@@ -1205,14 +1205,14 @@ static VALUE
 vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key)
 {
     cfp = vm_normal_frame(th, cfp);
-    return lep_svar_get(th, cfp ? VM_CF_LEP(cfp) : 0, key);
+    return lep_svar_get(th->ec, cfp ? VM_CF_LEP(cfp) : 0, key);
 }
 
 static void
 vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, const VALUE val)
 {
     cfp = vm_normal_frame(th, cfp);
-    lep_svar_set(th, cfp ? VM_CF_LEP(cfp) : 0, key, val);
+    lep_svar_set(th->ec, cfp ? VM_CF_LEP(cfp) : 0, key, val);
 }
 
 static VALUE

@@ -387,15 +387,15 @@ vm_svar_valid_p(VALUE svar)
 #endif
 
 static inline struct vm_svar *
-lep_svar(rb_thread_t *th, const VALUE *lep)
+lep_svar(rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep && (th == NULL || th->ec->root_lep != lep)) {
+    if (lep && (ec == NULL || ec->root_lep != lep)) {
 	svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
     }
     else {
-	svar = th->ec->root_svar;
+	svar = ec->root_svar;
     }
 
     VM_ASSERT(svar == Qfalse || vm_svar_valid_p(svar));
@@ -404,22 +404,22 @@ lep_svar(rb_thread_t *th, const VALUE *lep)
 }
 
 static inline void
-lep_svar_write(rb_thread_t *th, const VALUE *lep, const struct vm_svar *svar)
+lep_svar_write(rb_execution_context_t *ec, const VALUE *lep, const struct vm_svar *svar)
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep && (th == NULL || th->ec->root_lep != lep)) {
+    if (lep && (ec == NULL || ec->root_lep != lep)) {
 	vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
     }
     else {
-	RB_OBJ_WRITE(th->self, &th->ec->root_svar, svar);
+	RB_OBJ_WRITE(rb_ec_thread_ptr(ec)->self, &ec->root_svar, svar);
     }
 }
 
 static VALUE
-lep_svar_get(rb_thread_t *th, const VALUE *lep, rb_num_t key)
+lep_svar_get(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key)
 {
-    const struct vm_svar *svar = lep_svar(th, lep);
+    const struct vm_svar *svar = lep_svar(ec, lep);
 
     if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) return Qnil;
 
@@ -448,12 +448,12 @@ svar_new(VALUE obj)
 }
 
 static void
-lep_svar_set(rb_thread_t *th, const VALUE *lep, rb_num_t key, VALUE val)
+lep_svar_set(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, VALUE val)
 {
-    struct vm_svar *svar = lep_svar(th, lep);
+    struct vm_svar *svar = lep_svar(ec, lep);
 
     if ((VALUE)svar == Qfalse || imemo_type((VALUE)svar) != imemo_svar) {
-	lep_svar_write(th, lep, svar = svar_new((VALUE)svar));
+	lep_svar_write(ec, lep, svar = svar_new((VALUE)svar));
     }
 
     switch (key) {
@@ -475,15 +475,15 @@ lep_svar_set(rb_thread_t *th, const VALUE *lep, rb_num_t key, VALUE val)
 }
 
 static inline VALUE
-vm_getspecial(rb_thread_t *th, const VALUE *lep, rb_num_t key, rb_num_t type)
+vm_getspecial(rb_execution_context_t *ec, const VALUE *lep, rb_num_t key, rb_num_t type)
 {
     VALUE val;
 
     if (type == 0) {
-	val = lep_svar_get(th, lep, key);
+	val = lep_svar_get(ec, lep, key);
     }
     else {
-	VALUE backref = lep_svar_get(th, lep, VM_SVAR_BACKREF);
+	VALUE backref = lep_svar_get(ec, lep, VM_SVAR_BACKREF);
 
 	if (type & 0x01) {
 	    switch (type >> 1) {
@@ -2906,7 +2906,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	}
 	break;
       case DEFINED_REF:{
-	if (vm_getspecial(th, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
+	if (vm_getspecial(th->ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
 	    expr_type = DEFINED_GVAR;
 	}
 	break;

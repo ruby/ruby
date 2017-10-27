@@ -138,7 +138,7 @@ getspecial
 ()
 (VALUE val)
 {
-    val = vm_getspecial(th, GET_LEP(), key, type);
+    val = vm_getspecial(th->ec, GET_LEP(), key, type);
 }
 
 /**
@@ -152,7 +152,7 @@ setspecial
 (VALUE obj)
 ()
 {
-    lep_svar_set(th, GET_LEP(), key, obj);
+    lep_svar_set(th->ec, GET_LEP(), key, obj);
 }
 
 /**
