@@ -2499,29 +2499,6 @@ block_proc_is_lambda(const VALUE procval)
 }
 
 static VALUE
-vm_block_handler_to_proc(rb_thread_t *th, VALUE block_handler)
-{
-    VALUE blockarg = Qnil;
-
-    if (block_handler != VM_BLOCK_HANDLER_NONE) {
-	switch (vm_block_handler_type(block_handler)) {
-	  case block_handler_type_proc:
-	    blockarg = block_handler;
-	    break;
-	  case block_handler_type_symbol:
-	    blockarg = rb_sym_to_proc(block_handler);
-	    break;
-	  case block_handler_type_iseq:
-	  case block_handler_type_ifunc:
-	    blockarg = rb_vm_make_proc(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
-	    break;
-	}
-    }
-
-    return blockarg;
-}
-
-static VALUE
 vm_yield_with_cfunc(rb_thread_t *th,
 		    const struct rb_captured_block *captured,
 		    VALUE self, int argc, const VALUE *argv, VALUE block_handler)
@@ -2542,7 +2519,7 @@ vm_yield_with_cfunc(rb_thread_t *th,
 	arg = argv[0];
     }
 
-    blockarg = vm_block_handler_to_proc(th, block_handler);
+    blockarg = rb_vm_bh_to_procval(th->ec, block_handler);
 
     vm_push_frame(th->ec, (const rb_iseq_t *)captured->code.ifunc,
 		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME,
@@ -2559,7 +2536,7 @@ vm_yield_with_cfunc(rb_thread_t *th,
 static VALUE
 vm_yield_with_symbol(rb_thread_t *th,  VALUE symbol, int argc, const VALUE *argv, VALUE block_handler)
 {
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, vm_block_handler_to_proc(th, block_handler));
+    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, rb_vm_bh_to_procval(th->ec, block_handler));
 }
 
 static inline int
