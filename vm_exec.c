@@ -140,9 +140,10 @@ rb_vm_get_insns_address_table(void)
 }
 
 static VALUE
-vm_exec_core(rb_execution_cntext_t *ec, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
     register rb_control_frame_t *reg_cfp = ec->cfp;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     while (1) {
 	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);

@@ -60,7 +60,7 @@ error !
 
 #define INSN_ENTRY(insn) \
   static rb_control_frame_t * \
-    FUNC_FASTCALL(LABEL(insn))(rb_thread_t *th, rb_control_frame_t *reg_cfp) {
+    FUNC_FASTCALL(LABEL(insn))(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp) {
 
 #define END_INSN(insn) return reg_cfp;}
 
@@ -161,7 +161,7 @@ default:                        \
 
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
-    th->ec->errinfo = (VALUE)(exc); \
+    ec->errinfo = (VALUE)(exc); \
     return 0; \
 } while (0)
 #else
