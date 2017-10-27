@@ -856,10 +856,10 @@ static void
 check_stack_overflow(int sig, const void *addr)
 {
     int ruby_stack_overflowed_p(const rb_thread_t *, const void *);
-    rb_execution_context_t *ec = GET_EC();
-    if (ruby_stack_overflowed_p(ec, addr)) {
+    rb_thread_t *th = GET_THREAD();
+    if (ruby_stack_overflowed_p(th, addr)) {
 	reset_sigmask(sig);
-	rb_ec_stack_overflow(ec, FALSE);
+	rb_ec_stack_overflow(th->ec, FALSE);
     }
 }
 # endif
