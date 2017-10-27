@@ -525,7 +525,7 @@ die(void)
 
     abort();
 }
-#include <stdio.h>
+
 void
 rb_bug(const char *fmt, ...)
 {
