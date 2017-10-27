@@ -2796,7 +2796,7 @@ check_respond_to_missing(VALUE obj, VALUE v)
 }
 
 static VALUE
-vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
+vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
 {
     VALUE klass;
     enum defined_type expr_type = 0;
@@ -2826,7 +2826,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
       }
       case DEFINED_CONST:
 	klass = v;
-	if (vm_get_ev_const(th->ec, klass, SYM2ID(obj), 1)) {
+	if (vm_get_ev_const(ec, klass, SYM2ID(obj), 1)) {
 	    expr_type = DEFINED_CONST;
 	}
 	break;
@@ -2883,7 +2883,7 @@ vm_defined(rb_thread_t *th, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE
 	}
 	break;
       case DEFINED_REF:{
-	if (vm_getspecial(th->ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
+	if (vm_getspecial(ec, GET_LEP(), Qfalse, FIX2INT(obj)) != Qnil) {
 	    expr_type = DEFINED_GVAR;
 	}
 	break;
