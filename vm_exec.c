@@ -45,7 +45,7 @@ vm_stack_overflow_for_insn(void)
 
 #if !OPT_CALL_THREADED_CODE
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_context_t *ec, VALUE initial)
 {
 
 #if OPT_STACK_CACHING
@@ -84,7 +84,7 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
 { \
-  VM_REG_CFP = th->ec->cfp; \
+  VM_REG_CFP = ec->cfp; \
   reg_pc  = reg_cfp->pc; \
 }
 
@@ -98,11 +98,11 @@ vm_exec_core(rb_thread_t *th, VALUE initial)
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
-    if (UNLIKELY(th == 0)) {
+    if (UNLIKELY(ec == 0)) {
 	return (VALUE)insns_address_table;
     }
 #endif
-    reg_cfp = th->ec->cfp;
+    reg_cfp = ec->cfp;
     reg_pc = reg_cfp->pc;
 
 #if OPT_STACK_CACHING
@@ -140,26 +140,26 @@ rb_vm_get_insns_address_table(void)
 }
 
 static VALUE
-vm_exec_core(rb_thread_t *th, VALUE initial)
+vm_exec_core(rb_execution_cntext_t *ec, VALUE initial)
 {
-    register rb_control_frame_t *reg_cfp = th->ec->cfp;
+    register rb_control_frame_t *reg_cfp = ec->cfp;
 
     while (1) {
-	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(th, reg_cfp);
+	reg_cfp = ((rb_insn_func_t) (*GET_PC()))(ec, reg_cfp);
 
 	if (UNLIKELY(reg_cfp == 0)) {
 	    break;
 	}
     }
 
-    if (th->retval != Qundef) {
+    if (rb_ec_thread_ptr(ec)->retval != Qundef) {
 	VALUE ret = th->retval;
-	th->retval = Qundef;
+	rb_ec_thread_ptr(ec)->retval = Qundef;
 	return ret;
     }
     else {
-	VALUE err = th->ec->errinfo;
-	th->ec->errinfo = Qnil;
+	VALUE err = ec->errinfo;
+	ec->errinfo = Qnil;
 	return err;
     }
 }

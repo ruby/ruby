@@ -54,7 +54,7 @@ RUBY_SYMBOL_EXPORT_END
 #define VM_REG_EP  (VM_REG_CFP->ep)
 
 #define RESTORE_REGS() do { \
-    VM_REG_CFP = th->ec->cfp; \
+    VM_REG_CFP = ec->cfp; \
 } while (0)
 
 #define REG_A   reg_a
@@ -129,7 +129,7 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define CALL_METHOD(calling, ci, cc) do { \
-    VALUE v = (*(cc)->call)(th->ec, GET_CFP(), (calling), (ci), (cc)); \
+    VALUE v = (*(cc)->call)(ec, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef) { \
 	RESTORE_REGS(); \
 	NEXT_INSN(); \
