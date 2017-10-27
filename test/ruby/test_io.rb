@@ -366,6 +366,16 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_append
+    with_srccontent("foobar") {|src, content|
+      File.open('dst', 'ab') do |dst|
+        ret = IO.copy_stream(src, dst)
+        assert_equal(content.bytesize, ret)
+        assert_equal(content, File.read("dst"))
+      end
+    }
+  end
+
   def test_copy_stream_smaller
     with_srccontent {|src, content|
 

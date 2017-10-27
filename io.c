@@ -10789,6 +10789,16 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
             if (nogvl_copy_stream_wait_write(stp) == -1)
                 return -1;
             goto retry_copy_file_range;
+	  case EBADF:
+	    {
+		int e = errno;
+		int flags = fcntl(stp->dst_fd, F_GETFL);
+
+		if (flags != -1 && flags & O_APPEND) {
+		    return 0;
+		}
+		errno = e;
+	    }
         }
         stp->syserr = "copy_file_range";
         stp->error_no = errno;
