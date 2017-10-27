@@ -287,8 +287,6 @@ bracket(
 #define UNESCAPE(p) (escape && *(p) == '\\' ? (p) + 1 : (p))
 #define ISEND(p) (!*(p) || (pathname && *(p) == '/'))
 #define RETURN(val) return *pcur = p, *scur = s, (val);
-#define FNMATCH_ALLOC_N(type, n) ((type *)malloc(sizeof(type) * (n)))
-#define FNMATCH_FREE(ptr) free(ptr)
 
 static int
 fnmatch_helper(
@@ -312,11 +310,8 @@ fnmatch_helper(
 
     int r;
 
-    if (period && *s == '.') { /* leading period */
-	int c = *UNESCAPE(p);
-	if (c != '.' && (!(flags & FNM_EXTGLOB) || c != '{')) RETURN(FNM_NOMATCH);
-    }
-
+    if (period && *s == '.' && *UNESCAPE(p) != '.') /* leading period */
+	RETURN(FNM_NOMATCH);
 
     while (1) {
 	switch (*p) {
@@ -350,57 +345,6 @@ fnmatch_helper(
 	    }
 	    goto failed;
 	  }
-
-	  case '{':
-	    if (flags & FNM_EXTGLOB) {
-		size_t len = pend - p;
-		char *buf = FNMATCH_ALLOC_N(char, len);
-		const char *rbrace = NULL;
-		while (p < pend) {
-		    const char *t = ++p;
-		    int nest = 0;
-		    while (p < pend && !(*p == ',' && nest == 0)) {
-			if (*p == '{') nest++;
-			if (*p == '}') {
-			    if (nest == 0) {
-				if (!rbrace) rbrace = p;
-				goto rest;
-			    }
-			    nest--;
-			}
-			if (*p == '\\' && escape) {
-			    if (++p >= pend) break;
-			}
-			Inc(p, pend, enc);
-		    }
-		    if (!rbrace) {
-			rbrace = p;
-			while (rbrace < pend && !(*rbrace == '}' && nest == 0)) {
-			    if (*rbrace == '{') nest++;
-			    if (*rbrace == '}') nest--;
-			    if (*rbrace == '\\' && escape) {
-				if (++p >= pend) break;
-			    }
-			    Inc(rbrace, pend, enc);
-			}
-		    }
-		  rest:
-		    memcpy(buf, t, p-t);
-		    buf[p-t]=0;
-		    strlcpy(buf+(p-t), rbrace+1, len-(p-t));
-		    {
-			const char *pp = buf, *ss = s;
-			r = fnmatch_helper((const char **)&pp, &ss, flags|FNM_DOTMATCH, enc);
-		    }
-		    if (r == 0) {
-			p = buf;
-			FNMATCH_FREE(buf);
-			RETURN(0);
-		    }
-		    if (p >= rbrace) break;
-		}
-		FNMATCH_FREE(buf);
-	    }
 	}
 
 	/* ordinary */
@@ -1481,12 +1425,6 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 	  case '[':
 	    return MAGICAL;
 
-	  case '{':
-	    if (flags & FNM_EXTGLOB) {
-		return MAGICAL;
-	    }
-	    break;
-
 	  case '\\':
 	    if (escape && p++ >= pend)
 		continue;
@@ -2333,13 +2271,6 @@ push_pattern(const char *path, VALUE ary, void *enc)
     rb_ary_push(ary, name);
 }
 
-struct push_glob_args {
-    struct glob_args glob;
-    int flags;
-    int fd;
-};
-static int push_caller(const char *path, VALUE val, void *enc);
-
 static int
 ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 		  rb_encoding *enc, VALUE var)
@@ -2348,7 +2279,7 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
     const char *p = str;
     const char *pend = p + strlen(p);
     const char *s = p;
-    const char *lbrace = NULL, *rbrace = NULL;
+    const char *lbrace = 0, *rbrace = 0;
     int nest = 0, status = 0;
 
     while (*p) {
@@ -2367,18 +2298,9 @@ ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg,
 
     if (lbrace && rbrace) {
 	size_t len = strlen(s) + 1;
-	char *buf;
+	char *buf = GLOB_ALLOC_N(char, len);
 	long shift;
 
-	if (func == push_caller && !strchr(lbrace, '/')) {
-	    /* Now it reaches file basename entry. */
-	    /* Handle braces in glob_helper */
-	    struct push_glob_args *a = (struct push_glob_args *)arg;
-	    a->flags |= FNM_EXTGLOB;
-	    return glob_call_func(func, s, arg, enc);
-	}
-
-	buf = GLOB_ALLOC_N(char, len);
 	if (!buf) return -1;
 	memcpy(buf, s, lbrace-s);
 	shift = (lbrace-s);
@@ -2441,6 +2363,12 @@ ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
 {
     return ruby_brace_glob_with_enc(str, flags, func, arg, rb_ascii8bit_encoding());
 }
+
+struct push_glob_args {
+    struct glob_args glob;
+    int flags;
+    int fd;
+};
 
 static int
 push_caller(const char *path, VALUE val, void *enc)
