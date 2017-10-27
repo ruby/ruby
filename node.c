@@ -1217,11 +1217,11 @@ typedef struct node_buffer_elem_struct {
     NODE buf[1];
 } node_buffer_elem_t;
 
-typedef struct node_buffer_struct {
+struct node_buffer_struct {
     long idx, len;
     node_buffer_elem_t *head;
     node_buffer_elem_t body;
-} node_buffer_t;
+};
 
 node_buffer_t *
 rb_node_buffer_new()
