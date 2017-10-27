@@ -725,6 +725,13 @@ rsock_init_basicsocket(void)
     rb_define_private_method(rb_cBasicSocket,
 			     "__recv_nonblock", bsock_recv_nonblock, 4);
 
+#if MSG_DONTWAIT_RELIABLE
+    rb_define_private_method(rb_cBasicSocket,
+			     "__read_nonblock", rsock_read_nonblock, 3);
+    rb_define_private_method(rb_cBasicSocket,
+			     "__write_nonblock", rsock_write_nonblock, 2);
+#endif
+
     /* in ancdata.c */
     rb_define_private_method(rb_cBasicSocket, "__sendmsg",
 			     rsock_bsock_sendmsg, 4);

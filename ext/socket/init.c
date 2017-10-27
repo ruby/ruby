@@ -280,6 +280,108 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
     return rb_assoc_new(str, addr);
 }
 
+#if MSG_DONTWAIT_RELIABLE
+static VALUE sym_wait_writable;
+
+/* copied from io.c :< */
+static long
+read_buffered_data(char *ptr, long len, rb_io_t *fptr)
+{
+    int n = fptr->rbuf.len;
+
+    if (n <= 0) return 0;
+    if (n > len) n = (int)len;
+    MEMMOVE(ptr, fptr->rbuf.ptr+fptr->rbuf.off, char, n);
+    fptr->rbuf.off += n;
+    fptr->rbuf.len -= n;
+    return n;
+}
+
+/* :nodoc: */
+VALUE
+rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
+{
+    rb_io_t *fptr;
+    long n;
+    long len = NUM2LONG(length);
+    VALUE str = rsock_strbuf(buf, len);
+    char *ptr;
+
+    OBJ_TAINT(str);
+    GetOpenFile(sock, fptr);
+
+    if (len == 0) {
+	return str;
+    }
+
+    ptr = RSTRING_PTR(str);
+    n = read_buffered_data(ptr, len, fptr);
+    if (n <= 0) {
+	n = (long)recv(fptr->fd, ptr, len, MSG_DONTWAIT);
+	if (n < 0) {
+	    int e = errno;
+	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
+		if (ex == Qfalse) return sym_wait_readable;
+		rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
+					 e, "read would block");
+	    }
+	    rb_syserr_fail_path(e, fptr->pathv);
+	}
+    }
+    if (len != n) {
+	rb_str_modify(str);
+	rb_str_set_len(str, n);
+	if (str != buf) {
+	    rb_str_resize(str, n);
+	}
+    }
+    if (n == 0) {
+	if (ex == Qfalse) return Qnil;
+	rb_eof_error();
+    }
+
+    return str;
+}
+
+/* :nodoc: */
+VALUE
+rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
+{
+    rb_io_t *fptr;
+    long n;
+
+    if (!RB_TYPE_P(str, T_STRING))
+	str = rb_obj_as_string(str);
+
+    sock = rb_io_get_write_io(sock);
+    GetOpenFile(sock, fptr);
+    rb_io_check_writable(fptr);
+
+    /*
+     * As with IO#write_nonblock, we may block if somebody is relying on
+     * buffered I/O; but nobody actually hits this because pipes and sockets
+     * are not userspace-buffered in Ruby by default.
+     */
+    if (fptr->wbuf.len > 0) {
+	rb_io_flush(sock);
+    }
+
+    n = (long)send(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str), MSG_DONTWAIT);
+    if (n < 0) {
+	int e = errno;
+
+	if (e == EWOULDBLOCK || e == EAGAIN) {
+	    if (ex == Qfalse) return sym_wait_writable;
+	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
+				    "write would block");
+	}
+	rb_syserr_fail_path(e, fptr->pathv);
+    }
+
+    return LONG2FIX(n);
+}
+#endif /* MSG_DONTWAIT_RELIABLE */
+
 /* returns true if SOCK_CLOEXEC is supported */
 int rsock_detect_cloexec(int fd)
 {
@@ -680,4 +782,8 @@ rsock_init_socket_init(void)
 
 #undef rb_intern
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+
+#if MSG_DONTWAIT_RELIABLE
+    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+#endif
 }
