@@ -6640,6 +6640,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     len = lex_p - lex_pbeg;
     lex_goto_eol(parser);
     add_mark_object(lit = STR_NEW(tok(), toklen()));
+    add_mark_object(lex_lastline);
     lex_strterm = rb_node_newnode(NODE_HEREDOC,
 				  lit,			/* nd_lit */
 				  len,			/* nd_nth */
