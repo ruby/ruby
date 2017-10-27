@@ -949,7 +949,7 @@ invokesuper
 
     vm_caller_setup_arg_block(th, reg_cfp, &calling, ci, blockiseq, TRUE);
     calling.recv = GET_SELF();
-    vm_search_super_method(th, GET_CFP(), &calling, ci, cc);
+    vm_search_super_method(th->ec, GET_CFP(), &calling, ci, cc);
     CALL_METHOD(&calling, ci, cc);
 }
 

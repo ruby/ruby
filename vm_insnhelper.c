@@ -2430,7 +2430,7 @@ vm_super_outside(void)
 }
 
 static void
-vm_search_super_method(rb_thread_t *th, rb_control_frame_t *reg_cfp,
+vm_search_super_method(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 		       struct rb_calling_info *calling, struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     VALUE current_defined_class, klass;
