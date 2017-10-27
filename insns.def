@@ -1675,7 +1675,7 @@ opt_call_c_function
 ()
 ()
 {
-    reg_cfp = (funcptr)(rb_ec_thread_ptr(ec), reg_cfp);
+    reg_cfp = (funcptr)(ec, reg_cfp);
 
     if (reg_cfp == 0) {
 	VALUE err = ec->errinfo;

@@ -1000,7 +1000,7 @@ typedef VALUE CDHASH;
 #endif
 
 typedef rb_control_frame_t *
-  (FUNC_FASTCALL(*rb_insn_func_t))(rb_thread_t *, rb_control_frame_t *);
+  (FUNC_FASTCALL(*rb_insn_func_t))(rb_execution_context_t *, rb_control_frame_t *);
 
 #define VM_TAGGED_PTR_SET(p, tag)  ((VALUE)(p) | (tag))
 #define VM_TAGGED_PTR_REF(v, mask) ((void *)((v) & ~mask))
