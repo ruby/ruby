@@ -1025,7 +1025,7 @@ throw
 (VALUE val)
 {
     RUBY_VM_CHECK_INTS(th);
-    val = vm_throw(th, GET_CFP(), throw_state, throwobj);
+    val = vm_throw(th->ec, GET_CFP(), throw_state, throwobj);
     THROW_EXCEPTION(val);
     /* unreachable */
 }
