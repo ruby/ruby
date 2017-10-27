@@ -510,7 +510,7 @@ rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control
 }
 
 static rb_control_frame_t *
-vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
+vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	return (rb_control_frame_t *)cfp;
@@ -518,7 +518,7 @@ vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cf
 
     cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	if (VM_FRAME_RUBYFRAME_P(cfp)) {
 	    return (rb_control_frame_t *)cfp;
 	}
@@ -773,7 +773,7 @@ collect_local_variables_in_env(const rb_env_t *env, const struct local_var_list 
 }
 
 static int
-vm_collect_local_variables_in_heap(rb_thread_t *th, const VALUE *ep, const struct local_var_list *vars)
+vm_collect_local_variables_in_heap(const VALUE *ep, const struct local_var_list *vars)
 {
     if (VM_ENV_ESCAPED_P(ep)) {
 	collect_local_variables_in_env(VM_ENV_ENVVAL_PTR(ep), vars);

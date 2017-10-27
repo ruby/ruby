@@ -20,7 +20,7 @@
 
 /* control stack frame */
 
-static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
+static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 
 VALUE
 ruby_vm_special_exception_copy(VALUE exc)
@@ -742,7 +742,7 @@ vm_cref_push(rb_thread_t *th, VALUE klass, const VALUE *ep, int pushed_by_eval)
 	prev_cref = vm_env_cref(ep);
     }
     else {
-	rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th, th->ec->cfp);
+	rb_control_frame_t *cfp = vm_get_ruby_level_caller_cfp(th->ec, th->ec->cfp);
 
 	if (cfp) {
 	    prev_cref = vm_env_cref(cfp->ep);
