@@ -30,41 +30,41 @@ ruby_vm_special_exception_copy(VALUE exc)
     return e;
 }
 
-NORETURN(static void threadptr_stack_overflow(rb_thread_t *, int));
+NORETURN(static void ec_stack_overflow(rb_execution_context_t *ec, int));
 static void
-threadptr_stack_overflow(rb_thread_t *th, int setup)
+ec_stack_overflow(rb_execution_context_t *ec, int setup)
 {
-    VALUE mesg = th->vm->special_exceptions[ruby_error_sysstack];
-    th->ec->raised_flag = RAISED_STACKOVERFLOW;
+    VALUE mesg = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_sysstack];
+    ec->raised_flag = RAISED_STACKOVERFLOW;
     if (setup) {
-	VALUE at = rb_threadptr_backtrace_object(th);
+	VALUE at = rb_threadptr_backtrace_object(rb_ec_thread_ptr(ec));
 	mesg = ruby_vm_special_exception_copy(mesg);
 	rb_ivar_set(mesg, idBt, at);
 	rb_ivar_set(mesg, idBt_locations, at);
     }
-    th->ec->errinfo = mesg;
-    EC_JUMP_TAG(th->ec, TAG_RAISE);
+    ec->errinfo = mesg;
+    EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
 static void
 vm_stackoverflow(void)
 {
-    threadptr_stack_overflow(GET_THREAD(), TRUE);
+    ec_stack_overflow(GET_EC(), TRUE);
 }
 
-NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
+NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 void
-rb_threadptr_stack_overflow(rb_thread_t *th, int crit)
+rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
     if (crit || rb_during_gc()) {
-	th->ec->raised_flag = RAISED_STACKOVERFLOW;
-	th->ec->errinfo = th->vm->special_exceptions[ruby_error_stackfatal];
-	EC_JUMP_TAG(th->ec, TAG_RAISE);
+	ec->raised_flag = RAISED_STACKOVERFLOW;
+	ec->errinfo = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_stackfatal];
+	EC_JUMP_TAG(ec, TAG_RAISE);
     }
 #ifdef USE_SIGALTSTACK
-    threadptr_stack_overflow(th, TRUE);
+    ec_stack_overflow(ec, TRUE);
 #else
-    threadptr_stack_overflow(th, FALSE);
+    ec_stack_overflow(ec, FALSE);
 #endif
 }
 
