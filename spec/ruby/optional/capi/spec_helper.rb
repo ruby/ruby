@@ -27,7 +27,7 @@ def compile_extension(name)
   ruby_library = "#{RbConfig::CONFIG['libdir']}/#{libruby_so}"
   unless libruby_so and File.exist?(ruby_library)
     # Statically-compiled lib in the binary
-    ruby_library = RbConfig.ruby
+    ruby_library = ENV['RUBY_EXE']
   end
 
   return lib if File.exist?(lib) and
