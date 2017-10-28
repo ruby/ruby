@@ -1156,7 +1156,7 @@ collect_caller_bindings(rb_thread_t *th)
 
 	if (!NIL_P(cfp_val)) {
 	    rb_control_frame_t *cfp = GC_GUARDED_PTR_REF(cfp_val);
-	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(th, cfp));
+	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(th->ec, cfp));
 	}
     }
 
