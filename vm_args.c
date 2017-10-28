@@ -697,11 +697,11 @@ raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VA
 		      VM_BLOCK_HANDLER_NONE /* specval*/, Qfalse /* me or cref */,
 		      iseq->body->iseq_encoded,
 		      ec->cfp->sp, 0, 0 /* stack_max */);
-	at = rb_threadptr_backtrace_object(rb_ec_thread_ptr(ec));
+	at = rb_ec_backtrace_object(ec);
 	rb_vm_pop_frame(ec);
     }
     else {
-	at = rb_threadptr_backtrace_object(rb_ec_thread_ptr(ec));
+	at = rb_ec_backtrace_object(ec);
     }
 
     rb_ivar_set(exc, idBt_locations, at);
