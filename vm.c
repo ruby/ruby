@@ -341,7 +341,7 @@ ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
     enum ruby_value_type type;
     if (!klass) {
 	if (!th) th = GET_THREAD();
-	if (!rb_thread_method_id_and_class(th, &id, 0, &klass) || !klass)
+	if (!rb_ec_frame_method_id_and_class(th->ec, &id, 0, &klass) || !klass)
 	    return FALSE;
     }
     if (RB_TYPE_P(klass, T_ICLASS)) {
@@ -2064,15 +2064,15 @@ rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *cal
 }
 
 int
-rb_thread_method_id_and_class(rb_thread_t *th, ID *idp, ID *called_idp, VALUE *klassp)
+rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp)
 {
-    return rb_vm_control_frame_id_and_class(th->ec->cfp, idp, called_idp, klassp);
+    return rb_vm_control_frame_id_and_class(ec->cfp, idp, called_idp, klassp);
 }
 
 int
 rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
 {
-    return rb_thread_method_id_and_class(GET_THREAD(), idp, 0, klassp);
+    return rb_ec_frame_method_id_and_class(GET_EC(), idp, 0, klassp);
 }
 
 VALUE

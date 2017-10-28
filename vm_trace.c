@@ -598,10 +598,10 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     VALUE eventname = rb_str_new2(get_event_name(event));
     VALUE filename = srcfile ? rb_str_new2(srcfile) : Qnil;
     VALUE argv[6];
-    rb_thread_t *th = GET_THREAD();
+    const rb_execution_context_t *ec = GET_EC();
 
     if (!klass) {
-	rb_thread_method_id_and_class(th, &id, 0, &klass);
+	rb_ec_frame_method_id_and_class(ec, &id, 0, &klass);
     }
 
     if (klass) {
