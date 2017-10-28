@@ -1393,13 +1393,13 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		if (ci->flag & VM_CALL_ARGS_BLOCKARG_BLOCKPARAM) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG_BLOCKPARAM"));
 		if (ci->flag & VM_CALL_FCALL) rb_ary_push(flags, rb_str_new2("FCALL"));
 		if (ci->flag & VM_CALL_VCALL) rb_ary_push(flags, rb_str_new2("VCALL"));
+		if (ci->flag & VM_CALL_ARGS_SIMPLE) rb_ary_push(flags, rb_str_new2("ARGS_SIMPLE"));
 		if (ci->flag & VM_CALL_BLOCKISEQ) rb_ary_push(flags, rb_str_new2("BLOCKISEQ"));
 		if (ci->flag & VM_CALL_TAILCALL) rb_ary_push(flags, rb_str_new2("TAILCALL"));
 		if (ci->flag & VM_CALL_SUPER) rb_ary_push(flags, rb_str_new2("SUPER"));
 		if (ci->flag & VM_CALL_KWARG) rb_ary_push(flags, rb_str_new2("KWARG"));
 		if (ci->flag & VM_CALL_KW_SPLAT) rb_ary_push(flags, rb_str_new2("KW_SPLAT"));
 		if (ci->flag & VM_CALL_OPT_SEND) rb_ary_push(flags, rb_str_new2("SEND")); /* maybe not reachable */
-		if (ci->flag & VM_CALL_ARGS_SIMPLE) rb_ary_push(flags, rb_str_new2("ARGS_SIMPLE")); /* maybe not reachable */
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
 	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));
