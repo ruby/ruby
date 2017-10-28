@@ -893,10 +893,10 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
 /* Binding */
 
 VALUE
-rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
+rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *src_cfp)
 {
-    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th->ec, src_cfp);
-    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th->ec, src_cfp);
+    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(ec, src_cfp);
+    rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(ec, src_cfp);
     VALUE bindval, envval;
     rb_binding_t *bind;
 
@@ -905,11 +905,11 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
     }
 
     while (1) {
-	envval = vm_make_env_object(th->ec, cfp);
+	envval = vm_make_env_object(ec, cfp);
 	if (cfp == ruby_level_cfp) {
 	    break;
 	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(th->ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+	cfp = rb_vm_get_binding_creatable_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     }
 
     bindval = rb_binding_alloc(rb_cBinding);

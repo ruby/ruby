@@ -332,8 +332,8 @@ binding_clone(VALUE self)
 VALUE
 rb_binding_new(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    return rb_vm_make_binding(th, th->ec->cfp);
+    rb_execution_context_t *ec = GET_EC();
+    return rb_vm_make_binding(ec, ec->cfp);
 }
 
 /*
