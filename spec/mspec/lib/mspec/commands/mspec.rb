@@ -37,7 +37,7 @@ class MSpecMain < MSpecScript
 
     options.targets
 
-    options.on("--warnings", "Don't supress warnings") do
+    options.on("--warnings", "Don't suppress warnings") do
       config[:flags] << '-w'
       ENV['OUTPUT_WARNINGS'] = '1'
     end
@@ -171,6 +171,7 @@ class MSpecMain < MSpecScript
       exit multi_exec(argv)
     else
       $stderr.puts "$ #{argv.join(' ')}"
+      $stderr.flush
       exec(*argv, close_others: false)
     end
   end

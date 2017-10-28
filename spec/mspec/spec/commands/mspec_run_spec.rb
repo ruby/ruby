@@ -17,18 +17,12 @@ end
 
 describe MSpecRun, "#options" do
   before :each do
-    @stdout, $stdout = $stdout, IOStub.new
-
     @argv = [one_spec, two_spec]
     @options, @config = new_option
     MSpecOptions.stub(:new).and_return(@options)
 
     @script = MSpecRun.new
     @script.stub(:config).and_return(@config)
-  end
-
-  after :each do
-    $stdout = @stdout
   end
 
   it "enables the filter options" do
@@ -114,15 +108,14 @@ describe MSpecRun, "#options" do
   it "exits if there are no files to process and './spec' is not a directory" do
     File.should_receive(:directory?).with("./spec").and_return(false)
     @options.should_receive(:parse).and_return([])
-    @script.should_receive(:exit)
+    @script.should_receive(:abort).with("No files specified.")
     @script.options
-    $stdout.should include "No files specified"
   end
 
   it "process 'spec/' if it is a directory and no files were specified" do
     File.should_receive(:directory?).with("./spec").and_return(true)
     @options.should_receive(:parse).and_return([])
-    @script.should_receive(:files).with(["spec/"])
+    @script.should_receive(:files).with(["spec/"]).and_return(["spec/a_spec.rb"])
     @script.options
   end
 
