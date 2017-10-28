@@ -1189,11 +1189,11 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
 /* special variable */
 
 static rb_control_frame_t *
-vm_normal_frame(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_normal_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     while (cfp->pc == 0) {
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
+	if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	    return 0;
 	}
     }
@@ -1201,31 +1201,31 @@ vm_normal_frame(rb_thread_t *th, rb_control_frame_t *cfp)
 }
 
 static VALUE
-vm_cfp_svar_get(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key)
+vm_cfp_svar_get(const rb_execution_context_t *ec, rb_control_frame_t *cfp, VALUE key)
 {
-    cfp = vm_normal_frame(th, cfp);
-    return lep_svar_get(th->ec, cfp ? VM_CF_LEP(cfp) : 0, key);
+    cfp = vm_normal_frame(ec, cfp);
+    return lep_svar_get(ec, cfp ? VM_CF_LEP(cfp) : 0, key);
 }
 
 static void
-vm_cfp_svar_set(rb_thread_t *th, rb_control_frame_t *cfp, VALUE key, const VALUE val)
+vm_cfp_svar_set(const rb_execution_context_t *ec, rb_control_frame_t *cfp, VALUE key, const VALUE val)
 {
-    cfp = vm_normal_frame(th, cfp);
-    lep_svar_set(th->ec, cfp ? VM_CF_LEP(cfp) : 0, key, val);
+    cfp = vm_normal_frame(ec, cfp);
+    lep_svar_set(ec, cfp ? VM_CF_LEP(cfp) : 0, key, val);
 }
 
 static VALUE
 vm_svar_get(VALUE key)
 {
-    rb_thread_t *th = GET_THREAD();
-    return vm_cfp_svar_get(th, th->ec->cfp, key);
+    const rb_execution_context_t *ec = GET_EC();
+    return vm_cfp_svar_get(ec, ec->cfp, key);
 }
 
 static void
 vm_svar_set(VALUE key, VALUE val)
 {
-    rb_thread_t *th = GET_THREAD();
-    vm_cfp_svar_set(th, th->ec->cfp, key, val);
+    const rb_execution_context_t *ec = GET_EC();
+    vm_cfp_svar_set(ec, ec->cfp, key, val);
 }
 
 VALUE
