@@ -483,9 +483,9 @@ vm_set_main_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq)
 }
 
 rb_control_frame_t *
-rb_vm_get_binding_creatable_next_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp)
+rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
-    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, cfp)) {
+    while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) {
 	if (cfp->iseq) {
 	    return (rb_control_frame_t *)cfp;
 	}
@@ -729,11 +729,11 @@ vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 }
 
 void
-rb_vm_stack_to_heap(rb_thread_t *th)
+rb_vm_stack_to_heap(rb_execution_context_t *ec)
 {
-    rb_control_frame_t *cfp = th->ec->cfp;
-    while ((cfp = rb_vm_get_binding_creatable_next_cfp(th, cfp)) != 0) {
-	vm_make_env_object(th->ec, cfp);
+    rb_control_frame_t *cfp = ec->cfp;
+    while ((cfp = rb_vm_get_binding_creatable_next_cfp(ec, cfp)) != 0) {
+	vm_make_env_object(ec, cfp);
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 }
@@ -895,7 +895,7 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
 VALUE
 rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 {
-    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th, src_cfp);
+    rb_control_frame_t *cfp = rb_vm_get_binding_creatable_next_cfp(th->ec, src_cfp);
     rb_control_frame_t *ruby_level_cfp = rb_vm_get_ruby_level_next_cfp(th->ec, src_cfp);
     VALUE bindval, envval;
     rb_binding_t *bind;
@@ -909,7 +909,7 @@ rb_vm_make_binding(rb_thread_t *th, const rb_control_frame_t *src_cfp)
 	if (cfp == ruby_level_cfp) {
 	    break;
 	}
-	cfp = rb_vm_get_binding_creatable_next_cfp(th, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+	cfp = rb_vm_get_binding_creatable_next_cfp(th->ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
     }
 
     bindval = rb_binding_alloc(rb_cBinding);

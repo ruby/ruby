@@ -1541,10 +1541,10 @@ rb_vm_living_threads_remove(rb_vm_t *vm, rb_thread_t *th)
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);
 rb_control_frame_t *rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
-rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_thread_t *th, const rb_control_frame_t *cfp);
+rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *th, const rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 VALUE rb_name_err_mesg_new(VALUE mesg, VALUE recv, VALUE method);
-void rb_vm_stack_to_heap(rb_thread_t *th);
+void rb_vm_stack_to_heap(rb_execution_context_t *ec);
 void ruby_thread_init_stack(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp);
