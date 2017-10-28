@@ -542,15 +542,15 @@ rb_vm_pop_cfunc_frame(void)
 }
 
 void
-rb_vm_rewind_cfp(rb_thread_t *th, rb_control_frame_t *cfp)
+rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     /* check skipped frame */
-    while (th->ec->cfp != cfp) {
+    while (ec->cfp != cfp) {
 #if VMDEBUG
-	printf("skipped frame: %s\n", vm_frametype_name(th->ec->cfp));
+	printf("skipped frame: %s\n", vm_frametype_name(ec->cfp));
 #endif
-	if (VM_FRAME_TYPE(th->ec->cfp) != VM_FRAME_MAGIC_CFUNC) {
-	    rb_vm_pop_frame(th->ec);
+	if (VM_FRAME_TYPE(ec->cfp) != VM_FRAME_MAGIC_CFUNC) {
+	    rb_vm_pop_frame(ec);
 	}
 	else { /* unlikely path */
 	    rb_vm_pop_cfunc_frame();

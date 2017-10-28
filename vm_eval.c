@@ -1136,7 +1136,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	const rb_control_frame_t *const escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	if (cfp == escape_cfp) {
-	    rb_vm_rewind_cfp(th, cfp);
+	    rb_vm_rewind_cfp(th->ec, cfp);
 
 	    state = 0;
 	    th->ec->tag->state = TAG_NONE;
@@ -1995,7 +1995,7 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
     else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->ec->errinfo) == tag) {
-	rb_vm_rewind_cfp(th, saved_cfp);
+	rb_vm_rewind_cfp(th->ec, saved_cfp);
 	val = th->ec->tag->retval;
 	th->ec->errinfo = Qnil;
 	state = 0;
