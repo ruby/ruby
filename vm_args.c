@@ -806,7 +806,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     VALUE obj;
     ID mid;
     const rb_callable_method_entry_t *me;
-    rb_thread_t *th;
+    rb_execution_context_t *ec;
 
     if (argc-- < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
@@ -814,14 +814,14 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     obj = *argv++;
     mid = SYM2ID(callback_arg);
     me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid, NULL);
-    th = GET_THREAD();
+    ec = GET_EC();
     if (!NIL_P(blockarg)) {
-	vm_passed_block_handler_set(th, blockarg);
+	vm_passed_block_handler_set(ec, blockarg);
     }
     if (!me) {
 	return method_missing(obj, mid, argc, argv, MISSING_NOENTRY);
     }
-    return vm_call0(th->ec, obj, mid, argc, argv, me);
+    return vm_call0(ec, obj, mid, argc, argv, me);
 }
 
 static void

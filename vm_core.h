@@ -765,6 +765,12 @@ typedef struct rb_execution_context_struct {
 
     rb_fiber_t *fiber;
 
+    /* for rb_iterate */
+    VALUE passed_block_handler;
+
+    /* for bmethod */
+    const rb_callable_method_entry_t *passed_bmethod_me;
+
     /* for GC */
     struct {
 	VALUE *stack_start;
@@ -789,12 +795,6 @@ typedef struct rb_thread_struct {
     rb_execution_context_t *ec;
 
     VALUE last_status; /* $? */
-
-    /* for rb_iterate */
-    VALUE passed_block_handler;
-
-    /* for bmethod */
-    const rb_callable_method_entry_t *passed_bmethod_me;
 
     /* for cfunc */
     struct rb_calling_info *calling;

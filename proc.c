@@ -2099,7 +2099,7 @@ static inline VALUE
 call_method_data(rb_thread_t *th, const struct METHOD *data,
 		 int argc, const VALUE *argv, VALUE passed_procval)
 {
-    vm_passed_block_handler_set(th, proc_to_block_handler(passed_procval));
+    vm_passed_block_handler_set(th->ec, proc_to_block_handler(passed_procval));
     return rb_vm_call(th, data->recv, data->me->called_id, argc, argv,
 		      method_callable_method_entry(data));
 }

@@ -5,23 +5,23 @@
 #include "vm_core.h"
 
 static inline void
-vm_passed_block_handler_set(rb_thread_t *th, VALUE block_handler)
+vm_passed_block_handler_set(rb_execution_context_t *ec, VALUE block_handler)
 {
     vm_block_handler_verify(block_handler);
-    th->passed_block_handler = block_handler;
+    ec->passed_block_handler = block_handler;
 }
 
 static inline void
-pass_passed_block_handler(rb_thread_t *th)
+pass_passed_block_handler(rb_execution_context_t *ec)
 {
-    VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
+    VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
     vm_block_handler_verify(block_handler);
-    vm_passed_block_handler_set(th, block_handler);
-    VM_ENV_FLAGS_SET(th->ec->cfp->ep, VM_FRAME_FLAG_PASSED);
+    vm_passed_block_handler_set(ec, block_handler);
+    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_PASSED);
 }
 
-#define PASS_PASSED_BLOCK_HANDLER_TH(th) pass_passed_block_handler(th)
-#define PASS_PASSED_BLOCK_HANDLER() pass_passed_block_handler(GET_THREAD())
+#define PASS_PASSED_BLOCK_HANDLER_EC(ec) pass_passed_block_handler(ec)
+#define PASS_PASSED_BLOCK_HANDLER() pass_passed_block_handler(GET_EC())
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
