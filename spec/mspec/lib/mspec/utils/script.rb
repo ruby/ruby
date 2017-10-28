@@ -1,4 +1,5 @@
 require 'mspec/guards/guard'
+require 'mspec/guards/version'
 require 'mspec/utils/warnings'
 
 # MSpecScript provides a skeleton for all the MSpec runner scripts.
@@ -38,7 +39,7 @@ class MSpecScript
   end
 
   def initialize
-    if RUBY_VERSION < '2.2'
+    ruby_version_is ""..."2.2" do
       abort "MSpec needs Ruby 2.2 or more recent"
     end
 
@@ -200,27 +201,30 @@ class MSpecScript
     abort "Could not find spec file #{partial}"
   end
 
-  # Resolves each entry in +list+ to a set of files.
+  # Resolves each entry in +patterns+ to a set of files.
   #
-  # If the entry has a leading '^' character, the list of files
+  # If the pattern has a leading '^' character, the list of files
   # is subtracted from the list of files accumulated to that point.
   #
   # If the entry has a leading ':' character, the corresponding
   # key is looked up in the config object and the entries in the
   # value retrieved are processed through #entries.
-  def files(list)
-    list.inject([]) do |files, item|
-      case item[0]
+  def files(patterns)
+    list = []
+    patterns.each do |pattern|
+      case pattern[0]
       when ?^
-        files -= entries(item[1..-1])
+        list -= entries(pattern[1..-1])
       when ?:
-        key = item[1..-1].to_sym
-        files += files(Array(config[key]))
+        key = pattern[1..-1].to_sym
+        value = config[key]
+        abort "Key #{pattern} not found in mspec config." unless value
+        list += files(Array(value))
       else
-        files += entries(item)
+        list += entries(pattern)
       end
-      files
     end
+    list
   end
 
   def files_from_patterns(patterns)
@@ -231,12 +235,10 @@ class MSpecScript
       if patterns.empty? and File.directory? "./spec"
         patterns = ["spec/"]
       end
-      if patterns.empty?
-        puts "No files specified."
-        exit 1
-      end
     end
-    files patterns
+    list = files(patterns)
+    abort "No files specified." if list.empty?
+    list
   end
 
   def cores(max)
