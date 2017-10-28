@@ -1108,7 +1108,7 @@ tracepoint_enable_m(VALUE tpval)
  * Return false if trace was disabled.
  *
  *	trace.enabled?	#=> true
- *	trace.disable	#=> false (previous status)
+ *	trace.disable	#=> true (previous status)
  *	trace.enabled?	#=> false
  *	trace.disable	#=> false
  *
