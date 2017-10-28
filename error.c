@@ -532,7 +532,7 @@ rb_bug(const char *fmt, ...)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_THREAD()) {
+    if (GET_EC()) {
 	file = rb_source_loc(&line);
     }
 
@@ -547,7 +547,7 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_THREAD()) {
+    if (GET_EC()) {
 	file = rb_source_loc(&line);
     }
 
