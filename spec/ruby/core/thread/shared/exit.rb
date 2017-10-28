@@ -112,7 +112,7 @@ describe :thread_exit, shared: true do
 
   quarantine! do
 
-    it "propogates inner exception to Thread.join if there is an outer ensure clause" do
+    it "propagates inner exception to Thread.join if there is an outer ensure clause" do
       thread = ThreadSpecs.dying_thread_with_outer_ensure(@method) { }
       lambda { thread.join }.should raise_error(RuntimeError, "In dying thread")
     end

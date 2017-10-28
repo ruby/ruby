@@ -353,16 +353,27 @@ describe "Constant resolution within methods" do
   end
 
   describe "with ||=" do
-    it "assignes constant if previously undefined" do
+    it "assigns a scoped constant if previously undefined" do
       ConstantSpecs.should_not have_constant(:OpAssignUndefined)
-      # Literally opening the module is required to avoid content
-      # re-assignment error
       module ConstantSpecs
         OpAssignUndefined ||= 42
       end
       ConstantSpecs::OpAssignUndefined.should == 42
+      ConstantSpecs::OpAssignUndefinedOutside ||= 42
+      ConstantSpecs::OpAssignUndefinedOutside.should == 42
       ConstantSpecs.send(:remove_const, :OpAssignUndefined)
+      ConstantSpecs.send(:remove_const, :OpAssignUndefinedOutside)
     end
+
+    it "assigns a global constant if previously undefined" do
+      OpAssignGlobalUndefined ||= 42
+      ::OpAssignGlobalUndefinedExplicitScope ||= 42
+      OpAssignGlobalUndefined.should == 42
+      ::OpAssignGlobalUndefinedExplicitScope.should == 42
+      Object.send :remove_const, :OpAssignGlobalUndefined
+      Object.send :remove_const, :OpAssignGlobalUndefinedExplicitScope
+    end
+
   end
 end
 

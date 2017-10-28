@@ -42,6 +42,17 @@ module NetHTTPSpecs
     end
   end
 
+  class RequestBasicAuthServlet < SpecServlet
+    def reply(req, res)
+      res.content_type = "text/plain"
+
+      WEBrick::HTTPAuth.basic_auth(req, res, "realm") do |user, pass|
+        res.body = "username: #{user}\npassword: #{pass}"
+        true
+      end
+    end
+  end
+
   class << self
     @server = nil
     @server_thread = nil
@@ -69,6 +80,7 @@ module NetHTTPSpecs
       @server.mount('/request', RequestServlet)
       @server.mount("/request/body", RequestBodyServlet)
       @server.mount("/request/header", RequestHeaderServlet)
+      @server.mount("/request/basic_auth", RequestBasicAuthServlet)
 
       @server_thread = @server.start
     end

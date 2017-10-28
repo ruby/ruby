@@ -9,7 +9,7 @@ describe "Thread#key?" do
     @th.join
   end
 
-  it "tests for existance of thread local variables using symbols or strings" do
+  it "tests for existence of thread local variables using symbols or strings" do
     @th.key?(:oliver).should == true
     @th.key?("oliver").should == true
     @th.key?(:stanley).should == false

@@ -17,6 +17,13 @@ describe :io_readlines, shared: true do
     result = IO.send(@method, @name, "", &@object)
     (result ? result : ScratchPad.recorded).should == IOSpecs.lines_empty_separator
   end
+
+  ruby_version_is "2.4" do
+    it "yields a sequence of lines without trailing newline characters when chomp is passed" do
+      result = IO.send(@method, @name, chomp: true, &@object)
+      (result ? result : ScratchPad.recorded).should == IOSpecs.lines_without_newline_characters
+    end
+  end
 end
 
 describe :io_readlines_options_19, shared: true do

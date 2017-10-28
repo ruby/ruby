@@ -88,19 +88,17 @@ describe "A class definition" do
   end
 
   # [Bug #12367] [ruby-core:75446]
-  ruby_version_is "2.4" do # Until backported
-    it "raises an error when reopening a class with Object as superclass" do
-      module ClassSpecs
-        class SuperclassReopenedObject < A
-        end
-        SuperclassReopenedObject.superclass.should == A
-
-        lambda {
-          class SuperclassReopenedObject < Object
-          end
-        }.should raise_error(TypeError, /superclass mismatch/)
-        SuperclassReopenedObject.superclass.should == A
+  it "raises an error when reopening a class with Object as superclass" do
+    module ClassSpecs
+      class SuperclassReopenedObject < A
       end
+      SuperclassReopenedObject.superclass.should == A
+
+      lambda {
+        class SuperclassReopenedObject < Object
+        end
+      }.should raise_error(TypeError, /superclass mismatch/)
+      SuperclassReopenedObject.superclass.should == A
     end
   end
 

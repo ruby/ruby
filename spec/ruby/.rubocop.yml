@@ -7,13 +7,28 @@ AllCops:
     - command_line/fixtures/bad_syntax.rb
   DisabledByDefault: true
 
+Layout/TrailingWhitespace:
+  Enabled: true
+
 Lint:
   Enabled: true
 
 Lint/AssignmentInCondition:
   Enabled: false
 
-Lint/LiteralInCondition:
+Lint/BooleanSymbol:
+  Enabled: false
+
+Lint/InterpolationCheck:
+  Enabled: false
+
+Lint/LiteralAsCondition:
+  Enabled: false
+
+Lint/UnneededRequireStatement:
+  Enabled: false
+
+Lint/RescueWithoutErrorClass:
   Enabled: false
 
 Lint/UnifiedInteger:
@@ -38,3 +53,7 @@ Lint/Void:
 Lint/EmptyExpression:
   Exclude:
     - 'language/**/*.rb'
+
+Lint/UriRegexp:
+  Exclude:
+    - 'library/uri/regexp_spec.rb'

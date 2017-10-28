@@ -379,4 +379,11 @@ describe "The 'case'-construct with no target expression" do
       :called
     end.should == :called
   end
+
+  it "accepts complex expressions within ()" do
+    case 'a'
+    when (raise if 2+2 == 3; /a/)
+      :called
+    end.should == :called
+  end
 end

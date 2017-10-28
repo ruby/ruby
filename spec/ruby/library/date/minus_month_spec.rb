@@ -3,7 +3,7 @@ require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Date#<<" do
 
-  it "substracts a number of months from a date" do
+  it "subtracts a number of months from a date" do
     d = Date.civil(2007,2,27) << 10
     d.should == Date.civil(2006, 4, 27)
   end

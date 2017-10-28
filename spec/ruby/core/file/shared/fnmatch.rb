@@ -75,11 +75,11 @@ describe :file_fnmatch, shared: true do
     File.send(@method, 'c*t', 'c/a/b/t').should == true
   end
 
-  it "matches ranges of characters using bracket expresions (e.g. [a-z])" do
+  it "matches ranges of characters using bracket expression (e.g. [a-z])" do
     File.send(@method, 'ca[a-z]', 'cat').should == true
   end
 
-  it "matches ranges of characters using bracket expresions, taking case into account" do
+  it "matches ranges of characters using bracket expression, taking case into account" do
     File.send(@method, '[a-z]', 'D').should == false
     File.send(@method, '[^a-z]', 'D').should == true
     File.send(@method, '[A-Z]', 'd').should == false
@@ -92,7 +92,7 @@ describe :file_fnmatch, shared: true do
     File.send(@method, '/ca[s][s-t]/rul[a-b]/[z]he/[x-Z]orld', '/cats/rule/the/World').should == false
   end
 
-  it "matches ranges of characters using exclusive bracket expresions (e.g. [^t] or [!t])" do
+  it "matches ranges of characters using exclusive bracket expression (e.g. [^t] or [!t])" do
     File.send(@method, 'ca[^t]', 'cat').should == false
     File.send(@method, 'ca[!t]', 'cat').should == false
   end
@@ -106,13 +106,13 @@ describe :file_fnmatch, shared: true do
   end
 
   platform_is_not :windows do
-    it "doesn't match case sensitive characters on platfroms with case sensitive paths, when flags include FNM_SYSCASE" do
+    it "doesn't match case sensitive characters on platforms with case sensitive paths, when flags include FNM_SYSCASE" do
       File.send(@method, 'cat', 'CAT', File::FNM_SYSCASE).should == false
     end
   end
 
   platform_is :windows do
-    it "matches case sensitive characters on platfroms with case insensitive paths, when flags include FNM_SYSCASE" do
+    it "matches case sensitive characters on platforms with case insensitive paths, when flags include FNM_SYSCASE" do
       File.send(@method, 'cat', 'CAT', File::FNM_SYSCASE).should == true
     end
   end

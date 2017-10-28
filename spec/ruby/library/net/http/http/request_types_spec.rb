@@ -14,7 +14,7 @@ describe "Net::HTTP::Get" do
     Net::HTTP::Get::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Get::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -32,7 +32,7 @@ describe "Net::HTTP::Head" do
     Net::HTTP::Head::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has no Respone Body" do
+  it "has no Response Body" do
     Net::HTTP::Head::RESPONSE_HAS_BODY.should be_false
   end
 end
@@ -50,7 +50,7 @@ describe "Net::HTTP::Post" do
     Net::HTTP::Post::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Post::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -68,7 +68,7 @@ describe "Net::HTTP::Put" do
     Net::HTTP::Put::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Put::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -86,7 +86,7 @@ describe "Net::HTTP::Delete" do
     Net::HTTP::Delete::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Delete::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -104,7 +104,7 @@ describe "Net::HTTP::Options" do
     Net::HTTP::Options::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has no Respone Body" do
+  it "has no Response Body" do
     Net::HTTP::Options::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -122,7 +122,7 @@ describe "Net::HTTP::Trace" do
     Net::HTTP::Trace::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Trace::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -140,7 +140,7 @@ describe "Net::HTTP::Propfind" do
     Net::HTTP::Propfind::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Propfind::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -158,7 +158,7 @@ describe "Net::HTTP::Proppatch" do
     Net::HTTP::Proppatch::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Proppatch::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -176,7 +176,7 @@ describe "Net::HTTP::Mkcol" do
     Net::HTTP::Mkcol::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Mkcol::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -194,7 +194,7 @@ describe "Net::HTTP::Copy" do
     Net::HTTP::Copy::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Copy::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -212,7 +212,7 @@ describe "Net::HTTP::Move" do
     Net::HTTP::Move::REQUEST_HAS_BODY.should be_false
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Move::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -230,7 +230,7 @@ describe "Net::HTTP::Lock" do
     Net::HTTP::Lock::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Lock::RESPONSE_HAS_BODY.should be_true
   end
 end
@@ -248,7 +248,7 @@ describe "Net::HTTP::Unlock" do
     Net::HTTP::Unlock::REQUEST_HAS_BODY.should be_true
   end
 
-  it "has a Respone Body" do
+  it "has a Response Body" do
     Net::HTTP::Unlock::RESPONSE_HAS_BODY.should be_true
   end
 end

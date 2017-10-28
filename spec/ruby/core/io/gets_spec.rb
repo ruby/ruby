@@ -138,6 +138,14 @@ describe "IO#gets" do
       end
     end
   end
+
+  ruby_version_is "2.4" do
+    describe "when passed chomp" do
+      it "returns the first line without a trailing newline character" do
+        @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
+      end
+    end
+  end
 end
 
 describe "IO#gets" do
@@ -191,7 +199,7 @@ describe "IO#gets" do
     @io.gets(obj, 5).should == "one\n"
   end
 
-  it "reads to the default seperator when passed a single argument greater than the number of bytes to the separator" do
+  it "reads to the default separator when passed a single argument greater than the number of bytes to the separator" do
     @io.gets(6).should == "one\n"
   end
 

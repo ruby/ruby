@@ -39,6 +39,13 @@ describe "Regexps with modifers" do
     lambda { eval('/foo/a') }.should raise_error(SyntaxError)
   end
 
+  ruby_version_is "2.4" do
+    it "supports (?~) (absent operator)" do
+      Regexp.new("(?~foo)").match("hello").to_a.should == ["hello"]
+      "foo".scan(Regexp.new("(?~foo)")).should == ["fo","o",""]
+    end
+  end
+
   it "supports (?imx-imx) (inline modifiers)" do
     /(?i)foo/.match("FOO").to_a.should == ["FOO"]
     /foo(?i)/.match("FOO").should be_nil

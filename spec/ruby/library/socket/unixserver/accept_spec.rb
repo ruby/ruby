@@ -48,14 +48,14 @@ platform_is_not :windows do
 
     it "can be interrupted by Thread#raise" do
       t = Thread.new {
-        @server.accept
+        -> {
+          @server.accept
+        }.should raise_error(Exception, "interrupted")
       }
-      Thread.pass while t.status and t.status != "sleep"
 
-      # raise in thread, ensure the raise happens
-      ex = Exception.new
-      t.raise ex
-      lambda { t.join }.should raise_error(Exception)
+      Thread.pass while t.status and t.status != "sleep"
+      t.raise Exception, "interrupted"
+      t.join
     end
   end
 end

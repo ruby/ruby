@@ -37,7 +37,7 @@ describe "Struct#initialize" do
     car.make.should == nil # still nil despite override in Honda#initialize b/c of super order
   end
 
-  it "can be overriden" do
+  it "can be overridden" do
     StructClasses::SubclassX.new(:y).new.key.should == :value
   end
 end

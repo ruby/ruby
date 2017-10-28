@@ -19,7 +19,7 @@ describe "Array#&" do
 
   it "does not modify the original Array" do
     a = [1, 1, 3, 5]
-    a & [1, 2, 3]
+    (a & [1, 2, 3]).should == [1, 3]
     a.should == [1, 1, 3, 5]
   end
 
@@ -52,7 +52,7 @@ describe "Array#&" do
     obj1.stub!(:hash).and_return(0)
     obj2.stub!(:hash).and_return(0)
     obj1.should_receive(:eql?).at_least(1).and_return(true)
-    obj2.should_receive(:eql?).at_least(1).and_return(true)
+    obj2.stub!(:eql?).and_return(true)
 
     ([obj1] & [obj2]).should == [obj1]
     ([obj1, obj1, obj2, obj2] & [obj2]).should == [obj1]

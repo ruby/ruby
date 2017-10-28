@@ -687,7 +687,7 @@ describe "Block-local variables" do
     end.should raise_error(SyntaxError)
   end
 
-  it "need not be preceeded by standard parameters" do
+  it "need not be preceded by standard parameters" do
     [1].map {|; foo| foo }.should == [nil]
     [1].map {|; glark, bar| [glark, bar] }.should == [[nil, nil]]
   end

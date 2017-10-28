@@ -35,7 +35,7 @@ with_feature :fiber_library do
       states.should == [:start, :end]
     end
 
-    it "can transfer control to a Fiber that has transfered to another Fiber" do
+    it "can transfer control to a Fiber that has transferred to another Fiber" do
       states = []
       fiber1 = Fiber.new { states << :fiber1 }
       fiber2 = Fiber.new { states << :fiber2_start; fiber1.transfer; states << :fiber2_end}

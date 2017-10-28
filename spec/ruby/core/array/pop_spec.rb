@@ -119,7 +119,7 @@ describe "Array#pop" do
       a.should == []
     end
 
-    it "raises a TypeError when the passed n can be coerced to Integer" do
+    it "raises a TypeError when the passed n cannot be coerced to Integer" do
       lambda{ [1, 2].pop("cat") }.should raise_error(TypeError)
       lambda{ [1, 2].pop(nil) }.should raise_error(TypeError)
     end

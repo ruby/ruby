@@ -16,15 +16,13 @@ with_feature :encoding do
 
     it "returns [:source_buffer_empty,nil,nil,nil, nil] when #convert last succeeded" do
       ec = Encoding::Converter.new('ascii','utf-8')
-      ec.convert("a".force_encoding('ascii')).should == "a".\
-        force_encoding('utf-8')
+      ec.convert("a".force_encoding('ascii')).should == "a".force_encoding('utf-8')
       ec.primitive_errinfo.should == [:source_buffer_empty, nil, nil, nil, nil]
     end
 
     it "returns [:destination_buffer_full,nil,nil,nil,nil] when #primitive_convert last returned :destination_buffer_full" do
       ec = Encoding::Converter.new("utf-8", "iso-2022-jp")
-      ec.primitive_convert("\u{9999}", "", 0, 0, partial_input: false) \
-        .should == :destination_buffer_full
+      ec.primitive_convert("\u{9999}", "", 0, 0, partial_input: false).should == :destination_buffer_full
       ec.primitive_errinfo.should == [:destination_buffer_full, nil, nil, nil, nil]
     end
 

@@ -6,7 +6,7 @@ describe "StringIO#gets when passed [separator]" do
     @io = StringIO.new("this>is>an>example")
   end
 
-  it "returns the data read till the next occurence of the passed separator" do
+  it "returns the data read till the next occurrence of the passed separator" do
     @io.gets(">").should == "this>"
     @io.gets(">").should == "is>"
     @io.gets(">").should == "an>"
@@ -72,7 +72,7 @@ describe "StringIO#gets when passed no argument" do
     @io = StringIO.new("this is\nan example\nfor StringIO#gets")
   end
 
-  it "returns the data read till the next occurence of $/ or till eof" do
+  it "returns the data read till the next occurrence of $/ or till eof" do
     @io.gets.should == "this is\n"
 
     begin
@@ -234,5 +234,14 @@ describe "StringIO#gets when in write-only mode" do
     io = StringIO.new("xyz")
     io.close_read
     lambda { io.gets }.should raise_error(IOError)
+  end
+end
+
+ruby_version_is "2.4" do
+  describe "StringIO#gets when passed [chomp]" do
+    it "returns the data read without a trailing newline character" do
+      io = StringIO.new("this>is>an>example\n")
+      io.gets(chomp: true).should == "this>is>an>example"
+    end
   end
 end

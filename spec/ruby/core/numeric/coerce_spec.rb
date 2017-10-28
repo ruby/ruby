@@ -17,7 +17,7 @@ describe "Numeric#coerce" do
   # I (emp) think that this behavior is actually a bug in MRI. It's here as documentation
   # of the behavior until we find out if it's a bug.
   quarantine! do
-    it "considers the presense of a metaclass when checking the class of the objects" do
+    it "considers the presence of a metaclass when checking the class of the objects" do
       a = NumericSpecs::Subclass.new
       b = NumericSpecs::Subclass.new
 

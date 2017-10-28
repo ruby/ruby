@@ -1,6 +1,12 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 
 describe "Array#max" do
+  ruby_version_is "2.4" do
+    it "is defined on Array" do
+      [1].method(:max).owner.should equal Array
+    end
+  end
+
   it "returns nil with no values" do
     [].max.should == nil
   end

@@ -42,10 +42,8 @@ describe :string_chars, shared: true do
     it "returns a different character if the String is transcoded" do
       s = "\u{20AC}".force_encoding('UTF-8')
       s.encode('UTF-8').send(@method).to_a.should == ["\u{20AC}".force_encoding('UTF-8')]
-      s.encode('iso-8859-15').send(@method).to_a.should == [
-        [0xA4].pack('C').force_encoding('iso-8859-15')]
-      s.encode('iso-8859-15').encode('UTF-8').send(@method).to_a.should == [
-        "\u{20AC}".force_encoding('UTF-8')]
+      s.encode('iso-8859-15').send(@method).to_a.should == [[0xA4].pack('C').force_encoding('iso-8859-15')]
+      s.encode('iso-8859-15').encode('UTF-8').send(@method).to_a.should == ["\u{20AC}".force_encoding('UTF-8')]
     end
 
     it "uses the String's encoding to determine what characters it contains" do

@@ -557,6 +557,7 @@
 #define HAVE_RB_STR_SUBSEQ                 1
 #define HAVE_RB_VSPRINTF                   1
 #define HAVE_RB_STRING                     1
+#define HAVE_SAFE_STRING_VALUE             1
 
 /* Struct */
 #define HAVE_RB_STRUCT_AREF                1

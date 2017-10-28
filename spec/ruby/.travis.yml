@@ -3,21 +3,23 @@ language: ruby
 install:
   - git clone https://github.com/ruby/mspec.git ../mspec
 script:
-  - if [ -n "$RUBOCOP" ]; then gem install rubocop -v 0.49.1 && rubocop; fi
+  - if [ -n "$RUBOCOP" ]; then gem install rubocop -v 0.51.0 && rubocop; fi
   - ../mspec/bin/mspec $MSPEC_OPTS
 matrix:
   include:
     - os: osx
-      rvm: 2.4.0
+      osx_image: xcode9
+      rvm: 2.4.2
+      env: CHECK_LEAKS=true
     - os: linux
-      rvm: 2.4.1
+      rvm: 2.4.2
       env: MSPEC_OPTS="-R2 -ff"
     - os: linux
-      rvm: 2.2.7
+      rvm: 2.2.8
     - os: linux
-      rvm: 2.3.4
+      rvm: 2.3.5
     - os: linux
-      rvm: 2.4.1
+      rvm: 2.4.2
       env: CHECK_LEAKS=true RUBOCOP=true
     - os: linux
       rvm: ruby-head

@@ -10,7 +10,7 @@ describe "Matrix.hermitian?" do
     Matrix.empty.hermitian?.should be_true
   end
 
-  it "returns false for an assymetric Matrix" do
+  it "returns false for an asymmetric Matrix" do
     Matrix[[1, 2],[-2, 1]].hermitian?.should be_false
   end
 
@@ -20,9 +20,9 @@ describe "Matrix.hermitian?" do
       Matrix[[0, 0]],
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
-    ].each do |rectangual_matrix|
+    ].each do |rectangular_matrix|
       lambda {
-        rectangual_matrix.hermitian?
+        rectangular_matrix.hermitian?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end
   end

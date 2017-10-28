@@ -1,7 +1,7 @@
 require 'rexml/document'
 require File.expand_path('../../../../spec_helper', __FILE__)
 
-describe "REXML::Element#add_namespace" do
+describe "REXML::Element#add_text" do
   before :each do
     @name = REXML::Element.new "Name"
   end

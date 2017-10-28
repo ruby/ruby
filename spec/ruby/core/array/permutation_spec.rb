@@ -52,7 +52,7 @@ describe "Array#permutation" do
   end
 
   it "returns no permutations when the given length has no permutations" do
-    @numbers.permutation(9).entries.size == 0
+    @numbers.permutation(9).entries.size.should == 0
     @numbers.permutation(9) { |n| @yielded << n }
     @yielded.should == []
   end

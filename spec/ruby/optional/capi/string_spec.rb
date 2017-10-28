@@ -100,6 +100,10 @@ describe "C-API String function" do
     it "returns an empty string if len is 0" do
       @s.rb_str_new("hello", 0).should == ""
     end
+
+    it "returns a string from an offset char buffer" do
+      @s.rb_str_new_offset("hello", 1, 3).should == "ell"
+    end
   end
 
   describe "rb_str_new2" do
@@ -439,30 +443,51 @@ describe "C-API String function" do
     end
   end
 
-  describe "StringValue" do
+  describe :string_value_macro, shared: true do
+    before :each do
+      @s = CApiStringSpecs.new
+    end
+
     it "does not call #to_str on a String" do
       str = "genuine"
       str.should_not_receive(:to_str)
-      @s.StringValue(str)
+      @s.send(@method, str)
     end
 
     it "does not call #to_s on a String" do
       str = "genuine"
       str.should_not_receive(:to_str)
-      @s.StringValue(str)
+      @s.send(@method, str)
     end
 
     it "calls #to_str on non-String objects" do
       str = mock("fake")
       str.should_receive(:to_str).and_return("wannabe")
-      @s.StringValue(str)
+      @s.send(@method, str).should == "wannabe"
     end
 
     it "does not call #to_s on non-String objects" do
       str = mock("fake")
       str.should_not_receive(:to_s)
-      lambda { @s.StringValue(str) }.should raise_error(TypeError)
+      lambda { @s.send(@method, str) }.should raise_error(TypeError)
     end
+  end
+
+  describe "StringValue" do
+    it_behaves_like :string_value_macro, :StringValue
+  end
+
+  describe "SafeStringValue" do
+    it "raises for tained string when $SAFE is 1" do
+      Thread.new {
+        $SAFE = 1
+        lambda {
+          @s.SafeStringValue("str".taint)
+        }.should raise_error(SecurityError)
+      }.join
+    end
+
+    it_behaves_like :string_value_macro, :SafeStringValue
   end
 
   describe "rb_str_resize" do

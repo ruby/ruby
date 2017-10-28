@@ -420,6 +420,13 @@ describe "CApiObject" do
       @o.rb_class_of(0.1).should == Float
       @o.rb_class_of(ObjectTest.new).should == ObjectTest
     end
+
+    it "returns the singleton class if it exists" do
+      o = ObjectTest.new
+      @o.rb_class_of(o).should equal ObjectTest
+      s = o.singleton_class
+      @o.rb_class_of(o).should equal s
+    end
   end
 
   describe "rb_obj_classname" do

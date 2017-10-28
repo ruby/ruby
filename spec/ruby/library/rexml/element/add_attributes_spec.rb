@@ -1,7 +1,7 @@
 require 'rexml/document'
 require File.expand_path('../../../../spec_helper', __FILE__)
 
-describe "REXML::Element#add_attribute" do
+describe "REXML::Element#add_attributes" do
   before :each do
     @person = REXML::Element.new "person"
     @person.attributes["name"] = "Bill"

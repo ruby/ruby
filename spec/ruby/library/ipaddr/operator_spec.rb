@@ -57,13 +57,20 @@ describe "IPAddr Operator" do
     @a.should_not == IPAddr.new("3ffe:505:3::")
   end
 
+  ruby_version_is '2.4' do
+    # https://bugs.ruby-lang.org/issues/12799
+    it "tests for equality correctly if object cannot be converted to IPAddr" do
+      IPAddr.new("1.1.1.1").should_not == "sometext"
+    end
+  end
+
   it "sets a mask" do
     a = @a.mask(32)
     a.to_s.should == "3ffe:505::"
     @a.to_s.should == "3ffe:505:2::"
   end
 
-  it "checks whether an addres is included in a range" do
+  it "checks whether an address is included in a range" do
     @a.should include(IPAddr.new("3ffe:505:2::"))
     @a.should include(IPAddr.new("3ffe:505:2::1"))
     @a.should_not include(IPAddr.new("3ffe:505:3::"))
