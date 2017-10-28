@@ -695,8 +695,8 @@ static VALUE
 proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler;
 
     if ((block_handler = rb_vm_frame_block_handler(cfp)) == VM_BLOCK_HANDLER_NONE) {
@@ -747,7 +747,7 @@ proc_new(VALUE klass, int8_t is_lambda)
 
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
-	return rb_vm_make_proc_lambda(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
+	return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
     }
     VM_UNREACHABLE(proc_new);
     return Qnil;
