@@ -1263,7 +1263,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *      TracePoint.trace(:line) do |tp|
  *        $tp = tp
  *      end
- *      $tp.line #=> access from outside (RuntimeError)
+ *      $tp.lineno #=> access from outside (RuntimeError)
  *
  * Access from other threads is also forbidden.
  *
