@@ -1461,8 +1461,6 @@ rb_vm_jump_tag_but_local_jump(int state)
 }
 #endif
 
-NORETURN(static void vm_iter_break(rb_thread_t *th, VALUE val));
-
 static rb_control_frame_t *
 next_not_local_frame(rb_control_frame_t *cfp)
 {
@@ -1472,12 +1470,14 @@ next_not_local_frame(rb_control_frame_t *cfp)
     return cfp;
 }
 
+NORETURN(static void vm_iter_break(rb_execution_context_t *ec, VALUE val));
+
 static void
-vm_iter_break(rb_thread_t *th, VALUE val)
+vm_iter_break(rb_execution_context_t *ec, VALUE val)
 {
-    rb_control_frame_t *cfp = next_not_local_frame(th->ec->cfp);
+    rb_control_frame_t *cfp = next_not_local_frame(ec->cfp);
     const VALUE *ep = VM_CF_PREV_EP(cfp);
-    const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(th->ec, cfp, ep);
+    const rb_control_frame_t *target_cfp = rb_vm_search_cf_from_ep(ec, cfp, ep);
 
 #if 0				/* raise LocalJumpError */
     if (!target_cfp) {
@@ -1485,20 +1485,20 @@ vm_iter_break(rb_thread_t *th, VALUE val)
     }
 #endif
 
-    th->ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
-    EC_JUMP_TAG(th->ec, TAG_BREAK);
+    ec->errinfo = (VALUE)THROW_DATA_NEW(val, target_cfp, TAG_BREAK);
+    EC_JUMP_TAG(ec, TAG_BREAK);
 }
 
 void
 rb_iter_break(void)
 {
-    vm_iter_break(GET_THREAD(), Qnil);
+    vm_iter_break(GET_EC(), Qnil);
 }
 
 void
 rb_iter_break_value(VALUE val)
 {
-    vm_iter_break(GET_THREAD(), val);
+    vm_iter_break(GET_EC(), val);
 }
 
 /* optimization: redefine management */
