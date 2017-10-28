@@ -1046,8 +1046,8 @@ int
 rb_block_arity(void)
 {
     int min, max;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1079,8 +1079,8 @@ rb_block_arity(void)
 int
 rb_block_min_max_arity(int *max)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1908,8 +1908,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 #if PROC_NEW_REQUIRES_BLOCK
 	body = rb_block_lambda();
 #else
-	rb_thread_t *th = GET_THREAD();
-	VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
+	const rb_execution_context_t *ec = GET_EC();
+	VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
 	if (block_handler == VM_BLOCK_HANDLER_NONE) rb_raise(rb_eArgError, proc_without_block);
 
 	switch (vm_block_handler_type(block_handler)) {
@@ -1921,7 +1921,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    break;
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    body = rb_vm_make_proc_lambda(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc, TRUE);
+	    body = rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc, TRUE);
 	}
 #endif
     }
