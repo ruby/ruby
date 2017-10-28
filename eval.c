@@ -520,7 +520,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 		exc_setup_cause(mesg, cause);
 	    }
 	    if (NIL_P(bt)) {
-		VALUE at = rb_threadptr_backtrace_object(rb_ec_thread_ptr(ec));
+		VALUE at = rb_ec_backtrace_object(ec);
 		rb_ivar_set(mesg, idBt_locations, at);
 		set_backtrace(mesg, at);
 	    }

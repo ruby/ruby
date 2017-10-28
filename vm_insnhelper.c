@@ -37,7 +37,7 @@ ec_stack_overflow(rb_execution_context_t *ec, int setup)
     VALUE mesg = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_sysstack];
     ec->raised_flag = RAISED_STACKOVERFLOW;
     if (setup) {
-	VALUE at = rb_threadptr_backtrace_object(rb_ec_thread_ptr(ec));
+	VALUE at = rb_ec_backtrace_object(ec);
 	mesg = ruby_vm_special_exception_copy(mesg);
 	rb_ivar_set(mesg, idBt, at);
 	rb_ivar_set(mesg, idBt_locations, at);

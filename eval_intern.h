@@ -314,9 +314,9 @@ void rb_thread_terminate_all(void);
 VALUE rb_vm_cbase(void);
 
 /* vm_backtrace.c */
-VALUE rb_threadptr_backtrace_object(rb_thread_t *th);
-VALUE rb_threadptr_backtrace_str_ary(rb_thread_t *th, long lev, long n);
-VALUE rb_threadptr_backtrace_location_ary(rb_thread_t *th, long lev, long n);
+VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
+VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
+VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n);
 
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # ifdef HAVE_MBLEN

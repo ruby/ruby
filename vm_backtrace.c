@@ -512,12 +512,12 @@ bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
 }
 
 VALUE
-rb_threadptr_backtrace_object(rb_thread_t *th)
+rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     struct bt_iter_arg arg;
     arg.prev_loc = 0;
 
-    backtrace_each(th->ec,
+    backtrace_each(ec,
 		   bt_init,
 		   bt_iter_iseq,
 		   bt_iter_cfunc,
@@ -650,15 +650,15 @@ backtrace_load_data(VALUE self, VALUE str)
 }
 
 VALUE
-rb_threadptr_backtrace_str_ary(rb_thread_t *th, long lev, long n)
+rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_str_ary(rb_threadptr_backtrace_object(th), lev, n);
+    return backtrace_to_str_ary(rb_ec_backtrace_object(ec), lev, n);
 }
 
 VALUE
-rb_threadptr_backtrace_location_ary(rb_thread_t *th, long lev, long n)
+rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
 {
-    return backtrace_to_location_ary(rb_threadptr_backtrace_object(th), lev, n);
+    return backtrace_to_location_ary(rb_ec_backtrace_object(ec), lev, n);
 }
 
 /* make old style backtrace directly */
@@ -812,15 +812,15 @@ rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
 VALUE
 rb_make_backtrace(void)
 {
-    return rb_threadptr_backtrace_str_ary(GET_THREAD(), 0, 0);
+    return rb_ec_backtrace_str_ary(GET_EC(), 0, 0);
 }
 
 static VALUE
-threadptr_backtrace_to_ary(rb_thread_t *th, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
+ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
     VALUE level, vn;
     long lev, n;
-    VALUE btval = rb_threadptr_backtrace_object(th);
+    VALUE btval = rb_ec_backtrace_object(ec);
     VALUE r;
     rb_backtrace_t *bt;
 
@@ -894,7 +894,7 @@ thread_backtrace_to_ary(int argc, const VALUE *argv, VALUE thval, int to_str)
     if (target_th->to_kill || target_th->status == THREAD_KILLED)
       return Qnil;
 
-    return threadptr_backtrace_to_ary(target_th, argc, argv, 0, 0, to_str);
+    return ec_backtrace_to_ary(target_th->ec, argc, argv, 0, 0, to_str);
 }
 
 VALUE
@@ -950,7 +950,7 @@ rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval)
 static VALUE
 rb_f_caller(int argc, VALUE *argv)
 {
-    return threadptr_backtrace_to_ary(GET_THREAD(), argc, argv, 1, 1, 1);
+    return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 1);
 }
 
 /*
@@ -978,7 +978,7 @@ rb_f_caller(int argc, VALUE *argv)
 static VALUE
 rb_f_caller_locations(int argc, VALUE *argv)
 {
-    return threadptr_backtrace_to_ary(GET_THREAD(), argc, argv, 1, 1, 0);
+    return ec_backtrace_to_ary(GET_EC(), argc, argv, 1, 1, 0);
 }
 
 /* called from Init_vm() in vm.c */
@@ -1178,7 +1178,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 
     dbg_context.th = th;
     dbg_context.cfp = dbg_context.th->ec->cfp;
-    dbg_context.backtrace = rb_threadptr_backtrace_location_ary(th, 0, 0);
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(th->ec, 0, 0);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(th);
 

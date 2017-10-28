@@ -4937,7 +4937,7 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 	    }
 	}
 	rb_str_catf(msg, "\n   ");
-	rb_str_concat(msg, rb_ary_join(rb_threadptr_backtrace_str_ary(th, 0, 0), sep));
+	rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, 0, 0), sep));
 	rb_str_catf(msg, "\n");
     }
 }

@@ -1243,12 +1243,12 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-adjust_backtrace_in_eval(rb_thread_t *th, VALUE errinfo)
+adjust_backtrace_in_eval(const rb_execution_context_t *ec, VALUE errinfo)
 {
     VALUE errat = rb_get_backtrace(errinfo);
     VALUE mesg = rb_attr_get(errinfo, id_mesg);
     if (RB_TYPE_P(errat, T_ARRAY)) {
-	VALUE bt2 = rb_threadptr_backtrace_str_ary(th, 0, 0);
+	VALUE bt2 = rb_ec_backtrace_str_ary(ec, 0, 0);
 	if (RARRAY_LEN(bt2) > 0) {
 	    if (RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
 		rb_ivar_set(errinfo, id_mesg, RARRAY_AREF(errat, 0));
@@ -1318,7 +1318,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
 
 	if (!iseq) {
-	    rb_exc_raise(adjust_backtrace_in_eval(rb_ec_thread_ptr(ec), ec->errinfo));
+	    rb_exc_raise(adjust_backtrace_in_eval(ec, ec->errinfo));
 	}
 
 	/* TODO: what the code checking? */
@@ -1357,7 +1357,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
     if (state) {
 	if (state == TAG_RAISE) {
-	    adjust_backtrace_in_eval(rb_ec_thread_ptr(ec), ec->errinfo);
+	    adjust_backtrace_in_eval(ec, ec->errinfo);
 	}
 	EC_JUMP_TAG(ec, state);
     }
