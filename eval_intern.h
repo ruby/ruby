@@ -183,9 +183,9 @@ rb_threadptr_tag_state(const rb_execution_context_t *ec)
     return state;
 }
 
-NORETURN(static inline void rb_ec_tag_jump(rb_execution_context_t *ec, enum ruby_tag_type st));
+NORETURN(static inline void rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st));
 static inline void
-rb_ec_tag_jump(rb_execution_context_t *ec, enum ruby_tag_type st)
+rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
     ec->tag->state = st;
     ruby_longjmp(ec->tag->buf, 1);
