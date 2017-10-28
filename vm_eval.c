@@ -252,8 +252,10 @@ rb_current_receiver(void)
 }
 
 static inline void
-stack_check(rb_thread_t *th)
+stack_check(rb_execution_context_t *ec)
 {
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+
     if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) &&
 	rb_threadptr_stack_check(th)) {
 	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
@@ -262,7 +264,7 @@ stack_check(rb_thread_t *th)
 }
 
 static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
-static inline enum method_missing_reason rb_method_call_status(rb_thread_t *th, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
+static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 /*!
  * \internal
@@ -284,14 +286,14 @@ rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
     const rb_callable_method_entry_t *me = rb_search_method_entry(recv, mid);
-    rb_thread_t *th = GET_THREAD();
-    enum method_missing_reason call_status = rb_method_call_status(th, me, scope, self);
+    rb_execution_context_t *ec = GET_EC();
+    enum method_missing_reason call_status = rb_method_call_status(ec, me, scope, self);
 
     if (call_status != MISSING_NONE) {
 	return method_missing(recv, mid, argc, argv, call_status);
     }
-    stack_check(th);
-    return vm_call0(th->ec, recv, mid, argc, argv, me);
+    stack_check(ec);
+    return vm_call0(ec, recv, mid, argc, argv, me);
 }
 
 struct rescue_funcall_args {
@@ -309,7 +311,7 @@ struct rescue_funcall_args {
 static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
-    return call_method_entry(args->th, args->defined_class,
+    return call_method_entry(args->th->ec, args->defined_class,
 			     args->recv, idMethodMissing,
 			     args->me, args->argc, args->argv);
 }
@@ -339,25 +341,25 @@ check_funcall_failed(struct rescue_funcall_args *args, VALUE e)
 }
 
 static int
-check_funcall_respond_to(rb_thread_t *th, VALUE klass, VALUE recv, ID mid)
+check_funcall_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mid)
 {
-    return vm_respond_to(th, klass, recv, mid, TRUE);
+    return vm_respond_to(ec, klass, recv, mid, TRUE);
 }
 
 static int
-check_funcall_callable(rb_thread_t *th, const rb_callable_method_entry_t *me)
+check_funcall_callable(rb_execution_context_t *ec, const rb_callable_method_entry_t *me)
 {
-    return rb_method_call_status(th, me, CALL_FCALL, th->ec->cfp->self) == MISSING_NONE;
+    return rb_method_call_status(ec, me, CALL_FCALL, ec->cfp->self) == MISSING_NONE;
 }
 
 static VALUE
-check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def)
+check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mid, int argc, const VALUE *argv, int respond, VALUE def)
 {
     struct rescue_funcall_args args;
     const rb_method_entry_t *me;
     VALUE ret = Qundef;
 
-    ret = basic_obj_respond_to_missing(th, klass, recv,
+    ret = basic_obj_respond_to_missing(ec, klass, recv,
 				       ID2SYM(mid), Qtrue);
     if (!RTEST(ret)) return def;
     args.respond = respond > 0;
@@ -369,8 +371,8 @@ check_funcall_missing(rb_thread_t *th, VALUE klass, VALUE recv, ID mid, int argc
 
 	new_args[0] = ID2SYM(mid);
 	MEMCPY(new_args+1, argv, VALUE, argc);
-	th->method_missing_reason = MISSING_NOENTRY;
-	args.th = th;
+	rb_ec_thread_ptr(ec)->method_missing_reason = MISSING_NOENTRY;
+	args.th = rb_ec_thread_ptr(ec);
 	args.recv = recv;
 	args.me = me;
 	args.mid = mid;
@@ -395,21 +397,21 @@ rb_check_funcall_default(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE 
 {
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
-    rb_thread_t *th = GET_THREAD();
-    int respond = check_funcall_respond_to(th, klass, recv, mid);
+    rb_execution_context_t *ec = GET_EC();
+    int respond = check_funcall_respond_to(ec, klass, recv, mid);
 
     if (!respond)
 	return def;
 
     me = rb_search_method_entry(recv, mid);
-    if (!check_funcall_callable(th, me)) {
-	VALUE ret = check_funcall_missing(th, klass, recv, mid, argc, argv,
+    if (!check_funcall_callable(ec, me)) {
+	VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
 					  respond, def);
 	if (ret == Qundef) ret = def;
 	return ret;
     }
-    stack_check(th);
-    return vm_call0(th->ec, recv, mid, argc, argv, me);
+    stack_check(ec);
+    return vm_call0(ec, recv, mid, argc, argv, me);
 }
 
 VALUE
@@ -418,8 +420,8 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 {
     VALUE klass = CLASS_OF(recv);
     const rb_callable_method_entry_t *me;
-    rb_thread_t *th = GET_THREAD();
-    int respond = check_funcall_respond_to(th, klass, recv, mid);
+    rb_execution_context_t *ec = GET_EC();
+    int respond = check_funcall_respond_to(ec, klass, recv, mid);
 
     if (!respond) {
 	(*hook)(FALSE, recv, mid, argc, argv, arg);
@@ -427,15 +429,15 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
     }
 
     me = rb_search_method_entry(recv, mid);
-    if (!check_funcall_callable(th, me)) {
-	VALUE ret = check_funcall_missing(th, klass, recv, mid, argc, argv,
+    if (!check_funcall_callable(ec, me)) {
+	VALUE ret = check_funcall_missing(ec, klass, recv, mid, argc, argv,
 					  respond, Qundef);
 	(*hook)(ret != Qundef, recv, mid, argc, argv, arg);
 	return ret;
     }
-    stack_check(th);
+    stack_check(ec);
     (*hook)(TRUE, recv, mid, argc, argv, arg);
-    return vm_call0(th->ec, recv, mid, argc, argv, me);
+    return vm_call0(ec, recv, mid, argc, argv, me);
 }
 
 static const char *
@@ -524,7 +526,7 @@ rb_search_method_entry(VALUE recv, ID mid)
 }
 
 static inline enum method_missing_reason
-rb_method_call_status(rb_thread_t *th, const rb_callable_method_entry_t *me, call_type scope, VALUE self)
+rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self)
 {
     VALUE klass;
     ID oid;
@@ -673,7 +675,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 		 rb_obj_class(argv[0]));
     }
 
-    stack_check(th);
+    stack_check(th->ec);
 
     if (last_call_status & MISSING_PRIVATE) {
 	format = rb_fstring_cstr("private method `%s' called for %s%s%s");
