@@ -896,13 +896,13 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	   VALUE (* r_proc) (ANYARGS), VALUE data2, ...)
 {
     enum ruby_tag_type state;
-    rb_thread_t * volatile th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->ec->cfp;
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_control_frame_t *volatile cfp = ec->cfp;
     volatile VALUE result = Qfalse;
-    volatile VALUE e_info = th->ec->errinfo;
+    volatile VALUE e_info = ec->errinfo;
     va_list args;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       retry_entry:
 	result = (*b_proc) (data1);
@@ -911,13 +911,13 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	/* escape from r_proc */
 	if (state == TAG_RETRY) {
 	    state = 0;
-	    th->ec->errinfo = Qnil;
+	    ec->errinfo = Qnil;
 	    result = Qfalse;
 	    goto retry_entry;
 	}
     }
     else {
-	rb_vm_rewind_cfp(th, cfp);
+	rb_vm_rewind_cfp(ec, cfp);
 
 	if (state == TAG_RAISE) {
 	    int handle = FALSE;
@@ -925,7 +925,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 
 	    va_init_list(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
-		if (rb_obj_is_kind_of(th->ec->errinfo, eclass)) {
+		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
 		    break;
 		}
@@ -936,15 +936,15 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 		result = Qnil;
 		state = 0;
 		if (r_proc) {
-		    result = (*r_proc) (data2, th->ec->errinfo);
+		    result = (*r_proc) (data2, ec->errinfo);
 		}
-		th->ec->errinfo = e_info;
+		ec->errinfo = e_info;
 	    }
 	}
     }
     EC_POP_TAG();
     if (state)
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
 
     return result;
 }
@@ -993,24 +993,24 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 {
     volatile VALUE result = Qnil;
     volatile enum ruby_tag_type state;
-    rb_thread_t * volatile th = GET_THREAD();
-    rb_control_frame_t *volatile cfp = th->ec->cfp;
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_control_frame_t *volatile cfp = ec->cfp;
     struct rb_vm_protect_tag protect_tag;
     rb_jmpbuf_t org_jmpbuf;
 
-    protect_tag.prev = th->ec->protect_tag;
+    protect_tag.prev = ec->protect_tag;
 
-    EC_PUSH_TAG(th->ec);
-    th->ec->protect_tag = &protect_tag;
-    MEMCPY(&org_jmpbuf, &(th)->root_jmpbuf, rb_jmpbuf_t, 1);
+    EC_PUSH_TAG(ec);
+    ec->protect_tag = &protect_tag;
+    MEMCPY(&org_jmpbuf, &rb_ec_thread_ptr(ec)->root_jmpbuf, rb_jmpbuf_t, 1);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	SAVE_ROOT_JMPBUF(th, result = (*proc) (data));
+	SAVE_ROOT_JMPBUF(rb_ec_thread_ptr(ec), result = (*proc) (data));
     }
     else {
-	rb_vm_rewind_cfp(th, cfp);
+	rb_vm_rewind_cfp(ec, cfp);
     }
-    MEMCPY(&(th)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
-    th->ec->protect_tag = protect_tag.prev;
+    MEMCPY(&rb_ec_thread_ptr(ec)->root_jmpbuf, &org_jmpbuf, rb_jmpbuf_t, 1);
+    ec->protect_tag = protect_tag.prev;
     EC_POP_TAG();
 
     if (pstate != NULL) *pstate = state;
