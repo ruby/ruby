@@ -243,7 +243,7 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 		    method_cref = cref;
 		}
 		else {
-		    method_cref = vm_cref_new_toplevel(GET_THREAD()); /* TODO: can we reuse? */
+		    method_cref = vm_cref_new_toplevel(GET_EC()); /* TODO: can we reuse? */
 		}
 
 		RB_OBJ_WRITE(me, &def->body.iseq.cref, method_cref);
