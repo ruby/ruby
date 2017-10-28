@@ -82,7 +82,7 @@ safe_setter(VALUE val)
     }
 
     /* block parameters */
-    rb_vm_stack_to_heap(th);
+    rb_vm_stack_to_heap(th->ec);
 
     th->ec->safe_level = level;
 }

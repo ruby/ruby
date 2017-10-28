@@ -606,7 +606,7 @@ cont_capture(volatile int *volatile stat)
     const rb_execution_context_t *ec = th->ec;
 
     THREAD_MUST_BE_RUNNING(th);
-    rb_vm_stack_to_heap(th);
+    rb_vm_stack_to_heap(th->ec);
     cont = cont_new(rb_cContinuation);
     contval = cont->self;
 
