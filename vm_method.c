@@ -258,13 +258,13 @@ method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, 
 	  case VM_METHOD_TYPE_ATTRSET:
 	  case VM_METHOD_TYPE_IVAR:
 	    {
-		rb_thread_t *th = GET_THREAD();
+		const rb_execution_context_t *ec = GET_EC();
 		rb_control_frame_t *cfp;
 		int line;
 
 		def->body.attr.id = (ID)(VALUE)opts;
 
-		cfp = rb_vm_get_ruby_level_next_cfp(th->ec, th->ec->cfp);
+		cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
 		if (cfp && (line = rb_vm_get_sourceline(cfp))) {
 		    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
