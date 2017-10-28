@@ -1885,19 +1885,19 @@ rb_method_basic_definition_p(VALUE klass, ID id)
 }
 
 static VALUE
-call_method_entry(rb_thread_t *th, VALUE defined_class, VALUE obj, ID id,
+call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID id,
 		  const rb_method_entry_t *me, int argc, const VALUE *argv)
 {
     const rb_callable_method_entry_t *cme =
 	prepare_callable_method_entry(defined_class, id, me);
-    VALUE passed_block_handler = vm_passed_block_handler(th->ec);
-    VALUE result = vm_call0(th->ec, obj, id, argc, argv, cme);
-    vm_passed_block_handler_set(th->ec, passed_block_handler);
+    VALUE passed_block_handler = vm_passed_block_handler(ec);
+    VALUE result = vm_call0(ec, obj, id, argc, argv, cme);
+    vm_passed_block_handler_set(ec, passed_block_handler);
     return result;
 }
 
 static VALUE
-basic_obj_respond_to_missing(rb_thread_t *th, VALUE klass, VALUE obj,
+basic_obj_respond_to_missing(rb_execution_context_t *ec, VALUE klass, VALUE obj,
 			     VALUE mid, VALUE priv)
 {
     VALUE defined_class, args[2];
@@ -1908,11 +1908,11 @@ basic_obj_respond_to_missing(rb_thread_t *th, VALUE klass, VALUE obj,
     if (!me || METHOD_ENTRY_BASIC(me)) return Qundef;
     args[0] = mid;
     args[1] = priv;
-    return call_method_entry(th, defined_class, obj, rtmid, me, 2, args);
+    return call_method_entry(ec, defined_class, obj, rtmid, me, 2, args);
 }
 
 static inline int
-basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
+basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
 {
     VALUE klass = CLASS_OF(obj);
     VALUE ret;
@@ -1921,7 +1921,7 @@ basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
       case 2:
 	return FALSE;
       case 0:
-	ret = basic_obj_respond_to_missing(th, klass, obj, ID2SYM(id),
+	ret = basic_obj_respond_to_missing(ec, klass, obj, ID2SYM(id),
 					   pub ? Qfalse : Qtrue);
 	return RTEST(ret) && ret != Qundef;
       default:
@@ -1930,7 +1930,7 @@ basic_obj_respond_to(rb_thread_t *th, VALUE obj, ID id, int pub)
 }
 
 static int
-vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
+vm_respond_to(rb_execution_context_t *ec, VALUE klass, VALUE obj, ID id, int priv)
 {
     VALUE defined_class;
     const ID resid = idRespond_to;
@@ -1975,7 +1975,7 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 		}
 	    }
 	}
-	result = call_method_entry(th, defined_class, obj, resid, me, argc, args);
+	result = call_method_entry(ec, defined_class, obj, resid, me, argc, args);
 	return RTEST(result);
     }
 }
@@ -1983,10 +1983,10 @@ vm_respond_to(rb_thread_t *th, VALUE klass, VALUE obj, ID id, int priv)
 int
 rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     VALUE klass = CLASS_OF(obj);
-    int ret = vm_respond_to(th, klass, obj, id, priv);
-    if (ret == -1) ret = basic_obj_respond_to(th, obj, id, !priv);
+    int ret = vm_respond_to(ec, klass, obj, id, priv);
+    if (ret == -1) ret = basic_obj_respond_to(ec, obj, id, !priv);
     return ret;
 }
 
@@ -2022,16 +2022,16 @@ obj_respond_to(int argc, VALUE *argv, VALUE obj)
 {
     VALUE mid, priv;
     ID id;
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
     rb_scan_args(argc, argv, "11", &mid, &priv);
     if (!(id = rb_check_id(&mid))) {
-	VALUE ret = basic_obj_respond_to_missing(th, CLASS_OF(obj), obj,
+	VALUE ret = basic_obj_respond_to_missing(ec, CLASS_OF(obj), obj,
 						 rb_to_symbol(mid), priv);
 	if (ret == Qundef) ret = Qfalse;
 	return ret;
     }
-    if (basic_obj_respond_to(th, obj, id, !RTEST(priv)))
+    if (basic_obj_respond_to(ec, obj, id, !RTEST(priv)))
 	return Qtrue;
     return Qfalse;
 }

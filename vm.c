@@ -1013,7 +1013,6 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
 			 const rb_cref_t *cref, int is_lambda)
 {
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
@@ -1021,7 +1020,7 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     VALUE *sp = cfp->sp;
     const rb_callable_method_entry_t *me = ec->passed_bmethod_me;
     ec->passed_bmethod_me = NULL;
-    stack_check(th);
+    stack_check(ec);
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
     cfp->sp = sp + argc;
