@@ -2617,12 +2617,12 @@ vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval, int is_single
 }
 
 #define REWIND_CFP(expr) do { \
-    rb_thread_t *th__ = GET_THREAD(); \
-    VALUE *const curr_sp = (th__->ec->cfp++)->sp; \
-    VALUE *const saved_sp = th__->ec->cfp->sp; \
-    th__->ec->cfp->sp = curr_sp; \
+    rb_execution_context_t *ec__ = GET_EC(); \
+    VALUE *const curr_sp = (ec__->cfp++)->sp; \
+    VALUE *const saved_sp = ec__->cfp->sp; \
+    ec__->cfp->sp = curr_sp; \
     expr; \
-    (th__->ec->cfp--)->sp = saved_sp; \
+    (ec__->cfp--)->sp = saved_sp; \
 } while (0)
 
 static VALUE
