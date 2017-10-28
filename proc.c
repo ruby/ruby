@@ -2096,32 +2096,32 @@ method_callable_method_entry(const struct METHOD *data)
 }
 
 static inline VALUE
-call_method_data(rb_thread_t *th, const struct METHOD *data,
+call_method_data(rb_execution_context_t *ec, const struct METHOD *data,
 		 int argc, const VALUE *argv, VALUE passed_procval)
 {
-    vm_passed_block_handler_set(th->ec, proc_to_block_handler(passed_procval));
-    return rb_vm_call(th, data->recv, data->me->called_id, argc, argv,
+    vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
+    return rb_vm_call(ec, data->recv, data->me->called_id, argc, argv,
 		      method_callable_method_entry(data));
 }
 
 static VALUE
-call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
+call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
 		      int argc, const VALUE *argv, VALUE passed_procval,
 		      int safe)
 {
     VALUE result = Qnil;	/* OK */
     enum ruby_tag_type state;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	/* result is used only if state == 0, no exceptions is caught. */
 	/* otherwise it doesn't matter even if clobbered. */
-	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, passed_procval);
+	NO_CLOBBERED(result) = call_method_data(ec, data, argc, argv, passed_procval);
     }
     EC_POP_TAG();
     rb_set_safe_level_force(safe);
     if (state)
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     return result;
 }
 
@@ -2129,7 +2129,7 @@ VALUE
 rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passed_procval)
 {
     const struct METHOD *data;
-    rb_thread_t *const th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
@@ -2140,10 +2140,10 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
 	int safe = rb_safe_level();
 	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
-	    return call_method_data_safe(th, data, argc, argv, passed_procval, safe);
+	    return call_method_data_safe(ec, data, argc, argv, passed_procval, safe);
 	}
     }
-    return call_method_data(th, data, argc, argv, passed_procval);
+    return call_method_data(ec, data, argc, argv, passed_procval);
 }
 
 /**********************************************************************

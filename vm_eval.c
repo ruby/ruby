@@ -202,9 +202,9 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 }
 
 VALUE
-rb_vm_call(rb_thread_t *th, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
+rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
-    return vm_call0(th->ec, recv, id, argc, argv, me);
+    return vm_call0(ec, recv, id, argc, argv, me);
 }
 
 static inline VALUE
