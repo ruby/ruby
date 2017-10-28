@@ -168,10 +168,10 @@ VM_BH_FROM_CFP_P(VALUE block_handler, const rb_control_frame_t *cfp)
 }
 
 static VALUE
-vm_passed_block_handler(rb_thread_t *th)
+vm_passed_block_handler(rb_execution_context_t *ec)
 {
-    VALUE block_handler = th->passed_block_handler;
-    th->passed_block_handler = VM_BLOCK_HANDLER_NONE;
+    VALUE block_handler = ec->passed_block_handler;
+    ec->passed_block_handler = VM_BLOCK_HANDLER_NONE;
     vm_block_handler_verify(block_handler);
     return block_handler;
 }
@@ -1018,8 +1018,8 @@ invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_bl
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = ec->cfp;
     VALUE *sp = cfp->sp;
-    const rb_callable_method_entry_t *me = th->passed_bmethod_me;
-    th->passed_bmethod_me = NULL;
+    const rb_callable_method_entry_t *me = ec->passed_bmethod_me;
+    ec->passed_bmethod_me = NULL;
     stack_check(th);
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);

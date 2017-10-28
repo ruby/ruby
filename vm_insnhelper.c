@@ -1962,7 +1962,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE val;
 
     /* control block frame */
-    rb_ec_thread_ptr(ec)->passed_bmethod_me = cc->me;
+    ec->passed_bmethod_me = cc->me;
     GetProcPtr(cc->me->def->body.proc, proc);
     val = vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->block_handler);
 
@@ -2503,12 +2503,11 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
 		    const struct rb_captured_block *captured,
 		    VALUE self, int argc, const VALUE *argv, VALUE block_handler)
 {
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
     int is_lambda = FALSE; /* TODO */
     VALUE val, arg, blockarg;
     const struct vm_ifunc *ifunc = captured->code.ifunc;
-    const rb_callable_method_entry_t *me = th->passed_bmethod_me;
-    th->passed_bmethod_me = NULL;
+    const rb_callable_method_entry_t *me = ec->passed_bmethod_me;
+    ec->passed_bmethod_me = NULL;
 
     if (is_lambda) {
 	arg = rb_ary_new4(argc, argv);

@@ -106,7 +106,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 {
     VALUE ret;
 
-    calling->block_handler = vm_passed_block_handler(rb_ec_thread_ptr(ec));
+    calling->block_handler = vm_passed_block_handler(ec);
 
   again:
     switch (cc->me->def->type) {
@@ -170,7 +170,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
-	    vm_passed_block_handler_set(rb_ec_thread_ptr(ec), calling->block_handler);
+	    vm_passed_block_handler_set(ec, calling->block_handler);
 	    return method_missing(calling->recv, ci->mid, calling->argc,
 				  argv, MISSING_NOENTRY);
 	}
@@ -237,7 +237,7 @@ VALUE
 rb_call_super(int argc, const VALUE *argv)
 {
     rb_thread_t *th = GET_THREAD();
-    PASS_PASSED_BLOCK_HANDLER_TH(th);
+    PASS_PASSED_BLOCK_HANDLER_EC(th->ec);
     return vm_call_super(th, argc, argv);
 }
 
@@ -703,15 +703,15 @@ static inline VALUE
 method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status)
 {
     VALUE *nargv, result, work, klass;
-    rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = vm_passed_block_handler(th);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE block_handler = vm_passed_block_handler(ec);
     const rb_callable_method_entry_t *me;
 
-    th->method_missing_reason = call_status;
+    rb_ec_thread_ptr(ec)->method_missing_reason = call_status;
 
     if (id == idMethodMissing) {
       missing:
-	raise_method_missing(th, argc, argv, obj, call_status | MISSING_MISSING);
+	raise_method_missing(rb_ec_thread_ptr(ec), argc, argv, obj, call_status | MISSING_MISSING);
     }
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
@@ -724,8 +724,8 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     if (!klass) goto missing;
     me = rb_callable_method_entry(klass, idMethodMissing);
     if (!me || METHOD_ENTRY_BASIC(me)) goto missing;
-    vm_passed_block_handler_set(th, block_handler);
-    result = vm_call0(th->ec, obj, idMethodMissing, argc, argv, me);
+    vm_passed_block_handler_set(ec, block_handler);
+    result = vm_call0(ec, obj, idMethodMissing, argc, argv, me);
     if (work) ALLOCV_END(work);
     return result;
 }
@@ -734,7 +734,7 @@ void
 rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
 			VALUE obj, int call_status)
 {
-    vm_passed_block_handler_set(th, VM_BLOCK_HANDLER_NONE);
+    vm_passed_block_handler_set(th->ec, VM_BLOCK_HANDLER_NONE);
     raise_method_missing(th, argc, argv, obj, call_status | MISSING_MISSING);
 }
 
@@ -839,8 +839,7 @@ VALUE
 rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE passed_procval)
 {
     if (!NIL_P(passed_procval)) {
-	rb_thread_t *th = GET_THREAD();
-	vm_passed_block_handler_set(th, passed_procval);
+	vm_passed_block_handler_set(GET_EC(), passed_procval);
     }
 
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
@@ -907,7 +906,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     else {
 	argv++; argc--;
     }
-    PASS_PASSED_BLOCK_HANDLER_TH(th);
+    PASS_PASSED_BLOCK_HANDLER_EC(th->ec);
     ret = rb_call0(recv, id, argc, argv, scope, self);
     ALLOCV_END(vargv);
     return ret;
@@ -1128,7 +1127,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    else {
 		block_handler = VM_CF_BLOCK_HANDLER(cfp);
 	    }
-	    vm_passed_block_handler_set(th, block_handler);
+	    vm_passed_block_handler_set(th->ec, block_handler);
 	}
 	retval = (*it_proc) (data1);
     }
