@@ -21,7 +21,7 @@ static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *
 static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
 static VALUE vm_exec(rb_thread_t *th);
-static void vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
+static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
 
 static VALUE rb_eUncaughtThrow;
@@ -1263,7 +1263,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 {
     int state;
     VALUE result = Qundef;
-    rb_thread_t *volatile th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     struct rb_block block;
     const struct rb_block *base_block;
     volatile VALUE file;
@@ -1294,7 +1294,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    base_block = &bind->block;
 	}
 	else {
-	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(th->ec, th->ec->cfp);
+	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
 	    if (cfp != 0) {
 		block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
@@ -1316,7 +1316,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
 
 	if (!iseq) {
-	    rb_exc_raise(adjust_backtrace_in_eval(th, th->ec->errinfo));
+	    rb_exc_raise(adjust_backtrace_in_eval(rb_ec_thread_ptr(ec), ec->errinfo));
 	}
 
 	/* TODO: what the code checking? */
@@ -1329,7 +1329,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 		cref = NULL; /* use stacked CREF */
 	    }
 	}
-	vm_set_eval_stack(th, iseq, cref, base_block);
+	vm_set_eval_stack(ec, iseq, cref, base_block);
 
 	if (0) {		/* for debug */
 	    VALUE disasm = rb_iseq_disasm(iseq);
@@ -1338,26 +1338,26 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 
 	/* save new env */
 	if (bind && iseq->body->local_table_size > 0) {
-	    vm_bind_update_env(scope, bind, vm_make_env_object(th->ec, th->ec->cfp));
+	    vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
 	}
     }
 
     if (file != Qundef) {
 	/* kick */
-	return vm_exec(th);
+	return vm_exec(rb_ec_thread_ptr(ec));
     }
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	result = vm_exec(th);
+	result = vm_exec(rb_ec_thread_ptr(ec));
     }
     EC_POP_TAG();
 
     if (state) {
 	if (state == TAG_RAISE) {
-	    adjust_backtrace_in_eval(th, th->ec->errinfo);
+	    adjust_backtrace_in_eval(rb_ec_thread_ptr(ec), ec->errinfo);
 	}
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
     return result;
 }

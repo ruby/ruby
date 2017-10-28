@@ -241,12 +241,13 @@ vm_cref_dup(const rb_cref_t *cref)
 }
 
 static rb_cref_t *
-vm_cref_new_toplevel(rb_thread_t *th)
+vm_cref_new_toplevel(rb_execution_context_t *ec)
 {
     rb_cref_t *cref = vm_cref_new(rb_cObject, METHOD_VISI_PRIVATE /* toplevel visibility is private */, FALSE, NULL, FALSE);
+    VALUE top_wrapper = rb_ec_thread_ptr(ec)->top_wrapper;
 
-    if (th->top_wrapper) {
-	cref = vm_cref_new(th->top_wrapper, METHOD_VISI_PRIVATE, FALSE, cref, FALSE);
+    if (top_wrapper) {
+	cref = vm_cref_new(top_wrapper, METHOD_VISI_PRIVATE, FALSE, cref, FALSE);
     }
 
     return cref;
@@ -255,7 +256,7 @@ vm_cref_new_toplevel(rb_thread_t *th)
 rb_cref_t *
 rb_vm_cref_new_toplevel(void)
 {
-    return vm_cref_new_toplevel(GET_THREAD());
+    return vm_cref_new_toplevel(GET_EC());
 }
 
 static void
@@ -439,33 +440,33 @@ vm_stat(int argc, VALUE *argv, VALUE self)
 /* control stack frame */
 
 static void
-vm_set_top_stack(rb_thread_t *th, const rb_iseq_t *iseq)
+vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq)
 {
     if (iseq->body->type != ISEQ_TYPE_TOP) {
 	rb_raise(rb_eTypeError, "Not a toplevel InstructionSequence");
     }
 
     /* for return */
-    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH, th->top_self,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH, rb_ec_thread_ptr(ec)->top_self,
 		  VM_BLOCK_HANDLER_NONE,
-		  (VALUE)vm_cref_new_toplevel(th), /* cref or me */
-		  iseq->body->iseq_encoded, th->ec->cfp->sp,
+		  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
+		  iseq->body->iseq_encoded, ec->cfp->sp,
 		  iseq->body->local_table_size, iseq->body->stack_max);
 }
 
 static void
-vm_set_eval_stack(rb_thread_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block)
+vm_set_eval_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block)
 {
-    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_EVAL | VM_FRAME_FLAG_FINISH,
 		  vm_block_self(base_block), VM_GUARDED_PREV_EP(vm_block_ep(base_block)),
 		  (VALUE)cref, /* cref or me */
 		  iseq->body->iseq_encoded,
-		  th->ec->cfp->sp, iseq->body->local_table_size,
+		  ec->cfp->sp, iseq->body->local_table_size,
 		  iseq->body->stack_max);
 }
 
 static void
-vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
+vm_set_main_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq)
 {
     VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
     rb_binding_t *bind;
@@ -473,11 +474,11 @@ vm_set_main_stack(rb_thread_t *th, const rb_iseq_t *iseq)
     GetBindingPtr(toplevel_binding, bind);
     RUBY_ASSERT_MESG(bind, "TOPLEVEL_BINDING is not built");
 
-    vm_set_eval_stack(th, iseq, 0, &bind->block);
+    vm_set_eval_stack(ec, iseq, 0, &bind->block);
 
     /* save binding */
     if (iseq->body->local_table_size > 0) {
-	vm_bind_update_env(toplevel_binding, bind, vm_make_env_object(th->ec, th->ec->cfp));
+	vm_bind_update_env(toplevel_binding, bind, vm_make_env_object(ec, ec->cfp));
     }
 }
 
@@ -930,7 +931,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     VALUE realpath = pathobj_realpath(pathobj);
     const struct rb_block *base_block;
     const rb_env_t *env;
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     const rb_iseq_t *base_iseq, *iseq;
     NODE *node = 0, tmp_node;
     ID minibuf[4], *dyns = minibuf;
@@ -958,9 +959,9 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     node->u1.tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
 
-    vm_set_eval_stack(th, iseq, 0, base_block);
-    vm_bind_update_env(bindval, bind, envval = vm_make_env_object(th->ec, th->ec->cfp));
-    rb_vm_pop_frame(th->ec);
+    vm_set_eval_stack(ec, iseq, 0, base_block);
+    vm_bind_update_env(bindval, bind, envval = vm_make_env_object(ec, ec->cfp));
+    rb_vm_pop_frame(ec);
 
     env = (const rb_env_t *)envval;
     return env->env;
@@ -2030,7 +2031,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
 {
     rb_thread_t *th = GET_THREAD();
     VALUE val;
-    vm_set_top_stack(th, iseq);
+    vm_set_top_stack(th->ec, iseq);
     val = vm_exec(th);
     return val;
 }
@@ -2041,7 +2042,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     rb_thread_t *th = GET_THREAD();
     VALUE val;
 
-    vm_set_main_stack(th, iseq);
+    vm_set_main_stack(th->ec, iseq);
     val = vm_exec(th);
     return val;
 }
@@ -2102,19 +2103,19 @@ VALUE
 rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 		 VALUE block_handler, VALUE filename)
 {
-    rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *reg_cfp = th->ec->cfp;
+    rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *reg_cfp = ec->cfp;
     const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
     VALUE val;
 
-    vm_push_frame(th->ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
 		  recv, block_handler,
-		  (VALUE)vm_cref_new_toplevel(th), /* cref or me */
+		  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
 		  0, reg_cfp->sp, 0, 0);
 
     val = (*func)(arg);
 
-    rb_vm_pop_frame(th->ec);
+    rb_vm_pop_frame(ec);
     return val;
 }
 
