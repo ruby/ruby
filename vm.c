@@ -2589,7 +2589,7 @@ rb_thread_alloc(VALUE klass)
 }
 
 static void
-vm_define_method(rb_thread_t *th, VALUE obj, ID id, VALUE iseqval, int is_singleton)
+vm_define_method(VALUE obj, ID id, VALUE iseqval, int is_singleton)
 {
     VALUE klass;
     rb_method_visibility_t visi;
@@ -2629,7 +2629,7 @@ static VALUE
 m_core_define_method(VALUE self, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), Qnil, SYM2ID(sym), iseqval, FALSE);
+	vm_define_method(Qnil, SYM2ID(sym), iseqval, FALSE);
     });
     return sym;
 }
@@ -2638,7 +2638,7 @@ static VALUE
 m_core_define_singleton_method(VALUE self, VALUE cbase, VALUE sym, VALUE iseqval)
 {
     REWIND_CFP({
-	vm_define_method(GET_THREAD(), cbase, SYM2ID(sym), iseqval, TRUE);
+	vm_define_method(cbase, SYM2ID(sym), iseqval, TRUE);
     });
     return sym;
 }
