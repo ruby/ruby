@@ -2,6 +2,8 @@ require File.expand_path('../spec_helper', __FILE__)
 require File.expand_path('../fixtures/class', __FILE__)
 
 load_extension("class")
+compile_extension("class_under_autoload")
+compile_extension("class_id_under_autoload")
 
 autoload :ClassUnderAutoload, "#{object_path}/class_under_autoload_spec"
 autoload :ClassIdUnderAutoload, "#{object_path}/class_id_under_autoload_spec"
@@ -276,8 +278,6 @@ describe "C-API Class function" do
     end
 
     it "defines a class for an existing Autoload" do
-      compile_extension("class_under_autoload")
-
       ClassUnderAutoload.name.should == "ClassUnderAutoload"
     end
 
@@ -307,8 +307,6 @@ describe "C-API Class function" do
     end
 
     it "defines a class for an existing Autoload" do
-      compile_extension("class_id_under_autoload")
-
       ClassIdUnderAutoload.name.should == "ClassIdUnderAutoload"
     end
 
