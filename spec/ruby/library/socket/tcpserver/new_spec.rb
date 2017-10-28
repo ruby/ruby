@@ -62,7 +62,7 @@ describe "TCPServer.new" do
     # pick such a service port that will be able to reliably bind...
   end
 
-  it "raises Errno::EADDRNOTAVAIL when the adress is unknown" do
+  it "raises Errno::EADDRNOTAVAIL when the address is unknown" do
     lambda { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
   end
 

@@ -6,7 +6,7 @@ execution like 'if' and 'unless', exceptional execution control like 'rescue',
 etc. There are also literals for the basic "types" like String, Regexp, Array
 and Fixnum.
 
-Behavorial specifications describe the behavior of concrete entities. Rather
+Behavioral specifications describe the behavior of concrete entities. Rather
 than using concepts of computation to organize these spec files, we use
 entities of the Ruby language. Consider looking at any syntactic element of a
 Ruby program. With (almost) no ambiguity, one can identify it as a literal,

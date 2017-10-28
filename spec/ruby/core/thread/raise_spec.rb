@@ -51,6 +51,7 @@ describe "Thread#raise on a sleeping thread" do
 
   it "is captured and raised by Thread#value" do
     t = Thread.new do
+      Thread.current.report_on_exception = false
       sleep
     end
 
@@ -62,6 +63,7 @@ describe "Thread#raise on a sleeping thread" do
 
   it "raises a RuntimeError when called with no arguments inside rescue" do
     t = Thread.new do
+      Thread.current.report_on_exception = false
       begin
         1/0
       rescue ZeroDivisionError
@@ -113,6 +115,7 @@ describe "Thread#raise on a running thread" do
 
   it "can go unhandled" do
     t = Thread.new do
+      Thread.current.report_on_exception = false
       loop { Thread.pass }
     end
 
@@ -123,6 +126,7 @@ describe "Thread#raise on a running thread" do
   it "raises the given argument even when there is an active exception" do
     raised = false
     t = Thread.new do
+      Thread.current.report_on_exception = false
       begin
         1/0
       rescue ZeroDivisionError
@@ -142,6 +146,7 @@ describe "Thread#raise on a running thread" do
   it "raises a RuntimeError when called with no arguments inside rescue" do
     raised = false
     t = Thread.new do
+      Thread.current.report_on_exception = false
       begin
         1/0
       rescue ZeroDivisionError
@@ -164,6 +169,7 @@ describe "Thread#raise on same thread" do
 
   it "raises a RuntimeError when called with no arguments inside rescue" do
     t = Thread.new do
+      Thread.current.report_on_exception = false
       begin
         1/0
       rescue ZeroDivisionError

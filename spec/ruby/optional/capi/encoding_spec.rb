@@ -88,7 +88,7 @@ describe "C-API Encoding function" do
     end
 
     it "returns -1 for an non existing encoding" do
-      @s.rb_enc_find_index("non-existant-encoding").should == -1
+      @s.rb_enc_find_index("non-existent-encoding").should == -1
     end
   end
 

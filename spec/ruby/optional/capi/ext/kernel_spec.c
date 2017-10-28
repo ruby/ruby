@@ -230,6 +230,19 @@ static VALUE kernel_spec_rb_yield(VALUE self, VALUE obj) {
   return rb_yield(obj);
 }
 
+static VALUE kernel_spec_rb_yield_each(int argc, VALUE *args, VALUE self) {
+  int i;
+  for(i = 0; i < 4; i++) {
+    rb_yield(INT2FIX(i));
+  }
+  return INT2FIX(4);
+}
+
+static VALUE kernel_spec_rb_yield_define_each(VALUE self, VALUE cls) {
+  rb_define_method(cls, "each", kernel_spec_rb_yield_each, -1);
+  return Qnil;
+}
+
 static int kernel_cb(const void *a, const void *b) {
   rb_yield(Qtrue);
   return 0;
@@ -392,6 +405,7 @@ void Init_kernel_spec(void) {
 #ifdef HAVE_RB_YIELD
   rb_define_method(cls, "rb_yield", kernel_spec_rb_yield, 1);
   rb_define_method(cls, "rb_yield_indirected", kernel_spec_rb_yield_indirected, 1);
+  rb_define_method(cls, "rb_yield_define_each", kernel_spec_rb_yield_define_each, 1);
 #endif
 
 #ifdef HAVE_RB_YIELD_VALUES

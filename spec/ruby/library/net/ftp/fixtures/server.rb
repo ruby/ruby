@@ -35,7 +35,7 @@ module NetFTPSpecs
       response @connect_message || "220 Dummy FTP Server ready!"
 
       begin
-        while command = @socket.recv(1024)
+        while command = @socket.gets
           command, argument = command.chomp.split(" ", 2)
 
           if command == "QUIT"
@@ -229,8 +229,12 @@ module NetFTPSpecs
       end
     end
 
-    def stat
-      self.response("211 System status, or system help reply. (STAT)")
+    def stat(param = :default)
+      if param == :default
+        self.response("211 System status, or system help reply. (STAT)")
+      else
+        self.response("211 System status, or system help reply. (STAT #{param})")
+      end
     end
 
     def stor(file)

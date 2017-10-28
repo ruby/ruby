@@ -7,7 +7,7 @@ describe "StringIO#readline when passed [separator]" do
     @io = StringIO.new("this>is>an>example")
   end
 
-  it "returns the data read till the next occurence of the passed separator" do
+  it "returns the data read till the next occurrence of the passed separator" do
     @io.readline(">").should == "this>"
     @io.readline(">").should == "is>"
     @io.readline(">").should == "an>"
@@ -60,7 +60,7 @@ describe "StringIO#readline when passed no argument" do
     @io = StringIO.new("this is\nan example\nfor StringIO#readline")
   end
 
-  it "returns the data read till the next occurence of $/ or till eof" do
+  it "returns the data read till the next occurrence of $/ or till eof" do
     @io.readline.should == "this is\n"
 
     begin
@@ -118,5 +118,14 @@ describe "StringIO#readline when in write-only mode" do
     io = StringIO.new("xyz")
     io.close_read
     lambda { io.readline }.should raise_error(IOError)
+  end
+end
+
+ruby_version_is "2.4" do
+  describe "StringIO#readline when passed [chomp]" do
+    it "returns the data read without a trailing newline character" do
+      io = StringIO.new("this>is>an>example\n")
+      io.readline(chomp: true).should == "this>is>an>example"
+    end
   end
 end

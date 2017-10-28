@@ -48,14 +48,15 @@ describe "TCPServer#accept" do
   end
 
   it "can be interrupted by Thread#raise" do
-    t = Thread.new { @server.accept }
+    t = Thread.new {
+      -> {
+        @server.accept
+      }.should raise_error(Exception, "interrupted")
+    }
 
     Thread.pass while t.status and t.status != "sleep"
-
-    # raise in thread, ensure the raise happens
-    ex = Exception.new
-    t.raise ex
-    lambda { t.join }.should raise_error(Exception)
+    t.raise Exception, "interrupted"
+    t.join
   end
 
   it "raises an IOError if the socket is closed" do

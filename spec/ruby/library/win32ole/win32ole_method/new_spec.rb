@@ -10,7 +10,7 @@ platform_is :windows do
       lambda { WIN32OLE_METHOD.new(1, 2) }.should raise_error TypeError
     end
 
-    it "raises ArgumentError if only 1 arugment is given" do
+    it "raises ArgumentError if only 1 argument is given" do
       lambda { WIN32OLE_METHOD.new("hello") }.should raise_error ArgumentError
       lambda { WIN32OLE_METHOD.new(@ole_type) }.should raise_error ArgumentError
     end

@@ -116,10 +116,8 @@ describe :time_params, shared: true do
   end
 
   it "interprets all numerals as base 10" do
-    Time.send(@method, "2000", "08", "08", "08", "08", "08").should ==
-      Time.send(@method, 2000, 8, 8, 8, 8, 8)
-    Time.send(@method, "2000", "09", "09", "09", "09", "09").should ==
-      Time.send(@method, 2000, 9, 9, 9, 9, 9)
+    Time.send(@method, "2000", "08", "08", "08", "08", "08").should == Time.send(@method, 2000, 8, 8, 8, 8, 8)
+    Time.send(@method, "2000", "09", "09", "09", "09", "09").should == Time.send(@method, 2000, 9, 9, 9, 9, 9)
   end
 
   it "handles fractional seconds as a Float" do

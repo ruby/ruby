@@ -20,6 +20,18 @@ module IOSpecs
       "Here is line six.\n" ]
   end
 
+  def self.lines_without_newline_characters
+    [ "Voici la ligne une.",
+      "Qui \303\250 la linea due.",
+      "",
+      "",
+      "Aqu\303\255 est\303\241 la l\303\255nea tres.",
+      "Hier ist Zeile vier.",
+      "",
+      "Est\303\241 aqui a linha cinco.",
+      "Here is line six." ]
+  end
+
   def self.lines_limit
     [ "Voici la l",
       "igne une.\n",

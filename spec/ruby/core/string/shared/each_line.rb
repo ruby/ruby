@@ -133,4 +133,18 @@ end
   it "raises a TypeError when the separator is a symbol" do
     lambda { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
   end
+
+  ruby_version_is '2.4' do
+    context "when `chomp` keyword argument is passed" do
+      it "removes new line characters" do
+        a = []
+        "hello \nworld\n".send(@method, chomp: true) { |s| a << s }
+        a.should == ["hello ", "world"]
+
+        a = []
+        "hello \r\nworld\r\n".send(@method, chomp: true) { |s| a << s }
+        a.should == ["hello ", "world"]
+      end
+    end
+  end
 end

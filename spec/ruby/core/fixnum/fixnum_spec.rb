@@ -16,4 +16,16 @@ describe "Fixnum" do
       Fixnum.new
     end.should raise_error(NoMethodError)
   end
+
+  ruby_version_is '2.4' do
+    it "is unified into Integer" do
+      Fixnum.should equal(Integer)
+    end
+
+    it "is deprecated" do
+      -> {
+        Fixnum
+      }.should complain(/constant ::Fixnum is deprecated/)
+    end
+  end
 end

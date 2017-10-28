@@ -16,4 +16,16 @@ describe "Bignum" do
       Bignum.new
     end.should raise_error(NoMethodError)
   end
+
+  ruby_version_is '2.4' do
+    it "unified into Integer" do
+      Bignum.should equal(Integer)
+    end
+
+    it "is deprecated" do
+      -> {
+        Bignum
+      }.should complain(/constant ::Bignum is deprecated/)
+    end
+  end
 end

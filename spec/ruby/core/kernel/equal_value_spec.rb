@@ -7,9 +7,9 @@ describe "Kernel#==" do
     o2 = mock('o2')
     (o1 == o1).should == true
     (o2 == o2).should == true
-    (o1 == o2).should== false
+    (o1 == o2).should == false
     (nil == nil).should == true
-    (o1 == nil).should== false
-    (nil == o2).should== false
+    (o1 == nil).should == false
+    (nil == o2).should == false
   end
 end

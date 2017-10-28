@@ -1,5 +1,5 @@
 describe :yaml_each_document, shared: true do
-  it "calls the block on each succesive document" do
+  it "calls the block on each successive document" do
     documents = []
     YAML.send(@method, $multidocument) do |doc|
       documents << doc

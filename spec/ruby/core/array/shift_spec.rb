@@ -104,7 +104,7 @@ describe "Array#shift" do
       a.should == []
     end
 
-    it "raises a TypeError when the passed n can be coerced to Integer" do
+    it "raises a TypeError when the passed n cannot be coerced to Integer" do
       lambda{ [1, 2].shift("cat") }.should raise_error(TypeError)
       lambda{ [1, 2].shift(nil) }.should raise_error(TypeError)
     end

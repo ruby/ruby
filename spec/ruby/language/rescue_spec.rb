@@ -290,4 +290,11 @@ describe "The rescue keyword" do
       :expected
     end.should == :expected
   end
+
+  ruby_version_is "2.4" do
+    it "allows 'rescue' in method arguments" do
+      two = eval '1.+ (raise("Error") rescue 1)'
+      two.should == 2
+    end
+  end
 end

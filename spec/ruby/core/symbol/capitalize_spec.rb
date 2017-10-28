@@ -21,6 +21,13 @@ describe "Symbol#capitalize" do
     end
   end
 
+  ruby_version_is '2.4' do
+    it "capitalizes the first character if it is Unicode" do
+      :"äöü".capitalize.should == :"Äöü"
+      :"aou".capitalize.should == :"Aou"
+    end
+  end
+
   it "converts subsequent uppercase ASCII characters to their lowercase equivalents" do
     :lOWER.capitalize.should == :Lower
   end

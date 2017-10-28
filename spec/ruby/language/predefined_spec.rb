@@ -879,6 +879,25 @@ describe "Global variable $-d" do
   end
 end
 
+describe "Global variable $VERBOSE" do
+  it "converts truthy values to true" do
+    [true, 1, 0, [], ""].each do |true_value|
+      $VERBOSE = true_value
+      $VERBOSE.should be_true
+    end
+  end
+
+  it "allows false" do
+    $VERBOSE = false
+    $VERBOSE.should be_false
+  end
+
+  it "allows nil without coercing to false" do
+    $VERBOSE = nil
+    $VERBOSE.should be_nil
+  end
+end
+
 describe :verbose_global_alias, shared: true do
   before :each do
     @verbose = $VERBOSE

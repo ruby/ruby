@@ -1178,7 +1178,7 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
-        def m a, b=1, *c, d, e:, f: 2, g:, **k, &l
+        def m(a, b=1, *c, d, e:, f: 2, g:, **k, &l)
           [a, b, c, d, e, f, g, k, l]
         end
       ruby
@@ -1188,13 +1188,19 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
-        def m (a, b = nil, c = nil, d, e: nil, **f)
+        def m(a, b = nil, c = nil, d, e: nil, **f)
           [a, b, c, d, e, f]
         end
     ruby
 
       result = m(1, 2)
       result.should == [1, nil, nil, 2, nil, {}]
+
+      result = m(1, 2, {foo: :bar})
+      result.should == [1, nil, nil, 2, nil, {foo: :bar}]
+
+      result = m(1, {foo: :bar})
+      result.should == [1, nil, nil, {foo: :bar}, nil, {}]
     end
   end
 end

@@ -36,7 +36,7 @@ describe "Net::HTTPHeader#content_length=" do
   it "removes the 'Content-Length' entry if passed false or nil" do
     @headers["Content-Length"] = "123"
     @headers.content_length = nil
-    @headers["Content-Lenght"].should be_nil
+    @headers["Content-Length"].should be_nil
   end
 
   it "sets the 'Content-Length' entry to the passed value" do

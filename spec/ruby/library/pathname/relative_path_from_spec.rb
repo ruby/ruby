@@ -14,7 +14,7 @@ describe "Pathname#relative_path_from" do
     lambda { relative_path_str('a', '..') }.should raise_error(ArgumentError)
   end
 
-  it "retuns a path relative from root" do
+  it "returns a path relative from root" do
     relative_path_str('/usr', '/').should == 'usr'
   end
 

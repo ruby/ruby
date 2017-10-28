@@ -78,4 +78,18 @@ describe "CSV.parse" do
     result = CSV.parse "foo;bar\nbaz;quz", col_sep: ?;
     result.should == [['foo','bar'],['baz','quz']]
   end
+
+  it "raises CSV::MalformedCSVError exception if input is illegal" do
+    -> {
+      CSV.parse('"quoted" field')
+    }.should raise_error(CSV::MalformedCSVError)
+  end
+
+  ruby_version_is '2.4' do
+    it "handles illegal input with the liberal_parsing option" do
+      illegal_input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
+      result = CSV.parse(illegal_input, liberal_parsing: true)
+      result.should == [["Johnson, Dwayne", 'Dwayne "The Rock" Johnson']]
+    end
+  end
 end

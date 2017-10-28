@@ -11,7 +11,7 @@ describe "An ensure block inside a begin block" do
       lambda {
         begin
           ScratchPad << :begin
-          raise "An exception occured!"
+          raise "An exception occurred!"
         ensure
           ScratchPad << :ensure
         end
@@ -25,7 +25,7 @@ describe "An ensure block inside a begin block" do
     begin
       begin
         ScratchPad << :begin
-        raise "An exception occured!"
+        raise "An exception occurred!"
       rescue
         ScratchPad << :rescue
       ensure

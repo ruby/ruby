@@ -11,7 +11,7 @@ describe "GetoptLong#terminate" do
     )
   end
 
-  it "terminates option proccessing" do
+  it "terminates option processing" do
     argv [ "--size", "10k", "-v", "-q", "a.txt", "b.txt" ] do
       @opts.get.should == [ "--size", "10k" ]
       @opts.terminate

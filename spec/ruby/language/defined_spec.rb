@@ -725,7 +725,7 @@ describe "The defined? keyword for a top-level constant" do
     defined?(::DefinedSpecs).should == "constant"
   end
 
-  it "retuns nil if the constant is not defined" do
+  it "returns nil if the constant is not defined" do
     defined?(::DefinedSpecsUndefined).should be_nil
   end
 

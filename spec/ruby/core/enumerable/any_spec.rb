@@ -68,11 +68,11 @@ describe "Enumerable#any?" do
 
   describe "with block" do
     it "returns true if the block ever returns other than false or nil" do
-      @enum.any? { true } == true
-      @enum.any? { 0 } == true
-      @enum.any? { 1 } == true
+      @enum.any? { true }.should == true
+      @enum.any? { 0 }.should == true
+      @enum.any? { 1 }.should == true
 
-      @enum1.any? { Object.new } == true
+      @enum1.any? { Object.new }.should == true
       @enum1.any?{ |o| o < 1 }.should == true
       @enum1.any?{ |o| 5 }.should == true
 

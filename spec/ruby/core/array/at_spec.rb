@@ -15,7 +15,7 @@ describe "Array#at" do
     a.at(7).should == nil
   end
 
-  it "returns the (-n)'th elemet from the last, for the given negative index n" do
+  it "returns the (-n)'th element from the last, for the given negative index n" do
     a = [1, 2, 3, 4, 5, 6]
     a.at(-1).should == 6
     a.at(-2).should == 5
@@ -50,7 +50,7 @@ describe "Array#at" do
     lambda { [].at("cat") }.should raise_error(TypeError)
   end
 
-  it "raises an ArgumentError when 2 or more arguments is passed" do
+  it "raises an ArgumentError when 2 or more arguments are passed" do
     lambda { [:a, :b].at(0,1) }.should raise_error(ArgumentError)
   end
 end

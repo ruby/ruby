@@ -68,7 +68,7 @@ describe "Dir.glob" do
     Dir.glob('**/', File::FNM_DOTMATCH).sort.should == expected
   end
 
-  # This is a seperate case to check **/ coming after a constant
+  # This is a separate case to check **/ coming after a constant
   # directory as well.
   it "recursively matches any subdirectories except './' or '../' with '**/' and option File::FNM_DOTMATCH" do
     expected = %w[

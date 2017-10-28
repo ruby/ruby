@@ -9,12 +9,12 @@ describe "Thread#[]=" do
   it "raises a RuntimeError if the thread is frozen" do
     running = false
     t = Thread.new do
-      Thread.pass until running
       t.freeze
-      t[:foo] = "bar"
+      -> {
+        t[:foo] = "bar"
+      }.should raise_error(RuntimeError, /frozen/)
     end
-    running = true
-    lambda { t.join }.should raise_error(RuntimeError)
+    t.join
   end
 
   it "raises exceptions on the wrong type of keys" do

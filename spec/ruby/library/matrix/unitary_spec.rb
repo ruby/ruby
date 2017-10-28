@@ -19,9 +19,9 @@ describe "Matrix.unitary?" do
       Matrix[[0, 0]],
       Matrix.empty(0, 2),
       Matrix.empty(2, 0),
-    ].each do |rectangual_matrix|
+    ].each do |rectangular_matrix|
       lambda {
-        rectangual_matrix.unitary?
+        rectangular_matrix.unitary?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end
   end

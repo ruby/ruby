@@ -11,13 +11,13 @@ describe "Hash#delete" do
   it "calls supplied block if the key is not found" do
     { a: 1, b: 10, c: 100 }.delete(:d) { 5 }.should == 5
     Hash.new(:default).delete(:d) { 5 }.should == 5
-    Hash.new { :defualt }.delete(:d) { 5 }.should == 5
+    Hash.new { :default }.delete(:d) { 5 }.should == 5
   end
 
   it "returns nil if the key is not found when no block is given" do
     { a: 1, b: 10, c: 100 }.delete(:d).should == nil
     Hash.new(:default).delete(:d).should == nil
-    Hash.new { :defualt }.delete(:d).should == nil
+    Hash.new { :default }.delete(:d).should == nil
   end
 
   # MRI explicitly implements this behavior
