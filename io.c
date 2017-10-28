@@ -4807,6 +4807,8 @@ rb_io_closed(VALUE io)
  *
  *     prog.rb:3:in `readlines': not opened for reading (IOError)
  *     	from prog.rb:3
+ *
+ *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -4867,6 +4869,8 @@ rb_io_close_read(VALUE io)
  *     prog.rb:3:in `write': not opened for writing (IOError)
  *     	from prog.rb:3:in `print'
  *     	from prog.rb:3
+ *
+ *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
