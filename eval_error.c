@@ -67,9 +67,9 @@ set_backtrace(VALUE info, VALUE bt)
 }
 
 static void
-error_print(rb_thread_t *th)
+error_print(rb_execution_context_t *ec)
 {
-    rb_threadptr_error_print(th, th->ec->errinfo);
+    rb_ec_error_print(ec, ec->errinfo);
 }
 
 static void
@@ -164,17 +164,17 @@ print_backtrace(const VALUE eclass, const VALUE errat, int reverse)
 }
 
 void
-rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
+rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 {
     volatile VALUE errat = Qundef;
-    volatile int raised_flag = th->ec->raised_flag;
+    volatile int raised_flag = ec->raised_flag;
     volatile VALUE eclass = Qundef, emesg = Qundef;
 
     if (NIL_P(errinfo))
 	return;
-    rb_thread_raised_clear(th);
+    rb_thread_raised_clear(rb_ec_thread_ptr(ec));
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
 	errat = rb_get_backtrace(errinfo);
     }
@@ -202,8 +202,8 @@ rb_threadptr_error_print(rb_thread_t *volatile th, volatile VALUE errinfo)
     }
   error:
     EC_POP_TAG();
-    th->ec->errinfo = errinfo;
-    rb_thread_raised_set(th, raised_flag);
+    ec->errinfo = errinfo;
+    rb_thread_raised_set(rb_ec_thread_ptr(ec), raised_flag);
 }
 
 #define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
@@ -269,9 +269,9 @@ static int
 error_handle(int ex)
 {
     int status = EXIT_FAILURE;
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
-    if (rb_threadptr_set_raised(th))
+    if (rb_threadptr_set_raised(rb_ec_thread_ptr(ec)))
 	return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
       case 0:
@@ -304,7 +304,7 @@ error_handle(int ex)
 	warn_print("unexpected throw\n");
 	break;
       case TAG_RAISE: {
-	VALUE errinfo = th->ec->errinfo;
+	VALUE errinfo = ec->errinfo;
 	if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
 	    status = sysexit_status(errinfo);
 	}
@@ -313,17 +313,17 @@ error_handle(int ex)
 	    /* no message when exiting by signal */
 	}
 	else {
-	    rb_threadptr_error_print(th, errinfo);
+	    rb_ec_error_print(ec, errinfo);
 	}
 	break;
       }
       case TAG_FATAL:
-	error_print(th);
+	error_print(ec);
 	break;
       default:
 	unknown_longjmp_status(ex);
 	break;
     }
-    rb_threadptr_reset_raised(th);
+    rb_threadptr_reset_raised(rb_ec_thread_ptr(ec));
     return status;
 }
