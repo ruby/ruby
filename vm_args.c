@@ -474,10 +474,10 @@ args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals)
 }
 
 static inline void
-args_setup_block_parameter(rb_thread_t *th, struct rb_calling_info *calling, VALUE *locals)
+args_setup_block_parameter(const rb_execution_context_t *ec, struct rb_calling_info *calling, VALUE *locals)
 {
     VALUE block_handler = calling->block_handler;
-    *locals = rb_vm_bh_to_procval(th->ec, block_handler);
+    *locals = rb_vm_bh_to_procval(ec, block_handler);
 }
 
 struct fill_values_arg {
@@ -670,7 +670,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	    /* Do nothing */
 	}
 	else {
-	    args_setup_block_parameter(rb_ec_thread_ptr(ec), calling, locals + iseq->body->param.block_start);
+	    args_setup_block_parameter(ec, calling, locals + iseq->body->param.block_start);
 	}
     }
 
