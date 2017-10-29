@@ -208,12 +208,12 @@ rb_vm_call(rb_execution_context_t *ec, VALUE recv, VALUE id, int argc, const VAL
 }
 
 static inline VALUE
-vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
+vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
 {
-    VALUE recv = th->ec->cfp->self;
+    VALUE recv = ec->cfp->self;
     VALUE klass;
     ID id;
-    rb_control_frame_t *cfp = th->ec->cfp;
+    rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     if (VM_FRAME_RUBYFRAME_P(cfp)) {
@@ -229,16 +229,16 @@ vm_call_super(rb_thread_t *th, int argc, const VALUE *argv)
 	return method_missing(recv, id, argc, argv, MISSING_SUPER);
     }
     else {
-	return vm_call0(th->ec, recv, id, argc, argv, me);
+	return vm_call0(ec, recv, id, argc, argv, me);
     }
 }
 
 VALUE
 rb_call_super(int argc, const VALUE *argv)
 {
-    rb_thread_t *th = GET_THREAD();
-    PASS_PASSED_BLOCK_HANDLER_EC(th->ec);
-    return vm_call_super(th, argc, argv);
+    rb_execution_context_t *ec = GET_EC();
+    PASS_PASSED_BLOCK_HANDLER_EC(ec);
+    return vm_call_super(ec, argc, argv);
 }
 
 VALUE
