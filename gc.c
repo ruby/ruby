@@ -6745,13 +6745,6 @@ rb_during_gc(void)
     return during_gc;
 }
 
-int
-rb_threadptr_during_gc(rb_thread_t *th)
-{
-    rb_objspace_t *objspace = rb_objspace_of(th->vm);
-    return during_gc;
-}
-
 #if RGENGC_PROFILE >= 2
 
 static const char *type_name(int type, VALUE obj);
