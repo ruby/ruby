@@ -272,6 +272,7 @@ static inline enum method_missing_reason rb_method_call_status(rb_execution_cont
  * calls the specified method.
  *
  * This function is called by functions in rb_call* family.
+ * \param ec     current execution context
  * \param recv   receiver of the method
  * \param mid    an ID that represents the name of the method
  * \param argc   the number of method arguments
@@ -283,11 +284,11 @@ static inline enum method_missing_reason rb_method_call_status(rb_execution_cont
  * \note \a self is used in order to controlling access to protected methods.
  */
 static inline VALUE
-rb_call0(VALUE recv, ID mid, int argc, const VALUE *argv,
+rb_call0(rb_execution_context_t *ec,
+	 VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
     const rb_callable_method_entry_t *me = rb_search_method_entry(recv, mid);
-    rb_execution_context_t *ec = GET_EC();
     enum method_missing_reason call_status = rb_method_call_status(ec, me, scope, self);
 
     if (call_status != MISSING_NONE) {
@@ -586,8 +587,8 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
 static inline VALUE
 rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
 {
-    rb_thread_t *th = GET_THREAD();
-    return rb_call0(recv, mid, argc, argv, scope, th->ec->cfp->self);
+    rb_execution_context_t *ec = GET_EC();
+    return rb_call0(ec, recv, mid, argc, argv, scope, ec->cfp->self);
 }
 
 NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
@@ -864,13 +865,13 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     VALUE vid;
     VALUE self;
     VALUE ret, vargv = 0;
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
     if (scope == CALL_PUBLIC) {
 	self = Qundef;
     }
     else {
-	self = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp)->self;
+	self = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp)->self;
     }
 
     if (argc == 0) {
@@ -888,7 +889,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    rb_exc_raise(exc);
 	}
 	if (!SYMBOL_P(*argv)) {
-	    VALUE *tmp_argv = current_vm_stack_arg(th, argv);
+	    VALUE *tmp_argv = current_vm_stack_arg(rb_ec_thread_ptr(ec), argv);
 	    vid = rb_str_intern(vid);
 	    if (tmp_argv) {
 		tmp_argv[0] = vid;
@@ -904,13 +905,13 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    }
 	}
 	id = idMethodMissing;
-	th->method_missing_reason = MISSING_NOENTRY;
+	rb_ec_thread_ptr(ec)->method_missing_reason = MISSING_NOENTRY;
     }
     else {
 	argv++; argc--;
     }
-    PASS_PASSED_BLOCK_HANDLER_EC(th->ec);
-    ret = rb_call0(recv, id, argc, argv, scope, self);
+    PASS_PASSED_BLOCK_HANDLER_EC(ec);
+    ret = rb_call0(ec, recv, id, argc, argv, scope, self);
     ALLOCV_END(vargv);
     return ret;
 }
