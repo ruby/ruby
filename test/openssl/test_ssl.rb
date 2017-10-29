@@ -1231,6 +1231,49 @@ end
     end
   end
 
+  def test_fallback_scsv
+    ctx_proc = proc { |ctx|
+      ctx.ciphers = "kRSA"
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new fallback_scsv: false
+      ctx.ssl_version = :TLSv1_2
+      ctx.ciphers = "kRSA"
+      # Here is OK
+      # TLS1.2 supported and this is what we ask the first time
+      server_connect(port, ctx)
+    end
+
+    ctx_proc = proc { |ctx|
+      ctx.ssl_version = :TLSv1_1
+      ctx.ciphers = "kRSA"
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new fallback_scsv: true
+      ctx.ssl_version = :TLSv1_1
+      ctx.ciphers = "kRSA"
+      # Here is OK too
+      # TLS1.2 not supported, fallback to TLS1.1 and signaling the fallback
+      # Server doesn't support better, so connection OK
+      server_connect(port, ctx)
+    end
+
+    ctx_proc = proc { |ctx|
+      ctx.ciphers = "kRSA"
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new fallback_scsv: true
+      ctx.ssl_version = :TLSv1_1
+      ctx.ciphers = "kRSA"
+      # Here is not OK
+      # TLS1.2 is supported, fallback to TLS1.1 (downgrade attack) and signaling the fallback
+      # Server support better, so refuse the connection
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+        server_connect port, ctx
+      }
+    end
+  end
+
   def test_dh_callback
     pend "TLS 1.2 is not supported" unless tls12_supported?
 

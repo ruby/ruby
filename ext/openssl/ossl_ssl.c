@@ -1046,6 +1046,34 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     return v;
 }
 
+/*
+ * call-seq:
+ *    ctx.enable_fallback_scsv() => nil
+ *
+ * Activate TLS_FALLBACK_SCSV for this context.
+ * See RFC 7507.
+ */
+static VALUE
+ossl_sslctx_enable_fallback_scsv(VALUE self)
+{
+#ifdef SSL_MODE_SEND_FALLBACK_SCSV
+    SSL_CTX *ctx;
+    long modes;
+
+    GetSSLCTX(self, ctx);
+    if(!ctx){
+        rb_warning("SSL_CTX is not initialized.");
+        return Qnil;
+    }
+
+    modes = SSL_CTX_get_mode(ctx);
+    modes |= SSL_MODE_SEND_FALLBACK_SCSV;
+    SSL_CTX_set_mode(ctx, modes);
+#endif
+
+    return Qnil;
+}
+
 #if !defined(OPENSSL_NO_EC)
 /*
  * call-seq:
@@ -2561,6 +2589,7 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
     rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
+    rb_define_method(cSSLContext, "enable_fallback_scsv", ossl_sslctx_enable_fallback_scsv, 0);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
     rb_define_alias(cSSLContext, "freeze", "setup");

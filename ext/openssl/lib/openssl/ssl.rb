@@ -117,9 +117,10 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       # If an argument is given, #ssl_version= is called with the value. Note
       # that this form is deprecated. New applications should use #min_version=
       # and #max_version= as necessary.
-      def initialize(version = nil)
+      def initialize(version = nil, fallback_scsv: false)
         self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
+        self.enable_fallback_scsv if fallback_scsv
       end
 
       ##
