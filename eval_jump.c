@@ -115,27 +115,26 @@ rb_exec_end_proc(void)
 {
     enum ruby_tag_type state;
     volatile int safe = rb_safe_level();
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->ec->errinfo;
+    rb_execution_context_t * volatile ec = GET_EC();
+    volatile VALUE errinfo = ec->errinfo;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
       again:
-	exec_end_procs_chain(&ephemeral_end_procs, &th->ec->errinfo);
-	exec_end_procs_chain(&end_procs, &th->ec->errinfo);
+	exec_end_procs_chain(&ephemeral_end_procs, &ec->errinfo);
+	exec_end_procs_chain(&end_procs, &ec->errinfo);
     }
     else {
-	VAR_INITIALIZED(th);
 	EC_TMPPOP_TAG();
 	error_handle(state);
-	if (!NIL_P(th->ec->errinfo)) errinfo = th->ec->errinfo;
+	if (!NIL_P(ec->errinfo)) errinfo = ec->errinfo;
 	EC_REPUSH_TAG();
 	goto again;
     }
     EC_POP_TAG();
 
     rb_set_safe_level_force(safe);
-    th->ec->errinfo = errinfo;
+    ec->errinfo = errinfo;
 }
 
 void
