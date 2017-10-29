@@ -850,10 +850,10 @@ rb_funcall_with_block(VALUE recv, ID mid, int argc, const VALUE *argv, VALUE pas
 }
 
 static VALUE *
-current_vm_stack_arg(rb_thread_t *th, const VALUE *argv)
+current_vm_stack_arg(const rb_execution_context_t *ec, const VALUE *argv)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp);
-    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(th->ec, prev_cfp)) return NULL;
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
+    if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, prev_cfp)) return NULL;
     if (prev_cfp->sp + 1 != argv) return NULL;
     return prev_cfp->sp + 1;
 }
@@ -889,7 +889,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    rb_exc_raise(exc);
 	}
 	if (!SYMBOL_P(*argv)) {
-	    VALUE *tmp_argv = current_vm_stack_arg(rb_ec_thread_ptr(ec), argv);
+	    VALUE *tmp_argv = current_vm_stack_arg(ec, argv);
 	    vid = rb_str_intern(vid);
 	    if (tmp_argv) {
 		tmp_argv[0] = vid;
