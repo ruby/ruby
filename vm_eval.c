@@ -1876,8 +1876,8 @@ rb_f_throw(int argc, VALUE *argv)
 void
 rb_throw_obj(VALUE tag, VALUE value)
 {
-    rb_thread_t *th = GET_THREAD();
-    struct rb_vm_tag *tt = th->ec->tag;
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_vm_tag *tt = ec->tag;
 
     while (tt) {
 	if (tt->tag == tag) {
@@ -1894,8 +1894,8 @@ rb_throw_obj(VALUE tag, VALUE value)
 	rb_exc_raise(rb_class_new_instance(numberof(desc), desc, rb_eUncaughtThrow));
     }
 
-    th->ec->errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
-    EC_JUMP_TAG(th->ec, TAG_THROW);
+    ec->errinfo = (VALUE)THROW_DATA_NEW(tag, NULL, TAG_THROW);
+    EC_JUMP_TAG(ec, TAG_THROW);
 }
 
 void
