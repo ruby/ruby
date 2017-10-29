@@ -244,10 +244,11 @@ rb_call_super(int argc, const VALUE *argv)
 VALUE
 rb_current_receiver(void)
 {
-    rb_thread_t *th = GET_THREAD();
+    const rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp;
-    if (!th || !(cfp = th->ec->cfp))
+    if (!ec || !(cfp = ec->cfp)) {
 	rb_raise(rb_eRuntimeError, "no self, no life");
+    }
     return cfp->self;
 }
 
