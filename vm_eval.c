@@ -591,7 +591,7 @@ rb_call(VALUE recv, ID mid, int argc, const VALUE *argv, call_type scope)
     return rb_call0(ec, recv, mid, argc, argv, scope, ec->cfp->self);
 }
 
-NORETURN(static void raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
+NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv,
 					  VALUE obj, enum method_missing_reason call_status));
 
 /*
@@ -631,7 +631,7 @@ static VALUE
 rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     rb_thread_t *th = GET_THREAD();
-    raise_method_missing(th, argc, argv, obj, th->method_missing_reason);
+    raise_method_missing(th->ec, argc, argv, obj, th->method_missing_reason);
     UNREACHABLE;
 }
 
@@ -662,7 +662,7 @@ make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
 }
 
 static void
-raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
+raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE obj,
 		     enum method_missing_reason last_call_status)
 {
     VALUE exc = rb_eNoMethodError;
@@ -677,7 +677,7 @@ raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv, VALUE obj,
 		 rb_obj_class(argv[0]));
     }
 
-    stack_check(th->ec);
+    stack_check(ec);
 
     if (last_call_status & MISSING_PRIVATE) {
 	format = rb_fstring_cstr("private method `%s' called for %s%s%s");
@@ -715,7 +715,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
 
     if (id == idMethodMissing) {
       missing:
-	raise_method_missing(rb_ec_thread_ptr(ec), argc, argv, obj, call_status | MISSING_MISSING);
+	raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
     }
 
     nargv = ALLOCV_N(VALUE, work, argc + 1);
@@ -735,11 +735,11 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
 }
 
 void
-rb_raise_method_missing(rb_thread_t *th, int argc, const VALUE *argv,
+rb_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv,
 			VALUE obj, int call_status)
 {
-    vm_passed_block_handler_set(th->ec, VM_BLOCK_HANDLER_NONE);
-    raise_method_missing(th, argc, argv, obj, call_status | MISSING_MISSING);
+    vm_passed_block_handler_set(ec, VM_BLOCK_HANDLER_NONE);
+    raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
 }
 
 /*!
