@@ -2795,19 +2795,19 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	long finished;
 	int safe;
     } saved;
-    rb_thread_t *const volatile th = GET_THREAD();
+    rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
-	th->ec->cfp = saved.cfp, \
+	ec->cfp = saved.cfp, \
 	rb_set_safe_level_force(saved.safe), \
 	rb_set_errinfo(saved.errinfo))
 
     saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
     saved.objid = nonspecial_obj_id(obj);
-    saved.cfp = th->ec->cfp;
+    saved.cfp = ec->cfp;
     saved.finished = 0;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state != TAG_NONE) {
 	++saved.finished;	/* skip failed finalizer */
