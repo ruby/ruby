@@ -1274,6 +1274,15 @@ class TestIO < Test::Unit::TestCase
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
   end
 
+  def test_write_buffered_with_multiple_arguments
+    out, err, (_, status) = EnvUtil.invoke_ruby(["-e", "sleep 0.1;puts 'foo'"], "", true, true) do |_, o, e, i|
+      [o.read, e.read, Process.waitpid2(i)]
+    end
+    assert_predicate(status, :success?)
+    assert_equal("foo\n", out)
+    assert_empty(err)
+  end
+
   def test_write_non_writable
     with_pipe do |r, w|
       assert_raise(IOError) do
