@@ -577,7 +577,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 
     if (tag != TAG_FATAL) {
 	RUBY_DTRACE_HOOK(RAISE, rb_obj_classname(ec->errinfo));
-	EXEC_EVENT_HOOK(rb_ec_thread_ptr(ec), RUBY_EVENT_RAISE, ec->cfp->self, 0, 0, 0, mesg);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_RAISE, ec->cfp->self, 0, 0, 0, mesg);
     }
 }
 
@@ -796,17 +796,17 @@ rb_make_exception(int argc, const VALUE *argv)
 void
 rb_raise_jump(VALUE mesg, VALUE cause)
 {
-    rb_thread_t *th = GET_THREAD();
-    const rb_control_frame_t *cfp = th->ec->cfp;
+    rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
     VALUE klass = me->owner;
     VALUE self = cfp->self;
     ID mid = me->called_id;
 
-    rb_vm_pop_frame(th->ec);
-    EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
+    rb_vm_pop_frame(ec);
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, self, me->def->original_id, mid, klass, Qnil);
 
-    rb_longjmp(th->ec, TAG_RAISE, mesg, cause);
+    rb_longjmp(ec, TAG_RAISE, mesg, cause);
 }
 
 /*!

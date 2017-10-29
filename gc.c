@@ -1811,9 +1811,9 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 }
 
 static void
-gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
+gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
-    EXEC_EVENT_HOOK(th, event, th->ec->cfp->self, 0, 0, 0, data);
+    EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
@@ -1821,7 +1821,7 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 
 #define gc_event_hook(objspace, event, data) do { \
     if (UNLIKELY(gc_event_hook_needed_p(objspace, event))) { \
-	gc_event_hook_body(GET_THREAD(), (objspace), (event), (data)); \
+	gc_event_hook_body(GET_EC(), (objspace), (event), (data)); \
     } \
 } while (0)
 
