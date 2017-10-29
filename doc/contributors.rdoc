@@ -609,7 +609,7 @@ Joshua Stowers
 Marcus Stollsteimer (stomar)
 * committer
 * a maintainer of www.ruby-lang.org
-* patches for cgi (HTML5 tag maker), bigdecimal, and others
+* patches for cgi (HTML5 tag maker), numeric.c, bigdecimal, ostruct.rb, prime.rb, and others
 * documentation
 
 Adam Strzelecki
