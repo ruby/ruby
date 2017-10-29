@@ -1637,12 +1637,16 @@ io_writev(int argc, VALUE *argv, VALUE io)
 
     for (i = 0; i < argc; i += cnt) {
 #ifdef HAVE_WRITEV
-	if ((cnt = argc - i) >= IOV_MAX) cnt = IOV_MAX-1;
-	n = io_fwritev(cnt, &argv[i], fptr);
-#else
-	/* sync at last item */
-	n = io_fwrite(argv[i], fptr, (i < argc-1));
+	if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) && ((cnt = argc - i) < IOV_MAX)) {
+	    n = io_fwritev(cnt, &argv[i], fptr);
+	}
+	else
 #endif
+	{
+	    cnt = 1;
+	    /* sync at last item */
+	    n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
+	}
 	if (n == -1L) rb_sys_fail_path(fptr->pathv);
 	total = rb_fix_plus(LONG2FIX(n), total);
     }
