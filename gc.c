@@ -4796,8 +4796,8 @@ static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
-    rb_thread_t *th = GET_THREAD();
-    rb_execution_context_t *ec = th->ec;
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -4837,14 +4837,14 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
-    rb_vm_mark(th->vm);
-    if (th->vm->self) gc_mark(objspace, th->vm->self);
+    rb_vm_mark(vm);
+    if (vm->self) gc_mark(objspace, vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(objspace, th->ec);
+    mark_current_machine_context(objspace, ec);
 
     MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();
