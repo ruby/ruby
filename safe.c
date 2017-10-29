@@ -46,13 +46,16 @@ rb_set_safe_level_force(int safe)
 void
 rb_set_safe_level(int level)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
-    if (level > th->ec->safe_level) {
+    if (level > ec->safe_level) {
 	if (level > SAFE_LEVEL_MAX) {
 	    rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
 	}
-	th->ec->safe_level = level;
+	/* block parameters */
+	rb_vm_stack_to_heap(ec);
+
+	ec->safe_level = level;
     }
 }
 
@@ -65,8 +68,8 @@ safe_getter(void)
 static void
 safe_setter(VALUE val)
 {
-    rb_thread_t *th = GET_THREAD();
-    int current_level = th->ec->safe_level;
+    rb_execution_context_t *ec = GET_EC();
+    int current_level = ec->safe_level;
     int level = NUM2INT(val);
 
     if (level == current_level) {
@@ -82,9 +85,9 @@ safe_setter(VALUE val)
     }
 
     /* block parameters */
-    rb_vm_stack_to_heap(th->ec);
+    rb_vm_stack_to_heap(ec);
 
-    th->ec->safe_level = level;
+    ec->safe_level = level;
 }
 
 void
