@@ -1659,11 +1659,11 @@ io_writev(int argc, VALUE *argv, VALUE io)
  *     ios.write(string, ...)    -> integer
  *
  *  Writes the given strings to <em>ios</em>. The stream must be opened
- *  for writing. If each argument is not a string, they will be converted
+ *  for writing. Arguments that are not a string will be converted
  *  to a string using <code>to_s</code>. Returns the number of bytes
  *  written in total.
  *
- *     count = $stdout.write("This is", "a test\n")
+ *     count = $stdout.write("This is", " a test\n")
  *     puts "That was #{count} bytes of data"
  *
  *  <em>produces:</em>
