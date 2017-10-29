@@ -345,7 +345,7 @@ rb_vm_env_write(const VALUE *ep, int index, VALUE v)
 }
 
 VALUE
-rb_vm_bh_to_procval(rb_execution_context_t *ec, VALUE block_handler)
+rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 {
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
 	return Qnil;
