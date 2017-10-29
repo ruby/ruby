@@ -1074,7 +1074,7 @@ const char *ruby_fill_thread_id_string(rb_nativethread_id_t thid, rb_thread_id_s
 void
 rb_vmdebug_stack_dump_all_threads(void)
 {
-    rb_vm_t *vm = GET_THREAD()->vm;
+    rb_vm_t *vm = GET_VM();
     rb_thread_t *th = NULL;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
