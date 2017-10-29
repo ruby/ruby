@@ -490,20 +490,25 @@ class Set
     self
   end
 
-  # Returns true if obj is a member of the set, and false otherwise.
+  # Returns true if the given object is a member of the set,
+  # and false otherwise.
   #
   # Used in case statements:
   #
+  #   require 'set'
+  #
   #   case :apple
-  #   when Set[:potato, :carrot] then 'vegetable'
-  #   when Set[:apple, :banana]  then 'fruit'
+  #   when Set[:potato, :carrot]
+  #     "vegetable"
+  #   when Set[:apple, :banana]
+  #     "fruit"
   #   end
-  #   #=> "fruit"
+  #   # => "fruit"
   #
   # Or by itself:
   #
-  #   Set[1, 2, 3] === 2 #=> true
-  #   Set[1, 2, 3] === 4 #=> false
+  #   Set[1, 2, 3] === 2 # => true
+  #   Set[1, 2, 3] === 4 # => false
   #
   alias === include?
 
