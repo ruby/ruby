@@ -220,11 +220,15 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
                 readable, = IO.select([ssls, stop_pipe_r])
                 break if readable.include? stop_pipe_r
                 ssl = ssls.accept
-              rescue OpenSSL::SSL::SSLError, IOError, Errno::EBADF, Errno::EINVAL,
+              rescue OpenSSL::SSL::SSLError => e
+                retry if ignore_listener_error
+                raise unless e.message =~ /inappropriate fallback/
+              rescue IOError, Errno::EBADF, Errno::EINVAL,
                      Errno::ECONNABORTED, Errno::ENOTSOCK, Errno::ECONNRESET
                 retry if ignore_listener_error
                 raise
               end
+              next unless ssl
 
               th = Thread.new do
                 begin
