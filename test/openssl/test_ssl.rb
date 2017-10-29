@@ -1231,6 +1231,29 @@ end
     end
   end
 
+  def test_server_with_multiple_certificate
+    ctx_proc = proc { |ctx|
+      ctx.ssl_version = :TLSv1_2
+      ctx.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384'
+      ctx.keys = [@svr_key, @ec_key]
+      ctx.certs = [@svr_cert, @ec_cert]
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ssl_version = :TLSv1_2
+      ctx.ciphers = 'ECDHE-RSA-AES256-GCM-SHA384'
+      server_connect(port, ctx) { |ssl|
+        assert_instance_of OpenSSL::PKey::RSA, ssl.peer_cert.public_key
+      }
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ciphers = 'ECDHE-ECDSA-AES256-GCM-SHA384'
+      server_connect(port, ctx) { |ssl|
+        assert_instance_of OpenSSL::PKey::EC, ssl.peer_cert.public_key
+      }
+    end
+  end
+
   def test_dh_callback
     pend "TLS 1.2 is not supported" unless tls12_supported?
 

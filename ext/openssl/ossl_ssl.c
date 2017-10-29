@@ -38,7 +38,7 @@ static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_verify_depth, id_i_verify_callback, id_i_client_ca,
-	  id_i_renegotiation_cb, id_i_cert, id_i_key, id_i_extra_chain_cert,
+	  id_i_renegotiation_cb, id_i_certs, id_i_keys, id_i_extra_chain_cert,
 	  id_i_client_cert_cb, id_i_tmp_ecdh_callback, id_i_timeout,
 	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
 	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
@@ -780,7 +780,8 @@ ossl_sslctx_setup(VALUE self)
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
     long i;
-    VALUE val;
+    VALUE val, val2;
+    int cert_defined = 0, key_defined = 0;
 
     if(OBJ_FROZEN(self)) return Qnil;
     GetSSLCTX(self, ctx);
@@ -832,19 +833,38 @@ ossl_sslctx_setup(VALUE self)
     }
 
     /* private key may be bundled in certificate file. */
-    val = rb_attr_get(self, id_i_cert);
-    cert = NIL_P(val) ? NULL : GetX509CertPtr(val); /* NO DUP NEEDED */
-    val = rb_attr_get(self, id_i_key);
-    key = NIL_P(val) ? NULL : GetPrivPKeyPtr(val); /* NO DUP NEEDED */
-    if (cert && key) {
-        if (!SSL_CTX_use_certificate(ctx, cert)) {
-            /* Adds a ref => Safe to FREE */
-            ossl_raise(eSSLError, "SSL_CTX_use_certificate");
+    val = rb_attr_get(self, id_i_certs);
+    if (!NIL_P(val)) {
+        Check_Type(val, T_ARRAY);
+        for (i = 0; i < RARRAY_LEN(val); i++) {
+            val2 = rb_ary_entry(val, i);
+            if (!NIL_P(val2)) {
+                cert_defined = 1;
+                cert = GetX509CertPtr(val2); /* NO DUP NEEDED */
+                if (!SSL_CTX_use_certificate(ctx, cert)) {
+                    /* Adds a ref => Safe to FREE */
+                    ossl_raise(eSSLError, "SSL_CTX_use_certificate");
+                }
+            }
         }
-        if (!SSL_CTX_use_PrivateKey(ctx, key)) {
-            /* Adds a ref => Safe to FREE */
-            ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
+    }
+    val = rb_attr_get(self, id_i_keys);
+    if (!NIL_P(val)) {
+        Check_Type(val, T_ARRAY);
+        for (i = 0; i < RARRAY_LEN(val); i++) {
+            val2 = rb_ary_entry(val, i);
+            if (!NIL_P(val2)) {
+                key =  GetPrivPKeyPtr(val2); /* NO DUP NEEDED */
+                key_defined = 1;
+                if (!SSL_CTX_use_PrivateKey(ctx, key)) {
+                    /* Adds a ref => Safe to FREE */
+                    ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
+                }
+            }
         }
+    }
+
+    if (cert_defined && key_defined) {
         if (!SSL_CTX_check_private_key(ctx)) {
             ossl_raise(eSSLError, "SSL_CTX_check_private_key");
         }
@@ -852,22 +872,21 @@ ossl_sslctx_setup(VALUE self)
 
     val = rb_attr_get(self, id_i_client_ca);
     if(!NIL_P(val)){
-	if (RB_TYPE_P(val, T_ARRAY)) {
-	    for(i = 0; i < RARRAY_LEN(val); i++){
-		client_ca = GetX509CertPtr(RARRAY_AREF(val, i));
-        	if (!SSL_CTX_add_client_CA(ctx, client_ca)){
-		    /* Copies X509_NAME => FREE it. */
-        	    ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
-        	}
-	    }
-        }
-	else{
-	    client_ca = GetX509CertPtr(val); /* NO DUP NEEDED. */
-            if (!SSL_CTX_add_client_CA(ctx, client_ca)){
-		/* Copies X509_NAME => FREE it. */
-        	ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+        if (RB_TYPE_P(val, T_ARRAY)) {
+            for(i = 0; i < RARRAY_LEN(val); i++) {
+                client_ca = GetX509CertPtr(RARRAY_AREF(val, i));
+                if (!SSL_CTX_add_client_CA(ctx, client_ca)) {
+                    /* Copies X509_NAME => FREE it. */
+                    ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+                }
             }
-	}
+        } else {
+            client_ca = GetX509CertPtr(val); /* NO DUP NEEDED. */
+            if (!SSL_CTX_add_client_CA(ctx, client_ca)) {
+                /* Copies X509_NAME => FREE it. */
+                ossl_raise(eSSLError, "SSL_CTX_add_client_CA");
+            }
+        }
     }
 
     val = rb_attr_get(self, id_i_ca_file);
@@ -2325,12 +2344,12 @@ Init_ossl_ssl(void)
     /*
      * Context certificate
      */
-    rb_attr(cSSLContext, rb_intern("cert"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern("certs"), 1, 1, Qfalse);
 
     /*
      * Context private key
      */
-    rb_attr(cSSLContext, rb_intern("key"), 1, 1, Qfalse);
+    rb_attr(cSSLContext, rb_intern("keys"), 1, 1, Qfalse);
 
     /*
      * A certificate or Array of certificates that will be sent to the client.
@@ -2790,8 +2809,8 @@ Init_ossl_ssl(void)
     DefIVarID(verify_callback);
     DefIVarID(client_ca);
     DefIVarID(renegotiation_cb);
-    DefIVarID(cert);
-    DefIVarID(key);
+    DefIVarID(certs);
+    DefIVarID(keys);
     DefIVarID(extra_chain_cert);
     DefIVarID(client_cert_cb);
     DefIVarID(tmp_ecdh_callback);

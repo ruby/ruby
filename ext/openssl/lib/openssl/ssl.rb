@@ -118,8 +118,25 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       # that this form is deprecated. New applications should use #min_version=
       # and #max_version= as necessary.
       def initialize(version = nil)
+        @certs = []
+        @keys = []
         self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
+      end
+
+      # Compatibility with previous version supporting a single certificate
+      def cert=(cert)
+        self.certs = [cert]
+      end
+      def cert
+        self.certs.first
+      end
+
+      def key=(key)
+        self.keys = [key]
+      end
+      def key
+        self.keys.first
       end
 
       ##

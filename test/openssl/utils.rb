@@ -67,7 +67,15 @@ module OpenSSL::TestUtils
     cert.serial = serial
     cert.subject = dn
     cert.issuer = issuer.subject
-    cert.public_key = key.public_key
+    cert.public_key = case key
+                      when OpenSSL::PKey::EC
+                        curve             = key.group.curve_name
+                        public            = OpenSSL::PKey::EC.new curve
+                        public.public_key = key.public_key
+                        public
+                      else
+                        key.public_key
+                      end
     now = Time.now
     cert.not_before = not_before || now - 3600
     cert.not_after = not_after || now + 3600
@@ -160,6 +168,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @ca_key  = Fixtures.pkey("rsa2048")
     @svr_key = Fixtures.pkey("rsa1024")
     @cli_key = Fixtures.pkey("rsa2048")
+    @ec_key  = Fixtures.pkey("p256")
     @ca  = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=CA")
     @svr = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     @cli = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
@@ -173,6 +182,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @ca_cert  = issue_cert(@ca, @ca_key, 1, ca_exts, nil, nil)
     @svr_cert = issue_cert(@svr, @svr_key, 2, ee_exts, @ca_cert, @ca_key)
     @cli_cert = issue_cert(@cli, @cli_key, 3, ee_exts, @ca_cert, @ca_key)
+    @ec_cert  = issue_cert(@svr, @ec_key,  3, ee_exts, @ca_cert, @ca_key)
     @server = nil
   end
 
