@@ -9358,6 +9358,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, int column
 	}
 	if (options & RE_OPTION_ONCE) {
 	    node = NEW_NODE(NODE_SCOPE, 0, node, 0);
+	    nd_set_column(node, column);
 	}
 	break;
     }
