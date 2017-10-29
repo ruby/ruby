@@ -3850,10 +3850,10 @@ rb_f_abort(int argc, const VALUE *argv)
 {
     rb_check_arity(argc, 0, 1);
     if (argc == 0) {
-	rb_thread_t *th = GET_THREAD();
-	VALUE errinfo = th->ec->errinfo;
+	rb_execution_context_t *ec = GET_EC();
+	VALUE errinfo = ec->errinfo;
 	if (!NIL_P(errinfo)) {
-	    rb_threadptr_error_print(th, errinfo);
+	    rb_ec_error_print(ec, errinfo);
 	}
 	rb_exit(EXIT_FAILURE);
     }
