@@ -220,9 +220,9 @@ rb_vmdebug_stack_dump_th(VALUE thval)
 
 /* copy from vm.c */
 static const VALUE *
-vm_base_ptr(rb_control_frame_t *cfp)
+vm_base_ptr(const rb_control_frame_t *cfp)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    const rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     const VALUE *bp = prev_cfp->sp + cfp->iseq->body->local_table_size + VM_ENV_DATA_SIZE;
 
     if (cfp->iseq->body->type == ISEQ_TYPE_METHOD) {
@@ -232,7 +232,7 @@ vm_base_ptr(rb_control_frame_t *cfp)
 }
 
 static void
-vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
+vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     int i, argc = 0, local_table_size = 0;
     VALUE rstr;
@@ -258,7 +258,7 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
     {
 	const VALUE *ptr = ep - local_table_size;
 
-	control_frame_dump(th, cfp);
+	control_frame_dump(ec, cfp);
 
 	for (i = 0; i < argc; i++) {
 	    rstr = rb_inspect(*ptr);
@@ -285,12 +285,12 @@ vm_stack_dump_each(rb_thread_t *th, rb_control_frame_t *cfp)
 		break;
 	    }
 	    fprintf(stderr, "  stack %2d: %8s (%"PRIdPTRDIFF")\n", i, StringValueCStr(rstr),
-		    (ptr - th->ec->vm_stack));
+		    (ptr - ec->vm_stack));
 	}
     }
     else if (VM_FRAME_FINISHED_P(cfp)) {
-	if ((th)->ec->vm_stack + (th)->ec->vm_stack_size > (VALUE *)(cfp + 1)) {
-	    vm_stack_dump_each(th, cfp + 1);
+	if (ec->vm_stack + ec->vm_stack_size > (VALUE *)(cfp + 1)) {
+	    vm_stack_dump_each(ec, cfp + 1);
 	}
 	else {
 	    /* SDR(); */
