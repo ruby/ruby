@@ -102,8 +102,6 @@ enum vm_regan_acttype {
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
 
-#define GET_SP_COUNT() (VM_REG_SP - th->ec->vm_stack)
-
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
 
