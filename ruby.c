@@ -177,7 +177,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static ast_t *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+static rb_ast_t *load_file(VALUE parser, VALUE fname, VALUE f, int script,
 		       ruby_cmdline_options_t *opt);
 static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
@@ -1461,7 +1461,7 @@ rb_f_chomp(int argc, VALUE *argv)
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
-    ast_t *ast = 0;
+    rb_ast_t *ast = 0;
     VALUE parser;
     VALUE script_name;
     const rb_iseq_t *iseq;
@@ -1797,7 +1797,7 @@ load_file_internal(VALUE argp_v)
     ruby_cmdline_options_t *opt = argp->opt;
     VALUE f = argp->f;
     int line_start = 1;
-    ast_t *ast = 0;
+    rb_ast_t *ast = 0;
     rb_encoding *enc;
     ID set_encoding;
 
@@ -2011,7 +2011,7 @@ restore_load_file(VALUE arg)
     return Qnil;
 }
 
-static ast_t *
+static rb_ast_t *
 load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
@@ -2020,7 +2020,7 @@ load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t
     arg.script = script;
     arg.opt = opt;
     arg.f = f;
-    return (ast_t *)rb_ensure(load_file_internal, (VALUE)&arg,
+    return (rb_ast_t *)rb_ensure(load_file_internal, (VALUE)&arg,
 			      restore_load_file, (VALUE)&arg);
 }
 

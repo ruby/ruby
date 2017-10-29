@@ -239,7 +239,7 @@ struct parser_params {
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
 
-    ast_t *ast;
+    rb_ast_t *ast;
     NODE *eval_tree_begin;
     NODE *eval_tree;
     VALUE error_buffer;
@@ -5589,11 +5589,11 @@ lex_getline(struct parser_params *parser)
 static const rb_data_type_t parser_data_type;
 
 #ifndef RIPPER
-static ast_t*
+static rb_ast_t*
 parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
 {
     struct parser_params *parser;
-    ast_t *ast;
+    rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     parser->ast = ast = rb_ast_new();
@@ -5610,34 +5610,34 @@ parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
     return ast;
 }
 
-ast_t*
+rb_ast_t*
 rb_compile_string(const char *f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), s, line);
 }
 
-ast_t*
+rb_ast_t*
 rb_parser_compile_string(VALUE vparser, const char *f, VALUE s, int line)
 {
     return rb_parser_compile_string_path(vparser, rb_filesystem_str_new_cstr(f), s, line);
 }
 
-ast_t*
+rb_ast_t*
 rb_parser_compile_string_path(VALUE vparser, VALUE f, VALUE s, int line)
 {
     must_be_ascii_compatible(s);
     return parser_compile_string(vparser, f, s, line);
 }
 
-ast_t*
+rb_ast_t*
 rb_compile_cstr(const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
     return parser_compile_string(rb_parser_new(), rb_filesystem_str_new_cstr(f), str, line);
 }
 
-ast_t*
+rb_ast_t*
 rb_parser_compile_cstr(VALUE vparser, const char *f, const char *s, int len, int line)
 {
     VALUE str = rb_str_new(s, len);
@@ -5652,7 +5652,7 @@ lex_io_gets(struct parser_params *parser, VALUE io)
     return rb_io_gets_internal(io);
 }
 
-ast_t*
+rb_ast_t*
 rb_compile_file(const char *f, VALUE file, int start)
 {
     VALUE vparser = rb_parser_new();
@@ -5660,17 +5660,17 @@ rb_compile_file(const char *f, VALUE file, int start)
     return rb_parser_compile_file(vparser, f, file, start);
 }
 
-ast_t*
+rb_ast_t*
 rb_parser_compile_file(VALUE vparser, const char *f, VALUE file, int start)
 {
     return rb_parser_compile_file_path(vparser, rb_filesystem_str_new_cstr(f), file, start);
 }
 
-ast_t*
+rb_ast_t*
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct parser_params *parser;
-    ast_t *ast;
+    rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
     parser->ast = ast = rb_ast_new();

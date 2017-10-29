@@ -641,9 +641,9 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
 #else
 # define INITIALIZED /* volatile */
 #endif
-    ast_t *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
+    rb_ast_t *(*parse)(VALUE vparser, VALUE fname, VALUE file, int start);
     int ln;
-    ast_t *INITIALIZED ast;
+    rb_ast_t *INITIALIZED ast;
 
     /* safe results first */
     make_compile_option(&option, opt);
@@ -854,7 +854,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
     VALUE file, line = INT2FIX(1), opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
-    ast_t *ast;
+    rb_ast_t *ast;
     rb_compile_option_t option;
     int i;
 
