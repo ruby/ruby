@@ -1665,9 +1665,14 @@ class Resolv
           name = self.get_name
           type, klass, ttl = self.get_unpack('nnN')
           typeclass = Resource.get_class(type, klass)
-          res = self.get_length16 do
+          res = self.get_length16 do |len|
             begin
-              typeclass.decode_rdata self
+              method = typeclass.method :decode_rdata
+              if method.arity == 1
+                method.call self
+              else
+                method.call self, len
+              end
             rescue => e
               raise DecodeError, e.message, e.backtrace
             end
@@ -2341,6 +2346,57 @@ class Resolv
             return self.new(priority, weight, port, target)
           end
         end
+
+        ##
+        # CAA resource record defined in RFC 6844
+        #
+        # These records identify certificate authority allowed to issue
+        # certificates for the given domain.
+
+        class CAA < Resource
+          TypeValue = 257
+          ClassValue = IN::ClassValue
+          ClassHash[[TypeValue, ClassValue]] = self # :nodoc:
+
+          ##
+          # Flag:
+          #   Bit 0 : 0 = not critical, 1 = critical
+
+          attr_reader :flag
+
+          ##
+          # Tag: issue, issuewild, iodef…
+
+          attr_reader :tag
+
+          ##
+          # Value of the tag.
+
+          attr_reader :value
+
+          ##
+          # Creates a new CAA for +flag+, +tag+ and +value+.
+
+          def initialize(flag, tag, value)
+            @flag, @tag, @value = flag, tag, value
+          end
+
+          def encode_rdata(msg) # :nodoc:
+            msg.put_bytes @flag
+            msg.put_bytes @tag.length.chr
+            msg.put_bytes @tag
+            msg.put_bytes @value
+          end
+
+          def self.decode_rdata(msg, len) # :nodoc:
+            flag = msg.get_bytes 1
+            tag_length = msg.get_bytes(1).ord
+            tag = msg.get_bytes tag_length
+            len = len - 2 - tag_length
+            value = msg.get_bytes len
+            self.new flag, tag, value
+          end
+        end
       end
     end
   end
@@ -2909,4 +2965,3 @@ class Resolv
   AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 
 end
-
