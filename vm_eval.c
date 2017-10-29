@@ -1110,13 +1110,13 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    const struct vm_ifunc *const ifunc,
-	    rb_thread_t *const th)
+	    rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = th->ec->cfp;
+    rb_control_frame_t *const cfp = ec->cfp;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state == 0) {
       iter_retry:
@@ -1131,20 +1131,20 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    else {
 		block_handler = VM_CF_BLOCK_HANDLER(cfp);
 	    }
-	    vm_passed_block_handler_set(th->ec, block_handler);
+	    vm_passed_block_handler_set(ec, block_handler);
 	}
 	retval = (*it_proc) (data1);
     }
     else if (state == TAG_BREAK || state == TAG_RETRY) {
-	const struct vm_throw_data *const err = (struct vm_throw_data *)th->ec->errinfo;
+	const struct vm_throw_data *const err = (struct vm_throw_data *)ec->errinfo;
 	const rb_control_frame_t *const escape_cfp = THROW_DATA_CATCH_FRAME(err);
 
 	if (cfp == escape_cfp) {
-	    rb_vm_rewind_cfp(th->ec, cfp);
+	    rb_vm_rewind_cfp(ec, cfp);
 
 	    state = 0;
-	    th->ec->tag->state = TAG_NONE;
-	    th->ec->errinfo = Qnil;
+	    ec->tag->state = TAG_NONE;
+	    ec->errinfo = Qnil;
 
 	    if (state == TAG_RETRY) goto iter_retry;
 	    retval = THROW_DATA_VAL(err);
@@ -1156,7 +1156,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
     EC_POP_TAG();
 
     if (state) {
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
     return retval;
 }
@@ -1167,7 +1167,7 @@ rb_iterate(VALUE (* it_proc)(VALUE), VALUE data1,
 {
     return rb_iterate0(it_proc, data1,
 		       bl_proc ? rb_vm_ifunc_proc_new(bl_proc, (void *)data2) : 0,
-		       GET_THREAD());
+		       GET_EC());
 }
 
 struct iter_method_arg {
@@ -1213,7 +1213,7 @@ rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
     arg.argc = argc;
     arg.argv = argv;
     block = rb_vm_ifunc_new(bl_proc, (void *)data2, min_argc, max_argc);
-    return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_THREAD());
+    return rb_iterate0(iterate_method, (VALUE)&arg, block, GET_EC());
 }
 
 static VALUE
