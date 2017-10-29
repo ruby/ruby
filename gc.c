@@ -4028,9 +4028,8 @@ ruby_stack_length(VALUE **p)
 #endif
 #if PREVENT_STACK_OVERFLOW
 static int
-stack_check(rb_thread_t *th, int water_mark)
+stack_check(rb_execution_context_t *ec, int water_mark)
 {
-    rb_execution_context_t *ec = th->ec;
     int ret;
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
@@ -4043,21 +4042,21 @@ stack_check(rb_thread_t *th, int water_mark)
     return ret;
 }
 #else
-#define stack_check(th, water_mark) FALSE
+#define stack_check(ec, water_mark) FALSE
 #endif
 
 #define STACKFRAME_FOR_CALL_CFUNC 838
 
 int
-rb_threadptr_stack_check(rb_thread_t *th)
+rb_ec_stack_check(rb_execution_context_t *ec)
 {
-    return stack_check(th, STACKFRAME_FOR_CALL_CFUNC);
+    return stack_check(ec, STACKFRAME_FOR_CALL_CFUNC);
 }
 
 int
 ruby_stack_check(void)
 {
-    return stack_check(GET_THREAD(), STACKFRAME_FOR_CALL_CFUNC);
+    return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
