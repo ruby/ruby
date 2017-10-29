@@ -434,7 +434,7 @@ typedef struct RVALUE {
 	    const rb_iseq_t iseq;
 	    rb_env_t env;
 	    struct rb_imemo_alloc_struct alloc;
-	    ast_t ast;
+	    rb_ast_t ast;
 	} imemo;
 	struct {
 	    struct RBasic basic;

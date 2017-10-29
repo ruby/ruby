@@ -602,7 +602,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     EC_PUSH_TAG(th->ec);
     state = EXEC_TAG();
     if (state == TAG_NONE) {
-	ast_t *ast;
+	rb_ast_t *ast;
 	const rb_iseq_t *iseq;
 
 	if ((iseq = rb_iseq_load_iseq(fname)) != NULL) {
@@ -611,7 +611,7 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	else {
 	    VALUE parser = rb_parser_new();
 	    rb_parser_set_context(parser, NULL, FALSE);
-	    ast = (ast_t *)rb_parser_load_file(parser, fname);
+	    ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
 	    iseq = rb_iseq_new_top(ast->root, rb_fstring_cstr("<top (required)>"),
 			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	    rb_ast_dispose(ast);

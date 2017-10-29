@@ -1248,7 +1248,7 @@ rb_node_buffer_free(node_buffer_t *nb)
 }
 
 NODE *
-rb_ast_newnode(ast_t *ast)
+rb_ast_newnode(rb_ast_t *ast)
 {
     node_buffer_t *nb = ast->node_buffer;
     if (nb->idx >= nb->len) {
@@ -1264,27 +1264,27 @@ rb_ast_newnode(ast_t *ast)
 }
 
 void
-rb_ast_delete_node(ast_t *ast, NODE *n)
+rb_ast_delete_node(rb_ast_t *ast, NODE *n)
 {
     (void)ast;
     (void)n;
     /* should we implement freelist? */
 }
 
-ast_t *
+rb_ast_t *
 rb_ast_new(void)
 {
-    return (ast_t *)rb_imemo_new(imemo_ast, 0, (VALUE)rb_node_buffer_new(), rb_ary_tmp_new(0), 0);
+    return (rb_ast_t *)rb_imemo_new(imemo_ast, 0, (VALUE)rb_node_buffer_new(), rb_ary_tmp_new(0), 0);
 }
 
 void
-rb_ast_mark(ast_t *ast)
+rb_ast_mark(rb_ast_t *ast)
 {
     if (ast->node_buffer) rb_gc_mark(ast->mark_ary);
 }
 
 void
-rb_ast_free(ast_t *ast)
+rb_ast_free(rb_ast_t *ast)
 {
     if (ast->node_buffer) rb_node_buffer_free(ast->node_buffer);
     ast->node_buffer = 0;
@@ -1293,20 +1293,20 @@ rb_ast_free(ast_t *ast)
 }
 
 void
-rb_ast_dispose(ast_t *ast)
+rb_ast_dispose(rb_ast_t *ast)
 {
     rb_ast_free(ast);
     rb_gc_writebarrier_remember((VALUE)ast);
 }
 
 void
-rb_ast_add_mark_object(ast_t *ast, VALUE obj)
+rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
     rb_ary_push(ast->mark_ary, obj);
 }
 
 void
-rb_ast_delete_mark_object(ast_t *ast, VALUE obj)
+rb_ast_delete_mark_object(rb_ast_t *ast, VALUE obj)
 {
     long i;
     for (i = 0; i < RARRAY_LEN(ast->mark_ary); i++) {

@@ -441,21 +441,21 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */
-typedef struct ast_struct {
+typedef struct rb_ast_struct {
     VALUE flags;
     VALUE reserved1;
     NODE *root;
     node_buffer_t *node_buffer;
     VALUE mark_ary;
-} ast_t;
-ast_t *rb_ast_new();
-void rb_ast_mark(ast_t*);
-void rb_ast_dispose(ast_t*);
-void rb_ast_free(ast_t*);
-void rb_ast_add_mark_object(ast_t*, VALUE);
-void rb_ast_delete_mark_object(ast_t*, VALUE);
-NODE *rb_ast_newnode(ast_t*);
-void rb_ast_delete_node(ast_t*, NODE *n);
+} rb_ast_t;
+rb_ast_t *rb_ast_new();
+void rb_ast_mark(rb_ast_t*);
+void rb_ast_dispose(rb_ast_t*);
+void rb_ast_free(rb_ast_t*);
+void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+void rb_ast_delete_mark_object(rb_ast_t*, VALUE);
+NODE *rb_ast_newnode(rb_ast_t*);
+void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
@@ -465,15 +465,15 @@ VALUE rb_parser_set_yydebug(VALUE, VALUE);
 VALUE rb_parser_dump_tree(NODE *node, int comment);
 void rb_parser_set_options(VALUE, int, int, int, int);
 
-ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
-ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
-ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
-ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
+rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
+rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
 
-ast_t *rb_compile_cstr(const char*, const char*, int, int);
-ast_t *rb_compile_string(const char*, VALUE, int);
-ast_t *rb_compile_file(const char*, VALUE, int);
+rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
+rb_ast_t *rb_compile_string(const char*, VALUE, int);
+rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
 NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);

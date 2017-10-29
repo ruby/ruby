@@ -121,7 +121,7 @@ prelude_eval(VALUE code, VALUE name, int line)
 	FALSE, /* int debug_frozen_string_literal; */
     };
 
-    ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
+    rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->root) {
 	rb_ast_dispose(ast);
 	rb_exc_raise(rb_errinfo());
