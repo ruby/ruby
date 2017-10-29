@@ -771,6 +771,8 @@ typedef struct rb_execution_context_struct {
     /* for bmethod */
     const rb_callable_method_entry_t *passed_bmethod_me;
 
+    struct rb_thread_struct *thread_ptr;
+
     /* for GC */
     struct {
 	VALUE *stack_start;
@@ -1594,20 +1596,18 @@ RUBY_SYMBOL_EXPORT_END
 #define GET_THREAD() ruby_current_thread()
 #define GET_EC()     ruby_current_execution_context()
 
-rb_thread_t *rb_fiberptr_thread_ptr(const rb_fiber_t *fib);
-
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
 {
-    return rb_fiberptr_thread_ptr(ec->fiber);
+    return ec->thread_ptr;
 }
 
 static inline rb_vm_t *
 rb_ec_vm_ptr(const rb_execution_context_t *ec)
 {
-    const rb_thread_t *th = rb_fiberptr_thread_ptr(ec->fiber);
+    const rb_thread_t *th = rb_ec_thread_ptr(ec);
     if (th) {
-	return rb_fiberptr_thread_ptr(ec->fiber)->vm;
+	return th->vm;
     }
     else {
 	return NULL;

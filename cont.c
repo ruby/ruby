@@ -110,7 +110,6 @@ typedef struct rb_context_struct {
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
     rb_ensure_list_t *ensure_list;
-    rb_thread_t *thread_ptr;
 } rb_context_t;
 
 
@@ -267,7 +266,7 @@ NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 static VALUE
 cont_thread_value(const rb_context_t *cont)
 {
-    return cont->thread_ptr->self;
+    return cont->saved_ec.thread_ptr->self;
 }
 
 static void
@@ -394,12 +393,6 @@ cont_memsize(const void *ptr)
     }
 #endif
     return size;
-}
-
-rb_thread_t *
-rb_fiberptr_thread_ptr(const rb_fiber_t *fib)
-{
-    return fib->cont.thread_ptr;
 }
 
 void
@@ -550,7 +543,7 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
 {
     /* save thread context */
     cont_save_thread(cont, th);
-    cont->thread_ptr = th;
+    cont->saved_ec.thread_ptr = th;
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
@@ -1474,7 +1467,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     MEMZERO(fib, rb_fiber_t, 1);
     fib->cont.type = ROOT_FIBER_CONTEXT;
     fib->cont.saved_ec.fiber = fib;
-    fib->cont.thread_ptr = th;
+    fib->cont.saved_ec.thread_ptr = th;
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fib->cont.saved_ec;
 #if FIBER_USE_NATIVE
