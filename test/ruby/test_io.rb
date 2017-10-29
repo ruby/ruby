@@ -1270,6 +1270,10 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_write_with_multiple_nonstring_arguments
+    assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
+  end
+
   def test_write_non_writable
     with_pipe do |r, w|
       assert_raise(IOError) do

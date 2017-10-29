@@ -1590,7 +1590,7 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
     tmp_array = ALLOCV_N(VALUE, v2, argc);
 
     for (i = 0; i < argc; i++) {
-	str = argv[i];
+	str = rb_obj_as_string(argv[i]);
 	converted = 0;
 	str = do_writeconv(str, fptr, &converted);
 	if (converted)
