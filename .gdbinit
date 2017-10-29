@@ -989,7 +989,7 @@ define iseq
 end
 
 define rb_ps
-  rb_ps_vm ruby_current_vm
+  rb_ps_vm ruby_current_vm_ptr
 end
 document rb_ps
 Dump all threads and their callstacks
@@ -1181,7 +1181,7 @@ define rb_ps_thread
 end
 
 define rb_count_objects
-  set $objspace = ruby_current_vm->objspace
+  set $objspace = ruby_current_vm_ptr->objspace
   set $counts_00 = 0
   set $counts_01 = 0
   set $counts_02 = 0
