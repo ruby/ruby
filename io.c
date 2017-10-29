@@ -3631,7 +3631,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  */
 
 static VALUE
@@ -3685,7 +3685,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *     3: This is line three
  *     4: And so on...
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  */
 
 static VALUE
@@ -8687,7 +8687,7 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
  *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  *
  */
 static VALUE
@@ -10226,8 +10226,8 @@ io_s_foreach(struct getline_arg *arg)
  *     GOT And so on...
  *
  *  If the last argument is a hash, it's the keyword argument to open.
- *  See <code>IO.readlines</code> for detail about getline_args.
- *  And see also <code>IO.read</code> for detail about open_args.
+ *  See IO.readlines for details about getline_args.
+ *  And see also IO.read for details about open_args.
  *
  */
 
@@ -10270,7 +10270,7 @@ io_s_readlines(struct getline_arg *arg)
  *
  *  If the last argument is a hash, it's the keyword argument to open.
  *
- *  === Option for getline
+ *  === Options for getline
  *
  *  The options hash accepts the following keys:
  *
@@ -10278,7 +10278,7 @@ io_s_readlines(struct getline_arg *arg)
  *    Specifies the boolean. It will remove \n, \r, and \r\n
  *    from the end of each lines if it's true
  *
- *  And see also <code>IO.read</code> for detail about open_args.
+ *  And see also IO.read for details about open_args.
  *
  */
 
