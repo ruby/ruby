@@ -1694,8 +1694,8 @@ ruby_vm_check_ints(rb_thread_t *th)
 /* tracer */
 struct rb_trace_arg_struct {
     rb_event_flag_t event;
-    rb_thread_t *th;
-    rb_control_frame_t *cfp;
+    rb_execution_context_t *ec;
+    const rb_control_frame_t *cfp;
     VALUE self;
     ID id;
     ID called_id;
@@ -1727,7 +1727,7 @@ ruby_exec_event_hook_orig(rb_thread_t *const th, const rb_event_flag_t flag,
     if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
-	trace_arg.th = th;
+	trace_arg.ec = th->ec;
 	trace_arg.cfp = th->ec->cfp;
 	trace_arg.self = self;
 	trace_arg.id = id;
