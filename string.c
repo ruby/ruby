@@ -7796,7 +7796,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
  *  supplied, the string is split into paragraphs delimited by
  *  multiple successive newlines.
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  *
  *  If no block is given, an enumerator is returned instead.
  *
