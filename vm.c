@@ -2068,36 +2068,6 @@ rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *c
     return rb_vm_control_frame_id_and_class(ec->cfp, idp, called_idp, klassp);
 }
 
-int
-rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
-{
-    return rb_ec_frame_method_id_and_class(GET_EC(), idp, 0, klassp);
-}
-
-VALUE
-rb_thread_current_status(const rb_thread_t *th)
-{
-    const rb_control_frame_t *cfp = th->ec->cfp;
-    const rb_callable_method_entry_t *me;
-    VALUE str = Qnil;
-
-    if (cfp->iseq != 0) {
-	if (cfp->pc != 0) {
-	    const rb_iseq_t *iseq = cfp->iseq;
-	    int line_no = rb_vm_get_sourceline(cfp);
-	    str = rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"'",
-			     rb_iseq_path(iseq), line_no, iseq->body->location.label);
-	}
-    }
-    else if ((me = rb_vm_frame_method_entry(cfp)) && me->def->original_id) {
-	str = rb_sprintf("`%"PRIsVALUE"#%"PRIsVALUE"' (cfunc)",
-			 rb_class_path(me->owner),
-			 rb_id2str(me->def->original_id));
-    }
-
-    return str;
-}
-
 VALUE
 rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 		 VALUE block_handler, VALUE filename)
