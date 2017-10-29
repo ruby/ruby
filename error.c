@@ -1015,12 +1015,12 @@ rb_get_backtrace(VALUE exc)
     ID mid = id_backtrace;
     if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
 	VALUE info, klass = rb_eException;
-	rb_thread_t *th = GET_THREAD();
+	rb_execution_context_t *ec = GET_EC();
 	if (NIL_P(exc))
 	    return Qnil;
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
 	info = exc_backtrace(exc);
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
 	if (NIL_P(info))
 	    return Qnil;
 	return rb_check_backtrace(info);

@@ -584,11 +584,11 @@ thread_do_start(rb_thread_t *th, VALUE args)
 	th->ec->errinfo = Qnil;
 	th->ec->root_lep = rb_vm_proc_local_ep(th->first_proc);
 	th->ec->root_svar = Qfalse;
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+	EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
 	th->value = rb_vm_invoke_proc(th->ec, proc,
 				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
 				      VM_BLOCK_HANDLER_NONE);
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+	EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
     else {
 	th->value = (*th->first_func)((void *)args);
@@ -2094,7 +2094,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    if (th->status == THREAD_RUNNABLE)
 		th->running_time_us += TIME_QUANTUM_USEC;
 
-	    EXEC_EVENT_HOOK(th, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
+	    EXEC_EVENT_HOOK(th->ec, RUBY_INTERNAL_EVENT_SWITCH, th->ec->cfp->self,
 			    0, 0, 0, Qundef);
 
 	    rb_thread_schedule_limits(limits_us);
