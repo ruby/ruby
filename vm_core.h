@@ -1728,8 +1728,8 @@ ruby_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag
     if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
-	trace_arg.ec = th->ec;
-	trace_arg.cfp = th->ec->cfp;
+	trace_arg.ec = ec;
+	trace_arg.cfp = ec->cfp;
 	trace_arg.self = self;
 	trace_arg.id = id;
 	trace_arg.called_id = called_id;
