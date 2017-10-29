@@ -1386,7 +1386,6 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*%%%*/
 			NODE *resq = new_resbody(0, remove_begin($3), 0, @1.first_column);
 			$$ = new_rescue(remove_begin($1), resq, 0, @1.first_column);
-			nd_set_column(resq, @1.first_column);
 		    /*%
 			$$ = dispatch2(rescue_mod, $1, $3);
 		    %*/
