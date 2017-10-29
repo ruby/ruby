@@ -834,8 +834,7 @@ rb_jump_tag(int tag)
 int
 rb_block_given_p(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    if (rb_vm_frame_block_handler(th->ec->cfp) == VM_BLOCK_HANDLER_NONE) {
+    if (rb_vm_frame_block_handler(GET_EC()->cfp) == VM_BLOCK_HANDLER_NONE) {
 	return FALSE;
     }
     else {
@@ -1037,27 +1036,27 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     int state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
-    rb_thread_t *const volatile th = GET_THREAD();
+    rb_execution_context_t * volatile ec = GET_EC();
     rb_ensure_list_t ensure_list;
     ensure_list.entry.marker = 0;
     ensure_list.entry.e_proc = e_proc;
     ensure_list.entry.data2 = data2;
-    ensure_list.next = th->ec->ensure_list;
-    th->ec->ensure_list = &ensure_list;
-    EC_PUSH_TAG(th->ec);
+    ensure_list.next = ec->ensure_list;
+    ec->ensure_list = &ensure_list;
+    EC_PUSH_TAG(ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
     EC_POP_TAG();
-    errinfo = th->ec->errinfo;
+    errinfo = ec->errinfo;
     if (!NIL_P(errinfo) && !RB_TYPE_P(errinfo, T_OBJECT)) {
-	th->ec->errinfo = Qnil;
+	ec->errinfo = Qnil;
     }
-    th->ec->ensure_list=ensure_list.next;
+    ec->ensure_list=ensure_list.next;
     (*ensure_list.entry.e_proc)(ensure_list.entry.data2);
-    th->ec->errinfo = errinfo;
+    ec->errinfo = errinfo;
     if (state)
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     return result;
 }
 
@@ -1123,11 +1122,11 @@ rb_frame_callee(void)
 }
 
 static rb_control_frame_t *
-previous_frame(rb_thread_t *th)
+previous_frame(const rb_execution_context_t *ec)
 {
-    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(th->ec->cfp);
+    rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
     /* check if prev_cfp can be accessible */
-    if ((void *)(th->ec->vm_stack + th->ec->vm_stack_size) == (void *)(prev_cfp)) {
+    if ((void *)(ec->vm_stack + ec->vm_stack_size) == (void *)(prev_cfp)) {
         return 0;
     }
     return prev_cfp;
@@ -1136,7 +1135,7 @@ previous_frame(rb_thread_t *th)
 static ID
 prev_frame_callee(void)
 {
-    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
     if (!prev_cfp) return 0;
     return frame_called_id(prev_cfp);
 }
@@ -1144,7 +1143,7 @@ prev_frame_callee(void)
 static ID
 prev_frame_func(void)
 {
-    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
     if (!prev_cfp) return 0;
     return frame_func_id(prev_cfp);
 }
@@ -1500,7 +1499,7 @@ ignored_block(VALUE module, const char *klass)
 static VALUE
 mod_using(VALUE self, VALUE module)
 {
-    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
 
     if (prev_frame_func()) {
 	rb_raise(rb_eRuntimeError,
@@ -1709,7 +1708,7 @@ static VALUE
 top_using(VALUE self, VALUE module)
 {
     const rb_cref_t *cref = rb_vm_cref();
-    rb_control_frame_t *prev_cfp = previous_frame(GET_THREAD());
+    rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
 
     if (CREF_NEXT(cref) || (prev_cfp && rb_vm_frame_method_entry(prev_cfp))) {
 	rb_raise(rb_eRuntimeError, "main.using is permitted only at toplevel");
@@ -1776,8 +1775,7 @@ errinfo_getter(ID id)
 VALUE
 rb_errinfo(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    return th->ec->errinfo;
+    return GET_EC()->errinfo;
 }
 
 /*! Sets the current exception (\c $!) to the given value
