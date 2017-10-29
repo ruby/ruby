@@ -1984,13 +1984,13 @@ rb_catch(const char *tag, VALUE (*func)(), VALUE data)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-		 enum ruby_tag_type *stateptr, rb_thread_t *volatile th)
+		 enum ruby_tag_type *stateptr, rb_execution_context_t *volatile ec)
 {
     enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
-    rb_control_frame_t *volatile saved_cfp = th->ec->cfp;
+    rb_control_frame_t *volatile saved_cfp = ec->cfp;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
 
     _tag.tag = tag;
 
@@ -1998,10 +1998,10 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 	/* call with argc=1, argv = [tag], block = Qnil to insure compatibility */
 	val = (*func)(tag, data, 1, (const VALUE *)&tag, Qnil);
     }
-    else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)th->ec->errinfo) == tag) {
-	rb_vm_rewind_cfp(th->ec, saved_cfp);
-	val = th->ec->tag->retval;
-	th->ec->errinfo = Qnil;
+    else if (state == TAG_THROW && THROW_DATA_VAL((struct vm_throw_data *)ec->errinfo) == tag) {
+	rb_vm_rewind_cfp(ec, saved_cfp);
+	val = ec->tag->retval;
+	ec->errinfo = Qnil;
 	state = 0;
     }
     EC_POP_TAG();
@@ -2014,16 +2014,16 @@ vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
 VALUE
 rb_catch_protect(VALUE t, rb_block_call_func *func, VALUE data, enum ruby_tag_type *stateptr)
 {
-    return vm_catch_protect(t, func, data, stateptr, GET_THREAD());
+    return vm_catch_protect(t, func, data, stateptr, GET_EC());
 }
 
 VALUE
 rb_catch_obj(VALUE t, VALUE (*func)(), VALUE data)
 {
     enum ruby_tag_type state;
-    rb_thread_t *th = GET_THREAD();
-    VALUE val = vm_catch_protect(t, (rb_block_call_func *)func, data, &state, th);
-    if (state) EC_JUMP_TAG(th->ec, state);
+    rb_execution_context_t *ec = GET_EC();
+    VALUE val = vm_catch_protect(t, (rb_block_call_func *)func, data, &state, ec);
+    if (state) EC_JUMP_TAG(ec, state);
     return val;
 }
 
