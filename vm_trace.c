@@ -301,60 +301,60 @@ exec_hooks_protected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t
 static void
 rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 {
-    rb_thread_t *th = trace_arg->th;
+    rb_execution_context_t *ec = trace_arg->ec;
 
     if (trace_arg->event & RUBY_INTERNAL_EVENT_MASK) {
-	if (th->ec->trace_arg && (th->ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
+	if (ec->trace_arg && (ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
 	    /* skip hooks because this thread doing INTERNAL_EVENT */
 	}
 	else {
-	    rb_trace_arg_t *prev_trace_arg = th->ec->trace_arg;
-	    th->vm->trace_running++;
-	    th->ec->trace_arg = trace_arg;
-	    exec_hooks_unprotected(th, &th->event_hooks, trace_arg);
-	    exec_hooks_unprotected(th, &th->vm->event_hooks, trace_arg);
-	    th->ec->trace_arg = prev_trace_arg;
-	    th->vm->trace_running--;
+	    rb_trace_arg_t *prev_trace_arg = ec->trace_arg;
+	    rb_ec_vm_ptr(ec)->trace_running++;
+	    ec->trace_arg = trace_arg;
+	    exec_hooks_unprotected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->event_hooks, trace_arg);
+	    exec_hooks_unprotected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->vm->event_hooks, trace_arg);
+	    ec->trace_arg = prev_trace_arg;
+	    rb_ec_vm_ptr(ec)->trace_running--;
 	}
     }
     else {
-	if (th->ec->trace_arg == NULL && /* check reentrant */
+	if (ec->trace_arg == NULL && /* check reentrant */
 	    trace_arg->self != rb_mRubyVMFrozenCore /* skip special methods. TODO: remove it. */) {
-	    const VALUE errinfo = th->ec->errinfo;
-	    const VALUE old_recursive = th->ec->local_storage_recursive_hash;
+	    const VALUE errinfo = ec->errinfo;
+	    const VALUE old_recursive = ec->local_storage_recursive_hash;
 	    int state = 0;
 
-	    th->ec->local_storage_recursive_hash = th->ec->local_storage_recursive_hash_for_trace;
-	    th->ec->errinfo = Qnil;
+	    ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;
+	    ec->errinfo = Qnil;
 
-	    th->vm->trace_running++;
-	    th->ec->trace_arg = trace_arg;
+	    rb_ec_vm_ptr(ec)->trace_running++;
+	    ec->trace_arg = trace_arg;
 	    {
 		/* thread local traces */
-		state = exec_hooks_protected(th, &th->event_hooks, trace_arg);
+		state = exec_hooks_protected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		/* vm global traces */
-		state = exec_hooks_protected(th, &th->vm->event_hooks, trace_arg);
+		state = exec_hooks_protected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->vm->event_hooks, trace_arg);
 		if (state) goto terminate;
 
-		th->ec->errinfo = errinfo;
+		ec->errinfo = errinfo;
 	    }
 	  terminate:
-	    th->ec->trace_arg = NULL;
-	    th->vm->trace_running--;
+	    ec->trace_arg = NULL;
+	    rb_ec_vm_ptr(ec)->trace_running--;
 
-	    th->ec->local_storage_recursive_hash_for_trace = th->ec->local_storage_recursive_hash;
-	    th->ec->local_storage_recursive_hash = old_recursive;
+	    ec->local_storage_recursive_hash_for_trace = ec->local_storage_recursive_hash;
+	    ec->local_storage_recursive_hash = old_recursive;
 
 	    if (state) {
 		if (pop_p) {
-		    if (VM_FRAME_FINISHED_P(th->ec->cfp)) {
-			th->ec->tag = th->ec->tag->prev;
+		    if (VM_FRAME_FINISHED_P(ec->cfp)) {
+			ec->tag = ec->tag->prev;
 		    }
-		    rb_vm_pop_frame(th->ec);
+		    rb_vm_pop_frame(ec);
 		}
-		EC_JUMP_TAG(th->ec, state);
+		EC_JUMP_TAG(ec, state);
 	    }
 	}
     }
@@ -735,7 +735,7 @@ static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->path == Qundef) {
-	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->th->ec, trace_arg->cfp);
+	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->ec, trace_arg->cfp);
 
 	if (cfp) {
 	    trace_arg->path = rb_iseq_path(cfp->iseq);
@@ -807,10 +807,10 @@ VALUE
 rb_tracearg_binding(rb_trace_arg_t *trace_arg)
 {
     rb_control_frame_t *cfp;
-    cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->th->ec, trace_arg->cfp);
+    cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
     if (cfp) {
-	return rb_vm_make_binding(trace_arg->th->ec, cfp);
+	return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {
 	return Qnil;
