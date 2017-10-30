@@ -938,16 +938,16 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *     proc { |x:, y:, z:0| }.arity   #=>  1
  *     proc { |*a, x:, y:0| }.arity   #=> -2
  *
- *     proc   { |x=0| }.arity         #=>  0
- *     lambda { |x=0| }.arity         #=> -1
- *     proc   { |x=0, y| }.arity      #=>  1
- *     lambda { |x=0, y| }.arity      #=> -2
- *     proc   { |x=0, y=0| }.arity    #=>  0
- *     lambda { |x=0, y=0| }.arity    #=> -1
- *     proc   { |x, y=0| }.arity      #=>  1
- *     lambda { |x, y=0| }.arity      #=> -2
- *     proc   { |(x, y), z=0| }.arity #=>  1
- *     lambda { |(x, y), z=0| }.arity #=> -2
+ *     proc   { |a=0| }.arity         #=>  0
+ *     lambda { |a=0| }.arity         #=> -1
+ *     proc   { |a=0, b| }.arity      #=>  1
+ *     lambda { |a=0, b| }.arity      #=> -2
+ *     proc   { |a=0, b=0| }.arity    #=>  0
+ *     lambda { |a=0, b=0| }.arity    #=> -1
+ *     proc   { |a, b=0| }.arity      #=>  1
+ *     lambda { |a, b=0| }.arity      #=> -2
+ *     proc   { |(a, b), c=0| }.arity #=>  1
+ *     lambda { |(a, b), c=0| }.arity #=> -2
  *     proc   { |a, x:0, y:0| }.arity #=>  1
  *     lambda { |a, x:0, y:0| }.arity #=> -2
  */
