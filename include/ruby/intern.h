@@ -944,7 +944,6 @@ VALUE rb_mod_remove_cvar(VALUE, VALUE);
 ID rb_frame_callee(void);
 VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
-int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 VALUE rb_make_backtrace(void);
 VALUE rb_make_exception(int, const VALUE*);
 
