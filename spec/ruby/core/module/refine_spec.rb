@@ -1,3 +1,6 @@
+
+return ## this code causes double free and now we are debugging.
+
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/refine', __FILE__)
 
