@@ -268,8 +268,13 @@ typedef struct RNode {
 #define nd_line(n) (int)(((SIGNED_VALUE)RNODE(n)->flags)>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
-#define nd_column(n) (int)(RNODE(n)->nd_reserved)
-#define nd_set_column(n, v) (RNODE(n)->nd_reserved=v)
+#define nd_column(n) (int)(RNODE(n)->nd_reserved & 0xffff)
+#define nd_set_column(n, v) \
+    RNODE(n)->nd_reserved = (RNODE(n)->nd_reserved & ~0xffff) | ((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff)
+
+#define nd_lineno(n) (int)((RNODE(n)->nd_reserved >> 16) & 0xffff)
+#define nd_set_lineno(n, v) \
+    RNODE(n)->nd_reserved = (RNODE(n)->nd_reserved & ~0xffff0000) | (((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff) << 16)
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
