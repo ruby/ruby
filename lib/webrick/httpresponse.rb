@@ -303,6 +303,8 @@ module WEBrick
     def send_body(socket) # :nodoc:
       if @body.respond_to? :readpartial then
         send_body_io(socket)
+      elsif @body.respond_to?(:call) then
+        send_body_proc(socket)
       else
         send_body_string(socket)
       end
@@ -438,6 +440,39 @@ module WEBrick
           @sent_size = @body.bytesize
         end
       end
+    end
+
+    def send_body_proc(socket)
+      if @request_method == "HEAD"
+        # do nothing
+      elsif chunked?
+        @body.call(ChunkedWrapper.new(socket, self))
+        _write_data(socket, "0#{CRLF}#{CRLF}")
+      else
+        size = @header['content-length'].to_i
+        @body.call(socket)
+        @sent_size = size
+      end
+    end
+
+    class ChunkedWrapper
+      def initialize(socket, resp)
+        @socket = socket
+        @resp = resp
+      end
+
+      def write(buf)
+        return if buf.empty?
+        socket = @socket
+        @resp.instance_eval {
+          size = buf.bytesize
+          data = "#{size.to_s(16)}#{CRLF}#{buf}#{CRLF}"
+          _write_data(socket, data)
+          data.clear
+          @sent_size += size
+        }
+      end
+      alias :<< :write
     end
 
     def _send_file(output, input, offset, size)
