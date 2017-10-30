@@ -28,6 +28,7 @@ rescue LoadError
   $" << "zlib.rb"
 end
 
+INDENT = " "*36
 STDOUT.sync = true
 File.umask(0222)
 
@@ -301,7 +302,7 @@ def prepare(mesg, basedir, subdirs=nil)
   else
     dirs = [basedir, *subdirs.collect {|dir| File.join(basedir, dir)}]
   end
-  printf("installing %-18s %s%s\n", "#{mesg}:", basedir,
+  printf("%-*s%s%s\n", INDENT.size, "installing #{mesg}:", basedir,
          (subdirs ? " (#{subdirs.join(', ')})" : ""))
   makedirs(dirs)
 end
@@ -732,7 +733,7 @@ end
 def install_default_gem(dir, srcdir)
   gem_dir = Gem.default_dir
   directories = Gem.ensure_gem_subdirectories(gem_dir, :mode => $dir_mode)
-  prepare "default gems", gem_dir, directories
+  prepare "default gems from #{dir}", gem_dir, directories
 
   spec_dir = File.join(gem_dir, directories.grep(/^spec/)[0])
   default_spec_dir = "#{spec_dir}/default"
@@ -745,7 +746,7 @@ def install_default_gem(dir, srcdir)
   gems.compact.sort_by(&:name).each do |gemspec|
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
-    puts "#{" "*30}#{gemspec.name} #{gemspec.version}"
+    puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
     gemspec_path = File.join(default_spec_dir, "#{full_name}.gemspec")
     open_for_install(gemspec_path, $data_mode) do
       gemspec.to_ruby
@@ -791,7 +792,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       spec.extensions[0] ||= "-"
     end
     ins = RbInstall::UnpackedInstaller.new(spec, options)
-    puts "#{" "*30}#{spec.name} #{spec.version}"
+    puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
     File.chmod($data_mode, File.join(install_dir, "specifications", "#{spec.full_name}.gemspec"))
     unless spec.extensions.empty?
@@ -816,7 +817,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
         next
       end
       gemname = File.basename(gem)
-      puts "#{" "*30}#{gemname}"
+      puts "#{INDENT}#{gemname}"
     end
     # fix directory permissions
     # TODO: Gem.install should accept :dir_mode option or something
