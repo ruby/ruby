@@ -23,7 +23,7 @@
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, column: %d)"term, ruby_node_name(nd_type(node)), nd_line(node), nd_column(node))
+    rb_str_catf(buf, "@ %s (line: %d. lineno: %d, column: %d)"term, ruby_node_name(nd_type(node)), nd_line(node), nd_lineno(node), nd_column(node))
 #define A_FIELD_HEADER(len, name, term) \
     rb_str_catf(buf, "+- %.*s:"term, (len), (name))
 #define D_FIELD_HEADER(len, name, term) (A_INDENT, A_FIELD_HEADER(len, name, term))
