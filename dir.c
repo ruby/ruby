@@ -967,10 +967,22 @@ dir_close(VALUE dir)
     return Qnil;
 }
 
+static void *
+nogvl_chdir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)(VALUE)chdir(path);
+}
+
 static void
 dir_chdir(VALUE path)
 {
-    if (chdir(RSTRING_PTR(path)) < 0)
+    int r;
+    char *p = RSTRING_PTR(path);
+
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p, RUBY_UBF_IO, 0);
+    if (r < 0)
 	rb_sys_fail_path(path);
 }
 
