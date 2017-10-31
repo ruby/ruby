@@ -2378,7 +2378,9 @@ class Resolv
           # Creates a new CAA for +flag+, +tag+ and +value+.
 
           def initialize(flag, tag, value)
-            @flag, @tag, @value = flag, tag, value
+            @flag = flag
+            @tag = tag
+            @value = value
           end
 
           def encode_rdata(msg) # :nodoc:
