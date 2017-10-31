@@ -1218,10 +1218,10 @@ static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path, vmode;
-    int mode;
+    mode_t mode;
 
     if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
-	mode = NUM2INT(vmode);
+	mode = NUM2MODET(vmode);
     }
     else {
 	mode = 0777;
