@@ -2866,7 +2866,7 @@ primary		: literal
 		| k_case opt_terms case_body k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_CASE(0, $3);
+			$$ = NEW_CASE2(0, $3);
 			nd_set_line($3, $<num>1);
 			nd_set_lineno($$, @1.first_line);
 			nd_set_column($$, @1.first_column);

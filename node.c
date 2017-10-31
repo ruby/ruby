@@ -219,6 +219,14 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	LAST_NODE;
 	F_NODE(nd_body, "when clauses");
 	return;
+      case NODE_CASE2:
+	ANN("case statement");
+	ANN("format: case; [nd_body]; end");
+	ANN("example: case; when 1; foo; when 2; bar; else baz; end");
+	F_NODE(nd_head, "case expr");
+	LAST_NODE;
+	F_NODE(nd_body, "when clauses");
+	return;
 
       case NODE_WHEN:
 	ANN("if statement");
@@ -1125,6 +1133,7 @@ rb_gc_mark_node(NODE *obj)
       case NODE_AND:
       case NODE_OR:
       case NODE_CASE:
+      case NODE_CASE2:
       case NODE_SCLASS:
       case NODE_DOT2:
       case NODE_DOT3:
