@@ -5102,6 +5102,66 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    const int line = nd_line(node);
+
+    if (iseq) {
+	enum iseq_type type = iseq->body->type;
+	const rb_iseq_t *parent_iseq = iseq->body->parent_iseq;
+	enum iseq_type parent_type;
+	LABEL *splabel = 0;
+
+	if (type == ISEQ_TYPE_TOP) {
+	    splabel = NEW_LABEL(line);
+	    ADD_LABEL(ret, splabel);
+	    ADD_ADJUST(ret, line, 0);
+	    ADD_INSN(ret, line, putnil);
+	    ADD_INSN(ret, line, leave);
+	    ADD_ADJUST_RESTORE(ret, splabel);
+	    return COMPILE_OK;
+	}
+	else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
+		 parent_iseq &&
+		 ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
+		  parent_type == ISEQ_TYPE_MAIN)) {
+	    ADD_INSN(ret, line, putnil);
+	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	    return COMPILE_OK;
+	}
+
+	if (type == ISEQ_TYPE_METHOD) {
+	    splabel = NEW_LABEL(0);
+	    ADD_LABEL(ret, splabel);
+	    ADD_ADJUST(ret, line, 0);
+	}
+
+	CHECK(COMPILE(ret, "return nd_stts (return val)", node->nd_stts));
+
+	if (type == ISEQ_TYPE_METHOD) {
+	    add_ensure_iseq(ret, iseq, 1);
+	    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
+	    ADD_INSN(ret, line, leave);
+	    ADD_ADJUST_RESTORE(ret, splabel);
+
+	    if (!popped) {
+		ADD_INSN(ret, line, putnil);
+	    }
+	}
+	else {
+	    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
+	    if (popped) {
+		ADD_INSN(ret, line, pop);
+	    }
+	}
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
 /**
   compile each node
@@ -6014,63 +6074,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_RETURN:{
-	rb_iseq_t *is = iseq;
-
-	if (is) {
-	    enum iseq_type type = is->body->type;
-	    const rb_iseq_t *parent_iseq = is->body->parent_iseq;
-	    enum iseq_type parent_type;
-
-	    if (type == ISEQ_TYPE_TOP) {
-		LABEL *splabel = NEW_LABEL(line);
-		ADD_LABEL(ret, splabel);
-		ADD_ADJUST(ret, line, 0);
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN(ret, line, leave);
-		ADD_ADJUST_RESTORE(ret, splabel);
-	    }
-	    else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
-		     parent_iseq &&
-		     ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
-		      parent_type == ISEQ_TYPE_MAIN)) {
-		ADD_INSN(ret, line, putnil);
-		ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
-		if (popped) {
-		    ADD_INSN(ret, line, pop);
-		}
-	    }
-	    else {
-		LABEL *splabel = 0;
-
-		if (type == ISEQ_TYPE_METHOD) {
-		    splabel = NEW_LABEL(0);
-		    ADD_LABEL(ret, splabel);
-		    ADD_ADJUST(ret, line, 0);
-		}
-
-		CHECK(COMPILE(ret, "return nd_stts (return val)", node->nd_stts));
-
-		if (type == ISEQ_TYPE_METHOD) {
-		    add_ensure_iseq(ret, iseq, 1);
-		    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
-		    ADD_INSN(ret, line, leave);
-		    ADD_ADJUST_RESTORE(ret, splabel);
-
-		    if (!popped) {
-			ADD_INSN(ret, line, putnil);
-		    }
-		}
-		else {
-		    ADD_INSN1(ret, line, throw, INT2FIX(TAG_RETURN));
-		    if (popped) {
-			ADD_INSN(ret, line, pop);
-		    }
-		}
-	    }
-	}
+      case NODE_RETURN:
+	CHECK(compile_return(iseq, ret, node, popped));
 	break;
-      }
       case NODE_YIELD:{
 	DECL_ANCHOR(args);
 	VALUE argc;
