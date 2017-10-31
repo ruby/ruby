@@ -2388,7 +2388,7 @@ rb_file_size(VALUE obj)
 static int
 chmod_internal(const char *path, void *mode)
 {
-    return chmod(path, *(int *)mode);
+    return chmod(path, *(mode_t *)mode);
 }
 
 /*
@@ -2407,10 +2407,10 @@ chmod_internal(const char *path, void *mode)
 static VALUE
 rb_file_s_chmod(int argc, VALUE *argv)
 {
-    int mode;
+    mode_t mode;
 
     apply2args(1);
-    mode = NUM2INT(*argv++);
+    mode = NUM2MODET(*argv++);
 
     return apply2files(chmod_internal, argc, argv, &mode);
 }
@@ -2463,7 +2463,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 static int
 lchmod_internal(const char *path, void *mode)
 {
-    return lchmod(path, (int)(VALUE)mode);
+    return lchmod(path, *(mode_t *)mode);
 }
 
 /*
@@ -2479,12 +2479,12 @@ lchmod_internal(const char *path, void *mode)
 static VALUE
 rb_file_s_lchmod(int argc, VALUE *argv)
 {
-    long mode;
+    mode_t mode;
 
     apply2args(1);
-    mode = NUM2INT(*argv++);
+    mode = NUM2MODET(*argv++);
 
-    return apply2files(lchmod_internal, argc, argv, (void *)(long)mode);
+    return apply2files(lchmod_internal, argc, argv, &mode);
 }
 #else
 #define rb_file_s_lchmod rb_f_notimplement
@@ -3007,19 +3007,19 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 static VALUE
 rb_file_s_umask(int argc, VALUE *argv)
 {
-    int omask = 0;
+    mode_t omask = 0;
 
     if (argc == 0) {
 	omask = umask(0);
 	umask(omask);
     }
     else if (argc == 1) {
-	omask = umask(NUM2INT(argv[0]));
+	omask = umask(NUM2MODET(argv[0]));
     }
     else {
 	rb_check_arity(argc, 0, 1);
     }
-    return INT2FIX(omask);
+    return MODET2NUM(omask);
 }
 
 #ifdef __CYGWIN__
