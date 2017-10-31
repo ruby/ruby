@@ -277,11 +277,7 @@ struct parser_params {
 #endif
 };
 
-#ifdef RIPPER
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
-#else
-#define intern_cstr(n,l,en) rb_intern3(n,l,en)
-#endif
 
 #define STR_NEW(p,n) rb_enc_str_new((p),(n),current_enc)
 #define STR_NEW0() rb_enc_str_new(0,0,current_enc)
