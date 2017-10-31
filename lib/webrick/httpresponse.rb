@@ -396,19 +396,18 @@ module WEBrick
         if @request_method == "HEAD"
           # do nothing
         elsif chunked?
+          buf  = ''
           begin
-            buf  = ''
-            data = ''
-            while true
-              @body.readpartial( @buffer_size, buf ) # there is no need to clear buf?
-              data << format("%x", buf.bytesize) << CRLF
-              data << buf << CRLF
-              _write_data(socket, data)
-              data.clear
-              @sent_size += buf.bytesize
-            end
-          rescue EOFError # do nothing
-          end
+            @body.readpartial(@buffer_size, buf)
+            size = buf.bytesize
+            data = "#{size.to_s(16)}#{CRLF}#{buf}#{CRLF}"
+            _write_data(socket, data)
+            data.clear
+            @sent_size += size
+          rescue EOFError
+            break
+          end while true
+          buf.clear
           _write_data(socket, "0#{CRLF}#{CRLF}")
         else
           size = @header['content-length'].to_i
@@ -427,11 +426,11 @@ module WEBrick
         body ? @body.bytesize : 0
         while buf = @body[@sent_size, @buffer_size]
           break if buf.empty?
-          data = ""
-          data << format("%x", buf.bytesize) << CRLF
-          data << buf << CRLF
+          size = buf.bytesize
+          data = "#{size.to_s(16)}#{CRLF}#{buf}#{CRLF}"
+          buf.clear
           _write_data(socket, data)
-          @sent_size += buf.bytesize
+          @sent_size += size
         end
         _write_data(socket, "0#{CRLF}#{CRLF}")
       else
