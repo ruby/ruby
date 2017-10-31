@@ -990,7 +990,8 @@ eom
 
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
-    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    line = __LINE__+2
+    code = "#{<<~"begin;"}#{<<~'end;'}"
     begin;
       return; raise
       begin return; rescue SystemExit; exit false; end
@@ -1006,10 +1007,20 @@ eom
       begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
     end;
-    all_assertions_foreach(feature4840, *code.split(/\n/)) do |s|
-      assert_in_out_err(%[-W0], s, [*s[/#=> (.*)/, 1]], [],
-                        proc {RubyVM::InstructionSequence.compile(s).disasm},
-                        success: true)
+      .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
+    failed = proc do |n, s|
+      RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
+    end
+    all_assertions_foreach(feature4840, *code) do |n, s, *ex|
+      assert_in_out_err(%[-W0], src = s, ex, [], proc {failed[n, s]}, success: true)
+    end
+    Tempfile.create(%w"test_return_ .rb") do |lib|
+      lib.close
+      args = %W[-W0 -r#{lib.path}]
+      all_assertions_foreach(feature4840, *code) do |n, s, *ex|
+        File.write(lib, s)
+        assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+      end
     end
   end
 
