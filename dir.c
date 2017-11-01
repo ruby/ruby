@@ -1199,6 +1199,19 @@ dir_s_chroot(VALUE dir, VALUE path)
 #define dir_s_chroot rb_f_notimplement
 #endif
 
+struct mkdir_arg {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_mkdir(void *ptr)
+{
+    struct mkdir_arg *m = ptr;
+
+    return (void *)(VALUE)mkdir(m->path, m->mode);
+}
+
 /*
  *  call-seq:
  *     Dir.mkdir( string [, integer] ) -> 0
@@ -1217,21 +1230,32 @@ dir_s_chroot(VALUE dir, VALUE path)
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 {
+    struct mkdir_arg m;
     VALUE path, vmode;
-    mode_t mode;
+    int r;
 
     if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
-	mode = NUM2MODET(vmode);
+	m.mode = NUM2MODET(vmode);
     }
     else {
-	mode = 0777;
+	m.mode = 0777;
     }
 
     path = check_dirname(path);
-    if (mkdir(RSTRING_PTR(path), mode) == -1)
+    m.path = RSTRING_PTR(path);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_mkdir, &m, RUBY_UBF_IO, 0);
+    if (r < 0)
 	rb_sys_fail_path(path);
 
     return INT2FIX(0);
+}
+
+static void *
+nogvl_rmdir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)(VALUE)rmdir(path);
 }
 
 /*
@@ -1246,8 +1270,13 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_s_rmdir(VALUE obj, VALUE dir)
 {
+    const char *p;
+    int r;
+
     dir = check_dirname(dir);
-    if (rmdir(RSTRING_PTR(dir)) < 0)
+    p = RSTRING_PTR(dir);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_rmdir, p, RUBY_UBF_IO, 0);
+    if (r < 0)
 	rb_sys_fail_path(dir);
 
     return INT2FIX(0);
