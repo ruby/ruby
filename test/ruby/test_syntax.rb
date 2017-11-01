@@ -1011,15 +1011,16 @@ eom
     failed = proc do |n, s|
       RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
     end
-    all_assertions_foreach(feature4840, *code) do |n, s, *ex|
-      assert_in_out_err(%[-W0], src = s, ex, [], proc {failed[n, s]}, success: true)
-    end
     Tempfile.create(%w"test_return_ .rb") do |lib|
       lib.close
       args = %W[-W0 -r#{lib.path}]
-      all_assertions_foreach(feature4840, *code) do |n, s, *ex|
-        File.write(lib, s)
-        assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+      all_assertions_foreach(feature4840, *[true, false].product(code)) do |main, (n, s, *ex)|
+        if main
+          assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+        else
+          File.write(lib, s)
+          assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+        end
       end
     end
   end
