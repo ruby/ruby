@@ -4086,7 +4086,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 	}
     }
 
-    OBJ_INFECT(resolved, unresolved_path);
+    OBJ_TAINT(resolved);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
