@@ -283,6 +283,23 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realpath_taintedness
+    Dir.mktmpdir('rubytest-realpath') {|tmpdir|
+      realdir = File.realpath(tmpdir)
+      assert_predicate(realdir, :tainted?)
+      dir, base = File.split(realdir)
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.taint
+      dir.untaint
+      assert_predicate(File.realpath(base, dir), :tainted?)
+      base.untaint
+      assert_not_predicate(File.realpath(base, dir), :tainted?)
+      assert_predicate(Dir.chdir(dir) {File.realpath(base)}, :tainted?)
+    }
+  end
+
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
