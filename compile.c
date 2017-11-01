@@ -5109,20 +5109,26 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
     if (iseq) {
 	enum iseq_type type = iseq->body->type;
-	const rb_iseq_t *parent_iseq = iseq->body->parent_iseq;
-	enum iseq_type parent_type;
+	const rb_iseq_t *is = iseq;
+	enum iseq_type t = type;
 	const NODE *retval = node->nd_stts;
 	LABEL *splabel = 0;
 
-	if (type == ISEQ_TYPE_TOP) {
-	    retval = 0;
-	    type = ISEQ_TYPE_METHOD;
+	while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE) {
+	    if (!(is = is->body->parent_iseq)) break;
+	    t = is->body->type;
 	}
-	else if ((type == ISEQ_TYPE_RESCUE || type == ISEQ_TYPE_ENSURE || type == ISEQ_TYPE_MAIN) &&
-		 parent_iseq &&
-		 ((parent_type = parent_iseq->body->type) == ISEQ_TYPE_TOP ||
-		  parent_type == ISEQ_TYPE_MAIN)) {
+	switch (t) {
+	  case ISEQ_TYPE_TOP:
+	  case ISEQ_TYPE_MAIN:
+	    if (is == iseq) {
+		/* plain top-level, leave directly */
+		type = ISEQ_TYPE_METHOD;
+	    }
 	    retval = 0;
+	    break;
+	  default:
+	    break;
 	}
 
 	if (type == ISEQ_TYPE_METHOD) {
