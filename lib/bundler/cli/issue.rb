@@ -26,7 +26,7 @@ module Bundler
 
       EOS
 
-      Bundler.ui.info Bundler::Env.new.report
+      Bundler.ui.info Bundler::Env.report
 
       Bundler.ui.info "\n## Bundle Doctor"
       doctor

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   # used for Creating Specifications from the Gemcutter Endpoint
   class EndpointSpecification < Gem::Specification
@@ -9,10 +10,14 @@ module Bundler
     attr_accessor :source, :remote, :dependencies
 
     def initialize(name, version, platform, dependencies, metadata = nil)
+      super()
       @name         = name
       @version      = Gem::Version.create version
       @platform     = platform
       @dependencies = dependencies.map {|dep, reqs| build_dependency(dep, reqs) }
+
+      @loaded_from          = nil
+      @remote_specification = nil
 
       parse_metadata(metadata)
     end
@@ -71,6 +76,8 @@ module Bundler
         @remote_specification.post_install_message
       elsif _local_specification
         _local_specification.post_install_message
+      else
+        super
       end
     end
 
@@ -80,6 +87,8 @@ module Bundler
         @remote_specification.extensions
       elsif _local_specification
         _local_specification.extensions
+      else
+        super
       end
     end
 

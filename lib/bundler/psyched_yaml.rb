@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # Psych could be a gem, so try to ask for it
 begin
   gem "psych"
@@ -24,4 +25,13 @@ module Bundler
   else # Syck raises ArgumentError
     YamlLibrarySyntaxError = ::ArgumentError
   end
+end
+
+require "bundler/deprecate"
+begin
+  Bundler::Deprecate.skip_during do
+    require "rubygems/safe_yaml"
+  end
+rescue LoadError
+  # it's OK if the file isn't there
 end

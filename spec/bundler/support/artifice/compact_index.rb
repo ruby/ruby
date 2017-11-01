@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require File.expand_path("../endpoint", __FILE__)
 
 $LOAD_PATH.unshift Dir[base_system_gems.join("gems/compact_index*/lib")].first.to_s
@@ -14,7 +15,7 @@ class CompactIndexAPI < Endpoint
 
     def etag_response
       response_body = yield
-      checksum = Digest::MD5.hexdigest(response_body)
+      checksum = Digest(:MD5).hexdigest(response_body)
       return if not_modified?(checksum)
       headers "ETag" => quote(checksum)
       headers "Surrogate-Control" => "max-age=2592000, stale-while-revalidate=60"
@@ -67,7 +68,7 @@ class CompactIndexAPI < Endpoint
       @gems ||= {}
       @gems[gem_repo] ||= begin
         specs = Bundler::Deprecate.skip_during do
-          %w(specs.4.8 prerelease_specs.4.8).map do |filename|
+          %w[specs.4.8 prerelease_specs.4.8].map do |filename|
             Marshal.load(File.open(gem_repo.join(filename)).read).map do |name, version, platform|
               load_spec(name, version, platform, gem_repo)
             end

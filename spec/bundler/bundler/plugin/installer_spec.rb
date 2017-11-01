@@ -1,12 +1,16 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::Plugin::Installer do
   subject(:installer) { Bundler::Plugin::Installer.new }
 
+  before do
+    # allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(Pathname.new("/Gemfile"))
+  end
+
   describe "cli install" do
     it "uses Gem.sources when non of the source is provided" do
       sources = double(:sources)
+      Bundler.settings # initialize it before we have to touch rubygems.ext_lock
       allow(Bundler).to receive_message_chain("rubygems.sources") { sources }
 
       allow(installer).to receive(:install_rubygems).

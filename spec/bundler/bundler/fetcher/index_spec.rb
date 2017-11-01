@@ -1,12 +1,11 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::Fetcher::Index do
   let(:downloader)  { nil }
   let(:remote)      { nil }
   let(:display_uri) { "http://sample_uri.com" }
   let(:rubygems)    { double(:rubygems) }
-  let(:gem_names)   { %w(foo bar) }
+  let(:gem_names)   { %w[foo bar] }
 
   subject { described_class.new(downloader, remote, display_uri) }
 

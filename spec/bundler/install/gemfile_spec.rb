@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install" do
   context "with duplicated gems" do
@@ -37,7 +36,7 @@ RSpec.describe "bundle install" do
     end
     it "uses the gemfile to install" do
       bundle "install"
-      bundle "show"
+      bundle "list"
 
       expect(out).to include("rack (1.0.0)")
     end
@@ -45,7 +44,7 @@ RSpec.describe "bundle install" do
       bundled_app("subdir").mkpath
       Dir.chdir(bundled_app("subdir")) do
         bundle "install"
-        bundle "show"
+        bundle "list"
 
         expect(out).to include("rack (1.0.0)")
       end
@@ -64,6 +63,22 @@ RSpec.describe "bundle install" do
 
       bundle :install
       expect(out).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
+    end
+  end
+
+  context "with prefer_gems_rb set" do
+    before { bundle! "config prefer_gems_rb true" }
+
+    it "prefers gems.rb to Gemfile" do
+      create_file("gems.rb", "gem 'bundler'")
+      create_file("Gemfile", "raise 'wrong Gemfile!'")
+
+      bundle! :install
+
+      expect(bundled_app("gems.rb")).to be_file
+      expect(bundled_app("Gemfile.lock")).not_to be_file
+
+      expect(the_bundle).to include_gem "bundler #{Bundler::VERSION}"
     end
   end
 

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install with ENV conditionals" do
   describe "when just setting an ENV key as a string" do

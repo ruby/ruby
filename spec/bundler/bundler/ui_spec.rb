@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::UI do
   describe Bundler::UI::Silent do

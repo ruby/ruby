@@ -23,7 +23,7 @@ Bundler.with_friendly_errors do
   require "bundler/cli"
 
   # Allow any command to use --help flag to show help for that command
-  help_flags = %w(--help -h)
+  help_flags = %w[--help -h]
   help_flag_used = ARGV.any? {|a| help_flags.include? a }
   args = help_flag_used ? Bundler::CLI.reformatted_help_args(ARGV) : ARGV
 

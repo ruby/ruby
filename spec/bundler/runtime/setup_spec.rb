@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "Bundler.setup" do
   describe "with no arguments" do
@@ -117,7 +116,7 @@ RSpec.describe "Bundler.setup" do
         tmp("rubygems/lib").to_s,
         root.join("../lib").expand_path.to_s,
       ] - without_bundler_load_path
-      lp.map! {|p| p.sub(/^#{system_gem_path}/, "") }
+      lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
     end
 
     it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
@@ -270,21 +269,51 @@ RSpec.describe "Bundler.setup" do
     expect(bundled_app("Gemfile.lock")).to exist
   end
 
-  it "uses BUNDLE_GEMFILE to locate the gemfile if present" do
-    gemfile <<-G
-      source "file://#{gem_repo1}"
-      gem "rack"
-    G
+  describe "$BUNDLE_GEMFILE" do
+    context "user provides an absolute path" do
+      it "uses BUNDLE_GEMFILE to locate the gemfile if present" do
+        gemfile <<-G
+          source "file://#{gem_repo1}"
+          gem "rack"
+        G
 
-    gemfile bundled_app("4realz"), <<-G
-      source "file://#{gem_repo1}"
-      gem "activesupport", "2.3.5"
-    G
+        gemfile bundled_app("4realz"), <<-G
+          source "file://#{gem_repo1}"
+          gem "activesupport", "2.3.5"
+        G
 
-    ENV["BUNDLE_GEMFILE"] = bundled_app("4realz").to_s
-    bundle :install
+        ENV["BUNDLE_GEMFILE"] = bundled_app("4realz").to_s
+        bundle :install
 
-    expect(the_bundle).to include_gems "activesupport 2.3.5"
+        expect(the_bundle).to include_gems "activesupport 2.3.5"
+      end
+    end
+
+    context "an absolute path is not provided" do
+      it "uses BUNDLE_GEMFILE to locate the gemfile if present" do
+        gemfile <<-G
+          source "file://#{gem_repo1}"
+        G
+
+        bundle "install"
+        bundle "install --deployment"
+
+        ENV["BUNDLE_GEMFILE"] = "Gemfile"
+        ruby <<-R
+          require 'rubygems'
+          require 'bundler'
+
+          begin
+            Bundler.setup
+            puts "WIN"
+          rescue ArgumentError => e
+            puts "FAIL"
+          end
+        R
+
+        expect(out).to eq("WIN")
+      end
+    end
   end
 
   it "prioritizes gems in BUNDLE_PATH over gems in GEM_HOME" do
@@ -396,9 +425,10 @@ RSpec.describe "Bundler.setup" do
       end
 
       gemfile <<-G
-        path "#{lib_path("rack-1.0.0")}"
         source "file://#{gem_repo1}"
-        gem "rack"
+        path "#{lib_path("rack-1.0.0")}" do
+          gem "rack"
+        end
       G
 
       run "require 'rack'"
@@ -465,13 +495,13 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "works even when the cache directory has been deleted" do
-      bundle "install --path vendor/bundle"
+      bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
       FileUtils.rm_rf vendored_gems("cache")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
 
     it "does not randomly change the path when specifying --path and the bundle directory becomes read only" do
-      bundle "install --path vendor/bundle"
+      bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
 
       with_read_only("**/*") do
         expect(the_bundle).to include_gems "rack 1.0.0"
@@ -499,8 +529,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(out).to match(/at #{lib_path('local-rack')}/)
+      bundle! :install
 
       FileUtils.rm_rf(lib_path("local-rack"))
       run "require 'rack'"
@@ -518,8 +547,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(out).to match(/at #{lib_path('local-rack')}/)
+      bundle! :install
 
       gemfile <<-G
         source "file://#{gem_repo1}"
@@ -541,8 +569,7 @@ RSpec.describe "Bundler.setup" do
       G
 
       bundle %(config local.rack #{lib_path("local-rack")})
-      bundle :install
-      expect(out).to match(/at #{lib_path('local-rack')}/)
+      bundle! :install
 
       gemfile <<-G
         source "file://#{gem_repo1}"
@@ -576,7 +603,7 @@ RSpec.describe "Bundler.setup" do
 
   describe "when excluding groups" do
     it "doesn't change the resolve if --without is used" do
-      install_gemfile <<-G, :without => :rails
+      install_gemfile <<-G, forgotten_command_line_options(:without => :rails)
         source "file://#{gem_repo1}"
         gem "activesupport"
 
@@ -591,7 +618,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "remembers --without and does not bail on bare Bundler.setup" do
-      install_gemfile <<-G, :without => :rails
+      install_gemfile <<-G, forgotten_command_line_options(:without => :rails)
         source "file://#{gem_repo1}"
         gem "activesupport"
 
@@ -606,7 +633,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "remembers --without and does not include groups passed to Bundler.setup" do
-      install_gemfile <<-G, :without => :rails
+      install_gemfile <<-G, forgotten_command_line_options(:without => :rails)
         source "file://#{gem_repo1}"
         gem "activesupport"
 
@@ -680,7 +707,7 @@ RSpec.describe "Bundler.setup" do
     end
   end
 
-  # Rubygems returns loaded_from as a string
+  # RubyGems returns loaded_from as a string
   it "has loaded_from as a string on all specs" do
     build_git "foo"
     build_git "no-gemspec", :gemspec => false
@@ -741,12 +768,50 @@ end
     expect(err).to lack_errors
   end
 
+  describe "$MANPATH" do
+    before do
+      build_repo4 do
+        build_gem "with_man" do |s|
+          s.write("man/man1/page.1", "MANPAGE")
+        end
+      end
+    end
+
+    context "when the user has one set" do
+      before { ENV["MANPATH"] = "/foo:" }
+
+      it "adds the gem's man dir to the MANPATH" do
+        install_gemfile! <<-G
+          source "file:#{gem_repo4}"
+          gem "with_man"
+        G
+
+        run! "puts ENV['MANPATH']"
+        expect(out).to eq("#{default_bundle_path("gems/with_man-1.0/man")}:/foo")
+      end
+    end
+
+    context "when the user does not have one set" do
+      before { ENV.delete("MANPATH") }
+
+      it "adds the gem's man dir to the MANPATH" do
+        install_gemfile! <<-G
+          source "file:#{gem_repo4}"
+          gem "with_man"
+        G
+
+        run! "puts ENV['MANPATH']"
+        expect(out).to eq(default_bundle_path("gems/with_man-1.0/man").to_s)
+      end
+    end
+  end
+
   it "should prepend gemspec require paths to $LOAD_PATH in order" do
     update_repo2 do
       build_gem("requirepaths") do |s|
         s.write("lib/rq.rb", "puts 'yay'")
         s.write("src/rq.rb", "puts 'nooo'")
-        s.require_paths = %w(lib src)
+        s.require_paths = %w[lib src]
       end
     end
 
@@ -930,6 +995,7 @@ end
 
   describe "with system gems in the bundle" do
     before :each do
+      bundle! "config path.system true"
       system_gems "rack-1.0.0"
 
       install_gemfile <<-G
@@ -943,7 +1009,6 @@ end
       run "puts Gem.path"
       paths = out.split("\n")
       expect(paths).to include(system_gem_path.to_s)
-      expect(paths).to include(default_bundle_path.to_s)
     end
   end
 
@@ -1027,7 +1092,7 @@ end
             rack (1.0.0)
 
         PLATFORMS
-          #{generic_local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           rack
@@ -1085,7 +1150,7 @@ end
             rack (1.0.0)
 
         PLATFORMS
-          #{generic_local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           rack
@@ -1166,11 +1231,11 @@ end
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7") || ENV["RGV"] == "master"
           []
         else
-          %w(io-console openssl)
+          %w[io-console openssl]
         end << "bundler"
       end
 
-      let(:code) { strip_whitespace(<<-RUBY) }
+      let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
         require "rubygems"
 
         if Gem::Specification.instance_methods.map(&:to_sym).include?(:activate)
@@ -1185,7 +1250,14 @@ end
             bundler_spec_activate
           end
         end
+      RUBY
 
+      let(:activation_warning_hack_rubyopt) do
+        create_file("activation_warning_hack.rb", activation_warning_hack)
+        "-r#{bundled_app("activation_warning_hack.rb")} #{ENV["RUBYOPT"]}"
+      end
+
+      let(:code) { strip_whitespace(<<-RUBY) }
         require "bundler/setup"
         require "pp"
         loaded_specs = Gem.loaded_specs.dup
@@ -1201,17 +1273,15 @@ end
 
       it "activates no gems with -rbundler/setup" do
         install_gemfile! ""
-        ruby!(code)
-        expect(err).to eq("")
-        expect(out).to eq("{}")
+        ruby! code, :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        expect(last_command.stdout).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
         install_gemfile! ""
         create_file("script.rb", code)
-        bundle! "exec ruby ./script.rb"
-        expect(err).to eq("")
-        expect(out).to eq("{}")
+        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        expect(last_command.stdout).to eq("{}")
       end
 
       it "activates no gems with bundle exec that is loaded" do
@@ -1221,9 +1291,8 @@ end
         install_gemfile! ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle! "exec ./script.rb", :artifice => nil
-        expect(err).to eq("")
-        expect(out).to eq("{}")
+        bundle! "exec ./script.rb", :artifice => nil, :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        expect(last_command.stdout).to eq("{}")
       end
 
       let(:default_gems) do
@@ -1240,6 +1309,8 @@ end
             build_gem g, "999999"
           end
         end
+
+        default_gems.reject! {|g| exemptions.include?(g) }
 
         install_gemfile! <<-G
           source "file:#{gem_repo4}"
@@ -1273,17 +1344,51 @@ end
   end
 
   describe "after setup" do
-    it "allows calling #gem on random objects" do
+    it "allows calling #gem on random objects", :bundler => "< 2" do
       install_gemfile <<-G
         source "file:#{gem_repo1}"
         gem "rack"
       G
+
       ruby! <<-RUBY
         require "bundler/setup"
         Object.new.gem "rack"
         puts Gem.loaded_specs["rack"].full_name
       RUBY
+
       expect(out).to eq("rack-1.0.0")
+    end
+
+    it "keeps Kernel#gem private", :bundler => "2" do
+      install_gemfile! <<-G
+        source "file:#{gem_repo1}"
+        gem "rack"
+      G
+
+      ruby <<-RUBY
+        require "bundler/setup"
+        Object.new.gem "rack"
+        puts "FAIL"
+      RUBY
+
+      expect(last_command.stdboth).not_to include "FAIL"
+      expect(last_command.stderr).to include "private method `gem'"
+    end
+
+    it "keeps Kernel#require private" do
+      install_gemfile! <<-G
+        source "file:#{gem_repo1}"
+        gem "rack"
+      G
+
+      ruby <<-RUBY
+        require "bundler/setup"
+        Object.new.require "rack"
+        puts "FAIL"
+      RUBY
+
+      expect(last_command.stdboth).not_to include "FAIL"
+      expect(last_command.stderr).to include "private method `require'"
     end
   end
 end

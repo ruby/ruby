@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle check" do
   it "returns success when the Gemfile is satisfied" do
@@ -93,7 +92,7 @@ RSpec.describe "bundle check" do
     expect(out).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
-  it "remembers --without option from install" do
+  it "remembers --without option from install", :bundler => "< 2" do
     gemfile <<-G
       source "file://#{gem_repo1}"
       group :foo do
@@ -101,9 +100,21 @@ RSpec.describe "bundle check" do
       end
     G
 
-    bundle "install --without foo"
-    bundle "check"
-    expect(exitstatus).to eq(0) if exitstatus
+    bundle! "install --without foo"
+    bundle! "check"
+    expect(out).to include("The Gemfile's dependencies are satisfied")
+  end
+
+  it "uses the without setting" do
+    bundle! "config without foo"
+    install_gemfile! <<-G
+      source "file://#{gem_repo1}"
+      group :foo do
+        gem "rack"
+      end
+    G
+
+    bundle! "check"
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
@@ -113,7 +124,7 @@ RSpec.describe "bundle check" do
       gem "rack", :group => :foo
     G
 
-    bundle "install --without foo"
+    bundle :install, forgotten_command_line_options(:without => "foo")
 
     gemfile <<-G
       source "file://#{gem_repo1}"
@@ -126,8 +137,6 @@ RSpec.describe "bundle check" do
   end
 
   it "ignores missing gems restricted to other platforms" do
-    system_gems "rack-1.0.0"
-
     gemfile <<-G
       source "file://#{gem_repo1}"
       gem "rack"
@@ -135,6 +144,8 @@ RSpec.describe "bundle check" do
         gem "activesupport"
       end
     G
+
+    system_gems "rack-1.0.0", :path => :bundle_path
 
     lockfile <<-G
       GEM
@@ -157,8 +168,6 @@ RSpec.describe "bundle check" do
   end
 
   it "works with env conditionals" do
-    system_gems "rack-1.0.0"
-
     gemfile <<-G
       source "file://#{gem_repo1}"
       gem "rack"
@@ -166,6 +175,8 @@ RSpec.describe "bundle check" do
         gem "activesupport"
       end
     G
+
+    system_gems "rack-1.0.0", :path => :bundle_path
 
     lockfile <<-G
       GEM
@@ -211,25 +222,23 @@ RSpec.describe "bundle check" do
     3.times do
       bundle :check
       expect(out).to eq(last_out)
-      expect(err).to lack_errors
     end
   end
 
   it "fails when there's no lock file and frozen is set" do
-    gemfile <<-G
+    install_gemfile! <<-G
       source "file://#{gem_repo1}"
       gem "foo"
     G
 
-    bundle "install"
-    bundle "install --deployment"
+    bundle! "install", forgotten_command_line_options(:deployment => true)
     FileUtils.rm(bundled_app("Gemfile.lock"))
 
     bundle :check
-    expect(exitstatus).not_to eq(0) if exitstatus
+    expect(last_command).to be_failure
   end
 
-  context "--path" do
+  context "--path", :bundler => "< 2" do
     before do
       gemfile <<-G
         source "file://#{gem_repo1}"
@@ -241,15 +250,13 @@ RSpec.describe "bundle check" do
     end
 
     it "returns success" do
-      bundle "check --path vendor/bundle"
-      expect(exitstatus).to eq(0) if exitstatus
+      bundle! "check --path vendor/bundle"
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
 
-    it "should write to .bundle/config" do
+    it "should write to .bundle/config", :bundler => "< 2" do
       bundle "check --path vendor/bundle"
-      bundle "check"
-      expect(exitstatus).to eq(0) if exitstatus
+      bundle! "check"
     end
   end
 
@@ -299,7 +306,7 @@ RSpec.describe "bundle check" do
             rack (1.0.0)
 
         PLATFORMS
-          #{generic_local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           rack
@@ -330,9 +337,8 @@ RSpec.describe "bundle check" do
     context "is newer" do
       it "does not change the lock but warns" do
         lockfile lock_with(Bundler::VERSION.succ)
-        bundle :check
-        expect(out).to include("the running version of Bundler (#{Bundler::VERSION}) is older than the version that created the lockfile (#{Bundler::VERSION.succ})")
-        expect(err).to lack_errors
+        bundle! :check
+        expect(last_command.bundler_err).to include("the running version of Bundler (#{Bundler::VERSION}) is older than the version that created the lockfile (#{Bundler::VERSION.succ})")
         lockfile_should_be lock_with(Bundler::VERSION.succ)
       end
     end

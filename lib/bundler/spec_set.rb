@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "tsort"
 require "forwardable"
 require "set"
@@ -76,7 +77,7 @@ module Bundler
     end
 
     def materialize(deps, missing_specs = nil)
-      materialized = self.for(deps, [], false, true, missing_specs).to_a
+      materialized = self.for(deps, [], false, true, !missing_specs).to_a
       deps = materialized.map(&:name).uniq
       materialized.map! do |s|
         next s unless s.is_a?(LazySpecification)
@@ -109,9 +110,10 @@ module Bundler
 
     def merge(set)
       arr = sorted.dup
-      set.each do |s|
-        next if arr.any? {|s2| s2.name == s.name && s2.version == s.version && s2.platform == s.platform }
-        arr << s
+      set.each do |set_spec|
+        full_name = set_spec.full_name
+        next if arr.any? {|spec| spec.full_name == full_name }
+        arr << set_spec
       end
       SpecSet.new(arr)
     end

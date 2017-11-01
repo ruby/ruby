@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/fetcher/base"
 require "bundler/worker"
 
@@ -61,7 +62,7 @@ module Bundler
       compact_index_request :fetch_spec
 
       def available?
-        return nil unless md5_available?
+        return nil unless SharedHelpers.md5_available?
         user_home = Bundler.user_home
         return nil unless user_home.directory? && user_home.writable?
         # Read info file checksums out of /versions, so we can know if gems are up to date
@@ -119,16 +120,6 @@ module Bundler
           ui.warn "Using the cached data for the new index because of a network error: #{e}"
           Net::HTTPNotModified.new(nil, nil, nil)
         end
-      end
-
-      def md5_available?
-        require "openssl"
-        OpenSSL::Digest::MD5.digest("")
-        true
-      rescue LoadError
-        true
-      rescue OpenSSL::Digest::DigestError
-        false
       end
     end
   end

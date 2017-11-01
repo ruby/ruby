@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "Bundler.setup with multi platform stuff" do
   it "raises a friendly error when gems are missing locally" do
@@ -33,7 +32,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     expect(out).to eq("WIN")
   end
 
-  it "will resolve correctly on the current platform when the lockfile was targetted for a different one" do
+  it "will resolve correctly on the current platform when the lockfile was targeted for a different one" do
     lockfile <<-G
       GEM
         remote: file:#{gem_repo1}/
@@ -49,10 +48,8 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         nokogiri
     G
 
-    system_gems "nokogiri-1.4.2"
-
     simulate_platform "x86-darwin-10"
-    gemfile <<-G
+    install_gemfile! <<-G
       source "file://#{gem_repo1}"
       gem "nokogiri"
     G
@@ -78,9 +75,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     simulate_platform "x86-darwin-100"
 
-    system_gems "nokogiri-1.4.2", "platform_specific-1.0-x86-darwin-100"
-
-    gemfile <<-G
+    install_gemfile! <<-G
       source "file://#{gem_repo1}"
       gem "nokogiri"
       gem "platform_specific"

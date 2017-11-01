@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install across platforms" do
   it "maintains the same lockfile if all gems are compatible across platforms" do
@@ -88,7 +87,7 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
   end
 
-  it "works with gems that have extra platform-specific runtime dependencies" do
+  it "works with gems that have extra platform-specific runtime dependencies", :bundler => "< 2" do
     simulate_platform x64_mac
 
     update_repo2 do
@@ -121,12 +120,12 @@ RSpec.describe "bundle install across platforms" do
       gem "rack", "1.0.0"
     G
 
-    bundle "install --path vendor/bundle"
+    bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
 
     new_version = Gem::ConfigMap[:ruby_version] == "1.8" ? "1.9.1" : "1.8"
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, new_version))
 
-    bundle "install --path vendor/bundle"
+    bundle! :install
     expect(vendored_gems("gems/rack-1.0.0")).to exist
   end
 end
@@ -200,7 +199,7 @@ RSpec.describe "bundle install with platform conditionals" do
       end
     G
 
-    bundle :show
+    bundle :list
     expect(exitstatus).to eq(0) if exitstatus
   end
 

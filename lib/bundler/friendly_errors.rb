@@ -1,5 +1,6 @@
 # encoding: utf-8
 # frozen_string_literal: true
+
 require "cgi"
 require "bundler/vendored_thor"
 
@@ -92,7 +93,7 @@ module Bundler
           #{e.backtrace && e.backtrace.join("\n          ").chomp}
         ```
 
-        #{Bundler::Env.new.report}
+        #{Bundler::Env.report}
         --- TEMPLATE END ----------------------------------------------------------------
 
       EOS
@@ -119,6 +120,8 @@ module Bundler
 
   def self.with_friendly_errors
     yield
+  rescue SignalException
+    raise
   rescue Exception => e
     FriendlyErrors.log_error(e)
     exit FriendlyErrors.exit_status(e)

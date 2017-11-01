@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class CLI::Init
     attr_reader :options
@@ -7,8 +8,8 @@ module Bundler
     end
 
     def run
-      if File.exist?("Gemfile")
-        Bundler.ui.error "Gemfile already exists at #{SharedHelpers.pwd}/Gemfile"
+      if File.exist?(gemfile)
+        Bundler.ui.error "#{gemfile} already exists at #{File.expand_path(gemfile)}"
         exit 1
       end
 
@@ -21,14 +22,24 @@ module Bundler
 
         spec = Bundler.load_gemspec_uncached(gemspec)
 
-        puts "Writing new Gemfile to #{SharedHelpers.pwd}/Gemfile"
-        File.open("Gemfile", "wb") do |file|
+        File.open(gemfile, "wb") do |file|
           file << "# Generated from #{gemspec}\n"
           file << spec.to_gemfile
         end
       else
-        puts "Writing new Gemfile to #{SharedHelpers.pwd}/Gemfile"
-        FileUtils.cp(File.expand_path("../../templates/Gemfile", __FILE__), "Gemfile")
+        FileUtils.cp(File.expand_path("../../templates/#{gemfile}", __FILE__), gemfile)
+      end
+
+      puts "Writing new #{gemfile} to #{SharedHelpers.pwd}/#{gemfile}"
+    end
+
+  private
+
+    def gemfile
+      @gemfile ||= begin
+        Bundler.default_gemfile
+      rescue GemfileNotFound
+        Bundler.feature_flag.init_gems_rb? ? "gems.rb" : "Gemfile"
       end
     end
   end

@@ -1,7 +1,11 @@
 # frozen_string_literal: true
+
+require "bundler/compatibility_guard"
+
 require "pathname"
 require "rubygems"
 
+require "bundler/version"
 require "bundler/constants"
 require "bundler/rubygems_integration"
 require "bundler/current_ruby"
@@ -19,10 +23,16 @@ end
 
 module Bundler
   module SharedHelpers
-    def default_gemfile
+    def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).untaint
+      Pathname.new(gemfile).untaint.expand_path.parent
+    end
+
+    def default_gemfile
+      gemfile = find_gemfile(:order_matters)
+      raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
+      Pathname.new(gemfile).untaint.expand_path
     end
 
     def default_lockfile
@@ -63,7 +73,7 @@ module Bundler
     end
 
     def with_clean_git_env(&block)
-      keys    = %w(GIT_DIR GIT_WORK_TREE)
+      keys    = %w[GIT_DIR GIT_WORK_TREE]
       old_env = keys.inject({}) do |h, k|
         h.update(k => ENV[k])
       end
@@ -129,20 +139,34 @@ module Bundler
       namespace.const_get(constant_name)
     end
 
-    def major_deprecation(message)
+    def major_deprecation(major_version, message)
+      if Bundler.bundler_major_version >= major_version
+        require "bundler/errors"
+        raise DeprecatedError, "[REMOVED FROM #{major_version}.0] #{message}"
+      end
+
       return unless prints_major_deprecations?
       @major_deprecation_ui ||= Bundler::UI::Shell.new("no-color" => true)
       ui = Bundler.ui.is_a?(@major_deprecation_ui.class) ? Bundler.ui : @major_deprecation_ui
-      ui.warn("[DEPRECATED FOR #{Bundler::VERSION.split(".").first.to_i + 1}.0] #{message}")
+      ui.warn("[DEPRECATED FOR #{major_version}.0] #{message}")
     end
 
     def print_major_deprecations!
-      deprecate_gemfile(find_gemfile) if find_gemfile == find_file("Gemfile")
+      multiple_gemfiles = search_up(".") do |dir|
+        gemfiles = gemfile_names.select {|gf| File.file? File.expand_path(gf, dir) }
+        next if gemfiles.empty?
+        break false if gemfiles.size == 1
+      end
+      if multiple_gemfiles && Bundler.bundler_major_version == 1
+        Bundler::SharedHelpers.major_deprecation 2, \
+          "gems.rb and gems.locked will be preferred to Gemfile and Gemfile.lock."
+      end
+
       if RUBY_VERSION < "2"
-        major_deprecation("Bundler will only support ruby >= 2.0, you are running #{RUBY_VERSION}")
+        major_deprecation(2, "Bundler will only support ruby >= 2.0, you are running #{RUBY_VERSION}")
       end
       return if Bundler.rubygems.provides?(">= 2")
-      major_deprecation("Bundler will only support rubygems >= 2.0, you are running #{Bundler.rubygems.version}")
+      major_deprecation(2, "Bundler will only support rubygems >= 2.0, you are running #{Bundler.rubygems.version}")
     end
 
     def trap(signal, override = false, &block)
@@ -170,23 +194,59 @@ module Bundler
         "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
     end
 
+    def pretty_dependency(dep, print_source = false)
+      msg = String.new(dep.name)
+      msg << " (#{dep.requirement})" unless dep.requirement == Gem::Requirement.default
+      if dep.is_a?(Bundler::Dependency)
+        platform_string = dep.platforms.join(", ")
+        msg << " " << platform_string if !platform_string.empty? && platform_string != Gem::Platform::RUBY
+      end
+      msg << " from the `#{dep.source}` source" if print_source && dep.source
+      msg
+    end
+
+    def md5_available?
+      return @md5_available if defined?(@md5_available)
+      @md5_available = begin
+        require "openssl"
+        OpenSSL::Digest::MD5.digest("")
+        true
+      rescue LoadError
+        true
+      rescue OpenSSL::Digest::DigestError
+        false
+      end
+    end
+
+    def digest(name)
+      require "digest"
+      Digest(name)
+    end
+
   private
 
     def validate_bundle_path
-      return unless Bundler.bundle_path.to_s.include?(File::PATH_SEPARATOR)
-      message = "Your bundle path contains a '#{File::PATH_SEPARATOR}', " \
+      path_separator = Bundler.rubygems.path_separator
+      return unless Bundler.bundle_path.to_s.split(path_separator).size > 1
+      message = "Your bundle path contains text matching #{path_separator.inspect}, " \
                 "which is the path separator for your system. Bundler cannot " \
                 "function correctly when the Bundle path contains the " \
                 "system's PATH separator. Please change your " \
-                "bundle path to not include '#{File::PATH_SEPARATOR}'." \
+                "bundle path to not match #{path_separator.inspect}." \
                 "\nYour current bundle path is '#{Bundler.bundle_path}'."
       raise Bundler::PathError, message
     end
 
-    def find_gemfile
+    def find_gemfile(order_matters = false)
       given = ENV["BUNDLE_GEMFILE"]
       return given if given && !given.empty?
-      find_file("Gemfile", "gems.rb")
+      names = gemfile_names
+      names.reverse! if order_matters && Bundler.feature_flag.prefer_gems_rb?
+      find_file(*names)
+    end
+
+    def gemfile_names
+      ["Gemfile", "gems.rb"]
     end
 
     def find_file(*names)
@@ -226,40 +286,51 @@ module Bundler
       end
     end
 
+    def set_env(key, value)
+      raise ArgumentError, "new key #{key}" unless EnvironmentPreserver::BUNDLER_KEYS.include?(key)
+      orig_key = "#{EnvironmentPreserver::BUNDLER_PREFIX}#{key}"
+      orig = ENV[key]
+      orig ||= EnvironmentPreserver::INTENTIONALLY_NIL
+      ENV[orig_key] ||= orig
+
+      ENV[key] = value
+    end
+    public :set_env
+
     def set_bundle_variables
       begin
-        ENV["BUNDLE_BIN_PATH"] = Bundler.rubygems.bin_path("bundler", "bundle", VERSION)
+        Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", Bundler.rubygems.bin_path("bundler", "bundle", VERSION)
       rescue Gem::GemNotFoundException
         if File.exist?(File.expand_path("../../../exe/bundle", __FILE__))
-          ENV["BUNDLE_BIN_PATH"] = File.expand_path("../../../exe/bundle", __FILE__)
+          Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", File.expand_path("../../../exe/bundle", __FILE__)
         else
-          ENV["BUNDLE_BIN_PATH"] = File.expand_path("../../../../bin/bundle", __FILE__)
+          Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", File.expand_path("../../../../bin/bundle", __FILE__)
         end
       end
 
       # Set BUNDLE_GEMFILE
-      ENV["BUNDLE_GEMFILE"] = find_gemfile.to_s
-      ENV["BUNDLER_VERSION"] = Bundler::VERSION
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile(:order_matters).to_s
+      Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
     end
 
     def set_path
       validate_bundle_path
       paths = (ENV["PATH"] || "").split(File::PATH_SEPARATOR)
       paths.unshift "#{Bundler.bundle_path}/bin"
-      ENV["PATH"] = paths.uniq.join(File::PATH_SEPARATOR)
+      Bundler::SharedHelpers.set_env "PATH", paths.uniq.join(File::PATH_SEPARATOR)
     end
 
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
       return if !rubyopt.empty? && rubyopt.first =~ %r{-rbundler/setup}
       rubyopt.unshift %(-rbundler/setup)
-      ENV["RUBYOPT"] = rubyopt.join(" ")
+      Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
     end
 
     def set_rubylib
       rubylib = (ENV["RUBYLIB"] || "").split(File::PATH_SEPARATOR)
       rubylib.unshift bundler_ruby_lib
-      ENV["RUBYLIB"] = rubylib.uniq.join(File::PATH_SEPARATOR)
+      Bundler::SharedHelpers.set_env "RUBYLIB", rubylib.uniq.join(File::PATH_SEPARATOR)
     end
 
     def bundler_ruby_lib
@@ -288,12 +359,6 @@ module Bundler
       require "bundler/deprecate"
       return false if Bundler::Deprecate.skip
       true
-    end
-
-    def deprecate_gemfile(gemfile)
-      return unless gemfile && File.basename(gemfile) == "Gemfile"
-      Bundler::SharedHelpers.major_deprecation \
-        "gems.rb and gems.locked will be preferred to Gemfile and Gemfile.lock."
     end
 
     extend self

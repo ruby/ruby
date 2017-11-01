@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   module CLI::Common
     def self.output_post_install_messages(messages)
@@ -14,12 +15,12 @@ module Bundler
     end
 
     def self.output_without_groups_message
-      return unless Bundler.settings.without.any?
+      return if Bundler.settings[:without].empty?
       Bundler.ui.confirm without_groups_message
     end
 
     def self.without_groups_message
-      groups = Bundler.settings.without
+      groups = Bundler.settings[:without]
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
       group_str = (groups.size == 1) ? "group" : "groups"
@@ -88,6 +89,14 @@ module Bundler
 
     def self.patch_level_options(options)
       [:major, :minor, :patch].select {|v| options.keys.include?(v.to_s) }
+    end
+
+    def self.clean_after_install?
+      clean = Bundler.settings[:clean]
+      return clean unless clean.nil?
+      clean ||= Bundler.feature_flag.auto_clean_without_path? && Bundler.settings[:path].nil?
+      clean &&= !Bundler.use_system_gems?
+      clean
     end
   end
 end

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle lock" do
   def strip_lockfile(lockfile)
@@ -44,7 +43,7 @@ RSpec.describe "bundle lock" do
           with_license (1.0)
 
       PLATFORMS
-        #{local}
+        #{lockfile_platforms}
 
       DEPENDENCIES
         foo
@@ -59,7 +58,7 @@ RSpec.describe "bundle lock" do
   it "prints a lockfile when there is no existing lockfile with --print" do
     bundle "lock --print"
 
-    expect(out).to include(@lockfile)
+    expect(out).to eq(@lockfile)
   end
 
   it "prints a lockfile when there is an existing lockfile with --print" do
@@ -87,7 +86,7 @@ RSpec.describe "bundle lock" do
   it "does not fetch remote specs when using the --local option" do
     bundle "lock --update --local"
 
-    expect(out).to include("sources listed in your Gemfile")
+    expect(out).to match(/sources listed in your Gemfile|installed locally/)
   end
 
   it "writes to a custom location using --lockfile" do
@@ -120,17 +119,17 @@ RSpec.describe "bundle lock" do
   context "conservative updates" do
     before do
       build_repo4 do
-        build_gem "foo", %w(1.4.3 1.4.4) do |s|
+        build_gem "foo", %w[1.4.3 1.4.4] do |s|
           s.add_dependency "bar", "~> 2.0"
         end
-        build_gem "foo", %w(1.4.5 1.5.0) do |s|
+        build_gem "foo", %w[1.4.5 1.5.0] do |s|
           s.add_dependency "bar", "~> 2.1"
         end
-        build_gem "foo", %w(1.5.1) do |s|
+        build_gem "foo", %w[1.5.1] do |s|
           s.add_dependency "bar", "~> 3.0"
         end
-        build_gem "bar", %w(2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0)
-        build_gem "qux", %w(1.0.0 1.0.1 1.1.0 2.0.0)
+        build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+        build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
       # establish a lockfile set to 1.4.3
@@ -153,13 +152,13 @@ RSpec.describe "bundle lock" do
     it "single gem updates dependent gem to minor" do
       bundle "lock --update foo --patch"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w(foo-1.4.5 bar-2.1.1 qux-1.0.0).sort)
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.1 qux-1.0.0].sort)
     end
 
     it "minor preferred with strict" do
       bundle "lock --update --minor --strict"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w(foo-1.5.0 bar-2.1.1 qux-1.1.0).sort)
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
   end
 
@@ -167,13 +166,13 @@ RSpec.describe "bundle lock" do
     bundle! "lock --add-platform java x86-mingw32"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to eq([java, local, mingw])
+    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
   end
 
   it "supports adding the `ruby` platform" do
     bundle! "lock --add-platform ruby"
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to eq([local, "ruby"].uniq)
+    expect(lockfile.platforms).to match_array(local_platforms.unshift("ruby").uniq)
   end
 
   it "warns when adding an unknown platform" do
@@ -185,17 +184,17 @@ RSpec.describe "bundle lock" do
     bundle! "lock --add-platform java x86-mingw32"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to eq([java, local, mingw])
+    expect(lockfile.platforms).to match_array(local_platforms.unshift(java, mingw).uniq)
 
     bundle! "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to eq([local, mingw])
+    expect(lockfile.platforms).to match_array(local_platforms.unshift(mingw).uniq)
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local}"
-    expect(out).to include("Removing all platforms from the bundle is not allowed")
+    bundle "lock --remove-platform #{local_platforms.join(" ")}"
+    expect(last_command.bundler_err).to include("Removing all platforms from the bundle is not allowed")
   end
 
   # from https://github.com/bundler/bundler/issues/4896
@@ -221,7 +220,7 @@ RSpec.describe "bundle lock" do
 
       # we need all these versions to get the sorting the same as it would be
       # pulling from rubygems.org
-      %w(0.8.3 0.8.2 0.8.1 0.8.0).each do |v|
+      %w[0.8.3 0.8.2 0.8.1 0.8.0].each do |v|
         build_gem "win32-process", v do |s|
           s.add_dependency "ffi", ">= 1.0.0"
         end

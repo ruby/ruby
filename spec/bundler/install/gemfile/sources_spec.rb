@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install with gems on multiple sources" do
   # repo1 is built automatically before all of the specs run
@@ -29,7 +28,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         bundle "config major_deprecations true"
       end
 
-      it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first" do
+      it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first", :bundler => "< 2" do
         bundle :install
 
         expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
@@ -59,7 +58,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         bundle "config major_deprecations true"
       end
 
-      it "warns about ambiguous gems, but installs anyway" do
+      it "warns about ambiguous gems, but installs anyway", :bundler => "< 2" do
         bundle :install
 
         expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
@@ -79,6 +78,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
           build_gem "rack", "1.0.0" do |s|
             s.write "lib/rack.rb", "RACK = 'FAIL'"
           end
+
+          build_gem "rack-obama" do |s|
+            s.add_dependency "rack"
+          end
         end
 
         gemfile <<-G
@@ -92,21 +95,20 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs the gems without any warning" do
-        bundle :install
+        bundle! :install
         expect(out).not_to include("Warning")
         expect(the_bundle).to include_gems("rack-obama 1.0.0")
         expect(the_bundle).to include_gems("rack 1.0.0", :source => "remote1")
       end
 
       it "can cache and deploy" do
-        bundle :package
+        bundle! :package
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/rack-obama-1.0.gem")).to exist
 
-        bundle "install --deployment"
+        bundle! :install, forgotten_command_line_options(:deployment => true)
 
-        expect(exitstatus).to eq(0) if exitstatus
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0")
       end
     end
@@ -118,6 +120,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_repo gem_repo3 do
           build_gem "rack", "1.0.0" do |s|
             s.write "lib/rack.rb", "RACK = 'FAIL'"
+          end
+
+          build_gem "rack-obama" do |s|
+            s.add_dependency "rack"
           end
         end
 
@@ -135,7 +141,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     end
 
-    context "with an indirect dependency" do
+    context "when a pinned gem has an indirect dependency" do
       before do
         build_repo gem_repo3 do
           build_gem "depends_on_rack", "1.0.1" do |s|
@@ -181,10 +187,27 @@ RSpec.describe "bundle install with gems on multiple sources" do
             end
           end
 
-          it "installs from the same source without any warning" do
-            bundle :install
-            expect(out).not_to include("Warning")
-            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+          context "when lockfile_uses_separate_rubygems_sources is set" do
+            before do
+              bundle! "config lockfile_uses_separate_rubygems_sources true"
+              bundle! "config disable_multisource true"
+            end
+
+            it "installs from the same source without any warning" do
+              bundle! :install
+
+              expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+              expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+              expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+
+              # when there is already a lock file, and the gems are missing, so try again
+              system_gems []
+              bundle! :install
+
+              expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+              expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
+              expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+            end
           end
         end
       end
@@ -225,7 +248,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             G
           end
 
-          it "installs from the other source and warns about ambiguous gems" do
+          it "installs from the other source and warns about ambiguous gems", :bundler => "< 2" do
             bundle "config major_deprecations true"
             bundle :install
             expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
@@ -253,7 +276,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             G
           end
 
-          it "installs the dependency from the pinned source without warning" do
+          it "installs the dependency from the pinned source without warning", :bundler => "< 2" do
             bundle :install
 
             expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
@@ -266,6 +289,86 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
             expect(out).not_to include("Warning: the gem 'rack' was found in multiple sources.")
             expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
+          end
+        end
+      end
+    end
+
+    context "when a top-level gem has an indirect dependency" do
+      context "when lockfile_uses_separate_rubygems_sources is set" do
+        before do
+          bundle! "config lockfile_uses_separate_rubygems_sources true"
+          bundle! "config disable_multisource true"
+        end
+
+        before do
+          build_repo gem_repo2 do
+            build_gem "depends_on_rack", "1.0.1" do |s|
+              s.add_dependency "rack"
+            end
+          end
+
+          build_repo gem_repo3 do
+            build_gem "unrelated_gem", "1.0.0"
+          end
+
+          gemfile <<-G
+            source "file://#{gem_repo2}"
+
+            gem "depends_on_rack"
+
+            source "file://#{gem_repo3}" do
+              gem "unrelated_gem"
+            end
+          G
+        end
+
+        context "and the dependency is only in the top-level source" do
+          before do
+            update_repo gem_repo2 do
+              build_gem "rack", "1.0.0"
+            end
+          end
+
+          it "installs all gems without warning" do
+            bundle :install
+            expect(out).not_to include("Warning")
+            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", "unrelated_gem 1.0.0")
+          end
+        end
+
+        context "and the dependency is only in a pinned source" do
+          before do
+            update_repo gem_repo3 do
+              build_gem "rack", "1.0.0" do |s|
+                s.write "lib/rack.rb", "RACK = 'FAIL'"
+              end
+            end
+          end
+
+          it "does not find the dependency" do
+            bundle :install
+            expect(out).to include("Could not find gem 'rack', which is required by gem 'depends_on_rack', in any of the relevant sources")
+          end
+        end
+
+        context "and the dependency is in both the top-level and a pinned source" do
+          before do
+            update_repo gem_repo2 do
+              build_gem "rack", "1.0.0"
+            end
+
+            update_repo gem_repo3 do
+              build_gem "rack", "1.0.0" do |s|
+                s.write "lib/rack.rb", "RACK = 'FAIL'"
+              end
+            end
+          end
+
+          it "installs the dependency from the top-level source without warning" do
+            bundle :install
+            expect(out).not_to include("Warning")
+            expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", "unrelated_gem 1.0.0")
           end
         end
       end
@@ -291,7 +394,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "with an existing lockfile" do
       before do
-        system_gems "rack-0.9.1", "rack-1.0.0"
+        system_gems "rack-0.9.1", "rack-1.0.0", :path => :bundle_path
 
         lockfile <<-L
           GEM
@@ -394,7 +497,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           rack
       L
 
-      bundle "install --path ../gems/system"
+      bundle! :install, forgotten_command_line_options(:path => "../gems/system")
 
       # 4. Then we add some new versions...
       update_repo4 do
@@ -413,8 +516,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
 
       # 6. Which should update foo to 0.2, but not the (locked) bar 0.1
-      expect(the_bundle).to include_gems("foo 0.2")
-      expect(the_bundle).to include_gems("bar 0.1")
+      expect(the_bundle).to include_gems("foo 0.2", "bar 0.1")
     end
   end
 

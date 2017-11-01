@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install with a mirror configured" do
   describe "when the mirror does not match the gem source" do

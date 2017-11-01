@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems/dependency"
 require "bundler/shared_helpers"
 require "bundler/rubygems_ext"
@@ -90,16 +91,14 @@ module Bundler
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end
 
+    # Returns the platforms this dependency is valid for, in the same order as
+    # passed in the `valid_platforms` parameter
     def gem_platforms(valid_platforms)
       return valid_platforms if @platforms.empty?
 
-      platforms = []
-      @platforms.each do |p|
-        platform = PLATFORM_MAP[p]
-        next unless valid_platforms.include?(platform)
-        platforms |= [platform]
-      end
-      platforms
+      @gem_platforms ||= @platforms.map {|pl| PLATFORM_MAP[pl] }.compact.uniq
+
+      valid_platforms & @gem_platforms
     end
 
     def should_include?

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "bundler/cli/common"
 
 module Bundler
   class CLI::Binstubs
@@ -11,8 +10,10 @@ module Bundler
 
     def run
       Bundler.definition.validate_runtime!
-      Bundler.settings[:bin] = options["path"] if options["path"]
-      Bundler.settings[:bin] = nil if options["path"] && options["path"].empty?
+      path_option = options["path"]
+      path_option = nil if path_option && path_option.empty?
+      Bundler.settings.set_command_option :bin, path_option if options["path"]
+      Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
       installer = Installer.new(Bundler.root, Bundler.definition)
 
       if gems.empty?
@@ -28,10 +29,11 @@ module Bundler
           )
         end
 
-        if spec.name == "bundler"
-          Bundler.ui.warn "Sorry, Bundler can only be run via Rubygems."
-        elsif options[:standalone]
-          installer.generate_standalone_bundler_executable_stubs(spec)
+        if options[:standalone]
+          next Bundler.ui.warn("Sorry, Bundler can only be run via RubyGems.") if gem_name == "bundler"
+          Bundler.settings.temporary(:path => (Bundler.settings[:path] || Bundler.root)) do
+            installer.generate_standalone_bundler_executable_stubs(spec)
+          end
         else
           installer.generate_bundler_executable_stubs(spec, :force => options[:force], :binstubs_cmd => true)
         end

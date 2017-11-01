@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::RubygemsIntegration do
   it "uses the same chdir lock as rubygems", :rubygems => "2.1" do
@@ -67,7 +66,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
     let(:fetcher) { double("gem_remote_fetcher") }
 
-    it "succesfully downloads gem with retries" do
+    it "successfully downloads gem with retries" do
       expect(Bundler.rubygems).to receive(:gem_remote_fetcher).and_return(fetcher)
       expect(fetcher).to receive(:headers=).with("X-Gemfile-Source" => "https://foo.bar")
       expect(Bundler::Retry).to receive(:new).with("download gem from #{uri}/").
@@ -95,7 +94,7 @@ RSpec.describe Bundler::RubygemsIntegration do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
         expect(fetcher).to receive(:fetch_path).with(uri + "prerelease_specs.4.8.gz").and_return(prerelease_specs_response)
         result = Bundler.rubygems.fetch_all_remote_specs(remote_with_mirror)
-        expect(result).to eq(%w(specs prerelease_specs))
+        expect(result).to eq(%w[specs prerelease_specs])
       end
     end
 
@@ -108,7 +107,7 @@ RSpec.describe Bundler::RubygemsIntegration do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
         expect(fetcher).to receive(:fetch_path).with(uri + "prerelease_specs.4.8.gz").and_return(prerelease_specs_response)
         result = Bundler.rubygems.fetch_all_remote_specs(remote_no_mirror)
-        expect(result).to eq(%w(specs prerelease_specs))
+        expect(result).to eq(%w[specs prerelease_specs])
       end
     end
   end

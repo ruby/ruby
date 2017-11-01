@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::GemVersionPromoter do
   context "conservative resolver" do
@@ -27,13 +26,15 @@ RSpec.describe Bundler::GemVersionPromoter do
       end
     end
 
-    def build_spec_group(name, version)
-      Bundler::Resolver::SpecGroup.new(build_spec(name, version))
+    def build_spec_groups(name, versions)
+      versions.map do |v|
+        Bundler::Resolver::SpecGroup.new(build_spec(name, v))
+      end
     end
 
     # Rightmost (highest array index) in result is most preferred.
     # Leftmost (lowest array index) in result is least preferred.
-    # `build_spec_group` has all version of gem in index.
+    # `build_spec_groups` has all versions of gem in index.
     # `build_spec` is the version currently in the .lock file.
     #
     # In default (not strict) mode, all versions in the index will
@@ -44,28 +45,28 @@ RSpec.describe Bundler::GemVersionPromoter do
       it "when keeping build_spec, keep current, next release" do
         keep_locked(:level => :patch)
         res = @gvp.filter_dep_specs(
-          build_spec_group("foo", %w(1.7.8 1.7.9 1.8.0)),
+          build_spec_groups("foo", %w[1.7.8 1.7.9 1.8.0]),
           build_spec("foo", "1.7.8").first
         )
-        expect(versions(res)).to eq %w(1.7.9 1.7.8)
+        expect(versions(res)).to eq %w[1.7.9 1.7.8]
       end
 
       it "when unlocking prefer next release first" do
         unlocking(:level => :patch)
         res = @gvp.filter_dep_specs(
-          build_spec_group("foo", %w(1.7.8 1.7.9 1.8.0)),
+          build_spec_groups("foo", %w[1.7.8 1.7.9 1.8.0]),
           build_spec("foo", "1.7.8").first
         )
-        expect(versions(res)).to eq %w(1.7.8 1.7.9)
+        expect(versions(res)).to eq %w[1.7.8 1.7.9]
       end
 
       it "when unlocking keep current when already at latest release" do
         unlocking(:level => :patch)
         res = @gvp.filter_dep_specs(
-          build_spec_group("foo", %w(1.7.9 1.8.0 2.0.0)),
+          build_spec_groups("foo", %w[1.7.9 1.8.0 2.0.0]),
           build_spec("foo", "1.7.9").first
         )
-        expect(versions(res)).to eq %w(1.7.9)
+        expect(versions(res)).to eq %w[1.7.9]
       end
     end
 
@@ -73,19 +74,19 @@ RSpec.describe Bundler::GemVersionPromoter do
       it "when unlocking favor next releases, remove minor and major increases" do
         unlocking(:level => :minor)
         res = @gvp.filter_dep_specs(
-          build_spec_group("foo", %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
+          build_spec_groups("foo", %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1]),
           build_spec("foo", "0.2.0").first
         )
-        expect(versions(res)).to eq %w(0.2.0 0.3.0 0.3.1 0.9.0)
+        expect(versions(res)).to eq %w[0.2.0 0.3.0 0.3.1 0.9.0]
       end
 
       it "when keep locked, keep current, then favor next release, remove minor and major increases" do
         keep_locked(:level => :minor)
         res = @gvp.filter_dep_specs(
-          build_spec_group("foo", %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
+          build_spec_groups("foo", %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1]),
           build_spec("foo", "0.2.0").first
         )
-        expect(versions(res)).to eq %w(0.3.0 0.3.1 0.9.0 0.2.0)
+        expect(versions(res)).to eq %w[0.3.0 0.3.1 0.9.0 0.2.0]
       end
     end
 
@@ -93,37 +94,37 @@ RSpec.describe Bundler::GemVersionPromoter do
       it "when not unlocking, same order but make sure build_spec version is most preferred to stay put" do
         keep_locked(:level => :patch)
         res = @gvp.sort_dep_specs(
-          build_spec_group("foo", %w(1.5.4 1.6.5 1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 1.8.1 2.0.0 2.0.1)),
+          build_spec_groups("foo", %w[1.5.4 1.6.5 1.7.6 1.7.7 1.7.8 1.7.9 1.8.0 1.8.1 2.0.0 2.0.1]),
           build_spec("foo", "1.7.7").first
         )
-        expect(versions(res)).to eq %w(1.5.4 1.6.5 1.7.6 2.0.0 2.0.1 1.8.0 1.8.1 1.7.8 1.7.9 1.7.7)
+        expect(versions(res)).to eq %w[1.5.4 1.6.5 1.7.6 2.0.0 2.0.1 1.8.0 1.8.1 1.7.8 1.7.9 1.7.7]
       end
 
       it "when unlocking favor next release, then current over minor increase" do
         unlocking(:level => :patch)
         res = @gvp.sort_dep_specs(
-          build_spec_group("foo", %w(1.7.7 1.7.8 1.7.9 1.8.0)),
+          build_spec_groups("foo", %w[1.7.7 1.7.8 1.7.9 1.8.0]),
           build_spec("foo", "1.7.8").first
         )
-        expect(versions(res)).to eq %w(1.7.7 1.8.0 1.7.8 1.7.9)
+        expect(versions(res)).to eq %w[1.7.7 1.8.0 1.7.8 1.7.9]
       end
 
       it "when unlocking do proper integer comparison, not string" do
         unlocking(:level => :patch)
         res = @gvp.sort_dep_specs(
-          build_spec_group("foo", %w(1.7.7 1.7.8 1.7.9 1.7.15 1.8.0)),
+          build_spec_groups("foo", %w[1.7.7 1.7.8 1.7.9 1.7.15 1.8.0]),
           build_spec("foo", "1.7.8").first
         )
-        expect(versions(res)).to eq %w(1.7.7 1.8.0 1.7.8 1.7.9 1.7.15)
+        expect(versions(res)).to eq %w[1.7.7 1.8.0 1.7.8 1.7.9 1.7.15]
       end
 
       it "leave current when unlocking but already at latest release" do
         unlocking(:level => :patch)
         res = @gvp.sort_dep_specs(
-          build_spec_group("foo", %w(1.7.9 1.8.0 2.0.0)),
+          build_spec_groups("foo", %w[1.7.9 1.8.0 2.0.0]),
           build_spec("foo", "1.7.9").first
         )
-        expect(versions(res)).to eq %w(2.0.0 1.8.0 1.7.9)
+        expect(versions(res)).to eq %w[2.0.0 1.8.0 1.7.9]
       end
     end
 
@@ -131,10 +132,10 @@ RSpec.describe Bundler::GemVersionPromoter do
       it "when unlocking favor next release, then minor increase over current" do
         unlocking(:level => :minor)
         res = @gvp.sort_dep_specs(
-          build_spec_group("foo", %w(0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1)),
+          build_spec_groups("foo", %w[0.2.0 0.3.0 0.3.1 0.9.0 1.0.0 2.0.0 2.0.1]),
           build_spec("foo", "0.2.0").first
         )
-        expect(versions(res)).to eq %w(2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0)
+        expect(versions(res)).to eq %w[2.0.0 2.0.1 1.0.0 0.2.0 0.3.0 0.3.1 0.9.0]
       end
     end
 
@@ -159,7 +160,7 @@ RSpec.describe Bundler::GemVersionPromoter do
       end
 
       it "should accept major, minor patch strings" do
-        %w(major minor patch).each do |value|
+        %w[major minor patch].each do |value|
           subject.level = value
           expect(subject.level).to eq value.to_sym
         end
@@ -170,8 +171,7 @@ RSpec.describe Bundler::GemVersionPromoter do
       it "should not kerblooie on its own debug output" do
         gvp = unlocking(:level => :patch)
         dep = Bundler::DepProxy.new(dep("foo", "1.2.0").first, "ruby")
-        result = gvp.send(:debug_format_result, dep, [build_spec_group("foo", "1.2.0"),
-                                                      build_spec_group("foo", "1.3.0")])
+        result = gvp.send(:debug_format_result, dep, build_spec_groups("foo", %w[1.2.0 1.3.0]))
         expect(result.class).to eq Array
       end
     end

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle update" do
   let(:config) {}
@@ -53,7 +52,7 @@ RSpec.describe "bundle update" do
         gem 'thin'
       G
 
-      bundle! :update
+      bundle! :update, :all => bundle_update_requires_all?
     end
 
     it_behaves_like "a post-install message outputter"
@@ -68,7 +67,7 @@ RSpec.describe "bundle update" do
         gem 'thin'
       G
 
-      bundle! :update
+      bundle! :update, :all => bundle_update_requires_all?
     end
 
     it_behaves_like "a post-install message outputter"

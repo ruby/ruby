@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler/lockfile_parser"
 
 RSpec.describe Bundler::LockfileParser do
@@ -89,6 +89,65 @@ RSpec.describe Bundler::LockfileParser do
       it "returns an empty array" do
         expect(subject).to eq([])
       end
+    end
+  end
+
+  describe "#initialize" do
+    before { allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app("gems.rb")) }
+    subject { described_class.new(lockfile_contents) }
+
+    let(:sources) do
+      [Bundler::Source::Git.new("uri" => "https://github.com/alloy/peiji-san.git", "revision" => "eca485d8dc95f12aaec1a434b49d295c7e91844b"),
+       Bundler::Source::Rubygems.new("remotes" => ["https://rubygems.org"])]
+    end
+    let(:dependencies) do
+      {
+        "peiji-san" => Bundler::Dependency.new("peiji-san", ">= 0"),
+        "rake" => Bundler::Dependency.new("rake", ">= 0"),
+      }
+    end
+    let(:specs) do
+      [
+        Bundler::LazySpecification.new("peiji-san", v("1.2.0"), rb),
+        Bundler::LazySpecification.new("rake", v("10.3.2"), rb),
+      ]
+    end
+    let(:platforms) { [rb] }
+    let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
+    let(:ruby_version) { "ruby 2.1.3p242" }
+
+    shared_examples_for "parsing" do
+      it "parses correctly" do
+        expect(subject.sources).to eq sources
+        expect(subject.dependencies).to eq dependencies
+        expect(subject.specs).to eq specs
+        expect(Hash[subject.specs.map {|s| [s, s.dependencies] }]).to eq Hash[subject.specs.map {|s| [s, s.dependencies] }]
+        expect(subject.platforms).to eq platforms
+        expect(subject.bundler_version).to eq bundler_version
+        expect(subject.ruby_version).to eq ruby_version
+      end
+    end
+
+    include_examples "parsing"
+
+    context "when an extra section is at the end" do
+      let(:lockfile_contents) { super() + "\n\nFOO BAR\n  baz\n   baa\n    qux\n" }
+      include_examples "parsing"
+    end
+
+    context "when an extra section is at the start" do
+      let(:lockfile_contents) { "FOO BAR\n  baz\n   baa\n    qux\n\n" + super() }
+      include_examples "parsing"
+    end
+
+    context "when an extra section is in the middle" do
+      let(:lockfile_contents) { super().split(/(?=GEM)/).insert(1, "FOO BAR\n  baz\n   baa\n    qux\n\n").join }
+      include_examples "parsing"
+    end
+
+    context "when a dependency has options" do
+      let(:lockfile_contents) { super().sub("peiji-san!", "peiji-san!\n    foo: bar") }
+      include_examples "parsing"
     end
   end
 end

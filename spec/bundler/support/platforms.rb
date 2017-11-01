@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Spec
   module Platforms
     include Bundler::GemHelpers
@@ -41,6 +42,10 @@ module Spec
 
     def local
       generic_local_platform
+    end
+
+    def specific_local_platform
+      Bundler.local_platform
     end
 
     def not_local
@@ -93,6 +98,19 @@ module Spec
 
     def not_local_patchlevel
       9999
+    end
+
+    def lockfile_platforms(*platforms)
+      platforms = local_platforms if platforms.empty?
+      platforms.map(&:to_s).sort.join("\n  ")
+    end
+
+    def local_platforms
+      if Bundler::VERSION.split(".").first.to_i > 1
+        [local, specific_local_platform]
+      else
+        [local]
+      end
     end
   end
 end

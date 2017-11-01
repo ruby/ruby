@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class DepProxy
     attr_reader :__platform, :dep
@@ -13,6 +14,7 @@ module Bundler
     end
 
     def ==(other)
+      return if other.nil?
       dep == other.dep && __platform == other.__platform
     end
 

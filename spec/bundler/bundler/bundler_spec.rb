@@ -1,6 +1,6 @@
 # encoding: utf-8
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler"
 
 RSpec.describe Bundler do
@@ -102,11 +102,29 @@ RSpec.describe Bundler do
         subject
       end
     end
+
+    context "with gemspec containing local variables" do
+      before do
+        File.open(app_gemspec_path, "wb") do |f|
+          f.write strip_whitespace(<<-GEMSPEC)
+            must_not_leak = true
+            Gem::Specification.new do |gem|
+              gem.name = "leak check"
+            end
+          GEMSPEC
+        end
+      end
+
+      it "should not pollute the TOPLEVEL_BINDING" do
+        subject
+        expect(TOPLEVEL_BINDING.eval("local_variables")).to_not include(:must_not_leak)
+      end
+    end
   end
 
   describe "#which" do
     let(:executable) { "executable" }
-    let(:path) { %w(/a /b c ../d /e) }
+    let(:path) { %w[/a /b c ../d /e] }
     let(:expected) { "executable" }
 
     before do
@@ -145,8 +163,8 @@ RSpec.describe Bundler do
     context "disable_shared_gems" do
       it "should unset GEM_PATH with empty string" do
         env = {}
-        settings = { :disable_shared_gems => true }
-        Bundler.send(:configure_gem_path, env, settings)
+        expect(Bundler).to receive(:use_system_gems?).and_return(false)
+        Bundler.send(:configure_gem_path, env)
         expect(env.keys).to include("GEM_PATH")
         expect(env["GEM_PATH"]).to eq ""
       end
@@ -158,7 +176,7 @@ RSpec.describe Bundler do
       let(:bundler_ui) { Bundler.ui }
       it "should raise a friendly error" do
         allow(File).to receive(:exist?).and_return(true)
-        allow(FileUtils).to receive(:remove_entry_secure).and_raise(ArgumentError)
+        allow(bundler_fileutils).to receive(:remove_entry_secure).and_raise(ArgumentError)
         allow(File).to receive(:world_writable?).and_return(true)
         message = <<EOF
 It is a security vulnerability to allow your home directory to be world-writable, and bundler can not continue.

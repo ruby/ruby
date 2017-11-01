@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::Dsl do
   before do
@@ -26,7 +25,7 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "default hosts (git, gist)" do
+    context "default hosts (git, gist)", :bundler => "< 2" do
       it "converts :github to :git" do
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "git://github.com/indirect/sparks.git"
@@ -63,11 +62,17 @@ RSpec.describe Bundler::Dsl do
         expect(subject.dependencies.first.source.uri).to eq(bitbucket_uri)
       end
     end
+
+    context "default git sources", :bundler => "2" do
+      it "has none" do
+        expect(subject.instance_variable_get(:@git_sources)).to eq({})
+      end
+    end
   end
 
   describe "#method_missing" do
     it "raises an error for unknown DSL methods" do
-      expect(Bundler).to receive(:read_file).with("Gemfile").
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).
         and_return("unknown")
 
       error_msg = "There was an error parsing `Gemfile`: Undefined local variable or method `unknown' for Gemfile. Bundler cannot continue."
@@ -78,13 +83,13 @@ RSpec.describe Bundler::Dsl do
 
   describe "#eval_gemfile" do
     it "handles syntax errors with a useful message" do
-      expect(Bundler).to receive(:read_file).with("Gemfile").and_return("}")
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).and_return("}")
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: (syntax error, unexpected tSTRING_DEND|(compile error - )?syntax error, unexpected '\}'). Bundler cannot continue./)
     end
 
     it "distinguishes syntax errors from evaluation errors" do
-      expect(Bundler).to receive(:read_file).with("Gemfile").and_return(
+      expect(Bundler).to receive(:read_file).with(bundled_app("Gemfile").to_s).and_return(
         "ruby '2.1.5', :engine => 'ruby', :engine_version => '1.2.4'"
       )
       expect { subject.eval_gemfile("Gemfile") }.
@@ -103,6 +108,11 @@ RSpec.describe Bundler::Dsl do
     it "rejects invalid platforms" do
       expect { subject.gem("foo", :platform => :bogus) }.
         to raise_error(Bundler::GemfileError, /is not a valid platform/)
+    end
+
+    it "rejects empty gem name" do
+      expect { subject.gem("") }.
+        to raise_error(Bundler::GemfileError, /an empty gem name is not valid/)
     end
 
     it "rejects with a leading space in the name" do
@@ -150,13 +160,13 @@ RSpec.describe Bundler::Dsl do
         to raise_error(Bundler::GemfileError, /The `branch` option for `gem 'foo'` is not allowed. Only gems with a git source can specify a branch/)
     end
 
-    it "allows specifiying a branch on git gems" do
+    it "allows specifying a branch on git gems" do
       subject.gem("foo", :branch => "test", :git => "http://mytestrepo")
       dep = subject.dependencies.last
       expect(dep.name).to eq "foo"
     end
 
-    it "allows specifiying a branch on git gems with a git_source" do
+    it "allows specifying a branch on git gems with a git_source" do
       subject.git_source(:test_source) {|n| "https://github.com/#{n}" }
       subject.gem("foo", :branch => "test", :test_source => "bundler/bundler")
       dep = subject.dependencies.last
@@ -206,7 +216,7 @@ RSpec.describe Bundler::Dsl do
     # end
     describe "#git" do
       it "from a single repo" do
-        rails_gems = %w(railties action_pack active_model)
+        rails_gems = %w[railties action_pack active_model]
         subject.git "https://github.com/rails/rails.git" do
           rails_gems.each {|rails_gem| subject.send :gem, rails_gem }
         end
@@ -219,9 +229,9 @@ RSpec.describe Bundler::Dsl do
     #   gem 'spree_api'
     #   gem 'spree_backend'
     # end
-    describe "#github" do
+    describe "#github", :bundler => "< 2" do
       it "from github" do
-        spree_gems = %w(spree_core spree_api spree_backend)
+        spree_gems = %w[spree_core spree_api spree_backend]
         subject.github "spree" do
           spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
         end
@@ -229,6 +239,17 @@ RSpec.describe Bundler::Dsl do
         subject.dependencies.each do |d|
           expect(d.source.uri).to eq("git://github.com/spree/spree.git")
         end
+      end
+    end
+
+    describe "#github", :bundler => "2" do
+      it "from github" do
+        expect do
+          spree_gems = %w[spree_core spree_api spree_backend]
+          subject.github "spree" do
+            spree_gems.each {|spree_gem| subject.send :gem, spree_gem }
+          end
+        end.to raise_error(Bundler::DeprecatedError, /github method has been removed/)
       end
     end
   end

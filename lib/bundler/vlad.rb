@@ -1,4 +1,9 @@
 # frozen_string_literal: true
+
+require "bundler/shared_helpers"
+Bundler::SharedHelpers.major_deprecation 2,
+  "The Bundler task for Vlad"
+
 # Vlad task for Bundler.
 #
 # Add "require 'bundler/vlad'" in your Vlad deploy.rb, and

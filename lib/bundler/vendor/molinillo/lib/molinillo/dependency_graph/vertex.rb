@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler::Molinillo
   class DependencyGraph
     # A vertex in a {DependencyGraph} that encapsulates a {#name} and a
@@ -32,7 +33,7 @@ module Bundler::Molinillo
       # @return [Array<Object>] all of the requirements that required
       #   this vertex
       def requirements
-        incoming_edges.map(&:requirement) + explicit_requirements
+        (incoming_edges.map(&:requirement) + explicit_requirements).uniq
       end
 
       # @return [Array<Edge>] the edges of {#graph} that have `self` as their
@@ -53,7 +54,7 @@ module Bundler::Molinillo
       #   {#descendent?}
       def recursive_predecessors
         vertices = predecessors
-        vertices += vertices.map(&:recursive_predecessors).flatten(1)
+        vertices += Compatibility.flat_map(vertices, &:recursive_predecessors)
         vertices.uniq!
         vertices
       end
@@ -68,7 +69,7 @@ module Bundler::Molinillo
       #   {#ancestor?}
       def recursive_successors
         vertices = successors
-        vertices += vertices.map(&:recursive_successors).flatten(1)
+        vertices += Compatibility.flat_map(vertices, &:recursive_successors)
         vertices.uniq!
         vertices
       end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class LessThanProc < Proc
   attr_accessor :present
 

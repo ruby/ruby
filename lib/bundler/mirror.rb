@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "socket"
 
 module Bundler
@@ -37,7 +38,7 @@ module Bundler
         mirror = if config.all?
           @all
         else
-          (@mirrors[config.uri] = @mirrors[config.uri] || Mirror.new)
+          @mirrors[config.uri] ||= Mirror.new
         end
         config.update_mirror(mirror)
       end
@@ -45,7 +46,9 @@ module Bundler
     private
 
       def fetch_valid_mirror_for(uri)
-        mirror = (@mirrors[URI(uri.to_s.downcase)] || @mirrors[URI(uri.to_s).host] || Mirror.new(uri)).validate!(@prober)
+        downcased = uri.to_s.downcase
+        mirror = @mirrors[downcased] || @mirrors[URI(downcased).host] || Mirror.new(uri)
+        mirror.validate!(@prober)
         mirror = Mirror.new(uri) unless mirror.valid?
         mirror
       end
@@ -117,7 +120,7 @@ module Bundler
 
       def initialize(config_line, value)
         uri, fallback =
-          config_line.match(%r{^mirror\.(all|.+?)(\.fallback_timeout)?\/?$}).captures
+          config_line.match(%r{\Amirror\.(all|.+?)(\.fallback_timeout)?\/?\z}).captures
         @fallback = !fallback.nil?
         @all = false
         if uri == "all"

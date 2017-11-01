@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class Injector
     def self.inject(new_deps, options = {})
@@ -12,38 +13,40 @@ module Bundler
     end
 
     def inject(gemfile_path, lockfile_path)
-      if Bundler.settings[:frozen]
+      if Bundler.frozen?
         # ensure the lock and Gemfile are synced
         Bundler.definition.ensure_equivalent_gemfile_and_lockfile(true)
-        # temporarily remove frozen while we inject
-        frozen = Bundler.settings.delete(:frozen)
       end
 
-      # evaluate the Gemfile we have now
-      builder = Dsl.new
-      builder.eval_gemfile(gemfile_path)
+      # temporarily unfreeze
+      Bundler.settings.temporary(:deployment => false, :frozen => false) do
+        # evaluate the Gemfile we have now
+        builder = Dsl.new
+        builder.eval_gemfile(gemfile_path)
 
-      # don't inject any gems that are already in the Gemfile
-      @new_deps -= builder.dependencies
+        # don't inject any gems that are already in the Gemfile
+        @new_deps -= builder.dependencies
 
-      # add new deps to the end of the in-memory Gemfile
-      # Set conservative versioining to false because we want to let the resolver resolve the version first
-      builder.eval_gemfile("injected gems", build_gem_lines(false)) if @new_deps.any?
+        # add new deps to the end of the in-memory Gemfile
+        # Set conservative versioning to false because we want to let the resolver resolve the version first
+        builder.eval_gemfile("injected gems", build_gem_lines(false)) if @new_deps.any?
 
-      # resolve to see if the new deps broke anything
-      @definition = builder.to_definition(lockfile_path, {})
-      @definition.resolve_remotely!
+        # resolve to see if the new deps broke anything
+        @definition = builder.to_definition(lockfile_path, {})
+        @definition.resolve_remotely!
 
-      # since nothing broke, we can add those gems to the gemfile
-      append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @new_deps.any?
+        # since nothing broke, we can add those gems to the gemfile
+        append_to(gemfile_path, build_gem_lines(@options[:conservative_versioning])) if @new_deps.any?
 
-      # since we resolved successfully, write out the lockfile
-      @definition.lock(Bundler.default_lockfile)
+        # since we resolved successfully, write out the lockfile
+        @definition.lock(Bundler.default_lockfile)
 
-      # return an array of the deps that we added
-      return @new_deps
-    ensure
-      Bundler.settings[:frozen] = "1" if frozen
+        # invalidate the cached Bundler.definition
+        Bundler.reset_paths!
+
+        # return an array of the deps that we added
+        @new_deps
+      end
     end
 
   private

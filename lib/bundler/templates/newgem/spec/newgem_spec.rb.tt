@@ -1,5 +1,3 @@
-require "spec_helper"
-
 RSpec.describe <%= config[:constant_name] %> do
   it "has a version number" do
     expect(<%= config[:constant_name] %>::VERSION).not_to be nil

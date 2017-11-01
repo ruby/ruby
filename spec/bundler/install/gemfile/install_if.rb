@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 describe "bundle install with install_if conditionals" do
   it "follows the install_if DSL" do

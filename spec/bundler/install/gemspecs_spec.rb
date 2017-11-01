@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install" do
   describe "when a gem has a YAML gemspec" do
@@ -34,8 +33,8 @@ RSpec.describe "bundle install" do
       gem 'rack'
     G
 
-    FileUtils.mkdir_p "#{tmp}/gems/system/specifications"
-    File.open("#{tmp}/gems/system/specifications/rack-1.0.0.gemspec", "w+") do |f|
+    FileUtils.mkdir_p "#{default_bundle_path}/specifications"
+    File.open("#{default_bundle_path}/specifications/rack-1.0.0.gemspec", "w+") do |f|
       spec = Gem::Specification.new do |s|
         s.name = "rack"
         s.version = "1.0.0"

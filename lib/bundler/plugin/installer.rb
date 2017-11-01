@@ -13,12 +13,13 @@ module Bundler
 
       def install(names, options)
         version = options[:version] || [">= 0"]
-
-        if options[:git]
-          install_git(names, version, options)
-        else
-          sources = options[:source] || Bundler.rubygems.sources
-          install_rubygems(names, version, sources)
+        Bundler.settings.temporary(:lockfile_uses_separate_rubygems_sources => false, :disable_multisource => false) do
+          if options[:git]
+            install_git(names, version, options)
+          else
+            sources = options[:source] || Bundler.rubygems.sources
+            install_rubygems(names, version, sources)
+          end
         end
       end
 

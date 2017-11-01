@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundler source plugin" do
   describe "plugins dsl eval for #source with :type option" do

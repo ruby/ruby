@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle add" do
   before :each do
@@ -82,7 +81,7 @@ RSpec.describe "bundle add" do
 
   it "using combination of short form options works like long form" do
     bundle "add 'foo' -s='file://#{gem_repo2}' -g='development' -v='~>1.0'"
-    expect(bundled_app("Gemfile").read).to match(%r{gem "foo", "~> 1.0", :group => \[:development\], :source => "file:\/\/#{gem_repo2}"})
+    expect(bundled_app("Gemfile").read).to include %(gem "foo", "~> 1.0", :group => [:development], :source => "file://#{gem_repo2}")
     expect(the_bundle).to include_gems "foo 1.1"
   end
 
@@ -93,7 +92,7 @@ RSpec.describe "bundle add" do
 
   it "shows error message when gem cannot be found" do
     bundle "add 'werk_it'"
-    expect(out).to match("Could not find gem 'werk_it' in any of the gem sources listed in your Gemfile.")
+    expect(out).to match("Could not find gem 'werk_it' in")
 
     bundle "add 'werk_it' -s='file://#{gem_repo2}'"
     expect(out).to match("Could not find gem 'werk_it' in rubygems repository")

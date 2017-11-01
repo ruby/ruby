@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/vendored_persistent"
 require "cgi"
 require "securerandom"
@@ -237,7 +238,7 @@ module Bundler
           Bundler.settings[:ssl_client_cert]
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
-        con = Bundler::Persistent::Net::HTTP::Persistent.new "bundler", :ENV
+        con = PersistentHTTP.new "bundler", :ENV
         if gem_proxy = Bundler.rubygems.configuration[:http_proxy]
           con.proxy = URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end
@@ -248,8 +249,11 @@ module Bundler
           con.cert_store = bundler_cert_store
         end
 
-        if Bundler.settings[:ssl_client_cert]
-          pem = File.read(Bundler.settings[:ssl_client_cert])
+        ssl_client_cert = Bundler.settings[:ssl_client_cert] ||
+          (Bundler.rubygems.configuration.ssl_client_cert if
+            Bundler.rubygems.configuration.respond_to?(:ssl_client_cert))
+        if ssl_client_cert
+          pem = File.read(ssl_client_cert)
           con.cert = OpenSSL::X509::Certificate.new(pem)
           con.key  = OpenSSL::PKey::RSA.new(pem)
         end
@@ -273,16 +277,19 @@ module Bundler
       Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
       Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
       Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError,
-      Bundler::Persistent::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
+      PersistentHTTP::Error, Zlib::BufError, Errno::EHOSTUNREACH
     ].freeze
 
     def bundler_cert_store
       store = OpenSSL::X509::Store.new
-      if Bundler.settings[:ssl_ca_cert]
-        if File.directory? Bundler.settings[:ssl_ca_cert]
-          store.add_path Bundler.settings[:ssl_ca_cert]
+      ssl_ca_cert = Bundler.settings[:ssl_ca_cert] ||
+        (Bundler.rubygems.configuration.ssl_ca_cert if
+          Bundler.rubygems.configuration.respond_to?(:ssl_ca_cert))
+      if ssl_ca_cert
+        if File.directory? ssl_ca_cert
+          store.add_path ssl_ca_cert
         else
-          store.add_file Bundler.settings[:ssl_ca_cert]
+          store.add_file ssl_ca_cert
         end
       else
         store.set_default_paths

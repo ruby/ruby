@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class SimilarityDetector
     SimilarityScore = Struct.new(:string, :distance)

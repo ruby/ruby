@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle update" do
   describe "git sources" do
@@ -17,7 +16,7 @@ RSpec.describe "bundle update" do
         s.write "lib/foo.rb", "FOO = '1.1'"
       end
 
-      bundle "update"
+      bundle "update", :all => bundle_update_requires_all?
 
       expect(the_bundle).to include_gems "foo 1.1"
     end
@@ -28,12 +27,11 @@ RSpec.describe "bundle update" do
         s.add_dependency "activesupport", "= 3.0"
       end
 
-      install_gemfile <<-G
+      install_gemfile! <<-G
         gem "rails", :git => "#{lib_path("rails")}"
       G
 
-      bundle "update rails"
-      expect(out).to include("Using activesupport 3.0 from #{lib_path("rails")} (at master@#{revision_for(lib_path("rails"))[0..6]})")
+      bundle! "update rails"
       expect(the_bundle).to include_gems "rails 3.0", "activesupport 3.0"
     end
 
@@ -58,7 +56,7 @@ RSpec.describe "bundle update" do
 
     it "floats on master when updating all gems that are pinned to the source even if you have child dependencies" do
       build_git "foo", :path => lib_path("foo")
-      build_gem "bar", :to_system => true do |s|
+      build_gem "bar", :to_bundle => true do |s|
         s.add_dependency "foo"
       end
 
@@ -113,14 +111,16 @@ RSpec.describe "bundle update" do
         gem 'foo', :git => "#{@remote.path}", :tag => "fubar"
       G
 
-      bundle "update"
+      bundle "update", :all => bundle_update_requires_all?
       expect(exitstatus).to eq(0) if exitstatus
     end
 
     describe "with submodules" do
       before :each do
-        build_gem "submodule", :to_system => true do |s|
-          s.write "lib/submodule.rb", "puts 'GEM'"
+        build_repo4 do
+          build_gem "submodule" do |s|
+            s.write "lib/submodule.rb", "puts 'GEM'"
+          end
         end
 
         build_git "submodule", "1.0" do |s|
@@ -139,6 +139,7 @@ RSpec.describe "bundle update" do
 
       it "it unlocks the source when submodules are added to a git source" do
         install_gemfile <<-G
+          source "file:#{gem_repo4}"
           git "#{lib_path("has_submodule-1.0")}" do
             gem "has_submodule"
           end
@@ -148,6 +149,7 @@ RSpec.describe "bundle update" do
         expect(out).to eq("GEM")
 
         install_gemfile <<-G
+          source "file:#{gem_repo4}"
           git "#{lib_path("has_submodule-1.0")}", :submodules => true do
             gem "has_submodule"
           end
@@ -158,22 +160,24 @@ RSpec.describe "bundle update" do
       end
 
       it "unlocks the source when submodules are removed from git source", :git => ">= 2.9.0" do
-        install_gemfile <<-G
+        install_gemfile! <<-G
+          source "file:#{gem_repo4}"
           git "#{lib_path("has_submodule-1.0")}", :submodules => true do
             gem "has_submodule"
           end
         G
 
-        run "require 'submodule'"
+        run! "require 'submodule'"
         expect(out).to eq("GIT")
 
-        install_gemfile <<-G
+        install_gemfile! <<-G
+          source "file:#{gem_repo4}"
           git "#{lib_path("has_submodule-1.0")}" do
             gem "has_submodule"
           end
         G
 
-        run "require 'submodule'"
+        run! "require 'submodule'"
         expect(out).to eq("GEM")
       end
     end
@@ -187,8 +191,9 @@ RSpec.describe "bundle update" do
 
       lib_path("foo-1.0").join(".git").rmtree
 
-      bundle :update
-      expect(out).to include(lib_path("foo-1.0").to_s)
+      bundle :update, :all => bundle_update_requires_all?
+      expect(last_command.bundler_err).to include(lib_path("foo-1.0").to_s).
+        and match(/Git error: command `git fetch.+has failed/)
     end
 
     it "should not explode on invalid revision on update of gem by name" do
@@ -228,7 +233,7 @@ RSpec.describe "bundle update" do
           rails!
       G
 
-      bundle "update"
+      bundle "update", :all => bundle_update_requires_all?
       expect(out).to include("Using rails 3.0 (was 2.3.2) from #{lib_path("rails")} (at master@#{revision_for(lib_path("rails"))[0..6]})")
     end
   end
@@ -294,7 +299,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "the --source flag updates version of gems that were originally pulled in by the source" do
+    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "< 2" do
       spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
       spec_lines[5] = "s.version = '2.0'"
 
@@ -320,6 +325,42 @@ RSpec.describe "bundle update" do
 
         PLATFORMS
           ruby
+
+        DEPENDENCIES
+          foo!
+          rack
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      G
+    end
+
+    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "2" do
+      spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
+      spec_lines[5] = "s.version = '2.0'"
+
+      update_git "foo", "2.0", :path => @git.path do |s|
+        s.write "foo.gemspec", spec_lines.join("\n")
+      end
+
+      ref = @git.ref_for "master"
+
+      bundle "update --source bar"
+
+      lockfile_should_be <<-G
+        GEM
+          remote: file:#{gem_repo2}/
+          specs:
+            rack (1.0.0)
+
+        GIT
+          remote: #{@git.path}
+          revision: #{ref}
+          specs:
+            foo (2.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
 
         DEPENDENCIES
           foo!

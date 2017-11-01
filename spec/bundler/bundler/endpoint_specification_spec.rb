@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::EndpointSpecification do
   let(:name)         { "foo" }
@@ -8,7 +7,7 @@ RSpec.describe Bundler::EndpointSpecification do
   let(:dependencies) { [] }
   let(:metadata)     { nil }
 
-  subject { described_class.new(name, version, platform, dependencies, metadata) }
+  subject(:spec) { described_class.new(name, version, platform, dependencies, metadata) }
 
   describe "#build_dependency" do
     let(:name)           { "foo" }
@@ -62,5 +61,11 @@ RSpec.describe Bundler::EndpointSpecification do
         )
       end
     end
+  end
+
+  it "supports equality comparison" do
+    other_spec = described_class.new("bar", version, platform, dependencies, metadata)
+    expect(spec).to eql(spec)
+    expect(spec).to_not eql(other_spec)
   end
 end
