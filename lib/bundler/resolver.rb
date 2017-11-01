@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 module Bundler
   class Resolver
-    require "bundler/vendored_molinillo"
+    Molinillo = ::Gem::Resolver::Molinillo
 
     class Molinillo::VersionConflict
       def printable_dep(dep)
