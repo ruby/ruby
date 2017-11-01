@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe Bundler::EnvironmentPreserver do
   let(:preserver) { described_class.new(env, ["foo"]) }
@@ -22,14 +21,14 @@ RSpec.describe Bundler::EnvironmentPreserver do
 
     it "should not affect the original env" do
       subject
-      expect(env.keys.sort).to eq(%w(bar foo))
+      expect(env.keys.sort).to eq(%w[bar foo])
     end
 
     context "when a key is empty" do
       let(:env) { { "foo" => "" } }
 
       it "should not create backup entries" do
-        expect(subject.key?("BUNDLER_ORIG_foo")).to eq(false)
+        expect(subject).not_to have_key "BUNDLER_ORIG_foo"
       end
     end
 

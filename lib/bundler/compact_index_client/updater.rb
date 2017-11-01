@@ -1,7 +1,7 @@
 # frozen_string_literal: true
-require "fileutils"
+
+require "bundler/vendored_fileutils"
 require "stringio"
-require "tmpdir"
 require "zlib"
 
 module Bundler
@@ -22,6 +22,7 @@ module Bundler
 
       def initialize(fetcher)
         @fetcher = fetcher
+        require "tmpdir"
       end
 
       def update(local_path, remote_path, retrying = nil)
@@ -98,7 +99,7 @@ module Bundler
         # because we need to preserve \n line endings on windows when calculating
         # the checksum
         SharedHelpers.filesystem_access(path, :read) do
-          Digest::MD5.hexdigest(IO.read(path))
+          SharedHelpers.digest(:MD5).hexdigest(IO.read(path))
         end
       end
     end

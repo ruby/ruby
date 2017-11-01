@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class CLI::Config
     attr_reader :name, :options, :scope, :thor
@@ -112,7 +113,7 @@ module Bundler
     end
 
     def valid_scope?(scope)
-      %w(delete local global).include?(scope)
+      %w[delete local global].include?(scope)
     end
   end
 end

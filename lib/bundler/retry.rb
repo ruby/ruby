@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   # General purpose class for retrying code that may fail
   class Retry

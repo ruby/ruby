@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/fetcher/base"
 require "cgi"
 
@@ -6,7 +7,7 @@ module Bundler
   class Fetcher
     class Dependency < Base
       def available?
-        fetch_uri.scheme != "file" && downloader.fetch(dependency_api_uri)
+        @available ||= fetch_uri.scheme != "file" && downloader.fetch(dependency_api_uri)
       rescue NetworkDownError => e
         raise HTTPError, e.message
       rescue AuthenticationRequiredError

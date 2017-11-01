@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
   let(:ruby_graphviz) do

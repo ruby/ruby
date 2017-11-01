@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "pathname"
 
 if defined?(Gem::QuickLoader)
@@ -14,7 +15,7 @@ begin
   # shouldn't be deferred.
   require "rubygems/source"
 rescue LoadError
-  # Not available before Rubygems 2.0.0, ignore
+  # Not available before RubyGems 2.0.0, ignore
   nil
 end
 
@@ -135,7 +136,7 @@ module Gem
   end
 
   class Dependency
-    attr_accessor :source, :groups
+    attr_accessor :source, :groups, :all_sources
 
     alias_method :eql?, :==
 
@@ -146,7 +147,7 @@ module Gem
     end
 
     def to_yaml_properties
-      instance_variables.reject {|p| ["@source", "@groups"].include?(p.to_s) }
+      instance_variables.reject {|p| ["@source", "@groups", "@all_sources"].include?(p.to_s) }
     end
 
     def to_lock
@@ -158,7 +159,7 @@ module Gem
       out
     end
 
-    # Backport of performance enhancement added to Rubygems 1.4
+    # Backport of performance enhancement added to RubyGems 1.4
     def matches_spec?(spec)
       # name can be a Regexp, so use ===
       return false unless name === spec.name

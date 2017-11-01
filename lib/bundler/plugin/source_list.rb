@@ -5,13 +5,6 @@ module Bundler
   # approptiate options to be used with Source classes for plugin installation
   module Plugin
     class SourceList < Bundler::SourceList
-      def initialize
-        @path_sources       = []
-        @git_sources        = []
-        @rubygems_aggregate = Plugin::Installer::Rubygems.new
-        @rubygems_sources   = []
-      end
-
       def add_git_source(options = {})
         add_source_to_list Plugin::Installer::Git.new(options), git_sources
       end
@@ -21,7 +14,13 @@ module Bundler
       end
 
       def all_sources
-        path_sources + git_sources + rubygems_sources
+        path_sources + git_sources + rubygems_sources + [metadata_source]
+      end
+
+    private
+
+      def rubygems_aggregate_class
+        Plugin::Installer::Rubygems
       end
     end
   end

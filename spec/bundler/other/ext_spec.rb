@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "Gem::Specification#match_platform" do
   it "does not match platforms other than the gem platform" do

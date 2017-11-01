@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/add_edge_no_circular'
 require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/add_vertex'
 require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph/delete_edge'

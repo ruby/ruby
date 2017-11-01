@@ -814,7 +814,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
 
   ##
   # Pipelines +requests+ to the HTTP server at +uri+ yielding responses if a
-  # block is given.  Returns all responses recieved.
+  # block is given.  Returns all responses received.
   #
   # See
   # Net::HTTP::Pipeline[http://docs.seattlerb.org/net-http-pipeline/Net/HTTP/Pipeline.html]

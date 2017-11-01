@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install with install-time dependencies" do
   it "installs gems with implicit rake dependencies", :ruby_repo do
@@ -92,8 +91,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         bundle :install, :env => { "DEBUG_RESOLVER_TREE" => "1" }
 
-        expect(err).to include(" net_b")
-        expect(err).to include(" net_build_extensions (1.0)")
+        expect(err).to include(" net_b").
+          and include("Starting resolution").
+          and include("Finished resolution").
+          and include("Attempting to activate")
       end
     end
   end
@@ -141,9 +142,6 @@ RSpec.describe "bundle install with install-time dependencies" do
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
           nice_error = strip_whitespace(<<-E).strip
-            Fetching gem metadata from http://localgemserver.test/.
-            Fetching version metadata from http://localgemserver.test/
-            Resolving dependencies...
             Bundler could not find compatible versions for gem "ruby\0":
               In Gemfile:
                 ruby\0 (#{error_message_requirement})
@@ -151,9 +149,10 @@ RSpec.describe "bundle install with install-time dependencies" do
                 require_ruby was resolved to 1.0, which depends on
                   ruby\0 (> 9000)
 
-            Could not find gem 'ruby\0 (> 9000)', which is required by gem 'require_ruby', in any of the sources.
+            Could not find gem 'ruby\0 (> 9000)', which is required by gem 'require_ruby', in any of the relevant sources:
+              the local ruby installation
           E
-          expect(out).to eq(nice_error)
+          expect(last_command.bundler_err).to end_with(nice_error)
         end
       end
 

@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle install with win32-generated lockfile" do
   it "should read lockfile" do

@@ -1,9 +1,11 @@
 # frozen_string_literal: true
-require "fileutils"
+
+require "bundler/compatibility_guard"
+
+require "bundler/vendored_fileutils"
 require "pathname"
 require "rbconfig"
 require "thread"
-require "tmpdir"
 
 require "bundler/errors"
 require "bundler/environment_preserver"
@@ -13,9 +15,10 @@ require "bundler/rubygems_integration"
 require "bundler/version"
 require "bundler/constants"
 require "bundler/current_ruby"
+require "bundler/build_metadata"
 
 module Bundler
-  environment_preserver = EnvironmentPreserver.new(ENV, %w(PATH GEM_PATH))
+  environment_preserver = EnvironmentPreserver.new(ENV, EnvironmentPreserver::BUNDLER_KEYS)
   ORIGINAL_ENV = environment_preserver.restore
   ENV.replace(environment_preserver.backup)
   SUDO_MUTEX = Mutex.new
@@ -40,6 +43,7 @@ module Bundler
   autoload :LazySpecification,      "bundler/lazy_specification"
   autoload :LockfileParser,         "bundler/lockfile_parser"
   autoload :MatchPlatform,          "bundler/match_platform"
+  autoload :ProcessLock,            "bundler/process_lock"
   autoload :RemoteSpecification,    "bundler/remote_specification"
   autoload :Resolver,               "bundler/resolver"
   autoload :Retry,                  "bundler/retry"
@@ -58,8 +62,6 @@ module Bundler
   autoload :VersionRanges,          "bundler/version_ranges"
 
   class << self
-    attr_writer :bundle_path
-
     def configure
       @configured ||= configure_gem_home_and_path
     end
@@ -75,7 +77,11 @@ module Bundler
 
     # Returns absolute path of where gems are installed on the filesystem.
     def bundle_path
-      @bundle_path ||= Pathname.new(settings.path).expand_path(root)
+      @bundle_path ||= Pathname.new(configured_bundle_path.path).expand_path(root)
+    end
+
+    def configured_bundle_path
+      @configured_bundle_path ||= settings.path.tap(&:validate!)
     end
 
     # Returns absolute location of where binstubs are installed to.
@@ -113,7 +119,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation "Bundler.environment has been removed in favor of Bundler.load"
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load"
       load
     end
 
@@ -128,6 +134,12 @@ module Bundler
         configure
         Definition.build(default_gemfile, default_lockfile, unlock)
       end
+    end
+
+    def frozen?
+      frozen = settings[:deployment]
+      frozen ||= settings[:frozen] unless feature_flag.deployment_means_frozen?
+      frozen
     end
 
     def locked_gems
@@ -168,6 +180,7 @@ module Bundler
 
     def tmp_home_path(login, warning)
       login ||= "unknown"
+      Kernel.send(:require, "tmpdir")
       path = Pathname.new(Dir.tmpdir).join("bundler", "home")
       SharedHelpers.filesystem_access(path) do |tmp_home_path|
         unless tmp_home_path.exist?
@@ -196,17 +209,13 @@ module Bundler
       bundle_path.join("specifications")
     end
 
-    def cache
-      bundle_path.join("cache/bundler")
-    end
-
     def user_cache
       user_bundle_path.join("cache")
     end
 
     def root
       @root ||= begin
-                  default_gemfile.dirname.expand_path
+                  SharedHelpers.root
                 rescue GemfileNotFound
                   bundle_dir = default_bundle_dir
                   raise GemfileNotFound, "Could not locate Gemfile or .bundle/ directory" unless bundle_dir
@@ -215,8 +224,8 @@ module Bundler
     end
 
     def app_config_path
-      if ENV["BUNDLE_APP_CONFIG"]
-        Pathname.new(ENV["BUNDLE_APP_CONFIG"]).expand_path(root)
+      if app_config = ENV["BUNDLE_APP_CONFIG"]
+        Pathname.new(app_config).expand_path(root)
       else
         root.join(".bundle")
       end
@@ -224,10 +233,11 @@ module Bundler
 
     def app_cache(custom_path = nil)
       path = custom_path || root
-      path.join(settings.app_cache_path)
+      Pathname.new(path).join(settings.app_cache_path)
     end
 
     def tmp(name = Process.pid.to_s)
+      Kernel.send(:require, "tmpdir")
       Pathname.new(Dir.mktmpdir(["bundler", name]))
     end
 
@@ -257,7 +267,7 @@ EOF
     # @deprecated Use `original_env` instead
     # @return [Hash] Environment with all bundler-related variables removed
     def clean_env
-      Bundler::SharedHelpers.major_deprecation("`Bundler.clean_env` has weird edge cases, use `.original_env` instead")
+      Bundler::SharedHelpers.major_deprecation(2, "`Bundler.clean_env` has weird edge cases, use `.original_env` instead")
       env = original_env
 
       if env.key?("BUNDLER_ORIG_MANPATH")
@@ -313,12 +323,16 @@ EOF
     end
 
     def system_bindir
-      # Gem.bindir doesn't always return the location that Rubygems will install
-      # system binaries. If you put '-n foo' in your .gemrc, Rubygems will
-      # install binstubs there instead. Unfortunately, Rubygems doesn't expose
+      # Gem.bindir doesn't always return the location that RubyGems will install
+      # system binaries. If you put '-n foo' in your .gemrc, RubyGems will
+      # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
       # the directory to be set as well, via `bundle config bindir foo`.
       Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
+    end
+
+    def use_system_gems?
+      configured_bundle_path.use_system_gems?
     end
 
     def requires_sudo?
@@ -327,7 +341,7 @@ EOF
       sudo_present = which "sudo" if settings.allow_sudo?
 
       if sudo_present
-        # the bundle path and subdirectories need to be writable for Rubygems
+        # the bundle path and subdirectories need to be writable for RubyGems
         # to be able to unpack and install gems without exploding
         path = bundle_path
         path = path.parent until path.exist?
@@ -449,14 +463,17 @@ EOF
     end
 
     def reset_paths!
-      @root = nil
-      @settings = nil
+      @bin_path = nil
+      @bundler_major_version = nil
+      @bundle_path = nil
+      @configured = nil
+      @configured_bundle_path = nil
       @definition = nil
-      @setup = nil
       @load = nil
       @locked_gems = nil
-      @bundle_path = nil
-      @bin_path = nil
+      @root = nil
+      @settings = nil
+      @setup = nil
       @user_home = nil
     end
 
@@ -470,6 +487,8 @@ EOF
   private
 
     def eval_yaml_gemspec(path, contents)
+      Kernel.send(:require, "bundler/psyched_yaml")
+
       # If the YAML is invalid, Syck raises an ArgumentError, and Psych
       # raises a Psych::SyntaxError. See psyched_yaml.rb for more info.
       Gem::Specification.from_yaml(contents)
@@ -478,7 +497,7 @@ EOF
     end
 
     def eval_gemspec(path, contents)
-      eval(contents, TOPLEVEL_BINDING, path.expand_path.to_s)
+      eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
@@ -495,14 +514,14 @@ EOF
       bundle_path
     end
 
-    def configure_gem_path(env = ENV, settings = self.settings)
+    def configure_gem_path(env = ENV)
       blank_home = env["GEM_HOME"].nil? || env["GEM_HOME"].empty?
-      if settings[:disable_shared_gems]
+      if !use_system_gems?
         # this needs to be empty string to cause
         # PathSupport.split_gem_path to only load up the
         # Bundler --path setting as the GEM_PATH.
         env["GEM_PATH"] = ""
-      elsif blank_home || Bundler.rubygems.gem_dir != bundle_path.to_s
+      elsif blank_home
         possibles = [Bundler.rubygems.gem_dir, Bundler.rubygems.gem_path]
         paths = possibles.flatten.compact.uniq.reject(&:empty?)
         env["GEM_PATH"] = paths.join(File::PATH_SEPARATOR)
@@ -510,14 +529,7 @@ EOF
     end
 
     def configure_gem_home
-      # TODO: This mkdir_p is only needed for JRuby <= 1.5 and should go away (GH #602)
-      begin
-        FileUtils.mkdir_p bundle_path.to_s
-      rescue
-        nil
-      end
-
-      ENV["GEM_HOME"] = File.expand_path(bundle_path, root)
+      Bundler::SharedHelpers.set_env "GEM_HOME", File.expand_path(bundle_path, root)
       Bundler.rubygems.clear_paths
     end
 

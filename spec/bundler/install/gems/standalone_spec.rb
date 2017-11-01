@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.shared_examples "bundle install --standalone" do
   shared_examples "common functionality" do
@@ -51,10 +50,11 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with simple gems" do
     before do
-      install_gemfile <<-G, :standalone => true
+      gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
       G
+      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -69,7 +69,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with gems with native extension", :ruby_repo do
     before do
-      install_gemfile <<-G, :standalone => true
+      install_gemfile <<-G, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
         source "file://#{gem_repo1}"
         gem "very_simple_binary"
       G
@@ -101,7 +101,7 @@ RSpec.shared_examples "bundle install --standalone" do
           end
         G
       end
-      install_gemfile <<-G, :standalone => true
+      install_gemfile <<-G, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end
@@ -116,11 +116,12 @@ RSpec.shared_examples "bundle install --standalone" do
     before do
       build_git "devise", "1.0"
 
-      install_gemfile <<-G, :standalone => true
+      gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
+      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -138,7 +139,7 @@ RSpec.shared_examples "bundle install --standalone" do
     before do
       build_git "devise", "1.0"
 
-      install_gemfile <<-G, :standalone => true
+      gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
 
@@ -147,6 +148,7 @@ RSpec.shared_examples "bundle install --standalone" do
           gem "rack-test"
         end
       G
+      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -159,7 +161,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
 
     it "allows creating a standalone file with limited groups" do
-      bundle "install --standalone default"
+      bundle! "install", forgotten_command_line_options(:path => "bundle").merge(:standalone => "default")
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -172,12 +174,12 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(last_command.stdout).to eq("2.3.2")
+      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
 
     it "allows --without to limit the groups used in a standalone" do
-      bundle "install --standalone --without test"
+      bundle! :install, forgotten_command_line_options(:path => "bundle", :without => "test").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -190,12 +192,12 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(last_command.stdout).to eq("2.3.2")
+      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
 
     it "allows --path to change the location of the standalone bundle" do
-      bundle "install --standalone --path path/to/bundle"
+      bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
         ruby <<-RUBY, :no_lib => true
@@ -207,12 +209,12 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(out).to eq("2.3.2")
+      expect(last_command.stdout).to eq("2.3.2")
     end
 
     it "allows remembered --without to limit the groups used in a standalone" do
-      bundle "install --without test"
-      bundle "install --standalone"
+      bundle! :install, forgotten_command_line_options(:without => "test")
+      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -225,8 +227,8 @@ RSpec.shared_examples "bundle install --standalone" do
         RUBY
       end
 
-      expect(out).to eq("2.3.2")
-      expect(err).to eq("ZOMG LOAD ERROR")
+      expect(last_command.stdout).to eq("2.3.2")
+      expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
   end
 
@@ -239,7 +241,7 @@ RSpec.shared_examples "bundle install --standalone" do
           source "#{source_uri}"
           gem "rails"
         G
-        bundle "install --standalone", :artifice => "endpoint"
+        bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true, :artifice => "endpoint")
       end
 
       let(:expected_gems) do
@@ -253,12 +255,13 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with --binstubs" do
+  describe "with --binstubs", :bundler => "< 2" do
     before do
-      install_gemfile <<-G, :standalone => true, :binstubs => true
+      gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
       G
+      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true, :binstubs => true)
     end
 
     let(:expected_gems) do

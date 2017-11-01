@@ -1,19 +1,22 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   def rubygems_version(name, requirement)
-    require "bundler/source/rubygems/remote"
-    require "bundler/fetcher"
-    source = Bundler::Source::Rubygems::Remote.new(URI("https://rubygems.org"))
-    fetcher = Bundler::Fetcher.new(source)
-    index = fetcher.specs([name], nil)
-    rubygem = index.search(Gem::Dependency.new(name, requirement)).last
-    if rubygem.nil?
-      raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
-        "Found specs:\n#{index.send(:specs).inspect}"
-    end
-    "#{name} (#{rubygem.version})"
+    ruby! <<-RUBY
+      require #{File.expand_path("../../support/artifice/vcr.rb", __FILE__).dump}
+      require "bundler"
+      require "bundler/source/rubygems/remote"
+      require "bundler/fetcher"
+      source = Bundler::Source::Rubygems::Remote.new(URI("https://rubygems.org"))
+      fetcher = Bundler::Fetcher.new(source)
+      index = fetcher.specs([#{name.dump}], nil)
+      rubygem = index.search(Gem::Dependency.new(#{name.dump}, #{requirement.dump})).last
+      if rubygem.nil?
+        raise "Could not find #{name} (#{requirement}) on rubygems.org!\n" \
+          "Found specs:\n\#{index.send(:specs).inspect}"
+      end
+      "#{name} (\#{rubygem.version})"
+    RUBY
   end
 
   # there is no rbx-relative-require gem that will install on 1.9
@@ -76,7 +79,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem "gxapi_rails", "< 0.1.0" # 0.1.0 was released way after the test was written
       gem 'rack-cache', '1.2.0' # last version that works on Ruby 1.9
     G
-    bundle :lock
+    bundle! :lock
     expect(lockfile).to include("gxapi_rails (0.0.6)")
   end
 
@@ -89,7 +92,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem "activerecord", "~> 3.0"
       gem "builder", "~> 2.1.2"
     G
-    bundle :lock
+    bundle! :lock
     expect(lockfile).to include(rubygems_version("i18n", "~> 0.6.0"))
     expect(lockfile).to include(rubygems_version("activesupport", "~> 3.0"))
   end
@@ -220,9 +223,6 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       DEPENDENCIES
         paperclip (~> 5.1.0)
         rails (~> 4.2.7.1)
-
-      BUNDLED WITH
-         1.13.1
     L
 
     bundle! "lock --update paperclip"
@@ -239,7 +239,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
       gem 'rack', '1.0.1'
     G
 
-    bundle "install --path vendor/bundle"
+    bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
     expect(err).not_to include("Could not find rake")
     expect(err).to lack_errors
   end
@@ -247,6 +247,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
   it "checks out git repos when the lockfile is corrupted" do
     gemfile <<-G
       source "https://rubygems.org"
+      git_source(:github) {|repo| "https://github.com/\#{repo}.git" }
 
       gem 'activerecord',  :github => 'carlhuda/rails-bundler-test', :branch => 'master'
       gem 'activesupport', :github => 'carlhuda/rails-bundler-test', :branch => 'master'
@@ -255,7 +256,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
 
     lockfile <<-L
       GIT
-        remote: git://github.com/carlhuda/rails-bundler-test.git
+        remote: https://github.com/carlhuda/rails-bundler-test.git
         revision: 369e28a87419565f1940815219ea9200474589d4
         branch: master
         specs:
@@ -282,7 +283,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
             multi_json (~> 1.0)
 
       GIT
-        remote: git://github.com/carlhuda/rails-bundler-test.git
+        remote: https://github.com/carlhuda/rails-bundler-test.git
         revision: 369e28a87419565f1940815219ea9200474589d4
         branch: master
         specs:
@@ -309,7 +310,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
             multi_json (~> 1.0)
 
       GIT
-        remote: git://github.com/carlhuda/rails-bundler-test.git
+        remote: https://github.com/carlhuda/rails-bundler-test.git
         revision: 369e28a87419565f1940815219ea9200474589d4
         branch: master
         specs:
@@ -366,9 +367,8 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
         activesupport!
     L
 
-    bundle :lock
-    expect(err).to eq("")
-    expect(exitstatus).to eq(0) if exitstatus
+    bundle! :lock
+    expect(last_command.stderr).to lack_errors
   end
 
   it "outputs a helpful error message when gems have invalid gemspecs" do

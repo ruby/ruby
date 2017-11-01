@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "uri"
 require "bundler/match_platform"
 
@@ -68,7 +69,7 @@ module Bundler
     end
 
     def __materialize__
-      search_object = Bundler.settings[:specific_platform] || Bundler.settings[:force_ruby_platform] ? self : Dependency.new(name, version)
+      search_object = Bundler.feature_flag.specific_platform? || Bundler.settings[:force_ruby_platform] ? self : Dependency.new(name, version)
       @specification = if source.is_a?(Source::Gemspec) && source.gemspec.name == name
         source.gemspec.tap {|s| s.source = source }
       else

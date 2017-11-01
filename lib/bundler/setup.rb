@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/shared_helpers"
 
 if Bundler::SharedHelpers.in_bundle?

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'bundler/vendor/molinillo/lib/molinillo/dependency_graph'
 
 module Bundler::Molinillo

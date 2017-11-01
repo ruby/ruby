@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler::Molinillo
   module Delegates
     # Delegates all {Bundler::Molinillo::SpecificationProvider} methods to a

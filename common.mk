@@ -1185,7 +1185,7 @@ test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: yes-test-bundler-prepare
 	$(gnumake_recursive)$(Q) \
 	$(XRUBY) -C $(srcdir) -Ispec/bundler .bundle/bin/rspec \
-		$(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
+		--require spec_helper $(RSPECOPTS) spec/bundler/$(BUNDLER_SPECS)
 no-test-bundler:
 
 UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \

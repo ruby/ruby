@@ -62,6 +62,7 @@ module Bundler
 
     def run
       Bundler.ui.level = "error" if options[:quiet]
+      Bundler.settings.validate!
       check!
 
       definition = Bundler.definition

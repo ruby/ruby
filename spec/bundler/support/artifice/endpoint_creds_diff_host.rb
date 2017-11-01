@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require File.expand_path("../endpoint", __FILE__)
 
 Artifice.deactivate
@@ -10,7 +11,7 @@ class EndpointCredsDiffHost < Endpoint
     end
 
     def authorized?
-      auth.provided? && auth.basic? && auth.credentials && auth.credentials == %w(user pass)
+      auth.provided? && auth.basic? && auth.credentials && auth.credentials == %w[user pass]
     end
 
     def protected!

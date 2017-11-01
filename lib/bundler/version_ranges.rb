@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   module VersionRanges
     NEq = Struct.new(:version)

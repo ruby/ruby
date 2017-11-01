@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler/installer/parallel_installer"
 
 RSpec.describe Bundler::ParallelInstaller::SpecInstallation do

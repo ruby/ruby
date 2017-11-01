@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   module GemHelpers
     GENERIC_CACHE = {} # rubocop:disable MutableConstant

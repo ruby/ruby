@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "bundler/cli/common"
 
 module Bundler
   class CLI::Install
@@ -13,17 +12,9 @@ module Bundler
 
       warn_if_root
 
-      [:with, :without].each do |option|
-        if options[option]
-          options[option] = options[option].join(":").tr(" ", ":").split(":")
-        end
-      end
-
-      check_for_group_conflicts
-
       normalize_groups
 
-      ENV["RB_USER_INSTALL"] = "1" if Bundler::FREEBSD
+      Bundler::SharedHelpers.set_env "RB_USER_INSTALL", "1" if Bundler::FREEBSD
 
       # Disable color in deployment mode
       Bundler.ui.shell = Thor::Shell::Basic.new if options[:deployment]
@@ -32,22 +23,28 @@ module Bundler
 
       check_trust_policy
 
-      if options[:deployment] || options[:frozen]
+      if options[:deployment] || options[:frozen] || Bundler.frozen?
         unless Bundler.default_lockfile.exist?
-          flag = options[:deployment] ? "--deployment" : "--frozen"
-          raise ProductionError, "The #{flag} flag requires a #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}. Please make " \
+          flag   = "--deployment flag" if options[:deployment]
+          flag ||= "--frozen flag"     if options[:frozen]
+          flag ||= "deployment setting"
+          raise ProductionError, "The #{flag} requires a #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}. Please make " \
                                  "sure you have checked your #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)} into version control " \
                                  "before deploying."
         end
 
         options[:local] = true if Bundler.app_cache.exist?
 
-        Bundler.settings[:frozen] = "1"
+        if Bundler.feature_flag.deployment_means_frozen?
+          Bundler.settings.set_command_option :deployment, true
+        else
+          Bundler.settings.set_command_option :frozen, true
+        end
       end
 
       # When install is called with --no-deployment, disable deployment mode
       if options[:deployment] == false
-        Bundler.settings.delete(:frozen)
+        Bundler.settings.set_command_option :frozen, nil
         options[:system] = true
       end
 
@@ -56,7 +53,7 @@ module Bundler
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       if options["binstubs"]
-        Bundler::SharedHelpers.major_deprecation \
+        Bundler::SharedHelpers.major_deprecation 2,
           "The --binstubs option will be removed in favor of `bundle binstubs`"
       end
 
@@ -66,24 +63,24 @@ module Bundler
       definition.validate_runtime!
 
       installer = Installer.install(Bundler.root, definition, options)
-      Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.settings[:frozen]
+      Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen?
 
       Bundler.ui.confirm "Bundle complete! #{dependencies_count_for(definition)}, #{gems_installed_for(definition)}."
       Bundler::CLI::Common.output_without_groups_message
 
-      if Bundler.settings[:path]
-        absolute_path = File.expand_path(Bundler.settings[:path])
-        relative_path = absolute_path.sub(File.expand_path(".") + File::SEPARATOR, "." + File::SEPARATOR)
-        Bundler.ui.confirm "Bundled gems are installed into #{relative_path}."
-      else
+      if Bundler.use_system_gems?
         Bundler.ui.confirm "Use `bundle info [gemname]` to see where a bundled gem is installed."
+      else
+        absolute_path = File.expand_path(Bundler.configured_bundle_path.base_path)
+        relative_path = absolute_path.sub(File.expand_path(".") + File::SEPARATOR, "." + File::SEPARATOR)
+        Bundler.ui.confirm "Bundled gems are installed into `#{relative_path}`"
       end
 
       Bundler::CLI::Common.output_post_install_messages installer.post_install_messages
 
       warn_ambiguous_gems
 
-      if Bundler.settings[:clean] && Bundler.settings[:path]
+      if CLI::Common.clean_after_install?
         require "bundler/cli/clean"
         Bundler::CLI::Clean.new(options).run
       end
@@ -124,15 +121,11 @@ module Bundler
       "#{count} #{count == 1 ? "gem" : "gems"} now installed"
     end
 
-    def check_for_group_conflicts
-      if options[:without] && options[:with]
-        conflicting_groups = options[:without] & options[:with]
-        unless conflicting_groups.empty?
-          Bundler.ui.error "You can't list a group in both, --with and --without." \
-          " The offending groups are: #{conflicting_groups.join(", ")}."
-          exit 1
-        end
-      end
+    def check_for_group_conflicts_in_cli_options
+      conflicting_groups = Array(options[:without]) & Array(options[:with])
+      return if conflicting_groups.empty?
+      raise InvalidOption, "You can't list a group in both with and without." \
+        " The offending groups are: #{conflicting_groups.join(", ")}."
     end
 
     def check_for_options_conflicts
@@ -145,28 +138,29 @@ module Bundler
     end
 
     def check_trust_policy
-      if options["trust-policy"]
-        unless Bundler.rubygems.security_policies.keys.include?(options["trust-policy"])
-          Bundler.ui.error "Rubygems doesn't know about trust policy '#{options["trust-policy"]}'. " \
-            "The known policies are: #{Bundler.rubygems.security_policies.keys.join(", ")}."
-          exit 1
-        end
-        Bundler.settings["trust-policy"] = options["trust-policy"]
-      else
-        Bundler.settings["trust-policy"] = nil if Bundler.settings["trust-policy"]
+      trust_policy = options["trust-policy"]
+      unless Bundler.rubygems.security_policies.keys.unshift(nil).include?(trust_policy)
+        raise InvalidOption, "RubyGems doesn't know about trust policy '#{trust_policy}'. " \
+          "The known policies are: #{Bundler.rubygems.security_policies.keys.join(", ")}."
       end
+      Bundler.settings.set_command_option_if_given :"trust-policy", trust_policy
     end
 
     def normalize_groups
-      Bundler.settings.with    = [] if options[:with] && options[:with].empty?
-      Bundler.settings.without = [] if options[:without] && options[:without].empty?
+      options[:with] &&= options[:with].join(":").tr(" ", ":").split(":")
+      options[:without] &&= options[:without].join(":").tr(" ", ":").split(":")
 
-      with = options.fetch("with", [])
-      with |= Bundler.settings.with.map(&:to_s)
+      check_for_group_conflicts_in_cli_options
+
+      Bundler.settings.set_command_option :with, nil if options[:with] == []
+      Bundler.settings.set_command_option :without, nil if options[:without] == []
+
+      with = options.fetch(:with, [])
+      with |= Bundler.settings[:with].map(&:to_s)
       with -= options[:without] if options[:without]
 
-      without = options.fetch("without", [])
-      without |= Bundler.settings.without.map(&:to_s)
+      without = options.fetch(:without, [])
+      without |= Bundler.settings[:without].map(&:to_s)
       without -= options[:with] if options[:with]
 
       options[:with]    = with
@@ -174,28 +168,34 @@ module Bundler
     end
 
     def normalize_settings
-      Bundler.settings[:path]                = nil if options[:system]
-      Bundler.settings[:path]                = "vendor/bundle" if options[:deployment]
-      Bundler.settings[:path]                = options["path"] if options["path"]
-      Bundler.settings[:path]              ||= "bundle" if options["standalone"]
+      Bundler.settings.set_command_option :path, nil if options[:system]
+      Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
+      Bundler.settings.set_command_option_if_given :path, options["path"]
+      Bundler.settings.set_command_option :path, "bundle" if options["standalone"] && Bundler.settings[:path].nil?
 
-      Bundler.settings[:bin]                 = options["binstubs"] if options["binstubs"]
-      Bundler.settings[:bin]                 = nil if options["binstubs"] && options["binstubs"].empty?
+      bin_option = options["binstubs"]
+      bin_option = nil if bin_option && bin_option.empty?
+      Bundler.settings.set_command_option :bin, bin_option if options["binstubs"]
 
-      Bundler.settings[:shebang]             = options["shebang"] if options["shebang"]
+      Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
 
-      Bundler.settings[:jobs]                = options["jobs"] if options["jobs"]
+      Bundler.settings.set_command_option_if_given :jobs, options["jobs"]
 
-      Bundler.settings[:no_prune]            = true if options["no-prune"]
+      Bundler.settings.set_command_option_if_given :no_prune, options["no-prune"]
 
-      Bundler.settings[:no_install]          = true if options["no-install"]
+      Bundler.settings.set_command_option_if_given :no_install, options["no-install"]
 
-      Bundler.settings[:clean]               = options["clean"] if options["clean"]
+      Bundler.settings.set_command_option_if_given :clean, options["clean"]
 
-      Bundler.settings.without               = options[:without]
-      Bundler.settings.with                  = options[:with]
+      unless Bundler.settings[:without] == options[:without] && Bundler.settings[:with] == options[:with]
+        # need to nil them out first to get around validation for backwards compatibility
+        Bundler.settings.set_command_option :without, nil
+        Bundler.settings.set_command_option :with,    nil
+        Bundler.settings.set_command_option :without, options[:without] - options[:with]
+        Bundler.settings.set_command_option :with,    options[:with]
+      end
 
-      Bundler.settings[:disable_shared_gems] = Bundler.settings[:path] ? true : nil
+      options[:force] = options[:redownload]
     end
 
     def warn_ambiguous_gems

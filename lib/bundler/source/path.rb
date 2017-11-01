@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class Source
     class Path < Source
@@ -35,10 +36,12 @@ module Bundler
       end
 
       def remote!
+        @local_specs = nil
         @allow_remote = true
       end
 
       def cached!
+        @local_specs = nil
         @allow_cached = true
       end
 
@@ -74,14 +77,14 @@ module Bundler
       end
 
       def install(spec, options = {})
-        Bundler.ui.info "Using #{version_message(spec)} from #{self}"
+        print_using_message "Using #{version_message(spec)} from #{self}"
         generate_bin(spec, :disable_extensions => true)
         nil # no post-install message
       end
 
       def cache(spec, custom_path = nil)
         app_cache_path = app_cache_path(custom_path)
-        return unless Bundler.settings[:cache_all]
+        return unless Bundler.feature_flag.cache_all?
         return if expand(@original_path).to_s.index(root_path.to_s + "/") == 0
 
         unless @original_path.exist?
@@ -111,10 +114,6 @@ module Bundler
 
       def root
         Bundler.root
-      end
-
-      def is_a_path?
-        instance_of?(Path)
       end
 
       def expanded_original_path
@@ -228,7 +227,8 @@ module Bundler
           spec,
           :env_shebang => false,
           :disable_extensions => options[:disable_extensions],
-          :build_args => options[:build_args]
+          :build_args => options[:build_args],
+          :bundler_extension_cache_path => extension_cache_path(spec)
         )
         installer.post_install
       rescue Gem::InvalidSpecificationException => e
@@ -242,7 +242,7 @@ module Bundler
                           "to modify their .gemspec so it can work with `gem build`."
         end
 
-        Bundler.ui.warn "The validation message from Rubygems was:\n  #{e.message}"
+        Bundler.ui.warn "The validation message from RubyGems was:\n  #{e.message}"
       end
     end
   end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/vendored_thor"
 module Bundler
   class CLI::Plugin < Thor

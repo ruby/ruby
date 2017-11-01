@@ -1,20 +1,19 @@
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler/settings"
 
 RSpec.describe Bundler::Env do
-  let(:env)            { described_class.new }
   let(:git_proxy_stub) { Bundler::Source::Git::GitProxy.new(nil, nil, nil) }
 
   describe "#report" do
     it "prints the environment" do
-      out = env.report
+      out = described_class.report
 
       expect(out).to include("Environment")
       expect(out).to include(Bundler::VERSION)
       expect(out).to include(Gem::VERSION)
-      expect(out).to include(env.send(:ruby_version))
-      expect(out).to include(env.send(:git_version))
+      expect(out).to include(described_class.send(:ruby_version))
+      expect(out).to include(described_class.send(:git_version))
       expect(out).to include(OpenSSL::OPENSSL_VERSION)
     end
 
@@ -36,7 +35,7 @@ RSpec.describe Bundler::Env do
         L
       end
 
-      let(:output) { env.report(:print_gemfile => true) }
+      let(:output) { described_class.report(:print_gemfile => true) }
 
       it "prints the Gemfile" do
         expect(output).to include("Gemfile")
@@ -50,7 +49,7 @@ RSpec.describe Bundler::Env do
     end
 
     context "when there no Gemfile and print_gemfile is true" do
-      let(:output) { env.report(:print_gemfile => true) }
+      let(:output) { described_class.report(:print_gemfile => true) }
 
       it "prints the environment" do
         expect(output).to start_with("## Environment")
@@ -76,10 +75,58 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints the gemspec" do
-        output = env.report(:print_gemspecs => true)
+        output = described_class.report(:print_gemspecs => true)
 
         expect(output).to include("foo.gemspec")
         expect(output).to include(gemspec)
+      end
+    end
+
+    context "when eval_gemfile is used" do
+      it "prints all gemfiles" do
+        create_file "other/Gemfile-other", "gem 'rack'"
+        create_file "other/Gemfile", "eval_gemfile 'Gemfile-other'"
+        create_file "Gemfile-alt", <<-G
+          source "file:#{gem_repo1}"
+          eval_gemfile "other/Gemfile"
+        G
+        gemfile "eval_gemfile #{File.expand_path("Gemfile-alt").dump}"
+
+        output = described_class.report(:print_gemspecs => true)
+        expect(output).to include(strip_whitespace(<<-ENV))
+          ## Gemfile
+
+          ### Gemfile
+
+          ```ruby
+          eval_gemfile #{File.expand_path("Gemfile-alt").dump}
+          ```
+
+          ### Gemfile-alt
+
+          ```ruby
+          source "file:#{gem_repo1}"
+          eval_gemfile "other/Gemfile"
+          ```
+
+          ### other/Gemfile
+
+          ```ruby
+          eval_gemfile 'Gemfile-other'
+          ```
+
+          ### other/Gemfile-other
+
+          ```ruby
+          gem 'rack'
+          ```
+
+          ### Gemfile.lock
+
+          ```
+          <No #{bundled_app("Gemfile.lock")} found>
+          ```
+        ENV
       end
     end
 
@@ -89,7 +136,7 @@ RSpec.describe Bundler::Env do
           and_return("git version 1.2.3 (Apple Git-BS)")
         expect(Bundler::Source::Git::GitProxy).to receive(:new).and_return(git_proxy_stub)
 
-        expect(env.report).to include("Git       1.2.3 (Apple Git-BS)")
+        expect(described_class.report).to include("Git         1.2.3 (Apple Git-BS)")
       end
     end
   end

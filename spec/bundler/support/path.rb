@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "pathname"
 
 module Spec
@@ -29,7 +30,11 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      system_gem_path(*path)
+      if Bundler::VERSION.split(".").first.to_i < 2
+        system_gem_path(*path)
+      else
+        bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), Gem::ConfigMap[:ruby_version], *path].compact)
+      end
     end
 
     def bundled_app(*path)
@@ -110,6 +115,9 @@ module Spec
 
     private
     def for_ruby_core?
+      # avoid to wornings
+      @for_ruby_core ||= nil
+
       if @for_ruby_core.nil?
         @for_ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
       else

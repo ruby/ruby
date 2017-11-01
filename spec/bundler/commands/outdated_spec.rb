@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle outdated" do
   before :each do
@@ -192,6 +191,8 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "2.3.4"
       end
 
+      bundle! "config clean false"
+
       install_gemfile <<-G
         source "file://#{gem_repo2}"
         gem "activesupport", "2.3.4"
@@ -334,7 +335,7 @@ RSpec.describe "bundle outdated" do
         G
 
         update_repo2 do
-          build_gem "activesupport", %w(2.4.0 3.0.0)
+          build_gem "activesupport", %w[2.4.0 3.0.0]
           build_gem "weakling", "0.0.5"
         end
 
@@ -352,7 +353,7 @@ RSpec.describe "bundle outdated" do
         G
 
         update_repo2 do
-          build_gem "activesupport", %w(2.3.9)
+          build_gem "activesupport", %w[2.3.9]
           build_gem "weakling", "0.1.5"
         end
 
@@ -370,7 +371,7 @@ RSpec.describe "bundle outdated" do
         G
 
         update_repo2 do
-          build_gem "activesupport", %w(2.4.0 2.5.0)
+          build_gem "activesupport", %w[2.4.0 2.5.0]
           build_gem "weakling", "1.1.5"
         end
 
@@ -406,9 +407,9 @@ RSpec.describe "bundle outdated" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  context "after bundle install --deployment" do
+  context "after bundle install --deployment", :bundler => "< 2" do
     before do
-      install_gemfile <<-G, :deployment => true
+      install_gemfile <<-G, forgotten_command_line_options(:deployment => true)
         source "file://#{gem_repo2}"
 
         gem "rack"
@@ -420,11 +421,34 @@ RSpec.describe "bundle outdated" do
       update_repo2 { build_gem "activesupport", "3.0" }
 
       bundle "outdated"
-      expect(exitstatus).to_not be_zero if exitstatus
+      expect(last_command).to be_failure
       expect(out).to include("You are trying to check outdated gems in deployment mode.")
       expect(out).to include("Run `bundle outdated` elsewhere.")
       expect(out).to include("If this is a development machine, remove the ")
       expect(out).to include("Gemfile freeze\nby running `bundle install --no-deployment`.")
+    end
+  end
+
+  context "after bundle config deployment true" do
+    before do
+      install_gemfile <<-G
+        source "file://#{gem_repo2}"
+
+        gem "rack"
+        gem "foo"
+      G
+      bundle! "config deployment true"
+    end
+
+    it "outputs a helpful message about being in deployment mode" do
+      update_repo2 { build_gem "activesupport", "3.0" }
+
+      bundle "outdated"
+      expect(last_command).to be_failure
+      expect(out).to include("You are trying to check outdated gems in deployment mode.")
+      expect(out).to include("Run `bundle outdated` elsewhere.")
+      expect(out).to include("If this is a development machine, remove the ")
+      expect(out).to include("Gemfile freeze\nby running `bundle config --delete deployment`.")
     end
   end
 
@@ -629,9 +653,9 @@ RSpec.describe "bundle outdated" do
     context "without update-strict" do
       before do
         build_repo4 do
-          build_gem "patch", %w(1.0.0 1.0.1)
-          build_gem "minor", %w(1.0.0 1.0.1 1.1.0)
-          build_gem "major", %w(1.0.0 1.0.1 1.1.0 2.0.0)
+          build_gem "patch", %w[1.0.0 1.0.1]
+          build_gem "minor", %w[1.0.0 1.0.1 1.1.0]
+          build_gem "major", %w[1.0.0 1.0.1 1.1.0 2.0.0]
         end
 
         # establish a lockfile set to 1.0.0
@@ -689,17 +713,17 @@ RSpec.describe "bundle outdated" do
     context "with update-strict" do
       before do
         build_repo4 do
-          build_gem "foo", %w(1.4.3 1.4.4) do |s|
+          build_gem "foo", %w[1.4.3 1.4.4] do |s|
             s.add_dependency "bar", "~> 2.0"
           end
-          build_gem "foo", %w(1.4.5 1.5.0) do |s|
+          build_gem "foo", %w[1.4.5 1.5.0] do |s|
             s.add_dependency "bar", "~> 2.1"
           end
-          build_gem "foo", %w(1.5.1) do |s|
+          build_gem "foo", %w[1.5.1] do |s|
             s.add_dependency "bar", "~> 3.0"
           end
-          build_gem "bar", %w(2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0)
-          build_gem "qux", %w(1.0.0 1.1.0 2.0.0)
+          build_gem "bar", %w[2.0.3 2.0.4 2.0.5 2.1.0 2.1.1 3.0.0]
+          build_gem "qux", %w[1.0.0 1.1.0 2.0.0]
         end
 
         # establish a lockfile set to 1.4.3

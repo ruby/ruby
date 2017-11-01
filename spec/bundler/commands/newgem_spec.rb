@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle gem" do
   def reset!
@@ -166,10 +165,10 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("test_gem/.git")).to exist
   end
 
-  context "when git is not avaiable" do
+  context "when git is not available" do
     let(:gem_name) { "test_gem" }
 
-    # This spec cannot have `git` avaiable in the test env
+    # This spec cannot have `git` available in the test env
     before do
       load_paths = [lib, spec]
       load_path_str = "-I#{load_paths.join(File::PATH_SEPARATOR)}"
@@ -191,8 +190,6 @@ RSpec.describe "bundle gem" do
   end
 
   it "generates a valid gemspec" do
-    system_gems ["rake-10.0.2"]
-
     in_app_root
     bundle "gem newgem --bin"
 
@@ -214,12 +211,11 @@ RSpec.describe "bundle gem" do
     end
 
     Dir.chdir(bundled_app("newgem")) do
-      bundle "exec rake build"
+      system_gems ["rake-10.0.2"], :path => :bundle_path
+      bundle! "exec rake build"
     end
 
-    expect(exitstatus).to be_zero if exitstatus
-    expect(out).not_to include("ERROR")
-    expect(err).not_to include("ERROR")
+    expect(last_command.stdboth).not_to include("ERROR")
   end
 
   context "gem naming with relative paths" do
@@ -785,24 +781,24 @@ RSpec.describe "bundle gem" do
 
     it "fails gracefully with a ." do
       bundle "gem foo.gemspec"
-      expect(out).to end_with("Invalid gem name foo.gemspec -- `Foo.gemspec` is an invalid constant name")
+      expect(last_command.bundler_err).to end_with("Invalid gem name foo.gemspec -- `Foo.gemspec` is an invalid constant name")
     end
 
     it "fails gracefully with a ^" do
       bundle "gem ^"
-      expect(out).to end_with("Invalid gem name ^ -- `^` is an invalid constant name")
+      expect(last_command.bundler_err).to end_with("Invalid gem name ^ -- `^` is an invalid constant name")
     end
 
     it "fails gracefully with a space" do
       bundle "gem 'foo bar'"
-      expect(out).to end_with("Invalid gem name foo bar -- `Foo bar` is an invalid constant name")
+      expect(last_command.bundler_err).to end_with("Invalid gem name foo bar -- `Foo bar` is an invalid constant name")
     end
 
     it "fails gracefully when multiple names are passed" do
       bundle "gem foo bar baz"
-      expect(out).to eq(<<-E.strip)
+      expect(last_command.bundler_err).to eq(<<-E.strip)
 ERROR: "bundle gem" was called with arguments ["foo", "bar", "baz"]
-Usage: "bundle gem GEM [OPTIONS]"
+Usage: "bundle gem NAME [OPTIONS]"
       E
     end
   end
@@ -890,8 +886,8 @@ Usage: "bundle gem GEM [OPTIONS]"
       in_app_root do
         FileUtils.touch("conflict-foobar")
       end
-      output = bundle "gem conflict-foobar"
-      expect(output).to include("Errno::ENOTDIR")
+      bundle "gem conflict-foobar"
+      expect(last_command.bundler_err).to include("Errno::ENOTDIR")
       expect(exitstatus).to eql(32) if exitstatus
     end
   end
@@ -902,7 +898,7 @@ Usage: "bundle gem GEM [OPTIONS]"
         FileUtils.mkdir_p("conflict-foobar/Gemfile")
       end
       bundle! "gem conflict-foobar"
-      expect(out).to include("file_clash  conflict-foobar/Gemfile").
+      expect(last_command.stdout).to include("file_clash  conflict-foobar/Gemfile").
         and include "Initializing git repo in #{bundled_app("conflict-foobar")}"
     end
   end

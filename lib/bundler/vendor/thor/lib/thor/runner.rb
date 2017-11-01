@@ -3,7 +3,7 @@ require "bundler/vendor/thor/lib/thor/group"
 require "bundler/vendor/thor/lib/thor/core_ext/io_binary_read"
 
 require "yaml"
-require "digest/md5"
+require "digest"
 require "pathname"
 
 class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLength
@@ -90,7 +90,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
     end
 
     thor_yaml[as] = {
-      :filename   => Digest::MD5.hexdigest(name + as),
+      :filename   => Digest(:MD5).hexdigest(name + as),
       :location   => location,
       :namespaces => Bundler::Thor::Util.namespaces_in_content(contents, base)
     }

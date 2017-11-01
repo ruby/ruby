@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Sometimes
   def run_with_retries(example_to_run, retries)
     example = RSpec.current_example

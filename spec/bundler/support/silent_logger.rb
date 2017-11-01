@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "logger"
 module Spec
   class SilentLogger

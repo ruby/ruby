@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler::Molinillo
   class DependencyGraph
     # An action that modifies a {DependencyGraph} that is reversible.

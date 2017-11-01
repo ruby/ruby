@@ -1,4 +1,9 @@
 # frozen_string_literal: true
+
+require "bundler/shared_helpers"
+Bundler::SharedHelpers.major_deprecation 2,
+  "The Bundler task for Capistrano. Please use http://github.com/capistrano/bundler"
+
 # Capistrano task for Bundler.
 #
 # Add "require 'bundler/capistrano'" in your Capistrano deploy.rb, and

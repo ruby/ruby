@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "bundler/vendored_thor" unless defined?(Thor)
 require "bundler"
 
@@ -50,8 +51,8 @@ module Bundler
         install_gem(built_gem_path, :local)
       end
 
-      desc "Create tag #{version_tag} and build and push #{name}-#{version}.gem to Rubygems\n" \
-           "To prevent publishing in Rubygems use `gem_push=no rake release`"
+      desc "Create tag #{version_tag} and build and push #{name}-#{version}.gem to #{gem_push_host}\n" \
+           "To prevent publishing in RubyGems use `gem_push=no rake release`"
       task "release", [:remote] => ["build", "release:guard_clean",
                                     "release:source_control_push", "release:rubygem_push"] do
       end
@@ -92,18 +93,14 @@ module Bundler
   protected
 
     def rubygem_push(path)
-      allowed_push_host = nil
       gem_command = "gem push '#{path}'"
       gem_command += " --key #{gem_key}" if gem_key
-      if @gemspec.respond_to?(:metadata)
-        allowed_push_host = @gemspec.metadata["allowed_push_host"]
-        gem_command += " --host #{allowed_push_host}" if allowed_push_host
-      end
+      gem_command += " --host #{allowed_push_host}" if allowed_push_host
       unless allowed_push_host || Bundler.user_home.join(".gem/credentials").file?
         raise "Your rubygems.org credentials aren't set. Run `gem push` to set them."
       end
       sh(gem_command)
-      Bundler.ui.confirm "Pushed #{name} #{version} to #{allowed_push_host ? allowed_push_host : "rubygems.org."}"
+      Bundler.ui.confirm "Pushed #{name} #{version} to #{gem_push_host}"
     end
 
     def built_gem_path
@@ -114,6 +111,18 @@ module Bundler
       perform_git_push remote
       perform_git_push "#{remote} --tags"
       Bundler.ui.confirm "Pushed git commits and tags."
+    end
+
+    def allowed_push_host
+      @gemspec.metadata["allowed_push_host"] if @gemspec.respond_to?(:metadata)
+    end
+
+    def gem_push_host
+      env_rubygems_host = ENV["RUBYGEMS_HOST"]
+      env_rubygems_host = nil if
+        env_rubygems_host && env_rubygems_host.empty?
+
+      allowed_push_host || env_rubygems_host || "rubygems.org"
     end
 
     def perform_git_push(options = "")
@@ -187,7 +196,7 @@ module Bundler
     end
 
     def gem_push?
-      !%w(n no nil false off 0).include?(ENV["gem_push"].to_s.downcase)
+      !%w[n no nil false off 0].include?(ENV["gem_push"].to_s.downcase)
     end
   end
 end

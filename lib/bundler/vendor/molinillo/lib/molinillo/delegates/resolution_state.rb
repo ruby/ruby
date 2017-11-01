@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler::Molinillo
   # @!visibility private
   module Delegates
@@ -44,6 +45,12 @@ module Bundler::Molinillo
       def conflicts
         current_state = state || Bundler::Molinillo::ResolutionState.empty
         current_state.conflicts
+      end
+
+      # (see Bundler::Molinillo::ResolutionState#unused_unwind_options)
+      def unused_unwind_options
+        current_state = state || Bundler::Molinillo::ResolutionState.empty
+        current_state.unused_unwind_options
       end
     end
   end

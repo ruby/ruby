@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler/yaml_serializer"
 
 RSpec.describe Bundler::YAMLSerializer do
@@ -156,6 +156,7 @@ RSpec.describe Bundler::YAMLSerializer do
         "a_joke" => {
           "my-stand" => "I can totally keep secrets",
           "but" => "The people I tell them to can't :P",
+          "wouldn't it be funny if this string were empty?" => "",
         },
         "more" => {
           "first" => [

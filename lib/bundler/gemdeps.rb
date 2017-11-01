@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class Gemdeps
     def initialize(runtime)

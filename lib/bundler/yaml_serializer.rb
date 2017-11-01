@@ -37,7 +37,7 @@ module Bundler
     HASH_REGEX = /
       ^
       ([ ]*) # indentations
-      (.*) # key
+      (.+) # key
       (?::(?=(?:\s|$))) # :  (without the lookahead the #key includes this when : is present in value)
       [ ]?
       (?: !\s)? # optional exclamation mark found with ruby 1.9.3
@@ -54,10 +54,10 @@ module Bundler
       last_empty_key = nil
       str.split(/\r?\n/).each do |line|
         if match = HASH_REGEX.match(line)
-          indent, key, _, val = match.captures
+          indent, key, quote, val = match.captures
           key = convert_to_backward_compatible_key(key)
           depth = indent.scan(/  /).length
-          if val.empty?
+          if quote.empty? && val.empty?
             new_hash = {}
             stack[depth][key] = new_hash
             stack[depth + 1] = new_hash

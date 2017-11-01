@@ -1,6 +1,6 @@
 # frozen_string_literal: true
+
 require "uri"
-require "digest/sha1"
 
 module Bundler
   module Plugin
@@ -271,7 +271,7 @@ module Bundler
         end
 
         def uri_hash
-          Digest::SHA1.hexdigest(uri)
+          SharedHelpers.digest(:SHA1).hexdigest(uri)
         end
 
         # Note: Do not override if you don't know what you are doing.
@@ -293,6 +293,13 @@ module Bundler
         def bundler_plugin_api_source?
           true
         end
+
+        # @private
+        # This API on source might not be stable, and for now we expect plugins
+        # to download all specs in `#specs`, so we implement the method for
+        # compatibility purposes and leave it undocumented (and don't support)
+        # overriding it)
+        def double_check_for(*); end
       end
     end
   end

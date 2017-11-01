@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "Bundler.require" do
   before :each do
@@ -47,19 +46,20 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      path "#{lib_path}"
-      gem "one", :group => :bar, :require => %w[baz qux]
-      gem "two"
-      gem "three", :group => :not
-      gem "four", :require => false
-      gem "five"
-      gem "six", :group => "string"
-      gem "seven", :group => :not
-      gem "eight", :require => true, :group => :require_true
-      env "BUNDLER_TEST" => "nine" do
-        gem "nine", :require => true
+      path "#{lib_path}" do
+        gem "one", :group => :bar, :require => %w[baz qux]
+        gem "two"
+        gem "three", :group => :not
+        gem "four", :require => false
+        gem "five"
+        gem "six", :group => "string"
+        gem "seven", :group => :not
+        gem "eight", :require => true, :group => :require_true
+        env "BUNDLER_TEST" => "nine" do
+          gem "nine", :require => true
+        end
+        gem "ten", :install_if => lambda { ENV["BUNDLER_TEST"] == "ten" }
       end
-      gem "ten", :install_if => lambda { ENV["BUNDLER_TEST"] == "ten" }
     G
   end
 
@@ -86,7 +86,7 @@ RSpec.describe "Bundler.require" do
 
     # required in resolver order instead of gemfile order
     run("Bundler.require(:not)")
-    expect(out.split("\n").sort).to eq(%w(seven three))
+    expect(out.split("\n").sort).to eq(%w[seven three])
 
     # test require: true
     run "Bundler.require(:require_true)"
@@ -112,8 +112,9 @@ RSpec.describe "Bundler.require" do
 
   it "raises an exception if a require is specified but the file does not exist" do
     gemfile <<-G
-      path "#{lib_path}"
-      gem "two", :require => 'fail'
+      path "#{lib_path}" do
+        gem "two", :require => 'fail'
+      end
     G
 
     load_error_run <<-R, "fail"
@@ -129,8 +130,9 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      path "#{lib_path}"
-      gem "faulty"
+      path "#{lib_path}" do
+        gem "faulty"
+      end
     G
 
     run "Bundler.require"
@@ -144,8 +146,9 @@ RSpec.describe "Bundler.require" do
     end
 
     gemfile <<-G
-      path "#{lib_path}"
-      gem "loadfuuu"
+      path "#{lib_path}" do
+        gem "loadfuuu"
+      end
     G
 
     cmd = <<-RUBY
@@ -170,8 +173,9 @@ RSpec.describe "Bundler.require" do
 
     it "requires gem names that are namespaced" do
       gemfile <<-G
-        path '#{lib_path}'
-        gem 'jquery-rails'
+        path '#{lib_path}' do
+          gem 'jquery-rails'
+        end
       G
 
       run "Bundler.require"
@@ -183,8 +187,9 @@ RSpec.describe "Bundler.require" do
         s.write "lib/brcrypt.rb", "BCrypt = '1.0.0'"
       end
       gemfile <<-G
-        path "#{lib_path}"
-        gem "bcrypt-ruby"
+        path "#{lib_path}" do
+          gem "bcrypt-ruby"
+        end
       G
 
       cmd = <<-RUBY
@@ -198,8 +203,9 @@ RSpec.describe "Bundler.require" do
 
     it "does not mangle explicitly given requires" do
       gemfile <<-G
-        path "#{lib_path}"
-        gem 'jquery-rails', :require => 'jquery-rails'
+        path "#{lib_path}" do
+          gem 'jquery-rails', :require => 'jquery-rails'
+        end
       G
 
       load_error_run <<-R, "jquery-rails"
@@ -214,8 +220,9 @@ RSpec.describe "Bundler.require" do
       end
 
       gemfile <<-G
-        path "#{lib_path}"
-        gem "load-fuuu"
+        path "#{lib_path}" do
+          gem "load-fuuu"
+        end
       G
 
       cmd = <<-RUBY
@@ -237,8 +244,9 @@ RSpec.describe "Bundler.require" do
       lib_path("load-fuuu-1.0.0/lib/load-fuuu.rb").rmtree
 
       gemfile <<-G
-        path "#{lib_path}"
-        gem "load-fuuu"
+        path "#{lib_path}" do
+          gem "load-fuuu"
+        end
       G
 
       cmd = <<-RUBY
@@ -294,9 +302,10 @@ RSpec.describe "Bundler.require" do
 
     it "works when the gems are in the Gemfile in the correct order" do
       gemfile <<-G
-        path "#{lib_path}"
-        gem "two"
-        gem "one"
+        path "#{lib_path}" do
+          gem "two"
+          gem "one"
+        end
       G
 
       run "Bundler.require"
@@ -305,7 +314,7 @@ RSpec.describe "Bundler.require" do
 
     describe "a gem with different requires for different envs" do
       before(:each) do
-        build_gem "multi_gem", :to_system => true do |s|
+        build_gem "multi_gem", :to_bundle => true do |s|
           s.write "lib/one.rb", "puts 'ONE'"
           s.write "lib/two.rb", "puts 'TWO'"
         end
@@ -334,9 +343,10 @@ RSpec.describe "Bundler.require" do
 
     it "fails when the gems are in the Gemfile in the wrong order" do
       gemfile <<-G
-        path "#{lib_path}"
-        gem "one"
-        gem "two"
+        path "#{lib_path}" do
+          gem "one"
+          gem "two"
+        end
       G
 
       run "Bundler.require"
@@ -345,7 +355,7 @@ RSpec.describe "Bundler.require" do
 
     describe "with busted gems" do
       it "should be busted" do
-        build_gem "busted_require", :to_system => true do |s|
+        build_gem "busted_require", :to_bundle => true do |s|
           s.write "lib/busted_require.rb", "require 'no_such_file_omg'"
         end
 

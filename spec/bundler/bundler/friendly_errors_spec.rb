@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require "spec_helper"
+
 require "bundler"
 require "bundler/friendly_errors"
 require "cgi"
@@ -39,7 +39,7 @@ RSpec.describe Bundler, "friendly errors" do
 
       bundle :install, :env => { "DEBUG" => true }
 
-      expect(err).to include("Failed to load #{home(".gemrc")}")
+      expect(last_command.stderr).to include("Failed to load #{home(".gemrc")}")
       expect(exitstatus).to eq(0) if exitstatus
     end
   end

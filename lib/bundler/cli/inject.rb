@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Bundler
   class CLI::Inject
     attr_reader :options, :name, :version, :group, :source, :gems

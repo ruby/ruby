@@ -1,8 +1,10 @@
 # frozen_string_literal: true
+
 module Bundler
   class Source
     autoload :Gemspec,  "bundler/source/gemspec"
     autoload :Git,      "bundler/source/git"
+    autoload :Metadata, "bundler/source/metadata"
     autoload :Path,     "bundler/source/path"
     autoload :Rubygems, "bundler/source/rubygems"
 
@@ -31,12 +33,25 @@ module Bundler
       spec.source == self
     end
 
+    # it's possible that gems from one source depend on gems from some
+    # other source, so now we download gemspecs and iterate over those
+    # dependencies, looking for gems we don't have info on yet.
+    def double_check_for(*); end
+
+    def dependency_names_to_double_check
+      specs.dependency_names
+    end
+
     def include?(other)
       other == self
     end
 
     def inspect
       "#<#{self.class}:0x#{object_id} #{self}>"
+    end
+
+    def path?
+      instance_of?(Bundler::Source::Path)
     end
 
   private
@@ -53,6 +68,27 @@ module Bundler
 
     def earlier_version?(spec_version, locked_spec_version)
       Gem::Version.new(spec_version) < Gem::Version.new(locked_spec_version)
+    end
+
+    def print_using_message(message)
+      if !message.include?("(was ") && Bundler.feature_flag.suppress_install_using_messages?
+        Bundler.ui.debug message
+      else
+        Bundler.ui.info message
+      end
+    end
+
+    def extension_cache_path(spec)
+      return unless Bundler.feature_flag.global_gem_cache?
+      return unless source_slug = extension_cache_slug(spec)
+      Bundler.user_cache.join(
+        "extensions", Gem::Platform.local.to_s, Bundler.ruby_scope,
+        source_slug, spec.full_name
+      )
+    end
+
+    def extension_cache_slug(_)
+      nil
     end
   end
 end

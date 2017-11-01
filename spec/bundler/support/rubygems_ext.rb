@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "rubygems/user_interaction"
 require "support/path" unless defined?(Spec::Path)
 
@@ -8,7 +9,9 @@ module Spec
       deps = {
         # rack 2.x requires Ruby version >= 2.2.2.
         # artifice doesn't support rack 2.x now.
-        "rack" => "< 2",
+        # TODO: revert to `< 2` once https://github.com/rack/rack/issues/1168 is
+        # addressed
+        "rack" => "1.6.6",
         # rack-test 0.7.0 dropped 1.8.7 support
         # https://github.com/rack-test/rack-test/issues/193#issuecomment-314230318
         "rack-test" => "< 0.7.0",
@@ -19,7 +22,6 @@ module Spec
         "rake" => "10.0.2",
         # 3.0.0 breaks 1.9.2 specs
         "builder" => "2.1.2",
-        "bundler" => "1.12.0",
       }
       # ruby-graphviz is used by the viz tests
       deps["ruby-graphviz"] = nil if RUBY_VERSION >= "1.9.3"

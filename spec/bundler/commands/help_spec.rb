@@ -1,8 +1,7 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "bundle help" do
-  # Rubygems 1.4+ no longer load gem plugins so this test is no longer needed
+  # RubyGems 1.4+ no longer load gem plugins so this test is no longer needed
   it "complains if older versions of bundler are installed", :rubygems => "< 1.4" do
     system_gems "bundler-0.8.1"
 

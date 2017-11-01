@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "set"
 
 module Bundler
@@ -111,6 +112,13 @@ module Bundler
         spec_sets.values.each(&blk)
       end
       sources.each {|s| s.each(&blk) }
+      self
+    end
+
+    def spec_names
+      names = specs.keys + sources.map(&:spec_names)
+      names.uniq!
+      names
     end
 
     # returns a list of the dependencies
@@ -189,14 +197,6 @@ module Bundler
           else
             dependency.matches_spec?(spec) && Gem::Platform.match(spec.platform)
           end
-        end
-
-        wants_prerelease = dependency.requirement.prerelease?
-        wants_prerelease ||= base && base.any? {|base_spec| base_spec.version.prerelease? }
-        only_prerelease = specs.all? {|spec| spec.version.prerelease? }
-
-        unless wants_prerelease || only_prerelease
-          found.reject! {|spec| spec.version.prerelease? }
         end
 
         found

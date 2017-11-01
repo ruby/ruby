@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'set'
 require 'tsort'
 
@@ -147,8 +148,8 @@ module Bundler::Molinillo
       vertex = add_vertex(name, payload, root)
       vertex.explicit_requirements << requirement if root
       parent_names.each do |parent_name|
-        parent_node = vertex_named(parent_name)
-        add_edge(parent_node, vertex, requirement)
+        parent_vertex = vertex_named(parent_name)
+        add_edge(parent_vertex, vertex, requirement)
       end
       vertex
     end

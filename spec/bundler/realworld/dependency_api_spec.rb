@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-require "spec_helper"
 
 RSpec.describe "gemcutter's dependency API", :realworld => true do
   context "when Gemcutter API takes too long to respond" do
@@ -23,6 +22,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       @t.run
 
       wait_for_server("127.0.0.1", port)
+      bundle! "config timeout 1"
     end
 
     after do
@@ -32,16 +32,11 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
     end
 
     it "times out and falls back on the modern index" do
-      gemfile <<-G
+      install_gemfile! <<-G, :artifice => nil
         source "#{@server_uri}"
         gem "rack"
-
-        old_v, $VERBOSE = $VERBOSE, nil
-        Bundler::Fetcher.api_timeout = 1
-        $VERBOSE = old_v
       G
 
-      bundle :install
       expect(out).to include("Fetching source index from #{@server_uri}/")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
