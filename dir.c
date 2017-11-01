@@ -1275,7 +1275,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
 
     dir = check_dirname(dir);
     p = RSTRING_PTR(dir);
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_rmdir, p, RUBY_UBF_IO, 0);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_rmdir, (void *)p, RUBY_UBF_IO, 0);
     if (r < 0)
 	rb_sys_fail_path(dir);
 
