@@ -6830,6 +6830,7 @@ estimate_initial_sqrt(VALUE *xp, const size_t xn, const BDIGIT *nds, size_t len)
     if (rshift >= 0) {
 	d <<= rshift;
     }
+    BDIGITS_ZERO(xds, xn-2);
     bdigitdbl2bary(&xds[xn-2], 2, d);
 
     if (!lowbits) return NULL; /* special case, exact result */
