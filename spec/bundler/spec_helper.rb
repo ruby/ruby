@@ -20,22 +20,13 @@ rescue LoadError
   abort "Run rake spec:deps to install development dependencies"
 end
 
-if File.expand_path(__FILE__) =~ %r{([^\w/\.])}
+if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
 end
 
 require "bundler"
 
-# Require the correct version of popen for the current platform
-if RbConfig::CONFIG["host_os"] =~ /mingw|mswin/
-  begin
-    require "win32/open3"
-  rescue LoadError
-    abort "Run `gem install win32-open3` to be able to run specs"
-  end
-else
-  require "open3"
-end
+require "open3"
 
 Dir["#{File.expand_path("../support", __FILE__)}/*.rb"].each do |file|
   file = file.gsub(%r{\A#{Regexp.escape File.expand_path("..", __FILE__)}/}, "")
