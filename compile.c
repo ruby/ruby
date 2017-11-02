@@ -4197,6 +4197,8 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	    INSERT_LIST(args_splat, tmp);
 	    nsplat++;
 	    *flag |= VM_CALL_ARGS_SPLAT;
+	    if (nd_type(argn->nd_body) == NODE_HASH)
+		*flag |= VM_CALL_KW_SPLAT;
 
 	    if (next_is_array) {
 		int len = compile_array(iseq, args, argn->nd_head, COMPILE_ARRAY_TYPE_ARGS, NULL, flag, FALSE);
