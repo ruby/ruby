@@ -3620,16 +3620,19 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *     ios.readlines(sep, limit [, getline_args]) -> array
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
- *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
+ *  an array. Lines are separated by the optional <i>sep</i>. If
  *  <i>sep</i> is +nil+, the rest of the stream is returned
  *  as a single record.
- *  If the first argument is an integer, or
+ *  If the first argument is an integer, or an
  *  optional second argument is given, the returning string would not be
  *  longer than the given value in bytes. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
  *
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
+ *
+ *     f = File.new("testfile", chomp: true)
+ *     f.readlines[0]   #=> "This is line one"
  *
  *  See IO.readlines for details about getline_args.
  */
@@ -10268,6 +10271,9 @@ io_s_readlines(struct getline_arg *arg)
  *     a = IO.readlines("testfile")
  *     a[0]   #=> "This is line one\n"
  *
+ *     b = IO.readlines("testfile", chomp: true)
+ *     b[0]   #=> "This is line one"
+ *
  *  If the last argument is a hash, it's the keyword argument to open.
  *
  *  === Options for getline
@@ -10275,11 +10281,11 @@ io_s_readlines(struct getline_arg *arg)
  *  The options hash accepts the following keys:
  *
  *  :chomp::
- *    Specifies the boolean. It will remove \n, \r, and \r\n
- *    from the end of each lines if it's true
+ *    When the optional +chomp+ keyword argument has a true value,
+ *    <code>\n</code>, <code>\r</code>, and <code>\r\n</code>
+ *    will be removed from the end of each line.
  *
- *  And see also IO.read for details about open_args.
- *
+ *  See also IO.read for details about open_args.
  */
 
 static VALUE
