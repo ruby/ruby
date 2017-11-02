@@ -89,11 +89,13 @@ module Test
           }
 
           return e
+        ensure
+          unless e
+            exp = exp.first if exp.size == 1
+
+            flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
+          end
         end
-
-        exp = exp.first if exp.size == 1
-
-        flunk(message(msg) {"#{mu_pp(exp)} expected but nothing was raised"})
       end
 
       def assert_raises(*exp, &b)
