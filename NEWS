@@ -169,6 +169,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New method:
     * Pathname#glob [Feature #7360]
 
+* Psych
+
+  * Update to Psych 3.0.0.beta3.
+
 * RbConfig
   * New constants:
     * RbConfig::LIMITS is added to provide the limits of C types.
