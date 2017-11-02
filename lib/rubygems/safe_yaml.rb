@@ -35,7 +35,10 @@ module Gem
         ::YAML.safe_load(input, [::Symbol])
       end
     else
-      warn "YAML safe loading is not available. Please upgrade psych to a version that supports safe loading (>= 2.0)."
+      unless Gem::Deprecate.skip
+        warn "YAML safe loading is not available. Please upgrade psych to a version that supports safe loading (>= 2.0)."
+      end
+
       def self.safe_load input, *args
         ::YAML.load input
       end
