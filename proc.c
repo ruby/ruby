@@ -922,7 +922,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *  number of mandatory arguments, with the exception for blocks that
  *  are not lambdas and have only a finite number of optional arguments;
  *  in this latter case, returns n.
- *  Keywords arguments will considered as a single additional argument,
+ *  Keyword arguments will be considered as a single additional argument,
  *  that argument being mandatory if any keyword argument is mandatory.
  *  A <code>proc</code> with no argument declarations
  *  is the same as a block declaring <code>||</code> as its arguments.
@@ -2354,11 +2354,11 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
  *  number of arguments. For Ruby methods that take a variable number of
- *  arguments, returns -n-1, where n is the number of required
- *  arguments. For methods written in C, returns -1 if the call takes a
- *  variable number of arguments.
- *  Keywords arguments will considered as a single additional argument,
+ *  arguments, returns -n-1, where n is the number of required arguments.
+ *  Keyword arguments will be considered as a single additional argument,
  *  that argument being mandatory if any keyword argument is mandatory.
+ *  For methods written in C, returns -1 if the call takes a
+ *  variable number of arguments.
  *
  *     class C
  *       def one;    end
@@ -2367,9 +2367,10 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *       def four(a, b); end
  *       def five(a, b, *c);    end
  *       def six(a, b, *c, &d); end
- *       def seven(x:, y:); end
- *       def eighth(x:, y:, **z); end
- *       def nine(*a, x:, y:); end
+ *       def seven(a, b, x:0); end
+ *       def eight(x:, y:); end
+ *       def nine(x:, y:, **z); end
+ *       def ten(*a, x:, y:); end
  *     end
  *     c = C.new
  *     c.method(:one).arity     #=> 0
@@ -2378,9 +2379,10 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *     c.method(:four).arity    #=> 2
  *     c.method(:five).arity    #=> -3
  *     c.method(:six).arity     #=> -3
- *     c.method(:seven).arity   #=> 1
- *     c.method(:eighth).arity  #=> 1
- *     c.method(:nine).arity    #=> -2
+ *     c.method(:seven).arity   #=> -3
+ *     c.method(:eight).arity   #=> 1
+ *     c.method(:nine).arity    #=> 1
+ *     c.method(:ten).arity     #=> -2
  *
  *     "cat".method(:size).arity      #=> 0
  *     "cat".method(:replace).arity   #=> 1
