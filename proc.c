@@ -938,16 +938,16 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *     proc { |x:, y:, z:0| }.arity   #=>  1
  *     proc { |*a, x:, y:0| }.arity   #=> -2
  *
- *     proc   { |x=0| }.arity         #=>  0
- *     lambda { |x=0| }.arity         #=> -1
- *     proc   { |x=0, y| }.arity      #=>  1
- *     lambda { |x=0, y| }.arity      #=> -2
- *     proc   { |x=0, y=0| }.arity    #=>  0
- *     lambda { |x=0, y=0| }.arity    #=> -1
- *     proc   { |x, y=0| }.arity      #=>  1
- *     lambda { |x, y=0| }.arity      #=> -2
- *     proc   { |(x, y), z=0| }.arity #=>  1
- *     lambda { |(x, y), z=0| }.arity #=> -2
+ *     proc   { |a=0| }.arity         #=>  0
+ *     lambda { |a=0| }.arity         #=> -1
+ *     proc   { |a=0, b| }.arity      #=>  1
+ *     lambda { |a=0, b| }.arity      #=> -2
+ *     proc   { |a=0, b=0| }.arity    #=>  0
+ *     lambda { |a=0, b=0| }.arity    #=> -1
+ *     proc   { |a, b=0| }.arity      #=>  1
+ *     lambda { |a, b=0| }.arity      #=> -2
+ *     proc   { |(a, b), c=0| }.arity #=>  1
+ *     lambda { |(a, b), c=0| }.arity #=> -2
  *     proc   { |a, x:0, y:0| }.arity #=>  1
  *     lambda { |a, x:0, y:0| }.arity #=> -2
  */
@@ -2357,6 +2357,8 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *  arguments, returns -n-1, where n is the number of required
  *  arguments. For methods written in C, returns -1 if the call takes a
  *  variable number of arguments.
+ *  Keywords arguments will considered as a single additional argument,
+ *  that argument being mandatory if any keyword argument is mandatory.
  *
  *     class C
  *       def one;    end
@@ -2365,6 +2367,9 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *       def four(a, b); end
  *       def five(a, b, *c);    end
  *       def six(a, b, *c, &d); end
+ *       def seven(x:, y:); end
+ *       def eighth(x:, y:, **z); end
+ *       def nine(*a, x:, y:); end
  *     end
  *     c = C.new
  *     c.method(:one).arity     #=> 0
@@ -2373,6 +2378,9 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *     c.method(:four).arity    #=> 2
  *     c.method(:five).arity    #=> -3
  *     c.method(:six).arity     #=> -3
+ *     c.method(:seven).arity   #=> 1
+ *     c.method(:eighth).arity  #=> 1
+ *     c.method(:nine).arity    #=> -2
  *
  *     "cat".method(:size).arity      #=> 0
  *     "cat".method(:replace).arity   #=> 1
