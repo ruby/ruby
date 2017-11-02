@@ -1177,7 +1177,7 @@ test-bundler-precheck: $(arch)-fake.rb programs
 
 yes-test-bundler-prepare: test-bundler-precheck
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
-		--install-dir .bundle --conservative 'rspec:~> 3.5'
+		--install-dir .bundle --conservative "rspec:~> 3.5"
 
 RSPECOPTS = --format progress
 BUNDLER_SPECS =
