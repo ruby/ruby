@@ -1470,7 +1470,7 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /**********************************************************************
  *
- * Document-class : Method
+ * Document-class: Method
  *
  *  Method objects are created by <code>Object#method</code>, and are
  *  associated with a particular object (not just with a class). They
