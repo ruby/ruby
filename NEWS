@@ -113,7 +113,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     enumerate grapheme clusters [Feature #13780]
   * String#start_with? supports regexp [Feature #13712]
 
-* Regexp/String: Updated Unicode version from 9.0.0 to 10.0.0 [Feature #13685]
+* Regexp/String: Update Unicode version from 9.0.0 to 10.0.0 [Feature #13685]
 
 * Thread
 
@@ -183,13 +183,13 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * RDoc
 
-  * Update RDoc 6.0.0.beta3.
+  * Update to RDoc 6.0.0.beta3.
     * Replaced IRB based lexer with Ripper. It much improves the speed of generating document.
     * https://github.com/ruby/rdoc/pull/512
 
 * Rubygems
 
-  * Update Rubygems 2.7.0.
+  * Update to Rubygems 2.7.0.
     * http://blog.rubygems.org/2017/11/01/2.7.0-released.html
     * http://blog.rubygems.org/2017/08/27/2.6.13-released.html
     * http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
