@@ -61,6 +61,7 @@ const union {
     enum imemo_type             imemo_types;
     enum {RUBY_IMEMO_MASK = IMEMO_MASK} imemo_mask;
     struct RSymbol *symbol_ptr;
+    enum vm_call_flag_bits vm_call_flags;
 } ruby_dummy_gdb_enums;
 
 const SIGNED_VALUE RUBY_NODE_LMASK = NODE_LMASK;
