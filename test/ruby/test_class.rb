@@ -246,8 +246,15 @@ class TestClass < Test::Unit::TestCase
     assert_raise(SyntaxError) { eval("class C; break; end") }
     assert_raise(SyntaxError) { eval("class C; redo; end") }
     assert_raise(SyntaxError) { eval("class C; retry; end") }
+  end
+
+  def test_invalid_return_from_class_definition
+    skip "Wrongly return from this method"
     assert_raise(SyntaxError) { eval("class C; return; end") }
-    assert_raise(SyntaxError) { eval("class C; yield; end") }
+  end
+
+  def test_invalid_yield_from_class_definition
+    assert_raise(LocalJumpError) { eval("class C; yield; end") }
   end
 
   def test_clone
