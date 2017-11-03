@@ -1223,13 +1223,13 @@ rb_gc_mark_node(NODE *obj)
 
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
-    NODE buf[1];
+    NODE buf[1]; /* flexible array */
 } node_buffer_elem_t;
 
 struct node_buffer_struct {
     long idx, len;
     node_buffer_elem_t *head;
-    node_buffer_elem_t body;
+    node_buffer_elem_t body; /* this should be a last, because body has flexible array */
 };
 
 node_buffer_t *
