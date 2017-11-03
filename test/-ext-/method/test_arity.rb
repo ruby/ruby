@@ -2,7 +2,7 @@
 require '-test-/method'
 require 'test/unit'
 
-class TestMethod < Test::Unit::TestCase
+class Test_Method < Test::Unit::TestCase
   class TestArity < Test::Unit::TestCase
     class A
       def foo0()
