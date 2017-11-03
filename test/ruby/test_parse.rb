@@ -980,6 +980,19 @@ x = __ENCODING__
     end;
   end
 
+  def test_method_location_in_rescue
+    bug = '[ruby-core:79388] [Bug #13181]'
+    obj, line = Object.new, __LINE__+1
+    def obj.location
+      #
+      raise
+    rescue
+      caller_locations(1, 1)[0]
+    end
+
+    assert_equal(line, obj.location.lineno, bug)
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
