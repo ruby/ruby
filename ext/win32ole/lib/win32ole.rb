@@ -11,7 +11,7 @@ if defined?(WIN32OLE)
     #
     # By overriding Object#methods, WIN32OLE might
     # work well with did_you_mean gem.
-    # This is exprimental.
+    # This is experimental.
     #
     #  require 'win32ole'
     #  dict = WIN32OLE.new('Scripting.Dictionary')
