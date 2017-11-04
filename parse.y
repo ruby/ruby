@@ -1804,7 +1804,7 @@ mlhs_basic	: mlhs_head
 		| mlhs_head tSTAR
 		    {
 		    /*%%%*/
-			$$ = new_masgn($1, (NODE *)-1, &@1);
+			$$ = new_masgn($1, NODE_SPECIAL_NO_NAME_REST, &@1);
 		    /*%
 			$$ = mlhs_add_star($1, Qnil);
 		    %*/
@@ -1812,7 +1812,7 @@ mlhs_basic	: mlhs_head
 		| mlhs_head tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = new_masgn($1, new_postarg((NODE *)-1, $4, &@1), &@1);
+			$$ = new_masgn($1, new_postarg(NODE_SPECIAL_NO_NAME_REST, $4, &@1), &@1);
 		    /*%
 			$1 = mlhs_add_star($1, Qnil);
 			$$ = mlhs_add_post($1, $4);
@@ -1838,7 +1838,7 @@ mlhs_basic	: mlhs_head
 		| tSTAR
 		    {
 		    /*%%%*/
-			$$ = new_masgn(0, (NODE *)-1, &@1);
+			$$ = new_masgn(0, NODE_SPECIAL_NO_NAME_REST, &@1);
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
@@ -1846,7 +1846,7 @@ mlhs_basic	: mlhs_head
 		| tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
-			$$ = new_masgn(0, new_postarg((NODE *)-1, $3, &@1), &@1);
+			$$ = new_masgn(0, new_postarg(NODE_SPECIAL_NO_NAME_REST, $3, &@1), &@1);
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 			$$ = mlhs_add_post($$, $3);
@@ -3353,7 +3353,7 @@ f_margs		: f_marg_list
 		| f_marg_list ',' tSTAR
 		    {
 		    /*%%%*/
-			$$ = new_masgn($1, (NODE *)-1, &@1);
+			$$ = new_masgn($1, NODE_SPECIAL_NO_NAME_REST, &@1);
 		    /*%
 			$$ = mlhs_add_star($1, Qnil);
 		    %*/
@@ -3361,7 +3361,7 @@ f_margs		: f_marg_list
 		| f_marg_list ',' tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
-			$$ = new_masgn($1, new_postarg((NODE *)-1, $5, &@1), &@1);
+			$$ = new_masgn($1, new_postarg(NODE_SPECIAL_NO_NAME_REST, $5, &@1), &@1);
 		    /*%
 			$$ = mlhs_add_star($1, Qnil);
 			$$ = mlhs_add_post($$, $5);
@@ -3389,7 +3389,7 @@ f_margs		: f_marg_list
 		| tSTAR
 		    {
 		    /*%%%*/
-			$$ = new_masgn(0, (NODE *)-1, &@1);
+			$$ = new_masgn(0, NODE_SPECIAL_NO_NAME_REST, &@1);
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 		    %*/
@@ -3397,7 +3397,7 @@ f_margs		: f_marg_list
 		| tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
-			$$ = new_masgn(0, new_postarg((NODE *)-1, $3, &@1), &@1);
+			$$ = new_masgn(0, new_postarg(NODE_SPECIAL_NO_NAME_REST, $3, &@1), &@1);
 		    /*%
 			$$ = mlhs_add_star(mlhs_new(), Qnil);
 			$$ = mlhs_add_post($$, $3);
@@ -4753,7 +4753,7 @@ f_kw		: f_label arg_value
 		| f_label
 		    {
 			current_arg = 0;
-			$$ = assignable($1, (NODE *)-1, &@1);
+			$$ = assignable($1, NODE_SPECIAL_REQUIRED_KEYWORD, &@1);
 		    /*%%%*/
 			$$ = new_kw_arg($$, &@1);
 		    /*%
@@ -4773,7 +4773,7 @@ f_block_kw	: f_label primary_value
 		    }
 		| f_label
 		    {
-			$$ = assignable($1, (NODE *)-1, &@1);
+			$$ = assignable($1, NODE_SPECIAL_REQUIRED_KEYWORD, &@1);
 		    /*%%%*/
 			$$ = new_kw_arg($$, &@1);
 		    /*%
@@ -10836,7 +10836,7 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, YYLTYPE *l
 	    NODE *val_node = kwn->nd_body->nd_value;
 	    ID vid = kwn->nd_body->nd_vid;
 
-	    if (val_node == (NODE *)-1) {
+	    if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
 		vtable_add(required_kw_vars, vid);
 	    }
 	    else {
