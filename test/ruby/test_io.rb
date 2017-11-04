@@ -3656,7 +3656,7 @@ __END__
           s = w.syswrite(buf)
           after = ObjectSpace.count_objects(res)[:T_STRING]
           assert_equal before, after,
-            'no strings left over after write [ruby-core:78898] [Bug #13085]'
+            "no strings left over after write [ruby-core:78898] [Bug #13085]: #{ before } strings before write -> #{ after } strings after write"
           assert_not_predicate buf, :frozen?, 'no inadvertent freeze'
           assert_equal buf.bytesize, n, 'IO#write wrote expected size'
           assert_equal s, n, 'IO#syswrite wrote expected size'
