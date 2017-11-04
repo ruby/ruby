@@ -876,9 +876,11 @@ new_args_gen(struct parser_params *parser, VALUE f, VALUE o, VALUE r, VALUE p, V
 static inline VALUE
 new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 {
-    VALUE r = (VALUE)MEMO_NEW(k, kr, b);
-    add_mark_object(r);
-    return r;
+    NODE *t = rb_node_newnode(NODE_ARGS_AUX, k, kr, b);
+    add_mark_object(k);
+    add_mark_object(kr);
+    add_mark_object(b);
+    return (VALUE)t;
 }
 #define new_args_tail(k,kr,b,location) new_args_tail_gen(parser, (k),(kr),(b))
 
