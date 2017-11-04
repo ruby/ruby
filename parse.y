@@ -781,6 +781,7 @@ struct rb_strterm_struct {
     } u;
 };
 
+#ifndef RIPPER
 void
 rb_strterm_mark(VALUE obj)
 {
@@ -791,6 +792,7 @@ rb_strterm_mark(VALUE obj)
 	rb_gc_mark(heredoc->lastline);
     }
 }
+#endif
 
 #define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
