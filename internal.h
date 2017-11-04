@@ -845,7 +845,8 @@ enum imemo_type {
     imemo_ment       = 6,
     imemo_iseq       = 7,
     imemo_alloc      = 8,
-    imemo_ast        = 9
+    imemo_ast        = 9,
+    imemo_strterm    = 10
 };
 #define IMEMO_MASK   0x0f
 
@@ -940,6 +941,8 @@ typedef struct rb_imemo_alloc_struct {
 } rb_imemo_alloc_t;
 
 rb_imemo_alloc_t *rb_imemo_alloc_new(VALUE, VALUE, VALUE, VALUE);
+
+void rb_strterm_mark(VALUE obj);
 
 /*! MEMO
  *
