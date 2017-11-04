@@ -4227,7 +4227,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
     if (nsplat > 1) {
 	int i;
 	for (i=1; i<nsplat; i++) {
-	    ADD_INSN(args_splat, nd_line(args), concatarray);
+	    ADD_INSN(args_splat, nd_line(RNODE(args)), concatarray);
 	}
     }
 

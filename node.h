@@ -261,22 +261,22 @@ typedef struct RNode {
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
-#define nd_type(n) ((int) (((RNODE(n))->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
+#define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
-    RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
+    (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
-#define nd_line(n) (int)(((SIGNED_VALUE)RNODE(n)->flags)>>NODE_LSHIFT)
+#define nd_line(n) (int)(((SIGNED_VALUE)(n)->flags)>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
-    RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
-#define nd_column(n) (int)(RNODE(n)->nd_location & 0xffff)
+    (n)->flags=(((n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
+#define nd_column(n) (int)((n)->nd_location & 0xffff)
 #define nd_set_column(n, v) \
-    RNODE(n)->nd_location = (RNODE(n)->nd_location & ~0xffff) | ((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff)
+    (n)->nd_location = ((n)->nd_location & ~0xffff) | ((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff)
 
-#define nd_lineno(n) (int)((RNODE(n)->nd_location >> 16) & 0xffff)
+#define nd_lineno(n) (int)(((n)->nd_location >> 16) & 0xffff)
 #define nd_set_lineno(n, v) \
-    RNODE(n)->nd_location = (RNODE(n)->nd_location & ~0xffff0000) | (((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff) << 16)
+    (n)->nd_location = ((n)->nd_location & ~0xffff0000) | (((v) > 0xffff ? 0xffff : ((unsigned int)(v)) & 0xffff) << 16)
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
