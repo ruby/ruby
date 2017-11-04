@@ -742,17 +742,32 @@ static int lvar_defined_gen(struct parser_params*, ID);
 
 /* structs for managing terminator of string literal and heredocment */
 typedef struct rb_strterm_literal_struct {
-    long nest;
-    long func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
-    long paren;	    /* '(' of `%q(...)` */
-    long term;	    /* ')' of `%q(...)` */
+    union {
+	VALUE dummy;
+	long nest;
+    } u0;
+    union {
+	VALUE dummy;
+	long func;	    /* STR_FUNC_* (e.g., STR_FUNC_ESCAPE and STR_FUNC_EXPAND) */
+    } u1;
+    union {
+	VALUE dummy;
+	long paren;	    /* '(' of `%q(...)` */
+    } u2;
+    union {
+	VALUE dummy;
+	long term;	    /* ')' of `%q(...)` */
+    } u3;
 } rb_strterm_literal_t;
 
 typedef struct rb_strterm_heredoc_struct {
     VALUE sourceline;
-    VALUE term;	    /* `"END"` of `<<"END"` */
-    long lastidx;    /* the column of `<<"END"` */
-    VALUE lastline; /* the string of line that contains `<<"END"` */
+    VALUE term;		/* `"END"` of `<<"END"` */
+    VALUE lastline;	/* the string of line that contains `<<"END"` */
+    union {
+	VALUE dummy;
+	long lastidx;	/* the column of `<<"END"` */
+     } u3;
 } rb_strterm_heredoc_t;
 
 #define STRTERM_HEREDOC IMEMO_FL_USER0
@@ -6615,9 +6630,9 @@ parser_string_term(struct parser_params *parser, int func)
 static enum yytokentype
 parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
 {
-    int func = (int)quote->func;
-    int term = (int)quote->term;
-    int paren = (int)quote->paren;
+    int func = (int)quote->u1.func;
+    int term = (int)quote->u3.term;
+    int paren = (int)quote->u2.paren;
     int c, space = 0;
     rb_encoding *enc = current_enc;
     VALUE lit;
@@ -6632,9 +6647,9 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
 	do {c = nextc();} while (ISSPACE(c));
 	space = 1;
     }
-    if (c == term && !quote->nest) {
+    if (c == term && !quote->u0.nest) {
 	if (func & STR_FUNC_QWORDS) {
-	    quote->func |= STR_FUNC_TERM;
+	    quote->u1.func |= STR_FUNC_TERM;
 	    return ' ';
 	}
 	return parser_string_term(parser, func);
@@ -6651,7 +6666,7 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
 	c = nextc();
     }
     pushback(c);
-    if (tokadd_string(func, term, paren, &quote->nest,
+    if (tokadd_string(func, term, paren, &quote->u0.nest,
 		      &enc) == -1) {
 	if (parser->eofp) {
 #ifndef RIPPER
@@ -6666,7 +6681,7 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
 	    else {
 		unterminated_literal("unterminated string meets end of file");
 	    }
-	    quote->func |= STR_FUNC_TERM;
+	    quote->u1.func |= STR_FUNC_TERM;
 	}
     }
 
@@ -6753,8 +6768,8 @@ parser_heredoc_identifier(struct parser_params *parser)
 
     lex_strterm = (rb_strterm_t*)rb_imemo_new(imemo_strterm,
 					      STR_NEW(tok(), toklen()),	/* term */
-					      len,			/* lastidx */
 					      lex_lastline,		/* lastline */
+					      len,			/* lastidx */
 					      ruby_sourceline);
     lex_strterm->flags |= STRTERM_HEREDOC;
 
@@ -6774,7 +6789,7 @@ parser_heredoc_restore(struct parser_params *parser, rb_strterm_heredoc_t *here)
     lex_lastline = line;
     lex_pbeg = RSTRING_PTR(line);
     lex_pend = lex_pbeg + RSTRING_LEN(line);
-    lex_p = lex_pbeg + here->lastidx;
+    lex_p = lex_pbeg + here->u3.lastidx;
     heredoc_end = ruby_sourceline;
     ruby_sourceline = here->sourceline;
     token_flush(parser);
