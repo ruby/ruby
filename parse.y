@@ -6513,9 +6513,9 @@ parser_tokadd_string(struct parser_params *parser,
     return c;
 }
 
-/* imemo_strterm for literal */
+/* imemo_parser_strterm for literal */
 #define NEW_STRTERM(func, term, paren) \
-	(rb_strterm_t*)rb_imemo_new(imemo_strterm, (VALUE)(func), (VALUE)(paren), (VALUE)(term), 0)
+	(rb_strterm_t*)rb_imemo_new(imemo_parser_strterm, (VALUE)(func), (VALUE)(paren), (VALUE)(term), 0)
 
 #ifdef RIPPER
 static void
@@ -6769,7 +6769,7 @@ parser_heredoc_identifier(struct parser_params *parser)
     len = lex_p - lex_pbeg;
     lex_goto_eol(parser);
 
-    lex_strterm = (rb_strterm_t*)rb_imemo_new(imemo_strterm,
+    lex_strterm = (rb_strterm_t*)rb_imemo_new(imemo_parser_strterm,
 					      STR_NEW(tok(), toklen()),	/* term */
 					      lex_lastline,		/* lastline */
 					      len,			/* lastidx */

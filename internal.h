@@ -836,17 +836,17 @@ struct RIMemo {
 };
 
 enum imemo_type {
-    imemo_env        = 0,
-    imemo_cref       = 1, /*!< class reference */
-    imemo_svar       = 2, /*!< special variable */
-    imemo_throw_data = 3,
-    imemo_ifunc      = 4, /*!< iterator function */
-    imemo_memo       = 5,
-    imemo_ment       = 6,
-    imemo_iseq       = 7,
-    imemo_alloc      = 8,
-    imemo_ast        = 9,
-    imemo_strterm    = 10
+    imemo_env            =  0,
+    imemo_cref           =  1, /*!< class reference */
+    imemo_svar           =  2, /*!< special variable */
+    imemo_throw_data     =  3,
+    imemo_ifunc          =  4, /*!< iterator function */
+    imemo_memo           =  5,
+    imemo_ment           =  6,
+    imemo_iseq           =  7,
+    imemo_alloc          =  8,
+    imemo_ast            =  9,
+    imemo_parser_strterm = 10
 };
 #define IMEMO_MASK   0x0f
 
