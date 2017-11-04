@@ -64,7 +64,7 @@ module NetHTTPSpecs
 
     def start_server
       server_config = {
-        BindAddress: "localhost",
+        BindAddress: "127.0.0.1",
         Port: 0,
         Logger: WEBrick::Log.new(NullWriter.new),
         AccessLog: [],
