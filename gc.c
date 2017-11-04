@@ -8143,10 +8143,10 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
-    VALUE s = ATOMIC_VALUE_EXCHANGE(*store, 0);
+    rb_imemo_alloc_t *s = (rb_imemo_alloc_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
-	void *ptr = ATOMIC_PTR_EXCHANGE(RNODE(s)->u1.node, 0);
-	RNODE(s)->u3.cnt = 0;
+	void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
+	s->cnt = 0;
 	ruby_xfree(ptr);
     }
 }
