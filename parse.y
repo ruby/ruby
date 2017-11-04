@@ -349,12 +349,14 @@ static int parser_yyerror(struct parser_params*, const char*);
 
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
+#ifndef RIPPER
 static inline void
 rb_discard_node_gen(struct parser_params *parser, NODE *n)
 {
     rb_ast_delete_node(parser->ast, n);
 }
 #define rb_discard_node(n) rb_discard_node_gen(parser, (n))
+#endif
 
 static inline void
 add_mark_object_gen(struct parser_params *parser, VALUE obj)
