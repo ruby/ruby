@@ -233,6 +233,8 @@ struct parser_params {
 
     ID cur_arg;
 
+    rb_ast_t *ast;
+
     unsigned int command_start:1;
     unsigned int eofp: 1;
     unsigned int ruby__end__seen: 1;
@@ -259,7 +261,6 @@ struct parser_params {
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
 
-    rb_ast_t *ast;
     NODE *eval_tree_begin;
     NODE *eval_tree;
     VALUE error_buffer;
@@ -357,24 +358,27 @@ parser_set_line(NODE *n, int l)
 static inline void
 rb_discard_node_gen(struct parser_params *parser, NODE *n)
 {
-#ifndef RIPPER
     rb_ast_delete_node(parser->ast, n);
-#else
-    rb_gc_force_recycle((VALUE)n);
-#endif
 }
 #define rb_discard_node(n) rb_discard_node_gen(parser, (n))
 
-#ifndef RIPPER
 static inline void
 add_mark_object_gen(struct parser_params *parser, VALUE obj)
 {
-    if (!SPECIAL_CONST_P(obj)) {
+    if (!SPECIAL_CONST_P(obj)
+#ifdef RIPPER
+	&& !RB_TYPE_P(obj, T_NODE) /* Ripper jumbles NODE objects and other objects... */
+#endif
+    ) {
 	rb_ast_add_mark_object(parser->ast, obj);
     }
 }
 #define add_mark_object(obj) add_mark_object_gen(parser, (obj))
 
+static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
+#define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, (type), (a1), (a2), (a3))
+
+#ifndef RIPPER
 static inline void
 set_line_body(NODE *body, int line)
 {
@@ -387,9 +391,6 @@ set_line_body(NODE *body, int line)
 }
 
 #define yyparse ruby_yyparse
-
-static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, VALUE);
-#define rb_node_newnode(type, a1, a2, a3) node_newnode(parser, (type), (a1), (a2), (a3))
 
 static NODE *cond_gen(struct parser_params*,NODE*,int,YYLTYPE*);
 #define cond(node,location) cond_gen(parser, (node), FALSE, location)
@@ -604,13 +605,14 @@ static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
 #else  /* RIPPER */
 #define NODE_RIPPER NODE_CDECL
 
-#define add_mark_object(obj) (void)(obj)
-
 static inline VALUE
-ripper_new_yylval(ID a, VALUE b, VALUE c)
+ripper_new_yylval_gen(struct parser_params *parser, ID a, VALUE b, VALUE c)
 {
+    add_mark_object(b);
+    add_mark_object(c);
     return (VALUE)NEW_CDECL(a, b, c);
 }
+#define ripper_new_yylval(a, b, c) ripper_new_yylval_gen(parser, a, b, c)
 
 static inline int
 ripper_is_node_yylval(VALUE n)
@@ -875,7 +877,9 @@ new_args_gen(struct parser_params *parser, VALUE f, VALUE o, VALUE r, VALUE p, V
 static inline VALUE
 new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
 {
-    return (VALUE)MEMO_NEW(k, kr, b);
+    VALUE r = (VALUE)MEMO_NEW(k, kr, b);
+    add_mark_object(r);
+    return r;
 }
 #define new_args_tail(k,kr,b,location) new_args_tail_gen(parser, (k),(kr),(b))
 
@@ -5213,10 +5217,11 @@ static enum yytokentype parser_here_document(struct parser_params*,rb_strterm_he
 # define yylval_id() (yylval.id)
 #else
 static inline VALUE
-ripper_yylval_id(ID x)
+ripper_yylval_id_gen(struct parser_params *parser, ID x)
 {
     return ripper_new_yylval(x, ID2SYM(x), 0);
 }
+#define ripper_yylval_id(x) ripper_yylval_id_gen(parser, x)
 # define set_yylval_str(x) (yylval.val = (x))
 # define set_yylval_num(x) (yylval.val = ripper_new_yylval((x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
@@ -5264,7 +5269,7 @@ static void
 ripper_dispatch_scan_event(struct parser_params *parser, int t)
 {
     if (!ripper_has_scan_event(parser)) return;
-    yylval_rval = ripper_scan_event_val(parser, t);
+    add_mark_object(yylval_rval = ripper_scan_event_val(parser, t));
 }
 #define dispatch_scan_event(t) ripper_dispatch_scan_event(parser, t)
 
@@ -5276,7 +5281,7 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
     ruby_sourceline = parser->delayed_line;
     parser->tokp = lex_pbeg + parser->delayed_col;
-    yylval_rval = ripper_dispatch1(parser, ripper_token2eventid(t), parser->delayed);
+    add_mark_object(yylval_rval = ripper_dispatch1(parser, ripper_token2eventid(t), parser->delayed));
     parser->delayed = Qnil;
     ruby_sourceline = saved_line;
     parser->tokp = saved_tokp;
@@ -6311,9 +6316,7 @@ parser_regx_options(struct parser_params *parser)
 static void
 dispose_string(struct parser_params *parser, VALUE str)
 {
-#ifndef RIPPER
     rb_ast_delete_mark_object(parser->ast, str);
-#endif
     rb_str_free(str);
     rb_gc_force_recycle(str);
 }
@@ -8948,7 +8951,6 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *parser)
 
 #define LVAR_USED ((ID)1 << (sizeof(ID) * CHAR_BIT - 1))
 
-#ifndef RIPPER
 static NODE*
 node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
@@ -8963,6 +8965,7 @@ node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE 
     return n;
 }
 
+#ifndef RIPPER
 static enum node_type
 nodetype(NODE *node)			/* for debug */
 {
@@ -11585,6 +11588,7 @@ parser_mark(void *ptr)
     rb_gc_mark(lex_nextline);
     rb_gc_mark(ruby_sourcefile_string);
     rb_gc_mark((VALUE)lex_strterm);
+    rb_gc_mark((VALUE)parser->ast);
 #ifndef RIPPER
     rb_gc_mark(ruby_debug_lines);
     rb_gc_mark(parser->compile_option);
@@ -12107,7 +12111,10 @@ ripper_parse0(VALUE parser_v)
 
     TypedData_Get_Struct(parser_v, struct parser_params, &parser_data_type, parser);
     parser_prepare(parser);
+    parser->ast = rb_ast_new();
     ripper_yyparse((void*)parser);
+    rb_ast_free(parser->ast);
+    parser->ast = 0;
     return parser->result;
 }
 
