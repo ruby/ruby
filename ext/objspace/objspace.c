@@ -625,6 +625,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
 	imemo_type_ids[8] = rb_intern("imemo_alloc");
+	imemo_type_ids[9] = rb_intern("imemo_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
