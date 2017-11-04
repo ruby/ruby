@@ -445,6 +445,9 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b,o) NEW_NODE(NODE_PRELUDE,p,b,o)
 
+#define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
+#define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 typedef struct node_buffer_struct node_buffer_t;

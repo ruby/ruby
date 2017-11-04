@@ -366,12 +366,12 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("example: a, b = foo");
 	F_NODE(nd_value, "rhsn");
 	F_NODE(nd_head, "lhsn");
-	if ((VALUE)node->nd_args != (VALUE)-1) {
+	if (node->nd_args != NODE_SPECIAL_NO_NAME_REST) {
 	    LAST_NODE;
 	    F_NODE(nd_args, "splatn");
 	}
 	else {
-	    F_MSG(nd_args, "splatn", "-1 (rest argument without name)");
+	    F_MSG(nd_args, "splatn", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
 	}
 	return;
 
@@ -402,8 +402,8 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
       asgn:
 	F_ID(nd_vid, "variable");
 	LAST_NODE;
-	if (node->nd_value == (NODE *)-1) {
-	    F_MSG(nd_value, "rvalue", "(required keyword argument)");
+	if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	    F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
 	}
 	else {
 	    F_NODE(nd_value, "rvalue");
@@ -983,11 +983,11 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("post arguments");
 	ANN("format: *[nd_1st], [nd_2nd..] = ..");
 	ANN("example: a, *rest, z = foo");
-	if ((VALUE)node->nd_1st != (VALUE)-1) {
+	if (node->nd_1st != NODE_SPECIAL_NO_NAME_REST) {
 	    F_NODE(nd_1st, "rest argument");
 	}
 	else {
-	    F_MSG(nd_1st, "rest argument", "-1 (rest argument without name)");
+	    F_MSG(nd_1st, "rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
 	}
 	LAST_NODE;
 	F_NODE(nd_2nd, "post arguments");
