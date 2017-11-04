@@ -420,7 +420,6 @@ typedef struct RVALUE {
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RFile   file;
-	struct RNode   node;
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
@@ -2001,14 +2000,6 @@ rb_newobj_of(VALUE klass, VALUE flags)
     return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
-NODE*
-rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
-{
-    NODE *n = (NODE *)newobj_of(0, T_NODE, a0, a1, a2, FALSE); /* TODO: node also should be wb protected */
-    nd_set_type(n, type);
-    return n;
-}
-
 #undef rb_imemo_new
 
 VALUE
@@ -2329,8 +2320,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	rb_gc_free_node(obj);
-	break;			/* no need to free iv_tbl */
+	rb_bug("obj_free(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
+	       BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	break;
 
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
@@ -2533,10 +2525,13 @@ internal_object_p(VALUE obj)
 
     if (p->as.basic.flags) {
 	switch (BUILTIN_TYPE(p)) {
+	  case T_NODE:
+	      rb_bug("internal_object_p(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
+		      BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	      break;
 	  case T_NONE:
 	  case T_IMEMO:
 	  case T_ICLASS:
-	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
 	  case T_CLASS:
@@ -3307,7 +3302,8 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
 
       case T_NODE:
-	if (use_all_types) size += rb_node_memsize(obj);
+	rb_bug("obj_memsize_of(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
+		BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
 	break;
 
       case T_STRUCT:
@@ -3449,7 +3445,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_FIXNUM);
 	    COUNT_TYPE(T_IMEMO);
 	    COUNT_TYPE(T_UNDEF);
-	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);
 	    COUNT_TYPE(T_ZOMBIE);
 #undef COUNT_TYPE
@@ -4573,9 +4568,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	obj = rb_gc_mark_node(&any->as.node);
-	if (obj) gc_mark(objspace, obj);
-	return;			/* no need to mark class. */
+	rb_bug("rb_gc_mark(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
+		BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	break;
 
       case T_IMEMO:
 	gc_mark_imemo(objspace, obj);
@@ -9228,7 +9223,6 @@ type_name(int type, VALUE obj)
 	    TYPE_NAME(T_FIXNUM);
 	    TYPE_NAME(T_UNDEF);
 	    TYPE_NAME(T_IMEMO);
-	    TYPE_NAME(T_NODE);
 	    TYPE_NAME(T_ICLASS);
 	    TYPE_NAME(T_ZOMBIE);
       case T_DATA:
@@ -9333,8 +9327,8 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 
 	switch (type) {
 	  case T_NODE:
-	    snprintf(buff, buff_size, "%s (%s)", buff,
-		     ruby_node_name(nd_type(obj)));
+	    rb_bug("rb_raw_obj_info(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
+		    BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
 	    break;
 	  case T_ARRAY:
 	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,

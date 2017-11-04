@@ -484,10 +484,6 @@ rb_ast_t *rb_compile_string(const char*, VALUE, int);
 rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
-NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
-void rb_gc_free_node(VALUE obj);
-size_t rb_node_memsize(VALUE obj);
-VALUE rb_gc_mark_node(NODE *obj);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 
