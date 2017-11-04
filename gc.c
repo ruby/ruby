@@ -2000,6 +2000,10 @@ rb_newobj_of(VALUE klass, VALUE flags)
     return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
+#define UNEXPECTED_NODE(func) \
+    rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
+	   BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
+
 #undef rb_imemo_new
 
 VALUE
@@ -2320,8 +2324,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	rb_bug("obj_free(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
-	       BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	UNEXPECTED_NODE(obj_free);
 	break;
 
       case T_STRUCT:
@@ -2526,9 +2529,8 @@ internal_object_p(VALUE obj)
     if (p->as.basic.flags) {
 	switch (BUILTIN_TYPE(p)) {
 	  case T_NODE:
-	      rb_bug("internal_object_p(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
-		      BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
-	      break;
+	    UNEXPECTED_NODE(internal_object_p);
+	    break;
 	  case T_NONE:
 	  case T_IMEMO:
 	  case T_ICLASS:
@@ -3302,8 +3304,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
 
       case T_NODE:
-	rb_bug("obj_memsize_of(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
-		BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	UNEXPECTED_NODE(obj_memsize_of);
 	break;
 
       case T_STRUCT:
@@ -4568,8 +4569,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	rb_bug("rb_gc_mark(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
-		BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	UNEXPECTED_NODE(rb_gc_mark);
 	break;
 
       case T_IMEMO:
@@ -9327,8 +9327,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 
 	switch (type) {
 	  case T_NODE:
-	    rb_bug("rb_raw_obj_info(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE,
-		    BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
+	    UNEXPECTED_NODE(rb_raw_obj_info);
 	    break;
 	  case T_ARRAY:
 	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
