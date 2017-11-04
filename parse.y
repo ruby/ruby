@@ -350,12 +350,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
 static inline void
-parser_set_line(NODE *n, int l)
-{
-    nd_set_line(n, l);
-}
-
-static inline void
 rb_discard_node_gen(struct parser_params *parser, NODE *n)
 {
     rb_ast_delete_node(parser->ast, n);
@@ -763,24 +757,27 @@ typedef struct rb_strterm_literal_struct {
 } rb_strterm_literal_t;
 
 typedef struct rb_strterm_heredoc_struct {
-    VALUE sourceline;
+    union {
+	VALUE dummy;
+	int sourceline;
+    } u1;
     VALUE term;		/* `"END"` of `<<"END"` */
     VALUE lastline;	/* the string of line that contains `<<"END"` */
     union {
 	VALUE dummy;
 	long lastidx;	/* the column of `<<"END"` */
-     } u3;
+    } u3;
 } rb_strterm_heredoc_t;
 
 #define STRTERM_HEREDOC IMEMO_FL_USER0
 
-typedef struct rb_strterm_struct {
+struct rb_strterm_struct {
     VALUE flags;
     union {
 	rb_strterm_literal_t literal;
 	rb_strterm_heredoc_t heredoc;
     } u;
-} rb_strterm_t;
+};
 
 void
 rb_strterm_mark(VALUE obj)
@@ -6794,7 +6791,7 @@ parser_heredoc_restore(struct parser_params *parser, rb_strterm_heredoc_t *here)
     lex_pend = lex_pbeg + RSTRING_LEN(line);
     lex_p = lex_pbeg + here->u3.lastidx;
     heredoc_end = ruby_sourceline;
-    ruby_sourceline = here->sourceline;
+    ruby_sourceline = here->u1.sourceline;
     token_flush(parser);
 }
 
