@@ -4546,9 +4546,6 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_ast:
 	rb_ast_mark(&RANY(obj)->as.imemo.ast);
 	return;
-      case imemo_strterm:
-	rb_strterm_mark(obj);
-	return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
