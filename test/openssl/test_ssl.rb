@@ -811,31 +811,22 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     supported
   end
 
-  def test_min_version
+  def test_set_params_min_version
     supported = check_supported_protocol_versions
+    store = OpenSSL::X509::Store.new
+    store.add_cert(@ca_cert)
 
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.set_params
-    orig_options = ctx.options
-
-    ctx.set_params(min_version: 999)
-    assert_not_equal(ctx.options, orig_options)
-
-    ctx.min_version = :TLSv1_2
-    assert_not_equal(0, ctx.options & OpenSSL::SSL::OP_NO_TLSv1)
-    assert_not_equal(0, ctx.options & OpenSSL::SSL::OP_NO_TLSv1_1)
-  end
-
-  def test_max_version
-    supported = check_supported_protocol_versions
-
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.set_params
-    orig_options = ctx.options
-
-    ctx.max_version = :TLSv1
-    assert_not_equal(0, ctx.options & OpenSSL::SSL::OP_NO_TLSv1_1)
-    assert_not_equal(0, ctx.options & OpenSSL::SSL::OP_NO_TLSv1_2)
+    if supported.include?(OpenSSL::SSL::SSL3_VERSION)
+      # SSLContext#set_params properly disables SSL 3.0 by default
+      ctx_proc = proc { |ctx|
+        ctx.min_version = ctx.max_version = OpenSSL::SSL::SSL3_VERSION
+      }
+      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.set_params(cert_store: store, verify_hostname: false)
+        assert_handshake_error { server_connect(port, ctx) { } }
+      }
+    end
   end
 
   def test_minmax_version
