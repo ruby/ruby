@@ -9865,7 +9865,7 @@ rb_parser_trace_lex_state(struct parser_params *parser, enum lex_state_e from,
 VALUE
 rb_parser_lex_state_name(enum lex_state_e state)
 {
-    return append_lex_state_name(state, rb_str_new(0, 0));
+    return rb_fstring(append_lex_state_name(state, rb_str_new(0, 0)));
 }
 
 static void

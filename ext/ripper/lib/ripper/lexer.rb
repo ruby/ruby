@@ -46,33 +46,19 @@ class Ripper
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
-    Elem = Struct.new(:pos, :event, :tok, :state)
-    class Elem
-      class List < ::Array
-        def inspect
-          super.sub!(/\d+(?=\]\z)/, Ripper.lex_state_name(self[3]))
-        end
+    State = Struct.new(:to_int, :to_s) do
+      alias to_i to_int
+      def initialize(i) super(i, Ripper.lex_state_name(i)).freeze end
+      def inspect; "#<#{self.class}: #{self}>" end
+      def pretty_print(q) q.text(to_s) end
+      def ==(i) super or to_int == i end
+      def &(i) self.class.new(to_int & i) end
+      def |(i) self.class.new(to_int & i) end
+    end
 
-        def pretty_print(q) # :nodoc:
-          pos, event, tok, state = self
-          q.group(1, '[', ']') {
-            q.pp pos
-            q.comma_breakable
-            q.pp event
-            q.comma_breakable
-            q.pp tok
-            q.comma_breakable
-            q.text(Ripper.lex_state_name(state))
-          }
-        end
-
-        def pretty_print_cycle(q) # :nodoc:
-          q.text('[...]')
-        end
-      end
-
-      def to_a
-        List[*values]
+    Elem = Struct.new(:pos, :event, :tok, :state) do
+      def initialize(pos, event, tok, state)
+        super(pos, event, tok, State.new(state))
       end
     end
 
