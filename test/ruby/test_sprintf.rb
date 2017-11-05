@@ -532,4 +532,23 @@ class TestSprintf < Test::Unit::TestCase
     assert_equal before + 1, after, 'only new string is the created one'
     assert_equal '1970-01-01', val
   end
+
+  def test_warning_for_too_many_args
+    assert_warning(/too many arguments for format string/) { sprintf('blah', 1) }
+    assert_warning(/too many arguments for format string/) { sprintf('blah', 1, 2) }
+
+    assert_warning('') { sprintf('blah') }
+    assert_warning('') { sprintf('%d', 1) }
+    assert_warning('') { sprintf('%d %d', 1, 2) }
+
+    # Using <digit>$ syntax in format string suppresses warning
+    assert_warning('') { sprintf('%2$d', 1, 2) }
+
+    # Hash is special-cased, because of '%{arg1} %{arg2}' % {arg1: 1, arg2: 2} syntax
+    assert_warning('') { sprintf('blah', {}) }
+    assert_warning('') { sprintf('blah', {arg1: 1}) }
+    assert_warning('') { sprintf('%{arg1}', {arg1: 1, arg2: 2}) }
+
+    assert_warning(/too many arguments for format string/) { sprintf('blah', {}, 2) }
+  end
 end
