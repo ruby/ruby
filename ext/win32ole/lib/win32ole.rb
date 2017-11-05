@@ -19,7 +19,15 @@ if defined?(WIN32OLE)
     #  #=> Did you mean?  Add
     #
     def methods(*args)
-      super + ole_methods.map(&:name)
+      super + ole_methods_safely.map(&:name)
+    end
+
+    private
+
+    def ole_methods_safely
+      ole_methods
+    rescue WIN32OLEQueryInterfaceError
+      []
     end
   end
 end
