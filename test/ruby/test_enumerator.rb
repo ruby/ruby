@@ -590,6 +590,8 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 126, @sized.cycle(3).size
     assert_equal Float::INFINITY, [].to_enum { 42 }.cycle.size
     assert_equal 0, [].to_enum { 0 }.cycle.size
+
+    assert_raise(TypeError) {[].to_enum { 0 }.cycle("").size}
   end
 
   def test_size_for_loops
