@@ -507,7 +507,9 @@ EOS
       def size; 0; end
       include Enumerable
     end
-    assert_equal 0, obj.lazy.cycle.size
+    lazy = obj.lazy
+    assert_equal 0, lazy.cycle.size
+    assert_raise(TypeError) {lazy.cycle("").size}
   end
 
   def test_map_zip
