@@ -2845,6 +2845,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
     VALUE size = enum_size(self, args, 0);
 
     if (size == Qnil) return Qnil;
+    if (FIXNUM_ZERO_P(size)) return size;
 
     if (args && (RARRAY_LEN(args) > 0)) {
 	n = RARRAY_AREF(args, 0);
