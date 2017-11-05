@@ -3397,7 +3397,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -3407,7 +3407,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {

@@ -119,7 +119,7 @@ ole_methods_from_typeinfo(ITypeInfo *pTypeInfo, int mask)
     VALUE methods = rb_ary_new();
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeAttr");
     }
 
     ole_methods_sub(0, pTypeInfo, methods, mask);
@@ -179,7 +179,7 @@ ole_methods_sub(ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALUE methods, 
     WORD i;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
