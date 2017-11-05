@@ -69,7 +69,12 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Add"))
+      assert_include(mnames, 'Add')
+    end
+
+    def test_methods
+      methods = @dict1.methods
+      assert_include(methods, 'Add')
     end
 
     def test_ole_func_methods
@@ -77,7 +82,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Add"))
+      assert_include(mnames, 'Add')
     end
 
     def test_ole_put_methods
@@ -85,7 +90,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("CompareMode"))
+      assert_include(mnames, 'CompareMode')
     end
 
     def test_ole_get_methods
@@ -93,7 +98,7 @@ if defined?(WIN32OLE)
       mnames = methods.collect {|m|
         m.name
       }
-      assert(mnames.include?("Count"))
+      assert_include(mnames, 'Count')
     end
 
     def test_ole_mehtod_help
