@@ -227,11 +227,6 @@ typedef struct rb_code_location_struct {
     int column;
 } rb_code_location_t;
 
-typedef struct rb_code_range_struct {
-    rb_code_location_t first_loc;
-    rb_code_location_t last_loc;
-} rb_code_range_t;
-
 typedef struct RNode {
     VALUE flags;
     union {
