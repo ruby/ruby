@@ -30,7 +30,7 @@ In other words: If adding a spec might reveal a bug in
 another implementation, then it is worth adding it.
 Currently, the only module which is MRI-specific is `RubyVM`.
 
-## Runing ruby/spec
+## Running ruby/spec
 
 To run all specs:
 ```bash
