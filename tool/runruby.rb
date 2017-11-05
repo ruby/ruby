@@ -5,8 +5,15 @@
 
 show = false
 precommand = []
+srcdir = File.realpath('..', File.dirname(__FILE__))
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
+  case arg
+  when '-C',  /\A-C(.+)/m
+    ARGV.shift
+    Dir.chdir($1 || ARGV.shift)
+    next
+  end
   /\A--([-\w]+)(?:=(.*))?\z/ =~ arg or break
   arg, value = $1, $2
   re = Regexp.new('\A'+arg.gsub(/\w+\b/, '\&\\w*')+'\z', "i")
@@ -35,6 +42,8 @@ while arg = ARGV[0]
     precommand.concat(Shellwords.shellwords(value))
   when re =~ "show"
     show = true
+  when re =~ "chdir"
+    Dir.chdir(value)
   else
     break
   end
@@ -53,10 +62,10 @@ unless defined?(File.realpath)
   end
 end
 
-srcdir ||= File.realpath('..', File.dirname(__FILE__))
 begin
   conffile = File.realpath('rbconfig.rb', archdir)
 rescue Errno::ENOENT => e
+  # retry if !archdir and ARGV[0] and File.directory?(archdir = ARGV.shift)
   abort "#$0: rbconfig.rb not found, use --archdir option"
 end
 
