@@ -1503,11 +1503,11 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
 static inline rb_fiber_t*
 fiber_current(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    if (th->ec->fiber_ptr->cont.self == 0) {
-	root_fiber_alloc(th);
+    rb_execution_context_t *ec = GET_EC();
+    if (ec->fiber_ptr->cont.self == 0) {
+	root_fiber_alloc(rb_ec_thread_ptr(ec));
     }
-    return th->ec->fiber_ptr;
+    return ec->fiber_ptr;
 }
 
 static inline rb_fiber_t*
