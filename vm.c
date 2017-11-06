@@ -2393,7 +2393,7 @@ rb_thread_mark(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
-    rb_fiber_mark_self(th->ec->fiber);
+    rb_fiber_mark_self(th->ec->fiber_ptr);
 
     /* mark ruby objects */
     RUBY_MARK_UNLESS_NULL(th->first_proc);
