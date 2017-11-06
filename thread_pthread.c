@@ -1132,7 +1132,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
-	if (RUBY_VM_INTERRUPTED(th)) {
+	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}

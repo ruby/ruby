@@ -237,7 +237,7 @@ rb_mutex_lock(VALUE self)
 
     /* When running trap handler */
     if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
-		th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	th->ec->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
@@ -280,7 +280,7 @@ rb_mutex_lock(VALUE self)
 		patrol_thread = NULL;
 
 	    th->locking_mutex = Qfalse;
-	    if (mutex->th && timeout && !RUBY_VM_INTERRUPTED(th)) {
+	    if (mutex->th && timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
 		rb_check_deadlock(th->vm);
 	    }
 	    if (th->status == THREAD_STOPPED_FOREVER) {
@@ -290,7 +290,7 @@ rb_mutex_lock(VALUE self)
 
 	    if (mutex->th == th) mutex_locked(th, self);
 
-	    RUBY_VM_CHECK_INTS_BLOCKING(th);
+	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
 	}
     }
     return self;

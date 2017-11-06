@@ -96,7 +96,7 @@ static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
-static int rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th);
+static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -173,17 +173,18 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     }; \
 } while(0)
 
-#define RUBY_VM_CHECK_INTS_BLOCKING(th) vm_check_ints_blocking(th)
+#define RUBY_VM_CHECK_INTS_BLOCKING(ec) vm_check_ints_blocking(ec)
 static inline void
-vm_check_ints_blocking(rb_thread_t *th)
+vm_check_ints_blocking(rb_execution_context_t *ec)
 {
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+
     if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
-	if (LIKELY(!RUBY_VM_INTERRUPTED_ANY(th))) return;
+	if (LIKELY(!RUBY_VM_INTERRUPTED_ANY(ec))) return;
     }
     else {
 	th->pending_interrupt_queue_checked = 0;
-
-	RUBY_VM_SET_INTERRUPT(th);
+	RUBY_VM_SET_INTERRUPT(ec);
     }
     rb_threadptr_execute_interrupts(th, 1);
 }
@@ -381,16 +382,16 @@ unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, in
 {
     do {
 	if (fail_if_interrupted) {
-	    if (RUBY_VM_INTERRUPTED_ANY(th)) {
+	    if (RUBY_VM_INTERRUPTED_ANY(th->ec)) {
 		return FALSE;
 	    }
 	}
 	else {
-	    RUBY_VM_CHECK_INTS(th);
+	    RUBY_VM_CHECK_INTS(th->ec);
 	}
 
 	native_mutex_lock(&th->interrupt_lock);
-    } while (RUBY_VM_INTERRUPTED_ANY(th) &&
+    } while (RUBY_VM_INTERRUPTED_ANY(th->ec) &&
 	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
 
     VM_ASSERT(th->unblock.func == NULL);
@@ -415,10 +416,10 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
     native_mutex_lock(&th->interrupt_lock);
     if (trap) {
-	RUBY_VM_SET_TRAP_INTERRUPT(th);
+	RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
     }
     else {
-	RUBY_VM_SET_INTERRUPT(th);
+	RUBY_VM_SET_INTERRUPT(th->ec);
     }
     if (th->unblock.func != NULL) {
 	(th->unblock.func)(th->unblock.arg);
@@ -479,6 +480,7 @@ void
 rb_thread_terminate_all(void)
 {
     rb_thread_t *volatile th = GET_THREAD(); /* main thread */
+    rb_execution_context_t * volatile ec = th->ec;
     rb_vm_t *volatile vm = th->vm;
     volatile int sleeping = 0;
 
@@ -490,7 +492,7 @@ rb_thread_terminate_all(void)
     /* unlock all locking mutexes */
     rb_threadptr_unlock_all_locking_mutexes(th);
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
       retry:
 	thread_debug("rb_thread_terminate_all (main thread: %p)\n", (void *)th);
@@ -503,7 +505,7 @@ rb_thread_terminate_all(void)
 	     */
 	    sleeping = 1;
 	    native_sleep(th, 0);
-	    RUBY_VM_CHECK_INTS_BLOCKING(th);
+	    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 	    sleeping = 0;
 	}
     }
@@ -731,8 +733,6 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->pending_interrupt_queue_checked = 0;
     th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
-
-    th->interrupt_mask = 0;
 
     native_mutex_initialize(&th->interrupt_lock);
     th->report_on_exception = th->vm->thread_report_on_exception;
@@ -1079,7 +1079,7 @@ sleep_forever(rb_thread_t *th, int deadlockable, int spurious_check)
     enum rb_thread_status status = deadlockable ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
 
     th->status = status;
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == status) {
 	if (deadlockable) {
 	    th->vm->sleeper++;
@@ -1089,7 +1089,7 @@ sleep_forever(rb_thread_t *th, int deadlockable, int spurious_check)
 	if (deadlockable) {
 	    th->vm->sleeper--;
 	}
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
 	if (!spurious_check)
 	    break;
     }
@@ -1134,10 +1134,10 @@ sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
     }
 
     th->status = THREAD_STOPPED;
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &tv);
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
 	getclockofday(&tvn);
 	if (to.tv_sec < tvn.tv_sec) break;
 	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
@@ -1217,8 +1217,7 @@ rb_thread_wait_for(struct timeval time)
 void
 rb_thread_check_ints(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
 }
 
 /*
@@ -1235,7 +1234,7 @@ rb_thread_check_trap_pending(void)
 int
 rb_thread_interrupted(VALUE thval)
 {
-    return (int)RUBY_VM_INTERRUPTED(rb_thread_ptr(thval));
+    return (int)RUBY_VM_INTERRUPTED(rb_thread_ptr(thval)->ec);
 }
 
 void
@@ -1264,10 +1263,8 @@ rb_thread_schedule_limits(uint32_t limits_us)
 void
 rb_thread_schedule(void)
 {
-    rb_thread_t *cur_th = GET_THREAD();
     rb_thread_schedule_limits(0);
-
-    RUBY_VM_CHECK_INTS(cur_th);
+    RUBY_VM_CHECK_INTS(GET_EC());
 }
 
 /* blocking region */
@@ -1324,7 +1321,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
     }, ubf, data2, fail_if_interrupted);
 
     if (!fail_if_interrupted) {
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     }
 
     errno = saved_errno;
@@ -1435,22 +1432,21 @@ VALUE
 rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 {
     volatile VALUE val = Qundef; /* shouldn't be used */
-    rb_vm_t *vm = GET_VM();
-    rb_thread_t *volatile th = GET_THREAD();
+    rb_execution_context_t * volatile ec = GET_EC();
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
     struct waiting_fd wfd;
 
     wfd.fd = fd;
-    wfd.th = th;
-    list_add(&vm->waiting_fds, &wfd.wfd_node);
+    wfd.th = rb_ec_thread_ptr(ec);
+    list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd.wfd_node);
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	BLOCKING_REGION({
 	    val = func(data1);
 	    saved_errno = errno;
-	}, ubf_select, th, FALSE);
+	}, ubf_select, rb_ec_thread_ptr(ec), FALSE);
     }
     EC_POP_TAG();
 
@@ -1458,10 +1454,10 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     list_del(&wfd.wfd_node);
 
     if (state) {
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
     /* TODO: check func() */
-    RUBY_VM_CHECK_INTS_BLOCKING(th);
+    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 
     errno = saved_errno;
 
@@ -1656,7 +1652,7 @@ rb_threadptr_pending_interrupt_check_mask(rb_thread_t *th, VALUE err)
 }
 
 static int
-rb_threadptr_pending_interrupt_empty_p(rb_thread_t *th)
+rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th)
 {
     return RARRAY_LEN(th->pending_interrupt_queue) == 0;
 }
@@ -1857,7 +1853,8 @@ static VALUE
 rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
 {
     VALUE mask;
-    rb_thread_t * volatile th = GET_THREAD();
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     volatile VALUE r = Qnil;
     enum ruby_tag_type state;
 
@@ -1875,7 +1872,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     rb_ary_push(th->pending_interrupt_mask_stack, mask);
     if (!rb_threadptr_pending_interrupt_empty_p(th)) {
 	th->pending_interrupt_queue_checked = 0;
-	RUBY_VM_SET_INTERRUPT(th);
+	RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
     EC_PUSH_TAG(th->ec);
@@ -1887,10 +1884,10 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     rb_ary_pop(th->pending_interrupt_mask_stack);
     if (!rb_threadptr_pending_interrupt_empty_p(th)) {
 	th->pending_interrupt_queue_checked = 0;
-	RUBY_VM_SET_INTERRUPT(th);
+	RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
-    RUBY_VM_CHECK_INTS(th);
+    RUBY_VM_CHECK_INTS(th->ec);
 
     if (state) {
 	EC_JUMP_TAG(th->ec, state);
@@ -2014,14 +2011,15 @@ rb_threadptr_to_kill(rb_thread_t *th)
 static inline rb_atomic_t
 threadptr_get_interrupts(rb_thread_t *th)
 {
+    rb_execution_context_t *ec = th->ec;
     rb_atomic_t interrupt;
     rb_atomic_t old;
 
     do {
-	interrupt = th->interrupt_flag;
-	old = ATOMIC_CAS(th->interrupt_flag, interrupt, interrupt & th->interrupt_mask);
+	interrupt = ec->interrupt_flag;
+	old = ATOMIC_CAS(ec->interrupt_flag, interrupt, interrupt & ec->interrupt_mask);
     } while (old != interrupt);
-    return interrupt & (rb_atomic_t)~th->interrupt_mask;
+    return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
 void
@@ -2252,7 +2250,7 @@ thread_raise_m(int argc, VALUE *argv, VALUE self)
 
     /* To perform Thread.current.raise as Kernel.raise */
     if (current_th == target_th) {
-	RUBY_VM_CHECK_INTS(target_th);
+	RUBY_VM_CHECK_INTS(target_th->ec);
     }
     return Qnil;
 }
@@ -3734,7 +3732,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th, FALSE);
 
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     } while (result < 0 && retryable(errno = lerrno) && do_select_update());
 
 #define fd_term(f) if (f##fds) rb_fd_term(&orig_##f)
@@ -3898,7 +3896,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th, FALSE);
 
-	RUBY_VM_CHECK_INTS_BLOCKING(th);
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     } while (result < 0 && retryable(errno = lerrno) && poll_update());
     if (result < 0) return -1;
 
@@ -4041,8 +4039,9 @@ timer_thread_function(void *arg)
      */
     native_mutex_lock(&vm->thread_destruct_lock);
     /* for time slice */
-    if (vm->running_thread)
-	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread);
+    if (vm->running_thread) {
+	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread->ec);
+    }
     native_mutex_unlock(&vm->thread_destruct_lock);
 
     /* check signal */
@@ -4890,8 +4889,6 @@ Init_Thread(void)
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;
 	    th->pending_interrupt_mask_stack = rb_ary_tmp_new(0);
-
-	    th->interrupt_mask = 0;
 	}
     }
 
@@ -4922,7 +4919,7 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
 		    "native:%"PRI_THREAD_ID" int:%u",
-		    th->self, th, thread_id_str(th), th->interrupt_flag);
+		    th->self, th, thread_id_str(th), th->ec->interrupt_flag);
 	if (th->locking_mutex) {
 	    rb_mutex_t *mutex;
 	    GetMutexPtr(th->locking_mutex, mutex);
@@ -4953,7 +4950,7 @@ rb_check_deadlock(rb_vm_t *vm)
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
-	if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th)) {
+	if (th->status != THREAD_STOPPED_FOREVER || RUBY_VM_INTERRUPTED(th->ec)) {
 	    found = 1;
 	}
 	else if (th->locking_mutex) {

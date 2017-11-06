@@ -162,7 +162,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 		ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex);
 		goto success;
 	    }
-	    RUBY_VM_CHECK_INTS(rb_ec_thread_ptr(ec));
+	    RUBY_VM_CHECK_INTS(ec);
 	    goto again;
 	}
       case VM_METHOD_TYPE_ALIAS:
@@ -197,7 +197,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
     return Qundef;
 
   success:
-    RUBY_VM_CHECK_INTS(rb_ec_thread_ptr(ec));
+    RUBY_VM_CHECK_INTS(ec);
     return ret;
 }
 

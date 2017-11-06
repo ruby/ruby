@@ -1389,7 +1389,7 @@ rb_fiber_new(VALUE (*func)(ANYARGS), VALUE obj)
     return fiber_init(fiber_alloc(rb_cFiber), rb_proc_new(func, obj));
 }
 
-static void rb_fiber_terminate(rb_fiber_t *fib);
+static void rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt);
 
 void
 rb_fiber_start(void)
@@ -1398,6 +1398,7 @@ rb_fiber_start(void)
     rb_fiber_t *fib = th->ec->fiber_ptr;
     rb_proc_t *proc;
     enum ruby_tag_type state;
+    int need_interrupt = TRUE;
 
     VM_ASSERT(th->ec == ruby_current_execution_context_ptr);
     VM_ASSERT(FIBER_RESUMED_P(fib));
@@ -1420,20 +1421,22 @@ rb_fiber_start(void)
     EC_POP_TAG();
 
     if (state) {
+	VALUE err = th->ec->errinfo;
 	VM_ASSERT(FIBER_RESUMED_P(fib));
 
 	if (state == TAG_RAISE || state == TAG_FATAL) {
-	    rb_threadptr_pending_interrupt_enque(th, th->ec->errinfo);
+	    rb_threadptr_pending_interrupt_enque(th, err);
 	}
 	else {
-	    VALUE err = rb_vm_make_jump_tag_but_local_jump(state, th->ec->errinfo);
-	    if (!NIL_P(err))
+	    err = rb_vm_make_jump_tag_but_local_jump(state, err);
+	    if (!NIL_P(err)) {
 		rb_threadptr_pending_interrupt_enque(th, err);
+	    }
 	}
-	RUBY_VM_SET_INTERRUPT(th);
+	need_interrupt = TRUE;
     }
 
-    rb_fiber_terminate(fib);
+    rb_fiber_terminate(fib, need_interrupt);
     VM_UNREACHABLE(rb_fiber_start);
 }
 
@@ -1669,7 +1672,7 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
     cont->argc = argc;
     cont->value = make_passing_arg(argc, argv);
     value = fiber_store(fib, th);
-    RUBY_VM_CHECK_INTS(th);
+    RUBY_VM_CHECK_INTS(th->ec);
 
     EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
 
@@ -1704,11 +1707,12 @@ rb_fiber_close(rb_fiber_t *fib)
 }
 
 static void
-rb_fiber_terminate(rb_fiber_t *fib)
+rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
 {
     VALUE value = fib->cont.value;
-    VM_ASSERT(FIBER_RESUMED_P(fib));
+    rb_fiber_t *ret_fib;
 
+    VM_ASSERT(FIBER_RESUMED_P(fib));
     rb_fiber_close(fib);
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
@@ -1721,7 +1725,9 @@ rb_fiber_terminate(rb_fiber_t *fib)
     fib->cont.machine.stack_size = 0;
 #endif
 
-    fiber_switch(return_fiber(), 1, &value, 0);
+    ret_fib = return_fiber();
+    if (need_interrupt) RUBY_VM_SET_INTERRUPT(&ret_fib->cont.saved_ec);
+    fiber_switch(ret_fib, 1, &value, 0);
 }
 
 VALUE
