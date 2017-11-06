@@ -745,8 +745,8 @@ typedef struct rb_execution_context_struct {
     int safe_level;
     int raised_flag;
 
-    /* temporary place of errinfo */
-    VALUE errinfo;
+    rb_fiber_t *fiber_ptr;
+    struct rb_thread_struct *thread_ptr;
 
     /* storage (ec (fiber) local) */
     st_table *local_storage;
@@ -757,21 +757,16 @@ typedef struct rb_execution_context_struct {
     const VALUE *root_lep;
     VALUE root_svar;
 
-    /* trace information */
-    struct rb_trace_arg_struct *trace_arg;
-
     /* ensure & callcc */
     rb_ensure_list_t *ensure_list;
 
-    rb_fiber_t *fiber;
+    /* trace information */
+    struct rb_trace_arg_struct *trace_arg;
 
-    /* for rb_iterate */
-    VALUE passed_block_handler;
-
-    /* for bmethod */
-    const rb_callable_method_entry_t *passed_bmethod_me;
-
-    struct rb_thread_struct *thread_ptr;
+    /* temporary places */
+    VALUE errinfo;
+    VALUE passed_block_handler; /* for rb_iterate */
+    const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
 
     /* for GC */
     struct {
