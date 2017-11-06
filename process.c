@@ -902,8 +902,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     else {
 	while ((result = do_waitpid_nonblocking(pid, st, flags)) < 0 &&
 	       (errno == EINTR)) {
-	    rb_thread_t *th = GET_THREAD();
-	    RUBY_VM_CHECK_INTS(th);
+	    RUBY_VM_CHECK_INTS(GET_EC());
 	}
     }
     if (result > 0) {

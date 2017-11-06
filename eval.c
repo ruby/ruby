@@ -171,7 +171,7 @@ ruby_cleanup(volatile int ex)
     rb_threadptr_check_signal(th);
     EC_PUSH_TAG(th->ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
-	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th); });
+	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th->ec); });
 
       step_0: step++;
 	errs[1] = th->ec->errinfo;

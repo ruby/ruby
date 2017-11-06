@@ -1540,7 +1540,7 @@ postponed_job_register(rb_thread_t *th, rb_vm_t *vm,
     pjob->func = func;
     pjob->data = data;
 
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th);
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
 
     return PJRR_SUCESS;
 }
@@ -1576,7 +1576,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
     for (i=0; i<index; i++) {
 	pjob = &vm->postponed_job_buffer[i];
 	if (pjob->func == func) {
-	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th);
+	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
 	    return 2;
 	}
     }
@@ -1591,16 +1591,16 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
-    rb_thread_t * volatile th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     const unsigned long block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
-    volatile unsigned long saved_mask = th->interrupt_mask & block_mask;
-    VALUE volatile saved_errno = th->ec->errinfo;
+    volatile unsigned long saved_mask = ec->interrupt_mask & block_mask;
+    VALUE volatile saved_errno = ec->errinfo;
 
-    th->ec->errinfo = Qnil;
+    ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
-    th->interrupt_mask |= block_mask;
+    ec->interrupt_mask |= block_mask;
     {
-	EC_PUSH_TAG(th->ec);
+	EC_PUSH_TAG(ec);
 	if (EXEC_TAG() == TAG_NONE) {
 	    int index;
 	    while ((index = vm->postponed_job_index) > 0) {
@@ -1613,6 +1613,6 @@ rb_postponed_job_flush(rb_vm_t *vm)
 	EC_POP_TAG();
     }
     /* restore POSTPONED_JOB mask */
-    th->interrupt_mask &= ~(saved_mask ^ block_mask);
-    th->ec->errinfo = saved_errno;
+    ec->interrupt_mask &= ~(saved_mask ^ block_mask);
+    ec->errinfo = saved_errno;
 }

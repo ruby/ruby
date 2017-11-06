@@ -987,8 +987,8 @@ sig_do_nothing(int sig)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    rb_thread_t *cur_th = GET_THREAD();
-    volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
+    rb_execution_context_t *ec = GET_EC();
+    volatile unsigned long old_interrupt_mask = ec->interrupt_mask;
     enum ruby_tag_type state;
 
     /*
@@ -1000,19 +1000,19 @@ signal_exec(VALUE cmd, int safe, int sig)
     if (IMMEDIATE_P(cmd))
 	return;
 
-    cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
-    EC_PUSH_TAG(cur_th->ec);
+    ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
+    EC_PUSH_TAG(ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
     EC_POP_TAG();
-    cur_th = GET_THREAD();
-    cur_th->interrupt_mask = old_interrupt_mask;
+    ec = GET_EC();
+    ec->interrupt_mask = old_interrupt_mask;
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	EC_JUMP_TAG(cur_th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
 }
 

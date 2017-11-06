@@ -167,7 +167,7 @@ w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
     thread_debug("  w32_wait_events events:%p, count:%d, timeout:%ld, th:%p\n",
 		 events, count, timeout, th);
     if (th && (intr = th->native_thread_data.interrupt_event)) {
-	if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th) || SetEvent(intr))) {
+	if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th->ec) || SetEvent(intr))) {
 	    targets = ALLOCA_N(HANDLE, count + 1);
 	    memcpy(targets, events, sizeof(HANDLE) * count);
 
@@ -285,7 +285,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	th->unblock.arg = th;
 	native_mutex_unlock(&th->interrupt_lock);
 
-	if (RUBY_VM_INTERRUPTED(th)) {
+	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
 	}
 	else {

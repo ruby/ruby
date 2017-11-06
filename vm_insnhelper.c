@@ -1712,7 +1712,7 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
 		  iseq->body->stack_max);
 
     cfp->sp = sp_orig;
-    RUBY_VM_CHECK_INTS(rb_ec_thread_ptr(ec));
+    RUBY_VM_CHECK_INTS(ec);
 
     return Qundef;
 }
@@ -3284,7 +3284,7 @@ vm_once_dispatch(ISEQ iseq, IC ic, rb_thread_t *th)
     }
     else {
 	/* waiting for finish */
-	RUBY_VM_CHECK_INTS(th);
+	RUBY_VM_CHECK_INTS(th->ec);
 	rb_thread_schedule();
 	goto again;
     }

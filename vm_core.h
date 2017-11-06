@@ -745,6 +745,10 @@ typedef struct rb_execution_context_struct {
     int safe_level;
     int raised_flag;
 
+    /* interrupt flags */
+    rb_atomic_t interrupt_flag;
+    unsigned long interrupt_mask;
+
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
 
@@ -825,8 +829,7 @@ typedef struct rb_thread_struct {
     VALUE pending_interrupt_mask_stack;
     int pending_interrupt_queue_checked;
 
-    rb_atomic_t interrupt_flag;
-    unsigned long interrupt_mask;
+    /* interrupt management */
     rb_nativethread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
@@ -1652,12 +1655,13 @@ enum {
     TRAP_INTERRUPT_MASK	         = 0x08
 };
 
-#define RUBY_VM_SET_TIMER_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TIMER_INTERRUPT_MASK)
-#define RUBY_VM_SET_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, PENDING_INTERRUPT_MASK)
-#define RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th)	ATOMIC_OR((th)->interrupt_flag, POSTPONED_JOB_INTERRUPT_MASK)
-#define RUBY_VM_SET_TRAP_INTERRUPT(th)		ATOMIC_OR((th)->interrupt_flag, TRAP_INTERRUPT_MASK)
-#define RUBY_VM_INTERRUPTED(th) ((th)->interrupt_flag & ~(th)->interrupt_mask & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
-#define RUBY_VM_INTERRUPTED_ANY(th) ((th)->interrupt_flag & ~(th)->interrupt_mask)
+#define RUBY_VM_SET_TIMER_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TIMER_INTERRUPT_MASK)
+#define RUBY_VM_SET_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, PENDING_INTERRUPT_MASK)
+#define RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec)	ATOMIC_OR((ec)->interrupt_flag, POSTPONED_JOB_INTERRUPT_MASK)
+#define RUBY_VM_SET_TRAP_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TRAP_INTERRUPT_MASK)
+#define RUBY_VM_INTERRUPTED(ec)			((ec)->interrupt_flag & ~(ec)->interrupt_mask & \
+						 (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
+#define RUBY_VM_INTERRUPTED_ANY(ec)		((ec)->interrupt_flag & ~(ec)->interrupt_mask)
 
 VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
 int rb_signal_buff_size(void);
@@ -1676,13 +1680,13 @@ void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 
-#define RUBY_VM_CHECK_INTS(th) ruby_vm_check_ints(th)
+#define RUBY_VM_CHECK_INTS(ec) ruby_vm_check_ints(ec)
 static inline void
-ruby_vm_check_ints(rb_thread_t *th)
+ruby_vm_check_ints(rb_execution_context_t *ec)
 {
-    VM_ASSERT(th->ec == ruby_current_execution_context_ptr);
-    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(th))) {
-	rb_threadptr_execute_interrupts(th, 0);
+    VM_ASSERT(ec == ruby_current_execution_context_ptr);
+    if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {
+	rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
     }
 }
 
