@@ -254,6 +254,7 @@ def show_progress(message = '')
     end
   end
 rescue Interrupt
+  $stderr.puts "\##{@count} #{@location}"
   raise Interrupt
 rescue Exception => err
   $stderr.print 'E'
