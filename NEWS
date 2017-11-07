@@ -241,7 +241,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   Removed from stdlib. [Feature #10169]
 
 * Rubygems
-  * Removed "ubygems.rb" file from stdlib. It's needless after the Ruby 1.9.
+  * Removed "ubygems.rb" file from stdlib. It's needless since Ruby 1.9.
 
 === C API updates
 
