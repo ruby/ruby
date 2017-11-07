@@ -84,7 +84,7 @@ args_reduce(struct args_info *args, int over_argc)
 }
 
 static inline int
-args_check_block_arg0(struct args_info *args, rb_thread_t *th)
+args_check_block_arg0(struct args_info *args)
 {
     VALUE ary = Qnil;
 
@@ -172,7 +172,7 @@ args_rest_array(struct args_info *args)
 }
 
 static int
-keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th)
+keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr)
 {
     *rest_hash_ptr = rb_check_hash_type(*kw_hash_ptr);
 
@@ -189,7 +189,7 @@ keyword_hash_p(VALUE *kw_hash_ptr, VALUE *rest_hash_ptr, rb_thread_t *th)
 }
 
 static VALUE
-args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *th)
+args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr)
 {
     VALUE rest_hash;
 
@@ -198,7 +198,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 	VM_ASSERT(args->argc > 0);
 	*kw_hash_ptr = args->argv[args->argc-1];
 
-	if (keyword_hash_p(kw_hash_ptr, &rest_hash, th)) {
+	if (keyword_hash_p(kw_hash_ptr, &rest_hash)) {
 	    if (rest_hash) {
 		args->argv[args->argc-1] = rest_hash;
 	    }
@@ -214,7 +214,7 @@ args_pop_keyword_hash(struct args_info *args, VALUE *kw_hash_ptr, rb_thread_t *t
 	if (len > 0) {
 	    *kw_hash_ptr = RARRAY_AREF(args->rest, len - 1);
 
-	    if (keyword_hash_p(kw_hash_ptr, &rest_hash, th)) {
+	    if (keyword_hash_p(kw_hash_ptr, &rest_hash)) {
 		if (rest_hash) {
 		    RARRAY_ASET(args->rest, len - 1, rest_hash);
 		}
@@ -573,7 +573,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	    (min_argc > 0 || iseq->body->param.opt_num > 1 ||
 	     iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest) &&
 	    !iseq->body->param.flags.ambiguous_param0 &&
-	    args_check_block_arg0(args, rb_ec_thread_ptr(ec))) {
+	    args_check_block_arg0(args)) {
 	    given_argc = RARRAY_LENINT(args->rest);
 	}
 	break;
@@ -602,7 +602,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	 (!iseq->body->param.flags.has_rest && given_argc > max_argc &&
 	  (ci->flag & VM_CALL_KW_SPLAT))) &&
 	args->kw_argv == NULL) {
-	if (args_pop_keyword_hash(args, &keyword_hash, rb_ec_thread_ptr(ec))) {
+	if (args_pop_keyword_hash(args, &keyword_hash)) {
 	    given_argc--;
 	}
     }
