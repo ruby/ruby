@@ -324,6 +324,6 @@ error_handle(int ex)
 	unknown_longjmp_status(ex);
 	break;
     }
-    rb_threadptr_reset_raised(rb_ec_thread_ptr(ec));
+    rb_ec_reset_raised(ec);
     return status;
 }

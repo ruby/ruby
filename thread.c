@@ -2177,12 +2177,12 @@ rb_threadptr_set_raised(rb_thread_t *th)
 }
 
 int
-rb_threadptr_reset_raised(rb_thread_t *th)
+rb_ec_reset_raised(rb_execution_context_t *ec)
 {
-    if (!(th->ec->raised_flag & RAISED_EXCEPTION)) {
+    if (!(ec->raised_flag & RAISED_EXCEPTION)) {
 	return 0;
     }
-    th->ec->raised_flag &= ~RAISED_EXCEPTION;
+    ec->raised_flag &= ~RAISED_EXCEPTION;
     return 1;
 }
 

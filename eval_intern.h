@@ -281,11 +281,11 @@ enum {
     RAISED_NOMEMORY = 4
 };
 int rb_threadptr_set_raised(rb_thread_t *th);
-int rb_threadptr_reset_raised(rb_thread_t *th);
 #define rb_thread_raised_set(th, f)   ((th)->ec->raised_flag |= (f))
 #define rb_thread_raised_reset(th, f) ((th)->ec->raised_flag &= ~(f))
 #define rb_thread_raised_p(th, f)     (((th)->ec->raised_flag & (f)) != 0)
 #define rb_thread_raised_clear(th)    ((th)->ec->raised_flag = 0)
+int rb_ec_reset_raised(rb_execution_context_t *th);
 int rb_ec_stack_check(rb_execution_context_t *ec);
 
 VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);
