@@ -292,7 +292,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
     EC_POP_TAG();
 
     if (raised) {
-	rb_threadptr_set_raised(rb_ec_thread_ptr(ec));
+	rb_ec_set_raised(ec);
     }
 
     return state;

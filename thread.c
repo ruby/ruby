@@ -2167,12 +2167,12 @@ rb_threadptr_signal_exit(rb_thread_t *th)
 #endif
 
 int
-rb_threadptr_set_raised(rb_thread_t *th)
+rb_ec_set_raised(rb_execution_context_t *ec)
 {
-    if (th->ec->raised_flag & RAISED_EXCEPTION) {
+    if (ec->raised_flag & RAISED_EXCEPTION) {
 	return 1;
     }
-    th->ec->raised_flag |= RAISED_EXCEPTION;
+    ec->raised_flag |= RAISED_EXCEPTION;
     return 0;
 }
 

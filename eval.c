@@ -509,7 +509,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 	volatile int state = 0;
 
 	EC_PUSH_TAG(ec);
-	if (EXEC_TAG() == TAG_NONE && !(state = rb_threadptr_set_raised(rb_ec_thread_ptr(ec)))) {
+	if (EXEC_TAG() == TAG_NONE && !(state = rb_ec_set_raised(ec))) {
 	    VALUE bt = rb_get_backtrace(mesg);
 	    if (!NIL_P(bt) || cause == Qundef) {
 		if (OBJ_FROZEN(mesg)) {
@@ -568,7 +568,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 	}
     }
 
-    if (rb_threadptr_set_raised(rb_ec_thread_ptr(ec))) {
+    if (rb_ec_set_raised(ec)) {
       fatal:
 	ec->errinfo = exception_error;
 	rb_ec_reset_raised(ec);
