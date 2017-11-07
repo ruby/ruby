@@ -2944,20 +2944,22 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 /*
  *  call-seq:
  *     str.concat(obj1, obj2,...)          -> str
- *     str.concat(integer1, integer2,...)  -> str
  *
  *  Concatenates the given object(s) to <i>str</i>. If an object is an
  *  <code>Integer</code>, it is considered a codepoint and converted
  *  to a character before concatenation.
  *
- *  +concat+ can take multiple arguments, and all the arguments are concatenated
- *  in order.  See String#<<, which takes a single argument.
+ *  +concat+ can take multiple arguments, and all the arguments are
+ *  concatenated in order.
  *
  *     a = "hello "
  *     a.concat("world", 33)      #=> "hello world!"
+ *     a                          #=> "hello world!"
  *
  *     b = "sn"
  *     b.concat("_", b, "_", b)   #=> "sn_sn_sn"
+ *
+ *  See also String#<<, which takes a single argument.
  */
 static VALUE
 rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
@@ -2985,15 +2987,15 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *     str << obj      -> str
  *     str << integer  -> str
  *
- *  Append the given object to <i>str</i>. If the object is an
+ *  Appends the given object to <i>str</i>. If the object is an
  *  <code>Integer</code>, it is considered a codepoint and converted
  *  to a character before being appended.
- *
- *  See String#concat, which takes multiple arguments.
  *
  *     a = "hello "
  *     a << "world"   #=> "hello world"
  *     a << 33        #=> "hello world!"
+ *
+ *  See also String#concat, which takes multiple arguments.
  */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
