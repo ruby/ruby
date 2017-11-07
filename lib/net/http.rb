@@ -627,10 +627,10 @@ module Net   #:nodoc:
     # detection from the environment.  To disable proxy detection set +p_addr+
     # to nil.
     #
-    # If you are connecting to a custom proxy, +p_addr+ the DNS name or IP
-    # address of the proxy host, +p_port+ the port to use to access the proxy,
-    # +p_user+ and +p_pass+ the username and password if authorization is
-    # required to use the proxy, and p_no_proxy spcifies hosts which doesn't
+    # If you are connecting to a custom proxy, +p_addr+ specifies the DNS name
+    # or IP address of the proxy host, +p_port+ the port to use to access the
+    # proxy, +p_user+ and +p_pass+ the username and password if authorization
+    # is required to use the proxy, and p_no_proxy hosts which do not
     # use the proxy.
     #
     def HTTP.new(address, port = nil, p_addr = :ENV, p_port = nil, p_user = nil, p_pass = nil, p_no_proxy = nil)
@@ -746,7 +746,7 @@ module Net   #:nodoc:
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
     # Timeout::Error.
-    # Should be non-negative integer number. Zero means no retries.
+    # Should be a non-negative integer number. Zero means no retries.
     # The default value is 1.
     def max_retries=(retries)
       retries = retries.to_int
