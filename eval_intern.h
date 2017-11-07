@@ -176,7 +176,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 /* clear th->ec->tag->state, and return the value */
 static inline int
-rb_threadptr_tag_state(const rb_execution_context_t *ec)
+rb_ec_tag_state(const rb_execution_context_t *ec)
 {
     enum ruby_tag_type state = ec->tag->state;
     ec->tag->state = TAG_NONE;
@@ -196,7 +196,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
   [ISO/IEC 9899:1999] 7.13.1.1
 */
 #define EC_EXEC_TAG() \
-    (ruby_setjmp(_tag.buf) ? rb_threadptr_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
+    (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
 #define EXEC_TAG() \
   EC_EXEC_TAG()
