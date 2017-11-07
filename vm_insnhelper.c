@@ -2037,7 +2037,7 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 	}
 	TOPN(i) = rb_str_intern(sym);
 	ci->mid = idMethodMissing;
-	rb_ec_thread_ptr(ec)->method_missing_reason = cc->aux.method_missing_reason = ci_missing_reason(ci);
+	ec->method_missing_reason = cc->aux.method_missing_reason = ci_missing_reason(ci);
     }
     else {
 	/* shift arguments */
@@ -2104,7 +2104,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     argv[0] = ID2SYM(orig_ci->mid);
     INC_SP(1);
 
-    rb_ec_thread_ptr(ec)->method_missing_reason = orig_cc->aux.method_missing_reason;
+    ec->method_missing_reason = orig_cc->aux.method_missing_reason;
     return vm_call_method(ec, reg_cfp, calling, ci, cc);
 }
 
