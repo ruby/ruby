@@ -598,7 +598,7 @@ rb_longjmp(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE cause
 {
     mesg = exc_setup_message(ec, mesg, &cause);
     setup_exception(ec, tag, mesg, cause);
-    rb_thread_raised_clear(rb_ec_thread_ptr(ec));
+    rb_ec_raised_clear(ec);
     EC_JUMP_TAG(ec, tag);
 }
 

@@ -255,12 +255,10 @@ rb_current_receiver(void)
 static inline void
 stack_check(rb_execution_context_t *ec)
 {
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
-
-    if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW) &&
+    if (!rb_ec_raised_p(ec, RAISED_STACKOVERFLOW) &&
 	rb_ec_stack_check(ec)) {
-	rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
-	rb_ec_stack_overflow(th->ec, FALSE);
+	rb_ec_raised_set(ec, RAISED_STACKOVERFLOW);
+	rb_ec_stack_overflow(ec, FALSE);
     }
 }
 

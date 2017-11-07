@@ -172,7 +172,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 
     if (NIL_P(errinfo))
 	return;
-    rb_thread_raised_clear(rb_ec_thread_ptr(ec));
+    rb_ec_raised_clear(ec);
 
     EC_PUSH_TAG(ec);
     if (EC_EXEC_TAG() == TAG_NONE) {
@@ -203,7 +203,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
   error:
     EC_POP_TAG();
     ec->errinfo = errinfo;
-    rb_thread_raised_set(rb_ec_thread_ptr(ec), raised_flag);
+    rb_ec_raised_set(ec, raised_flag);
 }
 
 #define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")

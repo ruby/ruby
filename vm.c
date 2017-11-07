@@ -1813,7 +1813,7 @@ vm_exec(rb_execution_context_t *ec)
 	const rb_control_frame_t *escape_cfp;
 
 	err = (struct vm_throw_data *)ec->errinfo;
-	rb_thread_raised_reset(rb_ec_thread_ptr(ec), RAISED_STACKOVERFLOW);
+	rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
 
       exception_handler:
 	cont_pc = cont_sp = 0;
