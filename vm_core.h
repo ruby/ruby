@@ -1708,8 +1708,7 @@ struct rb_trace_arg_struct {
     VALUE path;
 };
 
-void rb_threadptr_exec_event_hooks(struct rb_trace_arg_struct *trace_arg);
-void rb_threadptr_exec_event_hooks_and_pop_frame(struct rb_trace_arg_struct *trace_arg);
+void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, int pop_p);
 
 #define EXEC_EVENT_HOOK_ORIG(ec_, flag_, self_, id_, called_id_, klass_, data_, pop_p_) do { \
     const rb_event_flag_t flag_arg_ = (flag_); \
@@ -1724,6 +1723,7 @@ ruby_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag
 			  VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
 {
     const rb_thread_t *th = rb_ec_thread_ptr(ec);
+
     if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
@@ -1736,8 +1736,7 @@ ruby_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag
 	trace_arg.data = data;
 	trace_arg.path = Qundef;
 	trace_arg.klass_solved = 0;
-	if (pop_p) rb_threadptr_exec_event_hooks_and_pop_frame(&trace_arg);
-	else rb_threadptr_exec_event_hooks(&trace_arg);
+	rb_exec_event_hooks(&trace_arg, pop_p);
     }
 }
 
