@@ -262,7 +262,7 @@ ifaddr_dstaddr(VALUE self)
  *   ifaddr.vhid => Integer
  *
  * Returns the vhid address of _ifaddr_.
- * nil is returned if there is no vhid
+ * nil is returned if there is no vhid.
  */
 
 static VALUE
