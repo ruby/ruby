@@ -466,7 +466,7 @@ darwin_sigtramp:
 	unw_set_reg(&cursor, UNW_X86_64_R15, uctx->uc_mcontext->__ss.__r15);
 	ip = uctx->uc_mcontext->__ss.__rip;
 
-	/* There're 4 cases for SEGV:
+	/* There are 4 cases for SEGV:
 	 * (1) called invalid address
 	 * (2) read or write invalid address
 	 * (3) received signal
