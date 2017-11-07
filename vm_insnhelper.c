@@ -1859,8 +1859,8 @@ vm_cfp_consistent_p(rb_execution_context_t *ec, const rb_control_frame_t *reg_cf
 {
     const int ov_flags = RAISED_STACKOVERFLOW;
     if (LIKELY(reg_cfp == ec->cfp + 1)) return TRUE;
-    if (rb_thread_raised_p(rb_ec_thread_ptr(ec), ov_flags)) {
-	rb_thread_raised_reset(rb_ec_thread_ptr(ec), ov_flags);
+    if (rb_ec_raised_p(ec, ov_flags)) {
+	rb_ec_raised_reset(ec, ov_flags);
 	return TRUE;
     }
     return FALSE;

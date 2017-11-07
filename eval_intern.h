@@ -98,7 +98,7 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
 #define SAVE_ROOT_JMPBUF_AFTER_STMT \
     } \
     __except (GetExceptionCode() == EXCEPTION_STACK_OVERFLOW ? \
-	      (rb_thread_raised_set(GET_THREAD(), RAISED_STACKOVERFLOW), \
+	      (rb_ec_raised_set(GET_EC(), RAISED_STACKOVERFLOW), \
 	       raise(SIGSEGV), \
 	       EXCEPTION_EXECUTE_HANDLER) : \
 	      EXCEPTION_CONTINUE_SEARCH) { \
@@ -280,10 +280,10 @@ enum {
     RAISED_STACKOVERFLOW = 2,
     RAISED_NOMEMORY = 4
 };
-#define rb_thread_raised_set(th, f)   ((th)->ec->raised_flag |= (f))
-#define rb_thread_raised_reset(th, f) ((th)->ec->raised_flag &= ~(f))
-#define rb_thread_raised_p(th, f)     (((th)->ec->raised_flag & (f)) != 0)
-#define rb_thread_raised_clear(th)    ((th)->ec->raised_flag = 0)
+#define rb_ec_raised_set(ec, f)   ((ec)->raised_flag |= (f))
+#define rb_ec_raised_reset(ec, f) ((ec)->raised_flag &= ~(f))
+#define rb_ec_raised_p(ec, f)    (((ec)->raised_flag & (f)) != 0)
+#define rb_ec_raised_clear(ec)    ((ec)->raised_flag = 0)
 int rb_ec_set_raised(rb_execution_context_t *ec);
 int rb_ec_reset_raised(rb_execution_context_t *th);
 int rb_ec_stack_check(rb_execution_context_t *ec);

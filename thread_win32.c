@@ -734,7 +734,7 @@ native_reset_timer_thread(void)
 int
 ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 {
-    return rb_thread_raised_p(th, RAISED_STACKOVERFLOW);
+    return rb_ec_raised_p(th->ec, RAISED_STACKOVERFLOW);
 }
 
 #if defined(__MINGW32__)
@@ -742,7 +742,7 @@ LONG WINAPI
 rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *exception)
 {
     if (exception->ExceptionRecord->ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
-	rb_thread_raised_set(GET_THREAD(), RAISED_STACKOVERFLOW);
+	rb_ec_raised_set(GET_EC(), RAISED_STACKOVERFLOW);
 	raise(SIGSEGV);
     }
     return EXCEPTION_CONTINUE_SEARCH;
@@ -754,9 +754,9 @@ void
 ruby_alloca_chkstk(size_t len, void *sp)
 {
     if (ruby_stack_length(NULL) * sizeof(VALUE) >= len) {
-	rb_thread_t *th = GET_THREAD();
-	if (!rb_thread_raised_p(th, RAISED_STACKOVERFLOW)) {
-	    rb_thread_raised_set(th, RAISED_STACKOVERFLOW);
+	rb_execution_context_t *ec = GET_EC();
+	if (!rb_ec_raised_p(ec, RAISED_STACKOVERFLOW)) {
+	    rb_ec_raised_set(ec, RAISED_STACKOVERFLOW);
 	    rb_exc_raise(sysstack_error);
 	}
     }
