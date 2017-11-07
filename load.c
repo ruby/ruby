@@ -578,9 +578,10 @@ NORETURN(static void load_failed(VALUE));
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
 static int
-rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
+rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 {
     enum ruby_tag_type state;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
 #if !defined __GNUC__
@@ -646,11 +647,11 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
-    rb_thread_t *curr_th = GET_THREAD();
-    int state = rb_load_internal0(curr_th, fname, wrap);
+    rb_execution_context_t *ec = GET_EC();
+    int state = rb_load_internal0(ec, fname, wrap);
     if (state) {
-	if (state == TAG_RAISE) rb_exc_raise(curr_th->ec->errinfo);
-	EC_JUMP_TAG(curr_th->ec, state);
+	if (state == TAG_RAISE) rb_exc_raise(ec->errinfo);
+	EC_JUMP_TAG(ec, state);
     }
 }
 
@@ -680,7 +681,7 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     }
     POP_TAG();
 
-    if (state == TAG_NONE) state = rb_load_internal0(GET_THREAD(), path, wrap);
+    if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
 }
 
@@ -963,8 +964,8 @@ int
 rb_require_internal(VALUE fname, int safe)
 {
     volatile int result = -1;
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->ec->errinfo;
+    rb_execution_context_t *ec = GET_EC();
+    volatile VALUE errinfo = ec->errinfo;
     enum ruby_tag_type state;
     struct {
 	int safe;
@@ -976,7 +977,7 @@ rb_require_internal(VALUE fname, int safe)
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	long handle;
@@ -999,7 +1000,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    state = rb_load_internal0(th, path, 0);
+		    state = rb_load_internal0(ec, path, 0);
 		    break;
 
 		  case 's':
@@ -1025,7 +1026,7 @@ rb_require_internal(VALUE fname, int safe)
 	return state;
     }
 
-    th->ec->errinfo = errinfo;
+    ec->errinfo = errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
