@@ -426,8 +426,9 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
  *
- *  The pathname may not point the file corresponding to <i>file</i>.
- *  For instance, pathname becomes inaccurate when file has been moved or deleted.
+ *  The pathname may not point to the file corresponding to <i>file</i>.
+ *  For instance, the pathname becomes void when the file has been
+ *  moved or deleted.
  *
  *  This method raises <code>IOError</code> for a <i>file</i> created using
  *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
