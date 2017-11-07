@@ -8323,7 +8323,7 @@ chompped_length(VALUE str, VALUE rs)
 }
 
 /*!
- * Returns the seperator for arguments of rb_str_chomp.
+ * Returns the separator for arguments of rb_str_chomp.
  *
  * @return returns rb_ps ($/) as default, the default value of rb_ps ($/) is "\n".
  */
@@ -9388,7 +9388,7 @@ rb_str_delete_prefix(VALUE str, VALUE prefix)
  *
  * @param str the target
  * @param suffix the suffix
- * @retval 0 if the given <i>str</i> does not end with the given suffix</i>
+ * @retval 0 if the given <i>str</i> does not end with the given <i>suffix</i>
  * @retval Positive-Integer otherwise
  */
 static long
