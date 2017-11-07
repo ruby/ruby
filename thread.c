@@ -476,6 +476,8 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
     }
 }
 
+static struct timeval double2timeval(double d);
+
 void
 rb_thread_terminate_all(void)
 {
@@ -499,12 +501,13 @@ rb_thread_terminate_all(void)
 	terminate_all(vm, th);
 
 	while (vm_living_thread_num(vm) > 1) {
+	    struct timeval tv = double2timeval(1.0);
 	    /*
 	     * Thread exiting routine in thread_start_func_2 notify
 	     * me when the last sub-thread exit.
 	     */
 	    sleeping = 1;
-	    native_sleep(th, 0);
+	    native_sleep(th, &tv);
 	    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 	    sleeping = 0;
 	}
