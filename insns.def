@@ -1164,7 +1164,7 @@ once
 ()
 (VALUE val)
 {
-    val = vm_once_dispatch(iseq, ic, rb_ec_thread_ptr(ec));
+    val = vm_once_dispatch(ec, iseq, ic);
 }
 
 /**
