@@ -271,7 +271,7 @@ error_handle(int ex)
     int status = EXIT_FAILURE;
     rb_execution_context_t *ec = GET_EC();
 
-    if (rb_threadptr_set_raised(rb_ec_thread_ptr(ec)))
+    if (rb_ec_set_raised(ec))
 	return EXIT_FAILURE;
     switch (ex & TAG_MASK) {
       case 0:
