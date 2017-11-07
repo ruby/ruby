@@ -297,10 +297,10 @@ rb_call0(rb_execution_context_t *ec,
 }
 
 struct rescue_funcall_args {
-    rb_thread_t *th;
     VALUE defined_class;
     VALUE recv;
     ID mid;
+    rb_execution_context_t *ec;
     const rb_method_entry_t *me;
     unsigned int respond: 1;
     unsigned int respond_to_missing: 1;
@@ -311,7 +311,7 @@ struct rescue_funcall_args {
 static VALUE
 check_funcall_exec(struct rescue_funcall_args *args)
 {
-    return call_method_entry(args->th->ec, args->defined_class,
+    return call_method_entry(args->ec, args->defined_class,
 			     args->recv, idMethodMissing,
 			     args->me, args->argc, args->argv);
 }
@@ -372,7 +372,7 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 	new_args[0] = ID2SYM(mid);
 	MEMCPY(new_args+1, argv, VALUE, argc);
 	ec->method_missing_reason = MISSING_NOENTRY;
-	args.th = rb_ec_thread_ptr(ec);
+	args.ec = ec;
 	args.recv = recv;
 	args.me = me;
 	args.mid = mid;
