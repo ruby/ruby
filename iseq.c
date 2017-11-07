@@ -631,7 +631,6 @@ rb_iseq_load(VALUE data, VALUE parent, VALUE opt)
 rb_iseq_t *
 rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, const struct rb_block *base_block, VALUE opt)
 {
-    rb_thread_t *th = GET_THREAD();
     rb_iseq_t *iseq = NULL;
     const rb_iseq_t *const parent = base_block ? vm_block_iseq(base_block) : NULL;
     rb_compile_option_t option;
@@ -664,7 +663,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
 
     if (!ast->root) {
 	rb_ast_dispose(ast);
-	rb_exc_raise(th->ec->errinfo);
+	rb_exc_raise(GET_EC()->errinfo);
     }
     else {
 	INITIALIZED VALUE label = parent ?
