@@ -238,7 +238,7 @@ clean_hooks(rb_hook_list_t *list)
 }
 
 static void
-exec_hooks_body(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_body(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
     rb_event_hook_t *hook;
 
@@ -255,10 +255,10 @@ exec_hooks_body(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *tra
 }
 
 static int
-exec_hooks_precheck(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_precheck(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
     if (UNLIKELY(list->need_clean != FALSE)) {
-	if (th->vm->trace_running <= 1) { /* only running this hooks */
+	if (rb_ec_vm_ptr(ec)->trace_running <= 1) { /* only running this hooks */
 	    clean_hooks(list);
 	}
     }
@@ -267,32 +267,32 @@ exec_hooks_precheck(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t 
 }
 
 static void
-exec_hooks_unprotected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_unprotected(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
-    if (exec_hooks_precheck(th, list, trace_arg) == 0) return;
-    exec_hooks_body(th, list, trace_arg);
+    if (exec_hooks_precheck(ec, list, trace_arg) == 0) return;
+    exec_hooks_body(ec, list, trace_arg);
 }
 
 static int
-exec_hooks_protected(rb_thread_t *th, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
     enum ruby_tag_type state;
     volatile int raised;
 
-    if (exec_hooks_precheck(th, list, trace_arg) == 0) return 0;
+    if (exec_hooks_precheck(ec, list, trace_arg) == 0) return 0;
 
-    raised = rb_threadptr_reset_raised(th);
+    raised = rb_ec_reset_raised(ec);
 
     /* TODO: Support !RUBY_EVENT_HOOK_FLAG_SAFE hooks */
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	exec_hooks_body(th, list, trace_arg);
+	exec_hooks_body(ec, list, trace_arg);
     }
     EC_POP_TAG();
 
     if (raised) {
-	rb_threadptr_set_raised(th);
+	rb_threadptr_set_raised(rb_ec_thread_ptr(ec));
     }
 
     return state;
@@ -302,8 +302,8 @@ static void
 rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
-    rb_vm_t *vm = th->vm;
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_hook_list_t *th_event_hooks = &rb_ec_thread_ptr(ec)->event_hooks;
 
     if (trace_arg->event & RUBY_INTERNAL_EVENT_MASK) {
 	if (ec->trace_arg && (ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
@@ -313,8 +313,8 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    rb_trace_arg_t *prev_trace_arg = ec->trace_arg;
 	    vm->trace_running++;
 	    ec->trace_arg = trace_arg;
-	    exec_hooks_unprotected(th, &th->event_hooks, trace_arg);
-	    exec_hooks_unprotected(th, &vm->event_hooks, trace_arg);
+	    exec_hooks_unprotected(ec, th_event_hooks, trace_arg);
+	    exec_hooks_unprotected(ec, &vm->event_hooks, trace_arg);
 	    ec->trace_arg = prev_trace_arg;
 	    vm->trace_running--;
 	}
@@ -333,11 +333,11 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    ec->trace_arg = trace_arg;
 	    {
 		/* thread local traces */
-		state = exec_hooks_protected(th, &th->event_hooks, trace_arg);
+		state = exec_hooks_protected(ec, th_event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		/* vm global traces */
-		state = exec_hooks_protected(th, &vm->event_hooks, trace_arg);
+		state = exec_hooks_protected(ec, &vm->event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		ec->errinfo = errinfo;
@@ -379,35 +379,35 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
     VALUE result = Qnil;
-    rb_thread_t *volatile th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state;
-    const int volatile tracing = th->ec->trace_arg ? 1 : 0;
+    const int volatile tracing = ec->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
 
-    if (!tracing) th->vm->trace_running++;
-    if (!th->ec->trace_arg) th->ec->trace_arg = &dummy_trace_arg;
+    if (!tracing) rb_ec_vm_ptr(ec)->trace_running++;
+    if (!ec->trace_arg) ec->trace_arg = &dummy_trace_arg;
 
-    raised = rb_threadptr_reset_raised(th);
+    raised = rb_ec_reset_raised(ec);
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(arg);
     }
     EC_POP_TAG();
 
     if (raised) {
-	rb_threadptr_set_raised(th);
+	rb_ec_reset_raised(ec);
     }
 
-    if (th->ec->trace_arg == &dummy_trace_arg) th->ec->trace_arg = 0;
-    if (!tracing) th->vm->trace_running--;
+    if (ec->trace_arg == &dummy_trace_arg) ec->trace_arg = NULL;
+    if (!tracing) rb_ec_vm_ptr(ec)->trace_running--;
 
     if (state) {
 #if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
 	RB_GC_GUARD(result);
 #endif
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
 
     return result;

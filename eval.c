@@ -524,7 +524,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 		rb_ivar_set(mesg, idBt_locations, at);
 		set_backtrace(mesg, at);
 	    }
-	    rb_threadptr_reset_raised(rb_ec_thread_ptr(ec));
+	    rb_ec_reset_raised(ec);
 	}
 	EC_POP_TAG();
 	if (state) goto fatal;
@@ -563,7 +563,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 	    ec->errinfo = mesg;
 	}
 	else if (state) {
-	    rb_threadptr_reset_raised(rb_ec_thread_ptr(ec));
+	    rb_ec_reset_raised(ec);
 	    EC_JUMP_TAG(ec, state);
 	}
     }
@@ -571,7 +571,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
     if (rb_threadptr_set_raised(rb_ec_thread_ptr(ec))) {
       fatal:
 	ec->errinfo = exception_error;
-	rb_threadptr_reset_raised(rb_ec_thread_ptr(ec));
+	rb_ec_reset_raised(ec);
 	EC_JUMP_TAG(ec, TAG_FATAL);
     }
 
