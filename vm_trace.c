@@ -302,6 +302,8 @@ static void
 rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_vm_t *vm = th->vm;
 
     if (trace_arg->event & RUBY_INTERNAL_EVENT_MASK) {
 	if (ec->trace_arg && (ec->trace_arg->event & RUBY_INTERNAL_EVENT_MASK)) {
@@ -309,12 +311,12 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	}
 	else {
 	    rb_trace_arg_t *prev_trace_arg = ec->trace_arg;
-	    rb_ec_vm_ptr(ec)->trace_running++;
+	    vm->trace_running++;
 	    ec->trace_arg = trace_arg;
-	    exec_hooks_unprotected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->event_hooks, trace_arg);
-	    exec_hooks_unprotected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->vm->event_hooks, trace_arg);
+	    exec_hooks_unprotected(th, &th->event_hooks, trace_arg);
+	    exec_hooks_unprotected(th, &vm->event_hooks, trace_arg);
 	    ec->trace_arg = prev_trace_arg;
-	    rb_ec_vm_ptr(ec)->trace_running--;
+	    vm->trace_running--;
 	}
     }
     else {
@@ -327,22 +329,22 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 	    ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;
 	    ec->errinfo = Qnil;
 
-	    rb_ec_vm_ptr(ec)->trace_running++;
+	    vm->trace_running++;
 	    ec->trace_arg = trace_arg;
 	    {
 		/* thread local traces */
-		state = exec_hooks_protected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->event_hooks, trace_arg);
+		state = exec_hooks_protected(th, &th->event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		/* vm global traces */
-		state = exec_hooks_protected(rb_ec_thread_ptr(ec), &rb_ec_thread_ptr(ec)->vm->event_hooks, trace_arg);
+		state = exec_hooks_protected(th, &vm->event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		ec->errinfo = errinfo;
 	    }
 	  terminate:
 	    ec->trace_arg = NULL;
-	    rb_ec_vm_ptr(ec)->trace_running--;
+	    vm->trace_running--;
 
 	    ec->local_storage_recursive_hash_for_trace = ec->local_storage_recursive_hash;
 	    ec->local_storage_recursive_hash = old_recursive;
