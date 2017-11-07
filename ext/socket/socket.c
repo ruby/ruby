@@ -984,13 +984,13 @@ sock_sockaddr(struct sockaddr *addr, socklen_t len)
  *   Socket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
  *
  * Use Addrinfo.getaddrinfo instead.
- * This method is deprecated since following reasons:
+ * This method is deprecated for the following reasons:
  *
- * - The 3rd element of result is the address family of the first address.
- *   The address families of rest addresses are not returned.
+ * - The 3rd element of the result is the address family of the first address.
+ *   The address families of the rest of the addresses are not returned.
  * - Uncommon address representation:
  *   4/16-bytes binary string to represent IPv4/IPv6 address.
- * - gethostbyname() is may take long time and it may block other threads.
+ * - gethostbyname() may take a long time and it may block other threads.
  *   (GVL cannot be released since gethostbyname() is not thread safe.)
  * - This method uses gethostbyname() function already removed from POSIX.
  *
@@ -1012,11 +1012,11 @@ sock_s_gethostbyname(VALUE obj, VALUE host)
  *   Socket.gethostbyaddr(address_string [, address_family]) => hostent
  *
  * Use Addrinfo#getnameinfo instead.
- * This method is deprecated since following reasons:
+ * This method is deprecated for the following reasons:
  *
  * - Uncommon address representation:
  *   4/16-bytes binary string to represent IPv4/IPv6 address.
- * - gethostbyaddr() is may take long time and it may block other threads.
+ * - gethostbyaddr() may take a long time and it may block other threads.
  *   (GVL cannot be released since gethostbyname() is not thread safe.)
  * - This method uses gethostbyname() function already removed from POSIX.
  *
@@ -1164,8 +1164,8 @@ sock_s_getservbyport(int argc, VALUE *argv)
  *
  * Obtains address information for _nodename_:_servname_.
  *
- * Note that Addrinfo.getaddrinfo provides same functionality in
- * object oriented style.
+ * Note that Addrinfo.getaddrinfo provides the same functionality in
+ * an object oriented style.
  *
  * _family_ should be an address family such as: :INET, :INET6, etc.
  *
