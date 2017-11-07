@@ -1057,7 +1057,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_SYMBOL_EXPORT_END
 
 struct rb_debug_inspector_struct {
-    rb_thread_t *th;
+    rb_execution_context_t *ec;
     rb_control_frame_t *cfp;
     VALUE backtrace;
     VALUE contexts; /* [[klass, binding, iseq, cfp], ...] */
@@ -1130,7 +1130,7 @@ collect_caller_bindings_cfunc(void *arg, const rb_control_frame_t *cfp, ID mid)
 }
 
 static VALUE
-collect_caller_bindings(rb_thread_t *th)
+collect_caller_bindings(const rb_execution_context_t *ec)
 {
     struct collect_caller_bindings_data data;
     VALUE result;
@@ -1138,7 +1138,7 @@ collect_caller_bindings(rb_thread_t *th)
 
     data.ary = rb_ary_new();
 
-    backtrace_each(th->ec,
+    backtrace_each(ec,
 		   collect_caller_bindings_init,
 		   collect_caller_bindings_iseq,
 		   collect_caller_bindings_cfunc,
@@ -1153,7 +1153,7 @@ collect_caller_bindings(rb_thread_t *th)
 
 	if (!NIL_P(cfp_val)) {
 	    rb_control_frame_t *cfp = GC_GUARDED_PTR_REF(cfp_val);
-	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(th->ec, cfp));
+	    rb_ary_store(entry, CALLER_BINDING_BINDING, rb_vm_make_binding(ec, cfp));
 	}
     }
 
@@ -1169,17 +1169,17 @@ VALUE
 rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 {
     rb_debug_inspector_t dbg_context;
-    rb_thread_t * volatile th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     enum ruby_tag_type state;
     volatile VALUE MAYBE_UNUSED(result);
 
-    dbg_context.th = th;
-    dbg_context.cfp = dbg_context.th->ec->cfp;
-    dbg_context.backtrace = rb_ec_backtrace_location_ary(th->ec, 0, 0);
+    dbg_context.ec = ec;
+    dbg_context.cfp = dbg_context.ec->cfp;
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, 0, 0);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
-    dbg_context.contexts = collect_caller_bindings(th);
+    dbg_context.contexts = collect_caller_bindings(ec);
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(&dbg_context, data);
     }
@@ -1188,7 +1188,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     /* invalidate bindings? */
 
     if (state) {
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
 
     return result;
