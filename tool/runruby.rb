@@ -131,7 +131,7 @@ end
 ENV.update env
 
 if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
-  if debugger == :gdb
+  if debugger == :gdb or !debugger
     debugger = %w'gdb'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
@@ -139,7 +139,11 @@ if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
     end
     debugger << '--args'
   end
-  precommand[precommand.index(:debugger), 1] = debugger
+  if idx = precommand.index(:debugger)
+    precommand[idx, 1] = debugger
+  else
+    precommand.concat(debugger)
+  end
 end
 
 cmd = [runner || ruby]
