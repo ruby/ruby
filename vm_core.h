@@ -1590,9 +1590,9 @@ extern rb_event_flag_t ruby_vm_event_flags;
 
 RUBY_SYMBOL_EXPORT_END
 
-#define GET_VM()     ruby_current_vm()
-#define GET_THREAD() ruby_current_thread()
-#define GET_EC()     ruby_current_execution_context()
+#define GET_VM()     rb_current_vm()
+#define GET_THREAD() rb_current_thread()
+#define GET_EC()     rb_current_execution_context()
 
 static inline rb_thread_t *
 rb_ec_thread_ptr(const rb_execution_context_t *ec)
@@ -1613,20 +1613,20 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
 }
 
 static inline rb_execution_context_t *
-ruby_current_execution_context(void)
+rb_current_execution_context(void)
 {
     return ruby_current_execution_context_ptr;
 }
 
 static inline rb_thread_t *
-ruby_current_thread(void)
+rb_current_thread(void)
 {
     const rb_execution_context_t *ec = GET_EC();
     return rb_ec_thread_ptr(ec);
 }
 
 static inline rb_vm_t *
-ruby_current_vm(void)
+rb_current_vm(void)
 {
     VM_ASSERT(ruby_current_vm_ptr == NULL ||
 	      ruby_current_execution_context_ptr == NULL ||
@@ -1680,11 +1680,11 @@ void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 
-#define RUBY_VM_CHECK_INTS(ec) ruby_vm_check_ints(ec)
+#define RUBY_VM_CHECK_INTS(ec) rb_vm_check_ints(ec)
 static inline void
-ruby_vm_check_ints(rb_execution_context_t *ec)
+rb_vm_check_ints(rb_execution_context_t *ec)
 {
-    VM_ASSERT(ec == ruby_current_execution_context_ptr);
+    VM_ASSERT(ec == GET_EC());
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {
 	rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
     }
@@ -1714,13 +1714,13 @@ void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, int pop_p);
     const rb_event_flag_t flag_arg_ = (flag_); \
     if (UNLIKELY(ruby_vm_event_flags & (flag_arg_))) { \
 	/* defer evaluating the other arguments */ \
-	ruby_exec_event_hook_orig(ec_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
+	rb_exec_event_hook_orig(ec_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
     } \
 } while (0)
 
 static inline void
-ruby_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag,
-			  VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
+rb_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag,
+			VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
 {
     const rb_thread_t *th = rb_ec_thread_ptr(ec);
 
