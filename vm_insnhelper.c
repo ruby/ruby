@@ -1910,7 +1910,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     VALUE block_handler = calling->block_handler;
     int argc = calling->argc;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, ci->mid, me->owner, Qundef);
 
     vm_push_frame(ec, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
@@ -1928,7 +1928,7 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     rb_vm_pop_frame(ec);
 
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, ci->mid, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
 
     return val;
 }
@@ -3018,7 +3018,7 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
 }
 
 static void
-vm_dtrace(rb_event_flag_t flag, rb_thread_t *th)
+vm_dtrace(rb_event_flag_t flag, rb_execution_context_t *ec)
 {
     if (RUBY_DTRACE_METHOD_ENTRY_ENABLED() ||
 	RUBY_DTRACE_METHOD_RETURN_ENABLED() ||
@@ -3027,16 +3027,16 @@ vm_dtrace(rb_event_flag_t flag, rb_thread_t *th)
 
 	switch (flag) {
 	  case RUBY_EVENT_CALL:
-	    RUBY_DTRACE_METHOD_ENTRY_HOOK(th, 0, 0);
+	    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, 0, 0);
 	    return;
 	  case RUBY_EVENT_C_CALL:
-	    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, 0, 0);
+	    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, 0, 0);
 	    return;
 	  case RUBY_EVENT_RETURN:
-	    RUBY_DTRACE_METHOD_RETURN_HOOK(th, 0, 0);
+	    RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
 	    return;
 	  case RUBY_EVENT_C_RETURN:
-	    RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, 0, 0);
+	    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, 0, 0);
 	    return;
 	}
     }

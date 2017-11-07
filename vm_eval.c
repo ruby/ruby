@@ -70,7 +70,7 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
     ID mid = ci->mid;
     VALUE block_handler = calling->block_handler;
 
-    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, mid, me->owner, Qnil);
     {
 	rb_control_frame_t *reg_cfp = ec->cfp;
@@ -89,7 +89,7 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 	rb_vm_pop_frame(ec);
     }
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
 
     return val;
 }
