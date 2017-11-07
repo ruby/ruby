@@ -1329,12 +1329,11 @@ rb_hash_reject(VALUE hash)
  *  call-seq:
  *     hsh.slice(*keys) -> a_hash
  *
- *  Slices a hash to include only the given keys.
- *  Returns a hash containing the given keys.
+ *  Returns a hash containing only the given keys and their values.
  *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.slice("a")      #=> {"a"=>100}
- *     h.slice("c", "d") #=> {"c"=>300}
+ *     h = { a: 100, b: 200, c: 300 }
+ *     h.slice(:a)           #=> {:a=>100}
+ *     h.slice(:b, :c, :d)   #=> {:b=>200, :c=>300}
  */
 
 static VALUE
