@@ -373,7 +373,7 @@ check_funcall_missing(rb_execution_context_t *ec, VALUE klass, VALUE recv, ID mi
 
 	new_args[0] = ID2SYM(mid);
 	MEMCPY(new_args+1, argv, VALUE, argc);
-	rb_ec_thread_ptr(ec)->method_missing_reason = MISSING_NOENTRY;
+	ec->method_missing_reason = MISSING_NOENTRY;
 	args.th = rb_ec_thread_ptr(ec);
 	args.recv = recv;
 	args.me = me;
@@ -630,8 +630,8 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
 static VALUE
 rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
-    rb_thread_t *th = GET_THREAD();
-    raise_method_missing(th->ec, argc, argv, obj, th->method_missing_reason);
+    rb_execution_context_t *ec = GET_EC();
+    raise_method_missing(ec, argc, argv, obj, ec->method_missing_reason);
     UNREACHABLE;
 }
 
@@ -711,7 +711,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     VALUE block_handler = vm_passed_block_handler(ec);
     const rb_callable_method_entry_t *me;
 
-    rb_ec_thread_ptr(ec)->method_missing_reason = call_status;
+    ec->method_missing_reason = call_status;
 
     if (id == idMethodMissing) {
       missing:
@@ -905,7 +905,7 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
 	    }
 	}
 	id = idMethodMissing;
-	rb_ec_thread_ptr(ec)->method_missing_reason = MISSING_NOENTRY;
+	ec->method_missing_reason = MISSING_NOENTRY;
     }
     else {
 	argv++; argc--;

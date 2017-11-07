@@ -771,6 +771,7 @@ typedef struct rb_execution_context_struct {
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
     const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
+    enum method_missing_reason method_missing_reason;
 
     /* for GC */
     struct {
@@ -852,7 +853,6 @@ typedef struct rb_thread_struct {
     rb_jmpbuf_t root_jmpbuf;
 
     /* misc */
-    enum method_missing_reason method_missing_reason: 8;
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
 #ifdef USE_SIGALTSTACK
