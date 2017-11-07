@@ -1500,7 +1500,6 @@ Init_vm_trace(void)
 
 typedef struct rb_postponed_job_struct {
     unsigned long flags; /* reserved */
-    struct rb_thread_struct *th; /* created thread, reserved */
     rb_postponed_job_func_t func;
     void *data;
 } rb_postponed_job_t;
@@ -1523,7 +1522,7 @@ enum postponed_job_register_result {
 };
 
 static enum postponed_job_register_result
-postponed_job_register(rb_thread_t *th, rb_vm_t *vm,
+postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
 		       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
 {
     rb_postponed_job_t *pjob;
@@ -1538,11 +1537,10 @@ postponed_job_register(rb_thread_t *th, rb_vm_t *vm,
     }
 
     pjob->flags = flags;
-    pjob->th = th;
     pjob->func = func;
     pjob->data = data;
 
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
+    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
 
     return PJRR_SUCESS;
 }
@@ -1552,11 +1550,11 @@ postponed_job_register(rb_thread_t *th, rb_vm_t *vm,
 int
 rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
   begin:
-    switch (postponed_job_register(th, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
+    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
       case PJRR_SUCESS     : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
@@ -1568,8 +1566,8 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
 int
 rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_vm_t *vm = th->vm;
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
     rb_postponed_job_t *pjob;
     int i, index;
 
@@ -1578,11 +1576,11 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
     for (i=0; i<index; i++) {
 	pjob = &vm->postponed_job_buffer[i];
 	if (pjob->func == func) {
-	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(th->ec);
+	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
 	    return 2;
 	}
     }
-    switch (postponed_job_register(th, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
+    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
       case PJRR_SUCESS     : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
