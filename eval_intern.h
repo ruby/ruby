@@ -174,7 +174,7 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #undef RB_OBJ_WRITE
 #define RB_OBJ_WRITE(a, slot, b) UNALIGNED_MEMBER_ACCESS(rb_obj_write((VALUE)(a), (VALUE *)(slot), (VALUE)(b), __FILE__, __LINE__))
 
-/* clear th->ec->tag->state, and return the value */
+/* clear ec->tag->state, and return the value */
 static inline int
 rb_ec_tag_state(const rb_execution_context_t *ec)
 {
