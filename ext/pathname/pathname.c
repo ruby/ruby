@@ -1083,8 +1083,8 @@ s_glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, klass))
 /*
  * Returns or yields Pathname objects.
  *
- *  Pathname.glob("config/?*.rb")
- *	#=> [#<Pathname:config/environment.rb>, #<Pathname:config/routes.rb>, ..]
+ *  Pathname.glob("lib/i*.rb")
+ *	#=> [#<Pathname:lib/ipaddr.rb>, #<Pathname:lib/irb.rb>]
  *
  * See Dir.glob.
  */
@@ -1126,7 +1126,7 @@ glob_i(RB_BLOCK_CALL_FUNC_ARGLIST(elt, self))
  *  #=> [#<Pathname:ruby-2.4.2/README.md>, #<Pathname:ruby-2.4.2/README.ja.md>]
  *
  * See Dir.glob.
- * This method uses base: argument of Dir.glob.
+ * This method uses the +base+ keyword argument of Dir.glob.
  */
 static VALUE
 path_glob(int argc, VALUE *argv, VALUE self)
