@@ -335,13 +335,13 @@ rb_vm_inc_const_missing_count(void)
 VALUE rb_class_path_no_cache(VALUE _klass);
 
 int
-ruby_th_dtrace_setup(rb_thread_t *th, VALUE klass, ID id,
-		     struct ruby_dtrace_method_hook_args *args)
+rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
+		struct ruby_dtrace_method_hook_args *args)
 {
     enum ruby_value_type type;
     if (!klass) {
-	if (!th) th = GET_THREAD();
-	if (!rb_ec_frame_method_id_and_class(th->ec, &id, 0, &klass) || !klass)
+	if (!ec) ec = GET_EC();
+	if (!rb_ec_frame_method_id_and_class(ec, &id, 0, &klass) || !klass)
 	    return FALSE;
     }
     if (RB_TYPE_P(klass, T_ICLASS)) {
@@ -537,7 +537,7 @@ rb_vm_pop_cfunc_frame(void)
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, Qnil);
-    RUBY_DTRACE_CMETHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
 
@@ -999,12 +999,12 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
 		  iseq->body->local_table_size - arg_size,
 		  iseq->body->stack_max);
 
-    RUBY_DTRACE_METHOD_ENTRY_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
     ret = vm_exec(ec);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
-    RUBY_DTRACE_METHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), me->owner, me->def->original_id);
+    RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     return ret;
 }
 
@@ -1672,7 +1672,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
     }
     switch (VM_FRAME_TYPE(ec->cfp)) {
       case VM_FRAME_MAGIC_METHOD:
-	RUBY_DTRACE_METHOD_RETURN_HOOK(rb_ec_thread_ptr(ec), 0, 0);
+	RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
 	EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
 	THROW_DATA_CONSUMED_SET(err);
 	break;
@@ -1825,7 +1825,7 @@ vm_exec(rb_execution_context_t *ec)
 				rb_vm_frame_method_entry(ec->cfp)->def->original_id,
 				rb_vm_frame_method_entry(ec->cfp)->called_id,
 				rb_vm_frame_method_entry(ec->cfp)->owner, Qnil);
-		RUBY_DTRACE_CMETHOD_RETURN_HOOK(rb_ec_thread_ptr(ec),
+		RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec,
 						rb_vm_frame_method_entry(ec->cfp)->owner,
 						rb_vm_frame_method_entry(ec->cfp)->def->original_id);
 	    }

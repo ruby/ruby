@@ -789,7 +789,7 @@ trace
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
-    vm_dtrace(flag, rb_ec_thread_ptr(ec));
+    vm_dtrace(flag, ec);
     EXEC_EVENT_HOOK(ec, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */,
 		    (flag & (RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN)) ? TOPN(0) : Qundef);
 }
@@ -807,7 +807,7 @@ trace2
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
-    vm_dtrace(flag, rb_ec_thread_ptr(ec));
+    vm_dtrace(flag, ec);
     EXEC_EVENT_HOOK(ec, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */, data);
 }
 
