@@ -583,10 +583,10 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 
 /*! \private */
 void
-rb_threadptr_setup_exception(rb_thread_t *th, VALUE mesg, VALUE cause)
+rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause)
 {
     if (cause == Qundef) {
-	cause = get_ec_errinfo(th->ec);
+	cause = get_ec_errinfo(ec);
     }
     if (cause != mesg) {
 	rb_ivar_set(mesg, id_cause, cause);
