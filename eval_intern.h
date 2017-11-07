@@ -285,7 +285,7 @@ enum {
 #define rb_ec_raised_p(ec, f)    (((ec)->raised_flag & (f)) != 0)
 #define rb_ec_raised_clear(ec)    ((ec)->raised_flag = 0)
 int rb_ec_set_raised(rb_execution_context_t *ec);
-int rb_ec_reset_raised(rb_execution_context_t *th);
+int rb_ec_reset_raised(rb_execution_context_t *ec);
 int rb_ec_stack_check(rb_execution_context_t *ec);
 
 VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);

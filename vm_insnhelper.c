@@ -2771,7 +2771,7 @@ FUNC_FASTCALL(rb_vm_opt_struct_aref)(rb_execution_context_t *ec, rb_control_fram
 }
 
 rb_control_frame_t *
-FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_execution_context_t *th, rb_control_frame_t *reg_cfp)
+FUNC_FASTCALL(rb_vm_opt_struct_aset)(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 {
     rb_struct_aset(GET_SELF(), TOPN(0), TOPN(1));
     return reg_cfp;
