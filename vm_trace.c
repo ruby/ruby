@@ -299,7 +299,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
 }
 
 static void
-rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
+rb_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
@@ -365,13 +365,13 @@ rb_threadptr_exec_event_hooks_orig(rb_trace_arg_t *trace_arg, int pop_p)
 void
 rb_threadptr_exec_event_hooks_and_pop_frame(rb_trace_arg_t *trace_arg)
 {
-    rb_threadptr_exec_event_hooks_orig(trace_arg, 1);
+    rb_exec_event_hooks_orig(trace_arg, 1);
 }
 
 void
 rb_threadptr_exec_event_hooks(rb_trace_arg_t *trace_arg)
 {
-    rb_threadptr_exec_event_hooks_orig(trace_arg, 0);
+    rb_exec_event_hooks_orig(trace_arg, 0);
 }
 
 VALUE
