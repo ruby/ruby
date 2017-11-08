@@ -1217,7 +1217,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *
  * Returns a new TracePoint object, not enabled by default.
  *
- * Next, in order to activate the trace, you must use TracePoint.enable
+ * Next, in order to activate the trace, you must use TracePoint#enable
  *
  *	trace = TracePoint.new(:call) do |tp|
  *	    p [tp.lineno, tp.defined_class, tp.method_id, tp.event]
@@ -1232,7 +1232,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *	# [48, IRB::Notifier::AbstractNotifier, :printf, :call]
  *	# ...
  *
- * When you want to deactivate the trace, you must use TracePoint.disable
+ * When you want to deactivate the trace, you must use TracePoint#disable
  *
  *	trace.disable
  *
