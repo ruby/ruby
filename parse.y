@@ -757,10 +757,7 @@ typedef struct rb_strterm_literal_struct {
 } rb_strterm_literal_t;
 
 typedef struct rb_strterm_heredoc_struct {
-    union {
-	VALUE dummy;
-	int sourceline;
-    } u1;
+    SIGNED_VALUE sourceline;
     VALUE term;		/* `"END"` of `<<"END"` */
     VALUE lastline;	/* the string of line that contains `<<"END"` */
     union {
@@ -6793,7 +6790,7 @@ parser_heredoc_restore(struct parser_params *parser, rb_strterm_heredoc_t *here)
     lex_pend = lex_pbeg + RSTRING_LEN(line);
     lex_p = lex_pbeg + here->u3.lastidx;
     heredoc_end = ruby_sourceline;
-    ruby_sourceline = here->u1.sourceline;
+    ruby_sourceline = (int)here->sourceline;
     token_flush(parser);
 }
 
