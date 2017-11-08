@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'erb'
+require 'stringio'
 
 class TestERB < Test::Unit::TestCase
   class MyError < RuntimeError ; end
@@ -235,6 +236,7 @@ EOS
     $stdout = orig
     out.rewind
     assert_equal('9', out.read)
+    return unless num               # to remove warning
   end
 
   class Foo; end
