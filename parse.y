@@ -243,7 +243,6 @@ struct parser_params {
     unsigned int in_defined: 1;
     unsigned int in_main: 1;
     unsigned int in_kwarg: 1;
-    unsigned int in_single: 1;
     unsigned int in_def: 1;
     unsigned int token_seen: 1;
     unsigned int token_info_enabled: 1;
@@ -300,7 +299,6 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define paren_nest		(parser->lex.paren_nest)
 #define lpar_beg		(parser->lex.lpar_beg)
 #define brace_nest		(parser->lex.brace_nest)
-#define in_single		(parser->in_single)
 #define in_def			(parser->in_def)
 #define in_main 		(parser->in_main)
 #define in_defined		(parser->in_defined)
@@ -1462,7 +1460,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| keyword_END '{' compstmt '}'
 		    {
-			if (in_def || in_single) {
+			if (in_def) {
 			    rb_warn0("END in method; use at_exit");
 			}
 		    /*%%%*/
@@ -2975,7 +2973,7 @@ primary		: literal
 		    }
 		| k_class cpath superclass
 		    {
-			if (in_def || in_single)
+			if (in_def)
 			    yyerror0("class definition in method body");
 			local_push(0);
 		    /*%%%*/
@@ -3001,9 +2999,8 @@ primary		: literal
 		    }
 		| k_class tLSHFT expr
 		    {
-			$<num>$ = (in_def << 1) | in_single;
+			$<num>$ = in_def;
 			in_def = 0;
-			in_single = 0;
 			local_push(0);
 		    }
 		  term
@@ -3022,12 +3019,11 @@ primary		: literal
 			$$ = dispatch2(sclass, $3, $6);
 		    %*/
 			local_pop();
-			in_def = ($<num>4 >> 1) & 1;
-			in_single = $<num>4 & 1;
+			in_def = $<num>4 & 1;
 		    }
 		| k_module cpath
 		    {
-			if (in_def || in_single)
+			if (in_def)
 			    yyerror0("module definition in method body");
 			local_push(0);
 		    /*%%%*/
@@ -3084,8 +3080,8 @@ primary		: literal
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
 		    {
-			$<num>4 = in_single;
-			in_single = 1;
+			$<num>4 = in_def;
+			in_def = 1;
 			SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
 			local_push(0);
 			$<id>$ = current_arg;
@@ -3109,7 +3105,7 @@ primary		: literal
 			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
 		    %*/
 			local_pop();
-			in_single = $<num>4 & 1;
+			in_def = $<num>4 & 1;
 			current_arg = $<id>6;
 		    }
 		| keyword_break
@@ -10003,7 +9999,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, YYLTYPE *location
       case ID_INSTANCE:
 	return assignable_result(NEW_IASGN(id, val));
       case ID_CONST:
-	if (!in_def && !in_single)
+	if (!in_def)
 	    return assignable_result(new_cdecl(id, val, 0, location));
 	yyerror0("dynamic constant assignment");
 	break;
@@ -11055,7 +11051,7 @@ const_path_field_gen(struct parser_params *parser, NODE *head, ID mid, YYLTYPE *
 static NODE *
 const_decl_gen(struct parser_params *parser, NODE *path, YYLTYPE *location)
 {
-    if (in_def || in_single) {
+    if (in_def) {
 	yyerror0("dynamic constant assignment");
     }
     return new_cdecl(0, 0, (path), location);
@@ -11084,7 +11080,7 @@ new_qcall_gen(struct parser_params *parser, VALUE r, VALUE q, VALUE m, VALUE a)
 static VALUE
 const_decl_gen(struct parser_params *parser, VALUE path)
 {
-    if (in_def || in_single) {
+    if (in_def) {
 	path = dispatch1(assign_error, path);
 	ripper_error();
     }
