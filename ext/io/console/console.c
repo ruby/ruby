@@ -308,10 +308,9 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
  * will read and return a line without echo back and line editing.
  *
  * The parameter +min+ specifies the minimum number of bytes that
- * should be received when the read operation is performed. (default:
- * 1)
+ * should be received when a read operation is performed. (default: 1)
  *
- * The paramter +time+ specifies the timeout in _seconds_, with a
+ * The parameter +time+ specifies the timeout in _seconds_ with a
  * precision of 1/10 of a second. (default: 0)
  *
  * Refer to the manual page of termios for further details.
