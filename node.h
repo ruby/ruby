@@ -360,7 +360,7 @@ typedef struct RNode {
 #define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)
 #define NEW_UNLESS(c,t,e) NEW_NODE(NODE_UNLESS,c,t,e)
 #define NEW_CASE(h,b) NEW_NODE(NODE_CASE,h,b,0)
-#define NEW_CASE2(h,b) NEW_NODE(NODE_CASE2,h,b,0)
+#define NEW_CASE2(b) NEW_NODE(NODE_CASE2,0,b,0)
 #define NEW_WHEN(c,t,e) NEW_NODE(NODE_WHEN,c,t,e)
 #define NEW_WHILE(c,b,n) NEW_NODE(NODE_WHILE,c,b,n)
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
