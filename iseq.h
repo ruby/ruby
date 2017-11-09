@@ -140,9 +140,9 @@ struct rb_compile_option_struct {
     int debug_level;
 };
 
-struct iseq_line_info_entry {
+struct iseq_insn_info_entry {
     unsigned int position;
-    unsigned int line_no;
+    int line_no;
 };
 
 struct iseq_catch_table_entry {

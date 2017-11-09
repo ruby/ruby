@@ -72,10 +72,12 @@ typedef struct iseq_label_data {
 typedef struct iseq_insn_data {
     LINK_ELEMENT link;
     enum ruby_vminsn_type insn_id;
-    unsigned int line_no;
     int operand_size;
     int sc_state;
     VALUE *operands;
+    struct {
+	int line_no;
+    } insn_info;
 } INSN;
 
 typedef struct iseq_adjust_data {
@@ -1111,7 +1113,7 @@ new_insn_core(rb_iseq_t *iseq, int line_no,
     iobj->link.type = ISEQ_ELEMENT_INSN;
     iobj->link.next = 0;
     iobj->insn_id = insn_id;
-    iobj->line_no = line_no;
+    iobj->insn_info.line_no = line_no;
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
@@ -1679,7 +1681,7 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 
 #define BADINSN_ERROR \
     (xfree(generated_iseq), \
-     xfree(line_info_table), \
+     xfree(insns_info), \
      BADINSN_DUMP(anchor, list, NULL), \
      COMPILE_ERROR)
 
@@ -1709,7 +1711,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = calc_sp_depth(sp, iobj);
 		if (sp < 0) {
 		    BADINSN_DUMP(anchor, list, NULL);
-		    COMPILE_ERROR(iseq, iobj->line_no,
+		    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 				  "argument stack underflow (%d)", sp);
 		    return -1;
 		}
@@ -1717,7 +1719,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		    stack_max = sp;
 		}
 
-		line = iobj->line_no;
+		line = iobj->insn_info.line_no;
 		/* fprintf(stderr, "insn: %-16s, sp: %d\n", insn_name(iobj->insn_id), sp); */
 		operands = iobj->operands;
 		insn = iobj->insn_id;
@@ -1728,7 +1730,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		if (iobj->operand_size != len - 1) {
 		    /* printf("operand size miss! (%d, %d)\n", iobj->operand_size, len); */
 		    BADINSN_DUMP(anchor, list, NULL);
-		    COMPILE_ERROR(iseq, iobj->line_no,
+		    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 				  "operand size miss! (%d for %d)",
 				  iobj->operand_size, len - 1);
 		    return -1;
@@ -1740,7 +1742,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			LABEL *lobj = (LABEL *)operands[j];
 			if (!lobj->set) {
 			    BADINSN_DUMP(anchor, list, NULL);
-			    COMPILE_ERROR(iseq, iobj->line_no,
+			    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 					  "unknown label: "LABEL_FORMAT, lobj->label_no);
 			    return -1;
 			}
@@ -1791,18 +1793,50 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     return stack_max;
 }
 
+static int
+add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int code_index, LINK_ELEMENT *list)
+{
+    if (list->type == ISEQ_ELEMENT_INSN) {
+	INSN *iobj = (INSN *)list;
+	if (iobj->insn_info.line_no != 0 &&
+	    (insns_info_index == 0 ||
+	     insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no)) {
+	    insns_info[insns_info_index].position   = code_index;
+	    insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
+	    return TRUE;
+	}
+	else {
+	    return FALSE;
+	}
+    }
+    else if (list->type == ISEQ_ELEMENT_ADJUST) {
+	ADJUST *adjust = (ADJUST *)list;
+	if (insns_info_index > 0 ||
+	    insns_info[insns_info_index-1].line_no != adjust->line_no) {
+	    insns_info[insns_info_index].position   = code_index;
+	    insns_info[insns_info_index].line_no    = adjust->line_no;
+	    return TRUE;
+	}
+	else {
+	    return FALSE;
+	}
+    }
+    else {
+	VM_UNREACHABLE(add_insn_info);
+    }
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
 static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
-    struct iseq_line_info_entry *line_info_table;
-    unsigned int last_line = 0;
+    struct iseq_insn_info_entry *insns_info;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
 
-    int insn_num, code_index, line_info_index, sp = 0;
+    int insn_num, code_index, insns_info_index, sp = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
 
     if (stack_max < 0) return COMPILE_NG;
@@ -1853,7 +1887,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, code_index);
-    line_info_table = ALLOC_N(struct iseq_line_info_entry, insn_num);
+    insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
     iseq->body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * iseq->body->ci_size +
 								 sizeof(struct rb_call_info_with_kwarg) * iseq->body->ci_kw_size);
@@ -1862,7 +1896,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     ISEQ_COMPILE_DATA(iseq)->ci_index = ISEQ_COMPILE_DATA(iseq)->ci_kw_index = 0;
 
     list = FIRST_ELEMENT(anchor);
-    line_info_index = code_index = sp = 0;
+    insns_info_index = code_index = sp = 0;
 
     while (list) {
 	switch (list->type) {
@@ -1976,16 +2010,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			generated_iseq[code_index + 1 + j] = operands[j];
 			break;
 		      default:
-			BADINSN_ERROR(iseq, iobj->line_no,
+			BADINSN_ERROR(iseq, iobj->insn_info.line_no,
 				      "unknown operand type: %c", type);
 			return COMPILE_NG;
 		    }
 		}
-		if (last_line != iobj->line_no) {
-		    line_info_table[line_info_index].line_no = last_line = iobj->line_no;
-		    line_info_table[line_info_index].position = code_index;
-		    line_info_index++;
-		}
+		if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)iobj)) insns_info_index++;
 		code_index += len;
 		break;
 	    }
@@ -2010,11 +2040,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		if (adjust->line_no != -1) {
 		    const int diff = orig_sp - sp;
 		    if (diff > 0) {
-			if (last_line != (unsigned int)adjust->line_no) {
-			    line_info_table[line_info_index].line_no = last_line = adjust->line_no;
-			    line_info_table[line_info_index].position = code_index;
-			    line_info_index++;
-			}
+			if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)adjust)) insns_info_index++;
 		    }
 		    if (diff > 1) {
 			generated_iseq[code_index++] = BIN(adjuststack);
@@ -2026,7 +2052,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		    else if (diff < 0) {
 			int label_no = adjust->label ? adjust->label->label_no : -1;
 			xfree(generated_iseq);
-			xfree(line_info_table);
+			xfree(insns_info);
 			debug_list(anchor);
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug to %d %d < %d",
@@ -2048,11 +2074,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq->body->stack_max = stack_max;
 
     /* get rid of memory leak when REALLOC failed */
-    iseq->body->line_info_table = line_info_table;
+    iseq->body->insns_info = insns_info;
 
-    REALLOC_N(line_info_table, struct iseq_line_info_entry, line_info_index);
-    iseq->body->line_info_table = line_info_table;
-    iseq->body->line_info_size = line_info_index;
+    REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
+    iseq->body->insns_info = insns_info;
+    iseq->body->insns_info_size = insns_info_index;
 
     return COMPILE_OK;
 }
@@ -2369,7 +2395,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 *   pop
 		 *   jump L1
 		 */
-		INSN *popiobj = new_insn_core(iseq, iobj->line_no,
+		INSN *popiobj = new_insn_core(iseq, iobj->insn_info.line_no,
 					      BIN(pop), 0, 0);
 		REPLACE_ELEM(&piobj->link, &popiobj->link);
 	    }
@@ -2509,7 +2535,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    REMOVE_ELEM(iobj->link.prev);
 		}
 		else if (!iseq_pop_newarray(iseq, pobj)) {
-		    pobj = new_insn_core(iseq, pobj->line_no, BIN(pop), 0, NULL);
+		    pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
 		    INSERT_ELEM_NEXT(&iobj->link, &pobj->link);
 		}
 		if (cond) {
@@ -2871,7 +2897,7 @@ new_unified_insn(rb_iseq_t *iseq,
 	list = list->next;
     }
 
-    return new_insn_core(iseq, iobj->line_no, insn_id, argc, operands);
+    return new_insn_core(iseq, iobj->insn_info.line_no, insn_id, argc, operands);
 }
 #endif
 
@@ -2955,7 +2981,7 @@ insn_set_sc_state(rb_iseq_t *iseq, const LINK_ELEMENT *anchor, INSN *iobj, int s
 	if (lobj->sc_state != 0) {
 	    if (lobj->sc_state != nstate) {
 		BADINSN_DUMP(anchor, iobj, lobj);
-		COMPILE_ERROR(iseq, iobj->line_no,
+		COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 			      "insn_set_sc_state error: %d at "LABEL_FORMAT
 			      ", %d expected\n",
 			      lobj->sc_state, lobj->label_no, nstate);
@@ -3059,7 +3085,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			  case SCS_XX:
 			    goto normal_insn;
 			  default:
-			    COMPILE_ERROR(iseq, iobj->line_no,
+			    COMPILE_ERROR(iseq, iobj->insn_info.line_no,
 					  "unreachable");
 			    return COMPILE_NG;
 			}
@@ -5179,7 +5205,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
     return iseq_compile_each0(iseq, ret, node, popped);
 }
 
-
 static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
@@ -7013,7 +7038,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
 	    {
 		iobj = (INSN *)link;
 		str = insn_data_to_s_detail(iobj);
-		printf("%04d %-65s(%4u)\n", pos, StringValueCStr(str), iobj->line_no);
+		printf("%04d %-65s(%4u)\n", pos, StringValueCStr(str), iobj->insn_info.line_no);
 		pos += insn_data_length(iobj);
 		break;
 	    }
@@ -8101,16 +8126,16 @@ ibf_load_param_keyword(const struct ibf_load *load, const struct rb_iseq_constan
     }
 }
 
-static struct iseq_line_info_entry *
-ibf_dump_line_info_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
+static struct iseq_insn_info_entry *
+ibf_dump_insns_info(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    return IBF_W(iseq->body->line_info_table, struct iseq_line_info_entry, iseq->body->line_info_size);
+    return IBF_W(iseq->body->insns_info, struct iseq_insn_info_entry, iseq->body->insns_info_size);
 }
 
-static struct iseq_line_info_entry *
-ibf_load_line_info_table(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+static struct iseq_insn_info_entry *
+ibf_load_insns_info(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
 {
-    return IBF_R(body->line_info_table, struct iseq_line_info_entry, body->line_info_size);
+    return IBF_R(body->insns_info, struct iseq_insn_info_entry, body->insns_info_size);
 }
 
 static ID *
@@ -8264,7 +8289,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.iseq_encoded =    ibf_dump_code(dump, iseq);
     dump_body.param.opt_table = ibf_dump_param_opt_table(dump, iseq);
     dump_body.param.keyword =   ibf_dump_param_keyword(dump, iseq);
-    dump_body.line_info_table = ibf_dump_line_info_table(dump, iseq);
+    dump_body.insns_info =      ibf_dump_insns_info(dump, iseq);
     dump_body.local_table =     ibf_dump_local_table(dump, iseq);
     dump_body.catch_table =     ibf_dump_catch_table(dump, iseq);
     dump_body.parent_iseq =     ibf_dump_iseq(dump, iseq->body->parent_iseq);
@@ -8302,7 +8327,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->is_size = body->is_size;
     load_body->ci_size = body->ci_size;
     load_body->ci_kw_size = body->ci_kw_size;
-    load_body->line_info_size = body->line_info_size;
+    load_body->insns_info_size = body->insns_info_size;
 
     RB_OBJ_WRITE(iseq, &load_body->mark_ary, iseq_mark_ary_create((int)body->mark_ary));
 
@@ -8334,7 +8359,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->cc_entries      = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
     load_body->param.opt_table = ibf_load_param_opt_table(load, body);
     load_body->param.keyword   = ibf_load_param_keyword(load, body);
-    load_body->line_info_table = ibf_load_line_info_table(load, body);
+    load_body->insns_info      = ibf_load_insns_info(load, body);
     load_body->local_table     = ibf_load_local_table(load, body);
     load_body->catch_table     = ibf_load_catch_table(load, body);
     load_body->parent_iseq     = ibf_load_iseq(load, body->parent_iseq);
