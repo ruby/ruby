@@ -640,4 +640,11 @@ class TestRubyOptimization < Test::Unit::TestCase
       assert_equal 0, foo{$SAFE}
     END
   end
+
+  def test_peephole_optimization_without_trace
+    assert_separately [], <<-END
+      RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
+      eval "def foo; 1.times{|(a), &b| nil && a}; end"
+    END
+  end
 end

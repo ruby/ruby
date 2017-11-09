@@ -2324,13 +2324,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     * LABEL:
 	     *  leave
 	     */
-	    INSN *popiobj = new_insn_core(iseq, iobj->line_no,
-					  BIN(pop), 0, 0);
 	    /* replace */
 	    unref_destination(iobj, 0);
 	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
-	    INSERT_ELEM_NEXT(&iobj->link, &popiobj->link);
 	    goto again;
 	}
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
