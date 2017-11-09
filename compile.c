@@ -2605,6 +2605,48 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (IS_INSN_ID(iobj, putstring) ||
+	(IS_INSN_ID(iobj, putobject) && RB_TYPE_P(OPERAND_AT(iobj, 0), T_STRING))) {
+	if (IS_NEXT_INSN_ID(&iobj->link, concatstrings) &&
+	    RSTRING_LEN(OPERAND_AT(iobj, 0)) == 0) {
+	    INSN *next = (INSN *)iobj->link.next;
+	    if ((OPERAND_AT(next, 0) = FIXNUM_INC(OPERAND_AT(next, 0), -1)) == INT2FIX(1)) {
+		REMOVE_ELEM(&next->link);
+	    }
+	    REMOVE_ELEM(&iobj->link);
+	}
+    }
+
+    if (IS_INSN_ID(iobj, concatstrings)) {
+	LINK_ELEMENT *next = iobj->link.next, *freeze = 0;
+	INSN *jump = 0;
+	if (IS_INSN(next) && IS_INSN_ID(next, freezestring))
+	    next = (freeze = next)->next;
+	if (IS_INSN(next) && IS_INSN_ID(next, jump))
+	    next = get_destination_insn(jump = (INSN *)next);
+	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings)) {
+	    int n = FIX2INT(OPERAND_AT(iobj, 0)) + FIX2INT(OPERAND_AT(next, 0)) - 1;
+	    OPERAND_AT(iobj, 0) = INT2FIX(n);
+	    if (jump) {
+		LABEL *label = ((LABEL *)OPERAND_AT(jump, 0));
+		if (!--label->refcnt) {
+		    REMOVE_ELEM(&label->link);
+		}
+		else {
+		    label = NEW_LABEL(0);
+		    OPERAND_AT(jump, 0) = (VALUE)label;
+		}
+		label->refcnt++;
+		INSERT_ELEM_NEXT(next, &label->link);
+		CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
+	    }
+	    else {
+		if (freeze) REMOVE_ELEM(freeze);
+		REMOVE_ELEM(next);
+	    }
+	}
+    }
+
     if (do_tailcallopt &&
 	(IS_INSN_ID(iobj, send) ||
 	 IS_INSN_ID(iobj, opt_aref_with) ||
@@ -3115,6 +3157,29 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     }
 #endif
     return COMPILE_OK;
+}
+
+static int
+all_string_result_p(const NODE *node)
+{
+    if (!node) return FALSE;
+    switch (nd_type(node)) {
+      case NODE_STR: case NODE_DSTR:
+	return TRUE;
+      case NODE_IF: case NODE_UNLESS:
+	if (!node->nd_body || !node->nd_else) return FALSE;
+	if (all_string_result_p(node->nd_body))
+	    return all_string_result_p(node->nd_else);
+	return FALSE;
+      case NODE_AND: case NODE_OR:
+	if (!node->nd_2nd)
+	    return all_string_result_p(node->nd_1st);
+	if (!all_string_result_p(node->nd_1st))
+	    return FALSE;
+	return all_string_result_p(node->nd_2nd);
+      default:
+	return FALSE;
+    }
 }
 
 static int
@@ -6344,7 +6409,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
-	else {
+	else if (!all_string_result_p(node->nd_body)) {
 	    const unsigned int flag = VM_CALL_FCALL;
 	    LABEL *isstr = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup);
