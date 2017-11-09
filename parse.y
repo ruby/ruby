@@ -12109,7 +12109,7 @@ ripper_parse0(VALUE parser_v)
     parser_prepare(parser);
     parser->ast = rb_ast_new();
     ripper_yyparse((void*)parser);
-    rb_ast_free(parser->ast);
+    rb_ast_dispose(parser->ast);
     parser->ast = 0;
     return parser->result;
 }
