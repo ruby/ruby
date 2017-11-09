@@ -1770,4 +1770,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
       end
     }, bug13705
   end
+
+  def test_trace_point_require_block
+    assert_raise(ArgumentError) { TracePoint.new(:return) }
+  end
 end

@@ -1238,7 +1238,7 @@ rb_tracepoint_new(VALUE target_thval, rb_event_flag_t events, void (*func)(VALUE
  *
  * See TracePoint@Events for possible events and more information.
  *
- * A block must be given, otherwise a ThreadError is raised.
+ * A block must be given, otherwise an ArgumentError is raised.
  *
  * If the trace method isn't included in the given events filter, a
  * RuntimeError is raised.
@@ -1274,7 +1274,7 @@ tracepoint_new_s(int argc, VALUE *argv, VALUE self)
     }
 
     if (!rb_block_given_p()) {
-	rb_raise(rb_eThreadError, "must be called with a block");
+	rb_raise(rb_eArgError, "must be called with a block");
     }
 
     return tracepoint_new(self, 0, events, 0, 0, rb_block_proc());
