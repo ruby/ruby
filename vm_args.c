@@ -687,6 +687,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     return opt_pc;
 }
 
+void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self); /* vm_backtrace.c */
+
 static void
 raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VALUE exc)
 {
@@ -698,6 +700,7 @@ raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VA
 		      iseq->body->iseq_encoded,
 		      ec->cfp->sp, 0, 0 /* stack_max */);
 	at = rb_ec_backtrace_object(ec);
+	rb_backtrace_use_iseq_first_lineno_for_last_location(at);
 	rb_vm_pop_frame(ec);
     }
     else {
