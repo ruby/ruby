@@ -383,7 +383,7 @@ struct rb_iseq_constant_body {
     rb_iseq_location_t location;
 
     /* insn info, must be freed */
-    const struct iseq_line_info_entry *line_info_table;
+    const struct iseq_insn_info_entry *insns_info;
 
     const ID *local_table;		/* must free */
 
@@ -408,7 +408,7 @@ struct rb_iseq_constant_body {
     unsigned int is_size;
     unsigned int ci_size;
     unsigned int ci_kw_size;
-    unsigned int line_info_size;
+    unsigned int insns_info_size;
     unsigned int stack_max; /* for stack overflow check */
 };
 
