@@ -585,6 +585,25 @@ rb_backtrace_to_str_ary(VALUE self)
     return bt->strary;
 }
 
+void
+rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
+{
+    const rb_backtrace_t *bt;
+    const rb_iseq_t *iseq;
+    rb_backtrace_location_t *loc;
+
+    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    VM_ASSERT(bt->backtrace_size > 0);
+
+    loc = &bt->backtrace[bt->backtrace_size - 1];
+    iseq = loc->body.iseq.iseq;
+
+    VM_ASSERT(loc->type == LOCATION_TYPE_ISEQ);
+
+    loc->body.iseq.lineno.lineno = FIX2INT(iseq->body->location.first_lineno);
+    loc->type = LOCATION_TYPE_ISEQ_CALCED;
+}
+
 static VALUE
 location_create(rb_backtrace_location_t *srcloc, void *btobj)
 {
