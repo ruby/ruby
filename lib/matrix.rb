@@ -1381,6 +1381,13 @@ class Matrix
   end
 
   #
+  # Explicit conversion to a Matrix. Returns self
+  #
+  def to_matrix
+    self
+  end
+
+  #
   # Returns an array of arrays that describe the rows of the matrix.
   #
   def to_a
@@ -1493,6 +1500,10 @@ class Matrix
 
     def self.coerce_to_int(obj)
       coerce_to(obj, Integer, :to_int)
+    end
+
+    def self.coerce_to_matrix(obj)
+      coerce_to(obj, Matrix, :to_matrix)
     end
   end
 
@@ -2037,6 +2048,13 @@ class Vector
   #
   def to_a
     @elements.dup
+  end
+
+  #
+  # Return a single-column matrix from this vector
+  #
+  def to_matrix
+    Matrix.column_vector(self)
   end
 
   def elements_to_f
