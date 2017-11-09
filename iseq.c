@@ -1289,6 +1289,22 @@ id_to_name(ID id, VALUE default_value)
     return str;
 }
 
+static VALUE
+local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
+{
+    VALUE i;
+    ID lid;
+
+    for (i = 0; i < level; i++) {
+	diseq = diseq->body->parent_iseq;
+    }
+    lid = diseq->body->local_table[diseq->body->local_table_size +
+				   VM_ENV_DATA_SIZE - 1 - op];
+    return id_to_name(lid, INT2FIX('*'));
+}
+
+int rb_insn_unified_local_var_level(VALUE);
+
 VALUE
 rb_insn_operand_intern(const rb_iseq_t *iseq,
 		       VALUE insn, int op_no, VALUE op,
@@ -1308,22 +1324,17 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       case TS_LINDEX:{
+	int level;
 	if (insn == BIN(getlocal) || insn == BIN(setlocal)) {
 	    if (pnop) {
-		const rb_iseq_t *diseq = iseq;
-		VALUE level = *pnop, i;
-		ID lid;
-
-		for (i = 0; i < level; i++) {
-		    diseq = diseq->body->parent_iseq;
-		}
-		lid = diseq->body->local_table[diseq->body->local_table_size +
-					       VM_ENV_DATA_SIZE - 1 - op];
-		ret = id_to_name(lid, INT2FIX('*'));
+		ret = local_var_name(iseq, *pnop, op);
 	    }
 	    else {
 		ret = rb_sprintf("%"PRIuVALUE, op);
 	    }
+	}
+	else if ((level = rb_insn_unified_local_var_level(insn)) >= 0) {
+	    ret = local_var_name(iseq, (VALUE)level, op);
 	}
 	else {
 	    ret = rb_inspect(INT2FIX(op));
