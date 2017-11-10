@@ -1252,8 +1252,8 @@ get_insn_info(const rb_iseq_t *iseq, size_t pos)
     return &insns_info[i-1];
 }
 
-static unsigned int
-find_line_no(const rb_iseq_t *iseq, size_t pos)
+unsigned int
+rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
     const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
 
@@ -1262,17 +1262,6 @@ find_line_no(const rb_iseq_t *iseq, size_t pos)
     }
     else {
 	return 0;
-    }
-}
-
-unsigned int
-rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
-{
-    if (pos == 0) {
-	return find_line_no(iseq, pos);
-    }
-    else {
-	return find_line_no(iseq, pos - 1);
     }
 }
 
@@ -1479,8 +1468,8 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
     }
 
     {
-	unsigned int line_no = find_line_no(iseq, pos);
-	unsigned int prev = pos == 0 ? 0 : find_line_no(iseq, pos - 1);
+	unsigned int line_no = rb_iseq_line_no(iseq, pos);
+	unsigned int prev = pos == 0 ? 0 : rb_iseq_line_no(iseq, pos - 1);
 	if (line_no && line_no != prev) {
 	    long slen = RSTRING_LEN(str);
 	    slen = (slen > 70) ? 0 : (70 - slen);
@@ -2295,7 +2284,7 @@ rb_iseqw_line_trace_each(VALUE iseqw, int (*func)(int line, rb_event_flag_t *eve
 		trace_num++;
 
 		if (func) {
-		    int line = find_line_no(iseq, pos);
+		    int line = rb_iseq_line_no(iseq, pos);
 		    /* printf("line: %d\n", line); */
 		    cont = (*func)(line, &events, data);
 		    if (current_events != events) {
