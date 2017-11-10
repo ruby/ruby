@@ -88,7 +88,6 @@ class TestDateAttr < Test::Unit::TestCase
   end
 
   def test_nth_kday
-    skip unless Date.new.respond_to?(:nth_kday?, true)
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 1,0))
     assert_equal(true, Date.new(2001,1,14).__send__(:nth_kday?, 2,0))
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, 3,0))
@@ -99,6 +98,6 @@ class TestDateAttr < Test::Unit::TestCase
     assert_equal(true, Date.new(2001,1,14).__send__(:nth_kday?, -3,0))
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -4,0))
     assert_equal(false, Date.new(2001,1,14).__send__(:nth_kday?, -5,0))
-  end
+  end if Date.new.respond_to?(:nth_kday?, true)
 
 end
