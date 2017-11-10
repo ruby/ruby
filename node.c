@@ -1147,17 +1147,17 @@ rb_ast_mark(rb_ast_t *ast)
 void
 rb_ast_free(rb_ast_t *ast)
 {
-    if (ast->node_buffer) rb_node_buffer_free(ast->node_buffer);
-    ast->node_buffer = 0;
-    ast->root = 0;
-    ast->mark_ary = 0;
+    if (ast->node_buffer) {
+	rb_node_buffer_free(ast->node_buffer);
+	ast->node_buffer = 0;
+    }
 }
 
 void
 rb_ast_dispose(rb_ast_t *ast)
 {
     rb_ast_free(ast);
-    rb_gc_writebarrier_remember((VALUE)ast);
+    RB_OBJ_WRITE(ast, &ast->mark_ary, Qnil);
 }
 
 void
