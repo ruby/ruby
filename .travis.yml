@@ -19,7 +19,7 @@
 language: c
 dist: trusty
 
-sudo: false
+sudo: required
 
 compiler:
   - gcc
