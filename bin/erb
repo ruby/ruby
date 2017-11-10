@@ -122,7 +122,7 @@ EOU
         exit 1
       end
 
-      $<.set_encoding(Encoding::ASCII_8BIT, nil)
+      $<.set_encoding(Encoding::UTF_8, nil)
       src = $<.read
       filename = $FILENAME
       exit 2 unless src

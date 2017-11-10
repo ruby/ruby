@@ -143,6 +143,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * ERB
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
+  * Default template file encoding is changed from ASCII-8BIT to UTF-8 in erb
+    command. [Bug #14095]
 
   * Carriage returns are changed to be trimmed properly if trim_mode is specified
     and used. Duplicated newlines will be removed on Windows. [Bug #5339] [Bug #11464]
