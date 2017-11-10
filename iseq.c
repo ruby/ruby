@@ -1532,6 +1532,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     const ID *tbl;
     size_t n;
     enum {header_minlen = 72};
+    st_table *done_iseq = 0;
 
     rb_secure(1);
 
@@ -1557,8 +1558,10 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 			"| catch type: %-6s st: %04d ed: %04d sp: %04d cont: %04d\n",
 			catch_type((int)entry->type), (int)entry->start,
 			(int)entry->end, (int)entry->sp, (int)entry->cont);
-	    if (entry->iseq) {
+	    if (entry->iseq && !(done_iseq && st_is_member(done_iseq, (st_data_t)entry->iseq))) {
 		rb_str_concat(str, rb_iseq_disasm(rb_iseq_check(entry->iseq)));
+		if (!done_iseq) done_iseq = st_init_numtable();
+		st_insert(done_iseq, (st_data_t)entry->iseq, (st_data_t)0);
 	    }
 	}
     }
@@ -1627,8 +1630,10 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 
     for (l = 0; l < RARRAY_LEN(child); l++) {
 	VALUE isv = rb_ary_entry(child, l);
+	if (done_iseq && st_is_member(done_iseq, (st_data_t)isv)) continue;
 	rb_str_concat(str, rb_iseq_disasm(rb_iseq_check((rb_iseq_t *)isv)));
     }
+    if (done_iseq) st_free_table(done_iseq);
 
     return str;
 }
