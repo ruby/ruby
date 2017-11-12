@@ -154,6 +154,7 @@ lcov*.info
 /ext/*/exts.mk
 
 # /ext/-test-/win32/dln/
+/ext/-test-/win32/dln/dlntest.dll
 /ext/-test-/win32/dln/dlntest.exp
 /ext/-test-/win32/dln/dlntest.lib
 
