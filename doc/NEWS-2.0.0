@@ -497,7 +497,7 @@ with all sufficient information, see the ChangeLog file.
     * Dir.mktmpdir uses FileUtils.remove_entry instead of
       FileUtils.remove_entry_secure.  This means that applications should not
       change the permission of the created temporary directory to make
-      accessible from other users.
+      writable from other users.
 
 * yaml
   * Syck has been removed.  YAML now completely depends on libyaml being
