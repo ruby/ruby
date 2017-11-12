@@ -8889,7 +8889,9 @@ rb_str_crypt(VALUE str, VALUE salt)
 	rb_sys_fail("crypt");
     }
     result = rb_str_new_cstr(res);
+#ifdef HAVE_CRYPT_R
     ALLOCV_END(databuf);
+#endif
     FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
