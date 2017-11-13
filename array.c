@@ -4296,7 +4296,7 @@ rb_ary_union(VALUE ary_union, VALUE ary)
  *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
  *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
  *
- *  See also Array#uniq.
+ *  See also Array#union.
  */
 
 static VALUE
