@@ -30,10 +30,10 @@ class CGI
       attributes.each do|name, value|
         next unless value
         s << " "
-        s << CGI::escapeHTML(name.to_s)
+        s << CGI.escapeHTML(name.to_s)
         if value != true
           s << '="'
-          s << CGI::escapeHTML(value.to_s)
+          s << CGI.escapeHTML(value.to_s)
           s << '"'
         end
       end
@@ -423,7 +423,7 @@ class CGI
       buf << super(attributes)
 
       if pretty
-        CGI::pretty(buf, pretty)
+        CGI.pretty(buf, pretty)
       else
         buf
       end

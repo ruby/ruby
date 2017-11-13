@@ -146,7 +146,7 @@ class CGI
       buf = "#{@name}=#{val}".dup
       buf << "; domain=#{@domain}" if @domain
       buf << "; path=#{@path}"     if @path
-      buf << "; expires=#{CGI::rfc1123_date(@expires)}" if @expires
+      buf << "; expires=#{CGI.rfc1123_date(@expires)}" if @expires
       buf << "; secure"            if @secure
       buf << "; HttpOnly"          if @httponly
       buf
