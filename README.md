@@ -84,7 +84,7 @@ This is what you need to do to compile and install Ruby:
     environment. Specify `optflags=..` and `warnflags=..` as necessary to
     override them.
 
-4.  Edit `defines.h` if you need. Usually this step will not be needed.
+4.  Edit `defines.h` if you need. Usually this step is not needed.
 
 5.  Remove comment mark(`#`) before the module names from `ext/Setup` (or add
     module names if not present), if you want to link modules statically.
@@ -93,7 +93,7 @@ This is what you need to do to compile and install Ruby:
     architectures which do not allow dynamic loading), remove comment mark
     from the line "`#option nodynamic`" in `ext/Setup`.
 
-    Usually this step will not be needed.
+    Usually this step is not needed.
 
 6.  Run `make`.
 
