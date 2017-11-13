@@ -227,6 +227,11 @@ typedef struct rb_code_location_struct {
     int column;
 } rb_code_location_t;
 
+typedef struct rb_code_range_struct {
+    rb_code_location_t first_loc;
+    rb_code_location_t last_loc;
+} rb_code_range_t;
+
 typedef struct RNode {
     VALUE flags;
     union {
@@ -251,7 +256,7 @@ typedef struct RNode {
 	long cnt;
 	VALUE value;
     } u3;
-    rb_code_location_t nd_first_loc;
+    rb_code_range_t nd_loc;
 } NODE;
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
@@ -276,10 +281,15 @@ typedef struct RNode {
 #define nd_set_line(n,l) \
     (n)->flags=(((n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
 
-#define nd_column(n) ((int)((n)->nd_first_loc.column))
-#define nd_set_column(n, v) ((n)->nd_first_loc.column = (v))
-#define nd_lineno(n) ((int)((n)->nd_first_loc.lineno))
-#define nd_set_lineno(n, v) ((n)->nd_first_loc.lineno = (v))
+#define nd_column(n) ((int)((n)->nd_loc.first_loc.column))
+#define nd_set_column(n, v) ((n)->nd_loc.first_loc.column = (v))
+#define nd_lineno(n) ((int)((n)->nd_loc.first_loc.lineno))
+#define nd_set_lineno(n, v) ((n)->nd_loc.first_loc.lineno = (v))
+
+#define nd_last_column(n) ((int)((n)->nd_loc.last_loc.column))
+#define nd_set_last_column(n, v) ((n)->nd_loc.last_loc.column = (v))
+#define nd_last_lineno(n) ((int)((n)->nd_loc.last_loc.lineno))
+#define nd_set_last_lineno(n, v) ((n)->nd_loc.last_loc.lineno = (v))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
