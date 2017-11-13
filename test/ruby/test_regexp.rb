@@ -1238,6 +1238,9 @@ class TestRegexp < Test::Unit::TestCase
 
     assert_equal(0, /\/\*((?~\*\/))\*\// =~ "/*abc*def/xyz*/ /* */")
     assert_equal("abc*def/xyz", $1)
+
+    assert_equal(0, /(?~(a)c)/ =~ "abb")
+    assert_nil($1)
   end
 
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
