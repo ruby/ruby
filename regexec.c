@@ -2506,6 +2506,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_MEMORY_START)  MOP_IN(OP_MEMORY_START);
       GET_MEMNUM_INC(mem, p);
       mem_start_stk[mem] = (OnigStackIndex )((void* )s);
+      mem_end_stk[mem] = INVALID_STACK_INDEX;
       MOP_OUT;
       JUMP;
 
