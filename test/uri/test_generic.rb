@@ -870,7 +870,7 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {|env|
-      assert_nil(URI("http://example.org/").find_proxy(env))
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
   end
