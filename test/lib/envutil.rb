@@ -42,6 +42,8 @@ module EnvUtil
   DEFAULT_SIGNALS = Signal.list
   DEFAULT_SIGNALS.delete("TERM") if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  RUBYLIB = ENV["RUBYLIB"]
+
   class << self
     attr_accessor :subprocess_timeout_scale
   end
@@ -79,6 +81,9 @@ module EnvUtil
     LANG_ENVS.each {|lc| child_env[lc] = c}
     if Array === args and Hash === args.first
       child_env.update(args.shift)
+    end
+    if RUBYLIB and lib = child_env["RUBYLIB"]
+      child_env["RUBYLIB"] = [lib, RUBYLIB].join(File::PATH_SEPARATOR)
     end
     args = [args] if args.kind_of?(String)
     pid = spawn(child_env, *precommand, rubybin, *args, **opt)
