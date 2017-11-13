@@ -1544,9 +1544,13 @@ module URI
     end
 
     def self.use_proxy?(hostname, addr, port, no_proxy) # :nodoc:
-      no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|p_host, p_port|
+      no_proxy.scan(/([^:,\s]+)(?::(\d+))?/) {|p_host, p_port|
         if !p_port || port == p_port.to_i
-          if /(\A|\.)#{Regexp.quote p_host}\z/i =~ hostname
+          cmp_begin = '(\A|\.)'
+          if p_host.start_with?('.')
+            cmp_begin = ''
+          end
+          if /#{cmp_begin}#{Regexp.quote p_host}\z/i =~ hostname
             return false
           elsif addr
             begin
