@@ -2302,6 +2302,21 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 }
 
 static int
+same_debug_pos_p(LINK_ELEMENT *iobj1, LINK_ELEMENT *iobj2)
+{
+    VALUE debug1 = OPERAND_AT(iobj1, 0);
+    VALUE debug2 = OPERAND_AT(iobj2, 0);
+    if (debug1 == debug2) return TRUE;
+    if (!RB_TYPE_P(debug1, T_ARRAY)) return FALSE;
+    if (!RB_TYPE_P(debug2, T_ARRAY)) return FALSE;
+    if (RARRAY_LEN(debug1) != 2) return FALSE;
+    if (RARRAY_LEN(debug2) != 2) return FALSE;
+    if (RARRAY_AREF(debug1, 0) != RARRAY_AREF(debug2, 0)) return FALSE;
+    if (RARRAY_AREF(debug1, 1) != RARRAY_AREF(debug2, 1)) return FALSE;
+    return TRUE;
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
@@ -2637,6 +2652,14 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    OPERAND_AT(jump, 0) = (VALUE)label;
 		}
 		label->refcnt++;
+		if (freeze && IS_NEXT_INSN_ID(next, freezestring)) {
+		    if (same_debug_pos_p(freeze, next->next)) {
+			REMOVE_ELEM(freeze);
+		    }
+		    else {
+			next = next->next;
+		    }
+		}
 		INSERT_ELEM_NEXT(next, &label->link);
 		CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
 	    }
