@@ -4271,6 +4271,19 @@ ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     return ST_CONTINUE;
 }
 
+
+static void
+rb_ary_union(VALUE ary_union, VALUE ary)
+{
+    int i;
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        VALUE elt = rb_ary_elt(ary, i);
+        if (rb_ary_includes_by_eql(ary_union, elt)) continue;
+        rb_ary_push(ary_union, elt);
+    }
+}
+
+
 /*
  *  call-seq:
  *     ary | other_ary     -> new_ary
@@ -4295,16 +4308,8 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary1) + RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
 	ary3 = rb_ary_new();
-	for (i=0; i<RARRAY_LEN(ary1); i++) {
-	    VALUE elt = rb_ary_elt(ary1, i);
-	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
-	    rb_ary_push(ary3, elt);
-	}
-	for (i=0; i<RARRAY_LEN(ary2); i++) {
-	    VALUE elt = rb_ary_elt(ary2, i);
-	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
-	    rb_ary_push(ary3, elt);
-	}
+	rb_ary_union(ary3, ary1);
+	rb_ary_union(ary3, ary2);
 	return ary3;
     }
 
@@ -4353,22 +4358,9 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     if (sum <= SMALL_ARRAY_LEN) {
 	ary_union = rb_ary_new();
 
-	for (i=0; i<RARRAY_LEN(ary); i++) {
-	    VALUE elt = rb_ary_elt(ary, i);
-	    if (rb_ary_includes_by_eql(ary_union, elt)) continue;
-	    rb_ary_push(ary_union, elt);
-	}
+	rb_ary_union(ary_union, ary);
+	for (i = 0; i < argc; i++) rb_ary_union(ary_union, argv[i]);
 
-	for (i = 0; i < argc; i++) {
-	    VALUE argv_i;
-	    int j;
-
-	    for (j=0; j<RARRAY_LEN(argv[i]); j++) {
-		VALUE elt = rb_ary_elt(argv[i], j);
-		if (rb_ary_includes_by_eql(ary_union, elt)) continue;
-		rb_ary_push(ary_union, elt);
-	    }
-	}
 	return ary_union;
     }
 
