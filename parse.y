@@ -8888,6 +8888,8 @@ node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE 
     /* mark not cared lineno to 0 and column to -1 */
     nd_set_lineno(n,  0);
     nd_set_column(n, -1);
+    nd_set_last_lineno(n,  0);
+    nd_set_last_column(n, -1);
     return n;
 }
 
