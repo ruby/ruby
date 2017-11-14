@@ -74,8 +74,12 @@ error !
 #define ELABEL(x) INSN_ELABEL_##x
 #define LABEL_PTR(x) &&LABEL(x)
 
-#define INSN_ENTRY_SIG(insn)
-
+#define INSN_ENTRY_SIG(insn) \
+  if (0) fprintf(stderr, "exec: %s@(%d, %d)@%s:%d\n", #insn, \
+		 (int)(reg_pc - reg_cfp->iseq->body->iseq_encoded), \
+		 (int)(reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded), \
+		 RSTRING_PTR(rb_iseq_path(reg_cfp->iseq)), \
+		 (int)(rb_iseq_line_no(reg_cfp->iseq, reg_pc - reg_cfp->iseq->body->iseq_encoded)));
 
 #define INSN_DISPATCH_SIG(insn)
 

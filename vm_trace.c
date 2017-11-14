@@ -25,6 +25,7 @@
 #include "ruby/debug.h"
 
 #include "vm_core.h"
+#include "iseq.h"
 #include "eval_intern.h"
 
 /* (1) trace mechanisms */
@@ -59,35 +60,44 @@ rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks)
 /* ruby_vm_event_flags management */
 
 static void
+update_global_event_hook(rb_event_flag_t vm_events)
+{
+    ruby_vm_event_flags = vm_events;
+    rb_iseq_trace_set_all(vm_events);
+    rb_objspace_set_event_hook(vm_events);
+}
+
+static void
 recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
 {
     int i;
-    ruby_vm_event_flags = 0;
+    rb_event_flag_t vm_events = 0;
 
     for (i=0; i<MAX_EVENT_NUM; i++) {
 	if (events & ((rb_event_flag_t)1 << i)) {
 	    ruby_event_flag_count[i]++;
 	}
-	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
+	vm_events |= ruby_event_flag_count[i] ? (1<<i) : 0;
     }
 
-    rb_objspace_set_event_hook(ruby_vm_event_flags);
+    update_global_event_hook(vm_events);
 }
 
 static void
 recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
 {
     int i;
-    ruby_vm_event_flags = 0;
+    rb_event_flag_t vm_events = 0;
 
     for (i=0; i<MAX_EVENT_NUM; i++) {
 	if (events & ((rb_event_flag_t)1 << i)) {
+	    VM_ASSERT(ruby_event_flag_count[i] > 0);
 	    ruby_event_flag_count[i]--;
 	}
-	ruby_vm_event_flags |= ruby_event_flag_count[i] ? (1<<i) : 0;
+	vm_events |= ruby_event_flag_count[i] ? (1<<i) : 0;
     }
 
-    rb_objspace_set_event_hook(ruby_vm_event_flags);
+    update_global_event_hook(vm_events);
 }
 
 /* add/remove hooks */
@@ -467,7 +477,6 @@ static void call_trace_func(rb_event_flag_t, VALUE data, VALUE self, ID id, VALU
 static VALUE
 set_trace_func(VALUE obj, VALUE trace)
 {
-
     rb_remove_event_hook(call_trace_func);
 
     if (NIL_P(trace)) {
@@ -581,14 +590,39 @@ get_event_id(rb_event_flag_t event)
 }
 
 static void
+get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, rb_event_flag_t event, VALUE *pathp, int *linep)
+{
+    cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
+
+    if (cfp) {
+	const rb_iseq_t *iseq = cfp->iseq;
+	*pathp = rb_iseq_path(iseq);
+
+	if (event & (RUBY_EVENT_CLASS |
+				RUBY_EVENT_CALL  |
+				RUBY_EVENT_B_CALL)) {
+	    *linep = FIX2INT(rb_iseq_first_lineno(iseq));
+	}
+	else {
+	    *linep = rb_vm_get_sourceline(cfp);
+	}
+    }
+    else {
+	*pathp = Qnil;
+	*linep = 0;
+    }
+}
+
+static void
 call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klass)
 {
     int line;
-    const char *srcfile = rb_source_loc(&line);
+    VALUE filename;
     VALUE eventname = rb_str_new2(get_event_name(event));
-    VALUE filename = srcfile ? rb_str_new2(srcfile) : Qnil;
     VALUE argv[6];
     const rb_execution_context_t *ec = GET_EC();
+
+    get_path_and_lineno(ec, ec->cfp, event, &filename, &line);
 
     if (!klass) {
 	rb_ec_frame_method_id_and_class(ec, &id, 0, &klass);
@@ -607,7 +641,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     argv[1] = filename;
     argv[2] = INT2FIX(line);
     argv[3] = id ? ID2SYM(id) : Qnil;
-    argv[4] = (self && srcfile) ? rb_binding_new() : Qnil;
+    argv[4] = (self && (filename != Qnil)) ? rb_binding_new() : Qnil;
     argv[5] = klass ? klass : Qnil;
 
     rb_proc_call_with_block(proc, 6, argv, Qnil);
@@ -725,16 +759,7 @@ static void
 fill_path_and_lineno(rb_trace_arg_t *trace_arg)
 {
     if (trace_arg->path == Qundef) {
-	rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(trace_arg->ec, trace_arg->cfp);
-
-	if (cfp) {
-	    trace_arg->path = rb_iseq_path(cfp->iseq);
-	    trace_arg->lineno = rb_vm_get_sourceline(cfp);
-	}
-	else {
-	    trace_arg->path = Qnil;
-	    trace_arg->lineno = 0;
-	}
+	get_path_and_lineno(trace_arg->ec, trace_arg->cfp, trace_arg->event, &trace_arg->path, &trace_arg->lineno);
     }
 }
 

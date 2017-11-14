@@ -264,6 +264,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Performance of block passing using block parameters is improved by
   lazy Proc allocation [Feature #14045]
 
+* Dynamic instrumentation for TracePoint hooks instead of using "trace"
+  instruction to avoid overhead [Feature #14104]
+
 === Miscellaneous changes
 
 * Print backtrace and error message in reverse order if STDERR is unchanged and a tty.

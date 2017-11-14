@@ -77,7 +77,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["c-return", 5, :+, Integer],
                  events.shift)
-    assert_equal(["return", 6, :add, self.class],
+    assert_equal(["return", 5, :add, self.class],
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
@@ -116,7 +116,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["c-return", 5, :method_added, Module],
                  events.shift)
-    assert_equal(["end", 7, nil, nil],
+    assert_equal(["end", 5, nil, nil],
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
@@ -130,7 +130,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["call", 5, :bar, Foo],
                  events.shift)
-    assert_equal(["return", 6, :bar, Foo],
+    assert_equal(["return", 5, :bar, Foo],
                  events.shift)
     assert_equal(["line", 9, __method__, self.class],
                  events.shift)
@@ -176,7 +176,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 5, :meth_return, self.class],
                  events.shift)
-    assert_equal(["return", 7, :meth_return, self.class],
+    assert_equal(["return", 5, :meth_return, self.class],
                  events.shift)
     assert_equal(["line", 10, :test_return, self.class],
                  events.shift)
@@ -215,7 +215,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 6, :meth_return2, self.class],
                  events.shift)
-    assert_equal(["return", 7, :meth_return2, self.class],
+    assert_equal(["return", 6, :meth_return2, self.class],
                  events.shift)
     assert_equal(["line", 9, :test_return2, self.class],
                  events.shift)
@@ -238,8 +238,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      8: set_trace_func(nil)
     EOF
     assert_equal(["c-return", 1, :set_trace_func, Kernel],
-                 events.shift)
-    assert_equal(["line", 4, __method__, self.class],
                  events.shift)
     assert_equal(["line", 5, __method__, self.class],
                  events.shift)
@@ -289,8 +287,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
      ["line", 4, __method__, self.class],
      ["c-return", 4, :any?, Array],
      ["line", 5, __method__, self.class],
-     ["c-call", 5, :set_trace_func, Kernel]].each{|e|
-      assert_equal(e, events.shift)
+     ["c-call", 5, :set_trace_func, Kernel]].each.with_index{|e, i|
+       assert_equal(e, events.shift, "mismatch on #{i}th trace")
     }
   end
 
@@ -345,7 +343,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      ["line", 4, nil, nil],
      ["c-call", 4, :method_added, Module],
      ["c-return", 4, :method_added, Module],
-     ["end", 7, nil, nil],
+     ["end", 4, nil, nil],
      ["line", 8, __method__, self.class],
      ["c-call", 8, :new, Class],
      ["c-call", 8, :initialize, BasicObject],
@@ -355,7 +353,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      ["line", 5, :foo, ThreadTraceInnerClass],
      ["c-call", 5, :+, Integer],
      ["c-return", 5, :+, Integer],
-     ["return", 6, :foo, ThreadTraceInnerClass],
+     ["return", 5, :foo, ThreadTraceInnerClass],
      ["line", 9, __method__, self.class],
      ["c-call", 9, :set_trace_func, Thread]].each do |e|
       [:set, :add].each do |type|
@@ -489,7 +487,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:line,    13, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:c_call,  13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, :nothing],
      [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, :XYZZY_outer, nil],
-     [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
+     [:end,     13, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
      [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, :outer, :nothing],
      [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       :outer, :nothing],
@@ -504,8 +502,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:line,    15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, :nothing],
      [:c_call,  15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, :nothing],
      [:c_return,15, "xyzzy", Kernel,      :tap,             xyzzy,       :XYZZY_bar, xyzzy],
-     [:return,  16, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
-     [:return,  12, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
+     [:return,  15, "xyzzy", xyzzy.class, :bar,             xyzzy,       :XYZZY_bar, xyzzy],
+     [:return,  11, "xyzzy", xyzzy.class, :foo,             xyzzy,       :XYZZY_foo, xyzzy],
      [:line,    20, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
      [:c_call,  20, "xyzzy", Kernel,      :raise,           self,        :outer, :nothing],
      [:c_call,  20, "xyzzy", Exception,   :exception,       RuntimeError, :outer, :nothing],

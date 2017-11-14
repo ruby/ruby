@@ -71,6 +71,12 @@ ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
     return NULL;
 }
 
+static inline void
+ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
+{
+    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, Qnil);
+}
+
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
@@ -110,10 +116,9 @@ VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
+void rb_iseq_trace_on_all(void);
 
-int rb_iseqw_line_trace_each(VALUE iseqval, int (*func)(int line, rb_event_flag_t *events_ptr, void *d), void *data);
-VALUE rb_iseqw_line_trace_all(VALUE iseqval);
-VALUE rb_iseqw_line_trace_specify(VALUE iseqval, VALUE pos, VALUE set);
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
 
@@ -145,6 +150,7 @@ struct rb_compile_option_struct {
 struct iseq_insn_info_entry {
     unsigned int position;
     int line_no;
+    rb_event_flag_t events;
 };
 
 struct iseq_catch_table_entry {

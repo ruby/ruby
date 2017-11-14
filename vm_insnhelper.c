@@ -3723,3 +3723,58 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 	return Qundef;
     }
 }
+
+rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
+
+NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc));
+
+static void
+vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc)
+{
+    const rb_iseq_t *iseq = reg_cfp->iseq;
+    size_t pos = pc - iseq->body->iseq_encoded;
+    rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
+    rb_event_flag_t event;
+
+    if (ec->trace_arg != NULL) return;
+
+    if (0) {
+	fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",
+		(int)pos,
+		(int)events,
+		RSTRING_PTR(rb_iseq_path(iseq)),
+		(int)rb_iseq_line_no(iseq, pos),
+		RSTRING_PTR(rb_iseq_label(iseq)));
+    }
+
+    VM_ASSERT(reg_cfp->pc == pc);
+    VM_ASSERT(events != 0);
+
+    /* increment PC because source line is calculated with PC-1 */
+    if (events & ruby_vm_event_flags) {
+	if (event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) {
+	    VM_ASSERT(event == RUBY_EVENT_CLASS ||
+		      event == RUBY_EVENT_CALL  ||
+		      event == RUBY_EVENT_B_CALL);
+	    reg_cfp->pc++;
+	    vm_dtrace(event, ec);
+	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, Qundef);
+	    reg_cfp->pc--;
+	}
+	if (events & RUBY_EVENT_LINE) {
+	    reg_cfp->pc++;
+	    vm_dtrace(RUBY_EVENT_LINE, ec);
+	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_LINE, GET_SELF(), 0, 0, 0, Qundef);
+	    reg_cfp->pc--;
+	}
+	if (event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) {
+	    VM_ASSERT(event == RUBY_EVENT_END ||
+		      event == RUBY_EVENT_RETURN  ||
+		      event == RUBY_EVENT_B_RETURN);
+	    reg_cfp->pc++;
+	    vm_dtrace(RUBY_EVENT_LINE, ec);
+	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, TOPN(0));
+	    reg_cfp->pc--;
+	}
+    }
+}
