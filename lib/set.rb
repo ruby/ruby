@@ -446,7 +446,8 @@ class Set
   alias intersection &  ##
 
   # Returns a new set containing elements exclusive between the set
-  # and the given enumerable object.  (set ^ enum) is equivalent to
+  # and the given enumerable object, what is commonly known as
+  # <em>exclusive or</em> and <em>XOR</em>.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
   def ^(enum)
     n = Set.new(enum)
