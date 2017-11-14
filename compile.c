@@ -201,7 +201,7 @@ struct iseq_compile_data_ensure_node_stack {
 
 /* insert an instruction before prev */
 #define INSERT_BEFORE_INSN(prev, line, insn) \
-  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
@@ -210,7 +210,7 @@ struct iseq_compile_data_ensure_node_stack {
 
 /* insert an instruction with some operands (1, 2, 3, 5) before prev */
 #define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
-  INSERT_ELEM_PREV(&(prev)->link, (LINK_ELEMENT *) \
+  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
@@ -912,7 +912,7 @@ compile_data_alloc_trace(rb_iseq_t *iseq)
  * elem1, elemX => elem1, elem2, elemX
  */
 static void
-INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_INSERT_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->next = elem1->next;
     elem2->prev = elem1;
@@ -926,7 +926,7 @@ INSERT_ELEM_NEXT(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
  * elem1, elemX => elemX, elem2, elem1
  */
 static void
-INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_INSERT_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->prev = elem1->prev;
     elem2->next = elem1;
@@ -940,7 +940,7 @@ INSERT_ELEM_PREV(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
  * elemX, elem1, elemY => elemX, elem2, elemY
  */
 static void
-REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
+ELEM_REPLACE(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 {
     elem2->prev = elem1->prev;
     elem2->next = elem1->next;
@@ -953,7 +953,7 @@ REPLACE_ELEM(LINK_ELEMENT *elem1, LINK_ELEMENT *elem2)
 }
 
 static void
-REMOVE_ELEM(LINK_ELEMENT *elem)
+ELEM_REMOVE(LINK_ELEMENT *elem)
 {
     elem->prev->next = elem->next;
     if (elem->next) {
@@ -2285,7 +2285,7 @@ unref_destination(INSN *iobj, int pos)
 {
     LABEL *lobj = (LABEL *)OPERAND_AT(iobj, pos);
     --lobj->refcnt;
-    if (!lobj->refcnt) REMOVE_ELEM(&lobj->link);
+    if (!lobj->refcnt) ELEM_REMOVE(&lobj->link);
 }
 
 static void
@@ -2297,7 +2297,7 @@ replace_destination(INSN *dobj, INSN *nobj)
     --dl->refcnt;
     ++nl->refcnt;
     OPERAND_AT(dobj, 0) = n;
-    if (!dl->refcnt) REMOVE_ELEM(&dl->link);
+    if (!dl->refcnt) ELEM_REMOVE(&dl->link);
 }
 
 static int
@@ -2344,7 +2344,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		}
 	    }
 	}
-	REMOVE_ELEM(i);
+	ELEM_REMOVE(i);
     } while ((i != end) && (i = i->next) != 0);
     return 1;
 }
@@ -2354,10 +2354,10 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 {
     switch (OPERAND_AT(iobj, 0)) {
       case INT2FIX(0): /* empty array */
-	REMOVE_ELEM(&iobj->link);
+	ELEM_REMOVE(&iobj->link);
 	return TRUE;
       case INT2FIX(1): /* single element array */
-	REMOVE_ELEM(&iobj->link);
+	ELEM_REMOVE(&iobj->link);
 	return FALSE;
       default:
 	iobj->insn_id = BIN(adjuststack);
@@ -2398,7 +2398,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	     *   LABEL:
 	     */
 	    unref_destination(iobj, 0);
-	    REMOVE_ELEM(&iobj->link);
+	    ELEM_REMOVE(&iobj->link);
 	    return COMPILE_OK;
 	}
 	else if (iobj != diobj && IS_INSN_ID(diobj, jump) &&
@@ -2458,7 +2458,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
-		REMOVE_ELEM(&iobj->link);
+		ELEM_REMOVE(&iobj->link);
 		return COMPILE_OK;
 	    }
 	    else if (diobj == pdiobj) {
@@ -2477,7 +2477,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		 */
 		INSN *popiobj = new_insn_core(iseq, iobj->insn_info.line_no,
 					      BIN(pop), 0, 0);
-		REPLACE_ELEM(&piobj->link, &popiobj->link);
+		ELEM_REPLACE(&piobj->link, &popiobj->link);
 	    }
 	}
 	if (remove_unreachable_chunk(iseq, iobj->link.next)) {
@@ -2509,8 +2509,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 
 	    iseq_add_mark_object_compile_time(iseq, lit_range);
-	    REMOVE_ELEM(&beg->link);
-	    REMOVE_ELEM(&end->link);
+	    ELEM_REMOVE(&beg->link);
+	    ELEM_REMOVE(&end->link);
 	    range->insn_id = BIN(putobject);
 	    OPERAND_AT(range, 0) = lit_range;
 	}
@@ -2612,11 +2612,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		}
 		else break;
 		if (prev_dup || !IS_INSN_ID(pobj, newarray)) {
-		    REMOVE_ELEM(iobj->link.prev);
+		    ELEM_REMOVE(iobj->link.prev);
 		}
 		else if (!iseq_pop_newarray(iseq, pobj)) {
 		    pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(pop), 0, NULL);
-		    INSERT_ELEM_NEXT(&iobj->link, &pobj->link);
+		    ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
 		}
 		if (cond) {
 		    iobj->insn_id = BIN(jump);
@@ -2624,7 +2624,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		}
 		else {
 		    unref_destination(iobj, 0);
-		    REMOVE_ELEM(&iobj->link);
+		    ELEM_REMOVE(&iobj->link);
 		}
 		break;
 	    }
@@ -2648,11 +2648,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		previ == BIN(duparray)) {
 		/* just push operand or static value and pop soon, no
 		 * side effects */
-		REMOVE_ELEM(prev);
-		REMOVE_ELEM(&iobj->link);
+		ELEM_REMOVE(prev);
+		ELEM_REMOVE(&iobj->link);
 	    }
 	    else if (previ == BIN(newarray) && iseq_pop_newarray(iseq, (INSN*)prev)) {
-		REMOVE_ELEM(&iobj->link);
+		ELEM_REMOVE(&iobj->link);
 	    }
 	}
     }
@@ -2673,7 +2673,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	LINK_ELEMENT *next = iobj->link.next;
 	if (IS_INSN(next) && IS_INSN_ID(next, splatarray)) {
 	    /* remove splatarray following always-array insn */
-	    REMOVE_ELEM(next);
+	    ELEM_REMOVE(next);
 	}
     }
 
@@ -2687,7 +2687,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 */
 	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
 	    OPERAND_AT(next, 0) == INT2FIX(1)) {
-	    REMOVE_ELEM(next);
+	    ELEM_REMOVE(next);
 	}
     }
 
@@ -2703,9 +2703,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    RSTRING_LEN(OPERAND_AT(iobj, 0)) == 0) {
 	    INSN *next = (INSN *)iobj->link.next;
 	    if ((OPERAND_AT(next, 0) = FIXNUM_INC(OPERAND_AT(next, 0), -1)) == INT2FIX(1)) {
-		REMOVE_ELEM(&next->link);
+		ELEM_REMOVE(&next->link);
 	    }
-	    REMOVE_ELEM(&iobj->link);
+	    ELEM_REMOVE(&iobj->link);
 	}
     }
 
@@ -2728,7 +2728,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    if (jump) {
 		LABEL *label = ((LABEL *)OPERAND_AT(jump, 0));
 		if (!--label->refcnt) {
-		    REMOVE_ELEM(&label->link);
+		    ELEM_REMOVE(&label->link);
 		}
 		else {
 		    label = NEW_LABEL(0);
@@ -2737,18 +2737,18 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		label->refcnt++;
 		if (freeze && IS_NEXT_INSN_ID(next, freezestring)) {
 		    if (same_debug_pos_p(freeze, next->next)) {
-			REMOVE_ELEM(freeze);
+			ELEM_REMOVE(freeze);
 		    }
 		    else {
 			next = next->next;
 		    }
 		}
-		INSERT_ELEM_NEXT(next, &label->link);
+		ELEM_INSERT_NEXT(next, &label->link);
 		CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
 	    }
 	    else {
-		if (freeze) REMOVE_ELEM(freeze);
-		REMOVE_ELEM(next);
+		if (freeze) ELEM_REMOVE(freeze);
+		ELEM_REMOVE(next);
 	    }
 	}
     }
@@ -2813,8 +2813,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		set2 = set1->next;
 		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
 		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
-		    REMOVE_ELEM(set1);
-		    REMOVE_ELEM(&iobj->link);
+		    ELEM_REMOVE(set1);
+		    ELEM_REMOVE(&iobj->link);
 		}
 	    }
 	    else if (IS_NEXT_INSN_ID(set1, dup) &&
@@ -2822,8 +2822,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		set2 = set1->next->next;
 		if (OPERAND_AT(set1, 0) == OPERAND_AT(set2, 0) &&
 		    OPERAND_AT(set1, 1) == OPERAND_AT(set2, 1)) {
-		    REMOVE_ELEM(set1->next);
-		    REMOVE_ELEM(set2);
+		    ELEM_REMOVE(set1->next);
+		    ELEM_REMOVE(set2);
 		}
 	    }
 	}
@@ -2838,8 +2838,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    LINK_ELEMENT *set1 = niobj->next;
 	    if (OPERAND_AT(iobj, 0) == OPERAND_AT(set1, 0) &&
 		OPERAND_AT(iobj, 1) == OPERAND_AT(set1, 1)) {
-		REMOVE_ELEM(set1);
-		REMOVE_ELEM(niobj);
+		ELEM_REMOVE(set1);
+		ELEM_REMOVE(niobj);
 	    }
 	}
     }
@@ -2881,11 +2881,11 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		switch (ci->mid) {
 		  case idMax:
 		    iobj->insn_id = BIN(opt_newarray_max);
-		    REMOVE_ELEM(&niobj->link);
+		    ELEM_REMOVE(&niobj->link);
 		    return COMPILE_OK;
 		  case idMin:
 		    iobj->insn_id = BIN(opt_newarray_min);
-		    REMOVE_ELEM(&niobj->link);
+		    ELEM_REMOVE(&niobj->link);
 		    return COMPILE_OK;
 		}
 	    }
@@ -3189,7 +3189,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				new_insn_body(iseq, 0, BIN(reput), 0);
 
 			    /* replace this insn */
-			    REPLACE_ELEM(list, (LINK_ELEMENT *)rpobj);
+			    ELEM_REPLACE(list, (LINK_ELEMENT *)rpobj);
 			    list = (LINK_ELEMENT *)rpobj;
 			    goto redo_point;
 			}
@@ -3200,7 +3200,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			if (state == SCS_AB || state == SCS_BA) {
 			    state = (state == SCS_AB ? SCS_BA : SCS_AB);
 
-			    REMOVE_ELEM(list);
+			    ELEM_REMOVE(list);
 			    list = list->next;
 			    goto redo_point;
 			}
@@ -3227,7 +3227,7 @@ iseq_set_sequence_stackcaching(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    return COMPILE_NG;
 			}
 			/* remove useless pop */
-			REMOVE_ELEM(list);
+			ELEM_REMOVE(list);
 			list = list->next;
 			goto redo_point;
 		    }
@@ -3312,7 +3312,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
 	list = list->nd_next;
     }
     if (NIL_P(lit) && first_lit) {
-	REMOVE_ELEM(first_lit);
+	ELEM_REMOVE(first_lit);
 	--cnt;
     }
     *cntp = cnt;
@@ -3784,7 +3784,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const n
 	DECL_ANCHOR(anchor);
 	INIT_ANCHOR(anchor);
 	CHECK(COMPILE_POPPED(anchor, "nest masgn lhs", node));
-	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	ELEM_REMOVE(FIRST_ELEMENT(anchor));
 	ADD_SEQ(ret, anchor);
 	break;
       }
@@ -3792,7 +3792,7 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const n
 	DECL_ANCHOR(anchor);
 	INIT_ANCHOR(anchor);
 	CHECK(COMPILE_POPPED(anchor, "masgn lhs", node));
-	REMOVE_ELEM(FIRST_ELEMENT(anchor));
+	ELEM_REMOVE(FIRST_ELEMENT(anchor));
 	ADD_SEQ(ret, anchor);
       }
     }
@@ -4239,7 +4239,7 @@ compile_defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const 
 	lfinish[1] = 0;
 	defined_expr(iseq, ret, node->nd_head, lfinish, needstr);
 	if (lfinish[1]) {
-	    INSERT_ELEM_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
+	    ELEM_INSERT_NEXT(last, &new_insn_body(iseq, line, BIN(putnil), 0)->link);
 	    ADD_INSN(ret, line, swap);
 	    ADD_INSN(ret, line, pop);
 	    ADD_LABEL(ret, lfinish[1]);
@@ -4473,7 +4473,7 @@ compile_named_capture_assign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
 	last = last->next; /* putobject :var */
 	cap = new_insn_send(iseq, line, idAREF, INT2FIX(1),
 			    NULL, INT2FIX(0), NULL);
-	INSERT_ELEM_PREV(last->next, (LINK_ELEMENT *)cap);
+	ELEM_INSERT_PREV(last->next, (LINK_ELEMENT *)cap);
 #if !defined(NAMED_CAPTURE_SINGLE_OPT) || NAMED_CAPTURE_SINGLE_OPT-0
 	if (!vars->nd_next && vars == node) {
 	    /* only one name */
