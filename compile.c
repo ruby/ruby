@@ -2614,6 +2614,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (IS_INSN_ID(iobj, tostring)) {
 	LINK_ELEMENT *next = iobj->link.next;
+	/*
+	 *  tostring
+	 *  concatstrings 1
+	 * =>
+	 *  tostring
+	 */
 	if (IS_INSN(next) && IS_INSN_ID(next, concatstrings) &&
 	    OPERAND_AT(next, 0) == INT2FIX(1)) {
 	    REMOVE_ELEM(next);
@@ -2622,6 +2628,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (IS_INSN_ID(iobj, putstring) ||
 	(IS_INSN_ID(iobj, putobject) && RB_TYPE_P(OPERAND_AT(iobj, 0), T_STRING))) {
+	/*
+	 *  putstring ""
+	 *  concatstrings N
+	 * =>
+	 *  concatstrings N-1
+	 */
 	if (IS_NEXT_INSN_ID(&iobj->link, concatstrings) &&
 	    RSTRING_LEN(OPERAND_AT(iobj, 0)) == 0) {
 	    INSN *next = (INSN *)iobj->link.next;
@@ -2633,6 +2645,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (IS_INSN_ID(iobj, concatstrings)) {
+	/*
+	 *  concatstrings N
+	 *  concatstrings M
+	 * =>
+	 *  concatstrings N+M-1
+	 */
 	LINK_ELEMENT *next = iobj->link.next, *freeze = 0;
 	INSN *jump = 0;
 	if (IS_INSN(next) && IS_INSN_ID(next, freezestring))
