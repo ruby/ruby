@@ -517,6 +517,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
 
     assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
+    assert_equal("", eval('"\u{}"'))
+    assert_equal("", eval('"\u{ }"'))
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
@@ -554,6 +556,10 @@ class TestParse < Test::Unit::TestCase
     end
     assert_nothing_raised(SyntaxError, bug) do
       assert_equal(sym, eval(':"foo\u{0}bar"'))
+    end
+    assert_nothing_raised(SyntaxError) do
+      assert_equal(:foobar, eval(':"foo\u{}bar"'))
+      assert_equal(:foobar, eval(':"foo\u{ }bar"'))
     end
   end
 
