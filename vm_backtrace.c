@@ -40,7 +40,14 @@ int
 rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 {
     if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->iseq) {
-	return calc_lineno(cfp->iseq, cfp->pc);
+	const rb_iseq_t *iseq = cfp->iseq;
+	int line = calc_lineno(iseq, cfp->pc);
+	if (line != 0) {
+	    return line;
+	}
+	else {
+	    return FIX2INT(rb_iseq_first_lineno(iseq));
+	}
     }
     else {
 	return 0;

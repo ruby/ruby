@@ -36,10 +36,10 @@
 
 typedef struct iseq_link_element {
     enum {
-	ISEQ_ELEMENT_NONE,
 	ISEQ_ELEMENT_LABEL,
 	ISEQ_ELEMENT_INSN,
-	ISEQ_ELEMENT_ADJUST
+	ISEQ_ELEMENT_ADJUST,
+	ISEQ_ELEMENT_TRACE
     } type;
     struct iseq_link_element *next;
     struct iseq_link_element *prev;
@@ -77,6 +77,7 @@ typedef struct iseq_insn_data {
     VALUE *operands;
     struct {
 	int line_no;
+	rb_event_flag_t events;
     } insn_info;
 } INSN;
 
@@ -85,6 +86,11 @@ typedef struct iseq_adjust_data {
     LABEL *label;
     int line_no;
 } ADJUST;
+
+typedef struct iseq_trace_data {
+    LINK_ELEMENT link;
+    rb_event_flag_t event;
+} TRACE;
 
 struct ensure_range {
     LABEL *begin;
@@ -242,6 +248,9 @@ struct iseq_compile_data_ensure_node_stack {
 #define ADD_SEND_R(seq, line, id, argc, block, flag, keywords) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
+#define ADD_TRACE(seq, event) \
+  ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
+
 #define ADD_TRACE_LINE_COVERAGE(seq, line) \
   do { \
       if (ISEQ_COVERAGE(iseq) && \
@@ -292,13 +301,6 @@ struct iseq_compile_data_ensure_node_stack {
 	  rb_ary_push(methods, INT2FIX(line)); \
 	  rb_ary_push(methods, INT2FIX(0)); \
 	  ADD_INSN2((seq), (line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx * 16 + COVERAGE_INDEX_METHODS)); \
-      } \
-  } while (0)
-
-#define ADD_TRACE(seq, line, event) \
-  do { \
-      if (ISEQ_COMPILE_DATA(iseq)->option->trace_instruction) { \
-	  ADD_INSN1((seq), (line), trace, INT2FIX(event)); \
       } \
   } while (0)
 
@@ -484,6 +486,8 @@ static int calc_sp_depth(int depth, INSN *iobj);
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
+static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event);
+
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
@@ -639,11 +643,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		start->rescued = LABEL_RESCUE_BEG;
 		end->rescued = LABEL_RESCUE_END;
 
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_B_CALL);
+		ADD_TRACE(ret, RUBY_EVENT_B_CALL);
+		ADD_INSN (ret, FIX2INT(iseq->body->location.first_lineno), nop);
 		ADD_LABEL(ret, start);
 		CHECK(COMPILE(ret, "block body", node->nd_body));
 		ADD_LABEL(ret, end);
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_B_RETURN);
+		ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
 
 		/* wide range catch handler must put at last */
 		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
@@ -652,17 +657,17 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	    }
 	  case ISEQ_TYPE_CLASS:
 	    {
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_CLASS);
+		ADD_TRACE(ret, RUBY_EVENT_CLASS);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_END);
+		ADD_TRACE(ret, RUBY_EVENT_END);
 		break;
 	    }
 	  case ISEQ_TYPE_METHOD:
 	    {
-		ADD_TRACE(ret, FIX2INT(iseq->body->location.first_lineno), RUBY_EVENT_CALL);
+		ADD_TRACE(ret, RUBY_EVENT_CALL);
 		ADD_TRACE_METHOD_COVERAGE(ret, FIX2INT(iseq->body->location.first_lineno), rb_intern_str(iseq->body->location.label));
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
-		ADD_TRACE(ret, nd_line(node), RUBY_EVENT_RETURN);
+		ADD_TRACE(ret, RUBY_EVENT_RETURN);
 		break;
 	    }
 	  default: {
@@ -897,6 +902,12 @@ compile_data_alloc_adjust(rb_iseq_t *iseq)
     return (ADJUST *)compile_data_alloc(iseq, sizeof(ADJUST));
 }
 
+static TRACE *
+compile_data_alloc_trace(rb_iseq_t *iseq)
+{
+    return (TRACE *)compile_data_alloc(iseq, sizeof(TRACE));
+}
+
 /*
  * elem1, elemX => elem1, elem2, elemX
  */
@@ -951,7 +962,7 @@ REMOVE_ELEM(LINK_ELEMENT *elem)
 }
 
 static LINK_ELEMENT *
-FIRST_ELEMENT(LINK_ANCHOR *const anchor)
+FIRST_ELEMENT(const LINK_ANCHOR *const anchor)
 {
     return anchor->anchor.next;
 }
@@ -975,26 +986,42 @@ POP_ELEMENT(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #define POP_ELEMENT(anchor) POP_ELEMENT(iseq, (anchor))
 #endif
 
-static int
-LIST_SIZE_ZERO(LINK_ANCHOR *const anchor)
+static LINK_ELEMENT *
+ELEM_FIRST_INSN(LINK_ELEMENT *elem)
 {
-    if (anchor->anchor.next == 0) {
-	return 1;
+    while (elem) {
+	switch (elem->type) {
+	  case ISEQ_ELEMENT_INSN:
+	  case ISEQ_ELEMENT_ADJUST:
+	    return elem;
+	  default:
+	    elem = elem->next;
+	}
+    }
+    return NULL;
+}
+
+static int
+LIST_INSN_SIZE_ONE(const LINK_ANCHOR *const anchor)
+{
+    LINK_ELEMENT *first_insn = ELEM_FIRST_INSN(FIRST_ELEMENT(anchor));
+    if (first_insn != NULL &&
+	ELEM_FIRST_INSN(first_insn->next) == NULL) {
+	return TRUE;
     }
     else {
-	return 0;
+	return FALSE;
     }
 }
 
 static int
-LIST_SIZE_ONE(const LINK_ANCHOR *const anchor)
+LIST_INSN_SIZE_ZERO(const LINK_ANCHOR *const anchor)
 {
-    if (anchor->anchor.next != NULL &&
-	anchor->anchor.next->next == NULL) {
-	return 1;
+    if (ELEM_FIRST_INSN(FIRST_ELEMENT(anchor)) == NULL) {
+	return TRUE;
     }
     else {
-	return 0;
+	return FALSE;
     }
 }
 
@@ -1073,6 +1100,18 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #define debug_list(anc) ((void)0)
 #endif
 
+static TRACE *
+new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event)
+{
+    TRACE *trace = compile_data_alloc_trace(iseq);
+
+    trace->link.type = ISEQ_ELEMENT_TRACE;
+    trace->link.next = NULL;
+    trace->event = event;
+
+    return trace;
+}
+
 static LABEL *
 new_label_body(rb_iseq_t *iseq, long line)
 {
@@ -1108,12 +1147,14 @@ new_insn_core(rb_iseq_t *iseq, int line_no,
 	      int insn_id, int argc, VALUE *argv)
 {
     INSN *iobj = compile_data_alloc_insn(iseq);
+
     /* printf("insn_id: %d, line: %d\n", insn_id, line_no); */
 
     iobj->link.type = ISEQ_ELEMENT_INSN;
     iobj->link.next = 0;
     iobj->insn_id = insn_id;
     iobj->insn_info.line_no = line_no;
+    iobj->insn_info.events = 0;
     iobj->operands = argv;
     iobj->operand_size = argc;
     iobj->sc_state = 0;
@@ -1764,7 +1805,7 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		}
 		break;
 	    }
-	  case ISEQ_ELEMENT_NONE:
+	  case ISEQ_ELEMENT_TRACE:
 	    {
 		/* ignore */
 		break;
@@ -1798,11 +1839,12 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int
 {
     if (list->type == ISEQ_ELEMENT_INSN) {
 	INSN *iobj = (INSN *)list;
-	if (iobj->insn_info.line_no != 0 &&
-	    (insns_info_index == 0 ||
-	     insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no)) {
+	if (insns_info_index == 0 ||
+	    insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
+	    insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
 	    insns_info[insns_info_index].position   = code_index;
 	    insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
+	    insns_info[insns_info_index].events     = iobj->insn_info.events;
 	    return TRUE;
 	}
 	else {
@@ -1815,6 +1857,7 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int
 	    insns_info[insns_info_index-1].line_no != adjust->line_no) {
 	    insns_info[insns_info_index].position   = code_index;
 	    insns_info[insns_info_index].line_no    = adjust->line_no;
+	    insns_info[insns_info_index].events     = 0;
 	    return TRUE;
 	}
 	else {
@@ -1835,6 +1878,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     struct iseq_insn_info_entry *insns_info;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
+    rb_event_flag_t events = 0;
 
     int insn_num, code_index, insns_info_index, sp = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
@@ -1853,6 +1897,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = calc_sp_depth(sp, iobj);
 		code_index += insn_data_length(iobj);
 		insn_num++;
+		iobj->insn_info.events |= events;
+		events = 0;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -1862,9 +1908,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = lobj->sp;
 		break;
 	    }
-	  case ISEQ_ELEMENT_NONE:
+	  case ISEQ_ELEMENT_TRACE:
 	    {
-		/* ignore */
+		TRACE *trace = (TRACE *)list;
+		events |= trace->event;
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
@@ -2177,13 +2224,30 @@ get_destination_insn(INSN *iobj)
 {
     LABEL *lobj = (LABEL *)OPERAND_AT(iobj, 0);
     LINK_ELEMENT *list;
+    rb_event_flag_t events = 0;
 
     list = lobj->link.next;
     while (list) {
-	if (IS_INSN(list) || IS_ADJUST(list)) {
+	switch (list->type) {
+	  case ISEQ_ELEMENT_INSN:
+	  case ISEQ_ELEMENT_ADJUST:
+	    goto found;
+	  case ISEQ_ELEMENT_LABEL:
+	    /* ignore */
+	    break;
+	  case ISEQ_ELEMENT_TRACE:
+	    {
+		TRACE *trace = (TRACE *)list;
+		events |= trace->event;
+	    }
 	    break;
 	}
 	list = list->next;
+    }
+  found:
+    if (list && IS_INSN(list)) {
+	INSN *iobj = (INSN *)list;
+	iobj->insn_info.events |= events;
     }
     return list;
 }
@@ -2369,6 +2433,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    unref_destination(iobj, 0);
 	    iobj->insn_id = BIN(leave);
 	    iobj->operand_size = 0;
+	    iobj->insn_info = diobj->insn_info;
 	    goto again;
 	}
 	else if ((piobj = (INSN *)get_prev_insn(iobj)) != 0 &&
@@ -2710,7 +2775,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		}
 		switch (INSN_OF(next)) {
 		  case BIN(nop):
-		  /*case BIN(trace):*/
 		    next = next->next;
 		    break;
 		  case BIN(jump):
@@ -2777,16 +2841,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		REMOVE_ELEM(set1);
 		REMOVE_ELEM(niobj);
 	    }
-	}
-    }
-
-    #define IS_TRACE_LINE(insn) \
-	(IS_INSN_ID(insn, trace) && \
-	 OPERAND_AT(insn, 0) == INT2FIX(RUBY_EVENT_LINE))
-    if (IS_TRACE_LINE(iobj) && iobj->link.prev && IS_INSN(iobj->link.prev)) {
-	INSN *piobj = (INSN *)iobj->link.prev;
-	if (IS_TRACE_LINE(piobj)) {
-	    REMOVE_ELEM(iobj->link.prev);
 	}
     }
 
@@ -4360,12 +4414,12 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	}
     }
 
-    if (!LIST_SIZE_ZERO(args_splat)) {
+    if (!LIST_INSN_SIZE_ZERO(args_splat)) {
 	ADD_SEQ(args, args_splat);
     }
 
     if (*flag & VM_CALL_ARGS_BLOCKARG) {
-	if (LIST_SIZE_ONE(arg_block)) {
+	if (LIST_INSN_SIZE_ONE(arg_block)) {
 	    LINK_ELEMENT *elem = FIRST_ELEMENT(arg_block);
 	    if (elem->type == ISEQ_ELEMENT_INSN) {
 		INSN *iobj = (INSN *)elem;
@@ -5208,7 +5262,7 @@ compile_ensure(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     ADD_LABEL(ret, lstart);
     CHECK(COMPILE_(ret, "ensure head", node->nd_head, (popped | last_leave)));
     ADD_LABEL(ret, lend);
-    if (ensr->anchor.next == NULL) {
+    if (LIST_INSN_SIZE_ZERO(ensr)) {
 	ADD_INSN(ret, line, nop);
     }
     else {
@@ -5272,7 +5326,7 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 
 	if (type == ISEQ_TYPE_METHOD) {
 	    add_ensure_iseq(ret, iseq, 1);
-	    ADD_TRACE(ret, line, RUBY_EVENT_RETURN);
+	    ADD_TRACE(ret, RUBY_EVENT_RETURN);
 	    ADD_INSN(ret, line, leave);
 	    ADD_ADJUST_RESTORE(ret, splabel);
 
@@ -5314,7 +5368,6 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
 static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
-    LINK_ELEMENT *saved_last_element = 0;
     const int line = (int)nd_line(node);
     const enum node_type type = nd_type(node);
 
@@ -5325,8 +5378,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (node->flags & NODE_FL_NEWLINE) {
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
 	    ADD_TRACE_LINE_COVERAGE(ret, line);
-	    ADD_TRACE(ret, line, RUBY_EVENT_LINE);
-	    saved_last_element = ret->last;
+	    ADD_TRACE(ret, RUBY_EVENT_LINE);
 	}
     }
 
@@ -6653,7 +6705,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    INIT_ANCHOR(pref);
 	    INIT_ANCHOR(body);
 	    CHECK(compile_const_prefix(iseq, node, pref, body));
-	    if (LIST_SIZE_ZERO(pref)) {
+	    if (LIST_INSN_SIZE_ZERO(pref)) {
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
 		    ADD_INSN2(ret, line, getinlinecache, lend, INT2FIX(ic_index));
 		}
@@ -6976,20 +7028,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	return COMPILE_NG;
     }
 
-    /* check & remove redundant trace(line) */
-    if (saved_last_element &&
-	ret->last == saved_last_element &&
-	((INSN *)saved_last_element)->insn_id == BIN(trace)) {
-	POP_ELEMENT(ret);
-	/* remove trace(coverage) */
-	if (IS_INSN_ID(ret->last, trace2) &&
-	    (FIX2LONG(OPERAND_AT(ret->last, 0)) & RUBY_EVENT_COVERAGE) &&
-	    (FIX2LONG(OPERAND_AT(ret->last, 1)) == COVERAGE_INDEX_LINES)) {
-	    POP_ELEMENT(ret);
-	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
-	}
-    }
-
     debug_node_end();
     return COMPILE_OK;
 }
@@ -7154,9 +7192,10 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
 		printf(LABEL_FORMAT"%s\n", lobj->label_no, dest == lobj ? " <---" : "");
 		break;
 	    }
-	  case ISEQ_ELEMENT_NONE:
+	  case ISEQ_ELEMENT_TRACE:
 	    {
-		printf("[none]\n");
+		TRACE *trace = (TRACE *)link;
+		printf("trace: %0x\n", trace->event);
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:
@@ -7355,6 +7394,21 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     return (VALUE)new_callinfo(iseq, mid, orig_argc, flag, kw_arg, (flag & VM_CALL_ARGS_SIMPLE) == 0);
 }
 
+static rb_event_flag_t
+event_name_to_flag(VALUE sym)
+{
+#define CHECK_EVENT(ev) if (sym == ID2SYM(rb_intern(#ev))) return ev;
+		CHECK_EVENT(RUBY_EVENT_LINE);
+		CHECK_EVENT(RUBY_EVENT_CLASS);
+		CHECK_EVENT(RUBY_EVENT_END);
+		CHECK_EVENT(RUBY_EVENT_CALL);
+		CHECK_EVENT(RUBY_EVENT_RETURN);
+		CHECK_EVENT(RUBY_EVENT_B_CALL);
+		CHECK_EVENT(RUBY_EVENT_B_RETURN);
+#undef CHECK_EVENT
+    return RUBY_EVENT_NONE;
+}
+
 static int
 iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			 VALUE body, VALUE labels_wrapper)
@@ -7380,8 +7434,14 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 	VALUE obj = ptr[i];
 
 	if (SYMBOL_P(obj)) {
-	    LABEL *label = register_label(iseq, labels_table, obj);
-	    ADD_LABEL(anchor, label);
+	    rb_event_flag_t event;
+	    if ((event = event_name_to_flag(obj)) != RUBY_EVENT_NONE) {
+		ADD_TRACE(anchor, event);
+	    }
+	    else {
+		LABEL *label = register_label(iseq, labels_table, obj);
+		ADD_LABEL(anchor, label);
+	    }
 	}
 	else if (FIXNUM_P(obj)) {
 	    line_no = NUM2INT(obj);

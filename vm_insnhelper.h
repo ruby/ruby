@@ -86,7 +86,7 @@ enum vm_regan_acttype {
 #define GET_CURRENT_INSN() (*GET_PC())
 #define GET_OPERAND(n)     (GET_PC()[(n)])
 #define ADD_PC(n)          (SET_PC(VM_REG_PC + (n)))
-#define JUMP(dst)          (VM_REG_PC += (dst))
+#define JUMP(dst)          (SET_PC(VM_REG_PC + (dst)))
 
 /* frame pointer, environment pointer */
 #define GET_CFP()  (COLLECT_USAGE_REGISTER_HELPER(CFP, GET, VM_REG_CFP))
