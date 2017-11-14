@@ -8842,8 +8842,10 @@ rb_str_crypt(VALUE str, VALUE salt)
 #ifdef HAVE_CRYPT_R
     VALUE databuf;
     struct crypt_data *data;
+#   define CRYPT_END() ALLOCV_END(databuf)
 #else
     extern char *crypt(const char *, const char *);
+#   define CRYPT_END() (void)0
 #endif
     VALUE result;
     const char *s, *saltp;
@@ -8881,17 +8883,12 @@ rb_str_crypt(VALUE str, VALUE salt)
     res = crypt(s, saltp);
 #endif
     if (!res) {
-#ifdef HAVE_CRYPT_R
 	int err = errno;
-	ALLOCV_END(databuf);
-	errno = err;
-#endif
-	rb_sys_fail("crypt");
+	CRYPT_END();
+	rb_syserr_fail(err, "crypt");
     }
     result = rb_str_new_cstr(res);
-#ifdef HAVE_CRYPT_R
-    ALLOCV_END(databuf);
-#endif
+    CRYPT_END();
     FL_SET_RAW(result, OBJ_TAINTED_RAW(str) | OBJ_TAINTED_RAW(salt));
     return result;
 }
