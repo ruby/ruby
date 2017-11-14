@@ -12,8 +12,10 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
-#define ISEQ_MAJOR_VERSION 2
-#define ISEQ_MINOR_VERSION 3
+#include "ruby/version.h"
+
+#define ISEQ_MAJOR_VERSION RUBY_API_VERSION_MAJOR
+#define ISEQ_MINOR_VERSION RUBY_API_VERSION_MINOR
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
