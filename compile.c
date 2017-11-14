@@ -364,6 +364,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 #define IS_INSN(link) ((link)->type == ISEQ_ELEMENT_INSN)
 #define IS_LABEL(link) ((link)->type == ISEQ_ELEMENT_LABEL)
 #define IS_ADJUST(link) ((link)->type == ISEQ_ELEMENT_ADJUST)
+#define IS_TRACE(link) ((link)->type == ISEQ_ELEMENT_TRACE)
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 #define IS_NEXT_INSN_ID(link, insn) \
     ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
@@ -2319,6 +2320,9 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 		i = i->prev;
 		break;
 	    }
+	}
+	else if (IS_TRACE(i)) {
+	    /* do nothing */
 	}
 	else return 0;
 	i = i->next;
