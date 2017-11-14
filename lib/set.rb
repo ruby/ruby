@@ -454,6 +454,7 @@ class Set
     each { |o| n.add(o) unless n.delete?(o) }
     n
   end
+  alias xor ^  ##
 
   # Returns true if two sets are equal.  The equality of each couple
   # of elements is defined according to Object#eql?.

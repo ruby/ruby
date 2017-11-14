@@ -208,6 +208,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Add Set#to_s as alias to #inspect [Feature #13676]
   * Add Set#=== as alias to #include? [Feature #13801]
   * Add Set#reset [Feature #6589]
+  * Add Set#xor as alias to #^ [Feature #14105]
 
 * StringIO
   * StringIO#write accepts multiple arguments
