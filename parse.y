@@ -5999,7 +5999,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 	int c, last = nextc();
 	if (lex_p >= lex_pend) goto unterminated;
 	while (ISSPACE(c = *lex_p) && ++lex_p < lex_pend);
-	do {
+	while (c != close_brace) {
 	    if (regexp_literal) tokadd(last);
 	    if (!parser_tokadd_codepoint(parser, encp, regexp_literal, TRUE)) {
 		break;
@@ -6008,7 +6008,7 @@ parser_tokadd_utf8(struct parser_params *parser, rb_encoding **encp,
 		if (++lex_p >= lex_pend) goto unterminated;
 		last = c;
 	    }
-	} while (c != close_brace);
+	}
 
 	if (c != close_brace) {
 	  unterminated:
