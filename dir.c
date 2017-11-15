@@ -743,7 +743,6 @@ to_be_skipped(const struct dirent *dp)
     return FALSE;
 }
 
-#ifndef _WIN32
 static void *
 nogvl_readdir(void *ptr)
 {
@@ -755,11 +754,11 @@ nogvl_readdir(void *ptr)
 static struct dirent *
 readdir_without_gvl(struct dir_data *dirp)
 {
-    return rb_thread_call_without_gvl(nogvl_readdir, dirp, RUBY_UBF_IO, 0);
+    if (rb_cThread) /* VM is running */
+	return rb_thread_call_without_gvl(nogvl_readdir, dirp, RUBY_UBF_IO, 0);
+    else
+	return READDIR(dirp->dir, dirp->enc);
 }
-#else
-#define readdir_without_gvl(dirp) READDIR((dirp)->dir, (dirp)->enc)
-#endif
 
 /*
  *  call-seq:
