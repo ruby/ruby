@@ -845,9 +845,6 @@ typedef struct rb_thread_struct {
     /* statistics data for profiler */
     VALUE stat_insn_usage;
 
-    /* tracer */
-    rb_hook_list_t event_hooks;
-
     /* fiber */
     rb_fiber_t *root_fiber;
     rb_jmpbuf_t root_jmpbuf;
@@ -1723,9 +1720,9 @@ static inline void
 rb_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag,
 			VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
 {
-    const rb_thread_t *th = rb_ec_thread_ptr(ec);
+    const rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-    if ((th->event_hooks.events | th->vm->event_hooks.events) & flag) {
+    if (vm->event_hooks.events & flag) {
 	struct rb_trace_arg_struct trace_arg;
 	trace_arg.event = flag;
 	trace_arg.ec = ec;
