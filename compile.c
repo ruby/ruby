@@ -1939,6 +1939,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
     iseq->body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * iseq->body->ci_size +
 								 sizeof(struct rb_call_info_with_kwarg) * iseq->body->ci_kw_size);
+    MEMZERO(iseq->body->ci_entries + iseq->body->ci_size, struct rb_call_info_with_kwarg,  iseq->body->ci_kw_size); /* need to clear ci_kw entries */
     iseq->body->cc_entries = ZALLOC_N(struct rb_call_cache, iseq->body->ci_size + iseq->body->ci_kw_size);
 
     ISEQ_COMPILE_DATA(iseq)->ci_index = ISEQ_COMPILE_DATA(iseq)->ci_kw_index = 0;

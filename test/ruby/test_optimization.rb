@@ -647,4 +647,19 @@ class TestRubyOptimization < Test::Unit::TestCase
       eval "def foo; 1.times{|(a), &b| nil && a}; end"
     END
   end
+
+  def test_clear_unreachable_keyword_args
+    assert_separately [], <<-END
+      script =  <<-EOS
+        if true
+        else
+          foo(k1:1)
+        end
+      EOS
+      GC.stress = true
+      30.times{
+        RubyVM::InstructionSequence.compile(script)
+      }
+    END
+  end
 end
