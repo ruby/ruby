@@ -743,23 +743,6 @@ to_be_skipped(const struct dirent *dp)
     return FALSE;
 }
 
-static void *
-nogvl_readdir(void *ptr)
-{
-    struct dir_data *dirp = ptr;
-
-    return READDIR(dirp->dir, dirp->enc);
-}
-
-static struct dirent *
-readdir_without_gvl(struct dir_data *dirp)
-{
-    if (rb_cThread) /* VM is running */
-	return rb_thread_call_without_gvl(nogvl_readdir, dirp, RUBY_UBF_IO, 0);
-    else
-	return READDIR(dirp->dir, dirp->enc);
-}
-
 /*
  *  call-seq:
  *     dir.read -> string or nil
@@ -780,7 +763,7 @@ dir_read(VALUE dir)
 
     GetDIR(dir, dirp);
     errno = 0;
-    if ((dp = readdir_without_gvl(dirp))) {
+    if ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	return rb_external_str_new_with_enc(dp->d_name, NAMLEN(dp), dirp->enc);
     }
     else {
@@ -835,7 +818,7 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE), VALUE arg, int children_o
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp->dir, RSTRING_PTR(dirp->path)));
-    while ((dp = readdir_without_gvl(dirp)) != NULL) {
+    while ((dp = READDIR(dirp->dir, dirp->enc)) != NULL) {
 	const char *name = dp->d_name;
 	size_t namlen = NAMLEN(dp);
 	VALUE path;
@@ -2023,27 +2006,25 @@ glob_helper(
     if (pathtype == path_noent) return 0;
 
     if (magical || recursive) {
-	struct dir_data dd;
 	struct dirent *dp;
+	DIR *dirp;
 # if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 	char *plainname = 0;
 # endif
 	IF_NORMALIZE_UTF8PATH(int norm_p);
-
-	dd.enc = enc;
 # if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;
-	    dd.dir = do_opendir(fd, plainname, flags, enc, funcs->error, arg, &status);
+	    dirp = do_opendir(fd, plainname, flags, enc, funcs->error, arg, &status);
 	    GLOB_FREE(plainname);
 	}
 	else
 # else
 	    ;
 # endif
-	dd.dir = do_opendir(fd, *base ? base : ".", flags, enc, funcs->error, arg, &status);
-	if (dd.dir == NULL) {
+	dirp = do_opendir(fd, *base ? base : ".", flags, enc, funcs->error, arg, &status);
+	if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
 	    if ((magical < 2) && !recursive && (errno == EACCES)) {
 		/* no read permission, fallback */
@@ -2052,19 +2033,19 @@ glob_helper(
 # endif
 	    return status;
 	}
-	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dd.dir, *base ? base : "."));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *base ? base : "."));
 
 # if NORMALIZE_UTF8PATH
 	if (!(norm_p || magical || recursive)) {
-	    closedir(dd.dir);
+	    closedir(dirp);
 	    goto literally;
 	}
 # endif
 # ifdef HAVE_GETATTRLIST
-	if (is_case_sensitive(dd.dir, path) == 0)
+	if (is_case_sensitive(dirp, path) == 0)
 	    flags |= FNM_CASEFOLD;
 # endif
-	while ((dp = readdir_without_gvl(&dd)) != NULL) {
+	while ((dp = READDIR(dirp, enc)) != NULL) {
 	    char *buf;
 	    rb_pathtype_t new_pathtype = path_unknown;
 	    const char *name;
@@ -2159,7 +2140,7 @@ glob_helper(
 	    if (status) break;
 	}
 
-	closedir(dd.dir);
+	closedir(dirp);
     }
     else if (plain) {
 	struct glob_pattern **copy_beg, **copy_end, **cur2;
