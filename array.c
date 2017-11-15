@@ -4163,7 +4163,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
 
-    if (RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
 	for (i=0; i<RARRAY_LEN(ary1); i++) {
 	    VALUE elt = rb_ary_elt(ary1, i);
 	    if (rb_ary_includes_by_eql(ary2, elt)) continue;
