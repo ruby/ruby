@@ -1309,8 +1309,8 @@ call_without_gvl(void *(*func)(void *), void *data1,
 		 rb_unblock_function_t *ubf, void *data2, int fail_if_interrupted)
 {
     void *val = 0;
-
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     int saved_errno = 0;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
@@ -1324,7 +1324,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
     }, ubf, data2, fail_if_interrupted);
 
     if (!fail_if_interrupted) {
-	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+	RUBY_VM_CHECK_INTS_BLOCKING(ec);
     }
 
     errno = saved_errno;
