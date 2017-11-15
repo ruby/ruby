@@ -743,6 +743,7 @@ to_be_skipped(const struct dirent *dp)
     return FALSE;
 }
 
+#ifndef _WIN32
 static void *
 nogvl_readdir(void *ptr)
 {
@@ -756,6 +757,9 @@ readdir_without_gvl(struct dir_data *dirp)
 {
     return rb_thread_call_without_gvl(nogvl_readdir, dirp, RUBY_UBF_IO, 0);
 }
+#else
+#define readdir_without_gvl(dirp) READDIR((dirp)->dir, (dirp)->enc)
+#endif
 
 /*
  *  call-seq:
