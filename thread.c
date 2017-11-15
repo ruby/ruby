@@ -600,6 +600,8 @@ thread_do_start(rb_thread_t *th, VALUE args)
     }
 }
 
+void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
+
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
@@ -672,6 +674,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    rb_threadptr_raise(main_th, 1, &errinfo);
 	}
 	EC_POP_TAG();
+
+	rb_ec_clear_current_thread_trace_func(th->ec);
 
 	/* locking_mutex must be Qfalse */
 	if (th->locking_mutex != Qfalse) {

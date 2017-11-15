@@ -2410,7 +2410,6 @@ rb_thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->last_status);
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
     RUBY_MARK_UNLESS_NULL(th->name);
-    rb_vm_trace_mark_event_hooks(&th->event_hooks);
 
     RUBY_MARK_LEAVE("thread");
 }
