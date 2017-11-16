@@ -196,6 +196,7 @@ struct parser_params {
 	rb_strterm_t *strterm;
 	VALUE (*gets)(struct parser_params*,VALUE);
 	VALUE input;
+	VALUE prevline;
 	VALUE lastline;
 	VALUE nextline;
 	const char *pbeg;
@@ -305,6 +306,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define toksiz			(parser->toksiz)
 #define tokline 		(parser->tokline)
 #define lex_input		(parser->lex.input)
+#define lex_prevline		(parser->lex.prevline)
 #define lex_lastline		(parser->lex.lastline)
 #define lex_nextline		(parser->lex.nextline)
 #define lex_pbeg		(parser->lex.pbeg)
@@ -5558,7 +5560,7 @@ yycompile0(VALUE arg)
 
     lex_strterm = 0;
     lex_p = lex_pbeg = lex_pend = 0;
-    lex_lastline = lex_nextline = 0;
+    lex_prevline = lex_lastline = lex_nextline = 0;
     if (parser->error_p) {
 	VALUE mesg = parser->error_buffer;
 	if (!mesg) {
@@ -5830,6 +5832,7 @@ parser_nextline(struct parser_params *parser)
     lex_pbeg = lex_p = RSTRING_PTR(v);
     lex_pend = lex_p + RSTRING_LEN(v);
     token_flush(parser);
+    lex_prevline = lex_lastline;
     lex_lastline = v;
     return 0;
 }
@@ -5854,7 +5857,7 @@ parser_nextc(struct parser_params *parser)
 {
     int c;
 
-    if (UNLIKELY(lex_p == lex_pend)) {
+    if (UNLIKELY((lex_p == lex_pend) || parser->eofp || lex_nextline)) {
 	if (parser_nextline(parser)) return -1;
     }
     c = (unsigned char)*lex_p++;
@@ -8300,8 +8303,14 @@ parser_yylex(struct parser_params *parser)
 		--ruby_sourceline;
 		lex_nextline = lex_lastline;
 	      case -1:		/* EOF no decrement*/
+#ifndef RIPPER
+		if (lex_prevline && !parser->eofp) lex_lastline = lex_prevline;
+		lex_pbeg = RSTRING_PTR(lex_lastline);
+		lex_pend = lex_p = lex_pbeg + RSTRING_LEN(lex_lastline);
+		pushback(1); /* always pushback */
+		parser->tokp = lex_p;
+#else
 		lex_goto_eol(parser);
-#ifdef RIPPER
 		if (c != -1) {
 		    parser->tokp = lex_p;
 		}
@@ -11447,6 +11456,7 @@ parser_mark(void *ptr)
     struct parser_params *parser = (struct parser_params*)ptr;
 
     rb_gc_mark(lex_input);
+    rb_gc_mark(lex_prevline);
     rb_gc_mark(lex_lastline);
     rb_gc_mark(lex_nextline);
     rb_gc_mark(ruby_sourcefile_string);
