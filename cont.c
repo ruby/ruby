@@ -709,8 +709,10 @@ cont_restore_thread(rb_context_t *cont)
 	if (sec->trace_arg == NULL && th->ec->trace_arg != NULL) {
 	    GET_VM()->trace_running--;
 	}
-	else if (sec->trace_arg == NULL && th->ec->trace_arg != NULL) {
-	    GET_VM()->trace_running++;
+	else { /* sec->trace_arg == NULL */
+	    if (th->ec->trace_arg != NULL) {
+		GET_VM()->trace_running++;
+	    }
 	}
 	th->ec->trace_arg = sec->trace_arg;
 
