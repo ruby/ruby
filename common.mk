@@ -1134,7 +1134,7 @@ update-gems: PHONY
 	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
 	    -e 'gem = "#{gem}-#{ver}.gem"' \
 	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
-	    -e 'old.delete("gems/#{gem}") and' \
+	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
 	    -e 'File.unlink(*old) and' \
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
