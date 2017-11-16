@@ -436,8 +436,8 @@ rb_threadptr_interrupt(rb_thread_t *th)
     rb_threadptr_interrupt_common(th, 0);
 }
 
-void
-rb_threadptr_trap_interrupt(rb_thread_t *th)
+static void
+threadptr_trap_interrupt(rb_thread_t *th)
 {
     rb_threadptr_interrupt_common(th, 1);
 }
@@ -1715,7 +1715,7 @@ rb_threadptr_pending_interrupt_deque(rb_thread_t *th, enum handle_interrupt_timi
 }
 
 int
-rb_threadptr_pending_interrupt_active_p(rb_thread_t *th)
+threadptr_pending_interrupt_active_p(rb_thread_t *th)
 {
     /*
      * For optimization, we don't check async errinfo queue
@@ -2063,7 +2063,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	}
 
 	/* exception from another thread */
-	if (pending_interrupt && rb_threadptr_pending_interrupt_active_p(th)) {
+	if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
 	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
 	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
 
@@ -4028,7 +4028,7 @@ rb_threadptr_check_signal(rb_thread_t *mth)
     /* mth must be main_thread */
     if (rb_signal_buff_size() > 0) {
 	/* wakeup main thread */
-	rb_threadptr_trap_interrupt(mth);
+	threadptr_trap_interrupt(mth);
     }
 }
 
