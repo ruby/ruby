@@ -1301,7 +1301,7 @@ const char *
 rb_source_loc(int *pline)
 {
     VALUE path = rb_source_location(pline);
-    if (!NIL_P(path)) return NULL;
+    if (NIL_P(path)) return NULL;
     return RSTRING_PTR(path);
 }
 
