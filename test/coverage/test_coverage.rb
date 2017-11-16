@@ -197,13 +197,13 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
-        [:if    ,  0,  2, 2] => {[:then,  1,  3,  4]=>2, [:else,  2,  5,  4]=>1},
-        [:unless,  3,  8, 2] => {[:else,  4, 11,  4]=>2, [:then,  5,  9,  4]=>1},
-        [:if    ,  6, 14, 2] => {[:then,  7, 15,  4]=>2, [:else,  8, 14,  2]=>1},
-        [:unless,  9, 18, 2] => {[:else, 10, 18,  2]=>2, [:then, 11, 19,  4]=>1},
-        [:if    , 12, 22, 2] => {[:then, 13, 22,  2]=>2, [:else, 14, 22,  2]=>1},
-        [:unless, 15, 23, 2] => {[:else, 16, 23,  2]=>2, [:then, 17, 23,  2]=>1},
-        [:if    , 18, 25, 2] => {[:then, 19, 25, 11]=>2, [:else, 20, 25, 15]=>1},
+        [:if    ,  0,  2, 2,  6,  5] => {[:then,  1,  3,  4,  3,  5]=>2, [:else,  2,  5,  4,  5,  5]=>1},
+        [:unless,  3,  8, 2, 12,  5] => {[:else,  4, 11,  4, 11,  5]=>2, [:then,  5,  9,  4,  9,  5]=>1},
+        [:if    ,  6, 14, 2, 16,  5] => {[:then,  7, 15,  4, 15,  5]=>2, [:else,  8, 14,  2, 16,  5]=>1},
+        [:unless,  9, 18, 2, 20,  5] => {[:else, 10, 18,  2, 20,  5]=>2, [:then, 11, 19,  4, 19,  5]=>1},
+        [:if    , 12, 22, 2, 22, 13] => {[:then, 13, 22,  2, 22,  3]=>2, [:else, 14, 22,  2, 22, 13]=>1},
+        [:unless, 15, 23, 2, 23, 17] => {[:else, 16, 23,  2, 23, 17]=>2, [:then, 17, 23,  2, 23,  3]=>1},
+        [:if    , 18, 25, 2, 25, 16] => {[:then, 19, 25, 11, 25, 12]=>2, [:else, 20, 25, 15, 25, 16]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -243,10 +243,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_while_statement
     result = {
       :branches => {
-        [:while, 0,  2, 0] => {[:body, 1,  3, 2]=> 3},
-        [:until, 2,  5, 0] => {[:body, 3,  6, 2]=>10},
-        [:while, 4, 10, 0] => {[:body, 5, 10, 0]=> 3},
-        [:until, 6, 11, 0] => {[:body, 7, 11, 0]=>10},
+        [:while, 0,  2, 0,  4,  3] => {[:body, 1,  3, 2,  3, 8]=> 3},
+        [:until, 2,  5, 0,  7,  3] => {[:body, 3,  6, 2,  6, 8]=>10},
+        [:while, 4, 10, 0, 10, 18] => {[:body, 5, 10, 0, 10, 6]=> 3},
+        [:until, 6, 11, 0, 11, 20] => {[:body, 7, 11, 0, 11, 6]=>10},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -267,10 +267,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_case_statement
     result = {
       :branches => {
-        [:case,  0,  2, 2] => {[:when,  1,  4, 4]=>2, [:when,  2,  6, 4]=>0, [:else,  3,  2, 2]=>1},
-        [:case,  4,  9, 2] => {[:when,  5, 11, 4]=>2, [:when,  6, 13, 4]=>0, [:else,  7,  9, 2]=>1},
-        [:case,  8, 16, 2] => {[:when,  9, 18, 4]=>2, [:when, 10, 20, 4]=>0, [:else, 11, 22, 4]=>1},
-        [:case, 12, 25, 2] => {[:when, 13, 27, 4]=>2, [:when, 14, 29, 4]=>0, [:else, 15, 31, 4]=>1},
+        [:case,  0,  2, 2,  7, 5] => {[:when,  1,  4, 4,  4, 5]=>2, [:when,  2,  6, 4,  6, 5]=>0, [:else,  3,  2, 2,  7,  5]=>1},
+        [:case,  4,  9, 2, 14, 5] => {[:when,  5, 11, 4, 11, 5]=>2, [:when,  6, 13, 4, 13, 5]=>0, [:else,  7,  9, 2, 14,  5]=>1},
+        [:case,  8, 16, 2, 23, 5] => {[:when,  9, 18, 4, 18, 5]=>2, [:when, 10, 20, 4, 20, 5]=>0, [:else, 11, 22, 4, 22, 10]=>1},
+        [:case, 12, 25, 2, 32, 5] => {[:when, 13, 27, 4, 27, 5]=>2, [:when, 14, 29, 4, 29, 5]=>0, [:else, 15, 31, 4, 31, 10]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -317,8 +317,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 3, 0] => {[:then, 1, 3, 0]=>1, [:else, 2, 3, 0]=>0},
-        [:"&.", 3, 4, 0] => {[:then, 4, 4, 0]=>0, [:else, 5, 4, 0]=>1},
+        [:"&.", 0, 3, 0, 3, 6] => {[:then, 1, 3, 0, 3, 6]=>1, [:else, 2, 3, 0, 3, 6]=>0},
+        [:"&.", 3, 4, 0, 4, 6] => {[:then, 4, 4, 0, 4, 6]=>0, [:else, 5, 4, 0, 4, 6]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
