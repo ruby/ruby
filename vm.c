@@ -804,8 +804,8 @@ rb_iseq_local_variables(const rb_iseq_t *iseq)
 
 /* Proc */
 
-VALUE
-rb_proc_create_from_captured(VALUE klass,
+static VALUE
+vm_proc_create_from_captured(VALUE klass,
 			     const struct rb_captured_block *captured,
 			     enum rb_block_type block_type,
 			     int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
@@ -878,7 +878,7 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
     VM_ASSERT(imemo_type_p(captured->code.val, imemo_iseq) ||
 	      imemo_type_p(captured->code.val, imemo_ifunc));
 
-    procval = rb_proc_create_from_captured(klass, captured,
+    procval = vm_proc_create_from_captured(klass, captured,
 					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc,
 					   (int8_t)ec->safe_level, FALSE, is_lambda);
     return procval;
