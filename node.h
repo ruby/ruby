@@ -299,8 +299,6 @@ typedef struct RNode {
 #define nd_body  u2.node
 #define nd_else  u3.node
 
-#define nd_orig  u3.value
-
 #define nd_resq  u2.node
 #define nd_ensr  u3.node
 
@@ -360,6 +358,12 @@ typedef struct RNode {
 #define nd_tval  u2.value
 
 #define nd_visi_  u2.argc
+
+#define nd_alias  u1.id
+#define nd_orig   u2.id
+#define nd_undef  u2.node
+
+#define nd_compile_option  u3.value
 
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
