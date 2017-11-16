@@ -6652,12 +6652,6 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int full_mark, int immediate_m
     }
 }
 
-int
-rb_garbage_collect(void)
-{
-    return garbage_collect(&rb_objspace, TRUE, TRUE, TRUE, GPR_FLAG_CAPI);
-}
-
 #undef Init_stack
 
 void
