@@ -1214,41 +1214,39 @@ vm_cfp_svar_set(const rb_execution_context_t *ec, rb_control_frame_t *cfp, VALUE
 }
 
 static VALUE
-vm_svar_get(VALUE key)
+vm_svar_get(const rb_execution_context_t *ec, VALUE key)
 {
-    const rb_execution_context_t *ec = GET_EC();
     return vm_cfp_svar_get(ec, ec->cfp, key);
 }
 
 static void
-vm_svar_set(VALUE key, VALUE val)
+vm_svar_set(const rb_execution_context_t *ec, VALUE key, VALUE val)
 {
-    const rb_execution_context_t *ec = GET_EC();
     vm_cfp_svar_set(ec, ec->cfp, key, val);
 }
 
 VALUE
 rb_backref_get(void)
 {
-    return vm_svar_get(VM_SVAR_BACKREF);
+    return vm_svar_get(GET_EC(), VM_SVAR_BACKREF);
 }
 
 void
 rb_backref_set(VALUE val)
 {
-    vm_svar_set(VM_SVAR_BACKREF, val);
+    vm_svar_set(GET_EC(), VM_SVAR_BACKREF, val);
 }
 
 VALUE
 rb_lastline_get(void)
 {
-    return vm_svar_get(VM_SVAR_LASTLINE);
+    return vm_svar_get(GET_EC(), VM_SVAR_LASTLINE);
 }
 
 void
 rb_lastline_set(VALUE val)
 {
-    vm_svar_set(VM_SVAR_LASTLINE, val);
+    vm_svar_set(GET_EC(), VM_SVAR_LASTLINE, val);
 }
 
 /* misc */
