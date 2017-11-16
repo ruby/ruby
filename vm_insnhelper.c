@@ -1464,7 +1464,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
 static VALUE vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
 
 static VALUE
-check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
+check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_check_match_type type)
 {
     switch (type) {
       case VM_CHECKMATCH_TYPE_WHEN:
@@ -1478,7 +1478,7 @@ check_match(VALUE pattern, VALUE target, enum vm_check_match_type type)
 	const rb_callable_method_entry_t *me =
 	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
 	if (me) {
-	    return vm_call0(GET_EC(), pattern, idEqq, 1, &target, me);
+	    return vm_call0(ec, pattern, idEqq, 1, &target, me);
 	}
 	else {
 	    /* fallback to funcall (e.g. method_missing) */
@@ -2979,7 +2979,7 @@ vm_splat_array(VALUE flag, VALUE ary)
 }
 
 static VALUE
-vm_check_match(VALUE target, VALUE pattern, rb_num_t flag)
+vm_check_match(rb_execution_context_t *ec, VALUE target, VALUE pattern, rb_num_t flag)
 {
     enum vm_check_match_type type = ((int)flag) & VM_CHECKMATCH_TYPE_MASK;
 
@@ -2989,7 +2989,7 @@ vm_check_match(VALUE target, VALUE pattern, rb_num_t flag)
 
 	for (i = 0; i < n; i++) {
 	    VALUE v = RARRAY_AREF(pattern, i);
-	    VALUE c = check_match(v, target, type);
+	    VALUE c = check_match(ec, v, target, type);
 
 	    if (RTEST(c)) {
 		return c;
@@ -2998,7 +2998,7 @@ vm_check_match(VALUE target, VALUE pattern, rb_num_t flag)
 	return Qfalse;
     }
     else {
-	return check_match(pattern, target, type);
+	return check_match(ec, pattern, target, type);
     }
 }
 
