@@ -1921,7 +1921,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    break;
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    body = rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc, TRUE);
+	    body = rb_vm_make_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	}
 #endif
     }

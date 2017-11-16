@@ -866,12 +866,6 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
 }
 
 VALUE
-rb_vm_make_proc(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass)
-{
-    return rb_vm_make_proc_lambda(ec, captured, klass, FALSE);
-}
-
-VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
