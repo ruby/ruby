@@ -32,7 +32,7 @@ error_pos_str(void)
     int sourceline;
     VALUE sourcefile = rb_source_location(&sourceline);
 
-    if (sourcefile) {
+    if (!NIL_P(sourcefile)) {
 	ID caller_name;
 	if (sourceline == 0) {
 	    return rb_sprintf("%"PRIsVALUE": ", sourcefile);
