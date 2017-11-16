@@ -701,6 +701,14 @@ raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VA
     }
 }
 
+static void
+vm_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv,
+			VALUE obj, int call_status)
+{
+    vm_passed_block_handler_set(ec, VM_BLOCK_HANDLER_NONE);
+    raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
+}
+
 static inline VALUE
 method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missing_reason call_status)
 {
@@ -730,14 +738,6 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     result = vm_call0(ec, obj, idMethodMissing, argc, argv, me);
     if (work) ALLOCV_END(work);
     return result;
-}
-
-void
-rb_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv,
-			VALUE obj, int call_status)
-{
-    vm_passed_block_handler_set(ec, VM_BLOCK_HANDLER_NONE);
-    raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
 }
 
 /*!
