@@ -7974,6 +7974,7 @@ Init_File(void)
     rb_define_method(rb_cStat, "executable_real?",  rb_stat_X, 0);
     rb_define_method(rb_cStat, "file?",  rb_stat_f, 0);
     rb_define_method(rb_cStat, "zero?",  rb_stat_z, 0);
+    rb_define_method(rb_cStat, "empty?",  rb_stat_z, 0);
     rb_define_method(rb_cStat, "size?",  rb_stat_s, 0);
     rb_define_method(rb_cStat, "owned?",  rb_stat_owned, 0);
     rb_define_method(rb_cStat, "grpowned?",  rb_stat_grpowned, 0);
