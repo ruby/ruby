@@ -194,7 +194,6 @@ const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_m
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_callable_method_entry_t *rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
-const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
 
 int rb_method_entry_arity(const rb_method_entry_t *me);
 int rb_method_entry_eq(const rb_method_entry_t *m1, const rb_method_entry_t *m2);
