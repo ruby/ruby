@@ -654,7 +654,7 @@ fail:
  * it is NUL terminated.
  */
 #if defined(__linux__)
-ssize_t
+static ssize_t
 main_exe_path(void)
 {
 # define PROC_SELF_EXE "/proc/self/exe"
@@ -663,7 +663,7 @@ main_exe_path(void)
     return len;
 }
 #elif defined(__FreeBSD__)
-ssize_t
+static ssize_t
 main_exe_path(void)
 {
     int mib[4] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
