@@ -950,7 +950,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 	VALUE tempstr = rb_fstring_cstr("<temp>");
 	iseq = rb_iseq_new_top(node, tempstr, tempstr, tempstr, NULL);
     }
-    node->u1.tbl = 0; /* reset table */
+    node->nd_tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(ec, iseq, 0, base_block);

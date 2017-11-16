@@ -6675,8 +6675,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_ALIAS:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-	CHECK(COMPILE(ret, "alias arg1", node->u1.node));
-	CHECK(COMPILE(ret, "alias arg2", node->u2.node));
+	CHECK(COMPILE(ret, "alias arg1", node->nd_1st));
+	CHECK(COMPILE(ret, "alias arg2", node->nd_2nd));
 	ADD_SEND(ret, line, id_core_set_method_alias, INT2FIX(3));
 
 	if (popped) {
@@ -6686,8 +6686,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_VALIAS:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->u1.id));
-	ADD_INSN1(ret, line, putobject, ID2SYM(node->u2.id));
+	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_alias));
+	ADD_INSN1(ret, line, putobject, ID2SYM(node->nd_orig));
 	ADD_SEND(ret, line, id_core_set_variable_alias, INT2FIX(2));
 
 	if (popped) {
@@ -6698,7 +6698,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_UNDEF:{
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
 	ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
-	CHECK(COMPILE(ret, "undef arg", node->u2.node));
+	CHECK(COMPILE(ret, "undef arg", node->nd_undef));
 	ADD_SEND(ret, line, id_core_undef_method, INT2FIX(2));
 
 	if (popped) {
@@ -7058,8 +7058,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
 	VALUE orig_cov = ISEQ_COVERAGE(iseq);
 	rb_compile_option_t new_opt = *orig_opt;
-	if (node->nd_orig) {
-	    rb_iseq_make_compile_option(&new_opt, node->nd_orig);
+	if (node->nd_compile_option) {
+	    rb_iseq_make_compile_option(&new_opt, node->nd_compile_option);
 	    ISEQ_COMPILE_DATA(iseq)->option = &new_opt;
 	}
 	if (!new_opt.coverage_enabled) ISEQ_COVERAGE_SET(iseq, Qfalse);

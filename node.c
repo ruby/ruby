@@ -802,17 +802,17 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("method alias statement");
 	ANN("format: alias [u1.node] [u2.node]");
 	ANN("example: alias bar foo");
-	F_NODE(u1.node, "new name");
+	F_NODE(nd_1st, "new name");
 	LAST_NODE;
-	F_NODE(u2.node, "old name");
+	F_NODE(nd_2nd, "old name");
 	return;
 
       case NODE_VALIAS:
 	ANN("global variable alias statement");
 	ANN("format: alias [u1.id](gvar) [u2.id](gvar)");
 	ANN("example: alias $y $x");
-	F_ID(u1.id, "new name");
-	F_ID(u2.id, "old name");
+	F_ID(nd_alias, "new name");
+	F_ID(nd_orig, "old name");
 	return;
 
       case NODE_UNDEF:
@@ -820,7 +820,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("format: undef [u2.node]");
 	ANN("example: undef foo");
 	LAST_NODE;
-	F_NODE(u2.node, "old name");
+	F_NODE(nd_undef, "old name");
 	return;
 
       case NODE_CLASS:
@@ -951,7 +951,6 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("pre-execution");
 	ANN("format: BEGIN { [nd_head] }; [nd_body]");
 	ANN("example: bar; BEGIN { foo }");
-#define nd_compile_option u3.value
 	F_NODE(nd_head, "prelude");
 	if (!node->nd_compile_option) LAST_NODE;
 	F_NODE(nd_body, "body");
