@@ -842,17 +842,6 @@ rb_block_given_p(void)
     }
 }
 
-/*!  Determines if the current method is an interator.
- *
- * An alias of rb_block_given_p().
- * \ingroup defmethod
- */
-int
-rb_iterator_p(void)
-{
-    return rb_block_given_p();
-}
-
 VALUE rb_eThreadError;
 
 /*! Declares that the current method needs a block.
