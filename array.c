@@ -4190,6 +4190,8 @@ ary_recycle_hash(VALUE hash)
  *     [ 1, 1, 2, 2, 3, 3, 4, 5 ] - [ 1, 2, 4 ]  #=>  [ 3, 3, 5 ]
  *
  *  If you need set-like behavior, see the library class Set.
+ *
+ *  See Array#difference.
  */
 
 static VALUE
