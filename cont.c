@@ -706,13 +706,12 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec->errinfo = sec->errinfo;
 
 	/* trace on -> trace off */
-	if (sec->trace_arg == NULL && th->ec->trace_arg != NULL) {
+	if (th->ec->trace_arg != NULL && sec->trace_arg == NULL) {
 	    GET_VM()->trace_running--;
 	}
-	else { /* sec->trace_arg == NULL */
-	    if (th->ec->trace_arg != NULL) {
-		GET_VM()->trace_running++;
-	    }
+	/* trace off -> trace on */
+	else if (th->ec->trace_arg == NULL && sec->trace_arg != NULL) {
+	    GET_VM()->trace_running++;
 	}
 	th->ec->trace_arg = sec->trace_arg;
 
