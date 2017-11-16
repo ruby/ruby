@@ -73,6 +73,10 @@
 #elif defined(HAVE_PTHREAD_H)
 #include "thread_pthread.h"
 #endif
+extern void native_mutex_lock(rb_nativethread_lock_t *lock);
+extern void native_mutex_unlock(rb_nativethread_lock_t *lock);
+extern void native_mutex_initialize(rb_nativethread_lock_t *lock);
+extern void native_mutex_destroy(rb_nativethread_lock_t *lock);
 
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32

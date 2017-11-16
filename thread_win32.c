@@ -24,8 +24,6 @@
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
-static int native_mutex_lock(rb_nativethread_lock_t *lock);
-static int native_mutex_unlock(rb_nativethread_lock_t *lock);
 
 static void
 w32_error(const char *func)
@@ -302,7 +300,7 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     GVL_UNLOCK_END();
 }
 
-static int
+void
 native_mutex_lock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -310,18 +308,16 @@ native_mutex_lock(rb_nativethread_lock_t *lock)
 #else
     EnterCriticalSection(&lock->crit);
 #endif
-    return 0;
 }
 
-static int
+void
 native_mutex_unlock(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
     thread_debug("release mutex: %p\n", lock->mutex);
-    return ReleaseMutex(lock->mutex);
+    ReleaseMutex(lock->mutex);
 #else
     LeaveCriticalSection(&lock->crit);
-    return 0;
 #endif
 }
 
@@ -345,7 +341,7 @@ native_mutex_trylock(rb_nativethread_lock_t *lock)
 #endif
 }
 
-static void
+void
 native_mutex_initialize(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
@@ -356,7 +352,7 @@ native_mutex_initialize(rb_nativethread_lock_t *lock)
 #endif
 }
 
-static void
+void
 native_mutex_destroy(rb_nativethread_lock_t *lock)
 {
 #if USE_WIN32_MUTEX
