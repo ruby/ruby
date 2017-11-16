@@ -241,15 +241,23 @@ class TestClass < Test::Unit::TestCase
     assert_equal("TestClass::C\u{df}", c.name, '[ruby-core:24600]')
   end
 
-  def test_invalid_jump_from_class_definition
+  def test_invalid_next_from_class_definition
     assert_raise(SyntaxError) { eval("class C; next; end") }
+  end
+
+  def test_invalid_break_from_class_definition
     assert_raise(SyntaxError) { eval("class C; break; end") }
+  end
+
+  def test_invalid_redo_from_class_definition
     assert_raise(SyntaxError) { eval("class C; redo; end") }
+  end
+
+  def test_invalid_retry_from_class_definition
     assert_raise(SyntaxError) { eval("class C; retry; end") }
   end
 
   def test_invalid_return_from_class_definition
-    skip "Wrongly return from this method"
     assert_raise(SyntaxError) { eval("class C; return; end") }
   end
 

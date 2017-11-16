@@ -1014,12 +1014,22 @@ eom
     Tempfile.create(%w"test_return_ .rb") do |lib|
       lib.close
       args = %W[-W0 -r#{lib.path}]
-      all_assertions_foreach(feature4840, *[true, false].product(code)) do |main, (n, s, *ex)|
-        if main
-          assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+      all_assertions_foreach(feature4840, *[:main, :lib].product([:class, :top], code)) do |main, klass, (n, s, *ex)|
+        if klass == :class
+          s = "class X; #{s}; end"
+          if main == :main
+            assert_in_out_err(%[-W0], s, [], /return/, proc {failed[n, s]}, success: false)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", [], /return/, proc {failed[n, s]}, success: false)
+          end
         else
-          File.write(lib, s)
-          assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          end
         end
       end
     end

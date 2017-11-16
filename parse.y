@@ -243,6 +243,7 @@ struct parser_params {
     unsigned int in_main: 1;
     unsigned int in_kwarg: 1;
     unsigned int in_def: 1;
+    unsigned int in_class: 1;
     unsigned int token_seen: 1;
     unsigned int token_info_enabled: 1;
 # if WARN_PAST_SCOPE
@@ -299,6 +300,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 #define lpar_beg		(parser->lex.lpar_beg)
 #define brace_nest		(parser->lex.brace_nest)
 #define in_def			(parser->in_def)
+#define in_class		(parser->in_class)
 #define in_main 		(parser->in_main)
 #define in_defined		(parser->in_defined)
 #define tokenbuf		(parser->tokenbuf)
@@ -1700,7 +1702,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = dispatch1(yield, $2);
 		    %*/
 		    }
-		| keyword_return call_args
+		| k_return call_args
 		    {
 		    /*%%%*/
 			$$ = NEW_RETURN(ret_args($2));
@@ -2737,7 +2739,7 @@ primary		: literal
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/
 		    }
-		| keyword_return
+		| k_return
 		    {
 		    /*%%%*/
 			$$ = NEW_RETURN(0);
@@ -2937,6 +2939,8 @@ primary		: literal
 		    {
 			if (in_def)
 			    yyerror0("class definition in method body");
+			$<num>1 = in_class;
+			in_class = 1;
 			local_push(0);
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
@@ -2956,11 +2960,13 @@ primary		: literal
 			$$ = dispatch3(class, $2, $3, $5);
 		    %*/
 			local_pop();
+			in_class = $<num>1 & 1;
 		    }
 		| k_class tLSHFT expr
 		    {
-			$<num>$ = in_def;
+			$<num>$ = (in_class << 1) | in_def;
 			in_def = 0;
+			in_class = 0;
 			local_push(0);
 		    }
 		  term
@@ -2978,11 +2984,14 @@ primary		: literal
 		    %*/
 			local_pop();
 			in_def = $<num>4 & 1;
+			in_class = ($<num>4 >> 1) & 1;
 		    }
 		| k_module cpath
 		    {
 			if (in_def)
 			    yyerror0("module definition in method body");
+			$<num>1 = in_class;
+			in_class = 1;
 			local_push(0);
 		    /*%%%*/
 			$<num>$ = ruby_sourceline;
@@ -3002,6 +3011,7 @@ primary		: literal
 			$$ = dispatch2(module, $2, $4);
 		    %*/
 			local_pop();
+			in_class = $<num>1 & 1;
 		    }
 		| k_def fname
 		    {
@@ -3181,6 +3191,13 @@ k_def		: keyword_def
 k_end		: keyword_end
 		    {
 			token_info_pop("end");
+		    }
+		;
+
+k_return	: keyword_return
+		    {
+			if (in_class && !in_def && !dyna_in_block())
+			    yyerror0("Invalid return in class/module body");
 		    }
 		;
 
