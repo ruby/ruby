@@ -2132,7 +2132,7 @@ rb_f_local_variables(void)
  */
 
 
-VALUE
+static VALUE
 rb_f_block_given_p(void)
 {
     rb_execution_context_t *ec = GET_EC();
