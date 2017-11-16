@@ -73,6 +73,18 @@
 #elif defined(HAVE_PTHREAD_H)
 #include "thread_pthread.h"
 #endif
+extern void native_mutex_lock(rb_nativethread_lock_t *lock);
+extern void native_mutex_unlock(rb_nativethread_lock_t *lock);
+extern void native_mutex_initialize(rb_nativethread_lock_t *lock);
+extern void native_mutex_destroy(rb_nativethread_lock_t *lock);
+
+/* not used in win32, but kept for future usage outside thread_*.c */
+#define RB_CONDATTR_CLOCK_MONOTONIC 1
+extern void native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
+extern void native_cond_destroy(rb_nativethread_cond_t *cond);
+extern void native_cond_signal(rb_nativethread_cond_t *cond);
+extern void native_cond_broadcast(rb_nativethread_cond_t *cond);
+extern void native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 
 #ifndef ENABLE_VM_OBJSPACE
 #ifdef _WIN32
