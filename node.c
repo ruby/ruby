@@ -1087,8 +1087,8 @@ struct node_buffer_struct {
     node_buffer_elem_t body; /* this should be a last, because body has flexible array */
 };
 
-node_buffer_t *
-rb_node_buffer_new()
+static node_buffer_t *
+rb_node_buffer_new(void)
 {
     node_buffer_t *nb = xmalloc(offsetof(node_buffer_t, body) + offsetof(node_buffer_elem_t, buf) + 16 * sizeof(NODE));
     nb->idx = 0;
@@ -1098,7 +1098,7 @@ rb_node_buffer_new()
     return nb;
 }
 
-void
+static void
 rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_elem_t *nbe = nb->head;
