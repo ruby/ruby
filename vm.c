@@ -2368,8 +2368,8 @@ void rb_fiber_mark_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
-void
-rb_thread_mark(void *ptr)
+static void
+thread_mark(void *ptr)
 {
     rb_thread_t *th = ptr;
     RUBY_MARK_ENTER("thread");
@@ -2443,7 +2443,7 @@ thread_memsize(const void *ptr)
 const rb_data_type_t ruby_threadptr_data_type = {
     "VM/thread",
     {
-	rb_thread_mark,
+	thread_mark,
 	thread_free,
 	thread_memsize,
     },
