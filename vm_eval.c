@@ -956,7 +956,7 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
  *     1.public_send(:puts, "hello")  # causes NoMethodError
  */
 
-VALUE
+static VALUE
 rb_f_public_send(int argc, VALUE *argv, VALUE recv)
 {
     return send_internal(argc, argv, recv, CALL_PUBLIC);
