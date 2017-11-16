@@ -368,8 +368,7 @@ struct cond_event_entry {
     HANDLE event;
 };
 
-#if 0
-static void
+void
 native_cond_signal(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
@@ -388,7 +387,7 @@ native_cond_signal(rb_nativethread_cond_t *cond)
     }
 }
 
-static void
+void
 native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     /* cond is guarded by mutex */
@@ -440,12 +439,13 @@ native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
     return (r == WAIT_OBJECT_0) ? 0 : ETIMEDOUT;
 }
 
-static int
+void
 native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
 {
-    return native_cond_timedwait_ms(cond, mutex, INFINITE);
+    native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
 
+#if 0
 static unsigned long
 abs_timespec_to_timeout_ms(const struct timespec *ts)
 {
@@ -503,20 +503,20 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 
     return timeout;
 }
+#endif
 
-static void
+void
 native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
     cond->next = (struct cond_event_entry *)cond;
     cond->prev = (struct cond_event_entry *)cond;
 }
 
-static void
+void
 native_cond_destroy(rb_nativethread_cond_t *cond)
 {
     /* */
 }
-#endif
 
 void
 ruby_init_stack(volatile VALUE *addr)
