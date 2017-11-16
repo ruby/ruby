@@ -229,11 +229,9 @@ static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
     int line;
-    VALUE file = rb_source_location(&line);
-
+    const char *file = rb_source_location_cstr(&line);
     return warn_vsprintf(enc,
-			 NIL_P(file) ? NULL : RSTRING_PTR(file), line,
-			 fmt, args);
+			 RSTRING_PTR(file), line, fmt, args);
 }
 
 #define with_warning_string(mesg, enc, fmt) \
@@ -533,7 +531,7 @@ rb_bug(const char *fmt, ...)
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_loc(&line);
+	file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, NULL);
@@ -548,7 +546,7 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     int line = 0;
 
     if (GET_EC()) {
-	file = rb_source_loc(&line);
+	file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, ctx);

@@ -356,7 +356,7 @@ rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 	VALUE name = rb_class_path_no_cache(klass);
 	const char *classname, *filename;
 	const char *methodname = rb_id2name(id);
-	if (methodname && (filename = rb_source_loc(&args->line_no)) != 0) {
+	if (methodname && (filename = rb_source_location_cstr(&args->line_no)) != 0) {
 	    if (NIL_P(name) || !(classname = StringValuePtr(name)))
 		classname = "<unknown>";
 	    args->classname = classname;
@@ -1298,7 +1298,7 @@ rb_source_location(int *pline)
 }
 
 const char *
-rb_source_loc(int *pline)
+rb_source_location_cstr(int *pline)
 {
     VALUE path = rb_source_location(pline);
     if (NIL_P(path)) return NULL;
