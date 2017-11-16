@@ -10865,6 +10865,7 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, con
 	else {
 	    asgn = lhs;
 	    asgn->nd_value = new_call(gettable(vid, location), op, new_list(rhs, location), location);
+	    asgn->nd_loc = *location;
 	}
     }
     else {
