@@ -1251,20 +1251,7 @@ rb_lastline_set(VALUE val)
 
 /* misc */
 
-VALUE
-rb_sourcefilename(void)
-{
-    const rb_execution_context_t *ec = GET_EC();
-    const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
-
-    if (cfp) {
-	return rb_iseq_path(cfp->iseq);
-    }
-    else {
-	return Qnil;
-    }
-}
-
+/* in intern.h */
 const char *
 rb_sourcefile(void)
 {
@@ -1279,6 +1266,7 @@ rb_sourcefile(void)
     }
 }
 
+/* in intern.h */
 int
 rb_sourceline(void)
 {
