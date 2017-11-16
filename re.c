@@ -3156,9 +3156,9 @@ rb_reg_match(VALUE re, VALUE str)
  *
  *     a = "HELLO"
  *     case a
- *     when /^[a-z]*$/; print "Lower case\n"
- *     when /^[A-Z]*$/; print "Upper case\n"
- *     else;            print "Mixed case\n"
+ *     when /\A[a-z]*\z/; print "Lower case\n"
+ *     when /\A[A-Z]*\z/; print "Upper case\n"
+ *     else;              print "Mixed case\n"
  *     end
  *     #=> "Upper case"
  *
