@@ -75,6 +75,7 @@ VALUE rb_tracearg_event(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_lineno(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_method_id(rb_trace_arg_t *trace_arg);
+VALUE rb_tracearg_callee_id(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_defined_class(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_binding(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_self(rb_trace_arg_t *trace_arg);
