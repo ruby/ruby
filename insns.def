@@ -759,7 +759,7 @@ checkmatch
 (VALUE target, VALUE pattern)
 (VALUE result)
 {
-    result = vm_check_match(target, pattern, flag);
+    result = vm_check_match(ec, target, pattern, flag);
 }
 
 /**
