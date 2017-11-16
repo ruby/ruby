@@ -862,12 +862,6 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
     return me;
 }
 
-const rb_method_entry_t *
-rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
-{
-    return method_entry_resolve_refinement(klass, id, TRUE, defined_class_ptr);
-}
-
 const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
