@@ -230,8 +230,7 @@ warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
     int line;
     const char *file = rb_source_location_cstr(&line);
-    return warn_vsprintf(enc,
-			 RSTRING_PTR(file), line, fmt, args);
+    return warn_vsprintf(enc, file, line, fmt, args);
 }
 
 #define with_warning_string(mesg, enc, fmt) \
