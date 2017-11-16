@@ -302,8 +302,6 @@ NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
 #if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
 #endif
-NORETURN(void rb_raise_method_missing(rb_execution_context_t *ec,
-				      int argc, const VALUE *argv, VALUE obj, int call_status));
 
 VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
 rb_cref_t *rb_vm_cref(void);

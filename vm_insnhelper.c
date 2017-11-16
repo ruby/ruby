@@ -2324,6 +2324,8 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
     rb_bug("vm_call_method: unsupported method type (%d)", cc->me->def->type);
 }
 
+NORETURN(static void vm_raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE obj, int call_status));
+
 static VALUE
 vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
@@ -2333,7 +2335,7 @@ vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct 
     if (ci->mid == idMethodMissing) {
 	rb_control_frame_t *reg_cfp = cfp;
 	VALUE *argv = STACK_ADDR_FROM_TOP(calling->argc);
-	rb_raise_method_missing(ec, calling->argc, argv, calling->recv, stat);
+	vm_raise_method_missing(ec, calling->argc, argv, calling->recv, stat);
     }
     else {
 	cc->aux.method_missing_reason = stat;
