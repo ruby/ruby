@@ -46,8 +46,6 @@ typedef void (*rb_event_hook_raw_arg_func_t)(VALUE data, const rb_trace_arg_t *a
 
 #define MAX_EVENT_NUM 32
 
-static int ruby_event_flag_count[MAX_EVENT_NUM] = {0};
-
 /* called from vm.c */
 
 void
@@ -82,39 +80,6 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_objspace_set_event_hook(vm_events);
 }
 
-static void
-recalc_add_ruby_vm_event_flags(rb_event_flag_t events)
-{
-    int i;
-    rb_event_flag_t vm_events = 0;
-
-    for (i=0; i<MAX_EVENT_NUM; i++) {
-	if (events & ((rb_event_flag_t)1 << i)) {
-	    ruby_event_flag_count[i]++;
-	}
-	vm_events |= ruby_event_flag_count[i] ? (1<<i) : 0;
-    }
-
-    update_global_event_hook(vm_events);
-}
-
-static void
-recalc_remove_ruby_vm_event_flags(rb_event_flag_t events)
-{
-    int i;
-    rb_event_flag_t vm_events = 0;
-
-    for (i=0; i<MAX_EVENT_NUM; i++) {
-	if (events & ((rb_event_flag_t)1 << i)) {
-	    VM_ASSERT(ruby_event_flag_count[i] > 0);
-	    ruby_event_flag_count[i]--;
-	}
-	vm_events |= ruby_event_flag_count[i] ? (1<<i) : 0;
-    }
-
-    update_global_event_hook(vm_events);
-}
-
 /* add/remove hooks */
 
 static rb_event_hook_t *
@@ -145,8 +110,8 @@ connect_event_hook(const rb_execution_context_t *ec, rb_event_hook_t *hook)
 
     hook->next = list->hooks;
     list->hooks = hook;
-    recalc_add_ruby_vm_event_flags(hook->events);
     list->events |= hook->events;
+    update_global_event_hook(list->events);
 }
 
 static void
@@ -184,13 +149,47 @@ rb_add_event_hook2(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data
     connect_event_hook(GET_EC(), hook);
 }
 
+static void
+clean_hooks(rb_hook_list_t *list)
+{
+    rb_event_hook_t *hook, **nextp = &list->hooks;
+    VM_ASSERT(list->need_clean == TRUE);
+
+    list->events = 0;
+    list->need_clean = FALSE;
+
+    while ((hook = *nextp) != 0) {
+	if (hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) {
+	    *nextp = hook->next;
+	    xfree(hook);
+	}
+	else {
+	    list->events |= hook->events; /* update active events */
+	    nextp = &hook->next;
+	}
+    }
+
+    update_global_event_hook(list->events);
+}
+
+static void
+clean_hooks_check(rb_vm_t *vm, rb_hook_list_t *list)
+{
+    if (UNLIKELY(list->need_clean != FALSE)) {
+	if (vm->trace_running == 0) {
+	    clean_hooks(list);
+	}
+    }
+}
+
 #define MATCH_ANY_FILTER_TH ((rb_thread_t *)1)
 
 /* if func is 0, then clear all funcs */
 static int
 remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th, rb_event_hook_func_t func, VALUE data)
 {
-    rb_hook_list_t *list = &rb_ec_vm_ptr(ec)->event_hooks;
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_hook_list_t *list = &vm->event_hooks;
     int ret = 0;
     rb_event_hook_t *hook = list->hooks;
 
@@ -207,6 +206,7 @@ remove_event_hook(const rb_execution_context_t *ec, const rb_thread_t *filter_th
 	hook = hook->next;
     }
 
+    clean_hooks_check(vm, list);
     return ret;
 }
 
@@ -256,27 +256,6 @@ rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec)
 /* invoke hooks */
 
 static void
-clean_hooks(rb_hook_list_t *list)
-{
-    rb_event_hook_t *hook, **nextp = &list->hooks;
-
-    list->events = 0;
-    list->need_clean = FALSE;
-
-    while ((hook = *nextp) != 0) {
-	if (hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) {
-	    *nextp = hook->next;
-	    recalc_remove_ruby_vm_event_flags(hook->events);
-	    xfree(hook);
-	}
-	else {
-	    list->events |= hook->events; /* update active events */
-	    nextp = &hook->next;
-	}
-    }
-}
-
-static void
 exec_hooks_body(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
     rb_event_hook_t *hook;
@@ -296,31 +275,39 @@ exec_hooks_body(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb
 }
 
 static int
-exec_hooks_precheck(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_precheck(const rb_execution_context_t *ec, rb_vm_t *vm, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
-    if (UNLIKELY(list->need_clean != FALSE)) {
-	if (rb_ec_vm_ptr(ec)->trace_running <= 1) { /* only running this hooks */
-	    clean_hooks(list);
-	}
+    if (list->events & trace_arg->event) {
+	vm->trace_running++;
+	return TRUE;
     }
-
-    return (list->events & trace_arg->event) != 0;
+    else {
+	return FALSE;
+    }
 }
 
 static void
-exec_hooks_unprotected(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_postcheck(const rb_execution_context_t *ec, rb_vm_t *vm, rb_hook_list_t *list)
 {
-    if (exec_hooks_precheck(ec, list, trace_arg) == 0) return;
+    vm->trace_running--;
+    clean_hooks_check(vm, list);
+}
+
+static void
+exec_hooks_unprotected(const rb_execution_context_t *ec, rb_vm_t *vm, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+{
+    if (exec_hooks_precheck(ec, vm, list, trace_arg) == 0) return;
     exec_hooks_body(ec, list, trace_arg);
+    exec_hooks_postcheck(ec, vm, list);
 }
 
 static int
-exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_protected(rb_execution_context_t *ec, rb_vm_t *vm, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
 {
     enum ruby_tag_type state;
     volatile int raised;
 
-    if (exec_hooks_precheck(ec, list, trace_arg) == 0) return 0;
+    if (exec_hooks_precheck(ec, vm, list, trace_arg) == 0) return 0;
 
     raised = rb_ec_reset_raised(ec);
 
@@ -331,6 +318,8 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_
 	exec_hooks_body(ec, list, trace_arg);
     }
     EC_POP_TAG();
+
+    exec_hooks_postcheck(ec, vm, list);
 
     if (raised) {
 	rb_ec_set_raised(ec);
@@ -351,11 +340,9 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, int pop_p)
 	}
 	else {
 	    rb_trace_arg_t *prev_trace_arg = ec->trace_arg;
-	    vm->trace_running++;
 	    ec->trace_arg = trace_arg;
-	    exec_hooks_unprotected(ec, &vm->event_hooks, trace_arg);
+	    exec_hooks_unprotected(ec, vm, &vm->event_hooks, trace_arg);
 	    ec->trace_arg = prev_trace_arg;
-	    vm->trace_running--;
 	}
     }
     else {
@@ -368,17 +355,15 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, int pop_p)
 	    ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;
 	    ec->errinfo = Qnil;
 
-	    vm->trace_running++;
 	    ec->trace_arg = trace_arg;
 	    {
-		state = exec_hooks_protected(ec, &vm->event_hooks, trace_arg);
+		state = exec_hooks_protected(ec, vm, &vm->event_hooks, trace_arg);
 		if (state) goto terminate;
 
 		ec->errinfo = errinfo;
 	    }
 	  terminate:
 	    ec->trace_arg = NULL;
-	    vm->trace_running--;
 
 	    ec->local_storage_recursive_hash_for_trace = ec->local_storage_recursive_hash;
 	    ec->local_storage_recursive_hash = old_recursive;
@@ -402,12 +387,15 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     volatile int raised;
     VALUE result = Qnil;
     rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;
     const int volatile tracing = ec->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
 
-    if (!tracing) rb_ec_vm_ptr(ec)->trace_running++;
+    if (!tracing) {
+	vm->trace_running++;
+    }
     if (!ec->trace_arg) ec->trace_arg = &dummy_trace_arg;
 
     raised = rb_ec_reset_raised(ec);
@@ -423,7 +411,9 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     }
 
     if (ec->trace_arg == &dummy_trace_arg) ec->trace_arg = NULL;
-    if (!tracing) rb_ec_vm_ptr(ec)->trace_running--;
+    if (!tracing) {
+	vm->trace_running--;
+    }
 
     if (state) {
 #if defined RUBY_USE_SETJMPEX && RUBY_USE_SETJMPEX
