@@ -3729,8 +3729,15 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 {
     const rb_iseq_t *iseq = reg_cfp->iseq;
     size_t pos = pc - iseq->body->iseq_encoded;
+    rb_event_flag_t cur_event_flags = ruby_vm_event_flags;
     rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
     rb_event_flag_t event;
+
+    if ((events & cur_event_flags) == 0) {
+	/* disable trace */
+	rb_iseq_trace_set(iseq, cur_event_flags);
+	return;
+    }
 
     if (ec->trace_arg != NULL) return;
 
