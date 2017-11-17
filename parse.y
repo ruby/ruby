@@ -10125,6 +10125,7 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs, const YYLTYP
       case NODE_ATTRASGN:
       case NODE_CALL:
 	lhs->nd_args = arg_append(lhs->nd_args, rhs, location);
+	lhs->nd_loc = *location;
 	break;
 
       default:
