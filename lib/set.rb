@@ -55,13 +55,13 @@
 # == Example
 #
 #   require 'set'
-#   s1 = Set.new [1, 2]                   # -> #<Set: {1, 2}>
-#   s2 = [1, 2].to_set                    # -> #<Set: {1, 2}>
-#   s1 == s2                              # -> true
-#   s1.add("foo")                         # -> #<Set: {1, 2, "foo"}>
-#   s1.merge([2, 6])                      # -> #<Set: {1, 2, "foo", 6}>
-#   s1.subset? s2                         # -> false
-#   s2.subset? s1                         # -> true
+#   s1 = Set.new([1, 2])                  #=> #<Set: {1, 2}>
+#   s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
+#   s1 == s2                              #=> true
+#   s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
+#   s1.merge([2, 6])                      #=> #<Set: {1, 2, "foo", 6}>
+#   s1.subset?(s2)                        #=> false
+#   s2.subset?(s1)                        #=> true
 #
 # == Contact
 #
@@ -71,6 +71,9 @@ class Set
   include Enumerable
 
   # Creates a new set containing the given objects.
+  #
+  #     Set[1, 2]                   # => #<Set: {1, 2}>
+  #     Set[1, 'c', :s]             # => #<Set: {1, "c", :s}>
   def self.[](*ary)
     new(ary)
   end
@@ -80,6 +83,11 @@ class Set
   #
   # If a block is given, the elements of enum are preprocessed by the
   # given block.
+  #
+  #     Set.new([1, 2])                       #=> #<Set: {1, 2}>
+  #     Set.new([1, 'c', :s])                 #=> #<Set: {1, "c", :s}>
+  #     Set.new((1..10))   #=> #<Set: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}>
+  #     Set.new([1, 2, 3]) { |x| x * x }      #=> #<Set: {1, 4, 9}>
   def initialize(enum = nil, &block) # :yields: o
     @hash ||= Hash.new(false)
 
@@ -159,6 +167,10 @@ class Set
   end
 
   # Removes all elements and returns self.
+  #
+  #     set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
+  #     set.clear                         #=> #<Set: {}>
+  #     set                               #=> #<Set: {}>
   def clear
     @hash.clear
     self
@@ -178,6 +190,9 @@ class Set
   end
 
   # Converts the set to an array.  The order of elements is uncertain.
+  #
+  #     Set[1, 2].to_a                    #=> [1, 2]
+  #     Set[1, 'c', :s].to_a              #=> [1, "c", :s]
   def to_a
     @hash.keys
   end
@@ -327,6 +342,10 @@ class Set
 
   # Adds the given object to the set and returns self.  Use +merge+ to
   # add many elements at once.
+  #
+  #     Set[1, 2].add(3)                    #=> #<Set: {1, 2, 3}>
+  #     Set[1, 2].add([3,4])                #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add(2)                    #=> #<Set: {1, 2}>
   def add(o)
     @hash[o] = true
     self
@@ -335,6 +354,10 @@ class Set
 
   # Adds the given object to the set and returns self.  If the
   # object is already in the set, returns nil.
+  #
+  #     Set[1, 2].add?(3)                    #=> #<Set: {1, 2, 3}>
+  #     Set[1, 2].add?([3,4])                #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add?(2)                    #=> nil
   def add?(o)
     add(o) unless include?(o)
   end
@@ -423,6 +446,9 @@ class Set
 
   # Returns a new set built by merging the set and the elements of the
   # given enumerable object.
+  #
+  #     Set[1, 2, 3, 3] | Set[2, 4, 5]      #=> #<Set: {1, 2, 3, 4, 5}>
+  #     Set[1, 5, 'z'] | (1..6)             #=> #<Set: {1, 5, "z", 2, 3, 4, 6}>
   def |(enum)
     dup.merge(enum)
   end
@@ -431,6 +457,9 @@ class Set
 
   # Returns a new set built by duplicating the set, removing every
   # element that appears in the given enumerable object.
+  #
+  #     Set[1, 3, 5] - Set[1, 5]                #=> #<Set: {3}>
+  #     Set['a', 'b', 'z'] - ['a', 'c']         #=> #<Set: {"b", "z"}>
   def -(enum)
     dup.subtract(enum)
   end
@@ -438,6 +467,9 @@ class Set
 
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
+  #
+  #     Set[1, 3, 5] & Set[3, 2, 1]             #=> #<Set: {3, 1}>
+  #     Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> #<Set: {"a", "b"}>
   def &(enum)
     n = self.class.new
     do_with_enum(enum) { |o| n.add(o) if include?(o) }
@@ -448,6 +480,9 @@ class Set
   # Returns a new set containing elements exclusive between the set
   # and the given enumerable object.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
+  #
+  #     Set[1, 2] ^ Set[2,3]                    #=> #<Set: {3, 1}>
+  #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
   def ^(enum)
     n = Set.new(enum)
     each { |o| n.add(o) unless n.delete?(o) }
@@ -456,6 +491,11 @@ class Set
 
   # Returns true if two sets are equal.  The equality of each couple
   # of elements is defined according to Object#eql?.
+  #
+  #     Set[1, 2] == Set[2, 1]                       #=> true
+  #     Set[1, 3, 5] == Set[1, 5]                    #=> false
+  #     Set['a', 'b', 'c'] == Set['a', 'c', 'b']     #=> true
+  #     Set['a', 'b', 'c'] == ['a', 'c', 'b']        #=> false
   def ==(other)
     if self.equal?(other)
       true
