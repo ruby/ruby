@@ -77,7 +77,7 @@ update_global_event_hook(rb_event_flag_t vm_events)
 
     if (new_iseq_events > cur_iseq_events) {
 	/* write all ISeqs iff new events are added */
-	rb_iseq_trace_set_all(vm_events); 
+	rb_iseq_trace_set_all(vm_events);
     }
 
     ruby_vm_event_flags = vm_events;
