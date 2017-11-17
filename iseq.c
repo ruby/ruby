@@ -336,8 +336,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     return Qtrue;
 }
 
-static void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
-
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -2311,15 +2309,16 @@ rb_iseq_defined_string(enum defined_type type)
     return str;
 }
 
-#define TRACE_INSN_P(insn) ((insn) >= VM_INSTRUCTION_SIZE/2)
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
 #define INSN_CODE(insn) ((VALUE)table[insn])
+#define TRACE_INSN_P(insn, insn_encoded)      ((VALUE)table[insn] != insn_encoded)
 #else
 #define INSN_CODE(insn) (insn)
+#define TRACE_INSN_P(insn, insn_encoded)      ((insn_encoded) >= VM_INSTRUCTION_SIZE/2)
 #endif
 
-static void
+void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 {
     unsigned int i;
@@ -2335,17 +2334,17 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 	int insn = (int)code[i];
 	rb_event_flag_t events = rb_iseq_event_flags(iseq, i);
 
+	/* code represents before transformation */
+	VM_ASSERT(insn < VM_INSTRUCTION_SIZE/2);
+
 	if (events & turnon_events) {
-	    if (!TRACE_INSN_P(insn)) {
+	    if (!TRACE_INSN_P(insn, iseq_encoded[i])) {
 		iseq_encoded[i] = INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
 	    }
-	    else {
-		/* OK */
-	    }
 	}
-	else if (TRACE_INSN_P(insn)) {
+	else if (TRACE_INSN_P(insn, iseq_encoded[i])) {
 	    VM_ASSERT(insn - VM_INSTRUCTION_SIZE/2 >= 0);
-	    iseq_encoded[i] = INSN_CODE(insn - VM_INSTRUCTION_SIZE/2);
+	    iseq_encoded[i] = INSN_CODE(insn);
 	}
 	i += insn_len(insn);
     }
