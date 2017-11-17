@@ -59,6 +59,11 @@
 	  (Current).last_loc  = YYRHSLOC(Rhs, N).last_loc;		\
 	}								\
       else								\
+	RUBY_SET_YYLLOC(Current);					\
+    while (0)
+
+#define RUBY_SET_YYLLOC(Current)					\
+    do									\
 	{								\
 	  (Current).first_loc.lineno = ruby_sourceline;			\
 	  (Current).first_loc.column = (int)(parser->tokp - lex_pbeg);	\
@@ -8893,10 +8898,7 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *parser)
     else if (t != 0)
 	dispatch_scan_event(t);
 
-    yylloc->first_loc.lineno = ruby_sourceline;
-    yylloc->first_loc.column = (int)(parser->tokp - lex_pbeg);
-    yylloc->last_loc.lineno = ruby_sourceline;
-    yylloc->last_loc.column = (int)(lex_p - lex_pbeg);
+    RUBY_SET_YYLLOC(*yylloc);
 
     return t;
 }
