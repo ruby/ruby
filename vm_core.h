@@ -1719,9 +1719,9 @@ struct rb_trace_arg_struct {
 
 void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, int pop_p);
 
-#define EXEC_EVENT_HOOK_ORIG(ec_, flag_, self_, id_, called_id_, klass_, data_, pop_p_) do { \
+#define EXEC_EVENT_HOOK_ORIG(ec_, flag_, vm_flags_, self_, id_, called_id_, klass_, data_, pop_p_) do { \
     const rb_event_flag_t flag_arg_ = (flag_); \
-    if (UNLIKELY(ruby_vm_event_flags & (flag_arg_))) { \
+    if (UNLIKELY(vm_flags_ & (flag_arg_))) { \
 	/* defer evaluating the other arguments */ \
 	rb_exec_event_hook_orig(ec_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
     } \
@@ -1731,29 +1731,32 @@ static inline void
 rb_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag,
 			VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
 {
-    const rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    struct rb_trace_arg_struct trace_arg;
 
-    if (vm->event_hooks.events & flag) {
-	struct rb_trace_arg_struct trace_arg;
-	trace_arg.event = flag;
-	trace_arg.ec = ec;
-	trace_arg.cfp = ec->cfp;
-	trace_arg.self = self;
-	trace_arg.id = id;
-	trace_arg.called_id = called_id;
-	trace_arg.klass = klass;
-	trace_arg.data = data;
-	trace_arg.path = Qundef;
-	trace_arg.klass_solved = 0;
-	rb_exec_event_hooks(&trace_arg, pop_p);
-    }
+    VM_ASSERT(rb_ec_vm_ptr(ec)->event_hooks.events == ruby_vm_event_flags);
+    VM_ASSERT(rb_ec_vm_ptr(ec)->event_hooks.events & flag);
+
+    trace_arg.event = flag;
+    trace_arg.ec = ec;
+    trace_arg.cfp = ec->cfp;
+    trace_arg.self = self;
+    trace_arg.id = id;
+    trace_arg.called_id = called_id;
+    trace_arg.klass = klass;
+    trace_arg.data = data;
+    trace_arg.path = Qundef;
+    trace_arg.klass_solved = 0;
+    rb_exec_event_hooks(&trace_arg, pop_p);
 }
 
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, flag_, self_, id_, called_id_, klass_, data_, 0)
+  EXEC_EVENT_HOOK_ORIG(ec_, flag_, ruby_vm_event_flags, self_, id_, called_id_, klass_, data_, 0)
+
+#define EXEC_EVENT_HOOK_VM_TRACE(ec_, flag_, vm_flag_, self_, id_, called_id_, klass_, data_) \
+  EXEC_EVENT_HOOK_ORIG(ec_, flag_, vm_flag_, self_, id_, called_id_, klass_, data_, 0)
 
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, flag_, self_, id_, called_id_, klass_, data_, 1)
+  EXEC_EVENT_HOOK_ORIG(ec_, flag_, ruby_vm_event_flags, self_, id_, called_id_, klass_, data_, 1)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
