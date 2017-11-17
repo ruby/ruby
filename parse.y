@@ -63,14 +63,7 @@
     while (0)
 
 #define RUBY_SET_YYLLOC(Current)					\
-    do									\
-	{								\
-	  (Current).first_loc.lineno = ruby_sourceline;			\
-	  (Current).first_loc.column = (int)(parser->tokp - lex_pbeg);	\
-	  (Current).last_loc.lineno = ruby_sourceline;			\
-	  (Current).last_loc.column = (int)(lex_p - lex_pbeg);		\
-	}								\
-    while (0)
+    rb_parser_set_location(parser, &(Current))
 
 #undef malloc
 #undef realloc
@@ -690,6 +683,7 @@ enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_stat
 VALUE rb_parser_lex_state_name(enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
+void rb_parser_set_location(struct parser_params *parser, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
 static ID formal_argument_gen(struct parser_params*, ID);
@@ -9827,6 +9821,15 @@ rb_parser_fatal(struct parser_params *parser, const char *fmt, ...)
     if (parser->debug_output == rb_stdout)
 	parser->debug_output = rb_stderr;
     yydebug = TRUE;
+}
+
+void
+rb_parser_set_location(struct parser_params *parser, YYLTYPE *yylloc)
+{
+    yylloc->first_loc.lineno = ruby_sourceline;
+    yylloc->first_loc.column = (int)(parser->tokp - lex_pbeg);
+    yylloc->last_loc.lineno = ruby_sourceline;
+    yylloc->last_loc.column = (int)(lex_p - lex_pbeg);
 }
 #endif /* !RIPPER */
 
