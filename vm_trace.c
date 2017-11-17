@@ -358,15 +358,11 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, int pop_p)
 
 	    ec->local_storage_recursive_hash = ec->local_storage_recursive_hash_for_trace;
 	    ec->errinfo = Qnil;
-
 	    ec->trace_arg = trace_arg;
-	    {
-		state = exec_hooks_protected(ec, vm, &vm->event_hooks, trace_arg);
-		if (state) goto terminate;
-
+	    state = exec_hooks_protected(ec, vm, &vm->event_hooks, trace_arg);
+	    if (!state) {
 		ec->errinfo = errinfo;
 	    }
-	  terminate:
 	    ec->trace_arg = NULL;
 
 	    ec->local_storage_recursive_hash_for_trace = ec->local_storage_recursive_hash;
