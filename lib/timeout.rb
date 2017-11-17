@@ -15,7 +15,7 @@
 #
 # Previous versions didn't use a module for namespacing, however
 # #timeout is provided for backwards compatibility.  You
-# should prefer Timeout#timeout instead.
+# should prefer Timeout.timeout instead.
 #
 # == Copyright
 #
@@ -23,7 +23,7 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
-  # Raised by Timeout#timeout when the block times out.
+  # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
     attr_reader :thread
 
