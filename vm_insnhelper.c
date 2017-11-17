@@ -3729,13 +3729,13 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 {
     const rb_iseq_t *iseq = reg_cfp->iseq;
     size_t pos = pc - iseq->body->iseq_encoded;
-    rb_event_flag_t cur_event_flags = ruby_vm_event_flags;
+    rb_event_flag_t vm_event_flags = ruby_vm_event_flags;
     rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
     rb_event_flag_t event;
 
-    if ((events & cur_event_flags) == 0) {
+    if ((events & vm_event_flags) == 0) {
 	/* disable trace */
-	rb_iseq_trace_set(iseq, cur_event_flags);
+	rb_iseq_trace_set(iseq, vm_event_flags);
 	return;
     }
 
@@ -3752,32 +3752,31 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 
     VM_ASSERT(reg_cfp->pc == pc);
     VM_ASSERT(events != 0);
+    VM_ASSERT(vm_event_flags & events);
 
     /* increment PC because source line is calculated with PC-1 */
-    if (events & ruby_vm_event_flags) {
-	if (event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) {
-	    VM_ASSERT(event == RUBY_EVENT_CLASS ||
-		      event == RUBY_EVENT_CALL  ||
-		      event == RUBY_EVENT_B_CALL);
-	    reg_cfp->pc++;
-	    vm_dtrace(event, ec);
-	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, Qundef);
-	    reg_cfp->pc--;
-	}
-	if (events & RUBY_EVENT_LINE) {
-	    reg_cfp->pc++;
-	    vm_dtrace(RUBY_EVENT_LINE, ec);
-	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_LINE, GET_SELF(), 0, 0, 0, Qundef);
-	    reg_cfp->pc--;
-	}
-	if (event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) {
-	    VM_ASSERT(event == RUBY_EVENT_END ||
-		      event == RUBY_EVENT_RETURN  ||
-		      event == RUBY_EVENT_B_RETURN);
-	    reg_cfp->pc++;
-	    vm_dtrace(RUBY_EVENT_LINE, ec);
-	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, TOPN(0));
-	    reg_cfp->pc--;
-	}
+    if (event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) {
+	VM_ASSERT(event == RUBY_EVENT_CLASS ||
+		  event == RUBY_EVENT_CALL  ||
+		  event == RUBY_EVENT_B_CALL);
+	reg_cfp->pc++;
+	vm_dtrace(event, ec);
+	EXEC_EVENT_HOOK_VM_TRACE(ec, event, vm_event_flags, GET_SELF(), 0, 0, 0, Qundef);
+	reg_cfp->pc--;
+    }
+    if (events & RUBY_EVENT_LINE) {
+	reg_cfp->pc++;
+	vm_dtrace(RUBY_EVENT_LINE, ec);
+	EXEC_EVENT_HOOK_VM_TRACE(ec, RUBY_EVENT_LINE, vm_event_flags, GET_SELF(), 0, 0, 0, Qundef);
+	reg_cfp->pc--;
+    }
+    if (event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) {
+	VM_ASSERT(event == RUBY_EVENT_END ||
+		  event == RUBY_EVENT_RETURN  ||
+		  event == RUBY_EVENT_B_RETURN);
+	reg_cfp->pc++;
+	vm_dtrace(RUBY_EVENT_LINE, ec);
+	EXEC_EVENT_HOOK_VM_TRACE(ec, event, vm_event_flags, GET_SELF(), 0, 0, 0, TOPN(0));
+	reg_cfp->pc--;
     }
 }
