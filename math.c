@@ -974,6 +974,9 @@ InitVM_Math(void)
     /*  Definition of the mathematical constant PI as a Float number. */
     rb_define_const(rb_mMath, "PI", DBL2NUM(M_PI));
 
+    /* Definition of the mathematical constant Tau as a Float number. */
+    rb_define_const(rb_mMath, "TAU", DBL2NUM(M_PI * 2));
+
 #ifdef M_E
     /*  Definition of the mathematical constant E (e) as a Float number. */
     rb_define_const(rb_mMath, "E", DBL2NUM(M_E));
