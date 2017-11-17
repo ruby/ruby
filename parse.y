@@ -10119,6 +10119,7 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs, const YYLTYP
       case NODE_CDECL:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
+	lhs->nd_loc = *location;
 	break;
 
       case NODE_ATTRASGN:
