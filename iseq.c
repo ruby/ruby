@@ -2343,7 +2343,6 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 	    }
 	}
 	else if (TRACE_INSN_P(insn, iseq_encoded[i])) {
-	    VM_ASSERT(insn - VM_INSTRUCTION_SIZE/2 >= 0);
 	    iseq_encoded[i] = INSN_CODE(insn);
 	}
 	i += insn_len(insn);
