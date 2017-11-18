@@ -1404,18 +1404,80 @@ do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc
 #define do_lstat do_stat
 #endif
 
+struct opendir_at_arg {
+    int basefd;
+    const char *path;
+};
+
+static void *
+with_gvl_gc_for_fd(void *ptr)
+{
+    int *e = ptr;
+
+    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
+}
+
+static int
+gc_for_fd_with_gvl(int e)
+{
+    return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
+}
+
+static void *
+nogvl_opendir_at(void *ptr)
+{
+    const struct opendir_at_arg *oaa = ptr;
+    DIR *dirp;
+
+#if USE_OPENDIR_AT
+    const int opendir_flags = (O_RDONLY|O_CLOEXEC|
+#  ifdef O_DIRECTORY
+			       O_DIRECTORY|
+#  endif /* O_DIRECTORY */
+			       0);
+    int fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+
+    dirp = fd >= 0 ? fdopendir(fd) : 0;
+    if (!dirp) {
+	int e = errno;
+
+	switch (gc_for_fd_with_gvl(e)) {
+	  default:
+	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+	    if (fd >= 0) dirp = fdopendir(fd);
+	    if (dirp) return dirp;
+
+	    e = errno;
+	    /* fallthrough*/
+	  case 0:
+	    if (fd >= 0) close(fd);
+	    errno = e;
+	}
+    }
+#else  /* !USE_OPENDIR_AT */
+    dirp = opendir(oaa->path);
+    if (!dirp && gc_for_fd_with_gvl(errno))
+	dirp = opendir(oaa->path);
+#endif /* !USE_OPENDIR_AT */
+
+    return dirp;
+}
+
+static DIR *
+opendir_at(int basefd, const char *path)
+{
+    struct opendir_at_arg oaa;
+
+    oaa.basefd = basefd;
+    oaa.path = path;
+
+    return rb_thread_call_without_gvl(nogvl_opendir_at, &oaa, RUBY_UBF_IO, 0);
+}
+
 static DIR *
 do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 	   ruby_glob_errfunc *errfunc, VALUE arg, int *status)
 {
-#if USE_OPENDIR_AT
-    const int opendir_flags = (O_RDONLY|O_CLOEXEC|
-#ifdef O_DIRECTORY
-			       O_DIRECTORY|
-#endif
-			       0);
-    int fd;
-#endif
     DIR *dirp;
 #ifdef _WIN32
     VALUE tmp = 0;
@@ -1425,37 +1487,18 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 	path = RSTRING_PTR(tmp);
     }
 #endif
-#if USE_OPENDIR_AT
-    fd = openat(basefd, path, 0, opendir_flags);
-    dirp = (fd < 0) ? NULL : fdopendir(fd);
-#else
-    dirp = opendir_without_gvl(path);
-#endif
+    dirp = opendir_at(basefd, path);
     if (!dirp) {
 	int e = errno;
-	switch (rb_gc_for_fd(e)) {
-	  default:
-#if USE_OPENDIR_AT
-	    if ((fd >= 0) || (fd = openat(basefd, path, 0, opendir_flags)) >= 0) {
-		dirp = fdopendir(fd);
-	    }
-#else
-	    dirp = opendir_without_gvl(path);
-#endif
-	    if (dirp) break;
-	    e = errno;
-	    /* fallback */
-	  case 0:
-#if USE_OPENDIR_AT
-	    if (fd >= 0) close(fd);
-#endif
-	    *status = 0;
-	    if (to_be_ignored(e)) break;
+
+	*status = 0;
+	if (!to_be_ignored(e)) {
 	    if (errfunc) {
 		*status = (*errfunc)(path, arg, enc, e);
-		break;
 	    }
-	    sys_warning(path, enc);
+	    else {
+		sys_warning(path, enc);
+	    }
 	}
     }
 #ifdef _WIN32
@@ -3041,14 +3084,6 @@ rb_dir_exists_p(VALUE obj, VALUE fname)
 }
 
 static void *
-gc_for_fd_with_gvl(void *ptr)
-{
-    int *e = ptr;
-
-    return (void *)(rb_gc_for_fd(*e) ? Qtrue : Qfalse);
-}
-
-static void *
 nogvl_dir_empty_p(void *ptr)
 {
     const char *path = ptr;
@@ -3058,7 +3093,7 @@ nogvl_dir_empty_p(void *ptr)
 
     if (!dir) {
 	int e = errno;
-	switch ((int)(VALUE)rb_thread_call_with_gvl(gc_for_fd_with_gvl, &e)) {
+	switch (gc_for_fd_with_gvl(e)) {
 	  default:
 	    dir = opendir(path);
 	    if (dir) break;
