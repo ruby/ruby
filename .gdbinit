@@ -1110,7 +1110,7 @@ define print_pathobj
     else
       set $str = ((struct RArray*)($arg0))->as.heap.ptr[0]
     end
-      printf "%s", $str
+    print_string $str
   end
 end
 
