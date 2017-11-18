@@ -9326,7 +9326,7 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
     rb_iseq_t *prev_src_iseq = load->iseq;
     load->iseq = iseq;
     ibf_load_iseq_each(load, iseq, ibf_iseq_list(load)[iseq->aux.loader.index]);
-    ISEQ_COMPILE_DATA(iseq) = NULL;
+    ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
     load->iseq = prev_src_iseq;
 }

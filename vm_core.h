@@ -426,6 +426,8 @@ struct rb_iseq_struct {
 	    VALUE obj;
 	    int index;
 	} loader;
+
+	rb_event_flag_t trace_events;
     } aux;
 };
 

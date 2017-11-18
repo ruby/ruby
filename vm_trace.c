@@ -61,23 +61,15 @@ rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks)
 
 /* ruby_vm_event_flags management */
 
-#define RUBY_EVENTS_TRACE_BY_ISEQ (RUBY_EVENT_LINE  | \
-				   RUBY_EVENT_CLASS | \
-				   RUBY_EVENT_END   | \
-				   RUBY_EVENT_CALL  | \
-				   RUBY_EVENT_RETURN| \
-				   RUBY_EVENT_B_CALL| \
-				   RUBY_EVENT_B_RETURN)
-
 static void
 update_global_event_hook(rb_event_flag_t vm_events)
 {
-    rb_event_flag_t new_iseq_events = vm_events & RUBY_EVENTS_TRACE_BY_ISEQ;
-    rb_event_flag_t cur_iseq_events = ruby_vm_event_flags & RUBY_EVENTS_TRACE_BY_ISEQ;
+    rb_event_flag_t new_iseq_events = vm_events & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t cur_iseq_events = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events > cur_iseq_events) {
 	/* write all ISeqs iff new events are added */
-	rb_iseq_trace_set_all(vm_events);
+	rb_iseq_trace_set_all(new_iseq_events);
     }
 
     ruby_vm_event_flags = vm_events;
