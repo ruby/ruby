@@ -76,6 +76,8 @@ char *strchr(char*,char);
 
 #include "ruby/util.h"
 
+#define vm_initialized rb_cThread
+
 /* define system APIs */
 #ifdef _WIN32
 #undef chdir
@@ -501,11 +503,15 @@ nogvl_opendir(void *ptr)
 static DIR *
 opendir_without_gvl(const char *path)
 {
-    union { const char *in; void *out; } u;
+    if (vm_initialized) {
+	union { const char *in; void *out; } u;
 
-    u.in = path;
+	u.in = path;
 
-    return rb_thread_call_without_gvl(nogvl_opendir, u.out, RUBY_UBF_IO, 0);
+	return rb_thread_call_without_gvl(nogvl_opendir, u.out, RUBY_UBF_IO, 0);
+    }
+    else
+	return opendir(path);
 }
 
 /*
@@ -1420,7 +1426,10 @@ with_gvl_gc_for_fd(void *ptr)
 static int
 gc_for_fd_with_gvl(int e)
 {
-    return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
+    if (vm_initialized)
+	return (int)(VALUE)rb_thread_call_with_gvl(with_gvl_gc_for_fd, &e);
+    else
+	return rb_gc_for_fd(e) ? Qtrue : Qfalse;
 }
 
 static void *
@@ -1471,7 +1480,10 @@ opendir_at(int basefd, const char *path)
     oaa.basefd = basefd;
     oaa.path = path;
 
-    return rb_thread_call_without_gvl(nogvl_opendir_at, &oaa, RUBY_UBF_IO, 0);
+    if (vm_initialized)
+	return rb_thread_call_without_gvl(nogvl_opendir_at, &oaa, RUBY_UBF_IO, 0);
+    else
+	return nogvl_opendir_at(&oaa);
 }
 
 static DIR *
