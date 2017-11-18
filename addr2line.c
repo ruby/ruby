@@ -95,6 +95,10 @@ void *alloca();
 #define PATH_MAX 4096
 #endif
 
+#ifndef SHF_COMPRESSED /* compatibility with glibc < 2.22 */
+#define SHF_COMPRESSED 0
+#endif
+
 int kprintf(const char *fmt, ...);
 
 typedef struct {
