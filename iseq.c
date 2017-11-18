@@ -120,7 +120,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     if (FL_TEST(iseq, ISEQ_NOT_LOADED_YET)) {
 	rb_gc_mark(iseq->aux.loader.obj);
     }
-    else if (ISEQ_COMPILE_DATA(iseq) != 0) {
+    else if (ISEQ_COMPILE_DATA(iseq) != NULL) {
 	const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 	RUBY_MARK_UNLESS_NULL(compile_data->mark_ary);
 	RUBY_MARK_UNLESS_NULL(compile_data->err_info);
@@ -305,7 +305,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     }
     RB_OBJ_WRITE(iseq, &iseq->body->mark_ary, iseq_mark_ary_create(0));
 
-    ISEQ_COMPILE_DATA(iseq) = ZALLOC(struct iseq_compile_data);
+    ISEQ_COMPILE_DATA_ALLOC(iseq);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->err_info, err_info);
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->mark_ary, rb_ary_tmp_new(3));
 
@@ -341,7 +341,7 @@ finish_iseq_build(rb_iseq_t *iseq)
 {
     struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
     VALUE err = data->err_info;
-    ISEQ_COMPILE_DATA(iseq) = 0;
+    ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
 
     if (RTEST(err)) {
@@ -351,8 +351,9 @@ finish_iseq_build(rb_iseq_t *iseq)
 	rb_exc_raise(err);
     }
 
-    if (ruby_vm_event_flags) {
-	rb_iseq_trace_set(iseq, ruby_vm_event_flags);
+    iseq->aux.trace_events = 0;
+    if (ruby_vm_event_flags & ISEQ_TRACE_EVENTS) {
+	rb_iseq_trace_set(iseq, ruby_vm_event_flags & ISEQ_TRACE_EVENTS);
     }
     return Qtrue;
 }
@@ -2321,34 +2322,41 @@ rb_iseq_defined_string(enum defined_type type)
 void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 {
-    unsigned int i;
-    VALUE *iseq_encoded = (VALUE *)iseq->body->iseq_encoded;
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    VALUE *code = rb_iseq_original_iseq(iseq);
-    const void * const *table = rb_vm_get_insns_address_table();
-#else
-    const VALUE *code = iseq->body->iseq_encoded;
-#endif
+    VM_ASSERT((turnon_events & ~ISEQ_TRACE_EVENTS) == 0);
 
-    for (i=0; i<iseq->body->iseq_size;) {
-	int insn = (int)code[i];
-	rb_event_flag_t events = rb_iseq_event_flags(iseq, i);
-
-	/* code represents before transformation */
-	VM_ASSERT(insn < VM_INSTRUCTION_SIZE/2);
-
-	if (events & turnon_events) {
-	    if (!TRACE_INSN_P(insn, iseq_encoded[i])) {
-		iseq_encoded[i] = INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
-	    }
-	}
-	else if (TRACE_INSN_P(insn, iseq_encoded[i])) {
-	    iseq_encoded[i] = INSN_CODE(insn);
-	}
-	i += insn_len(insn);
+    if (iseq->aux.trace_events == turnon_events) {
+	return;
     }
+    else {
+	unsigned int i;
+	VALUE *iseq_encoded = (VALUE *)iseq->body->iseq_encoded;
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+	VALUE *code = rb_iseq_original_iseq(iseq);
+	const void * const *table = rb_vm_get_insns_address_table();
+#else
+	const VALUE *code = iseq->body->iseq_encoded;
+#endif
+	((rb_iseq_t *)iseq)->aux.trace_events = turnon_events;
 
-    /* clear for debugging: ISEQ_ORIGINAL_ISEQ_CLEAR(iseq); */
+	for (i=0; i<iseq->body->iseq_size;) {
+	    int insn = (int)code[i];
+	    rb_event_flag_t events = rb_iseq_event_flags(iseq, i);
+
+	    /* code represents before transformation */
+	    VM_ASSERT(insn < VM_INSTRUCTION_SIZE/2);
+
+	    if (events & turnon_events) {
+		if (!TRACE_INSN_P(insn, iseq_encoded[i])) {
+		    iseq_encoded[i] = INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
+		}
+	    }
+	    else if (TRACE_INSN_P(insn, iseq_encoded[i])) {
+		iseq_encoded[i] = INSN_CODE(insn);
+	    }
+	    i += insn_len(insn);
+	}
+	/* clear for debugging: ISEQ_ORIGINAL_ISEQ_CLEAR(iseq); */
+    }
 }
 
 static int
