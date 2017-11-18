@@ -13,6 +13,7 @@
 #include "addr2line.h"
 
 #include <stdio.h>
+#include <stdbool.h>
 #include <errno.h>
 
 #ifdef USE_ELF
@@ -486,6 +487,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
     uintptr_t dladdr_fbase = 0;
+    bool compressed_p = false;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -555,6 +557,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    break;
 	  case SHT_PROGBITS:
 	    if (!strcmp(section_name, ".debug_line")) {
+		if (shdr[i].sh_flags & SHF_COMPRESSED) {
+		    compressed_p = true;
+		}
 		debug_line_shdr = shdr + i;
 	    }
 	    else if (!strcmp(section_name, ".gnu_debuglink")) {
@@ -632,7 +637,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    if (parse_debug_line(num_traces, traces,
+    if (!compressed_p &&
+	    parse_debug_line(num_traces, traces,
 			 file + debug_line_shdr->sh_offset,
 			 debug_line_shdr->sh_size,
 			 obj, lines, offset))
@@ -748,7 +754,7 @@ next_line:
 	    kprintf("[0x%lx]\n", addr);
 	}
 	else if (!line->saddr || !line->sname) {
-	    kprintf("%s [0x%lx]\n", line->path, addr);
+	    kprintf("%s(0x%lx) [0x%lx]\n", line->path, addr-line->base_addr, addr);
 	}
 	else if (line->line <= 0) {
 	    kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
