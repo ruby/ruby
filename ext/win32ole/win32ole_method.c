@@ -83,7 +83,7 @@ ole_method_sub(VALUE self, ITypeInfo *pOwnerTypeInfo, ITypeInfo *pTypeInfo, VALU
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeAttr");
     }
     for(i = 0; i < pTypeAttr->cFuncs && method == Qnil; i++) {
         hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, i, &pFuncDesc);
@@ -148,7 +148,7 @@ olemethod_from_typeinfo(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
     VALUE method = Qnil;
     hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
     if (FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetTypeAttr");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeAttr");
     }
     method = ole_method_sub(self, 0, pTypeInfo, name);
     if (method != Qnil) {
@@ -308,7 +308,7 @@ ole_method_return_type(ITypeInfo *pTypeInfo, UINT method_index)
 
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to GetFuncDesc");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetFuncDesc");
 
     type = ole_typedesc2val(pTypeInfo, &(pFuncDesc->elemdescFunc.tdesc), Qnil);
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);

@@ -942,7 +942,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
                                            &p);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError,
+        ole_raise(hr, eWIN32OLEQueryInterfaceError,
                   "failed to query IConnectionPointContainer");
     }
     pContainer = p;
@@ -953,7 +953,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
     OLE_RELEASE(pContainer);
     if (FAILED(hr)) {
         OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "failed to query IConnectionPoint");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to query IConnectionPoint");
     }
     pIEV = EVENTSINK_Constructor();
     pIEV->m_iid = iid;
@@ -961,7 +961,7 @@ ev_advise(int argc, VALUE *argv, VALUE self)
                                           (IUnknown*)pIEV,
                                           &dwCookie);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "Advise Error");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "Advise Error");
     }
 
     TypedData_Get_Struct(self, struct oleeventdata, &oleevent_datatype, poleev);
