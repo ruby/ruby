@@ -2788,6 +2788,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$2->nd_iter = $1;
+			$2->nd_loc = @$;
 			$$ = $2;
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
@@ -2800,6 +2801,7 @@ primary		: literal
 		    /*%%%*/
 			block_dup_check($1->nd_args, $2);
 			$2->nd_iter = $1;
+			$2->nd_loc = @$;
 			$$ = $2;
 		    /*%
 			$$ = method_add_block($1, $2);
@@ -3624,6 +3626,7 @@ block_call	: command do_block
 			    block_dup_check($1->nd_args, $2);
 			}
 			$2->nd_iter = $1;
+			$2->nd_loc = @$;
 			$$ = $2;
 			fixpos($$, $1);
 		    /*%
@@ -3639,6 +3642,7 @@ block_call	: command do_block
 		    /*%%%*/
 			block_dup_check($4, $5);
 			$5->nd_iter = new_command_qcall($2, $1, $3, $4, &@$);
+			$5->nd_loc = @$;
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
@@ -3651,6 +3655,7 @@ block_call	: command do_block
 		    /*%%%*/
 			block_dup_check($4, $5);
 			$5->nd_iter = new_command_qcall($2, $1, $3, $4, &@$);
+			$5->nd_loc = @$;
 			$$ = $5;
 			fixpos($$, $1);
 		    /*%
