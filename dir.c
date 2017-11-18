@@ -490,6 +490,24 @@ dir_s_alloc(VALUE klass)
     return obj;
 }
 
+static void *
+nogvl_opendir(void *ptr)
+{
+    const char *path = ptr;
+
+    return (void *)opendir(path);
+}
+
+static DIR *
+opendir_without_gvl(const char *path)
+{
+    union { const char *in; void *out; } u;
+
+    u.in = path;
+
+    return rb_thread_call_without_gvl(nogvl_opendir, u.out, RUBY_UBF_IO, 0);
+}
+
 /*
  *  call-seq:
  *     Dir.new( string ) -> aDir
@@ -536,18 +554,18 @@ dir_initialize(int argc, VALUE *argv, VALUE dir)
     RB_OBJ_WRITE(dir, &dp->path, Qnil);
     dp->enc = fsenc;
     path = RSTRING_PTR(dirname);
-    dp->dir = opendir(path);
+    dp->dir = opendir_without_gvl(path);
     if (dp->dir == NULL) {
 	int e = errno;
 	if (rb_gc_for_fd(e)) {
-	    dp->dir = opendir(path);
+	    dp->dir = opendir_without_gvl(path);
 	}
 #ifdef HAVE_GETATTRLIST
 	else if (e == EIO) {
 	    u_int32_t attrbuf[1];
 	    struct attrlist al = {ATTR_BIT_MAP_COUNT, 0};
 	    if (getattrlist(path, &al, attrbuf, sizeof(attrbuf), FSOPT_NOFOLLOW) == 0) {
-		dp->dir = opendir(path);
+		dp->dir = opendir_without_gvl(path);
 	    }
 	}
 #endif
@@ -1411,7 +1429,7 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
     fd = openat(basefd, path, 0, opendir_flags);
     dirp = (fd < 0) ? NULL : fdopendir(fd);
 #else
-    dirp = opendir(path);
+    dirp = opendir_without_gvl(path);
 #endif
     if (!dirp) {
 	int e = errno;
@@ -1422,7 +1440,7 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 		dirp = fdopendir(fd);
 	    }
 #else
-	    dirp = opendir(path);
+	    dirp = opendir_without_gvl(path);
 #endif
 	    if (dirp) break;
 	    e = errno;
