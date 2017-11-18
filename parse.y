@@ -4640,10 +4640,10 @@ f_arg_item	: f_arg_asgn
 			arg_var(tid);
 		    /*%%%*/
 			if (dyna_in_block()) {
-			    $2->nd_value = new_dvar(tid, &@$);
+			    $2->nd_value = new_dvar(tid, &@2);
 			}
 			else {
-			    $2->nd_value = new_lvar(tid, &@$);
+			    $2->nd_value = new_lvar(tid, &@2);
 			}
 			$$ = NEW_ARGS_AUX(tid, 1);
 			$$->nd_next = $2;
