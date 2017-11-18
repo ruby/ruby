@@ -9032,6 +9032,10 @@ list_append_gen(struct parser_params *parser, NODE *list, NODE *item, const YYLT
     list->nd_alen += 1;
     last->nd_next = new_list(item, location);
     list->nd_next->nd_end = last->nd_next;
+
+    nd_set_last_lineno(list, nd_last_lineno(item));
+    nd_set_last_column(list, nd_last_column(item));
+
     return list;
 }
 
@@ -9056,6 +9060,9 @@ list_concat(NODE *head, NODE *tail)
     else {
 	head->nd_next->nd_end = tail;
     }
+
+    nd_set_last_lineno(head, nd_last_lineno(tail));
+    nd_set_last_column(head, nd_last_column(tail));
 
     return head;
 }
