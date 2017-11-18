@@ -1471,8 +1471,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			value_expr($3);
-			$1->nd_value = $3;
-			$$ = $1;
+			$$ = node_assign($1, $3, &@$);
 		    /*%
 			$$ = dispatch2(massign, $1, $3);
 		    %*/
@@ -1485,8 +1484,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| mlhs '=' mrhs_arg
 		    {
 		    /*%%%*/
-			$1->nd_value = $3;
-			$$ = $1;
+			$$ = node_assign($1, $3, &@$);
 		    /*%
 			$$ = dispatch2(massign, $1, $3);
 		    %*/
