@@ -3735,7 +3735,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 
     if ((events & vm_event_flags) == 0) {
 	/* disable trace */
-	rb_iseq_trace_set(iseq, vm_event_flags);
+	rb_iseq_trace_set(iseq, vm_event_flags & ISEQ_TRACE_EVENTS);
 	return;
     }
 
