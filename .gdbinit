@@ -1022,8 +1022,8 @@ define print_lineno
   end
 
   set $i = 0
-  set $size = $iseq->body->line_info_size
-  set $table = $iseq->body->line_info_table
+  set $size = $iseq->body->insns_info_size
+  set $table = $iseq->body->insns_info
   #printf "size: %d\n", $size
   if $size == 0
   else
