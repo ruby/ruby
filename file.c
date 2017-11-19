@@ -2873,6 +2873,33 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 }
 
 #ifndef _WIN32
+struct readlink_arg {
+    const char *path;
+    char *buf;
+    size_t size;
+};
+
+static void *
+nogvl_readlink(void *ptr)
+{
+    struct readlink_arg *ra = ptr;
+
+    return (void *)(VALUE)readlink(ra->path, ra->buf, ra->size);
+}
+
+static ssize_t
+readlink_without_gvl(VALUE path, VALUE buf, size_t size)
+{
+    struct readlink_arg ra;
+
+    ra.path = RSTRING_PTR(path);
+    ra.buf = RSTRING_PTR(buf);
+    ra.size = size;
+
+    return (ssize_t)rb_thread_call_without_gvl(nogvl_readlink, &ra,
+						RUBY_UBF_IO, 0);
+}
+
 VALUE
 rb_readlink(VALUE path, rb_encoding *enc)
 {
@@ -2883,7 +2910,7 @@ rb_readlink(VALUE path, rb_encoding *enc)
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
     v = rb_enc_str_new(0, size, enc);
-    while ((rv = readlink(RSTRING_PTR(path), RSTRING_PTR(v), size)) == size
+    while ((rv = readlink_without_gvl(path, v, size)) == size
 #ifdef _AIX
 	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
 #endif
