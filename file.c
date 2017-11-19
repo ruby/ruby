@@ -4652,7 +4652,7 @@ nogvl_truncate(void *ptr)
 {
     struct truncate_arg *ta = ptr;
 #ifdef HAVE_TRUNCATE
-    return (void *)truncate(ta->path, ta->pos);
+    return (void *)(VALUE)truncate(ta->path, ta->pos);
 #else /* defined(HAVE_CHSIZE) */
     {
 	int tmpfd = rb_cloexec_open(ta->path, 0, 0);
@@ -4698,7 +4698,8 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     path = rb_str_encode_ospath(path);
     ta.path = StringValueCStr(path);
 
-    r = (int)rb_thread_call_without_gvl(nogvl_truncate, &ta, RUBY_UBF_IO, NULL);
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_truncate, &ta,
+						RUBY_UBF_IO, NULL);
     if (r < 0)
 	rb_sys_fail_path(path);
     return INT2FIX(0);
