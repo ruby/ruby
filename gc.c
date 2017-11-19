@@ -718,6 +718,19 @@ struct heap_page {
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
 #endif
 
+#ifndef ENABLE_VM_OBJSPACE
+# ifdef _WIN32
+/*
+ * TODO: object space independent st_table.
+ * socklist and conlist will be freed exit_handler(), after object
+ * space destruction.
+ */
+#   define ENABLE_VM_OBJSPACE 0
+# else
+#   define ENABLE_VM_OBJSPACE 1
+# endif
+#endif
+
 /* Aliases */
 #if defined(ENABLE_VM_OBJSPACE) && ENABLE_VM_OBJSPACE
 #define rb_objspace (*rb_objspace_of(GET_VM()))
