@@ -1,5 +1,7 @@
 # From https://bugs.ruby-lang.org/issues/13526#note-1
 
+Thread.report_on_exception = true
+
 sleep if $load
 $load = true
 
@@ -7,7 +9,7 @@ n = 10
 threads = Array.new(n) do
   Thread.new do
     begin
-      autoload :Foo, "#{File.dirname($0)}/#{$0}"
+      autoload :Foo, File.expand_path(__FILE__)
       Thread.pass
       Foo
     ensure
@@ -17,4 +19,4 @@ threads = Array.new(n) do
 end
 
 Thread.pass while threads.all?(&:stop?)
-100.times { Thread.pass }
+1000.times { Thread.pass }
