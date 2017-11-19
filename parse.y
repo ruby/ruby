@@ -9015,6 +9015,8 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
     }
     end->nd_next = tail;
     h->nd_end = tail->nd_end;
+    nd_set_last_lineno(head, nd_last_lineno(tail));
+    nd_set_last_column(head, nd_last_column(tail));
     return head;
 }
 
