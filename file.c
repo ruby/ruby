@@ -5766,11 +5766,11 @@ static VALUE
 rb_file_s_mkfifo(int argc, VALUE *argv)
 {
     VALUE path;
-    int mode = 0666;
+    mode_t mode = 0666;
 
     rb_check_arity(argc, 1, 2);
     if (argc > 1) {
-	mode = NUM2INT(argv[1]);
+	mode = NUM2MODET(argv[1]);
     }
     path = argv[0];
     FilePathValue(path);
