@@ -335,6 +335,22 @@ describe "Module#autoload" do
     end
   end
 
+  describe "when changing $LOAD_PATH" do
+    before do
+      $LOAD_PATH.unshift(File.expand_path('../fixtures/path1', __FILE__))
+    end
+
+    after do
+      $LOAD_PATH.shift
+      $LOAD_PATH.shift
+    end
+
+    it "does not reload a file due to a different load path" do
+      ModuleSpecs::Autoload.autoload :LoadPath, "load_path"
+      ModuleSpecs::Autoload::LoadPath.loaded.should == :autoload_load_path
+    end
+  end
+
   describe "(concurrently)" do
     it "blocks a second thread while a first is doing the autoload" do
       ModuleSpecs::Autoload.autoload :Concur, fixture(__FILE__, "autoload_concur.rb")
@@ -383,27 +399,7 @@ describe "Module#autoload" do
 
       ModuleSpecs::Autoload.send(:remove_const, :Concur)
     end
-  end
 
-  describe "when changing $LOAD_PATH" do
-
-    before do
-      $LOAD_PATH.unshift(File.expand_path('../fixtures/path1', __FILE__))
-    end
-
-    after do
-      $LOAD_PATH.shift
-      $LOAD_PATH.shift
-    end
-
-    it "does not reload a file due to a different load path" do
-      ModuleSpecs::Autoload.autoload :LoadPath, "load_path"
-      ModuleSpecs::Autoload::LoadPath.loaded.should == :autoload_load_path
-    end
-
-  end
-
-  describe "(concurrently)" do
     ruby_bug "#10892", ""..."2.3" do
       it "blocks others threads while doing an autoload" do
         file_path     = fixture(__FILE__, "repeated_concurrent_autoload.rb")
