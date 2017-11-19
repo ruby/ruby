@@ -448,6 +448,56 @@ describe "Module#autoload" do
         end
       end
     end
+
+    it "raises a NameError in each thread if the constant is not set" do
+      file = fixture(__FILE__, "autoload_never_set.rb")
+      start = false
+
+      threads = Array.new(10) do
+        Thread.new do
+          Thread.pass until start
+          begin
+            ModuleSpecs::Autoload.autoload :NeverSetConstant, file
+            Thread.pass
+            ModuleSpecs::Autoload::NeverSetConstant
+          rescue NameError => e
+            e
+          ensure
+            Thread.pass
+          end
+        end
+      end
+
+      start = true
+      threads.each { |t|
+        t.value.should be_an_instance_of(NameError)
+      }
+    end
+
+    it "raises a LoadError in each thread if the file does not exist" do
+      file = fixture(__FILE__, "autoload_does_not_exist.rb")
+      start = false
+
+      threads = Array.new(10) do
+        Thread.new do
+          Thread.pass until start
+          begin
+            ModuleSpecs::Autoload.autoload :FileDoesNotExist, file
+            Thread.pass
+            ModuleSpecs::Autoload::FileDoesNotExist
+          rescue LoadError => e
+            e
+          ensure
+            Thread.pass
+          end
+        end
+      end
+
+      start = true
+      threads.each { |t|
+        t.value.should be_an_instance_of(LoadError)
+      }
+    end
   end
 
   it "loads the registered constant even if the constant was already loaded by another thread" do
