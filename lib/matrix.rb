@@ -212,10 +212,10 @@ class Matrix
   #   Matrix.vstack(x, y) # => Matrix[[1, 2], [3, 4], [5, 6], [7, 8]]
   #
   def Matrix.vstack(x, *matrices)
-    raise TypeError, "Expected a Matrix, got a #{x.class}" unless x.is_a?(Matrix)
+    x = CoercionHelper.coerce_to_matrix(x)
     result = x.send(:rows).map(&:dup)
     matrices.each do |m|
-      raise TypeError, "Expected a Matrix, got a #{m.class}" unless m.is_a?(Matrix)
+      m = CoercionHelper.coerce_to_matrix(m)
       if m.column_count != x.column_count
         raise ErrDimensionMismatch, "The given matrices must have #{x.column_count} columns, but one has #{m.column_count}"
       end
@@ -233,11 +233,11 @@ class Matrix
   #   Matrix.hstack(x, y) # => Matrix[[1, 2, 5, 6], [3, 4, 7, 8]]
   #
   def Matrix.hstack(x, *matrices)
-    raise TypeError, "Expected a Matrix, got a #{x.class}" unless x.is_a?(Matrix)
+    x = CoercionHelper.coerce_to_matrix(x)
     result = x.send(:rows).map(&:dup)
     total_column_count = x.column_count
     matrices.each do |m|
-      raise TypeError, "Expected a Matrix, got a #{m.class}" unless m.is_a?(Matrix)
+      m = CoercionHelper.coerce_to_matrix(m)
       if m.row_count != x.row_count
         raise ErrDimensionMismatch, "The given matrices must have #{x.row_count} rows, but one has #{m.row_count}"
       end
@@ -1487,7 +1487,7 @@ class Matrix
     #
     def self.coerce_to(obj, cls, meth) # :nodoc:
       return obj if obj.kind_of?(cls)
-
+      raise TypeError, "Expected a #{cls} but got a #{obj.class}" unless obj.respond_to? meth
       begin
         ret = obj.__send__(meth)
       rescue Exception => e

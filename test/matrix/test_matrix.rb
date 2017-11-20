@@ -571,6 +571,8 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @e1, @e1.hstack(@e1)
     assert_equal Matrix.empty(0,6), @e2.hstack(@e2)
     assert_equal SubMatrix, SubMatrix.hstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1, 3],[2, 4]], Matrix.hstack(Vector[1,2], Vector[3, 4])
   end
 
   def test_vstack
@@ -586,6 +588,8 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal Matrix.empty(4,0), @e1.vstack(@e1)
     assert_equal @e2, @e2.vstack(@e2)
     assert_equal SubMatrix, SubMatrix.vstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1],[2],[3]], Matrix.vstack(Vector[1,2], Vector[3])
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric
