@@ -5752,6 +5752,19 @@ rb_stat_sticky(VALUE obj)
 #endif
 
 #ifdef HAVE_MKFIFO
+struct mkfifo_arg {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_mkfifo(void *ptr)
+{
+    struct mkfifo_arg *ma = ptr;
+
+    return (void *)(VALUE)mkfifo(ma->path, ma->mode);
+}
+
 /*
  *  call-seq:
  *     File.mkfifo(file_name, mode=0666)  => 0
@@ -5766,16 +5779,18 @@ static VALUE
 rb_file_s_mkfifo(int argc, VALUE *argv)
 {
     VALUE path;
-    mode_t mode = 0666;
+    struct mkfifo_arg ma;
 
+    ma.mode = 0666;
     rb_check_arity(argc, 1, 2);
     if (argc > 1) {
-	mode = NUM2MODET(argv[1]);
+	ma.mode = NUM2MODET(argv[1]);
     }
     path = argv[0];
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
-    if (mkfifo(RSTRING_PTR(path), mode)) {
+    ma.path = RSTRING_PTR(path);
+    if (rb_thread_call_without_gvl(nogvl_mkfifo, &ma, RUBY_UBF_IO, 0)) {
 	rb_sys_fail_path(path);
     }
     return INT2FIX(0);
