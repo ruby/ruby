@@ -218,6 +218,10 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal([[1], [1]], m2.to_a)
   end
 
+  def test_to_matrix
+    assert @m1.equal? @m1.to_matrix
+  end
+
   def test_columns
     assert_equal(@m1, Matrix.columns([[1, 4], [2, 5], [3, 6]]))
   end
