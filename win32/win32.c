@@ -49,6 +49,7 @@
 #include <mswsock.h>
 #endif
 #include "ruby/win32.h"
+#include "ruby/vm.h"
 #include "win32/dir.h"
 #include "win32/file.h"
 #include "internal.h"
@@ -689,7 +690,7 @@ rtc_error_handler(int e, const char *src, int line, const char *exe, const char 
 #endif
 
 static CRITICAL_SECTION select_mutex;
-static int NtSocketsInitialized = 0;
+#define NtSocketsInitialized 1
 static st_table *socklist = NULL;
 static st_table *conlist = NULL;
 #define conlist_disabled ((st_table *)-1)
@@ -730,21 +731,38 @@ exit_handler(void)
 {
     if (NtSocketsInitialized) {
 	WSACleanup();
-	if (socklist) {
-	    st_free_table(socklist);
-	    socklist = NULL;
-	}
 	DeleteCriticalSection(&select_mutex);
-	NtSocketsInitialized = 0;
+    }
+    if (uenvarea) {
+	free(uenvarea);
+	uenvarea = NULL;
+    }
+}
+
+/* License: Ruby's */
+static void
+vm_exit_handler(ruby_vm_t *vm)
+{
+    if (socklist) {
+	st_free_table(socklist);
+	socklist = NULL;
     }
     if (conlist && conlist != conlist_disabled) {
 	st_foreach(conlist, free_conlist, 0);
 	st_free_table(conlist);
 	conlist = NULL;
     }
-    if (uenvarea) {
-	free(uenvarea);
-	uenvarea = NULL;
+}
+
+/* License: Ruby's */
+static void
+install_vm_exit_handler(void)
+{
+    static bool installed = 0;
+
+    if (!installed) {
+	ruby_vm_at_exit(vm_exit_handler);
+	installed = 1;
     }
 }
 
@@ -767,7 +785,7 @@ StartSockets(void)
 
     InitializeCriticalSection(&select_mutex);
 
-    NtSocketsInitialized = 1;
+    atexit(exit_handler);
 }
 
 #define MAKE_SOCKDATA(af, fl)	((int)((((int)af)<<4)|((fl)&0xFFFF)))
@@ -778,8 +796,10 @@ StartSockets(void)
 static inline int
 socklist_insert(SOCKET sock, int flag)
 {
-    if (!socklist)
+    if (!socklist) {
 	socklist = st_init_numtable();
+	install_vm_exit_handler();
+    }
     return st_insert(socklist, (st_data_t)sock, (st_data_t)flag);
 }
 
@@ -856,8 +876,6 @@ rb_w32_sysinit(int *argc, char ***argv)
     init_env();
 
     init_stdhandle();
-
-    atexit(exit_handler);
 
     // Initialize Winsock
     StartSockets();
@@ -6560,6 +6578,7 @@ constat_handle(HANDLE h)
 	    return NULL;
 	}
 	conlist = st_init_numtable();
+	install_vm_exit_handler();
     }
     else if (conlist == conlist_disabled) {
 	return NULL;

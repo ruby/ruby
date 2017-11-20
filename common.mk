@@ -844,7 +844,8 @@ compile.$(OBJEXT): {$(VPATH)}opt_sc.inc {$(VPATH)}optunifs.inc
 
 win32/win32.$(OBJEXT): {$(VPATH)}win32/win32.c {$(VPATH)}win32/file.h \
   {$(VPATH)}dln.h {$(VPATH)}dln_find.c {$(VPATH)}encindex.h \
-  {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) $(PLATFORM_D)
+  {$(VPATH)}internal.h {$(VPATH)}util.h $(RUBY_H_INCLUDES) \
+  {$(VPATH)}vm.h $(PLATFORM_D)
 win32/file.$(OBJEXT): {$(VPATH)}win32/file.c {$(VPATH)}win32/file.h \
   $(RUBY_H_INCLUDES) $(PLATFORM_D)
 
