@@ -254,7 +254,7 @@ class Matrix
   #
   #   x = Matrix[[6, 6], [4, 4]]
   #   y = Matrix[[1, 2], [3, 4]]
-  #   Matrix.combine(x, y) {|a, b| a - b} # => Matrix[[5, 4], [1, 2]]
+  #   Matrix.combine(x, y) {|a, b| a - b} # => Matrix[[5, 4], [1, 0]]
   #
   def Matrix.combine(*matrices)
     return to_enum(__method__, *matrices) unless block_given?
