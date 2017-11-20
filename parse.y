@@ -4124,7 +4124,7 @@ qsym_list	: /* none */
 			lit = $2->nd_lit;
 			nd_set_type($2, NODE_LIT);
 			add_mark_object($2->nd_lit = ID2SYM(rb_intern_str(lit)));
-			$2->nd_loc = @$;
+			$2->nd_loc = @2;
 			$$ = list_append($1, $2, &@$);
 		    /*%
 			$$ = dispatch2(qsymbols_add, $1, $2);
