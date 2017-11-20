@@ -250,6 +250,35 @@ class Matrix
   end
 
   #
+  # Create a matrix by combining matrices entrywise, using the given block
+  #
+  #   x = Matrix[[6, 6], [4, 4]]
+  #   y = Matrix[[1, 2], [3, 4]]
+  #   Matrix.combine(x, y) {|a, b| a - b} # => Matrix[[5, 4], [1, 2]]
+  #
+  def Matrix.combine(*matrices)
+    return to_enum(__method__, *matrices) unless block_given?
+
+    return Matrix.empty if matrices.empty?
+    matrices.map!(&CoercionHelper.method(:coerce_to_matrix))
+    x = matrices.first
+    matrices.each do |m|
+      Matrix.Raise ErrDimensionMismatch unless x.row_count == m.row_count && x.column_count == m.column_count
+    end
+
+    rows = Array.new(x.row_count) do |i|
+      Array.new(x.column_count) do |j|
+        yield matrices.map{|m| m[i,j]}
+      end
+    end
+    new rows, x.column_count
+  end
+
+  def combine(*matrices, &block)
+    Matrix.combine(self, *matrices, &block)
+  end
+
+  #
   # Matrix.new is private; use Matrix.rows, columns, [], etc... to create.
   #
   def initialize(rows, column_count = rows[0].size)
