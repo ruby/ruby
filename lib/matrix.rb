@@ -951,6 +951,33 @@ class Matrix
   end
 
   #
+  # Hadamard product
+  #    Matrix[[1,2], [3,4]].hadamard(Matrix[[1,2], [3,2]])
+  #      => 1  4
+  #         9  8
+  #
+  def hadamard(m)
+    case m
+    when Numeric
+      Matrix.Raise ErrOperationNotDefined, "element_multiplication", self.class, m.class
+    when Vector
+      m = self.class.column_vector(m)
+    when Matrix
+    else
+      return apply_through_coercion(m, __method__)
+    end
+
+    Matrix.Raise ErrDimensionMismatch unless row_count == m.row_count && column_count == m.column_count
+
+    rows = Array.new(row_count) do |i|
+      Array.new(column_count) do|j|
+        self[i, j] * m[i, j]
+      end
+    end
+    new_matrix rows, column_count
+  end
+
+  #
   # Returns the inverse of the matrix.
   #   Matrix[[-1, -1], [0, -1]].inverse
   #     => -1  1

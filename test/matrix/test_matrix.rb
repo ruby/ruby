@@ -414,6 +414,16 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[1,1],[1,1]], Matrix[[2,2],[2,2]] / o)
   end
 
+  def test_hadamard
+    assert_equal(Matrix[[1,4], [9,16]], Matrix[[1,2], [3,4]].hadamard(Matrix[[1,2], [3,4]]))
+    assert_equal(Matrix[[2, 6, 12], [20, 30, 42]], @m1.hadamard(@n1))
+    o = Object.new
+    def o.coerce(m)
+        [m, m]
+    end
+    assert_equal(Matrix[[1, 4, 9], [16, 25, 36]], @m1.hadamard(o))
+  end
+
   def test_exp
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
