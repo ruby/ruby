@@ -2,7 +2,7 @@
 require 'test/unit'
 require '-test-/array/resize'
 
-class TestArray < Test::Unit::TestCase
+class Test_Array < Test::Unit::TestCase
   class TestResize < Test::Unit::TestCase
     def test_expand
       feature = '[ruby-dev:42912]'
