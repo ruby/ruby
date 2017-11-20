@@ -4101,7 +4101,7 @@ qword_list	: /* none */
 		| qword_list tSTRING_CONTENT ' '
 		    {
 		    /*%%%*/
-			$2->nd_loc = @$;
+			$2->nd_loc = @2;
 			$$ = list_append($1, $2, &@$);
 		    /*%
 			$$ = dispatch2(qwords_add, $1, $2);
