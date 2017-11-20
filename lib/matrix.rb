@@ -980,6 +980,17 @@ class Matrix
   end
 
   #
+  # Hadamard product
+  #    Matrix[[1,2], [3,4]].hadamard_product(Matrix[[1,2], [3,2]])
+  #      => 1  4
+  #         9  8
+  #
+  def hadamard_product(m)
+    combine(m){|a, b| a * b}
+  end
+  alias_method :entrywise_product, :hadamard_product
+
+  #
   # Returns the inverse of the matrix.
   #   Matrix[[-1, -1], [0, -1]].inverse
   #     => -1  1
