@@ -393,8 +393,9 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
 }
 
 static void
-args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
-			 const rb_iseq_t * const iseq, VALUE * const locals)
+args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
+			 VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
+			 VALUE *const locals)
 {
     const ID *acceptable_keywords = iseq->body->param.keyword->table;
     const int req_key_num = iseq->body->param.keyword->required_num;
@@ -416,7 +417,7 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
 	}
     }
 
-    if (missing) argument_kw_error(GET_EC(), iseq, "missing", missing);
+    if (missing) argument_kw_error(ec, iseq, "missing", missing);
 
     for (di=0; i<key_num; i++, di++) {
 	if (args_setup_kw_parameters_lookup(acceptable_keywords[i], &locals[i], passed_keywords, passed_values, passed_keyword_len)) {
@@ -457,7 +458,7 @@ args_setup_kw_parameters(VALUE* const passed_values, const int passed_keyword_le
     else {
 	if (found != passed_keyword_len) {
 	    VALUE keys = make_unknown_kw_hash(passed_keywords, passed_keyword_len, passed_values);
-	    argument_kw_error(GET_EC(), iseq, "unknown", keys);
+	    argument_kw_error(ec, iseq, "unknown", keys);
 	}
     }
 
@@ -640,7 +641,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
 	if (args->kw_argv != NULL) {
 	    const struct rb_call_info_kw_arg *kw_arg = args->kw_arg;
-	    args_setup_kw_parameters(args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, iseq, klocals);
+	    args_setup_kw_parameters(ec, iseq, args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, klocals);
 	}
 	else if (!NIL_P(keyword_hash)) {
 	    int kw_len = rb_long2int(RHASH_SIZE(keyword_hash));
@@ -651,11 +652,11 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	    arg.argc = 0;
 	    rb_hash_foreach(keyword_hash, fill_keys_values, (VALUE)&arg);
 	    VM_ASSERT(arg.argc == kw_len);
-	    args_setup_kw_parameters(arg.vals, kw_len, arg.keys, iseq, klocals);
+	    args_setup_kw_parameters(ec, iseq, arg.vals, kw_len, arg.keys, klocals);
 	}
 	else {
 	    VM_ASSERT(args_argc(args) == 0);
-	    args_setup_kw_parameters(NULL, 0, NULL, iseq, klocals);
+	    args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
 	}
     }
     else if (iseq->body->param.flags.has_kwrest) {
