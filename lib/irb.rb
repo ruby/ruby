@@ -706,6 +706,8 @@ class Binding
   undef irb if method_defined?(:irb)
   def irb
     IRB.setup(eval("__FILE__"))
-    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
+    workspace = IRB::WorkSpace.new(self)
+    STDOUT.print(workspace.code_around_binding)
+    IRB::Irb.new(workspace).run(IRB.conf)
   end
 end
