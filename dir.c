@@ -504,7 +504,7 @@ static DIR *
 opendir_without_gvl(const char *path)
 {
     if (vm_initialized) {
-	union { const char *in; void *out; } u;
+	union { const void *in; void *out; } u;
 
 	u.in = path;
 
