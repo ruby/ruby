@@ -4638,7 +4638,7 @@ rb_file_s_join(VALUE klass, VALUE args)
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
 struct truncate_arg {
     const char *path;
-#if defined(HAVE_FTRUNCATE)
+#if defined(HAVE_TRUNCATE)
 #define NUM2POS(n) NUM2OFFT(n)
     off_t pos;
 #else
