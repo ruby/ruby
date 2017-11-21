@@ -18,5 +18,5 @@ threads = Array.new(n) do
   end
 end
 
-Thread.pass while threads.all?(&:stop?)
+Thread.pass until threads.all?(&:stop?)
 1000.times { Thread.pass }
