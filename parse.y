@@ -8248,6 +8248,7 @@ parser_yylex(struct parser_params *parser)
 	    return here_document(&lex_strterm->u.heredoc);
 	}
 	else {
+	    token_flush(parser);
 	    return parse_string(&lex_strterm->u.literal);
 	}
     }
