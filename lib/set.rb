@@ -451,8 +451,8 @@ class Set
   def |(enum)
     dup.merge(enum)
   end
-  alias + |             ##
-  alias union |         ##
+  alias + |
+  alias union |
 
   # Returns a new set built by duplicating the set, removing every
   # element that appears in the given enumerable object.
@@ -462,7 +462,7 @@ class Set
   def -(enum)
     dup.subtract(enum)
   end
-  alias difference -    ##
+  alias difference -
 
   # Returns a new set containing elements common to the set and the
   # given enumerable object.
@@ -474,7 +474,7 @@ class Set
     do_with_enum(enum) { |o| n.add(o) if include?(o) }
     n
   end
-  alias intersection &  ##
+  alias intersection &
 
   # Returns a new set containing elements exclusive between the set
   # and the given enumerable object.  (set ^ enum) is equivalent to
