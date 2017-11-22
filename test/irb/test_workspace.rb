@@ -42,6 +42,7 @@ module TestIRB
             From: #{f.path} @ line 1 :
 
              => 1: IRB::WorkSpace.new(binding)
+
           EOS
         end
       end
