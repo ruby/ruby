@@ -47,15 +47,15 @@
 #
 # == Comparison
 #
-# The comparison operators <, >, <= and >= are implemented as
+# The comparison operators <, >, <=, and >= are implemented as
 # shorthand for the {proper_,}{subset?,superset?} methods.  However,
 # the <=> operator is intentionally left out because not every pair of
-# sets is comparable. ({x,y} vs. {x,z} for example)
+# sets is comparable ({x, y} vs. {x, z} for example).
 #
 # == Example
 #
 #   require 'set'
-#   s1 = Set.new([1, 2])                  #=> #<Set: {1, 2}>
+#   s1 = Set[1, 2]                        #=> #<Set: {1, 2}>
 #   s2 = [1, 2].to_set                    #=> #<Set: {1, 2}>
 #   s1 == s2                              #=> true
 #   s1.add("foo")                         #=> #<Set: {1, 2, "foo"}>
@@ -73,6 +73,7 @@ class Set
   # Creates a new set containing the given objects.
   #
   #     Set[1, 2]                   # => #<Set: {1, 2}>
+  #     Set[1, 2, 1]                # => #<Set: {1, 2}>
   #     Set[1, 'c', :s]             # => #<Set: {1, "c", :s}>
   def self.[](*ary)
     new(ary)
@@ -85,8 +86,9 @@ class Set
   # given block.
   #
   #     Set.new([1, 2])                       #=> #<Set: {1, 2}>
+  #     Set.new([1, 2, 1])                    #=> #<Set: {1, 2}>
   #     Set.new([1, 'c', :s])                 #=> #<Set: {1, "c", :s}>
-  #     Set.new((1..10))   #=> #<Set: {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}>
+  #     Set.new(1..5)                         #=> #<Set: {1, 2, 3, 4, 5}>
   #     Set.new([1, 2, 3]) { |x| x * x }      #=> #<Set: {1, 4, 9}>
   def initialize(enum = nil, &block) # :yields: o
     @hash ||= Hash.new(false)
@@ -178,6 +180,10 @@ class Set
 
   # Replaces the contents of the set with the contents of the given
   # enumerable object and returns self.
+  #
+  #     set = Set[1, 'c', :s]             #=> #<Set: {1, "c", :s}>
+  #     set.replace([1, 2])               #=> #<Set: {1, 2}>
+  #     set                               #=> #<Set: {1, 2}>
   def replace(enum)
     if enum.instance_of?(self.class)
       @hash.replace(enum.instance_variable_get(:@hash))
@@ -304,11 +310,8 @@ class Set
   # Returns true if the set and the given set have at least one
   # element in common.
   #
-  # e.g.:
-  #
-  #   require 'set'
-  #   Set[1, 2, 3].intersect? Set[4, 5] # => false
-  #   Set[1, 2, 3].intersect? Set[3, 4] # => true
+  #   Set[1, 2, 3].intersect? Set[4, 5]   #=> false
+  #   Set[1, 2, 3].intersect? Set[3, 4]   #=> true
   def intersect?(set)
     set.is_a?(Set) or raise ArgumentError, "value must be a set"
     if size < set.size
@@ -321,12 +324,8 @@ class Set
   # Returns true if the set and the given set have no element in
   # common.  This method is the opposite of +intersect?+.
   #
-  # e.g.:
-  #
-  #   require 'set'
-  #   Set[1, 2, 3].disjoint? Set[3, 4] # => false
-  #   Set[1, 2, 3].disjoint? Set[4, 5] # => true
-
+  #   Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
+  #   Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
   def disjoint?(set)
     !intersect?(set)
   end
@@ -344,7 +343,7 @@ class Set
   # add many elements at once.
   #
   #     Set[1, 2].add(3)                    #=> #<Set: {1, 2, 3}>
-  #     Set[1, 2].add([3,4])                #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
   #     Set[1, 2].add(2)                    #=> #<Set: {1, 2}>
   def add(o)
     @hash[o] = true
@@ -356,7 +355,7 @@ class Set
   # object is already in the set, returns nil.
   #
   #     Set[1, 2].add?(3)                    #=> #<Set: {1, 2, 3}>
-  #     Set[1, 2].add?([3,4])                #=> #<Set: {1, 2, [3, 4]}>
+  #     Set[1, 2].add?([3, 4])               #=> #<Set: {1, 2, [3, 4]}>
   #     Set[1, 2].add?(2)                    #=> nil
   def add?(o)
     add(o) unless include?(o)
@@ -447,7 +446,7 @@ class Set
   # Returns a new set built by merging the set and the elements of the
   # given enumerable object.
   #
-  #     Set[1, 2, 3, 3] | Set[2, 4, 5]      #=> #<Set: {1, 2, 3, 4, 5}>
+  #     Set[1, 2, 3] | Set[2, 4, 5]         #=> #<Set: {1, 2, 3, 4, 5}>
   #     Set[1, 5, 'z'] | (1..6)             #=> #<Set: {1, 5, "z", 2, 3, 4, 6}>
   def |(enum)
     dup.merge(enum)
@@ -481,7 +480,7 @@ class Set
   # and the given enumerable object.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
   #
-  #     Set[1, 2] ^ Set[2,3]                    #=> #<Set: {3, 1}>
+  #     Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
   #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
   def ^(enum)
     n = Set.new(enum)
@@ -547,8 +546,8 @@ class Set
   #
   # Or by itself:
   #
-  #   Set[1, 2, 3] === 2 # => true
-  #   Set[1, 2, 3] === 4 # => false
+  #   Set[1, 2, 3] === 2   #=> true
+  #   Set[1, 2, 3] === 4   #=> false
   #
   alias === include?
 
@@ -557,14 +556,12 @@ class Set
   # called once for each element of the set, passing the element as
   # parameter.
   #
-  # e.g.:
-  #
   #   require 'set'
   #   files = Set.new(Dir.glob("*.rb"))
   #   hash = files.classify { |f| File.mtime(f).year }
-  #   p hash    # => {2000=>#<Set: {"a.rb", "b.rb"}>,
-  #             #     2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
-  #             #     2002=>#<Set: {"f.rb"}>}
+  #   hash       #=> {2000=>#<Set: {"a.rb", "b.rb"}>,
+  #              #    2001=>#<Set: {"c.rb", "d.rb", "e.rb"}>,
+  #              #    2002=>#<Set: {"f.rb"}>}
   #
   # Returns an enumerator if no block is given.
   def classify # :yields: o
@@ -586,15 +583,13 @@ class Set
   # if block.call(o1, o2) is true.  Otherwise, elements o1 and o2 are
   # in common if block.call(o1) == block.call(o2).
   #
-  # e.g.:
-  #
   #   require 'set'
   #   numbers = Set[1, 3, 4, 6, 9, 10, 11]
   #   set = numbers.divide { |i,j| (i - j).abs == 1 }
-  #   p set     # => #<Set: {#<Set: {1}>,
-  #             #            #<Set: {11, 9, 10}>,
-  #             #            #<Set: {3, 4}>,
-  #             #            #<Set: {6}>}>
+  #   set        #=> #<Set: {#<Set: {1}>,
+  #              #           #<Set: {11, 9, 10}>,
+  #              #           #<Set: {3, 4}>,
+  #              #           #<Set: {6}>}>
   #
   # Returns an enumerator if no block is given.
   def divide(&func)
@@ -630,7 +625,7 @@ class Set
   InspectKey = :__inspect_key__         # :nodoc:
 
   # Returns a string containing a human-readable representation of the
-  # set. ("#<Set: {element1, element2, ...}>")
+  # set ("#<Set: {element1, element2, ...}>").
   def inspect
     ids = (Thread.current[InspectKey] ||= [])
 
