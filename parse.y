@@ -10698,6 +10698,8 @@ arg_blk_pass(NODE *node1, NODE *node2)
 {
     if (node2) {
 	node2->nd_head = node1;
+	nd_set_lineno(node2, nd_lineno(node1));
+	nd_set_column(node2, nd_column(node1));
 	return node2;
     }
     return node1;
