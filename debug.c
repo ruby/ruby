@@ -58,8 +58,11 @@ const union {
         RUBY_NODE_LSHIFT    = NODE_LSHIFT,
         RUBY_NODE_FL_NEWLINE   = NODE_FL_NEWLINE
     } various;
-    enum imemo_type             imemo_types;
-    enum {RUBY_IMEMO_MASK = IMEMO_MASK} imemo_mask;
+    union {
+	enum imemo_type                     types;
+	enum {RUBY_IMEMO_MASK = IMEMO_MASK} mask;
+	struct RIMemo                      *ptr;
+    } imemo;
     struct RSymbol *symbol_ptr;
     enum vm_call_flag_bits vm_call_flags;
 } ruby_dummy_gdb_enums;
