@@ -5819,6 +5819,26 @@ parser_str_new(const char *p, long n, rb_encoding *enc, int func, rb_encoding *e
 #define peekc() peekc_n(0)
 #define peekc_n(n) (lex_p+(n) < lex_pend ? (unsigned char)lex_p[n] : -1)
 
+#ifdef RIPPER
+static void
+parser_add_delayed_token(struct parser_params *parser, const char *tok, const char *end)
+{
+    if (tok < end) {
+	if (!has_delayed_token()) {
+	    parser->delayed = rb_str_buf_new(1024);
+	    rb_enc_associate(parser->delayed, current_enc);
+	    parser->delayed_line = ruby_sourceline;
+	    parser->delayed_col = (int)(tok - lex_pbeg);
+	}
+	rb_str_buf_cat(parser->delayed, tok, end - tok);
+	parser->tokp = end;
+    }
+}
+#define add_delayed_token(tok, end) parser_add_delayed_token(parser, (tok), (end))
+#else
+#define add_delayed_token(tok, end) ((void)(tok), (void)(end))
+#endif
+
 static int
 parser_nextline(struct parser_params *parser)
 {
@@ -5835,22 +5855,7 @@ parser_nextline(struct parser_params *parser)
 	}
 	parser->cr_seen = FALSE;
     }
-#ifdef RIPPER
-    if (parser->tokp < lex_pend) {
-	if (!has_delayed_token()) {
-	    parser->delayed = rb_str_buf_new(1024);
-	    rb_enc_associate(parser->delayed, current_enc);
-	    rb_str_buf_cat(parser->delayed,
-			   parser->tokp, lex_pend - parser->tokp);
-	    parser->delayed_line = ruby_sourceline;
-	    parser->delayed_col = (int)(parser->tokp - lex_pbeg);
-	}
-	else {
-	    rb_str_buf_cat(parser->delayed,
-			   parser->tokp, lex_pend - parser->tokp);
-	}
-    }
-#endif
+    add_delayed_token(parser->tokp, lex_pend);
     if (heredoc_end > 0) {
 	ruby_sourceline = heredoc_end;
 	heredoc_end = 0;
@@ -6597,6 +6602,9 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
     VALUE lit;
 
     if (func & STR_FUNC_TERM) {
+#ifdef RIPPER
+	if (func & STR_FUNC_QWORDS) nextc(); /* delayed term */
+#endif
 	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
 	lex_strterm = 0;
 	return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
@@ -6609,12 +6617,17 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
     if (c == term && !quote->u0.nest) {
 	if (func & STR_FUNC_QWORDS) {
 	    quote->u1.func |= STR_FUNC_TERM;
+#ifdef RIPPER
+	    pushback(c); /* dispatch the term at tSTRING_END */
+#endif
+	    add_delayed_token(parser->tokp, lex_p);
 	    return ' ';
 	}
 	return parser_string_term(parser, func);
     }
     if (space) {
 	pushback(c);
+	add_delayed_token(parser->tokp, lex_p);
 	return ' ';
     }
     newtok();
@@ -7853,6 +7866,19 @@ parse_qmark(struct parser_params *parser, int space_seen)
     return tCHAR;
 }
 
+#ifndef RIPPER
+static void
+parser_skip_words_sep(struct parser_params *parser)
+{
+    int c;
+    do {c = nextc();} while (ISSPACE(c));
+    pushback(c);
+}
+#define skip_words_sep() parser_skip_words_sep(parser)
+#else
+#define skip_words_sep() ((void)0)
+#endif
+
 static enum yytokentype
 parse_percent(struct parser_params *parser, const int space_seen, const enum lex_state_e last_state)
 {
@@ -7897,26 +7923,22 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 
 	  case 'W':
 	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
-	    do {c = nextc();} while (ISSPACE(c));
-	    pushback(c);
+	    skip_words_sep();
 	    return tWORDS_BEG;
 
 	  case 'w':
 	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
-	    do {c = nextc();} while (ISSPACE(c));
-	    pushback(c);
+	    skip_words_sep();
 	    return tQWORDS_BEG;
 
 	  case 'I':
 	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
-	    do {c = nextc();} while (ISSPACE(c));
-	    pushback(c);
+	    skip_words_sep();
 	    return tSYMBOLS_BEG;
 
 	  case 'i':
 	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
-	    do {c = nextc();} while (ISSPACE(c));
-	    pushback(c);
+	    skip_words_sep();
 	    return tQSYMBOLS_BEG;
 
 	  case 'x':
