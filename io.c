@@ -5970,7 +5970,10 @@ static int
 io_strip_bom(VALUE io)
 {
     VALUE b1, b2, b3, b4;
+    rb_io_t *fptr;
 
+    GetOpenFile(io, fptr);
+    if (!(fptr->mode & FMODE_READABLE)) return 0;
     if (NIL_P(b1 = rb_io_getbyte(io))) return 0;
     switch (b1) {
       case INT2FIX(0xEF):
