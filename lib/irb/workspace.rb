@@ -125,7 +125,7 @@ EOF
         lineno = "%#{end_pos.to_s.length}d" % (current_pos + 1)
         " #{pos == current_pos ? '=>' : '  '} #{lineno}: #{lines[current_pos]}"
       end.join
-      "From: #{file} @ line #{pos + 1} :\n\n#{body}\n"
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}\n"
     end
 
     def IRB.delete_caller

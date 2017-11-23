@@ -19,6 +19,7 @@ module TestIRB
 
         workspace = eval(code, binding, f.path)
         assert_equal(<<~EOS, workspace.code_around_binding)
+
           From: #{f.path} @ line 3 :
 
               1: # 1
@@ -39,6 +40,7 @@ module TestIRB
 
           workspace = eval(code, binding, f.path)
           assert_equal(<<~EOS, workspace.code_around_binding)
+
             From: #{f.path} @ line 1 :
 
              => 1: IRB::WorkSpace.new(binding)
