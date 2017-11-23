@@ -5089,14 +5089,14 @@ rb_default_coverage(int n)
 	branches = rb_ary_tmp_new_fill(2);
 	/* internal data structures for branch coverage:
 	 *
-	 * [[base_type, base_lineno,
-	 *   target_type_1, target_lineno_1, target_counter_index_1,
-	 *   target_type_2, target_lineno_2, target_counter_index_2, ...],
+	 * [[base_type, base_first_lineno, base_first_column, base_last_lineno, base_last_column,
+	 *   target_type_1, target_first_lineno_1, target_first_column_1, target_last_lineno_1, target_last_column_1, target_counter_index_1,
+	 *   target_type_2, target_first_lineno_2, target_first_column_2, target_last_lineno_2, target_last_column_2, target_counter_index_2, ...],
 	 *  ...]
 	 *
-	 * Example: [[:case, 1,
-	 *            :when, 2, 0,
-	 *            :when, 3, 1, ...],
+	 * Example: [[:case, 1, 0, 4, 3,
+	 *            :when, 2, 8, 2, 9, 0,
+	 *            :when, 3, 8, 3, 9, 1, ...],
 	 *           ...]
 	 */
 	RARRAY_ASET(branches, 0, rb_ary_tmp_new(0));
