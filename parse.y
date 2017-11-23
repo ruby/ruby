@@ -10637,6 +10637,7 @@ logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *r
 	}
 	node->nd_2nd = NEW_NODE(type, second, right, 0);
 	node->nd_2nd->nd_loc = *location;
+	left->nd_loc.last_loc = location->last_loc;
 	return left;
     }
     op = NEW_NODE(type, left, right, 0);
