@@ -113,7 +113,7 @@ EOF
       return nil unless File.exist?(file)
 
       if defined?(SCRIPT_LINES__) && SCRIPT_LINES__.key?(file)
-        lines = SCRIPT_LINES__[file].lines
+        lines = SCRIPT_LINES__[file].split(/^/)
       else
         lines = File.readlines(file)
       end
