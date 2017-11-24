@@ -5,7 +5,7 @@ require 'irb/workspace'
 
 module TestIRB
   class TestWorkSpace < Test::Unit::TestCase
-    def test_code_around_bindinig
+    def test_code_around_binding
       Tempfile.create do |f|
         code = <<~RUBY
           # 1
@@ -32,7 +32,7 @@ module TestIRB
       end
     end
 
-    def test_code_around_bindinig_with_script_lines__
+    def test_code_around_binding_with_script_lines__
       with_script_lines do |script_lines|
         Tempfile.create do |f|
           code = "IRB::WorkSpace.new(binding)\n"
@@ -50,7 +50,7 @@ module TestIRB
       end
     end
 
-    def test_code_around_bindinig_on_irb
+    def test_code_around_binding_on_irb
       workspace = eval("IRB::WorkSpace.new(binding)", binding, "(irb)")
       assert_equal(nil, workspace.code_around_binding)
     end
