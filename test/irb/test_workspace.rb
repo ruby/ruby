@@ -36,7 +36,7 @@ module TestIRB
       with_script_lines do |script_lines|
         Tempfile.create do |f|
           code = "IRB::WorkSpace.new(binding)\n"
-          script_lines[f.path] = code
+          script_lines[f.path] = code.split(/^/)
 
           workspace = eval(code, binding, f.path)
           assert_equal(<<~EOS, workspace.code_around_binding)
