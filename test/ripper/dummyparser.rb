@@ -24,6 +24,16 @@ class Node
     end
     list
   end
+
+  class Sym < self
+    def initialize(name)
+      @name = name
+    end
+
+    def to_s
+      ":#{@name}"
+    end
+  end
 end
 
 class NodeList
@@ -216,6 +226,22 @@ class DummyParser < Ripper
 
   def on_qwords_add(words, word)
     words.push word
+  end
+
+  def on_symbols_new
+    NodeList.new
+  end
+
+  def on_symbols_add(symbols, symbol)
+    symbols.push Node::Sym.new(symbol)
+  end
+
+  def on_qsymbols_new
+    NodeList.new
+  end
+
+  def on_qsymbols_add(symbols, symbol)
+    symbols.push Node::Sym.new(symbol)
   end
 
   def on_mlhs_new
