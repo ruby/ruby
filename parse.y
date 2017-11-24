@@ -549,6 +549,7 @@ static NODE *new_undef_gen(struct parser_params *parser, NODE *i, const YYLTYPE 
 
 static NODE *new_zarray_gen(struct parser_params *parser, const YYLTYPE *location);
 #define new_zarray(location) new_zarray_gen(parser, location)
+#define make_array(ary, location) ((ary) ? (ary) : new_zarray(location))
 
 static NODE *new_ivar_gen(struct parser_params *parser, ID id, const YYLTYPE *location);
 #define new_ivar(id, location) new_ivar_gen(parser,id,location)
@@ -1508,7 +1509,7 @@ command_asgn	: lhs '=' command_rhs
 			NODE *args;
 
 			value_expr($6);
-			if (!$3) $3 = new_zarray(&@$);
+			$3 = make_array($3, &@$);
 			args = arg_concat($3, $6, &@$);
 			if ($5 == tOROP) {
 			    $5 = 0;
@@ -2158,7 +2159,7 @@ arg		: lhs '=' arg_rhs
 			NODE *args;
 
 			value_expr($6);
-			if (!$3) $3 = new_zarray(&@$);
+			$3 = make_array($3, &@$);
 			if (nd_type($3) == NODE_BLOCK_PASS) {
 			    args = NEW_ARGSCAT($3, $6);
 			    args->nd_loc = @$;
@@ -2724,12 +2725,7 @@ primary		: literal
 		| tLBRACK aref_args ']'
 		    {
 		    /*%%%*/
-			if ($2 == 0) {
-			    $$ = new_zarray(&@$); /* zero length array*/
-			}
-			else {
-			    $$ = $2;
-			}
+			$$ = make_array($2, &@$);
 		    /*%
 			$$ = dispatch1(array, escape_Qundef($2));
 		    %*/
@@ -3955,7 +3951,7 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 words		: tWORDS_BEG ' ' word_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $3 ? $3 : new_zarray(&@$);
+			$$ = make_array($3, &@$);
 		    /*%
 			$$ = dispatch1(array, $3);
 		    %*/
@@ -4001,7 +3997,7 @@ word		: string_content
 symbols 	: tSYMBOLS_BEG ' ' symbol_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $3 ? $3 : new_zarray(&@$);
+			$$ = make_array($3, &@$);
 		    /*%
 			$$ = dispatch1(array, $3);
 		    %*/
@@ -4037,7 +4033,7 @@ symbol_list	: /* none */
 qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $3 ? $3 : new_zarray(&@$);
+			$$ = make_array($3, &@$);
 		    /*%
 			$$ = dispatch1(array, $3);
 		    %*/
@@ -4047,7 +4043,7 @@ qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
 qsymbols	: tQSYMBOLS_BEG ' ' qsym_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = $3 ? $3 : new_zarray(&@$);
+			$$ = make_array($3, &@$);
 		    /*%
 			$$ = dispatch1(array, $3);
 		    %*/
