@@ -119,7 +119,7 @@ EOF
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
-      fmt = "%2s %#{end_pos.to_s.length}d: %s"
+      fmt = " %2s %#{end_pos.to_s.length}d: %s"
       body = (start_pos..end_pos).map do |current_pos|
         sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
       end.join("")
