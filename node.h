@@ -344,9 +344,6 @@ typedef struct RNode {
 #define nd_cpath u1.node
 #define nd_super u3.node
 
-#define nd_modl  u1.id
-#define nd_clss_  u1.value
-
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
@@ -355,9 +352,6 @@ typedef struct RNode {
 #define nd_nth   u2.argc
 
 #define nd_tag   u1.id
-#define nd_tval  u2.value
-
-#define nd_visi_  u2.argc
 
 #define nd_alias  u1.id
 #define nd_orig   u2.id
