@@ -108,23 +108,21 @@ EOF
     end
 
     def code_around_binding
-      file = @binding.eval('__FILE__')
-      pos  = @binding.eval('__LINE__') - 1
-      return nil unless File.exist?(file)
+      file, pos = @binding.eval('[__FILE__, __LINE__]')
 
-      if defined?(SCRIPT_LINES__) && SCRIPT_LINES__.key?(file)
-        lines = SCRIPT_LINES__[file].split(/^/)
-      else
+      unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+        return unless File.exist?(file)
         lines = File.readlines(file)
       end
+      pos -= 1
 
       start_pos = [pos - 5, 0].max
       end_pos   = [pos + 5, lines.size - 1].min
 
+      fmt = "%2s %#{end_pos.to_s.length}d: %s"
       body = (start_pos..end_pos).map do |current_pos|
-        lineno = "%#{end_pos.to_s.length}d" % (current_pos + 1)
-        " #{pos == current_pos ? '=>' : '  '} #{lineno}: #{lines[current_pos]}"
-      end.join
+        sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
+      end.join("")
       "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}\n"
     end
 
