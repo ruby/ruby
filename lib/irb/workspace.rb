@@ -111,8 +111,11 @@ EOF
       file, pos = @binding.eval('[__FILE__, __LINE__]')
 
       unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
-        return unless File.exist?(file)
-        lines = File.readlines(file)
+        begin
+          lines = File.readlines(file)
+        rescue SystemCallError
+          return
+        end
       end
       pos -= 1
 

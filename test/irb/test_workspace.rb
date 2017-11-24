@@ -32,6 +32,19 @@ module TestIRB
       end
     end
 
+    def test_code_around_binding_with_existing_unreadable_file
+      Tempfile.create do |f|
+        code = "IRB::WorkSpace.new(binding)\n"
+        f.print(code)
+        f.close
+
+        File.chmod(0, f.path)
+
+        workspace = eval(code, binding, f.path)
+        assert_equal(nil, workspace.code_around_binding)
+      end
+    end
+
     def test_code_around_binding_with_script_lines__
       with_script_lines do |script_lines|
         Tempfile.create do |f|
