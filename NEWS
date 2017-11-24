@@ -159,7 +159,8 @@ with all sufficient information, see the ChangeLog file or Redmine
   * IPAddr#ipv4_compat and #ipv4_compat? are deprecated. [Bug #13769]
 
 * IRB
-  * Show source around `binding.irb` on session start
+  * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
+  * Show source around `binding.irb` on session start [Feature #14124]
 
 * Net::HTTP
   * Add more HTTP status classes
