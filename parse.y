@@ -3952,21 +3952,12 @@ regexp		: tREGEXP_BEG regexp_contents tREGEXP_END
 		    }
 		;
 
-words		: tWORDS_BEG ' ' tSTRING_END
+words		: tWORDS_BEG ' ' word_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = new_zarray(&@$);
+			$$ = $3 ? $3 : new_zarray(&@$);
 		    /*%
-			$$ = dispatch0(words_new);
-			$$ = dispatch1(array, $$);
-		    %*/
-		    }
-		| tWORDS_BEG word_list tSTRING_END
-		    {
-		    /*%%%*/
-			$$ = $2;
-		    /*%
-			$$ = dispatch1(array, $2);
+			$$ = dispatch1(array, $3);
 		    %*/
 		    }
 		;
@@ -4007,21 +3998,12 @@ word		: string_content
 		    }
 		;
 
-symbols 	: tSYMBOLS_BEG ' ' tSTRING_END
+symbols 	: tSYMBOLS_BEG ' ' symbol_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = new_zarray(&@$);
+			$$ = $3 ? $3 : new_zarray(&@$);
 		    /*%
-			$$ = dispatch0(symbols_new);
-			$$ = dispatch1(array, $$);
-		    %*/
-		    }
-		| tSYMBOLS_BEG symbol_list tSTRING_END
-		    {
-		    /*%%%*/
-			$$ = $2;
-		    /*%
-			$$ = dispatch1(array, $2);
+			$$ = dispatch1(array, $3);
 		    %*/
 		    }
 		;
@@ -4052,40 +4034,22 @@ symbol_list	: /* none */
 		    }
 		;
 
-qwords		: tQWORDS_BEG ' ' tSTRING_END
+qwords		: tQWORDS_BEG ' ' qword_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = new_zarray(&@$);
+			$$ = $3 ? $3 : new_zarray(&@$);
 		    /*%
-			$$ = dispatch0(qwords_new);
-			$$ = dispatch1(array, $$);
-		    %*/
-		    }
-		| tQWORDS_BEG qword_list tSTRING_END
-		    {
-		    /*%%%*/
-			$$ = $2;
-		    /*%
-			$$ = dispatch1(array, $2);
+			$$ = dispatch1(array, $3);
 		    %*/
 		    }
 		;
 
-qsymbols	: tQSYMBOLS_BEG ' ' tSTRING_END
+qsymbols	: tQSYMBOLS_BEG ' ' qsym_list tSTRING_END
 		    {
 		    /*%%%*/
-			$$ = new_zarray(&@$);
+			$$ = $3 ? $3 : new_zarray(&@$);
 		    /*%
-			$$ = dispatch0(qsymbols_new);
-			$$ = dispatch1(array, $$);
-		    %*/
-		    }
-		| tQSYMBOLS_BEG qsym_list tSTRING_END
-		    {
-		    /*%%%*/
-			$$ = $2;
-		    /*%
-			$$ = dispatch1(array, $2);
+			$$ = dispatch1(array, $3);
 		    %*/
 		    }
 		;
@@ -5781,6 +5745,7 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 #define STR_FUNC_SYMBOL 0x10
 #define STR_FUNC_INDENT 0x20
 #define STR_FUNC_LABEL  0x40
+#define STR_FUNC_LIST   0x4000
 #define STR_FUNC_TERM   0x8000
 
 enum string_type {
@@ -5789,8 +5754,8 @@ enum string_type {
     str_dquote = (STR_FUNC_EXPAND),
     str_xquote = (STR_FUNC_EXPAND),
     str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
-    str_sword  = (STR_FUNC_QWORDS),
-    str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
+    str_sword  = (STR_FUNC_QWORDS|STR_FUNC_LIST),
+    str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND|STR_FUNC_LIST),
     str_ssym   = (STR_FUNC_SYMBOL),
     str_dsym   = (STR_FUNC_SYMBOL|STR_FUNC_EXPAND)
 };
@@ -6602,9 +6567,7 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
     VALUE lit;
 
     if (func & STR_FUNC_TERM) {
-#ifdef RIPPER
 	if (func & STR_FUNC_QWORDS) nextc(); /* delayed term */
-#endif
 	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
 	lex_strterm = 0;
 	return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
@@ -6614,12 +6577,14 @@ parser_parse_string(struct parser_params *parser, rb_strterm_literal_t *quote)
 	do {c = nextc();} while (ISSPACE(c));
 	space = 1;
     }
+    if (func & STR_FUNC_LIST) {
+	quote->u1.func &= ~STR_FUNC_LIST;
+	space = 1;
+    }
     if (c == term && !quote->u0.nest) {
 	if (func & STR_FUNC_QWORDS) {
 	    quote->u1.func |= STR_FUNC_TERM;
-#ifdef RIPPER
 	    pushback(c); /* dispatch the term at tSTRING_END */
-#endif
 	    add_delayed_token(parser->tokp, lex_p);
 	    return ' ';
 	}
@@ -7866,19 +7831,6 @@ parse_qmark(struct parser_params *parser, int space_seen)
     return tCHAR;
 }
 
-#ifndef RIPPER
-static void
-parser_skip_words_sep(struct parser_params *parser)
-{
-    int c;
-    do {c = nextc();} while (ISSPACE(c));
-    pushback(c);
-}
-#define skip_words_sep() parser_skip_words_sep(parser)
-#else
-#define skip_words_sep() ((void)0)
-#endif
-
 static enum yytokentype
 parse_percent(struct parser_params *parser, const int space_seen, const enum lex_state_e last_state)
 {
@@ -7923,22 +7875,18 @@ parse_percent(struct parser_params *parser, const int space_seen, const enum lex
 
 	  case 'W':
 	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
-	    skip_words_sep();
 	    return tWORDS_BEG;
 
 	  case 'w':
 	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
-	    skip_words_sep();
 	    return tQWORDS_BEG;
 
 	  case 'I':
 	    lex_strterm = NEW_STRTERM(str_dword, term, paren);
-	    skip_words_sep();
 	    return tSYMBOLS_BEG;
 
 	  case 'i':
 	    lex_strterm = NEW_STRTERM(str_sword, term, paren);
-	    skip_words_sep();
 	    return tQSYMBOLS_BEG;
 
 	  case 'x':
