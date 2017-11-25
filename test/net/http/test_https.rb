@@ -195,7 +195,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_min_version
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
-    http.min_version = :TLSv1
+    http.min_version = :TLS1
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
       true
     end
@@ -208,7 +208,7 @@ class TestNetHTTPS < Test::Unit::TestCase
   def test_max_version
     http = Net::HTTP.new("127.0.0.1", config("port"))
     http.use_ssl = true
-    http.max_version = :SSLv2
+    http.max_version = :SSL2
     http.verify_callback = Proc.new do |preverify_ok, store_ctx|
       true
     end
