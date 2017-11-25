@@ -209,6 +209,10 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 #  define X509_get0_notAfter(x) X509_get_notAfter(x)
 #  define X509_CRL_get0_lastUpdate(x) X509_CRL_get_lastUpdate(x)
 #  define X509_CRL_get0_nextUpdate(x) X509_CRL_get_nextUpdate(x)
+#  define X509_set1_notBefore(x, t) X509_set_notBefore(x, t)
+#  define X509_set1_notAfter(x, t) X509_set_notAfter(x, t)
+#  define X509_CRL_set1_lastUpdate(x, t) X509_CRL_set_lastUpdate(x, t)
+#  define X509_CRL_set1_nextUpdate(x, t) X509_CRL_set_nextUpdate(x, t)
 #endif
 
 #if !defined(HAVE_SSL_SESSION_GET_PROTOCOL_VERSION)

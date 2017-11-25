@@ -362,6 +362,15 @@ module OpenSSL::TestPairM
     }
   end
 
+  def test_write_multiple_arguments
+    ssl_pair {|s1, s2|
+      str1 = "foo"; str2 = "bar"
+      assert_equal 6, s1.write(str1, str2)
+      s1.close
+      assert_equal "foobar", s2.read
+    }
+  end
+
   def test_partial_tls_record_read_nonblock
     ssl_pair { |s1, s2|
       # the beginning of a TLS record

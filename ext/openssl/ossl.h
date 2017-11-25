@@ -35,6 +35,11 @@
 #if !defined(OPENSSL_NO_OCSP)
 #  include <openssl/ocsp.h>
 #endif
+#include <openssl/bn.h>
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
+#include <openssl/evp.h>
+#include <openssl/dh.h>
 
 /*
  * Common Module

@@ -208,12 +208,13 @@ static VALUE
 ossl_spki_set_public_key(VALUE self, VALUE key)
 {
     NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
 
     GetSPKI(self, spki);
-    if (!NETSCAPE_SPKI_set_pubkey(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-	ossl_raise(eSPKIError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!NETSCAPE_SPKI_set_pubkey(spki, pkey))
+	ossl_raise(eSPKIError, "NETSCAPE_SPKI_set_pubkey");
     return key;
 }
 
@@ -307,17 +308,20 @@ static VALUE
 ossl_spki_verify(VALUE self, VALUE key)
 {
     NETSCAPE_SPKI *spki;
+    EVP_PKEY *pkey;
 
     GetSPKI(self, spki);
-    switch (NETSCAPE_SPKI_verify(spki, GetPKeyPtr(key))) { /* NO NEED TO DUP */
-    case 0:
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    switch (NETSCAPE_SPKI_verify(spki, pkey)) {
+      case 0:
+	ossl_clear_error();
 	return Qfalse;
-    case 1:
+      case 1:
 	return Qtrue;
-    default:
-	ossl_raise(eSPKIError, NULL);
+      default:
+	ossl_raise(eSPKIError, "NETSCAPE_SPKI_verify");
     }
-    return Qnil; /* dummy */
 }
 
 /* Document-class: OpenSSL::Netscape::SPKI

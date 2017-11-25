@@ -113,6 +113,39 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     }
   end
 
+  def test_sign_verify_pss
+    key = Fixtures.pkey("rsa1024")
+    data = "Sign me!"
+    invalid_data = "Sign me?"
+
+    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal 128, signature.bytesize
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+    assert_equal false,
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+
+    signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: 94, mgf1_hash: "SHA1")
+    assert_equal true,
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+
+    assert_raise(OpenSSL::PKey::RSAError) {
+      key.sign_pss("SHA256", data, salt_length: 95, mgf1_hash: "SHA1")
+    }
+  end
+
   def test_RSAPrivateKey
     rsa1024 = Fixtures.pkey("rsa1024")
     asn1 = OpenSSL::ASN1::Sequence([
