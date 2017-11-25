@@ -148,7 +148,7 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
 
       # call-seq:
       #    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.min_version = :TLSv1_2
+      #    ctx.min_version = :TLS1_2
       #    ctx.min_version = nil
       #
       # Sets the lower bound on the supported SSL/TLS protocol version. The
@@ -167,30 +167,18 @@ YoaOffgTf5qxiwkjnlVZQc3whgnEt9FpVMvQ9eknyeGB5KHfayAc3+hUAvI3/Cr3
       #   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
       #   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
       def min_version=(version)
-        case version
-        when nil, Integer
-        else
-          version = (METHODS_MAP[version] or
-            raise ArgumentError, "unknown SSL version `#{version.inspect}'")
-        end
         set_minmax_proto_version(version, @max_proto_version ||= nil)
         @min_proto_version = version
       end
 
       # call-seq:
       #    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.max_version = :TLSv1_2
+      #    ctx.max_version = :TLS1_2
       #    ctx.max_version = nil
       #
       # Sets the upper bound of the supported SSL/TLS protocol version. See
       # #min_version= for the possible values.
       def max_version=(version)
-        case version
-        when nil, Integer
-        else
-          version = (METHODS_MAP[version] or
-            raise ArgumentError, "unknown SSL version `#{version.inspect}'")
-        end
         set_minmax_proto_version(@min_proto_version ||= nil, version)
         @max_proto_version = version
       end
