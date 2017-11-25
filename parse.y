@@ -10858,10 +10858,11 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, con
 
     if (lhs) {
 	ID vid = lhs->nd_vid;
-	YYLTYPE *lhs_location = &lhs->nd_loc;
+	YYLTYPE lhs_location = lhs->nd_loc;
 	if (op == tOROP) {
 	    lhs->nd_value = rhs;
-	    asgn = NEW_OP_ASGN_OR(gettable(vid, lhs_location), lhs);
+	    lhs->nd_loc = *location;
+	    asgn = NEW_OP_ASGN_OR(gettable(vid, &lhs_location), lhs);
 	    asgn->nd_loc = *location;
 	    if (is_notop_id(vid)) {
 		switch (id_type(vid)) {
@@ -10874,12 +10875,13 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, con
 	}
 	else if (op == tANDOP) {
 	    lhs->nd_value = rhs;
-	    asgn = NEW_OP_ASGN_AND(gettable(vid, lhs_location), lhs);
+	    lhs->nd_loc = *location;
+	    asgn = NEW_OP_ASGN_AND(gettable(vid, &lhs_location), lhs);
 	    asgn->nd_loc = *location;
 	}
 	else {
 	    asgn = lhs;
-	    asgn->nd_value = new_call(gettable(vid, lhs_location), op, new_list(rhs, &rhs->nd_loc), location);
+	    asgn->nd_value = new_call(gettable(vid, &lhs_location), op, new_list(rhs, &rhs->nd_loc), location);
 	    asgn->nd_loc = *location;
 	}
     }
