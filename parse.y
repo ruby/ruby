@@ -494,6 +494,7 @@ static NODE *const_decl_gen(struct parser_params *parser, NODE* path, const YYLT
 #define var_field(n) (n)
 #define backref_assign_error(n, a, location) (rb_backref_error(n), new_begin(0, location))
 
+static NODE *opt_arg_append(NODE*, NODE*);
 static NODE *kwd_append(NODE*, NODE*);
 
 static NODE *new_hash_gen(struct parser_params *parser, NODE *hash, const YYLTYPE *location);
@@ -4797,13 +4798,7 @@ f_block_optarg	: f_block_opt
 		| f_block_optarg ',' f_block_opt
 		    {
 		    /*%%%*/
-			NODE *opts = $1;
-
-			while (opts->nd_next) {
-			    opts = opts->nd_next;
-			}
-			opts->nd_next = $3;
-			$$ = $1;
+			$$ = opt_arg_append($1, $3);
 		    /*%
 			$$ = rb_ary_push($1, get_value($3));
 		    %*/
@@ -4821,13 +4816,7 @@ f_optarg	: f_opt
 		| f_optarg ',' f_opt
 		    {
 		    /*%%%*/
-			NODE *opts = $1;
-
-			while (opts->nd_next) {
-			    opts = opts->nd_next;
-			}
-			opts->nd_next = $3;
-			$$ = $1;
+			$$ = opt_arg_append($1, $3);
 		    /*%
 			$$ = rb_ary_push($1, get_value($3));
 		    %*/
@@ -9348,6 +9337,19 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
     }
     compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to get", rb_id2str(id));
     return 0;
+}
+
+static NODE *
+opt_arg_append(NODE *opt_list, NODE *opt)
+{
+    NODE *opts = opt_list;
+
+    while (opts->nd_next) {
+	opts = opts->nd_next;
+    }
+    opts->nd_next = opt;
+
+    return opt_list;
 }
 
 static NODE *
