@@ -67,7 +67,7 @@ module OpenSSL::TestUtils
     cert.serial = serial
     cert.subject = dn
     cert.issuer = issuer.subject
-    cert.public_key = key.public_key
+    cert.public_key = key
     now = Time.now
     cert.not_before = not_before || now - 3600
     cert.not_after = not_after || now + 3600

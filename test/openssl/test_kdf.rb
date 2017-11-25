@@ -131,6 +131,48 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
     assert_equal(expected, OpenSSL::KDF.scrypt(pass, salt: salt, N: n, r: r, p: p, length: dklen))
   end
 
+  def test_hkdf_rfc5869_test_case_1
+    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
+    hash = "sha256"
+    ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
+    salt = B("000102030405060708090a0b0c")
+    info = B("f0f1f2f3f4f5f6f7f8f9")
+    l = 42
+
+    okm = B("3cb25f25faacd57a90434f64d0362f2a" \
+            "2d2d0a90cf1a5a4c5db02d56ecc4c5bf" \
+            "34007208d5b887185865")
+    assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
+  end
+
+  def test_hkdf_rfc5869_test_case_3
+    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
+    hash = "sha256"
+    ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
+    salt = B("")
+    info = B("")
+    l = 42
+
+    okm = B("8da4e775a563c18f715f802a063c5a31" \
+            "b8a11f5c5ee1879ec3454e5f3c738d2d" \
+            "9d201395faa4b61a96c8")
+    assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
+  end
+
+  def test_hkdf_rfc5869_test_case_4
+    pend "HKDF is not implemented" unless OpenSSL::KDF.respond_to?(:hkdf) # OpenSSL >= 1.1.0
+    hash = "sha1"
+    ikm = B("0b0b0b0b0b0b0b0b0b0b0b")
+    salt = B("000102030405060708090a0b0c")
+    info = B("f0f1f2f3f4f5f6f7f8f9")
+    l = 42
+
+    okm = B("085a01ea1b10f36933068b56efa5ad81" \
+            "a4f14b822f5b091568a9cdd4f155fda2" \
+            "c22e422478d305f3f896")
+    assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
+  end
+
   private
 
   def B(ary)

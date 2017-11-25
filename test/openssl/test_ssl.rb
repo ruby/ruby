@@ -54,6 +54,87 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_add_certificate
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.add_certificate(@svr_cert, @svr_key, [@ca_cert]) # RSA
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      server_connect(port) { |ssl|
+        assert_equal @svr_cert.subject, ssl.peer_cert.subject
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+      }
+    end
+  end
+
+  def test_add_certificate_multiple_certs
+    pend "EC is not supported" unless defined?(OpenSSL::PKey::EC)
+    pend "TLS 1.2 is not supported" unless tls12_supported?
+
+    # SSL_CTX_set0_chain() is needed for setting multiple certificate chains
+    add0_chain_supported = openssl?(1, 0, 2)
+
+    if add0_chain_supported
+      ca2_key = Fixtures.pkey("rsa1024")
+      ca2_exts = [
+        ["basicConstraints", "CA:TRUE", true],
+        ["keyUsage", "cRLSign, keyCertSign", true],
+      ]
+      ca2_dn = OpenSSL::X509::Name.parse_rfc2253("CN=CA2")
+      ca2_cert = issue_cert(ca2_dn, ca2_key, 123, ca2_exts, nil, nil)
+    else
+      # Use the same CA as @svr_cert
+      ca2_key = @ca_key; ca2_cert = @ca_cert
+    end
+
+    ecdsa_key = Fixtures.pkey("p256")
+    exts = [
+      ["keyUsage", "digitalSignature", false],
+    ]
+    ecdsa_dn = OpenSSL::X509::Name.parse_rfc2253("CN=localhost2")
+    ecdsa_cert = issue_cert(ecdsa_dn, ecdsa_key, 456, exts, ca2_cert, ca2_key)
+
+    if !add0_chain_supported
+      # Testing the warning emitted when 'extra' chain is replaced
+      tctx = OpenSSL::SSL::SSLContext.new
+      tctx.add_certificate(@svr_cert, @svr_key, [@ca_cert])
+      assert_warning(/set0_chain/) {
+        tctx.add_certificate(ecdsa_cert, ecdsa_key, [ca2_cert])
+      }
+    end
+
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.ecdh_curves = "P-256" unless openssl?(1, 0, 2)
+      ctx.add_certificate(@svr_cert, @svr_key, [@ca_cert]) # RSA
+      EnvUtil.suppress_warning do # !add0_chain_supported
+        ctx.add_certificate(ecdsa_cert, ecdsa_key, [ca2_cert])
+      end
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2 # TODO: We need this to force certificate type
+      ctx.ciphers = "aECDSA"
+      server_connect(port, ctx) { |ssl|
+        assert_equal ecdsa_cert.subject, ssl.peer_cert.subject
+        assert_equal [ecdsa_cert.subject, ca2_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+      }
+
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = :TLS1_2
+      ctx.ciphers = "aRSA"
+      server_connect(port, ctx) { |ssl|
+        assert_equal @svr_cert.subject, ssl.peer_cert.subject
+        assert_equal [@svr_cert.subject, @ca_cert.subject],
+          ssl.peer_cert_chain.map(&:subject)
+      }
+    end
+  end
+
   def test_sysread_and_syswrite
     start_server { |port|
       server_connect(port) { |ssl|
@@ -1222,6 +1303,59 @@ end
     end
   end
 
+  def test_fallback_scsv
+    pend "Fallback SCSV is not supported" unless OpenSSL::SSL::SSLContext.method_defined?( :enable_fallback_scsv)
+
+    start_server do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      # Here is OK
+      # TLS1.2 supported and this is what we ask the first time
+      server_connect(port, ctx)
+    end
+
+    ctx_proc = proc { |ctx|
+      ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.enable_fallback_scsv
+      ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
+      # Here is OK too
+      # TLS1.2 not supported, fallback to TLS1.1 and signaling the fallback
+      # Server doesn't support better, so connection OK
+      server_connect(port, ctx)
+    end
+
+    # Here is not OK
+    # TLS1.2 is supported, fallback to TLS1.1 (downgrade attack) and signaling the fallback
+    # Server support better, so refuse the connection
+    sock1, sock2 = socketpair
+    begin
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
+
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.enable_fallback_scsv
+      ctx2.max_version = OpenSSL::SSL::TLS1_1_VERSION
+      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+      t = Thread.new {
+        assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+          s2.connect
+        }
+      }
+
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+        s1.accept
+      }
+
+      assert t.join
+    ensure
+      sock1.close
+      sock2.close
+    end
+  end
+
   def test_dh_callback
     pend "TLS 1.2 is not supported" unless tls12_supported?
 
@@ -1336,11 +1470,24 @@ end
       return
     end
     assert_equal(1, ctx.security_level)
-    # assert_raise(OpenSSL::SSL::SSLError) { ctx.key = Fixtures.pkey("dsa512") }
-    # ctx.key = Fixtures.pkey("rsa1024")
-    # ctx.security_level = 2
-    # assert_raise(OpenSSL::SSL::SSLError) { ctx.key = Fixtures.pkey("rsa1024") }
-    pend "FIXME: SSLContext#key= currently does not raise because SSL_CTX_use_certificate() is delayed"
+
+    dsa512 = Fixtures.pkey("dsa512")
+    dsa512_cert = issue_cert(@svr, dsa512, 50, [], @ca_cert, @ca_key)
+    rsa1024 = Fixtures.pkey("rsa1024")
+    rsa1024_cert = issue_cert(@svr, rsa1024, 51, [], @ca_cert, @ca_key)
+
+    assert_raise(OpenSSL::SSL::SSLError) {
+      # 512 bit DSA key is rejected because it offers < 80 bits of security
+      ctx.add_certificate(dsa512_cert, dsa512)
+    }
+    assert_nothing_raised {
+      ctx.add_certificate(rsa1024_cert, rsa1024)
+    }
+    ctx.security_level = 2
+    assert_raise(OpenSSL::SSL::SSLError) {
+      # < 112 bits of security
+      ctx.add_certificate(rsa1024_cert, rsa1024)
+    }
   end
 
   def test_dup

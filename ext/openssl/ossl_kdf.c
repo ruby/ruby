@@ -3,6 +3,9 @@
  * Copyright (C) 2007, 2017 Ruby/OpenSSL Project Authors
  */
 #include "ossl.h"
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+# include <openssl/kdf.h>
+#endif
 
 static VALUE mKDF, eKDF;
 
@@ -138,6 +141,97 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
 }
 #endif
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+/*
+ * call-seq:
+ *    KDF.hkdf(ikm, salt:, info:, length:, hash:) -> String
+ *
+ * HMAC-based Extract-and-Expand Key Derivation Function (HKDF) as specified in
+ * {RFC 5869}[https://tools.ietf.org/html/rfc5869].
+ *
+ * New in OpenSSL 1.1.0.
+ *
+ * === Parameters
+ * _ikm_::
+ *   The input keying material.
+ * _salt_::
+ *   The salt.
+ * _info_::
+ *   The context and application specific information.
+ * _length_::
+ *   The output length in octets. Must be <= <tt>255 * HashLen</tt>, where
+ *   HashLen is the length of the hash function output in octets.
+ * _hash_::
+ *   The hash function.
+ */
+static VALUE
+kdf_hkdf(int argc, VALUE *argv, VALUE self)
+{
+    VALUE ikm, salt, info, opts, kwargs[4], str;
+    static ID kwargs_ids[4];
+    int saltlen, ikmlen, infolen;
+    size_t len;
+    const EVP_MD *md;
+    EVP_PKEY_CTX *pctx;
+
+    if (!kwargs_ids[0]) {
+	kwargs_ids[0] = rb_intern_const("salt");
+	kwargs_ids[1] = rb_intern_const("info");
+	kwargs_ids[2] = rb_intern_const("length");
+	kwargs_ids[3] = rb_intern_const("hash");
+    }
+    rb_scan_args(argc, argv, "1:", &ikm, &opts);
+    rb_get_kwargs(opts, kwargs_ids, 4, 0, kwargs);
+
+    StringValue(ikm);
+    ikmlen = RSTRING_LENINT(ikm);
+    salt = StringValue(kwargs[0]);
+    saltlen = RSTRING_LENINT(salt);
+    info = StringValue(kwargs[1]);
+    infolen = RSTRING_LENINT(info);
+    len = (size_t)NUM2LONG(kwargs[2]);
+    if (len > LONG_MAX)
+	rb_raise(rb_eArgError, "length must be non-negative");
+    md = ossl_evp_get_digestbyname(kwargs[3]);
+
+    str = rb_str_new(NULL, (long)len);
+    pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
+    if (!pctx)
+	ossl_raise(eKDF, "EVP_PKEY_CTX_new_id");
+    if (EVP_PKEY_derive_init(pctx) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_derive_init");
+    }
+    if (EVP_PKEY_CTX_set_hkdf_md(pctx, md) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_md");
+    }
+    if (EVP_PKEY_CTX_set1_hkdf_salt(pctx, (unsigned char *)RSTRING_PTR(salt),
+				    saltlen) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_salt");
+    }
+    if (EVP_PKEY_CTX_set1_hkdf_key(pctx, (unsigned char *)RSTRING_PTR(ikm),
+				   ikmlen) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_key");
+    }
+    if (EVP_PKEY_CTX_add1_hkdf_info(pctx, (unsigned char *)RSTRING_PTR(info),
+				    infolen) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_CTX_set_hkdf_info");
+    }
+    if (EVP_PKEY_derive(pctx, (unsigned char *)RSTRING_PTR(str), &len) <= 0) {
+	EVP_PKEY_CTX_free(pctx);
+	ossl_raise(eKDF, "EVP_PKEY_derive");
+    }
+    rb_str_set_len(str, (long)len);
+    EVP_PKEY_CTX_free(pctx);
+
+    return str;
+}
+#endif
+
 void
 Init_ossl_kdf(void)
 {
@@ -162,6 +256,7 @@ Init_ossl_kdf(void)
      * * PKCS #5 PBKDF2 (Password-Based Key Derivation Function 2) in
      *   combination with HMAC
      * * scrypt
+     * * HKDF
      *
      * == Examples
      * === Generating a 128 bit key for a Cipher (e.g. AES)
@@ -217,5 +312,8 @@ Init_ossl_kdf(void)
     rb_define_module_function(mKDF, "pbkdf2_hmac", kdf_pbkdf2_hmac, -1);
 #if defined(HAVE_EVP_PBE_SCRYPT)
     rb_define_module_function(mKDF, "scrypt", kdf_scrypt, -1);
+#endif
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
+    rb_define_module_function(mKDF, "hkdf", kdf_hkdf, -1);
 #endif
 }

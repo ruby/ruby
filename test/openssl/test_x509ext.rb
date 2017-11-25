@@ -75,6 +75,17 @@ class OpenSSL::TestX509Extension < OpenSSL::TestCase
     assert_equal(@basic_constraints.to_der, ext.to_der)
     assert_equal(ext.to_der, ext.dup.to_der)
   end
+
+  def test_eq
+    ext1 = OpenSSL::X509::Extension.new(@basic_constraints.to_der)
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ext2 = ef.create_extension("basicConstraints", "critical, CA:TRUE, pathlen:2")
+    ext3 = ef.create_extension("basicConstraints", "critical, CA:TRUE")
+
+    assert_equal false, ext1 == 12345
+    assert_equal true, ext1 == ext2
+    assert_equal false, ext1 == ext3
+  end
 end
 
 end

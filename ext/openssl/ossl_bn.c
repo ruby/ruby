@@ -979,20 +979,20 @@ static VALUE
 ossl_bn_hash(VALUE self)
 {
     BIGNUM *bn;
-    VALUE hash;
+    VALUE tmp, hash;
     unsigned char *buf;
     int len;
 
     GetBN(self, bn);
     len = BN_num_bytes(bn);
-    buf = xmalloc(len);
+    buf = ALLOCV(tmp, len);
     if (BN_bn2bin(bn, buf) != len) {
-	xfree(buf);
-	ossl_raise(eBNError, NULL);
+	ALLOCV_END(tmp);
+	ossl_raise(eBNError, "BN_bn2bin");
     }
 
     hash = ST2FIX(rb_memhash(buf, len));
-    xfree(buf);
+    ALLOCV_END(tmp);
 
     return hash;
 }

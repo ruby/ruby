@@ -32,7 +32,7 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
+static ID id_call, ID_callback_state, id_tmp_dh_callback, id_tmp_ecdh_callback,
 	  id_npn_protocols_encoded;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
@@ -205,7 +205,7 @@ ossl_call_client_cert_cb(VALUE obj)
     if (NIL_P(cb))
 	return Qnil;
 
-    ary = rb_funcall(cb, rb_intern("call"), 1, obj);
+    ary = rb_funcallv(cb, id_call, 1, &obj);
     Check_Type(ary, T_ARRAY);
     GetX509CertPtr(cert = rb_ary_entry(ary, 0));
     GetPrivPKeyPtr(key = rb_ary_entry(ary, 1));
@@ -248,8 +248,8 @@ ossl_call_tmp_dh_callback(struct tmp_dh_callback_args *args)
     cb = rb_funcall(args->ssl_obj, args->id, 0);
     if (NIL_P(cb))
 	return NULL;
-    dh = rb_funcall(cb, rb_intern("call"), 3,
-		    args->ssl_obj, INT2NUM(args->is_export), INT2NUM(args->keylength));
+    dh = rb_funcall(cb, id_call, 3, args->ssl_obj, INT2NUM(args->is_export),
+		    INT2NUM(args->keylength));
     pkey = GetPKeyPtr(dh);
     if (EVP_PKEY_base_id(pkey) != args->type)
 	return NULL;
@@ -374,12 +374,12 @@ ossl_call_session_get_cb(VALUE ary)
     cb = rb_funcall(ssl_obj, rb_intern("session_get_cb"), 0);
     if (NIL_P(cb)) return Qnil;
 
-    return rb_funcall(cb, rb_intern("call"), 1, ary);
+    return rb_funcallv(cb, id_call, 1, &ary);
 }
 
 /* this method is currently only called for servers (in OpenSSL <= 0.9.8e) */
 static SSL_SESSION *
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(LIBRESSL_VERSION_NUMBER)
+#if OPENSSL_VERSION_NUMBER >= 0x10100000 && !defined(LIBRESSL_VERSION_NUMBER)
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
 #else
 ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
@@ -420,7 +420,7 @@ ossl_call_session_new_cb(VALUE ary)
     cb = rb_funcall(ssl_obj, rb_intern("session_new_cb"), 0);
     if (NIL_P(cb)) return Qnil;
 
-    return rb_funcall(cb, rb_intern("call"), 1, ary);
+    return rb_funcallv(cb, id_call, 1, &ary);
 }
 
 /* return 1 normal.  return 0 removes the session */
@@ -467,7 +467,7 @@ ossl_call_session_remove_cb(VALUE ary)
     cb = rb_attr_get(sslctx_obj, id_i_session_remove_cb);
     if (NIL_P(cb)) return Qnil;
 
-    return rb_funcall(cb, rb_intern("call"), 1, ary);
+    return rb_funcallv(cb, id_call, 1, &ary);
 }
 
 static void
@@ -533,7 +533,7 @@ ossl_call_servername_cb(VALUE ary)
     cb = rb_attr_get(sslctx_obj, id_i_servername_cb);
     if (NIL_P(cb)) return Qnil;
 
-    ret_obj = rb_funcall(cb, rb_intern("call"), 1, ary);
+    ret_obj = rb_funcallv(cb, id_call, 1, &ary);
     if (rb_obj_is_kind_of(ret_obj, cSSLContext)) {
         SSL *ssl;
         SSL_CTX *ctx2;
@@ -585,7 +585,7 @@ ssl_renegotiation_cb(const SSL *ssl)
     cb = rb_attr_get(sslctx_obj, id_i_renegotiation_cb);
     if (NIL_P(cb)) return;
 
-    (void) rb_funcall(cb, rb_intern("call"), 1, ssl_obj);
+    rb_funcallv(cb, id_call, 1, &ssl_obj);
 }
 
 #if !defined(OPENSSL_NO_NEXTPROTONEG) || \
@@ -635,7 +635,7 @@ npn_select_cb_common_i(VALUE tmp)
 	in += l;
     }
 
-    selected = rb_funcall(args->cb, rb_intern("call"), 1, protocols);
+    selected = rb_funcallv(args->cb, id_call, 1, &protocols);
     StringValue(selected);
     len = RSTRING_LEN(selected);
     if (len < 1 || len >= 256) {
@@ -1191,6 +1191,134 @@ ossl_sslctx_set_security_level(VALUE self, VALUE value)
 #endif
 
     return value;
+}
+
+#ifdef SSL_MODE_SEND_FALLBACK_SCSV
+/*
+ * call-seq:
+ *    ctx.enable_fallback_scsv() => nil
+ *
+ * Activate TLS_FALLBACK_SCSV for this context.
+ * See RFC 7507.
+ */
+static VALUE
+ossl_sslctx_enable_fallback_scsv(VALUE self)
+{
+    SSL_CTX *ctx;
+
+    GetSSLCTX(self, ctx);
+    SSL_CTX_set_mode(ctx, SSL_MODE_SEND_FALLBACK_SCSV);
+
+    return Qnil;
+}
+#endif
+
+/*
+ * call-seq:
+ *    ctx.add_certificate(certiticate, pkey [, extra_certs]) -> self
+ *
+ * Adds a certificate to the context. _pkey_ must be a corresponding private
+ * key with _certificate_.
+ *
+ * Multiple certificates with different public key type can be added by
+ * repeated calls of this method, and OpenSSL will choose the most appropriate
+ * certificate during the handshake.
+ *
+ * #cert=, #key=, and #extra_chain_cert= are old accessor methods for setting
+ * certificate and internally call this method.
+ *
+ * === Parameters
+ * _certificate_::
+ *   A certificate. An instance of OpenSSL::X509::Certificate.
+ * _pkey_::
+ *   The private key for _certificate_. An instance of OpenSSL::PKey::PKey.
+ * _extra_certs_::
+ *   Optional. An array of OpenSSL::X509::Certificate. When sending a
+ *   certificate chain, the certificates specified by this are sent following
+ *   _certificate_, in the order in the array.
+ *
+ * === Example
+ *   rsa_cert = OpenSSL::X509::Certificate.new(...)
+ *   rsa_pkey = OpenSSL::PKey.read(...)
+ *   ca_intermediate_cert = OpenSSL::X509::Certificate.new(...)
+ *   ctx.add_certificate(rsa_cert, rsa_pkey, [ca_intermediate_cert])
+ *
+ *   ecdsa_cert = ...
+ *   ecdsa_pkey = ...
+ *   another_ca_cert = ...
+ *   ctx.add_certificate(ecdsa_cert, ecdsa_pkey, [another_ca_cert])
+ *
+ * === Note
+ * OpenSSL before the version 1.0.2 could handle only one extra chain across
+ * all key types. Calling this method discards the chain set previously.
+ */
+static VALUE
+ossl_sslctx_add_certificate(int argc, VALUE *argv, VALUE self)
+{
+    VALUE cert, key, extra_chain_ary;
+    SSL_CTX *ctx;
+    X509 *x509;
+    STACK_OF(X509) *extra_chain = NULL;
+    EVP_PKEY *pkey, *pub_pkey;
+
+    GetSSLCTX(self, ctx);
+    rb_scan_args(argc, argv, "21", &cert, &key, &extra_chain_ary);
+    rb_check_frozen(self);
+    x509 = GetX509CertPtr(cert);
+    pkey = GetPrivPKeyPtr(key);
+
+    /*
+     * The reference counter is bumped, and decremented immediately.
+     * X509_get0_pubkey() is only available in OpenSSL >= 1.1.0.
+     */
+    pub_pkey = X509_get_pubkey(x509);
+    EVP_PKEY_free(pub_pkey);
+    if (!pub_pkey)
+	rb_raise(rb_eArgError, "certificate does not contain public key");
+    if (EVP_PKEY_cmp(pub_pkey, pkey) != 1)
+	rb_raise(rb_eArgError, "public key mismatch");
+
+    if (argc >= 3)
+	extra_chain = ossl_x509_ary2sk(extra_chain_ary);
+
+    if (!SSL_CTX_use_certificate(ctx, x509)) {
+	sk_X509_pop_free(extra_chain, X509_free);
+	ossl_raise(eSSLError, "SSL_CTX_use_certificate");
+    }
+    if (!SSL_CTX_use_PrivateKey(ctx, pkey)) {
+	sk_X509_pop_free(extra_chain, X509_free);
+	ossl_raise(eSSLError, "SSL_CTX_use_PrivateKey");
+    }
+
+    if (extra_chain) {
+#if OPENSSL_VERSION_NUMBER >= 0x10002000 && !defined(LIBRESSL_VERSION_NUMBER)
+	if (!SSL_CTX_set0_chain(ctx, extra_chain)) {
+	    sk_X509_pop_free(extra_chain, X509_free);
+	    ossl_raise(eSSLError, "SSL_CTX_set0_chain");
+	}
+#else
+	STACK_OF(X509) *orig_extra_chain;
+	X509 *x509_tmp;
+
+	/* First, clear the existing chain */
+	SSL_CTX_get_extra_chain_certs(ctx, &orig_extra_chain);
+	if (orig_extra_chain && sk_X509_num(orig_extra_chain)) {
+	    rb_warning("SSL_CTX_set0_chain() is not available; " \
+		       "clearing previously set certificate chain");
+	    SSL_CTX_clear_extra_chain_certs(ctx);
+	}
+	while ((x509_tmp = sk_X509_shift(extra_chain))) {
+	    /* Transfers ownership */
+	    if (!SSL_CTX_add_extra_chain_cert(ctx, x509_tmp)) {
+		X509_free(x509_tmp);
+		sk_X509_pop_free(extra_chain, X509_free);
+		ossl_raise(eSSLError, "SSL_CTX_add_extra_chain_cert");
+	    }
+	}
+	sk_X509_free(extra_chain);
+#endif
+    }
+    return self;
 }
 
 /*
@@ -2261,6 +2389,7 @@ Init_ossl_ssl(void)
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
 #endif
 
+    id_call = rb_intern("call");
     ID_callback_state = rb_intern("callback_state");
 
     ossl_ssl_ex_vcb_idx = SSL_get_ex_new_index(0, (void *)"ossl_ssl_ex_vcb_idx", 0, 0, 0);
@@ -2324,11 +2453,17 @@ Init_ossl_ssl(void)
 
     /*
      * Context certificate
+     *
+     * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
+     * It is recommended to use #add_certificate instead.
      */
     rb_attr(cSSLContext, rb_intern("cert"), 1, 1, Qfalse);
 
     /*
      * Context private key
+     *
+     * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
+     * It is recommended to use #add_certificate instead.
      */
     rb_attr(cSSLContext, rb_intern("key"), 1, 1, Qfalse);
 
@@ -2402,6 +2537,9 @@ Init_ossl_ssl(void)
     /*
      * An Array of extra X509 certificates to be added to the certificate
      * chain.
+     *
+     * The _cert_, _key_, and _extra_chain_cert_ attributes are deprecated.
+     * It is recommended to use #add_certificate instead.
      */
     rb_attr(cSSLContext, rb_intern("extra_chain_cert"), 1, 1, Qfalse);
 
@@ -2561,6 +2699,10 @@ Init_ossl_ssl(void)
     rb_define_method(cSSLContext, "ecdh_curves=", ossl_sslctx_set_ecdh_curves, 1);
     rb_define_method(cSSLContext, "security_level", ossl_sslctx_get_security_level, 0);
     rb_define_method(cSSLContext, "security_level=", ossl_sslctx_set_security_level, 1);
+#ifdef SSL_MODE_SEND_FALLBACK_SCSV
+    rb_define_method(cSSLContext, "enable_fallback_scsv", ossl_sslctx_enable_fallback_scsv, 0);
+#endif
+    rb_define_method(cSSLContext, "add_certificate", ossl_sslctx_add_certificate, -1);
 
     rb_define_method(cSSLContext, "setup", ossl_sslctx_setup, 0);
     rb_define_alias(cSSLContext, "freeze", "setup");

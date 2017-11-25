@@ -226,7 +226,7 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 
     GetX509CRL(self, crl);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_CRL_set_lastUpdate(crl, asn1time)) {
+    if (!X509_CRL_set1_lastUpdate(crl, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CRLError, "X509_CRL_set_lastUpdate");
     }
@@ -257,7 +257,7 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 
     GetX509CRL(self, crl);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_CRL_set_nextUpdate(crl, asn1time)) {
+    if (!X509_CRL_set1_nextUpdate(crl, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CRLError, "X509_CRL_set_nextUpdate");
     }
@@ -359,9 +359,12 @@ static VALUE
 ossl_x509crl_verify(VALUE self, VALUE key)
 {
     X509_CRL *crl;
+    EVP_PKEY *pkey;
 
     GetX509CRL(self, crl);
-    switch (X509_CRL_verify(crl, GetPKeyPtr(key))) {
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    switch (X509_CRL_verify(crl, pkey)) {
       case 1:
 	return Qtrue;
       case 0:
