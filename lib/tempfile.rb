@@ -80,7 +80,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
   # call-seq:
-  #    new(basename = "", [tmpdir = Dir.tmpdir], [options])
+  #    new(basename = "", [tmpdir = Dir.tmpdir], mode: 0, extension: nil, [options])
   #
   # Creates a temporary file with permissions 0600 (= only readable and
   # writable by the owner) and opens it with mode "w+".
@@ -95,8 +95,13 @@ class Tempfile < DelegateClass(File)
   #   file = Tempfile.new('hello')
   #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0"
   #
-  #   # Use the Array form to enforce an extension in the filename:
-  #   file = Tempfile.new(['hello', '.jpg'])
+  #   file = Tempfile.new(['hello', 'world'])
+  #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0world"
+  #
+  # To enforce an extension in the filename use +extension+ keyword argument.
+  # For example:
+  #
+  #   file = Tempfile.new('hello', extension: :jpg)
   #   file.path  # => something like: "/tmp/hello2843-8392-92849382--0.jpg"
   #
   # The temporary file will be placed in the directory as specified
@@ -123,14 +128,15 @@ class Tempfile < DelegateClass(File)
   #
   # If Tempfile.new cannot find a unique filename within a limited
   # number of tries, then it will raise an exception.
-  def initialize(basename="", tmpdir=nil, mode: 0, **options)
+  def initialize(basename="", tmpdir=nil, mode: 0, extension: nil, **options)
     warn "Tempfile.new doesn't call the given block." if block_given?
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
     ::Dir::Tmpname.create(basename, tmpdir, options) do |tmpname, n, opts|
       opts[:perm] = 0600
-      @tmpfile = File.open(tmpname, @mode, opts)
+      filename = extension ? "#{tmpname}.#{extension}" : tmpname
+      @tmpfile = File.open(filename, @mode, opts)
       @opts = opts.freeze
     end
     ObjectSpace.define_finalizer(self, Remover.new(@tmpfile))
