@@ -3130,9 +3130,9 @@ getcwdofdrv(int drv)
        of a particular drive is to change chdir() to that drive,
        so save the old cwd before chdir()
     */
-    oldcwd = my_getcwd();
+    oldcwd = ruby_getcwd();
     if (chdir(drive) == 0) {
-	drvcwd = my_getcwd();
+	drvcwd = ruby_getcwd();
 	chdir(oldcwd);
 	xfree(oldcwd);
     }
@@ -3553,7 +3553,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    p = pend;
 	}
 	else {
-	    char *e = append_fspath(result, fname, my_getcwd(), &enc, fsenc);
+	    char *e = append_fspath(result, fname, ruby_getcwd(), &enc, fsenc);
 	    tainted = 1;
 	    BUFINIT();
 	    p = e;
@@ -5842,7 +5842,7 @@ path_check_0(VALUE path, int execpath)
     char *p = 0, *s;
 
     if (!rb_is_absolute_path(p0)) {
-	char *buf = my_getcwd();
+	char *buf = ruby_getcwd();
 	VALUE newpath;
 
 	newpath = rb_str_new2(buf);
