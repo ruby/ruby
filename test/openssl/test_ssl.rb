@@ -1304,7 +1304,8 @@ end
   end
 
   def test_fallback_scsv
-    pend "Fallback SCSV is not supported" unless OpenSSL::SSL::SSLContext.method_defined?( :enable_fallback_scsv)
+    pend "Fallback SCSV is not supported" unless \
+      OpenSSL::SSL::SSLContext.method_defined?(:enable_fallback_scsv)
 
     start_server do |port|
       ctx = OpenSSL::SSL::SSLContext.new
@@ -1339,17 +1340,13 @@ end
       ctx2.enable_fallback_scsv
       ctx2.max_version = OpenSSL::SSL::TLS1_1_VERSION
       s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-      t = Thread.new {
-        assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
-          s2.connect
-        }
-      }
-
+      t = Thread.new { s2.connect }
       assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
         s1.accept
       }
-
-      assert t.join
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+        t.join
+      }
     ensure
       sock1.close
       sock2.close
