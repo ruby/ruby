@@ -9343,9 +9343,11 @@ static NODE *
 opt_arg_append(NODE *opt_list, NODE *opt)
 {
     NODE *opts = opt_list;
+    opts->nd_loc.last_loc = opt->nd_loc.last_loc;
 
     while (opts->nd_next) {
 	opts = opts->nd_next;
+	opts->nd_loc.last_loc = opt->nd_loc.last_loc;
     }
     opts->nd_next = opt;
 
