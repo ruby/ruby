@@ -3081,7 +3081,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     if (eargp->chdir_given) {
         if (sargp) {
-            char *cwd = my_getcwd();
+            char *cwd = ruby_getcwd();
             sargp->chdir_given = 1;
             sargp->chdir_dir = hide_obj(rb_str_new2(cwd));
             xfree(cwd);
