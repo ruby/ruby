@@ -198,6 +198,10 @@ class LeakChecker
   end
 
   def puts(*a)
-    MiniTest::Unit.output.puts(*a)
+    output = MiniTest::Unit.output
+    if defined?(output.set_encoding)
+      output.set_encoding(nil, nil)
+    end
+    output.puts(*a)
   end
 end
