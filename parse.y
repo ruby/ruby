@@ -9359,8 +9359,10 @@ kwd_append(NODE *kwlist, NODE *kw)
 {
     if (kwlist) {
 	NODE *kws = kwlist;
+	kws->nd_loc.last_loc = kw->nd_loc.last_loc;
 	while (kws->nd_next) {
 	    kws = kws->nd_next;
+	    kws->nd_loc.last_loc = kw->nd_loc.last_loc;
 	}
 	kws->nd_next = kw;
     }
