@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle_ruby", :bundler => "< 2" do
+RSpec.describe "bundle_ruby", :ruby_repo, :bundler => "< 2" do
   context "without patchlevel" do
     it "returns the ruby version" do
       gemfile <<-G
