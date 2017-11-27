@@ -6123,27 +6123,6 @@ unescape_ascii(unsigned int c)
     }
 }
 
-/* copied from rb_strseq_index */
-static const char *
-find_close_brace(const char *s, const char *s_end, rb_encoding *enc)
-{
-    const char *search_start;
-    long search_len = s_end - s, pos;
-
-    search_start = s;
-    for (;;) {
-	const char *t;
-	pos = rb_memsearch("}", 1, search_start, search_len, enc);
-	if (pos < 0) return NULL;
-	t = rb_enc_right_char_head(search_start, search_start+pos, s_end, enc);
-	if (t == search_start + pos) break;
-	search_len -= t - search_start;
-	if (search_len <= 0) return NULL;
-	search_start = t;
-    }
-    return s + pos;
-}
-
 static int
 undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding *enc)
 {
@@ -6176,17 +6155,20 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	}
 	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, enc);
 	if (c2 == '{') { /* handle \u{...} form */
-	    const char *p, *hexstr = s + 2;
+	    const char *hexstr = s + 2;
 	    unsigned int hex;
+	    static const char* const close_brace = "}";
+	    long pos;
 
 	    if (hexstr >= s_end) {
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
-	    p = find_close_brace(hexstr, s_end, enc);
-	    if (p == NULL) {
+	    /* find close brace */
+	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, enc);
+	    if (pos < 0) {
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
-	    hex = ruby_scan_hex(hexstr, p - hexstr + 1, &hexlen);
+	    hex = ruby_scan_hex(hexstr, pos, &hexlen);
 	    if (hexlen == 0 || hexlen > 6) {
 		rb_raise(rb_eArgError, "invalid Unicode escape");
 	    }
