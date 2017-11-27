@@ -292,6 +292,9 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
     }
 
     while(!done) {
+	VALUE event_args[5];
+	VALUE start_line, start_column, end_line, end_column;
+
 	if(!yaml_parser_parse(parser, &event)) {
 	    VALUE exception;
 
@@ -301,9 +304,6 @@ static VALUE parse(int argc, VALUE *argv, VALUE self)
 
 	    rb_exc_raise(exception);
 	}
-
-	VALUE event_args[5];
-	VALUE start_line, start_column, end_line, end_column;
 
 	start_line = INT2NUM((long)event.start_mark.line);
 	start_column = INT2NUM((long)event.start_mark.column);
