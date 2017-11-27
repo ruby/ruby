@@ -6176,17 +6176,17 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	}
 	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, enc);
 	if (c2 == '{') { /* handle \u{...} form */
-	    const char *p;
+	    const char *p, *hexstr = s + 2;
 	    unsigned int hex;
 
-	    if (s+2 >= s_end) {
+	    if (hexstr >= s_end) {
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
-	    p = find_close_brace(s+2, s_end, enc);
+	    p = find_close_brace(hexstr, s_end, enc);
 	    if (p == NULL) {
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
-	    hex = ruby_scan_hex(s+2, p-(s+2)+1, &hexlen);
+	    hex = ruby_scan_hex(hexstr, p - hexstr + 1, &hexlen);
 	    if (hexlen == 0 || hexlen > 6) {
 		rb_raise(rb_eArgError, "invalid Unicode escape");
 	    }
