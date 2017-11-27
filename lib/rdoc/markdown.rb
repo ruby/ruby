@@ -81,6 +81,18 @@
 # :   A little insect that is known
 # to enjoy picnics
 #
+# ### Strike
+#
+# Example:
+#
+# ```
+# This is ~~striked~~.
+# ```
+#
+# Produces:
+#
+# This is ~~striked~~.
+#
 # ### Github
 #
 # The #github extension enables a partial set of [Github Flavored Markdown]
@@ -540,6 +552,7 @@ class RDoc::Markdown
     :github,
     :html,
     :notes,
+    :strike,
   ]
 
   # :section: Extensions
@@ -589,6 +602,11 @@ class RDoc::Markdown
   # Enables the notes extension
 
   extension :notes
+
+  ##
+  # Enables the strike extension
+
+  extension :strike
 
   # :section:
 
@@ -678,7 +696,7 @@ class RDoc::Markdown
   # with the linking `text` (usually whitespace).
 
   def link_to content, label = content, text = nil
-    raise 'enable notes extension' if
+    raise ParseError, 'enable notes extension' if
       content.start_with? '^' and label.equal? content
 
     if ref = @references[label] then
@@ -811,6 +829,17 @@ class RDoc::Markdown
       "*#{text}*"
     else
       "<b>#{text}</b>"
+    end
+  end
+
+  ##
+  # Wraps `text` in strike markup for rdoc inline formatting
+
+  def strike text
+    if text =~ /\A[a-z\d.\/-]+\z/i then
+      "~#{text}~"
+    else
+      "<s>#{text}</s>"
     end
   end
 
@@ -1005,7 +1034,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxInline = !@Newline !(@Sp? /#*/ @Sp @Newline) Inline
+  # AtxInline = !@Newline !(@Sp /#*/ @Sp @Newline) Inline
   def _AtxInline
 
     _save = self.pos
@@ -1022,12 +1051,7 @@ class RDoc::Markdown
 
       _save3 = self.pos
       while true # sequence
-        _save4 = self.pos
         _tmp = _Sp()
-        unless _tmp
-          _tmp = true
-          self.pos = _save4
-        end
         unless _tmp
           self.pos = _save3
           break
@@ -1092,7 +1116,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # AtxHeading = AtxStart:s @Sp? AtxInline+:a (@Sp? /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
+  # AtxHeading = AtxStart:s @Sp AtxInline+:a (@Sp /#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }
   def _AtxHeading
 
     _save = self.pos
@@ -1103,17 +1127,12 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _save1 = self.pos
       _tmp = _Sp()
-      unless _tmp
-        _tmp = true
-        self.pos = _save1
-      end
       unless _tmp
         self.pos = _save
         break
       end
-      _save2 = self.pos
+      _save1 = self.pos
       _ary = []
       _tmp = apply(:_AtxInline)
       if _tmp
@@ -1126,42 +1145,37 @@ class RDoc::Markdown
         _tmp = true
         @result = _ary
       else
-        self.pos = _save2
+        self.pos = _save1
       end
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      _save3 = self.pos
+      _save2 = self.pos
 
-      _save4 = self.pos
+      _save3 = self.pos
       while true # sequence
-        _save5 = self.pos
         _tmp = _Sp()
         unless _tmp
-          _tmp = true
-          self.pos = _save5
-        end
-        unless _tmp
-          self.pos = _save4
+          self.pos = _save3
           break
         end
         _tmp = scan(/\A(?-mix:#*)/)
         unless _tmp
-          self.pos = _save4
+          self.pos = _save3
           break
         end
         _tmp = _Sp()
         unless _tmp
-          self.pos = _save4
+          self.pos = _save3
         end
         break
       end # end sequence
 
       unless _tmp
         _tmp = true
-        self.pos = _save3
+        self.pos = _save2
       end
       unless _tmp
         self.pos = _save
@@ -1202,12 +1216,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextBottom1 = /={3,}/ @Newline
+  # SetextBottom1 = /={1,}/ @Newline
   def _SetextBottom1
 
     _save = self.pos
     while true # sequence
-      _tmp = scan(/\A(?-mix:={3,})/)
+      _tmp = scan(/\A(?-mix:={1,})/)
       unless _tmp
         self.pos = _save
         break
@@ -1223,12 +1237,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextBottom2 = /-{3,}/ @Newline
+  # SetextBottom2 = /-{1,}/ @Newline
   def _SetextBottom2
 
     _save = self.pos
     while true # sequence
-      _tmp = scan(/\A(?-mix:-{3,})/)
+      _tmp = scan(/\A(?-mix:-{1,})/)
       unless _tmp
         self.pos = _save
         break
@@ -1244,7 +1258,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextHeading1 = &(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }
+  # SetextHeading1 = &(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }
   def _SetextHeading1
 
     _save = self.pos
@@ -1339,12 +1353,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _save8 = self.pos
       _tmp = _Sp()
-      unless _tmp
-        _tmp = true
-        self.pos = _save8
-      end
       unless _tmp
         self.pos = _save
         break
@@ -1371,7 +1380,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SetextHeading2 = &(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }
+  # SetextHeading2 = &(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }
   def _SetextHeading2
 
     _save = self.pos
@@ -1466,12 +1475,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      _save8 = self.pos
       _tmp = _Sp()
-      unless _tmp
-        _tmp = true
-        self.pos = _save8
-      end
       unless _tmp
         self.pos = _save
         break
@@ -8446,7 +8450,162 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # HtmlBlockInTags = (HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)
+  # HtmlBlockOpenHead = "<" Spnl ("head" | "HEAD") Spnl HtmlAttribute* ">"
+  def _HtmlBlockOpenHead
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("<")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = match_string("head")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("HEAD")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+        _tmp = apply(:_HtmlAttribute)
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(">")
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlBlockOpenHead unless _tmp
+    return _tmp
+  end
+
+  # HtmlBlockCloseHead = "<" Spnl "/" ("head" | "HEAD") Spnl ">"
+  def _HtmlBlockCloseHead
+
+    _save = self.pos
+    while true # sequence
+      _tmp = match_string("<")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("/")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+
+      _save1 = self.pos
+      while true # choice
+        _tmp = match_string("head")
+        break if _tmp
+        self.pos = _save1
+        _tmp = match_string("HEAD")
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_Spnl)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string(">")
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlBlockCloseHead unless _tmp
+    return _tmp
+  end
+
+  # HtmlBlockHead = HtmlBlockOpenHead (!HtmlBlockCloseHead .)* HtmlBlockCloseHead
+  def _HtmlBlockHead
+
+    _save = self.pos
+    while true # sequence
+      _tmp = apply(:_HtmlBlockOpenHead)
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      while true
+
+        _save2 = self.pos
+        while true # sequence
+          _save3 = self.pos
+          _tmp = apply(:_HtmlBlockCloseHead)
+          _tmp = _tmp ? nil : true
+          self.pos = _save3
+          unless _tmp
+            self.pos = _save2
+            break
+          end
+          _tmp = get_byte
+          unless _tmp
+            self.pos = _save2
+          end
+          break
+        end # end sequence
+
+        break unless _tmp
+      end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = apply(:_HtmlBlockCloseHead)
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_HtmlBlockHead unless _tmp
+    return _tmp
+  end
+
+  # HtmlBlockInTags = (HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript | HtmlBlockHead)
   def _HtmlBlockInTags
 
     _save = self.pos
@@ -8551,6 +8710,9 @@ class RDoc::Markdown
       break if _tmp
       self.pos = _save
       _tmp = apply(:_HtmlBlockScript)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_HtmlBlockHead)
       break if _tmp
       self.pos = _save
       break
@@ -9320,7 +9482,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Inline = (Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)
+  # Inline = (Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Strike | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)
   def _Inline
 
     _save = self.pos
@@ -9341,6 +9503,9 @@ class RDoc::Markdown
       break if _tmp
       self.pos = _save
       _tmp = apply(:_Emph)
+      break if _tmp
+      self.pos = _save
+      _tmp = apply(:_Strike)
       break if _tmp
       self.pos = _save
       _tmp = apply(:_Image)
@@ -9669,7 +9834,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # NormalEndline = @Sp @Newline !@BlankLine !">" !AtxStart !(Line /={3,}|-{3,}=/ @Newline) { "\n" }
+  # NormalEndline = @Sp @Newline !@BlankLine !">" !AtxStart !(Line /={1,}|-{1,}/ @Newline) { "\n" }
   def _NormalEndline
 
     _save = self.pos
@@ -9717,7 +9882,7 @@ class RDoc::Markdown
           self.pos = _save5
           break
         end
-        _tmp = scan(/\A(?-mix:={3,}|-{3,}=)/)
+        _tmp = scan(/\A(?-mix:={1,}|-{1,})/)
         unless _tmp
           self.pos = _save5
           break
@@ -10032,96 +10197,38 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneStarOpen = !StarLine "*" !@Spacechar !@Newline
-  def _OneStarOpen
+  # Whitespace = (@Spacechar | @Newline)
+  def _Whitespace
 
     _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = apply(:_StarLine)
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("*")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
+    while true # choice
       _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save3 = self.pos
+      break if _tmp
+      self.pos = _save
       _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save3
-      unless _tmp
-        self.pos = _save
-      end
+      break if _tmp
+      self.pos = _save
       break
-    end # end sequence
+    end # end choice
 
-    set_failed_rule :_OneStarOpen unless _tmp
+    set_failed_rule :_Whitespace unless _tmp
     return _tmp
   end
 
-  # OneStarClose = !@Spacechar !@Newline Inline:a "*" { a }
-  def _OneStarClose
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Inline)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("*")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a ; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_OneStarClose unless _tmp
-    return _tmp
-  end
-
-  # EmphStar = OneStarOpen @StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }
+  # EmphStar = "*" !@Whitespace @StartList:a (!"*" Inline:b { a << b } | StrongStar:b { a << b })+ "*" { emphasis a.join }
   def _EmphStar
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_OneStarOpen)
+      _tmp = match_string("*")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = _Whitespace()
+      _tmp = _tmp ? nil : true
+      self.pos = _save1
       unless _tmp
         self.pos = _save
         break
@@ -10132,47 +10239,124 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      while true
+      _save2 = self.pos
 
-        _save2 = self.pos
+      _save3 = self.pos
+      while true # choice
+
+        _save4 = self.pos
         while true # sequence
-          _save3 = self.pos
-          _tmp = apply(:_OneStarClose)
+          _save5 = self.pos
+          _tmp = match_string("*")
           _tmp = _tmp ? nil : true
-          self.pos = _save3
+          self.pos = _save5
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
             break
           end
           _tmp = apply(:_Inline)
-          l = @result
+          b = @result
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
             break
           end
-          @result = begin;  a << l ; end
+          @result = begin;  a << b ; end
           _tmp = true
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
           end
           break
         end # end sequence
 
-        break unless _tmp
+        break if _tmp
+        self.pos = _save3
+
+        _save6 = self.pos
+        while true # sequence
+          _tmp = apply(:_StrongStar)
+          b = @result
+          unless _tmp
+            self.pos = _save6
+            break
+          end
+          @result = begin;  a << b ; end
+          _tmp = true
+          unless _tmp
+            self.pos = _save6
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save3
+        break
+      end # end choice
+
+      if _tmp
+        while true
+
+          _save7 = self.pos
+          while true # choice
+
+            _save8 = self.pos
+            while true # sequence
+              _save9 = self.pos
+              _tmp = match_string("*")
+              _tmp = _tmp ? nil : true
+              self.pos = _save9
+              unless _tmp
+                self.pos = _save8
+                break
+              end
+              _tmp = apply(:_Inline)
+              b = @result
+              unless _tmp
+                self.pos = _save8
+                break
+              end
+              @result = begin;  a << b ; end
+              _tmp = true
+              unless _tmp
+                self.pos = _save8
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
+
+            _save10 = self.pos
+            while true # sequence
+              _tmp = apply(:_StrongStar)
+              b = @result
+              unless _tmp
+                self.pos = _save10
+                break
+              end
+              @result = begin;  a << b ; end
+              _tmp = true
+              unless _tmp
+                self.pos = _save10
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
+            break
+          end # end choice
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save2
       end
-      _tmp = true
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_OneStarClose)
-      l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a << l ; end
-      _tmp = true
+      _tmp = match_string("*")
       unless _tmp
         self.pos = _save
         break
@@ -10189,96 +10373,20 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # OneUlOpen = !UlLine "_" !@Spacechar !@Newline
-  def _OneUlOpen
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = apply(:_UlLine)
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("_")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save3 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save3
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_OneUlOpen unless _tmp
-    return _tmp
-  end
-
-  # OneUlClose = !@Spacechar !@Newline Inline:a "_" { a }
-  def _OneUlClose
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Inline)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("_")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a ; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_OneUlClose unless _tmp
-    return _tmp
-  end
-
-  # EmphUl = OneUlOpen @StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }
+  # EmphUl = "_" !@Whitespace @StartList:a (!"_" Inline:b { a << b } | StrongUl:b { a << b })+ "_" { emphasis a.join }
   def _EmphUl
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_OneUlOpen)
+      _tmp = match_string("_")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = _Whitespace()
+      _tmp = _tmp ? nil : true
+      self.pos = _save1
       unless _tmp
         self.pos = _save
         break
@@ -10289,47 +10397,124 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      while true
+      _save2 = self.pos
 
-        _save2 = self.pos
+      _save3 = self.pos
+      while true # choice
+
+        _save4 = self.pos
         while true # sequence
-          _save3 = self.pos
-          _tmp = apply(:_OneUlClose)
+          _save5 = self.pos
+          _tmp = match_string("_")
           _tmp = _tmp ? nil : true
-          self.pos = _save3
+          self.pos = _save5
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
             break
           end
           _tmp = apply(:_Inline)
-          l = @result
+          b = @result
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
             break
           end
-          @result = begin;  a << l ; end
+          @result = begin;  a << b ; end
           _tmp = true
           unless _tmp
-            self.pos = _save2
+            self.pos = _save4
           end
           break
         end # end sequence
 
-        break unless _tmp
+        break if _tmp
+        self.pos = _save3
+
+        _save6 = self.pos
+        while true # sequence
+          _tmp = apply(:_StrongUl)
+          b = @result
+          unless _tmp
+            self.pos = _save6
+            break
+          end
+          @result = begin;  a << b ; end
+          _tmp = true
+          unless _tmp
+            self.pos = _save6
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save3
+        break
+      end # end choice
+
+      if _tmp
+        while true
+
+          _save7 = self.pos
+          while true # choice
+
+            _save8 = self.pos
+            while true # sequence
+              _save9 = self.pos
+              _tmp = match_string("_")
+              _tmp = _tmp ? nil : true
+              self.pos = _save9
+              unless _tmp
+                self.pos = _save8
+                break
+              end
+              _tmp = apply(:_Inline)
+              b = @result
+              unless _tmp
+                self.pos = _save8
+                break
+              end
+              @result = begin;  a << b ; end
+              _tmp = true
+              unless _tmp
+                self.pos = _save8
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
+
+            _save10 = self.pos
+            while true # sequence
+              _tmp = apply(:_StrongUl)
+              b = @result
+              unless _tmp
+                self.pos = _save10
+                break
+              end
+              @result = begin;  a << b ; end
+              _tmp = true
+              unless _tmp
+                self.pos = _save10
+              end
+              break
+            end # end sequence
+
+            break if _tmp
+            self.pos = _save7
+            break
+          end # end choice
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save2
       end
-      _tmp = true
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_OneUlClose)
-      l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a << l ; end
-      _tmp = true
+      _tmp = match_string("_")
       unless _tmp
         self.pos = _save
         break
@@ -10364,96 +10549,20 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoStarOpen = !StarLine "**" !@Spacechar !@Newline
-  def _TwoStarOpen
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = apply(:_StarLine)
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("**")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save3 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save3
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_TwoStarOpen unless _tmp
-    return _tmp
-  end
-
-  # TwoStarClose = !@Spacechar !@Newline Inline:a "**" { a }
-  def _TwoStarClose
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Inline)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("**")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a ; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_TwoStarClose unless _tmp
-    return _tmp
-  end
-
-  # StrongStar = TwoStarOpen @StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }
+  # StrongStar = "**" !@Whitespace @StartList:a (!"**" Inline:b { a << b })+ "**" { strong a.join }
   def _StrongStar
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_TwoStarOpen)
+      _tmp = match_string("**")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = _Whitespace()
+      _tmp = _tmp ? nil : true
+      self.pos = _save1
       unless _tmp
         self.pos = _save
         break
@@ -10464,47 +10573,70 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      while true
+      _save2 = self.pos
 
-        _save2 = self.pos
-        while true # sequence
-          _save3 = self.pos
-          _tmp = apply(:_TwoStarClose)
-          _tmp = _tmp ? nil : true
+      _save3 = self.pos
+      while true # sequence
+        _save4 = self.pos
+        _tmp = match_string("**")
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
           self.pos = _save3
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          _tmp = apply(:_Inline)
-          l = @result
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          @result = begin;  a << l ; end
-          _tmp = true
-          unless _tmp
-            self.pos = _save2
-          end
           break
-        end # end sequence
+        end
+        _tmp = apply(:_Inline)
+        b = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin;  a << b ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
 
-        break unless _tmp
+      if _tmp
+        while true
+
+          _save5 = self.pos
+          while true # sequence
+            _save6 = self.pos
+            _tmp = match_string("**")
+            _tmp = _tmp ? nil : true
+            self.pos = _save6
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _tmp = apply(:_Inline)
+            b = @result
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            @result = begin;  a << b ; end
+            _tmp = true
+            unless _tmp
+              self.pos = _save5
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save2
       end
-      _tmp = true
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_TwoStarClose)
-      l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a << l ; end
-      _tmp = true
+      _tmp = match_string("**")
       unless _tmp
         self.pos = _save
         break
@@ -10521,96 +10653,20 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # TwoUlOpen = !UlLine "__" !@Spacechar !@Newline
-  def _TwoUlOpen
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = apply(:_UlLine)
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("__")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save3 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save3
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_TwoUlOpen unless _tmp
-    return _tmp
-  end
-
-  # TwoUlClose = !@Spacechar !@Newline Inline:a "__" { a }
-  def _TwoUlClose
-
-    _save = self.pos
-    while true # sequence
-      _save1 = self.pos
-      _tmp = _Spacechar()
-      _tmp = _tmp ? nil : true
-      self.pos = _save1
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _save2 = self.pos
-      _tmp = _Newline()
-      _tmp = _tmp ? nil : true
-      self.pos = _save2
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Inline)
-      a = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = match_string("__")
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a ; end
-      _tmp = true
-      unless _tmp
-        self.pos = _save
-      end
-      break
-    end # end sequence
-
-    set_failed_rule :_TwoUlClose unless _tmp
-    return _tmp
-  end
-
-  # StrongUl = TwoUlOpen @StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }
+  # StrongUl = "__" !@Whitespace @StartList:a (!"__" Inline:b { a << b })+ "__" { strong a.join }
   def _StrongUl
 
     _save = self.pos
     while true # sequence
-      _tmp = apply(:_TwoUlOpen)
+      _tmp = match_string("__")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save1 = self.pos
+      _tmp = _Whitespace()
+      _tmp = _tmp ? nil : true
+      self.pos = _save1
       unless _tmp
         self.pos = _save
         break
@@ -10621,47 +10677,70 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      while true
+      _save2 = self.pos
 
-        _save2 = self.pos
-        while true # sequence
-          _save3 = self.pos
-          _tmp = apply(:_TwoUlClose)
-          _tmp = _tmp ? nil : true
+      _save3 = self.pos
+      while true # sequence
+        _save4 = self.pos
+        _tmp = match_string("__")
+        _tmp = _tmp ? nil : true
+        self.pos = _save4
+        unless _tmp
           self.pos = _save3
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          _tmp = apply(:_Inline)
-          i = @result
-          unless _tmp
-            self.pos = _save2
-            break
-          end
-          @result = begin;  a << i ; end
-          _tmp = true
-          unless _tmp
-            self.pos = _save2
-          end
           break
-        end # end sequence
+        end
+        _tmp = apply(:_Inline)
+        b = @result
+        unless _tmp
+          self.pos = _save3
+          break
+        end
+        @result = begin;  a << b ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save3
+        end
+        break
+      end # end sequence
 
-        break unless _tmp
+      if _tmp
+        while true
+
+          _save5 = self.pos
+          while true # sequence
+            _save6 = self.pos
+            _tmp = match_string("__")
+            _tmp = _tmp ? nil : true
+            self.pos = _save6
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            _tmp = apply(:_Inline)
+            b = @result
+            unless _tmp
+              self.pos = _save5
+              break
+            end
+            @result = begin;  a << b ; end
+            _tmp = true
+            unless _tmp
+              self.pos = _save5
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save2
       end
-      _tmp = true
       unless _tmp
         self.pos = _save
         break
       end
-      _tmp = apply(:_TwoUlClose)
-      l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      @result = begin;  a << l ; end
-      _tmp = true
+      _tmp = match_string("__")
       unless _tmp
         self.pos = _save
         break
@@ -10675,6 +10754,117 @@ class RDoc::Markdown
     end # end sequence
 
     set_failed_rule :_StrongUl unless _tmp
+    return _tmp
+  end
+
+  # Strike = &{ strike? } "~~" !@Whitespace @StartList:a (!"~~" Inline:b { a << b })+ "~~" { strike a.join }
+  def _Strike
+
+    _save = self.pos
+    while true # sequence
+      _save1 = self.pos
+      _tmp = begin;  strike? ; end
+      self.pos = _save1
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("~~")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save2 = self.pos
+      _tmp = _Whitespace()
+      _tmp = _tmp ? nil : true
+      self.pos = _save2
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = _StartList()
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _save3 = self.pos
+
+      _save4 = self.pos
+      while true # sequence
+        _save5 = self.pos
+        _tmp = match_string("~~")
+        _tmp = _tmp ? nil : true
+        self.pos = _save5
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        _tmp = apply(:_Inline)
+        b = @result
+        unless _tmp
+          self.pos = _save4
+          break
+        end
+        @result = begin;  a << b ; end
+        _tmp = true
+        unless _tmp
+          self.pos = _save4
+        end
+        break
+      end # end sequence
+
+      if _tmp
+        while true
+
+          _save6 = self.pos
+          while true # sequence
+            _save7 = self.pos
+            _tmp = match_string("~~")
+            _tmp = _tmp ? nil : true
+            self.pos = _save7
+            unless _tmp
+              self.pos = _save6
+              break
+            end
+            _tmp = apply(:_Inline)
+            b = @result
+            unless _tmp
+              self.pos = _save6
+              break
+            end
+            @result = begin;  a << b ; end
+            _tmp = true
+            unless _tmp
+              self.pos = _save6
+            end
+            break
+          end # end sequence
+
+          break unless _tmp
+        end
+        _tmp = true
+      else
+        self.pos = _save3
+      end
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      _tmp = match_string("~~")
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  strike a.join ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_Strike unless _tmp
     return _tmp
   end
 
@@ -10853,18 +11043,13 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ExplicitLink = Label:l Spnl "(" @Sp Source:s Spnl Title @Sp ")" { "{#{l}}[#{s}]" }
+  # ExplicitLink = Label:l "(" @Sp Source:s Spnl Title @Sp ")" { "{#{l}}[#{s}]" }
   def _ExplicitLink
 
     _save = self.pos
     while true # sequence
       _tmp = apply(:_Label)
       l = @result
-      unless _tmp
-        self.pos = _save
-        break
-      end
-      _tmp = apply(:_Spnl)
       unless _tmp
         self.pos = _save
         break
@@ -10977,130 +11162,119 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SourceContents = (((!"(" !")" !">" Nonspacechar)+ | "(" SourceContents ")")* | "")
+  # SourceContents = ((!"(" !")" !">" Nonspacechar)+ | "(" SourceContents ")")*
   def _SourceContents
+    while true
 
-    _save = self.pos
-    while true # choice
-      while true
-
+      _save1 = self.pos
+      while true # choice
         _save2 = self.pos
-        while true # choice
-          _save3 = self.pos
 
+        _save3 = self.pos
+        while true # sequence
           _save4 = self.pos
-          while true # sequence
-            _save5 = self.pos
-            _tmp = match_string("(")
-            _tmp = _tmp ? nil : true
-            self.pos = _save5
-            unless _tmp
-              self.pos = _save4
-              break
-            end
-            _save6 = self.pos
-            _tmp = match_string(")")
-            _tmp = _tmp ? nil : true
-            self.pos = _save6
-            unless _tmp
-              self.pos = _save4
-              break
-            end
-            _save7 = self.pos
-            _tmp = match_string(">")
-            _tmp = _tmp ? nil : true
-            self.pos = _save7
-            unless _tmp
-              self.pos = _save4
-              break
-            end
-            _tmp = apply(:_Nonspacechar)
-            unless _tmp
-              self.pos = _save4
-            end
+          _tmp = match_string("(")
+          _tmp = _tmp ? nil : true
+          self.pos = _save4
+          unless _tmp
+            self.pos = _save3
             break
-          end # end sequence
-
-          if _tmp
-            while true
-
-              _save8 = self.pos
-              while true # sequence
-                _save9 = self.pos
-                _tmp = match_string("(")
-                _tmp = _tmp ? nil : true
-                self.pos = _save9
-                unless _tmp
-                  self.pos = _save8
-                  break
-                end
-                _save10 = self.pos
-                _tmp = match_string(")")
-                _tmp = _tmp ? nil : true
-                self.pos = _save10
-                unless _tmp
-                  self.pos = _save8
-                  break
-                end
-                _save11 = self.pos
-                _tmp = match_string(">")
-                _tmp = _tmp ? nil : true
-                self.pos = _save11
-                unless _tmp
-                  self.pos = _save8
-                  break
-                end
-                _tmp = apply(:_Nonspacechar)
-                unless _tmp
-                  self.pos = _save8
-                end
-                break
-              end # end sequence
-
-              break unless _tmp
-            end
-            _tmp = true
-          else
+          end
+          _save5 = self.pos
+          _tmp = match_string(")")
+          _tmp = _tmp ? nil : true
+          self.pos = _save5
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _save6 = self.pos
+          _tmp = match_string(">")
+          _tmp = _tmp ? nil : true
+          self.pos = _save6
+          unless _tmp
+            self.pos = _save3
+            break
+          end
+          _tmp = apply(:_Nonspacechar)
+          unless _tmp
             self.pos = _save3
           end
-          break if _tmp
-          self.pos = _save2
-
-          _save12 = self.pos
-          while true # sequence
-            _tmp = match_string("(")
-            unless _tmp
-              self.pos = _save12
-              break
-            end
-            _tmp = apply(:_SourceContents)
-            unless _tmp
-              self.pos = _save12
-              break
-            end
-            _tmp = match_string(")")
-            unless _tmp
-              self.pos = _save12
-            end
-            break
-          end # end sequence
-
-          break if _tmp
-          self.pos = _save2
           break
-        end # end choice
+        end # end sequence
 
-        break unless _tmp
-      end
-      _tmp = true
-      break if _tmp
-      self.pos = _save
-      _tmp = match_string("")
-      break if _tmp
-      self.pos = _save
-      break
-    end # end choice
+        if _tmp
+          while true
 
+            _save7 = self.pos
+            while true # sequence
+              _save8 = self.pos
+              _tmp = match_string("(")
+              _tmp = _tmp ? nil : true
+              self.pos = _save8
+              unless _tmp
+                self.pos = _save7
+                break
+              end
+              _save9 = self.pos
+              _tmp = match_string(")")
+              _tmp = _tmp ? nil : true
+              self.pos = _save9
+              unless _tmp
+                self.pos = _save7
+                break
+              end
+              _save10 = self.pos
+              _tmp = match_string(">")
+              _tmp = _tmp ? nil : true
+              self.pos = _save10
+              unless _tmp
+                self.pos = _save7
+                break
+              end
+              _tmp = apply(:_Nonspacechar)
+              unless _tmp
+                self.pos = _save7
+              end
+              break
+            end # end sequence
+
+            break unless _tmp
+          end
+          _tmp = true
+        else
+          self.pos = _save2
+        end
+        break if _tmp
+        self.pos = _save1
+
+        _save11 = self.pos
+        while true # sequence
+          _tmp = match_string("(")
+          unless _tmp
+            self.pos = _save11
+            break
+          end
+          _tmp = apply(:_SourceContents)
+          unless _tmp
+            self.pos = _save11
+            break
+          end
+          _tmp = match_string(")")
+          unless _tmp
+            self.pos = _save11
+          end
+          break
+        end # end sequence
+
+        break if _tmp
+        self.pos = _save1
+        break
+      end # end choice
+
+      break unless _tmp
+    end
+    _tmp = true
     set_failed_rule :_SourceContents unless _tmp
     return _tmp
   end
@@ -14357,12 +14531,12 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # SpecialChar = (/[*_`&\[\]()<!#\\'"]/ | @ExtendedSpecialChar)
+  # SpecialChar = (/[~*_`&\[\]()<!#\\'"]/ | @ExtendedSpecialChar)
   def _SpecialChar
 
     _save = self.pos
     while true # choice
-      _tmp = scan(/\A(?-mix:[*_`&\[\]()<!#\\'"])/)
+      _tmp = scan(/\A(?-mix:[~*_`&\[\]()<!#\\'"])/)
       break if _tmp
       self.pos = _save
       _tmp = _ExtendedSpecialChar()
@@ -14452,13 +14626,6 @@ class RDoc::Markdown
   def _Newline
     _tmp = @_grammar_literals.external_invoke(self, :_Newline)
     set_failed_rule :_Newline unless _tmp
-    return _tmp
-  end
-
-  # NonAlphanumeric = %literals.NonAlphanumeric
-  def _NonAlphanumeric
-    _tmp = @_grammar_literals.external_invoke(self, :_NonAlphanumeric)
-    set_failed_rule :_NonAlphanumeric unless _tmp
     return _tmp
   end
 
@@ -15189,7 +15356,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # InlineNote = &{ notes? } "^[" @StartList:a (!"]" Inline:l { a << l })+ "]" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
+  # InlineNote = &{ notes? } "^[" @StartList:a (!"]" Inline:l { a << l })+ "]" { ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }
   def _InlineNote
 
     _save = self.pos
@@ -15280,8 +15447,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;
-               ref = [:inline, @note_order.length]
+      @result = begin;  ref = [:inline, @note_order.length]
                @footnotes[ref] = paragraph a
 
                note_for ref
@@ -15882,14 +16048,14 @@ class RDoc::Markdown
   Rules[:_Block] = rule_info("Block", "@BlankLine* (BlockQuote | Verbatim | CodeFence | Note | Reference | HorizontalRule | Heading | OrderedList | BulletList | DefinitionList | HtmlBlock | StyleBlock | Para | Plain)")
   Rules[:_Para] = rule_info("Para", "@NonindentSpace Inlines:a @BlankLine+ { paragraph a }")
   Rules[:_Plain] = rule_info("Plain", "Inlines:a { paragraph a }")
-  Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp? /\#*/ @Sp @Newline) Inline")
+  Rules[:_AtxInline] = rule_info("AtxInline", "!@Newline !(@Sp /\#*/ @Sp @Newline) Inline")
   Rules[:_AtxStart] = rule_info("AtxStart", "< /\\\#{1,6}/ > { text.length }")
-  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp? AtxInline+:a (@Sp? /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
+  Rules[:_AtxHeading] = rule_info("AtxHeading", "AtxStart:s @Sp AtxInline+:a (@Sp /\#*/ @Sp)? @Newline { RDoc::Markup::Heading.new(s, a.join) }")
   Rules[:_SetextHeading] = rule_info("SetextHeading", "(SetextHeading1 | SetextHeading2)")
-  Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={3,}/ @Newline")
-  Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{3,}/ @Newline")
-  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }")
-  Rules[:_SetextHeading2] = rule_info("SetextHeading2", "&(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp? @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }")
+  Rules[:_SetextBottom1] = rule_info("SetextBottom1", "/={1,}/ @Newline")
+  Rules[:_SetextBottom2] = rule_info("SetextBottom2", "/-{1,}/ @Newline")
+  Rules[:_SetextHeading1] = rule_info("SetextHeading1", "&(@RawLine SetextBottom1) @StartList:a (!@Endline Inline:b { a << b })+ @Sp @Newline SetextBottom1 { RDoc::Markup::Heading.new(1, a.join) }")
+  Rules[:_SetextHeading2] = rule_info("SetextHeading2", "&(@RawLine SetextBottom2) @StartList:a (!@Endline Inline:b { a << b })+ @Sp @Newline SetextBottom2 { RDoc::Markup::Heading.new(2, a.join) }")
   Rules[:_Heading] = rule_info("Heading", "(SetextHeading | AtxHeading)")
   Rules[:_BlockQuote] = rule_info("BlockQuote", "BlockQuoteRaw:a { RDoc::Markup::BlockQuote.new(*a) }")
   Rules[:_BlockQuoteRaw] = rule_info("BlockQuoteRaw", "@StartList:a (\">\" \" \"? Line:l { a << l } (!\">\" !@BlankLine Line:c { a << c })* (@BlankLine:n { a << n })*)+ { inner_parse a.join }")
@@ -16010,7 +16176,10 @@ class RDoc::Markdown
   Rules[:_HtmlBlockOpenScript] = rule_info("HtmlBlockOpenScript", "\"<\" Spnl (\"script\" | \"SCRIPT\") Spnl HtmlAttribute* \">\"")
   Rules[:_HtmlBlockCloseScript] = rule_info("HtmlBlockCloseScript", "\"<\" Spnl \"/\" (\"script\" | \"SCRIPT\") Spnl \">\"")
   Rules[:_HtmlBlockScript] = rule_info("HtmlBlockScript", "HtmlBlockOpenScript (!HtmlBlockCloseScript .)* HtmlBlockCloseScript")
-  Rules[:_HtmlBlockInTags] = rule_info("HtmlBlockInTags", "(HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript)")
+  Rules[:_HtmlBlockOpenHead] = rule_info("HtmlBlockOpenHead", "\"<\" Spnl (\"head\" | \"HEAD\") Spnl HtmlAttribute* \">\"")
+  Rules[:_HtmlBlockCloseHead] = rule_info("HtmlBlockCloseHead", "\"<\" Spnl \"/\" (\"head\" | \"HEAD\") Spnl \">\"")
+  Rules[:_HtmlBlockHead] = rule_info("HtmlBlockHead", "HtmlBlockOpenHead (!HtmlBlockCloseHead .)* HtmlBlockCloseHead")
+  Rules[:_HtmlBlockInTags] = rule_info("HtmlBlockInTags", "(HtmlAnchor | HtmlBlockAddress | HtmlBlockBlockquote | HtmlBlockCenter | HtmlBlockDir | HtmlBlockDiv | HtmlBlockDl | HtmlBlockFieldset | HtmlBlockForm | HtmlBlockH1 | HtmlBlockH2 | HtmlBlockH3 | HtmlBlockH4 | HtmlBlockH5 | HtmlBlockH6 | HtmlBlockMenu | HtmlBlockNoframes | HtmlBlockNoscript | HtmlBlockOl | HtmlBlockP | HtmlBlockPre | HtmlBlockTable | HtmlBlockUl | HtmlBlockDd | HtmlBlockDt | HtmlBlockFrameset | HtmlBlockLi | HtmlBlockTbody | HtmlBlockTd | HtmlBlockTfoot | HtmlBlockTh | HtmlBlockThead | HtmlBlockTr | HtmlBlockScript | HtmlBlockHead)")
   Rules[:_HtmlBlock] = rule_info("HtmlBlock", "< (HtmlBlockInTags | HtmlComment | HtmlBlockSelfClosing | HtmlUnclosed) > @BlankLine+ { if html? then                 RDoc::Markup::Raw.new text               end }")
   Rules[:_HtmlUnclosed] = rule_info("HtmlUnclosed", "\"<\" Spnl HtmlUnclosedType Spnl HtmlAttribute* Spnl \">\"")
   Rules[:_HtmlUnclosedType] = rule_info("HtmlUnclosedType", "(\"HR\" | \"hr\")")
@@ -16021,14 +16190,14 @@ class RDoc::Markdown
   Rules[:_InStyleTags] = rule_info("InStyleTags", "StyleOpen (!StyleClose .)* StyleClose")
   Rules[:_StyleBlock] = rule_info("StyleBlock", "< InStyleTags > @BlankLine* { if css? then                     RDoc::Markup::Raw.new text                   end }")
   Rules[:_Inlines] = rule_info("Inlines", "(!@Endline Inline:i { i } | @Endline:c &Inline { c })+:chunks @Endline? { chunks }")
-  Rules[:_Inline] = rule_info("Inline", "(Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)")
+  Rules[:_Inline] = rule_info("Inline", "(Str | @Endline | UlOrStarLine | @Space | Strong | Emph | Strike | Image | Link | NoteReference | InlineNote | Code | RawHtml | Entity | EscapedChar | Symbol)")
   Rules[:_Space] = rule_info("Space", "@Spacechar+ { \" \" }")
   Rules[:_Str] = rule_info("Str", "@StartList:a < @NormalChar+ > { a = text } (StrChunk:c { a << c })* { a }")
   Rules[:_StrChunk] = rule_info("StrChunk", "< (@NormalChar | /_+/ &Alphanumeric)+ > { text }")
   Rules[:_EscapedChar] = rule_info("EscapedChar", "\"\\\\\" !@Newline < /[:\\\\`|*_{}\\[\\]()\#+.!><-]/ > { text }")
   Rules[:_Entity] = rule_info("Entity", "(HexEntity | DecEntity | CharEntity):a { a }")
   Rules[:_Endline] = rule_info("Endline", "(@LineBreak | @TerminalEndline | @NormalEndline)")
-  Rules[:_NormalEndline] = rule_info("NormalEndline", "@Sp @Newline !@BlankLine !\">\" !AtxStart !(Line /={3,}|-{3,}=/ @Newline) { \"\\n\" }")
+  Rules[:_NormalEndline] = rule_info("NormalEndline", "@Sp @Newline !@BlankLine !\">\" !AtxStart !(Line /={1,}|-{1,}/ @Newline) { \"\\n\" }")
   Rules[:_TerminalEndline] = rule_info("TerminalEndline", "@Sp @Newline @Eof")
   Rules[:_LineBreak] = rule_info("LineBreak", "\"  \" @NormalEndline { RDoc::Markup::HardBreak.new }")
   Rules[:_Symbol] = rule_info("Symbol", "< @SpecialChar > { text }")
@@ -16036,27 +16205,21 @@ class RDoc::Markdown
   Rules[:_StarLine] = rule_info("StarLine", "(< /\\*{4,}/ > { text } | < @Spacechar /\\*+/ &@Spacechar > { text })")
   Rules[:_UlLine] = rule_info("UlLine", "(< /_{4,}/ > { text } | < @Spacechar /_+/ &@Spacechar > { text })")
   Rules[:_Emph] = rule_info("Emph", "(EmphStar | EmphUl)")
-  Rules[:_OneStarOpen] = rule_info("OneStarOpen", "!StarLine \"*\" !@Spacechar !@Newline")
-  Rules[:_OneStarClose] = rule_info("OneStarClose", "!@Spacechar !@Newline Inline:a \"*\" { a }")
-  Rules[:_EmphStar] = rule_info("EmphStar", "OneStarOpen @StartList:a (!OneStarClose Inline:l { a << l })* OneStarClose:l { a << l } { emphasis a.join }")
-  Rules[:_OneUlOpen] = rule_info("OneUlOpen", "!UlLine \"_\" !@Spacechar !@Newline")
-  Rules[:_OneUlClose] = rule_info("OneUlClose", "!@Spacechar !@Newline Inline:a \"_\" { a }")
-  Rules[:_EmphUl] = rule_info("EmphUl", "OneUlOpen @StartList:a (!OneUlClose Inline:l { a << l })* OneUlClose:l { a << l } { emphasis a.join }")
+  Rules[:_Whitespace] = rule_info("Whitespace", "(@Spacechar | @Newline)")
+  Rules[:_EmphStar] = rule_info("EmphStar", "\"*\" !@Whitespace @StartList:a (!\"*\" Inline:b { a << b } | StrongStar:b { a << b })+ \"*\" { emphasis a.join }")
+  Rules[:_EmphUl] = rule_info("EmphUl", "\"_\" !@Whitespace @StartList:a (!\"_\" Inline:b { a << b } | StrongUl:b { a << b })+ \"_\" { emphasis a.join }")
   Rules[:_Strong] = rule_info("Strong", "(StrongStar | StrongUl)")
-  Rules[:_TwoStarOpen] = rule_info("TwoStarOpen", "!StarLine \"**\" !@Spacechar !@Newline")
-  Rules[:_TwoStarClose] = rule_info("TwoStarClose", "!@Spacechar !@Newline Inline:a \"**\" { a }")
-  Rules[:_StrongStar] = rule_info("StrongStar", "TwoStarOpen @StartList:a (!TwoStarClose Inline:l { a << l })* TwoStarClose:l { a << l } { strong a.join }")
-  Rules[:_TwoUlOpen] = rule_info("TwoUlOpen", "!UlLine \"__\" !@Spacechar !@Newline")
-  Rules[:_TwoUlClose] = rule_info("TwoUlClose", "!@Spacechar !@Newline Inline:a \"__\" { a }")
-  Rules[:_StrongUl] = rule_info("StrongUl", "TwoUlOpen @StartList:a (!TwoUlClose Inline:i { a << i })* TwoUlClose:l { a << l } { strong a.join }")
+  Rules[:_StrongStar] = rule_info("StrongStar", "\"**\" !@Whitespace @StartList:a (!\"**\" Inline:b { a << b })+ \"**\" { strong a.join }")
+  Rules[:_StrongUl] = rule_info("StrongUl", "\"__\" !@Whitespace @StartList:a (!\"__\" Inline:b { a << b })+ \"__\" { strong a.join }")
+  Rules[:_Strike] = rule_info("Strike", "&{ strike? } \"~~\" !@Whitespace @StartList:a (!\"~~\" Inline:b { a << b })+ \"~~\" { strike a.join }")
   Rules[:_Image] = rule_info("Image", "\"!\" (ExplicitLink | ReferenceLink):a { \"rdoc-image:\#{a[/\\[(.*)\\]/, 1]}\" }")
   Rules[:_Link] = rule_info("Link", "(ExplicitLink | ReferenceLink | AutoLink)")
   Rules[:_ReferenceLink] = rule_info("ReferenceLink", "(ReferenceLinkDouble | ReferenceLinkSingle)")
   Rules[:_ReferenceLinkDouble] = rule_info("ReferenceLinkDouble", "Label:content < Spnl > !\"[]\" Label:label { link_to content, label, text }")
   Rules[:_ReferenceLinkSingle] = rule_info("ReferenceLinkSingle", "Label:content < (Spnl \"[]\")? > { link_to content, content, text }")
-  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l Spnl \"(\" @Sp Source:s Spnl Title @Sp \")\" { \"{\#{l}}[\#{s}]\" }")
+  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l \"(\" @Sp Source:s Spnl Title @Sp \")\" { \"{\#{l}}[\#{s}]\" }")
   Rules[:_Source] = rule_info("Source", "(\"<\" < SourceContents > \">\" | < SourceContents >) { text }")
-  Rules[:_SourceContents] = rule_info("SourceContents", "(((!\"(\" !\")\" !\">\" Nonspacechar)+ | \"(\" SourceContents \")\")* | \"\")")
+  Rules[:_SourceContents] = rule_info("SourceContents", "((!\"(\" !\")\" !\">\" Nonspacechar)+ | \"(\" SourceContents \")\")*")
   Rules[:_Title] = rule_info("Title", "(TitleSingle | TitleDouble | \"\"):a { a }")
   Rules[:_TitleSingle] = rule_info("TitleSingle", "\"'\" (!(\"'\" @Sp (\")\" | @Newline)) .)* \"'\"")
   Rules[:_TitleDouble] = rule_info("TitleDouble", "\"\\\"\" (!(\"\\\"\" @Sp (\")\" | @Newline)) .)* \"\\\"\"")
@@ -16088,14 +16251,13 @@ class RDoc::Markdown
   Rules[:_Nonspacechar] = rule_info("Nonspacechar", "!@Spacechar !@Newline .")
   Rules[:_Sp] = rule_info("Sp", "@Spacechar*")
   Rules[:_Spnl] = rule_info("Spnl", "@Sp (@Newline @Sp)?")
-  Rules[:_SpecialChar] = rule_info("SpecialChar", "(/[*_`&\\[\\]()<!\#\\\\'\"]/ | @ExtendedSpecialChar)")
+  Rules[:_SpecialChar] = rule_info("SpecialChar", "(/[~*_`&\\[\\]()<!\#\\\\'\"]/ | @ExtendedSpecialChar)")
   Rules[:_NormalChar] = rule_info("NormalChar", "!(@SpecialChar | @Spacechar | @Newline) .")
   Rules[:_Digit] = rule_info("Digit", "[0-9]")
   Rules[:_Alphanumeric] = rule_info("Alphanumeric", "%literals.Alphanumeric")
   Rules[:_AlphanumericAscii] = rule_info("AlphanumericAscii", "%literals.AlphanumericAscii")
   Rules[:_BOM] = rule_info("BOM", "%literals.BOM")
   Rules[:_Newline] = rule_info("Newline", "%literals.Newline")
-  Rules[:_NonAlphanumeric] = rule_info("NonAlphanumeric", "%literals.NonAlphanumeric")
   Rules[:_Spacechar] = rule_info("Spacechar", "%literals.Spacechar")
   Rules[:_HexEntity] = rule_info("HexEntity", "/&\#x/i < /[0-9a-fA-F]+/ > \";\" { [text.to_i(16)].pack 'U' }")
   Rules[:_DecEntity] = rule_info("DecEntity", "\"&\#\" < /[0-9]+/ > \";\" { [text.to_i].pack 'U' }")
@@ -16112,7 +16274,7 @@ class RDoc::Markdown
   Rules[:_NoteReference] = rule_info("NoteReference", "&{ notes? } RawNoteReference:ref { note_for ref }")
   Rules[:_RawNoteReference] = rule_info("RawNoteReference", "\"[^\" < (!@Newline !\"]\" .)+ > \"]\" { text }")
   Rules[:_Note] = rule_info("Note", "&{ notes? } @NonindentSpace RawNoteReference:ref \":\" @Sp @StartList:a RawNoteBlock:i { a.concat i } (&Indent RawNoteBlock:i { a.concat i })* { @footnotes[ref] = paragraph a                    nil                 }")
-  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" @StartList:a (!\"]\" Inline:l { a << l })+ \"]\" {                ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
+  Rules[:_InlineNote] = rule_info("InlineNote", "&{ notes? } \"^[\" @StartList:a (!\"]\" Inline:l { a << l })+ \"]\" { ref = [:inline, @note_order.length]                @footnotes[ref] = paragraph a                 note_for ref              }")
   Rules[:_Notes] = rule_info("Notes", "(Note | SkipBlock)*")
   Rules[:_RawNoteBlock] = rule_info("RawNoteBlock", "@StartList:a (!@BlankLine OptionallyIndentedLine:l { a << l })+ < @BlankLine* > { a << text } { a }")
   Rules[:_CodeFence] = rule_info("CodeFence", "&{ github? } Ticks3 (@Sp StrChunk:format)? Spnl < ((!\"`\" Nonspacechar)+ | !Ticks3 /`+/ | Spacechar | @Newline)+ > Ticks3 @Sp @Newline* { verbatim = RDoc::Markup::Verbatim.new text               verbatim.format = format.intern if format.instance_of?(String)               verbatim             }")

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 begin
   gem 'minitest', '~> 4.0' unless defined?(Test::Unit)
 rescue NoMethodError, Gem::LoadError
@@ -139,9 +139,8 @@ class RDoc::TestCase < MiniTest::Unit::TestCase
   # Enables pretty-print output
 
   def mu_pp obj # :nodoc:
-    s = ''
-    s = PP.pp obj, s
-    s = s.force_encoding Encoding.default_external
+    s = obj.pretty_inspect
+    s = RDoc::Encoding.change_encoding s, Encoding.default_external
     s.chomp
   end
 

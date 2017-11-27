@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'cgi'
 
 ##
@@ -239,7 +239,7 @@ class RDoc::Context < RDoc::CodeObject
 
       if known then
         known.comment = attribute.comment if known.comment.empty?
-      elsif registered = @methods_hash[attribute.pretty_name << '='] and
+      elsif registered = @methods_hash[attribute.pretty_name + '='] and
             RDoc::Attr === registered then
         registered.rw = 'RW'
       else
@@ -249,7 +249,7 @@ class RDoc::Context < RDoc::CodeObject
     end
 
     if attribute.rw.index 'W' then
-      key = attribute.pretty_name << '='
+      key = attribute.pretty_name + '='
       known = @methods_hash[key]
 
       if known then

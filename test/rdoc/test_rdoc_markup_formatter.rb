@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocMarkupFormatter < RDoc::TestCase
@@ -12,7 +12,7 @@ class TestRDocMarkupFormatter < RDoc::TestCase
     end
 
     def accept_paragraph paragraph
-      @res << attributes(paragraph.text)
+      @res += attributes(paragraph.text)
     end
 
     def attributes text

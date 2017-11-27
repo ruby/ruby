@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # -*- mode: ruby; ruby-indent-level: 2; tab-width: 2 -*-
 
 require 'erb'
@@ -313,12 +313,16 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
-    # suppress 1.9.3 warning
-    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+    asset_rel_prefix = rel_prefix + @asset_rel_path
 
     @title = @options.title
 
-    render_template template_file, out_file do |io| binding end
+    render_template template_file, out_file do |io|
+      here = binding
+      # suppress 1.9.3 warning
+      here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      here
+    end
   rescue => e
     error = RDoc::Error.new \
       "error generating index.html: #{e.message} (#{e.class})"
@@ -343,14 +347,19 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
-    # suppress 1.9.3 warning
-    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
-    svninfo          = svninfo          = get_svninfo(current)
+    asset_rel_prefix = rel_prefix + @asset_rel_path
+    svninfo          = get_svninfo(current)
 
     @title = "#{klass.type} #{klass.full_name} - #{@options.title}"
 
     debug_msg "  rendering #{out_file}"
-    render_template template_file, out_file do |io| binding end
+    render_template template_file, out_file do |io|
+      here = binding
+      # suppress 1.9.3 warning
+      here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      here.local_variable_set(:svninfo, svninfo)
+      here
+    end
   end
 
   ##
@@ -416,8 +425,7 @@ class RDoc::Generator::Darkfish
       search_index_rel_prefix = rel_prefix
       search_index_rel_prefix += @asset_rel_path if @file_output
 
-      # suppress 1.9.3 warning
-      asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+      asset_rel_prefix = rel_prefix + @asset_rel_path
 
       unless filepage_file then
         if file.text? then
@@ -434,7 +442,13 @@ class RDoc::Generator::Darkfish
       @title += " - #{@options.title}"
       template_file ||= filepage_file
 
-      render_template template_file, out_file do |io| binding end
+      render_template template_file, out_file do |io|
+        here = binding
+        # suppress 1.9.3 warning
+        here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+        here.local_variable_set(:current, current)
+        here
+      end
     end
   rescue => e
     error =
@@ -458,14 +472,19 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
-    # suppress 1.9.3 warning
-    current          = current          = file
-    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+    current          = file
+    asset_rel_prefix = rel_prefix + @asset_rel_path
 
     @title = "#{file.page_name} - #{@options.title}"
 
     debug_msg "  rendering #{out_file}"
-    render_template template_file, out_file do |io| binding end
+    render_template template_file, out_file do |io|
+      here = binding
+      # suppress 1.9.3 warning
+      here.local_variable_set(:current, current)
+      here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      here
+    end
   end
 
   ##
@@ -483,12 +502,16 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
-    # suppress 1.9.3 warning
-    asset_rel_prefix = asset_rel_prefix = ''
+    asset_rel_prefix = ''
 
     @title = 'Not Found'
 
-    render_template template_file do |io| binding end
+    render_template template_file do |io|
+      here = binding
+      # suppress 1.9.3 warning
+      here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      here
+    end
   rescue => e
     error = RDoc::Error.new \
       "error generating servlet_not_found: #{e.message} (#{e.class})"
@@ -540,12 +563,16 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix = rel_prefix
     search_index_rel_prefix += @asset_rel_path if @file_output
 
-    # suppress 1.9.3 warning
-    asset_rel_prefix = asset_rel_prefix = rel_prefix + @asset_rel_path
+    asset_rel_prefix = rel_prefix + @asset_rel_path
 
     @title = "Table of Contents - #{@options.title}"
 
-    render_template template_file, out_file do |io| binding end
+    render_template template_file, out_file do |io|
+      here = binding
+      # suppress 1.9.3 warning
+      here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      here
+    end
   rescue => e
     error = RDoc::Error.new \
       "error generating table_of_contents.html: #{e.message} (#{e.class})"

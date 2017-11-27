@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'rdoc/test_case'
 
@@ -679,6 +679,32 @@ end
     blah = foo.method_list.first
     assert_equal 'Foo#blah', blah.full_name
     assert_equal @top_level, blah.file
+  end
+
+  def test_parse_class_in_a_file_repeatedly
+    @filename = 'a.rb'
+    comment_a = RDoc::Comment.new "# aaa\n", @top_level
+    util_parser "class Foo\nend"
+    tk = @parser.get_tk
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment_a
+    comment_b = RDoc::Comment.new "# bbb\n", @top_level
+    util_parser "class Foo\nend"
+    tk = @parser.get_tk
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment_b
+
+    @filename = 'b.rb'
+    comment_c = RDoc::Comment.new "# ccc\n", @top_level
+    util_parser "class Foo\nend"
+    tk = @parser.get_tk
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, comment_c
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+    assert_equal [[comment_a, @top_level],
+                  [comment_b, @top_level],
+                  [comment_c, @top_level]], foo.comment_location
+    assert_equal [@top_level], foo.in_files
+    assert_equal 1, foo.line
   end
 
   def test_parse_class_ghost_method_yields
@@ -1392,7 +1418,7 @@ end
     RUBY
 
     expected = <<EXPECTED
-<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier">foo</span>
+<span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">foo</span>
   <span class="ruby-constant">A</span><span class="ruby-operator">::</span><span class="ruby-constant">B</span><span class="ruby-operator">::</span><span class="ruby-constant">C</span>
 <span class="ruby-keyword">end</span>
 EXPECTED
@@ -1760,6 +1786,28 @@ end
       assert_equal :on_ident, method.token_stream[5][:kind]
       assert_includes redefinable_ops, method.token_stream[5][:text]
     end
+  end
+
+  def test_parse_method_with_args_directive
+    util_parser <<-RUBY
+class C
+  def meth_with_args_after # :args: a, b, c
+  end
+
+  ##
+  # :args: d, e, f
+  def meth_with_args_before
+end
+    RUBY
+
+    @parser.scan
+
+    c = @store.find_class_named 'C'
+
+    assert_equal 'C#meth_with_args_after', c.method_list[0].full_name
+    assert_equal 'a, b, c', c.method_list[0].params
+    assert_equal 'C#meth_with_args_before', c.method_list[1].full_name
+    assert_equal 'd, e, f', c.method_list[1].params
   end
 
   def test_parse_method_bracket
@@ -2607,11 +2655,34 @@ end
 RUBY
 
     expected = <<EXPECTED
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blah</span>()
   <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span> <span class="ruby-keyword">do</span>
   <span class="ruby-keyword">end</span>
   <span class="ruby-keyword">for</span> <span class="ruby-identifier">i</span> <span class="ruby-keyword">in</span> (<span class="ruby-identifier">k</span>)<span class="ruby-operator">...</span><span class="ruby-identifier">n</span>
   <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">end</span>
+EXPECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_code = blah.markup_code.sub(/^.*\n/, '')
+    assert_equal expected, markup_code
+  end
+
+  def test_parse_instance_operation_method
+    util_parser <<-RUBY
+class Foo
+  def self.& end
+end
+    RUBY
+
+    expected = <<EXPECTED
+  <span class="ruby-keyword">def</span> <span class="ruby-keyword">self</span>.<span class="ruby-identifier ruby-title">&amp;</span> <span class="ruby-keyword">end</span>
 <span class="ruby-keyword">end</span>
 EXPECTED
     expected = expected.rstrip
@@ -2638,7 +2709,7 @@ end
 RUBY
 
     expected = <<EXPECTED
-  <span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>()
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blah</span>()
     <span class="ruby-identifier">&lt;&lt;-EOM</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">true</span>
 <span class="ruby-value"></span><span class="ruby-identifier">    EOM</span>
   <span class="ruby-keyword">end</span>
@@ -2663,7 +2734,7 @@ end
 RUBY
 
     expected = <<EXPECTED
-<span class="ruby-keyword">def</span> <span class="ruby-identifier">blah</span>() <span class="ruby-regexp">/bar/</span> <span class="ruby-keyword">end</span>
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blah</span>() <span class="ruby-regexp">/bar/</span> <span class="ruby-keyword">end</span>
 EXPECTED
     expected = expected.rstrip
 
@@ -2778,7 +2849,7 @@ RUBY
     assert_nil m.params, 'Module parameter not removed'
   end
 
-  def test_parse_statements_stopdoc_TkALIAS
+  def test_parse_statements_stopdoc_alias
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
     util_parser "\n# :stopdoc:\nalias old new"
@@ -2789,7 +2860,7 @@ RUBY
     assert_empty klass.unmatched_alias_lists
   end
 
-  def test_parse_statements_stopdoc_TkIDENTIFIER_alias_method
+  def test_parse_statements_stopdoc_identifier_alias_method
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
     util_parser "\n# :stopdoc:\nalias_method :old :new"
@@ -2800,7 +2871,7 @@ RUBY
     assert_empty klass.unmatched_alias_lists
   end
 
-  def test_parse_statements_stopdoc_TkIDENTIFIER_metaprogrammed
+  def test_parse_statements_stopdoc_identifier_metaprogrammed
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
     util_parser "\n# :stopdoc:\n# attr :meta"
@@ -2811,7 +2882,7 @@ RUBY
     assert_empty klass.attributes
   end
 
-  def test_parse_statements_stopdoc_TkCONSTANT
+  def test_parse_statements_stopdoc_constant
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
     util_parser "\n# :stopdoc:\nA = v"
@@ -2821,7 +2892,7 @@ RUBY
     assert_empty klass.constants
   end
 
-  def test_parse_statements_stopdoc_TkDEF
+  def test_parse_statements_stopdoc_def
     klass = @top_level.add_class RDoc::NormalClass, 'Foo'
 
     util_parser "\n# :stopdoc:\ndef m\n end"
@@ -3393,6 +3464,7 @@ end
     foo = @top_level.modules.first
 
     expected = [
+      RDoc::Comment.new('comment a', @top_level),
       RDoc::Comment.new('comment b', @top_level)
     ]
 
@@ -3756,21 +3828,6 @@ end
     baz = @top_level.modules.first.classes.first
     assert_equal 'Baz', baz.name
     assert_equal 'there', baz.comment.text
-  end
-
-  def tk klass, scan, line, char, name, text
-    klass = RDoc::RubyToken.const_get "Tk#{klass.to_s.upcase}"
-
-    token = if klass.instance_method(:initialize).arity == 3 then
-              raise ArgumentError, "name not used for #{klass}" if name
-              klass.new scan, line, char
-            else
-              klass.new scan, line, char, name
-            end
-
-    token.set_text text
-
-    token
   end
 
   def util_parser(content)

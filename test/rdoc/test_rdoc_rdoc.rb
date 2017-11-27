@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocRDoc < RDoc::TestCase
@@ -33,6 +33,34 @@ class TestRDocRDoc < RDoc::TestCase
       assert File.directory? 'ri'
       assert_equal rdoc, rdoc.store.rdoc
     end
+
+    store = rdoc.store
+
+    assert_equal 'MAIN_PAGE.rdoc', store.main
+    assert_equal 'title',          store.title
+  end
+
+  def test_document_with_dry_run # functional test
+    options = RDoc::Options.new
+    options.files = [File.expand_path('../xref_data.rb', __FILE__)]
+    options.setup_generator 'darkfish'
+    options.main_page = 'MAIN_PAGE.rdoc'
+    options.root      = Pathname File.expand_path('..', __FILE__)
+    options.title     = 'title'
+    options.dry_run = true
+
+    rdoc = RDoc::RDoc.new
+
+    out = nil
+    temp_dir do
+      out, = capture_io do
+        rdoc.document options
+      end
+
+      refute File.directory? 'doc'
+      assert_equal rdoc, rdoc.store.rdoc
+    end
+    assert_includes out, '100%'
 
     store = rdoc.store
 
@@ -109,17 +137,18 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list
+    test_path = File.expand_path(__FILE__)
     files = temp_dir do |dir|
       flag_file = @rdoc.output_flag_file dir
 
       FileUtils.touch flag_file
 
-      @rdoc.normalized_file_list [__FILE__, flag_file]
+      @rdoc.normalized_file_list [test_path, flag_file]
     end
 
     files = files.map { |file| File.expand_path file }
 
-    assert_equal [File.expand_path(__FILE__)], files
+    assert_equal [test_path], files
   end
 
   def test_normalized_file_list_not_modified
@@ -189,9 +218,10 @@ class TestRDocRDoc < RDoc::TestCase
   def test_parse_file_include_root
     @rdoc.store = RDoc::Store.new
 
+    test_path = File.expand_path('..', __FILE__)
     top_level = nil
     temp_dir do |dir|
-      @rdoc.options.parse %W[--root #{File.dirname(__FILE__)}]
+      @rdoc.options.parse %W[--root #{test_path}]
 
       open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'

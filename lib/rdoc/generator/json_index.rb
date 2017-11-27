@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'json'
 begin
   require 'zlib'
@@ -161,7 +161,7 @@ class RDoc::Generator::JsonIndex
   # Compress the search_index.js file using gzip
 
   def generate_gzipped
-    return unless defined?(Zlib)
+    return if @options.dry_run or not defined?(Zlib)
 
     debug_msg "Compressing generated JSON index"
     out_dir = @base_dir + @options.op_dir

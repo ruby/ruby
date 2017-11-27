@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'optparse'
 require 'pathname'
 
@@ -624,16 +624,16 @@ Usage: #{opt.program_name} [options] [names...]
       end
 
       parsers.sort.each do |parser, regexp|
-        opt.banner << "  - #{parser}: #{regexp.join ', '}\n"
+        opt.banner += "  - #{parser}: #{regexp.join ', '}\n"
       end
-      opt.banner << "  - TomDoc:  Only in ruby files\n"
+      opt.banner += "  - TomDoc:  Only in ruby files\n"
 
-      opt.banner << "\n  The following options are deprecated:\n\n"
+      opt.banner += "\n  The following options are deprecated:\n\n"
 
       name_length = DEPRECATED.keys.sort_by { |k| k.length }.last.length
 
       DEPRECATED.sort_by { |k,| k }.each do |name, reason|
-        opt.banner << "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
+        opt.banner += "    %*1$2$s  %3$s\n" % [-name_length, name, reason]
       end
 
       opt.accept Template do |template|
@@ -1087,7 +1087,7 @@ Usage: #{opt.program_name} [options] [names...]
 
     unless quiet then
       deprecated.each do |opt|
-        $stderr.puts 'option ' << opt << ' is deprecated: ' << DEPRECATED[opt]
+        $stderr.puts 'option ' + opt + ' is deprecated: ' + DEPRECATED[opt]
       end
     end
 

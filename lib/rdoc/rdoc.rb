@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc'
 
 require 'find'
@@ -521,13 +521,18 @@ The internal error was:
   # by the RDoc options
 
   def generate
-    Dir.chdir @options.op_dir do
-      unless @options.quiet then
-        $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
-      end
-
+    if @options.dry_run then
+      # do nothing
       @generator.generate
-      update_output_dir '.', @start_time, @last_modified
+    else
+      Dir.chdir @options.op_dir do
+        unless @options.quiet then
+          $stderr.puts "\nGenerating #{@generator.class.name.sub(/^.*::/, '')} format into #{Dir.pwd}..."
+        end
+
+        @generator.generate
+        update_output_dir '.', @start_time, @last_modified
+      end
     end
   end
 

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :markup: tomdoc
 
 # A parser for TomDoc based on TomDoc 1.0.0-rc1 (02adef9b5a)
@@ -222,7 +222,7 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   # Returns self.
 
   def tokenize text
-    text.sub!(/\A(Public|Internal|Deprecated):\s+/, '')
+    text = text.sub(/\A(Public|Internal|Deprecated):\s+/, '')
 
     setup_scanner text
 

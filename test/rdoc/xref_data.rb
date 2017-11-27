@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 XREF_DATA = <<-XREF_DATA
 class C1
 

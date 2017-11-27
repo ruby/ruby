@@ -1,5 +1,5 @@
 # -*- coding: us-ascii -*-
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 ##
 # A parser is simple a class that subclasses RDoc::Parser and implements #scan
