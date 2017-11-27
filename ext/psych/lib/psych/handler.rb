@@ -242,6 +242,11 @@ module Psych
     end
 
     ###
+    # Called before each event with line/column information.
+    def event_location(start_line, start_column, end_line, end_column)
+    end
+
+    ###
     # Is this handler a streaming handler?
     def streaming?
       false

@@ -198,12 +198,13 @@ require 'psych/class_loader'
 #
 # ==== Receiving an events stream
 #
-#   parser = Psych::Parser.new(Psych::Handlers::Recorder.new)
+#   recorder = Psych::Handlers::Recorder.new
+#   parser = Psych::Parser.new(recorder)
 #
 #   parser.parse("---\n - a\n - b")
-#   parser.events # => [list of [event, args] lists]
-#                 # event is one of: Psych::Handler::EVENTS
-#                 # args are the arguments passed to the event
+#   recorder.events # => [list of [event, args] lists]
+#                   # event is one of: Psych::Handler::EVENTS
+#                   # args are the arguments passed to the event
 #
 # === Emitting
 #
@@ -251,9 +252,11 @@ module Psych
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
-  def self.load yaml, filename = nil, fallback = false
+  def self.load yaml, filename = nil, fallback = false, symbolize_names: false
     result = parse(yaml, filename, fallback)
-    result ? result.to_ruby : result
+    result = result.to_ruby if result
+    symbolize_names!(result) if symbolize_names
+    result
   end
 
   ###
@@ -501,6 +504,19 @@ module Psych
     @load_tags[tag] = klass.name
     @dump_tags[klass] = tag
   end
+
+  def self.symbolize_names!(result)
+    case result
+    when Hash
+      result.keys.each do |key|
+        result[key.to_sym] = symbolize_names!(result.delete(key))
+      end
+    when Array
+      result.map! { |r| symbolize_names!(r) }
+    end
+    result
+  end
+  private_class_method :symbolize_names!
 
   class << self
     attr_accessor :load_tags
