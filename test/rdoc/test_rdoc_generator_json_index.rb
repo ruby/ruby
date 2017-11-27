@@ -1,5 +1,5 @@
 # coding: US-ASCII
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'rdoc/test_case'
 
@@ -199,7 +199,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
   def test_generate_utf_8
     text = "5\xB0"
-    text.force_encoding Encoding::ISO_8859_1
+    text = RDoc::Encoding.change_encoding text, Encoding::ISO_8859_1
     @klass.add_comment comment(text), @top_level
 
     @g.generate
@@ -215,7 +215,7 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
 
     klass_record = @klass.search_record[2..-1]
     klass_record[-1] = "<p>5\xc2\xb0\n"
-    klass_record.last.force_encoding Encoding::UTF_8
+    klass_record[-1] = RDoc::Encoding.change_encoding klass_record[-1], Encoding::UTF_8
 
     info = [
       klass_record,

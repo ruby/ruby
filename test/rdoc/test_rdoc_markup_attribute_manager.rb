@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocMarkupAttributeManager < RDoc::TestCase
@@ -171,21 +171,21 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
   end
 
   def test_convert_attrs
-    str = '+foo+'
+    str = '+foo+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
 
     assert_equal "\000foo\000", str
 
-    str = '+:foo:+'
+    str = '+:foo:+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
 
     assert_equal "\000:foo:\000", str
 
-    str = '+x-y+'
+    str = '+x-y+'.dup
     attrs = RDoc::Markup::AttrSpan.new str.length
 
     @am.convert_attrs str, attrs
@@ -299,17 +299,17 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
     def @am.str()     @str       end
     def @am.str=(str) @str = str end
 
-    @am.str = '<code>foo</code>'
+    @am.str = '<code>foo</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo</code>",       @am.str
 
-    @am.str = '<code>foo\\</code>'
+    @am.str = '<code>foo\\</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo<\x04/code>", @am.str, 'escaped close'
 
-    @am.str = '<code>foo\\\\</code>'
+    @am.str = '<code>foo\\\\</code>'.dup
     @am.mask_protected_sequences
 
     assert_equal "<code>foo\\</code>",     @am.str, 'escaped backslash'
@@ -330,6 +330,14 @@ class TestRDocMarkupAttributeManager < RDoc::TestCase
 
     assert_equal(["_cat_", @em_on, "dog", @em_off],
                   @am.flow("\\_cat_<i>dog</i>"))
+  end
+
+  def test_lost_tag_for_the_second_time
+    str = "cat <tt>dog</tt>"
+    assert_equal(["cat ", @tt_on, "dog", @tt_off],
+                 @am.flow(str))
+    assert_equal(["cat ", @tt_on, "dog", @tt_off],
+                 @am.flow(str))
   end
 
   def test_special

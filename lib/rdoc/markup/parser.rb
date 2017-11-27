@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'strscan'
 
 ##
@@ -249,7 +249,7 @@ class RDoc::Markup::Parser
 
     min_indent = nil
     generate_leading_spaces = true
-    line = ''
+    line = ''.dup
 
     until @tokens.empty? do
       type, data, column, = get
@@ -257,7 +257,7 @@ class RDoc::Markup::Parser
       if type == :NEWLINE then
         line << data
         verbatim << line
-        line = ''
+        line = ''.dup
         generate_leading_spaces = true
         next
       end

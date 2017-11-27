@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocParserChangeLog < RDoc::TestCase
@@ -33,7 +33,7 @@ class TestRDocParserChangeLog < RDoc::TestCase
   def test_continue_entry_body
     parser = util_parser
 
-    entry_body = ['a']
+    entry_body = ['a'.dup]
 
     parser.continue_entry_body entry_body, 'b'
 
@@ -53,7 +53,7 @@ class TestRDocParserChangeLog < RDoc::TestCase
   def test_continue_entry_body_function
     parser = util_parser
 
-    entry_body = ['file: (func1)']
+    entry_body = ['file: (func1)'.dup]
 
     parser.continue_entry_body entry_body, '(func2): blah'
 

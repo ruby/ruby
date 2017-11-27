@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A section of documentation like:
 #
@@ -43,7 +43,7 @@ class RDoc::Context::Section
     @parent = parent
     @title = title ? title.strip : title
 
-    @@sequence.succ!
+    @@sequence = @@sequence.succ
     @sequence = @@sequence.dup
 
     @comments = []

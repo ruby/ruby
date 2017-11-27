@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocClassModule < XrefTestCase
@@ -42,7 +42,8 @@ class TestRDocClassModule < XrefTestCase
     cm.add_comment '# comment 1', tl1
     cm.add_comment '# comment 2', tl1
 
-    assert_equal [['comment 2', tl1]], cm.comment_location
+    assert_equal [['comment 1', tl1],
+                  ['comment 2', tl1]], cm.comment_location
   end
 
   def test_add_comment_stopdoc

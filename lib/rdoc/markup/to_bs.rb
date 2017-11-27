@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Outputs RDoc markup with hot backspace action!  You will probably need a
 # pager to use this output format.

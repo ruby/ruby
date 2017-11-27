@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require File.expand_path '../xref_test_case', __FILE__
 
 class TestRDocNormalModule < XrefTestCase

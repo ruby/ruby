@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'rdoc/test_case'
 
@@ -86,8 +86,7 @@ contents of a string.
     text = "# :main: M\n"
     out = @pp.handle text
 
-    assert_same out, text
-    assert_equal "#\n", text
+    assert_equal "#\n", out
   end
 
   def test_handle_comment
@@ -96,8 +95,7 @@ contents of a string.
 
     out = @pp.handle c
 
-    assert_same out, text
-    assert_equal "#\n", text
+    assert_equal "#\n", out
   end
 
   def test_handle_markup
@@ -129,8 +127,7 @@ contents of a string.
 
     out = @pp.handle text, cd
 
-    assert_same out, text
-    assert_equal "# a b c\n", text
+    assert_equal "# a b c\n", out
     assert_equal "# a b c\n", cd.metadata[:stuff]
   end
 
@@ -138,8 +135,7 @@ contents of a string.
     text = "# :x: y\n"
     out = @pp.handle text
 
-    assert_same out, text
-    assert_equal "# :x: y\n", text
+    assert_equal text, out
   end
 
   def test_handle_directive_blankline

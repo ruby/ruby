@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Test case for creating new plain-text RDoc::Markup formatters.  See also
 # RDoc::Markup::FormatterTestCase

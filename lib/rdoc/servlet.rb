@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc'
 require 'time'
 require 'json'
@@ -111,7 +111,7 @@ class RDoc::Servlet < WEBrick::HTTPServlet::AbstractServlet
   # GET request entry point.  Fills in +res+ for the path, etc. in +req+.
 
   def do_GET req, res
-    req.path.sub!(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
+    req.path = req.path.sub(/^#{Regexp.escape @mount_path}/o, '') if @mount_path
 
     case req.path
     when '/' then

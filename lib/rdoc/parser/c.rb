@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'tsort'
 
 ##
@@ -865,8 +865,8 @@ class RDoc::Parser::C < RDoc::Parser
 
   def handle_attr(var_name, attr_name, read, write)
     rw = ''
-    rw << 'R' if '1' == read
-    rw << 'W' if '1' == write
+    rw += 'R' if '1' == read
+    rw += 'W' if '1' == write
 
     class_name = @known_classes[var_name]
 
@@ -982,8 +982,8 @@ class RDoc::Parser::C < RDoc::Parser
         if new_definition.empty? then # Default to literal C definition
           new_definition = definition
         else
-          new_definition.gsub!("\:", ":")
-          new_definition.gsub!("\\", '\\')
+          new_definition = new_definition.gsub("\:", ":")
+          new_definition = new_definition.gsub("\\", '\\')
         end
 
         new_definition.sub!(/\A(\s+)/, '')
@@ -1237,7 +1237,7 @@ class RDoc::Parser::C < RDoc::Parser
   # when scanning for classes and methods
 
   def remove_commented_out_lines
-    @content.gsub!(%r%//.*rb_define_%, '//')
+    @content = @content.gsub(%r%//.*rb_define_%, '//')
   end
 
   ##
