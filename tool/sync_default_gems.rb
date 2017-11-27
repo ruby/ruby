@@ -69,6 +69,7 @@ def sync_default_gems(gem)
     `cp -r ../../bundler/bundler/exe/bundle* ./bin`
     `cp ../../bundler/bundler/bundler.gemspec ./lib`
     `cp -r ../../bundler/bundler/spec spec/bundler`
+    `rm -rf bin/bundle_ruby`
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc`
     `cp -rf ../rdoc/lib/rdoc* ./lib`
