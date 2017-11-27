@@ -2327,6 +2327,10 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
     if (iseq->aux.trace_events == turnon_events) {
 	return;
     }
+    if (iseq->flags & ISEQ_USE_COMPILE_DATA) {
+	/* this is building ISeq */
+	return;
+    }
     else {
 	unsigned int i;
 	VALUE *iseq_encoded = (VALUE *)iseq->body->iseq_encoded;
@@ -2336,9 +2340,6 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 #else
 	const VALUE *code = iseq->body->iseq_encoded;
 #endif
-	if (iseq->flags & ISEQ_USE_COMPILE_DATA) {
-	    rb_bug("ISEQ_USE_COMPILE_DATA should not be enabled: %s:%d\n", RSTRING_PTR(rb_iseq_path(iseq)), FIX2INT(rb_iseq_first_lineno(iseq)));
-	}
 	((rb_iseq_t *)iseq)->aux.trace_events = turnon_events;
 
 	for (i=0; i<iseq->body->iseq_size;) {
