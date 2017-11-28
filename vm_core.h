@@ -1741,9 +1741,6 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, const rb_event_flag_t flag,
 #define EXEC_EVENT_HOOK(ec_, flag_, self_, id_, called_id_, klass_, data_) \
   EXEC_EVENT_HOOK_ORIG(ec_, flag_, ruby_vm_event_flags, self_, id_, called_id_, klass_, data_, 0)
 
-#define EXEC_EVENT_HOOK_VM_TRACE(ec_, flag_, vm_flag_, self_, id_, called_id_, klass_, data_) \
-  EXEC_EVENT_HOOK_ORIG(ec_, flag_, vm_flag_, self_, id_, called_id_, klass_, data_, 0)
-
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
   EXEC_EVENT_HOOK_ORIG(ec_, flag_, ruby_vm_event_flags, self_, id_, called_id_, klass_, data_, 1)
 
