@@ -4187,7 +4187,7 @@ string_content	: tSTRING_CONTENT
 		    }
 		| tSTRING_DVAR
 		    {
-			/* need to backup lex_stream so that a string literal `%&foo,#$&,bar&` can be parsed */
+			/* need to backup lex_strterm so that a string literal `%&foo,#$&,bar&` can be parsed */
 			$<strterm>$ = lex_strterm;
 			lex_strterm = 0;
 			SET_LEX_STATE(EXPR_BEG);
@@ -4210,7 +4210,7 @@ string_content	: tSTRING_CONTENT
 			CMDARG_SET(0);
 		    }
 		    {
-			/* need to backup lex_stream so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
+			/* need to backup lex_strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
 			$<strterm>$ = lex_strterm;
 			lex_strterm = 0;
 		    }
