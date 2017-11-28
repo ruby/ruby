@@ -1414,12 +1414,53 @@ eaccess(const char *path, int mode)
 }
 #endif
 
+struct access_arg {
+    const char *path;
+    int mode;
+};
+
+static void *
+nogvl_eaccess(void *ptr)
+{
+    struct access_arg *aa = ptr;
+
+    return (void *)(VALUE)eaccess(aa->path, aa->mode);
+}
+
 static int
 rb_eaccess(VALUE fname, int mode)
 {
+    struct access_arg aa;
+
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
-    return eaccess(StringValueCStr(fname), mode);
+    aa.path = StringValueCStr(fname);
+    aa.mode = mode;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_eaccess, &aa,
+						RUBY_UBF_IO, 0);
+}
+
+static void *
+nogvl_access(void *ptr)
+{
+    struct access_arg *aa = ptr;
+
+    return (void *)(VALUE)access(aa->path, aa->mode);
+}
+
+static int
+rb_access(VALUE fname, int mode)
+{
+    struct access_arg aa;
+
+    FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
+    aa.path = StringValueCStr(fname);
+    aa.mode = mode;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_access, &aa,
+						RUBY_UBF_IO, 0);
 }
 
 /*
@@ -1680,9 +1721,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
+    if (rb_access(fname, R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1750,9 +1789,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
+    if (rb_access(fname, W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1812,9 +1849,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), X_OK) < 0) return Qfalse;
+    if (rb_access(fname, X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
