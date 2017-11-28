@@ -27,10 +27,11 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def test_execute_when_already_signed_in_with_same_host
     host            = 'http://some-gemcutter-compatible-host.org'
-    sign_in_ui      = util_capture(nil, host) { @cmd.execute }
+
+    util_capture(nil, host) { @cmd.execute }
     old_credentials = YAML.load_file Gem.configuration.credentials_path
 
-    sign_in_ui      = util_capture(nil, host) { @cmd.execute }
+    util_capture(nil, host) { @cmd.execute }
     new_credentials = YAML.load_file Gem.configuration.credentials_path
 
     assert_equal old_credentials[host], new_credentials[host]
@@ -38,9 +39,11 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
   def test_execute_when_already_signed_in_with_different_host
     api_key     = 'a5fdbb6ba150cbb83aad2bb2fede64cf04045xxxx'
-    sign_in_ui  = util_capture(nil, nil, api_key) { @cmd.execute }
+
+    util_capture(nil, nil, api_key) { @cmd.execute }
     host        = 'http://some-gemcutter-compatible-host.org'
-    sign_in_ui  = util_capture(nil, host, api_key) { @cmd.execute }
+
+    util_capture(nil, host, api_key) { @cmd.execute }
     credentials = YAML.load_file Gem.configuration.credentials_path
 
     assert_equal credentials[:rubygems_api_key], api_key
