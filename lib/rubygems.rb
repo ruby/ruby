@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = "2.7.2"
+  VERSION = "2.7.3"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -47,9 +47,7 @@ require 'rubygems/errors'
 # As of RubyGems 1.3.2, RubyGems will load plugins installed in gems or
 # $LOAD_PATH.  Plugins must be named 'rubygems_plugin' (.rb, .so, etc) and
 # placed at the root of your gem's #require_path.  Plugins are discovered via
-# Gem::find_files and then loaded.  Take care when implementing a plugin as your
-# plugin file may be loaded multiple times if multiple versions of your gem
-# are installed.
+# Gem::find_files and then loaded.
 #
 # For an example plugin, see the {Graph gem}[https://github.com/seattlerb/graph]
 # which adds a `gem graph` command.

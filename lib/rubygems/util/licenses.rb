@@ -48,9 +48,13 @@ class Gem::Licenses
       BSD-3-Clause-Attribution
       BSD-3-Clause-Clear
       BSD-3-Clause-LBNL
+      BSD-3-Clause-No-Nuclear-License
+      BSD-3-Clause-No-Nuclear-License-2014
+      BSD-3-Clause-No-Nuclear-Warranty
       BSD-4-Clause
       BSD-4-Clause-UC
       BSD-Protection
+      BSD-Source-Code
       BSL-1.0
       Bahyph
       Barr
@@ -126,6 +130,7 @@ class Gem::Licenses
       Entessa
       ErlPL-1.1
       Eurosym
+      FSFAP
       FSFUL
       FSFULLR
       FTL
@@ -137,8 +142,18 @@ class Gem::Licenses
       GFDL-1.3
       GL2PS
       GPL-1.0
+      GPL-1.0+
       GPL-2.0
+      GPL-2.0+
+      GPL-2.0-with-GCC-exception
+      GPL-2.0-with-autoconf-exception
+      GPL-2.0-with-bison-exception
+      GPL-2.0-with-classpath-exception
+      GPL-2.0-with-font-exception
       GPL-3.0
+      GPL-3.0+
+      GPL-3.0-with-GCC-exception
+      GPL-3.0-with-autoconf-exception
       Giftware
       Glide
       Glulxe
@@ -152,14 +167,20 @@ class Gem::Licenses
       ISC
       ImageMagick
       Imlib2
+      Info-ZIP
       Intel
       Intel-ACPI
       Interbase-1.0
       JSON
       JasPer-2.0
+      LAL-1.2
+      LAL-1.3
       LGPL-2.0
+      LGPL-2.0+
       LGPL-2.1
+      LGPL-2.1+
       LGPL-3.0
+      LGPL-3.0+
       LGPLLR
       LPL-1.0
       LPL-1.02
@@ -170,6 +191,9 @@ class Gem::Licenses
       LPPL-1.3c
       Latex2e
       Leptonica
+      LiLiQ-P-1.1
+      LiLiQ-R-1.1
+      LiLiQ-Rplus-1.1
       Libpng
       MIT
       MIT-CMU
@@ -193,6 +217,7 @@ class Gem::Licenses
       NBPL-1.0
       NCSA
       NGPL
+      NLOD-1.0
       NLPL
       NOSL
       NPL-1.0
@@ -201,11 +226,13 @@ class Gem::Licenses
       NRL
       NTP
       Naumen
+      Net-SNMP
       NetCDF
       Newsletr
       Nokia
       Noweb
       Nunit
+      OCCT-PL
       OCLC-2.0
       ODbL-1.0
       OFL-1.0
@@ -229,6 +256,7 @@ class Gem::Licenses
       OLDAP-2.8
       OML
       OPL-1.0
+      OSET-PL-2.1
       OSL-1.0
       OSL-1.1
       OSL-2.0
@@ -259,6 +287,7 @@ class Gem::Licenses
       SISSL
       SISSL-1.2
       SMLNJ
+      SMPPL
       SNIA
       SPL-1.0
       SWL
@@ -269,12 +298,16 @@ class Gem::Licenses
       Spencer-86
       Spencer-94
       Spencer-99
+      StandardML-NJ
       SugarCRM-1.1.3
       TCL
+      TCP-wrappers
       TMate
       TORQUE-1.1
       TOSL
       UPL-1.0
+      Unicode-DFS-2015
+      Unicode-DFS-2016
       Unicode-TOU
       Unlicense
       VOSTROM
@@ -282,7 +315,9 @@ class Gem::Licenses
       Vim
       W3C
       W3C-19980720
+      W3C-20150513
       WTFPL
+      WXwindows
       Watcom-1.0
       Wsuipa
       X11
@@ -302,8 +337,10 @@ class Gem::Licenses
       Zlib
       bzip2-1.0.5
       bzip2-1.0.6
+      curl
       diffmark
       dvipdfm
+      eCos-2.0
       eGenix
       gSOAP-1.3b
       gnuplot

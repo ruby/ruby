@@ -32,6 +32,21 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert @cmd.options[:dryrun]
   end
 
+  def test_handle_options_check_development
+    @cmd.handle_options []
+    assert @cmd.options[:check_dev]
+
+    %w[-D --check-development].each do |options|
+      @cmd.handle_options [options]
+      assert @cmd.options[:check_dev]
+    end
+
+    %w[--no-check-development].each do |options|
+      @cmd.handle_options [options]
+      refute @cmd.options[:check_dev]
+    end
+  end
+
   def test_execute
     @cmd.options[:args] = %w[a]
 
@@ -53,6 +68,34 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
 
     refute_path_exists @a_1.gem_dir
     refute_path_exists @b_1.gem_dir
+  end
+
+  def test_execute_dev_dependencies
+    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
+    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+
+    install_gem @b_1
+    install_gem @c_1
+
+    @cmd.handle_options %w[--check-development]
+
+    @cmd.execute
+
+    assert_path_exists @a_1.gem_dir
+  end
+
+  def test_execute_without_dev_dependencies
+    @b_1 = util_spec 'b', 1 do |s| s.add_development_dependency 'a', '1' end
+    @c_1 = util_spec 'c', 1 do |s| s.add_development_dependency 'a', '2' end
+
+    install_gem @b_1
+    install_gem @c_1
+
+    @cmd.handle_options %w[--no-check-development]
+
+    @cmd.execute
+
+    refute_path_exists @a_1.gem_dir
   end
 
   def test_execute_all

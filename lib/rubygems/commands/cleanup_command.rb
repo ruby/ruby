@@ -8,11 +8,18 @@ class Gem::Commands::CleanupCommand < Gem::Command
   def initialize
     super 'cleanup',
           'Clean up old versions of installed gems',
-          :force => false, :install_dir => Gem.dir
+          :force => false, :install_dir => Gem.dir,
+          :check_dev => true
 
     add_option('-n', '-d', '--dryrun',
                'Do not uninstall gems') do |value, options|
       options[:dryrun] = true
+    end
+
+    add_option('-D', '--[no-]check-development',
+               'Check development dependencies while uninstalling',
+               '(default: true)') do |value, options|
+      options[:check_dev] = value
     end
 
     @candidate_gems  = nil
@@ -138,7 +145,7 @@ If no gems are named all gems in GEM_HOME are cleaned.
   end
 
   def uninstall_dep spec
-    return unless @full.ok_to_remove?(spec.full_name)
+    return unless @full.ok_to_remove?(spec.full_name, options[:check_dev])
 
     if options[:dryrun] then
       say "Dry Run Mode: Would uninstall #{spec.full_name}"

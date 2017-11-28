@@ -13,6 +13,7 @@ class TestGemCommand < Gem::TestCase
 
     @xopt = nil
 
+    @common_options = Gem::Command.common_options.dup
     Gem::Command.common_options.clear
     Gem::Command.common_options <<  [
       ['-x', '--exe', 'Execute'], lambda do |*a|
@@ -22,6 +23,11 @@ class TestGemCommand < Gem::TestCase
 
     @cmd_name = 'doit'
     @cmd = Gem::Command.new @cmd_name, 'summary'
+  end
+
+  def teardown
+    super
+    Gem::Command.common_options.replace @common_options
   end
 
   def test_self_add_specific_extra_args

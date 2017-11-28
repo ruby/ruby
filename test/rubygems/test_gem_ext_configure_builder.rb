@@ -54,7 +54,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
       end
     end
 
-    shell_error_msg = %r{(\./configure: .*)|((?:Can't|cannot) open \./configure(?:: No such file or directory)?)}
+    shell_error_msg = %r{(\./configure: .*)|((?:[Cc]an't|cannot) open '?\./configure'?(?:: No such file or directory)?)}
     sh_prefix_configure = "sh ./configure --prefix="
 
     assert_match 'configure failed', error.message

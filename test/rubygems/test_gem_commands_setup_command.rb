@@ -27,6 +27,67 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     open 'bundler/exe/bundle',        'w' do |io| io.puts '# bundle'       end
     open 'bundler/lib/bundler.rb',    'w' do |io| io.puts '# bundler.rb'   end
     open 'bundler/lib/bundler/b.rb',  'w' do |io| io.puts '# b.rb'         end
+
+    FileUtils.mkdir_p 'default/gems'
+
+    gemspec = Gem::Specification.new
+    gemspec.name = "bundler"
+    gemspec.version = "1.16.0"
+    gemspec.bindir = "exe"
+    gemspec.executables = ["bundle"]
+
+    open 'bundler/bundler.gemspec',   'w' do |io|
+      io.puts gemspec.to_ruby
+    end
+
+    open(File.join(Gem::Specification.default_specifications_dir, "bundler-1.15.4.gemspec"), 'w') do |io|
+      io.puts '# bundler'
+    end
+
+    FileUtils.mkdir_p File.join(Gem.default_dir, "specifications")
+    open(File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec"), 'w') do |io|
+      io.puts '# bundler-audit'
+    end
+
+    FileUtils.mkdir_p 'default/gems/bundler-1.15.4'
+    FileUtils.mkdir_p 'default/gems/bundler-audit-1.0.0'
+  end
+
+  def gem_install name
+    gem = util_spec name do |s|
+      s.executables = [name]
+      s.files = %W[bin/#{name}]
+    end
+    write_file File.join @tempdir, 'bin', name do |f|
+      f.puts '#!/usr/bin/ruby'
+    end
+    install_gem gem
+    File.join @gemhome, 'bin', name
+  end
+
+  def test_execute_regenerate_binstubs
+    gem_bin_path = gem_install 'a'
+    write_file gem_bin_path do |io|
+      io.puts 'I changed it!'
+    end
+
+    @cmd.options[:document] = []
+    @cmd.execute
+
+    assert_match %r{\A#!}, File.read(gem_bin_path)
+  end
+
+  def test_execute_no_regenerate_binstubs
+    gem_bin_path = gem_install 'a'
+    write_file gem_bin_path do |io|
+      io.puts 'I changed it!'
+    end
+
+    @cmd.options[:document] = []
+    @cmd.options[:regenerate_binstubs] = false
+    @cmd.execute
+
+    assert_equal "I changed it!\n", File.read(gem_bin_path)
   end
 
   def test_pem_files_in
@@ -54,6 +115,33 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       end
     end
   end
+
+  def test_install_default_bundler_gem
+    @cmd.extend FileUtils
+
+    @cmd.install_default_bundler_gem
+
+    if Gem.win_platform?
+      bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
+      default_spec_path = File.join(Gem::Specification.default_specifications_dir, "#{bundler_spec.full_name}.gemspec")
+      spec = Gem::Specification.load(default_spec_path)
+
+      spec.executables.each do |e|
+        assert_path_exists File.join(spec.bin_dir, "#{e}.bat")
+      end
+    end
+
+    default_dir = Gem::Specification.default_specifications_dir
+
+    refute_path_exists File.join(default_dir, "bundler-1.15.4.gemspec")
+    refute_path_exists 'default/gems/bundler-1.15.4'
+
+    assert_path_exists File.join(default_dir, "bundler-1.16.0.gemspec")
+    assert_path_exists 'default/gems/bundler-1.16.0'
+
+    assert_path_exists File.join(Gem.default_dir, "specifications", "bundler-audit-1.0.0.gemspec")
+    assert_path_exists 'default/gems/bundler-audit-1.0.0'
+  end if Gem::USE_BUNDLER_FOR_GEMDEPS
 
   def test_remove_old_lib_files
     lib                   = File.join @install_dir, 'lib'
