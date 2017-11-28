@@ -3761,13 +3761,13 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 		  event == RUBY_EVENT_B_CALL);
 	reg_cfp->pc++;
 	vm_dtrace(event, ec);
-	EXEC_EVENT_HOOK_VM_TRACE(ec, event, vm_event_flags, GET_SELF(), 0, 0, 0, Qundef);
+	EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, Qundef);
 	reg_cfp->pc--;
     }
     if (events & RUBY_EVENT_LINE) {
 	reg_cfp->pc++;
 	vm_dtrace(RUBY_EVENT_LINE, ec);
-	EXEC_EVENT_HOOK_VM_TRACE(ec, RUBY_EVENT_LINE, vm_event_flags, GET_SELF(), 0, 0, 0, Qundef);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_LINE, GET_SELF(), 0, 0, 0, Qundef);
 	reg_cfp->pc--;
     }
     if (event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) {
@@ -3776,7 +3776,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 		  event == RUBY_EVENT_B_RETURN);
 	reg_cfp->pc++;
 	vm_dtrace(RUBY_EVENT_LINE, ec);
-	EXEC_EVENT_HOOK_VM_TRACE(ec, event, vm_event_flags, GET_SELF(), 0, 0, 0, TOPN(0));
+	EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, TOPN(0));
 	reg_cfp->pc--;
     }
 }
