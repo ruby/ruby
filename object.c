@@ -4076,11 +4076,12 @@ InitVM_Object(void)
     /*
      * Document-class: Data
      *
-     * This is a recommended base class for C extensions using Data_Make_Struct
-     * or Data_Wrap_Struct, see doc/extension.rdoc for details.
+     * This is a deprecated class, base class for C extensions using
+     * Data_Make_Struct or Data_Wrap_Struct.
      */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
+    rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
