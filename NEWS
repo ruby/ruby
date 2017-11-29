@@ -284,6 +284,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Print backtrace and error message in reverse order if STDERR is unchanged and a tty.
   [Feature #8661] [experimental]
 
+* Print error message in bold/underlined text if STDERR is unchanged and a tty.
+  [Feature #14160] [experimental]
+
 * configure option --with-ext now mandates its arguments.  So for
   instance if you run ./configure --with-ext=openssl,+ then the
   openssl library is guaranteed compiled, otherwise the build fails
