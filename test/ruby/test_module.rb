@@ -2038,6 +2038,10 @@ class TestModule < Test::Unit::TestCase
       attr_accessor
       attr_reader
       attr_writer
+      define_method
+      alias_method
+      undef_method
+      remove_method
     ]
     assert_equal public_methods.sort, (Module.public_methods & public_methods).sort
   end
@@ -2104,9 +2108,9 @@ class TestModule < Test::Unit::TestCase
 
   def test_visibility_by_public_class_method
     bug8284 = '[ruby-core:54404] [Bug #8284]'
-    assert_raise(NoMethodError) {Object.define_method}
-    Module.new.public_class_method(:define_method)
-    assert_raise(NoMethodError, bug8284) {Object.define_method}
+    assert_raise(NoMethodError) {Object.remove_const}
+    Module.new.public_class_method(:remove_const)
+    assert_raise(NoMethodError, bug8284) {Object.remove_const}
   end
 
   def test_include_module_with_constants_does_not_invalidate_method_cache

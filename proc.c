@@ -3164,7 +3164,7 @@ Init_Proc(void)
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
     rb_define_method(rb_cModule, "public_instance_method", rb_mod_public_instance_method, 1);
-    rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
+    rb_define_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     /* Kernel */
     rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);
