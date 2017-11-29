@@ -216,6 +216,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 * StringIO
   * StringIO#write accepts multiple arguments
 
+* StringScanner
+  * Add StringScanner#size, StringScanner#captures, StringScanner#values_at  [Feature #836]
+
 * WEBrick
 
   * Add Server Name Indication (SNI) support [Feature #13729]
