@@ -728,4 +728,26 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil(s[:c])
     assert_nil(s["c"])
   end
+
+  def test_size
+    s = StringScanner.new("Fri Dec 12 1975 14:39")
+    s.scan(/(\w+) (\w+) (\d+) /)
+    assert_equal(4, s.size)
+  end
+
+  def test_captures
+    s = StringScanner.new("Fri Dec 12 1975 14:39")
+    s.scan(/(\w+) (\w+) (\d+) /)
+    assert_equal(["Fri", "Dec", "12"], s.captures)
+    s.scan(/(\w+) (\w+) (\d+) /)
+    assert_nil(s.captures)
+  end
+
+  def test_values_at
+    s = StringScanner.new("Fri Dec 12 1975 14:39")
+    s.scan(/(\w+) (\w+) (\d+) /)
+    assert_equal(["Fri Dec 12 ", "12", nil, "Dec"], s.values_at(0, -1, 5, 2))
+    s.scan(/(\w+) (\w+) (\d+) /)
+    assert_nil(s.values_at(0, -1, 5, 2))
+  end
 end
