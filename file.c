@@ -2662,6 +2662,7 @@ rb_file_s_lchown(int argc, VALUE *argv)
 struct utime_args {
     const struct timespec* tsp;
     VALUE atime, mtime;
+    int follow; /* Whether to act on symlinks (1) or their referent (0) */
 };
 
 #ifdef UTIME_EINVAL
@@ -2717,11 +2718,27 @@ utime_internal(const char *path, void *arg)
 
 #if defined(HAVE_UTIMENSAT)
     static int try_utimensat = 1;
+# ifdef AT_SYMLINK_NOFOLLOW
+    static int try_utimensat_follow = 1;
+# else
+    const int try_utimensat_follow = 0;
+# endif
+    int flags = 0;
 
-    if (try_utimensat) {
-        if (utimensat(AT_FDCWD, path, tsp, 0) < 0) {
+    if (v->follow ? try_utimensat_follow : try_utimensat) {
+# ifdef AT_SYMLINK_NOFOLLOW
+	if (v->follow) {
+	    flags = AT_SYMLINK_NOFOLLOW;
+	}
+# endif
+
+	if (utimensat(AT_FDCWD, path, tsp, flags) < 0) {
             if (errno == ENOSYS) {
-                try_utimensat = 0;
+# ifdef AT_SYMLINK_NOFOLLOW
+		try_utimensat_follow = 0;
+# endif
+		if (!v->follow)
+		    try_utimensat = 0;
                 goto no_utimensat;
             }
             return -1; /* calls utime_failed */
@@ -2738,6 +2755,9 @@ no_utimensat:
         tvbuf[1].tv_usec = (int)(tsp[1].tv_nsec / 1000);
         tvp = tvbuf;
     }
+#ifdef HAVE_LUTIMES
+    if (v->follow) return lutimes(path, tvp);
+#endif
     return utimes(path, tvp);
 }
 
@@ -2766,17 +2786,8 @@ utime_internal(const char *path, void *arg)
 
 #endif
 
-/*
- * call-seq:
- *  File.utime(atime, mtime, file_name,...)   ->  integer
- *
- * Sets the access and modification times of each
- * named file to the first two arguments. Returns
- * the number of file names in the argument list.
- */
-
 static VALUE
-rb_file_s_utime(int argc, VALUE *argv)
+utime_internal_i(int argc, VALUE *argv, int follow)
 {
     struct utime_args args;
     struct timespec tss[2], *tsp = NULL;
@@ -2784,6 +2795,8 @@ rb_file_s_utime(int argc, VALUE *argv)
     apply2args(2);
     args.atime = *argv++;
     args.mtime = *argv++;
+
+    args.follow = follow;
 
     if (!NIL_P(args.atime) || !NIL_P(args.mtime)) {
 	tsp = tss;
@@ -2797,6 +2810,45 @@ rb_file_s_utime(int argc, VALUE *argv)
 
     return apply2files(utime_internal, argc, argv, &args);
 }
+
+/*
+ * call-seq:
+ *  File.utime(atime, mtime, file_name,...)   ->  integer
+ *
+ * Sets the access and modification times of each named file to the
+ * first two arguments. If a file is a symlink, this method acts upon
+ * its referent rather than the link itself; for the inverse
+ * behavior see <code>File.lutime</code>. Returns the number of file
+ * names in the argument list.
+ */
+
+static VALUE
+rb_file_s_utime(int argc, VALUE *argv)
+{
+    return utime_internal_i(argc, argv, FALSE);
+}
+
+#if defined(HAVE_UTIMES) && (defined(HAVE_LUTIMES) || (defined(HAVE_UTIMENSAT) && defined(AT_SYMLINK_NOFOLLOW)))
+
+/*
+ * call-seq:
+ *  File.lutime(atime, mtime, file_name,...)   ->  integer
+ *
+ * Sets the access and modification times of each named file to the
+ * first two arguments. If a file is a symlink, this method acts upon
+ * the link itself as opposed to its referent; for the inverse
+ * behavior, see <code>File.utime</code>. Returns the number of file
+ * names in the argument list.
+ */
+
+static VALUE
+rb_file_s_lutime(int argc, VALUE *argv)
+{
+    return utime_internal_i(argc, argv, TRUE);
+}
+#else
+#define rb_file_s_lutime rb_f_notimplement
+#endif
 
 #ifdef RUBY_FUNCTION_NAME_STRING
 # define syserr_fail2(e, s1, s2) syserr_fail2_in(RUBY_FUNCTION_NAME_STRING, e, s1, s2)
@@ -6259,6 +6311,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "chown", rb_file_s_chown, -1);
     rb_define_singleton_method(rb_cFile, "lchmod", rb_file_s_lchmod, -1);
     rb_define_singleton_method(rb_cFile, "lchown", rb_file_s_lchown, -1);
+    rb_define_singleton_method(rb_cFile, "lutime", rb_file_s_lutime, -1);
 
     rb_define_singleton_method(rb_cFile, "link", rb_file_s_link, 2);
     rb_define_singleton_method(rb_cFile, "symlink", rb_file_s_symlink, 2);
