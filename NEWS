@@ -27,6 +27,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Array#append  [Feature #12746]
   * Array#prepend  [Feature #12746]
 
+* Data
+
+  * Now deprecated [Feature #3072]
+
 * Dir
 
   * Dir.glob provides new optional keyword argument, :base.
