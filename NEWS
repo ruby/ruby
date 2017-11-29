@@ -46,6 +46,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * File.stat, File.exist?, and other rb_stat()-using methods release GVL
     [Bug #13941]
   * File.rename releases GVL [Feature #13951]
+  * Add File.lutime  [Feature #4052]
 
 * Hash
 
