@@ -20,8 +20,15 @@ describe "Module#remove_method" do
     @module = Module.new { def method_to_remove; end }
   end
 
-  it "is a private method" do
-    Module.should have_private_instance_method(:remove_method, false)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      Module.should have_private_instance_method(:remove_method, false)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:remove_method, false)
+    end
   end
 
   it "removes the method from a class" do
