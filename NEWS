@@ -77,6 +77,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Kernel#yield_self  [Feature #6721]
 
+* Module
+  * Module#attr, attr_accessor, attr_reader, attr_writer are now public [#14132]
+
 * Net::HTTP
 
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
