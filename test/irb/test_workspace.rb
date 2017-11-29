@@ -32,18 +32,18 @@ module TestIRB
       end
     end
 
-    unless /mswin|mingw/ =~ RUBY_PLATFORM
-      def test_code_around_binding_with_existing_unreadable_file
-        Tempfile.create do |f|
-          code = "IRB::WorkSpace.new(binding)\n"
-          f.print(code)
-          f.close
+    def test_code_around_binding_with_existing_unreadable_file
+      skip 'chmod cannot make file unreadable on windows' if windows?
 
-          File.chmod(0, f.path)
+      Tempfile.create do |f|
+        code = "IRB::WorkSpace.new(binding)\n"
+        f.print(code)
+        f.close
 
-          workspace = eval(code, binding, f.path)
-          assert_equal(nil, workspace.code_around_binding)
-        end
+        File.chmod(0, f.path)
+
+        workspace = eval(code, binding, f.path)
+        assert_equal(nil, workspace.code_around_binding)
       end
     end
 
