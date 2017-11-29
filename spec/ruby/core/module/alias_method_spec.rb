@@ -69,8 +69,15 @@ describe "Module#alias_method" do
     lambda { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
   end
 
-  it "is a private method" do
-    lambda { @class.alias_method :ichi, :public_one }.should raise_error(NoMethodError)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      lambda { @class.alias_method :ichi, :public_one }.should raise_error(NoMethodError)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:alias_method, false)
+    end
   end
 
   it "returns self" do
