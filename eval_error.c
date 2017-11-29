@@ -73,8 +73,11 @@ error_print(rb_execution_context_t *ec)
 }
 
 static void
-print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
+print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, int colored)
 {
+    static const char underline[] = "\033[4;1m";
+    static const char bold[] = "\033[1m";
+    static const char reset[] = "\033[m";
     const char *einfo = "";
     long elen = 0;
     VALUE mesg;
@@ -89,13 +92,16 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
 	    warn_print(": ");
 	}
 
+        if (colored) warn_print(bold);
+
 	if (!NIL_P(emesg)) {
 	    einfo = RSTRING_PTR(emesg);
-	    elen = RSTRING_LEN(emesg);
+            elen = RSTRING_LEN(emesg);
 	}
     }
 
     if (eclass == rb_eRuntimeError && elen == 0) {
+        if (colored) warn_print(underline);
 	warn_print("unhandled exception\n");
     }
     else {
@@ -103,6 +109,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
 
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
+            if (colored) warn_print(underline);
 	    warn_print_str(epath);
 	    warn_print("\n");
 	}
@@ -119,7 +126,10 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
 	    warn_print_str(tail ? rb_str_subseq(emesg, 0, len) : emesg);
 	    if (epath) {
 		warn_print(" (");
-		warn_print_str(epath);
+                if (colored) warn_print(underline);
+                warn_print_str(epath);
+                if (colored) warn_print(reset);
+                if (colored) warn_print(bold);
 		warn_print(")\n");
 	    }
 	    if (tail) {
@@ -128,6 +138,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg)
 	    if (tail ? einfo[elen-1] != '\n' : !epath) warn_print2("\n", 1);
 	}
     }
+    if (colored) warn_print(reset);
 }
 
 static void
@@ -192,12 +203,12 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 	}
     }
     if (rb_stderr_tty_p()) {
-	warn_print("Traceback (most recent call last):\n");
+	warn_print("\033[1mTraceback \033[m(most recent call last):\n");
 	print_backtrace(eclass, errat, TRUE);
-	print_errinfo(eclass, errat, emesg);
+	print_errinfo(eclass, errat, emesg, TRUE);
     }
     else {
-	print_errinfo(eclass, errat, emesg);
+	print_errinfo(eclass, errat, emesg, FALSE);
 	print_backtrace(eclass, errat, FALSE);
     }
   error:
