@@ -4028,10 +4028,10 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);  /* in variable.c */
     rb_define_method(rb_cModule, "ancestors", rb_mod_ancestors, 0); /* in class.c */
 
-    rb_define_private_method(rb_cModule, "attr", rb_mod_attr, -1);
-    rb_define_private_method(rb_cModule, "attr_reader", rb_mod_attr_reader, -1);
-    rb_define_private_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
-    rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
+    rb_define_method(rb_cModule, "attr", rb_mod_attr, -1);
+    rb_define_method(rb_cModule, "attr_reader", rb_mod_attr_reader, -1);
+    rb_define_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
+    rb_define_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);

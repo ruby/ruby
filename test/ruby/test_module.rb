@@ -2030,6 +2030,18 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError){ m.instance_eval { remove_const(:__FOO__) } }
   end
 
+  def test_public_methods
+    public_methods = %i[
+      include
+      prepend
+      attr
+      attr_accessor
+      attr_reader
+      attr_writer
+    ]
+    assert_equal public_methods.sort, (Module.public_methods & public_methods).sort
+  end
+
   def test_private_top_methods
     assert_top_method_is_private(:include)
     assert_top_method_is_private(:public)
