@@ -2018,10 +2018,10 @@ class TestRefinement < Test::Unit::TestCase
           puts "M1#foo"
         end
       end
-      
+
       module M2
       end
-      
+
       module UnusedRefinement
         refine(M2) do
           def foo
@@ -2029,7 +2029,7 @@ class TestRefinement < Test::Unit::TestCase
           end
         end
       end
-      
+
       include M1
       include M2
       foo()
