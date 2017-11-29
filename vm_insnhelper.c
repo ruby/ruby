@@ -2314,7 +2314,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 	    cc->me = refined_method_callable_without_refinement(cc->me);
 	}
 	else {
-	    VALUE klass = RCLASS_SUPER(cc->me->owner);
+	    VALUE klass = RCLASS_SUPER(cc->me->defined_class);
 	    cc->me = klass ? rb_callable_method_entry(klass, ci->mid) : NULL;
 	}
 	return vm_call_method(ec, cfp, calling, ci, cc);
