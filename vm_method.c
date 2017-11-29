@@ -2085,9 +2085,9 @@ Init_eval_method(void)
     rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     rb_define_method(rb_mKernel, "respond_to_missing?", obj_respond_to_missing, 2);
 
-    rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
-    rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
-    rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
+    rb_define_method(rb_cModule, "remove_method", rb_mod_remove_method, -1);
+    rb_define_method(rb_cModule, "undef_method", rb_mod_undef_method, -1);
+    rb_define_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
     rb_define_private_method(rb_cModule, "public", rb_mod_public, -1);
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);

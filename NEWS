@@ -79,6 +79,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Module
   * Module#attr, attr_accessor, attr_reader, attr_writer are now public [#14132]
+  * Module#define_method, alias_method, undef_method, remove_method are now public [#14133]
 
 * Net::HTTP
 
