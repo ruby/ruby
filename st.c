@@ -443,6 +443,12 @@ get_allocated_entries(const st_table *tab)
     return ((st_index_t) 1)<<tab->entry_power;
 }
 
+static inline st_index_t
+get_allocating_entries_with_size(int size)
+{
+    return ((st_index_t) 1)<<size;
+}
+
 /* Return size of the allocated bins of table TAB.  */
 static inline st_index_t
 bins_size(const st_table *tab)
@@ -548,15 +554,9 @@ stat_col(void)
 }
 #endif
 
-/* Create and return table with TYPE which can hold at least SIZE
-   entries.  The real number of entries which the table can hold is
-   the nearest power of two for SIZE.  */
-st_table *
-st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+static inline void
+setup_hash_log(void)
 {
-    st_table *tab;
-    int n;
-
 #ifdef HASH_LOG
 #if HASH_LOG+0 < 0
     {
@@ -569,9 +569,11 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
         atexit(stat_col);
     }
 #endif
+}
 
-    n = get_power2(size);
-    tab = (st_table *) malloc(sizeof (st_table));
+static inline void
+setup_st_table(st_table *tab, const struct st_hash_type *type, int n)
+{
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
@@ -580,8 +582,11 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
         tab->bins = NULL;
     else
         tab->bins = (st_index_t *) malloc(bins_size(tab));
-    tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
-					     * sizeof(st_table_entry));
+}
+
+static inline void
+initialize_st_table(st_table *tab)
+{
 #ifdef ST_DEBUG
     memset(tab->entries, ST_INIT_VAL_BYTE,
 	   get_allocated_entries(tab) * sizeof(st_table_entry));
@@ -593,6 +598,56 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 #ifdef ST_DEBUG
     st_check(tab);
 #endif
+}
+
+/* Create and return table with TYPE which can hold at least SIZE
+   entries.  The real number of entries which the table can hold is
+   the nearest power of two for SIZE.  */
+st_table *
+st_init_table_with_size_slow(const struct st_hash_type *type, st_index_t size)
+{
+    st_table *tab;
+    int n;
+
+    setup_hash_log();
+
+    n = get_power2(size);
+    tab = (st_table *) malloc(sizeof (st_table));
+    setup_st_table(tab, type, n);
+    tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
+					     * sizeof(st_table_entry));
+
+    initialize_st_table(tab);
+    return tab;
+}
+
+static inline void
+assign_unified_table_entries(st_table *tab)
+{
+    tab->entries = (st_table_entry *)(&tab->entries + 1);
+}
+
+static inline bool
+assigned_unified_table_entries_p(st_table *tab)
+{
+    return tab->entries == (st_table_entry *)(&tab->entries + 1);
+}
+
+st_table *
+st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
+{
+    st_table *tab;
+    int n;
+
+    setup_hash_log();
+
+    n = get_power2(size);
+    tab = (st_table *) malloc(sizeof (st_table) +
+	    (get_allocating_entries_with_size(n) * sizeof(st_table_entry)));
+    setup_st_table(tab, type, n);
+    assign_unified_table_entries(tab);
+
+    initialize_st_table(tab);
     return tab;
 }
 
@@ -667,7 +722,8 @@ st_free_table(st_table *tab)
 {
     if (tab->bins != NULL)
         free(tab->bins);
-    free(tab->entries);
+    if (!assigned_unified_table_entries_p(tab))
+	free(tab->entries);
     free(tab);
 }
 
@@ -755,7 +811,7 @@ rebuild_table(st_table *tab)
 	new_entries = entries;
     }
     else {
-        new_tab = st_init_table_with_size(tab->type,
+        new_tab = st_init_table_with_size_slow(tab->type,
 					  2 * tab->num_entries - 1);
 	new_entries = new_tab->entries;
     }
@@ -789,7 +845,8 @@ rebuild_table(st_table *tab)
 	if (tab->bins != NULL)
 	    free(tab->bins);
 	tab->bins = new_tab->bins;
-	free(tab->entries);
+	if (!assigned_unified_table_entries_p(tab))
+	    free(tab->entries);
 	tab->entries = new_tab->entries;
 	free(new_tab);
     }
@@ -1998,10 +2055,11 @@ st_expand_table(st_table *tab, st_index_t siz)
     if (siz <= get_allocated_entries(tab))
         return; /* enough room already */
 
-    tmp = st_init_table_with_size(tab->type, siz);
+    tmp = st_init_table_with_size_slow(tab->type, siz);
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
-    free(tab->entries);
+    if (!assigned_unified_table_entries_p(tab))
+	free(tab->entries);
     if (tab->bins != NULL)
         free(tab->bins);
     if (tmp->bins != NULL)
