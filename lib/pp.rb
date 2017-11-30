@@ -17,6 +17,7 @@ module Kernel
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
+  undef pp if method_defined?(:pp)
   def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
