@@ -141,3 +141,13 @@ class Binding
     irb
   end
 end
+
+module Kernel
+  # prints arguments in pretty form.
+  #
+  # pp returns argument(s).
+  def pp(*objs)
+    require 'pp'
+    pp(objs)
+  end
+end
