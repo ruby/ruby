@@ -148,6 +148,6 @@ module Kernel
   # pp returns argument(s).
   def pp(*objs)
     require 'pp'
-    pp(objs)
+    pp(*objs)
   end
 end
