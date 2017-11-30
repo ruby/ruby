@@ -466,7 +466,7 @@ EOM
 
     @checksums = gem.seek 'checksums.yaml.gz' do |entry|
       Zlib::GzipReader.wrap entry do |gz_io|
-        YAML.load gz_io.read
+        Gem::SafeYAML.safe_load gz_io.read
       end
     end
   end

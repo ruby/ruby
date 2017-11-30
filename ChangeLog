@@ -1,3 +1,9 @@
+Thu Nov 30 23:29:00 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Merge rubygems-2.6.14 changes.
+
+	It fixed http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
+
 Fri Sep 15 05:40:40 2017  URABE Shyouhei  <shyouhei@ruby-lang.org>
 
 	fix --with-gmp (broken by r57490)
