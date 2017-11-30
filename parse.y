@@ -389,6 +389,17 @@ static int parser_yyerror(struct parser_params*, const char*);
 
 static int yylex(YYSTYPE*, struct parser_params*);
 
+static inline void
+set_line_body(NODE *body, int line)
+{
+    if (!body) return;
+    switch (nd_type(body)) {
+      case NODE_RESCUE:
+      case NODE_ENSURE:
+	nd_set_line(body, line);
+    }
+}
+
 #ifndef RIPPER
 #define yyparse ruby_yyparse
 
@@ -2688,9 +2699,7 @@ primary		: literal
 			    $$ = NEW_NIL();
 			}
 			else {
-			    if (nd_type($3) == NODE_RESCUE ||
-				nd_type($3) == NODE_ENSURE)
-				nd_set_line($3, $<num>2);
+			    set_line_body($3, $<num>2);
 			    $$ = NEW_BEGIN($3);
 			}
 			nd_set_line($$, $<num>2);
@@ -2975,6 +2984,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
+			set_line_body($5, $<num>4);
 			nd_set_line($$, $<num>4);
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
@@ -2994,6 +3004,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $6);
+			set_line_body($6, nd_line($3));
 			fixpos($$, $3);
 		    /*%
 			$$ = dispatch2(sclass, $3, $6);
@@ -3017,6 +3028,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
+			set_line_body($4, $<num>3);
 			nd_set_line($$, $<num>3);
 		    /*%
 			$$ = dispatch2(module, $2, $4);
@@ -3041,6 +3053,7 @@ primary		: literal
 			NODE *body = remove_begin($6);
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $5, body, METHOD_VISI_PRIVATE);
+			set_line_body(body, $<num>1);
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch3(def, $2, $5, $6);
@@ -3066,6 +3079,7 @@ primary		: literal
 			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body);
+			set_line_body(body, $<num>1);
 			nd_set_line($$, $<num>1);
 		    /*%
 			$$ = dispatch5(defs, $2, $3, $5, $7, $8);

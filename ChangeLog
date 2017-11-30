@@ -1,3 +1,10 @@
+Thu Nov 30 23:37:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: fix line in rescue
+
+	* parse.y (set_line_body, primary): fix line number of bodystmt as the
+	  beginning of the block. [Bug #13181]
+
 Thu Nov 30 23:29:00 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Merge rubygems-2.6.14 changes.
