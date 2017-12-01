@@ -133,14 +133,15 @@ def parse_scripts(data, categories)
   files = [
     {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
     {:fn => 'Scripts.txt', :title => 'Script'},
-    {:fn => 'PropList.txt', :title => 'Binary Property'}
+    {:fn => 'PropList.txt', :title => 'Binary Property'},
+    {:fn => 'emoji-data.txt', :title => 'Emoji'}
   ]
   current = nil
   cps = []
   names = {}
   files.each do |file|
     data_foreach(file[:fn]) do |line|
-      if /^# Total code points: / =~ line
+      if /^# Total (?:code points|elements): / =~ line
         data[current] = cps
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
@@ -310,13 +311,15 @@ def data_foreach(name, &block)
   pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
   File.open(fn, 'rb') do |f|
     line = f.gets
-    unless pat =~ line
-      raise ArgumentError, "#{name}: no Unicode version"
-    end
-    if !$unicode_version
-      $unicode_version = $1
-    elsif $unicode_version != $1
-      raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+    unless /^emoji-/ =~ name
+      unless pat =~ line
+        raise ArgumentError, "#{name}: no Unicode version"
+      end
+      if !$unicode_version
+        $unicode_version = $1
+      elsif $unicode_version != $1
+        raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+      end
     end
     f.each(&block)
   end
