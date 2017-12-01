@@ -187,7 +187,17 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Psych
 
-  * Update to Psych 3.0.0.beta3.
+  * Update to Psych 3.0.0.
+    * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
+      https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
+    * Add Psych::Handler#event_location
+      https://github.com/ruby/psych/pull/326
+    * Make frozen string literal = true
+      https://github.com/ruby/psych/pull/320
+    * Preserve time zone offset when deserializing times
+      https://github.com/ruby/psych/pull/316
+    * Removed deprecated method aliases for syck gem
+      https://github.com/ruby/psych/pull/312
 
 * RbConfig
   * New constants:
