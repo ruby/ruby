@@ -42,7 +42,6 @@ class Prelude
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
       @preludes[filename] ||= result
-      next if /\A\s*\#.*\n\z/ =~ line
       line.sub!(/(?:^|\s+)\#(?:$|[#\s].*)/, '')
       line.sub!(/require(_relative)?\s*\(?\s*(["'])(.*?)(?:\.rb)?\2\)?/) do
         orig, rel, path = $&, $2, $3
