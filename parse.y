@@ -2909,22 +2909,22 @@ primary		: literal
 
 			switch (nd_type($2)) {
 			  case NODE_MASGN:
-			    m->nd_next = node_assign($2, new_for(new_dvar(id, &@$), 0, 0, &@$), &@$);
-			    args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@$));
+			    m->nd_next = node_assign($2, new_for(new_dvar(id, &@2), 0, 0, &@2), &@2);
+			    args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2));
 			    break;
 			  case NODE_LASGN:
 			  case NODE_DASGN:
 			  case NODE_DASGN_CURR:
-			    $2->nd_value = new_dvar(id, &@$);
+			    $2->nd_value = new_dvar(id, &@2);
 			    m->nd_plen = 1;
 			    m->nd_next = $2;
-			    args = new_args(m, 0, 0, 0, new_args_tail(0, 0, 0, &@$));
+			    args = new_args(m, 0, 0, 0, new_args_tail(0, 0, 0, &@2));
 			    break;
 			  default:
 			    {
-				NODE *masgn = new_masgn(new_list($2, &@$), 0, &@$);
-				m->nd_next = node_assign(masgn, new_dvar(id, &@$), &@$);
-				args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@$));
+				NODE *masgn = new_masgn(new_list($2, &@2), 0, &@2);
+				m->nd_next = node_assign(masgn, new_dvar(id, &@2), &@2);
+				args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2));
 				break;
 			    }
 			}
