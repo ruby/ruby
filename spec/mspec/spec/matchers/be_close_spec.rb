@@ -34,13 +34,13 @@ describe BeCloseMatcher do
 
   it "provides a useful failure message" do
     matcher = BeCloseMatcher.new(5.0, 0.5)
-    matcher.matches?(5.5)
-    matcher.failure_message.should == ["Expected 5.0", "to be within +/- 0.5 of 5.5"]
+    matcher.matches?(6.5)
+    matcher.failure_message.should == ["Expected 6.5", "to be within 5.0 +/- 0.5"]
   end
 
   it "provides a useful negative failure message" do
     matcher = BeCloseMatcher.new(5.0, 0.5)
-    matcher.matches?(5.0)
-    matcher.negative_failure_message.should == ["Expected 5.0", "not to be within +/- 0.5 of 5.0"]
+    matcher.matches?(4.9)
+    matcher.negative_failure_message.should == ["Expected 4.9", "not to be within 5.0 +/- 0.5"]
   end
 end
