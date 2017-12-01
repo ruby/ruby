@@ -36,6 +36,6 @@ def remove_guards(guard, keep)
   end
 end
 
-version = "2.2"
+version = (ARGV[0] || "2.2")
 remove_guards(/ruby_version_is ["']#{version}["'] do/, true)
 remove_guards(/ruby_version_is ["'][0-9.]*["']...["']#{version}["'] do/, false)
