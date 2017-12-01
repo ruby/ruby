@@ -30,9 +30,9 @@ describe :dir_open, shared: true do
     lambda do
       Dir.send(@method, DirSpecs.mock_dir) do |dir|
         closed_dir = dir
-        raise
+        raise "dir specs"
       end
-    end.should raise_error
+    end.should raise_error(RuntimeError, "dir specs")
 
     lambda { closed_dir.read }.should raise_error(IOError)
   end

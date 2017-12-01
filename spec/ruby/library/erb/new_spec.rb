@@ -65,7 +65,7 @@ END
   end
 
 
-  it "not support '<%-= expr %> even when trim_mode is '-'" do
+  it "does not support '<%-= expr %> even when trim_mode is '-'" do
 
     input = <<'END'
 <p>
@@ -74,7 +74,9 @@ END
 </p>
 END
 
-    lambda { ERB.new(input, nil, '-').result }.should raise_error
+    lambda {
+      ERB.new(input, nil, '-').result
+    }.should raise_error(SyntaxError)
   end
 
   it "regards lines starting with '%' as '<% ... %>' when trim_mode is '%'" do

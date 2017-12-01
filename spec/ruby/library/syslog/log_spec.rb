@@ -1,5 +1,6 @@
+require File.expand_path('../../../spec_helper', __FILE__)
+
 platform_is_not :windows do
-  require File.expand_path('../../../spec_helper', __FILE__)
   require 'syslog'
 
   describe "Syslog.log" do

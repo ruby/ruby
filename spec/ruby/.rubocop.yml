@@ -13,6 +13,10 @@ Layout/TrailingWhitespace:
 Lint:
   Enabled: true
 
+# {...} has higher precedence than do ... end, on purpose
+Lint/AmbiguousBlockAssociation:
+  Enabled: false
+
 Lint/AssignmentInCondition:
   Enabled: false
 

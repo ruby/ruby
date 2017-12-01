@@ -422,6 +422,7 @@
 #define HAVE_RB_NUM_COERCE_BIN             1
 #define HAVE_RB_NUM_COERCE_CMP             1
 #define HAVE_RB_NUM_COERCE_RELOP           1
+#define HAVE_RB_ABSINT_SINGLEBIT_P         1
 #define HAVE_RB_NUM_ZERODIV                1
 
 /* Fixnum */
@@ -431,6 +432,8 @@
 #endif
 
 /* Object */
+#define HAVE_FL_ABLE                       1
+#define HAVE_FL_TEST                       1
 #define HAVE_OBJ_TAINT                     1
 #define HAVE_OBJ_TAINTED                   1
 #define HAVE_OBJ_INFECT                    1

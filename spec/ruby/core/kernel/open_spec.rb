@@ -33,13 +33,14 @@ describe "Kernel#open" do
       @io = open("|date")
       begin
         @io.should be_kind_of(IO)
+        @io.read
       ensure
         @io.close
       end
     end
 
     it "opens an io when called with a block" do
-      @output = open("|date") { |f| f.gets }
+      @output = open("|date") { |f| f.read }
       @output.should_not == ''
     end
 
@@ -61,7 +62,7 @@ describe "Kernel#open" do
     end
 
     it "opens an io when called with a block" do
-      @output = open("|date /t") { |f| f.gets }
+      @output = open("|date /t") { |f| f.read }
       @output.should_not == ''
     end
   end

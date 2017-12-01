@@ -66,7 +66,9 @@ describe "Array#sort" do
   it "does not deal with exceptions raised by unimplemented or incorrect #<=>" do
     o = Object.new
 
-    lambda { [o, 1].sort }.should raise_error
+    lambda {
+      [o, 1].sort
+    }.should raise_error(ArgumentError)
   end
 
   it "may take a block which is used to determine the order of objects a and b described as -1, 0 or +1" do

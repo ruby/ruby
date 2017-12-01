@@ -27,6 +27,11 @@ describe "Processing RUBYOPT" do
     ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
   end
 
+  it "ignores whitespace around the option" do
+    ENV["RUBYOPT"] = ' -v '
+    ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
+  end
+
   it "sets $VERBOSE to true for '-w'" do
     ENV["RUBYOPT"] = '-w'
     ruby_exe("p $VERBOSE", escape: true).chomp.should == "true"

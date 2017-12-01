@@ -1,5 +1,6 @@
+require File.expand_path('../../../spec_helper', __FILE__)
+
 platform_is_not :windows do
-  require File.expand_path('../../../spec_helper', __FILE__)
   require File.expand_path('../shared/reopen', __FILE__)
   require 'syslog'
 
@@ -73,8 +74,13 @@ platform_is_not :windows do
 
       it "raises an error if the log is opened" do
         Syslog.open
-        lambda { Syslog.open}.should raise_error
-        lambda { Syslog.close; Syslog.open }.should_not raise_error
+        lambda {
+          Syslog.open
+        }.should raise_error(RuntimeError, /syslog already open/)
+        lambda {
+          Syslog.close
+          Syslog.open
+        }.should_not raise_error
         Syslog.close
       end
     end

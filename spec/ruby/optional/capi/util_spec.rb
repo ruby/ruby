@@ -105,6 +105,16 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, h]
     end
 
+    it "assigns required and Hash arguments with optional Hash" do
+      @o.rb_scan_args([1], "1:", 2, @acc).should == 1
+      ScratchPad.recorded.should == [1, nil]
+    end
+
+    it "assigns required and Hash arguments with nil Hash" do
+      @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+      ScratchPad.recorded.should == [1, nil]
+    end
+
     it "assigns required, optional, splat, post-splat, Hash and block arguments" do
       h = {a: 1, b: 2}
       @o.rb_scan_args([1, 2, 3, 4, 5, h], "11*1:&", 6, @acc, &@prc).should == 5

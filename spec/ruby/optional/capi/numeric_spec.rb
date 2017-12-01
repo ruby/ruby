@@ -429,4 +429,19 @@ describe "CApiNumericSpecs" do
       lambda { @s.rb_num_coerce_relop(2, obj, :<) }.should raise_error(ArgumentError)
     end
   end
+
+  describe "rb_absint_singlebit_p" do
+    it "returns 1 if absolute value fits into a bit" do
+      @s.rb_absint_singlebit_p(1).should == 1
+      @s.rb_absint_singlebit_p(2).should == 1
+      @s.rb_absint_singlebit_p(3).should == 0
+      @s.rb_absint_singlebit_p(-1).should == 1
+      @s.rb_absint_singlebit_p(-2).should == 1
+      @s.rb_absint_singlebit_p(-3).should == 0
+      @s.rb_absint_singlebit_p(bignum_value).should == 1
+      @s.rb_absint_singlebit_p(bignum_value(1)).should == 0
+      @s.rb_absint_singlebit_p(-bignum_value).should == 1
+      @s.rb_absint_singlebit_p(-bignum_value(1)).should == 0
+    end
+  end
 end

@@ -1,6 +1,3 @@
-
-return ## this code causes double free and now we are debugging.
-
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/refine', __FILE__)
 
@@ -87,18 +84,20 @@ describe "Module#refine" do
     end
   end
 
-  ruby_version_is "2.4" do
-    it "accepts a module as argument" do
-      inner_self = nil
-      Module.new do
-        refine(Enumerable) do
-          def blah
+  quarantine! do # https://bugs.ruby-lang.org/issues/14070
+    ruby_version_is "2.4" do
+      it "accepts a module as argument" do
+        inner_self = nil
+        Module.new do
+          refine(Enumerable) do
+            def blah
+            end
+            inner_self = self
           end
-          inner_self = self
         end
-      end
 
-      inner_self.public_instance_methods.should include(:blah)
+        inner_self.public_instance_methods.should include(:blah)
+      end
     end
   end
 
@@ -616,4 +615,3 @@ describe "Module#refine" do
     end
   end
 end
-

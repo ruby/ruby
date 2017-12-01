@@ -404,6 +404,31 @@ describe "CApiObject" do
     end
   end
 
+  describe "FL_ABLE" do
+    it "returns correct boolean for type" do
+      @o.FL_ABLE(Object.new).should be_true
+      @o.FL_ABLE(true).should be_false
+      @o.FL_ABLE(nil).should be_false
+      @o.FL_ABLE(1).should be_false
+    end
+  end
+
+  describe "FL_TEST" do
+    it "returns correct status for FL_TAINT" do
+      obj = Object.new
+      @o.FL_TEST(obj, "FL_TAINT").should == 0
+      obj.taint
+      @o.FL_TEST(obj, "FL_TAINT").should_not == 0
+    end
+
+    it "returns correct status for FL_FREEZE" do
+      obj = Object.new
+      @o.FL_TEST(obj, "FL_FREEZE").should == 0
+      obj.freeze
+      @o.FL_TEST(obj, "FL_FREEZE").should_not == 0
+    end
+  end
+
   describe "rb_inspect" do
     it "returns a string with the inspect representation" do
       @o.rb_inspect(nil).should == "nil"

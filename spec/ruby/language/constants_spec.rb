@@ -375,6 +375,28 @@ describe "Constant resolution within methods" do
     end
 
   end
+
+  describe "with &&=" do
+    it "re-assigns a scoped constant if already true" do
+      module ConstantSpecs
+        OpAssignTrue = true
+      end
+      suppress_warning do
+        ConstantSpecs::OpAssignTrue &&= 1
+      end
+      ConstantSpecs::OpAssignTrue.should == 1
+      ConstantSpecs.send :remove_const, :OpAssignTrue
+    end
+
+    it "leaves scoped constant if not true" do
+      module ConstantSpecs
+        OpAssignFalse = false
+      end
+      ConstantSpecs::OpAssignFalse &&= 1
+      ConstantSpecs::OpAssignFalse.should == false
+      ConstantSpecs.send :remove_const, :OpAssignFalse
+    end
+  end
 end
 
 describe "Constant resolution within a singleton class (class << obj)" do

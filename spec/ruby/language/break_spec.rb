@@ -24,6 +24,24 @@ describe "The break statement in a block" do
       value.should == :value
     end
   end
+
+  describe "captured and delegated to another method repeatedly" do
+    it "breaks out of the block" do
+      @program.looped_break_in_captured_block
+      ScratchPad.recorded.should ==  [:begin,
+                                      :preloop,
+                                      :predele,
+                                      :preyield,
+                                      :prebreak,
+                                      :postbreak,
+                                      :postyield,
+                                      :postdele,
+                                      :predele,
+                                      :preyield,
+                                      :prebreak,
+                                      :end]
+    end
+  end
 end
 
 describe "The break statement in a captured block" do

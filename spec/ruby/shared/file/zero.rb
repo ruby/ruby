@@ -55,17 +55,9 @@ describe :file_zero, shared: true do
     end
   end
 
-  platform_is_not :windows do
-    it "returns false for a directory" do
-      @object.send(@method, @dir).should == false
-    end
-  end
-
-  platform_is :windows do
-    # see http://redmine.ruby-lang.org/issues/show/449 for background
-    it "returns true for a directory" do
-      @object.send(@method, @dir).should == true
-    end
+  # See https://bugs.ruby-lang.org/issues/449 for background
+  it "returns true or false for a directory" do
+    @object.send(@method, @dir).should be_true_or_false
   end
 end
 

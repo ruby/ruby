@@ -409,6 +409,39 @@ describe "The return keyword" do
         end
       end
 
+      describe "within a class" do
+        ruby_version_is ""..."2.5" do
+          it "is allowed" do
+            File.write(@filename, <<-END_OF_CODE)
+              class A
+                ScratchPad << "before return"
+                return
+
+                ScratchPad << "after return"
+              end
+            END_OF_CODE
+
+            load @filename
+            ScratchPad.recorded.should == ["before return"]
+          end
+        end
+
+        ruby_version_is "2.5" do
+          it "raises a SyntaxError" do
+            File.write(@filename, <<-END_OF_CODE)
+              class A
+                ScratchPad << "before return"
+                return
+
+                ScratchPad << "after return"
+              end
+            END_OF_CODE
+
+            -> { load @filename }.should raise_error(SyntaxError)
+          end
+        end
+      end
+
       describe "file loading" do
         it "stops file loading and execution" do
           File.write(@filename, <<-END_OF_CODE)

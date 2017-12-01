@@ -96,6 +96,12 @@ static VALUE numeric_spec_rb_num_coerce_relop(VALUE self, VALUE x, VALUE y, VALU
 }
 #endif
 
+#ifdef HAVE_RB_ABSINT_SINGLEBIT_P
+static VALUE numeric_spec_rb_absint_singlebit_p(VALUE self, VALUE num) {
+  return INT2FIX(rb_absint_singlebit_p(num));
+}
+#endif
+
 void Init_numeric_spec(void) {
   VALUE cls;
   cls = rb_define_class("CApiNumericSpecs", rb_cObject);
@@ -158,6 +164,10 @@ void Init_numeric_spec(void) {
 
 #ifdef HAVE_RB_NUM_COERCE_RELOP
   rb_define_method(cls, "rb_num_coerce_relop", numeric_spec_rb_num_coerce_relop, 3);
+#endif
+
+#ifdef HAVE_RB_ABSINT_SINGLEBIT_P
+rb_define_method(cls, "rb_absint_singlebit_p", numeric_spec_rb_absint_singlebit_p, 1);
 #endif
 }
 

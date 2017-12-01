@@ -29,4 +29,8 @@ describe "The BEGIN keyword" do
 
     ScratchPad.recorded.should == ['foo', 'bar']
   end
+
+  it "returns the top-level script's filename for __FILE__" do
+    ruby_exe(fixture(__FILE__, "begin_file.rb")).chomp.should =~ /begin_file\.rb$/
+  end
 end

@@ -1,5 +1,6 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../../../core/kernel/shared/sprintf', __FILE__)
 
 describe "StringIO#printf" do
   before :each do
@@ -27,6 +28,14 @@ describe "StringIO#printf" do
 
     @io.printf("%d %04x", 123, 123)
     @io.pos.should eql(16)
+  end
+
+  describe "formatting" do
+    it_behaves_like :kernel_sprintf, -> (format, *args) {
+      io = StringIO.new
+      io.printf(format, *args)
+      io.string
+    }
   end
 end
 
@@ -59,3 +68,4 @@ describe "StringIO#printf when self is not writable" do
     lambda { io.printf("test") }.should raise_error(IOError)
   end
 end
+
