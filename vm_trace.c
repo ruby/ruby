@@ -381,14 +381,13 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;
-    const int volatile tracing = ec->trace_arg ? 1 : 0;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
 
-    if (!tracing) {
+    if (!ec->trace_arg) {
 	vm->trace_running++;
+	ec->trace_arg = &dummy_trace_arg;
     }
-    if (!ec->trace_arg) ec->trace_arg = &dummy_trace_arg;
 
     raised = rb_ec_reset_raised(ec);
 
@@ -402,8 +401,8 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 	rb_ec_reset_raised(ec);
     }
 
-    if (ec->trace_arg == &dummy_trace_arg) ec->trace_arg = NULL;
-    if (!tracing) {
+    if (ec->trace_arg == &dummy_trace_arg) {
+	ec->trace_arg = NULL;
 	vm->trace_running--;
     }
 
