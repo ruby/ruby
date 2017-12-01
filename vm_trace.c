@@ -378,8 +378,8 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
 {
     volatile int raised;
     VALUE result = Qnil;
-    rb_execution_context_t *ec = GET_EC();
-    rb_vm_t *vm = rb_ec_vm_ptr(ec);
+    rb_execution_context_t *const ec = GET_EC();
+    rb_vm_t *const vm = rb_ec_vm_ptr(ec);
     enum ruby_tag_type state;
     rb_trace_arg_t dummy_trace_arg;
     dummy_trace_arg.event = 0;
@@ -392,8 +392,11 @@ rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg)
     raised = rb_ec_reset_raised(ec);
 
     EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+    if (LIKELY((state = EC_EXEC_TAG()) == TAG_NONE)) {
 	result = (*func)(arg);
+    }
+    else {
+	(void)*&vm; /* suppress "clobbered" warning */
     }
     EC_POP_TAG();
 
