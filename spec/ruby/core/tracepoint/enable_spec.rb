@@ -5,20 +5,21 @@ describe 'TracePoint#enable' do
 
   describe 'without a block' do
     it 'returns true if trace was enabled' do
-      event_name, method_name = nil, nil
-      method_name = []
+      event_name = nil
       trace = TracePoint.new(:call) do |tp|
         event_name = tp.event
-        method_name << tp.method_id
       end
 
       test
       event_name.should == nil
 
       trace.enable
-      test
-      event_name.should equal(:call)
-      trace.disable
+      begin
+        test
+        event_name.should equal(:call)
+      ensure
+        trace.disable
+      end
     end
 
     it 'returns false if trace was disabled' do
@@ -29,21 +30,27 @@ describe 'TracePoint#enable' do
       end
 
       trace.enable.should be_false
-      event_name.should equal(:call)
-      test
-      method_name.equal?(:test).should be_true
+      begin
+        event_name.should equal(:call)
+        test
+        method_name.equal?(:test).should be_true
+      ensure
+        trace.disable
+      end
 
-      trace.disable
       event_name, method_name = nil
       test
       method_name.equal?(:test).should be_false
       event_name.should equal(nil)
 
       trace.enable.should be_false
-      event_name.should equal(:call)
-      test
-      method_name.equal?(:test).should be_true
-      trace.disable
+      begin
+        event_name.should equal(:call)
+        test
+        method_name.equal?(:test).should be_true
+      ensure
+        trace.disable
+      end
     end
   end
 
@@ -71,9 +78,12 @@ describe 'TracePoint#enable' do
       enabled = nil
       trace = TracePoint.new(:line) {}
       trace.enable
-      trace.enable { enabled = trace.enabled? }
-      enabled.should == true
-      trace.disable
+      begin
+        trace.enable { enabled = trace.enabled? }
+        enabled.should == true
+      ensure
+        trace.disable
+      end
     end
 
     it 'returns value returned by the block' do
