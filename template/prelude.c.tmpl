@@ -9,6 +9,8 @@ class Prelude
   LINE_LIMIT = 509 # by C89
 
   C_ESC = {
+    "/*" => "/\\*",
+    "*/" => "*\\/",
     "\\" => "\\\\",
     '"' => '\"',
     "\n" => '\n',
@@ -19,7 +21,7 @@ class Prelude
   C_ESC_PAT = Regexp.union(*C_ESC.keys)
 
   def c_esc(str)
-    '"' + str.gsub(C_ESC_PAT) { C_ESC[$&] } + '"'
+    str.gsub(C_ESC_PAT) { C_ESC[$&] }
   end
   def prelude_base(filename)
     filename.chomp(".rb")
@@ -83,7 +85,7 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 % preludes = @preludes.values.sort
 % preludes.each {|i, prelude, lines, sub|
 
-static const char prelude_name<%=i%><%=%>[] = <%=c_esc(prelude_name(*prelude))%><%=%>;
+static const char prelude_name<%=i%><%=%>[] = "<%=c_esc(prelude_name(*prelude))%>";
 static const struct {
 %   size = beg = 0
 %   lines.each_with_index {|(line, comment), n|
@@ -100,15 +102,15 @@ static const struct {
 %   end
 } prelude_code<%=i%><%=%> = {
 %   size = 0
-#line 1 <%=c_esc(prelude)%>
+#line 1 "<%=c_esc(prelude)%>"
 %   lines.each_with_index {|(line, comment), n|
 %     if size + line.size >= Prelude::LINE_LIMIT
 %       size = 0
 ,
-#line <%=n+1%> <%=c_esc(prelude)%>
+#line <%=n+1%> "<%=c_esc(prelude)%>"
 %     end
 %     size += line.size
-<%=c_esc(line)%><%=%><%if comment%>/* <%=comment%> */<%end%>
+"<%=c_esc(line)%>"<%if comment%>/* <%=c_esc(comment)%> */<%end%>
 %   }
 #line <%=_erbout.count("\n")+2%> "<%=@init_name%>.c"
 };
