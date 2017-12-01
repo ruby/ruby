@@ -7,7 +7,7 @@ describe "DateTime.now" do
   end
 
   it "sets the current date" do
-    (DateTime.now - Date.today).to_f.should be_close(0.0, 1.0)
+    (DateTime.now - Date.today).to_f.should be_close(0.0, 2.0)
   end
 
   it "sets the current time" do

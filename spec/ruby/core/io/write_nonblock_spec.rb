@@ -32,7 +32,9 @@ platform_is_not :windows do
     end
 
     it "checks if the file is writable if writing zero bytes" do
-      lambda { @readonly_file.write_nonblock("") }.should raise_error
+      lambda {
+         @readonly_file.write_nonblock("")
+      }.should raise_error(IOError)
     end
   end
 
@@ -73,4 +75,12 @@ describe 'IO#write_nonblock' do
     end
   end
 
+  platform_is_not :windows do
+    it 'sets the IO in nonblock mode' do
+      require 'io/nonblock'
+      @write.nonblock?.should == false
+      @write.write_nonblock('a')
+      @write.nonblock?.should == true
+    end
+  end
 end

@@ -2,7 +2,6 @@ require File.expand_path('../../../spec_helper', __FILE__)
 
 ruby_version_is "2.0.0" do
   require File.expand_path('../fixtures/classes', __FILE__)
-  require File.expand_path('../fixtures/string_refinement', __FILE__)
 
   describe "main.using" do
     it "requires one Module argument" do
@@ -16,6 +15,7 @@ ruby_version_is "2.0.0" do
     end
 
     it "uses refinements from the given module only in the target file" do
+      require File.expand_path('../fixtures/string_refinement', __FILE__)
       load File.expand_path('../fixtures/string_refinement_user.rb', __FILE__)
       MainSpecs::DATA[:in_module].should == 'foo'
       MainSpecs::DATA[:toplevel].should == 'foo'
@@ -25,6 +25,7 @@ ruby_version_is "2.0.0" do
     end
 
     it "uses refinements from the given module for method calls in the target file" do
+      require File.expand_path('../fixtures/string_refinement', __FILE__)
       load File.expand_path('../fixtures/string_refinement_user.rb', __FILE__)
       lambda do
         'hello'.foo

@@ -5,6 +5,32 @@
 extern "C" {
 #endif
 
+#ifdef HAVE_FL_ABLE
+static VALUE object_spec_FL_ABLE(VALUE self, VALUE obj) {
+  if (FL_ABLE(obj)) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
+}
+#endif
+
+#ifdef HAVE_FL_TEST
+static int object_spec_FL_TEST_flag(VALUE flag_string) {
+  char *flag_cstr = StringValueCStr(flag_string);
+  if (strcmp(flag_cstr, "FL_TAINT") == 0) {
+    return FL_TAINT;
+  } else if (strcmp(flag_cstr, "FL_FREEZE") == 0) {
+    return FL_FREEZE;
+  }
+  return 0;
+}
+
+static VALUE object_spec_FL_TEST(VALUE self, VALUE obj, VALUE flag) {
+  return INT2FIX(FL_TEST(obj, object_spec_FL_TEST_flag(flag)));
+}
+#endif
+
 #ifdef HAVE_OBJ_TAINT
 static VALUE object_spec_OBJ_TAINT(VALUE self, VALUE obj) {
   OBJ_TAINT(obj);
@@ -204,7 +230,11 @@ static VALUE object_spec_rb_method_boundp(VALUE self, VALUE obj, VALUE method, V
 
 #ifdef HAVE_RB_SPECIAL_CONST_P
 static VALUE object_spec_rb_special_const_p(VALUE self, VALUE value) {
-  return rb_special_const_p(value);
+  if (rb_special_const_p(value)) {
+    return Qtrue;
+  } else {
+    return Qfalse;
+  }
 }
 #endif
 
@@ -403,6 +433,14 @@ static VALUE object_spec_rb_class_inherited_p(VALUE self, VALUE mod, VALUE arg) 
 void Init_object_spec(void) {
   VALUE cls;
   cls = rb_define_class("CApiObjectSpecs", rb_cObject);
+
+#ifdef HAVE_FL_ABLE
+  rb_define_method(cls, "FL_ABLE", object_spec_FL_ABLE, 1);
+#endif
+
+#ifdef HAVE_FL_TEST
+  rb_define_method(cls, "FL_TEST", object_spec_FL_TEST, 2);
+#endif
 
 #ifdef HAVE_OBJ_TAINT
   rb_define_method(cls, "OBJ_TAINT", object_spec_OBJ_TAINT, 1);

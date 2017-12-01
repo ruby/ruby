@@ -1,5 +1,4 @@
 require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/using', __FILE__)
 
 describe "Module#using" do
   it "imports class refinements from module into the current class/module" do
@@ -90,7 +89,7 @@ describe "Module#using" do
   it "raises error in method scope" do
     mod = Module.new do
       def self.foo
-        using ModuleSpecs::EmptyRefinement
+        using Module.new {}
       end
     end
 
@@ -156,7 +155,11 @@ describe "Module#using" do
 
       Module.new do
         Class.new do
-          using ModuleSpecs::RefinementForStringToS
+          using Module.new {
+            refine String do
+              def to_s; "hello from refinement"; end
+            end
+          }
           ScratchPad << "1".to_s
         end
 
@@ -175,7 +178,11 @@ describe "Module#using" do
       Module.new do
         Class.new do
           ScratchPad << "1".to_s
-          using ModuleSpecs::RefinementForStringToS
+          using Module.new {
+            refine String do
+              def to_s; "hello from refinement"; end
+            end
+          }
           ScratchPad << "1".to_s
         end
       end
@@ -241,7 +248,11 @@ describe "Module#using" do
 
       Module.new do
         if false
-          using ModuleSpecs::RefinementForStringToS
+          using Module.new {
+            refine String do
+              def to_s; "hello from refinement"; end
+            end
+          }
         end
         result = "1".to_s
       end

@@ -16,7 +16,9 @@ describe "Socket::IPSocket#peeraddr" do
   end
 
   it "raises error if socket is not connected" do
-    lambda { @server.peeraddr }.should raise_error
+    lambda {
+      @server.peeraddr
+    }.should raise_error(Errno::ENOTCONN)
   end
 
   it "returns an array of information on the peer" do
