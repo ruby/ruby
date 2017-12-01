@@ -207,6 +207,9 @@ Zachary Scott (zzak)
 
 === Libraries
 
+[lib/bundler.rb, lib/bundler/*]
+  Hiroshi SHIBATA (hsbt)
+  https://github.com/bundler/bundler
 [lib/cmath.rb]
   _unmaintained_
 [lib/csv.rb]
