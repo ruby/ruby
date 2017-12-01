@@ -4983,7 +4983,7 @@ assoc		: arg_value tASSOC arg_value
 		| tLABEL arg_value
 		    {
 		    /*%%%*/
-			$$ = list_append(new_list(new_lit(ID2SYM($1), &@$), &@$), $2, &@$);
+			$$ = list_append(new_list(new_lit(ID2SYM($1), &@1), &@$), $2, &@$);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $2);
 		    %*/
