@@ -140,6 +140,9 @@ class Binding
     require 'irb'
     irb
   end
+
+  # suppress redefinition warning
+  alias irb irb # :nodoc:
 end
 
 module Kernel
@@ -150,4 +153,7 @@ module Kernel
     require 'pp'
     pp(*objs)
   end
+
+  # suppress redefinition warning
+  alias pp pp # :nodoc:
 end
