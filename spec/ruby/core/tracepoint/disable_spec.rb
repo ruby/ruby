@@ -3,18 +3,18 @@ require File.expand_path('../../../spec_helper', __FILE__)
 describe 'TracePoint#disable' do
   def test; end
   it 'returns true if trace was enabled' do
-    event_name, method_name = nil
+    called = false
     trace = TracePoint.new(:call) do |tp|
-      event_name = tp.event
-      method_name = tp.method_id
+      called = true
     end
 
     trace.enable
     trace.disable.should be_true
-    event_name, method_name = nil
+
+    # Check the TracePoint is disabled
+    called = false
     test
-    method_name.equal?(:test).should be_false
-    event_name.should equal(nil)
+    called.should == false
   end
 
   it 'returns false if trace was disabled' do
@@ -35,18 +35,24 @@ describe 'TracePoint#disable' do
     enabled = nil
     trace = TracePoint.new(:line) {}
     trace.enable
-    trace.disable { enabled = trace.enabled? }
-    enabled.should be_false
-    trace.enabled?.should be_true
-    trace.disable
+    begin
+      trace.disable { enabled = trace.enabled? }
+      enabled.should be_false
+      trace.enabled?.should be_true
+    ensure
+      trace.disable
+    end
   end
 
   it 'is disabled within a block & also returns false when its called with a block' do
     trace = TracePoint.new(:line) {}
     trace.enable
-    trace.disable { trace.enabled? }.should == false
-    trace.enabled?.should equal(true)
-    trace.disable
+    begin
+      trace.disable { trace.enabled? }.should == false
+      trace.enabled?.should equal(true)
+    ensure
+      trace.disable
+    end
   end
 
   ruby_bug "#14057", "2.0"..."2.5" do
@@ -54,11 +60,14 @@ describe 'TracePoint#disable' do
       event_name = nil
       trace = TracePoint.new(:line) {}
       trace.enable
-      trace.disable do |*args|
-        args.should == []
+      begin
+        trace.disable do |*args|
+          args.should == []
+        end
+        trace.enabled?.should be_true
+      ensure
+        trace.disable
       end
-      trace.enabled?.should be_true
-      trace.disable
     end
   end
 end
