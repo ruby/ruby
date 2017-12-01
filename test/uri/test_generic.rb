@@ -20,6 +20,10 @@ class URI::TestGeneric < Test::Unit::TestCase
     str = URI(exp).to_s
     assert_equal exp, str
     assert_not_predicate str, :frozen?, '[ruby-core:71785] [Bug #11759]'
+
+    assert_equal "file:///foo", URI("file:///foo").to_s
+    assert_equal "postgres:///foo", URI("postgres:///foo").to_s
+    assert_equal "http:/foo", URI("http:///foo").to_s
   end
 
   def test_parse
