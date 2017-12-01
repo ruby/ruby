@@ -3644,7 +3644,7 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       if (IS_SYNTAX_OP(syn, ONIG_SYN_OP_ESC_OCTAL3)) {
 	prev = p;
 	num = scan_unsigned_octal_number(&p, end, (c == '0' ? 2:3), enc);
-	if (num < 0) return ONIGERR_TOO_BIG_NUMBER;
+	if (num < 0 || 0xff < num) return ONIGERR_TOO_BIG_NUMBER;
 	if (p == prev) {  /* can't read nothing. */
 	  num = 0; /* but, it's not error */
 	}
@@ -4440,8 +4440,8 @@ next_state_class(CClassNode* cc, CClassNode* asc_cc,
 
 static int
 next_state_val(CClassNode* cc, CClassNode* asc_cc,
-	       OnigCodePoint *vs, OnigCodePoint v,
-	       int* vs_israw, int v_israw,
+	       OnigCodePoint *from, OnigCodePoint to,
+	       int* from_israw, int to_israw,
 	       enum CCVALTYPE intype, enum CCVALTYPE* type,
 	       enum CCSTATE* state, ScanEnv* env)
 {
@@ -4450,15 +4450,15 @@ next_state_val(CClassNode* cc, CClassNode* asc_cc,
   switch (*state) {
   case CCS_VALUE:
     if (*type == CCV_SB) {
-      BITSET_SET_BIT_CHKDUP(cc->bs, (int )(*vs));
+      BITSET_SET_BIT_CHKDUP(cc->bs, (int )(*from));
       if (IS_NOT_NULL(asc_cc))
-	BITSET_SET_BIT(asc_cc->bs, (int )(*vs));
+	BITSET_SET_BIT(asc_cc->bs, (int )(*from));
     }
     else if (*type == CCV_CODE_POINT) {
-      r = add_code_range(&(cc->mbuf), env, *vs, *vs);
+      r = add_code_range(&(cc->mbuf), env, *from, *from);
       if (r < 0) return r;
       if (IS_NOT_NULL(asc_cc)) {
-	r = add_code_range0(&(asc_cc->mbuf), env, *vs, *vs, 0);
+	r = add_code_range0(&(asc_cc->mbuf), env, *from, *from, 0);
 	if (r < 0) return r;
       }
     }
@@ -4467,51 +4467,43 @@ next_state_val(CClassNode* cc, CClassNode* asc_cc,
   case CCS_RANGE:
     if (intype == *type) {
       if (intype == CCV_SB) {
-	if (*vs > 0xff || v > 0xff)
+	if (*from > 0xff || to > 0xff)
 	  return ONIGERR_INVALID_CODE_POINT_VALUE;
 
-	if (*vs > v) {
+	if (*from > to) {
 	  if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC))
 	    goto ccs_range_end;
 	  else
 	    return ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS;
 	}
-	bitset_set_range(env, cc->bs, (int )*vs, (int )v);
+	bitset_set_range(env, cc->bs, (int )*from, (int )to);
 	if (IS_NOT_NULL(asc_cc))
-	  bitset_set_range(env, asc_cc->bs, (int )*vs, (int )v);
+	  bitset_set_range(env, asc_cc->bs, (int )*from, (int )to);
       }
       else {
-	r = add_code_range(&(cc->mbuf), env, *vs, v);
+	r = add_code_range(&(cc->mbuf), env, *from, to);
 	if (r < 0) return r;
 	if (IS_NOT_NULL(asc_cc)) {
-	  r = add_code_range0(&(asc_cc->mbuf), env, *vs, v, 0);
+	  r = add_code_range0(&(asc_cc->mbuf), env, *from, to, 0);
 	  if (r < 0) return r;
 	}
       }
     }
     else {
-#if 0
-      if (intype == CCV_CODE_POINT && *type == CCV_SB) {
-#endif
-	if (*vs > v) {
-	  if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC))
-	    goto ccs_range_end;
-	  else
-	    return ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS;
-	}
-	bitset_set_range(env, cc->bs, (int )*vs, (int )(v < 0xff ? v : 0xff));
-	r = add_code_range(&(cc->mbuf), env, (OnigCodePoint )*vs, v);
-	if (r < 0) return r;
-	if (IS_NOT_NULL(asc_cc)) {
-	  bitset_set_range(env, asc_cc->bs, (int )*vs, (int )(v < 0xff ? v : 0xff));
-	  r = add_code_range0(&(asc_cc->mbuf), env, (OnigCodePoint )*vs, v, 0);
-	  if (r < 0) return r;
-	}
-#if 0
+      if (*from > to) {
+	if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_ALLOW_EMPTY_RANGE_IN_CC))
+	  goto ccs_range_end;
+	else
+	  return ONIGERR_EMPTY_RANGE_IN_CHAR_CLASS;
       }
-      else
-	return ONIGERR_MISMATCH_CODE_LENGTH_IN_CLASS_RANGE;
-#endif
+      bitset_set_range(env, cc->bs, (int )*from, (int )(to < 0xff ? to : 0xff));
+      r = add_code_range(&(cc->mbuf), env, (OnigCodePoint )*from, to);
+      if (r < 0) return r;
+      if (IS_NOT_NULL(asc_cc)) {
+	bitset_set_range(env, asc_cc->bs, (int )*from, (int )(to < 0xff ? to : 0xff));
+	r = add_code_range0(&(asc_cc->mbuf), env, (OnigCodePoint )*from, to, 0);
+	if (r < 0) return r;
+      }
     }
   ccs_range_end:
     *state = CCS_COMPLETE;
@@ -4526,9 +4518,9 @@ next_state_val(CClassNode* cc, CClassNode* asc_cc,
     break;
   }
 
-  *vs_israw = v_israw;
-  *vs       = v;
-  *type     = intype;
+  *from_israw = to_israw;
+  *from       = to;
+  *type       = intype;
   return 0;
 }
 
@@ -4767,6 +4759,12 @@ parse_char_class(Node** np, Node** asc_np, OnigToken* tok, UChar** src, UChar* e
 	  CC_ESC_WARN(env, (UChar* )"-");
 	  goto range_end_val;
 	}
+
+	if (val_type == CCV_CLASS) {
+	  r = ONIGERR_UNMATCHED_RANGE_SPECIFIER_IN_CHAR_CLASS;
+	  goto err;
+	}
+
 	state = CCS_RANGE;
       }
       else if (state == CCS_START) {
