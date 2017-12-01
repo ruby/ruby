@@ -50,7 +50,7 @@ DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_struct_ptr);
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
 
 /* vm.c */
-DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_frame_method_id_and_class);
+DEPRECATED(int rb_frame_method_id_and_class(ID *idp, VALUE *klassp));
 
 /* from version.c */
 #ifndef RUBY_SHOW_COPYRIGHT_TO_DIE
