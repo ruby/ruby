@@ -126,6 +126,7 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
+  https://github.com/rubygems/rubygems
 [lib/set.rb]
   Akinori MUSHA (knu)
 [lib/securerandom.rb]
@@ -212,15 +213,19 @@ Zachary Scott (zzak)
   https://github.com/bundler/bundler
 [lib/cmath.rb]
   _unmaintained_
+  https://github.com/ruby/cmath
 [lib/csv.rb]
   James Edward Gray II (jeg2)
+  https://github.com/ruby/csv
 [lib/fileutils.rb]
   _unmaintained_
+  https://github.com/ruby/fileutils
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
-  https://github.com/rdoc/rdoc
+  https://github.com/ruby/rdoc
 [lib/scanf.rb]
   David A. Black (dblack)
+  https://github.com/ruby/scanf
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/
@@ -232,18 +237,25 @@ Zachary Scott (zzak)
   https://github.com/ruby/bigdecimal
 [ext/date]
   _unmaintained_
+  https://github.com/ruby/date
 [ext/dbm]
   _unmaintained_
+  https://github.com/ruby/dbm
 [ext/etc]
   _unmaintained_
+  https://github.com/ruby/etc
 [ext/fcntl]
   _unmaintained_
+  https://github.com/ruby/fcntl
 [ext/fiddle]
   Aaron Patterson (tenderlove)
+  https://github.com/ruby/fiddle
 [ext/gdbm]
   Yukihiro Matsumoto (matz)
+  https://github.com/ruby/gdbm
 [ext/io/console]
   Nobuyuki Nakada (nobu)
+  https://github.com/ruby/io-console
 [ext/json]
   NARUSE, Yui (naruse), Hiroshi SHIBATA (hsbt)
   https://github.com/flori/json
@@ -255,12 +267,16 @@ Zachary Scott (zzak)
   https://github.com/ruby/psych
 [ext/sdbm]
   Yukihiro Matsumoto (matz)
+  https://github.com/ruby/sdbm
 [ext/stringio]
   Nobuyuki Nakada (nobu)
+  https://github.com/ruby/stringio
 [ext/strscan]
   _unmaintained_
+  https://github.com/ruby/strscan
 [ext/zlib]
   _unmaintained_
+  https://github.com/ruby/zlib
 
 == Bundled gems upstream repositories
 
