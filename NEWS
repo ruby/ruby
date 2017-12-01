@@ -82,11 +82,6 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Module#attr, attr_accessor, attr_reader, attr_writer are now public [#14132]
   * Module#define_method, alias_method, undef_method, remove_method are now public [#14133]
 
-* Net::HTTP
-
-  * Net::HTTP.new supports no_proxy parameter [Feature #11195]
-  * Net::HTTP#min_version/max_version [Feature #9450]
-
 * Numeric
 
   * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions
@@ -173,6 +168,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Show source around `binding.irb` on session start [Feature #14124]
 
 * Net::HTTP
+  * Net::HTTP.new supports no_proxy parameter [Feature #11195]
+
+  * Net::HTTP#min_version/max_version [Feature #9450]
+
   * Add more HTTP status classes
 
   * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
