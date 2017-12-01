@@ -37,13 +37,6 @@ module Psych
       assert_equal str, Psych.load(yaml)
     end
 
-    def test_doublequotes_when_there_are_single_quotes_only
-      str = "psych: Please don't escape ' with ' here."
-      yaml = Psych.dump str
-      assert_equal "--- \"psych: Please don't escape ' with ' here.\"\n", yaml
-      assert_equal str, Psych.load(yaml)
-    end
-
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12

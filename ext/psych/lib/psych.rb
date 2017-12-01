@@ -252,6 +252,13 @@ module Psych
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
+  #
+  # When the optional +symbolize_names+ keyword argument is set to a
+  # true value, returns symbols for keys in Hash objects (default: strings).
+  #
+  #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #
   def self.load yaml, filename = nil, fallback = false, symbolize_names: false
     result = parse(yaml, filename, fallback)
     result = result.to_ruby if result
@@ -293,7 +300,7 @@ module Psych
   #
   # A Psych::BadAlias exception will be raised if the yaml contains aliases
   # but the +aliases+ parameter is set to false.
-  def self.safe_load yaml, whitelist_classes = [], whitelist_symbols = [], aliases = false, filename = nil
+  def self.safe_load yaml, whitelist_classes = [], whitelist_symbols = [], aliases = false, filename = nil, symbolize_names: false
     result = parse(yaml, filename)
     return unless result
 
@@ -305,7 +312,9 @@ module Psych
     else
       visitor = Visitors::NoAliasRuby.new scanner, class_loader
     end
-    visitor.accept result
+    result = visitor.accept result
+    symbolize_names!(result) if symbolize_names
+    result
   end
 
   ###
