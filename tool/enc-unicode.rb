@@ -539,6 +539,7 @@ if header
       f.each {|line|
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
+        line.sub!(/^(uniname2ctype_(hash|p) *\(.* )size_t /, '\1unsigned int ')
         puts line
       }
     }
