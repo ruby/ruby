@@ -1011,6 +1011,10 @@ rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
     VALUE str;
     const int eidx = rb_enc_to_index(eenc);
 
+    if (!ptr) {
+	return rb_tainted_str_new_with_enc(ptr, len, eenc);
+    }
+
     /* ASCII-8BIT case, no conversion */
     if ((eidx == rb_ascii8bit_encindex()) ||
 	(eidx == rb_usascii_encindex() && search_nonascii(ptr, ptr + len))) {
