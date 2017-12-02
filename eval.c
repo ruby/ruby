@@ -1304,6 +1304,10 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 	}
     }
     FL_SET(module, RMODULE_IS_OVERLAID);
+    if (RB_TYPE_P(superclass, T_MODULE)) {
+	superclass = rb_include_class_new(superclass,
+					  RCLASS_SUPER(superclass));
+    }
     c = iclass = rb_include_class_new(module, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
 
@@ -1398,6 +1402,10 @@ add_activated_refinement(VALUE activated_refinements,
 	}
     }
     FL_SET(refinement, RMODULE_IS_OVERLAID);
+    if (RB_TYPE_P(superclass, T_MODULE)) {
+	superclass = rb_include_class_new(superclass,
+					  RCLASS_SUPER(superclass));
+    }
     c = iclass = rb_include_class_new(refinement, superclass);
     RCLASS_REFINED_CLASS(c) = klass;
     refinement = RCLASS_SUPER(refinement);
@@ -1453,7 +1461,12 @@ rb_mod_refine(VALUE module, VALUE klass)
     refinement = rb_hash_lookup(refinements, klass);
     if (NIL_P(refinement)) {
 	refinement = rb_module_new();
-	RCLASS_SET_SUPER(refinement, klass);
+	if (RB_TYPE_P(klass, T_MODULE)) {
+	    rb_include_module(refinement, klass);
+	}
+	else {
+	    RCLASS_SET_SUPER(refinement, klass);
+	}
 	FL_SET(refinement, RMODULE_IS_REFINEMENT);
 	CONST_ID(id_refined_class, "__refined_class__");
 	rb_ivar_set(refinement, id_refined_class, klass);

@@ -2036,6 +2036,25 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_refining_module_repeatedly
+    bug14070 = '[ruby-core:83617] [Bug #14070]'
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070)
+      1000.times do
+        Class.new do
+          include Enumerable
+        end
+
+        Module.new do
+          refine Enumerable do
+            def foo
+            end
+          end
+        end
+      end
+      puts "ok"
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)
