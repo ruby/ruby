@@ -16,12 +16,14 @@ gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 10.0.0
+UNICODE_EMOJI_VERSION = 5.0
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
 # ALWAYS_UPDATE_UNICODE = yes
-UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)
+UNICODE_DATA_DIR = enc/unicode/data/$(UNICODE_VERSION)/ucd
 UNICODE_SRC_DATA_DIR = $(srcdir)/$(UNICODE_DATA_DIR)
+UNICODE_SRC_EMOJI_DATA_DIR = $(srcdir)/enc/unicode/data/emoji/$(UNICODE_EMOJI_VERSION)
 UNICODE_HDR_DIR = $(srcdir)/enc/unicode/$(UNICODE_VERSION)
 UNICODE_DATA_HEADERS = \
 	$(UNICODE_HDR_DIR)/casefold.h \
@@ -1207,14 +1209,24 @@ UNICODE_PROPERTY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
 		$(empty)
 
+UNICODE_EMOJI_FILES = \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-data.txt \
+		$(empty)
+
 update-unicode: $(UNICODE_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
 	$(BASERUBY) $(srcdir)/tool/downloader.rb \
 	    --cache-dir=$(CACHE_DIR) \
-	    -d $(srcdir)/$(UNICODE_DATA_DIR) \
+	    -d $(UNICODE_SRC_DATA_DIR) \
 	    -p $(UNICODE_VERSION)/ucd \
+	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
+UNICODE_EMOJI_DOWNLOAD = \
+	$(BASERUBY) $(srcdir)/tool/downloader.rb \
+	    --cache-dir=$(CACHE_DIR) \
+	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
+	    -p emoji/$(UNICODE_EMOJI_VERSION) \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 
 $(UNICODE_PROPERTY_FILES): update-unicode-property-files
@@ -1222,6 +1234,9 @@ update-unicode-property-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_PROPERTY_FILES)
+	$(ECHO) Downloading Unicode emoji $(UNICODE_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
+	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
 
 $(UNICODE_FILES): update-unicode-files
 update-unicode-files:
@@ -1259,7 +1274,9 @@ $(UNICODE_HDR_DIR)/$(ALWAYS_UPDATE_UNICODE:yes=name2ctype.h): \
 
 $(UNICODE_HDR_DIR)/name2ctype.h:
 	$(MAKEDIRS) $(@D)
-	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header $(UNICODE_SRC_DATA_DIR) > $@
+	$(BOOTSTRAPRUBY) $(srcdir)/tool/enc-unicode.rb --header \
+		$(UNICODE_SRC_DATA_DIR) $(UNICODE_SRC_EMOJI_DATA_DIR) > $@.new
+	$(MV) $@.new $@
 
 # the next non-comment line was:
 # $(UNICODE_HDR_DIR)/casefold.h: $(srcdir)/enc/unicode/case-folding.rb \
