@@ -1419,7 +1419,7 @@ static const CaseFold_11_Type CaseFold_11_Table[] = {
   {0x0130, {2|F|D, {0x0069, 0x0307}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf -7 -k1,2,3 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseFold_11_hash -N onigenc_unicode_CaseFold_11_lookup -n  */
 
 /* maximum key range = 3623, duplicates = 0 */
@@ -1462,12 +1462,6 @@ onigenc_unicode_CaseFold_11_hash(const OnigCodePoint code)
   return asso_values[bits_of(code, 2)+81] + asso_values[bits_of(code, 1)+2] + asso_values[bits_of(code, 0)];
 }
 
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 static const CodePointList3 *
 onigenc_unicode_CaseFold_11_lookup(const OnigCodePoint code)
 {
@@ -3583,9 +3577,9 @@ onigenc_unicode_CaseFold_11_lookup(const OnigCodePoint code)
 
   if (code <= MAX_CODE_VALUE && code >= MIN_CODE_VALUE)
     {
-      register int key = onigenc_unicode_CaseFold_11_hash(code);
+      register unsigned int key = onigenc_unicode_CaseFold_11_hash(code);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register short s = wordlist[key];
 
@@ -4868,7 +4862,7 @@ static const CaseUnfold_11_Type CaseUnfold_11_Table[] = {
   {0x0069, {1|U, {0x0049}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf -7 -k1,2,3 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_11_hash -N onigenc_unicode_CaseUnfold_11_lookup -n  */
 
 /* maximum key range = 2216, duplicates = 0 */
@@ -4910,12 +4904,6 @@ onigenc_unicode_CaseUnfold_11_hash(const OnigCodePoint code)
   return asso_values[bits_of(code, 2)+66] + asso_values[bits_of(code, 1)+4] + asso_values[bits_of(code, 0)];
 }
 
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 static const CodePointList3 *
 onigenc_unicode_CaseUnfold_11_lookup(const OnigCodePoint code)
 {
@@ -6602,9 +6590,9 @@ onigenc_unicode_CaseUnfold_11_lookup(const OnigCodePoint code)
 
   if (code <= MAX_CODE_VALUE && code >= MIN_CODE_VALUE)
     {
-      register int key = onigenc_unicode_CaseUnfold_11_hash(code);
+      register unsigned int key = onigenc_unicode_CaseUnfold_11_hash(code);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register short s = wordlist[key];
 
@@ -6679,7 +6667,7 @@ static const CaseUnfold_12_Type CaseUnfold_12_Table[] = {
   {{0x0069, 0x0307}, {1, {0x0130}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf -7 -k1,2,3,4,5,6 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_12_hash -N onigenc_unicode_CaseUnfold_12_lookup -n  */
 
 /* maximum key range = 71, duplicates = 0 */
@@ -6714,12 +6702,6 @@ onigenc_unicode_CaseUnfold_12_hash(const OnigCodePoint *codes)
   return asso_values[bits_at(codes, 5)] + asso_values[bits_at(codes, 4)] + asso_values[bits_at(codes, 3)] + asso_values[bits_at(codes, 2)] + asso_values[bits_at(codes, 1)] + asso_values[bits_at(codes, 0)];
 }
 
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 static const CodePointList2 *
 onigenc_unicode_CaseUnfold_12_lookup(const OnigCodePoint *codes)
 {
@@ -6804,9 +6786,9 @@ onigenc_unicode_CaseUnfold_12_lookup(const OnigCodePoint *codes)
   if (codes[0] <= MAX_CODE_VALUE && codes[0] >= MIN_CODE_VALUE &&
       codes[1] <= MAX_CODE_VALUE && codes[1] >= MIN_CODE_VALUE)
     {
-      register int key = onigenc_unicode_CaseUnfold_12_hash(codes);
+      register unsigned int key = onigenc_unicode_CaseUnfold_12_hash(codes);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register short s = wordlist[key];
 
@@ -6835,7 +6817,7 @@ static const CaseUnfold_13_Type CaseUnfold_13_Table[] = {
   {{0x03c9, 0x0342, 0x03b9}, {1, {0x1ff7}}},
 };
 
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf -7 -k1,2,3,4,5,6,7,8,9 -F,-1 -c -j1 -i1 -t -T -E -C -H onigenc_unicode_CaseUnfold_13_hash -N onigenc_unicode_CaseUnfold_13_lookup -n  */
 
 /* maximum key range = 20, duplicates = 0 */
@@ -6870,12 +6852,6 @@ onigenc_unicode_CaseUnfold_13_hash(const OnigCodePoint *codes)
   return asso_values[bits_at(codes, 8)] + asso_values[bits_at(codes, 7)] + asso_values[bits_at(codes, 6)] + asso_values[bits_at(codes, 5)] + asso_values[bits_at(codes, 4)] + asso_values[bits_at(codes, 3)] + asso_values[bits_at(codes, 2)] + asso_values[bits_at(codes, 1)] + asso_values[bits_at(codes, 0)];
 }
 
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 static const CodePointList2 *
 onigenc_unicode_CaseUnfold_13_lookup(const OnigCodePoint *codes)
 {
@@ -6918,9 +6894,9 @@ onigenc_unicode_CaseUnfold_13_lookup(const OnigCodePoint *codes)
       codes[1] <= MAX_CODE_VALUE && codes[1] >= MIN_CODE_VALUE &&
       codes[2] <= MAX_CODE_VALUE && codes[2] >= MIN_CODE_VALUE)
     {
-      register int key = onigenc_unicode_CaseUnfold_13_hash(codes);
+      register unsigned int key = onigenc_unicode_CaseUnfold_13_hash(codes);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register short s = wordlist[key];
 

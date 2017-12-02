@@ -14,8 +14,8 @@ if ARGV[0] == "--header"
   header = true
   ARGV.shift
 end
-unless ARGV.size == 1
-  abort "Usage: #{$0} data_directory"
+unless ARGV.size == 2
+  abort "Usage: #{$0} data_directory emoji_data_directory"
 end
 
 $unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
@@ -302,7 +302,7 @@ def constantize_blockname(name)
 end
 
 def get_file(name)
-  File.join(ARGV[0], name)
+  File.join(ARGV[name.start_with?("emoji-") ? 1 : 0], name)
 end
 
 def data_foreach(name, &block)
