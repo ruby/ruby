@@ -1,6 +1,6 @@
 #include "ruby.h"
 
-#define init(n) {void Init_##n(VALUE klass); Init_##n(klass);}
+#define init(n) {void Init_time_##n(VALUE klass); Init_time_##n(klass);}
 
 void
 Init_time(void)

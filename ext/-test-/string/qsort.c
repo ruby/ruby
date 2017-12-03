@@ -55,7 +55,7 @@ bug_str_qsort_bang(int argc, VALUE *argv, VALUE str)
 }
 
 void
-Init_qsort(VALUE klass)
+Init_string_qsort(VALUE klass)
 {
     rb_define_method(klass, "qsort!", bug_str_qsort_bang, -1);
 }

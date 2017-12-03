@@ -14,7 +14,7 @@ bug_external_str_new(VALUE self, VALUE len, VALUE enc)
 }
 
 void
-Init_new(VALUE klass)
+Init_string_new(VALUE klass)
 {
     rb_define_singleton_method(klass, "buf_new", bug_str_buf_new, 1);
     rb_define_singleton_method(klass, "external_new", bug_external_str_new, 2);

@@ -11,7 +11,7 @@ bug_str_capacity(VALUE klass, VALUE str)
 }
 
 void
-Init_capacity(VALUE klass)
+Init_string_capacity(VALUE klass)
 {
     rb_define_singleton_method(klass, "capacity", bug_str_capacity, 1);
 }
