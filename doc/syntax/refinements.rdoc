@@ -256,6 +256,29 @@ method lookup.
 
 This behavior may be changed in the future.
 
+== Refinement inheritance by Module#include
+
+When a module X is included into a module Y, Y inherits refinments from X.
+
+For exmaple, C inherits refinements from A and B in the following code:
+
+  module A
+    refine X do ... end
+    refine Y do ... end
+  end
+  module B
+    refine Z do ... end
+  end
+  module C
+    include A
+    include B
+  end
+
+  using C
+  # Refinements in A and B are activated here.
+
+Refinements in descendents have higher precedence than those of ancestors.
+
 == Further Reading
 
 See https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/RefinementsSpec for the
