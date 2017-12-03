@@ -389,7 +389,8 @@ set_line_body(NODE *body, int line)
 static NODE *cond_gen(struct parser_params*,NODE*,int,const YYLTYPE*);
 #define cond(node,location) cond_gen(parser, (node), FALSE, location)
 #define method_cond(node,location) cond_gen(parser, (node), TRUE, location)
-#define new_nil() NEW_NIL()
+static NODE *new_nil_gen(struct parser_params*,const YYLTYPE*);
+#define new_nil(location) new_nil_gen(parser,location)
 static NODE *new_if_gen(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
 #define new_if(cc,left,right,location) new_if_gen(parser, (cc), (left), (right), (location))
 static NODE *new_unless_gen(struct parser_params*,NODE*,NODE*,NODE*,const YYLTYPE*);
@@ -641,7 +642,7 @@ static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE
 #define new_command_call(q,r,m,a) dispatch4(command_call, (r), (q), (m), (a))
 #define new_command(m,a) dispatch2(command, (m), (a));
 
-#define new_nil() Qnil
+#define new_nil(location) Qnil
 static VALUE new_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE op, VALUE rhs);
 #define new_op_assign(lhs, op, rhs, location) new_op_assign_gen(parser, (lhs), (op), (rhs))
 static VALUE new_attr_op_assign_gen(struct parser_params *parser, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs);
@@ -2786,7 +2787,7 @@ primary		: literal
 		    }
 		| keyword_not '(' rparen
 		    {
-			$$ = call_uni_op(method_cond(new_nil(), &@2), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond(new_nil(&@2), &@2), METHOD_NOT, &@$);
 		    }
 		| fcall brace_block
 		    {
@@ -10549,6 +10550,14 @@ cond_gen(struct parser_params *parser, NODE *node, int method_op, const YYLTYPE 
 {
     if (node == 0) return 0;
     return cond0(parser, node, method_op, location);
+}
+
+static NODE*
+new_nil_gen(struct parser_params *parser, const YYLTYPE *location)
+{
+    NODE *node_nil = NEW_NIL();
+    node_nil->nd_loc = *location;
+    return node_nil;
 }
 
 static NODE*
