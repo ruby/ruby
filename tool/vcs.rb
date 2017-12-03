@@ -443,7 +443,7 @@ class VCS
         rev unless rev.empty?
       end.join('..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --date=iso-local --topo-order #{range}") do |r|
+               %W"#{COMMAND} log --date=iso-local --topo-order #{range}", "rb") do |r|
         open(path, 'w') do |w|
           sep = "-"*72
           w.puts sep
