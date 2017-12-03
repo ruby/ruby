@@ -270,16 +270,19 @@ class TestLogDevice < Test::Unit::TestCase
       assert_file.not_exist?(filename1)
       assert_file.not_exist?(filename2)
       assert_file.not_exist?(filename3)
+      sleep 0.01
       logger.info("0" * 15)
       assert_file.exist?(@filename)
       assert_file.exist?(filename1)
       assert_file.not_exist?(filename2)
       assert_file.not_exist?(filename3)
+      sleep 0.01
       logger.warn("0" * 15)
       assert_file.exist?(@filename)
       assert_file.exist?(filename1)
       assert_file.exist?(filename2)
       assert_file.not_exist?(filename3)
+      sleep 0.01
       logger.error("0" * 15)
       assert_file.exist?(@filename)
       assert_file.exist?(filename1)
@@ -306,8 +309,11 @@ class TestLogDevice < Test::Unit::TestCase
         filename1 = @filename + ".#{yyyymmdd}"
         filename2 = @filename + ".#{yyyymmdd}.1"
         filename3 = @filename + ".#{yyyymmdd}.2"
+        sleep 0.01
         logger.info("0" * 15)
+        sleep 0.01
         logger.info("0" * 15)
+        sleep 0.01
         logger.info("0" * 15)
         assert_file.exist?(@filename)
         assert_file.exist?(filename1)
