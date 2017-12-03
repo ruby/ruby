@@ -1418,10 +1418,10 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_WHILE(cond($3, &@$), $1->nd_body, 0);
+			    $$ = NEW_WHILE(cond($3, &@3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = NEW_WHILE(cond($3, &@$), $1, 1);
+			    $$ = NEW_WHILE(cond($3, &@3), $1, 1);
 			}
 			$$->nd_loc = @$;
 		    /*%
@@ -1432,10 +1432,10 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			if ($1 && nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_UNTIL(cond($3, &@$), $1->nd_body, 0);
+			    $$ = NEW_UNTIL(cond($3, &@3), $1->nd_body, 0);
 			}
 			else {
-			    $$ = NEW_UNTIL(cond($3, &@$), $1, 1);
+			    $$ = NEW_UNTIL(cond($3, &@3), $1, 1);
 			}
 			$$->nd_loc = @$;
 		    /*%
@@ -1584,11 +1584,11 @@ expr		: command_call
 		    }
 		| keyword_not opt_nl expr
 		    {
-			$$ = call_uni_op(method_cond($3, &@$), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@$);
 		    }
 		| '!' command_call
 		    {
-			$$ = call_uni_op(method_cond($2, &@$), '!', &@$);
+			$$ = call_uni_op(method_cond($2, &@2), '!', &@$);
 		    }
 		| arg
 		;
@@ -2309,7 +2309,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| '!' arg
 		    {
-			$$ = call_uni_op(method_cond($2, &@$), '!', &@$);
+			$$ = call_uni_op(method_cond($2, &@2), '!', &@$);
 		    }
 		| '~' arg
 		    {
@@ -2782,11 +2782,11 @@ primary		: literal
 		    }
 		| keyword_not '(' expr rparen
 		    {
-			$$ = call_uni_op(method_cond($3, &@$), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@$);
 		    }
 		| keyword_not '(' rparen
 		    {
-			$$ = call_uni_op(method_cond(new_nil(), &@$), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond(new_nil(), &@2), METHOD_NOT, &@$);
 		    }
 		| fcall brace_block
 		    {
@@ -2844,7 +2844,7 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_WHILE(cond($3, &@$), $6, 1);
+			$$ = NEW_WHILE(cond($3, &@3), $6, 1);
 			fixpos($$, $3);
 			$$->nd_loc = @$;
 		    /*%
@@ -2856,7 +2856,7 @@ primary		: literal
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_UNTIL(cond($3, &@$), $6, 1);
+			$$ = NEW_UNTIL(cond($3, &@3), $6, 1);
 			fixpos($$, $3);
 			$$->nd_loc = @$;
 		    /*%
