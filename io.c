@@ -7488,10 +7488,10 @@ rb_f_print(int argc, const VALUE *argv)
  *     ios.putc(obj)    -> obj
  *
  *  If <i>obj</i> is <code>Numeric</code>, write the character whose code is
- *  the least-significant byte of <i>obj</i>, otherwise write the first byte
- *  of the string representation of <i>obj</i> to <em>ios</em>. Note: This
- *  method is not safe for use with multi-byte characters as it will truncate
- *  them.
+ *  the least-significant byte of <i>obj</i>.
+ *  If <i>obj</i> is <code>String</code>, write the first character
+ *  of <i>obj</i> to <em>ios</em>.
+ *  Otherwise, raise <code>TypeError</code>.
  *
  *     $stdout.putc "A"
  *     $stdout.putc 65
