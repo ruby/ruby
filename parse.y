@@ -447,8 +447,8 @@ static NODE *new_command_gen(struct parser_params*parser, NODE *m, NODE *a) {m->
 static NODE *method_add_block_gen(struct parser_params*parser, NODE *m, NODE *b) {b->nd_iter = m; return b;}
 #define method_add_block(m,b) method_add_block_gen(parser, m, b)
 
-static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*);
-#define new_args(f,o,r,p,t) new_args_gen(parser, (f),(o),(r),(p),(t))
+static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
+#define new_args(f,o,r,p,t,location) new_args_gen(parser, (f),(o),(r),(p),(t),(location))
 static NODE *new_args_tail_gen(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 #define new_args_tail(k,kr,b,location) new_args_tail_gen(parser, (k),(kr),(b),(location))
 static NODE *new_kw_arg_gen(struct parser_params *parser, NODE *k, const YYLTYPE *location);
@@ -872,7 +872,7 @@ new_args_gen(struct parser_params *parser, VALUE f, VALUE o, VALUE r, VALUE p, V
     VALUE k = t->u1.value, kr = t->u2.value, b = t->u3.value;
     return params_new(f, o, r, p, k, kr, escape_Qundef(b));
 }
-#define new_args(f,o,r,p,t) new_args_gen(parser, (f),(o),(r),(p),(t))
+#define new_args(f,o,r,p,t,location) new_args_gen(parser, (f),(o),(r),(p),(t))
 
 static inline VALUE
 new_args_tail_gen(struct parser_params *parser, VALUE k, VALUE kr, VALUE b)
@@ -2911,7 +2911,7 @@ primary		: literal
 			switch (nd_type($2)) {
 			  case NODE_MASGN:
 			    m->nd_next = node_assign($2, new_for(new_dvar(id, &@2), 0, 0, &@2), &@2);
-			    args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2));
+			    args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2), &@2);
 			    break;
 			  case NODE_LASGN:
 			  case NODE_DASGN:
@@ -2919,13 +2919,13 @@ primary		: literal
 			    $2->nd_value = new_dvar(id, &@2);
 			    m->nd_plen = 1;
 			    m->nd_next = $2;
-			    args = new_args(m, 0, 0, 0, new_args_tail(0, 0, 0, &@2));
+			    args = new_args(m, 0, 0, 0, new_args_tail(0, 0, 0, &@2), &@2);
 			    break;
 			  default:
 			    {
 				NODE *masgn = new_masgn(new_list($2, &@2), 0, &@2);
 				m->nd_next = node_assign(masgn, new_dvar(id, &@2), &@2);
-				args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2));
+				args = new_args(m, 0, id, 0, new_args_tail(0, 0, 0, &@2), &@2);
 				break;
 			    }
 			}
@@ -3403,27 +3403,27 @@ opt_block_args_tail : ',' block_args_tail
 
 block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, $3, $5, Qnone, $6);
+			$$ = new_args($1, $3, $5, Qnone, $6, &@$);
 		    }
 		| f_arg ',' f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, $3, $5, $7, $8);
+			$$ = new_args($1, $3, $5, $7, $8, &@$);
 		    }
 		| f_arg ',' f_block_optarg opt_block_args_tail
 		    {
-			$$ = new_args($1, $3, Qnone, Qnone, $4);
+			$$ = new_args($1, $3, Qnone, Qnone, $4, &@$);
 		    }
 		| f_arg ',' f_block_optarg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, $3, Qnone, $5, $6);
+			$$ = new_args($1, $3, Qnone, $5, $6, &@$);
 		    }
                 | f_arg ',' f_rest_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, Qnone, $3, Qnone, $4);
+			$$ = new_args($1, Qnone, $3, Qnone, $4, &@$);
 		    }
 		| f_arg ','
 		    {
-			$$ = new_args($1, Qnone, 1, Qnone, new_args_tail(Qnone, Qnone, Qnone, &@1));
+			$$ = new_args($1, Qnone, 1, Qnone, new_args_tail(Qnone, Qnone, Qnone, &@1), &@$);
 		    /*%%%*/
 		    /*%
                         dispatch1(excessed_comma, $$);
@@ -3431,39 +3431,39 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, Qnone, $3, $5, $6);
+			$$ = new_args($1, Qnone, $3, $5, $6, &@$);
 		    }
 		| f_arg opt_block_args_tail
 		    {
-			$$ = new_args($1, Qnone, Qnone, Qnone, $2);
+			$$ = new_args($1, Qnone, Qnone, Qnone, $2, &@$);
 		    }
 		| f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, $1, $3, Qnone, $4);
+			$$ = new_args(Qnone, $1, $3, Qnone, $4, &@$);
 		    }
 		| f_block_optarg ',' f_rest_arg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, $1, $3, $5, $6);
+			$$ = new_args(Qnone, $1, $3, $5, $6, &@$);
 		    }
 		| f_block_optarg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, $1, Qnone, Qnone, $2);
+			$$ = new_args(Qnone, $1, Qnone, Qnone, $2, &@$);
 		    }
 		| f_block_optarg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, $1, Qnone, $3, $4);
+			$$ = new_args(Qnone, $1, Qnone, $3, $4, &@$);
 		    }
 		| f_rest_arg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, $1, Qnone, $2);
+			$$ = new_args(Qnone, Qnone, $1, Qnone, $2, &@$);
 		    }
 		| f_rest_arg ',' f_arg opt_block_args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, $1, $3, $4);
+			$$ = new_args(Qnone, Qnone, $1, $3, $4, &@$);
 		    }
 		| block_args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $1);
+			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $1, &@$);
 		    }
 		;
 
@@ -4481,64 +4481,64 @@ opt_args_tail	: ',' args_tail
 
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 		    {
-			$$ = new_args($1, $3, $5, Qnone, $6);
+			$$ = new_args($1, $3, $5, Qnone, $6, &@$);
 		    }
 		| f_arg ',' f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args($1, $3, $5, $7, $8);
+			$$ = new_args($1, $3, $5, $7, $8, &@$);
 		    }
 		| f_arg ',' f_optarg opt_args_tail
 		    {
-			$$ = new_args($1, $3, Qnone, Qnone, $4);
+			$$ = new_args($1, $3, Qnone, Qnone, $4, &@$);
 		    }
 		| f_arg ',' f_optarg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args($1, $3, Qnone, $5, $6);
+			$$ = new_args($1, $3, Qnone, $5, $6, &@$);
 		    }
 		| f_arg ',' f_rest_arg opt_args_tail
 		    {
-			$$ = new_args($1, Qnone, $3, Qnone, $4);
+			$$ = new_args($1, Qnone, $3, Qnone, $4, &@$);
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args($1, Qnone, $3, $5, $6);
+			$$ = new_args($1, Qnone, $3, $5, $6, &@$);
 		    }
 		| f_arg opt_args_tail
 		    {
-			$$ = new_args($1, Qnone, Qnone, Qnone, $2);
+			$$ = new_args($1, Qnone, Qnone, Qnone, $2, &@$);
 		    }
 		| f_optarg ',' f_rest_arg opt_args_tail
 		    {
-			$$ = new_args(Qnone, $1, $3, Qnone, $4);
+			$$ = new_args(Qnone, $1, $3, Qnone, $4, &@$);
 		    }
 		| f_optarg ',' f_rest_arg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args(Qnone, $1, $3, $5, $6);
+			$$ = new_args(Qnone, $1, $3, $5, $6, &@$);
 		    }
 		| f_optarg opt_args_tail
 		    {
-			$$ = new_args(Qnone, $1, Qnone, Qnone, $2);
+			$$ = new_args(Qnone, $1, Qnone, Qnone, $2, &@$);
 		    }
 		| f_optarg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args(Qnone, $1, Qnone, $3, $4);
+			$$ = new_args(Qnone, $1, Qnone, $3, $4, &@$);
 		    }
 		| f_rest_arg opt_args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, $1, Qnone, $2);
+			$$ = new_args(Qnone, Qnone, $1, Qnone, $2, &@$);
 		    }
 		| f_rest_arg ',' f_arg opt_args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, $1, $3, $4);
+			$$ = new_args(Qnone, Qnone, $1, $3, $4, &@$);
 		    }
 		| args_tail
 		    {
-			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $1);
+			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $1, &@$);
 		    }
 		| /* none */
 		    {
 			$$ = new_args_tail(Qnone, Qnone, Qnone, &@0);
-			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $$);
+			$$ = new_args(Qnone, Qnone, Qnone, Qnone, $$, &@0);
 		    }
 		;
 
@@ -10689,7 +10689,7 @@ arg_blk_pass(NODE *node1, NODE *node2)
 
 
 static NODE*
-new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE *tail)
+new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE *tail, const YYLTYPE *location)
 {
     int saved_line = ruby_sourceline;
     struct rb_args_info *args = tail->nd_ainfo;
@@ -10706,6 +10706,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE
     args->opt_args       = o;
 
     ruby_sourceline = saved_line;
+    tail->nd_loc = *location;
 
     return tail;
 }
