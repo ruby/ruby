@@ -1234,7 +1234,7 @@ top_stmt	: stmt
 		    {
 		    /*%%%*/
 			ruby_eval_tree_begin = block_append(ruby_eval_tree_begin,
-							    $4, &@$);
+							    new_begin($4, &@$), &@$);
 			/* NEW_PREEXE($4)); */
 			/* local_pop(); */
 			$$ = new_begin(0, &@$);
