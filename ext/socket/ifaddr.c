@@ -24,7 +24,6 @@ typedef struct rb_ifaddr_root_tag rb_ifaddr_root_t;
 struct rb_ifaddr_tag {
     int ord;
     struct ifaddrs *ifaddr;
-    rb_ifaddr_root_t *root;
 };
 
 struct rb_ifaddr_root_tag {
@@ -114,7 +113,6 @@ rsock_getifaddrs(void)
     for (i = 0; i < numifaddrs; i++) {
         root->ary[i].ord = i;
         root->ary[i].ifaddr = ifa;
-        root->ary[i].root = root;
         ifa = ifa->ifa_next;
     }
     RTYPEDDATA_DATA(addr) = &root->ary[0];
