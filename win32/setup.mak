@@ -48,11 +48,8 @@ EXTSTATIC = $(EXTSTATIC)
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
 !endif
-!if defined(EXTOUT)
+!if defined(EXTOUT) && "$(EXTOUT)" != ".ext"
 EXTOUT = $(EXTOUT)
-!endif
-!if defined(BASERUBY)
-BASERUBY = $(BASERUBY:/=\)
 !endif
 !if defined(NTVER)
 NTVER = $(NTVER)
@@ -66,19 +63,21 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 
 # TOOLS
 <<
-!if !defined(BASERUBY)
-	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
-	@echo !if "$$(BASERUBY)" == "">> $(MAKEFILE)
-	@echo BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1 >> $(MAKEFILE)
-	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
-	@echo !else>> $(MAKEFILE)
-	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
-	@echo !endif>> $(MAKEFILE)
-!elseif [$(BASERUBY) -eexit 2> nul] == 0
-	@echo HAVE_BASERUBY = yes>> $(MAKEFILE)
+!if defined(BASERUBY)
+	@echo BASERUBY = $(BASERUBY:/=\)>> $(MAKEFILE)
 !else
-	@echo HAVE_BASERUBY = no>> $(MAKEFILE)
+	@for %I in (ruby.exe) do @echo BASERUBY = %~s$$PATH:I>> $(MAKEFILE)
 !endif
+	@type << >> $(MAKEFILE)
+$(BANG)if "$$(BASERUBY)" == ""
+BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
+HAVE_BASERUBY = no
+$(BANG)elseif [$$(BASERUBY) -eexit 2> nul] == 0
+HAVE_BASERUBY = yes
+$(BANG)else
+HAVE_BASERUBY = no
+$(BANG)endif
+<<
 !if "$(GIT)" != ""
 	@echo GIT = $(GIT)>> $(MAKEFILE)
 !endif
