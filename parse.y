@@ -3375,19 +3375,19 @@ f_margs		: f_marg_list
 
 block_args_tail	: f_block_kwarg ',' f_kwrest opt_f_block_arg
 		    {
-			$$ = new_args_tail($1, $3, $4, &@$);
+			$$ = new_args_tail($1, $3, $4, &@3);
 		    }
 		| f_block_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail($1, Qnone, $2, &@$);
+			$$ = new_args_tail($1, Qnone, $2, &@1);
 		    }
 		| f_kwrest opt_f_block_arg
 		    {
-			$$ = new_args_tail(Qnone, $1, $2, &@$);
+			$$ = new_args_tail(Qnone, $1, $2, &@1);
 		    }
 		| f_block_arg
 		    {
-			$$ = new_args_tail(Qnone, Qnone, $1, &@$);
+			$$ = new_args_tail(Qnone, Qnone, $1, &@1);
 		    }
 		;
 
@@ -3423,7 +3423,7 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    }
 		| f_arg ','
 		    {
-			$$ = new_args($1, Qnone, 1, Qnone, new_args_tail(Qnone, Qnone, Qnone, &@$));
+			$$ = new_args($1, Qnone, 1, Qnone, new_args_tail(Qnone, Qnone, Qnone, &@1));
 		    /*%%%*/
 		    /*%
                         dispatch1(excessed_comma, $$);
@@ -4453,19 +4453,19 @@ f_arglist	: '(' f_args rparen
 
 args_tail	: f_kwarg ',' f_kwrest opt_f_block_arg
 		    {
-			$$ = new_args_tail($1, $3, $4, &@$);
+			$$ = new_args_tail($1, $3, $4, &@3);
 		    }
 		| f_kwarg opt_f_block_arg
 		    {
-			$$ = new_args_tail($1, Qnone, $2, &@$);
+			$$ = new_args_tail($1, Qnone, $2, &@1);
 		    }
 		| f_kwrest opt_f_block_arg
 		    {
-			$$ = new_args_tail(Qnone, $1, $2, &@$);
+			$$ = new_args_tail(Qnone, $1, $2, &@1);
 		    }
 		| f_block_arg
 		    {
-			$$ = new_args_tail(Qnone, Qnone, $1, &@$);
+			$$ = new_args_tail(Qnone, Qnone, $1, &@1);
 		    }
 		;
 
@@ -10711,7 +10711,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE
 }
 
 static NODE*
-new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, const YYLTYPE *location)
+new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, const YYLTYPE *kr_location)
 {
     int saved_line = ruby_sourceline;
     struct rb_args_info *args;
@@ -10720,7 +10720,6 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, const YYLT
     args = ZALLOC(struct rb_args_info);
     add_mark_object((VALUE)rb_imemo_alloc_new((VALUE)args, 0, 0, 0));
     node = NEW_NODE(NODE_ARGS, 0, 0, args);
-    node->nd_loc = *location;
     if (parser->error_p) return node;
 
     args->block_arg      = b;
@@ -10766,14 +10765,14 @@ new_args_tail_gen(struct parser_params *parser, NODE *k, ID kr, ID b, const YYLT
 	if (kr) arg_var(kr);
 	if (b) arg_var(b);
 
-	args->kw_rest_arg = new_dvar(kr, location);
+	args->kw_rest_arg = new_dvar(kr, kr_location);
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
     else if (kr) {
 	if (b) vtable_pop(lvtbl->args, 1); /* reorder */
 	arg_var(kr);
 	if (b) arg_var(b);
-	args->kw_rest_arg = new_dvar(kr, location);
+	args->kw_rest_arg = new_dvar(kr, kr_location);
     }
 
     ruby_sourceline = saved_line;
