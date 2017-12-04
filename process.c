@@ -2237,8 +2237,7 @@ rb_execarg_new(int argc, const VALUE *argv, int accept_shell)
 {
     VALUE execarg_obj;
     struct rb_execarg *eargp;
-    execarg_obj = TypedData_Make_Struct(rb_cData, struct rb_execarg, &exec_arg_data_type, eargp);
-    hide_obj(execarg_obj);
+    execarg_obj = TypedData_Make_Struct(0, struct rb_execarg, &exec_arg_data_type, eargp);
     rb_execarg_init(argc, argv, accept_shell, execarg_obj);
     return execarg_obj;
 }
