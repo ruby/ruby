@@ -62,14 +62,14 @@
 #endif
 
 static int w32_wopen(const WCHAR *file, int oflag, int perm);
-static int w32_stati64(const char *path, struct stati64 *st, UINT cp);
-static int w32_lstati64(const char *path, struct stati64 *st, UINT cp);
+static int w32_stati64ns(const char *path, struct stati64ns *st, UINT cp);
+static int w32_lstati64ns(const char *path, struct stati64ns *st, UINT cp);
 static char *w32_getenv(const char *name, UINT cp);
 
 #undef getenv
 #define DLN_FIND_EXTRA_ARG_DECL ,UINT cp
 #define DLN_FIND_EXTRA_ARG ,cp
-#define rb_w32_stati64(path, st) w32_stati64(path, st, cp)
+#define rb_w32_stati64ns(path, st) w32_stati64ns(path, st, cp)
 #define getenv(name) w32_getenv(name, cp)
 #undef CharNext
 #define CharNext(p) CharNextExA(cp, (p), 0)
@@ -78,7 +78,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #include "dln.h"
 #include "dln_find.c"
 #undef MAXPATHLEN
-#undef rb_w32_stati64
+#undef rb_w32_stati64ns
 #undef dln_find_exe_r
 #undef dln_find_file_r
 #define dln_find_exe_r(fname, path, buf, size) rb_w32_udln_find_exe_r(fname, path, buf, size, cp)
@@ -123,8 +123,8 @@ static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_AT
 static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
-static int wstati64(const WCHAR *path, struct stati64 *st);
-static int wlstati64(const WCHAR *path, struct stati64 *st);
+static int wstati64ns(const WCHAR *path, struct stati64ns *st);
+static int wlstati64ns(const WCHAR *path, struct stati64ns *st);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 int ruby_brace_glob_with_enc(const char *str, int flags, ruby_glob_func *func, VALUE arg, rb_encoding *enc);
 static FARPROC get_proc_address(const char *module, const char *func, HANDLE *mh);
@@ -1992,7 +1992,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 static DIR *
 w32_wopendir(const WCHAR *wpath)
 {
-    struct stati64 sbuf;
+    struct stati64ns sbuf;
     WIN32_FIND_DATAW fd;
     HANDLE fh;
     DIR *p;
@@ -2006,7 +2006,7 @@ w32_wopendir(const WCHAR *wpath)
     //
     // check to see if we've got a directory
     //
-    if (wstati64(wpath, &sbuf) < 0) {
+    if (wstati64ns(wpath, &sbuf) < 0) {
 	return NULL;
     }
     if (!(sbuf.st_mode & S_IFDIR) &&
@@ -4571,6 +4571,27 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 #include <sys/timeb.h>
 
+static int have_precisetime = -1;
+
+static void get_systemtime(FILETIME *ft)
+{
+    typedef void (WINAPI *get_time_func)(FILETIME *ft);
+    static get_time_func func = (get_time_func)-1;
+
+    if (func == (get_time_func)-1) {
+	/* GetSystemTimePreciseAsFileTime is available since Windows 8 and Windows Server 2012. */
+	func = (get_time_func)get_proc_address("kernel32", "GetSystemTimePreciseAsFileTime", NULL);
+	if (func == NULL) {
+	    func = GetSystemTimeAsFileTime;
+	    have_precisetime = 0;
+	}
+	else
+	    have_precisetime = 1;
+    }
+    if (!ft) return;
+    func(ft);
+}
+
 /* License: Ruby's */
 static int
 filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
@@ -4593,21 +4614,6 @@ filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
     tv->tv_usec = (long)(lt % (1000 * 1000));
 
     return tv->tv_sec > 0 ? 0 : -1;
-}
-
-static void get_systemtime(FILETIME *ft)
-{
-    typedef void (WINAPI *get_time_func)(FILETIME *ft);
-    static get_time_func func = (get_time_func)-1;
-
-    if (func == (get_time_func)-1) {
-	/* GetSystemTimePreciseAsFileTime is available since Windows 8 and Windows Server 2012. */
-	func = (get_time_func)get_proc_address("kernel32", "GetSystemTimePreciseAsFileTime", NULL);
-	if (func == NULL) {
-	    func = GetSystemTimeAsFileTime;
-	}
-    }
-    func(ft);
 }
 
 /* License: Ruby's */
@@ -5381,12 +5387,13 @@ isUNCRoot(const WCHAR *path)
     } while (0)
 
 static time_t filetime_to_unixtime(const FILETIME *ft);
+static long filetime_to_nsec(const FILETIME *ft);
 static WCHAR *name_for_stat(WCHAR *buf, const WCHAR *path);
-static DWORD stati64_handle(HANDLE h, struct stati64 *st);
+static DWORD stati64ns_handle(HANDLE h, struct stati64ns *st);
 
 /* License: Ruby's */
 static void
-stati64_set_inode(BY_HANDLE_FILE_INFORMATION *pinfo, struct stati64 *st)
+stati64ns_set_inode(BY_HANDLE_FILE_INFORMATION *pinfo, struct stati64ns *st)
 {
     /* struct stati64 layout
      *
@@ -5413,19 +5420,6 @@ stati64_set_inode(BY_HANDLE_FILE_INFORMATION *pinfo, struct stati64 *st)
     p4[5] = pinfo->nFileIndexLow;
 }
 
-/* License: Ruby's */
-static DWORD
-stati64_set_inode_handle(HANDLE h, struct stati64 *st)
-{
-    BY_HANDLE_FILE_INFORMATION info;
-    DWORD attr = (DWORD)-1;
-
-    if (GetFileInformationByHandle(h, &info)) {
-	stati64_set_inode(&info, st);
-    }
-    return attr;
-}
-
 #undef fstat
 /* License: Ruby's */
 int
@@ -5446,27 +5440,20 @@ rb_w32_fstat(int fd, struct stat *st)
 
 /* License: Ruby's */
 int
-rb_w32_fstati64(int fd, struct stati64 *st)
+rb_w32_fstati64ns(int fd, struct stati64ns *st)
 {
     struct stat tmp;
-    int ret;
-
-    if (GetEnvironmentVariableW(L"TZ", NULL, 0) == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) {
-	ret = _fstati64(fd, st);
-	stati64_set_inode_handle((HANDLE)_get_osfhandle(fd), st);
-	return ret;
-    }
-    ret = fstat(fd, &tmp);
+    int ret = fstat(fd, &tmp);
 
     if (ret) return ret;
     COPY_STAT(tmp, *st, +);
-    stati64_handle((HANDLE)_get_osfhandle(fd), st);
+    stati64ns_handle((HANDLE)_get_osfhandle(fd), st);
     return ret;
 }
 
 /* License: Ruby's */
 static DWORD
-stati64_handle(HANDLE h, struct stati64 *st)
+stati64ns_handle(HANDLE h, struct stati64ns *st)
 {
     BY_HANDLE_FILE_INFORMATION info;
     DWORD attr = (DWORD)-1;
@@ -5474,11 +5461,14 @@ stati64_handle(HANDLE h, struct stati64 *st)
     if (GetFileInformationByHandle(h, &info)) {
 	st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
 	st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
+	st->st_atimensec = filetime_to_nsec(&info.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&info.ftLastWriteTime);
+	st->st_mtimensec = filetime_to_nsec(&info.ftLastWriteTime);
 	st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
+	st->st_ctimensec = filetime_to_nsec(&info.ftCreationTime);
 	st->st_nlink = info.nNumberOfLinks;
 	attr = info.dwFileAttributes;
-	stati64_set_inode(&info, st);
+	stati64ns_set_inode(&info, st);
     }
     return attr;
 }
@@ -5493,6 +5483,20 @@ filetime_to_unixtime(const FILETIME *ft)
 	return 0;
     else
 	return tv.tv_sec;
+}
+
+/* License: Ruby's */
+static long
+filetime_to_nsec(const FILETIME *ft)
+{
+    if (have_precisetime <= 0)
+	return 0;
+    else {
+	ULARGE_INTEGER tmp;
+	tmp.LowPart = ft->dwLowDateTime;
+	tmp.HighPart = ft->dwHighDateTime;
+	return (long)(tmp.QuadPart % 10000000) * 100;
+    }
 }
 
 /* License: Ruby's */
@@ -5583,7 +5587,7 @@ check_valid_dir(const WCHAR *path)
 
 /* License: Ruby's */
 static int
-stat_by_find(const WCHAR *path, struct stati64 *st)
+stat_by_find(const WCHAR *path, struct stati64ns *st)
 {
     HANDLE h;
     WIN32_FIND_DATAW wfd;
@@ -5605,8 +5609,11 @@ stat_by_find(const WCHAR *path, struct stati64 *st)
     FindClose(h);
     st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path);
     st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
+    st->st_atimensec = filetime_to_nsec(&wfd.ftLastAccessTime);
     st->st_mtime = filetime_to_unixtime(&wfd.ftLastWriteTime);
+    st->st_mtimensec = filetime_to_nsec(&wfd.ftLastWriteTime);
     st->st_ctime = filetime_to_unixtime(&wfd.ftCreationTime);
+    st->st_ctimensec = filetime_to_nsec(&wfd.ftCreationTime);
     st->st_size = ((__int64)wfd.nFileSizeHigh << 32) | wfd.nFileSizeLow;
     st->st_nlink = 1;
     return 0;
@@ -5624,7 +5631,7 @@ static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
 
 /* License: Ruby's */
 static int
-winnt_stat(const WCHAR *path, struct stati64 *st)
+winnt_stat(const WCHAR *path, struct stati64ns *st)
 {
     HANDLE f;
     WCHAR finalname[PATH_MAX];
@@ -5632,7 +5639,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
     memset(st, 0, sizeof(*st));
     f = open_special(path, 0, 0);
     if (f != INVALID_HANDLE_VALUE) {
-	const DWORD attr = stati64_handle(f, st);
+	const DWORD attr = stati64ns_handle(f, st);
 	const DWORD len = get_final_path(f, finalname, numberof(finalname), 0);
 	CloseHandle(f);
 	if (attr & FILE_ATTRIBUTE_DIRECTORY) {
@@ -5657,7 +5664,7 @@ winnt_stat(const WCHAR *path, struct stati64 *st)
 
 /* License: Ruby's */
 static int
-winnt_lstat(const WCHAR *path, struct stati64 *st)
+winnt_lstat(const WCHAR *path, struct stati64ns *st)
 {
     WIN32_FILE_ATTRIBUTE_DATA wfa;
     const WCHAR *p = path;
@@ -5688,8 +5695,11 @@ winnt_lstat(const WCHAR *path, struct stati64 *st)
 	}
 	st->st_mode  = fileattr_to_unixmode(wfa.dwFileAttributes, path);
 	st->st_atime = filetime_to_unixtime(&wfa.ftLastAccessTime);
+	st->st_atimensec = filetime_to_nsec(&wfa.ftLastAccessTime);
 	st->st_mtime = filetime_to_unixtime(&wfa.ftLastWriteTime);
+	st->st_mtimensec = filetime_to_nsec(&wfa.ftLastWriteTime);
 	st->st_ctime = filetime_to_unixtime(&wfa.ftCreationTime);
+	st->st_ctimensec = filetime_to_nsec(&wfa.ftCreationTime);
     }
     else {
 	if (stat_by_find(path, st)) return -1;
@@ -5704,16 +5714,16 @@ winnt_lstat(const WCHAR *path, struct stati64 *st)
 int
 rb_w32_stat(const char *path, struct stat *st)
 {
-    struct stati64 tmp;
+    struct stati64ns tmp;
 
-    if (rb_w32_stati64(path, &tmp)) return -1;
+    if (rb_w32_stati64ns(path, &tmp)) return -1;
     COPY_STAT(tmp, *st, (_off_t));
     return 0;
 }
 
 /* License: Ruby's */
 static int
-wstati64(const WCHAR *path, struct stati64 *st)
+wstati64ns(const WCHAR *path, struct stati64ns *st)
 {
     WCHAR *buf1;
     int ret, size;
@@ -5736,7 +5746,7 @@ wstati64(const WCHAR *path, struct stati64 *st)
 
 /* License: Ruby's */
 static int
-wlstati64(const WCHAR *path, struct stati64 *st)
+wlstati64ns(const WCHAR *path, struct stati64ns *st)
 {
     WCHAR *buf1;
     int ret, size;
@@ -5793,56 +5803,56 @@ name_for_stat(WCHAR *buf1, const WCHAR *path)
 
 /* License: Ruby's */
 int
-rb_w32_ustati64(const char *path, struct stati64 *st)
+rb_w32_ustati64ns(const char *path, struct stati64ns *st)
 {
-    return w32_stati64(path, st, CP_UTF8);
+    return w32_stati64ns(path, st, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
-rb_w32_stati64(const char *path, struct stati64 *st)
+rb_w32_stati64ns(const char *path, struct stati64ns *st)
 {
-    return w32_stati64(path, st, filecp());
+    return w32_stati64ns(path, st, filecp());
 }
 
 /* License: Ruby's */
 static int
-w32_stati64(const char *path, struct stati64 *st, UINT cp)
+w32_stati64ns(const char *path, struct stati64ns *st, UINT cp)
 {
     WCHAR *wpath;
     int ret;
 
     if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
 	return -1;
-    ret = wstati64(wpath, st);
+    ret = wstati64ns(wpath, st);
     free(wpath);
     return ret;
 }
 
 /* License: Ruby's */
 int
-rb_w32_ulstati64(const char *path, struct stati64 *st)
+rb_w32_ulstati64ns(const char *path, struct stati64ns *st)
 {
-    return w32_lstati64(path, st, CP_UTF8);
+    return w32_lstati64ns(path, st, CP_UTF8);
 }
 
 /* License: Ruby's */
 int
-rb_w32_lstati64(const char *path, struct stati64 *st)
+rb_w32_lstati64ns(const char *path, struct stati64ns *st)
 {
-    return w32_lstati64(path, st, filecp());
+    return w32_lstati64ns(path, st, filecp());
 }
 
 /* License: Ruby's */
 static int
-w32_lstati64(const char *path, struct stati64 *st, UINT cp)
+w32_lstati64ns(const char *path, struct stati64ns *st, UINT cp)
 {
     WCHAR *wpath;
     int ret;
 
     if (!(wpath = mbstr_to_wstr(cp, path, -1, NULL)))
 	return -1;
-    ret = wlstati64(wpath, st);
+    ret = wlstati64ns(wpath, st);
     free(wpath);
     return ret;
 }
@@ -5851,8 +5861,8 @@ w32_lstati64(const char *path, struct stati64 *st, UINT cp)
 int
 rb_w32_access(const char *path, int mode)
 {
-    struct stati64 stat;
-    if (rb_w32_stati64(path, &stat) != 0)
+    struct stati64ns stat;
+    if (rb_w32_stati64ns(path, &stat) != 0)
 	return -1;
     mode <<= 6;
     if ((stat.st_mode & mode) != mode) {
@@ -5866,8 +5876,8 @@ rb_w32_access(const char *path, int mode)
 int
 rb_w32_uaccess(const char *path, int mode)
 {
-    struct stati64 stat;
-    if (rb_w32_ustati64(path, &stat) != 0)
+    struct stati64ns stat;
+    if (rb_w32_ustati64ns(path, &stat) != 0)
 	return -1;
     mode <<= 6;
     if ((stat.st_mode & mode) != mode) {
@@ -7318,6 +7328,7 @@ rb_w32_write_console(uintptr_t strarg, int fd)
     return (long)reslen;
 }
 
+#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__GMTIME64_S)
 /* License: Ruby's */
 static int
 unixtime_to_filetime(time_t time, FILETIME *ft)
@@ -7329,25 +7340,50 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     ft->dwHighDateTime = tmp.HighPart;
     return 0;
 }
+#endif
 
 /* License: Ruby's */
 static int
-wutime(const WCHAR *path, const struct utimbuf *times)
+timespec_to_filetime(const struct timespec *ts, FILETIME *ft)
+{
+    ULARGE_INTEGER tmp;
+
+    tmp.QuadPart = ((LONG_LONG)ts->tv_sec + (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60) * 10 * 1000 * 1000;
+    tmp.QuadPart += ts->tv_nsec / 100;
+    ft->dwLowDateTime = tmp.LowPart;
+    ft->dwHighDateTime = tmp.HighPart;
+    return 0;
+}
+
+/* License: Ruby's */
+static int
+wutimensat(int dirfd, const WCHAR *path, const struct timespec *times, int flags)
 {
     HANDLE hFile;
     FILETIME atime, mtime;
-    struct stati64 stat;
+    struct stati64ns stat;
     int ret = 0;
 
-    if (wstati64(path, &stat)) {
+    /* TODO: When path is absolute, dirfd should be ignored. */
+    if (dirfd != AT_FDCWD) {
+	errno = ENOSYS;
+	return -1;
+    }
+
+    if (flags != 0) {
+	errno = EINVAL; /* AT_SYMLINK_NOFOLLOW isn't supported. */
+	return -1;
+    }
+
+    if (wstati64ns(path, &stat)) {
 	return -1;
     }
 
     if (times) {
-	if (unixtime_to_filetime(times->actime, &atime)) {
+	if (timespec_to_filetime(&times[0], &atime)) {
 	    return -1;
 	}
-	if (unixtime_to_filetime(times->modtime, &mtime)) {
+	if (timespec_to_filetime(&times[1], &mtime)) {
 	    return -1;
 	}
     }
@@ -7383,26 +7419,78 @@ wutime(const WCHAR *path, const struct utimbuf *times)
 int
 rb_w32_uutime(const char *path, const struct utimbuf *times)
 {
-    WCHAR *wpath;
-    int ret;
+    struct timespec ts[2];
 
-    if (!(wpath = utf8_to_wstr(path, NULL)))
-	return -1;
-    ret = wutime(wpath, times);
-    free(wpath);
-    return ret;
+    ts[0].tv_sec = times->actime;
+    ts[0].tv_nsec = 0;
+    ts[1].tv_sec = times->modtime;
+    ts[1].tv_nsec = 0;
+    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
 }
 
 /* License: Ruby's */
 int
 rb_w32_utime(const char *path, const struct utimbuf *times)
 {
+    struct timespec ts[2];
+
+    ts[0].tv_sec = times->actime;
+    ts[0].tv_nsec = 0;
+    ts[1].tv_sec = times->modtime;
+    ts[1].tv_nsec = 0;
+    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
+}
+
+/* License: Ruby's */
+int
+rb_w32_uutimes(const char *path, const struct timeval *times)
+{
+    struct timespec ts[2];
+
+    ts[0].tv_sec = times[0].tv_sec;
+    ts[0].tv_nsec = times[0].tv_usec * 1000;
+    ts[1].tv_sec = times[1].tv_sec;
+    ts[1].tv_nsec = times[1].tv_usec * 1000;
+    return rb_w32_uutimensat(AT_FDCWD, path, ts, 0);
+}
+
+/* License: Ruby's */
+int
+rb_w32_utimes(const char *path, const struct timeval *times)
+{
+    struct timespec ts[2];
+
+    ts[0].tv_sec = times[0].tv_sec;
+    ts[0].tv_nsec = times[0].tv_usec * 1000;
+    ts[1].tv_sec = times[1].tv_sec;
+    ts[1].tv_nsec = times[1].tv_usec * 1000;
+    return rb_w32_utimensat(AT_FDCWD, path, ts, 0);
+}
+
+/* License: Ruby's */
+int
+rb_w32_uutimensat(int dirfd, const char *path, const struct timespec *times, int flags)
+{
+    WCHAR *wpath;
+    int ret;
+
+    if (!(wpath = utf8_to_wstr(path, NULL)))
+	return -1;
+    ret = wutimensat(dirfd, wpath, times, flags);
+    free(wpath);
+    return ret;
+}
+
+/* License: Ruby's */
+int
+rb_w32_utimensat(int dirfd, const char *path, const struct timespec *times, int flags)
+{
     WCHAR *wpath;
     int ret;
 
     if (!(wpath = filecp_to_wstr(path, NULL)))
 	return -1;
-    ret = wutime(wpath, times);
+    ret = wutimensat(dirfd, wpath, times, flags);
     free(wpath);
     return ret;
 }
