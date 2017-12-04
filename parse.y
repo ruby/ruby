@@ -10061,6 +10061,7 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYL
 	return node1;
       case NODE_ARGSPUSH:
 	node1->nd_body = list_append(new_list(node1->nd_body, &node1->nd_body->nd_loc), node2, location);
+	node1->nd_loc.last_loc = node1->nd_body->nd_loc.last_loc;
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
     }
