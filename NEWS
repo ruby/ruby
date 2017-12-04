@@ -72,6 +72,8 @@ with all sufficient information, see the ChangeLog file or Redmine
     a step value which cannot be compared with #> to 0. [Feature #7688]
   * Integer#{round,floor,ceil,truncate} now always return an Integer.
     [Bug #13420]
+  * Integer#pow now has an optional modulo argument for calculating modular
+    exponentiation.  [Feature #12508] [Feature #11003]
 
 * Kernel
 
