@@ -2737,7 +2737,7 @@ utime_internal_i(int argc, VALUE *argv, int follow)
  * Sets the access and modification times of each named file to the
  * first two arguments. If a file is a symlink, this method acts upon
  * its referent rather than the link itself; for the inverse
- * behavior see <code>File.lutime</code>. Returns the number of file
+ * behavior see File.lutime. Returns the number of file
  * names in the argument list.
  */
 
@@ -2756,7 +2756,7 @@ rb_file_s_utime(int argc, VALUE *argv)
  * Sets the access and modification times of each named file to the
  * first two arguments. If a file is a symlink, this method acts upon
  * the link itself as opposed to its referent; for the inverse
- * behavior, see <code>File.utime</code>. Returns the number of file
+ * behavior, see File.utime. Returns the number of file
  * names in the argument list.
  */
 
