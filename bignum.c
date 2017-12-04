@@ -6877,6 +6877,222 @@ rb_big_isqrt(VALUE n)
     return x;
 }
 
+#ifdef USE_GMP
+static void
+bary_powm_gmp(BDIGIT *zds, size_t zn, const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn, const BDIGIT *mds, size_t mn)
+{
+    const size_t nails = (sizeof(BDIGIT)-SIZEOF_BDIGIT)*CHAR_BIT;
+    mpz_t z, x, y, m;
+    size_t count;
+    mpz_init(x);
+    mpz_init(y);
+    mpz_init(m);
+    mpz_init(z);
+    mpz_import(x, xn, -1, sizeof(BDIGIT), 0, nails, xds);
+    mpz_import(y, yn, -1, sizeof(BDIGIT), 0, nails, yds);
+    mpz_import(m, mn, -1, sizeof(BDIGIT), 0, nails, mds);
+    mpz_powm(z, x, y, m);
+    mpz_export(zds, &count, -1, sizeof(BDIGIT), 0, nails, z);
+    BDIGITS_ZERO(zds+count, zn-count);
+    mpz_clear(x);
+    mpz_clear(y);
+    mpz_clear(m);
+    mpz_clear(z);
+}
+#endif
+
+static VALUE
+int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
+{
+#ifdef USE_GMP
+    VALUE z;
+    size_t xn, yn, mn, zn;
+
+    if (FIXNUM_P(x)) {
+       x = rb_int2big(FIX2LONG(x));
+    }
+    if (FIXNUM_P(y)) {
+       y = rb_int2big(FIX2LONG(y));
+    }
+    assert(RB_BIGNUM_TYPE_P(m));
+    xn = BIGNUM_LEN(x);
+    yn = BIGNUM_LEN(y);
+    mn = BIGNUM_LEN(m);
+    zn = mn;
+    z = bignew(zn, 1);
+    bary_powm_gmp(BDIGITS(z), zn, BDIGITS(x), xn, BDIGITS(y), yn, BDIGITS(m), mn);
+    if (nega_flg & BIGNUM_POSITIVE_P(z)) {
+        z = rb_funcall(z, '-', 1, m);
+    }
+    RB_GC_GUARD(x);
+    RB_GC_GUARD(y);
+    RB_GC_GUARD(m);
+    return rb_big_norm(z);
+#else
+    VALUE tmp = LONG2FIX(1L);
+    long yy;
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, rb_intern(">>"), 1, LONG2FIX(1L))) {
+        if (RTEST(rb_funcall(y, rb_intern("odd?"), 0))) {
+            tmp = rb_funcall(tmp, '*', 1, x);
+            tmp = rb_int_modulo(tmp, m);
+        }
+        x = rb_funcall(x, '*', 1, x);
+        x = rb_int_modulo(x, m);
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp = rb_funcall(tmp, '*', 1, x);
+            tmp = rb_int_modulo(tmp, m);
+        }
+        x = rb_funcall(x, '*', 1, x);
+        x = rb_int_modulo(x, m);
+    }
+
+    if (nega_flg && RTEST(rb_funcall(tmp, rb_intern("positive?"), 0))) {
+        tmp = rb_funcall(tmp, '-', 1, m);
+    }
+    return tmp;
+#endif
+}
+
+/*
+ * Integer#pow
+ */
+
+static VALUE
+int_pow_tmp1(VALUE x, VALUE y, long mm, int nega_flg)
+{
+    long xx = FIX2LONG(x);
+    long tmp = 1L;
+    long yy;
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(rb_int_odd_p(y))) {
+            tmp = (tmp * xx) % mm;
+        }
+        xx = (xx * xx) % mm;
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp = (tmp * xx) % mm;
+        }
+        xx = (xx * xx) % mm;
+    }
+
+    if (nega_flg && tmp) {
+        tmp -= mm;
+    }
+    return LONG2FIX(tmp);
+}
+
+static VALUE
+int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
+{
+    long tmp = 1L;
+    long yy;
+#ifdef DLONG
+    DLONG const mmm = mm;
+    long xx = FIX2LONG(x);
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(rb_int_odd_p(y))) {
+            tmp = ((DLONG)tmp * (DLONG)xx) % mmm;
+        }
+        xx = ((DLONG)xx * (DLONG)xx) % mmm;
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp = ((DLONG)tmp * (DLONG)xx) % mmm;
+        }
+        xx = ((DLONG)xx * (DLONG)xx) % mmm;
+    }
+#else
+    VALUE const m = LONG2FIX(mm);
+    VALUE tmp2 = LONG2FIX(tmp);
+
+    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
+        if (RTEST(rb_int_odd_p(y))) {
+            tmp2 = rb_fix_mul_fix(tmp2, x);
+            tmp2 = rb_int_modulo(tmp2, m);
+        }
+        x = rb_fix_mul_fix(x, x);
+        x = rb_int_modulo(x, m);
+    }
+    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
+        if (yy & 1L) {
+            tmp2 = rb_fix_mul_fix(tmp2, x);
+            tmp2 = rb_int_modulo(tmp2, m);
+        }
+        x = rb_fix_mul_fix(x, x);
+        x = rb_int_modulo(x, m);
+    }
+
+    tmp = FIX2LONG(tmp2);
+#endif
+    if (nega_flg && tmp) {
+        tmp -= mm;
+    }
+    return LONG2FIX(tmp);
+}
+
+/*
+ * Document-method: Integer#pow
+ * call-seq:
+ *    integer.pow(integer)           ->  integer
+ *    integer.pow(integer, integer)  ->  integer
+ *
+ * Returns (modular) exponentiation as:
+ *
+ *   a.pow(b)     #=>  same as a**b
+ *   a.pow(b, m)  #=>  same as (a**b) % m, but doesn't make huge values as temporary
+ */
+VALUE
+rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
+{
+    rb_check_arity(argc, 1, 2);
+
+    if (argc == 1) {
+        return rb_funcall(num, rb_intern("**"), 1, argv[0]);
+    }
+    else {
+        VALUE const a = num;
+        VALUE const b = argv[0];
+        VALUE m = argv[1];
+        int nega_flg = 0;
+        if ( ! RB_INTEGER_TYPE_P(b)) {
+            rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless a 1st argument is integer");
+        }
+        if (rb_num_negative_int_p(b)) {
+            rb_raise(rb_eRangeError, "Integer#pow() 1st argument cannot be negative when 2nd argument specified");
+        }
+        if (!RB_INTEGER_TYPE_P(m)) {
+            rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless all arguments are integers");
+        }
+
+        if (rb_num_negative_int_p(m)) {
+            m = rb_funcall(m, idUMinus, 0);
+            nega_flg = 1;
+        }
+
+        if (!rb_num_positive_int_p(m)) {
+            rb_num_zerodiv();
+        }
+        if (FIXNUM_P(m)) {
+            long const half_val = (long)HALF_LONG_MSB;
+            long const mm = FIX2LONG(m);
+            if (mm <= half_val) {
+                return int_pow_tmp1(rb_int_modulo(a, m), b, mm, nega_flg);
+            } else {
+                return int_pow_tmp2(rb_int_modulo(a, m), b, mm, nega_flg);
+            }
+        } else if (RB_TYPE_P(m, T_BIGNUM)) {
+            return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
+        }
+    }
+    UNREACHABLE;
+}
+
 /*
  *  Bignum objects hold integers outside the range of
  *  Fixnum. Bignum objects are created
