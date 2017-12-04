@@ -52,6 +52,7 @@
 #include "ruby/vm.h"
 #include "win32/dir.h"
 #include "win32/file.h"
+#include "id.h"
 #include "internal.h"
 #include "encindex.h"
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -7893,6 +7894,133 @@ rb_w32_pow(double x, double y)
     return r;
 }
 #endif
+
+#if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
+#define FileIdInfo 0x12
+
+typedef struct {
+    BYTE  Identifier[16];
+} FILE_ID_128;
+
+typedef struct {
+    unsigned LONG_LONG VolumeSerialNumber;
+    FILE_ID_128 FileId;
+} FILE_ID_INFO;
+#endif
+
+typedef union {
+    BY_HANDLE_FILE_INFORMATION bhfi;
+    FILE_ID_INFO fii;
+} w32_io_info_t;
+
+static HANDLE
+w32_io_info(VALUE *file, w32_io_info_t *st)
+{
+    VALUE tmp;
+    HANDLE f, ret = 0;
+
+    tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
+    if (!NIL_P(tmp)) {
+	rb_io_t *fptr;
+
+	GetOpenFile(tmp, fptr);
+	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
+	if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
+    }
+    else {
+	VALUE tmp;
+	WCHAR *ptr;
+	int len;
+	VALUE v;
+
+	FilePathValue(*file);
+	tmp = rb_str_encode_ospath(*file);
+	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
+	ptr = ALLOCV_N(WCHAR, v, len);
+	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
+	f = CreateFileW(ptr, 0,
+			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+			FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	ALLOCV_END(v);
+	if (f == INVALID_HANDLE_VALUE) return f;
+	ret = f;
+    }
+    if (GetFileType(f) == FILE_TYPE_DISK) {
+	ZeroMemory(st, sizeof(*st));
+	if (osver.dwMajorVersion < 6 ||
+	    (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2)) {
+	    if (GetFileInformationByHandle(f, &st->bhfi))
+		return ret;
+	}
+	else {
+	    typedef BOOL (WINAPI *gfibhe_t)(HANDLE, int, void *, DWORD);
+	    static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
+	    if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
+		pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
+
+	    /* expect that this function is always available after Windows 8. */
+	    /* if not available, return with error... */
+	    if (pGetFileInformationByHandleEx &&
+		pGetFileInformationByHandleEx(f, FileIdInfo, &st->fii, sizeof(st->fii)))
+		return ret;
+	}
+    }
+    if (ret) CloseHandle(ret);
+    return INVALID_HANDLE_VALUE;
+}
+
+static VALUE
+close_handle(VALUE h)
+{
+    CloseHandle((HANDLE)h);
+    return Qfalse;
+}
+
+struct w32_io_info_args {
+    VALUE *fname;
+    w32_io_info_t *st;
+};
+
+static VALUE
+call_w32_io_info(VALUE arg)
+{
+    struct w32_io_info_args *p = (void *)arg;
+    return (VALUE)w32_io_info(p->fname, p->st);
+}
+
+VALUE
+rb_w32_file_identical_p(VALUE fname1, VALUE fname2)
+{
+    w32_io_info_t st1, st2;
+    HANDLE f1 = 0, f2 = 0;
+
+    f1 = w32_io_info(&fname1, &st1);
+    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
+    if (f1) {
+	struct w32_io_info_args arg;
+	arg.fname = &fname2;
+	arg.st = &st2;
+	f2 = (HANDLE)rb_ensure(call_w32_io_info, (VALUE)&arg, close_handle, (VALUE)f1);
+    }
+    else {
+	f2 = w32_io_info(&fname2, &st2);
+    }
+    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
+    if (f2) CloseHandle(f2);
+
+    if (osver.dwMajorVersion < 6 || (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2)) {
+	if (st1.bhfi.dwVolumeSerialNumber == st2.bhfi.dwVolumeSerialNumber &&
+	    st1.bhfi.nFileIndexHigh == st2.bhfi.nFileIndexHigh &&
+	    st1.bhfi.nFileIndexLow == st2.bhfi.nFileIndexLow)
+	    return Qtrue;
+    }
+    else {
+	if (st1.fii.VolumeSerialNumber == st2.fii.VolumeSerialNumber &&
+	    memcmp(&st1.fii.FileId, &st2.fii.FileId, sizeof(FILE_ID_128)) == 0)
+	    return Qtrue;
+    }
+    return Qfalse;
+}
 
 int
 rb_w32_set_thread_description(HANDLE th, const WCHAR *name)

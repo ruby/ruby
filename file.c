@@ -1117,67 +1117,6 @@ rb_stat(VALUE file, struct stat *st)
     return (int)result;
 }
 
-#ifdef _WIN32
-static HANDLE
-w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
-{
-    VALUE tmp;
-    HANDLE f, ret = 0;
-
-    tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
-    if (!NIL_P(tmp)) {
-	rb_io_t *fptr;
-
-	GetOpenFile(tmp, fptr);
-	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
-	if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
-    }
-    else {
-	VALUE tmp;
-	WCHAR *ptr;
-	int len;
-	VALUE v;
-
-	FilePathValue(*file);
-	tmp = rb_str_encode_ospath(*file);
-	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-	ptr = ALLOCV_N(WCHAR, v, len);
-	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
-	f = CreateFileW(ptr, 0,
-			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	ALLOCV_END(v);
-	if (f == INVALID_HANDLE_VALUE) return f;
-	ret = f;
-    }
-    if (GetFileType(f) == FILE_TYPE_DISK) {
-	ZeroMemory(st, sizeof(*st));
-	if (GetFileInformationByHandle(f, st)) return ret;
-    }
-    if (ret) CloseHandle(ret);
-    return INVALID_HANDLE_VALUE;
-}
-
-static VALUE
-close_handle(VALUE h)
-{
-    CloseHandle((HANDLE)h);
-    return Qfalse;
-}
-
-struct w32_io_info_args {
-    VALUE *fname;
-    BY_HANDLE_FILE_INFORMATION *st;
-};
-
-static VALUE
-call_w32_io_info(VALUE arg)
-{
-    struct w32_io_info_args *p = (void *)arg;
-    return (VALUE)w32_io_info(p->fname, p->st);
-}
-#endif
-
 /*
  *  call-seq:
  *     File.stat(file_name)   ->  stat
@@ -2067,28 +2006,8 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (st1.st_ino != st2.st_ino) return Qfalse;
     return Qtrue;
 #else
-    BY_HANDLE_FILE_INFORMATION st1, st2;
-    HANDLE f1 = 0, f2 = 0;
-
-    f1 = w32_io_info(&fname1, &st1);
-    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
-    if (f1) {
-	struct w32_io_info_args arg;
-	arg.fname = &fname2;
-	arg.st = &st2;
-	f2 = (HANDLE)rb_ensure(call_w32_io_info, (VALUE)&arg, close_handle, (VALUE)f1);
-    }
-    else {
-	f2 = w32_io_info(&fname2, &st2);
-    }
-    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
-    if (f2) CloseHandle(f2);
-
-    if (st1.dwVolumeSerialNumber == st2.dwVolumeSerialNumber &&
-	st1.nFileIndexHigh == st2.nFileIndexHigh &&
-	st1.nFileIndexLow == st2.nFileIndexLow)
-	return Qtrue;
-    return Qfalse;
+    extern VALUE rb_w32_file_identical_p(VALUE, VALUE);
+    return rb_w32_file_identical_p(fname1, fname2);
 #endif
 }
 
