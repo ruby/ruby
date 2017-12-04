@@ -1168,6 +1168,7 @@ $(srcdir)/enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 
 $(OBJS): {$(hdrdir)/ruby}win32.h
 
+win32/win32.$(OBJEXT): {$(VPATH)}id.h
 dir.$(OBJEXT) win32/win32.$(OBJEXT): {$(srcdir)}win32/dir.h
 file.$(OBJEXT) win32/win32.$(OBJEXT): {$(VPATH)}win32/file.h
 
