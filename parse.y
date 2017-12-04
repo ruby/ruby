@@ -3832,7 +3832,7 @@ opt_rescue	: keyword_rescue exc_list exc_var then
 		    {
 		    /*%%%*/
 			if ($3) {
-			    $3 = node_assign($3, new_errinfo(&@$), &@$);
+			    $3 = node_assign($3, new_errinfo(&@3), &@3);
 			    $5 = block_append($3, $5, &@$);
 			}
 			$$ = new_resbody($2, $5, $6, &@$);
