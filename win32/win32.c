@@ -7983,7 +7983,7 @@ rb_w32_pow(double x, double y)
 }
 #endif
 
-#ifndef FILE_INVALID_FILE_ID
+#if !defined FILE_INVALID_FILE_ID && !defined __MINGW32__
 typedef struct {
     BYTE  Identifier[16];
 } FILE_ID_128;
