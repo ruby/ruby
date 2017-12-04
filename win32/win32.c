@@ -7895,12 +7895,14 @@ rb_w32_pow(double x, double y)
 }
 #endif
 
-#if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
-#define FileIdInfo 0x12
-
+#ifndef FILE_INVALID_FILE_ID
 typedef struct {
     BYTE  Identifier[16];
 } FILE_ID_128;
+#endif
+
+#if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
+#define FileIdInfo 0x12
 
 typedef struct {
     unsigned LONG_LONG VolumeSerialNumber;
