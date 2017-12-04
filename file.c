@@ -91,9 +91,9 @@ int flock(int, int);
 /* define system APIs */
 #ifdef _WIN32
 #include "win32/file.h"
-#define STAT(p, s)	rb_w32_ustati64((p), (s))
+#define STAT(p, s)	rb_w32_ustati64ns((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ulstati64((p), (s))
+#define lstat(p, s)	rb_w32_ulstati64ns((p), (s))
 #undef access
 #define access(p, m)	rb_w32_uaccess((p), (m))
 #undef truncate
@@ -104,8 +104,8 @@ int flock(int, int);
 #define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
 #undef lchown
 #define lchown(p, o, g)	rb_w32_ulchown((p), (o), (g))
-#undef utime
-#define utime(p, t)	rb_w32_uutime((p), (t))
+#undef utimensat
+#define utimensat(s, p, t, f)	rb_w32_uutimensat((s), (p), (t), (f))
 #undef link
 #define link(f, t)	rb_w32_ulink((f), (t))
 #undef unlink
