@@ -54,11 +54,12 @@ ifaddr_free(void *ptr)
 static size_t
 ifaddr_memsize(const void *ptr)
 {
+    size_t size = offsetof(rb_ifaddr_root_t, ary);
     const rb_ifaddr_t *ifaddr;
-    const rb_ifaddr_root_t *root;
     ifaddr = ptr;
-    root = get_root(ifaddr);
-    return sizeof(rb_ifaddr_root_t) + (root->numifaddrs - 1) * sizeof(rb_ifaddr_t);
+    if (ifaddr->ord == 0) size = sizeof(rb_ifaddr_root_t);
+    size += sizeof(struct ifaddrs);
+    return size;
 }
 
 static const rb_data_type_t ifaddr_type = {
@@ -105,7 +106,7 @@ rsock_getifaddrs(void)
         numifaddrs++;
 
     addr = TypedData_Wrap_Struct(rb_cSockIfaddr, &ifaddr_type, 0);
-    root = xmalloc(sizeof(rb_ifaddr_root_t) + (numifaddrs-1) * sizeof(rb_ifaddr_t));
+    root = xmalloc(offsetof(rb_ifaddr_root_t, ary) + numifaddrs * sizeof(rb_ifaddr_t));
     root->refcount = 0;
     root->numifaddrs = numifaddrs;
 
