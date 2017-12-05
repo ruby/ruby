@@ -71,6 +71,7 @@
 #include "ruby/thread_native.h"
 #include "ruby/debug.h"
 #include "internal.h"
+#include "iseq.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -4093,7 +4094,6 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
     VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
 
     if (lines) {
 	for (i = 0; i < RARRAY_LEN(lines); i++) {
@@ -4106,11 +4106,6 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 	VALUE counters = RARRAY_AREF(branches, 1);
 	for (i = 0; i < RARRAY_LEN(counters); i++) {
 	    RARRAY_ASET(counters, i, INT2FIX(0));
-	}
-    }
-    if (methods) {
-	for (i = 2; i < RARRAY_LEN(methods); i += 3) {
-	    RARRAY_ASET(methods, i, INT2FIX(0));
 	}
     }
 
@@ -5019,20 +5014,72 @@ update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 	    }
 	    break;
 	  }
-	  case COVERAGE_INDEX_METHODS: {
-	    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
-	    if (methods) {
-		long count;
-		long idx = arg / 16 * 3 + 2;
-		VALUE num = RARRAY_AREF(methods, idx);
-		count = FIX2LONG(num) + 1;
-		if (POSFIXABLE(count)) {
-		    RARRAY_ASET(methods, idx, LONG2FIX(count));
-		}
-	    }
-	    break;
-	  }
 	}
+    }
+}
+
+const rb_method_entry_t *
+rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[2])
+{
+    VALUE path, first_lineno;
+
+  retry:
+    switch (me->def->type) {
+      case VM_METHOD_TYPE_ISEQ: {
+	rb_iseq_location_t loc = me->def->body.iseq.iseqptr->body->location;
+	path = loc.pathobj;
+	first_lineno = loc.first_lineno;
+	break;
+      }
+      case VM_METHOD_TYPE_BMETHOD: {
+	const rb_iseq_t *iseq = rb_proc_get_iseq(me->def->body.proc, 0);
+	if (iseq) {
+	    rb_iseq_check(iseq);
+	    path = rb_iseq_path(iseq);
+	    first_lineno = iseq->body->location.first_lineno;
+	    break;
+	}
+	return NULL;
+      }
+      case VM_METHOD_TYPE_ALIAS:
+	me = me->def->body.alias.original_me;
+	goto retry;
+      case VM_METHOD_TYPE_REFINED:
+	me = me->def->body.refined.orig_me;
+	if (!me) return NULL;
+	goto retry;
+      default:
+	return NULL;
+    }
+
+    /* found */
+    if (RB_TYPE_P(path, T_ARRAY)) {
+	path = rb_ary_entry(path, 1);
+	if (!RB_TYPE_P(path, T_STRING)) return NULL; /* just for the case... */
+    }
+    if (resolved_location) {
+	resolved_location[0] = path;
+	resolved_location[1] = first_lineno;
+    }
+    return me;
+}
+
+static void
+update_method_coverage(VALUE me2counter, rb_trace_arg_t *trace_arg)
+{
+    const rb_control_frame_t *cfp = GET_EC()->cfp;
+    const rb_callable_method_entry_t *cme = rb_vm_frame_method_entry(cfp);
+    const rb_method_entry_t *me = (const rb_method_entry_t *)cme;
+    VALUE rcount;
+    long count;
+
+    me = rb_resolve_me_location(me, 0);
+    if (!me) return;
+
+    rcount = rb_hash_aref(me2counter, (VALUE) me);
+    count = FIXNUM_P(rcount) ? FIX2LONG(rcount) + 1 : 1;
+    if (POSFIXABLE(count)) {
+	rb_hash_aset(me2counter, (VALUE) me, LONG2FIX(count));
     }
 }
 
@@ -5043,11 +5090,14 @@ rb_get_coverages(void)
 }
 
 void
-rb_set_coverages(VALUE coverages, int mode)
+rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
     GET_VM()->coverages = coverages;
     GET_VM()->coverage_mode = mode;
     rb_add_event_hook2((rb_event_hook_func_t) update_coverage, RUBY_EVENT_COVERAGE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    if (mode & COVERAGE_TARGET_METHODS) {
+	rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, me2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    }
 }
 
 /* Make coverage arrays empty so old covered files are no longer tracked. */
@@ -5057,10 +5107,8 @@ reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE coverage = (VALUE)val;
     VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
     VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-    VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
     if (lines) rb_ary_clear(lines);
     if (branches) rb_ary_clear(branches);
-    if (methods) rb_ary_clear(methods);
     return ST_CONTINUE;
 }
 
@@ -5071,13 +5119,16 @@ rb_reset_coverages(void)
     st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook((rb_event_hook_func_t) update_coverage);
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);
+    }
 }
 
 VALUE
 rb_default_coverage(int n)
 {
     VALUE coverage = rb_ary_tmp_new_fill(3);
-    VALUE lines = Qfalse, branches = Qfalse, methods = Qfalse;
+    VALUE lines = Qfalse, branches = Qfalse;
     int mode = GET_VM()->coverage_mode;
 
     if (mode & COVERAGE_TARGET_LINES) {
@@ -5104,18 +5155,6 @@ rb_default_coverage(int n)
 	RARRAY_ASET(branches, 1, rb_ary_tmp_new(0));
     }
     RARRAY_ASET(coverage, COVERAGE_INDEX_BRANCHES, branches);
-
-    if (mode & COVERAGE_TARGET_METHODS) {
-	methods = rb_ary_tmp_new(0);
-	/* internal data structures for method coverage:
-	 *
-	 * [symbol_of_method_name, lineno_of_method_head, counter,
-	 *  ...]
-	 *
-	 * Example: [:foobar, 1, 0, ...]
-	 */
-    }
-    RARRAY_ASET(coverage, COVERAGE_INDEX_METHODS, methods);
 
     return coverage;
 }

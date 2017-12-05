@@ -294,19 +294,6 @@ struct iseq_compile_data_ensure_node_stack {
 	  ADD_INSN2((seq), (first_line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx * 16 + COVERAGE_INDEX_BRANCHES)); \
       } \
   } while (0)
-#define ADD_TRACE_METHOD_COVERAGE(seq, line, method_name) \
-  do { \
-      if (ISEQ_COVERAGE(iseq) && \
-	  ISEQ_METHOD_COVERAGE(iseq) && \
-	  (line) > 0) { \
-	  VALUE methods = ISEQ_METHOD_COVERAGE(iseq); \
-	  long counter_idx = RARRAY_LEN(methods) / 3; \
-	  rb_ary_push(methods, ID2SYM(method_name)); \
-	  rb_ary_push(methods, INT2FIX(line)); \
-	  rb_ary_push(methods, INT2FIX(0)); \
-	  ADD_INSN2((seq), (line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx * 16 + COVERAGE_INDEX_METHODS)); \
-      } \
-  } while (0)
 
 static void iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
 static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level);
@@ -670,7 +657,6 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	  case ISEQ_TYPE_METHOD:
 	    {
 		ADD_TRACE(ret, RUBY_EVENT_CALL);
-		ADD_TRACE_METHOD_COVERAGE(ret, FIX2INT(iseq->body->location.first_lineno), rb_intern_str(iseq->body->location.label));
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
 		ADD_TRACE(ret, RUBY_EVENT_RETURN);
 		break;

@@ -427,6 +427,14 @@ rb_hash_new(void)
 }
 
 VALUE
+rb_hash_new_compare_by_id(void)
+{
+    VALUE hash = rb_hash_new();
+    RHASH(hash)->ntbl = rb_init_identtable();
+    return hash;
+}
+
+VALUE
 rb_hash_new_with_size(st_index_t size)
 {
     VALUE ret = rb_hash_new();

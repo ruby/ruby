@@ -188,7 +188,15 @@ class TestCoverage < Test::Unit::TestCase
           Coverage.start(#{ opt })
           tmp = Dir.pwd
           require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
+          r = Coverage.result[tmp + "/test.rb"]
+          if r[:methods]
+            h = {}
+            r[:methods].keys.sort_by {|key| key.drop(1) }.each do |key|
+              h[key] = r[:methods][key]
+            end
+            r[:methods].replace h
+          end
+          p r
         end;
       }
     }
@@ -332,9 +340,9 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage
     result = {
       :methods => {
-        [:foo, 0, 1] => 2,
-        [:bar, 1, 2] => 1,
-        [:baz, 2, 4] => 0,
+        [Object, :bar, 2] => 1,
+        [Object, :baz, 4] => 0,
+        [Object, :foo, 1] => 2,
       }
     }
     assert_coverage(<<-"end;", { methods: true }, result)
@@ -347,5 +355,102 @@ class TestCoverage < Test::Unit::TestCase
       foo
       bar
     end;
+  end
+
+  def test_method_coverage_for_define_method
+    result = {
+      :methods => {
+        [Object, :bar, 2] => 1,
+        [Object, :baz, 4] => 0,
+        [Object, :foo, 1] => 2,
+      }
+    }
+    assert_coverage(<<-"end;", { methods: true }, result)
+      define_method(:foo) {}
+      define_method(:bar) {
+      }
+      f = proc {}
+      define_method(:baz, &f)
+
+      foo
+      foo
+      bar
+    end;
+  end
+
+  class DummyConstant < String
+    def inspect
+      self
+    end
+  end
+
+  def test_method_coverage_for_alias
+    _C = DummyConstant.new("C")
+    _M = DummyConstant.new("M")
+    code = <<-"end;"
+      module M
+        def foo
+        end
+        alias bar foo
+      end
+      class C
+        include M
+        def baz
+        end
+        alias qux baz
+      end
+    end;
+
+    result = {
+      :methods => {
+        [_C, :baz, 8] => 0,
+        [_M, :foo, 2] => 0,
+      }
+    }
+    assert_coverage(code, { methods: true }, result)
+
+    result = {
+      :methods => {
+        [_C, :baz, 8] => 12,
+        [_M, :foo, 2] =>  3,
+      }
+    }
+    assert_coverage(code + <<-"end;", { methods: true }, result)
+      obj = C.new
+      1.times { obj.foo }
+      2.times { obj.bar }
+      4.times { obj.baz }
+      8.times { obj.qux }
+    end;
+  end
+
+  def test_method_coverage_for_singleton_class
+    _singleton_Foo = DummyConstant.new("#<Class:Foo>")
+    _Foo = DummyConstant.new("Foo")
+    code = <<-"end;"
+      class Foo
+        def foo
+        end
+        alias bar foo
+        def self.baz
+        end
+        class << self
+          alias qux baz
+        end
+      end
+
+      1.times { Foo.new.foo }
+      2.times { Foo.new.bar }
+      4.times { Foo.baz }
+      8.times { Foo.qux }
+    end;
+
+    result = {
+      :methods => {
+        [_singleton_Foo, :baz, 5] => 12,
+        [_Foo, :foo, 2] =>  3,
+      }
+    }
+    assert_coverage(code, { methods: true }, result)
   end
 end
