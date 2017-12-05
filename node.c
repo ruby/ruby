@@ -32,18 +32,12 @@
 #define D_NULL_NODE (A_INDENT, A("(null node)\n"))
 #define D_NODE_HEADER(node) (A_INDENT, A_NODE_HEADER(node, "\n"))
 
-#define COMPOUND_FIELD(len, name, block) \
-    do { \
-	D_FIELD_HEADER((len), (name), "\n");	\
-	D_INDENT; \
-	block; \
-	D_DEDENT; \
-    } while (0)
+#define COMPOUND_FIELD(len, name) \
+    FIELD_BLOCK((D_FIELD_HEADER((len), (name), "\n"), D_INDENT), D_DEDENT)
 
-#define COMPOUND_FIELD1(name, ann, block) \
+#define COMPOUND_FIELD1(name, ann) \
     COMPOUND_FIELD(FIELD_NAME_LEN(name, ann), \
-		   FIELD_NAME_DESC(name, ann), \
-		   block)
+		   FIELD_NAME_DESC(name, ann))
 
 #define FIELD_NAME_DESC(name, ann) name " (" ann ")"
 #define FIELD_NAME_LEN(name, ann) (int)( \
@@ -51,9 +45,12 @@
 	rb_strlen_lit(FIELD_NAME_DESC(name, ann)) : \
 	rb_strlen_lit(name))
 #define SIMPLE_FIELD(len, name) \
-    for (D_FIELD_HEADER((len), (name), " "), field_flag = 1; \
+    FIELD_BLOCK(D_FIELD_HEADER((len), (name), " "), A("\n"))
+
+#define FIELD_BLOCK(init, reset) \
+    for (init, field_flag = 1; \
 	 field_flag; /* should be optimized away */ \
-	 A("\n"), field_flag = 0)
+	 reset, field_flag = 0)
 
 #define SIMPLE_FIELD1(name, ann)    SIMPLE_FIELD(FIELD_NAME_LEN(name, ann), FIELD_NAME_DESC(name, ann))
 #define F_CUSTOM1(name, ann)	    SIMPLE_FIELD1(#name, ann)
@@ -65,9 +62,9 @@
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
-    COMPOUND_FIELD1(#name, ann, dump_node(buf, indent, comment, node->name))
+    COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, node->name);}
 #define F_OPTION(name, ann) \
-    COMPOUND_FIELD1(#name, ann, dump_option(buf, indent, node->name))
+    COMPOUND_FIELD1(#name, ann) {dump_option(buf, indent, node->name);}
 
 #define ANN(ann) \
     if (comment) { \
