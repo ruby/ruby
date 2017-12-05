@@ -87,15 +87,15 @@ def gen_rb_lcov(file)
 
       # function coverage
       total = covered = 0
-      cov[:methods].each do |(name, _, lineno), count|
-        f.puts "FN:#{ lineno },#{ name }"
+      cov[:methods].each do |(klass, name, lineno), count|
+        f.puts "FN:#{ lineno },#{ klass }##{ name }"
         total += 1
         covered += 1 if count > 0
       end
       f.puts "FNF:#{ total }"
       f.puts "FNF:#{ covered }"
-      cov[:methods].each do |(name, _), count|
-        f.puts "FNDA:#{ count },#{ name }"
+      cov[:methods].each do |(klass, name, _), count|
+        f.puts "FNDA:#{ count },#{ klass }##{ name }"
       end
 
       # line coverage
