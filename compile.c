@@ -8566,6 +8566,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
     load_body->location.first_lineno = body->location.first_lineno;
+    load_body->location.code_range = body->location.code_range;
 
     load_body->is_entries      = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
     load_body->ci_entries      = ibf_load_ci_entries(load, body);
