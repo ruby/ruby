@@ -579,8 +579,8 @@ static NODE *new_body_gen(struct parser_params *parser, NODE *param, NODE *stmt,
 #define new_brace_body(param, stmt, location) new_body_gen(parser, param, stmt, location)
 #define new_do_body(param, stmt, location) new_body_gen(parser, param, stmt, location)
 
-static NODE *match_op_gen(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
-#define match_op(node1,node2,location) match_op_gen(parser, (node1), (node2), (location))
+static NODE *match_op_gen(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
+#define match_op(node1,node2,op_loc,location) match_op_gen(parser, (node1), (node2), (op_loc), (location))
 
 static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
@@ -632,7 +632,7 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 
 #define method_cond(node,location) (node)
 #define call_bin_op(recv,id,arg1,op_loc,location) dispatch3(binary, (recv), STATIC_ID2SYM(id), (arg1))
-#define match_op(node1,node2,location) call_bin_op((node1), idEqTilde, (node2), 0, location)
+#define match_op(node1,node2,op_loc,location) call_bin_op((node1), idEqTilde, (node2), op_loc, location)
 #define call_uni_op(recv,id,location) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define logop(id,node1,node2,location) call_bin_op((node1), (id), (node2), 0, location)
 #define node_assign(node1, node2, location) dispatch2(assign, (node1), (node2))
@@ -2302,7 +2302,7 @@ arg		: lhs '=' arg_rhs
 		    }
 		| arg tMATCH arg
 		    {
-			$$ = match_op($1, $3, &@$);
+			$$ = match_op($1, $3, &@2, &@$);
 		    }
 		| arg tNMATCH arg
 		    {
@@ -9205,9 +9205,10 @@ new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *
 
 #define nd_once_body(node) (nd_type(node) == NODE_SCOPE ? (node)->nd_body : node)
 static NODE*
-match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTYPE *location)
+match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *location)
 {
     NODE *n;
+    int line = op_loc->first_loc.lineno;
 
     value_expr(node1);
     value_expr(node2);
@@ -9217,6 +9218,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTY
 	    {
 		NODE *match = NEW_MATCH2(node1, node2);
 		match->nd_loc = *location;
+		nd_set_line(match, line);
 		return match;
 	    }
 
@@ -9226,6 +9228,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTY
 		NODE *match = NEW_MATCH2(node1, node2);
 		match->nd_args = reg_named_capture_assign(lit, location);
 		match->nd_loc = *location;
+		nd_set_line(match, line);
 		return match;
 	    }
 	}
@@ -9235,21 +9238,20 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTY
         NODE *match3;
 
 	switch (nd_type(n)) {
+	  case NODE_LIT:
+	    if (!RB_TYPE_P(n->nd_lit, T_REGEXP)) break;
+	    /* fallthru */
 	  case NODE_DREGX:
 	    match3 = NEW_MATCH3(node2, node1);
 	    match3->nd_loc = *location;
+	    nd_set_line(match3, line);
 	    return match3;
-
-	  case NODE_LIT:
-	    if (RB_TYPE_P(n->nd_lit, T_REGEXP)) {
-		match3 = NEW_MATCH3(node2, node1);
-		match3->nd_loc = *location;
-		return match3;
-	    }
 	}
     }
 
-    return new_call(node1, tMATCH, new_list(node2, location), location);
+    n = new_call(node1, tMATCH, new_list(node2, location), location);
+    nd_set_line(n, line);
+    return n;
 }
 
 # if WARN_PAST_SCOPE
