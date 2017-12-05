@@ -6992,40 +6992,31 @@ int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
     long tmp = 1L;
     long yy;
 #ifdef DLONG
-    DLONG const mmm = mm;
+    const DLONG m = mm;
+    long tmp2 = tmp;
     long xx = FIX2LONG(x);
 # define MUL_MODULO(a, b, c) (long)(((DLONG)(a) * (DLONG)(b)) % (c))
-
-    for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
-        if (RTEST(rb_int_odd_p(y))) {
-            tmp = MUL_MODULO(tmp, xx, mmm);
-        }
-        xx = MUL_MODULO(xx, xx, mmm);
-    }
-    for (yy = FIX2LONG(y); yy; yy >>= 1L) {
-        if (yy & 1L) {
-            tmp = MUL_MODULO(tmp, xx, mmm);
-        }
-        xx = MUL_MODULO(xx, xx, mmm);
-    }
 #else
-    VALUE const m = LONG2FIX(mm);
+    const VALUE m = LONG2FIX(mm);
     VALUE tmp2 = LONG2FIX(tmp);
+    VALUE xx = x;
 # define MUL_MODULO(a, b, c) rb_int_modulo(rb_fix_mul_fix((a), (b)), (c))
+#endif
 
     for (/*NOP*/; ! FIXNUM_P(y); y = rb_funcall(y, idGTGT, 1, LONG2FIX(1L))) {
         if (RTEST(rb_int_odd_p(y))) {
-            tmp2 = MUL_MODULO(tmp2, x, m);
+            tmp2 = MUL_MODULO(tmp2, xx, m);
         }
-        x = MUL_MODULO(x, x, m);
+        xx = MUL_MODULO(xx, xx, m);
     }
     for (yy = FIX2LONG(y); yy; yy >>= 1L) {
         if (yy & 1L) {
-            tmp2 = MUL_MODULO(tmp2, x, m);
+            tmp2 = MUL_MODULO(tmp2, xx, m);
         }
-        x = MUL_MODULO(x, x, m);
+        xx = MUL_MODULO(xx, xx, m);
     }
 
+#ifndef DLONG
     tmp = FIX2LONG(tmp2);
 #endif
     if (nega_flg && tmp) {
