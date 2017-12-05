@@ -340,16 +340,16 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage
     result = {
       :methods => {
-        [Object, :bar, 2] => 1,
-        [Object, :baz, 4] => 0,
-        [Object, :foo, 1] => 2,
+        [Object, :bar, 2, 0, 3, 3] => 1,
+        [Object, :baz, 4, 1, 4, 13] => 0,
+        [Object, :foo, 1, 0, 1, 12] => 2,
       }
     }
-    assert_coverage(<<-"end;", { methods: true }, result)
+    assert_coverage(<<~"end;", { methods: true }, result)
       def foo; end
       def bar
       end
-      def baz; end
+       def baz; end
 
       foo
       foo
@@ -360,12 +360,12 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage_for_define_method
     result = {
       :methods => {
-        [Object, :bar, 2] => 1,
-        [Object, :baz, 4] => 0,
-        [Object, :foo, 1] => 2,
+        [Object, :bar, 2, 20, 3, 1] => 1,
+        [Object, :baz, 4, 9, 4, 11] => 0,
+        [Object, :foo, 1, 20, 1, 22] => 2,
       }
     }
-    assert_coverage(<<-"end;", { methods: true }, result)
+    assert_coverage(<<~"end;", { methods: true }, result)
       define_method(:foo) {}
       define_method(:bar) {
       }
@@ -387,7 +387,7 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage_for_alias
     _C = DummyConstant.new("C")
     _M = DummyConstant.new("M")
-    code = <<-"end;"
+    code = <<~"end;"
       module M
         def foo
         end
@@ -403,19 +403,19 @@ class TestCoverage < Test::Unit::TestCase
 
     result = {
       :methods => {
-        [_C, :baz, 8] => 0,
-        [_M, :foo, 2] => 0,
+        [_C, :baz, 8, 2, 9, 5] => 0,
+        [_M, :foo, 2, 2, 3, 5] => 0,
       }
     }
     assert_coverage(code, { methods: true }, result)
 
     result = {
       :methods => {
-        [_C, :baz, 8] => 12,
-        [_M, :foo, 2] =>  3,
+        [_C, :baz, 8, 2, 9, 5] => 12,
+        [_M, :foo, 2, 2, 3, 5] =>  3,
       }
     }
-    assert_coverage(code + <<-"end;", { methods: true }, result)
+    assert_coverage(code + <<~"end;", { methods: true }, result)
       obj = C.new
       1.times { obj.foo }
       2.times { obj.bar }
@@ -427,7 +427,7 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage_for_singleton_class
     _singleton_Foo = DummyConstant.new("#<Class:Foo>")
     _Foo = DummyConstant.new("Foo")
-    code = <<-"end;"
+    code = <<~"end;"
       class Foo
         def foo
         end
@@ -447,8 +447,8 @@ class TestCoverage < Test::Unit::TestCase
 
     result = {
       :methods => {
-        [_singleton_Foo, :baz, 5] => 12,
-        [_Foo, :foo, 2] =>  3,
+        [_singleton_Foo, :baz, 5, 2, 6, 5] => 12,
+        [_Foo, :foo, 2, 2, 3, 5] => 3,
       }
     }
     assert_coverage(code, { methods: true }, result)
