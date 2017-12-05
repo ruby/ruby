@@ -8,7 +8,7 @@ end
 Gem::Specification.new do |s|
   s.name = "rdoc"
   s.version = RDoc::VERSION
-  s.date = "2017-11-27"
+  s.date = "2017-12-05"
 
   s.authors = [
     "Eric Hodel",
