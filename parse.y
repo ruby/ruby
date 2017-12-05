@@ -8929,6 +8929,14 @@ parser_warn(struct parser_params *parser, NODE *node, const char *mesg)
 }
 #define parser_warn(node, mesg) parser_warn(parser, (node), (mesg))
 
+static NODE *
+nd_set_loc(NODE *nd, const YYLTYPE *location)
+{
+    nd->nd_loc = *location;
+    nd_set_line(nd, location->first_loc.lineno);
+    return nd;
+}
+
 static NODE*
 block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYLTYPE *location)
 {
@@ -8948,9 +8956,8 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
 	return tail;
       default:
 	h = end = NEW_BLOCK(head);
-	end->nd_loc = *location;
 	end->nd_end = end;
-	fixpos(end, head);
+	nd_set_loc(end, location);
 	head = end;
 	break;
       case NODE_BLOCK:
@@ -8976,7 +8983,7 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
 
     if (nd_type(tail) != NODE_BLOCK) {
 	tail = NEW_BLOCK(tail);
-	tail->nd_loc = *location;
+	nd_set_loc(tail, location);
 	tail->nd_end = tail;
     }
     end->nd_next = tail;
@@ -9168,7 +9175,7 @@ new_evstr_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
 	}
     }
     evstr = NEW_EVSTR(head);
-    evstr->nd_loc = *location;
+    nd_set_loc(evstr, location);
     return evstr;
 }
 
@@ -9276,19 +9283,19 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
     switch (id) {
       case keyword_self:
 	node = NEW_SELF();
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case keyword_nil:
 	node = NEW_NIL();
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case keyword_true:
 	node = NEW_TRUE();
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case keyword_false:
 	node = NEW_FALSE();
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case keyword__FILE__:
 	node = new_str(rb_str_dup(ruby_sourcefile_string), location);
@@ -9323,7 +9330,7 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 # endif
 	/* method call without arguments */
 	node = NEW_VCALL(id);
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case ID_GLOBAL:
 	node = new_gvar(id, location);
@@ -9333,11 +9340,11 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 	return node;
       case ID_CONST:
 	node = NEW_CONST(id);
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
       case ID_CLASS:
 	node = NEW_CVAR(id);
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	return node;
     }
     compile_error(PARSER_ARG "identifier %"PRIsVALUE" is not valid to get", rb_id2str(id));
@@ -9378,7 +9385,7 @@ static NODE *
 new_defined_gen(struct parser_params *parser, NODE *expr, const YYLTYPE *location)
 {
     NODE *defined = NEW_DEFINED(remove_begin_all(expr));
-    defined->nd_loc = *location;
+    nd_set_loc(defined, location);
     return defined;
 }
 
@@ -9402,7 +9409,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
       default:
 	add_mark_object(lit = STR_NEW0());
 	node = NEW_NODE(NODE_DSTR, lit, 1, new_list(node, location));
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
 	node->nd_cflag = options & RE_OPTION_MASK;
@@ -9437,7 +9444,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
 	}
 	if (options & RE_OPTION_ONCE) {
 	    node = NEW_NODE(NODE_SCOPE, 0, node, 0);
-	    node->nd_loc = *location;
+	    nd_set_loc(node, location);
 	}
 	break;
     }
@@ -9449,7 +9456,7 @@ new_lit_gen(struct parser_params *parser, VALUE sym, const YYLTYPE *location)
 {
     NODE *lit = NEW_LIT(sym);
     add_mark_object(sym);
-    lit->nd_loc = *location;
+    nd_set_loc(lit, location);
     return lit;
 }
 
@@ -9457,7 +9464,7 @@ static NODE *
 new_list_gen(struct parser_params *parser, NODE *item, const YYLTYPE *location)
 {
     NODE *list = NEW_LIST(item);
-    list->nd_loc = *location;
+    nd_set_loc(list, location);
     return list;
 }
 
@@ -9466,7 +9473,7 @@ new_str_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location)
 {
     NODE *nd_str = NEW_STR(str);
     add_mark_object(str);
-    nd_str->nd_loc = *location;
+    nd_set_loc(nd_str, location);
     return nd_str;
 }
 
@@ -9474,7 +9481,7 @@ static NODE *
 new_dvar_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 {
     NODE *dvar = NEW_DVAR(id);
-    dvar->nd_loc = *location;
+    nd_set_loc(dvar, location);
     return dvar;
 }
 
@@ -9482,7 +9489,7 @@ static NODE *
 new_resbody_gen(struct parser_params *parser, NODE *exc_list, NODE *stmt, NODE *rescue, const YYLTYPE *location)
 {
     NODE *resbody = NEW_RESBODY(exc_list, stmt, rescue);
-    resbody->nd_loc = *location;
+    nd_set_loc(resbody, location);
     return resbody;
 }
 
@@ -9490,7 +9497,7 @@ static NODE *
 new_errinfo_gen(struct parser_params *parser, const YYLTYPE *location)
 {
     NODE *errinfo = NEW_ERRINFO();
-    errinfo->nd_loc = *location;
+    nd_set_loc(errinfo, location);
     return errinfo;
 }
 
@@ -9498,7 +9505,7 @@ static NODE *
 new_call_gen(struct parser_params *parser, NODE *recv, ID mid, NODE *args, const YYLTYPE *location)
 {
     NODE *call = NEW_CALL(recv, mid, args);
-    call->nd_loc = *location;
+    nd_set_loc(call, location);
     return call;
 }
 
@@ -9506,7 +9513,7 @@ static NODE *
 new_fcall_gen(struct parser_params *parser, ID mid, NODE *args, const YYLTYPE *location)
 {
     NODE *fcall = NEW_FCALL(mid, args);
-    fcall->nd_loc = *location;
+    nd_set_loc(fcall, location);
     return fcall;
 }
 
@@ -9514,7 +9521,7 @@ static NODE *
 new_for_gen(struct parser_params *parser, NODE *var, NODE *iter, NODE *body, const YYLTYPE *location)
 {
     NODE *nd_for = NEW_FOR(var, iter, body);
-    nd_for->nd_loc = *location;
+    nd_set_loc(nd_for, location);
     return nd_for;
 }
 
@@ -9522,7 +9529,7 @@ static NODE *
 new_gvar_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 {
     NODE *gvar = NEW_GVAR(id);
-    gvar->nd_loc = *location;
+    nd_set_loc(gvar, location);
     return gvar;
 }
 
@@ -9530,7 +9537,7 @@ static NODE *
 new_lvar_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 {
     NODE *lvar = NEW_LVAR(id);
-    lvar->nd_loc = *location;
+    nd_set_loc(lvar, location);
     return lvar;
 }
 
@@ -9539,7 +9546,7 @@ new_dstr_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location)
 {
     NODE *dstr = NEW_DSTR(str);
     add_mark_object(str);
-    dstr->nd_loc = *location;
+    nd_set_loc(dstr, location);
     return dstr;
 }
 
@@ -9547,7 +9554,7 @@ static NODE *
 new_rescue_gen(struct parser_params *parser, NODE *b, NODE *res, NODE *e, const YYLTYPE *location)
 {
     NODE *rescue = NEW_RESCUE(b, res, e);
-    rescue->nd_loc = *location;
+    nd_set_loc(rescue, location);
     return rescue;
 }
 
@@ -9555,7 +9562,7 @@ static NODE *
 new_undef_gen(struct parser_params *parser, NODE *i, const YYLTYPE *location)
 {
     NODE *undef = NEW_UNDEF(i);
-    undef->nd_loc = *location;
+    nd_set_loc(undef, location);
     return undef;
 }
 
@@ -9563,7 +9570,7 @@ static NODE *
 new_zarray_gen(struct parser_params *parser, const YYLTYPE *location)
 {
     NODE *zarray = NEW_ZARRAY();
-    zarray->nd_loc = *location;
+    nd_set_loc(zarray, location);
     return zarray;
 }
 
@@ -9571,7 +9578,7 @@ static NODE *
 new_ivar_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 {
     NODE *ivar = NEW_IVAR(id);
-    ivar->nd_loc = *location;
+    nd_set_loc(ivar, location);
     return ivar;
 }
 
@@ -9579,7 +9586,7 @@ static NODE *
 new_postarg_gen(struct parser_params *parser, NODE *i, NODE *v, const YYLTYPE *location)
 {
     NODE *postarg = NEW_POSTARG(i, v);
-    postarg->nd_loc = *location;
+    nd_set_loc(postarg, location);
     return postarg;
 }
 
@@ -9587,7 +9594,7 @@ static NODE *
 new_cdecl_gen(struct parser_params *parser, ID v, NODE *val, NODE *path, const YYLTYPE *location)
 {
     NODE *nd_cdecl = NEW_CDECL(v, val, path);
-    nd_cdecl->nd_loc = *location;
+    nd_set_loc(nd_cdecl, location);
     return nd_cdecl;
 }
 
@@ -9595,7 +9602,7 @@ static NODE *
 new_scope_gen(struct parser_params *parser, NODE *a, NODE *b, const YYLTYPE *location)
 {
     NODE *scope = NEW_SCOPE(a, b);
-    scope->nd_loc = *location;
+    nd_set_loc(scope, location);
     return scope;
 }
 
@@ -9603,7 +9610,7 @@ static NODE *
 new_begin_gen(struct parser_params *parser, NODE *b, const YYLTYPE *location)
 {
     NODE *begin = NEW_BEGIN(b);
-    begin->nd_loc = *location;
+    nd_set_loc(begin, location);
     return begin;
 }
 
@@ -9611,7 +9618,7 @@ static NODE *
 new_masgn_gen(struct parser_params *parser, NODE *l, NODE *r, const YYLTYPE *location)
 {
     NODE *masgn = NEW_MASGN(l, r);
-    masgn->nd_loc = *location;
+    nd_set_loc(masgn, location);
     return masgn;
 }
 
@@ -9622,7 +9629,7 @@ new_kw_arg_gen(struct parser_params *parser, NODE *k, const YYLTYPE *location)
     NODE *kw_arg;
     if (!k) return 0;
     kw_arg = NEW_KW_ARG(0, (k));
-    kw_arg->nd_loc = *location;
+    nd_set_loc(kw_arg, location);
     return kw_arg;
 }
 
@@ -9645,7 +9652,7 @@ new_xstring_gen(struct parser_params *parser, NODE *node, const YYLTYPE *locatio
 	break;
       default:
 	node = NEW_NODE(NODE_DXSTR, Qnil, 1, new_list(node, location));
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	break;
     }
     return node;
@@ -9655,8 +9662,8 @@ static NODE *
 new_body_gen(struct parser_params *parser, NODE *param, NODE *stmt, const YYLTYPE *location)
 {
     NODE *iter = NEW_ITER(param, stmt);
-    iter->nd_body->nd_loc = *location;
-    iter->nd_loc = *location;
+    nd_set_loc(iter->nd_body, location);
+    nd_set_loc(iter, location);
     return iter;
 
 }
@@ -9837,7 +9844,7 @@ static NODE*
 assignable_result0(NODE *node, const YYLTYPE *location)
 {
     if (node) {
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
     }
     return node;
 }
@@ -9987,7 +9994,7 @@ static NODE *
 aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx, const YYLTYPE *location)
 {
     NODE *attrasgn = NEW_ATTRASGN(recv, tASET, idx);
-    attrasgn->nd_loc = *location;
+    nd_set_loc(attrasgn, location);
     return attrasgn;
 }
 
@@ -10005,7 +10012,7 @@ attrset_gen(struct parser_params *parser, NODE *recv, ID atype, ID id, const YYL
     NODE *attrasgn;
     if (!CALL_Q_P(atype)) id = rb_id_attrset(id);
     attrasgn = NEW_ATTRASGN(recv, id, 0);
-    attrasgn->nd_loc = *location;
+    nd_set_loc(attrasgn, location);
     return attrasgn;
 }
 
@@ -10047,7 +10054,7 @@ arg_concat_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYL
 	return node1;
     }
     argscat = NEW_ARGSCAT(node1, node2);
-    argscat->nd_loc = *location;
+    nd_set_loc(argscat, location);
     return argscat;
 }
 
@@ -10071,7 +10078,7 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYL
 	return node1;
     }
     argspush = NEW_ARGSPUSH(node1, node2);
-    argspush->nd_loc = *location;
+    nd_set_loc(argspush, location);
     return argspush;
 }
 
@@ -10125,12 +10132,12 @@ node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs, const YYLTYP
       case NODE_CDECL:
       case NODE_CVASGN:
 	lhs->nd_value = rhs;
-	lhs->nd_loc = *location;
+	nd_set_loc(lhs, location);
 	break;
 
       case NODE_ATTRASGN:
 	lhs->nd_args = arg_append(lhs->nd_args, rhs, location);
-	lhs->nd_loc = *location;
+	nd_set_loc(lhs, location);
 	break;
 
       default:
@@ -10506,7 +10513,7 @@ cond0(struct parser_params *parser, NODE *node, int method_op, const YYLTYPE *lo
 		warning_unless_e_option(parser, node, "regex literal in condition");
 
 	    match = NEW_MATCH2(node, new_gvar(idLASTLINE, location));
-	    match->nd_loc = *location;
+	    nd_set_loc(match, location);
 	    return match;
 	}
 
@@ -10562,7 +10569,7 @@ static NODE*
 new_nil_gen(struct parser_params *parser, const YYLTYPE *location)
 {
     NODE *node_nil = NEW_NIL();
-    node_nil->nd_loc = *location;
+    nd_set_loc(node_nil, location);
     return node_nil;
 }
 
@@ -10574,7 +10581,7 @@ new_if_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right, cons
     if (!cc) return right;
     cc = cond0(parser, cc, FALSE, location);
     node_if = NEW_IF(cc, left, right);
-    node_if->nd_loc = *location;
+    nd_set_loc(node_if, location);
     return newline_node(node_if);
 }
 
@@ -10586,7 +10593,7 @@ new_unless_gen(struct parser_params *parser, NODE *cc, NODE *left, NODE *right, 
     if (!cc) return right;
     cc = cond0(parser, cc, FALSE, location);
     node_unless = NEW_UNLESS(cc, left, right);
-    node_unless->nd_loc = *location;
+    nd_set_loc(node_unless, location);
     return newline_node(node_unless);
 }
 
@@ -10645,7 +10652,7 @@ new_yield_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
     if (node) no_blockarg(parser, node);
 
     yield = NEW_YIELD(node);
-    yield->nd_loc = *location;
+    nd_set_loc(yield, location);
     return yield;
 }
 
@@ -10715,7 +10722,7 @@ new_args_gen(struct parser_params *parser, NODE *m, NODE *o, ID r, NODE *p, NODE
     args->opt_args       = o;
 
     ruby_sourceline = saved_line;
-    tail->nd_loc = *location;
+    nd_set_loc(tail, location);
 
     return tail;
 }
@@ -10809,7 +10816,7 @@ dsym_node_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
 	break;
       default:
 	node = NEW_NODE(NODE_DSYM, Qnil, 1, new_list(node, location));
-	node->nd_loc = *location;
+	nd_set_loc(node, location);
 	break;
     }
     return node;
@@ -10869,7 +10876,7 @@ new_hash_gen(struct parser_params *parser, NODE *hash, const YYLTYPE *location)
     NODE *nd_hash;
     if (hash) hash = remove_duplicate_keys(parser, hash, location);
     nd_hash = NEW_HASH(hash);
-    nd_hash->nd_loc = *location;
+    nd_set_loc(nd_hash, location);
     return nd_hash;
 }
 #endif /* !RIPPER */
@@ -10885,9 +10892,9 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, con
 	YYLTYPE lhs_location = lhs->nd_loc;
 	if (op == tOROP) {
 	    lhs->nd_value = rhs;
-	    lhs->nd_loc = *location;
+	    nd_set_loc(lhs, location);
 	    asgn = NEW_OP_ASGN_OR(gettable(vid, &lhs_location), lhs);
-	    asgn->nd_loc = *location;
+	    nd_set_loc(asgn, location);
 	    if (is_notop_id(vid)) {
 		switch (id_type(vid)) {
 		  case ID_GLOBAL:
@@ -10899,14 +10906,14 @@ new_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, con
 	}
 	else if (op == tANDOP) {
 	    lhs->nd_value = rhs;
-	    lhs->nd_loc = *location;
+	    nd_set_loc(lhs, location);
 	    asgn = NEW_OP_ASGN_AND(gettable(vid, &lhs_location), lhs);
-	    asgn->nd_loc = *location;
+	    nd_set_loc(asgn, location);
 	}
 	else {
 	    asgn = lhs;
 	    asgn->nd_value = new_call(gettable(vid, &lhs_location), op, new_list(rhs, &rhs->nd_loc), location);
-	    asgn->nd_loc = *location;
+	    nd_set_loc(asgn, location);
 	}
     }
     else {
@@ -10928,7 +10935,7 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs,
 	op = 1;
     }
     asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, op, rhs);
-    asgn->nd_loc = *location;
+    nd_set_loc(asgn, location);
     fixpos(asgn, lhs);
     return asgn;
 }
@@ -10951,7 +10958,7 @@ new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rh
 	asgn = new_begin(0, location);
     }
     fixpos(asgn, lhs);
-    asgn->nd_loc = *location;
+    nd_set_loc(asgn, location);
     return asgn;
 }
 
@@ -10959,7 +10966,7 @@ static NODE *
 const_path_field_gen(struct parser_params *parser, NODE *head, ID mid, const YYLTYPE *location)
 {
     NODE *colon2 = NEW_COLON2(head, mid);
-    colon2->nd_loc = *location;
+    nd_set_loc(colon2, location);
     return colon2;
 }
 
