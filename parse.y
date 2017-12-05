@@ -437,8 +437,8 @@ static NODE *splat_array(NODE*);
 
 static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
 #define call_bin_op(recv,id,arg1,op_loc,location) call_bin_op_gen(parser, (recv),(id),(arg1),(op_loc),(location))
-static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID,const YYLTYPE*);
-#define call_uni_op(recv,id,location) call_uni_op_gen(parser, (recv),(id),(location))
+static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
+#define call_uni_op(recv,id,op_loc,location) call_uni_op_gen(parser, (recv),(id),(op_loc),(location))
 static NODE *new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *location);
 #define new_qcall(q,r,m,a,location) new_qcall_gen(parser,q,r,m,a,location)
 #define new_command_qcall(q,r,m,a,location) new_qcall_gen(parser,q,r,m,a,location)
@@ -633,7 +633,7 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 #define method_cond(node,location) (node)
 #define call_bin_op(recv,id,arg1,op_loc,location) dispatch3(binary, (recv), STATIC_ID2SYM(id), (arg1))
 #define match_op(node1,node2,op_loc,location) call_bin_op((node1), idEqTilde, (node2), op_loc, location)
-#define call_uni_op(recv,id,location) dispatch2(unary, STATIC_ID2SYM(id), (recv))
+#define call_uni_op(recv,id,op_loc,location) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define logop(id,node1,node2,op_loc,location) call_bin_op((node1), (id), (node2), op_loc, location)
 #define node_assign(node1, node2, location) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE m, VALUE a);
@@ -1585,11 +1585,11 @@ expr		: command_call
 		    }
 		| keyword_not opt_nl expr
 		    {
-			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@1, &@$);
 		    }
 		| '!' command_call
 		    {
-			$$ = call_uni_op(method_cond($2, &@2), '!', &@$);
+			$$ = call_uni_op(method_cond($2, &@2), '!', &@1, &@$);
 		    }
 		| arg
 		;
@@ -2261,15 +2261,15 @@ arg		: lhs '=' arg_rhs
 		    }
 		| tUMINUS_NUM simple_numeric tPOW arg
 		    {
-			$$ = call_uni_op(call_bin_op($2, idPow, $4, &@2, &@$), idUMinus, &@$);
+			$$ = call_uni_op(call_bin_op($2, idPow, $4, &@2, &@$), idUMinus, &@1, &@$);
 		    }
 		| tUPLUS arg
 		    {
-			$$ = call_uni_op($2, idUPlus, &@$);
+			$$ = call_uni_op($2, idUPlus, &@1, &@$);
 		    }
 		| tUMINUS arg
 		    {
-			$$ = call_uni_op($2, idUMinus, &@$);
+			$$ = call_uni_op($2, idUMinus, &@1, &@$);
 		    }
 		| arg '|' arg
 		    {
@@ -2310,11 +2310,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| '!' arg
 		    {
-			$$ = call_uni_op(method_cond($2, &@2), '!', &@$);
+			$$ = call_uni_op(method_cond($2, &@2), '!', &@1, &@$);
 		    }
 		| '~' arg
 		    {
-			$$ = call_uni_op($2, '~', &@$);
+			$$ = call_uni_op($2, '~', &@1, &@$);
 		    }
 		| arg tLSHFT arg
 		    {
@@ -2783,11 +2783,11 @@ primary		: literal
 		    }
 		| keyword_not '(' expr rparen
 		    {
-			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond($3, &@3), METHOD_NOT, &@1, &@$);
 		    }
 		| keyword_not '(' rparen
 		    {
-			$$ = call_uni_op(method_cond(new_nil(&@2), &@2), METHOD_NOT, &@$);
+			$$ = call_uni_op(method_cond(new_nil(&@2), &@2), METHOD_NOT, &@1, &@$);
 		    }
 		| fcall brace_block
 		    {
@@ -9186,12 +9186,13 @@ call_bin_op_gen(struct parser_params *parser, NODE *recv, ID id, NODE *arg1,
 }
 
 static NODE *
-call_uni_op_gen(struct parser_params *parser, NODE *recv, ID id, const YYLTYPE *location)
+call_uni_op_gen(struct parser_params *parser, NODE *recv, ID id, const YYLTYPE *op_loc, const YYLTYPE *location)
 {
     NODE *opcall;
     value_expr(recv);
     opcall = NEW_OPCALL(recv, id, 0);
     opcall->nd_loc = *location;
+    nd_set_line(opcall, op_loc->first_loc.lineno);
     return opcall;
 }
 
