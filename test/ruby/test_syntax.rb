@@ -1056,6 +1056,10 @@ eom
     assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
   end
 
+  def test_keyword_not_parens
+    assert_valid_syntax("not()")
+  end
+
   def test_rescue_do_end_raised
     result = []
     assert_raise(RuntimeError) do
