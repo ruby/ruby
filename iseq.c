@@ -617,10 +617,10 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 
     code_range = rb_hash_aref(misc, ID2SYM(rb_intern("code_range")));
     if (RB_TYPE_P(code_range, T_ARRAY) && RARRAY_LEN(code_range) == 4) {
-	tmp_loc.first_loc.lineno = NUM2LONG(rb_ary_entry(code_range, 0));
-	tmp_loc.first_loc.column = NUM2LONG(rb_ary_entry(code_range, 1));
-	tmp_loc.last_loc.lineno = NUM2LONG(rb_ary_entry(code_range, 2));
-	tmp_loc.last_loc.column = NUM2LONG(rb_ary_entry(code_range, 3));
+	tmp_loc.first_loc.lineno = NUM2INT(rb_ary_entry(code_range, 0));
+	tmp_loc.first_loc.column = NUM2INT(rb_ary_entry(code_range, 1));
+	tmp_loc.last_loc.lineno = NUM2INT(rb_ary_entry(code_range, 2));
+	tmp_loc.last_loc.column = NUM2INT(rb_ary_entry(code_range, 3));
     }
 
     make_compile_option(&option, opt);
@@ -2182,10 +2182,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq->body->stack_max));
     rb_hash_aset(misc, ID2SYM(rb_intern("code_range")),
 	    rb_ary_new_from_args(4,
-		LONG2FIX(iseq->body->location.code_range.first_loc.lineno),
-		LONG2FIX(iseq->body->location.code_range.first_loc.column),
-		LONG2FIX(iseq->body->location.code_range.last_loc.lineno),
-		LONG2FIX(iseq->body->location.code_range.last_loc.column)));
+		INT2FIX(iseq->body->location.code_range.first_loc.lineno),
+		INT2FIX(iseq->body->location.code_range.first_loc.column),
+		INT2FIX(iseq->body->location.code_range.last_loc.lineno),
+		INT2FIX(iseq->body->location.code_range.last_loc.column)));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,
