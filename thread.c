@@ -5019,24 +5019,33 @@ update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 }
 
 const rb_method_entry_t *
-rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[2])
+rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 {
-    VALUE path, first_lineno;
+    VALUE path, first_lineno, first_column, last_lineno, last_column;
 
   retry:
     switch (me->def->type) {
       case VM_METHOD_TYPE_ISEQ: {
-	rb_iseq_location_t loc = me->def->body.iseq.iseqptr->body->location;
-	path = loc.pathobj;
-	first_lineno = loc.first_lineno;
+	const rb_iseq_t *iseq = me->def->body.iseq.iseqptr;
+	rb_iseq_location_t *loc = &iseq->body->location;
+	path = rb_iseq_path(iseq);
+	first_lineno = INT2FIX(loc->code_range.first_loc.lineno);
+	first_column = INT2FIX(loc->code_range.first_loc.column);
+	last_lineno = INT2FIX(loc->code_range.last_loc.lineno);
+	last_column = INT2FIX(loc->code_range.last_loc.column);
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
 	const rb_iseq_t *iseq = rb_proc_get_iseq(me->def->body.proc, 0);
 	if (iseq) {
+	    rb_iseq_location_t *loc;
 	    rb_iseq_check(iseq);
 	    path = rb_iseq_path(iseq);
-	    first_lineno = iseq->body->location.first_lineno;
+	    loc = &iseq->body->location;
+	    first_lineno = INT2FIX(loc->code_range.first_loc.lineno);
+	    first_column = INT2FIX(loc->code_range.first_loc.column);
+	    last_lineno = INT2FIX(loc->code_range.last_loc.lineno);
+	    last_column = INT2FIX(loc->code_range.last_loc.column);
 	    break;
 	}
 	return NULL;
@@ -5060,6 +5069,9 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[2])
     if (resolved_location) {
 	resolved_location[0] = path;
 	resolved_location[1] = first_lineno;
+	resolved_location[2] = first_column;
+	resolved_location[3] = last_lineno;
+	resolved_location[4] = last_column;
     }
     return me;
 }

@@ -129,7 +129,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
 	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
 	    VALUE path = Qundef, first_lineno = Qundef;
-	    VALUE data[2], ncoverage, methods;
+	    VALUE data[5], ncoverage, methods;
 	    VALUE methods_id = ID2SYM(rb_intern("methods"));
 	    VALUE klass;
 	    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
