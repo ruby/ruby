@@ -128,7 +128,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
 	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
 	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
-	    VALUE path = Qundef, first_lineno = Qundef;
+	    VALUE path, first_lineno, first_column, last_lineno, last_column;
 	    VALUE data[5], ncoverage, methods;
 	    VALUE methods_id = ID2SYM(rb_intern("methods"));
 	    VALUE klass;
@@ -140,6 +140,9 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 	    }
 	    path = data[0];
 	    first_lineno = data[1];
+	    first_column = data[2];
+	    last_lineno = data[3];
+	    last_column = data[4];
 	    if (FIX2LONG(first_lineno) <= 0) continue;
 	    ncoverage = rb_hash_aref(ncoverages, path);
 	    if (NIL_P(ncoverage)) continue;
@@ -148,7 +151,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 	    {
 		VALUE method_id = ID2SYM(me->def->original_id);
 		VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
-		VALUE key = rb_ary_new_from_args(3, klass, method_id, first_lineno);
+		VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
 		VALUE rcount2 = rb_hash_aref(methods, key);
 
 		if (NIL_P(rcount)) rcount = LONG2FIX(0);
