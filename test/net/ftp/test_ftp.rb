@@ -490,7 +490,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 1.0
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -533,7 +533,6 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -1233,7 +1232,6 @@ EOF
     begin
       begin
         ftp = Net::FTP.new
-        #ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -1266,7 +1264,6 @@ EOF
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
@@ -1299,7 +1296,6 @@ EOF
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
