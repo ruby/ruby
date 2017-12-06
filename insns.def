@@ -778,11 +778,11 @@ checkkeyword
 
 /**
   @c setting
-  @e trace
-  @j trace 用の命令。
+  @e trace a branch
+  @j 分岐を trace する
  */
 DEFINE_INSN
-trace2
+tracebranch
 (rb_num_t nf, VALUE data)
 ()
 ()
