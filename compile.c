@@ -288,7 +288,7 @@ struct iseq_compile_data_ensure_node_stack {
 	  rb_ary_push(branches, INT2FIX(last_line)); \
 	  rb_ary_push(branches, INT2FIX(last_column)); \
 	  rb_ary_push(branches, INT2FIX(counter_idx)); \
-	  ADD_INSN2((seq), (first_line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx)); \
+	  ADD_INSN2((seq), (first_line), tracebranch, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(counter_idx)); \
       } \
   } while (0)
 
