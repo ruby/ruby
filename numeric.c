@@ -5382,7 +5382,7 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
 
-    rb_define_method(rb_cInteger, "pow", rb_int_powm, -1);
+    rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */
 
     rb_define_method(rb_cInteger, "abs", rb_int_abs, 0);
     rb_define_method(rb_cInteger, "magnitude", rb_int_abs, 0);
