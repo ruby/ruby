@@ -1655,7 +1655,7 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
 	    VM_UNREACHABLE(fiber_switch);
 	}
 	else {
-	    /* th->ec.fiber is also dead => switch to root fiber */
+	    /* th->ec->fiber_ptr is also dead => switch to root fiber */
 	    /* (this means we're being called from rb_fiber_terminate, */
 	    /* and the terminated fiber's return_fiber() is already dead) */
 	    VM_ASSERT(FIBER_SUSPENDED_P(th->root_fiber));
