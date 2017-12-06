@@ -308,7 +308,6 @@ class Matrix
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
 
   #
   # Returns the number of rows.
@@ -1766,7 +1765,6 @@ class Vector
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
