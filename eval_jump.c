@@ -119,7 +119,7 @@ rb_exec_end_proc(void)
     volatile VALUE errinfo = ec->errinfo;
 
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       again:
 	exec_end_procs_chain(&ephemeral_end_procs, &ec->errinfo);
 	exec_end_procs_chain(&end_procs, &ec->errinfo);

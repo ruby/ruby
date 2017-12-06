@@ -1002,7 +1002,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 
     ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }

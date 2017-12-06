@@ -1413,7 +1413,7 @@ rb_fiber_start(void)
     VM_ASSERT(FIBER_RESUMED_P(fib));
 
     EC_PUSH_TAG(th->ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	rb_context_t *cont = &VAR_FROM_MEMORY(fib)->cont;
 	int argc;
 	const VALUE *argv, args = cont->value;

@@ -1208,7 +1208,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     dbg_context.contexts = collect_caller_bindings(ec);
 
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	result = (*func)(&dbg_context, data);
     }
     EC_POP_TAG();

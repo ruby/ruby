@@ -1623,7 +1623,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ec->interrupt_mask |= block_mask;
     {
 	EC_PUSH_TAG(ec);
-	if (EXEC_TAG() == TAG_NONE) {
+	if (EC_EXEC_TAG() == TAG_NONE) {
 	    int index;
 	    while ((index = vm->postponed_job_index) > 0) {
 		if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
