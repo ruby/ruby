@@ -6124,14 +6124,15 @@ unescape_ascii(unsigned int c)
 }
 
 static int
-undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding *enc)
+undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
 {
     unsigned int c, c2;
     int n, n2, codelen;
     size_t hexlen;
     char buf[6];
+    static const rb_encoding *enc_utf8 = NULL;
 
-    c = rb_enc_codepoint_len(s, s_end, &n, enc);
+    c = rb_enc_codepoint_len(s, s_end, &n, *penc);
     switch (c) {
       case '\\':
       case '"':
@@ -6153,7 +6154,13 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	if (s+1 >= s_end) {
 	    rb_raise(rb_eArgError, "invalid Unicode escape");
 	}
-	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, enc);
+	if (enc_utf8 == NULL) enc_utf8 = rb_utf8_encoding();
+	if (*penc != enc_utf8) {
+	    *penc = enc_utf8;
+	    rb_enc_associate(undumped, enc_utf8);
+	    ENC_CODERANGE_CLEAR(undumped);
+	}
+	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, *penc);
 	if (c2 == '{') { /* handle \u{...} form */
 	    const char *hexstr = s + 2;
 	    unsigned int hex;
@@ -6164,7 +6171,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
 	    /* find close brace */
-	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, enc);
+	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, *penc);
 	    if (pos < 0) {
 		rb_raise(rb_eArgError, "unterminated Unicode escape");
 	    }
@@ -6178,8 +6185,8 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	    if ((hex & 0xfffff800U) == 0xd800U) {
 		rb_raise(rb_eArgError, "invalid Unicode codepoint");
 	    }
-	    codelen = rb_enc_codelen(hex, enc);
-	    rb_enc_mbcput(hex, buf, enc);
+	    codelen = rb_enc_codelen(hex, *penc);
+	    rb_enc_mbcput(hex, buf, *penc);
 	    rb_str_cat(undumped, buf, codelen);
 	    n += rb_strlen_lit("u{}") + hexlen;
 	}
@@ -6188,8 +6195,8 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	    if (hexlen != 4) {
 		rb_raise(rb_eArgError, "invalid Unicode escape");
 	    }
-	    codelen = rb_enc_codelen(hex, enc);
-	    rb_enc_mbcput(hex, buf, enc);
+	    codelen = rb_enc_codelen(hex, *penc);
+	    rb_enc_mbcput(hex, buf, *penc);
 	    rb_str_cat(undumped, buf, codelen);
 	    n += rb_strlen_lit("uXXXX");
 	}
@@ -6212,7 +6219,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	    n++;
 	    break;
 	}
-	n2 = rb_enc_mbclen(s+1, s_end, enc);
+	n2 = rb_enc_mbclen(s+1, s_end, *penc);
 	if (n2 == 1 && IS_EVSTR(s+1, s_end)) {
 	    rb_str_cat(undumped, s, n);
 	    n += n2;
@@ -6260,7 +6267,7 @@ str_undump(VALUE str)
 	    if (s+1 >= s_end) {
 		rb_raise(rb_eArgError, "invalid escape");
 	    }
-	    n = undump_after_backslash(undumped, s+1, s_end, enc);
+	    n = undump_after_backslash(undumped, s+1, s_end, &enc);
 	}
 	else {
 	    rb_str_cat(undumped, s, n);

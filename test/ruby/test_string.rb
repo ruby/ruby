@@ -765,6 +765,8 @@ CODE
 
     assert_equal(S("äöü"), S('"\u00E4\u00F6\u00FC"').undump)
     assert_equal(S("äöü"), S('"\xC3\xA4\xC3\xB6\xC3\xBC"').undump)
+
+    assert_equal(Encoding::UTF_8, S('"\\u3042"').encode(Encoding::EUC_JP).undump.encoding)
  end
 
   def test_dup
