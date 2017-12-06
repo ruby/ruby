@@ -213,7 +213,7 @@ Init_<%=@init_name%><%=%>(void)
     prelude_eval(
       rb_usascii_str_new(prelude_code<%=i%><%=%>.L0, sizeof(prelude_code<%=i%><%=%>)),
       rb_usascii_str_new(prelude_name<%=i%><%=%>, sizeof(prelude_name<%=i%><%=%>) - 1),
-      INT2FIX(1));
+      1);
 % end
 % if @have_sublib
     rb_gc_force_recycle(prelude);
