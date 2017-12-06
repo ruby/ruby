@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |spec|
   spec.name          = "fiddle"
-  spec.version       = '1.0.0.beta2'
+  spec.version       = '1.0.0'
   spec.authors       = ["Aaron Patterson", "SHIBATA Hiroshi"]
   spec.email         = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org"]
 
@@ -14,6 +14,8 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
+
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
