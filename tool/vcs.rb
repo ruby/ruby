@@ -116,6 +116,32 @@ class VCS
     String === path or path.respond_to?(:to_path)
   end
 
+  def self.cmd_args(cmds, srcdir = nil)
+    if srcdir and local_path?(srcdir)
+      (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
+      opts[:chdir] ||= srcdir
+    end
+    cmds
+  end
+
+  def self.cmd_pipe_at(srcdir, cmds, &block)
+    IO.popen(*cmd_args(cmds, srcdir), &block)
+  rescue Errno::ENOENT => e
+    raise VCS::NotFoundError, e.message
+  end
+
+  def self.cmd_read_at(srcdir, cmds)
+    IO.pread(*cmd_args(cmds, srcdir))
+  rescue Errno::ENOENT => e
+    raise VCS::NotFoundError, e.message
+  end
+
+  def self.system(*cmds)
+    Process.wait(Process.spawn(*cmds))
+  rescue Errno::ENOENT => e
+    raise VCS::NotFoundError, e.message
+  end
+
   attr_reader :srcdir
 
   def initialize(path)
@@ -191,6 +217,18 @@ class VCS
   def after_export(dir)
   end
 
+  def cmd_pipe(*cmds, &block)
+    self.class.cmd_pipe_at(@srcdir, cmds, &block)
+  end
+
+  def cmd_read(*cmds)
+    self.class.cmd_read_at(@srcdir, cmds)
+  end
+
+  def system(*cmds)
+    self.class.system(*cmds)
+  end
+
   class SVN < self
     register(".svn")
     COMMAND = ENV['SVN'] || 'svn'
@@ -200,10 +238,10 @@ class VCS
         path = File.join(srcdir, path)
       end
       if srcdir
-        info_xml = IO.pread(%W"#{COMMAND} info --xml #{srcdir}")
+        info_xml = cmd_read_at(nil, %W"#{COMMAND} info --xml #{srcdir}")
         info_xml = nil unless info_xml[/<url>(.*)<\/url>/, 1] == path.to_s
       end
-      info_xml ||= IO.pread(%W"#{COMMAND} info --xml #{path}")
+      info_xml ||= cmd_read_at(nil, %W"#{COMMAND} info --xml #{path}")
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
@@ -220,7 +258,7 @@ class VCS
     end
 
     def get_info
-      @info ||= IO.pread(%W"#{COMMAND} info --xml #{@srcdir}")
+      @info ||= cmd_read(%W"#{COMMAND} info --xml")
     end
 
     def url
@@ -253,7 +291,7 @@ class VCS
     end
 
     def branch_list(pat)
-      IO.popen(%W"#{COMMAND} ls #{branch('')}") do |f|
+      cmd_pipe(%W"#{COMMAND} ls #{branch('')}") do |f|
         f.each do |line|
           line.chomp!
           line.chomp!('/')
@@ -266,7 +304,7 @@ class VCS
       cmd = %W"#{COMMAND} cat"
       files.map! {|n| File.join(tag, n)} if tag
       set = block.binding.eval("proc {|match| $~ = match}")
-      IO.popen([cmd, *files]) do |f|
+      cmd_pipe([cmd, *files]) do |f|
         f.grep(pat) do |s|
           set[$~]
           yield s
@@ -298,7 +336,7 @@ class VCS
           return true
         end
       end
-      IO.popen(%W"#{COMMAND} export -r #{revision} #{url} #{dir}") do |pipe|
+      cmd_pipe(%W"#{COMMAND} export -r #{revision} #{url} #{dir}") do |pipe|
         pipe.each {|line| /^A/ =~ line or yield line}
       end
       $?.success?
@@ -310,7 +348,7 @@ class VCS
 
     def export_changelog(url, from, to, path)
       range = [to, (from+1 if from)].compact.join(':')
-      IO.popen({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
+      cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
                %W"#{COMMAND} log -r#{range} #{url}") do |r|
         open(path, 'w') do |w|
           IO.copy_stream(r, w)
@@ -326,22 +364,6 @@ class VCS
   class GIT < self
     register(".git") {|path, dir| File.exist?(File.join(path, dir))}
     COMMAND = ENV["GIT"] || 'git'
-
-    def self.cmd_args(cmds, srcdir = nil)
-      if srcdir and local_path?(srcdir)
-        (opts = cmds.last).kind_of?(Hash) or cmds << (opts = {})
-        opts[:chdir] ||= srcdir
-      end
-      cmds
-    end
-
-    def self.cmd_pipe_at(srcdir, cmds, &block)
-      IO.popen(*cmd_args(cmds, srcdir), &block)
-    end
-
-    def self.cmd_read_at(srcdir, cmds)
-      IO.pread(*cmd_args(cmds, srcdir))
-    end
 
     def self.get_revisions(path, srcdir = nil)
       gitcmd = [COMMAND]
@@ -376,14 +398,6 @@ class VCS
         @srcdir = File.realpath(srcdir)
       end
       self
-    end
-
-    def cmd_pipe(*cmds, &block)
-      self.class.cmd_pipe_at(@srcdir, cmds, &block)
-    end
-
-    def cmd_read(*cmds)
-      self.class.cmd_read_at(@srcdir, cmds)
     end
 
     Branch = Struct.new(:to_str)
