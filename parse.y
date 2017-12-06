@@ -766,7 +766,7 @@ typedef struct rb_strterm_literal_struct {
     } u3;
 } rb_strterm_literal_t;
 
-typedef struct rb_strterm_heredoc_struct {
+struct rb_strterm_heredoc_struct {
     SIGNED_VALUE sourceline;
     VALUE term;		/* `"END"` of `<<"END"` */
     VALUE lastline;	/* the string of line that contains `<<"END"` */
@@ -774,7 +774,7 @@ typedef struct rb_strterm_heredoc_struct {
 	VALUE dummy;
 	long lastidx;	/* the column of `<<"END"` */
     } u3;
-} rb_strterm_heredoc_t;
+};
 
 #define STRTERM_HEREDOC IMEMO_FL_USER0
 
