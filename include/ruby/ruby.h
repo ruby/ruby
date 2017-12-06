@@ -2096,7 +2096,6 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */
-#define RUBY_EVENT_SPECIFIED_LINE         0x010000
 #define RUBY_EVENT_COVERAGE               0x020000
 
 /* internal events */
