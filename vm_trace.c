@@ -590,8 +590,6 @@ get_event_id(rb_event_flag_t event)
 	C(thread_begin, THREAD_BEGIN);
 	C(thread_end, THREAD_END);
 	C(fiber_switch, FIBER_SWITCH);
-	C(specified_line, SPECIFIED_LINE);
-      case RUBY_EVENT_LINE: CONST_ID(id, "line"); return id;
 #undef C
       default:
 	return 0;
