@@ -592,7 +592,7 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
     }
 
     EC_PUSH_TAG(th->ec);
-    state = EXEC_TAG();
+    state = EC_EXEC_TAG();
     if (state == TAG_NONE) {
 	rb_ast_t *ast;
 	const rb_iseq_t *iseq;
@@ -666,11 +666,11 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     enum ruby_tag_type state;
     volatile VALUE path = 0;
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(GET_EC());
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	path = file_to_load(fname);
     }
-    POP_TAG();
+    EC_POP_TAG();
 
     if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
@@ -970,7 +970,7 @@ rb_require_internal(VALUE fname, int safe)
 
     EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
 
@@ -1041,7 +1041,7 @@ rb_require_safe(VALUE fname, int safe)
 
     if (result > TAG_RETURN) {
 	if (result == TAG_RAISE) rb_exc_raise(rb_errinfo());
-	JUMP_TAG(result);
+	EC_JUMP_TAG(GET_EC(), result);
     }
     if (result < 0) {
 	load_failed(fname);

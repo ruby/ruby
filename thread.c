@@ -634,7 +634,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_thread_set_current(th);
 
 	EC_PUSH_TAG(th->ec);
-	if ((state = EXEC_TAG()) == TAG_NONE) {
+	if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
 	}
 	else {
@@ -1450,7 +1450,7 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &wfd.wfd_node);
 
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	BLOCKING_REGION({
 	    val = func(data1);
 	    saved_errno = errno;
@@ -1884,7 +1884,7 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
     }
 
     EC_PUSH_TAG(th->ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	r = rb_yield(Qnil);
     }
     EC_POP_TAG();
@@ -4666,7 +4666,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    result = rb_catch_protect(p.list, exec_recursive_i, (VALUE)&p, &state);
 	    if (!recursive_pop(p.list, p.objid, p.pairid)) goto invalid;
 	    if (!recursive_pop(p.list, ID2SYM(recursive_key), 0)) goto invalid;
-	    if (state != TAG_NONE) JUMP_TAG(state);
+	    if (state != TAG_NONE) EC_JUMP_TAG(GET_EC(), state);
 	    if (result == p.list) {
 		result = (*func)(obj, arg, TRUE);
 	    }
@@ -4674,18 +4674,18 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	else {
 	    volatile VALUE ret = Qundef;
 	    recursive_push(p.list, p.objid, p.pairid);
-	    PUSH_TAG();
-	    if ((state = EXEC_TAG()) == TAG_NONE) {
+	    EC_PUSH_TAG(GET_EC());
+	    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 		ret = (*func)(obj, arg, FALSE);
 	    }
-	    POP_TAG();
+	    EC_POP_TAG();
 	    if (!recursive_pop(p.list, p.objid, p.pairid)) {
 	      invalid:
 		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
 			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
 			 sym, rb_thread_current());
 	    }
-	    if (state != TAG_NONE) JUMP_TAG(state);
+	    if (state != TAG_NONE) EC_JUMP_TAG(GET_EC(), state);
 	    result = ret;
 	}
     }

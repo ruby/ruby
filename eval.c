@@ -56,13 +56,13 @@ ruby_setup(void)
     Init_heap();
     Init_vm_objects();
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(GET_EC());
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	rb_call_inits();
 	ruby_prog_init();
 	GET_VM()->running = 1;
     }
-    POP_TAG();
+    EC_POP_TAG();
 
     return state;
 }
@@ -100,8 +100,8 @@ ruby_options(int argc, char **argv)
     void *volatile iseq = 0;
 
     ruby_init_stack((void *)&iseq);
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(GET_EC());
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
     }
     else {
@@ -109,18 +109,18 @@ ruby_options(int argc, char **argv)
 	state = error_handle(state);
 	iseq = (void *)INT2FIX(state);
     }
-    POP_TAG();
+    EC_POP_TAG();
     return iseq;
 }
 
 static void
 ruby_finalize_0(void)
 {
-    PUSH_TAG();
-    if (EXEC_TAG() == TAG_NONE) {
+    EC_PUSH_TAG(GET_EC());
+    if (EC_EXEC_TAG() == TAG_NONE) {
 	rb_trap_exit();
     }
-    POP_TAG();
+    EC_POP_TAG();
     rb_exec_end_proc();
     rb_clear_trace_func();
 }
@@ -170,7 +170,7 @@ ruby_cleanup(volatile int ex)
     rb_threadptr_interrupt(th);
     rb_threadptr_check_signal(th);
     EC_PUSH_TAG(th->ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, { RUBY_VM_CHECK_INTS(th->ec); });
 
       step_0: step++;
@@ -242,7 +242,7 @@ ruby_exec_internal(void *n)
     if (!n) return 0;
 
     EC_PUSH_TAG(th->ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	SAVE_ROOT_JMPBUF(th, {
 	    rb_iseq_eval_main(iseq);
 	});
@@ -509,7 +509,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 	volatile int state = 0;
 
 	EC_PUSH_TAG(ec);
-	if (EXEC_TAG() == TAG_NONE && !(state = rb_ec_set_raised(ec))) {
+	if (EC_EXEC_TAG() == TAG_NONE && !(state = rb_ec_set_raised(ec))) {
 	    VALUE bt = rb_get_backtrace(mesg);
 	    if (!NIL_P(bt) || cause == Qundef) {
 		if (OBJ_FROZEN(mesg)) {
@@ -540,7 +540,7 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 
 	mesg = e;
 	EC_PUSH_TAG(ec);
-	if ((state = EXEC_TAG()) == TAG_NONE) {
+	if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	    ec->errinfo = Qnil;
 	    e = rb_obj_as_string(mesg);
 	    ec->errinfo = mesg;
@@ -823,7 +823,7 @@ rb_jump_tag(int tag)
     if (UNLIKELY(tag < TAG_RETURN || tag > TAG_FATAL)) {
 	unknown_longjmp_status(tag);
     }
-    JUMP_TAG(tag);
+    EC_JUMP_TAG(GET_EC(), tag);
 }
 
 /*! Determines if the current method is given a block.
@@ -1033,7 +1033,7 @@ rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE
     ensure_list.next = ec->ensure_list;
     ec->ensure_list = &ensure_list;
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	result = (*b_proc) (data1);
     }
     EC_POP_TAG();

@@ -1143,7 +1143,7 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
     volatile int stored_safe = ec->safe_level;
 
     EC_PUSH_TAG(ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	ec->safe_level = proc->safe_level;
 	val = invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
     }
@@ -1436,7 +1436,7 @@ rb_vm_jump_tag_but_local_jump(int state)
 {
     VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
     if (!NIL_P(exc)) rb_exc_raise(exc);
-    JUMP_TAG(state);
+    EC_JUMP_TAG(GET_EC(), state);
 }
 #endif
 
@@ -1772,7 +1772,7 @@ vm_exec(rb_execution_context_t *ec)
     EC_PUSH_TAG(ec);
 
     _tag.retval = Qnil;
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
 	result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);

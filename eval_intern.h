@@ -144,9 +144,6 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 
 #define EC_REPUSH_TAG() (void)(_ec->tag = &_tag)
 
-#define PUSH_TAG() EC_PUSH_TAG(GET_EC())
-#define POP_TAG()  EC_POP_TAG()
-
 #if defined __GNUC__ && __GNUC__ == 4 && (__GNUC_MINOR__ >= 6 && __GNUC_MINOR__ <= 8)
 # define VAR_FROM_MEMORY(var) __extension__(*(__typeof__(var) volatile *)&(var))
 # define VAR_INITIALIZED(var) ((var) = VAR_FROM_MEMORY(var))
@@ -198,12 +195,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 #define EC_EXEC_TAG() \
     (ruby_setjmp(_tag.buf) ? rb_ec_tag_state(VAR_FROM_MEMORY(_ec)) : (EC_REPUSH_TAG(), 0))
 
-#define EXEC_TAG() \
-  EC_EXEC_TAG()
-
 #define EC_JUMP_TAG(ec, st) rb_ec_tag_jump(ec, st)
-
-#define JUMP_TAG(st) EC_JUMP_TAG(GET_EC(), (st))
 
 #define INTERNAL_EXCEPTION_P(exc) FIXNUM_P(exc)
 
