@@ -386,6 +386,10 @@ class TestNumeric < Test::Unit::TestCase
   end
 
   def test_pow
+    assert_equal(2**3, 2.pow(3))
+    assert_equal(2**-1, 2.pow(-1))
+    assert_equal(2**0.5, 2.pow(0.5))
+    assert_equal((-1)**0.5, -1.pow(0.5))
     assert_equal(3**3 % 8, 3.pow(3, 8))
     assert_equal(3**3 % -8, 3.pow(3,-8))
     assert_equal(3**2 % -2, 3.pow(2,-2))
