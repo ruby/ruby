@@ -251,15 +251,12 @@ struct iseq_compile_data_ensure_node_stack {
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
 
-#define ADD_TRACE_LINE_COVERAGE(seq, line) \
+#define SETUP_LINE_COVERAGE(seq, line) \
   do { \
       if (ISEQ_COVERAGE(iseq) && \
 	  ISEQ_LINE_COVERAGE(iseq) && \
-	  (line) > 0 && \
-	  (line) != ISEQ_COMPILE_DATA(iseq)->last_coverable_line) { \
+	  (line) > 0) { \
 	  RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
-	  ISEQ_COMPILE_DATA(iseq)->last_coverable_line = (line); \
-	  ADD_INSN2((seq), (line), trace2, INT2FIX(RUBY_EVENT_COVERAGE), INT2FIX(COVERAGE_INDEX_LINES)); \
       } \
   } while (0)
 #define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
@@ -5424,7 +5421,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
     else {
 	if (node->flags & NODE_FL_NEWLINE) {
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
-	    ADD_TRACE_LINE_COVERAGE(ret, line);
+	    SETUP_LINE_COVERAGE(ret, line);
 	    ADD_TRACE(ret, RUBY_EVENT_LINE);
 	}
     }

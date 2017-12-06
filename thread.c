@@ -4976,30 +4976,35 @@ rb_check_deadlock(rb_vm_t *vm)
 }
 
 static void
+update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
+{
+    VALUE coverage = rb_iseq_coverage(GET_EC()->cfp->iseq);
+    if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
+	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
+	if (lines) {
+	    long line = rb_sourceline() - 1;
+	    long count;
+	    VALUE num;
+	    if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
+		return;
+	    }
+	    num = RARRAY_AREF(lines, line);
+	    if (!FIXNUM_P(num)) return;
+	    count = FIX2LONG(num) + 1;
+	    if (POSFIXABLE(count)) {
+		RARRAY_ASET(lines, line, LONG2FIX(count));
+	    }
+	}
+    }
+}
+
+static void
 update_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     VALUE coverage = rb_iseq_coverage(GET_EC()->cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	long arg = FIX2INT(trace_arg->data);
 	switch (arg % 16) {
-	  case COVERAGE_INDEX_LINES: {
-	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
-	    if (lines) {
-		long line = rb_sourceline() - 1;
-		long count;
-		VALUE num;
-		if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
-		    return;
-		}
-		num = RARRAY_AREF(lines, line);
-		if (!FIXNUM_P(num)) return;
-		count = FIX2LONG(num) + 1;
-		if (POSFIXABLE(count)) {
-		    RARRAY_ASET(lines, line, LONG2FIX(count));
-		}
-	    }
-	    break;
-	  }
 	  case COVERAGE_INDEX_BRANCHES: {
 	    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 	    if (branches) {
@@ -5106,6 +5111,7 @@ rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
     GET_VM()->coverages = coverages;
     GET_VM()->coverage_mode = mode;
+    rb_add_event_hook2((rb_event_hook_func_t) update_line_coverage, RUBY_EVENT_LINE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     rb_add_event_hook2((rb_event_hook_func_t) update_coverage, RUBY_EVENT_COVERAGE, Qnil, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
     if (mode & COVERAGE_TARGET_METHODS) {
 	rb_add_event_hook2((rb_event_hook_func_t) update_method_coverage, RUBY_EVENT_CALL, me2counter, RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
@@ -5130,6 +5136,9 @@ rb_reset_coverages(void)
     VALUE coverages = rb_get_coverages();
     st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
     GET_VM()->coverages = Qfalse;
+    if (GET_VM()->coverage_mode & COVERAGE_TARGET_LINES) {
+	rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
+    }
     rb_remove_event_hook((rb_event_hook_func_t) update_coverage);
     if (GET_VM()->coverage_mode & COVERAGE_TARGET_METHODS) {
 	rb_remove_event_hook((rb_event_hook_func_t) update_method_coverage);

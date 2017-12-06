@@ -330,7 +330,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->storage_head->size =
       INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE;
     ISEQ_COMPILE_DATA(iseq)->option = option;
-    ISEQ_COMPILE_DATA(iseq)->last_coverable_line = -1;
 
     ISEQ_COMPILE_DATA(iseq)->ivar_cache_table = NULL;
 

@@ -114,7 +114,6 @@ struct iseq_compile_data {
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
     int last_line;
-    int last_coverable_line;
     int label_no;
     int node_level;
     unsigned int ci_index;
