@@ -62,6 +62,8 @@
 	RUBY_SET_YYLLOC(Current);					\
     while (0)
 
+#define RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(Current)			\
+    rb_parser_set_location_from_strterm_heredoc(parser, &lex_strterm->u.heredoc, &(Current))
 #define RUBY_SET_YYLLOC(Current)					\
     rb_parser_set_location(parser, &(Current))
 
@@ -679,6 +681,9 @@ static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
 #endif /* !RIPPER */
 
+/* forward declaration */
+typedef struct rb_strterm_heredoc_struct rb_strterm_heredoc_t;
+
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_reg_compile(struct parser_params* parser, VALUE str, int options);
 int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
@@ -686,6 +691,7 @@ enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_stat
 VALUE rb_parser_lex_state_name(enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
+void rb_parser_set_location_from_strterm_heredoc(struct parser_params *parser, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
 void rb_parser_set_location(struct parser_params *parser, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
@@ -8861,7 +8867,10 @@ yylex(YYSTYPE *lval, YYLTYPE *yylloc, struct parser_params *parser)
     else if (t != 0)
 	dispatch_scan_event(t);
 
-    RUBY_SET_YYLLOC(*yylloc);
+    if (lex_strterm && (lex_strterm->flags & STRTERM_HEREDOC))
+	RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(*yylloc);
+    else
+	RUBY_SET_YYLLOC(*yylloc);
 
     return t;
 }
@@ -9827,6 +9836,15 @@ rb_parser_fatal(struct parser_params *parser, const char *fmt, ...)
     if (parser->debug_output == rb_stdout)
 	parser->debug_output = rb_stderr;
     yydebug = TRUE;
+}
+
+void
+rb_parser_set_location_from_strterm_heredoc(struct parser_params *parser, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
+{
+    yylloc->first_loc.lineno = (int)here->sourceline;
+    yylloc->first_loc.column = (int)(here->u3.lastidx - RSTRING_LEN(here->term));
+    yylloc->last_loc.lineno  = (int)here->sourceline;
+    yylloc->last_loc.column  = (int)(here->u3.lastidx);
 }
 
 void
