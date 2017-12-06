@@ -6255,11 +6255,12 @@ str_undump(VALUE str)
 
     rb_must_asciicompat(str);
 
-    if (is_wrapped(s, s_end, len, enc)) {
-	/* strip '"' at the begin and the end */
-	s++;
-	s_end--;
+    if (!is_wrapped(s, s_end, len, enc)) {
+	rb_raise(rb_eArgError, "not wrapped with '\"'");
     }
+    /* strip '"' at the begin and the end */
+    s++;
+    s_end--;
 
     for (; s < s_end; s += n) {
 	c = rb_enc_codepoint_len(s, s_end, &n, enc);
