@@ -618,6 +618,12 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	COMPILE(ret, "nil", node);
 	iseq_set_local_table(iseq, 0);
     }
+    else if (imemo_type_p((VALUE)node, imemo_ifunc)) {
+	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
+	/* user callback */
+	(*ifunc->func)(iseq, ret, ifunc->data);
+    }
+    /* assume node is T_NODE */
     else if (nd_type(node) == NODE_SCOPE) {
 	/* iseq type of top, method, class, block */
 	iseq_set_local_table(iseq, node->nd_tbl);
@@ -663,11 +669,6 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	    break;
 	  }
 	}
-    }
-    else if (imemo_type_p((VALUE)node, imemo_ifunc)) {
-	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
-	/* user callback */
-	(*ifunc->func)(iseq, ret, ifunc->data);
     }
     else {
 	const char *m;
