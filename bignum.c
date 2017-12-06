@@ -7028,7 +7028,7 @@ int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
 /*
  * Document-method: Integer#pow
  * call-seq:
- *    integer.pow(integer)           ->  integer
+ *    integer.pow(numeric)           ->  numeric
  *    integer.pow(integer, integer)  ->  integer
  *
  * Returns (modular) exponentiation as:
