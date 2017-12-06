@@ -238,10 +238,10 @@ class VCS
         path = File.join(srcdir, path)
       end
       if srcdir
-        info_xml = cmd_read_at(nil, %W"#{COMMAND} info --xml #{srcdir}")
+        info_xml = cmd_read_at(nil, [%W"#{COMMAND} info --xml #{srcdir}"])
         info_xml = nil unless info_xml[/<url>(.*)<\/url>/, 1] == path.to_s
       end
-      info_xml ||= cmd_read_at(nil, %W"#{COMMAND} info --xml #{path}")
+      info_xml ||= cmd_read_at(nil, [%W"#{COMMAND} info --xml #{path}"])
       _, last, _, changed, _ = info_xml.split(/revision="(\d+)"/)
       modified = info_xml[/<date>([^<>]*)/, 1]
       branch = info_xml[%r'<relative-url>\^/(?:branches/|tags/)?([^<>]+)', 1]
