@@ -591,7 +591,7 @@ get_event_id(rb_event_flag_t event)
 	C(thread_end, THREAD_END);
 	C(fiber_switch, FIBER_SWITCH);
 	C(specified_line, SPECIFIED_LINE);
-      case RUBY_EVENT_LINE | RUBY_EVENT_SPECIFIED_LINE: CONST_ID(id, "line"); return id;
+      case RUBY_EVENT_LINE: CONST_ID(id, "line"); return id;
 #undef C
       default:
 	return 0;
@@ -1339,7 +1339,6 @@ tracepoint_inspect(VALUE self)
     if (trace_arg) {
 	switch (trace_arg->event) {
 	  case RUBY_EVENT_LINE:
-	  case RUBY_EVENT_SPECIFIED_LINE:
 	    {
 		VALUE sym = rb_tracearg_method_id(trace_arg);
 		if (NIL_P(sym))
