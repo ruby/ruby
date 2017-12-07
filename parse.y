@@ -9422,15 +9422,16 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
 	{
 	    VALUE src = node->nd_lit;
 	    nd_set_type(node, NODE_LIT);
+	    nd_set_loc(node, location);
 	    add_mark_object(node->nd_lit = reg_compile(src, options));
 	}
 	break;
       default:
 	add_mark_object(lit = STR_NEW0());
 	node = NEW_NODE(NODE_DSTR, lit, 1, new_list(node, location));
-	nd_set_loc(node, location);
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
+	nd_set_loc(node, location);
 	node->nd_cflag = options & RE_OPTION_MASK;
 	if (!NIL_P(node->nd_lit)) reg_fragment_check(node->nd_lit, options);
 	for (list = (prev = node)->nd_next; list; list = list->nd_next) {
