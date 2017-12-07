@@ -10842,11 +10842,13 @@ dsym_node_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
     switch (nd_type(node)) {
       case NODE_DSTR:
 	nd_set_type(node, NODE_DSYM);
+	nd_set_loc(node, location);
 	break;
       case NODE_STR:
 	lit = node->nd_lit;
 	add_mark_object(node->nd_lit = ID2SYM(rb_intern_str(lit)));
 	nd_set_type(node, NODE_LIT);
+	nd_set_loc(node, location);
 	break;
       default:
 	node = NEW_NODE(NODE_DSYM, Qnil, 1, new_list(node, location));
