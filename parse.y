@@ -3942,6 +3942,10 @@ string		: tCHAR
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
 			$$ = new_string1(heredoc_dedent($2));
+		    /*%%%*/
+			if ($$) nd_set_loc($$, &@$);
+		    /*%
+		    %*/
 		    }
 		;
 
