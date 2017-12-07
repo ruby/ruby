@@ -7998,9 +7998,12 @@ typedef struct {
 } FILE_ID_INFO;
 #endif
 
-typedef union {
-    BY_HANDLE_FILE_INFORMATION bhfi;
-    FILE_ID_INFO fii;
+typedef struct {
+    BOOL file_id_p;
+    union {
+	BY_HANDLE_FILE_INFORMATION bhfi;
+	FILE_ID_INFO fii;
+    } info;
 } w32_io_info_t;
 
 static HANDLE
@@ -8036,23 +8039,23 @@ w32_io_info(VALUE *file, w32_io_info_t *st)
 	ret = f;
     }
     if (GetFileType(f) == FILE_TYPE_DISK) {
-	ZeroMemory(st, sizeof(*st));
-	if (osver.dwMajorVersion < 6 ||
-	    (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2)) {
-	    if (GetFileInformationByHandle(f, &st->bhfi))
-		return ret;
-	}
-	else {
-	    typedef BOOL (WINAPI *gfibhe_t)(HANDLE, int, void *, DWORD);
-	    static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
-	    if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
-		pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
+	typedef BOOL (WINAPI *gfibhe_t)(HANDLE, int, void *, DWORD);
+	static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
+	if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
+	    pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
-	    /* expect that this function is always available after Windows 8. */
-	    /* if not available, return with error... */
-	    if (pGetFileInformationByHandleEx &&
-		pGetFileInformationByHandleEx(f, FileIdInfo, &st->fii, sizeof(st->fii)))
+	ZeroMemory(st, sizeof(*st));
+	/* expect that this function is always available after Windows 8. */
+	if (pGetFileInformationByHandleEx) {
+	    if (pGetFileInformationByHandleEx(f, FileIdInfo, &st->info.fii, sizeof(st->info.fii))) {
+		st->file_id_p = TRUE;
 		return ret;
+	    }
+	    /* may not work at files on network drives, fallback to old API. */
+	}
+	if (GetFileInformationByHandle(f, &st->info.bhfi)) {
+	    st->file_id_p = FALSE;
+	    return ret;
 	}
     }
     if (ret) CloseHandle(ret);
@@ -8098,15 +8101,16 @@ rb_w32_file_identical_p(VALUE fname1, VALUE fname2)
     if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
     if (f2) CloseHandle(f2);
 
-    if (osver.dwMajorVersion < 6 || (osver.dwMajorVersion == 6 && osver.dwMinorVersion < 2)) {
-	if (st1.bhfi.dwVolumeSerialNumber == st2.bhfi.dwVolumeSerialNumber &&
-	    st1.bhfi.nFileIndexHigh == st2.bhfi.nFileIndexHigh &&
-	    st1.bhfi.nFileIndexLow == st2.bhfi.nFileIndexLow)
+    if (st1.file_id_p != st2.file_id_p) return Qfalse;
+    if (!st1.file_id_p) {
+	if (st1.info.bhfi.dwVolumeSerialNumber == st2.info.bhfi.dwVolumeSerialNumber &&
+	    st1.info.bhfi.nFileIndexHigh == st2.info.bhfi.nFileIndexHigh &&
+	    st1.info.bhfi.nFileIndexLow == st2.info.bhfi.nFileIndexLow)
 	    return Qtrue;
     }
     else {
-	if (st1.fii.VolumeSerialNumber == st2.fii.VolumeSerialNumber &&
-	    memcmp(&st1.fii.FileId, &st2.fii.FileId, sizeof(FILE_ID_128)) == 0)
+	if (st1.info.fii.VolumeSerialNumber == st2.info.fii.VolumeSerialNumber &&
+	    memcmp(&st1.info.fii.FileId, &st2.info.fii.FileId, sizeof(FILE_ID_128)) == 0)
 	    return Qtrue;
     }
     return Qfalse;
