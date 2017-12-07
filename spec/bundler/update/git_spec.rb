@@ -291,7 +291,7 @@ RSpec.describe "bundle update" do
       @git = build_git "foo", :path => lib_path("bar")
 
       install_gemfile <<-G
-        source "file://#{gem_repo2}"
+        source "file://localhost#{gem_repo2}"
         git "#{lib_path("bar")}" do
           gem 'foo'
         end
@@ -319,7 +319,7 @@ RSpec.describe "bundle update" do
             foo (2.0)
 
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
             rack (1.0.0)
 

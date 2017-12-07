@@ -13,7 +13,7 @@ RSpec.describe "bundle lock" do
 
   before :each do
     gemfile <<-G
-      source "file://#{repo}"
+      source "file://localhost#{repo}"
       gem "rails"
       gem "with_license"
       gem "foo"
@@ -21,7 +21,7 @@ RSpec.describe "bundle lock" do
 
     @lockfile = strip_lockfile <<-L
       GEM
-        remote: file:#{repo}/
+        remote: file://localhost#{repo}/
         specs:
           actionmailer (2.3.2)
             activesupport (= 2.3.2)
@@ -228,7 +228,7 @@ RSpec.describe "bundle lock" do
     end
 
     gemfile <<-G
-      source "file:#{gem_repo4}"
+      source "file://localhost#{gem_repo4}"
 
       gem "mixlib-shellout"
       gem "gssapi"
@@ -238,7 +238,7 @@ RSpec.describe "bundle lock" do
 
     expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
       GEM
-        remote: file:#{gem_repo4}/
+        remote: file://localhost#{gem_repo4}/
         specs:
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
@@ -263,7 +263,7 @@ RSpec.describe "bundle lock" do
 
     expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
       GEM
-        remote: file:#{gem_repo4}/
+        remote: file://localhost#{gem_repo4}/
         specs:
           ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)

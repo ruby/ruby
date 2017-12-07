@@ -52,7 +52,7 @@ RSpec.describe "real source plugins" do
       build_lib "a-path-gem"
 
       gemfile <<-G
-        source "file://#{gem_repo2}" # plugin source
+        source "file://localhost#{gem_repo2}" # plugin source
         source "#{lib_path("a-path-gem-1.0")}", :type => :mpath do
           gem "a-path-gem"
         end
@@ -78,7 +78,7 @@ RSpec.describe "real source plugins" do
             a-path-gem (1.0)
 
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
 
         PLATFORMS
@@ -346,7 +346,7 @@ RSpec.describe "real source plugins" do
       build_git "ma-gitp-gem"
 
       gemfile <<-G
-        source "file://#{gem_repo2}" # plugin source
+        source "file://localhost#{gem_repo2}" # plugin source
         source "file://#{lib_path("ma-gitp-gem-1.0")}", :type => :gitp do
           gem "ma-gitp-gem"
         end
@@ -372,7 +372,7 @@ RSpec.describe "real source plugins" do
             ma-gitp-gem (1.0)
 
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
 
         PLATFORMS
