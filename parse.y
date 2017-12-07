@@ -4998,7 +4998,8 @@ assoc		: arg_value tASSOC arg_value
 		| tSTRING_BEG string_contents tLABEL_END arg_value
 		    {
 		    /*%%%*/
-			$$ = list_append(new_list(dsym_node($2, &@$), &@$), $4, &@$);
+			YYLTYPE location = {@1.first_loc, @3.last_loc};
+			$$ = list_append(new_list(dsym_node($2, &location), &location), $4, &@$);
 		    /*%
 			$$ = dispatch2(assoc_new, dispatch1(dyna_symbol, $2), $4);
 		    %*/
