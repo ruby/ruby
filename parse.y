@@ -551,9 +551,10 @@ static NODE *new_rescue_gen(struct parser_params *parser, NODE *b, NODE *res, NO
 static NODE *new_undef_gen(struct parser_params *parser, NODE *i, const YYLTYPE *location);
 #define new_undef(i, location) new_undef_gen(parser, i, location)
 
+static NODE *nd_set_loc(NODE *nd, const YYLTYPE *location);
 static NODE *new_zarray_gen(struct parser_params *parser, const YYLTYPE *location);
 #define new_zarray(location) new_zarray_gen(parser, location)
-#define make_array(ary, location) ((ary) ? (ary) : new_zarray(location))
+#define make_array(ary, location) ((ary) ? (nd_set_loc(ary, location), ary) : new_zarray(location))
 
 static NODE *new_ivar_gen(struct parser_params *parser, ID id, const YYLTYPE *location);
 #define new_ivar(id, location) new_ivar_gen(parser,id,location)
