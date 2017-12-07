@@ -8045,7 +8045,6 @@ w32_io_info(VALUE *file, w32_io_info_t *st)
 	    pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
 
 	ZeroMemory(st, sizeof(*st));
-	/* expect that this function is always available after Windows 8. */
 	if (pGetFileInformationByHandleEx) {
 	    if (pGetFileInformationByHandleEx(f, FileIdInfo, &st->info.fii, sizeof(st->info.fii))) {
 		st->file_id_p = TRUE;
