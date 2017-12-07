@@ -20,8 +20,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       before do
         gemfile <<-G
-          source "file://#{gem_repo3}"
-          source "file://#{gem_repo1}"
+          source "file://localhost#{gem_repo3}"
+          source "file://localhost#{gem_repo1}"
           gem "rack-obama"
           gem "rack"
         G
@@ -33,7 +33,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
         expect(out).to include("Warning: the gem 'rack' was found in multiple sources.")
-        expect(out).to include("Installed from: file:#{gem_repo1}")
+        expect(out).to include("Installed from: file://localhost#{gem_repo1}")
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
 
@@ -50,8 +50,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       before do
         gemfile <<-G
-          source "file://#{gem_repo3}"
-          source "file://#{gem_repo1}"
+          source "file://localhost#{gem_repo3}"
+          source "file://localhost#{gem_repo1}"
           gem "rack-obama"
           gem "rack", "1.0.0" # force it to install the working version in repo1
         G
@@ -63,7 +63,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
         expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
         expect(out).to include("Warning: the gem 'rack' was found in multiple sources.")
-        expect(out).to include("Installed from: file:#{gem_repo1}")
+        expect(out).to include("Installed from: file://localhost#{gem_repo1}")
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
       end
     end
@@ -240,9 +240,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         context "and in yet another source" do
           before do
             gemfile <<-G
-              source "file://#{gem_repo1}"
-              source "file://#{gem_repo2}"
-              source "file://#{gem_repo3}" do
+              source "file://localhost#{gem_repo1}"
+              source "file://localhost#{gem_repo2}"
+              source "file://localhost#{gem_repo3}" do
                 gem "depends_on_rack"
               end
             G
@@ -253,7 +253,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             bundle :install
             expect(out).to have_major_deprecation a_string_including("Your Gemfile contains multiple primary sources.")
             expect(out).to include("Warning: the gem 'rack' was found in multiple sources.")
-            expect(out).to include("Installed from: file:#{gem_repo2}")
+            expect(out).to include("Installed from: file://localhost#{gem_repo2}")
             expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
           end
         end
