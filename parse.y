@@ -9659,15 +9659,17 @@ new_xstring_gen(struct parser_params *parser, NODE *node, const YYLTYPE *locatio
 	VALUE lit = STR_NEW0();
 	NODE *xstr = NEW_XSTR(lit);
 	add_mark_object(lit);
-	xstr->nd_loc = * location;
+	xstr->nd_loc = *location;
 	return xstr;
     }
     switch (nd_type(node)) {
       case NODE_STR:
 	nd_set_type(node, NODE_XSTR);
+	nd_set_loc(node, location);
 	break;
       case NODE_DSTR:
 	nd_set_type(node, NODE_DXSTR);
+	nd_set_loc(node, location);
 	break;
       default:
 	node = NEW_NODE(NODE_DXSTR, Qnil, 1, new_list(node, location));
