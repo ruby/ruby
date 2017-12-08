@@ -2,7 +2,7 @@
 struct kwtable {int name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
-static const struct kwtable *reserved_word(const char *, unsigned int);
+/*!ANSI*/static const struct kwtable *reserved_word(const char *, unsigned int);
 #define rb_reserved_word(str, len) reserved_word(str, len)
 %}
 

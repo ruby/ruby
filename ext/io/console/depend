@@ -26,7 +26,7 @@ win32_vk.inc: win32_vk.list
 	-e   'puts(%[#ifndef #{n}\n# define #{n} UNDEFINED_VK\n#endif])' \
 	$< && \
 	gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k* $< \
-	| sed 's/(int)(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
+	| sed -f $(top_srcdir)/tool/gperf.sed \
 	) > $(@F)
 
 .SUFFIXES: .chksum .list .inc

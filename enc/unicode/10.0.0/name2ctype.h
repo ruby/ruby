@@ -34756,7 +34756,9 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
+#if !1+0
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+#endif
 
 #ifndef USE_UNICODE_PROPERTIES
 #define TOTAL_KEYWORDS 15
@@ -34786,7 +34788,7 @@ inline
 #endif
 #endif
 static unsigned int
-uniname2ctype_hash (register const char *str, register unsigned int len)
+uniname2ctype_hash (register const char *str, register size_t len)
 {
 #ifndef USE_UNICODE_PROPERTIES
   static const unsigned char asso_values[] =
@@ -34832,7 +34834,7 @@ uniname2ctype_hash (register const char *str, register unsigned int len)
 #ifndef USE_UNICODE_PROPERTIES
   return len + asso_values[(unsigned char)str[2]] + asso_values[(unsigned char)str[0]];
 #else /* USE_UNICODE_PROPERTIES */
-  register unsigned int hval = len;
+  register unsigned int hval = (unsigned int)len;
 
   switch (hval)
     {
@@ -36535,7 +36537,7 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
   };
 #define uniname2ctype_pool ((const char *) &uniname2ctype_pool_contents)
 const struct uniname2ctype_struct *
-uniname2ctype_p (register const char *str, register unsigned int len)
+uniname2ctype_p (register const char *str, register size_t len)
 {
   static const struct uniname2ctype_struct wordlist[] =
     {

@@ -1,6 +1,6 @@
 %{
 struct vktable {short ofs; unsigned short vk;};
-static const struct vktable *console_win32_vk(const char *, unsigned int);
+/*!ANSI*/static const struct vktable *console_win32_vk(const char *, unsigned int);
 %}
 struct vktable
 %%
