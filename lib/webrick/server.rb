@@ -157,12 +157,12 @@ module WEBrick
       server_type.start{
         @logger.info \
           "#{self.class}#start: pid=#{$$} port=#{@config[:Port]}"
+        @status = :Running
         call_callback(:StartCallback)
 
         shutdown_pipe = @shutdown_pipe
 
         thgroup = ThreadGroup.new
-        @status = :Running
         begin
           while @status == :Running
             begin
