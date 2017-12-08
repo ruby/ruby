@@ -258,7 +258,7 @@ This behavior may be changed in the future.
 
 == Refinement inheritance by Module#include
 
-When a module X is included into a module Y, Y inherits refinments from X.
+When a module X is included into a module Y, Y inherits refinements from X.
 
 For exmaple, C inherits refinements from A and B in the following code:
 
@@ -277,7 +277,7 @@ For exmaple, C inherits refinements from A and B in the following code:
   using C
   # Refinements in A and B are activated here.
 
-Refinements in descendents have higher precedence than those of ancestors.
+Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 
