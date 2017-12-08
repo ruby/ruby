@@ -197,7 +197,7 @@ with all sufficient information, see the ChangeLog file or Redmine
       https://github.com/ruby/psych/pull/320
     * Preserve time zone offset when deserializing times
       https://github.com/ruby/psych/pull/316
-    * Removed deprecated method aliases for syck gem
+    * Remove deprecated method aliases for syck gem
       https://github.com/ruby/psych/pull/312
 
 * RbConfig
