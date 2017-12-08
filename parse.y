@@ -1453,10 +1453,11 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| stmt modifier_rescue stmt
 		    {
 		    /*%%%*/
+			NODE *resq;
 			YYLTYPE location;
 			location.first_loc = @2.first_loc;
 			location.last_loc = @3.last_loc;
-			NODE *resq = new_resbody(0, remove_begin($3), 0, &location);
+			resq = new_resbody(0, remove_begin($3), 0, &location);
 			$$ = new_rescue(remove_begin($1), resq, 0, &@$);
 		    /*%
 			$$ = dispatch2(rescue_mod, $1, $3);
