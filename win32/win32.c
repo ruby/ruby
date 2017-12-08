@@ -8050,7 +8050,12 @@ w32_io_info(VALUE *file, w32_io_info_t *st)
 		st->file_id_p = TRUE;
 		return ret;
 	    }
-	    /* may not work at files on network drives, fallback to old API. */
+	    else if (GetLastError() != ERROR_INVALID_PARAMETER) {
+		CloseHandle(f);
+		return FALSE;
+	    }
+	    /* this API may not wrok at files on non Microsoft SMB
+	     * server, fallback to old API then. */
 	}
 	if (GetFileInformationByHandle(f, &st->info.bhfi)) {
 	    st->file_id_p = FALSE;
