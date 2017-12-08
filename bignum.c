@@ -7033,8 +7033,8 @@ int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
  *
  * Returns (modular) exponentiation as:
  *
- *   a.pow(b)     #=>  same as a**b
- *   a.pow(b, m)  #=>  same as (a**b) % m, but doesn't make huge values as temporary
+ *   a.pow(b)     #=> same as a**b
+ *   a.pow(b, m)  #=> same as (a**b) % m, but avoids huge temporary values
  */
 VALUE
 rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
