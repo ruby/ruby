@@ -549,7 +549,9 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
+  # :stopdoc:
   alias __pp_backup__ pp if method_defined?(:pp)
+  # :startdoc:
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
