@@ -479,7 +479,7 @@
 #ifndef VK_OEM_CLEAR
 # define VK_OEM_CLEAR UNDEFINED_VK
 #endif
-/* C code produced by gperf version 3.0.4 */
+/* ANSI-C code produced by gperf version 3.1 */
 /* Command-line: gperf --ignore-case -E -C -P -p -j1 -i 1 -g -o -t -K ofs -N console_win32_vk -k'*' win32_vk.list  */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -506,13 +506,14 @@
       && ('w' == 119) && ('x' == 120) && ('y' == 121) && ('z' == 122) \
       && ('{' == 123) && ('|' == 124) && ('}' == 125) && ('~' == 126))
 /* The character set is not based on ISO-646.  */
-error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gnu-gperf@gnu.org>."
+#error "gperf generated tables don't work with this execution character set. Please report a bug to <bug-gperf@gnu.org>."
 #endif
 
+#define gperf_offsetof(s, n) (short)offsetof(struct s##_t, s##_str##n)
 #line 1 "win32_vk.list"
 
 struct vktable {short ofs; unsigned short vk;};
-static const struct vktable *console_win32_vk(const char *, unsigned int);
+/*static const struct vktable *console_win32_vk(const char *, unsigned int);*/
 #line 5 "win32_vk.list"
 struct vktable;
 /* maximum key range = 245, duplicates = 0 */
@@ -545,9 +546,7 @@ static unsigned char gperf_downcase[256] =
 #ifndef GPERF_CASE_STRCMP
 #define GPERF_CASE_STRCMP 1
 static int
-gperf_case_strcmp (s1, s2)
-     register const char *s1;
-     register const char *s2;
+gperf_case_strcmp (register const char *s1, register const char *s2)
 {
   for (;;)
     {
@@ -560,15 +559,15 @@ gperf_case_strcmp (s1, s2)
 }
 #endif
 
-#if (defined (__STDC_VERSION__) && __STDC_VERSION__ >= 199901L) || defined(__cplusplus) || defined(__GNUC_STDC_INLINE__)
-inline
-#elif defined(__GNUC__)
+#ifdef __GNUC__
 __inline
+#else
+#ifdef __cplusplus
+inline
+#endif
 #endif
 static unsigned int
-hash (str, len)
-     register const char *str;
-     register unsigned int len;
+hash (register const char *str, register size_t len)
 {
   static const unsigned short asso_values[] =
     {
@@ -599,7 +598,7 @@ hash (str, len)
       257, 257, 257, 257, 257, 257, 257, 257, 257, 257,
       257, 257, 257, 257, 257, 257, 257, 257
     };
-  register int hval = len;
+  register unsigned int hval = (unsigned int)len;
 
   switch (hval)
     {
@@ -661,7 +660,7 @@ hash (str, len)
         hval += asso_values[(unsigned char)str[0]];
         break;
     }
-  return hval;
+  return (unsigned int)hval;
 }
 
 struct stringpool_t
@@ -991,16 +990,8 @@ static const struct stringpool_t stringpool_contents =
     "DIVIDE"
   };
 #define stringpool ((const char *) &stringpool_contents)
-#ifdef __GNUC__
-__inline
-#if defined __GNUC_STDC_INLINE__ || defined __GNUC_GNU_INLINE__
-__attribute__ ((__gnu_inline__))
-#endif
-#endif
 const struct vktable *
-console_win32_vk (str, len)
-     register const char *str;
-     register unsigned int len;
+console_win32_vk (register const char *str, register size_t len)
 {
   enum
     {
@@ -1016,375 +1007,375 @@ console_win32_vk (str, len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1},
 #line 40 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str12), VK_UP},
+      {gperf_offsetof(stringpool, 12), VK_UP},
 #line 52 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str13), VK_APPS},
+      {gperf_offsetof(stringpool, 13), VK_APPS},
 #line 159 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str14), VK_CRSEL},
+      {gperf_offsetof(stringpool, 14), VK_CRSEL},
 #line 34 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str15), VK_SPACE},
+      {gperf_offsetof(stringpool, 15), VK_SPACE},
 #line 95 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str16), VK_SCROLL},
+      {gperf_offsetof(stringpool, 16), VK_SCROLL},
 #line 29 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str17), VK_ESCAPE},
+      {gperf_offsetof(stringpool, 17), VK_ESCAPE},
 #line 9 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str18), VK_CANCEL},
+      {gperf_offsetof(stringpool, 18), VK_CANCEL},
 #line 32 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str19), VK_ACCEPT},
+      {gperf_offsetof(stringpool, 19), VK_ACCEPT},
 #line 66 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str20), VK_SEPARATOR},
+      {gperf_offsetof(stringpool, 20), VK_SEPARATOR},
 #line 43 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str21), VK_SELECT},
+      {gperf_offsetof(stringpool, 21), VK_SELECT},
 #line 18 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str22), VK_CONTROL},
+      {gperf_offsetof(stringpool, 22), VK_CONTROL},
 #line 166 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str23), VK_OEM_CLEAR},
+      {gperf_offsetof(stringpool, 23), VK_OEM_CLEAR},
 #line 145 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str24), VK_OEM_RESET},
+      {gperf_offsetof(stringpool, 24), VK_OEM_RESET},
 #line 155 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str25), VK_OEM_AUTO},
+      {gperf_offsetof(stringpool, 25), VK_OEM_AUTO},
 #line 151 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str26), VK_OEM_CUSEL},
+      {gperf_offsetof(stringpool, 26), VK_OEM_CUSEL},
       {-1},
 #line 22 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str28), VK_KANA},
+      {gperf_offsetof(stringpool, 28), VK_KANA},
 #line 127 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str29), VK_OEM_PLUS},
+      {gperf_offsetof(stringpool, 29), VK_OEM_PLUS},
 #line 35 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str30), VK_PRIOR},
+      {gperf_offsetof(stringpool, 30), VK_PRIOR},
 #line 152 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str31), VK_OEM_ATTN},
+      {gperf_offsetof(stringpool, 31), VK_OEM_ATTN},
 #line 20 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str32), VK_PAUSE},
+      {gperf_offsetof(stringpool, 32), VK_PAUSE},
 #line 13 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str33), VK_BACK},
+      {gperf_offsetof(stringpool, 33), VK_BACK},
 #line 144 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str34), VK_PACKET},
+      {gperf_offsetof(stringpool, 34), VK_PACKET},
 #line 105 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str35), VK_RCONTROL},
+      {gperf_offsetof(stringpool, 35), VK_RCONTROL},
 #line 104 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str36), VK_LCONTROL},
+      {gperf_offsetof(stringpool, 36), VK_LCONTROL},
 #line 37 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str37), VK_END},
+      {gperf_offsetof(stringpool, 37), VK_END},
 #line 38 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str38), VK_HOME},
+      {gperf_offsetof(stringpool, 38), VK_HOME},
 #line 44 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str39), VK_PRINT},
+      {gperf_offsetof(stringpool, 39), VK_PRINT},
 #line 94 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str40), VK_NUMLOCK},
+      {gperf_offsetof(stringpool, 40), VK_NUMLOCK},
 #line 39 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str41), VK_LEFT},
+      {gperf_offsetof(stringpool, 41), VK_LEFT},
 #line 25 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str42), VK_JUNJA},
+      {gperf_offsetof(stringpool, 42), VK_JUNJA},
 #line 19 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str43), VK_MENU},
+      {gperf_offsetof(stringpool, 43), VK_MENU},
 #line 150 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str44), VK_OEM_WSCTRL},
+      {gperf_offsetof(stringpool, 44), VK_OEM_WSCTRL},
 #line 156 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str45), VK_OEM_ENLW},
+      {gperf_offsetof(stringpool, 45), VK_OEM_ENLW},
 #line 36 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str46), VK_NEXT},
+      {gperf_offsetof(stringpool, 46), VK_NEXT},
 #line 51 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str47), VK_RWIN},
+      {gperf_offsetof(stringpool, 47), VK_RWIN},
 #line 50 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str48), VK_LWIN},
+      {gperf_offsetof(stringpool, 48), VK_LWIN},
 #line 21 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str49), VK_CAPITAL},
+      {gperf_offsetof(stringpool, 49), VK_CAPITAL},
 #line 49 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str50), VK_HELP},
+      {gperf_offsetof(stringpool, 50), VK_HELP},
 #line 164 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str51), VK_NONAME},
+      {gperf_offsetof(stringpool, 51), VK_NONAME},
 #line 8 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str52), VK_RBUTTON},
+      {gperf_offsetof(stringpool, 52), VK_RBUTTON},
 #line 7 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str53), VK_LBUTTON},
+      {gperf_offsetof(stringpool, 53), VK_LBUTTON},
 #line 96 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str54), VK_OEM_NEC_EQUAL},
+      {gperf_offsetof(stringpool, 54), VK_OEM_NEC_EQUAL},
       {-1},
 #line 47 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str56), VK_INSERT},
+      {gperf_offsetof(stringpool, 56), VK_INSERT},
 #line 27 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str57), VK_HANJA},
+      {gperf_offsetof(stringpool, 57), VK_HANJA},
       {-1}, {-1},
 #line 46 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str60), VK_SNAPSHOT},
+      {gperf_offsetof(stringpool, 60), VK_SNAPSHOT},
 #line 158 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str61), VK_ATTN},
+      {gperf_offsetof(stringpool, 61), VK_ATTN},
 #line 14 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str62), VK_TAB},
+      {gperf_offsetof(stringpool, 62), VK_TAB},
 #line 157 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str63), VK_OEM_BACKTAB},
+      {gperf_offsetof(stringpool, 63), VK_OEM_BACKTAB},
 #line 143 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str64), VK_ICO_CLEAR},
+      {gperf_offsetof(stringpool, 64), VK_ICO_CLEAR},
 #line 30 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str65), VK_CONVERT},
+      {gperf_offsetof(stringpool, 65), VK_CONVERT},
 #line 16 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str66), VK_RETURN},
+      {gperf_offsetof(stringpool, 66), VK_RETURN},
 #line 146 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str67), VK_OEM_JUMP},
+      {gperf_offsetof(stringpool, 67), VK_OEM_JUMP},
       {-1}, {-1}, {-1},
 #line 111 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str71), VK_BROWSER_STOP},
+      {gperf_offsetof(stringpool, 71), VK_BROWSER_STOP},
 #line 26 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str72), VK_FINAL},
+      {gperf_offsetof(stringpool, 72), VK_FINAL},
 #line 163 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str73), VK_ZOOM},
+      {gperf_offsetof(stringpool, 73), VK_ZOOM},
 #line 28 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str74), VK_KANJI},
+      {gperf_offsetof(stringpool, 74), VK_KANJI},
 #line 48 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str75), VK_DELETE},
+      {gperf_offsetof(stringpool, 75), VK_DELETE},
 #line 128 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str76), VK_OEM_COMMA},
+      {gperf_offsetof(stringpool, 76), VK_OEM_COMMA},
 #line 67 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str77), VK_SUBTRACT},
+      {gperf_offsetof(stringpool, 77), VK_SUBTRACT},
       {-1},
 #line 10 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str79), VK_MBUTTON},
+      {gperf_offsetof(stringpool, 79), VK_MBUTTON},
 #line 78 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str80), VK_F9},
+      {gperf_offsetof(stringpool, 80), VK_F9},
 #line 17 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str81), VK_SHIFT},
+      {gperf_offsetof(stringpool, 81), VK_SHIFT},
 #line 103 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str82), VK_RSHIFT},
+      {gperf_offsetof(stringpool, 82), VK_RSHIFT},
 #line 102 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str83), VK_LSHIFT},
+      {gperf_offsetof(stringpool, 83), VK_LSHIFT},
 #line 65 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str84), VK_ADD},
+      {gperf_offsetof(stringpool, 84), VK_ADD},
 #line 31 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str85), VK_NONCONVERT},
+      {gperf_offsetof(stringpool, 85), VK_NONCONVERT},
 #line 160 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str86), VK_EXSEL},
+      {gperf_offsetof(stringpool, 86), VK_EXSEL},
 #line 126 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str87), VK_OEM_1},
+      {gperf_offsetof(stringpool, 87), VK_OEM_1},
 #line 138 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str88), VK_OEM_AX},
+      {gperf_offsetof(stringpool, 88), VK_OEM_AX},
 #line 108 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str89), VK_BROWSER_BACK},
+      {gperf_offsetof(stringpool, 89), VK_BROWSER_BACK},
 #line 137 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str90), VK_OEM_8},
+      {gperf_offsetof(stringpool, 90), VK_OEM_8},
 #line 129 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str91), VK_OEM_MINUS},
+      {gperf_offsetof(stringpool, 91), VK_OEM_MINUS},
 #line 162 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str92), VK_PLAY},
+      {gperf_offsetof(stringpool, 92), VK_PLAY},
 #line 131 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str93), VK_OEM_2},
+      {gperf_offsetof(stringpool, 93), VK_OEM_2},
 #line 15 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str94), VK_CLEAR},
+      {gperf_offsetof(stringpool, 94), VK_CLEAR},
 #line 99 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str95), VK_OEM_FJ_TOUROKU},
+      {gperf_offsetof(stringpool, 95), VK_OEM_FJ_TOUROKU},
 #line 147 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str96), VK_OEM_PA1},
+      {gperf_offsetof(stringpool, 96), VK_OEM_PA1},
 #line 140 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str97), VK_ICO_HELP},
+      {gperf_offsetof(stringpool, 97), VK_ICO_HELP},
 #line 112 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str98), VK_BROWSER_SEARCH},
+      {gperf_offsetof(stringpool, 98), VK_BROWSER_SEARCH},
 #line 53 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str99), VK_SLEEP},
+      {gperf_offsetof(stringpool, 99), VK_SLEEP},
       {-1},
 #line 70 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str101), VK_F1},
+      {gperf_offsetof(stringpool, 101), VK_F1},
 #line 148 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str102), VK_OEM_PA2},
+      {gperf_offsetof(stringpool, 102), VK_OEM_PA2},
 #line 154 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str103), VK_OEM_COPY},
+      {gperf_offsetof(stringpool, 103), VK_OEM_COPY},
 #line 77 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str104), VK_F8},
+      {gperf_offsetof(stringpool, 104), VK_F8},
 #line 88 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str105), VK_F19},
+      {gperf_offsetof(stringpool, 105), VK_F19},
 #line 41 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str106), VK_RIGHT},
+      {gperf_offsetof(stringpool, 106), VK_RIGHT},
 #line 71 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str107), VK_F2},
+      {gperf_offsetof(stringpool, 107), VK_F2},
 #line 135 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str108), VK_OEM_6},
+      {gperf_offsetof(stringpool, 108), VK_OEM_6},
 #line 87 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str109), VK_F18},
+      {gperf_offsetof(stringpool, 109), VK_F18},
       {-1},
 #line 117 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str111), VK_VOLUME_UP},
+      {gperf_offsetof(stringpool, 111), VK_VOLUME_UP},
       {-1}, {-1},
 #line 120 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str114), VK_MEDIA_STOP},
+      {gperf_offsetof(stringpool, 114), VK_MEDIA_STOP},
 #line 130 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str115), VK_OEM_PERIOD},
+      {gperf_offsetof(stringpool, 115), VK_OEM_PERIOD},
       {-1},
 #line 161 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str117), VK_EREOF},
+      {gperf_offsetof(stringpool, 117), VK_EREOF},
       {-1}, {-1}, {-1},
 #line 114 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str121), VK_BROWSER_HOME},
+      {gperf_offsetof(stringpool, 121), VK_BROWSER_HOME},
 #line 75 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str122), VK_F6},
+      {gperf_offsetof(stringpool, 122), VK_F6},
       {-1},
 #line 110 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str124), VK_BROWSER_REFRESH},
+      {gperf_offsetof(stringpool, 124), VK_BROWSER_REFRESH},
       {-1},
 #line 165 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str126), VK_PA1},
+      {gperf_offsetof(stringpool, 126), VK_PA1},
 #line 142 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str127), VK_PROCESSKEY},
+      {gperf_offsetof(stringpool, 127), VK_PROCESSKEY},
 #line 68 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str128), VK_DECIMAL},
+      {gperf_offsetof(stringpool, 128), VK_DECIMAL},
 #line 132 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str129), VK_OEM_3},
+      {gperf_offsetof(stringpool, 129), VK_OEM_3},
 #line 107 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str130), VK_RMENU},
+      {gperf_offsetof(stringpool, 130), VK_RMENU},
 #line 106 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str131), VK_LMENU},
+      {gperf_offsetof(stringpool, 131), VK_LMENU},
 #line 98 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str132), VK_OEM_FJ_MASSHOU},
+      {gperf_offsetof(stringpool, 132), VK_OEM_FJ_MASSHOU},
 #line 54 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str133), VK_NUMPAD0},
+      {gperf_offsetof(stringpool, 133), VK_NUMPAD0},
 #line 24 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str134), VK_HANGUL},
+      {gperf_offsetof(stringpool, 134), VK_HANGUL},
 #line 63 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str135), VK_NUMPAD9},
+      {gperf_offsetof(stringpool, 135), VK_NUMPAD9},
 #line 23 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str136), VK_HANGEUL},
+      {gperf_offsetof(stringpool, 136), VK_HANGEUL},
 #line 134 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str137), VK_OEM_5},
+      {gperf_offsetof(stringpool, 137), VK_OEM_5},
 #line 149 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str138), VK_OEM_PA3},
+      {gperf_offsetof(stringpool, 138), VK_OEM_PA3},
 #line 115 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str139), VK_VOLUME_MUTE},
+      {gperf_offsetof(stringpool, 139), VK_VOLUME_MUTE},
 #line 133 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str140), VK_OEM_4},
+      {gperf_offsetof(stringpool, 140), VK_OEM_4},
 #line 122 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str141), VK_LAUNCH_MAIL},
+      {gperf_offsetof(stringpool, 141), VK_LAUNCH_MAIL},
 #line 97 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str142), VK_OEM_FJ_JISHO},
+      {gperf_offsetof(stringpool, 142), VK_OEM_FJ_JISHO},
 #line 72 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str143), VK_F3},
+      {gperf_offsetof(stringpool, 143), VK_F3},
 #line 101 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str144), VK_OEM_FJ_ROYA},
+      {gperf_offsetof(stringpool, 144), VK_OEM_FJ_ROYA},
 #line 100 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str145), VK_OEM_FJ_LOYA},
+      {gperf_offsetof(stringpool, 145), VK_OEM_FJ_LOYA},
       {-1},
 #line 42 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str147), VK_DOWN},
+      {gperf_offsetof(stringpool, 147), VK_DOWN},
       {-1},
 #line 153 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str149), VK_OEM_FINISH},
+      {gperf_offsetof(stringpool, 149), VK_OEM_FINISH},
       {-1},
 #line 74 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str151), VK_F5},
+      {gperf_offsetof(stringpool, 151), VK_F5},
       {-1},
 #line 136 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str153), VK_OEM_7},
+      {gperf_offsetof(stringpool, 153), VK_OEM_7},
 #line 73 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str154), VK_F4},
+      {gperf_offsetof(stringpool, 154), VK_F4},
 #line 86 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str155), VK_F17},
+      {gperf_offsetof(stringpool, 155), VK_F17},
 #line 55 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str156), VK_NUMPAD1},
+      {gperf_offsetof(stringpool, 156), VK_NUMPAD1},
 #line 141 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str157), VK_ICO_00},
+      {gperf_offsetof(stringpool, 157), VK_ICO_00},
       {-1},
 #line 62 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str159), VK_NUMPAD8},
+      {gperf_offsetof(stringpool, 159), VK_NUMPAD8},
       {-1}, {-1},
 #line 56 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str162), VK_NUMPAD2},
+      {gperf_offsetof(stringpool, 162), VK_NUMPAD2},
       {-1},
 #line 124 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str164), VK_LAUNCH_APP1},
+      {gperf_offsetof(stringpool, 164), VK_LAUNCH_APP1},
 #line 109 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str165), VK_BROWSER_FORWARD},
+      {gperf_offsetof(stringpool, 165), VK_BROWSER_FORWARD},
       {-1},
 #line 76 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str167), VK_F7},
+      {gperf_offsetof(stringpool, 167), VK_F7},
       {-1}, {-1},
 #line 125 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str170), VK_LAUNCH_APP2},
+      {gperf_offsetof(stringpool, 170), VK_LAUNCH_APP2},
 #line 64 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str171), VK_MULTIPLY},
+      {gperf_offsetof(stringpool, 171), VK_MULTIPLY},
       {-1}, {-1},
 #line 45 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str174), VK_EXECUTE},
+      {gperf_offsetof(stringpool, 174), VK_EXECUTE},
       {-1},
 #line 113 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str176), VK_BROWSER_FAVORITES},
+      {gperf_offsetof(stringpool, 176), VK_BROWSER_FAVORITES},
 #line 60 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str177), VK_NUMPAD6},
+      {gperf_offsetof(stringpool, 177), VK_NUMPAD6},
       {-1},
 #line 85 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str179), VK_F16},
+      {gperf_offsetof(stringpool, 179), VK_F16},
       {-1}, {-1},
 #line 79 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str182), VK_F10},
+      {gperf_offsetof(stringpool, 182), VK_F10},
       {-1}, {-1},
 #line 116 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str185), VK_VOLUME_DOWN},
+      {gperf_offsetof(stringpool, 185), VK_VOLUME_DOWN},
       {-1}, {-1},
 #line 89 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str188), VK_F20},
+      {gperf_offsetof(stringpool, 188), VK_F20},
 #line 119 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str189), VK_MEDIA_PREV_TRACK},
+      {gperf_offsetof(stringpool, 189), VK_MEDIA_PREV_TRACK},
       {-1},
 #line 33 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str191), VK_MODECHANGE},
+      {gperf_offsetof(stringpool, 191), VK_MODECHANGE},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 83 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str197), VK_F14},
+      {gperf_offsetof(stringpool, 197), VK_F14},
 #line 57 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str198), VK_NUMPAD3},
+      {gperf_offsetof(stringpool, 198), VK_NUMPAD3},
 #line 11 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str199), VK_XBUTTON1},
+      {gperf_offsetof(stringpool, 199), VK_XBUTTON1},
       {-1}, {-1}, {-1},
 #line 93 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str203), VK_F24},
+      {gperf_offsetof(stringpool, 203), VK_F24},
       {-1},
 #line 12 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str205), VK_XBUTTON2},
+      {gperf_offsetof(stringpool, 205), VK_XBUTTON2},
 #line 59 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str206), VK_NUMPAD5},
+      {gperf_offsetof(stringpool, 206), VK_NUMPAD5},
       {-1}, {-1},
 #line 58 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str209), VK_NUMPAD4},
+      {gperf_offsetof(stringpool, 209), VK_NUMPAD4},
       {-1}, {-1}, {-1}, {-1}, {-1},
 #line 121 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str215), VK_MEDIA_PLAY_PAUSE},
+      {gperf_offsetof(stringpool, 215), VK_MEDIA_PLAY_PAUSE},
       {-1},
 #line 123 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str217), VK_LAUNCH_MEDIA_SELECT},
+      {gperf_offsetof(stringpool, 217), VK_LAUNCH_MEDIA_SELECT},
 #line 80 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str218), VK_F11},
+      {gperf_offsetof(stringpool, 218), VK_F11},
       {-1},
 #line 139 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str220), VK_OEM_102},
+      {gperf_offsetof(stringpool, 220), VK_OEM_102},
 #line 118 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str221), VK_MEDIA_NEXT_TRACK},
+      {gperf_offsetof(stringpool, 221), VK_MEDIA_NEXT_TRACK},
 #line 61 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str222), VK_NUMPAD7},
+      {gperf_offsetof(stringpool, 222), VK_NUMPAD7},
       {-1},
 #line 90 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str224), VK_F21},
+      {gperf_offsetof(stringpool, 224), VK_F21},
       {-1},
 #line 82 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str226), VK_F13},
+      {gperf_offsetof(stringpool, 226), VK_F13},
       {-1}, {-1},
 #line 81 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str229), VK_F12},
+      {gperf_offsetof(stringpool, 229), VK_F12},
       {-1}, {-1},
 #line 92 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str232), VK_F23},
+      {gperf_offsetof(stringpool, 232), VK_F23},
       {-1}, {-1},
 #line 91 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str235), VK_F22},
+      {gperf_offsetof(stringpool, 235), VK_F22},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #line 84 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str242), VK_F15},
+      {gperf_offsetof(stringpool, 242), VK_F15},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
 #line 69 "win32_vk.list"
-      {offsetof(struct stringpool_t, stringpool_str256), VK_DIVIDE}
+      {gperf_offsetof(stringpool, 256), VK_DIVIDE}
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
     {
-      register int key = hash (str, len);
+      register unsigned int key = hash (str, len);
 
-      if (key <= MAX_HASH_VALUE && key >= 0)
+      if (key <= MAX_HASH_VALUE)
         {
           register int o = wordlist[key].ofs;
           if (o >= 0)

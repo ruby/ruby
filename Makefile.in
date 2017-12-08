@@ -345,7 +345,7 @@ lex.c: defs/keywords
 	else \
 	  [ $(Q) ] && echo generating $@ || set -x; \
 	  gperf -C -P -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? \
-	  | sed 's/(long)&((\(struct stringpool_t\) *\*)0)->\(stringpool_[a-z0-9]*\)/offsetof(\1, \2)/g' \
+	  | sed -f $(srcdir)/tool/gperf.sed \
 	  > $@.tmp && \
 	  $(MV) $@.tmp $@ && \
 	  $(CP) $? $(srcdir)/defs/lex.c.src && \
@@ -363,7 +363,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	else \
 	  set -x; \
 	  gperf $(JIS_PROPS_OPTIONS) $? | \
-	  sed 's/(int)(long)&((\([a-zA-Z_0-9 ]*[a-zA-Z_0-9]\) *\*)0)->\([a-zA-Z0-9_]*\),/(char)offsetof(\1, \2),/g' > $@ && \
+	  sed -f $(srcdir)/tool/gperf.sed > $@ && \
 	  $(CP) $? $(?:.kwd=.src) && \
 	  $(CP) $@ $(?:.kwd=.h.blt); \
 	fi

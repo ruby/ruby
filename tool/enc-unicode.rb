@@ -449,7 +449,9 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
+#if !(/*ANSI*/+0)
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+#endif
 %}
 struct uniname2ctype_struct;
 %%
@@ -536,10 +538,17 @@ if header
   fds.each(&:close)
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
     IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+      ansi = false
       f.each {|line|
+        if /ANSI-C code produced by gperf/ =~ line
+          ansi = true
+        end
+        line.sub!(/\/\*ANSI\*\//, '1') if ansi
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
-        line.sub!(/^(uniname2ctype_(hash|p) *\(.* )size_t /, '\1unsigned int ')
+        if (/^(uniname2ctype_hash) /=~line)..(/^\}/=~line)
+          line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
+        end
         puts line
       }
     }
