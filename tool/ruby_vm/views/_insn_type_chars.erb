@@ -1,0 +1,12 @@
+%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%
+% map = RubyVM::Typemap.each_pair.map {|k, (c, t)| sprintf "%s = '%s'", t, c }
+enum ruby_insn_type_chars {
+    <%=  map.join(",\n    ") %>
+};
