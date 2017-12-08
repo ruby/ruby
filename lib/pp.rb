@@ -549,10 +549,10 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
+  alias __pp_backup__ pp if method_defined?(:pp)
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
-  alias __pp_backup__ pp if method_defined?(:pp)
   def pp(*objs)
     objs.each {|obj|
       PP.pp(obj)
