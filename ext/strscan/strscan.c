@@ -996,7 +996,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 /*
  * call-seq: [](n)
  *
- * Return the n-th subgroup in the most recent match.
+ * Returns the n-th subgroup in the most recent match.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
  *   s.scan(/(\w+) (\w+) (\d+) /)       # -> "Fri Dec 12 "
@@ -1055,7 +1055,7 @@ strscan_aref(VALUE self, VALUE idx)
 /*
  * call-seq: size
  *
- * Return the amount of subgroups in the most recent match.
+ * Returns the amount of subgroups in the most recent match.
  * The full match counts as a subgroup.
  *
  *   s = StringScanner.new("Fri Dec 12 1975 14:39")
@@ -1139,7 +1139,7 @@ strscan_values_at(int argc, VALUE *argv, VALUE self)
 }
 
 /*
- * Return the <i><b>pre</b>-match</i> (in the regular expression sense) of the last scan.
+ * Returns the <i><b>pre</b>-match</i> (in the regular expression sense) of the last scan.
  *
  *   s = StringScanner.new('test string')
  *   s.scan(/\w+/)           # -> "test"
@@ -1158,7 +1158,7 @@ strscan_pre_match(VALUE self)
 }
 
 /*
- * Return the <i><b>post</b>-match</i> (in the regular expression sense) of the last scan.
+ * Returns the <i><b>post</b>-match</i> (in the regular expression sense) of the last scan.
  *
  *   s = StringScanner.new('test string')
  *   s.scan(/\w+/)           # -> "test"
