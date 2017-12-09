@@ -10118,7 +10118,7 @@ arg_append_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYL
 {
     NODE *argspush;
 
-    if (!node1) return new_list(node2, location);
+    if (!node1) return new_list(node2, &node2->nd_loc);
     switch (nd_type(node1))  {
       case NODE_ARRAY:
 	return list_append(node1, node2, location);
