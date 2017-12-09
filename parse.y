@@ -9223,7 +9223,7 @@ call_bin_op_gen(struct parser_params *parser, NODE *recv, ID id, NODE *arg1,
     NODE *expr;
     value_expr(recv);
     value_expr(arg1);
-    expr = NEW_OPCALL(recv, id, new_list(arg1, location));
+    expr = NEW_OPCALL(recv, id, new_list(arg1, &arg1->nd_loc));
     nd_set_line(expr, op_loc->first_loc.lineno);
     expr->nd_loc = *location;
     return expr;
