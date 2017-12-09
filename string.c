@@ -6081,21 +6081,58 @@ rb_str_dump(VALUE str)
     return result;
 }
 
-/* Is s wrapped with '"'? */
-static int
-is_wrapped(const char *s, const char *s_end, long len, rb_encoding *enc)
+enum undump_source_format {
+    UNDUMP_SOURCE_SIMPLE, /* "..." */
+    UNDUMP_SOURCE_FORCE_ENCODING, /* "...".force_encoding("...") */
+    UNDUMP_SOURCE_INVALID
+};
+
+static enum undump_source_format
+check_undump_source_format(const char *s, const char *s_end, long len, rb_encoding *enc,
+			   VALUE *forced_enc_str, long *forced_enc_str_len)
 {
     unsigned int cbeg, cend;
     const char *prev;
+    static const long force_encoding_minimum_len = rb_strlen_lit("\"\".force_encoding(\"\")");
+    static const char force_encoding_middle_part[] = "\".force_encoding(\"";
+    static const long force_encoding_middle_part_len = rb_strlen_lit("\".force_encoding(\"");
+    static const char force_encoding_end_part[] = "\")";
+    static const long force_encoding_end_part_len = rb_strlen_lit("\")");
+    long pos_before_middle_part, pos_before_end_part, pos_after_middle_part;
 
-    if (len < 2) return FALSE;
+    if (len < 2) return UNDUMP_SOURCE_INVALID;
 
     cbeg = rb_enc_mbc_to_codepoint(s, s_end, enc);
-    if (cbeg != '"') return FALSE;
+    if (cbeg != '"') return UNDUMP_SOURCE_INVALID;
 
     prev = rb_enc_prev_char(s, s_end, s_end, enc);
     cend = rb_enc_mbc_to_codepoint(prev, s_end, enc);
-    return cend == '"';
+    if (cend == '"') return UNDUMP_SOURCE_SIMPLE;
+
+    if (cend != ')' || len < force_encoding_minimum_len) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    /* find '".force_encoding("' */
+    pos_before_middle_part = strseq_core(s, s_end, len,
+					 force_encoding_middle_part, force_encoding_middle_part_len,
+					 0, enc);
+    if (pos_before_middle_part <= 0) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    pos_after_middle_part = pos_before_middle_part + force_encoding_middle_part_len;
+    /* find '")' */
+    pos_before_end_part = strseq_core(s + pos_after_middle_part, s_end, len - pos_after_middle_part,
+				      force_encoding_end_part, force_encoding_end_part_len,
+				      0, enc);
+    if (pos_before_end_part < 0 || pos_after_middle_part + pos_before_end_part + 2 != len) {
+	return UNDUMP_SOURCE_INVALID;
+    }
+
+    *forced_enc_str_len = pos_before_end_part;
+    *forced_enc_str = rb_str_new(s + pos_after_middle_part, *forced_enc_str_len);
+    return UNDUMP_SOURCE_FORCE_ENCODING;
 }
 
 static const char *
@@ -6248,19 +6285,34 @@ str_undump(VALUE str)
     const char *s = RSTRING_PTR(str);
     const char *s_end = RSTRING_END(str);
     long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str);
+    rb_encoding *enc = rb_enc_get(str), *forced_enc;
     int n;
     unsigned int c;
+    enum undump_source_format source_format;
     VALUE undumped = rb_enc_str_new(s, 0L, enc);
+    VALUE forced_enc_str;
+    long forced_enc_str_len;
 
     rb_must_asciicompat(str);
 
-    if (!is_wrapped(s, s_end, len, enc)) {
-	rb_raise(rb_eArgError, "not wrapped with '\"'");
+    source_format = check_undump_source_format(s, s_end, len, enc,
+					       &forced_enc_str, &forced_enc_str_len);
+    if (source_format == UNDUMP_SOURCE_INVALID) {
+	rb_raise(rb_eArgError, "not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
     }
-    /* strip '"' at the begin and the end */
+    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
+	forced_enc = rb_to_encoding(forced_enc_str);
+    }
+
+    /* strip '"' at the start */
     s++;
-    s_end--;
+    if (source_format == UNDUMP_SOURCE_SIMPLE) {
+	/* strip '"' at the end */
+	s_end--;
+    } else { /* source_format == UNDUMP_SOURCE_FORCE_ENCODING */
+	/* strip '".force_encoding("...")' */
+	s_end -= rb_strlen_lit("\".force_encoding(\"\")") + forced_enc_str_len;
+    }
 
     for (; s < s_end; s += n) {
 	c = rb_enc_codepoint_len(s, s_end, &n, enc);
@@ -6275,6 +6327,10 @@ str_undump(VALUE str)
 	}
     }
 
+    if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
+	rb_enc_associate(undumped, forced_enc);
+	ENC_CODERANGE_CLEAR(undumped);
+    }
     OBJ_INFECT(undumped, str);
     return undumped;
 }

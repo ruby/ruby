@@ -768,7 +768,12 @@ CODE
 
     assert_equal(Encoding::UTF_8, S('"\\u3042"').encode(Encoding::EUC_JP).undump.encoding)
 
+    assert_equal("abc".encode(Encoding::UTF_16LE),
+                 '"a\x00b\x00c\x00".force_encoding("UTF-16LE")'.undump)
+
     assert_raise(ArgumentError) { S('\u3042').undump }
+    assert_raise(ArgumentError) { S('"".force_encoding()').undump }
+    assert_raise(ArgumentError) { S('"".force_encoding("UNKNOWN")').undump }
  end
 
   def test_dup
