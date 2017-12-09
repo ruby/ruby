@@ -1002,11 +1002,7 @@ nogvl_chdir(void *ptr)
 static void
 dir_chdir(VALUE path)
 {
-    int r;
-    char *p = RSTRING_PTR(path);
-
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p, RUBY_UBF_IO, 0);
-    if (r < 0)
+    if (chdir(RSTRING_PTR(path)) < 0)
 	rb_sys_fail_path(path);
 }
 
@@ -1111,7 +1107,13 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 	args.done = FALSE;
 	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
     }
-    dir_chdir(path);
+    else {
+	char *p = RSTRING_PTR(path);
+	int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p,
+							RUBY_UBF_IO, 0);
+	if (r < 0)
+	    rb_sys_fail_path(path);
+    }
 
     return INT2FIX(0);
 }
