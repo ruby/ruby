@@ -3849,8 +3849,11 @@ opt_rescue	: keyword_rescue exc_list exc_var then
 		    {
 		    /*%%%*/
 			if ($3) {
+			    YYLTYPE location;
+			    location.first_loc = @3.first_loc;
+			    location.last_loc = @5.last_loc;
 			    $3 = node_assign($3, new_errinfo(&@3), &@3);
-			    $5 = block_append($3, $5, &@$);
+			    $5 = block_append($3, $5, &location);
 			}
 			$$ = new_resbody($2, $5, $6, &@$);
 			fixpos($$, $2?$2:$5);
