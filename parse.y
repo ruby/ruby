@@ -2996,7 +2996,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $6);
-			$$->nd_body->nd_loc = @$;
+			$$->nd_body->nd_loc = @6;
 			set_line_body($6, nd_line($3));
 			fixpos($$, $3);
 			$$->nd_loc = @$;
