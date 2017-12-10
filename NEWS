@@ -38,6 +38,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Dir.children  [Feature #11302]
   * Dir.each_child  [Feature #11302]
 
+* Enumerable
+
+  * Enumerable#any?, all?, none? and one? now accept a pattern argument [Feature #11286]
+
 * File
 
   * :newline option to File.open implies text mode now.  [Bug #13350]
