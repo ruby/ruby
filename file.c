@@ -91,9 +91,9 @@ int flock(int, int);
 /* define system APIs */
 #ifdef _WIN32
 #include "win32/file.h"
-#define STAT(p, s)	rb_w32_ustati64ns((p), (s))
+#define STAT(p, s)	rb_w32_ustati128((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ulstati64ns((p), (s))
+#define lstat(p, s)	rb_w32_ulstati128((p), (s))
 #undef access
 #define access(p, m)	rb_w32_uaccess((p), (m))
 #undef truncate
@@ -611,17 +611,12 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
-#ifdef _WIN32
-    struct stat *st = get_stat(self);
-    unsigned short *p2 = (unsigned short *)st;
-    unsigned int *p4 = (unsigned int *)st;
-    uint64_t r;
-    r = p2[2];
-    r <<= 16;
-    r |= p2[7];
-    r <<= 32;
-    r |= p4[5];
-    return ULL2NUM(r);
+#ifdef HAVE_STRUCT_STAT_ST_INOHIGH
+    /* assume INTEGER_PACK_LSWORD_FIRST and st_inohigh is just next of st_ino */
+    return rb_integer_unpack(&get_stat(self)->st_ino, 2,
+            SIZEOF_STRUCT_STAT_ST_INO, 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP);
 #elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
     return ULL2NUM(get_stat(self)->st_ino);
 #else

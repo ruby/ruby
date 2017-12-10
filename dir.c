@@ -1366,9 +1366,9 @@ to_be_ignored(int e)
 }
 
 #ifdef _WIN32
-#define STAT(p, s)	rb_w32_ustati64ns((p), (s))
+#define STAT(p, s)	rb_w32_ustati128((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ulstati64ns((p), (s))
+#define lstat(p, s)	rb_w32_ulstati128((p), (s))
 #else
 #define STAT(p, s)	stat((p), (s))
 #endif

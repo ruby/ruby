@@ -172,10 +172,11 @@ typedef int clockid_t;
 #define unlink(p)		rb_w32_unlink(p)
 #endif /* RUBY_EXPORT */
 
-/* same with stati64 except nanosecond timestamps */
-struct stati64ns {
+/* same with stati64 except the size of st_ino and nanosecond timestamps */
+struct stati128 {
   _dev_t st_dev;
-  _ino_t st_ino;
+  unsigned __int64 st_ino;
+  __int64 st_inohigh;
   unsigned short st_mode;
   short st_nlink;
   short st_uid;
@@ -192,19 +193,21 @@ struct stati64ns {
 
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
-#define stat stati64ns
+#define stat stati128
+#define SIZEOF_STRUCT_STAT_ST_INO sizeof(unsigned __int64)
+#define HAVE_STRUCT_STAT_ST_INOHIGH
 #define HAVE_STRUCT_STAT_ST_ATIMENSEC
 #define HAVE_STRUCT_STAT_ST_MTIMENSEC
 #define HAVE_STRUCT_STAT_ST_CTIMENSEC
-#define fstat(fd,st)		rb_w32_fstati64ns(fd,st)
-#define stati64ns(path, st)	rb_w32_stati64ns(path, st)
+#define fstat(fd,st)		rb_w32_fstati128(fd,st)
+#define stati128(path, st)	rb_w32_stati128(path,st)
 #else
 #define stat(path,st)		rb_w32_stat(path,st)
 #define fstat(fd,st)		rb_w32_fstat(fd,st)
 extern int rb_w32_stat(const char *, struct stat *);
 extern int rb_w32_fstat(int, struct stat *);
 #endif
-#define lstat(path,st)		rb_w32_lstati64ns(path,st)
+#define lstat(path,st)		rb_w32_lstati128(path,st)
 #define access(path,mode)	rb_w32_access(path,mode)
 
 #define strcasecmp		_stricmp
@@ -335,14 +338,14 @@ extern int rb_w32_urmdir(const char *);
 extern int rb_w32_unlink(const char *);
 extern int rb_w32_uunlink(const char *);
 extern int rb_w32_uchmod(const char *, int);
-extern int rb_w32_stati64ns(const char *, struct stati64ns *);
-extern int rb_w32_ustati64ns(const char *, struct stati64ns *);
-extern int rb_w32_lstati64ns(const char *, struct stati64ns *);
-extern int rb_w32_ulstati64ns(const char *, struct stati64ns *);
+extern int rb_w32_stati128(const char *, struct stati128 *);
+extern int rb_w32_ustati128(const char *, struct stati128 *);
+extern int rb_w32_lstati128(const char *, struct stati128 *);
+extern int rb_w32_ulstati128(const char *, struct stati128 *);
 extern int rb_w32_access(const char *, int);
 extern int rb_w32_uaccess(const char *, int);
 extern char rb_w32_fd_is_text(int);
-extern int rb_w32_fstati64ns(int, struct stati64ns *);
+extern int rb_w32_fstati128(int, struct stati128 *);
 extern int rb_w32_dup2(int, int);
 
 #include <float.h>
