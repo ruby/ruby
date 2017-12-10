@@ -9039,7 +9039,7 @@ list_append_gen(struct parser_params *parser, NODE *list, NODE *item, const YYLT
 {
     NODE *last;
 
-    if (list == 0) return new_list(item, location);
+    if (list == 0) return new_list(item, &item->nd_loc);
     if (list->nd_next) {
 	last = list->nd_next->nd_end;
     }
@@ -9048,7 +9048,7 @@ list_append_gen(struct parser_params *parser, NODE *list, NODE *item, const YYLT
     }
 
     list->nd_alen += 1;
-    last->nd_next = new_list(item, location);
+    last->nd_next = new_list(item, &item->nd_loc);
     list->nd_next->nd_end = last->nd_next;
 
     nd_set_last_lineno(list, nd_last_lineno(item));
