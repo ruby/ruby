@@ -1550,7 +1550,10 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
 		    {
-			$$ = const_path_field($1, $3, &@$);
+			YYLTYPE location;
+			location.first_loc = @1.first_loc;
+			location.last_loc = @3.last_loc;
+			$$ = const_path_field($1, $3, &location);
 			$$ = new_const_op_assign($$, $4, $5, &@$);
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
@@ -2214,7 +2217,10 @@ arg		: lhs '=' arg_rhs
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
-			$$ = const_path_field($1, $3, &@$);
+			YYLTYPE location;
+			location.first_loc = @1.first_loc;
+			location.last_loc = @3.last_loc;
+			$$ = const_path_field($1, $3, &location);
 			$$ = new_const_op_assign($$, $4, $5, &@$);
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg_rhs
