@@ -3030,7 +3030,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
-			$$->nd_body->nd_loc = @$;
+			$$->nd_body->nd_loc = @4;
 			set_line_body($4, $<num>3);
 			nd_set_line($$, $<num>3);
 			$$->nd_loc = @$;
