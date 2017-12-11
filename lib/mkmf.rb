@@ -129,7 +129,6 @@ module MakeMakefile
   $vendorarchdir = CONFIG["vendorarchdir"]
 
   $mswin = /mswin/ =~ RUBY_PLATFORM
-  $bccwin = /bccwin/ =~ RUBY_PLATFORM
   $mingw = /mingw/ =~ RUBY_PLATFORM
   $cygwin = /cygwin/ =~ RUBY_PLATFORM
   $netbsd = /netbsd/ =~ RUBY_PLATFORM
