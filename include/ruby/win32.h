@@ -194,6 +194,7 @@ struct stati128 {
 #if SIZEOF_OFF_T == 8
 #define off_t __int64
 #define stat stati128
+#undef SIZEOF_STRUCT_STAT_ST_INO
 #define SIZEOF_STRUCT_STAT_ST_INO sizeof(unsigned __int64)
 #define HAVE_STRUCT_STAT_ST_INOHIGH
 #define HAVE_STRUCT_STAT_ST_ATIMENSEC
