@@ -549,9 +549,6 @@ module Kernel
     PP.pp(self, ''.dup)
   end
 
-  # :stopdoc:
-  alias __pp_backup__ pp if method_defined?(:pp)
-  # :startdoc:
   # prints arguments in pretty form.
   #
   # pp returns argument(s).
@@ -561,7 +558,6 @@ module Kernel
     }
     objs.size <= 1 ? objs.first : objs
   end
-  undef __pp_backup__ if method_defined?(:__pp_backup__)
   module_function :pp
 end
 
