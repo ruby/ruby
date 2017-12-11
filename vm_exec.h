@@ -66,6 +66,9 @@ error !
 
 #define NEXT_INSN() return reg_cfp;
 
+#define START_OF_ORIGINAL_INSN(x) /* ignore */
+#define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
+
 /************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 /* threaded code with gcc */
@@ -95,9 +98,7 @@ error !
 #else
 #define DISPATCH_ARCH_DEPEND_WAY(addr) \
 				/* do nothing */
-
 #endif
-
 
 /**********************************/
 #if OPT_DIRECT_THREADED_CODE
@@ -134,6 +135,9 @@ error !
 
 #define NEXT_INSN() TC_DISPATCH(__NEXT_INSN__)
 
+#define START_OF_ORIGINAL_INSN(x) start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
+
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -144,7 +148,6 @@ case BIN(insn):
 #define END_INSN(insn)                        \
   DEBUG_END_INSN();                           \
   break;
-
 
 #define INSN_DISPATCH()         \
   while (1) {			\
@@ -158,6 +161,9 @@ default:                        \
   }   /* end of while loop */   \
 
 #define NEXT_INSN() goto first
+
+#define START_OF_ORIGINAL_INSN(x) start_of_##x:
+#define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 
 #endif
 
