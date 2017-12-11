@@ -45,6 +45,26 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('Integer', '%', 'assert_equal 7, 8 % 7')
   end
 
+  def test_fixnum_lt
+    assert_equal true, 1 < 2
+    assert_redefine_method('Integer', '<', 'assert_equal 2, 1 < 2')
+  end
+
+  def test_fixnum_le
+    assert_equal true, 1 <= 2
+    assert_redefine_method('Integer', '<=', 'assert_equal 2, 1 <= 2')
+  end
+
+  def test_fixnum_gt
+    assert_equal false, 1 > 2
+    assert_redefine_method('Integer', '>', 'assert_equal 2, 1 > 2')
+  end
+
+  def test_fixnum_ge
+    assert_equal false, 1 >= 2
+    assert_redefine_method('Integer', '>=', 'assert_equal 2, 1 >= 2')
+  end
+
   def test_float_plus
     assert_equal 4.0, 2.0 + 2.0
     assert_redefine_method('Float', '+', 'assert_equal 2.0, 2.0 + 2.0')
@@ -63,6 +83,26 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_float_div
     assert_in_delta 0.63063063063063063, 4.2 / 6.66
     assert_redefine_method('Float', '/', 'assert_equal 6.66, 4.2 / 6.66', "[Bug #9238]")
+  end
+
+  def test_float_lt
+    assert_equal true, 1.1 < 2.2
+    assert_redefine_method('Float', '<', 'assert_equal 2.2, 1.1 < 2.2')
+  end
+
+  def test_float_le
+    assert_equal true, 1.1 <= 2.2
+    assert_redefine_method('Float', '<=', 'assert_equal 2.2, 1.1 <= 2.2')
+  end
+
+  def test_float_gt
+    assert_equal false, 1.1 > 2.2
+    assert_redefine_method('Float', '>', 'assert_equal 2.2, 1.1 > 2.2')
+  end
+
+  def test_fixnum_ge
+    assert_equal false, 1.1 >= 2.2
+    assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
   end
 
   def test_string_length
