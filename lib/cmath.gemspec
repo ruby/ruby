@@ -3,8 +3,8 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "cmath"
-  spec.version       = "0.0.1"
-  spec.date          = '2017-02-02'
+  spec.version       = "1.0.0"
+  spec.date          = '2017-12-11'
   spec.authors       = ["Tadayoshi Funaba"]
   spec.email         = [nil]
 
@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.required_ruby_version = ">= 2.5.0dev"
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
