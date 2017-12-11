@@ -41,7 +41,7 @@ command:
 
 Or if you are using git then use the following command:
 
-    $ git clone git://github.com/ruby/ruby.git
+    $ git clone https://github.com/ruby/ruby.git
 
 There are some other branches under development. Try the following command
 to see the list of branches:
