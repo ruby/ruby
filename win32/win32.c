@@ -5475,8 +5475,8 @@ stati128_handle(HANDLE h, struct stati128 *st)
 	st->st_nlink = info.nNumberOfLinks;
 	attr = info.dwFileAttributes;
 	if (!get_ino(h, &fii)) {
-	    st->st_ino = *((unsigned __int64 *)&fii);
-	    st->st_inohigh = *((__int64 *)&fii + 1);
+	    st->st_ino = *((unsigned __int64 *)&fii.FileId);
+	    st->st_inohigh = *((__int64 *)&fii.FileId + 1);
 	}
 	else {
 	    st->st_ino = ((__int64)info.nFileIndexHigh << 32) | info.nFileIndexLow;
