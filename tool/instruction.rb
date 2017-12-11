@@ -540,7 +540,7 @@ class RubyVM
       @insns.dup.each{|insn|
         body = <<-EOS
         vm_trace(ec, GET_CFP(), GET_PC());
-        goto start_of_#{insn.name};
+        DISPATCH_ORIGINAL_INSN(#{insn.name});
         EOS
 
         trace_insn = Instruction.new(name = "trace_#{insn.name}",
@@ -884,7 +884,7 @@ class RubyVM
     end
 
     def make_header insn
-      label = insn.trace ? '' : "start_of_#{insn.name}:;"
+      label = insn.trace ? '' : "START_OF_ORIGINAL_INSN(#{insn.name});"
       commit "INSN_ENTRY(#{insn.name}){#{label}"
       make_header_prepare_stack insn
       commit "{"
