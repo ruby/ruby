@@ -3,8 +3,8 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "fcntl"
-  spec.version       = "0.0.1"
-  spec.date          = '2017-02-10'
+  spec.version       = "1.0.0"
+  spec.date          = '2017-12-11'
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions    = "ext/fcntl/extconf.rb"
-  spec.required_ruby_version = ">= 2.5.0dev"
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler", "~> 1.14"
   spec.add_development_dependency "rake", "~> 12"
