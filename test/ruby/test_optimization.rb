@@ -100,7 +100,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('Float', '>', 'assert_equal 2.2, 1.1 > 2.2')
   end
 
-  def test_fixnum_ge
+  def test_float_ge
     assert_equal false, 1.1 >= 2.2
     assert_redefine_method('Float', '>=', 'assert_equal 2.2, 1.1 >= 2.2')
   end
