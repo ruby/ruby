@@ -65,14 +65,15 @@ static void
 update_global_event_hook(rb_event_flag_t vm_events)
 {
     rb_event_flag_t new_iseq_events = vm_events & ISEQ_TRACE_EVENTS;
-    rb_event_flag_t cur_iseq_events = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
+    rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS;
 
-    if (new_iseq_events > cur_iseq_events) {
+    if (new_iseq_events & ~enabled_iseq_events) {
 	/* write all ISeqs iff new events are added */
-	rb_iseq_trace_set_all(new_iseq_events);
+	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
 
     ruby_vm_event_flags = vm_events;
+    ruby_vm_event_enabled_flags |= vm_events;
     rb_objspace_set_event_hook(vm_events);
 }
 

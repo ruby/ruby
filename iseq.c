@@ -361,8 +361,8 @@ finish_iseq_build(rb_iseq_t *iseq)
     }
 
     iseq->aux.trace_events = 0;
-    if (ruby_vm_event_flags & ISEQ_TRACE_EVENTS) {
-	rb_iseq_trace_set(iseq, ruby_vm_event_flags & ISEQ_TRACE_EVENTS);
+    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
+	rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
     }
     return Qtrue;
 }

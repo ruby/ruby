@@ -320,6 +320,7 @@ VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_execution_context_t *ruby_current_execution_context_ptr = NULL;
 rb_event_flag_t ruby_vm_event_flags;
+rb_event_flag_t ruby_vm_event_enabled_flags;
 rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;

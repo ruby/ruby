@@ -1591,6 +1591,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 extern rb_vm_t *ruby_current_vm_ptr;
 extern rb_execution_context_t *ruby_current_execution_context_ptr;
 extern rb_event_flag_t ruby_vm_event_flags;
+extern rb_event_flag_t ruby_vm_event_enabled_flags;
 
 RUBY_SYMBOL_EXPORT_END
 
