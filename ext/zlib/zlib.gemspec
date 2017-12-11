@@ -2,8 +2,8 @@
 # frozen_string_literal: true
 Gem::Specification.new do |spec|
   spec.name          = "zlib"
-  spec.version       = "0.1.0"
-  spec.date          = '2017-09-13'
+  spec.version       = "1.0.0"
+  spec.date          = '2017-12-11'
   spec.authors       = ["Yukihiro Matsumoto", "UENO Katsuhiro"]
   spec.email         = ["matz@ruby-lang.org", nil]
 
@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
   spec.extensions    = "ext/zlib/extconf.rb"
-  spec.required_ruby_version = ">= 2.5.0dev"
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
