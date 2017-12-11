@@ -4643,13 +4643,16 @@ f_arg_item	: f_arg_asgn
 		| tLPAREN f_margs rparen
 		    {
 			ID tid = internal_id();
+			YYLTYPE location;
+			location.first_loc = @2.first_loc;
+			location.last_loc = @2.first_loc;
 			arg_var(tid);
 		    /*%%%*/
 			if (dyna_in_block()) {
-			    $2->nd_value = new_dvar(tid, &@2);
+			    $2->nd_value = new_dvar(tid, &location);
 			}
 			else {
-			    $2->nd_value = new_lvar(tid, &@2);
+			    $2->nd_value = new_lvar(tid, &location);
 			}
 			$$ = NEW_ARGS_AUX(tid, 1);
 			$$->nd_next = $2;
