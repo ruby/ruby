@@ -177,6 +177,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
   * Show source around `binding.irb` on session start [Feature #14124]
 
+* Matrix
+  * New methods:
+    * Matrix.combine and Matrix#combine [Feature #10903]
+    * Matrix#hadamard_product/#entrywise_product
+
 * Net::HTTP
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
 
