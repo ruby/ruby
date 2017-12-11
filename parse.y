@@ -433,8 +433,8 @@ static NODE *literal_concat_gen(struct parser_params*,NODE*,NODE*,const YYLTYPE*
 static int literal_concat0(struct parser_params *, VALUE, VALUE);
 static NODE *new_evstr_gen(struct parser_params*,NODE*,const YYLTYPE*);
 #define new_evstr(n, location) new_evstr_gen(parser,(n),(location))
-static NODE *evstr2dstr_gen(struct parser_params*,NODE*,const YYLTYPE*);
-#define evstr2dstr(n,location) evstr2dstr_gen(parser,(n),(location))
+static NODE *evstr2dstr_gen(struct parser_params*,NODE*);
+#define evstr2dstr(n) evstr2dstr_gen(parser,(n))
 static NODE *splat_array(NODE*);
 
 static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
@@ -3931,7 +3931,7 @@ strings		: string
 			    node = new_str(STR_NEW0(), &@$);
 			}
 			else {
-			    node = evstr2dstr(node, &@$);
+			    node = evstr2dstr(node);
 			}
 			$$ = node;
 		    /*%
@@ -4001,7 +4001,7 @@ word_list	: /* none */
 		| word_list word ' '
 		    {
 		    /*%%%*/
-			$$ = list_append($1, evstr2dstr($2, &@$));
+			$$ = list_append($1, evstr2dstr($2));
 		    /*%
 			$$ = dispatch2(words_add, $1, $2);
 		    %*/
@@ -4047,7 +4047,7 @@ symbol_list	: /* none */
 		| symbol_list word ' '
 		    {
 		    /*%%%*/
-			$2 = evstr2dstr($2, &@$);
+			$2 = evstr2dstr($2);
 			if (nd_type($2) == NODE_DSTR) {
 			    nd_set_type($2, NODE_DSYM);
 			}
@@ -9200,10 +9200,10 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, const Y
 }
 
 static NODE *
-evstr2dstr_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
+evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(new_dstr(STR_NEW0(), location), node);
+	node = list_append(new_dstr(STR_NEW0(), &node->nd_loc), node);
     }
     return node;
 }
