@@ -2505,7 +2505,7 @@ call_args	: command
 		| assocs opt_block_arg
 		    {
 		    /*%%%*/
-			$$ = $1 ? new_list(new_hash($1, &@1), &@$) : 0;
+			$$ = $1 ? new_list(new_hash($1, &@1), &@1) : 0;
 			$$ = arg_blk_pass($$, $2);
 		    /*%
 			$$ = arg_add_assocs(arg_new(), $1);
