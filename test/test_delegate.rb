@@ -100,7 +100,7 @@ class TestDelegateClass < Test::Unit::TestCase
     a = [42, :hello].freeze
     d = SimpleDelegator.new(a)
     assert_nothing_raised(bug2679) {d.dup[0] += 1}
-    assert_raise(RuntimeError) {d.clone[0] += 1}
+    assert_raise(FrozenError) {d.clone[0] += 1}
     d.freeze
     assert(d.clone.frozen?)
     assert(!d.dup.frozen?)
@@ -109,7 +109,7 @@ class TestDelegateClass < Test::Unit::TestCase
   def test_frozen
     d = SimpleDelegator.new([1, :foo])
     d.freeze
-    assert_raise(RuntimeError, '[ruby-dev:40314]#1') {d.__setobj__("foo")}
+    assert_raise(FrozenError, '[ruby-dev:40314]#1') {d.__setobj__("foo")}
     assert_equal([1, :foo], d)
   end
 

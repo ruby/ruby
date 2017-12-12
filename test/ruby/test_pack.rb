@@ -821,7 +821,7 @@ EXPECTED
   def test_pack_with_buffer
     buf = String.new(capacity: 100)
 
-    assert_raise_with_message(RuntimeError, /frozen/) {
+    assert_raise_with_message(FrozenError, /frozen/) {
       [0xDEAD_BEEF].pack('N', buffer: 'foo'.freeze)
     }
     assert_raise_with_message(TypeError, /must be String/) {

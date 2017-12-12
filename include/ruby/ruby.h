@@ -1946,6 +1946,7 @@ RUBY_EXTERN VALUE rb_eKeyError;
 RUBY_EXTERN VALUE rb_eRangeError;
 RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;
+RUBY_EXTERN VALUE rb_eFrozenError;
 RUBY_EXTERN VALUE rb_eSecurityError;
 RUBY_EXTERN VALUE rb_eSystemCallError;
 RUBY_EXTERN VALUE rb_eThreadError;

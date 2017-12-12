@@ -22,7 +22,7 @@ class TestRange < Test::Unit::TestCase
   def test_frozen_initialize
     r = Range.allocate
     r.freeze
-    assert_raise(RuntimeError){r.__send__(:initialize, 1, 2)}
+    assert_raise(FrozenError){r.__send__(:initialize, 1, 2)}
   end
 
   def test_range_string

@@ -99,12 +99,12 @@ class TestObject < Test::Unit::TestCase
   def test_taint_frozen_obj
     o = Object.new
     o.freeze
-    assert_raise(RuntimeError) { o.taint }
+    assert_raise(FrozenError) { o.taint }
 
     o = Object.new
     o.taint
     o.freeze
-    assert_raise(RuntimeError) { o.untaint }
+    assert_raise(FrozenError) { o.untaint }
   end
 
   def test_freeze_immediate
@@ -123,7 +123,7 @@ class TestObject < Test::Unit::TestCase
       attr_accessor :foo
     }
     obj = klass.new.freeze
-    assert_raise_with_message(RuntimeError, /#{name}/) {
+    assert_raise_with_message(FrozenError, /#{name}/) {
       obj.foo = 1
     }
   end
@@ -399,7 +399,7 @@ class TestObject < Test::Unit::TestCase
   def test_remove_method
     c = Class.new
     c.freeze
-    assert_raise(RuntimeError) do
+    assert_raise(FrozenError) do
       c.instance_eval { remove_method(:foo) }
     end
 
@@ -807,7 +807,7 @@ class TestObject < Test::Unit::TestCase
     class<<x;self;end.class_eval {define_method(:to_s) {name}}
     assert_same(name, x.to_s)
     assert_not_predicate(name, :tainted?)
-    assert_raise(RuntimeError) {name.taint}
+    assert_raise(FrozenError) {name.taint}
     assert_equal("X", [x].join(""))
     assert_not_predicate(name, :tainted?)
     assert_not_predicate(eval('"X".freeze'), :tainted?)
@@ -899,7 +899,7 @@ class TestObject < Test::Unit::TestCase
     b = yield
     assert_nothing_raised("copy") {a.instance_eval {initialize_copy(b)}}
     c = a.dup.freeze
-    assert_raise(RuntimeError, "frozen") {c.instance_eval {initialize_copy(b)}}
+    assert_raise(FrozenError, "frozen") {c.instance_eval {initialize_copy(b)}}
     d = a.dup.trust
     [a, b, c, d]
   end

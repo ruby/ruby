@@ -185,7 +185,7 @@ class TestRubyLiteral < Test::Unit::TestCase
       str = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
       assert_equal("foo-1", str)
       assert_predicate(str, :frozen?)
-      assert_raise_with_message(RuntimeError, /created at #{Regexp.quote(f)}:#{n}/) {
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
         str << "x"
       }
     end

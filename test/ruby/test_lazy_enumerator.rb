@@ -32,7 +32,7 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
     a = [1, 2, 3].lazy
     a.freeze
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       a.__send__ :initialize, [4, 5], &->(y, *v) { y << yield(*v) }
     }
   end

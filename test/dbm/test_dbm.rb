@@ -625,7 +625,7 @@ if defined? DBM
     def test_freeze
       DBM.open("#{@tmproot}/a") {|d|
         d.freeze
-        assert_raise(RuntimeError) { d["k"] = "v" }
+        assert_raise(FrozenError) { d["k"] = "v" }
       }
     end
   end

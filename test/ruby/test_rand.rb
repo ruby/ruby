@@ -507,7 +507,7 @@ END
   def test_initialize_frozen
     r = Random.new(0)
     r.freeze
-    assert_raise(RuntimeError, '[Bug #6540]') do
+    assert_raise(FrozenError, '[Bug #6540]') do
       r.__send__(:initialize, r)
     end
   end
@@ -516,7 +516,7 @@ END
     r = Random.new(0)
     d = r.__send__(:marshal_dump)
     r.freeze
-    assert_raise(RuntimeError, '[Bug #6540]') do
+    assert_raise(FrozenError, '[Bug #6540]') do
       r.__send__(:marshal_load, d)
     end
   end

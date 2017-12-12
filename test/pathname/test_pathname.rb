@@ -635,7 +635,7 @@ class TestPathname < Test::Unit::TestCase
     obj = Pathname.new("a")
     obj.freeze
     assert_equal(false, obj.tainted?)
-    assert_raise(RuntimeError) { obj.taint }
+    assert_raise(FrozenError) { obj.taint }
 
     obj = Pathname.new("a")
     obj.taint

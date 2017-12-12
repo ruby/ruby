@@ -443,14 +443,14 @@ class TestClass < Test::Unit::TestCase
     obj = Object.new
     c = obj.singleton_class
     obj.freeze
-    assert_raise_with_message(RuntimeError, /frozen object/) {
+    assert_raise_with_message(FrozenError, /frozen object/) {
       c.class_eval {def f; end}
     }
   end
 
   def test_singleton_class_message
     c = Class.new.freeze
-    assert_raise_with_message(RuntimeError, /frozen Class/) {
+    assert_raise_with_message(FrozenError, /frozen Class/) {
       def c.f; end
     }
   end
