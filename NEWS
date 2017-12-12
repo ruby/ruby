@@ -99,7 +99,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Integer
 
-  * Integer#step wrongly hid errors from corece method, when
+  * Integer#step wrongly hide errors from coerce method, when
     a given step value which cannot be compared with #> to 0.
     [Feature #7688]
   * Integer#{round,floor,ceil,truncate} always return an Integer.
@@ -132,7 +132,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Numeric
 
   * Numerical comparison operators (<,<=,>=,>) no longer hide exceptions
-    from #corece method internally. Return nil in #coerce if the coercion is
+    from #coerce method internally. Return nil in #coerce if the coercion is
     impossible.  [Feature #7688]
 
 * Process
