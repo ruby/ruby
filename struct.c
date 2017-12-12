@@ -295,6 +295,16 @@ define_aset_method(VALUE nstr, VALUE name, VALUE off)
 }
 
 static VALUE
+rb_struct_s_inspect(VALUE klass)
+{
+    VALUE inspect = rb_class_name(klass);
+    if (RTEST(struct_ivar_get(klass, id_keyword_init))) {
+	rb_str_cat_cstr(inspect, "(keyword_init: true)");
+    }
+    return inspect;
+}
+
+static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
     const VALUE *ptr_members;
@@ -306,6 +316,7 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
+    rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
     ptr_members = RARRAY_CONST_PTR(members);
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
