@@ -437,7 +437,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 /*
  *  call-seq:
  *    Struct.new([class_name] [, member_name]+)                        -> StructClass
- *    Struct.new([class_name] [, member_name]+, keyword_args: true)    -> StructClass
+ *    Struct.new([class_name] [, member_name]+, keyword_init: true)    -> StructClass
  *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
  *    StructClass.new(value, ...)                                      -> object
  *    StructClass[value, ...]                                          -> object
@@ -464,9 +464,9 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *     Customer.new("Dave", "123 Main")
  *     #=> #<struct Customer name="Dave", address="123 Main">
  *
- *  If keyword_args: true option is given, .new takes Hash instead of Array.
+ *  If keyword_init: true option is given, .new takes Hash instead of Array.
  *
- *     Customer = Struct.new(:name, :address, keyword_args: true)
+ *     Customer = Struct.new(:name, :address, keyword_init: true)
  *     #=> Customer
  *     Customer.new(name: "Dave", address: "123 Main")
  *     #=> #<struct Customer name="Dave", address="123 Main">
@@ -520,7 +520,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
-	    keyword_ids[0] = rb_intern("keyword_args");
+	    keyword_ids[0] = rb_intern("keyword_init");
 	}
 	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
 	--argc;

@@ -92,9 +92,9 @@ module TestStruct
     assert_equal([:utime, :stime, :cutime, :cstime], Process.times.members)
   end
 
-  def test_struct_new_with_keyword_args
-    @Struct.new("KeywordArgsTrue", :a, :b, keyword_args: true)
-    @Struct.new("KeywordArgsFalse", :a, :b, keyword_args: false)
+  def test_struct_new_with_keyword_init
+    @Struct.new("KeywordArgsTrue", :a, :b, keyword_init: true)
+    @Struct.new("KeywordArgsFalse", :a, :b, keyword_init: false)
 
     assert_raise(ArgumentError) { @Struct::KeywordArgsTrue.new(1, 2) }
     assert_nothing_raised { @Struct::KeywordArgsFalse.new(1, 2) }

@@ -648,7 +648,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
-  def test_clear_unreachable_keyword_args
+  def test_clear_unreachable_keyword_init
     assert_separately [], <<-END
       script =  <<-EOS
         if true
