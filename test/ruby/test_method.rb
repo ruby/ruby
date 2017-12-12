@@ -1017,4 +1017,10 @@ class TestMethod < Test::Unit::TestCase
     # without trace insn
     assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
   end
+
+  def test_eqq
+    assert(Method.instance_methods(false).include? :===)
+    assert_operator(0.method(:<), :===, 5)
+    assert_not_operator(0.method(:<), :===, -5)
+  end
 end
