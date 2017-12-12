@@ -42,12 +42,10 @@ class TestConditionVariable < Test::Unit::TestCase
     thread = Thread.new do
       Thread.current.abort_on_exception = false
       mutex.synchronize do
-        begin
+        assert_raise(Interrupt) {
           condvar.wait(mutex)
-        rescue Exception
-          locked = mutex.locked?
-          raise
-        end
+        }
+        locked = mutex.locked?
       end
     end
 
@@ -56,7 +54,7 @@ class TestConditionVariable < Test::Unit::TestCase
     end
 
     thread.raise Interrupt, "interrupt a dead condition variable"
-    assert_raise(Interrupt) { thread.value }
+    thread.join
     assert(locked)
   end
 

@@ -118,13 +118,12 @@ class TestGemRequestConnectionPool < Gem::TestCase
 
     pool.checkout
 
-    t1 = Thread.new {
-      Timeout.timeout(1) do
-        pool.checkout
+    Thread.new {
+      assert_raises(Timeout::Error) do
+        Timeout.timeout(1) do
+          pool.checkout
+        end
       end
-    }
-    assert_raises(Timeout::Error) do
-      t1.join
-    end
+    }.join
   end
 end

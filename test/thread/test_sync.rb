@@ -52,11 +52,15 @@ class SyncTest < Test::Unit::TestCase
     tester= Tester.new
     tester.sync_lock(:EX)
 
-    t = Thread.new { tester.sync_lock(:EX) }
+    t = Thread.new {
+      assert_raise(RuntimeError) {
+        tester.sync_lock(:EX)
+      }
+    }
 
     sleep 0.1 until t.stop?
     t.raise
-    sleep 0.1 while t.alive?
+    t.join
 
     assert_equal(tester.sync_waiting.uniq, tester.sync_waiting)
     assert_equal(tester.sync_waiting, [])

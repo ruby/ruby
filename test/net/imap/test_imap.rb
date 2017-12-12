@@ -660,6 +660,7 @@ EOF
     }
     ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
     ths = Thread.start do
+      Thread.current.report_on_exception = false # always join-ed
       begin
         sock = ssl_server.accept
         begin

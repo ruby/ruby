@@ -448,7 +448,10 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_status_and_stop_p
-    a = ::Thread.new { raise("die now") }
+    a = ::Thread.new {
+      Thread.current.report_on_exception = false
+      raise("die now")
+    }
     b = Thread.new { Thread.stop }
     c = Thread.new { Thread.exit }
     e = Thread.current
@@ -560,13 +563,13 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_thread_local_security
-    assert_raise(FrozenError) do
-      Thread.new do
-        Thread.current[:foo] = :bar
-        Thread.current.freeze
+    Thread.new do
+      Thread.current[:foo] = :bar
+      Thread.current.freeze
+      assert_raise(FrozenError) do
         Thread.current[:foo] = :baz
-      end.join
-    end
+      end
+    end.join
   end
 
   def test_thread_local_dynamic_symbol
@@ -615,11 +618,11 @@ class TestThread < Test::Unit::TestCase
   def test_mutex_illegal_unlock
     m = Thread::Mutex.new
     m.lock
-    assert_raise(ThreadError) do
-      Thread.new do
+    Thread.new do
+      assert_raise(ThreadError) do
         m.unlock
-      end.join
-    end
+      end
+    end.join
   end
 
   def test_mutex_fifo_like_lock
@@ -767,12 +770,12 @@ class TestThread < Test::Unit::TestCase
     r=:ng
     e=Class.new(Exception)
     th_s = Thread.current
-    begin
-      th = Thread.start{
+    th = Thread.start{
+      assert_raise(RuntimeError) {
         Thread.handle_interrupt(Object => :on_blocking){
           begin
             Thread.pass until r == :wait
-            Thread.current.raise RuntimeError
+            Thread.current.raise RuntimeError, "will raise in sleep"
             r = :ok
             sleep
           ensure
@@ -780,11 +783,9 @@ class TestThread < Test::Unit::TestCase
           end
         }
       }
-      assert_raise(e) {r = :wait; sleep 0.2}
-      assert_raise(RuntimeError) {th.join(0.2)}
-    ensure
-      th.kill
-    end
+    }
+    assert_raise(e) {r = :wait; sleep 0.2}
+    assert_not_equal nil, th.join
     assert_equal(:ok,r)
   end
 
@@ -971,11 +972,11 @@ _eom
   end
 
   def test_thread_join_main_thread
-    assert_raise(ThreadError) do
-      Thread.new(Thread.current) {|t|
+    Thread.new(Thread.current) {|t|
+      assert_raise(ThreadError) do
         t.join
-      }.join
-    end
+      end
+    }.join
   end
 
   def test_main_thread_status_at_exit
@@ -1019,31 +1020,30 @@ q.pop
     ary = []
 
     t = Thread.new {
-      begin
-        ary << Thread.current.status
-        sleep #1
-      ensure
+      assert_raise(RuntimeError) do
         begin
           ary << Thread.current.status
-          sleep #2
+          sleep #1
         ensure
-          ary << Thread.current.status
+          begin
+            ary << Thread.current.status
+            sleep #2
+          ensure
+            ary << Thread.current.status
+          end
         end
       end
     }
 
-    begin
-      Thread.pass until ary.size >= 1
-      Thread.pass until t.stop?
-      t.kill  # wake up sleep #1
-      Thread.pass until ary.size >= 2
-      Thread.pass until t.stop?
-      t.raise "wakeup" # wake up sleep #2
-      Thread.pass while t.alive?
-      assert_equal(ary, ["run", "aborting", "aborting"])
-    ensure
-      t.join rescue nil
-    end
+    Thread.pass until ary.size >= 1
+    Thread.pass until t.stop?
+    t.kill  # wake up sleep #1
+    Thread.pass until ary.size >= 2
+    Thread.pass until t.stop?
+    t.raise "wakeup" # wake up sleep #2
+    Thread.pass while t.alive?
+    assert_equal(ary, ["run", "aborting", "aborting"])
+    t.join
   end
 
   def test_mutex_owned

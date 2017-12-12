@@ -183,12 +183,12 @@ class TestException < Test::Unit::TestCase
 
   def test_throw_false
     bug12743 = '[ruby-core:77229] [Bug #12743]'
-    e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
-      Thread.start {
+    Thread.start {
+      e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
         throw false
-      }.join
-    }
-    assert_same(false, e.tag, bug12743)
+      }
+      assert_same(false, e.tag, bug12743)
+    }.join
   end
 
   def test_else_no_exception
