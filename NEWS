@@ -128,6 +128,11 @@ with all sufficient information, see the ChangeLog file or Redmine
     enumerate grapheme clusters [Feature #13780]
   * String#start_with? supports regexp [Feature #13712]
 
+* Struct
+
+  * Struct.new now takes `keyword_init: true` option to initialize members
+    with keyword arguments. [Feature #11925]
+
 * Regexp/String: Update Unicode version from 9.0.0 to 10.0.0 [Feature #13685]
 
 * Thread
