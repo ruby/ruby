@@ -1515,6 +1515,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
  *     [ nil, true, 99 ].one?                             #=> false
  *     [ nil, true, false ].one?                          #=> true
  *     [ nil, true, 99 ].one?(Integer)                    #=> true
+ *     [].one?                                            #=> false
  *
  */
 static VALUE
