@@ -3648,6 +3648,8 @@ do_block	: keyword_do_block
 		    {
 			$$ = $3;
 		    /*%%%*/
+			$3->nd_body->nd_loc.first_loc = @1.first_loc;
+			$3->nd_body->nd_loc.last_loc = @4.last_loc;
 			nd_set_line($$, $<num>2);
 		    /*% %*/
 		    }
@@ -3816,6 +3818,8 @@ brace_block	: '{'
 		    {
 			$$ = $3;
 		    /*%%%*/
+			$3->nd_body->nd_loc.first_loc = @1.first_loc;
+			$3->nd_body->nd_loc.last_loc = @4.last_loc;
 			nd_set_line($$, $<num>2);
 		    /*% %*/
 		    }
