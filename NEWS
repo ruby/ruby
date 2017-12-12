@@ -54,7 +54,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Enumerable
 
-  * Enumerable#{any?,all?,none?,one?} accept a :pattern argument [Feature #11286]
+  * Enumerable#{any?,all?,none?,one?} accept a pattern argument [Feature #11286]
 
 * File
 
@@ -104,7 +104,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     [Feature #7688]
   * Integer#{round,floor,ceil,truncate} always return an Integer.
     [Bug #13420]
-  * Integer#pow accepts :modulo argument for calculating modular
+  * Integer#pow accepts modulo argument for calculating modular
     exponentiation.  [Feature #12508] [Feature #11003]
 
   * New methods:
