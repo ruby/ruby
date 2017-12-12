@@ -176,6 +176,34 @@ struct_member_pos(VALUE s, VALUE name)
     }
 }
 
+static int
+rb_struct_s_new_instance_kwargs_hash_loop(VALUE key, VALUE value, VALUE s)
+{
+    (void)rb_struct_aset(s, key, value);
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_struct_s_new_instance_kwargs(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE res, ary, hash;
+    int i;
+
+    res = rb_class_new_instance(0, NULL, klass);
+
+    (void)rb_scan_args(argc, argv, "*:", &ary, &hash);
+
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+	(void)rb_struct_aset(res, INT2FIX(i), RARRAY_AREF(ary, i));
+    }
+
+    if (!NIL_P(hash)) {
+	rb_hash_foreach(hash, rb_struct_s_new_instance_kwargs_hash_loop, res);
+    }
+
+    return res;
+}
+
 static VALUE
 rb_struct_s_members_m(VALUE klass)
 {
@@ -304,6 +332,7 @@ setup_struct(VALUE nstr, VALUE members)
 
     rb_define_alloc_func(nstr, struct_alloc);
     rb_define_singleton_method(nstr, "new", rb_class_new_instance, -1);
+    rb_define_singleton_method(nstr, "new_from_kwargs", rb_struct_s_new_instance_kwargs, -1);
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     ptr_members = RARRAY_CONST_PTR(members);
@@ -439,6 +468,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    Struct.new([class_name] [, member_name]+)                        -> StructClass
  *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
  *    StructClass.new(value, ...)                                      -> object
+ *    StructClass.new_from_kwargs(value, member1: value)               -> object
  *    StructClass[value, ...]                                          -> object
  *
  *  The first two forms are used to create a new Struct subclass +class_name+
@@ -487,6 +517,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *     #=> #<struct Customer name="Dave", address="123 Main">
  *     Customer["Dave"]
  *     #=> #<struct Customer name="Dave", address=nil>
+ *     Customer.new_from_kwargs(address: "123 Main", name: "Dave")
+ *     #=> #<struct Customer name="Dave", address="123 Main">
  */
 
 static VALUE
