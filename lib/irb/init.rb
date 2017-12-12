@@ -13,7 +13,7 @@
 module IRB # :nodoc:
 
   # initialize config
-  def IRB.setup(ap_path, argv: ARGV)
+  def IRB.setup(ap_path, argv: ::ARGV)
     IRB.init_config(ap_path)
     IRB.init_error
     IRB.parse_opts(argv: argv)
@@ -121,7 +121,7 @@ module IRB # :nodoc:
   end
 
   # option analyzing
-  def IRB.parse_opts(argv: ARGV)
+  def IRB.parse_opts(argv: ::ARGV)
     load_path = []
     while opt = argv.shift
       case opt
