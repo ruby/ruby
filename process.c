@@ -474,7 +474,7 @@ rb_last_status_get(void)
 
 /*
  *  call-seq:
- *     Process.last_status   -> Process::Status
+ *     Process.last_status   -> Process::Status or nil
  *
  *  Return the status of the last executed child process in the
  *  current thread.
