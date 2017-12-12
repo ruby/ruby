@@ -951,7 +951,7 @@ exc_to_s(VALUE exc)
 }
 
 /* FIXME: Include eval_error.c */
-void rb_ec_error_write(VALUE errinfo, VALUE errat, VALUE str);
+void rb_error_write(VALUE errinfo, VALUE errat, VALUE str);
 
 /*
  * call-seq:
@@ -968,7 +968,7 @@ exc_full_message(VALUE exc)
 {
     VALUE str = rb_str_new2("");
     VALUE errat = rb_get_backtrace(exc);
-    rb_ec_error_write(exc, errat, str);
+    rb_error_write(exc, errat, str);
     return str;
 }
 
