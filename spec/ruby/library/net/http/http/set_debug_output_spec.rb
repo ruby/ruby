@@ -28,6 +28,6 @@ describe "Net::HTTP#set_debug_output when passed io" do
 
   it "outputs a warning when the connection has already been started" do
     @http.start
-    lambda { @http.set_debug_output(StringIO.new) }.should complain("Net::HTTP#set_debug_output called after HTTP started\n")
+    lambda { @http.set_debug_output(StringIO.new) }.should complain(/Net::HTTP#set_debug_output called after HTTP started/)
   end
 end
