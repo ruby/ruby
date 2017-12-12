@@ -1877,7 +1877,7 @@ mlhs_item	: mlhs_node
 mlhs_head	: mlhs_item ','
 		    {
 		    /*%%%*/
-			$$ = new_list($1, &@$);
+			$$ = new_list($1, &@1);
 		    /*%
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
