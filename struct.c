@@ -475,7 +475,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *     Customer.new("Dave", "123 Main")
  *     #=> #<struct Customer name="Dave", address="123 Main">
  *
- *  If keyword_init: true option is given, .new takes Hash instead of Array.
+ *  If keyword_init: true option is given, .new takes keyword arguments instead
+ *  of normal arguments.
  *
  *     Customer = Struct.new(:name, :address, keyword_init: true)
  *     #=> Customer
@@ -536,7 +537,8 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
 	--argc;
 	keyword_init = kwargs[0];
-    } else {
+    }
+    else {
 	keyword_init = Qfalse;
     }
 
@@ -599,7 +601,8 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
 	    args->unknown_keywords = rb_ary_new();
 	}
 	rb_ary_push(args->unknown_keywords, key);
-    } else {
+    }
+    else {
 	rb_struct_modify(args->self);
 	RSTRUCT_SET(args->self, i, val);
     }
@@ -627,7 +630,8 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 	    rb_raise(rb_eArgError, "unknown keywords: %s",
 		     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
 	}
-    } else {
+    }
+    else {
 	if (n < argc) {
 	    rb_raise(rb_eArgError, "struct size differs");
 	}
