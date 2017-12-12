@@ -1019,7 +1019,6 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_eqq
-    assert(Method.instance_methods(false).include? :===)
     assert_operator(0.method(:<), :===, 5)
     assert_not_operator(0.method(:<), :===, -5)
   end
