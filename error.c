@@ -923,6 +923,25 @@ exc_to_s(VALUE exc)
 
 /*
  * call-seq:
+ *   exception.full_message  ->  string
+ *
+ * Returns formatted string of <i>exception</i>.
+ * The returned string is formatted using the same format that Ruby uses
+ * when printing an uncaught exceptions to stderr. So it may differ by
+ * <code>$stderr.tty?</code> at the timing of a call.
+ */
+
+static VALUE
+exc_full_message(VALUE exc)
+{
+    VALUE str = rb_str_new2("");
+    VALUE errat = rb_get_backtrace(exc);
+    rb_ec_error_write(exc, errat, str);
+    return str;
+}
+
+/*
+ * call-seq:
  *   exception.message   ->  string
  *
  * Returns the result of invoking <code>exception.to_s</code>.
@@ -2189,6 +2208,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
+    rb_define_method(rb_eException, "full_message", exc_full_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);

@@ -31,6 +31,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Now deprecated [Feature #3072]
 
+* Exception
+
+  * Exception#full_message [Feature #14141] [experimental]
+
 * Dir
 
   * Dir.glob provides new optional keyword argument, :base.
