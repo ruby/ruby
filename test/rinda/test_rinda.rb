@@ -504,6 +504,8 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       ts = Rinda::TupleSpaceProxy.new(ro)
       th = Thread.new do
         ts.take([:test_take, nil])
+      rescue Interrupt
+        # Expected
       end
       Kernel.sleep(0.1)
       th.raise(Interrupt) # causes loss of the taken tuple
