@@ -9306,7 +9306,7 @@ match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTY
 	}
     }
 
-    n = new_call(node1, tMATCH, new_list(node2, location), location);
+    n = new_call(node1, tMATCH, new_list(node2, &node2->nd_loc), location);
     nd_set_line(n, line);
     return n;
 }
