@@ -102,6 +102,8 @@ module TestStruct
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
     assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(a: 1, b: 2, c: 3) }
     assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
+    assert_equal "#{@Struct}::KeywordInitFalse", @Struct::KeywordInitFalse.inspect
+    assert_equal "#{@Struct}::KeywordInitTrue(keyword_init: true)", @Struct::KeywordInitTrue.inspect
 
     @Struct.instance_eval do
       remove_const(:KeywordInitTrue)
