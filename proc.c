@@ -3124,6 +3124,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "===", rb_method_call, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
