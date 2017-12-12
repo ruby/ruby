@@ -317,7 +317,10 @@ class TestThread < Test::Unit::TestCase
     assert_in_out_err([], <<-INPUT, %w(false 1), [])
       p Thread.abort_on_exception
       begin
-        t = Thread.new { raise }
+        t = Thread.new {
+          Thread.current.report_on_exception = false
+          raise
+        }
         Thread.pass until t.stop?
         p 1
       rescue
@@ -329,7 +332,10 @@ class TestThread < Test::Unit::TestCase
       Thread.abort_on_exception = true
       p Thread.abort_on_exception
       begin
-        Thread.new { raise }
+        Thread.new {
+          Thread.current.report_on_exception = false
+          raise
+        }
         sleep 0.5
         p 1
       rescue
@@ -352,7 +358,11 @@ class TestThread < Test::Unit::TestCase
       p Thread.abort_on_exception
       begin
         ok = false
-        t = Thread.new { Thread.pass until ok; raise }
+        t = Thread.new {
+          Thread.current.report_on_exception = false
+          Thread.pass until ok
+          raise
+        }
         t.abort_on_exception = true
         p t.abort_on_exception
         ok = 1
@@ -370,17 +380,20 @@ class TestThread < Test::Unit::TestCase
       q1 = Thread::Queue.new
       q2 = Thread::Queue.new
 
-      assert_equal(false, Thread.report_on_exception,
-                   "global flags is false by default")
-      assert_equal(false, Thread.current.report_on_exception)
+      assert_equal(true, Thread.report_on_exception,
+                   "global flag is true by default")
+      assert_equal(false, Thread.current.report_on_exception,
+                   "the main thread has report_on_exception=false")
 
-      Thread.current.report_on_exception = true
-      assert_equal(false,
+      Thread.report_on_exception = true
+      Thread.current.report_on_exception = false
+      assert_equal(true,
                    Thread.start {Thread.current.report_on_exception}.value,
-                  "should not inherit from the parent thread")
+                  "should not inherit from the parent thread but from the global flag")
 
-      assert_warn("", "exception should be ignored silently") {
+      assert_warn("", "exception should be ignored silently when false") {
         th = Thread.start {
+          Thread.current.report_on_exception = false
           q1.push(Thread.current.report_on_exception)
           raise "report 1"
         }
@@ -388,7 +401,7 @@ class TestThread < Test::Unit::TestCase
         Thread.pass while th.alive?
       }
 
-      assert_warn(/report 2/, "exception should be reported") {
+      assert_warn(/report 2/, "exception should be reported when true") {
         th = Thread.start {
           q1.push(Thread.current.report_on_exception = true)
           raise "report 2"
@@ -397,8 +410,8 @@ class TestThread < Test::Unit::TestCase
         Thread.pass while th.alive?
       }
 
-      assert_equal(false, Thread.report_on_exception)
       assert_warn("", "the global flag should not affect already started threads") {
+        Thread.report_on_exception = false
         th = Thread.start {
           q2.pop
           q1.push(Thread.current.report_on_exception)
@@ -409,8 +422,8 @@ class TestThread < Test::Unit::TestCase
         Thread.pass while th.alive?
       }
 
-      assert_equal(true, Thread.report_on_exception)
       assert_warn(/report 4/, "should defaults to the global flag at the start") {
+        Thread.report_on_exception = true
         th = Thread.start {
           q1.push(Thread.current.report_on_exception)
           raise "report 4"
@@ -419,7 +432,7 @@ class TestThread < Test::Unit::TestCase
         Thread.pass while th.alive?
       }
 
-      assert_warn(/report 5/, "should defaults to the global flag at the start") {
+      assert_warn(/report 5/, "should first report and then raise with report_on_exception + abort_on_exception") {
         th = Thread.start {
           Thread.current.report_on_exception = true
           Thread.current.abort_on_exception = true
@@ -780,6 +793,7 @@ class TestThread < Test::Unit::TestCase
       th_waiting = true
 
       t = Thread.new {
+        Thread.current.report_on_exception = false
         Thread.handle_interrupt(RuntimeError => :on_blocking) {
           nil while th_waiting
           # async interrupt should be raised _before_ writing puts arguments
@@ -800,6 +814,7 @@ class TestThread < Test::Unit::TestCase
       th_waiting = false
 
       t = Thread.new {
+        Thread.current.report_on_exception = false
         Thread.handle_interrupt(RuntimeError => :on_blocking) {
           th_waiting = true
           nil while th_waiting
