@@ -3166,6 +3166,45 @@ int_even_p(VALUE num)
 }
 
 /*
+ *  call-seq:
+ *     int.allbits?(mask)  ->  true or false
+ *
+ *  Returns +true+ if all bits of <code>+int+ & +mask+</code> is 1.
+ */
+
+static VALUE
+int_allbits_p(VALUE num, VALUE mask)
+{
+    return rb_int_equal(rb_int_and(num, mask), mask);
+}
+
+/*
+ *  call-seq:
+ *     int.anybits?(mask)  ->  true or false
+ *
+ *  Returns +true+ if any bits of <code>+int+ & +mask+</code> is 1.
+ */
+
+static VALUE
+int_anybits_p(VALUE num, VALUE mask)
+{
+    return num_zero_p(rb_int_and(num, mask)) ? Qfalse : Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     int.nobits?(mask)  ->  true or false
+ *
+ *  Returns +true+ if no bits of <code>+int+ & +mask+</code> is 1.
+ */
+
+static VALUE
+int_nobits_p(VALUE num, VALUE mask)
+{
+    return num_zero_p(rb_int_and(num, mask));
+}
+
+/*
  *  Document-method: Integer#succ
  *  Document-method: Integer#next
  *  call-seq:
@@ -5352,6 +5391,9 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "integer?", int_int_p, 0);
     rb_define_method(rb_cInteger, "odd?", rb_int_odd_p, 0);
     rb_define_method(rb_cInteger, "even?", int_even_p, 0);
+    rb_define_method(rb_cInteger, "allbits?", int_allbits_p, 1);
+    rb_define_method(rb_cInteger, "anybits?", int_anybits_p, 1);
+    rb_define_method(rb_cInteger, "nobits?", int_nobits_p, 1);
     rb_define_method(rb_cInteger, "upto", int_upto, 1);
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "times", int_dotimes, 0);
