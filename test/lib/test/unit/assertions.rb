@@ -678,8 +678,8 @@ eom
       end
 
       def assert_warning(pat, msg = nil)
-        stderr = EnvUtil.verbose_warning {
-          EnvUtil.with_default_internal(pat.encoding) {
+        stderr = EnvUtil.with_default_internal(pat.encoding) {
+          EnvUtil.verbose_warning {
             yield
           }
         }
