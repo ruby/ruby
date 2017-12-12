@@ -184,7 +184,6 @@ class TestCoverage < Test::Unit::TestCase
         File.write("test.rb", code)
 
         assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", stdout, [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
           Coverage.start(#{ opt })
           tmp = Dir.pwd
           require tmp + '/test.rb'

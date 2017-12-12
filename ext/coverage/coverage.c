@@ -25,15 +25,8 @@ static VALUE
 rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 {
     VALUE coverages, opt;
-    int mode, experimental_mode_enabled = 1;
+    int mode;
 
-    {
-        const char *e = getenv("COVERAGE_EXPERIMENTAL_MODE");
-        if (!e || !*e) experimental_mode_enabled = 0;
-    }
-
-    if (!experimental_mode_enabled && argc != 0)
-	rb_error_arity(argc, 0, 0);
     rb_scan_args(argc, argv, "01", &opt);
 
     if (argc == 0) {

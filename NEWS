@@ -152,6 +152,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add Bundler to Standard Library. [Feature #12733]
 
+* Coverage
+  * Support branch coverage and method coverage [Feature #13901]
+
 * DRb
   * ACL::ACLEntry.new no longer suppresses IPAddr::InvalidPrefixError.
 
