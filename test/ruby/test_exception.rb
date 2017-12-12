@@ -354,6 +354,7 @@ class TestException < Test::Unit::TestCase
   def test_thread_signal_location
     _, stderr, _ = EnvUtil.invoke_ruby(%w"--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
+  Thread.current.report_on_exception = false
   begin
     Process.kill(:INT, $$)
   ensure

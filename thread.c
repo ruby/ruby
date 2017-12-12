@@ -648,7 +648,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	    else {
 		if (th->report_on_exception) {
 		    VALUE mesg = rb_thread_to_s(th->self);
-		    rb_str_cat_cstr(mesg, " terminated with exception:\n");
+		    rb_str_cat_cstr(mesg, " terminated with exception (report_on_exception is true):\n");
 		    rb_write_error_str(mesg);
 		    rb_ec_error_print(th->ec, errinfo);
 		}

@@ -2280,6 +2280,7 @@ vm_init2(rb_vm_t *vm)
 {
     MEMZERO(vm, rb_vm_t, 1);
     rb_vm_living_threads_init(vm);
+    vm->thread_report_on_exception = 1;
     vm->src_encoding_index = -1;
 
     vm_default_params_setup(vm);
