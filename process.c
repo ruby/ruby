@@ -472,6 +472,27 @@ rb_last_status_get(void)
     return GET_THREAD()->last_status;
 }
 
+/*
+ *  call-seq:
+ *     Process.last_status   -> Process::Status
+ *
+ *  Return the status of the last executed child process in the
+ *  current thread.
+ *
+ *     Process.wait Process.spawn("ruby", "-e", "exit 13")
+ *     Process.last_status   #=> #<Process::Status: pid 4825 exit 13>
+ *
+ *  If no child process has never been executed in the current
+ *  thread, this returns +nil+.
+ *
+ *     Process.last_status   #=> nil
+ */
+static VALUE
+proc_s_last_status(VALUE mod)
+{
+  return rb_last_status_get();
+}
+
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
@@ -7600,6 +7621,7 @@ InitVM_process(void)
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
     rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
+    rb_define_singleton_method(rb_mProcess, "last_status", proc_s_last_status, 0);
 
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); /* in signal.c */
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
