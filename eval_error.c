@@ -188,7 +188,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 }
 
 void
-rb_ec_error_write(VALUE errinfo, VALUE errat, VALUE str)
+rb_error_write(VALUE errinfo, VALUE errat, VALUE str)
 {
     volatile VALUE eclass = Qundef, emesg = Qundef;
 
@@ -231,7 +231,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 	errat = rb_get_backtrace(errinfo);
     }
 
-    rb_ec_error_write(errinfo, errat, Qnil);
+    rb_error_write(errinfo, errat, Qnil);
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
