@@ -12,6 +12,12 @@ module TestIRB
       end
     end
 
+    def test_setup_with_empty_argv_does_not_change_dollar0
+      orig = $0.dup
+      IRB.setup(eval("__FILE__"), argv: [])
+      assert_equal orig, $0
+    end
+
     private
 
     def with_argv(argv)
