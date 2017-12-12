@@ -59,11 +59,13 @@
 	  (Current).last_loc  = YYRHSLOC(Rhs, N).last_loc;		\
 	}								\
       else								\
-	RUBY_SET_YYLLOC(Current);					\
+	RUBY_SET_YYLLOC_OF_NONE(Current);				\
     while (0)
 
 #define RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(Current)			\
     rb_parser_set_location_from_strterm_heredoc(parser, &lex_strterm->u.heredoc, &(Current))
+#define RUBY_SET_YYLLOC_OF_NONE(Current)					\
+    rb_parser_set_location_of_none(parser, &(Current))
 #define RUBY_SET_YYLLOC(Current)					\
     rb_parser_set_location(parser, &(Current))
 
@@ -693,6 +695,7 @@ VALUE rb_parser_lex_state_name(enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
 PRINTF_ARGS(void rb_parser_fatal(struct parser_params *parser, const char *fmt, ...), 2, 3);
 void rb_parser_set_location_from_strterm_heredoc(struct parser_params *parser, rb_strterm_heredoc_t *here, YYLTYPE *yylloc);
+void rb_parser_set_location_of_none(struct parser_params *parser, YYLTYPE *yylloc);
 void rb_parser_set_location(struct parser_params *parser, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
@@ -9908,6 +9911,15 @@ rb_parser_set_location_from_strterm_heredoc(struct parser_params *parser, rb_str
     yylloc->first_loc.column = (int)(here->u3.lastidx - term_len);
     yylloc->last_loc.lineno  = (int)here->sourceline;
     yylloc->last_loc.column  = (int)(here->u3.lastidx);
+}
+
+void
+rb_parser_set_location_of_none(struct parser_params *parser, YYLTYPE *yylloc)
+{
+    yylloc->first_loc.lineno = ruby_sourceline;
+    yylloc->first_loc.column = (int)(parser->tokp - lex_pbeg);
+    yylloc->last_loc.lineno = ruby_sourceline;
+    yylloc->last_loc.column = (int)(parser->tokp - lex_pbeg);
 }
 
 void
