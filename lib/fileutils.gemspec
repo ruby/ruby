@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 Gem::Specification.new do |s|
   s.name = "fileutils"
-  s.version = '1.0.0'
+  s.version = '1.0.1'
   s.date = '2017-12-12'
   s.summary = "Several file utility methods for copying, moving, removing, etc."
   s.description = "Several file utility methods for copying, moving, removing, etc."
@@ -14,6 +14,12 @@ Gem::Specification.new do |s|
   s.email = [nil]
   s.homepage = "https://github.com/ruby/fileutils"
   s.license = "BSD-2-Clause"
+
+  if s.respond_to?(:metadata=)
+    s.metadata = {
+      "source_code_uri" => "https://github.com/ruby/fileutils"
+    }
+  end
 
   s.add_development_dependency 'rake'
 end
