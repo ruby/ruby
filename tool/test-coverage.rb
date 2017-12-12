@@ -1,6 +1,5 @@
 require "coverage"
 
-ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
 Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
