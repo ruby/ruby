@@ -93,19 +93,19 @@ module TestStruct
   end
 
   def test_struct_new_with_keyword_init
-    @Struct.new("KeywordArgsTrue", :a, :b, keyword_init: true)
-    @Struct.new("KeywordArgsFalse", :a, :b, keyword_init: false)
+    @Struct.new("KeywordInitTrue", :a, :b, keyword_init: true)
+    @Struct.new("KeywordInitFalse", :a, :b, keyword_init: false)
 
-    assert_raise(ArgumentError) { @Struct::KeywordArgsTrue.new(1, 2) }
-    assert_nothing_raised { @Struct::KeywordArgsFalse.new(1, 2) }
-    assert_nothing_raised { @Struct::KeywordArgsTrue.new(a: 1, b: 2) }
-    assert_raise(ArgumentError) { @Struct::KeywordArgsTrue.new(1, b: 2) }
-    assert_raise(ArgumentError) { @Struct::KeywordArgsTrue.new(a: 1, b: 2, c: 3) }
-    assert_equal @Struct::KeywordArgsTrue.new(a: 1, b: 2).values, @Struct::KeywordArgsFalse.new(1, 2).values
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, 2) }
+    assert_nothing_raised { @Struct::KeywordInitFalse.new(1, 2) }
+    assert_nothing_raised { @Struct::KeywordInitTrue.new(a: 1, b: 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(1, b: 2) }
+    assert_raise(ArgumentError) { @Struct::KeywordInitTrue.new(a: 1, b: 2, c: 3) }
+    assert_equal @Struct::KeywordInitTrue.new(a: 1, b: 2).values, @Struct::KeywordInitFalse.new(1, 2).values
 
     @Struct.instance_eval do
-      remove_const(:KeywordArgsTrue)
-      remove_const(:KeywordArgsFalse)
+      remove_const(:KeywordInitTrue)
+      remove_const(:KeywordInitFalse)
     end
   end
 
