@@ -359,6 +359,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage_for_define_method
     result = {
       :methods => {
+        [Object, :a, 6, 18, 6, 25] => 2,
+        [Object, :b, 7, 18, 8, 3] => 0,
         [Object, :bar, 2, 20, 3, 1] => 1,
         [Object, :baz, 4, 9, 4, 11] => 0,
         [Object, :foo, 1, 20, 1, 22] => 2,
@@ -370,10 +372,15 @@ class TestCoverage < Test::Unit::TestCase
       }
       f = proc {}
       define_method(:baz, &f)
+      define_method(:a) do; end
+      define_method(:b) do
+      end
 
       foo
       foo
       bar
+      a
+      a
     end;
   end
 
