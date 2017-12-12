@@ -46,6 +46,14 @@ module EnvUtil
 
   class << self
     attr_accessor :subprocess_timeout_scale
+    attr_reader :original_internal_encoding, :original_external_encoding,
+                :original_verbose
+
+    def capture_global_values
+      @original_internal_encoding = Encoding.default_internal
+      @original_external_encoding = Encoding.default_external
+      @original_verbose = $VERBOSE
+    end
   end
 
   def apply_timeout_scale(t)
@@ -167,27 +175,29 @@ module EnvUtil
     class << (stderr = "".dup)
       alias write concat
     end
-    stderr, $stderr, verbose, $VERBOSE = $stderr, stderr, $VERBOSE, true
+    stderr, $stderr = $stderr, stderr
+    $VERBOSE = true
     yield stderr
     return $stderr
   ensure
-    stderr, $stderr, $VERBOSE = $stderr, stderr, verbose
+    stderr, $stderr = $stderr, stderr
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :verbose_warning
 
   def default_warning
-    verbose, $VERBOSE = $VERBOSE, false
+    $VERBOSE = false
     yield
   ensure
-    $VERBOSE = verbose
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :default_warning
 
   def suppress_warning
-    verbose, $VERBOSE = $VERBOSE, nil
+    $VERBOSE = nil
     yield
   ensure
-    $VERBOSE = verbose
+    $VERBOSE = EnvUtil.original_verbose
   end
   module_function :suppress_warning
 
@@ -200,26 +210,18 @@ module EnvUtil
   module_function :under_gc_stress
 
   def with_default_external(enc)
-    verbose, $VERBOSE = $VERBOSE, nil
-    origenc, Encoding.default_external = Encoding.default_external, enc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_external = enc }
     yield
   ensure
-    verbose, $VERBOSE = $VERBOSE, nil
-    Encoding.default_external = origenc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_external = EnvUtil.original_external_encoding }
   end
   module_function :with_default_external
 
   def with_default_internal(enc)
-    verbose, $VERBOSE = $VERBOSE, nil
-    origenc, Encoding.default_internal = Encoding.default_internal, enc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_internal = enc }
     yield
   ensure
-    verbose, $VERBOSE = $VERBOSE, nil
-    Encoding.default_internal = origenc
-    $VERBOSE = verbose
+    suppress_warning { Encoding.default_internal = EnvUtil.original_internal_encoding }
   end
   module_function :with_default_internal
 
@@ -291,3 +293,5 @@ if defined?(RbConfig)
     Gem::ConfigMap[:bindir] = dir if defined?(Gem::ConfigMap)
   end
 end
+
+EnvUtil.capture_global_values
