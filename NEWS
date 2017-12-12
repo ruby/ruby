@@ -94,6 +94,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Kernel#pp [Feature #14123]
   * Kernel#warn(..., uplevel:n) [Feature #12882]
 
+* Method
+
+  * Method#=== invokes Method#call [#14142]
+
 * Module
   * Module#attr, attr_accessor, attr_reader, attr_writer are now public [#14132]
   * Module#define_method, alias_method, undef_method, remove_method are now public [#14133]
