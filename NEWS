@@ -154,6 +154,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * KeyError#receiver [Feature #12063]
   * KeyError#key      [Feature #12063]
 
+* FrozenError
+
+  New exception class. [Feature #13224]
+
 === Stdlib updates (outstanding ones only)
 
 * Bundler
