@@ -1,7 +1,12 @@
 # coding: utf-8
 # frozen_string_literal: true
 
-require File.expand_path("../bundler/version", __FILE__)
+version = File.expand_path("../lib/bundler/version", __FILE__)
+if File.file?(version)
+  require version
+else # for Ruby core repository
+  require File.expand_path("../bundler/version", __FILE__)
+end
 require "shellwords"
 
 Gem::Specification.new do |s|
@@ -163,6 +168,7 @@ Gem::Specification.new do |s|
     lib/bundler/ssl_certs/rubygems.global.ssl.fastly.net/DigiCertHighAssuranceEVRootCA.pem
     lib/bundler/ssl_certs/rubygems.org/AddTrustExternalCARoot.pem
     lib/bundler/stub_specification.rb
+    lib/bundler/templates/.document
     lib/bundler/templates/Executable
     lib/bundler/templates/Executable.bundler
     lib/bundler/templates/Executable.standalone
@@ -333,6 +339,7 @@ Gem::Specification.new do |s|
     CHANGELOG.md
     LICENSE.md
     README.md
+    bundler.gemspec
   ]
 
   s.bindir        = "exe"

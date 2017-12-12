@@ -349,7 +349,7 @@ RSpec.describe "bundle update" do
 
       lockfile_should_be <<-G
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
             rack (1.0.0)
 

@@ -36,11 +36,7 @@ module Bundler
   private
 
     def gemfile
-      @gemfile ||= begin
-        Bundler.default_gemfile
-      rescue GemfileNotFound
-        Bundler.feature_flag.init_gems_rb? ? "gems.rb" : "Gemfile"
-      end
+      @gemfile ||= Bundler.feature_flag.init_gems_rb? ? "gems.rb" : "Gemfile"
     end
   end
 end

@@ -245,7 +245,8 @@ module Bundler
           if all <= 1
             all - 1_000_000
           else
-            search = search_for(dependency).size
+            search = search_for(dependency)
+            search = @prerelease_specified[dependency.name] ? search.count : search.count {|s| !s.version.prerelease? }
             search - all
           end
         end

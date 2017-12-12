@@ -401,5 +401,20 @@ module Spec
         gem("d", %w[1.0.0 2.0.0])
       end
     end
+
+    def optional_prereleases_index
+      build_index do
+        gem("a", %w[1.0.0])
+
+        gem("a", "2.0.0") do
+          dep "b", ">= 2.0.0.pre"
+        end
+
+        gem("b", %w[0.9.0 1.5.0 2.0.0.pre])
+
+        # --- Pre-release support
+        gem "rubygems\0", ["1.3.2"]
+      end
+    end
   end
 end

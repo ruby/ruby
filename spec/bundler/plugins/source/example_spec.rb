@@ -97,7 +97,7 @@ RSpec.describe "real source plugins" do
 
       lockfile_should_be <<-G
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
 
         PLUGIN SOURCE
@@ -392,7 +392,7 @@ RSpec.describe "real source plugins" do
 
       lockfile_should_be <<-G
         GEM
-          remote: file:#{gem_repo2}/
+          remote: file://localhost#{gem_repo2}/
           specs:
 
         PLUGIN SOURCE

@@ -252,10 +252,8 @@ module Bundler
         end
       end
 
-      def double_check_for(unmet_dependency_names, override_dupes = false, index = specs)
+      def double_check_for(unmet_dependency_names)
         return unless @allow_remote
-        raise ArgumentError, "missing index" unless index
-
         return unless api_fetchers.any?
 
         unmet_dependency_names = unmet_dependency_names.call
@@ -270,7 +268,7 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, index, override_dupes)
+        fetch_names(api_fetchers, unmet_dependency_names, specs, false)
       end
 
       def dependency_names_to_double_check
