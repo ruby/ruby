@@ -950,6 +950,9 @@ exc_to_s(VALUE exc)
     return rb_String(mesg);
 }
 
+/* FIXME: Include eval_error.c */
+void rb_ec_error_write(VALUE errinfo, VALUE errat, VALUE str);
+
 /*
  * call-seq:
  *   exception.full_message  ->  string
