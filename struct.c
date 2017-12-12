@@ -23,7 +23,7 @@ const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t f
 const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
 
 VALUE rb_cStruct;
-static ID id_members, id_back_members, id_use_kwargs;
+static ID id_members, id_back_members, id_keyword_init;
 
 static VALUE struct_alloc(VALUE);
 
@@ -549,7 +549,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	st = new_struct(name, klass);
     }
     setup_struct(st, rest);
-    rb_ivar_set(st, id_use_kwargs, kwflag);
+    rb_ivar_set(st, id_keyword_init, kwflag);
     if (rb_block_given_p()) {
 	rb_mod_module_eval(0, 0, st);
     }
@@ -603,7 +603,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 
     rb_struct_modify(self);
     n = num_members(klass);
-    if (argc > 0 && RTEST(struct_ivar_get(klass, id_use_kwargs))) {
+    if (argc > 0 && RTEST(struct_ivar_get(klass, id_keyword_init))) {
 	struct struct_hash_set_arg arg;
 	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
@@ -1289,7 +1289,7 @@ Init_Struct(void)
 {
     id_members = rb_intern("__members__");
     id_back_members = rb_intern("__members_back__");
-    id_use_kwargs = rb_intern("__use_kwargs__");
+    id_keyword_init = rb_intern("__keyword_init__");
 
     InitVM(Struct);
 }
