@@ -2911,11 +2911,15 @@ __END__
         $stdin.reopen(r)
         r.close
         read_thread = Thread.new do
-          $stdin.read(1)
+          begin
+            $stdin.read(1)
+          rescue IOError => e
+            e
+          end
         end
         sleep(0.1) until read_thread.stop?
         $stdin.close
-        assert_raise(IOError) {read_thread.join}
+        assert_kind_of(IOError, read_thread.value)
       end
     end;
   end
@@ -3539,7 +3543,9 @@ __END__
         thread = Thread.new do
           begin
             q << true
-            while r.gets
+            assert_raise_with_message(IOError, /stream closed/) do
+              while r.gets
+              end
             end
           ensure
             closed = r.closed?
@@ -3548,9 +3554,7 @@ __END__
         q.pop
         sleep 0.01 until thread.stop?
         r.close
-        assert_raise_with_message(IOError, /stream closed/) do
-          thread.join
-        end
+        thread.join
         assert_equal(true, closed, bug13158 + ': stream should be closed')
       end
     end;
