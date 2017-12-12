@@ -310,13 +310,13 @@ module Net
 
     # Obsolete
     def return_code # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code is obsolete and do nothing")
+      warn("Net::FTP#return_code is obsolete and do nothing", uplevel: 1)
       return "\n"
     end
 
     # Obsolete
     def return_code=(s) # :nodoc:
-      $stderr.puts("warning: Net::FTP#return_code= is obsolete and do nothing")
+      warn("Net::FTP#return_code= is obsolete and do nothing", uplevel: 1)
     end
 
     # Constructs a socket with +host+ and +port+.

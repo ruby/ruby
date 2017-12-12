@@ -118,7 +118,7 @@ module Timeout
 end
 
 def timeout(*args, &block)
-  warn "#{caller_locations(1, 1)[0]}: Object##{__method__} is deprecated, use Timeout.timeout instead."
+  warn "Object##{__method__} is deprecated, use Timeout.timeout instead.", uplevel: 1
   Timeout.timeout(*args, &block)
 end
 

@@ -710,7 +710,7 @@ module REXML
     #  doc.write( out )     #-> doc is written to the string 'out'
     #  doc.write( $stdout ) #-> doc written to the console
     def write(output=$stdout, indent=-1, transitive=false, ie_hack=false)
-      Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
+      Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters", uplevel: 1)
       formatter = if indent > -1
           if transitive
             require "rexml/formatters/transitive"
