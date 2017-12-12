@@ -667,7 +667,11 @@ class TestRegexp < Test::Unit::TestCase
     key = "\u{3042}"
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
-      test.call {|m| assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]} }
+      test.call {|m|
+        EnvUtil.with_default_external(enc) do
+          assert_raise_with_message(IndexError, /#{idx}/, bug10877) {m[idx]}
+        end
+      }
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }
