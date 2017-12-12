@@ -1678,6 +1678,7 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = method_add_block($$, $3);
 			fixpos($$, $1);
 		    /*%%%*/
+			$$->nd_loc = @$;
 			nd_set_last_lineno($1, nd_last_lineno($2));
 			nd_set_last_column($1, nd_last_column($2));
 		    /*%
@@ -1694,6 +1695,10 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = new_command_qcall($2, $1, $3, $4, &@$);
 			$$ = method_add_block($$, $5);
 			fixpos($$, $1);
+		    /*%%%*/
+			$$->nd_loc = @$;
+		    /*%
+		    %*/
 		   }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
@@ -1706,6 +1711,10 @@ command		: fcall command_args       %prec tLOWEST
 			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@$);
 			$$ = method_add_block($$, $5);
 			fixpos($$, $1);
+		    /*%%%*/
+			$$->nd_loc = @$;
+		    /*%
+		    %*/
 		   }
 		| keyword_super command_args
 		    {
