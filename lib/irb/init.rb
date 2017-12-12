@@ -277,7 +277,7 @@ module IRB # :nodoc:
       begin
         require m
       rescue LoadError => err
-        warn ":#{err.class}: #{err}", uplevel: 0
+        warn "#{err.class}: #{err}", uplevel: 0
       end
     end
   end
