@@ -158,4 +158,33 @@ RSpec.describe "Running bin/* commands" do
 
     expect(bundled_app("bin/rackup").read).to_not eq("OMG")
   end
+
+  it "use BUNDLE_GEMFILE gemfile for binstub" do
+    # context with bin/bunlder w/ default Gemfile
+    bundle! "binstubs bundler"
+
+    # generate other Gemfile with executable gem
+    build_repo2 do
+      build_gem("bindir") {|s| s.executables = "foo" }
+    end
+
+    create_file("OtherGemfile", <<-G)
+      source "file://#{gem_repo2}"
+      gem 'bindir'
+    G
+
+    # generate binstub for executable from non default Gemfile (other then bin/bundler version)
+    ENV["BUNDLE_GEMFILE"] = "OtherGemfile"
+    bundle "install"
+    bundle! "binstubs bindir"
+
+    # remove user settings
+    ENV["BUNDLE_GEMFILE"] = nil
+
+    # run binstub for non default Gemfile
+    gembin "foo"
+
+    expect(exitstatus).to eq(0) if exitstatus
+    expect(out).to eq("1.0")
+  end
 end

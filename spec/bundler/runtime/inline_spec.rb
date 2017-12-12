@@ -43,10 +43,6 @@ RSpec.describe "bundler/inline#gemfile" do
     build_lib "eight", "1.0.0" do |s|
       s.write "lib/eight.rb", "puts 'eight'"
     end
-
-    build_lib "four", "1.0.0" do |s|
-      s.write "lib/four.rb", "puts 'four'"
-    end
   end
 
   it "requires the gems" do

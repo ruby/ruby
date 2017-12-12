@@ -391,7 +391,7 @@ module Spec
       index
     end
 
-    def build_spec(name, version, platform = nil, &block)
+    def build_spec(name, version = "0.0.1", platform = nil, &block)
       Array(version).map do |v|
         Gem::Specification.new do |s|
           s.name     = name

@@ -99,6 +99,8 @@ RSpec.configure do |config|
 
   original_wd  = Dir.pwd
   original_env = ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) }
+  original_default_specs = Dir[File.join(Gem.default_dir, "specifications", "default", "bundler*")]
+  original_site_ruby_dirs = $LOAD_PATH.select {|path| path =~ /site_ruby/ }.map {|path| File.join(path, "bundler*") }.compact.map {|path| Dir[path] }.flatten
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -113,6 +115,11 @@ RSpec.configure do |config|
 
   config.before :all do
     build_repo1
+    (original_default_specs + original_site_ruby_dirs).each {|s| FileUtils.mv(s, s + ".org") }
+  end
+
+  config.after :all do
+    (original_default_specs + original_site_ruby_dirs).each {|s| FileUtils.mv(s + ".org", s) if File.exist?(s + ".org") }
   end
 
   config.before :each do

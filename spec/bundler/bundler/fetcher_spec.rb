@@ -95,11 +95,15 @@ RSpec.describe Bundler::Fetcher do
 
     context "when bunder ssl ssl configuration is set" do
       before do
+        cert = File.join(Spec::Path.tmpdir, "cert")
+        File.open(cert, "w") {|f| f.write "PEM" }
         allow(Bundler.settings).to receive(:[]).and_return(nil)
-        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return("/cert")
-        expect(File).to receive(:read).with("/cert").and_return("")
-        expect(OpenSSL::X509::Certificate).to receive(:new).and_return("cert")
-        expect(OpenSSL::PKey::RSA).to receive(:new).and_return("key")
+        allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(cert)
+        expect(OpenSSL::X509::Certificate).to receive(:new).with("PEM").and_return("cert")
+        expect(OpenSSL::PKey::RSA).to receive(:new).with("PEM").and_return("key")
+      end
+      after do
+        FileUtils.rm File.join(Spec::Path.tmpdir, "cert")
       end
       it "use bundler configuration" do
         expect(fetcher.send(:connection).cert).to eq("cert")

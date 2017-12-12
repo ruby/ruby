@@ -295,7 +295,7 @@ module Bundler
         end
 
         sources.all_sources.each do |source|
-          source.double_check_for(unmet_dependency_names, :override_dupes)
+          source.double_check_for(unmet_dependency_names)
         end
 
         break if idxcount == idx.size

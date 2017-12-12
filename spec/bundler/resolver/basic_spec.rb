@@ -42,6 +42,13 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[a-1.0.0 b-2.0.0 c-1.0.0 d-1.0.0]
   end
 
+  it "prefers non-prerelease resolutions in sort order" do
+    @index = optional_prereleases_index
+    dep "a"
+    dep "b"
+    should_resolve_as %w[a-1.0.0 b-1.5.0]
+  end
+
   it "resolves a index with root level conflict on child" do
     @index = a_index_with_root_conflict_on_child
     dep "i18n", "~> 0.4"

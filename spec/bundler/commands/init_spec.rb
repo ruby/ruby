@@ -13,9 +13,9 @@ RSpec.describe "bundle init" do
     expect(bundled_app("gems.rb")).to be_file
   end
 
-  context "when a Gemfile already exists" do
+  context "when a Gemfile already exists", :bundler => "< 2" do
     before do
-      gemfile <<-G
+      create_file "Gemfile", <<-G
         gem "rails"
       G
     end
@@ -30,20 +30,54 @@ RSpec.describe "bundle init" do
     end
   end
 
-  context "when a gems.rb already exists" do
+  context "when gems.rb already exists", :bundler => ">= 2" do
     before do
-      create_file "gems.rb", <<-G
+      create_file("gems.rb", <<-G)
         gem "rails"
       G
     end
 
-    it "does not change existing gem.rb files" do
+    it "does not change existing Gemfiles" do
       expect { bundle :init }.not_to change { File.read(bundled_app("gems.rb")) }
     end
 
     it "notifies the user that an existing gems.rb already exists" do
       bundle :init
       expect(out).to include("gems.rb already exists")
+    end
+  end
+
+  context "when a Gemfile exists in a parent directory", :bundler => "< 2" do
+    let(:subdir) { "child_dir" }
+
+    it "lets users generate a Gemfile in a child directory" do
+      bundle! :init
+
+      FileUtils.mkdir bundled_app(subdir)
+
+      Dir.chdir bundled_app(subdir) do
+        bundle! :init
+      end
+
+      expect(out).to include("Writing new Gemfile")
+      expect(bundled_app("#{subdir}/Gemfile")).to be_file
+    end
+  end
+
+  context "when a gems.rb file exists in a parent directory", :bundler => ">= 2" do
+    let(:subdir) { "child_dir" }
+
+    it "lets users generate a Gemfile in a child directory" do
+      bundle! :init
+
+      FileUtils.mkdir bundled_app(subdir)
+
+      Dir.chdir bundled_app(subdir) do
+        bundle! :init
+      end
+
+      expect(out).to include("Writing new gems.rb")
+      expect(bundled_app("#{subdir}/gems.rb")).to be_file
     end
   end
 
@@ -93,28 +127,6 @@ RSpec.describe "bundle init" do
 
   context "when init_gems_rb setting is enabled" do
     before { bundle "config init_gems_rb true" }
-
-    it "generates a gems.rb file" do
-      bundle :init
-      expect(bundled_app("gems.rb")).to exist
-    end
-
-    context "when gems.rb already exists" do
-      before do
-        create_file("gems.rb", <<-G)
-          gem "rails"
-        G
-      end
-
-      it "does not change existing Gemfiles" do
-        expect { bundle :init }.not_to change { File.read(bundled_app("gems.rb")) }
-      end
-
-      it "notifies the user that an existing gems.rb already exists" do
-        bundle :init
-        expect(out).to include("gems.rb already exists")
-      end
-    end
 
     context "given --gemspec option", :bundler => "< 2" do
       let(:spec_file) { tmp.join("test.gemspec") }
