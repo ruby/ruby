@@ -206,7 +206,7 @@ module Forwardable
       method_call = "#{<<-"begin;"}\n#{<<-"end;".chomp}"
         begin;
           unless defined? _.#{method}
-            ::Kernel.warn "\#{caller_locations(1)[0]}: "#{mesg.dump}"\#{_.class}"'##{method}'
+            ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
             _.#{method}(*args, &block)

@@ -103,7 +103,7 @@ module WEBrick
       @shutdown_pipe = nil
       unless @config[:DoNotListen]
         if @config[:Listen]
-          warn(":Listen option is deprecated; use GenericServer#listen")
+          warn(":Listen option is deprecated; use GenericServer#listen", uplevel: 1)
         end
         listen(@config[:BindAddress], @config[:Port])
         if @config[:Port] == 0

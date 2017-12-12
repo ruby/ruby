@@ -1517,7 +1517,7 @@ module URI
       elsif name == 'http_proxy'
         unless proxy_uri = env[name]
           if proxy_uri = env[name.upcase]
-            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.'
+            warn 'The environment variable HTTP_PROXY is discouraged.  Use http_proxy.', uplevel: 1
           end
         end
       else

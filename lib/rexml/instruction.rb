@@ -43,7 +43,7 @@ module REXML
     # See the rexml/formatters package
     #
     def write writer, indent=-1, transitive=false, ie_hack=false
-      Kernel.warn( "#{self.class.name}.write is deprecated" )
+      Kernel.warn( "#{self.class.name}.write is deprecated", uplevel: 1)
       indent(writer, indent)
       writer << START.sub(/\\/u, '')
       writer << @target

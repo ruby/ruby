@@ -48,7 +48,7 @@ module REXML
     # ie_hack::
     #    Needed for conformity to the child API, but not used by this class.
     def write( output, indent=-1, transitive=false, ie_hack=false )
-      Kernel.warn("Comment.write is deprecated.  See REXML::Formatters")
+      Kernel.warn("Comment.write is deprecated.  See REXML::Formatters", uplevel: 1)
       indent( output, indent )
       output << START
       output << @string

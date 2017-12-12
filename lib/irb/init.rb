@@ -277,7 +277,7 @@ module IRB # :nodoc:
       begin
         require m
       rescue LoadError => err
-        warn err.backtrace[0] << ":#{err.class}: #{err}"
+        warn ":#{err.class}: #{err}", uplevel: 0
       end
     end
   end

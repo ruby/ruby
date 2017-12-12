@@ -596,11 +596,10 @@ EOC
 
       def #{accessor_name}=(*args)
         receiver = self.class.name
-        warn("Warning:\#{caller.first.sub(/:in `.*'\z/, '')}: " \
-             "Don't use `\#{receiver}\##{accessor_name} = XXX'/" \
+        warn("Don't use `\#{receiver}\##{accessor_name} = XXX'/" \
              "`\#{receiver}\#set_#{accessor_name}(XXX)'. " \
              "Those APIs are not sense of Ruby. " \
-             "Use `\#{receiver}\##{plural_name} << XXX' instead of them.")
+             "Use `\#{receiver}\##{plural_name} << XXX' instead of them.", uplevel: 1)
         if args.size == 1
           @#{accessor_name}.push(args[0])
         else

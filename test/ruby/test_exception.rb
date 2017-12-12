@@ -1003,6 +1003,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal(["\n"],     capture_warning_warn {warn ""})
   end
 
+  def test_kernel_warn_uplevel
+    warning = capture_warning_warn {warn("test warning", uplevel: 0)}
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
+  end
+
   def test_warning_warn_invalid_argument
     assert_raise(TypeError) do
       ::Warning.warn nil

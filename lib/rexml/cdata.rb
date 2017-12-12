@@ -58,7 +58,7 @@ module REXML
     #  c = CData.new( " Some text " )
     #  c.write( $stdout )     #->  <![CDATA[ Some text ]]>
     def write( output=$stdout, indent=-1, transitive=false, ie_hack=false )
-      Kernel.warn( "#{self.class.name}.write is deprecated" )
+      Kernel.warn( "#{self.class.name}.write is deprecated", uplevel: 1)
       indent( output, indent )
       output << START
       output << @string

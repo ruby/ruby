@@ -327,10 +327,39 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
-    if (!NIL_P(ruby_verbose) && argc > 0) {
+    VALUE opts, uplevel = Qnil;
+
+    if (!NIL_P(ruby_verbose) && argc > 0 &&
+	    (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
 	VALUE str = argv[0];
-	if (argc > 1 || !end_with_asciichar(str, '\n')) {
-	    str = rb_str_tmp_new(0);
+	if (!NIL_P(opts)) {
+	    static ID kwds[1];
+	    if (!kwds[0]) {
+		CONST_ID(kwds[0], "uplevel");
+	    }
+	    rb_get_kwargs(opts, kwds, 0, 1, &uplevel);
+	    if (uplevel == Qundef) {
+		uplevel = Qnil;
+	    }
+	    else if (!NIL_P(uplevel)) {
+		uplevel = LONG2NUM((long)NUM2ULONG(uplevel) + 1);
+		uplevel = rb_vm_thread_backtrace_locations(1, &uplevel, GET_THREAD()->self);
+		if (!NIL_P(uplevel)) {
+		    uplevel = rb_ary_entry(uplevel, 0);
+		}
+	    }
+	}
+	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
+	    if (NIL_P(uplevel)) {
+		str = rb_str_tmp_new(0);
+	    }
+	    else {
+		VALUE path;
+		path = rb_funcall(uplevel, rb_intern("path"), 0);
+		str = rb_sprintf("%s:%li: warning: ",
+		    rb_string_value_ptr(&path),
+		    NUM2LONG(rb_funcall(uplevel, rb_intern("lineno"), 0)));
+	    }
 	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
