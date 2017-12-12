@@ -188,7 +188,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 }
 
 void
-rb_ec_error_write(volatile VALUE errinfo, volatile VALUE errat, volatile VALUE str)
+rb_ec_error_write(VALUE errinfo, VALUE errat, VALUE str)
 {
     volatile VALUE eclass = Qundef, emesg = Qundef;
 
