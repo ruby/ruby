@@ -359,7 +359,7 @@ module TupleSpaceTestModule
     sleep(2)
 
     assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(taker))
+      thread_join(taker)
     end
 
     assert(template.canceled?)
@@ -388,7 +388,7 @@ module TupleSpaceTestModule
     sleep(2)
 
     assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(reader))
+      thread_join(reader)
     end
 
     assert(template.canceled?)
@@ -844,4 +844,3 @@ class TestRingFinger < Test::Unit::TestCase
 end
 
 end
-
