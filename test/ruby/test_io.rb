@@ -3392,12 +3392,16 @@ __END__
 
     str = ""
     IO.pipe {|r,|
-      t = Thread.new { r.read(nil, str) }
+      t = Thread.new {
+        assert_raise(RuntimeError) {
+          r.read(nil, str)
+        }
+      }
       sleep 0.1 until t.stop?
       t.raise
       sleep 0.1 while t.alive?
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-      assert_raise(RuntimeError) { t.join }
+      t.join
     }
   end if /cygwin/ !~ RUBY_PLATFORM
 
@@ -3406,12 +3410,16 @@ __END__
 
     str = ""
     IO.pipe {|r, w|
-      t = Thread.new { r.readpartial(4096, str) }
+      t = Thread.new {
+        assert_raise(RuntimeError) {
+          r.readpartial(4096, str)
+        }
+      }
       sleep 0.1 until t.stop?
       t.raise
       sleep 0.1 while t.alive?
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-      assert_raise(RuntimeError) { t.join }
+      t.join
     }
   end if /cygwin/ !~ RUBY_PLATFORM
 
@@ -3431,12 +3439,16 @@ __END__
 
     str = ""
     IO.pipe {|r, w|
-      t = Thread.new { r.sysread(4096, str) }
+      t = Thread.new {
+        assert_raise(RuntimeError) {
+          r.sysread(4096, str)
+        }
+      }
       sleep 0.1 until t.stop?
       t.raise
       sleep 0.1 while t.alive?
       assert_nothing_raised(RuntimeError, bug8669) { str.clear }
-      assert_raise(RuntimeError) { t.join }
+      t.join
     }
   end if /cygwin/ !~ RUBY_PLATFORM
 

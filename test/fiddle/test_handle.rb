@@ -9,20 +9,22 @@ module Fiddle
     include Fiddle
 
     def test_safe_handle_open
-      t = Thread.new do
+      Thread.new do
         $SAFE = 1
-        Fiddle::Handle.new(LIBC_SO.dup.taint)
-      end
-      assert_raise(SecurityError) { t.value }
+        assert_raise(SecurityError) {
+          Fiddle::Handle.new(LIBC_SO.dup.taint)
+        }
+      end.join
     end
 
     def test_safe_function_lookup
-      t = Thread.new do
+      Thread.new do
         h = Fiddle::Handle.new(LIBC_SO)
         $SAFE = 1
-        h["qsort".dup.taint]
-      end
-      assert_raise(SecurityError) { t.value }
+        assert_raise(SecurityError) {
+          h["qsort".dup.taint]
+        }
+      end.join
     end
 
     def test_to_i

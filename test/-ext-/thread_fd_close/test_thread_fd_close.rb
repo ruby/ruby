@@ -9,7 +9,9 @@ class TestThreadFdClose < Test::Unit::TestCase
     IO.pipe do |r, w|
       th = Thread.new do
         begin
-          r.read(4)
+          assert_raise(IOError) {
+            r.read(4)
+          }
         ensure
           w.syswrite('done')
         end
@@ -17,7 +19,7 @@ class TestThreadFdClose < Test::Unit::TestCase
       Thread.pass until th.stop?
       IO.thread_fd_close(r.fileno)
       assert_equal 'done', r.read(4)
-      assert_raise(IOError) { th.join }
+      th.join
     end
   end
 end
