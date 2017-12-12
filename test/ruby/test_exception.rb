@@ -1094,4 +1094,15 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       }
     end;
   end
+
+  def test_full_message
+    test_method = "def foo; raise 'testerror'; end"
+
+    out1, err1, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; rescue => e; puts e.full_message; end"], '', true, true)
+    assert(status1.success?)
+    assert(err1.empty?, "expected nothing wrote to $stdout by #long_message")
+
+    _, err2, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; end"], '', true, true)
+    assert_equal(err2, out1)
+  end
 end
