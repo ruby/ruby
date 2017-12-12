@@ -500,7 +500,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, kwflag;
+    VALUE name, rest, keyword_init;
     long i;
     VALUE st;
     st_table *tbl;
@@ -524,9 +524,9 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	}
 	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
 	--argc;
-	kwflag = kwargs[0];
+	keyword_init = kwargs[0];
     } else {
-	kwflag = Qfalse;
+	keyword_init = Qfalse;
     }
 
     rest = rb_ident_hash_new();
@@ -549,7 +549,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	st = new_struct(name, klass);
     }
     setup_struct(st, rest);
-    rb_ivar_set(st, id_keyword_init, kwflag);
+    rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
 	rb_mod_module_eval(0, 0, st);
     }
