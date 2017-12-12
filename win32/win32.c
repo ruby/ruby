@@ -5442,7 +5442,6 @@ get_ino(HANDLE h, FILE_ID_INFO *id)
 {
     typedef BOOL (WINAPI *gfibhe_t)(HANDLE, int, void *, DWORD);
     static gfibhe_t pGetFileInformationByHandleEx = (gfibhe_t)-1;
-    DWORD err;
 
     if (pGetFileInformationByHandleEx == (gfibhe_t)-1)
 	pGetFileInformationByHandleEx = (gfibhe_t)get_proc_address("kernel32", "GetFileInformationByHandleEx", NULL);
