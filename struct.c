@@ -23,7 +23,7 @@ const rb_iseq_t *rb_method_for_self_aref(VALUE name, VALUE arg, rb_insn_func_t f
 const rb_iseq_t *rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func);
 
 VALUE rb_cStruct;
-static ID id_members, id_back_members;
+static ID id_members, id_back_members, id_keyword_init;
 
 static VALUE struct_alloc(VALUE);
 
@@ -437,6 +437,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 /*
  *  call-seq:
  *    Struct.new([class_name] [, member_name]+)                        -> StructClass
+ *    Struct.new([class_name] [, member_name]+, keyword_init: true)    -> StructClass
  *    Struct.new([class_name] [, member_name]+) {|StructClass| block } -> StructClass
  *    StructClass.new(value, ...)                                      -> object
  *    StructClass[value, ...]                                          -> object
@@ -461,6 +462,13 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *     Customer = Struct.new(:name, :address)
  *     #=> Customer
  *     Customer.new("Dave", "123 Main")
+ *     #=> #<struct Customer name="Dave", address="123 Main">
+ *
+ *  If keyword_init: true option is given, .new takes Hash instead of Array.
+ *
+ *     Customer = Struct.new(:name, :address, keyword_init: true)
+ *     #=> Customer
+ *     Customer.new(name: "Dave", address: "123 Main")
  *     #=> #<struct Customer name="Dave", address="123 Main">
  *
  *  If a block is given it will be evaluated in the context of
@@ -492,7 +500,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest;
+    VALUE name, rest, keyword_init;
     long i;
     VALUE st;
     st_table *tbl;
@@ -506,6 +514,21 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	--argc;
 	++argv;
     }
+
+    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+	VALUE kwargs[1];
+	static ID keyword_ids[1];
+
+	if (!keyword_ids[0]) {
+	    keyword_ids[0] = rb_intern("keyword_init");
+	}
+	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
+	--argc;
+	keyword_init = kwargs[0];
+    } else {
+	keyword_init = Qfalse;
+    }
+
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
     tbl = RHASH_TBL(rest);
@@ -526,6 +549,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	st = new_struct(name, klass);
     }
     setup_struct(st, rest);
+    rb_ivar_set(st, id_keyword_init, keyword_init);
     if (rb_block_given_p()) {
 	rb_mod_module_eval(0, 0, st);
     }
@@ -547,6 +571,30 @@ num_members(VALUE klass)
 /*
  */
 
+struct struct_hash_set_arg {
+    VALUE self;
+    VALUE unknown_keywords;
+};
+
+static int rb_struct_pos(VALUE s, VALUE *name);
+
+static int
+struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    int i = rb_struct_pos(args->self, &key);
+    if (i < 0) {
+	if (args->unknown_keywords == Qnil) {
+	    args->unknown_keywords = rb_ary_new();
+	}
+	rb_ary_push(args->unknown_keywords, key);
+    } else {
+	rb_struct_modify(args->self);
+	RSTRUCT_SET(args->self, i, val);
+    }
+    return ST_CONTINUE;
+}
+
 static VALUE
 rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 {
@@ -555,14 +603,29 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 
     rb_struct_modify(self);
     n = num_members(klass);
-    if (n < argc) {
-	rb_raise(rb_eArgError, "struct size differs");
-    }
-    for (i=0; i<argc; i++) {
-	RSTRUCT_SET(self, i, argv[i]);
-    }
-    if (n > argc) {
-	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
+    if (argc > 0 && RTEST(struct_ivar_get(klass, id_keyword_init))) {
+	struct struct_hash_set_arg arg;
+	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
+	}
+	rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
+	arg.self = self;
+	arg.unknown_keywords = Qnil;
+	rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+	if (arg.unknown_keywords != Qnil) {
+	    rb_raise(rb_eArgError, "unknown keywords: %s",
+		     RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
+	}
+    } else {
+	if (n < argc) {
+	    rb_raise(rb_eArgError, "struct size differs");
+	}
+	for (i=0; i<argc; i++) {
+	    RSTRUCT_SET(self, i, argv[i]);
+	}
+	if (n > argc) {
+	    rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self)+argc, n-argc);
+	}
     }
     return Qnil;
 }
@@ -1226,6 +1289,7 @@ Init_Struct(void)
 {
     id_members = rb_intern("__members__");
     id_back_members = rb_intern("__members_back__");
+    id_keyword_init = rb_intern("__keyword_init__");
 
     InitVM(Struct);
 }

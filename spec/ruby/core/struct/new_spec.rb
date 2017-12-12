@@ -60,7 +60,7 @@ describe "Struct.new" do
     lambda { Struct.new(:animal, nil)                  }.should raise_error(TypeError)
     lambda { Struct.new(:animal, true)                 }.should raise_error(TypeError)
     lambda { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+    lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
   end
 
   it "raises a TypeError if object is not a Symbol" do
