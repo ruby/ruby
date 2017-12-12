@@ -101,6 +101,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Process
 
   * Precision of Process.times is improved if getrusage(2) exists. [Feature #11952]
+  * Process.last_status. [Feature #14043]
 
 * Range
   * Range#initialize no longer rescue exceptions when comparing begin and
