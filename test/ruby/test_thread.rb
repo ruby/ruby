@@ -785,7 +785,7 @@ class TestThread < Test::Unit::TestCase
       }
     }
     assert_raise(e) {r = :wait; sleep 0.2}
-    assert_not_equal nil, th.join
+    th.join
     assert_equal(:ok,r)
   end
 
