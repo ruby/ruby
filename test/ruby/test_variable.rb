@@ -137,14 +137,14 @@ class TestVariable < Test::Unit::TestCase
       assert_empty v.instance_variables
       msg = "can't modify frozen #{v.class}"
 
-      assert_raise_with_message(RuntimeError, msg) do
+      assert_raise_with_message(FrozenError, msg) do
         v.instance_variable_set(:@foo, :bar)
       end
 
       assert_nil EnvUtil.suppress_warning {v.instance_variable_get(:@foo)}
       assert_not_send([v, :instance_variable_defined?, :@foo])
 
-      assert_raise_with_message(RuntimeError, msg) do
+      assert_raise_with_message(FrozenError, msg) do
         v.remove_instance_variable(:@foo)
       end
     end

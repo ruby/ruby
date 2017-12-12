@@ -79,7 +79,7 @@ class TestEnumerator < Test::Unit::TestCase
     enum = @obj.to_enum
     assert_raise(NoMethodError) { enum.each {} }
     enum.freeze
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       capture_io do
         # warning: Enumerator.new without a block is deprecated; use Object#to_enum
         enum.__send__(:initialize, @obj, :foo)
@@ -440,7 +440,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1, 2, 3], a)
 
     g.freeze
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       g.__send__ :initialize, proc { |y| y << 4 << 5 }
     }
 

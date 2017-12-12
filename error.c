@@ -804,6 +804,7 @@ VALUE rb_eSignal;
 VALUE rb_eFatal;
 VALUE rb_eStandardError;
 VALUE rb_eRuntimeError;
+VALUE rb_eFrozenError;
 VALUE rb_eTypeError;
 VALUE rb_eArgError;
 VALUE rb_eIndexError;
@@ -2011,16 +2012,21 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
- *  Document-class: RuntimeError
+ *  Document-class: FrozenError
  *
- *  A generic error class raised when an invalid operation is attempted.
+ *  Raised when there is an attempt to modify a frozen object.
  *
  *     [1, 2, 3].freeze << 4
  *
  *  <em>raises the exception:</em>
  *
- *     RuntimeError: can't modify frozen Array
+ *     FrozenError: can't modify frozen Array
+ */
+
+/*
+ *  Document-class: RuntimeError
  *
+ *  A generic error class raised when an invalid operation is attempted.
  *  Kernel#raise will raise a RuntimeError if no Exception class is
  *  specified.
  *
@@ -2233,6 +2239,7 @@ Init_Exception(void)
     rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
+    rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
@@ -2588,7 +2595,7 @@ rb_load_fail(VALUE path, const char *err)
 void
 rb_error_frozen(const char *what)
 {
-    rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
+    rb_raise(rb_eFrozenError, "can't modify frozen %s", what);
 }
 
 void
@@ -2601,11 +2608,11 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
 		 CLASS_OF(frozen_obj), path, line);
     }
     else {
-	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE,
 		 CLASS_OF(frozen_obj));
     }
 }

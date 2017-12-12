@@ -506,7 +506,7 @@ class TestEval < Test::Unit::TestCase
   def test_fstring_instance_eval
     bug = "[ruby-core:78116] [Bug #12930]".freeze
     assert_same bug, (bug.instance_eval {self})
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       bug.instance_eval {@ivar = true}
     }
   end
