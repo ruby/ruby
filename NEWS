@@ -132,7 +132,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Numeric
 
   * Numerical comparison operators (<,<=,>=,>) no longer hide exceptions
-    from #corece method internally. Return nil in #coerce if the coercion is 
+    from #corece method internally. Return nil in #coerce if the coercion is
     impossible.  [Feature #7688]
 
 * Process
