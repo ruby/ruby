@@ -704,7 +704,7 @@ end
 class Binding
   # :nodoc:
   def irb
-    IRB.setup(eval("__FILE__"))
+    IRB.setup(eval("__FILE__"), argv: [])
     workspace = IRB::WorkSpace.new(self)
     STDOUT.print(workspace.code_around_binding)
     IRB::Irb.new(workspace).run(IRB.conf)
