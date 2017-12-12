@@ -24,105 +24,138 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Array
 
-  * Array#append  [Feature #12746]
-  * Array#prepend  [Feature #12746]
+  * New methods:
+
+    * Array#append  [Feature #12746]
+    * Array#prepend  [Feature #12746]
 
 * Data
 
-  * Now deprecated [Feature #3072]
+  * Is deprecated. It was a base class for C extensions, and it's not
+    necessary to expose in Ruby level. [Feature #3072]
 
 * Exception
 
-  * Exception#full_message [Feature #14141] [experimental]
+  * New methods:
+
+    * Exception#full_message to retrieve a String expression of an exception,
+      formatted in the same way with that Ruby prints an uncaught exception out.
+      [Feature #14141] [experimental]
 
 * Dir
 
   * Dir.glob provides new optional keyword argument, :base.
     [Feature #13056]
-  * Dir.children  [Feature #11302]
-  * Dir.each_child  [Feature #11302]
+
+  * New methods:
+
+    * Dir.children  [Feature #11302]
+    * Dir.each_child  [Feature #11302]
 
 * Enumerable
 
-  * Enumerable#any?, all?, none? and one? now accept a pattern argument [Feature #11286]
+  * Enumerable#{any?,all?,none?,one?} accept a :pattern argument [Feature #11286]
 
 * File
 
-  * :newline option to File.open implies text mode now.  [Bug #13350]
-  * File#path now raises an IOError for files opened with
+  * File.open accepts :newline option to imply text mode.  [Bug #13350]
+  * File#path raises an IOError for files opened with
     File::Constants::TMPFILE option. [Feature #13568]
   * File.stat, File.exist?, and other rb_stat()-using methods release GVL
     [Bug #13941]
   * File.rename releases GVL [Feature #13951]
-  * Add File.lutime  [Feature #4052]
-  * File::Stat.atime, mtime and ctime supports fractional second timestamps on
+  * File::Stat.{atime,mtime,ctime} support fractional second timestamps on
     Windows 8 and later  [Feature #13726]
   * File::Stat.ino and File.indentical? supports ReFS 128bit ino on Windows 8.1
     and later  [Feature #13731]
 
+  * New method:
+
+    * File.lutime  [Feature #4052]
+
 * Hash
 
-  * Hash#transform_keys  [Feature #13583]
-  * Hash#transform_keys!  [Feature #13583]
-  * Hash#slice  [Feature #8499]
+  * New methods:
+
+    * Hash#transform_keys  [Feature #13583]
+    * Hash#transform_keys!  [Feature #13583]
+    * Hash#slice  [Feature #8499]
 
 * IO
 
-  * IO#pread  [Feature #4532]
-  * IO#pwrite  [Feature #4532]
-  * IO#copy_stream tries copy offload with copy_file_range(2) [Feature #13867]
-  * IO#write accepts multiple arguments  [Feature #9323]
+  * New methods:
+
+    * IO#pread  [Feature #4532]
+    * IO#pwrite  [Feature #4532]
+    * IO#copy_stream tries copy offload with copy_file_range(2) [Feature #13867]
+    * IO#write accepts multiple arguments  [Feature #9323]
 
 * IOError
 
-  * exception message "stream closed" is changed  [Bug #13405]
+  * IO#close might raise an error with message "stream closed",
+    but it is refined to "stream closed in another thread". The new message
+    is more clear for user.
+    [Bug #13405]
 
 * Integer
 
-  * Integer.sqrt  [Feature #13219]
-  * Integer#step does no longer rescue exceptions when given
-    a step value which cannot be compared with #> to 0. [Feature #7688]
-  * Integer#{round,floor,ceil,truncate} now always return an Integer.
+  * Integer#step wrongly hid errors from corece method, when
+    a given step value which cannot be compared with #> to 0.
+    [Feature #7688]
+  * Integer#{round,floor,ceil,truncate} always return an Integer.
     [Bug #13420]
-  * Integer#pow now has an optional modulo argument for calculating modular
+  * Integer#pow accepts :modulo argument for calculating modular
     exponentiation.  [Feature #12508] [Feature #11003]
-  * Integer#allbits?, Integer#anybits?, Integer#nobits? [Feature #12753]
+
+  * New methods:
+
+    * Integer#allbits?, Integer#anybits?, Integer#nobits? [Feature #12753]
+    * Integer.sqrt  [Feature #13219]
 
 * Kernel
 
-  * Kernel#yield_self  [Feature #6721]
-  * Kernel#pp [Feature #14123]
-  * Kernel#warn(..., uplevel:n) [Feature #12882]
+  * Kernel#yield_self   [Feature #6721]
+  * Kernel#pp  [Feature #14123]
+  * Kernel#warn(..., uplevel:n)  [Feature #12882]
 
 * Method
 
-  * Method#=== invokes Method#call [#14142]
+  * New methods:
+
+    * Method#=== that invokes Method#call, as same as Proc#=== [Feature #14142]
 
 * Module
-  * Module#attr, attr_accessor, attr_reader, attr_writer are now public [#14132]
-  * Module#define_method, alias_method, undef_method, remove_method are now public [#14133]
+
+  * Module#{attr,attr_accessor,attr_reader,attr_writer} become public [Feature #14132]
+  * Module#{define_method,alias_method,undef_method,remove_method} become public [Feature #14133]
 
 * Numeric
 
-  * Numerical comparison operators (<,<=,>=,>) no longer rescue exceptions
-    of #coerce. Return nil in #coerce if the coercion is impossible.
-    [Feature #7688]
+  * Numerical comparison operators (<,<=,>=,>) no longer hide exceptions
+    from #corece method internally. Return nil in #coerce if the coercion is 
+    impossible.  [Feature #7688]
 
 * Process
 
   * Precision of Process.times is improved if getrusage(2) exists. [Feature #11952]
-  * Process.last_status. [Feature #14043]
+
+  * New method:
+
+    * Process.last_status as a alias of $? [Feature #14043]
 
 * Range
-  * Range#initialize no longer rescue exceptions when comparing begin and
+  * Range#initialize no longer hide exceptions when comparing begin and
     end with #<=> and raise a "bad value for range" ArgumentError
     but instead let the exception from the #<=> call go through.
     [Feature #7688]
 
 * Regexp
-  * Update to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
+
+  * Updated to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
+
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
-  * Support for 5 emoji-related Unicode character properties
+
+  * Support new 5 emoji-related Unicode character properties
 
 * String
 
@@ -130,28 +163,30 @@ with all sufficient information, see the ChangeLog file or Redmine
     strings remain unchanged for compatibility.  [Feature #13077]
   * -"literal" (String#-@) optimized to return the same object
     (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
-  * String#{casecmp,casecmp?} now return nil for non-string arguments
+  * String#{casecmp,casecmp?} return nil for non-string arguments
     instead of raising a TypeError. [Bug #13312]
-  * String#delete_prefix is added to remove prefix [Feature #12694]
-  * String#delete_prefix! is added to remove prefix destructively [Feature #12694]
-  * String#delete_suffix is added to remove suffix [Feature #13665]
-  * String#delete_suffix! is added to remove suffix destructively [Feature #13665]
-  * String#each_grapheme_cluster and String#grapheme_clusters is added to
-    enumerate grapheme clusters [Feature #13780]
-  * String#start_with? supports regexp [Feature #13712]
+  * String#start_with? accepts a regexp [Feature #13712]
+
+  * New methods:
+
+    * String#delete_prefix, String#delete_prefix! [Feature #12694]
+    * String#delete_suffix, String#delete_suffix! [Feature #13665]
+    * String#each_grapheme_cluster and String#grapheme_clusters to
+      enumerate grapheme clusters [Feature #13780]
 
 * Struct
 
-  * Struct.new now takes `keyword_init: true` option to initialize members
+  * Struct.new takes `keyword_init: true` option to initialize members
     with keyword arguments. [Feature #11925]
 
 * Regexp/String: Update Unicode version from 9.0.0 to 10.0.0 [Feature #13685]
 
 * Thread
 
-  * Thread#fetch  [Feature #13009]
-
   * Description set by Thread#name= is now visible on Windows 10.
+
+  * New method:
+    * Thread#fetch  [Feature #13009]
 
 * Time
 
@@ -160,12 +195,14 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * KeyError
 
-  * KeyError#receiver [Feature #12063]
-  * KeyError#key      [Feature #12063]
+  * New methods:
+
+    * KeyError#receiver [Feature #12063]
+    * KeyError#key      [Feature #12063]
 
 * FrozenError
 
-  New exception class. [Feature #13224]
+  * New exception class. [Feature #13224]
 
 === Stdlib updates (outstanding ones only)
 
@@ -174,12 +211,15 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Add Bundler to Standard Library. [Feature #12733]
 
 * Coverage
+
   * Support branch coverage and method coverage [Feature #13901]
 
 * DRb
+
   * ACL::ACLEntry.new no longer suppresses IPAddr::InvalidPrefixError.
 
 * ERB
+
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
   * Default template file encoding is changed from ASCII-8BIT to UTF-8 in erb
@@ -189,43 +229,50 @@ with all sufficient information, see the ChangeLog file or Redmine
     and used. Duplicated newlines will be removed on Windows. [Bug #5339] [Bug #11464]
 
 * IPAddr
-  * New methods are added:
+
+  * IPAddr no longer accepts invalid address mask. [Bug #13399]
+  * IPAddr#{ipv4_compat,ipv4_compat?} are marked for deprecation. [Bug #13769]
+
+  * New methods:
+
     * IPAddr#prefix
     * IPAddr#loopback?
     * IPAddr#private? [Feature #11666]
     * IPAddr#link_local? [Feature #10912]
-  * IPAddr now rejects invalid address mask. [Bug #13399]
-  * IPAddr#ipv4_compat and #ipv4_compat? are deprecated. [Bug #13769]
+
 
 * IRB
+
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
-  * Show source around `binding.irb` on session start [Feature #14124]
+  * `binding.irb` show source around a line called `binding.irb` on
+    its start [Feature #14124]
 
 * Matrix
+
   * New methods:
+
     * Matrix.combine and Matrix#combine [Feature #10903]
-    * Matrix#hadamard_product/#entrywise_product
+    * Matrix#{hadamard_product,entrywise_product}
 
 * Net::HTTP
+
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
-
-  * Net::HTTP#min_version/max_version [Feature #9450]
-
+  * Net::HTTP#{min_version,max_version}, [Feature #9450]
   * Add more HTTP status classes
-
   * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
-
-  * Net::HTTP#proxy_user and Net::HTTP#proxy_pass now reflects http_proxy
-    environment variable if the system's environment variable is multiuser
-    safe. [Bug #12921]
+  * Net::HTTP#{proxy_user,proxy_pass} reflects http_proxy environment variable
+    if the system's environment variable is multiuser safe. [Bug #12921]
 
 * Pathname
+
   * New method:
+
     * Pathname#glob [Feature #7360]
 
 * Psych
 
-  * Update to Psych 3.0.0.
+  * Updated to Psych 3.0.0.
+
     * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
       https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
     * Add Psych::Handler#event_location
@@ -238,16 +285,17 @@ with all sufficient information, see the ChangeLog file or Redmine
       https://github.com/ruby/psych/pull/312
 
 * RbConfig
-  * New constants:
-    * RbConfig::LIMITS is added to provide the limits of C types.
-      This is available when rbconfig/sizeof is required.
+
+  * RbConfig::LIMITS is added to provide the limits of C types.
+    This is available when rbconfig/sizeof is loaded.
 
 * Ripper
-  * New method:
-    * Ripper#state is added to tell the state of scanner. [Feature #13686]
 
-  * New constants:
-    * Ripper::EXPR_BEG and so on for Ripper#state.
+  * Ripper::EXPR_BEG and so on for Ripper#state.
+
+  * New method:
+
+    * Ripper#state to tell the state of scanner. [Feature #13686]
 
 * RDoc
 
@@ -263,58 +311,78 @@ with all sufficient information, see the ChangeLog file or Redmine
     * http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
 
 * SecureRandom
-  * New methods:
+
+  * New method:
+
     * SecureRandom.alphanumeric
 
 * Set
-  * Add Set#to_s as alias to #inspect [Feature #13676]
-  * Add Set#=== as alias to #include? [Feature #13801]
-  * Add Set#reset [Feature #6589]
+
+  * New methods:
+
+    * Set#to_s as alias to #inspect [Feature #13676]
+    * Set#=== as alias to #include? [Feature #13801]
+    * Set#reset [Feature #6589]
 
 * StringIO
+
   * StringIO#write accepts multiple arguments
 
 * StringScanner
-  * Add StringScanner#size, StringScanner#captures, StringScanner#values_at  [Feature #836]
+
+  * New methods:
+
+    * StringScanner#size, StringScanner#captures, StringScanner#values_at  [Feature #836]
 
 * WEBrick
 
   * Add Server Name Indication (SNI) support [Feature #13729]
 
 * Zlib
+
   * Zlib::GzipWriter#write accepts multiple arguments
 
 === Compatibility issues (excluding feature bug fixes)
 
-* BasicSocket#read_nonblock and BasicSocket#write_nonblock no
-  longer sets the O_NONBLOCK file description flag as side effect
-  (on Linux only) [Feature #13362]
+* Socket
 
-* Net::HTTP
-  * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
-    To avoid this, pass nil explicitly.
+  * BasicSocket#read_nonblock and BasicSocket#write_nonblock no
+    longer sets the O_NONBLOCK file description flag as side effect
+    (on Linux only) [Feature #13362]
 
-* Random.raw_seed renamed to become Random.urandom.  It is now
-  applicable to non-seeding purposes due to [Bug #9569].
+* Random
 
-* Socket::Ifaddr#vhid is added [Feature #13803]
+  * Random.raw_seed renamed to become Random.urandom.  It is now
+    applicable to non-seeding purposes due to [Bug #9569].
+
+* Socket
+
+  * Socket::Ifaddr#vhid is added [Feature #13803]
 
 * ConditionVariable, Queue and SizedQueue reimplemented for speed.
   They no longer subclass Struct. [Feature #13552]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Net::HTTP
+
+  * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
+    To avoid this, pass nil explicitly.
+
 * mathn.rb
-  Removed from stdlib. [Feature #10169]
+
+  * Removed from stdlib. [Feature #10169]
 
 * Rubygems
+
   * Removed "ubygems.rb" file from stdlib. It's needless since Ruby 1.9.
 
 === C API updates
 
 === Supported platform changes
 
-* Drop to support NaCl platform
+* Drop support of NaCl platform
+
   * https://bugs.chromium.org/p/chromium/issues/detail?id=239656#c160
 
 === Implementation improvements
