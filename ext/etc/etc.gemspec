@@ -3,8 +3,8 @@
 
 Gem::Specification.new do |spec|
   spec.name          = "etc"
-  spec.version       = "0.2.1"
-  spec.date          = '2017-02-27'
+  spec.version       = "1.0.0"
+  spec.date          = '2017-12-13'
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
@@ -33,7 +33,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
   spec.extensions    = %w{ext/etc/extconf.rb}
 
-  spec.required_ruby_version = ">= 2.5.0dev"
+  spec.required_ruby_version = ">= 2.3.0"
 
   spec.add_development_dependency "bundler"
   spec.add_development_dependency "rake"
