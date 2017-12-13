@@ -6284,10 +6284,14 @@ str_undump(VALUE str)
     VALUE undumped = rb_enc_str_new(s, 0L, enc);
     VALUE forced_enc_str;
     long forced_enc_str_len;
+    int w;
 
     rb_must_asciicompat(str);
     if (rb_str_is_ascii_only_p(str) == Qfalse) {
 	rb_raise(rb_eRuntimeError, "non-ASCII character detected");
+    }
+    if (!str_null_check(str, &w)) {
+	rb_raise(rb_eRuntimeError, "string contains null byte");
     }
 
     source_format = check_undump_source_format(s, s_end, len, enc,

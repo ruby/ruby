@@ -785,6 +785,7 @@ CODE
     assert_raise(RuntimeError) { S('"\u{3042"').undump }
     assert_raise(RuntimeError) { S('"\x"').undump }
     assert_raise(RuntimeError) { S('"\\"').undump }
+    assert_raise(RuntimeError) { S(%("\0")).undump }
   end
 
   def test_dup
