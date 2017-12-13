@@ -6167,7 +6167,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
     int n, codelen;
     size_t hexlen;
     char buf[6];
-    static const rb_encoding *enc_utf8 = NULL;
+    static rb_encoding *enc_utf8 = NULL;
 
     c = rb_enc_codepoint_len(s, s_end, &n, *penc);
     switch (c) {
