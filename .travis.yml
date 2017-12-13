@@ -21,6 +21,9 @@ dist: trusty
 
 sudo: false
 
+# temporary workaround for https://github.com/travis-ci/travis-ci/issues/8892
+group: deprecated-2017Q4
+
 compiler:
   - gcc
 
