@@ -6269,6 +6269,8 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
     return n;
 }
 
+static VALUE rb_str_is_ascii_only_p(VALUE str);
+
 /*
  *  call-seq:
  *     str.undump   -> new_str
@@ -6294,6 +6296,9 @@ str_undump(VALUE str)
     long forced_enc_str_len;
 
     rb_must_asciicompat(str);
+    if (rb_str_is_ascii_only_p(str) == Qfalse) {
+	rb_raise(rb_eRuntimeError, "non-ASCII character detected");
+    }
 
     source_format = check_undump_source_format(s, s_end, len, enc,
 					       &forced_enc_str, &forced_enc_str_len);
