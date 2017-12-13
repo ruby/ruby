@@ -6164,7 +6164,7 @@ static int
 undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
 {
     unsigned int c, c2;
-    int n, n2, codelen;
+    int n, codelen;
     size_t hexlen;
     char buf[6];
     static const rb_encoding *enc_utf8 = NULL;
@@ -6173,6 +6173,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
     switch (c) {
       case '\\':
       case '"':
+      case '#':
 	rb_str_cat(undumped, s, n); /* cat itself */
 	n++;
 	break;
@@ -6249,18 +6250,6 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	*buf = (char)c2;
 	rb_str_cat(undumped, buf, 1L);
 	n += rb_strlen_lit("xXX");
-	break;
-      case '#':
-	if (s+1 >= s_end) {
-	    rb_str_cat(undumped, s, 1L); /* just '#' */
-	    n++;
-	    break;
-	}
-	n2 = rb_enc_mbclen(s+1, s_end, *penc);
-	if (n2 == 1 && IS_EVSTR(s+1, s_end)) {
-	    rb_str_cat(undumped, s, n);
-	    n += n2;
-	}
 	break;
       default:
 	rb_str_cat(undumped, "\\", 1L); /* keep backslash */

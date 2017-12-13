@@ -771,6 +771,9 @@ CODE
     assert_equal("abc".encode(Encoding::UTF_16LE),
                  '"a\x00b\x00c\x00".force_encoding("UTF-16LE")'.undump)
 
+    assert_equal('\#', '"\\\\#"'.undump)
+    assert_equal('\#{', '"\\\\\#{"'.undump)
+
     assert_raise(RuntimeError) { S('\u3042').undump }
     assert_raise(RuntimeError) { S('"".force_encoding()').undump }
     assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
