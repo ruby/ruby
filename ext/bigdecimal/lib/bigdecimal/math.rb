@@ -37,7 +37,7 @@ module BigMath
   # Computes the square root of +decimal+ to the specified number of digits of
   # precision, +numeric+.
   #
-  #   BigMath.sqrt(BigDecimal.new('2'), 16).to_s
+  #   BigMath.sqrt(BigDecimal('2'), 16).to_s
   #   #=> "0.1414213562373095048801688724e1"
   #
   def sqrt(x, prec)
@@ -140,7 +140,7 @@ module BigMath
   #
   # If +decimal+ is NaN, returns NaN.
   #
-  #   BigMath.atan(BigDecimal.new('-1'), 16).to_s
+  #   BigMath.atan(BigDecimal('-1'), 16).to_s
   #   #=> "-0.785398163397448309615660845819878471907514682065e0"
   #
   def atan(x, prec)

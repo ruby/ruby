@@ -83,7 +83,7 @@ class BigDecimal < Numeric
   #
   #     require 'bigdecimal/util'
   #
-  #     d = BigDecimal.new("3.14")
+  #     d = BigDecimal("3.14")
   #     d.to_digits                  # => "3.14"
   #
   def to_digits
@@ -103,7 +103,7 @@ class BigDecimal < Numeric
   #
   #     require 'bigdecimal/util'
   #
-  #     d = BigDecimal.new("3.14")
+  #     d = BigDecimal("3.14")
   #     d.to_d                       # => 0.314e1
   #
   def to_d

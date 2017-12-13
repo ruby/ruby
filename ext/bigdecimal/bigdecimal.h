@@ -142,6 +142,12 @@ rb_sym2str(VALUE sym)
 }
 #endif
 
+#ifndef ST2FIX
+# undef RB_ST2FIX
+# define RB_ST2FIX(h) LONG2FIX((long)(h))
+# define ST2FIX(h) RB_ST2FIX(h)
+#endif
+
 #ifdef vabs
 # undef vabs
 #endif

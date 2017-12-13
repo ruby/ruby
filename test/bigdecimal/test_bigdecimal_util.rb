@@ -50,11 +50,11 @@ class TestBigDecimalUtil < Test::Unit::TestCase
   end
 
   def test_String_to_d
-    assert_equal("2.5".to_d, BigDecimal.new('2.5'))
+    assert_equal("2.5".to_d, BigDecimal('2.5'))
   end
 
   def test_invalid_String_to_d
-    assert_equal("invalid".to_d, BigDecimal.new('0.0'))
+    assert_equal("invalid".to_d, BigDecimal('0.0'))
   end
 
 end
