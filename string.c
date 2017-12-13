@@ -6308,7 +6308,7 @@ str_undump(VALUE str)
     if (source_format == UNDUMP_SOURCE_FORCE_ENCODING) {
 	forced_enc = rb_find_encoding(forced_enc_str);
 	if (forced_enc == NULL) {
-	  rb_raise(rb_eRuntimeError, "unknown encoding name - %"PRIsVALUE, forced_enc_str);
+	    rb_raise(rb_eRuntimeError, "unknown encoding name - %"PRIsVALUE, forced_enc_str);
 	}
     }
 
