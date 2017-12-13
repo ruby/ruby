@@ -1241,6 +1241,7 @@ q.pop
 
   def test_thread_interrupt_for_killed_thread
     assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5, timeout_error: nil)
+      Thread.report_on_exception = false
       trap(:TERM){exit}
       while true
         t = Thread.new{sleep 0}
