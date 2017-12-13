@@ -776,7 +776,13 @@ CODE
     assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
     assert_raise(RuntimeError) { S(%("\u00E4")).undump }
     assert_raise(RuntimeError) { S('""""').undump }
- end
+
+    assert_raise(RuntimeError) { S('"\u"').undump }
+    assert_raise(RuntimeError) { S('"\u{"').undump }
+    assert_raise(RuntimeError) { S('"\u{3042"').undump }
+    assert_raise(RuntimeError) { S('"\x"').undump }
+    assert_raise(RuntimeError) { S('"\\"').undump }
+  end
 
   def test_dup
     for taint in [ false, true ]
