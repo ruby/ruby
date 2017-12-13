@@ -6200,7 +6200,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, *penc);
 	if (c2 == '{') { /* handle \u{...} form */
 	    const char *hexstr = s + 2;
-	    unsigned int hex;
+	    int hex;
 	    static const char* const close_brace = "}";
 	    long pos;
 
@@ -6212,14 +6212,14 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	    if (pos < 0) {
 		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
 	    }
-	    hex = ruby_scan_hex(hexstr, pos, &hexlen);
+	    hex = scan_hex(hexstr, pos, &hexlen);
 	    if (hexlen == 0 || hexlen > 6) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	    }
-	    if (hex > 0x10ffffU) {
+	    if (hex > 0x10ffff) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
 	    }
-	    if ((hex & 0xfffff800U) == 0xd800U) {
+	    if ((hex & 0xfffff800) == 0xd800) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
 	    }
 	    codelen = rb_enc_codelen(hex, *penc);
@@ -6228,7 +6228,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	    n += rb_strlen_lit("u{}") + hexlen;
 	}
 	else { /* handle \uXXXX form */
-	    unsigned int hex = ruby_scan_hex(s+1, 4, &hexlen);
+	    int hex = scan_hex(s+1, 4, &hexlen);
 	    if (hexlen != 4) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	    }
@@ -6242,7 +6242,7 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	if (s+1 >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	c2 = ruby_scan_hex(s+1, 2, &hexlen);
+	c2 = scan_hex(s+1, 2, &hexlen);
 	if (hexlen != 2) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
