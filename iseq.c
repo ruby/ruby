@@ -1344,7 +1344,15 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       case TS_NUM:		/* ULONG */
-	ret = rb_sprintf("%"PRIuVALUE, op);
+	{
+	    const char *type_str;
+	    if (insn == BIN(branchiftype) && (type_str = rb_type_str((enum ruby_value_type)op)) != NULL) {
+		ret = rb_str_new_cstr(type_str);
+	    }
+	    else {
+		ret = rb_sprintf("%"PRIuVALUE, op);
+	    }
+	}
 	break;
 
       case TS_LINDEX:{
