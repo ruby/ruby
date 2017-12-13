@@ -2648,15 +2648,40 @@ rb_thread_abort_exc_set(VALUE thread, VALUE val)
  *
  *  Returns the status of the global ``report on exception'' condition.
  *
- *  The default is +false+.
+ *  The default is +true+ since Ruby 2.5.
  *
- *  When set to +true+, all threads will report the exception if an
- *  exception is raised in any thread.
+ *  All threads created when this flag is true will report
+ *  a message on $stderr if an exception kills the thread.
+ *
+ *     Thread.new { 1.times { raise } }
+ *
+ *  will produce this output on $stderr:
+ *
+ *     #<Thread:...> terminated with exception (report_on_exception is true):
+ *     Traceback (most recent call last):
+ *             2: from -e:1:in `block in <main>'
+ *             1: from -e:1:in `times'
+ *
+ *  This is done to catch errors in threads early.
+ *  In some cases, you might not want this output.
+ *  There are multiple ways to avoid the extra output:
+ *
+ *  * If the exception is not intended, the best is to fix the cause of
+ *    the exception so it does not happen anymore.
+ *  * If the exception is intended, it might be better to rescue it closer to
+ *    where it is raised rather then let it kill the Thread.
+ *  * If it is guaranteed the Thread will be joined with Thread#join or
+ *    Thread#value, then it is safe to disable this report with
+ *    <code>Thread.current.report_on_exception = false</code>
+ *    when starting the Thread.
+ *    However, this might handle the exception much later, or not at all
+ *    if the Thread is never joined due to the parent thread being blocked, etc.
  *
  *  See also ::report_on_exception=.
  *
  *  There is also an instance level method to set this for a specific thread,
- *  see #report_on_exception.
+ *  see #report_on_exception=.
+  *
  */
 
 static VALUE
@@ -2670,8 +2695,9 @@ rb_thread_s_report_exc(void)
  *  call-seq:
  *     Thread.report_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads will report the exception if an
- *  exception is raised.  Returns the new state.
+ *  Returns the new state.
+ *  When set to +true+, all threads created afterwards will inherit the
+ *  condition and report a message on $stderr if an exception kills a thread:
  *
  *     Thread.report_on_exception = true
  *     t1 = Thread.new do
@@ -2684,10 +2710,9 @@ rb_thread_s_report_exc(void)
  *  This will produce:
  *
  *     In new thread
- *     prog.rb:4: Exception from thread (RuntimeError)
- *     	from prog.rb:2:in `initialize'
- *     	from prog.rb:2:in `new'
- *     	from prog.rb:2
+ *     #<Thread:...prog.rb:2> terminated with exception (report_on_exception is true):
+ *     Traceback (most recent call last):
+ *     prog.rb:4:in `block in <main>': Exception from thread (RuntimeError)
  *     In the main thread
  *
  *  See also ::report_on_exception.
@@ -2711,12 +2736,13 @@ rb_thread_s_report_exc_set(VALUE self, VALUE val)
  *  Returns the status of the thread-local ``report on exception'' condition for
  *  this +thr+.
  *
- *  The default is +false+.
+ *  The default value when creating a Thread is the value of
+ *  the global flag Thread.report_on_exception.
  *
  *  See also #report_on_exception=.
  *
- *  There is also a class level method to set this for all threads, see
- *  ::report_on_exception.
+ *  There is also a class level method to set this for all new threads, see
+ *  ::report_on_exception=.
  */
 
 static VALUE
@@ -2730,12 +2756,12 @@ rb_thread_report_exc(VALUE thread)
  *  call-seq:
  *     thr.report_on_exception= boolean   -> true or false
  *
- *  When set to +true+, all threads (including the main program) will
- *  report the exception if an exception is raised in this +thr+.
+ *  When set to +true+, a message is printed on $stderr if an exception
+ *  kills this +thr+.  See ::report_on_exception for details.
  *
  *  See also #report_on_exception.
  *
- *  There is also a class level method to set this for all threads, see
+ *  There is also a class level method to set this for all new threads, see
  *  ::report_on_exception=.
  */
 
