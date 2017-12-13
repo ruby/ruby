@@ -139,6 +139,8 @@ class VCS
           STDERR.reopen NullDevice, 'w'
         end
         self.class.get_revisions(path, @srcdir)
+      rescue Errno::ENOENT => e
+        raise VCS::NotFoundError, e.message
       ensure
         if save_stderr
           STDERR.reopen save_stderr
