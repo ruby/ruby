@@ -490,7 +490,7 @@ rb_last_status_get(void)
 static VALUE
 proc_s_last_status(VALUE mod)
 {
-  return rb_last_status_get();
+    return rb_last_status_get();
 }
 
 void
