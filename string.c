@@ -6135,26 +6135,26 @@ check_undump_source_format(const char *s, const char *s_end, long len, rb_encodi
     return UNDUMP_SOURCE_FORCE_ENCODING;
 }
 
-static const char *
+static int
 unescape_ascii(unsigned int c)
 {
     switch (c) {
       case 'n':
-	return "\n";
+	return '\n';
       case 'r':
-	return "\r";
+	return '\r';
       case 't':
-	return "\t";
+	return '\t';
       case 'f':
-	return "\f";
+	return '\f';
       case 'v':
-	return "\v";
+	return '\13';
       case 'b':
-	return "\b";
+	return '\010';
       case 'a':
-	return "\a";
+	return '\007';
       case 'e':
-	return "\e";
+	return 033;
       default:
 	UNREACHABLE;
     }
@@ -6185,7 +6185,8 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
       case 'b':
       case 'a':
       case 'e':
-	rb_str_cat(undumped, unescape_ascii(c), n);
+	*buf = (char)unescape_ascii(c);
+	rb_str_cat(undumped, buf, n);
 	n++;
 	break;
       case 'u':
