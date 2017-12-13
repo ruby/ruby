@@ -1518,6 +1518,7 @@ class TestProcess < Test::Unit::TestCase
     assert_kind_of(Integer, max)
     gs = Process.groups
     assert_operator(gs.size, :<=, max)
+    gs[0] ||= 0
     assert_raise(ArgumentError) {Process.groups = gs * (max / gs.size + 1)}
   end
 
