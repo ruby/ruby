@@ -6330,6 +6330,9 @@ str_undump(VALUE str)
 	    }
 	    n = undump_after_backslash(undumped, s+1, s_end, &enc);
 	}
+	else if (c == '"') {
+	    rb_raise(rb_eRuntimeError, "non-escaped double quote detected");
+	}
 	else {
 	    rb_str_cat(undumped, s, n);
 	}

@@ -775,6 +775,7 @@ CODE
     assert_raise(RuntimeError) { S('"".force_encoding()').undump }
     assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
     assert_raise(RuntimeError) { S(%("\u00E4")).undump }
+    assert_raise(RuntimeError) { S('""""').undump }
  end
 
   def test_dup
