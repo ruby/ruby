@@ -206,6 +206,25 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* BigDecimal
+
+  * Update to BigDecimal 1.3.3
+
+  * The following features are added:
+
+    * BigDecimal::VERSION
+
+  * The following features has been deprecated,
+    and are planned to be removed in the version 1.4.0:
+
+    * BigDecimal.new
+
+    * BigDecimal.ver
+
+    * BigDecimal#clone
+
+    * BigDecimal#dup
+
 * Bundler
 
   * Add Bundler to Standard Library. [Feature #12733]
