@@ -1553,9 +1553,12 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			YYLTYPE location;
 			location.first_loc = @1.first_loc;
 			location.last_loc = @3.last_loc;
+		    /*%
+		    %*/
 			$$ = const_path_field($1, $3, &location);
 			$$ = new_const_op_assign($$, $4, $5, &@$);
 		    }
@@ -2231,9 +2234,12 @@ arg		: lhs '=' arg_rhs
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			YYLTYPE location;
 			location.first_loc = @1.first_loc;
 			location.last_loc = @3.last_loc;
+		    /*%
+		    %*/
 			$$ = const_path_field($1, $3, &location);
 			$$ = new_const_op_assign($$, $4, $5, &@$);
 		    }
@@ -4663,9 +4669,12 @@ f_arg_item	: f_arg_asgn
 		| tLPAREN f_margs rparen
 		    {
 			ID tid = internal_id();
+		    /*%%%*/
 			YYLTYPE location;
 			location.first_loc = @2.first_loc;
 			location.last_loc = @2.first_loc;
+		    /*%
+		    %*/
 			arg_var(tid);
 		    /*%%%*/
 			if (dyna_in_block()) {
