@@ -173,6 +173,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     * String#delete_suffix, String#delete_suffix! [Feature #13665]
     * String#each_grapheme_cluster and String#grapheme_clusters to
       enumerate grapheme clusters [Feature #13780]
+    * String#undump to unescape String#dump'ed string [Feature #12275]
 
 * Struct
 

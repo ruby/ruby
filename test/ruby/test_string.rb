@@ -753,6 +753,41 @@ CODE
     assert_equal(S('"\\u{10ABCD}"'), b.dump)
   end
 
+  def test_undump
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    assert_equal(S("\u{7F}"), S('"\\x7F"').undump)
+    assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
+    assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
+    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
+    assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
+    assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
+
+    assert_equal(S("äöü"), S('"\u00E4\u00F6\u00FC"').undump)
+    assert_equal(S("äöü"), S('"\xC3\xA4\xC3\xB6\xC3\xBC"').undump)
+
+    assert_equal(Encoding::UTF_8, S('"\\u3042"').encode(Encoding::EUC_JP).undump.encoding)
+
+    assert_equal("abc".encode(Encoding::UTF_16LE),
+                 '"a\x00b\x00c\x00".force_encoding("UTF-16LE")'.undump)
+
+    assert_equal('\#', '"\\\\#"'.undump)
+    assert_equal('\#{', '"\\\\\#{"'.undump)
+
+    assert_raise(RuntimeError) { S('\u3042').undump }
+    assert_raise(RuntimeError) { S('"".force_encoding()').undump }
+    assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
+    assert_raise(RuntimeError) { S(%("\u00E4")).undump }
+    assert_raise(RuntimeError) { S('""""').undump }
+
+    assert_raise(RuntimeError) { S('"\u"').undump }
+    assert_raise(RuntimeError) { S('"\u{"').undump }
+    assert_raise(RuntimeError) { S('"\u{3042"').undump }
+    assert_raise(RuntimeError) { S('"\x"').undump }
+    assert_raise(RuntimeError) { S('"\\"').undump }
+    assert_raise(RuntimeError) { S(%("\0")).undump }
+  end
+
   def test_dup
     for taint in [ false, true ]
       for frozen in [ false, true ]
