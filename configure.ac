@@ -749,7 +749,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
     ])
     # ICC doesn't support -Werror=
     AS_IF([test $icc_version -gt 0], [
-	particular_werror_flags=yes
+	particular_werror_flags=no
     ])
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
                  -diag-disable=2259 \
