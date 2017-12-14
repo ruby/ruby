@@ -1,3 +1,66 @@
+Thu Dec 14 22:29:04 2017  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: do not hang acceptor on slow TLS connections
+
+	OpenSSL::SSL::SSLSocket#accept may block indefinitely on clients
+	which negotiate the TCP connection, but fail (or are slow) to
+	negotiate the subsequent TLS handshake.  This prevents the
+	multi-threaded WEBrick server from accepting other connections.
+
+	Since the TLS handshake (via OpenSSL::SSL::SSLSocket#accept)
+	consists of normal read/write traffic over TCP, handle it in the
+	per-client thread, instead.
+
+	Furthermore, using non-blocking accept() is useful for non-TLS
+	sockets anyways because spurious wakeups are possible from
+	select(2).
+
+	* lib/webrick/server.rb (accept_client): use TCPServer#accept_nonblock
+	  and remove OpenSSL::SSL::SSLSocket#accept call
+	* lib/webrick/server.rb (start_thread): call OpenSSL::SSL::SSLSocket#acc
+ept
+	* test/webrick/test_ssl_server.rb (test_slow_connect): new test
+	  [ruby-core:83221] [Bug #14005]
+
+	webrick: fix up r60172
+
+	By making the socket non-blocking in r60172, TLS/SSL negotiation
+	via the SSL_accept function must handle non-blocking sockets
+	properly and retry on SSL_ERROR_WANT_READ/SSL_ERROR_WANT_WRITE.
+	OpenSSL::SSL::SSLSocket#accept cannot do that properly with a
+	non-blocking socket, so it must use non-blocking logic of
+	OpenSSL::SSL::SSLSocket#accept_nonblock.
+
+	Thanks to MSP-Greg (Greg L) for finding this.
+
+	* lib/webrick/server.rb (start_thread): use SSL_accept properly
+	  with non-blocking socket.
+	  [Bug #14013] [Bug #14005]
+
+	webrick: fix up r60172 and revert r60189
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): ignore ECONNRESET, ECONNABORTED,
+	  EPROTO, and EINVAL on TLS negotiation errors the same way they
+	  were ignored before r60172 in the accept_client method of the
+	  main acceptor thread.
+	  [Bug #14013] [Bug #14005]
+
+	webrick: fix up r60172 and r60208
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): fix non-local return
+	  introduced in r60208
+
+	webrick: fix up r60172 and r60210
+
+	Thanks to MSP-Greg (Greg L) for helping with this.
+
+	* lib/webrick/server.rb (start_thread): properly fix non-local return
+	  introduced in r60208 and r60210
+
 Thu Nov 30 23:37:08 2017  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	parse.y: fix line in rescue

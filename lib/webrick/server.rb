@@ -258,18 +258,26 @@ module WEBrick
     # the client socket.
 
     def accept_client(svr)
-      sock = nil
-      begin
-        sock = svr.accept
-        sock.sync = true
-        Utils::set_non_blocking(sock)
-      rescue Errno::ECONNRESET, Errno::ECONNABORTED,
-             Errno::EPROTO, Errno::EINVAL
-      rescue StandardError => ex
-        msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
-        @logger.error msg
+      case sock = svr.to_io.accept_nonblock(exception: false)
+      when :wait_readable
+        nil
+      else
+        if svr.respond_to?(:start_immediately)
+          sock = OpenSSL::SSL::SSLSocket.new(sock, ssl_context)
+          sock.sync_close = true
+          # we cannot do OpenSSL::SSL::SSLSocket#accept here because
+          # a slow client can prevent us from accepting connections
+          # from other clients
+        end
+        sock
       end
-      return sock
+    rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+           Errno::EPROTO, Errno::EINVAL
+      nil
+    rescue StandardError => ex
+      msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
+      @logger.error msg
+      nil
     end
 
     ##
@@ -291,6 +299,16 @@ module WEBrick
           rescue SocketError
             @logger.debug "accept: <address unknown>"
             raise
+          end
+          if sock.respond_to?(:sync_close=) && @config[:SSLStartImmediately]
+            WEBrick::Utils.timeout(@config[:RequestTimeout]) do
+              begin
+                sock.accept # OpenSSL::SSL::SSLSocket#accept
+              rescue Errno::ECONNRESET, Errno::ECONNABORTED,
+                     Errno::EPROTO, Errno::EINVAL
+                Thread.exit
+              end
+            end
           end
           call_callback(:AcceptCallback, sock)
           block ? block.call(sock) : run(sock)
