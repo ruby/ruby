@@ -1,3 +1,9 @@
+Thu Dec 14 22:49:08 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Merge rubygems-2.6.14 changes.
+
+	It fixed http://blog.rubygems.org/2017/10/09/unsafe-object-deserialization-vulnerability.html
+
 Thu Sep 14 20:44:26 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json: bump to version 1.8.1.1. [Backport #13853]

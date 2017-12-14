@@ -330,7 +330,7 @@ if you believe they were disclosed to a third party.
     return {} unless filename and File.exist? filename
 
     begin
-      content = YAML.load(File.read(filename))
+      content = Gem::SafeYAML.load(File.read(filename))
       unless content.kind_of? Hash
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
