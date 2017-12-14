@@ -1,3 +1,8 @@
+Thu Dec 14 23:53:41 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/net/ftp/test_ftp.rb (process_port_or_eprt): merge a part of
+	  r56973 to pass the test introduced at previous commit.
+
 Thu Dec 14 22:55:05 2017  Shugo Maeda  <shugo@ruby-lang.org>
 
 	Fix a command injection vulnerability in Net::FTP.
