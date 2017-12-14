@@ -135,6 +135,7 @@ class IO
   end
 end
 
+# :stopdoc:
 class Binding
   def irb
     require 'irb'
@@ -146,9 +147,6 @@ class Binding
 end
 
 module Kernel
-  # prints arguments in pretty form.
-  #
-  # pp returns argument(s).
   def pp(*objs)
     require 'pp'
     pp(*objs)
