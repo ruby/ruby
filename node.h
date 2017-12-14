@@ -290,6 +290,8 @@ typedef struct RNode {
 #define nd_set_last_column(n, v) ((n)->nd_loc.last_loc.column = (v))
 #define nd_last_lineno(n) ((int)((n)->nd_loc.last_loc.lineno))
 #define nd_set_last_lineno(n, v) ((n)->nd_loc.last_loc.lineno = (v))
+#define nd_last_loc(n) ((n)->nd_loc.last_loc)
+#define nd_set_last_loc(n, v) (nd_last_loc(n) = (v))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc

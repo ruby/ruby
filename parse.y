@@ -1673,8 +1673,7 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = $1;
 			$$->nd_args = $2;
-			nd_set_last_lineno($1, nd_last_lineno($2));
-			nd_set_last_column($1, nd_last_column($2));
+			nd_set_last_loc($1, nd_last_loc($2));
 		    /*%
 			$$ = dispatch2(command, $1, $2);
 		    %*/
@@ -1687,8 +1686,7 @@ command		: fcall command_args       %prec tLOWEST
 			fixpos($$, $1);
 		    /*%%%*/
 			$$->nd_loc = @$;
-			nd_set_last_lineno($1, nd_last_lineno($2));
-			nd_set_last_column($1, nd_last_column($2));
+			nd_set_last_loc($1, nd_last_loc($2));
 		    /*%
 		    %*/
 		    }
@@ -3720,8 +3718,7 @@ method_call	: fcall paren_args
 		    /*%%%*/
 			$$ = $1;
 			$$->nd_args = $2;
-			nd_set_last_lineno($1, @2.last_loc.lineno);
-			nd_set_last_column($1, @2.last_loc.column);
+			nd_set_last_loc($1, @2.last_loc);
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), $2);
 		    %*/
@@ -9066,8 +9063,7 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
     }
     end->nd_next = tail;
     h->nd_end = tail->nd_end;
-    nd_set_last_lineno(head, nd_last_lineno(tail));
-    nd_set_last_column(head, nd_last_column(tail));
+    nd_set_last_loc(head, nd_last_loc(tail));
     return head;
 }
 
@@ -9089,8 +9085,7 @@ list_append_gen(struct parser_params *parser, NODE *list, NODE *item)
     last->nd_next = new_list(item, &item->nd_loc);
     list->nd_next->nd_end = last->nd_next;
 
-    nd_set_last_lineno(list, nd_last_lineno(item));
-    nd_set_last_column(list, nd_last_column(item));
+    nd_set_last_loc(list, nd_last_loc(item));
 
     return list;
 }
@@ -9117,8 +9112,7 @@ list_concat(NODE *head, NODE *tail)
 	head->nd_next->nd_end = tail;
     }
 
-    nd_set_last_lineno(head, nd_last_lineno(tail));
-    nd_set_last_column(head, nd_last_column(tail));
+    nd_set_last_loc(head, nd_last_loc(tail));
 
     return head;
 }
