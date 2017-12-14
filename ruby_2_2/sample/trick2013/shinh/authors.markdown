@@ -1,2 +1,0 @@
-Shinichiro Hamaji
-Japan, .jp

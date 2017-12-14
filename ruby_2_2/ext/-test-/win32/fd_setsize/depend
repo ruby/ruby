@@ -1,1 +1,0 @@
-fd_setsize.o: $(ruby_headers) $(hdrdir)/ruby/win32.h

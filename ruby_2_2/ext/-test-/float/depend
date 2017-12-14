@@ -1,3 +1,0 @@
-$(OBJS): $(HDRS) $(ruby_headers)
-
-nextafter.o: nextafter.c $(top_srcdir)/missing/nextafter.c
