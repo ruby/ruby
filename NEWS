@@ -283,6 +283,11 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Net::HTTP#{proxy_user,proxy_pass} reflect http_proxy environment variable
     if the system's environment variable is multiuser safe. [Bug #12921]
 
+* OpenSSL
+
+  * Updated Ruby/OpenSSL from version 2.0 to 2.1. Changes are noted in
+    "Version 2.1.0" section in ext/openssl/History.md.
+
 * Pathname
 
   * New method:
