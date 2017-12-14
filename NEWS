@@ -39,7 +39,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New methods:
 
     * Exception#full_message to retrieve a String expression of an exception,
-      formatted in the same way with that Ruby prints an uncaught exception out.
+      formatted in the same way in which Ruby prints out an uncaught exception.
       [Feature #14141] [experimental]
 
 * Dir
@@ -66,7 +66,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * File.rename releases GVL [Feature #13951]
   * File::Stat#{atime,mtime,ctime} support fractional second timestamps on
     Windows 8 and later  [Feature #13726]
-  * File::Stat.ino and File.indentical? supports ReFS 128bit ino on Windows 8.1
+  * File::Stat.ino and File.indentical? support ReFS 128bit ino on Windows 8.1
     and later  [Feature #13731]
 
   * New method:
@@ -99,8 +99,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Integer
 
-  * Integer#step wrongly hid errors from coerce method, when
-    a given step value which cannot be compared with #> to 0.
+  * Integer#step no longer hides errors from coerce method when
+    given a step value which cannot be compared with #> to 0.
     [Feature #7688]
   * Integer#{round,floor,ceil,truncate} always return an Integer.
     [Bug #13420]
@@ -141,17 +141,17 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * New method:
 
-    * Process.last_status as a alias of $? [Feature #14043]
+    * Process.last_status as an alias of $? [Feature #14043]
 
 * Range
-  * Range#initialize no longer hide exceptions when comparing begin and
+  * Range#initialize no longer hides exceptions when comparing begin and
     end with #<=> and raise a "bad value for range" ArgumentError
-    but instead let the exception from the #<=> call go through.
+    but instead lets the exception from the #<=> call go through.
     [Feature #7688]
 
 * Regexp
 
-  * Updated to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
+  * Update to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
 
     * Support absent operator https://github.com/k-takata/Onigmo/issues/82
 
@@ -215,7 +215,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * BigDecimal::VERSION
 
-  * The following features has been deprecated,
+  * The following features have been deprecated,
     and are planned to be removed in the version 1.4.0:
 
     * BigDecimal.new
@@ -264,8 +264,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 * IRB
 
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
-  * `binding.irb` show source around a line called `binding.irb` on
-    its start [Feature #14124]
+  * `binding.irb` on its start shows source around the line where it was called
+    [Feature #14124]
 
 * Matrix
 
@@ -280,7 +280,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Net::HTTP#{min_version,max_version}, [Feature #9450]
   * Add more HTTP status classes
   * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
-  * Net::HTTP#{proxy_user,proxy_pass} reflects http_proxy environment variable
+  * Net::HTTP#{proxy_user,proxy_pass} reflect http_proxy environment variable
     if the system's environment variable is multiuser safe. [Bug #12921]
 
 * Pathname
@@ -291,7 +291,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Psych
 
-  * Updated to Psych 3.0.0.
+  * Update to Psych 3.0.0.
 
     * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
       https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
@@ -371,7 +371,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Socket
 
   * BasicSocket#read_nonblock and BasicSocket#write_nonblock no
-    longer sets the O_NONBLOCK file description flag as side effect
+    longer set the O_NONBLOCK file description flag as side effect
     (on Linux only) [Feature #13362]
 
 * Random
@@ -390,7 +390,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Net::HTTP
 
-  * Net::HTTP#start now pass :ENV to p_addr by default. [Bug #13351]
+  * Net::HTTP#start now passes :ENV to p_addr by default. [Bug #13351]
     To avoid this, pass nil explicitly.
 
 * mathn.rb
