@@ -979,7 +979,7 @@ module URI
     # returns an Array of the path split on '/'
     #
     def split_path(path)
-      path.split(%r{/}, -1)
+      path.split("/", -1)
     end
     private :split_path
 
