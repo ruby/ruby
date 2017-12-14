@@ -8955,8 +8955,8 @@ node_newnode(struct parser_params *parser, enum node_type type, VALUE a0, VALUE 
 
     nd_set_line(n, ruby_sourceline);
     /* mark not cared lineno to 0 and column to -1 */
-    nd_set_lineno(n,  0);
-    nd_set_column(n, -1);
+    nd_set_first_lineno(n,  0);
+    nd_set_first_column(n, -1);
     nd_set_last_lineno(n,  0);
     nd_set_last_column(n, -1);
     return n;
@@ -10798,8 +10798,8 @@ arg_blk_pass(NODE *node1, NODE *node2)
 {
     if (node2) {
 	node2->nd_head = node1;
-	nd_set_lineno(node2, nd_lineno(node1));
-	nd_set_column(node2, nd_column(node1));
+	nd_set_first_lineno(node2, nd_first_lineno(node1));
+	nd_set_first_column(node2, nd_first_column(node1));
 	return node2;
     }
     return node1;
