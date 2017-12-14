@@ -5,6 +5,7 @@ require "test/unit"
 require "ostruct"
 require "stringio"
 require "tempfile"
+require "tmpdir"
 
 class FTPTest < Test::Unit::TestCase
   SERVER_NAME = "localhost"
@@ -2132,6 +2133,227 @@ EOF
     end
   end
 
+  def test_getbinaryfile_command_injection
+    skip "| is not allowed in filename on Windows" if windows?
+    [false, true].each do |resume|
+      commands = []
+      binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+      server = create_ftp_server { |sock|
+        sock.print("220 (test_ftp).\r\n")
+        commands.push(sock.gets)
+        sock.print("331 Please specify the password.\r\n")
+        commands.push(sock.gets)
+        sock.print("230 Login successful.\r\n")
+        commands.push(sock.gets)
+        sock.print("200 Switching to Binary mode.\r\n")
+        line = sock.gets
+        commands.push(line)
+        host, port = process_port_or_eprt(sock, line)
+        commands.push(sock.gets)
+        sock.print("150 Opening BINARY mode data connection for |echo hello (#{binary_data.size} bytes)\r\n")
+        conn = TCPSocket.new(host, port)
+        binary_data.scan(/.{1,1024}/nm) do |s|
+          conn.print(s)
+        end
+        conn.shutdown(Socket::SHUT_WR)
+        conn.read
+        conn.close
+        sock.print("226 Transfer complete.\r\n")
+      }
+      begin
+        chdir_to_tmpdir do
+          begin
+            ftp = Net::FTP.new
+            ftp.resume = resume
+            ftp.read_timeout = 0.2
+            ftp.connect(SERVER_ADDR, server.port)
+            ftp.login
+            assert_match(/\AUSER /, commands.shift)
+            assert_match(/\APASS /, commands.shift)
+            assert_equal("TYPE I\r\n", commands.shift)
+            ftp.getbinaryfile("|echo hello")
+            assert_equal(binary_data, File.binread("./|echo hello"))
+            assert_match(/\A(PORT|EPRT) /, commands.shift)
+            assert_equal("RETR |echo hello\r\n", commands.shift)
+            assert_equal(nil, commands.shift)
+          ensure
+            ftp.close if ftp
+          end
+        end
+      ensure
+        server.close
+      end
+    end
+  end
+
+  def test_gettextfile_command_injection
+    skip "| is not allowed in filename on Windows" if windows?
+    commands = []
+    text_data = <<EOF.gsub(/\n/, "\r\n")
+foo
+bar
+baz
+EOF
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to ASCII mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      host, port = process_port_or_eprt(sock, line)
+      commands.push(sock.gets)
+      sock.print("150 Opening TEXT mode data connection for |echo hello (#{text_data.size} bytes)\r\n")
+      conn = TCPSocket.new(host, port)
+      text_data.each_line do |l|
+        conn.print(l)
+      end
+      conn.shutdown(Socket::SHUT_WR)
+      conn.read
+      conn.close
+      sock.print("226 Transfer complete.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+    }
+    begin
+      chdir_to_tmpdir do
+        begin
+          ftp = Net::FTP.new
+          ftp.connect(SERVER_ADDR, server.port)
+          ftp.login
+          assert_match(/\AUSER /, commands.shift)
+          assert_match(/\APASS /, commands.shift)
+          assert_equal("TYPE I\r\n", commands.shift)
+          ftp.gettextfile("|echo hello")
+          assert_equal(text_data.gsub(/\r\n/, "\n"),
+                       File.binread("./|echo hello"))
+          assert_equal("TYPE A\r\n", commands.shift)
+          assert_match(/\A(PORT|EPRT) /, commands.shift)
+          assert_equal("RETR |echo hello\r\n", commands.shift)
+          assert_equal("TYPE I\r\n", commands.shift)
+          assert_equal(nil, commands.shift)
+        ensure
+          ftp.close if ftp
+        end
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_putbinaryfile_command_injection
+    skip "| is not allowed in filename on Windows" if windows?
+    commands = []
+    binary_data = (0..0xff).map {|i| i.chr}.join * 4 * 3
+    received_data = nil
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      host, port = process_port_or_eprt(sock, line)
+      commands.push(sock.gets)
+      sock.print("150 Opening BINARY mode data connection for |echo hello (#{binary_data.size} bytes)\r\n")
+      conn = TCPSocket.new(host, port)
+      received_data = conn.read
+      conn.close
+      sock.print("226 Transfer complete.\r\n")
+    }
+    begin
+      chdir_to_tmpdir do
+        File.binwrite("./|echo hello", binary_data)
+        begin
+          ftp = Net::FTP.new
+          ftp.read_timeout = 0.2
+          ftp.connect(SERVER_ADDR, server.port)
+          ftp.login
+          assert_match(/\AUSER /, commands.shift)
+          assert_match(/\APASS /, commands.shift)
+          assert_equal("TYPE I\r\n", commands.shift)
+          ftp.putbinaryfile("|echo hello")
+          assert_equal(binary_data, received_data)
+          assert_match(/\A(PORT|EPRT) /, commands.shift)
+          assert_equal("STOR |echo hello\r\n", commands.shift)
+          assert_equal(nil, commands.shift)
+        ensure
+          ftp.close if ftp
+        end
+      end
+    ensure
+      server.close
+    end
+  end
+
+  def test_puttextfile_command_injection
+    skip "| is not allowed in filename on Windows" if windows?
+    commands = []
+    received_data = nil
+    server = create_ftp_server { |sock|
+      sock.print("220 (test_ftp).\r\n")
+      commands.push(sock.gets)
+      sock.print("331 Please specify the password.\r\n")
+      commands.push(sock.gets)
+      sock.print("230 Login successful.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to ASCII mode.\r\n")
+      line = sock.gets
+      commands.push(line)
+      host, port = process_port_or_eprt(sock, line)
+      commands.push(sock.gets)
+      sock.print("150 Opening TEXT mode data connection for |echo hello\r\n")
+      conn = TCPSocket.new(host, port)
+      received_data = conn.read
+      conn.close
+      sock.print("226 Transfer complete.\r\n")
+      commands.push(sock.gets)
+      sock.print("200 Switching to Binary mode.\r\n")
+    }
+    begin
+      chdir_to_tmpdir do
+        File.open("|echo hello", "w") do |f|
+          f.puts("foo")
+          f.puts("bar")
+          f.puts("baz")
+        end
+        begin
+          ftp = Net::FTP.new
+          ftp.connect(SERVER_ADDR, server.port)
+          ftp.login
+          assert_match(/\AUSER /, commands.shift)
+          assert_match(/\APASS /, commands.shift)
+          assert_equal("TYPE I\r\n", commands.shift)
+          ftp.puttextfile("|echo hello")
+          assert_equal(<<EOF.gsub(/\n/, "\r\n"), received_data)
+foo
+bar
+baz
+EOF
+          assert_equal("TYPE A\r\n", commands.shift)
+          assert_match(/\A(PORT|EPRT) /, commands.shift)
+          assert_equal("STOR |echo hello\r\n", commands.shift)
+          assert_equal("TYPE I\r\n", commands.shift)
+          assert_equal(nil, commands.shift)
+        ensure
+          ftp.close if ftp
+        end
+      end
+    ensure
+      server.close
+    end
+  end
+
   private
 
   def create_ftp_server(sleep_time = nil)
@@ -2227,5 +2449,17 @@ EOF
       flunk "Invalid local address"
     end
     return data_server
+  end
+
+  def chdir_to_tmpdir
+    Dir.mktmpdir do |dir|
+      pwd = Dir.pwd
+      Dir.chdir(dir)
+      begin
+        yield
+      ensure
+        Dir.chdir(pwd)
+      end
+    end
   end
 end
