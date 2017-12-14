@@ -1665,12 +1665,12 @@ Init_ossl_asn1(void)
      * == Primitive sub-classes and their mapping to Ruby classes
      * * OpenSSL::ASN1::EndOfContent    <=> _value_ is always +nil+
      * * OpenSSL::ASN1::Boolean         <=> _value_ is +true+ or +false+
-     * * OpenSSL::ASN1::Integer         <=> _value_ is an Integer
+     * * OpenSSL::ASN1::Integer         <=> _value_ is an OpenSSL::BN
      * * OpenSSL::ASN1::BitString       <=> _value_ is a String
      * * OpenSSL::ASN1::OctetString     <=> _value_ is a String
      * * OpenSSL::ASN1::Null            <=> _value_ is always +nil+
      * * OpenSSL::ASN1::Object          <=> _value_ is a String
-     * * OpenSSL::ASN1::Enumerated      <=> _value_ is an Integer
+     * * OpenSSL::ASN1::Enumerated      <=> _value_ is an OpenSSL::BN
      * * OpenSSL::ASN1::UTF8String      <=> _value_ is a String
      * * OpenSSL::ASN1::NumericString   <=> _value_ is a String
      * * OpenSSL::ASN1::PrintableString <=> _value_ is a String
