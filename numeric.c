@@ -3169,7 +3169,7 @@ int_even_p(VALUE num)
  *  call-seq:
  *     int.allbits?(mask)  ->  true or false
  *
- *  Returns +true+ if all bits of <code>+int+ & +mask+</code> is 1.
+ *  Returns +true+ if all bits of <code>+int+ & +mask+</code> are 1.
  */
 
 static VALUE
@@ -3182,7 +3182,7 @@ int_allbits_p(VALUE num, VALUE mask)
  *  call-seq:
  *     int.anybits?(mask)  ->  true or false
  *
- *  Returns +true+ if any bits of <code>+int+ & +mask+</code> is 1.
+ *  Returns +true+ if any bits of <code>+int+ & +mask+</code> are 1.
  */
 
 static VALUE
@@ -3195,7 +3195,7 @@ int_anybits_p(VALUE num, VALUE mask)
  *  call-seq:
  *     int.nobits?(mask)  ->  true or false
  *
- *  Returns +true+ if no bits of <code>+int+ & +mask+</code> is 1.
+ *  Returns +true+ if no bits of <code>+int+ & +mask+</code> are 1.
  */
 
 static VALUE
