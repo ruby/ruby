@@ -382,8 +382,8 @@ class TestThread < Test::Unit::TestCase
 
       assert_equal(true, Thread.report_on_exception,
                    "global flag is true by default")
-      assert_equal(false, Thread.current.report_on_exception,
-                   "the main thread has report_on_exception=false")
+      assert_equal(true, Thread.current.report_on_exception,
+                   "the main thread has report_on_exception=true")
 
       Thread.report_on_exception = true
       Thread.current.report_on_exception = false

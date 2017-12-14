@@ -743,7 +743,6 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
 
     native_mutex_initialize(&th->interrupt_lock);
-    th->report_on_exception = th->vm->thread_report_on_exception;
 
     /* kick thread */
     err = native_thread_create(th);
