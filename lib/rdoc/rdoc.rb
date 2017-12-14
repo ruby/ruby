@@ -232,6 +232,9 @@ option)
 
   def update_output_dir(op_dir, time, last = {})
     return if @options.dry_run or not @options.update_output_dir
+    unless ENV['SOURCE_DATE_EPOCH'].nil?
+      time = Time.at(ENV['SOURCE_DATE_EPOCH'].to_i).gmtime
+    end
 
     open output_flag_file(op_dir), "w" do |f|
       f.puts time.rfc2822
