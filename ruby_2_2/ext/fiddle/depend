@@ -1,0 +1,55 @@
+PWD =
+
+CONFIGURE_LIBFFI = \
+	$(LIBFFI_CONFIGURE) --disable-shared \
+		--host=$(LIBFFI_ARCH) --enable-builddir=$(arch) \
+		CC="$(CC)" CFLAGS="$(LIBFFI_CFLAGS)" \
+		LD="$(LD)" LDFLAGS="$(LIBFFI_LDFLAGS)"
+
+$(OBJS): $(HDRS) $(ruby_headers) \
+  $(hdrdir)/ruby/io.h \
+  $(hdrdir)/ruby/encoding.h \
+  $(hdrdir)/ruby/oniguruma.h
+
+$(STATIC_LIB) $(RUBYARCHDIR)/$(DLLIB) $(DLLIB): $(LIBFFI_A)
+
+$(OBJS): $(FFI_H)
+
+.PHONY: .FORCE hdr
+
+.FORCE:
+
+hdr: $(FFI_H)
+
+configure-libffi build-libffi: .FORCE
+configure-libffi \
+$(LIBFFI_DIR)/include/ffi.h \
+$(LIBFFI_DIR)/include/ffitarget.h \
+$(LIBFFI_DIR)/fficonfig.h \
+$(LIBFFI_DIR)/Makefile:
+	$(Q) $(MAKEDIRS) $(LIBFFI_DIR)
+	$(Q) $(CONFIGURE_LIBFFI)
+
+build-libffi: $(LIBFFI_A)
+build-libffi $(LIBFFI_A):
+	$(Q) $(SUBMAKE_LIBFFI)
+
+clean-libffi:
+	$(Q) $(SUBMAKE_LIBFFI) clean
+
+distclean-libffi:
+	$(Q) $(SUBMAKE_LIBFFI) distclean
+	$(Q) $(RM) $(LIBFFI_DIR)/local.exp
+	$(Q) $(RUBY) -rfileutils -e "FileUtils.rmdir(Dir.glob(ARGV[0]+'/**/'), :parents=>true)" $(LIBFFI_DIR)
+
+realclean-libffi:
+	$(Q) $(RMALL) $(LIBFFI_DIR)
+
+.PHONY clean-libffi distclean-libffi realclean-libffi: .FORCE
+.PHONY clean-none distclean-none realclean-none: .FORCE
+
+clean: clean-$(LIBFFI_CLEAN)
+distclean: distclean-$(LIBFFI_CLEAN)
+realclean: realclean-$(LIBFFI_CLEAN)
+
+.PHONY configure: configure-libffi

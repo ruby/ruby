@@ -1,0 +1,61 @@
+#!/bin/sh
+# usage: ifchange target temporary
+
+set -e
+timestamp=
+keepsuffix=
+empty=
+until [ $# -eq 0 ]; do
+    case "$1" in
+	--timestamp)
+	    timestamp=.
+	    ;;
+	--timestamp=*)
+	    timestamp=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
+	--keep)
+	    keepsuffix=.old
+	    ;;
+	--keep=*)
+	    keepsuffix=`expr \( "$1" : '[^=]*=\(.*\)' \)`
+	    ;;
+	--empty)
+	    empty=yes
+	    ;;
+	*)
+	    break
+	    ;;
+    esac
+    shift
+done
+
+target="$1"
+temp="$2"
+if [ "$temp" = - ]; then
+    temp="tmpdata$$.tmp~"
+    cat > "$temp" || exit $?
+    trap 'rm -f "$temp"' 0
+fi
+
+if [ -f "$target" -a ! -${empty:+f}${empty:-s} "$temp" ] || cmp "$target" "$temp" >/dev/null 2>&1; then
+    echo "$target unchanged"
+    rm -f "$temp"
+else
+    echo "$target updated"
+    [ x"${keepsuffix}" = x ] || mv -f "$target" "${target}${keepsuffix}"
+    mv -f "$temp" "$target"
+fi
+
+if [ -n "${timestamp}" ]; then
+    if [ x"${timestamp}" = x. ]; then
+	case "$target" in
+	    */*)
+		timestamp=`dirname "$target"`/.time.`basename "$target"`
+		;;
+	    *)
+		timestamp=.time."$target"
+		;;
+	esac
+    fi
+    : > "$timestamp"
+fi

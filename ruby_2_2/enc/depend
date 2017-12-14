@@ -1,0 +1,568 @@
+% inplace = File.identical?($top_srcdir, ".")
+% workdirs = %w"$(ENCSODIR) $(TRANSSODIR) enc enc/trans"
+% CONFIG["WORKDIRS"] = workdirs.join(' ')
+% enable_shared = CONFIG['ENABLE_SHARED'] == 'yes'
+% deffile = (true if /\$\(DEFFILE\)/ =~ CONFIG["LINK_SO"])
+% dependencies = ENCS + TRANS
+% cleanlibs = Shellwords.shellwords(CONFIG["cleanlibs"] || "")
+% cleanobjs = Shellwords.shellwords(CONFIG["cleanobjs"] || "")
+% cleanobjs << "$*.def" if deffile
+% rule_subst = CONFIG["RULE_SUBST"] || "%s"
+% transvpath = rule_subst.dup.sub!(/\{[^{}]+\}/, '$(TRANSVPATH)/') || "enc/trans/%s"
+% transvpath_prefix = (rule_subst.dup.sub!(/\{[^{}]+\}/, '{$(TRANSVPATH)}') || "%s") % ""
+% CONFIG['ARFLAGS'] = 'rcu ' if (CONFIG['ARFLAGS'] || "").empty?
+% CONFIG['RANLIB'] = ':' if (CONFIG['RANLIB'] || "").empty?
+% CONFIG['CPPFLAGS'] += " -DRUBY_EXPORT=1" if CONFIG["EXTSTATIC"] == "static"
+% if File::ALT_SEPARATOR
+%   pathrep = proc {|path| path.gsub('/', File::ALT_SEPARATOR).gsub(/\$\(([@<?*]\w?|\w+)\)/, "$(\\1:/=\\#{File::ALT_SEPARATOR})")}
+% else
+%   pathrep = proc {|path| path}
+% end
+
+VPATH = <%=%w[$(arch_hdrdir)/ruby $(hdrdir)/ruby $(srcdir) $(encsrcdir)].join(CONFIG["PATH_SEPARATOR"])%>
+LIBPATH = <%=libpathflag($DEFLIBPATH)%>
+LIBS = <%=
+if enable_shared or RbConfig.expand(CONFIG["LIBRUBY"].dup) != RbConfig.expand(CONFIG["LIBRUBY_A"].dup)
+  CONFIG['LIBRUBYARG']
+else
+  ''
+end %> <%=CONFIG['LIBS']%> $(EXTLIBS)
+
+ENCOBJS = <%=ENCS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t  ")%><%="\n" if ENCS.size>1%>
+ENCSOS = <%=ENCS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t ")%><%="\n" if ENCS.size>1%>
+ENCCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+ENCCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(ENCOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+LIBENC=enc/libenc.$(LIBEXT)
+
+TRANSVPATH = $(srcdir)/enc/trans
+
+TRANSCSRCS = <%=ATRANS.map {|e| transvpath % "#{e}.c"}.join(" \\\n\t     ")%><%="\n" if TRANS.size>1%>
+TRANSOBJS = <%=TRANS.map {|e|"enc/#{e}.$(OBJEXT)"}.join(" \\\n\t    ")%><%="\n" if TRANS.size>1%>
+TRANSSOS = <%=TRANS.map {|e|"$(ENCSODIR)/#{e}.$(DLEXT)"}.join(" \\\n\t   ")%><%="\n" if TRANS.size>1%>
+TRANSCLEANLIBS = <%=cleanlibs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+TRANSCLEANOBJS = <%=cleanobjs.map {|clean|
+  clean.gsub(/\$\*(\.\w+)?/) {"$(TRANSOBJS#{$1 ? ":.#{CONFIG["OBJEXT"]}=#{$1}" : ""})"}
+}.join(" ")%>
+LIBTRANS=enc/libtrans.$(LIBEXT)
+
+encs: all
+% if MODULE_TYPE == :static
+all: libenc libtrans
+% else
+all: enc trans
+%end
+libencs: libenc libtrans
+enc: $(ENCSOS)
+libenc: $(LIBENC)
+trans: $(TRANSSOS)
+libtrans: $(LIBTRANS)
+
+$(LIBENC): $(ENCOBJS)
+	@$(RM) $@
+	$(ECHO) linking statically-linked encoding library $@
+	$(Q) $(AR) $(ARFLAGS)$@ $(ENCOBJS)
+	@-$(RANLIB) $@ 2> /dev/null || true
+$(LIBTRANS): $(TRANSOBJS)
+	@$(RM) $@
+	$(ECHO) linking statically-linked transcoder library $@
+	$(Q) $(AR) $(ARFLAGS)$@ $(TRANSOBJS)
+	@-$(RANLIB) $@ 2> /dev/null || true
+
+srcs: $(TRANSCSRCS)
+
+<%=transvpath_prefix%>.trans<%=transvpath_prefix%>.c:
+	$(ECHO) generating table from $@
+	$(Q)$(MINIRUBY) "$(srcdir)/tool/transcode-tblgen.rb" -vo "$@" "$<"
+
+% unless ENCS.empty? or TRANS.empty?
+
+%   ENC_DEPS.each do |e, deps|
+enc/<%=e%>.$(OBJEXT): <%=deps.map {|n| rule_subst % n}.join(' ')%>
+%   end
+%   ATRANS.each do |e|
+%     src = "#{e}.trans"
+
+<%=transvpath % "#{e}.c"%>: <%= transvpath % "#{e}.trans"%>
+%     src = [*IO.read(File.join($srcdir, "trans", src)).scan(/^\s*require\s+[\'\"]([^\'\"]*)/).flatten.map{|c|c+".rb"}]
+<%=transvpath % "#{e}.c"%>: <%= src.map {|s| transvpath % "#{s}"}.join(" ")%> $(srcdir)/tool/transcode-tblgen.rb
+%   end
+
+% end
+% link_so = LINK_SO.gsub(/([^\\])\n/, "\\1\n$(Q) ").gsub(/\n/, "\n\t")
+% link_so.gsub!(/(-(?:implib|pdb):\S+)-\$\(arch\)\./, '\1.')
+% dependencies.each do |e|
+%   obj = "enc/#{e}.$(OBJEXT)"
+%   df = ("enc/#{e}.def" if deffile)
+%   target = e.dup
+%   if target.sub!(/\Atrans\//, '$(TRANSSODIR)/')
+%     mesg = "transcoder"
+%   else
+%     target = "$(ENCSODIR)/#{e}"
+%     mesg = "encoding"
+%   end
+<%=target%>.$(DLEXT): <%=obj%>
+	$(ECHO) linking <%=mesg%> $(@F)
+%   cmd = link_so.sub(/\$\(OBJS\)/) {obj}
+%   base = File.basename(e)
+%   if df
+	$(Q)echo> <%=df%> EXPORTS
+	$(Q)echo>> <%=df%> <%=EXPORT_PREFIX%>Init_<%=base%>
+%     cmd.sub!(/\$\(DEFFILE\)/) {df}
+%     cmd.gsub!(/-(?:implib|pdb):/) {|s|"#{s}enc/#{e.sub(/[^\/]+\z/, '')}"}
+%   end
+	$(Q)$(MAKEDIRS) "$(@D)"
+	$(Q)<%=cmd%>
+
+% end
+% dependencies.each do |e|
+<%="enc/#{e}.$(OBJEXT)"%>: <%="$(encsrcdir)/#{e}.c"%>
+	-$(Q)$(MAKEDIRS) "$(@D)"
+	$(ECHO) compiling <%= "$(encsrcdir)/#{e}.c"%>
+	$(Q)<%=COMPILE_C.gsub(/\$(\()?<(\:[^)]+)?(\))?/){"$(encsrcdir)/#{e}.c"}%>
+
+% end
+
+enc/encdb.$(OBJEXT): encdb.h
+enc/trans/transdb.$(OBJEXT): transdb.h
+
+clean:
+% %w[$(ENCSOS) $(LIBENC) $(ENCOBJS) $(ENCCLEANOBJS) $(ENCCLEANLIBS) $(TRANSSOS) $(LIBTRANS) $(TRANSOBJS) $(TRANSCLEANOBJS) $(TRANSCLEANLIBS)].each do |clean|
+	$(Q)$(RM) <%=pathrep[clean]%>
+% end
+% @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+% unless inplace
+	$(Q)$(RM) enc/unicode/name2ctype.h
+	$(Q)$(RM) enc/jis/props.h
+	-$(Q)$(RMDIR) enc/unicode<%=@ignore_error%>
+% end
+% workdirs.reverse_each do|d|
+	-$(Q)$(RMDIR) <%=pathrep[d]%><%=@ignore_error%>
+% end
+
+clean-srcs:
+	$(Q)$(RM) <%=pathrep['$(TRANSCSRCS)']%>
+	-$(Q)$(RMDIR) <%=pathrep['enc/trans']%><%=@ignore_error%>
+	$(Q)$(RM) enc/unicode/name2ctype.h
+	$(Q)$(RM) enc/jis/props.h
+	-$(Q)$(RMDIR) <%=pathrep['enc/unicode']%><%=@ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc/props']%><%=@ignore_error%>
+	-$(Q)$(RMDIR) <%=pathrep['enc']%><%=@ignore_error%>
+
+<%# vim: set ft=eruby noexpandtab ts=8 sw=2 : -%>
+
+# AUTOGENERATED DEPENDENCIES START
+enc/big5.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/big5.$(OBJEXT): config.h
+enc/big5.$(OBJEXT): defines.h
+enc/big5.$(OBJEXT): enc/big5.c
+enc/big5.$(OBJEXT): missing.h
+enc/big5.$(OBJEXT): oniguruma.h
+enc/cp949.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/cp949.$(OBJEXT): config.h
+enc/cp949.$(OBJEXT): defines.h
+enc/cp949.$(OBJEXT): enc/cp949.c
+enc/cp949.$(OBJEXT): missing.h
+enc/cp949.$(OBJEXT): oniguruma.h
+enc/emacs_mule.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/emacs_mule.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/emacs_mule.$(OBJEXT): $(top_srcdir)/regint.h
+enc/emacs_mule.$(OBJEXT): config.h
+enc/emacs_mule.$(OBJEXT): defines.h
+enc/emacs_mule.$(OBJEXT): enc/emacs_mule.c
+enc/emacs_mule.$(OBJEXT): intern.h
+enc/emacs_mule.$(OBJEXT): missing.h
+enc/emacs_mule.$(OBJEXT): oniguruma.h
+enc/emacs_mule.$(OBJEXT): st.h
+enc/emacs_mule.$(OBJEXT): subst.h
+enc/encdb.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/encdb.$(OBJEXT): $(top_srcdir)/include/ruby.h
+enc/encdb.$(OBJEXT): $(top_srcdir)/internal.h
+enc/encdb.$(OBJEXT): config.h
+enc/encdb.$(OBJEXT): defines.h
+enc/encdb.$(OBJEXT): enc/encdb.c
+enc/encdb.$(OBJEXT): encdb.h
+enc/encdb.$(OBJEXT): encoding.h
+enc/encdb.$(OBJEXT): intern.h
+enc/encdb.$(OBJEXT): io.h
+enc/encdb.$(OBJEXT): missing.h
+enc/encdb.$(OBJEXT): oniguruma.h
+enc/encdb.$(OBJEXT): st.h
+enc/encdb.$(OBJEXT): subst.h
+enc/euc_jp.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/euc_jp.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/euc_jp.$(OBJEXT): $(top_srcdir)/regint.h
+enc/euc_jp.$(OBJEXT): config.h
+enc/euc_jp.$(OBJEXT): defines.h
+enc/euc_jp.$(OBJEXT): enc/euc_jp.c
+enc/euc_jp.$(OBJEXT): enc/jis/props.h
+enc/euc_jp.$(OBJEXT): enc/jis/props.kwd
+enc/euc_jp.$(OBJEXT): intern.h
+enc/euc_jp.$(OBJEXT): missing.h
+enc/euc_jp.$(OBJEXT): oniguruma.h
+enc/euc_jp.$(OBJEXT): st.h
+enc/euc_jp.$(OBJEXT): subst.h
+enc/euc_kr.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/euc_kr.$(OBJEXT): config.h
+enc/euc_kr.$(OBJEXT): defines.h
+enc/euc_kr.$(OBJEXT): enc/euc_kr.c
+enc/euc_kr.$(OBJEXT): missing.h
+enc/euc_kr.$(OBJEXT): oniguruma.h
+enc/euc_tw.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/euc_tw.$(OBJEXT): config.h
+enc/euc_tw.$(OBJEXT): defines.h
+enc/euc_tw.$(OBJEXT): enc/euc_tw.c
+enc/euc_tw.$(OBJEXT): missing.h
+enc/euc_tw.$(OBJEXT): oniguruma.h
+enc/gb18030.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/gb18030.$(OBJEXT): config.h
+enc/gb18030.$(OBJEXT): defines.h
+enc/gb18030.$(OBJEXT): enc/gb18030.c
+enc/gb18030.$(OBJEXT): missing.h
+enc/gb18030.$(OBJEXT): oniguruma.h
+enc/gb2312.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/gb2312.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/gb2312.$(OBJEXT): config.h
+enc/gb2312.$(OBJEXT): defines.h
+enc/gb2312.$(OBJEXT): enc/gb2312.c
+enc/gb2312.$(OBJEXT): encoding.h
+enc/gb2312.$(OBJEXT): intern.h
+enc/gb2312.$(OBJEXT): missing.h
+enc/gb2312.$(OBJEXT): oniguruma.h
+enc/gb2312.$(OBJEXT): st.h
+enc/gb2312.$(OBJEXT): subst.h
+enc/gbk.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/gbk.$(OBJEXT): config.h
+enc/gbk.$(OBJEXT): defines.h
+enc/gbk.$(OBJEXT): enc/gbk.c
+enc/gbk.$(OBJEXT): missing.h
+enc/gbk.$(OBJEXT): oniguruma.h
+enc/iso_8859_1.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_1.$(OBJEXT): config.h
+enc/iso_8859_1.$(OBJEXT): defines.h
+enc/iso_8859_1.$(OBJEXT): enc/iso_8859_1.c
+enc/iso_8859_1.$(OBJEXT): missing.h
+enc/iso_8859_1.$(OBJEXT): oniguruma.h
+enc/iso_8859_10.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_10.$(OBJEXT): config.h
+enc/iso_8859_10.$(OBJEXT): defines.h
+enc/iso_8859_10.$(OBJEXT): enc/iso_8859_10.c
+enc/iso_8859_10.$(OBJEXT): missing.h
+enc/iso_8859_10.$(OBJEXT): oniguruma.h
+enc/iso_8859_11.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_11.$(OBJEXT): config.h
+enc/iso_8859_11.$(OBJEXT): defines.h
+enc/iso_8859_11.$(OBJEXT): enc/iso_8859_11.c
+enc/iso_8859_11.$(OBJEXT): missing.h
+enc/iso_8859_11.$(OBJEXT): oniguruma.h
+enc/iso_8859_13.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_13.$(OBJEXT): config.h
+enc/iso_8859_13.$(OBJEXT): defines.h
+enc/iso_8859_13.$(OBJEXT): enc/iso_8859_13.c
+enc/iso_8859_13.$(OBJEXT): missing.h
+enc/iso_8859_13.$(OBJEXT): oniguruma.h
+enc/iso_8859_14.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_14.$(OBJEXT): config.h
+enc/iso_8859_14.$(OBJEXT): defines.h
+enc/iso_8859_14.$(OBJEXT): enc/iso_8859_14.c
+enc/iso_8859_14.$(OBJEXT): missing.h
+enc/iso_8859_14.$(OBJEXT): oniguruma.h
+enc/iso_8859_15.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_15.$(OBJEXT): config.h
+enc/iso_8859_15.$(OBJEXT): defines.h
+enc/iso_8859_15.$(OBJEXT): enc/iso_8859_15.c
+enc/iso_8859_15.$(OBJEXT): missing.h
+enc/iso_8859_15.$(OBJEXT): oniguruma.h
+enc/iso_8859_16.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_16.$(OBJEXT): config.h
+enc/iso_8859_16.$(OBJEXT): defines.h
+enc/iso_8859_16.$(OBJEXT): enc/iso_8859_16.c
+enc/iso_8859_16.$(OBJEXT): missing.h
+enc/iso_8859_16.$(OBJEXT): oniguruma.h
+enc/iso_8859_2.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_2.$(OBJEXT): config.h
+enc/iso_8859_2.$(OBJEXT): defines.h
+enc/iso_8859_2.$(OBJEXT): enc/iso_8859_2.c
+enc/iso_8859_2.$(OBJEXT): missing.h
+enc/iso_8859_2.$(OBJEXT): oniguruma.h
+enc/iso_8859_3.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_3.$(OBJEXT): config.h
+enc/iso_8859_3.$(OBJEXT): defines.h
+enc/iso_8859_3.$(OBJEXT): enc/iso_8859_3.c
+enc/iso_8859_3.$(OBJEXT): missing.h
+enc/iso_8859_3.$(OBJEXT): oniguruma.h
+enc/iso_8859_4.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_4.$(OBJEXT): config.h
+enc/iso_8859_4.$(OBJEXT): defines.h
+enc/iso_8859_4.$(OBJEXT): enc/iso_8859_4.c
+enc/iso_8859_4.$(OBJEXT): missing.h
+enc/iso_8859_4.$(OBJEXT): oniguruma.h
+enc/iso_8859_5.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_5.$(OBJEXT): config.h
+enc/iso_8859_5.$(OBJEXT): defines.h
+enc/iso_8859_5.$(OBJEXT): enc/iso_8859_5.c
+enc/iso_8859_5.$(OBJEXT): missing.h
+enc/iso_8859_5.$(OBJEXT): oniguruma.h
+enc/iso_8859_6.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_6.$(OBJEXT): config.h
+enc/iso_8859_6.$(OBJEXT): defines.h
+enc/iso_8859_6.$(OBJEXT): enc/iso_8859_6.c
+enc/iso_8859_6.$(OBJEXT): missing.h
+enc/iso_8859_6.$(OBJEXT): oniguruma.h
+enc/iso_8859_7.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_7.$(OBJEXT): config.h
+enc/iso_8859_7.$(OBJEXT): defines.h
+enc/iso_8859_7.$(OBJEXT): enc/iso_8859_7.c
+enc/iso_8859_7.$(OBJEXT): missing.h
+enc/iso_8859_7.$(OBJEXT): oniguruma.h
+enc/iso_8859_8.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_8.$(OBJEXT): config.h
+enc/iso_8859_8.$(OBJEXT): defines.h
+enc/iso_8859_8.$(OBJEXT): enc/iso_8859_8.c
+enc/iso_8859_8.$(OBJEXT): missing.h
+enc/iso_8859_8.$(OBJEXT): oniguruma.h
+enc/iso_8859_9.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/iso_8859_9.$(OBJEXT): config.h
+enc/iso_8859_9.$(OBJEXT): defines.h
+enc/iso_8859_9.$(OBJEXT): enc/iso_8859_9.c
+enc/iso_8859_9.$(OBJEXT): missing.h
+enc/iso_8859_9.$(OBJEXT): oniguruma.h
+enc/koi8_r.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/koi8_r.$(OBJEXT): config.h
+enc/koi8_r.$(OBJEXT): defines.h
+enc/koi8_r.$(OBJEXT): enc/koi8_r.c
+enc/koi8_r.$(OBJEXT): missing.h
+enc/koi8_r.$(OBJEXT): oniguruma.h
+enc/koi8_u.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/koi8_u.$(OBJEXT): config.h
+enc/koi8_u.$(OBJEXT): defines.h
+enc/koi8_u.$(OBJEXT): enc/koi8_u.c
+enc/koi8_u.$(OBJEXT): missing.h
+enc/koi8_u.$(OBJEXT): oniguruma.h
+enc/shift_jis.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/shift_jis.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/shift_jis.$(OBJEXT): $(top_srcdir)/regint.h
+enc/shift_jis.$(OBJEXT): config.h
+enc/shift_jis.$(OBJEXT): defines.h
+enc/shift_jis.$(OBJEXT): enc/jis/props.h
+enc/shift_jis.$(OBJEXT): enc/jis/props.kwd
+enc/shift_jis.$(OBJEXT): enc/shift_jis.c
+enc/shift_jis.$(OBJEXT): intern.h
+enc/shift_jis.$(OBJEXT): missing.h
+enc/shift_jis.$(OBJEXT): oniguruma.h
+enc/shift_jis.$(OBJEXT): st.h
+enc/shift_jis.$(OBJEXT): subst.h
+enc/trans/big5.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/big5.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/big5.$(OBJEXT): config.h
+enc/trans/big5.$(OBJEXT): defines.h
+enc/trans/big5.$(OBJEXT): enc/trans/big5.c
+enc/trans/big5.$(OBJEXT): intern.h
+enc/trans/big5.$(OBJEXT): missing.h
+enc/trans/big5.$(OBJEXT): st.h
+enc/trans/big5.$(OBJEXT): subst.h
+enc/trans/chinese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/chinese.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/chinese.$(OBJEXT): config.h
+enc/trans/chinese.$(OBJEXT): defines.h
+enc/trans/chinese.$(OBJEXT): enc/trans/chinese.c
+enc/trans/chinese.$(OBJEXT): intern.h
+enc/trans/chinese.$(OBJEXT): missing.h
+enc/trans/chinese.$(OBJEXT): st.h
+enc/trans/chinese.$(OBJEXT): subst.h
+enc/trans/emoji.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/emoji.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji.$(OBJEXT): config.h
+enc/trans/emoji.$(OBJEXT): defines.h
+enc/trans/emoji.$(OBJEXT): enc/trans/emoji.c
+enc/trans/emoji.$(OBJEXT): intern.h
+enc/trans/emoji.$(OBJEXT): missing.h
+enc/trans/emoji.$(OBJEXT): st.h
+enc/trans/emoji.$(OBJEXT): subst.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): config.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): defines.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): enc/trans/emoji_iso2022_kddi.c
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): intern.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): missing.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): st.h
+enc/trans/emoji_iso2022_kddi.$(OBJEXT): subst.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): config.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): defines.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): enc/trans/emoji_sjis_docomo.c
+enc/trans/emoji_sjis_docomo.$(OBJEXT): intern.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): st.h
+enc/trans/emoji_sjis_docomo.$(OBJEXT): subst.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): config.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): defines.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): enc/trans/emoji_sjis_kddi.c
+enc/trans/emoji_sjis_kddi.$(OBJEXT): intern.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): st.h
+enc/trans/emoji_sjis_kddi.$(OBJEXT): subst.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): config.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): defines.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): enc/trans/emoji_sjis_softbank.c
+enc/trans/emoji_sjis_softbank.$(OBJEXT): intern.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): missing.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): st.h
+enc/trans/emoji_sjis_softbank.$(OBJEXT): subst.h
+enc/trans/escape.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/escape.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/escape.$(OBJEXT): config.h
+enc/trans/escape.$(OBJEXT): defines.h
+enc/trans/escape.$(OBJEXT): enc/trans/escape.c
+enc/trans/escape.$(OBJEXT): intern.h
+enc/trans/escape.$(OBJEXT): missing.h
+enc/trans/escape.$(OBJEXT): st.h
+enc/trans/escape.$(OBJEXT): subst.h
+enc/trans/gb18030.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/gb18030.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/gb18030.$(OBJEXT): config.h
+enc/trans/gb18030.$(OBJEXT): defines.h
+enc/trans/gb18030.$(OBJEXT): enc/trans/gb18030.c
+enc/trans/gb18030.$(OBJEXT): intern.h
+enc/trans/gb18030.$(OBJEXT): missing.h
+enc/trans/gb18030.$(OBJEXT): st.h
+enc/trans/gb18030.$(OBJEXT): subst.h
+enc/trans/gbk.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/gbk.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/gbk.$(OBJEXT): config.h
+enc/trans/gbk.$(OBJEXT): defines.h
+enc/trans/gbk.$(OBJEXT): enc/trans/gbk.c
+enc/trans/gbk.$(OBJEXT): intern.h
+enc/trans/gbk.$(OBJEXT): missing.h
+enc/trans/gbk.$(OBJEXT): st.h
+enc/trans/gbk.$(OBJEXT): subst.h
+enc/trans/iso2022.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/iso2022.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/iso2022.$(OBJEXT): config.h
+enc/trans/iso2022.$(OBJEXT): defines.h
+enc/trans/iso2022.$(OBJEXT): enc/trans/iso2022.c
+enc/trans/iso2022.$(OBJEXT): intern.h
+enc/trans/iso2022.$(OBJEXT): missing.h
+enc/trans/iso2022.$(OBJEXT): st.h
+enc/trans/iso2022.$(OBJEXT): subst.h
+enc/trans/japanese.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/japanese.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese.$(OBJEXT): config.h
+enc/trans/japanese.$(OBJEXT): defines.h
+enc/trans/japanese.$(OBJEXT): enc/trans/japanese.c
+enc/trans/japanese.$(OBJEXT): intern.h
+enc/trans/japanese.$(OBJEXT): missing.h
+enc/trans/japanese.$(OBJEXT): st.h
+enc/trans/japanese.$(OBJEXT): subst.h
+enc/trans/japanese_euc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/japanese_euc.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese_euc.$(OBJEXT): config.h
+enc/trans/japanese_euc.$(OBJEXT): defines.h
+enc/trans/japanese_euc.$(OBJEXT): enc/trans/japanese_euc.c
+enc/trans/japanese_euc.$(OBJEXT): intern.h
+enc/trans/japanese_euc.$(OBJEXT): missing.h
+enc/trans/japanese_euc.$(OBJEXT): st.h
+enc/trans/japanese_euc.$(OBJEXT): subst.h
+enc/trans/japanese_sjis.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/japanese_sjis.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/japanese_sjis.$(OBJEXT): config.h
+enc/trans/japanese_sjis.$(OBJEXT): defines.h
+enc/trans/japanese_sjis.$(OBJEXT): enc/trans/japanese_sjis.c
+enc/trans/japanese_sjis.$(OBJEXT): intern.h
+enc/trans/japanese_sjis.$(OBJEXT): missing.h
+enc/trans/japanese_sjis.$(OBJEXT): st.h
+enc/trans/japanese_sjis.$(OBJEXT): subst.h
+enc/trans/korean.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/korean.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/korean.$(OBJEXT): config.h
+enc/trans/korean.$(OBJEXT): defines.h
+enc/trans/korean.$(OBJEXT): enc/trans/korean.c
+enc/trans/korean.$(OBJEXT): intern.h
+enc/trans/korean.$(OBJEXT): missing.h
+enc/trans/korean.$(OBJEXT): st.h
+enc/trans/korean.$(OBJEXT): subst.h
+enc/trans/single_byte.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/single_byte.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/single_byte.$(OBJEXT): config.h
+enc/trans/single_byte.$(OBJEXT): defines.h
+enc/trans/single_byte.$(OBJEXT): enc/trans/single_byte.c
+enc/trans/single_byte.$(OBJEXT): intern.h
+enc/trans/single_byte.$(OBJEXT): missing.h
+enc/trans/single_byte.$(OBJEXT): st.h
+enc/trans/single_byte.$(OBJEXT): subst.h
+enc/trans/transdb.$(OBJEXT): enc/trans/transdb.c
+enc/trans/transdb.$(OBJEXT): transdb.h
+enc/trans/utf8_mac.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/utf8_mac.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/utf8_mac.$(OBJEXT): config.h
+enc/trans/utf8_mac.$(OBJEXT): defines.h
+enc/trans/utf8_mac.$(OBJEXT): enc/trans/utf8_mac.c
+enc/trans/utf8_mac.$(OBJEXT): intern.h
+enc/trans/utf8_mac.$(OBJEXT): missing.h
+enc/trans/utf8_mac.$(OBJEXT): st.h
+enc/trans/utf8_mac.$(OBJEXT): subst.h
+enc/trans/utf_16_32.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/trans/utf_16_32.$(OBJEXT): $(top_srcdir)/transcode_data.h
+enc/trans/utf_16_32.$(OBJEXT): config.h
+enc/trans/utf_16_32.$(OBJEXT): defines.h
+enc/trans/utf_16_32.$(OBJEXT): enc/trans/utf_16_32.c
+enc/trans/utf_16_32.$(OBJEXT): intern.h
+enc/trans/utf_16_32.$(OBJEXT): missing.h
+enc/trans/utf_16_32.$(OBJEXT): st.h
+enc/trans/utf_16_32.$(OBJEXT): subst.h
+enc/utf_16be.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/utf_16be.$(OBJEXT): config.h
+enc/utf_16be.$(OBJEXT): defines.h
+enc/utf_16be.$(OBJEXT): enc/utf_16be.c
+enc/utf_16be.$(OBJEXT): missing.h
+enc/utf_16be.$(OBJEXT): oniguruma.h
+enc/utf_16le.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/utf_16le.$(OBJEXT): config.h
+enc/utf_16le.$(OBJEXT): defines.h
+enc/utf_16le.$(OBJEXT): enc/utf_16le.c
+enc/utf_16le.$(OBJEXT): missing.h
+enc/utf_16le.$(OBJEXT): oniguruma.h
+enc/utf_32be.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/utf_32be.$(OBJEXT): config.h
+enc/utf_32be.$(OBJEXT): defines.h
+enc/utf_32be.$(OBJEXT): enc/utf_32be.c
+enc/utf_32be.$(OBJEXT): missing.h
+enc/utf_32be.$(OBJEXT): oniguruma.h
+enc/utf_32le.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/utf_32le.$(OBJEXT): config.h
+enc/utf_32le.$(OBJEXT): defines.h
+enc/utf_32le.$(OBJEXT): enc/utf_32le.c
+enc/utf_32le.$(OBJEXT): missing.h
+enc/utf_32le.$(OBJEXT): oniguruma.h
+enc/windows_1251.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/windows_1251.$(OBJEXT): config.h
+enc/windows_1251.$(OBJEXT): defines.h
+enc/windows_1251.$(OBJEXT): enc/windows_1251.c
+enc/windows_1251.$(OBJEXT): missing.h
+enc/windows_1251.$(OBJEXT): oniguruma.h
+enc/windows_31j.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enc/windows_31j.$(OBJEXT): $(top_srcdir)/regenc.h
+enc/windows_31j.$(OBJEXT): $(top_srcdir)/regint.h
+enc/windows_31j.$(OBJEXT): config.h
+enc/windows_31j.$(OBJEXT): defines.h
+enc/windows_31j.$(OBJEXT): enc/jis/props.h
+enc/windows_31j.$(OBJEXT): enc/jis/props.kwd
+enc/windows_31j.$(OBJEXT): enc/shift_jis.c
+enc/windows_31j.$(OBJEXT): enc/windows_31j.c
+enc/windows_31j.$(OBJEXT): intern.h
+enc/windows_31j.$(OBJEXT): missing.h
+enc/windows_31j.$(OBJEXT): oniguruma.h
+enc/windows_31j.$(OBJEXT): st.h
+enc/windows_31j.$(OBJEXT): subst.h
+# AUTOGENERATED DEPENDENCIES END

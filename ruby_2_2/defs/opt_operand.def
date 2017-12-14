@@ -1,0 +1,22 @@
+#
+# configuration file for operand union optimization
+#
+# format:
+#   [insn name] op1, op2 ...
+#
+#  wildcard: *
+#
+
+getlocal *, 0
+getlocal *, 1
+setlocal *, 0
+setlocal *, 1
+
+putobject INT2FIX(0)
+putobject INT2FIX(1)
+
+__END__
+
+putobject Qtrue
+putobject Qfalse
+

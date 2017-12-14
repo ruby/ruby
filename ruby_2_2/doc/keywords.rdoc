@@ -1,0 +1,158 @@
+== Keywords
+
+The following keywords are used by Ruby.
+
+__ENCODING__::
+  The script encoding of the current file.  See Encoding.
+
+__LINE__::
+  The line number of this keyword in the current file.
+
+__FILE__::
+  The path to the current file.
+
+BEGIN::
+  Runs before any other code in the current file.  See {miscellaneous
+  syntax}[rdoc-ref:syntax/miscellaneous.rdoc]
+
+END::
+  Runs after any other code in the current file.  See {miscellaneous
+  syntax}[rdoc-ref:syntax/miscellaneous.rdoc]
+
+alias::
+  Creates an alias between two methods (and other things).  See {modules and
+  classes syntax}[rdoc-ref:syntax/modules_and_classes.rdoc]
+
+and::
+  Short-circuit Boolean and with lower precedence than <code>&&</code>
+
+begin::
+  Starts an exception handling block.  See {exceptions
+  syntax}[rdoc-ref:syntax/exceptions.rdoc]
+
+break::
+  Leaves a block early.  See {control expressions
+  syntax}[rdoc-ref:syntax/control_expressions.rdoc]
+
+case::
+  Starts a +case+ expression.  See {control expressions
+  syntax}[rdoc-ref:syntax/control_expressions.rdoc]
+
+class::
+  Creates or opens a class.  See {modules and classes
+  syntax}[rdoc-ref:syntax/modules_and_classes.rdoc]
+
+def::
+  Defines a method.  See {methods syntax}[rdoc-ref:syntax/methods.rdoc]
+
+defined?::
+  Returns a string describing its argument.  See {miscellaneous
+  syntax}[rdoc-ref:syntax/miscellaneous.rdoc]
+
+do::
+  Starts a block.
+
+else::
+  The unhandled condition in +case+, +if+ and +unless+ expressions.  See
+  {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+elsif::
+  An alternate condition for an +if+ expression.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+end::
+  The end of a syntax block.  Used by classes, modules, methods, exception
+  handling and control expressions.
+
+ensure::
+  Starts a section of code that is always run when an exception is raised.
+  See {exception handling}[rdoc-ref:syntax/exceptions.rdoc]
+
+false::
+  Boolean false.  See {literals}[rdoc-ref:syntax/literals.rdoc]
+
+for::
+  A loop that is similar to using the +each+ method.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+if::
+  Used for +if+ and modifier +if+ expressions.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+in::
+  Used to separate the iterable object and iterator variable in a +for+ loop.
+  See {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+module::
+  Creates or opens a module.  See {modules and classes
+  syntax}[rdoc-ref:syntax/modules_and_classes.rdoc]
+
+next::
+  Skips the rest of the block.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+nil::
+  A false value usually indicating "no value" or "unknown".  See
+  {literals}[rdoc-ref:syntax/literals.rdoc]
+
+not::
+  Inverts the following boolean expression.  Has a lower precedence than
+  <code>!</code>
+
+or::
+  Boolean or with lower precedence than <code>||</code>
+
+redo::
+  Restarts execution in the current block.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+rescue::
+  Starts an exception section of code in a +begin+ block.  See {exception
+  handling}[rdoc-ref:syntax/exceptions.rdoc]
+
+retry::
+  Retries an exception block.  See {exception
+  handling}[rdoc-ref:syntax/exceptions.rdoc]
+
+return::
+  Exits a method.  See {methods}[rdoc-ref:syntax/methods.rdoc]
+
+self::
+  The object the current method is attached to.  See
+  {methods}[rdoc-ref:syntax/methods.rdoc]
+
+super::
+  Calls the current method in a superclass.  See
+  {methods}[rdoc-ref:syntax/methods.rdoc]
+
+then::
+  Indicates the end of conditional blocks in control structures.  See
+  {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+true::
+  Boolean true.  See {literals}[rdoc-ref:syntax/literals.rdoc]
+
+undef::
+  Prevents a class or module from responding to a method call.
+  See {modules and classes}[rdoc-ref:syntax/modules_and_classes.rdoc]
+
+unless::
+  Used for +unless+ and modifier +unless+ expressions.  See {control
+  expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+until::
+  Creates a loop that executes until the condition is true.  See
+  {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+when::
+  A condition in a +case+ expression.  See
+  {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+while::
+  Creates a loop that executes while the condition is true.  See
+  {control expressions}[rdoc-ref:syntax/control_expressions.rdoc]
+
+yield::
+  Starts execution of the block sent to the current method.  See
+  {methods}[rdoc-ref:syntax/methods.rdoc]
+

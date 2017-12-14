@@ -1,0 +1,615 @@
+#!/usr/bin/ruby
+
+# tool/update-deps verify makefile dependencies.
+
+# Requirements:
+#   gcc 4.5 (for -save-temps=obj option)
+#   GNU make (for -p option)
+#
+# Warning: ccache (and similar tools) must be disabled for
+# -save-temps=obj to work properly.
+#
+# Usage:
+#   1. Compile ruby with -save-temps=obj option.
+#      Ex.  ./configure debugflags='-save-temps=obj -g' && make all golf
+#   2. Run tool/update-deps to show dependency problems.
+#      Ex.  ruby tool/update-deps
+#   3. Use --fix to fix makefiles.
+#      Ex.  ruby tool/update-deps --fix
+#
+# Other usages:
+#   *  Fix makefiles using previously detected dependency problems
+#      Ex.  ruby tool/update-deps --actual-fix [file]
+#      "ruby tool/update-deps --fix" is same as "ruby tool/update-deps | ruby tool/update-deps --actual-fix".
+
+require 'optparse'
+require 'stringio'
+require 'pathname'
+require 'open3'
+require 'pp'
+
+# When out-of-place bulid, files may be built in source directory or
+# build directory.
+# Some files are always built in the source directory.
+# Some files are always built in the build directory.
+# Some files are built in the source directory for tarball but build directory for repository (svn).
+
+=begin
+How to build test directories.
+
+VER=2.2.0
+REV=48577
+tar xf ruby-$VER-r$REV.tar.xz
+cp -a ruby-$VER-r$REV tarball_source_dir_original
+mv ruby-$VER-r$REV tarball_source_dir_after_build
+svn co -q -r$REV http://svn.ruby-lang.org/repos/ruby/trunk ruby
+(cd ruby; autoconf)
+cp -a ruby repo_source_dir_original
+mv ruby repo_source_dir_after_build
+mkdir tarball_build_dir repo_build_dir tarball_install_dir repo_install_dir
+(cd tarball_build_dir; ../tarball_source_dir_after_build/configure --prefix=$(cd ../tarball_install_dir; pwd) && make all golf install) > tarball.log 2>&1
+(cd repo_build_dir; ../repo_source_dir_after_build/configure --prefix=$(cd ../repo_install_dir; pwd) && make all golf install) > repo.log 2>&1
+ruby -rpp -rfind -e '
+ds = %w[
+  repo_source_dir_original
+  repo_source_dir_after_build
+  repo_build_dir
+  tarball_source_dir_original
+  tarball_source_dir_after_build
+  tarball_build_dir
+]
+files = {}
+ds.each {|d|
+  files[d] = {}
+  Dir.chdir(d) { Find.find(".") {|f| files[d][f] = true if %r{\.(c|h|inc|dmyh)\z} =~ f } }
+}
+result = {}
+files_union = files.values.map {|h| h.keys }.flatten.uniq.sort
+files_union.each {|f|
+  k = files.map {|d,h| h[f] ? d : nil }.compact.sort
+  next if k == %w[repo_source_dir_after_build repo_source_dir_original tarball_source_dir_after_build tarball_source_dir_original]
+  next if k == %w[repo_build_dir tarball_build_dir] && File.basename(f) == "extconf.h"
+  result[k] ||= []
+  result[k] << f
+}
+result.each {|k,v|
+  k.each {|d|
+    puts d
+  }
+  v.each {|f|
+    puts "  " + f.sub(%r{\A\./}, "")
+  }
+  puts
+}
+' | tee compare.log
+=end
+
+# Files built in the source directory.
+# They can be referenced as $(top_srcdir)/filename.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_source_dir_after_build") - g("repo_source_dir_original")).sort)'
+FILES_IN_SOURCE_DIRECTORY = %w[
+  revision.h
+]
+
+# Files built in the build directory (except extconf.h).
+# They can be referenced as $(topdir)/filename.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts(g("tarball_build_dir").reject {|f| %r{/extconf.h\z} =~ f }.sort)'
+FILES_IN_BUILD_DIRECTORY = %w[
+  encdb.h
+  ext/etc/constdefs.h
+  ext/socket/constdefs.c
+  ext/socket/constdefs.h
+  probes.h
+  transdb.h
+  verconf.h
+]
+
+# They are built in the build directory if the source is obtained from the repository.
+# However they are pre-built for tarball and they exist in the source directory extracted from the tarball.
+# % ruby -e 'def g(d) Dir.chdir(d) { Dir["**/*.{c,h,inc,dmyh}"] } end; puts((g("repo_build_dir") & g("tarball_source_dir_original")).sort)'
+FILES_NEED_VPATH = %w[
+  ext/rbconfig/sizeof/sizes.c
+  ext/ripper/eventids1.c
+  ext/ripper/eventids2table.c
+  ext/ripper/ripper.c
+  golf_prelude.c
+  id.c
+  id.h
+  insns.inc
+  insns_info.inc
+  known_errors.inc
+  lex.c
+  miniprelude.c
+  newline.c
+  node_name.inc
+  opt_sc.inc
+  optinsn.inc
+  optunifs.inc
+  parse.c
+  parse.h
+  prelude.c
+  probes.dmyh
+  vm.inc
+  vmtc.inc
+
+  enc/trans/big5.c
+  enc/trans/chinese.c
+  enc/trans/emoji.c
+  enc/trans/emoji_iso2022_kddi.c
+  enc/trans/emoji_sjis_docomo.c
+  enc/trans/emoji_sjis_kddi.c
+  enc/trans/emoji_sjis_softbank.c
+  enc/trans/escape.c
+  enc/trans/gb18030.c
+  enc/trans/gbk.c
+  enc/trans/iso2022.c
+  enc/trans/japanese.c
+  enc/trans/japanese_euc.c
+  enc/trans/japanese_sjis.c
+  enc/trans/korean.c
+  enc/trans/single_byte.c
+  enc/trans/utf8_mac.c
+  enc/trans/utf_16_32.c
+]
+
+# Multiple files with same filename.
+# It is not good idea to refer them using VPATH.
+# Files in FILES_SAME_NAME_INC is referenced using $(hdrdir).
+# Files in FILES_SAME_NAME_TOP is referenced using $(top_srcdir).
+# include/ruby.h is referenced using $(top_srcdir) because mkmf.rb replaces
+# $(hdrdir)/ruby.h to $(hdrdir)/ruby/ruby.h
+
+FILES_SAME_NAME_INC = %w[
+  include/ruby/ruby.h
+  include/ruby/version.h
+]
+
+FILES_SAME_NAME_TOP = %w[
+  include/ruby.h
+  version.h
+]
+
+# Other source files exist in the source directory.
+
+def in_makefile(target, source)
+  target = target.to_s
+  source = source.to_s
+  case target
+  when %r{\A[^/]*\z}
+    target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
+    case source
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = "{$(VPATH)}#{source}" # VPATH is not used now but it may changed in future.
+    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{source}"
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
+    when 'thread_pthread.c' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).c'
+    when 'thread_pthread.h' then source2 = '{$(VPATH)}thread_$(THREAD_MODEL).h'
+    when %r{\A[^/]*\z} then source2 = "{$(VPATH)}#{File.basename source}"
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Ainclude/ruby/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Aenc/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Amissing/} then source2 = "{$(VPATH)}#{$'}"
+    when %r{\Accan/} then source2 = "$(CCAN_DIR)/#{$'}"
+    when %r{\Adefs/} then source2 = "{$(VPATH)}#{source}"
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["common.mk", target2, source2]
+  when %r{\Aenc/}
+    target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
+    case source
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = source
+    when *FILES_NEED_VPATH then source2 = source
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = $'
+    when %r{\Ainclude/ruby/} then source2 = $'
+    when %r{\Aenc/} then source2 = source
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["enc/depend", target2, source2]
+  when %r{\Aext/}
+    unless File.exist?("#{File.dirname(target)}/extconf.rb")
+      warn "warning: not found: #{File.dirname(target)}/extconf.rb"
+    end
+    target2 = File.basename(target)
+    relpath = Pathname(source).relative_path_from(Pathname(target).dirname).to_s
+    case source
+    when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
+    when *FILES_IN_BUILD_DIRECTORY then source2 = relpath
+    when *FILES_NEED_VPATH then source2 = "{$(VPATH)}#{File.basename source}"
+    when *FILES_SAME_NAME_INC then source2 = "$(hdrdir)/#{source.sub(%r{\Ainclude/},'')}"
+    when *FILES_SAME_NAME_TOP then source2 = "$(top_srcdir)/#{source}"
+    when %r{\A\.ext/include/[^/]+/ruby/} then source2 = "$(arch_hdrdir)/ruby/#{$'}"
+    when %r{\Ainclude/} then source2 = "$(hdrdir)/#{$'}"
+    when %r{\A#{Regexp.escape File.dirname(target)}/extconf\.h\z} then source2 = "$(RUBY_EXTCONF_H)"
+    when %r{\A#{Regexp.escape File.dirname(target)}/} then source2 = $'
+    else source2 = "$(top_srcdir)/#{source}"
+    end
+    ["#{File.dirname(target)}/depend", target2, source2]
+  else
+    raise "unexpected target: #{target}"
+  end
+end
+
+DEPENDENCIES_SECTION_START_MARK = "\# AUTOGENERATED DEPENDENCIES START\n"
+DEPENDENCIES_SECTION_END_MARK = "\# AUTOGENERATED DEPENDENCIES END\n"
+
+def init_global
+  ENV['LC_ALL'] = 'C'
+
+  $opt_fix = false
+  $opt_a = false
+  $opt_actual_fix = false
+  $i_not_found = false
+end
+
+def optionparser
+  op = OptionParser.new
+  op.banner = 'Usage: ruby tool/update-deps'
+  op.def_option('-a', 'show valid dependencies') { $opt_a = true }
+  op.def_option('--fix') { $opt_fix = true }
+  op.def_option('--actual-fix') { $opt_actual_fix = true }
+  op
+end
+
+def read_make_deps(cwd)
+  dependencies = {}
+  make_p, make_p_stderr, make_p_status = Open3.capture3("make -p all miniruby ruby golf")
+  File.open('update-deps.make.out.log', 'w') {|f| f.print make_p }
+  File.open('update-deps.make.err.log', 'w') {|f| f.print make_p_stderr }
+  if !make_p_status.success?
+    puts make_p_stderr
+    raise "make failed"
+  end
+  dirstack = [cwd]
+  curdir = nil
+  make_p.scan(%r{Entering\ directory\ ['`](.*)'|
+                 ^\#\ (GNU\ Make)\ |
+                 ^CURDIR\ :=\ (.*)|
+                 ^([/0-9a-zA-Z._-]+):(.*)\n((?:\#.*\n)*)|
+                 ^\#\ (Finished\ Make\ data\ base\ on)\ |
+                 Leaving\ directory\ ['`](.*)'}x) {
+    directory_enter = $1
+    data_base_start = $2
+    data_base_curdir = $3
+    rule_target = $4
+    rule_sources = $5
+    rule_desc = $6
+    data_base_end = $7
+    directory_leave = $8
+    #p $~
+    if directory_enter
+      enter_dir = Pathname(directory_enter)
+      #p [:enter, enter_dir]
+      dirstack.push enter_dir
+    elsif data_base_start
+      curdir = nil
+    elsif data_base_curdir
+      curdir = Pathname(data_base_curdir)
+    elsif rule_target && rule_sources && rule_desc &&
+          /Modification time never checked/ !~ rule_desc # This pattern match eliminates rules which VPATH is not expanded.
+      target = rule_target
+      deps = rule_sources
+      deps = deps.scan(%r{[/0-9a-zA-Z._-]+})
+      next if /\.o\z/ !~ target.to_s
+      next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
+      #p [curdir, target, deps]
+      dir = curdir || dirstack.last
+      dependencies[dir + target] ||= []
+      dependencies[dir + target] |= deps.map {|dep| dir + dep }
+    elsif data_base_end
+      curdir = nil
+    elsif directory_leave
+      leave_dir = Pathname(directory_leave)
+      #p [:leave, leave_dir]
+      if leave_dir != dirstack.last
+        warn "unexpected leave_dir : #{dirstack.last.inspect} != #{leave_dir.inspect}"
+      end
+      dirstack.pop
+    end
+  }
+  dependencies
+end
+
+#def guess_compiler_wd(filename, hint0)
+#  hint = hint0
+#  begin
+#    guess = hint + filename
+#    if guess.file?
+#      return hint
+#    end
+#    hint = hint.parent
+#  end while hint.to_s != '.'
+#  raise ArgumentError, "can not find #{filename} (hint: #{hint0})"
+#end
+
+def read_single_cc_deps(path_i, cwd)
+  files = {}
+  path_i.each_line.with_index {|line, lineindex|
+    next if /\A\# \d+ "(.*)"/ !~ line
+    files[$1] = lineindex
+  }
+  # gcc emits {# 1 "/absolute/directory/of/the/source/file//"} at 2nd line.
+  compiler_wd = files.keys.find {|f| %r{\A/.*//\z} =~ f }
+  if compiler_wd
+    files.delete compiler_wd
+    compiler_wd = Pathname(compiler_wd.sub(%r{//\z}, ''))
+  else
+    raise "compiler working directory not found"
+  end
+  deps = []
+  files.each_key {|dep|
+    next if %r{\A<.*>\z} =~ dep # omit <command-line>, etc.
+    dep = Pathname(dep)
+    if dep.relative?
+      dep = compiler_wd + dep
+    end
+    if !dep.file?
+      warn "warning: file not found: #{dep}"
+      next
+    end
+    next if !dep.to_s.start_with?(cwd.to_s) # omit system headers.
+    deps << dep
+  }
+  deps
+end
+
+def read_cc_deps(cwd)
+  deps = {}
+  Pathname.glob('**/*.o').sort.each {|fn_o|
+    fn_i = fn_o.sub_ext('.i')
+    if !fn_i.exist?
+      warn "warning: not found: #{fn_i}"
+      $i_not_found = true
+      next
+    end
+    path_o = cwd + fn_o
+    path_i = cwd + fn_i
+    deps[path_o] = read_single_cc_deps(path_i, cwd)
+  }
+  deps
+end
+
+def concentrate(dependencies, cwd)
+  deps = {}
+  dependencies.keys.sort.each {|target|
+    sources = dependencies[target]
+    target = target.relative_path_from(cwd)
+    sources = sources.map {|s|
+      rel = s.relative_path_from(cwd)
+      rel
+    }
+    if %r{\A\.\.(/|\z)} =~ target.to_s
+      warn "warning: out of tree target: #{target}"
+      next
+    end
+    sources = sources.reject {|s|
+      if %r{\A\.\.(/|\z)} =~ s.to_s
+        warn "warning: out of tree source: #{s}"
+        true
+      else
+        false
+      end
+    }
+    deps[target] = sources
+  }
+  deps
+end
+
+def sort_paths(paths)
+  paths.sort_by {|t|
+    ary = t.to_s.split(%r{/})
+    ary.map.with_index {|e, i| i == ary.length-1 ? [0, e] : [1, e] } # regular file first, directories last.
+  }
+end
+
+def show_deps(tag, deps)
+  targets = sort_paths(deps.keys)
+  targets.each {|t|
+    sources = sort_paths(deps[t])
+    sources.each {|s|
+      puts "#{tag} #{t}: #{s}"
+    }
+  }
+end
+
+def detect_dependencies(out=$stdout)
+  cwd = Pathname.pwd
+  make_deps = read_make_deps(cwd)
+  #pp make_deps
+  make_deps = concentrate(make_deps, cwd)
+  #pp make_deps
+  cc_deps = read_cc_deps(cwd)
+  #pp cc_deps
+  cc_deps = concentrate(cc_deps, cwd)
+  #pp cc_deps
+  return make_deps, cc_deps
+end
+
+def compare_deps(make_deps, cc_deps, out=$stdout)
+  targets = make_deps.keys | cc_deps.keys
+
+  makefiles = {}
+
+  make_lines_hash = {}
+  make_deps.each {|t, sources|
+    sources.each {|s|
+      makefile, t2, s2 = in_makefile(t, s)
+      makefiles[makefile] = true
+      make_lines_hash[makefile] ||= Hash.new(false)
+      make_lines_hash[makefile]["#{t2}: #{s2}"] = true
+    }
+  }
+
+  cc_lines_hash = {}
+  cc_deps.each {|t, sources|
+    sources.each {|s|
+      makefile, t2, s2 = in_makefile(t, s)
+      makefiles[makefile] = true
+      cc_lines_hash[makefile] ||= Hash.new(false)
+      cc_lines_hash[makefile]["#{t2}: #{s2}"] = true
+    }
+  }
+
+  makefiles.keys.sort.each {|makefile|
+    cc_lines = cc_lines_hash[makefile] || Hash.new(false)
+    make_lines = make_lines_hash[makefile] || Hash.new(false)
+    content = begin
+      File.read(makefile)
+    rescue Errno::ENOENT
+      ''
+    end
+    if /^#{Regexp.escape DEPENDENCIES_SECTION_START_MARK}
+        ((?:.*\n)*)
+        #{Regexp.escape DEPENDENCIES_SECTION_END_MARK}/x =~ content
+      pre_post_part = [$`, $']
+      current_lines = Hash.new(false)
+      $1.each_line {|line| current_lines[line.chomp] = true }
+      (cc_lines.keys | current_lines.keys | make_lines.keys).sort.each {|line|
+        status = [cc_lines[line], current_lines[line], make_lines[line]]
+        case status
+        when [true, true, true]
+          # no problem
+        when [true, true, false]
+          out.puts "warning #{makefile} : #{line}  (make doesn't detect written dependency)"
+        when [true, false, true]
+          out.puts "add_auto #{makefile} : #{line}  (harmless)" # This is automatically updatable.
+        when [true, false, false]
+          out.puts "add_auto #{makefile} : #{line}  (harmful)" # This is automatically updatable.
+        when [false, true, true]
+          out.puts "del_cc #{makefile} : #{line}" # Not automatically updatable because build on other OS may need the dependency.
+        when [false, true, false]
+          out.puts "del_cc #{makefile} : #{line}  (Curious.  make doesn't detect this dependency.)" # Not automatically updatable because build on other OS may need the dependency.
+        when [false, false, true]
+          out.puts "del_make #{makefile} : #{line}" # Not automatically updatable because the dependency is written manually.
+        else
+          raise "unexpected status: #{status.inspect}"
+        end
+      }
+    else
+      (cc_lines.keys | make_lines.keys).sort.each {|line|
+        status = [cc_lines[line], make_lines[line]]
+        case status
+        when [true, true]
+          # no problem
+        when [true, false]
+          out.puts "add_manual #{makefile} : #{line}" # Not automatically updatable because makefile has no section to update automatically.
+        when [false, true]
+          out.puts "del_manual #{makefile} : #{line}" # Not automatically updatable because makefile has no section to update automatically.
+        else
+          raise "unexpected status: #{status.inspect}"
+        end
+      }
+    end
+  }
+end
+
+def main_show(out=$stdout)
+  make_deps, cc_deps = detect_dependencies(out)
+  compare_deps(make_deps, cc_deps, out)
+end
+
+def extract_deplines(problems)
+  adds = {}
+  others = {}
+  problems.each_line {|line|
+    case line
+    when /\Aadd_auto (\S+) : ((\S+): (\S+))/
+      (adds[$1] ||= []) << [line, "#{$2}\n"]
+    when /\A(?:del_cc|del_make|add_manual|del_manual|warning) (\S+) : /
+      (others[$1] ||= []) << line
+    else
+      raise "unexpected line: #{line.inspect}"
+    end
+  }
+  return adds, others
+end
+
+def main_actual_fix(problems)
+  adds, others = extract_deplines(problems)
+  (adds.keys | others.keys).sort.each {|makefile|
+    content = begin
+      File.read(makefile)
+    rescue Errno::ENOENT
+      nil
+    end
+
+    if content &&
+       /^#{Regexp.escape DEPENDENCIES_SECTION_START_MARK}
+        ((?:.*\n)*)
+        #{Regexp.escape DEPENDENCIES_SECTION_END_MARK}/x =~ content
+      pre_dep_post = [$`, $1, $']
+    else
+      pre_dep_post = nil
+    end
+
+    if pre_dep_post && adds[makefile]
+      pre_lines, dep_lines, post_lines = pre_dep_post
+      dep_lines = dep_lines.lines.to_a
+      add_lines = adds[makefile].map(&:last)
+      new_lines = (dep_lines | add_lines).sort.uniq
+      new_content = [
+        pre_lines,
+        DEPENDENCIES_SECTION_START_MARK,
+        *new_lines,
+        DEPENDENCIES_SECTION_END_MARK,
+        post_lines
+      ].join
+      if content != new_content
+        puts "modified: #{makefile}"
+        tmp_makefile = "#{makefile}.new.#{$$}"
+        File.write(tmp_makefile, new_content)
+        File.rename tmp_makefile, makefile
+        (add_lines - dep_lines).each {|line| puts "  added #{line}" }
+      else
+        puts "not modified: #{makefile}"
+      end
+      if others[makefile]
+        others[makefile].each {|line| puts "  #{line}" }
+      end
+    else
+      if pre_dep_post
+        puts "no addtional lines: #{makefile}"
+      elsif content
+        puts "no dependencies section: #{makefile}"
+      else
+        puts "no makefile: #{makefile}"
+      end
+      if adds[makefile]
+        puts "  warning: dependencies section was exist at previous phase."
+      end
+      if adds[makefile]
+        adds[makefile].map(&:first).each {|line| puts "  #{line}" }
+      end
+      if others[makefile]
+        others[makefile].each {|line| puts "  #{line}" }
+      end
+    end
+  }
+end
+
+def main_fix
+  problems = StringIO.new
+  main_show(problems)
+  main_actual_fix(problems.string)
+end
+
+def run
+  op = optionparser
+  op.parse!(ARGV)
+  if $opt_actual_fix
+    main_actual_fix(ARGF.read)
+  elsif $opt_fix
+    main_fix
+  else
+    main_show
+  end
+end
+
+init_global
+run
+if $i_not_found
+  warn "warning: missing *.i files, see help in #$0 and ensure ccache is disabled"
+end
