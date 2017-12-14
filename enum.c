@@ -1201,7 +1201,7 @@ DEFINE_ENUMFUNCS(all)
  *  +false+ or +nil+.
  *
  *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for every element of <i>enum</i>.
+ *  <code>pattern === element</code> for every collection member.
  *
  *     %w[ant bear cat].all? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].all? { |word| word.length >= 4 } #=> false
@@ -1242,7 +1242,7 @@ DEFINE_ENUMFUNCS(any)
  *  members is not +false+ or +nil+.
  *
  *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for any element of <i>enum</i>.
+ *  <code>pattern === element</code> for any collection member.
  *
  *     %w[ant bear cat].any? { |word| word.length >= 3 } #=> true
  *     %w[ant bear cat].any? { |word| word.length >= 4 } #=> true
@@ -1506,7 +1506,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
  *  true.
  *
  *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for exactly one element of <i>enum</i>.
+ *  <code>pattern === element</code> for exactly one collection member.
  *
  *     %w{ant bear cat}.one? { |word| word.length == 4 }  #=> true
  *     %w{ant bear cat}.one? { |word| word.length > 4 }   #=> false
@@ -1550,7 +1550,7 @@ DEFINE_ENUMFUNCS(none)
  *  <code>true</code> only if none of the collection members is true.
  *
  *  If instead a pattern is supplied, the method returns whether
- *  <code>pattern === element</code> for none of the elements of <i>enum</i>.
+ *  <code>pattern === element</code> for none of the collection members.
  *
  *     %w{ant bear cat}.none? { |word| word.length == 5 } #=> true
  *     %w{ant bear cat}.none? { |word| word.length >= 4 } #=> false
