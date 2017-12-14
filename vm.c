@@ -2518,6 +2518,7 @@ th_init(rb_thread_t *th, VALUE self)
     th->retval = Qundef;
 #endif
     th->name = Qnil;
+    th->report_on_exception = th->vm->thread_report_on_exception;
 }
 
 static VALUE
