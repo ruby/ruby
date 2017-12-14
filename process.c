@@ -476,13 +476,13 @@ rb_last_status_get(void)
  *  call-seq:
  *     Process.last_status   -> Process::Status or nil
  *
- *  Return the status of the last executed child process in the
+ *  Returns the status of the last executed child process in the
  *  current thread.
  *
  *     Process.wait Process.spawn("ruby", "-e", "exit 13")
  *     Process.last_status   #=> #<Process::Status: pid 4825 exit 13>
  *
- *  If no child process has never been executed in the current
+ *  If no child process has ever been executed in the current
  *  thread, this returns +nil+.
  *
  *     Process.last_status   #=> nil
