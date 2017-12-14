@@ -1,3 +1,7 @@
+Thu Dec 14 22:55:05 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	Fix a command injection vulnerability in Net::FTP.
+
 Thu Dec 14 22:35:19 2017  Eric Wong  <normalperson@yhbt.net>
 
 	webrick: compile RE correctly for beginning and end match
