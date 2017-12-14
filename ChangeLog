@@ -1,3 +1,19 @@
+Thu Dec 14 22:35:19 2017  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: compile RE correctly for beginning and end match
+
+	Using ^ and $ in regexps means we can accidentally get fooled
+	by "%0a" in HTTP request paths being decoded to newline
+	characters.  Use \A and \z to match beginning and end-of-string
+	respectively, instead.
+
+	Thanks to mame and hsbt for reporting.
+
+	* lib/webrick/httpserver.rb (MountTable#compile):
+	  use \A and \z instead of ^ and $
+	* lib/webrick/httpserver.rb (MountTable#normalize): use \z instead of $
+	* test/webrick/test_httpserver.rb (test_cntrl_in_path): new test
+
 Thu Dec 14 22:29:04 2017  Eric Wong  <normalperson@yhbt.net>
 
 	webrick: do not hang acceptor on slow TLS connections
