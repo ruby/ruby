@@ -1,3 +1,7 @@
+Thu Dec 14 22:52:11 2017  Shugo Maeda  <shugo@ruby-lang.org>
+
+	Fix a command injection vulnerability in Net::FTP.
+
 Thu Dec 14 22:49:08 2017  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Merge rubygems-2.6.14 changes.
