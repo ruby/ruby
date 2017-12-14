@@ -208,6 +208,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert(nil != u.merge!("../baz"))
     assert_equal('http://foo/baz', u.to_s)
 
+    url = URI.parse('http://a/b//c') + 'd//e'
+    assert_equal('http://a/b//d//e', url.to_s)
+
     u0 = URI.parse('mailto:foo@example.com')
     u1 = URI.parse('mailto:foo@example.com#bar')
     assert_equal(uri_to_ary(u0 + '#bar'), uri_to_ary(u1), "[ruby-dev:23628]")
@@ -264,6 +267,9 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal('../b', url.to_s)
     url = URI.parse('http://hoge/b').route_to('http://hoge/b:c')
     assert_equal('./b:c', url.to_s)
+
+    url = URI.parse('http://hoge/b//c').route_to('http://hoge/b/c')
+    assert_equal('../c', url.to_s)
 
     url = URI.parse('file:///a/b/').route_to('file:///a/b/')
     assert_equal('', url.to_s)

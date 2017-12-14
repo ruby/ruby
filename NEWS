@@ -353,6 +353,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * StringScanner#size, StringScanner#captures, StringScanner#values_at  [Feature #836]
 
+* URI
+
+  * Relative path operations no longer collapse consecutive slashes to a single slash. [Bug #8352]
+
 * WEBrick
 
   * Add Server Name Indication (SNI) support [Feature #13729]
