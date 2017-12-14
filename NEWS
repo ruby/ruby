@@ -189,6 +189,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New method:
     * Thread#fetch  [Feature #13009]
 
+  * The default of Thread.report_on_exception is now true,
+    showing unhandled exceptions terminating threads on $stderr.
+    [Feature #14143]
+
 * Time
 
   * Time#at receives 3rd argument which specifies the unit of 2nd argument.
