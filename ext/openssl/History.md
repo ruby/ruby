@@ -1,5 +1,5 @@
-Version 2.1.0.beta2
-===================
+Version 2.1.0
+=============
 
 Notable changes
 ---------------
@@ -50,6 +50,24 @@ Notable changes
   [[GitHub #169]](https://github.com/ruby/openssl/pull/169)
 * OpenSSL::SSL::SSLContext#add_certificate is added.
   [[GitHub #167]](https://github.com/ruby/openssl/pull/167)
+* OpenSSL::PKey::EC::Point#to_octet_string is added.
+  OpenSSL::PKey::EC::Point.new can now take String as the second argument.
+  [[GitHub #177]](https://github.com/ruby/openssl/pull/177)
+
+
+Version 2.0.7
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::Cipher#auth_data= could segfault if called against a non-AEAD cipher.
+  [[Bug #14024]](https://bugs.ruby-lang.org/issues/14024)
+* OpenSSL::X509::Certificate#public_key= (and similar methods) could segfault
+  when an instance of OpenSSL::PKey::PKey with no public key components is
+  passed.
+  [[Bug #14087]](https://bugs.ruby-lang.org/issues/14087)
+  [[GitHub #168]](https://github.com/ruby/openssl/pull/168)
 
 
 Version 2.0.6
