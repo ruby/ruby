@@ -979,7 +979,7 @@ module URI
     # returns an Array of the path split on '/'
     #
     def split_path(path)
-      path.split(%r{/+}, -1)
+      path.split(%r{/}, -1)
     end
     private :split_path
 
@@ -1154,8 +1154,8 @@ module URI
         return dst.dup
       end
 
-      src_path = src.scan(%r{(?:\A|[^/]+)/})
-      dst_path = dst.scan(%r{(?:\A|[^/]+)/?})
+      src_path = src.scan(%r{[^/]*/})
+      dst_path = dst.scan(%r{[^/]*/?})
 
       # discard same parts
       while !dst_path.empty? && dst_path.first == src_path.first
