@@ -404,8 +404,10 @@ AS_IF([test "$GCC" = yes], [
     : ${optflags=-O3}
     gcc_major=`echo =__GNUC__ | $CC -E -xc - | sed '/^=/!d;s///'`
     gcc_minor=`echo =__GNUC_MINOR__ | $CC -E -xc - | sed '/^=/!d;s///'`
+    icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
     test -n "$gcc_major" || gcc_major=0
     test -n "$gcc_minor" || gcc_minor=0
+    test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 ], [
     linker_flag=
@@ -744,6 +746,10 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
     ])
     AS_IF([test $gcc_major -ge 5 -a $gcc_major -le 6], [
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
+    ])
+    # ICC doesn't support -Werror=
+    AS_IF([test $icc_version -gt 0], [
+	particular_werror_flags=yes
     ])
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
                  -diag-disable=2259 \
