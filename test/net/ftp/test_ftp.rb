@@ -1900,4 +1900,22 @@ EOF
       end
     end
   end
+
+  def process_port_or_eprt(sock, line)
+    case line
+    when /\APORT (.*)/
+      port_args = $1.split(/,/)
+      host = port_args[0, 4].join(".")
+      port = port_args[4, 2].map(&:to_i).inject {|x, y| (x << 8) + y}
+      sock.print("200 PORT command successful.\r\n")
+      return host, port
+    when /\AEPRT \|2\|(.*?)\|(.*?)\|/
+      host = $1
+      port = $2.to_i
+      sock.print("200 EPRT command successful.\r\n")
+      return host, port
+    else
+      flunk "PORT or EPRT expected"
+    end
+  end
 end
