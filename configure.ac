@@ -752,7 +752,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 	particular_werror_flags=no
     ])
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
-                 -diag-disable=2259 \
+                 -diag-disable=175,188,2259 \
 		 -Wno-missing-field-initializers \
 		 -Wno-tautological-compare \
 		 -Wno-parentheses-equality \
