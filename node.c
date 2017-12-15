@@ -227,11 +227,11 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	return;
 
       case NODE_WHEN:
-	ANN("if statement");
+	ANN("when clause");
 	ANN("format: when [nd_head]; [nd_body]; (when or else) [nd_next]");
 	ANN("example: case x; when 1; foo; when 2; bar; else baz; end");
 	F_NODE(nd_head, "when value");
-	F_NODE(nd_body, "when clause");
+	F_NODE(nd_body, "when body");
 	LAST_NODE;
 	F_NODE(nd_next, "next when clause");
 	return;
@@ -271,7 +271,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	return;
 
       case NODE_BREAK:
-	ANN("for statement");
+	ANN("break statement");
 	ANN("format: break [nd_stts]");
 	ANN("example: break 1");
 	goto jump;
