@@ -377,37 +377,47 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	ANN("local variable assignment");
 	ANN("format: [nd_vid](lvar) = [nd_value]");
 	ANN("example: x = foo");
-	goto asgn;
-      case NODE_DASGN:
-	ANN("dynamic variable assignment (out of current scope)");
-	ANN("format: [nd_vid](dvar) = [nd_value]");
-	ANN("example: x = nil; 1.times { x = foo }");
-	goto asgn;
-      case NODE_DASGN_CURR:
-	ANN("dynamic variable assignment (in current scope)");
-	ANN("format: [nd_vid](current dvar) = [nd_value]");
-	ANN("example: 1.times { x = foo }");
-	goto asgn;
-      case NODE_IASGN:
-	ANN("instance variable assignment");
-	ANN("format: [nd_vid](ivar) = [nd_value]");
-	ANN("example: @x = foo");
-	goto asgn;
-      case NODE_CVASGN:
-	ANN("class variable assignment");
-	ANN("format: [nd_vid](cvar) = [nd_value]");
-	ANN("example: @@x = foo");
-      asgn:
-	F_ID(nd_vid, "variable");
-	LAST_NODE;
+	F_ID(nd_vid, "local variable");
 	if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
 	    F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
 	}
 	else {
+	    LAST_NODE;
 	    F_NODE(nd_value, "rvalue");
 	}
 	return;
-
+      case NODE_DASGN:
+	ANN("dynamic variable assignment (out of current scope)");
+	ANN("format: [nd_vid](dvar) = [nd_value]");
+	ANN("example: x = nil; 1.times { x = foo }");
+	F_ID(nd_vid, "local variable");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+	return;
+      case NODE_DASGN_CURR:
+	ANN("dynamic variable assignment (in current scope)");
+	ANN("format: [nd_vid](current dvar) = [nd_value]");
+	ANN("example: 1.times { x = foo }");
+	F_ID(nd_vid, "local variable");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+	return;
+      case NODE_IASGN:
+	ANN("instance variable assignment");
+	ANN("format: [nd_vid](ivar) = [nd_value]");
+	ANN("example: @x = foo");
+	F_ID(nd_vid, "instance variable");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+	return;
+      case NODE_CVASGN:
+	ANN("class variable assignment");
+	ANN("format: [nd_vid](cvar) = [nd_value]");
+	ANN("example: @@x = foo");
+	F_ID(nd_vid, "class variable");
+	LAST_NODE;
+	F_NODE(nd_value, "rvalue");
+	return;
       case NODE_GASGN:
 	ANN("global variable assignment");
 	ANN("format: [nd_entry](gvar) = [nd_value]");
