@@ -3,7 +3,7 @@ language: ruby
 install:
   - git clone https://github.com/ruby/mspec.git ../mspec
 script:
-  - if [ -n "$RUBOCOP" ]; then gem install rubocop -v 0.51.0 && rubocop; fi
+  - if [ -n "$RUBOCOP" ]; then gem install rubocop -v 0.52.0 && rubocop; fi
   - ../mspec/bin/mspec $MSPEC_OPTS
 matrix:
   include:

@@ -24,7 +24,7 @@ describe "Matrix.build" do
 
   it "returns an Enumerator is no block is given" do
     enum = Matrix.build(2, 1)
-    enum.should  be_an_instance_of(Enumerator)
+    enum.should be_an_instance_of(Enumerator)
     enum.each{1}.should == Matrix[[1], [1]]
   end
 

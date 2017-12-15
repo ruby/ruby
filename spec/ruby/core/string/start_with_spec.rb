@@ -28,9 +28,9 @@ describe "String#start_with?" do
 
   it "ignores arguments not convertible to string" do
     "hello".start_with?().should be_false
-    lambda { "hello".start_with?(1) }.should  raise_error(TypeError)
-    lambda { "hello".start_with?(["h"]) }.should  raise_error(TypeError)
-    lambda { "hello".start_with?(1, nil, "h").should }.should raise_error(TypeError)
+    lambda { "hello".start_with?(1) }.should raise_error(TypeError)
+    lambda { "hello".start_with?(["h"]) }.should raise_error(TypeError)
+    lambda { "hello".start_with?(1, nil, "h") }.should raise_error(TypeError)
   end
 
   it "uses only the needed arguments" do

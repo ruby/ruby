@@ -32,9 +32,6 @@ Lint/LiteralAsCondition:
 Lint/UnneededRequireStatement:
   Enabled: false
 
-Lint/RescueWithoutErrorClass:
-  Enabled: false
-
 Lint/UnifiedInteger:
   Enabled: false
 

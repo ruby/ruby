@@ -8,7 +8,7 @@ module EnsureSpec
 
     def raise_in_method_with_ensure
       @executed << :method
-      raise "An Exception"
+      raise EnsureSpec::Error
     ensure
       @executed << :ensure
     end
@@ -68,5 +68,10 @@ module EnsureSpec
         return :did_test
       end
     end
+  end
+end
+
+module EnsureSpec
+  class Error < RuntimeError
   end
 end
