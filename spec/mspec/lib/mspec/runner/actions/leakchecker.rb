@@ -262,11 +262,11 @@ class LeakChecker
     leaked = false
     if new_internal != old_internal
       leaked = true
-      puts "Encoding.default_internal changed: #{test_name} : #{old_internal} to #{new_internal}"
+      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
     end
     if new_external != old_external
       leaked = true
-      puts "Encoding.default_external changed: #{test_name} : #{old_external} to #{new_external}"
+      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
     end
     @encoding_info = [new_internal, new_external]
     return leaked
