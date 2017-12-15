@@ -408,8 +408,8 @@ AS_IF([test "$GCC" = yes], [
     test -n "$gcc_minor" || gcc_minor=0
     AS_CASE(["x$CC"], [xicc], [
       icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
-      test -n "$icc_version" || icc_version=0
     ])
+    test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 ], [
     linker_flag=
