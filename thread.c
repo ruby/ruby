@@ -98,6 +98,7 @@ static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
+static const char *thread_status_name(rb_thread_t *th, int detail);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -450,12 +451,15 @@ terminate_all(rb_vm_t *vm, const rb_thread_t *main_thread)
 
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	if (th != main_thread) {
-	    thread_debug("terminate_i: %p\n", (void *)th);
+	    thread_debug("terminate_all: begin (thid: %"PRI_THREAD_ID", status: %s)\n",
+			 thread_id_str(th), thread_status_name(th, TRUE));
 	    rb_threadptr_pending_interrupt_enque(th, eTerminateSignal);
 	    rb_threadptr_interrupt(th);
+	    thread_debug("terminate_all: end (thid: %"PRI_THREAD_ID", status: %s)\n",
+			 thread_id_str(th), thread_status_name(th, TRUE));
 	}
 	else {
-	    thread_debug("terminate_i: main thread (%p)\n", (void *)th);
+	    thread_debug("terminate_all: main thread (%p)\n", (void *)th);
 	}
     }
 }
@@ -890,8 +894,8 @@ thread_join_sleep(VALUE arg)
 	    }
 	    sleep_wait_for_interrupt(th, limit - now, 0);
 	}
-	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID")\n",
-		     thread_id_str(target_th));
+	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID", status: %s)\n",
+		     thread_id_str(target_th), thread_status_name(target_th, TRUE));
     }
     return Qtrue;
 }
@@ -913,7 +917,8 @@ thread_join(rb_thread_t *target_th, double delay)
     arg.waiting = th;
     arg.delay = delay;
 
-    thread_debug("thread_join (thid: %"PRI_THREAD_ID")\n", thread_id_str(target_th));
+    thread_debug("thread_join (thid: %"PRI_THREAD_ID", status: %s)\n",
+		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->status != THREAD_KILLED) {
 	rb_thread_list_t list;
@@ -926,8 +931,8 @@ thread_join(rb_thread_t *target_th, double delay)
 	}
     }
 
-    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID")\n",
-		 thread_id_str(target_th));
+    thread_debug("thread_join: success (thid: %"PRI_THREAD_ID", status: %s)\n",
+		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
 
     if (target_th->ec->errinfo != Qnil) {
 	VALUE err = target_th->ec->errinfo;
@@ -935,6 +940,9 @@ thread_join(rb_thread_t *target_th, double delay)
 	if (FIXNUM_P(err)) {
 	    switch (err) {
 	      case INT2FIX(TAG_FATAL):
+		thread_debug("thread_join: terminated (thid: %"PRI_THREAD_ID", status: %s)\n",
+			     thread_id_str(target_th), thread_status_name(target_th, TRUE));
+
 		/* OK. killed. */
 		break;
 	      default:
