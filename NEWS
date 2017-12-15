@@ -46,6 +46,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Dir.glob provides new optional keyword argument, :base.
     [Feature #13056]
+  * Dir.chdir (without block arg), Dir.open, Dir.new, Dir.mkdir, Dir.rmdir,
+    Dir.empty? releases GVL
 
   * New methods:
 
@@ -68,6 +70,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     Windows 8 and later  [Feature #13726]
   * File::Stat#ino and File.indentical? support ReFS 128bit ino on Windows 8.1
     and later  [Feature #13731]
+  * File.readable?, File.readable_real?, File.writable?, File.writable_real?,
+    File.executable?, File.executable_real?, File.mkfifo, File.readlink,
+    File.truncate, File#truncate, File.chmod, File.lchmod, File.chown,
+    File.lchown, File.unlink, File.utime, File.lstat release GVL
 
   * New method:
 
