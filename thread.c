@@ -883,7 +883,13 @@ thread_join_sleep(VALUE arg)
 
     while (target_th->status != THREAD_KILLED) {
 	if (forever) {
-	    sleep_forever(th, TRUE, FALSE);
+	    th->status = THREAD_STOPPED_FOREVER;
+	    th->vm->sleeper++;
+	    rb_check_deadlock(th->vm);
+	    native_sleep(th, 0);
+	    th->vm->sleeper--;
+	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+	    th->status = THREAD_RUNNABLE;
 	}
 	else {
 	    double now = timeofday();
