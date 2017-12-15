@@ -583,11 +583,10 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	    ANN("format: { [nd_head] }");
 	    ANN("example: { 1 => 2, 3 => 4 }");
 	}
-	F_CUSTOM1(nd_alen, "keyword-arguments-or-hash-literal") {
+	F_CUSTOM1(nd_alen, "keyword arguments or hash literal") {
 	    switch (node->nd_alen) {
 	      case 0: A("0 (keyword argument)"); break;
 	      case 1: A("1 (hash literal)"); break;
-	      default: A_ID(node->nd_alen);
 	    }
 	}
 	LAST_NODE;
