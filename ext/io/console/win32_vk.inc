@@ -513,7 +513,7 @@
 #line 1 "win32_vk.list"
 
 struct vktable {short ofs; unsigned short vk;};
-/*static const struct vktable *console_win32_vk(const char *, unsigned int);*/
+static const struct vktable *console_win32_vk(/*const char *, unsigned int*/);
 #line 5 "win32_vk.list"
 struct vktable;
 /* maximum key range = 245, duplicates = 0 */
