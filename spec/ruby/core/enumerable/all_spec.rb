@@ -54,10 +54,20 @@ describe "Enumerable#all?" do
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
+      # This spec doesn't spec what it says it does
       multi = EnumerableSpecs::YieldsMultiWithFalse.new
       multi.all?.should be_true
     end
 
+    ruby_version_is "2.5" do
+      describe "given a pattern argument" do
+        # This spec should be replaced by more extensive ones
+        it "returns true iff all match that pattern" do
+          @enum.all?(Integer).should == true
+          @enum2.all?(NilClass).should == false
+        end
+      end
+    end
   end
 
   describe "with block" do
@@ -116,6 +126,5 @@ describe "Enumerable#all?" do
       multi.all? {|e, i| yielded << [e, i] }
       yielded.should == [[1, 2], [3, 4], [6, 7]]
     end
-
   end
 end

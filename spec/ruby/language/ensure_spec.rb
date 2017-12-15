@@ -7,50 +7,44 @@ describe "An ensure block inside a begin block" do
   end
 
   it "is executed when an exception is raised in it's corresponding begin block" do
-    begin
-      lambda {
-        begin
-          ScratchPad << :begin
-          raise "An exception occurred!"
-        ensure
-          ScratchPad << :ensure
-        end
-      }.should raise_error(RuntimeError)
+    lambda {
+      begin
+        ScratchPad << :begin
+        raise EnsureSpec::Error
+      ensure
+        ScratchPad << :ensure
+      end
+    }.should raise_error(EnsureSpec::Error)
 
-      ScratchPad.recorded.should == [:begin, :ensure]
-    end
+    ScratchPad.recorded.should == [:begin, :ensure]
   end
 
   it "is executed when an exception is raised and rescued in it's corresponding begin block" do
     begin
+      ScratchPad << :begin
+      raise "An exception occurred!"
+    rescue
+      ScratchPad << :rescue
+    ensure
+      ScratchPad << :ensure
+    end
+
+    ScratchPad.recorded.should == [:begin, :rescue, :ensure]
+  end
+
+  it "is executed even when a symbol is thrown in it's corresponding begin block" do
+    catch(:symbol) do
       begin
         ScratchPad << :begin
-        raise "An exception occurred!"
+        throw(:symbol)
       rescue
         ScratchPad << :rescue
       ensure
         ScratchPad << :ensure
       end
-
-      ScratchPad.recorded.should == [:begin, :rescue, :ensure]
     end
-  end
 
-  it "is executed even when a symbol is thrown in it's corresponding begin block" do
-    begin
-      catch(:symbol) do
-        begin
-          ScratchPad << :begin
-          throw(:symbol)
-        rescue
-          ScratchPad << :rescue
-        ensure
-          ScratchPad << :ensure
-        end
-      end
-
-      ScratchPad.recorded.should == [:begin, :ensure]
-    end
+    ScratchPad.recorded.should == [:begin, :ensure]
   end
 
   it "is executed when nothing is raised or thrown in it's corresponding begin block" do
@@ -102,7 +96,7 @@ describe "An ensure block inside a method" do
   end
 
   it "is executed when an exception is raised in the method" do
-    lambda { @obj.raise_in_method_with_ensure }.should raise_error(RuntimeError)
+    lambda { @obj.raise_in_method_with_ensure }.should raise_error(EnsureSpec::Error)
     @obj.executed.should == [:method, :ensure]
   end
 
@@ -122,5 +116,178 @@ describe "An ensure block inside a method" do
 
   it "has an impact on the method's explicit return value" do
     @obj.explicit_return_in_method_with_ensure.should == :ensure
+  end
+end
+
+describe "An ensure block inside a class" do
+  before :each do
+    ScratchPad.record []
+  end
+
+  it "is executed when an exception is raised" do
+    lambda {
+      eval <<-ruby
+        class EnsureInClassExample
+          ScratchPad << :class
+          raise EnsureSpec::Error
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
+    }.should raise_error(EnsureSpec::Error)
+
+    ScratchPad.recorded.should == [:class, :ensure]
+  end
+
+  it "is executed when an exception is raised and rescued" do
+    eval <<-ruby
+      class EnsureInClassExample
+        ScratchPad << :class
+        raise
+      rescue
+        ScratchPad << :rescue
+      ensure
+        ScratchPad << :ensure
+      end
+    ruby
+
+    ScratchPad.recorded.should == [:class, :rescue, :ensure]
+  end
+
+  it "is executed even when a symbol is thrown" do
+    catch(:symbol) do
+      eval <<-ruby
+        class EnsureInClassExample
+          ScratchPad << :class
+          throw(:symbol)
+        rescue
+          ScratchPad << :rescue
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
+    end
+
+    ScratchPad.recorded.should == [:class, :ensure]
+  end
+
+  it "is executed when nothing is raised or thrown" do
+    eval <<-ruby
+      class EnsureInClassExample
+        ScratchPad << :class
+      rescue
+        ScratchPad << :rescue
+      ensure
+        ScratchPad << :ensure
+      end
+    ruby
+
+    ScratchPad.recorded.should == [:class, :ensure]
+  end
+
+  it "has no return value" do
+    result = eval <<-ruby
+      class EnsureInClassExample
+        :class
+      ensure
+        :ensure
+      end
+    ruby
+
+    result.should == :class
+  end
+end
+
+describe "An ensure block inside {} block" do
+  it "is not allowed" do
+    lambda {
+      eval <<-ruby
+        lambda {
+          raise
+        ensure
+        }
+      ruby
+    }.should raise_error(SyntaxError)
+  end
+end
+
+ruby_version_is "2.5" do
+  describe "An ensure block inside 'do end' block" do
+    before :each do
+      ScratchPad.record []
+    end
+
+    it "is executed when an exception is raised in it's corresponding begin block" do
+      lambda {
+        eval(<<-ruby).call
+          lambda do
+            ScratchPad << :begin
+            raise EnsureSpec::Error
+          ensure
+            ScratchPad << :ensure
+          end
+        ruby
+      }.should raise_error(EnsureSpec::Error)
+
+      ScratchPad.recorded.should == [:begin, :ensure]
+    end
+
+    it "is executed when an exception is raised and rescued in it's corresponding begin block" do
+      eval(<<-ruby).call
+        lambda do
+          ScratchPad << :begin
+          raise "An exception occurred!"
+        rescue
+          ScratchPad << :rescue
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
+
+      ScratchPad.recorded.should == [:begin, :rescue, :ensure]
+    end
+
+    it "is executed even when a symbol is thrown in it's corresponding begin block" do
+      catch(:symbol) do
+        eval(<<-ruby).call
+          lambda do
+            ScratchPad << :begin
+            throw(:symbol)
+          rescue
+            ScratchPad << :rescue
+          ensure
+            ScratchPad << :ensure
+          end
+        ruby
+      end
+
+      ScratchPad.recorded.should == [:begin, :ensure]
+    end
+
+    it "is executed when nothing is raised or thrown in it's corresponding begin block" do
+      eval(<<-ruby).call
+        lambda do
+          ScratchPad << :begin
+        rescue
+          ScratchPad << :rescue
+        ensure
+          ScratchPad << :ensure
+        end
+      ruby
+
+      ScratchPad.recorded.should == [:begin, :ensure]
+    end
+
+    it "has no return value" do
+      result = eval(<<-ruby).call
+        lambda do
+          :begin
+        ensure
+          :ensure
+        end
+      ruby
+
+      result.should == :begin
+    end
   end
 end

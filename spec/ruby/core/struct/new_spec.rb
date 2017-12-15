@@ -60,7 +60,18 @@ describe "Struct.new" do
     lambda { Struct.new(:animal, nil)                  }.should raise_error(TypeError)
     lambda { Struct.new(:animal, true)                 }.should raise_error(TypeError)
     lambda { Struct.new(:animal, ['chris', 'evan'])    }.should raise_error(TypeError)
-    lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is ""..."2.5" do
+    it "raises a TypeError if an argument is a Hash" do
+      lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "2.5" do
+    it "raises a ArgumentError if passed a Hash with an unknown key" do
+      lambda { Struct.new(:animal, { name: 'chris' }) }.should raise_error(ArgumentError)
+    end
   end
 
   it "raises a TypeError if object is not a Symbol" do

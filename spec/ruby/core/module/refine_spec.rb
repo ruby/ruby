@@ -320,7 +320,7 @@ describe "Module#refine" do
     result.should == "foo from subclass"
   end
 
-  context "for methods accesses indirectly" do
+  context "for methods accessed indirectly" do
     ruby_version_is "" ... "2.4" do
       it "is not honored by Kernel#send" do
         refinement = Module.new do
@@ -422,6 +422,46 @@ describe "Module#refine" do
         end
 
         result.should == ["(1)", "(2)", "(3)"]
+      end
+    end
+
+    ruby_version_is "" ... "2.5" do
+      it "is not honored by string interpolation" do
+        refinement = Module.new do
+          refine Integer do
+            def to_s
+              "foo"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = "#{1}"
+        end
+
+        result.should == "1"
+      end
+    end
+
+    ruby_version_is "2.5" do
+      it "is honored by string interpolation" do
+        refinement = Module.new do
+          refine Integer do
+            def to_s
+              "foo"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = "#{1}"
+        end
+
+        result.should == "foo"
       end
     end
 
