@@ -8043,10 +8043,6 @@ rb_io_make_open_file(VALUE obj)
  *    Specifies file open flags as integer.
  *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
  *
- *  :\external_encoding ::
- *    External encoding for the IO.  "-" is a synonym for the default external
- *    encoding.
- *
  *  :\internal_encoding ::
  *    Internal encoding for the IO.  "-" is a synonym for the default internal
  *    encoding.
