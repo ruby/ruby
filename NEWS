@@ -376,6 +376,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * WEBrick
 
   * Add Server Name Indication (SNI) support [Feature #13729]
+  * support Proc objects as body responses [Feature #855]
 
 * Zlib
 
