@@ -142,6 +142,10 @@ def tag intv_p = false, relname=nil
   end
   tagname = 'v' + x + (v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl ? '_' + pl : '')
   tag_url = $repos + 'tags/' + tagname
+  system(*%w'svn info', tag_url, out: IO::NULL, err: IO::NULL)
+  if $?.success?
+    abort "specfied tag already exists. check tag name and remove it if you want to force re-tagging"
+  end
   if intv_p
     interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
     end
