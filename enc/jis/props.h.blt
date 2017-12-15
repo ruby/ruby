@@ -69,7 +69,7 @@ struct enc_property {
     unsigned char ctype;
 };
 
-/*static const struct enc_property *onig_jis_property(const char *str, unsigned int len);*/
+static const struct enc_property *onig_jis_property(/*const char *str, unsigned int len*/);
 #line 43 "enc/jis/props.kwd"
 struct enc_property;
 

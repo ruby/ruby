@@ -37,7 +37,7 @@ struct enc_property {
     unsigned char ctype;
 };
 
-/*!ANSI*/static const struct enc_property *onig_jis_property(const char *str, unsigned int len);
+static const struct enc_property *onig_jis_property(/*!ANSI{*/const char *str, unsigned int len/*}!ANSI*/);
 %}
 
 struct enc_property;
