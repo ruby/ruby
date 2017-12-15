@@ -1249,4 +1249,42 @@ q.pop
       end
     _end
   end
+
+  def test_signal_at_join
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      skip "can't trap a signal from another process on Windows"
+      # opt = {new_pgroup: true}
+    end
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      n = 1000
+      sig = :INT
+      trap(sig) {}
+      IO.popen([EnvUtil.rubybin, "-e", "#{<<~"{#1"}\n#{<<~'};#1'}"], "r+") do |f|
+        tpid = #{$$}
+        sig = :#{sig}
+        {#1
+          STDOUT.sync = true
+          while gets
+            puts
+            Process.kill(sig, tpid)
+          end
+        };#1
+        assert_nothing_raised do
+          n.times do
+            w = Thread.start do
+              sleep 30
+            end
+            begin
+              f.puts
+              f.gets
+            ensure
+              w.kill
+              w.join
+            end
+          end
+        end
+      end
+    };
+  end
 end
