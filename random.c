@@ -447,14 +447,21 @@ fill_random_bytes_urandom(void *seed, size_t size)
 			     O_RDONLY, 0);
     struct stat statbuf;
     ssize_t ret = 0;
+    size_t offset = 0;
 
     if (fd < 0) return -1;
     rb_update_max_fd(fd);
     if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
-	ret = read(fd, seed, size);
+	do {
+	    ret = read(fd, ((char*)seed) + offset, size - offset);
+	    if (ret < 0) {
+		close(fd);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
     }
     close(fd);
-    if (ret < 0 || (size_t)ret < size) return -1;
     return 0;
 }
 #else
@@ -518,16 +525,20 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
     static rb_atomic_t try_syscall = 1;
     if (try_syscall) {
 	long ret;
+	size_t offset = 0;
 	int flags = 0;
 	if (!need_secure)
 	    flags = GRND_NONBLOCK;
-	errno = 0;
-	ret = syscall(__NR_getrandom, seed, size, flags);
-	if (errno == ENOSYS) {
-	    ATOMIC_SET(try_syscall, 0);
-	    return -1;
-	}
-	if ((size_t)ret == size) return 0;
+	do {
+	    errno = 0;
+	    ret = syscall(__NR_getrandom, ((char*)seed) + offset, size - offset, flags);
+	    if (ret == -1) {
+		ATOMIC_SET(try_syscall, 0);
+		return -1;
+	    }
+	    offset += (size_t)ret;
+	} while(offset < size);
+	return 0;
     }
     return -1;
 }
