@@ -1744,6 +1744,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 		path = str_conv_enc(path, uenc, lenc);
 	    }
 #endif
+	    if (!ENCODING_GET(path)) { /* ASCII-8BIT */
+		rb_enc_copy(path, opt->script_name);
+	    }
 	}
 	base_block = toplevel_context(toplevel_binding);
 	iseq = rb_iseq_new_main(ast->root, opt->script_name, path, vm_block_iseq(base_block));
