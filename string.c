@@ -6160,16 +6160,18 @@ unescape_ascii(unsigned int c)
     }
 }
 
-static int
+static long
 undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
 {
     unsigned int c, c2;
-    int n, codelen;
+    long n;
+    int codelen;
     size_t hexlen;
     char buf[6];
     static rb_encoding *enc_utf8 = NULL;
 
-    c = rb_enc_codepoint_len(s, s_end, &n, *penc);
+    c = rb_enc_codepoint_len(s, s_end, &codelen, *penc);
+    n = codelen;
     switch (c) {
       case '\\':
       case '"':
@@ -6203,31 +6205,30 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
 	if (c2 == '{') { /* handle \u{...} form */
 	    const char *hexstr = s + 2;
 	    int hex;
-	    static const char* const close_brace = "}";
-	    long pos;
 
-	    if (hexstr >= s_end) {
-		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+	    while ((hex = rb_enc_ascget(hexstr, s_end, &codelen, *penc)) != '}') {
+		if (hex == -1) {
+		    rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
+		}
+		if (ISSPACE(hex)) {
+		    hexstr += codelen;
+		    continue;
+		}
+		hex = scan_hex(hexstr, s_end-hexstr, &hexlen);
+		if (hexlen == 0 || hexlen > 6) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
+		}
+		if (hex > 0x10ffff) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
+		}
+		if ((hex & 0xfffff800) == 0xd800) {
+		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
+		}
+		codelen = rb_enc_mbcput(hex, buf, *penc);
+		rb_str_cat(undumped, buf, codelen);
+		hexstr += hexlen;
 	    }
-	    /* find close brace */
-	    pos = strseq_core(hexstr, s_end, s_end - hexstr, close_brace, 1, 0, *penc);
-	    if (pos < 0) {
-		rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
-	    }
-	    hex = scan_hex(hexstr, pos, &hexlen);
-	    if (hexlen == 0 || hexlen > 6) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
-	    }
-	    if (hex > 0x10ffff) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
-	    }
-	    if ((hex & 0xfffff800) == 0xd800) {
-		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
-	    }
-	    codelen = rb_enc_codelen(hex, *penc);
-	    rb_enc_mbcput(hex, buf, *penc);
-	    rb_str_cat(undumped, buf, codelen);
-	    n += rb_strlen_lit("u{}") + hexlen;
+	    n += hexstr - s + 1;
 	}
 	else { /* handle \uXXXX form */
 	    int hex = scan_hex(s+1, 4, &hexlen);
@@ -6276,9 +6277,8 @@ str_undump(VALUE str)
 {
     const char *s = RSTRING_PTR(str);
     const char *s_end = RSTRING_END(str);
-    long len = RSTRING_LEN(str);
+    long len = RSTRING_LEN(str), n;
     rb_encoding *enc = rb_enc_get(str), *forced_enc = NULL;
-    int n;
     unsigned int c;
     enum undump_source_format source_format;
     VALUE undumped = rb_enc_str_new(s, 0L, enc);
@@ -6317,7 +6317,7 @@ str_undump(VALUE str)
     }
 
     for (; s < s_end; s += n) {
-	c = rb_enc_codepoint_len(s, s_end, &n, enc);
+	c = rb_enc_codepoint_len(s, s_end, &w, enc);
 	if (c == '\\') {
 	    if (s+1 >= s_end) {
 		rb_raise(rb_eRuntimeError, "invalid escape");
@@ -6328,6 +6328,7 @@ str_undump(VALUE str)
 	    rb_raise(rb_eRuntimeError, "non-escaped double quote detected");
 	}
 	else {
+	    n = w;
 	    rb_str_cat(undumped, s, n);
 	}
     }

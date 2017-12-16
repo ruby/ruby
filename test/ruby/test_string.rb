@@ -762,6 +762,7 @@ CODE
     assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
     assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
     assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
+    assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
 
     assert_equal(S("äöü"), S('"\u00E4\u00F6\u00FC"').undump)
     assert_equal(S("äöü"), S('"\xC3\xA4\xC3\xB6\xC3\xBC"').undump)
