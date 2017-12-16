@@ -1324,7 +1324,7 @@ change: PHONY
 
 exam: check test-spec
 
-love: sudo-precheck up all test install exam
+love: sudo-precheck up all test exam install
 	@echo love is all you need
 
 great: exam
