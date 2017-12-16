@@ -6277,7 +6277,7 @@ str_undump(VALUE str)
     const char *s = RSTRING_PTR(str);
     const char *s_end = RSTRING_END(str);
     long len = RSTRING_LEN(str);
-    rb_encoding *enc = rb_enc_get(str), *forced_enc;
+    rb_encoding *enc = rb_enc_get(str), *forced_enc = NULL;
     int n;
     unsigned int c;
     enum undump_source_format source_format;
