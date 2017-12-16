@@ -199,7 +199,7 @@ when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
   system 'svn diff version.h'
 when "tag"
   tag :interactive, ARGV[1]
-when "removetag"
+when /\A(?:remove|rm|del)_?tag\z/
   remove_tag :interactive, ARGV[1]
 when nil, "-h", "--help"
   help
