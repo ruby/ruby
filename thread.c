@@ -1135,41 +1135,57 @@ getclockofday(struct timeval *tp)
 }
 
 static void
+timeval_add(struct timeval *dst, const struct timeval *tv)
+{
+    if (TIMEVAL_SEC_MAX - tv->tv_sec < dst->tv_sec)
+        dst->tv_sec = TIMEVAL_SEC_MAX;
+    else
+        dst->tv_sec += tv->tv_sec;
+    if ((dst->tv_usec += tv->tv_usec) >= 1000000) {
+        if (dst->tv_sec == TIMEVAL_SEC_MAX)
+            dst->tv_usec = 999999;
+         else {
+            dst->tv_sec++;
+            dst->tv_usec -= 1000000;
+         }
+     }
+}
+
+static int
+timeval_update_expire(struct timeval *tv, const struct timeval *to)
+{
+    struct timeval tvn;
+
+    getclockofday(&tvn);
+    if (to->tv_sec < tvn.tv_sec) return 1;
+    if (to->tv_sec == tvn.tv_sec && to->tv_usec <= tvn.tv_usec) return 1;
+    thread_debug("timeval_update_expire: "
+		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
+		 (time_t)to->tv_sec, (long)to->tv_usec,
+		 (time_t)tvn.tv_sec, (long)tvn.tv_usec);
+    tv->tv_sec = to->tv_sec - tvn.tv_sec;
+    if ((tv->tv_usec = to->tv_usec - tvn.tv_usec) < 0) {
+	--tv->tv_sec;
+	tv->tv_usec += 1000000;
+    }
+    return 0;
+}
+
+static void
 sleep_timeval(rb_thread_t *th, struct timeval tv, int spurious_check)
 {
-    struct timeval to, tvn;
+    struct timeval to;
     enum rb_thread_status prev_status = th->status;
 
     getclockofday(&to);
-    if (TIMEVAL_SEC_MAX - tv.tv_sec < to.tv_sec)
-        to.tv_sec = TIMEVAL_SEC_MAX;
-    else
-        to.tv_sec += tv.tv_sec;
-    if ((to.tv_usec += tv.tv_usec) >= 1000000) {
-        if (to.tv_sec == TIMEVAL_SEC_MAX)
-            to.tv_usec = 999999;
-        else {
-            to.tv_sec++;
-            to.tv_usec -= 1000000;
-        }
-    }
-
+    timeval_add(&to, &tv);
     th->status = THREAD_STOPPED;
     RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &tv);
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	getclockofday(&tvn);
-	if (to.tv_sec < tvn.tv_sec) break;
-	if (to.tv_sec == tvn.tv_sec && to.tv_usec <= tvn.tv_usec) break;
-	thread_debug("sleep_timeval: %"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
-		     (time_t)to.tv_sec, (long)to.tv_usec,
-		     (time_t)tvn.tv_sec, (long)tvn.tv_usec);
-	tv.tv_sec = to.tv_sec - tvn.tv_sec;
-	if ((tv.tv_usec = to.tv_usec - tvn.tv_usec) < 0) {
-	    --tv.tv_sec;
-	    tv.tv_usec += 1000000;
-	}
+	if (timeval_update_expire(&tv, &to))
+	    break;
 	if (!spurious_check)
 	    break;
     }
