@@ -1145,13 +1145,14 @@ timeval_add(struct timeval *dst, const struct timeval *tv)
     else
         dst->tv_sec += tv->tv_sec;
     if ((dst->tv_usec += tv->tv_usec) >= 1000000) {
-        if (dst->tv_sec == TIMEVAL_SEC_MAX)
+	if (dst->tv_sec == TIMEVAL_SEC_MAX) {
             dst->tv_usec = 999999;
-         else {
+	}
+	else {
             dst->tv_sec++;
             dst->tv_usec -= 1000000;
-         }
-     }
+	}
+    }
 }
 
 static int
