@@ -91,7 +91,6 @@ static VALUE sym_never;
 static ID id_locals;
 
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
-static void sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static double timeofday(void);
@@ -888,18 +887,22 @@ thread_join_sleep(VALUE arg)
 	    rb_check_deadlock(th->vm);
 	    native_sleep(th, 0);
 	    th->vm->sleeper--;
-	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	    th->status = THREAD_RUNNABLE;
 	}
 	else {
 	    double now = timeofday();
+	    struct timeval tv;
+
 	    if (now > limit) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
 		return Qfalse;
 	    }
-	    sleep_wait_for_interrupt(th, limit - now, 0);
+	    tv = double2timeval(limit - now);
+	    th->status = THREAD_STOPPED;
+	    native_sleep(th, &tv);
 	}
+	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+	th->status = THREAD_RUNNABLE;
 	thread_debug("thread_join: interrupted (thid: %"PRI_THREAD_ID", status: %s)\n",
 		     thread_id_str(target_th), thread_status_name(target_th, TRUE));
     }
@@ -1229,12 +1232,6 @@ timeofday(void)
         gettimeofday(&tv, NULL);
         return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
     }
-}
-
-static void
-sleep_wait_for_interrupt(rb_thread_t *th, double sleepsec, int spurious_check)
-{
-    sleep_timeval(th, double2timeval(sleepsec), spurious_check);
 }
 
 void
