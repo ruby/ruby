@@ -13,8 +13,13 @@
 #include "addr2line.h"
 
 #include <stdio.h>
-#include <stdbool.h>
 #include <errno.h>
+
+#ifdef HAVE_STDBOOL_H
+#include <stdbool.h>
+#else
+#include "missing/stdbool.h"
+#endif
 
 #ifdef USE_ELF
 
