@@ -108,6 +108,7 @@
 #endif
 #include <string.h>
 #include <assert.h>
+#include "ccan/list/list.h"
 
 #ifdef __GNUC__
 #define PREFETCH(addr, write_p) __builtin_prefetch(addr, write_p)
@@ -124,6 +125,18 @@
 #else
 #define st_assert(cond) ((void)(0 && (cond)))
 #endif
+
+typedef struct _st_table_list {
+    st_table table;
+    struct list_node node;
+} st_table_list;
+
+struct _st_table_pool {
+    struct list_head head;
+    int length;
+};
+static struct _st_table_pool st_table_pool;
+#define ST_TABLE_POOL_MAX_LENGTH 500
 
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
@@ -548,6 +561,38 @@ stat_col(void)
 }
 #endif
 
+static st_table *
+get_st_table()
+{
+    st_table_list *table;
+
+    if (!ruby_thread_has_gvl_p() || st_table_pool.length == 0) {
+	table = (st_table_list*)malloc(sizeof (st_table_list));
+	list_node_init(&table->node);
+	return (st_table*)table;
+    }
+
+    table = list_pop(&st_table_pool.head, st_table_list, node);
+    st_table_pool.length--;
+
+    return (st_table*)table;
+}
+
+static void
+pool_st_table(st_table *_table)
+{
+    st_table_list *table = (st_table_list*)_table;
+
+    if (!ruby_thread_has_gvl_p() ||
+	    st_table_pool.length >= ST_TABLE_POOL_MAX_LENGTH) {
+	free(table);
+	return;
+    }
+
+    list_add_tail(&st_table_pool.head, &table->node);
+    st_table_pool.length++;
+}
+
 /* Create and return table with TYPE which can hold at least SIZE
    entries.  The real number of entries which the table can hold is
    the nearest power of two for SIZE.  */
@@ -571,7 +616,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
 #endif
 
     n = get_power2(size);
-    tab = (st_table *) malloc(sizeof (st_table));
+    tab = get_st_table();
     tab->type = type;
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
@@ -668,14 +713,14 @@ st_free_table(st_table *tab)
     if (tab->bins != NULL)
         free(tab->bins);
     free(tab->entries);
-    free(tab);
+    pool_st_table(tab);
 }
 
 /* Return byte size of memory allocted for table TAB.  */
 size_t
 st_memsize(const st_table *tab)
 {
-    return(sizeof(st_table)
+    return(sizeof(st_table_list)
            + (tab->bins == NULL ? 0 : bins_size(tab))
            + get_allocated_entries(tab) * sizeof(st_table_entry));
 }
@@ -791,7 +836,7 @@ rebuild_table(st_table *tab)
 	tab->bins = new_tab->bins;
 	free(tab->entries);
 	tab->entries = new_tab->entries;
-	free(new_tab);
+	pool_st_table(new_tab);
     }
     tab->entries_start = 0;
     tab->entries_bound = tab->num_entries;
@@ -1238,7 +1283,7 @@ st_copy(st_table *old_tab)
 {
     st_table *new_tab;
 
-    new_tab = (st_table *) malloc(sizeof(st_table));
+    new_tab = (st_table *) malloc(sizeof(st_table_list));
     *new_tab = *old_tab;
     if (old_tab->bins == NULL)
         new_tab->bins = NULL;
@@ -2012,7 +2057,7 @@ st_expand_table(st_table *tab, st_index_t siz)
     tab->entries = tmp->entries;
     tab->bins = NULL;
     tab->rebuilds_num++;
-    free(tmp);
+    pool_st_table(tmp);
 }
 
 /* Rehash using linear search. */
@@ -2192,3 +2237,11 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
         st_insert_generic(tab, argc, argv, hash);
 }
 #endif
+
+void
+Init_st(void)
+{
+    // initialize st_table pool
+    list_head_init(&st_table_pool.head);
+    st_table_pool.length = 0;
+}
