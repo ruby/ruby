@@ -2192,10 +2192,10 @@ class TestIO < Test::Unit::TestCase
     assert_warn(/invoke external command/) do
       File.binread("|#{EnvUtil.rubybin} -e puts")
     end
-    assert_raise(Errno::ENOENT) do
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).read("|#{EnvUtil.rubybin} -e puts")
     end
-    assert_raise(Errno::ENOENT) do
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
     end
   end
