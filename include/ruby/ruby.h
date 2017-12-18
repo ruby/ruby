@@ -628,7 +628,7 @@ int ruby_safe_level_2_warning(void) __attribute__((const,warning("$SAFE=2 to 4 a
 # define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
 #endif
 void rb_set_safe_level_force(int);
-CONSTFUNC(void rb_secure_update(VALUE));
+void rb_secure_update(VALUE);
 NORETURN(void rb_insecure_operation(void));
 
 VALUE rb_errinfo(void);
