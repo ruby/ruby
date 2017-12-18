@@ -469,7 +469,7 @@ class VCS
 
     def commit
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
-      ret = system(COMMAND, "svn", "dcommit")
+      ret = system(COMMAND, "svn", "dcommit", "--add-author-from")
       if ret and rev
         old = [cmd_read(%W"#{COMMAND} log -1 --format=%H").chomp]
         old << cmd_read(%W"#{COMMAND} svn reset -r#{rev}")[/^r#{rev} = (\h+)/, 1]
