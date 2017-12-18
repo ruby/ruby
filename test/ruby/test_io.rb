@@ -2357,6 +2357,10 @@ End
     IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :foo; puts :bar; puts :baz'") {|x| a << x }
     assert_equal(["foo\n", "bar\n", "baz\n"], a)
 
+    a = []
+    IO.foreach("|" + EnvUtil.rubybin + " -e 'puts :zot'", :open_args => ["r"]) {|x| a << x }
+    assert_equal(["zot\n"], a)
+
     make_tempfile {|t|
       a = []
       IO.foreach(t.path) {|x| a << x }
