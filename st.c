@@ -2241,7 +2241,7 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 void
 Init_st(void)
 {
-    // initialize st_table pool
+    /* initialize st_table pool */
     list_head_init(&st_table_pool.head);
     st_table_pool.length = 0;
 }
