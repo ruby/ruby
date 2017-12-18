@@ -7088,17 +7088,11 @@ rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
 		   const convconfig_t *convconfig, mode_t perm)
 {
     VALUE cmd;
-    if (!NIL_P(cmd = check_pipe_command(filename))) {
-	if (klass != rb_cIO) {
-	    ID func = rb_frame_this_func();
-	    VALUE fname = rb_id2str(func);
-	    static const char MSG[] = "IO.%"PRIsVALUE" called on %"PRIsVALUE" to invoke external command";
-	    if (klass == rb_cFile) {
-		rb_warn(MSG, fname, klass);
-	    }
-	    else {
-		rb_raise(rb_eArgError, MSG, fname, klass);
-	    }
+    const int warn = klass == rb_cFile;
+    if ((warn || klass == rb_cIO) && !NIL_P(cmd = check_pipe_command(filename))) {
+	if (warn) {
+	    rb_warn("IO.%"PRIsVALUE" called on File to invoke external command",
+		    rb_id2str(rb_frame_this_func()));
 	}
 	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
     }

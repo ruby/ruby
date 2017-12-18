@@ -2185,16 +2185,17 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_read_command
+    assert_equal("foo\n", IO.read("|echo foo"))
     assert_warn(/invoke external command/) do
       File.read("|#{EnvUtil.rubybin} -e puts")
     end
     assert_warn(/invoke external command/) do
       File.binread("|#{EnvUtil.rubybin} -e puts")
     end
-    assert_raise_with_message(ArgumentError, /invoke external command/) do
+    assert_raise(Errno::ENOENT) do
       Class.new(IO).read("|#{EnvUtil.rubybin} -e puts")
     end
-    assert_raise_with_message(ArgumentError, /invoke external command/) do
+    assert_raise(Errno::ENOENT) do
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
     end
   end
