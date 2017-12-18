@@ -201,6 +201,39 @@ class TestCoverage < Test::Unit::TestCase
     }
   end
 
+  def test_line_coverage_for_multiple_lines
+    result = {
+      :lines => [nil, 1, nil, nil, nil, 1, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, 1, 1, nil, 1, nil, nil, nil, nil, 1]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #14191
+      FOO = [
+        { foo: 'bar' },
+        { bar: 'baz' }
+      ]
+
+      'some string'.split
+                   .map(&:length)
+
+      some =
+        'value'
+
+      Struct.new(
+        :foo,
+        :bar
+      ).new
+
+      class Test
+        def foo(bar)
+          {
+            foo: bar
+          }
+        end
+      end
+
+      Test.new.foo(Object.new)
+    end;
+  end
+
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
