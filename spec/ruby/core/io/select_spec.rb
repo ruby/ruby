@@ -15,7 +15,7 @@ describe "IO.select" do
   end
 
   it "returns immediately all objects that are ready for I/O when timeout is 0" do
-    @wr.write("be ready")
+    @wr.syswrite("be ready")
     result = IO.select [@rd], [@wr], nil, 0
     result.should == [[@rd], [@wr], []]
   end
