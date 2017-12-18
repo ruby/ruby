@@ -7069,10 +7069,10 @@ rb_f_open(int argc, VALUE *argv)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, int, int, const convconfig_t *, mode_t);
+static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const convconfig_t *, mode_t);
 
 static VALUE
-rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
+rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
     int oflags, fmode;
     convconfig_t convconfig;
@@ -7080,19 +7080,30 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
-    return rb_io_open_generic(filename, oflags, fmode, &convconfig, perm);
+    return rb_io_open_generic(io, filename, oflags, fmode, &convconfig, perm);
 }
 
 static VALUE
-rb_io_open_generic(VALUE filename, int oflags, int fmode,
+rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
 		   const convconfig_t *convconfig, mode_t perm)
 {
     VALUE cmd;
     if (!NIL_P(cmd = check_pipe_command(filename))) {
+	if (klass != rb_cIO) {
+	    ID func = rb_frame_this_func();
+	    VALUE fname = rb_id2str(func);
+	    static const char MSG[] = "IO.%"PRIsVALUE" called on %"PRIsVALUE" to invoke external command";
+	    if (klass == rb_cFile) {
+		rb_warn(MSG, fname, klass);
+	    }
+	    else {
+		rb_raise(rb_eArgError, MSG, fname, klass);
+	    }
+	}
 	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
     }
     else {
-        return rb_file_open_generic(io_alloc(rb_cFile), filename,
+	return rb_file_open_generic(io_alloc(klass), filename,
 				    oflags, fmode, convconfig, perm);
     }
 }
@@ -10155,7 +10166,7 @@ struct foreach_arg {
 };
 
 static void
-open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
+open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 {
     VALUE path, v;
     VALUE vmode = Qnil, vperm = Qnil;
@@ -10178,7 +10189,7 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 	rb_check_arity(n, 0, 3); /* rb_io_open */
 	rb_scan_args(n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
     }
-    arg->io = rb_io_open(path, vmode, vperm, opt);
+    arg->io = rb_io_open(klass, path, vmode, vperm, opt);
 }
 
 static VALUE
@@ -10232,7 +10243,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
     extract_getline_args(argc-1, argv+1, &garg);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(self, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
@@ -10284,7 +10295,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     extract_getline_args(argc-1, argv+1, &garg);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
@@ -10360,7 +10371,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	struct seek_arg sarg;
@@ -10409,7 +10420,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
     convconfig.enc = rb_ascii8bit_encoding();
-    arg.io = rb_io_open_generic(argv[0], oflags, fmode, &convconfig, 0);
+    arg.io = rb_file_open_generic(io_alloc(io), argv[0], oflags, fmode, &convconfig, 0);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;
     arg.argc = (argc > 1) ? 1 : 0;
@@ -10435,7 +10446,7 @@ io_s_write0(struct write_arg *arg)
 }
 
 static VALUE
-io_s_write(int argc, VALUE *argv, int binary)
+io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 {
     VALUE string, offset, opt;
     struct foreach_arg arg;
@@ -10455,7 +10466,7 @@ io_s_write(int argc, VALUE *argv, int binary)
        if (NIL_P(offset)) mode |= O_TRUNC;
        rb_hash_aset(opt,sym_mode,INT2NUM(mode));
     }
-    open_key_args(argc,argv,opt,&arg);
+    open_key_args(klass, argc, argv, opt, &arg);
 
 #ifndef O_BINARY
     if (binary) rb_io_binmode_m(arg.io);
@@ -10529,7 +10540,7 @@ io_s_write(int argc, VALUE *argv, int binary)
 static VALUE
 rb_io_s_write(int argc, VALUE *argv, VALUE io)
 {
-    return io_s_write(argc, argv, 0);
+    return io_s_write(argc, argv, io, 0);
 }
 
 /*
@@ -10544,7 +10555,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
 {
-    return io_s_write(argc, argv, 1);
+    return io_s_write(argc, argv, io, 1);
 }
 
 struct copy_stream_struct {
