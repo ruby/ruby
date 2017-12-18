@@ -7098,16 +7098,6 @@ rb_io_open_generic(VALUE filename, int oflags, int fmode,
 }
 
 static VALUE
-rb_io_open_with_args(int argc, const VALUE *argv)
-{
-    VALUE io;
-
-    io = io_alloc(rb_cFile);
-    rb_open_file(argc, argv, io);
-    return io;
-}
-
-static VALUE
 io_reopen(VALUE io, VALUE nfile)
 {
     rb_io_t *fptr, *orig;
@@ -10168,6 +10158,7 @@ static void
 open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 {
     VALUE path, v;
+    VALUE vmode = Qnil, vperm = Qnil;
 
     path = *argv++;
     argc--;
@@ -10176,29 +10167,18 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
     arg->argc = argc;
     arg->argv = argv;
     if (NIL_P(opt)) {
-	arg->io = rb_io_open(path, INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
-	return;
+	vmode = INT2NUM(O_RDONLY);
+	vperm = INT2FIX(0666);
     }
-    v = rb_hash_aref(opt, sym_open_args);
-    if (!NIL_P(v)) {
-	VALUE args;
-	long n;
+    else if (!NIL_P(v = rb_hash_aref(opt, sym_open_args))) {
+	int n;
 
 	v = rb_to_array_type(v);
-	n = RARRAY_LEN(v) + 1;
-#if SIZEOF_LONG > SIZEOF_INT
-	if (n > INT_MAX) {
-	    rb_raise(rb_eArgError, "too many arguments");
-	}
-#endif
-	args = rb_ary_tmp_new(n);
-	rb_ary_push(args, path);
-	rb_ary_concat(args, v);
-	arg->io = rb_io_open_with_args((int)n, RARRAY_CONST_PTR(args));
-	rb_ary_clear(args);	/* prevent from GC */
-	return;
+	n = RARRAY_LENINT(v);
+	rb_check_arity(n, 0, 3); /* rb_io_open */
+	rb_scan_args(n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
     }
-    arg->io = rb_io_open(path, Qnil, Qnil, opt);
+    arg->io = rb_io_open(path, vmode, vperm, opt);
 }
 
 static VALUE
