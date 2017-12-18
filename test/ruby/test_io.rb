@@ -2184,6 +2184,15 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_read_command
+    assert_warn(/invoke external command/) do
+      File.read("|#{EnvUtil.rubybin} -e puts")
+    end
+    assert_raise_with_message(ArgumentError, /invoke external command/) do
+      Class.new(IO).read("|#{EnvUtil.rubybin} -e puts")
+    end
+  end
+
   def test_reopen
     make_tempfile {|t|
       open(__FILE__) do |f|
