@@ -5,9 +5,6 @@ require 'prettyprint'
 ##
 # A pretty-printer for Ruby objects.
 #
-# All examples assume you have loaded the PP class with:
-#   require 'pp'
-#
 ##
 # == What PP Does
 #
@@ -560,4 +557,3 @@ module Kernel
   end
   module_function :pp
 end
-
