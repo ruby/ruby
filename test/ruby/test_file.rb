@@ -494,6 +494,8 @@ class TestFile < Test::Unit::TestCase
         io = File.open(tmpdir, File::RDWR | File::TMPFILE)
       rescue Errno::EINVAL
         skip 'O_TMPFILE not supported (EINVAL)'
+      rescue Errno::EOPNOTSUPP
+        skip 'O_TMPFILE not supported (EOPNOTSUPP)'
       end
 
       io.write "foo"
