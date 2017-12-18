@@ -108,7 +108,7 @@
 #endif
 #include <string.h>
 #include <assert.h>
-#include "list.h"
+#include "ccan/list/list.h"
 
 #ifdef __GNUC__
 #define PREFETCH(addr, write_p) __builtin_prefetch(addr, write_p)
