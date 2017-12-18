@@ -16,6 +16,7 @@
 void
 rb_call_inits(void)
 {
+    CALL(st);
     CALL(Method);
     CALL(RandomSeedCore);
     CALL(sym);
