@@ -350,8 +350,20 @@ finish_iseq_build(rb_iseq_t *iseq)
 {
     struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
     VALUE err = data->err_info;
+    unsigned int i;
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
+
+    if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+	for (i = 0; i < iseq->body->insns_info_size; i++) {
+	    if (iseq->body->insns_info[i].events & RUBY_EVENT_LINE) {
+		int line_no = iseq->body->insns_info[i].line_no - 1;
+		if (0 <= line_no && line_no < RARRAY_LEN(ISEQ_LINE_COVERAGE(iseq))) {
+		    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line_no, INT2FIX(0));
+		}
+	    }
+	}
+    }
 
     if (RTEST(err)) {
 	VALUE path = pathobj_path(iseq->body->location.pathobj);

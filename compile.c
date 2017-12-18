@@ -251,14 +251,6 @@ struct iseq_compile_data_ensure_node_stack {
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
 
-#define SETUP_LINE_COVERAGE(seq, line) \
-  do { \
-      if (ISEQ_COVERAGE(iseq) && \
-	  ISEQ_LINE_COVERAGE(iseq) && \
-	  (line) > 0) { \
-	  RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
-      } \
-  } while (0)
 #define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
   do { \
       if (ISEQ_COVERAGE(iseq) && \
@@ -5422,7 +5414,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
     else {
 	if (node->flags & NODE_FL_NEWLINE) {
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
-	    SETUP_LINE_COVERAGE(ret, line);
 	    ADD_TRACE(ret, RUBY_EVENT_LINE);
 	}
     }
@@ -7040,7 +7031,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_PRELUDE:{
 	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
-	VALUE orig_cov = ISEQ_COVERAGE(iseq);
 	rb_compile_option_t new_opt = *orig_opt;
 	if (node->nd_compile_option) {
 	    rb_iseq_make_compile_option(&new_opt, node->nd_compile_option);
@@ -7050,7 +7040,13 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	CHECK(COMPILE_POPPED(ret, "prelude", node->nd_head));
 	CHECK(COMPILE_(ret, "body", node->nd_body, popped));
 	ISEQ_COMPILE_DATA(iseq)->option = orig_opt;
-	ISEQ_COVERAGE_SET(iseq, orig_cov);
+	/* Do NOT restore ISEQ_COVERAGE!
+	 * If ISEQ_COVERAGE is not false, finish_iseq_build function in iseq.c
+	 * will initialize the counter array of line coverage.
+	 * We keep ISEQ_COVERAGE as nil to disable this initialization.
+	 * This is not harmful assuming that NODE_PRELUDE pragma does not occur
+	 * in NODE tree except the root.
+	 */
 	break;
       }
       case NODE_LAMBDA:{
