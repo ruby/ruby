@@ -112,6 +112,23 @@ platform_is_not :windows do
       Signal.trap :HUP, "IGNORE"
       Signal.trap(:HUP, "IGNORE").should == "IGNORE"
     end
+
+    it "respects 'IGNORE' on a process if such a signal already exits" do
+      pid = fork do
+        Signal.trap :HUP, "IGNORE"
+        Signal.trap :HUP, "DEFAULT"
+
+        sleep 10
+      end
+
+      lambda {
+        Process.detach(pid)
+        sleep 2
+        Process.kill(:HUP, pid)
+        sleep 2
+        Process.getpgid(pid)
+      }.should_not raise_error
+    end
   end
 end
 
