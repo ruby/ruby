@@ -1678,7 +1678,10 @@ module DRb
             error_print(e) if verbose
           ensure
             client.close unless succ
-            shutdown if Thread.current['DRb']['stop_service']
+            if Thread.current['DRb']['stop_service']
+              shutdown
+              break
+            end
             break unless succ
           end
         end
