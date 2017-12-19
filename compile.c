@@ -3648,20 +3648,24 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			}
 			if (kw) {
 			    VALUE nhash = (i > 0 || !first) ? INT2FIX(2) : INT2FIX(1);
-			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-			    if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    if (!popped) {
+				ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+				if (i > 0 || !first) ADD_INSN(ret, line, swap);
+			    }
 			    COMPILE(ret, "keyword splat", kw);
-			    ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
-			    if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    if (popped) {
+				ADD_INSN(ret, line, pop);
+			    }
+			    else {
+				ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
+				if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+			    }
 			}
 			first = 0;
 			break;
 		      case COMPILE_ARRAY_TYPE_ARGS:
 			APPEND_LIST(ret, anchor);
 			break;
-		    }
-		    if (popped) {
-			ADD_INSN(ret, line, pop);
 		    }
 		}
 		else {
