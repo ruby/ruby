@@ -306,7 +306,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Psych
 
-  * Update to Psych 3.0.0.
+  * Update to Psych 3.0.2.
 
     * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
       https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
