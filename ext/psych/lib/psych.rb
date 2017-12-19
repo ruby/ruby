@@ -259,8 +259,8 @@ module Psych
   #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.load yaml, filename = nil, fallback = false, symbolize_names: false
-    result = parse(yaml, filename, fallback)
+  def self.load yaml, filename = nil, fallback: false, symbolize_names: false
+    result = parse(yaml, filename, fallback: fallback)
     result = result.to_ruby if result
     symbolize_names!(result) if symbolize_names
     result
@@ -300,6 +300,16 @@ module Psych
   #
   # A Psych::BadAlias exception will be raised if the yaml contains aliases
   # but the +aliases+ parameter is set to false.
+  #
+  # +filename+ will be used in the exception message if any exception is raised
+  # while parsing.
+  #
+  # When the optional +symbolize_names+ keyword argument is set to a
+  # true value, returns symbols for keys in Hash objects (default: strings).
+  #
+  #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
+  #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
+  #
   def self.safe_load yaml, whitelist_classes = [], whitelist_symbols = [], aliases = false, filename = nil, symbolize_names: false
     result = parse(yaml, filename)
     return unless result
@@ -336,7 +346,7 @@ module Psych
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse yaml, filename = nil, fallback = false
+  def self.parse yaml, filename = nil, fallback: false
     parse_stream(yaml, filename) do |node|
       return node
     end
@@ -483,9 +493,9 @@ module Psych
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified default return value, which defaults to an empty Hash
-  def self.load_file filename, fallback = false
+  def self.load_file filename, fallback: false
     File.open(filename, 'r:bom|utf-8') { |f|
-      self.load f, filename, FALLBACK.new(fallback)
+      self.load f, filename, fallback: FALLBACK.new(fallback)
     }
   end
 
