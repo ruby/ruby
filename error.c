@@ -1610,6 +1610,13 @@ rb_invalid_str(const char *str, const char *type)
     rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
 }
 
+/*
+ * call-seq:
+ *   key_error.receiver  -> object
+ *
+ * Return the receiver associated with this KeyError exception.
+ */
+
 static VALUE
 key_err_receiver(VALUE self)
 {
@@ -1619,6 +1626,13 @@ key_err_receiver(VALUE self)
     if (recv != Qundef) return recv;
     rb_raise(rb_eArgError, "no receiver is available");
 }
+
+/*
+ * call-seq:
+ *   key_error.key  -> object
+ *
+ * Return the key caused this KeyError exception.
+ */
 
 static VALUE
 key_err_key(VALUE self)
