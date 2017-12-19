@@ -469,7 +469,17 @@ class VCS
 
     def commit
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
-      ret = system(COMMAND, "svn", "dcommit", "--add-author-from")
+      com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
+
+      # TODO: dcommit necessary commits only with --add-author-from
+      same = true
+      cmd_pipe([COMMAND, "log", "--format=%ae %ce", "#{com}..@"], "rb") do |r|
+        r.each do |l|
+          same &&= /^(\S+) +\1$/ =~ l
+        end
+      end
+      ret = system(COMMAND, "svn", "dcommit", *(["--add-author-from"] unless same))
+
       if ret and rev
         old = [cmd_read(%W"#{COMMAND} log -1 --format=%H").chomp]
         old << cmd_read(%W"#{COMMAND} svn reset -r#{rev}")[/^r#{rev} = (\h+)/, 1]
