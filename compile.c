@@ -3619,7 +3619,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		}
 	    }
 	    else {
-		if (!popped) {
+		if (!popped || kw) {
 		    switch (type) {
 		      case COMPILE_ARRAY_TYPE_ARRAY:
 			ADD_INSN1(anchor, line, newarray, INT2FIX(i));
@@ -3659,6 +3659,9 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		      case COMPILE_ARRAY_TYPE_ARGS:
 			APPEND_LIST(ret, anchor);
 			break;
+		    }
+		    if (popped) {
+			ADD_INSN(ret, line, pop);
 		    }
 		}
 		else {
@@ -6268,7 +6271,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_HASH:{
 	DECL_ANCHOR(list);
-	int type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
+	enum node_type type = node->nd_head ? nd_type(node->nd_head) : NODE_ZARRAY;
 
 	INIT_ANCHOR(list);
 	switch (type) {

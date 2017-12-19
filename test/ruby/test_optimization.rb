@@ -702,4 +702,10 @@ class TestRubyOptimization < Test::Unit::TestCase
       }
     END
   end
+
+  def test_side_effect_in_popped_splat
+    bug = '[ruby-core:84340] [Bug #14201]'
+    eval("{**(bug = nil; {})};42")
+    assert_nil(bug)
+  end
 end
