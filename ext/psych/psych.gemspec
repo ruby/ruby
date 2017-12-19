@@ -3,10 +3,10 @@
 
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = "3.0.0"
+  s.version = "3.0.2"
   s.authors = ["Aaron Patterson", "SHIBATA Hiroshi", "Charles Oliver Nutter"]
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
-  s.date = "2017-12-01"
+  s.date = "2017-12-04"
   s.summary = "Psych is a YAML parser and emitter"
   s.description = <<-DESCRIPTION
 Psych is a YAML parser and emitter. Psych leverages libyaml[http://pyyaml.org/wiki/LibYAML]
@@ -41,7 +41,7 @@ DESCRIPTION
   s.rdoc_options = ["--main", "README.md"]
   s.extra_rdoc_files = ["CHANGELOG.rdoc", "README.md"]
 
-  s.required_ruby_version = Gem::Requirement.new(">= 1.9.2")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.2.2")
   s.rubygems_version = "2.5.1"
   s.required_rubygems_version = Gem::Requirement.new(">= 0")
 
