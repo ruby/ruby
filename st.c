@@ -126,16 +126,16 @@
 #define st_assert(cond) ((void)(0 && (cond)))
 #endif
 
-typedef struct _st_table_list {
+typedef struct st_table_list {
     st_table table;
     struct list_node node;
 } st_table_list;
 
-struct _st_table_pool {
+struct st_table_pool {
     struct list_head head;
     int length;
 };
-static struct _st_table_pool st_table_pool;
+static struct st_table_pool st_table_pool;
 #define ST_TABLE_POOL_MAX_LENGTH 500
 
 /* The type of hashes.  */
@@ -562,7 +562,7 @@ stat_col(void)
 #endif
 
 static st_table *
-get_st_table()
+get_st_table(void)
 {
     st_table_list *table;
 
@@ -2195,7 +2195,7 @@ st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 static void
 st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 {
-    int i;
+    long i;
 
     /* push elems */
     for (i = 0; i < argc; /* */) {
