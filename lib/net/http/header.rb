@@ -18,7 +18,11 @@ module Net::HTTPHeader
       if value.nil?
         warn "net/http: nil HTTP header: #{key}", uplevel: 1 if $VERBOSE
       else
-        @header[key.downcase] = [value.strip]
+        value = value.strip # raise error for invalid byte sequences
+        if value.count("\r\n") > 0
+          raise ArgumentError, 'header field value cannot include CR/LF'
+        end
+        @header[key.downcase] = [value]
       end
     end
   end
@@ -75,8 +79,8 @@ module Net::HTTPHeader
       append_field_value(ary, val)
       @header[key.downcase] = ary
     else
-      val = val.to_s
-      if /[\r\n]/n.match?(val.b)
+      val = val.to_s # for compatibility use to_s instead of to_str
+      if val.b.count("\r\n") > 0
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
       @header[key.downcase] = [val]
