@@ -345,6 +345,10 @@ prepare_iseq_build(rb_iseq_t *iseq,
     return Qtrue;
 }
 
+#if VM_CHECK_MODE > 0
+static void validate_get_insn_info(rb_iseq_t *iseq);
+#endif
+
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -352,6 +356,10 @@ finish_iseq_build(rb_iseq_t *iseq)
     VALUE err = data->err_info;
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
+
+#if VM_CHECK_MODE > 0
+    validate_get_insn_info(iseq);
+#endif
 
     if (RTEST(err)) {
 	VALUE path = pathobj_path(iseq->body->location.pathobj);
@@ -1237,11 +1245,52 @@ iseqw_to_a(VALUE self)
     return iseq_data_to_ary(iseq);
 }
 
-/* TODO: search algorithm is brute force.
-         this should be binary search or so. */
-
 static const struct iseq_insn_info_entry *
-get_insn_info(const rb_iseq_t *iseq, size_t pos)
+get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
+{
+    size_t size = iseq->body->insns_info_size;
+    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info;
+    const int debug = 0;
+
+    if (debug) {
+	printf("size: %"PRIuSIZE"\n", size);
+	printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
+	       (size_t)0, insns_info[0].position, insns_info[0].line_no, pos);
+    }
+
+    if (size == 0) {
+	return NULL;
+    }
+    else if (size == 1) {
+	return &insns_info[0];
+    }
+    else {
+	size_t l = 1, r = size - 1;
+	while (l <= r) {
+	    size_t m = l + (r - l) / 2;
+	    if (insns_info[m].position == pos) {
+		return &insns_info[m];
+	    }
+	    if (insns_info[m].position < pos) {
+		l = m + 1;
+	    }
+	    else {
+		r = m - 1;
+	    }
+	}
+	if (l >= size) {
+	    return &insns_info[size-1];
+	}
+	if (insns_info[l].position > pos) {
+	    return &insns_info[l-1];
+	}
+	return &insns_info[l];
+    }
+}
+
+#if VM_CHECK_MODE > 0
+static const struct iseq_insn_info_entry *
+get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 {
     size_t i = 0, size = iseq->body->insns_info_size;
     const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info;
@@ -1275,10 +1324,22 @@ get_insn_info(const rb_iseq_t *iseq, size_t pos)
     return &insns_info[i-1];
 }
 
+static void
+validate_get_insn_info(rb_iseq_t *iseq)
+{
+    size_t i;
+    for (i = 0; i < iseq->body->iseq_size; i++) {
+	if (get_insn_info_linear_search(iseq, i) != get_insn_info_binary_search(iseq, i)) {
+	    rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info_binary_search(iseq, %"PRIuSIZE")", i, i);
+	}
+    }
+}
+#endif
+
 unsigned int
 rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+    const struct iseq_insn_info_entry *entry = get_insn_info_binary_search(iseq, pos);
 
     if (entry) {
 	return entry->line_no;
@@ -1291,7 +1352,7 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
+    const struct iseq_insn_info_entry *entry = get_insn_info_binary_search(iseq, pos);
     if (entry) {
 	return entry->events;
     }
