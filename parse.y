@@ -8341,8 +8341,8 @@ parser_yylex(struct parser_params *parser)
 	    }
 	    goto retry;
 	}
-	while ((c = nextc())) {
-	    switch (c) {
+	while (1) {
+	    switch (c = nextc()) {
 	      case ' ': case '\t': case '\f': case '\r':
 	      case '\13': /* '\v' */
 		space_seen = 1;
