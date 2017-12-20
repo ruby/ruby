@@ -1755,7 +1755,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 int rb_thread_check_trap_pending(void);
 
 /* #define RUBY_EVENT_RESERVED_FOR_INTERNAL_USE 0x030000 */ /* from vm_core.h */
-#define RUBY_EVENT_COVERAGE_BRANCH              0x010000
+#define RUBY_EVENT_COVERAGE_LINE                0x010000
+#define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
 extern VALUE rb_get_coverages(void);
 extern void rb_set_coverages(VALUE, int, VALUE);

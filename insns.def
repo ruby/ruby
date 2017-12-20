@@ -778,11 +778,11 @@ checkkeyword
 
 /**
   @c setting
-  @e trace a branch
-  @j 分岐を trace する
+  @e fire a coverage event (currently, this is used for line coverage and branch coverage)
+  @j カバレッジイベントを trace する
  */
 DEFINE_INSN
-tracebranch
+tracecoverage
 (rb_num_t nf, VALUE data)
 ()
 ()
