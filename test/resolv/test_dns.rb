@@ -182,7 +182,7 @@ class TestResolvDNS < Test::Unit::TestCase
   def test_resolv_conf_by_command
     Dir.mktmpdir do |dir|
       Dir.chdir(dir) do
-        assert_raise(Errno::ENOENT) do
+        assert_raise(Errno::ENOENT, Errno::EINVAL) do
           Resolv::DNS::Config.parse_resolv_conf("|echo foo")
         end
       end
