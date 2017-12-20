@@ -159,7 +159,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Update to Onigmo 6.1.3-669ac9997619954c298da971fcfacccf36909d05.
 
-    * Support absent operator https://github.com/k-takata/Onigmo/issues/82
+    * Support absence operator https://github.com/k-takata/Onigmo/issues/82
 
   * Support new 5 emoji-related Unicode character properties
 
