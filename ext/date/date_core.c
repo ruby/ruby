@@ -6735,9 +6735,9 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  * Any text not listed as a directive will be passed through to the
  * output string.
  *
- * The directive consists of a percent (%) character,
- * zero or more flags, optional minimum field width,
- * optional modifier and a conversion specifier
+ * A directive consists of a percent (%) character,
+ * zero or more flags, an optional minimum field width,
+ * an optional modifier, and a conversion specifier
  * as follows.
  *
  *    %<flags><width><modifier><conversion>
@@ -8179,9 +8179,9 @@ dt_lite_to_s(VALUE self)
  * Any text not listed as a directive will be passed through to the
  * output string.
  *
- * The directive consists of a percent (%) character,
- * zero or more flags, optional minimum field width,
- * optional modifier and a conversion specifier
+ * A directive consists of a percent (%) character,
+ * zero or more flags, an optional minimum field width,
+ * an optional modifier, and a conversion specifier
  * as follows.
  *
  *    %<flags><width><modifier><conversion>
@@ -8375,8 +8375,8 @@ iso8601_timediv(VALUE self, long n)
  *    dt.iso8601([n=0])    ->  string
  *    dt.xmlschema([n=0])  ->  string
  *
- * This method is equivalent to strftime('%FT%T').  The optional
- * argument +n+ is the number of digits for fractional seconds.
+ * This method is equivalent to strftime('%FT%T%:z').
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').iso8601(9)
  *				#=> "2001-02-03T04:05:06.123456789+07:00"
@@ -8398,8 +8398,8 @@ dt_lite_iso8601(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    dt.rfc3339([n=0])  ->  string
  *
- * This method is equivalent to strftime('%FT%T').  The optional
- * argument n is length of fractional seconds.
+ * This method is equivalent to strftime('%FT%T%:z').
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').rfc3339(9)
  *				#=> "2001-02-03T04:05:06.123456789+07:00"
@@ -8414,8 +8414,8 @@ dt_lite_rfc3339(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *    dt.jisx0301([n=0])  ->  string
  *
- * Returns a string in a JIS X 0301 format.  The optional argument n
- * is length of fractional seconds.
+ * Returns a string in a JIS X 0301 format.
+ * The optional argument +n+ is the number of digits for fractional seconds.
  *
  *    DateTime.parse('2001-02-03T04:05:06.123456789+07:00').jisx0301(9)
  *				#=> "H13.02.03T04:05:06.123456789+07:00"
