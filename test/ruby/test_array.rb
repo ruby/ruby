@@ -2839,6 +2839,9 @@ class TestArray < Test::Unit::TestCase
     assert_equal("abc", ["a", "b", "c"].sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].sum([]))
 
+    assert_raise(TypeError) {[0].sum("")}
+    assert_raise(TypeError) {[1].sum("")}
+
     assert_separately(%w[-rmathn], <<-EOS, ignore_stderr: true)
       assert_equal(6, [1r, 2, 3r].sum)
     EOS

@@ -5691,6 +5691,26 @@ rb_ary_dig(int argc, VALUE *argv, VALUE self)
     return rb_obj_dig(argc, argv, self, Qnil);
 }
 
+static inline VALUE
+finish_exact_sum(long n, VALUE r, VALUE v, int z)
+{
+    if (n != 0)
+        v = rb_fix_plus(LONG2FIX(n), v);
+    if (r != Qundef) {
+	/* r can be an Integer when mathn is loaded */
+	if (FIXNUM_P(r))
+	    v = rb_fix_plus(r, v);
+	else if (RB_TYPE_P(r, T_BIGNUM))
+	    v = rb_big_plus(r, v);
+	else
+	    v = rb_rational_plus(r, v);
+    }
+    else if (!n && z) {
+        v = rb_fix_plus(LONG2FIX(0), v);
+    }
+    return v;
+}
+
 /*
  * call-seq:
  *   ary.sum(init=0)                    -> number
@@ -5772,31 +5792,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
         else
             goto not_exact;
     }
-    if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef) {
-        /* r can be an Integer when mathn is loaded */
-        if (FIXNUM_P(r))
-            v = rb_fix_plus(r, v);
-        else if (RB_TYPE_P(r, T_BIGNUM))
-            v = rb_big_plus(r, v);
-        else
-            v = rb_rational_plus(r, v);
-    }
+    v = finish_exact_sum(n, r, v, argc!=0);
     return v;
 
   not_exact:
-    if (n != 0)
-        v = rb_fix_plus(LONG2FIX(n), v);
-    if (r != Qundef) {
-        /* r can be an Integer when mathn is loaded */
-        if (FIXNUM_P(r))
-            v = rb_fix_plus(r, v);
-        else if (RB_TYPE_P(r, T_BIGNUM))
-            v = rb_big_plus(r, v);
-        else
-            v = rb_rational_plus(r, v);
-    }
+    v = finish_exact_sum(n, r, v, i!=0);
 
     if (RB_FLOAT_TYPE_P(e)) {
         /*
