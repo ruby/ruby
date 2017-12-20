@@ -334,9 +334,15 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * RDoc
 
-  * Update to RDoc 6.0.0.beta3.
-    * Replaced IRB based lexer with Ripper. It much improves the speed of generating document.
-    * https://github.com/ruby/rdoc/pull/512
+  * Update to RDoc 6.0.0.
+
+    * Replaced IRB based lexer with Ripper.
+      * https://github.com/ruby/rdoc/pull/512
+      * It much improves the speed of generating documents.
+      * To facilitate supporting new syntax in the future.
+    * Supported many new syntaxes of Ruby in the past few years.
+    * Used "frozen_string_literal: true". It reduces documents generation time by 5%.
+    * Supported did_you_mean.
 
 * Rubygems
 
