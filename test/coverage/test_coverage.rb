@@ -203,7 +203,7 @@ class TestCoverage < Test::Unit::TestCase
 
   def test_line_coverage_for_multiple_lines
     result = {
-      :lines => [nil, 1, nil, nil, nil, 1, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, 1, 1, nil, 1, nil, nil, nil, nil, 1]
+      :lines => [1, nil, nil, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1, nil, 1, 1, 1, nil, nil, nil, nil, nil, 1]
     }
     assert_coverage(<<~"end;", { lines: true }, result) # Bug #14191
       FOO = [
