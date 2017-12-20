@@ -3840,7 +3840,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 		      event == RUBY_EVENT_RETURN  ||
 		      event == RUBY_EVENT_B_RETURN);
 	    reg_cfp->pc++;
-	    vm_dtrace(RUBY_EVENT_LINE, ec);
+	    vm_dtrace(event, ec);
 	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, TOPN(0));
 	    reg_cfp->pc--;
 	}
