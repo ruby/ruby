@@ -308,6 +308,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Update to Psych 3.0.2.
 
+    * Convert fallback option to a keyword argument
+      https://github.com/ruby/psych/pull/342
     * Add :symbolize_names option to Psych.load, Psych.safe_load like JSON.parse
       https://github.com/ruby/psych/pull/333, https://github.com/ruby/psych/pull/337
     * Add Psych::Handler#event_location
