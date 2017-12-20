@@ -928,7 +928,7 @@ class Resolv
         nameserver = []
         search = nil
         ndots = 1
-        open(filename, 'rb') {|f|
+        File.open(filename, 'rb') {|f|
           f.each {|line|
             line.sub!(/[#;].*/, '')
             keyword, *args = line.split(/\s+/)
