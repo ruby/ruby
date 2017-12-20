@@ -2199,6 +2199,10 @@ module Net
         else
           result = response_tagged
         end
+        while lookahead.symbol == T_SPACE
+          # Ignore trailing space for Microsoft Exchange Server
+          shift_token
+        end
         match(T_CRLF)
         match(T_EOF)
         return result
