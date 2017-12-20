@@ -9,9 +9,10 @@ describe "Thread#[]=" do
   it "raises a RuntimeError if the thread is frozen" do
     running = false
     t = Thread.new do
-      t.freeze
+      th = Thread.current
+      th.freeze
       -> {
-        t[:foo] = "bar"
+        th[:foo] = "bar"
       }.should raise_error(RuntimeError, /frozen/)
     end
     t.join
