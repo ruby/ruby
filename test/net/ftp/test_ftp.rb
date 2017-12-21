@@ -611,7 +611,7 @@ class FTPTest < Test::Unit::TestCase
       conn = TCPSocket.new(host, port)
       sleep(0.1)
       conn.print(binary_data[0,1024])
-      sleep(0.5)
+      sleep(1.0)
       conn.print(binary_data[1024, 1024]) rescue nil # may raise EPIPE or something
       conn.close
       sock.print("226 Transfer complete.\r\n")
@@ -619,7 +619,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 0.5
         ftp.connect(SERVER_ADDR, server.port)
         ftp.login
         assert_match(/\AUSER /, commands.shift)
