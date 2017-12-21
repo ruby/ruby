@@ -5186,12 +5186,11 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
+    VALUE tmp;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
-    arg.buf = RSTRING_PTR(str);
-    arg.count = (size_t)RSTRING_LEN(str);
     arg.offset = NUM2OFFT(offset);
 
     io = GetWriteIO(io);
@@ -5199,10 +5198,13 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     rb_io_check_writable(fptr);
     arg.fd = fptr->fd;
 
-    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
-    RB_GC_GUARD(str);
+    tmp = rb_str_tmp_frozen_acquire(str);
+    arg.buf = RSTRING_PTR(tmp);
+    arg.count = (size_t)RSTRING_LEN(tmp);
 
+    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
     if (n == -1) rb_sys_fail_path(fptr->pathv);
+    rb_str_tmp_frozen_release(str, tmp);
 
     return SSIZET2NUM(n);
 }
