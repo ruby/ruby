@@ -771,6 +771,15 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
     }
 }
 
+void
+rb_iseq_code_range(const rb_iseq_t *iseq, int *first_lineno, int *first_column, int *last_lineno, int *last_column)
+{
+    if (first_lineno) *first_lineno = iseq->body->location.code_range.first_loc.lineno;
+    if (first_column) *first_column = iseq->body->location.code_range.first_loc.column;
+    if (last_lineno) *last_lineno = iseq->body->location.code_range.last_loc.lineno;;
+    if (last_column) *last_column = iseq->body->location.code_range.last_loc.column;
+}
+
 VALUE
 rb_iseq_coverage(const rb_iseq_t *iseq)
 {
