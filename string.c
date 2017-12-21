@@ -6163,21 +6163,19 @@ unescape_ascii(unsigned int c)
 static long
 undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_encoding **penc)
 {
-    unsigned int c, c2;
-    long n;
+    const char *s0 = s;
+    unsigned int c;
     int codelen;
     size_t hexlen;
     char buf[6];
     static rb_encoding *enc_utf8 = NULL;
 
-    c = rb_enc_codepoint_len(s, s_end, &codelen, *penc);
-    n = codelen;
-    switch (c) {
+    switch (*s) {
       case '\\':
       case '"':
       case '#':
-	rb_str_cat(undumped, s, n); /* cat itself */
-	n++;
+	rb_str_cat(undumped, s, 1); /* cat itself */
+	s++;
 	break;
       case 'n':
       case 'r':
@@ -6187,77 +6185,78 @@ undump_after_backslash(VALUE undumped, const char *s, const char *s_end, rb_enco
       case 'b':
       case 'a':
       case 'e':
-	*buf = (char)unescape_ascii(c);
-	rb_str_cat(undumped, buf, n);
-	n++;
+	*buf = (char)unescape_ascii(*s);
+	rb_str_cat(undumped, buf, 1);
+	s++;
 	break;
       case 'u':
-	if (s+1 >= s_end) {
+	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	}
 	if (enc_utf8 == NULL) enc_utf8 = rb_utf8_encoding();
 	if (*penc != enc_utf8) {
 	    *penc = enc_utf8;
 	    rb_enc_associate(undumped, enc_utf8);
-	    ENC_CODERANGE_CLEAR(undumped);
 	}
-	c2 = rb_enc_codepoint_len(s+1, s_end, NULL, *penc);
-	if (c2 == '{') { /* handle \u{...} form */
-	    const char *hexstr = s + 2;
-	    int hex;
-
-	    while ((hex = rb_enc_ascget(hexstr, s_end, &codelen, *penc)) != '}') {
-		if (hex == -1) {
+	if (*s == '{') { /* handle \u{...} form */
+	    s++;
+	    for (;;) {
+		if (s >= s_end) {
 		    rb_raise(rb_eRuntimeError, "unterminated Unicode escape");
 		}
-		if (ISSPACE(hex)) {
-		    hexstr += codelen;
+		if (*s == '}') {
+		    s++;
+		    break;
+		}
+		if (ISSPACE(*s)) {
+		    s++;
 		    continue;
 		}
-		hex = scan_hex(hexstr, s_end-hexstr, &hexlen);
+		c = scan_hex(s, s_end-s, &hexlen);
 		if (hexlen == 0 || hexlen > 6) {
 		    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 		}
-		if (hex > 0x10ffff) {
+		if (c > 0x10ffff) {
 		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint (too large)");
 		}
-		if ((hex & 0xfffff800) == 0xd800) {
+		if (0xd800 <= c && c <= 0xdfff) {
 		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
 		}
-		codelen = rb_enc_mbcput(hex, buf, *penc);
+		codelen = rb_enc_mbcput(c, buf, *penc);
 		rb_str_cat(undumped, buf, codelen);
-		hexstr += hexlen;
+		s += hexlen;
 	    }
-	    n += hexstr - s + 1;
 	}
 	else { /* handle \uXXXX form */
-	    int hex = scan_hex(s+1, 4, &hexlen);
+	    c = scan_hex(s, 4, &hexlen);
 	    if (hexlen != 4) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode escape");
 	    }
-	    codelen = rb_enc_codelen(hex, *penc);
-	    rb_enc_mbcput(hex, buf, *penc);
+	    if (0xd800 <= c && c <= 0xdfff) {
+		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
+	    }
+	    codelen = rb_enc_mbcput(c, buf, *penc);
 	    rb_str_cat(undumped, buf, codelen);
-	    n += rb_strlen_lit("uXXXX");
+	    s += hexlen;
 	}
 	break;
       case 'x':
-	if (s+1 >= s_end) {
+	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	c2 = scan_hex(s+1, 2, &hexlen);
+	*buf = scan_hex(s, 2, &hexlen);
 	if (hexlen != 2) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	*buf = (char)c2;
-	rb_str_cat(undumped, buf, 1L);
-	n += rb_strlen_lit("xXX");
+	rb_str_cat(undumped, buf, 1);
+	s += hexlen;
 	break;
       default:
-	rb_str_cat(undumped, "\\", 1L); /* keep backslash */
+	rb_str_cat(undumped, s-1, 2);
+	s++;
     }
 
-    return n;
+    return s - s0 + 1;
 }
 
 static VALUE rb_str_is_ascii_only_p(VALUE str);
