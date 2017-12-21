@@ -6287,6 +6287,7 @@ str_undump(VALUE str)
 		memcpy(buf, encname, size);
 		buf[size] = '\0';
 		encidx = rb_enc_find_index(buf);
+		xfree(buf);
 		if (encidx < 0) {
 		    rb_raise(rb_eRuntimeError, "dumped string has unknown encoding name");
 		}
