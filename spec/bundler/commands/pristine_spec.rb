@@ -41,11 +41,14 @@ RSpec.describe "bundle pristine", :ruby_repo do
     end
 
     it "does not delete the bundler gem", :ruby_repo do
+      ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"] = "true"
       system_gems :bundler
       bundle! "install"
       bundle! "pristine", :system_bundler => true
       bundle! "-v", :system_bundler => true
-      expect(out).to end_with(Bundler::VERSION)
+      # An old rubygems couldn't handle a correct version of vendoered bundler.
+      bundler_version = Gem::VERSION < "2.1" ? "1.16.0" : Bundler::VERSION
+      expect(out).to end_with(bundler_version)
     end
   end
 

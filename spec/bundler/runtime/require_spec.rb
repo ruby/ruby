@@ -264,13 +264,13 @@ RSpec.describe "Bundler.require" do
 
   describe "using bundle exec" do
     it "requires the locked gems" do
-      bundle "exec ruby -e 'Bundler.require'"
+      bundle "exec ruby -e 'Bundler.require'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(out).to eq("two")
 
-      bundle "exec ruby -e 'Bundler.require(:bar)'"
+      bundle "exec ruby -e 'Bundler.require(:bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(out).to eq("baz\nqux")
 
-      bundle "exec ruby -e 'Bundler.require(:default, :bar)'"
+      bundle "exec ruby -e 'Bundler.require(:default, :bar)'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(out).to eq("baz\nqux\ntwo")
     end
   end

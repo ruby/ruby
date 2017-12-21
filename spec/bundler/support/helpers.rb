@@ -220,7 +220,7 @@ module Spec
 
     def rake
       if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
-        "#{ENV['BUNDLE_RUBY']} #{ENV['GEM_PATH']}/bin/rake"
+        "'#{ENV['BUNDLE_RUBY']}' -S '#{ENV['GEM_PATH']}/bin/rake'"
       else
         'rake'
       end

@@ -763,7 +763,7 @@ end
     G
 
     ENV["GEM_HOME"] = ""
-    bundle %(exec ruby -e "require 'set'")
+    bundle %(exec ruby -e "require 'set'"), :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
 
     expect(err).to lack_errors
   end
@@ -1078,7 +1078,7 @@ end
         gem "bundler", :path => "#{File.expand_path("..", lib)}"
       G
 
-      bundle %(exec ruby -e "require 'bundler'; Bundler.setup")
+      bundle %(exec ruby -e "require 'bundler'; Bundler.setup"), :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(err).to lack_errors
     end
   end
@@ -1236,6 +1236,7 @@ end
       end
 
       let(:activation_warning_hack) { strip_whitespace(<<-RUBY) }
+        require #{spec_dir.join("support/hax").to_s.dump}
         require "rubygems"
 
         if Gem::Specification.instance_methods.map(&:to_sym).include?(:activate)
@@ -1279,8 +1280,9 @@ end
 
       it "activates no gems with bundle exec" do
         install_gemfile! ""
+        # ensure we clean out the default gems, bceause bundler's allowed to be activated
         create_file("script.rb", code)
-        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt + " -rbundler/setup" }
         expect(last_command.stdout).to eq("{}")
       end
 

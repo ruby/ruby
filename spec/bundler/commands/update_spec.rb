@@ -657,7 +657,7 @@ RSpec.describe "bundle update --bundler" do
       source "file:#{gem_repo4}"
       gem "rack"
     G
-    lockfile lockfile.sub(Bundler::VERSION, "1.0.0")
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
     FileUtils.rm_r gem_repo4
 
