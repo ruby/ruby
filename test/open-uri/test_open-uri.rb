@@ -68,6 +68,16 @@ class TestOpenURI < Test::Unit::TestCase
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
+  def test_200_uri_open
+    with_http {|srv, dr, url|
+      srv.mount_proc("/urifoo200", lambda { |req, res| res.body = "urifoo200" } )
+      URI.open("#{url}/urifoo200") {|f|
+        assert_equal("200", f.status[0])
+        assert_equal("urifoo200", f.read)
+      }
+    }
+  end
+
   def test_200
     with_http {|srv, dr, url|
       srv.mount_proc("/foo200", lambda { |req, res| res.body = "foo200" } )

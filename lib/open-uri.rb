@@ -40,6 +40,13 @@ module Kernel
   module_function :open
 end
 
+module URI #:nodoc:
+  # alias for Kernel.open defined in open-uri.
+  def self.open(name, *rest, &block)
+    Kernel.open(name, *rest, &block)
+  end
+end
+
 # OpenURI is an easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP.
 #
 # == Example
