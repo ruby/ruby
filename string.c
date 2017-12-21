@@ -6107,7 +6107,7 @@ unescape_ascii(unsigned int c)
 }
 
 static void
-undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_encoding **penc, bool *utf8)
+undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_encoding **penc, bool *utf8, bool *binary)
 {
     const char *s = *ss;
     unsigned int c;
@@ -6136,6 +6136,9 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
 	s++;
 	break;
       case 'u':
+	if (*binary) {
+	    rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
+	}
 	*utf8 = true;
 	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid Unicode escape");
@@ -6188,6 +6191,10 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
 	}
 	break;
       case 'x':
+	if (*utf8) {
+	    rb_raise(rb_eRuntimeError, "hex escape and Unicode escape are mixed");
+	}
+	*binary = true;
 	if (++s >= s_end) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
@@ -6226,6 +6233,7 @@ str_undump(VALUE str)
     rb_encoding *enc = rb_enc_get(str);
     VALUE undumped = rb_enc_str_new(s, 0L, enc);
     bool utf8 = false;
+    bool binary = false;
     int w;
 
     rb_must_asciicompat(str);
@@ -6296,7 +6304,7 @@ str_undump(VALUE str)
 	    if (s >= s_end) {
 		rb_raise(rb_eRuntimeError, "invalid escape");
 	    }
-	    undump_after_backslash(undumped, &s, s_end, &enc, &utf8);
+	    undump_after_backslash(undumped, &s, s_end, &enc, &utf8, &binary);
 	}
 	else {
 	    rb_str_cat(undumped, s++, 1);

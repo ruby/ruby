@@ -784,6 +784,8 @@ CODE
     assert_equal('\#{', '"\\\\\#{"'.undump)
 
     assert_raise(RuntimeError) { S('\u3042').undump }
+    assert_raise(RuntimeError) { S('"\x82\xA0\u3042"'.force_encoding("SJIS")).undump }
+    assert_raise(RuntimeError) { S('"\u3042\x82\xA0"'.force_encoding("SJIS")).undump }
     assert_raise(RuntimeError) { S('"".force_encoding()').undump }
     assert_raise(RuntimeError) { S('"".force_encoding("').undump }
     assert_raise(RuntimeError) { S('"".force_encoding("UNKNOWN")').undump }
