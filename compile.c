@@ -3367,21 +3367,6 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 }
 
 static int
-local_block_param_p(rb_iseq_t *iseq, ID vid)
-{
-    int idx = iseq->body->local_iseq->body->local_table_size - get_local_var_idx(iseq, vid);
-    int level = get_lvar_level(iseq);
-    return iseq_local_block_param_p(iseq, idx, level);
-}
-
-static void
-compile_defined_yield(rb_iseq_t *iseq, LINK_ANCHOR *const ret, int line, VALUE needstr)
-{
-    ADD_INSN(ret, line, putnil);
-    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_YIELD), 0, needstr);
-}
-
-static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
 			 LABEL *then_label, LABEL *else_label)
 {
@@ -3429,11 +3414,6 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
       case NODE_DEFINED:
 	CHECK(compile_defined_expr(iseq, ret, cond, Qfalse));
 	goto branch;
-      case NODE_LVAR:
-	if (local_block_param_p(iseq, cond->nd_vid)) {
-	    compile_defined_yield(iseq, ret, nd_line(cond), Qfalse);
-	    goto branch;
-	}
       default:
 	CHECK(COMPILE(ret, "branch condition", cond));
       branch:
@@ -4170,7 +4150,9 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       }
 
       case NODE_YIELD:
-	compile_defined_yield(iseq, ret, nd_line(node), needstr);
+	ADD_INSN(ret, nd_line(node), putnil);
+	ADD_INSN3(ret, nd_line(node), defined, INT2FIX(DEFINED_YIELD), 0,
+		  needstr);
 	return 1;
 
       case NODE_BACK_REF:
