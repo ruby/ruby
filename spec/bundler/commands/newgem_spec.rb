@@ -191,7 +191,7 @@ RSpec.describe "bundle gem" do
 
   it "generates a valid gemspec" do
     in_app_root
-    bundle "gem newgem --bin"
+    bundle! "gem newgem --bin"
 
     process_file(bundled_app("newgem", "newgem.gemspec")) do |line|
       # Simulate replacing TODOs with real values
@@ -211,7 +211,9 @@ RSpec.describe "bundle gem" do
     end
 
     Dir.chdir(bundled_app("newgem")) do
-      system_gems ["rake-10.0.2"], :path => :bundle_path
+      gems = ["rake-10.0.2", :bundler]
+      gems.delete(:bundler) if ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]
+      system_gems gems, :path => :bundle_path
       bundle! "exec rake build"
     end
 

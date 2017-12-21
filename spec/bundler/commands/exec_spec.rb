@@ -29,7 +29,7 @@ RSpec.describe "bundle exec" do
       gem "rack"
     G
 
-    bundle "exec 'cd #{tmp("gems")} && rackup'"
+    bundle "exec 'cd #{tmp("gems")} && rackup'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
 
     expect(out).to include("1.0.0")
   end
@@ -42,7 +42,7 @@ RSpec.describe "bundle exec" do
 
   it "works when exec'ing to ruby" do
     install_gemfile 'gem "rack"'
-    bundle "exec ruby -e 'puts %{hi}'"
+    bundle "exec ruby -e 'puts %{hi}'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
     expect(out).to eq("hi")
   end
 
@@ -76,7 +76,9 @@ RSpec.describe "bundle exec" do
     G
 
     install_gemfile ""
-    sys_exec("#{Gem.ruby} #{command.path}")
+    with_env_vars "RUBYOPT" => "-r#{spec_dir.join("support/hax")}" do
+      sys_exec "#{Gem.ruby} #{command.path}"
+    end
 
     if Bundler.current_ruby.ruby_2?
       expect(out).to eq("")
@@ -237,7 +239,7 @@ RSpec.describe "bundle exec" do
     G
     [true, false].each do |l|
       bundle! "config disable_exec_load #{l}"
-      bundle "exec rackup"
+      bundle "exec rackup", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(last_command.stderr).to include "rack is not part of the bundle. Add it to your Gemfile."
     end
   end
@@ -339,14 +341,14 @@ RSpec.describe "bundle exec" do
       end
 
       it "works when unlocked", :ruby_repo do
-        bundle "exec 'cd #{tmp("gems")} && rackup'"
+        bundle "exec 'cd #{tmp("gems")} && rackup'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
         expect(out).to eq("1.0.0")
         expect(out).to include("1.0.0")
       end
 
       it "works when locked", :ruby_repo do
         expect(the_bundle).to be_locked
-        bundle "exec 'cd #{tmp("gems")} && rackup'"
+        bundle "exec 'cd #{tmp("gems")} && rackup'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
         expect(out).to include("1.0.0")
       end
     end
@@ -472,7 +474,7 @@ RSpec.describe "bundle exec" do
       Bundler.rubygems.extend(Monkey)
       G
       bundle "install --deployment"
-      bundle "exec ruby -e '`#{bindir.join("bundler")} -v`; puts $?.success?'"
+      bundle "exec ruby -e '`#{bindir.join("bundler")} -v`; puts $?.success?'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
       expect(out).to match("true")
     end
   end
@@ -512,7 +514,7 @@ RSpec.describe "bundle exec" do
     let(:expected) { [exec, args, rack, process].join("\n") }
     let(:expected_err) { "" }
 
-    subject { bundle "exec #{path} arg1 arg2" }
+    subject { bundle "exec #{path} arg1 arg2", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" } }
 
     shared_examples_for "it runs" do
       it "like a normally executed executable" do
@@ -550,6 +552,7 @@ RSpec.describe "bundle exec" do
         ex << "raise SignalException, 'SIGTERM'\n"
         ex
       end
+      let(:expected_err) { ENV["TRAVIS"] ? "Terminated" : "" }
       let(:exit_code) do
         # signal mask 128 + plus signal 15 -> TERM
         # this is specified by C99
@@ -778,10 +781,13 @@ __FILE__: #{path.to_s.inspect}
         file.chmod(0o777)
 
         aggregate_failures do
-          expect(bundle!("exec #{file}", :system_bundler => true, :artifice => nil)).to eq(expected)
-          expect(bundle!("exec bundle exec #{file}", :system_bundler => true, :artifice => nil)).to eq(expected)
-          expect(bundle!("exec ruby #{file}", :system_bundler => true, :artifice => nil)).to eq(expected)
-          expect(run!(file.read, :no_lib => true, :artifice => nil)).to eq(expected)
+          expect(bundle!("exec #{file}", :artifice => nil)).to eq(expected)
+          expect(bundle!("exec bundle exec #{file}", :artifice => nil)).to eq(expected)
+          expect(bundle!("exec ruby #{file}", :artifice => nil)).to eq(expected)
+          # Ignore expectaion for default bundler gem conflict.
+          unless ENV["BUNDLER_SPEC_SUB_VERSION"]
+            expect(run!(file.read, :no_lib => true, :artifice => nil)).to eq(expected)
+          end
         end
 
         # sanity check that we get the newer, custom version without bundler

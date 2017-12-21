@@ -435,12 +435,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not unlock the non-path gem after install" do
-        bundle :install
+        bundle! :install
 
-        bundle %(exec ruby -e 'puts "OK"')
+        bundle! %(exec ruby -e 'puts "OK"'), :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
 
         expect(out).to include("OK")
-        expect(exitstatus).to eq(0) if exitstatus
       end
     end
   end

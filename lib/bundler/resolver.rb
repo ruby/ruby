@@ -306,6 +306,8 @@ module Bundler
         :solver_name => "Bundler",
         :possibility_type => "gem",
         :reduce_trees => lambda do |trees|
+          # bail out if tree size is too big for Array#combination to make any sense
+          return trees if trees.size > 15
           maximal = 1.upto(trees.size).map do |size|
             trees.map(&:last).flatten(1).combination(size).to_a
           end.flatten(1).select do |deps|

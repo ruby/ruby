@@ -4,13 +4,16 @@ $:.unshift File.expand_path("..", __FILE__)
 $:.unshift File.expand_path("../../lib", __FILE__)
 
 require "rubygems"
-require "bundler/psyched_yaml"
-require "bundler/vendored_fileutils"
-require "uri"
-require "digest"
-require File.expand_path("../support/path.rb", __FILE__)
+module Gem
+  if defined?(@path_to_default_spec_map)
+    @path_to_default_spec_map.delete_if do |_path, spec|
+      spec.name == "bundler"
+    end
+  end
+end
 
 begin
+  require File.expand_path("../support/path.rb", __FILE__)
   spec = Gem::Specification.load(Spec::Path.gemspec.to_s)
   rspec = spec.dependencies.find {|d| d.name == "rspec" }
   gem "rspec", rspec.requirement.to_s
@@ -19,6 +22,11 @@ begin
 rescue LoadError
   abort "Run rake spec:deps to install development dependencies"
 end
+
+require "bundler/psyched_yaml"
+require "bundler/vendored_fileutils"
+require "uri"
+require "digest"
 
 if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
@@ -99,8 +107,6 @@ RSpec.configure do |config|
 
   original_wd  = Dir.pwd
   original_env = ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) }
-  original_default_specs = Dir[File.join(Gem.default_dir, "specifications", "default", "bundler*")]
-  original_site_ruby_dirs = $LOAD_PATH.select {|path| path =~ /site_ruby/ }.map {|path| File.join(path, "bundler*") }.compact.map {|path| Dir[path] }.flatten
 
   config.expect_with :rspec do |c|
     c.syntax = :expect
@@ -115,11 +121,6 @@ RSpec.configure do |config|
 
   config.before :all do
     build_repo1
-    (original_default_specs + original_site_ruby_dirs).each {|s| FileUtils.mv(s, s + ".org") }
-  end
-
-  config.after :all do
-    (original_default_specs + original_site_ruby_dirs).each {|s| FileUtils.mv(s + ".org", s) if File.exist?(s + ".org") }
   end
 
   config.before :each do
