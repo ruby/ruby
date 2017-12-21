@@ -7,15 +7,13 @@ describe "Thread#[]=" do
   end
 
   it "raises a RuntimeError if the thread is frozen" do
-    running = false
-    t = Thread.new do
+    Thread.new do
       th = Thread.current
       th.freeze
       -> {
         th[:foo] = "bar"
       }.should raise_error(RuntimeError, /frozen/)
-    end
-    t.join
+    end.join
   end
 
   it "raises exceptions on the wrong type of keys" do
