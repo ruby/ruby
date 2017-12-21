@@ -416,6 +416,13 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Logger
+
+  * Logger.new("| command") had been working to open a command
+    unintentionally. It was prohibitted, and now Logger#initialize
+    treats a String argument only as a filename, as its specification.
+    [Bug #14212]
+
 * Net::HTTP
 
   * Net::HTTP#start now passes :ENV to p_addr by default. [Bug #13351]
