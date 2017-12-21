@@ -708,4 +708,14 @@ class TestRubyOptimization < Test::Unit::TestCase
     eval("{**(bug = nil; {})};42")
     assert_nil(bug)
   end
+
+  def test_overwritten_blockparam
+    obj = Object.new
+    def obj.a(&block)
+      block = 1
+      return :ok if block
+      :ng
+    end
+    assert_equal(:ok, obj.a())
+  end
 end
