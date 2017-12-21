@@ -2997,7 +2997,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3);
-			$$->nd_body->nd_loc = @5;
+			$$->nd_body->nd_loc = @$;
 			set_line_body($5, $<num>4);
 			nd_set_line($$, $<num>4);
 			$$->nd_loc = @$;
@@ -3020,7 +3020,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $6);
-			$$->nd_body->nd_loc = @6;
+			$$->nd_body->nd_loc = @$;
 			set_line_body($6, nd_line($3));
 			fixpos($$, $3);
 			$$->nd_loc = @$;
@@ -3048,7 +3048,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4);
-			$$->nd_body->nd_loc = @4;
+			$$->nd_body->nd_loc = @$;
 			set_line_body($4, $<num>3);
 			nd_set_line($$, $<num>3);
 			$$->nd_loc = @$;
