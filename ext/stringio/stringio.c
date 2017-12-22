@@ -1248,8 +1248,8 @@ strio_readlines(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   strio.write(string)    -> integer
- *   strio.syswrite(string) -> integer
+ *   strio.write(string, ...) -> integer
+ *   strio.syswrite(string)   -> integer
  *
  * Appends the given string to the underlying buffer string of *strio*.
  * The stream must be opened for writing.  If the argument is not a
