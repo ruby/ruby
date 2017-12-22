@@ -40,7 +40,7 @@ module WEBrick
         @mtime = Time.at(0)
         @passwd = Hash.new
         @auth_type = BasicAuth
-        open(@path,"a").close unless File::exist?(@path)
+        File.open(@path,"a").close unless File.exist?(@path)
         reload
       end
 
@@ -51,7 +51,7 @@ module WEBrick
         mtime = File::mtime(@path)
         if mtime > @mtime
           @passwd.clear
-          open(@path){|io|
+          File.open(@path){|io|
             while line = io.gets
               line.chomp!
               case line
