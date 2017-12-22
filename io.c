@@ -10783,6 +10783,8 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 	}
         switch (errno) {
 	  case EINVAL:
+	  case EPERM: /* copy_file_range(2) doesn't exist (may happen in
+			 docker container) */
 #ifdef ENOSYS
 	  case ENOSYS:
 #endif
