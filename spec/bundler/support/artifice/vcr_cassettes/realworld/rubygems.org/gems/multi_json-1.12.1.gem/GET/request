@@ -1,7 +1,0 @@
-> GET /gems/multi_json-1.12.1.gem
-> accept-encoding: gzip;q=1.0,deflate;q=0.6,identity;q=0.3
-> accept: */*
-> user-agent: Ruby
-> connection: keep-alive
-> keep-alive: 30
-> host: rubygems.org

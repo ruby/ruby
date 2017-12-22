@@ -1,14 +1,3 @@
-# spec/bundler
-
-spec/bundler is rspec examples for bundler library(lib/bundler.rb, lib/bundler/*).
-
-## Running spec/bundler
-
-To run rspec for bundler:
-```bash
-make test-bundler
-```
-
 # spec/ruby
 
 ruby/spec (https://github.com/ruby/spec/) is
