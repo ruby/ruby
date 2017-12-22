@@ -236,12 +236,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * BigDecimal#dup
 
-* Bundler
-
-  * Add Bundler to Standard Library. [Feature #12733]
-
-  * Use 1.16.1. It's latest stable version.
-
 * Coverage
 
   * Support branch coverage and method coverage [Feature #13901]
