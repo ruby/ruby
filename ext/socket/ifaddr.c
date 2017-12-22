@@ -84,6 +84,12 @@ get_ifaddr(VALUE self)
     return rifaddr;
 }
 
+static struct ifaddrs *
+get_ifaddrs(VALUE self)
+{
+    return get_ifaddr(self)->ifaddr;
+}
+
 static VALUE
 rsock_getifaddrs(void)
 {
@@ -140,8 +146,7 @@ rsock_getifaddrs(void)
 static VALUE
 ifaddr_name(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     return rb_str_new_cstr(ifa->ifa_name);
 }
 
@@ -156,8 +161,7 @@ ifaddr_name(VALUE self)
 static VALUE
 ifaddr_ifindex(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     unsigned int ifindex = if_nametoindex(ifa->ifa_name);
     if (ifindex == 0) {
         rb_raise(rb_eArgError, "invalid interface name: %s", ifa->ifa_name);
@@ -178,8 +182,7 @@ ifaddr_ifindex(VALUE self)
 static VALUE
 ifaddr_flags(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     return IFAFLAGS2NUM(ifa->ifa_flags);
 }
 
@@ -194,8 +197,7 @@ ifaddr_flags(VALUE self)
 static VALUE
 ifaddr_addr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_addr)
         return rsock_sockaddr_obj(ifa->ifa_addr, rsock_sockaddr_len(ifa->ifa_addr));
     return Qnil;
@@ -212,8 +214,7 @@ ifaddr_addr(VALUE self)
 static VALUE
 ifaddr_netmask(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_netmask)
         return rsock_sockaddr_obj(ifa->ifa_netmask, rsock_sockaddr_len(ifa->ifa_netmask));
     return Qnil;
@@ -230,8 +231,7 @@ ifaddr_netmask(VALUE self)
 static VALUE
 ifaddr_broadaddr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if ((ifa->ifa_flags & IFF_BROADCAST) && ifa->ifa_broadaddr)
         return rsock_sockaddr_obj(ifa->ifa_broadaddr, rsock_sockaddr_len(ifa->ifa_broadaddr));
     return Qnil;
@@ -248,8 +248,7 @@ ifaddr_broadaddr(VALUE self)
 static VALUE
 ifaddr_dstaddr(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if ((ifa->ifa_flags & IFF_POINTOPOINT) && ifa->ifa_dstaddr)
         return rsock_sockaddr_obj(ifa->ifa_dstaddr, rsock_sockaddr_len(ifa->ifa_dstaddr));
     return Qnil;
@@ -267,8 +266,7 @@ ifaddr_dstaddr(VALUE self)
 static VALUE
 ifaddr_vhid(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa = rifaddr->ifaddr;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     if (ifa->ifa_data)
         return (INT2FIX(((struct if_data*)ifa->ifa_data)->ifi_vhid));
     else
@@ -358,11 +356,8 @@ ifaddr_inspect_flags(ifa_flags_t flags, VALUE result)
 static VALUE
 ifaddr_inspect(VALUE self)
 {
-    rb_ifaddr_t *rifaddr = get_ifaddr(self);
-    struct ifaddrs *ifa;
+    struct ifaddrs *ifa = get_ifaddrs(self);
     VALUE result;
-
-    ifa = rifaddr->ifaddr;
 
     result = rb_str_new_cstr("#<");
 
