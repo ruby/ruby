@@ -889,7 +889,7 @@ class ERB
   # Render a template on a new toplevel binding with local variables specified
   # by a Hash object.
   def result_with_hash(hash)
-    b = new_toplevel
+    b = new_toplevel(hash.keys)
     hash.each_pair do |key, value|
       b.local_variable_set(key, value)
     end
@@ -900,8 +900,15 @@ class ERB
   # Returns a new binding each time *near* TOPLEVEL_BINDING for runs that do
   # not specify a binding.
 
-  def new_toplevel
-    TOPLEVEL_BINDING.dup
+  def new_toplevel(vars = nil)
+    b = TOPLEVEL_BINDING
+    if vars
+      vars = vars.select {|v| b.local_variable_defined?(v)}
+      unless vars.empty?
+        return b.eval("tap {|;#{vars.join(',')}| break binding}")
+      end
+    end
+    b.dup
   end
   private :new_toplevel
 
