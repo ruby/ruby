@@ -1420,9 +1420,9 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		ret = rb_str_new_cstr(type_str);
 	    }
 	    else if (insn == BIN(defined) && op_no == 0 &&
-		     (enum defined_type)op == DEFINED_FUNC ? (ret = rb_fstring_cstr("func"), 1) :
-		     (enum defined_type)op == DEFINED_REF ? (ret = rb_fstring_cstr("ref"), 1) :
-		     (ret = rb_iseq_defined_string((enum defined_type)op)) != 0) {
+		     ((enum defined_type)op == DEFINED_FUNC ? (ret = rb_fstring_cstr("func"), 1) :
+		      (enum defined_type)op == DEFINED_REF ? (ret = rb_fstring_cstr("ref"), 1) :
+		      (ret = rb_iseq_defined_string((enum defined_type)op)) != 0)) {
 		/* ok */
 	    }
 	    else {
