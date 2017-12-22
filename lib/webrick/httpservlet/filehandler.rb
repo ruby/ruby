@@ -57,7 +57,7 @@ module WEBrick
           res['content-type'] = mtype
           res['content-length'] = st.size
           res['last-modified'] = mtime.httpdate
-          res.body = open(@local_path, "rb")
+          res.body = File.open(@local_path, "rb")
         end
       end
 
@@ -92,7 +92,7 @@ module WEBrick
           raise HTTPStatus::BadRequest,
             "Unrecognized range-spec: \"#{req['range']}\""
         end
-        open(filename, "rb"){|io|
+        File.open(filename, "rb"){|io|
           if ranges.size > 1
             time = Time.now
             boundary = "#{time.sec}_#{time.usec}_#{Process::pid}"
