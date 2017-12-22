@@ -30,6 +30,7 @@ const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
+const char ruby_patchlevel_str[] = RUBY_PATCHLEVEL_STR;
 const char ruby_description[] = RUBY_DESCRIPTION;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
@@ -59,6 +60,12 @@ Init_version(void)
      * the patchlevel will be -1
      */
     rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
+    /*
+     * The patchlevel string for this ruby. If this is a development build
+     * of ruby the patchlevel string will be dev otherwise the respective
+     * rc or preview candidate.
+     */
+    rb_define_global_const("RUBY_PATCHNAME", MKSTR(patchlevel_str));
     /*
      * The SVN revision for this ruby.
      */
