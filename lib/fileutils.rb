@@ -87,6 +87,8 @@
 
 module FileUtils
 
+  VERSION = "1.0.2"
+
   def self.private_module_function(name)   #:nodoc:
     module_function name
     private_class_method name
