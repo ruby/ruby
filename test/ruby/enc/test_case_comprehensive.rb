@@ -5,7 +5,8 @@ require "test/unit"
 
 class TestComprehensiveCaseMapping < Test::Unit::TestCase
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  UNICODE_DATA_PATH = "../../../enc/unicode/data/#{UNICODE_VERSION}"
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
 
   def self.hex2utf8(s)
     s.split(' ').map { |c| c.to_i(16) }.pack('U*')
