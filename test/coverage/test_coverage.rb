@@ -119,4 +119,34 @@ class TestCoverage < Test::Unit::TestCase
     end
     assert_include Coverage.result, "<compiled>"
   end
+
+  def test_eval
+    bug13305 = '[ruby-core:80079] [Bug #13305]'
+    loaded_features = $".dup
+
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts 'REPEATS = 400'
+          f.puts 'def add_method(target)'
+          f.puts '  REPEATS.times do'
+          f.puts '    target.class_eval(<<~RUBY, __FILE__, __LINE__ + 1)'
+          f.puts '      def foo'
+          f.puts '        #{"\n" * rand(REPEATS)}'
+          f.puts '      end'
+          f.puts '      1'
+          f.puts '    RUBY'
+          f.puts '  end'
+          f.puts 'end'
+        end
+
+        Coverage.start
+        require tmp + '/test.rb'
+        add_method(Class.new)
+        assert_equal Coverage.result[tmp + "/test.rb"], [1, 1, 1, 400, nil, nil, nil, nil, nil, nil, nil], bug13305
+      }
+    }
+  ensure
+    $".replace loaded_features
+  end
 end unless ENV['COVERAGE']
