@@ -1419,6 +1419,12 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    if (insn == BIN(branchiftype) && (type_str = rb_type_str((enum ruby_value_type)op)) != NULL) {
 		ret = rb_str_new_cstr(type_str);
 	    }
+	    else if (insn == BIN(defined) && op_no == 0 &&
+		     (enum defined_type)op == DEFINED_FUNC ? (ret = rb_fstring_cstr("func"), 1) :
+		     (enum defined_type)op == DEFINED_REF ? (ret = rb_fstring_cstr("ref"), 1) :
+		     (ret = rb_iseq_defined_string((enum defined_type)op)) != 0) {
+		/* ok */
+	    }
 	    else {
 		ret = rb_sprintf("%"PRIuVALUE, op);
 	    }
@@ -1445,10 +1451,24 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
       }
       case TS_ID:		/* ID (symbol) */
-	op = ID2SYM(op);
+	ret = rb_inspect(ID2SYM(op));
+	break;
 
       case TS_VALUE:		/* VALUE */
 	op = obj_resurrect(op);
+	if (insn == BIN(defined) && op_no == 1 && FIXNUM_P(op)) {
+	    /* should be DEFINED_REF */
+	    int type = NUM2INT(op);
+	    if (type) {
+		if (type & 1) {
+		    ret = rb_sprintf(":$%c", (type >> 1));
+		}
+		else {
+		    ret = rb_sprintf(":$%d", (type >> 1));
+		}
+		break;
+	    }
+	}
 	ret = rb_inspect(op);
 	if (CLASS_OF(op) == rb_cISeq) {
 	    if (child) {
@@ -1501,18 +1521,20 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
 	    if (ci->flag) {
 		VALUE flags = rb_ary_new();
-		if (ci->flag & VM_CALL_ARGS_SPLAT) rb_ary_push(flags, rb_str_new2("ARGS_SPLAT"));
-		if (ci->flag & VM_CALL_ARGS_BLOCKARG) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG"));
-		if (ci->flag & VM_CALL_ARGS_BLOCKARG_BLOCKPARAM) rb_ary_push(flags, rb_str_new2("ARGS_BLOCKARG_BLOCKPARAM"));
-		if (ci->flag & VM_CALL_FCALL) rb_ary_push(flags, rb_str_new2("FCALL"));
-		if (ci->flag & VM_CALL_VCALL) rb_ary_push(flags, rb_str_new2("VCALL"));
-		if (ci->flag & VM_CALL_ARGS_SIMPLE) rb_ary_push(flags, rb_str_new2("ARGS_SIMPLE"));
-		if (ci->flag & VM_CALL_BLOCKISEQ) rb_ary_push(flags, rb_str_new2("BLOCKISEQ"));
-		if (ci->flag & VM_CALL_TAILCALL) rb_ary_push(flags, rb_str_new2("TAILCALL"));
-		if (ci->flag & VM_CALL_SUPER) rb_ary_push(flags, rb_str_new2("SUPER"));
-		if (ci->flag & VM_CALL_KWARG) rb_ary_push(flags, rb_str_new2("KWARG"));
-		if (ci->flag & VM_CALL_KW_SPLAT) rb_ary_push(flags, rb_str_new2("KW_SPLAT"));
-		if (ci->flag & VM_CALL_OPT_SEND) rb_ary_push(flags, rb_str_new2("SEND")); /* maybe not reachable */
+# define CALL_FLAG(n) if (ci->flag & VM_CALL_##n) rb_ary_push(flags, rb_str_new2(#n))
+# define CALL_OPT_FLAG(n) if (ci->flag & VM_CALL_OPT_##n) rb_ary_push(flags, rb_str_new2(#n))
+		CALL_FLAG(ARGS_SPLAT);
+		CALL_FLAG(ARGS_BLOCKARG);
+		CALL_FLAG(ARGS_BLOCKARG_BLOCKPARAM);
+		CALL_FLAG(FCALL);
+		CALL_FLAG(VCALL);
+		CALL_FLAG(ARGS_SIMPLE);
+		CALL_FLAG(BLOCKISEQ);
+		CALL_FLAG(TAILCALL);
+		CALL_FLAG(SUPER);
+		CALL_FLAG(KWARG);
+		CALL_FLAG(KW_SPLAT);
+		CALL_FLAG(OPT_SEND); /* maybe not reachable */
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
 	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));
