@@ -29,7 +29,8 @@ class TestRDocMarkupPreProcess < RDoc::TestCase
   def test_class_post_process
     RDoc::Markup::PreProcess.post_process do end
 
-    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length
+    assert_equal 1, RDoc::Markup::PreProcess.post_processors.length,
+                 proc{RDoc::Markup::PreProcess.post_processors.inspect}
   end
 
   def test_include_file
