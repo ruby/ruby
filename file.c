@@ -2128,7 +2128,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *     file.atime    -> time
  *
  *  Returns the last access time (a <code>Time</code> object)
- *   for <i>file</i>, or epoch if <i>file</i> has not been accessed.
+ *  for <i>file</i>, or epoch if <i>file</i> has not been accessed.
  *
  *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
