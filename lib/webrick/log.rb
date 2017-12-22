@@ -51,7 +51,7 @@ module WEBrick
       @level = level || INFO
       case log_file
       when String
-        @log = open(log_file, "a+")
+        @log = File.open(log_file, "a+")
         @log.sync = true
         @opened = true
       when NilClass
