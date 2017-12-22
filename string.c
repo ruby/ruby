@@ -6263,7 +6263,6 @@ str_undump(VALUE str)
 	    }
 	    else {
 		const char *encname;
-		char *buf;
 		int encidx;
 		ptrdiff_t size;
 
@@ -6280,22 +6279,14 @@ str_undump(VALUE str)
 		s = memchr(s, '"', s_end-s);
 		size = s - encname;
 		if (!s) goto invalid_format;
-		if (size > 100) {
-		    rb_raise(rb_eRuntimeError, "dumped string has unknown encoding name");
-		}
-		buf = ALLOC_N(char, size+1);
-		memcpy(buf, encname, size);
-		buf[size] = '\0';
-		encidx = rb_enc_find_index(buf);
-		xfree(buf);
+		if (s_end - s != 2) goto invalid_format;
+		if (s[0] != '"' || s[1] != ')') goto invalid_format;
+
+		encidx = rb_enc_find_index2(encname, (long)size);
 		if (encidx < 0) {
 		    rb_raise(rb_eRuntimeError, "dumped string has unknown encoding name");
 		}
 		rb_enc_associate_index(undumped, encidx);
-
-		if (s_end - s != 2 ||
-			s[0] != '"' ||
-			s[1] != ')') goto invalid_format;
 	    }
 	    break;
 	}
