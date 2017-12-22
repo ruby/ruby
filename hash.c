@@ -193,8 +193,16 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 	hnum = other_func(a);
     }
   out:
+#if SIZEOF_LONG < SIZEOF_ST_INDEX_T
+    if (hnum > 0)
+	hnum &= (unsigned long)-1 >> 2;
+    else
+	hnum |= ~((unsigned long)-1 >> 2);
+#else
     hnum <<= 1;
-    return (long)RSHIFT(hnum, 1);
+    hnum = RSHIFT(hnum, 1);
+#endif
+    return (long)hnum;
 }
 
 static st_index_t

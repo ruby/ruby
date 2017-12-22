@@ -1575,7 +1575,11 @@ rb_num2char_inline(VALUE x)
 #define NUM2CHR(x) RB_NUM2CHR(x)
 #define CHR2FIX(x) RB_CHR2FIX(x)
 
+#if SIZEOF_LONG < SIZEOF_VALUE
+#define RB_ST2FIX(h) RB_LONG2FIX((long)((h) > 0 ? (h) & (unsigned long)-1 >> 2 : (h) | ~((unsigned long)-1 >> 2)))
+#else
 #define RB_ST2FIX(h) RB_LONG2FIX((long)(h))
+#endif
 #define ST2FIX(h) RB_ST2FIX(h)
 
 #define RB_ALLOC_N(type,n) ((type*)ruby_xmalloc2((size_t)(n),sizeof(type)))
