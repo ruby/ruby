@@ -41,7 +41,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     end
 
     open(File.join(Gem::Specification.default_specifications_dir, "bundler-1.15.4.gemspec"), 'w') do |io|
-      io.puts '# bundler'
+      gemspec.version = "1.15.4"
+      io.puts gemspec.to_ruby
     end
 
     FileUtils.mkdir_p File.join(Gem.default_dir, "specifications")
