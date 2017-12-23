@@ -26,14 +26,16 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#include "defines.h"
+
 #if defined(__cplusplus)
 /* __builtin_choose_expr and __builtin_types_compatible aren't available
  * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
 # undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 # undef HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P
+#elif GCC_VERSION_BEFORE(4,8,6) /* Bug #14221 */
+# undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 #endif
-
-#include "defines.h"
 
 #ifndef ASSUME
 # ifdef UNREACHABLE
