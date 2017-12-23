@@ -276,6 +276,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * IRB
 
+  * Print backtrace and error message in reverse order [Feature #8661] [experimental]
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
   * `binding.irb` on its start shows source around the line where it was called
     [Feature #14124]
