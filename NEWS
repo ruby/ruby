@@ -168,6 +168,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New method:
 
     * RubyVM::InstructionSequence#each_child
+    * RubyVM::InstructionSequence#trace_points
 
 * String
 
