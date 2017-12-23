@@ -1035,9 +1035,10 @@ iseqw_inspect(VALUE self)
 	return rb_sprintf("#<%"PRIsVALUE": uninitialized>", klass);
     }
     else {
-	return rb_sprintf("<%"PRIsVALUE":%"PRIsVALUE"@%"PRIsVALUE">",
+	return rb_sprintf("<%"PRIsVALUE":%"PRIsVALUE"@%"PRIsVALUE":%d>",
 			  klass,
-			  iseq->body->location.label, rb_iseq_path(iseq));
+			  iseq->body->location.label, rb_iseq_path(iseq),
+			  FIX2INT(rb_iseq_first_lineno(iseq)));
     }
 }
 
@@ -1661,7 +1662,9 @@ iseq_inspect(const rb_iseq_t *iseq)
 	return rb_sprintf("#<ISeq: uninitialized>");
     }
     else {
-	return rb_sprintf("#<ISeq:%s@%s>", RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)));
+	return rb_sprintf("#<ISeq:%s@%s:%d>",
+			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)),
+			  FIX2INT(rb_iseq_first_lineno(iseq)));
     }
 }
 
