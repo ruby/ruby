@@ -188,8 +188,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     skip unless IO.method_defined?("getpass")
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
+      sleep 0.1
       w.print "asdf\n"
-      sleep 1
+      sleep 0.1
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
@@ -231,6 +232,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.ioflush # ioflush may be issued after "a" is already sent.
       s.print "b"
       s.flush
+      sleep 0.1
       assert_include(["b", "ab"], m.readpartial(10))
     }
   end
