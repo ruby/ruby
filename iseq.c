@@ -1516,7 +1516,6 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    if (ci->flag) {
 		VALUE flags = rb_ary_new();
 # define CALL_FLAG(n) if (ci->flag & VM_CALL_##n) rb_ary_push(flags, rb_str_new2(#n))
-# define CALL_OPT_FLAG(n) if (ci->flag & VM_CALL_OPT_##n) rb_ary_push(flags, rb_str_new2(#n))
 		CALL_FLAG(ARGS_SPLAT);
 		CALL_FLAG(ARGS_BLOCKARG);
 		CALL_FLAG(ARGS_BLOCKARG_BLOCKPARAM);
