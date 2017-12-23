@@ -344,7 +344,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * RDoc
 
-  * Update to RDoc 6.0.0.
+  * Update to RDoc 6.0.1.
 
     * Replace IRB based lexer with Ripper.
       * https://github.com/ruby/rdoc/pull/512
