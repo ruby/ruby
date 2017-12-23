@@ -280,4 +280,45 @@ class TestISeq < Test::Unit::TestCase
       assert_match /:#{name}@/, ISeq.of(m).inspect, name
     end
   end
+
+  def test_each_child
+    iseq = ISeq.compile <<-EOS
+    class C
+      def foo
+        begin
+        rescue
+          p :rescue
+        ensure
+          p :ensure
+        end
+      end
+      def bar
+        1.times{
+          2.times{
+          }
+        }
+      end
+    end
+    class D < C
+    end
+    EOS
+
+    collect_iseq = lambda{|iseq|
+      iseqs = []
+      iseq.each_child{|child_iseq|
+        iseqs << collect_iseq.call(child_iseq)
+      }
+      ["#{iseq.label}@#{iseq.first_lineno}", *iseqs.sort_by{|k, *| k}]
+    }
+
+    expected = ["<compiled>@1",
+                  ["<class:C>@1",
+                    ["bar@10", ["block in bar@11",
+                            ["block (2 levels) in bar@12"]]],
+                    ["foo@2", ["ensure in foo@2"],
+                              ["rescue in foo@4"]]],
+                  ["<class:D>@17"]]
+
+    assert_equal expected, collect_iseq.call(iseq)
+  end
 end

@@ -163,6 +163,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Support new 5 emoji-related Unicode character properties
 
+* RubyVM::InstructionSequence
+
+  * New method:
+
+    * RubyVM::InstructionSequence#each_child
+
 * String
 
   * String#-@ deduplicates unfrozen strings.  Already-frozen
