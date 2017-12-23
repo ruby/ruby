@@ -769,7 +769,7 @@ checkmatch
  */
 DEFINE_INSN
 checkkeyword
-(lindex_t kw_bits_index, rb_num_t keyword_index)
+(lindex_t kw_bits_index, lindex_t keyword_index)
 ()
 (VALUE ret)
 {
