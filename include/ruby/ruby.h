@@ -35,6 +35,12 @@ extern "C" {
 
 #include "defines.h"
 
+/* __builtin_choose_expr has a different behavior befor gcc 4.8.5 
+* */
+#if !GCC_VERSION_SINCE(4,8,6)
+# undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
+#endif
+
 #ifndef ASSUME
 # ifdef UNREACHABLE
 #   define ASSUME(x) (RB_LIKELY(!!(x)) ? (void)0 : UNREACHABLE)
