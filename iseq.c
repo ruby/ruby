@@ -1786,6 +1786,46 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     return str;
 }
 
+static VALUE
+rb_iseq_all_children(const rb_iseq_t *iseq)
+{
+    unsigned int i;
+    VALUE *code = rb_iseq_original_iseq(iseq);
+    VALUE all_children = rb_obj_hide(rb_ident_hash_new());
+    VALUE child;
+
+    if (iseq->body->catch_table) {
+	for (i = 0; i < iseq->body->catch_table->size; i++) {
+	    const struct iseq_catch_table_entry *entry = &iseq->body->catch_table->entries[i];
+	    child = (VALUE)entry->iseq;
+	    if (child) {
+		rb_hash_aset(all_children, child, Qtrue);
+	    }
+	}
+    }
+    for (i=0; i<iseq->body->iseq_size;) {
+	VALUE insn = code[i];
+	int len = insn_len(insn);
+	const char *types = insn_op_types(insn);
+	int j;
+
+	for (j=0; types[j]; j++) {
+	    switch (types[j]) {
+	      case TS_ISEQ:
+		child = code[i+j+1];
+		if (child) {
+		    rb_hash_aset(all_children, child, Qtrue);
+		}
+		break;
+	      default:
+		break;
+	    }
+	}
+	i += len;
+    }
+    return all_children;
+}
+
 /*
  *  call-seq:
  *     iseq.disasm -> str
@@ -1808,6 +1848,30 @@ static VALUE
 iseqw_disasm(VALUE self)
 {
     return rb_iseq_disasm(iseqw_check(self));
+}
+
+static int
+iseqw_each_child_i(VALUE key, VALUE value, VALUE dummy)
+{
+    rb_yield(iseqw_new((const rb_iseq_t *)key));
+    return ST_CONTINUE;
+}
+
+/*
+ *  call-seq:
+ *     iseq.each_child{|child_iseq| ...} -> iseq
+ *
+ *  Iterate all direct child instruction sequences.
+ *  Iteration order is implementation/version defined
+ *  so that people should not rely on the order.
+ */
+static VALUE
+iseqw_each_child(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    VALUE all_children = rb_iseq_all_children(iseq);
+    rb_hash_foreach(all_children, iseqw_each_child_i, Qnil);
+    return self;
 }
 
 /*
@@ -2615,6 +2679,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "label", iseqw_label, 0);
     rb_define_method(rb_cISeq, "base_label", iseqw_base_label, 0);
     rb_define_method(rb_cISeq, "first_lineno", iseqw_first_lineno, 0);
+    rb_define_method(rb_cISeq, "each_child", iseqw_each_child, 0);
 
 #if 0 /* TBD */
     rb_define_private_method(rb_cISeq, "marshal_dump", iseqw_marshal_dump, 0);
