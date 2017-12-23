@@ -178,6 +178,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     @size = 0
     @token_listeners = nil
     @scanner = RDoc::RipperStateLex.parse(content)
+    @content = content
     @scanner_point = 0
     @prev_seek = nil
     @markup = @options.markup
@@ -2067,6 +2068,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
         parse_top_level_statements @top_level
 
       rescue StandardError => e
+        if @content.include?('<%') and @content.include?('%>') then
+          # Maybe, this is ERB.
+          $stderr.puts "\033[2KRDoc detects ERB file. Skips it for compatibility:"
+          $stderr.puts @file_name
+          return
+        end
         bytes = ''
 
         if @scanner_point >= @scanner.size
