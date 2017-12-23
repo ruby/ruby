@@ -497,7 +497,6 @@ module IRB
           rescue Exception => exc
           end
           if exc
-            print exc.class, ": ", exc, "\n"
             if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
                 !(SyntaxError === exc)
               irb_bug = true
@@ -509,26 +508,32 @@ module IRB
             lasts = []
             levels = 0
             if exc.backtrace
-              for m in exc.backtrace
+              filtered_line_count = 0
+              exc.backtrace.each_with_index do |m, i|
+                num_str = (i + 1 - filtered_line_count).to_s.rjust(9, ' ')
                 m = @context.workspace.filter_backtrace(m) unless irb_bug
                 if m
                   if messages.size < @context.back_trace_limit
-                    messages.push "\tfrom "+m
+                      messages.push "#{num_str}: from "+m
                   else
-                    lasts.push "\tfrom "+m
+                    lasts.push "#{num_str}: from "+m
                     if lasts.size > @context.back_trace_limit
                       lasts.shift
                       levels += 1
                     end
                   end
+                else
+                  filtered_line_count += 1
                 end
               end
             end
-            print messages.join("\n"), "\n"
+            print "Traceback (most recent call last):\n"
             unless lasts.empty?
+              print lasts.reverse.join("\n"), "\n"
               printf "... %d levels...\n", levels if levels > 0
-              print lasts.join("\n"), "\n"
             end
+            print messages.reverse.join("\n"), "\n"
+            print exc.class, ": ", exc, "\n"
             print "Maybe IRB bug!\n" if irb_bug
           end
         end
