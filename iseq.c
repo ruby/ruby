@@ -1433,14 +1433,8 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 
       case TS_LINDEX:{
 	int level;
-	if (insn == BIN(getlocal) || insn == BIN(setlocal) ||
-	    insn == BIN(getblockparam) || insn == BIN(setblockparam)) {
-	    if (pnop) {
-		ret = local_var_name(iseq, *pnop, op);
-	    }
-	    else {
-		ret = rb_sprintf("%"PRIuVALUE, op);
-	    }
+	if (types[op_no+1] == TS_NUM && pnop) {
+	    ret = local_var_name(iseq, *pnop, op);
 	}
 	else if ((level = rb_insn_unified_local_var_level(insn)) >= 0) {
 	    ret = local_var_name(iseq, (VALUE)level, op);
