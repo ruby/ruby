@@ -1874,6 +1874,43 @@ iseqw_each_child(VALUE self)
     return self;
 }
 
+static void
+push_event_info(const rb_iseq_t *iseq, rb_event_flag_t events, int line, VALUE ary)
+{
+#define C(ev, cstr, l) if (events & ev) rb_ary_push(ary, rb_ary_new_from_args(2, l, ID2SYM(rb_intern(cstr))));
+    C(RUBY_EVENT_CLASS,    "class",    rb_iseq_first_lineno(iseq));
+    C(RUBY_EVENT_CALL,     "call",     rb_iseq_first_lineno(iseq));
+    C(RUBY_EVENT_B_CALL,   "b_call",   rb_iseq_first_lineno(iseq));
+    C(RUBY_EVENT_LINE,     "line",     INT2FIX(line));
+    C(RUBY_EVENT_END,      "end",      INT2FIX(line));
+    C(RUBY_EVENT_RETURN,   "return",   INT2FIX(line));
+    C(RUBY_EVENT_B_RETURN, "b_return", INT2FIX(line));
+#undef C
+}
+
+/*
+ *  call-seq:
+ *     iseq.trace_points -> ary
+ *
+ *  Return trace points in the instruction sequence.
+ *  Return an array of [line, event_symbol] pair.
+ */
+static VALUE
+iseqw_trace_points(VALUE self)
+{
+    const rb_iseq_t *iseq = iseqw_check(self);
+    unsigned int i;
+    VALUE ary = rb_ary_new();
+
+    for (i=0; i<iseq->body->insns_info_size; i++) {
+	const struct iseq_insn_info_entry *entry = &iseq->body->insns_info[i];
+	if (entry->events) {
+	    push_event_info(iseq, entry->events, entry->line_no, ary);
+	}
+    }
+    return ary;
+}
+
 /*
  *  Returns the instruction sequence containing the given proc or method.
  *
@@ -2679,6 +2716,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "label", iseqw_label, 0);
     rb_define_method(rb_cISeq, "base_label", iseqw_base_label, 0);
     rb_define_method(rb_cISeq, "first_lineno", iseqw_first_lineno, 0);
+    rb_define_method(rb_cISeq, "trace_points", iseqw_trace_points, 0);
     rb_define_method(rb_cISeq, "each_child", iseqw_each_child, 0);
 
 #if 0 /* TBD */

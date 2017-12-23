@@ -281,27 +281,31 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
-  def test_each_child
-    iseq = ISeq.compile <<-EOS
-    class C
-      def foo
-        begin
-        rescue
-          p :rescue
-        ensure
-          p :ensure
-        end
-      end
-      def bar
-        1.times{
-          2.times{
-          }
-        }
-      end
-    end
-    class D < C
-    end
+  def sample_iseq
+    ISeq.compile <<-EOS.gsub(/^.*?: /, "")
+     1: class C
+     2:   def foo
+     3:     begin
+     4:     rescue
+     5:       p :rescue
+     6:     ensure
+     7:       p :ensure
+     8:     end
+     9:   end
+    10:   def bar
+    11:     1.times{
+    12:       2.times{
+    13:       }
+    14:     }
+    15:   end
+    16: end
+    17: class D < C
+    18: end
     EOS
+  end
+
+  def test_each_child
+    iseq = sample_iseq
 
     collect_iseq = lambda{|iseq|
       iseqs = []
@@ -320,5 +324,37 @@ class TestISeq < Test::Unit::TestCase
                   ["<class:D>@17"]]
 
     assert_equal expected, collect_iseq.call(iseq)
+  end
+
+  def test_trace_points
+    collect_iseq = lambda{|iseq|
+      iseqs = []
+      iseq.each_child{|child_iseq|
+        iseqs << collect_iseq.call(child_iseq)
+      }
+      [["#{iseq.label}@#{iseq.first_lineno}", iseq.trace_points], *iseqs.sort_by{|k, *| k}]
+    }
+    assert_equal [["<compiled>@1", [[1, :line],
+                                    [17, :line]]],
+                   [["<class:C>@1", [[1, :class],
+                                     [2, :line],
+                                     [10, :line],
+                                     [16, :end]]],
+                     [["bar@10", [[10, :call],
+                                  [11, :line],
+                                  [15, :return]]],
+                         [["block in bar@11", [[11, :b_call],
+                                               [12, :line],
+                                               [14, :b_return]]],
+                         [["block (2 levels) in bar@12", [[12, :b_call],
+                                                          [13, :b_return]]]]]],
+                      [["foo@2", [[2, :call],
+                                  [4, :line],
+                                  [7, :line],
+                                  [9, :return]]],
+                       [["ensure in foo@2", [[7, :line]]]],
+                       [["rescue in foo@4", [[5, :line]]]]]],
+                   [["<class:D>@17", [[17, :class],
+                                      [18, :end]]]]], collect_iseq.call(sample_iseq)
   end
 end
