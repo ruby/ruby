@@ -646,6 +646,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		CHECK(COMPILE(ret, "block body", node->nd_body));
 		ADD_LABEL(ret, end);
 		ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = iseq->body->location.code_range.last_loc.lineno;
 
 		/* wide range catch handler must put at last */
 		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
@@ -657,6 +658,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		ADD_TRACE(ret, RUBY_EVENT_CLASS);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
 		ADD_TRACE(ret, RUBY_EVENT_END);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  case ISEQ_TYPE_METHOD:
@@ -664,6 +666,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		ADD_TRACE(ret, RUBY_EVENT_CALL);
 		CHECK(COMPILE(ret, "scoped node", node->nd_body));
 		ADD_TRACE(ret, RUBY_EVENT_RETURN);
+		ISEQ_COMPILE_DATA(iseq)->last_line = nd_line(node);
 		break;
 	    }
 	  default: {
