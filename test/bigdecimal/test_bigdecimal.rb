@@ -2,8 +2,6 @@
 require_relative "testbase"
 require 'bigdecimal/math'
 
-require 'thread'
-
 class TestBigDecimal < Test::Unit::TestCase
   include TestBigDecimalBase
 
@@ -1777,25 +1775,27 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_clone
-    assert_warning(/BigDecimal#clone is deprecated/) do
-      BigDecimal(0).clone
+    assert_warning(/^$/) do
+      x = BigDecimal(0)
+      assert_same(x, x.clone)
     end
   end
 
   def test_dup
-    assert_warning(/BigDecimal#dup is deprecated/) do
+    assert_warning(/^$/) do
       [1, -1, 2**100, -2**100].each do |i|
         x = BigDecimal(i)
-        assert_equal(x, x.dup)
+        assert_same(x, x.dup)
       end
     end
   end
 
   def test_dup_subclass
-    assert_warning(/BigDecimal#dup is deprecated/) do
+    assert_warning(/BigDecimal\.new is deprecated/) do
       c = Class.new(BigDecimal)
       x = c.new(1)
       y = x.dup
+      assert_same(x, y)
       assert_equal(1, y)
       assert_kind_of(c, y)
     end
