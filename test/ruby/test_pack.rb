@@ -686,6 +686,11 @@ EXPECTED
     assert_equal(["pre=hoge"], "pre=hoge".unpack("M"))
     assert_equal(["pre==31after"], "pre==31after".unpack("M"))
     assert_equal(["pre===31after"], "pre===31after".unpack("M"))
+
+    bug = '[ruby-core:83055] [Bug #13949]'
+    s = "abcdef".unpack1("M")
+    assert_equal(Encoding::ASCII_8BIT, s.encoding)
+    assert_predicate(s, :ascii_only?, bug)
   end
 
   def test_pack_unpack_P2
