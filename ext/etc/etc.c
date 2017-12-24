@@ -215,9 +215,10 @@ etc_getpwnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETPWENT
     struct passwd *pwd;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    pwd = getpwnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    pwd = getpwnam(p);
     if (pwd == 0) rb_raise(rb_eArgError, "can't find user for %"PRIsVALUE, nam);
     return setup_passwd(pwd);
 #else
@@ -458,9 +459,10 @@ etc_getgrnam(VALUE obj, VALUE nam)
 {
 #ifdef HAVE_GETGRENT
     struct group *grp;
+    const char *p = StringValueCStr(nam);
 
-    SafeStringValue(nam);
-    grp = getgrnam(RSTRING_PTR(nam));
+    rb_check_safe_obj(nam);
+    grp = getgrnam(p);
     if (grp == 0) rb_raise(rb_eArgError, "can't find group for %"PRIsVALUE, nam);
     return setup_group(grp);
 #else
