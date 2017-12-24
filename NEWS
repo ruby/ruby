@@ -316,8 +316,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * ERB
 
-  * Rendering of ERB's compiled code becomes 2x faster.
-
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
 
@@ -534,6 +532,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Dynamic instrumentation for TracePoint hooks instead of using "trace"
   instruction to avoid overhead [Feature #14104]
+
+* ERB now generates code from a template which runs 2 times faster than Ruby 2.4
 
 === Miscellaneous changes
 
