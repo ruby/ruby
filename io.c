@@ -5175,10 +5175,11 @@ internal_pwrite_func(void *ptr)
  *  Raises <code>SystemCallError</code> on error and <code>NotImplementedError</code>
  *  if platform does not implement the system call.
  *
- *     f = File.new("out", "w")
- *     f.pwrite("ABCDEF", 3)   #=> 6
+ *     File.open("out", "w") do |f|
+ *       f.pwrite("ABCDEF", 3)   #=> 6
+ *     end
  *
- *     File.read("out")        #=> "\u0000\u0000\u0000ABCDEF"
+ *     File.read("out")          #=> "\u0000\u0000\u0000ABCDEF"
  */
 static VALUE
 rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
