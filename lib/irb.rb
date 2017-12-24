@@ -508,31 +508,24 @@ module IRB
             lasts = []
             levels = 0
             if exc.backtrace
-              filtered_line_count = 0
-              exc.backtrace.each_with_index do |m, i|
-                num_str = (i + 1 - filtered_line_count).to_s.rjust(9, ' ')
-                m = @context.workspace.filter_backtrace(m) unless irb_bug
-                if m
-                  if messages.size < @context.back_trace_limit
-                      messages.push "#{num_str}: from "+m
-                  else
-                    lasts.push "#{num_str}: from "+m
-                    if lasts.size > @context.back_trace_limit
-                      lasts.shift
-                      levels += 1
-                    end
-                  end
-                else
-                  filtered_line_count += 1
+              count = 0
+              exc.backtrace.each do |m|
+                m = @context.workspace.filter_backtrace(m) or next unless irb_bug
+                m = sprintf("%9d: from %s", (count += 1), m)
+                if messages.size < @context.back_trace_limit
+                  messages.push(m)
+                elsif lasts.size < @context.back_trace_limit
+                  lasts.push(m).shift
+                  levels += 1
                 end
               end
             end
             print "Traceback (most recent call last):\n"
             unless lasts.empty?
-              print lasts.reverse.join("\n"), "\n"
+              puts lasts.reverse
               printf "... %d levels...\n", levels if levels > 0
             end
-            print messages.reverse.join("\n"), "\n"
+            puts messages.reverse
             print exc.class, ": ", exc, "\n"
             print "Maybe IRB bug!\n" if irb_bug
           end
