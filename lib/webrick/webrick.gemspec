@@ -4,7 +4,7 @@ require_relative 'version'
 Gem::Specification.new do |s|
   s.name = "webrick"
   s.version = WEBrick::VERSION
-  s.date = '2017-12-18'
+  s.date = '2017-12-24'
   s.summary = "HTTP server toolkit"
   s.description = "WEBrick is an HTTP server toolkit that can be configured as an HTTPS server, a proxy server, and a virtual-host server."
 
