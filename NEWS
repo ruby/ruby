@@ -239,7 +239,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * BigDecimal.ver
 
-  * BigDecimal#clone and #dup now does not make a new instance,
+  * BigDecimal#clone and #dup now do not make a new instance,
     but returns the receiver itself.
 
 * Coverage
