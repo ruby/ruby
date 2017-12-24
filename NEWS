@@ -316,8 +316,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * ERB
 
+  * Rendering of ERB's compiled code becomes 2x faster.
+
   * Add ERB#result_with_hash to render a template with local variables passed
     with a Hash object. [Feature #8631]
+
   * Default template file encoding is changed from ASCII-8BIT to UTF-8 in erb
     command. [Bug #14095]
 
