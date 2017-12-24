@@ -396,6 +396,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Add Server Name Indication (SNI) support [Feature #13729]
   * support Proc objects as body responses [Feature #855]
+  * released as a RubyGem [Feature #13173]
+  * avoid unintended behavior from Kernel#open [Misc #14216]
 
 * Zlib
 
