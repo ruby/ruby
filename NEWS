@@ -244,7 +244,71 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Coverage
 
-  * Support branch coverage and method coverage [Feature #13901]
+  * Support branch coverage and method coverage measurement. [Feature #13901]
+    Branch coverage tells you which branches are executed, and which not.
+    Method coverage tells you which methods are invoked, and which not.
+    By running a test suite with this new feature, you can know which branches
+    and methods are executed by a test, and evaluate total coverage of a test
+    suite more strictly.
+
+    You can specity the measuring target by an option to `Coverage.start`:
+
+        Coverage.start(lines: true, branches: true, methods: true)
+
+    After some Ruby files are loaded, you can use `Coverage.result` to get
+    the coverage result:
+
+        Coverage.result
+        #=> { "/path/to/file.rb"=>
+        #     { :lines => [1, 2, 0, nil, ...],
+        #       :branches =>
+        #         { [:if, 0, 2, 1, 6, 4] =>
+        #             { [:then, 1, 3, 2, 3, 8] => 0,
+        #               [:else, 2, 5, 2, 5, 8] => 2
+        #             }
+        #         },
+        #       :methods => {
+        #          [Object, :foo, 1, 0, 7, 3] => 2
+        #       }
+        #     }
+        #   }
+
+    The result type of line coverage is not changed; it is just an array that
+    contains numbers, which means the count that each line was executed,
+    or `nil`s, which means that the line is not relevant.
+
+    The result type of branch coverage is:
+
+        { (jump base) => { (jump target) => (counter) } }
+
+    where jump base and targets have the format
+
+        [type, unique-id, start lineno, start column, end lineno, end column]
+
+    For example, `[:if, 0, 2, 1, 6, 4]` reads an `if` statement that ranges from
+    line 2 and column 1, to line 6 and column 4.  `[:then, 1, 3, 2, 3, 8]` reads
+    a `then` clause that ranges from line 3 and column 2, to line 3 and column 8.
+    Note that lineno starts from 1, and that columnno starts from 0.  So, the
+    above example shows a branch from the `if` to the `then` was never executed,
+    adn a branch from the `if` to the `else` was executed twice.
+
+    The result type of method coverage is:
+
+        { (method key) => (counter) }
+
+    where method key has the format
+
+        [class, method-name, start lineno, start column, end lineno, end column]
+
+    For example, `[Object, :foo, 1, 0, 7, 3]` reads `Object#foo` that ranges from
+    line 1 and column 0, to line 7 and column 3.  The above example shows this
+    `Object#foo` was invoked twice.
+
+    Note: To keep compatibility, passing no option to `Coverage.start` will measure
+    only line coverage, and `Coverage.result` will return the old format:
+
+        Coverage.result
+        #=> { "/path/to/file.rb"=> [1, 2, 0, nil, ...] }
 
 * DRb
 
