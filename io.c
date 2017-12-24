@@ -5107,10 +5107,12 @@ pread_internal_call(VALUE arg)
  *  at end of file and <code>NotImplementedError</code> if platform does not
  *  implement the system call.
  *
- *     f = File.new("testfile")
- *     f.read           #=> "This is line one\nThis is line two\n"
- *     f.pread(12, 0)   #=> "This is line"
- *     f.pread(9, 8)    #=> "line one\n"
+ *     File.write("testfile", "This is line one\nThis is line two\n")
+ *     File.open("testfile") do |f|
+ *       p f.read           # => "This is line one\nThis is line two\n"
+ *       p f.pread(12, 0)   # => "This is line"
+ *       p f.pread(9, 8)    # => "line one\n"
+ *     end
  */
 static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
