@@ -2602,7 +2602,7 @@ static Real *BigDecimal_new(int argc, VALUE *argv);
 static VALUE
 BigDecimal_s_new(int argc, VALUE *argv, VALUE self)
 {
-  rb_warning("BigDecimal.new is deprecated");
+  rb_warning("BigDecimal.new is deprecated; use Kernel.BigDecimal method instead.");
   return rb_call_super(argc, argv);
 }
 
@@ -2645,15 +2645,7 @@ BigDecimal_initialize_copy(VALUE self, VALUE other)
 static VALUE
 BigDecimal_clone(VALUE self)
 {
-  rb_warning("BigDecimal#clone is deprecated.");
-  return rb_call_super(0, NULL);
-}
-
-static VALUE
-BigDecimal_dup(VALUE self)
-{
-  rb_warning("BigDecimal#dup is deprecated.");
-  return rb_call_super(0, NULL);
+  return self;
 }
 
 static Real *
@@ -3449,7 +3441,7 @@ Init_bigdecimal(void)
     rb_define_method(rb_cBigDecimal, "remainder", BigDecimal_remainder, 1);
     rb_define_method(rb_cBigDecimal, "divmod", BigDecimal_divmod, 1);
     rb_define_method(rb_cBigDecimal, "clone", BigDecimal_clone, 0);
-    rb_define_method(rb_cBigDecimal, "dup", BigDecimal_dup, 0);
+    rb_define_method(rb_cBigDecimal, "dup", BigDecimal_clone, 0);
     rb_define_method(rb_cBigDecimal, "to_f", BigDecimal_to_f, 0);
     rb_define_method(rb_cBigDecimal, "abs", BigDecimal_abs, 0);
     rb_define_method(rb_cBigDecimal, "sqrt", BigDecimal_sqrt, 1);
