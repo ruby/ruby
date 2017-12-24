@@ -520,13 +520,14 @@ module IRB
                 end
               end
             end
-            print "Traceback (most recent call last):\n"
+            attr = STDOUT.tty? ? ATTR_TTY : ATTR_PLAIN
+            print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
             unless lasts.empty?
               puts lasts.reverse
               printf "... %d levels...\n", levels if levels > 0
             end
             puts messages.reverse
-            print exc.class, ": ", exc, "\n"
+            print "#{attr[1]}#{exc.class} (#{attr[4]}#{exc}#{attr[0, 1]})#{attr[]}\n"
             print "Maybe IRB bug!\n" if irb_bug
           end
         end
@@ -674,6 +675,11 @@ module IRB
       end
       format("#<%s: %s>", self.class, ary.join(", "))
     end
+
+    ATTR_TTY = "\e[%sm"
+    def ATTR_TTY.[](*a) self % a.join(";"); end
+    ATTR_PLAIN = ""
+    def ATTR_PLAIN.[](*) self; end
   end
 
   def @CONF.inspect
