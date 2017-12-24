@@ -5367,7 +5367,6 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
 		/* plain top-level, leave directly */
 		type = ISEQ_TYPE_METHOD;
 	    }
-	    retval = 0;
 	    break;
 	  default:
 	    break;
