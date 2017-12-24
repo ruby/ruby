@@ -226,7 +226,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * BigDecimal
 
-  * Update to BigDecimal 1.3.3
+  * Update to BigDecimal 1.3.4
 
   * The following features are added:
 
@@ -239,9 +239,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * BigDecimal.ver
 
-    * BigDecimal#clone
-
-    * BigDecimal#dup
+  * BigDecimal#clone and #dup now does not make a new instance,
+    but returns the receiver itself.
 
 * Coverage
 
