@@ -528,7 +528,7 @@ cont_save_thread(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     *sec = *th->ec;
 
-    /* saved_thread->machine.stack_end should be NULL */
+    /* saved_ec->machine.stack_end should be NULL */
     /* because it may happen GC afterward */
     sec->machine.stack_end = NULL;
 
