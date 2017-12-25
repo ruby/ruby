@@ -252,7 +252,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     and methods are executed by a test, and evaluate total coverage of a test
     suite more strictly.
 
-    You can specity the measuring target by an option to `Coverage.start`:
+    You can specify the measuring target by an option to `Coverage.start`:
 
         Coverage.start(lines: true, branches: true, methods: true)
 
@@ -291,7 +291,7 @@ with all sufficient information, see the ChangeLog file or Redmine
     a `then` clause that ranges from line 3 and column 2, to line 3 and column 8.
     Note that lineno starts from 1, and that columnno starts from 0.  So, the
     above example shows a branch from the `if` to the `then` was never executed,
-    adn a branch from the `if` to the `else` was executed twice.
+    and a branch from the `if` to the `else` was executed twice.
 
     The result type of method coverage is:
 
