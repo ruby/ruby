@@ -253,6 +253,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
       Thread.pass while server.status != :Running
+      sleep 1 if MJIT.enabled? # server.status behaves unexpectedly with -j:aot
       assert_equal(1, started, log.call)
       assert_equal(0, stopped, log.call)
       assert_equal(0, accepted, log.call)

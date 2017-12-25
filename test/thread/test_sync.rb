@@ -59,6 +59,7 @@ class SyncTest < Test::Unit::TestCase
     }
 
     sleep 0.1 until t.stop?
+    sleep 1 if MJIT.enabled? # t.stop? behaves unexpectedly with -j:aot
     t.raise
     t.join
 

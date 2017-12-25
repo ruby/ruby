@@ -1782,6 +1782,9 @@ mjit_worker(void *arg)
     if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
 	fprintf(stderr, "Cannot enable cancelation in MJIT worker\n");
     }
+#ifdef SET_CURRENT_THREAD_NAME
+    SET_CURRENT_THREAD_NAME("ruby-mjitworker"); /* 16 byte including NUL */
+#endif
     worker_func();
     return NULL;
 }
@@ -1800,7 +1803,8 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
 	/* jit_worker thread is not to be joined */
 	pthread_detach(worker_pid);
 	return TRUE;
-    } else {
+    }
+    else {
 	return FALSE;
     }
 }

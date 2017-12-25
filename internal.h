@@ -1124,6 +1124,7 @@ int rb_dvar_defined(ID, const struct rb_block *);
 int rb_local_defined(ID, const struct rb_block *);
 const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
+int rb_vm_insn_addr2insn(const void *);
 
 /* complex.c */
 VALUE rb_complex_plus(VALUE, VALUE);

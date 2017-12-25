@@ -781,6 +781,7 @@ static unsigned long __stdcall
 mjit_worker(void *arg)
 {
     void (*worker_func)(void) = arg;
+    rb_w32_set_thread_description(GetCurrentThread(), L"ruby-mjitworker");
     worker_func();
     return 0;
 }

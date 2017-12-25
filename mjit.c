@@ -23,7 +23,7 @@
      code execution.  MJIT has one thread (*worker*) to do
      parallel compilations:
       o It prepares a precompiled code of the minimized header.
-	It starts at the MRI execution start
+        It starts at the MRI execution start
       o It generates PIC object files of ISEQs
       o It takes one JIT unit from a priority queue unless it is empty.
       o It translates the JIT unit ISEQ into C-code using the precompiled
@@ -45,7 +45,7 @@
                     |                         MRI building
       --------------|----------------------------------------
                     |                         MRI execution
-     	            |
+                    |
        _____________|_____
       |             |     |
       |          ___V__   |  CC      ____________________
@@ -82,6 +82,8 @@
 #include "mjit.h"
 #include "version.h"
 #include "gc.h"
+#include "constant.h"
+#include "id_table.h"
 #include "ruby_assert.h"
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
@@ -129,7 +131,8 @@ struct rb_mjit_unit {
     char used_code_p;
 };
 
-/* Node of linked list in struct rb_mjit_unit_list. */
+/* Node of linked list in struct rb_mjit_unit_list.
+   TODO: use ccan/list for this */
 struct rb_mjit_unit_node {
     struct rb_mjit_unit *unit;
     struct rb_mjit_unit_node *next, *prev;
@@ -177,12 +180,15 @@ static char *header_file;
 static char *pch_file;
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
 static const char *tmp_dir;
+/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
+   This is used to invalidate obsoleted CALL_CACHE. */
+static VALUE valid_class_serials;
 /* Ruby level interface module.  */
 VALUE rb_mMJIT;
 
 /* Return time in milliseconds as a double.  */
 static double
-real_ms_time()
+real_ms_time(void)
 {
     struct timeval  tv;
 
@@ -278,7 +284,8 @@ form_args(int num, ...)
 }
 
 /* Start an OS process of executable PATH with arguments ARGV.  Return
-   PID of the process.  */
+   PID of the process.
+   TODO: Use the same function in process.c */
 static pid_t
 start_process(const char *path, char *const *argv)
 {
@@ -296,29 +303,35 @@ start_process(const char *path, char *const *argv)
 #ifdef _WIN32
     pid = spawnvp(_P_NOWAIT, path, argv);
 #else
-    if ((pid = vfork()) == 0) {
-	if (mjit_opts.verbose == 0) {
-	    /* CC can be started in a thread using a file which has been
-	       already removed while MJIT is finishing.  Discard the
-	       messages about missing files.  */
-	    FILE *f = fopen("/dev/null", "w");
+    {
+	/* Not calling IO functions between fork and exec for safety */
+	FILE *f = fopen("/dev/null", "w");
+	int dev_null = fileno(f);
+	fclose(f);
 
-	    dup2(fileno(f), STDERR_FILENO);
-	    dup2(fileno(f), STDOUT_FILENO);
+	if ((pid = vfork()) == 0) {
+	    if (mjit_opts.verbose == 0) {
+		/* CC can be started in a thread using a file which has been
+		   already removed while MJIT is finishing.  Discard the
+		   messages about missing files.  */
+		dup2(dev_null, STDERR_FILENO);
+		dup2(dev_null, STDOUT_FILENO);
+	    }
+	    pid = execvp(path, argv); /* Pid will be negative on an error */
+	    /* Even if we successfully found CC to compile PCH we still can
+	     fail with loading the CC in very rare cases for some reasons.
+	     Stop the forked process in this case.  */
+	    verbose(1, "MJIT: Error in execvp: %s\n", path);
+	    _exit(1);
 	}
-	pid = execvp(path, argv); /* Pid will be negative on an error */
-	/* Even if we successfully found CC to compile PCH we still can
-	 fail with loading the CC in very rare cases for some reasons.
-	 Stop the forked process in this case.  */
-	fprintf(stderr, "MJIT: Error in execvp: %s", path);
-	_exit(1);
     }
 #endif
     return pid;
 }
 
 /* Execute an OS process of executable PATH with arguments ARGV.
-   Return -1 if failed to execute, otherwise exit code of the process.  */
+   Return -1 or -2 if failed to execute, otherwise exit code of the process.
+   TODO: Use the same function in process.c */
 static int
 exec_process(const char *path, char *const argv[])
 {
@@ -327,7 +340,7 @@ exec_process(const char *path, char *const argv[])
 
     pid = start_process(path, argv);
     if (pid <= 0)
-	return -1;
+	return -2;
 
     for (;;) {
 	waitpid(pid, &stat, 0);
@@ -364,7 +377,7 @@ CRITICAL_SECTION_FINISH(int level, const char *msg)
 /* Wait until workers don't compile any iseq.  It is called at the
    start of GC.  */
 void
-mjit_gc_start_hook()
+mjit_gc_start_hook(void)
 {
     if (!mjit_init_p)
 	return;
@@ -381,7 +394,7 @@ mjit_gc_start_hook()
 /* Send a signal to workers to continue iseq compilations.  It is
    called at the end of GC.  */
 void
-mjit_gc_finish_hook()
+mjit_gc_finish_hook(void)
 {
     if (!mjit_init_p)
 	return;
@@ -444,7 +457,8 @@ add_to_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
     /* Append iseq to list */
     if (list->head == NULL) {
 	list->head = node;
-    } else {
+    }
+    else {
 	struct rb_mjit_unit_node *tail = list->head;
 	while (tail->next != NULL) {
 	    tail = tail->next;
@@ -461,12 +475,15 @@ remove_from_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
     if (node->prev && node->next) {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
-    } else if (node->prev == NULL && node->next) {
+    }
+    else if (node->prev == NULL && node->next) {
 	list->head = node->next;
 	node->next->prev = NULL;
-    } else if (node->prev && node->next == NULL) {
+    }
+    else if (node->prev && node->next == NULL) {
 	node->prev->next = NULL;
-    } else {
+    }
+    else {
 	list->head = NULL;
     }
     list->length--;
@@ -548,7 +565,7 @@ static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
 /* The function producing the pre-compiled header. */
 static void
-make_pch()
+make_pch(void)
 {
     int exit_code;
     static const char *input[] = {NULL, NULL};
@@ -581,7 +598,7 @@ make_pch()
 	pch_status = PCH_SUCCESS;
     } else {
 	if (mjit_opts.warnings || mjit_opts.verbose)
-	    fprintf(stderr, "MJIT warning: making precompiled header failed on compilation\n");
+	    fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
 	pch_status = PCH_FAILED;
     }
     /* wakeup `mjit_finish` */
@@ -615,7 +632,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 	CLANG_USE_PCH_ARGS[1] = pch_file;
 	args = form_args(5, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
 			 CLANG_USE_PCH_ARGS, input, output, libs);
-    } else {
+    }
+    else {
 	args = form_args(5, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
 			 GCC_USE_PCH_ARGS, input, output, libs);
     }
@@ -625,7 +643,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
     exit_code = exec_process(cc_path, args);
     xfree(args);
 
-    verbose(3, "compile exit_status: %d", exit_code);
+    if (exit_code != 0)
+	verbose(2, "compile_c_to_so: compile error: %d", exit_code);
     return exit_code == 0;
 }
 
@@ -720,7 +739,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!mjit_opts.save_temps)
 	remove(c_file);
     if (!success) {
-	verbose(2, "Failed to load so: %s", so_file);
+	verbose(2, "Failed to generate so: %s", so_file);
 	return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
@@ -749,7 +768,7 @@ static int worker_finished;
    thread by rb_thread_create_mjit_thread. It compiles precompiled header
    and then compiles requested ISeqs. */
 static void
-worker()
+worker(void)
 {
     make_pch();
     if (pch_status == PCH_FAILED) {
@@ -759,7 +778,7 @@ worker()
 	verbose(3, "Sending wakeup signal to client in a mjit-worker");
 	rb_native_cond_signal(&mjit_client_wakeup);
 	CRITICAL_SECTION_FINISH(3, "in worker to update worker_finished");
-	return;
+	return; /* TODO: do the same thing in the latter half of mjit_finish */
     }
 
     /* main worker loop */
@@ -816,7 +835,8 @@ mjit_cont_new(rb_execution_context_t *ec)
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
     if (first_cont == NULL) {
 	cont->next = cont->prev = NULL;
-    } else {
+    }
+    else {
 	cont->prev = NULL;
 	cont->next = first_cont;
 	first_cont->prev = cont;
@@ -836,7 +856,8 @@ mjit_cont_free(struct mjit_cont *cont)
 	first_cont = cont->next;
 	if (first_cont != NULL)
 	    first_cont->prev = NULL;
-    } else {
+    }
+    else {
 	cont->prev->next = cont->next;
 	if (cont->next != NULL)
 	    cont->next->prev = cont->prev;
@@ -969,6 +990,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     if (!mjit_init_p)
 	return;
 
+    iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
     if (iseq->body->jit_unit == NULL)
 	/* Failure in creating the unit.  */
@@ -985,6 +1007,23 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
 }
 
+/* Wait for JIT compilation finish for AOT. This should only return a function pointer
+   or NOT_COMPILABLE_JIT_ISEQ_FUNC. */
+mjit_func_t
+mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
+{
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000;
+    while ((enum rb_mjit_iseq_func)body->jit_func == NOT_READY_JIT_ISEQ_FUNC) {
+	CRITICAL_SECTION_START(3, "in mjit_get_iseq_func for a client wakeup");
+	rb_native_cond_broadcast(&mjit_worker_wakeup);
+	CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func for a client wakeup");
+	rb_thread_wait_for(tv);
+    }
+    return body->jit_func;
+}
+
 /* A name of the header file included in any C file generated by MJIT for iseqs.  */
 #define RUBY_MJIT_HEADER_FILE ("rb_mjit_min_header-" RUBY_VERSION ".h")
 /* GCC and CLANG executable paths.  TODO: The paths should absolute
@@ -993,7 +1032,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 #define CLANG_PATH "clang"
 
 static void
-init_header_filename()
+init_header_filename(void)
 {
     FILE *f;
 
@@ -1031,6 +1070,19 @@ child_after_fork(void)
     /* TODO: Should we initiate MJIT in the forked Ruby.  */
 }
 
+static enum rb_id_table_iterator_result
+valid_class_serials_add_i(ID key, VALUE v, void *unused)
+{
+    rb_const_entry_t *ce = (rb_const_entry_t *)v;
+    VALUE value = ce->value;
+
+    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
+    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
+	mjit_add_class_serial(RCLASS_SERIAL(value));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
 /* Default permitted number of units with a JIT code kept in
    memory.  */
 #define DEFAULT_CACHE_SIZE 1000
@@ -1060,6 +1112,14 @@ mjit_init(struct mjit_options *opts)
 	mjit_opts.cc = MJIT_CC_GCC;
 	verbose(2, "MJIT: CC defaults to gcc");
 #endif
+    }
+
+    /* Initialize class_serials cache for compilation */
+    valid_class_serials = rb_hash_new();
+    rb_obj_hide(valid_class_serials);
+    rb_gc_register_mark_object(valid_class_serials);
+    if (RCLASS_CONST_TBL(rb_cObject)) {
+	rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
     }
 
     /* Initialize variables for compilation */
@@ -1110,7 +1170,7 @@ mjit_init(struct mjit_options *opts)
    and free MJIT data.  It should be called last during MJIT
    life.  */
 void
-mjit_finish()
+mjit_finish(void)
 {
     if (!mjit_init_p)
 	return;
@@ -1180,6 +1240,42 @@ VALUE
 mjit_enable_get(void)
 {
     return mjit_init_p ? Qtrue : Qfalse;
+}
+
+/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+void
+mjit_add_class_serial(rb_serial_t class_serial)
+{
+    if (!mjit_init_p)
+	return;
+
+    CRITICAL_SECTION_START(3, "in mjit_add_class_serial");
+    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
+    CRITICAL_SECTION_FINISH(3, "in mjit_add_class_serial");
+}
+
+/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+void
+mjit_remove_class_serial(rb_serial_t class_serial)
+{
+    if (!mjit_init_p)
+	return;
+
+    CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
+    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
+    CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
+}
+
+/* Return TRUE if class_serial is not obsoleted. This can be used in MJIT worker. */
+int
+mjit_valid_class_serial_p(rb_serial_t class_serial)
+{
+    int found_p;
+
+    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
+    found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
+    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
+    return found_p;
 }
 
 void

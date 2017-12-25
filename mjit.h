@@ -49,6 +49,8 @@ struct mjit_options {
     /* Disable compiler optimization and add debug symbols. It can be
        very slow.  */
     char debug;
+    /* If not 0, all ISeqs are compiled after `aot` calls. For testing. */
+    unsigned int aot;
     /* Force printing info about MJIT work of level VERBOSE or
        less. 0=silence, 1=medium, 2=verbose.  */
     int verbose;
@@ -57,22 +59,28 @@ struct mjit_options {
     int max_cache_size;
 };
 
+typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 extern struct mjit_options mjit_opts;
 extern int mjit_init_p;
 
 extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
+extern mjit_func_t mjit_get_iseq_func(const struct rb_iseq_constant_body *body);
 RUBY_SYMBOL_EXPORT_END
 
 extern int mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname);
 extern void mjit_init(struct mjit_options *opts);
-extern void mjit_finish();
-extern void mjit_gc_start_hook();
-extern void mjit_gc_finish_hook();
+extern void mjit_finish(void);
+extern void mjit_gc_start_hook(void);
+extern void mjit_gc_finish_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
-extern void mjit_mark();
+extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
+extern void mjit_add_class_serial(rb_serial_t class_serial);
+extern void mjit_remove_class_serial(rb_serial_t class_serial);
+extern int mjit_valid_class_serial_p(rb_serial_t class_serial);
 
 /* A threshold used to add iseq to JIT. */
 #define NUM_CALLS_TO_ADD 5
@@ -81,7 +89,13 @@ extern void mjit_cont_free(struct mjit_cont *cont);
    takes too much time to be compiled.  */
 #define JIT_ISEQ_SIZE_THRESHOLD 1000
 
-typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
+/* Return TRUE if given ISeq body should be compiled by MJIT */
+static inline int
+mjit_target_iseq_p(struct rb_iseq_constant_body *body)
+{
+    return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
+	&& body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
+}
 
 /* Try to execute the current iseq in ec.  Use JIT code if it is ready.
    If it is not, add ISEQ to the compilation queue and return Qundef.  */
@@ -101,13 +115,16 @@ mjit_exec(rb_execution_context_t *ec)
     total_calls = ++body->total_calls;
 
     func = body->jit_func;
+    if (UNLIKELY(mjit_opts.aot == total_calls && mjit_target_iseq_p(body)
+		 && (enum rb_mjit_iseq_func)func == NOT_ADDED_JIT_ISEQ_FUNC)) {
+	mjit_add_iseq_to_process(iseq);
+	func = mjit_get_iseq_func(body);
+    }
+
     if (UNLIKELY((ptrdiff_t)func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)) {
 	switch ((enum rb_mjit_iseq_func)func) {
 	  case NOT_ADDED_JIT_ISEQ_FUNC:
-	    if (total_calls == NUM_CALLS_TO_ADD
-		&& (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-		&& body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD) {
-		body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
+	    if (total_calls == NUM_CALLS_TO_ADD && mjit_target_iseq_p(body)) {
 		mjit_add_iseq_to_process(iseq);
 	    }
 	    return Qundef;

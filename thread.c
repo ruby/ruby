@@ -2064,7 +2064,7 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;

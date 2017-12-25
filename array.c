@@ -521,7 +521,7 @@ VALUE
     return ary;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
@@ -1312,7 +1312,7 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
     long beg, len;

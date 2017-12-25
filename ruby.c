@@ -273,6 +273,7 @@ usage(const char *name, int help)
 	M("s",     ", save-temps",     "Save MJIT temporary files in $TMP or /tmp"),
 	M("w",     ", warnings",       "Enable printing MJIT warnings"),
 	M("d",     ", debug",          "Enable MJIT debugging (very slow)"),
+	M("a=num", ", aot=num",        "Ahead of Time Compilation after num calls"),
 	M("v=num", ", verbose=num",    "Print MJIT logs of level num or less to stderr"),
 	M("n=num", ", num-cache=num",  "Maximum number of JIT codes in a cache"),
     };
@@ -942,6 +943,12 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
     }
     else if (strcmp(s, ":d") == 0 || strcmp(s, ":debug") == 0) {
 	mjit_opt->debug = 1;
+    }
+    else if (strncmp(s, ":a=", 3) == 0) {
+	mjit_opt->aot = atoi(s + 3);
+    }
+    else if (strncmp(s, ":aot=", 5) == 0) {
+	mjit_opt->aot = atoi(s + 5);
     }
     else if (strncmp(s, ":v=", 3) == 0) {
 	mjit_opt->verbose = atoi(s + 3);

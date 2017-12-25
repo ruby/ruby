@@ -1999,7 +1999,10 @@ mjit.$(OBJEXT): {$(VPATH)}mjit.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit.$(OBJEXT): {$(VPATH)}version.h
 mjit.$(OBJEXT): {$(VPATH)}vm_core.h
+mjit_compile.$(OBJEXT): {$(VPATH)}insns.inc
+mjit_compile.$(OBJEXT): {$(VPATH)}insns_info.inc
 mjit_compile.$(OBJEXT): {$(VPATH)}internal.h
+mjit_compile.$(OBJEXT): {$(VPATH)}mjit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.c
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
 load.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h

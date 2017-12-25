@@ -5,6 +5,7 @@ require 'rubygems/util'
 class TestGemUtil < Gem::TestCase
 
   def test_class_popen
+    skip "MJIT executes process and it's caught by Process.wait(-1)" if MJIT.enabled?
     assert_equal "0\n", Gem::Util.popen(Gem.ruby, '-e', 'p 0')
 
     assert_raises Errno::ECHILD do
