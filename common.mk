@@ -59,6 +59,7 @@ ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
+MJIT_MIN_HEADER = $(EXTOUT)/include/$(arch)/rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -186,7 +187,7 @@ SHOWFLAGS = showflags
 
 all: $(SHOWFLAGS) main docs
 
-main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
+main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs $(MJIT_MIN_HEADER)
 	@$(NULLCMD)
 
 .PHONY: showflags

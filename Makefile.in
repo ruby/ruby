@@ -54,6 +54,7 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+MJIT_MIN_HEADER = $(EXTOUT)/include/$(arch)/rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 
 empty =
 CC_VERSION = @CC_VERSION@
@@ -406,6 +407,15 @@ probes.@OBJEXT@: $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	@$(ECHO) processing probes in object files
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
+
+rb_mjit_header.h: PHONY probes.h
+	@$(ECHO) building $@
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(COUTFLAG) $@.new -E -P -dD
+	$(Q) (cmp $@.new $@ && $(ECHO) $@ unchanged && $(RM) $@.new) || $(MV) $@.new $@
+
+$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
+	@$(ECHO) building $@
+	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
