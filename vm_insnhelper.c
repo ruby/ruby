@@ -243,7 +243,8 @@ vm_push_frame(rb_execution_context_t *ec,
     *sp++ = specval     /* ep[-1] / block handler or prev env ptr */;
     *sp   = type;       /* ep[-0] / ENV_FLAGS */
 
-    cfp->ep = sp;
+    /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
+    cfp->ep = cfp->bp = sp;
     cfp->sp = sp + 1;
 
 #if VM_DEBUG_BP_CHECK

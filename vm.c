@@ -298,6 +298,7 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 static VALUE rb_block_param_proxy;
 
+#include "mjit.h"
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.c"
@@ -1787,7 +1788,8 @@ vm_exec(rb_execution_context_t *ec)
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
-	result = vm_exec_core(ec, initial);
+	if ((result = mjit_exec(ec)) == Qundef)
+	    result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
@@ -2122,6 +2124,8 @@ rb_vm_mark(void *ptr)
 	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+	mjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");

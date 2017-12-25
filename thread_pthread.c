@@ -12,6 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "gc.h"
+#include "mjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -34,16 +35,16 @@
 #include <kernel/OS.h>
 #endif
 
-static void native_mutex_lock(rb_nativethread_lock_t *lock);
-static void native_mutex_unlock(rb_nativethread_lock_t *lock);
+void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
+void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 static int native_mutex_trylock(rb_nativethread_lock_t *lock);
-static void native_mutex_initialize(rb_nativethread_lock_t *lock);
-static void native_mutex_destroy(rb_nativethread_lock_t *lock);
-static void native_cond_signal(rb_nativethread_cond_t *cond);
-static void native_cond_broadcast(rb_nativethread_cond_t *cond);
-static void native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
-static void native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
-static void native_cond_destroy(rb_nativethread_cond_t *cond);
+void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
+void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
+void rb_native_cond_signal(rb_nativethread_cond_t *cond);
+void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
+void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
+void rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
+void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
 static struct {
     pthread_t id;
@@ -84,14 +85,14 @@ gvl_acquire_common(rb_vm_t *vm)
 	}
 
 	while (vm->gvl.acquired) {
-	    native_cond_wait(&vm->gvl.cond, &vm->gvl.lock);
+	    rb_native_cond_wait(&vm->gvl.cond, &vm->gvl.lock);
 	}
 
 	vm->gvl.waiting--;
 
 	if (vm->gvl.need_yield) {
 	    vm->gvl.need_yield = 0;
-	    native_cond_signal(&vm->gvl.switch_cond);
+	    rb_native_cond_signal(&vm->gvl.switch_cond);
 	}
     }
 
@@ -101,9 +102,9 @@ gvl_acquire_common(rb_vm_t *vm)
 static void
 gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
 {
-    native_mutex_lock(&vm->gvl.lock);
+    rb_native_mutex_lock(&vm->gvl.lock);
     gvl_acquire_common(vm);
-    native_mutex_unlock(&vm->gvl.lock);
+    rb_native_mutex_unlock(&vm->gvl.lock);
 }
 
 static void
@@ -111,28 +112,28 @@ gvl_release_common(rb_vm_t *vm)
 {
     vm->gvl.acquired = 0;
     if (vm->gvl.waiting > 0)
-	native_cond_signal(&vm->gvl.cond);
+	rb_native_cond_signal(&vm->gvl.cond);
 }
 
 static void
 gvl_release(rb_vm_t *vm)
 {
-    native_mutex_lock(&vm->gvl.lock);
+    rb_native_mutex_lock(&vm->gvl.lock);
     gvl_release_common(vm);
-    native_mutex_unlock(&vm->gvl.lock);
+    rb_native_mutex_unlock(&vm->gvl.lock);
 }
 
 static void
 gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {
-    native_mutex_lock(&vm->gvl.lock);
+    rb_native_mutex_lock(&vm->gvl.lock);
 
     gvl_release_common(vm);
 
     /* An another thread is processing GVL yield. */
     if (UNLIKELY(vm->gvl.wait_yield)) {
 	while (vm->gvl.wait_yield)
-	    native_cond_wait(&vm->gvl.switch_wait_cond, &vm->gvl.lock);
+	    rb_native_cond_wait(&vm->gvl.switch_wait_cond, &vm->gvl.lock);
 	goto acquire;
     }
 
@@ -141,28 +142,28 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 	vm->gvl.need_yield = 1;
 	vm->gvl.wait_yield = 1;
 	while (vm->gvl.need_yield)
-	    native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
+	    rb_native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
 	vm->gvl.wait_yield = 0;
     }
     else {
-	native_mutex_unlock(&vm->gvl.lock);
+	rb_native_mutex_unlock(&vm->gvl.lock);
 	sched_yield();
-	native_mutex_lock(&vm->gvl.lock);
+	rb_native_mutex_lock(&vm->gvl.lock);
     }
 
-    native_cond_broadcast(&vm->gvl.switch_wait_cond);
+    rb_native_cond_broadcast(&vm->gvl.switch_wait_cond);
   acquire:
     gvl_acquire_common(vm);
-    native_mutex_unlock(&vm->gvl.lock);
+    rb_native_mutex_unlock(&vm->gvl.lock);
 }
 
 static void
 gvl_init(rb_vm_t *vm)
 {
-    native_mutex_initialize(&vm->gvl.lock);
-    native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    native_cond_initialize(&vm->gvl.switch_wait_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_mutex_initialize(&vm->gvl.lock);
+    rb_native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&vm->gvl.switch_wait_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     vm->gvl.acquired = 0;
     vm->gvl.waiting = 0;
     vm->gvl.need_yield = 0;
@@ -172,10 +173,10 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
-    native_cond_destroy(&vm->gvl.switch_wait_cond);
-    native_cond_destroy(&vm->gvl.switch_cond);
-    native_cond_destroy(&vm->gvl.cond);
-    native_mutex_destroy(&vm->gvl.lock);
+    rb_native_cond_destroy(&vm->gvl.switch_wait_cond);
+    rb_native_cond_destroy(&vm->gvl.switch_cond);
+    rb_native_cond_destroy(&vm->gvl.cond);
+    rb_native_mutex_destroy(&vm->gvl.lock);
 }
 
 #if defined(HAVE_WORKING_FORK)
@@ -202,8 +203,8 @@ mutex_debug(const char *msg, void *lock)
     }
 }
 
-static void
-native_mutex_lock(pthread_mutex_t *lock)
+void
+rb_native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
     mutex_debug("lock", lock);
@@ -212,8 +213,8 @@ native_mutex_lock(pthread_mutex_t *lock)
     }
 }
 
-static void
-native_mutex_unlock(pthread_mutex_t *lock)
+void
+rb_native_mutex_unlock(pthread_mutex_t *lock)
 {
     int r;
     mutex_debug("unlock", lock);
@@ -238,8 +239,8 @@ native_mutex_trylock(pthread_mutex_t *lock)
     return 0;
 }
 
-static void
-native_mutex_initialize(pthread_mutex_t *lock)
+void
+rb_native_mutex_initialize(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_init(lock, 0);
     mutex_debug("init", lock);
@@ -248,8 +249,8 @@ native_mutex_initialize(pthread_mutex_t *lock)
     }
 }
 
-static void
-native_mutex_destroy(pthread_mutex_t *lock)
+void
+rb_native_mutex_destroy(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_destroy(lock);
     mutex_debug("destroy", lock);
@@ -258,8 +259,8 @@ native_mutex_destroy(pthread_mutex_t *lock)
     }
 }
 
-static void
-native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
+void
+rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
     int r;
 # if USE_MONOTONIC_COND
@@ -287,8 +288,8 @@ native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
     return;
 }
 
-static void
-native_cond_destroy(rb_nativethread_cond_t *cond)
+void
+rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 {
     int r = pthread_cond_destroy(&cond->cond);
     if (r != 0) {
@@ -302,12 +303,12 @@ native_cond_destroy(rb_nativethread_cond_t *cond)
  *
  * http://www.opensource.apple.com/source/Libc/Libc-763.11/pthreads/pthread_cond.c
  *
- * The following native_cond_signal and native_cond_broadcast functions
+ * The following rb_native_cond_signal and rb_native_cond_broadcast functions
  * need to retrying until pthread functions don't return EAGAIN.
  */
 
-static void
-native_cond_signal(rb_nativethread_cond_t *cond)
+void
+rb_native_cond_signal(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
@@ -318,20 +319,20 @@ native_cond_signal(rb_nativethread_cond_t *cond)
     }
 }
 
-static void
-native_cond_broadcast(rb_nativethread_cond_t *cond)
+void
+rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
 	r = pthread_cond_broadcast(&cond->cond);
     } while (r == EAGAIN);
     if (r != 0) {
-	rb_bug_errno("native_cond_broadcast", r);
+	rb_bug_errno("rb_native_cond_broadcast", r);
     }
 }
 
-static void
-native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
+void
+rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 {
     int r = pthread_cond_wait(&cond->cond, mutex);
     if (r != 0) {
@@ -449,7 +450,7 @@ Init_native_thread(rb_thread_t *th)
     fill_thread_id_str(th);
     native_thread_init(th);
 #ifdef USE_UBF_LIST
-    native_mutex_initialize(&ubf_list_lock);
+    rb_native_mutex_initialize(&ubf_list_lock);
 #endif
     posix_signal(SIGVTALRM, null_func);
 }
@@ -462,14 +463,14 @@ native_thread_init(rb_thread_t *th)
 #ifdef USE_UBF_LIST
     list_node_init(&nd->ubf_list);
 #endif
-    native_cond_initialize(&nd->sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&nd->sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
     ruby_thread_set_native(th);
 }
 
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    native_cond_destroy(&th->native_thread_data.sleep_cond);
+    rb_native_cond_destroy(&th->native_thread_data.sleep_cond);
 }
 
 #ifndef USE_THREAD_CACHE
@@ -917,7 +918,7 @@ register_cached_thread_and_wait(void)
     ts.tv_sec = tv.tv_sec + 60;
     ts.tv_nsec = tv.tv_usec * 1000;
 
-    native_mutex_lock(&thread_cache_lock);
+    rb_native_mutex_lock(&thread_cache_lock);
     {
 	entry->th_area = &th_area;
 	entry->cond = &cond;
@@ -939,9 +940,9 @@ register_cached_thread_and_wait(void)
 	}
 
 	free(entry); /* ok */
-	native_cond_destroy(&cond);
+	rb_native_cond_destroy(&cond);
     }
-    native_mutex_unlock(&thread_cache_lock);
+    rb_native_mutex_unlock(&thread_cache_lock);
 
     return (rb_thread_t *)th_area;
 }
@@ -955,7 +956,7 @@ use_cached_thread(rb_thread_t *th)
     struct cached_thread_entry *entry;
 
     if (cached_thread_root) {
-	native_mutex_lock(&thread_cache_lock);
+	rb_native_mutex_lock(&thread_cache_lock);
 	entry = cached_thread_root;
 	{
 	    if (cached_thread_root) {
@@ -965,9 +966,9 @@ use_cached_thread(rb_thread_t *th)
 	    }
 	}
 	if (result) {
-	    native_cond_signal(entry->cond);
+	    rb_native_cond_signal(entry->cond);
 	}
-	native_mutex_unlock(&thread_cache_lock);
+	rb_native_mutex_unlock(&thread_cache_lock);
     }
 #endif
     return result;
@@ -1067,7 +1068,7 @@ ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
-    native_cond_signal(&th->native_thread_data.sleep_cond);
+    rb_native_cond_signal(&th->native_thread_data.sleep_cond);
 }
 
 static void
@@ -1101,7 +1102,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 
     GVL_UNLOCK_BEGIN();
     {
-	native_mutex_lock(lock);
+	rb_native_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
@@ -1111,14 +1112,14 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	}
 	else {
 	    if (!timeout_tv)
-		native_cond_wait(cond, lock);
+		rb_native_cond_wait(cond, lock);
 	    else
 		native_cond_timedwait(cond, lock, &timeout);
 	}
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
 
-	native_mutex_unlock(lock);
+	rb_native_mutex_unlock(lock);
     }
     GVL_UNLOCK_END();
 
@@ -1135,9 +1136,9 @@ register_ubf_list(rb_thread_t *th)
     struct list_node *node = &th->native_thread_data.ubf_list;
 
     if (list_empty((struct list_head*)node)) {
-	native_mutex_lock(&ubf_list_lock);
+	rb_native_mutex_lock(&ubf_list_lock);
 	list_add(&ubf_list_head, node);
-	native_mutex_unlock(&ubf_list_lock);
+	rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1148,9 +1149,9 @@ unregister_ubf_list(rb_thread_t *th)
     struct list_node *node = &th->native_thread_data.ubf_list;
 
     if (!list_empty((struct list_head*)node)) {
-	native_mutex_lock(&ubf_list_lock);
+	rb_native_mutex_lock(&ubf_list_lock);
 	list_del_init(node);
-	native_mutex_unlock(&ubf_list_lock);
+	rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1197,12 +1198,12 @@ ubf_wakeup_all_threads(void)
     native_thread_data_t *dat;
 
     if (!ubf_threads_empty()) {
-	native_mutex_lock(&ubf_list_lock);
+	rb_native_mutex_lock(&ubf_list_lock);
 	list_for_each(&ubf_list_head, dat, ubf_list) {
 	    th = container_of(dat, rb_thread_t, native_thread_data);
 	    ubf_wakeup_thread(th);
 	}
-	native_mutex_unlock(&ubf_list_lock);
+	rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1535,9 +1536,9 @@ thread_timer(void *p)
 #endif
 
 #if !USE_SLEEPY_TIMER_THREAD
-    native_mutex_initialize(&timer_thread_lock);
-    native_cond_initialize(&timer_thread_cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    native_mutex_lock(&timer_thread_lock);
+    rb_native_mutex_initialize(&timer_thread_lock);
+    rb_native_cond_initialize(&timer_thread_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_mutex_lock(&timer_thread_lock);
 #endif
     while (system_working > 0) {
 
@@ -1554,9 +1555,9 @@ thread_timer(void *p)
     CLOSE_INVALIDATE(normal[0]);
     CLOSE_INVALIDATE(low[0]);
 #else
-    native_mutex_unlock(&timer_thread_lock);
-    native_cond_destroy(&timer_thread_cond);
-    native_mutex_destroy(&timer_thread_lock);
+    rb_native_mutex_unlock(&timer_thread_lock);
+    rb_native_cond_destroy(&timer_thread_cond);
+    rb_native_mutex_destroy(&timer_thread_lock);
 #endif
 
     if (TT_DEBUG) WRITE_CONST(2, "finish timer thread\n");
@@ -1770,6 +1771,38 @@ rb_nativethread_id_t
 rb_nativethread_self(void)
 {
     return pthread_self();
+}
+
+/* A function that wraps actual worker function, for pthread abstraction. */
+static void *
+mjit_worker(void *arg)
+{
+    void (*worker_func)(void) = arg;
+
+    if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
+	fprintf(stderr, "Cannot enable cancelation in MJIT worker\n");
+    }
+    worker_func();
+    return NULL;
+}
+
+/* Launch MJIT thread. Returns FALSE if it fails to create thread. */
+int
+rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void))
+{
+    pthread_attr_t attr;
+    pthread_t worker_pid;
+
+    pthread_atfork(NULL, NULL, child_hook);
+    if (pthread_attr_init(&attr) == 0
+	&& pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) == 0
+	&& pthread_create(&worker_pid, &attr, mjit_worker, worker_func) == 0) {
+	/* jit_worker thread is not to be joined */
+	pthread_detach(worker_pid);
+	return TRUE;
+    } else {
+	return FALSE;
+    }
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
