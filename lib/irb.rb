@@ -527,7 +527,9 @@ module IRB
               printf "... %d levels...\n", levels if levels > 0
             end
             puts messages.reverse
-            print "#{attr[1]}#{exc.class} (#{attr[4]}#{exc}#{attr[0, 1]})#{attr[]}\n"
+            messages = exc.to_s.split(/\n/)
+            print "#{attr[1]}#{exc.class} (#{attr[4]}#{messages.shift}#{attr[0, 1]})#{attr[]}\n"
+            puts messages.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
             print "Maybe IRB bug!\n" if irb_bug
           end
         end
