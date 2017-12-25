@@ -634,16 +634,16 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal 52, m1[2, 3] = 52
     assert_equal 40 , m2[0..1, 0..2] = 40
     assert_equal v1, m1[2, 0..3] = v1
-    assert_raise(Matrix::ErrDimensionMismatch){ m2[1, 0..2] = v1 }
-    assert_raise(Matrix::ErrDimensionMismatch){ m2[0..2, 0] = v1 }
+    assert_raise(ArgumentError){ m2[1, 0..2] = v1 }
+    assert_raise(ArgumentError){ m2[0..2, 0] = v1 }
     assert_raise(Matrix::ErrDimensionMismatch){ m1[0..1, 0..3] = m2 }
     assert_raise(ArgumentError){ m2[5, 5] = 10 }
     assert_raise(ArgumentError){ m2[3..5, 3..5] = 10 }
     assert_raise(ArgumentError){ m2[3..5, 5] = 10 }
     assert_raise(ArgumentError){ m2[5, 3..5] = 10 }
     assert_equal m2, m3[0..1, 0..2] = m2
-    assert_equal v2, m3[0..2][3] = v2
-    assert_equal m4, Matrix.zero(2,4)[1,0...4] = m4
+    assert_equal v2, m3[0..2, 3] = v2
+    assert_equal m4, Matrix.zero(2,4)[1, 0...4] = m4
     assert_equal m5, Matrix.zero(3, 2)[0..2, 1] = m5
   end
 
