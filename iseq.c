@@ -1658,9 +1658,13 @@ iseq_inspect(const rb_iseq_t *iseq)
 	return rb_sprintf("#<ISeq: uninitialized>");
     }
     else {
-	return rb_sprintf("#<ISeq:%s@%s:%d>",
+	return rb_sprintf("#<ISeq:%s@%s:%d (%d,%d)-(%d,%d)>",
 			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)),
-			  FIX2INT(rb_iseq_first_lineno(iseq)));
+			  iseq->body->location.code_range.first_loc.lineno,
+			  iseq->body->location.code_range.first_loc.lineno,
+			  iseq->body->location.code_range.first_loc.column,
+			  iseq->body->location.code_range.last_loc.lineno,
+			  iseq->body->location.code_range.last_loc.column);
     }
 }
 
