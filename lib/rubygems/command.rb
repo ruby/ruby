@@ -300,7 +300,10 @@ class Gem::Command
 
     options[:build_args] = build_args
 
-    self.ui = Gem::SilentUI.new if options[:silent]
+    if options[:silent]
+      old_ui = self.ui
+      self.ui = ui = Gem::SilentUI.new
+    end
 
     if options[:help] then
       show_help
@@ -308,6 +311,11 @@ class Gem::Command
       @when_invoked.call options
     else
       execute
+    end
+  ensure
+    if ui
+      self.ui = old_ui
+      ui.close
     end
   end
 
