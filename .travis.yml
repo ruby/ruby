@@ -73,6 +73,7 @@ branches:
     - ruby_2_2
     - ruby_2_3
     - ruby_2_4
+    - ruby_2_5
     - /^feature\//
     - /^bug\//
 
