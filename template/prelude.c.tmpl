@@ -139,13 +139,13 @@ prelude_prefix_path(VALUE self)
 
 % unless preludes.empty?
 #define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
-static void
-prelude_eval(VALUE code, VALUE name, int line)
-{
 #ifdef __GNUC__
 # pragma GCC diagnostic push
 # pragma GCC diagnostic error "-Wmissing-field-initializers"
 #endif
+static void
+prelude_eval(VALUE code, VALUE name, int line)
+{
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
@@ -159,9 +159,6 @@ prelude_eval(VALUE code, VALUE name, int line)
 	FALSE, /* unsigned int coverage_enabled; */
 	0, /* int debug_level; */
     };
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#endif
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->root) {
@@ -172,6 +169,9 @@ prelude_eval(VALUE code, VALUE name, int line)
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 % end
 
 % if @have_sublib
