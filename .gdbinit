@@ -989,7 +989,7 @@ define iseq
 end
 
 define rb_ps
-  rb_ps_vm ruby_current_vm
+  rb_ps_vm ruby_current_vm_ptr
 end
 document rb_ps
 Dump all threads and their callstacks
@@ -1022,8 +1022,8 @@ define print_lineno
   end
 
   set $i = 0
-  set $size = $iseq->body->line_info_size
-  set $table = $iseq->body->line_info_table
+  set $size = $iseq->body->insns_info_size
+  set $table = $iseq->body->insns_info
   #printf "size: %d\n", $size
   if $size == 0
   else
@@ -1110,7 +1110,7 @@ define print_pathobj
     else
       set $str = ((struct RArray*)($arg0))->as.heap.ptr[0]
     end
-      printf "%s", $str
+    print_string $str
   end
 end
 
@@ -1120,7 +1120,7 @@ define rb_ps_thread
   printf "* #<Thread:%p rb_thread_t:%p native_thread:%p>\n", \
     $ps_thread, $ps_thread_th, $ps_thread_th->thread_id
   set $cfp = $ps_thread_th->ec->cfp
-  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec.vm_stack_size)-1
+  set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
     if $cfp->iseq
       if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
@@ -1181,7 +1181,7 @@ define rb_ps_thread
 end
 
 define rb_count_objects
-  set $objspace = ruby_current_vm->objspace
+  set $objspace = ruby_current_vm_ptr->objspace
   set $counts_00 = 0
   set $counts_01 = 0
   set $counts_02 = 0

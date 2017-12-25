@@ -141,6 +141,16 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
     assert_equal(req.to_der, req.dup.to_der)
   end
 
+  def test_eq
+    req1 = issue_csr(0, @dn, @rsa1024, "sha1")
+    req2 = issue_csr(0, @dn, @rsa1024, "sha1")
+    req3 = issue_csr(0, @dn, @rsa1024, "sha256")
+
+    assert_equal false, req1 == 12345
+    assert_equal true, req1 == req2
+    assert_equal false, req1 == req3
+  end
+
   private
 
   def request_error_returns_false

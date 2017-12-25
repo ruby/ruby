@@ -3,11 +3,11 @@
 #define GPERF_CASE_STRNCMP 1
 
 static inline int
-gperf_case_strncmp(const char *s1, const char *s2, unsigned int n)
+gperf_case_strncmp(const char *s1, const char *s2, size_t n)
 {
     const UChar *str = (const UChar *)s1;
     const UChar *s = (const UChar *)s2;
-    return onigenc_with_ascii_strnicmp(ONIG_ENCODING_ASCII, str, str + n, s, n);
+    return onigenc_with_ascii_strnicmp(ONIG_ENCODING_ASCII, str, str + n, s, (int)n);
 }
 
 enum onigenc_jis_ctype {
@@ -37,7 +37,7 @@ struct enc_property {
     unsigned char ctype;
 };
 
-static const struct enc_property *onig_jis_property(const char *str, unsigned int len);
+static const struct enc_property *onig_jis_property(/*!ANSI{*/const char *str, unsigned int len/*}!ANSI*/);
 %}
 
 struct enc_property;

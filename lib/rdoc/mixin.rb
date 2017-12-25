@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A Mixin adds features from a module into another context.  RDoc::Include and
 # RDoc::Extend are both mixins.

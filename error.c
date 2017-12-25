@@ -229,11 +229,8 @@ static VALUE
 warning_string(rb_encoding *enc, const char *fmt, va_list args)
 {
     int line;
-    VALUE file = rb_source_location(&line);
-
-    return warn_vsprintf(enc,
-			 NIL_P(file) ? NULL : RSTRING_PTR(file), line,
-			 fmt, args);
+    const char *file = rb_source_location_cstr(&line);
+    return warn_vsprintf(enc, file, line, fmt, args);
 }
 
 #define with_warning_string(mesg, enc, fmt) \
@@ -330,10 +327,39 @@ warning_write(int argc, VALUE *argv, VALUE buf)
 static VALUE
 rb_warn_m(int argc, VALUE *argv, VALUE exc)
 {
-    if (!NIL_P(ruby_verbose) && argc > 0) {
+    VALUE opts, uplevel = Qnil;
+
+    if (!NIL_P(ruby_verbose) && argc > 0 &&
+	    (argc = rb_scan_args(argc, argv, "*:", NULL, &opts)) > 0) {
 	VALUE str = argv[0];
-	if (argc > 1 || !end_with_asciichar(str, '\n')) {
-	    str = rb_str_tmp_new(0);
+	if (!NIL_P(opts)) {
+	    static ID kwds[1];
+	    if (!kwds[0]) {
+		CONST_ID(kwds[0], "uplevel");
+	    }
+	    rb_get_kwargs(opts, kwds, 0, 1, &uplevel);
+	    if (uplevel == Qundef) {
+		uplevel = Qnil;
+	    }
+	    else if (!NIL_P(uplevel)) {
+		uplevel = LONG2NUM((long)NUM2ULONG(uplevel) + 1);
+		uplevel = rb_vm_thread_backtrace_locations(1, &uplevel, GET_THREAD()->self);
+		if (!NIL_P(uplevel)) {
+		    uplevel = rb_ary_entry(uplevel, 0);
+		}
+	    }
+	}
+	if (argc > 1 || !NIL_P(uplevel) || !end_with_asciichar(str, '\n')) {
+	    if (NIL_P(uplevel)) {
+		str = rb_str_tmp_new(0);
+	    }
+	    else {
+		VALUE path;
+		path = rb_funcall(uplevel, rb_intern("path"), 0);
+		str = rb_sprintf("%s:%li: warning: ",
+		    rb_string_value_ptr(&path),
+		    NUM2LONG(rb_funcall(uplevel, rb_intern("lineno"), 0)));
+	    }
 	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
 	    rb_io_puts(argc, argv, str);
 	    RBASIC_SET_CLASS(str, rb_cString);
@@ -525,15 +551,15 @@ die(void)
 
     abort();
 }
-#include <stdio.h>
+
 void
 rb_bug(const char *fmt, ...)
 {
     const char *file = NULL;
     int line = 0;
 
-    if (GET_THREAD()) {
-	file = rb_source_loc(&line);
+    if (GET_EC()) {
+	file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, NULL);
@@ -547,8 +573,8 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_THREAD()) {
-	file = rb_source_loc(&line);
+    if (GET_EC()) {
+	file = rb_source_location_cstr(&line);
     }
 
     report_bug(file, line, fmt, ctx);
@@ -807,6 +833,7 @@ VALUE rb_eSignal;
 VALUE rb_eFatal;
 VALUE rb_eStandardError;
 VALUE rb_eRuntimeError;
+VALUE rb_eFrozenError;
 VALUE rb_eTypeError;
 VALUE rb_eArgError;
 VALUE rb_eIndexError;
@@ -923,6 +950,28 @@ exc_to_s(VALUE exc)
     return rb_String(mesg);
 }
 
+/* FIXME: Include eval_error.c */
+void rb_error_write(VALUE errinfo, VALUE errat, VALUE str);
+
+/*
+ * call-seq:
+ *   exception.full_message  ->  string
+ *
+ * Returns formatted string of <i>exception</i>.
+ * The returned string is formatted using the same format that Ruby uses
+ * when printing an uncaught exceptions to stderr. So it may differ by
+ * <code>$stderr.tty?</code> at the timing of a call.
+ */
+
+static VALUE
+exc_full_message(VALUE exc)
+{
+    VALUE str = rb_str_new2("");
+    VALUE errat = rb_get_backtrace(exc);
+    rb_error_write(exc, errat, str);
+    return str;
+}
+
 /*
  * call-seq:
  *   exception.message   ->  string
@@ -1015,12 +1064,12 @@ rb_get_backtrace(VALUE exc)
     ID mid = id_backtrace;
     if (rb_method_basic_definition_p(CLASS_OF(exc), id_backtrace)) {
 	VALUE info, klass = rb_eException;
-	rb_thread_t *th = GET_THREAD();
+	rb_execution_context_t *ec = GET_EC();
 	if (NIL_P(exc))
 	    return Qnil;
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, exc, mid, mid, klass, Qundef);
 	info = exc_backtrace(exc);
-	EXEC_EVENT_HOOK(th, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
+	EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, exc, mid, mid, klass, info);
 	if (NIL_P(info))
 	    return Qnil;
 	return rb_check_backtrace(info);
@@ -1561,6 +1610,13 @@ rb_invalid_str(const char *str, const char *type)
     rb_raise(rb_eArgError, "invalid value for %s: %+"PRIsVALUE, type, s);
 }
 
+/*
+ * call-seq:
+ *   key_error.receiver  -> object
+ *
+ * Return the receiver associated with this KeyError exception.
+ */
+
 static VALUE
 key_err_receiver(VALUE self)
 {
@@ -1570,6 +1626,13 @@ key_err_receiver(VALUE self)
     if (recv != Qundef) return recv;
     rb_raise(rb_eArgError, "no receiver is available");
 }
+
+/*
+ * call-seq:
+ *   key_error.key  -> object
+ *
+ * Return the key caused this KeyError exception.
+ */
 
 static VALUE
 key_err_key(VALUE self)
@@ -2014,16 +2077,21 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
- *  Document-class: RuntimeError
+ *  Document-class: FrozenError
  *
- *  A generic error class raised when an invalid operation is attempted.
+ *  Raised when there is an attempt to modify a frozen object.
  *
  *     [1, 2, 3].freeze << 4
  *
  *  <em>raises the exception:</em>
  *
- *     RuntimeError: can't modify frozen Array
+ *     FrozenError: can't modify frozen Array
+ */
+
+/*
+ *  Document-class: RuntimeError
  *
+ *  A generic error class raised when an invalid operation is attempted.
  *  Kernel#raise will raise a RuntimeError if no Exception class is
  *  specified.
  *
@@ -2186,6 +2254,7 @@ Init_Exception(void)
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
+    rb_define_method(rb_eException, "full_message", exc_full_message, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
@@ -2236,6 +2305,7 @@ Init_Exception(void)
     rb_define_method(rb_eNoMethodError, "private_call?", nometh_err_private_call_p, 0);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
+    rb_eFrozenError = rb_define_class("FrozenError", rb_eRuntimeError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eException);
     rb_eNoMemError = rb_define_class("NoMemoryError", rb_eException);
     rb_eEncodingError = rb_define_class("EncodingError", rb_eStandardError);
@@ -2591,7 +2661,7 @@ rb_load_fail(VALUE path, const char *err)
 void
 rb_error_frozen(const char *what)
 {
-    rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
+    rb_raise(rb_eFrozenError, "can't modify frozen %s", what);
 }
 
 void
@@ -2604,11 +2674,11 @@ rb_error_frozen_object(VALUE frozen_obj)
 	VALUE path = rb_ary_entry(debug_info, 0);
 	VALUE line = rb_ary_entry(debug_info, 1);
 
-	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
+	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE", created at %"PRIsVALUE":%"PRIsVALUE,
 		 CLASS_OF(frozen_obj), path, line);
     }
     else {
-	rb_raise(rb_eRuntimeError, "can't modify frozen %"PRIsVALUE,
+	rb_raise(rb_eFrozenError, "can't modify frozen %"PRIsVALUE,
 		 CLASS_OF(frozen_obj));
     }
 }

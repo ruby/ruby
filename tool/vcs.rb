@@ -139,6 +139,8 @@ class VCS
           STDERR.reopen NullDevice, 'w'
         end
         self.class.get_revisions(path, @srcdir)
+      rescue Errno::ENOENT => e
+        raise VCS::NotFoundError, e.message
       ensure
         if save_stderr
           STDERR.reopen save_stderr
@@ -443,7 +445,7 @@ class VCS
         rev unless rev.empty?
       end.join('..')
       cmd_pipe({'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'},
-               %W"#{COMMAND} log --date=iso-local --topo-order #{range}") do |r|
+               %W"#{COMMAND} log --date=iso-local --topo-order #{range}", "rb") do |r|
         open(path, 'w') do |w|
           sep = "-"*72
           w.puts sep
@@ -467,7 +469,17 @@ class VCS
 
     def commit
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
-      ret = system(COMMAND, "svn", "dcommit")
+      com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
+
+      # TODO: dcommit necessary commits only with --add-author-from
+      same = true
+      cmd_pipe([COMMAND, "log", "--format=%ae %ce", "#{com}..@"], "rb") do |r|
+        r.each do |l|
+          same &&= /^(\S+) +\1$/ =~ l
+        end
+      end
+      ret = system(COMMAND, "svn", "dcommit", *(["--add-author-from"] unless same))
+
       if ret and rev
         old = [cmd_read(%W"#{COMMAND} log -1 --format=%H").chomp]
         old << cmd_read(%W"#{COMMAND} svn reset -r#{rev}")[/^r#{rev} = (\h+)/, 1]

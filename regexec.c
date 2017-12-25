@@ -1811,14 +1811,9 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       NEXT;
 
     CASE(OP_EXACT1)  MOP_IN(OP_EXACT1);
-#if 0
       DATA_ENSURE(1);
       if (*p != *s) goto fail;
       p++; s++;
-#endif
-      if (*p != *s++) goto fail;
-      DATA_ENSURE(0);
-      p++;
       MOP_OUT;
       NEXT;
 
@@ -2164,7 +2159,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	s += n;
       }
       MOP_OUT;
-      NEXT;
+      JUMP;
 
     CASE(OP_ANYCHAR_ML_STAR)  MOP_IN(OP_ANYCHAR_ML_STAR);
       while (DATA_ENSURE_CHECK1) {
@@ -2181,7 +2176,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	}
       }
       MOP_OUT;
-      NEXT;
+      JUMP;
 
     CASE(OP_ANYCHAR_STAR_PEEK_NEXT)  MOP_IN(OP_ANYCHAR_STAR_PEEK_NEXT);
       while (DATA_ENSURE_CHECK1) {
@@ -2506,6 +2501,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     CASE(OP_MEMORY_START)  MOP_IN(OP_MEMORY_START);
       GET_MEMNUM_INC(mem, p);
       mem_start_stk[mem] = (OnigStackIndex )((void* )s);
+      mem_end_stk[mem] = INVALID_STACK_INDEX;
       MOP_OUT;
       JUMP;
 
@@ -3917,6 +3913,8 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
     }
     else {
       UChar *q = p + reg->dmin;
+
+      if (q >= end) return 0; /* fail */
       while (p < q) p += enclen(reg->enc, p, end);
     }
   }
@@ -4000,18 +3998,25 @@ forward_search_range(regex_t* reg, const UChar* str, const UChar* end, UChar* s,
     }
     else {
       if (reg->dmax != ONIG_INFINITE_DISTANCE) {
-	*low = p - reg->dmax;
-	if (*low > s) {
-	  *low = onigenc_get_right_adjust_char_head_with_prev(reg->enc, s,
-							      *low, end, (const UChar** )low_prev);
-	  if (low_prev && IS_NULL(*low_prev))
-	    *low_prev = onigenc_get_prev_char_head(reg->enc,
-						   (pprev ? pprev : s), *low, end);
+	if (p < str + reg->dmax) {
+	  *low = (UChar* )str;
+	  if (low_prev)
+	    *low_prev = onigenc_get_prev_char_head(reg->enc, str, *low, end);
 	}
 	else {
-	  if (low_prev)
-	    *low_prev = onigenc_get_prev_char_head(reg->enc,
-					       (pprev ? pprev : str), *low, end);
+	  *low = p - reg->dmax;
+	  if (*low > s) {
+	    *low = onigenc_get_right_adjust_char_head_with_prev(reg->enc, s,
+								*low, end, (const UChar** )low_prev);
+	    if (low_prev && IS_NULL(*low_prev))
+	      *low_prev = onigenc_get_prev_char_head(reg->enc,
+						     (pprev ? pprev : s), *low, end);
+	  }
+	  else {
+	    if (low_prev)
+	      *low_prev = onigenc_get_prev_char_head(reg->enc,
+						 (pprev ? pprev : str), *low, end);
+	  }
 	}
       }
     }
@@ -4539,8 +4544,10 @@ onig_scan(regex_t* reg, const UChar* str, const UChar* end,
       if (rs != 0)
 	return rs;
 
-      if (region->end[0] == start - str)
-	start++;
+      if (region->end[0] == start - str) {
+	if (start >= end) break;
+	start += enclen(reg->enc, start, end);
+      }
       else
 	start = str + region->end[0];
 

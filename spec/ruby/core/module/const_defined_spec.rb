@@ -12,12 +12,12 @@ describe "Module#const_defined?" do
     ConstantSpecs::ContainerA.const_defined?(:ChildA).should == true
   end
 
-  it "returns true if the constant is defined in the reciever's superclass" do
+  it "returns true if the constant is defined in the receiver's superclass" do
     # CS_CONST4 is defined in the superclass of ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST4).should be_true
   end
 
-  it "returns true if the constant is defined in a mixed-in module of the reciever" do
+  it "returns true if the constant is defined in a mixed-in module of the receiver" do
     # CS_CONST10 is defined in a module included by ChildA
     ConstantSpecs::ContainerA::ChildA.const_defined?(:CS_CONST10).should be_true
   end

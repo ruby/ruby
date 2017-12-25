@@ -193,8 +193,16 @@ any_hash(VALUE a, st_index_t (*other_func)(VALUE))
 	hnum = other_func(a);
     }
   out:
+#if SIZEOF_LONG < SIZEOF_ST_INDEX_T
+    if (hnum > 0)
+	hnum &= (unsigned long)-1 >> 2;
+    else
+	hnum |= ~((unsigned long)-1 >> 2);
+#else
     hnum <<= 1;
-    return (long)RSHIFT(hnum, 1);
+    hnum = RSHIFT(hnum, 1);
+#endif
+    return (long)hnum;
 }
 
 static st_index_t
@@ -216,14 +224,14 @@ rb_any_hash(VALUE a)
 
 /* Here we two primes with random bit generation.  */
 static const uint64_t prime1 = ((uint64_t)0x2e0bb864 << 32) | 0xe9ea7df5;
-static const uint64_t prime2 = ((uint64_t)0xcdb32970 << 32) | 0x830fcaa1;
+static const uint32_t prime2 = 0x830fcab9;
 
 
 static inline uint64_t
 mult_and_mix(uint64_t m1, uint64_t m2)
 {
-#if defined(__GNUC__) && UINT_MAX != ULONG_MAX
-    __uint128_t r = (__uint128_t) m1 * (__uint128_t) m2;
+#if defined HAVE_UINT128_T
+    uint128_t r = (uint128_t) m1 * (uint128_t) m2;
     return (uint64_t) (r >> 64) ^ (uint64_t) r;
 #else
     uint64_t hm1 = m1 >> 32, hm2 = m2 >> 32;
@@ -245,7 +253,7 @@ key64_hash(uint64_t key, uint32_t seed)
 long
 rb_objid_hash(st_index_t index)
 {
-    return (long)key64_hash(rb_hash_start(index), (uint32_t)prime2);
+    return (long)key64_hash(rb_hash_start(index), prime2);
 }
 
 static st_index_t
@@ -282,7 +290,7 @@ rb_ident_hash(st_data_t n)
     }
 #endif
 
-    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), (uint32_t)prime2);
+    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), prime2);
 }
 
 static const struct st_hash_type identhash = {
@@ -424,6 +432,14 @@ VALUE
 rb_hash_new(void)
 {
     return hash_alloc(rb_cHash);
+}
+
+VALUE
+rb_hash_new_compare_by_id(void)
+{
+    VALUE hash = rb_hash_new();
+    RHASH(hash)->ntbl = rb_init_identtable();
+    return hash;
 }
 
 VALUE
@@ -1329,12 +1345,11 @@ rb_hash_reject(VALUE hash)
  *  call-seq:
  *     hsh.slice(*keys) -> a_hash
  *
- *  Slices a hash to include only the given keys.
- *  Returns a hash containing the given keys.
+ *  Returns a hash containing only the given keys and their values.
  *
- *     h = { "a" => 100, "b" => 200, "c" => 300 }
- *     h.slice("a")      #=> {"a"=>100}
- *     h.slice("c", "d") #=> {"c"=>300}
+ *     h = { a: 100, b: 200, c: 300 }
+ *     h.slice(:a)           #=> {:a=>100}
+ *     h.slice(:b, :c, :d)   #=> {:b=>200, :c=>300}
  */
 
 static VALUE
@@ -2976,6 +2991,17 @@ any_p_i_fast(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
+static int
+any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
+{
+    VALUE ret = rb_funcall(((VALUE *)arg)[1], idEqq, 1, rb_assoc_new(key, value));
+    if (RTEST(ret)) {
+	*(VALUE *)arg = Qtrue;
+	return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *     hsh.any? [{ |(key, value)| block }]   -> true or false
@@ -2984,20 +3010,29 @@ any_p_i_fast(VALUE key, VALUE value, VALUE arg)
  */
 
 static VALUE
-rb_hash_any_p(VALUE hash)
+rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 {
-    VALUE ret = Qfalse;
+    VALUE args[2];
+    args[0] = Qfalse;
 
+    rb_check_arity(argc, 0, 1);
     if (RHASH_EMPTY_P(hash)) return Qfalse;
-    if (!rb_block_given_p()) {
-	/* yields pairs, never false */
-	return Qtrue;
+    if (argc) {
+	args[1] = argv[0];
+
+	rb_hash_foreach(hash, any_p_i_pattern, (VALUE)args);
     }
-    if (rb_block_arity() > 1)
-	rb_hash_foreach(hash, any_p_i_fast, (VALUE)&ret);
-    else
-	rb_hash_foreach(hash, any_p_i, (VALUE)&ret);
-    return ret;
+    else {
+	if (!rb_block_given_p()) {
+	    /* yields pairs, never false */
+	    return Qtrue;
+	}
+	if (rb_block_arity() > 1)
+	    rb_hash_foreach(hash, any_p_i_fast, (VALUE)args);
+	else
+	    rb_hash_foreach(hash, any_p_i, (VALUE)args);
+    }
+    return args[0];
 }
 
 /*
@@ -4656,7 +4691,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "compare_by_identity", rb_hash_compare_by_id, 0);
     rb_define_method(rb_cHash, "compare_by_identity?", rb_hash_compare_by_id_p, 0);
 
-    rb_define_method(rb_cHash, "any?", rb_hash_any_p, 0);
+    rb_define_method(rb_cHash, "any?", rb_hash_any_p, -1);
     rb_define_method(rb_cHash, "dig", rb_hash_dig, -1);
 
     rb_define_method(rb_cHash, "<=", rb_hash_le, 1);

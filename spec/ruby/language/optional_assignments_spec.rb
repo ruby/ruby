@@ -207,7 +207,7 @@ describe 'Optional variable assignments' do
       Object::A.should == 10
     end
 
-    it 'with &&= assignments will fail with non-existant constants' do
+    it 'with &&= assignments will fail with non-existent constants' do
       lambda { Object::A &&= 10 }.should raise_error(NameError)
     end
 
@@ -219,7 +219,7 @@ describe 'Optional variable assignments' do
       Object::A.should == 30
     end
 
-    it 'with operator assignments will fail with non-existant constants' do
+    it 'with operator assignments will fail with non-existent constants' do
       lambda { Object::A += 10 }.should raise_error(NameError)
     end
   end

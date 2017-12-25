@@ -162,7 +162,7 @@ class OpenStruct
   end
   private :modifiable?
 
-  # ::Kernel.warn("#{caller(1, 1)[0]}: do not use OpenStruct#modifiable")
+  # ::Kernel.warn("do not use OpenStruct#modifiable", uplevel: 1)
   alias modifiable modifiable? # :nodoc:
   protected :modifiable
 
@@ -181,7 +181,7 @@ class OpenStruct
   end
   private :new_ostruct_member!
 
-  # ::Kernel.warn("#{caller(1, 1)[0]}: do not use OpenStruct#new_ostruct_member")
+  # ::Kernel.warn("do not use OpenStruct#new_ostruct_member", uplevel: 1)
   alias new_ostruct_member new_ostruct_member! # :nodoc:
   protected :new_ostruct_member
 

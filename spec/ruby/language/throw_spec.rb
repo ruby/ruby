@@ -68,13 +68,14 @@ describe "The throw keyword" do
     lambda { catch(:different) { throw :test, 5 } }.should raise_error(ArgumentError)
   end
 
-  it "raises an ArgumentError if used to exit a thread" do
-    lambda {
-      catch(:what) do
-        Thread.new {
+  it "raises an UncaughtThrowError if used to exit a thread" do
+    catch(:what) do
+      t = Thread.new {
+        -> {
           throw :what
-        }.join
-      end
-    }.should raise_error(ArgumentError)
+        }.should raise_error(UncaughtThrowError)
+      }
+      t.join
+    end
   end
 end

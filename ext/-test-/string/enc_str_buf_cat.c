@@ -8,7 +8,7 @@ enc_str_buf_cat(VALUE str, VALUE str2)
 }
 
 void
-Init_enc_str_buf_cat(VALUE klass)
+Init_string_enc_str_buf_cat(VALUE klass)
 {
     rb_define_method(klass, "enc_str_buf_cat", enc_str_buf_cat, 1);
 }

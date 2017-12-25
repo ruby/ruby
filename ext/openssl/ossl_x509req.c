@@ -293,11 +293,10 @@ ossl_x509req_set_public_key(VALUE self, VALUE key)
     EVP_PKEY *pkey;
 
     GetX509Req(self, req);
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
-    if (!X509_REQ_set_pubkey(req, pkey)) {
-	ossl_raise(eX509ReqError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_REQ_set_pubkey(req, pkey))
+	ossl_raise(eX509ReqError, "X509_REQ_set_pubkey");
     return key;
 }
 
@@ -328,7 +327,8 @@ ossl_x509req_verify(VALUE self, VALUE key)
     EVP_PKEY *pkey;
 
     GetX509Req(self, req);
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
     switch (X509_REQ_verify(req, pkey)) {
       case 1:
 	return Qtrue;

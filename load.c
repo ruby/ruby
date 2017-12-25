@@ -94,15 +94,6 @@ rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *h
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
 }
 
-static VALUE
-load_path_getcwd(void)
-{
-    char *cwd = my_getcwd();
-    VALUE cwd_str = rb_filesystem_str_new_cstr(cwd);
-    xfree(cwd);
-    return cwd_str;
-}
-
 VALUE
 rb_get_expanded_load_path(void)
 {
@@ -114,7 +105,7 @@ rb_get_expanded_load_path(void)
 	int has_relative = 0, has_non_cache = 0;
 	rb_construct_expanded_load_path(EXPAND_ALL, &has_relative, &has_non_cache);
 	if (has_relative) {
-	    vm->load_path_check_cache = load_path_getcwd();
+	    vm->load_path_check_cache = rb_dir_getwd_ospath();
 	}
 	else if (has_non_cache) {
 	    /* Non string object. */
@@ -132,7 +123,7 @@ rb_get_expanded_load_path(void)
     }
     else if (vm->load_path_check_cache) {
 	int has_relative = 1, has_non_cache = 1;
-	VALUE cwd = load_path_getcwd();
+	VALUE cwd = rb_dir_getwd_ospath();
 	if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
 	    /* Current working directory or filesystem encoding was changed.
 	       Expand relative load path and non-cacheable objects again. */
@@ -578,9 +569,10 @@ NORETURN(static void load_failed(VALUE));
 const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
 static int
-rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
+rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 {
     enum ruby_tag_type state;
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile VALUE wrapper = th->top_wrapper;
     volatile VALUE self = th->top_self;
 #if !defined __GNUC__
@@ -600,9 +592,9 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     }
 
     EC_PUSH_TAG(th->ec);
-    state = EXEC_TAG();
+    state = EC_EXEC_TAG();
     if (state == TAG_NONE) {
-	NODE *node;
+	rb_ast_t *ast;
 	const rb_iseq_t *iseq;
 
 	if ((iseq = rb_iseq_load_iseq(fname)) != NULL) {
@@ -611,9 +603,10 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 	else {
 	    VALUE parser = rb_parser_new();
 	    rb_parser_set_context(parser, NULL, FALSE);
-	    node = (NODE *)rb_parser_load_file(parser, fname);
-	    iseq = rb_iseq_new_top(node, rb_fstring_cstr("<top (required)>"),
+	    ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+	    iseq = rb_iseq_new_top(ast->root, rb_fstring_cstr("<top (required)>"),
 			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+	    rb_ast_dispose(ast);
 	}
 	rb_iseq_eval(iseq);
     }
@@ -645,11 +638,11 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
 static void
 rb_load_internal(VALUE fname, int wrap)
 {
-    rb_thread_t *curr_th = GET_THREAD();
-    int state = rb_load_internal0(curr_th, fname, wrap);
+    rb_execution_context_t *ec = GET_EC();
+    int state = rb_load_internal0(ec, fname, wrap);
     if (state) {
-	if (state == TAG_RAISE) rb_exc_raise(curr_th->ec->errinfo);
-	EC_JUMP_TAG(curr_th->ec, state);
+	if (state == TAG_RAISE) rb_exc_raise(ec->errinfo);
+	EC_JUMP_TAG(ec, state);
     }
 }
 
@@ -673,13 +666,13 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     enum ruby_tag_type state;
     volatile VALUE path = 0;
 
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    EC_PUSH_TAG(GET_EC());
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	path = file_to_load(fname);
     }
-    POP_TAG();
+    EC_POP_TAG();
 
-    if (state == TAG_NONE) state = rb_load_internal0(GET_THREAD(), path, wrap);
+    if (state == TAG_NONE) state = rb_load_internal0(GET_EC(), path, wrap);
     if (state != TAG_NONE) *pstate = state;
 }
 
@@ -962,8 +955,8 @@ int
 rb_require_internal(VALUE fname, int safe)
 {
     volatile int result = -1;
-    rb_thread_t *th = GET_THREAD();
-    volatile VALUE errinfo = th->ec->errinfo;
+    rb_execution_context_t *ec = GET_EC();
+    volatile VALUE errinfo = ec->errinfo;
     enum ruby_tag_type state;
     struct {
 	int safe;
@@ -975,9 +968,9 @@ rb_require_internal(VALUE fname, int safe)
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     saved.safe = rb_safe_level();
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	long handle;
 	int found;
 
@@ -998,7 +991,7 @@ rb_require_internal(VALUE fname, int safe)
 	    else {
 		switch (found) {
 		  case 'r':
-		    state = rb_load_internal0(th, path, 0);
+		    state = rb_load_internal0(ec, path, 0);
 		    break;
 
 		  case 's':
@@ -1024,7 +1017,7 @@ rb_require_internal(VALUE fname, int safe)
 	return state;
     }
 
-    th->ec->errinfo = errinfo;
+    ec->errinfo = errinfo;
 
     RUBY_DTRACE_HOOK(REQUIRE_RETURN, RSTRING_PTR(fname));
 
@@ -1048,7 +1041,7 @@ rb_require_safe(VALUE fname, int safe)
 
     if (result > TAG_RETURN) {
 	if (result == TAG_RAISE) rb_exc_raise(rb_errinfo());
-	JUMP_TAG(result);
+	EC_JUMP_TAG(GET_EC(), result);
     }
     if (result < 0) {
 	load_failed(fname);

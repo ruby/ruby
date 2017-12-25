@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # A comment holds the text comment for a RDoc::CodeObject and provides a
 # unified way of cleaning it up and parsing it into an RDoc::Markup::Document.
@@ -45,7 +45,7 @@ class RDoc::Comment
 
   def initialize text = nil, location = nil
     @location = location
-    @text     = text
+    @text     = text.nil? ? nil : text.dup
 
     @document   = nil
     @format     = 'rdoc'
@@ -114,10 +114,14 @@ class RDoc::Comment
 
       method.call_seq = seq.chomp
 
-    elsif @text.sub!(/^\s*:?call-seq:(.*?)(^\s*$|\z)/m, '') then
-      seq = $1
-      seq.gsub!(/^\s*/, '')
-      method.call_seq = seq
+    else
+      regexp = /^\s*:?call-seq:(.*?)(^\s*$|\z)/m
+      if regexp =~ @text then
+        @text = @text.sub(regexp, '')
+        seq = $1
+        seq.gsub!(/^\s*/, '')
+        method.call_seq = seq
+      end
     end
 
     method
@@ -133,8 +137,14 @@ class RDoc::Comment
   ##
   # HACK dubious
 
-  def force_encoding encoding
-    @text.force_encoding encoding
+  def encode! encoding
+    # TODO: Remove this condition after Ruby 2.2 EOL
+    if RUBY_VERSION < '2.3.0'
+      @text = @text.force_encoding encoding
+    else
+      @text = String.new @text, encoding: encoding
+    end
+    self
   end
 
   ##
@@ -200,7 +210,7 @@ class RDoc::Comment
   def remove_private
     # Workaround for gsub encoding for Ruby 1.9.2 and earlier
     empty = ''
-    empty.force_encoding @text.encoding
+    empty = RDoc::Encoding.change_encoding empty, @text.encoding
 
     @text = @text.gsub(%r%^\s*([#*]?)--.*?^\s*(\1)\+\+\n?%m, empty)
     @text = @text.sub(%r%^\s*[#*]?--.*%m, '')
@@ -216,7 +226,7 @@ class RDoc::Comment
       @text.nil? and @document
 
     @document = nil
-    @text = text
+    @text = text.nil? ? nil : text.dup
   end
 
   ##

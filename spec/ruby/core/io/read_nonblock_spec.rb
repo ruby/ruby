@@ -43,6 +43,16 @@ describe "IO#read_nonblock" do
     end
   end
 
+  platform_is_not :windows do
+    it 'sets the IO in nonblock mode' do
+      require 'io/nonblock'
+      @read.nonblock?.should == false
+      @write.write "abc"
+      @read.read_nonblock(1).should == "a"
+      @read.nonblock?.should == true
+    end
+  end
+
   it "returns at most the number of bytes requested" do
     @write << "hello"
     @read.read_nonblock(4).should == "hell"

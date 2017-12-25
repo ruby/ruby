@@ -1232,6 +1232,17 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_absent
+    assert_equal(0, /(?~(a|c)c)/ =~ "abb")
+    assert_equal("abb", $&)
+
+    assert_equal(0, /\/\*((?~\*\/))\*\// =~ "/*abc*def/xyz*/ /* */")
+    assert_equal("abc*def/xyz", $1)
+
+    assert_equal(0, /(?~(a)c)/ =~ "abb")
+    assert_nil($1)
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)

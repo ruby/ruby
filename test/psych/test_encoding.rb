@@ -106,6 +106,18 @@ module Psych
       }
     end
 
+    def test_io_utf8_read_as_binary
+      Tempfile.create(['utf8', 'yml']) {|t|
+        t.binmode
+        t.write '--- こんにちは！'.encode('UTF-8')
+        t.close
+
+        File.open(t.path, 'rb', :encoding => 'ascii-8bit') do |f|
+          assert_equal "こんにちは！", Psych.load(f)
+        end
+      }
+    end
+
     def test_emit_alias
       @emitter.start_stream Psych::Parser::UTF8
       @emitter.start_document [], [], true

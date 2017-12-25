@@ -1,5 +1,5 @@
 # coding: us-ascii
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'rdoc/test_case'
 
@@ -207,7 +207,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
   end
 
   def test_force_encoding
-    @comment.force_encoding Encoding::UTF_8
+    @comment = RDoc::Encoding.change_encoding @comment, Encoding::UTF_8
 
     assert_equal Encoding::UTF_8, @comment.text.encoding
   end
@@ -347,7 +347,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
 # this is private
     EOS
 
-    comment.force_encoding Encoding::IBM437
+    comment = RDoc::Encoding.change_encoding comment, Encoding::IBM437
 
     comment.remove_private
 
@@ -471,7 +471,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
 # This is text again.
     EOS
 
-    comment.force_encoding Encoding::IBM437
+    comment = RDoc::Encoding.change_encoding comment, Encoding::IBM437
 
     comment.remove_private
 
@@ -486,7 +486,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
 # This is text again.
     EOS
 
-    comment.force_encoding Encoding::IBM437
+    comment = RDoc::Encoding.change_encoding comment, Encoding::IBM437
 
     comment.remove_private
 

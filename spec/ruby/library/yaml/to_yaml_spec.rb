@@ -46,7 +46,7 @@ describe "Object#to_yaml" do
     nil_klass.to_yaml.should match_yaml("--- \n")
   end
 
-  it "returns the YAML represenation of a RegExp object" do
+  it "returns the YAML representation of a RegExp object" do
     Regexp.new('^a-z+:\\s+\w+').to_yaml.should match_yaml("--- !ruby/regexp /^a-z+:\\s+\\w+/\n")
   end
 

@@ -27,8 +27,7 @@ module REXML
     # the constructor with the entity definition, or use the accessor methods.
     # +WARNING+: There is no validation of entity state except when the entity
     # is read from a stream.  If you start poking around with the accessors,
-    # you can easily create a non-conformant Entity.  The best thing to do is
-    # dump the stupid DTDs and use XMLSchema instead.
+    # you can easily create a non-conformant Entity.
     #
     #  e = Entity.new( 'amp', '&' )
     def initialize stream, value=nil, parent=nil, reference=false

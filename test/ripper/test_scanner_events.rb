@@ -637,8 +637,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('words_beg', '%W()')
     assert_equal ['%W('],
                  scan('words_beg', '%W(w w w)')
-    assert_equal ['%W( '],
+    assert_equal ['%W('],
                  scan('words_beg', '%W( w w w )')
+    assert_equal ['%W('],
+                 scan('words_beg', "%W(\nw)")
   end
 
   def test_qwords_beg
@@ -648,8 +650,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('qwords_beg', '%w()')
     assert_equal ['%w('],
                  scan('qwords_beg', '%w(w w w)')
-    assert_equal ['%w( '],
+    assert_equal ['%w('],
                  scan('qwords_beg', '%w( w w w )')
+    assert_equal ['%w('],
+                 scan('qwords_beg', "%w(\nw)")
   end
 
   def test_qsymbols_beg
@@ -659,8 +663,10 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('qsymbols_beg', '%i()')
     assert_equal ['%i('],
                  scan('qsymbols_beg', '%i(w w w)')
-    assert_equal ['%i( '],
+    assert_equal ['%i('],
                  scan('qsymbols_beg', '%i( w w w )')
+    assert_equal ['%i('],
+                 scan('qsymbols_beg', "%i(\nw)")
   end
 
   def test_symbols_beg
@@ -670,22 +676,25 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('symbols_beg', '%I()')
     assert_equal ['%I('],
                  scan('symbols_beg', '%I(w w w)')
-    assert_equal ['%I( '],
+    assert_equal ['%I('],
                  scan('symbols_beg', '%I( w w w )')
+    assert_equal ['%I('],
+                 scan('symbols_beg', "%I(\nw)")
   end
 
-  # FIXME: Close paren must not present (`words_end' scanner event?).
   def test_words_sep
     assert_equal [],
                  scan('words_sep', '')
-    assert_equal [')'],
+    assert_equal [],
                  scan('words_sep', '%w()')
-    assert_equal [' ', ' ', ')'],
+    assert_equal [' ', ' '],
                  scan('words_sep', '%w(w w w)')
-    assert_equal [' ', ' ', ' )'],
+    assert_equal [' ', ' ', ' ', ' '],
                  scan('words_sep', '%w( w w w )')
-    assert_equal ["\n", ' ', ' )'],
+    assert_equal [' ', "\n", ' ', ' '],
                  scan('words_sep', "%w( w\nw w )")
+    assert_equal ["\n\n", "\n ", ' ', ' '],
+                 scan('words_sep', "%w(\n\nw\n w w )")
   end
 
   def test_heredoc_beg

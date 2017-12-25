@@ -647,6 +647,34 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(t + 2, File.mtime(zerofile))
   end
 
+  def test_utime_symlinkfile
+    return unless symlinkfile
+    t = Time.local(2000)
+    stat = File.lstat(symlinkfile)
+    assert_equal(1, File.utime(t, t, symlinkfile))
+    assert_equal(t, File.stat(regular_file).atime)
+    assert_equal(t, File.stat(regular_file).mtime)
+  end
+
+  def test_lutime
+    return unless File.respond_to?(:lutime)
+    return unless symlinkfile
+
+    r = File.stat(regular_file)
+    t = Time.local(2000)
+    File.lutime(t + 1, t + 2, symlinkfile)
+  rescue NotImplementedError => e
+    skip(e.message)
+  else
+    stat = File.stat(regular_file)
+    assert_equal(r.atime, stat.atime)
+    assert_equal(r.mtime, stat.mtime)
+
+    stat = File.lstat(symlinkfile)
+    assert_equal(t + 1, stat.atime)
+    assert_equal(t + 2, stat.mtime)
+  end
+
   def test_hardlink
     return unless hardlinkfile
     assert_equal("file", File.ftype(hardlinkfile))

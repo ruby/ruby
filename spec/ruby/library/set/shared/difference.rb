@@ -3,7 +3,7 @@ describe :set_difference, shared: true do
     @set = Set[:a, :b, :c]
   end
 
-  it "returns a new Set containting self's elements excluding the elements in the passed Enumerable" do
+  it "returns a new Set containing self's elements excluding the elements in the passed Enumerable" do
     @set.send(@method, Set[:a, :b]).should == Set[:c]
     @set.send(@method, [:b, :c]).should == Set[:a]
   end

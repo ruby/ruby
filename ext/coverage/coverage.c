@@ -10,8 +10,10 @@
 
 #include "ruby.h"
 #include "vm_core.h"
+#include "gc.h"
 
 static int current_mode;
+static VALUE me2counter = Qnil;
 
 /*
  * call-seq:
@@ -23,15 +25,8 @@ static VALUE
 rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 {
     VALUE coverages, opt;
-    int mode, experimental_mode_enabled = 1;
+    int mode;
 
-    {
-        const char *e = getenv("COVERAGE_EXPERIMENTAL_MODE");
-        if (!e || !*e) experimental_mode_enabled = 0;
-    }
-
-    if (!experimental_mode_enabled && argc != 0)
-	rb_error_arity(argc, 0, 0);
     rb_scan_args(argc, argv, "01", &opt);
 
     if (argc == 0) {
@@ -55,13 +50,20 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 	}
     }
 
+    if (mode & COVERAGE_TARGET_METHODS) {
+	me2counter = rb_hash_new_compare_by_id();
+    }
+    else {
+	me2counter = Qnil;
+    }
+
     coverages = rb_get_coverages();
     if (!RTEST(coverages)) {
 	coverages = rb_hash_new();
 	rb_obj_hide(coverages);
 	current_mode = mode;
 	if (mode == 0) mode = COVERAGE_TARGET_LINES;
-	rb_set_coverages(coverages, mode);
+	rb_set_coverages(coverages, mode, me2counter);
     }
     else if (current_mode != mode) {
 	rb_raise(rb_eRuntimeError, "cannot change the measuring target during coverage measurement");
@@ -81,37 +83,83 @@ branch_coverage(VALUE branches)
     for (i = 0; i < RARRAY_LEN(structure); i++) {
 	VALUE branches = RARRAY_AREF(structure, i);
 	VALUE base_type = RARRAY_AREF(branches, 0);
-	VALUE base_lineno = RARRAY_AREF(branches, 1);
-	VALUE base_column = RARRAY_AREF(branches, 2);
+	VALUE base_first_lineno = RARRAY_AREF(branches, 1);
+	VALUE base_first_column = RARRAY_AREF(branches, 2);
+	VALUE base_last_lineno = RARRAY_AREF(branches, 3);
+	VALUE base_last_column = RARRAY_AREF(branches, 4);
 	VALUE children = rb_hash_new();
-	rb_hash_aset(ret, rb_ary_new_from_args(4, base_type, LONG2FIX(id++), base_lineno, base_column), children);
-	for (j = 3; j < RARRAY_LEN(branches); j += 4) {
+	rb_hash_aset(ret, rb_ary_new_from_args(6, base_type, LONG2FIX(id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column), children);
+	for (j = 5; j < RARRAY_LEN(branches); j += 6) {
 	    VALUE target_label = RARRAY_AREF(branches, j);
-	    VALUE target_lineno = RARRAY_AREF(branches, j + 1);
-	    VALUE target_column = RARRAY_AREF(branches, j + 2);
-	    int idx = FIX2INT(RARRAY_AREF(branches, j + 3));
-	    rb_hash_aset(children, rb_ary_new_from_args(4, target_label, LONG2FIX(id++), target_lineno, target_column), RARRAY_AREF(counters, idx));
+	    VALUE target_first_lineno = RARRAY_AREF(branches, j + 1);
+	    VALUE target_first_column = RARRAY_AREF(branches, j + 2);
+	    VALUE target_last_lineno = RARRAY_AREF(branches, j + 3);
+	    VALUE target_last_column = RARRAY_AREF(branches, j + 4);
+	    int idx = FIX2INT(RARRAY_AREF(branches, j + 5));
+	    rb_hash_aset(children, rb_ary_new_from_args(6, target_label, LONG2FIX(id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column), RARRAY_AREF(counters, idx));
 	}
     }
 
     return ret;
 }
 
-static VALUE
-method_coverage(VALUE methods)
+static int
+method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 {
-    VALUE ret = rb_hash_new();
-    int i;
-    long id = 0;
+    /*
+     * ObjectSpace.each_object(Module){|mod|
+     *   mod.instance_methods.each{|mid|
+     *     m = mod.instance_method(mid)
+     *     if loc = m.source_location
+     *       p [m.name, loc, $g_method_cov_counts[m]]
+     *     end
+     *   }
+     * }
+     */
+    VALUE ncoverages = *(VALUE*)data, v;
 
-    for (i = 0; i < RARRAY_LEN(methods); ) {
-	VALUE method_name = RARRAY_AREF(methods, i++);
-	VALUE lineno = RARRAY_AREF(methods, i++);
-	VALUE counter = RARRAY_AREF(methods, i++);
-	rb_hash_aset(ret, rb_ary_new_from_args(3, method_name, LONG2FIX(id++), lineno), counter);
+    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
+	if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
+	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
+	    VALUE path, first_lineno, first_column, last_lineno, last_column;
+	    VALUE data[5], ncoverage, methods;
+	    VALUE methods_id = ID2SYM(rb_intern("methods"));
+	    VALUE klass;
+	    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
+	    if (me != me2) continue;
+	    klass = me->owner;
+	    if (RB_TYPE_P(klass, T_ICLASS)) {
+		rb_bug("T_ICLASS");
+	    }
+	    path = data[0];
+	    first_lineno = data[1];
+	    first_column = data[2];
+	    last_lineno = data[3];
+	    last_column = data[4];
+	    if (FIX2LONG(first_lineno) <= 0) continue;
+	    ncoverage = rb_hash_aref(ncoverages, path);
+	    if (NIL_P(ncoverage)) continue;
+	    methods = rb_hash_aref(ncoverage, methods_id);
+
+	    {
+		VALUE method_id = ID2SYM(me->def->original_id);
+		VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
+		VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
+		VALUE rcount2 = rb_hash_aref(methods, key);
+
+		if (NIL_P(rcount)) rcount = LONG2FIX(0);
+		if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
+		if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
+		    rcount = LONG2FIX(FIXNUM_MAX);
+		}
+		else {
+		    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
+		}
+		rb_hash_aset(methods, key, rcount);
+	    }
+	}
     }
-
-    return ret;
+    return 0;
 }
 
 static int
@@ -128,25 +176,23 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
     }
     else {
 	VALUE h = rb_hash_new();
-	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
-	VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-	VALUE methods = RARRAY_AREF(coverage, COVERAGE_INDEX_METHODS);
 
-	if (lines) {
+	if (current_mode & COVERAGE_TARGET_LINES) {
+	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	    lines = rb_ary_dup(lines);
 	    rb_ary_freeze(lines);
 	    rb_hash_aset(h, ID2SYM(rb_intern("lines")), lines);
 	}
 
-	if (branches) {
+	if (current_mode & COVERAGE_TARGET_BRANCHES) {
+	    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
 	}
 
-	if (methods) {
-	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), method_coverage(methods));
+	if (current_mode & COVERAGE_TARGET_METHODS) {
+	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
 	}
 
-	rb_hash_freeze(h);
 	coverage = h;
     }
 
@@ -174,6 +220,11 @@ rb_coverage_peek_result(VALUE klass)
 	rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
     st_foreach(RHASH_TBL(coverages), coverage_peek_result_i, ncoverages);
+
+    if (current_mode & COVERAGE_TARGET_METHODS) {
+	rb_objspace_each_objects(method_coverage_i, &ncoverages);
+    }
+
     rb_hash_freeze(ncoverages);
     return ncoverages;
 }
@@ -190,6 +241,7 @@ rb_coverage_result(VALUE klass)
 {
     VALUE ncoverages = rb_coverage_peek_result(klass);
     rb_reset_coverages();
+    me2counter = Qnil;
     return ncoverages;
 }
 
@@ -248,4 +300,5 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "result", rb_coverage_result, 0);
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
+    rb_global_variable(&me2counter);
 }

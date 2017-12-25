@@ -163,8 +163,8 @@ ossl_pkey_new_from_data(int argc, VALUE *argv, VALUE self)
     return ossl_pkey_new(pkey);
 }
 
-static void
-pkey_check_public_key(EVP_PKEY *pkey)
+void
+ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
     void *ptr;
     const BIGNUM *n, *e, *pubkey;
@@ -172,7 +172,8 @@ pkey_check_public_key(EVP_PKEY *pkey)
     if (EVP_PKEY_missing_parameters(pkey))
 	ossl_raise(ePKeyError, "parameters missing");
 
-    ptr = EVP_PKEY_get0(pkey);
+    /* OpenSSL < 1.1.0 takes non-const pointer */
+    ptr = EVP_PKEY_get0((EVP_PKEY *)pkey);
     switch (EVP_PKEY_base_id(pkey)) {
       case EVP_PKEY_RSA:
 	RSA_get0_key(ptr, &n, &e, NULL);
@@ -352,7 +353,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
     int siglen, result;
 
     GetPKey(self, pkey);
-    pkey_check_public_key(pkey);
+    ossl_pkey_check_public_key(pkey);
     md = ossl_evp_get_digestbyname(digest);
     StringValue(sig);
     siglen = RSTRING_LENINT(sig);

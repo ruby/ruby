@@ -1,18 +1,21 @@
-Version 2.1.0.beta1
-===================
+Version 2.1.0
+=============
 
 Notable changes
 ---------------
 
-* Support for OpenSSL versions before 1.0.1 is removed.
+* Support for OpenSSL versions before 1.0.1 and LibreSSL versions before 2.5
+  is removed.
   [[GitHub #86]](https://github.com/ruby/openssl/pull/86)
 * OpenSSL::BN#negative?, #+@, and #-@ are added.
 * OpenSSL::SSL::SSLSocket#connect raises a more informative exception when
   certificate verification fails.
   [[GitHub #99]](https://github.com/ruby/openssl/pull/99)
-* OpenSSL::KDF module is newly added. Support for scrypt is added.
+* OpenSSL::KDF module is newly added. In addition to PBKDF2-HMAC that has moved
+  from OpenSSL::PKCS5, scrypt and HKDF are supported.
   [[GitHub #109]](https://github.com/ruby/openssl/pull/109)
-* OpenSSL.fips_mode is added. We have had the setter, but not the getter.
+  [[GitHub #173]](https://github.com/ruby/openssl/pull/173)
+* OpenSSL.fips_mode is added. We had the setter, but not the getter.
   [[GitHub #125]](https://github.com/ruby/openssl/pull/125)
 * OpenSSL::OCSP::Request#signed? is added.
 * OpenSSL::ASN1 handles the indefinite length form better. OpenSSL::ASN1.decode
@@ -22,11 +25,49 @@ Notable changes
 * OpenSSL::X509::Name#add_entry now accepts two additional keyword arguments
   'loc' and 'set'.
   [[GitHub #94]](https://github.com/ruby/openssl/issues/94)
-* OpenSSL::SSL::SSLContext#min_version= and #max_version= are added.
+* OpenSSL::SSL::SSLContext#min_version= and #max_version= are added to replace
+  #ssl_version= that was built on top of the deprecated OpenSSL C API. Use of
+  that method and the constant OpenSSL::SSL::SSLContext::METHODS is now
+  deprecated.
   [[GitHub #142]](https://github.com/ruby/openssl/pull/142)
 * OpenSSL::X509::Name#to_utf8 is added.
   [[GitHub #26]](https://github.com/ruby/openssl/issues/26)
   [[GitHub #143]](https://github.com/ruby/openssl/pull/143)
+* OpenSSL::X509::{Extension,Attribute,Certificate,CRL,Revoked,Request} can be
+  compared with == operator.
+  [[GitHub #161]](https://github.com/ruby/openssl/pull/161)
+* TLS Fallback Signaling Cipher Suite Value (SCSV) support is added.
+  [[GitHub #165]](https://github.com/ruby/openssl/pull/165)
+* Build failure with OpenSSL 1.1 built with no-deprecated is fixed.
+  [[GitHub #160]](https://github.com/ruby/openssl/pull/160)
+* OpenSSL::Buffering#write accepts an arbitrary number of arguments.
+  [[Feature #9323]](https://bugs.ruby-lang.org/issues/9323)
+  [[GitHub #162]](https://github.com/ruby/openssl/pull/162)
+* OpenSSL::PKey::RSA#sign_pss and #verify_pss are added. They perform RSA-PSS
+  signature and verification.
+  [[GitHub #75]](https://github.com/ruby/openssl/issues/75)
+  [[GitHub #76]](https://github.com/ruby/openssl/pull/76)
+  [[GitHub #169]](https://github.com/ruby/openssl/pull/169)
+* OpenSSL::SSL::SSLContext#add_certificate is added.
+  [[GitHub #167]](https://github.com/ruby/openssl/pull/167)
+* OpenSSL::PKey::EC::Point#to_octet_string is added.
+  OpenSSL::PKey::EC::Point.new can now take String as the second argument.
+  [[GitHub #177]](https://github.com/ruby/openssl/pull/177)
+
+
+Version 2.0.7
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::Cipher#auth_data= could segfault if called against a non-AEAD cipher.
+  [[Bug #14024]](https://bugs.ruby-lang.org/issues/14024)
+* OpenSSL::X509::Certificate#public_key= (and similar methods) could segfault
+  when an instance of OpenSSL::PKey::PKey with no public key components is
+  passed.
+  [[Bug #14087]](https://bugs.ruby-lang.org/issues/14087)
+  [[GitHub #168]](https://github.com/ruby/openssl/pull/168)
 
 
 Version 2.0.6
@@ -201,7 +242,7 @@ Notable changes
   - A new option 'verify_hostname' is added to OpenSSL::SSL::SSLContext. When it
     is enabled, and the SNI hostname is also set, the hostname verification on
     the server certificate is automatically performed. It is now enabled by
-    OpenSSL::SSL::Context#set_params.
+    OpenSSL::SSL::SSLContext#set_params.
     [[GH ruby/openssl#60]](https://github.com/ruby/openssl/pull/60)
 
 Removals

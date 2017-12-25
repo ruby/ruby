@@ -440,7 +440,7 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
 
     GetX509(self, x509);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_set_notBefore(x509, asn1time)) {
+    if (!X509_set1_notBefore(x509, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CertError, "X509_set_notBefore");
     }
@@ -479,7 +479,7 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
 
     GetX509(self, x509);
     asn1time = ossl_x509_time_adjust(NULL, time);
-    if (!X509_set_notAfter(x509, asn1time)) {
+    if (!X509_set1_notAfter(x509, asn1time)) {
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CertError, "X509_set_notAfter");
     }
@@ -508,18 +508,19 @@ ossl_x509_get_public_key(VALUE self)
 
 /*
  * call-seq:
- *    cert.public_key = key => key
+ *    cert.public_key = key
  */
 static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
     X509 *x509;
+    EVP_PKEY *pkey;
 
     GetX509(self, x509);
-    if (!X509_set_pubkey(x509, GetPKeyPtr(key))) { /* DUPs pkey */
-	ossl_raise(eX509CertError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_set_pubkey(x509, pkey))
+	ossl_raise(eX509CertError, "X509_set_pubkey");
     return key;
 }
 
@@ -557,9 +558,9 @@ ossl_x509_verify(VALUE self, VALUE key)
     X509 *x509;
     EVP_PKEY *pkey;
 
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
     switch (X509_verify(x509, pkey)) {
       case 1:
 	return Qtrue;
@@ -681,6 +682,26 @@ ossl_x509_inspect(VALUE self)
 		      ossl_x509_get_serial(self),
 		      ossl_x509_get_not_before(self),
 		      ossl_x509_get_not_after(self));
+}
+
+/*
+ * call-seq:
+ *    cert1 == cert2 -> true | false
+ *
+ * Compares the two certificates. Note that this takes into account all fields,
+ * not just the issuer name and the serial number.
+ */
+static VALUE
+ossl_x509_eq(VALUE self, VALUE other)
+{
+    X509 *a, *b;
+
+    GetX509(self, a);
+    if (!rb_obj_is_kind_of(other, cX509Cert))
+	return Qfalse;
+    GetX509(other, b);
+
+    return !X509_cmp(a, b) ? Qtrue : Qfalse;
 }
 
 /*
@@ -821,4 +842,5 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "extensions=", ossl_x509_set_extensions, 1);
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
+    rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
 }

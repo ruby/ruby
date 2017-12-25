@@ -46,13 +46,25 @@ VALUE eEngineError;
 /*
  * Private
  */
-#define OSSL_ENGINE_LOAD_IF_MATCH(x) \
+#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
+#define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x) \
 do{\
-  if(!strcmp(#x, RSTRING_PTR(name))){\
-    ENGINE_load_##x();\
+  if(!strcmp(#engine_name, RSTRING_PTR(name))){\
+    if (OPENSSL_init_crypto(OPENSSL_INIT_ENGINE_##x, NULL))\
+      return Qtrue;\
+    else\
+      ossl_raise(eEngineError, "OPENSSL_init_crypto"); \
+  }\
+}while(0)
+#else
+#define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x)  \
+do{\
+  if(!strcmp(#engine_name, RSTRING_PTR(name))){\
+    ENGINE_load_##engine_name();\
     return Qtrue;\
   }\
 }while(0)
+#endif
 
 static void
 ossl_engine_free(void *engine)
@@ -94,55 +106,55 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
     StringValueCStr(name);
 #ifndef OPENSSL_NO_STATIC_ENGINE
 #if HAVE_ENGINE_LOAD_DYNAMIC
-    OSSL_ENGINE_LOAD_IF_MATCH(dynamic);
+    OSSL_ENGINE_LOAD_IF_MATCH(dynamic, DYNAMIC);
 #endif
 #if HAVE_ENGINE_LOAD_4758CCA
-    OSSL_ENGINE_LOAD_IF_MATCH(4758cca);
+    OSSL_ENGINE_LOAD_IF_MATCH(4758cca, 4758CCA);
 #endif
 #if HAVE_ENGINE_LOAD_AEP
-    OSSL_ENGINE_LOAD_IF_MATCH(aep);
+    OSSL_ENGINE_LOAD_IF_MATCH(aep, AEP);
 #endif
 #if HAVE_ENGINE_LOAD_ATALLA
-    OSSL_ENGINE_LOAD_IF_MATCH(atalla);
+    OSSL_ENGINE_LOAD_IF_MATCH(atalla, ATALLA);
 #endif
 #if HAVE_ENGINE_LOAD_CHIL
-    OSSL_ENGINE_LOAD_IF_MATCH(chil);
+    OSSL_ENGINE_LOAD_IF_MATCH(chil, CHIL);
 #endif
 #if HAVE_ENGINE_LOAD_CSWIFT
-    OSSL_ENGINE_LOAD_IF_MATCH(cswift);
+    OSSL_ENGINE_LOAD_IF_MATCH(cswift, CSWIFT);
 #endif
 #if HAVE_ENGINE_LOAD_NURON
-    OSSL_ENGINE_LOAD_IF_MATCH(nuron);
+    OSSL_ENGINE_LOAD_IF_MATCH(nuron, NURON);
 #endif
 #if HAVE_ENGINE_LOAD_SUREWARE
-    OSSL_ENGINE_LOAD_IF_MATCH(sureware);
+    OSSL_ENGINE_LOAD_IF_MATCH(sureware, SUREWARE);
 #endif
 #if HAVE_ENGINE_LOAD_UBSEC
-    OSSL_ENGINE_LOAD_IF_MATCH(ubsec);
+    OSSL_ENGINE_LOAD_IF_MATCH(ubsec, UBSEC);
 #endif
 #if HAVE_ENGINE_LOAD_PADLOCK
-    OSSL_ENGINE_LOAD_IF_MATCH(padlock);
+    OSSL_ENGINE_LOAD_IF_MATCH(padlock, PADLOCK);
 #endif
 #if HAVE_ENGINE_LOAD_CAPI
-    OSSL_ENGINE_LOAD_IF_MATCH(capi);
+    OSSL_ENGINE_LOAD_IF_MATCH(capi, CAPI);
 #endif
 #if HAVE_ENGINE_LOAD_GMP
-    OSSL_ENGINE_LOAD_IF_MATCH(gmp);
+    OSSL_ENGINE_LOAD_IF_MATCH(gmp, GMP);
 #endif
 #if HAVE_ENGINE_LOAD_GOST
-    OSSL_ENGINE_LOAD_IF_MATCH(gost);
+    OSSL_ENGINE_LOAD_IF_MATCH(gost, GOST);
 #endif
 #if HAVE_ENGINE_LOAD_CRYPTODEV
-    OSSL_ENGINE_LOAD_IF_MATCH(cryptodev);
+    OSSL_ENGINE_LOAD_IF_MATCH(cryptodev, CRYPTODEV);
 #endif
 #if HAVE_ENGINE_LOAD_AESNI
-    OSSL_ENGINE_LOAD_IF_MATCH(aesni);
+    OSSL_ENGINE_LOAD_IF_MATCH(aesni, AESNI);
 #endif
 #endif
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
-    OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
+    OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto, OPENBSD_DEV_CRYPTO);
 #endif
-    OSSL_ENGINE_LOAD_IF_MATCH(openssl);
+    OSSL_ENGINE_LOAD_IF_MATCH(openssl, OPENSSL);
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
@@ -160,7 +172,9 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
 {
+#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10100000
     ENGINE_cleanup();
+#endif
     return Qnil;
 }
 

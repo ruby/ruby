@@ -30,6 +30,8 @@ enum node_type {
 #define NODE_UNLESS      NODE_UNLESS
     NODE_CASE,
 #define NODE_CASE        NODE_CASE
+    NODE_CASE2,
+#define NODE_CASE2       NODE_CASE2
     NODE_WHEN,
 #define NODE_WHEN        NODE_WHEN
     NODE_WHILE,
@@ -220,9 +222,18 @@ enum node_type {
 #define NODE_LAST        NODE_LAST
 };
 
+typedef struct rb_code_location_struct {
+    int lineno;
+    int column;
+} rb_code_location_t;
+
+typedef struct rb_code_range_struct {
+    rb_code_location_t first_loc;
+    rb_code_location_t last_loc;
+} rb_code_range_t;
+
 typedef struct RNode {
     VALUE flags;
-    VALUE nd_reserved;		/* ex nd_file */
     union {
 	struct RNode *node;
 	ID id;
@@ -245,12 +256,13 @@ typedef struct RNode {
 	long cnt;
 	VALUE value;
     } u3;
+    rb_code_range_t nd_loc;
 } NODE;
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: TAINT, 9: UNTRUSTED, 10: EXIVAR, 11: FREEZE */
-/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE|NODE_FL_CREF_PUSHED_BY_EVAL,
+/* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,
  *          8..14: nd_type,
  *          15..: nd_line
  */
@@ -259,17 +271,27 @@ typedef struct RNode {
 #define NODE_TYPESHIFT 8
 #define NODE_TYPEMASK  (((VALUE)0x7f)<<NODE_TYPESHIFT)
 
-#define nd_type(n) ((int) (((RNODE(n))->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
+#define nd_type(n) ((int) (((n)->flags & NODE_TYPEMASK)>>NODE_TYPESHIFT))
 #define nd_set_type(n,t) \
-    RNODE(n)->flags=((RNODE(n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
+    (n)->flags=(((n)->flags&~NODE_TYPEMASK)|((((unsigned long)(t))<<NODE_TYPESHIFT)&NODE_TYPEMASK))
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
-#define nd_line(n) (int)(((SIGNED_VALUE)RNODE(n)->flags)>>NODE_LSHIFT)
+#define nd_line(n) (int)(((SIGNED_VALUE)(n)->flags)>>NODE_LSHIFT)
 #define nd_set_line(n,l) \
-    RNODE(n)->flags=((RNODE(n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
-#define nd_column(n) (int)(RNODE(n)->nd_reserved)
-#define nd_set_column(n, v) (RNODE(n)->nd_reserved=v)
+    (n)->flags=(((n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
+
+#define nd_first_column(n) ((int)((n)->nd_loc.first_loc.column))
+#define nd_set_first_column(n, v) ((n)->nd_loc.first_loc.column = (v))
+#define nd_first_lineno(n) ((int)((n)->nd_loc.first_loc.lineno))
+#define nd_set_first_lineno(n, v) ((n)->nd_loc.first_loc.lineno = (v))
+
+#define nd_last_column(n) ((int)((n)->nd_loc.last_loc.column))
+#define nd_set_last_column(n, v) ((n)->nd_loc.last_loc.column = (v))
+#define nd_last_lineno(n) ((int)((n)->nd_loc.last_loc.lineno))
+#define nd_set_last_lineno(n, v) ((n)->nd_loc.last_loc.lineno = (v))
+#define nd_last_loc(n) ((n)->nd_loc.last_loc)
+#define nd_set_last_loc(n, v) (nd_last_loc(n) = (v))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc
@@ -278,8 +300,6 @@ typedef struct RNode {
 #define nd_cond  u1.node
 #define nd_body  u2.node
 #define nd_else  u3.node
-
-#define nd_orig  u3.value
 
 #define nd_resq  u2.node
 #define nd_ensr  u3.node
@@ -326,9 +346,6 @@ typedef struct RNode {
 #define nd_cpath u1.node
 #define nd_super u3.node
 
-#define nd_modl  u1.id
-#define nd_clss_  u1.value
-
 #define nd_beg   u1.node
 #define nd_end   u2.node
 #define nd_state u3.state
@@ -337,9 +354,12 @@ typedef struct RNode {
 #define nd_nth   u2.argc
 
 #define nd_tag   u1.id
-#define nd_tval  u2.value
 
-#define nd_visi_  u2.argc
+#define nd_alias  u1.id
+#define nd_orig   u2.id
+#define nd_undef  u2.node
+
+#define nd_compile_option  u3.value
 
 #define NEW_NODE(t,a0,a1,a2) rb_node_newnode((t),(VALUE)(a0),(VALUE)(a1),(VALUE)(a2))
 
@@ -350,6 +370,7 @@ typedef struct RNode {
 #define NEW_IF(c,t,e) NEW_NODE(NODE_IF,c,t,e)
 #define NEW_UNLESS(c,t,e) NEW_NODE(NODE_UNLESS,c,t,e)
 #define NEW_CASE(h,b) NEW_NODE(NODE_CASE,h,b,0)
+#define NEW_CASE2(b) NEW_NODE(NODE_CASE2,0,b,0)
 #define NEW_WHEN(c,t,e) NEW_NODE(NODE_WHEN,c,t,e)
 #define NEW_WHILE(c,b,n) NEW_NODE(NODE_WHILE,c,b,n)
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
@@ -437,7 +458,28 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b,o) NEW_NODE(NODE_PRELUDE,p,b,o)
 
+#define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
+#define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
+
 RUBY_SYMBOL_EXPORT_BEGIN
+
+typedef struct node_buffer_struct node_buffer_t;
+/* T_IMEMO/ast */
+typedef struct rb_ast_struct {
+    VALUE flags;
+    VALUE reserved1;
+    NODE *root;
+    node_buffer_t *node_buffer;
+    VALUE mark_ary;
+} rb_ast_t;
+rb_ast_t *rb_ast_new();
+void rb_ast_mark(rb_ast_t*);
+void rb_ast_dispose(rb_ast_t*);
+void rb_ast_free(rb_ast_t*);
+void rb_ast_add_mark_object(rb_ast_t*, VALUE);
+void rb_ast_delete_mark_object(rb_ast_t*, VALUE);
+NODE *rb_ast_newnode(rb_ast_t*);
+void rb_ast_delete_node(rb_ast_t*, NODE *n);
 
 VALUE rb_parser_new(void);
 VALUE rb_parser_end_seen_p(VALUE);
@@ -447,21 +489,17 @@ VALUE rb_parser_set_yydebug(VALUE, VALUE);
 VALUE rb_parser_dump_tree(NODE *node, int comment);
 void rb_parser_set_options(VALUE, int, int, int, int);
 
-NODE *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
-NODE *rb_parser_compile_string(VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_file(VALUE, const char*, VALUE, int);
-NODE *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
-NODE *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
+rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
+rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
+rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
 
-NODE *rb_compile_cstr(const char*, const char*, int, int);
-NODE *rb_compile_string(const char*, VALUE, int);
-NODE *rb_compile_file(const char*, VALUE, int);
+rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
+rb_ast_t *rb_compile_string(const char*, VALUE, int);
+rb_ast_t *rb_compile_file(const char*, VALUE, int);
 
 void rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2);
-NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
-void rb_gc_free_node(VALUE obj);
-size_t rb_node_memsize(VALUE obj);
-VALUE rb_gc_mark_node(NODE *obj);
 
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 

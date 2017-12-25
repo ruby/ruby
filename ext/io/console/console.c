@@ -307,6 +307,14 @@ ttymode(VALUE io, VALUE (*func)(VALUE), void (*setter)(conmode *, void *), void 
  *
  * will read and return a line without echo back and line editing.
  *
+ * The parameter +min+ specifies the minimum number of bytes that
+ * should be received when a read operation is performed. (default: 1)
+ *
+ * The parameter +time+ specifies the timeout in _seconds_ with a
+ * precision of 1/10 of a second. (default: 0)
+ *
+ * Refer to the manual page of termios for further details.
+ *
  * You must require 'io/console' to use this method.
  */
 static VALUE
@@ -323,6 +331,8 @@ console_raw(int argc, VALUE *argv, VALUE io)
  * Enables raw mode.
  *
  * If the terminal mode needs to be back, use io.raw { ... }.
+ *
+ * See IO#raw for details on the parameters.
  *
  * You must require 'io/console' to use this method.
  */
@@ -396,6 +406,8 @@ getc_call(VALUE io)
  *   io.getch(min: nil, time: nil)       -> char
  *
  * Reads and returns a character in raw mode.
+ *
+ * See IO#raw for details on the parameters.
  *
  * You must require 'io/console' to use this method.
  */

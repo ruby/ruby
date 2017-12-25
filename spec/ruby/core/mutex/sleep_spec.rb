@@ -25,9 +25,11 @@ describe "Mutex#sleep" do
     m = Mutex.new
     m.lock
     duration = 0.1
-    start = Time.now
+    start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     m.sleep duration
-    (Time.now - start).should be_close(duration, 0.2)
+    now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    (now - start).should > 0
+    (now - start).should < 2.0
   end
 
   it "unlocks the mutex while sleeping" do
@@ -70,5 +72,24 @@ describe "Mutex#sleep" do
     m = Mutex.new
     m.lock
     m.sleep(0.01).should be_kind_of(Integer)
+  end
+
+  it "wakes up when requesting sleep times near or equal to zero" do
+    times = []
+    val = 1
+
+    # power of two divisor so we eventually get near zero
+    loop do
+      val = val / 16.0
+      times << val
+      break if val == 0.0
+    end
+
+    m = Mutex.new
+    m.lock
+    times.each do |time|
+      # just testing that sleep completes
+      m.sleep(time).should_not == nil
+    end
   end
 end

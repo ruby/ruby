@@ -181,8 +181,8 @@ When not evaluated:
   # not activated here
 
 When defining multiple refinements in the same module inside multiple +refine+ blocks,
-all refinements from the same module are active when a refined method(any of the +.to_json+ method from Example below) is
-called for the first time:
+all refinements from the same module are active when a refined method
+(any of the +to_json+ methods from the example below) is called:
 
   module ToJSON
     refine Integer do
@@ -227,7 +227,8 @@ Note that methods in a subclass have priority over refinements in a
 superclass.  For example, if the method <code>/</code> is defined in a
 refinement for Numeric <code>1 / 2</code> invokes the original Integer#/
 because Integer is a subclass of Numeric and is searched before the refinements
-for the superclass Numeric. Since the method <code>/</code> is also present in child +Integer+ therefore, the method lookup never went to the superclass.
+for the superclass Numeric. Since the method <code>/</code> is also present
+in child +Integer+, the method lookup does not move up to the superclass.
 
 However, if a method +foo+ is defined on Numeric in a refinement, <code>1.foo</code>
 invokes that method since +foo+ does not exist on Integer.
@@ -254,6 +255,29 @@ Kernel#respond_to? refinements are not honored for the caller context during
 method lookup.
 
 This behavior may be changed in the future.
+
+== Refinement inheritance by Module#include
+
+When a module X is included into a module Y, Y inherits refinements from X.
+
+For exmaple, C inherits refinements from A and B in the following code:
+
+  module A
+    refine X do ... end
+    refine Y do ... end
+  end
+  module B
+    refine Z do ... end
+  end
+  module C
+    include A
+    include B
+  end
+
+  using C
+  # Refinements in A and B are activated here.
+
+Refinements in descendants have higher precedence than those of ancestors.
 
 == Further Reading
 

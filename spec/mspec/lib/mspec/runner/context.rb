@@ -6,7 +6,7 @@
 #--
 # A note on naming: this is named _ContextState_ rather
 # than _DescribeState_ because +describe+ is the keyword
-# in the DSL for refering to the context in which an example
+# in the DSL for referring to the context in which an example
 # is evaluated, just as +it+ refers to the example itself.
 #++
 class ContextState

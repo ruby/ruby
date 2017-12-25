@@ -19,7 +19,9 @@
 language: c
 dist: trusty
 
-sudo: false
+# temporary workaround for https://github.com/travis-ci/travis-ci/issues/8892
+sudo: required
+group: deprecated-2017Q4
 
 compiler:
   - gcc
@@ -71,6 +73,7 @@ branches:
     - ruby_2_2
     - ruby_2_3
     - ruby_2_4
+    - ruby_2_5
     - /^feature\//
     - /^bug\//
 

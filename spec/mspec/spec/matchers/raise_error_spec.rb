@@ -90,6 +90,18 @@ describe RaiseErrorMatcher do
       ["Expected ExpectedException (expected)", "but no exception was raised (nil was returned)"]
   end
 
+  it "provides a useful failure message when no exception is raised and the result raises in #pretty_inspect" do
+    result = Object.new
+    def result.pretty_inspect
+      raise ArgumentError, "bad"
+    end
+    proc = Proc.new { result }
+    matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
+    matcher.matches?(proc)
+    matcher.failure_message.should ==
+      ["Expected ExpectedException (expected)", "but no exception was raised (#pretty_inspect raised ArgumentError; A #<Object> was returned)"]
+  end
+
   it "provides a useful negative failure message" do
     proc = Proc.new { raise ExpectedException, "expected" }
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")

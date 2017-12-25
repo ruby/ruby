@@ -13,13 +13,13 @@ struct ruby_dtrace_method_hook_args {
     volatile VALUE name;
 };
 
-NOINLINE(int ruby_th_dtrace_setup(rb_thread_t *, VALUE, ID, struct ruby_dtrace_method_hook_args *));
+NOINLINE(int rb_dtrace_setup(rb_execution_context_t *, VALUE, ID, struct ruby_dtrace_method_hook_args *));
 
-#define RUBY_DTRACE_METHOD_HOOK(name, th, klazz, id) \
+#define RUBY_DTRACE_METHOD_HOOK(name, ec, klazz, id) \
 do { \
     if (UNLIKELY(RUBY_DTRACE_##name##_ENABLED())) { \
 	struct ruby_dtrace_method_hook_args args; \
-	if (ruby_th_dtrace_setup(th, klazz, id, &args)) { \
+	if (rb_dtrace_setup(ec, klazz, id, &args)) { \
 	    RUBY_DTRACE_##name(args.classname, \
 			       args.methodname, \
 			       args.filename, \
@@ -28,16 +28,16 @@ do { \
     } \
 } while (0)
 
-#define RUBY_DTRACE_METHOD_ENTRY_HOOK(th, klass, id) \
-    RUBY_DTRACE_METHOD_HOOK(METHOD_ENTRY, th, klass, id)
+#define RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, klass, id) \
+    RUBY_DTRACE_METHOD_HOOK(METHOD_ENTRY, ec, klass, id)
 
-#define RUBY_DTRACE_METHOD_RETURN_HOOK(th, klass, id) \
-    RUBY_DTRACE_METHOD_HOOK(METHOD_RETURN, th, klass, id)
+#define RUBY_DTRACE_METHOD_RETURN_HOOK(ec, klass, id) \
+    RUBY_DTRACE_METHOD_HOOK(METHOD_RETURN, ec, klass, id)
 
-#define RUBY_DTRACE_CMETHOD_ENTRY_HOOK(th, klass, id) \
-    RUBY_DTRACE_METHOD_HOOK(CMETHOD_ENTRY, th, klass, id)
+#define RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, klass, id) \
+    RUBY_DTRACE_METHOD_HOOK(CMETHOD_ENTRY, ec, klass, id)
 
-#define RUBY_DTRACE_CMETHOD_RETURN_HOOK(th, klass, id) \
-    RUBY_DTRACE_METHOD_HOOK(CMETHOD_RETURN, th, klass, id)
+#define RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, klass, id) \
+    RUBY_DTRACE_METHOD_HOOK(CMETHOD_RETURN, ec, klass, id)
 
 #endif /* RUBY_PROBES_HELPER_H */

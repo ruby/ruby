@@ -35,7 +35,7 @@ describe "SecureRandom.hex" do
     SecureRandom.hex.length.should == 32
   end
 
-  it "treats nil agrument as default one and generates a random hex string of length 32" do
+  it "treats nil argument as default one and generates a random hex string of length 32" do
     SecureRandom.hex(nil).should be_kind_of(String)
     SecureRandom.hex(nil).length.should == 32
   end

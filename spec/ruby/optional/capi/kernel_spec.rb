@@ -198,6 +198,16 @@ describe "C-API Kernel function" do
         @s.rb_yield_indirected(1) { break 73 }.should == 73
       end
     end
+
+    it "rb_yield to block passed to enumerator" do
+      enum_class = Class.new do
+        include Enumerable
+      end
+      @s.rb_yield_define_each(enum_class)
+      res = enum_class.new.collect { |i| i * 2}
+      res.should == [0, 2, 4, 6]
+    end
+
   end
 
   describe "rb_yield_values" do

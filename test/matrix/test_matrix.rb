@@ -218,6 +218,10 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal([[1], [1]], m2.to_a)
   end
 
+  def test_to_matrix
+    assert @m1.equal? @m1.to_matrix
+  end
+
   def test_columns
     assert_equal(@m1, Matrix.columns([[1, 4], [2, 5], [3, 6]]))
   end
@@ -414,6 +418,20 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal(Matrix[[1,1],[1,1]], Matrix[[2,2],[2,2]] / o)
   end
 
+  def test_hadamard_product
+    assert_equal(Matrix[[1,4], [9,16]], Matrix[[1,2], [3,4]].hadamard_product(Matrix[[1,2], [3,4]]))
+    assert_equal(Matrix[[2, 6, 12], [20, 30, 42]], @m1.hadamard_product(@n1))
+    o = Object.new
+    def o.to_matrix
+      Matrix[[1, 2, 3], [-1, 0, 1]]
+    end
+    assert_equal(Matrix[[1, 4, 9], [-4, 0, 6]], @m1.hadamard_product(o))
+    e = Matrix.empty(3, 0)
+    assert_equal(e, e.hadamard_product(e))
+    e = Matrix.empty(0, 3)
+    assert_equal(e, e.hadamard_product(e))
+  end
+
   def test_exp
     assert_equal(Matrix[[67,96],[48,99]], Matrix[[7,6],[3,9]] ** 2)
     assert_equal(Matrix.I(5), Matrix.I(5) ** -1)
@@ -567,6 +585,8 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal @e1, @e1.hstack(@e1)
     assert_equal Matrix.empty(0,6), @e2.hstack(@e2)
     assert_equal SubMatrix, SubMatrix.hstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1, 3],[2, 4]], Matrix.hstack(Vector[1,2], Vector[3, 4])
   end
 
   def test_vstack
@@ -582,6 +602,25 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal Matrix.empty(4,0), @e1.vstack(@e1)
     assert_equal @e2, @e2.vstack(@e2)
     assert_equal SubMatrix, SubMatrix.vstack(@e1).class
+    # From Vectors:
+    assert_equal Matrix[[1],[2],[3]], Matrix.vstack(Vector[1,2], Vector[3])
+  end
+
+  def test_combine
+    x = Matrix[[6, 6], [4, 4]]
+    y = Matrix[[1, 2], [3, 4]]
+    assert_equal Matrix[[5, 4], [1, 0]], Matrix.combine(x, y) {|a, b| a - b}
+    assert_equal Matrix[[5, 4], [1, 0]], x.combine(y) {|a, b| a - b}
+    # Without block
+    assert_equal Matrix[[5, 4], [1, 0]], Matrix.combine(x, y).each {|a, b| a - b}
+    # With vectors
+    assert_equal Matrix[[111], [222]], Matrix.combine(Matrix[[1], [2]], Vector[10,20], Vector[100,200], &:sum)
+    # Basic checks
+    assert_raise(Matrix::ErrDimensionMismatch) { @m1.combine(x) { raise } }
+    # Edge cases
+    assert_equal Matrix.empty, Matrix.combine{ raise }
+    assert_equal Matrix.empty(3,0), Matrix.combine(Matrix.empty(3,0), Matrix.empty(3,0)) { raise }
+    assert_equal Matrix.empty(0,3), Matrix.combine(Matrix.empty(0,3), Matrix.empty(0,3)) { raise }
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric

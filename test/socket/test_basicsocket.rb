@@ -205,4 +205,25 @@ class TestSocket_BasicSocket < Test::Unit::TestCase
       assert_not_predicate(ssock, :nonblock?) unless set_nb
     end
   end
+
+  def test_read_nonblock_mix_buffered
+    socks do |sserv, ssock, csock|
+      ssock.write("hello\nworld\n")
+      assert_equal "hello\n", csock.gets
+      IO.select([csock], nil, nil, 10) or
+        flunk 'socket did not become readable'
+      assert_equal "world\n", csock.read_nonblock(8)
+    end
+  end
+
+  def test_write_nonblock_buffered
+    socks do |sserv, ssock, csock|
+      ssock.sync = false
+      ssock.write("h")
+      assert_equal :wait_readable, csock.read_nonblock(1, exception: false)
+      assert_equal 4, ssock.write_nonblock("ello")
+      ssock.close
+      assert_equal "hello", csock.read(5)
+    end
+  end
 end if defined?(BasicSocket)

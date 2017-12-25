@@ -449,16 +449,11 @@ class BasicSocket < IO
   # Do other platforms support MSG_DONTWAIT reliably?
   if RUBY_PLATFORM =~ /linux/ && Socket.const_defined?(:MSG_DONTWAIT)
     def read_nonblock(len, str = nil, exception: true) # :nodoc:
-      case rv = __recv_nonblock(len, 0, str, exception)
-      when '' # recv_nonblock returns empty string on EOF
-        exception ? raise(EOFError, 'end of file reached') : nil
-      else
-        rv
-      end
+      __read_nonblock(len, str, exception)
     end
 
     def write_nonblock(buf, exception: true) # :nodoc:
-      __sendmsg_nonblock(buf, 0, nil, nil, exception)
+      __write_nonblock(buf, exception)
     end
   end
 end

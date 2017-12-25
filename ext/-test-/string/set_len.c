@@ -8,7 +8,7 @@ bug_str_set_len(VALUE str, VALUE len)
 }
 
 void
-Init_set_len(VALUE klass)
+Init_string_set_len(VALUE klass)
 {
     rb_define_method(klass, "set_len", bug_str_set_len, 1);
 }

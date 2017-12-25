@@ -536,13 +536,15 @@ class TestSocket < Test::Unit::TestCase
     begin sleep(0.1) end until serv_thread.stop?
     sock = TCPSocket.new("localhost", server.addr[1])
     client_thread = Thread.new do
-      sock.readline
+      assert_raise(IOError, bug4390) {
+        sock.readline
+      }
     end
     begin sleep(0.1) end until client_thread.stop?
     Timeout.timeout(1) do
       sock.close
       sock = nil
-      assert_raise(IOError, bug4390) {client_thread.join}
+      client_thread.join
     end
   ensure
     serv_thread.value.close

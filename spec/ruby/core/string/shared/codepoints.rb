@@ -48,7 +48,7 @@ describe :string_codepoints, shared: true do
     s.should == s2
   end
 
-  it "is synonomous with #bytes for Strings which are single-byte optimisable" do
+  it "is synonymous with #bytes for Strings which are single-byte optimisable" do
     s = "(){}".encode('ascii')
     s.ascii_only?.should be_true
     s.send(@method).to_a.should == s.bytes.to_a

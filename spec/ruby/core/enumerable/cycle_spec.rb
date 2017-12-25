@@ -69,7 +69,7 @@ describe "Enumerable#cycle" do
       enum.cycle(obj).to_a.should == [3, 2, 1, 3, 2, 1]
     end
 
-    it "raises a TypeError when the passed n can be coerced to Integer" do
+    it "raises a TypeError when the passed n cannot be coerced to Integer" do
       enum = EnumerableSpecs::Numerous.new
       lambda{ enum.cycle("cat"){} }.should raise_error(TypeError)
     end

@@ -26,4 +26,11 @@ describe "Shellwords#shellwords" do
   it "raises ArgumentError when single quoted strings are misquoted" do
     lambda { shellwords("a 'b c d e") }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is '2.4' do
+    # https://bugs.ruby-lang.org/issues/10055
+    it "matches POSIX sh behavior for backslashes within double quoted strings" do
+      shellsplit('printf "%s\n"').should == ['printf', '%s\n']
+    end
+  end
 end

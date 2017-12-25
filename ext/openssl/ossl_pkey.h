@@ -44,6 +44,7 @@ int ossl_generate_cb_2(int p, int n, BN_GENCB *cb);
 void ossl_generate_cb_stop(void *ptr);
 
 VALUE ossl_pkey_new(EVP_PKEY *);
+void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);

@@ -137,6 +137,7 @@ describe "String#index with String" do
 
     "hello".index("he", 1).should == nil
     "hello".index("he", 2).should == nil
+    "I’ve got a multibyte character.\n".index("\n\n").should == nil
   end
 
   with_feature :encoding do

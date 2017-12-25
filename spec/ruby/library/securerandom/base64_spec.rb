@@ -36,7 +36,7 @@ describe "SecureRandom.base64" do
     SecureRandom.base64.length.should < 32 * 2
   end
 
-  it "treats nil agrument as default one and generates a random base64 string" do
+  it "treats nil argument as default one and generates a random base64 string" do
     SecureRandom.base64(nil).should be_kind_of(String)
     SecureRandom.base64(nil).length.should < 32 * 2
   end

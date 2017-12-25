@@ -7,7 +7,7 @@
 
 # Constants for input and ouput directory
 InputDataDir = ARGV[0] || 'enc/unicode/data'
-unicode_version = InputDataDir[/[\d.]+\z/]
+unicode_version = InputDataDir[/.*\/(\d+\.\d+\.\d+)(?=\/|\z)/, 1]
 
 # convenience methods
 class Integer

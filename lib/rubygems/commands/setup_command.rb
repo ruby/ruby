@@ -82,11 +82,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]regenerate-binstubs',
                'Regenerate gem binstubs' do |value, options|
-      if value then
-        options[:regenerate_binstubs] = true
-      else
-        options.delete(:regenerate_binstubs)
-      end
+      options[:regenerate_binstubs] = value
    end
 
     @verbose = nil
@@ -156,7 +152,7 @@ By default, this RubyGems will install gem as:
 
     say "RubyGems #{Gem::VERSION} installed"
 
-    regenerate_binstubs
+    regenerate_binstubs if options[:regenerate_binstubs]
 
     uninstall_old_gemcutter
 
@@ -294,6 +290,8 @@ By default, this RubyGems will install gem as:
       say "Installing #{tool}" if @verbose
 
       lib_files = rb_files_in path
+      lib_files.concat(template_files) if tool == 'Bundler'
+
       pem_files = pem_files_in path
 
       Dir.chdir path do
@@ -352,8 +350,14 @@ By default, this RubyGems will install gem as:
   def install_default_bundler_gem
     return unless Gem::USE_BUNDLER_FOR_GEMDEPS
 
+    mkdir_p Gem::Specification.default_specifications_dir
+
+    # Workaround for non-git environment.
+    gemspec = File.open('bundler/bundler.gemspec', 'rb'){|f| f.read.gsub(/`git ls-files -z`/, "''") }
+    File.open('bundler/bundler.gemspec', 'w'){|f| f.write gemspec }
+
     bundler_spec = Gem::Specification.load("bundler/bundler.gemspec")
-    bundler_spec.files = Dir["bundler/{*.md,{lib,exe,man}/**/*}"]
+    bundler_spec.files = Dir.chdir("bundler") { Dir["{*.md,{lib,exe,man}/**/*}"] }
     bundler_spec.executables -= %w[bundler bundle_ruby]
     Dir.entries(Gem::Specification.default_specifications_dir).
       select {|gs| gs.start_with?("bundler-") }.
@@ -364,12 +368,25 @@ By default, this RubyGems will install gem as:
 
     bundler_spec = Gem::Specification.load(default_spec_path)
 
-    Dir.entries(bundler_spec.gems_dir).
-      select {|default_gem| default_gem.start_with?("bundler-") }.
-      each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    if File.directory? bundler_spec.gems_dir
+      Dir.entries(bundler_spec.gems_dir).
+        select {|default_gem| File.basename(default_gem).match(/^bundler-#{Gem::Version::VERSION_PATTERN}$/) }.
+        each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    end
 
     mkdir_p bundler_spec.bin_dir
     bundler_spec.executables.each {|e| cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_spec.bin_dir, e) }
+
+    if Gem.win_platform?
+      require 'rubygems/installer'
+
+      installer = Gem::Installer.for_spec bundler_spec
+      bundler_spec.executables.each do |e|
+        installer.generate_windows_script e, bundler_spec.bin_dir
+      end
+    end
+
+    say "Bundler #{bundler_spec.version} installed"
   end
 
   def make_destination_dirs(install_destdir)
@@ -429,6 +446,22 @@ By default, this RubyGems will install gem as:
     end
   end
 
+  # for installation of bundler as default gems
+  def template_files
+    Dir.chdir "bundler/lib" do
+      (Dir[File.join('bundler', 'templates', '**', '{*,.*}')]).
+        select{|f| !File.directory?(f)}
+    end
+  end
+
+  # for cleanup old bundler files
+  def template_files_in dir
+    Dir.chdir dir do
+      (Dir[File.join('templates', '**', '{*,.*}')]).
+        select{|f| !File.directory?(f)}
+    end
+  end
+
   def remove_old_bin_files(bin_dir)
     old_bin_files = {
       'gem_mirror' => 'gem mirror',
@@ -466,8 +499,10 @@ abort "#{deprecation_message}"
     lib_dirs[File.join(lib_dir, 'bundler')] = 'bundler/lib/bundler' if Gem::USE_BUNDLER_FOR_GEMDEPS
     lib_dirs.each do |old_lib_dir, new_lib_dir|
       lib_files = rb_files_in(new_lib_dir)
+      lib_files.concat(template_files_in(new_lib_dir)) if new_lib_dir =~ /bundler/
 
       old_lib_files = rb_files_in(old_lib_dir)
+      old_lib_files.concat(template_files_in(old_lib_dir)) if old_lib_dir =~ /bundler/
 
       to_remove = old_lib_files - lib_files
 

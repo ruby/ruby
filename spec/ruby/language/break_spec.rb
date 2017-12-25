@@ -24,6 +24,24 @@ describe "The break statement in a block" do
       value.should == :value
     end
   end
+
+  describe "captured and delegated to another method repeatedly" do
+    it "breaks out of the block" do
+      @program.looped_break_in_captured_block
+      ScratchPad.recorded.should ==  [:begin,
+                                      :preloop,
+                                      :predele,
+                                      :preyield,
+                                      :prebreak,
+                                      :postbreak,
+                                      :postyield,
+                                      :postdele,
+                                      :predele,
+                                      :preyield,
+                                      :prebreak,
+                                      :end]
+    end
+  end
 end
 
 describe "The break statement in a captured block" do
@@ -63,15 +81,14 @@ describe "The break statement in a captured block" do
 
   describe "from another thread" do
     it "raises a LocalJumpError when getting the value from another thread" do
-      ScratchPad << :a
       thread_with_break = Thread.new do
-        ScratchPad << :b
-        break :break
-        ScratchPad << :c
+        begin
+          break :break
+        rescue LocalJumpError => e
+          e
+        end
       end
-
-      lambda { thread_with_break.value }.should raise_error(LocalJumpError)
-      ScratchPad.recorded.should == [:a, :b]
+      thread_with_break.value.should be_an_instance_of(LocalJumpError)
     end
   end
 end

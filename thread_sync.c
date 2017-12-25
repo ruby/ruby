@@ -237,7 +237,7 @@ rb_mutex_lock(VALUE self)
 
     /* When running trap handler */
     if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
-		th->interrupt_mask & TRAP_INTERRUPT_MASK) {
+	th->ec->interrupt_mask & TRAP_INTERRUPT_MASK) {
 	rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
@@ -280,7 +280,7 @@ rb_mutex_lock(VALUE self)
 		patrol_thread = NULL;
 
 	    th->locking_mutex = Qfalse;
-	    if (mutex->th && timeout && !RUBY_VM_INTERRUPTED(th)) {
+	    if (mutex->th && timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
 		rb_check_deadlock(th->vm);
 	    }
 	    if (th->status == THREAD_STOPPED_FOREVER) {
@@ -290,7 +290,7 @@ rb_mutex_lock(VALUE self)
 
 	    if (mutex->th == th) mutex_locked(th, self);
 
-	    RUBY_VM_CHECK_INTS_BLOCKING(th);
+	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
 	}
     }
     return self;
@@ -1363,23 +1363,29 @@ undumpable(VALUE obj)
     UNREACHABLE;
 }
 
-static void
-alias_global_const(const char *name, VALUE klass)
+static VALUE
+define_thread_class(VALUE outer, const char *name, VALUE super)
 {
+    VALUE klass = rb_define_class_under(outer, name, super);
     rb_define_const(rb_cObject, name, klass);
+    return klass;
 }
 
 static void
 Init_thread_sync(void)
 {
 #if 0
+    rb_cMutex = rb_define_class("Mutex", rb_cObject); /* teach rdoc Mutex */
     rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */
     rb_cQueue = rb_define_class("Queue", rb_cObject); /* teach rdoc Queue */
     rb_cSizedQueue = rb_define_class("SizedQueue", rb_cObject); /* teach rdoc SizedQueue */
 #endif
 
+#define DEFINE_CLASS(name, super) \
+    rb_c##name = define_thread_class(rb_cThread, #name, rb_c##super)
+
     /* Mutex */
-    rb_cMutex = rb_define_class_under(rb_cThread, "Mutex", rb_cObject);
+    DEFINE_CLASS(Mutex, Object);
     rb_define_alloc_func(rb_cMutex, mutex_alloc);
     rb_define_method(rb_cMutex, "initialize", mutex_initialize, 0);
     rb_define_method(rb_cMutex, "locked?", rb_mutex_locked_p, 0);
@@ -1391,7 +1397,7 @@ Init_thread_sync(void)
     rb_define_method(rb_cMutex, "owned?", rb_mutex_owned_p, 0);
 
     /* Queue */
-    rb_cQueue = rb_define_class_under(rb_cThread, "Queue", rb_cObject);
+    DEFINE_CLASS(Queue, Object);
     rb_define_alloc_func(rb_cQueue, queue_alloc);
 
     rb_eClosedQueueError = rb_define_class("ClosedQueueError", rb_eStopIteration);
@@ -1414,7 +1420,7 @@ Init_thread_sync(void)
     rb_define_alias(rb_cQueue, "shift", "pop");
     rb_define_alias(rb_cQueue, "size", "length");
 
-    rb_cSizedQueue = rb_define_class_under(rb_cThread, "SizedQueue", rb_cQueue);
+    DEFINE_CLASS(SizedQueue, Queue);
     rb_define_alloc_func(rb_cSizedQueue, szqueue_alloc);
 
     rb_define_method(rb_cSizedQueue, "initialize", rb_szqueue_initialize, 1);
@@ -1435,8 +1441,7 @@ Init_thread_sync(void)
     rb_define_alias(rb_cSizedQueue, "size", "length");
 
     /* CVar */
-    rb_cConditionVariable = rb_define_class_under(rb_cThread,
-					"ConditionVariable", rb_cObject);
+    DEFINE_CLASS(ConditionVariable, Object);
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
     id_sleep = rb_intern("sleep");
@@ -1448,12 +1453,5 @@ Init_thread_sync(void)
     rb_define_method(rb_cConditionVariable, "signal", rb_condvar_signal, 0);
     rb_define_method(rb_cConditionVariable, "broadcast", rb_condvar_broadcast, 0);
 
-#define ALIAS_GLOBAL_CONST(name) \
-    alias_global_const(#name, rb_c##name)
-
-    ALIAS_GLOBAL_CONST(Mutex);
-    ALIAS_GLOBAL_CONST(Queue);
-    ALIAS_GLOBAL_CONST(SizedQueue);
-    ALIAS_GLOBAL_CONST(ConditionVariable);
     rb_provide("thread.rb");
 }

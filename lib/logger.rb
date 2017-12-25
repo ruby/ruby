@@ -743,7 +743,7 @@ private
 
     def open_logfile(filename)
       begin
-        open(filename, (File::WRONLY | File::APPEND))
+        File.open(filename, (File::WRONLY | File::APPEND))
       rescue Errno::ENOENT
         create_logfile(filename)
       end
@@ -751,7 +751,7 @@ private
 
     def create_logfile(filename)
       begin
-        logdev = open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
+        logdev = File.open(filename, (File::WRONLY | File::APPEND | File::CREAT | File::EXCL))
         logdev.flock(File::LOCK_EX)
         logdev.sync = true
         add_log_header(logdev)

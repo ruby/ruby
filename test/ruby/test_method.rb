@@ -990,4 +990,36 @@ class TestMethod < Test::Unit::TestCase
     assert_equal('1', obj.foo(1))
     assert_equal('1', obj.bar(1))
   end
+
+  def test_argument_error_location
+    body = <<-'END_OF_BODY'
+    eval <<-'EOS'
+    $line_lambda = __LINE__; $f = lambda do
+      _x = 1
+    end
+    $line_method = __LINE__; def foo
+      _x = 1
+    end
+    begin
+      $f.call(1)
+    rescue ArgumentError => e
+      assert_equal "(eval):#{$line_lambda.to_s}:in `block in <main>'", e.backtrace.first
+    end
+    begin
+      foo(1)
+    rescue ArgumentError => e
+      assert_equal "(eval):#{$line_method}:in `foo'", e.backtrace.first
+    end
+    EOS
+    END_OF_BODY
+
+    assert_separately [], body
+    # without trace insn
+    assert_separately [], "RubyVM::InstructionSequence.compile_option = {trace_instruction: false}\n" + body
+  end
+
+  def test_eqq
+    assert_operator(0.method(:<), :===, 5)
+    assert_not_operator(0.method(:<), :===, -5)
+  end
 end

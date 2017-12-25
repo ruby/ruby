@@ -293,7 +293,7 @@ module REXML
     # See REXML::Formatters
     #
     def write( writer, indent=-1, transitive=false, ie_hack=false )
-      Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters")
+      Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters", uplevel: 1)
       formatter = if indent > -1
           REXML::Formatters::Pretty.new( indent )
         else

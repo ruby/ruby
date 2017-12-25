@@ -1,16 +1,16 @@
 # -*- encoding: utf-8 -*-
-# stub: openssl 2.1.0.beta1 ruby lib
+# stub: openssl 2.1.0 ruby lib
 # stub: ext/openssl/extconf.rb
 
 Gem::Specification.new do |s|
   s.name = "openssl".freeze
-  s.version = "2.1.0.beta1"
+  s.version = "2.1.0"
 
-  s.required_rubygems_version = Gem::Requirement.new("> 1.3.1".freeze) if s.respond_to? :required_rubygems_version=
+  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
   s.metadata = { "msys2_mingw_dependencies" => "openssl" } if s.respond_to? :metadata=
   s.require_paths = ["lib".freeze]
   s.authors = ["Martin Bosslet".freeze, "SHIBATA Hiroshi".freeze, "Zachary Scott".freeze, "Kazuki Yamaguchi".freeze]
-  s.date = "2017-09-24"
+  s.date = "2017-12-14"
   s.description = "It wraps the OpenSSL library.".freeze
   s.email = ["ruby-core@ruby-lang.org".freeze]
   s.extensions = ["ext/openssl/extconf.rb".freeze]
@@ -20,7 +20,7 @@ Gem::Specification.new do |s|
   s.licenses = ["Ruby".freeze]
   s.rdoc_options = ["--main".freeze, "README.md".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.3.0".freeze)
-  s.rubygems_version = "2.6.13".freeze
+  s.rubygems_version = "2.7.3".freeze
   s.summary = "OpenSSL provides SSL, TLS and general purpose cryptography.".freeze
 
   if s.respond_to? :specification_version then

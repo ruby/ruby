@@ -2,35 +2,8 @@
 
 require 'prettyprint'
 
-module Kernel
-  # Returns a pretty printed object as a string.
-  #
-  # In order to use this method you must first require the PP module:
-  #
-  #   require 'pp'
-  #
-  # See the PP module for more information.
-  def pretty_inspect
-    PP.pp(self, ''.dup)
-  end
-
-  # prints arguments in pretty form.
-  #
-  # pp returns argument(s).
-  def pp(*objs)
-    objs.each {|obj|
-      PP.pp(obj)
-    }
-    objs.size <= 1 ? objs.first : objs
-  end
-  module_function :pp
-end
-
 ##
 # A pretty-printer for Ruby objects.
-#
-# All examples assume you have loaded the PP class with:
-#   require 'pp'
 #
 ##
 # == What PP Does
@@ -560,3 +533,27 @@ end
     end
   }
 }
+
+module Kernel
+  # Returns a pretty printed object as a string.
+  #
+  # In order to use this method you must first require the PP module:
+  #
+  #   require 'pp'
+  #
+  # See the PP module for more information.
+  def pretty_inspect
+    PP.pp(self, ''.dup)
+  end
+
+  # prints arguments in pretty form.
+  #
+  # pp returns argument(s).
+  def pp(*objs)
+    objs.each {|obj|
+      PP.pp(obj)
+    }
+    objs.size <= 1 ? objs.first : objs
+  end
+  module_function :pp
+end

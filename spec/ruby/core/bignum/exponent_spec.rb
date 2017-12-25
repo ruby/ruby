@@ -11,9 +11,9 @@ describe "Bignum#**" do
   end
 
   it "raises a TypeError when given a non-Integer" do
-    lambda { @bignum ** mock('10') }.should raise_error
-    lambda { @bignum ** "10" }.should raise_error
-    lambda { @bignum ** :symbol }.should raise_error
+    lambda { @bignum ** mock('10') }.should raise_error(TypeError)
+    lambda { @bignum ** "10" }.should raise_error(TypeError)
+    lambda { @bignum ** :symbol }.should raise_error(TypeError)
   end
 
   it "switch to a Float when the values is too big" do

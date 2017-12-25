@@ -13,3 +13,9 @@ end
 describe "StringIO#each when self is not readable" do
   it_behaves_like :stringio_each_not_readable, :each
 end
+
+ruby_version_is "2.4" do
+  describe "StringIO#each when passed chomp" do
+    it_behaves_like :stringio_each_chomp, :each
+  end
+end

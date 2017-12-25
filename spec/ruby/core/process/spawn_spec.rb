@@ -595,8 +595,10 @@ describe "Process.spawn" do
     end
   end
 
-  it "raises an Errno::EACCES when passed a directory" do
-    lambda { Process.spawn File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+  it "raises an Errno::EACCES or Errno::EISDIR when passed a directory" do
+    lambda { Process.spawn File.dirname(__FILE__) }.should raise_error(SystemCallError) { |e|
+      [Errno::EACCES, Errno::EISDIR].should include(e.class)
+    }
   end
 
   it "raises an ArgumentError when passed a string key in options" do

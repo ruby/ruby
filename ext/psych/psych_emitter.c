@@ -272,8 +272,8 @@ static VALUE scalar(
 
     yaml_scalar_event_initialize(
 	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValuePtr(tag)),
+	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
 	    (yaml_char_t*)StringValuePtr(value),
 	    (int)RSTRING_LEN(value),
 	    plain ? 1 : 0,
@@ -319,8 +319,8 @@ static VALUE start_sequence(
 
     yaml_sequence_start_event_initialize(
 	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValuePtr(tag)),
+	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
 	    implicit ? 1 : 0,
 	    (yaml_sequence_style_t)NUM2INT(style)
 	    );
@@ -383,8 +383,8 @@ static VALUE start_mapping(
 
     yaml_mapping_start_event_initialize(
 	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor)),
-	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValuePtr(tag)),
+	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor)),
+	    (yaml_char_t *)(NIL_P(tag) ? NULL : StringValueCStr(tag)),
 	    implicit ? 1 : 0,
 	    (yaml_mapping_style_t)NUM2INT(style)
 	    );
@@ -432,7 +432,7 @@ static VALUE alias(VALUE self, VALUE anchor)
 
     yaml_alias_event_initialize(
 	    &event,
-	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValuePtr(anchor))
+	    (yaml_char_t *)(NIL_P(anchor) ? NULL : StringValueCStr(anchor))
 	    );
 
     emit(emitter, &event);

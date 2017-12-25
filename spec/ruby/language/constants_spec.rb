@@ -353,15 +353,48 @@ describe "Constant resolution within methods" do
   end
 
   describe "with ||=" do
-    it "assignes constant if previously undefined" do
+    it "assigns a scoped constant if previously undefined" do
       ConstantSpecs.should_not have_constant(:OpAssignUndefined)
-      # Literally opening the module is required to avoid content
-      # re-assignment error
       module ConstantSpecs
         OpAssignUndefined ||= 42
       end
       ConstantSpecs::OpAssignUndefined.should == 42
+      ConstantSpecs::OpAssignUndefinedOutside ||= 42
+      ConstantSpecs::OpAssignUndefinedOutside.should == 42
       ConstantSpecs.send(:remove_const, :OpAssignUndefined)
+      ConstantSpecs.send(:remove_const, :OpAssignUndefinedOutside)
+    end
+
+    it "assigns a global constant if previously undefined" do
+      OpAssignGlobalUndefined ||= 42
+      ::OpAssignGlobalUndefinedExplicitScope ||= 42
+      OpAssignGlobalUndefined.should == 42
+      ::OpAssignGlobalUndefinedExplicitScope.should == 42
+      Object.send :remove_const, :OpAssignGlobalUndefined
+      Object.send :remove_const, :OpAssignGlobalUndefinedExplicitScope
+    end
+
+  end
+
+  describe "with &&=" do
+    it "re-assigns a scoped constant if already true" do
+      module ConstantSpecs
+        OpAssignTrue = true
+      end
+      suppress_warning do
+        ConstantSpecs::OpAssignTrue &&= 1
+      end
+      ConstantSpecs::OpAssignTrue.should == 1
+      ConstantSpecs.send :remove_const, :OpAssignTrue
+    end
+
+    it "leaves scoped constant if not true" do
+      module ConstantSpecs
+        OpAssignFalse = false
+      end
+      ConstantSpecs::OpAssignFalse &&= 1
+      ConstantSpecs::OpAssignFalse.should == false
+      ConstantSpecs.send :remove_const, :OpAssignFalse
     end
   end
 end
@@ -389,6 +422,28 @@ describe "Constant resolution within a singleton class (class << obj)" do
       b = ConstantSpecs::CS_SINGLETON4_CLASSES[1].new
       [a.foo, b.foo].should == [1, 2]
     end
+  end
+end
+
+describe "top-level constant lookup" do
+  context "on a class" do
+    ruby_version_is "" ... "2.5" do
+      it "searches Object successfully after searching other scopes" do
+        ->() {
+          String::Hash.should == Hash
+        }.should complain(/toplevel constant Hash referenced by/)
+      end
+    end
+
+    ruby_version_is "2.5" do
+      it "does not search Object after searching other scopes" do
+        ->() { String::Hash }.should raise_error(NameError)
+      end
+    end
+  end
+
+  it "searches Object unsuccessfully when searches on a module" do
+    ->() { Enumerable::Hash }.should raise_error(NameError)
   end
 end
 

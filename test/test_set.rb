@@ -693,7 +693,7 @@ class TC_Set < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -716,7 +716,7 @@ class TC_Set < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end
@@ -849,7 +849,7 @@ class TC_SortedSet < Test::Unit::TestCase
     set << 4
     assert_same orig, set.freeze
     assert_equal true, set.frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set << 5
     }
     assert_equal 4, set.size
@@ -877,7 +877,7 @@ class TC_SortedSet < Test::Unit::TestCase
     set2 = set1.clone
 
     assert_predicate set2, :frozen?
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       set2.add 5
     }
   end

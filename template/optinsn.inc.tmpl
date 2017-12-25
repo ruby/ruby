@@ -52,3 +52,27 @@ insn_operands_unification(INSN *insnobj)
     return insnobj;
 }
 
+int
+rb_insn_unified_local_var_level(VALUE insn)
+{
+#ifdef OPT_OPERANDS_UNIFICATION
+    /* optimize rule */
+    switch (insn) {
+% opt_insns_map.each do |originsn, optinsns|
+%   optinsns.each {|opti|
+      case BIN(<%=opti.name%>):
+%     opti.defopes.each {|opinfo|
+%       next if opinfo[1] == '*'
+	return <%=opinfo[1]%>;
+%       break
+%     }
+%   }
+% end
+
+      default:
+	/* do nothing */;
+	break;
+    }
+#endif
+    return -1;
+}

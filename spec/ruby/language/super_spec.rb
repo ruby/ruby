@@ -9,7 +9,7 @@ describe "The super keyword" do
     Super::S1::B.new.bar([]).should == ["B#bar","A#bar"]
   end
 
-  it "searches the full inheritence chain" do
+  it "searches the full inheritance chain" do
     Super::S2::B.new.foo([]).should == ["B#foo","A#baz"]
     Super::S2::B.new.baz([]).should == ["A#baz"]
     Super::S2::C.new.foo([]).should == ["B#foo","C#baz","A#baz"]
@@ -32,7 +32,7 @@ describe "The super keyword" do
     Super::MS1::B.new.bar([]).should == ["ModB#bar","ModA#bar"]
   end
 
-  it "searches the full inheritence chain including modules" do
+  it "searches the full inheritance chain including modules" do
     Super::MS2::B.new.foo([]).should == ["ModB#foo","A#baz"]
     Super::MS2::B.new.baz([]).should == ["A#baz"]
     Super::MS2::C.new.baz([]).should == ["C#baz","A#baz"]
@@ -248,35 +248,112 @@ describe "The super keyword" do
   end
 
   describe 'when using keyword arguments' do
-    it 'passes any given keyword arguments to the parent' do
-      b = Super::KeywordArguments::B.new
-      b.foo(:number => 10).should == {:number => 10}
+    before :each do
+      @req  = Super::Keywords::RequiredArguments.new
+      @opts = Super::Keywords::OptionalArguments.new
+      @etc  = Super::Keywords::PlaceholderArguments.new
+
+      @req_and_opts = Super::Keywords::RequiredAndOptionalArguments.new
+      @req_and_etc  = Super::Keywords::RequiredAndPlaceholderArguments.new
+      @opts_and_etc = Super::Keywords::OptionalAndPlaceholderArguments.new
+
+      @req_and_opts_and_etc = Super::Keywords::RequiredAndOptionalAndPlaceholderArguments.new
     end
 
-    it "passes any given keyword arguments including optional and required ones to the parent" do
-      class Super::KeywordArguments::C
-        eval <<-RUBY
-        def foo(a:, b: 'b', **)
-          super
-        end
-        RUBY
+    it 'does not pass any arguments to the parent when none are given' do
+      @etc.foo.should == {}
+    end
+
+    it 'passes only required arguments to the parent when no optional arguments are given' do
+      [@req, @req_and_etc].each do |obj|
+        obj.foo(a: 'a').should == {a: 'a'}
       end
-      c = Super::KeywordArguments::C.new
-
-      c.foo(a: 'a', c: 'c').should == {a: 'a', b: 'b', c: 'c'}
     end
 
-    it 'does not pass any keyword arguments to the parent when none are given' do
-      b = Super::KeywordArguments::B.new
-      b.foo.should == {}
-    end
-
-    describe 'when using splat arguments' do
-      it 'passes splat arguments and keyword arguments to the parent' do
-        b = Super::SplatAndKeyword::B.new
-
-        b.foo('bar', baz: true).should == [['bar'], {baz: true}]
+    it 'passes default argument values to the parent' do
+      [@opts, @opts_and_etc].each do |obj|
+        obj.foo.should == {b: 'b'}
       end
+
+      [@req_and_opts, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo(a: 'a').should == {a: 'a', b: 'b'}
+      end
+    end
+
+    it 'passes any given arguments including optional keyword arguments to the parent' do
+      [@etc, @req_and_opts, @req_and_etc, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo(a: 'a', b: 'b').should == {a: 'a', b: 'b'}
+      end
+
+      [@etc, @req_and_etc, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo(a: 'a', b: 'b', c: 'c').should == {a: 'a', b: 'b', c: 'c'}
+      end
+    end
+  end
+
+  describe 'when using regular and keyword arguments' do
+    before :each do
+      @req  = Super::RegularAndKeywords::RequiredArguments.new
+      @opts = Super::RegularAndKeywords::OptionalArguments.new
+      @etc  = Super::RegularAndKeywords::PlaceholderArguments.new
+
+      @req_and_opts = Super::RegularAndKeywords::RequiredAndOptionalArguments.new
+      @req_and_etc  = Super::RegularAndKeywords::RequiredAndPlaceholderArguments.new
+      @opts_and_etc = Super::RegularAndKeywords::OptionalAndPlaceholderArguments.new
+
+      @req_and_opts_and_etc = Super::RegularAndKeywords::RequiredAndOptionalAndPlaceholderArguments.new
+    end
+
+    it 'passes only required regular arguments to the parent when no optional keyword arguments are given' do
+      @etc.foo('a').should == ['a', {}]
+    end
+
+    it 'passes only required regular and keyword arguments to the parent when no optional keyword arguments are given' do
+      [@req, @req_and_etc].each do |obj|
+        obj.foo('a', b: 'b').should == ['a', {b: 'b'}]
+      end
+    end
+
+    it 'passes default argument values to the parent' do
+      [@opts, @opts_and_etc].each do |obj|
+        obj.foo('a').should == ['a', {c: 'c'}]
+      end
+
+      [@req_and_opts, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo('a', b: 'b').should == ['a', {b: 'b', c: 'c'}]
+      end
+    end
+
+    it 'passes any given regular and keyword arguments including optional keyword arguments to the parent' do
+      [@etc, @req_and_opts, @req_and_etc, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo('a', b: 'b', c: 'c').should == ['a', {b: 'b', c: 'c'}]
+      end
+
+      [@etc, @req_and_etc, @opts_and_etc, @req_and_opts_and_etc].each do |obj|
+        obj.foo('a', b: 'b', c: 'c', d: 'd').should == ['a', {b: 'b', c: 'c', d: 'd'}]
+      end
+    end
+  end
+
+  describe 'when using splat and keyword arguments' do
+    before :each do
+      @all = Super::SplatAndKeywords::AllArguments.new
+    end
+
+    it 'does not pass any arguments to the parent when none are given' do
+      @all.foo.should == [[], {}]
+    end
+
+    it 'passes only splat arguments to the parent when no keyword arguments are given' do
+      @all.foo('a').should == [['a'], {}]
+    end
+
+    it 'passes only keyword arguments to the parent when no splat arguments are given' do
+      @all.foo(b: 'b').should == [[], {b: 'b'}]
+    end
+
+    it 'passes any given splat and keyword arguments to the parent' do
+      @all.foo('a', b: 'b').should == [['a'], {b: 'b'}]
     end
   end
 end

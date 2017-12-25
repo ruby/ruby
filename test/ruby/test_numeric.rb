@@ -384,4 +384,22 @@ class TestNumeric < Test::Unit::TestCase
       end
     end
   end
+
+  def test_pow
+    assert_equal(2**3, 2.pow(3))
+    assert_equal(2**-1, 2.pow(-1))
+    assert_equal(2**0.5, 2.pow(0.5))
+    assert_equal((-1)**0.5, -1.pow(0.5))
+    assert_equal(3**3 % 8, 3.pow(3, 8))
+    assert_equal(3**3 % -8, 3.pow(3,-8))
+    assert_equal(3**2 % -2, 3.pow(2,-2))
+    assert_equal((-3)**3 % 8, -3.pow(3,8))
+    assert_equal((-3)**3 % -8, -3.pow(3,-8))
+    assert_equal(5**2 % -8, 5.pow(2,-8))
+    assert_equal(4481650795473624846969600733813414725093,
+                 2120078484650058507891187874713297895455.
+                    pow(5478118174010360425845660566650432540723,
+                        5263488859030795548286226023720904036518))
+  end
+
 end

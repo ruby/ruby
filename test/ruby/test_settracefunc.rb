@@ -239,8 +239,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
     EOF
     assert_equal(["c-return", 1, :set_trace_func, Kernel],
                  events.shift)
-    assert_equal(["line", 4, __method__, self.class],
-                 events.shift)
     assert_equal(["line", 5, __method__, self.class],
                  events.shift)
     assert_equal(["c-call", 5, :raise, Kernel],
@@ -289,8 +287,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
      ["line", 4, __method__, self.class],
      ["c-return", 4, :any?, Array],
      ["line", 5, __method__, self.class],
-     ["c-call", 5, :set_trace_func, Kernel]].each{|e|
-      assert_equal(e, events.shift)
+     ["c-call", 5, :set_trace_func, Kernel]].each.with_index{|e, i|
+       assert_equal(e, events.shift, "mismatch on #{i}th trace")
     }
   end
 
@@ -1769,5 +1767,80 @@ class TestSetTraceFunc < Test::Unit::TestCase
         end
       end
     }, bug13705
+  end
+
+  def test_trace_point_require_block
+    assert_raise(ArgumentError) { TracePoint.new(:return) }
+  end
+
+  def method_for_test_thread_add_trace_func
+
+  end
+
+  def test_thread_add_trace_func
+    events = []
+    base_line = __LINE__
+    q = Queue.new
+    t = Thread.new{
+      Thread.current.add_trace_func proc{|ev, file, line, *args|
+        events << [ev, line]
+      } # do not stop trace. They will be stopped at Thread termination.
+      q.push 1
+      _x = 1
+      method_for_test_thread_add_trace_func
+      _y = 2
+    }
+    q.pop
+    method_for_test_thread_add_trace_func
+    t.join
+    assert_equal ["c-return", base_line + 3], events[0]
+    assert_equal ["line", base_line + 6],     events[1]
+    assert_equal ["c-call", base_line + 6],   events[2]
+    assert_equal ["c-return", base_line + 6], events[3]
+    assert_equal ["line", base_line + 7],     events[4]
+    assert_equal ["line", base_line + 8],     events[5]
+    assert_equal ["call", base_line + -6],    events[6]
+    assert_equal ["return", base_line + -4],  events[7]
+    assert_equal ["line", base_line + 9],     events[8]
+    assert_equal nil,                         events[9]
+
+    # other thread
+    events = []
+    m2t_q = Queue.new
+
+    t = Thread.new{
+      Thread.current.abort_on_exception = true
+      assert_equal 1, m2t_q.pop
+      _x = 1
+      method_for_test_thread_add_trace_func
+      _y = 2
+      Thread.current.set_trace_func(nil)
+      method_for_test_thread_add_trace_func
+    }
+    # it is dirty hack. usually we shouldn't use such technique
+    Thread.pass until t.status == 'sleep'
+
+    t.add_trace_func proc{|ev, file, line, *args|
+      if file == __FILE__
+        events << [ev, line]
+      end
+    }
+
+    method_for_test_thread_add_trace_func
+
+    m2t_q.push 1
+    t.join
+
+    assert_equal ["c-return", base_line + 31], events[0]
+    assert_equal ["line", base_line + 32],     events[1]
+    assert_equal ["line", base_line + 33],     events[2]
+    assert_equal ["call", base_line + -6],     events[3]
+    assert_equal ["return", base_line + -4],   events[4]
+    assert_equal ["line", base_line + 34],     events[5]
+    assert_equal ["line", base_line + 35],     events[6]
+    assert_equal ["c-call", base_line + 35],   events[7] # Thread.current
+    assert_equal ["c-return", base_line + 35], events[8] # Thread.current
+    assert_equal ["c-call", base_line + 35],   events[9] # Thread#set_trace_func
+    assert_equal nil,                          events[10]
   end
 end

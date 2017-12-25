@@ -26,14 +26,16 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
+#include "defines.h"
+
 #if defined(__cplusplus)
 /* __builtin_choose_expr and __builtin_types_compatible aren't available
  * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
 # undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 # undef HAVE_BUILTIN___BUILTIN_TYPES_COMPATIBLE_P
+#elif GCC_VERSION_BEFORE(4,8,6) /* Bug #14221 */
+# undef HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P
 #endif
-
-#include "defines.h"
 
 #ifndef ASSUME
 # ifdef UNREACHABLE
@@ -628,7 +630,7 @@ int ruby_safe_level_2_warning(void) __attribute__((const,warning("$SAFE=2 to 4 a
 # define rb_set_safe_level(level) rb_set_safe_level(RUBY_SAFE_LEVEL_CHECK(level, error))
 #endif
 void rb_set_safe_level_force(int);
-CONSTFUNC(void rb_secure_update(VALUE));
+void rb_secure_update(VALUE);
 NORETURN(void rb_insecure_operation(void));
 
 VALUE rb_errinfo(void);
@@ -1575,7 +1577,11 @@ rb_num2char_inline(VALUE x)
 #define NUM2CHR(x) RB_NUM2CHR(x)
 #define CHR2FIX(x) RB_CHR2FIX(x)
 
+#if SIZEOF_LONG < SIZEOF_VALUE
+#define RB_ST2FIX(h) RB_LONG2FIX((long)((h) > 0 ? (h) & (unsigned long)-1 >> 2 : (h) | ~((unsigned long)-1 >> 2)))
+#else
 #define RB_ST2FIX(h) RB_LONG2FIX((long)(h))
+#endif
 #define ST2FIX(h) RB_ST2FIX(h)
 
 #define RB_ALLOC_N(type,n) ((type*)ruby_xmalloc2((size_t)(n),sizeof(type)))
@@ -1946,6 +1952,7 @@ RUBY_EXTERN VALUE rb_eKeyError;
 RUBY_EXTERN VALUE rb_eRangeError;
 RUBY_EXTERN VALUE rb_eIOError;
 RUBY_EXTERN VALUE rb_eRuntimeError;
+RUBY_EXTERN VALUE rb_eFrozenError;
 RUBY_EXTERN VALUE rb_eSecurityError;
 RUBY_EXTERN VALUE rb_eSystemCallError;
 RUBY_EXTERN VALUE rb_eThreadError;
@@ -2096,8 +2103,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */
-#define RUBY_EVENT_SPECIFIED_LINE         0x010000
-#define RUBY_EVENT_COVERAGE               0x020000
+#define RUBY_EVENT_RESERVED_FOR_INTERNAL_USE 0x030000
 
 /* internal events */
 #define RUBY_INTERNAL_EVENT_SWITCH          0x040000
@@ -2111,7 +2117,7 @@ int ruby_native_thread_p(void);
 #define RUBY_INTERNAL_EVENT_GC_ENTER       0x2000000
 #define RUBY_INTERNAL_EVENT_GC_EXIT        0x4000000
 #define RUBY_INTERNAL_EVENT_OBJSPACE_MASK  0x7f00000
-#define RUBY_INTERNAL_EVENT_MASK          0xfffe0000
+#define RUBY_INTERNAL_EVENT_MASK          0xffff0000
 
 typedef uint32_t rb_event_flag_t;
 typedef void (*rb_event_hook_func_t)(rb_event_flag_t evflag, VALUE data, VALUE self, ID mid, VALUE klass);

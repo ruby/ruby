@@ -107,6 +107,28 @@ EOF
       bt
     end
 
+    def code_around_binding
+      file, pos = @binding.eval('[__FILE__, __LINE__]')
+
+      unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
+        begin
+          lines = File.readlines(file)
+        rescue SystemCallError
+          return
+        end
+      end
+      pos -= 1
+
+      start_pos = [pos - 5, 0].max
+      end_pos   = [pos + 5, lines.size - 1].min
+
+      fmt = " %2s %#{end_pos.to_s.length}d: %s"
+      body = (start_pos..end_pos).map do |current_pos|
+        sprintf(fmt, pos == current_pos ? '=>' : '', current_pos + 1, lines[current_pos])
+      end.join("")
+      "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}\n"
+    end
+
     def IRB.delete_caller
     end
   end

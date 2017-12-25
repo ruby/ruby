@@ -38,6 +38,9 @@ def help
 \e[1mtagging preview/RC\e[0m
   ruby #$0 tag 2.2.0-preview1
 
+\e[1mremove tag\e[0m
+  ruby #$0 removetag 2.2.9
+
 \e[33;1m* all operations shall be applied to the working directory.\e[0m
 end
 end
@@ -142,13 +145,45 @@ def tag intv_p = false, relname=nil
   end
   tagname = 'v' + x + (v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl ? '_' + pl : '')
   tag_url = $repos + 'tags/' + tagname
+  system(*%w'svn info', tag_url, out: IO::NULL, err: IO::NULL)
+  if $?.success?
+    abort "specfied tag already exists. check tag name and remove it if you want to force re-tagging"
+  end
   if intv_p
     interactive "OK? svn cp -m \"add tag #{tagname}\" #{branch_url} #{tag_url}" do
+      # nothing to do here
     end
   end
   system(*%w'svn cp -m', "add tag #{tagname}", branch_url, tag_url)
   puts "run following command in git-svn working directory to push the tag into GitHub:"
   puts "git tag #{tagname}  origin/tags/#{tagname} && git push ruby #{tagname}"
+end
+
+def remove_tag intv_p = false, relname
+  # relname:
+  #   * 2.2.0-preview1
+  #   * 2.2.0-rc1
+  #   * 2.2.0
+  #   * v2_2_0_preview1
+  #   * v2_2_0_rc1
+  #   * v2_2_0
+  if !relname && !intv_p.is_a?(String)
+    raise ArgumentError, "relname is not specified"
+  end
+  intv_p, relname = false, intv_p if !relname && intv_p.is_a?(String)
+
+  if /^v/ !~ relname
+    tagname = 'v' + relname.tr(".-", "_")
+  else
+    tagname = relname
+  end
+  tag_url = $repos + 'tags/' + tagname
+  if intv_p
+    interactive "OK? svn rm -m \"remove tag #{tagname}\" #{tag_url}" do
+      # nothing to do here
+    end
+  end
+  system(*%w'svn rm -m', "remove tag #{tagname}", tag_url)
 end
 
 def default_merge_branch
@@ -164,6 +199,8 @@ when "up", /\A(ver|version|rev|revision|lv|level|patch\s*level)\s*up/
   system 'svn diff version.h'
 when "tag"
   tag :interactive, ARGV[1]
+when /\A(?:remove|rm|del)_?tag\z/
+  remove_tag :interactive, ARGV[1]
 when nil, "-h", "--help"
   help
   exit

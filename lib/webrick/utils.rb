@@ -37,7 +37,7 @@ module WEBrick
         Process::Sys::setgid(pw.gid)
         Process::Sys::setuid(pw.uid)
       else
-        warn("WEBrick::Utils::su doesn't work on this platform")
+        warn("WEBrick::Utils::su doesn't work on this platform", uplevel: 1)
       end
     end
     module_function :su

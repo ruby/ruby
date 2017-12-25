@@ -1590,7 +1590,7 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
     tmp_array = ALLOCV_N(VALUE, v2, argc);
 
     for (i = 0; i < argc; i++) {
-	str = argv[i];
+	str = rb_obj_as_string(argv[i]);
 	converted = 0;
 	str = do_writeconv(str, fptr, &converted);
 	if (converted)
@@ -1637,12 +1637,16 @@ io_writev(int argc, VALUE *argv, VALUE io)
 
     for (i = 0; i < argc; i += cnt) {
 #ifdef HAVE_WRITEV
-	if ((cnt = argc - i) >= IOV_MAX) cnt = IOV_MAX-1;
-	n = io_fwritev(cnt, &argv[i], fptr);
-#else
-	/* sync at last item */
-	n = io_fwrite(argv[i], fptr, (i < argc-1));
+	if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) && ((cnt = argc - i) < IOV_MAX)) {
+	    n = io_fwritev(cnt, &argv[i], fptr);
+	}
+	else
 #endif
+	{
+	    cnt = 1;
+	    /* sync at last item */
+	    n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
+	}
 	if (n == -1L) rb_sys_fail_path(fptr->pathv);
 	total = rb_fix_plus(LONG2FIX(n), total);
     }
@@ -1655,11 +1659,11 @@ io_writev(int argc, VALUE *argv, VALUE io)
  *     ios.write(string, ...)    -> integer
  *
  *  Writes the given strings to <em>ios</em>. The stream must be opened
- *  for writing. If each argument is not a string, they will be converted
+ *  for writing. Arguments that are not a string will be converted
  *  to a string using <code>to_s</code>. Returns the number of bytes
  *  written in total.
  *
- *     count = $stdout.write("This is", "a test\n")
+ *     count = $stdout.write("This is", " a test\n")
  *     puts "That was #{count} bytes of data"
  *
  *  <em>produces:</em>
@@ -3616,10 +3620,10 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *     ios.readlines(sep, limit [, getline_args]) -> array
  *
  *  Reads all of the lines in <em>ios</em>, and returns them in
- *  <i>anArray</i>. Lines are separated by the optional <i>sep</i>. If
+ *  an array. Lines are separated by the optional <i>sep</i>. If
  *  <i>sep</i> is +nil+, the rest of the stream is returned
  *  as a single record.
- *  If the first argument is an integer, or
+ *  If the first argument is an integer, or an
  *  optional second argument is given, the returning string would not be
  *  longer than the given value in bytes. The stream must be opened for
  *  reading or an <code>IOError</code> will be raised.
@@ -3627,7 +3631,10 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *     f = File.new("testfile")
  *     f.readlines[0]   #=> "This is line one\n"
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *     f = File.new("testfile", chomp: true)
+ *     f.readlines[0]   #=> "This is line one"
+ *
+ *  See IO.readlines for details about getline_args.
  */
 
 static VALUE
@@ -3681,7 +3688,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *     3: This is line three
  *     4: And so on...
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  */
 
 static VALUE
@@ -4807,6 +4814,8 @@ rb_io_closed(VALUE io)
  *
  *     prog.rb:3:in `readlines': not opened for reading (IOError)
  *     	from prog.rb:3
+ *
+ *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -4867,6 +4876,8 @@ rb_io_close_read(VALUE io)
  *     prog.rb:3:in `write': not opened for writing (IOError)
  *     	from prog.rb:3:in `print'
  *     	from prog.rb:3
+ *
+ *  Calling this method on closed IO object is just ignored since Ruby 2.3.
  */
 
 static VALUE
@@ -5096,10 +5107,12 @@ pread_internal_call(VALUE arg)
  *  at end of file and <code>NotImplementedError</code> if platform does not
  *  implement the system call.
  *
- *     f = File.new("testfile")
- *     f.read           #=> "This is line one\nThis is line two\n"
- *     f.pread(12, 0)   #=> "This is line"
- *     f.pread(9, 8)    #=> "line one\n"
+ *     File.write("testfile", "This is line one\nThis is line two\n")
+ *     File.open("testfile") do |f|
+ *       p f.read           # => "This is line one\nThis is line two\n"
+ *       p f.pread(12, 0)   # => "This is line"
+ *       p f.pread(9, 8)    # => "line one\n"
+ *     end
  */
 static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
@@ -5164,10 +5177,11 @@ internal_pwrite_func(void *ptr)
  *  Raises <code>SystemCallError</code> on error and <code>NotImplementedError</code>
  *  if platform does not implement the system call.
  *
- *     f = File.new("out", "w")
- *     f.pwrite("ABCDEF", 3)   #=> 6
+ *     File.open("out", "w") do |f|
+ *       f.pwrite("ABCDEF", 3)   #=> 6
+ *     end
  *
- *     File.read("out")        #=> "\u0000\u0000\u0000ABCDEF"
+ *     File.read("out")          #=> "\u0000\u0000\u0000ABCDEF"
  */
 static VALUE
 rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
@@ -5175,12 +5189,11 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
+    VALUE tmp;
 
     if (!RB_TYPE_P(str, T_STRING))
 	str = rb_obj_as_string(str);
 
-    arg.buf = RSTRING_PTR(str);
-    arg.count = (size_t)RSTRING_LEN(str);
     arg.offset = NUM2OFFT(offset);
 
     io = GetWriteIO(io);
@@ -5188,10 +5201,13 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     rb_io_check_writable(fptr);
     arg.fd = fptr->fd;
 
-    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
-    RB_GC_GUARD(str);
+    tmp = rb_str_tmp_frozen_acquire(str);
+    arg.buf = RSTRING_PTR(tmp);
+    arg.count = (size_t)RSTRING_LEN(tmp);
 
+    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
     if (n == -1) rb_sys_fail_path(fptr->pathv);
+    rb_str_tmp_frozen_release(str, tmp);
 
     return SSIZET2NUM(n);
 }
@@ -5959,7 +5975,10 @@ static int
 io_strip_bom(VALUE io)
 {
     VALUE b1, b2, b3, b4;
+    rb_io_t *fptr;
 
+    GetOpenFile(io, fptr);
+    if (!(fptr->mode & FMODE_READABLE)) return 0;
     if (NIL_P(b1 = rb_io_getbyte(io))) return 0;
     switch (b1) {
       case INT2FIX(0xEF):
@@ -7055,10 +7074,10 @@ rb_f_open(int argc, VALUE *argv)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, int, int, const convconfig_t *, mode_t);
+static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const convconfig_t *, mode_t);
 
 static VALUE
-rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
+rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 {
     int oflags, fmode;
     convconfig_t convconfig;
@@ -7066,31 +7085,26 @@ rb_io_open(VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
-    return rb_io_open_generic(filename, oflags, fmode, &convconfig, perm);
+    return rb_io_open_generic(io, filename, oflags, fmode, &convconfig, perm);
 }
 
 static VALUE
-rb_io_open_generic(VALUE filename, int oflags, int fmode,
+rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
 		   const convconfig_t *convconfig, mode_t perm)
 {
     VALUE cmd;
-    if (!NIL_P(cmd = check_pipe_command(filename))) {
+    const int warn = klass == rb_cFile;
+    if ((warn || klass == rb_cIO) && !NIL_P(cmd = check_pipe_command(filename))) {
+	if (warn) {
+	    rb_warn("IO.%"PRIsVALUE" called on File to invoke external command",
+		    rb_id2str(rb_frame_this_func()));
+	}
 	return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
     }
     else {
-        return rb_file_open_generic(io_alloc(rb_cFile), filename,
+	return rb_file_open_generic(io_alloc(klass), filename,
 				    oflags, fmode, convconfig, perm);
     }
-}
-
-static VALUE
-rb_io_open_with_args(int argc, const VALUE *argv)
-{
-    VALUE io;
-
-    io = io_alloc(rb_cFile);
-    rb_open_file(argc, argv, io);
-    return io;
 }
 
 static VALUE
@@ -7474,10 +7488,10 @@ rb_f_print(int argc, const VALUE *argv)
  *     ios.putc(obj)    -> obj
  *
  *  If <i>obj</i> is <code>Numeric</code>, write the character whose code is
- *  the least-significant byte of <i>obj</i>, otherwise write the first byte
- *  of the string representation of <i>obj</i> to <em>ios</em>. Note: This
- *  method is not safe for use with multi-byte characters as it will truncate
- *  them.
+ *  the least-significant byte of <i>obj</i>.
+ *  If <i>obj</i> is <code>String</code>, write the first character
+ *  of <i>obj</i> to <em>ios</em>.
+ *  Otherwise, raise <code>TypeError</code>.
  *
  *     $stdout.putc "A"
  *     $stdout.putc 65
@@ -7753,6 +7767,11 @@ void
 rb_write_error2(const char *mesg, long len)
 {
     if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
+#ifdef _WIN32
+	if (isatty(fileno(stderr))) {
+	    if (rb_w32_write_console(rb_str_new(mesg, len), fileno(stderr)) > 0) return;
+	}
+#endif
 	if (fwrite(mesg, sizeof(char), (size_t)len, stderr) < (size_t)len) {
 	    /* failed to write to stderr, what can we do? */
 	    return;
@@ -8025,8 +8044,7 @@ rb_io_make_open_file(VALUE obj)
  *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
  *
  *  :\external_encoding ::
- *    External encoding for the IO.  "-" is a synonym for the default external
- *    encoding.
+ *    External encoding for the IO.
  *
  *  :\internal_encoding ::
  *    Internal encoding for the IO.  "-" is a synonym for the default internal
@@ -8679,7 +8697,7 @@ rb_f_gets(int argc, VALUE *argv, VALUE recv)
  *  The optional _limit_ argument specifies how many characters of each line
  *  to return. By default all characters are returned.
  *
- *  See <code>IO.readlines</code> for detail about getline_args.
+ *  See IO.readlines for details about getline_args.
  *
  */
 static VALUE
@@ -10147,9 +10165,10 @@ struct foreach_arg {
 };
 
 static void
-open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
+open_key_args(VALUE klass, int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
 {
     VALUE path, v;
+    VALUE vmode = Qnil, vperm = Qnil;
 
     path = *argv++;
     argc--;
@@ -10158,29 +10177,18 @@ open_key_args(int argc, VALUE *argv, VALUE opt, struct foreach_arg *arg)
     arg->argc = argc;
     arg->argv = argv;
     if (NIL_P(opt)) {
-	arg->io = rb_io_open(path, INT2NUM(O_RDONLY), INT2FIX(0666), Qnil);
-	return;
+	vmode = INT2NUM(O_RDONLY);
+	vperm = INT2FIX(0666);
     }
-    v = rb_hash_aref(opt, sym_open_args);
-    if (!NIL_P(v)) {
-	VALUE args;
-	long n;
+    else if (!NIL_P(v = rb_hash_aref(opt, sym_open_args))) {
+	int n;
 
 	v = rb_to_array_type(v);
-	n = RARRAY_LEN(v) + 1;
-#if SIZEOF_LONG > SIZEOF_INT
-	if (n > INT_MAX) {
-	    rb_raise(rb_eArgError, "too many arguments");
-	}
-#endif
-	args = rb_ary_tmp_new(n);
-	rb_ary_push(args, path);
-	rb_ary_concat(args, v);
-	arg->io = rb_io_open_with_args((int)n, RARRAY_CONST_PTR(args));
-	rb_ary_clear(args);	/* prevent from GC */
-	return;
+	n = RARRAY_LENINT(v);
+	rb_check_arity(n, 0, 3); /* rb_io_open */
+	rb_scan_args(n, RARRAY_CONST_PTR(v), "02:", &vmode, &vperm, &opt);
     }
-    arg->io = rb_io_open(path, Qnil, Qnil, opt);
+    arg->io = rb_io_open(klass, path, vmode, vperm, opt);
 }
 
 static VALUE
@@ -10218,8 +10226,8 @@ io_s_foreach(struct getline_arg *arg)
  *     GOT And so on...
  *
  *  If the last argument is a hash, it's the keyword argument to open.
- *  See <code>IO.readlines</code> for detail about getline_args.
- *  And see also <code>IO.read</code> for detail about open_args.
+ *  See IO.readlines for details about getline_args.
+ *  And see also IO.read for details about open_args.
  *
  */
 
@@ -10234,7 +10242,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
     extract_getline_args(argc-1, argv+1, &garg);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(self, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
@@ -10260,18 +10268,21 @@ io_s_readlines(struct getline_arg *arg)
  *     a = IO.readlines("testfile")
  *     a[0]   #=> "This is line one\n"
  *
+ *     b = IO.readlines("testfile", chomp: true)
+ *     b[0]   #=> "This is line one"
+ *
  *  If the last argument is a hash, it's the keyword argument to open.
  *
- *  === Option for getline
+ *  === Options for getline
  *
  *  The options hash accepts the following keys:
  *
  *  :chomp::
- *    Specifies the boolean. It will remove \n, \r, and \r\n
- *    from the end of each lines if it's true
+ *    When the optional +chomp+ keyword argument has a true value,
+ *    <code>\n</code>, <code>\r</code>, and <code>\r\n</code>
+ *    will be removed from the end of each line.
  *
- *  And see also <code>IO.read</code> for detail about open_args.
- *
+ *  See also IO.read for details about open_args.
  */
 
 static VALUE
@@ -10283,7 +10294,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, NULL, NULL, &opt);
     extract_getline_args(argc-1, argv+1, &garg);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     extract_getline_opts(opt, &garg);
     check_getline_args(&garg.rs, &garg.limit, garg.io = arg.io);
@@ -10359,7 +10370,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
-    open_key_args(argc, argv, opt, &arg);
+    open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
     if (!NIL_P(offset)) {
 	struct seek_arg sarg;
@@ -10408,7 +10419,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
     convconfig.enc = rb_ascii8bit_encoding();
-    arg.io = rb_io_open_generic(argv[0], oflags, fmode, &convconfig, 0);
+    arg.io = rb_io_open_generic(io, argv[0], oflags, fmode, &convconfig, 0);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;
     arg.argc = (argc > 1) ? 1 : 0;
@@ -10434,7 +10445,7 @@ io_s_write0(struct write_arg *arg)
 }
 
 static VALUE
-io_s_write(int argc, VALUE *argv, int binary)
+io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 {
     VALUE string, offset, opt;
     struct foreach_arg arg;
@@ -10454,7 +10465,7 @@ io_s_write(int argc, VALUE *argv, int binary)
        if (NIL_P(offset)) mode |= O_TRUNC;
        rb_hash_aset(opt,sym_mode,INT2NUM(mode));
     }
-    open_key_args(argc,argv,opt,&arg);
+    open_key_args(klass, argc, argv, opt, &arg);
 
 #ifndef O_BINARY
     if (binary) rb_io_binmode_m(arg.io);
@@ -10528,7 +10539,7 @@ io_s_write(int argc, VALUE *argv, int binary)
 static VALUE
 rb_io_s_write(int argc, VALUE *argv, VALUE io)
 {
-    return io_s_write(argc, argv, 0);
+    return io_s_write(argc, argv, io, 0);
 }
 
 /*
@@ -10543,7 +10554,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 static VALUE
 rb_io_s_binwrite(int argc, VALUE *argv, VALUE io)
 {
-    return io_s_write(argc, argv, 1);
+    return io_s_write(argc, argv, io, 1);
 }
 
 struct copy_stream_struct {
@@ -10775,6 +10786,8 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 	}
         switch (errno) {
 	  case EINVAL:
+	  case EPERM: /* copy_file_range(2) doesn't exist (may happen in
+			 docker container) */
 #ifdef ENOSYS
 	  case ENOSYS:
 #endif
@@ -10789,6 +10802,16 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
             if (nogvl_copy_stream_wait_write(stp) == -1)
                 return -1;
             goto retry_copy_file_range;
+	  case EBADF:
+	    {
+		int e = errno;
+		int flags = fcntl(stp->dst_fd, F_GETFL);
+
+		if (flags != -1 && flags & O_APPEND) {
+		    return 0;
+		}
+		errno = e;
+	    }
         }
         stp->syserr = "copy_file_range";
         stp->error_no = errno;

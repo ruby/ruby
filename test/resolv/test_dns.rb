@@ -179,6 +179,16 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  def test_resolv_conf_by_command
+    Dir.mktmpdir do |dir|
+      Dir.chdir(dir) do
+        assert_raise(Errno::ENOENT, Errno::EINVAL) do
+          Resolv::DNS::Config.parse_resolv_conf("|echo foo")
+        end
+      end
+    end
+  end
+
   def test_dots_diffences
     name1 = Resolv::DNS::Name.create("example.org")
     name2 = Resolv::DNS::Name.create("ex.ampl.eo.rg")

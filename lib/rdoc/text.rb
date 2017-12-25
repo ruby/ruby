@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 ##
 # For RDoc::Text#to_html
@@ -60,7 +60,7 @@ module RDoc::Text
     text.each_line do |line|
       nil while line.gsub!(/(?:\G|\r)((?:.{8})*?)([^\t\r\n]{0,7})\t/) do
         r = "#{$1}#{$2}#{' ' * (8 - $2.size)}"
-        r.force_encoding text.encoding
+        r = RDoc::Encoding.change_encoding r, text.encoding
         r
       end
 
@@ -82,7 +82,7 @@ module RDoc::Text
     end
 
     empty = ''
-    empty.force_encoding text.encoding
+    empty = RDoc::Encoding.change_encoding empty, text.encoding
 
     text.gsub(/^ {0,#{indent}}/, empty)
   end
@@ -149,7 +149,7 @@ module RDoc::Text
     return text if text =~ /^(?>\s*)[^\#]/
 
     empty = ''
-    empty.force_encoding text.encoding
+    empty = RDoc::Encoding.change_encoding empty, text.encoding
 
     text.gsub(/^\s*(#+)/) { $1.tr '#', ' ' }.gsub(/^\s+$/, empty)
   end
@@ -172,14 +172,14 @@ module RDoc::Text
     text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
 
     space = ' '
-    space.force_encoding encoding if encoding
+    space = RDoc::Encoding.change_encoding space, encoding if encoding
 
     text.sub!  %r%/\*+%       do space * $&.length end
     text.sub!  %r%\*+/%       do space * $&.length end
     text.gsub! %r%^[ \t]*\*%m do space * $&.length end
 
     empty = ''
-    empty.force_encoding encoding if encoding
+    empty = RDoc::Encoding.change_encoding empty, encoding if encoding
     text.gsub(/^\s+$/, empty)
   end
 
@@ -188,7 +188,7 @@ module RDoc::Text
   # trademark symbols in +text+ to properly encoded characters.
 
   def to_html text
-    html = ''.encode text.encoding
+    html = (''.encode text.encoding).dup
 
     encoded = RDoc::Text::TO_HTML_CHARACTERS[text.encoding]
 

@@ -183,12 +183,12 @@ class TestException < Test::Unit::TestCase
 
   def test_throw_false
     bug12743 = '[ruby-core:77229] [Bug #12743]'
-    e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
-      Thread.start {
+    Thread.start {
+      e = assert_raise_with_message(UncaughtThrowError, /false/, bug12743) {
         throw false
-      }.join
-    }
-    assert_same(false, e.tag, bug12743)
+      }
+      assert_same(false, e.tag, bug12743)
+    }.join
   end
 
   def test_else_no_exception
@@ -354,6 +354,7 @@ class TestException < Test::Unit::TestCase
   def test_thread_signal_location
     _, stderr, _ = EnvUtil.invoke_ruby(%w"--disable-gems -d", <<-RUBY, false, true)
 Thread.start do
+  Thread.current.report_on_exception = false
   begin
     Process.kill(:INT, $$)
   ensure
@@ -1003,6 +1004,11 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_equal(["\n"],     capture_warning_warn {warn ""})
   end
 
+  def test_kernel_warn_uplevel
+    warning = capture_warning_warn {warn("test warning", uplevel: 0)}
+    assert_equal("#{__FILE__}:#{__LINE__-1}: warning: test warning\n", warning[0])
+  end
+
   def test_warning_warn_invalid_argument
     assert_raise(TypeError) do
       ::Warning.warn nil
@@ -1093,5 +1099,16 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         raise RuntimeError, "hello"
       }
     end;
+  end
+
+  def test_full_message
+    test_method = "def foo; raise 'testerror'; end"
+
+    out1, err1, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; rescue => e; puts e.full_message; end"], '', true, true)
+    assert(status1.success?)
+    assert(err1.empty?, "expected nothing wrote to $stdout by #long_message")
+
+    _, err2, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; end"], '', true, true)
+    assert_equal(err2, out1)
   end
 end

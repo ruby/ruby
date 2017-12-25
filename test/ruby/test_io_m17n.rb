@@ -2168,6 +2168,20 @@ EOT
     assert_nil(enc)
   end
 
+  def test_bom_non_reading
+    with_tmpdir {
+      enc = nil
+      assert_nothing_raised(IOError) {
+        open("test", "w:bom|utf-8") {|f|
+          enc = f.external_encoding
+          f.print("abc")
+        }
+      }
+      assert_equal(Encoding::UTF_8, enc)
+      assert_equal("abc", File.binread("test"))
+    }
+  end
+
   def test_cbuf
     with_tmpdir {
       fn = "tst"

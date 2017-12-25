@@ -5,6 +5,7 @@ class LeakChecker
     @tempfile_info = find_tempfiles
     @thread_info = find_threads
     @env_info = find_env
+    @encoding_info = find_encodings
   end
 
   def check(test_name)
@@ -12,7 +13,8 @@ class LeakChecker
       check_fd_leak(test_name),
       check_thread_leak(test_name),
       check_tempfile_leak(test_name),
-      check_env(test_name)
+      check_env(test_name),
+      check_encodings(test_name),
     ]
     GC.start if leaks.any?
   end
@@ -197,7 +199,31 @@ class LeakChecker
     return true
   end
 
+  def find_encodings
+    [Encoding.default_internal, Encoding.default_external]
+  end
+
+  def check_encodings(test_name)
+    old_internal, old_external = @encoding_info
+    new_internal, new_external = find_encodings
+    leaked = false
+    if new_internal != old_internal
+      leaked = true
+      puts "Encoding.default_internal changed: #{test_name} : #{old_internal.inspect} to #{new_internal.inspect}"
+    end
+    if new_external != old_external
+      leaked = true
+      puts "Encoding.default_external changed: #{test_name} : #{old_external.inspect} to #{new_external.inspect}"
+    end
+    @encoding_info = [new_internal, new_external]
+    return leaked
+  end
+
   def puts(*a)
-    MiniTest::Unit.output.puts(*a)
+    output = MiniTest::Unit.output
+    if defined?(output.set_encoding)
+      output.set_encoding(nil, nil)
+    end
+    output.puts(*a)
   end
 end

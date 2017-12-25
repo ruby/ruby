@@ -1325,14 +1325,14 @@ rb_backref_set_string(VALUE string, long pos, long len)
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 2
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> 0
  *
  *      r = /\u{6666}/
  *      r.fixed_encoding?                               #=> true
  *      r.encoding                                      #=> #<Encoding:UTF-8>
  *      r =~ "\u{6666} a"                               #=> 0
- *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> ArgumentError
+ *      r =~ "\xa1\xa2".force_encoding("euc-jp")        #=> Encoding::CompatibilityError
  *      r =~ "abc".force_encoding("euc-jp")             #=> nil
  */
 
@@ -3156,9 +3156,9 @@ rb_reg_match(VALUE re, VALUE str)
  *
  *     a = "HELLO"
  *     case a
- *     when /^[a-z]*$/; print "Lower case\n"
- *     when /^[A-Z]*$/; print "Upper case\n"
- *     else;            print "Mixed case\n"
+ *     when /\A[a-z]*\z/; print "Lower case\n"
+ *     when /\A[A-Z]*\z/; print "Upper case\n"
+ *     else;              print "Mixed case\n"
  *     end
  *     #=> "Upper case"
  *

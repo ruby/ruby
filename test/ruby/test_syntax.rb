@@ -990,7 +990,8 @@ eom
 
   def test_return_toplevel
     feature4840 = '[ruby-core:36785] [Feature #4840]'
-    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    line = __LINE__+2
+    code = "#{<<~"begin;"}#{<<~'end;'}"
     begin;
       return; raise
       begin return; rescue SystemExit; exit false; end
@@ -1005,11 +1006,33 @@ eom
       begin raise; ensure return; end; self
       begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
+      return puts('ignored') #=> ignored
     end;
-    all_assertions_foreach(feature4840, *code.split(/\n/)) do |s|
-      assert_in_out_err(%[-W0], s, [*s[/#=> (.*)/, 1]], [],
-                        proc {RubyVM::InstructionSequence.compile(s).disasm},
-                        success: true)
+      .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
+    failed = proc do |n, s|
+      RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
+    end
+    Tempfile.create(%w"test_return_ .rb") do |lib|
+      lib.close
+      args = %W[-W0 -r#{lib.path}]
+      all_assertions_foreach(feature4840, *[:main, :lib].product([:class, :top], code)) do |main, klass, (n, s, *ex)|
+        if klass == :class
+          s = "class X; #{s}; end"
+          if main == :main
+            assert_in_out_err(%[-W0], s, [], /return/, proc {failed[n, s]}, success: false)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", [], /return/, proc {failed[n, s]}, success: false)
+          end
+        else
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          end
+        end
+      end
     end
   end
 
@@ -1032,6 +1055,10 @@ eom
 
   def test_invalid_jump
     assert_in_out_err(%w[-e redo], "", [], /^-e:1: /)
+  end
+
+  def test_keyword_not_parens
+    assert_valid_syntax("not()")
   end
 
   def test_rescue_do_end_raised

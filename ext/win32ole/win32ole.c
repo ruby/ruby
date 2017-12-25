@@ -26,7 +26,7 @@
 const IID IID_IMultiLanguage2 = {0xDCCFC164, 0x2B38, 0x11d2, {0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A}};
 #endif
 
-#define WIN32OLE_VERSION "1.8.6"
+#define WIN32OLE_VERSION "1.8.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1809,7 +1809,9 @@ ole_const_load(ITypeLib *pTypeLib, VALUE klass, VALUE self)
                 *pName = toupper((int)*pName);
                 id = rb_intern(pName);
                 if (rb_is_const_id(id)) {
-                    rb_define_const(klass, pName, val);
+                    if(!rb_const_defined_at(klass, id)) {
+                        rb_define_const(klass, pName, val);
+                    }
                 }
                 else {
                     rb_hash_aset(constant, rb_str_new2(pName), val);
@@ -2071,12 +2073,12 @@ fole_s_const_load(int argc, VALUE *argv, VALUE self)
         hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                   0, lcid, &pTypeInfo);
         if(FAILED(hr)) {
-            ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
         }
         hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
         if(FAILED(hr)) {
             OLE_RELEASE(pTypeInfo);
-            ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+            ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
         }
         OLE_RELEASE(pTypeInfo);
         if(!RB_TYPE_P(klass, T_NIL)) {
@@ -3322,7 +3324,7 @@ fole_each(VALUE self)
 
     if (FAILED(hr)) {
         VariantClear(&result);
-        ole_raise(hr, eWIN32OLERuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     if (V_VT(&result) == VT_UNKNOWN) {
@@ -3338,7 +3340,7 @@ fole_each(VALUE self)
     }
     if (FAILED(hr) || !pEnum) {
         VariantClear(&result);
-        ole_raise(hr, rb_eRuntimeError, "failed to get IEnum Interface");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get IEnum Interface");
     }
 
     VariantClear(&result);
@@ -3397,7 +3399,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     HRESULT hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                                       0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     hr = pTypeInfo->lpVtbl->GetDocumentation(pTypeInfo,
                                              -1,
@@ -3407,7 +3409,7 @@ typeinfo_from_ole(struct oledata *pole, ITypeInfo **ppti)
     hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &i);
     OLE_RELEASE(pTypeInfo);
     if (FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetContainingTypeLib");
     }
     count = pTypeLib->lpVtbl->GetTypeInfoCount(pTypeLib);
     for (i = 0; i < count; i++) {
@@ -3532,7 +3534,7 @@ fole_type(VALUE self)
 
     hr = pole->pDispatch->lpVtbl->GetTypeInfo( pole->pDispatch, 0, lcid, &pTypeInfo );
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3566,7 +3568,7 @@ fole_typelib(VALUE self)
     hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
                                               0, lcid, &pTypeInfo);
     if(FAILED(hr)) {
-        ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to GetTypeInfo");
     }
     vtlib = ole_typelib_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
@@ -3613,7 +3615,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
     hr = pole->pDispatch->lpVtbl->QueryInterface(pole->pDispatch, &iid,
                                                  &p);
     if(FAILED(hr)) {
-        ole_raise(hr, eWIN32OLERuntimeError,
+        ole_raise(hr, eWIN32OLEQueryInterfaceError,
                   "failed to get interface `%s'",
                   StringValuePtr(str_iid));
     }
@@ -3854,7 +3856,7 @@ fole_method_help(VALUE self, VALUE cmdname)
     pole = oledata_get_struct(self);
     hr = typeinfo_from_ole(pole, &pTypeInfo);
     if(FAILED(hr))
-        ole_raise(hr, rb_eRuntimeError, "failed to get ITypeInfo");
+        ole_raise(hr, eWIN32OLEQueryInterfaceError, "failed to get ITypeInfo");
 
     obj = create_win32ole_method(pTypeInfo, cmdname);
 
@@ -3994,11 +3996,11 @@ Init_win32ole(void)
     message_filter.RetryRejectedCall = mf_RetryRejectedCall;
     message_filter.MessagePending = mf_MessagePending;
 
-    enc2cp_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    enc2cp_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(enc2cp_hash) = st_init_numtable();
     rb_gc_register_mark_object(enc2cp_hash);
 
-    com_hash = TypedData_Wrap_Struct(rb_cData, &win32ole_hash_datatype, 0);
+    com_hash = TypedData_Wrap_Struct(0, &win32ole_hash_datatype, 0);
     RTYPEDDATA_DATA(com_hash) = st_init_numtable();
     rb_gc_register_mark_object(com_hash);
 

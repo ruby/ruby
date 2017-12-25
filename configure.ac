@@ -406,6 +406,10 @@ AS_IF([test "$GCC" = yes], [
     gcc_minor=`echo =__GNUC_MINOR__ | $CC -E -xc - | sed '/^=/!d;s///'`
     test -n "$gcc_major" || gcc_major=0
     test -n "$gcc_minor" || gcc_minor=0
+    AS_CASE(["x$CC"], [xicc], [
+      icc_version=`echo =__ICC | $CC -E -xc - | sed '/^=/!d;s///'`
+    ])
+    test -n "$icc_version" || icc_version=0
     # RUBY_APPEND_OPTIONS(XCFLAGS, ["-include ruby/config.h" "-include ruby/missing.h"])
 ], [
     linker_flag=
@@ -745,8 +749,12 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
     AS_IF([test $gcc_major -ge 5 -a $gcc_major -le 6], [
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
     ])
+    # ICC doesn't support -Werror=
+    AS_IF([test $icc_version -gt 0], [
+	particular_werror_flags=no
+    ])
     for wflag in -Wno-unused-parameter -Wno-parentheses -Wno-long-long \
-                 -diag-disable=2259 \
+                 -diag-disable=175,188,2259 \
 		 -Wno-missing-field-initializers \
 		 -Wno-tautological-compare \
 		 -Wno-parentheses-equality \
@@ -2328,6 +2336,7 @@ AC_CHECK_FUNCS(llabs)
 AC_CHECK_FUNCS(lockf)
 AC_CHECK_FUNCS(log2)
 AC_CHECK_FUNCS(lstat)
+AC_CHECK_FUNCS(lutimes)
 AC_CHECK_FUNCS(malloc_usable_size)
 AC_CHECK_FUNCS(malloc_size)
 AC_CHECK_FUNCS(mblen)

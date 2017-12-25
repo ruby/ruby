@@ -84,4 +84,18 @@ describe "Float#round" do
     -2.5e200.round(-200).should eql( -3 * 10 ** 200 )
     -2.4e200.round(-200).should eql( -2 * 10 ** 200 )
   end
+
+  ruby_version_is "2.4" do
+    it "returns different rounded values depending on the half option" do
+      2.5.round(half: :up).should      eql(3)
+      2.5.round(half: :down).should    eql(2)
+      2.5.round(half: :even).should    eql(2)
+      3.5.round(half: :up).should      eql(4)
+      3.5.round(half: :down).should    eql(3)
+      3.5.round(half: :even).should    eql(4)
+      (-2.5).round(half: :up).should   eql(-3)
+      (-2.5).round(half: :down).should eql(-2)
+      (-2.5).round(half: :even).should eql(-2)
+    end
+  end
 end

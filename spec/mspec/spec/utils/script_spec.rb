@@ -172,7 +172,7 @@ describe MSpecScript, "#load" do
     @script.load(@base).should == :loaded
   end
 
-  it "attemps to locate the file in '.'" do
+  it "attempts to locate the file in '.'" do
     path = File.expand_path @file, "."
     File.should_receive(:exist?).with(path).and_return(true)
     Kernel.should_receive(:load).with(path).and_return(:loaded)
@@ -186,7 +186,7 @@ describe MSpecScript, "#load" do
     @script.load(@base).should == :loaded
   end
 
-  it "attemps to locate the file in 'spec'" do
+  it "attempts to locate the file in 'spec'" do
     path = File.expand_path @file, "spec"
     File.should_receive(:exist?).with(path).and_return(true)
     Kernel.should_receive(:load).with(path).and_return(:loaded)
@@ -438,8 +438,9 @@ describe MSpecScript, "#files" do
     @script.files([":files"]).should == ["file1", "file2"]
   end
 
-  it "returns an empty list if the config key is not set" do
-    @script.files([":all_files"]).should == []
+  it "aborts if the config key is not set" do
+    @script.should_receive(:abort).with("Key :all_files not found in mspec config.")
+    @script.files([":all_files"])
   end
 end
 

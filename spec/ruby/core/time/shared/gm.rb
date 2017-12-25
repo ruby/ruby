@@ -19,4 +19,11 @@ describe :time_gm, shared: true do
   it "interprets post-Gregorian reform dates using Gregorian calendar" do
     Time.send(@method, 1582, 10, 15, 12).to_i.should == -12219249600 # 2299161j
   end
+
+  it "handles fractional usec close to rounding limit" do
+    time = Time.send(@method, 2000, 1, 1, 12, 30, 0, 9999r/10000)
+
+    time.usec.should == 0
+    time.nsec.should == 999
+  end
 end

@@ -2010,6 +2010,51 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:foo, ToSymbol.new("foo").symbol)
   end
 
+  def test_unused_refinement_for_module
+    bug14068 = '[ruby-core:83613] [Bug #14068]'
+    assert_in_out_err([], <<-INPUT, ["M1#foo"], [], bug14068)
+      module M1
+        def foo
+          puts "M1#foo"
+        end
+      end
+
+      module M2
+      end
+
+      module UnusedRefinement
+        refine(M2) do
+          def foo
+            puts "M2#foo"
+          end
+        end
+      end
+
+      include M1
+      include M2
+      foo()
+    INPUT
+  end
+
+  def test_refining_module_repeatedly
+    bug14070 = '[ruby-core:83617] [Bug #14070]'
+    assert_in_out_err([], <<-INPUT, ["ok"], [], bug14070)
+      1000.times do
+        Class.new do
+          include Enumerable
+        end
+
+        Module.new do
+          refine Enumerable do
+            def foo
+            end
+          end
+        end
+      end
+      puts "ok"
+    INPUT
+  end
+
   private
 
   def eval_using(mod, s)

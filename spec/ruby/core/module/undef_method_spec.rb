@@ -18,8 +18,15 @@ describe "Module#undef_method" do
     @module = Module.new { def method_to_undef; end }
   end
 
-  it "is a private method" do
-    Module.should have_private_instance_method(:undef_method, false)
+  ruby_version_is ''...'2.5' do
+    it "is a private method" do
+      Module.should have_private_instance_method(:undef_method, false)
+    end
+  end
+  ruby_version_is '2.5' do
+    it "is a public method" do
+      Module.should have_public_instance_method(:undef_method, false)
+    end
   end
 
   it "requires multiple arguments" do

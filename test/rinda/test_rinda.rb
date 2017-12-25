@@ -241,17 +241,21 @@ module TupleSpaceTestModule
   end
 
   def test_ruby_talk_264062
-    th = Thread.new { @ts.take([:empty], 1) }
+    th = Thread.new {
+      assert_raise(Rinda::RequestExpiredError) do
+        @ts.take([:empty], 1)
+      end
+    }
     sleep(10)
-    assert_raise(Rinda::RequestExpiredError) do
-      thread_join(th)
-    end
+    thread_join(th)
 
-    th = Thread.new { @ts.read([:empty], 1) }
+    th = Thread.new {
+      assert_raise(Rinda::RequestExpiredError) do
+        @ts.read([:empty], 1)
+      end
+    }
     sleep(10)
-    assert_raise(Rinda::RequestExpiredError) do
-      thread_join(th)
-    end
+    thread_join(th)
   end
 
   def test_symbol_tuple
@@ -348,19 +352,18 @@ module TupleSpaceTestModule
 
     template = nil
     taker = Thread.new do
-      @ts.take([:take, nil], 10) do |t|
-        template = t
-	Thread.new do
-	  template.cancel
-	end
+      assert_raise(Rinda::RequestCanceledError) do
+        @ts.take([:take, nil], 10) do |t|
+          template = t
+          Thread.new do
+            template.cancel
+          end
+        end
       end
     end
 
     sleep(2)
-
-    assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(taker))
-    end
+    thread_join(taker)
 
     assert(template.canceled?)
 
@@ -377,19 +380,18 @@ module TupleSpaceTestModule
 
     template = nil
     reader = Thread.new do
-      @ts.read([:take, nil], 10) do |t|
-        template = t
-	Thread.new do
-	  template.cancel
-	end
+      assert_raise(Rinda::RequestCanceledError) do
+        @ts.read([:take, nil], 10) do |t|
+          template = t
+          Thread.new do
+            template.cancel
+          end
+        end
       end
     end
 
     sleep(2)
-
-    assert_raise(Rinda::RequestCanceledError) do
-      assert_nil(thread_join(reader))
-    end
+    thread_join(reader)
 
     assert(template.canceled?)
 
@@ -504,6 +506,8 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
       ts = Rinda::TupleSpaceProxy.new(ro)
       th = Thread.new do
         ts.take([:test_take, nil])
+      rescue Interrupt
+        # Expected
       end
       Kernel.sleep(0.1)
       th.raise(Interrupt) # causes loss of the taken tuple
@@ -842,4 +846,3 @@ class TestRingFinger < Test::Unit::TestCase
 end
 
 end
-

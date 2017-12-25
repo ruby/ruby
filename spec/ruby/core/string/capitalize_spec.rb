@@ -44,6 +44,14 @@ describe "String#capitalize!" do
     a.should == "Hello"
   end
 
+  ruby_version_is '2.4' do
+    it "capitalizes self in place for all of Unicode" do
+      a = "äöü"
+      a.capitalize!.should equal(a)
+      a.should == "Äöü"
+    end
+  end
+
   it "returns nil when no changes are made" do
     a = "Hello"
     a.capitalize!.should == nil

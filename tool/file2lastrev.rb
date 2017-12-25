@@ -89,7 +89,8 @@ else
     begin
       puts @output[*vcs.get_revisions(arg)]
     rescue => e
-      warn "#{File.basename(Program)}: #{e.message}" unless @suppress_not_found
+      next if @suppress_not_found and VCS::NotFoundError === e
+      warn "#{File.basename(Program)}: #{e.message}"
       ok = false
     end
   end

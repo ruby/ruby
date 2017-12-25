@@ -16,6 +16,13 @@ ruby_version_is "2.4" do
       @hash.transform_values(&:succ).should ==  { a: 2, b: 3, c: 4 }
     end
 
+    it "makes both hashes to share keys" do
+      key = [1, 2, 3]
+      new_hash = { key => 1 }.transform_values(&:succ)
+      new_hash[key].should == 2
+      new_hash.keys[0].should equal(key)
+    end
+
     context "when no block is given" do
       it "returns a sized Enumerator" do
         enumerator = @hash.transform_values
@@ -23,6 +30,15 @@ ruby_version_is "2.4" do
         enumerator.size.should == @hash.size
         enumerator.each(&:succ).should == { a: 2, b: 3, c: 4 }
       end
+    end
+
+    it "returns a Hash instance, even on subclasses" do
+      klass = Class.new(Hash)
+      h = klass.new
+      h[:foo] = 42
+      r = h.transform_values{|v| 2 * v}
+      r[:foo].should == 84
+      r.class.should == Hash
     end
   end
 
@@ -38,7 +54,15 @@ ruby_version_is "2.4" do
 
     it "updates self as transformed values with the given block" do
       @hash.transform_values!(&:succ)
-      @hash.should ==  { a: 2, b: 3, c: 4 }
+      @hash.should == { a: 2, b: 3, c: 4 }
+    end
+
+    it "partially modifies the contents if we broke from the block" do
+      @hash.transform_values! do |v|
+        break if v == 3
+        100 + v
+      end
+      @hash.should == { a: 101, b: 102, c: 3}
     end
 
     context "when no block is given" do
@@ -54,6 +78,10 @@ ruby_version_is "2.4" do
     describe "on frozen instance" do
       before :each do
         @hash.freeze
+      end
+
+      it "raises a RuntimeError on an empty hash" do
+        ->{ {}.freeze.transform_values!(&:succ) }.should raise_error(RuntimeError)
       end
 
       it "keeps pairs and raises a RuntimeError" do

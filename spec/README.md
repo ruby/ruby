@@ -1,14 +1,3 @@
-# spec/bundler
-
-spec/bundler is rspec examples for bundler library(lib/bundler.rb, lib/bundler/*).
-
-## Running spec/bundler
-
-To run rspec for bundler:
-```bash
-make test-bundler
-```
-
 # spec/ruby
 
 ruby/spec (https://github.com/ruby/spec/) is
@@ -30,7 +19,7 @@ In other words: If adding a spec might reveal a bug in
 another implementation, then it is worth adding it.
 Currently, the only module which is MRI-specific is `RubyVM`.
 
-## Runing ruby/spec
+## Running ruby/spec
 
 To run all specs:
 ```bash

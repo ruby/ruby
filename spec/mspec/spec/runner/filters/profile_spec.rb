@@ -15,25 +15,25 @@ describe ProfileFilter, "#find" do
     @filter.find(@file).should == @file
   end
 
-  it "attemps to locate the file in 'spec/profiles'" do
+  it "attempts to locate the file in 'spec/profiles'" do
     path = File.join "spec/profiles", @file
     File.should_receive(:exist?).with(path).and_return(true)
     @filter.find(@file).should == path
   end
 
-  it "attemps to locate the file in 'spec'" do
+  it "attempts to locate the file in 'spec'" do
     path = File.join "spec", @file
     File.should_receive(:exist?).with(path).and_return(true)
     @filter.find(@file).should == path
   end
 
-  it "attemps to locate the file in 'profiles'" do
+  it "attempts to locate the file in 'profiles'" do
     path = File.join "profiles", @file
     File.should_receive(:exist?).with(path).and_return(true)
     @filter.find(@file).should == path
   end
 
-  it "attemps to locate the file in '.'" do
+  it "attempts to locate the file in '.'" do
     path = File.join ".", @file
     File.should_receive(:exist?).with(path).and_return(true)
     @filter.find(@file).should == path

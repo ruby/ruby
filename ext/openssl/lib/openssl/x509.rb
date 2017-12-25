@@ -41,6 +41,11 @@ module OpenSSL
     end
 
     class Extension
+      def ==(other)
+        return false unless Extension === other
+        to_der == other.to_der
+      end
+
       def to_s # "oid = critical, value"
         str = self.oid
         str << " = "
@@ -160,6 +165,13 @@ module OpenSSL
       end
     end
 
+    class Attribute
+      def ==(other)
+        return false unless Attribute === other
+        to_der == other.to_der
+      end
+    end
+
     class StoreContext
       def cleanup
         warn "(#{caller.first}) OpenSSL::X509::StoreContext#cleanup is deprecated with no replacement" if $VERBOSE
@@ -176,6 +188,27 @@ module OpenSSL
           q.text 'not_before='; q.pp self.not_before; q.text ','; q.breakable
           q.text 'not_after='; q.pp self.not_after
         }
+      end
+    end
+
+    class CRL
+      def ==(other)
+        return false unless CRL === other
+        to_der == other.to_der
+      end
+    end
+
+    class Revoked
+      def ==(other)
+        return false unless Revoked === other
+        to_der == other.to_der
+      end
+    end
+
+    class Request
+      def ==(other)
+        return false unless Request === other
+        to_der == other.to_der
       end
     end
   end

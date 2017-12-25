@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 =begin
@@ -357,6 +357,25 @@ VALUE cFoo = rb_define_class("Foo", rb_cObject);
     assert_equal "this is the Foo class", klass.comment.text
   end
 
+  def test_do_classes_duplicate_class
+    content = <<-EOF
+/* Document-class: Foo
+ * first
+ */
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+/* Document-class: Foo
+ * second
+ */
+VALUE cFoo = rb_define_class("Foo", rb_cObject);
+    EOF
+
+    klass = util_get_class content, 'cFoo'
+    assert_equal 1, klass.comment_location.size
+    first = klass.comment_location.first
+    first_comment = first[0]
+    assert_equal 'first', first_comment.text
+  end
+
   def test_do_classes_struct
     content = <<-EOF
 /* Document-class: Foo
@@ -642,6 +661,7 @@ void Init_Blah(void) {
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.c ', err
   end
 
@@ -664,6 +684,7 @@ void Init_Blah(void) {
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.cpp ', err
   end
 
@@ -686,6 +707,7 @@ void Init_Blah(void) {
       klass = util_get_class content, 'cDate'
     end
 
+    assert_equal 'Date', klass.full_name
     assert_match ' blah.y ', err
   end
 

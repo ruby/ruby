@@ -23,11 +23,18 @@ def compile_extension(name)
   ext = "#{name}_spec"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
+  libruby_so = RbConfig::CONFIG['LIBRUBY_SO']
+  ruby_library = "#{RbConfig::CONFIG['libdir']}/#{libruby_so}"
+  unless libruby_so and File.exist?(ruby_library)
+    # Statically-compiled lib in the binary, ignore this check
+    ruby_library = nil
+  end
 
   return lib if File.exist?(lib) and
                 File.mtime(lib) > File.mtime("#{extension_path}/rubyspec.h") and
                 File.mtime(lib) > File.mtime("#{extension_path}/#{ext}.c") and
                 File.mtime(lib) > File.mtime(ruby_header) and
+                (!ruby_library || File.mtime(lib) > File.mtime(ruby_library)) and
                 true            # sentinel
 
   # Copy needed source files to tmpdir

@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Joins the parts of an RDoc::Markup::Paragraph into a single String.
 #
@@ -23,37 +23,11 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   # Converts the parts of +paragraph+ to a single entry.
 
   def accept_paragraph paragraph
-    parts = []
-    string = false
-
-    paragraph.parts.each do |part|
-      if String === part then
-        if string then
-          string << part
-        else
-          parts << part
-          string = part
-        end
-      else
-        parts << part
-        string = false
-      end
-    end
-
-    parts = parts.map do |part|
-      if String === part then
-        part.rstrip
-      else
-        part
-      end
-    end
-
-    # TODO use Enumerable#chunk when Ruby 1.8 support is dropped
-    #parts = paragraph.parts.chunk do |part|
-    #  String === part
-    #end.map do |string, chunk|
-    #  string ? chunk.join.rstrip : chunk
-    #end.flatten
+    parts = paragraph.parts.chunk do |part|
+      String === part
+    end.map do |string, chunk|
+      string ? chunk.join.rstrip : chunk
+    end.flatten
 
     paragraph.parts.replace parts
   end

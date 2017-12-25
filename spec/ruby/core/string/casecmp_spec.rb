@@ -1,4 +1,4 @@
-# -*- encoding: ascii-8bit -*-
+# -*- encoding: utf-8 -*-
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes.rb', __FILE__)
 
@@ -40,10 +40,10 @@ describe "String#casecmp independent of case" do
   describe "in UTF-8 mode" do
     describe "for non-ASCII characters" do
       before :each do
-        @upper_a_tilde  = "\xc3\x83"
-        @lower_a_tilde  = "\xc3\xa3"
-        @upper_a_umlaut = "\xc3\x84"
-        @lower_a_umlaut = "\xc3\xa4"
+        @upper_a_tilde  = "Ã"
+        @lower_a_tilde  = "ã"
+        @upper_a_umlaut = "Ä"
+        @lower_a_umlaut = "ä"
       end
 
       it "returns -1 when numerically less than other" do
@@ -115,6 +115,70 @@ describe "String#casecmp independent of case" do
       a = StringSpecs::MyString.new "a"
       "b".casecmp(a).should == 1
       "B".casecmp(a).should == 1
+    end
+  end
+end
+
+ruby_version_is "2.4" do
+  describe 'String#casecmp? independent of case' do
+    it 'returns true when equal to other' do
+      'abc'.casecmp?('abc').should == true
+      'abc'.casecmp?('ABC').should == true
+    end
+
+    it 'returns false when not equal to other' do
+      'abc'.casecmp?('DEF').should == false
+      'abc'.casecmp?('def').should == false
+    end
+
+    it "tries to convert other to string using to_str" do
+      other = mock('x')
+      other.should_receive(:to_str).and_return("abc")
+
+      "abc".casecmp?(other).should == true
+    end
+
+    describe 'for UNICODE characters' do
+      it 'returns true when downcase(:fold) on unicode' do
+        'äöü'.casecmp?('ÄÖÜ').should == true
+      end
+    end
+
+    describe "when comparing a subclass instance" do
+      it 'returns true when equal to other' do
+        a = StringSpecs::MyString.new "a"
+        'a'.casecmp?(a).should == true
+        'A'.casecmp?(a).should == true
+      end
+
+      it 'returns false when not equal to other' do
+        b = StringSpecs::MyString.new "a"
+        'b'.casecmp?(b).should == false
+        'B'.casecmp?(b).should == false
+      end
+    end
+
+    describe "in UTF-8 mode" do
+      describe "for non-ASCII characters" do
+        before :each do
+          @upper_a_tilde  = "Ã"
+          @lower_a_tilde  = "ã"
+          @upper_a_umlaut = "Ä"
+          @lower_a_umlaut = "ä"
+        end
+
+        it "returns true when they are the same with normalized case" do
+          @upper_a_tilde.casecmp?(@lower_a_tilde).should == true
+        end
+
+        it "returns false when they are unrelated" do
+          @upper_a_tilde.casecmp?(@upper_a_umlaut).should == false
+        end
+
+        it "returns true when they have the same bytes" do
+          @upper_a_tilde.casecmp?(@upper_a_tilde).should == true
+        end
+      end
     end
   end
 end

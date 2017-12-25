@@ -32,7 +32,7 @@ class TestLazyEnumerator < Test::Unit::TestCase
 
     a = [1, 2, 3].lazy
     a.freeze
-    assert_raise(RuntimeError) {
+    assert_raise(FrozenError) {
       a.__send__ :initialize, [4, 5], &->(y, *v) { y << yield(*v) }
     }
   end
@@ -501,6 +501,15 @@ EOS
     assert_equal Float::INFINITY, loop.lazy.cycle.size
     assert_equal nil, lazy.select{}.cycle(4).size
     assert_equal nil, lazy.select{}.cycle.size
+
+    class << (obj = Object.new)
+      def each; end
+      def size; 0; end
+      include Enumerable
+    end
+    lazy = obj.lazy
+    assert_equal 0, lazy.cycle.size
+    assert_raise(TypeError) {lazy.cycle("").size}
   end
 
   def test_map_zip

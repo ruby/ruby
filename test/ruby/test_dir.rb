@@ -144,8 +144,8 @@ class TestDir < Test::Unit::TestCase
     assert_equal([File.join(@root, '//a')], Dir.glob(@root + '//a'))
 
     FileUtils.touch(File.join(@root, "{}"))
-    assert_equal(%w(a {}).map{|f| File.join(@root, f) },
-                 Dir.glob(File.join(@root, '{\{\},a}')).sort)
+    assert_equal(%w({} a).map{|f| File.join(@root, f) },
+                 Dir.glob(File.join(@root, '{\{\},a}')))
     assert_equal([], Dir.glob(File.join(@root, '[')))
     assert_equal([], Dir.glob(File.join(@root, '[a-\\')))
 
@@ -154,8 +154,8 @@ class TestDir < Test::Unit::TestCase
 
     open(File.join(@root, "}}{}"), "wb") {}
     open(File.join(@root, "}}a"), "wb") {}
-    assert_equal(%w(}}{} }}a).map {|f| File.join(@root, f)}.sort, Dir.glob(File.join(@root, '}}{\{\},a}')).sort)
-    assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}.sort, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')).sort)
+    assert_equal(%w(}}{} }}a).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '}}{\{\},a}')))
+    assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')))
   end
 
   def test_glob_recursive

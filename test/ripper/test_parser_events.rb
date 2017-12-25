@@ -1014,20 +1014,35 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_qwords_add
     thru_qwords_add = false
-    parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
+    tree = parse('%w[a]', :on_qwords_add) {thru_qwords_add = true}
     assert_equal true, thru_qwords_add
+    assert_equal '[array([a])]', tree
+    thru_qwords_add = false
+    tree = parse('%w[ a ]', :on_qwords_add) {thru_qwords_add = true}
+    assert_equal true, thru_qwords_add
+    assert_equal '[array([a])]', tree
   end
 
   def test_qsymbols_add
     thru_qsymbols_add = false
-    parse('%i[a]', :on_qsymbols_add) {thru_qsymbols_add = true}
+    tree = parse('%i[a]', :on_qsymbols_add) {thru_qsymbols_add = true}
     assert_equal true, thru_qsymbols_add
+    assert_equal '[array([:a])]', tree
+    thru_qsymbols_add = false
+    tree = parse('%i[ a ]', :on_qsymbols_add) {thru_qsymbols_add = true}
+    assert_equal true, thru_qsymbols_add
+    assert_equal '[array([:a])]', tree
   end
 
   def test_symbols_add
     thru_symbols_add = false
-    parse('%I[a]', :on_symbols_add) {thru_symbols_add = true}
+    tree = parse('%I[a]', :on_symbols_add) {thru_symbols_add = true}
     assert_equal true, thru_symbols_add
+    assert_equal '[array([:a])]', tree
+    thru_symbols_add = false
+    tree = parse('%I[ a ]', :on_symbols_add) {thru_symbols_add = true}
+    assert_equal true, thru_symbols_add
+    assert_equal '[array([:a])]', tree
   end
 
   def test_qwords_new
@@ -1377,8 +1392,13 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
 
   def test_words_add
     thru_words_add = false
-    parse('%W[a]', :on_words_add) {thru_words_add = true}
+    tree = parse('%W[a]', :on_words_add) {thru_words_add = true}
     assert_equal true, thru_words_add
+    assert_equal '[array([a])]', tree
+    thru_words_add = false
+    tree = parse('%W[ a ]', :on_words_add) {thru_words_add = true}
+    assert_equal true, thru_words_add
+    assert_equal '[array([a])]', tree
   end
 
   def test_words_new

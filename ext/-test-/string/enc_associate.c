@@ -15,7 +15,7 @@ bug_str_encoding_index(VALUE self, VALUE str)
 }
 
 void
-Init_enc_associate(VALUE klass)
+Init_string_enc_associate(VALUE klass)
 {
     rb_define_method(klass, "associate_encoding!", bug_str_enc_associate, 1);
     rb_define_singleton_method(klass, "encoding_index", bug_str_encoding_index, 1);

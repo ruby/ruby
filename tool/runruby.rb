@@ -5,8 +5,15 @@
 
 show = false
 precommand = []
+srcdir = File.realpath('..', File.dirname(__FILE__))
 while arg = ARGV[0]
   break ARGV.shift if arg == '--'
+  case arg
+  when '-C',  /\A-C(.+)/m
+    ARGV.shift
+    Dir.chdir($1 || ARGV.shift)
+    next
+  end
   /\A--([-\w]+)(?:=(.*))?\z/ =~ arg or break
   arg, value = $1, $2
   re = Regexp.new('\A'+arg.gsub(/\w+\b/, '\&\\w*')+'\z', "i")
@@ -23,12 +30,20 @@ while arg = ARGV[0]
     # obsolete switch do nothing
   when re =~ "debugger"
     require 'shellwords'
-    precommand.concat(value ? (Shellwords.shellwords(value) unless value == "no") : %w"gdb --args")
+    case value
+    when nil
+      debugger = :gdb
+    when "no"
+    else
+      debugger = Shellwords.shellwords(value)
+    end and precommand |= [:debugger]
   when re =~ "precommand"
     require 'shellwords'
     precommand.concat(Shellwords.shellwords(value))
   when re =~ "show"
     show = true
+  when re =~ "chdir"
+    Dir.chdir(value)
   else
     break
   end
@@ -37,19 +52,28 @@ end
 
 unless defined?(File.realpath)
   def File.realpath(*args)
-    Dir.chdir(expand_path(*args)) do
-      Dir.pwd
+    path = expand_path(*args)
+    if File.stat(path).directory?
+      Dir.chdir(path) {Dir.pwd}
+    else
+      dir, base = File.split(path)
+      File.join(Dir.chdir(dir) {Dir.pwd}, base)
     end
   end
 end
 
-srcdir ||= File.realpath('..', File.dirname(__FILE__))
-archdir ||= '.'
+begin
+  conffile = File.realpath('rbconfig.rb', archdir)
+rescue Errno::ENOENT => e
+  # retry if !archdir and ARGV[0] and File.directory?(archdir = ARGV.shift)
+  abort "#$0: rbconfig.rb not found, use --archdir option"
+end
 
-abs_archdir = File.expand_path(archdir)
+abs_archdir = File.dirname(conffile)
+archdir ||= abs_archdir
 $:.unshift(abs_archdir)
 
-config = File.read(conffile = File.join(abs_archdir, 'rbconfig.rb'))
+config = File.read(conffile)
 config.sub!(/^(\s*)RUBY_VERSION\b.*(\sor\s*)\n.*\n/, '')
 config = Module.new {module_eval(config, conffile)}::RbConfig::CONFIG
 
@@ -106,11 +130,19 @@ end
 
 ENV.update env
 
-if ENV['RUNRUBY_USE_GDB'] == 'true'
-  if File.exist?('run.gdb')
-    precommand = %w'gdb -x run.gdb --args'
+if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
+  if debugger == :gdb or !debugger
+    debugger = %w'gdb'
+    if File.exist?(gdb = 'run.gdb') or
+      File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
+      debugger.push('-x', gdb)
+    end
+    debugger << '--args'
+  end
+  if idx = precommand.index(:debugger)
+    precommand[idx, 1] = debugger
   else
-    precommand = %w'gdb --args'
+    precommand.concat(debugger)
   end
 end
 

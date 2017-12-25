@@ -622,7 +622,6 @@ wv2timet(wideval_t w)
 #define WV2TIMET(t) wv2timet(t)
 
 VALUE rb_cTime;
-static VALUE time_utc_offset _((VALUE));
 
 static int obj2int(VALUE obj);
 static uint32_t obj2ubits(VALUE obj, size_t bits);
@@ -4192,18 +4191,18 @@ time_zone(VALUE time)
  *     l.gmt_offset                    #=> -21600
  */
 
-static VALUE
-time_utc_offset(VALUE time)
+VALUE
+rb_time_utc_offset(VALUE time)
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    MAKE_TM(time, tobj);
 
     if (TIME_UTC_P(tobj)) {
 	return INT2FIX(0);
     }
     else {
+	MAKE_TM(time, tobj);
 	return tobj->vtm.utc_offset;
     }
 }
@@ -4584,7 +4583,7 @@ time_mdump(VALUE time)
         rb_ivar_set(str, id_submicro, rb_str_new(buf, len));
     }
     if (!TIME_UTC_P(tobj)) {
-	VALUE off = time_utc_offset(time), div, mod;
+	VALUE off = rb_time_utc_offset(time), div, mod;
 	divmodv(off, INT2FIX(1), &div, &mod);
 	if (rb_equal(mod, INT2FIX(0)))
 	    off = rb_Integer(div);
@@ -4901,9 +4900,9 @@ Init_Time(void)
     rb_define_method(rb_cTime, "isdst", time_isdst, 0);
     rb_define_method(rb_cTime, "dst?", time_isdst, 0);
     rb_define_method(rb_cTime, "zone", time_zone, 0);
-    rb_define_method(rb_cTime, "gmtoff", time_utc_offset, 0);
-    rb_define_method(rb_cTime, "gmt_offset", time_utc_offset, 0);
-    rb_define_method(rb_cTime, "utc_offset", time_utc_offset, 0);
+    rb_define_method(rb_cTime, "gmtoff", rb_time_utc_offset, 0);
+    rb_define_method(rb_cTime, "gmt_offset", rb_time_utc_offset, 0);
+    rb_define_method(rb_cTime, "utc_offset", rb_time_utc_offset, 0);
 
     rb_define_method(rb_cTime, "utc?", time_utc_p, 0);
     rb_define_method(rb_cTime, "gmt?", time_utc_p, 0);

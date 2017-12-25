@@ -129,7 +129,6 @@ module MakeMakefile
   $vendorarchdir = CONFIG["vendorarchdir"]
 
   $mswin = /mswin/ =~ RUBY_PLATFORM
-  $bccwin = /bccwin/ =~ RUBY_PLATFORM
   $mingw = /mingw/ =~ RUBY_PLATFORM
   $cygwin = /cygwin/ =~ RUBY_PLATFORM
   $netbsd = /netbsd/ =~ RUBY_PLATFORM
@@ -2124,7 +2123,10 @@ RULES
     unless suffixes.empty?
       depout.unshift(".SUFFIXES: ." + suffixes.uniq.join(" .") + "\n\n")
     end
-    depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n") if $extconf_h
+    if $extconf_h
+      depout.unshift("$(OBJS): $(RUBY_EXTCONF_H)\n\n")
+      depout.unshift("$(OBJS): $(hdrdir)/ruby/win32.h\n\n") if $mswin or $mingw
+    end
     depout.flatten!
     depout
   end

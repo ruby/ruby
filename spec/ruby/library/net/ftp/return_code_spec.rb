@@ -9,7 +9,7 @@ describe "Net::FTP#return_code" do
   it "outputs a warning and returns a newline" do
     lambda do
       @ftp.return_code.should == "\n"
-    end.should complain("warning: Net::FTP#return_code is obsolete and do nothing\n")
+    end.should complain(/warning: Net::FTP#return_code is obsolete and do nothing/)
   end
 end
 
@@ -19,6 +19,6 @@ describe "Net::FTP#return_code=" do
   end
 
   it "outputs a warning" do
-    lambda { @ftp.return_code = 123 }.should complain("warning: Net::FTP#return_code= is obsolete and do nothing\n")
+    lambda { @ftp.return_code = 123 }.should complain(/warning: Net::FTP#return_code= is obsolete and do nothing/)
   end
 end

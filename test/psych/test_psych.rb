@@ -146,7 +146,7 @@ class TestPsych < Psych::TestCase
 
   def test_load_file_with_fallback
     Tempfile.create(['empty', 'yml']) {|t|
-      assert_equal Hash.new, Psych.load_file(t.path, Hash.new)
+      assert_equal Hash.new, Psych.load_file(t.path, fallback: Hash.new)
     }
   end
 
@@ -181,5 +181,23 @@ class TestPsych < Psych::TestCase
       ["tag:yaml.org,2002:foo", "bar"],
       ["tag:example.com,2002:foo", "bar"]
     ], types
+  end
+
+  def test_symbolize_names
+    yaml = <<-eoyml
+foo:
+  bar: baz
+hoge:
+  - fuga: piyo
+    eoyml
+
+    result = Psych.load(yaml)
+    assert_equal result, { "foo" => { "bar" => "baz"}, "hoge" => [{ "fuga" => "piyo" }] }
+
+    result = Psych.load(yaml, symbolize_names: true)
+    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
+
+    result = Psych.safe_load(yaml, symbolize_names: true)
+    assert_equal result, { foo: { bar: "baz" }, hoge: [{ fuga: "piyo" }] }
   end
 end

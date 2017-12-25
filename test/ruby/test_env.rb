@@ -129,7 +129,9 @@ class TestEnv < Test::Unit::TestCase
     assert_equal("test", e.key)
     assert_equal("foo", ENV.fetch("test", "foo"))
     assert_equal("bar", ENV.fetch("test") { "bar" })
-    assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
+    EnvUtil.suppress_warning do
+      assert_equal("bar", ENV.fetch("test", "foo") { "bar" })
+    end
     assert_invalid_env {|v| ENV.fetch(v)}
     assert_nothing_raised { ENV.fetch(PATH_ENV, "foo") }
     ENV[PATH_ENV] = ""

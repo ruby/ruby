@@ -497,7 +497,6 @@ module IRB
           rescue Exception => exc
           end
           if exc
-            print exc.class, ": ", exc, "\n"
             if exc.backtrace && exc.backtrace[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
                 !(SyntaxError === exc)
               irb_bug = true
@@ -509,26 +508,28 @@ module IRB
             lasts = []
             levels = 0
             if exc.backtrace
-              for m in exc.backtrace
-                m = @context.workspace.filter_backtrace(m) unless irb_bug
-                if m
-                  if messages.size < @context.back_trace_limit
-                    messages.push "\tfrom "+m
-                  else
-                    lasts.push "\tfrom "+m
-                    if lasts.size > @context.back_trace_limit
-                      lasts.shift
-                      levels += 1
-                    end
-                  end
+              count = 0
+              exc.backtrace.each do |m|
+                m = @context.workspace.filter_backtrace(m) or next unless irb_bug
+                m = sprintf("%9d: from %s", (count += 1), m)
+                if messages.size < @context.back_trace_limit
+                  messages.push(m)
+                elsif lasts.size < @context.back_trace_limit
+                  lasts.push(m).shift
+                  levels += 1
                 end
               end
             end
-            print messages.join("\n"), "\n"
+            attr = STDOUT.tty? ? ATTR_TTY : ATTR_PLAIN
+            print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
             unless lasts.empty?
+              puts lasts.reverse
               printf "... %d levels...\n", levels if levels > 0
-              print lasts.join("\n"), "\n"
             end
+            puts messages.reverse
+            messages = exc.to_s.split(/\n/)
+            print "#{attr[1]}#{exc.class} (#{attr[4]}#{messages.shift}#{attr[0, 1]})#{attr[]}\n"
+            puts messages.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
             print "Maybe IRB bug!\n" if irb_bug
           end
         end
@@ -676,6 +677,11 @@ module IRB
       end
       format("#<%s: %s>", self.class, ary.join(", "))
     end
+
+    ATTR_TTY = "\e[%sm"
+    def ATTR_TTY.[](*a) self % a.join(";"); end
+    ATTR_PLAIN = ""
+    def ATTR_PLAIN.[](*) self; end
   end
 
   def @CONF.inspect
@@ -703,9 +709,10 @@ end
 
 class Binding
   # :nodoc:
-  undef irb if method_defined?(:irb)
   def irb
-    IRB.setup(eval("__FILE__"))
-    IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
+    IRB.setup(eval("__FILE__"), argv: [])
+    workspace = IRB::WorkSpace.new(self)
+    STDOUT.print(workspace.code_around_binding)
+    IRB::Irb.new(workspace).run(IRB.conf)
   end
 end

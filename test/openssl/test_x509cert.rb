@@ -169,6 +169,26 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     }
   end
 
+  def test_eq
+    now = Time.now
+    cacert = issue_cert(@ca, @rsa1024, 1, [], nil, nil,
+                        not_before: now, not_after: now + 3600)
+    cert1 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert2 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert3 = issue_cert(@ee1, @rsa2048, 3, [], cacert, @rsa1024,
+                       not_before: now, not_after: now + 3600)
+    cert4 = issue_cert(@ee1, @rsa2048, 2, [], cacert, @rsa1024,
+                       digest: "sha512", not_before: now, not_after: now + 3600)
+
+    assert_equal false, cert1 == 12345
+    assert_equal true, cert1 == cert2
+    assert_equal false, cert1 == cert3
+    assert_equal false, cert1 == cert4
+    assert_equal false, cert3 == cert4
+  end
+
   private
 
   def certificate_error_returns_false

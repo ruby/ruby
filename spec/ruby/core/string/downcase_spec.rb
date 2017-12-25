@@ -46,6 +46,14 @@ describe "String#downcase!" do
     a.should == "hello"
   end
 
+  ruby_version_is '2.4' do
+    it "modifies self in place for all of Unicode" do
+      a = "ÄÖÜ"
+      a.downcase!.should equal(a)
+      a.should == "äöü"
+    end
+  end
+
   it "returns nil if no modifications were made" do
     a = "hello"
     a.downcase!.should == nil

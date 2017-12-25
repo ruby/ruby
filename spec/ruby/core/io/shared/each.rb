@@ -114,6 +114,56 @@ describe :io_each, shared: true do
       ScratchPad.recorded.should == IOSpecs.paragraphs
     end
   end
+
+  describe "with both separator and limit" do
+    describe "when no block is given" do
+      it "returns an Enumerator" do
+        enum = @io.send(@method, nil, 1024)
+        enum.should be_an_instance_of(Enumerator)
+
+        enum.each { |l| ScratchPad << l }
+        ScratchPad.recorded.should == [IOSpecs.lines.join]
+      end
+
+      describe "returned Enumerator" do
+        describe "size" do
+          it "should return nil" do
+            @io.send(@method, nil, 1024).size.should == nil
+          end
+        end
+      end
+    end
+
+    describe "when a block is given" do
+      it "accepts an empty block" do
+        @io.send(@method, nil, 1024) {}.should equal(@io)
+      end
+
+      describe "when passed nil as a separator" do
+        it "yields self's content starting from the current position when the passed separator is nil" do
+          @io.pos = 100
+          @io.send(@method, nil, 1024) { |s| ScratchPad << s }
+          ScratchPad.recorded.should == ["qui a linha cinco.\nHere is line six.\n"]
+        end
+      end
+
+      describe "when passed an empty String as a separator" do
+        it "yields each paragraph" do
+          @io.send(@method, "", 1024) { |s| ScratchPad << s }
+          ScratchPad.recorded.should == IOSpecs.paragraphs
+        end
+      end
+    end
+  end
+
+  ruby_version_is "2.4" do
+    describe "when passed chomp" do
+      it "yields each line without trailing newline characters to the passed block" do
+        @io.send(@method, chomp: true) { |s| ScratchPad << s }
+        ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
+      end
+    end
+  end
 end
 
 describe :io_each_default_separator, shared: true do

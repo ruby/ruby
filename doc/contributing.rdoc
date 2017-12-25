@@ -66,14 +66,12 @@ maintainer for a specific platform.
 
 The current active platform maintainers are as follows:
 
-[mswin32, mswin64 (Microsoft Windows)]
+[mswin64 (Microsoft Windows)]
   NAKAMURA Usaku (usa)
 [mingw32 (Minimalist GNU for Windows)]
   Nobuyoshi Nakada (nobu)
 [IA-64 (Debian GNU/Linux)]
   TAKANO Mitsuhiro (takano32)
-[Symbian OS]
-  Alexander Zavorine (azov)
 [AIX]
   Yutaka Kanemoto (kanemoto)
 [FreeBSD]
@@ -82,7 +80,7 @@ The current active platform maintainers are as follows:
   Naohisa Goto (ngoto)
 [RHEL, CentOS]
   KOSAKI Motohiro kosaki
-[Mac OS X]
+[macOS]
   Kenta Murata (mrkn)
 [cygwin, bcc32, djgpp, wince, ...]
   none. (Maintainer WANTED)

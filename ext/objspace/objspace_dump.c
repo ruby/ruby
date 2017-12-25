@@ -205,6 +205,9 @@ imemo_name(int imemo)
 	TYPE_STR(memo);
 	TYPE_STR(ment);
 	TYPE_STR(iseq);
+	TYPE_STR(alloc);
+	TYPE_STR(ast);
+	TYPE_STR(parser_strterm);
       default:
 	return "unknown";
 #undef TYPE_STR
@@ -243,10 +246,6 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_NONE:
 	dump_append(dc, "}\n");
 	return;
-
-      case T_NODE:
-	dump_append(dc, ", \"node_type\":\"%s\"", ruby_node_name(nd_type(obj)));
-	break;
 
       case T_IMEMO:
 	dump_append(dc, ", \"imemo_type\":\"%s\"", imemo_name(imemo_type(obj)));

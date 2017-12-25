@@ -4163,7 +4163,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     ary2 = to_ary(ary2);
     ary3 = rb_ary_new();
 
-    if (RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
 	for (i=0; i<RARRAY_LEN(ary1); i++) {
 	    VALUE elt = rb_ary_elt(ary1, i);
 	    if (rb_ary_includes_by_eql(ary2, elt)) continue;
@@ -5771,13 +5771,19 @@ rb_ary_drop_while(VALUE ary)
  */
 
 static VALUE
-rb_ary_any_p(VALUE ary)
+rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 {
     long i, len = RARRAY_LEN(ary);
     const VALUE *ptr = RARRAY_CONST_PTR(ary);
 
+    rb_check_arity(argc, 0, 1);
     if (!len) return Qfalse;
-    if (!rb_block_given_p()) {
+    if (argc) {
+	for (i = 0; i < RARRAY_LEN(ary); ++i) {
+	    if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qtrue;
+	}
+    }
+    else if (!rb_block_given_p()) {
 	for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
     }
     else {
@@ -6329,7 +6335,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "drop_while", rb_ary_drop_while, 0);
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
-    rb_define_method(rb_cArray, "any?", rb_ary_any_p, 0);
+    rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 

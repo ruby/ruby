@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 ##
 # Parse a Markdown format file.  The parsed RDoc::Markup::Document is attached
 # as a file comment.

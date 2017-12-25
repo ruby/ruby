@@ -1,6 +1,5 @@
 require "coverage"
 
-ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
 Coverage.start(lines: true, branches: true, methods: true)
 
 TEST_COVERAGE_DATA_FILE = "test-coverage.dat"
@@ -41,6 +40,15 @@ def add_count(h, key, count)
 end
 
 def save_coverage_data(res1)
+  res1.each do |_path, cov|
+    if cov[:methods]
+      h = {}
+      cov[:methods].each do |(klass, *key), count|
+        h[[klass.inspect, *key]] = count
+      end
+      cov[:methods].replace h
+    end
+  end
   File.open(TEST_COVERAGE_DATA_FILE, File::RDWR | File::CREAT | File::BINARY) do |f|
     f.flock(File::LOCK_EX)
     s = f.read

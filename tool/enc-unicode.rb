@@ -14,8 +14,8 @@ if ARGV[0] == "--header"
   header = true
   ARGV.shift
 end
-unless ARGV.size == 1
-  abort "Usage: #{$0} data_directory"
+unless ARGV.size == 2
+  abort "Usage: #{$0} data_directory emoji_data_directory"
 end
 
 $unicode_version = File.basename(ARGV[0])[/\A[.\d]+\z/]
@@ -133,14 +133,15 @@ def parse_scripts(data, categories)
   files = [
     {:fn => 'DerivedCoreProperties.txt', :title => 'Derived Property'},
     {:fn => 'Scripts.txt', :title => 'Script'},
-    {:fn => 'PropList.txt', :title => 'Binary Property'}
+    {:fn => 'PropList.txt', :title => 'Binary Property'},
+    {:fn => 'emoji-data.txt', :title => 'Emoji'}
   ]
   current = nil
   cps = []
   names = {}
   files.each do |file|
     data_foreach(file[:fn]) do |line|
-      if /^# Total code points: / =~ line
+      if /^# Total (?:code points|elements): / =~ line
         data[current] = cps
         categories[current] = file[:title]
         (names[file[:title]] ||= []) << current
@@ -301,7 +302,7 @@ def constantize_blockname(name)
 end
 
 def get_file(name)
-  File.join(ARGV[0], name)
+  File.join(ARGV[name.start_with?("emoji-") ? 1 : 0], name)
 end
 
 def data_foreach(name, &block)
@@ -310,13 +311,15 @@ def data_foreach(name, &block)
   pat = /^# #{File.basename(name).sub(/\./, '-([\\d.]+)\\.')}/
   File.open(fn, 'rb') do |f|
     line = f.gets
-    unless pat =~ line
-      raise ArgumentError, "#{name}: no Unicode version"
-    end
-    if !$unicode_version
-      $unicode_version = $1
-    elsif $unicode_version != $1
-      raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+    unless /^emoji-/ =~ name
+      unless pat =~ line
+        raise ArgumentError, "#{name}: no Unicode version"
+      end
+      if !$unicode_version
+        $unicode_version = $1
+      elsif $unicode_version != $1
+        raise ArgumentError, "#{name}: Unicode version mismatch: #$1"
+      end
     end
     f.each(&block)
   end
@@ -446,7 +449,9 @@ struct uniname2ctype_struct {
 };
 #define uniname2ctype_offset(str) offsetof(struct uniname2ctype_pool_t, uniname2ctype_pool_##str)
 
+#if !(/*ANSI*/+0)
 static const struct uniname2ctype_struct *uniname2ctype_p(const char *, unsigned int);
+#endif
 %}
 struct uniname2ctype_struct;
 %%
@@ -533,9 +538,17 @@ if header
   fds.each(&:close)
   IO.popen(%W[diff -DUSE_UNICODE_AGE_PROPERTIES #{fds[1].path} #{fds[0].path}], "r") {|age|
     IO.popen(%W[diff -DUSE_UNICODE_PROPERTIES #{fds[2].path} -], "r", in: age) {|f|
+      ansi = false
       f.each {|line|
+        if /ANSI-C code produced by gperf/ =~ line
+          ansi = true
+        end
+        line.sub!(/\/\*ANSI\*\//, '1') if ansi
         line.gsub!(/\(int\)\((?:long|size_t)\)&\(\(struct uniname2ctype_pool_t \*\)0\)->uniname2ctype_pool_(str\d+),\s+/,
                    'uniname2ctype_offset(\1), ')
+        if (/^(uniname2ctype_hash) /=~line)..(/^\}/=~line)
+          line.sub!(/^( *(?:register\s+)?(.*\S)\s+hval\s*=\s*)(?=len;)/, '\1(\2)')
+        end
         puts line
       }
     }

@@ -517,6 +517,8 @@ class TestParse < Test::Unit::TestCase
     assert_syntax_error(src, /:#{__LINE__}: unterminated/o)
 
     assert_syntax_error('"\u{100000000}"', /invalid Unicode escape/)
+    assert_equal("", eval('"\u{}"'))
+    assert_equal("", eval('"\u{ }"'))
 
     assert_equal("\x81", eval('"\C-\M-a"'))
     assert_equal("\177", eval('"\c?"'))
@@ -554,6 +556,10 @@ class TestParse < Test::Unit::TestCase
     end
     assert_nothing_raised(SyntaxError, bug) do
       assert_equal(sym, eval(':"foo\u{0}bar"'))
+    end
+    assert_nothing_raised(SyntaxError) do
+      assert_equal(:foobar, eval(':"foo\u{}bar"'))
+      assert_equal(:foobar, eval(':"foo\u{ }bar"'))
     end
   end
 
@@ -1079,6 +1085,12 @@ x = __ENCODING__
       x = 1
       eval("if false; 0 < x < 2; end")
     end
+  end
+
+  def test_eof_in_def
+    assert_raise(SyntaxError) { eval("def m\n\0""end") }
+    assert_raise(SyntaxError) { eval("def m\n\C-d""end") }
+    assert_raise(SyntaxError) { eval("def m\n\C-z""end") }
   end
 
 =begin

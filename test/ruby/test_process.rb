@@ -1512,8 +1512,14 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_maxgroups
-    assert_kind_of(Integer, Process.maxgroups)
+    max = Process.maxgroups
   rescue NotImplementedError
+  else
+    assert_kind_of(Integer, max)
+    gs = Process.groups
+    assert_operator(gs.size, :<=, max)
+    gs[0] ||= 0
+    assert_raise(ArgumentError) {Process.groups = gs * (max / gs.size + 1)}
   end
 
   def test_geteuid
@@ -1575,7 +1581,10 @@ class TestProcess < Test::Unit::TestCase
     pid = nil
     IO.pipe do |r, w|
       pid = fork { r.read(1); exit }
-      Thread.start { raise }
+      Thread.start {
+        Thread.current.report_on_exception = false
+        raise
+      }
       w.puts
     end
     Process.wait pid
@@ -1632,6 +1641,9 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_aspawn_too_long_path
+    if /solaris/i =~ RUBY_PLATFORM && !defined?(Process::RLIMIT_NPROC)
+      skip "Too exhaustive test on platforms without Process::RLIMIT_NPROC such as Solaris 10"
+    end
     bug4315 = '[ruby-core:34833] #7904 [ruby-core:52628] #11613'
     assert_fail_too_long_path(%w"echo |", bug4315)
   end
@@ -2269,7 +2281,7 @@ EOS
   def test_threading_works_after_exec_fail
     r, w = IO.pipe
     pid = status = nil
-    Timeout.timeout(30) do
+    Timeout.timeout(90) do
       pid = fork do
         r.close
         begin
@@ -2277,11 +2289,12 @@ EOS
         rescue SystemCallError
           w.syswrite("exec failed\n")
         end
+        q = Queue.new
         run = true
-        th1 = Thread.new { i = 0; i += 1 while run; i }
-        th2 = Thread.new { j = 0; j += 1 while run && Thread.pass.nil?; j }
+        th1 = Thread.new { i = 0; i += 1 while q.empty?; i }
+        th2 = Thread.new { j = 0; j += 1 while q.empty? && Thread.pass.nil?; j }
         sleep 0.5
-        run = false
+        q << true
         w.syswrite "#{th1.value} #{th2.value}\n"
       end
       w.close
@@ -2346,5 +2359,10 @@ EOS
         Process.initgroups("\0", 0)
       end
     end
+  end
+
+  def test_last_status
+    Process.wait spawn(RUBY, "-e", "exit 13")
+    assert_same(Process.last_status, $?)
   end
 end

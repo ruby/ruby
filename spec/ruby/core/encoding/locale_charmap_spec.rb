@@ -16,7 +16,7 @@ with_feature :encoding do
       end
     end
 
-    platform_is :freebsd, :darwin do
+    platform_is :freebsd, :openbsd, :darwin do
       it "returns a value based on the LC_ALL environment variable" do
         old_lc_all = ENV['LC_ALL']
         ENV['LC_ALL'] = 'C'
@@ -25,7 +25,7 @@ with_feature :encoding do
       end
     end
 
-    platform_is :netbsd, :openbsd do
+    platform_is :netbsd do
       it "returns a value based on the LC_ALL environment variable" do
         old_lc_all = ENV['LC_ALL']
         ENV['LC_ALL'] = 'C'

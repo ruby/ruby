@@ -759,7 +759,7 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_threadptr_stack_overflow(rb_thread_t *th, int crit));
+NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -838,17 +838,17 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
 	sp_page <= fault_page && fault_page <= bp_page) {
-	rb_thread_t *th = ruby_current_thread();
+	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
-	if ((uintptr_t)th->ec->tag->buf / pagesize <= fault_page + 1) {
+	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
 	    /* drop the last tag if it is close to the fault,
 	     * otherwise it can cause stack overflow again at the same
 	     * place. */
-	    th->ec->tag = th->ec->tag->prev;
+	    ec->tag = ec->tag->prev;
 	    crit = TRUE;
 	}
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th, crit);
+	rb_ec_stack_overflow(ec, crit);
     }
 }
 # else
@@ -859,7 +859,7 @@ check_stack_overflow(int sig, const void *addr)
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
 	reset_sigmask(sig);
-	rb_threadptr_stack_overflow(th, FALSE);
+	rb_ec_stack_overflow(th->ec, FALSE);
     }
 }
 # endif
@@ -987,8 +987,8 @@ sig_do_nothing(int sig)
 static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
-    rb_thread_t *cur_th = GET_THREAD();
-    volatile unsigned long old_interrupt_mask = cur_th->interrupt_mask;
+    rb_execution_context_t *ec = GET_EC();
+    volatile unsigned long old_interrupt_mask = ec->interrupt_mask;
     enum ruby_tag_type state;
 
     /*
@@ -1000,19 +1000,19 @@ signal_exec(VALUE cmd, int safe, int sig)
     if (IMMEDIATE_P(cmd))
 	return;
 
-    cur_th->interrupt_mask |= TRAP_INTERRUPT_MASK;
-    EC_PUSH_TAG(cur_th->ec);
-    if ((state = EXEC_TAG()) == TAG_NONE) {
+    ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	VALUE signum = INT2NUM(sig);
 	rb_eval_cmd(cmd, rb_ary_new3(1, signum), safe);
     }
     EC_POP_TAG();
-    cur_th = GET_THREAD();
-    cur_th->interrupt_mask = old_interrupt_mask;
+    ec = GET_EC();
+    ec->interrupt_mask = old_interrupt_mask;
 
     if (state) {
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
-	EC_JUMP_TAG(cur_th->ec, state);
+	EC_JUMP_TAG(ec, state);
     }
 }
 

@@ -24,7 +24,7 @@ describe "Enumerator::Lazy#force" do
       (0..Float::INFINITY).lazy.map(&:succ).take(2).force.should == [1, 2]
 
       @eventsmixed.take(1).map(&:succ).force.should == [1]
-      ScratchPad.recorded == [:after_yields]
+      ScratchPad.recorded.should == [:before_yield]
     end
   end
 end

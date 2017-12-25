@@ -91,9 +91,9 @@ int flock(int, int);
 /* define system APIs */
 #ifdef _WIN32
 #include "win32/file.h"
-#define STAT(p, s)	rb_w32_ustati64((p), (s))
+#define STAT(p, s)	rb_w32_ustati128((p), (s))
 #undef lstat
-#define lstat(p, s)	rb_w32_ulstati64((p), (s))
+#define lstat(p, s)	rb_w32_ulstati128((p), (s))
 #undef access
 #define access(p, m)	rb_w32_uaccess((p), (m))
 #undef truncate
@@ -104,8 +104,8 @@ int flock(int, int);
 #define chown(p, o, g)	rb_w32_uchown((p), (o), (g))
 #undef lchown
 #define lchown(p, o, g)	rb_w32_ulchown((p), (o), (g))
-#undef utime
-#define utime(p, t)	rb_w32_uutime((p), (t))
+#undef utimensat
+#define utimensat(s, p, t, f)	rb_w32_uutimensat((s), (p), (t), (f))
 #undef link
 #define link(f, t)	rb_w32_ulink((f), (t))
 #undef unlink
@@ -426,8 +426,9 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
  *  Returns the pathname used to create <i>file</i> as a string. Does
  *  not normalize the name.
  *
- *  The pathname may not point the file corresponding to <i>file</i>.
- *  For instance, pathname becomes inaccurate when file has been moved or deleted.
+ *  The pathname may not point to the file corresponding to <i>file</i>.
+ *  For instance, the pathname becomes void when the file has been
+ *  moved or deleted.
  *
  *  This method raises <code>IOError</code> for a <i>file</i> created using
  *  <code>File::Constants::TMPFILE</code> because they don't have a pathname.
@@ -610,17 +611,12 @@ rb_stat_dev_minor(VALUE self)
 static VALUE
 rb_stat_ino(VALUE self)
 {
-#ifdef _WIN32
-    struct stat *st = get_stat(self);
-    unsigned short *p2 = (unsigned short *)st;
-    unsigned int *p4 = (unsigned int *)st;
-    uint64_t r;
-    r = p2[2];
-    r <<= 16;
-    r |= p2[7];
-    r <<= 32;
-    r |= p4[5];
-    return ULL2NUM(r);
+#ifdef HAVE_STRUCT_STAT_ST_INOHIGH
+    /* assume INTEGER_PACK_LSWORD_FIRST and st_inohigh is just next of st_ino */
+    return rb_integer_unpack(&get_stat(self)->st_ino, 2,
+            SIZEOF_STRUCT_STAT_ST_INO, 0,
+            INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
+            INTEGER_PACK_2COMP);
 #elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
     return ULL2NUM(get_stat(self)->st_ino);
 #else
@@ -1116,67 +1112,6 @@ rb_stat(VALUE file, struct stat *st)
     return (int)result;
 }
 
-#ifdef _WIN32
-static HANDLE
-w32_io_info(VALUE *file, BY_HANDLE_FILE_INFORMATION *st)
-{
-    VALUE tmp;
-    HANDLE f, ret = 0;
-
-    tmp = rb_check_convert_type_with_id(*file, T_FILE, "IO", idTo_io);
-    if (!NIL_P(tmp)) {
-	rb_io_t *fptr;
-
-	GetOpenFile(tmp, fptr);
-	f = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
-	if (f == (HANDLE)-1) return INVALID_HANDLE_VALUE;
-    }
-    else {
-	VALUE tmp;
-	WCHAR *ptr;
-	int len;
-	VALUE v;
-
-	FilePathValue(*file);
-	tmp = rb_str_encode_ospath(*file);
-	len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-	ptr = ALLOCV_N(WCHAR, v, len);
-	MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, ptr, len);
-	f = CreateFileW(ptr, 0,
-			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS, NULL);
-	ALLOCV_END(v);
-	if (f == INVALID_HANDLE_VALUE) return f;
-	ret = f;
-    }
-    if (GetFileType(f) == FILE_TYPE_DISK) {
-	ZeroMemory(st, sizeof(*st));
-	if (GetFileInformationByHandle(f, st)) return ret;
-    }
-    if (ret) CloseHandle(ret);
-    return INVALID_HANDLE_VALUE;
-}
-
-static VALUE
-close_handle(VALUE h)
-{
-    CloseHandle((HANDLE)h);
-    return Qfalse;
-}
-
-struct w32_io_info_args {
-    VALUE *fname;
-    BY_HANDLE_FILE_INFORMATION *st;
-};
-
-static VALUE
-call_w32_io_info(VALUE arg)
-{
-    struct w32_io_info_args *p = (void *)arg;
-    return (VALUE)w32_io_info(p->fname, p->st);
-}
-#endif
-
 /*
  *  call-seq:
  *     File.stat(file_name)   ->  stat
@@ -1413,6 +1348,54 @@ eaccess(const char *path, int mode)
 }
 #endif
 
+struct access_arg {
+    const char *path;
+    int mode;
+};
+
+static void *
+nogvl_eaccess(void *ptr)
+{
+    struct access_arg *aa = ptr;
+
+    return (void *)(VALUE)eaccess(aa->path, aa->mode);
+}
+
+static int
+rb_eaccess(VALUE fname, int mode)
+{
+    struct access_arg aa;
+
+    FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
+    aa.path = StringValueCStr(fname);
+    aa.mode = mode;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_eaccess, &aa,
+						RUBY_UBF_IO, 0);
+}
+
+static void *
+nogvl_access(void *ptr)
+{
+    struct access_arg *aa = ptr;
+
+    return (void *)(VALUE)access(aa->path, aa->mode);
+}
+
+static int
+rb_access(VALUE fname, int mode)
+{
+    struct access_arg aa;
+
+    FilePathValue(fname);
+    fname = rb_str_encode_ospath(fname);
+    aa.path = StringValueCStr(fname);
+    aa.mode = mode;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_access, &aa,
+						RUBY_UBF_IO, 0);
+}
 
 /*
  * Document-class: FileTest
@@ -1657,9 +1640,7 @@ rb_file_exists_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (eaccess(StringValueCStr(fname), R_OK) < 0) return Qfalse;
+    if (rb_eaccess(fname, R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1674,9 +1655,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_readable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), R_OK) < 0) return Qfalse;
+    if (rb_access(fname, R_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1729,9 +1708,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (eaccess(StringValueCStr(fname), W_OK) < 0) return Qfalse;
+    if (rb_eaccess(fname, W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1746,9 +1723,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_writable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), W_OK) < 0) return Qfalse;
+    if (rb_access(fname, W_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1793,9 +1768,7 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (eaccess(StringValueCStr(fname), X_OK) < 0) return Qfalse;
+    if (rb_eaccess(fname, X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -1810,9 +1783,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 static VALUE
 rb_file_executable_real_p(VALUE obj, VALUE fname)
 {
-    FilePathValue(fname);
-    fname = rb_str_encode_ospath(fname);
-    if (access(StringValueCStr(fname), X_OK) < 0) return Qfalse;
+    if (rb_access(fname, X_OK) < 0) return Qfalse;
     return Qtrue;
 }
 
@@ -2030,28 +2001,8 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
     if (st1.st_ino != st2.st_ino) return Qfalse;
     return Qtrue;
 #else
-    BY_HANDLE_FILE_INFORMATION st1, st2;
-    HANDLE f1 = 0, f2 = 0;
-
-    f1 = w32_io_info(&fname1, &st1);
-    if (f1 == INVALID_HANDLE_VALUE) return Qfalse;
-    if (f1) {
-	struct w32_io_info_args arg;
-	arg.fname = &fname2;
-	arg.st = &st2;
-	f2 = (HANDLE)rb_ensure(call_w32_io_info, (VALUE)&arg, close_handle, (VALUE)f1);
-    }
-    else {
-	f2 = w32_io_info(&fname2, &st2);
-    }
-    if (f2 == INVALID_HANDLE_VALUE) return Qfalse;
-    if (f2) CloseHandle(f2);
-
-    if (st1.dwVolumeSerialNumber == st2.dwVolumeSerialNumber &&
-	st1.nFileIndexHigh == st2.nFileIndexHigh &&
-	st1.nFileIndexLow == st2.nFileIndexLow)
-	return Qtrue;
-    return Qfalse;
+    extern VALUE rb_w32_file_identical_p(VALUE, VALUE);
+    return rb_w32_file_identical_p(fname1, fname2);
 #endif
 }
 
@@ -2151,7 +2102,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *  call-seq:
  *     File.atime(file_name)  ->  time
  *
- *  Returns the last access time for the named file as a Time object).
+ *  Returns the last access time for the named file as a Time object.
  *
  *  _file_name_ can be an IO object.
  *
@@ -2177,7 +2128,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *     file.atime    -> time
  *
  *  Returns the last access time (a <code>Time</code> object)
- *   for <i>file</i>, or epoch if <i>file</i> has not been accessed.
+ *  for <i>file</i>, or epoch if <i>file</i> has not been accessed.
  *
  *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
  *
@@ -2388,7 +2339,7 @@ rb_file_size(VALUE obj)
 static int
 chmod_internal(const char *path, void *mode)
 {
-    return chmod(path, *(int *)mode);
+    return chmod(path, *(mode_t *)mode);
 }
 
 /*
@@ -2407,10 +2358,10 @@ chmod_internal(const char *path, void *mode)
 static VALUE
 rb_file_s_chmod(int argc, VALUE *argv)
 {
-    int mode;
+    mode_t mode;
 
     apply2args(1);
-    mode = NUM2INT(*argv++);
+    mode = NUM2MODET(*argv++);
 
     return apply2files(chmod_internal, argc, argv, &mode);
 }
@@ -2463,7 +2414,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 static int
 lchmod_internal(const char *path, void *mode)
 {
-    return lchmod(path, (int)(VALUE)mode);
+    return lchmod(path, *(mode_t *)mode);
 }
 
 /*
@@ -2479,12 +2430,12 @@ lchmod_internal(const char *path, void *mode)
 static VALUE
 rb_file_s_lchmod(int argc, VALUE *argv)
 {
-    long mode;
+    mode_t mode;
 
     apply2args(1);
-    mode = NUM2INT(*argv++);
+    mode = NUM2MODET(*argv++);
 
-    return apply2files(lchmod_internal, argc, argv, (void *)(long)mode);
+    return apply2files(lchmod_internal, argc, argv, &mode);
 }
 #else
 #define rb_file_s_lchmod rb_f_notimplement
@@ -2625,6 +2576,7 @@ rb_file_s_lchown(int argc, VALUE *argv)
 struct utime_args {
     const struct timespec* tsp;
     VALUE atime, mtime;
+    int follow; /* Whether to act on symlinks (1) or their referent (0) */
 };
 
 #ifdef UTIME_EINVAL
@@ -2680,11 +2632,27 @@ utime_internal(const char *path, void *arg)
 
 #if defined(HAVE_UTIMENSAT)
     static int try_utimensat = 1;
+# ifdef AT_SYMLINK_NOFOLLOW
+    static int try_utimensat_follow = 1;
+# else
+    const int try_utimensat_follow = 0;
+# endif
+    int flags = 0;
 
-    if (try_utimensat) {
-        if (utimensat(AT_FDCWD, path, tsp, 0) < 0) {
+    if (v->follow ? try_utimensat_follow : try_utimensat) {
+# ifdef AT_SYMLINK_NOFOLLOW
+	if (v->follow) {
+	    flags = AT_SYMLINK_NOFOLLOW;
+	}
+# endif
+
+	if (utimensat(AT_FDCWD, path, tsp, flags) < 0) {
             if (errno == ENOSYS) {
-                try_utimensat = 0;
+# ifdef AT_SYMLINK_NOFOLLOW
+		try_utimensat_follow = 0;
+# endif
+		if (!v->follow)
+		    try_utimensat = 0;
                 goto no_utimensat;
             }
             return -1; /* calls utime_failed */
@@ -2701,6 +2669,9 @@ no_utimensat:
         tvbuf[1].tv_usec = (int)(tsp[1].tv_nsec / 1000);
         tvp = tvbuf;
     }
+#ifdef HAVE_LUTIMES
+    if (v->follow) return lutimes(path, tvp);
+#endif
     return utimes(path, tvp);
 }
 
@@ -2729,17 +2700,8 @@ utime_internal(const char *path, void *arg)
 
 #endif
 
-/*
- * call-seq:
- *  File.utime(atime, mtime, file_name,...)   ->  integer
- *
- * Sets the access and modification times of each
- * named file to the first two arguments. Returns
- * the number of file names in the argument list.
- */
-
 static VALUE
-rb_file_s_utime(int argc, VALUE *argv)
+utime_internal_i(int argc, VALUE *argv, int follow)
 {
     struct utime_args args;
     struct timespec tss[2], *tsp = NULL;
@@ -2747,6 +2709,8 @@ rb_file_s_utime(int argc, VALUE *argv)
     apply2args(2);
     args.atime = *argv++;
     args.mtime = *argv++;
+
+    args.follow = follow;
 
     if (!NIL_P(args.atime) || !NIL_P(args.mtime)) {
 	tsp = tss;
@@ -2760,6 +2724,45 @@ rb_file_s_utime(int argc, VALUE *argv)
 
     return apply2files(utime_internal, argc, argv, &args);
 }
+
+/*
+ * call-seq:
+ *  File.utime(atime, mtime, file_name,...)   ->  integer
+ *
+ * Sets the access and modification times of each named file to the
+ * first two arguments. If a file is a symlink, this method acts upon
+ * its referent rather than the link itself; for the inverse
+ * behavior see File.lutime. Returns the number of file
+ * names in the argument list.
+ */
+
+static VALUE
+rb_file_s_utime(int argc, VALUE *argv)
+{
+    return utime_internal_i(argc, argv, FALSE);
+}
+
+#if defined(HAVE_UTIMES) && (defined(HAVE_LUTIMES) || (defined(HAVE_UTIMENSAT) && defined(AT_SYMLINK_NOFOLLOW)))
+
+/*
+ * call-seq:
+ *  File.lutime(atime, mtime, file_name,...)   ->  integer
+ *
+ * Sets the access and modification times of each named file to the
+ * first two arguments. If a file is a symlink, this method acts upon
+ * the link itself as opposed to its referent; for the inverse
+ * behavior, see File.utime. Returns the number of file
+ * names in the argument list.
+ */
+
+static VALUE
+rb_file_s_lutime(int argc, VALUE *argv)
+{
+    return utime_internal_i(argc, argv, TRUE);
+}
+#else
+#define rb_file_s_lutime rb_f_notimplement
+#endif
 
 #ifdef RUBY_FUNCTION_NAME_STRING
 # define syserr_fail2(e, s1, s2) syserr_fail2_in(RUBY_FUNCTION_NAME_STRING, e, s1, s2)
@@ -2872,6 +2875,33 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 }
 
 #ifndef _WIN32
+struct readlink_arg {
+    const char *path;
+    char *buf;
+    size_t size;
+};
+
+static void *
+nogvl_readlink(void *ptr)
+{
+    struct readlink_arg *ra = ptr;
+
+    return (void *)(VALUE)readlink(ra->path, ra->buf, ra->size);
+}
+
+static ssize_t
+readlink_without_gvl(VALUE path, VALUE buf, size_t size)
+{
+    struct readlink_arg ra;
+
+    ra.path = RSTRING_PTR(path);
+    ra.buf = RSTRING_PTR(buf);
+    ra.size = size;
+
+    return (ssize_t)rb_thread_call_without_gvl(nogvl_readlink, &ra,
+						RUBY_UBF_IO, 0);
+}
+
 VALUE
 rb_readlink(VALUE path, rb_encoding *enc)
 {
@@ -2882,7 +2912,7 @@ rb_readlink(VALUE path, rb_encoding *enc)
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
     v = rb_enc_str_new(0, size, enc);
-    while ((rv = readlink(RSTRING_PTR(path), RSTRING_PTR(v), size)) == size
+    while ((rv = readlink_without_gvl(path, v, size)) == size
 #ifdef _AIX
 	    || (rv < 0 && errno == ERANGE) /* quirky behavior of GPFS */
 #endif
@@ -3007,19 +3037,19 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 static VALUE
 rb_file_s_umask(int argc, VALUE *argv)
 {
-    int omask = 0;
+    mode_t omask = 0;
 
     if (argc == 0) {
 	omask = umask(0);
 	umask(omask);
     }
     else if (argc == 1) {
-	omask = umask(NUM2INT(argv[0]));
+	omask = umask(NUM2MODET(argv[0]));
     }
     else {
 	rb_check_arity(argc, 0, 1);
     }
-    return INT2FIX(omask);
+    return MODET2NUM(omask);
 }
 
 #ifdef __CYGWIN__
@@ -3101,9 +3131,9 @@ getcwdofdrv(int drv)
        of a particular drive is to change chdir() to that drive,
        so save the old cwd before chdir()
     */
-    oldcwd = my_getcwd();
+    oldcwd = ruby_getcwd();
     if (chdir(drive) == 0) {
-	drvcwd = my_getcwd();
+	drvcwd = ruby_getcwd();
 	chdir(oldcwd);
 	xfree(oldcwd);
     }
@@ -3524,7 +3554,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    p = pend;
 	}
 	else {
-	    char *e = append_fspath(result, fname, my_getcwd(), &enc, fsenc);
+	    char *e = append_fspath(result, fname, ruby_getcwd(), &enc, fsenc);
 	    tainted = 1;
 	    BUFINIT();
 	    p = e;
@@ -4086,7 +4116,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 	}
     }
 
-    OBJ_TAINT(resolved);
+    OBJ_INFECT(resolved, unresolved_path);
     RB_GC_GUARD(unresolved_path);
     RB_GC_GUARD(curdir);
     return resolved;
@@ -4608,6 +4638,42 @@ rb_file_s_join(VALUE klass, VALUE args)
 }
 
 #if defined(HAVE_TRUNCATE) || defined(HAVE_CHSIZE)
+struct truncate_arg {
+    const char *path;
+#if defined(HAVE_TRUNCATE)
+#define NUM2POS(n) NUM2OFFT(n)
+    off_t pos;
+#else
+#define NUM2POS(n) NUM2LONG(n)
+    long pos;
+#endif
+};
+
+static void *
+nogvl_truncate(void *ptr)
+{
+    struct truncate_arg *ta = ptr;
+#ifdef HAVE_TRUNCATE
+    return (void *)(VALUE)truncate(ta->path, ta->pos);
+#else /* defined(HAVE_CHSIZE) */
+    {
+	int tmpfd = rb_cloexec_open(ta->path, 0, 0);
+
+	if (tmpfd < 0)
+	    return (void *)-1;
+	rb_update_max_fd(tmpfd);
+	if (chsize(tmpfd, ta->pos) < 0) {
+	    int e = errno;
+	    close(tmpfd);
+	    errno = e;
+	    return (void *)-1;
+	}
+	close(tmpfd);
+	return 0;
+    }
+#endif
+}
+
 /*
  *  call-seq:
  *     File.truncate(file_name, integer)  -> 0
@@ -4626,36 +4692,18 @@ rb_file_s_join(VALUE klass, VALUE args)
 static VALUE
 rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 {
-#ifdef HAVE_TRUNCATE
-#define NUM2POS(n) NUM2OFFT(n)
-    off_t pos;
-#else
-#define NUM2POS(n) NUM2LONG(n)
-    long pos;
-#endif
+    struct truncate_arg ta;
+    int r;
 
-    pos = NUM2POS(len);
+    ta.pos = NUM2POS(len);
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
-#ifdef HAVE_TRUNCATE
-    if (truncate(StringValueCStr(path), pos) < 0)
-	rb_sys_fail_path(path);
-#else /* defined(HAVE_CHSIZE) */
-    {
-	int tmpfd;
+    ta.path = StringValueCStr(path);
 
-	if ((tmpfd = rb_cloexec_open(StringValueCStr(path), 0, 0)) < 0) {
-	    rb_sys_fail_path(path);
-	}
-        rb_update_max_fd(tmpfd);
-	if (chsize(tmpfd, pos) < 0) {
-	    int e = errno;
-	    close(tmpfd);
-	    rb_syserr_fail_path(e, path);
-	}
-	close(tmpfd);
-    }
-#endif
+    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_truncate, &ta,
+						RUBY_UBF_IO, NULL);
+    if (r < 0)
+	rb_sys_fail_path(path);
     return INT2FIX(0);
 #undef NUM2POS
 }
@@ -4664,6 +4712,29 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #endif
 
 #if defined(HAVE_FTRUNCATE) || defined(HAVE_CHSIZE)
+struct ftruncate_arg {
+    int fd;
+#if defined(HAVE_FTRUNCATE)
+#define NUM2POS(n) NUM2OFFT(n)
+    off_t pos;
+#else
+#define NUM2POS(n) NUM2LONG(n)
+    long pos;
+#endif
+};
+
+static VALUE
+nogvl_ftruncate(void *ptr)
+{
+    struct ftruncate_arg *fa = ptr;
+
+#ifdef HAVE_FTRUNCATE
+    return (VALUE)ftruncate(fa->fd, fa->pos);
+#else /* defined(HAVE_CHSIZE) */
+    return (VALUE)chsize(fa->fd, fa->pos);
+#endif
+}
+
 /*
  *  call-seq:
  *     file.truncate(integer)    -> 0
@@ -4682,27 +4753,18 @@ static VALUE
 rb_file_truncate(VALUE obj, VALUE len)
 {
     rb_io_t *fptr;
-#if defined(HAVE_FTRUNCATE)
-#define NUM2POS(n) NUM2OFFT(n)
-    off_t pos;
-#else
-#define NUM2POS(n) NUM2LONG(n)
-    long pos;
-#endif
+    struct ftruncate_arg fa;
 
-    pos = NUM2POS(len);
+    fa.pos = NUM2POS(len);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
     rb_io_flush_raw(obj, 0);
-#ifdef HAVE_FTRUNCATE
-    if (ftruncate(fptr->fd, pos) < 0)
+    fa.fd = fptr->fd;
+    if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
 	rb_sys_fail_path(fptr->pathv);
-#else /* defined(HAVE_CHSIZE) */
-    if (chsize(fptr->fd, pos) < 0)
-	rb_sys_fail_path(fptr->pathv);
-#endif
+    }
     return INT2FIX(0);
 #undef NUM2POS
 }
@@ -5692,6 +5754,19 @@ rb_stat_sticky(VALUE obj)
 #endif
 
 #ifdef HAVE_MKFIFO
+struct mkfifo_arg {
+    const char *path;
+    mode_t mode;
+};
+
+static void *
+nogvl_mkfifo(void *ptr)
+{
+    struct mkfifo_arg *ma = ptr;
+
+    return (void *)(VALUE)mkfifo(ma->path, ma->mode);
+}
+
 /*
  *  call-seq:
  *     File.mkfifo(file_name, mode=0666)  => 0
@@ -5706,16 +5781,18 @@ static VALUE
 rb_file_s_mkfifo(int argc, VALUE *argv)
 {
     VALUE path;
-    int mode = 0666;
+    struct mkfifo_arg ma;
 
+    ma.mode = 0666;
     rb_check_arity(argc, 1, 2);
     if (argc > 1) {
-	mode = NUM2INT(argv[1]);
+	ma.mode = NUM2MODET(argv[1]);
     }
     path = argv[0];
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
-    if (mkfifo(RSTRING_PTR(path), mode)) {
+    ma.path = RSTRING_PTR(path);
+    if (rb_thread_call_without_gvl(nogvl_mkfifo, &ma, RUBY_UBF_IO, 0)) {
 	rb_sys_fail_path(path);
     }
     return INT2FIX(0);
@@ -5766,7 +5843,7 @@ path_check_0(VALUE path, int execpath)
     char *p = 0, *s;
 
     if (!rb_is_absolute_path(p0)) {
-	char *buf = my_getcwd();
+	char *buf = ruby_getcwd();
 	VALUE newpath;
 
 	newpath = rb_str_new2(buf);
@@ -6148,6 +6225,7 @@ Init_File(void)
     rb_define_singleton_method(rb_cFile, "chown", rb_file_s_chown, -1);
     rb_define_singleton_method(rb_cFile, "lchmod", rb_file_s_lchmod, -1);
     rb_define_singleton_method(rb_cFile, "lchown", rb_file_s_lchown, -1);
+    rb_define_singleton_method(rb_cFile, "lutime", rb_file_s_lutime, -1);
 
     rb_define_singleton_method(rb_cFile, "link", rb_file_s_link, 2);
     rb_define_singleton_method(rb_cFile, "symlink", rb_file_s_symlink, 2);

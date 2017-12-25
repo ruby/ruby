@@ -14,4 +14,16 @@ class TestAssertion < Test::Unit::TestCase
       end;
     end
   end
+
+  def return_in_assert_raise
+    assert_raise(RuntimeError) do
+      return
+    end
+  end
+
+  def test_assert_raise
+    assert_raise(MiniTest::Assertion) do
+      return_in_assert_raise
+    end
+  end
 end

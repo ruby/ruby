@@ -336,7 +336,7 @@ module DRb
       end
       self.class.new(uri, ssl, @config, true)
       rescue OpenSSL::SSL::SSLError
-        warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if @config[:verbose]
+        warn("#{$!.message} (#{$!.class})", uplevel: 0) if @config[:verbose]
         retry
       end
     end

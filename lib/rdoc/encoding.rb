@@ -1,5 +1,5 @@
 # coding: US-ASCII
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 ##
 # This class is a wrapper around File IO and Encoding that helps RDoc load
@@ -23,26 +23,26 @@ module RDoc::Encoding
 
     utf8 = content.sub!(/\A\xef\xbb\xbf/, '')
 
-    RDoc::Encoding.set_encoding content
+    content = RDoc::Encoding.set_encoding content
 
     begin
       encoding ||= Encoding.default_external
       orig_encoding = content.encoding
 
       if not orig_encoding.ascii_compatible? then
-        content.encode! encoding
+        content = content.encode encoding
       elsif utf8 then
-        content.force_encoding Encoding::UTF_8
-        content.encode! encoding
+        content = RDoc::Encoding.change_encoding content, Encoding::UTF_8
+        content = content.encode encoding
       else
         # assume the content is in our output encoding
-        content.force_encoding encoding
+        content = RDoc::Encoding.change_encoding content, encoding
       end
 
       unless content.valid_encoding? then
         # revert and try to transcode
-        content.force_encoding orig_encoding
-        content.encode! encoding
+        content = RDoc::Encoding.change_encoding content, orig_encoding
+        content = content.encode encoding
       end
 
       unless content.valid_encoding? then
@@ -52,10 +52,11 @@ module RDoc::Encoding
     rescue Encoding::InvalidByteSequenceError,
            Encoding::UndefinedConversionError => e
       if force_transcode then
-        content.force_encoding orig_encoding
-        content.encode!(encoding,
-                        :invalid => :replace, :undef => :replace,
-                        :replace => '?')
+        content = RDoc::Encoding.change_encoding content, orig_encoding
+        content = content.encode(encoding,
+                                 :invalid => :replace,
+                                 :undef => :replace,
+                                 :replace => '?')
         return content
       else
         warn "unable to convert #{e.message} for #{filename}, skipping"
@@ -77,15 +78,17 @@ module RDoc::Encoding
     first_line = $1
 
     if first_line =~ /\A# +frozen[-_]string[-_]literal[=:].+$/i
-      string.sub! first_line, ''
+      string = string.sub first_line, ''
     end
+
+    string
   end
 
   ##
   # Sets the encoding of +string+ based on the magic comment
 
   def self.set_encoding string
-    remove_frozen_string_literal string
+    string = remove_frozen_string_literal string
 
     string =~ /\A(?:#!.*\n)?(.*\n)/
 
@@ -94,15 +97,34 @@ module RDoc::Encoding
     name = case first_line
            when /^<\?xml[^?]*encoding=(["'])(.*?)\1/ then $2
            when /\b(?:en)?coding[=:]\s*([^\s;]+)/i   then $1
-           else                                           return
+           else                                           return string
            end
 
-    string.sub! first_line, ''
+    string = string.sub first_line, ''
 
-    remove_frozen_string_literal string
+    string = remove_frozen_string_literal string
 
     enc = Encoding.find name
-    string.force_encoding enc if enc
+    string = RDoc::Encoding.change_encoding string, enc if enc
+
+    string
+  end
+
+  ##
+  # Changes encoding based on +encoding+ without converting and returns new
+  # string
+
+  def self.change_encoding text, encoding
+    if text.kind_of? RDoc::Comment
+      text.encode! encoding
+    else
+      # TODO: Remove this condition after Ruby 2.2 EOL
+      if RUBY_VERSION < '2.3.0'
+        text.force_encoding encoding
+      else
+        String.new text, encoding: encoding
+      end
+    end
   end
 
 end

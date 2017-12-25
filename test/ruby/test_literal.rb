@@ -177,6 +177,20 @@ class TestRubyLiteral < Test::Unit::TestCase
     end
   end
 
+  if defined?(RubyVM::InstructionSequence.compile_option) and
+    RubyVM::InstructionSequence.compile_option.key?(:debug_frozen_string_literal)
+    def test_debug_frozen_string
+      src = 'n = 1; "foo#{n ? "-#{n}" : ""}"'; f = "test.rb"; n = 1
+      opt = {frozen_string_literal: true, debug_frozen_string_literal: true}
+      str = RubyVM::InstructionSequence.compile(src, f, f, n, opt).eval
+      assert_equal("foo-1", str)
+      assert_predicate(str, :frozen?)
+      assert_raise_with_message(FrozenError, /created at #{Regexp.quote(f)}:#{n}/) {
+        str << "x"
+      }
+    end
+  end
+
   def test_regexp
     assert_instance_of Regexp, //
     assert_match(//, 'a')

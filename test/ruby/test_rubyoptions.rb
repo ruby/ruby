@@ -928,7 +928,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   def test_frozen_string_literal_debug
     with_debug_pat = /created at/
-    wo_debug_pat = /can\'t modify frozen String \(RuntimeError\)\n\z/
+    wo_debug_pat = /can\'t modify frozen String \(FrozenError\)\n\z/
     frozen = [
       ["--enable-frozen-string-literal", true],
       ["--disable-frozen-string-literal", false],
@@ -952,17 +952,34 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test___dir__encoding
+    lang = {"LC_ALL"=>ENV["LC_ALL"]||ENV["LANG"]}
     with_tmpchdir do
       testdir = "\u30c6\u30b9\u30c8"
       Dir.mkdir(testdir)
       Dir.chdir(testdir) do
         open("test.rb", "w") do |f|
           f.puts <<-END
-            p __FILE__.encoding == __dir__.encoding
+            if __FILE__.encoding == __dir__.encoding
+              p true
+            else
+              puts "__FILE__: \#{__FILE__.encoding}, __dir__: \#{__dir__.encoding}"
+            end
           END
         end
-        r, = EnvUtil.invoke_ruby("test.rb", "", true)
+        r, = EnvUtil.invoke_ruby([lang, "test.rb"], "", true)
         assert_equal "true", r.chomp, "the encoding of __FILE__ and __dir__ should be same"
+      end
+    end
+  end
+
+  def test_cwd_encoding
+    with_tmpchdir do
+      testdir = "\u30c6\u30b9\u30c8"
+      Dir.mkdir(testdir)
+      Dir.chdir(testdir) do
+        File.write("a.rb", "require './b'")
+        File.write("b.rb", "puts 'ok'")
+        assert_ruby_status([{"RUBYLIB"=>"."}, *%w[-E cp932:utf-8 a.rb]])
       end
     end
   end

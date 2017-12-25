@@ -60,4 +60,61 @@ describe "Logger#new" do
     f1.close
     rm_r path, "#{path}.0"
   end
+
+  ruby_version_is "2.4" do
+    it "receives level symbol as keyword argument" do
+      logger = Logger.new(STDERR, level: :info)
+      logger.level.should == Logger::INFO
+    end
+
+    it "receives level as keyword argument" do
+      logger = Logger.new(STDERR, level: Logger::INFO)
+      logger.level.should == Logger::INFO
+    end
+
+    it "receives progname as keyword argument" do
+      progname = "progname"
+
+      logger = Logger.new(STDERR, progname: progname)
+      logger.progname.should == progname
+    end
+
+    it "receives datetime_format as keyword argument" do
+      datetime_format = "%H:%M:%S"
+
+      logger = Logger.new(STDERR, datetime_format: datetime_format)
+      logger.datetime_format.should == datetime_format
+    end
+
+    it "receives formatter as keyword argument" do
+      formatter = Class.new do
+        def call(_severity, _time, _progname, _msg); end
+      end.new
+
+      logger = Logger.new(STDERR, formatter: formatter)
+      logger.formatter.should == formatter
+    end
+
+    it "receives shift_period_suffix " do
+      shift_period_suffix = "%Y-%m-%d"
+      path                = tmp("shift_period_suffix_test.log")
+      now                 = Time.now
+      tomorrow            = Time.at(now.to_i + 60 * 60 * 24)
+      logger              = Logger.new(path, 'daily', shift_period_suffix: shift_period_suffix)
+
+      logger.add Logger::INFO, 'message'
+
+      Time.stub!(:now).and_return(tomorrow)
+      logger.add Logger::INFO, 'second message'
+
+      shifted_path = "#{path}.#{now.strftime(shift_period_suffix)}"
+
+      File.exist?(shifted_path).should == true
+
+      logger.close
+
+      rm_r path, shifted_path
+    end
+  end
+
 end

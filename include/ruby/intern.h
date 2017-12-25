@@ -249,9 +249,9 @@ PRINTF_ARGS(NORETURN(void rb_name_error_str(VALUE, const char*, ...)), 2, 3);
 NORETURN(void rb_invalid_str(const char*, const char*));
 NORETURN(void rb_error_frozen(const char*));
 NORETURN(void rb_error_frozen_object(VALUE));
-CONSTFUNC(void rb_error_untrusted(VALUE));
+void rb_error_untrusted(VALUE);
 void rb_check_frozen(VALUE);
-CONSTFUNC(void rb_check_trusted(VALUE));
+void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
 	if (OBJ_FROZEN(frozen_obj)) { \
@@ -892,6 +892,7 @@ VALUE rb_time_num_new(VALUE, VALUE);
 struct timeval rb_time_interval(VALUE num);
 struct timeval rb_time_timeval(VALUE time);
 struct timespec rb_time_timespec(VALUE time);
+VALUE rb_time_utc_offset(VALUE time);
 /* variable.c */
 VALUE rb_mod_name(VALUE);
 VALUE rb_class_path(VALUE);
@@ -944,7 +945,6 @@ VALUE rb_mod_remove_cvar(VALUE, VALUE);
 ID rb_frame_callee(void);
 VALUE rb_str_succ(VALUE);
 VALUE rb_time_succ(VALUE);
-int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 VALUE rb_make_backtrace(void);
 VALUE rb_make_exception(int, const VALUE*);
 

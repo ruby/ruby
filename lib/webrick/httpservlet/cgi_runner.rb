@@ -23,11 +23,11 @@ STDIN.binmode
 
 len = sysread(STDIN, 8).to_i
 out = sysread(STDIN, len)
-STDOUT.reopen(open(out, "w"))
+STDOUT.reopen(File.open(out, "w"))
 
 len = sysread(STDIN, 8).to_i
 err = sysread(STDIN, len)
-STDERR.reopen(open(err, "w"))
+STDERR.reopen(File.open(err, "w"))
 
 len  = sysread(STDIN, 8).to_i
 dump = sysread(STDIN, len)

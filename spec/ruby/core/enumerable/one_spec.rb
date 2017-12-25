@@ -16,6 +16,7 @@ describe "Enumerable#one?" do
     end
 
     it "gathers initial args as elements when each yields multiple" do
+      # This spec doesn't spec what it says it does
       multi = EnumerableSpecs::YieldsMulti.new
       multi.one? {|e| e == 1 }.should be_true
     end
@@ -25,6 +26,16 @@ describe "Enumerable#one?" do
       yielded = []
       multi.one? {|e, i| yielded << [e, i] }
       yielded.should == [[1, 2], [3, 4]]
+    end
+
+    ruby_version_is "2.5" do
+      describe "given a pattern argument" do
+        # This spec should be replaced by more extensive ones
+        it "returns true iff none match that pattern" do
+          EnumerableSpecs::Numerous.new.one?(Integer).should == false
+          [nil, false, true].one?(NilClass).should == true
+        end
+      end
     end
   end
 

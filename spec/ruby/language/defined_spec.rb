@@ -725,7 +725,7 @@ describe "The defined? keyword for a top-level constant" do
     defined?(::DefinedSpecs).should == "constant"
   end
 
-  it "retuns nil if the constant is not defined" do
+  it "returns nil if the constant is not defined" do
     defined?(::DefinedSpecsUndefined).should be_nil
   end
 
@@ -750,7 +750,7 @@ describe "The defined? keyword for a scoped constant" do
   end
 
   it "returns nil when an undefined constant is scoped to a defined constant" do
-    defined?(DefinedSpecs::Child::B).should be_nil
+    defined?(DefinedSpecs::Child::Undefined).should be_nil
   end
 
   it "returns nil when a constant is scoped to an undefined constant" do
@@ -785,7 +785,7 @@ describe "The defined? keyword for a top-level scoped constant" do
   end
 
   it "returns nil when an undefined constant is scoped to a defined constant" do
-    defined?(::DefinedSpecs::Child::B).should be_nil
+    defined?(::DefinedSpecs::Child::Undefined).should be_nil
   end
 
   it "returns nil when the undefined constant is scoped to an undefined constant" do

@@ -13,7 +13,7 @@ describe :cgi_http_header, shared: true do
     end
 
 
-    it "returns a HTTP header specifiying the Content-Type as text/html" do
+    it "returns a HTTP header specifying the Content-Type as text/html" do
       @cgi.send(@method).should == "Content-Type: text/html\r\n\r\n"
     end
 
@@ -34,7 +34,7 @@ describe :cgi_http_header, shared: true do
     end
 
 
-    it "returns a HTTP header specifiying the Content-Type as the passed String's content" do
+    it "returns a HTTP header specifying the Content-Type as the passed String's content" do
       @cgi.send(@method, "text/plain").should == "Content-Type: text/plain\r\n\r\n"
     end
 
@@ -105,7 +105,7 @@ describe :cgi_http_header, shared: true do
       @cgi.send(@method, {}).should == "Content-Type: text/html\r\nSet-Cookie: multiple\r\nSet-Cookie: cookies\r\n\r\n"
     end
 
-    it "returns a HTTP header specifiying the Content-Type as text/html when passed an empty Hash" do
+    it "returns a HTTP header specifying the Content-Type as text/html when passed an empty Hash" do
       @cgi.send(@method, {}).should == "Content-Type: text/html\r\n\r\n"
     end
   end

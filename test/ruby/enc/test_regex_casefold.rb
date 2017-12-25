@@ -5,6 +5,8 @@ require "test/unit"
 class TestCaseFold < Test::Unit::TestCase
 
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
+  path = File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
   CaseTest = Struct.new :source, :target, :kind, :line
 
   def check_downcase_properties(expected, start, *flags)
@@ -17,7 +19,7 @@ class TestCaseFold < Test::Unit::TestCase
   end
 
   def read_tests
-    IO.readlines(File.expand_path("../../../enc/unicode/data/#{UNICODE_VERSION}/CaseFolding.txt", __dir__), encoding: Encoding::ASCII_8BIT)
+    IO.readlines("#{UNICODE_DATA_PATH}/CaseFolding.txt", encoding: Encoding::ASCII_8BIT)
     .collect.with_index { |linedata, linenumber| [linenumber.to_i+1, linedata.chomp] }
     .reject { |number, data| data =~ /^(#|$)/ }
     .collect do |linenumber, linedata|

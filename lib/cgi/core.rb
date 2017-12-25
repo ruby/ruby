@@ -267,7 +267,7 @@ class CGI
   def _header_for_modruby(buf)  #:nodoc:
     request = Apache::request
     buf.scan(/([^:]+): (.+)#{EOL}/o) do |name, value|
-      warn sprintf("name:%s value:%s\n", name, value) if $DEBUG
+      $stderr.printf("name:%s value:%s\n", name, value) if $DEBUG
       case name
       when 'Set-Cookie'
         request.headers_out.add(name, value)

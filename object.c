@@ -1315,7 +1315,7 @@ rb_obj_infect(VALUE victim, VALUE carrier)
  *
  *  <em>produces:</em>
  *
- *     prog.rb:3:in `<<': can't modify frozen Array (RuntimeError)
+ *     prog.rb:3:in `<<': can't modify frozen Array (FrozenError)
  *     	from prog.rb:3
  *
  *  Objects of the following classes are always frozen: Integer,
@@ -4028,10 +4028,10 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);  /* in variable.c */
     rb_define_method(rb_cModule, "ancestors", rb_mod_ancestors, 0); /* in class.c */
 
-    rb_define_private_method(rb_cModule, "attr", rb_mod_attr, -1);
-    rb_define_private_method(rb_cModule, "attr_reader", rb_mod_attr_reader, -1);
-    rb_define_private_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
-    rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
+    rb_define_method(rb_cModule, "attr", rb_mod_attr, -1);
+    rb_define_method(rb_cModule, "attr_reader", rb_mod_attr_reader, -1);
+    rb_define_method(rb_cModule, "attr_writer", rb_mod_attr_writer, -1);
+    rb_define_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
@@ -4076,11 +4076,12 @@ InitVM_Object(void)
     /*
      * Document-class: Data
      *
-     * This is a recommended base class for C extensions using Data_Make_Struct
-     * or Data_Wrap_Struct, see doc/extension.rdoc for details.
+     * This is a deprecated class, base class for C extensions using
+     * Data_Make_Struct or Data_Wrap_Struct.
      */
     rb_cData = rb_define_class("Data", rb_cObject);
     rb_undef_alloc_func(rb_cData);
+    rb_deprecate_constant(rb_cObject, "Data");
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);

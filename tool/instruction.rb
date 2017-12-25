@@ -33,6 +33,7 @@ class RubyVM
       @optimized = []
       @is_sc  = false
       @sp_inc = sp_inc
+      @trace  = trace
     end
 
     def add_sc sci
@@ -49,6 +50,7 @@ class RubyVM
     attr_reader :is_sc
     attr_reader :tvars
     attr_reader :sp_inc
+    attr_accessor :trace
 
     def set_sc
       @is_sc = true
@@ -116,6 +118,7 @@ class RubyVM
       load_opt_operand_def opts[:"opope.def"] || 'defs/opt_operand.def'
       load_insn_unification_def opts[:"unif.def"] || 'defs/opt_insn_unif.def'
       make_stackcaching_insns if vm_opt?('STACK_CACHING')
+      make_trace_insns
     end
 
     attr_reader :vpath
@@ -533,6 +536,21 @@ class RubyVM
       }
     end
 
+    def make_trace_insns
+      @insns.dup.each{|insn|
+        body = <<-EOS
+        vm_trace(ec, GET_CFP(), GET_PC());
+        DISPATCH_ORIGINAL_INSN(#{insn.name});
+        EOS
+
+        trace_insn = Instruction.new(name = "trace_#{insn.name}",
+                                     insn.opes, insn.pops, insn.rets, insn.comm,
+                                     body, insn.tvars, insn.sp_inc)
+        trace_insn.trace = true
+        add_insn trace_insn
+      }
+    end
+
     def make_insn_sc orig_insn, name, opes, pops, rets, pushs, nextsc
       comm = orig_insn.comm.dup
       comm[:c] = 'optimize(sc)'
@@ -866,27 +884,32 @@ class RubyVM
     end
 
     def make_header insn
-      commit "INSN_ENTRY(#{insn.name}){"
+      label = insn.trace ? '' : "START_OF_ORIGINAL_INSN(#{insn.name});"
+      commit "INSN_ENTRY(#{insn.name}){#{label}"
       make_header_prepare_stack insn
       commit "{"
-      make_header_stack_val  insn
-      make_header_default_operands insn
-      make_header_operands   insn
-      make_header_stack_pops insn
-      make_header_temporary_vars insn
-      #
-      make_header_debug insn
-      make_header_pc insn
-      make_header_popn insn
-      make_header_defines insn
-      make_header_analysis insn
+      unless insn.trace
+        make_header_stack_val  insn
+        make_header_default_operands insn
+        make_header_operands   insn
+        make_header_stack_pops insn
+        make_header_temporary_vars insn
+        #
+        make_header_debug insn
+        make_header_pc insn
+        make_header_popn insn
+        make_header_defines insn
+        make_header_analysis insn
+      end
       commit  "{"
     end
 
     def make_footer insn
-      make_footer_stack_val insn
-      make_footer_default_operands insn
-      make_footer_undefs insn
+      unless insn.trace
+        make_footer_stack_val insn
+        make_footer_default_operands insn
+        make_footer_undefs insn
+      end
       commit "  END_INSN(#{insn.name});}}}"
     end
 

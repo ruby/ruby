@@ -420,7 +420,6 @@ typedef struct RVALUE {
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RFile   file;
-	struct RNode   node;
 	struct RMatch  match;
 	struct RRational rational;
 	struct RComplex complex;
@@ -434,6 +433,7 @@ typedef struct RVALUE {
 	    const rb_iseq_t iseq;
 	    rb_env_t env;
 	    struct rb_imemo_alloc_struct alloc;
+	    rb_ast_t ast;
 	} imemo;
 	struct {
 	    struct RBasic basic;
@@ -716,6 +716,10 @@ struct heap_page {
 #define GET_HEAP_UNCOLLECTIBLE_BITS(x)  (&GET_HEAP_PAGE(x)->uncollectible_bits[0])
 #define GET_HEAP_WB_UNPROTECTED_BITS(x) (&GET_HEAP_PAGE(x)->wb_unprotected_bits[0])
 #define GET_HEAP_MARKING_BITS(x)        (&GET_HEAP_PAGE(x)->marking_bits[0])
+#endif
+
+#ifndef ENABLE_VM_OBJSPACE
+# define ENABLE_VM_OBJSPACE 1
 #endif
 
 /* Aliases */
@@ -1810,9 +1814,9 @@ rb_objspace_set_event_hook(const rb_event_flag_t event)
 }
 
 static void
-gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
+gc_event_hook_body(rb_execution_context_t *ec, rb_objspace_t *objspace, const rb_event_flag_t event, VALUE data)
 {
-    EXEC_EVENT_HOOK(th, event, th->ec->cfp->self, 0, 0, 0, data);
+    EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, data);
 }
 
 #define gc_event_hook_available_p(objspace) ((objspace)->flags.has_hook)
@@ -1820,7 +1824,7 @@ gc_event_hook_body(rb_thread_t *th, rb_objspace_t *objspace, const rb_event_flag
 
 #define gc_event_hook(objspace, event, data) do { \
     if (UNLIKELY(gc_event_hook_needed_p(objspace, event))) { \
-	gc_event_hook_body(GET_THREAD(), (objspace), (event), (data)); \
+	gc_event_hook_body(GET_EC(), (objspace), (event), (data)); \
     } \
 } while (0)
 
@@ -1874,7 +1878,7 @@ newobj_init(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_prote
 #endif
 
 #if GC_DEBUG
-    RANY(obj)->file = rb_source_loc(&RANY(obj)->line);
+    RANY(obj)->file = rb_source_location_cstr(&RANY(obj)->line);
     GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
@@ -2000,13 +2004,9 @@ rb_newobj_of(VALUE klass, VALUE flags)
     return newobj_of(klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED);
 }
 
-NODE*
-rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
-{
-    NODE *n = (NODE *)newobj_of(0, T_NODE, a0, a1, a2, FALSE); /* TODO: node also should be wb protected */
-    nd_set_type(n, type);
-    return n;
-}
+#define UNEXPECTED_NODE(func) \
+    rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
+	   BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)
 
 #undef rb_imemo_new
 
@@ -2328,8 +2328,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	rb_gc_free_node(obj);
-	break;			/* no need to free iv_tbl */
+	UNEXPECTED_NODE(obj_free);
+	break;
 
       case T_STRUCT:
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
@@ -2358,6 +2358,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    break;
 	  case imemo_alloc:
 	    xfree(RANY(obj)->as.imemo.alloc.ptr);
+	    break;
+	  case imemo_ast:
+	    rb_ast_free(&RANY(obj)->as.imemo.ast);
 	    break;
 	  default:
 	    break;
@@ -2529,10 +2532,12 @@ internal_object_p(VALUE obj)
 
     if (p->as.basic.flags) {
 	switch (BUILTIN_TYPE(p)) {
+	  case T_NODE:
+	    UNEXPECTED_NODE(internal_object_p);
+	    break;
 	  case T_NONE:
 	  case T_IMEMO:
 	  case T_ICLASS:
-	  case T_NODE:
 	  case T_ZOMBIE:
 	    break;
 	  case T_CLASS:
@@ -2791,19 +2796,19 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
 	long finished;
 	int safe;
     } saved;
-    rb_thread_t *const volatile th = GET_THREAD();
+    rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
-	th->ec->cfp = saved.cfp, \
+	ec->cfp = saved.cfp, \
 	rb_set_safe_level_force(saved.safe), \
 	rb_set_errinfo(saved.errinfo))
 
     saved.safe = rb_safe_level();
     saved.errinfo = rb_errinfo();
     saved.objid = nonspecial_obj_id(obj);
-    saved.cfp = th->ec->cfp;
+    saved.cfp = ec->cfp;
     saved.finished = 0;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
     if (state != TAG_NONE) {
 	++saved.finished;	/* skip failed finalizer */
@@ -3303,7 +3308,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
 
       case T_NODE:
-	if (use_all_types) size += rb_node_memsize(obj);
+	UNEXPECTED_NODE(obj_memsize_of);
 	break;
 
       case T_STRUCT:
@@ -3445,7 +3450,6 @@ count_objects(int argc, VALUE *argv, VALUE os)
 	    COUNT_TYPE(T_FIXNUM);
 	    COUNT_TYPE(T_IMEMO);
 	    COUNT_TYPE(T_UNDEF);
-	    COUNT_TYPE(T_NODE);
 	    COUNT_TYPE(T_ICLASS);
 	    COUNT_TYPE(T_ZOMBIE);
 #undef COUNT_TYPE
@@ -4024,9 +4028,8 @@ ruby_stack_length(VALUE **p)
 #endif
 #if PREVENT_STACK_OVERFLOW
 static int
-stack_check(rb_thread_t *th, int water_mark)
+stack_check(rb_execution_context_t *ec, int water_mark)
 {
-    rb_execution_context_t *ec = th->ec;
     int ret;
     SET_STACK_END;
     ret = STACK_LENGTH > STACK_LEVEL_MAX - water_mark;
@@ -4039,21 +4042,21 @@ stack_check(rb_thread_t *th, int water_mark)
     return ret;
 }
 #else
-#define stack_check(th, water_mark) FALSE
+#define stack_check(ec, water_mark) FALSE
 #endif
 
 #define STACKFRAME_FOR_CALL_CFUNC 838
 
 int
-rb_threadptr_stack_check(rb_thread_t *th)
+rb_ec_stack_check(rb_execution_context_t *ec)
 {
-    return stack_check(th, STACKFRAME_FOR_CALL_CFUNC);
+    return stack_check(ec, STACKFRAME_FOR_CALL_CFUNC);
 }
 
 int
 ruby_stack_check(void)
 {
-    return stack_check(GET_THREAD(), STACKFRAME_FOR_CALL_CFUNC);
+    return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
@@ -4540,6 +4543,12 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
 	    } while ((m = m->next) != NULL);
 	}
 	return;
+      case imemo_ast:
+	rb_ast_mark(&RANY(obj)->as.imemo.ast);
+	return;
+      case imemo_parser_strterm:
+	rb_strterm_mark(obj);
+	return;
 #if VM_CHECK_MODE > 0
       default:
 	VM_UNREACHABLE(gc_mark_imemo);
@@ -4564,9 +4573,8 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_NODE:
-	obj = rb_gc_mark_node(&any->as.node);
-	if (obj) gc_mark(objspace, obj);
-	return;			/* no need to mark class. */
+	UNEXPECTED_NODE(rb_gc_mark);
+	break;
 
       case T_IMEMO:
 	gc_mark_imemo(objspace, obj);
@@ -4790,8 +4798,8 @@ static void
 gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 {
     struct gc_list *list;
-    rb_thread_t *th = GET_THREAD();
-    rb_execution_context_t *ec = th->ec;
+    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
 #if PRINT_ROOT_TICKS
     tick_t start_tick = tick();
@@ -4831,14 +4839,14 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
 
     MARK_CHECKPOINT("vm");
     SET_STACK_END;
-    rb_vm_mark(th->vm);
-    if (th->vm->self) gc_mark(objspace, th->vm->self);
+    rb_vm_mark(vm);
+    if (vm->self) gc_mark(objspace, vm->self);
 
     MARK_CHECKPOINT("finalizers");
     mark_tbl(objspace, finalizer_table);
 
     MARK_CHECKPOINT("machine_context");
-    mark_current_machine_context(objspace, th->ec);
+    mark_current_machine_context(objspace, ec);
 
     MARK_CHECKPOINT("encodings");
     rb_gc_mark_encodings();
@@ -6227,7 +6235,7 @@ rb_gc_force_recycle(VALUE obj)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    VALUE ary_ary = GET_THREAD()->vm->mark_object_ary;
+    VALUE ary_ary = GET_VM()->mark_object_ary;
     VALUE ary = rb_ary_last(0, 0, ary_ary);
 
     if (ary == Qnil || RARRAY_LEN(ary) >= MARK_OBJECT_ARY_BUCKET_SIZE) {
@@ -6648,12 +6656,6 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int full_mark, int immediate_m
     }
 }
 
-int
-rb_garbage_collect(void)
-{
-    return garbage_collect(&rb_objspace, TRUE, TRUE, TRUE, GPR_FLAG_CAPI);
-}
-
 #undef Init_stack
 
 void
@@ -6736,13 +6738,6 @@ int
 rb_during_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    return during_gc;
-}
-
-int
-rb_threadptr_during_gc(rb_thread_t *th)
-{
-    rb_objspace_t *objspace = rb_objspace_of(th->vm);
     return during_gc;
 }
 
@@ -7700,27 +7695,27 @@ ruby_memerror(void)
 void
 rb_memerror(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_objspace_t *objspace = rb_objspace_of(th->vm);
+    rb_execution_context_t *ec = GET_EC();
+    rb_objspace_t *objspace = rb_objspace_of(rb_ec_vm_ptr(ec));
     VALUE exc;
 
     if (during_gc) gc_exit(objspace, "rb_memerror");
 
     exc = nomem_error;
     if (!exc ||
-	rb_thread_raised_p(th, RAISED_NOMEMORY)) {
+	rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(EXIT_FAILURE);
     }
-    if (rb_thread_raised_p(th, RAISED_NOMEMORY)) {
-	rb_thread_raised_clear(th);
+    if (rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
+	rb_ec_raised_clear(ec);
     }
     else {
-	rb_thread_raised_set(th, RAISED_NOMEMORY);
+	rb_ec_raised_set(ec, RAISED_NOMEMORY);
 	exc = ruby_vm_special_exception_copy(exc);
     }
-    th->ec->errinfo = exc;
-    EC_JUMP_TAG(th->ec, TAG_RAISE);
+    ec->errinfo = exc;
+    EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
 static void *
@@ -8146,10 +8141,10 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
-    VALUE s = ATOMIC_VALUE_EXCHANGE(*store, 0);
+    rb_imemo_alloc_t *s = (rb_imemo_alloc_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
-	void *ptr = ATOMIC_PTR_EXCHANGE(RNODE(s)->u1.node, 0);
-	RNODE(s)->u3.cnt = 0;
+	void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
+	s->cnt = 0;
 	ruby_xfree(ptr);
     }
 }
@@ -9226,7 +9221,6 @@ type_name(int type, VALUE obj)
 	    TYPE_NAME(T_FIXNUM);
 	    TYPE_NAME(T_UNDEF);
 	    TYPE_NAME(T_IMEMO);
-	    TYPE_NAME(T_NODE);
 	    TYPE_NAME(T_ICLASS);
 	    TYPE_NAME(T_ZOMBIE);
       case T_DATA:
@@ -9331,8 +9325,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 
 	switch (type) {
 	  case T_NODE:
-	    snprintf(buff, buff_size, "%s (%s)", buff,
-		     ruby_node_name(nd_type(obj)));
+	    UNEXPECTED_NODE(rb_raw_obj_info);
 	    break;
 	  case T_ARRAY:
 	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,

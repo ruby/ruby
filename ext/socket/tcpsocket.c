@@ -42,11 +42,11 @@ tcp_sockaddr(struct sockaddr *addr, socklen_t len)
  *   TCPSocket.gethostbyname(hostname) => [official_hostname, alias_hostnames, address_family, *address_list]
  *
  * Use Addrinfo.getaddrinfo instead.
- * This method is deprecated since following reasons:
+ * This method is deprecated for the following reasons:
  *
- * - The 3rd element of result is the address family of the first address.
- *   The address families of rest addresses are not returned.
- * - gethostbyname() is may take long time and it may block other threads.
+ * - The 3rd element of the result is the address family of the first address.
+ *   The address families of the rest of the addresses are not returned.
+ * - gethostbyname() may take a long time and it may block other threads.
  *   (GVL cannot be released since gethostbyname() is not thread safe.)
  * - This method uses gethostbyname() function already removed from POSIX.
  *

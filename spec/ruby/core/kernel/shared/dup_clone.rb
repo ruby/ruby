@@ -122,4 +122,28 @@ describe :kernel_dup_clone, shared: true do
       :my_symbol.send(@method).should == :my_symbol
     end
   end
+
+  ruby_version_is ''...'2.5' do
+    it "raises a TypeError for Complex" do
+      c = Complex(1.3, 3.1)
+      lambda { c.send(@method) }.should raise_error(TypeError)
+    end
+
+    it "raises a TypeError for Rational" do
+      r = Rational(1, 3)
+      lambda { r.send(@method) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is '2.5' do
+    it "returns self for Complex" do
+      c = Complex(1.3, 3.1)
+      c.send(@method).should equal c
+    end
+
+    it "returns self for Rational" do
+      r = Rational(1, 3)
+      r.send(@method).should equal r
+    end
+  end
 end

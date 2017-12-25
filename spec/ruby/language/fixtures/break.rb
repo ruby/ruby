@@ -106,6 +106,34 @@ module BreakSpecs
       note :d
     end
 
+    def looped_break_in_captured_block
+      note :begin
+      looped_delegate_block do |i|
+        note :prebreak
+        break if i == 1
+        note :postbreak
+      end
+      note :end
+    end
+
+    def looped_delegate_block(&block)
+      note :preloop
+      2.times do |i|
+        note :predele
+        yield_value(i, &block)
+        note :postdele
+      end
+      note :postloop
+    end
+    private :looped_delegate_block
+
+    def yield_value(value)
+      note :preyield
+      yield value
+      note :postyield
+    end
+    private :yield_value
+
     def method(v)
       yield v
     end

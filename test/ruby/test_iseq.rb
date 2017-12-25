@@ -280,4 +280,114 @@ class TestISeq < Test::Unit::TestCase
       assert_match /:#{name}@/, ISeq.of(m).inspect, name
     end
   end
+
+  def sample_iseq
+    ISeq.compile <<-EOS.gsub(/^.*?: /, "")
+     1: class C
+     2:   def foo
+     3:     begin
+     4:     rescue
+     5:       p :rescue
+     6:     ensure
+     7:       p :ensure
+     8:     end
+     9:   end
+    10:   def bar
+    11:     1.times{
+    12:       2.times{
+    13:       }
+    14:     }
+    15:   end
+    16: end
+    17: class D < C
+    18: end
+    EOS
+  end
+
+  def test_each_child
+    iseq = sample_iseq
+
+    collect_iseq = lambda{|iseq|
+      iseqs = []
+      iseq.each_child{|child_iseq|
+        iseqs << collect_iseq.call(child_iseq)
+      }
+      ["#{iseq.label}@#{iseq.first_lineno}", *iseqs.sort_by{|k, *| k}]
+    }
+
+    expected = ["<compiled>@1",
+                  ["<class:C>@1",
+                    ["bar@10", ["block in bar@11",
+                            ["block (2 levels) in bar@12"]]],
+                    ["foo@2", ["ensure in foo@2"],
+                              ["rescue in foo@4"]]],
+                  ["<class:D>@17"]]
+
+    assert_equal expected, collect_iseq.call(iseq)
+  end
+
+  def test_trace_points
+    collect_iseq = lambda{|iseq|
+      iseqs = []
+      iseq.each_child{|child_iseq|
+        iseqs << collect_iseq.call(child_iseq)
+      }
+      [["#{iseq.label}@#{iseq.first_lineno}", iseq.trace_points], *iseqs.sort_by{|k, *| k}]
+    }
+    assert_equal [["<compiled>@1", [[1, :line],
+                                    [17, :line]]],
+                   [["<class:C>@1", [[1, :class],
+                                     [2, :line],
+                                     [10, :line],
+                                     [16, :end]]],
+                     [["bar@10", [[10, :call],
+                                  [11, :line],
+                                  [15, :return]]],
+                         [["block in bar@11", [[11, :b_call],
+                                               [12, :line],
+                                               [14, :b_return]]],
+                         [["block (2 levels) in bar@12", [[12, :b_call],
+                                                          [13, :b_return]]]]]],
+                      [["foo@2", [[2, :call],
+                                  [4, :line],
+                                  [7, :line],
+                                  [9, :return]]],
+                       [["ensure in foo@2", [[7, :line]]]],
+                       [["rescue in foo@4", [[5, :line]]]]]],
+                   [["<class:D>@17", [[17, :class],
+                                      [18, :end]]]]], collect_iseq.call(sample_iseq)
+  end
+
+  def test_empty_iseq_lineno
+    iseq = ISeq.compile(<<-EOS)
+    # 1
+    # 2
+    def foo   # line 3 empty method
+    end       # line 4
+    1.time do # line 5 empty block
+    end       # line 6
+    class C   # line 7 empty class
+    end
+    EOS
+
+    iseq.each_child{|ci|
+      ary = ci.to_a
+      type = ary[9]
+      name = ary[5]
+      line = ary[13].first
+      case ary[9]
+      when :method
+        assert_equal "foo", name
+        assert_equal 3, line
+      when :class
+        assert_equal '<class:C>', name
+        assert_equal 7, line
+      when :block
+        assert_equal 'block in <compiled>', name
+        assert_equal 5, line
+      else
+        raise "unknown ary: " + ary.inspect
+      end
+    }
+  end
 end

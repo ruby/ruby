@@ -332,8 +332,8 @@ binding_clone(VALUE self)
 VALUE
 rb_binding_new(void)
 {
-    rb_thread_t *th = GET_THREAD();
-    return rb_vm_make_binding(th, th->ec->cfp);
+    rb_execution_context_t *ec = GET_EC();
+    return rb_vm_make_binding(ec, ec->cfp);
 }
 
 /*
@@ -384,8 +384,6 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
     return rb_f_eval(argc+1, args, Qnil /* self will be searched in eval */);
 }
 
-VALUE rb_vm_bh_to_procval(rb_thread_t *th, VALUE block_handler);
-
 static const VALUE *
 get_local_variable_ptr(const rb_env_t **envp, ID lid)
 {
@@ -404,7 +402,7 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
 			(unsigned int)iseq->body->param.block_start == i) {
 			const VALUE *ep = env->ep;
 			if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-			    RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_THREAD(), VM_ENV_BLOCK_HANDLER(ep)));
+			    RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
 			    VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
 			}
 		    }
@@ -697,8 +695,8 @@ static VALUE
 proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler;
 
     if ((block_handler = rb_vm_frame_block_handler(cfp)) == VM_BLOCK_HANDLER_NONE) {
@@ -749,7 +747,7 @@ proc_new(VALUE klass, int8_t is_lambda)
 
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
-	return rb_vm_make_proc_lambda(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
+	return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
     }
     VM_UNREACHABLE(proc_new);
     return Qnil;
@@ -886,7 +884,7 @@ rb_proc_call(VALUE self, VALUE args)
     VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(GET_THREAD(), proc,
+    vret = rb_vm_invoke_proc(GET_EC(), proc,
 			     check_argc(RARRAY_LEN(args)), RARRAY_CONST_PTR(args),
 			     VM_BLOCK_HANDLER_NONE);
     RB_GC_GUARD(self);
@@ -903,11 +901,11 @@ proc_to_block_handler(VALUE procval)
 VALUE
 rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_procval)
 {
-    rb_thread_t *th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
     VALUE vret;
     rb_proc_t *proc;
     GetProcPtr(self, proc);
-    vret = rb_vm_invoke_proc(th, proc, argc, argv, proc_to_block_handler(passed_procval));
+    vret = rb_vm_invoke_proc(ec, proc, argc, argv, proc_to_block_handler(passed_procval));
     RB_GC_GUARD(self);
     return vret;
 }
@@ -924,7 +922,7 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *  number of mandatory arguments, with the exception for blocks that
  *  are not lambdas and have only a finite number of optional arguments;
  *  in this latter case, returns n.
- *  Keywords arguments will considered as a single additional argument,
+ *  Keyword arguments will be considered as a single additional argument,
  *  that argument being mandatory if any keyword argument is mandatory.
  *  A <code>proc</code> with no argument declarations
  *  is the same as a block declaring <code>||</code> as its arguments.
@@ -940,16 +938,16 @@ rb_proc_call_with_block(VALUE self, int argc, const VALUE *argv, VALUE passed_pr
  *     proc { |x:, y:, z:0| }.arity   #=>  1
  *     proc { |*a, x:, y:0| }.arity   #=> -2
  *
- *     proc   { |x=0| }.arity         #=>  0
- *     lambda { |x=0| }.arity         #=> -1
- *     proc   { |x=0, y| }.arity      #=>  1
- *     lambda { |x=0, y| }.arity      #=> -2
- *     proc   { |x=0, y=0| }.arity    #=>  0
- *     lambda { |x=0, y=0| }.arity    #=> -1
- *     proc   { |x, y=0| }.arity      #=>  1
- *     lambda { |x, y=0| }.arity      #=> -2
- *     proc   { |(x, y), z=0| }.arity #=>  1
- *     lambda { |(x, y), z=0| }.arity #=> -2
+ *     proc   { |a=0| }.arity         #=>  0
+ *     lambda { |a=0| }.arity         #=> -1
+ *     proc   { |a=0, b| }.arity      #=>  1
+ *     lambda { |a=0, b| }.arity      #=> -2
+ *     proc   { |a=0, b=0| }.arity    #=>  0
+ *     lambda { |a=0, b=0| }.arity    #=> -1
+ *     proc   { |a, b=0| }.arity      #=>  1
+ *     lambda { |a, b=0| }.arity      #=> -2
+ *     proc   { |(a, b), c=0| }.arity #=>  1
+ *     lambda { |(a, b), c=0| }.arity #=> -2
  *     proc   { |a, x:0, y:0| }.arity #=>  1
  *     lambda { |a, x:0, y:0| }.arity #=> -2
  */
@@ -1048,8 +1046,8 @@ int
 rb_block_arity(void)
 {
     int min, max;
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1081,8 +1079,8 @@ rb_block_arity(void)
 int
 rb_block_min_max_arity(int *max)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_control_frame_t *cfp = th->ec->cfp;
+    const rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
     struct rb_block block;
 
@@ -1472,7 +1470,7 @@ method_entry_defined_class(const rb_method_entry_t *me)
 
 /**********************************************************************
  *
- * Document-class : Method
+ * Document-class: Method
  *
  *  Method objects are created by <code>Object#method</code>, and are
  *  associated with a particular object (not just with a class). They
@@ -1910,8 +1908,8 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 #if PROC_NEW_REQUIRES_BLOCK
 	body = rb_block_lambda();
 #else
-	rb_thread_t *th = GET_THREAD();
-	VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
+	const rb_execution_context_t *ec = GET_EC();
+	VALUE block_handler = rb_vm_frame_block_handler(ec->cfp);
 	if (block_handler == VM_BLOCK_HANDLER_NONE) rb_raise(rb_eArgError, proc_without_block);
 
 	switch (vm_block_handler_type(block_handler)) {
@@ -1923,7 +1921,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	    break;
 	  case block_handler_type_iseq:
 	  case block_handler_type_ifunc:
-	    body = rb_vm_make_proc_lambda(th->ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc, TRUE);
+	    body = rb_vm_make_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 	}
 #endif
     }
@@ -2098,32 +2096,32 @@ method_callable_method_entry(const struct METHOD *data)
 }
 
 static inline VALUE
-call_method_data(rb_thread_t *th, const struct METHOD *data,
+call_method_data(rb_execution_context_t *ec, const struct METHOD *data,
 		 int argc, const VALUE *argv, VALUE passed_procval)
 {
-    vm_passed_block_handler_set(th, proc_to_block_handler(passed_procval));
-    return rb_vm_call(th, data->recv, data->me->called_id, argc, argv,
+    vm_passed_block_handler_set(ec, proc_to_block_handler(passed_procval));
+    return rb_vm_call(ec, data->recv, data->me->called_id, argc, argv,
 		      method_callable_method_entry(data));
 }
 
 static VALUE
-call_method_data_safe(rb_thread_t *th, const struct METHOD *data,
+call_method_data_safe(rb_execution_context_t *ec, const struct METHOD *data,
 		      int argc, const VALUE *argv, VALUE passed_procval,
 		      int safe)
 {
     VALUE result = Qnil;	/* OK */
     enum ruby_tag_type state;
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
 	/* result is used only if state == 0, no exceptions is caught. */
 	/* otherwise it doesn't matter even if clobbered. */
-	NO_CLOBBERED(result) = call_method_data(th, data, argc, argv, passed_procval);
+	NO_CLOBBERED(result) = call_method_data(ec, data, argc, argv, passed_procval);
     }
     EC_POP_TAG();
     rb_set_safe_level_force(safe);
     if (state)
-	EC_JUMP_TAG(th->ec, state);
+	EC_JUMP_TAG(ec, state);
     return result;
 }
 
@@ -2131,7 +2129,7 @@ VALUE
 rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passed_procval)
 {
     const struct METHOD *data;
-    rb_thread_t *const th = GET_THREAD();
+    rb_execution_context_t *ec = GET_EC();
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     if (data->recv == Qundef) {
@@ -2142,10 +2140,10 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
 	int safe = rb_safe_level();
 	if (safe < safe_level_to_run) {
 	    rb_set_safe_level_force(safe_level_to_run);
-	    return call_method_data_safe(th, data, argc, argv, passed_procval, safe);
+	    return call_method_data_safe(ec, data, argc, argv, passed_procval, safe);
 	}
     }
-    return call_method_data(th, data, argc, argv, passed_procval);
+    return call_method_data(ec, data, argc, argv, passed_procval);
 }
 
 /**********************************************************************
@@ -2356,8 +2354,10 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *  Returns an indication of the number of arguments accepted by a
  *  method. Returns a nonnegative integer for methods that take a fixed
  *  number of arguments. For Ruby methods that take a variable number of
- *  arguments, returns -n-1, where n is the number of required
- *  arguments. For methods written in C, returns -1 if the call takes a
+ *  arguments, returns -n-1, where n is the number of required arguments.
+ *  Keyword arguments will be considered as a single additional argument,
+ *  that argument being mandatory if any keyword argument is mandatory.
+ *  For methods written in C, returns -1 if the call takes a
  *  variable number of arguments.
  *
  *     class C
@@ -2367,6 +2367,10 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *       def four(a, b); end
  *       def five(a, b, *c);    end
  *       def six(a, b, *c, &d); end
+ *       def seven(a, b, x:0); end
+ *       def eight(x:, y:); end
+ *       def nine(x:, y:, **z); end
+ *       def ten(*a, x:, y:); end
  *     end
  *     c = C.new
  *     c.method(:one).arity     #=> 0
@@ -2375,6 +2379,10 @@ rb_method_entry_arity(const rb_method_entry_t *me)
  *     c.method(:four).arity    #=> 2
  *     c.method(:five).arity    #=> -3
  *     c.method(:six).arity     #=> -3
+ *     c.method(:seven).arity   #=> -3
+ *     c.method(:eight).arity   #=> 1
+ *     c.method(:nine).arity    #=> 1
+ *     c.method(:ten).arity     #=> -2
  *
  *     "cat".method(:size).arity      #=> 0
  *     "cat".method(:replace).arity   #=> 1
@@ -3116,6 +3124,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "===", rb_method_call, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
@@ -3156,7 +3165,7 @@ Init_Proc(void)
     /* Module#*_method */
     rb_define_method(rb_cModule, "instance_method", rb_mod_instance_method, 1);
     rb_define_method(rb_cModule, "public_instance_method", rb_mod_public_instance_method, 1);
-    rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
+    rb_define_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     /* Kernel */
     rb_define_method(rb_mKernel, "define_singleton_method", rb_obj_define_method, -1);

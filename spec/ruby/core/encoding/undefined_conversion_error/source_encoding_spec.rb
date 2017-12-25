@@ -24,7 +24,7 @@ with_feature :encoding do
     # conversion from ISO-8859-1 -> UTF-8 succeeded, but the conversion from
     # UTF-8 to EUC-JP failed. IOW, it failed when the source encoding was
     # UTF-8, so UTF-8 is regarded as the source encoding.
-    it "is equal to the source encoding at the stage of the conversion path where the error occured" do
+    it "is equal to the source encoding at the stage of the conversion path where the error occurred" do
       @exception2.source_encoding.should == Encoding::UTF_8
     end
   end

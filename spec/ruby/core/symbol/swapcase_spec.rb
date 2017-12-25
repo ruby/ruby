@@ -28,6 +28,13 @@ describe "Symbol#swapcase" do
     end
   end
 
+  ruby_version_is '2.4' do
+    it "swaps the case for Unicode characters" do
+      "äÖü".to_sym.swapcase.should == :"ÄöÜ"
+      "aOu".to_sym.swapcase.should == :"AoU"
+    end
+  end
+
   it "leaves non-alphabetic ASCII characters as they were" do
     "Glark?!?".to_sym.swapcase.should == :"gLARK?!?"
   end

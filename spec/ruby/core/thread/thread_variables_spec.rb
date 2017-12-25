@@ -17,8 +17,13 @@ describe "Thread#thread_variables" do
   end
 
   it "sets a value private to self" do
-    @t.thread_variable_set :thread_variables_spec_a, 82
-    @t.thread_variable_set :thread_variables_spec_b, 82
+    @t.thread_variable_set :a, 82
+    @t.thread_variable_set :b, 82
+    Thread.current.thread_variables.should_not include(:a, :b)
+  end
+
+  it "only contains user thread variables and is empty initially" do
     Thread.current.thread_variables.should == []
+    @t.thread_variables.should == []
   end
 end

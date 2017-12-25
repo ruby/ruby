@@ -1353,8 +1353,8 @@ nucomp_inspect(VALUE self)
  * call-seq:
  *    cmp.finite?  ->  true or false
  *
- * Returns +true+ if +cmp+'s magnitude is finite number,
- * oterwise returns +false+.
+ * Returns +true+ if +cmp+'s magnitude is a finite number,
+ * otherwise returns +false+.
  */
 static VALUE
 rb_complex_finite_p(VALUE self)

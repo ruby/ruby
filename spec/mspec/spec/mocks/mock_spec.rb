@@ -284,21 +284,21 @@ describe Mock, ".verify_call" do
     ScratchPad.recorded.should == 1
   end
 
-  it "raises an expection when it is expected to yield but no block is given" do
+  it "raises an exception when it is expected to yield but no block is given" do
     @proxy.and_yield(1, 2, 3)
     lambda {
       Mock.verify_call(@mock, :method_call)
     }.should raise_error(SpecExpectationNotMetError)
   end
 
-  it "raises an expection when it is expected to yield more arguments than the block can take" do
+  it "raises an exception when it is expected to yield more arguments than the block can take" do
     @proxy.and_yield(1, 2, 3)
     lambda {
       Mock.verify_call(@mock, :method_call) {|a, b|}
     }.should raise_error(SpecExpectationNotMetError)
   end
 
-  it "does not raise an expection when it is expected to yield to a block that can take any number of arguments" do
+  it "does not raise an exception when it is expected to yield to a block that can take any number of arguments" do
     @proxy.and_yield(1, 2, 3)
     expect {
       Mock.verify_call(@mock, :method_call) {|*a|}

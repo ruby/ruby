@@ -13,8 +13,19 @@ describe "Enumerable#none?" do
   end
 
   it "gathers whole arrays as elements when each yields multiple" do
+    # This spec doesn't spec what it says it does
     multi = EnumerableSpecs::YieldsMultiWithFalse.new
     multi.none?.should be_false
+  end
+
+  ruby_version_is "2.5" do
+    describe "given a pattern argument" do
+      # This spec should be replaced by more extensive ones
+      it "returns true iff none match that pattern" do
+        EnumerableSpecs::Numerous.new.none?(Float).should == true
+        [nil, false, true].none?(NilClass).should == false
+      end
+    end
   end
 end
 

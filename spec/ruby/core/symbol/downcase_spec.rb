@@ -20,6 +20,13 @@ describe "Symbol#downcase" do
     end
   end
 
+  ruby_version_is '2.4' do
+    it "uncapitalizes all Unicode characters" do
+      "ÄÖÜ".to_sym.downcase.should == :"äöü"
+      "AOU".to_sym.downcase.should == :"aou"
+    end
+  end
+
   it "leaves non-alphabetic ASCII characters as they were" do
     "Glark?!?".to_sym.downcase.should == :"glark?!?"
   end

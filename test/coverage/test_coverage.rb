@@ -184,26 +184,66 @@ class TestCoverage < Test::Unit::TestCase
         File.write("test.rb", code)
 
         assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", stdout, [])
-          ENV["COVERAGE_EXPERIMENTAL_MODE"] = "true"
           Coverage.start(#{ opt })
           tmp = Dir.pwd
           require tmp + '/test.rb'
-          p Coverage.result[tmp + "/test.rb"]
+          r = Coverage.result[tmp + "/test.rb"]
+          if r[:methods]
+            h = {}
+            r[:methods].keys.sort_by {|key| key.drop(1) }.each do |key|
+              h[key] = r[:methods][key]
+            end
+            r[:methods].replace h
+          end
+          p r
         end;
       }
     }
   end
 
+  def test_line_coverage_for_multiple_lines
+    result = {
+      :lines => [1, nil, nil, nil, nil, nil, 1, nil, 1, nil, nil, nil, nil, nil, 1, nil, 1, 1, 1, nil, nil, nil, nil, nil, 1]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #14191
+      FOO = [
+        { foo: 'bar' },
+        { bar: 'baz' }
+      ]
+
+      'some string'.split
+                   .map(&:length)
+
+      some =
+        'value'
+
+      Struct.new(
+        :foo,
+        :bar
+      ).new
+
+      class Test
+        def foo(bar)
+          {
+            foo: bar
+          }
+        end
+      end
+
+      Test.new.foo(Object.new)
+    end;
+  end
+
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
-        [:if    ,  0,  2, 2] => {[:then,  1,  3,  4]=>2, [:else,  2,  5,  4]=>1},
-        [:unless,  3,  8, 2] => {[:else,  4, 11,  4]=>2, [:then,  5,  9,  4]=>1},
-        [:if    ,  6, 14, 2] => {[:then,  7, 15,  4]=>2, [:else,  8, 14,  2]=>1},
-        [:unless,  9, 18, 2] => {[:else, 10, 18,  2]=>2, [:then, 11, 19,  4]=>1},
-        [:if    , 12, 22, 2] => {[:then, 13, 22,  2]=>2, [:else, 14, 22,  2]=>1},
-        [:unless, 15, 23, 2] => {[:else, 16, 23,  2]=>2, [:then, 17, 23,  2]=>1},
-        [:if    , 18, 25, 2] => {[:then, 19, 25, 11]=>2, [:else, 20, 25, 15]=>1},
+        [:if    ,  0,  2, 2,  6,  5] => {[:then,  1,  3,  4,  3,  5]=>2, [:else,  2,  5,  4,  5,  5]=>1},
+        [:unless,  3,  8, 2, 12,  5] => {[:else,  4, 11,  4, 11,  5]=>2, [:then,  5,  9,  4,  9,  5]=>1},
+        [:if    ,  6, 14, 2, 16,  5] => {[:then,  7, 15,  4, 15,  5]=>2, [:else,  8, 14,  2, 16,  5]=>1},
+        [:unless,  9, 18, 2, 20,  5] => {[:else, 10, 18,  2, 20,  5]=>2, [:then, 11, 19,  4, 19,  5]=>1},
+        [:if    , 12, 22, 2, 22, 13] => {[:then, 13, 22,  2, 22,  3]=>2, [:else, 14, 22,  2, 22, 13]=>1},
+        [:unless, 15, 23, 2, 23, 17] => {[:else, 16, 23,  2, 23, 17]=>2, [:then, 17, 23,  2, 23,  3]=>1},
+        [:if    , 18, 25, 2, 25, 16] => {[:then, 19, 25, 11, 25, 12]=>2, [:else, 20, 25, 15, 25, 16]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -243,10 +283,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_while_statement
     result = {
       :branches => {
-        [:while, 0,  2, 0] => {[:body, 1,  3, 2]=> 3},
-        [:until, 2,  5, 0] => {[:body, 3,  6, 2]=>10},
-        [:while, 4, 10, 0] => {[:body, 5, 10, 0]=> 3},
-        [:until, 6, 11, 0] => {[:body, 7, 11, 0]=>10},
+        [:while, 0,  2, 0,  4,  3] => {[:body, 1,  3, 2,  3, 8]=> 3},
+        [:until, 2,  5, 0,  7,  3] => {[:body, 3,  6, 2,  6, 8]=>10},
+        [:while, 4, 10, 0, 10, 18] => {[:body, 5, 10, 0, 10, 6]=> 3},
+        [:until, 6, 11, 0, 11, 20] => {[:body, 7, 11, 0, 11, 6]=>10},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -267,10 +307,10 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_case_statement
     result = {
       :branches => {
-        [:case,  0,  2, 2] => {[:when,  1,  4, 4]=>2, [:when,  2,  6, 4]=>0, [:else,  3,  2, 2]=>1},
-        [:case,  4,  9, 2] => {[:when,  5, 11, 4]=>2, [:when,  6, 13, 4]=>0, [:else,  7,  9, 2]=>1},
-        [:case,  8, 16, 2] => {[:when,  9, 18, 4]=>2, [:when, 10, 20, 4]=>0, [:else, 11, 22, 4]=>1},
-        [:case, 12, 25, 2] => {[:when, 13, 27, 4]=>2, [:when, 14, 29, 4]=>0, [:else, 15, 31, 4]=>1},
+        [:case,  0,  2, 2,  7, 5] => {[:when,  1,  4, 4,  4, 5]=>2, [:when,  2,  6, 4,  6, 5]=>0, [:else,  3,  2, 2,  7,  5]=>1},
+        [:case,  4,  9, 2, 14, 5] => {[:when,  5, 11, 4, 11, 5]=>2, [:when,  6, 13, 4, 13, 5]=>0, [:else,  7,  9, 2, 14,  5]=>1},
+        [:case,  8, 16, 2, 23, 5] => {[:when,  9, 18, 4, 18, 5]=>2, [:when, 10, 20, 4, 20, 5]=>0, [:else, 11, 22, 4, 22, 10]=>1},
+        [:case, 12, 25, 2, 32, 5] => {[:when, 13, 27, 4, 27, 5]=>2, [:when, 14, 29, 4, 29, 5]=>0, [:else, 15, 31, 4, 31, 10]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -317,8 +357,8 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 3, 0] => {[:then, 1, 3, 0]=>1, [:else, 2, 3, 0]=>0},
-        [:"&.", 3, 4, 0] => {[:then, 4, 4, 0]=>0, [:else, 5, 4, 0]=>1},
+        [:"&.", 0, 3, 0, 3, 6] => {[:then, 1, 3, 0, 3, 6]=>1, [:else, 2, 3, 0, 3, 6]=>0},
+        [:"&.", 3, 4, 0, 4, 6] => {[:then, 4, 4, 0, 4, 6]=>0, [:else, 5, 4, 0, 4, 6]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
@@ -332,20 +372,124 @@ class TestCoverage < Test::Unit::TestCase
   def test_method_coverage
     result = {
       :methods => {
-        [:foo, 0, 1] => 2,
-        [:bar, 1, 2] => 1,
-        [:baz, 2, 4] => 0,
+        [Object, :bar, 2, 0, 3, 3] => 1,
+        [Object, :baz, 4, 1, 4, 13] => 0,
+        [Object, :foo, 1, 0, 1, 12] => 2,
       }
     }
-    assert_coverage(<<-"end;", { methods: true }, result)
+    assert_coverage(<<~"end;", { methods: true }, result)
       def foo; end
       def bar
       end
-      def baz; end
+       def baz; end
 
       foo
       foo
       bar
     end;
+  end
+
+  def test_method_coverage_for_define_method
+    result = {
+      :methods => {
+        [Object, :a, 6, 18, 6, 25] => 2,
+        [Object, :b, 7, 18, 8, 3] => 0,
+        [Object, :bar, 2, 20, 3, 1] => 1,
+        [Object, :baz, 4, 9, 4, 11] => 0,
+        [Object, :foo, 1, 20, 1, 22] => 2,
+      }
+    }
+    assert_coverage(<<~"end;", { methods: true }, result)
+      define_method(:foo) {}
+      define_method(:bar) {
+      }
+      f = proc {}
+      define_method(:baz, &f)
+      define_method(:a) do; end
+      define_method(:b) do
+      end
+
+      foo
+      foo
+      bar
+      a
+      a
+    end;
+  end
+
+  class DummyConstant < String
+    def inspect
+      self
+    end
+  end
+
+  def test_method_coverage_for_alias
+    _C = DummyConstant.new("C")
+    _M = DummyConstant.new("M")
+    code = <<~"end;"
+      module M
+        def foo
+        end
+        alias bar foo
+      end
+      class C
+        include M
+        def baz
+        end
+        alias qux baz
+      end
+    end;
+
+    result = {
+      :methods => {
+        [_C, :baz, 8, 2, 9, 5] => 0,
+        [_M, :foo, 2, 2, 3, 5] => 0,
+      }
+    }
+    assert_coverage(code, { methods: true }, result)
+
+    result = {
+      :methods => {
+        [_C, :baz, 8, 2, 9, 5] => 12,
+        [_M, :foo, 2, 2, 3, 5] =>  3,
+      }
+    }
+    assert_coverage(code + <<~"end;", { methods: true }, result)
+      obj = C.new
+      1.times { obj.foo }
+      2.times { obj.bar }
+      4.times { obj.baz }
+      8.times { obj.qux }
+    end;
+  end
+
+  def test_method_coverage_for_singleton_class
+    _singleton_Foo = DummyConstant.new("#<Class:Foo>")
+    _Foo = DummyConstant.new("Foo")
+    code = <<~"end;"
+      class Foo
+        def foo
+        end
+        alias bar foo
+        def self.baz
+        end
+        class << self
+          alias qux baz
+        end
+      end
+
+      1.times { Foo.new.foo }
+      2.times { Foo.new.bar }
+      4.times { Foo.baz }
+      8.times { Foo.qux }
+    end;
+
+    result = {
+      :methods => {
+        [_singleton_Foo, :baz, 5, 2, 6, 5] => 12,
+        [_Foo, :foo, 2, 2, 3, 5] => 3,
+      }
+    }
+    assert_coverage(code, { methods: true }, result)
   end
 end

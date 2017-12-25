@@ -50,7 +50,7 @@ module CMath
     atanh
   ].each do |meth|
     define_method(meth + '!') do |*args, &block|
-      warn("CMath##{meth}! is deprecated; use CMath##{meth} or Math##{meth}") if $VERBOSE
+      warn("CMath##{meth}! is deprecated; use CMath##{meth} or Math##{meth}", uplevel: 1) if $VERBOSE
       RealMath.send(meth, *args, &block)
     end
   end

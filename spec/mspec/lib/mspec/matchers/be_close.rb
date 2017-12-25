@@ -12,11 +12,11 @@ class BeCloseMatcher
   end
 
   def failure_message
-    ["Expected #{@expected}", "to be within +/- #{@tolerance} of #{@actual}"]
+    ["Expected #{@actual}", "to be within #{@expected} +/- #{@tolerance}"]
   end
 
   def negative_failure_message
-    ["Expected #{@expected}", "not to be within +/- #{@tolerance} of #{@actual}"]
+    ["Expected #{@actual}", "not to be within #{@expected} +/- #{@tolerance}"]
   end
 end
 

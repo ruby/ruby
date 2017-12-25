@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'rdoc/test_case'
 
 class TestRDocMarkupToHtmlSnippet < RDoc::Markup::FormatterTestCase
@@ -604,7 +604,7 @@ This routine modifies its +comment+ parameter.
     rdoc = "* text\n" * 2
 
     expected = "<p>text\n"
-    expected.chomp!
+    expected = expected.chomp
     expected << " #{@ellipsis}\n"
 
     actual = @to.convert rdoc

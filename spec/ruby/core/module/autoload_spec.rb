@@ -335,6 +335,22 @@ describe "Module#autoload" do
     end
   end
 
+  describe "when changing $LOAD_PATH" do
+    before do
+      $LOAD_PATH.unshift(File.expand_path('../fixtures/path1', __FILE__))
+    end
+
+    after do
+      $LOAD_PATH.shift
+      $LOAD_PATH.shift
+    end
+
+    it "does not reload a file due to a different load path" do
+      ModuleSpecs::Autoload.autoload :LoadPath, "load_path"
+      ModuleSpecs::Autoload::LoadPath.loaded.should == :autoload_load_path
+    end
+  end
+
   describe "(concurrently)" do
     it "blocks a second thread while a first is doing the autoload" do
       ModuleSpecs::Autoload.autoload :Concur, fixture(__FILE__, "autoload_concur.rb")
@@ -383,27 +399,7 @@ describe "Module#autoload" do
 
       ModuleSpecs::Autoload.send(:remove_const, :Concur)
     end
-  end
 
-  describe "when changing $LOAD_PATH" do
-
-    before do
-      $LOAD_PATH.unshift(File.expand_path('../fixtures/path1', __FILE__))
-    end
-
-    after do
-      $LOAD_PATH.shift
-      $LOAD_PATH.shift
-    end
-
-    it "does not reload a file due to a different load path" do
-      ModuleSpecs::Autoload.autoload :LoadPath, "load_path"
-      ModuleSpecs::Autoload::LoadPath.loaded.should == :autoload_load_path
-    end
-
-  end
-
-  describe "(concurrently)" do
     ruby_bug "#10892", ""..."2.3" do
       it "blocks others threads while doing an autoload" do
         file_path     = fixture(__FILE__, "repeated_concurrent_autoload.rb")
@@ -451,6 +447,56 @@ describe "Module#autoload" do
           Object.send(:remove_const, mod_name)
         end
       end
+    end
+
+    it "raises a NameError in each thread if the constant is not set" do
+      file = fixture(__FILE__, "autoload_never_set.rb")
+      start = false
+
+      threads = Array.new(10) do
+        Thread.new do
+          Thread.pass until start
+          begin
+            ModuleSpecs::Autoload.autoload :NeverSetConstant, file
+            Thread.pass
+            ModuleSpecs::Autoload::NeverSetConstant
+          rescue NameError => e
+            e
+          ensure
+            Thread.pass
+          end
+        end
+      end
+
+      start = true
+      threads.each { |t|
+        t.value.should be_an_instance_of(NameError)
+      }
+    end
+
+    it "raises a LoadError in each thread if the file does not exist" do
+      file = fixture(__FILE__, "autoload_does_not_exist.rb")
+      start = false
+
+      threads = Array.new(10) do
+        Thread.new do
+          Thread.pass until start
+          begin
+            ModuleSpecs::Autoload.autoload :FileDoesNotExist, file
+            Thread.pass
+            ModuleSpecs::Autoload::FileDoesNotExist
+          rescue LoadError => e
+            e
+          ensure
+            Thread.pass
+          end
+        end
+      end
+
+      start = true
+      threads.each { |t|
+        t.value.should be_an_instance_of(LoadError)
+      }
     end
   end
 

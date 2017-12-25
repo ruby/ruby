@@ -177,6 +177,10 @@ class TestVector < Test::Unit::TestCase
     assert_equal("Vector[1, 2, 3]", @v1.to_s)
   end
 
+  def test_to_matrix
+    assert_equal Matrix[[1], [2], [3]], @v1.to_matrix
+  end
+
   def test_inspect
     assert_equal("Vector[1, 2, 3]", @v1.inspect)
   end

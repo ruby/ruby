@@ -27,7 +27,7 @@ describe "BigDecimal#sign" do
     BigDecimal("-Infinity").sign.should == BigDecimal::SIGN_NEGATIVE_INFINITE
   end
 
-  it "returns positive zero if BigDecimal equals positve zero" do
+  it "returns positive zero if BigDecimal equals positive zero" do
     BigDecimal("0").sign.should == BigDecimal::SIGN_POSITIVE_ZERO
     BigDecimal("0E-200000000").sign.should == BigDecimal::SIGN_POSITIVE_ZERO
     BigDecimal("0E200000000").sign.should == BigDecimal::SIGN_POSITIVE_ZERO

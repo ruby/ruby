@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'erb'
+require 'stringio'
 
 class TestERB < Test::Unit::TestCase
   class MyError < RuntimeError ; end
@@ -235,6 +236,7 @@ EOS
     $stdout = orig
     out.rewind
     assert_equal('9', out.read)
+    return unless num               # to remove warning
   end
 
   class Foo; end
@@ -609,6 +611,10 @@ EOS
     erb = @erb.new("<%= foo %>")
     erb.result_with_hash(foo: "1")
     assert_equal(false, TOPLEVEL_BINDING.local_variable_defined?(:foo))
+    TOPLEVEL_BINDING.eval 'template2 = "two"'
+    erb = @erb.new("<%= template2 %>")
+    erb.result_with_hash(template2: "TWO")
+    assert_equal "two", TOPLEVEL_BINDING.local_variable_get("template2")
   end
 
   # This depends on the behavior that #local_variable_set raises TypeError by invalid key.

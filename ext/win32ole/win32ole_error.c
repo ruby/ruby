@@ -80,4 +80,5 @@ Init_win32ole_error(void)
      *
      */
     eWIN32OLERuntimeError = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
+    eWIN32OLEQueryInterfaceError = rb_define_class("WIN32OLEQueryInterfaceError", eWIN32OLERuntimeError);
 }

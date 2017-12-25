@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 require 'rdoc/test_case'
 
@@ -61,7 +61,7 @@ class TestRDocText < RDoc::TestCase
 
   def test_expand_tabs_encoding
     inn = "hello\ns\tdave"
-    inn.force_encoding Encoding::BINARY
+    inn = RDoc::Encoding.change_encoding inn, Encoding::BINARY
 
     out = expand_tabs inn
 
@@ -95,7 +95,7 @@ The comments associated with
   The comments associated with
     TEXT
 
-    text.force_encoding Encoding::US_ASCII
+    text = RDoc::Encoding.change_encoding text, Encoding::US_ASCII
 
     expected = <<-EXPECTED
 
@@ -303,7 +303,7 @@ paragraph will be cut off …
 # The comments associated with
     TEXT
 
-    text.force_encoding Encoding::CP852
+    text = RDoc::Encoding.change_encoding text, Encoding::CP852
 
     expected = <<-EXPECTED
 
@@ -332,7 +332,7 @@ paragraph will be cut off …
     assert_equal Encoding::UTF_8, ''.encoding, 'Encoding sanity check'
 
     text = " \n"
-    text.force_encoding Encoding::US_ASCII
+    text = RDoc::Encoding.change_encoding text, Encoding::US_ASCII
 
     stripped = strip_newlines text
 
@@ -386,7 +386,7 @@ paragraph will be cut off …
  */
     TEXT
 
-    text.force_encoding Encoding::CP852
+    text = RDoc::Encoding.change_encoding text, Encoding::CP852
 
     expected = <<-EXPECTED
 
@@ -410,7 +410,7 @@ paragraph will be cut off …
  */
     TEXT
 
-    text.force_encoding Encoding::BINARY
+    text = RDoc::Encoding.change_encoding text, Encoding::BINARY
 
     expected = <<-EXPECTED
 

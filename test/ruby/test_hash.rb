@@ -1031,8 +1031,8 @@ class TestHash < Test::Unit::TestCase
     assert_raise(TypeError) { h2.replace(1) }
     h2.freeze
     assert_raise(ArgumentError) { h2.replace() }
-    assert_raise(RuntimeError) { h2.replace(h1) }
-    assert_raise(RuntimeError) { h2.replace(42) }
+    assert_raise(FrozenError) { h2.replace(h1) }
+    assert_raise(FrozenError) { h2.replace(42) }
   end
 
   def test_size2
@@ -1594,6 +1594,13 @@ class TestHash < Test::Unit::TestCase
     x = @cls[a: 1, b: 2, c: 3]
     y = x.transform_values!.with_index {|v, i| "#{v}.#{i}" }
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
+  end
+
+  def test_broken_hash_value
+    bug14218 = '[ruby-core:84395] [Bug #14218]'
+
+    assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; a < 0 && b < 0 && a + b > 0}, bug14218)
+    assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; 0 + a + b != 0 + b + a}, bug14218)
   end
 
   class TestSubHash < TestHash

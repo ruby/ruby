@@ -17,7 +17,7 @@ describe "IO#advise" do
     }.should raise_error(TypeError)
   end
 
-  it "raises a TypeError if offsert cannot be coerced to an Integer" do
+  it "raises a TypeError if offset cannot be coerced to an Integer" do
     lambda {
       @io.advise(:normal, "wat")
     }.should raise_error(TypeError)

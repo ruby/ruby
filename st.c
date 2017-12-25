@@ -2150,7 +2150,7 @@ st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 static void
 st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 {
-    int i;
+    long i;
 
     /* push elems */
     for (i = 0; i < argc; /* */) {

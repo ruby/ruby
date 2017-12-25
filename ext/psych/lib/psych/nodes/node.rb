@@ -17,6 +17,18 @@ module Psych
       # An associated tag
       attr_reader :tag
 
+      # The line number where this node start
+      attr_accessor :start_line
+
+      # The column number where this node start
+      attr_accessor :start_column
+
+      # The line number where this node ends
+      attr_accessor :end_line
+
+      # The column number where this node ends
+      attr_accessor :end_column
+
       # Create a new Psych::Nodes::Node
       def initialize
         @children = []

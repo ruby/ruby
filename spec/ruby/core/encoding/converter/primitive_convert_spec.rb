@@ -89,7 +89,7 @@ with_feature :encoding do
       @ec.primitive_convert("","",nil,nil, {after_output: true}).should == :finished
     end
 
-    it "sets the destination buffer's encoding to the destination encoding if the conversion suceeded" do
+    it "sets the destination buffer's encoding to the destination encoding if the conversion succeeded" do
       dest = "".force_encoding('utf-8')
       dest.encoding.should == Encoding::UTF_8
       @ec.primitive_convert("\u{98}",dest).should == :finished
