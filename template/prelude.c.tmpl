@@ -138,6 +138,10 @@ prelude_prefix_path(VALUE self)
 static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic error "-Wmissing-field-initializers"
+#endif
     static const rb_compile_option_t optimization = {
 	TRUE, /* int inline_const_cache; */
 	TRUE, /* int peephole_optimization; */
@@ -146,10 +150,14 @@ prelude_eval(VALUE code, VALUE name, int line)
 	TRUE, /* int operands_unification; */
 	TRUE, /* int instructions_unification; */
 	TRUE, /* int stack_caching; */
-	FALSE, /* int trace_instruction; */
 	TRUE, /* int frozen_string_literal; */
 	FALSE, /* int debug_frozen_string_literal; */
+	FALSE, /* unsigned int coverage_enabled; */
+	0, /* int debug_level; */
     };
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
 
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
     if (!ast->root) {
