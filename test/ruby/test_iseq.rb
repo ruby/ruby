@@ -357,4 +357,37 @@ class TestISeq < Test::Unit::TestCase
                    [["<class:D>@17", [[17, :class],
                                       [18, :end]]]]], collect_iseq.call(sample_iseq)
   end
+
+  def test_empty_iseq_lineno
+    iseq = ISeq.compile(<<-EOS)
+    # 1
+    # 2
+    def foo   # line 3 empty method
+    end       # line 4
+    1.time do # line 5 empty block
+    end       # line 6
+    class C   # line 7 empty class
+    end
+    EOS
+
+    iseq.each_child{|ci|
+      ary = ci.to_a
+      type = ary[9]
+      name = ary[5]
+      line = ary[13].first
+      case ary[9]
+      when :method
+        assert_equal "foo", name
+        assert_equal 3, line
+      when :class
+        assert_equal '<class:C>', name
+        assert_equal 7, line
+      when :block
+        assert_equal 'block in <compiled>', name
+        assert_equal 5, line
+      else
+        raise "unknown ary: " + ary.inspect
+      end
+    }
+  end
 end

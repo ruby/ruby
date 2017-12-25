@@ -5413,8 +5413,10 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
 {
     if (node == 0) {
 	if (!popped) {
+	    int lineno = ISEQ_COMPILE_DATA(iseq)->last_line;
+	    if (lineno == 0) lineno = FIX2INT(rb_iseq_first_lineno(iseq));
 	    debugs("node: NODE_NIL(implicit)\n");
-	    ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, putnil);
+	    ADD_INSN(ret, lineno, putnil);
 	}
 	return COMPILE_OK;
     }
