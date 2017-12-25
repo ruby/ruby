@@ -231,7 +231,7 @@ static inline uint64_t
 mult_and_mix(uint64_t m1, uint64_t m2)
 {
 #if defined HAVE_UINT128_T
-    __uint128_t r = (__uint128_t) m1 * (__uint128_t) m2;
+    uint128_t r = (uint128_t) m1 * (uint128_t) m2;
     return (uint64_t) (r >> 64) ^ (uint64_t) r;
 #else
     uint64_t hm1 = m1 >> 32, hm2 = m2 >> 32;
