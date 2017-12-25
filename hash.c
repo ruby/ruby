@@ -224,7 +224,7 @@ rb_any_hash(VALUE a)
 
 /* Here we two primes with random bit generation.  */
 static const uint64_t prime1 = ((uint64_t)0x2e0bb864 << 32) | 0xe9ea7df5;
-static const uint64_t prime2 = ((uint64_t)0xcdb32970 << 32) | 0x830fcaa1;
+static const uint32_t prime2 = 0x830fcab9;
 
 
 static inline uint64_t
@@ -253,7 +253,7 @@ key64_hash(uint64_t key, uint32_t seed)
 long
 rb_objid_hash(st_index_t index)
 {
-    return (long)key64_hash(rb_hash_start(index), (uint32_t)prime2);
+    return (long)key64_hash(rb_hash_start(index), prime2);
 }
 
 static st_index_t
@@ -290,7 +290,7 @@ rb_ident_hash(st_data_t n)
     }
 #endif
 
-    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), (uint32_t)prime2);
+    return (st_index_t)key64_hash(rb_hash_start((st_index_t)n), prime2);
 }
 
 static const struct st_hash_type identhash = {
