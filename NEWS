@@ -491,6 +491,26 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* Gemification
+
+  * Promote following standard libraries to default gems.
+    * cmath
+    * csv
+    * date
+    * dbm
+    * etc
+    * fcntl
+    * fiddle
+    * fileutils
+    * gdbm
+    * ipaddr
+    * scanf
+    * sdbm
+    * stringio
+    * strscan
+    * webrick
+    * zlib
+
 * Logger
 
   * Logger.new("| command") had been working to open a command
