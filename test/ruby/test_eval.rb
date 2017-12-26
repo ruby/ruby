@@ -503,6 +503,12 @@ class TestEval < Test::Unit::TestCase
     assert_same a, b
   end
 
+  def test_eval_location_binding
+    assert_warning(/__FILE__ in eval/) do
+      assert_equal(__FILE__, eval("__FILE__", binding))
+    end
+  end
+
   def test_fstring_instance_eval
     bug = "[ruby-core:78116] [Bug #12930]".freeze
     assert_same bug, (bug.instance_eval {self})

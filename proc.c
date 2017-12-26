@@ -12,6 +12,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "gc.h"
+#include "vm_core.h"
 #include "iseq.h"
 
 /* Proc.new with no block will raise an exception in the future
@@ -609,6 +610,24 @@ bind_receiver(VALUE bindval)
     const rb_binding_t *bind;
     GetBindingPtr(bindval, bind);
     return vm_block_self(&bind->block);
+}
+
+/*
+ *  call-seq:
+ *     binding.source_location  -> [String, Integer]
+ *
+ *  Returns the Ruby source filename and line number of the binding object.
+ */
+static VALUE
+bind_location(VALUE bindval)
+{
+    VALUE loc[2];
+    const rb_binding_t *bind;
+    GetBindingPtr(bindval, bind);
+    loc[0] = pathobj_path(bind->pathobj);
+    loc[1] = INT2FIX(bind->first_lineno);
+
+    return rb_ary_new4(2, loc);
 }
 
 static VALUE
@@ -3223,5 +3242,6 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
+    rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
