@@ -1242,6 +1242,28 @@ rb_each(VALUE obj)
     return rb_call(obj, idEach, 0, 0, CALL_FCALL);
 }
 
+void rb_parser_warn_location(VALUE, int);
+static const rb_iseq_t *
+eval_make_iseq(VALUE fname, VALUE realpath, VALUE src, int line, const struct rb_block *base_block, int warn_location)
+{
+    const VALUE parser = rb_parser_new();
+    const rb_iseq_t *const parent = vm_block_iseq(base_block);
+    rb_iseq_t *iseq = 0;
+    rb_ast_t *ast;
+
+    rb_parser_set_context(parser, base_block, FALSE);
+    rb_parser_warn_location(parser, warn_location);
+    ast = rb_parser_compile_string_path(parser, fname, src, line);
+    if (ast->root) {
+	iseq = rb_iseq_new_with_opt(ast->root,
+				    parent->body->location.label,
+				    fname, realpath, INT2FIX(line),
+				    parent, ISEQ_TYPE_EVAL, NULL);
+    }
+    rb_ast_dispose(ast);
+    return iseq;
+}
+
 static VALUE
 eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg,
 		      VALUE filename, int lineno)
@@ -1251,8 +1273,11 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
     const struct rb_block *base_block;
     VALUE file;
     int line;
+    int warn_location = FALSE;
 
-    file = filename ? filename : rb_source_location(&lineno);
+    if (!(file = filename)) {
+	file = rb_source_location(&lineno);
+    }
     line = lineno;
 
     {
@@ -1269,6 +1294,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	if (!NIL_P(scope)) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 
+	    warn_location = !filename || filename == Qundef;
 	    if (NIL_P(realpath)) {
 		file = pathobj_path(bind->pathobj);
 		realpath = pathobj_realpath(bind->pathobj);
@@ -1295,9 +1321,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    fname = rb_usascii_str_new_cstr("(eval)");
 	}
 
-	/* make eval iseq */
-	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
-
+	iseq = eval_make_iseq(fname, realpath, src, line, base_block, warn_location);
 	if (!iseq) {
 	    rb_exc_raise(ec->errinfo);
 	}
