@@ -397,6 +397,21 @@ class TestProc < Test::Unit::TestCase
     assert_equal([1, 2, 3], b.eval("[x, y, z]"))
   end
 
+  def test_binding_source_location
+    b, expected_location = binding, [__FILE__, __LINE__]
+    assert_equal(expected_location, b.source_location)
+
+    file, lineno = method(:source_location_test).to_proc.binding.source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+  end
+
+  def test_source_location
+    file, lineno = method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+  end
+
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
     assert_raise(ArgumentError) { lambda }
