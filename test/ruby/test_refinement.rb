@@ -2055,6 +2055,25 @@ class TestRefinement < Test::Unit::TestCase
     INPUT
   end
 
+  def test_super_from_refined_module
+    a = EnvUtil.labeled_module("A") do
+      def foo;"[A#{super}]";end
+    end
+    b = EnvUtil.labeled_class("B") do
+      def foo;"[B]";end
+    end
+    c = EnvUtil.labeled_class("C", b) do
+      include a
+      def foo;"[C#{super}]";end
+    end
+    d = EnvUtil.labeled_module("D") do
+      refine(a) do
+        def foo;end
+      end
+    end
+    assert_equal("[C[A[B]]]", c.new.foo, '[ruby-dev:50390] [Bug #14232]')
+  end
+
   private
 
   def eval_using(mod, s)
