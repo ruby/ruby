@@ -261,6 +261,7 @@ struct parser_params {
     unsigned int do_loop: 1;
     unsigned int do_chomp: 1;
     unsigned int do_split: 1;
+    unsigned int warn_location: 1;
 
     NODE *eval_tree_begin;
     NODE *eval_tree;
@@ -9347,6 +9348,13 @@ past_dvar_p(struct parser_params *parser, ID id)
 }
 # endif
 
+#define WARN_LOCATION(type) do { \
+    if (parser->warn_location) { \
+	rb_warning0(type" in eval may not return location in binding;" \
+		    " use Binding#source_location instead"); \
+    } \
+} while (0)
+
 static NODE*
 gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 {
@@ -9370,9 +9378,11 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 	nd_set_loc(node, location);
 	return node;
       case keyword__FILE__:
+	WARN_LOCATION("__FILE__");
 	node = new_str(rb_str_dup(ruby_sourcefile_string), location);
 	return node;
       case keyword__LINE__:
+	WARN_LOCATION("__LINE__");
 	return new_lit(INT2FIX(tokline), location);
       case keyword__ENCODING__:
 	return new_lit(rb_enc_from_encoding(current_enc), location);
@@ -11525,6 +11535,14 @@ rb_parser_set_options(VALUE vparser, int print, int loop, int chomp, int split)
     parser->do_loop = loop;
     parser->do_chomp = chomp;
     parser->do_split = split;
+}
+
+void
+rb_parser_warn_location(VALUE vparser, int warn)
+{
+    struct parser_params *parser;
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
+    parser->warn_location = warn;
 }
 
 static NODE *
