@@ -1882,7 +1882,7 @@ static const rb_data_type_t autoload_data_i_type = {
 #define check_autoload_data(av) \
     (struct autoload_data_i *)rb_check_typeddata((av), &autoload_data_i_type)
 
-void
+RUBY_FUNC_EXPORTED void
 rb_autoload(VALUE mod, ID id, const char *file)
 {
     if (!file || !*file) {
