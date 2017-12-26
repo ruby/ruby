@@ -371,13 +371,11 @@ class Matrix
   alias set_component []=
 
   def in_row_range?(range)
-    range = range.to_a
-    (range.last <= (row_count - 1)) && (range.first >= (-row_count))
+    (range.max <= (row_count - 1)) && (range.min >= (-row_count))
   end
 
   def in_column_range?(range)
-    range = range.to_a
-    (range.last <= (column_count - 1)) && (range.first >= (-column_count))
+    (range.max <= (column_count - 1)) && (range.min >= (-column_count))
   end
 
   private :in_row_range?, :in_column_range?
