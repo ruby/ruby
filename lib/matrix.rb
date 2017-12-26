@@ -916,10 +916,11 @@ class Matrix
   #
   def antisymmetric?
     Matrix.Raise ErrDimensionMismatch unless square?
+    return false if reflexive?
     each_with_index(:strict_upper) do |e, row, col|
       return false if e == rows[col][row]
     end
-    true
+    all?
   end
 
   #
@@ -931,7 +932,7 @@ class Matrix
     self.each(:diagonal) do |e|
       return false if e != 1
     end
-    true
+    all?
   end
 
   #
