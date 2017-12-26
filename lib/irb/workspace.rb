@@ -108,7 +108,7 @@ EOF
     end
 
     def code_around_binding
-      file, pos = @binding.eval('[__FILE__, __LINE__]')
+      file, pos = @binding.source_location
 
       unless defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
         begin
