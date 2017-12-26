@@ -406,12 +406,6 @@ class TestProc < Test::Unit::TestCase
     assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
   end
 
-  def test_source_location
-    file, lineno = method(:source_location_test).source_location
-    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
-  end
-
   def test_proc_lambda
     assert_raise(ArgumentError) { proc }
     assert_raise(ArgumentError) { lambda }
