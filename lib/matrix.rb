@@ -305,7 +305,7 @@ class Matrix
 
   def []=(i, j, v)
     if i.is_a?(Range) && j.is_a?(Range)
-      raise ArgumentError, "expected ranges are outside of matrix" unless is_subrange?(row_range, i) && is_subrange?(column_range, j)
+      raise ArgumentError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
       if v.is_a?(Matrix)
         Matrix.Raise ErrDimensionMismatch unless i.size == v.row_count && j.size == v.column_count
         v.each_with_index do |e, row, col|
@@ -321,7 +321,7 @@ class Matrix
         end
       end
     elsif i.is_a?(Range)
-      raise ArgumentError, "expected row range is outside of matrix" unless is_subrange?(row_range, i)
+      raise ArgumentError, "expected row range is outside of matrix" unless in_row_range?(i)
       CoercionHelper.coerce_to_int(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
@@ -342,7 +342,7 @@ class Matrix
       end
     elsif j.is_a?(Range)
       CoercionHelper.coerce_to_int(i)
-      raise ArgumentError, "expected column range is outside of matrix" unless is_subrange?(column_range, j)
+      raise ArgumentError, "expected column range is outside of matrix" unless in_column_range?(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
         v.each_with_index do |e, index|
@@ -363,26 +363,22 @@ class Matrix
     else
       CoercionHelper.coerce_to_int(i)
       CoercionHelper.coerce_to_int(j)
-      raise ArgumentError, "indecies are outside of matrix" unless row_range.cover?(i) && column_range.cover?(j)
+      raise ArgumentError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
       @rows[i][j] = v
     end
   end
   alias set_element []=
   alias set_component []=
 
-  def row_range
-    (-row_count...row_count)
+  def in_row_range?(range)
+    (range.last <= row_count - 1) && (range.first >= -row_count)
   end
 
-  def column_range
-    (-column_count...column_count)
+  def in_column_range?(range)
+    (range.last <= column_count - 1) && (range.first >= -column_count)
   end
 
-  def is_subrange?(range, range_to_test)
-    (range_to_test.last <= range.last) && (range_to_test.first >= range.first)
-  end
-
-  private :row_range, :column_range, :is_subrange?
+  private :in_row_range?, :in_column_range?
 
 
 
