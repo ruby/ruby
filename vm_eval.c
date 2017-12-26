@@ -1243,33 +1243,14 @@ rb_each(VALUE obj)
 }
 
 static VALUE
-adjust_backtrace_in_eval(const rb_execution_context_t *ec, VALUE errinfo)
-{
-    VALUE errat = rb_get_backtrace(errinfo);
-    VALUE mesg = rb_attr_get(errinfo, id_mesg);
-    if (RB_TYPE_P(errat, T_ARRAY)) {
-	VALUE bt2 = rb_ec_backtrace_str_ary(ec, 0, 0);
-	if (RARRAY_LEN(bt2) > 0) {
-	    if (RB_TYPE_P(mesg, T_STRING) && !RSTRING_LEN(mesg)) {
-		rb_ivar_set(errinfo, id_mesg, RARRAY_AREF(errat, 0));
-	    }
-	    RARRAY_ASET(errat, 0, RARRAY_AREF(bt2, 0));
-	}
-    }
-    return errinfo;
-}
-
-static VALUE
 eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg,
 		      VALUE filename, int lineno)
 {
-    int state;
-    VALUE result = Qundef;
     rb_execution_context_t *ec = GET_EC();
     struct rb_block block;
     const struct rb_block *base_block;
-    volatile VALUE file;
-    volatile int line;
+    VALUE file;
+    int line;
 
     file = filename ? filename : rb_source_location(&lineno);
     line = lineno;
@@ -1318,7 +1299,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	iseq = rb_iseq_compile_with_option(src, fname, realpath, INT2FIX(line), base_block, Qnil);
 
 	if (!iseq) {
-	    rb_exc_raise(adjust_backtrace_in_eval(ec, ec->errinfo));
+	    rb_exc_raise(ec->errinfo);
 	}
 
 	/* TODO: what the code checking? */
@@ -1344,24 +1325,8 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	}
     }
 
-    if (file != Qundef) {
-	/* kick */
-	return vm_exec(ec);
-    }
-
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	result = vm_exec(ec);
-    }
-    EC_POP_TAG();
-
-    if (state) {
-	if (state == TAG_RAISE) {
-	    adjust_backtrace_in_eval(ec, ec->errinfo);
-	}
-	EC_JUMP_TAG(ec, state);
-    }
-    return result;
+    /* kick */
+    return vm_exec(ec);
 }
 
 static VALUE
