@@ -6608,7 +6608,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *    This option cannot be combined with any other option.
  *  :turkic ::
  *    Full Unicode case mapping, adapted for Turkic languages
- *    (Turkish, Aserbaijani,...). This means that upper case I is mapped to
+ *    (Turkish, Azerbaijani,...). This means that upper case I is mapped to
  *    lower case dotless i, and so on.
  *  :lithuanian ::
  *    Currently, just full Unicode case mapping. In the future, full Unicode
@@ -6618,7 +6618,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *    Only available on +downcase+ and +downcase!+. Unicode case <b>folding</b>,
  *    which is more far-reaching than Unicode case mapping.
  *    This option currently cannot be combined with any other option
- *    (i.e. there is currenty no variant for turkic languages).
+ *    (i.e. there is currently no variant for turkic languages).
  *
  *  Please note that several assumptions that are valid for ASCII-only case
  *  conversions do not hold for more general case conversions. For example,
