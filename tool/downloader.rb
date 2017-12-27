@@ -277,6 +277,8 @@ class Downloader
         $stderr.puts "retrying #{e.class} (#{e.message}) after #{times ** 2} seconds..."
         sleep(times ** 2)
         retry
+      else
+        raise
       end
     end
   end
