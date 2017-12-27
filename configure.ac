@@ -2039,7 +2039,8 @@ AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@endif])
 
 AC_CACHE_VAL([rb_cv_large_fd_select],
-    [AC_CHECK_TYPE(fd_mask, [rb_cv_large_fd_select=yes], [rb_cv_large_fd_select=no], [@%:@ifdef HAVE_SYS_SELECT_H
+    [AC_CHECK_TYPE(fd_mask, [rb_cv_large_fd_select=yes], [rb_cv_large_fd_select=no], [AC_INCLUDES_DEFAULT([])
+@%:@ifdef HAVE_SYS_SELECT_H
 @%:@ include <sys/select.h>
 @%:@endif])])
 AS_IF([test "$rb_cv_large_fd_select" = yes], [
