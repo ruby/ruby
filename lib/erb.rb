@@ -291,7 +291,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   _erbout=+''; _erbout.<<(-"Got "); _erbout.<<(( obj ).to_s); _erbout.<<(-"!\n"); _erbout
+  #   _erbout=+''; _erbout.<< "Got ".freeze; _erbout.<<(( obj ).to_s); _erbout.<< "!\n".freeze; _erbout
   #
   # By default the output is sent to the print method.  For example:
   #
@@ -302,7 +302,7 @@ class ERB
   # <i>Generates</i>:
   #
   #   #coding:UTF-8
-  #   print(-"Got "); print(( obj ).to_s); print(-"!\n")
+  #   print "Got ".freeze; print(( obj ).to_s); print "!\n".freeze
   #
   # == Evaluation
   #
@@ -576,17 +576,8 @@ class ERB
       end
     end
 
-    def content_dump(s) # :nodoc:
-      n = s.count("\n")
-      if n > 0
-        s.dump << "\n" * n
-      else
-        s.dump
-      end
-    end
-
     def add_put_cmd(out, content)
-      out.push("#{@put_cmd}(-#{content_dump(content)})")
+      out.push("#{@put_cmd} #{content.dump}.freeze#{"\n" * content.count("\n")}")
     end
 
     def add_insert_cmd(out, content)
@@ -668,7 +659,7 @@ class ERB
       when '<%='
         add_insert_cmd(out, content)
       when '<%#'
-        # out.push("# #{content_dump(content)}")
+        # commented out
       end
     end
 
