@@ -40,8 +40,21 @@ class PlatformGuard < SpecGuard
     os?(:windows)
   end
 
+  WORD_SIZE = 1.size * 8
+
+  POINTER_SIZE = begin
+    require 'rbconfig/sizeof'
+    RbConfig::SIZEOF["void*"] * 8
+  rescue LoadError
+    WORD_SIZE
+  end
+
   def self.wordsize?(size)
-    size == 8 * 1.size
+    size == WORD_SIZE
+  end
+
+  def self.pointer_size?(size)
+    size == POINTER_SIZE
   end
 
   def initialize(*args)
@@ -61,6 +74,8 @@ class PlatformGuard < SpecGuard
         match &&= PlatformGuard.os?(*value)
       when :wordsize
         match &&= PlatformGuard.wordsize? value
+      when :pointer_size
+        match &&= PlatformGuard.pointer_size? value
       end
     end
     match

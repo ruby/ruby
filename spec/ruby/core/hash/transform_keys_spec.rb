@@ -91,12 +91,12 @@ ruby_version_is "2.5" do
         @hash.freeze
       end
 
-      it "raises a RuntimeError on an empty hash" do
-        ->{ {}.freeze.transform_keys!(&:upcase) }.should raise_error(RuntimeError)
+      it "raises a #{frozen_error_class} on an empty hash" do
+        ->{ {}.freeze.transform_keys!(&:upcase) }.should raise_error(frozen_error_class)
       end
 
-      it "keeps pairs and raises a RuntimeError" do
-        ->{ @hash.transform_keys!(&:upcase) }.should raise_error(RuntimeError)
+      it "keeps pairs and raises a #{frozen_error_class}" do
+        ->{ @hash.transform_keys!(&:upcase) }.should raise_error(frozen_error_class)
         @hash.should == @initial_pairs
       end
 

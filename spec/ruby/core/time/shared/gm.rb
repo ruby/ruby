@@ -26,4 +26,30 @@ describe :time_gm, shared: true do
     time.usec.should == 0
     time.nsec.should == 999
   end
+
+  platform_is :linux do
+    it "handles real leap seconds" do
+      with_timezone 'right/UTC' do
+        time = Time.send(@method, 1972, 6, 30, 23, 59, 60)
+
+        time.sec.should == 60
+        time.min.should == 59
+        time.hour.should == 23
+        time.day.should == 30
+        time.month.should == 6
+      end
+    end
+
+    it "handles bad leap seconds by carrying values forward" do
+      with_timezone 'UTC' do
+        time = Time.send(@method, 1972, 6, 30, 23, 59, 60)
+
+        time.sec.should == 0
+        time.min.should == 0
+        time.hour.should == 0
+        time.day.should == 1
+        time.month.should == 7
+      end
+    end
+  end
 end

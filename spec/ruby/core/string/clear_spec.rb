@@ -30,10 +30,10 @@ with_feature :encoding do
       s.should == ""
     end
 
-    it "raises a RuntimeError if self is frozen" do
+    it "raises a #{frozen_error_class} if self is frozen" do
       @s.freeze
-      lambda { @s.clear        }.should raise_error(RuntimeError)
-      lambda { "".freeze.clear }.should raise_error(RuntimeError)
+      lambda { @s.clear        }.should raise_error(frozen_error_class)
+      lambda { "".freeze.clear }.should raise_error(frozen_error_class)
     end
   end
 end

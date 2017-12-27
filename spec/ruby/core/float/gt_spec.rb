@@ -1,6 +1,9 @@
 require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../shared/comparison_exception_in_coerce', __FILE__)
 
 describe "Float#>" do
+  it_behaves_like :float_comparison_exception_in_coerce, :>
+
   it "returns true if self is greater than other" do
     (1.5 > 1).should == true
     (2.5 > 3).should == false

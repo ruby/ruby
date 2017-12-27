@@ -38,12 +38,12 @@ describe "Array#pop" do
     a.tainted?.should be_true
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.pop }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { ArraySpecs.frozen_array.pop }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.pop }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    lambda { ArraySpecs.empty_frozen_array.pop }.should raise_error(frozen_error_class)
   end
 
   it "keeps untrusted status" do
@@ -152,9 +152,9 @@ describe "Array#pop" do
       ary.pop(0).untrusted?.should be_false
     end
 
-    it "raises a RuntimeError on a frozen array" do
-      lambda { ArraySpecs.frozen_array.pop(2) }.should raise_error(RuntimeError)
-      lambda { ArraySpecs.frozen_array.pop(0) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} on a frozen array" do
+      lambda { ArraySpecs.frozen_array.pop(2) }.should raise_error(frozen_error_class)
+      lambda { ArraySpecs.frozen_array.pop(0) }.should raise_error(frozen_error_class)
     end
 
     it "keeps untrusted status" do

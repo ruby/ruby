@@ -121,9 +121,9 @@ describe "Array#rotate!" do
     a.should == []
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { [1, 2, 3].freeze.rotate!(0) }.should raise_error(RuntimeError)
-    lambda { [1].freeze.rotate!(42) }.should raise_error(RuntimeError)
-    lambda { [].freeze.rotate! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { [1, 2, 3].freeze.rotate!(0) }.should raise_error(frozen_error_class)
+    lambda { [1].freeze.rotate!(42) }.should raise_error(frozen_error_class)
+    lambda { [].freeze.rotate! }.should raise_error(frozen_error_class)
   end
 end

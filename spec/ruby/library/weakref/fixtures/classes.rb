@@ -15,8 +15,7 @@ class WeakRefSpec
     weak = nil
     10_000.times do
       weaks << make_weakref
-      GC.start
-      GC.start
+      10.times { GC.start }
       break if weak = weaks.find { |w| !w.weakref_alive? }
     end
     weak
