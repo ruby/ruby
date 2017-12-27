@@ -23,7 +23,7 @@ def compile_extension(name)
   ext = "#{name}_spec"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
-  libruby_so = RbConfig::CONFIG['LIBRUBY_SO']
+  libruby_so = RbConfig::CONFIG['LIBRUBY_SO'] if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
 
   begin
     mtime = File.mtime(lib)
