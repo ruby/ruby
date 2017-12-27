@@ -38,18 +38,6 @@ class TestGemRequire < Gem::TestCase
     assert require(path), "'#{path}' was already required"
   end
 
-  def append_latch spec
-    dir = spec.gem_dir
-    Dir.chdir dir do
-      spec.files.each do |file|
-        File.open file, 'a' do |fp|
-          fp.puts "FILE_ENTERED_LATCH.release"
-          fp.puts "FILE_EXIT_LATCH.await"
-        end
-      end
-    end
-  end
-
   # Providing -I on the commandline should always beat gems
   def test_dash_i_beats_gems
     a1 = new_spec "a", "1", {"b" => "= 1"}, "lib/test_gem_require_a.rb"
@@ -80,6 +68,15 @@ class TestGemRequire < Gem::TestCase
     Object.send :remove_const, :HELLO if Object.const_defined? :HELLO
   end
 
+  def create_sync_thread
+    Thread.new do
+      yield
+    ensure
+      FILE_ENTERED_LATCH.release
+      FILE_EXIT_LATCH.await
+    end
+  end
+
   def test_concurrent_require
     skip 'deadlock' if /^1\.8\./ =~ RUBY_VERSION
 
@@ -91,11 +88,8 @@ class TestGemRequire < Gem::TestCase
 
     install_specs a1, b1
 
-    append_latch a1
-    append_latch b1
-
-    t1 = Thread.new { assert_require 'a' }
-    t2 = Thread.new { assert_require 'b' }
+    t1 = create_sync_thread{ assert_require 'a' }
+    t2 = create_sync_thread{ assert_require 'b' }
 
     # wait until both files are waiting on the exit latch
     FILE_ENTERED_LATCH.await
@@ -106,8 +100,6 @@ class TestGemRequire < Gem::TestCase
     assert t1.join, "thread 1 should exit"
     assert t2.join, "thread 2 should exit"
   ensure
-    return if $! # skipping
-
     Object.send :remove_const, :FILE_ENTERED_LATCH
     Object.send :remove_const, :FILE_EXIT_LATCH
   end
