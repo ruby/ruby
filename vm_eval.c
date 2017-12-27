@@ -1289,58 +1289,52 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *cref, VALUE file, int line)
+eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
     struct rb_block block;
-    const struct rb_block *base_block;
+    const rb_iseq_t *iseq;
+    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+    if (!cfp) {
+	rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
+    }
 
-    {
-	rb_binding_t *bind = 0;
-	const rb_iseq_t *iseq;
+    block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
+    block.as.captured.self = self;
+    block.as.captured.code.iseq = cfp->iseq;
+    block.type = block_type_iseq;
 
-	if (!NIL_P(scope)) {
-	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
+    iseq = eval_make_iseq(src, file, line, NULL, &block);
+    if (!iseq) {
+	rb_exc_raise(ec->errinfo);
+    }
 
-	    base_block = &bind->block;
-	}
-	else {
-	    rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
+    /* TODO: what the code checking? */
+    if (!cref && block.as.captured.code.val) {
+	rb_cref_t *orig_cref = rb_vm_get_cref(vm_block_ep(&block));
+	cref = vm_cref_dup(orig_cref);
+    }
+    vm_set_eval_stack(ec, iseq, cref, &block);
 
-	    if (cfp != 0) {
-		block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
-		block.as.captured.self = self;
-		block.as.captured.code.iseq = cfp->iseq;
-		block.type = block_type_iseq;
-		base_block = &block;
-	    }
-	    else {
-		rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
-	    }
-	}
+    /* kick */
+    return vm_exec(ec);
+}
 
-	iseq = eval_make_iseq(src, file, line, bind, base_block);
-	if (!iseq) {
-	    rb_exc_raise(ec->errinfo);
-	}
+static VALUE
+eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_binding_t *bind = Check_TypedStruct(scope, &ruby_binding_data_type);
+    const rb_iseq_t *iseq = eval_make_iseq(src, file, line, bind, &bind->block);
+    if (!iseq) {
+	rb_exc_raise(ec->errinfo);
+    }
 
-	/* TODO: what the code checking? */
-	if (!cref && base_block->as.captured.code.val) {
-	    if (NIL_P(scope)) {
-		rb_cref_t *orig_cref = rb_vm_get_cref(vm_block_ep(base_block));
-		cref = vm_cref_dup(orig_cref);
-	    }
-	    else {
-		cref = NULL; /* use stacked CREF */
-	    }
-	}
-	vm_set_eval_stack(ec, iseq, cref, base_block);
+    vm_set_eval_stack(ec, iseq, NULL, &bind->block);
 
-
-	/* save new env */
-	if (bind && iseq->body->local_table_size > 0) {
-	    vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
-	}
+    /* save new env */
+    if (iseq->body->local_table_size > 0) {
+	vm_bind_update_env(scope, bind, vm_make_env_object(ec, ec->cfp));
     }
 
     /* kick */
@@ -1350,7 +1344,10 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *cref, VALUE
 static VALUE
 eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
 {
-    return eval_string_with_cref(self, src, scope, 0, file, line);
+    if (NIL_P(scope))
+	return eval_string_with_cref(self, src, NULL, file, line);
+    else
+	return eval_string_with_scope(scope, src, file, line);
 }
 
 /*
@@ -1598,7 +1595,7 @@ eval_under(VALUE under, VALUE self, VALUE src, VALUE file, int line)
 {
     rb_cref_t *cref = vm_cref_push(GET_EC(), under, NULL, SPECIAL_CONST_P(self) && !NIL_P(under));
     SafeStringValue(src);
-    return eval_string_with_cref(self, src, Qnil, cref, file, line);
+    return eval_string_with_cref(self, src, cref, file, line);
 }
 
 static VALUE
