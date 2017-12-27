@@ -161,7 +161,9 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = url.read(options.merge(http_options(file, since.nil? ? true : since)))
+      data = with_retry(3, Errno::ECONNREFUSED) do
+        url.read(options.merge(http_options(file, since.nil? ? true : since)))
+      end
     rescue OpenURI::HTTPError => http_error
       if http_error.message =~ /^304 / # 304 Not Modified
         if $VERBOSE
@@ -207,7 +209,7 @@ class Downloader
     end
     return file.to_path
   rescue => e
-    raise "failed to download #{name}\n#{e.message}: #{url}"
+    raise "failed to download #{name}\n#{e.class}: #{e.message}: #{url}"
   end
 
   def self.under(dir, name)
@@ -264,6 +266,23 @@ class Downloader
       end
     end
   end
+
+  def self.with_retry(max_times, exception, &block)
+    times = 0
+    begin
+      block.call
+    rescue exception => e
+      times += 1
+      if times <= max_times
+        $stderr.puts "retrying #{e.class} (#{e.message}) after #{times ** 2} seconds..."
+        sleep(times ** 2)
+        retry
+      else
+        raise
+      end
+    end
+  end
+  private_class_method :with_retry
 end
 
 Downloader.https = https.freeze

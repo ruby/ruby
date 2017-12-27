@@ -23,19 +23,22 @@ def compile_extension(name)
   ext = "#{name}_spec"
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
-  libruby_so = RbConfig::CONFIG['LIBRUBY_SO']
-  ruby_library = "#{RbConfig::CONFIG['libdir']}/#{libruby_so}"
-  unless libruby_so and File.exist?(ruby_library)
-    # Statically-compiled lib in the binary, ignore this check
-    ruby_library = nil
-  end
+  libruby_so = RbConfig::CONFIG['LIBRUBY_SO'] if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
 
-  return lib if File.exist?(lib) and
-                File.mtime(lib) > File.mtime("#{extension_path}/rubyspec.h") and
-                File.mtime(lib) > File.mtime("#{extension_path}/#{ext}.c") and
-                File.mtime(lib) > File.mtime(ruby_header) and
-                (!ruby_library || File.mtime(lib) > File.mtime(ruby_library)) and
-                true            # sentinel
+  begin
+    mtime = File.mtime(lib)
+  rescue Errno::ENOENT
+    # not found, then compile
+  else
+    case # if lib is older than headers, source or libruby, then recompile
+    when mtime <= File.mtime("#{extension_path}/rubyspec.h")
+    when mtime <= File.mtime("#{extension_path}/#{ext}.c")
+    when mtime <= File.mtime(ruby_header)
+    when libruby_so && mtime <= File.mtime("#{RbConfig::CONFIG['libdir']}/#{libruby_so}")
+    else
+      return lib # up-to-date
+    end
+  end
 
   # Copy needed source files to tmpdir
   tmpdir = tmp("cext_#{name}")
