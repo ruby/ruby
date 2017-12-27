@@ -80,9 +80,9 @@ describe "Hash#compare_by_identity" do
     @h[o].should == :o
   end
 
-  it "raises a RuntimeError on frozen hashes" do
+  it "raises a #{frozen_error_class} on frozen hashes" do
     @h = @h.freeze
-    lambda { @h.compare_by_identity }.should raise_error(RuntimeError)
+    lambda { @h.compare_by_identity }.should raise_error(frozen_error_class)
   end
 
   # Behaviour confirmed in bug #1871

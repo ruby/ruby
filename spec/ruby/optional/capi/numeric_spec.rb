@@ -195,6 +195,13 @@ describe "CApiNumericSpecs" do
         @s.rb_num2ulong(-2147442171).should == 2147525125
       end
 
+      it "converts positive Bignums if the values is less than 64bits" do
+        @s.rb_num2ulong(0xffff_ffff).should == 0xffff_ffff
+        @s.rb_num2ulong(2**30).should == 2**30
+        @s.rb_num2ulong(fixnum_max+1).should == fixnum_max+1
+        @s.rb_num2ulong(fixnum_max).should == fixnum_max
+      end
+
       it "raises a RangeError if the value is more than 32bits" do
         lambda { @s.rb_num2ulong(0xffff_ffff+1) }.should raise_error(RangeError)
       end
@@ -207,6 +214,13 @@ describe "CApiNumericSpecs" do
 
       it "converts a negative Bignum into an unsigned number" do
         @s.rb_num2ulong(-9223372036854734331).should == 9223372036854817285
+      end
+
+      it "converts positive Bignums if the values is less than 64bits" do
+        @s.rb_num2ulong(0xffff_ffff_ffff_ffff).should == 0xffff_ffff_ffff_ffff
+        @s.rb_num2ulong(2**62).should == 2**62
+        @s.rb_num2ulong(fixnum_max+1).should == fixnum_max+1
+        @s.rb_num2ulong(fixnum_max).should == fixnum_max
       end
 
       it "raises a RangeError if the value is more than 64bits" do
@@ -244,6 +258,20 @@ describe "CApiNumericSpecs" do
       i = @s.rb_int2inum_14()
       i.should be_kind_of(Fixnum)
       i.should eql(14)
+    end
+  end
+
+  describe "rb_uint2inum" do
+    it "creates a new Fixnum from a long" do
+      i = @s.rb_uint2inum_14()
+      i.should be_kind_of(Fixnum)
+      i.should eql(14)
+    end
+
+    it "creates a new Bignum from a negative long" do
+      i = @s.rb_uint2inum_n14()
+      i.should be_kind_of(Bignum)
+      i.should eql(2 ** (@s.size_of_VALUE * 8) - 14)
     end
   end
 

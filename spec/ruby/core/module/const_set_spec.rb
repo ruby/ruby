@@ -78,8 +78,8 @@ describe "Module#const_set" do
       @name = :Foo
     end
 
-    it "raises a RuntimeError before setting the name" do
-      lambda { @frozen.const_set @name, nil }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} before setting the name" do
+      lambda { @frozen.const_set @name, nil }.should raise_error(frozen_error_class)
       @frozen.should_not have_constant(@name)
     end
   end

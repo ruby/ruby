@@ -234,10 +234,10 @@ describe "A singleton method definition" do
     (obj==2).should == 2
   end
 
-  it "raises RuntimeError if frozen" do
+  it "raises #{frozen_error_class} if frozen" do
     obj = Object.new
     obj.freeze
-    lambda { def obj.foo; end }.should raise_error(RuntimeError)
+    lambda { def obj.foo; end }.should raise_error(frozen_error_class)
   end
 end
 
@@ -385,12 +385,12 @@ describe "A method definition inside a metaclass scope" do
     lambda { Object.new.a_singleton_method }.should raise_error(NoMethodError)
   end
 
-  it "raises RuntimeError if frozen" do
+  it "raises #{frozen_error_class} if frozen" do
     obj = Object.new
     obj.freeze
 
     class << obj
-      lambda { def foo; end }.should raise_error(RuntimeError)
+      lambda { def foo; end }.should raise_error(frozen_error_class)
     end
   end
 end

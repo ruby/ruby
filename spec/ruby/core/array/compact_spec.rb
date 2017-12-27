@@ -71,7 +71,7 @@ describe "Array#compact!" do
     a.untrusted?.should be_true
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.compact! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { ArraySpecs.frozen_array.compact! }.should raise_error(frozen_error_class)
   end
 end

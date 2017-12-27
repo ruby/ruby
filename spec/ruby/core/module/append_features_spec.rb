@@ -65,8 +65,8 @@ describe "Module#append_features" do
       @other = Module.new.freeze
     end
 
-    it "raises a RuntimeError before appending self" do
-      lambda { @receiver.send(:append_features, @other) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} before appending self" do
+      lambda { @receiver.send(:append_features, @other) }.should raise_error(frozen_error_class)
       @other.ancestors.should_not include(@receiver)
     end
   end

@@ -38,13 +38,13 @@ describe "String#lstrip!" do
     a.should == "hello"
   end
 
-  it "raises a RuntimeError on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.lstrip! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+    lambda { "  hello  ".freeze.lstrip! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23657]
-  it "raises a RuntimeError on a frozen instance that would not be modified" do
-    lambda { "hello".freeze.lstrip! }.should raise_error(RuntimeError)
-    lambda { "".freeze.lstrip!      }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
+    lambda { "hello".freeze.lstrip! }.should raise_error(frozen_error_class)
+    lambda { "".freeze.lstrip!      }.should raise_error(frozen_error_class)
   end
 end

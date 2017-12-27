@@ -60,7 +60,7 @@ describe "SignalException.new" do
   end
 end
 
-describe "rescueing SignalException" do
+describe "rescuing SignalException" do
   it "raises a SignalException when sent a signal" do
     begin
       Process.kill :TERM, Process.pid

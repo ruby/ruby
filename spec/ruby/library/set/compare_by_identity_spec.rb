@@ -92,11 +92,11 @@ ruby_version_is '2.4' do
       set.to_a.sort.should == [a1, a2].sort
     end
 
-    it "raises a RuntimeError on frozen sets" do
+    it "raises a #{frozen_error_class} on frozen sets" do
       set = Set.new.freeze
       lambda {
         set.compare_by_identity
-      }.should raise_error(RuntimeError, /frozen Hash/)
+      }.should raise_error(frozen_error_class, /frozen Hash/)
     end
 
     it "persists over #dups" do

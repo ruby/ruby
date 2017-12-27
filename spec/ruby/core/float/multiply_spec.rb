@@ -1,6 +1,9 @@
 require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../shared/arithmetic_exception_in_coerce', __FILE__)
 
 describe "Float#*" do
+  it_behaves_like :float_arithmetic_exception_in_coerce, :*
+
   it "returns self multiplied by other" do
     (4923.98221 * 2).should be_close(9847.96442, TOLERANCE)
     (6712.5 * 0.25).should be_close(1678.125, TOLERANCE)

@@ -41,8 +41,8 @@ describe :keep_if, shared: true do
         @frozen.should == @origin
       end
 
-      it "raises a RuntimeError" do
-        lambda { @frozen.send(@method) { true } }.should raise_error(RuntimeError)
+      it "raises a #{frozen_error_class}" do
+        lambda { @frozen.send(@method) { true } }.should raise_error(frozen_error_class)
       end
     end
 
@@ -52,8 +52,8 @@ describe :keep_if, shared: true do
         @frozen.should == @origin
       end
 
-      it "raises a RuntimeError" do
-        lambda { @frozen.send(@method) { false } }.should raise_error(RuntimeError)
+      it "raises a #{frozen_error_class}" do
+        lambda { @frozen.send(@method) { false } }.should raise_error(frozen_error_class)
       end
     end
   end

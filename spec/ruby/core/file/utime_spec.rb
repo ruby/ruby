@@ -34,6 +34,14 @@ describe "File.utime" do
     File.utime(@atime, @mtime, mock_to_path(@file1), mock_to_path(@file2))
   end
 
+  it "accepts numeric atime and mtime arguments" do
+    File.utime(@atime.to_i, @mtime.to_i, @file1, @file2)
+    File.atime(@file1).to_i.should be_close(@atime.to_i, 2)
+    File.mtime(@file1).to_i.should be_close(@mtime.to_i, 2)
+    File.atime(@file2).to_i.should be_close(@atime.to_i, 2)
+    File.mtime(@file2).to_i.should be_close(@mtime.to_i, 2)
+  end
+
   platform_is :linux do
     platform_is wordsize: 64 do
       it "allows Time instances in the far future to set mtime and atime" do

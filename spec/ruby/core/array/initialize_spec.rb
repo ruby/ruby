@@ -32,13 +32,13 @@ describe "Array#initialize" do
     end.should raise_error(ArgumentError)
   end
 
-  it "raises a RuntimeError on frozen arrays" do
+  it "raises a #{frozen_error_class} on frozen arrays" do
     lambda do
       ArraySpecs.frozen_array.send :initialize
-    end.should raise_error(RuntimeError)
+    end.should raise_error(frozen_error_class)
     lambda do
       ArraySpecs.frozen_array.send :initialize, ArraySpecs.frozen_array
-    end.should raise_error(RuntimeError)
+    end.should raise_error(frozen_error_class)
   end
 
   it "calls #to_ary to convert the value to an array, even if it's private" do

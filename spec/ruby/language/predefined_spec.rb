@@ -30,11 +30,11 @@ $`               String          The string preceding the match in a successful 
                                  is local to the current scope. [r/o, thread]
 $'               String          The string following the match in a successful pattern match. This variable
                                  is local to the current scope. [r/o, thread]
-$1 to $9         String          The contents of successive groups matched in a successful pattern match. In
+$1 to $<N>       String          The contents of successive groups matched in a successful pattern match. In
                                  "cat" =~/(c|a)(t|z)/, $1 will be set to “a” and $2 to “t”. This variable
                                  is local to the current scope. [r/o, thread]
 $~               MatchData       An object that encapsulates the results of a successful pattern match. The
-                                 variables $&, $`, $', and $1 to $9 are all derived from $~. Assigning to $~
+                                 variables $&, $`, $', and $1 to $<N> are all derived from $~. Assigning to $~
                                  changes the values of these derived variables. This variable is local to the
                                  current scope. [thread]
 =end
@@ -642,6 +642,33 @@ describe "Predefined global $," do
 
   it "raises TypeError if assigned a non-String" do
     lambda { $, = Object.new }.should raise_error(TypeError)
+  end
+end
+
+describe "Predefined global $." do
+  it "can be assigned an Integer" do
+    $. = 123
+    $..should == 123
+  end
+
+  it "can be assigned a Float" do
+    $. = 123.5
+    $..should == 123
+  end
+
+  it "should call #to_int to convert the object to an Integer" do
+    obj = mock("good-value")
+    obj.should_receive(:to_int).and_return(321)
+
+    $. = obj
+    $..should == 321
+  end
+
+  it "raises TypeError if object can't be converted to an Integer" do
+    obj = mock("bad-value")
+    obj.should_receive(:to_int).and_return('abc')
+
+    lambda { $. = obj }.should raise_error(TypeError)
   end
 end
 

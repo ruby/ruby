@@ -103,12 +103,12 @@ describe "Array#reject!" do
     ArraySpecs.frozen_array.reject!.should be_an_instance_of(Enumerator)
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { ArraySpecs.frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError on an empty frozen array" do
-    lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on an empty frozen array" do
+    lambda { ArraySpecs.empty_frozen_array.reject! {} }.should raise_error(frozen_error_class)
   end
 
   it_behaves_like :enumeratorize, :reject!

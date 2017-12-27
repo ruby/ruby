@@ -14,6 +14,7 @@ end
 
 describe "Rational#<=> when passed an Object that responds to #coerce" do
   it_behaves_like(:rational_cmp_coerce, :<=>)
+  it_behaves_like(:rational_cmp_coerce_exception, :<=>)
 end
 
 describe "Rational#<=> when passed a non-Numeric Object that doesn't respond to #coerce" do
