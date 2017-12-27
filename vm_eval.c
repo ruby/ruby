@@ -1244,15 +1244,33 @@ rb_each(VALUE obj)
 
 void rb_parser_warn_location(VALUE, int);
 static const rb_iseq_t *
-eval_make_iseq(VALUE fname, VALUE realpath, VALUE src, int line, const struct rb_block *base_block, int warn_location)
+eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
+	       const struct rb_block *base_block)
 {
     const VALUE parser = rb_parser_new();
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
+    VALUE realpath = Qnil;
     rb_iseq_t *iseq = 0;
     rb_ast_t *ast;
 
+    if (!fname) {
+	fname = rb_source_location(&line);
+    }
+
+    if (fname != Qundef) {
+	realpath = fname;
+    }
+    else if (bind) {
+	fname = pathobj_path(bind->pathobj);
+	realpath = pathobj_realpath(bind->pathobj);
+	line = bind->first_lineno;
+	rb_parser_warn_location(parser, TRUE);
+    }
+    else {
+	fname = rb_usascii_str_new_cstr("(eval)");
+    }
+
     rb_parser_set_context(parser, base_block, FALSE);
-    rb_parser_warn_location(parser, warn_location);
     ast = rb_parser_compile_string_path(parser, fname, src, line);
     if (ast->root) {
 	iseq = rb_iseq_new_with_opt(ast->root,
@@ -1261,45 +1279,29 @@ eval_make_iseq(VALUE fname, VALUE realpath, VALUE src, int line, const struct rb
 				    parent, ISEQ_TYPE_EVAL, NULL);
     }
     rb_ast_dispose(ast);
+
+    if (0 && iseq) {		/* for debug */
+	VALUE disasm = rb_iseq_disasm(iseq);
+	printf("%s\n", StringValuePtr(disasm));
+    }
+
     return iseq;
 }
 
 static VALUE
-eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_arg,
-		      VALUE filename, int lineno)
+eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *cref, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
     struct rb_block block;
     const struct rb_block *base_block;
-    VALUE file;
-    int line;
-    int warn_location = FALSE;
-
-    if (!(file = filename)) {
-	file = rb_source_location(&lineno);
-    }
-    line = lineno;
 
     {
-	rb_cref_t *cref = cref_arg;
 	rb_binding_t *bind = 0;
 	const rb_iseq_t *iseq;
-	VALUE realpath = Qnil;
-	VALUE fname;
-
-	if (file != Qundef) {
-	    realpath = file;
-	}
 
 	if (!NIL_P(scope)) {
 	    bind = Check_TypedStruct(scope, &ruby_binding_data_type);
 
-	    warn_location = !filename || filename == Qundef;
-	    if (NIL_P(realpath)) {
-		file = pathobj_path(bind->pathobj);
-		realpath = pathobj_realpath(bind->pathobj);
-		line = bind->first_lineno;
-	    }
 	    base_block = &bind->block;
 	}
 	else {
@@ -1317,11 +1319,7 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	    }
 	}
 
-	if ((fname = file) == Qundef) {
-	    fname = rb_usascii_str_new_cstr("(eval)");
-	}
-
-	iseq = eval_make_iseq(fname, realpath, src, line, base_block, warn_location);
+	iseq = eval_make_iseq(src, file, line, bind, base_block);
 	if (!iseq) {
 	    rb_exc_raise(ec->errinfo);
 	}
@@ -1338,10 +1336,6 @@ eval_string_with_cref(VALUE self, VALUE src, VALUE scope, rb_cref_t *const cref_
 	}
 	vm_set_eval_stack(ec, iseq, cref, base_block);
 
-	if (0) {		/* for debug */
-	    VALUE disasm = rb_iseq_disasm(iseq);
-	    printf("%s\n", StringValuePtr(disasm));
-	}
 
 	/* save new env */
 	if (bind && iseq->body->local_table_size > 0) {
