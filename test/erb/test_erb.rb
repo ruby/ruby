@@ -622,6 +622,13 @@ EOS
     erb = @erb.new("<%= 1 %>")
     assert_raise(TypeError) { erb.result_with_hash({ 1 => "1" }) }
   end
+
+  # Bug#14243
+  def test_half_working_comment_backward_compatibility
+    assert_nothing_raised do
+      @erb.new("<% # comment %>\n").result
+    end
+  end
 end
 
 class TestERBCoreWOStrScan < TestERBCore
