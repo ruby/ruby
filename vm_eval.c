@@ -1341,15 +1341,6 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
     return vm_exec(ec);
 }
 
-static VALUE
-eval_string(VALUE self, VALUE src, VALUE scope, VALUE file, int line)
-{
-    if (NIL_P(scope))
-	return eval_string_with_cref(self, src, NULL, file, line);
-    else
-	return eval_string_with_scope(scope, src, file, line);
-}
-
 /*
  *  call-seq:
  *     eval(string [, binding [, filename [,lineno]]])  -> obj
@@ -1386,7 +1377,11 @@ rb_f_eval(int argc, const VALUE *argv, VALUE self)
 
     if (!NIL_P(vfile))
 	file = vfile;
-    return eval_string(self, src, scope, file, line);
+
+    if (NIL_P(scope))
+	return eval_string_with_cref(self, src, NULL, file, line);
+    else
+	return eval_string_with_scope(scope, src, file, line);
 }
 
 /** @note This function name is not stable. */
@@ -1394,7 +1389,7 @@ VALUE
 ruby_eval_string_from_file(const char *str, const char *filename)
 {
     VALUE file = filename ? rb_str_new_cstr(filename) : 0;
-    return eval_string(rb_vm_top_self(), rb_str_new2(str), Qnil, file, 1);
+    return eval_string_with_cref(rb_vm_top_self(), rb_str_new2(str), NULL, file, 1);
 }
 
 struct eval_string_from_file_arg {
@@ -1406,7 +1401,7 @@ static VALUE
 eval_string_from_file_helper(VALUE data)
 {
     const struct eval_string_from_file_arg *const arg = (struct eval_string_from_file_arg*)data;
-    return eval_string(rb_vm_top_self(), arg->str, Qnil, arg->filename, 1);
+    return eval_string_with_cref(rb_vm_top_self(), arg->str, NULL, arg->filename, 1);
 }
 
 VALUE
@@ -1510,7 +1505,7 @@ rb_eval_cmd(VALUE cmd, VALUE arg, int level)
 			      RARRAY_CONST_PTR(arg));
 	}
 	else {
-	    val = eval_string(rb_vm_top_self(), cmd, Qnil, 0, 0);
+	    val = eval_string_with_cref(rb_vm_top_self(), cmd, NULL, 0, 0);
 	}
     }
     EC_POP_TAG();
