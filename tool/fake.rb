@@ -57,6 +57,7 @@ prehook = proc do |extmk|
   mkconfig = RbConfig::MAKEFILE_CONFIG
   mkconfig["builddir"] = config["builddir"] = builddir
   mkconfig["buildlibdir"] = config["buildlibdir"] = builddir
+  mkconfig["libdir"] = config["libdir"] = builddir
   mkconfig["top_srcdir"] = $top_srcdir if $top_srcdir
   mkconfig["extout"] ||= $extout
   config["top_srcdir"] = File.expand_path($top_srcdir ||= top_srcdir)
