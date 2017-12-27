@@ -41,9 +41,9 @@ describe "Array#clear" do
     a.untrusted?.should be_true
   end
 
-  it "raises a RuntimeError on a frozen array" do
+  it "raises a #{frozen_error_class} on a frozen array" do
     a = [1]
     a.freeze
-    lambda { a.clear }.should raise_error(RuntimeError)
+    lambda { a.clear }.should raise_error(frozen_error_class)
   end
 end

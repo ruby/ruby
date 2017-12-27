@@ -82,12 +82,12 @@ describe "Kernel#instance_variable_set" do
       @frozen.ivar.should equal(:origin)
     end
 
-    it "raises a RuntimeError when passed replacement is identical to stored object" do
-      lambda { @frozen.instance_variable_set(:@ivar, :origin) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when passed replacement is identical to stored object" do
+      lambda { @frozen.instance_variable_set(:@ivar, :origin) }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when passed replacement is different from stored object" do
-      lambda { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when passed replacement is different from stored object" do
+      lambda { @frozen.instance_variable_set(:@ivar, :replacement) }.should raise_error(frozen_error_class)
     end
   end
 end

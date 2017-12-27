@@ -32,13 +32,13 @@ describe "Array#concat" do
     [].concat(obj).should == [5, 6, 7]
   end
 
-  it "raises a RuntimeError when Array is frozen and modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat [1] }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} when Array is frozen and modification occurs" do
+    lambda { ArraySpecs.frozen_array.concat [1] }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a RuntimeError when Array is frozen and no modification occurs" do
-    lambda { ArraySpecs.frozen_array.concat([]) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} when Array is frozen and no modification occurs" do
+    lambda { ArraySpecs.frozen_array.concat([]) }.should raise_error(frozen_error_class)
   end
 
   it "keeps tainted status" do

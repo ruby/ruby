@@ -115,14 +115,14 @@ describe "String#chop!" do
     "".chop!.should be_nil
   end
 
-  it "raises a RuntimeError on a frozen instance that is modified" do
-    lambda { "string\n\r".freeze.chop! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+    lambda { "string\n\r".freeze.chop! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23666]
-  it "raises a RuntimeError on a frozen instance that would not be modified" do
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    lambda { a.chop! }.should raise_error(RuntimeError)
+    lambda { a.chop! }.should raise_error(frozen_error_class)
   end
 end

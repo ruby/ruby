@@ -272,15 +272,15 @@ describe "Array#flatten!" do
     ary.should == [1, 2, 3]
   end
 
-  it "raises a RuntimeError on frozen arrays when the array is modified" do
+  it "raises a #{frozen_error_class} on frozen arrays when the array is modified" do
     nested_ary = [1, 2, []]
     nested_ary.freeze
-    lambda { nested_ary.flatten! }.should raise_error(RuntimeError)
+    lambda { nested_ary.flatten! }.should raise_error(frozen_error_class)
   end
 
   # see [ruby-core:23663]
-  it "raises a RuntimeError on frozen arrays when the array would not be modified" do
-    lambda { ArraySpecs.frozen_array.flatten! }.should raise_error(RuntimeError)
-    lambda { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on frozen arrays when the array would not be modified" do
+    lambda { ArraySpecs.frozen_array.flatten! }.should raise_error(frozen_error_class)
+    lambda { ArraySpecs.empty_frozen_array.flatten! }.should raise_error(frozen_error_class)
   end
 end

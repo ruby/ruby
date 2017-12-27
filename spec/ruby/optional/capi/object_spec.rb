@@ -313,8 +313,8 @@ describe "CApiObject" do
 
     it "does not rescue exceptions raised by #to_ary" do
       obj = mock("to_ary")
-      obj.should_receive(:to_ary).and_raise(RuntimeError)
-      lambda { @o.rb_check_array_type obj }.should raise_error(RuntimeError)
+      obj.should_receive(:to_ary).and_raise(frozen_error_class)
+      lambda { @o.rb_check_array_type obj }.should raise_error(frozen_error_class)
     end
   end
 
@@ -666,14 +666,14 @@ describe "CApiObject" do
       obj.tainted?.should == true
     end
 
-    it "raises a RuntimeError if the object passed is frozen" do
-      lambda { @o.rb_obj_taint("".freeze) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the object passed is frozen" do
+      lambda { @o.rb_obj_taint("".freeze) }.should raise_error(frozen_error_class)
     end
   end
 
   describe "rb_check_frozen" do
-    it "raises a RuntimeError if the obj is frozen" do
-      lambda { @o.rb_check_frozen("".freeze) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the obj is frozen" do
+      lambda { @o.rb_check_frozen("".freeze) }.should raise_error(frozen_error_class)
     end
 
     it "does nothing when object isn't frozen" do

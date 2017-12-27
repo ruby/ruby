@@ -27,8 +27,8 @@ describe :stringio_read, shared: true do
     lambda { @io.send(@method, 7, Object.new) }.should raise_error(TypeError)
   end
 
-  it "raises an error when passed a frozen String as buffer" do
-    lambda { @io.send(@method, 7, "".freeze) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} error when passed a frozen String as buffer" do
+    lambda { @io.send(@method, 7, "".freeze) }.should raise_error(frozen_error_class)
   end
 end
 

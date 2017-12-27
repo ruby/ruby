@@ -326,13 +326,13 @@ describe "String#sub! with pattern, replacement" do
     a.should == "hello"
   end
 
-  it "raises a RuntimeError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    lambda { s.sub!(/ROAR/, "x")    }.should raise_error(RuntimeError)
-    lambda { s.sub!(/e/, "e")       }.should raise_error(RuntimeError)
-    lambda { s.sub!(/[aeiou]/, '*') }.should raise_error(RuntimeError)
+    lambda { s.sub!(/ROAR/, "x")    }.should raise_error(frozen_error_class)
+    lambda { s.sub!(/e/, "e")       }.should raise_error(frozen_error_class)
+    lambda { s.sub!(/[aeiou]/, '*') }.should raise_error(frozen_error_class)
   end
 end
 
@@ -379,13 +379,13 @@ describe "String#sub! with pattern and block" do
     lambda { str.sub!(//) { str << 'x' } }.should raise_error(RuntimeError)
   end
 
-  it "raises a RuntimeError when self is frozen" do
+  it "raises a #{frozen_error_class} when self is frozen" do
     s = "hello"
     s.freeze
 
-    lambda { s.sub!(/ROAR/) { "x" }    }.should raise_error(RuntimeError)
-    lambda { s.sub!(/e/) { "e" }       }.should raise_error(RuntimeError)
-    lambda { s.sub!(/[aeiou]/) { '*' } }.should raise_error(RuntimeError)
+    lambda { s.sub!(/ROAR/) { "x" }    }.should raise_error(frozen_error_class)
+    lambda { s.sub!(/e/) { "e" }       }.should raise_error(frozen_error_class)
+    lambda { s.sub!(/[aeiou]/) { '*' } }.should raise_error(frozen_error_class)
   end
 end
 

@@ -110,22 +110,22 @@ describe :array_collect_b, shared: true do
   end
 
   describe "when frozen" do
-    it "raises a RuntimeError" do
-      lambda { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class}" do
+      lambda { ArraySpecs.frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when empty" do
-      lambda { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when empty" do
+      lambda { ArraySpecs.empty_frozen_array.send(@method) {} }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when calling #each on the returned Enumerator" do
+    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator" do
       enumerator = ArraySpecs.frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(RuntimeError)
+      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
 
-    it "raises a RuntimeError when calling #each on the returned Enumerator when empty" do
+    it "raises a #{frozen_error_class} when calling #each on the returned Enumerator when empty" do
       enumerator = ArraySpecs.empty_frozen_array.send(@method)
-      lambda { enumerator.each {|x| x } }.should raise_error(RuntimeError)
+      lambda { enumerator.each {|x| x } }.should raise_error(frozen_error_class)
     end
   end
 

@@ -35,8 +35,8 @@ describe "Hash#rehash" do
     h[k2].should == v2
   end
 
-  it "raises a RuntimeError if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.rehash  }.should raise_error(RuntimeError)
-    lambda { HashSpecs.empty_frozen_hash.rehash }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on a frozen instance" do
+    lambda { HashSpecs.frozen_hash.rehash  }.should raise_error(frozen_error_class)
+    lambda { HashSpecs.empty_frozen_hash.rehash }.should raise_error(frozen_error_class)
   end
 end

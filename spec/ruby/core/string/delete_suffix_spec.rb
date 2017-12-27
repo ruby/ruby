@@ -72,10 +72,10 @@ ruby_version_is '2.5' do
       'hello'.delete_suffix!(o).should == 'h'
     end
 
-    it "raises a RuntimeError when self is frozen" do
-      lambda { 'hello'.freeze.delete_suffix!('ello') }.should raise_error(RuntimeError)
-      lambda { 'hello'.freeze.delete_suffix!('') }.should raise_error(RuntimeError)
-      lambda { ''.freeze.delete_suffix!('') }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} when self is frozen" do
+      lambda { 'hello'.freeze.delete_suffix!('ello') }.should raise_error(frozen_error_class)
+      lambda { 'hello'.freeze.delete_suffix!('') }.should raise_error(frozen_error_class)
+      lambda { ''.freeze.delete_suffix!('') }.should raise_error(frozen_error_class)
     end
   end
 end

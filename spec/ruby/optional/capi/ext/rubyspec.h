@@ -409,6 +409,7 @@
 #define HAVE_NUM2CHR                       1
 #define HAVE_RB_CMPINT                     1
 #define HAVE_RB_INT2INUM                   1
+#define HAVE_RB_UINT2INUM                  1
 #define HAVE_RB_INTEGER                    1
 #define HAVE_RB_LL2INUM                    1
 #define HAVE_RB_NUM2DBL                    1

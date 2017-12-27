@@ -8,4 +8,7 @@ module RationalSpecs
       @value
     end
   end
+
+  class CoerceError < StandardError
+  end
 end

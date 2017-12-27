@@ -83,8 +83,8 @@ describe "C-API Array function" do
       @s.rb_ary_cat([1, 2], 3, 4).should == [1, 2, 3, 4]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
-      lambda { @s.rb_ary_cat([].freeze, 1) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the array is frozen" do
+      lambda { @s.rb_ary_cat([].freeze, 1) }.should raise_error(frozen_error_class)
     end
   end
 
@@ -130,8 +130,8 @@ describe "C-API Array function" do
       @s.rb_ary_rotate([1, 2, 3, 4], -3).should == [2, 3, 4, 1]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
-      lambda { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class} if the array is frozen" do
+      lambda { @s.rb_ary_rotate([].freeze, 1) }.should raise_error(frozen_error_class)
     end
   end
 
@@ -214,9 +214,9 @@ describe "C-API Array function" do
       a.should == [nil, nil, 7]
     end
 
-    it "raises a RuntimeError if the array is frozen" do
+    it "raises a #{frozen_error_class} if the array is frozen" do
       a = [1, 2, 3].freeze
-      lambda { @s.rb_ary_store(a, 1, 5) }.should raise_error(RuntimeError)
+      lambda { @s.rb_ary_store(a, 1, 5) }.should raise_error(frozen_error_class)
     end
   end
 

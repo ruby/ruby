@@ -20,7 +20,7 @@ describe "Interrupt.new" do
   end
 end
 
-describe "rescueing Interrupt" do
+describe "rescuing Interrupt" do
   before do
     @original_sigint_proc = Signal.trap(:INT, :SIG_DFL)
   end

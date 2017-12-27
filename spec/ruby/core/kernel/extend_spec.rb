@@ -72,8 +72,8 @@ describe "Kernel#extend" do
       lambda { @frozen.extend }.should raise_error(ArgumentError)
     end
 
-    it "raises a RuntimeError" do
-      lambda { @frozen.extend @module }.should raise_error(RuntimeError)
+    it "raises a #{frozen_error_class}" do
+      lambda { @frozen.extend @module }.should raise_error(frozen_error_class)
     end
   end
 end

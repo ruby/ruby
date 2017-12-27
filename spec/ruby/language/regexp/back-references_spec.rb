@@ -7,7 +7,7 @@ describe "Regexps with back-references" do
     $~.to_a.should == ["ll"]
   end
 
-  it "saves captures in numbered $[1-9] variables" do
+  it "saves captures in numbered $[1-N] variables" do
     "1234567890" =~ /(1)(2)(3)(4)(5)(6)(7)(8)(9)(0)/
     $~.to_a.should == ["1234567890", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]
     $1.should == "1"
@@ -19,6 +19,7 @@ describe "Regexps with back-references" do
     $7.should == "7"
     $8.should == "8"
     $9.should == "9"
+    $10.should == "0"
   end
 
   it "will not clobber capture variables across threads" do

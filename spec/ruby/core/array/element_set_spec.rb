@@ -94,8 +94,8 @@ describe "Array#[]=" do
 
   it "checks frozen before attempting to coerce arguments" do
     a = [1,2,3,4].freeze
-    lambda {a[:foo] = 1}.should raise_error(RuntimeError)
-    lambda {a[:foo, :bar] = 1}.should raise_error(RuntimeError)
+    lambda {a[:foo] = 1}.should raise_error(frozen_error_class)
+    lambda {a[:foo, :bar] = 1}.should raise_error(frozen_error_class)
   end
 
   it "sets elements in the range arguments when passed ranges" do
@@ -236,8 +236,8 @@ describe "Array#[]=" do
     ary.should == [5, 6, 7]
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { ArraySpecs.frozen_array[0, 0] = [] }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { ArraySpecs.frozen_array[0, 0] = [] }.should raise_error(frozen_error_class)
   end
 end
 

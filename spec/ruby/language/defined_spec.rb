@@ -543,16 +543,12 @@ describe "The defined? keyword for variables" do
       defined?($+).should be_nil
     end
 
-    it "returns nil for $1-$9" do
+    it "returns nil for any last match global" do
       defined?($1).should be_nil
-      defined?($2).should be_nil
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -587,13 +583,10 @@ describe "The defined? keyword for variables" do
     end
 
     it "returns nil for non-captures" do
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -622,16 +615,12 @@ describe "The defined? keyword for variables" do
       defined?($+).should be_nil
     end
 
-    it "returns nil for $1-$9" do
+    it "returns nil for any last match global" do
       defined?($1).should be_nil
-      defined?($2).should be_nil
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
 
@@ -666,13 +655,10 @@ describe "The defined? keyword for variables" do
     end
 
     it "returns nil for non-captures" do
-      defined?($3).should be_nil
       defined?($4).should be_nil
-      defined?($5).should be_nil
-      defined?($6).should be_nil
       defined?($7).should be_nil
-      defined?($8).should be_nil
-      defined?($9).should be_nil
+      defined?($10).should be_nil
+      defined?($200).should be_nil
     end
   end
   it "returns 'global-variable' for a global variable that has been assigned" do

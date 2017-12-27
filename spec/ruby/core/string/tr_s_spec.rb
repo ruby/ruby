@@ -127,10 +127,10 @@ describe "String#tr_s!" do
     s.should == "hello"
   end
 
-  it "raises a RuntimeError if self is frozen" do
+  it "raises a #{frozen_error_class} if self is frozen" do
     s = "hello".freeze
-    lambda { s.tr_s!("el", "ar") }.should raise_error(RuntimeError)
-    lambda { s.tr_s!("l", "r")   }.should raise_error(RuntimeError)
-    lambda { s.tr_s!("", "")     }.should raise_error(RuntimeError)
+    lambda { s.tr_s!("el", "ar") }.should raise_error(frozen_error_class)
+    lambda { s.tr_s!("l", "r")   }.should raise_error(frozen_error_class)
+    lambda { s.tr_s!("", "")     }.should raise_error(frozen_error_class)
   end
 end

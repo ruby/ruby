@@ -1,7 +1,10 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/coerce.rb', __FILE__)
+require File.expand_path('../shared/arithmetic_exception_in_coerce', __FILE__)
 
 describe "Float#/" do
+  it_behaves_like :float_arithmetic_exception_in_coerce, :/
+
   it "returns self divided by other" do
     (5.75 / -2).should be_close(-2.875,TOLERANCE)
     (451.0 / 9.3).should be_close(48.494623655914,TOLERANCE)

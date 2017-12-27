@@ -27,9 +27,9 @@ describe "Hash#keep_if" do
     h.keep_if { true }.should equal(h)
   end
 
-  it "raises a RuntimeError if called on a frozen instance" do
-    lambda { HashSpecs.frozen_hash.keep_if { true } }.should raise_error(RuntimeError)
-    lambda { HashSpecs.empty_frozen_hash.keep_if { false } }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on a frozen instance" do
+    lambda { HashSpecs.frozen_hash.keep_if { true } }.should raise_error(frozen_error_class)
+    lambda { HashSpecs.empty_frozen_hash.keep_if { false } }.should raise_error(frozen_error_class)
   end
 
   it_behaves_like(:hash_iteration_no_block, :keep_if)

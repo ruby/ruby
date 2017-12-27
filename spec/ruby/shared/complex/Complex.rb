@@ -72,7 +72,7 @@ describe :kernel_Complex, shared: true do
   describe "when passed a Numeric which responds to #real? with false" do
     it "returns the passed argument" do
       n = mock_numeric("unreal")
-      n.should_receive(:real?).and_return(false)
+      n.should_receive(:real?).any_number_of_times.and_return(false)
       Complex(n).should equal(n)
     end
   end

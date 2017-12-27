@@ -48,13 +48,13 @@ describe "String#strip!" do
     a.should == "\x00 goodbye"
   end
 
-  it "raises a RuntimeError on a frozen instance that is modified" do
-    lambda { "  hello  ".freeze.strip! }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that is modified" do
+    lambda { "  hello  ".freeze.strip! }.should raise_error(frozen_error_class)
   end
 
   # see #1552
-  it "raises a RuntimeError on a frozen instance that would not be modified" do
-    lambda {"hello".freeze.strip! }.should raise_error(RuntimeError)
-    lambda {"".freeze.strip!      }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen instance that would not be modified" do
+    lambda {"hello".freeze.strip! }.should raise_error(frozen_error_class)
+    lambda {"".freeze.strip!      }.should raise_error(frozen_error_class)
   end
 end

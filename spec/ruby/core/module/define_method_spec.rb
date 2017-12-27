@@ -247,10 +247,10 @@ describe "Module#define_method" do
     lambda { obj.proc_style_test :arg }.should raise_error(ArgumentError)
   end
 
-  it "raises a RuntimeError if frozen" do
+  it "raises a #{frozen_error_class} if frozen" do
     lambda {
       Class.new { freeze; define_method(:foo) {} }
-    }.should raise_error(RuntimeError)
+    }.should raise_error(frozen_error_class)
   end
 
   it "accepts a Method (still bound)" do

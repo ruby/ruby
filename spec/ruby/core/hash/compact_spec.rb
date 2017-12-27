@@ -52,8 +52,8 @@ ruby_version_is "2.4" do
         @hash.freeze
       end
 
-      it "keeps pairs and raises a RuntimeError" do
-        ->{ @hash.compact! }.should raise_error(RuntimeError)
+      it "keeps pairs and raises a #{frozen_error_class}" do
+        ->{ @hash.compact! }.should raise_error(frozen_error_class)
         @hash.should == @initial_pairs
       end
     end

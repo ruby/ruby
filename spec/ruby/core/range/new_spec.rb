@@ -1,4 +1,5 @@
 require File.expand_path('../../../spec_helper', __FILE__)
+require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Range.new" do
   it "constructs a range using the given start and end" do
@@ -30,5 +31,15 @@ describe "Range.new" do
     b = mock('x')
     (a = mock('nil')).should_receive(:<=>).with(b).and_return(nil)
     lambda { Range.new(a, b) }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is "2.5" do
+    it "does not rescue exception raised in #<=> when compares the given start and end" do
+      b = mock('a')
+      a = mock('b')
+      a.should_receive(:<=>).with(b).and_raise(RangeSpecs::ComparisonError)
+
+      -> { Range.new(a, b) }.should raise_error(RangeSpecs::ComparisonError)
+    end
   end
 end

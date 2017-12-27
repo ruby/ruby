@@ -70,12 +70,12 @@ describe "Hash#select!" do
     { a: 1 }.select! { |k,v| v <= 1 }.should == nil
   end
 
-  it "raises a RuntimeError if called on an empty frozen instance" do
-    lambda { HashSpecs.empty_frozen_hash.select! { false } }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on an empty frozen instance" do
+    lambda { HashSpecs.empty_frozen_hash.select! { false } }.should raise_error(frozen_error_class)
   end
 
-  it "raises a RuntimeError if called on a frozen instance that would not be modified" do
-    lambda { HashSpecs.frozen_hash.select! { true } }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} if called on a frozen instance that would not be modified" do
+    lambda { HashSpecs.frozen_hash.select! { true } }.should raise_error(frozen_error_class)
   end
 
   it_behaves_like(:hash_iteration_no_block, :select!)

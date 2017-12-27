@@ -35,8 +35,8 @@ describe "Array#delete_at" do
     a.delete_at(-2).should == 1
   end
 
-  it "raises a RuntimeError on a frozen array" do
-    lambda { [1,2,3].freeze.delete_at(0) }.should raise_error(RuntimeError)
+  it "raises a #{frozen_error_class} on a frozen array" do
+    lambda { [1,2,3].freeze.delete_at(0) }.should raise_error(frozen_error_class)
   end
 
   it "keeps tainted status" do
