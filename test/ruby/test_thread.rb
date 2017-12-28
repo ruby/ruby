@@ -557,7 +557,9 @@ class TestThread < Test::Unit::TestCase
     assert_equal(3, t.fetch("qux") {x = 3})
     assert_equal(3, x)
 
-    assert_raise(KeyError) {t.fetch(:qux)}
+    e = assert_raise(KeyError) {t.fetch(:qux)}
+    assert_equal(:qux, e.key)
+    assert_equal(t, e.receiver)
   ensure
     t.kill if t
   end

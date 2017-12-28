@@ -3168,7 +3168,7 @@ rb_thread_fetch(int argc, VALUE *argv, VALUE self)
 	return rb_yield(key);
     }
     else if (argc == 1) {
-	rb_raise(rb_eKeyError, "key not found: %"PRIsVALUE, key);
+	rb_key_err_raise(rb_sprintf("key not found: %+"PRIsVALUE, key), self, key);
     }
     else {
 	return argv[1];
