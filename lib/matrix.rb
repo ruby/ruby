@@ -322,7 +322,7 @@ class Matrix
       end
     elsif i.is_a?(Range)
       raise ArgumentError, "expected row range is outside of matrix" unless in_row_range?(i)
-      CoercionHelper.coerce_to_int(j)
+      j = CoercionHelper.coerce_to_int(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
         v.each_with_index do |e, index|
@@ -341,7 +341,7 @@ class Matrix
         end
       end
     elsif j.is_a?(Range)
-      CoercionHelper.coerce_to_int(i)
+      i = CoercionHelper.coerce_to_int(i)
       raise ArgumentError, "expected column range is outside of matrix" unless in_column_range?(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
@@ -361,9 +361,9 @@ class Matrix
         end
       end
     else
-      CoercionHelper.coerce_to_int(i)
-      CoercionHelper.coerce_to_int(j)
-      raise ArgumentError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
+      i = CoercionHelper.coerce_to_int(i)
+      j = CoercionHelper.coerce_to_int(j)
+      raise IndexError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
       @rows[i][j] = v
     end
   end
