@@ -2844,12 +2844,15 @@ proc_binding(VALUE self)
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
 	    if (IS_METHOD_PROC_IFUNC(ifunc)) {
 		VALUE method = (VALUE)ifunc->data;
+		VALUE name = rb_fstring_cstr("<empty_iseq>");
+		rb_iseq_t *empty;
 		binding_self = method_receiver(method);
 		iseq = rb_method_iseq(method);
 		env = VM_ENV_ENVVAL_PTR(block->as.captured.ep);
 		env = env_clone(env, method_cref(method));
 		/* set empty iseq */
-		RB_OBJ_WRITE(env, &env->iseq, rb_iseq_new(NULL, rb_str_new2("<empty iseq>"), rb_str_new2("<empty_iseq>"), Qnil, 0, ISEQ_TYPE_TOP));
+		empty = rb_iseq_new(NULL, name, name, Qnil, 0, ISEQ_TYPE_TOP);
+		RB_OBJ_WRITE(env, &env->iseq, empty);
 		break;
 	    }
 	    else {
