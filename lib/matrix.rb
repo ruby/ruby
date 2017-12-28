@@ -807,9 +807,11 @@ class Matrix
   #
   def antisymmetric?
     Matrix.Raise ErrDimensionMismatch unless square?
-    return false if reflexive?
+    self.each(:diagonal) do |e|
+      return false if e != 0
+    end
     each_with_index(:strict_upper) do |e, row, col|
-      return false if e == rows[col][row]
+      return false if e.abs != rows[col][row].abs
     end
     all?
   end

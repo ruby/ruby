@@ -7,14 +7,14 @@ describe "Matrix.reflexive?" do
   end
 
   it "returns true for a 0x0 empty matrix" do
-    Matrix.empty.symmetric?.should be_true
+    Matrix.empty.reflexive?.should be_true
   end
 
-  it "returns true for a non-reflexive Matrix" do
+  it "returns false for a non-reflexive Matrix" do
     Matrix[[1, 1],[2, 2]].reflexive?.should be_false
   end
 
-  it "raises an error for rectangular matrices" do
+  it "raises an error for non-square matrices" do
     [
       Matrix[[0], [0]],
       Matrix[[0, 0]],
@@ -22,7 +22,7 @@ describe "Matrix.reflexive?" do
       Matrix.empty(2, 0),
     ].each do |rectangular_matrix|
       lambda {
-        rectangular_matrix.symmetric?
+        rectangular_matrix.reflexive?
       }.should raise_error(Matrix::ErrDimensionMismatch)
     end
   end
