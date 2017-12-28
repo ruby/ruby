@@ -124,28 +124,11 @@ rb_obj_is_proc(VALUE proc)
     }
 }
 
-VALUE rb_proc_create(VALUE klass, const struct rb_block *block,
-		     int8_t safe_level, int8_t is_from_method, int8_t is_lambda);
-
-/* :nodoc: */
-static VALUE
-proc_dup(VALUE self)
-{
-    VALUE procval;
-    rb_proc_t *src;
-
-    GetProcPtr(self, src);
-    procval = rb_proc_create(rb_cProc, &src->block,
-			     src->safe_level, src->is_from_method, src->is_lambda);
-    RB_GC_GUARD(self); /* for: body = proc_dup(body) */
-    return procval;
-}
-
 /* :nodoc: */
 static VALUE
 proc_clone(VALUE self)
 {
-    VALUE procval = proc_dup(self);
+    VALUE procval = rb_proc_dup(self);
     CLONESETUP(procval, self);
     return procval;
 }
@@ -752,7 +735,7 @@ proc_new(VALUE klass, int8_t is_lambda)
 	    return procval;
 	}
 	else {
-	    VALUE newprocval = proc_dup(procval);
+	    VALUE newprocval = rb_proc_dup(procval);
 	    RBASIC_SET_CLASS(newprocval, klass);
 	    return newprocval;
 	}
@@ -1982,7 +1965,7 @@ rb_mod_define_method(int argc, VALUE *argv, VALUE mod)
 	RB_GC_GUARD(body);
     }
     else {
-	VALUE procval = proc_dup(body);
+	VALUE procval = rb_proc_dup(body);
 	if (vm_proc_iseq(procval) != NULL) {
 	    rb_proc_t *proc;
 	    GetProcPtr(procval, proc);
@@ -3115,7 +3098,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
-    rb_define_method(rb_cProc, "dup", proc_dup, 0);
+    rb_define_method(rb_cProc, "dup", rb_proc_dup, 0);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_alias(rb_cProc, "inspect", "to_s");

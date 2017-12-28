@@ -515,6 +515,9 @@ typedef struct rb_vm_struct {
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
+
+    unsigned int safe_level_: 1;
+
     int trace_running;
     volatile int sleeper;
 
@@ -736,7 +739,6 @@ typedef struct rb_execution_context_struct {
 
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
-    int safe_level;
     int raised_flag;
 
     /* interrupt flags */
@@ -899,9 +901,8 @@ RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
     const struct rb_block block;
-    int8_t safe_level;		/* 0..1 */
-    int8_t is_from_method;	/* bool */
-    int8_t is_lambda;		/* bool */
+    unsigned int is_from_method: 1;	/* bool */
+    unsigned int is_lambda: 1;		/* bool */
 } rb_proc_t;
 
 typedef struct {
@@ -1464,8 +1465,9 @@ VM_BH_FROM_PROC(VALUE procval)
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
-VALUE rb_proc_alloc(VALUE klass);
 VALUE rb_binding_alloc(VALUE klass);
+VALUE rb_proc_alloc(VALUE klass);
+VALUE rb_proc_dup(VALUE self);
 
 /* for debug */
 extern void rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);

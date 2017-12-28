@@ -809,7 +809,7 @@ static VALUE
 vm_proc_create_from_captured(VALUE klass,
 			     const struct rb_captured_block *captured,
 			     enum rb_block_type block_type,
-			     int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+			     int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
@@ -822,7 +822,6 @@ vm_proc_create_from_captured(VALUE klass,
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
-    proc->safe_level = safe_level;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -849,9 +848,8 @@ rb_vm_block_copy(VALUE obj, const struct rb_block *dst, const struct rb_block *s
     }
 }
 
-VALUE
-rb_proc_create(VALUE klass, const struct rb_block *block,
-	       int8_t safe_level, int8_t is_from_method, int8_t is_lambda)
+static VALUE
+proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
@@ -859,12 +857,24 @@ rb_proc_create(VALUE klass, const struct rb_block *block,
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
-    proc->safe_level = safe_level;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
     return procval;
 }
+
+VALUE
+rb_proc_dup(VALUE self)
+{
+    VALUE procval;
+    rb_proc_t *src;
+
+    GetProcPtr(self, src);
+    procval = proc_create(rb_cProc, &src->block, src->is_from_method, src->is_lambda);
+    RB_GC_GUARD(self); /* for: body = rb_proc_dup(body) */
+    return procval;
+}
+
 
 VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
@@ -880,8 +890,7 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
 	      imemo_type_p(captured->code.val, imemo_ifunc));
 
     procval = vm_proc_create_from_captured(klass, captured,
-					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc,
-					   (int8_t)ec->safe_level, FALSE, is_lambda);
+					   imemo_type(captured->code.val) == imemo_iseq ? block_type_iseq : block_type_ifunc, FALSE, is_lambda);
     return procval;
 }
 
@@ -1139,23 +1148,7 @@ static VALUE
 vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
 	       int argc, const VALUE *argv, VALUE passed_block_handler)
 {
-    VALUE val = Qundef;
-    enum ruby_tag_type state;
-    volatile int stored_safe = ec->safe_level;
-
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	ec->safe_level = proc->safe_level;
-	val = invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
-    }
-    EC_POP_TAG();
-
-    ec->safe_level = stored_safe;
-
-    if (state) {
-	EC_JUMP_TAG(ec, state);
-    }
-    return val;
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
 }
 
 static VALUE

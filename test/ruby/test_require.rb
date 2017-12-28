@@ -112,6 +112,8 @@ class TestRequire < Test::Unit::TestCase
       proc do |require_path|
         $SAFE = 1
         require(require_path)
+      ensure
+        $SAFE = 0
       end
     end
 

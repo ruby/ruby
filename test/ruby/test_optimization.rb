@@ -677,7 +677,7 @@ class TestRubyOptimization < Test::Unit::TestCase
         $SAFE = 1
         b.call
       end
-      assert_equal 0, foo{$SAFE}
+      assert_equal 1, foo{$SAFE}
     END
   end
 

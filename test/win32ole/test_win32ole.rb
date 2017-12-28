@@ -188,6 +188,8 @@ if defined?(WIN32OLE)
         th.join
       }
       assert_match(/insecure object creation - `Scripting.Dictionary'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_s_new_exc_host_tainted
@@ -203,6 +205,8 @@ if defined?(WIN32OLE)
         th.join
       }
       assert_match(/insecure object creation - `localhost'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_s_new_DCOM
@@ -242,6 +246,8 @@ if defined?(WIN32OLE)
         th.join
       }
       assert_match(/insecure connection - `winmgmts:'/, exc.message)
+    ensure
+      $SAFE = 0
     end
 
     def test_invoke_accept_symbol_hash_key

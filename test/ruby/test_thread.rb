@@ -505,10 +505,10 @@ class TestThread < Test::Unit::TestCase
       sleep
     end
     Thread.pass until ok
-    assert_equal(0, Thread.current.safe_level)
-    assert_equal(1, t.safe_level)
-
+    assert_equal($SAFE, Thread.current.safe_level)
+    assert_equal($SAFE, t.safe_level)
   ensure
+    $SAFE = 0
     t.kill if t
   end
 
