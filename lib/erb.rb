@@ -515,10 +515,6 @@ class ERB
       end
       Scanner.register_scanner(SimpleScanner, nil, false)
 
-      # Deprecated. Kept for backward compatibility.
-      SimpleScanner2 = SimpleScanner # :nodoc:
-      deprecate_constant :SimpleScanner2
-
       class ExplicitScanner < Scanner # :nodoc:
         def scan
           stag_reg = /(.*?)(^[ \t]*<%-|<%-|#{stags.join('|')}|\z)/m
