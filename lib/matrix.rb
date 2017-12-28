@@ -309,8 +309,8 @@ class Matrix
       if v.is_a?(Matrix)
         Matrix.Raise ErrDimensionMismatch unless i.size == v.row_count && j.size == v.column_count
         v.each_with_index do |e, row, col|
-          r = i.to_a[row]
-          c = j.to_a[col]
+          r = i.first + row
+          c = j.first + col
           @rows[r][c] = e
         end
       else
@@ -326,13 +326,13 @@ class Matrix
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
         v.each_with_index do |e, index|
-          r = i.to_a[index]
+          r = i.first + index
           @rows[r][j] = e
         end
       elsif v.is_a?(Matrix)
         Matrix.Raise ErrDimensionMismatch unless v.column_count == 1
         v.each_with_index do |e, row, col|
-          r = i.to_a[row]
+          r = i.first + row
           @rows[r][j] = e
         end
       else
@@ -346,13 +346,13 @@ class Matrix
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
         v.each_with_index do |e, index|
-          c = j.to_a[index]
+          c = j.first + index
           @rows[i][c] = e
         end
       elsif v.is_a?(Matrix)
         Matrix.Raise ErrDimensionMismatch unless v.row_count == 1
         v.each_with_index do |e, row, col|
-          c = j.to_a[col]
+          c = j.first + col
           @rows[i][c] = e
         end
       else
