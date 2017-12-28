@@ -15,6 +15,8 @@ module Fiddle
           Fiddle::Handle.new(LIBC_SO.dup.taint)
         }
       end.join
+    ensure
+      $SAFE = 0
     end
 
     def test_safe_function_lookup
@@ -25,6 +27,8 @@ module Fiddle
           h["qsort".dup.taint]
         }
       end.join
+    ensure
+      $SAFE = 0
     end
 
     def test_to_i

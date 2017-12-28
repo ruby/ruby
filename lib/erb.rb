@@ -864,10 +864,13 @@ class ERB
   #
   def result(b=new_toplevel)
     if @safe_level
-      proc {
+      proc do
+        prev_safe_level = $SAFE
         $SAFE = @safe_level
         eval(@src, b, (@filename || '(erb)'), @lineno)
-      }.call
+      ensure
+        $SAFE = prev_safe_level
+      end.call
     else
       eval(@src, b, (@filename || '(erb)'), @lineno)
     end

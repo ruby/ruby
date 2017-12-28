@@ -53,6 +53,8 @@ class TestReadline < Test::Unit::TestCase
             end
           end
         }.join
+      ensure
+        $SAFE = 0
       end
     end
 

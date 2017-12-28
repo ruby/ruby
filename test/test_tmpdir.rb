@@ -20,6 +20,8 @@ class TestTmpdir < Test::Unit::TestCase
       tmpdir << "foo"
       assert_equal(tmpdir_org, Dir.tmpdir)
     }.join
+  ensure
+    $SAFE = 0
   end
 
   def test_world_writable

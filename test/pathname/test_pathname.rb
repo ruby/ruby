@@ -1411,6 +1411,8 @@ class TestPathname < Test::Unit::TestCase
       $SAFE = 1
       assert_equal("foo/bar", File.join(Pathname.new("foo"), Pathname.new("bar").taint))
     }.call
+  ensure
+    $SAFE = 0
   end
 
   def test_relative_path_from_casefold

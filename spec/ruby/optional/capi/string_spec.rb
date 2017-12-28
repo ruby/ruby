@@ -485,6 +485,8 @@ describe "C-API String function" do
           @s.SafeStringValue("str".taint)
         }.should raise_error(SecurityError)
       }.join
+    ensure
+      $SAFE = 0
     end
 
     it_behaves_like :string_value_macro, :SafeStringValue

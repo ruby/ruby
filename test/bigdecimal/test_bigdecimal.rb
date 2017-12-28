@@ -125,6 +125,8 @@ class TestBigDecimal < Test::Unit::TestCase
       $SAFE = 1
       BigDecimal('1'.taint)
     }.join
+  ensure
+    $SAFE = 0
   end
 
   def test_s_ver
@@ -195,6 +197,8 @@ class TestBigDecimal < Test::Unit::TestCase
       $SAFE = 1
       BigDecimal('1'.taint)
     }.join
+  ensure
+    $SAFE = 0
   end
 
   def _test_mode(type)

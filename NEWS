@@ -11,3 +11,27 @@ with all sufficient information, see the ChangeLog file or Redmine
 (e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
 
 == Changes since the 2.5.0 release
+
+=== Language changes
+
+* $SAFE is a process global state and we can set 0 again. [Feature #14250]
+
+=== Core classes updates (outstanding ones only)
+
+* Proc
+
+  * Proc#call doesn't change $SAFE any more. [Feature #14250]
+
+=== Stdlib updates (outstanding ones only)
+
+=== Compatibility issues (excluding feature bug fixes)
+
+=== Stdlib compatibility issues (excluding feature bug fixes)
+
+=== C API updates
+
+=== Supported platform changes
+
+=== Implementation improvements
+
+=== Miscellaneous changes

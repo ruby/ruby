@@ -34,28 +34,34 @@ ruby_safe_level_2_warning(void)
 int
 rb_safe_level(void)
 {
-    return GET_EC()->safe_level;
+    return GET_VM()->safe_level_;
 }
 
 void
 rb_set_safe_level_force(int safe)
 {
-    GET_EC()->safe_level = safe;
+    GET_VM()->safe_level_ = safe;
 }
 
 void
 rb_set_safe_level(int level)
 {
-    rb_execution_context_t *ec = GET_EC();
+    rb_vm_t *vm = GET_VM();
 
-    if (level > ec->safe_level) {
-	if (level > SAFE_LEVEL_MAX) {
-	    rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
-	}
-	/* block parameters */
-	rb_vm_stack_to_heap(ec);
+    if (level > SAFE_LEVEL_MAX) {
+	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
+    }
+    else if (level < 0) {
+	rb_raise(rb_eArgError, "$SAFE should be >= 0");
+    }
+    else {
+	int line;
+	const char *path = rb_source_location_cstr(&line);
 
-	ec->safe_level = level;
+	if (0) fprintf(stderr, "%s:%d $SAFE %d -> %d\n",
+		       path ? path : "-", line, vm->safe_level_, level);
+
+	vm->safe_level_ = level;
     }
 }
 
@@ -68,26 +74,8 @@ safe_getter(void)
 static void
 safe_setter(VALUE val)
 {
-    rb_execution_context_t *ec = GET_EC();
-    int current_level = ec->safe_level;
     int level = NUM2INT(val);
-
-    if (level == current_level) {
-	return;
-    }
-    else if (level < current_level) {
-	rb_raise(rb_eSecurityError,
-		 "tried to downgrade safe level from %d to %d",
-		 current_level, level);
-    }
-    else if (level > SAFE_LEVEL_MAX) {
-	rb_raise(rb_eArgError, "$SAFE=2 to 4 are obsolete");
-    }
-
-    /* block parameters */
-    rb_vm_stack_to_heap(ec);
-
-    ec->safe_level = level;
+    rb_set_safe_level(level);
 }
 
 void

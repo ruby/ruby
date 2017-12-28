@@ -395,6 +395,8 @@ if defined?(WIN32OLE_EVENT)
           th.join
         }
         assert_match(/insecure event creation - `ConnectionEvents'/, exc.message)
+      ensure
+        $SAFE = 0
       end
     end
   end

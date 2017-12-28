@@ -19,6 +19,8 @@ module Fiddle
           f.call("uname -rs".dup.taint)
         end
       }.join
+    ensure
+      $SAFE = 0
     end
 
     def test_sinf
