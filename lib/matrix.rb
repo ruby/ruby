@@ -305,7 +305,7 @@ class Matrix
 
   def []=(i, j, v)
     if i.is_a?(Range) && j.is_a?(Range)
-      raise ArgumentError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
+      raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
       if v.is_a?(Matrix)
         Matrix.Raise ErrDimensionMismatch unless i.size == v.row_count && j.size == v.column_count
         v.each_with_index do |e, row, col|
@@ -321,7 +321,7 @@ class Matrix
         end
       end
     elsif i.is_a?(Range)
-      raise ArgumentError, "expected row range is outside of matrix" unless in_row_range?(i)
+      raise IndexError, "expected row range is outside of matrix" unless in_row_range?(i)
       j = CoercionHelper.coerce_to_int(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
@@ -342,7 +342,7 @@ class Matrix
       end
     elsif j.is_a?(Range)
       i = CoercionHelper.coerce_to_int(i)
-      raise ArgumentError, "expected column range is outside of matrix" unless in_column_range?(j)
+      raise IndexError, "expected column range is outside of matrix" unless in_column_range?(j)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
         v.each_with_index do |e, index|
