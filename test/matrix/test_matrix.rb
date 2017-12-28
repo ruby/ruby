@@ -634,49 +634,51 @@ class TestMatrix < Test::Unit::TestCase
     v1 = Vector[3, 5, 6, 7]
     v2 = Vector[4, 5, 6]
 
+    # Set element
     assert_block do
       m1[2, 3] = 52
-      Matrix[[1,2,3,4], [5,6,7,8], [9, 10, 11, 52]] == m1
+      Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 52]] == m1
     end
-
+    # Set element for ranges
     assert_block do
       m2[0..1, 0..2] = 40
-      Matrix[[40,40,40],[40,40,40]] == m2
+      Matrix[[40, 40, 40],[40, 40, 40]] == m2
     end
-
+    # Set row to vector
     assert_block do
       m1[2, 0..3] = v1
       Matrix[[1,2,3,4], [5,6,7,8], [3, 5, 6, 7]] == m1
     end
-
-    assert_raise(ArgumentError){ m2[1, 0..2] = v1 }
-    assert_raise(ArgumentError){ m2[0..2, 0] = v1 }
-    assert_raise(Matrix::ErrDimensionMismatch){ m1[0..1, 0..3] = m2 }
-    assert_raise(ArgumentError){ m2[5, 5] = 10 }
-    assert_raise(ArgumentError){ m2[3..5, 3..5] = 10 }
-    assert_raise(ArgumentError){ m2[3..5, 5] = 10 }
-    assert_raise(ArgumentError){ m2[5, 3..5] = 10 }
-
+    # Set entries to entries of matrix
     assert_block do
       m2 = Matrix[[5, 8, 9], [2, 3, 4]]
       m3[0..1, 0..2] = m2
       Matrix[[5, 8, 9, 4], [2, 3, 4, 8], [9, 10, 11, 12]] == m3
     end
-
+    # Set column to vector
     assert_block do
       m3[0..2, 3] = v2
       Matrix[[5, 8, 9, 4], [2, 3, 4, 5], [9, 10, 11, 6]] == m3
     end
-
+    # Set row to row matrix
     assert_block do
       m6[1, 0...4] = m4
       Matrix[[0, 0, 0, 0], [7, 8, 0, 9]] == m6
     end
-
+    # Set column to column matrix
     assert_block do
       m7[0..2, 1] = m5
       Matrix[[0, 1],[0, 2], [0, 3]] == m7
     end
+
+    # Error checking
+    assert_raise(ArgumentError){ m2[1, 0..2] = v1 }
+    assert_raise(ArgumentError){ m2[0..2, 0] = v1 }
+    assert_raise(ArgumentError){ m2[3..5, 3..5] = 10 }
+    assert_raise(ArgumentError){ m2[3..5, 5] = 10 }
+    assert_raise(ArgumentError){ m2[5, 3..5] = 10 }
+    assert_raise(IndexError){ m2[5, 5] = 10 }
+    assert_raise(Matrix::ErrDimensionMismatch){ m1[0..1, 0..3] = m2 }
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric
