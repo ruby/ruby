@@ -305,10 +305,10 @@ class TestHash < Test::Unit::TestCase
     h = {}
     h[str] = nil
     key = h.keys.first
-    assert_predicate str, :tainted?
-    assert_not_predicate str, :frozen?
-    assert_predicate key, :tainted?
-    assert_predicate key, :frozen?
+    assert_equal true, str.tainted?
+    assert_equal false, str.frozen?
+    assert_equal true, key.tainted?
+    assert_equal true, key.frozen?
   end
 
   def test_EQUAL # '=='
@@ -1006,12 +1006,51 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, h.select!{true})
   end
 
+<<<<<<< HEAD
   def test_slice
     h = @cls[1=>2,3=>4,5=>6]
     assert_equal({1=>2, 3=>4}, h.slice(1, 3))
     assert_equal({}, h.slice(7))
     assert_equal({}, h.slice)
     assert_equal({}, {}.slice)
+=======
+  def test_filter
+    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].filter {|k, v| k + v >= 7 })
+
+    base = @cls[ 1 => 'one', '2' => false, true => 'true', 'cat' => 99 ]
+    h1   = @cls[ '2' => false, 'cat' => 99 ]
+    h2   = @cls[ 1 => 'one', true => 'true' ]
+    h3   = @cls[ 1 => 'one', true => 'true', 'cat' => 99 ]
+
+    h = base.dup
+    assert_equal(h, h.filter { true })
+    assert_equal(@cls[], h.filter { false })
+
+    h = base.dup
+    assert_equal(h1, h.filter {|k,v| k.instance_of?(String) })
+
+    assert_equal(h2, h.filter {|k,v| v.instance_of?(String) })
+
+    assert_equal(h3, h.filter {|k,v| v })
+    assert_equal(base, h)
+
+    h.instance_variable_set(:@foo, :foo)
+    h.default = 42
+    h.taint
+    h = h.filter {true}
+    assert_instance_of(Hash, h)
+    assert_not_predicate(h, :tainted?)
+    assert_nil(h.default)
+    assert_not_send([h, :instance_variable_defined?, :@foo])
+  end
+
+  def test_filter!
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal(h, h.filter! {|k, v| k + v >= 7 })
+    assert_equal({3=>4,5=>6}, h)
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal(nil, h.filter!{true})
+>>>>>>> dc0c8fc5f3... Updated array tests to include filter.
   end
 
   def test_clear2
