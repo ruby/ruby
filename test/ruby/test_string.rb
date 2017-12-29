@@ -1119,6 +1119,10 @@ CODE
     res = []
     S("\r\n").each_line(chomp: true) {|x| res << x}
     assert_equal([S("")], res)
+
+    res = []
+    S("a\n b\n").each_line(" ", chomp: true) {|x| res << x}
+    assert_equal([S("a\n"), S("b\n")], res)
   end
 
   def test_lines
