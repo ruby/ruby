@@ -1846,10 +1846,39 @@ class Vector
   alias component []
 
   def []=(i, v)
-    @elements[i]= v
+    if i.is_a?(Range)
+      raise IndexError 'expected range is outside of vector' unless in_vector_range?(i)
+      if v.is_a?(Vector)
+        raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
+        v.each_with_index do |e, index|
+          r = i.first + index
+          @elements[r] = e
+        end
+      elsif v.is_a?(Matrix)
+        Matrix.Raise ErrDimensionMismatch unless v.row_count == 1
+        v.each_with_index do |e, row, col|
+          r = i.first + col
+          @elements[r] = e
+        end
+      else
+        i.each do |i|
+          @elements[i] = v
+        end
+      end
+    else
+      i = Matrix::CoercionHelper.coerce_to_int(i)
+      raise IndexError unless i.between?(-size, size-1)
+      @elements[i] = v
+    end
   end
   alias set_element []=
   alias set_component []=
+
+  def in_vector_range?(range)
+    (range.max <= (size - 1)) && (range.min >= (-size))
+  end
+
+  private :in_vector_range?
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
@@ -1944,6 +1973,11 @@ class Vector
   #
   def zero?
     all?(&:zero?)
+  end
+
+  def freeze
+    @elements.freeze
+    super
   end
 
   #--
@@ -2119,6 +2153,13 @@ class Vector
     self.class.elements(els, false)
   end
   alias map collect
+
+  def collect!(&block)
+    return to_enum(:collect!) unless block_given?
+    @elements.collect!(&block)
+    self
+  end
+  alias map! collect!
 
   #
   # Returns the modulus (Pythagorean distance) of the vector.

@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'matrix'
+require_relative '../../lib/matrix'
 
 class TestVector < Test::Unit::TestCase
   def setup
@@ -25,6 +25,50 @@ class TestVector < Test::Unit::TestCase
     assert_raise(ArgumentError) { Vector.basis(size: 3, index: 3) }
     assert_raise(ArgumentError) { Vector.basis(size: 3) }
     assert_raise(ArgumentError) { Vector.basis(index: 3) }
+  end
+
+  def test_set_element
+    v1 = Vector[1, 3, 4, 5]
+    v2 = Vector[1, 2, 3, 4, 5, 6]
+    v3 = Vector[1, 2]
+    v4 = Vector[5, 6, 7, 8, 9]
+    v5 = Vector[6, 7, 8]
+    v6 = Vector[7, 8, 9].freeze
+    m1 = Matrix[[1, 3]]
+
+    assert_block do
+      v1[2] = 5
+      Vector[1, 3, 5, 5] == v1
+    end
+
+    assert_block do
+      v2[0..2] = 8
+      Vector[8, 8, 8, 4, 5, 6] == v2
+    end
+
+    assert_block do
+      v4[1..2] = v3
+      Vector[5, 1, 2, 8, 9] == v4
+    end
+
+    assert_block do
+      v5[1..2] = m1
+      Vector[6, 1, 3] == v5
+    end
+
+    assert_raise(IndexError) {v1[5..6] = 17}
+    assert_raise(IndexError) {v1[6] = 17}
+    assert_raise(Matrix::ErrDimensionMismatch) {v1[0..2] = Matrix[[1], [2], [3]]}
+
+    assert_raise(ArgumentError) {v2[0..2] = Vector[1, 2, 3, 4, 5, 6]}
+    assert_raise(FrozenError) { v6[0..1] = 5}
+  end
+
+  def test_map!
+    v1 = Vector[1, 2, 3]
+    v2 = Vector[1, 3, 5].freeze
+    assert_equal Vector[1, 4, 9], v1.map!{|e| e ** 2}
+    assert_raise(FrozenError) { v2.map!{|e| e + 2 }}
   end
 
   def test_identity
