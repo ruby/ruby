@@ -631,6 +631,7 @@ class TestMatrix < Test::Unit::TestCase
     m5 = Matrix[[1], [2], [3]]
     m6 = Matrix.zero(2, 4)
     m7 = Matrix.zero(3, 2)
+    m8 = Matrix[[1, 3, 4], [5, 6, 9]].freeze
     v1 = Vector[3, 5, 6, 7]
     v2 = Vector[4, 5, 6]
 
@@ -682,11 +683,14 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(Matrix::ErrDimensionMismatch){ m1[0..1, 0..3] = m2 }
     assert_raise(Matrix::ErrDimensionMismatch){ m1[0...2, 3] = Matrix[[3, 5, 7]] }
     assert_raise(Matrix::ErrDimensionMismatch){ m1[1, 0..3] = Matrix[[1],[5]] }
+    assert_raise(RuntimeError){ m8[1, 2] = 5}
+    assert_raise(RuntimeError){ m8[0...1, 2] = 5}
   end
 
   def test_map!
     m1 = Matrix.zero(2,2)
     m2 = Matrix.build(3,4){|row, col| 1}
+    m3 = Matrix.zero(3,5).freeze
 
     assert_equal Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.map!{|e| e * 5}
     assert_equal Matrix[[7, 0],[0, 7]], m1.map!(:diagonal){|e| e + 7}
@@ -696,6 +700,7 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal Matrix[[12, 25, 25, 25], [0, 12, 25, 25], [0, 0, 12, 25]], m2.map!(:strict_upper){|e| e ** 2}
     assert_equal Matrix[[-12, -25, -25, -25], [0, -12, -25, -25], [0, 0, -12, -25]], m2.map!(:upper){|e| -e}
     assert_raise(ArgumentError) {m1.map!(:test){|e| e + 7}}
+    assert_raise(RuntimeError) { m3.map!{|e| e * 2} }
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric
