@@ -444,6 +444,12 @@ class Matrix
   end
   alias map collect
 
+  def collect!(which = :all)
+    each_with_index(which){ |e, row_index, col_index| self[row_index, col_index] = yield e }
+  end
+
+  alias map! collect!
+
   #
   # Yields all elements of the matrix, starting with those of the first row,
   # or returns an Enumerator if no block given.
