@@ -305,10 +305,10 @@ class TestHash < Test::Unit::TestCase
     h = {}
     h[str] = nil
     key = h.keys.first
-    assert_equal true, str.tainted?
-    assert_equal false, str.frozen?
-    assert_equal true, key.tainted?
-    assert_equal true, key.frozen?
+    assert_predicate str, :tainted?
+    assert_not_predicate str, :frozen?
+    assert_predicate key, :tainted?
+    assert_predicate key, :frozen?
   end
 
   def test_EQUAL # '=='
