@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require_relative '../../lib/matrix'
+require 'matrix'
 
 class TestVector < Test::Unit::TestCase
   def setup
@@ -68,6 +68,7 @@ class TestVector < Test::Unit::TestCase
     v1 = Vector[1, 2, 3]
     v2 = Vector[1, 3, 5].freeze
     assert_equal Vector[1, 4, 9], v1.map!{|e| e ** 2}
+    assert_equal v1, v1.map!{|e| e - 8}
     assert_raise(FrozenError) { v2.map!{|e| e + 2 }}
   end
 

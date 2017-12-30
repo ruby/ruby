@@ -699,6 +699,8 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal Matrix[[12, 5, 5, 5], [0, 12, 5, 5], [0, 0, 12, 5]], m2.map!(:strict_lower){|e| e - 12}
     assert_equal Matrix[[12, 25, 25, 25], [0, 12, 25, 25], [0, 0, 12, 25]], m2.map!(:strict_upper){|e| e ** 2}
     assert_equal Matrix[[-12, -25, -25, -25], [0, -12, -25, -25], [0, 0, -12, -25]], m2.map!(:upper){|e| -e}
+    assert_equal m1, m1.map!{|e| e ** 2 }
+    assert_equal m2, m2.map!(:lower){ |e| e - 3 }
     assert_raise(ArgumentError) {m1.map!(:test){|e| e + 7}}
     assert_raise(FrozenError) { m3.map!{|e| e * 2} }
   end
