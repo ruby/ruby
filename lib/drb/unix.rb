@@ -15,12 +15,12 @@ module DRb
   class DRbUNIXSocket < DRbTCPSocket
     # :stopdoc:
     def self.parse_uri(uri)
-      if /^drbunix:(.*?)(\?(.*))?$/ =~ uri
+      if /\Adrbunix:(.*?)(\?(.*))?\z/ =~ uri
         filename = $1
         option = $3
         [filename, option]
       else
-        raise(DRbBadScheme, uri) unless uri =~ /^drbunix:/
+        raise(DRbBadScheme, uri) unless uri.start_with?('drbunix:')
         raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
