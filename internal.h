@@ -1284,6 +1284,7 @@ st_table *rb_init_identtable(void);
 st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 VALUE rb_to_hash_type(VALUE obj);
+VALUE rb_hash_key_str(VALUE);
 
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);

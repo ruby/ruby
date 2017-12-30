@@ -1582,19 +1582,25 @@ fstring_existing_str(VALUE str)
     }
 }
 
+VALUE
+rb_hash_key_str(VALUE key)
+{
+    VALUE k;
+
+    if (!RB_OBJ_TAINTED(key) &&
+	(k = fstring_existing_str(key)) != Qnil) {
+	return k;
+    }
+    else {
+	return rb_str_new_frozen(key);
+    }
+}
+
 static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
     if (!existing && !RB_OBJ_FROZEN(*key)) {
-	VALUE k;
-
-	if (!RB_OBJ_TAINTED(*key) &&
-	    (k = fstring_existing_str(*key)) != Qnil) {
-	    *key = k;
-	}
-	else {
-	    *key = rb_str_new_frozen(*key);
-	}
+	*key = rb_hash_key_str(*key);
     }
     return hash_aset(key, val, arg, existing);
 }
