@@ -2114,8 +2114,8 @@ st_rehash(st_table *tab)
 static st_data_t
 st_stringify(VALUE key)
 {
-    return (rb_obj_class(key) == rb_cString) ?
-        rb_str_new_frozen(key) : key;
+    return (rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN(key)) ?
+        rb_hash_key_str(key) : key;
 }
 
 static void

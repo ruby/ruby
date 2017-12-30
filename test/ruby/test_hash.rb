@@ -298,6 +298,9 @@ class TestHash < Test::Unit::TestCase
     b = {"ABC" => :t}
     assert_same a.keys[0], b.keys[0]
     assert_same "ABC".freeze, a.keys[0]
+    var = +'ABC'
+    c = { var => :t }
+    assert_same "ABC".freeze, c.keys[0]
   end
 
   def test_tainted_string_key
