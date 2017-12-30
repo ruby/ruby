@@ -3,11 +3,11 @@ require 'matrix'
 
 describe "Matrix.antisymmetric?" do
   it "returns true for a 0x0 empty matrix" do
-    Matrix.empty.antisymmetric?should be_true
+    Matrix.empty.antisymmetric?.should be_true
   end
 
   it "returns false for a non-antisymmetric matrix" do
-    Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]].antisymmetric?should be_false
+    Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]].antisymmetric?.should be_false
   end
 
   it "returns true for an antisymmetric matrix" do
