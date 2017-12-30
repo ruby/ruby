@@ -1571,17 +1571,23 @@ module DRb
         if $SAFE < @safe_level
           info = Thread.current['DRb']
           if @block
-            @result = Thread.new {
+            @result = Thread.new do
               Thread.current['DRb'] = info
+              prev_safe_level = $SAFE
               $SAFE = @safe_level
               perform_with_block
-            }.value
+            ensure
+              $SAFE = prev_safe_level
+            end.value
           else
-            @result = Thread.new {
+            @result = Thread.new do
               Thread.current['DRb'] = info
+              prev_safe_level = $SAFE
               $SAFE = @safe_level
               perform_without_block
-            }.value
+            ensure
+              $SAFE = prev_safe_level
+            end.value
           end
         else
           if @block

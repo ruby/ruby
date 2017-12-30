@@ -160,26 +160,34 @@ class TestProc < Test::Unit::TestCase
       $SAFE += 1
       proc {$SAFE}
     }.call
-    assert_equal(safe, $SAFE)
-    assert_equal(safe + 1, p.call)
-    assert_equal(safe, $SAFE)
 
+    assert_equal(safe + 1, $SAFE)
+    assert_equal(safe + 1, p.call)
+    assert_equal(safe + 1, $SAFE)
+
+    $SAFE = 0
     c.class_eval {define_method(:safe, p)}
     assert_equal(safe, x.safe)
-    assert_equal(safe, x.method(:safe).call)
-    assert_equal(safe, x.method(:safe).to_proc.call)
 
+    $SAFE = 0
     p = proc {$SAFE += 1}
     assert_equal(safe + 1, p.call)
-    assert_equal(safe, $SAFE)
+    assert_equal(safe + 1, $SAFE)
 
+    $SAFE = 0
     c.class_eval {define_method(:inc, p)}
     assert_equal(safe + 1, proc {x.inc; $SAFE}.call)
-    assert_equal(safe, $SAFE)
+    assert_equal(safe + 1, $SAFE)
+
+    $SAFE = 0
     assert_equal(safe + 1, proc {x.method(:inc).call; $SAFE}.call)
-    assert_equal(safe, $SAFE)
+    assert_equal(safe + 1, $SAFE)
+
+    $SAFE = 0
     assert_equal(safe + 1, proc {x.method(:inc).to_proc.call; $SAFE}.call)
-    assert_equal(safe, $SAFE)
+    assert_equal(safe + 1, $SAFE)
+  ensure
+    $SAFE = 0
   end
 
   def m2

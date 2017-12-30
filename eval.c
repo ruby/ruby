@@ -175,7 +175,7 @@ ruby_cleanup(volatile int ex)
 
       step_0: step++;
 	errs[1] = th->ec->errinfo;
-	th->ec->safe_level = 0;
+	rb_set_safe_level_force(0);
 	ruby_init_stack(&errs[STACK_UPPER(errs, 0, 1)]);
 
 	SAVE_ROOT_JMPBUF(th, ruby_finalize_0());

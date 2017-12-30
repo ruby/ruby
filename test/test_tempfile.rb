@@ -38,6 +38,8 @@ class TestTempfile < Test::Unit::TestCase
     assert_nothing_raised(SecurityError, bug3733) {
       proc {$SAFE = 1; File.expand_path(Dir.tmpdir)}.call
     }
+  ensure
+    $SAFE = 0
   end
 
   def test_saves_in_given_directory

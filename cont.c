@@ -696,7 +696,6 @@ cont_restore_thread(rb_context_t *cont)
 	/* other members of ec */
 
 	th->ec->cfp = sec->cfp;
-	th->ec->safe_level = sec->safe_level;
 	th->ec->raised_flag = sec->raised_flag;
 	th->ec->tag = sec->tag;
 	th->ec->protect_tag = sec->protect_tag;

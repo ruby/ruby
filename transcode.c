@@ -368,14 +368,13 @@ load_transcoder_entry(transcoder_entry_t *entry)
         const size_t total_len = sizeof(transcoder_lib_prefix) - 1 + len;
         const VALUE fn = rb_str_new(0, total_len);
         char *const path = RSTRING_PTR(fn);
-	const int safe = rb_safe_level();
 
         memcpy(path, transcoder_lib_prefix, sizeof(transcoder_lib_prefix) - 1);
         memcpy(path + sizeof(transcoder_lib_prefix) - 1, lib, len);
         rb_str_set_len(fn, total_len);
         FL_UNSET(fn, FL_TAINT);
         OBJ_FREEZE(fn);
-        rb_require_safe(fn, safe > 3 ? 3 : safe);
+        rb_require_safe(fn, rb_safe_level());
     }
 
     if (entry->transcoder)

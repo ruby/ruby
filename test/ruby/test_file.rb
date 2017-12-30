@@ -465,6 +465,8 @@ class TestFile < Test::Unit::TestCase
     (0..1).each do |level|
       assert_nothing_raised(SecurityError, bug5374) {in_safe[level]}
     end
+  ensure
+    $SAFE = 0
   end
 
   if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
