@@ -7016,7 +7016,9 @@ int_pow_tmp2(VALUE x, VALUE y, long mm, int nega_flg)
         xx = MUL_MODULO(xx, xx, m);
     }
 
-#ifndef DLONG
+#ifdef DLONG
+    tmp = tmp2;
+#else
     tmp = FIX2LONG(tmp2);
 #endif
     if (nega_flg && tmp) {
