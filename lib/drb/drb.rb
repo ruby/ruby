@@ -800,7 +800,7 @@ module DRb
     module_function :uri_option
 
     def auto_load(uri)  # :nodoc:
-      if uri =~ /^drb([a-z0-9]+):/
+      if /\Adrb([a-z0-9]+):/ =~ uri
         require("drb/#{$1}") rescue nil
       end
     end
@@ -816,13 +816,13 @@ module DRb
     # :stopdoc:
     private
     def self.parse_uri(uri)
-      if uri =~ /^druby:\/\/(.*?):(\d+)(\?(.*))?$/
+      if /\Adruby:\/\/(.*?):(\d+)(\?(.*))?\z/ =~ uri
         host = $1
         port = $2.to_i
         option = $4
         [host, port, option]
       else
-        raise(DRbBadScheme, uri) unless uri =~ /^druby:/
+        raise(DRbBadScheme, uri) unless uri.start_with?('druby:')
         raise(DRbBadURI, 'can\'t parse uri:' + uri)
       end
     end
@@ -1172,7 +1172,7 @@ module DRb
       bt = []
       result.backtrace.each do |x|
         break if /`__send__'$/ =~ x
-        if /^\(druby:\/\// =~ x
+        if /\A\(druby:\/\// =~ x
           bt.push(x)
         else
           bt.push(prefix + x)

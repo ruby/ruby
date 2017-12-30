@@ -40,6 +40,12 @@ class TestDRbUNIXCore < Test::Unit::TestCase
 
   def test_05_eq
   end
+
+  def test_bad_uri
+    assert_raise(DRb::DRbBadURI) do
+      DRb::DRbServer.new("badfile\n""drbunix:")
+    end
+  end
 end
 
 class TestDRbUNIXAry < Test::Unit::TestCase
