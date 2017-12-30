@@ -914,8 +914,8 @@ struct vm_throw_data {
 
 struct vm_ifunc_argc {
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
-    int min: (SIZEOF_VALUE * CHAR_BIT) / 2;
-    int max: (SIZEOF_VALUE * CHAR_BIT) / 2;
+    signed int min: (SIZEOF_VALUE * CHAR_BIT) / 2;
+    signed int max: (SIZEOF_VALUE * CHAR_BIT) / 2;
 #else
     int min, max;
 #endif
