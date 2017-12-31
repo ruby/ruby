@@ -5342,7 +5342,7 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 {
 #ifndef RIPPER
     const int max_line_margin = 30;
-    const char *p, *pe;
+    const char *p, *pe, *pt;
     const char *pre = "", *post = "", *pend;
     const char *code = "", *caret = "", *newline = "";
     const char *lim;
@@ -5356,9 +5356,9 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 	yylloc = &current;
     }
     else if ((ruby_sourceline != yylloc->first_loc.lineno &&
-	 ruby_sourceline != yylloc->last_loc.lineno) ||
-	(yylloc->first_loc.lineno == yylloc->last_loc.lineno &&
-	 yylloc->first_loc.column == yylloc->last_loc.column)) {
+	      ruby_sourceline != yylloc->last_loc.lineno) ||
+	     (yylloc->first_loc.lineno == yylloc->last_loc.lineno &&
+	      yylloc->first_loc.column == yylloc->last_loc.column)) {
 	compile_error(PARSER_ARG "%s", msg);
 	return 0;
     }
@@ -5368,7 +5368,9 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 	if (--pend > lex_pbeg && pend[-1] == '\r') --pend;
     }
 
-    p = pe = lex_p < pend ? lex_p : pend;
+    pt = (ruby_sourceline == yylloc->last_loc.lineno) ?
+	    lex_p : lex_pend;
+    p = pe = pt < pend ? pt : pend;
     lim = p - lex_pbeg > max_line_margin ? p - max_line_margin : lex_pbeg;
     while ((lim < p) && (*(p-1) != '\n')) p--;
 
@@ -5380,20 +5382,22 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 	char *p2;
 
 	if (p > lex_pbeg) {
-	    p = rb_enc_prev_char(lex_pbeg, p, lex_p, rb_enc_get(lex_lastline));
+	    p = rb_enc_prev_char(lex_pbeg, p, pt, rb_enc_get(lex_lastline));
 	    if (p > lex_pbeg) pre = "...";
 	}
 	if (pe < pend) {
-	    pe = rb_enc_prev_char(lex_p, pe, pend, rb_enc_get(lex_lastline));
+	    pe = rb_enc_prev_char(pt, pe, pend, rb_enc_get(lex_lastline));
 	    if (pe < pend) post = "...";
 	}
 	len = pe - p;
-	lim = lex_p < pend ? lex_p : pend;
+	lim = pt < pend ? pt : pend;
 	i = (int)(lim - p);
 	buf = ALLOCA_N(char, i+2);
 	code = p;
 	caret = p2 = buf;
-	pe = (parser->tokp < lim ? parser->tokp : lim);
+	pe = (ruby_sourceline == yylloc->first_loc.lineno) ?
+	    parser->tokp : lex_pbeg;
+	if (pe > lim) pe = lim;
 	if (p <= pe) {
 	    while (p < pe) {
 		*p2++ = *p++ == '\t' ? '\t' : ' ';
