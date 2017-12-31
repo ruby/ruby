@@ -342,7 +342,11 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 		uplevel = Qnil;
 	    }
 	    else if (!NIL_P(uplevel)) {
-		uplevel = LONG2NUM((long)NUM2ULONG(uplevel) + 1);
+		long lev = NUM2LONG(uplevel);
+		if (lev < 0) {
+		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
+		}
+		uplevel = LONG2NUM(lev + 1);
 		uplevel = rb_vm_thread_backtrace_locations(1, &uplevel, GET_THREAD()->self);
 		if (!NIL_P(uplevel)) {
 		    uplevel = rb_ary_entry(uplevel, 0);
