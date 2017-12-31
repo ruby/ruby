@@ -292,6 +292,7 @@ struct parser_params {
 
 static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
 #define yyerror0(msg) parser_yyerror(parser, NULL, (msg))
+#define yyerror1(loc, msg) parser_yyerror(parser, (loc), (msg))
 #define yyerror(yylloc, parser, msg) parser_yyerror(parser, yylloc, msg)
 #define token_flush(p) ((p)->lex.ptok = (p)->lex.pcur)
 
@@ -1339,7 +1340,7 @@ stmt_or_begin	: stmt
 		    }
                 | keyword_BEGIN
 		    {
-			yyerror0("BEGIN is permitted only at toplevel");
+			yyerror1(&@1, "BEGIN is permitted only at toplevel");
 		    /*%%%*/
 			/* local_push(0); */
 		    /*%
@@ -1392,7 +1393,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		| keyword_alias tGVAR tNTH_REF
 		    {
 		    /*%%%*/
-			yyerror0("can't make alias for the number variables");
+			yyerror1(&@3, "can't make alias for the number variables");
 			$$ = new_begin(0, &@$);
 		    /*%
 			$$ = dispatch2(var_alias, $2, $3);
@@ -2039,7 +2040,7 @@ lhs		: user_variable
 cname		: tIDENTIFIER
 		    {
 		    /*%%%*/
-			yyerror0("class/module name must be CONSTANT");
+			yyerror1(&@1, "class/module name must be CONSTANT");
 		    /*%
 			$$ = dispatch1(class_name_error, $1);
 			ripper_error();
@@ -2975,8 +2976,12 @@ primary		: literal
 		    }
 		| k_class cpath superclass
 		    {
-			if (in_def)
-			    yyerror0("class definition in method body");
+			if (in_def) {
+			    YYLTYPE location;
+			    location.first_loc = @1.first_loc;
+			    location.last_loc = @2.last_loc;
+			    yyerror1(&location, "class definition in method body");
+			}
 			$<num>1 = in_class;
 			in_class = 1;
 			local_push(0);
@@ -3026,8 +3031,12 @@ primary		: literal
 		    }
 		| k_module cpath
 		    {
-			if (in_def)
-			    yyerror0("module definition in method body");
+			if (in_def) {
+			    YYLTYPE location;
+			    location.first_loc = @1.first_loc;
+			    location.last_loc = @2.last_loc;
+			    yyerror1(&location, "module definition in method body");
+			}
 			$<num>1 = in_class;
 			in_class = 1;
 			local_push(0);
@@ -3235,7 +3244,7 @@ k_end		: keyword_end
 k_return	: keyword_return
 		    {
 			if (in_class && !in_def && !dyna_in_block())
-			    yyerror0("Invalid return in class/module body");
+			    yyerror1(&@1, "Invalid return in class/module body");
 		    }
 		;
 
@@ -4591,7 +4600,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_args_tail
 f_bad_arg	: tCONSTANT
 		    {
 		    /*%%%*/
-			yyerror0("formal argument cannot be a constant");
+			yyerror1(&@1, "formal argument cannot be a constant");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
@@ -4601,7 +4610,7 @@ f_bad_arg	: tCONSTANT
 		| tIVAR
 		    {
 		    /*%%%*/
-			yyerror0("formal argument cannot be an instance variable");
+			yyerror1(&@1, "formal argument cannot be an instance variable");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
@@ -4611,7 +4620,7 @@ f_bad_arg	: tCONSTANT
 		| tGVAR
 		    {
 		    /*%%%*/
-			yyerror0("formal argument cannot be a global variable");
+			yyerror1(&@1, "formal argument cannot be a global variable");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
@@ -4621,7 +4630,7 @@ f_bad_arg	: tCONSTANT
 		| tCVAR
 		    {
 		    /*%%%*/
-			yyerror0("formal argument cannot be a class variable");
+			yyerror1(&@1, "formal argument cannot be a class variable");
 			$$ = 0;
 		    /*%
 			$$ = dispatch1(param_error, $1);
@@ -4884,7 +4893,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
 		    /*%%%*/
 			if (!is_local_id($2))
-			    yyerror0("rest argument must be local variable");
+			    yyerror1(&@2, "rest argument must be local variable");
 		    /*% %*/
 			arg_var(shadowing_lvar(get_id($2)));
 		    /*%%%*/
@@ -4912,9 +4921,9 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    {
 		    /*%%%*/
 			if (!is_local_id($2))
-			    yyerror0("block argument must be local variable");
+			    yyerror1(&@2, "block argument must be local variable");
 			else if (!dyna_in_block() && local_id($2))
-			    yyerror0("duplicated block argument name");
+			    yyerror1(&@2, "duplicated block argument name");
 		    /*% %*/
 			arg_var(shadowing_lvar(get_id($2)));
 		    /*%%%*/
@@ -4953,7 +4962,7 @@ singleton	: var_ref
 		    {
 		    /*%%%*/
 			if ($3 == 0) {
-			    yyerror0("can't define singleton method for ().");
+			    yyerror1(&@2, "can't define singleton method for ().");
 			}
 			else {
 			    switch (nd_type($3)) {
@@ -4965,7 +4974,7 @@ singleton	: var_ref
 			      case NODE_LIT:
 			      case NODE_ARRAY:
 			      case NODE_ZARRAY:
-				yyerror0("can't define singleton method for literals");
+				yyerror1(&@2, "can't define singleton method for literals");
 				break;
 			      default:
 				value_expr($3);
@@ -9985,25 +9994,25 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, const YYLTYPE *lo
     if (!id) return assignable_error();
     switch (id) {
       case keyword_self:
-	yyerror0("Can't change the value of self");
+	yyerror1(location, "Can't change the value of self");
 	goto error;
       case keyword_nil:
-	yyerror0("Can't assign to nil");
+	yyerror1(location, "Can't assign to nil");
 	goto error;
       case keyword_true:
-	yyerror0("Can't assign to true");
+	yyerror1(location, "Can't assign to true");
 	goto error;
       case keyword_false:
-	yyerror0("Can't assign to false");
+	yyerror1(location, "Can't assign to false");
 	goto error;
       case keyword__FILE__:
-	yyerror0("Can't assign to __FILE__");
+	yyerror1(location, "Can't assign to __FILE__");
 	goto error;
       case keyword__LINE__:
-	yyerror0("Can't assign to __LINE__");
+	yyerror1(location, "Can't assign to __LINE__");
 	goto error;
       case keyword__ENCODING__:
-	yyerror0("Can't assign to __ENCODING__");
+	yyerror1(location, "Can't assign to __ENCODING__");
 	goto error;
     }
     switch (id_type(id)) {
@@ -10037,7 +10046,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, const YYLTYPE *lo
       case ID_CONST:
 	if (!in_def)
 	    return assignable_result(new_cdecl(id, val, 0, location));
-	yyerror0("dynamic constant assignment");
+	yyerror1(location, "dynamic constant assignment");
 	break;
       case ID_CLASS:
 	return assignable_result(NEW_CVASGN(id, val));
@@ -10280,7 +10289,7 @@ value_expr_gen(struct parser_params *parser, NODE *node)
 	  case NODE_NEXT:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	    if (!cond) yyerror0("void value expression");
+	    if (!cond) yyerror1(&node->nd_loc, "void value expression");
 	    /* or "control never reach"? */
 	    return FALSE;
 
@@ -11093,7 +11102,7 @@ static NODE *
 const_decl_gen(struct parser_params *parser, NODE *path, const YYLTYPE *location)
 {
     if (in_def) {
-	yyerror0("dynamic constant assignment");
+	yyerror1(location, "dynamic constant assignment");
     }
     return new_cdecl(0, 0, (path), location);
 }
