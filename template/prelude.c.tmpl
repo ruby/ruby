@@ -139,7 +139,7 @@ prelude_prefix_path(VALUE self)
 
 % unless preludes.empty?
 #define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
-#ifdef __GNUC__
+#if defined __GNUC__ && __GNUC__ >= 5
 # pragma GCC diagnostic push
 # pragma GCC diagnostic error "-Wmissing-field-initializers"
 #endif
@@ -169,7 +169,7 @@ prelude_eval(VALUE code, VALUE name, int line)
 				      NULL, ISEQ_TYPE_TOP, &optimization));
     rb_ast_dispose(ast);
 }
-#ifdef __GNUC__
+#if defined __GNUC__ && __GNUC__ >= 5
 # pragma GCC diagnostic pop
 #endif
 % end
