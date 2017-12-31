@@ -290,9 +290,9 @@ struct parser_params {
 #define STR_NEW3(p,n,e,func) parser_str_new((p),(n),(e),(func),current_enc)
 #define TOK_INTERN() intern_cstr(tok(), toklen(), current_enc)
 
-static int parser_yyerror(struct parser_params*, const char*);
-#define yyerror0(msg) parser_yyerror(parser, (msg))
-#define yyerror(yylloc, parser, msg) yyerror0(msg)
+static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const char*);
+#define yyerror0(msg) parser_yyerror(parser, NULL, (msg))
+#define yyerror(yylloc, parser, msg) parser_yyerror(parser, yylloc, msg)
 #define token_flush(p) ((p)->lex.ptok = (p)->lex.pcur)
 
 #define lex_strterm		(parser->lex.strterm)
@@ -5346,7 +5346,7 @@ parser_precise_mbclen(struct parser_params *parser, const char *p)
 }
 
 static int
-parser_yyerror(struct parser_params *parser, const char *msg)
+parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *msg)
 {
 #ifndef RIPPER
     const int max_line_margin = 30;
@@ -5357,6 +5357,19 @@ parser_yyerror(struct parser_params *parser, const char *msg)
     char *buf;
     long len;
     int i;
+    YYLTYPE current;
+
+    if (!yylloc) {
+	RUBY_SET_YYLLOC(current);
+	yylloc = &current;
+    }
+    else if ((ruby_sourceline != yylloc->first_loc.lineno &&
+	 ruby_sourceline != yylloc->last_loc.lineno) ||
+	(yylloc->first_loc.lineno == yylloc->last_loc.lineno &&
+	 yylloc->first_loc.column == yylloc->last_loc.column)) {
+	compile_error(PARSER_ARG "%s", msg);
+	return 0;
+    }
 
     pend = lex_pend;
     if (pend > lex_pbeg && pend[-1] == '\n') {
@@ -6723,8 +6736,8 @@ parser_heredoc_identifier(struct parser_params *parser)
 	    else if (newline) newline = 2;
 	}
 	if (c == -1) {
-	    compile_error(PARSER_ARG "unterminated here document identifier");
-	    return 0;
+	    yyerror(NULL, parser, "unterminated here document identifier");
+	    return -1;
 	}
 	switch (newline) {
 	  case 1:
@@ -9893,7 +9906,7 @@ rb_parser_fatal(struct parser_params *parser, const char *fmt, ...)
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
 #ifndef RIPPER
-    parser_yyerror(parser, RSTRING_PTR(mesg));
+    parser_yyerror(parser, NULL, RSTRING_PTR(mesg));
     RB_GC_GUARD(mesg);
 #else
     dispatch1(parse_error, mesg);
@@ -9967,7 +9980,7 @@ assignable_gen(struct parser_params *parser, ID id, NODE *val, const YYLTYPE *lo
 #ifdef RIPPER
     ID id = get_id(lhs);
 # define assignable_result(x) (lhs)
-# define parser_yyerror(parser, x) (lhs = assign_error_gen(parser, lhs))
+# define parser_yyerror(parser, loc, x) (lhs = assign_error_gen(parser, lhs))
 #else
 # define assignable_result(x) assignable_result0(x, location)
 #endif
