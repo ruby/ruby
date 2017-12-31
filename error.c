@@ -342,12 +342,14 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 		uplevel = Qnil;
 	    }
 	    else if (!NIL_P(uplevel)) {
+		VALUE args[2];
 		long lev = NUM2LONG(uplevel);
 		if (lev < 0) {
 		    rb_raise(rb_eArgError, "negative level (%ld)", lev);
 		}
-		uplevel = LONG2NUM(lev + 1);
-		uplevel = rb_vm_thread_backtrace_locations(1, &uplevel, GET_THREAD()->self);
+		args[0] = LONG2NUM(lev + 1);
+		args[1] = INT2FIX(1);
+		uplevel = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
 		if (!NIL_P(uplevel)) {
 		    uplevel = rb_ary_entry(uplevel, 0);
 		}
@@ -360,7 +362,7 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 	    else {
 		VALUE path;
 		path = rb_funcall(uplevel, rb_intern("path"), 0);
-		str = rb_sprintf("%s:%li: warning: ",
+		str = rb_sprintf("%s:%ld: warning: ",
 		    rb_string_value_ptr(&path),
 		    NUM2LONG(rb_funcall(uplevel, rb_intern("lineno"), 0)));
 	    }
