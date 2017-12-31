@@ -746,6 +746,12 @@ x = __ENCODING__
         end
       END
     end
+    assert_raise(SyntaxError) do
+      eval "#{<<~"begin;"}\n#{<<~'end;'}", nil, __FILE__, __LINE__+1
+      begin;
+        x, true
+      end;
+    end
   end
 
   def test_block_dup
