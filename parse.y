@@ -5351,7 +5351,7 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 {
 #ifndef RIPPER
     const int max_line_margin = 30;
-    const char *p, *pe, *pt;
+    const char *p, *pe, *pt, *pb;
     const char *pre = "", *post = "", *pend;
     const char *code = "", *caret = "", *newline = "";
     const char *lim;
@@ -5388,8 +5388,6 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 
     len = pe - p;
     if (len > 4) {
-	char *p2;
-
 	if (p > lex_pbeg) {
 	    p = rb_enc_prev_char(lex_pbeg, p, pt, rb_enc_get(lex_lastline));
 	    if (p > lex_pbeg) pre = "...";
@@ -5398,17 +5396,42 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 	    pe = rb_enc_prev_char(pt, pe, pend, rb_enc_get(lex_lastline));
 	    if (pe < pend) post = "...";
 	}
+    }
+    pb = lex_pbeg;
+    if (ruby_sourceline == yylloc->first_loc.lineno) {
+	pb += yylloc->first_loc.column;
+	if (pb > pt) pb = pt;
+    }
+    if (pb < p) pb = p;
+    if (len <= 4 && yylloc->first_loc.lineno == yylloc->last_loc.lineno) {
+	compile_error(PARSER_ARG "%s", msg);
+    }
+    else if (!parser->error_buffer && rb_stderr_tty_p()) {
+#define CSI_BEGIN "\033["
+#define CSI_SGR "m"
+	compile_error(PARSER_ARG "%s\n"
+		      CSI_BEGIN""CSI_SGR"%s" /* pre */
+		      CSI_BEGIN"1"CSI_SGR"%.*s"
+		      CSI_BEGIN"1;4"CSI_SGR"%.*s"
+		      CSI_BEGIN";1"CSI_SGR"%.*s"
+		      CSI_BEGIN""CSI_SGR"%s" /* post */,
+		      msg, pre,
+		      (int)(pb - p), p,
+		      (int)(pt - pb), pb,
+		      (int)(pe - pt), pt,
+		      post);
+    }
+    else {
+	char *p2;
+
 	len = pe - p;
 	lim = pt < pend ? pt : pend;
 	i = (int)(lim - p);
 	buf = ALLOCA_N(char, i+2);
 	code = p;
 	caret = p2 = buf;
-	pe = (ruby_sourceline == yylloc->first_loc.lineno) ?
-	    parser->tokp : lex_pbeg;
-	if (pe > lim) pe = lim;
-	if (p <= pe) {
-	    while (p < pe) {
+	if (p <= pb) {
+	    while (p < pb) {
 		*p2++ = *p++ == '\t' ? '\t' : ' ';
 	    }
 	    *p2++ = '^';
@@ -5420,14 +5443,11 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 	}
 	*p2 = '\0';
 	newline = "\n";
+	compile_error(PARSER_ARG "%s%s""%s%.*s%s%s""%s%s",
+		      msg, newline,
+		      pre, (int)len, code, post, newline,
+		      pre, caret);
     }
-    else {
-	len = 0;
-    }
-    compile_error(PARSER_ARG "%s%s""%s%.*s%s%s""%s%s",
-		  msg, newline,
-		  pre, (int)len, code, post, newline,
-		  pre, caret);
 #else
     dispatch1(parse_error, STR_NEW2(msg));
     ripper_error();
