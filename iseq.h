@@ -210,7 +210,6 @@ struct rb_compile_option_struct {
 };
 
 struct iseq_insn_info_entry {
-    unsigned int position;
     int line_no;
     rb_event_flag_t events;
 };

@@ -373,6 +373,7 @@ struct rb_iseq_constant_body {
     /* insn info, must be freed */
     struct iseq_insn_info {
 	const struct iseq_insn_info_entry *body;
+	const unsigned int *positions;
 	unsigned int size;
     } insns_info;
 

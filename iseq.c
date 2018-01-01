@@ -75,6 +75,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	if (iseq->body) {
 	    ruby_xfree((void *)iseq->body->iseq_encoded);
 	    ruby_xfree((void *)iseq->body->insns_info.body);
+	    ruby_xfree((void *)iseq->body->insns_info.positions);
 	    ruby_xfree((void *)iseq->body->local_table);
 	    ruby_xfree((void *)iseq->body->is_entries);
 
@@ -157,7 +158,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 
 	size += sizeof(struct rb_iseq_constant_body);
 	size += body->iseq_size * sizeof(VALUE);
-	size += body->insns_info.size * sizeof(struct iseq_insn_info_entry);
+	size += body->insns_info.size * (sizeof(struct iseq_insn_info_entry) + sizeof(unsigned int));
 	size += body->local_table_size * sizeof(ID);
 	if (body->catch_table) {
 	    size += iseq_catch_table_bytes(body->catch_table->size);
@@ -1256,12 +1257,13 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 {
     size_t size = iseq->body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info.body;
+    const unsigned int *positions = iseq->body->insns_info.positions;
     const int debug = 0;
 
     if (debug) {
 	printf("size: %"PRIuSIZE"\n", size);
 	printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-	       (size_t)0, insns_info[0].position, insns_info[0].line_no, pos);
+	       (size_t)0, positions[0], insns_info[0].line_no, pos);
     }
 
     if (size == 0) {
@@ -1274,10 +1276,10 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 	size_t l = 1, r = size - 1;
 	while (l <= r) {
 	    size_t m = l + (r - l) / 2;
-	    if (insns_info[m].position == pos) {
+	    if (positions[m] == pos) {
 		return &insns_info[m];
 	    }
-	    if (insns_info[m].position < pos) {
+	    if (positions[m] < pos) {
 		l = m + 1;
 	    }
 	    else {
@@ -1287,7 +1289,7 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 	if (l >= size) {
 	    return &insns_info[size-1];
 	}
-	if (insns_info[l].position > pos) {
+	if (positions[l] > pos) {
 	    return &insns_info[l-1];
 	}
 	return &insns_info[l];
@@ -1300,12 +1302,13 @@ get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 {
     size_t i = 0, size = iseq->body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info.body;
+    const unsigned int *positions = iseq->body->insns_info.positions;
     const int debug = 0;
 
     if (debug) {
 	printf("size: %"PRIuSIZE"\n", size);
 	printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-	       i, insns_info[i].position, insns_info[i].line_no, pos);
+	       i, positions[i], insns_info[i].line_no, pos);
     }
 
     if (size == 0) {
@@ -1317,12 +1320,12 @@ get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
     else {
 	for (i=1; i<size; i++) {
 	    if (debug) printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-			      i, insns_info[i].position, insns_info[i].line_no, pos);
+			      i, positions[i], insns_info[i].line_no, pos);
 
-	    if (insns_info[i].position == pos) {
+	    if (positions[i] == pos) {
 		return &insns_info[i];
 	    }
-	    if (insns_info[i].position > pos) {
+	    if (positions[i] > pos) {
 		return &insns_info[i-1];
 	    }
 	}
@@ -2346,7 +2349,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
 	if (ti < iseq->body->insns_info.size) {
 	    const struct iseq_insn_info_entry *info = &iseq->body->insns_info.body[ti];
-	    if (info->position == pos) {
+	    if (iseq->body->insns_info.positions[ti] == pos) {
 		int line = info->line_no;
 		rb_event_flag_t events = info->events;
 
