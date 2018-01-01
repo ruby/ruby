@@ -56,6 +56,13 @@
 
 #define RUBY_VM_THREAD_MODEL 2
 
+/*
+ * implementation selector of get_insn_info algorithm
+ *   0: linear search
+ *   1: binary search
+ */
+#define VM_INSN_INFO_TABLE_IMPL 1
+
 #include "ruby/ruby.h"
 #include "ruby/st.h"
 
