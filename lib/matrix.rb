@@ -1847,7 +1847,7 @@ class Vector
 
   def []=(i, v)
     if i.is_a?(Range)
-      raise IndexError 'expected range is outside of vector' unless in_vector_range?(i)
+      raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
       if v.is_a?(Vector)
         raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
         v.each_with_index do |e, index|
