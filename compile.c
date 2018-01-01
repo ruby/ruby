@@ -2116,11 +2116,11 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq->body->stack_max = stack_max;
 
     /* get rid of memory leak when REALLOC failed */
-    iseq->body->insns_info = insns_info;
+    iseq->body->insns_info.body = insns_info;
 
     REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
-    iseq->body->insns_info = insns_info;
-    iseq->body->insns_info_size = insns_info_index;
+    iseq->body->insns_info.body = insns_info;
+    iseq->body->insns_info.size = insns_info_index;
 
     return COMPILE_OK;
 }
@@ -8358,13 +8358,13 @@ ibf_load_param_keyword(const struct ibf_load *load, const struct rb_iseq_constan
 static struct iseq_insn_info_entry *
 ibf_dump_insns_info(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    return IBF_W(iseq->body->insns_info, struct iseq_insn_info_entry, iseq->body->insns_info_size);
+    return IBF_W(iseq->body->insns_info.body, struct iseq_insn_info_entry, iseq->body->insns_info.size);
 }
 
 static struct iseq_insn_info_entry *
 ibf_load_insns_info(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
 {
-    return IBF_R(body->insns_info, struct iseq_insn_info_entry, body->insns_info_size);
+    return IBF_R(body->insns_info.body, struct iseq_insn_info_entry, body->insns_info.size);
 }
 
 static ID *
@@ -8518,7 +8518,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.iseq_encoded =    ibf_dump_code(dump, iseq);
     dump_body.param.opt_table = ibf_dump_param_opt_table(dump, iseq);
     dump_body.param.keyword =   ibf_dump_param_keyword(dump, iseq);
-    dump_body.insns_info =      ibf_dump_insns_info(dump, iseq);
+    dump_body.insns_info.body = ibf_dump_insns_info(dump, iseq);
     dump_body.local_table =     ibf_dump_local_table(dump, iseq);
     dump_body.catch_table =     ibf_dump_catch_table(dump, iseq);
     dump_body.parent_iseq =     ibf_dump_iseq(dump, iseq->body->parent_iseq);
@@ -8556,7 +8556,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->is_size = body->is_size;
     load_body->ci_size = body->ci_size;
     load_body->ci_kw_size = body->ci_kw_size;
-    load_body->insns_info_size = body->insns_info_size;
+    load_body->insns_info.size = body->insns_info.size;
 
     RB_OBJ_WRITE(iseq, &load_body->mark_ary, iseq_mark_ary_create((int)body->mark_ary));
 
@@ -8589,7 +8589,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->cc_entries      = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
     load_body->param.opt_table = ibf_load_param_opt_table(load, body);
     load_body->param.keyword   = ibf_load_param_keyword(load, body);
-    load_body->insns_info      = ibf_load_insns_info(load, body);
+    load_body->insns_info.body = ibf_load_insns_info(load, body);
     load_body->local_table     = ibf_load_local_table(load, body);
     load_body->catch_table     = ibf_load_catch_table(load, body);
     load_body->parent_iseq     = ibf_load_iseq(load, body->parent_iseq);

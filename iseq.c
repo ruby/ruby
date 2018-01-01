@@ -74,7 +74,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
     if (iseq) {
 	if (iseq->body) {
 	    ruby_xfree((void *)iseq->body->iseq_encoded);
-	    ruby_xfree((void *)iseq->body->insns_info);
+	    ruby_xfree((void *)iseq->body->insns_info.body);
 	    ruby_xfree((void *)iseq->body->local_table);
 	    ruby_xfree((void *)iseq->body->is_entries);
 
@@ -157,7 +157,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 
 	size += sizeof(struct rb_iseq_constant_body);
 	size += body->iseq_size * sizeof(VALUE);
-	size += body->insns_info_size * sizeof(struct iseq_insn_info_entry);
+	size += body->insns_info.size * sizeof(struct iseq_insn_info_entry);
 	size += body->local_table_size * sizeof(ID);
 	if (body->catch_table) {
 	    size += iseq_catch_table_bytes(body->catch_table->size);
@@ -1254,8 +1254,8 @@ iseqw_to_a(VALUE self)
 static const struct iseq_insn_info_entry *
 get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 {
-    size_t size = iseq->body->insns_info_size;
-    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info;
+    size_t size = iseq->body->insns_info.size;
+    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info.body;
     const int debug = 0;
 
     if (debug) {
@@ -1298,7 +1298,7 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 static const struct iseq_insn_info_entry *
 get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 {
-    size_t i = 0, size = iseq->body->insns_info_size;
+    size_t i = 0, size = iseq->body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info;
     const int debug = 0;
 
@@ -1902,8 +1902,8 @@ iseqw_trace_points(VALUE self)
     unsigned int i;
     VALUE ary = rb_ary_new();
 
-    for (i=0; i<iseq->body->insns_info_size; i++) {
-	const struct iseq_insn_info_entry *entry = &iseq->body->insns_info[i];
+    for (i=0; i<iseq->body->insns_info.size; i++) {
+	const struct iseq_insn_info_entry *entry = &iseq->body->insns_info.body[i];
 	if (entry->events) {
 	    push_event_info(iseq, entry->events, entry->line_no, ary);
 	}
@@ -2344,8 +2344,8 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	    rb_ary_push(body, (VALUE)label);
 	}
 
-	if (ti < iseq->body->insns_info_size) {
-	    const struct iseq_insn_info_entry *info = &iseq->body->insns_info[ti];
+	if (ti < iseq->body->insns_info.size) {
+	    const struct iseq_insn_info_entry *info = &iseq->body->insns_info.body[ti];
 	    if (info->position == pos) {
 		int line = info->line_no;
 		rb_event_flag_t events = info->events;
