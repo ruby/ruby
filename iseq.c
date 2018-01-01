@@ -1299,7 +1299,7 @@ static const struct iseq_insn_info_entry *
 get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 {
     size_t i = 0, size = iseq->body->insns_info.size;
-    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info;
+    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info.body;
     const int debug = 0;
 
     if (debug) {
