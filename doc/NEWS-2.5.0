@@ -338,7 +338,6 @@ with all sufficient information, see the ChangeLog file or Redmine
     * IPAddr#private? [Feature #11666]
     * IPAddr#link_local? [Feature #10912]
 
-
 * IRB
 
   * Print backtrace and error message in reverse order [Feature #8661] [experimental]
@@ -356,7 +355,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Net::HTTP
 
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
-  * Net::HTTP#{min_version,max_version}, [Feature #9450]
+  * Net::HTTP#{min_version,max_version} [Feature #9450]
   * Add more HTTP status classes
   * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
   * Net::HTTP#{proxy_user,proxy_pass} reflect http_proxy environment variable
