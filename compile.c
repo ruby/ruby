@@ -1829,16 +1829,16 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 }
 
 static int
-add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int code_index, LINK_ELEMENT *list)
+add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions, int insns_info_index, int code_index, LINK_ELEMENT *list)
 {
     if (list->type == ISEQ_ELEMENT_INSN) {
 	INSN *iobj = (INSN *)list;
 	if (insns_info_index == 0 ||
 	    insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
 	    insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
-	    insns_info[insns_info_index].position   = code_index;
 	    insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
 	    insns_info[insns_info_index].events     = iobj->insn_info.events;
+	    positions[insns_info_index]             = code_index;
 	    return TRUE;
 	}
 	else {
@@ -1849,9 +1849,9 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, int insns_info_index, int
 	ADJUST *adjust = (ADJUST *)list;
 	if (insns_info_index > 0 ||
 	    insns_info[insns_info_index-1].line_no != adjust->line_no) {
-	    insns_info[insns_info_index].position   = code_index;
 	    insns_info[insns_info_index].line_no    = adjust->line_no;
 	    insns_info[insns_info_index].events     = 0;
+	    positions[insns_info_index]             = code_index;
 	    return TRUE;
 	}
 	else {
@@ -1870,6 +1870,7 @@ static int
 iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
     struct iseq_insn_info_entry *insns_info;
+    unsigned int *positions;
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
     rb_event_flag_t events = 0;
@@ -1929,6 +1930,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     /* make instruction sequence */
     generated_iseq = ALLOC_N(VALUE, code_index);
     insns_info = ALLOC_N(struct iseq_insn_info_entry, insn_num);
+    positions = ALLOC_N(unsigned int, insn_num);
     iseq->body->is_entries = ZALLOC_N(union iseq_inline_storage_entry, iseq->body->is_size);
     iseq->body->ci_entries = (struct rb_call_info *)ruby_xmalloc(sizeof(struct rb_call_info) * iseq->body->ci_size +
 								 sizeof(struct rb_call_info_with_kwarg) * iseq->body->ci_kw_size);
@@ -2057,7 +2059,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			return COMPILE_NG;
 		    }
 		}
-		if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)iobj)) insns_info_index++;
+		if (add_insn_info(insns_info, positions, insns_info_index, code_index, (LINK_ELEMENT *)iobj)) insns_info_index++;
 		code_index += len;
 		break;
 	    }
@@ -2082,7 +2084,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		if (adjust->line_no != -1) {
 		    const int diff = orig_sp - sp;
 		    if (diff > 0) {
-			if (add_insn_info(insns_info, insns_info_index, code_index, (LINK_ELEMENT *)adjust)) insns_info_index++;
+			if (add_insn_info(insns_info, positions, insns_info_index, code_index, (LINK_ELEMENT *)adjust)) insns_info_index++;
 		    }
 		    if (diff > 1) {
 			generated_iseq[code_index++] = BIN(adjuststack);
@@ -2095,6 +2097,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			int label_no = adjust->label ? adjust->label->label_no : -1;
 			xfree(generated_iseq);
 			xfree(insns_info);
+			xfree(positions);
 			debug_list(anchor);
 			COMPILE_ERROR(iseq, adjust->line_no,
 				      "iseq_set_sequence: adjust bug to %d %d < %d",
@@ -2117,9 +2120,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     /* get rid of memory leak when REALLOC failed */
     iseq->body->insns_info.body = insns_info;
+    iseq->body->insns_info.positions = positions;
 
     REALLOC_N(insns_info, struct iseq_insn_info_entry, insns_info_index);
     iseq->body->insns_info.body = insns_info;
+    REALLOC_N(positions, unsigned int, insns_info_index);
+    iseq->body->insns_info.positions = positions;
     iseq->body->insns_info.size = insns_info_index;
 
     return COMPILE_OK;
@@ -8356,15 +8362,27 @@ ibf_load_param_keyword(const struct ibf_load *load, const struct rb_iseq_constan
 }
 
 static struct iseq_insn_info_entry *
-ibf_dump_insns_info(struct ibf_dump *dump, const rb_iseq_t *iseq)
+ibf_dump_insns_info_body(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     return IBF_W(iseq->body->insns_info.body, struct iseq_insn_info_entry, iseq->body->insns_info.size);
 }
 
 static struct iseq_insn_info_entry *
-ibf_load_insns_info(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+ibf_load_insns_info_body(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
 {
     return IBF_R(body->insns_info.body, struct iseq_insn_info_entry, body->insns_info.size);
+}
+
+static unsigned int *
+ibf_dump_insns_info_positions(struct ibf_dump *dump, const rb_iseq_t *iseq)
+{
+    return IBF_W(iseq->body->insns_info.positions, unsigned int, iseq->body->insns_info.size);
+}
+
+static unsigned int *
+ibf_load_insns_info_positions(const struct ibf_load *load, const struct rb_iseq_constant_body *body)
+{
+    return IBF_R(body->insns_info.positions, unsigned int, body->insns_info.size);
 }
 
 static ID *
@@ -8515,18 +8533,19 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
     dump_body.location.label = ibf_dump_object(dump, dump_body.location.label);
 
-    dump_body.iseq_encoded =    ibf_dump_code(dump, iseq);
-    dump_body.param.opt_table = ibf_dump_param_opt_table(dump, iseq);
-    dump_body.param.keyword =   ibf_dump_param_keyword(dump, iseq);
-    dump_body.insns_info.body = ibf_dump_insns_info(dump, iseq);
-    dump_body.local_table =     ibf_dump_local_table(dump, iseq);
-    dump_body.catch_table =     ibf_dump_catch_table(dump, iseq);
-    dump_body.parent_iseq =     ibf_dump_iseq(dump, iseq->body->parent_iseq);
-    dump_body.local_iseq =      ibf_dump_iseq(dump, iseq->body->local_iseq);
-    dump_body.is_entries =      NULL;
-    dump_body.ci_entries =      ibf_dump_ci_entries(dump, iseq);
-    dump_body.cc_entries =      NULL;
-    dump_body.mark_ary =        ISEQ_FLIP_CNT(iseq);
+    dump_body.iseq_encoded =         ibf_dump_code(dump, iseq);
+    dump_body.param.opt_table =      ibf_dump_param_opt_table(dump, iseq);
+    dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
+    dump_body.insns_info.body =      ibf_dump_insns_info_body(dump, iseq);
+    dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, iseq);
+    dump_body.local_table =          ibf_dump_local_table(dump, iseq);
+    dump_body.catch_table =          ibf_dump_catch_table(dump, iseq);
+    dump_body.parent_iseq =          ibf_dump_iseq(dump, iseq->body->parent_iseq);
+    dump_body.local_iseq =           ibf_dump_iseq(dump, iseq->body->local_iseq);
+    dump_body.is_entries =           NULL;
+    dump_body.ci_entries =           ibf_dump_ci_entries(dump, iseq);
+    dump_body.cc_entries =           NULL;
+    dump_body.mark_ary =             ISEQ_FLIP_CNT(iseq);
 
     return ibf_dump_write(dump, &dump_body, sizeof(dump_body));
 }
@@ -8584,18 +8603,19 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->location.first_lineno = body->location.first_lineno;
     load_body->location.code_range = body->location.code_range;
 
-    load_body->is_entries      = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
-    load_body->ci_entries      = ibf_load_ci_entries(load, body);
-    load_body->cc_entries      = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
-    load_body->param.opt_table = ibf_load_param_opt_table(load, body);
-    load_body->param.keyword   = ibf_load_param_keyword(load, body);
-    load_body->insns_info.body = ibf_load_insns_info(load, body);
-    load_body->local_table     = ibf_load_local_table(load, body);
-    load_body->catch_table     = ibf_load_catch_table(load, body);
-    load_body->parent_iseq     = ibf_load_iseq(load, body->parent_iseq);
-    load_body->local_iseq      = ibf_load_iseq(load, body->local_iseq);
+    load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
+    load_body->ci_entries           = ibf_load_ci_entries(load, body);
+    load_body->cc_entries           = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
+    load_body->param.opt_table      = ibf_load_param_opt_table(load, body);
+    load_body->param.keyword        = ibf_load_param_keyword(load, body);
+    load_body->insns_info.body      = ibf_load_insns_info_body(load, body);
+    load_body->insns_info.positions = ibf_load_insns_info_positions(load, body);
+    load_body->local_table          = ibf_load_local_table(load, body);
+    load_body->catch_table          = ibf_load_catch_table(load, body);
+    load_body->parent_iseq          = ibf_load_iseq(load, body->parent_iseq);
+    load_body->local_iseq           = ibf_load_iseq(load, body->local_iseq);
 
-    load_body->iseq_encoded    = ibf_load_code(load, iseq, body);
+    load_body->iseq_encoded         = ibf_load_code(load, iseq, body);
 
     rb_iseq_translate_threaded_code(iseq);
 }
