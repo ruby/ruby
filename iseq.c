@@ -346,7 +346,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     return Qtrue;
 }
 
-#if VM_CHECK_MODE > 0
+#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
 static void validate_get_insn_info(rb_iseq_t *iseq);
 #endif
 
@@ -358,7 +358,7 @@ finish_iseq_build(rb_iseq_t *iseq)
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
 
-#if VM_CHECK_MODE > 0
+#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
     validate_get_insn_info(iseq);
 #endif
 
@@ -1252,6 +1252,7 @@ iseqw_to_a(VALUE self)
     return iseq_data_to_ary(iseq);
 }
 
+#if VM_INSN_INFO_TABLE_IMPL == 1 /* binary search */
 static const struct iseq_insn_info_entry *
 get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
 {
@@ -1296,7 +1297,14 @@ get_insn_info_binary_search(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
-#if VM_CHECK_MODE > 0
+static const struct iseq_insn_info_entry *
+get_insn_info(const rb_iseq_t *iseq, size_t pos)
+{
+    return get_insn_info_binary_search(iseq, pos);
+}
+#endif
+
+#if VM_CHECK_MODE > 0 || VM_INSN_INFO_TABLE_IMPL == 0
 static const struct iseq_insn_info_entry *
 get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
 {
@@ -1332,14 +1340,24 @@ get_insn_info_linear_search(const rb_iseq_t *iseq, size_t pos)
     }
     return &insns_info[i-1];
 }
+#endif
 
+#if VM_INSN_INFO_TABLE_IMPL == 0 /* linear search */
+static const struct iseq_insn_info_entry *
+get_insn_info(const rb_iseq_t *iseq, size_t pos)
+{
+    return get_insn_info_linear_search(iseq, pos);
+}
+#endif
+
+#if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
 static void
 validate_get_insn_info(rb_iseq_t *iseq)
 {
     size_t i;
     for (i = 0; i < iseq->body->iseq_size; i++) {
-	if (get_insn_info_linear_search(iseq, i) != get_insn_info_binary_search(iseq, i)) {
-	    rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info_binary_search(iseq, %"PRIuSIZE")", i, i);
+	if (get_insn_info_linear_search(iseq, i) != get_insn_info(iseq, i)) {
+	    rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info(iseq, %"PRIuSIZE")", i, i);
 	}
     }
 }
@@ -1348,7 +1366,7 @@ validate_get_insn_info(rb_iseq_t *iseq)
 unsigned int
 rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info_binary_search(iseq, pos);
+    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
 
     if (entry) {
 	return entry->line_no;
@@ -1361,7 +1379,7 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
 rb_event_flag_t
 rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 {
-    const struct iseq_insn_info_entry *entry = get_insn_info_binary_search(iseq, pos);
+    const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pos);
     if (entry) {
 	return entry->events;
     }
