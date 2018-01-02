@@ -33,8 +33,14 @@ NORETURN(void rb_assert_failure(const char *, int, const char *, const char *));
 #define RUBY_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(!RUBY_NDEBUG+0, expr, #expr)
 #define RUBY_ASSERT_WHEN(cond, expr) RUBY_ASSERT_MESG_WHEN(cond, expr, #expr)
 
+#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+/* C89 compilers are required to support strings of only 509 chars. */
+/* can't use RUBY_ASSERT for such compilers. */
+#include <assert.h>
+#else
 #undef assert
 #define assert RUBY_ASSERT
+#endif
 
 #ifndef RUBY_NDEBUG
 # ifdef NDEBUG
