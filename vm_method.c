@@ -151,14 +151,14 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	VM_ASSERT(complemented_count >= 0);
 
 	if (alias_count + complemented_count == 0) {
-	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", def, rb_id2name(def->original_id), alias_count, complemented_count);
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def, rb_id2name(def->original_id), alias_count, complemented_count);
 	    xfree(def);
 	}
 	else {
 	    if (complemented) def->complemented_count--;
 	    else if (def->alias_count > 0) def->alias_count--;
 
-	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d,%d->%d (dec)\n", def, rb_id2name(def->original_id),
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d,%d->%d (dec)\n", (void *)def, rb_id2name(def->original_id),
 				      alias_count, def->alias_count, complemented_count, def->complemented_count);
 	}
     }
@@ -350,7 +350,7 @@ static rb_method_definition_t *
 method_definition_addref(rb_method_definition_t *def)
 {
     def->alias_count++;
-    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", def, rb_id2name(def->original_id), def->alias_count);
+    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", (void *)def, rb_id2name(def->original_id), def->alias_count);
     return def;
 }
 
@@ -358,7 +358,7 @@ static rb_method_definition_t *
 method_definition_addref_complement(rb_method_definition_t *def)
 {
     def->complemented_count++;
-    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", def, rb_id2name(def->original_id), def->complemented_count);
+    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", (void *)def, rb_id2name(def->original_id), def->complemented_count);
     return def;
 }
 

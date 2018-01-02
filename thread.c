@@ -473,7 +473,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
     while (mutexes) {
 	mutex = mutexes;
 	/* rb_warn("mutex #<%p> remains to be locked by terminated thread",
-		mutexes); */
+		(void *)mutexes); */
 	mutexes = mutex->next_mutex;
 	err = rb_mutex_unlock_th(mutex, th);
 	if (err) rb_bug("invalid keeping_mutexes: %s", err);
@@ -4966,21 +4966,21 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
     VALUE sep = rb_str_new_cstr("\n   ");
 
     rb_str_catf(msg, "\n%d threads, %d sleeps current:%p main thread:%p\n",
-	    vm_living_thread_num(vm), vm->sleeper, GET_THREAD(), vm->main_thread);
+		vm_living_thread_num(vm), vm->sleeper, (void *)GET_THREAD(), (void *)vm->main_thread);
     list_for_each(&vm->living_threads, th, vmlt_node) {
 	rb_str_catf(msg, "* %+"PRIsVALUE"\n   rb_thread_t:%p "
 		    "native:%"PRI_THREAD_ID" int:%u",
-		    th->self, th, thread_id_str(th), th->ec->interrupt_flag);
+		    th->self, (void *)th, thread_id_str(th), th->ec->interrupt_flag);
 	if (th->locking_mutex) {
 	    rb_mutex_t *mutex;
 	    GetMutexPtr(th->locking_mutex, mutex);
 	    rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
-			mutex->th, rb_mutex_num_waiting(mutex));
+			(void *)mutex->th, rb_mutex_num_waiting(mutex));
 	}
 	{
 	    rb_thread_list_t *list = th->join_list;
 	    while (list) {
-		rb_str_catf(msg, "\n    depended by: tb_thread_id:%p", list->th);
+		rb_str_catf(msg, "\n    depended by: tb_thread_id:%p", (void *)list->th);
 		list = list->next;
 	    }
 	}

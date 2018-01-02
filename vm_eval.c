@@ -1148,7 +1148,7 @@ rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
 	    retval = THROW_DATA_VAL(err);
 	}
 	else if (0) {
-	    SDR(); fprintf(stderr, "%p, %p\n", cfp, escape_cfp);
+	    SDR(); fprintf(stderr, "%p, %p\n", (void *)cfp, (void *)escape_cfp);
 	}
     }
     EC_POP_TAG();
