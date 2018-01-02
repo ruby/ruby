@@ -22,6 +22,7 @@
 static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
+#include "internal.h"
 
 #ifdef HAVE_STDLIB_H
 # include <stdlib.h>
