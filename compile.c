@@ -7985,7 +7985,11 @@ struct ibf_id_entry {
 	ibf_id_enc_ascii,
 	ibf_id_enc_utf8,
 	ibf_id_enc_other
-    } enc : 2;
+    } enc
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+    : 2
+#endif
+    ;
     char body[1];
 };
 

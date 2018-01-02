@@ -32,10 +32,16 @@ typedef enum {
     METHOD_VISI_MASK = 0x03
 } rb_method_visibility_t;
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#define bits_t rb_method_visibility_t
+#else
+#define bits_t unsigned int
+#endif
 typedef struct rb_scope_visi_struct {
-    rb_method_visibility_t method_visi : 3;
+    bits_t method_visi : 3;
     unsigned int module_func : 1;
 } rb_scope_visibility_t;
+#undef bits_t
 
 /*! CREF (Class REFerence) */
 typedef struct rb_cref_struct {
