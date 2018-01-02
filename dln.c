@@ -1242,6 +1242,27 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #define translit_separator(str) (void)(str)
 #endif
 
+MAYBE_UNUSED(static bool xmalloc_mismatch_p(void *handle));
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#elif defined(__GNUC__) && (__GNUC__ >= 5)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+bool
+xmalloc_mismatch_p(void *handle)
+{
+    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
+    return ex && ex != ruby_xmalloc;
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#elif defined(__GNUC__) && (__GNUC__ >= 5)
+#pragma GCC diagnostic pop
+#endif
+
 void*
 dln_load(const char *file)
 {
@@ -1329,8 +1350,7 @@ dln_load(const char *file)
 	}
 # if defined RUBY_EXPORT
 	{
-	    void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
-	    if (ex && ex != ruby_xmalloc) {
+	    if (xmalloc_mismatch_p(handle)) {
 
 #   if defined __APPLE__ && \
     defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
