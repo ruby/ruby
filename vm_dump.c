@@ -827,10 +827,11 @@ print_machine_register(size_t reg, const char *reg_name, int col_count, int max_
     char buf[64];
 
 #ifdef __LP64__
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%016" PRIxSIZE, reg_name, reg);
 #else
-    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08zx", reg_name, reg);
+    ret = snprintf(buf, sizeof(buf), " %3.3s: 0x%08" PRIxSIZE, reg_name, reg);
 #endif
+#undef zx
     if (col_count + ret > max_col) {
 	fputs("\n", stderr);
 	col_count = 0;
