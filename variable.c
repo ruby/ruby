@@ -1846,10 +1846,8 @@ struct autoload_state {
     VALUE result;
     ID id;
     VALUE thread;
-    union {
-	struct list_node node;
-	struct list_head head;
-    } waitq;
+    struct list_node node;
+    struct list_head head;
 };
 
 struct autoload_data_i {
@@ -2102,11 +2100,11 @@ autoload_reset(VALUE arg)
     if (need_wakeups) {
 	struct autoload_state *cur = 0, *nxt;
 
-	list_for_each_safe(&state->waitq.head, cur, nxt, waitq.node) {
+	list_for_each_safe(&state->head, cur, nxt, node) {
 	    VALUE th = cur->thread;
 
 	    cur->thread = Qfalse;
-	    list_del_init(&cur->waitq.node); /* idempotent */
+	    list_del_init(&cur->node); /* idempotent */
 
 	    /*
 	     * cur is stored on the stack of cur->waiting_th,
@@ -2141,7 +2139,7 @@ autoload_sleep_done(VALUE arg)
     struct autoload_state *state = (struct autoload_state *)arg;
 
     if (state->thread != Qfalse && rb_thread_to_be_killed(state->thread)) {
-	list_del(&state->waitq.node); /* idempotent after list_del_init */
+	list_del(&state->node); /* idempotent after list_del_init */
     }
 
     return Qfalse;
@@ -2177,13 +2175,13 @@ rb_autoload_load(VALUE mod, ID id)
 	 * autoload_reset will wake up any threads added to this
 	 * iff the GVL is released during autoload_require
 	 */
-	list_head_init(&state.waitq.head);
+	list_head_init(&state.head);
     }
     else if (state.thread == ele->state->thread) {
 	return Qfalse;
     }
     else {
-	list_add_tail(&ele->state->waitq.head, &state.waitq.node);
+	list_add_tail(&ele->state->head, &state.node);
 
 	rb_ensure(autoload_sleep, (VALUE)&state,
 		autoload_sleep_done, (VALUE)&state);
