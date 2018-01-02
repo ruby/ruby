@@ -109,7 +109,7 @@ extern "C" {
     __builtin_mul_overflow_p((a), (b), (__typeof__(a * b))0)
 #elif defined HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW
 #define MUL_OVERFLOW_P(a, b) \
-    ({__typeof__(a) c; __builtin_mul_overflow((a), (b), &c);})
+    RB_GNUC_EXTENSION_BLOCK(__typeof__(a) c; __builtin_mul_overflow((a), (b), &c))
 #endif
 
 #define MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, min, max) ( \
@@ -122,10 +122,10 @@ extern "C" {
 #ifdef HAVE_BUILTIN___BUILTIN_MUL_OVERFLOW_P
 /* __builtin_mul_overflow_p can take bitfield */
 /* and GCC permits bitfields for integers other than int */
-#define MUL_OVERFLOW_FIXNUM_P(a, b) ({ \
+#define MUL_OVERFLOW_FIXNUM_P(a, b) RB_GNUC_EXTENSION_BLOCK( \
     struct { long fixnum : SIZEOF_LONG * CHAR_BIT - 1; } c; \
     __builtin_mul_overflow_p((a), (b), c.fixnum); \
-})
+)
 #else
 #define MUL_OVERFLOW_FIXNUM_P(a, b) MUL_OVERFLOW_SIGNED_INTEGER_P(a, b, FIXNUM_MIN, FIXNUM_MAX)
 #endif
