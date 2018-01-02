@@ -446,19 +446,26 @@ class Matrix
   #
   # Returns a matrix that is the result of iteration of the given block over all
   # elements of the matrix.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
   #   Matrix[ [1,2], [3,4] ].collect { |e| e**2 }
   #     => 1  4
   #        9 16
   #
-  def collect(&block) # :yield: e
-    return to_enum(:collect) unless block_given?
-    rows = @rows.collect{|row| row.collect(&block)}
-    new_matrix rows, column_count
+  def collect(which = :all, &block) # :yield: e
+    return to_enum(:collect, which) unless block_given?
+    dup.collect!(which, &block)
   end
   alias map collect
 
   #
-  # Invokes the given block for each element of self, replacing the element with the value
+  # Invokes the given block for each element of matrix, replacing the element with the value
   # returned by the block.
   # Elements can be restricted by passing an argument:
   # * :all (default): yields all elements

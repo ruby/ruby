@@ -687,6 +687,20 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(FrozenError){ m8[0...1, 2] = 5}
   end
 
+  def test_map
+    m1 = Matrix.zero(2,2)
+    m2 = Matrix.build(3,4){|row, col| 1}
+
+    assert_equal Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.map{|e| e * 5}
+    assert_equal Matrix[[7, 0],[0, 7]], m1.map(:diagonal){|e| e + 7}
+    assert_equal Matrix[[0, 5],[5, 0]], m1.map(:off_diagonal){|e| e + 5}
+    assert_equal Matrix[[8, 1, 1, 1], [8, 8, 1, 1], [8, 8, 8, 1]], m2.map(:lower){|e| e + 7}
+    assert_equal Matrix[[1, 1, 1, 1], [-11, 1, 1, 1], [-11, -11, 1, 1]], m2.map(:strict_lower){|e| e - 12}
+    assert_equal Matrix[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], m2.map(:strict_upper){|e| e ** 2}
+    assert_equal Matrix[[-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1]], m2.map(:upper){|e| -e}
+    assert_raise(ArgumentError) {m1.map(:test){|e| e + 7}}
+  end
+
   def test_map!
     m1 = Matrix.zero(2,2)
     m2 = Matrix.build(3,4){|row, col| 1}
