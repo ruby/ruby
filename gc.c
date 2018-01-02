@@ -5960,18 +5960,18 @@ NOINLINE(static void gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t
 static void
 gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
-    gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
+    gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %p -> %s\n", (void *)a, obj_info(b));
 
     if (RVALUE_BLACK_P(a)) {
 	if (RVALUE_WHITE_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(a)) {
-		gc_report(2, objspace, "gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(2, objspace, "gc_writebarrier_incremental: [IN] %p -> %s\n", (void *)a, obj_info(b));
 		gc_mark_from(objspace, b, a);
 	    }
 	}
 	else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(b)) {
-		gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %p -> %s\n", (void *)a, obj_info(b));
 		RVALUE_AGE_SET_OLD(objspace, b);
 
 		if (RVALUE_BLACK_P(b)) {
@@ -5979,7 +5979,7 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 		}
 	    }
 	    else {
-		gc_report(1, objspace, "gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [LL] %p -> %s\n", (void *)a, obj_info(b));
 		gc_remember_unprotected(objspace, b);
 	    }
 	}
