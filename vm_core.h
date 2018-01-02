@@ -1406,7 +1406,6 @@ vm_proc_ep(VALUE procval)
 static inline const rb_iseq_t *
 vm_block_iseq(const struct rb_block *block)
 {
-    if (!block) return NULL;
     switch (vm_block_type(block)) {
       case block_type_iseq: return rb_iseq_check(block->as.captured.code.iseq);
       case block_type_proc: return vm_proc_iseq(block->as.proc);
