@@ -1596,12 +1596,18 @@ localtimew(wideval_t timew, struct vtm *result)
     return result;
 }
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#define bits_t uint8_t
+#else
+#define bits_t unsigned int
+#endif
 PACKED_STRUCT_UNALIGNED(struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    uint8_t gmt:3; /* 0:localtime 1:utc 2:fixoff 3:init */
-    uint8_t tm_got:1;
+    bits_t gmt:3; /* 0:localtime 1:utc 2:fixoff 3:init */
+    bits_t tm_got:1;
 });
+#undef bits_t
 
 #define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))

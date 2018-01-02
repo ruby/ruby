@@ -1,20 +1,29 @@
 #ifndef RUBY_TIMEV_H
 #define RUBY_TIMEV_H
 
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#define bits8_t uint8_t
+#define bits16_t uint16_t
+#else
+#define bits8_t unsigned int
+#define bits16_t unsigned int
+#endif
 PACKED_STRUCT_UNALIGNED(struct vtm {
     VALUE year; /* 2000 for example.  Integer. */
     VALUE subsecx; /* 0 <= subsecx < TIME_SCALE.  possibly Rational. */
     VALUE utc_offset; /* -3600 as -01:00 for example.  possibly Rational. */
     const char *zone; /* "JST", "EST", "EDT", etc. */
-    uint16_t yday:9; /* 1..366 */
-    uint8_t mon:4; /* 1..12 */
-    uint8_t mday:5; /* 1..31 */
-    uint8_t hour:5; /* 0..23 */
-    uint8_t min:6; /* 0..59 */
-    uint8_t sec:6; /* 0..60 */
-    uint8_t wday:3; /* 0:Sunday, 1:Monday, ..., 6:Saturday 7:init */
-    uint8_t isdst:2; /* 0:StandardTime 1:DayLightSavingTime 3:init */
+    bits16_t yday:9; /* 1..366 */
+    bits8_t mon:4; /* 1..12 */
+    bits8_t mday:5; /* 1..31 */
+    bits8_t hour:5; /* 0..23 */
+    bits8_t min:6; /* 0..59 */
+    bits8_t sec:6; /* 0..60 */
+    bits8_t wday:3; /* 0:Sunday, 1:Monday, ..., 6:Saturday 7:init */
+    bits8_t isdst:2; /* 0:StandardTime 1:DayLightSavingTime 3:init */
 });
+#undef bits8_t
+#undef bits16_t
 
 #define TIME_SCALE 1000000000
 
