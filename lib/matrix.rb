@@ -974,11 +974,9 @@ class Matrix
   end
 
   #
-  # Returns a clone of the matrix, so that the contents of each do not reference
-  # identical objects.
-  # There should be no good reason to do this since Matrices are immutable.
+  # Duplicates matrix.
   #
-  def clone
+  def dup
     new_matrix @rows.map(&:dup), column_count
   end
 
@@ -2032,9 +2030,9 @@ class Vector
   end
 
   #
-  # Returns a copy of the vector.
+  # Duplicates vector.
   #
-  def clone
+  def dup
     self.class.elements(@elements)
   end
 
