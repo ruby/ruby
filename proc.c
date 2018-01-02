@@ -1279,7 +1279,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
 	rb_str_catf(str, "%p(&%+"PRIsVALUE")", (void *)self, block->as.symbol);
 	break;
       case block_type_ifunc:
-	rb_str_catf(str, "%p", block->as.captured.code.ifunc);
+	rb_str_catf(str, "%p", (void *)block->as.captured.code.ifunc);
 	break;
     }
 
