@@ -13,6 +13,13 @@
 #define <%=t%> '<%=c%>'
 % end
 
+#if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 199901L)
+static const char *insn_name_info[] = {
+% @insns.each do |insn|
+    "<%= insn.name %>",
+% end
+};
+#else
 static const unsigned short insn_name_info_offset[] = {
 % insn_name_length = @insns.inject(0) do |ofs, insn|
     <%= ofs %>,
@@ -29,6 +36,7 @@ static const char insn_name_info_base[<%=insn_name_length%>] = ""
 ;
 
 #define insn_name_info insn_name_info_base+insn_name_info_offset
+#endif
 
 static const char insn_operand_info[][8] = {
 % @insns.each do |insn|
