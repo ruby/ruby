@@ -9272,10 +9272,11 @@ rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
 {
     if (iseq->body && iseq->body->location.label) {
 	VALUE path = rb_iseq_path(iseq);
+	VALUE n = iseq->body->location.first_lineno;
 	snprintf(buff, buff_size, "%s %s@%s:%d", buff,
 		 RSTRING_PTR(iseq->body->location.label),
 		 RSTRING_PTR(path),
-		 FIX2INT(iseq->body->location.first_lineno));
+		 n ? FIX2INT(n) : 0 );
     }
 }
 
