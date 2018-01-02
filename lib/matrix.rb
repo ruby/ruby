@@ -303,6 +303,19 @@ class Matrix
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   matrix[range, range] = new_matrix
+  #   matrix[range, range] = new_element
+  #   matrix[range, integer] = vector
+  #   matrix[range, integer] = column_matrix
+  #   matrix[range, integer] = new_element
+  #   matrix[integer, range] = vector
+  #   matrix[integer, range] = row_matrix
+  #   matrix[integer, range] = new_element
+  #   matrix[integer, integer] = new_element
+  #
+  # Set element or elements of matrix.
   def []=(i, j, v)
     if i.is_a?(Range) && j.is_a?(Range)
       raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
@@ -444,6 +457,18 @@ class Matrix
   end
   alias map collect
 
+  #
+  # Invokes the given block for each element of self, replacing the element with the value
+  # returned by the block.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
+  #
   def collect!(which = :all)
     return to_enum(:collect!, which) unless block_given?
     each_with_index(which){ |e, row_index, col_index| self[row_index, col_index] = yield e }
@@ -1845,6 +1870,15 @@ class Vector
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   vector[range] = new_vector
+  #   vector[range] = row_matrix
+  #   vector[range] = new_element
+  #   vector[integer] = new_element
+  #
+  # Set element or elements of vector.
+  #
   def []=(i, v)
     if i.is_a?(Range)
       raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
@@ -2154,6 +2188,9 @@ class Vector
   end
   alias map collect
 
+  #
+  # Like Array#collect!
+  #
   def collect!(&block)
     return to_enum(:collect!) unless block_given?
     @elements.collect!(&block)
