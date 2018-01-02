@@ -4962,7 +4962,7 @@ singleton	: var_ref
 		    {
 		    /*%%%*/
 			if ($3 == 0) {
-			    yyerror1(&@2, "can't define singleton method for ().");
+			    yyerror1(&@3, "can't define singleton method for ().");
 			}
 			else {
 			    switch (nd_type($3)) {
@@ -4974,7 +4974,7 @@ singleton	: var_ref
 			      case NODE_LIT:
 			      case NODE_ARRAY:
 			      case NODE_ZARRAY:
-				yyerror1(&@2, "can't define singleton method for literals");
+				yyerror1(&@3, "can't define singleton method for literals");
 				break;
 			      default:
 				value_expr($3);
