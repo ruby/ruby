@@ -75,7 +75,7 @@ error !
 
 #define LABEL(x)  INSN_LABEL_##x
 #define ELABEL(x) INSN_ELABEL_##x
-#define LABEL_PTR(x) &&LABEL(x)
+#define LABEL_PTR(x) RB_GNUC_EXTENSION(&&LABEL(x))
 
 #define INSN_ENTRY_SIG(insn) \
   if (0) fprintf(stderr, "exec: %s@(%d, %d)@%s:%d\n", #insn, \
@@ -106,7 +106,7 @@ error !
 /* for GCC 3.4.x */
 #define TC_DISPATCH(insn) \
   INSN_DISPATCH_SIG(insn); \
-  goto *(void const *)GET_CURRENT_INSN(); \
+  RB_GNUC_EXTENSION_BLOCK(goto *(void const *)GET_CURRENT_INSN()); \
   ;
 
 #else
@@ -115,7 +115,7 @@ error !
 #define TC_DISPATCH(insn)  \
   DISPATCH_ARCH_DEPEND_WAY(insns_address_table[GET_CURRENT_INSN()]); \
   INSN_DISPATCH_SIG(insn); \
-  goto *insns_address_table[GET_CURRENT_INSN()]; \
+  RB_GNUC_EXTENSION_BLOCK(goto *insns_address_table[GET_CURRENT_INSN()]); \
   rb_bug("tc error");
 
 
