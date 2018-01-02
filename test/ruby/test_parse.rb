@@ -1099,6 +1099,12 @@ x = __ENCODING__
     assert_raise(SyntaxError) { eval("def m\n\C-z""end") }
   end
 
+  def test_location_of_invalid_token
+    assert_raise_with_message(SyntaxError, /^      \^~~\z/) do
+      eval('class xxx end')
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
