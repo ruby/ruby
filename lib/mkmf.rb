@@ -2584,7 +2584,8 @@ MESSAGE
       src = src.sub(/\{/) do
         $& +
           "\n  if (argc > 1000000) {\n" +
-          refs.map {|n|"    printf(\"%p\", &#{n});\n"}.join("") +
+          refs.map {|n|"    int (* volatile #{n}p)(void)=(int (*)(void))&#{n};\n"}.join("") +
+          refs.map {|n|"    printf(\"%d\", (*#{n}p)());\n"}.join("") +
           "  }\n"
       end
     end
