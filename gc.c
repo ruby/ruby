@@ -9378,12 +9378,17 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    switch (imemo_type(obj)) {
 	      case imemo_ment: {
 		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
-			 rb_id2name(me->called_id),
-			 method_type_name(me->def->type),
-			 me->def->alias_count,
-			 obj_info(me->owner),
-			 obj_info(me->defined_class));
+		if (me->def) {
+		    snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
+			     rb_id2name(me->called_id),
+			     method_type_name(me->def->type),
+			     me->def->alias_count,
+			     obj_info(me->owner),
+			     obj_info(me->defined_class));
+		}
+		else {
+		    snprintf(buff, buff_size, "%s", rb_id2name(me->called_id));
+		}
 		break;
 	      }
 	      case imemo_iseq: {
