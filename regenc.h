@@ -122,7 +122,7 @@ typedef struct {
 } PosixBracketEntryType;
 
 #define POSIX_BRACKET_ENTRY_INIT(name, ctype) \
-  {(short int )(sizeof(name) - 1), (name), (ctype)}
+  {(short int )(sizeof(name) - 1), name, (ctype)}
 
 #ifndef numberof
 # define numberof(array) (int )(sizeof(array) / sizeof((array)[0]))
