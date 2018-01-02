@@ -1151,10 +1151,10 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     (void)((sval) = (type *)DATA_PTR(result));
 
 #ifdef __GNUC__
-#define Data_Make_Struct(klass,type,mark,free,sval) ({\
+#define Data_Make_Struct(klass,type,mark,free,sval) RB_GNUC_EXTENSION_BLOCK(\
     Data_Make_Struct0(data_struct_obj, klass, type, sizeof(type), mark, free, sval); \
-    data_struct_obj; \
-})
+    data_struct_obj \
+)
 #else
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     rb_data_object_make((klass),(RUBY_DATA_FUNC)(mark),(RUBY_DATA_FUNC)(free),(void **)&(sval),sizeof(type)) \
@@ -1169,10 +1169,10 @@ void *rb_check_typeddata(VALUE, const rb_data_type_t *);
     (void)((sval) = (type *)DATA_PTR(result));
 
 #ifdef __GNUC__
-#define TypedData_Make_Struct(klass, type, data_type, sval) ({\
+#define TypedData_Make_Struct(klass, type, data_type, sval) RB_GNUC_EXTENSION_BLOCK(\
     TypedData_Make_Struct0(data_struct_obj, klass, type, sizeof(type), data_type, sval); \
-    data_struct_obj; \
-})
+    data_struct_obj \
+)
 #else
 #define TypedData_Make_Struct(klass, type, data_type, sval) (\
     rb_data_typed_object_make((klass),(data_type),(void **)&(sval),sizeof(type)) \
