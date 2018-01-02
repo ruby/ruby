@@ -4953,7 +4953,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	long max_idx = 0;
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
-	VALUE vmemo = Data_Wrap_Struct(0, 0, 0, st_free_table);
+	VALUE vmemo = Data_Wrap_Struct(0, 0, st_free_table, 0);
 	st_table *memo = st_init_numtable_with_size(n);
 	DATA_PTR(vmemo) = memo;
 	result = rb_ary_new_capa(n);
