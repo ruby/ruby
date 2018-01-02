@@ -66,11 +66,11 @@ enum vm_regan_regtype {
     VM_REGAN_EP = 2,
     VM_REGAN_CFP = 3,
     VM_REGAN_SELF = 4,
-    VM_REGAN_ISEQ = 5,
+    VM_REGAN_ISEQ = 5
 };
 enum vm_regan_acttype {
     VM_REGAN_ACT_GET = 0,
-    VM_REGAN_ACT_SET = 1,
+    VM_REGAN_ACT_SET = 1
 };
 
 #if VM_COLLECT_USAGE_DETAILS
