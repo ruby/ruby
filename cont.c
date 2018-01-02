@@ -590,6 +590,10 @@ show_vm_pcs(const rb_control_frame_t *cfp,
     }
 }
 #endif
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wduplicate-decl-specifier"
+#endif
 static VALUE
 cont_capture(volatile int *volatile stat)
 {
@@ -652,6 +656,9 @@ cont_capture(volatile int *volatile stat)
 	return contval;
     }
 }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 static inline void
 fiber_restore_thread(rb_thread_t *th, rb_fiber_t *fib)
