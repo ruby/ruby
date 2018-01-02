@@ -7205,7 +7205,7 @@ insn_data_to_s_detail(INSN *iobj)
 		break;
 	      case TS_FUNCPTR:
 		{
-		    rb_insn_func_t func = (rb_insn_func_t)OPERAND_AT(iobj, j);
+		    const void *func = (const void *)OPERAND_AT(iobj, j);
 #ifdef HAVE_DLADDR
 		    Dl_info info;
 		    if (dladdr(func, &info) && info.dli_sname) {
