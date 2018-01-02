@@ -9346,8 +9346,12 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
 	  case T_DATA: {
+	    const struct rb_block *block;
 	    const rb_iseq_t *iseq;
-	    if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
+	    if (rb_obj_is_proc(obj) &&
+		(block = vm_proc_block(obj)) != NULL &&
+		(vm_block_type(block) == block_type_iseq) &&
+		(iseq = vm_block_iseq(block)) != NULL) {
 		rb_raw_iseq_info(buff, buff_size, iseq);
 	    }
 	    else {
