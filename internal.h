@@ -293,10 +293,15 @@ nlz_int128(uint128_t x)
 static inline unsigned int
 nlz_intptr(uintptr_t x)
 {
-#if SIZEOF_VOIDP == 8
-    return nlz_long_long(x);
-#elif SIZEOF_VOIDP == 4
+#if SIZEOF_UINTPTR_T == SIZEOF_INT
     return nlz_int(x);
+#elif SIZEOF_UINTPTR_T == SIZEOF_LONG
+    return nlz_long(x);
+#elif SIZEOF_UINTPTR_T == SIZEOF_LONG_LONG
+    return nlz_long_long(x);
+#else
+    #error no known integer type corresponds uintptr_t
+    return /* sane compiler */ ~0;
 #endif
 }
 
