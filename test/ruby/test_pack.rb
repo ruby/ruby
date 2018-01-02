@@ -428,6 +428,7 @@ class TestPack < Test::Unit::TestCase
     assert_operator(4, :<=, [1].pack("L!").bytesize)
   end
 
+  require 'rbconfig'
   def test_pack_unpack_qQ
     s1 = [578437695752307201, -506097522914230529].pack("q*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q*")
@@ -437,6 +438,7 @@ class TestPack < Test::Unit::TestCase
 
     # Note: q! and Q! should not work on platform which has no long long type.
     # Is there a such platform now?
+    # @shyouhei: Yes. gcc -ansi is one of such platform.
     s1 = [578437695752307201, -506097522914230529].pack("q!*")
     s2 = [578437695752307201, 17940646550795321087].pack("Q!*")
     assert_equal([578437695752307201, -506097522914230529], s2.unpack("q!*"))
@@ -446,7 +448,7 @@ class TestPack < Test::Unit::TestCase
     assert_equal(8, [1].pack("Q").bytesize)
     assert_operator(8, :<=, [1].pack("q!").bytesize)
     assert_operator(8, :<=, [1].pack("Q!").bytesize)
-  end
+  end if RbConfig::CONFIG['HAVE_LONG_LONG']
 
   def test_pack_unpack_jJ
     # Note: we assume that the size of intptr_t and uintptr_t equals to the size
