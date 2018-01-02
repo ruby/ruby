@@ -512,12 +512,18 @@ rb_fix_mod_fix(VALUE x, VALUE y)
     return mod;
 }
 
-#if defined(HAVE_UINT128_T)
+#if defined(HAVE_UINT128_T) && defined(HAVE_LONG_LONG)
 #   define bit_length(x) \
     (unsigned int) \
     (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
      sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      sizeof(x) <= SIZEOF_LONG_LONG ? SIZEOF_LONG_LONG * CHAR_BIT - nlz_long_long((unsigned LONG_LONG)(x)) : \
+     SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
+#elif defined(HAVE_UINT128_T)
+#   define bit_length(x) \
+    (unsigned int) \
+    (sizeof(x) <= SIZEOF_INT ? SIZEOF_INT * CHAR_BIT - nlz_int((unsigned int)(x)) : \
+     sizeof(x) <= SIZEOF_LONG ? SIZEOF_LONG * CHAR_BIT - nlz_long((unsigned long)(x)) : \
      SIZEOF_INT128_T * CHAR_BIT - nlz_int128((uint128_t)(x)))
 #elif defined(HAVE_LONG_LONG)
 #   define bit_length(x) \
