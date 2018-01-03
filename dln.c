@@ -1243,7 +1243,8 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #define translit_separator(str) (void)(str)
 #endif
 
-MAYBE_UNUSED(static bool xmalloc_mismatch_p(void *handle));
+#ifdef USE_DLN_DLOPEN
+static bool xmalloc_mismatch_p(void *handle);
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -1262,6 +1263,7 @@ xmalloc_mismatch_p(void *handle)
 #pragma clang diagnostic pop
 #elif defined(__GNUC__) && (__GNUC__ >= 5)
 #pragma GCC diagnostic pop
+#endif
 #endif
 
 void*
