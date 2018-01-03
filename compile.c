@@ -36,6 +36,7 @@
 
 typedef struct iseq_link_element {
     enum {
+	ISEQ_ELEMENT_ANCHOR,
 	ISEQ_ELEMENT_LABEL,
 	ISEQ_ELEMENT_INSN,
 	ISEQ_ELEMENT_ADJUST,
@@ -438,7 +439,7 @@ do { \
 /* leave name uninitialized so that compiler warn if INIT_ANCHOR is
  * missing */
 #define DECL_ANCHOR(name) \
-    LINK_ANCHOR name[1] = {{{0,},}}
+    LINK_ANCHOR name[1] = {{{ISEQ_ELEMENT_ANCHOR,},}}
 #define INIT_ANCHOR(name) \
     (name->last = &name->anchor)
 
@@ -1712,7 +1713,7 @@ get_ivar_ic_value(rb_iseq_t *iseq,ID id)
 }
 
 #define BADINSN_DUMP(anchor, list, dest) \
-    dump_disasm_list_with_cursor(&anchor->anchor, list, dest)
+    dump_disasm_list_with_cursor(FIRST_ELEMENT(anchor), list, dest)
 
 #define BADINSN_ERROR \
     (xfree(generated_iseq), \
@@ -1923,6 +1924,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		}
 		break;
 	    }
+	  default: break;
 	}
 	list = list->next;
     }
@@ -2242,6 +2244,7 @@ get_destination_insn(INSN *iobj)
 		events |= trace->event;
 	    }
 	    break;
+	  default: break;
 	}
 	list = list->next;
     }
