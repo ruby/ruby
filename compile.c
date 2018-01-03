@@ -7258,7 +7258,8 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
 	  case ISEQ_ELEMENT_LABEL:
 	    {
 		lobj = (LABEL *)link;
-		printf(LABEL_FORMAT"%s\n", lobj->label_no, dest == lobj ? " <---" : "");
+		printf(LABEL_FORMAT" [sp: %d]%s\n", lobj->label_no, lobj->sp,
+		       dest == lobj ? " <---" : "");
 		break;
 	    }
 	  case ISEQ_ELEMENT_TRACE:
