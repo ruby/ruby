@@ -1244,8 +1244,6 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #endif
 
 #ifdef USE_DLN_DLOPEN
-static bool xmalloc_mismatch_p(void *handle);
-
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpedantic"
@@ -1253,8 +1251,8 @@ static bool xmalloc_mismatch_p(void *handle);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
-bool
-xmalloc_mismatch_p(void *handle)
+static bool
+dln_incompatible_library_p(void *handle)
 {
     void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
     return ex && ex != ruby_xmalloc;
@@ -1353,7 +1351,7 @@ dln_load(const char *file)
 	}
 # if defined RUBY_EXPORT
 	{
-	    if (xmalloc_mismatch_p(handle)) {
+	    if (dln_incompatible_library_p(handle)) {
 
 #   if defined __APPLE__ && \
     defined(MAC_OS_X_VERSION_MIN_REQUIRED) && \
