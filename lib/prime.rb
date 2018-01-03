@@ -32,15 +32,17 @@ class Integer
 
   # Returns true if +self+ is a prime number, else returns false.
   def prime?
-    return self >= 2 if self <= 3
-    return true if self == 5
-    return false unless 30.gcd(self) == 1
-    (7..Integer.sqrt(self)).step(30) do |p|
-      return false if
-        self%(p)    == 0 || self%(p+4)  == 0 || self%(p+6)  == 0 || self%(p+10) == 0 ||
-        self%(p+12) == 0 || self%(p+16) == 0 || self%(p+22) == 0 || self%(p+24) == 0
+    return false if n == 1
+    return true  if n == 2 || n == 3
+    return false if n % 2 == 0 || n % 3 == 0
+    i = 5
+    w = 2
+    while i * i <= n
+        return false if n % i == 0
+        i += w
+        w = 6 - w
     end
-    true
+    return true
   end
 
   # Iterates the given block over all prime numbers.
