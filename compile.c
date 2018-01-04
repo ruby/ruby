@@ -321,8 +321,8 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 			   (VALUE)(ls) | 1, (VALUE)(le) | 1,			\
 			   (VALUE)(iseqv), (VALUE)(lc) | 1);			\
     LABEL_UNREMOVABLE(ls);							\
-    LABEL_UNREMOVABLE(le);							\
-    LABEL_UNREMOVABLE(lc);							\
+    LABEL_REF(le);								\
+    LABEL_REF(lc);								\
     rb_ary_push(ISEQ_COMPILE_DATA(iseq)->catch_table_ary, freeze_hide_obj(_e));	\
 } while (0)
 
@@ -2327,7 +2327,10 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 	else if (IS_TRACE(i)) {
 	    /* do nothing */
 	}
-	else return 0;
+	else if (IS_ADJUST(i)) {
+	    LABEL *dest = ((ADJUST *)i)->label;
+	    if (dest && dest->unremovable) return 0;
+	}
 	i = i->next;
     }
     end = i;
@@ -5067,6 +5070,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	add_ensure_iseq(ret, iseq, 0);
 	ADD_INSNL(ret, line, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
 	ADD_ADJUST_RESTORE(ret, splabel);
+	splabel->unremovable = FALSE;
 
 	if (!popped) {
 	    ADD_INSN(ret, line, putnil);
