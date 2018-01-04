@@ -32,7 +32,7 @@ class Integer
 
   # Returns true if +self+ is a prime number, else returns false.
   def prime?
-    return false if self == 1
+    return false if self <= 1
     return true  if self == 2 || self == 3
     return false if self % 2 == 0 || self % 3 == 0
     i = 5
