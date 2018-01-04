@@ -745,6 +745,8 @@ ruby_getcwd(void)
 
 #if HAVE_LONG_LONG
 #define Llong LONG_LONG
+#else
+#define NO_LONG_LONG
 #endif
 
 #ifdef DEBUG
