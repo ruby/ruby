@@ -440,10 +440,21 @@ static inline const char *
 search_nonascii(const char *p, const char *e)
 {
     const uintptr_t *s, *t;
-#if SIZEOF_VOIDP == 8
-# define NONASCII_MASK 0x8080808080808080ULL
-#elif SIZEOF_VOIDP == 4
-# define NONASCII_MASK 0x80808080UL
+
+#if defined(__STDC_VERSION) && (__STDC_VERSION__ >= 199901L)
+# if SIZEOF_UINTPTR_T == 8
+#  define NONASCII_MASK UINT64_C(0x8080808080808080)
+# elif SIZEOF_UINTPTR_T == 4
+#  define NONASCII_MASK UINT32_C(0x80808080)
+# endif
+#else
+# if SIZEOF_UINTPTR_T == 8
+#  define NONASCII_MASK ((uintptr_t)0x80808080UL << 32 | (uintptr_t)0x80808080UL)
+# elif SIZEOF_UINTPTR_T == 4
+#  define NONASCII_MASK 0x80808080UL /* or...? */
+# else
+#  error "don't know what to do."
+# endif
 #endif
 
     if (UNALIGNED_WORD_ACCESS || e - p >= SIZEOF_VOIDP) {
