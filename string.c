@@ -10461,7 +10461,7 @@ rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc)
  * call-seq:
  *   sym.to_proc
  *
- * Returns a _Proc_ object which respond to the given method by _sym_.
+ * Returns a _Proc_ object which responds to the given method by _sym_.
  *
  *   (1..3).collect(&:to_s)  #=> ["1", "2", "3"]
  */
