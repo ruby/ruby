@@ -519,9 +519,11 @@ rb_iseq_new_with_opt(const NODE *node, VALUE name, VALUE path, VALUE realpath,
 {
     /* TODO: argument check */
     rb_iseq_t *iseq = iseq_alloc();
+    const rb_code_range_t *code_range = NULL;
 
     if (!option) option = &COMPILE_OPTION_DEFAULT;
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, parent, type, option);
+    if (node && !imemo_type_p((VALUE)node, imemo_ifunc)) code_range = &node->nd_loc;
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, code_range, parent, type, option);
 
     rb_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
