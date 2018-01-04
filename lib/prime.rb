@@ -42,7 +42,7 @@ class Integer
         i += w
         w = 6 - w
     end
-    return true
+    true
   end
 
   # Iterates the given block over all prime numbers.
