@@ -17,6 +17,7 @@
 # include <dlfcn.h>
 #endif
 
+#define RUBY_VM_INSNS_INFO 1
 /* #define RUBY_MARK_FREE_DEBUG 1 */
 #include "gc.h"
 #include "vm_core.h"

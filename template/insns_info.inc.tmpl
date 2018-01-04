@@ -13,28 +13,35 @@
 #define <%=t%> '<%=c%>'
 % end
 
-static const unsigned short insn_name_info_offset[] = {
+extern const struct rb_vm_insn_name_info rb_vm_insn_name_info_base;
+extern const unsigned short rb_vm_insn_name_info_offset[];
+extern const char rb_vm_insn_operand_info[][8];
+extern const unsigned short rb_vm_insn_stack_push_num_info[];
+#define insn_name_info (const char *)&rb_vm_insn_name_info_base+rb_vm_insn_name_info_offset
+#define insn_operand_info rb_vm_insn_operand_info
+#define rb_vm_insn_stack_push_num_info insn_stack_push_num_info
+
+#ifdef RUBY_VM_INSNS_INFO
+const unsigned short rb_vm_insn_name_info_offset[] = {
 % insn_name_length = @insns.inject(0) do |ofs, insn|
     <%= ofs %>,
 %   ofs + insn.name.size + 1
 % end
 };
 
-ASSERT_VM_INSTRUCTION_SIZE(insn_name_info_offset);
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_info_offset);
 
-static const struct {
+const struct rb_vm_insn_name_info {
 % @insns.each_with_index do |insn, i|
     char L<%=i%>[<%= insn.name.size+1 %>];
 % end
-} insn_name_info_base = {
+} rb_vm_insn_name_info_base = {
 % @insns.each do |insn|
     "<%= insn.name %>",
 % end
 };
 
-#define insn_name_info insn_name_info_base.L0+insn_name_info_offset
-
-static const char insn_operand_info[][8] = {
+const char rb_vm_insn_operand_info[][8] = {
 % @insns.each do |insn|
     "\<%= (insn.opes.size+1).to_s(8) %>""<%
     insn.opes.each {|type, _|
@@ -43,16 +50,17 @@ static const char insn_operand_info[][8] = {
 % end
 };
 
-ASSERT_VM_INSTRUCTION_SIZE(insn_operand_info);
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_operand_info);
 
 #ifdef USE_INSN_RET_NUM
-static const unsigned short insn_stack_push_num_info[] = {
+const unsigned short rb_vm_insn_stack_push_num_info[] = {
 % @insns.each do |insn|
     <%= insn.rets.size %>,
 % end
 };
 
-ASSERT_VM_INSTRUCTION_SIZE(insn_stack_push_num_info);
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_stack_push_num_info);
+#endif
 #endif
 
 #ifdef USE_INSN_STACK_INCREASE
