@@ -612,19 +612,29 @@ validate_labels(rb_iseq_t *iseq, st_table *labels_table)
 }
 
 VALUE
+rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc)
+{
+    DECL_ANCHOR(ret);
+    INIT_ANCHOR(ret);
+
+    (*ifunc->func)(iseq, ret, ifunc->data);
+
+    ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, leave);
+
+    return iseq_setup(iseq, ret);
+}
+
+VALUE
 rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 {
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
+    VM_ASSERT(!imemo_type_p((VALUE)node, imemo_ifunc));
+
     if (node == 0) {
 	COMPILE(ret, "nil", node);
 	iseq_set_local_table(iseq, 0);
-    }
-    else if (imemo_type_p((VALUE)node, imemo_ifunc)) {
-	const struct vm_ifunc *ifunc = (struct vm_ifunc *)node;
-	/* user callback */
-	(*ifunc->func)(iseq, ret, ifunc->data);
     }
     /* assume node is T_NODE */
     else if (nd_type(node) == NODE_SCOPE) {
@@ -1223,6 +1233,21 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
+    iseq_add_mark_object(iseq, (VALUE)ret_iseq);
+    return ret_iseq;
+}
+
+static rb_iseq_t *
+new_child_iseq_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc,
+		     VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
+{
+    rb_iseq_t *ret_iseq;
+
+    debugs("[new_child_iseq_ifunc]> ---------------------------------------\n");
+    ret_iseq = rb_iseq_new_ifunc(ifunc, name,
+				 rb_iseq_path(iseq), rb_iseq_realpath(iseq),
+				 INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
+    debugs("[new_child_iseq_ifunc]< ---------------------------------------\n");
     iseq_add_mark_object(iseq, (VALUE)ret_iseq);
     return ret_iseq;
 }
@@ -6928,8 +6953,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	 *   ONCE{ rb_mRubyVMFrozenCore::core#set_postexe{ ... } }
 	 */
 	int is_index = iseq->body->is_size++;
-	const rb_iseq_t *once_iseq = NEW_CHILD_ISEQ((const NODE *)IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
-						    make_name_for_block(iseq), ISEQ_TYPE_BLOCK, line);
+	const rb_iseq_t *once_iseq =
+	    new_child_iseq_ifunc(iseq, IFUNC_NEW(build_postexe_iseq, node->nd_body, 0),
+				 rb_fstring(make_name_for_block(iseq)), iseq, ISEQ_TYPE_BLOCK, line);
 
 	ADD_INSN2(ret, line, once, once_iseq, INT2FIX(is_index));
 
@@ -7911,9 +7937,9 @@ method_for_self(VALUE name, VALUE arg, rb_insn_func_t func,
     acc.arg = arg;
     acc.func = func;
     acc.line = caller_location(&path, &realpath);
-    return rb_iseq_new_with_opt((const NODE *)IFUNC_NEW(build, (VALUE)&acc, 0),
-				rb_sym2str(name), path, realpath,
-				INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
+    return rb_iseq_new_ifunc(IFUNC_NEW(build, (VALUE)&acc, 0),
+			     rb_sym2str(name), path, realpath,
+			     INT2FIX(acc.line), 0, ISEQ_TYPE_METHOD, 0);
 }
 
 static VALUE

@@ -889,6 +889,8 @@ rb_iseq_t *rb_iseq_new_top     (const NODE *node, VALUE name, VALUE path, VALUE 
 rb_iseq_t *rb_iseq_new_main    (const NODE *node,             VALUE path, VALUE realpath, const rb_iseq_t *parent);
 rb_iseq_t *rb_iseq_new_with_opt(const NODE *node, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
 				const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
+rb_iseq_t *rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno,
+			     const rb_iseq_t *parent, enum iseq_type, const rb_compile_option_t*);
 
 /* src -> iseq */
 rb_iseq_t *rb_iseq_compile(VALUE src, VALUE file, VALUE line);
