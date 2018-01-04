@@ -105,13 +105,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 {
     const unsigned char *x = xs, *xe = xs + m;
     const unsigned char *y = ys, *ye = ys + n;
-#ifndef VALUE_MAX
-# if SIZEOF_VALUE == 8
-#  define VALUE_MAX 0xFFFFFFFFFFFFFFFFULL
-# elif SIZEOF_VALUE == 4
-#  define VALUE_MAX 0xFFFFFFFFUL
-# endif
-#endif
+#define VALUE_MAX ((VALUE)~(VALUE)0)
     VALUE hx, hy, mask = VALUE_MAX >> ((SIZEOF_VALUE - m) * CHAR_BIT);
 
     if (m > SIZEOF_VALUE)
