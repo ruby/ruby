@@ -150,6 +150,8 @@ enum node_type {
 #define NODE_EVSTR       NODE_EVSTR
     NODE_DREGX,
 #define NODE_DREGX       NODE_DREGX
+    NODE_ONCE,
+#define NODE_ONCE        NODE_ONCE
     NODE_ARGS,
 #define NODE_ARGS        NODE_ARGS
     NODE_ARGS_AUX,
