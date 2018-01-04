@@ -716,6 +716,13 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 	F_LIT(nd_lit, "literal");
 	return;
 
+      case NODE_ONCE:
+	ANN("once evaluation");
+	ANN("format: [nd_body]");
+	ANN("example: /foo#{ bar }baz/o");
+	LAST_NODE;
+	F_NODE(nd_body, "body");
+	return;
       case NODE_DSTR:
 	ANN("string literal with interpolation");
 	ANN("format: [nd_lit]");

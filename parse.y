@@ -9322,7 +9322,7 @@ new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *
     return qcall;
 }
 
-#define nd_once_body(node) (nd_type(node) == NODE_SCOPE ? (node)->nd_body : node)
+#define nd_once_body(node) (nd_type(node) == NODE_ONCE ? (node)->nd_body : node)
 static NODE*
 match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *location)
 {
@@ -9564,7 +9564,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
 	    add_mark_object(node->nd_lit = reg_compile(src, options));
 	}
 	if (options & RE_OPTION_ONCE) {
-	    node = NEW_NODE(NODE_SCOPE, 0, node, 0);
+	    node = NEW_NODE(NODE_ONCE, 0, node, 0);
 	    nd_set_loc(node, location);
 	}
 	break;

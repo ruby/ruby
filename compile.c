@@ -6619,10 +6619,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_SCOPE:{
+      case NODE_ONCE:{
 	int ic_index = iseq->body->is_size++;
-	const rb_iseq_t *block_iseq = NEW_CHILD_ISEQ(node, make_name_for_block(iseq),
-						     ISEQ_TYPE_ONCE_GUARD, line);
+	NODE tmp_node;
+	const rb_iseq_t *block_iseq;
+	rb_node_init(&tmp_node, NODE_SCOPE, 0, (VALUE)node->nd_body, 0);
+	block_iseq = NEW_CHILD_ISEQ(&tmp_node, make_name_for_block(iseq), ISEQ_TYPE_ONCE_GUARD, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
 
