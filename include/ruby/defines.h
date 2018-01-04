@@ -397,6 +397,21 @@ void rb_ia64_flushrs(void);
 #define NORETURN(x) x
 #endif
 
+#if defined(HAVE___CLANG__FALLTHROUGH__)
+# define RUBY_FALLTHROUGH [[clang::fallthrough]]
+#elif defined(HAVE___GNU__FALLTHROUGH__)
+# define RUBY_FALLTHROUGH [[gnu::fallthrough]]
+#elif defined(HAVE___FALLTHROUGH__)
+# define RUBY_FALLTHROUGH [[fallthrough]]
+#elif defined(HAVE___FALLTHROUGH)
+# include <sal.h>
+# define RUBY_FALLTHROUGH __fallthrough
+#elif defined(HAVE___ATTRIBUTE______FALLTHROUGH____)
+# define RUBY_FALLTHROUGH __attribute__((__fallthrough__))
+#else
+# define RUBY_FALLTHROUGH /* FALLTHROUGH */
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)

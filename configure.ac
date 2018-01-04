@@ -520,6 +520,30 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 ])
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
+RUBY_WERROR_FLAG([
+for n in \
+  "@<:@@<:@clang::fallthrough@:>@@:>@" \
+  "@<:@@<:@gnu::fallthrough@:>@@:>@" \
+  "@<:@@<:@fallthrough@:>@@:>@" \
+  "__fallthrough" \
+  "__attribute__((__fallthrough__))"; do
+    m=AS_TR_CPP($n)
+    AC_CACHE_CHECK([whether $n is accepted], rb_cv_have_$m,
+      [AC_TRY_COMPILE([int foo(int x, int y) {
+  switch(x) {
+  case 0:
+    if (y) return y;
+    $n;
+  default:
+    return x;
+  }
+}], [return foo(0, 0);], [eval rb_cv_have_$m=yes], [eval rb_cv_have_$m=no])])
+    AS_IF([eval test '"$rb_cv_have_'$m'"' = yes], [
+	AC_DEFINE_UNQUOTED([HAVE_]$m)
+    ])
+done
+])
+
 for n in huge_val infinity nan; do
     m=AS_TR_CPP($n)
     AC_CACHE_CHECK([whether $m is available without C99 option], rb_cv_$n,
