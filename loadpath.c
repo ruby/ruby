@@ -16,6 +16,12 @@
 #define RUBY_REVISION 0
 #include "version.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Woverlength-strings"
+#elif defined(__GNUC__) && (__GNUC__ >= 5)
+#pragma GCC diagnostic ignored "-Woverlength-strings"
+#endif
+
 #ifndef RUBY_ARCH
 #define RUBY_ARCH RUBY_PLATFORM
 #endif
@@ -89,4 +95,3 @@ const char ruby_initial_load_paths[] =
     RUBY_ARCH_LIB_FOR(RUBY_ARCH) "\0"
 #endif
     "";
-
