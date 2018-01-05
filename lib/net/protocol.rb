@@ -191,7 +191,12 @@ module Net # :nodoc:
     end
 
     def rbuf_consume(len)
-      s = @rbuf.slice!(0, len)
+      if len == @rbuf.size
+        s = @rbuf
+        @rbuf = ''.dup
+      else
+        s = @rbuf.slice!(0, len)
+      end
       @debug_output << %Q[-> #{s.dump}\n] if @debug_output
       s
     end
