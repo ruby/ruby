@@ -467,12 +467,15 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */
+typedef struct rb_ast_body_struct {
+    const NODE *root;
+    VALUE reserved;
+} rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
-    VALUE reserved1;
-    const NODE *root;
     node_buffer_t *node_buffer;
     VALUE mark_ary;
+    rb_ast_body_t body;
 } rb_ast_t;
 rb_ast_t *rb_ast_new();
 void rb_ast_mark(rb_ast_t*);

@@ -1150,7 +1150,7 @@ rb_ast_delete_node(rb_ast_t *ast, NODE *n)
 rb_ast_t *
 rb_ast_new(void)
 {
-    return (rb_ast_t *)rb_imemo_new(imemo_ast, 0, (VALUE)rb_node_buffer_new(), rb_ary_tmp_new(0), 0);
+    return (rb_ast_t *)rb_imemo_new(imemo_ast, rb_ary_tmp_new(0), 0, 0, (VALUE)rb_node_buffer_new());
 }
 
 void

@@ -5675,7 +5675,7 @@ yycompile(VALUE vparser, struct parser_params *parser, VALUE fname, int line)
     ruby_sourceline = line - 1;
 
     parser->ast = ast = rb_ast_new();
-    ast->root = (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
+    ast->body.root = (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
     parser->ast = 0;
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 
