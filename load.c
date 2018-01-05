@@ -923,6 +923,9 @@ search_required(VALUE fname, volatile VALUE *path, int safe_level)
 	    if (loading) *path = rb_filesystem_str_new_cstr(loading);
 	    return ft;
 	}
+	else {
+	    FALLTHROUGH;
+	}
       case 1:
 	ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
 	if (rb_feature_p(ftptr, ext, !--type, TRUE, &loading) && !loading)
