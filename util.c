@@ -1989,6 +1989,8 @@ hexnan(double *rvp, const char **sp)
 #endif /*No_Hex_NaN*/
 #endif /* INFNAN_CHECK */
 
+COMPILER_WARNING_PUSH
+ALLOW_IMPLICIT_FALLTHROUGH
 double
 ruby_strtod(const char *s00, char **se)
 {
@@ -2947,6 +2949,7 @@ ret:
         *se = (char *)s;
     return sign ? -dval(rv) : dval(rv);
 }
+COMPILER_WARNING_POP
 
 static int
 quorem(Bigint *b, Bigint *S)
@@ -3105,6 +3108,8 @@ static const char INFSTR[] = "Infinity";
 static const char NANSTR[] = "NaN";
 static const char ZEROSTR[] = "0";
 
+COMPILER_WARNING_PUSH
+ALLOW_IMPLICIT_FALLTHROUGH
 /* dtoa for IEEE arithmetic (dmg): convert double to ASCII string.
  *
  * Inspired by "How to Print Floating-Point Numbers Accurately" by
@@ -3816,6 +3821,7 @@ ret1:
         *rve = s;
     return s0;
 }
+COMPILER_WARNING_POP
 
 void
 ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *arg)
