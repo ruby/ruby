@@ -744,13 +744,9 @@ random_load(VALUE obj, VALUE dump)
     Check_Type(dump, T_ARRAY);
     ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
-      case 3:
-	seed = ary[2];
-      case 2:
-	left = ary[1];
-      case 1:
-	state = ary[0];
-	break;
+      case 3: seed = ary[2]; FALLTHROUGH;
+      case 2: left = ary[1]; FALLTHROUGH;
+      case 1: state = ary[0]; break;
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
     }
@@ -1288,6 +1284,9 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 	VALUE f = rb_check_to_float(beg);
 	if (!NIL_P(f)) {
 	    return DBL2NUM(RFLOAT_VALUE(v) + RFLOAT_VALUE(f));
+	}
+	else {
+	    FALLTHROUGH;
 	}
       }
       default:
