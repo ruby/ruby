@@ -1768,6 +1768,7 @@ VALUE rb_to_symbol_type(VALUE obj);
 /* struct.c */
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
+VALUE rb_struct_s_keyword_init(VALUE klass);
 
 /* time.c */
 struct timeval rb_time_timeval(VALUE);
