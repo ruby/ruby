@@ -3184,6 +3184,7 @@ rb_f_integer(int argc, VALUE *argv, VALUE obj)
     switch (argc) {
       case 2:
 	base = NUM2INT(argv[1]);
+	FALLTHROUGH;
       case 1:
 	arg = argv[0];
 	break;
