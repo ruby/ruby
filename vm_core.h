@@ -299,7 +299,7 @@ struct rb_iseq_constant_body {
 	ISEQ_TYPE_ENSURE,
 	ISEQ_TYPE_EVAL,
 	ISEQ_TYPE_MAIN,
-	ISEQ_TYPE_DEFINED_GUARD
+	ISEQ_TYPE_PLAIN
     } type;              /* instruction sequence type */
 
     unsigned int iseq_size;

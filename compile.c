@@ -29,8 +29,6 @@
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
 
-#define ISEQ_TYPE_ONCE_GUARD ISEQ_TYPE_DEFINED_GUARD
-
 #define FIXNUM_INC(n, i) ((n)+(INT2FIX(i)&~FIXNUM_FLAG))
 #define FIXNUM_OR(n, i) ((n)|INT2FIX(i))
 
@@ -706,9 +704,8 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	    iseq_set_exception_local_table(iseq);
 	    CHECK(COMPILE_POPPED(ret, "ensure", node));
 	    break;
-	  case ISEQ_TYPE_DEFINED_GUARD:
-	    iseq_set_exception_local_table(iseq);
-	    CHECK(COMPILE(ret, "defined guard", node));
+	  case ISEQ_TYPE_PLAIN:
+	    CHECK(COMPILE(ret, "ensure", node));
 	    break;
 	  default:
 	    COMPILE_ERROR(ERROR_ARGS "unknown scope: %d", iseq->body->type);
@@ -6626,10 +6623,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_ONCE:{
 	int ic_index = iseq->body->is_size++;
-	NODE tmp_node;
 	const rb_iseq_t *block_iseq;
-	rb_node_init(&tmp_node, NODE_SCOPE, 0, (VALUE)node->nd_body, 0);
-	block_iseq = NEW_CHILD_ISEQ(&tmp_node, make_name_for_block(iseq), ISEQ_TYPE_ONCE_GUARD, line);
+	block_iseq = NEW_CHILD_ISEQ(node->nd_body, make_name_for_block(iseq), ISEQ_TYPE_PLAIN, line);
 
 	ADD_INSN2(ret, line, once, block_iseq, INT2FIX(ic_index));
 

@@ -575,7 +575,7 @@ iseq_type_from_sym(VALUE type)
     const ID id_ensure = rb_intern("ensure");
     const ID id_eval = rb_intern("eval");
     const ID id_main = rb_intern("main");
-    const ID id_defined_guard = rb_intern("defined_guard");
+    const ID id_plain = rb_intern("plain");
     /* ensure all symbols are static or pinned down before
      * conversion */
     const ID typeid = rb_check_id(&type);
@@ -587,7 +587,7 @@ iseq_type_from_sym(VALUE type)
     if (typeid == id_ensure) return ISEQ_TYPE_ENSURE;
     if (typeid == id_eval) return ISEQ_TYPE_EVAL;
     if (typeid == id_main) return ISEQ_TYPE_MAIN;
-    if (typeid == id_defined_guard) return ISEQ_TYPE_DEFINED_GUARD;
+    if (typeid == id_plain) return ISEQ_TYPE_PLAIN;
     return (enum iseq_type)-1;
 }
 
@@ -1240,7 +1240,7 @@ static VALUE iseq_data_to_ary(const rb_iseq_t *iseq);
  *    The type of the instruction sequence.
  *
  *    Valid values are +:top+, +:method+, +:block+, +:class+, +:rescue+,
- *    +:ensure+, +:eval+, +:main+, and +:defined_guard+.
+ *    +:ensure+, +:eval+, +:main+, and +plain+.
  *
  *  [locals]
  *    An array containing the names of all arguments and local variables as
@@ -2145,7 +2145,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     DECL_SYMBOL(ensure);
     DECL_SYMBOL(eval);
     DECL_SYMBOL(main);
-    DECL_SYMBOL(defined_guard);
+    DECL_SYMBOL(plain);
 
     if (sym_top == 0) {
 	int i;
@@ -2160,7 +2160,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	INIT_SYMBOL(ensure);
 	INIT_SYMBOL(eval);
 	INIT_SYMBOL(main);
-	INIT_SYMBOL(defined_guard);
+	INIT_SYMBOL(plain);
     }
 
     /* type */
@@ -2173,7 +2173,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
       case ISEQ_TYPE_ENSURE: type = sym_ensure; break;
       case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
       case ISEQ_TYPE_MAIN:   type = sym_main;   break;
-      case ISEQ_TYPE_DEFINED_GUARD: type = sym_defined_guard; break;
+      case ISEQ_TYPE_PLAIN:  type = sym_plain;  break;
       default: rb_bug("unsupported iseq type");
     };
 
