@@ -22,6 +22,7 @@
 #define A_INT(val) rb_str_catf(buf, "%d", (val))
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_inspect(lit))
+#define A_OPERATOR(id) add_operator(buf, (id))
 #define A_NODE_HEADER(node, term) \
     rb_str_catf(buf, "@ %s (line: %d, code_range: (%d,%d)-(%d,%d))"term, \
 	ruby_node_name(nd_type(node)), nd_line(node), nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node))
@@ -59,6 +60,7 @@
 #define F_INT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(node->name)
 #define F_LONG(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(node->name)
 #define F_LIT(name, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(node->name)
+#define F_OPERATOR(name, ann)	    SIMPLE_FIELD1(#name, ann) A_OPERATOR(node->name)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, ann) \
@@ -91,6 +93,16 @@ add_id(VALUE buf, ID id)
 	else {
 	    A("(internal variable)");
 	}
+    }
+}
+
+static void
+add_operator(VALUE buf, ID id)
+{
+    switch (id) {
+	case 0: A("0 (||)"); break;
+	case 1: A("1 (&&)"); break;
+	default: A_ID(id);
     }
 }
 
@@ -415,13 +427,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: [nd_value] [ [nd_args->nd_body] ] [nd_vid]= [nd_args->nd_head]");
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
-	F_CUSTOM1(nd_mid, "operator") {
-	    switch (node->nd_mid) {
-	      case 0: A("0 (||)"); break;
-	      case 1: A("1 (&&)"); break;
-	      default: A_ID(node->nd_mid);
-	    }
-	}
+	F_OPERATOR(nd_mid, "operator");
 	F_NODE(nd_args->nd_head, "index");
 	LAST_NODE;
 	F_NODE(nd_args->nd_body, "rvalue");
@@ -437,13 +443,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    if (node->nd_next->nd_aid) A("? ");
 	    A_ID(node->nd_next->nd_vid);
 	}
-	F_CUSTOM1(nd_next->nd_mid, "operator") {
-	    switch (node->nd_next->nd_mid) {
-	      case 0: A("0 (||)"); break;
-	      case 1: A("1 (&&)"); break;
-	      default: A_ID(node->nd_next->nd_mid);
-	    }
-	}
+	F_OPERATOR(nd_next->nd_mid, "operator");
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
 	return;
@@ -468,13 +468,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: [nd_head](constant) [nd_aid]= [nd_value]");
 	ANN("example: A::B ||= 1");
 	F_NODE(nd_head, "constant");
-	F_CUSTOM1(nd_aid, "operator") {
-	    switch (node->nd_aid) {
-	      case 0: A("0 (||)"); break;
-	      case 1: A("1 (&&)"); break;
-	      default: A_ID(node->nd_aid);
-	    }
-	}
+	F_OPERATOR(nd_aid, "operator");
 	LAST_NODE;
 	F_NODE(nd_value, "rvalue");
 	return;
