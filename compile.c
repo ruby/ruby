@@ -2865,6 +2865,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    break;
 		  case BIN(leave):
 		    piobj = iobj;
+		    FALLTHROUGH;
 		  default:
 		    next = NULL;
 		    break;
@@ -4143,6 +4144,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	    }
 	    ADD_INSNL(ret, nd_line(node), branchunless, lfinish[1]);
 	} while ((vals = vals->nd_next) != NULL);
+	FALLTHROUGH;
       }
       case NODE_STR:
       case NODE_LIT:
@@ -5735,6 +5737,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    break;
 	  case NODE_BLOCK_PASS:
 	    boff = 1;
+	    FALLTHROUGH;
 	  default:
 	    INIT_ANCHOR(args);
 	    argc = setup_args(iseq, args, node->nd_args->nd_head, &flag, NULL);
@@ -6081,6 +6084,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    }
 	    break;
 	}
+
+	FALLTHROUGH;
       case NODE_QCALL:
       case NODE_FCALL:
       case NODE_VCALL:{		/* VCALL: variable or call */
@@ -6213,7 +6218,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	switch ((int)type) {
 	  case NODE_VCALL:
 	    flag |= VM_CALL_VCALL;
-	    /* VCALL is funcall, so fall through */
+	    FALLTHROUGH; /* VCALL is funcall, so fall through */
 	  case NODE_FCALL:
 	    flag |= VM_CALL_FCALL;
 	}
