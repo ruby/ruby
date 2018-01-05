@@ -5310,6 +5310,9 @@ parser_read_escape(struct parser_params *p, int flags,
 	if ((c = nextc()) != '-') {
 	    goto eof;
 	}
+	else {
+	    FALLTHROUGH;
+	}
       case 'c':
 	if (flags & ESCAPE_CONTROL) goto eof;
 	if ((c = nextc())== '\\') {
@@ -6194,6 +6197,9 @@ parser_here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		    if (--ptr_end == ptr || ptr_end[-1] != '\r') {
 			ptr_end++;
 			break;
+		    }
+		    else {
+			FALLTHROUGH;
 		    }
 		  case '\r':
 		    --ptr_end;
@@ -7187,7 +7193,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	}
 	pushback(c);
 	c = '_';
-	/* fall through */
+	FALLTHROUGH;
       case '~':		/* $~: match-data */
       case '*':		/* $*: argv */
       case '$':		/* $$: pid */
@@ -7260,6 +7266,9 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 		compile_error(p, "`$%c' is not allowed as a global variable name", c);
 	    }
 	    return 0;
+	}
+	else {
+	    FALLTHROUGH;
 	}
       case '0':
 	tokadd('$');
@@ -7474,7 +7483,7 @@ parser_yylex(struct parser_params *p)
 	p->lex.pcur = p->lex.pend;
         dispatch_scan_event(tCOMMENT);
         fallthru = TRUE;
-	/* fall through */
+	FALLTHROUGH;
       case '\n':
 	p->token_seen = token_seen;
 	c = (IS_lex_state(EXPR_BEG|EXPR_CLASS|EXPR_FNAME|EXPR_DOT) &&
@@ -7503,10 +7512,14 @@ parser_yylex(struct parser_params *p)
 		    dispatch_scan_event(tSP);
 		    goto retry;
 		}
+		else {
+		    FALLTHROUGH;
+		}
 	      }
 	      default:
 		p->ruby_sourceline--;
 		p->lex.nextline = p->lex.lastline;
+		FALLTHROUGH;
 	      case -1:		/* EOF no decrement*/
 #ifndef RIPPER
 		if (p->lex.prevline && !p->eofp) p->lex.lastline = p->lex.prevline;
@@ -8304,6 +8317,7 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 	switch (htype) {
 	  case NODE_STR:
 	    nd_set_type(head, NODE_DSTR);
+	    FALLTHROUGH;
 	  case NODE_DSTR:
 	    return list_append(p, head, tail);
 	  default:
@@ -8474,7 +8488,7 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
 	switch (nd_type(n)) {
 	  case NODE_LIT:
 	    if (!RB_TYPE_P(n->nd_lit, T_REGEXP)) break;
-	    /* fallthru */
+	    FALLTHROUGH;
 	  case NODE_DREGX:
 	    match3 = NEW_MATCH3(node2, node1, loc);
 	    return match3;
@@ -8638,6 +8652,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
       default:
 	add_mark_object(p, lit = STR_NEW0());
 	node = NEW_NODE(NODE_DSTR, lit, 1, NEW_LIST(node, loc), loc);
+	FALLTHROUGH;
       case NODE_DSTR:
 	nd_set_type(node, NODE_DREGX);
 	nd_set_loc(node, loc);
@@ -9456,10 +9471,12 @@ is_static_content(NODE *node)
     switch (nd_type(node)) {
       case NODE_HASH:
 	if (!(node = node->nd_head)) break;
+	else FALLTHROUGH;
       case NODE_ARRAY:
 	do {
 	    if (!is_static_content(node->nd_head)) return 0;
 	} while ((node = node->nd_next) != 0);
+	FALLTHROUGH;
       case NODE_LIT:
       case NODE_STR:
       case NODE_NIL:
