@@ -48,6 +48,12 @@ struct_ivar_get(VALUE c, ID id)
 }
 
 VALUE
+rb_struct_s_keyword_init(VALUE klass)
+{
+    return struct_ivar_get(klass, id_keyword_init);
+}
+
+VALUE
 rb_struct_s_members(VALUE klass)
 {
     VALUE members = struct_ivar_get(klass, id_members);
@@ -298,7 +304,7 @@ static VALUE
 rb_struct_s_inspect(VALUE klass)
 {
     VALUE inspect = rb_class_name(klass);
-    if (RTEST(struct_ivar_get(klass, id_keyword_init))) {
+    if (RTEST(rb_struct_s_keyword_init(klass))) {
 	rb_str_cat_cstr(inspect, "(keyword_init: true)");
     }
     return inspect;
@@ -616,7 +622,7 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
 
     rb_struct_modify(self);
     n = num_members(klass);
-    if (argc > 0 && RTEST(struct_ivar_get(klass, id_keyword_init))) {
+    if (argc > 0 && RTEST(rb_struct_s_keyword_init(klass))) {
 	struct struct_hash_set_arg arg;
 	if (argc > 2 || !RB_TYPE_P(argv[0], T_HASH)) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 0)", argc);
