@@ -3578,7 +3578,7 @@ rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 	if (rb_range_beg_len(arg1, &beg, &len, RARRAY_LEN(ary), 1)) {
 	    break;
 	}
-	/* fall through */
+	FALLTHROUGH;
       case 3:
 	beg = NIL_P(arg1) ? 0 : NUM2LONG(arg1);
 	if (beg < 0) {
