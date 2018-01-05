@@ -792,7 +792,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		}
 	    }
 	    len = 1;
-	    /* FALL THROUGH */
+	    FALLTHROUGH;
 	  case 'p':		/* pointer to string */
 	    while (len-- > 0) {
 		char *t;
