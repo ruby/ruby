@@ -711,6 +711,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 			     RARRAY_LEN(v));
 		  case 2:
 		    val = RARRAY_AREF(v, 1);
+		    FALLTHROUGH;
 		  case 1:
 		    key = RARRAY_AREF(v, 0);
 		    rb_hash_aset(hash, key, val);
