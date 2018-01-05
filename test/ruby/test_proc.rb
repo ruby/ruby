@@ -1325,7 +1325,7 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_local_variable_set_wb
-    assert_ruby_status([], <<-'end;', '[Bug #13605]')
+    assert_ruby_status([], <<-'end;', '[Bug #13605]', timeout: 15)
       b = binding
       n = 20_000
 
