@@ -63,8 +63,6 @@
 
 #define F_NODE(name, ann) \
     COMPOUND_FIELD1(#name, ann) {dump_node(buf, indent, comment, node->name);}
-#define F_OPTION(name, ann) \
-    COMPOUND_FIELD1(#name, ann) {dump_option(buf, indent, node->name);}
 
 #define ANN(ann) \
     if (comment) { \
