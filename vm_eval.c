@@ -1629,6 +1629,7 @@ singleton_class_for_eval(VALUE self)
 	return Qnil;
       case T_STRING:
 	if (FL_TEST_RAW(self, RSTRING_FSTR)) return Qnil;
+	else FALLTHROUGH;
       default:
 	return rb_singleton_class(self);
     }
