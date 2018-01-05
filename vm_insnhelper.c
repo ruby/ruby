@@ -2047,22 +2047,19 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
     return vm_call_method(ec, reg_cfp, calling, ci, cc);
 }
 
+static VALUE vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler);
+
 static VALUE
-vm_call_opt_call(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
+vm_call_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
-    rb_proc_t *proc;
-    int argc;
-    VALUE *argv;
+    VALUE procval = calling->recv;
+    int argc = calling->argc;
 
-    CALLER_SETUP_ARG(cfp, calling, ci);
+    /* remove self */
+    if (argc > 0) MEMMOVE(&TOPN(argc), &TOPN(argc-1), VALUE, argc);
+    DEC_SP(1);
 
-    argc = calling->argc;
-    argv = ALLOCA_N(VALUE, argc);
-    GetProcPtr(calling->recv, proc);
-    MEMCPY(argv, cfp->sp - argc, VALUE, argc);
-    cfp->sp -= argc + 1;
-
-    return rb_vm_invoke_proc(ec, proc, argc, argv, calling->block_handler);
+    return vm_invoke_block(ec, reg_cfp, calling, ci, VM_BH_FROM_PROC(procval));
 }
 
 static VALUE
@@ -2654,7 +2651,7 @@ vm_invoke_symbol_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     argc = calling->argc;
-    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), VM_BLOCK_HANDLER_NONE);
+    val = vm_yield_with_symbol(ec, symbol, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler);
     POPN(argc);
     return val;
 }
@@ -2668,7 +2665,7 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     argc = calling->argc;
-    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), VM_BLOCK_HANDLER_NONE);
+    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler);
     POPN(argc); /* TODO: should put before C/yield? */
     return val;
 }
@@ -2693,16 +2690,9 @@ vm_proc_to_block_handler(VALUE procval)
 }
 
 static VALUE
-vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci)
+vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler)
 {
-    VALUE block_handler = VM_CF_BLOCK_HANDLER(reg_cfp);
-    VALUE type = GET_ISEQ()->body->local_iseq->body->type;
     int is_lambda = FALSE;
-
-    if ((type != ISEQ_TYPE_METHOD && type != ISEQ_TYPE_CLASS) ||
-	block_handler == VM_BLOCK_HANDLER_NONE) {
-	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
-    }
 
   again:
     switch (vm_block_handler_type(block_handler)) {
