@@ -1388,7 +1388,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    StringValue(str);
 	    rb_str_modify(str);
 	}
-	/* fall through */
+	RUBY_FALLTHROUGH;
       case 1:
 	if (!NIL_P(argv[0])) {
 	    len = NUM2LONG(argv[0]);
@@ -1402,7 +1402,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 	    binary = 1;
 	    break;
 	}
-	/* fall through */
+	RUBY_FALLTHROUGH;
       case 0:
 	len = RSTRING_LEN(ptr->string);
 	if (len <= ptr->pos) {
