@@ -1,3 +1,5 @@
+#include "internal.h"
+ALLOW_IMPLICIT_FALLTHROUGH
 /**********************************************************************
   unicode.c -  Oniguruma (regular expression library)
 **********************************************************************/
