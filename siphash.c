@@ -1,3 +1,6 @@
+#include "internal.h"
+ALLOW_IMPLICIT_FALLTHROUGH
+
 #include <string.h>
 #include <stdio.h>
 #include "siphash.h"
