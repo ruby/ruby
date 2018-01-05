@@ -3951,7 +3951,7 @@ strings		: string
 string		: tCHAR
 		    {
 		    /*%%%*/
-			$$->nd_loc = @$;
+			nd_set_loc($$, &@$);
 		    /*%
 		    %*/
 		    }
@@ -4101,7 +4101,7 @@ qword_list	: /* none */
 		| qword_list tSTRING_CONTENT ' '
 		    {
 		    /*%%%*/
-			$2->nd_loc = @2;
+			nd_set_loc($2, &@2);
 			$$ = list_append($1, $2);
 		    /*%
 			$$ = dispatch2(qwords_add, $1, $2);
@@ -4124,7 +4124,7 @@ qsym_list	: /* none */
 			lit = $2->nd_lit;
 			nd_set_type($2, NODE_LIT);
 			add_mark_object($2->nd_lit = ID2SYM(rb_intern_str(lit)));
-			$2->nd_loc = @2;
+			nd_set_loc($2, &@2);
 			$$ = list_append($1, $2);
 		    /*%
 			$$ = dispatch2(qsymbols_add, $1, $2);
@@ -4220,7 +4220,7 @@ regexp_contents: /* none */
 string_content	: tSTRING_CONTENT
 		    {
 		    /*%%%*/
-			$$->nd_loc = @$;
+			nd_set_loc($$, &@$);
 		    /*%
 		    %*/
 		    }
