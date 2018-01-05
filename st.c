@@ -1516,6 +1516,8 @@ st_general_foreach(st_table *tab, int (*func)(ANYARGS), st_data_t arg,
 	  case ST_CHECK:
 	    if (check_p)
 		break;
+	    else
+		FALLTHROUGH;
 	  case ST_STOP:
 #ifdef ST_DEBUG
 	    st_check(tab);
@@ -1835,16 +1837,16 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 #if UNALIGNED_WORD_ACCESS && SIZEOF_ST_INDEX_T <= 8 && CHAR_BIT == 8
     /* in this case byteorder doesn't really matter */
 #if SIZEOF_ST_INDEX_T > 4
-      case 7: t |= data_at(6) << 48;
-      case 6: t |= data_at(5) << 40;
-      case 5: t |= data_at(4) << 32;
+      case 7: t |= data_at(6) << 48; FALLTHROUGH;
+      case 6: t |= data_at(5) << 40; FALLTHROUGH;
+      case 5: t |= data_at(4) << 32; FALLTHROUGH;
       case 4:
 	t |= (st_index_t)*(uint32_t*)aligned_data;
 	goto skip_tail;
 # define SKIP_TAIL 1
 #endif
-      case 3: t |= data_at(2) << 16;
-      case 2: t |= data_at(1) << 8;
+      case 3: t |= data_at(2) << 16; FALLTHROUGH;
+      case 2: t |= data_at(1) << 8; FALLTHROUGH;
       case 1: t |= data_at(0);
 #else
 #ifdef WORDS_BIGENDIAN
