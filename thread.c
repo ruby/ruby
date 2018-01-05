@@ -1726,7 +1726,7 @@ rb_threadptr_pending_interrupt_deque(rb_thread_t *th, enum handle_interrupt_timi
 	    if (timing != INTERRUPT_ON_BLOCKING) {
 		break;
 	    }
-	    /* fall through */
+	    FALLTHROUGH;
 	  case INTERRUPT_NONE: /* default: IMMEDIATE */
 	  case INTERRUPT_IMMEDIATE:
 	    rb_ary_delete_at(th->pending_interrupt_queue, i);
@@ -2832,6 +2832,7 @@ thread_status_name(rb_thread_t *th, int detail)
 	return th->to_kill ? "aborting" : "run";
       case THREAD_STOPPED_FOREVER:
 	if (detail) return "sleep_forever";
+	else FALLTHROUGH;
       case THREAD_STOPPED:
 	return "sleep";
       case THREAD_KILLED:
