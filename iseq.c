@@ -921,9 +921,9 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
     if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
     switch (i) {
-      case 5: opt = argv[--i];
-      case 4: line = argv[--i];
-      case 3: path = argv[--i];
+      case 5: opt = argv[--i]; FALLTHROUGH;
+      case 4: line = argv[--i]; FALLTHROUGH;
+      case 3: path = argv[--i]; FALLTHROUGH;
       case 2: file = argv[--i];
     }
     if (NIL_P(file)) file = rb_fstring_cstr("<compiled>");
