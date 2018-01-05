@@ -845,19 +845,50 @@ zstream_append_input(struct zstream *z, const Bytef *src, long len)
 static void
 zstream_discard_input(struct zstream *z, long len)
 {
-    if (NIL_P(z->input) || RSTRING_LEN(z->input) <= len) {
-	z->input = Qnil;
+    if (NIL_P(z->input)) {
     }
-    else {
-	z->input = rb_str_substr(z->input, len,
-				 RSTRING_LEN(z->input) - len);
+    else if (RBASIC_CLASS(z->input) == 0) {
+	/* hidden, we created z->input and have complete control */
+	char *ptr;
+	long oldlen, newlen;
+
+	RSTRING_GETMEM(z->input, ptr, oldlen);
+	newlen = oldlen - len;
+	if (newlen > 0) {
+	    memmove(ptr, ptr + len, newlen);
+	}
+	if (newlen < 0) {
+	    newlen = 0;
+	}
+	rb_str_resize(z->input, newlen);
+	if (newlen == 0) {
+	    rb_gc_force_recycle(z->input);
+	    z->input = Qnil;
+	}
+	else {
+	    rb_str_set_len(z->input, newlen);
+	}
+    }
+    else { /* do not mangle user-provided data */
+	if (RSTRING_LEN(z->input) <= len) {
+	    z->input = Qnil;
+	}
+	else {
+	    z->input = rb_str_substr(z->input, len,
+				     RSTRING_LEN(z->input) - len);
+	}
     }
 }
 
 static void
 zstream_reset_input(struct zstream *z)
 {
-    z->input = Qnil;
+    if (!NIL_P(z->input) && RBASIC_CLASS(z->input) == 0) {
+	rb_str_resize(z->input, 0);
+    }
+    else {
+	z->input = Qnil;
+    }
 }
 
 static void
@@ -994,7 +1025,7 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
 {
     struct zstream_run_args args;
     int err;
-    VALUE guard = Qnil;
+    VALUE old_input = Qnil;
 
     args.z = z;
     args.flush = flush;
@@ -1008,12 +1039,13 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
     else {
 	zstream_append_input(z, src, len);
-	z->stream.next_in = (Bytef*)RSTRING_PTR(z->input);
-	z->stream.avail_in = MAX_UINT(RSTRING_LEN(z->input));
 	/* keep reference to `z->input' so as not to be garbage collected
 	   after zstream_reset_input() and prevent `z->stream.next_in'
 	   from dangling. */
-	guard = z->input;
+	old_input = zstream_detach_input(z);
+	rb_obj_hide(old_input); /* for GVL release and later recycle */
+	z->stream.next_in = (Bytef*)RSTRING_PTR(old_input);
+	z->stream.avail_in = MAX_UINT(RSTRING_LEN(old_input));
     }
 
     if (z->stream.avail_out == 0) {
@@ -1051,7 +1083,10 @@ loop:
 
     if (z->stream.avail_in > 0) {
 	zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
-	RB_GC_GUARD(guard); /* prevent tail call to make guard effective */
+    }
+    if (!NIL_P(old_input)) {
+	rb_str_resize(old_input, 0);
+	rb_gc_force_recycle(old_input);
     }
 
     if (args.jump_state)
@@ -2330,6 +2365,7 @@ gzfile_write_raw(struct gzfile *gz)
 	str = zstream_detach_buffer(&gz->z);
 	OBJ_TAINT(str);  /* for safe */
 	rb_funcall(gz->io, id_write, 1, str);
+	rb_str_resize(str, 0);
 	if ((gz->z.flags & GZFILE_FLAG_SYNC)
 	    && rb_respond_to(gz->io, id_flush))
 	    rb_funcall(gz->io, id_flush, 0);
