@@ -1253,7 +1253,11 @@ fmt_setup(char *buf, size_t size, int c, int flags, int width, int prec)
 # undef MAYBE_UNUSED
 # define MAYBE_UNUSED(x) x = 0
 #endif
+
+COMPILER_WARNING_PUSH
+ALLOW_IMPLICIT_FALLTHROUGH
 #include "vsnprintf.c"
+COMPILER_WARNING_POP
 
 static char *
 ruby_ultoa(unsigned long val, char *endp, int base, int flags)
