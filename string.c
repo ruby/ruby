@@ -8012,7 +8012,12 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 
     if (subptr != pend) {
 	if (chomp) {
-	    pend = chomp_newline(subptr, pend, enc);
+	    if (rsnewline) {
+		pend = chomp_newline(subptr, pend, enc);
+	    }
+	    else if (memcmp(pend - rslen, rsptr, rslen) == 0) {
+		pend -= rslen;
+	    }
 	}
 	line = rb_str_subseq(str, subptr - ptr, pend - subptr);
 	ENUM_ELEM(ary, line);
