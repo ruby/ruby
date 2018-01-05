@@ -1244,11 +1244,10 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 #endif
 
 #ifdef USE_DLN_DLOPEN
+COMPILER_WARNING_PUSH
 #ifdef __clang__
-#pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wpedantic"
 #elif defined(__GNUC__) && (__GNUC__ >= 5)
-#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
 #endif
 static bool
@@ -1257,11 +1256,7 @@ dln_incompatible_library_p(void *handle)
     void *ex = dlsym(handle, EXTERNAL_PREFIX"ruby_xmalloc");
     return ex && ex != ruby_xmalloc;
 }
-#ifdef __clang__
-#pragma clang diagnostic pop
-#elif defined(__GNUC__) && (__GNUC__ >= 5)
-#pragma GCC diagnostic pop
-#endif
+COMPILER_WARNING_POP
 #endif
 
 void*
