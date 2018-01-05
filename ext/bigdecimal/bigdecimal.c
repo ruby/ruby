@@ -1052,9 +1052,9 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
     switch (TYPE(r)) {
     case T_DATA:
 	if (!is_kind_of_BigDecimal(r)) break;
-	/* fall through */
+	else RUBY_FALLTHROUGH;
     case T_FIXNUM:
-	/* fall through */
+	RUBY_FALLTHROUGH;
     case T_BIGNUM:
 	GUARD_OBJ(b, GetVpValue(r, 0));
 	break;
@@ -1089,7 +1089,7 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 	    break;
 
 	case '>':
-	    /* fall through */
+	    RUBY_FALLTHROUGH;
 	case '<':
 	    f = (ID)op;
 	    break;
@@ -2388,7 +2388,9 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	    exp = DATA_PTR(vexp);
 	    break;
 	}
-	/* fall through */
+	else {
+	    RUBY_FALLTHROUGH;
+	}
       default:
 	rb_raise(rb_eTypeError,
 		 "wrong argument type %"PRIsVALUE" (expected scalar Numeric)",
@@ -2671,7 +2673,7 @@ BigDecimal_new(int argc, VALUE *argv)
 	break;
 
       case T_FIXNUM:
-	/* fall through */
+	RUBY_FALLTHROUGH;
       case T_BIGNUM:
 	return GetVpValue(iniValue, 1);
 
@@ -2685,7 +2687,7 @@ BigDecimal_new(int argc, VALUE *argv)
 	if (mf > DBL_DIG+1) {
 	    rb_raise(rb_eArgError, "precision too large.");
 	}
-	/* fall through */
+	RUBY_FALLTHROUGH;
       case T_RATIONAL:
 	if (NIL_P(nFig)) {
 	    rb_raise(rb_eArgError,
@@ -2695,7 +2697,7 @@ BigDecimal_new(int argc, VALUE *argv)
 	return GetVpValueWithPrec(iniValue, mf, 1);
 
       case T_STRING:
-	/* fall through */
+	RUBY_FALLTHROUGH;
       default:
 	break;
     }
@@ -2888,7 +2890,7 @@ BigMath_s_exp(VALUE klass, VALUE x, VALUE vprec)
 	break;
 
       case T_FIXNUM:
-	/* fall through */
+	RUBY_FALLTHROUGH;
       case T_BIGNUM:
 	vx = GetVpValue(x, 0);
 	break;
@@ -3933,7 +3935,7 @@ VpNumOfChars(Real *vp,const char *pszFmt)
 	}
 	break;
       case 'E':
-	/* fall through */
+	RUBY_FALLTHROUGH;
       default:
 	nc = BASE_FIG*(vp->Prec + 2)+6; /* 3: sign + exponent chars */
     }
