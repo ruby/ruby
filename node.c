@@ -474,7 +474,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	    switch (node->nd_aid) {
 	      case 0: A("0 (||)"); break;
 	      case 1: A("1 (&&)"); break;
-	      default: A_ID(node->nd_mid);
+	      default: A_ID(node->nd_aid);
 	    }
 	}
 	LAST_NODE;
