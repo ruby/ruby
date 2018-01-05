@@ -2339,6 +2339,9 @@ again:
             errcpy(err, "too short control escape");
             return -1;
         }
+        else {
+            FALLTHROUGH;
+        }
       case 'c': /* \cX, \c\M-X */
         if (ctrl_prefix) {
             errcpy(err, "duplicate control escape");
@@ -2569,6 +2572,9 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                            no need to unescape anyway.
                            re-escaping may break backref */
                         goto escape_asis;
+                    }
+                    else {
+                        FALLTHROUGH;
                     }
                 }
                 /* xxx: How about more than 199 subexpressions? */
