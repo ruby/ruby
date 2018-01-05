@@ -296,7 +296,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	    type = ID_JUNK;
 	    ++m;
 	    if (m + 1 < e || *m != '=') break;
-	    /* fall through */
+	    FALLTHROUGH;
 	  case '=':
 	    if (!(allowed_attrset & (1U << type))) return -1;
 	    type = ID_ATTRSET;
