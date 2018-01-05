@@ -525,6 +525,9 @@ check_method_entry(VALUE obj, int can_be_svar)
 	if (can_be_svar) {
 	    return check_method_entry(((struct vm_svar *)obj)->cref_or_me, FALSE);
 	}
+	else {
+	    FALLTHROUGH;
+	}
       default:
 #if VM_CHECK_MODE > 0
 	rb_bug("check_method_entry: svar should not be there:");
@@ -578,6 +581,9 @@ check_cref(VALUE obj, int can_be_svar)
       case imemo_svar:
 	if (can_be_svar) {
 	    return check_cref(((struct vm_svar *)obj)->cref_or_me, FALSE);
+	}
+	else {
+	    FALLTHROUGH;
 	}
       default:
 #if VM_CHECK_MODE > 0
@@ -647,6 +653,9 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
 	  case imemo_svar:
 	    if (can_be_svar) {
 		return cref_replace_with_duplicated_cref_each_frame((const VALUE *)&((struct vm_svar *)v)->cref_or_me, FALSE, v);
+	    }
+	    else {
+		FALLTHROUGH;
 	    }
 	  case imemo_ment:
 	    rb_bug("cref_replace_with_duplicated_cref_each_frame: unreachable");
@@ -1467,7 +1476,7 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 	if (!rb_obj_is_kind_of(pattern, rb_cModule)) {
 	    rb_raise(rb_eTypeError, "class or module required for rescue clause");
 	}
-	/* fall through */
+	FALLTHROUGH;
       case VM_CHECKMATCH_TYPE_CASE: {
 	const rb_callable_method_entry_t *me =
 	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
@@ -2868,6 +2877,9 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
 	      case METHOD_VISI_PROTECTED:
 		if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(klass))) {
 		    break;
+		}
+		else {
+		    FALLTHROUGH;
 		}
 	      case METHOD_VISI_PUBLIC:
 		expr_type = DEFINED_METHOD;
