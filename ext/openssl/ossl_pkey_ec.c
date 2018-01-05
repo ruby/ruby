@@ -340,6 +340,8 @@ static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
     case 0:
         if (bn == NULL)
             break;
+        else
+            RUBY_FALLTHROUGH;
     default:
         ossl_raise(eECError, "EC_KEY_set_private_key");
     }
@@ -386,6 +388,8 @@ static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
     case 0:
         if (point == NULL)
             break;
+        else
+            RUBY_FALLTHROUGH;
     default:
         ossl_raise(eECError, "EC_KEY_set_public_key");
     }

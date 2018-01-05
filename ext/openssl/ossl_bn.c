@@ -715,7 +715,7 @@ BIGNUM_SELF_SHIFT(rshift)
 	switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {	\
 	case 3:							\
 	    bottom = (odd == Qtrue) ? 1 : 0;			\
-	    /* FALLTHROUGH */					\
+	    RUBY_FALLTHROUGH;					\
 	case 2:							\
 	    top = NUM2INT(fill);				\
 	}							\
