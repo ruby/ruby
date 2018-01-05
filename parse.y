@@ -5643,7 +5643,6 @@ yycompile0(VALUE arg)
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
 	prelude = block_append(ruby_eval_tree_begin, body, &body->nd_loc /* dummy location */);
 	add_mark_object(opt);
-	prelude->nd_loc = body->nd_loc;
 	tree->nd_body = prelude;
 	parser->ast->body.compile_option = opt;
     }
