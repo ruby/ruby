@@ -132,11 +132,11 @@ dump_option(VALUE buf, VALUE indent, VALUE opt)
     rb_hash_foreach(opt, add_option_i, (VALUE)&arg);
 }
 
-static void dump_node(VALUE, VALUE, int, NODE *);
+static void dump_node(VALUE, VALUE, int, const NODE *);
 static const char default_indent[] = "|   ";
 
 static void
-dump_array(VALUE buf, VALUE indent, int comment, NODE *node)
+dump_array(VALUE buf, VALUE indent, int comment, const NODE *node)
 {
     int field_flag;
     const char *next_indent = default_indent;
@@ -151,7 +151,7 @@ dump_array(VALUE buf, VALUE indent, int comment, NODE *node)
 }
 
 static void
-dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
+dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 {
     int field_flag;
     int i;
@@ -1056,7 +1056,7 @@ dump_node(VALUE buf, VALUE indent, int comment, NODE *node)
 }
 
 VALUE
-rb_parser_dump_tree(NODE *node, int comment)
+rb_parser_dump_tree(const NODE *node, int comment)
 {
     VALUE buf = rb_str_new_cstr(
 	"###########################################################\n"
