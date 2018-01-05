@@ -11163,8 +11163,10 @@ copy_stream_fallback_body(VALUE arg)
             l = buflen;
         }
         else {
-            if (rest == 0)
-                break;
+	    if (rest == 0) {
+		rb_str_resize(buf, 0);
+		break;
+	    }
             l = buflen < rest ? buflen : (long)rest;
         }
         if (stp->src_fd == -1) {
@@ -11305,6 +11307,7 @@ copy_stream_body(VALUE arg)
         }
         else /* others such as StringIO */
 	    rb_io_write(dst_io, str);
+        rb_str_resize(str, 0);
         stp->total += len;
         if (stp->copy_length != (off_t)-1)
             stp->copy_length -= len;
