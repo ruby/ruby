@@ -2330,25 +2330,48 @@ replace_destination(INSN *dobj, INSN *nobj)
     if (!dl->refcnt) ELEM_REMOVE(&dl->link);
 }
 
+static LABEL*
+find_destination(INSN *i)
+{
+    int pos, len = insn_len(i->insn_id);
+    for (pos = 0; pos < len; ++pos) {
+	if (insn_op_types(i->insn_id)[pos] == TS_OFFSET) {
+	    return (LABEL *)OPERAND_AT(i, pos);
+	}
+    }
+    return 0;
+}
+
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end;
+    int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
-    while (i) {
+    unref_counts = ALLOCA_N(int, nlabels);
+    MEMZERO(unref_counts, int, nlabels);
+    end = i;
+    do {
+	LABEL *lab;
 	if (IS_INSN(i)) {
-	    if (IS_INSN_ID(i, jump) || IS_INSN_ID(i, leave)) {
+	    if (IS_INSN_ID(i, leave)) {
+		end = i;
 		break;
+	    }
+	    else if ((lab = find_destination((INSN *)i)) != 0) {
+		if (lab->unremovable) break;
+		unref_counts[lab->label_no]++;
 	    }
 	}
 	else if (IS_LABEL(i)) {
-	    if (((LABEL *)i)->unremovable) return 0;
-	    if (((LABEL *)i)->refcnt > 0) {
+	    lab = (LABEL *)i;
+	    if (lab->unremovable) return 0;
+	    if (lab->refcnt > unref_counts[lab->label_no]) {
 		if (i == first) return 0;
-		i = i->prev;
 		break;
 	    }
+	    continue;
 	}
 	else if (IS_TRACE(i)) {
 	    /* do nothing */
@@ -2357,9 +2380,8 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 	    LABEL *dest = ((ADJUST *)i)->label;
 	    if (dest && dest->unremovable) return 0;
 	}
-	i = i->next;
-    }
-    end = i;
+	end = i;
+    } while ((i = i->next) != 0);
     i = first;
     do {
 	if (IS_INSN(i)) {
