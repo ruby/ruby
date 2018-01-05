@@ -5666,13 +5666,20 @@ yycompile0(VALUE arg)
     return (VALUE)tree;
 }
 
-static NODE*
-yycompile(struct parser_params *parser, VALUE fname, int line)
+static rb_ast_t *
+yycompile(VALUE vparser, struct parser_params *parser, VALUE fname, int line)
 {
+    rb_ast_t *ast;
     ruby_sourcefile_string = rb_str_new_frozen(fname);
     ruby_sourcefile = RSTRING_PTR(fname);
     ruby_sourceline = line - 1;
-    return (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
+
+    parser->ast = ast = rb_ast_new();
+    ast->root = (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
+    parser->ast = 0;
+    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
+
+    return ast;
 }
 #endif /* !RIPPER */
 
@@ -5731,21 +5738,15 @@ static rb_ast_t*
 parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
 {
     struct parser_params *parser;
-    rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    parser->ast = ast = rb_ast_new();
 
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
     lex_input = rb_str_new_frozen(s);
     lex_pbeg = lex_p = lex_pend = 0;
 
-    ast->root = yycompile(parser, fname, line);
-    parser->ast = 0;
-    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
-
-    return ast;
+    return yycompile(vparser, parser, fname, line);
 }
 
 rb_ast_t*
@@ -5808,20 +5809,14 @@ rb_ast_t*
 rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 {
     struct parser_params *parser;
-    rb_ast_t *ast;
 
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, parser);
-    parser->ast = ast = rb_ast_new();
 
     lex_gets = lex_io_gets;
     lex_input = file;
     lex_pbeg = lex_p = lex_pend = 0;
 
-    ast->root = yycompile(parser, fname, start);
-    parser->ast = 0;
-    RB_GC_GUARD(vparser); /* prohibit tail call optimization */
-
-    return ast;
+    return yycompile(vparser, parser, fname, start);
 }
 #endif  /* !RIPPER */
 
