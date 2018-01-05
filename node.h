@@ -470,7 +470,7 @@ typedef struct node_buffer_struct node_buffer_t;
 typedef struct rb_ast_struct {
     VALUE flags;
     VALUE reserved1;
-    NODE *root;
+    const NODE *root;
     node_buffer_t *node_buffer;
     VALUE mark_ary;
 } rb_ast_t;
@@ -488,7 +488,7 @@ VALUE rb_parser_end_seen_p(VALUE);
 VALUE rb_parser_encoding(VALUE);
 VALUE rb_parser_get_yydebug(VALUE);
 VALUE rb_parser_set_yydebug(VALUE, VALUE);
-VALUE rb_parser_dump_tree(NODE *node, int comment);
+VALUE rb_parser_dump_tree(const NODE *node, int comment);
 void rb_parser_set_options(VALUE, int, int, int, int);
 
 rb_ast_t *rb_parser_compile_cstr(VALUE, const char*, const char*, int, int);
