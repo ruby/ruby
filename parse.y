@@ -450,8 +450,8 @@ static NODE *new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, I
 #define new_command_qcall(q,r,m,a,location) new_qcall_gen(parser,q,r,m,a,location)
 static NODE *new_command_gen(struct parser_params*parser, NODE *m, NODE *a) {m->nd_args = a; return m;}
 #define new_command(m,a) new_command_gen(parser, m, a)
-static NODE *method_add_block_gen(struct parser_params*parser, NODE *m, NODE *b) {b->nd_iter = m; return b;}
-#define method_add_block(m,b) method_add_block_gen(parser, m, b)
+static NODE *method_add_block_gen(struct parser_params*parser, NODE *m, NODE *b, const YYLTYPE *location) {b->nd_iter = m; b->nd_loc = *location; return b;}
+#define method_add_block(m,b,location) method_add_block_gen(parser, m, b, location)
 
 static NODE *new_args_gen(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
 #define new_args(f,o,r,p,t,location) new_args_gen(parser, (f),(o),(r),(p),(t),(location))
@@ -873,7 +873,7 @@ static void ripper_error_gen(struct parser_params *parser);
 
 #define method_optarg(m,a) ((a)==Qundef ? (m) : dispatch2(method_add_arg,(m),(a)))
 #define method_arg(m,a) dispatch2(method_add_arg,(m),(a))
-#define method_add_block(m,b) dispatch2(method_add_block, (m), (b))
+#define method_add_block(m,b,location) dispatch2(method_add_block, (m), (b))
 
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
 
@@ -1684,10 +1684,9 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 			block_dup_check($2,$3);
 			$$ = new_command($1, $2);
-			$$ = method_add_block($$, $3);
+			$$ = method_add_block($$, $3, &@$);
 			fixpos($$, $1);
 		    /*%%%*/
-			$$->nd_loc = @$;
 			nd_set_last_loc($1, nd_last_loc($2));
 		    /*%
 		    %*/
@@ -1701,12 +1700,8 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 			block_dup_check($4,$5);
 			$$ = new_command_qcall($2, $1, $3, $4, &@$);
-			$$ = method_add_block($$, $5);
+			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
-		    /*%%%*/
-			$$->nd_loc = @$;
-		    /*%
-		    %*/
 		   }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
@@ -1717,12 +1712,8 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 			block_dup_check($4,$5);
 			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@$);
-			$$ = method_add_block($$, $5);
+			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
-		    /*%%%*/
-			$$->nd_loc = @$;
-		    /*%
-		    %*/
 		   }
 		| keyword_super command_args
 		    {
@@ -2827,12 +2818,10 @@ primary		: literal
 		| fcall brace_block
 		    {
 		    /*%%%*/
-			$2->nd_iter = $1;
-			$2->nd_loc = @$;
-			$$ = $2;
+			$$ = method_add_block($1, $2, &@$);
 		    /*%
 			$$ = method_arg(dispatch1(fcall, $1), arg_new());
-			$$ = method_add_block($$, $2);
+			$$ = method_add_block($$, $2, &@$);
 		    %*/
 		    }
 		| method_call
@@ -2840,11 +2829,9 @@ primary		: literal
 		    {
 		    /*%%%*/
 			block_dup_check($1->nd_args, $2);
-			$2->nd_iter = $1;
-			$2->nd_loc = @$;
-			$$ = $2;
+			$$ = method_add_block($1, $2, &@$);
 		    /*%
-			$$ = method_add_block($1, $2);
+			$$ = method_add_block($1, $2, &@$);
 		    %*/
 		    }
 		| tLAMBDA lambda
@@ -3675,12 +3662,10 @@ block_call	: command do_block
 			else {
 			    block_dup_check($1->nd_args, $2);
 			}
-			$2->nd_iter = $1;
-			$2->nd_loc = @$;
-			$$ = $2;
+			$$ = method_add_block($1, $2, &@$);
 			fixpos($$, $1);
 		    /*%
-			$$ = method_add_block($1, $2);
+			$$ = method_add_block($1, $2, &@$);
 		    %*/
 		    }
 		| block_call call_op2 operation2 opt_paren_args
@@ -3691,26 +3676,24 @@ block_call	: command do_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
-			$5->nd_iter = new_command_qcall($2, $1, $3, $4, &@$);
-			$5->nd_loc = @$;
-			$$ = $5;
+			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, $2, $3, $4);
-			$$ = method_add_block($$, $5);
+			$$ = method_add_block($$, $5, &@$);
 		    %*/
 		    }
 		| block_call call_op2 operation2 command_args do_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
-			$5->nd_iter = new_command_qcall($2, $1, $3, $4, &@$);
-			$5->nd_loc = @$;
-			$$ = $5;
+			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch4(command_call, $1, $2, $3, $4);
-			$$ = method_add_block($$, $5);
+			$$ = method_add_block($$, $5, &@$);
 		    %*/
 		    }
 		;
