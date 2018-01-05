@@ -6748,6 +6748,7 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 2:
 	pmode = argv[1];
+	FALLTHROUGH;
       case 1:
 	pname = argv[0];
 	break;
