@@ -937,7 +937,8 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     const rb_env_t *env;
     rb_execution_context_t *ec = GET_EC();
     const rb_iseq_t *base_iseq, *iseq;
-    NODE *node = 0, tmp_node;
+    rb_ast_body_t ast;
+    NODE tmp_node;
     ID minibuf[4], *dyns = minibuf;
     VALUE idtmp = 0;
 
@@ -950,17 +951,18 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 
     dyns[0] = dyncount;
     MEMCPY(dyns + 1, dynvars, ID, dyncount);
-    node = &tmp_node;
-    rb_node_init(node, NODE_SCOPE, (VALUE)dyns, 0, 0);
+    rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
+    ast.root = &tmp_node;
+    ast.reserved = 0;
 
     if (base_iseq) {
-	iseq = rb_iseq_new(node, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
+	iseq = rb_iseq_new(&ast, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
     }
     else {
 	VALUE tempstr = rb_fstring_cstr("<temp>");
-	iseq = rb_iseq_new_top(node, tempstr, tempstr, tempstr, NULL);
+	iseq = rb_iseq_new_top(&ast, tempstr, tempstr, tempstr, NULL);
     }
-    node->nd_tbl = 0; /* reset table */
+    tmp_node.nd_tbl = 0; /* reset table */
     ALLOCV_END(idtmp);
 
     vm_set_eval_stack(ec, iseq, 0, base_block);

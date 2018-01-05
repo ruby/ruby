@@ -1749,7 +1749,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    }
 	}
 	base_block = toplevel_context(toplevel_binding);
-	iseq = rb_iseq_new_main(ast->body.root, opt->script_name, path, vm_block_iseq(base_block));
+	iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block));
 	rb_ast_dispose(ast);
     }
 
