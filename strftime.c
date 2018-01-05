@@ -51,6 +51,7 @@
 #include "ruby/encoding.h"
 #include "timev.h"
 #include "internal.h"
+ALLOW_IMPLICIT_FALLTHROUGH
 
 #ifndef GAWK
 #include <stdio.h>
