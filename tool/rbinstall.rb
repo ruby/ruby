@@ -30,7 +30,7 @@ end
 
 INDENT = " "*36
 STDOUT.sync = true
-File.umask(0222)
+File.umask(022)
 
 def parse_args(argv = ARGV)
   $mantype = 'doc'
