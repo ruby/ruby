@@ -882,7 +882,6 @@ zstream_detach_input(struct zstream *z)
 	rb_obj_reveal(dst, rb_cString);
     }
     z->input = Qnil;
-    rb_obj_reveal(dst, rb_cString);
     return dst;
 }
 
