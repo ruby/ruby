@@ -54,6 +54,31 @@ extern "C" {
 # define WARN_UNUSED_RESULT(x) x
 #endif
 
+#ifdef __clang__
+# define COMPILER_WARNING_PUSH      _Pragma("clang diagnostic push")
+# define COMPILER_WARNING_POP       _Pragma("clang diagnostic pop")
+#elif GCC_VERSION_SINCE(4, 6, 0)
+# define COMPILER_WARNING_PUSH      _Pragma("GCC diagnostic push")
+# define COMPILER_WARNING_POP       _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+# define COMPILER_WARNING_PUSH      __pragma(warning(push))
+# define COMPILER_WARNING_POP       __pragma(warning(pop))
+#else /* other compilers to follow? */
+# define COMPILER_WARNING_PUSH      /* nop */
+# define COMPILER_WARNING_POP       /* nop */
+#endif
+
+#ifndef FALLTHROUGH
+# define FALLTHROUGH RUBY_FALLTHROUGH
+#endif
+#ifdef __clang__
+# define ALLOW_IMPLICIT_FALLTHROUGH _Pragma("clang diagnostic ignored \"-Wimplicit-fallthrough\"")
+#elif GCC_VERSION_SINCE(7, 0, 0)
+# define ALLOW_IMPLICIT_FALLTHROUGH _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+#else
+# define ALLOW_IMPLICIT_FALLTHROUGH /* nop */
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
