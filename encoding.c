@@ -756,6 +756,7 @@ enc_capable(VALUE obj)
 	return TRUE;
       case T_DATA:
 	if (is_data_encoding(obj)) return TRUE;
+	else FALLTHROUGH;
       default:
 	return FALSE;
     }
@@ -803,6 +804,7 @@ rb_enc_get_index(VALUE obj)
 	if (NIL_P(tmp)) obj = rb_funcallv(obj, rb_intern("external_encoding"), 0, 0);
 	else obj = tmp;
 	if (NIL_P(obj)) break;
+	else FALLTHROUGH;
       case T_DATA:
 	if (is_data_encoding(obj)) {
 	    i = enc_check_encoding(obj);
