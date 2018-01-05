@@ -944,7 +944,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	  case 'p':
 	    if (envopt) goto noenvopt;
 	    opt->do_print = TRUE;
-	    /* through */
+	    FALLTHROUGH;
 	  case 'n':
 	    if (envopt) goto noenvopt;
 	    opt->do_loop = TRUE;
@@ -970,6 +970,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    }
 	    opt->dump |= DUMP_BIT(version_v);
 	    opt->verbose = 1;
+	    FALLTHROUGH;
 	  case 'w':
 	    if (!opt->warning) {
 		warning = 1;
@@ -1290,6 +1291,8 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	  case '\r':
 	    if (!s[1])
 		break;
+	    else
+		FALLTHROUGH;
 
 	  default:
 	    {
