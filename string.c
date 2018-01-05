@@ -469,14 +469,14 @@ search_nonascii(const char *p, const char *e)
 	    switch (l) {
 	      default: UNREACHABLE;
 #if SIZEOF_VOIDP > 4
-	      case 7: if (p[-7]&0x80) return p-7;
-	      case 6: if (p[-6]&0x80) return p-6;
-	      case 5: if (p[-5]&0x80) return p-5;
-	      case 4: if (p[-4]&0x80) return p-4;
+	      case 7: if (p[-7]&0x80) return p-7; else FALLTHROUGH;
+	      case 6: if (p[-6]&0x80) return p-6; else FALLTHROUGH;
+	      case 5: if (p[-5]&0x80) return p-5; else FALLTHROUGH;
+	      case 4: if (p[-4]&0x80) return p-4; else FALLTHROUGH;
 #endif
-	      case 3: if (p[-3]&0x80) return p-3;
-	      case 2: if (p[-2]&0x80) return p-2;
-	      case 1: if (p[-1]&0x80) return p-1;
+	      case 3: if (p[-3]&0x80) return p-3; else FALLTHROUGH;
+	      case 2: if (p[-2]&0x80) return p-2; else FALLTHROUGH;
+	      case 1: if (p[-1]&0x80) return p-1; else FALLTHROUGH;
 	      case 0: break;
 	    }
 	}
@@ -505,14 +505,14 @@ search_nonascii(const char *p, const char *e)
     switch (e - p) {
       default: UNREACHABLE;
 #if SIZEOF_VOIDP > 4
-      case 7: if (e[-7]&0x80) return e-7;
-      case 6: if (e[-6]&0x80) return e-6;
-      case 5: if (e[-5]&0x80) return e-5;
-      case 4: if (e[-4]&0x80) return e-4;
+      case 7: if (e[-7]&0x80) return e-7; else FALLTHROUGH;
+      case 6: if (e[-6]&0x80) return e-6; else FALLTHROUGH;
+      case 5: if (e[-5]&0x80) return e-5; else FALLTHROUGH;
+      case 4: if (e[-4]&0x80) return e-4; else FALLTHROUGH;
 #endif
-      case 3: if (e[-3]&0x80) return e-3;
-      case 2: if (e[-2]&0x80) return e-2;
-      case 1: if (e[-1]&0x80) return e-1;
+      case 3: if (e[-3]&0x80) return e-3; else FALLTHROUGH;
+      case 2: if (e[-2]&0x80) return e-2; else FALLTHROUGH;
+      case 1: if (e[-1]&0x80) return e-1; else FALLTHROUGH;
       case 0: return NULL;
     }
 }
@@ -3569,7 +3569,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
 	}
 	sub = tmp;
       }
-	/* fall through */
+	FALLTHROUGH;
       case T_STRING:
 	pos = rb_str_index(str, sub, pos);
 	pos = rb_str_sublen(str, pos);
@@ -3736,7 +3736,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 	}
 	sub = tmp;
       }
-	/* fall through */
+	FALLTHROUGH;
       case T_STRING:
 	pos = rb_str_rindex(str, sub, pos);
 	if (pos >= 0) return LONG2NUM(pos);
