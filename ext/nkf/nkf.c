@@ -56,10 +56,22 @@ rb_nkf_putchar(unsigned int c)
 /* Include kanji filter main part */
 /* getchar and putchar will be replaced during inclusion */
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#elif GCC_VERSION_SINCE(7, 0, 0)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
 #define PERL_XS 1
 #include "nkf-utf8/config.h"
 #include "nkf-utf8/utf8tbl.c"
 #include "nkf-utf8/nkf.c"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#elif GCC_VERSION_SINCE(7, 0, 0)
+#pragma GCC diagnostic pop
+#endif
 
 rb_encoding* rb_nkf_enc_get(const char *name)
 {
