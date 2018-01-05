@@ -544,4 +544,20 @@ class TestSuper < Test::Unit::TestCase
       c.new
     }
   end
+
+  class TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args
+    end
+  end
+
+  class TestFor_super_with_modified_rest_parameter < TestFor_super_with_modified_rest_parameter_base
+    def foo *args
+      args = 13
+      super
+    end
+  end
+  def test_super_with_modified_rest_parameter
+    assert_equal [13], TestFor_super_with_modified_rest_parameter.new.foo
+  end
 end
