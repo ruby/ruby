@@ -4239,6 +4239,14 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
     return 0;
 }
 
+static VALUE
+build_defined_rescue_iseq(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *unused)
+{
+    ADD_INSN(ret, 0, putnil);
+    iseq_set_exception_local_table(iseq);
+    return Qnil;
+}
+
 static int
 defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	     const NODE *const node, LABEL **lfinish, VALUE needstr)
@@ -4250,13 +4258,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	LABEL *lstart = NEW_LABEL(line);
 	LABEL *lend = NEW_LABEL(line);
 	const rb_iseq_t *rescue;
-	NODE tmp_node, *node = &tmp_node;
-	rb_node_init(node, NODE_NIL, 0, 0, 0);
-	rescue = NEW_CHILD_ISEQ(node,
-				rb_str_concat(rb_str_new2
-					      ("defined guard in "),
-					      iseq->body->location.label),
-				ISEQ_TYPE_DEFINED_GUARD, 0);
+	rescue = new_child_iseq_ifunc(iseq, IFUNC_NEW(build_defined_rescue_iseq, 0, 0),
+				      rb_str_concat(rb_str_new2("defined guard in "),
+						    iseq->body->location.label),
+				      iseq, ISEQ_TYPE_RESCUE, 0);
 	lstart->rescued = LABEL_RESCUE_BEG;
 	lend->rescued = LABEL_RESCUE_END;
 	APPEND_LABEL(ret, lcur, lstart);
