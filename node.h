@@ -216,8 +216,6 @@ enum node_type {
 #define NODE_DSYM        NODE_DSYM
     NODE_ATTRASGN,
 #define NODE_ATTRASGN    NODE_ATTRASGN
-    NODE_PRELUDE,
-#define NODE_PRELUDE     NODE_PRELUDE
     NODE_LAMBDA,
 #define NODE_LAMBDA      NODE_LAMBDA
     NODE_LAST
@@ -458,7 +456,6 @@ typedef struct RNode {
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE(b) NEW_NODE(NODE_POSTEXE,0,b,0)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
-#define NEW_PRELUDE(p,b,o) NEW_NODE(NODE_PRELUDE,p,b,o)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
@@ -469,7 +466,7 @@ typedef struct node_buffer_struct node_buffer_t;
 /* T_IMEMO/ast */
 typedef struct rb_ast_body_struct {
     const NODE *root;
-    VALUE reserved;
+    VALUE compile_option;
 } rb_ast_body_t;
 typedef struct rb_ast_struct {
     VALUE flags;
