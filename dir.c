@@ -1462,7 +1462,7 @@ nogvl_opendir_at(void *ptr)
 	    if (dirp) return dirp;
 
 	    e = errno;
-	    /* fallthrough*/
+	    FALLTHROUGH;
 	  case 0:
 	    if (fd >= 0) close(fd);
 	    errno = e;
@@ -3115,7 +3115,7 @@ nogvl_dir_empty_p(void *ptr)
 	    dir = opendir(path);
 	    if (dir) break;
 	    e = errno;
-	    /* fall through */
+	    FALLTHROUGH;
 	  case 0:
 	    if (e == ENOTDIR) return (void *)Qfalse;
 	    errno = e; /* for rb_sys_fail_path */
