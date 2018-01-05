@@ -571,6 +571,7 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 	  case '0':
 	    FLAG_FOUND();
 	    padding = '0';
+	    RUBY_FALLTHROUGH;
 	  case '1':  case '2': case '3': case '4':
 	  case '5': case '6':  case '7': case '8': case '9':
 	    {

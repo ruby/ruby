@@ -3078,8 +3078,10 @@ date_s_new_bang(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	ajd = INT2FIX(0);
+	RUBY_FALLTHROUGH;
       case 1:
 	of = INT2FIX(0);
+	RUBY_FALLTHROUGH;
       case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -3279,6 +3281,7 @@ date_s_jd(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 2:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 1:
 	num2num_with_frac(jd, positive_inf);
     }
@@ -3331,8 +3334,10 @@ date_s_ordinal(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 3:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 2:
 	num2int_with_frac(d, positive_inf);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -3400,10 +3405,13 @@ date_s_civil(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, positive_inf);
+	RUBY_FALLTHROUGH;
       case 2:
 	m = NUM2INT(vm);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -3477,10 +3485,13 @@ date_s_commercial(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 4:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, positive_inf);
+	RUBY_FALLTHROUGH;
       case 2:
 	w = NUM2INT(vw);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -3525,12 +3536,16 @@ date_s_weeknum(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 5:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 4:
 	f = NUM2INT(vf);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, positive_inf);
+	RUBY_FALLTHROUGH;
       case 2:
 	w = NUM2INT(vw);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -3574,12 +3589,16 @@ date_s_nth_kday(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 5:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(k, positive_inf);
+	RUBY_FALLTHROUGH;
       case 3:
 	n = NUM2INT(vn);
+	RUBY_FALLTHROUGH;
       case 2:
 	m = NUM2INT(vm);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -4272,8 +4291,10 @@ date_s_strptime(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01");
+	RUBY_FALLTHROUGH;
       case 1:
 	fmt = rb_str_new2("%F");
+	RUBY_FALLTHROUGH;
       case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4363,8 +4384,10 @@ date_s_parse(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01");
+	RUBY_FALLTHROUGH;
       case 1:
 	comp = Qtrue;
+	RUBY_FALLTHROUGH;
       case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4419,6 +4442,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4460,6 +4484,7 @@ date_s_rfc3339(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4501,6 +4526,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4545,6 +4571,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 1 Jan -4712 00:00:00 +0000");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4587,6 +4614,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 01 Jan -4712 00:00:00 GMT");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4628,6 +4656,7 @@ date_s_jisx0301(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -4720,17 +4749,21 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
     switch (argc) {
       case 5:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 4:
 	val2off(vof, of);
+	RUBY_FALLTHROUGH;
       case 3:
 	sf = vsf;
 	if (f_lt_p(sf, INT2FIX(0)) ||
 	    f_ge_p(sf, INT2FIX(SECOND_IN_NANOSECONDS)))
 	    rb_raise(rb_eArgError, "invalid second fraction");
+	RUBY_FALLTHROUGH;
       case 2:
 	df = NUM2INT(vdf);
 	if (df < 0 || df >= DAY_IN_SECONDS)
 	    rb_raise(rb_eArgError, "invalid day fraction");
+	RUBY_FALLTHROUGH;
       case 1:
 	jd = vjd;
     }
@@ -7229,14 +7262,19 @@ datetime_s_jd(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 6:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 5:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(min, 3);
+	RUBY_FALLTHROUGH;
       case 2:
 	num2int_with_frac(h, 2);
+	RUBY_FALLTHROUGH;
       case 1:
 	num2num_with_frac(jd, 1);
     }
@@ -7298,16 +7336,22 @@ datetime_s_ordinal(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 7:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 6:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 5:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(min, 4);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(h, 3);
+	RUBY_FALLTHROUGH;
       case 2:
 	num2int_with_frac(d, 2);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -7375,18 +7419,25 @@ datetime_s_civil(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 8:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 7:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 6:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 5:
 	num2int_with_frac(min, 5);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(h, 4);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, 3);
+	RUBY_FALLTHROUGH;
       case 2:
 	m = NUM2INT(vm);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -7472,18 +7523,25 @@ datetime_s_commercial(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 8:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 7:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 6:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 5:
 	num2int_with_frac(min, 5);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(h, 4);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, 3);
+	RUBY_FALLTHROUGH;
       case 2:
 	w = NUM2INT(vw);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -7541,20 +7599,28 @@ datetime_s_weeknum(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 9:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 8:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 7:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 6:
 	num2int_with_frac(min, 6);
+	RUBY_FALLTHROUGH;
       case 5:
 	num2int_with_frac(h, 5);
+	RUBY_FALLTHROUGH;
       case 4:
 	f = NUM2INT(vf);
+	RUBY_FALLTHROUGH;
       case 3:
 	num2int_with_frac(d, 4);
+	RUBY_FALLTHROUGH;
       case 2:
 	w = NUM2INT(vw);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -7610,20 +7676,28 @@ datetime_s_nth_kday(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 9:
 	val2sg(vsg, sg);
+	RUBY_FALLTHROUGH;
       case 8:
 	val2off(vof, rof);
+	RUBY_FALLTHROUGH;
       case 7:
 	num2int_with_frac(s, positive_inf);
+	RUBY_FALLTHROUGH;
       case 6:
 	num2int_with_frac(min, 6);
+	RUBY_FALLTHROUGH;
       case 5:
 	num2int_with_frac(h, 5);
+	RUBY_FALLTHROUGH;
       case 4:
 	num2int_with_frac(k, 4);
+	RUBY_FALLTHROUGH;
       case 3:
 	n = NUM2INT(vn);
+	RUBY_FALLTHROUGH;
       case 2:
 	m = NUM2INT(vm);
+	RUBY_FALLTHROUGH;
       case 1:
 	y = vy;
     }
@@ -7909,8 +7983,10 @@ datetime_s_strptime(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	fmt = rb_str_new2("%FT%T%z");
+	RUBY_FALLTHROUGH;
       case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -7952,8 +8028,10 @@ datetime_s_parse(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	comp = Qtrue;
+	RUBY_FALLTHROUGH;
       case 2:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -7992,6 +8070,7 @@ datetime_s_iso8601(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8022,6 +8101,7 @@ datetime_s_rfc3339(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8052,6 +8132,7 @@ datetime_s_xmlschema(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8083,6 +8164,7 @@ datetime_s_rfc2822(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 1 Jan -4712 00:00:00 +0000");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8113,6 +8195,7 @@ datetime_s_httpdate(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("Mon, 01 Jan -4712 00:00:00 GMT");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
@@ -8143,6 +8226,7 @@ datetime_s_jisx0301(int argc, VALUE *argv, VALUE klass)
     switch (argc) {
       case 0:
 	str = rb_str_new2("-4712-01-01T00:00:00+00:00");
+	RUBY_FALLTHROUGH;
       case 1:
 	sg = INT2FIX(DEFAULT_SG);
     }
