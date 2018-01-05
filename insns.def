@@ -949,7 +949,7 @@ invokeblock
     struct rb_calling_info calling;
     calling.argc = ci->orig_argc;
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
-    calling.recv = GET_SELF();
+    calling.recv = Qundef; /* should not be used */
 
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci);
     if (val == Qundef) {
