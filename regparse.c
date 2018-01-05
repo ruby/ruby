@@ -1,3 +1,5 @@
+#include "internal.h"
+ALLOW_IMPLICIT_FALLTHROUGH
 /**********************************************************************
   regparse.c -  Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
