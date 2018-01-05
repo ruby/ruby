@@ -89,7 +89,8 @@ notifications:
       - "%{message} by @%{author}: See %{build_url}"
 
   slack:
-    secure: TNRGiWGytGSLDAjJLR0NVXKlHhba6Kf584wU7mXqiOCDNBQ0LHUsrIMaL38uvpnzQ6NeV5j5k575LAZyuGXKczSrOTeIBJaHfw6Wj/8WUnifnNcIFozZ5DH9/S2EuiVcslDmoRflOFSTkocpE0MElt2KU2kNCzeq3/iVatNT8Nw=
+    rooms:
+      secure: i1GLETSKye85ea6dGNA3MxI/5myChmMFiZtBd5C69xK+s1sBFqEgOSbaSf9KHc0CYrHVyNhQMaZRruieV7xS+6Pfs0Zvxf1DO6QQTWC2KhkqwFDLvZncAzjoyASdR90hbr+iRPOngQ+HJuE94zemALAwEqNAinzA74PMiJXktqY=
     on_pull_requests: false
     on_success: change
     on_failure: always
