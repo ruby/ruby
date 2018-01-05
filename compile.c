@@ -1224,9 +1224,13 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 	       VALUE name, const rb_iseq_t *parent, enum iseq_type type, int line_no)
 {
     rb_iseq_t *ret_iseq;
+    rb_ast_body_t ast;
+
+    ast.root = node;
+    ast.reserved = 0;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
-    ret_iseq = rb_iseq_new_with_opt(node, name,
+    ret_iseq = rb_iseq_new_with_opt(&ast, name,
 				    rb_iseq_path(iseq), rb_iseq_realpath(iseq),
 				    INT2FIX(line_no), parent, type, ISEQ_COMPILE_DATA(iseq)->option);
     debugs("[new_child_iseq]< ---------------------------------------\n");
