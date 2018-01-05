@@ -1566,7 +1566,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
       case T_FILE:
       io:
         val = check_exec_redirect_fd(val, 0);
-        /* fall through */
+        FALLTHROUGH;
       case T_FIXNUM:
         param = val;
         eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
@@ -4835,7 +4835,7 @@ rlimit_resource_type(VALUE rtype)
 	    len = RSTRING_LEN(rtype);
             break;
         }
-        /* fall through */
+        FALLTHROUGH;
 
       case T_FIXNUM:
       case T_BIGNUM:
@@ -4871,7 +4871,7 @@ rlimit_resource_value(VALUE rval)
             name = StringValueCStr(rval);
             break;
         }
-        /* fall through */
+        FALLTHROUGH;
 
       case T_FIXNUM:
       case T_BIGNUM:
@@ -6023,7 +6023,7 @@ proc_daemon(int argc, VALUE *argv)
     int n, nochdir = FALSE, noclose = FALSE;
 
     switch (rb_check_arity(argc, 0, 2)) {
-      case 2: noclose = RTEST(argv[1]);
+      case 2: noclose = RTEST(argv[1]); FALLTHROUGH;
       case 1: nochdir = RTEST(argv[0]);
     }
 
