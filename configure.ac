@@ -490,7 +490,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
 		 -Wmissing-noreturn \
-		 -Wimplicit-fallthrough=0 \
+		 -Wimplicit-fallthrough \
 		 -Werror=duplicated-cond \
 		 -Werror=restrict \
 		 $extra_warning \
