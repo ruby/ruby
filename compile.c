@@ -1227,7 +1227,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
     rb_ast_body_t ast;
 
     ast.root = node;
-    ast.reserved = 0;
+    ast.compile_option = 0;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
@@ -7096,26 +7096,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (lskip) ADD_LABEL(ret, lskip);
 	ADD_INSN(ret, line, pop);
 
-	break;
-      }
-      case NODE_PRELUDE:{
-	const rb_compile_option_t *orig_opt = ISEQ_COMPILE_DATA(iseq)->option;
-	rb_compile_option_t new_opt = *orig_opt;
-	if (node->nd_compile_option) {
-	    rb_iseq_make_compile_option(&new_opt, node->nd_compile_option);
-	    ISEQ_COMPILE_DATA(iseq)->option = &new_opt;
-	}
-	if (!new_opt.coverage_enabled) ISEQ_COVERAGE_SET(iseq, Qfalse);
-	CHECK(COMPILE_POPPED(ret, "prelude", node->nd_head));
-	CHECK(COMPILE_(ret, "body", node->nd_body, popped));
-	ISEQ_COMPILE_DATA(iseq)->option = orig_opt;
-	/* Do NOT restore ISEQ_COVERAGE!
-	 * If ISEQ_COVERAGE is not false, finish_iseq_build function in iseq.c
-	 * will initialize the counter array of line coverage.
-	 * We keep ISEQ_COVERAGE as nil to disable this initialization.
-	 * This is not harmful assuming that NODE_PRELUDE pragma does not occur
-	 * in NODE tree except the root.
-	 */
 	break;
       }
       case NODE_LAMBDA:{

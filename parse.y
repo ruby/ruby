@@ -5646,7 +5646,7 @@ yycompile0(VALUE arg)
 	    mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
 	}
 	rb_set_errinfo(mesg);
-	return 0;
+	return FALSE;
     }
     tree = ruby_eval_tree;
     if (!tree) {
@@ -5658,12 +5658,14 @@ yycompile0(VALUE arg)
 	NODE *body = parser_append_options(parser, tree->nd_body);
 	if (!opt) opt = rb_obj_hide(rb_ident_hash_new());
 	rb_hash_aset(opt, rb_sym_intern_ascii_cstr("coverage_enabled"), cov);
-	prelude = NEW_PRELUDE(ruby_eval_tree_begin, body, opt);
+	prelude = block_append(ruby_eval_tree_begin, body, &body->nd_loc /* dummy location */);
 	add_mark_object(opt);
 	prelude->nd_loc = body->nd_loc;
 	tree->nd_body = prelude;
+	parser->ast->body.compile_option = opt;
     }
-    return (VALUE)tree;
+    parser->ast->body.root = tree;
+    return TRUE;
 }
 
 static rb_ast_t *
@@ -5675,7 +5677,7 @@ yycompile(VALUE vparser, struct parser_params *parser, VALUE fname, int line)
     ruby_sourceline = line - 1;
 
     parser->ast = ast = rb_ast_new();
-    ast->body.root = (NODE *)rb_suppress_tracing(yycompile0, (VALUE)parser);
+    rb_suppress_tracing(yycompile0, (VALUE)parser);
     parser->ast = 0;
     RB_GC_GUARD(vparser); /* prohibit tail call optimization */
 

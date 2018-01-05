@@ -101,37 +101,6 @@ struct add_option_arg {
     st_index_t count;
 };
 
-static int
-add_option_i(VALUE key, VALUE val, VALUE args)
-{
-    struct add_option_arg *argp = (void *)args;
-    VALUE buf = argp->buf;
-    VALUE indent = argp->indent;
-
-    A_INDENT;
-    A("+- ");
-    AR(rb_sym2str(key));
-    A(": ");
-    A_LIT(val);
-    A("\n");
-    return ST_CONTINUE;
-}
-
-static void
-dump_option(VALUE buf, VALUE indent, VALUE opt)
-{
-    struct add_option_arg arg;
-
-    if (!RB_TYPE_P(opt, T_HASH)) {
-	A_LIT(opt);
-	return;
-    }
-    arg.buf = buf;
-    arg.indent = indent;
-    arg.count = 0;
-    rb_hash_foreach(opt, add_option_i, (VALUE)&arg);
-}
-
 static void dump_node(VALUE, VALUE, int, const NODE *);
 static const char default_indent[] = "|   ";
 
@@ -958,19 +927,6 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_ID(nd_mid, "method name");
 	LAST_NODE;
 	F_NODE(nd_args, "arguments");
-	return;
-
-      case NODE_PRELUDE:
-	ANN("pre-execution");
-	ANN("format: BEGIN { [nd_head] }; [nd_body]");
-	ANN("example: bar; BEGIN { foo }");
-	F_NODE(nd_head, "prelude");
-	if (!node->nd_compile_option) LAST_NODE;
-	F_NODE(nd_body, "body");
-	if (node->nd_compile_option) {
-	    LAST_NODE;
-	    F_OPTION(nd_compile_option, "compile_option");
-	}
 	return;
 
       case NODE_LAMBDA:
