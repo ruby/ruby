@@ -1128,6 +1128,15 @@ eom
     assert_equal(:begin, result)
   end
 
+  def test_return_in_loop
+    obj = Object.new
+    def obj.test
+      x = nil
+      return until x unless x
+    end
+    assert_nil obj.test
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
