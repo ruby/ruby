@@ -1070,7 +1070,6 @@ rb_block_arity(void)
 	    rb_proc_t *proc;
 	    GetProcPtr(procval, proc);
 	    return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
-	    /* fall through */
 	}
 
       default:
