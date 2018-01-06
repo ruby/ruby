@@ -84,7 +84,7 @@ module Net # :nodoc:
       @read_timeout = read_timeout
       @continue_timeout = continue_timeout
       @debug_output = debug_output
-      @rbuf = ''.b
+      @rbuf = ''.dup
     end
 
     attr_reader :io
@@ -114,7 +114,7 @@ module Net # :nodoc:
 
     public
 
-    def read(len, dest = ''.b, ignore_eof = false)
+    def read(len, dest = ''.dup, ignore_eof = false)
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
@@ -134,7 +134,7 @@ module Net # :nodoc:
       dest
     end
 
-    def read_all(dest = ''.b)
+    def read_all(dest = ''.dup)
       LOG 'reading all...'
       read_bytes = 0
       begin
@@ -193,7 +193,7 @@ module Net # :nodoc:
     def rbuf_consume(len)
       if len == @rbuf.size
         s = @rbuf
-        @rbuf = ''.b
+        @rbuf = ''.dup
       else
         s = @rbuf.slice!(0, len)
       end
@@ -340,7 +340,7 @@ module Net # :nodoc:
     end
 
     def using_each_crlf_line
-      @wbuf = ''.b
+      @wbuf = ''.dup
       yield
       if not @wbuf.empty?   # unterminated last line
         write0 dot_stuff(@wbuf.chomp) + "\r\n"
