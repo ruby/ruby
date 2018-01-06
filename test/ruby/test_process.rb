@@ -1850,7 +1850,12 @@ class TestProcess < Test::Unit::TestCase
     skip "Process.groups not implemented on Windows platform" if windows?
     feature6975 = '[ruby-core:47414]'
 
-    [30000, *Process.groups.map {|g| g = Etc.getgrgid(g); [g.name, g.gid]}].each do |group, gid|
+    groups = Process.groups.map do |g|
+      g = Etc.getgrgid(g) rescue next
+      [g.name, g.gid]
+    end
+    groups.compact!
+    [30000, *groups].each do |group, gid|
       assert_nothing_raised(feature6975) do
         begin
           system(*TRUECOMMAND, gid: group)
