@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 # :stopdoc:
 # https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 class Net::HTTPUnknownResponse < Net::HTTPResponse
