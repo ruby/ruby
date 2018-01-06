@@ -35,6 +35,9 @@ end
 class Net::HTTPProcessing < Net::HTTPInformation         # 102
   HAS_BODY = false
 end
+class Net::HTTPEarlyHints < Net::HTTPInformation         # 103 - RFC 8297
+  HAS_BODY = false
+end
 
 class Net::HTTPOK < Net::HTTPSuccess                            # 200
   HAS_BODY = true
@@ -232,6 +235,7 @@ class Net::HTTPResponse
     '100' => Net::HTTPContinue,
     '101' => Net::HTTPSwitchProtocol,
     '102' => Net::HTTPProcessing,
+    '103' => Net::HTTPEarlyHints,
 
     '200' => Net::HTTPOK,
     '201' => Net::HTTPCreated,
