@@ -122,9 +122,10 @@ end
 class Net::HTTPProxyAuthenticationRequired < Net::HTTPClientError   # 407
   HAS_BODY = true
 end
-class Net::HTTPRequestTimeOut < Net::HTTPClientError                # 408
+class Net::HTTPRequestTimeout < Net::HTTPClientError                # 408
   HAS_BODY = true
 end
+Net::HTTPRequestTimeOut = Net::HTTPRequestTimeout
 class Net::HTTPConflict < Net::HTTPClientError                      # 409
   HAS_BODY = true
 end
@@ -137,19 +138,22 @@ end
 class Net::HTTPPreconditionFailed < Net::HTTPClientError            # 412
   HAS_BODY = true
 end
-class Net::HTTPRequestEntityTooLarge < Net::HTTPClientError         # 413
+class Net::HTTPPayloadTooLarge < Net::HTTPClientError               # 413
   HAS_BODY = true
 end
-class Net::HTTPRequestURITooLong < Net::HTTPClientError             # 414
+Net::HTTPRequestEntityTooLarge = Net::HTTPPayloadTooLarge
+class Net::HTTPURITooLong < Net::HTTPClientError                    # 414
   HAS_BODY = true
 end
+Net::HTTPRequestURITooLong = Net::HTTPURITooLong
 Net::HTTPRequestURITooLarge = Net::HTTPRequestURITooLong
 class Net::HTTPUnsupportedMediaType < Net::HTTPClientError          # 415
   HAS_BODY = true
 end
-class Net::HTTPRequestedRangeNotSatisfiable < Net::HTTPClientError  # 416
+class Net::HTTPRangeNotSatisfiable < Net::HTTPClientError           # 416
   HAS_BODY = true
 end
+Net::HTTPRequestedRangeNotSatisfiable = Net::HTTPRangeNotSatisfiable
 class Net::HTTPExpectationFailed < Net::HTTPClientError             # 417
   HAS_BODY = true
 end
@@ -200,9 +204,10 @@ end
 class Net::HTTPServiceUnavailable < Net::HTTPServerError            # 503
   HAS_BODY = true
 end
-class Net::HTTPGatewayTimeOut < Net::HTTPServerError                # 504
+class Net::HTTPGatewayTimeout < Net::HTTPServerError                # 504
   HAS_BODY = true
 end
+Net::HTTPGatewayTimeOut = Net::HTTPGatewayTimeout
 class Net::HTTPVersionNotSupported < Net::HTTPServerError           # 505
   HAS_BODY = true
 end
@@ -265,15 +270,15 @@ class Net::HTTPResponse
     '405' => Net::HTTPMethodNotAllowed,
     '406' => Net::HTTPNotAcceptable,
     '407' => Net::HTTPProxyAuthenticationRequired,
-    '408' => Net::HTTPRequestTimeOut,
+    '408' => Net::HTTPRequestTimeout,
     '409' => Net::HTTPConflict,
     '410' => Net::HTTPGone,
     '411' => Net::HTTPLengthRequired,
     '412' => Net::HTTPPreconditionFailed,
-    '413' => Net::HTTPRequestEntityTooLarge,
-    '414' => Net::HTTPRequestURITooLong,
+    '413' => Net::HTTPPayloadTooLarge,
+    '414' => Net::HTTPURITooLong,
     '415' => Net::HTTPUnsupportedMediaType,
-    '416' => Net::HTTPRequestedRangeNotSatisfiable,
+    '416' => Net::HTTPRangeNotSatisfiable,
     '417' => Net::HTTPExpectationFailed,
     '421' => Net::HTTPMisdirectedRequest,
     '422' => Net::HTTPUnprocessableEntity,
@@ -289,7 +294,7 @@ class Net::HTTPResponse
     '501' => Net::HTTPNotImplemented,
     '502' => Net::HTTPBadGateway,
     '503' => Net::HTTPServiceUnavailable,
-    '504' => Net::HTTPGatewayTimeOut,
+    '504' => Net::HTTPGatewayTimeout,
     '505' => Net::HTTPVersionNotSupported,
     '506' => Net::HTTPVariantAlsoNegotiates,
     '507' => Net::HTTPInsufficientStorage,
@@ -300,4 +305,3 @@ class Net::HTTPResponse
 end
 
 # :startdoc:
-
