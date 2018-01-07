@@ -154,6 +154,7 @@ typedef struct rb_method_refined_struct {
 enum method_optimized_type {
     OPTIMIZED_METHOD_TYPE_SEND,
     OPTIMIZED_METHOD_TYPE_CALL,
+    OPTIMIZED_METHOD_TYPE_BLOCK_CALL,
     OPTIMIZED_METHOD_TYPE__MAX
 };
 
