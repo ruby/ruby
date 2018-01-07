@@ -7763,10 +7763,16 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+static int
+rb_stderr_to_original_p(void)
+{
+    return (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
+}
+
 void
 rb_write_error2(const char *mesg, long len)
 {
-    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
+    if (rb_stderr_to_original_p()) {
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
 	    if (rb_w32_write_console(rb_str_new(mesg, len), fileno(stderr)) > 0) return;
@@ -7792,7 +7798,7 @@ void
 rb_write_error_str(VALUE mesg)
 {
     /* a stopgap measure for the time being */
-    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0) {
+    if (rb_stderr_to_original_p()) {
 	size_t len = (size_t)RSTRING_LEN(mesg);
 #ifdef _WIN32
 	if (isatty(fileno(stderr))) {
@@ -7813,7 +7819,7 @@ rb_write_error_str(VALUE mesg)
 int
 rb_stderr_tty_p(void)
 {
-    if (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0)
+    if (rb_stderr_to_original_p())
 	return isatty(fileno(stderr));
     return 0;
 }
