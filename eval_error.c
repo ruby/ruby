@@ -109,7 +109,9 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 
     if (eclass == rb_eRuntimeError && elen == 0) {
 	if (highlight) write_warn(str, underline);
-	write_warn(str, "unhandled exception\n");
+	write_warn(str, "unhandled exception");
+	if (highlight) write_warn(str, reset);
+	write_warn2(str, "\n", 1);
     }
     else {
 	VALUE epath;
@@ -118,34 +120,49 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	if (elen == 0) {
 	    if (highlight) write_warn(str, underline);
 	    write_warn_str(str, epath);
+	    if (highlight) write_warn(str, reset);
 	    write_warn(str, "\n");
 	}
 	else {
 	    const char *tail = 0;
 	    long len = elen;
 
+	    if (emesg == Qundef && highlight) write_warn(str, bold);
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
 		len = tail - einfo;
 		tail++;		/* skip newline */
+		write_warn2(str, einfo, len);
 	    }
-	    write_warn_str(str, tail ? rb_str_subseq(emesg, 0, len) : emesg);
+	    else {
+		write_warn_str(str, emesg);
+	    }
 	    if (epath) {
 		write_warn(str, " (");
 		if (highlight) write_warn(str, underline);
                 write_warn_str(str, epath);
+		if (highlight) {
+		    write_warn(str, reset);
+		    write_warn(str, bold);
+		}
+		write_warn2(str, ")", 1);
 		if (highlight) write_warn(str, reset);
-		if (highlight) write_warn(str, bold);
-		write_warn(str, ")\n");
+		write_warn2(str, "\n", 1);
 	    }
 	    if (tail) {
-		write_warn_str(str, rb_str_subseq(emesg, tail - einfo, elen - len - 1));
+		if (highlight) {
+		    if (einfo[elen-1] == '\n') --elen;
+		    write_warn(str, bold);
+		}
+		write_warn2(str, tail, elen - len - 1);
 	    }
-	    if (tail ? einfo[elen-1] != '\n' : !epath) write_warn2(str, "\n", 1);
+	    if (tail ? (highlight || einfo[elen-1] != '\n') : !epath) {
+		if (highlight) write_warn(str, reset);
+		write_warn2(str, "\n", 1);
+	    }
 	}
     }
-    if (highlight) write_warn(str, reset);
 }
 
 static void

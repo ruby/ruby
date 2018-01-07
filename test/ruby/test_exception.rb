@@ -1113,6 +1113,9 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_full_message
+    message = RuntimeError.new("testerror").full_message
+    assert_operator(message, :end_with?, "\n")
+
     test_method = "def foo; raise 'testerror'; end"
 
     out1, err1, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; rescue => e; puts e.full_message; end"], '', true, true)
