@@ -3845,6 +3845,7 @@ case_body	: keyword_when args then
 		    {
 		    /*%%%*/
 			$$ = NEW_WHEN($2, $4, $5);
+			fixpos($$, $2);
 			$$->nd_loc = @$;
 		    /*%
 			$$ = dispatch3(when, $2, $4, escape_Qundef($5));
