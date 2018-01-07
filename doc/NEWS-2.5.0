@@ -557,10 +557,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Miscellaneous changes
 
-* Print backtrace and error message in reverse order if STDERR is unchanged and a tty.
+* Print backtrace and error message in reverse order if $stderr is unchanged and a tty.
   [Feature #8661] [experimental]
 
-* Print error message in bold/underlined text if STDERR is unchanged and a tty.
+* Print error message in bold/underlined text if $stderr is unchanged and a tty.
   [Feature #14140] [experimental]
 
 * configure option --with-ext now mandates its arguments.  So for
