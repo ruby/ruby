@@ -86,7 +86,7 @@ error_print(rb_execution_context_t *ec)
 }
 
 static void
-print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int colored)
+print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
 {
     static const char underline[] = "\033[4;1m";
     static const char bold[] = "\033[1m";
@@ -105,7 +105,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn(str, ": ");
 	}
 
-        if (colored) write_warn(str, bold);
+	if (highlight) write_warn(str, bold);
 
 	if (!NIL_P(emesg)) {
 	    einfo = RSTRING_PTR(emesg);
@@ -114,7 +114,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
     }
 
     if (eclass == rb_eRuntimeError && elen == 0) {
-        if (colored) write_warn(str, underline);
+	if (highlight) write_warn(str, underline);
 	write_warn(str, "unhandled exception\n");
     }
     else {
@@ -122,7 +122,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 
 	epath = rb_class_name(eclass);
 	if (elen == 0) {
-            if (colored) write_warn(str, underline);
+	    if (highlight) write_warn(str, underline);
 	    write_warn_str(str, epath);
 	    write_warn(str, "\n");
 	}
@@ -139,10 +139,10 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    write_warn_str(str, tail ? rb_str_subseq(emesg, 0, len) : emesg);
 	    if (epath) {
 		write_warn(str, " (");
-                if (colored) write_warn(str, underline);
+		if (highlight) write_warn(str, underline);
                 write_warn_str(str, epath);
-                if (colored) write_warn(str, reset);
-                if (colored) write_warn(str, bold);
+		if (highlight) write_warn(str, reset);
+		if (highlight) write_warn(str, bold);
 		write_warn(str, ")\n");
 	    }
 	    if (tail) {
@@ -151,7 +151,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    if (tail ? einfo[elen-1] != '\n' : !epath) write_warn2(str, "\n", 1);
 	}
     }
-    if (colored) write_warn(str, reset);
+    if (highlight) write_warn(str, reset);
 }
 
 static void
