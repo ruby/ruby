@@ -496,13 +496,17 @@ cond = proc {|ext, *|
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  exts |= Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
+  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
     d = File.dirname(d)
     d.slice!(0, ext_prefix.length + 1)
     d
-  }.find_all {|ext|
+  }.partition {|ext|
     with_config(ext, &cond)
-  }.sort
+  }
+  incl.sort!
+  excl.sort!.collect! {|d| d+"/"}
+  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|e| d.start_with?(e)}}
+  exts |= incl
   if $LIBRUBYARG_SHARED.empty? and CONFIG["EXTSTATIC"] == "static"
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
