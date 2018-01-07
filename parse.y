@@ -646,7 +646,6 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE m, VALUE a);
 #define new_qcall(q,r,m,a,op_loc,location) new_qcall_gen(parser, (r), (q), (m), (a))
 #define new_command_qcall(q,r,m,a,op_loc,location) dispatch4(command_call, (r), (q), (m), (a))
-#define new_command_call(q,r,m,a) dispatch4(command_call, (r), (q), (m), (a))
 #define new_command(m,a) dispatch2(command, (m), (a));
 
 #define new_nil(location) Qnil
