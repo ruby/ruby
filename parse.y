@@ -445,9 +445,9 @@ static NODE *call_bin_op_gen(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*
 #define call_bin_op(recv,id,arg1,op_loc,location) call_bin_op_gen(parser, (recv),(id),(arg1),(op_loc),(location))
 static NODE *call_uni_op_gen(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
 #define call_uni_op(recv,id,op_loc,location) call_uni_op_gen(parser, (recv),(id),(op_loc),(location))
-static NODE *new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *location);
-#define new_qcall(q,r,m,a,location) new_qcall_gen(parser,q,r,m,a,location)
-#define new_command_qcall(q,r,m,a,location) new_qcall_gen(parser,q,r,m,a,location)
+static NODE *new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *location);
+#define new_qcall(q,r,m,a,op_loc,location) new_qcall_gen(parser,q,r,m,a,op_loc,location)
+#define new_command_qcall(q,r,m,a,op_loc,location) new_qcall_gen(parser,q,r,m,a,op_loc,location)
 static NODE *new_command_gen(struct parser_params*parser, NODE *m, NODE *a) {m->nd_args = a; return m;}
 #define new_command(m,a) new_command_gen(parser, m, a)
 static NODE *method_add_block_gen(struct parser_params*parser, NODE *m, NODE *b, const YYLTYPE *location) {b->nd_iter = m; b->nd_loc = *location; return b;}
@@ -644,8 +644,8 @@ static int id_is_var_gen(struct parser_params *parser, ID id);
 #define logop(id,node1,node2,op_loc,location) call_bin_op((node1), (id), (node2), op_loc, location)
 #define node_assign(node1, node2, location) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall_gen(struct parser_params *parser, VALUE q, VALUE r, VALUE m, VALUE a);
-#define new_qcall(q,r,m,a,location) new_qcall_gen(parser, (r), (q), (m), (a))
-#define new_command_qcall(q,r,m,a,location) dispatch4(command_call, (r), (q), (m), (a))
+#define new_qcall(q,r,m,a,op_loc,location) new_qcall_gen(parser, (r), (q), (m), (a))
+#define new_command_qcall(q,r,m,a,op_loc,location) dispatch4(command_call, (r), (q), (m), (a))
 #define new_command_call(q,r,m,a) dispatch4(command_call, (r), (q), (m), (a))
 #define new_command(m,a) dispatch2(command, (m), (a));
 
@@ -1638,7 +1638,7 @@ command_call	: command
 block_command	: block_call
 		| block_call call_op2 operation2 command_args
 		    {
-			$$ = new_qcall($2, $1, $3, $4, &@$);
+			$$ = new_qcall($2, $1, $3, $4, &@3, &@$);
 		    }
 		;
 
@@ -1693,25 +1693,25 @@ command		: fcall command_args       %prec tLOWEST
 		    }
 		| primary_value call_op operation2 command_args	%prec tLOWEST
 		    {
-			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = new_command_qcall($2, $1, $3, $4, &@3, &@$);
 			fixpos($$, $1);
 		    }
 		| primary_value call_op operation2 command_args cmd_brace_block
 		    {
 			block_dup_check($4,$5);
-			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = new_command_qcall($2, $1, $3, $4, &@3, &@$);
 			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		   }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
-			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@$);
+			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
 			fixpos($$, $1);
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
 			block_dup_check($4,$5);
-			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@$);
+			$$ = new_command_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
 			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		   }
@@ -3670,13 +3670,13 @@ block_call	: command do_block
 		    }
 		| block_call call_op2 operation2 opt_paren_args
 		    {
-			$$ = new_qcall($2, $1, $3, $4, &@$);
+			$$ = new_qcall($2, $1, $3, $4, &@3, &@$);
 		    }
 		| block_call call_op2 operation2 opt_paren_args brace_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
-			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = new_command_qcall($2, $1, $3, $4, &@3, &@$);
 			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		    /*%
@@ -3688,7 +3688,7 @@ block_call	: command do_block
 		    {
 		    /*%%%*/
 			block_dup_check($4, $5);
-			$$ = new_command_qcall($2, $1, $3, $4, &@$);
+			$$ = new_command_qcall($2, $1, $3, $4, &@3, &@$);
 			$$ = method_add_block($$, $5, &@$);
 			fixpos($$, $1);
 		    /*%
@@ -3716,7 +3716,7 @@ method_call	: fcall paren_args
 		    }
 		  opt_paren_args
 		    {
-			$$ = new_qcall($2, $1, $3, $5, &@$);
+			$$ = new_qcall($2, $1, $3, $5, &@3, &@$);
 			nd_set_line($$, $<num>4);
 		    }
 		| primary_value tCOLON2 operation2
@@ -3727,12 +3727,12 @@ method_call	: fcall paren_args
 		    }
 		  paren_args
 		    {
-			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, $5, &@$);
+			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, $5, &@3, &@$);
 			nd_set_line($$, $<num>4);
 		    }
 		| primary_value tCOLON2 operation3
 		    {
-			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, Qnull, &@$);
+			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
 		    }
 		| primary_value call_op
 		    {
@@ -3742,7 +3742,7 @@ method_call	: fcall paren_args
 		    }
 		  paren_args
 		    {
-			$$ = new_qcall($2, $1, ID2VAL(idCall), $4, &@$);
+			$$ = new_qcall($2, $1, ID2VAL(idCall), $4, &@2, &@$);
 			nd_set_line($$, $<num>3);
 		    }
 		| primary_value tCOLON2
@@ -3753,7 +3753,7 @@ method_call	: fcall paren_args
 		    }
 		  paren_args
 		    {
-			$$ = new_qcall(ID2VAL(idCOLON2), $1, ID2VAL(idCall), $4, &@$);
+			$$ = new_qcall(ID2VAL(idCOLON2), $1, ID2VAL(idCall), $4, &@2, &@$);
 			nd_set_line($$, $<num>3);
 		    }
 		| keyword_super paren_args
@@ -9294,10 +9294,11 @@ call_uni_op_gen(struct parser_params *parser, NODE *recv, ID id, const YYLTYPE *
 }
 
 static NODE *
-new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *location)
+new_qcall_gen(struct parser_params* parser, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *location)
 {
     NODE *qcall = NEW_QCALL(atype, recv, mid, args);
     qcall->nd_loc = *location;
+    nd_set_line(qcall, op_loc->first_loc.lineno);
     return qcall;
 }
 
