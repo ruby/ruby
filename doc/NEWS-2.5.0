@@ -553,7 +553,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Dynamic instrumentation for TracePoint hooks instead of using "trace"
   instruction to avoid overhead [Feature #14104]
 
-* ERB now generates code from a template which runs 2 times faster than Ruby 2.4
+* ERB now generates code from a template twice as fast as Ruby 2.4
 
 === Miscellaneous changes
 
