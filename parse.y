@@ -2901,7 +2901,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE2($3);
-			nd_set_line($3, $<num>1);
+			nd_set_line($$, $<num>1);
 			$$->nd_loc = @$;
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
