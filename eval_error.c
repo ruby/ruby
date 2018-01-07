@@ -3,26 +3,20 @@
  * included by eval.c
  */
 
+#define write_warn(str, x) \
+    (NIL_P(str) ? warn_print(x) : (void)rb_str_cat_cstr(str, x))
+#define write_warn2(str, x, l) \
+    (NIL_P(str) ? warn_print2(x, l) : (void)rb_str_cat(str, x, l))
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
-#define write_warn(str, x) RB_GNUC_EXTENSION_BLOCK( \
-        NIL_P(str) ? \
-            warn_print(x) : (void)( \
-            (__builtin_constant_p(x)) ? 		\
-                rb_str_concat((str), rb_str_new((x), (long)strlen(x))) : \
-                rb_str_concat((str), rb_str_new2(x)) \
-            ) \
-        )
 #define warn_print(x) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(x)) ? 		\
 	rb_write_error2((x), (long)strlen(x)) : \
 	rb_write_error(x)			\
 )
 #else
-#define write_warn(str, x) NIL_P(str) ? rb_write_error((x)) : (void)rb_str_concat((str), rb_str_new2(x))
 #define warn_print(x) rb_write_error(x)
 #endif
 
-#define write_warn2(str,x,l) NIL_P(str) ? warn_print2(x,l) : (void)rb_str_concat((str), rb_str_new((x),(l)))
 #define warn_print2(x,l) rb_write_error2((x),(l))
 
 #define write_warn_str(str,x) NIL_P(str) ? rb_write_error_str(x) : (void)rb_str_concat((str), (x))
