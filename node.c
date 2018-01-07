@@ -378,8 +378,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: [nd_vid](current dvar) = [nd_value]");
 	ANN("example: 1.times { x = foo }");
 	F_ID(nd_vid, "local variable");
-	LAST_NODE;
-	F_NODE(nd_value, "rvalue");
+	if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	    F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
+	}
+	else {
+	    LAST_NODE;
+	    F_NODE(nd_value, "rvalue");
+	}
 	return;
       case NODE_IASGN:
 	ANN("instance variable assignment");
