@@ -129,6 +129,54 @@ setblockparam
 
 /**
   @c variable
+  @e Get special proxy object which only responds to `call` method if the block parameter
+     represents a iseq/ifunc block. Otherwise, same as `getblockparam`.
+  @j ブロックパラメータが iseq/ifunc ブロックであれば、特殊なプロキシオブジェクトを取得する。
+ */
+DEFINE_INSN
+getblockparamproxy
+(lindex_t idx, rb_num_t level)
+()
+(VALUE val)
+{
+    const VALUE *ep = vm_get_ep(GET_EP(), level);
+    VM_ASSERT(VM_ENV_LOCAL_P(ep));
+
+    if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
+
+	if (block_handler) {
+	    switch (vm_block_handler_type(block_handler)) {
+	      case block_handler_type_iseq:
+	      case block_handler_type_ifunc:
+		val = rb_block_param_proxy;
+		break;
+	      case block_handler_type_symbol:
+		val = rb_sym_to_proc(VM_BH_TO_SYMBOL(block_handler));
+		goto INSN_LABEL(set);
+	      case block_handler_type_proc:
+		val = VM_BH_TO_PROC(block_handler);
+		goto INSN_LABEL(set);
+	      default:
+		VM_UNREACHABLE(getblockparamproxy);
+	    }
+	}
+	else {
+	    val = Qnil;
+	  INSN_LABEL(set):
+	    vm_env_write(ep, -(int)idx, val);
+	    VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+	}
+    }
+    else {
+	val = *(ep - idx);
+	RB_DEBUG_COUNTER_INC(lvar_get);
+	(void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
+    }
+}
+
+/**
+  @c variable
   @e Get value of special local variable ($~, $_, ..).
   @j 特殊なローカル変数（$~, $_, ...）の値を得る。
  */
