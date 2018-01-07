@@ -295,6 +295,8 @@ static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_fra
 static VALUE vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
+static VALUE rb_block_param_proxy;
+
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.c"
@@ -1494,6 +1496,7 @@ vm_redefinition_check_flag(VALUE klass)
     if (klass == rb_cNilClass) return NIL_REDEFINED_OP_FLAG;
     if (klass == rb_cTrueClass) return TRUE_REDEFINED_OP_FLAG;
     if (klass == rb_cFalseClass) return FALSE_REDEFINED_OP_FLAG;
+    if (klass == rb_cProc) return PROC_REDEFINED_OP_FLAG;
     return 0;
 }
 
@@ -1537,7 +1540,9 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
-    if (me && me->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (me &&
+	(me->def->type == VM_METHOD_TYPE_CFUNC ||
+	 me->def->type == VM_METHOD_TYPE_OPTIMIZED)) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
     }
     else {
@@ -3053,6 +3058,12 @@ Init_VM(void)
 	rb_define_global_const("TOPLEVEL_BINDING", rb_binding_new());
     }
     vm_init_redefined_flag();
+
+    rb_block_param_proxy = rb_obj_alloc(rb_cObject);
+    rb_add_method(rb_singleton_class(rb_block_param_proxy), rb_intern("call"), VM_METHOD_TYPE_OPTIMIZED,
+		  (void *)OPTIMIZED_METHOD_TYPE_BLOCK_CALL, METHOD_VISI_PUBLIC);
+    rb_obj_freeze(rb_block_param_proxy);
+    rb_gc_register_mark_object(rb_block_param_proxy);
 
     /* vm_backtrace.c */
     Init_vm_backtrace();

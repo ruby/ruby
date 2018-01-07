@@ -1399,6 +1399,21 @@ iseq_local_block_param_p(const rb_iseq_t *iseq, unsigned int idx, unsigned int l
     }
 }
 
+static int
+iseq_block_param_id_p(const rb_iseq_t *iseq, ID id, int *pidx, int *plevel)
+{
+    int level, ls;
+    int idx = get_dyna_var_idx(iseq, id, &level, &ls);
+    if (iseq_local_block_param_p(iseq, ls - idx, level)) {
+	*pidx = ls - idx;
+	*plevel = level;
+	return TRUE;
+    }
+    else {
+	return FALSE;
+    }
+}
+
 static void
 iseq_add_getlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line, int idx, int level)
 {
@@ -6159,7 +6174,17 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 #endif
 	/* receiver */
 	if (type == NODE_CALL || type == NODE_OPCALL || type == NODE_QCALL) {
-	    CHECK(COMPILE(recv, "recv", node->nd_recv));
+	    int idx, level;
+
+	    if (mid == idCall &&
+		nd_type(node->nd_recv) == NODE_LVAR &&
+		iseq_block_param_id_p(iseq, node->nd_recv->nd_vid, &idx, &level)) {
+		ADD_INSN2(recv, nd_line(node->nd_recv), getblockparamproxy, INT2FIX(idx + VM_ENV_DATA_SIZE - 1), INT2FIX(level));
+	    }
+	    else {
+		CHECK(COMPILE(recv, "recv", node->nd_recv));
+	    }
+
 	    if (type == NODE_QCALL) {
 		else_label = NEW_LABEL(line);
 		end_label = NEW_LABEL(line);
