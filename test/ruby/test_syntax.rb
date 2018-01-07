@@ -1137,6 +1137,32 @@ eom
     assert_nil obj.test
   end
 
+  def test_method_call_location
+    line = __LINE__+5
+    e = assert_raise(NoMethodError) do
+      1.upto(0) do
+      end
+        .
+        foo(
+          1,
+          2,
+        )
+    end
+    assert_equal(line, e.backtrace_locations[0].lineno)
+
+    line = __LINE__+5
+    e = assert_raise(NoMethodError) do
+      1.upto 0 do
+      end
+        .
+        foo(
+          1,
+          2,
+        )
+    end
+    assert_equal(line, e.backtrace_locations[0].lineno)
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
