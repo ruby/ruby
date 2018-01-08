@@ -380,6 +380,7 @@ class Net::HTTPResponse
       end
       block = proc do |compressed_chunk|
         @inflate.inflate(compressed_chunk) do |chunk|
+          compressed_chunk.clear
           dest << chunk
         end
       end
