@@ -2086,6 +2086,7 @@ vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     }
     else {
 	calling->recv = rb_vm_bh_to_procval(ec, block_handler);
+	vm_search_method(ci, cc, calling->recv);
 	return vm_call_general(ec, reg_cfp, calling, ci, cc);
     }
 }

@@ -1500,6 +1500,18 @@ vm_redefinition_check_flag(VALUE klass)
     return 0;
 }
 
+static int
+vm_redefinition_check_method_type(const rb_method_definition_t *def)
+{
+    switch (def->type) {
+      case VM_METHOD_TYPE_CFUNC:
+      case VM_METHOD_TYPE_OPTIMIZED:
+	return TRUE;
+      default:
+	return FALSE;
+    }
+}
+
 static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
@@ -1507,7 +1519,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
     if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN)) {
        klass = RBASIC_CLASS(klass);
     }
-    if (me->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (vm_redefinition_check_method_type(me->def)) {
 	if (st_lookup(vm_opt_method_table, (st_data_t)me, &bop)) {
 	    int flag = vm_redefinition_check_flag(klass);
 
@@ -1540,9 +1552,7 @@ add_opt_method(VALUE klass, ID mid, VALUE bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
-    if (me &&
-	(me->def->type == VM_METHOD_TYPE_CFUNC ||
-	 me->def->type == VM_METHOD_TYPE_OPTIMIZED)) {
+    if (me && vm_redefinition_check_method_type(me->def)) {
 	st_insert(vm_opt_method_table, (st_data_t)me, (st_data_t)bop);
     }
     else {
@@ -1584,6 +1594,7 @@ vm_init_redefined_flag(void)
     OP(UMinus, UMINUS), (C(String));
     OP(Max, MAX), (C(Array));
     OP(Min, MIN), (C(Array));
+    OP(Call, CALL), (C(Proc));
 #undef C
 #undef OP
 }
