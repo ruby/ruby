@@ -4845,9 +4845,12 @@ compile_case2(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
 	switch (nd_type(vals)) {
 	  case NODE_ARRAY:
 	    while (vals) {
+		LABEL *lnext;
 		val = vals->nd_head;
-		CHECK(COMPILE(ret, "when2", val));
-		ADD_INSNL(ret, nd_line(val), branchif, l1);
+		lnext = NEW_LABEL(nd_line(val));
+		debug_compile("== when2\n", (void)0);
+		CHECK(compile_branch_condition(iseq, ret, val, l1, lnext));
+		ADD_LABEL(ret, lnext);
 		vals = vals->nd_next;
 	    }
 	    break;
