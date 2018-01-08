@@ -128,7 +128,7 @@ enum lex_state_e {
 
 typedef VALUE stack_type;
 
-static rb_code_range_t NULL_LOC = { {0, -1}, {0, -1} };
+static const rb_code_range_t NULL_LOC = { {0, -1}, {0, -1} };
 
 # define SHOW_BITSTACK(stack, name) (yydebug ? rb_parser_show_bitstack(parser, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
