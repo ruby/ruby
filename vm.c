@@ -2355,9 +2355,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
 	while (cfp != limit_cfp) {
 	    const VALUE *ep = cfp->ep;
-#if VM_CHECK_MODE > 0
 	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
-#endif
 	    rb_gc_mark(cfp->self);
 	    rb_gc_mark((VALUE)cfp->iseq);
 	    rb_gc_mark((VALUE)cfp->block_code);
