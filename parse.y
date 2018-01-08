@@ -364,7 +364,7 @@ rb_discard_node_gen(struct parser_params *parser, NODE *n)
 #define rb_discard_node(n) rb_discard_node_gen(parser, (n))
 #endif
 
-static inline void
+static inline VALUE
 add_mark_object_gen(struct parser_params *parser, VALUE obj)
 {
     if (!SPECIAL_CONST_P(obj)
@@ -374,6 +374,7 @@ add_mark_object_gen(struct parser_params *parser, VALUE obj)
     ) {
 	rb_ast_add_mark_object(parser->ast, obj);
     }
+    return obj;
 }
 #define add_mark_object(obj) add_mark_object_gen(parser, (obj))
 
@@ -515,15 +516,6 @@ static NODE *new_defined_gen(struct parser_params *parser, NODE *expr, const YYL
 
 static NODE *new_regexp_gen(struct parser_params *, NODE *, int, const YYLTYPE *);
 #define new_regexp(node, opt, location) new_regexp_gen(parser, node, opt, location)
-
-static NODE *new_lit_gen(struct parser_params *parser, VALUE sym, const YYLTYPE *location);
-#define new_lit(sym, location) new_lit_gen(parser, sym, location)
-
-static NODE *new_str_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location);
-#define new_str(s,location) new_str_gen(parser, s, location)
-
-static NODE *new_dstr_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location);
-#define new_dstr(s, location) new_dstr_gen(parser, s, location)
 
 #define make_array(ary, location) ((ary) ? (nd_set_loc(ary, location), ary) : NEW_ZARRAY(location))
 
@@ -2022,7 +2014,7 @@ fsym		: fname
 fitem		: fsym
 		    {
 		    /*%%%*/
-			$$ = new_lit(ID2SYM($1), &@$);
+			$$ = NEW_LIT(ID2SYM($1), &@$);
 		    /*%
 			$$ = dispatch1(symbol_literal, $1);
 		    %*/
@@ -3826,7 +3818,7 @@ literal		: numeric
 		| symbol
 		    {
 		    /*%%%*/
-			$$ = new_lit(ID2SYM($1), &@$);
+			$$ = NEW_LIT(ID2SYM($1), &@$);
 		    /*%
 			$$ = dispatch1(symbol_literal, $1);
 		    %*/
@@ -3839,7 +3831,7 @@ strings		: string
 		    /*%%%*/
 			NODE *node = $1;
 			if (!node) {
-			    node = new_str(STR_NEW0(), &@$);
+			    node = NEW_STR(add_mark_object(STR_NEW0()), &@$);
 			}
 			else {
 			    node = evstr2dstr(node);
@@ -4097,7 +4089,7 @@ regexp_contents: /* none */
 			      case NODE_DSTR:
 				break;
 			      default:
-				head = list_append(new_dstr(Qnil, &@$), head);
+				head = list_append(NEW_DSTR(Qnil, &@$), head);
 				break;
 			    }
 			    $$ = list_append(head, tail);
@@ -4928,7 +4920,7 @@ assoc		: arg_value tASSOC arg_value
 		| tLABEL arg_value
 		    {
 		    /*%%%*/
-			$$ = list_append(NEW_LIST(new_lit(ID2SYM($1), &@1), &@$), $2);
+			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), $2);
 		    /*%
 			$$ = dispatch2(assoc_new, $1, $2);
 		    %*/
@@ -9057,7 +9049,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, const Y
 
     htype = nd_type(head);
     if (htype == NODE_EVSTR) {
-	NODE *node = new_dstr(STR_NEW0(), location);
+	NODE *node = NEW_DSTR(add_mark_object(STR_NEW0()), location);
 	head = list_append(node, head);
 	htype = NODE_DSTR;
     }
@@ -9120,7 +9112,7 @@ literal_concat_gen(struct parser_params *parser, NODE *head, NODE *tail, const Y
 	}
 	else {
 	    nd_set_type(tail, NODE_ARRAY);
-	    tail->nd_head = new_str(tail->nd_lit, location);
+	    tail->nd_head = NEW_STR(tail->nd_lit, location);
 	    list_concat(head, tail);
 	}
 	break;
@@ -9140,7 +9132,7 @@ static NODE *
 evstr2dstr_gen(struct parser_params *parser, NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
-	node = list_append(new_dstr(STR_NEW0(), &node->nd_loc), node);
+	node = list_append(NEW_DSTR(add_mark_object(STR_NEW0()), &node->nd_loc), node);
     }
     return node;
 }
@@ -9272,13 +9264,13 @@ gettable_gen(struct parser_params *parser, ID id, const YYLTYPE *location)
 	return NEW_FALSE(location);
       case keyword__FILE__:
 	WARN_LOCATION("__FILE__");
-	node = new_str(rb_str_dup(ruby_sourcefile_string), location);
+	node = NEW_STR(add_mark_object(rb_str_dup(ruby_sourcefile_string)), location);
 	return node;
       case keyword__LINE__:
 	WARN_LOCATION("__LINE__");
-	return new_lit(INT2FIX(tokline), location);
+	return NEW_LIT(INT2FIX(tokline), location);
       case keyword__ENCODING__:
-	return new_lit(rb_enc_from_encoding(current_enc), location);
+	return NEW_LIT(add_mark_object(rb_enc_from_encoding(current_enc)), location);
     }
     switch (id_type(id)) {
       case ID_LOCAL:
@@ -9361,7 +9353,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
     VALUE lit;
 
     if (!node) {
-	return new_lit(reg_compile(STR_NEW0(), options), location);
+	return NEW_LIT(add_mark_object(reg_compile(STR_NEW0(), options)), location);
     }
     switch (nd_type(node)) {
       case NODE_STR:
@@ -9415,28 +9407,6 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options, const YYLT
     }
     return node;
 }
-
-static NODE *
-new_lit_gen(struct parser_params *parser, VALUE sym, const YYLTYPE *location)
-{
-    add_mark_object(sym);
-    return NEW_LIT(sym, location);
-}
-
-static NODE *
-new_str_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location)
-{
-    add_mark_object(str);
-    return NEW_STR(str, location);
-}
-
-static NODE *
-new_dstr_gen(struct parser_params *parser, VALUE str, const YYLTYPE *location)
-{
-    add_mark_object(str);
-    return NEW_DSTR(str, location);
-}
-
 
 static NODE *
 new_kw_arg_gen(struct parser_params *parser, NODE *k, const YYLTYPE *location)
@@ -10585,7 +10555,7 @@ dsym_node_gen(struct parser_params *parser, NODE *node, const YYLTYPE *location)
     VALUE lit;
 
     if (!node) {
-	return new_lit(ID2SYM(idNULL), location);
+	return NEW_LIT(ID2SYM(idNULL), location);
     }
 
     switch (nd_type(node)) {
@@ -11123,7 +11093,7 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
         return ST_CONTINUE;
     }
     var = intern_cstr(s, len, enc);
-    node = node_assign(assignable(var, 0, arg->location), new_lit(ID2SYM(var), arg->location), arg->location);
+    node = node_assign(assignable(var, 0, arg->location), NEW_LIT(ID2SYM(var), arg->location), arg->location);
     succ = arg->succ_block;
     if (!succ) succ = NEW_BEGIN(0, arg->location);
     succ = block_append(succ, node, arg->location);
