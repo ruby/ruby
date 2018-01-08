@@ -1584,7 +1584,7 @@ cmd_brace_block	: tLBRACE_ARG brace_body '}'
 		    /*%%%*/
 			$$->nd_body->nd_loc.first_loc = @1.first_loc;
 			$$->nd_body->nd_loc.last_loc = @3.last_loc;
-			nd_set_line($$, $$->nd_loc.first_loc.lineno);
+			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
 		;
@@ -2598,10 +2598,10 @@ primary		: literal
 			    $$ = NEW_NIL(&@$);
 			}
 			else {
-			    set_line_body($3, @3.first_loc.lineno);
+			    set_line_body($3, @1.last_loc.lineno);
 			    $$ = NEW_BEGIN($3, &@$);
 			}
-			nd_set_line($$, @3.first_loc.lineno);
+			nd_set_line($$, @1.last_loc.lineno);
 		    /*%
 			$$ = dispatch1(begin, $3);
 		    %*/
@@ -2873,8 +2873,8 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3, &@$);
 			nd_set_line($$->nd_body, @6.last_loc.lineno);
-			set_line_body($5, @4.last_loc.lineno);
-			nd_set_line($$, @4.last_loc.lineno);
+			set_line_body($5, @3.last_loc.lineno);
+			nd_set_line($$, @3.last_loc.lineno);
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
 		    %*/
@@ -2922,8 +2922,8 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4, &@$);
 			nd_set_line($$->nd_body, @5.last_loc.lineno);
-			set_line_body($4, @4.first_loc.lineno);
-			nd_set_line($$, @4.first_loc.lineno);
+			set_line_body($4, @2.last_loc.lineno);
+			nd_set_line($$, @2.last_loc.lineno);
 		    /*%
 			$$ = dispatch2(module, $2, $4);
 		    %*/
@@ -3468,7 +3468,7 @@ lambda		:   {
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $5, &@$);
 			nd_set_line($$->nd_body, @5.last_loc.lineno);
-			nd_set_line($$, @5.first_loc.lineno);
+			nd_set_line($$, @3.last_loc.lineno);
 		    /*%
 			$$ = dispatch2(lambda, $3, $5);
 		    %*/
@@ -3507,7 +3507,7 @@ do_block	: keyword_do_block do_body keyword_end
 		    /*%%%*/
 			$$->nd_body->nd_loc.first_loc = @1.first_loc;
 			$$->nd_body->nd_loc.last_loc = @3.last_loc;
-			nd_set_line($$, @2.first_loc.lineno);
+			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
 		;
@@ -3570,12 +3570,12 @@ method_call	: fcall paren_args
 		| primary_value call_op operation2 opt_paren_args
 		    {
 			$$ = new_qcall($2, $1, $3, $4, &@3, &@$);
-			nd_set_line($$, @4.first_loc.lineno);
+			nd_set_line($$, @3.last_loc.lineno);
 		    }
 		| primary_value tCOLON2 operation2 paren_args
 		    {
 			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
-			nd_set_line($$, @4.first_loc.lineno);
+			nd_set_line($$, @3.last_loc.lineno);
 		    }
 		| primary_value tCOLON2 operation3
 		    {
@@ -3584,12 +3584,12 @@ method_call	: fcall paren_args
 		| primary_value call_op paren_args
 		    {
 			$$ = new_qcall($2, $1, ID2VAL(idCall), $3, &@2, &@$);
-			nd_set_line($$, @3.first_loc.lineno);
+			nd_set_line($$, @2.last_loc.lineno);
 		    }
 		| primary_value tCOLON2 paren_args
 		    {
 			$$ = new_qcall(ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
-			nd_set_line($$, @3.first_loc.lineno);
+			nd_set_line($$, @2.last_loc.lineno);
 		    }
 		| keyword_super paren_args
 		    {
@@ -3627,7 +3627,7 @@ brace_block	: '{' brace_body '}'
 		    /*%%%*/
 			$$->nd_body->nd_loc.first_loc = @1.first_loc;
 			$$->nd_body->nd_loc.last_loc = @3.last_loc;
-			nd_set_line($$, @1.first_loc.lineno);
+			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
 		| keyword_do do_body keyword_end
@@ -3636,7 +3636,7 @@ brace_block	: '{' brace_body '}'
 		    /*%%%*/
 			$$->nd_body->nd_loc.first_loc = @1.first_loc;
 			$$->nd_body->nd_loc.last_loc = @3.last_loc;
-			nd_set_line($$, @1.first_loc.lineno);
+			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
 		;
