@@ -952,7 +952,6 @@ enum vm_check_match_type {
 enum vm_call_flag_bits {
     VM_CALL_ARGS_SPLAT_bit,     /* m(*args) */
     VM_CALL_ARGS_BLOCKARG_bit,  /* m(&block) */
-    VM_CALL_ARGS_BLOCKARG_BLOCKPARAM_bit,  /* m(&block) and block is a passed block parameter */
     VM_CALL_FCALL_bit,          /* m(...) */
     VM_CALL_VCALL_bit,          /* m */
     VM_CALL_ARGS_SIMPLE_bit,    /* (ci->flag & (SPLAT|BLOCKARG)) && blockiseq == NULL && ci->kw_arg == NULL */
@@ -967,7 +966,6 @@ enum vm_call_flag_bits {
 
 #define VM_CALL_ARGS_SPLAT      (0x01 << VM_CALL_ARGS_SPLAT_bit)
 #define VM_CALL_ARGS_BLOCKARG   (0x01 << VM_CALL_ARGS_BLOCKARG_bit)
-#define VM_CALL_ARGS_BLOCKARG_BLOCKPARAM (0x01 << VM_CALL_ARGS_BLOCKARG_BLOCKPARAM_bit)
 #define VM_CALL_FCALL           (0x01 << VM_CALL_FCALL_bit)
 #define VM_CALL_VCALL           (0x01 << VM_CALL_VCALL_bit)
 #define VM_CALL_ARGS_SIMPLE     (0x01 << VM_CALL_ARGS_SIMPLE_bit)
