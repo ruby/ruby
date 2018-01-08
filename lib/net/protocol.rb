@@ -172,8 +172,10 @@ module Net # :nodoc:
     BUFSIZE = 1024 * 16
 
     def rbuf_fill
-      case rv = @io.read_nonblock(BUFSIZE, exception: false)
+      tmp = @rbuf.empty? ? @rbuf : nil
+      case rv = @io.read_nonblock(BUFSIZE, tmp, exception: false)
       when String
+        return if rv.equal?(tmp)
         @rbuf << rv
         rv.clear
         return
