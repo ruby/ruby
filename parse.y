@@ -8852,7 +8852,7 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
 	parser_warning(h, "unused literal ignored");
 	return tail;
       default:
-	h = end = NEW_BLOCK(head, location);
+	h = end = NEW_BLOCK(head, &head->nd_loc);
 	end->nd_end = end;
 	head = end;
 	break;
@@ -8878,7 +8878,7 @@ block_append_gen(struct parser_params *parser, NODE *head, NODE *tail, const YYL
     }
 
     if (nd_type(tail) != NODE_BLOCK) {
-	tail = NEW_BLOCK(tail, location);
+	tail = NEW_BLOCK(tail, &tail->nd_loc);
 	tail->nd_end = tail;
     }
     end->nd_next = tail;
