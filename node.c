@@ -1136,14 +1136,3 @@ rb_ast_add_mark_object(rb_ast_t *ast, VALUE obj)
 {
     rb_ary_push(ast->mark_ary, obj);
 }
-
-void
-rb_ast_delete_mark_object(rb_ast_t *ast, VALUE obj)
-{
-    long i;
-    for (i = 0; i < RARRAY_LEN(ast->mark_ary); i++) {
-	if (obj == RARRAY_AREF(ast->mark_ary, i)) {
-	    RARRAY_ASET(ast->mark_ary, i, Qnil);
-	}
-    }
-}
