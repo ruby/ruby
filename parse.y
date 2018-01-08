@@ -1578,20 +1578,13 @@ block_command	: block_call
 		    }
 		;
 
-cmd_brace_block	: tLBRACE_ARG
+cmd_brace_block	: tLBRACE_ARG brace_body '}'
 		    {
+			$$ = $2;
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
-		    }
-		  brace_body '}'
-		    {
-			$$ = $3;
-		    /*%%%*/
-			$3->nd_body->nd_loc.first_loc = @1.first_loc;
-			$3->nd_body->nd_loc.last_loc = @4.last_loc;
-			nd_set_line($$, $<num>2);
+			$$->nd_body->nd_loc.first_loc = @1.first_loc;
+			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			nd_set_line($$, $$->nd_loc.first_loc.lineno);
 		    /*% %*/
 		    }
 		;
@@ -2595,10 +2588,6 @@ primary		: literal
 		    {
 			$<val>1 = cmdarg_stack;
 			CMDARG_SET(0);
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
 		    }
 		  bodystmt
 		  k_end
@@ -2609,10 +2598,10 @@ primary		: literal
 			    $$ = NEW_NIL(&@$);
 			}
 			else {
-			    set_line_body($3, $<num>2);
+			    set_line_body($3, @3.first_loc.lineno);
 			    $$ = NEW_BEGIN($3, &@$);
 			}
-			nd_set_line($$, $<num>2);
+			nd_set_line($$, @3.first_loc.lineno);
 		    /*%
 			$$ = dispatch1(begin, $3);
 		    %*/
@@ -2809,7 +2798,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE2($3, &@$);
-			nd_set_line($$, $<num>1);
+			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
@@ -2877,10 +2866,6 @@ primary		: literal
 			$<num>1 = in_class;
 			in_class = 1;
 			local_push(0);
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
 		    }
 		  bodystmt
 		  k_end
@@ -2888,8 +2873,8 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3, &@$);
 			nd_set_line($$->nd_body, ruby_sourceline);
-			set_line_body($5, $<num>4);
-			nd_set_line($$, $<num>4);
+			set_line_body($5, @4.last_loc.lineno);
+			nd_set_line($$, @4.last_loc.lineno);
 		    /*%
 			$$ = dispatch3(class, $2, $3, $5);
 		    %*/
@@ -2930,10 +2915,6 @@ primary		: literal
 			$<num>1 = in_class;
 			in_class = 1;
 			local_push(0);
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
 		    }
 		  bodystmt
 		  k_end
@@ -2941,8 +2922,8 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4, &@$);
 			nd_set_line($$->nd_body, ruby_sourceline);
-			set_line_body($4, $<num>3);
-			nd_set_line($$, $<num>3);
+			set_line_body($4, @4.first_loc.lineno);
+			nd_set_line($$, @4.first_loc.lineno);
 		    /*%
 			$$ = dispatch2(module, $2, $4);
 		    %*/
@@ -2968,8 +2949,8 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $5, body, &@$);
 			nd_set_line($$->nd_defn, ruby_sourceline);
-			set_line_body(body, $<num>1);
-			nd_set_line($$, $<num>1);
+			set_line_body(body, @1.first_loc.lineno);
+			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch3(def, $2, $5, $6);
 		    %*/
@@ -2995,8 +2976,8 @@ primary		: literal
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body, &@$);
 			nd_set_line($$->nd_defn, ruby_sourceline);
-			set_line_body(body, $<num>1);
-			nd_set_line($$, $<num>1);
+			set_line_body(body, @1.first_loc.lineno);
+			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
 		    %*/
@@ -3083,10 +3064,6 @@ k_until		: keyword_until
 k_case		: keyword_case
 		    {
 			token_info_push("case");
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
 		    }
 		;
 
@@ -3111,10 +3088,6 @@ k_module	: keyword_module
 k_def		: keyword_def
 		    {
 			token_info_push("def");
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*%
-		    %*/
 		    }
 		;
 
@@ -3484,23 +3457,20 @@ lambda		:   {
 		    }
 		  f_larglist
 		    {
-			$<num>$ = ruby_sourceline;
-		    }
-		    {
 			$<val>$ = cmdarg_stack;
 			CMDARG_SET(0);
 		    }
 		  lambda_body
 		    {
 			lpar_beg = $<num>2;
-			CMDARG_SET($<val>5);
+			CMDARG_SET($<val>4);
 			CMDARG_LEXPOP();
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, $6, &@$);
+			$$ = NEW_LAMBDA($3, $5, &@$);
 			nd_set_line($$->nd_body, ruby_sourceline);
-			nd_set_line($$, $<num>4);
+			nd_set_line($$, @5.first_loc.lineno);
 		    /*%
-			$$ = dispatch2(lambda, $3, $6);
+			$$ = dispatch2(lambda, $3, $5);
 		    %*/
 			dyna_pop($<vars>1);
 		    }
@@ -3531,19 +3501,13 @@ lambda_body	: tLAMBEG compstmt '}'
 		    }
 		;
 
-do_block	: keyword_do_block
+do_block	: keyword_do_block do_body keyword_end
 		    {
+			$$ = $2;
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
-		    }
-		  do_body keyword_end
-		    {
-			$$ = $3;
-		    /*%%%*/
-			$3->nd_body->nd_loc.first_loc = @1.first_loc;
-			$3->nd_body->nd_loc.last_loc = @4.last_loc;
-			nd_set_line($$, $<num>2);
+			$$->nd_body->nd_loc.first_loc = @1.first_loc;
+			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			nd_set_line($$, @2.first_loc.lineno);
 		    /*% %*/
 		    }
 		;
@@ -3603,53 +3567,29 @@ method_call	: fcall paren_args
 			$$ = method_arg(dispatch1(fcall, $1), $2);
 		    %*/
 		    }
-		| primary_value call_op operation2
+		| primary_value call_op operation2 opt_paren_args
 		    {
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
+			$$ = new_qcall($2, $1, $3, $4, &@3, &@$);
+			nd_set_line($$, @4.first_loc.lineno);
 		    }
-		  opt_paren_args
+		| primary_value tCOLON2 operation2 paren_args
 		    {
-			$$ = new_qcall($2, $1, $3, $5, &@3, &@$);
-			nd_set_line($$, $<num>4);
-		    }
-		| primary_value tCOLON2 operation2
-		    {
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
-		    }
-		  paren_args
-		    {
-			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, $5, &@3, &@$);
-			nd_set_line($$, $<num>4);
+			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
+			nd_set_line($$, @4.first_loc.lineno);
 		    }
 		| primary_value tCOLON2 operation3
 		    {
 			$$ = new_qcall(ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
 		    }
-		| primary_value call_op
+		| primary_value call_op paren_args
 		    {
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
+			$$ = new_qcall($2, $1, ID2VAL(idCall), $3, &@2, &@$);
+			nd_set_line($$, @3.first_loc.lineno);
 		    }
-		  paren_args
+		| primary_value tCOLON2 paren_args
 		    {
-			$$ = new_qcall($2, $1, ID2VAL(idCall), $4, &@2, &@$);
-			nd_set_line($$, $<num>3);
-		    }
-		| primary_value tCOLON2
-		    {
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
-		    }
-		  paren_args
-		    {
-			$$ = new_qcall(ID2VAL(idCOLON2), $1, ID2VAL(idCall), $4, &@2, &@$);
-			nd_set_line($$, $<num>3);
+			$$ = new_qcall(ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
+			nd_set_line($$, @3.first_loc.lineno);
 		    }
 		| keyword_super paren_args
 		    {
@@ -3681,34 +3621,22 @@ method_call	: fcall paren_args
 		    }
 		;
 
-brace_block	: '{'
+brace_block	: '{' brace_body '}'
 		    {
+			$$ = $2;
 		    /*%%%*/
-			$<num>$ = ruby_sourceline;
+			$$->nd_body->nd_loc.first_loc = @1.first_loc;
+			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			nd_set_line($$, @1.first_loc.lineno);
 		    /*% %*/
 		    }
-		  brace_body '}'
+		| keyword_do do_body keyword_end
 		    {
-			$$ = $3;
+			$$ = $2;
 		    /*%%%*/
-			$3->nd_body->nd_loc.first_loc = @1.first_loc;
-			$3->nd_body->nd_loc.last_loc = @4.last_loc;
-			nd_set_line($$, $<num>2);
-		    /*% %*/
-		    }
-		| keyword_do
-		    {
-		    /*%%%*/
-			$<num>$ = ruby_sourceline;
-		    /*% %*/
-		    }
-		  do_body keyword_end
-		    {
-			$$ = $3;
-		    /*%%%*/
-			$3->nd_body->nd_loc.first_loc = @1.first_loc;
-			$3->nd_body->nd_loc.last_loc = @4.last_loc;
-			nd_set_line($$, $<num>2);
+			$$->nd_body->nd_loc.first_loc = @1.first_loc;
+			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			nd_set_line($$, @1.first_loc.lineno);
 		    /*% %*/
 		    }
 		;
