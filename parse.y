@@ -1398,9 +1398,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
 			NODE *resq;
-			YYLTYPE location;
-			location.first_loc = @2.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@2, &@3);
 			resq = NEW_RESBODY(0, remove_begin($3), 0, &location);
 			$$ = NEW_RESCUE(remove_begin($1), resq, 0, &@$);
 		    /*%
@@ -1492,9 +1490,7 @@ command_asgn	: lhs '=' command_rhs
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
 		    {
 		    /*%%%*/
-			YYLTYPE location;
-			location.first_loc = @1.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@1, &@3);
 		    /*%
 		    %*/
 			$$ = const_path_field($1, $3, &location);
@@ -1523,9 +1519,7 @@ command_rhs	: command_call   %prec tOP_ASGN
 		| command_call modifier_rescue stmt
 		    {
 		    /*%%%*/
-			YYLTYPE location;
-			location.first_loc = @2.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@2, &@3);
 			value_expr($1);
 			$$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($3), 0, &location), 0, &@$);
 		    /*%
@@ -1582,8 +1576,7 @@ cmd_brace_block	: tLBRACE_ARG brace_body '}'
 		    {
 			$$ = $2;
 		    /*%%%*/
-			$$->nd_body->nd_loc.first_loc = @1.first_loc;
-			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			$$->nd_body->nd_loc = code_range_gen(&@1, &@3);
 			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
@@ -2132,9 +2125,7 @@ arg		: lhs '=' arg_rhs
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
 		    /*%%%*/
-			YYLTYPE location;
-			location.first_loc = @1.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@1, &@3);
 		    /*%
 		    %*/
 			$$ = const_path_field($1, $3, &location);
@@ -2351,9 +2342,7 @@ arg_rhs 	: arg   %prec tOP_ASGN
 		| arg modifier_rescue arg
 		    {
 		    /*%%%*/
-			YYLTYPE location;
-			location.first_loc = @2.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@2, &@3);
 			value_expr($1);
 			$$ = NEW_RESCUE($1, NEW_RESBODY(0, remove_begin($3), 0, &location), 0, &@$);
 		    /*%
@@ -2858,9 +2847,7 @@ primary		: literal
 		| k_class cpath superclass
 		    {
 			if (in_def) {
-			    YYLTYPE location;
-			    location.first_loc = @1.first_loc;
-			    location.last_loc = @2.last_loc;
+			    YYLTYPE location = code_range_gen(&@1, &@2);
 			    yyerror1(&location, "class definition in method body");
 			}
 			$<num>1 = in_class;
@@ -2907,9 +2894,7 @@ primary		: literal
 		| k_module cpath
 		    {
 			if (in_def) {
-			    YYLTYPE location;
-			    location.first_loc = @1.first_loc;
-			    location.last_loc = @2.last_loc;
+			    YYLTYPE location = code_range_gen(&@1, &@2);
 			    yyerror1(&location, "module definition in method body");
 			}
 			$<num>1 = in_class;
@@ -3505,8 +3490,7 @@ do_block	: keyword_do_block do_body keyword_end
 		    {
 			$$ = $2;
 		    /*%%%*/
-			$$->nd_body->nd_loc.first_loc = @1.first_loc;
-			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			$$->nd_body->nd_loc = code_range_gen(&@1, &@3);
 			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
@@ -3625,8 +3609,7 @@ brace_block	: '{' brace_body '}'
 		    {
 			$$ = $2;
 		    /*%%%*/
-			$$->nd_body->nd_loc.first_loc = @1.first_loc;
-			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			$$->nd_body->nd_loc = code_range_gen(&@1, &@3);
 			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
@@ -3634,8 +3617,7 @@ brace_block	: '{' brace_body '}'
 		    {
 			$$ = $2;
 		    /*%%%*/
-			$$->nd_body->nd_loc.first_loc = @1.first_loc;
-			$$->nd_body->nd_loc.last_loc = @3.last_loc;
+			$$->nd_body->nd_loc = code_range_gen(&@1, &@3);
 			nd_set_line($$, @1.last_loc.lineno);
 		    /*% %*/
 		    }
@@ -4851,9 +4833,7 @@ assoc		: arg_value tASSOC arg_value
 		| tSTRING_BEG string_contents tLABEL_END arg_value
 		    {
 		    /*%%%*/
-			YYLTYPE location;
-			location.first_loc = @1.first_loc;
-			location.last_loc = @3.last_loc;
+			YYLTYPE location = code_range_gen(&@1, &@3);
 			$$ = list_append(NEW_LIST(dsym_node($2, &location), &location), $4);
 		    /*%
 			$$ = dispatch2(assoc_new, dispatch1(dyna_symbol, $2), $4);
