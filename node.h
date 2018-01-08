@@ -232,6 +232,14 @@ typedef struct rb_code_range_struct {
     rb_code_location_t last_loc;
 } rb_code_range_t;
 
+static inline rb_code_range_t code_range_gen(rb_code_range_t *cr1, rb_code_range_t *cr2)
+{
+    rb_code_range_t cr;
+    cr.first_loc = cr1->first_loc;
+    cr.last_loc = cr2->last_loc;
+    return cr;
+}
+
 typedef struct RNode {
     VALUE flags;
     union {
