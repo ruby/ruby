@@ -2364,7 +2364,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
 	    if (!VM_ENV_LOCAL_P(ep)) {
 		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-		if (VM_ENV_ESCAPED_P(prev_ep)) {
+		if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
 		    rb_gc_mark(prev_ep[VM_ENV_DATA_INDEX_ENV]);
 		}
 	    }
