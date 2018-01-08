@@ -6123,14 +6123,6 @@ parser_regx_options(struct parser_params *parser)
     return options | RE_OPTION_ENCODING(kcode);
 }
 
-static void
-dispose_string(struct parser_params *parser, VALUE str)
-{
-    rb_ast_delete_mark_object(parser->ast, str);
-    rb_str_free(str);
-    rb_gc_force_recycle(str);
-}
-
 static int
 parser_tokadd_mbchar(struct parser_params *parser, int c)
 {
@@ -6907,7 +6899,6 @@ parser_here_document(struct parser_params *parser, rb_strterm_heredoc_t *here)
 	    }
 	    if (nextc() == -1) {
 		if (str) {
-		    dispose_string(parser, str);
 		    str = 0;
 		}
 		goto error;
