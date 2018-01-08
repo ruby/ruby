@@ -2810,7 +2810,6 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_CASE2($3, &@$);
 			nd_set_line($$, $<num>1);
-			$$->nd_loc = @$;
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
@@ -3741,7 +3740,6 @@ case_body	: keyword_when args then
 		    /*%%%*/
 			$$ = NEW_WHEN($2, $4, $5, &@$);
 			fixpos($$, $2);
-			$$->nd_loc = @$;
 		    /*%
 			$$ = dispatch3(when, $2, $4, escape_Qundef($5));
 		    %*/
