@@ -2872,7 +2872,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CLASS($2, $5, $3, &@$);
-			nd_set_line($$->nd_body, ruby_sourceline);
+			nd_set_line($$->nd_body, @6.last_loc.lineno);
 			set_line_body($5, @4.last_loc.lineno);
 			nd_set_line($$, @4.last_loc.lineno);
 		    /*%
@@ -2894,7 +2894,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_SCLASS($3, $6, &@$);
-			nd_set_line($$->nd_body, ruby_sourceline);
+			nd_set_line($$->nd_body, @7.last_loc.lineno);
 			set_line_body($6, nd_line($3));
 			fixpos($$, $3);
 		    /*%
@@ -2921,7 +2921,7 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_MODULE($2, $4, &@$);
-			nd_set_line($$->nd_body, ruby_sourceline);
+			nd_set_line($$->nd_body, @5.last_loc.lineno);
 			set_line_body($4, @4.first_loc.lineno);
 			nd_set_line($$, @4.first_loc.lineno);
 		    /*%
@@ -2948,7 +2948,7 @@ primary		: literal
 			NODE *body = remove_begin($6);
 			reduce_nodes(&body);
 			$$ = NEW_DEFN($2, $5, body, &@$);
-			nd_set_line($$->nd_defn, ruby_sourceline);
+			nd_set_line($$->nd_defn, @7.last_loc.lineno);
 			set_line_body(body, @1.first_loc.lineno);
 			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
@@ -2975,7 +2975,7 @@ primary		: literal
 			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
 			$$ = NEW_DEFS($2, $5, $7, body, &@$);
-			nd_set_line($$->nd_defn, ruby_sourceline);
+			nd_set_line($$->nd_defn, @9.last_loc.lineno);
 			set_line_body(body, @1.first_loc.lineno);
 			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
@@ -3467,7 +3467,7 @@ lambda		:   {
 			CMDARG_LEXPOP();
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $5, &@$);
-			nd_set_line($$->nd_body, ruby_sourceline);
+			nd_set_line($$->nd_body, @5.last_loc.lineno);
 			nd_set_line($$, @5.first_loc.lineno);
 		    /*%
 			$$ = dispatch2(lambda, $3, $5);
@@ -4057,7 +4057,7 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = $<strterm>2;
 		    /*%%%*/
 			$$ = NEW_EVSTR($3, &@$);
-			nd_set_line($$, ruby_sourceline);
+			nd_set_line($$, @3.last_loc.lineno);
 		    /*%
 			$$ = dispatch1(string_dvar, $3);
 		    %*/
