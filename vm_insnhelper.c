@@ -2050,13 +2050,19 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 static inline VALUE vm_invoke_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler);
 
 NOINLINE(static VALUE
-	 vm_invoke_block_noinline(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+	 vm_invoke_block_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 				  struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler));
 
 static VALUE
-vm_invoke_block_noinline(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-				      struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler)
+vm_invoke_block_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+			 struct rb_calling_info *calling, const struct rb_call_info *ci, VALUE block_handler)
 {
+    int argc = calling->argc;
+
+    /* remove self */
+    if (argc > 0) MEMMOVE(&TOPN(argc), &TOPN(argc-1), VALUE, argc);
+    DEC_SP(1);
+
     return vm_invoke_block(ec, reg_cfp, calling, ci, block_handler);
 }
 
@@ -2064,25 +2070,16 @@ static VALUE
 vm_call_opt_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     VALUE procval = calling->recv;
-    int argc = calling->argc;
-
-    /* remove self */
-    if (argc > 0) MEMMOVE(&TOPN(argc), &TOPN(argc-1), VALUE, argc);
-    DEC_SP(1);
-
-    return vm_invoke_block_noinline(ec, reg_cfp, calling, ci, VM_BH_FROM_PROC(procval));
+    return vm_invoke_block_opt_call(ec, reg_cfp, calling, ci, VM_BH_FROM_PROC(procval));
 }
 
 static VALUE
 vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
-    int argc = calling->argc;
     VALUE block_handler = VM_ENV_BLOCK_HANDLER(reg_cfp->ep);
 
     if (BASIC_OP_UNREDEFINED_P(BOP_CALL, PROC_REDEFINED_OP_FLAG)) {
-	if (argc > 0) MEMMOVE(&TOPN(argc), &TOPN(argc-1), VALUE, argc);
-	DEC_SP(1);
-	return vm_invoke_block_noinline(ec, reg_cfp, calling, ci, block_handler);
+	return vm_invoke_block_opt_call(ec, reg_cfp, calling, ci, block_handler);
     }
     else {
 	calling->recv = rb_vm_bh_to_procval(ec, block_handler);
