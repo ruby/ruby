@@ -10486,7 +10486,7 @@ append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
 }
 
 static NODE *
-remove_duplicate_keys(struct parser_params *parser, NODE *hash, const YYLTYPE *location)
+remove_duplicate_keys(struct parser_params *parser, NODE *hash)
 {
     st_table *literal_keys = st_init_numtable_with_size(hash->nd_alen / 2);
     NODE *result = 0;
@@ -10521,7 +10521,7 @@ remove_duplicate_keys(struct parser_params *parser, NODE *hash, const YYLTYPE *l
 static NODE *
 new_hash_gen(struct parser_params *parser, NODE *hash, const YYLTYPE *location)
 {
-    if (hash) hash = remove_duplicate_keys(parser, hash, location);
+    if (hash) hash = remove_duplicate_keys(parser, hash);
     return NEW_HASH(hash, location);
 }
 #endif /* !RIPPER */
