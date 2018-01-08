@@ -2354,13 +2354,20 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 	rb_gc_mark_values((long)(sp - p), p);
 
 	while (cfp != limit_cfp) {
-#if VM_CHECK_MODE > 0
 	    const VALUE *ep = cfp->ep;
+#if VM_CHECK_MODE > 0
 	    VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 #endif
 	    rb_gc_mark(cfp->self);
 	    rb_gc_mark((VALUE)cfp->iseq);
 	    rb_gc_mark((VALUE)cfp->block_code);
+
+	    if (!VM_ENV_LOCAL_P(ep)) {
+		const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+		if (VM_ENV_ESCAPED_P(prev_ep)) {
+		    rb_gc_mark(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+		}
+	    }
 
 	    cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 	}
