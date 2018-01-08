@@ -495,6 +495,12 @@ static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID 
 #define new_attr_op_assign(lhs, type, attr, op, rhs, location) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs), (location))
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *location);
 #define new_const_op_assign(lhs, op, rhs, location) new_const_op_assign_gen(parser, (lhs), (op), (rhs), (location))
+static ID change_shortcut_operator_id(ID id)
+{
+    if (id == tOROP) return 0;
+    if (id == tANDOP) return 1;
+    return id;
+}
 
 static NODE *const_path_field_gen(struct parser_params *parser, NODE *head, ID mid, const YYLTYPE *location);
 #define const_path_field(w, n, location) const_path_field_gen(parser, w, n, location)
@@ -2108,13 +2114,7 @@ arg		: lhs '=' arg_rhs
 			else {
 			    args = arg_concat($3, $6, &@$);
 			}
-			if ($5 == tOROP) {
-			    $5 = 0;
-			}
-			else if ($5 == tANDOP) {
-			    $5 = 1;
-			}
-			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
+			$$ = NEW_OP_ASGN1($1, change_shortcut_operator_id($5), args, &@$);
 			fixpos($$, $1);
 		    /*%
 			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -10675,13 +10675,7 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs,
 {
     NODE *asgn;
 
-    if (op == tOROP) {
-	op = 0;
-    }
-    else if (op == tANDOP) {
-	op = 1;
-    }
-    asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, op, rhs, location);
+    asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, change_shortcut_operator_id(op), rhs, location);
     fixpos(asgn, lhs);
     return asgn;
 }
@@ -10691,14 +10685,8 @@ new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rh
 {
     NODE *asgn;
 
-    if (op == tOROP) {
-	op = 0;
-    }
-    else if (op == tANDOP) {
-	op = 1;
-    }
     if (lhs) {
-	asgn = NEW_OP_CDECL(lhs, op, rhs, location);
+	asgn = NEW_OP_CDECL(lhs, change_shortcut_operator_id(op), rhs, location);
     }
     else {
 	asgn = NEW_BEGIN(0, location);
