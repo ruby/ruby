@@ -4514,8 +4514,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 	    if (elem->type == ISEQ_ELEMENT_INSN) {
 		INSN *iobj = (INSN *)elem;
 		if (iobj->insn_id == BIN(getblockparam)) {
-		    iobj->insn_id = BIN(getlocal);
-		    *flag |= VM_CALL_ARGS_BLOCKARG_BLOCKPARAM;
+		    iobj->insn_id = BIN(getblockparamproxy);
 		}
 	    }
 	}
