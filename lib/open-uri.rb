@@ -354,6 +354,7 @@ module OpenURI
           if options[:progress_proc] && Net::HTTPSuccess === resp
             options[:progress_proc].call(buf.size)
           end
+          str.clear
         }
       }
     }
