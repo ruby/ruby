@@ -2123,7 +2123,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 {
     unsigned int i;
     long l;
-    size_t ti;
+    const struct iseq_insn_info_entry *prev_insn_info;
     unsigned int pos;
     int last_line = 0;
     VALUE *seq, *iseq_original;
@@ -2376,9 +2376,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
     /* make body with labels and insert line number */
     body = rb_ary_new();
-    ti = 0;
+    prev_insn_info = NULL;
 
     for (l=0, pos=0; l<RARRAY_LEN(nbody); l++) {
+	const struct iseq_insn_info_entry *info;
 	VALUE ary = RARRAY_AREF(nbody, l);
 	st_data_t label;
 
@@ -2386,27 +2387,26 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	    rb_ary_push(body, (VALUE)label);
 	}
 
-	if (ti < iseq->body->insns_info.size) {
-	    const struct iseq_insn_info_entry *info = &iseq->body->insns_info.body[ti];
-	    if (iseq->body->insns_info.positions[ti] == pos) {
-		int line = info->line_no;
-		rb_event_flag_t events = info->events;
+	info = get_insn_info(iseq, pos);
 
-		if (line > 0 && last_line != line) {
-		    rb_ary_push(body, INT2FIX(line));
-		    last_line = line;
-		}
-#define CHECK_EVENT(ev) if (events & ev) rb_ary_push(body, ID2SYM(rb_intern(#ev)));
-		CHECK_EVENT(RUBY_EVENT_LINE);
-		CHECK_EVENT(RUBY_EVENT_CLASS);
-		CHECK_EVENT(RUBY_EVENT_END);
-		CHECK_EVENT(RUBY_EVENT_CALL);
-		CHECK_EVENT(RUBY_EVENT_RETURN);
-		CHECK_EVENT(RUBY_EVENT_B_CALL);
-		CHECK_EVENT(RUBY_EVENT_B_RETURN);
-#undef CHECK_EVENT
-		ti++;
+	if (prev_insn_info != info) {
+	    int line = info->line_no;
+	    rb_event_flag_t events = info->events;
+
+	    if (line > 0 && last_line != line) {
+		rb_ary_push(body, INT2FIX(line));
+		last_line = line;
 	    }
+#define CHECK_EVENT(ev) if (events & ev) rb_ary_push(body, ID2SYM(rb_intern(#ev)));
+	    CHECK_EVENT(RUBY_EVENT_LINE);
+	    CHECK_EVENT(RUBY_EVENT_CLASS);
+	    CHECK_EVENT(RUBY_EVENT_END);
+	    CHECK_EVENT(RUBY_EVENT_CALL);
+	    CHECK_EVENT(RUBY_EVENT_RETURN);
+	    CHECK_EVENT(RUBY_EVENT_B_CALL);
+	    CHECK_EVENT(RUBY_EVENT_B_RETURN);
+#undef CHECK_EVENT
+	    prev_insn_info = info;
 	}
 
 	rb_ary_push(body, ary);
