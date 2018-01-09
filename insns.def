@@ -5,32 +5,14 @@
   created at: 04/01/01 01:17:55 JST
 
   Copyright (C) 2004-2007 Koichi Sasada
-*/
+ */
 
 /** ##skip
   instruction comment
-  @c: category
-  @e: english description
-  @j: japanese description
-
-  instruction form:
-    DEFINE_INSN
-    instruction_name
-    (instruction_operands, ..)
-    (pop_values, ..)
-    (return value)
-    {
-       .. // insn body
-    }
-
+  : english description
  */
 
-
-/**
-  @c nop
-  @e nop
-  @j nop
- */
+/* nop */
 DEFINE_INSN
 nop
 ()
@@ -44,12 +26,8 @@ nop
 /* deal with variables                                    */
 /**********************************************************/
 
-/**
-  @c variable
-  @e Get local variable (pointed by `idx' and `level').
+/* Get local variable (pointed by `idx' and `level').
      'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたローカル変数の値をスタックに置く。
-     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 getlocal
@@ -62,12 +40,8 @@ getlocal
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_get_dynamic, level > 0);
 }
 
-/**
-  @c variable
-  @e Set a local variable (pointed to by 'idx') as val.
+/* Set a local variable (pointed to by 'idx') as val.
      'level' indicates the nesting depth from the current block.
-  @j level, idx で指定されたローカル変数の値を val にする。
-     level はブロックのネストレベルで、何段上かを示す。
  */
 DEFINE_INSN
 setlocal
@@ -80,11 +54,7 @@ setlocal
     (void)RB_DEBUG_COUNTER_INC_IF(lvar_set_dynamic, level > 0);
 }
 
-/**
-  @c variable
-  @e Get a block parameter.
-  @j ブロックパラメータを取得する。
- */
+/* Get a block parameter. */
 DEFINE_INSN
 getblockparam
 (lindex_t idx, rb_num_t level)
@@ -106,11 +76,7 @@ getblockparam
     }
 }
 
-/**
-  @c variable
-  @e Set block parameter.
-  @j ブロックパラメータを設定する。
- */
+/* Set block parameter. */
 DEFINE_INSN
 setblockparam
 (lindex_t idx, rb_num_t level)
@@ -127,11 +93,8 @@ setblockparam
     VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
 }
 
-/**
-  @c variable
-  @e Get special proxy object which only responds to `call` method if the block parameter
+/* Get special proxy object which only responds to `call` method if the block parameter
      represents a iseq/ifunc block. Otherwise, same as `getblockparam`.
-  @j ブロックパラメータが iseq/ifunc ブロックであれば、特殊なプロキシオブジェクトを取得する。
  */
 DEFINE_INSN
 getblockparamproxy
@@ -175,11 +138,7 @@ getblockparamproxy
     }
 }
 
-/**
-  @c variable
-  @e Get value of special local variable ($~, $_, ..).
-  @j 特殊なローカル変数（$~, $_, ...）の値を得る。
- */
+/* Get value of special local variable ($~, $_, ..). */
 DEFINE_INSN
 getspecial
 (rb_num_t key, rb_num_t type)
@@ -189,11 +148,7 @@ getspecial
     val = vm_getspecial(ec, GET_LEP(), key, type);
 }
 
-/**
-  @c variable
-  @e Set value of special local variable ($~, $_, ...) to obj.
-  @j 特別なローカル変数（$~, $_, ...）の値を設定する。
- */
+/* Set value of special local variable ($~, $_, ...) to obj. */
 DEFINE_INSN
 setspecial
 (rb_num_t key)
@@ -203,11 +158,7 @@ setspecial
     lep_svar_set(ec, GET_LEP(), key, obj);
 }
 
-/**
-  @c variable
-  @e Get value of instance variable id of self.
-  @j self のインスタンス変数 id の値を得る。
- */
+/* Get value of instance variable id of self. */
 DEFINE_INSN
 getinstancevariable
 (ID id, IC ic)
@@ -217,11 +168,7 @@ getinstancevariable
     val = vm_getinstancevariable(GET_SELF(), id, ic);
 }
 
-/**
-  @c variable
-  @e Set value of instance variable id of self to val.
-  @j self のインスタンス変数 id を val にする。
- */
+/* Set value of instance variable id of self to val. */
 DEFINE_INSN
 setinstancevariable
 (ID id, IC ic)
@@ -231,11 +178,7 @@ setinstancevariable
     vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
 
-/**
-  @c variable
-  @e Get value of class variable id of klass as val.
-  @j 現在のスコープのクラス変数 id の値を得る。
- */
+/* Get value of class variable id of klass as val. */
 DEFINE_INSN
 getclassvariable
 (ID id)
@@ -245,11 +188,7 @@ getclassvariable
     val = rb_cvar_get(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id);
 }
 
-/**
-  @c variable
-  @e Set value of class variable id of klass as val.
-  @j klass のクラス変数 id を val にする。
- */
+/* Set value of class variable id of klass as val. */
 DEFINE_INSN
 setclassvariable
 (ID id)
@@ -260,17 +199,10 @@ setclassvariable
     rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id, val);
 }
 
-/**
-  @c variable
-  @e
-   Get constant variable id. If klass is Qnil, constants
+/* Get constant variable id. If klass is Qnil, constants
    are searched in the current scope. If klass is Qfalse, constants
    are searched as top level constants. Otherwise, get constant under klass
    class or module.
-  @j 定数 id の値を得る。
-   klass が Qnil なら、そのスコープで得られる定数の値を得る。
-   Qfalse なら、トップレベルスコープを得る。
-   それ以外なら、klass クラスの下の定数を得る。
  */
 DEFINE_INSN
 getconstant
@@ -281,18 +213,10 @@ getconstant
     val = vm_get_ev_const(ec, klass, id, 0);
 }
 
-/**
-  @c variable
-  @e
-   Set constant variable id. If klass is Qfalse, constant
+/* Set constant variable id. If klass is Qfalse, constant
    is able to access in this scope. if klass is Qnil, set
    top level constant. otherwise, set constant under klass
    class or module.
-
-  @j 定数 id の値を val にする。
-   klass が Qfalse なら、そのスコープで得られる定数 id の値を設定する。
-   Qnil なら、トップレベルスコープの値を設定する。
-   それ以外なら、klass クラスの下の定数を設定する。
  */
 DEFINE_INSN
 setconstant
@@ -305,11 +229,7 @@ setconstant
     rb_const_set(cbase, id, val);
 }
 
-/**
-  @c variable
-  @e get global variable id.
-  @j グローバル変数 id の値を得る。
- */
+/* get global variable id. */
 DEFINE_INSN
 getglobal
 (GENTRY entry)
@@ -319,11 +239,7 @@ getglobal
     val = GET_GLOBAL((VALUE)entry);
 }
 
-/**
-  @c variable
-  @e set global variable id as val.
-  @j グローバル変数 id の値を設定する。
- */
+/* set global variable id as val. */
 DEFINE_INSN
 setglobal
 (GENTRY entry)
@@ -333,16 +249,11 @@ setglobal
     SET_GLOBAL((VALUE)entry, val);
 }
 
-
 /**********************************************************/
 /* deal with values                                       */
 /**********************************************************/
 
-/**
-  @c put
-  @e put nil to stack.
-  @j スタックに nil をプッシュする。
- */
+/* put nil to stack. */
 DEFINE_INSN
 putnil
 ()
@@ -352,11 +263,7 @@ putnil
     val = Qnil;
 }
 
-/**
-  @c put
-  @e put self.
-  @j スタックに self をプッシュする。
- */
+/* put self. */
 DEFINE_INSN
 putself
 ()
@@ -366,11 +273,7 @@ putself
     val = GET_SELF();
 }
 
-/**
-  @c put
-  @e put some object.
-     i.e. Fixnum, true, false, nil, and so on.
-  @j オブジェクト val をスタックにプッシュする。
+/* put some object.
      i.e. Fixnum, true, false, nil, and so on.
  */
 DEFINE_INSN
@@ -382,12 +285,7 @@ putobject
     /* */
 }
 
-/**
-  @c put
-  @e put special object.  "value_type" is for expansion.
-  @j 特別なオブジェクト val をスタックにプッシュする。
-     オブジェクトの種類は value_type による．
- */
+/* put special object.  "value_type" is for expansion. */
 DEFINE_INSN
 putspecialobject
 (rb_num_t value_type)
@@ -400,11 +298,7 @@ putspecialobject
     val = vm_get_special_object(GET_EP(), type);
 }
 
-/**
-  @c put
-  @e put iseq value.
-  @j iseq をスタックにプッシュする。
- */
+/* put iseq value. */
 DEFINE_INSN
 putiseq
 (ISEQ iseq)
@@ -414,11 +308,7 @@ putiseq
     ret = (VALUE)iseq;
 }
 
-/**
-  @c put
-  @e put string val. string will be copied.
-  @j 文字列をコピーしてスタックにプッシュする。
- */
+/* put string val. string will be copied. */
 DEFINE_INSN
 putstring
 (VALUE str)
@@ -428,26 +318,19 @@ putstring
     val = rb_str_resurrect(str);
 }
 
-/**
-  @c put
-  @e put concatenate strings
-  @j スタックトップの文字列を n 個連結し，結果をスタックにプッシュする。
- */
+/* put concatenate strings */
 DEFINE_INSN
 concatstrings
 (rb_num_t num)
 (...)
-(VALUE val) // inc += 1 - num;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
     POPN(num);
 }
 
-/**
-  @c put
-  @e push the result of to_s.
-  @j to_s の結果をスタックにプッシュする。
- */
+/* push the result of to_s. */
 DEFINE_INSN
 tostring
 ()
@@ -458,11 +341,7 @@ tostring
     val = rb_obj_as_string_result(str, val);
 }
 
-/**
-  @c put
-  @e Freeze (dynamically) created strings. if debug_info is given, set it.
-  @j （埋め込み）文字列を freeze する。もし、debug_info が与えられていれば、それを設定する。
- */
+/* Freeze (dynamically) created strings. if debug_info is given, set it. */
 DEFINE_INSN
 freezestring
 (VALUE debug_info)
@@ -472,18 +351,15 @@ freezestring
     vm_freezestring(str, debug_info);
 }
 
-/**
-  @c put
-  @e compile str to Regexp and push it.
+/* compile str to Regexp and push it.
      opt is the option for the Regexp.
-  @j 文字列 str を正規表現にコンパイルしてスタックにプッシュする。
-     コンパイル時，opt を正規表現のオプションとする。
  */
 DEFINE_INSN
 toregexp
 (rb_num_t opt, rb_num_t cnt)
 (...)
-(VALUE val) // inc += 1 - cnt;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - cnt;
 {
     VALUE rb_reg_new_ary(VALUE ary, int options);
     VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
@@ -493,11 +369,7 @@ toregexp
     rb_ary_clear(ary);
 }
 
-/**
-  @c put
-  @e intern str to Symbol and push it.
-  @j 文字列 str をシンボルに変換してスタックにプッシュする。
- */
+/* intern str to Symbol and push it. */
 DEFINE_INSN
 intern
 ()
@@ -507,26 +379,19 @@ intern
     sym = rb_str_intern(str);
 }
 
-/**
-  @c put
-  @e put new array initialized with num values on the stack.
-  @j 新しい配列をスタック上の num 個の値で初期化して生成しプッシュする。
- */
+/* put new array initialized with num values on the stack. */
 DEFINE_INSN
 newarray
 (rb_num_t num)
 (...)
-(VALUE val) // inc += 1 - num;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
     POPN(num);
 }
 
-/**
-  @c put
-  @e dup array
-  @j 配列 ary を dup してスタックにプッシュする。
- */
+/* dup array */
 DEFINE_INSN
 duparray
 (VALUE ary)
@@ -536,9 +401,7 @@ duparray
     val = rb_ary_resurrect(ary);
 }
 
-/**
-  @c put
-  @e if TOS is an array expand, expand it to num objects.
+/* if TOS is an array expand, expand it to num objects.
      if the number of the array is less than num, push nils to fill.
      if it is greater than num, exceeding elements are dropped.
      unless TOS is an array, push num - 1 nils.
@@ -546,29 +409,18 @@ duparray
      flag: 0x01 - rest args array
      flag: 0x02 - for postarg
      flag: 0x04 - reverse?
-  @j スタックトップのオブジェクトが配列であれば、それを展開する。
-     配列オブジェクトの要素数が num以下ならば、代わりに nil を積む。num以上なら、
-     num以上の要素は切り捨てる。
-     配列オブジェクトでなければ、num - 1 個の nil を積む。
-     もし flag が真なら、残り要素の配列を積む
-     flag: 0x01 - 最後を配列に
-     flag: 0x02 - postarg 用
-     flag: 0x04 - reverse?
  */
 DEFINE_INSN
 expandarray
 (rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
-(...) // inc += num - 1 + (flag & 1 ? 1 : 0);
+(...)
+// attr rb_snum_t sp_inc = num - 1 + (flag & 1 ? 1 : 0);
 {
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
 
-/**
-  @c put
-  @e concat two arrays
-  @j 二つの配列 ary1, ary2 を連結しスタックへプッシュする。
- */
+/* concat two arrays */
 DEFINE_INSN
 concatarray
 ()
@@ -578,11 +430,7 @@ concatarray
     ary = vm_concat_array(ary1, ary2);
 }
 
-/**
-  @c put
-  @e call to_a on array ary to splat
-  @j splat のために配列 ary に対して to_a を呼び出す。
- */
+/* call to_a on array ary to splat */
 DEFINE_INSN
 splatarray
 (VALUE flag)
@@ -592,17 +440,13 @@ splatarray
     obj = vm_splat_array(flag, ary);
 }
 
-/**
-  @c put
-  @e put new Hash from n elements. n must be an even number.
-  @j 新しいハッシュをスタックトップの n 個を初期値として生成する。
-     n はキーと値のペアなので 2 の倍数でなければならない。
- */
+/* put new Hash from n elements. n must be an even number. */
 DEFINE_INSN
 newhash
 (rb_num_t num)
 (...)
-(VALUE val) // inc += 1 - num;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - num;
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
@@ -614,11 +458,7 @@ newhash
     POPN(num);
 }
 
-/**
-  @c put
-  @e put new Range object.(Range.new(low, high, flag))
-  @j Range.new(low, high, flag) のようなオブジェクトを生成しスタックにプッシュする。
- */
+/* put new Range object.(Range.new(low, high, flag)) */
 DEFINE_INSN
 newrange
 (rb_num_t flag)
@@ -632,11 +472,7 @@ newrange
 /* deal with stack operation                              */
 /**********************************************************/
 
-/**
-  @c stack
-  @e pop from stack.
-  @j スタックから一つポップする。
- */
+/* pop from stack. */
 DEFINE_INSN
 pop
 ()
@@ -647,11 +483,7 @@ pop
     /* none */
 }
 
-/**
-  @c stack
-  @e duplicate stack top.
-  @j スタックトップをコピーしてスタックにプッシュする。
- */
+/* duplicate stack top. */
 DEFINE_INSN
 dup
 ()
@@ -661,16 +493,13 @@ dup
     val1 = val2 = val;
 }
 
-/**
-  @c stack
-  @e duplicate stack top n elements
-  @j スタックトップの n 個をコピーしてスタックにプッシュする。
- */
+/* duplicate stack top n elements */
 DEFINE_INSN
 dupn
 (rb_num_t n)
 (...)
-(...) // inc += n;
+(...)
+// attr rb_snum_t sp_inc = n;
 {
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
@@ -679,12 +508,7 @@ dupn
     MEMCPY(dst, src, VALUE, n);
 }
 
-
-/**
-  @c stack
-  @e swap top 2 vals
-  @j スタックトップの 2 つの値を交換する。
- */
+/* swap top 2 vals */
 DEFINE_INSN
 swap
 ()
@@ -694,16 +518,13 @@ swap
     /* none */
 }
 
-/**
-  @c stack
-  @e reverse stack top N order.
-  @j スタックトップの n 個の値を逆転する。
- */
+/* reverse stack top N order. */
 DEFINE_INSN
 reverse
 (rb_num_t n)
 (...)
-(...) // inc += 0;
+(...)
+// attr rb_snum_t sp_inc = 0;
 {
     rb_num_t i;
     VALUE *sp = STACK_ADDR_FROM_TOP(n);
@@ -716,72 +537,55 @@ reverse
     }
 }
 
-/**
-  @c stack
-  @e for stack caching.
-  @j スタックキャッシングの状態を調整するために必要な命令。
- */
+/* for stack caching. */
 DEFINE_INSN
 reput
 ()
 (..., VALUE val)
-(VALUE val) // inc += 0;
+(VALUE val)
+// attr rb_snum_t sp_inc = 0;
 {
     /* none */
 }
 
-/**
-  @c stack
-  @e get nth stack value from stack top
-  @j スタックトップから n 個目をスタックにプッシュする。
- */
+/* get nth stack value from stack top */
 DEFINE_INSN
 topn
 (rb_num_t n)
 (...)
-(VALUE val) // inc += 1;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1;
 {
     val = TOPN(n);
 }
 
-/**
-  @c stack
-  @e set Nth stack entry to stack top
-  @j スタックトップの値を n 個目のスタックにコピー
- */
+/* set Nth stack entry to stack top */
 DEFINE_INSN
 setn
 (rb_num_t n)
 (..., VALUE val)
-(VALUE val) // inc += 0
+(VALUE val)
+// attr rb_snum_t sp_inc = 0;
 {
     TOPN(n-1) = val;
 }
 
-/**
-  @c stack
-  @e empty current stack
-  @j current stack を空にする。
- */
+/* empty current stack */
 DEFINE_INSN
 adjuststack
 (rb_num_t n)
 (...)
-(...) // inc -= n
+(...)
+// attr rb_snum_t sp_inc = -n;
 {
     DEC_SP(n);
 }
-
 
 /**********************************************************/
 /* deal with setting                                      */
 /**********************************************************/
 
-/**
-  @c setting
-  @e defined?
-  @j defined? を行う。
- */
+/* defined? */
 DEFINE_INSN
 defined
 (rb_num_t op_type, VALUE obj, VALUE needstr)
@@ -791,15 +595,12 @@ defined
     val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
 }
 
-/**
-  @c setting
-  @e check `target' matches `pattern'.
+/* check `target' matches `pattern'.
      `flag & VM_CHECKMATCH_TYPE_MASK' describe how to check pattern.
       VM_CHECKMATCH_TYPE_WHEN: ignore target and check pattern is truthy.
       VM_CHECKMATCH_TYPE_CASE: check `patten === target'.
       VM_CHECKMATCH_TYPE_RESCUE: check `pattern.kind_op?(Module) && pattern == target'.
      if `flag & VM_CHECKMATCH_ARRAY' is not 0, then `patten' is array of patterns.
-  @j see above comments.
  */
 DEFINE_INSN
 checkmatch
@@ -810,11 +611,7 @@ checkmatch
     result = vm_check_match(ec, target, pattern, flag);
 }
 
-/**
-  @c setting
-  @e check keywords are specified or not.
-  @j キーワードが指定されているかどうかチェックする
- */
+/* check keywords are specified or not. */
 DEFINE_INSN
 checkkeyword
 (lindex_t kw_bits_index, lindex_t keyword_index)
@@ -824,11 +621,7 @@ checkkeyword
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
 
-/**
-  @c setting
-  @e fire a coverage event (currently, this is used for line coverage and branch coverage)
-  @j カバレッジイベントを trace する
- */
+/* fire a coverage event (currently, this is used for line coverage and branch coverage) */
 DEFINE_INSN
 tracecoverage
 (rb_num_t nf, VALUE data)
@@ -845,14 +638,8 @@ tracecoverage
 /* deal with control flow 1: class/module                 */
 /**********************************************************/
 
-/**
-  @c class/module
-  @e
-   enter class definition scope. if super is Qfalse, and class
+/* enter class definition scope. if super is Qfalse, and class
    "klass" is defined, it's redefine. otherwise, define "klass" class.
-  @j クラス定義スコープへ移行する。
-   もし super が Qfalse で klassクラスが定義されていれば再定義である。
-   そうでなければ、klass クラスを定義する。
  */
 DEFINE_INSN
 defineclass
@@ -875,21 +662,17 @@ defineclass
     NEXT_INSN();
 }
 
-
 /**********************************************************/
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-/**
-  @c method/iterator
-  @e invoke method.
-  @j メソッド呼び出しを行う。ci に必要な情報が格納されている。
- */
+/* invoke method. */
 DEFINE_INSN
 send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
-(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
+(VALUE val)
+// attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
 
@@ -930,7 +713,8 @@ DEFINE_INSN
 opt_newarray_max
 (rb_num_t num)
 (...)
-(VALUE val) // inc += 1 - num;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
     POPN(num);
@@ -940,22 +724,20 @@ DEFINE_INSN
 opt_newarray_min
 (rb_num_t num)
 (...)
-(VALUE val) // inc += 1 - num;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
     POPN(num);
 }
 
-/**
-  @c optimize
-  @e Invoke method without block
-  @j ブロックなしでメソッド呼び出しを行う。
- */
+/* Invoke method without block */
 DEFINE_INSN
 opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
-(VALUE val) // inc += -ci->orig_argc;
+(VALUE val)
+// attr rb_snum_t sp_inc = -ci->orig_argc;
 {
     struct rb_calling_info calling;
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
@@ -963,16 +745,13 @@ opt_send_without_block
     CALL_METHOD(&calling, ci, cc);
 }
 
-/**
-  @c method/iterator
-  @e super(args) # args.size => num
-  @j super を実行する。ci に必要な情報が格納されている。
- */
+/* super(args) # args.size => num */
 DEFINE_INSN
 invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
-(VALUE val) // inc += - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
+(VALUE val)
+// attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
     calling.argc = ci->orig_argc;
@@ -983,16 +762,13 @@ invokesuper
     CALL_METHOD(&calling, ci, cc);
 }
 
-/**
-  @c method/iterator
-  @e yield(args)
-  @j yield を実行する。
- */
+/* yield(args) */
 DEFINE_INSN
 invokeblock
 (CALL_INFO ci)
 (...)
-(VALUE val)  // inc += 1 - ci->orig_argc;
+(VALUE val)
+// attr rb_snum_t sp_inc = 1 - ci->orig_argc;
 {
     struct rb_calling_info calling;
     VALUE block_handler;
@@ -1013,11 +789,7 @@ invokeblock
     }
 }
 
-/**
-  @c method/iterator
-  @e return from this scope.
-  @j このスコープから抜ける。
- */
+/* return from this scope. */
 DEFINE_INSN
 leave
 ()
@@ -1050,11 +822,7 @@ leave
 /* deal with control flow 3: exception                    */
 /**********************************************************/
 
-/**
-  @c exception
-  @e longjump
-  @j 大域ジャンプを行う。
- */
+/* longjump */
 DEFINE_INSN
 throw
 (rb_num_t throw_state)
@@ -1071,11 +839,7 @@ throw
 /* deal with control flow 4: local jump                   */
 /**********************************************************/
 
-/**
-  @c jump
-  @e set PC to (PC + dst).
-  @j PC を (PC + dst) にする。
- */
+/* set PC to (PC + dst). */
 DEFINE_INSN
 jump
 (OFFSET dst)
@@ -1086,11 +850,7 @@ jump
     JUMP(dst);
 }
 
-/**
-  @c jump
-  @e if val is not false or nil, set PC to (PC + dst).
-  @j もし val が false か nil でなければ、PC を (PC + dst) にする。
- */
+/* if val is not false or nil, set PC to (PC + dst). */
 DEFINE_INSN
 branchif
 (OFFSET dst)
@@ -1103,11 +863,7 @@ branchif
     }
 }
 
-/**
-  @c jump
-  @e if val is false or nil, set PC to (PC + dst).
-  @j もし val が false か nil ならば、PC を (PC + dst) にする。
- */
+/* if val is false or nil, set PC to (PC + dst). */
 DEFINE_INSN
 branchunless
 (OFFSET dst)
@@ -1120,11 +876,7 @@ branchunless
     }
 }
 
-/**
-  @c jump
-  @e if val is nil, set PC to (PC + dst).
-  @j もし val が nil ならば、PC を (PC + dst) にする。
- */
+/* if val is nil, set PC to (PC + dst). */
 DEFINE_INSN
 branchnil
 (OFFSET dst)
@@ -1137,11 +889,7 @@ branchnil
     }
 }
 
-/**
-  @c jump
-  @e if val is type, set PC to (PC + dst).
-  @j もし val が type ならば、PC を (PC + dst) にする。
- */
+/* if val is type, set PC to (PC + dst). */
 DEFINE_INSN
 branchiftype
 (rb_num_t type, OFFSET dst)
@@ -1154,16 +902,11 @@ branchiftype
     }
 }
 
-
 /**********************************************************/
 /* for optimize                                           */
 /**********************************************************/
 
-/**
-  @c optimize
-  @e push inline-cached value and go to dst if it is valid
-  @j インラインキャッシュが有効なら、値をスタックにプッシュして dst へジャンプする。
- */
+/* push inline-cached value and go to dst if it is valid */
 DEFINE_INSN
 getinlinecache
 (OFFSET dst, IC ic)
@@ -1176,11 +919,7 @@ getinlinecache
     }
 }
 
-/**
-  @c optimize
-  @e set inline cache
-  @j インラインキャッシュの値を設定する。
- */
+/* set inline cache */
 DEFINE_INSN
 setinlinecache
 (IC ic)
@@ -1190,11 +929,7 @@ setinlinecache
     vm_ic_update(ic, val, GET_EP());
 }
 
-/**
-  @c optimize
-  @e run iseq only once
-  @j once を実現する。
- */
+/* run iseq only once */
 DEFINE_INSN
 once
 (ISEQ iseq, IC ic)
@@ -1204,16 +939,13 @@ once
     val = vm_once_dispatch(ec, iseq, ic);
 }
 
-/**
-  @c optimize
-  @e case dispatcher, jump by table if possible
-  @j case 文で、可能なら表引きでジャンプする。
- */
+/* case dispatcher, jump by table if possible */
 DEFINE_INSN
 opt_case_dispatch
 (CDHASH hash, OFFSET else_offset)
 (..., VALUE key)
-() // inc += -1;
+()
+// attr rb_snum_t sp_inc = -1;
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 
@@ -1224,11 +956,7 @@ opt_case_dispatch
 
 /** simple functions */
 
-/**
-  @c optimize
-  @e optimized X+Y.
-  @j 最適化された X+Y。
- */
+/* optimized X+Y. */
 DEFINE_INSN
 opt_plus
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1245,11 +973,7 @@ opt_plus
     }
 }
 
-/**
-  @c optimize
-  @e optimized X-Y.
-  @j 最適化された X-Y。
- */
+/* optimized X-Y. */
 DEFINE_INSN
 opt_minus
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1266,11 +990,7 @@ opt_minus
     }
 }
 
-/**
-  @c optimize
-  @e optimized X*Y.
-  @j 最適化された X*Y。
- */
+/* optimized X*Y. */
 DEFINE_INSN
 opt_mult
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1287,11 +1007,7 @@ opt_mult
     }
 }
 
-/**
-  @c optimize
-  @e optimized X/Y.
-  @j 最適化された X/Y。
- */
+/* optimized X/Y. */
 DEFINE_INSN
 opt_div
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1308,11 +1024,7 @@ opt_div
     }
 }
 
-/**
-  @c optimize
-  @e optimized X%Y.
-  @j 最適化された X%Y。
- */
+/* optimized X%Y. */
 DEFINE_INSN
 opt_mod
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1329,11 +1041,7 @@ opt_mod
     }
 }
 
-/**
-  @c optimize
-  @e optimized X==Y.
-  @j 最適化された X==Y。
- */
+/* optimized X==Y. */
 DEFINE_INSN
 opt_eq
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1350,11 +1058,7 @@ opt_eq
     }
 }
 
-/**
-  @c optimize
-  @e optimized X!=Y.
-  @j 最適化された X!=Y。
- */
+/* optimized X!=Y. */
 DEFINE_INSN
 opt_neq
 (CALL_INFO ci, CALL_CACHE cc, CALL_INFO ci_eq, CALL_CACHE cc_eq)
@@ -1371,11 +1075,7 @@ opt_neq
     }
 }
 
-/**
-  @c optimize
-  @e optimized X<Y.
-  @j 最適化された X<Y。
- */
+/* optimized X<Y. */
 DEFINE_INSN
 opt_lt
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1392,11 +1092,7 @@ opt_lt
     }
 }
 
-/**
-  @c optimize
-  @e optimized X<=Y.
-  @j 最適化された X<=Y。
- */
+/* optimized X<=Y. */
 DEFINE_INSN
 opt_le
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1413,11 +1109,7 @@ opt_le
     }
 }
 
-/**
-  @c optimize
-  @e optimized X>Y.
-  @j 最適化された X>Y。
- */
+/* optimized X>Y. */
 DEFINE_INSN
 opt_gt
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1434,11 +1126,7 @@ opt_gt
     }
 }
 
-/**
-  @c optimize
-  @e optimized X>=Y.
-  @j 最適化された X>=Y。
- */
+/* optimized X>=Y. */
 DEFINE_INSN
 opt_ge
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1455,11 +1143,7 @@ opt_ge
     }
 }
 
-/**
-  @c optimize
-  @e <<
-  @j 最適化された X<<Y。
- */
+/* << */
 DEFINE_INSN
 opt_ltlt
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1476,11 +1160,7 @@ opt_ltlt
     }
 }
 
-/**
-  @c optimize
-  @e []
-  @j 最適化された recv[obj]。
- */
+/* [] */
 DEFINE_INSN
 opt_aref
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1497,11 +1177,7 @@ opt_aref
     }
 }
 
-/**
-  @c optimize
-  @e recv[obj] = set
-  @j 最適化された recv[obj] = set。
- */
+/* recv[obj] = set */
 DEFINE_INSN
 opt_aset
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1519,11 +1195,7 @@ opt_aset
     }
 }
 
-/**
-  @c optimize
-  @e recv[str] = set
-  @j 最適化された recv[str] = set。
- */
+/* recv[str] = set */
 DEFINE_INSN
 opt_aset_with
 (CALL_INFO ci, CALL_CACHE cc, VALUE key)
@@ -1544,11 +1216,7 @@ opt_aset_with
     }
 }
 
-/**
-  @c optimize
-  @e recv[str]
-  @j 最適化された recv[str]。
- */
+/* recv[str] */
 DEFINE_INSN
 opt_aref_with
 (CALL_INFO ci, CALL_CACHE cc, VALUE key)
@@ -1565,11 +1233,7 @@ opt_aref_with
     }
 }
 
-/**
-  @c optimize
-  @e optimized length
-  @j 最適化された recv.length()。
- */
+/* optimized length */
 DEFINE_INSN
 opt_length
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1585,11 +1249,7 @@ opt_length
     }
 }
 
-/**
-  @c optimize
-  @e optimized size
-  @j 最適化された recv.size()。
- */
+/* optimized size */
 DEFINE_INSN
 opt_size
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1605,11 +1265,7 @@ opt_size
     }
 }
 
-/**
-  @c optimize
-  @e optimized empty?
-  @j 最適化された recv.empty?()。
- */
+/* optimized empty? */
 DEFINE_INSN
 opt_empty_p
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1625,11 +1281,7 @@ opt_empty_p
     }
 }
 
-/**
-  @c optimize
-  @e optimized succ
-  @j 最適化された recv.succ()。
- */
+/* optimized succ */
 DEFINE_INSN
 opt_succ
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1645,11 +1297,7 @@ opt_succ
     }
 }
 
-/**
-  @c optimize
-  @e optimized not
-  @j 最適化された recv.!()。
- */
+/* optimized not */
 DEFINE_INSN
 opt_not
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1665,12 +1313,7 @@ opt_not
     }
 }
 
-
-/**
-  @c optimize
-  @e optimized regexp match
-  @j 最適化された正規表現マッチ。
- */
+/* optimized regexp match */
 DEFINE_INSN
 opt_regexpmatch1
 (VALUE recv)
@@ -1680,11 +1323,7 @@ opt_regexpmatch1
     val = vm_opt_regexpmatch1(recv, obj);
 }
 
-/**
-  @c optimize
-  @e optimized regexp match 2
-  @j 最適化された正規表現マッチ 2
- */
+/* optimized regexp match 2 */
 DEFINE_INSN
 opt_regexpmatch2
 (CALL_INFO ci, CALL_CACHE cc)
@@ -1701,11 +1340,7 @@ opt_regexpmatch2
     }
 }
 
-/**
-  @c optimize
-  @e call native compiled method
-  @j ネイティブコンパイルしたメソッドを起動。
- */
+/* call native compiled method */
 DEFINE_INSN
 opt_call_c_function
 (rb_insn_func_t funcptr)
@@ -1724,11 +1359,7 @@ opt_call_c_function
     NEXT_INSN();
 }
 
-/**
-  @c joke
-  @e BLT
-  @j BLT
- */
+/* BLT */
 DEFINE_INSN
 bitblt
 ()
@@ -1738,11 +1369,7 @@ bitblt
     ret = rb_str_new2("a bit of bacon, lettuce and tomato");
 }
 
-/**
-  @c joke
-  @e The Answer to Life, the Universe, and Everything
-  @j 人生、宇宙、すべての答え。
- */
+/* The Answer to Life, the Universe, and Everything */
 DEFINE_INSN
 answer
 ()
@@ -1751,4 +1378,3 @@ answer
 {
     ret = INT2FIX(42);
 }
-
