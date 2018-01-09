@@ -834,11 +834,6 @@ native_thread_init_stack(rb_thread_t *th)
 	    th->ec->machine.stack_start = (VALUE *)&curr;
 	    th->ec->machine.stack_maxsize = size - diff;
 	}
-#elif defined get_stack_of
-	if (!th->ec->machine.stack_maxsize) {
-	    native_mutex_lock(&th->interrupt_lock);
-	    native_mutex_unlock(&th->interrupt_lock);
-	}
 #else
 	rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
 #endif
@@ -1010,18 +1005,7 @@ native_thread_create(rb_thread_t *th)
 # endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
 
-#ifdef get_stack_of
-	native_mutex_lock(&th->interrupt_lock);
-#endif
 	err = pthread_create(&th->thread_id, attrp, thread_start_func_1, th);
-#ifdef get_stack_of
-	if (!err) {
-	    get_stack_of(th->thread_id,
-			 &th->ec->machine.stack_start,
-			 &th->ec->machine.stack_maxsize);
-	}
-	native_mutex_unlock(&th->interrupt_lock);
-#endif
 	thread_debug("create: %p (%d)\n", (void *)th, err);
 	/* should be done in the created thread */
 	fill_thread_id_str(th);
