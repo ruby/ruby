@@ -31,13 +31,26 @@ const unsigned short rb_vm_insn_name_info_offset[] = {
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_info_offset);
 
+% n = 100
 const struct rb_vm_insn_name_info {
 % @insns.each_with_index do |insn, i|
-    char L<%=i%>[<%= insn.name.size+1 %>];
+%   if (i % n) == 0
+    struct {
+%   end
+	char L<%=i%n%>[<%= insn.name.size+1 %>];
+%   if (i % n) == n - 1 or i == @insns.size - 1
+    } S<%=i / n%>;
+%   end
 % end
 } rb_vm_insn_name_info_base = {
-% @insns.each do |insn|
-    "<%= insn.name %>",
+% @insns.each_with_index do |insn, i|
+%   if (i % n) == 0
+    {
+%   end
+	"<%= insn.name %>",
+%   if (i % n) == n - 1 or i == @insns.size - 1
+    },
+%   end
 % end
 };
 
