@@ -991,12 +991,8 @@ native_thread_create(rb_thread_t *th)
 	thread_debug("create (use cached thread): %p\n", (void *)th);
     }
     else {
-#ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
 	pthread_attr_t *const attrp = &attr;
-#else
-	pthread_attr_t *const attrp = NULL;
-#endif
 	const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
 	const size_t space = space_size(stack_size);
 
@@ -1006,7 +1002,6 @@ native_thread_create(rb_thread_t *th)
         th->ec->machine.register_stack_maxsize = th->ec->machine.stack_maxsize;
 #endif
 
-#ifdef HAVE_PTHREAD_ATTR_INIT
 	CHECK_ERR(pthread_attr_init(&attr));
 
 # ifdef PTHREAD_STACK_MIN
@@ -1018,7 +1013,7 @@ native_thread_create(rb_thread_t *th)
 	CHECK_ERR(pthread_attr_setinheritsched(&attr, PTHREAD_INHERIT_SCHED));
 # endif
 	CHECK_ERR(pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED));
-#endif
+
 #ifdef get_stack_of
 	native_mutex_lock(&th->interrupt_lock);
 #endif
@@ -1034,9 +1029,7 @@ native_thread_create(rb_thread_t *th)
 	thread_debug("create: %p (%d)\n", (void *)th, err);
 	/* should be done in the created thread */
 	fill_thread_id_str(th);
-#ifdef HAVE_PTHREAD_ATTR_INIT
 	CHECK_ERR(pthread_attr_destroy(&attr));
-#endif
     }
     return err;
 }
@@ -1596,7 +1589,6 @@ rb_thread_create_timer_thread(void)
     if (!timer_thread.created) {
 	size_t stack_size = 0;
 	int err;
-#ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
 	rb_vm_t *vm = GET_VM();
 
@@ -1631,7 +1623,6 @@ rb_thread_create_timer_thread(void)
 	    }
 	}
 # endif
-#endif
 
 #if USE_SLEEPY_TIMER_THREAD
 	err = setup_communication_pipe();
@@ -1646,7 +1637,6 @@ rb_thread_create_timer_thread(void)
 	if (timer_thread.created) {
 	    rb_bug("rb_thread_create_timer_thread: Timer thread was already created\n");
 	}
-#ifdef HAVE_PTHREAD_ATTR_INIT
 	err = pthread_create(&timer_thread.id, &attr, thread_timer, &vm->gvl);
 	pthread_attr_destroy(&attr);
 
@@ -1660,9 +1650,6 @@ rb_thread_create_timer_thread(void)
 	    stack_size = 0;
 	    err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
 	}
-#else
-	err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
-#endif
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
 		    strerror(err));
