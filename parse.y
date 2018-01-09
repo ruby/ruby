@@ -8172,7 +8172,7 @@ parser_yylex(struct parser_params *parser)
       case '*':
 	if ((c = nextc()) == '*') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tPOW);
+		set_yylval_id(idPow);
 		SET_LEX_STATE(EXPR_BEG);
 		return tOP_ASGN;
 	    }
@@ -8304,7 +8304,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '<') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tLSHFT);
+		set_yylval_id(idLTLT);
 		SET_LEX_STATE(EXPR_BEG);
 		return tOP_ASGN;
 	    }
@@ -8321,7 +8321,7 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '>') {
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tRSHFT);
+		set_yylval_id(idGTGT);
 		SET_LEX_STATE(EXPR_BEG);
 		return tOP_ASGN;
 	    }
