@@ -5,8 +5,8 @@
 %# granted, to either  redistribute and/or modify this file,  provided that the
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
+%
+% map = RubyVM::Typemap.each_pair.map {|k, (c, t)| sprintf "%s = '%s'", t, c }
 enum ruby_insn_type_chars {
-% RubyVM::Typemap.each_pair do |k, (c, t)|
-    <%= t %> = '<%= c %>',
-% end
+    <%=  map.join(",\n    ") %>
 };
