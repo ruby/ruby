@@ -63,7 +63,7 @@
  *   2: succinct bitvector
  */
 #ifndef VM_INSN_INFO_TABLE_IMPL
-# define VM_INSN_INFO_TABLE_IMPL 2
+# define VM_INSN_INFO_TABLE_IMPL 1
 #endif
 
 #include "ruby/ruby.h"
