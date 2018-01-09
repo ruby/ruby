@@ -1022,19 +1022,20 @@ define print_lineno
   end
 
   set $i = 0
-  set $size = $iseq->body->insns_info_size
-  set $table = $iseq->body->insns_info
+  set $size = $iseq->body->insns_info.size
+  set $table = $iseq->body->insns_info.body
+  set $positions = $iseq->body->insns_info.positions
   #printf "size: %d\n", $size
   if $size == 0
   else
     set $i = 1
     while $i < $size
-      #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $table[$i].position, $table[$i].line_no, $pos
-      if $table[$i].position > $pos
+      #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $positions[$i], $table[$i].line_no, $pos
+      if $positions[$i] > $pos
         loop_break
       end
       set $i = $i + 1
-      if $table[$i].position == $pos
+      if $positions[$i] == $pos
         loop_break
       end
     end
