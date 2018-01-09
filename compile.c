@@ -5748,9 +5748,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_SEND_WITH_FLAG(ret, line, idAREF, argc, INT2FIX(flag));
 	flag |= asgnflag;
 
-	if (id == 0 || id == 1) {
-	    /* 0: or, 1: and
-	       a[x] ||= y
+	if (id == idOROP || id == idANDOP) {
+	    /* a[x] ||= y  or  a[x] &&= y
 
 	       unless/if a[x]
 	       a[x]= y
@@ -5762,12 +5761,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    LABEL *lfin = NEW_LABEL(line);
 
 	    ADD_INSN(ret, line, dup);
-	    if (id == 0) {
-		/* or */
+	    if (id == idOROP) {
 		ADD_INSNL(ret, line, branchif, label);
 	    }
-	    else {
-		/* and */
+	    else { /* idANDOP */
 		ADD_INSNL(ret, line, branchunless, label);
 	    }
 	    ADD_INSN(ret, line, pop);
@@ -5894,12 +5891,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN(ret, line, dup);
 	ADD_SEND(ret, line, vid, INT2FIX(0));
 
-	if (atype == 0 || atype == 1) {	/* 0: OR or 1: AND */
+	if (atype == idOROP || atype == idANDOP) {
 	    ADD_INSN(ret, line, dup);
-	    if (atype == 0) {
+	    if (atype == idOROP) {
 		ADD_INSNL(ret, line, branchif, lcfin);
 	    }
-	    else {
+	    else { /* idANDOP */
 		ADD_INSNL(ret, line, branchunless, lcfin);
 	    }
 	    ADD_INSN(ret, line, pop);
@@ -5959,7 +5956,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	mid = node->nd_head->nd_mid;
 	/* cref */
-	if (node->nd_aid == 0) {
+	if (node->nd_aid == idOROP) {
 	    lassign = NEW_LABEL(line);
 	    ADD_INSN(ret, line, dup); /* cref cref */
 	    ADD_INSN3(ret, line, defined, INT2FIX(DEFINED_CONST),
@@ -5969,12 +5966,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN(ret, line, dup); /* cref cref */
 	ADD_INSN1(ret, line, getconstant, ID2SYM(mid)); /* cref obj */
 
-	if (node->nd_aid == 0 || node->nd_aid == 1) {
+	if (node->nd_aid == idOROP || node->nd_aid == idANDOP) {
 	    lfin = NEW_LABEL(line);
 	    if (!popped) ADD_INSN(ret, line, dup); /* cref [obj] obj */
-	    if (node->nd_aid == 0)
+	    if (node->nd_aid == idOROP)
 		ADD_INSNL(ret, line, branchif, lfin);
-	    else
+	    else /* idANDOP */
 		ADD_INSNL(ret, line, branchunless, lfin);
 	    /* cref [obj] */
 	    if (!popped) ADD_INSN(ret, line, pop); /* cref */

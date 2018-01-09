@@ -495,12 +495,6 @@ static NODE *new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs, ID 
 #define new_attr_op_assign(lhs, type, attr, op, rhs, cr) new_attr_op_assign_gen(parser, (lhs), (type), (attr), (op), (rhs), (cr))
 static NODE *new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *cr);
 #define new_const_op_assign(lhs, op, rhs, cr) new_const_op_assign_gen(parser, (lhs), (op), (rhs), (cr))
-static ID change_shortcut_operator_id(ID id)
-{
-    if (id == tOROP) return 0;
-    if (id == tANDOP) return 1;
-    return id;
-}
 
 static NODE *const_path_field_gen(struct parser_params *parser, NODE *head, ID mid, const YYLTYPE *cr);
 #define const_path_field(w, n, cr) const_path_field_gen(parser, w, n, cr)
@@ -1464,7 +1458,7 @@ command_asgn	: lhs '=' command_rhs
 			value_expr($6);
 			$3 = make_array($3, &@3);
 			args = arg_concat($3, $6, &@$);
-			$$ = NEW_OP_ASGN1($1, change_shortcut_operator_id($5), args, &@$);
+			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -2094,7 +2088,7 @@ arg		: lhs '=' arg_rhs
 			else {
 			    args = arg_concat($3, $6, &@$);
 			}
-			$$ = NEW_OP_ASGN1($1, change_shortcut_operator_id($5), args, &@$);
+			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
 			fixpos($$, $1);
 		    /*%
 			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
@@ -8369,7 +8363,7 @@ parser_yylex(struct parser_params *parser)
 	if ((c = nextc()) == '&') {
 	    SET_LEX_STATE(EXPR_BEG);
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tANDOP);
+                set_yylval_id(idANDOP);
 		SET_LEX_STATE(EXPR_BEG);
 		return tOP_ASGN;
 	    }
@@ -8408,7 +8402,7 @@ parser_yylex(struct parser_params *parser)
 	if ((c = nextc()) == '|') {
 	    SET_LEX_STATE(EXPR_BEG);
 	    if ((c = nextc()) == '=') {
-                set_yylval_id(tOROP);
+                set_yylval_id(idOROP);
 		SET_LEX_STATE(EXPR_BEG);
 		return tOP_ASGN;
 	    }
@@ -10562,7 +10556,7 @@ new_attr_op_assign_gen(struct parser_params *parser, NODE *lhs,
 {
     NODE *asgn;
 
-    asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, change_shortcut_operator_id(op), rhs, cr);
+    asgn = NEW_OP_ASGN2(lhs, CALL_Q_P(atype), attr, op, rhs, cr);
     fixpos(asgn, lhs);
     return asgn;
 }
@@ -10573,7 +10567,7 @@ new_const_op_assign_gen(struct parser_params *parser, NODE *lhs, ID op, NODE *rh
     NODE *asgn;
 
     if (lhs) {
-	asgn = NEW_OP_CDECL(lhs, change_shortcut_operator_id(op), rhs, cr);
+	asgn = NEW_OP_CDECL(lhs, op, rhs, cr);
     }
     else {
 	asgn = NEW_BEGIN(0, cr);
