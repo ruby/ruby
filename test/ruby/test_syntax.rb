@@ -1128,6 +1128,24 @@ eom
     assert_equal(:begin, result)
   end
 
+  def test_rescue_do_end_ensure_in_lambda
+    result = []
+    eval("#{<<-"begin;"}\n#{<<-"end;"}")
+    begin;
+      -> do
+        result << :begin
+        raise "An exception occurred!"
+      rescue
+        result << :rescue
+      else
+        result << :else
+      ensure
+        result << :ensure
+      end.call
+    end;
+    assert_equal([:begin, :rescue, :ensure], result)
+  end
+
   def test_return_in_loop
     obj = Object.new
     def obj.test
