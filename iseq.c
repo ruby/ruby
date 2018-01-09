@@ -242,7 +242,7 @@ rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
 }
 
 static rb_iseq_location_t *
-iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_range_t *code_range)
+iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_location_t *code_location)
 {
     rb_iseq_location_t *loc = &iseq->body->location;
 
@@ -250,14 +250,14 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, VAL
     RB_OBJ_WRITE(iseq, &loc->label, name);
     RB_OBJ_WRITE(iseq, &loc->base_label, name);
     loc->first_lineno = first_lineno;
-    if (code_range) {
-	loc->code_range = *code_range;
+    if (code_location) {
+	loc->code_location = *code_location;
     }
     else {
-	loc->code_range.first_loc.lineno = 0;
-	loc->code_range.first_loc.column = 0;
-	loc->code_range.last_loc.lineno = -1;
-	loc->code_range.last_loc.column = -1;
+	loc->code_location.beg_pos.lineno = 0;
+	loc->code_location.beg_pos.column = 0;
+	loc->code_location.end_pos.lineno = -1;
+	loc->code_location.end_pos.column = -1;
     }
 
     return loc;
@@ -297,7 +297,7 @@ rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj)
 
 static VALUE
 prepare_iseq_build(rb_iseq_t *iseq,
-		   VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_range_t *code_range,
+		   VALUE name, VALUE path, VALUE realpath, VALUE first_lineno, const rb_code_location_t *code_location,
 		   const rb_iseq_t *parent, enum iseq_type type,
 		   const rb_compile_option_t *option)
 {
@@ -311,7 +311,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     set_relation(iseq, parent);
 
     name = rb_fstring(name);
-    iseq_location_setup(iseq, name, path, realpath, first_lineno, code_range);
+    iseq_location_setup(iseq, name, path, realpath, first_lineno, code_location);
     if (iseq != iseq->body->local_iseq) {
 	RB_OBJ_WRITE(iseq, &iseq->body->location.base_label, iseq->body->local_iseq->body->location.label);
     }
@@ -525,7 +525,7 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
     new_opt = option ? *option : COMPILE_OPTION_DEFAULT;
     if (ast && ast->compile_option) rb_iseq_make_compile_option(&new_opt, ast->compile_option);
 
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_crange : NULL, parent, type, &new_opt);
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, node ? &node->nd_loc : NULL, parent, type, &new_opt);
 
     rb_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
@@ -601,13 +601,13 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
     rb_iseq_t *iseq = iseq_alloc();
 
     VALUE magic, version1, version2, format_type, misc;
-    VALUE name, path, realpath, first_lineno, code_range;
+    VALUE name, path, realpath, first_lineno, code_location;
     VALUE type, body, locals, params, exception;
 
     st_data_t iseq_type;
     rb_compile_option_t option;
     int i = 0;
-    rb_code_range_t tmp_loc = { {0, 0}, {-1, -1} };
+    rb_code_location_t tmp_loc = { {0, 0}, {-1, -1} };
 
     /* [magic, major_version, minor_version, format_type, misc,
      *  label, path, first_lineno,
@@ -642,12 +642,12 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
-    code_range = rb_hash_aref(misc, ID2SYM(rb_intern("code_range")));
-    if (RB_TYPE_P(code_range, T_ARRAY) && RARRAY_LEN(code_range) == 4) {
-	tmp_loc.first_loc.lineno = NUM2INT(rb_ary_entry(code_range, 0));
-	tmp_loc.first_loc.column = NUM2INT(rb_ary_entry(code_range, 1));
-	tmp_loc.last_loc.lineno = NUM2INT(rb_ary_entry(code_range, 2));
-	tmp_loc.last_loc.column = NUM2INT(rb_ary_entry(code_range, 3));
+    code_location = rb_hash_aref(misc, ID2SYM(rb_intern("code_location")));
+    if (RB_TYPE_P(code_location, T_ARRAY) && RARRAY_LEN(code_location) == 4) {
+	tmp_loc.beg_pos.lineno = NUM2INT(rb_ary_entry(code_location, 0));
+	tmp_loc.beg_pos.column = NUM2INT(rb_ary_entry(code_location, 1));
+	tmp_loc.end_pos.lineno = NUM2INT(rb_ary_entry(code_location, 2));
+	tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
     }
 
     make_compile_option(&option, opt);
@@ -792,12 +792,12 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
 }
 
 void
-rb_iseq_code_range(const rb_iseq_t *iseq, int *first_lineno, int *first_column, int *last_lineno, int *last_column)
+rb_iseq_code_location(const rb_iseq_t *iseq, int *beg_pos_lineno, int *beg_pos_column, int *end_pos_lineno, int *end_pos_column)
 {
-    if (first_lineno) *first_lineno = iseq->body->location.code_range.first_loc.lineno;
-    if (first_column) *first_column = iseq->body->location.code_range.first_loc.column;
-    if (last_lineno) *last_lineno = iseq->body->location.code_range.last_loc.lineno;
-    if (last_column) *last_column = iseq->body->location.code_range.last_loc.column;
+    if (beg_pos_lineno) *beg_pos_lineno = iseq->body->location.code_location.beg_pos.lineno;
+    if (beg_pos_column) *beg_pos_column = iseq->body->location.code_location.beg_pos.column;
+    if (end_pos_lineno) *end_pos_lineno = iseq->body->location.code_location.end_pos.lineno;
+    if (end_pos_column) *end_pos_column = iseq->body->location.code_location.end_pos.column;
 }
 
 VALUE
@@ -1702,11 +1702,11 @@ iseq_inspect(const rb_iseq_t *iseq)
     else {
 	return rb_sprintf("#<ISeq:%s@%s:%d (%d,%d)-(%d,%d)>",
 			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)),
-			  iseq->body->location.code_range.first_loc.lineno,
-			  iseq->body->location.code_range.first_loc.lineno,
-			  iseq->body->location.code_range.first_loc.column,
-			  iseq->body->location.code_range.last_loc.lineno,
-			  iseq->body->location.code_range.last_loc.column);
+			  iseq->body->location.code_location.beg_pos.lineno,
+			  iseq->body->location.code_location.beg_pos.lineno,
+			  iseq->body->location.code_location.beg_pos.column,
+			  iseq->body->location.code_location.end_pos.lineno,
+			  iseq->body->location.code_location.end_pos.column);
     }
 }
 
@@ -2419,12 +2419,12 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     rb_hash_aset(misc, ID2SYM(rb_intern("arg_size")), INT2FIX(iseq->body->param.size));
     rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq->body->local_table_size));
     rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq->body->stack_max));
-    rb_hash_aset(misc, ID2SYM(rb_intern("code_range")),
+    rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
 	    rb_ary_new_from_args(4,
-		INT2FIX(iseq->body->location.code_range.first_loc.lineno),
-		INT2FIX(iseq->body->location.code_range.first_loc.column),
-		INT2FIX(iseq->body->location.code_range.last_loc.lineno),
-		INT2FIX(iseq->body->location.code_range.last_loc.column)));
+		INT2FIX(iseq->body->location.code_location.beg_pos.lineno),
+		INT2FIX(iseq->body->location.code_location.beg_pos.column),
+		INT2FIX(iseq->body->location.code_location.end_pos.lineno),
+		INT2FIX(iseq->body->location.code_location.end_pos.column)));
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

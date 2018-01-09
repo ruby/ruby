@@ -258,7 +258,7 @@ typedef struct rb_iseq_location_struct {
     VALUE base_label;   /* String */
     VALUE label;        /* String */
     VALUE first_lineno; /* TODO: may be unsigned short */
-    rb_code_range_t code_range;
+    rb_code_location_t code_location;
 } rb_iseq_location_t;
 
 #define PATHOBJ_PATH     0

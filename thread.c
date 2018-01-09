@@ -5070,7 +5070,7 @@ update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 const rb_method_entry_t *
 rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 {
-    VALUE path, first_lineno, first_column, last_lineno, last_column;
+    VALUE path, beg_pos_lineno, beg_pos_column, end_pos_lineno, end_pos_column;
 
   retry:
     switch (me->def->type) {
@@ -5078,10 +5078,10 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 	const rb_iseq_t *iseq = me->def->body.iseq.iseqptr;
 	rb_iseq_location_t *loc = &iseq->body->location;
 	path = rb_iseq_path(iseq);
-	first_lineno = INT2FIX(loc->code_range.first_loc.lineno);
-	first_column = INT2FIX(loc->code_range.first_loc.column);
-	last_lineno = INT2FIX(loc->code_range.last_loc.lineno);
-	last_column = INT2FIX(loc->code_range.last_loc.column);
+	beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
+	beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
+	end_pos_lineno = INT2FIX(loc->code_location.end_pos.lineno);
+	end_pos_column = INT2FIX(loc->code_location.end_pos.column);
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
@@ -5091,10 +5091,10 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 	    rb_iseq_check(iseq);
 	    path = rb_iseq_path(iseq);
 	    loc = &iseq->body->location;
-	    first_lineno = INT2FIX(loc->code_range.first_loc.lineno);
-	    first_column = INT2FIX(loc->code_range.first_loc.column);
-	    last_lineno = INT2FIX(loc->code_range.last_loc.lineno);
-	    last_column = INT2FIX(loc->code_range.last_loc.column);
+	    beg_pos_lineno = INT2FIX(loc->code_location.beg_pos.lineno);
+	    beg_pos_column = INT2FIX(loc->code_location.beg_pos.column);
+	    end_pos_lineno = INT2FIX(loc->code_location.end_pos.lineno);
+	    end_pos_column = INT2FIX(loc->code_location.end_pos.column);
 	    break;
 	}
 	return NULL;
@@ -5117,10 +5117,10 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
     }
     if (resolved_location) {
 	resolved_location[0] = path;
-	resolved_location[1] = first_lineno;
-	resolved_location[2] = first_column;
-	resolved_location[3] = last_lineno;
-	resolved_location[4] = last_column;
+	resolved_location[1] = beg_pos_lineno;
+	resolved_location[2] = beg_pos_column;
+	resolved_location[3] = end_pos_lineno;
+	resolved_location[4] = end_pos_column;
     }
     return me;
 }

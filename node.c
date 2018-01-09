@@ -23,7 +23,7 @@
 #define A_LONG(val) rb_str_catf(buf, "%ld", (val))
 #define A_LIT(lit) AR(rb_inspect(lit))
 #define A_NODE_HEADER(node, term) \
-    rb_str_catf(buf, "@ %s (line: %d, code_range: (%d,%d)-(%d,%d))%s"term, \
+    rb_str_catf(buf, "@ %s (line: %d, location: (%d,%d)-(%d,%d))%s"term, \
 		ruby_node_name(nd_type(node)), nd_line(node), \
 		nd_first_lineno(node), nd_first_column(node), \
 		nd_last_lineno(node), nd_last_column(node), \
@@ -1026,10 +1026,10 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
     n->u1.value = a0;
     n->u2.value = a1;
     n->u3.value = a2;
-    n->nd_crange.first_loc.lineno = 0;
-    n->nd_crange.first_loc.column = 0;
-    n->nd_crange.last_loc.lineno = 0;
-    n->nd_crange.last_loc.column = 0;
+    n->nd_loc.beg_pos.lineno = 0;
+    n->nd_loc.beg_pos.column = 0;
+    n->nd_loc.end_pos.lineno = 0;
+    n->nd_loc.end_pos.column = 0;
 }
 
 typedef struct node_buffer_elem_struct {
