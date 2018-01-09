@@ -2840,9 +2840,9 @@ struct succ_index_table {
 } succ_index_table;
 
 #define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
-#define imm_block_rank_get(v, i) (((v) & 0x7fL << (i) * 7) >> ((i) * 7))
+#define imm_block_rank_get(v, i) ((int) (((v) & 0x7fL << (i) * 7) >> ((i) * 7)))
 #define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
-#define small_block_rank_get(v, i) ((i) == 0 ? 0 : ((v) & 0x1ffL << ((i) - 1) * 9) >> (((i) - 1) * 9))
+#define small_block_rank_get(v, i) ((int) ((i) == 0 ? 0 : ((v) & 0x1ffL << ((i) - 1) * 9) >> (((i) - 1) * 9)))
 
 static struct succ_index_table *
 succ_index_table_create(int max_pos, int *data, int size)
