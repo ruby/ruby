@@ -1743,7 +1743,7 @@ rb_threadptr_pending_interrupt_deque(rb_thread_t *th, enum handle_interrupt_timi
 #endif
 }
 
-int
+static int
 threadptr_pending_interrupt_active_p(rb_thread_t *th)
 {
     /*
