@@ -2,8 +2,9 @@
  * load methods from eval.c
  */
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include "dln.h"
 #include "eval_intern.h"
 #include "probes.h"

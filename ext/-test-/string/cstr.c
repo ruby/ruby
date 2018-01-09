@@ -1,3 +1,4 @@
+#include "ruby/encoding.h"
 #include "internal.h"
 
 static VALUE

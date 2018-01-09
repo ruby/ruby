@@ -11,9 +11,10 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
+#include "ruby/thread.h"
 #include "internal.h"
 #include "encindex.h"
-#include "ruby/thread.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

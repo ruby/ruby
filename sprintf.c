@@ -11,8 +11,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "id.h"
 #include <math.h>
 #include <stdarg.h>
