@@ -1181,6 +1181,11 @@ eom
     assert_equal(line, e.backtrace_locations[0].lineno)
   end
 
+  def test_methoddef_in_cond
+    assert_valid_syntax('while def foo; tap do end; end; break; end')
+    assert_valid_syntax('while def foo a = tap do end; end; break; end')
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
