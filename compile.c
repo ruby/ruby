@@ -7169,6 +7169,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	return COMPILE_NG;
     }
 
+    /* remove tracecoverage instruction if there is no relevant instruction */
+    if (IS_TRACE(ret->last) && ((TRACE*) ret->last)->event == RUBY_EVENT_LINE) {
+	LINK_ELEMENT *insn = ret->last->prev;
+	if (IS_INSN(insn) &&
+	    IS_INSN_ID(insn, tracecoverage) &&
+	    FIX2LONG(OPERAND_AT(insn, 0)) == RUBY_EVENT_COVERAGE_LINE
+	) {
+	    ELEM_REMOVE(insn); /* remove tracecovearge */
+	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
+	}
+    }
+
     debug_node_end();
     return COMPILE_OK;
 }
