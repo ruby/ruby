@@ -55,7 +55,7 @@ static struct {
 
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(HAVE_CLOCKID_T) && \
     defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
-    defined(HAVE_CLOCK_GETTIME) && defined(HAVE_PTHREAD_CONDATTR_INIT)
+    defined(HAVE_CLOCK_GETTIME)
 #define USE_MONOTONIC_COND 1
 #else
 #define USE_MONOTONIC_COND 0
@@ -261,7 +261,6 @@ native_mutex_destroy(pthread_mutex_t *lock)
 static void
 native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
 {
-#ifdef HAVE_PTHREAD_COND_INIT
     int r;
 # if USE_MONOTONIC_COND
     pthread_condattr_t attr;
@@ -286,18 +285,15 @@ native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
     }
 
     return;
-#endif
 }
 
 static void
 native_cond_destroy(rb_nativethread_cond_t *cond)
 {
-#ifdef HAVE_PTHREAD_COND_INIT
     int r = pthread_cond_destroy(&cond->cond);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_destroy", r);
     }
-#endif
 }
 
 /*

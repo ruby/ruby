@@ -2966,7 +2966,7 @@ AS_IF([test x"$enable_pthread" = xyes], [
 	pthread_attr_get_np pthread_attr_getstack \
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
-	pthread_cond_init pthread_condattr_setclock pthread_condattr_init \
+	pthread_condattr_setclock \
 	pthread_sigmask pthread_setname_np pthread_set_name_np)
     AS_CASE(["$target_os"],[aix*],[ac_cv_func_pthread_getattr_np=no],[AC_CHECK_FUNCS(pthread_getattr_np)])
     set_current_thread_name=
