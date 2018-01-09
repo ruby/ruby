@@ -14,9 +14,6 @@
 #if !YYPURE
 # error needs pure parser
 #endif
-#ifndef PARSER_DEBUG
-#define PARSER_DEBUG 0
-#endif
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
 #define YYSTACK_USE_ALLOCA 0
