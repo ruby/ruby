@@ -23,7 +23,7 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
         }.join(', ') -%>,
 % end
     };
-    char c = t[insn];
+    signed char c = t[insn];
 
     ASSERT_VM_INSTRUCTION_SIZE(t);
     if (c != -127) {
