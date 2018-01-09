@@ -60,8 +60,11 @@
  * implementation selector of get_insn_info algorithm
  *   0: linear search
  *   1: binary search
+ *   2: succinct bitvector
  */
-#define VM_INSN_INFO_TABLE_IMPL 1
+#ifndef VM_INSN_INFO_TABLE_IMPL
+# define VM_INSN_INFO_TABLE_IMPL 2
+#endif
 
 #include "ruby/ruby.h"
 #include "ruby/st.h"
@@ -380,8 +383,11 @@ struct rb_iseq_constant_body {
     /* insn info, must be freed */
     struct iseq_insn_info {
 	const struct iseq_insn_info_entry *body;
-	const unsigned int *positions;
+	unsigned int *positions;
 	unsigned int size;
+#if VM_INSN_INFO_TABLE_IMPL == 2
+	struct succ_index_table *succ_index_table;
+#endif
     } insns_info;
 
     const ID *local_table;		/* must free */

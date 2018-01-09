@@ -31,6 +31,12 @@ VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
 static const rb_iseq_t *iseqw_check(VALUE iseqw);
 
+#if VM_INSN_INFO_TABLE_IMPL == 2
+static struct succ_index_table *succ_index_table_create(int max_pos, int *data, int size);
+static unsigned int *succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size);
+static int succ_index_lookup(const struct succ_index_table *sd, int x);
+#endif
+
 #define hidden_obj_p(obj) (!SPECIAL_CONST_P(obj) && !RBASIC(obj)->klass)
 
 static inline VALUE
@@ -76,7 +82,10 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	if (iseq->body) {
 	    ruby_xfree((void *)iseq->body->iseq_encoded);
 	    ruby_xfree((void *)iseq->body->insns_info.body);
-	    ruby_xfree((void *)iseq->body->insns_info.positions);
+	    if (iseq->body->insns_info.positions) ruby_xfree((void *)iseq->body->insns_info.positions);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+	    if (iseq->body->insns_info.succ_index_table) ruby_xfree(iseq->body->insns_info.succ_index_table);
+#endif
 	    ruby_xfree((void *)iseq->body->local_table);
 	    ruby_xfree((void *)iseq->body->is_entries);
 
@@ -351,6 +360,34 @@ prepare_iseq_build(rb_iseq_t *iseq,
 static void validate_get_insn_info(rb_iseq_t *iseq);
 #endif
 
+void
+rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
+{
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    int size = iseq->body->insns_info.size;
+    int max_pos = iseq->body->iseq_size;
+    int *data = (int *)iseq->body->insns_info.positions;
+    if (iseq->body->insns_info.succ_index_table) ruby_xfree(iseq->body->insns_info.succ_index_table);
+    iseq->body->insns_info.succ_index_table = succ_index_table_create(max_pos, data, size);
+#if VM_CHECK_MODE == 0
+    ruby_xfree(iseq->body->insns_info.positions);
+    iseq->body->insns_info.positions = NULL;
+#endif
+#endif
+}
+
+void
+rb_iseq_insns_info_decode_positions(const rb_iseq_t *iseq)
+{
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    int size = iseq->body->insns_info.size;
+    int max_pos = iseq->body->iseq_size;
+    struct succ_index_table *sd = iseq->body->insns_info.succ_index_table;
+    if (iseq->body->insns_info.positions) ruby_xfree(iseq->body->insns_info.positions);
+    iseq->body->insns_info.positions = succ_index_table_invert(max_pos, sd, size);
+#endif
+}
+
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -358,6 +395,13 @@ finish_iseq_build(rb_iseq_t *iseq)
     VALUE err = data->err_info;
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     compile_data_free(data);
+
+#if VM_INSN_INFO_TABLE_IMPL == 2 /* succinct bitvector */
+    /* create succ_index_table */
+    if (iseq->body->insns_info.succ_index_table == NULL) {
+	rb_iseq_insns_info_encode_positions(iseq);
+    }
+#endif
 
 #if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
     validate_get_insn_info(iseq);
@@ -1323,6 +1367,42 @@ static const struct iseq_insn_info_entry *
 get_insn_info(const rb_iseq_t *iseq, size_t pos)
 {
     return get_insn_info_binary_search(iseq, pos);
+}
+#endif
+
+#if VM_INSN_INFO_TABLE_IMPL == 2 /* succinct bitvector */
+static const struct iseq_insn_info_entry *
+get_insn_info_succinct_bitvector(const rb_iseq_t *iseq, size_t pos)
+{
+    size_t size = iseq->body->insns_info.size;
+    const struct iseq_insn_info_entry *insns_info = iseq->body->insns_info.body;
+    const unsigned int *positions = iseq->body->insns_info.positions;
+    const int debug = 0;
+
+    if (debug) {
+	printf("size: %"PRIuSIZE"\n", size);
+	printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
+	       (size_t)0, positions[0], insns_info[0].line_no, pos);
+    }
+
+    if (size == 0) {
+	return NULL;
+    }
+    else if (size == 1) {
+	return &insns_info[0];
+    }
+    else {
+	int index;
+	VM_ASSERT(iseq->body->insns_info.succ_index_table != NULL);
+	index = succ_index_lookup(iseq->body->insns_info.succ_index_table, (int)pos);
+	return &insns_info[index-1];
+    }
+}
+
+static const struct iseq_insn_info_entry *
+get_insn_info(const rb_iseq_t *iseq, size_t pos)
+{
+    return get_insn_info_succinct_bitvector(iseq, pos);
 }
 #endif
 
@@ -2714,6 +2794,138 @@ iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
 {
     return  iseq_ibf_load_extra_data(str);
 }
+
+#if VM_INSN_INFO_TABLE_IMPL == 2
+
+/* An implementation of succinct bit-vector for insn_info table.
+ *
+ * A succinct bit-vector is a small and efficient data structure that provides
+ * a bit-vector augmented with an index for O(1) rank operation:
+ *
+ *   rank(bv, n): the number of 1's within a range from index 0 to index n
+ *
+ * This can be used to lookup insn_info table from PC.
+ * For example, consider the following iseq and insn_info_table:
+ *
+ *  iseq               insn_info_table
+ *  PC  insn+operand   position  lineno event
+ *   0: insn1                 0: 1      [Li]
+ *   2: insn2                 2: 2      [Li]  <= (A)
+ *   5: insn3                 8: 3      [Li]  <= (B)
+ *   8: insn4
+ *
+ * In this case, a succinct bit-vector whose indexes 0, 2, 8 is "1" and
+ * other indexes is "0", i.e., "101000001", is created.
+ * To lookup the lineno of insn2, calculate rank("10100001", 2) = 2, so
+ * the line (A) is the entry in question.
+ * To lookup the lineno of insn4, calculate rank("10100001", 8) = 3, so
+ * the line (B) is the entry in question.
+ *
+ * A naive implementatoin of succinct bit-vector works really well
+ * not only for large size but also for small size.  However, it has
+ * tiny overhead for very small size.  So, this implementation consist
+ * of two parts: one part is the "immediate" table that keeps rank result
+ * as a raw table, and the other part is a normal succinct bit-vector.
+ */
+
+#define IMMEDIATE_TABLE_SIZE 54 /* a multiple of 9, and < 128 */
+
+struct succ_index_table {
+    uint64_t imm_part[IMMEDIATE_TABLE_SIZE / 9];
+    struct succ_dict_block {
+	unsigned int rank;
+	uint64_t small_block_ranks; /* 9 bits * 7 = 63 bits */
+	uint64_t bits[512/64];
+    } succ_part[];
+} succ_index_table;
+
+#define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
+#define imm_block_rank_get(v, i) (((v) & 0x7fL << (i) * 7) >> ((i) * 7))
+#define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
+#define small_block_rank_get(v, i) ((i) == 0 ? 0 : ((v) & 0x1ffL << ((i) - 1) * 9) >> (((i) - 1) * 9))
+
+static struct succ_index_table *
+succ_index_table_create(int max_pos, int *data, int size)
+{
+    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
+    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
+    struct succ_index_table *sd = ruby_xcalloc(imm_size * sizeof(uint64_t) + succ_size * sizeof(struct succ_dict_block), 1); /* zero cleared */
+    int i, j, k, r;
+
+    r = 0;
+    for (j = 0; j < imm_size; j++) {
+	for (i = 0; i < 9; i++) {
+	    if (r < size && data[r] == j * 9 + i) r++;
+	    imm_block_rank_set(sd->imm_part[j], i, r);
+	}
+    }
+    for (k = 0; k < succ_size; k++) {
+	struct succ_dict_block *sd_block = &sd->succ_part[k];
+	int small_rank = 0;
+	sd_block->rank = r;
+	for (j = 0; j < 8; j++) {
+	    uint64_t bits = 0;
+	    if (j) small_block_rank_set(sd_block->small_block_ranks, j, small_rank);
+	    for (i = 0; i < 64; i++) {
+		if (r < size && data[r] == k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE) {
+		    bits |= 1L << i;
+		    r++;
+		}
+	    }
+	    sd_block->bits[j] = bits;
+	    small_rank += rb_popcount64(bits);
+	}
+    }
+    return sd;
+}
+
+static unsigned int *
+succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size)
+{
+    const int imm_size = (max_pos < IMMEDIATE_TABLE_SIZE ? max_pos + 8 : IMMEDIATE_TABLE_SIZE) / 9;
+    const int succ_size = (max_pos < IMMEDIATE_TABLE_SIZE ? 0 : (max_pos - IMMEDIATE_TABLE_SIZE + 511)) / 512;
+    unsigned int *positions = ruby_xmalloc(sizeof(unsigned int) * size), *p;
+    int i, j, k, r = -1;
+    p = positions;
+    for (j = 0; j < imm_size; j++) {
+	for (i = 0; i < 9; i++) {
+	    int nr = imm_block_rank_get(sd->imm_part[j], i);
+	    if (r != nr) *p++ = j * 9 + i;
+	    r = nr;
+	}
+    }
+    for (k = 0; k < succ_size; k++) {
+	for (j = 0; j < 8; j++) {
+	    for (i = 0; i < 64; i++) {
+		if (sd->succ_part[k].bits[j] & (1L << i)) {
+		    *p++ = k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE;
+		}
+	    }
+	}
+    }
+    return positions;
+}
+
+static int
+succ_index_lookup(const struct succ_index_table *sd, int x)
+{
+    if (x < IMMEDIATE_TABLE_SIZE) {
+	const int i = x / 9;
+	const int j = x % 9;
+	return imm_block_rank_get(sd->imm_part[i], j);
+    }
+    else {
+	const int block_index = (x - IMMEDIATE_TABLE_SIZE) / 512;
+	const struct succ_dict_block *block = &sd->succ_part[block_index];
+	const int block_bit_index = (x - IMMEDIATE_TABLE_SIZE) % 512;
+	const int small_block_index = block_bit_index / 64;
+	const int small_block_popcount = small_block_rank_get(block->small_block_ranks, small_block_index);
+	const int popcnt = rb_popcount64(block->bits[small_block_index] << (63 - block_bit_index % 64));
+
+	return block->rank + small_block_popcount + popcnt;
+    }
+}
+#endif
 
 /*
  *  Document-class: RubyVM::InstructionSequence

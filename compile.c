@@ -8627,7 +8627,13 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.param.opt_table =      ibf_dump_param_opt_table(dump, iseq);
     dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
     dump_body.insns_info.body =      ibf_dump_insns_info_body(dump, iseq);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    rb_iseq_insns_info_decode_positions(iseq);
+#endif
     dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, iseq);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    rb_iseq_insns_info_encode_positions(iseq);
+#endif
     dump_body.local_table =          ibf_dump_local_table(dump, iseq);
     dump_body.catch_table =          ibf_dump_catch_table(dump, iseq);
     dump_body.parent_iseq =          ibf_dump_iseq(dump, iseq->body->parent_iseq);
@@ -8700,6 +8706,9 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->param.keyword        = ibf_load_param_keyword(load, body);
     load_body->insns_info.body      = ibf_load_insns_info_body(load, body);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, body);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    rb_iseq_insns_info_encode_positions(iseq);
+#endif
     load_body->local_table          = ibf_load_local_table(load, body);
     load_body->catch_table          = ibf_load_catch_table(load, body);
     load_body->parent_iseq          = ibf_load_iseq(load, body->parent_iseq);
