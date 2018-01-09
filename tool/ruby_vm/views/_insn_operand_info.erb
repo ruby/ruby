@@ -1,0 +1,43 @@
+%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+MAYBE_UNUSED(static const char *insn_op_types(VALUE insn));
+MAYBE_UNUSED(static int insn_op_type(VALUE insn, long pos));
+
+const char *
+insn_op_types(VALUE i)
+{
+    static const unsigned short o[] = {
+% a = RubyVM::Instructions.map {|i| i.operands_info }
+% o = 0
+% a.each_slice 14 do |b|
+        <%= b.map {|i|
+          j = o; o += i.size + 1; sprintf("%3d", j)
+        }.join(', ') %>,
+% end
+    };
+    static const char t[] = {
+% a.each_slice 6 do |b|
+        <%= b.map {|i| sprintf("%-6s", cstr(i)) }.join(' "\0" ') %> "\0"
+% end
+    };
+
+    ASSERT_VM_INSTRUCTION_SIZE(o);
+
+    return &t[o[i]];
+}
+
+int
+insn_op_type(VALUE i, long j)
+{
+    if (j >= insn_len(i)) {
+        return 0;
+    }
+    else {
+        return insn_op_types(i)[j];
+    }
+}

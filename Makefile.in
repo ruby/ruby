@@ -515,7 +515,7 @@ INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
-	  $(srcdir)/tool/instruction.rb $(srcdir)/tool/insns2vm.rb
+	  $(srcdir)/tool/insns2vm.rb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
