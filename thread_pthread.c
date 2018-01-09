@@ -1594,6 +1594,7 @@ static void
 rb_thread_create_timer_thread(void)
 {
     if (!timer_thread.created) {
+	size_t stack_size = 0;
 	int err;
 #ifdef HAVE_PTHREAD_ATTR_INIT
 	pthread_attr_t attr;
@@ -1621,10 +1622,14 @@ rb_thread_create_timer_thread(void)
 		THREAD_DEBUG != 0
 #endif
 	    };
-	    size_t stack_size = PTHREAD_STACK_MIN; /* may be dynamic, get only once */
+	    stack_size = PTHREAD_STACK_MIN; /* may be dynamic, get only once */
 	    if (stack_size < min_size) stack_size = min_size;
 	    if (needs_more_stack) stack_size += BUFSIZ;
-	    pthread_attr_setstacksize(&attr, stack_size);
+	    err = pthread_attr_setstacksize(&attr, stack_size);
+	    if (err != 0) {
+		rb_bug("pthread_attr_setstacksize(.., %"PRIuSIZE") failed: %s",
+			stack_size, strerror(err));
+	    }
 	}
 # endif
 #endif
@@ -1653,6 +1658,7 @@ rb_thread_create_timer_thread(void)
 	     * storage can cause small stack sizes to fail.  So lets hope the
 	     * default stack size is enough for them:
 	     */
+	    stack_size = 0;
 	    err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
 	}
 #else
@@ -1661,6 +1667,12 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
 		    strerror(err));
+	    if (stack_size) {
+		rb_warn("timer thread stack size: %"PRIuSIZE, stack_size);
+	    }
+	    else {
+		rb_warn("timer thread stack size: system default");
+	    }
 #if USE_SLEEPY_TIMER_THREAD
 	    CLOSE_INVALIDATE(normal[0]);
 	    CLOSE_INVALIDATE(normal[1]);
