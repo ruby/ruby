@@ -152,7 +152,7 @@ struct local_vars {
     struct vtable *past;
 # endif
     struct local_vars *prev;
-    stack_type cmdargs;
+    stack_type cmdargs, cond; /* XXX: backup for cmdargs_stack and cond_stack.  Because this is not a part of local variables, refactoring is needed. */
 };
 
 #define DVARS_INHERIT ((void*)1)
@@ -2900,31 +2900,22 @@ primary		: literal
 			$<num>$ = in_def;
 			in_def = 1;
 		    }
-		    {
-			$<val>1 = cond_stack;
-			$<val>$ = cmdarg_stack;
-			COND_SET(0);
-			CMDARG_SET(0);
-		    }
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($7);
+			NODE *body = remove_begin($6);
 			reduce_nodes(&body);
-			$$ = NEW_DEFN($2, $6, body, &@$);
-			nd_set_line($$->nd_defn, @8.end_pos.lineno);
+			$$ = NEW_DEFN($2, $5, body, &@$);
+			nd_set_line($$->nd_defn, @7.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*%
-			$$ = dispatch3(def, $2, $6, $7);
+			$$ = dispatch3(def, $2, $5, $6);
 		    %*/
 			local_pop();
 			in_def = $<num>4 & 1;
 			current_arg = $<id>3;
-
-			COND_SET($<val>1);
-			CMDARG_SET($<val>5);
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
 		    {
@@ -2935,31 +2926,22 @@ primary		: literal
 			$<id>$ = current_arg;
 			current_arg = 0;
 		    }
-		    {
-			$<val>1 = cond_stack;
-			$<val>$ = cmdarg_stack;
-			COND_SET(0);
-			CMDARG_SET(0);
-		    }
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($9);
+			NODE *body = remove_begin($8);
 			reduce_nodes(&body);
-			$$ = NEW_DEFS($2, $5, $8, body, &@$);
-			nd_set_line($$->nd_defn, @10.end_pos.lineno);
+			$$ = NEW_DEFS($2, $5, $7, body, &@$);
+			nd_set_line($$->nd_defn, @9.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*%
-			$$ = dispatch5(defs, $2, $<val>3, $5, $8, $9);
+			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
 		    %*/
 			local_pop();
 			in_def = $<num>4 & 1;
 			current_arg = $<id>6;
-
-			COND_SET($<val>1);
-			CMDARG_SET($<val>7);
 		    }
 		| keyword_break
 		    {
@@ -10675,6 +10657,8 @@ local_push_gen(struct parser_params *parser, int inherit_dvars)
 # endif
     local->cmdargs = cmdarg_stack;
     CMDARG_SET(0);
+    local->cond = cond_stack;
+    COND_SET(0);
     lvtbl = local;
 }
 
@@ -10696,6 +10680,7 @@ local_pop_gen(struct parser_params *parser)
     vtable_free(lvtbl->args);
     vtable_free(lvtbl->vars);
     CMDARG_SET(lvtbl->cmdargs);
+    COND_SET(lvtbl->cond);
     xfree(lvtbl);
     lvtbl = local;
 }

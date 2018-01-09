@@ -1186,6 +1186,11 @@ eom
     assert_valid_syntax('while def foo a = tap do end; end; break; end')
   end
 
+  def test_classdef_in_cond
+    assert_valid_syntax('while class Foo; tap do end; end; break; end')
+    assert_valid_syntax('while class Foo a = tap do end; end; break; end')
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
