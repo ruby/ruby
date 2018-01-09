@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
+#include <ruby/io.h>
 #include "internal.h"
 #include <ruby/st.h>
-#include <ruby/io.h>
 #include <ruby/re.h>
 #include "node.h"
 #include "gc.h"

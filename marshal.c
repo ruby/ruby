@@ -13,8 +13,8 @@
 # error too old GCC
 #endif
 
-#include "internal.h"
 #include "ruby/io.h"
+#include "internal.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
 #include "encindex.h"
