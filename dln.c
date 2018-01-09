@@ -232,13 +232,13 @@ load_header(int fd, struct exec *hdrp, long disp)
 #  define R_RIGHTSHIFT(r)	(reloc_r_rightshift[(r)->r_type])
 #  define R_BITSIZE(r) 		(reloc_r_bitsize[(r)->r_type])
 #  define R_LENGTH(r)		(reloc_r_length[(r)->r_type])
-static int reloc_r_rightshift[] = {
+static const int reloc_r_rightshift[] = {
   0, 0, 0, 0, 0, 0, 2, 2, 10, 0, 0, 0, 0, 0, 0,
 };
-static int reloc_r_bitsize[] = {
+static const int reloc_r_bitsize[] = {
   8, 16, 32, 8, 16, 32, 30, 22, 22, 22, 13, 10, 32, 32, 16,
 };
-static int reloc_r_length[] = {
+static const int reloc_r_length[] = {
   0, 1, 2, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
 };
 #  define R_PCREL(r) \
