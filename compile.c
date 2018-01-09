@@ -657,7 +657,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 		CHECK(COMPILE(ret, "block body", node->nd_body));
 		ADD_LABEL(ret, end);
 		ADD_TRACE(ret, RUBY_EVENT_B_RETURN);
-		ISEQ_COMPILE_DATA(iseq)->last_line = iseq->body->location.code_range.last_loc.lineno;
+		ISEQ_COMPILE_DATA(iseq)->last_line = iseq->body->location.code_location.end_pos.lineno;
 
 		/* wide range catch handler must put at last */
 		ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
@@ -8692,7 +8692,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, body->location.base_label));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, body->location.label));
     load_body->location.first_lineno = body->location.first_lineno;
-    load_body->location.code_range = body->location.code_range;
+    load_body->location.code_location = body->location.code_location;
 
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
     load_body->ci_entries           = ibf_load_ci_entries(load, body);
