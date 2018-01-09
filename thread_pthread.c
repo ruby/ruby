@@ -1603,6 +1603,7 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    rb_warn("pthread_attr_init failed for timer: %s, scheduling broken",
 		    strerror(err));
+	    VM_ASSERT(err == 0);
 	    return;
         }
 # ifdef PTHREAD_STACK_MIN
