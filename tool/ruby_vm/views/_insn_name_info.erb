@@ -12,31 +12,36 @@
 % c.pop
 %
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
+extern const char *rb_vm_insn_name_info;
+extern const unsigned short rb_vm_insn_name_offset[];
+
+#ifdef RUBY_VM_INSNS_INFO
+const unsigned short rb_vm_insn_name_offset[] = {
+% c.each_slice 12 do |d|
+    <%= d.map {|i| sprintf("%4d", i) }.join(', ') %>,
+% end
+};
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);
+
+PACKED_STRUCT(struct rb_vm_insn_name_info_tag {
+% b.each_slice 3 do |d|
+    <%= d.map {|i|
+        sprintf("const char L%03d[%2d]", i, a[i].length + 1)
+    }.join('; ') %>;
+% end
+});
+
+static const struct rb_vm_insn_name_info_tag rb_vm_insn_name_base = {
+% a.each_slice 2 do |d|
+    <%= d.map {|i| sprintf("%-30s", cstr(i)) }.join(', ') %>,
+% end
+};
+
+const char *rb_vm_insn_name_info = (const char *)&rb_vm_insn_name_base;
+#endif
 
 const char *
 insn_name(VALUE i)
 {
-    static const unsigned short o[] = {
-% c.each_slice 12 do |d|
-        <%= d.map {|i| sprintf("%4d", i) }.join(', ') %>,
-% end
-    };
-
-    PACKED_STRUCT(static const struct {
-% b.each_slice 3 do |d|
-        <%= d.map {|i|
-            sprintf("const char L%03d[%2d]", i, a[i].length + 1)
-        }.join('; ') %>;
-% end
-
-    }) t = {
-% a.each_slice 2 do |d|
-        <%= d.map {|i| sprintf("%-30s", cstr(i)) }.join(', ') %>,
-% end
-    };
-
-    ASSERT_VM_INSTRUCTION_SIZE(o);
-    static const char *p = (const char *)&t;
-
-    return &p[o[i]];
+    return &rb_vm_insn_name_info[rb_vm_insn_name_offset[i]];
 }
