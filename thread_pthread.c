@@ -1604,7 +1604,6 @@ rb_thread_create_timer_thread(void)
 	if (err != 0) {
 	    rb_warn("pthread_attr_init failed for timer: %s, scheduling broken",
 		    strerror(err));
-	    VM_ASSERT(err == 0);
 	    return;
         }
 # ifdef PTHREAD_STACK_MIN
@@ -1673,6 +1672,7 @@ rb_thread_create_timer_thread(void)
 	    else {
 		rb_warn("timer thread stack size: system default");
 	    }
+	    VM_ASSERT(err == 0);
 #if USE_SLEEPY_TIMER_THREAD
 	    CLOSE_INVALIDATE(normal[0]);
 	    CLOSE_INVALIDATE(normal[1]);
