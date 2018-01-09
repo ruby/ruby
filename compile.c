@@ -9,13 +9,15 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "internal.h"
 #include "encindex.h"
 #include <math.h>
 
 #define USE_INSN_STACK_INCREASE 1
 #include "vm_core.h"
+#include "vm_debug.h"
 #include "iseq.h"
 #include "insns.inc"
 #include "insns_info.inc"

@@ -13,7 +13,6 @@
 #define RUBY_INTERNAL_H 1
 
 #include "ruby.h"
-#include "ruby/encoding.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -1149,8 +1148,10 @@ void Init_ext(void);
 /* encoding.c */
 ID rb_id_encoding(void);
 void rb_gc_mark_encodings(void);
+#ifdef RUBY_ENCODING_H
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
+#endif
 int rb_encdb_replicate(const char *alias, const char *orig);
 int rb_encdb_alias(const char *alias, const char *orig);
 int rb_encdb_dummy(const char *name);
@@ -1169,21 +1170,23 @@ extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
 void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
-VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 VALUE rb_check_backtrace(VALUE);
 NORETURN(void rb_async_bug_errno(const char *,int));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
 PRINTF_ARGS(void rb_sys_warn(const char *fmt, ...), 1, 2);
 PRINTF_ARGS(void rb_syserr_warn(int err, const char *fmt, ...), 2, 3);
+PRINTF_ARGS(void rb_sys_warning(const char *fmt, ...), 1, 2);
+PRINTF_ARGS(void rb_syserr_warning(int err, const char *fmt, ...), 2, 3);
+#ifdef RUBY_ENCODING_H
+VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
 PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
-PRINTF_ARGS(void rb_sys_warning(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warning(int err, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
 PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
+#endif
 
 #define rb_raise_cstr(etype, mesg) \
     rb_exc_raise(rb_exc_new_str(etype, rb_str_new_cstr(mesg)))
@@ -1801,17 +1804,23 @@ int rb_divert_reserved_fd(int fd);
 
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;
+#ifdef RUBY_ENCODING_H
 size_t rb_econv_memsize(rb_econv_t *);
+#endif
 
 /* us_ascii.c */
+#ifdef RUBY_ENCODING_H
 extern rb_encoding OnigEncodingUS_ASCII;
+#endif
 
 /* util.c */
 char *ruby_dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve);
 char *ruby_hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rve);
 
 /* utf_8.c */
+#ifdef RUBY_ENCODING_H
 extern rb_encoding OnigEncodingUTF_8;
+#endif
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
@@ -1932,7 +1941,7 @@ NORETURN(void rb_unexpected_type(VALUE,int));
      rb_unexpected_type((VALUE)(v), (t)) : (void)0)
 
 /* file.c (export) */
-#ifdef HAVE_READLINK
+#if defined HAVE_READLINK && defined RUBY_ENCODING_H
 VALUE rb_readlink(VALUE path, rb_encoding *enc);
 #endif
 #ifdef __APPLE__
