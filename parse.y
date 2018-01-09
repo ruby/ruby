@@ -52,8 +52,8 @@
     do									\
       if (N)								\
 	{								\
-	  (Current).beg_pos = YYRHSLOC(Rhs, 1).beg_pos;		\
-	  (Current).end_pos  = YYRHSLOC(Rhs, N).end_pos;		\
+	  (Current).beg_pos = YYRHSLOC(Rhs, 1).beg_pos;			\
+	  (Current).end_pos = YYRHSLOC(Rhs, N).end_pos;			\
 	}								\
       else								\
 	RUBY_SET_YYLLOC_OF_NONE(Current);				\
@@ -9496,8 +9496,8 @@ rb_parser_set_location_from_strterm_heredoc(struct parser_params *parser, rb_str
 
     yylloc->beg_pos.lineno = (int)here->sourceline;
     yylloc->beg_pos.column = (int)(here->u3.lastidx - term_len);
-    yylloc->end_pos.lineno  = (int)here->sourceline;
-    yylloc->end_pos.column  = (int)(here->u3.lastidx);
+    yylloc->end_pos.lineno = (int)here->sourceline;
+    yylloc->end_pos.column = (int)(here->u3.lastidx);
 }
 
 void
