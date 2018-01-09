@@ -181,6 +181,8 @@ unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_trace_on_all(void);
+void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
+void rb_iseq_insns_info_decode_positions(const rb_iseq_t *iseq);
 
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
