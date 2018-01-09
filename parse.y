@@ -3453,7 +3453,7 @@ lambda_body	: tLAMBEG compstmt '}'
 			token_info_pop("}");
 			$$ = $2;
 		    }
-		| keyword_do_LAMBDA compstmt k_end
+		| keyword_do_LAMBDA bodystmt k_end
 		    {
 			$$ = $2;
 		    }
