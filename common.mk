@@ -872,22 +872,6 @@ $(OBJS):  {$(VPATH)}config.h {$(VPATH)}missing.h
 
 INSNS2VMOPT = --srcdir="$(srcdir)"
 
-{$(VPATH)}minsns.inc: $(srcdir)/template/minsns.inc.tmpl
-
-{$(VPATH)}opt_sc.inc: $(srcdir)/template/opt_sc.inc.tmpl
-
-{$(VPATH)}optinsn.inc: $(srcdir)/template/optinsn.inc.tmpl
-
-{$(VPATH)}optunifs.inc: $(srcdir)/template/optunifs.inc.tmpl
-
-{$(VPATH)}insns.inc: $(srcdir)/template/insns.inc.tmpl
-
-{$(VPATH)}insns_info.inc: $(srcdir)/template/insns_info.inc.tmpl
-
-{$(VPATH)}vmtc.inc: $(srcdir)/template/vmtc.inc.tmpl
-
-{$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
-
 srcs_vpath = {$(VPATH)}
 common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newline.c $(srcs_vpath)id.c \
 	     srcs-lib srcs-ext incs
