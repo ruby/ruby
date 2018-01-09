@@ -35,8 +35,8 @@
 #endif
 #include <ctype.h>
 
-#include "internal.h"
 #include "ruby/io.h"
+#include "internal.h"
 #include "ruby/util.h"
 
 #include <signal.h>

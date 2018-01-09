@@ -63,10 +63,11 @@
 
 /* for model 2 */
 
+#include "ruby/config.h"
+#include "ruby/io.h"
 #include "eval_intern.h"
 #include "gc.h"
 #include "timev.h"
-#include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
 #include "ruby/debug.h"

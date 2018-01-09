@@ -12,9 +12,9 @@
 
 **********************************************************************/
 
+#include "ruby/io.h"
 #include "internal.h"
 #include "ruby/debug.h"
-#include "ruby/io.h"
 #include "gc.h"
 #include "node.h"
 #include "vm_core.h"
