@@ -2787,7 +2787,6 @@ primary		: literal
 		    {
 		    /*%%%*/
 			$$ = NEW_CASE2($3, &@$);
-			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
@@ -2935,7 +2934,6 @@ primary		: literal
 			$$ = NEW_DEFN($2, $5, body, &@$);
 			nd_set_line($$->nd_defn, @7.last_loc.lineno);
 			set_line_body(body, @1.first_loc.lineno);
-			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch3(def, $2, $5, $6);
 		    %*/
@@ -2962,7 +2960,6 @@ primary		: literal
 			$$ = NEW_DEFS($2, $5, $7, body, &@$);
 			nd_set_line($$->nd_defn, @9.last_loc.lineno);
 			set_line_body(body, @1.first_loc.lineno);
-			nd_set_line($$, @1.first_loc.lineno);
 		    /*%
 			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
 		    %*/
