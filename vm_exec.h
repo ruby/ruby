@@ -189,4 +189,7 @@ default:                        \
 #define CHECK_VM_STACK_OVERFLOW_FOR_INSN(cfp, margin)
 #endif
 
+#define INSN_LABEL2(insn, name) INSN_LABEL_ ## insn ## _ ## name
+#define INSN_LABEL(x) INSN_LABEL2(NAME_OF_CURRENT_INSN, x)
+
 #endif /* RUBY_VM_EXEC_H */

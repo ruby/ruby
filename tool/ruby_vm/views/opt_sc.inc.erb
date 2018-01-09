@@ -1,0 +1,40 @@
+/* -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*- */
+
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+% raise ':FIXME:TBW' if RubyVM::VmOptsH['STACK_CACHING']
+<%= render 'copyright' %>
+<%= render 'notice', locals: {
+    this_file: 'is for threaded code',
+    edit: __FILE__,
+} -%>
+
+#define SC_STATE_SIZE 6
+
+#define SCS_XX 1
+#define SCS_AX 2
+#define SCS_BX 3
+#define SCS_AB 4
+#define SCS_BA 5
+
+#define SC_ERROR 0xffffffff
+
+static const VALUE sc_insn_info[][SC_STATE_SIZE] = {
+#define NO_SC { SC_ERROR, SC_ERROR, SC_ERROR, SC_ERROR, SC_ERROR, SC_ERROR }
+% RubyVM::Instructions.each_slice 8 do |a|
+    <%= a.map{|i| 'NO_SC' }.join(', ') %>,
+% end
+#undef NO_SC
+};
+
+static const VALUE sc_insn_next[] = {
+% RubyVM::Instructions.each_slice 8 do |a|
+    <%= a.map{|i| 'SCS_XX' }.join(', ') %>,
+% end
+};
+
+ASSERT_VM_INSTRUCTION_SIZE(sc_insn_next);

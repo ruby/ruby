@@ -1,0 +1,50 @@
+%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%;
+
+/* insn <%= insn.pretty_name %> */
+#define NAME_OF_CURRENT_INSN <%= insn.name %>
+INSN_ENTRY(<%= insn.name %>)
+{
+% unless insn.declarations.empty?
+    <%= insn.declarations.join(";\n    ") %>;
+
+% end
+    START_OF_ORIGINAL_INSN(<%= insn.name %>);
+% insn.preamble.each do |konst|
+<%= render_c_expr konst -%>
+% end
+%
+% insn.opes.each_with_index do |ope, i|
+    <%= ope[:name] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
+% end
+%
+% insn.pops.reverse_each.with_index.reverse_each do |pop, i|
+    <%= pop[:name] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
+% end
+    DEBUG_ENTER_INSN(<%=cstr insn.name %>);
+    ADD_PC(<%= insn.width %>);
+    PREFETCH(GET_PC());
+% unless insn.pops.empty?
+    POPN(<%= insn.pops.size %>);
+% end
+    COLLECT_USAGE_INSN(<%= insn.bin %>);
+% insn.opes.each_with_index do |ope, i|
+    COLLECT_USAGE_OPERAND(<%= insn.bin %>, <%= i %>, <%= ope[:name] %>);
+% end
+<%= render_c_expr insn.expr -%>
+% unless insn.rets.empty?
+    CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, <%= insn.rets.size %>);
+%   insn.rets.each_with_index do |ret, i|
+    PUSH(<%= insn.cast_to_VALUE ret %>);
+%   end
+% end
+%
+    END_INSN(<%= insn.name %>);
+}
+#undef NAME_OF_CURRENT_INSN
