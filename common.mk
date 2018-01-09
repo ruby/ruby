@@ -888,8 +888,8 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
-srcs-vpath = {$(VPATH)}
-common-srcs: $(srcs-vpath)parse.c $(srcs-vpath)lex.c $(srcs-vpath)enc/trans/newline.c $(srcs-vpath)id.c \
+srcs_vpath = {$(VPATH)}
+common-srcs: $(srcs_vpath)parse.c $(srcs_vpath)lex.c $(srcs_vpath)enc/trans/newline.c $(srcs_vpath)id.c \
 	     srcs-lib srcs-ext incs
 
 missing-srcs: $(srcdir)/missing/des_tables.c
