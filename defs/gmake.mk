@@ -139,7 +139,7 @@ $(TIMESTAMPDIR)/.exec.time:
 .PHONY: commit
 commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS)))
 	@$(BASERUBY) -C "$(srcdir)" -I./tool -rvcs -e 'VCS.detect(".").commit'
-	$(Q)$(MAKE) $(mflags) Q=$(Q) srcs-vpath='$(srcdir)/' REVISION_FORCE=PHONY update-src srcs all-incs
+	$(Q)$(MAKE) $(mflags) Q=$(Q) srcs_vpath='$(srcdir)/' REVISION_FORCE=PHONY update-src srcs all-incs
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
