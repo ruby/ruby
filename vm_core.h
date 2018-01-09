@@ -136,6 +136,7 @@
 #endif /* OPT_CALL_THREADED_CODE */
 
 typedef unsigned long rb_num_t;
+typedef   signed long rb_snum_t;
 
 enum ruby_tag_type {
     RUBY_TAG_NONE	= 0x0,
