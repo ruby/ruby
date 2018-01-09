@@ -14,7 +14,6 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
-#include "ruby/io.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -1315,7 +1314,9 @@ void ruby_set_inplace_mode(const char *);
 ssize_t rb_io_bufread(VALUE io, void *buf, size_t size);
 void rb_stdio_set_default_encoding(void);
 VALUE rb_io_flush_raw(VALUE, int);
+#ifdef RUBY_IO_H
 size_t rb_io_memsize(const rb_io_t *);
+#endif
 int rb_stderr_tty_p(void);
 
 /* load.c */

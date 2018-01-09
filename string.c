@@ -24,6 +24,7 @@
 #define BEG(no) (regs->beg[(no)])
 #define END(no) (regs->end[(no)])
 
+#include <errno.h>
 #include <math.h>
 #include <ctype.h>
 

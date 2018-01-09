@@ -11,6 +11,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/util.h"
 #include "vm_debug.h"
 #include "eval_intern.h"

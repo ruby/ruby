@@ -23,6 +23,7 @@
 
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
+#include "ruby/io.h"
 #include "ruby/util.h"
 #include <fcntl.h>
 #include <process.h>

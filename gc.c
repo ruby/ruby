@@ -14,13 +14,13 @@
 #define rb_data_object_alloc rb_data_object_alloc
 #define rb_data_typed_object_alloc rb_data_typed_object_alloc
 
-#include "internal.h"
+#include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/re.h"
-#include "ruby/io.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/debug.h"
+#include "internal.h"
 #include "eval_intern.h"
 #include "vm_core.h"
 #include "gc.h"
