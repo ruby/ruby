@@ -265,9 +265,11 @@ class RubyVM
             insn_in = true
             body    = ''
 
-            sp_inc = rets_str[%r"//\s*(.+)", 1]
 
-            raise unless /^\{$/ =~ f.gets.chomp
+          when /^\/\/ attr rb_snum_t sp_inc = (.+)$/
+            sp_inc = 'inc +=' + $1
+
+          when /^\{$/
             line_no = f.line_no
 
           # end instruction body
@@ -1246,4 +1248,3 @@ class RubyVM
     end
   end
 end
-
