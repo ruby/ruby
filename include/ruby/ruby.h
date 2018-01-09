@@ -2229,7 +2229,7 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 
 # ifdef __GNUC__
 # define rb_scan_args_verify(fmt, varc) \
-    ({ \
+    __extension__ ({ \
 	int verify; \
 	_Pragma("GCC diagnostic push"); \
 	_Pragma("GCC diagnostic ignored \"-Warray-bounds\""); \
