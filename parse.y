@@ -2900,22 +2900,31 @@ primary		: literal
 			$<num>$ = in_def;
 			in_def = 1;
 		    }
+		    {
+			$<val>1 = cond_stack;
+			$<val>$ = cmdarg_stack;
+			COND_SET(0);
+			CMDARG_SET(0);
+		    }
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($6);
+			NODE *body = remove_begin($7);
 			reduce_nodes(&body);
-			$$ = NEW_DEFN($2, $5, body, &@$);
-			nd_set_line($$->nd_defn, @7.end_pos.lineno);
+			$$ = NEW_DEFN($2, $6, body, &@$);
+			nd_set_line($$->nd_defn, @8.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*%
-			$$ = dispatch3(def, $2, $5, $6);
+			$$ = dispatch3(def, $2, $6, $7);
 		    %*/
 			local_pop();
 			in_def = $<num>4 & 1;
 			current_arg = $<id>3;
+
+			COND_SET($<val>1);
+			CMDARG_SET($<val>5);
 		    }
 		| k_def singleton dot_or_colon {SET_LEX_STATE(EXPR_FNAME);} fname
 		    {
@@ -2926,22 +2935,31 @@ primary		: literal
 			$<id>$ = current_arg;
 			current_arg = 0;
 		    }
+		    {
+			$<val>1 = cond_stack;
+			$<val>$ = cmdarg_stack;
+			COND_SET(0);
+			CMDARG_SET(0);
+		    }
 		  f_arglist
 		  bodystmt
 		  k_end
 		    {
 		    /*%%%*/
-			NODE *body = remove_begin($8);
+			NODE *body = remove_begin($9);
 			reduce_nodes(&body);
-			$$ = NEW_DEFS($2, $5, $7, body, &@$);
-			nd_set_line($$->nd_defn, @9.end_pos.lineno);
+			$$ = NEW_DEFS($2, $5, $8, body, &@$);
+			nd_set_line($$->nd_defn, @10.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*%
-			$$ = dispatch5(defs, $2, $<val>3, $5, $7, $8);
+			$$ = dispatch5(defs, $2, $<val>3, $5, $8, $9);
 		    %*/
 			local_pop();
 			in_def = $<num>4 & 1;
 			current_arg = $<id>6;
+
+			COND_SET($<val>1);
+			CMDARG_SET($<val>7);
 		    }
 		| keyword_break
 		    {
