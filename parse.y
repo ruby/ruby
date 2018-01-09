@@ -1464,13 +1464,7 @@ command_asgn	: lhs '=' command_rhs
 			value_expr($6);
 			$3 = make_array($3, &@3);
 			args = arg_concat($3, $6, &@$);
-			if ($5 == tOROP) {
-			    $5 = 0;
-			}
-			else if ($5 == tANDOP) {
-			    $5 = 1;
-			}
-			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
+			$$ = NEW_OP_ASGN1($1, change_shortcut_operator_id($5), args, &@$);
 			fixpos($$, $1);
 		    /*%
 			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
