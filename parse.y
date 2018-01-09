@@ -66,15 +66,6 @@
 #define RUBY_SET_YYLLOC(Current)					\
     rb_parser_set_code_range(parser, &(Current))
 
-#undef malloc
-#undef realloc
-#undef calloc
-#undef free
-#define malloc	YYMALLOC
-#define realloc	YYREALLOC
-#define calloc	YYCALLOC
-#define free	YYFREE
-
 enum lex_state_bits {
     EXPR_BEG_bit,		/* ignore newline, +/- is a sign. */
     EXPR_END_bit,		/* newline significant, +/- is an operator. */
