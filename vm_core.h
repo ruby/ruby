@@ -67,7 +67,6 @@
 #include "ruby/st.h"
 
 #include "node.h"
-#include "vm_debug.h"
 #include "vm_opts.h"
 #include "id.h"
 #include "method.h"

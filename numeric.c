@@ -9,8 +9,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include "id.h"
 #include <assert.h>
 #include <ctype.h>

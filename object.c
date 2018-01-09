@@ -11,9 +11,10 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "internal.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>

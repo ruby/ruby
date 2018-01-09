@@ -14,6 +14,7 @@
 
 #include "gc.h"
 #include "vm_core.h"
+#include "vm_debug.h"
 #include "iseq.h"
 #include "eval_intern.h"
 #include "probes.h"

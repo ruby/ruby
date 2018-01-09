@@ -9,8 +9,9 @@
 
 **********************************************************************/
 
-#include "internal.h"
+#include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "internal.h"
 #include "symbol.h"
 #include "gc.h"
 #include "probes.h"

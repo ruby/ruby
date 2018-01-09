@@ -11,6 +11,7 @@
 
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
+#include "ruby/encoding.h"
 #include "internal.h"
 #include <sys/types.h>
 #include <time.h>

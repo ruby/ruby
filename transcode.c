@@ -9,6 +9,7 @@
 
 **********************************************************************/
 
+#include "ruby/encoding.h"
 #include "internal.h"
 #include "transcode_data.h"
 #include <ctype.h>
