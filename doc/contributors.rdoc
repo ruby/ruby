@@ -88,7 +88,7 @@ Christoph
 * patches for set.rb
 
 Sean Chittenden
-* pathces for net/http, cgi
+* patches for net/http, cgi
 
 William D. Clinger
 * ruby_strtod is based on his paper.
@@ -109,7 +109,7 @@ Martin Duerst (duerst)
 * M17N
 
 Paul Duncan
-* pathces for rdoc
+* patches for rdoc
 
 Alexander Dymo
 * a patch for lib/benchmark.rb
