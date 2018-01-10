@@ -15,7 +15,7 @@ require_relative '../helpers/scanner'
 json    = []
 scanner = RubyVM::Scanner.new '../../../defs/opt_operand.def'
 path    = scanner.__FILE__
-grammer = %r/
+grammar = %r/
     (?<comment> \# .+? \n                      ){0}
     (?<ws>      \g<comment> | \s               ){0}
     (?<insn>    \w+                            ){0}
@@ -30,15 +30,15 @@ grammer = %r/
 
 until scanner.eos? do
   break if scanner.scan(/ ^ __END__ $ /x)
-  next  if scanner.scan(/#{grammer} \g<ws>+ /ox)
+  next  if scanner.scan(/#{grammar} \g<ws>+ /ox)
 
-  line = scanner.scan!(/#{grammer} \g<decl> /mox)
+  line = scanner.scan!(/#{grammar} \g<decl> /mox)
   insn = scanner["insn"]
   args = scanner["args"]
   ary  = []
   until args.strip.empty? do
     tmp = StringScanner.new args
-    tmp.scan(/#{grammer} \g<args> /mox)
+    tmp.scan(/#{grammar} \g<args> /mox)
     ary << tmp["arg"]
     args = tmp["remain"]
     break unless args

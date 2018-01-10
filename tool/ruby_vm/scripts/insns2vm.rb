@@ -24,7 +24,7 @@ def generate_parser
   OptionParser.new do |this|
     this.on "-I", "--srcdir=DIR", <<'end'
   Historically this option has been passed to the script.  This is
-  supposedly because at the beginnig the script was placed outside
+  supposedly because at the beginning the script was placed outside
   of the ruby source tree.  Decades passed since the merge of
   YARV, now I can safely assume this feature is obsolescent.  Just
   ignore the passed value here.
