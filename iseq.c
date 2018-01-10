@@ -2840,9 +2840,9 @@ struct succ_index_table {
 } succ_index_table;
 
 #define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
-#define imm_block_rank_get(v, i) ((int) (((v) & 0x7fL << (i) * 7) >> ((i) * 7)))
+#define imm_block_rank_get(v, i) (((int)((v) >> ((i) * 7))) & 0x7f)
 #define small_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (9 * ((i) - 1))
-#define small_block_rank_get(v, i) ((int) ((i) == 0 ? 0 : ((v) & 0x1ffL << ((i) - 1) * 9) >> (((i) - 1) * 9)))
+#define small_block_rank_get(v, i) ((i) == 0 ? 0 : (((int)((v) >> (((i) - 1) * 9))) & 0x1ff))
 
 static struct succ_index_table *
 succ_index_table_create(int max_pos, int *data, int size)
@@ -2868,7 +2868,7 @@ succ_index_table_create(int max_pos, int *data, int size)
 	    if (j) small_block_rank_set(sd_block->small_block_ranks, j, small_rank);
 	    for (i = 0; i < 64; i++) {
 		if (r < size && data[r] == k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE) {
-		    bits |= 1L << i;
+		    bits |= ((uint64_t)1) << i;
 		    r++;
 		}
 	    }
@@ -2897,7 +2897,7 @@ succ_index_table_invert(int max_pos, struct succ_index_table *sd, int size)
     for (k = 0; k < succ_size; k++) {
 	for (j = 0; j < 8; j++) {
 	    for (i = 0; i < 64; i++) {
-		if (sd->succ_part[k].bits[j] & (1L << i)) {
+		if (sd->succ_part[k].bits[j] & (((uint64_t)1) << i)) {
 		    *p++ = k * 512 + j * 64 + i + IMMEDIATE_TABLE_SIZE;
 		}
 	    }
