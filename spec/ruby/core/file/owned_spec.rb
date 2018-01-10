@@ -24,9 +24,11 @@ describe "File.owned?" do
   end
 
   platform_is_not :windows do
-    it "returns false when the file is not owned by the user" do
-      system_file = '/etc/passwd'
-      File.owned?(system_file).should == false
+    as_user do
+      it "returns false when the file is not owned by the user" do
+        system_file = '/etc/passwd'
+        File.owned?(system_file).should == false
+      end
     end
   end
 
