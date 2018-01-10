@@ -260,7 +260,7 @@ This behavior may be changed in the future.
 
 When a module X is included into a module Y, Y inherits refinements from X.
 
-For exmaple, C inherits refinements from A and B in the following code:
+For example, C inherits refinements from A and B in the following code:
 
   module A
     refine X do ... end
