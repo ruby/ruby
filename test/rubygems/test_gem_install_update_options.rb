@@ -141,6 +141,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   def test_user_install_disabled_read_only
     if win_platform?
       skip('test_user_install_disabled_read_only test skipped on MS Windows')
+    elsif Process.uid == 0
+      skip('test_user_install_disabled_read_only test skipped in root privilege')
     else
       @cmd.handle_options %w[--no-user-install]
 

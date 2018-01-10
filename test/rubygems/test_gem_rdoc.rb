@@ -223,6 +223,7 @@ class TestGemRDoc < Gem::TestCase
 
   def test_remove_unwritable
     skip 'chmod not supported' if Gem.win_platform?
+    skip 'skipped in root privilege' if Process.uid == 0
     FileUtils.mkdir_p @a.base_dir
     FileUtils.chmod 0, @a.base_dir
 
@@ -251,6 +252,7 @@ class TestGemRDoc < Gem::TestCase
 
   def test_setup_unwritable
     skip 'chmod not supported' if Gem.win_platform?
+    skip 'skipped in root privilege' if Process.uid == 0
     FileUtils.mkdir_p @a.doc_dir
     FileUtils.chmod 0, @a.doc_dir
 

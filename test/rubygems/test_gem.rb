@@ -463,7 +463,7 @@ class TestGem < Gem::TestCase
     assert File.directory?(util_cache_dir)
   end
 
-  unless win_platform? then # only for FS that support write protection
+  unless win_platform? || Process.uid == 0 then # only for FS that support write protection
     def test_self_ensure_gem_directories_write_protected
       gemdir = File.join @tempdir, "egd"
       FileUtils.rm_r gemdir rescue nil

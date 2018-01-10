@@ -104,6 +104,8 @@ class TestFind < Test::Unit::TestCase
 
   def test_unreadable_dir
     skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip if Process.uid == 0 # because root can read anything
+
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
       File.open("#{dir}/foo", "w"){}
@@ -157,6 +159,8 @@ class TestFind < Test::Unit::TestCase
         assert_equal([d, dir, file], a)
 
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        skip "skipped because root can read anything" if Process.uid == 0
+
         a = []
         assert_raise_with_message(Errno::EACCES, /#{Regexp.quote(file)}/) do
           Find.find(d, ignore_error: false) {|f| a << f }
