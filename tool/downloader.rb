@@ -161,7 +161,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = with_retry(3, Errno::ECONNREFUSED) do
+      data = with_retry(3, Errno::ETIMEDOUT) do
         url.read(options.merge(http_options(file, since.nil? ? true : since)))
       end
     rescue OpenURI::HTTPError => http_error
