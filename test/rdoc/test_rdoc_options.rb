@@ -18,6 +18,7 @@ class TestRDocOptions < RDoc::TestCase
 
   def test_check_files
     skip "assumes UNIX permission model" if /mswin|mingw/ =~ RUBY_PLATFORM
+    skip "skipped in root privilege" if Process.uid == 0
 
     out, err = capture_io do
       temp_dir do

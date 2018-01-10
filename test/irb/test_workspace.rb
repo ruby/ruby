@@ -34,6 +34,7 @@ module TestIRB
 
     def test_code_around_binding_with_existing_unreadable_file
       skip 'chmod cannot make file unreadable on windows' if windows?
+      skip 'skipped in root privilege' if Process.uid == 0
 
       Tempfile.create do |f|
         code = "IRB::WorkSpace.new(binding)\n"
