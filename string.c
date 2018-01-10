@@ -448,6 +448,8 @@ search_nonascii(const char *p, const char *e)
 #  define NONASCII_MASK UINT64_C(0x8080808080808080)
 # elif SIZEOF_UINTPTR_T == 4
 #  define NONASCII_MASK UINT32_C(0x80808080)
+# else
+#  error "don't know what to do."
 # endif
 #else
 # if SIZEOF_UINTPTR_T == 8
