@@ -27,21 +27,23 @@ describe :kernel_require_basic, shared: true do
 
     # Can't make a file unreadable on these platforms
     platform_is_not :windows, :cygwin do
-      describe "with an unreadable file" do
-        before :each do
-          @path = tmp("unreadable_file.rb")
-          touch @path
-          File.chmod 0000, @path
-        end
+      as_user do
+        describe "with an unreadable file" do
+          before :each do
+            @path = tmp("unreadable_file.rb")
+            touch @path
+            File.chmod 0000, @path
+          end
 
-        after :each do
-          File.chmod 0666, @path
-          rm_r @path
-        end
+          after :each do
+            File.chmod 0666, @path
+            rm_r @path
+          end
 
-        it "raises a LoadError" do
-          File.exist?(@path).should be_true
-          lambda { @object.send(@method, @path) }.should raise_error(LoadError)
+          it "raises a LoadError" do
+            File.exist?(@path).should be_true
+            lambda { @object.send(@method, @path) }.should raise_error(LoadError)
+          end
         end
       end
     end

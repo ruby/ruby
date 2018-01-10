@@ -147,11 +147,13 @@ describe "File.open" do
   end
 
   platform_is_not :windows do
-    it "creates a new write-only file when invoked with 'w' and '0222'" do
-      rm_r @file
-      File.open(@file, 'w', 0222) {}
-      File.readable?(@file).should == false
-      File.writable?(@file).should == true
+    as_user do
+      it "creates a new write-only file when invoked with 'w' and '0222'" do
+        rm_r @file
+        File.open(@file, 'w', 0222) {}
+        File.readable?(@file).should == false
+        File.writable?(@file).should == true
+      end
     end
   end
 
@@ -464,17 +466,21 @@ describe "File.open" do
   end
 
   platform_is_not :windows do
-    it "raises an Errno::EACCES when opening non-permitted file" do
-      @fh = File.open(@file, "w")
-      @fh.chmod(000)
-      lambda { fh1 = File.open(@file); fh1.close }.should raise_error(Errno::EACCES)
+    as_user do
+      it "raises an Errno::EACCES when opening non-permitted file" do
+        @fh = File.open(@file, "w")
+        @fh.chmod(000)
+        lambda { fh1 = File.open(@file); fh1.close }.should raise_error(Errno::EACCES)
+      end
     end
   end
 
-  it "raises an Errno::EACCES when opening read-only file" do
-    @fh = File.open(@file, "w")
-    @fh.chmod(0444)
-    lambda { File.open(@file, "w") }.should raise_error(Errno::EACCES)
+  as_user do
+    it "raises an Errno::EACCES when opening read-only file" do
+      @fh = File.open(@file, "w")
+      @fh.chmod(0444)
+      lambda { File.open(@file, "w") }.should raise_error(Errno::EACCES)
+    end
   end
 
   it "opens a file for binary read" do

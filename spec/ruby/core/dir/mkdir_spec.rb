@@ -66,20 +66,22 @@ end
 # The permissions flag are not supported on Windows as stated in documentation:
 # The permissions may be modified by the value of File.umask, and are ignored on NT.
 platform_is_not :windows do
-  describe "Dir.mkdir" do
-    before :each do
-      @dir = tmp "noperms"
-    end
+  as_user do
+    describe "Dir.mkdir" do
+      before :each do
+        @dir = tmp "noperms"
+      end
 
-    after :each do
-      File.chmod 0777, @dir
-      rm_r @dir
-    end
+      after :each do
+        File.chmod 0777, @dir
+        rm_r @dir
+      end
 
-    it "raises a SystemCallError when lacking adequate permissions in the parent dir" do
-      Dir.mkdir @dir, 0000
+      it "raises a SystemCallError when lacking adequate permissions in the parent dir" do
+        Dir.mkdir @dir, 0000
 
-      lambda { Dir.mkdir "#{@dir}/subdir" }.should raise_error(SystemCallError)
+        lambda { Dir.mkdir "#{@dir}/subdir" }.should raise_error(SystemCallError)
+      end
     end
   end
 end

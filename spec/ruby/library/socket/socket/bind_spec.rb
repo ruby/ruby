@@ -34,9 +34,11 @@ describe "Socket#bind on SOCK_DGRAM socket" do
   end
 
   platform_is_not :windows, :cygwin do
-    it "raises Errno::EACCES when the current user does not have permission to bind" do
-      sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
-      lambda { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
+    as_user do
+      it "raises Errno::EACCES when the current user does not have permission to bind" do
+        sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
+        lambda { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
+      end
     end
   end
 end
@@ -73,9 +75,11 @@ describe "Socket#bind on SOCK_STREAM socket" do
   end
 
   platform_is_not :windows, :cygwin do
-    it "raises Errno::EACCES when the current user does not have permission to bind" do
-      sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
-      lambda { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
+    as_user do
+      it "raises Errno::EACCES when the current user does not have permission to bind" do
+        sockaddr1 = Socket.pack_sockaddr_in(1, "127.0.0.1")
+        lambda { @sock.bind(sockaddr1) }.should raise_error(Errno::EACCES)
+      end
     end
   end
 end
