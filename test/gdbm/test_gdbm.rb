@@ -213,7 +213,7 @@ if defined? GDBM
     end if defined? GDBM::NOLOCK # gdbm 1.8.0 specific
 
     def test_s_open_error
-    skip if Process.uid == 0 # because root can open anything
+      skip "because root can open anything" if Process.uid == 0
 
       assert_instance_of(GDBM, gdbm = GDBM.open("#{@tmpdir}/#{@prefix}", 0))
       assert_raise(Errno::EACCES, Errno::EWOULDBLOCK) {

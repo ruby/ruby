@@ -104,7 +104,7 @@ class TestFind < Test::Unit::TestCase
 
   def test_unreadable_dir
     skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-    skip if Process.uid == 0 # because root can read anything
+    skip "because root can read anything" if Process.uid == 0
 
     Dir.mktmpdir {|d|
       Dir.mkdir(dir = "#{d}/dir")
