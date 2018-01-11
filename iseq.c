@@ -1780,8 +1780,8 @@ iseq_inspect(const rb_iseq_t *iseq)
 	return rb_sprintf("#<ISeq: uninitialized>");
     }
     else {
-	return rb_sprintf("#<ISeq:%s@%s:%d (%d,%d)-(%d,%d)>",
-			  RSTRING_PTR(iseq->body->location.label), RSTRING_PTR(rb_iseq_path(iseq)),
+	return rb_sprintf("#<ISeq:%"PRIsVALUE"@%"PRIsVALUE":%d (%d,%d)-(%d,%d)>",
+			  iseq->body->location.label, rb_iseq_path(iseq),
 			  iseq->body->location.code_location.beg_pos.lineno,
 			  iseq->body->location.code_location.beg_pos.lineno,
 			  iseq->body->location.code_location.beg_pos.column,

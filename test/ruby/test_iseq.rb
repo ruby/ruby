@@ -91,6 +91,11 @@ class TestISeq < Test::Unit::TestCase
     asm = compile(src).disasm
     assert_equal(src.encoding, asm.encoding)
     assert_predicate(asm, :valid_encoding?)
+
+    obj = Object.new
+    name = "\u{2603 26a1}"
+    obj.instance_eval("def #{name}; tap {}; end")
+    assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
   LINE_BEFORE_METHOD = __LINE__
