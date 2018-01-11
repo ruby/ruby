@@ -121,7 +121,6 @@ static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 # define SHOW_BITSTACK(stack, name) (yydebug ? rb_parser_show_bitstack(parser, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
 # define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack"(pop)"))
-# define BITSTACK_LEXPOP(stack)	 (((stack) = ((stack) >> 1) | ((stack) & 1)), SHOW_BITSTACK(stack, #stack"(lexpop)"))
 # define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
 # define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack"(set)"))
 
@@ -129,7 +128,6 @@ static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
    Examples: `while ... do`, `until ... do`, and `for ... in ... do` */
 #define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
 #define COND_POP()	BITSTACK_POP(cond_stack)
-#define COND_LEXPOP()	BITSTACK_LEXPOP(cond_stack)
 #define COND_P()	BITSTACK_SET_P(cond_stack)
 #define COND_SET(n)	BITSTACK_SET(cond_stack, (n))
 
@@ -137,7 +135,6 @@ static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
    Example: `foo 1, 2 do`. */
 #define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
 #define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
-#define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
 #define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
 #define CMDARG_SET(n)	BITSTACK_SET(cmdarg_stack, (n))
 
@@ -2418,8 +2415,22 @@ call_args	: command
 		;
 
 command_args	:   {
+			/* If call_args starts with a open paren '(' or '[',
+			 * look-ahead reading of the letters calls CMDARG_PUSH(0),
+			 * but the push must be done after CMDARG_PUSH(1).
+			 * So this code makes them consistent by first cancelling
+			 * the premature CMDARG_PUSH(0), doing CMDARG_PUSH(1),
+			 * and finally redoing CMDARG_PUSH(0).
+			 */
+			int lookahead = 0;
+			switch (yychar) {
+			  case '(': case tLPAREN: case tLPAREN_ARG: case '[': case tLBRACK:
+			    lookahead = 1;
+			}
+			if (lookahead) CMDARG_POP();
 			$<val>$ = cmdarg_stack;
 			CMDARG_PUSH(1);
+			if (lookahead) CMDARG_PUSH(0);
 		    }
 		  call_args
 		    {
@@ -3429,7 +3440,7 @@ lambda		:   {
 		    {
 			lpar_beg = $<num>2;
 			CMDARG_SET($<val>4);
-			CMDARG_LEXPOP();
+			CMDARG_POP();
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $5, &@$);
 			nd_set_line($$->nd_body, @5.end_pos.lineno);
@@ -8488,22 +8499,22 @@ parser_yylex(struct parser_params *parser)
 	return parse_numeric(parser, c);
 
       case ')':
-	COND_LEXPOP();
-	CMDARG_LEXPOP();
+	COND_POP();
+	CMDARG_POP();
 	SET_LEX_STATE(EXPR_ENDFN);
 	paren_nest--;
 	return c;
 
       case ']':
-	COND_LEXPOP();
-	CMDARG_LEXPOP();
+	COND_POP();
+	CMDARG_POP();
 	SET_LEX_STATE(EXPR_END);
 	paren_nest--;
 	return c;
 
       case '}':
-	COND_LEXPOP();
-	CMDARG_LEXPOP();
+	COND_POP();
+	CMDARG_POP();
 	SET_LEX_STATE(EXPR_END);
 	if (!brace_nest--) return tSTRING_DEND;
 	paren_nest--;
