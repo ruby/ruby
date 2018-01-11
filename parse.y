@@ -1094,7 +1094,7 @@ static void token_info_pop_gen(struct parser_params*, const char *token, size_t 
 program		:  {
 			SET_LEX_STATE(EXPR_BEG);
 		    /*%%%*/
-			local_push(compile_for_eval || in_main);
+			local_push(1);
 		    /*%
 			local_push(0);
 		    %*/
@@ -10641,17 +10641,22 @@ warn_unused_var(struct parser_params *parser, struct local_vars *local)
 }
 
 static void
-local_push_gen(struct parser_params *parser, int inherit_dvars)
+local_push_gen(struct parser_params *parser, int toplevel_scope)
 {
     struct local_vars *local;
+    int inherits_dvars = toplevel_scope && (compile_for_eval || in_main /* is in_main really needed? */);
+    int warn_unused_vars = RTEST(ruby_verbose);
 
     local = ALLOC(struct local_vars);
     local->prev = lvtbl;
     local->args = vtable_alloc(0);
-    local->vars = vtable_alloc(inherit_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE);
-    local->used = !(inherit_dvars &&
-		    (ifndef_ripper(compile_for_eval || e_option_supplied(parser))+0)) &&
-	RTEST(ruby_verbose) ? vtable_alloc(0) : 0;
+    local->vars = vtable_alloc(inherits_dvars ? DVARS_INHERIT : DVARS_TOPSCOPE);
+#ifndef RIPPER
+    if (toplevel_scope && compile_for_eval) warn_unused_vars = 0;
+    if (toplevel_scope && e_option_supplied(parser)) warn_unused_vars = 0;
+#endif
+    local->used = warn_unused_vars ? vtable_alloc(0) : 0;
+
 # if WARN_PAST_SCOPE
     local->past = 0;
 # endif
