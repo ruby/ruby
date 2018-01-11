@@ -201,8 +201,11 @@ struct parser_params {
 	const char *ptok;
 	long gets_ptr;
 	enum lex_state_e state;
+	/* track the nest level of any parens "()[]{}" */
 	int paren_nest;
+	/* keep paren_nest at the beginning of lambda "->" to detect tLAMBEG and keyowrd_do_LAMBDA */
 	int lpar_beg;
+	/* track the nest level of only braces "{}" */
 	int brace_nest;
     } lex;
     stack_type cond_stack;
@@ -343,7 +346,7 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 #define NODE_CALL_Q(q) (CALL_Q_P(q) ? NODE_QCALL : NODE_CALL)
 #define NEW_QCALL(q,r,m,a,loc) NEW_NODE(NODE_CALL_Q(q),r,m,a,loc)
 
-#define lambda_beginning_p() (lpar_beg && lpar_beg == paren_nest)
+#define lambda_beginning_p() (lpar_beg == paren_nest)
 
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
@@ -3415,7 +3418,7 @@ lambda		:   {
 		    }
 		    {
 			$<num>$ = lpar_beg;
-			lpar_beg = ++paren_nest;
+			lpar_beg = paren_nest;
 		    }
 		  f_larglist
 		    {
@@ -7991,8 +7994,7 @@ parse_ident(struct parser_params *parser, int c, int cmd_state)
 	    }
 	    if (kw->id[0] == keyword_do) {
 		if (lambda_beginning_p()) {
-		    lpar_beg = 0;
-		    --paren_nest;
+		    lpar_beg = -1; /* make lambda_beginning_p() == FALSE in the body of "-> do ... end" */
 		    return keyword_do_LAMBDA;
 		}
 		if (COND_P()) return keyword_do_cond;
@@ -8487,7 +8489,6 @@ parser_yylex(struct parser_params *parser)
 
       case ')':
       case ']':
-	paren_nest--;
       case '}':
 	COND_LEXPOP();
 	CMDARG_LEXPOP();
@@ -8498,6 +8499,7 @@ parser_yylex(struct parser_params *parser)
 	if (c == '}') {
 	    if (!brace_nest--) c = tSTRING_DEND;
 	}
+	if (c != tSTRING_DEND) paren_nest--;
 	return c;
 
       case ':':
@@ -8630,12 +8632,12 @@ parser_yylex(struct parser_params *parser)
 	++brace_nest;
 	if (lambda_beginning_p()) {
 	    SET_LEX_STATE(EXPR_BEG);
-	    lpar_beg = 0;
-	    --paren_nest;
 	    COND_PUSH(0);
 	    CMDARG_PUSH(0);
+	    paren_nest++;
 	    return tLAMBEG;
 	}
+	paren_nest++;
 	if (IS_lex_state(EXPR_LABELED))
 	    c = tLBRACE;      /* hash */
 	else if (IS_lex_state(EXPR_ARG_ANY | EXPR_END | EXPR_ENDFN))
@@ -11098,6 +11100,7 @@ parser_initialize(struct parser_params *parser)
     /* note: we rely on TypedData_Make_Struct to set most fields to 0 */
     command_start = TRUE;
     ruby_sourcefile_string = Qnil;
+    lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
 #ifdef RIPPER
     parser->delayed = Qnil;
     parser->result = Qnil;
