@@ -203,7 +203,7 @@ struct parser_params {
 	enum lex_state_e state;
 	/* track the nest level of any parens "()[]{}" */
 	int paren_nest;
-	/* keep paren_nest at the beginning of lambda "->" to detect tLAMBEG and keyowrd_do_LAMBDA */
+	/* keep paren_nest at the beginning of lambda "->" to detect tLAMBEG and keyword_do_LAMBDA */
 	int lpar_beg;
 	/* track the nest level of only braces "{}" */
 	int brace_nest;
