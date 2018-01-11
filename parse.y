@@ -8488,18 +8488,25 @@ parser_yylex(struct parser_params *parser)
 	return parse_numeric(parser, c);
 
       case ')':
+	COND_LEXPOP();
+	CMDARG_LEXPOP();
+	SET_LEX_STATE(EXPR_ENDFN);
+	paren_nest--;
+	return c;
+
       case ']':
+	COND_LEXPOP();
+	CMDARG_LEXPOP();
+	SET_LEX_STATE(EXPR_END);
+	paren_nest--;
+	return c;
+
       case '}':
 	COND_LEXPOP();
 	CMDARG_LEXPOP();
-	if (c == ')')
-	    SET_LEX_STATE(EXPR_ENDFN);
-	else
-	    SET_LEX_STATE(EXPR_END);
-	if (c == '}') {
-	    if (!brace_nest--) c = tSTRING_DEND;
-	}
-	if (c != tSTRING_DEND) paren_nest--;
+	SET_LEX_STATE(EXPR_END);
+	if (!brace_nest--) return tSTRING_DEND;
+	paren_nest--;
 	return c;
 
       case ':':
