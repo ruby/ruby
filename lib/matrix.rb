@@ -802,6 +802,33 @@ class Matrix
   end
 
   #
+  # Returns +true+ if this is a antisymmetric matrix.
+  # Raises an error if matrix is not square.
+  #
+  def antisymmetric?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    self.each(:diagonal) do |e|
+      return false if e != 0
+    end
+    each_with_index(:strict_upper) do |e, row, col|
+      return false if e.abs != rows[col][row].abs
+    end
+    all?
+  end
+
+  #
+  # Returns +true+ if this is a reflexive matrix.
+  # Raises an error if matrix is not square.
+  #
+  def reflexive?
+    Matrix.Raise ErrDimensionMismatch unless square?
+    self.each(:diagonal) do |e|
+      return false if e != 1
+    end
+    all?
+  end
+
+  #
   # Returns +true+ if this is a unitary matrix
   # Raises an error if matrix is not square.
   #
