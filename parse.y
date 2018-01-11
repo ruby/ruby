@@ -125,12 +125,16 @@ static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 # define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
 # define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack"(set)"))
 
+/* A flag to identify keyword_do_cond, "do" keyword after condition expression.
+   Examples: `while ... do`, `until ... do`, and `for ... in ... do` */
 #define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
 #define COND_POP()	BITSTACK_POP(cond_stack)
 #define COND_LEXPOP()	BITSTACK_LEXPOP(cond_stack)
 #define COND_P()	BITSTACK_SET_P(cond_stack)
 #define COND_SET(n)	BITSTACK_SET(cond_stack, (n))
 
+/* A flag to identify keyword_do_block; "do" keyword after command_call.
+   Example: `foo 1, 2 do`. */
 #define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
 #define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
 #define CMDARG_LEXPOP()	BITSTACK_LEXPOP(cmdarg_stack)
