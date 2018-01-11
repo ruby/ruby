@@ -24,6 +24,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* Matrix
+
+  * New method:
+
+    * Matrix#antisymmetric?
+
 === Compatibility issues (excluding feature bug fixes)
 
 === Stdlib compatibility issues (excluding feature bug fixes)
