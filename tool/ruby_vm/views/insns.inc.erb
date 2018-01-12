@@ -1,0 +1,26 @@
+/* -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*- */
+
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+<%= render 'copyright' %>
+<%= render 'notice', locals: {
+    this_file: 'contains YARV instruction list',
+    edit: __FILE__,
+} -%>
+
+/* BIN : Basic Instruction Name */
+#define BIN(n) YARVINSN_##n
+
+enum ruby_vminsn_type {
+% RubyVM::Instructions.each do |i|
+    <%= i.bin %>,
+% end
+    VM_INSTRUCTION_SIZE
+};
+
+#define ASSERT_VM_INSTRUCTION_SIZE(array) \
+    STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)
