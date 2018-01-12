@@ -106,9 +106,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Integer
 
-  * Integer#step no longer hides errors from coerce method when
-    given a step value which cannot be compared with #> to 0.
-    [Feature #7688]
   * Integer#{round,floor,ceil,truncate} always return an Integer.
     [Bug #13420]
   * Integer#pow accepts modulo argument for calculating modular
@@ -138,6 +135,9 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Numeric
 
+  * Numeric#step no longer hides errors from coerce method when
+    given a step value which cannot be compared with #> to 0.
+    [Feature #7688]
   * Numerical comparison operators (<,<=,>=,>) no longer hide exceptions
     from #coerce method internally. Return nil in #coerce if the coercion is
     impossible.  [Feature #7688]
