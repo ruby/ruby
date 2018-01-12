@@ -110,7 +110,7 @@ is simply `/=/` and removing a padding `",,,,,"`.  The program no
 longer terminates, though.
 
 
-### Limination
+### Limitation
 
 The implementation requires to manipulate long strings even for some
 small starting numbers.  For example, starting from 1,819, the number

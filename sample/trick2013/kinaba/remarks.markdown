@@ -16,7 +16,7 @@ The program contains each ASCII character from 0x20 ' ' to 0x7e '~' exactly once
 
 ### Internals
 
-The algorthim is the obvious loop "32.upto(126){|x| putc x}".
+The algorithm is the obvious loop "32.upto(126){|x| putc x}".
 
 It is not so hard to transform it to use each character *at most once*. The only slight difficulty comes from the constraint that we cannot "declare and then use" variables, because then the code will contain the variable name twice. This restriction is worked around by the $. global variable, the best friend of Ruby golfers.
 
