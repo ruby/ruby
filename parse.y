@@ -158,8 +158,7 @@ struct local_vars {
 
 #define DVARS_INHERIT ((void*)1)
 #define DVARS_TOPSCOPE NULL
-#define DVARS_SPECIAL_P(tbl) (!POINTER_P(tbl))
-#define POINTER_P(val) ((VALUE)(val) & ~(VALUE)3)
+#define DVARS_TERMINAL_P(tbl) ((tbl) == DVARS_INHERIT || (tbl) == DVARS_TOPSCOPE)
 
 typedef struct token_info {
     const char *token;
@@ -5227,7 +5226,7 @@ parser_yyerror(struct parser_params *parser, const YYLTYPE *yylloc, const char *
 static int
 vtable_size(const struct vtable *tbl)
 {
-    if (POINTER_P(tbl)) {
+    if (!DVARS_TERMINAL_P(tbl)) {
 	return tbl->pos;
     }
     else {
@@ -5261,7 +5260,7 @@ vtable_free_gen(struct parser_params *parser, int line, const char *name,
 	rb_parser_printf(parser, "vtable_free:%d: %s(%p)\n", line, name, tbl);
     }
 #endif
-    if (POINTER_P(tbl)) {
+    if (!DVARS_TERMINAL_P(tbl)) {
 	if (tbl->tbl) {
 	    xfree(tbl->tbl);
 	}
@@ -5280,7 +5279,7 @@ vtable_add_gen(struct parser_params *parser, int line, const char *name,
 			 line, name, tbl, rb_id2name(id));
     }
 #endif
-    if (!POINTER_P(tbl)) {
+    if (DVARS_TERMINAL_P(tbl)) {
 	rb_parser_fatal(parser, "vtable_add: vtable is not allocated (%p)", (void *)tbl);
 	return;
     }
@@ -5315,7 +5314,7 @@ vtable_included(const struct vtable * tbl, ID id)
 {
     int i;
 
-    if (POINTER_P(tbl)) {
+    if (!DVARS_TERMINAL_P(tbl)) {
 	for (i = 0; i < tbl->pos; i++) {
 	    if (tbl->tbl[i] == id) {
 		return i+1;
@@ -10767,7 +10766,7 @@ local_id_gen(struct parser_params *parser, ID id, ID **vidrefp)
     args = lvtbl->args;
     used = lvtbl->used;
 
-    while (vars && POINTER_P(vars->prev)) {
+    while (vars && !DVARS_TERMINAL_P(vars->prev)) {
 	vars = vars->prev;
 	args = args->prev;
 	if (used) used = used->prev;
@@ -10843,7 +10842,7 @@ dyna_pop_gen(struct parser_params *parser, const struct vtable *lvargs)
 static int
 dyna_in_block_gen(struct parser_params *parser)
 {
-    return POINTER_P(lvtbl->vars) && lvtbl->vars->prev != DVARS_TOPSCOPE;
+    return !DVARS_TERMINAL_P(lvtbl->vars) && lvtbl->vars->prev != DVARS_TOPSCOPE;
 }
 
 static int
@@ -10856,7 +10855,7 @@ dvar_defined_gen(struct parser_params *parser, ID id, ID **vidrefp)
     vars = lvtbl->vars;
     used = lvtbl->used;
 
-    while (POINTER_P(vars)) {
+    while (!DVARS_TERMINAL_P(vars)) {
 	if (vtable_included(args, id)) {
 	    return 1;
 	}
