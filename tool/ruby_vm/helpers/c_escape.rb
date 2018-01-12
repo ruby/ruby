@@ -118,3 +118,11 @@ module RubyVM::CEscape
   }.freeze
   private_constant :RString2CStr
 end
+
+unless defined? ''.b
+  class String
+    def b
+      return dup.force_encoding 'binary'
+    end
+  end
+end
