@@ -18,7 +18,7 @@ class RubyVM::TraceInstructions
 
   attr_reader :name
 
-  def initialize orig:
+  def initialize orig
     @orig = orig
     @name = as_tr_cpp "trace @ #{@orig.name}"
   end
@@ -61,7 +61,7 @@ class RubyVM::TraceInstructions
 
   private
 
-  @instances = RubyVM::Instructions.map {|i| new orig: i }
+  @instances = RubyVM::Instructions.map {|i| new i }
 
   def self.to_a
     @instances

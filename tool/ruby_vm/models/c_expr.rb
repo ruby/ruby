@@ -17,10 +17,10 @@ class RubyVM::CExpr
 
   attr_reader :__FILE__, :__LINE__, :expr
 
-  def initialize location:, expr:
-    @__FILE__  = location[0]
-    @__LINE__  = location[1]
-    @expr      = expr
+  def initialize opts = {}
+    @__FILE__  = opts[:location][0]
+    @__LINE__  = opts[:location][1]
+    @expr      = opts[:expr]
   end
 
   # blank, in sense of C program.

@@ -11,8 +11,10 @@
 # details.
 
 require 'pathname'
-require 'strscan'
 
+# Poor man's StringScanner.
+# Sadly  https://bugs.ruby-lang.org/issues/8343 is  not backported  to 2.0.  We
+# have to do it by hand.
 class RubyVM::Scanner
   attr_reader :__FILE__
   attr_reader :__LINE__
@@ -22,28 +24,29 @@ class RubyVM::Scanner
     src      += path
     @__LINE__ = 1
     @__FILE__ = src.realpath.to_path
-    str       = src.read mode: 'rt:utf-8:utf-8'
-    @scanner  = StringScanner.new str
+    @str      = src.read mode: 'rt:utf-8:utf-8'
+    @pos      = 0
   end
 
   def eos?
-    @scanner.eos?
+    return @pos >= @str.length
   end
 
   def scan re
     ret   = @__LINE__
-    match = @scanner.scan re
-    return unless match
-    @__LINE__ += match.count "\n"
+    @last_match = @str.match re, @pos
+    return unless @last_match
+    @__LINE__ += @last_match.to_s.count "\n"
+    @pos = @last_match.end 0
     return ret
   end
 
   def scan! re
     scan re or raise sprintf "parse error at %s:%d near:\n %s...", \
-        @__FILE__, @__LINE__, @scanner.peek(32)
+        @__FILE__, @__LINE__, @str[pos, 32]
   end
 
   def [] key
-    return @scanner[key]
+    return @last_match[key]
   end
 end

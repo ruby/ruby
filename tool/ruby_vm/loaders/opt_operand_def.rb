@@ -29,18 +29,17 @@ grammar = %r/
 /mx
 
 until scanner.eos? do
-  break if scanner.scan(/ ^ __END__ $ /x)
-  next  if scanner.scan(/#{grammar} \g<ws>+ /ox)
+  break if scanner.scan(/\G ^ __END__ $ /x)
+  next  if scanner.scan(/\G#{grammar} \g<ws>+ /ox)
 
-  line = scanner.scan!(/#{grammar} \g<decl> /mox)
+  line = scanner.scan!(/\G#{grammar} \g<decl> /mox)
   insn = scanner["insn"]
   args = scanner["args"]
   ary  = []
   until args.strip.empty? do
-    tmp = StringScanner.new args
-    tmp.scan(/#{grammar} \g<args> /mox)
-    ary << tmp["arg"]
-    args = tmp["remain"]
+    md = /\G#{grammar} \g<args> /mox.match(args)
+    ary << md["arg"]
+    args = md["remain"]
     break unless args
   end
   json << {

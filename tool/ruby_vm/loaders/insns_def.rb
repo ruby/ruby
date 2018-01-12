@@ -41,7 +41,7 @@ grammar = %r'
 'x
 
 until scanner.eos? do
-  next if scanner.scan(/#{grammar}\g<ws>+/o)
+  next if scanner.scan(/\G#{grammar}\g<ws>+/o)
   split = -> (v) {
     case v when /\Avoid\z/ then
       []
@@ -50,14 +50,14 @@ until scanner.eos? do
     end
   }
 
-  l1   = scanner.scan!(/#{grammar}\g<insn>/o)
+  l1   = scanner.scan!(/\G#{grammar}\g<insn>/o)
   name = scanner["insn:name"]
   ope  = split.(scanner["insn:opes"])
   pop  = split.(scanner["insn:pops"])
   ret  = split.(scanner["insn:rets"])
 
   attrs = []
-  while l2 = scanner.scan(/#{grammar}\g<pragma>/o) do
+  while l2 = scanner.scan(/\G#{grammar}\g<pragma>/o) do
     attrs << {
       location: [path, l2],
       name: scanner["pragma:name"],
@@ -66,7 +66,7 @@ until scanner.eos? do
     }
   end
 
-  l3 = scanner.scan!(/#{grammar}\g<block>/o)
+  l3 = scanner.scan!(/\G#{grammar}\g<block>/o)
   json << {
     name: name,
     location: [path, l1],
