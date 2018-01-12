@@ -141,11 +141,11 @@ class RubyVM::InstructionSequence
     end
 
     def read_compiled_iseq fname, iseq_key
-      open(iseq_key, 'rb'){|f| f.read}
+      File.open(iseq_key, 'rb'){|f| f.read}
     end
 
     def write_compiled_iseq fname, iseq_key, binary
-      open(iseq_key, 'wb'){|f| f.write(binary)}
+      File.open(iseq_key, 'wb'){|f| f.write(binary)}
     end
   end
 
