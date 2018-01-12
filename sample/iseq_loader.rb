@@ -41,7 +41,7 @@ class RubyVM::InstructionSequence
   at_exit{
     STDERR.puts "[ISEQ_LOADER] #{Process.pid} time: #{Time.now - LAUNCHED_TIME}, " +
                 "loaded: #{$ISEQ_LOADER_LOADED}, " +
-                "compied: #{$ISEQ_LOADER_COMPILED}, " +
+                "compiled: #{$ISEQ_LOADER_COMPILED}, " +
                 "ignored: #{$ISEQ_LOADER_IGNORED}"
   } if COMPILE_VERBOSE
 
