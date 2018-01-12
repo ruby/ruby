@@ -24,6 +24,7 @@ Net::HTTP::STATUS_CODES = {
   100 => 'Continue',
   101 => 'Switching Protocols',
   102 => 'Processing',
+  103 => 'Early Hints',
   200 => 'OK',
   201 => 'Created',
   202 => 'Accepted',
