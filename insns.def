@@ -610,7 +610,7 @@ adjuststack
 (rb_num_t n)
 (...)
 (...)
-// attr rb_snum_t sp_inc = -n;
+// attr rb_snum_t sp_inc = -(rb_snum_t)n;
 {
     DEC_SP(n);
 }
