@@ -921,10 +921,10 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 #endif
 #endif
 
-static void token_info_push_gen(struct parser_params*, const char *token, size_t len, const rb_code_location_t *loc);
-static void token_info_pop_gen(struct parser_params*, const char *token, size_t len, const rb_code_location_t *loc);
-#define token_info_push(token, loc) token_info_push_gen(parser, (token), rb_strlen_lit(token), (loc))
-#define token_info_pop(token, loc) token_info_pop_gen(parser, (token), rb_strlen_lit(token), (loc))
+static void token_info_push_gen(struct parser_params*, const char *token, const rb_code_location_t *loc);
+static void token_info_pop_gen(struct parser_params*, const char *token, const rb_code_location_t *loc);
+#define token_info_push(token, loc) token_info_push_gen(parser, (token), (loc))
+#define token_info_pop(token, loc) token_info_pop_gen(parser, (token), (loc))
 %}
 
 %pure-parser
@@ -5042,66 +5042,58 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 
 #define parser_isascii() ISASCII(*(lex_p-1))
 
-static int
-token_info_get_column(const char *p, int len)
+static void
+setup_token_info(token_info *ptinfo, const char *p, const rb_code_location_t *loc)
 {
-    int column = 1, i;
-    for (i = 0; i < len; i++, p++) {
+    int column = 1, nonspc = 0, i;
+    for (i = 0; i < loc->beg_pos.column; i++, p++) {
 	if (*p == '\t') {
 	    column = (((column - 1) / TAB_WIDTH) + 1) * TAB_WIDTH;
 	}
 	column++;
-    }
-    return column;
-}
-
-static int
-token_info_has_nonspaces(const char *p, int len)
-{
-    int i;
-    for (i = 0; i < len; i++, p++) {
 	if (*p != ' ' && *p != '\t') {
-	    return 1;
+	    nonspc = 1;
 	}
     }
-    return 0;
+
+    ptinfo->linenum = loc->beg_pos.lineno;
+    ptinfo->column = column;
+    ptinfo->nonspc = nonspc;
 }
 
 static void
-token_info_push_gen(struct parser_params *parser, const char *token, size_t len, const rb_code_location_t *loc)
+token_info_push_gen(struct parser_params *parser, const char *token, const rb_code_location_t *loc)
 {
     token_info *ptinfo;
 
     if (!parser->token_info_enabled) return;
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
-    ptinfo->linenum = loc->beg_pos.lineno;
-    ptinfo->column = token_info_get_column(lex_pbeg, loc->beg_pos.column);
-    ptinfo->nonspc = token_info_has_nonspaces(lex_pbeg, loc->beg_pos.column);
     ptinfo->next = parser->token_info;
+    setup_token_info(ptinfo, lex_pbeg, loc);
 
     parser->token_info = ptinfo;
 }
 
 static void
-token_info_pop_gen(struct parser_params *parser, const char *token, size_t len, const rb_code_location_t *loc)
+token_info_pop_gen(struct parser_params *parser, const char *token, const rb_code_location_t *loc)
 {
-    int linenum;
-    token_info *ptinfo = parser->token_info;
+    token_info *ptinfo_beg = parser->token_info, ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
+    setup_token_info(ptinfo_end, lex_pbeg, loc);
 
-    if (!ptinfo) return;
-    parser->token_info = ptinfo->next;
-    linenum = loc->beg_pos.lineno;
-    if (parser->token_info_enabled &&
-	linenum != ptinfo->linenum && !ptinfo->nonspc &&
-	!token_info_has_nonspaces(lex_pbeg, loc->beg_pos.column) &&
-	token_info_get_column(lex_pbeg, loc->beg_pos.column) != ptinfo->column) {
-	rb_warn3L(linenum,
-		  "mismatched indentations at '%s' with '%s' at %d",
-		  WARN_S(token), WARN_S(ptinfo->token), WARN_I(ptinfo->linenum));
-    }
+    if (!ptinfo_beg) return;
+    parser->token_info = ptinfo_beg->next;
 
-    xfree(ptinfo);
+    /* indentation check of matched keywords (begin..end, if..end, etc.) */
+    if (!parser->token_info_enabled) goto ok; /* the check is off */
+    if (ptinfo_beg->linenum == ptinfo_end->linenum) goto ok; /* ignore one-line block */
+    if (ptinfo_beg->nonspc || ptinfo_end->nonspc) goto ok; /* ignore keyword in the middle of a line */
+    if (ptinfo_beg->column == ptinfo_end->column) goto ok; /* the indents are matched */
+    rb_warn3L(ptinfo_end->linenum,
+	      "mismatched indentations at '%s' with '%s' at %d",
+	      WARN_S(token), WARN_S(ptinfo_beg->token), WARN_I(ptinfo_beg->linenum));
+ok:
+    xfree(ptinfo_beg);
 }
 
 static int
