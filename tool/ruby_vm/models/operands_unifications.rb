@@ -19,13 +19,13 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
 
   attr_reader :preamble, :original, :spec
 
-  def initialize location:, signature:
-    name             = signature[0]
+  def initialize opts = {}
+    name             = opts[:signature][0]
     @original        = RubyVM::BareInstructions.fetch name
     template         = @original.template
-    parts            = compose location, signature, template[:signature]
+    parts            = compose opts[:location], opts[:signature], template[:signature]
     json             = template.dup
-    json[:location]  = location
+    json[:location]  = opts[:location]
     json[:signature] = parts[:signature]
     json[:name]      = parts[:name]
     @preamble        = parts[:preamble]
@@ -122,7 +122,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
   end
 
   @instances = RubyVM::OptOperandDef.map do |h|
-    new(**h)
+    new h
   end
 
   def self.to_a

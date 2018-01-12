@@ -16,67 +16,69 @@ require_relative 'c_escape'
 
 class RubyVM::Dumper
   include RubyVM::CEscape
+  private
 
-  # I learned this handy "super-private" maneuver from @a_matsuda
-  # cf: https://github.com/rails/rails/pull/27363/files
-  using Module.new {
-    refine RubyVM::Dumper do
-      private
+  def new_binding
+    # This `eval 'binding'` does not return the current binding
+    # but creates one on top of it.
+    return eval 'binding'
+  end
 
-      def new_binding
-        # This `eval 'binding'` does not return the current binding
-        # but creates one on top of it.
-        return eval 'binding'
-      end
+  def new_erb spec
+    path  = Pathname.new __dir__
+    path += '../views'
+    path += spec
+    src   = path.read mode: 'rt:utf-8:utf-8'
+  rescue Errno::ENOENT
+    raise "don't know how to generate #{path}"
+  else
+    erb = ERB.new src, nil, '%-'
+    erb.filename = path.realpath.to_path
+    return erb
+  end
 
-      def new_erb spec
-        path  = Pathname.new __dir__
-        path += '../views'
-        path += spec
-        src   = path.read mode: 'rt:utf-8:utf-8'
-      rescue Errno::ENOENT
-        raise "don't know how to generate #{path}"
-      else
-        erb = ERB.new src, nil, '%-'
-        erb.filename = path.realpath.to_path
-        return erb
-      end
-
-      def finderb spec
-        return @erb.fetch spec do |k|
-          erb = new_erb k
-          @erb[k] = erb
-        end
-      end
-
-      def replace_pragma_line str, lineno
-        if str == "#pragma RubyVM reset source\n" then
-          return "#line #{lineno + 2} #{@file}\n"
-        else
-          return str
-        end
-      end
-
-      public
-
-      def do_render source, locals
-        erb = finderb source
-        bnd = @empty.dup
-        locals.each_pair do |k, v|
-          bnd.local_variable_set k, v
-        end
-        return erb.result bnd
-      end
-
-      def replace_pragma str
-        return str                                 \
-          . each_line                              \
-          . with_index                             \
-          . map {|i, j| replace_pragma_line i, j } \
-          . join
-      end
+  def finderb spec
+    return @erb.fetch spec do |k|
+      erb = new_erb k
+      @erb[k] = erb
     end
-  }
+  end
+
+  def replace_pragma_line str, lineno
+    if str == "#pragma RubyVM reset source\n" then
+      return "#line #{lineno + 2} #{@file}\n"
+    else
+      return str
+    end
+  end
+
+  def local_variable_set bnd, var, val
+    eval '__locals__ ||= {}', bnd
+    locals = eval '__locals__', bnd
+    locals[var] = val
+    eval "#{var} = __locals__[:#{var}]", bnd
+    test = eval "#{var}", bnd
+    raise unless test == val
+  end
+
+  public
+
+  def do_render source, locals
+    erb = finderb source
+    bnd = @empty.dup
+    locals.each_pair do |k, v|
+      local_variable_set bnd, k, v
+    end
+    return erb.result bnd
+  end
+
+  def replace_pragma str
+    return str                                 \
+      . each_line                              \
+      . with_index                             \
+      . map {|i, j| replace_pragma_line i, j } \
+      . join
+  end
 
   def initialize path
     @erb   = {}
