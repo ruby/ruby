@@ -9463,13 +9463,8 @@ rb_parser_fatal(struct parser_params *parser, const char *fmt, ...)
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-#ifndef RIPPER
     parser_yyerror(parser, NULL, RSTRING_PTR(mesg));
     RB_GC_GUARD(mesg);
-#else
-    dispatch1(parse_error, mesg);
-    ripper_error();
-#endif /* !RIPPER */
 
     mesg = rb_str_new(0, 0);
     append_lex_state_name(lex_state, mesg);
