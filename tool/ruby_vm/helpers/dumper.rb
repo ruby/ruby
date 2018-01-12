@@ -25,7 +25,7 @@ class RubyVM::Dumper
   end
 
   def new_erb spec
-    path  = Pathname.new __dir__
+    path  = Pathname.new(__FILE__).realpath.dirname
     path += '../views'
     path += spec
     src   = path.read mode: 'rt:utf-8:utf-8'
@@ -88,8 +88,8 @@ class RubyVM::Dumper
     @file  = cstr dst.realdirpath.to_path
   end
 
-  def render partial, locals: {}
-    return do_render "_#{partial}.erb", locals
+  def render partial, opts = { :locals => {} }
+    return do_render "_#{partial}.erb", opts[:locals]
   end
 
   def generate template

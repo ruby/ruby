@@ -42,7 +42,7 @@ grammar = %r'
 
 until scanner.eos? do
   next if scanner.scan(/\G#{grammar}\g<ws>+/o)
-  split = -> (v) {
+  split = lambda {|v|
     case v when /\Avoid\z/ then
       []
     else

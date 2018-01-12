@@ -30,7 +30,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
     json[:name]      = parts[:name]
     @preamble        = parts[:preamble]
     @spec            = parts[:spec]
-    super template: template, **json
+    super json.merge(:template => template)
     parts[:vars].each do |v|
       @variables[v[:name]] ||= v
     end

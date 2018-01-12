@@ -28,7 +28,7 @@ class RubyVM::BareInstructions
     @pops     = typesplit @sig[:pop].reject {|i| i == '...' }
     @rets     = typesplit @sig[:ret].reject {|i| i == '...' }
     @attrs    = opts[:attributes].map {|i|
-      RubyVM::Attribute.new insn: self, **i
+      RubyVM::Attribute.new i.merge(:insn => self)
     }.each_with_object({}) {|a, h|
       h[a.key] = a
     }
@@ -149,8 +149,7 @@ class RubyVM::BareInstructions
   end
 
   @instances = RubyVM::InsnsDef.map {|h|
-    hh = h.merge(:template => h)
-    new hh
+    new h.merge(:template => h)
   }
 
   def self.fetch name
