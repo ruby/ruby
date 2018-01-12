@@ -554,6 +554,10 @@ thread_cleanup_func(void *th_ptr, int atfork)
      * Unfortunately, we can't release native threading resource at fork
      * because libc may have unstable locking state therefore touching
      * a threading resource may cause a deadlock.
+     *
+     * FIXME: Skipping native_mutex_destroy(pthread_mutex_destroy) is safe
+     * with NPTL, but native_thread_destroy calls pthread_cond_destroy
+     * which calls free(3), so there is a small memory leak atfork, here.
      */
     if (atfork)
 	return;
