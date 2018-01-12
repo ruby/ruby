@@ -16,10 +16,10 @@ json    = []
 scanner = RubyVM::Scanner.new '../../../defs/opt_insn_unif.def'
 path    = scanner.__FILE__
 until scanner.eos? do
-  next  if scanner.scan(/ ^ (?: \#.* )? \n /x)
-  break if scanner.scan(/ ^ __END__ $ /x)
+  next  if scanner.scan(/\G ^ (?: \#.* )? \n /x)
+  break if scanner.scan(/\G ^ __END__ $ /x)
 
-  pos = scanner.scan!(/(?<series>  (?: [\ \t]* \w+ )+ ) \n /mx)
+  pos = scanner.scan!(/\G (?<series>  (?: [\ \t]* \w+ )+ ) \n /mx)
   json << {
     location: [path, pos],
     signature: scanner["series"].strip.split

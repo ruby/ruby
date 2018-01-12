@@ -18,14 +18,14 @@ grammar = %r/
     (?<ws>      \u0020 ){0}
     (?<key>     \w+    ){0}
     (?<value>   0|1    ){0}
-    (?<define>  \#define \g<ws>+ OPT_\g<key> \g<ws>+ \g<value> \g<ws>*\n )
+    (?<define>  \G \#define \g<ws>+ OPT_\g<key> \g<ws>+ \g<value> \g<ws>*\n )
 /mx
 
 until scanner.eos? do
   if scanner.scan grammar then
     json[scanner['key']] = ! scanner['value'].to_i.zero? # not nonzero?
   else
-    scanner.scan(/.*\n/)
+    scanner.scan(/\G.*\n/)
   end
 end
 

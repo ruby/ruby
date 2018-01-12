@@ -16,11 +16,11 @@ class RubyVM::Attribute
   include RubyVM::CEscape
   attr_reader :insn, :key, :type, :expr
 
-  def initialize insn:, name:, type:, location:, expr:
-    @insn = insn
-    @key = name
-    @expr = RubyVM::CExpr.new location: location, expr: expr
-    @type = type
+  def initialize opts = {}
+    @insn = opts[:insn]
+    @key = opts[:name]
+    @expr = RubyVM::CExpr.new location: opts[:location], expr: opts[:expr]
+    @type = opts[:type]
   end
 
   def name

@@ -19,10 +19,10 @@ class RubyVM::InstructionsUnifications
 
   attr_reader :name
 
-  def initialize location:, signature:
-    @location = location
-    @name     = namegen signature
-    @series   = signature.map do |i|
+  def initialize opts = {}
+    @location = opts[:location]
+    @name     = namegen opts[:signature]
+    @series   = opts[:signature].map do |i|
       RubyVM::BareInstructions.fetch i # Misshit is fatal
     end
   end
@@ -34,7 +34,7 @@ class RubyVM::InstructionsUnifications
   end
 
   @instances = RubyVM::OptInsnUnifDef.map do |h|
-    new(**h)
+    new h
   end
 
   def self.to_a

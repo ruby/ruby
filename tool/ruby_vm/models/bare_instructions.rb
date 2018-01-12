@@ -18,16 +18,16 @@ require_relative 'attribute'
 class RubyVM::BareInstructions
   attr_reader :template, :name, :opes, :pops, :rets, :decls, :expr
 
-  def initialize template:, name:, location:, signature:, attributes:, expr:
-    @template = template
-    @name     = name
-    @loc      = location
-    @sig      = signature
-    @expr     = RubyVM::CExpr.new expr
+  def initialize opts = {}
+    @template = opts[:template]
+    @name     = opts[:name]
+    @loc      = opts[:location]
+    @sig      = opts[:signature]
+    @expr     = RubyVM::CExpr.new opts[:expr]
     @opes     = typesplit @sig[:ope]
     @pops     = typesplit @sig[:pop].reject {|i| i == '...' }
     @rets     = typesplit @sig[:ret].reject {|i| i == '...' }
-    @attrs    = attributes.map {|i|
+    @attrs    = opts[:attributes].map {|i|
       RubyVM::Attribute.new insn: self, **i
     }.each_with_object({}) {|a, h|
       h[a.key] = a
@@ -148,7 +148,10 @@ class RubyVM::BareInstructions
     end
   end
 
-  @instances = RubyVM::InsnsDef.map {|h| new template: h, **h }
+  @instances = RubyVM::InsnsDef.map {|h|
+    hh = h.merge(:template => h)
+    new hh
+  }
 
   def self.fetch name
     @instances.find do |insn|
