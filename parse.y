@@ -921,10 +921,10 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 #endif
 #endif
 
-static void token_info_push_gen(struct parser_params*, const char *token, size_t len);
-static void token_info_pop_gen(struct parser_params*, const char *token, size_t len);
-#define token_info_push(token) token_info_push_gen(parser, (token), rb_strlen_lit(token))
-#define token_info_pop(token) token_info_pop_gen(parser, (token), rb_strlen_lit(token))
+static void token_info_push_gen(struct parser_params*, const char *token, size_t len, const rb_code_location_t *loc);
+static void token_info_pop_gen(struct parser_params*, const char *token, size_t len, const rb_code_location_t *loc);
+#define token_info_push(token, loc) token_info_push_gen(parser, (token), rb_strlen_lit(token), (loc))
+#define token_info_pop(token, loc) token_info_pop_gen(parser, (token), rb_strlen_lit(token), (loc))
 %}
 
 %pure-parser
@@ -2715,9 +2715,13 @@ primary		: literal
 			$$ = method_add_block($1, $2, &@$);
 		    %*/
 		    }
-		| tLAMBDA lambda
+		| tLAMBDA
 		    {
-			$$ = $2;
+			token_info_push("->", &@1);
+		    }
+		  lambda
+		    {
+			$$ = $3;
 		    }
 		| k_if expr_value then
 		  compstmt
@@ -3008,67 +3012,67 @@ primary_value	: primary
 
 k_begin		: keyword_begin
 		    {
-			token_info_push("begin");
+			token_info_push("begin", &@$);
 		    }
 		;
 
 k_if		: keyword_if
 		    {
-			token_info_push("if");
+			token_info_push("if", &@$);
 		    }
 		;
 
 k_unless	: keyword_unless
 		    {
-			token_info_push("unless");
+			token_info_push("unless", &@$);
 		    }
 		;
 
 k_while		: keyword_while
 		    {
-			token_info_push("while");
+			token_info_push("while", &@$);
 		    }
 		;
 
 k_until		: keyword_until
 		    {
-			token_info_push("until");
+			token_info_push("until", &@$);
 		    }
 		;
 
 k_case		: keyword_case
 		    {
-			token_info_push("case");
+			token_info_push("case", &@$);
 		    }
 		;
 
 k_for		: keyword_for
 		    {
-			token_info_push("for");
+			token_info_push("for", &@$);
 		    }
 		;
 
 k_class		: keyword_class
 		    {
-			token_info_push("class");
+			token_info_push("class", &@$);
 		    }
 		;
 
 k_module	: keyword_module
 		    {
-			token_info_push("module");
+			token_info_push("module", &@$);
 		    }
 		;
 
 k_def		: keyword_def
 		    {
-			token_info_push("def");
+			token_info_push("def", &@$);
 		    }
 		;
 
 k_end		: keyword_end
 		    {
-			token_info_pop("end");
+			token_info_pop("end", &@$);
 		    }
 		;
 
@@ -3467,7 +3471,7 @@ f_larglist	: '(' f_args opt_bv_decl ')'
 
 lambda_body	: tLAMBEG compstmt '}'
 		    {
-			token_info_pop("}");
+			token_info_pop("}", &@3);
 			$$ = $2;
 		    }
 		| keyword_do_LAMBDA bodystmt k_end
@@ -5039,11 +5043,10 @@ ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 #define parser_isascii() ISASCII(*(lex_p-1))
 
 static int
-token_info_get_column(struct parser_params *parser, const char *pend)
+token_info_get_column(const char *p, int len)
 {
-    int column = 1;
-    const char *p;
-    for (p = lex_pbeg; p < pend; p++) {
+    int column = 1, i;
+    for (i = 0; i < len; i++, p++) {
 	if (*p == '\t') {
 	    column = (((column - 1) / TAB_WIDTH) + 1) * TAB_WIDTH;
 	}
@@ -5053,10 +5056,10 @@ token_info_get_column(struct parser_params *parser, const char *pend)
 }
 
 static int
-token_info_has_nonspaces(struct parser_params *parser, const char *pend)
+token_info_has_nonspaces(const char *p, int len)
 {
-    const char *p;
-    for (p = lex_pbeg; p < pend; p++) {
+    int i;
+    for (i = 0; i < len; i++, p++) {
 	if (*p != ' ' && *p != '\t') {
 	    return 1;
 	}
@@ -5065,36 +5068,34 @@ token_info_has_nonspaces(struct parser_params *parser, const char *pend)
 }
 
 static void
-token_info_push_gen(struct parser_params *parser, const char *token, size_t len)
+token_info_push_gen(struct parser_params *parser, const char *token, size_t len, const rb_code_location_t *loc)
 {
     token_info *ptinfo;
-    const char *t = lex_p - len;
 
     if (!parser->token_info_enabled) return;
     ptinfo = ALLOC(token_info);
     ptinfo->token = token;
-    ptinfo->linenum = ruby_sourceline;
-    ptinfo->column = token_info_get_column(parser, t);
-    ptinfo->nonspc = token_info_has_nonspaces(parser, t);
+    ptinfo->linenum = loc->beg_pos.lineno;
+    ptinfo->column = token_info_get_column(lex_pbeg, loc->beg_pos.column);
+    ptinfo->nonspc = token_info_has_nonspaces(lex_pbeg, loc->beg_pos.column);
     ptinfo->next = parser->token_info;
 
     parser->token_info = ptinfo;
 }
 
 static void
-token_info_pop_gen(struct parser_params *parser, const char *token, size_t len)
+token_info_pop_gen(struct parser_params *parser, const char *token, size_t len, const rb_code_location_t *loc)
 {
     int linenum;
     token_info *ptinfo = parser->token_info;
-    const char *t = lex_p - len;
 
     if (!ptinfo) return;
     parser->token_info = ptinfo->next;
-    linenum = ruby_sourceline;
+    linenum = loc->beg_pos.lineno;
     if (parser->token_info_enabled &&
 	linenum != ptinfo->linenum && !ptinfo->nonspc &&
-	!token_info_has_nonspaces(parser, t) &&
-	token_info_get_column(parser, t) != ptinfo->column) {
+	!token_info_has_nonspaces(lex_pbeg, loc->beg_pos.column) &&
+	token_info_get_column(lex_pbeg, loc->beg_pos.column) != ptinfo->column) {
 	rb_warn3L(linenum,
 		  "mismatched indentations at '%s' with '%s' at %d",
 		  WARN_S(token), WARN_S(ptinfo->token), WARN_I(ptinfo->linenum));
@@ -8462,7 +8463,6 @@ parser_yylex(struct parser_params *parser)
 	}
 	if (c == '>') {
 	    SET_LEX_STATE(EXPR_ENDFN);
-	    token_info_push("->");
 	    return tLAMBDA;
 	}
 	if (IS_BEG() || (IS_SPCARG(c) && arg_ambiguous('-'))) {
