@@ -1,0 +1,59 @@
+%# -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+%# Copyright (c) 2017 Urabe, Shyouhei.  All rights reserved.
+%#
+%# This file is a part of  the programming language Ruby.  Permission is hereby
+%# granted, to either  redistribute and/or modify this file,  provided that the
+%# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+%# details.
+%
+% a = RubyVM::Instructions.map {|i| i.operands_info }
+% b = (0...a.size)
+% c = a.inject([0]) {|r, i| r << (r[-1] + i.length + 1) }
+% c.pop
+%
+CONSTFUNC(MAYBE_UNUSED(static const char *insn_op_types(VALUE insn)));
+CONSTFUNC(MAYBE_UNUSED(static int insn_op_type(VALUE insn, long pos)));
+extern const char *rb_vm_insn_op_info;
+extern const unsigned short rb_vm_insn_op_offset[];
+
+#ifdef RUBY_VM_INSNS_INFO
+const unsigned short rb_vm_insn_op_offset[] = {
+% c.each_slice 14 do |d|
+    <%= d.map {|i| sprintf("%3d", i) }.join(', ') %>,
+% end
+};
+ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);
+
+PACKED_STRUCT(struct rb_vm_insn_op_info_tag {
+% b.each_slice 3 do |d|
+    <%= d.map {|i|
+        sprintf("const char L%03d[%2d]", i, a[i].length + 1)
+    }.join('; ') %>;
+% end
+});
+
+static const struct rb_vm_insn_op_info_tag rb_vm_insn_op_base = {
+% a.each_slice 8 do |d|
+    <%= d.map {|i| sprintf("%-6s", cstr(i)) }.join(', ') %>,
+% end
+};
+
+const char *rb_vm_insn_op_info = (const char *)&rb_vm_insn_op_base;
+#endif
+
+const char *
+insn_op_types(VALUE i)
+{
+    return &rb_vm_insn_op_info[rb_vm_insn_op_offset[i]];
+}
+
+int
+insn_op_type(VALUE i, long j)
+{
+    if (j >= insn_len(i)) {
+        return 0;
+    }
+    else {
+        return insn_op_types(i)[j];
+    }
+}

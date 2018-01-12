@@ -15,7 +15,6 @@
 #include "encindex.h"
 #include <math.h>
 
-#define USE_INSN_STACK_INCREASE 1
 #include "vm_core.h"
 #include "vm_debug.h"
 #include "iseq.h"
@@ -7373,16 +7372,16 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
 const char *
 rb_insns_name(int i)
 {
-    return insn_name_info[i];
+    return insn_name(i);
 }
 
 VALUE
 rb_insns_name_array(void)
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(VM_INSTRUCTION_SIZE);
     int i;
     for (i = 0; i < VM_INSTRUCTION_SIZE; i++) {
-	rb_ary_push(ary, rb_fstring_cstr(insn_name_info[i]));
+	rb_ary_push(ary, rb_fstring_cstr(insn_name(i)));
     }
     return rb_obj_freeze(ary);
 }
