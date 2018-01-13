@@ -35,11 +35,10 @@ insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
 % RubyVM::Instructions.each do |i|
 %   next unless i.has_attribute?('sp_inc')
     case <%= i.bin %>:
-        return CALL_ATTRIBUTE(sp_inc, <%= i.name %><%=
+        return attr_sp_inc_<%= i.name %>(<%=
           i.opes.map.with_index do |v, j|
-            k = i.cast_from_VALUE v, "opes[#{j}]"
-            next ", #{k}"
-          end.join
+            i.cast_from_VALUE v, "opes[#{j}]"
+          end.join(", ")
         %>);
 % end
     }
