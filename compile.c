@@ -868,7 +868,7 @@ compile_data_alloc(rb_iseq_t *iseq, size_t size)
 	    alloc_size *= 2;
 	}
 	storage->next = (void *)ALLOC_N(char, alloc_size +
-					SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
+					sizeof(struct iseq_compile_data_storage));
 	storage = ISEQ_COMPILE_DATA(iseq)->storage_current = storage->next;
 	storage->next = 0;
 	storage->pos = 0;
