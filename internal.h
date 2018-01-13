@@ -2050,6 +2050,15 @@ rb_obj_builtin_type(VALUE obj)
 }
 #endif
 
+/* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+# define FLEX_ARY_LEN   /* VALUE ary[]; */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
+# define FLEX_ARY_LEN 0 /* VALUE ary[0]; */
+#else
+# define FLEX_ARY_LEN 1 /* VALUE ary[1]; */
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
