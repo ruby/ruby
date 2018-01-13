@@ -864,7 +864,7 @@ AS_IF([test "$GCC" = yes], [
       # comments.   We  bypass  ANSI   C  mode  for  them.   Otherwise
       # extension libs cannot include those headers.
 
-      # Since math.h in some mingw64 wrongly delcares frexp and modf
+      # Since math.h in some mingw64 wrongly declares frexp and modf
       # to be pure, the variables pointed by the second arguments are
       # considered uninitialized unexpectedly.
       AC_CACHE_CHECK([whether frexp and modf are broken],
