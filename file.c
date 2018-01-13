@@ -361,7 +361,7 @@ struct apply_arg {
     int errnum;
     int (*func)(const char *, void *);
     void *arg;
-    struct apply_filename fn[1]; /* flexible array */
+    struct apply_filename fn[FLEX_ARY_LEN];
 };
 
 static void *
@@ -388,7 +388,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
     VALUE v;
     const size_t size = sizeof(struct apply_filename);
-    const long len = (long)(offsetof(struct apply_arg, fn) + (size * argc));
+    const long len = (long)(sizeof(struct apply_arg) + (size * argc));
     struct apply_arg *aa = ALLOCV(v, len);
 
     aa->errnum = 0;
