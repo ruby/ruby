@@ -2836,7 +2836,15 @@ struct succ_index_table {
 	unsigned int rank;
 	uint64_t small_block_ranks; /* 9 bits * 7 = 63 bits */
 	uint64_t bits[512/64];
-    } succ_part[];
+    } succ_part[
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+	/* flexible array member */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
+	0
+#else
+	1
+#endif
+    ];
 } succ_index_table;
 
 #define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
