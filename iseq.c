@@ -208,7 +208,7 @@ iseq_memsize(const rb_iseq_t *iseq)
 
 	cur = compile_data->storage_head;
 	while (cur) {
-	    size += cur->size + SIZEOF_ISEQ_COMPILE_DATA_STORAGE;
+	    size += cur->size + sizeof(struct iseq_compile_data_storage);
 	    cur = cur->next;
 	}
     }
@@ -333,7 +333,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
     ISEQ_COMPILE_DATA(iseq)->storage_head = ISEQ_COMPILE_DATA(iseq)->storage_current =
       (struct iseq_compile_data_storage *)
 	ALLOC_N(char, INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE +
-		SIZEOF_ISEQ_COMPILE_DATA_STORAGE);
+		sizeof(struct iseq_compile_data_storage));
 
     RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, rb_ary_tmp_new(3));
     ISEQ_COMPILE_DATA(iseq)->storage_head->pos = 0;
