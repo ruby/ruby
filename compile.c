@@ -8786,7 +8786,7 @@ enum ibf_object_class_index {
 struct ibf_object_string {
     long encindex;
     long len;
-    char ptr[1];
+    char ptr[FLEX_ARY_LEN];
 };
 
 struct ibf_object_regexp {
@@ -8796,12 +8796,12 @@ struct ibf_object_regexp {
 
 struct ibf_object_array {
     long len;
-    long ary[1];
+    long ary[FLEX_ARY_LEN];
 };
 
 struct ibf_object_hash {
     long len;
-    long keyval[1];
+    long keyval[FLEX_ARY_LEN];
 };
 
 struct ibf_object_struct_range {
@@ -8814,7 +8814,7 @@ struct ibf_object_struct_range {
 
 struct ibf_object_bignum {
     ssize_t slen;
-    BDIGIT digits[1];
+    BDIGIT digits[FLEX_ARY_LEN];
 };
 
 enum ibf_object_data_type {
