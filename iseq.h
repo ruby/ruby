@@ -249,7 +249,7 @@ struct iseq_catch_table_entry {
 
 PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
     unsigned int size;
-    struct iseq_catch_table_entry entries[1]; /* flexible array */
+    struct iseq_catch_table_entry entries[FLEX_ARY_LEN];
 });
 
 static inline int
@@ -260,7 +260,7 @@ iseq_catch_table_bytes(int n)
     };
     if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
     return (int)(sizeof(struct iseq_catch_table) +
-		 (n - 1) * sizeof(struct iseq_catch_table_entry));
+		 n * sizeof(struct iseq_catch_table_entry));
 }
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
@@ -269,12 +269,8 @@ struct iseq_compile_data_storage {
     struct iseq_compile_data_storage *next;
     unsigned int pos;
     unsigned int size;
-    char buff[1]; /* flexible array */
+    char buff[FLEX_ARY_LEN];
 };
-
-/* account for flexible array */
-#define SIZEOF_ISEQ_COMPILE_DATA_STORAGE \
-    (sizeof(struct iseq_compile_data_storage) - 1)
 
 /* defined? */
 
