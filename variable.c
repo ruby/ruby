@@ -34,7 +34,7 @@ static st_table *generic_iv_tbl_compat;
 /* per-object */
 struct gen_ivtbl {
     uint32_t numiv;
-    VALUE ivptr[1]; /* flexible array */
+    VALUE ivptr[FLEX_ARY_LEN];
 };
 
 struct ivar_update {
@@ -1001,7 +1001,7 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 static size_t
 gen_ivtbl_bytes(size_t n)
 {
-    return sizeof(struct gen_ivtbl) + n * sizeof(VALUE) - sizeof(VALUE);
+    return sizeof(struct gen_ivtbl) + n * sizeof(VALUE);
 }
 
 static struct gen_ivtbl *
