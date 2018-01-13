@@ -10,8 +10,6 @@ typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
 
-#define CALL_ATTRIBUTE(name, insn, ...) attr_ ## name ## _ ## insn(__VA_ARGS__)
-
 % attrs = RubyVM::Instructions.map(&:attributes).flatten
 %
 % attrs.each do |a|
