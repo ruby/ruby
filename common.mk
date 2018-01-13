@@ -1700,6 +1700,7 @@ enumerator.$(OBJEXT): {$(VPATH)}config.h
 enumerator.$(OBJEXT): {$(VPATH)}defines.h
 enumerator.$(OBJEXT): {$(VPATH)}encoding.h
 enumerator.$(OBJEXT): {$(VPATH)}enumerator.c
+enumerator.$(OBJEXT): {$(VPATH)}id.h
 enumerator.$(OBJEXT): {$(VPATH)}intern.h
 enumerator.$(OBJEXT): {$(VPATH)}internal.h
 enumerator.$(OBJEXT): {$(VPATH)}io.h
@@ -1850,6 +1851,7 @@ golf_prelude.$(OBJEXT): {$(VPATH)}config.h
 golf_prelude.$(OBJEXT): {$(VPATH)}defines.h
 golf_prelude.$(OBJEXT): {$(VPATH)}encoding.h
 golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.c
+golf_prelude.$(OBJEXT): {$(VPATH)}golf_prelude.rb
 golf_prelude.$(OBJEXT): {$(VPATH)}id.h
 golf_prelude.$(OBJEXT): {$(VPATH)}intern.h
 golf_prelude.$(OBJEXT): {$(VPATH)}internal.h
@@ -2202,6 +2204,7 @@ prelude.$(OBJEXT): $(top_srcdir)/include/ruby.h
 prelude.$(OBJEXT): {$(VPATH)}config.h
 prelude.$(OBJEXT): {$(VPATH)}defines.h
 prelude.$(OBJEXT): {$(VPATH)}encoding.h
+prelude.$(OBJEXT): {$(VPATH)}gem_prelude.rb
 prelude.$(OBJEXT): {$(VPATH)}id.h
 prelude.$(OBJEXT): {$(VPATH)}intern.h
 prelude.$(OBJEXT): {$(VPATH)}internal.h
@@ -2213,6 +2216,7 @@ prelude.$(OBJEXT): {$(VPATH)}node.h
 prelude.$(OBJEXT): {$(VPATH)}onigmo.h
 prelude.$(OBJEXT): {$(VPATH)}oniguruma.h
 prelude.$(OBJEXT): {$(VPATH)}prelude.c
+prelude.$(OBJEXT): {$(VPATH)}prelude.rb
 prelude.$(OBJEXT): {$(VPATH)}ruby_assert.h
 prelude.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 prelude.$(OBJEXT): {$(VPATH)}st.h
