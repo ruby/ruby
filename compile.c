@@ -8066,19 +8066,6 @@ struct ibf_header {
     ibf_offset_t object_list_offset;
 };
 
-struct ibf_id_entry {
-    enum {
-	ibf_id_enc_ascii,
-	ibf_id_enc_utf8,
-	ibf_id_enc_other
-    } enc
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-    : 2
-#endif
-    ;
-    char body[1];
-};
-
 struct ibf_dump {
     VALUE str;
     VALUE iseq_list;      /* [iseq0 offset, ...] */
