@@ -1001,7 +1001,7 @@ generic_ivar_get(VALUE obj, ID id, VALUE undef)
 static size_t
 gen_ivtbl_bytes(size_t n)
 {
-    return sizeof(struct gen_ivtbl) + n * sizeof(VALUE);
+    return offsetof(struct gen_ivtbl, ivptr) + n * sizeof(VALUE);
 }
 
 static struct gen_ivtbl *

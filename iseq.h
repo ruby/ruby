@@ -256,11 +256,12 @@ static inline int
 iseq_catch_table_bytes(int n)
 {
     enum {
-	catch_table_entries_max = (INT_MAX - sizeof(struct iseq_catch_table)) / sizeof(struct iseq_catch_table_entry)
+	catch_table_entry_size = sizeof(struct iseq_catch_table_entry),
+	catch_table_entries_max = (INT_MAX - offsetof(struct iseq_catch_table, entries)) / catch_table_entry_size
     };
     if (n > catch_table_entries_max) rb_fatal("too large iseq_catch_table - %d", n);
-    return (int)(sizeof(struct iseq_catch_table) +
-		 n * sizeof(struct iseq_catch_table_entry));
+    return (int)(offsetof(struct iseq_catch_table, entries) +
+		 n * catch_table_entry_size);
 }
 
 #define INITIAL_ISEQ_COMPILE_DATA_STORAGE_BUFF_SIZE (512)
