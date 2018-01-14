@@ -306,11 +306,13 @@ static int parser_yyerror(struct parser_params*, const YYLTYPE *yylloc, const ch
 
 static enum yytokentype yylex(YYSTYPE*, YYLTYPE*, struct parser_params*);
 
+#ifndef RIPPER
 static inline void
 rb_discard_node(struct parser_params *p, NODE *n)
 {
     rb_ast_delete_node(p->ast, n);
 }
+#endif
 
 static inline VALUE
 add_mark_object(struct parser_params *p, VALUE obj)
