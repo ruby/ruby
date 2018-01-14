@@ -39,6 +39,8 @@
 
 #define TAB_WIDTH 8
 
+#define yydebug (p->debug)	/* disable the global variable definition */
+
 #define YYMALLOC(size)		rb_parser_malloc(p, (size))
 #define YYREALLOC(ptr, size)	rb_parser_realloc(p, (ptr), (size))
 #define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
@@ -110,7 +112,7 @@ enum lex_state_e {
 
 # define SET_LEX_STATE(ls) \
     (p->lex.state = \
-     (p->yydebug ? \
+     (p->debug ? \
       rb_parser_trace_lex_state(p, p->lex.state, (ls), __LINE__) : \
       (enum lex_state_e)(ls)))
 
@@ -118,7 +120,7 @@ typedef VALUE stack_type;
 
 static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 
-# define SHOW_BITSTACK(stack, name) (p->yydebug ? rb_parser_show_bitstack(p, stack, name, __LINE__) : (void)0)
+# define SHOW_BITSTACK(stack, name) (p->debug ? rb_parser_show_bitstack(p, stack, name, __LINE__) : (void)0)
 # define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
 # define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack"(pop)"))
 # define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
@@ -232,7 +234,7 @@ struct parser_params {
     unsigned int command_start:1;
     unsigned int eofp: 1;
     unsigned int ruby__end__seen: 1;
-    unsigned int yydebug: 1;
+    unsigned int debug: 1;
     unsigned int has_shebang: 1;
     unsigned int in_defined: 1;
     unsigned int in_main: 1;
@@ -5101,7 +5103,7 @@ vtable_alloc_gen(struct parser_params *p, int line, struct vtable *prev)
     tbl->tbl = ALLOC_N(ID, tbl->capa);
     tbl->prev = prev;
 #ifndef RIPPER
-    if (p->yydebug) {
+    if (p->debug) {
 	rb_parser_printf(p, "vtable_alloc:%d: %p\n", line, tbl);
     }
 #endif
@@ -5114,7 +5116,7 @@ vtable_free_gen(struct parser_params *p, int line, const char *name,
 		struct vtable *tbl)
 {
 #ifndef RIPPER
-    if (p->yydebug) {
+    if (p->debug) {
 	rb_parser_printf(p, "vtable_free:%d: %s(%p)\n", line, name, tbl);
     }
 #endif
@@ -5132,7 +5134,7 @@ vtable_add_gen(struct parser_params *p, int line, const char *name,
 	       struct vtable *tbl, ID id)
 {
 #ifndef RIPPER
-    if (p->yydebug) {
+    if (p->debug) {
 	rb_parser_printf(p, "vtable_add:%d: %s(%p), %s\n",
 			 line, name, tbl, rb_id2name(id));
     }
@@ -5154,7 +5156,7 @@ static void
 vtable_pop_gen(struct parser_params *p, int line, const char *name,
 	       struct vtable *tbl, int n)
 {
-    if (p->yydebug) {
+    if (p->debug) {
 	rb_parser_printf(p, "vtable_pop:%d: %s(%p), %d\n",
 			 line, name, tbl, n);
     }
@@ -9337,7 +9339,7 @@ rb_parser_fatal(struct parser_params *p, const char *fmt, ...)
     compile_error(PARSER_ARG "p->cmdarg_stack: %"PRIsVALUE, mesg);
     if (p->debug_output == rb_stdout)
 	p->debug_output = rb_stderr;
-    p->yydebug = TRUE;
+    p->debug = TRUE;
 }
 
 void
@@ -11173,7 +11175,7 @@ rb_parser_get_yydebug(VALUE self)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    return p->yydebug ? Qtrue : Qfalse;
+    return p->debug ? Qtrue : Qfalse;
 }
 
 /*
@@ -11188,7 +11190,7 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
     struct parser_params *p;
 
     TypedData_Get_Struct(self, struct parser_params, &parser_data_type, p);
-    p->yydebug = RTEST(flag);
+    p->debug = RTEST(flag);
     return flag;
 }
 
