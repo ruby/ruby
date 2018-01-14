@@ -788,15 +788,6 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 # define PARSER_ARG p,
 #endif
 
-/* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
-   for instance).  This is too low for Ruby to parse some files, such as
-   date/format.rb, therefore bump the value up to at least Bison's default. */
-#ifdef OLD_YACC
-#ifndef YYMAXDEPTH
-#define YYMAXDEPTH 10000
-#endif
-#endif
-
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
 %}
