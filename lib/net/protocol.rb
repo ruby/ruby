@@ -209,9 +209,9 @@ module Net # :nodoc:
 
     public
 
-    def write(str)
+    def write(*strs)
       writing {
-        write0 str
+        write0 *strs
       }
     end
 
@@ -235,9 +235,9 @@ module Net # :nodoc:
       bytes
     end
 
-    def write0(str)
-      @debug_output << str.dump if @debug_output
-      len = @io.write(str)
+    def write0(*strs)
+      @debug_output << strs.map(&:dump).join if @debug_output
+      len = @io.write(*strs)
       @written_bytes += len
       len
     end
