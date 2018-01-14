@@ -711,8 +711,6 @@ new_args_tail(struct parser_params *p, VALUE k, VALUE kr, VALUE b, YYLTYPE *loc)
 static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
 # define heredoc_dedent(str) parser_heredoc_dedent(p, (str))
 
-#define FIXME 0
-
 #else
 #define ID2VAL(id) ((VALUE)(id))
 #define TOKEN2VAL(t) ID2VAL(t)
