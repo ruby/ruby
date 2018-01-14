@@ -6410,7 +6410,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	if (CASEMAP_DEBUG) {
 	    fprintf(stderr, "Buffer allocation, capa is %"PRIuSIZE"\n", capa); /* for tuning */
 	}
-	current_buffer->next = xmalloc(sizeof(mapping_buffer) + capa);
+	current_buffer->next = xmalloc(offsetof(mapping_buffer, space) + capa);
 	current_buffer = current_buffer->next;
 	current_buffer->next = NULL;
 	current_buffer->capa = capa;
