@@ -35,15 +35,15 @@ a\
 /^yy_stack_print/{
   /parser/!{
     H
-    s/)$/, parser)/
-    /\*/s/parser)$/struct parser_params *&/
+    s/)$/, p)/
+    /\*/s/p)$/struct parser_params *&/
   }
 }
 /yy_stack_print.*;/{
   x
   /yy_stack_print/{
     x
-    s/\(yy_stack_print *\)(\(.*\));/\1(\2, parser);/
+    s/\(yy_stack_print *\)(\(.*\));/\1(\2, p);/
     x
   }
   x
@@ -51,9 +51,9 @@ a\
 /^yy_reduce_print/,/^}/{
   s/fprintf *(stderr,/YYFPRINTF (parser,/g
 }
-s/\( YYFPRINTF *(\)yyoutput,/\1parser,/
-s/\( YYFPRINTF *(\)stderr,/\1parser,/
-s/\( YYDPRINTF *((\)stderr,/\1parser,/
+s/\( YYFPRINTF *(\)yyoutput,/\1p,/
+s/\( YYFPRINTF *(\)stderr,/\1p,/
+s/\( YYDPRINTF *((\)stderr,/\1p,/
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
 s!^ *extern char \*getenv();!/* & */!
 s/^\(#.*\)".*\.tab\.c"/\1"parse.c"/
