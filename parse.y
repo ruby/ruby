@@ -440,8 +440,7 @@ static void reg_fragment_setenc(struct parser_params*, VALUE, int);
 static int reg_fragment_check(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
-static NODE *parser_heredoc_dedent(struct parser_params*,NODE*);
-# define heredoc_dedent(str) parser_heredoc_dedent(p, (str))
+static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
 #define get_id(id) (id)
 #define get_value(val) (val)
@@ -710,8 +709,7 @@ new_args_tail(struct parser_params *p, VALUE k, VALUE kr, VALUE b, YYLTYPE *loc)
 
 #define new_defined(p,expr,loc) dispatch1(defined, (expr))
 
-static VALUE parser_heredoc_dedent(struct parser_params*,VALUE);
-# define heredoc_dedent(str) parser_heredoc_dedent(p, (str))
+static VALUE heredoc_dedent(struct parser_params*,VALUE);
 
 #else
 #define ID2VAL(id) ((VALUE)(id))
@@ -3630,7 +3628,7 @@ string		: tCHAR
 
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
-			$$ = new_string1(heredoc_dedent($2));
+			$$ = new_string1(heredoc_dedent(p, $2));
 		    /*%%%*/
 			if ($$) nd_set_loc($$, &@$);
 		    /*%
@@ -3640,7 +3638,7 @@ string1		: tSTRING_BEG string_contents tSTRING_END
 
 xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    {
-			$$ = new_xstring(p, heredoc_dedent($2), &@$);
+			$$ = new_xstring(p, heredoc_dedent(p, $2), &@$);
 		    }
 		;
 
@@ -6473,7 +6471,7 @@ dedent_string(VALUE string, int width)
 
 #ifndef RIPPER
 static NODE *
-parser_heredoc_dedent(struct parser_params *p, NODE *root)
+heredoc_dedent(struct parser_params *p, NODE *root)
 {
     NODE *node, *str_node;
     int bol = TRUE;
@@ -6505,7 +6503,7 @@ parser_heredoc_dedent(struct parser_params *p, NODE *root)
 }
 #else /* RIPPER */
 static VALUE
-parser_heredoc_dedent(struct parser_params *p, VALUE array)
+heredoc_dedent(struct parser_params *p, VALUE array)
 {
     int indent = p->heredoc_indent;
 
