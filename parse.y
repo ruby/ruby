@@ -865,7 +865,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric dsym cpath
-%type <node> top_compstmt top_stmts top_stmt
+%type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -1033,14 +1033,20 @@ top_stmts	: none
 		;
 
 top_stmt	: stmt
-		| keyword_BEGIN '{' top_compstmt '}'
+		| keyword_BEGIN begin_block
+		    {
+			$$ = $2;
+		    }
+		;
+
+begin_block	: '{' top_compstmt '}'
 		    {
 		    /*%%%*/
 			p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-							  NEW_BEGIN($3, &@$));
+							  NEW_BEGIN($2, &@$));
 			$$ = NEW_BEGIN(0, &@$);
 		    /*%
-			$$ = dispatch1(BEGIN, $3);
+			$$ = dispatch1(BEGIN, $2);
 		    %*/
 		    }
 		;
@@ -1128,17 +1134,10 @@ stmt_or_begin	: stmt
 		    {
 			yyerror1(&@1, "BEGIN is permitted only at toplevel");
 		    }
-		  '{' top_compstmt '}'
+		  begin_block
 		    {
-		    /*%%%*/
-			p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-							  $4);
-			$$ = NEW_BEGIN(0, &@$);
-		    /*%
-			$$ = dispatch1(BEGIN, $4);
-		    %*/
+			$$ = $3;
 		    }
-		;
 
 stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
