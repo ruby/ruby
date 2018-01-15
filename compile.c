@@ -8077,7 +8077,7 @@ struct ibf_dump {
 rb_iseq_t * iseq_alloc(void);
 
 struct ibf_load {
-    const RUBY_ALIGNAS(sizeof(VALUE)) char *buff;
+    const ruby_aligned_char *buff;
     const struct ibf_header *header;
     ID *id_list;     /* [id0, ...] */
     VALUE iseq_list; /* [iseq0, ...] */
