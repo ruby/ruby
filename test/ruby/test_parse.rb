@@ -457,6 +457,30 @@ class TestParse < Test::Unit::TestCase
     end
   end
 
+  def test_op_asgn1_with_block
+    t = Object.new
+    a = []
+    blk = proc {|x| a << x }
+    def t.[](_)
+      yield(:aref)
+      nil
+    end
+    def t.[]=(_, _)
+      yield(:aset)
+    end
+    def t.dummy(_)
+    end
+    eval <<-END, nil, __FILE__, __LINE__+1
+      t[42, &blk] ||= 42
+    END
+    assert_equal([:aref, :aset], a)
+    a.clear
+    eval <<-END, nil, __FILE__, __LINE__+1
+    t[42, &blk] ||= t.dummy 42 # command_asgn test
+    END
+    assert_equal([:aref, :aset], a)
+  end
+
   def test_backquote
     t = Object.new
 

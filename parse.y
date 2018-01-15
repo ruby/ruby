@@ -1298,7 +1298,12 @@ command_asgn	: lhs '=' command_rhs
 
 			value_expr($6);
 			$3 = make_array($3, &@3);
-			args = arg_concat(p, $3, $6, &@$);
+			if (nd_type($3) == NODE_BLOCK_PASS) {
+			    args = NEW_ARGSCAT($3, $6, &@$);
+			}
+			else {
+			    args = arg_concat(p, $3, $6, &@$);
+			}
 			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
 			fixpos($$, $1);
 		    /*%
