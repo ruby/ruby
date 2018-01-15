@@ -853,7 +853,7 @@ enum ruby_fl_type {
     RUBY_FL_SINGLETON = RUBY_FL_USER0
 };
 
-struct RUBY_ALIGNAS(sizeof(VALUE)) RBasic {
+struct RUBY_ALIGNAS(SIZEOF_VALUE) RBasic {
     VALUE flags;
     const VALUE klass;
 };
@@ -950,7 +950,7 @@ enum ruby_rstring_flags {
     RSTRING_ENUM_END
 };
 
-typedef RUBY_ALIGNAS(sizeof(VALUE)) char ruby_aligned_char;
+typedef RUBY_ALIGNAS(SIZEOF_VALUE) char ruby_aligned_char;
 
 struct RString {
     struct RBasic basic;
@@ -963,7 +963,7 @@ struct RString {
 		VALUE shared;
 	    } aux;
 	} heap;
-	char RUBY_ALIGNAS(sizeof(VALUE)) ary[RSTRING_EMBED_LEN_MAX + 1];
+	char RUBY_ALIGNAS(SIZEOF_VALUE) ary[RSTRING_EMBED_LEN_MAX + 1];
     } as;
 };
 #define RSTRING_EMBED_LEN(str) \
