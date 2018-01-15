@@ -2493,6 +2493,7 @@ AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
 AS_IF([test "${AS_TR_SH(rb_cv_builtin_$1)}" != no], [
   AC_DEFINE(AS_TR_CPP(HAVE_BUILTIN_$1))
 ])])
+RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((void*)32, 32)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])

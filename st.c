@@ -1816,9 +1816,14 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 	}
 	else
 #endif
+#ifdef HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
+#define aligned_data __builtin_assume_aligned(data, sizeof(st_index_t))
+#else
+#define aligned_data data
+#endif
 	{
 	    do {
-		h = murmur_step(h, *(st_index_t *)data);
+		h = murmur_step(h, *(st_index_t *)aligned_data);
 		data += sizeof(st_index_t);
 		len -= sizeof(st_index_t);
 	    } while (len >= sizeof(st_index_t));
@@ -1834,7 +1839,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
       case 6: t |= data_at(5) << 40;
       case 5: t |= data_at(4) << 32;
       case 4:
-	t |= (st_index_t)*(uint32_t*)data;
+	t |= (st_index_t)*(uint32_t*)aligned_data;
 	goto skip_tail;
 # define SKIP_TAIL 1
 #endif
@@ -1859,6 +1864,7 @@ st_hash(const void *ptr, size_t len, st_index_t h)
 	h *= C2;
     }
     h ^= l;
+#undef aligned_data
 
     return murmur_finish(h);
 }
