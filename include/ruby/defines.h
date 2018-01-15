@@ -29,10 +29,6 @@ extern "C" {
 #ifndef PUREFUNC
 # define PUREFUNC(x) x
 #endif
-#define NORETURN_STYLE_NEW 1
-#ifndef NORETURN
-# define NORETURN(x) x
-#endif
 #ifndef DEPRECATED
 # define DEPRECATED(x) x
 #endif
@@ -388,6 +384,17 @@ void rb_ia64_flushrs(void);
 #define RUBY_ALIGNOF _Alignof
 #else
 #define RUBY_ALIGNOF(x) ((size_t)offsetof(struct { char f1; type f2; }, f2))
+#endif
+
+#define NORETURN_STYLE_NEW 1
+#ifdef NORETURN
+/* OK, take that definition */
+#elif defined(__cplusplus) && (__cplusplus >= 201103L)
+#define NORETURN(x) [[ noreturn ]] x
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define NORETURN(x) _Noreturn x
+#else
+#define NORETURN(x) x
 #endif
 
 RUBY_SYMBOL_EXPORT_END
