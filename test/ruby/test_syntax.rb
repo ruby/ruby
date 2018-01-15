@@ -1191,6 +1191,11 @@ eom
     assert_valid_syntax('while class Foo a = tap do end; end; break; end')
   end
 
+  def test_command_with_cmd_brace_block
+    assert_valid_syntax('obj.foo (1) {}')
+    assert_valid_syntax('obj::foo (1) {}')
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
