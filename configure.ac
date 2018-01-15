@@ -1743,6 +1743,30 @@ EOH
 ])dnl
 ])dnl
 
+AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
+rb_cv_have_alignas=no
+RUBY_WERROR_FLAG([
+for attr in \
+    "_Alignas(x)" \
+    "alignas(x)" \
+    "@<:@@<:@alignas(x)@:>@@:>@" \
+    "__declspec(aligned(x))" \
+    "__attribute__((__aligned__(x)))" \
+;
+do
+    # C11 _Alignas and GCC __attribute__((__aligned__)) behave
+    # slightly differently.  What we want is GCC's.  Check that
+    # here by something C11 does not allow (`struct ALIGNAS ...`)
+    AC_TRY_COMPILE(
+	[@%:@define ALIGNAS(x) $attr
+	struct ALIGNAS(128) conftest_tag { int foo; } foo; ], [],
+        [rb_cv_have_alignas="$attr"; break], [])
+done
+])])
+AS_IF([test "$rb_cv_have_alignas" != no], [
+    AC_DEFINE_UNQUOTED([RUBY_ALIGNAS(x)], $rb_cv_have_alignas)
+])
+
 dnl RUBY_DECL_ATTRIBUTE(attrib, macroname, cachevar, condition, type, code)
 AC_DEFUN([RUBY_DECL_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl
@@ -1773,6 +1797,7 @@ ${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
 ${rbcv_cond+[@%:@endif]})
 $6
 @%:@define mesg ("")
+@%:@define n (32768)
     attrib[](attrib_params)[;], [],
     [rbcv="$mac"; break])
 done
@@ -1801,7 +1826,6 @@ AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
 @%:@define x struct conftest_attribute_check {int i;}
 ])
 ])
-
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
 RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
 RUBY_FUNC_ATTRIBUTE(__noreturn__, NORETURN)

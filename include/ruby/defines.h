@@ -376,6 +376,10 @@ void rb_ia64_flushrs(void);
 # endif
 #endif
 
+#ifndef RUBY_ALIGNAS
+#define RUBY_ALIGNAS(x) y
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
