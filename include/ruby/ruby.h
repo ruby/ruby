@@ -1603,12 +1603,12 @@ rb_num2char_inline(VALUE x)
 # undef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 #endif
 
-#ifdef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
+#if defined(HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN) && defined(RUBY_ALIGNOF)
 /* I don't know why but __builtin_alloca_with_align's second argument
    takes bits rather than bytes. */
 #define ALLOCA_N(type, n) \
     (type*)__builtin_alloca_with_align((sizeof(type)*(n)), \
-        sizeof(type) * CHAR_BIT)
+        RUBY_ALIGNOF(type) * CHAR_BIT)
 #else
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
 #endif
