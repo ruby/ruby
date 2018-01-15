@@ -1068,13 +1068,7 @@ bodystmt	: compstmt
 			    $$ = block_append(p, $$, $3);
 			}
 			if ($4) {
-			    if ($$) {
-				$$ = NEW_ENSURE($$, $4, &@$);
-			    }
-			    else {
-				NODE *nil = NEW_NIL(&@$);
-				$$ = block_append(p, $4, nil);
-			    }
+			    $$ = NEW_ENSURE($$, $4, &@$);
 			}
 			fixpos($$, $1);
 		    /*%
@@ -1375,7 +1369,6 @@ expr_value	: expr
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-			if (!$$) $$ = NEW_NIL(&@$);
 		    /*%
 			$$ = $1;
 		    %*/
@@ -2107,7 +2100,6 @@ arg_value	: arg
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-			if (!$$) $$ = NEW_NIL(&@$);
 		    /*%
 			$$ = $1;
 		    %*/
@@ -2800,7 +2792,6 @@ primary_value	: primary
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-			if (!$$) $$ = NEW_NIL(&@$);
 		    /*%
 			$$ = $1;
 		    %*/
@@ -4524,7 +4515,6 @@ singleton	: var_ref
 		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-			if (!$$) $$ = NEW_NIL(&@$);
 		    /*%
 			$$ = $1;
 		    %*/
