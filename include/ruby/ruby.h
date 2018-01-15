@@ -957,13 +957,13 @@ struct RString {
     union {
 	struct {
 	    long len;
-	    ruby_aligned_char *ptr;
+	    char *ptr;
 	    union {
 		long capa;
 		VALUE shared;
 	    } aux;
 	} heap;
-	char RUBY_ALIGNAS(SIZEOF_VALUE) ary[RSTRING_EMBED_LEN_MAX + 1];
+	char ary[RSTRING_EMBED_LEN_MAX + 1];
     } as;
 };
 #define RSTRING_EMBED_LEN(str) \
@@ -975,7 +975,7 @@ struct RString {
      RSTRING(str)->as.heap.len)
 #define RSTRING_PTR(str) \
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
-     (ruby_aligned_char *)RSTRING(str)->as.ary : \
+     RSTRING(str)->as.ary : \
      RSTRING(str)->as.heap.ptr)
 #define RSTRING_END(str) \
     (!(RBASIC(str)->flags & RSTRING_NOEMBED) ? \
