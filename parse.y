@@ -1325,11 +1325,8 @@ command_asgn	: lhs '=' command_rhs
 
 command_rhs	: command_call   %prec tOP_ASGN
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-		    %*/
 		    }
 		| command_call modifier_rescue stmt
 		    {
@@ -1366,12 +1363,8 @@ expr		: command_call
 
 expr_value	: expr
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		;
 
@@ -1408,12 +1401,10 @@ fcall		: operation
 
 command		: fcall command_args       %prec tLOWEST
 		    {
+			$$ = new_command(p, $1, $2);
 		    /*%%%*/
-			$$ = $1;
-			$$->nd_args = $2;
 			nd_set_last_loc($1, nd_last_loc($2));
 		    /*%
-			$$ = dispatch2(command, $1, $2);
 		    %*/
 		    }
 		| fcall command_args cmd_brace_block
@@ -2089,12 +2080,8 @@ rel_expr	: arg relop arg   %prec '>'
 
 arg_value	: arg
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		;
 
@@ -2123,11 +2110,8 @@ aref_args	: none
 
 arg_rhs 	: arg   %prec tOP_ASGN
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-		    %*/
 		    }
 		| arg modifier_rescue arg
 		    {
@@ -2781,12 +2765,8 @@ primary		: literal
 
 primary_value	: primary
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		;
 
@@ -4478,12 +4458,8 @@ opt_f_block_arg	: ',' f_block_arg
 
 singleton	: var_ref
 		    {
-		    /*%%%*/
 			value_expr($1);
 			$$ = $1;
-		    /*%
-			$$ = $1;
-		    %*/
 		    }
 		| '(' {SET_LEX_STATE(EXPR_BEG);} expr rparen
 		    {
