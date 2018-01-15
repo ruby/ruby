@@ -1815,7 +1815,6 @@ ${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
 ${rbcv_cond+[@%:@endif]})
 $6
 @%:@define mesg ("")
-@%:@define n (32768)
     attrib[](attrib_params)[;], [],
     [rbcv="$mac"; break])
 done
@@ -1844,6 +1843,7 @@ AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
 @%:@define x struct conftest_attribute_check {int i;}
 ])
 ])
+
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
 RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
 RUBY_FUNC_ATTRIBUTE(__noreturn__, NORETURN)
