@@ -404,6 +404,7 @@ static void rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
+static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc);
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc);
 static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
 
@@ -486,6 +487,7 @@ static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE
 #define new_nil(loc) Qnil
 #define new_op_assign(p,lhs,op,rhs,loc) dispatch3(opassign, (lhs), (op), (rhs))
 
+static VALUE new_ary_op_assign(struct parser_params *p, VALUE ary, VALUE args, VALUE op, VALUE rhs, const YYLTYPE *args_loc, const YYLTYPE *loc);
 static VALUE new_attr_op_assign(struct parser_params *p, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs, const YYLTYPE *loc);
 #define new_const_op_assign(p, lhs, op, rhs, loc) new_op_assign(p, lhs, op, rhs, loc)
 
@@ -1293,23 +1295,8 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
-		    /*%%%*/
-			NODE *args;
-
 			value_expr($6);
-			$3 = make_array($3, &@3);
-			if (nd_type($3) == NODE_BLOCK_PASS) {
-			    args = NEW_ARGSCAT($3, $6, &@$);
-			}
-			else {
-			    args = arg_concat(p, $3, $6, &@$);
-			}
-			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
-			$$ = dispatch3(opassign, $$, $5, $6);
-		    %*/
+			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 		    }
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
@@ -1923,23 +1910,8 @@ arg		: lhs '=' arg_rhs
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs
 		    {
-		    /*%%%*/
-			NODE *args;
-
 			value_expr($6);
-			$3 = make_array($3, &@3);
-			if (nd_type($3) == NODE_BLOCK_PASS) {
-			    args = NEW_ARGSCAT($3, $6, &@$);
-			}
-			else {
-			    args = arg_concat(p, $3, $6, &@$);
-			}
-			$$ = NEW_OP_ASGN1($1, $5, args, &@$);
-			fixpos($$, $1);
-		    /*%
-			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
-			$$ = dispatch3(opassign, $1, $5, $6);
-		    %*/
+			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
 		    }
 		| primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs
 		    {
@@ -10403,6 +10375,24 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYP
 }
 
 static NODE *
+new_ary_op_assign(struct parser_params *p, NODE *ary,
+		  NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc)
+{
+    NODE *asgn;
+
+    args = make_array(args, args_loc);
+    if (nd_type(args) == NODE_BLOCK_PASS) {
+	args = NEW_ARGSCAT(args, rhs, loc);
+    }
+    else {
+	args = arg_concat(p, args, rhs, loc);
+    }
+    asgn = NEW_OP_ASGN1(ary, op, args, loc);
+    fixpos(asgn, ary);
+    return asgn;
+}
+
+static NODE *
 new_attr_op_assign(struct parser_params *p, NODE *lhs,
 		   ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc)
 {
@@ -10437,6 +10427,14 @@ const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
     return NEW_CDECL(0, 0, (path), loc);
 }
 #else
+static VALUE
+new_ary_op_assign(struct parser_params *p, VALUE ary,
+		  VALUE args, VALUE op, VALUE rhs, const YYLTYPE *args_loc, const YYLTYPE *loc)
+{
+    VALUE recv = dispatch2(aref_field, ary, escape_Qundef(args));
+    return dispatch3(opassign, recv, op, rhs);
+}
+
 static VALUE
 new_attr_op_assign(struct parser_params *p, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs, const YYLTYPE *loc)
 {
