@@ -14,10 +14,10 @@ a\
 }
 /^yydestruct.*yymsg/,/#endif/{
   /^yydestruct/{
-    /parser/!{
+    /p/!{
       H
       s/^/ruby_parser_&/
-      s/)$/, parser)/
+      s/)$/, p)/
       /\*/s/parser)$/struct parser_params *&/
     }
   }
@@ -25,9 +25,9 @@ a\
     x
     /yydestruct/{
       i\
-    struct parser_params *parser;
+    struct parser_params *p;
       a\
-#define yydestruct(m, t, v) ruby_parser_yydestruct(m, t, v, parser)
+#define yydestruct(m, t, v) ruby_parser_yydestruct(m, t, v, p)
     }
     x
   }
@@ -49,7 +49,7 @@ a\
   x
 }
 /^yy_reduce_print/,/^}/{
-  s/fprintf *(stderr,/YYFPRINTF (parser,/g
+  s/fprintf *(stderr,/YYFPRINTF (p,/g
 }
 s/\( YYFPRINTF *(\)yyoutput,/\1p,/
 s/\( YYFPRINTF *(\)stderr,/\1p,/
