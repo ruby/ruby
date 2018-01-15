@@ -1595,7 +1595,15 @@ rb_num2char_inline(VALUE x)
 #define ZALLOC(type) RB_ZALLOC(type)
 #define REALLOC_N(var,type,n) RB_REALLOC_N(var,type,n)
 
+#ifdef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
+/* I don't know why but __builtin_alloca_with_align's second argument
+   takes bits rather than bytes. */
+#define ALLOCA_N(type, n) \
+    (type*)__builtin_alloca_with_align((sizeof(type)*(n)), \
+        sizeof(type) * CHAR_BIT)
+#else
 #define ALLOCA_N(type,n) ((type*)alloca(sizeof(type)*(n)))
+#endif
 
 void *rb_alloc_tmp_buffer(volatile VALUE *store, long len) RUBY_ATTR_ALLOC_SIZE((2));
 void *rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t len,size_t count) RUBY_ATTR_ALLOC_SIZE((2,3));
