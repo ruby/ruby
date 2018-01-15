@@ -950,8 +950,6 @@ enum ruby_rstring_flags {
     RSTRING_ENUM_END
 };
 
-typedef RUBY_ALIGNAS(SIZEOF_VALUE) char ruby_aligned_char;
-
 struct RString {
     struct RBasic basic;
     union {
