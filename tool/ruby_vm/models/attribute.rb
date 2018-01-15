@@ -32,13 +32,23 @@ class RubyVM::Attribute
   end
 
   def declaration
-    argv = @insn.opes.map {|o| o[:decl] }.join(', ')
+    opes = @insn.opes
+    if opes.empty?
+      argv = "void"
+    else
+      argv = opes.map {|o| o[:decl] }.join(', ')
+    end
     sprintf '%s %s(%s)', @type, name, argv
   end
 
   def definition
-    argv = @insn.opes.map {|o| "MAYBE_UNUSED(#{o[:decl]})" }.join(",\n    ")
-    argv = "\n    #{argv}\n" if @insn.opes.size > 1
+    opes = @insn.opes
+    if opes.empty?
+      argv = "void"
+    else
+      argv = opes.map {|o| "MAYBE_UNUSED(#{o[:decl]})" }.join(",\n    ")
+      argv = "\n    #{argv}\n" if opes.size > 1
+    end
     sprintf "%s\n%s(%s)", @type, name, argv
   end
 end
