@@ -1033,23 +1033,14 @@ top_stmts	: none
 		;
 
 top_stmt	: stmt
-		| keyword_BEGIN
-		    {
-		    /*%%%*/
-			/* local_push(p, 0); */
-		    /*%
-		    %*/
-		    }
-		  '{' top_compstmt '}'
+		| keyword_BEGIN '{' top_compstmt '}'
 		    {
 		    /*%%%*/
 			p->eval_tree_begin = block_append(p, p->eval_tree_begin,
-							  NEW_BEGIN($4, &@$));
-			/* NEW_PREEXE($4)); */
-			/* local_pop(p); */
+							  NEW_BEGIN($3, &@$));
 			$$ = NEW_BEGIN(0, &@$);
 		    /*%
-			$$ = dispatch1(BEGIN, $4);
+			$$ = dispatch1(BEGIN, $3);
 		    %*/
 		    }
 		;
@@ -1136,18 +1127,12 @@ stmt_or_begin	: stmt
                 | keyword_BEGIN
 		    {
 			yyerror1(&@1, "BEGIN is permitted only at toplevel");
-		    /*%%%*/
-			/* local_push(p, 0); */
-		    /*%
-		    %*/
 		    }
 		  '{' top_compstmt '}'
 		    {
 		    /*%%%*/
 			p->eval_tree_begin = block_append(p, p->eval_tree_begin,
 							  $4);
-			/* NEW_PREEXE($4)); */
-			/* local_pop(p); */
 			$$ = NEW_BEGIN(0, &@$);
 		    /*%
 			$$ = dispatch1(BEGIN, $4);
