@@ -4453,10 +4453,6 @@ restarg_mark	: '*'
 
 f_rest_arg	: restarg_mark tIDENTIFIER
 		    {
-		    /*%%%*/
-			if (!is_local_id($2))
-			    yyerror1(&@2, "rest argument must be local variable");
-		    /*% %*/
 			arg_var(p, shadowing_lvar(p, get_id($2)));
 		    /*%%%*/
 			$$ = $2;
@@ -4481,12 +4477,6 @@ blkarg_mark	: '&'
 
 f_block_arg	: blkarg_mark tIDENTIFIER
 		    {
-		    /*%%%*/
-			if (!is_local_id($2))
-			    yyerror1(&@2, "block argument must be local variable");
-			else if (!dyna_in_block(p) && local_id(p, $2))
-			    yyerror1(&@2, "duplicated block argument name");
-		    /*% %*/
 			arg_var(p, shadowing_lvar(p, get_id($2)));
 		    /*%%%*/
 			$$ = $2;
@@ -4522,25 +4512,20 @@ singleton	: var_ref
 		| '(' {SET_LEX_STATE(EXPR_BEG);} expr rparen
 		    {
 		    /*%%%*/
-			if ($3 == 0) {
-			    yyerror1(&@3, "can't define singleton method for ().");
-			}
-			else {
-			    switch (nd_type($3)) {
-			      case NODE_STR:
-			      case NODE_DSTR:
-			      case NODE_XSTR:
-			      case NODE_DXSTR:
-			      case NODE_DREGX:
-			      case NODE_LIT:
-			      case NODE_ARRAY:
-			      case NODE_ZARRAY:
-				yyerror1(&@3, "can't define singleton method for literals");
-				break;
-			      default:
-				value_expr($3);
-				break;
-			    }
+			switch (nd_type($3)) {
+			  case NODE_STR:
+			  case NODE_DSTR:
+			  case NODE_XSTR:
+			  case NODE_DXSTR:
+			  case NODE_DREGX:
+			  case NODE_LIT:
+			  case NODE_ARRAY:
+			  case NODE_ZARRAY:
+			    yyerror1(&@3, "can't define singleton method for literals");
+			    break;
+			  default:
+			    value_expr($3);
+			    break;
 			}
 			$$ = $3;
 		    /*%
