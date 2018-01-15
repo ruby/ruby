@@ -1405,7 +1405,7 @@ static void
 heap_pages_expand_sorted(rb_objspace_t *objspace)
 {
     /* usually heap_allocatable_pages + heap_eden->total_pages == heap_pages_sorted_length
-     * beacuse heap_allocatable_pages contains heap_tomb->total_pages (recycle heap_tomb pages).
+     * because heap_allocatable_pages contains heap_tomb->total_pages (recycle heap_tomb pages).
      * howerver, if there are pages which do not have empty slots, then try to create new pages
      * so that the additional allocatable_pages counts (heap_tomb->total_pages) are added.
      */
