@@ -2378,13 +2378,8 @@ primary		: literal
 		    {
 			CMDARG_SET($<val>1);
 		    /*%%%*/
-			if ($3 == NULL) {
-			    $$ = NEW_NIL(&@$);
-			}
-			else {
-			    set_line_body($3, @1.end_pos.lineno);
-			    $$ = NEW_BEGIN($3, &@$);
-			}
+			set_line_body($3, @1.end_pos.lineno);
+			$$ = NEW_BEGIN($3, &@$);
 			nd_set_line($$, @1.end_pos.lineno);
 		    /*%
 			$$ = dispatch1(begin, $3);
