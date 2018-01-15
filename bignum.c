@@ -1079,6 +1079,13 @@ integer_unpack_single_bdigit(BDIGIT u, size_t size, int flags, BDIGIT *dp)
     return sign;
 }
 
+#ifdef HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
+#define reinterpret_cast(type, value) (type) \
+    __builtin_assume_aligned((value), sizeof(*(type)NULL));
+#else
+#define reinterpret_cast(type, value) (type)value
+#endif
+
 static int
 bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, size_t numwords, size_t wordsize, size_t nails, int flags, int nlp_bits)
 {
@@ -1100,22 +1107,23 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
             }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGIT
             if (wordsize == 2 && (uintptr_t)words % RUBY_ALIGNOF(uint16_t) == 0) {
-                uint16_t u = *(uint16_t *)buf;
+                uint16_t u = *reinterpret_cast(const uint16_t *, buf);
                 return integer_unpack_single_bdigit(need_swap ? swap16(u) : u, sizeof(uint16_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGIT
             if (wordsize == 4 && (uintptr_t)words % RUBY_ALIGNOF(uint32_t) == 0) {
-                uint32_t u = *(uint32_t *)buf;
+                uint32_t u = *reinterpret_cast(const uint32_t *, buf);
                 return integer_unpack_single_bdigit(need_swap ? swap32(u) : u, sizeof(uint32_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGIT
             if (wordsize == 8 && (uintptr_t)words % RUBY_ALIGNOF(uint64_t) == 0) {
-                uint64_t u = *(uint64_t *)buf;
+                uint64_t u = *reinterpret_cast(const uint64_t *, buf);
                 return integer_unpack_single_bdigit(need_swap ? swap64(u) : u, sizeof(uint64_t), flags, dp);
             }
 #endif
+#undef reinterpret_cast
         }
 #if !defined(WORDS_BIGENDIAN)
         if (nails == 0 && SIZEOF_BDIGIT == sizeof(BDIGIT) &&

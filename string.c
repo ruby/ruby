@@ -481,8 +481,15 @@ search_nonascii(const char *p, const char *e)
 	    }
 	}
 #endif
-	s = (const uintptr_t *)p;
-	t = (const uintptr_t *)(e - (SIZEOF_VOIDP-1));
+#ifdef HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
+#define aligned_ptr(value) \
+        __builtin_assume_aligned((value), sizeof(uintptr_t *))
+#else
+#define aligned_ptr(value) (uintptr_t *)(value)
+#endif
+	s = aligned_ptr(p);
+	t = aligned_ptr(e - (SIZEOF_VOIDP-1));
+#undef aligned_ptr
 	for (;s < t; s++) {
 	    if (*s & NONASCII_MASK) {
 #ifdef WORDS_BIGENDIAN
