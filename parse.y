@@ -381,7 +381,7 @@ static NODE *splat_array(NODE*);
 static NODE *call_bin_op(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
 static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
-#define new_command_qcall(p,q,r,m,a,op_loc,loc) new_qcall(p,q,r,m,a,op_loc,loc)
+static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *new_command(struct parser_params *p, NODE *m, NODE *a) {m->nd_args = a; return m;}
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {b->nd_iter = m; b->nd_loc = *loc; return b;}
 
@@ -481,7 +481,7 @@ static int id_is_var(struct parser_params *p, ID id);
 #define logop(p,id,node1,node2,op_loc,loc) call_bin_op(0, (node1), (id), (node2), op_loc, loc)
 #define node_assign(p, node1, node2, loc) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc);
-#define new_command_qcall(p,q,r,m,a,op_loc,loc) dispatch4(command_call, (r), (q), (m), (a))
+static VALUE new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 #define new_command(p, m,a) dispatch2(command, (m), (a));
 
 #define new_nil(loc) Qnil
@@ -1429,27 +1429,19 @@ command		: fcall command_args       %prec tLOWEST
 		    }
 		| primary_value call_op operation2 command_args	%prec tLOWEST
 		    {
-			$$ = new_command_qcall(p, $2, $1, $3, $4, &@3, &@$);
-			fixpos($$, $1);
+			$$ = new_command_qcall(p, $2, $1, $3, $4, Qnull, &@3, &@$);
 		    }
 		| primary_value call_op operation2 command_args cmd_brace_block
 		    {
-			block_dup_check(p, $4, $5);
-			$$ = new_command_qcall(p, $2, $1, $3, $4, &@3, &@$);
-			$$ = method_add_block(p, $$, $5, &@$);
-			fixpos($$, $1);
+			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
 		   }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
-			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
-			fixpos($$, $1);
+			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, Qnull, &@3, &@$);
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
-			block_dup_check(p, $4, $5);
-			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
-			$$ = method_add_block(p, $$, $5, &@$);
-			fixpos($$, $1);
+			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
 		   }
 		| keyword_super command_args
 		    {
@@ -3299,27 +3291,11 @@ block_call	: command do_block
 		    }
 		| block_call call_op2 operation2 opt_paren_args brace_block
 		    {
-		    /*%%%*/
-			block_dup_check(p, $4, $5);
-			$$ = new_command_qcall(p, $2, $1, $3, $4, &@3, &@$);
-			$$ = method_add_block(p, $$, $5, &@$);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch4(command_call, $1, $2, $3, $4);
-			$$ = method_add_block(p, $$, $5, &@$);
-		    %*/
+			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
 		    }
 		| block_call call_op2 operation2 command_args do_block
 		    {
-		    /*%%%*/
-			block_dup_check(p, $4, $5);
-			$$ = new_command_qcall(p, $2, $1, $3, $4, &@3, &@$);
-			$$ = method_add_block(p, $$, $5, &@$);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch4(command_call, $1, $2, $3, $4);
-			$$ = method_add_block(p, $$, $5, &@$);
-		    %*/
+			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
 		    }
 		;
 
@@ -8830,6 +8806,17 @@ new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, con
     return qcall;
 }
 
+static NODE*
+new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc)
+{
+    NODE *ret;
+    if (block) block_dup_check(p, args, block);
+    ret = new_qcall(p, atype, recv, mid, args, op_loc, loc);
+    if (block) ret = method_add_block(p, ret, block, loc);
+    fixpos(ret, recv);
+    return ret;
+}
+
 #define nd_once_body(node) (nd_type(node) == NODE_ONCE ? (node)->nd_body : node)
 static NODE*
 match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_loc, const YYLTYPE *loc)
@@ -10412,6 +10399,14 @@ new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *
 {
     VALUE ret = dispatch3(call, (r), (q), (m));
     return method_optarg(ret, (a));
+}
+
+static VALUE
+new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc)
+{
+    VALUE ret = dispatch4(command_call, recv, atype, mid, args);
+    if (block == Qundef) ret = method_add_block(p, ret, block, loc);
+    return ret;
 }
 
 static VALUE
