@@ -371,7 +371,8 @@ static NODE *block_append(struct parser_params*,NODE*,NODE*);
 static NODE *list_append(struct parser_params*,NODE*,NODE*);
 static NODE *list_concat(NODE*,NODE*);
 static NODE *arg_append(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
-static NODE *arg_concat(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
+static NODE *last_arg_append(struct parser_params *p, NODE *args, NODE *last_arg, const YYLTYPE *loc);
+static NODE *rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc);
 static NODE *literal_concat(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_evstr(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *evstr2dstr(struct parser_params*,NODE*);
@@ -442,7 +443,6 @@ static int reg_fragment_check(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
-
 #define get_id(id) (id)
 #define get_value(val) (val)
 #else  /* RIPPER */
@@ -2305,13 +2305,7 @@ args		: arg_value
 		| args ',' arg_value
 		    {
 		    /*%%%*/
-			NODE *n1;
-			if ((n1 = splat_array($1)) != 0) {
-			    $$ = list_append(p, n1, $3);
-			}
-			else {
-			    $$ = arg_append(p, $1, $3, &@$);
-			}
+			$$ = last_arg_append(p, $1, $3, &@$);
 		    /*%
 			$$ = arg_add($1, $3);
 		    %*/
@@ -2319,13 +2313,7 @@ args		: arg_value
 		| args ',' tSTAR arg_value
 		    {
 		    /*%%%*/
-			NODE *n1;
-			if ((nd_type($4) == NODE_ARRAY) && (n1 = splat_array($1)) != 0) {
-			    $$ = list_concat(n1, $4);
-			}
-			else {
-			    $$ = arg_concat(p, $1, $4, &@$);
-			}
+			$$ = rest_arg_append(p, $1, $4, &@$);
 		    /*%
 			$$ = arg_add_star($1, $4);
 		    %*/
@@ -2339,13 +2327,7 @@ mrhs_arg	: mrhs
 mrhs		: args ',' arg_value
 		    {
 		    /*%%%*/
-			NODE *n1;
-			if ((n1 = splat_array($1)) != 0) {
-			    $$ = list_append(p, n1, $3);
-			}
-			else {
-			    $$ = arg_append(p, $1, $3, &@$);
-			}
+			$$ = last_arg_append(p, $1, $3, &@$);
 		    /*%
 			$$ = mrhs_add(args2mrhs($1), $3);
 		    %*/
@@ -2353,14 +2335,7 @@ mrhs		: args ',' arg_value
 		| args ',' tSTAR arg_value
 		    {
 		    /*%%%*/
-			NODE *n1;
-			if (nd_type($4) == NODE_ARRAY &&
-			    (n1 = splat_array($1)) != 0) {
-			    $$ = list_concat(n1, $4);
-			}
-			else {
-			    $$ = arg_concat(p, $1, $4, &@$);
-			}
+			$$ = rest_arg_append(p, $1, $4, &@$);
 		    /*%
 			$$ = mrhs_add_star(args2mrhs($1), $4);
 		    %*/
@@ -9510,6 +9485,26 @@ rb_backref_error(struct parser_params *p, NODE *node)
 }
 
 static NODE *
+arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc)
+{
+    if (!node1) return NEW_LIST(node2, &node2->nd_loc);
+    switch (nd_type(node1))  {
+      case NODE_ARRAY:
+	return list_append(p, node1, node2);
+      case NODE_BLOCK_PASS:
+	node1->nd_head = arg_append(p, node1->nd_head, node2, loc);
+	node1->nd_loc.end_pos = node1->nd_head->nd_loc.end_pos;
+	return node1;
+      case NODE_ARGSPUSH:
+	node1->nd_body = list_append(p, NEW_LIST(node1->nd_body, &node1->nd_body->nd_loc), node2);
+	node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
+	nd_set_type(node1, NODE_ARGSCAT);
+	return node1;
+    }
+    return NEW_ARGSPUSH(node1, node2, loc);
+}
+
+static NODE *
 arg_concat(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc)
 {
     if (!node2) return node1;
@@ -9535,23 +9530,23 @@ arg_concat(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 }
 
 static NODE *
-arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc)
+last_arg_append(struct parser_params *p, NODE *args, NODE *last_arg, const YYLTYPE *loc)
 {
-    if (!node1) return NEW_LIST(node2, &node2->nd_loc);
-    switch (nd_type(node1))  {
-      case NODE_ARRAY:
-	return list_append(p, node1, node2);
-      case NODE_BLOCK_PASS:
-	node1->nd_head = arg_append(p, node1->nd_head, node2, loc);
-	node1->nd_loc.end_pos = node1->nd_head->nd_loc.end_pos;
-	return node1;
-      case NODE_ARGSPUSH:
-	node1->nd_body = list_append(p, NEW_LIST(node1->nd_body, &node1->nd_body->nd_loc), node2);
-	node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
-	nd_set_type(node1, NODE_ARGSCAT);
-	return node1;
+    NODE *n1;
+    if ((n1 = splat_array(args)) != 0) {
+	return list_append(p, n1, last_arg);
     }
-    return NEW_ARGSPUSH(node1, node2, loc);
+    return arg_append(p, args, last_arg, loc);
+}
+
+static NODE *
+rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc)
+{
+    NODE *n1;
+    if ((nd_type(rest_arg) == NODE_ARRAY) && (n1 = splat_array(args)) != 0) {
+	return list_concat(n1, rest_arg);
+    }
+    return arg_concat(p, args, rest_arg, loc);
 }
 
 static NODE *
