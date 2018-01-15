@@ -65,7 +65,6 @@ STATIC_ASSERT(sizeof_long_and_sizeof_bdigit, SIZEOF_BDIGIT % SIZEOF_LONG == 0);
 #else
 #   define HOST_BIGENDIAN_P 0
 #endif
-#define ALIGNOF(type) ((int)offsetof(struct { char f1; type f2; }, f2))
 /* (!LSHIFTABLE(d, n) ? 0 : (n)) is same as n but suppress a warning, C4293, by Visual Studio.  */
 #define LSHIFTABLE(d, n) ((n) < sizeof(d) * CHAR_BIT)
 #define LSHIFTX(d, n) (!LSHIFTABLE(d, n) ? 0 : ((d) << (!LSHIFTABLE(d, n) ? 0 : (n))))
@@ -668,7 +667,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                     return ((1 < de - dp || CLEAR_LOWBITS(d, 8) != 0) ? 2 : 1) * sign;
                 }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGIT
-                if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+                if (wordsize == 2 && (uintptr_t)words % RUBY_ALIGNOF(uint16_t) == 0) {
                     uint16_t u = (uint16_t)(d = dp[0]);
                     if (need_swap) u = swap16(u);
                     *((uint16_t *)words) = u;
@@ -676,7 +675,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGIT
-                if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+                if (wordsize == 4 && (uintptr_t)words % RUBY_ALIGNOF(uint32_t) == 0) {
                     uint32_t u = (uint32_t)(d = dp[0]);
                     if (need_swap) u = swap32(u);
                     *((uint32_t *)words) = u;
@@ -684,7 +683,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGIT
-                if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+                if (wordsize == 8 && (uintptr_t)words % RUBY_ALIGNOF(uint64_t) == 0) {
                     uint64_t u = (uint64_t)(d = dp[0]);
                     if (need_swap) u = swap64(u);
                     *((uint64_t *)words) = u;
@@ -699,7 +698,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                     return (1 < de - dp || FILL_LOWBITS(d, 8) != -1) ? -2 : -1;
                 }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGIT
-                if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+                if (wordsize == 2 && (uintptr_t)words % RUBY_ALIGNOF(uint16_t) == 0) {
                     uint16_t u = (uint16_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
                     if (need_swap) u = swap16(u);
                     *((uint16_t *)words) = u;
@@ -708,7 +707,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGIT
-                if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+                if (wordsize == 4 && (uintptr_t)words % RUBY_ALIGNOF(uint32_t) == 0) {
                     uint32_t u = (uint32_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
                     if (need_swap) u = swap32(u);
                     *((uint32_t *)words) = u;
@@ -717,7 +716,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
                 }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGIT
-                if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+                if (wordsize == 8 && (uintptr_t)words % RUBY_ALIGNOF(uint64_t) == 0) {
                     uint64_t u = (uint64_t)(d = -(BDIGIT_DBL_SIGNED)dp[0]);
                     if (need_swap) u = swap64(u);
                     *((uint64_t *)words) = u;
@@ -760,7 +759,7 @@ bary_pack(int sign, BDIGIT *ds, size_t num_bdigits, void *words, size_t numwords
         }
 #endif
         if (nails == 0 && SIZEOF_BDIGIT == sizeof(BDIGIT) &&
-            wordsize % SIZEOF_BDIGIT == 0 && (uintptr_t)words % ALIGNOF(BDIGIT) == 0) {
+            wordsize % SIZEOF_BDIGIT == 0 && (uintptr_t)words % RUBY_ALIGNOF(BDIGIT) == 0) {
             size_t bdigits_per_word = wordsize / SIZEOF_BDIGIT;
             size_t src_num_bdigits = de - dp;
             size_t dst_num_bdigits = numwords * bdigits_per_word;
@@ -1100,19 +1099,19 @@ bary_unpack_internal(BDIGIT *bdigits, size_t num_bdigits, const void *words, siz
                 return integer_unpack_single_bdigit(*(uint8_t *)buf, sizeof(uint8_t), flags, dp);
             }
 #if defined(HAVE_UINT16_T) && 2 <= SIZEOF_BDIGIT
-            if (wordsize == 2 && (uintptr_t)words % ALIGNOF(uint16_t) == 0) {
+            if (wordsize == 2 && (uintptr_t)words % RUBY_ALIGNOF(uint16_t) == 0) {
                 uint16_t u = *(uint16_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap16(u) : u, sizeof(uint16_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT32_T) && 4 <= SIZEOF_BDIGIT
-            if (wordsize == 4 && (uintptr_t)words % ALIGNOF(uint32_t) == 0) {
+            if (wordsize == 4 && (uintptr_t)words % RUBY_ALIGNOF(uint32_t) == 0) {
                 uint32_t u = *(uint32_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap32(u) : u, sizeof(uint32_t), flags, dp);
             }
 #endif
 #if defined(HAVE_UINT64_T) && 8 <= SIZEOF_BDIGIT
-            if (wordsize == 8 && (uintptr_t)words % ALIGNOF(uint64_t) == 0) {
+            if (wordsize == 8 && (uintptr_t)words % RUBY_ALIGNOF(uint64_t) == 0) {
                 uint64_t u = *(uint64_t *)buf;
                 return integer_unpack_single_bdigit(need_swap ? swap64(u) : u, sizeof(uint64_t), flags, dp);
             }

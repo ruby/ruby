@@ -1767,6 +1767,24 @@ AS_IF([test "$rb_cv_have_alignas" != no], [
     AC_DEFINE_UNQUOTED([RUBY_ALIGNAS(x)], $rb_cv_have_alignas)
 ])
 
+AC_CACHE_CHECK([for alignof() syntax], rb_cv_have_alignof,[
+rb_cv_have_alignof=no
+RUBY_WERROR_FLAG([
+for expr in \
+    "_Alignof" \
+    "alignof" \
+    "__alignof" \
+    "__alignof__" \
+;
+do
+    AC_TRY_COMPILE([],[return (int)$expr(int);],
+        [rb_cv_have_alignof="$expr"; break], [])
+done
+])])
+AS_IF([test "$rb_cv_have_alignof" != no], [
+    AC_DEFINE_UNQUOTED(RUBY_ALIGNOF, $rb_cv_have_alignof)
+])
+
 dnl RUBY_DECL_ATTRIBUTE(attrib, macroname, cachevar, condition, type, code)
 AC_DEFUN([RUBY_DECL_ATTRIBUTE], [dnl
 m4_ifval([$2], dnl

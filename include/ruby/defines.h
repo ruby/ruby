@@ -380,6 +380,16 @@ void rb_ia64_flushrs(void);
 #define RUBY_ALIGNAS(x) y
 #endif
 
+#ifdef RUBY_ALIGNOF
+/* OK, take that definition */
+#elif defined(__cplusplus) && (__cplusplus >= 201103L)
+#define RUBY_ALIGNOF alignof
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+#define RUBY_ALIGNOF _Alignof
+#else
+#define RUBY_ALIGNOF(x) ((size_t)offsetof(struct { char f1; type f2; }, f2))
+#endif
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
