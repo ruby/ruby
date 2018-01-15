@@ -1595,6 +1595,14 @@ rb_num2char_inline(VALUE x)
 #define ZALLOC(type) RB_ZALLOC(type)
 #define REALLOC_N(var,type,n) RB_REALLOC_N(var,type,n)
 
+#if GCC_VERSION_BEFORE(4,8,6)
+/* GCC 4.8.5 reportedly has this feature and is broken.
+ * The function is not officially documented below.
+ * Seems we should not use it.
+ * https://gcc.gnu.org/onlinedocs/gcc-4.8.5/gcc/Other-Builtins.html#Other-Builtins */
+# undef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
+#endif
+
 #ifdef HAVE_BUILTIN___BUILTIN_ALLOCA_WITH_ALIGN
 /* I don't know why but __builtin_alloca_with_align's second argument
    takes bits rather than bytes. */
