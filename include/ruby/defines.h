@@ -373,7 +373,7 @@ void rb_ia64_flushrs(void);
 #endif
 
 #ifndef RUBY_ALIGNAS
-#define RUBY_ALIGNAS(x) y
+#define RUBY_ALIGNAS(x) /* x */
 #endif
 
 #ifdef RUBY_ALIGNOF
@@ -383,7 +383,7 @@ void rb_ia64_flushrs(void);
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 #define RUBY_ALIGNOF _Alignof
 #else
-#define RUBY_ALIGNOF(x) ((size_t)offsetof(struct { char f1; type f2; }, f2))
+#define RUBY_ALIGNOF(type) ((size_t)offsetof(struct { char f1; type f2; }, f2))
 #endif
 
 #define NORETURN_STYLE_NEW 1
