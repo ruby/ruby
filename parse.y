@@ -3920,19 +3920,7 @@ var_lhs		: user_variable
 		;
 
 backref		: tNTH_REF
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| tBACK_REF
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		;
 
 superclass	: '<'
@@ -4626,20 +4614,16 @@ static enum yytokentype parser_here_document(struct parser_params*,rb_strterm_he
 # define set_integer_literal(v, f)    parser_set_integer_literal(p, (v), (f))
 
 #ifndef RIPPER
-# define set_yylval_str(x) {		\
-  YYLTYPE loc;				\
-  rb_parser_set_location(p, &loc);	\
-  yylval.node = NEW_STR(x, &loc);	\
+# define set_yylval_node(x) {				\
+  YYLTYPE _cur_loc;					\
+  rb_parser_set_location(p, &_cur_loc);			\
+  yylval.node = (x);					\
 }
-# define set_yylval_literal(x) {	\
-  YYLTYPE loc;				\
-  rb_parser_set_location(p, &loc);	\
-  yylval.node = NEW_LIT(x, &loc);	\
-}
+# define set_yylval_str(x) set_yylval_node(NEW_STR(x, &_cur_loc))
+# define set_yylval_literal(x) set_yylval_node(NEW_LIT(x, &_cur_loc))
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
-# define set_yylval_node(x) (yylval.node = (x))
 # define yylval_id() (yylval.id)
 #else
 static inline VALUE
@@ -4654,6 +4638,7 @@ ripper_yylval_id(struct parser_params *p, ID x)
 # define set_yylval_literal(x) (void)(x)
 # define set_yylval_node(x) (void)(x)
 # define yylval_id() yylval.id
+# define _cur_loc NULL_LOC /* dummy */
 #endif
 
 #ifndef RIPPER
@@ -7550,7 +7535,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	    tokadd(c);
 	    goto gvar;
 	}
-	set_yylval_node(NEW_BACK_REF(c, &NULL_LOC));
+	set_yylval_node(NEW_BACK_REF(c, &_cur_loc));
 	return tBACK_REF;
 
       case '1': case '2': case '3':
@@ -7564,7 +7549,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	pushback(c);
 	if (IS_lex_state_for(last_state, EXPR_FNAME)) goto gvar;
 	tokfix();
-	set_yylval_node(NEW_NTH_REF(parse_numvar(p), &NULL_LOC));
+	set_yylval_node(NEW_NTH_REF(parse_numvar(p), &_cur_loc));
 	return tNTH_REF;
 
       default:
