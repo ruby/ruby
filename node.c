@@ -240,6 +240,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_body, "body");
 	return;
 
+      case NODE_FOR_MASGN:
+	ANN("vars of for statement with masgn");
+	ANN("format: for [nd_var] in ... do ... end");
+	ANN("example: for x, y in 1..3 do foo end");
+	LAST_NODE;
+	F_NODE(nd_var, "var");
+	return;
+
       case NODE_BREAK:
 	ANN("break statement");
 	ANN("format: break [nd_stts]");

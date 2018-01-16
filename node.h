@@ -42,6 +42,8 @@ enum node_type {
 #define NODE_ITER        NODE_ITER
     NODE_FOR,
 #define NODE_FOR         NODE_FOR
+    NODE_FOR_MASGN,
+#define NODE_FOR_MASGN   NODE_FOR_MASGN
     NODE_BREAK,
 #define NODE_BREAK       NODE_BREAK
     NODE_NEXT,
@@ -382,7 +384,8 @@ typedef struct RNode {
 #define NEW_WHEN(c,t,e,loc) NEW_NODE(NODE_WHEN,c,t,e,loc)
 #define NEW_WHILE(c,b,n,loc) NEW_NODE(NODE_WHILE,c,b,n,loc)
 #define NEW_UNTIL(c,b,n,loc) NEW_NODE(NODE_UNTIL,c,b,n,loc)
-#define NEW_FOR(v,i,b,loc) NEW_NODE(NODE_FOR,v,b,i,loc)
+#define NEW_FOR(i,b,loc) NEW_NODE(NODE_FOR,0,b,i,loc)
+#define NEW_FOR_MASGN(v,loc) NEW_NODE(NODE_FOR_MASGN,v,0,0,loc)
 #define NEW_ITER(a,b,loc) NEW_NODE(NODE_ITER,0,NEW_SCOPE(a,b,loc),0,loc)
 #define NEW_LAMBDA(a,b,loc) NEW_NODE(NODE_LAMBDA,0,NEW_SCOPE(a,b,loc),0,loc)
 #define NEW_BREAK(s,loc) NEW_NODE(NODE_BREAK,s,0,0,loc)

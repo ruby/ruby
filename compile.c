@@ -5019,38 +5019,33 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 }
 
 static int
-compile_for(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
+    /* massign to var in "for"
+     * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
+     */
     const int line = nd_line(node);
-    if (node->nd_var) {
-	/* massign to var in "for"
-	 * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
-	 */
-	const NODE *var = node->nd_var;
-	LABEL *not_single = NEW_LABEL(nd_line(var));
-	LABEL *not_ary = NEW_LABEL(nd_line(var));
-	CHECK(COMPILE(ret, "for var", var));
-	ADD_INSN(ret, line, dup);
-	ADD_CALL(ret, line, idLength, INT2FIX(0));
-	ADD_INSN1(ret, line, putobject, INT2FIX(1));
-	ADD_CALL(ret, line, idEq, INT2FIX(1));
-	ADD_INSNL(ret, line, branchunless, not_single);
-	ADD_INSN(ret, line, dup);
-	ADD_INSN1(ret, line, putobject, INT2FIX(0));
-	ADD_CALL(ret, line, idAREF, INT2FIX(1));
-	ADD_INSN1(ret, line, putobject, rb_cArray);
-	ADD_INSN1(ret, line, topn, INT2FIX(1));
-	ADD_CALL(ret, line, idEqq, INT2FIX(1));
-	ADD_INSNL(ret, line, branchunless, not_ary);
-	ADD_INSN(ret, line, swap);
-	ADD_LABEL(ret, not_ary);
-	ADD_INSN(ret, line, pop);
-	ADD_LABEL(ret, not_single);
-	return COMPILE_OK;
-    }
-    else {
-	return compile_iter(iseq, ret, node, popped);
-    }
+    const NODE *var = node->nd_var;
+    LABEL *not_single = NEW_LABEL(nd_line(var));
+    LABEL *not_ary = NEW_LABEL(nd_line(var));
+    CHECK(COMPILE(ret, "for var", var));
+    ADD_INSN(ret, line, dup);
+    ADD_CALL(ret, line, idLength, INT2FIX(0));
+    ADD_INSN1(ret, line, putobject, INT2FIX(1));
+    ADD_CALL(ret, line, idEq, INT2FIX(1));
+    ADD_INSNL(ret, line, branchunless, not_single);
+    ADD_INSN(ret, line, dup);
+    ADD_INSN1(ret, line, putobject, INT2FIX(0));
+    ADD_CALL(ret, line, idAREF, INT2FIX(1));
+    ADD_INSN1(ret, line, putobject, rb_cArray);
+    ADD_INSN1(ret, line, topn, INT2FIX(1));
+    ADD_CALL(ret, line, idEqq, INT2FIX(1));
+    ADD_INSNL(ret, line, branchunless, not_ary);
+    ADD_INSN(ret, line, swap);
+    ADD_LABEL(ret, not_ary);
+    ADD_INSN(ret, line, pop);
+    ADD_LABEL(ret, not_single);
+    return COMPILE_OK;
 }
 
 static int
@@ -5560,10 +5555,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	CHECK(compile_loop(iseq, ret, node, popped, type));
 	break;
       case NODE_FOR:
-	CHECK(compile_for(iseq, ret, node, popped));
-	break;
       case NODE_ITER:
 	CHECK(compile_iter(iseq, ret, node, popped));
+	break;
+      case NODE_FOR_MASGN:
+	CHECK(compile_for_masgn(iseq, ret, node, popped));
 	break;
       case NODE_BREAK:
 	CHECK(compile_break(iseq, ret, node, popped));
