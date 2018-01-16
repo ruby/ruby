@@ -198,10 +198,10 @@ node_children(rb_ast_t *ast, NODE *node)
       loop:
 	return rb_ary_new_from_node_args(ast, 2, node->nd_cond, node->nd_body);
       case NODE_ITER:
-	goto iter;
       case NODE_FOR:
-      iter:
 	return rb_ary_new_from_node_args(ast, 2, node->nd_iter, node->nd_body);
+      case NODE_FOR_MASGN:
+	return rb_ary_new_from_node_args(ast, 1, node->nd_var);
       case NODE_BREAK:
 	goto jump;
       case NODE_NEXT:
