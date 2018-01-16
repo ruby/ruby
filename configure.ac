@@ -770,6 +770,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
 		 -Werror=misleading-indentation \
+		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
