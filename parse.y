@@ -964,11 +964,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %%
 program		:  {
 			SET_LEX_STATE(EXPR_BEG);
-		    /*%%%*/
-			local_push(p, 1);
-		    /*%
-			local_push(p, 0);
-		    %*/
+			local_push(p, ifndef_ripper(1)+0);
 		    }
 		  top_compstmt
 		    {
