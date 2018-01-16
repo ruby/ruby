@@ -1042,22 +1042,22 @@ rb_node_init(NODE *n, enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 
 typedef struct node_buffer_elem_struct {
     struct node_buffer_elem_struct *next;
-    NODE buf[1];
+    NODE buf[FLEX_ARY_LEN];
 } node_buffer_elem_t;
 
 struct node_buffer_struct {
     long idx, len;
     node_buffer_elem_t *head;
-    node_buffer_elem_t body; /* this should be a last, because body has flexible array */
+    node_buffer_elem_t *last;
 };
 
 static node_buffer_t *
 rb_node_buffer_new(void)
 {
-    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + 16 * sizeof(NODE));
+    node_buffer_t *nb = xmalloc(sizeof(node_buffer_t) + offsetof(node_buffer_elem_t, buf) + 16 * sizeof(NODE));
     nb->idx = 0;
     nb->len = 16;
-    nb->head = &nb->body;
+    nb->head = nb->last = (node_buffer_elem_t*) &nb[1];
     nb->head->next = NULL;
     return nb;
 }
@@ -1067,7 +1067,7 @@ rb_node_buffer_free(node_buffer_t *nb)
 {
     node_buffer_elem_t *nbe = nb->head;
 
-    while (nbe != &nb->body) {
+    while (nbe != nb->last) {
 	void *buf = nbe;
 	nbe = nbe->next;
 	xfree(buf);
