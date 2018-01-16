@@ -363,7 +363,7 @@ static void void_expr(struct parser_params*,NODE*);
 static NODE *remove_begin(NODE*);
 static NODE *remove_begin_all(NODE*);
 #define value_expr(node) value_expr_gen(p, (node) = remove_begin(node))
-static void void_stmts(struct parser_params*,NODE*);
+static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
 static void block_dup_check(struct parser_params*,NODE*,NODE*);
 
@@ -466,6 +466,7 @@ ripper_is_node_yylval(VALUE n)
 
 #define value_expr(node) ((void)(node))
 #define remove_begin(node) (node)
+#define void_stmts(p,x) (x)
 #define rb_dvar_defined(id, base) 0
 #define rb_local_defined(id, base) 0
 static ID ripper_get_id(VALUE);
@@ -995,11 +996,7 @@ program		:  {
 
 top_compstmt	: top_stmts opt_terms
 		    {
-		    /*%%%*/
-			void_stmts(p, $1);
-		    /*%
-		    %*/
-			$$ = $1;
+			$$ = void_stmts(p, $1);
 		    }
 		;
 
@@ -1083,11 +1080,7 @@ bodystmt	: compstmt
 
 compstmt	: stmts opt_terms
 		    {
-		    /*%%%*/
-			void_stmts(p, $1);
-		    /*%
-		    %*/
-			$$ = $1;
+			$$ = void_stmts(p, $1);
 		    }
 		;
 
@@ -9653,18 +9646,19 @@ void_expr(struct parser_params *p, NODE *node)
     }
 }
 
-static void
+static NODE *
 void_stmts(struct parser_params *p, NODE *node)
 {
-    if (!RTEST(ruby_verbose)) return;
-    if (!node) return;
-    if (nd_type(node) != NODE_BLOCK) return;
+    NODE *const n = node;
+    if (!RTEST(ruby_verbose)) return n;
+    if (!node) return n;
+    if (nd_type(node) != NODE_BLOCK) return n;
 
-    for (;;) {
-	if (!node->nd_next) return;
+    while (node->nd_next) {
 	void_expr(p, node->nd_head);
 	node = node->nd_next;
     }
+    return n;
 }
 
 static NODE *
