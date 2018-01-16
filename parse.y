@@ -8993,8 +8993,7 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 		if (reg_fragment_check(p, tail, options) && prev && !NIL_P(prev->nd_lit)) {
 		    VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
 		    if (!literal_concat0(p, lit, tail)) {
-			node = 0;
-			break;
+			return NEW_NIL(loc); /* dummy node on error */
 		    }
 		    rb_str_resize(tail, 0);
 		    prev->nd_next = list->nd_next;
