@@ -3489,12 +3489,6 @@ strings		: string
 		;
 
 string		: tCHAR
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| string1
 		| string string1
 		    {
@@ -3633,7 +3627,6 @@ qword_list	: /* none */
 		| qword_list tSTRING_CONTENT ' '
 		    {
 		    /*%%%*/
-			nd_set_loc($2, &@2);
 			$$ = list_append(p, $1, $2);
 		    /*%
 			$$ = dispatch2(qwords_add, $1, $2);
@@ -3652,7 +3645,6 @@ qsym_list	: /* none */
 		| qsym_list tSTRING_CONTENT ' '
 		    {
 		    /*%%%*/
-			nd_set_loc($2, &@2);
 			$$ = symbol_append(p, $1, $2);
 		    /*%
 			$$ = dispatch2(qsymbols_add, $1, $2);
@@ -3746,12 +3738,6 @@ regexp_contents: /* none */
 		;
 
 string_content	: tSTRING_CONTENT
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| tSTRING_DVAR
 		    {
 			/* need to backup p->lex.strterm so that a string literal `%&foo,#$&,bar&` can be parsed */
@@ -3879,33 +3865,9 @@ numeric 	: simple_numeric
 		;
 
 simple_numeric	: tINTEGER
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| tFLOAT
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| tRATIONAL
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		| tIMAGINARY
-		    {
-		    /*%%%*/
-			nd_set_loc($$, &@$);
-		    /*%
-		    %*/
-		    }
 		;
 
 user_variable	: tIDENTIFIER
@@ -4664,11 +4626,19 @@ static enum yytokentype parser_here_document(struct parser_params*,rb_strterm_he
 # define set_integer_literal(v, f)    parser_set_integer_literal(p, (v), (f))
 
 #ifndef RIPPER
-# define set_yylval_str(x) (yylval.node = NEW_STR(x, &NULL_LOC))
+# define set_yylval_str(x) {		\
+  YYLTYPE loc;				\
+  rb_parser_set_location(p, &loc);	\
+  yylval.node = NEW_STR(x, &loc);	\
+}
+# define set_yylval_literal(x) {	\
+  YYLTYPE loc;				\
+  rb_parser_set_location(p, &loc);	\
+  yylval.node = NEW_LIT(x, &loc);	\
+}
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
-# define set_yylval_literal(x) (yylval.node = NEW_LIT(x, &NULL_LOC))
 # define set_yylval_node(x) (yylval.node = (x))
 # define yylval_id() (yylval.id)
 #else
