@@ -698,17 +698,17 @@ static inline VALUE
 new_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg, VALUE post_args, VALUE tail, YYLTYPE *loc)
 {
     NODE *t = (NODE *)tail;
-    VALUE k = t->u1.value, kr = t->u2.value, b = t->u3.value;
-    return params_new(pre_args, opt_args, rest_arg, post_args, k, kr, escape_Qundef(b));
+    VALUE kw_args = t->u1.value, kw_rest_arg = t->u2.value, block = t->u3.value;
+    return params_new(pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, escape_Qundef(block));
 }
 
 static inline VALUE
-new_args_tail(struct parser_params *p, VALUE k, VALUE kr, VALUE b, YYLTYPE *loc)
+new_args_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, VALUE block, YYLTYPE *loc)
 {
-    NODE *t = rb_node_newnode(NODE_ARGS_AUX, k, kr, b, &NULL_LOC);
-    add_mark_object(p, k);
-    add_mark_object(p, kr);
-    add_mark_object(p, b);
+    NODE *t = rb_node_newnode(NODE_ARGS_AUX, kw_args, kw_rest_arg, block, &NULL_LOC);
+    add_mark_object(p, kw_args);
+    add_mark_object(p, kw_rest_arg);
+    add_mark_object(p, block);
     return (VALUE)t;
 }
 
@@ -10058,7 +10058,7 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
 }
 
 static NODE*
-new_args_tail(struct parser_params *p, NODE *k, ID kr, ID b, const YYLTYPE *loc)
+new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *loc)
 {
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args;
@@ -10069,10 +10069,10 @@ new_args_tail(struct parser_params *p, NODE *k, ID kr, ID b, const YYLTYPE *loc)
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
-    args->block_arg      = b;
-    args->kw_args        = k;
+    args->block_arg      = block;
+    args->kw_args        = kw_args;
 
-    if (k) {
+    if (kw_args) {
 	/*
 	 * def foo(k1: 1, kr1:, k2: 2, **krest, &b)
 	 * variable order: k1, kr1, k2, &b, internal_id, krest
@@ -10080,7 +10080,7 @@ new_args_tail(struct parser_params *p, NODE *k, ID kr, ID b, const YYLTYPE *loc)
 	 * variable order: kr1, k1, k2, internal_id, krest, &b
 	 */
 	ID kw_bits;
-	NODE *kwn = k;
+	NODE *kwn = kw_args;
 	struct vtable *required_kw_vars = vtable_alloc(NULL);
 	struct vtable *kw_vars = vtable_alloc(NULL);
 	int i;
@@ -10100,8 +10100,8 @@ new_args_tail(struct parser_params *p, NODE *k, ID kr, ID b, const YYLTYPE *loc)
 	}
 
 	kw_bits = internal_id(p);
-	if (kr && is_junk_id(kr)) vtable_pop(p->lvtbl->args, 1);
-	vtable_pop(p->lvtbl->args, vtable_size(required_kw_vars) + vtable_size(kw_vars) + (b != 0));
+	if (kw_rest_arg && is_junk_id(kw_rest_arg)) vtable_pop(p->lvtbl->args, 1);
+	vtable_pop(p->lvtbl->args, vtable_size(required_kw_vars) + vtable_size(kw_vars) + (block != 0));
 
 	for (i=0; i<vtable_size(required_kw_vars); i++) arg_var(p, required_kw_vars->tbl[i]);
 	for (i=0; i<vtable_size(kw_vars); i++) arg_var(p, kw_vars->tbl[i]);
@@ -10109,17 +10109,17 @@ new_args_tail(struct parser_params *p, NODE *k, ID kr, ID b, const YYLTYPE *loc)
 	vtable_free(kw_vars);
 
 	arg_var(p, kw_bits);
-	if (kr) arg_var(p, kr);
-	if (b) arg_var(p, b);
+	if (kw_rest_arg) arg_var(p, kw_rest_arg);
+	if (block) arg_var(p, block);
 
-	args->kw_rest_arg = NEW_DVAR(kr, loc);
+	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
-    else if (kr) {
-	if (b) vtable_pop(p->lvtbl->args, 1); /* reorder */
-	arg_var(p, kr);
-	if (b) arg_var(p, b);
-	args->kw_rest_arg = NEW_DVAR(kr, loc);
+    else if (kw_rest_arg) {
+	if (block) vtable_pop(p->lvtbl->args, 1); /* reorder */
+	arg_var(p, kw_rest_arg);
+	if (block) arg_var(p, block);
+	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
     }
 
     p->ruby_sourceline = saved_line;
