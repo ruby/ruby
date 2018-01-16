@@ -5748,7 +5748,7 @@ parser_regx_options(struct parser_params *p)
 }
 
 static int
-parser_tokadd_mbchar(struct parser_params *p, int c)
+tokadd_mbchar(struct parser_params *p, int c)
 {
     int len = parser_precise_mbclen(p, p->lex.pcur-1);
     if (len < 0) return -1;
@@ -5757,8 +5757,6 @@ parser_tokadd_mbchar(struct parser_params *p, int c)
     if (len > 0) tokcopy(len);
     return c;
 }
-
-#define tokadd_mbchar(c) parser_tokadd_mbchar(p, (c))
 
 static inline int
 simple_re_meta(int c)
@@ -5917,7 +5915,7 @@ parser_tokadd_string(struct parser_params *p,
 		mixed_error(enc, *encp);
 		continue;
 	    }
-	    if (tokadd_mbchar(c) == -1) return -1;
+	    if (tokadd_mbchar(p, c) == -1) return -1;
 	    continue;
 	}
 	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
@@ -6169,7 +6167,7 @@ parser_heredoc_identifier(struct parser_params *p)
 	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
-	    if (tokadd_mbchar(c) == -1) return 0;
+	    if (tokadd_mbchar(p, c) == -1) return 0;
 	    if (!newline && c == '\n') newline = 1;
 	    else if (newline) newline = 2;
 	}
@@ -6200,7 +6198,7 @@ parser_heredoc_identifier(struct parser_params *p)
 	tokadd(term_len);
 	tokadd(func |= str_dquote);
 	do {
-	    if (tokadd_mbchar(c) == -1) return 0;
+	    if (tokadd_mbchar(p, c) == -1) return 0;
 	} while ((c = nextc()) != -1 && parser_is_identchar());
 	pushback(c);
 	break;
@@ -7297,7 +7295,7 @@ parse_qmark(struct parser_params *p, int space_seen)
     newtok();
     enc = p->enc;
     if (!parser_isascii()) {
-	if (tokadd_mbchar(c) == -1) return 0;
+	if (tokadd_mbchar(p, c) == -1) return 0;
     }
     else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
 	     p->lex.pcur < p->lex.pend && is_identchar(p->lex.pcur, p->lex.pend, p->enc)) {
@@ -7323,7 +7321,7 @@ parse_qmark(struct parser_params *p, int space_seen)
 	}
 	else if (!lex_eol_p() && !(c = *p->lex.pcur, ISASCII(c))) {
 	    nextc();
-	    if (tokadd_mbchar(c) == -1) return 0;
+	    if (tokadd_mbchar(p, c) == -1) return 0;
 	}
 	else {
 	    c = read_escape(0, &enc);
@@ -7433,7 +7431,7 @@ static int
 tokadd_ident(struct parser_params *p, int c)
 {
     do {
-	if (tokadd_mbchar(c) == -1) return -1;
+	if (tokadd_mbchar(p, c) == -1) return -1;
 	c = nextc();
     } while (parser_is_identchar());
     pushback(c);
@@ -7515,7 +7513,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
 	tokadd(c);
 	c = nextc();
 	if (parser_is_identchar()) {
-	    if (tokadd_mbchar(c) == -1) return 0;
+	    if (tokadd_mbchar(p, c) == -1) return 0;
 	}
 	else {
 	    pushback(c);
@@ -7622,7 +7620,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 
     do {
 	if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
-	if (tokadd_mbchar(c) == -1) return 0;
+	if (tokadd_mbchar(p, c) == -1) return 0;
 	c = nextc();
     } while (parser_is_identchar());
     if ((c == '!' || c == '?') && !peek('=')) {
