@@ -430,6 +430,8 @@ static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *);
 static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 #define new_string1(str) (str)
 
+static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol);
+
 #define new_brace_body(param, stmt, loc) NEW_ITER(param, stmt, loc)
 #define new_do_body(param, stmt, loc) NEW_ITER(param, stmt, loc)
 
@@ -3593,15 +3595,7 @@ symbol_list	: /* none */
 		| symbol_list word ' '
 		    {
 		    /*%%%*/
-			$2 = evstr2dstr(p, $2);
-			if (nd_type($2) == NODE_DSTR) {
-			    nd_set_type($2, NODE_DSYM);
-			}
-			else {
-			    nd_set_type($2, NODE_LIT);
-			    add_mark_object(p, $2->nd_lit = rb_str_intern($2->nd_lit));
-			}
-			$$ = list_append(p, $1, $2);
+			$$ = symbol_append(p, $1, evstr2dstr(p, $2));
 		    /*%
 			$$ = dispatch2(symbols_add, $1, $2);
 		    %*/
@@ -3658,12 +3652,8 @@ qsym_list	: /* none */
 		| qsym_list tSTRING_CONTENT ' '
 		    {
 		    /*%%%*/
-			VALUE lit;
-			lit = $2->nd_lit;
-			nd_set_type($2, NODE_LIT);
-			add_mark_object(p, $2->nd_lit = ID2SYM(rb_intern_str(lit)));
 			nd_set_loc($2, &@2);
-			$$ = list_append(p, $1, $2);
+			$$ = symbol_append(p, $1, $2);
 		    /*%
 			$$ = dispatch2(qsymbols_add, $1, $2);
 		    %*/
@@ -8956,6 +8946,19 @@ static NODE *
 new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 {
     return NEW_DEFINED(remove_begin_all(expr), loc);
+}
+
+static NODE*
+symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
+{
+    if (nd_type(symbol) == NODE_DSTR) {
+	nd_set_type(symbol, NODE_DSYM);
+    }
+    else {
+	nd_set_type(symbol, NODE_LIT);
+	symbol->nd_lit = add_mark_object(p, rb_str_intern(symbol->nd_lit));
+    }
+    return list_append(p, symbols, symbol);
 }
 
 static NODE *
