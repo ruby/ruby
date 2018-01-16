@@ -2563,34 +2563,30 @@ primary		: literal
 			 *  e.each{|x| a, = x}
 			 */
 			ID id = internal_id(p);
-			ID *tbl = ALLOC_N(ID, 2);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
-			NODE *args, *scope;
+			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
+			ID *tbl = ALLOC_N(ID, 2);
+			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
+			add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
 
 			switch (nd_type($2)) {
-			  case NODE_MASGN:
-			    m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(NEW_DVAR(id, &@2), &@2), &@2);
-			    args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
-			    break;
 			  case NODE_LASGN:
 			  case NODE_DASGN:
-			  case NODE_DASGN_CURR:
-			    $2->nd_value = NEW_DVAR(id, &@2);
+			  case NODE_DASGN_CURR: /* e.each {|internal_var| a = internal_var; ... } */
+			    $2->nd_value = internal_var;
+			    id = 0;
 			    m->nd_plen = 1;
 			    m->nd_next = $2;
-			    args = new_args(p, m, 0, 0, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			    break;
-			  default:
-			    {
-				NODE *masgn = NEW_MASGN(NEW_LIST($2, &@2), 0, &@2);
-				m->nd_next = node_assign(p, masgn, NEW_DVAR(id, &@2), &@2);
-				args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
-				break;
-			    }
+			  case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
+			    m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), &@2);
+			    break;
+			  default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
+			    m->nd_next = node_assign(p, NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, &@2);
 			}
-			add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
+			/* {|*internal_id| <m> = internal_id; ... } */
+			args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
-			tbl[0] = 1; tbl[1] = id;
 			$$ = NEW_FOR($4, scope, &@$);
 			fixpos($$, $2);
 		    /*%
