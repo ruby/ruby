@@ -869,7 +869,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %type <node> literal numeric simple_numeric dsym cpath
 %type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
-%type <node> expr_value arg_value primary_value fcall rel_expr
+%type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
@@ -1367,6 +1367,12 @@ expr_value	: expr
 			$$ = $1;
 		    }
 		;
+
+expr_value_do	: {COND_PUSH(1);} expr_value do {COND_POP();}
+		    {
+			$$ = $2;
+		    }
+
 
 command_call	: command
 		| block_command
@@ -2512,26 +2518,26 @@ primary		: literal
 			$$ = dispatch3(unless, $2, $4, escape_Qundef($5));
 		    %*/
 		    }
-		| k_while {COND_PUSH(1);} expr_value do {COND_POP();}
+		| k_while expr_value_do
 		  compstmt
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_WHILE(cond(p, $3, &@3), $6, 1, &@$);
-			fixpos($$, $3);
+			$$ = NEW_WHILE(cond(p, $2, &@2), $3, 1, &@$);
+			fixpos($$, $2);
 		    /*%
-			$$ = dispatch2(while, $3, $6);
+			$$ = dispatch2(while, $2, $3);
 		    %*/
 		    }
-		| k_until {COND_PUSH(1);} expr_value do {COND_POP();}
+		| k_until expr_value_do
 		  compstmt
 		  k_end
 		    {
 		    /*%%%*/
-			$$ = NEW_UNTIL(cond(p, $3, &@3), $6, 1, &@$);
-			fixpos($$, $3);
+			$$ = NEW_UNTIL(cond(p, $2, &@2), $3, 1, &@$);
+			fixpos($$, $2);
 		    /*%
-			$$ = dispatch2(until, $3, $6);
+			$$ = dispatch2(until, $2, $3);
 		    %*/
 		    }
 		| k_case expr_value opt_terms
@@ -2553,10 +2559,7 @@ primary		: literal
 			$$ = dispatch2(case, Qnil, $3);
 		    %*/
 		    }
-		| k_for for_var keyword_in
-		  {COND_PUSH(1);}
-		  expr_value do
-		  {COND_POP();}
+		| k_for for_var keyword_in expr_value_do
 		  compstmt
 		  k_end
 		    {
@@ -2597,12 +2600,12 @@ primary		: literal
 			    }
 			}
 			add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
-			scope = NEW_NODE(NODE_SCOPE, tbl, $8, args, &@$);
+			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
 			tbl[0] = 1; tbl[1] = id;
-			$$ = NEW_FOR(0, $5, scope, &@$);
+			$$ = NEW_FOR(0, $4, scope, &@$);
 			fixpos($$, $2);
 		    /*%
-			$$ = dispatch3(for, $2, $5, $8);
+			$$ = dispatch3(for, $2, $4, $5);
 		    %*/
 		    }
 		| k_class cpath superclass
