@@ -2580,7 +2580,7 @@ primary		: literal
 
 			switch (nd_type($2)) {
 			  case NODE_MASGN:
-			    m->nd_next = node_assign(p, $2, NEW_FOR(NEW_DVAR(id, &@2), 0, 0, &@2), &@2);
+			    m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(NEW_DVAR(id, &@2), &@2), &@2);
 			    args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
 			    break;
 			  case NODE_LASGN:
@@ -2602,7 +2602,7 @@ primary		: literal
 			add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
 			scope = NEW_NODE(NODE_SCOPE, tbl, $5, args, &@$);
 			tbl[0] = 1; tbl[1] = id;
-			$$ = NEW_FOR(0, $4, scope, &@$);
+			$$ = NEW_FOR($4, scope, &@$);
 			fixpos($$, $2);
 		    /*%
 			$$ = dispatch3(for, $2, $4, $5);
