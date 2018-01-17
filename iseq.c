@@ -1534,21 +1534,24 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       case TS_NUM:		/* ULONG */
-	{
-	    const char *type_str;
-	    if (insn == BIN(branchiftype) && (type_str = rb_type_str((enum ruby_value_type)op)) != NULL) {
-		ret = rb_str_new_cstr(type_str);
+	if (insn == BIN(defined) && op_no == 0) {
+	    enum defined_type deftype = (enum defined_type)op;
+	    if (deftype == DEFINED_FUNC) {
+		ret = rb_fstring_cstr("func"); break;
 	    }
-	    else if (insn == BIN(defined) && op_no == 0 &&
-		     ((enum defined_type)op == DEFINED_FUNC ? (ret = rb_fstring_cstr("func"), 1) :
-		      (enum defined_type)op == DEFINED_REF ? (ret = rb_fstring_cstr("ref"), 1) :
-		      (ret = rb_iseq_defined_string((enum defined_type)op)) != 0)) {
-		/* ok */
+	    if (deftype == DEFINED_REF) {
+		ret = rb_fstring_cstr("ref"); break;
 	    }
-	    else {
-		ret = rb_sprintf("%"PRIuVALUE, op);
+	    ret = rb_iseq_defined_string((enum defined_type)op);
+	    if (ret) break;
+	}
+	else if (insn == BIN(branchiftype) && op_no == 0) {
+	    const char *type_str = rb_type_str((enum ruby_value_type)op);
+	    if (type_str) {
+		ret = rb_str_new_cstr(type_str); break;
 	    }
 	}
+	ret = rb_sprintf("%"PRIuVALUE, op);
 	break;
 
       case TS_LINDEX:{
