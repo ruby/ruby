@@ -9985,11 +9985,18 @@ new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 static VALUE
 negate_lit(struct parser_params *p, VALUE lit)
 {
-    int type = TYPE(lit);
-    switch (type) {
-      case T_FIXNUM:
-	lit = LONG2FIX(-FIX2LONG(lit));
-	break;
+    if (FIXNUM_P(lit)) {
+	return LONG2FIX(-FIX2LONG(lit));
+    }
+    if (SPECIAL_CONST_P(lit)) {
+#if USE_FLONUM
+	if (FLONUM_P(lit)) {
+	    return DBL2NUM(-RFLOAT_VALUE(lit));
+	}
+#endif
+	goto unknown;
+    }
+    switch (BUILTIN_TYPE(lit)) {
       case T_BIGNUM:
 	BIGNUM_NEGATE(lit);
 	lit = rb_big_norm(lit);
@@ -10002,16 +10009,12 @@ negate_lit(struct parser_params *p, VALUE lit)
 	RCOMPLEX_SET_IMAG(lit, negate_lit(p, RCOMPLEX(lit)->imag));
 	break;
       case T_FLOAT:
-#if USE_FLONUM
-	if (FLONUM_P(lit)) {
-	    lit = DBL2NUM(-RFLOAT_VALUE(lit));
-	    break;
-	}
-#endif
 	RFLOAT(lit)->float_value = -RFLOAT_VALUE(lit);
 	break;
+      unknown:
       default:
-	rb_parser_fatal(p, "unknown literal type (%d) passed to negate_lit", type);
+	rb_parser_fatal(p, "unknown literal type (%s) passed to negate_lit",
+			rb_builtin_class_name(lit));
 	break;
     }
     return lit;
