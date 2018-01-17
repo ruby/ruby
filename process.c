@@ -6884,7 +6884,7 @@ get_clk_tck(void)
 {
     long hertz =
 #ifdef HAVE__SC_CLK_TCK
-	(double)sysconf(_SC_CLK_TCK);
+	sysconf(_SC_CLK_TCK);
 #else
 #ifndef HZ
 # ifdef CLK_TCK
@@ -6924,7 +6924,7 @@ rb_proc_times(VALUE obj)
     cutime = DBL2NUM((double)usage_c.ru_utime.tv_sec + (double)usage_c.ru_utime.tv_usec/1e6);
     cstime = DBL2NUM((double)usage_c.ru_stime.tv_sec + (double)usage_c.ru_stime.tv_usec/1e6);
 #else
-    const double hertz = get_clk_tck();
+    const double hertz = (double)get_clk_tck();
     struct tms buf;
 
     times(&buf);
