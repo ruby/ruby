@@ -112,18 +112,18 @@ class TestAst < Test::Unit::TestCase
 
   SRCDIR = File.expand_path("../../../..", __FILE__)
 
-  Dir.glob("#{SRCDIR}/test/**/*.rb").each do |path|
+  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
     define_method("test_ranges:#{path}") do
-      helper = Helper.new(path)
+      helper = Helper.new("#{SRCDIR}/#{path}")
       helper.validate_range
 
       assert_equal([], helper.errors)
     end
   end
 
-  Dir.glob("#{SRCDIR}/test/**/*.rb").each do |path|
+  Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
     define_method("test_not_cared:#{path}") do
-      helper = Helper.new(path)
+      helper = Helper.new("#{SRCDIR}/#{path}")
       helper.validate_not_cared
 
       assert_equal([], helper.errors)
