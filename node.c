@@ -1020,7 +1020,7 @@ rb_parser_dump_tree(const NODE *node, int comment)
     return buf;
 }
 
-/* Setup NODE strucutre.
+/* Setup NODE structure.
  * NODE is not an object managed by GC, but it imitates an object
  * so that it can work with `RB_TYPE_P(obj, T_NODE)`.
  * This dirty hack is needed because Ripper jumbles NODEs and other type
