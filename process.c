@@ -6882,20 +6882,15 @@ p_gid_switch(VALUE obj)
 static long
 get_clk_tck(void)
 {
-    long hertz =
 #ifdef HAVE__SC_CLK_TCK
-	sysconf(_SC_CLK_TCK);
+    return sysconf(_SC_CLK_TCK);
+#elif defined CLK_TCK
+    return CLK_TCK;
+#elif defined HZ
+    return HZ;
 #else
-#ifndef HZ
-# ifdef CLK_TCK
-#   define HZ CLK_TCK
-# else
-#   define HZ 60
-# endif
-#endif /* HZ */
-	HZ;
+    return 60;
 #endif
-    return hertz;
 }
 
 /*
