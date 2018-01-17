@@ -13,6 +13,7 @@
 # error too old GCC
 #endif
 
+#include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "internal.h"
 #include "ruby/st.h"
