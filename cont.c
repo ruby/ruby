@@ -475,7 +475,7 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
 #ifdef __ia64
-    th->machine.register_stack_end = rb_ia64_bsp();
+    th->ec->machine.register_stack_end = rb_ia64_bsp();
 #endif
 
     if (th->ec->machine.stack_start > th->ec->machine.stack_end) {
@@ -499,8 +499,8 @@ cont_save_machine_stack(rb_thread_t *th, rb_context_t *cont)
 
 #ifdef __ia64
     rb_ia64_flushrs();
-    size = cont->machine.register_stack_size = th->machine.register_stack_end - th->machine.register_stack_start;
-    cont->machine.register_stack_src = th->machine.register_stack_start;
+    size = cont->machine.register_stack_size = th->ec->machine.register_stack_end - th->ec->machine.register_stack_start;
+    cont->machine.register_stack_src = th->ec->machine.register_stack_start;
     if (cont->machine.register_stack) {
 	REALLOC_N(cont->machine.register_stack, VALUE, size);
     }
