@@ -616,6 +616,8 @@ dir_s_open(int argc, VALUE *argv, VALUE klass)
     return dir;
 }
 
+NORETURN(static void dir_closed(void));
+
 static void
 dir_closed(void)
 {
