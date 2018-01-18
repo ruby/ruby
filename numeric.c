@@ -329,6 +329,8 @@ num_funcall0(VALUE x, ID func)
     return rb_exec_recursive(num_funcall_op_0, x, (VALUE)func);
 }
 
+NORETURN(static void num_funcall_op_1_recursion(VALUE x, ID func, VALUE y));
+
 static void
 num_funcall_op_1_recursion(VALUE x, ID func, VALUE y)
 {
