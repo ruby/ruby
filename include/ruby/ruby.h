@@ -1907,6 +1907,8 @@ RUBY_EXTERN VALUE rb_mMath;
 RUBY_EXTERN VALUE rb_mProcess;
 RUBY_EXTERN VALUE rb_mWaitReadable;
 RUBY_EXTERN VALUE rb_mWaitWritable;
+RUBY_EXTERN VALUE rb_mWarning;
+RUBY_EXTERN VALUE rb_cWarningBuffer;
 
 RUBY_EXTERN VALUE rb_cBasicObject;
 RUBY_EXTERN VALUE rb_cObject;
