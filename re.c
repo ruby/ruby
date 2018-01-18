@@ -686,6 +686,8 @@ rb_reg_error_desc(VALUE str, int options, const char *err)
 				 rb_enc_get(str), options, err);
 }
 
+NORETURN(static void rb_reg_raise_str(VALUE str, int options, const char *err));
+
 static void
 rb_reg_raise_str(VALUE str, int options, const char *err)
 {
