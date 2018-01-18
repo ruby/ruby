@@ -8828,6 +8828,8 @@ struct ibf_object_symbol {
 #define IBF_OBJHEADER(offset)     (struct ibf_object_header *)(load->buff + (offset))
 #define IBF_OBJBODY(type, offset) (type *)(load->buff + sizeof(struct ibf_object_header) + (offset))
 
+NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj));
+
 static void
 ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
 {
