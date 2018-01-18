@@ -22,7 +22,7 @@
 #include "id_table.h"
 #include "debug_counter.h"
 
-struct rb_id_table *rb_global_tbl;
+static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
 
 static void check_before_mod_set(VALUE, ID, VALUE, const char *);
