@@ -2038,6 +2038,8 @@ rb_thread_s_pending_interrupt_p(int argc, VALUE *argv, VALUE self)
     return rb_thread_pending_interrupt_p(argc, argv, GET_THREAD()->self);
 }
 
+NORETURN(static void rb_threadptr_to_kill(rb_thread_t *th));
+
 static void
 rb_threadptr_to_kill(rb_thread_t *th)
 {
