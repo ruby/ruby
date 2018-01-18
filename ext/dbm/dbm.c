@@ -39,6 +39,8 @@ struct dbmdata {
     DBM *di_dbm;
 };
 
+NORETURN(static void closed_dbm(void));
+
 static void
 closed_dbm(void)
 {
