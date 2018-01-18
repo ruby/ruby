@@ -646,6 +646,8 @@ queue_closed_p(VALUE self)
     return FL_TEST_RAW(self, QUEUE_CLOSED) != 0;
 }
 
+NORETURN(static void raise_closed_queue_error(VALUE self));
+
 static void
 raise_closed_queue_error(VALUE self)
 {
