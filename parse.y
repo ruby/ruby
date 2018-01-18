@@ -9039,7 +9039,7 @@ new_xstring(struct parser_params *p, VALUE str, const YYLTYPE *loc)
 #endif /* !RIPPER */
 
 #ifndef RIPPER
-const char rb_parser_lex_state_names[][13] = {
+static const char rb_parser_lex_state_names[][13] = {
     "EXPR_BEG",    "EXPR_END",    "EXPR_ENDARG", "EXPR_ENDFN",  "EXPR_ARG",
     "EXPR_CMDARG", "EXPR_MID",    "EXPR_FNAME",  "EXPR_DOT",    "EXPR_CLASS",
     "EXPR_LABEL",  "EXPR_LABELED","EXPR_FITEM",
