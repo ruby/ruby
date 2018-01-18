@@ -2447,6 +2447,8 @@ vm_search_normal_superclass(VALUE klass)
     return RCLASS_SUPER(klass);
 }
 
+NORETURN(static void vm_super_outside(void));
+
 static void
 vm_super_outside(void)
 {
