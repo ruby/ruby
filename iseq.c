@@ -1542,7 +1542,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    if (deftype == DEFINED_REF) {
 		ret = rb_fstring_cstr("ref"); break;
 	    }
-	    ret = rb_iseq_defined_string((enum defined_type)op);
+	    ret = rb_iseq_defined_string(deftype);
 	    if (ret) break;
 	}
 	else if (insn == BIN(branchiftype) && op_no == 0) {
