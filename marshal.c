@@ -1184,6 +1184,8 @@ r_byte(struct load_arg *arg)
     return c;
 }
 
+NORETURN(static void long_toobig(int size));
+
 static void
 long_toobig(int size)
 {
