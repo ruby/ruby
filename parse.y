@@ -9183,7 +9183,6 @@ rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 
 #ifdef RIPPER
 static VALUE
-#undef assignable
 assignable(struct parser_params *p, VALUE lhs, VALUE val, const YYLTYPE *loc)
 #else
 static NODE*
