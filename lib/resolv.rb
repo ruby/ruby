@@ -188,26 +188,28 @@ class Resolv
         unless @initialized
           @name2addr = {}
           @addr2name = {}
-          File.open(@filename, 'rb') {|f|
-            f.each {|line|
-              line.sub!(/#.*/, '')
-              addr, hostname, *aliases = line.split(/\s+/)
-              next unless addr
-              addr.untaint
-              hostname.untaint
-              @addr2name[addr] = [] unless @addr2name.include? addr
-              @addr2name[addr] << hostname
-              @addr2name[addr] += aliases
-              @name2addr[hostname] = [] unless @name2addr.include? hostname
-              @name2addr[hostname] << addr
-              aliases.each {|n|
-                n.untaint
-                @name2addr[n] = [] unless @name2addr.include? n
-                @name2addr[n] << addr
+          unless @filename.nil?
+            File.open(@filename, 'rb') {|f|
+              f.each {|line|
+                line.sub!(/#.*/, '')
+                addr, hostname, *aliases = line.split(/\s+/)
+                next unless addr
+                addr.untaint
+                hostname.untaint
+                @addr2name[addr] = [] unless @addr2name.include? addr
+                @addr2name[addr] << hostname
+                @addr2name[addr] += aliases
+                @name2addr[hostname] = [] unless @name2addr.include? hostname
+                @name2addr[hostname] << addr
+                aliases.each {|n|
+                  n.untaint
+                  @name2addr[n] = [] unless @name2addr.include? n
+                  @name2addr[n] << addr
+                }
               }
             }
-          }
-          @name2addr.each {|name, arr| arr.reverse!}
+            @name2addr.each {|name, arr| arr.reverse!}
+          end
           @initialized = true
         end
       }
