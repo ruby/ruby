@@ -1315,7 +1315,7 @@ node_new_quantifier(int lower, int upper, int by_number)
   NQTFR(node)->target_empty_info = NQ_TARGET_ISNOT_EMPTY;
   NQTFR(node)->head_exact        = NULL_NODE;
   NQTFR(node)->next_head_exact   = NULL_NODE;
-  NQTFR(node)->is_refered        = 0;
+  NQTFR(node)->is_referred       = 0;
   if (by_number != 0)
     NQTFR(node)->state |= NST_BY_NUMBER;
 

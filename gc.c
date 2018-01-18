@@ -1105,7 +1105,7 @@ check_rvalue_consistency(const VALUE obj)
 		rb_bug("check_rvalue_consistency: %s is uncollectible, but not old (age: %d) and not WB unprotected.", obj_info(obj), age);
 	    }
 	    if (remembered_bit && age != RVALUE_OLD_AGE) {
-		rb_bug("check_rvalue_consistency: %s is rememberd, but not old (age: %d).", obj_info(obj), age);
+		rb_bug("check_rvalue_consistency: %s is remembered, but not old (age: %d).", obj_info(obj), age);
 	    }
 	}
 
@@ -4928,7 +4928,7 @@ reflist_dump(struct reflist *refs)
 }
 
 static int
-reflist_refered_from_machine_context(struct reflist *refs)
+reflist_referred_from_machine_context(struct reflist *refs)
 {
     int i;
     for (i=0; i<refs->pos; i++) {
@@ -5071,7 +5071,7 @@ gc_check_after_marks_i(st_data_t k, st_data_t v, void *ptr)
 	fprintf(stderr, "gc_check_after_marks_i: %p is referred from ", (void *)obj);
 	reflist_dump(refs);
 
-	if (reflist_refered_from_machine_context(refs)) {
+	if (reflist_referred_from_machine_context(refs)) {
 	    fprintf(stderr, " (marked from machine stack).\n");
 	    /* marked from machine context can be false positive */
 	}
@@ -5222,7 +5222,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
     int i;
     unsigned int has_remembered_shady = FALSE;
     unsigned int has_remembered_old = FALSE;
-    int rememberd_old_objects = 0;
+    int remembered_old_objects = 0;
     int free_objects = 0;
     int zombie_objects = 0;
 
@@ -5235,7 +5235,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 	}
 	if (RVALUE_PAGE_MARKING(page, val)) {
 	    has_remembered_old = TRUE;
-	    rememberd_old_objects++;
+	    remembered_old_objects++;
 	}
     }
 
@@ -5249,7 +5249,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 	    }
 	}
 	rb_bug("page %p's has_remembered_objects should be false, but there are remembered old objects (%d). %s",
-	       (void *)page, rememberd_old_objects, obj ? obj_info(obj) : "");
+	       (void *)page, remembered_old_objects, obj ? obj_info(obj) : "");
     }
 
     if (page->flags.has_uncollectible_shady_objects == FALSE && has_remembered_shady == TRUE) {
@@ -5267,7 +5267,7 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 	rb_bug("page %p's final_slots should be %d, but %d\n", (void *)page, (int)page->final_slots, zombie_objects);
     }
 
-    return rememberd_old_objects;
+    return remembered_old_objects;
 #else
     return 0;
 #endif
@@ -5276,25 +5276,25 @@ gc_verify_heap_page(rb_objspace_t *objspace, struct heap_page *page, VALUE obj)
 static int
 gc_verify_heap_pages_(rb_objspace_t *objspace, struct heap_page *page)
 {
-    int rememberd_old_objects = 0;
+    int remembered_old_objects = 0;
 
     while (page) {
 	if (page->flags.has_remembered_objects == FALSE) {
-	    rememberd_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
+	    remembered_old_objects += gc_verify_heap_page(objspace, page, Qfalse);
 	}
 	page = page->next;
     }
 
-    return rememberd_old_objects;
+    return remembered_old_objects;
 }
 
 static int
 gc_verify_heap_pages(rb_objspace_t *objspace)
 {
-    int rememberd_old_objects = 0;
-    rememberd_old_objects = gc_verify_heap_pages_(objspace, heap_eden->pages);
-    rememberd_old_objects = gc_verify_heap_pages_(objspace, heap_tomb->pages);
-    return rememberd_old_objects;
+    int remembered_old_objects = 0;
+    remembered_old_objects = gc_verify_heap_pages_(objspace, heap_eden->pages);
+    remembered_old_objects = gc_verify_heap_pages_(objspace, heap_tomb->pages);
+    return remembered_old_objects;
 }
 
 /*
