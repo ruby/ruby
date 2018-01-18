@@ -644,6 +644,8 @@ rb_reg_to_s(VALUE re)
     return str;
 }
 
+NORETURN(static void rb_reg_raise(const char *s, long len, const char *err, VALUE re));
+
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
 {
