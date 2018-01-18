@@ -474,7 +474,6 @@ static ID ripper_get_id(VALUE);
 static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
 static VALUE assignable(struct parser_params*,VALUE,VALUE,const YYLTYPE*);
-#define assignable(p,id,val,loc) assignable((p),(id),(VALUE)(val),(loc))
 static int id_is_var(struct parser_params *p, ID id);
 
 #define method_cond(p,node,loc) (node)
@@ -725,10 +724,12 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 #ifndef RIPPER
 # define Qnone 0
 # define Qnull 0
+# define REQUIRED_KEYWORD NODE_SPECIAL_REQUIRED_KEYWORD
 # define ifndef_ripper(x) (x)
 #else
 # define Qnone Qnil
 # define Qnull Qundef
+# define REQUIRED_KEYWORD Qundef
 # define ifndef_ripper(x)
 #endif
 
@@ -4179,7 +4180,7 @@ f_kw		: f_label arg_value
 		| f_label
 		    {
 			p->cur_arg = 0;
-			$$ = assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$);
+			$$ = assignable(p, $1, REQUIRED_KEYWORD, &@$);
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*%
@@ -4199,7 +4200,7 @@ f_block_kw	: f_label primary_value
 		    }
 		| f_label
 		    {
-			$$ = assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$);
+			$$ = assignable(p, $1, REQUIRED_KEYWORD, &@$);
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*%
