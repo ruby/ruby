@@ -671,6 +671,8 @@ rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, co
     return rb_exc_new3(rb_eRegexpError, desc);
 }
 
+NORETURN(static void rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err));
+
 static void
 rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
 {
