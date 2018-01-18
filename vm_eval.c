@@ -443,34 +443,34 @@ rb_check_funcall_with_hook(VALUE recv, ID mid, int argc, const VALUE *argv,
 const char *
 rb_type_str(enum ruby_value_type type)
 {
-#define type_case(t) case t: return #t;
+#define type_case(t) t: return #t
     switch (type) {
-      type_case(T_NONE)
-      type_case(T_OBJECT)
-      type_case(T_CLASS)
-      type_case(T_MODULE)
-      type_case(T_FLOAT)
-      type_case(T_STRING)
-      type_case(T_REGEXP)
-      type_case(T_ARRAY)
-      type_case(T_HASH)
-      type_case(T_STRUCT)
-      type_case(T_BIGNUM)
-      type_case(T_FILE)
-      type_case(T_DATA)
-      type_case(T_MATCH)
-      type_case(T_COMPLEX)
-      type_case(T_RATIONAL)
-      type_case(T_NIL)
-      type_case(T_TRUE)
-      type_case(T_FALSE)
-      type_case(T_SYMBOL)
-      type_case(T_FIXNUM)
-      type_case(T_IMEMO)
-      type_case(T_UNDEF)
-      type_case(T_NODE)
-      type_case(T_ICLASS)
-      type_case(T_ZOMBIE)
+      case type_case(T_NONE);
+      case type_case(T_OBJECT);
+      case type_case(T_CLASS);
+      case type_case(T_MODULE);
+      case type_case(T_FLOAT);
+      case type_case(T_STRING);
+      case type_case(T_REGEXP);
+      case type_case(T_ARRAY);
+      case type_case(T_HASH);
+      case type_case(T_STRUCT);
+      case type_case(T_BIGNUM);
+      case type_case(T_FILE);
+      case type_case(T_DATA);
+      case type_case(T_MATCH);
+      case type_case(T_COMPLEX);
+      case type_case(T_RATIONAL);
+      case type_case(T_NIL);
+      case type_case(T_TRUE);
+      case type_case(T_FALSE);
+      case type_case(T_SYMBOL);
+      case type_case(T_FIXNUM);
+      case type_case(T_IMEMO);
+      case type_case(T_UNDEF);
+      case type_case(T_NODE);
+      case type_case(T_ICLASS);
+      case type_case(T_ZOMBIE);
       case T_MASK: break;
     }
 #undef type_case
