@@ -46,6 +46,8 @@ ec_stack_overflow(rb_execution_context_t *ec, int setup)
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
+NORETURN(static void vm_stackoverflow(void));
+
 static void
 vm_stackoverflow(void)
 {
