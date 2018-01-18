@@ -885,6 +885,9 @@ NOINLINE(static void check_reserved_signal_(const char *name, size_t name_len));
 #define check_reserved_signal(name) check_reserved_signal_(name, sizeof(name)-1)
 
 #ifdef SIGBUS
+
+NORETURN(static ruby_sigaction_t sigbus);
+
 static RETSIGTYPE
 sigbus(int sig SIGINFO_ARG)
 {
