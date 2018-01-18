@@ -6191,7 +6191,6 @@ parser_heredoc_identifier(struct parser_params *p)
 	break;
     }
 
-    p->tokenbuf[0] = p->tokenbuf[0] + toklen() - 2;
     tokfix();
     dispatch_scan_event(tHEREDOC_BEG);
     len = p->lex.pcur - p->lex.pbeg;
@@ -9155,7 +9154,7 @@ void
 rb_parser_set_location_from_strterm_heredoc(struct parser_params *p, rb_strterm_heredoc_t *here, YYLTYPE *yylloc)
 {
     const char *eos = RSTRING_PTR(here->term);
-    int term_len = (int)eos[0];
+    long term_len = RSTRING_LEN(here->term) - 2 + (unsigned char)eos[0];
 
     yylloc->beg_pos.lineno = (int)here->sourceline;
     yylloc->beg_pos.column = (int)(here->u3.lastidx - term_len);

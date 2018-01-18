@@ -129,4 +129,12 @@ class TestAst < Test::Unit::TestCase
       assert_equal([], helper.errors)
     end
   end
+
+  def test_column_with_long_heredoc_identifier
+    term = "A"*257
+    ast = AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    node = ast.children[1]
+    assert_equal("NODE_STR", node.type)
+    assert_equal(0, node.first_column)
+  end
 end
