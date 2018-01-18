@@ -1346,6 +1346,7 @@ static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
+NORETURN(static void reg_enc_error(VALUE re, VALUE str));
 
 static void
 reg_enc_error(VALUE re, VALUE str)
