@@ -1813,9 +1813,8 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    v = r_entry0(v, idx, arg);
 	    values = rb_ary_new2(len);
 	    {
-		VALUE keywords;
-		int keyword_init = RTEST(rb_struct_s_keyword_init(klass));
-		if (keyword_init) {
+		VALUE keywords = Qfalse;
+		if (RTEST(rb_struct_s_keyword_init(klass))) {
 		    keywords = rb_hash_new();
 		    rb_ary_push(values, keywords);
 		}
@@ -1829,7 +1828,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 				 rb_class_name(klass),
 				 slot, n);
 		    }
-		    if (keyword_init) {
+		    if (keywords) {
 			rb_hash_aset(keywords, RARRAY_AREF(mem, i), r_object(arg));
 		    }
 		    else {
