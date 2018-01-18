@@ -236,9 +236,7 @@ class Resolv
 
     def each_address(name, &proc)
       lazy_initialize
-      if @name2addr.include?(name)
-        @name2addr[name].each(&proc)
-      end
+      @name2addr[name]&.each(&proc)
     end
 
     ##
