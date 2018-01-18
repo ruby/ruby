@@ -774,6 +774,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Wno-packed-bitfield-compat \
 		 -Wsuggest-attribute=noreturn \
 		 -Wsuggest-attribute=format \
+		 -Wmissing-noreturn \
 		 -Wimplicit-fallthrough=0 \
 		 -Werror=duplicated-cond \
 		 -Werror=restrict \
