@@ -41,9 +41,6 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-extern ID ruby_static_id_signo;
-#define id_signo ruby_static_id_signo
-
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
 ruby_atomic_exchange(rb_atomic_t *ptr, rb_atomic_t val)

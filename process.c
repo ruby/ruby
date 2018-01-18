@@ -273,8 +273,6 @@ static ID id_CLOCK_BASED_CLOCK_PROCESS_CPUTIME_ID;
 static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 #endif
 static ID id_hertz;
-extern ID ruby_static_id_status;
-#define id_status ruby_static_id_status
 
 /* execv and execl are async-signal-safe since SUSv4 (POSIX.1-2008, XPG7) */
 #if defined(__sun) && !defined(_XPG7) /* Solaris 10, 9, ... */

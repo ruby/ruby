@@ -26,8 +26,6 @@ VALUE rb_eSysStackError;
 
 ID ruby_static_id_signo, ruby_static_id_status;
 static ID id_cause;
-#define id_signo ruby_static_id_signo
-#define id_status ruby_static_id_status
 
 #define exception_error GET_VM()->special_exceptions[ruby_error_reenter]
 

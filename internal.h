@@ -1209,6 +1209,9 @@ VALUE rb_warning_string(const char *fmt, ...);
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
+extern ID ruby_static_id_signo, ruby_static_id_status;
+#define id_signo ruby_static_id_signo
+#define id_status ruby_static_id_status
 
 /* eval_error.c */
 VALUE rb_get_backtrace(VALUE info);
