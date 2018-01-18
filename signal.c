@@ -935,6 +935,9 @@ sigsegv(int sig SIGINFO_ARG)
 #endif
 
 #ifdef SIGILL
+
+NORETURN(static ruby_sigaction_t sigill);
+
 static RETSIGTYPE
 sigill(int sig SIGINFO_ARG)
 {
