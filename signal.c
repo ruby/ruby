@@ -905,6 +905,8 @@ sigbus(int sig SIGINFO_ARG)
 }
 #endif
 
+NORETURN(static void ruby_abort(void));
+
 static void
 ruby_abort(void)
 {
