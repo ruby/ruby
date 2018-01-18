@@ -3329,9 +3329,9 @@ vm_analysis_register(int reg, int isset)
 
 #undef HASH_ASET
 
-void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
-void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
-void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = vm_analysis_register;
+static void (*ruby_vm_collect_usage_func_insn)(int insn) = vm_analysis_insn;
+static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = vm_analysis_operand;
+static void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = vm_analysis_register;
 
 /* :nodoc: */
 static VALUE
@@ -3359,9 +3359,9 @@ usage_analysis_register_stop(VALUE self)
 
 #else
 
-void (*ruby_vm_collect_usage_func_insn)(int insn) = NULL;
-void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op) = NULL;
-void (*ruby_vm_collect_usage_func_register)(int reg, int isset) = NULL;
+MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_insn)(int insn)) = NULL;
+MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_operand)(int insn, int n, VALUE op)) = NULL;
+MAYBE_UNUSED(static void (*ruby_vm_collect_usage_func_register)(int reg, int isset)) = NULL;
 
 #endif
 
