@@ -867,11 +867,9 @@ static ID id_new, id_cause, id_message, id_backtrace;
 static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
 static ID id_private_call_p;
-extern ID ruby_static_id_status;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
 #define id_mesg idMesg
-#define id_status ruby_static_id_status
 
 #undef rb_exc_new_cstr
 
