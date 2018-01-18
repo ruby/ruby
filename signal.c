@@ -920,6 +920,9 @@ ruby_abort(void)
 }
 
 #ifdef SIGSEGV
+
+NORETURN(static ruby_sigaction_t sigsegv);
+
 static RETSIGTYPE
 sigsegv(int sig SIGINFO_ARG)
 {
