@@ -947,6 +947,7 @@ rb_ary_cat(VALUE ary, const VALUE *argv, long len)
 /*
  *  call-seq:
  *     ary.push(obj, ... )   -> ary
+ *     ary.append(obj, ... ) -> ary
  *
  *  Append --- Pushes the given object(s) on to the end of this array. This
  *  expression returns the array itself, so several appends
@@ -1169,6 +1170,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
 /*
  *  call-seq:
  *     ary.unshift(obj, ...)  -> ary
+ *     ary.prepend(obj, ...)  -> ary
  *
  *  Prepends objects to the front of +self+, moving other elements upwards.
  *  See also Array#shift for the opposite effect.
