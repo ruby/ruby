@@ -772,7 +772,7 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     }
   }
   else if (qn->upper == 0) {
-    if (qn->is_refered != 0) /* /(?<n>..){0}/ */
+    if (qn->is_referred != 0) /* /(?<n>..){0}/ */
       len = SIZE_OP_JUMP + tlen;
     else
       len = 0;
@@ -901,7 +901,7 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     }
   }
   else if (qn->upper == 0) {
-    if (qn->is_refered != 0) { /* /(?<n>..){0}/ */
+    if (qn->is_referred != 0) { /* /(?<n>..){0}/ */
       r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
       if (r) return r;
       r = compile_tree(qn->target, reg);
@@ -1005,7 +1005,7 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     else
       len += SIZE_OP_JUMP + mod_tlen + SIZE_OP_PUSH;
   }
-  else if (qn->upper == 0 && qn->is_refered != 0) { /* /(?<n>..){0}/ */
+  else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     len = SIZE_OP_JUMP + tlen;
   }
   else if (!infinite && qn->greedy &&
@@ -1124,7 +1124,7 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
       r = add_opcode_rel_addr(reg, OP_PUSH, -(mod_tlen + (int )SIZE_OP_PUSH));
     }
   }
-  else if (qn->upper == 0 && qn->is_refered != 0) { /* /(?<n>..){0}/ */
+  else if (qn->upper == 0 && qn->is_referred != 0) { /* /(?<n>..){0}/ */
     r = add_opcode_rel_addr(reg, OP_JUMP, tlen);
     if (r) return r;
     r = compile_tree(qn->target, reg);
@@ -3106,7 +3106,7 @@ subexp_recursive_check_trav(Node* node, ScanEnv* env)
     r = subexp_recursive_check_trav(NQTFR(node)->target, env);
     if (NQTFR(node)->upper == 0) {
       if (r == FOUND_CALLED_NODE)
-	NQTFR(node)->is_refered = 1;
+	NQTFR(node)->is_referred = 1;
     }
     break;
 
