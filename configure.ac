@@ -1611,6 +1611,8 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	    t=LL],
 	  [*" long "*], [
 	    t=LONG],
+	  [*" short "*], [
+	    t=SHORT],
 	  [
 	    t=INT])
 	rb_cv_[$1]_convertible=${u}${t}])
@@ -1620,6 +1622,7 @@ AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
 	AS_CASE(["${rb_cv_[$1]_convertible}"],
 		[*LL], [n="long long"],
 		[*LONG], [n="long"],
+		[*SHORT], [n="short"],
 		[n="int"])
 	AS_CASE(["${rb_cv_[$1]_convertible}"],
 		[U*], [n="unsigned $n"])
@@ -1637,7 +1640,7 @@ RUBY_REPLACE_TYPE(uid_t, int, UIDT)
 RUBY_REPLACE_TYPE(gid_t, int, GIDT)
 RUBY_REPLACE_TYPE(time_t, [], TIMET, [@%:@include <time.h>])
 RUBY_REPLACE_TYPE(dev_t, [int long "long long"], DEVT)
-RUBY_REPLACE_TYPE(mode_t, ["unsigned int" long], MODET, [@%:@include <sys/stat.h>])
+RUBY_REPLACE_TYPE(mode_t, ["unsigned short" "unsigned int" long], MODET, [@%:@include <sys/stat.h>])
 RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@ifdef HAVE_SYS_TYPES_H
 @%:@include <sys/types.h>

@@ -113,6 +113,9 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #ifndef PRI_LONG_PREFIX
 #define PRI_LONG_PREFIX "l"
 #endif
+#ifndef PRI_SHORT_PREFIX
+#define PRI_SHORT_PREFIX "h"
+#endif
 
 #if SIZEOF_LONG == 8
 #define PRI_64_PREFIX PRI_LONG_PREFIX
@@ -1571,6 +1574,7 @@ rb_num2char_inline(VALUE x)
 
 #define LONG2NUM(x) RB_LONG2NUM(x)
 #define ULONG2NUM(x) RB_ULONG2NUM(x)
+#define USHORT2NUM(x) RB_INT2FIX(x)
 #define NUM2CHR(x) RB_NUM2CHR(x)
 #define CHR2FIX(x) RB_CHR2FIX(x)
 
