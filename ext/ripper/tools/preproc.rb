@@ -72,9 +72,13 @@ def prelude(f, out)
   end
 end
 
+require_relative "dsl"
+
 def grammar(f, out)
   while line = f.gets
     case line
+    when %r</\*% *ripper(?:\[(.*?)\])?: *(.*?) *%\*/>
+      out << DSL.new($2, ($1 || "").split(",")).generate << $/
     when %r</\*%%%\*/>
       out << '#if 0' << $/
     when %r</\*%c%\*/>
