@@ -874,10 +874,6 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop
-/*%%%*/
-/*%
-%type <val> program then do
-%*/
 %token END_OF_INPUT 0	"end-of-input"
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
 %token tUMINUS		RUBY_TOKEN(UMINUS) "unary-"
@@ -968,11 +964,7 @@ program		:  {
 			}
 			p->eval_tree = NEW_SCOPE(0, block_append(p, p->eval_tree, $2), &@$);
 		    /*% %*/
-		    /*% ripper: program!($2) %*/
-		    /*%%%*/
-		    /*%
-			p->result = $$;
-		    %*/
+		    /*% ripper[final]: program!($2) %*/
 			local_pop(p);
 		    }
 		;
@@ -2686,14 +2678,11 @@ k_return	: keyword_return
 		;
 
 then		: term
-		    /*% ripper[brace]: "Qnil" %*/
 		| keyword_then
 		| term keyword_then
-		    /*% ripper[brace]: $2 %*/
 		;
 
 do		: term
-		    /*% ripper[brace]: "Qnil" %*/
 		| keyword_do_cond
 		;
 

@@ -43,12 +43,6 @@ def prelude(f, out)
   @exprs = {}
   while line = f.gets
     case line
-    when %r</\*%%%\*/>
-      out << '/*' << $/
-    when %r</\*%>
-      out << '*/' << $/
-    when %r<%\*/>
-      out << $/
     when /\A%%/
       out << '%%' << $/
       return

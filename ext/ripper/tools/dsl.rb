@@ -8,6 +8,7 @@ class DSL
     @events = {}
     @error = options.include?("error")
     @brace = options.include?("brace")
+    @final = options.include?("final")
 
     # create $1 == "$1", $2 == "$2", ...
     re, s = "", ""
@@ -28,6 +29,7 @@ class DSL
 
   def generate
     s = "$$"
+    s = "p->result" if @final
     s = "\t\t\t#{ s } = #@code;"
     s << "ripper_error(p);" if @error
     s = "{#{ s }}" if @brace
