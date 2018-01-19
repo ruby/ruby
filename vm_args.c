@@ -392,6 +392,8 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
+#define KW_SPECIFIED_BITS_MAX 32 /* TODO: 32 -> Fixnum's max bits */
+
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
 			 VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -427,7 +429,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
 	    if (default_values[di] == Qundef) {
 		locals[i] = Qnil;
 
-		if (LIKELY(i < 32)) { /* TODO: 32 -> Fixnum's max bits */
+		if (LIKELY(i < KW_SPECIFIED_BITS_MAX)) {
 		    unspecified_bits |= 0x01 << di;
 		}
 		else {
@@ -436,7 +438,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
 			int j;
 			unspecified_bits_value = rb_hash_new();
 
-			for (j=0; j<32; j++) {
+			for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
 			    if (unspecified_bits & (0x01 << j)) {
 				rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
 			    }

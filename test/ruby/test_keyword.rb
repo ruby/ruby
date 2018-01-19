@@ -681,12 +681,13 @@ class TestKeywordArguments < Test::Unit::TestCase
   def many_kwargs(a0: '', a1: '', a2: '', a3: '', a4: '', a5: '', a6: '', a7: '',
                   b0: '', b1: '', b2: '', b3: '', b4: '', b5: '', b6: '', b7: '',
                   c0: '', c1: '', c2: '', c3: '', c4: '', c5: '', c6: '', c7: '',
-                  d0: '', d1: '', d2: '', d3: '', d4: '', d5: '', d6: '', d7: '')
+                  d0: '', d1: '', d2: '', d3: '', d4: '', d5: '', d6: '', d7: '',
+                  e0: '')
     [a0, a1, a2, a3, a4, a5, a6, a7,
      b0, b1, b2, b3, b4, b5, b6, b7,
      c0, c1, c2, c3, c4, c5, c6, c7,
      d0, d1, d2, d3, d4, d5, d6, d7,
-    ]
+     e0]
   end
 
   def test_many_kwargs
@@ -726,5 +727,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(d5: :ok)[i], "#{i}: d5"); i+=1
     assert_equal(:ok, many_kwargs(d6: :ok)[i], "#{i}: d6"); i+=1
     assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
+
+    assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
   end
 end
