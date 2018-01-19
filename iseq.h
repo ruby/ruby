@@ -276,6 +276,7 @@ struct iseq_compile_data_storage {
 /* defined? */
 
 enum defined_type {
+    DEFINED_NOT_DEFINED,
     DEFINED_NIL = 1,
     DEFINED_IVAR,
     DEFINED_LVAR,
