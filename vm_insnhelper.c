@@ -3026,7 +3026,7 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
     const VALUE kw_bits = *(ep - bits);
 
     if (FIXNUM_P(kw_bits)) {
-	int b = FIX2INT(kw_bits);
+	unsigned int b = (unsigned int)FIX2ULONG(kw_bits);
 	if ((idx < KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
 	    return Qfalse;
     }
