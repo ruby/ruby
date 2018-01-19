@@ -413,7 +413,6 @@ static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
 #define var_field(p, n) (n)
-#define backref_assign_error(p, n, a, loc) (rb_backref_error(p, n), NEW_BEGIN(0, loc))
 
 static NODE *opt_arg_append(NODE*, NODE*);
 static NODE *kwd_append(NODE*, NODE*);
@@ -505,7 +504,6 @@ static VALUE const_decl(struct parser_params *p, VALUE path, const YYLTYPE *loc)
 
 static VALUE var_field(struct parser_params *p, VALUE a);
 static VALUE assign_error(struct parser_params *p, VALUE a);
-#define backref_assign_error(p, n, a, loc) assign_error(p, a)
 
 #define block_dup_check(p, n1,n2) ((void)(n1), (void)(n2))
 #define fixpos(n1,n2) ((void)(n1), (void)(n2))
@@ -1256,8 +1254,11 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| backref tOP_ASGN command_rhs
 		    {
-			$1 = var_field(p, $1);
-			$$ = backref_assign_error(p, $1, node_assign(p, $1, $3, &@$), &@$);
+		    /*%%%*/
+			rb_backref_error(p, $1);
+			$$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1,error]: assign_error!(assign!($1, $3)) %*/
 		    }
 		;
 
@@ -1596,8 +1597,11 @@ mlhs_node	: user_variable
 		    }
 		| backref
 		    {
-			$1 = var_field(p, $1);
-			$$ = backref_assign_error(p, $1, $1, &@$);
+		    /*%%%*/
+			rb_backref_error(p, $1);
+			$$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1,error]: assign_error!($1) %*/
 		    }
 		;
 
@@ -1647,8 +1651,11 @@ lhs		: user_variable
 		    }
 		| backref
 		    {
-			$1 = var_field(p, $1);
-			$$ = backref_assign_error(p, $1, $1, &@$);
+		    /*%%%*/
+			rb_backref_error(p, $1);
+			$$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1,error]: assign_error!($1) %*/
 		    }
 		;
 
@@ -1820,8 +1827,11 @@ arg		: lhs '=' arg_rhs
 		    }
 		| backref tOP_ASGN arg_rhs
 		    {
-			$1 = var_field(p, $1);
-			$$ = backref_assign_error(p, $1, new_op_assign(p, $1, $2, $3, &@$), &@$);
+		    /*%%%*/
+			rb_backref_error(p, $1);
+			$$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1,error]: assign_error!(opassign!($1, $2, $3)) %*/
 		    }
 		| arg tDOT2 arg
 		    {
