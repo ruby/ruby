@@ -479,7 +479,6 @@ static int id_is_var(struct parser_params *p, ID id);
 #define match_op(p,node1,node2,op_loc,loc) call_bin_op(0, (node1), idEqTilde, (node2), op_loc, loc)
 #define call_uni_op(p, recv,id,op_loc,loc) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define logop(p,id,node1,node2,op_loc,loc) call_bin_op(0, (node1), (id), (node2), op_loc, loc)
-#define node_assign(p, node1, node2, loc) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc);
 static VALUE new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 
@@ -1201,8 +1200,11 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    }
 		| lhs '=' mrhs
 		    {
+		    /*%%%*/
 			value_expr($3);
 			$$ = node_assign(p, $1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($1, $3) %*/
 		    }
 		| mlhs '=' mrhs_arg
 		    {
@@ -1216,8 +1218,11 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 
 command_asgn	: lhs '=' command_rhs
 		    {
+		    /*%%%*/
 			value_expr($3);
 			$$ = node_assign(p, $1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($1, $3) %*/
 		    }
 		| var_lhs tOP_ASGN command_rhs
 		    {
@@ -1786,7 +1791,10 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 
 arg		: lhs '=' arg_rhs
 		    {
+		    /*%%%*/
 			$$ = node_assign(p, $1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: assign!($1, $3) %*/
 		    }
 		| var_lhs tOP_ASGN arg_rhs
 		    {
