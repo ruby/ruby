@@ -11,23 +11,7 @@ AC_ARG_VAR([cflags], [additional CFLAGS])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
 
-AC_DEFUN([RUBY_RM_RECURSIVE], [
-m4_version_prereq([2.70], [-1], [
-# suppress error messages, rm: cannot remove 'conftest.dSYM', from
-# AC_EGREP_CPP with CFLAGS=-g on Darwin.
-AS_CASE([$build_os], [darwin*], [
-rm() {
-    rm_recursive=''
-    for arg do
-	AS_CASE("$arg",
-		[--*], [],
-		[-*r*], [break],
-		[conftest.*], [AS_IF([test -d "$arg"], [rm_recursive=-r; break])],
-		[])
-    done
-    command rm $rm_recursive "[$]@"
-}
-])])])
+m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 
 { # environment section
 
@@ -66,56 +50,9 @@ AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no]
 AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
 
-AC_DEFUN([RUBY_MINGW32],
-[AS_CASE(["$host_os"],
-[cygwin*], [
-AC_CACHE_CHECK(for mingw32 environment, rb_cv_mingw32,
-[AC_TRY_CPP([
-#ifndef __MINGW32__
-# error
-#endif
-], rb_cv_mingw32=yes,rb_cv_mingw32=no)
-rm -f conftest*])
-AS_IF([test "$rb_cv_mingw32" = yes], [
-    target_os="mingw32"
-    : ${ac_tool_prefix:="`expr "$CC" : ['\(.*-\)g\?cc[^/]*$']`"}
-])
-])
-AS_CASE(["$target_os"], [mingw*msvc], [
-target_os="`echo ${target_os} | sed 's/msvc$//'`"
-])
-AS_CASE(["$target_cpu-$target_os"], [x86_64-mingw*], [
-target_cpu=x64
-])
-])
-
-AC_DEFUN([RUBY_CPPOUTFILE],
-[AC_CACHE_CHECK(whether ${CPP} accepts -o, rb_cv_cppoutfile,
-[save_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS='-o conftest-1.i'
-rb_cv_cppoutfile=no
-AC_TRY_CPP([test-for-cppout],
-	   [grep test-for-cppout conftest-1.i > /dev/null && rb_cv_cppoutfile=yes])
-CPPFLAGS="$save_CPPFLAGS"
-rm -f conftest*])
-AS_IF([test "$rb_cv_cppoutfile" = yes], [
-  CPPOUTFILE='-o conftest.i'
-], [test "$rb_cv_cppoutfile" = no], [
-  CPPOUTFILE='> conftest.i'
-], [test -n "$rb_cv_cppoutfile"], [
-  CPPOUTFILE="$rb_cv_cppoutfile"
-])
-AC_SUBST(CPPOUTFILE)])
-
-AC_DEFUN([RUBY_PROG_GNU_LD],
-[AC_CACHE_CHECK(whether the linker is GNU ld, rb_cv_prog_gnu_ld,
-[AS_IF([`$CC $CFLAGS $CPPFLAGS $LDFLAGS --print-prog-name=ld 2>&1` -v 2>&1 | grep "GNU ld" > /dev/null], [
-  rb_cv_prog_gnu_ld=yes
-], [
-  rb_cv_prog_gnu_ld=no
-])])
-GNU_LD=$rb_cv_prog_gnu_ld
-AC_SUBST(GNU_LD)])
+m4_include([tool/m4/ruby_mingw32.m4])dnl
+m4_include([tool/m4/ruby_cppoutfile.m4])dnl
+m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
 
 eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
 RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
@@ -201,27 +138,10 @@ AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 	target_os=`echo ${target_os} | sed "$os_version_style_transform"`
 	])
 
-AC_DEFUN([RUBY_APPEND_OPTION],
-	[# RUBY_APPEND_OPTION($1)
-	AS_CASE([" [$]{$1-} "],
-	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="[$]$1 $2"])])
-AC_DEFUN([RUBY_APPEND_OPTIONS],
-	[# RUBY_APPEND_OPTIONS($1)
-	for rb_opt in $2; do
-	AS_CASE([" [$]{$1-} "],
-	[*" [$]{rb_opt} "*], [], ['  '], [ $1="[$]{rb_opt}"], [ $1="[$]$1 [$]{rb_opt}"])
-	done])
-AC_DEFUN([RUBY_PREPEND_OPTION],
-	[# RUBY_PREPEND_OPTION($1)
-	AS_CASE([" [$]{$1-} "],
-	[*" $2 "*], [], ['  '], [ $1="$2"], [ $1="$2 [$]$1"])])
-AC_DEFUN([RUBY_PREPEND_OPTIONS],
-	[# RUBY_PREPEND_OPTIONS($1)
-	unset rb_opts; for rb_opt in $2; do
-	AS_CASE([" [$]{rb_opts} [$]{$1-} "],
-	[*" [$]{rb_opt} "*], [], ['  '], [ $1="[$]{rb_opt}"], [ rb_opts="[$]{rb_opts}[$]{rb_opt} "])
-	done
-	$1="[$]{rb_opts}[$]$1"])
+m4_include([tool/m4/ruby_append_option.m4])dnl
+m4_include([tool/m4/ruby_append_options.m4])dnl
+m4_include([tool/m4/ruby_prepend_option.m4])dnl
+m4_include([tool/m4/ruby_prepend_options.m4])dnl
 
 AC_ARG_WITH(arch,
 	AS_HELP_STRING([--with-arch=ARCHS],
@@ -232,105 +152,8 @@ AC_ARG_WITH(arch,
 			  target platform]),
        [target_archs="$withval"], [unset target_archs])
 
-AC_DEFUN([RUBY_DEFAULT_ARCH], [
-AC_MSG_CHECKING([arch option])
-AS_CASE([$1],
-	[*64],        [ARCH_FLAG=-m64],
-	[[i[3-6]86]], [ARCH_FLAG=-m32],
-	[AC_MSG_ERROR(unknown target architecture: $target_archs)]
-	)
-AC_MSG_RESULT([$ARCH_FLAG])
-])
-
-AC_DEFUN([RUBY_UNIVERSAL_ARCH], [
-# RUBY_UNIVERSAL_ARCH begin
-ARCH_FLAG=`expr " $CXXFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
-test ${CXXFLAGS+set} && CXXFLAGS=`echo "$CXXFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
-ARCH_FLAG=`expr " $CFLAGS " : ['.* \(-m[0-9][0-9]*\) ']`
-test ${CFLAGS+set} && CFLAGS=`echo "$CFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
-test ${LDFLAGS+set} && LDFLAGS=`echo "$LDFLAGS" | sed [-e 's/ *-arch  *[^ ]*//g' -e 's/ *-m32//g' -e 's/ *-m64//g']`
-unset universal_binary universal_archnames
-AS_IF([test ${target_archs+set}], [
-    AC_MSG_CHECKING([target architectures])
-    target_archs=`echo $target_archs | tr , ' '`
-    # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
-    for archs in $target_archs
-    do
-	AS_CASE([",$universal_binary,"],[*",$archs,"*], [],[
-	    cpu=`$SHELL "$ac_aux_dir/config.sub" "${archs}-${target_os}" 2>&1` || {
-	        AC_MSG_RESULT([failed])
-		AC_MSG_ERROR([$cpu])
-	    }
-	    cpu=`echo $cpu | sed 's/-.*-.*//'`
-	    universal_binary="${universal_binary+$universal_binary,}$cpu"
-	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
-	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
-	    ])
-    done
-    target_archs="$universal_binary"
-    unset universal_binary
-    AS_CASE(["$target_archs"],
-      [*,*], [universal_binary=yes],
-             [unset universal_archnames])
-    AC_MSG_RESULT([$target_archs])
-
-    target=`echo $target | sed "s/^$target_cpu-/-/"`
-    target_alias=`echo $target_alias | sed "s/^$target_cpu-/-/"`
-    AS_IF([test "${universal_binary-no}" = yes], [
-	AC_SUBST(try_header,try_compile)
-	target_cpu=universal
-	real_cross_compiling=$cross_compiling
-    ], [
-	AS_IF([test x"$target_cpu" != x"${target_archs}"], [
-	    echo 'int main(){return 0;}' > conftest.c
-	    AS_IF([$CC $CFLAGS $ARCH_FLAG -o conftest conftest.c > /dev/null 2>&1], [
-		rm -fr conftest.*
-	    ], [
-		RUBY_DEFAULT_ARCH("$target_archs")
-	    ])
-	])
-	target_cpu=${target_archs}
-    ])
-    AS_CASE(["$target"], [-*], [ target="$target_cpu${target}"])
-    AS_CASE(["$target_alias"], [-*], [ target_alias="$target_cpu${target_alias}"])
-], [
-    AS_IF([test x"$target_alias" = x], [
-	AS_CASE(["$target_os"],
-	  [darwin*], [
-	    AC_MSG_CHECKING([for real target cpu])
-	    target=`echo $target | sed "s/^$target_cpu-/-/"`
-	    target_cpu=`$CC -E - 2>/dev/null <<EOF |
-#ifdef __x86_64__
-"processor-name=x86_64"
-#endif
-#ifdef __i386__
-"processor-name=i386"
-#endif
-#ifdef __ppc__
-"processor-name=powerpc"
-#endif
-#ifdef __ppc64__
-"processor-name=powerpc64"
-#endif
-EOF
-	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
-	    target="$target_cpu${target}"
-	    AC_MSG_RESULT([$target_cpu])
-	    ])
-    ])
-    target_archs="$target_cpu"
-])
-AS_IF([test "${target_archs}" != "${rb_cv_target_archs-${target_archs}}"], [
-    AC_MSG_ERROR([target arch(s) has changed from ${rb_cv_target_archs-nothing} to ${target_archs}])
-], [
-    rb_cv_target_archs=${target_archs}
-])
-AS_IF([test "x${ARCH_FLAG}" != x], [
-    CFLAGS="${CFLAGS:+$CFLAGS }${ARCH_FLAG}"
-    LDFLAGS="${LDFLAGS:+$LDFLAGS }${ARCH_FLAG}"
-])
-# RUBY_UNIVERSAL_ARCH end
-])
+m4_include([tool/m4/ruby_default_arch.m4])dnl
+m4_include([tool/m4/ruby_universal_arch.m4])dnl
 
 AC_ARG_ENABLE(load-relative,
        AS_HELP_STRING([--enable-load-relative], [resolve load paths at run time]),
@@ -539,55 +362,8 @@ AS_IF([test "x$MKDIR_P" = "x -d"], [
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
 
-AC_DEFUN([RUBY_DTRACE_AVAILABLE],
-[AC_CACHE_CHECK(whether dtrace USDT is available, rb_cv_dtrace_available,
-[
-    echo "provider conftest{ probe fire(); };" > conftest_provider.d
-    rb_cv_dtrace_available=no
-    AS_FOR(opt, rb_dtrace_opt, ["-xnolibs" ""], [dnl
-	AS_IF([$DTRACE opt -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null],
-	    [], [continue])
-	AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();],
-	    [], [continue])
-	# DTrace is available on the system
-	rb_cv_dtrace_available=yes${rb_dtrace_opt:+"(opt)"}
-	break
-    ])
-    rm -f conftest.[co] conftest_provider.[dho]
-])
-AS_CASE(["$rb_cv_dtrace_available"], ["yes("*")"],
-    [DTRACE_OPT=`expr "$rb_cv_dtrace_available" : "yes(\(.*\))"`])
-])
-
-AC_DEFUN([RUBY_DTRACE_POSTPROCESS],
-[AC_CACHE_CHECK(whether $DTRACE needs post processing, rb_cv_prog_dtrace_g,
-[
-  rb_cv_prog_dtrace_g=no
-  AS_IF([{
-    cat >conftest_provider.d <<_PROBES &&
-    provider conftest {
-      probe fire();
-    };
-_PROBES
-    $DTRACE ${DTRACE_OPT} -h -o conftest_provider.h -s conftest_provider.d >/dev/null 2>/dev/null &&
-    :
-  }], [
-    AC_TRY_COMPILE([@%:@include "conftest_provider.h"], [CONFTEST_FIRE();], [
-	AS_IF([{
-	    cp -p conftest.${ac_objext} conftest.${ac_objext}.save &&
-	    $DTRACE ${DTRACE_OPT} -G -s conftest_provider.d conftest.${ac_objext} 2>/dev/null &&
-	    :
-	}], [
-	    AS_IF([cmp -s conftest.o conftest.${ac_objext}.save], [
-		rb_cv_prog_dtrace_g=yes
-	    ], [
-		rb_cv_prog_dtrace_g=rebuild
-	    ])
-	])])
-  ])
-  rm -f conftest.[co] conftest_provider.[dho]
-])
-])
+m4_include([tool/m4/ruby_dtrace_available.m4])dnl
+m4_include([tool/m4/ruby_dtrace_postprocess.m4])dnl
 
 AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
 AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"], [
@@ -637,23 +413,7 @@ AC_SUBST(CHDIR)
 }
 { # compiler section
 
-AC_DEFUN([RUBY_WERROR_FLAG], [dnl
-save_CFLAGS="$CFLAGS"
-CFLAGS="$CFLAGS $rb_cv_warnflags"
-AS_IF([test "${ac_c_werror_flag+set}"], [
-  rb_c_werror_flag="$ac_c_werror_flag"
-], [
-  unset rb_c_werror_flag
-])
-ac_c_werror_flag=yes
-$1
-CFLAGS="$save_CFLAGS"
-save_CFLAGS=
-AS_IF([test "${rb_c_werror_flag+set}"], [
-  ac_c_werror_flag="$rb_c_werror_flag"
-], [
-  unset ac_c_werror_flag
-])])
+m4_include([tool/m4/ruby_werror_flag.m4])dnl
 
 RUBY_WERROR_FLAG([
     AC_MSG_CHECKING([whether CFLAGS is valid])
@@ -683,32 +443,8 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
-AC_DEFUN([RUBY_TRY_CFLAGS], [
-    AC_MSG_CHECKING([whether ]$1[ is accepted as CFLAGS])
-    RUBY_WERROR_FLAG([
-    CFLAGS="[$]CFLAGS $1"
-    AC_TRY_COMPILE([$4], [$5],
-	[$2
-	AC_MSG_RESULT(yes)],
-	[$3
-	AC_MSG_RESULT(no)])
-    ])
-])
-
-AC_DEFUN([RUBY_TRY_LDFLAGS], [
-    save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="[$]LDFLAGS $1"
-    AC_MSG_CHECKING([whether $1 is accepted as LDFLAGS])
-    RUBY_WERROR_FLAG([
-    AC_TRY_LINK([$4], [$5],
-	[$2
-	AC_MSG_RESULT(yes)],
-	[$3
-	AC_MSG_RESULT(no)])
-    ])
-    LDFLAGS="$save_LDFLAGS"
-    save_LDFLAGS=
-])
+m4_include([tool/m4/ruby_try_cflags.m4])dnl
+m4_include([tool/m4/ruby_try_ldflags.m4])dnl
 
 : ${DLDFLAGS="$LDFLAGS"}
 : ${RPATHFLAG=''}
@@ -1404,113 +1140,7 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
 	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])
     test "$universal_binary" = yes && cross_compiling=$real_cross_compiling])
 
-dnl RUBY_CHECK_SIZEOF [typename], [maybe same size types], [macros], [include]
-AC_DEFUN([RUBY_CHECK_SIZEOF],
-[dnl
-AS_VAR_PUSHDEF([rbcv_var], [rbcv_sizeof_var])dnl
-AS_VAR_PUSHDEF([cond], [rbcv_sizeof_cond])dnl
-AS_VAR_PUSHDEF([t], [rbcv_sizeof_type])dnl
-AS_VAR_PUSHDEF([s], [rbcv_sizeof_size])dnl
-]
-[m4_bmatch([$1], [\.], [], [if test "$universal_binary" = yes; then])
-AC_CACHE_CHECK([size of $1], [AS_TR_SH([ac_cv_sizeof_$1])], [
-    unset AS_TR_SH(ac_cv_sizeof_$1)
-    rbcv_var="
-typedef m4_bpatsubst([$1], [\..*]) ac__type_sizeof_;
-static ac__type_sizeof_ *rbcv_ptr;
-@%:@define AS_TR_CPP(SIZEOF_$1) sizeof((*rbcv_ptr)[]m4_bmatch([$1], [\.], .m4_bpatsubst([$1], [^[^.]*\.])))
-"
-    m4_ifval([$2], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
-    for t in $2; do
-	AC_COMPILE_IFELSE(
-	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([$4]
-		[$rbcv_var]),
-		[AS_TR_CPP(SIZEOF_$1) == sizeof($t)])], [
-		AS_TR_SH(ac_cv_sizeof_$1)=AS_TR_CPP([SIZEOF_]$t)
-		break])
-    done
-    }], [
-	AC_COMPUTE_INT([AS_TR_SH(ac_cv_sizeof_$1)], [AS_TR_CPP(SIZEOF_$1)],
-	    [AC_INCLUDES_DEFAULT([$4])
-$rbcv_var],
-	    [AS_TR_SH(ac_cv_sizeof_$1)=])
-    ])
-    unset cond
-    m4_ifval([$3], [test -z "${AS_TR_SH(ac_cv_sizeof_$1)+set}" && {
-    for s in 32 64 128; do
-	for t in $3; do
-	    cond="${cond}
-@%:@${cond+el}if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})"
-	    hdr="AC_INCLUDES_DEFAULT([$4
-@%:@if defined(__${t}${s}__) || defined(__${t}${s}) || defined(_${t}${s}) || defined(${t}${s})
-@%:@ define AS_TR_CPP(HAVE_$1) 1
-@%:@else
-@%:@ define AS_TR_CPP(HAVE_$1) 0
-@%:@endif])"
-	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr], [!AS_TR_CPP(HAVE_$1)])], [continue])
-	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr]
-				[$rbcv_var],
-				[AS_TR_CPP(HAVE_$1) == (AS_TR_CPP(SIZEOF_$1) == ($s / $rb_cv_char_bit))])],
-		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}"; continue])
-	    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([$hdr]
-[
-@%:@if AS_TR_CPP(HAVE_$1)
-$rbcv_var
-@%:@else
-@%:@define AS_TR_CPP(SIZEOF_$1) 0
-@%:@endif
-],
-		    [AS_TR_CPP(HAVE_$1) == (AS_TR_CPP(SIZEOF_$1) == (m4_bmatch([$2], [^[0-9][0-9]*$], [$2], [($s / $rb_cv_char_bit)])))])],
-		[AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}${s}m4_bmatch([$2], [^[0-9][0-9]*$], [:$2])"])
-	done
-    done
-    }])
-    test "${AS_TR_SH(ac_cv_sizeof_$1)@%:@@<:@1-9@:>@}" = "${AS_TR_SH(ac_cv_sizeof_$1)}" &&
-    m4_ifval([$2][$3],
-	[test "${AS_TR_SH(ac_cv_sizeof_$1)@%:@SIZEOF_}" = "${AS_TR_SH(ac_cv_sizeof_$1)}" && ]){
-    test "$universal_binary" = yes && cross_compiling=yes
-    AC_COMPUTE_INT([t], AS_TR_CPP(SIZEOF_$1), [AC_INCLUDES_DEFAULT([$4])]
-[${cond+$cond
-@%:@else}
-$rbcv_var
-${cond+@%:@endif}
-@%:@ifndef AS_TR_CPP(SIZEOF_$1)
-@%:@define AS_TR_CPP(SIZEOF_$1) 0
-@%:@endif], [t=0])
-    test "$universal_binary" = yes && cross_compiling=$real_cross_compiling
-    AS_IF([test ${t-0} != 0], [
-	AS_TR_SH(ac_cv_sizeof_$1)="${AS_TR_SH(ac_cv_sizeof_$1)+${AS_TR_SH(ac_cv_sizeof_$1)-} }${t}"
-    ])
-    }
-    : ${AS_TR_SH(ac_cv_sizeof_$1)=0}
-])
-{
-    unset cond
-    for t in ${AS_TR_SH(ac_cv_sizeof_$1)-}; do
-	AS_CASE(["$t"],
-	[[[0-9]*|SIZEOF_*]], [
-	    ${cond+echo "@%:@else"}
-	    echo "[@%:@define ]AS_TR_CPP(SIZEOF_$1) $t"
-	    break
-	    ],
-	[
-	    s=`expr $t : ['.*[^0-9]\([0-9][0-9]*\)$']`
-	    AS_CASE([$t], [*:*], [t="${t%:*}"], [s=`expr $s / $rb_cv_char_bit`])
-	    echo "@%:@${cond+el}if defined(__${t}__) || defined(__${t}) || defined(_${t}) || defined($t)"
-	    echo "@%:@define AS_TR_CPP(SIZEOF_$1) $s"
-	    cond=1
-	    ])
-    done
-    ${cond+echo "@%:@endif"}
-} >> confdefs.h
-m4_bmatch([$1], [\.], [], [else
-AC_CHECK_SIZEOF([$1], 0, [$4])
-fi])
-AS_VAR_POPDEF([rbcv_var])dnl
-AS_VAR_POPDEF([cond])dnl
-AS_VAR_POPDEF([t])dnl
-AS_VAR_POPDEF([s])dnl
-])
+m4_include([tool/m4/ruby_check_sizeof.m4])dnl
 
 RUBY_CHECK_SIZEOF(int, [], [ILP])
 RUBY_CHECK_SIZEOF(short)
@@ -1542,30 +1172,7 @@ AS_IF([test "$rb_cv_packed_struct" != no], [
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 ])
 
-AC_DEFUN([RUBY_CHECK_PRINTF_PREFIX], [
-AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
-    [rb_cv_pri_prefix_]AS_TR_SH($1)=[NONE]
-    RUBY_WERROR_FLAG(RUBY_APPEND_OPTIONS(CFLAGS, $rb_cv_wsuppress_flags)
-    for pri in $2; do
-        AC_TRY_COMPILE(
-            [@%:@include <stdio.h>
-	    @%:@include <stddef.h>
-            @%:@ifdef __GNUC__
-            @%:@define PRINTF_ARGS(decl, string_index, first_to_check) \
-              decl __attribute__((format(printf, string_index, first_to_check)))
-            @%:@else
-            @%:@define PRINTF_ARGS(decl, string_index, first_to_check) decl
-            @%:@endif
-	    PRINTF_ARGS(void test_sprintf(const char*, ...), 1, 2);],
-            [printf("%]${pri}[d", (]$1[)42);
-            test_sprintf("%]${pri}[d", (]$1[)42);],
-            [rb_cv_pri_prefix_]AS_TR_SH($1)[=[$pri]; break])
-    done)])
-AS_IF([test "[$rb_cv_pri_prefix_]AS_TR_SH($1)" != NONE], [
-    AC_DEFINE_UNQUOTED([PRI_]m4_ifval($3,$3,AS_TR_CPP(m4_bpatsubst([$1],[_t$])))[_PREFIX],
-        "[$rb_cv_pri_prefix_]AS_TR_SH($1)")
-])
-])
+m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
 
 AS_IF([test "x$ac_cv_type_long_long" = xyes], [
     RUBY_CHECK_PRINTF_PREFIX(long long, ll I64, LL)
@@ -1573,68 +1180,9 @@ AS_IF([test "x$ac_cv_type_long_long" = xyes], [
     RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
 ])
 
-dnl RUBY_CHECK_SIGNEDNESS [typename] [if-signed] [if-unsigned] [included]
-AC_DEFUN([RUBY_CHECK_SIGNEDNESS], [dnl
-    AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])], [($1)-1 > 0])],
-		      [$3], [$2])])
+m4_include([tool/m4/ruby_check_signedness.m4])dnl
+m4_include([tool/m4/ruby_replace_type.m4])dnl
 
-dnl RUBY_REPLACE_TYPE [typename] [default type] [macro type] [included]
-AC_DEFUN([RUBY_REPLACE_TYPE], [dnl
-    AC_CHECK_TYPE([$1],
-		  [n="patsubst([$1],["],[\\"])"],
-		  [n="patsubst([$2],["],[\\"])"],
-		  [$4])
-    AC_CACHE_CHECK([for convertible type of [$1]], rb_cv_[$1]_convertible, [
-	u= t=
-	AS_CASE(["$n "],
-	  [*" signed "*], [ ],
-	  [*" unsigned "*], [
-	    u=U],
-	  [RUBY_CHECK_SIGNEDNESS($n, [], [u=U], [$4])])
-	AS_IF([test x"$t" = x], [
-	    for t in "long long" long int short; do
-		test -n "$u" && t="unsigned $t"
-		AC_COMPILE_IFELSE(
-		    [AC_LANG_BOOL_COMPILE_TRY([AC_INCLUDES_DEFAULT([$4])]
-			[typedef $n rbcv_conftest_target_type;
-			typedef $t rbcv_conftest_replace_type;
-			extern rbcv_conftest_target_type rbcv_conftest_var;
-			extern rbcv_conftest_replace_type rbcv_conftest_var;
-			extern rbcv_conftest_target_type rbcv_conftest_func(void);
-			extern rbcv_conftest_replace_type rbcv_conftest_func(void);
-			], [sizeof(rbcv_conftest_target_type) == sizeof(rbcv_conftest_replace_type)])],
-		    [n="$t"; break])
-	    done
-	])
-	AS_CASE([" $n "],
-	  [*" long long "*], [
-	    t=LL],
-	  [*" long "*], [
-	    t=LONG],
-	  [*" short "*], [
-	    t=SHORT],
-	  [
-	    t=INT])
-	rb_cv_[$1]_convertible=${u}${t}])
-    AS_IF([test "${AS_TR_SH(ac_cv_type_[$1])}" = "yes"], [
-	n="$1"
-    ], [
-	AS_CASE(["${rb_cv_[$1]_convertible}"],
-		[*LL], [n="long long"],
-		[*LONG], [n="long"],
-		[*SHORT], [n="short"],
-		[n="int"])
-	AS_CASE(["${rb_cv_[$1]_convertible}"],
-		[U*], [n="unsigned $n"])
-    ])
-    AS_CASE("${rb_cv_[$1]_convertible}", [U*], [u=+1], [u=-1])
-    AC_DEFINE_UNQUOTED(rb_[$1], $n)
-    AC_DEFINE_UNQUOTED([SIGNEDNESS_OF_]AS_TR_CPP($1), $u)
-    AC_DEFINE_UNQUOTED([$3]2NUM[(v)], [${rb_cv_[$1]_convertible}2NUM(v)])
-    AC_DEFINE_UNQUOTED(NUM2[$3][(v)], [NUM2${rb_cv_[$1]_convertible}(v)])
-    AC_DEFINE_UNQUOTED(PRI_[$3]_PREFIX,
-	[PRI_`echo ${rb_cv_[$1]_convertible} | sed ['s/^U//']`_PREFIX])
-])
 RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
 RUBY_REPLACE_TYPE(gid_t, int, GIDT)
@@ -1736,17 +1284,7 @@ AS_IF([test "$rb_cv_va_args_macro" = yes], [
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
 ])
 
-AC_DEFUN([RUBY_DEFINE_IF], [dnl
-    m4_ifval([$1], [AS_LITERAL_IF([$1], [], [test "X$1" = X || ])cat <<EOH >> confdefs.h
-@%:@if $1
-EOH
-])dnl
-AC_DEFINE_UNQUOTED($2, $3)dnl
-    m4_ifval([$1], [AS_LITERAL_IF([$1], [], [test "X$1" = X || ])cat <<EOH >> confdefs.h
-@%:@endif /* $1 */
-EOH
-])dnl
-])dnl
+m4_include([tool/m4/ruby_define_if.m4])dnl
 
 AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
 rb_cv_have_alignas=no
@@ -1790,64 +1328,9 @@ AS_IF([test "$rb_cv_have_alignof" != no], [
     AC_DEFINE_UNQUOTED(RUBY_ALIGNOF, $rb_cv_have_alignof)
 ])
 
-dnl RUBY_DECL_ATTRIBUTE(attrib, macroname, cachevar, condition, type, code)
-AC_DEFUN([RUBY_DECL_ATTRIBUTE], [dnl
-m4_ifval([$2], dnl
-  [AS_VAR_PUSHDEF([attrib], m4_bpatsubst([$2], [(.*)], []))], dnl
-  [AS_VAR_PUSHDEF([attrib], m4_toupper(m4_format(%.4s, [$5]))[_]AS_TR_CPP($1))] dnl
-)dnl
-m4_ifval([$3], dnl
-  [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
-  [AS_VAR_PUSHDEF([rbcv],[rb_cv_]m4_format(%.4s, [$5])[_][$1])]dnl
-)dnl
-m4_pushdef([attrib_code],[m4_bpatsubst([$1],["],[\\"])])dnl
-m4_pushdef([attrib_params],[m4_bpatsubst([$2(x)],[^[^()]*(\([^()]*\)).*],[\1])])dnl
-m4_ifval([$4], [rbcv_cond=["$4"]; test "$rbcv_cond" || unset rbcv_cond])
-AC_CACHE_CHECK(for m4_ifval([$2],[m4_bpatsubst([$2], [(.*)], [])],[$1]) [$5] attribute, rbcv, dnl
-[rbcv=x
-RUBY_WERROR_FLAG([
-for mac in \
-    "__attribute__ ((attrib_code)) x" \
-    "x __attribute__ ((attrib_code))" \
-    "__declspec(attrib_code) x" \
-    x; do
-  m4_ifval([$4],mac="$mac"${rbcv_cond+" /* only if $rbcv_cond */"})
-  AC_TRY_COMPILE(
-    m4_ifval([$4],${rbcv_cond+[@%:@if ]$rbcv_cond})
-[@%:@define ]attrib[](attrib_params)[ $mac]
-m4_ifval([$4],${rbcv_cond+[@%:@else]}
-${rbcv_cond+[@%:@define ]attrib[](attrib_params)[ x]}
-${rbcv_cond+[@%:@endif]})
-$6
-@%:@define mesg ("")
-    attrib[](attrib_params)[;], [],
-    [rbcv="$mac"; break])
-done
-])])
-AS_IF([test "$rbcv" != x], [
-    RUBY_DEFINE_IF(m4_ifval([$4],[${rbcv_cond}]), attrib[](attrib_params)[], $rbcv)
-])
-m4_ifval([$4], [unset rbcv_cond]) dnl
-m4_popdef([attrib_params])dnl
-m4_popdef([attrib_code])dnl
-AS_VAR_POPDEF([attrib])dnl
-AS_VAR_POPDEF([rbcv])dnl
-])
-
-dnl RUBY_FUNC_ATTRIBUTE(attrib, macroname, cachevar, condition)
-AC_DEFUN([RUBY_FUNC_ATTRIBUTE], [dnl
-    RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
-	[function], [@%:@define x int conftest_attribute_check(void)]
-    )
-])
-
-dnl RUBY_TYPE_ATTRIBUTE(attrib, macroname, cachevar, condition)
-AC_DEFUN([RUBY_TYPE_ATTRIBUTE], [dnl
-    RUBY_DECL_ATTRIBUTE([$1], [$2], [$3], [$4],
-	[type], [
-@%:@define x struct conftest_attribute_check {int i;}
-])
-])
+m4_include([tool/m4/ruby_decl_attribute.m4])dnl
+m4_include([tool/m4/ruby_func_attribute.m4])dnl
+m4_include([tool/m4/ruby_type_attribute.m4])dnl
 
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
 RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
@@ -2094,45 +1577,7 @@ AS_IF([test "$rb_cv_large_fd_select" = yes], [
     AC_DEFINE(HAVE_RB_FD_INIT, 1)
 ])
 
-dnl RUBY_DEFINT TYPENAME, SIZE, [UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
-AC_DEFUN([RUBY_DEFINT], [dnl
-AS_VAR_PUSHDEF([cond], [rb_defint_cond])dnl
-AS_VAR_PUSHDEF([type], [rb_defint_type])dnl
-AC_CACHE_CHECK([for $1], [rb_cv_type_$1],
-[AC_COMPILE_IFELSE([AC_LANG_PROGRAM([AC_INCLUDES_DEFAULT([$4])
-typedef $1 t; int s = sizeof(t) == 42;])],
-   [rb_cv_type_$1=yes],
-   [AS_CASE([m4_bmatch([$2], [^[1-9][0-9]*$], $2, [$ac_cv_sizeof_]AS_TR_SH($2))],
-    ["1"], [ rb_cv_type_$1="m4_if([$3], [], [signed ], [$3 ])char"],
-    ["$ac_cv_sizeof_short"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])short"],
-    ["$ac_cv_sizeof_int"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])int"],
-    ["$ac_cv_sizeof_long"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])long"],
-    ["$ac_cv_sizeof_long_long"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])long long"],
-    ["${ac_cv_sizeof___int64@%:@*:}"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])__int64"],
-    ["${ac_cv_sizeof___int128@%:@*:}"], [ rb_cv_type_$1="m4_if([$3], [], [], [$3 ])__int128"],
-    [ rb_cv_type_$1=no])])])
-AS_IF([test "${rb_cv_type_$1}" != no], [
-    type="${rb_cv_type_$1@%:@@%:@unsigned }"
-    AS_IF([test "$type" != yes && eval 'test -n "${ac_cv_sizeof_'$type'+set}"'], [
-	eval cond='"${ac_cv_sizeof_'$type'}"'
-	AS_CASE([$cond], [*:*], [
-	    cond=AS_TR_CPP($type)
-	    echo "@%:@if defined SIZEOF_"$cond" && SIZEOF_"$cond" > 0" >> confdefs.h
-	], [cond=])
-    ], [cond=])
-    AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)
-    AS_IF([test "${rb_cv_type_$1}" = yes], [
-	m4_bmatch([$2], [^[1-9][0-9]*$], [AC_CHECK_SIZEOF([$1], 0, [AC_INCLUDES_DEFAULT([$4])])],
-			[RUBY_CHECK_SIZEOF([$1], [$2], [], [AC_INCLUDES_DEFAULT([$4])])])
-    ], [
-	AC_DEFINE_UNQUOTED($1, [$rb_cv_type_$1])
-	AC_DEFINE_UNQUOTED([SIZEOF_]AS_TR_CPP($1), [SIZEOF_]AS_TR_CPP([$type]))
-    ])
-    test -n "$cond" && echo "@%:@endif /* $cond */" >> confdefs.h
-])
-AS_VAR_POPDEF([cond])dnl
-AS_VAR_POPDEF([type])dnl
-])
+m4_include([tool/m4/ruby_defint.m4])dnl
 
 RUBY_DEFINT(int8_t, 1)
 RUBY_DEFINT(uint8_t, 1, unsigned)
@@ -2490,15 +1935,8 @@ AS_IF([test "$ac_cv_func_crypt_r:$ac_cv_header_crypt_h" = yes:yes],
     [AC_CHECK_MEMBERS([struct crypt_data.initialized], [], [],
 		      [AC_INCLUDES_DEFAULT([@%:@include <crypt.h>])])])
 
-AC_DEFUN([RUBY_CHECK_BUILTIN_FUNC], [dnl
-AC_CACHE_CHECK([for $1], AS_TR_SH(rb_cv_builtin_$1),
-  [AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([int foo;], [$2;])],
-    [AS_TR_SH(rb_cv_builtin_$1)=yes],
-    [AS_TR_SH(rb_cv_builtin_$1)=no])])
-AS_IF([test "${AS_TR_SH(rb_cv_builtin_$1)}" != no], [
-  AC_DEFINE(AS_TR_CPP(HAVE_BUILTIN_$1))
-])])
+m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
+
 RUBY_CHECK_BUILTIN_FUNC(__builtin_alloca_with_align, [__builtin_alloca_with_align(1, 4096)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((void*)32, 32)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
@@ -2607,101 +2045,9 @@ AS_IF([test "$rb_cv_unsetenv_return_value" = no], [
   AC_DEFINE(VOID_UNSETENV)
 ])
 
-# used for AC_ARG_WITH(setjmp-type)
-AC_DEFUN([RUBY_CHECK_SETJMP], [
-AC_CACHE_CHECK([for ]$1[ as a macro or function], ac_cv_func_$1,
-  [AC_TRY_COMPILE([
-@%:@include <setjmp.h>
-]AC_INCLUDES_DEFAULT([$3])[
-@%:@define JMPARGS_1 env
-@%:@define JMPARGS_2 env,1
-@%:@define JMPARGS JMPARGS_]m4_ifval($2,2,1)[
-],
-    m4_ifval($2,$2,jmp_buf)[ env; $1(JMPARGS);],
-    ac_cv_func_$1=yes,
-    ac_cv_func_$1=no)]
-)
-AS_IF([test "$ac_cv_func_]$1[" = yes], [AC_DEFINE([HAVE_]AS_TR_CPP($1), 1)])
-])
-
-AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
-AS_IF([test x"${ac_cv_func___builtin_setjmp}" = xyes], [
-   unset ac_cv_func___builtin_setjmp
-])
-AC_CACHE_CHECK(for __builtin_setjmp, ac_cv_func___builtin_setjmp,
-    [
-    ac_cv_func___builtin_setjmp=no
-    for cast in "" "(void **)"; do
-	RUBY_WERROR_FLAG(
-	[AC_TRY_LINK([@%:@include <setjmp.h>
-	    @%:@include <stdio.h>
-	    jmp_buf jb;
-	    @%:@ifdef NORETURN
-	    NORETURN(void t(void));
-	    @%:@endif
-	    void t(void) {__builtin_longjmp($cast jb, 1);}
-	    int jump(void) {(void)(__builtin_setjmp($cast jb) ? 1 : 0); return 0;}],
-	    [
-	    void (*volatile f)(void) = t;
-	    if (!jump()) printf("%d\n", f != 0);
-	    ],
-	    [ac_cv_func___builtin_setjmp="yes with cast ($cast)"])
-	])
-	test "$ac_cv_func___builtin_setjmp" = no || break
-    done])
-])
-
-AC_DEFUN([RUBY_SETJMP_TYPE], [
-RUBY_CHECK_BUILTIN_SETJMP
-RUBY_CHECK_SETJMP(_setjmpex, [], [@%:@include <setjmpex.h>])
-RUBY_CHECK_SETJMP(_setjmp)
-RUBY_CHECK_SETJMP(sigsetjmp, [sigjmp_buf])
-AC_MSG_CHECKING(for setjmp type)
-setjmp_suffix=
-unset setjmp_sigmask
-AC_ARG_WITH(setjmp-type,
-	AS_HELP_STRING([--with-setjmp-type], [select setjmp type]),
-	[
-	AS_CASE([$withval],
-	[__builtin_setjmp], [setjmp=__builtin_setjmp],
-	[_setjmp], [ setjmp_prefix=_],
-	[sigsetjmp,*], [ setjmp_prefix=sig setjmp_sigmask=`expr "$withval" : 'sigsetjmp\(,.*\)'`],
-	[sigsetjmp], [ setjmp_prefix=sig],
-	[setjmp], [ setjmp_prefix=],
-	[setjmpex], [ setjmp_prefix= setjmp_suffix=ex],
-	[''], [ unset setjmp_prefix],
-	[   AC_MSG_ERROR(invalid setjmp type: $withval)])], [unset setjmp_prefix])
-setjmp_cast=
-AS_IF([test ${setjmp_prefix+set}], [
-    AS_IF([test "${setjmp_prefix}" && eval test '$ac_cv_func_'${setjmp_prefix}setjmp${setjmp_suffix} = no], [
-	AC_MSG_ERROR(${setjmp_prefix}setjmp${setjmp_suffix} is not available)
-    ])
-], [{ AS_CASE("$ac_cv_func___builtin_setjmp", [yes*], [true], [false]) }], [
-    setjmp_cast=`expr "$ac_cv_func___builtin_setjmp" : "yes with cast (\(.*\))"`
-    setjmp_prefix=__builtin_
-    setjmp_suffix=
-], [test "$ac_cv_header_setjmpex_h:$ac_cv_func__setjmpex" = yes:yes], [
-    setjmp_prefix=
-    setjmp_suffix=ex
-], [test "$ac_cv_func__setjmp" = yes], [
-    setjmp_prefix=_
-    setjmp_suffix=
-], [test "$ac_cv_func_sigsetjmp" = yes], [
-    AS_CASE([$target_os],[solaris*|cygwin*],[setjmp_prefix=],[setjmp_prefix=sig])
-    setjmp_suffix=
-], [
-    setjmp_prefix=
-    setjmp_suffix=
-])
-AS_IF([test x$setjmp_prefix:$setjmp_sigmask = xsig:], [
-    setjmp_sigmask=,0
-])
-AC_MSG_RESULT(${setjmp_prefix}setjmp${setjmp_suffix}${setjmp_cast:+\($setjmp_cast\)}${setjmp_sigmask})
-AC_DEFINE_UNQUOTED([RUBY_SETJMP(env)], [${setjmp_prefix}setjmp${setjmp_suffix}($setjmp_cast(env)${setjmp_sigmask})])
-AC_DEFINE_UNQUOTED([RUBY_LONGJMP(env,val)], [${setjmp_prefix}longjmp($setjmp_cast(env),val)])
-AC_DEFINE_UNQUOTED(RUBY_JMP_BUF, ${setjmp_sigmask+${setjmp_prefix}}jmp_buf)
-AS_IF([test x$setjmp_suffix = xex], [AC_DEFINE_UNQUOTED(RUBY_USE_SETJMPEX, 1)])
-])
+m4_include([tool/m4/ruby_check_setjmp.m4])dnl
+m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
+m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 # End of setjmp check.
 
 AC_ARG_ENABLE(setreuid,
@@ -2902,50 +2248,12 @@ AS_IF([test x"$ac_cv_func_gettimeofday" != xyes], [
 ])
 
 AS_IF([test "$ac_cv_func_sysconf" = yes], [
-  AC_DEFUN([RUBY_CHECK_SYSCONF], [dnl
-  AC_CACHE_CHECK([whether _SC_$1 is supported], rb_cv_have_sc_[]m4_tolower($1),
-    [AC_TRY_COMPILE([#include <unistd.h>
-      ],
-      [_SC_$1 >= 0],
-      rb_cv_have_sc_[]m4_tolower($1)=yes,
-      rb_cv_have_sc_[]m4_tolower($1)=no)
-    ])
-  AS_IF([test "$rb_cv_have_sc_[]m4_tolower($1)" = yes], [
-    AC_DEFINE(HAVE__SC_$1)
-  ])
-  ])
+  m4_include([tool/m4/ruby_check_sysconf.m4])dnl
   RUBY_CHECK_SYSCONF(CLK_TCK)
 ])
 
-AC_DEFUN([RUBY_STACK_GROW_DIRECTION], [
-    AS_VAR_PUSHDEF([stack_grow_dir], [rb_cv_stack_grow_dir_$1])
-    AC_CACHE_CHECK(stack growing direction on $1, stack_grow_dir, [
-AS_CASE(["$1"],
-[m68*|x86*|x64|i?86|ia64|ppc*|sparc*|alpha*], [ $2=-1],
-[hppa*], [ $2=+1],
-[
-  AC_TRY_RUN([
-/* recurse to get rid of inlining */
-static int
-stack_growup_p(addr, n)
-    volatile int *addr, n;
-{
-    volatile int end;
-    if (n > 0)
-	return *addr = stack_growup_p(addr, n - 1);
-    else
-	return (&end > addr);
-}
-int main()
-{
-    int x;
-    return stack_growup_p(&x, 10);
-}
-], $2=-1, $2=+1, $2=0)
-  ])
-eval stack_grow_dir=\$$2])
-eval $2=\$stack_grow_dir
-AS_VAR_POPDEF([stack_grow_dir])])
+m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
+
 AS_IF([test "${universal_binary-no}" = yes ], [
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
     save_CFLAGS="$CFLAGS" new_cflags=`echo "$CFLAGS" | sed "s|$archflagpat"'||'`
