@@ -3908,7 +3908,7 @@ f_kw		: f_label arg_value
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), get_value!($2)) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), get_value!($2)) %*/
 		    }
 		| f_label
 		    {
@@ -3917,7 +3917,7 @@ f_kw		: f_label arg_value
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), 0) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), 0) %*/
 		    }
 		;
 
@@ -3927,7 +3927,7 @@ f_block_kw	: f_label primary_value
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), get_value!($2)) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), get_value!($2)) %*/
 		    }
 		| f_label
 		    {
@@ -3935,7 +3935,7 @@ f_block_kw	: f_label primary_value
 		    /*%%%*/
 			$$ = new_kw_arg(p, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), 0) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), 0) %*/
 		    }
 		;
 
@@ -4001,7 +4001,7 @@ f_opt		: f_arg_asgn '=' arg_value
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), get_value!($3)) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), get_value!($3)) %*/
 		    }
 		;
 
@@ -4012,7 +4012,7 @@ f_block_opt	: f_arg_asgn '=' primary_value
 		    /*%%%*/
 			$$ = NEW_OPT_ARG(0, $$, &@$);
 		    /*% %*/
-		    /*% ripper: _rb_assoc_new(get_value!("$$"), get_value!($3)) %*/
+		    /*% ripper: rb_assoc_new!(get_value!("$$"), get_value!($3)) %*/
 		    }
 		;
 
