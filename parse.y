@@ -382,7 +382,6 @@ static NODE *call_bin_op(struct parser_params*,NODE*,ID,NODE*,const YYLTYPE*,con
 static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYLTYPE*);
 static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
-static NODE *new_command(struct parser_params *p, NODE *m, NODE *a) {m->nd_args = a; return m;}
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {b->nd_iter = m; b->nd_loc = *loc; return b;}
 
 static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
@@ -484,7 +483,6 @@ static int id_is_var(struct parser_params *p, ID id);
 #define node_assign(p, node1, node2, loc) dispatch2(assign, (node1), (node2))
 static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc);
 static VALUE new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc);
-#define new_command(p, m,a) dispatch2(command, (m), (a));
 
 #define new_nil(loc) Qnil
 #define new_op_assign(p,lhs,op,rhs,loc) dispatch3(opassign, (lhs), (op), (rhs))
@@ -1353,20 +1351,22 @@ fcall		: operation
 
 command		: fcall command_args       %prec tLOWEST
 		    {
-			$$ = new_command(p, $1, $2);
 		    /*%%%*/
+			$1->nd_args = $2;
 			nd_set_last_loc($1, nd_last_loc($2));
 		    /*% %*/
+		    /*% ripper: command($1, $2) %*/
 		    }
 		| fcall command_args cmd_brace_block
 		    {
-			block_dup_check(p, $2, $3);
-			$$ = new_command(p, $1, $2);
-			$$ = method_add_block(p, $$, $3, &@$);
-			fixpos($$, $1);
 		    /*%%%*/
+			block_dup_check(p, $2, $3);
+			$1->nd_args = $2;
+			$$ = method_add_block(p, $1, $3, &@$);
+			fixpos($$, $1);
 			nd_set_last_loc($1, nd_last_loc($2));
 		    /*% %*/
+		    /*% ripper: method_add_block(command($1, $2), $3) %*/
 		    }
 		| primary_value call_op operation2 command_args	%prec tLOWEST
 		    {
