@@ -869,7 +869,8 @@ class TestIO < Test::Unit::TestCase
               s1.close
               IO.select([s2])
               Process.kill(:USR1, Process.ppid)
-              s2.read
+              buf = String.new(capacity: 16384)
+              nil while s2.read(16384, buf)
             end
             s2.close
             nr.times do
