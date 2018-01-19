@@ -1060,7 +1060,7 @@ loop_stop(VALUE dummy, VALUE exc)
 static VALUE
 rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
 {
-    return DBL2NUM(INFINITY);
+    return DBL2NUM(HUGE_VAL);
 }
 
 /*

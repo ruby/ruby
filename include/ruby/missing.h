@@ -155,6 +155,10 @@ RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define NAN (rb_nan.float_value)
 #endif
 
+#ifndef HUGE_VAL
+# define HUGE_VAL ((double)INFINITY)
+#endif
+
 #ifndef isinf
 # ifndef HAVE_ISINF
 #  if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
