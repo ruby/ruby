@@ -478,7 +478,7 @@ class Matrix
   #
   def collect!(which = :all)
     return to_enum(:collect!, which) unless block_given?
-    each_with_index(which){ |e, row_index, col_index| self[row_index, col_index] = yield e }
+    each_with_index(which){ |e, row_index, col_index| @rows[row_index][col_index] = yield e }
   end
 
   alias map! collect!
