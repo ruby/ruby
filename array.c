@@ -5064,8 +5064,6 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
     return Qnil;
 }
 
-#define tmpbuf(n, size) rb_str_tmp_new((n)*(size))
-#define tmpbuf_discard(s) (rb_str_resize((s), 0L), RBASIC_SET_CLASS_RAW(s, rb_cString))
 #define tmpary(n) rb_ary_tmp_new(n)
 #define tmpary_discard(a) (ary_discard(a), RBASIC_SET_CLASS_RAW(a, rb_cArray))
 
@@ -5568,9 +5566,9 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
 {
     int n = argc+1;    /* How many arrays we're operating on */
     volatile VALUE t0 = tmpary(n);
-    volatile VALUE t1 = tmpbuf(n, sizeof(int));
+    volatile VALUE t1 = Qundef;
     VALUE *arrays = RARRAY_PTR(t0); /* The arrays we're computing the product of */
-    int *counters = (int*)RSTRING_PTR(t1); /* The current position in each one */
+    int *counters = ALLOCV_N(int, t1, n); /* The current position in each one */
     VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     long i,j;
     long resultlen = 1;
@@ -5647,7 +5645,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     }
 done:
     tmpary_discard(t0);
-    tmpbuf_discard(t1);
+    ALLOCV_END(t1);
 
     return NIL_P(result) ? ary : result;
 }
