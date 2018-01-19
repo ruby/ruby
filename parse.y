@@ -412,8 +412,6 @@ static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE
 #define top_const_field(n,loc) NEW_COLON3(n,loc)
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
-#define var_field(p, n) (n)
-
 static NODE *opt_arg_append(NODE*, NODE*);
 static NODE *kwd_append(NODE*, NODE*);
 
@@ -471,7 +469,7 @@ static ID ripper_get_id(VALUE);
 #define get_id(id) ripper_get_id(id)
 static VALUE ripper_get_value(VALUE);
 #define get_value(val) ripper_get_value(val)
-static VALUE assignable(struct parser_params*,VALUE,VALUE,const YYLTYPE*);
+static VALUE assignable(struct parser_params*,VALUE);
 static int id_is_var(struct parser_params *p, ID id);
 
 #define method_cond(p,node,loc) (node)
@@ -705,12 +703,10 @@ static VALUE heredoc_dedent(struct parser_params*,VALUE);
 #ifndef RIPPER
 # define Qnone 0
 # define Qnull 0
-# define REQUIRED_KEYWORD NODE_SPECIAL_REQUIRED_KEYWORD
 # define ifndef_ripper(x) (x)
 #else
 # define Qnone Qnil
 # define Qnull Qundef
-# define REQUIRED_KEYWORD Qundef
 # define ifndef_ripper(x)
 #endif
 
@@ -1344,6 +1340,7 @@ fcall		: operation
 			$$ = NEW_FCALL($1, 0, &@$);
 			nd_set_line($$, p->tokline);
 		    /*% %*/
+		    /*% ripper: $1 %*/
 		    }
 		;
 
@@ -1558,11 +1555,17 @@ mlhs_post	: mlhs_item
 
 mlhs_node	: user_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1612,11 +1615,17 @@ mlhs_node	: user_variable
 
 lhs		: user_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -2733,9 +2742,10 @@ for_var		: lhs
 
 f_marg		: f_norm_arg
 		    {
-			$$ = assignable(p, $1, 0, &@$);
 		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
+		    /*% ripper: assignable("p", $1) %*/
 		    }
 		| tLPAREN f_margs rparen
 		    {
@@ -2771,19 +2781,17 @@ f_margs		: f_marg_list
 		    }
 		| f_marg_list ',' tSTAR f_norm_arg
 		    {
-			$$ = assignable(p, $4, 0, &@$);
 		    /*%%%*/
-			$$ = NEW_MASGN($1, $$, &@$);
+			$$ = NEW_MASGN($1, assignable(p, $4, 0, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!($1, "$$") %*/
+		    /*% ripper: mlhs_add_star!($1, assignable("p", $4)) %*/
 		    }
 		| f_marg_list ',' tSTAR f_norm_arg ',' f_marg_list
 		    {
-			$$ = assignable(p, $4, 0, &@$);
 		    /*%%%*/
-			$$ = NEW_MASGN($1, NEW_POSTARG($$, $6, &@$), &@$);
+			$$ = NEW_MASGN($1, NEW_POSTARG(assignable(p, $4, 0, &@$), $6, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, "$$"), $6) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, assignable("p", $4)), $6) %*/
 		    }
 		| f_marg_list ',' tSTAR
 		    {
@@ -2801,19 +2809,17 @@ f_margs		: f_marg_list
 		    }
 		| tSTAR f_norm_arg
 		    {
-			$$ = assignable(p, $2, 0, &@$);
 		    /*%%%*/
-			$$ = NEW_MASGN(0, $$, &@$);
+			$$ = NEW_MASGN(0, assignable(p, $2, 0, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!(mlhs_new!, "$$") %*/
+		    /*% ripper: mlhs_add_star!(mlhs_new!, assignable("p", $2)) %*/
 		    }
 		| tSTAR f_norm_arg ',' f_marg_list
 		    {
-			$$ = assignable(p, $2, 0, &@$);
 		    /*%%%*/
-			$$ = NEW_MASGN(0, NEW_POSTARG($$, $4, &@$), &@$);
+			$$ = NEW_MASGN(0, NEW_POSTARG(assignable(p, $2, 0, &@$), $4, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, "$$"), $4) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, assignable("p", $2)), $4) %*/
 		    }
 		| tSTAR
 		    {
@@ -3194,11 +3200,9 @@ opt_rescue	: keyword_rescue exc_list exc_var then
 		  opt_rescue
 		    {
 		    /*%%%*/
-			if ($3) {
-			    $3 = node_assign(p, $3, NEW_ERRINFO(&@3), &@3);
-			    $5 = block_append(p, $3, $5);
-			}
-			$$ = NEW_RESBODY($2, $5, $6, &@$);
+			$$ = NEW_RESBODY($2,
+					 $3 ? block_append(p, node_assign(p, $3, NEW_ERRINFO(&@3), &@3), $5) : $5,
+					 $6, &@$);
 			fixpos($$, $2?$2:$5);
 		    /*% %*/
 		    /*% ripper: rescue!(escape_Qundef($2), escape_Qundef($3), escape_Qundef($5), escape_Qundef($6)) %*/
@@ -3659,11 +3663,17 @@ var_ref		: user_variable
 
 var_lhs		: user_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		| keyword_variable
 		    {
-			$$ = assignable(p, var_field(p, $1), 0, &@$);
+		    /*%%%*/
+			$$ = assignable(p, $1, 0, &@$);
+		    /*% %*/
+		    /*% ripper[var_field_1]: assignable("p", $1) %*/
 		    }
 		;
 
@@ -3912,38 +3922,34 @@ f_label 	: tLABEL
 f_kw		: f_label arg_value
 		    {
 			p->cur_arg = 0;
-			$$ = assignable(p, $1, $2, &@$);
 		    /*%%%*/
-			$$ = new_kw_arg(p, $$, &@$);
+			$$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), get_value($2)) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), get_value($2)) %*/
 		    }
 		| f_label
 		    {
 			p->cur_arg = 0;
-			$$ = assignable(p, $1, REQUIRED_KEYWORD, &@$);
 		    /*%%%*/
-			$$ = new_kw_arg(p, $$, &@$);
+			$$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), 0) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), 0) %*/
 		    }
 		;
 
 f_block_kw	: f_label primary_value
 		    {
-			$$ = assignable(p, $1, $2, &@$);
 		    /*%%%*/
-			$$ = new_kw_arg(p, $$, &@$);
+			$$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), get_value($2)) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), get_value($2)) %*/
 		    }
 		| f_label
 		    {
-			$$ = assignable(p, $1, REQUIRED_KEYWORD, &@$);
 		    /*%%%*/
-			$$ = new_kw_arg(p, $$, &@$);
+			$$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), 0) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), 0) %*/
 		    }
 		;
 
@@ -4005,22 +4011,20 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 f_opt		: f_arg_asgn '=' arg_value
 		    {
 			p->cur_arg = 0;
-			$$ = assignable(p, $1, $3, &@$);
 		    /*%%%*/
-			$$ = NEW_OPT_ARG(0, $$, &@$);
+			$$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), get_value($3)) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), get_value($3)) %*/
 		    }
 		;
 
 f_block_opt	: f_arg_asgn '=' primary_value
 		    {
 			p->cur_arg = 0;
-			$$ = assignable(p, $1, $3, &@$);
 		    /*%%%*/
-			$$ = NEW_OPT_ARG(0, $$, &@$);
+			$$ = NEW_OPT_ARG(0, assignable(p, $1, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: rb_assoc_new(get_value("$$"), get_value($3)) %*/
+		    /*% ripper: rb_assoc_new(get_value(assignable("p", $1)), get_value($3)) %*/
 		    }
 		;
 
@@ -8893,7 +8897,7 @@ rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 
 #ifdef RIPPER
 static VALUE
-assignable(struct parser_params *p, VALUE lhs, VALUE val, const YYLTYPE *loc)
+assignable(struct parser_params *p, VALUE lhs)
 #else
 static NODE*
 assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
