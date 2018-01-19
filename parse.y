@@ -1726,7 +1726,7 @@ undef_list	: fitem
 		    /*%%%*/
 			$$ = NEW_UNDEF($1, &@$);
 		    /*% %*/
-		    /*% ripper: rb_ary_new3!(1, _get_value($1)) %*/
+		    /*% ripper: rb_ary_new3!(1, get_value!($1)) %*/
 		    }
 		| undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
@@ -1734,7 +1734,7 @@ undef_list	: fitem
 			NODE *undef = NEW_UNDEF($4, &@$);
 			$$ = block_append(p, $1, undef);
 		    /*% %*/
-		    /*% ripper: rb_ary_push!($1, _get_value($4)) %*/
+		    /*% ripper: rb_ary_push!($1, get_value!($4)) %*/
 		    }
 		;
 
@@ -2074,7 +2074,7 @@ call_args	: command
 		    /*%%%*/
 			$$ = arg_blk_pass($1, $2);
 		    /*% %*/
-		    /*% ripper: _arg_add_optblock($1, $2) %*/
+		    /*% ripper: arg_add_optblock!($1, $2) %*/
 		    }
 		| assocs opt_block_arg
 		    {
@@ -2082,7 +2082,7 @@ call_args	: command
 			$$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@1) : 0;
 			$$ = arg_blk_pass($$, $2);
 		    /*% %*/
-		    /*% ripper: _arg_add_optblock(args_add(args_new, bare_assoc_hash($1)), $2) %*/
+		    /*% ripper: arg_add_optblock!(args_add(args_new, bare_assoc_hash($1)), $2) %*/
 		    }
 		| args ',' assocs opt_block_arg
 		    {
@@ -2090,7 +2090,7 @@ call_args	: command
 			$$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
 			$$ = arg_blk_pass($$, $4);
 		    /*% %*/
-		    /*% ripper: _arg_add_optblock(args_add($1, bare_assoc_hash($3)), $4) %*/
+		    /*% ripper: arg_add_optblock!(args_add($1, bare_assoc_hash($3)), $4) %*/
 		    }
 		| block_arg
 		    /*% ripper[brace]: args_add_block(args_new, $1) %*/
@@ -2962,15 +2962,15 @@ opt_bv_decl	: opt_nl
 		;
 
 bv_decls	: bvar
-		    /*% ripper[brace]: rb_ary_new3!(1, _get_value($1)) %*/
+		    /*% ripper[brace]: rb_ary_new3!(1, get_value!($1)) %*/
 		| bv_decls ',' bvar
-		    /*% ripper[brace]: rb_ary_push!($1, _get_value($3)) %*/
+		    /*% ripper[brace]: rb_ary_push!($1, get_value!($3)) %*/
 		;
 
 bvar		: tIDENTIFIER
 		    {
 			new_bv(p, get_id($1));
-		    /*% ripper: _get_value($1) %*/
+		    /*% ripper: get_value!($1) %*/
 		    }
 		| f_bad_arg
 		    {
