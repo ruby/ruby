@@ -3029,12 +3029,13 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
 
     if (FIXNUM_P(kw_bits)) {
 	int b = FIX2INT(kw_bits);
-	return (b & (0x01 << idx)) ? Qfalse : Qtrue;
+	if (b & (0x01 << idx)) return Qfalse;
     }
     else {
 	VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
-	return rb_hash_has_key(kw_bits, INT2FIX(idx));
+	if (rb_hash_has_key(kw_bits, INT2FIX(idx))) return Qfalse;
     }
+    return Qtrue;
 }
 
 static void

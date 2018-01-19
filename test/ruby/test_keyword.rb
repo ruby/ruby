@@ -677,4 +677,54 @@ class TestKeywordArguments < Test::Unit::TestCase
       obj.t(42)
     end
   end
+
+  def many_kwargs(a0: '', a1: '', a2: '', a3: '', a4: '', a5: '', a6: '', a7: '',
+                  b0: '', b1: '', b2: '', b3: '', b4: '', b5: '', b6: '', b7: '',
+                  c0: '', c1: '', c2: '', c3: '', c4: '', c5: '', c6: '', c7: '',
+                  d0: '', d1: '', d2: '', d3: '', d4: '', d5: '', d6: '', d7: '')
+    [a0, a1, a2, a3, a4, a5, a6, a7,
+     b0, b1, b2, b3, b4, b5, b6, b7,
+     c0, c1, c2, c3, c4, c5, c6, c7,
+     d0, d1, d2, d3, d4, d5, d6, d7,
+    ]
+  end
+
+  def test_many_kwargs
+    i = 0
+    assert_equal(:ok, many_kwargs(a0: :ok)[i], "#{i}: a0"); i+=1
+    assert_equal(:ok, many_kwargs(a1: :ok)[i], "#{i}: a1"); i+=1
+    assert_equal(:ok, many_kwargs(a2: :ok)[i], "#{i}: a2"); i+=1
+    assert_equal(:ok, many_kwargs(a3: :ok)[i], "#{i}: a3"); i+=1
+    assert_equal(:ok, many_kwargs(a4: :ok)[i], "#{i}: a4"); i+=1
+    assert_equal(:ok, many_kwargs(a5: :ok)[i], "#{i}: a5"); i+=1
+    assert_equal(:ok, many_kwargs(a6: :ok)[i], "#{i}: a6"); i+=1
+    assert_equal(:ok, many_kwargs(a7: :ok)[i], "#{i}: a7"); i+=1
+
+    assert_equal(:ok, many_kwargs(b0: :ok)[i], "#{i}: b0"); i+=1
+    assert_equal(:ok, many_kwargs(b1: :ok)[i], "#{i}: b1"); i+=1
+    assert_equal(:ok, many_kwargs(b2: :ok)[i], "#{i}: b2"); i+=1
+    assert_equal(:ok, many_kwargs(b3: :ok)[i], "#{i}: b3"); i+=1
+    assert_equal(:ok, many_kwargs(b4: :ok)[i], "#{i}: b4"); i+=1
+    assert_equal(:ok, many_kwargs(b5: :ok)[i], "#{i}: b5"); i+=1
+    assert_equal(:ok, many_kwargs(b6: :ok)[i], "#{i}: b6"); i+=1
+    assert_equal(:ok, many_kwargs(b7: :ok)[i], "#{i}: b7"); i+=1
+
+    assert_equal(:ok, many_kwargs(c0: :ok)[i], "#{i}: c0"); i+=1
+    assert_equal(:ok, many_kwargs(c1: :ok)[i], "#{i}: c1"); i+=1
+    assert_equal(:ok, many_kwargs(c2: :ok)[i], "#{i}: c2"); i+=1
+    assert_equal(:ok, many_kwargs(c3: :ok)[i], "#{i}: c3"); i+=1
+    assert_equal(:ok, many_kwargs(c4: :ok)[i], "#{i}: c4"); i+=1
+    assert_equal(:ok, many_kwargs(c5: :ok)[i], "#{i}: c5"); i+=1
+    assert_equal(:ok, many_kwargs(c6: :ok)[i], "#{i}: c6"); i+=1
+    assert_equal(:ok, many_kwargs(c7: :ok)[i], "#{i}: c7"); i+=1
+
+    assert_equal(:ok, many_kwargs(d0: :ok)[i], "#{i}: d0"); i+=1
+    assert_equal(:ok, many_kwargs(d1: :ok)[i], "#{i}: d1"); i+=1
+    assert_equal(:ok, many_kwargs(d2: :ok)[i], "#{i}: d2"); i+=1
+    assert_equal(:ok, many_kwargs(d3: :ok)[i], "#{i}: d3"); i+=1
+    assert_equal(:ok, many_kwargs(d4: :ok)[i], "#{i}: d4"); i+=1
+    assert_equal(:ok, many_kwargs(d5: :ok)[i], "#{i}: d5"); i+=1
+    assert_equal(:ok, many_kwargs(d6: :ok)[i], "#{i}: d6"); i+=1
+    assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
+  end
 end
