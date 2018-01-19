@@ -2840,7 +2840,7 @@ struct succ_index_table {
 	uint64_t small_block_ranks; /* 9 bits * 7 = 63 bits */
 	uint64_t bits[512/64];
     } succ_part[FLEX_ARY_LEN];
-} succ_index_table;
+};
 
 #define imm_block_rank_set(v, i, r) (v) |= (uint64_t)(r) << (7 * (i))
 #define imm_block_rank_get(v, i) (((int)((v) >> ((i) * 7))) & 0x7f)
