@@ -211,7 +211,7 @@ module Net # :nodoc:
 
     def write(*strs)
       writing {
-        write0 *strs
+        write0(*strs)
       }
     end
 
