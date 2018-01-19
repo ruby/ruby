@@ -826,7 +826,9 @@ struct RZombie {
 
 #define nomem_error GET_VM()->special_exceptions[ruby_error_nomemory]
 
+#if RUBY_MARK_FREE_DEBUG
 int ruby_gc_debug_indent = 0;
+#endif
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
 
