@@ -8895,90 +8895,88 @@ rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
 }
 #endif /* !RIPPER */
 
-#ifdef RIPPER
-static VALUE
-assignable(struct parser_params *p, VALUE lhs)
-#else
-static NODE*
-assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
-#endif
+static int
+assignable0(struct parser_params *p, ID id, const char **err)
 {
-#ifdef RIPPER
-    ID id = get_id(lhs);
-# define assignable_result(x) (lhs)
-# define assignable_error() (lhs)
-# define parser_yyerror(p, loc, x) (lhs = assign_error(p, lhs))
-#else
-# define assignable_result(x) (x)
-# define assignable_error() NEW_BEGIN(0, loc)
-#endif
-    if (!id) return assignable_error();
+    if (!id) return -1;
     switch (id) {
       case keyword_self:
-	yyerror1(loc, "Can't change the value of self");
-	goto error;
+	*err = "Can't change the value of self";
+	return -1;
       case keyword_nil:
-	yyerror1(loc, "Can't assign to nil");
-	goto error;
+	*err = "Can't assign to nil";
+	return -1;
       case keyword_true:
-	yyerror1(loc, "Can't assign to true");
-	goto error;
+	*err = "Can't assign to true";
+	return -1;
       case keyword_false:
-	yyerror1(loc, "Can't assign to false");
-	goto error;
+	*err = "Can't assign to false";
+	return -1;
       case keyword__FILE__:
-	yyerror1(loc, "Can't assign to __FILE__");
-	goto error;
+	*err = "Can't assign to __FILE__";
+	return -1;
       case keyword__LINE__:
-	yyerror1(loc, "Can't assign to __LINE__");
-	goto error;
+	*err = "Can't assign to __LINE__";
+	return -1;
       case keyword__ENCODING__:
-	yyerror1(loc, "Can't assign to __ENCODING__");
-	goto error;
+	*err = "Can't assign to __ENCODING__";
+	return -1;
     }
     switch (id_type(id)) {
       case ID_LOCAL:
 	if (dyna_in_block(p)) {
-	    if (dvar_curr(p, id)) {
-		return assignable_result(NEW_DASGN_CURR(id, val, loc));
-	    }
-	    else if (dvar_defined(p, id)) {
-		return assignable_result(NEW_DASGN(id, val, loc));
-	    }
-	    else if (local_id(p, id)) {
-		return assignable_result(NEW_LASGN(id, val, loc));
-	    }
-	    else {
-		dyna_var(p, id);
-		return assignable_result(NEW_DASGN_CURR(id, val, loc));
-	    }
+	    if (dvar_curr(p, id)) return NODE_DASGN_CURR;
+	    if (dvar_defined(p, id)) return NODE_DASGN;
+	    if (local_id(p, id)) return NODE_LASGN;
+	    dyna_var(p, id);
+	    return NODE_DASGN_CURR;
 	}
 	else {
-	    if (!local_id(p, id)) {
-		local_var(p, id);
-	    }
-	    return assignable_result(NEW_LASGN(id, val, loc));
+	    if (!local_id(p, id)) local_var(p, id);
+	    return NODE_LASGN;
 	}
 	break;
-      case ID_GLOBAL:
-	return assignable_result(NEW_GASGN(id, val, loc));
-      case ID_INSTANCE:
-	return assignable_result(NEW_IASGN(id, val, loc));
+      case ID_GLOBAL: return NODE_GASGN;
+      case ID_INSTANCE: return NODE_IASGN;
       case ID_CONST:
-	if (!p->in_def)
-	    return assignable_result(NEW_CDECL(id, val, 0, loc));
-	yyerror1(loc, "dynamic constant assignment");
-	break;
-      case ID_CLASS:
-	return assignable_result(NEW_CVASGN(id, val, loc));
+	if (!p->in_def) return NODE_CDECL;
+	*err = "dynamic constant assignment";
+	return -1;
+      case ID_CLASS: return NODE_CVASGN;
       default:
 	compile_error(p, "identifier %"PRIsVALUE" is not valid to set", rb_id2str(id));
     }
-  error:
-    return assignable_error();
-#undef assignable_result
-#undef parser_yyerror
+    return -1;
 }
+
+#ifndef RIPPER
+static NODE*
+assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
+{
+    const char *err = 0;
+    int node_type = assignable0(p, id, &err);
+    switch (node_type) {
+      case NODE_DASGN_CURR: return NEW_DASGN_CURR(id, val, loc);
+      case NODE_DASGN: return NEW_DASGN(id, val, loc);
+      case NODE_LASGN: return NEW_LASGN(id, val, loc);
+      case NODE_GASGN: return NEW_GASGN(id, val, loc);
+      case NODE_IASGN: return NEW_IASGN(id, val, loc);
+      case NODE_CDECL: return NEW_CDECL(id, val, 0, loc);
+      case NODE_CVASGN: return NEW_CVASGN(id, val, loc);
+    }
+    if (err) yyerror1(loc, err);
+    return NEW_BEGIN(0, loc);
+}
+#else
+static VALUE
+assignable(struct parser_params *p, VALUE lhs)
+{
+    const char *err = 0;
+    assignable0(p, get_id(lhs), &err);
+    if (err) lhs = assign_error(p, lhs);
+    return lhs;
+}
+#endif
 
 static int
 is_private_local_id(ID name)
