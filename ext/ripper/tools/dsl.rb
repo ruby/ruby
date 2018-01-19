@@ -35,8 +35,8 @@ class DSL
   end
 
   def method_missing(*args)
-    if args.first =~ /\A_/
-      "#{ $' }(#{ args.drop(1).join(", ") })"
+    if args.first =~ /!\z/
+      "#{ $` }(#{ args.drop(1).join(", ") })"
     else
       @events[args.first.to_s] = args.size - 1
       "dispatch#{ args.size - 1 }(#{ args.join(", ") })"
