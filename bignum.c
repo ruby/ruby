@@ -6130,7 +6130,7 @@ big_fdiv(VALUE x, VALUE y, long ey)
 #if SIZEOF_LONG > SIZEOF_INT
     {
 	/* Visual C++ can't be here */
-	if (l > INT_MAX) return INFINITY;
+	if (l > INT_MAX) return HUGE_VAL;
 	if (l < INT_MIN) return 0.0;
     }
 #endif

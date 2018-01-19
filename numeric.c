@@ -1795,7 +1795,7 @@ flo_next_float(VALUE vx)
 {
     double x, y;
     x = NUM2DBL(vx);
-    y = nextafter(x, INFINITY);
+    y = nextafter(x, HUGE_VAL);
     return DBL2NUM(y);
 }
 
@@ -1846,7 +1846,7 @@ flo_prev_float(VALUE vx)
 {
     double x, y;
     x = NUM2DBL(vx);
-    y = nextafter(x, -INFINITY);
+    y = nextafter(x, -HUGE_VAL);
     return DBL2NUM(y);
 }
 
@@ -2451,7 +2451,7 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
 	return unit > 0 ? beg <= end : beg >= end;
     }
     if (unit == 0) {
-	return INFINITY;
+	return HUGE_VAL;
     }
     if (err>0.5) err=0.5;
     if (excl) {
@@ -2507,7 +2507,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 
 	diff = FIX2LONG(step);
 	if (diff == 0) {
-	    return DBL2NUM(INFINITY);
+	    return DBL2NUM(HUGE_VAL);
 	}
 	delta = FIX2LONG(to) - FIX2LONG(from);
 	if (diff < 0) {
@@ -2533,7 +2533,7 @@ ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl)
 	VALUE result;
 	ID cmp = '>';
 	switch (rb_cmpint(rb_num_coerce_cmp(step, INT2FIX(0), id_cmp), step, INT2FIX(0))) {
-	  case 0: return DBL2NUM(INFINITY);
+	  case 0: return DBL2NUM(HUGE_VAL);
 	  case -1: cmp = '<'; break;
 	}
 	if (RTEST(rb_funcall(from, cmp, 1, to))) return INT2FIX(0);
@@ -2604,7 +2604,7 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
     }
     desc = num_step_negative_p(*step);
     if (NIL_P(*to)) {
-	*to = desc ? DBL2NUM(-INFINITY) : DBL2NUM(INFINITY);
+	*to = desc ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     return desc;
 }
@@ -3650,7 +3650,13 @@ rb_int_fdiv_double(VALUE x, VALUE y)
     else if (RB_TYPE_P(x, T_BIGNUM)) {
         return rb_big_fdiv_double(x, y);
     }
-    return NAN;
+    else {
+#ifdef HAVE_NANF
+        return nan("");
+#else
+        return (double)NAN;
+#endif
+    }
 }
 
 /*
@@ -3967,7 +3973,7 @@ fix_pow(VALUE x, VALUE y)
 	if (b == 1) return x;
 	if (a == 0) {
 	    if (b > 0) return INT2FIX(0);
-	    return DBL2NUM(INFINITY);
+	    return DBL2NUM(HUGE_VAL);
 	}
 	return int_pow(a, b);
     }
@@ -3987,7 +3993,7 @@ fix_pow(VALUE x, VALUE y)
 	double dy = RFLOAT_VALUE(y);
 	if (dy == 0.0) return DBL2NUM(1.0);
 	if (a == 0) {
-	    return DBL2NUM(dy < 0 ? INFINITY : 0.0);
+	    return DBL2NUM(dy < 0 ? HUGE_VAL : 0.0);
 	}
 	if (a == 1) return DBL2NUM(1.0);
 	{
@@ -5555,11 +5561,17 @@ Init_Numeric(void)
     /*
      *	An expression representing positive infinity.
      */
-    rb_define_const(rb_cFloat, "INFINITY", DBL2NUM(INFINITY));
+    rb_define_const(rb_cFloat, "INFINITY", DBL2NUM(HUGE_VAL));
     /*
      *	An expression representing a value which is "not a number".
      */
-    rb_define_const(rb_cFloat, "NAN", DBL2NUM(NAN));
+    rb_define_const(rb_cFloat, "NAN",
+#ifdef HAVE_NANF
+		    DBL2NUM(nan(""))
+#else
+		    DBL2NUM((double)NAN)
+#endif
+	);
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_alias(rb_cFloat, "inspect", "to_s");

@@ -5012,7 +5012,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 	n = RARRAY_AREF(args, 0);
     }
     if (RARRAY_LEN(self) == 0) return INT2FIX(0);
-    if (n == Qnil) return DBL2NUM(INFINITY);
+    if (n == Qnil) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
     n = LONG2FIX(mul);

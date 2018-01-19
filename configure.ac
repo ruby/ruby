@@ -805,7 +805,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 ])
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
-for n in infinity nan; do
+for n in huge_val infinity nan; do
     m=AS_TR_CPP($n)
     AC_CACHE_CHECK([whether $m is available without C99 option], rb_cv_$n,
 	[AC_COMPILE_IFELSE(
@@ -2393,6 +2393,7 @@ AC_CHECK_FUNCS(memmem)
 AC_CHECK_FUNCS(mkfifo)
 AC_CHECK_FUNCS(mknod)
 AC_CHECK_FUNCS(mktime)
+AC_CHECK_FUNCS(nanf) # We need nan(), but HAVE_NAN conflicts...
 AC_CHECK_FUNCS(openat)
 AC_CHECK_FUNCS(pipe2)
 AC_CHECK_FUNCS(poll)

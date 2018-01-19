@@ -1678,13 +1678,18 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    const char *ptr = RSTRING_PTR(str);
 
 	    if (strcmp(ptr, "nan") == 0) {
-		d = NAN;
+		d =
+#ifdef HAVE_NANF
+		    nan("");
+#else
+		    (double)NAN;
+#endif
 	    }
 	    else if (strcmp(ptr, "inf") == 0) {
-		d = INFINITY;
+		d = HUGE_VAL;
 	    }
 	    else if (strcmp(ptr, "-inf") == 0) {
-		d = -INFINITY;
+		d = -HUGE_VAL;
 	    }
 	    else {
 		char *e;

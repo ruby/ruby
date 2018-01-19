@@ -1072,7 +1072,12 @@ nurat_expt(VALUE self, VALUE other)
 		den = ONE;
 	    }
 	    if (RB_FLOAT_TYPE_P(num)) { /* infinity due to overflow */
-		if (RB_FLOAT_TYPE_P(den)) return DBL2NUM(NAN);
+		if (RB_FLOAT_TYPE_P(den))
+#ifdef HAVE_NANF
+		    return DBL2NUM(nan(""));
+#else
+		    return DBL2NUM((double)NAN);
+#endif
 		return num;
 	    }
 	    if (RB_FLOAT_TYPE_P(den)) { /* infinity due to overflow */
