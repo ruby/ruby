@@ -2384,12 +2384,12 @@ static VALUE
 rb_file_chmod(VALUE obj, VALUE vmode)
 {
     rb_io_t *fptr;
-    int mode;
+    mode_t mode;
 #if !defined HAVE_FCHMOD || !HAVE_FCHMOD
     VALUE path;
 #endif
 
-    mode = NUM2INT(vmode);
+    mode = NUM2MODET(vmode);
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD

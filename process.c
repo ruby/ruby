@@ -2348,7 +2348,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             VALUE param = RARRAY_AREF(elt, 1);
             VALUE vpath = RARRAY_AREF(param, 0);
             int flags = NUM2INT(RARRAY_AREF(param, 1));
-            int perm = NUM2INT(RARRAY_AREF(param, 2));
+            mode_t perm = NUM2MODET(RARRAY_AREF(param, 2));
             VALUE fd2v = RARRAY_AREF(param, 3);
             int fd2;
             if (NIL_P(fd2v)) {
