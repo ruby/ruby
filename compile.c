@@ -4113,7 +4113,7 @@ static int
 defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
 	      const NODE *const node, LABEL **lfinish, VALUE needstr)
 {
-    enum defined_type expr_type = 0;
+    enum defined_type expr_type = DEFINED_NOT_DEFINED;
     enum node_type type;
 
     switch (type = nd_type(node)) {

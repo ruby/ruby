@@ -2809,7 +2809,7 @@ check_respond_to_missing(VALUE obj, VALUE v)
 	return DEFINED_METHOD;
     }
     else {
-	return 0;
+	return DEFINED_NOT_DEFINED;
     }
 }
 
@@ -2817,7 +2817,7 @@ static VALUE
 vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_type, VALUE obj, VALUE needstr, VALUE v)
 {
     VALUE klass;
-    enum defined_type expr_type = 0;
+    enum defined_type expr_type = DEFINED_NOT_DEFINED;
     enum defined_type type = (enum defined_type)op_type;
 
     switch (type) {
