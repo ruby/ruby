@@ -1354,6 +1354,7 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			$1->nd_args = $2;
 			nd_set_last_loc($1, nd_last_loc($2));
+			$$ = $1;
 		    /*% %*/
 		    /*% ripper: command($1, $2) %*/
 		    }
