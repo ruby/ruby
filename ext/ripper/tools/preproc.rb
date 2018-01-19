@@ -81,10 +81,6 @@ def grammar(f, out)
       out << DSL.new($2, ($1 || "").split(",")).generate << $/
     when %r</\*%%%\*/>
       out << '#if 0' << $/
-    when %r</\*%c%\*/>
-      out << '/*' << $/
-    when %r</\*%c>
-      out << '*/' << $/
     when %r</\*%>
       out << '#endif' << $/
     when %r<%\*/>
