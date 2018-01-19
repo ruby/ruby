@@ -3053,7 +3053,7 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 			$$ = new_args(p, $1, Qnone, 1, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
 		    /*%%%*/
 		    /*%
-                        dispatch1(excessed_comma, $$);
+                        $$ = dispatch1(excessed_comma, $$);
 		    %*/
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
