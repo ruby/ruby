@@ -3029,7 +3029,8 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
 
     if (FIXNUM_P(kw_bits)) {
 	int b = FIX2INT(kw_bits);
-	if (b & (0x01 << idx)) return Qfalse;
+	if ((idx < KW_SPECIFIED_BITS_MAX) && (b & (0x01 << idx)))
+	    return Qfalse;
     }
     else {
 	VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
