@@ -30,12 +30,31 @@ describe "File.umask" do
     end
   end
 
-  it "always succeeds with any integer values" do
-    vals = [-2**30, -2**16, -2**8, -2,
-      -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8, 2**16, 2**30]
-    vals.each { |v|
-      lambda { File.umask(v) }.should_not raise_error
-    }
+  platform_is_not :freebsd, :darwin do
+    it "always succeeds with any integer values" do
+      vals = [-2**30, -2**16, -2**8, -2,
+              -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8, 2**16, 2**30]
+      vals.each { |v|
+        lambda { File.umask(v) }.should_not raise_error
+      }
+    end
+  end
+
+  platform_is :freebsd, :darwin do
+    it "always succeeds with any integer values" do
+      vals = [-2**8, -2,
+              -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8]
+      vals.each { |v|
+        lambda { File.umask(v) }.should_not raise_error
+      }
+    end
+
+    it "fails with invalid values" do
+      vals = [-2**30, -2**16, 2**16, 2**30]
+      vals.each { |v|
+        lambda { File.chmod(v, @file) }.should raise_error(RangeError)
+      }
+    end
   end
 
   it "raises ArgumentError when more than one argument is provided" do
