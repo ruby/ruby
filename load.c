@@ -715,8 +715,6 @@ rb_f_load(int argc, VALUE *argv)
     return Qtrue;
 }
 
-extern VALUE rb_mWarning;
-
 static char *
 load_lock(const char *ftptr)
 {
@@ -741,7 +739,7 @@ load_lock(const char *ftptr)
     if (RTEST(ruby_verbose)) {
 	VALUE warning = rb_warning_string("loading in progress, circular require considered harmful - %s", ftptr);
 	rb_backtrace_each(rb_str_append, warning);
-	rb_warning_warn(rb_mWarning, warning);
+	rb_warning("%"PRIsVALUE, warning);
     }
     switch (rb_thread_shield_wait((VALUE)data)) {
       case Qfalse:
