@@ -1472,14 +1472,14 @@ mlhs_basic	: mlhs_head
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!($1, "Qnil") %*/
+		    /*% ripper: mlhs_add_star!($1, Qnil) %*/
 		    }
 		| mlhs_head tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $4, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, "Qnil"), $4) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, Qnil), $4) %*/
 		    }
 		| tSTAR mlhs_node
 		    {
@@ -1500,14 +1500,14 @@ mlhs_basic	: mlhs_head
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!(mlhs_new!, "Qnil") %*/
+		    /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
 		    }
 		| tSTAR ',' mlhs_post
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, "Qnil"), $3) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $3) %*/
 		    }
 		;
 
@@ -2429,7 +2429,7 @@ primary		: literal
 		    /*%%%*/
 			$$ = NEW_CASE2($3, &@$);
 		    /*% %*/
-		    /*% ripper: case!("Qnil", $3) %*/
+		    /*% ripper: case!(Qnil, $3) %*/
 		    }
 		| k_for for_var keyword_in expr_value_do
 		  compstmt
@@ -2798,14 +2798,14 @@ f_margs		: f_marg_list
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NODE_SPECIAL_NO_NAME_REST, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!($1, "Qnil") %*/
+		    /*% ripper: mlhs_add_star!($1, Qnil) %*/
 		    }
 		| f_marg_list ',' tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $5, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, "Qnil"), $5) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!($1, Qnil), $5) %*/
 		    }
 		| tSTAR f_norm_arg
 		    {
@@ -2826,14 +2826,14 @@ f_margs		: f_marg_list
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NODE_SPECIAL_NO_NAME_REST, &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_star!(mlhs_new!, "Qnil") %*/
+		    /*% ripper: mlhs_add_star!(mlhs_new!, Qnil) %*/
 		    }
 		| tSTAR ',' f_marg_list
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN(0, NEW_POSTARG(NODE_SPECIAL_NO_NAME_REST, $3, &@$), &@$);
 		    /*% %*/
-		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, "Qnil"), $3) %*/
+		    /*% ripper: mlhs_add_post!(mlhs_add_star!(mlhs_new!, Qnil), $3) %*/
 		    }
 		;
 
@@ -2942,14 +2942,14 @@ block_param_def	: '|' opt_bv_decl '|'
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: block_var!("params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil)", escape_Qundef($2)) %*/
+		    /*% ripper: block_var!(params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), escape_Qundef($2)) %*/
 		    }
 		| tOROP
 		    {
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: block_var!("params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil)", "Qnil") %*/
+		    /*% ripper: block_var!(params_new(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), Qnil) %*/
 		    }
 		| '|' block_param opt_bv_decl '|'
 		    {
@@ -3695,7 +3695,7 @@ superclass	: '<'
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: "Qnil" %*/
+		    /*% ripper: Qnil %*/
 		    }
 		;
 
@@ -4004,7 +4004,7 @@ f_kwrest	: kwrest_mark tIDENTIFIER
 			$$ = internal_id(p);
 			arg_var(p, $$);
 		    /*% %*/
-		    /*% ripper: kwrest_param!("Qnil") %*/
+		    /*% ripper: kwrest_param!(Qnil) %*/
 		    }
 		;
 
@@ -4078,7 +4078,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			$$ = internal_id(p);
 			arg_var(p, $$);
 		    /*% %*/
-		    /*% ripper: rest_param!("Qnil") %*/
+		    /*% ripper: rest_param!(Qnil) %*/
 		    }
 		;
 
@@ -4105,7 +4105,7 @@ opt_f_block_arg	: ',' f_block_arg
 		    /*%%%*/
 			$$ = 0;
 		    /*% %*/
-		    /*% ripper: "Qundef" %*/
+		    /*% ripper: Qundef %*/
 		    }
 		;
 
