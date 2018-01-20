@@ -31,11 +31,11 @@ class DSL
   def generate
     s = "$$"
     s = "p->result" if @final
-    s = "\t\t\t#{ s } = #@code;"
+    s = "#{ s } = #@code;"
     s << "ripper_error(p);" if @error
     s = "{#{ s }}" if @brace
     s = "$1 = var_field(p, $1);" + s if @var_field_1
-    s
+    "\t\t\t#{s}"
   end
 
   def method_missing(event, *args)
