@@ -19,6 +19,9 @@ class DSL
     end
     /#{ re }/ =~ s
 
+    # struct parser_params *p
+    p = "p"
+
     @code = eval(code)
   end
 
