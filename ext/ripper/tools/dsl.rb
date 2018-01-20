@@ -9,7 +9,6 @@ class DSL
     @error = options.include?("error")
     @brace = options.include?("brace")
     @final = options.include?("final")
-    @var_field_1 = options.include?("var_field_1")
 
     # create $1 == "$1", $2 == "$2", ...
     re, s = "", ""
@@ -37,7 +36,6 @@ class DSL
     s = "#{ s } = #@code;"
     s << "ripper_error(p);" if @error
     s = "{#{ s }}" if @brace
-    s = "$1 = var_field(p, $1);" + s if @var_field_1
     "\t\t\t#{s}"
   end
 

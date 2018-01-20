@@ -1260,7 +1260,7 @@ command_asgn	: lhs '=' command_rhs
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1,error]: assign_error!(assign!($1, $3)) %*/
+		    /*% ripper[error]: assign_error!(assign!(var_field(p, $1), $3)) %*/
 		    }
 		;
 
@@ -1559,14 +1559,14 @@ mlhs_node	: user_variable
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		| keyword_variable
 		    {
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1610,7 +1610,7 @@ mlhs_node	: user_variable
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1,error]: assign_error!($1) %*/
+		    /*% ripper[error]: assign_error!(var_field(p, $1)) %*/
 		    }
 		;
 
@@ -1619,14 +1619,14 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		| keyword_variable
 		    {
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket
 		    {
@@ -1670,7 +1670,7 @@ lhs		: user_variable
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1,error]: assign_error!($1) %*/
+		    /*% ripper[error]: assign_error!(var_field(p, $1)) %*/
 		    }
 		;
 
@@ -1849,7 +1849,7 @@ arg		: lhs '=' arg_rhs
 			rb_backref_error(p, $1);
 			$$ = NEW_BEGIN(0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1,error]: assign_error!(opassign!($1, $2, $3)) %*/
+		    /*% ripper[error]: assign_error!(opassign!(var_field(p, $1), $2, $3)) %*/
 		    }
 		| arg tDOT2 arg
 		    {
@@ -3675,14 +3675,14 @@ var_lhs		: user_variable
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		| keyword_variable
 		    {
 		    /*%%%*/
 			$$ = assignable(p, $1, 0, &@$);
 		    /*% %*/
-		    /*% ripper[var_field_1]: assignable(p, $1) %*/
+		    /*% ripper: assignable(p, var_field(p, $1)) %*/
 		    }
 		;
 
