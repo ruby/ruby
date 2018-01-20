@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_RM_RECURSIVE], [
 m4_version_prereq([2.70], [-1], [
 # suppress error messages, rm: cannot remove 'conftest.dSYM', from

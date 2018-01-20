@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_DTRACE_AVAILABLE],
 [AC_CACHE_CHECK(whether dtrace USDT is available, rb_cv_dtrace_available,
 [

@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_PREPEND_OPTIONS],
 	[# RUBY_PREPEND_OPTIONS($1)
 	unset rb_opts; for rb_opt in $2; do

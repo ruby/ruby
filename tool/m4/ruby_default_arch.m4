@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_DEFAULT_ARCH], [
 AC_MSG_CHECKING([arch option])
 AS_CASE([$1],

@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_CHECK_BUILTIN_SETJMP], [
 AS_IF([test x"${ac_cv_func___builtin_setjmp}" = xyes], [
    unset ac_cv_func___builtin_setjmp
