@@ -481,9 +481,6 @@ static VALUE const_decl(struct parser_params *p, VALUE path);
 static VALUE var_field(struct parser_params *p, VALUE a);
 static VALUE assign_error(struct parser_params *p, VALUE a);
 
-#undef nd_set_line
-#define nd_set_line(n,l) ((void)(n))
-
 static VALUE parser_reg_compile(struct parser_params*, VALUE, int, VALUE *);
 
 #endif /* !RIPPER */
