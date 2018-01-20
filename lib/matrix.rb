@@ -317,6 +317,7 @@ class Matrix
   #
   # Set element or elements of matrix.
   def []=(i, j, v)
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
     if i.is_a?(Range) && j.is_a?(Range)
       raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
       if v.is_a?(Matrix)
@@ -478,6 +479,7 @@ class Matrix
   #
   def collect!(which = :all)
     return to_enum(:collect!, which) unless block_given?
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
     each_with_index(which){ |e, row_index, col_index| @rows[row_index][col_index] = yield e }
   end
 
