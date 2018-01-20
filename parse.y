@@ -1646,7 +1646,7 @@ lhs		: user_variable
 		    /*%%%*/
 			$$ = attrset(p, $1, idCOLON2, $3, &@$);
 		    /*% %*/
-		    /*% ripper: field!($1, "ID2VAL(idCOLON2)", $3) %*/
+		    /*% ripper: field!($1, ID2VAL(idCOLON2), $3) %*/
 		    }
 		| primary_value call_op tCONSTANT
 		    {
@@ -3613,7 +3613,7 @@ numeric 	: simple_numeric
 			$$ = $2;
 			add_mark_object(p, $$->nd_lit = negate_lit(p, $$->nd_lit));
 		    /*% %*/
-		    /*% ripper: unary!("ID2VAL(idUMinus)", $2) %*/
+		    /*% ripper: unary!(ID2VAL(idUMinus), $2) %*/
 		    }
 		;
 

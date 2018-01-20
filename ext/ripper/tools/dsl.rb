@@ -43,6 +43,8 @@ class DSL
       event = $`
       @events[event] = args.size
       "dispatch#{ args.size }(#{ [event, *args].join(", ") })"
+    elsif args.empty? and /\Aid[A-Z]/ =~ event.to_s
+      event
     else
       "#{ event }(#{ args.join(", ") })"
     end
