@@ -866,8 +866,9 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
-%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop
+%type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %token END_OF_INPUT 0	"end-of-input"
+%token <id> '.'
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
 %token tUMINUS		RUBY_TOKEN(UMINUS) "unary-"
 %token tPOW		RUBY_TOKEN(POW)    "**"
@@ -887,8 +888,8 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %token tASET		RUBY_TOKEN(ASET)   "[]="
 %token tLSHFT		RUBY_TOKEN(LSHFT)  "<<"
 %token tRSHFT		RUBY_TOKEN(RSHFT)  ">>"
-%token tANDDOT		RUBY_TOKEN(ANDDOT) "&."
-%token tCOLON2		RUBY_TOKEN(COLON2) "::"
+%token <id> tANDDOT	RUBY_TOKEN(ANDDOT) "&."
+%token <id> tCOLON2	RUBY_TOKEN(COLON2) "::"
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		"=>"
@@ -2589,7 +2590,7 @@ primary		: literal
 			nd_set_line($$->nd_defn, @9.end_pos.lineno);
 			set_line_body(body, @1.beg_pos.lineno);
 		    /*% %*/
-		    /*% ripper: defs!($2, "$<val>3", $5, $7, $8) %*/
+		    /*% ripper: defs!($2, $3, $5, $7, $8) %*/
 			local_pop(p);
 			p->in_def = $<num>4 & 1;
 			p->cur_arg = $<id>6;
@@ -4241,20 +4242,11 @@ dot_or_colon	: '.'
 		;
 
 call_op 	: '.'
-		    {
-			$$ = TOKEN2VAL('.');
-		    }
 		| tANDDOT
-		    {
-			$$ = ID2VAL(idANDDOT);
-		    }
 		;
 
 call_op2	: call_op
 		| tCOLON2
-		    {
-			$$ = ID2VAL(idCOLON2);
-		    }
 		;
 
 opt_terms	: /* none */
@@ -7743,6 +7735,7 @@ parser_yylex(struct parser_params *p)
 	    return tOP_ASGN;
 	}
 	else if (c == '.') {
+	    set_yylval_id(idANDDOT);
 	    SET_LEX_STATE(EXPR_DOT);
 	    return tANDDOT;
 	}
@@ -7856,6 +7849,7 @@ parser_yylex(struct parser_params *p)
 	if (c != -1 && ISDIGIT(c)) {
 	    yyerror0("no .<digit> floating literal anymore; put 0 before dot");
 	}
+	set_yylval_id('.');
 	SET_LEX_STATE(EXPR_DOT);
 	return '.';
 
@@ -7892,6 +7886,7 @@ parser_yylex(struct parser_params *p)
 		SET_LEX_STATE(EXPR_BEG);
 		return tCOLON3;
 	    }
+	    set_yylval_id(idCOLON2);
 	    SET_LEX_STATE(EXPR_DOT);
 	    return tCOLON2;
 	}
