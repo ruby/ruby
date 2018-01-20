@@ -408,8 +408,6 @@ static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, I
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc);
 static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
 
-#define const_path_field(w, n, loc) NEW_COLON2(w, n, loc)
-#define top_const_field(n,loc) NEW_COLON3(n,loc)
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
 static NODE *opt_arg_append(NODE*, NODE*);
@@ -495,9 +493,7 @@ static VALUE new_xstring(struct parser_params *, VALUE, const YYLTYPE *);
 #define new_brace_body(param, stmt, loc) dispatch2(brace_block, escape_Qundef(param), stmt)
 #define new_do_body(param, stmt, loc) dispatch2(do_block, escape_Qundef(param), stmt)
 
-#define const_path_field(w, n, loc) dispatch2(const_path_field, (w), (n))
-#define top_const_field(n,loc) dispatch1(top_const_field, (n))
-static VALUE const_decl(struct parser_params *p, VALUE path, const YYLTYPE *loc);
+static VALUE const_decl(struct parser_params *p, VALUE path);
 
 static VALUE var_field(struct parser_params *p, VALUE a);
 static VALUE assign_error(struct parser_params *p, VALUE a);
@@ -1245,9 +1241,9 @@ command_asgn	: lhs '=' command_rhs
 		    {
 		    /*%%%*/
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
+			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $5, &@$);
 		    /*% %*/
-			$$ = const_path_field($1, $3, &loc);
-			$$ = new_const_op_assign(p, $$, $4, $5, &@$);
+		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $5) %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
@@ -1598,11 +1594,17 @@ mlhs_node	: user_variable
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {
-			$$ = const_decl(p, const_path_field($1, $3, &@$), &@$);
+		    /*%%%*/
+			$$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
+		    /*% %*/
+		    /*% ripper: const_decl(p, const_path_field!($1, $3)) %*/
 		    }
 		| tCOLON3 tCONSTANT
 		    {
-			$$ = const_decl(p, top_const_field($2, &@$), &@$);
+		    /*%%%*/
+			$$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
+		    /*% %*/
+		    /*% ripper: const_decl(p, top_const_field!($2)) %*/
 		    }
 		| backref
 		    {
@@ -1658,11 +1660,17 @@ lhs		: user_variable
 		    }
 		| primary_value tCOLON2 tCONSTANT
 		    {
-			$$ = const_decl(p, const_path_field($1, $3, &@$), &@$);
+		    /*%%%*/
+			$$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
+		    /*% %*/
+		    /*% ripper: const_decl(p, const_path_field!($1, $3)) %*/
 		    }
 		| tCOLON3 tCONSTANT
 		    {
-			$$ = const_decl(p, top_const_field($2, &@$), &@$);
+		    /*%%%*/
+			$$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
+		    /*% %*/
+		    /*% ripper: const_decl(p, top_const_field!($2)) %*/
 		    }
 		| backref
 		    {
@@ -1834,14 +1842,16 @@ arg		: lhs '=' arg_rhs
 		    {
 		    /*%%%*/
 			YYLTYPE loc = code_loc_gen(&@1, &@3);
+			$$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $5, &@$);
 		    /*% %*/
-			$$ = const_path_field($1, $3, &loc);
-			$$ = new_const_op_assign(p, $$, $4, $5, &@$);
+		    /*% ripper: opassign!(const_path_field!($1, $3), $4, $5) %*/
 		    }
 		| tCOLON3 tCONSTANT tOP_ASGN arg_rhs
 		    {
-			$$ = top_const_field($2, &@$);
-			$$ = new_const_op_assign(p, $$, $3, $4, &@$);
+		    /*%%%*/
+			$$ = new_const_op_assign(p, NEW_COLON3($2, &@$), $3, $4, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(top_const_field!($2), $3, $4) %*/
 		    }
 		| backref tOP_ASGN arg_rhs
 		    {
@@ -10045,7 +10055,7 @@ new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, V
 }
 
 static VALUE
-const_decl(struct parser_params *p, VALUE path, const YYLTYPE *loc)
+const_decl(struct parser_params *p, VALUE path)
 {
     if (p->in_def) {
 	path = dispatch1(assign_error, path);
