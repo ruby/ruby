@@ -475,11 +475,6 @@ static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE
 static VALUE new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 
 #define new_nil(loc) Qnil
-#define new_op_assign(p,lhs,op,rhs,loc) dispatch3(opassign, (lhs), (op), (rhs))
-
-static VALUE new_ary_op_assign(struct parser_params *p, VALUE ary, VALUE args, VALUE op, VALUE rhs, const YYLTYPE *args_loc, const YYLTYPE *loc);
-static VALUE new_attr_op_assign(struct parser_params *p, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs, const YYLTYPE *loc);
-#define new_const_op_assign(p, lhs, op, rhs, loc) new_op_assign(p, lhs, op, rhs, loc)
 
 static VALUE new_regexp(struct parser_params *, VALUE, VALUE, const YYLTYPE *);
 
@@ -1209,23 +1204,36 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| var_lhs tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			value_expr($3);
 			$$ = new_op_assign(p, $1, $2, $3, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!($1, $2, $3) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
+
 		    }
 		| primary_value call_op tIDENTIFIER tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
 		    }
 		| primary_value call_op tCONSTANT tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN command_rhs
 		    {
@@ -1237,8 +1245,11 @@ command_asgn	: lhs '=' command_rhs
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
 		    }
 		| backref tOP_ASGN command_rhs
 		    {
@@ -1806,27 +1817,42 @@ arg		: lhs '=' arg_rhs
 		    }
 		| var_lhs tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			$$ = new_op_assign(p, $1, $2, $3, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!($1, $2, $3) %*/
 		    }
 		| primary_value '[' opt_call_args rbracket tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			value_expr($6);
 			$$ = new_ary_op_assign(p, $1, $3, $5, $6, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(aref_field!($1, escape_Qundef($3)), $5, $6) %*/
 		    }
 		| primary_value call_op tIDENTIFIER tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
 		    }
 		| primary_value call_op tCONSTANT tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, $2, $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, $2, $3), $4, $5) %*/
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg_rhs
 		    {
+		    /*%%%*/
 			value_expr($5);
 			$$ = new_attr_op_assign(p, $1, ID2VAL(idCOLON2), $3, $4, $5, &@$);
+		    /*% %*/
+		    /*% ripper: opassign!(field!($1, ID2VAL(idCOLON2), $3), $4, $5) %*/
 		    }
 		| primary_value tCOLON2 tCONSTANT tOP_ASGN arg_rhs
 		    {
@@ -10018,21 +10044,6 @@ const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
     return NEW_CDECL(0, 0, (path), loc);
 }
 #else
-static VALUE
-new_ary_op_assign(struct parser_params *p, VALUE ary,
-		  VALUE args, VALUE op, VALUE rhs, const YYLTYPE *args_loc, const YYLTYPE *loc)
-{
-    VALUE recv = dispatch2(aref_field, ary, escape_Qundef(args));
-    return dispatch3(opassign, recv, op, rhs);
-}
-
-static VALUE
-new_attr_op_assign(struct parser_params *p, VALUE lhs, VALUE type, VALUE attr, VALUE op, VALUE rhs, const YYLTYPE *loc)
-{
-    VALUE recv = dispatch3(field, lhs, type, attr);
-    return dispatch3(opassign, recv, op, rhs);
-}
-
 static VALUE
 new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc)
 {
