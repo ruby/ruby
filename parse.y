@@ -422,7 +422,6 @@ static NODE *new_regexp(struct parser_params *, NODE *, int, const YYLTYPE *);
 #define make_array(ary, loc) ((ary) ? (nd_set_loc(ary, loc), ary) : NEW_ZARRAY(loc))
 
 static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
-#define new_string1(str) (str)
 
 static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol);
 
@@ -483,9 +482,6 @@ static VALUE new_attr_op_assign(struct parser_params *p, VALUE lhs, VALUE type, 
 #define new_const_op_assign(p, lhs, op, rhs, loc) new_op_assign(p, lhs, op, rhs, loc)
 
 static VALUE new_regexp(struct parser_params *, VALUE, VALUE, const YYLTYPE *);
-
-static VALUE new_xstring(struct parser_params *, VALUE, const YYLTYPE *);
-#define new_string1(str) dispatch1(string_literal, str)
 
 static VALUE const_decl(struct parser_params *p, VALUE path);
 
@@ -3303,16 +3299,20 @@ string		: tCHAR
 
 string1		: tSTRING_BEG string_contents tSTRING_END
 		    {
-			$$ = new_string1(heredoc_dedent(p, $2));
 		    /*%%%*/
+			$$ = heredoc_dedent(p, $2);
 			if ($$) nd_set_loc($$, &@$);
 		    /*% %*/
+		    /*% ripper: string_literal!(heredoc_dedent(p, $2)) %*/
 		    }
 		;
 
 xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 		    {
+		    /*%%%*/
 			$$ = new_xstring(p, heredoc_dedent(p, $2), &@$);
+		    /*% %*/
+		    /*% ripper: xstring_literal!(heredoc_dedent(p, $2)) %*/
 		    }
 		;
 
@@ -8756,12 +8756,6 @@ new_regexp(struct parser_params *p, VALUE re, VALUE opt, const YYLTYPE *loc)
 	compile_error(p, "%"PRIsVALUE, err);
     }
     return dispatch2(regexp_literal, re, opt);
-}
-
-static VALUE
-new_xstring(struct parser_params *p, VALUE str, const YYLTYPE *loc)
-{
-    return dispatch1(xstring_literal, str);
 }
 #endif /* !RIPPER */
 
