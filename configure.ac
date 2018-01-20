@@ -2,6 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_INIT()
 {
 AC_CONFIG_AUX_DIR(tool)
+AC_CONFIG_MACRO_DIRS(tool/m4)
 
 AC_PREREQ(2.67)
 
@@ -10,8 +11,6 @@ AC_DISABLE_OPTION_CHECKING
 AC_ARG_VAR([cflags], [additional CFLAGS])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
-
-m4_include([tool/m4/ruby_rm_recursive.m4])dnl
 
 { # environment section
 
@@ -49,10 +48,6 @@ AC_ARG_WITH(git,
 AS_IF([test x"$HAVE_GIT" = xyes], [command -v "$GIT" > /dev/null || HAVE_GIT=no])
 AC_SUBST(GIT)
 AC_SUBST(HAVE_GIT)
-
-m4_include([tool/m4/ruby_mingw32.m4])dnl
-m4_include([tool/m4/ruby_cppoutfile.m4])dnl
-m4_include([tool/m4/ruby_prog_gnu_ld.m4])dnl
 
 eval `sed -n ['s/^@%:@define RUBY_API_VERSION_\([A-Z][A-Z_0-9]*\) \([0-9][0-9]*\)/API_\1=\2/p'] $srcdir/include/ruby/version.h`
 RUBY_PROGRAM_VERSION=`sed -n 's/^@%:@define RUBY_VERSION "\(.*\)"/\1/p' $srcdir/version.h`
@@ -138,11 +133,6 @@ AS_IF([test -z "$target_alias" -a -n "$os_version_style_transform"],
 	target_os=`echo ${target_os} | sed "$os_version_style_transform"`
 	])
 
-m4_include([tool/m4/ruby_append_option.m4])dnl
-m4_include([tool/m4/ruby_append_options.m4])dnl
-m4_include([tool/m4/ruby_prepend_option.m4])dnl
-m4_include([tool/m4/ruby_prepend_options.m4])dnl
-
 AC_ARG_WITH(arch,
 	AS_HELP_STRING([--with-arch=ARCHS],
 		       [build an Apple/NeXT Multi Architecture Binary (MAB);
@@ -151,9 +141,6 @@ AC_ARG_WITH(arch,
 			  entirely, then the package will be built only for the
 			  target platform]),
        [target_archs="$withval"], [unset target_archs])
-
-m4_include([tool/m4/ruby_default_arch.m4])dnl
-m4_include([tool/m4/ruby_universal_arch.m4])dnl
 
 AC_ARG_ENABLE(load-relative,
        AS_HELP_STRING([--enable-load-relative], [resolve load paths at run time]),
@@ -362,9 +349,6 @@ AS_IF([test "x$MKDIR_P" = "x -d"], [
 MAKEDIRS="$MKDIR_P"
 AC_SUBST(MAKEDIRS)
 
-m4_include([tool/m4/ruby_dtrace_available.m4])dnl
-m4_include([tool/m4/ruby_dtrace_postprocess.m4])dnl
-
 AC_CHECK_PROG([DTRACE], [${ac_tool_prefix}dtrace], [${ac_tool_prefix}dtrace])
 AS_IF([test "$cross_compiling:$ac_cv_prog_DTRACE" = no: -a -n "$ac_tool_prefix"], [
     AC_CHECK_PROG([DTRACE], [dtrace], [dtrace])
@@ -413,8 +397,6 @@ AC_SUBST(CHDIR)
 }
 { # compiler section
 
-m4_include([tool/m4/ruby_werror_flag.m4])dnl
-
 RUBY_WERROR_FLAG([
     AC_MSG_CHECKING([whether CFLAGS is valid])
     AC_TRY_COMPILE([], [],
@@ -442,9 +424,6 @@ RUBY_WERROR_FLAG([
     )
     cd .. && rm -fr tmp.$$.try_link
 ])
-
-m4_include([tool/m4/ruby_try_cflags.m4])dnl
-m4_include([tool/m4/ruby_try_ldflags.m4])dnl
 
 : ${DLDFLAGS="$LDFLAGS"}
 : ${RPATHFLAG=''}
@@ -1140,8 +1119,6 @@ AC_CACHE_CHECK([char bit], [rb_cv_char_bit],
 	[AC_INCLUDES_DEFAULT([@%:@include <limits.h>])], [rb_cv_char_bit=8])
     test "$universal_binary" = yes && cross_compiling=$real_cross_compiling])
 
-m4_include([tool/m4/ruby_check_sizeof.m4])dnl
-
 RUBY_CHECK_SIZEOF(int, [], [ILP])
 RUBY_CHECK_SIZEOF(short)
 RUBY_CHECK_SIZEOF(long, [int], [ILP LP])
@@ -1172,16 +1149,11 @@ AS_IF([test "$rb_cv_packed_struct" != no], [
     AC_DEFINE_UNQUOTED([PACKED_STRUCT(x)], x)
 ])
 
-m4_include([tool/m4/ruby_check_printf_prefix.m4])dnl
-
 AS_IF([test "x$ac_cv_type_long_long" = xyes], [
     RUBY_CHECK_PRINTF_PREFIX(long long, ll I64, LL)
 ], [test "x$ac_cv_type___int64" = xyes], [
     RUBY_CHECK_PRINTF_PREFIX(__int64, ll I64, LL)
 ])
-
-m4_include([tool/m4/ruby_check_signedness.m4])dnl
-m4_include([tool/m4/ruby_replace_type.m4])dnl
 
 RUBY_REPLACE_TYPE(pid_t, int, PIDT)
 RUBY_REPLACE_TYPE(uid_t, int, UIDT)
@@ -1284,8 +1256,6 @@ AS_IF([test "$rb_cv_va_args_macro" = yes], [
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
 ])
 
-m4_include([tool/m4/ruby_define_if.m4])dnl
-
 AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
 rb_cv_have_alignas=no
 RUBY_WERROR_FLAG([
@@ -1327,10 +1297,6 @@ done
 AS_IF([test "$rb_cv_have_alignof" != no], [
     AC_DEFINE_UNQUOTED(RUBY_ALIGNOF, $rb_cv_have_alignof)
 ])
-
-m4_include([tool/m4/ruby_decl_attribute.m4])dnl
-m4_include([tool/m4/ruby_func_attribute.m4])dnl
-m4_include([tool/m4/ruby_type_attribute.m4])dnl
 
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
 RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
@@ -1576,8 +1542,6 @@ AC_CACHE_VAL([rb_cv_large_fd_select],
 AS_IF([test "$rb_cv_large_fd_select" = yes], [
     AC_DEFINE(HAVE_RB_FD_INIT, 1)
 ])
-
-m4_include([tool/m4/ruby_defint.m4])dnl
 
 RUBY_DEFINT(int8_t, 1)
 RUBY_DEFINT(uint8_t, 1, unsigned)
@@ -1935,8 +1899,6 @@ AS_IF([test "$ac_cv_func_crypt_r:$ac_cv_header_crypt_h" = yes:yes],
     [AC_CHECK_MEMBERS([struct crypt_data.initialized], [], [],
 		      [AC_INCLUDES_DEFAULT([@%:@include <crypt.h>])])])
 
-m4_include([tool/m4/ruby_check_builtin_func.m4])dnl
-
 RUBY_CHECK_BUILTIN_FUNC(__builtin_alloca_with_align, [__builtin_alloca_with_align(1, 4096)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((void*)32, 32)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
@@ -2045,9 +2007,6 @@ AS_IF([test "$rb_cv_unsetenv_return_value" = no], [
   AC_DEFINE(VOID_UNSETENV)
 ])
 
-m4_include([tool/m4/ruby_check_setjmp.m4])dnl
-m4_include([tool/m4/ruby_check_builtin_setjmp.m4])dnl
-m4_include([tool/m4/ruby_setjmp_type.m4])dnl
 # End of setjmp check.
 
 AC_ARG_ENABLE(setreuid,
@@ -2248,11 +2207,8 @@ AS_IF([test x"$ac_cv_func_gettimeofday" != xyes], [
 ])
 
 AS_IF([test "$ac_cv_func_sysconf" = yes], [
-  m4_include([tool/m4/ruby_check_sysconf.m4])dnl
   RUBY_CHECK_SYSCONF(CLK_TCK)
 ])
-
-m4_include([tool/m4/ruby_stack_grow_direction.m4])dnl
 
 AS_IF([test "${universal_binary-no}" = yes ], [
     archflagpat=`eval echo '"'"${ARCH_FLAG}"'"' | sed 's/[[][|.*]]/\\&/g'`
