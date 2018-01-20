@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 dnl RUBY_DEFINT TYPENAME, SIZE, [UNSIGNED], [INCLUDES = DEFAULT-INCLUDES]
 AC_DEFUN([RUBY_DEFINT], [dnl
 AS_VAR_PUSHDEF([cond], [rb_defint_cond])dnl

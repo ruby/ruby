@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([COLORIZE_RESULT], [AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
     AS_LITERAL_IF([$1],
 	[m4_case([$1],

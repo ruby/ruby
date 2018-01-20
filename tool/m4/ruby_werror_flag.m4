@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([RUBY_WERROR_FLAG], [dnl
 save_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $rb_cv_warnflags"

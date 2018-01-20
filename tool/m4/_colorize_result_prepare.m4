@@ -1,3 +1,4 @@
+# -*- Autoconf -*-
 AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     msg_checking= msg_result_yes= msg_result_no= msg_result_other= msg_reset=
     AS_IF([test "x${CONFIGURE_TTY}" = xyes -o -t 1], [
