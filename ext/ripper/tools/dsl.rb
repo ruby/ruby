@@ -47,5 +47,9 @@ class DSL
       "#{ event }(#{ args.join(", ") })"
     end
   end
+
+  def self.const_missing(name)
+    name
+  end
 end
 
