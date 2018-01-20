@@ -3651,11 +3651,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
         return rb_big_fdiv_double(x, y);
     }
     else {
-#ifdef HAVE_NANF
         return nan("");
-#else
-        return (double)NAN;
-#endif
     }
 }
 
@@ -5565,13 +5561,7 @@ Init_Numeric(void)
     /*
      *	An expression representing a value which is "not a number".
      */
-    rb_define_const(rb_cFloat, "NAN",
-#ifdef HAVE_NANF
-		    DBL2NUM(nan(""))
-#else
-		    DBL2NUM((double)NAN)
-#endif
-	);
+    rb_define_const(rb_cFloat, "NAN", DBL2NUM(nan("")));
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_alias(rb_cFloat, "inspect", "to_s");
