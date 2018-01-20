@@ -4758,7 +4758,7 @@ yycompile0(VALUE arg)
 	RUBY_DTRACE_PARSE_##name(p->ruby_sourcefile, p->ruby_sourceline); \
     }
     RUBY_DTRACE_PARSE_HOOK(BEGIN);
-    n = yyparse((void*)p);
+    n = yyparse(p);
     RUBY_DTRACE_PARSE_HOOK(END);
     p->debug_lines = 0;
     p->coverage = 0;
@@ -4766,7 +4766,7 @@ yycompile0(VALUE arg)
     p->lex.strterm = 0;
     p->lex.pcur = p->lex.pbeg = p->lex.pend = 0;
     p->lex.prevline = p->lex.lastline = p->lex.nextline = 0;
-    if (p->error_p) {
+    if (n || p->error_p) {
 	VALUE mesg = p->error_buffer;
 	if (!mesg) {
 	    mesg = rb_class_new_instance(0, 0, rb_eSyntaxError);
