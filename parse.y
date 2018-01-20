@@ -2888,8 +2888,16 @@ block_param	: f_arg ',' f_block_optarg ',' f_rest_arg opt_block_args_tail
 		    }
 		| f_arg ','
 		    {
-			$$ = new_args(p, $1, Qnone, 1, Qnone, new_args_tail(p, Qnone, Qnone, Qnone, &@1), &@$);
-		    /*% ripper: excessed_comma!("$$") %*/
+#ifndef RIPPER
+			/* magic number for rest_id in iseq_set_arguments() */
+			const ID excessed_comma = 1;
+#else
+			const VALUE excessed_comma =
+			    /*% ripper: excessed_comma! %*/
+			    ;
+#endif
+			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@1);
+			$$ = new_args(p, $1, Qnone, excessed_comma, Qnone, $$, &@$);
 		    }
 		| f_arg ',' f_rest_arg ',' f_arg opt_block_args_tail
 		    {
