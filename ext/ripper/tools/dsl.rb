@@ -55,7 +55,7 @@ class DSL
   end
 
   def add_event(event, args, qundef_check = false)
-    event = event.to_s.delete_suffix("!")
+    event = event.to_s.sub(/!\z/, "")
     @events[event] = args.size
     vars = []
     args.each do |arg|
