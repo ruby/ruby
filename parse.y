@@ -483,8 +483,6 @@ static VALUE const_decl(struct parser_params *p, VALUE path);
 static VALUE var_field(struct parser_params *p, VALUE a);
 static VALUE assign_error(struct parser_params *p, VALUE a);
 
-#define block_dup_check(p, n1,n2) ((void)(n1), (void)(n2))
-#define fixpos(n1,n2) ((void)(n1), (void)(n2))
 #undef nd_set_line
 #define nd_set_line(n,l) ((void)(n))
 
@@ -639,11 +637,6 @@ static void ripper_error(struct parser_params *p);
 #define KWD2EID(t, v) ripper_new_yylval(p, keyword_##t, get_value(v), 0)
 
 #define arg_add_optblock(l,b) ((b)==Qundef? (l) : dispatch2(args_add_block, (l), (b)))
-
-#define args2mrhs(a) dispatch1(mrhs_new_from_args, (a))
-#define mrhs_new() dispatch0(mrhs_new)
-#define mrhs_add(l,a) dispatch2(mrhs_add, (l), (a))
-#define mrhs_add_star(l,a) dispatch2(mrhs_add_star, (l), (a))
 
 #define params_new(pars, opts, rest, pars2, kws, kwrest, blk) \
         dispatch7(params, (pars), (opts), (rest), (pars2), (kws), (kwrest), (blk))
