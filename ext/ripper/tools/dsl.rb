@@ -50,18 +50,28 @@ class DSL
     "v#{ @vars += 1 }"
   end
 
+  def opt_event(event, default, addend)
+    add_event(event, [default, addend], true)
+  end
+
+  def add_event(event, args, qundef_check = false)
+    event = event.to_s.delete_suffix("!")
+    @events[event] = args.size
+    vars = []
+    args.each do |arg|
+      vars << v = new_var
+      @code << "#{ v }=#{ arg };"
+    end
+    v = new_var
+    d = "dispatch#{ args.size }(#{ [event, *vars].join(",") })"
+    d = "#{ vars.last }==Qundef ? #{ vars.first } : #{ d }" if qundef_check
+    @code << "#{ v }=#{ d };"
+    v
+  end
+
   def method_missing(event, *args)
     if event.to_s =~ /!\z/
-      event = $`
-      @events[event] = args.size
-      vars = []
-      args.each do |arg|
-        vars << v = new_var
-        @code << "#{ v }=#{ arg };"
-      end
-      v = new_var
-      @code << "#{ v }=dispatch#{ args.size }(#{ [event, *vars].join(",") });"
-      v
+      add_event(event, args)
     elsif args.empty? and /\Aid[A-Z]/ =~ event.to_s
       event
     else

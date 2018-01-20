@@ -471,8 +471,6 @@ static int id_is_var(struct parser_params *p, ID id);
 #define match_op(p,node1,node2,op_loc,loc) call_bin_op(0, (node1), idEqTilde, (node2), op_loc, loc)
 #define call_uni_op(p, recv,id,op_loc,loc) dispatch2(unary, STATIC_ID2SYM(id), (recv))
 #define logop(p,id,node1,node2,op_loc,loc) call_bin_op(0, (node1), (id), (node2), op_loc, loc)
-static VALUE new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc);
-static VALUE new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 
 #define new_nil(loc) Qnil
 
@@ -636,13 +634,8 @@ static void ripper_error(struct parser_params *p);
 #define TOKEN2VAL(t) ID2VAL(TOKEN2ID(t))
 #define KWD2EID(t, v) ripper_new_yylval(p, keyword_##t, get_value(v), 0)
 
-#define arg_add_optblock(l,b) ((b)==Qundef? (l) : dispatch2(args_add_block, (l), (b)))
-
 #define params_new(pars, opts, rest, pars2, kws, kwrest, blk) \
         dispatch7(params, (pars), (opts), (rest), (pars2), (kws), (kwrest), (blk))
-
-#define method_optarg(m,a) ((a)==Qundef ? (m) : dispatch2(method_add_arg,(m),(a)))
-#define method_add_block(p,m,b,loc) dispatch2(method_add_block, (m), (b))
 
 #define escape_Qundef(x) ((x)==Qundef ? Qnil : (x))
 
@@ -1311,7 +1304,10 @@ command_call	: command
 block_command	: block_call
 		| block_call call_op2 operation2 command_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, $3), $4) %*/
 		    }
 		;
 
@@ -1357,19 +1353,31 @@ command		: fcall command_args       %prec tLOWEST
 		    }
 		| primary_value call_op operation2 command_args	%prec tLOWEST
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, $2, $1, $3, $4, Qnull, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: command_call!($1, $2, $3, $4) %*/
 		    }
 		| primary_value call_op operation2 command_args cmd_brace_block
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
-		   }
+		    /*% %*/
+		    /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
+		    }
 		| primary_value tCOLON2 operation2 command_args	%prec tLOWEST
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, Qnull, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: command_call!($1, ID2VAL(idCOLON2), $3, $4) %*/
 		    }
 		| primary_value tCOLON2 operation2 command_args cmd_brace_block
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, $5, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: method_add_block!(command_call!($1, ID2VAL(idCOLON2), $3, $4), $5) %*/
 		   }
 		| keyword_super command_args
 		    {
@@ -2114,7 +2122,7 @@ call_args	: command
 		    /*%%%*/
 			$$ = arg_blk_pass($1, $2);
 		    /*% %*/
-		    /*% ripper: arg_add_optblock($1, $2) %*/
+		    /*% ripper: args_add_block!($1, $2) %*/
 		    }
 		| assocs opt_block_arg
 		    {
@@ -2122,7 +2130,7 @@ call_args	: command
 			$$ = $1 ? NEW_LIST(new_hash(p, $1, &@1), &@1) : 0;
 			$$ = arg_blk_pass($$, $2);
 		    /*% %*/
-		    /*% ripper: arg_add_optblock(args_add!(args_new!, bare_assoc_hash!($1)), $2) %*/
+		    /*% ripper: args_add_block!(args_add!(args_new!, bare_assoc_hash!($1)), $2) %*/
 		    }
 		| args ',' assocs opt_block_arg
 		    {
@@ -2130,7 +2138,7 @@ call_args	: command
 			$$ = $3 ? arg_append(p, $1, new_hash(p, $3, &@3), &@$) : $1;
 			$$ = arg_blk_pass($$, $4);
 		    /*% %*/
-		    /*% ripper: arg_add_optblock(args_add!($1, bare_assoc_hash!($3)), $4) %*/
+		    /*% ripper: args_add_block!(args_add!($1, bare_assoc_hash!($3)), $4) %*/
 		    }
 		| block_arg
 		    /*% ripper[brace]: args_add_block!(args_new!, $1) %*/
@@ -3093,15 +3101,24 @@ block_call	: command do_block
 		    }
 		| block_call call_op2 operation2 opt_paren_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: opt_event(:method_add_arg!, call!($1, $2, $3), $4) %*/
 		    }
 		| block_call call_op2 operation2 opt_paren_args brace_block
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: opt_event(:method_add_block!, command_call!($1, $2, $3, $4), $5) %*/
 		    }
 		| block_call call_op2 operation2 command_args do_block
 		    {
+		    /*%%%*/
 			$$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: method_add_block!(command_call!($1, $2, $3, $4), $5) %*/
 		    }
 		;
 
@@ -3116,27 +3133,42 @@ method_call	: fcall paren_args
 		    }
 		| primary_value call_op operation2 opt_paren_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
 			nd_set_line($$, @3.end_pos.lineno);
+		    /*% %*/
+		    /*% ripper: opt_event(:method_add_arg!, call!($1, $2, $3), $4) %*/
 		    }
 		| primary_value tCOLON2 operation2 paren_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, $4, &@3, &@$);
 			nd_set_line($$, @3.end_pos.lineno);
+		    /*% %*/
+		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), $3), $4) %*/
 		    }
 		| primary_value tCOLON2 operation3
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, $3, Qnull, &@3, &@$);
+		    /*% %*/
+		    /*% ripper: call!($1, ID2VAL(idCOLON2), $3) %*/
 		    }
 		| primary_value call_op paren_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, $2, $1, ID2VAL(idCall), $3, &@2, &@$);
 			nd_set_line($$, @2.end_pos.lineno);
+		    /*% %*/
+		    /*% ripper: method_add_arg!(call!($1, $2, ID2VAL(idCall)), $3) %*/
 		    }
 		| primary_value tCOLON2 paren_args
 		    {
+		    /*%%%*/
 			$$ = new_qcall(p, ID2VAL(idCOLON2), $1, ID2VAL(idCall), $3, &@2, &@$);
 			nd_set_line($$, @2.end_pos.lineno);
+		    /*% %*/
+		    /*% ripper: method_add_arg!(call!($1, ID2VAL(idCOLON2), ID2VAL(idCall)), $3) %*/
 		    }
 		| keyword_super paren_args
 		    {
@@ -10033,21 +10065,6 @@ const_decl(struct parser_params *p, NODE *path, const YYLTYPE *loc)
     return NEW_CDECL(0, 0, (path), loc);
 }
 #else
-static VALUE
-new_qcall(struct parser_params *p, VALUE q, VALUE r, VALUE m, VALUE a, YYLTYPE *op_loc, const YYLTYPE *loc)
-{
-    VALUE ret = dispatch3(call, (r), (q), (m));
-    return method_optarg(ret, (a));
-}
-
-static VALUE
-new_command_qcall(struct parser_params* p, VALUE atype, VALUE recv, VALUE mid, VALUE args, VALUE block, const YYLTYPE *op_loc, const YYLTYPE *loc)
-{
-    VALUE ret = dispatch4(command_call, recv, atype, mid, args);
-    if (block == Qundef) ret = method_add_block(p, ret, block, loc);
-    return ret;
-}
-
 static VALUE
 const_decl(struct parser_params *p, VALUE path)
 {
