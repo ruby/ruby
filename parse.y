@@ -426,9 +426,6 @@ static NODE *new_xstring(struct parser_params *, NODE *, const YYLTYPE *loc);
 
 static NODE *symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol);
 
-#define new_brace_body(param, stmt, loc) NEW_ITER(param, stmt, loc)
-#define new_do_body(param, stmt, loc) NEW_ITER(param, stmt, loc)
-
 static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYLTYPE*);
 
 static ID  *local_tbl(struct parser_params*);
@@ -489,9 +486,6 @@ static VALUE new_regexp(struct parser_params *, VALUE, VALUE, const YYLTYPE *);
 
 static VALUE new_xstring(struct parser_params *, VALUE, const YYLTYPE *);
 #define new_string1(str) dispatch1(string_literal, str)
-
-#define new_brace_body(param, stmt, loc) dispatch2(brace_block, escape_Qundef(param), stmt)
-#define new_do_body(param, stmt, loc) dispatch2(do_block, escape_Qundef(param), stmt)
 
 static VALUE const_decl(struct parser_params *p, VALUE path);
 
@@ -3182,9 +3176,12 @@ brace_body	: {$<vars>$ = dyna_push(p);}
 		  {$<val>$ = p->cmdarg_stack >> 1; CMDARG_SET(0);}
 		  opt_block_param compstmt
 		    {
-			$$ = new_brace_body($3, $4, &@$);
-			dyna_pop(p, $<vars>1);
+		    /*%%%*/
+			$$ = NEW_ITER($3, $4, &@$);
+		    /*% %*/
+		    /*% ripper: brace_block!(escape_Qundef($3), $4) %*/
 			CMDARG_SET($<val>2);
+			dyna_pop(p, $<vars>1);
 		    }
 		;
 
@@ -3192,9 +3189,12 @@ do_body 	: {$<vars>$ = dyna_push(p);}
 		  {$<val>$ = p->cmdarg_stack; CMDARG_SET(0);}
 		  opt_block_param bodystmt
 		    {
-			$$ = new_do_body($3, $4, &@$);
-			dyna_pop(p, $<vars>1);
+		    /*%%%*/
+			$$ = NEW_ITER($3, $4, &@$);
+		    /*% %*/
+		    /*% ripper: do_block!(escape_Qundef($3), $4) %*/
 			CMDARG_SET($<val>2);
+			dyna_pop(p, $<vars>1);
 		    }
 		;
 
