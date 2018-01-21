@@ -6978,7 +6978,7 @@ parse_numeric(struct parser_params *p, int c)
     }
     tokfix();
     if (is_float) {
-	int type = tFLOAT;
+	enum yytokentype type = tFLOAT;
 	VALUE v;
 
 	suffix = number_literal_suffix(seen_e ? NUM_SUFFIX_I : NUM_SUFFIX_ALL);
