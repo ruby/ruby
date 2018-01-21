@@ -702,6 +702,7 @@ class TestMatrix < Test::Unit::TestCase
     m1 = Matrix.zero(2,2)
     m2 = Matrix.build(3,4){|row, col| 1}
     m3 = Matrix.zero(3,5).freeze
+    m4 = Matrix.empty.freeze
 
     assert_equal Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.map!{|e| e * 5}
     assert_equal Matrix[[7, 0],[0, 7]], m1.map!(:diagonal){|e| e + 7}
@@ -714,6 +715,7 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal m2, m2.map!(:lower){ |e| e - 3 }
     assert_raise(ArgumentError) {m1.map!(:test){|e| e + 7}}
     assert_raise(FrozenError) { m3.map!{|e| e * 2} }
+    assert_raise(FrozenError) { m4.map!{} }
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric
