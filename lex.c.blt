@@ -31,7 +31,7 @@
 #define gperf_offsetof(s, n) (short)offsetof(struct s##_t, s##_str##n)
 #line 1 "defs/keywords"
 
-struct kwtable {int name, id[2], state;};
+struct kwtable {short name, id[2], state;};
 const struct kwtable *rb_reserved_word(const char *, unsigned int);
 #ifndef RIPPER
 static const struct kwtable *reserved_word(/*const char *, unsigned int*/);
