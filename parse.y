@@ -8082,7 +8082,7 @@ parser_yylex(struct parser_params *p)
 	    c = tLBRACE;      /* hash */
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
-	SET_LEX_STATE(c == tLBRACE_ARG ? EXPR_BEG : EXPR_BEG|EXPR_LABEL);
+	SET_LEX_STATE(c != tLBRACE ? EXPR_BEG : EXPR_BEG|EXPR_LABEL);
 	if (c != tLBRACE) p->command_start = TRUE;
 	return c;
 
