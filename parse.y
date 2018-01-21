@@ -46,6 +46,7 @@
 #define YYCALLOC(nelem, size)	rb_parser_calloc(p, (nelem), (size))
 #define YYFREE(ptr)		rb_parser_free(p, (ptr))
 #define YYFPRINTF		rb_parser_printf
+#define YYPRINT(out, tok, val)	parser_token_value_print(p, (tok), &(val))
 #define YY_LOCATION_PRINT(File, loc) \
      rb_parser_printf(p, "%d.%d-%d.%d", \
 		      (loc).beg_pos.lineno, (loc).beg_pos.column,\
@@ -500,6 +501,7 @@ void rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
 void rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
 RUBY_SYMBOL_EXPORT_END
 
+static void parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp);
 static ID formal_argument(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
 static void new_bv(struct parser_params*,ID);
@@ -8945,6 +8947,49 @@ rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc)
     yylloc->end_pos.column = (int)(p->lex.pcur - p->lex.pbeg);
 }
 #endif /* !RIPPER */
+
+static void
+parser_token_value_print(struct parser_params *p, enum yytokentype type, const YYSTYPE *valp)
+{
+    VALUE v;
+
+    switch (type) {
+      case tIDENTIFIER: case tFID: case tGVAR: case tIVAR:
+      case tCONSTANT: case tCVAR: case tLABEL: case tOP_ASGN:
+#ifndef RIPPER
+	v = rb_id2str(valp->id);
+#else
+	v = valp->val;
+#endif
+	rb_parser_printf(p, "%"PRIsVALUE, v);
+	break;
+      case tINTEGER: case tFLOAT: case tRATIONAL: case tIMAGINARY:
+      case tSTRING_CONTENT: case tCHAR:
+#ifndef RIPPER
+	v = valp->node->nd_lit;
+#else
+	v = valp->val;
+#endif
+	rb_parser_printf(p, "%+"PRIsVALUE, v);
+	break;
+      case tNTH_REF:
+#ifndef RIPPER
+	rb_parser_printf(p, "$%ld", valp->node->nd_nth);
+#else
+	rb_parser_printf(p, "%"PRIsVALUE, valp->val);
+#endif
+	break;
+      case tBACK_REF:
+#ifndef RIPPER
+	rb_parser_printf(p, "$%c", valp->node->nd_nth);
+#else
+	rb_parser_printf(p, "%"PRIsVALUE, valp->val);
+#endif
+	break;
+      default:
+	break;
+    }
+}
 
 static int
 assignable0(struct parser_params *p, ID id, const char **err)
