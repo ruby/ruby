@@ -8853,7 +8853,7 @@ rb_parser_trace_lex_state(struct parser_params *p, enum lex_state_e from,
 			  enum lex_state_e to, int line)
 {
     VALUE mesg;
-    mesg = rb_str_new_cstr("p->lex.state: ");
+    mesg = rb_str_new_cstr("lex_state: ");
     append_lex_state_name(from, mesg);
     rb_str_cat_cstr(mesg, " -> ");
     append_lex_state_name(to, mesg);
