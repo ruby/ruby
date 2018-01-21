@@ -1767,6 +1767,9 @@ end
 # To access elements:
 # * #[](i)
 #
+# To set elements:
+# * #[]=(i, v)
+#
 # To enumerate the elements:
 # * #each2(v)
 # * #collect2(v)
