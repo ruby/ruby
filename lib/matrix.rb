@@ -1789,8 +1789,10 @@ end
 # * #inner_product(v), dot(v)
 # * #cross_product(v), cross(v)
 # * #collect
+# * #collect!
 # * #magnitude
 # * #map
+# * #map!
 # * #map2(v)
 # * #norm
 # * #normalize
@@ -1887,6 +1889,7 @@ class Vector
   # Set element or elements of vector.
   #
   def []=(i, v)
+    raise FrozenError, "can't modify frozen Vector" if frozen?
     if i.is_a?(Range)
       raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
       if v.is_a?(Vector)
@@ -2200,6 +2203,7 @@ class Vector
   #
   def collect!(&block)
     return to_enum(:collect!) unless block_given?
+    raise FrozenError, "can't modify frozen Vector" if frozen?
     @elements.collect!(&block)
     self
   end
