@@ -501,10 +501,10 @@ num_exact(VALUE v)
         goto typeerror;
     }
     else {
-        if ((tmp = rb_check_funcall(v, rb_intern("to_r"), 0, NULL)) != Qundef) {
+        if ((tmp = rb_check_funcall(v, idTo_r, 0, NULL)) != Qundef) {
             /* test to_int method availability to reject non-Numeric
              * objects such as String, Time, etc which have to_r method. */
-            if (!rb_respond_to(v, rb_intern("to_int"))) goto typeerror;
+            if (!rb_respond_to(v, idTo_int)) goto typeerror;
         }
         else if (!NIL_P(tmp = rb_check_to_int(v))) {
             return tmp;
