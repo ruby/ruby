@@ -1211,7 +1211,7 @@ static struct tm *localtime_with_gmtoff_zone(const time_t *t, struct tm *result,
  *  }
  *
  */
-static int compat_common_month_table[12][7] = {
+static const int compat_common_month_table[12][7] = {
   /* Sun   Mon   Tue   Wed   Thu   Fri   Sat */
   { 2034, 2035, 2036, 2031, 2032, 2027, 2033 }, /* January */
   { 2026, 2027, 2033, 2034, 2035, 2030, 2031 }, /* February */
@@ -1252,7 +1252,7 @@ static int compat_common_month_table[12][7] = {
  *    puts
  *  }
  */
-static int compat_leap_month_table[7] = {
+static const int compat_leap_month_table[7] = {
 /* Sun   Mon   Tue   Wed   Thu   Fri   Sat */
   2032, 2016, 2028, 2012, 2024, 2036, 2020, /* February */
 };
