@@ -12,6 +12,7 @@
 #endif
 #include <math.h>
 #include "internal.h"
+#include "id.h"
 
 #define NDEBUG
 #include "ruby_assert.h"
@@ -33,10 +34,12 @@ static VALUE nucomp_arg(VALUE self);
 static ID id_abs, id_arg,
     id_denominator, id_expt, id_fdiv,
     id_negate, id_numerator, id_quo,
-    id_real_p, id_to_f, id_to_i, id_to_r,
+    id_real_p, id_to_f,
     id_i_real, id_i_imag,
     id_finite_p, id_infinite_p, id_rationalize,
     id_PI;
+#define id_to_i idTo_i
+#define id_to_r idTo_r
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -2204,8 +2207,6 @@ Init_Complex(void)
     id_quo = rb_intern("quo");
     id_real_p = rb_intern("real?");
     id_to_f = rb_intern("to_f");
-    id_to_i = rb_intern("to_i");
-    id_to_r = rb_intern("to_r");
     id_i_real = rb_intern("@real");
     id_i_imag = rb_intern("@image"); /* @image, not @imag */
     id_finite_p = rb_intern("finite?");

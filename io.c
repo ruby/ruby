@@ -4742,7 +4742,7 @@ static VALUE
 ignore_closed_stream(VALUE io, VALUE exc)
 {
     enum {mesg_len = sizeof(closed_stream)-1};
-    VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
+    VALUE mesg = rb_attr_get(exc, idMesg);
     if (!RB_TYPE_P(mesg, T_STRING) ||
 	RSTRING_LEN(mesg) != mesg_len ||
 	memcmp(RSTRING_PTR(mesg), closed_stream, mesg_len)) {

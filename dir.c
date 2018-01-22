@@ -14,6 +14,7 @@
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "internal.h"
+#include "id.h"
 #include "encindex.h"
 
 #include <sys/types.h>
@@ -662,7 +663,7 @@ dir_inspect(VALUE dir)
 	rb_str_cat2(str, ">");
 	return str;
     }
-    return rb_funcallv(dir, rb_intern("to_s"), 0, 0);
+    return rb_funcallv(dir, idTo_s, 0, 0);
 }
 
 /* Workaround for Solaris 10 that does not have dirfd.

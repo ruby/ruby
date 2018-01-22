@@ -33,8 +33,9 @@
 
 VALUE rb_cRational;
 
-static ID id_abs, id_idiv, id_integer_p, id_to_i,
+static ID id_abs, id_idiv, id_integer_p,
     id_i_num, id_i_den;
+#define id_to_i idTo_i
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 #define f_inspect rb_inspect
@@ -2003,7 +2004,7 @@ rb_rational_den(VALUE rat)
 #define id_denominator rb_intern("denominator")
 #define f_denominator(x) rb_funcall((x), id_denominator, 0)
 
-#define id_to_r rb_intern("to_r")
+#define id_to_r idTo_r
 #define f_to_r(x) rb_funcall((x), id_to_r, 0)
 
 /*
@@ -2684,7 +2685,6 @@ Init_Rational(void)
     id_abs = rb_intern("abs");
     id_idiv = rb_intern("div");
     id_integer_p = rb_intern("integer?");
-    id_to_i = rb_intern("to_i");
     id_i_num = rb_intern("@numerator");
     id_i_den = rb_intern("@denominator");
 
