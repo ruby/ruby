@@ -1748,7 +1748,7 @@ uninitialized_constant(VALUE klass, VALUE name)
 VALUE
 rb_const_missing(VALUE klass, VALUE name)
 {
-    VALUE value = rb_funcallv(klass, rb_intern("const_missing"), 1, &name);
+    VALUE value = rb_funcallv(klass, idConst_missing, 1, &name);
     rb_vm_inc_const_missing_count();
     return value;
 }

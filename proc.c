@@ -3082,7 +3082,7 @@ Init_Proc(void)
     rb_undef_alloc_func(rb_cProc);
     rb_define_singleton_method(rb_cProc, "new", rb_proc_s_new, -1);
 
-    rb_add_method(rb_cProc, rb_intern("call"), VM_METHOD_TYPE_OPTIMIZED,
+    rb_add_method(rb_cProc, idCall, VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);
     rb_add_method(rb_cProc, rb_intern("[]"), VM_METHOD_TYPE_OPTIMIZED,
 		  (void *)OPTIMIZED_METHOD_TYPE_CALL, METHOD_VISI_PUBLIC);

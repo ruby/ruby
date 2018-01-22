@@ -2150,9 +2150,9 @@ Init_vm_eval(void)
     rb_define_private_method(rb_cBasicObject, "method_missing", rb_method_missing, -1);
 
 #if 1
-    rb_add_method(rb_cBasicObject, rb_intern("__send__"),
+    rb_add_method(rb_cBasicObject, id__send__,
 		  VM_METHOD_TYPE_OPTIMIZED, (void *)OPTIMIZED_METHOD_TYPE_SEND, METHOD_VISI_PUBLIC);
-    rb_add_method(rb_mKernel, rb_intern("send"),
+    rb_add_method(rb_mKernel, idSend,
 		  VM_METHOD_TYPE_OPTIMIZED, (void *)OPTIMIZED_METHOD_TYPE_SEND, METHOD_VISI_PUBLIC);
 #else
     rb_define_method(rb_cBasicObject, "__send__", rb_f_send, -1);
