@@ -6166,7 +6166,7 @@ set_number_literal(struct parser_params *p, VALUE v,
     return type;
 }
 
-static int
+static enum yytokentype
 set_integer_literal(struct parser_params *p, VALUE v, int suffix)
 {
     enum yytokentype type = tINTEGER;
@@ -6772,7 +6772,7 @@ parse_rational(struct parser_params *p, char *str, int len, int seen_point)
     return rb_rational_new(v, rb_int_positive_pow(10, fraclen));
 }
 
-static int
+static enum yytokentype
 parse_numeric(struct parser_params *p, int c)
 {
     int is_float, seen_point, seen_e, nondigit;
