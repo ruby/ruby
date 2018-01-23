@@ -5682,9 +5682,15 @@ tokadd_string(struct parser_params *p,
     return c;
 }
 
+static inline rb_strterm_t *
+new_strterm(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+{
+    return (rb_strterm_t*)rb_imemo_new(imemo_parser_strterm, v1, v2, v3, v0);
+}
+
 /* imemo_parser_strterm for literal */
 #define NEW_STRTERM(func, term, paren) \
-	(rb_strterm_t*)rb_imemo_new(imemo_parser_strterm, (VALUE)(func), (VALUE)(paren), (VALUE)(term), 0)
+    new_strterm((VALUE)(func), (VALUE)(paren), (VALUE)(term), 0)
 
 #ifdef RIPPER
 static void
@@ -5952,11 +5958,10 @@ heredoc_identifier(struct parser_params *p)
     len = p->lex.pcur - p->lex.pbeg;
     lex_goto_eol(p);
 
-    p->lex.strterm = (rb_strterm_t*)rb_imemo_new(imemo_parser_strterm,
-					      STR_NEW(tok(), toklen()),	/* term */
-					      p->lex.lastline,		/* lastline */
-					      len,			/* lastidx */
-					      p->ruby_sourceline);
+    p->lex.strterm = new_strterm(STR_NEW(tok(), toklen()), /* term */
+				 p->lex.lastline, /* lastline */
+				 len, /* lastidx */
+				 p->ruby_sourceline);
     p->lex.strterm->flags |= STRTERM_HEREDOC;
 
     token_flush(p);
