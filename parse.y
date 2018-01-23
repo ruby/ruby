@@ -435,6 +435,7 @@ static void reg_fragment_setenc(struct parser_params*, VALUE, int);
 static int reg_fragment_check(struct parser_params*, VALUE, int);
 static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, const YYLTYPE *loc);
 
+static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 #define get_id(id) (id)
 #define get_value(val) (val)
@@ -6015,28 +6016,47 @@ dedent_string(VALUE string, int width)
 static NODE *
 heredoc_dedent(struct parser_params *p, NODE *root)
 {
-    NODE *node, *str_node;
+    NODE *node, *str_node, *prev_node;
     int bol = TRUE;
     int indent = p->heredoc_indent;
+    VALUE prev_lit = 0;
 
     if (indent <= 0) return root;
     p->heredoc_indent = 0;
     if (!root) return root;
 
-    node = str_node = root;
+    prev_node = node = str_node = root;
     if (nd_type(root) == NODE_ARRAY) str_node = root->nd_head;
 
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
 	if (bol) dedent_string(lit, indent);
 	bol = TRUE;
+	if (!prev_lit) {
+	    prev_lit = lit;
+	}
+	else if (!literal_concat0(p, prev_lit, lit)) {
+	    return 0;
+	}
+	else {
+	    node = prev_node->nd_next = node->nd_next;
+	    if (!node) {
+		if (nd_type(prev_node) == NODE_DSTR)
+		    nd_set_type(prev_node, NODE_STR);
+		break;
+	    }
+	    goto next_str;
+	}
 
 	str_node = 0;
-	while ((node = node->nd_next) != 0 && nd_type(node) == NODE_ARRAY) {
+	while ((node = (prev_node = node)->nd_next) != 0) {
+	  next_str:
+	    if (nd_type(node) != NODE_ARRAY) break;
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
 		bol = FALSE;
+		prev_lit = 0;
 		str_node = 0;
 	    }
 	}
