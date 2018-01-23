@@ -10,6 +10,10 @@
 
 #include "rubysocket.h"
 
+#ifdef _WIN32
+VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
+#endif
+
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
 VALUE rb_cTCPSocket;
@@ -39,7 +43,15 @@ rsock_raise_socket_error(const char *reason, int error)
     if (error == EAI_SYSTEM && (e = errno) != 0)
 	rb_syserr_fail(e, reason);
 #endif
+#ifdef _WIN32
+    rb_encoding *enc = rb_default_internal_encoding();
+    VALUE msg = rb_sprintf("%s: ", reason);
+    if (!enc) enc = rb_default_internal_encoding();
+    rb_str_concat(msg, rb_w32_conv_from_wchar(gai_strerrorW(error), enc));
+    rb_exc_raise(rb_exc_new_str(rb_eSocket, msg));
+#else
     rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
+#endif
 }
 
 #ifdef _WIN32
