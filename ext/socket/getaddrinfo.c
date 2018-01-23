@@ -149,6 +149,7 @@ static int get_addr __P((const char *, int, struct addrinfo **,
 			struct addrinfo *, int));
 static int str_isnumber __P((const char *));
 
+#ifndef HAVE_GAI_STRERROR
 static const char *const ai_errlist[] = {
 	"success.",
 	"address family for hostname not supported.",	/* EAI_ADDRFAMILY */
@@ -166,6 +167,7 @@ static const char *const ai_errlist[] = {
 	"resolved protocol is unknown.",		/* EAI_PROTOCOL   */
 	"unknown error.", 				/* EAI_MAX        */
 };
+#endif
 
 #define GET_CANONNAME(ai, str) \
 if (pai->ai_flags & AI_CANONNAME) {\
