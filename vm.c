@@ -2757,6 +2757,12 @@ core_hash_merge_kwd(int argc, VALUE *argv)
     return hash;
 }
 
+static VALUE
+mjit_enabled_p(void)
+{
+    return mjit_init_p ? Qtrue : Qfalse;
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2810,6 +2816,7 @@ Init_VM(void)
     VALUE opts;
     VALUE klass;
     VALUE fcore;
+    VALUE mjit;
 
     /* ::RubyVM */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
@@ -2840,6 +2847,10 @@ Init_VM(void)
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
+
+    /* RubyVM::MJIT */
+    mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
+    rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
 
     /*
      * Document-class: Thread

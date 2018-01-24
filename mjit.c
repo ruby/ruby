@@ -1240,12 +1240,6 @@ mjit_mark(void)
     RUBY_MARK_LEAVE("mjit");
 }
 
-VALUE
-mjit_enable_get(void)
-{
-    return mjit_init_p ? Qtrue : Qfalse;
-}
-
 /* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
 void
 mjit_add_class_serial(rb_serial_t class_serial)
@@ -1280,11 +1274,4 @@ mjit_valid_class_serial_p(rb_serial_t class_serial)
     found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
     CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
     return found_p;
-}
-
-void
-Init_MJIT(void)
-{
-    rb_mMJIT = rb_define_module("MJIT");
-    rb_define_singleton_method(rb_mMJIT, "enabled?", mjit_enable_get, 0);
 }

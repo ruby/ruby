@@ -1821,7 +1821,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.pass until t.status == 'sleep'
     # When MJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
     # This sleep forces it to reach m2t_q.pop for -j:aot.
-    sleep 1 if MJIT.enabled?
+    sleep 1 if RubyVM::MJIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__
