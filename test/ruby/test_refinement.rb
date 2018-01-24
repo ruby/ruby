@@ -2010,6 +2010,122 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal(:foo, ToSymbol.new("foo").symbol)
   end
 
+  module ToProc
+    def self.call &block
+      block.call
+    end
+
+    class ReturnProc
+      c = self
+      using Module.new {
+        refine c do
+          def to_proc
+            proc { "to_proc" }
+          end
+        end
+      }
+      def call
+        ToProc.call &self
+      end
+    end
+
+    class ReturnNoProc
+      c = self
+      using Module.new {
+        refine c do
+          def to_proc
+            true
+          end
+        end
+      }
+
+      def call
+        ToProc.call &self
+      end
+    end
+
+    class PrivateToProc
+      c = self
+      using Module.new {
+        refine c do
+          private
+          def to_proc
+            proc { "private_to_proc" }
+          end
+        end
+      }
+
+      def call
+        ToProc.call &self
+      end
+    end
+
+
+    class NonProc
+      def call
+        ToProc.call &self
+      end
+    end
+
+    class MethodMissing
+      def method_missing *args
+        proc { "method_missing" }
+      end
+
+      def call
+        ToProc.call &self
+      end
+      end
+
+    class ToProcAndMethodMissing
+      def method_missing *args
+        proc { "method_missing" }
+      end
+
+      c = self
+      using Module.new {
+        refine c do
+          def to_proc
+            proc { "to_proc" }
+          end
+        end
+      }
+
+      def call
+        ToProc.call &self
+      end
+    end
+
+    class ToProcAndRefinements
+      def to_proc
+        proc { "to_proc" }
+      end
+
+      c = self
+      using Module.new {
+        refine c do
+          def to_proc
+            proc { "refinements_to_proc" }
+          end
+        end
+      }
+
+      def call
+        ToProc.call &self
+      end
+    end
+  end
+
+  def test_to_proc
+    assert_equal("to_proc", ToProc::ReturnProc.new.call)
+    assert_equal("private_to_proc", ToProc::PrivateToProc.new.call)
+    assert_raise(TypeError){ ToProc::ReturnNoProc.new.call }
+    assert_raise(TypeError){ ToProc::NonProc.new.call }
+    assert_equal("method_missing", ToProc::MethodMissing.new.call)
+    assert_equal("to_proc", ToProc::ToProcAndMethodMissing.new.call)
+    assert_equal("refinements_to_proc", ToProc::ToProcAndRefinements.new.call)
+  end
+
   def test_unused_refinement_for_module
     bug14068 = '[ruby-core:83613] [Bug #14068]'
     assert_in_out_err([], <<-INPUT, ["M1#foo"], [], bug14068)
