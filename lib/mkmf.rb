@@ -657,6 +657,7 @@ MSG
   end
 
   def try_ldflags(flags, opts = {})
+    opts = {:werror => true}.update(opts) if $mswin
     try_link(MAIN_DOES_NOTHING, flags, opts)
   end
 
