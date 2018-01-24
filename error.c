@@ -323,6 +323,25 @@ warning_write(int argc, VALUE *argv, VALUE buf)
  *
  *    warning 1
  *    warning 2
+ *
+ * If the <code>:uplevel</code> keyword is given, the string will
+ * be prepended with information for the given caller frame in
+ * the same format used by the <code>rb_warn</code> C function.
+ *
+ *    # In baz.rb
+ *    def foo
+ *      warn("invalid call to foo", uplevel: 1)
+ *    end
+ *
+ *    def bar
+ *      foo
+ *    end
+ *
+ *    bar
+ *
+ *  <em>produces:</em>
+ *
+ *    baz.rb:6: warning: invalid call to foo
  */
 
 static VALUE
