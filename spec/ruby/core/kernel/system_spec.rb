@@ -25,6 +25,14 @@ describe :kernel_system, shared: true do
     $?.exitstatus.should == 1
   end
 
+  it "raises RuntimeError when `exception: true` is given and the command exits with a non-zero exit status" do
+    lambda { @object.system(ruby_cmd('exit 1'), exception: true) }.should raise_error(RuntimeError)
+  end
+
+  it "raises Errno::ENOENT when `exception: true` is given and the specified command does not exist" do
+    lambda { @object.system('feature_14386', exception: true) }.should raise_error(Errno::ENOENT)
+  end
+
   it "returns nil when command execution fails" do
     @object.system("sad").should be_nil
 
