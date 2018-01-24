@@ -2439,9 +2439,7 @@ thread_free(void *ptr)
     }
     else {
 #ifdef USE_SIGALTSTACK
-	if (th->altstack) {
-	    free(th->altstack);
-	}
+	free(th->altstack);
 #endif
 	ruby_xfree(ptr);
     }
