@@ -26,6 +26,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * added Dir#each_child and Dir#children instance methods.  [Feature #13969]
 
+* Kernel
+
+  * Kernel.#system takes :exception option to raise an exception on failure. [Feature #14386]
+
 * Proc
 
   * Proc#call doesn't change $SAFE any more. [Feature #14250]
