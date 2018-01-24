@@ -65,9 +65,9 @@ script:
   - "make -s $JOBS test-spec MSPECOPT=-j"
 
   # Demo. This will be removed at actual merge.
-  - "make -s test RUN_OPTS='-j' TESTOPTS=--color=never"
-  - "make -s $JOBS test-all -o exts RUN_OPTS='-j' TESTOPTS='-q --color=never --job-status=normal'"
-  - "make -s $JOBS test-spec RUN_OPTS='-j' MSPECOPT=-j"
+  - "make -s test RUN_OPTS='--jit' TESTOPTS=--color=never"
+  - "make -s $JOBS test-all -o exts RUN_OPTS='--jit' TESTOPTS='-q --color=never --job-status=normal'"
+  - "make -s $JOBS test-spec RUN_OPTS='--jit' MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:

@@ -49,8 +49,10 @@ struct mjit_options {
     /* Disable compiler optimization and add debug symbols. It can be
        very slow.  */
     char debug;
-    /* If not 0, all ISeqs are compiled after `aot` calls. For testing. */
-    unsigned int aot;
+    /* If not 0, all ISeqs are synchronously compiled. For testing. */
+    unsigned int wait;
+    /* Number of calls to trigger JIT compilation. For testing. */
+    unsigned int min_calls;
     /* Force printing info about MJIT work of level VERBOSE or
        less. 0=silence, 1=medium, 2=verbose.  */
     int verbose;
@@ -82,9 +84,6 @@ extern void mjit_add_class_serial(rb_serial_t class_serial);
 extern void mjit_remove_class_serial(rb_serial_t class_serial);
 extern int mjit_valid_class_serial_p(rb_serial_t class_serial);
 
-/* A threshold used to add iseq to JIT. */
-#define NUM_CALLS_TO_ADD 5
-
 /* A threshold used to reject long iseqs from JITting as such iseqs
    takes too much time to be compiled.  */
 #define JIT_ISEQ_SIZE_THRESHOLD 1000
@@ -115,7 +114,7 @@ mjit_exec(rb_execution_context_t *ec)
     total_calls = ++body->total_calls;
 
     func = body->jit_func;
-    if (UNLIKELY(mjit_opts.aot == total_calls && mjit_target_iseq_p(body)
+    if (UNLIKELY(mjit_opts.wait && mjit_opts.min_calls == total_calls && mjit_target_iseq_p(body)
                  && (enum rb_mjit_iseq_func)func == NOT_ADDED_JIT_ISEQ_FUNC)) {
         mjit_add_iseq_to_process(iseq);
         func = mjit_get_iseq_func(body);
@@ -124,7 +123,7 @@ mjit_exec(rb_execution_context_t *ec)
     if (UNLIKELY((ptrdiff_t)func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)) {
         switch ((enum rb_mjit_iseq_func)func) {
           case NOT_ADDED_JIT_ISEQ_FUNC:
-            if (total_calls == NUM_CALLS_TO_ADD && mjit_target_iseq_p(body)) {
+            if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
                 mjit_add_iseq_to_process(iseq);
             }
             return Qundef;

@@ -33,7 +33,7 @@ class TestConditionVariable < Test::Unit::TestCase
   end
 
   def test_condvar_wait_exception_handling
-    skip "MJIT thread is unexpected for this test, especially with -j:aot" if RubyVM::MJIT.enabled?
+    skip "MJIT thread is unexpected for this test, especially with --jit-wait" if RubyVM::MJIT.enabled?
 
     # Calling wait in the only thread running should raise a ThreadError of
     # 'stopping only thread'

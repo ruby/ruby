@@ -1007,7 +1007,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
 }
 
-/* Wait for JIT compilation finish for AOT. This should only return a function pointer
+/* Wait for JIT compilation finish for --jit-wait. This should only return a function pointer
    or NOT_COMPILABLE_JIT_ISEQ_FUNC. */
 mjit_func_t
 mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
@@ -1086,6 +1086,8 @@ valid_class_serials_add_i(ID key, VALUE v, void *unused)
 /* Default permitted number of units with a JIT code kept in
    memory.  */
 #define DEFAULT_CACHE_SIZE 1000
+/* A default threshold used to add iseq to JIT. */
+#define DEFAULT_MIN_CALLS_TO_ADD 5
 /* Minimum value for JIT cache size.  */
 #define MIN_CACHE_SIZE 10
 
@@ -1099,6 +1101,8 @@ mjit_init(struct mjit_options *opts)
     mjit_init_p = TRUE;
 
     /* Normalize options */
+    if (mjit_opts.min_calls == 0)
+        mjit_opts.min_calls = DEFAULT_MIN_CALLS_TO_ADD;
     if (mjit_opts.max_cache_size <= 0)
         mjit_opts.max_cache_size = DEFAULT_CACHE_SIZE;
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
