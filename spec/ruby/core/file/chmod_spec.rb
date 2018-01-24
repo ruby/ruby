@@ -15,7 +15,7 @@ describe "File#chmod" do
     @file.chmod(0755).should == 0
   end
 
-  platform_is_not :freebsd, :netbsd, :openbsd, :darwin do
+  platform_is_not :freebsd, :netbsd, :openbsd, :darwin, :mingw32 do
     it "always succeeds with any numeric values" do
       vals = [-2**30, -2**16, -2**8, -2, -1,
         -0.5, 0, 1, 2, 5.555575, 16, 32, 64, 2**8, 2**16, 2**30]
@@ -37,7 +37,7 @@ describe "File#chmod" do
   end
 
   # -256, -2 and -1 raise Errno::EINVAL on OpenBSD
-  platform_is :freebsd, :openbsd, :darwin do
+  platform_is :freebsd, :openbsd, :darwin, :mingw32 do
     it "always succeeds with any numeric values" do
       vals = [#-2**30, -2**16, -2**8, -2, -1,
         -0.5, 0, 1, 2, 5.555575, 16, 32, 64, 2**8]#, 2**16, 2**30
@@ -123,7 +123,7 @@ describe "File.chmod" do
     @count.should == 1
   end
 
-  platform_is_not :freebsd, :netbsd, :openbsd, :darwin do
+  platform_is_not :freebsd, :netbsd, :openbsd, :darwin, :mingw32 do
     it "always succeeds with any numeric values" do
       vals = [-2**30, -2**16, -2**8, -2, -1,
         -0.5, 0, 1, 2, 5.555575, 16, 32, 64, 2**8, 2**16, 2**30]
@@ -144,7 +144,7 @@ describe "File.chmod" do
     end
   end
 
-  platform_is :darwin do
+  platform_is :darwin, :mingw32 do
     it "succeeds with valid values" do
       vals = [-2**8, -2, -1, -0.5, 0, 1, 2, 5.555575, 16, 32, 64, 2**8]
       vals.each { |v|
