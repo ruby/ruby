@@ -179,7 +179,7 @@ static char *header_file;
 /* Name of the precompiled header file.  */
 static char *pch_file;
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
-static const char *tmp_dir;
+static char *tmp_dir;
 /* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
    This is used to invalidate obsoleted CALL_CACHE. */
 static VALUE valid_class_serials;
@@ -1122,9 +1122,12 @@ mjit_init(struct mjit_options *opts)
 	cc_path = GCC_PATH;
     }
 
-    tmp_dir = getenv("TMP"); /* For MinGW */
-    if (tmp_dir == NULL)
-	tmp_dir = "/tmp";
+    if (getenv("TMP") != NULL) { /* For MinGW */
+	tmp_dir = get_string(getenv("TMP"));
+    }
+    else {
+	tmp_dir = get_string("/tmp");
+    }
 
     init_header_filename();
     pch_file = get_uniq_filename(0, "_mjit_h", ".h.gch");
@@ -1208,6 +1211,7 @@ mjit_finish(void)
     if (!mjit_opts.save_temps)
 	remove(pch_file);
 
+    xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
     xfree(header_file); header_file = NULL;
 
