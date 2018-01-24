@@ -1114,14 +1114,6 @@ mjit_init(struct mjit_options *opts)
 #endif
     }
 
-    /* Initialize class_serials cache for compilation */
-    valid_class_serials = rb_hash_new();
-    rb_obj_hide(valid_class_serials);
-    rb_gc_register_mark_object(valid_class_serials);
-    if (RCLASS_CONST_TBL(rb_cObject)) {
-	rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
-    }
-
     /* Initialize variables for compilation */
     pch_status = PCH_NOT_READY;
     if (mjit_opts.cc == MJIT_CC_CLANG) {
@@ -1151,6 +1143,14 @@ mjit_init(struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_client_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
     rb_native_cond_initialize(&mjit_worker_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
     rb_native_cond_initialize(&mjit_gc_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
+
+    /* Initialize class_serials cache for compilation */
+    valid_class_serials = rb_hash_new();
+    rb_obj_hide(valid_class_serials);
+    rb_gc_register_mark_object(valid_class_serials);
+    if (RCLASS_CONST_TBL(rb_cObject)) {
+	rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
+    }
 
     /* Initialize worker thread */
     finish_worker_p = FALSE;
