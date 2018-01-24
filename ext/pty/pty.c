@@ -182,7 +182,7 @@ establishShell(int argc, VALUE *argv, struct pty_info *info,
 	argv = &v;
     }
 
-    carg.execarg_obj = rb_execarg_new(argc, argv, 1);
+    carg.execarg_obj = rb_execarg_new(argc, argv, 1, 0);
     carg.eargp = rb_execarg_get(carg.execarg_obj);
     rb_execarg_parent_start(carg.execarg_obj);
 
