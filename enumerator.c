@@ -102,7 +102,7 @@
  *
  */
 VALUE rb_cEnumerator;
-VALUE rb_cLazy;
+static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_yield, id_to_enum;
 static ID id_next, id_result, id_lazy, id_receiver, id_arguments, id_memo, id_method, id_force;
 static VALUE sym_each, sym_cycle;
