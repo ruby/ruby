@@ -20,6 +20,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Dir
+
+  * New methods:
+
+    * added Dir#each_child and Dir#children instance methods.  [Feature #13969]
+
 * Proc
 
   * Proc#call doesn't change $SAFE any more. [Feature #14250]

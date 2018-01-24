@@ -2860,6 +2860,13 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
 }
 
 static VALUE
+dir_each_child_m(VALUE dir)
+{
+    RETURN_ENUMERATOR(dir, 0, 0);
+    return dir_each_entry(dir, dir_yield, Qnil, TRUE);
+}
+
+static VALUE
 dir_collect_children(VALUE dir)
 {
     VALUE ary = rb_ary_new();
@@ -3212,6 +3219,8 @@ Init_Dir(void)
     rb_define_method(rb_cDir,"inspect", dir_inspect, 0);
     rb_define_method(rb_cDir,"read", dir_read, 0);
     rb_define_method(rb_cDir,"each", dir_each, 0);
+    rb_define_method(rb_cDir,"each_child", dir_each_child_m, 0);
+    rb_define_method(rb_cDir,"children", dir_collect_children, 0);
     rb_define_method(rb_cDir,"rewind", dir_rewind, 0);
     rb_define_method(rb_cDir,"tell", dir_tell, 0);
     rb_define_method(rb_cDir,"seek", dir_seek, 1);

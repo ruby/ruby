@@ -232,14 +232,17 @@ class TestDir < Test::Unit::TestCase
   end
 
   def test_foreach
+    assert_entries(Dir.open(@root) {|dir| dir.each.to_a})
     assert_entries(Dir.foreach(@root).to_a)
   end
 
   def test_children
+    assert_entries(Dir.open(@root) {|dir| dir.children}, true)
     assert_entries(Dir.children(@root), true)
   end
 
   def test_each_child
+    assert_entries(Dir.open(@root) {|dir| dir.each_child.to_a}, true)
     assert_entries(Dir.each_child(@root).to_a, true)
   end
 
