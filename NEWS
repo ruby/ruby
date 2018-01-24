@@ -16,6 +16,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * $SAFE is a process global state and we can set 0 again. [Feature #14250]
 
+* refinements take place at block passing.  [Feature #14223]
+
 === Core classes updates (outstanding ones only)
 
 * Proc
