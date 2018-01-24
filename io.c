@@ -6633,7 +6633,7 @@ pipe_open_s(VALUE prog, const char *modestr, int fmode,
     VALUE execarg_obj = Qnil;
 
     if (!is_popen_fork(prog))
-	execarg_obj = rb_execarg_new(argc, argv, TRUE);
+        execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     return pipe_open(execarg_obj, modestr, fmode, convconfig);
 }
 
@@ -6766,14 +6766,14 @@ rb_io_s_popen(int argc, VALUE *argv, VALUE klass)
 	    rb_raise(rb_eArgError, "too many arguments");
 	}
 #endif
-	execarg_obj = rb_execarg_new((int)len, RARRAY_CONST_PTR(tmp), FALSE);
+        execarg_obj = rb_execarg_new((int)len, RARRAY_CONST_PTR(tmp), FALSE, FALSE);
 	RB_GC_GUARD(tmp);
     }
     else {
 	SafeStringValue(pname);
 	execarg_obj = Qnil;
 	if (!is_popen_fork(pname))
-	    execarg_obj = rb_execarg_new(1, &pname, TRUE);
+            execarg_obj = rb_execarg_new(1, &pname, TRUE, FALSE);
     }
     if (!NIL_P(execarg_obj)) {
 	if (!NIL_P(opt))

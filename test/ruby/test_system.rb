@@ -160,4 +160,23 @@ class TestSystem < Test::Unit::TestCase
       assert_equal(true, system(tmpfilename), '[ruby-core:32745]')
     }
   end if File.executable?("/bin/sh")
+
+  def test_system_exception
+    ruby = EnvUtil.rubybin
+    assert_nothing_raised do
+      system('feature_14235', exception: false)
+      system("'#{ruby}' -e 'exit 1'", exception: false)
+    end
+    assert_raise(Errno::ENOENT) do
+      system('feature_14235', exception: true)
+    end
+    assert_raise(RuntimeError) do
+      system("'#{ruby}' -e 'exit 1'", exception: true)
+    end
+    begin
+      system("'#{ruby}' -e 'exit 1'", exception: true)
+    rescue RuntimeError => e
+      assert_equal true, e.message.include?('status (1)')
+    end
+  end
 end
