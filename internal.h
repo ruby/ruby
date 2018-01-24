@@ -1631,6 +1631,7 @@ struct rb_execarg {
     unsigned new_pgroup_flag : 1;
     unsigned uid_given : 1;
     unsigned gid_given : 1;
+    unsigned exception : 1;
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
@@ -1968,9 +1969,9 @@ VALUE rb_int_positive_pow(long x, unsigned long y);
 /* process.c (export) */
 int rb_exec_async_signal_safe(const struct rb_execarg *e, char *errmsg, size_t errmsg_buflen);
 rb_pid_t rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds, char *errmsg, size_t errmsg_buflen);
-VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell);
+VALUE rb_execarg_new(int argc, const VALUE *argv, int accept_shell, int allow_exc_opt);
 struct rb_execarg *rb_execarg_get(VALUE execarg_obj); /* dangerous.  needs GC guard. */
-VALUE rb_execarg_init(int argc, const VALUE *argv, int accept_shell, VALUE execarg_obj);
+VALUE rb_execarg_init(int argc, const VALUE *argv, int accept_shell, VALUE execarg_obj, int allow_exc_opt);
 int rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val);
 void rb_execarg_parent_start(VALUE execarg_obj);
 void rb_execarg_parent_end(VALUE execarg_obj);
