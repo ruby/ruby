@@ -792,7 +792,16 @@ vm_to_proc(VALUE proc)
 {
     if (UNLIKELY(!rb_obj_is_proc(proc))) {
 	VALUE b;
-	b = rb_check_convert_type_with_id(proc, T_DATA, "Proc", idTo_proc);
+	const rb_callable_method_entry_t *me =
+	    rb_callable_method_entry_with_refinements(CLASS_OF(proc), idTo_proc, NULL);
+
+	if (me) {
+	    b = vm_call0(GET_EC(), proc, idTo_proc, 0, NULL, me);
+	}
+	else {
+	    /* NOTE: calling method_missing */
+	    b = rb_check_convert_type_with_id(proc, T_DATA, "Proc", idTo_proc);
+	}
 
 	if (NIL_P(b) || !rb_obj_is_proc(b)) {
 	    rb_raise(rb_eTypeError,
