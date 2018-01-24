@@ -1799,8 +1799,8 @@ vm_exec(rb_execution_context_t *ec)
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
       vm_loop_start:
-	if ((result = mjit_exec(ec)) == Qundef)
-	    result = vm_exec_core(ec, initial);
+        if ((result = mjit_exec(ec)) == Qundef)
+            result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
@@ -2136,7 +2136,7 @@ rb_vm_mark(void *ptr)
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
-	mjit_mark();
+        mjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");

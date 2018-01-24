@@ -94,7 +94,7 @@ static inline int
 mjit_target_iseq_p(struct rb_iseq_constant_body *body)
 {
     return (body->type == ISEQ_TYPE_METHOD || body->type == ISEQ_TYPE_BLOCK)
-	&& body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
+        && body->iseq_size < JIT_ISEQ_SIZE_THRESHOLD;
 }
 
 /* Try to execute the current iseq in ec.  Use JIT code if it is ready.
@@ -108,7 +108,7 @@ mjit_exec(rb_execution_context_t *ec)
     mjit_func_t func;
 
     if (!mjit_init_p)
-	return Qundef;
+        return Qundef;
 
     iseq = ec->cfp->iseq;
     body = iseq->body;
@@ -116,24 +116,24 @@ mjit_exec(rb_execution_context_t *ec)
 
     func = body->jit_func;
     if (UNLIKELY(mjit_opts.aot == total_calls && mjit_target_iseq_p(body)
-		 && (enum rb_mjit_iseq_func)func == NOT_ADDED_JIT_ISEQ_FUNC)) {
-	mjit_add_iseq_to_process(iseq);
-	func = mjit_get_iseq_func(body);
+                 && (enum rb_mjit_iseq_func)func == NOT_ADDED_JIT_ISEQ_FUNC)) {
+        mjit_add_iseq_to_process(iseq);
+        func = mjit_get_iseq_func(body);
     }
 
     if (UNLIKELY((ptrdiff_t)func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)) {
-	switch ((enum rb_mjit_iseq_func)func) {
-	  case NOT_ADDED_JIT_ISEQ_FUNC:
-	    if (total_calls == NUM_CALLS_TO_ADD && mjit_target_iseq_p(body)) {
-		mjit_add_iseq_to_process(iseq);
-	    }
-	    return Qundef;
-	  case NOT_READY_JIT_ISEQ_FUNC:
-	  case NOT_COMPILABLE_JIT_ISEQ_FUNC:
-	    return Qundef;
-	  default: /* to avoid warning with LAST_JIT_ISEQ_FUNC */
-	    break;
-	}
+        switch ((enum rb_mjit_iseq_func)func) {
+          case NOT_ADDED_JIT_ISEQ_FUNC:
+            if (total_calls == NUM_CALLS_TO_ADD && mjit_target_iseq_p(body)) {
+                mjit_add_iseq_to_process(iseq);
+            }
+            return Qundef;
+          case NOT_READY_JIT_ISEQ_FUNC:
+          case NOT_COMPILABLE_JIT_ISEQ_FUNC:
+            return Qundef;
+          default: /* to avoid warning with LAST_JIT_ISEQ_FUNC */
+            break;
+        }
     }
 
     return func(ec, ec->cfp);

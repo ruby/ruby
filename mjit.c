@@ -204,7 +204,7 @@ get_string(const char *str)
     char *res;
 
     if ((res = xmalloc(strlen(str) + 1)) != NULL)
-	strcpy(res, str);
+        strcpy(res, str);
     return res;
 }
 
@@ -234,10 +234,10 @@ verbose(int level, const char *format, ...)
 
     va_start(args, format);
     if (mjit_opts.verbose >= level)
-	vfprintf(stderr, format, args);
+        vfprintf(stderr, format, args);
     va_end(args);
     if (mjit_opts.verbose >= level)
-	fprintf(stderr, "\n");
+        fprintf(stderr, "\n");
 }
 
 /* Return length of NULL-terminated array ARGS excluding the NULL
@@ -248,7 +248,7 @@ args_len(char *const *args)
     size_t i;
 
     for (i = 0; (args[i]) != NULL;i++)
-	;
+        ;
     return i;
 }
 
@@ -266,17 +266,17 @@ form_args(int num, ...)
     va_start(argp, num);
     va_copy(argp2, argp);
     for (i = len = 0; i < num; i++) {
-	args = va_arg(argp, char **);
-	len += args_len(args);
+        args = va_arg(argp, char **);
+        len += args_len(args);
     }
     va_end(argp);
     if ((res = xmalloc((len + 1) * sizeof(char *))) == NULL)
-	return NULL;
+        return NULL;
     for (i = disp = 0; i < num; i++) {
-	args = va_arg(argp2, char **);
-	len = args_len(args);
-	memmove(res + disp, args, len * sizeof(char *));
-	disp += len;
+        args = va_arg(argp2, char **);
+        len = args_len(args);
+        memmove(res + disp, args, len * sizeof(char *));
+        disp += len;
     }
     res[disp] = NULL;
     va_end(argp2);
@@ -292,38 +292,38 @@ start_process(const char *path, char *const *argv)
     pid_t pid;
 
     if (mjit_opts.verbose >= 2) {
-	int i;
-	const char *arg;
+        int i;
+        const char *arg;
 
-	fprintf(stderr, "Starting process: %s", path);
-	for (i = 0; (arg = argv[i]) != NULL; i++)
-	    fprintf(stderr, " %s", arg);
-	fprintf(stderr, "\n");
+        fprintf(stderr, "Starting process: %s", path);
+        for (i = 0; (arg = argv[i]) != NULL; i++)
+            fprintf(stderr, " %s", arg);
+        fprintf(stderr, "\n");
     }
 #ifdef _WIN32
     pid = spawnvp(_P_NOWAIT, path, argv);
 #else
     {
-	/* Not calling IO functions between fork and exec for safety */
-	FILE *f = fopen("/dev/null", "w");
-	int dev_null = fileno(f);
-	fclose(f);
+        /* Not calling IO functions between fork and exec for safety */
+        FILE *f = fopen("/dev/null", "w");
+        int dev_null = fileno(f);
+        fclose(f);
 
-	if ((pid = vfork()) == 0) {
-	    if (mjit_opts.verbose == 0) {
-		/* CC can be started in a thread using a file which has been
-		   already removed while MJIT is finishing.  Discard the
-		   messages about missing files.  */
-		dup2(dev_null, STDERR_FILENO);
-		dup2(dev_null, STDOUT_FILENO);
-	    }
-	    pid = execvp(path, argv); /* Pid will be negative on an error */
-	    /* Even if we successfully found CC to compile PCH we still can
-	     fail with loading the CC in very rare cases for some reasons.
-	     Stop the forked process in this case.  */
-	    verbose(1, "MJIT: Error in execvp: %s\n", path);
-	    _exit(1);
-	}
+        if ((pid = vfork()) == 0) {
+            if (mjit_opts.verbose == 0) {
+                /* CC can be started in a thread using a file which has been
+                   already removed while MJIT is finishing.  Discard the
+                   messages about missing files.  */
+                dup2(dev_null, STDERR_FILENO);
+                dup2(dev_null, STDOUT_FILENO);
+            }
+            pid = execvp(path, argv); /* Pid will be negative on an error */
+            /* Even if we successfully found CC to compile PCH we still can
+             fail with loading the CC in very rare cases for some reasons.
+             Stop the forked process in this case.  */
+            verbose(1, "MJIT: Error in execvp: %s\n", path);
+            _exit(1);
+        }
     }
 #endif
     return pid;
@@ -340,17 +340,17 @@ exec_process(const char *path, char *const argv[])
 
     pid = start_process(path, argv);
     if (pid <= 0)
-	return -2;
+        return -2;
 
     for (;;) {
-	waitpid(pid, &stat, 0);
-	if (WIFEXITED(stat)) {
-	    exit_code = WEXITSTATUS(stat);
-	    break;
-	} else if (WIFSIGNALED(stat)) {
-	    exit_code = -1;
-	    break;
-	}
+        waitpid(pid, &stat, 0);
+        if (WIFEXITED(stat)) {
+            exit_code = WEXITSTATUS(stat);
+            break;
+        } else if (WIFSIGNALED(stat)) {
+            exit_code = -1;
+            break;
+        }
     }
     return exit_code;
 }
@@ -380,12 +380,12 @@ void
 mjit_gc_start_hook(void)
 {
     if (!mjit_init_p)
-	return;
+        return;
     CRITICAL_SECTION_START(4, "mjit_gc_start_hook");
     while (in_jit) {
-	verbose(4, "Waiting wakeup from a worker for GC");
-	rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
-	verbose(4, "Getting wakeup from a worker for GC");
+        verbose(4, "Waiting wakeup from a worker for GC");
+        rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
+        verbose(4, "Getting wakeup from a worker for GC");
     }
     in_gc = TRUE;
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
@@ -397,7 +397,7 @@ void
 mjit_gc_finish_hook(void)
 {
     if (!mjit_init_p)
-	return;
+        return;
     CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
     in_gc = FALSE;
     verbose(4, "Sending wakeup signal to workers after GC");
@@ -411,12 +411,12 @@ void
 mjit_free_iseq(const rb_iseq_t *iseq)
 {
     if (!mjit_init_p)
-	return;
+        return;
     CRITICAL_SECTION_START(4, "mjit_free_iseq");
     if (iseq->body->jit_unit) {
-	/* jit_unit is not freed here because it may be referred by multiple
-	   lists of units. `get_from_list` and `mjit_finish` do the job. */
-	iseq->body->jit_unit->iseq = NULL;
+        /* jit_unit is not freed here because it may be referred by multiple
+           lists of units. `get_from_list` and `mjit_finish` do the job. */
+        iseq->body->jit_unit->iseq = NULL;
     }
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
@@ -425,9 +425,9 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
-	unit->iseq->body->jit_func = NULL;
+        unit->iseq->body->jit_func = NULL;
     if (unit->handle) /* handle is NULL if it's in queue */
-	dlclose(unit->handle);
+        dlclose(unit->handle);
     xfree(unit);
 }
 
@@ -456,15 +456,15 @@ add_to_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
 {
     /* Append iseq to list */
     if (list->head == NULL) {
-	list->head = node;
+        list->head = node;
     }
     else {
-	struct rb_mjit_unit_node *tail = list->head;
-	while (tail->next != NULL) {
-	    tail = tail->next;
-	}
-	tail->next = node;
-	node->prev = tail;
+        struct rb_mjit_unit_node *tail = list->head;
+        while (tail->next != NULL) {
+            tail = tail->next;
+        }
+        tail->next = node;
+        node->prev = tail;
     }
     list->length++;
 }
@@ -473,18 +473,18 @@ static void
 remove_from_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
 {
     if (node->prev && node->next) {
-	node->prev->next = node->next;
-	node->next->prev = node->prev;
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
     }
     else if (node->prev == NULL && node->next) {
-	list->head = node->next;
-	node->next->prev = NULL;
+        list->head = node->next;
+        node->next->prev = NULL;
     }
     else if (node->prev && node->next == NULL) {
-	node->prev->next = NULL;
+        node->prev->next = NULL;
     }
     else {
-	list->head = NULL;
+        list->head = NULL;
     }
     list->length--;
     xfree(node);
@@ -499,19 +499,19 @@ get_from_list(struct rb_mjit_unit_list *list)
     struct rb_mjit_unit_node *node, *best = NULL;
 
     if (list->head == NULL)
-	return NULL;
+        return NULL;
 
     /* Find iseq with max total_calls */
     for (node = list->head; node != NULL; node = node ? node->next : NULL) {
-	if (node->unit->iseq == NULL) { /* ISeq is GCed. */
-	    free_unit(node->unit);
-	    remove_from_list(node, list);
-	    continue;
-	}
+        if (node->unit->iseq == NULL) { /* ISeq is GCed. */
+            free_unit(node->unit);
+            remove_from_list(node, list);
+            continue;
+        }
 
-	if (best == NULL || best->unit->iseq->body->total_calls < node->unit->iseq->body->total_calls) {
-	    best = node;
-	}
+        if (best == NULL || best->unit->iseq->body->total_calls < node->unit->iseq->body->total_calls) {
+            best = node;
+        }
     }
 
     return best;
@@ -525,9 +525,9 @@ free_list(struct rb_mjit_unit_list *list)
 {
     struct rb_mjit_unit_node *node, *next;
     for (node = list->head; node != NULL; node = next) {
-	next = node->next;
-	free_unit(node->unit);
-	xfree(node);
+        next = node->next;
+        free_unit(node->unit);
+        xfree(node);
     }
 }
 
@@ -576,18 +576,18 @@ make_pch(void)
     input[0] = header_file;
     output[1] = pch_file;
     if (mjit_opts.cc == MJIT_CC_CLANG)
-	args = form_args(4, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
-			 CLANG_EMIT_PCH_ARGS, input, output);
+        args = form_args(4, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
+                         CLANG_EMIT_PCH_ARGS, input, output);
     else
-	args = form_args(4, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
-			 GCC_EMIT_PCH_ARGS, input, output);
+        args = form_args(4, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
+                         GCC_EMIT_PCH_ARGS, input, output);
     if (args == NULL) {
-	if (mjit_opts.warnings || mjit_opts.verbose)
-	    fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
-	CRITICAL_SECTION_START(3, "in make_pch");
-	pch_status = PCH_FAILED;
-	CRITICAL_SECTION_FINISH(3, "in make_pch");
-	return;
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
+        CRITICAL_SECTION_START(3, "in make_pch");
+        pch_status = PCH_FAILED;
+        CRITICAL_SECTION_FINISH(3, "in make_pch");
+        return;
     }
 
     exit_code = exec_process(cc_path, args);
@@ -595,11 +595,11 @@ make_pch(void)
 
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
-	pch_status = PCH_SUCCESS;
+        pch_status = PCH_SUCCESS;
     } else {
-	if (mjit_opts.warnings || mjit_opts.verbose)
-	    fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
-	pch_status = PCH_FAILED;
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
+        pch_status = PCH_FAILED;
     }
     /* wakeup `mjit_finish` */
     rb_native_cond_broadcast(&mjit_pch_wakeup);
@@ -615,36 +615,36 @@ compile_c_to_so(const char *c_file, const char *so_file)
     static const char *output[] = {"-o",  NULL, NULL};
     static const char *libs[] = {
 #ifdef _WIN32
-	/* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
-	"-L" LIBRUBY_LIBDIR,
-	LIBRUBYARG_SHARED,
-	"-lmsvcrt",
+        /* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
+        "-L" LIBRUBY_LIBDIR,
+        LIBRUBYARG_SHARED,
+        "-lmsvcrt",
 # ifdef __GNUC__
-	"-lgcc",
+        "-lgcc",
 # endif
 #endif
-	NULL};
+        NULL};
     char **args;
 
     input[0] = c_file;
     output[1] = so_file;
     if (mjit_opts.cc == MJIT_CC_CLANG) {
-	CLANG_USE_PCH_ARGS[1] = pch_file;
-	args = form_args(5, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
-			 CLANG_USE_PCH_ARGS, input, output, libs);
+        CLANG_USE_PCH_ARGS[1] = pch_file;
+        args = form_args(5, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
+                         CLANG_USE_PCH_ARGS, input, output, libs);
     }
     else {
-	args = form_args(5, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
-			 GCC_USE_PCH_ARGS, input, output, libs);
+        args = form_args(5, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
+                         GCC_USE_PCH_ARGS, input, output, libs);
     }
     if (args == NULL)
-	return FALSE;
+        return FALSE;
 
     exit_code = exec_process(cc_path, args);
     xfree(args);
 
     if (exit_code != 0)
-	verbose(2, "compile_c_to_so: compile error: %d", exit_code);
+        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
     return exit_code == 0;
 }
 
@@ -655,9 +655,9 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 
     handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
-	if (mjit_opts.warnings || mjit_opts.verbose)
-	    fprintf(stderr, "MJIT warning: failure in loading code from '%s': %s\n", so_file, dlerror());
-	return (void *)NOT_ADDED_JIT_ISEQ_FUNC;
+        if (mjit_opts.warnings || mjit_opts.verbose)
+            fprintf(stderr, "MJIT warning: failure in loading code from '%s': %s\n", so_file, dlerror());
+        return (void *)NOT_ADDED_JIT_ISEQ_FUNC;
     }
 
     func = dlsym(handle, funcname);
@@ -683,19 +683,19 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     f = fopen(c_file, "w");
     /* -include-pch is used for Clang */
     if (mjit_opts.cc == MJIT_CC_GCC) {
-	const char *s = pch_file;
-	fprintf(f, "#include \"");
-	/* print pch_file except .gch */
-	for (; strcmp(s, ".gch") != 0; s++) {
-	    switch(*s) {
-	      case '\\':
-		fprintf(f, "\\%c", *s);
-		break;
-	      default:
-		fprintf(f, "%c", *s);
-	    }
-	}
-	fprintf(f, "\"\n");
+        const char *s = pch_file;
+        fprintf(f, "#include \"");
+        /* print pch_file except .gch */
+        for (; strcmp(s, ".gch") != 0; s++) {
+            switch(*s) {
+              case '\\':
+                fprintf(f, "\\%c", *s);
+                break;
+              default:
+                fprintf(f, "%c", *s);
+            }
+        }
+        fprintf(f, "\"\n");
     }
 
 #ifdef _WIN32
@@ -706,16 +706,16 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     /* wait until mjit_gc_finish_hook is called */
     CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
     while (in_gc) {
-	verbose(3, "Waiting wakeup from GC");
-	rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+        verbose(3, "Waiting wakeup from GC");
+        rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
     }
     in_jit = TRUE;
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
 
     verbose(2, "start compile: %s@%s:%d -> %s", RSTRING_PTR(unit->iseq->body->location.label),
-	    RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
     fprintf(f, "/* %s@%s:%d */\n\n", RSTRING_PTR(unit->iseq->body->location.label),
-	    RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno));
+            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno));
     success = mjit_compile(f, unit->iseq->body, funcname);
 
     /* release blocking mjit_gc_start_hook */
@@ -727,9 +727,9 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     fclose(f);
     if (!success) {
-	if (!mjit_opts.save_temps)
-	    remove(c_file);
-	return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        if (!mjit_opts.save_temps)
+            remove(c_file);
+        return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
     start_time = real_ms_time();
@@ -737,24 +737,24 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     end_time = real_ms_time();
 
     if (!mjit_opts.save_temps)
-	remove(c_file);
+        remove(c_file);
     if (!success) {
-	verbose(2, "Failed to generate so: %s", so_file);
-	return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        verbose(2, "Failed to generate so: %s", so_file);
+        return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
     func = load_func_from_so(so_file, funcname, unit);
     if (!mjit_opts.save_temps)
-	remove(so_file);
+        remove(so_file);
 
     if ((ptrdiff_t)func > (ptrdiff_t)LAST_JIT_ISEQ_FUNC) {
-	struct rb_mjit_unit_node *node = create_list_node(unit);
-	CRITICAL_SECTION_START(3, "end of jit");
-	add_to_list(node, &active_units);
-	if (unit->iseq)
-	    verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s", end_time - start_time, RSTRING_PTR(unit->iseq->body->location.label),
-		    RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
-	CRITICAL_SECTION_FINISH(3, "end of jit");
+        struct rb_mjit_unit_node *node = create_list_node(unit);
+        CRITICAL_SECTION_START(3, "end of jit");
+        add_to_list(node, &active_units);
+        if (unit->iseq)
+            verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s", end_time - start_time, RSTRING_PTR(unit->iseq->body->location.label),
+                    RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+        CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return func;
 }
@@ -772,39 +772,39 @@ worker(void)
 {
     make_pch();
     if (pch_status == PCH_FAILED) {
-	mjit_init_p = FALSE;
-	CRITICAL_SECTION_START(3, "in worker to update worker_finished");
-	worker_finished = TRUE;
-	verbose(3, "Sending wakeup signal to client in a mjit-worker");
-	rb_native_cond_signal(&mjit_client_wakeup);
-	CRITICAL_SECTION_FINISH(3, "in worker to update worker_finished");
-	return; /* TODO: do the same thing in the latter half of mjit_finish */
+        mjit_init_p = FALSE;
+        CRITICAL_SECTION_START(3, "in worker to update worker_finished");
+        worker_finished = TRUE;
+        verbose(3, "Sending wakeup signal to client in a mjit-worker");
+        rb_native_cond_signal(&mjit_client_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in worker to update worker_finished");
+        return; /* TODO: do the same thing in the latter half of mjit_finish */
     }
 
     /* main worker loop */
     while (!finish_worker_p) {
-	struct rb_mjit_unit_node *node;
+        struct rb_mjit_unit_node *node;
 
-	/* wait until unit is available */
-	CRITICAL_SECTION_START(3, "in worker dequeue");
-	while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !finish_worker_p) {
-	    rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
-	    verbose(3, "Getting wakeup from client");
-	}
-	node = get_from_list(&unit_queue);
-	CRITICAL_SECTION_FINISH(3, "in worker dequeue");
+        /* wait until unit is available */
+        CRITICAL_SECTION_START(3, "in worker dequeue");
+        while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !finish_worker_p) {
+            rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+            verbose(3, "Getting wakeup from client");
+        }
+        node = get_from_list(&unit_queue);
+        CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
-	if (node) {
-	    void *func = convert_unit_to_func(node->unit);
+        if (node) {
+            void *func = convert_unit_to_func(node->unit);
 
-	    CRITICAL_SECTION_START(3, "in jit func replace");
-	    if (node->unit->iseq) { /* Check whether GCed or not */
-		/* Usage of jit_code might be not in a critical section.  */
-		ATOMIC_SET(node->unit->iseq->body->jit_func, func);
-	    }
-	    remove_from_list(node, &unit_queue);
-	    CRITICAL_SECTION_FINISH(3, "in jit func replace");
-	}
+            CRITICAL_SECTION_START(3, "in jit func replace");
+            if (node->unit->iseq) { /* Check whether GCed or not */
+                /* Usage of jit_code might be not in a critical section.  */
+                ATOMIC_SET(node->unit->iseq->body->jit_func, func);
+            }
+            remove_from_list(node, &unit_queue);
+            CRITICAL_SECTION_FINISH(3, "in jit func replace");
+        }
     }
 
     CRITICAL_SECTION_START(3, "in the end of worker to update worker_finished");
@@ -834,12 +834,12 @@ mjit_cont_new(rb_execution_context_t *ec)
 
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
     if (first_cont == NULL) {
-	cont->next = cont->prev = NULL;
+        cont->next = cont->prev = NULL;
     }
     else {
-	cont->prev = NULL;
-	cont->next = first_cont;
-	first_cont->prev = cont;
+        cont->prev = NULL;
+        cont->next = first_cont;
+        first_cont->prev = cont;
     }
     first_cont = cont;
     CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
@@ -853,14 +853,14 @@ mjit_cont_free(struct mjit_cont *cont)
 {
     CRITICAL_SECTION_START(3, "in mjit_cont_new");
     if (cont == first_cont) {
-	first_cont = cont->next;
-	if (first_cont != NULL)
-	    first_cont->prev = NULL;
+        first_cont = cont->next;
+        if (first_cont != NULL)
+            first_cont->prev = NULL;
     }
     else {
-	cont->prev->next = cont->next;
-	if (cont->next != NULL)
-	    cont->next->prev = cont->prev;
+        cont->prev->next = cont->next;
+        if (cont->next != NULL)
+            cont->next->prev = cont->prev;
     }
     CRITICAL_SECTION_FINISH(3, "in mjit_cont_new");
 
@@ -874,8 +874,8 @@ finish_conts(void)
     struct mjit_cont *cont, *next;
 
     for (cont = first_cont; cont != NULL; cont = next) {
-	next = cont->next;
-	xfree(cont);
+        next = cont->next;
+        xfree(cont);
     }
 }
 
@@ -887,7 +887,7 @@ create_unit(const rb_iseq_t *iseq)
 
     unit = ZALLOC(struct rb_mjit_unit);
     if (unit == NULL)
-	return;
+        return;
 
     unit->id = current_unit_num++;
     unit->iseq = iseq;
@@ -905,15 +905,15 @@ mark_ec_units(rb_execution_context_t *ec)
     ptrdiff_t i, size;
 
     if (ec->vm_stack == NULL)
-	return;
+        return;
     end_marker_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     size = end_marker_cfp - last_cfp;
     for (i = 0, cfp = end_marker_cfp - 1; i < size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-	if (cfp->pc && (iseq = cfp->iseq) != NULL
-	    && imemo_type((VALUE) iseq) == imemo_iseq
-	    && (iseq->body->jit_unit) != NULL) {
-	    iseq->body->jit_unit->used_code_p = TRUE;
-	}
+        if (cfp->pc && (iseq = cfp->iseq) != NULL
+            && imemo_type((VALUE) iseq) == imemo_iseq
+            && (iseq->body->jit_unit) != NULL) {
+            iseq->body->jit_unit->used_code_p = TRUE;
+        }
     }
 }
 
@@ -932,50 +932,50 @@ unload_units(void)
     /* For now, we don't unload units when ISeq is GCed. We should
        unload such ISeqs first here. */
     for (node = active_units.head; node != NULL; node = next) {
-	next = node->next;
-	if (node->unit->iseq == NULL) { /* ISeq is GCed. */
-	    free_unit(node->unit);
-	    remove_from_list(node, &active_units);
-	}
+        next = node->next;
+        if (node->unit->iseq == NULL) { /* ISeq is GCed. */
+            free_unit(node->unit);
+            remove_from_list(node, &active_units);
+        }
     }
 
     /* Detect units which are in use and can't be unloaded. */
     for (node = active_units.head; node != NULL; node = node->next) {
-	assert(node->unit != NULL && node->unit->iseq != NULL && node->unit->handle != NULL);
-	node->unit->used_code_p = FALSE;
+        assert(node->unit != NULL && node->unit->iseq != NULL && node->unit->handle != NULL);
+        node->unit->used_code_p = FALSE;
     }
     list_for_each(&vm->living_threads, th, vmlt_node) {
-	mark_ec_units(th->ec);
+        mark_ec_units(th->ec);
     }
     for (cont = first_cont; cont != NULL; cont = cont->next) {
-	mark_ec_units(cont->ec);
+        mark_ec_units(cont->ec);
     }
 
     /* Remove 1/10 units more to decrease unloading calls.  */
     delete_num = active_units.length / 10;
     for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
-	/* Find one unit that has the minimum total_calls. */
-	worst_node = NULL;
-	for (node = active_units.head; node != NULL; node = node->next) {
-	    if (node->unit->used_code_p) /* We can't unload code on stack. */
-		continue;
+        /* Find one unit that has the minimum total_calls. */
+        worst_node = NULL;
+        for (node = active_units.head; node != NULL; node = node->next) {
+            if (node->unit->used_code_p) /* We can't unload code on stack. */
+                continue;
 
-	    if (worst_node == NULL || worst_node->unit->iseq->body->total_calls > node->unit->iseq->body->total_calls) {
-		worst_node = node;
-	    }
-	}
-	if (worst_node == NULL)
-	    break;
+            if (worst_node == NULL || worst_node->unit->iseq->body->total_calls > node->unit->iseq->body->total_calls) {
+                worst_node = node;
+            }
+        }
+        if (worst_node == NULL)
+            break;
 
-	/* Unload the worst node. */
-	verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
-	unit = worst_node->unit;
-	unit->iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
-	remove_from_list(worst_node, &active_units);
+        /* Unload the worst node. */
+        verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
+        unit = worst_node->unit;
+        unit->iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
+        remove_from_list(worst_node, &active_units);
 
-	assert(unit->handle != NULL);
-	dlclose(unit->handle);
-	unit->handle = NULL;
+        assert(unit->handle != NULL);
+        dlclose(unit->handle);
+        unit->handle = NULL;
     }
     verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
@@ -988,19 +988,19 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     struct rb_mjit_unit_node *node;
 
     if (!mjit_init_p)
-	return;
+        return;
 
     iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
     if (iseq->body->jit_unit == NULL)
-	/* Failure in creating the unit.  */
-	return;
+        /* Failure in creating the unit.  */
+        return;
 
     node = create_list_node(iseq->body->jit_unit);
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(node, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
-	unload_units();
+        unload_units();
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
     rb_native_cond_broadcast(&mjit_worker_wakeup);
@@ -1016,10 +1016,10 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
     while ((enum rb_mjit_iseq_func)body->jit_func == NOT_READY_JIT_ISEQ_FUNC) {
-	CRITICAL_SECTION_START(3, "in mjit_get_iseq_func for a client wakeup");
-	rb_native_cond_broadcast(&mjit_worker_wakeup);
-	CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func for a client wakeup");
-	rb_thread_wait_for(tv);
+        CRITICAL_SECTION_START(3, "in mjit_get_iseq_func for a client wakeup");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func for a client wakeup");
+        rb_thread_wait_for(tv);
     }
     return body->jit_func;
 }
@@ -1038,24 +1038,24 @@ init_header_filename(void)
 
     header_file = xmalloc(strlen(MJIT_HEADER_BUILD_DIR) + 2 + strlen(RUBY_MJIT_HEADER_FILE));
     if (header_file == NULL)
-	return;
+        return;
     strcpy(header_file, MJIT_HEADER_BUILD_DIR);
     strcat(header_file, "/");
     strcat(header_file, RUBY_MJIT_HEADER_FILE);
 
     if ((f = fopen(header_file, "r")) == NULL) {
-	xfree(header_file);
-	header_file = xmalloc(strlen(MJIT_HEADER_INSTALL_DIR) + 2 + strlen(RUBY_MJIT_HEADER_FILE));
-	if (header_file == NULL)
-	    return;
-	strcpy(header_file, MJIT_HEADER_INSTALL_DIR);
-	strcat(header_file, "/");
-	strcat(header_file, RUBY_MJIT_HEADER_FILE);
-	if ((f = fopen(header_file, "r")) == NULL) {
-	    xfree(header_file);
-	    header_file = NULL;
-	    return;
-	}
+        xfree(header_file);
+        header_file = xmalloc(strlen(MJIT_HEADER_INSTALL_DIR) + 2 + strlen(RUBY_MJIT_HEADER_FILE));
+        if (header_file == NULL)
+            return;
+        strcpy(header_file, MJIT_HEADER_INSTALL_DIR);
+        strcat(header_file, "/");
+        strcat(header_file, RUBY_MJIT_HEADER_FILE);
+        if ((f = fopen(header_file, "r")) == NULL) {
+            xfree(header_file);
+            header_file = NULL;
+            return;
+        }
     }
     fclose(f);
 }
@@ -1078,7 +1078,7 @@ valid_class_serials_add_i(ID key, VALUE v, void *unused)
 
     if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
     if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
-	mjit_add_class_serial(RCLASS_SERIAL(value));
+        mjit_add_class_serial(RCLASS_SERIAL(value));
     }
     return ID_TABLE_CONTINUE;
 }
@@ -1100,41 +1100,41 @@ mjit_init(struct mjit_options *opts)
 
     /* Normalize options */
     if (mjit_opts.max_cache_size <= 0)
-	mjit_opts.max_cache_size = DEFAULT_CACHE_SIZE;
+        mjit_opts.max_cache_size = DEFAULT_CACHE_SIZE;
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
-	mjit_opts.max_cache_size = MIN_CACHE_SIZE;
+        mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
     if (mjit_opts.cc == MJIT_CC_DEFAULT) {
 #if defined(__MACH__)
-	mjit_opts.cc = MJIT_CC_CLANG;
-	verbose(2, "MJIT: CC defaults to clang");
+        mjit_opts.cc = MJIT_CC_CLANG;
+        verbose(2, "MJIT: CC defaults to clang");
 #else
-	mjit_opts.cc = MJIT_CC_GCC;
-	verbose(2, "MJIT: CC defaults to gcc");
+        mjit_opts.cc = MJIT_CC_GCC;
+        verbose(2, "MJIT: CC defaults to gcc");
 #endif
     }
 
     /* Initialize variables for compilation */
     pch_status = PCH_NOT_READY;
     if (mjit_opts.cc == MJIT_CC_CLANG) {
-	cc_path = CLANG_PATH;
+        cc_path = CLANG_PATH;
     } else {
-	cc_path = GCC_PATH;
+        cc_path = GCC_PATH;
     }
 
     if (getenv("TMP") != NULL) { /* For MinGW */
-	tmp_dir = get_string(getenv("TMP"));
+        tmp_dir = get_string(getenv("TMP"));
     }
     else {
-	tmp_dir = get_string("/tmp");
+        tmp_dir = get_string("/tmp");
     }
 
     init_header_filename();
     pch_file = get_uniq_filename(0, "_mjit_h", ".h.gch");
     if (header_file == NULL || pch_file == NULL) {
-	mjit_init_p = FALSE;
-	verbose(1, "Failure in MJIT header file name initialization\n");
-	return;
+        mjit_init_p = FALSE;
+        verbose(1, "Failure in MJIT header file name initialization\n");
+        return;
     }
 
     init_list(&unit_queue);
@@ -1152,20 +1152,20 @@ mjit_init(struct mjit_options *opts)
     rb_obj_hide(valid_class_serials);
     rb_gc_register_mark_object(valid_class_serials);
     if (RCLASS_CONST_TBL(rb_cObject)) {
-	rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
+        rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
     }
 
     /* Initialize worker thread */
     finish_worker_p = FALSE;
     worker_finished = FALSE;
     if (rb_thread_create_mjit_thread(child_after_fork, worker) == FALSE) {
-	mjit_init_p = FALSE;
-	rb_native_mutex_destroy(&mjit_engine_mutex);
-	rb_native_cond_destroy(&mjit_pch_wakeup);
-	rb_native_cond_destroy(&mjit_client_wakeup);
-	rb_native_cond_destroy(&mjit_worker_wakeup);
-	rb_native_cond_destroy(&mjit_gc_wakeup);
-	verbose(1, "Failure in MJIT thread initialization\n");
+        mjit_init_p = FALSE;
+        rb_native_mutex_destroy(&mjit_engine_mutex);
+        rb_native_cond_destroy(&mjit_pch_wakeup);
+        rb_native_cond_destroy(&mjit_client_wakeup);
+        rb_native_cond_destroy(&mjit_worker_wakeup);
+        rb_native_cond_destroy(&mjit_gc_wakeup);
+        verbose(1, "Failure in MJIT thread initialization\n");
     }
 }
 
@@ -1176,7 +1176,7 @@ void
 mjit_finish(void)
 {
     if (!mjit_init_p)
-	return;
+        return;
 
     /* Wait for pch finish */
     verbose(2, "Canceling pch and worker threads");
@@ -1187,18 +1187,18 @@ mjit_finish(void)
        removed, the used C compiler still complaint about their
        absence.  So wait for a clean finish of the threads.  */
     while (pch_status == PCH_NOT_READY) {
-	verbose(3, "Waiting wakeup from make_pch");
-	rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
+        verbose(3, "Waiting wakeup from make_pch");
+        rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }
     CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
 
     /* Stop worker */
     finish_worker_p = TRUE;
     while (!worker_finished) {
-	verbose(3, "Sending cancel signal to workers");
-	CRITICAL_SECTION_START(3, "in mjit_finish");
-	rb_native_cond_broadcast(&mjit_worker_wakeup);
-	CRITICAL_SECTION_FINISH(3, "in mjit_finish");
+        verbose(3, "Sending cancel signal to workers");
+        CRITICAL_SECTION_START(3, "in mjit_finish");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in mjit_finish");
     }
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
@@ -1209,7 +1209,7 @@ mjit_finish(void)
 
     /* cleanup temps */
     if (!mjit_opts.save_temps)
-	remove(pch_file);
+        remove(pch_file);
 
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
@@ -1228,13 +1228,13 @@ mjit_mark(void)
 {
     struct rb_mjit_unit_node *node;
     if (!mjit_init_p)
-	return;
+        return;
     RUBY_MARK_ENTER("mjit");
     CRITICAL_SECTION_START(4, "mjit_mark");
     for (node = unit_queue.head; node != NULL; node = node->next) {
-	if (node->unit->iseq) { /* ISeq is still not GCed */
-	    rb_gc_mark((VALUE)node->unit->iseq);
-	}
+        if (node->unit->iseq) { /* ISeq is still not GCed */
+            rb_gc_mark((VALUE)node->unit->iseq);
+        }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
     RUBY_MARK_LEAVE("mjit");
@@ -1245,7 +1245,7 @@ void
 mjit_add_class_serial(rb_serial_t class_serial)
 {
     if (!mjit_init_p)
-	return;
+        return;
 
     CRITICAL_SECTION_START(3, "in mjit_add_class_serial");
     rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
@@ -1257,7 +1257,7 @@ void
 mjit_remove_class_serial(rb_serial_t class_serial)
 {
     if (!mjit_init_p)
-	return;
+        return;
 
     CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
     rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));

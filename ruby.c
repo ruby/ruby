@@ -241,8 +241,8 @@ usage(const char *name, int help)
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-	M("-j",		   ", --jit",		   "use MJIT with default options"),
-	M("-j:option",     ", --jit:option",       "use MJIT with an option"),
+        M("-j",            ", --jit",              "use MJIT with default options"),
+        M("-j:option",     ", --jit:option",       "use MJIT with an option"),
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
@@ -269,13 +269,13 @@ usage(const char *name, int help)
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
     };
     static const struct message mjit_options[] = {
-	M("c",     ", cc",             "C compiler to generate native code (gcc, clang)"),
-	M("s",     ", save-temps",     "Save MJIT temporary files in $TMP or /tmp"),
-	M("w",     ", warnings",       "Enable printing MJIT warnings"),
-	M("d",     ", debug",          "Enable MJIT debugging (very slow)"),
-	M("a=num", ", aot=num",        "Ahead of Time Compilation after num calls"),
-	M("v=num", ", verbose=num",    "Print MJIT logs of level num or less to stderr"),
-	M("n=num", ", num-cache=num",  "Maximum number of JIT codes in a cache"),
+        M("c",     ", cc",             "C compiler to generate native code (gcc, clang)"),
+        M("s",     ", save-temps",     "Save MJIT temporary files in $TMP or /tmp"),
+        M("w",     ", warnings",       "Enable printing MJIT warnings"),
+        M("d",     ", debug",          "Enable MJIT debugging (very slow)"),
+        M("a=num", ", aot=num",        "Ahead of Time Compilation after num calls"),
+        M("v=num", ", verbose=num",    "Print MJIT logs of level num or less to stderr"),
+        M("n=num", ", num-cache=num",  "Maximum number of JIT codes in a cache"),
     };
     int i;
     const int num = numberof(usage_msg) - (help ? 1 : 0);
@@ -914,13 +914,13 @@ static enum rb_mjit_cc
 parse_mjit_cc(const char *s)
 {
     if (strcmp(s, "gcc") == 0) {
-	return MJIT_CC_GCC;
+        return MJIT_CC_GCC;
     }
     else if (strcmp(s, "clang") == 0) {
-	return MJIT_CC_CLANG;
+        return MJIT_CC_CLANG;
     }
     else {
-	rb_raise(rb_eRuntimeError, "invalid C compiler `%s' (available C compilers: gcc, clang)", s);
+        rb_raise(rb_eRuntimeError, "invalid C compiler `%s' (available C compilers: gcc, clang)", s);
     }
 }
 
@@ -930,41 +930,41 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
     mjit_opt->on = 1;
     if (*s == 0) return;
     if (strcmp(s, ":s") == 0 || strcmp(s, ":save-temps") == 0) {
-	mjit_opt->save_temps = 1;
+        mjit_opt->save_temps = 1;
     }
     else if (strncmp(s, ":c=", 3) == 0) {
-	mjit_opt->cc = parse_mjit_cc(s + 3);
+        mjit_opt->cc = parse_mjit_cc(s + 3);
     }
     else if (strncmp(s, ":cc=", 4) == 0) {
-	mjit_opt->cc = parse_mjit_cc(s + 4);
+        mjit_opt->cc = parse_mjit_cc(s + 4);
     }
     else if (strcmp(s, ":w") == 0 || strcmp(s, ":warnings") == 0) {
-	mjit_opt->warnings = 1;
+        mjit_opt->warnings = 1;
     }
     else if (strcmp(s, ":d") == 0 || strcmp(s, ":debug") == 0) {
-	mjit_opt->debug = 1;
+        mjit_opt->debug = 1;
     }
     else if (strncmp(s, ":a=", 3) == 0) {
-	mjit_opt->aot = atoi(s + 3);
+        mjit_opt->aot = atoi(s + 3);
     }
     else if (strncmp(s, ":aot=", 5) == 0) {
-	mjit_opt->aot = atoi(s + 5);
+        mjit_opt->aot = atoi(s + 5);
     }
     else if (strncmp(s, ":v=", 3) == 0) {
-	mjit_opt->verbose = atoi(s + 3);
+        mjit_opt->verbose = atoi(s + 3);
     }
     else if (strncmp(s, ":verbose=", 9) == 0) {
-	mjit_opt->verbose = atoi(s + 9);
+        mjit_opt->verbose = atoi(s + 9);
     }
     else if (strncmp(s, ":n=", 3) == 0) {
-	mjit_opt->max_cache_size = atoi(s + 3);
+        mjit_opt->max_cache_size = atoi(s + 3);
     }
     else if (strncmp(s, ":num-cache=", 11) == 0) {
-	mjit_opt->max_cache_size = atoi(s + 11);
+        mjit_opt->max_cache_size = atoi(s + 11);
     }
     else {
-	rb_raise(rb_eRuntimeError,
-		 "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
+        rb_raise(rb_eRuntimeError,
+                 "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
     }
 }
 
@@ -1123,9 +1123,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 	    ruby_set_inplace_mode(s + 1);
 	    break;
 
-	  case 'j':
-	    setup_mjit_options(s + 1, &opt->mjit);
-	    break;
+          case 'j':
+            setup_mjit_options(s + 1, &opt->mjit);
+            break;
 
 	  case 'x':
 	    if (envopt) goto noenvopt;
@@ -1324,9 +1324,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		opt->verbose = 1;
 		ruby_verbose = Qtrue;
 	    }
-	    else if (strncmp("jit", s, 3) == 0) {
-		setup_mjit_options(s + 3, &opt->mjit);
-	    }
+            else if (strncmp("jit", s, 3) == 0) {
+                setup_mjit_options(s + 3, &opt->mjit);
+            }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
 		opt->dump |= DUMP_BIT(yydebug);
@@ -1564,7 +1564,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 
     if (opt->mjit.on)
-	mjit_init(&opt->mjit);
+        mjit_init(&opt->mjit);
 
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");

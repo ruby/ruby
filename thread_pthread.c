@@ -85,14 +85,14 @@ gvl_acquire_common(rb_vm_t *vm)
 	}
 
 	while (vm->gvl.acquired) {
-	    rb_native_cond_wait(&vm->gvl.cond, &vm->gvl.lock);
+            rb_native_cond_wait(&vm->gvl.cond, &vm->gvl.lock);
 	}
 
 	vm->gvl.waiting--;
 
 	if (vm->gvl.need_yield) {
 	    vm->gvl.need_yield = 0;
-	    rb_native_cond_signal(&vm->gvl.switch_cond);
+            rb_native_cond_signal(&vm->gvl.switch_cond);
 	}
     }
 
@@ -112,7 +112,7 @@ gvl_release_common(rb_vm_t *vm)
 {
     vm->gvl.acquired = 0;
     if (vm->gvl.waiting > 0)
-	rb_native_cond_signal(&vm->gvl.cond);
+        rb_native_cond_signal(&vm->gvl.cond);
 }
 
 static void
@@ -133,7 +133,7 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
     /* An another thread is processing GVL yield. */
     if (UNLIKELY(vm->gvl.wait_yield)) {
 	while (vm->gvl.wait_yield)
-	    rb_native_cond_wait(&vm->gvl.switch_wait_cond, &vm->gvl.lock);
+            rb_native_cond_wait(&vm->gvl.switch_wait_cond, &vm->gvl.lock);
 	goto acquire;
     }
 
@@ -142,13 +142,13 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 	vm->gvl.need_yield = 1;
 	vm->gvl.wait_yield = 1;
 	while (vm->gvl.need_yield)
-	    rb_native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
+            rb_native_cond_wait(&vm->gvl.switch_cond, &vm->gvl.lock);
 	vm->gvl.wait_yield = 0;
     }
     else {
 	rb_native_mutex_unlock(&vm->gvl.lock);
 	sched_yield();
-	rb_native_mutex_lock(&vm->gvl.lock);
+        rb_native_mutex_lock(&vm->gvl.lock);
     }
 
     rb_native_cond_broadcast(&vm->gvl.switch_wait_cond);
@@ -327,7 +327,7 @@ rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
 	r = pthread_cond_broadcast(&cond->cond);
     } while (r == EAGAIN);
     if (r != 0) {
-	rb_bug_errno("rb_native_cond_broadcast", r);
+        rb_bug_errno("rb_native_cond_broadcast", r);
     }
 }
 
@@ -940,7 +940,7 @@ register_cached_thread_and_wait(void)
 	}
 
 	free(entry); /* ok */
-	rb_native_cond_destroy(&cond);
+        rb_native_cond_destroy(&cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
 
@@ -956,7 +956,7 @@ use_cached_thread(rb_thread_t *th)
     struct cached_thread_entry *entry;
 
     if (cached_thread_root) {
-	rb_native_mutex_lock(&thread_cache_lock);
+        rb_native_mutex_lock(&thread_cache_lock);
 	entry = cached_thread_root;
 	{
 	    if (cached_thread_root) {
@@ -1102,7 +1102,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 
     GVL_UNLOCK_BEGIN();
     {
-	rb_native_mutex_lock(lock);
+        rb_native_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
 	th->unblock.arg = th;
 
@@ -1112,7 +1112,7 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	}
 	else {
 	    if (!timeout_tv)
-		rb_native_cond_wait(cond, lock);
+                rb_native_cond_wait(cond, lock);
 	    else
 		native_cond_timedwait(cond, lock, &timeout);
 	}
@@ -1136,9 +1136,9 @@ register_ubf_list(rb_thread_t *th)
     struct list_node *node = &th->native_thread_data.ubf_list;
 
     if (list_empty((struct list_head*)node)) {
-	rb_native_mutex_lock(&ubf_list_lock);
+        rb_native_mutex_lock(&ubf_list_lock);
 	list_add(&ubf_list_head, node);
-	rb_native_mutex_unlock(&ubf_list_lock);
+        rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1149,9 +1149,9 @@ unregister_ubf_list(rb_thread_t *th)
     struct list_node *node = &th->native_thread_data.ubf_list;
 
     if (!list_empty((struct list_head*)node)) {
-	rb_native_mutex_lock(&ubf_list_lock);
+        rb_native_mutex_lock(&ubf_list_lock);
 	list_del_init(node);
-	rb_native_mutex_unlock(&ubf_list_lock);
+        rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1198,12 +1198,12 @@ ubf_wakeup_all_threads(void)
     native_thread_data_t *dat;
 
     if (!ubf_threads_empty()) {
-	rb_native_mutex_lock(&ubf_list_lock);
+        rb_native_mutex_lock(&ubf_list_lock);
 	list_for_each(&ubf_list_head, dat, ubf_list) {
 	    th = container_of(dat, rb_thread_t, native_thread_data);
 	    ubf_wakeup_thread(th);
 	}
-	rb_native_mutex_unlock(&ubf_list_lock);
+        rb_native_mutex_unlock(&ubf_list_lock);
     }
 }
 
@@ -1780,7 +1780,7 @@ mjit_worker(void *arg)
     void (*worker_func)(void) = arg;
 
     if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
-	fprintf(stderr, "Cannot enable cancelation in MJIT worker\n");
+        fprintf(stderr, "Cannot enable cancelation in MJIT worker\n");
     }
 #ifdef SET_CURRENT_THREAD_NAME
     SET_CURRENT_THREAD_NAME("ruby-mjitworker"); /* 16 byte including NUL */
@@ -1798,14 +1798,14 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
 
     pthread_atfork(NULL, NULL, child_hook);
     if (pthread_attr_init(&attr) == 0
-	&& pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) == 0
-	&& pthread_create(&worker_pid, &attr, mjit_worker, worker_func) == 0) {
-	/* jit_worker thread is not to be joined */
-	pthread_detach(worker_pid);
-	return TRUE;
+        && pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) == 0
+        && pthread_create(&worker_pid, &attr, mjit_worker, worker_func) == 0) {
+        /* jit_worker thread is not to be joined */
+        pthread_detach(worker_pid);
+        return TRUE;
     }
     else {
-	return FALSE;
+        return FALSE;
     }
 }
 

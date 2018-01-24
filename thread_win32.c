@@ -54,7 +54,7 @@ w32_mutex_lock(HANDLE lock)
 {
     DWORD result;
     while (1) {
-	thread_debug("rb_native_mutex_lock: %p\n", lock);
+        thread_debug("rb_native_mutex_lock: %p\n", lock);
 	result = w32_wait_events(&lock, 1, INFINITE, 0);
 	switch (result) {
 	  case WAIT_OBJECT_0:
@@ -85,7 +85,7 @@ w32_mutex_create(void)
 {
     HANDLE lock = CreateMutex(NULL, FALSE, NULL);
     if (lock == NULL) {
-	w32_error("rb_native_mutex_initialize");
+        w32_error("rb_native_mutex_initialize");
     }
     return lock;
 }
@@ -280,10 +280,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
     {
 	DWORD ret;
 
-	rb_native_mutex_lock(&th->interrupt_lock);
+        rb_native_mutex_lock(&th->interrupt_lock);
 	th->unblock.func = ubf_handle;
 	th->unblock.arg = th;
-	rb_native_mutex_unlock(&th->interrupt_lock);
+        rb_native_mutex_unlock(&th->interrupt_lock);
 
 	if (RUBY_VM_INTERRUPTED(th->ec)) {
 	    /* interrupted.  return immediate */
@@ -294,10 +294,10 @@ native_sleep(rb_thread_t *th, struct timeval *tv)
 	    thread_debug("native_sleep done (%lu)\n", ret);
 	}
 
-	rb_native_mutex_lock(&th->interrupt_lock);
+        rb_native_mutex_lock(&th->interrupt_lock);
 	th->unblock.func = 0;
 	th->unblock.arg = 0;
-	rb_native_mutex_unlock(&th->interrupt_lock);
+        rb_native_mutex_unlock(&th->interrupt_lock);
     }
     GVL_UNLOCK_END();
 }
@@ -429,7 +429,7 @@ native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
     {
 	r = WaitForSingleObject(entry.event, msec);
 	if ((r != WAIT_OBJECT_0) && (r != WAIT_TIMEOUT)) {
-	    rb_bug("rb_native_cond_wait: WaitForSingleObject returns %lu", r);
+            rb_bug("rb_native_cond_wait: WaitForSingleObject returns %lu", r);
 	}
     }
     rb_native_mutex_lock(mutex);
@@ -793,7 +793,7 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
     size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
     HANDLE thread_id = w32_create_thread(stack_size, mjit_worker, worker_func);
     if (thread_id == 0) {
-	return FALSE;
+        return FALSE;
     }
 
     w32_resume_thread(thread_id);
