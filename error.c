@@ -53,8 +53,8 @@ int rb_str_end_with_asciichar(VALUE str, int c);
 VALUE rb_eEAGAIN;
 VALUE rb_eEWOULDBLOCK;
 VALUE rb_eEINPROGRESS;
-VALUE rb_mWarning;
-VALUE rb_cWarningBuffer;
+static VALUE rb_mWarning;
+static VALUE rb_cWarningBuffer;
 
 static ID id_warn;
 

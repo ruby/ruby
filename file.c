@@ -5802,7 +5802,7 @@ rb_file_s_mkfifo(int argc, VALUE *argv)
 #define rb_file_s_mkfifo rb_f_notimplement
 #endif
 
-VALUE rb_mFConst;
+static VALUE rb_mFConst;
 
 void
 rb_file_const(const char *name, VALUE value)

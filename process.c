@@ -7590,9 +7590,9 @@ rb_clock_getres(int argc, VALUE *argv)
 }
 
 VALUE rb_mProcess;
-VALUE rb_mProcUID;
-VALUE rb_mProcGID;
-VALUE rb_mProcID_Syscall;
+static VALUE rb_mProcUID;
+static VALUE rb_mProcGID;
+static VALUE rb_mProcID_Syscall;
 
 
 /*

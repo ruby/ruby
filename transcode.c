@@ -17,9 +17,9 @@
 #define ENABLE_ECONV_NEWLINE_OPTION 1
 
 /* VALUE rb_cEncoding = rb_define_class("Encoding", rb_cObject); */
-VALUE rb_eUndefinedConversionError;
-VALUE rb_eInvalidByteSequenceError;
-VALUE rb_eConverterNotFoundError;
+static VALUE rb_eUndefinedConversionError;
+static VALUE rb_eInvalidByteSequenceError;
+static VALUE rb_eConverterNotFoundError;
 
 VALUE rb_cEncodingConverter;
 
