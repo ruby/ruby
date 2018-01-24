@@ -1965,7 +1965,7 @@ open_load_file(VALUE fname_v, int *xflag)
 #endif
 
 	if ((fd = rb_cloexec_open(fname, mode, 0)) < 0) {
-	    int e = errno;
+	    e = errno;
 	    if (!rb_gc_for_fd(e)) {
 		rb_load_fail(fname_v, strerror(e));
 	    }
