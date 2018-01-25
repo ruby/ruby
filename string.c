@@ -2560,6 +2560,7 @@ str_substr(VALUE str, long beg, long len, int empty)
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += ofs;
 	RSTRING(str2)->as.heap.len = len;
+	ENC_CODERANGE_CLEAR(str2);
     }
     else {
 	if (!len && !empty) return Qnil;
