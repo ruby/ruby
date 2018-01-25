@@ -318,7 +318,7 @@ class Matrix
   # Set element or elements of matrix.
   def []=(i, j, v)
     raise FrozenError, "can't modify frozen Matrix" if frozen?
-    if i.is_a?(Range) && j.is_a?(Range)
+    if both_ranges?(i, j)
       set_row_and_col_range(i, j, v)
     elsif i.is_a?(Range)
       set_row_range(i, j, v)
@@ -331,25 +331,43 @@ class Matrix
   alias set_element []=
   alias set_component []=
 
-  def in_row_range?(range)
+  def range_within_row_range?(range)
     (range.max <= (row_count - 1)) && (range.min >= (-row_count))
   end
 
-  def in_column_range?(range)
+  def range_within_column_range?(range)
     (range.max <= (column_count - 1)) && (range.min >= (-column_count))
   end
+
+  def range_within_matrix_range?(row_range, col_range)
+    range_within_row_range?(row_range) && range_within_column_range?(col_range)
+  end
+
+  def ranges_and_dimentions_equal?(row, col, matrix)
+    row.size == matrix.row_count && col.size == matrix.column_count
+  end
+
+  def indices_within_matrix?(row_index, col_index)
+    row_index.between?(-row_count, row_count-1) && col_index.between?(-column_count, column_count-1)
+  end
+
+  def both_ranges?(row, col)
+    row.is_a?(Range) && col.is_a?(Range)
+  end
+
+  private :range_within_row_range?, :range_within_column_range?, :range_within_matrix_range?, :ranges_and_dimentions_equal?, :indices_within_matrix?, :both_ranges?
 
   def set_value(i, j, v)
     i = CoercionHelper.coerce_to_int(i)
     j = CoercionHelper.coerce_to_int(j)
-    raise IndexError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
+    raise IndexError, "indices are outside of matrix" unless indices_within_matrix?(i, j)
     @rows[i][j] = v
   end
 
   def set_row_and_col_range(i, j, v)
-    raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
+    raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(i, j)
     if v.is_a?(Matrix)
-      Matrix.Raise ErrDimensionMismatch unless i.size == v.row_count && j.size == v.column_count
+      Matrix.Raise ErrDimensionMismatch unless ranges_and_dimentions_equal?(i, j, v)
       i.each do |i|
         @rows[i][j] = v.rows[i][j]
       end
@@ -362,7 +380,7 @@ class Matrix
   end
 
   def set_row_range(i, j, v)
-    raise IndexError, "expected row range is outside of matrix" unless in_row_range?(i)
+    raise IndexError, "expected row range is outside of matrix" unless range_within_row_range?(i)
     j = CoercionHelper.coerce_to_int(j)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
@@ -384,7 +402,7 @@ class Matrix
 
   def set_col_range(i, j, v)
     i = CoercionHelper.coerce_to_int(i)
-    raise IndexError, "expected column range is outside of matrix" unless in_column_range?(j)
+    raise IndexError, "expected column range is outside of matrix" unless range_within_column_range?(j)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
       @rows[i][j] = v.to_a
@@ -397,7 +415,7 @@ class Matrix
   end
 
 
-  private :in_row_range?, :in_column_range?, :set_value, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
+  private :set_value, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
 
 
 
@@ -1907,7 +1925,7 @@ class Vector
   alias set_element []=
   alias set_component []=
 
-  def in_vector_range?(range)
+  def range_within_vector_range?(range)
     (range.max <= (size - 1)) && (range.min >= (-size))
   end
 
@@ -1918,7 +1936,7 @@ class Vector
   end
 
   def set_range(i, v)
-    raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
+    raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(i)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
       @elements[i] = v.elements
@@ -1930,7 +1948,7 @@ class Vector
     end
   end
 
-  private :in_vector_range?, :set_value, :set_range
+  private :range_within_vector_range?, :set_value, :set_range
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
