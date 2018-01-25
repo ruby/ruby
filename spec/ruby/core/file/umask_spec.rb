@@ -30,15 +30,6 @@ describe "File.umask" do
     end
   end
 
-  it "raises RangeError with too large values" do
-    -> { File.umask(2**64) }.should raise_error(RangeError)
-    -> { File.umask(-2**63 - 1) }.should raise_error(RangeError)
-  end
-
-  it "raises ArgumentError when more than one argument is provided" do
-    lambda { File.umask(022, 022) }.should raise_error(ArgumentError)
-  end
-
   platform_is :windows do
     it "returns the current umask value for this process (basic)" do
       File.umask.should == 0
@@ -53,5 +44,14 @@ describe "File.umask" do
       File.umask(0006)
       File.umask.should == 0
     end
+  end
+
+  it "raises RangeError with too large values" do
+    -> { File.umask(2**64) }.should raise_error(RangeError)
+    -> { File.umask(-2**63 - 1) }.should raise_error(RangeError)
+  end
+
+  it "raises ArgumentError when more than one argument is provided" do
+    lambda { File.umask(022, 022) }.should raise_error(ArgumentError)
   end
 end
