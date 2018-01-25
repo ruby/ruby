@@ -30,7 +30,7 @@ describe "File.umask" do
     end
   end
 
-  platform_is_not :freebsd, :darwin do
+  platform_is_not :freebsd, :darwin, :mingw32 do
     it "always succeeds with any integer values" do
       vals = [-2**30, -2**16, -2**8, -2,
               -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8, 2**16, 2**30]
@@ -40,7 +40,7 @@ describe "File.umask" do
     end
   end
 
-  platform_is :freebsd, :darwin do
+  platform_is :freebsd, :darwin, :mingw32 do
     it "always succeeds with any integer values" do
       vals = [-2**8, -2,
               -1.5, -1, 0.5, 0, 1, 2, 7.77777, 16, 32, 64, 2**8]
