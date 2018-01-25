@@ -319,21 +319,13 @@ class Matrix
   def []=(i, j, v)
     raise FrozenError, "can't modify frozen Matrix" if frozen?
     if i.is_a?(Range) && j.is_a?(Range)
-      raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
       set_row_and_col_range(i, j, v)
     elsif i.is_a?(Range)
-      raise IndexError, "expected row range is outside of matrix" unless in_row_range?(i)
-      j = CoercionHelper.coerce_to_int(j)
       set_row_range(i, j, v)
     elsif j.is_a?(Range)
-      i = CoercionHelper.coerce_to_int(i)
-      raise IndexError, "expected column range is outside of matrix" unless in_column_range?(j)
       set_col_range(i, j, v)
     else
-      i = CoercionHelper.coerce_to_int(i)
-      j = CoercionHelper.coerce_to_int(j)
-      raise IndexError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
-      @rows[i][j] = v
+      set_value(i, j, v)
     end
   end
   alias set_element []=
@@ -347,65 +339,65 @@ class Matrix
     (range.max <= (column_count - 1)) && (range.min >= (-column_count))
   end
 
+  def set_value(i, j, v)
+    i = CoercionHelper.coerce_to_int(i)
+    j = CoercionHelper.coerce_to_int(j)
+    raise IndexError, "indices are outside of matrix" unless i.between?(-row_count, row_count-1) && j.between?(-column_count, column_count-1)
+    @rows[i][j] = v
+  end
+
   def set_row_and_col_range(i, j, v)
+    raise IndexError, "expected ranges are outside of matrix" unless in_row_range?(i) && in_column_range?(j)
     if v.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless i.size == v.row_count && j.size == v.column_count
-      v.each_with_index do |e, row, col|
-        r = i.first + row
-        c = j.first + col
-        @rows[r][c] = e
+      i.each do |i|
+        @rows[i][j] = v.rows[i][j]
       end
     else
+      value_to_set = Array.new(j.size, v)
       i.each do |i|
-        j.each do |j|
-          @rows[i][j] = v
-        end
+        @rows[i][j] = value_to_set
       end
     end
   end
 
   def set_row_range(i, j, v)
+    raise IndexError, "expected row range is outside of matrix" unless in_row_range?(i)
+    j = CoercionHelper.coerce_to_int(j)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
-      v.each_with_index do |e, index|
-        r = i.first + index
-        @rows[r][j] = e
-      end
+      set_column_vector(i, j, v)
     elsif v.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless v.column_count == 1
-      v.each_with_index do |e, row, col|
-        r = i.first + row
-        @rows[r][j] = e
-      end
+      set_column_vector(i, j, v.column(0))
     else
-      i.each do |i|
-        @rows[i][j] = v
-      end
+      @rows[i].map!{|e| e[j] = v }
+    end
+  end
+
+  def set_column_vector(i, j, v)
+    v.each_with_index do |e, index|
+      r = i.first + index
+      @rows[r][j] = e
     end
   end
 
   def set_col_range(i, j, v)
+    i = CoercionHelper.coerce_to_int(i)
+    raise IndexError, "expected column range is outside of matrix" unless in_column_range?(j)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless j.size == v.size
-      v.each_with_index do |e, index|
-        c = j.first + index
-        @rows[i][c] = e
-      end
+      @rows[i][j] = v.to_a
     elsif v.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless v.row_count == 1
-      v.each_with_index do |e, row, col|
-        c = j.first + col
-        @rows[i][c] = e
-      end
+      @rows[i][j] = v.row(0).to_a
     else
-      j.each do |j|
-        @rows[i][j] = v
-      end
+      @rows[i][j] = Array.new(j.size, v)
     end
   end
 
 
-  private :in_row_range?, :in_column_range?, :set_row_and_col_range, :set_row_range, :set_col_range
+  private :in_row_range?, :in_column_range?, :set_value, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
 
 
 
@@ -1907,12 +1899,9 @@ class Vector
   def []=(i, v)
     raise FrozenError, "can't modify frozen Vector" if frozen?
     if i.is_a?(Range)
-      raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
       set_range(i, v)
     else
-      i = Matrix::CoercionHelper.coerce_to_int(i)
-      raise IndexError unless i.between?(-size, size-1)
-      @elements[i] = v
+      set_value(i, v)
     end
   end
   alias set_element []=
@@ -1922,27 +1911,26 @@ class Vector
     (range.max <= (size - 1)) && (range.min >= (-size))
   end
 
+  def set_value(i, v)
+    i = Matrix::CoercionHelper.coerce_to_int(i)
+    raise IndexError unless i.between?(-size, size-1)
+    @elements[i] = v
+  end
+
   def set_range(i, v)
+    raise IndexError, 'expected range is outside of vector' unless in_vector_range?(i)
     if v.is_a?(Vector)
       raise ArgumentError, "vector to be set has wrong size" unless i.size == v.size
-      v.each_with_index do |e, index|
-        r = i.first + index
-        @elements[r] = e
-      end
+      @elements[i] = v.elements
     elsif v.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless v.row_count == 1
-      v.each_with_index do |e, row, col|
-        r = i.first + col
-        @elements[r] = e
-      end
+      @elements[i] = v.row(0).elements
     else
-      i.each do |i|
-        @elements[i] = v
-      end
+      @elements[i] = Array.new(i.size, v)
     end
   end
 
-  private :in_vector_range?, :set_range
+  private :in_vector_range?, :set_value, :set_range
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
