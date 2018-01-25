@@ -2832,6 +2832,22 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
+    if (IS_INSN_ID(iobj, freezestring) &&
+	IS_NEXT_INSN_ID(&iobj->link, send)) {
+	INSN *niobj = (INSN *)iobj->link.next;
+	struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(niobj, 0);
+	/*
+	 *  freezestring debug_info
+	 *  send <:+@, 0, ARG_SIMPLE>
+	 * =>
+	 *  send <:+@, 0, ARG_SIMPLE>
+	 */
+	if ((ci->flag & VM_CALL_ARGS_SIMPLE) && ci->orig_argc == 0) {
+	    ELEM_REMOVE(list);
+	    return COMPILE_OK;
+	}
+    }
+
     if (do_tailcallopt &&
 	(IS_INSN_ID(iobj, send) ||
 	 IS_INSN_ID(iobj, opt_aref_with) ||
