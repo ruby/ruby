@@ -2842,7 +2842,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	 * =>
 	 *  send <:+@, 0, ARG_SIMPLE>
 	 */
-	if ((ci->flag & VM_CALL_ARGS_SIMPLE) && ci->orig_argc == 0) {
+	if (ci->mid == idUPlus &&
+	    (ci->flag & VM_CALL_ARGS_SIMPLE) &&
+	    ci->orig_argc == 0) {
 	    ELEM_REMOVE(list);
 	    return COMPILE_OK;
 	}
