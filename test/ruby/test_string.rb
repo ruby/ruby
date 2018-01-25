@@ -3087,6 +3087,12 @@ CODE
     assert_equal("\u3042", "\u3042\u3043".chr)
     assert_equal('', ''.chr)
   end
+
+  def test_substr_code_range
+    data = "\xff" + "a"*200
+    assert_not_predicate(data, :valid_encoding?)
+    assert_predicate(data[100..-1], :valid_encoding?)
+  end
 end
 
 class TestString2 < TestString
