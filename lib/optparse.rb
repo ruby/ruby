@@ -1237,7 +1237,7 @@ XXX
   # +indent+:: Indentation, defaults to @summary_indent.
   #
   def summarize(to = [], width = @summary_width, max = width - 1, indent = @summary_indent, &blk)
-    blk ||= proc {|l| to << (l.index(nl, -1) ? l : l + nl)}
+    blk ||= proc {|l| to << (l.index($/, -1) ? l : l + $/)}
     visit(:summarize, {}, {}, width, max, indent, &blk)
     to
   end
