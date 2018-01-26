@@ -1418,7 +1418,7 @@ name_err_local_variables(VALUE self)
 
 /*
  * call-seq:
- *   NoMethodError.new([msg, *, name [, args]])  -> no_method_error
+ *   NoMethodError.new([msg, *, name [, args [, priv]]])  -> no_method_error
  *
  * Construct a NoMethodError exception for a method of the given name
  * called with the given arguments. The name may be accessed using
