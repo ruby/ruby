@@ -15,11 +15,15 @@ class TestKeyError < Test::Unit::TestCase
     receiver = Object.new
     error = KeyError.new(receiver: receiver)
     assert_equal(receiver, error.receiver)
+    error = KeyError.new
+    assert_raise(ArgumentError) {error.receiver}
   end
 
   def test_key
     error = KeyError.new(key: :key)
     assert_equal(:key, error.key)
+    error = KeyError.new
+    assert_raise(ArgumentError) {error.key}
   end
 
   def test_receiver_and_key
