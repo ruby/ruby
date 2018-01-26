@@ -28,8 +28,9 @@ INSN_ENTRY(<%= insn.name %>)
     <%= pop[:name] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
 % end
     DEBUG_ENTER_INSN(<%=cstr insn.name %>);
+% if insn.handles_frame?
     ADD_PC(<%= insn.width %>);
-    PREFETCH(GET_PC());
+% end
 % unless insn.pops.empty?
     POPN(<%= insn.pops.size %>);
 % end
@@ -44,7 +45,10 @@ INSN_ENTRY(<%= insn.name %>)
     PUSH(<%= insn.cast_to_VALUE ret %>);
 %   end
 % end
-%
+% unless insn.handles_frame?
+    ADD_PC(<%= insn.width %>);
+    PREFETCH(GET_PC());
+% end
     END_INSN(<%= insn.name %>);
 }
 #undef NAME_OF_CURRENT_INSN

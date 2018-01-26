@@ -33,6 +33,7 @@ class RubyVM::BareInstructions
       h[a.key] = a
     }
     @attrs_orig = @attrs.dup
+    predefine_attributes
   end
 
   def pretty_name
@@ -109,8 +110,8 @@ class RubyVM::BareInstructions
     }.join
   end
 
-  def pushs_frame?
-    opes.any? {|o| /CALL_INFO/ =~ o[:type] }
+  def handles_frame?
+    /\b(false|0)\b/ !~ @attrs['handles_frame'].expr.expr
   end
 
   def inspect
@@ -126,7 +127,13 @@ class RubyVM::BareInstructions
       type: t, \
       location: [], \
       expr: v.to_s + ';'
-    return @attrs[k] = attr
+    return @attrs[k] ||= attr
+  end
+
+  def predefine_attributes
+    generate_attribute 'sp_inc', 'rb_snum_t', rets.size - pops.size
+    generate_attribute 'handles_frame', 'bool', \
+      opes.any? {|o| /CALL_INFO/ =~ o[:type] }
   end
 
   def typesplit a
