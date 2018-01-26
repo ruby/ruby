@@ -319,12 +319,14 @@ class Matrix
   def []=(i, j, v)
     raise FrozenError, "can't modify frozen Matrix" if frozen?
     if both_ranges?(i, j)
+      raise_row_and_col_range_outside_matrix(i, j)
       set_row_and_col_range(i, j, v)
-    elsif i.is_a?(Range)
-      set_row_range(i, j, v)
-    elsif j.is_a?(Range)
-      set_col_range(i, j, v)
+    elsif one_is_range?(i, j)
+      set_range(i, j, v)
     else
+      i = CoercionHelper.coerce_to_int(i)
+      j = CoercionHelper.coerce_to_int(j)
+      raise_indices_outside_matrix(i, j)
       set_value(i, j, v)
     end
   end
@@ -343,9 +345,11 @@ class Matrix
     range_within_row_range?(row_range) && range_within_column_range?(col_range)
   end
 
-  def ranges_and_dimentions_equal?(row, col, matrix)
+  def ranges_and_dimensions_equal?(row, col, matrix)
     row.size == matrix.row_count && col.size == matrix.column_count
   end
+
+  private :range_within_row_range?, :range_within_column_range?, :range_within_matrix_range?, :ranges_and_dimensions_equal?
 
   def indices_within_matrix?(row_index, col_index)
     row_index.between?(-row_count, row_count-1) && col_index.between?(-column_count, column_count-1)
@@ -355,20 +359,68 @@ class Matrix
     row.is_a?(Range) && col.is_a?(Range)
   end
 
-  private :range_within_row_range?, :range_within_column_range?, :range_within_matrix_range?, :ranges_and_dimentions_equal?, :indices_within_matrix?, :both_ranges?
+  def one_is_range?(row, col)
+    row.is_a?(Range) || col.is_a?(Range)
+  end
+
+  private :indices_within_matrix?, :both_ranges?, :one_is_range?
+
+  def raise_row_and_col_range_outside_matrix(row_range, col_range)
+    raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(row_range, col_range)
+  end
+
+  def raise_row_range_outside_matrix(row_range)
+    raise IndexError, "expected row range is outside of matrix" unless range_within_row_range?(row_range)
+  end
+
+  def raise_col_range_outside_matrix(col_range)
+    raise IndexError, "expected column range is outside of matrix" unless range_within_column_range?(col_range)
+  end
+
+  def raise_indices_outside_matrix(row, col)
+    raise IndexError, "indices are outside of matrix" unless indices_within_matrix?(row, col)
+  end
+
+  private :raise_row_and_col_range_outside_matrix, :raise_row_range_outside_matrix, :raise_col_range_outside_matrix, :raise_indices_outside_matrix
+
+  def raise_matrix_wrong_dimensions(row_range, col_range, matrix)
+    Matrix.Raise ErrDimensionMismatch unless ranges_and_dimensions_equal?(row_range, col_range, matrix)
+  end
+
+  def raise_column_matrix_wrong_dimension(matrix)
+    Matrix.Raise ErrDimensionMismatch unless matrix.column_count == 1
+  end
+
+  def raise_row_matrix_wrong_dimension(matrix)
+    Matrix.Raise ErrDimensionMismatch unless matrix.row_count == 1
+  end
+
+  def raise_vector_wrong_size(range, vector)
+    raise ArgumentError, "vector to be set has wrong size" unless range.size == vector.size
+  end
+
+  private :raise_matrix_wrong_dimensions, :raise_column_matrix_wrong_dimension, :raise_row_matrix_wrong_dimension, :raise_vector_wrong_size
 
   def set_value(row, col, value)
-    row = CoercionHelper.coerce_to_int(row)
-    col = CoercionHelper.coerce_to_int(col)
-    raise IndexError, "indices are outside of matrix" unless indices_within_matrix?(row, col)
     @rows[row][col] = value
+  end
+
+  def set_range(row, col, value)
+    if row.is_a?(Range)
+      raise_row_range_outside_matrix(row)
+      col = CoercionHelper.coerce_to_int(col)
+      set_row_range(row, col, value)
+    else
+      row = CoercionHelper.coerce_to_int(row)
+      raise_col_range_outside_matrix(col)
+      set_col_range(row, col, value)
+    end
   end
 
 
   def set_row_and_col_range(row_range, col_range, value)
-    raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(row_range, col_range)
     if value.is_a?(Matrix)
-      Matrix.Raise ErrDimensionMismatch unless ranges_and_dimentions_equal?(row_range, col_range, value)
+      raise_matrix_wrong_dimensions(row_range, col_range, value)
       row_range.each do |i|
         @rows[i][col_range] = value.rows[i][col_range]
       end
@@ -381,24 +433,16 @@ class Matrix
   end
 
   def set_row_range(row_range, col, value)
-    raise IndexError, "expected row range is outside of matrix" unless range_within_row_range?(row_range)
-    col = CoercionHelper.coerce_to_int(col)
     if value.is_a?(Vector)
-      raise_vector_size_error(row_range, value)
+      raise_vector_wrong_size(row_range, value)
       set_column_vector(row_range, col, value)
     elsif value.is_a?(Matrix)
-      Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
+      raise_column_matrix_wrong_dimension(value)
       set_column_vector(row_range, col, value.column(0))
     else
       @rows[row_range].map!{|e| e[col] = value }
     end
   end
-
-  def raise_vector_size_error(range, vector)
-    raise ArgumentError, "vector to be set has wrong size" unless range.size == vector.size
-  end
-
-  private :raise_vector_size_error
 
   def set_column_vector(row_range, col, value)
     value.each_with_index do |e, index|
@@ -408,13 +452,11 @@ class Matrix
   end
 
   def set_col_range(row, col_range, value)
-    row = CoercionHelper.coerce_to_int(row)
-    raise IndexError, "expected column range is outside of matrix" unless range_within_column_range?(col_range)
     if value.is_a?(Vector)
-      raise_vector_size_error(col_range, value)
+      raise_vector_wrong_size(col_range, value)
       @rows[row][col_range] = value.to_a
     elsif value.is_a?(Matrix)
-      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
+      raise_row_matrix_wrong_dimension(value)
       @rows[row][col_range] = value.row(0).to_a
     else
       @rows[row][col_range] = Array.new(col_range.size, value)
@@ -422,7 +464,7 @@ class Matrix
   end
 
 
-  private :set_value, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
+  private :set_value, :set_range, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
 
 
 
@@ -1924,8 +1966,11 @@ class Vector
   def []=(i, v)
     raise FrozenError, "can't modify frozen Vector" if frozen?
     if i.is_a?(Range)
+      raise_range_outside_vector(i)
       set_range(i, v)
     else
+      i = Matrix::CoercionHelper.coerce_to_int(i)
+      raise_index_outside_vector_error(i)
       set_value(i, v)
     end
   end
@@ -1936,26 +1981,43 @@ class Vector
     (range.max <= (size - 1)) && (range.min >= (-size))
   end
 
-  def set_value(index, value)
-    index = Matrix::CoercionHelper.coerce_to_int(index)
+  private :range_within_vector_range?
+
+  def raise_index_outside_vector_error(index)
     raise IndexError unless index.between?(-size, size-1)
+  end
+
+  def raise_range_outside_vector(range)
+    raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(range)
+  end
+
+  def raise_vector_wrong_size(range, vector)
+    raise ArgumentError, "vector to be set has wrong size" unless range.size == vector.size
+  end
+
+  def raise_matrix_wrong_dimension(matrix)
+    Matrix.Raise ErrDimensionMismatch unless matrix.row_count == 1
+  end
+
+  private :raise_index_outside_vector_error, :raise_range_outside_vector, :raise_vector_wrong_size
+
+  def set_value(index, value)
     @elements[index] = value
   end
 
   def set_range(range, value)
-    raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(range)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless range.size == value.size
+      raise_vector_wrong_size(range, value)
       @elements[range] = value.elements
     elsif value.is_a?(Matrix)
-      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
+      raise_matrix_wrong_dimension(value)
       @elements[range] = value.row(0).elements
     else
       @elements[range] = Array.new(range.size, value)
     end
   end
 
-  private :range_within_vector_range?, :set_value, :set_range
+  private :set_value, :set_range
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
