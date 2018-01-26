@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'matrix'
+require_relative 'matrix'
 
 class TestVector < Test::Unit::TestCase
   def setup
@@ -34,6 +34,8 @@ class TestVector < Test::Unit::TestCase
     v4 = Vector[5, 6, 7, 8, 9]
     v5 = Vector[6, 7, 8]
     v6 = Vector[7, 8, 9].freeze
+    v7 = Vector[2, 3, 5]
+    v8 = Vector[3, 4, 5]
     m1 = Matrix[[1, 3]]
 
     assert_block do
@@ -54,6 +56,16 @@ class TestVector < Test::Unit::TestCase
     assert_block do
       v5[1..2] = m1
       Vector[6, 1, 3] == v5
+    end
+
+    assert_block do
+      v7[-2] = 13
+      Vector[2, 3, 13]
+    end
+
+    assert_block do
+      v8[-2..0] = 57
+      Vector[57, 57, 57]
     end
 
     assert_raise(IndexError) {v1[5..6] = 17}

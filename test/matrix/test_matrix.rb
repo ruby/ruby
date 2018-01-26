@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'matrix'
+require_relative 'matrix'
 
 class SubMatrix < Matrix
 end
@@ -643,6 +643,7 @@ class TestMatrix < Test::Unit::TestCase
     m6 = Matrix.zero(2, 4)
     m7 = Matrix.zero(3, 2)
     m8 = Matrix[[1, 3, 4], [5, 6, 9]].freeze
+    m9 = Matrix[[1,2],[2,1]]
     v1 = Vector[3, 5, 6, 7]
     v2 = Vector[4, 5, 6]
 
@@ -681,6 +682,11 @@ class TestMatrix < Test::Unit::TestCase
     assert_block do
       m7[0..2, 1] = m5
       Matrix[[0, 1],[0, 2], [0, 3]] == m7
+    end
+
+    assert_block do
+      m9[-2..1, 1] = 45
+      Matrix[[1, 45], [2, 45]] == m9
     end
 
     # Error checking
