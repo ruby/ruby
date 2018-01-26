@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require_relative 'matrix'
+require 'matrix'
 
 class SubMatrix < Matrix
 end

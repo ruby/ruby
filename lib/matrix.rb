@@ -1999,7 +1999,7 @@ class Vector
     Matrix.Raise ErrDimensionMismatch unless matrix.row_count == 1
   end
 
-  private :raise_index_outside_vector_error, :raise_range_outside_vector, :raise_vector_wrong_size
+  private :raise_index_outside_vector_error, :raise_range_outside_vector, :raise_vector_wrong_size, :raise_matrix_wrong_dimension
 
   def set_value(index, value)
     @elements[index] = value
