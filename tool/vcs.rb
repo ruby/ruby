@@ -86,6 +86,14 @@ else
         super
       end
     end
+    refine Kernel do
+      def system(*args, exception: true, **opts)
+        STDERR.puts [*args, **opts].inspect if $DEBUG
+        ret = super(*args, **opts, exception: exception)
+        raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
+        ret
+      end
+    end
   ensure
     $VERBOSE = verbose unless verbose.nil?
   end
