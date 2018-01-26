@@ -866,6 +866,14 @@ end.join
     error = NameError.new
     assert_raise(ArgumentError) {error.receiver}
     assert_equal("NameError", error.message)
+
+    error = NameError.new(receiver: receiver)
+    assert_equal(["NameError", receiver],
+                 [error.message, error.receiver])
+
+    error = NameError.new("Message", :foo, receiver: receiver)
+    assert_equal(["Message", receiver, :foo],
+                 [error.message, error.receiver, error.name])
   end
 
   def test_nomethod_error_new_default
@@ -901,6 +909,44 @@ end.join
     error = NoMethodError.new("Message", :foo, [1, 2], true)
     assert_equal([:foo, [1, 2], true],
                  [error.name, error.args, error.private_call?])
+  end
+
+  def test_nomethod_error_new_receiver
+    receiver = Object.new
+
+    error = NoMethodError.new
+    assert_raise(ArgumentError) {error.receiver}
+
+    error = NoMethodError.new(receiver: receiver)
+    assert_equal(receiver, error.receiver)
+
+    error = NoMethodError.new("Message")
+    assert_raise(ArgumentError) {error.receiver}
+
+    error = NoMethodError.new("Message", receiver: receiver)
+    assert_equal(["Message", receiver],
+                 [error.message, error.receiver])
+
+    error = NoMethodError.new("Message", :foo)
+    assert_raise(ArgumentError) {error.receiver}
+
+    error = NoMethodError.new("Message", :foo, receiver: receiver)
+    assert_equal(["Message", :foo, receiver],
+                 [error.message, error.name, error.receiver])
+
+    error = NoMethodError.new("Message", :foo, [1, 2])
+    assert_raise(ArgumentError) {error.receiver}
+
+    error = NoMethodError.new("Message", :foo, [1, 2], receiver: receiver)
+    assert_equal(["Message", :foo, [1, 2], receiver],
+                 [error.message, error.name, error.args, error.receiver])
+
+    error = NoMethodError.new("Message", :foo, [1, 2], true)
+    assert_raise(ArgumentError) {error.receiver}
+
+    error = NoMethodError.new("Message", :foo, [1, 2], true, receiver: receiver)
+    assert_equal([:foo, [1, 2], true, receiver],
+                 [error.name, error.args, error.private_call?, error.receiver])
   end
 
   def test_name_error_info_const

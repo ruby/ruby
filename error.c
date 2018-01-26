@@ -1351,6 +1351,8 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
     rb_exc_raise(exc);
 }
 
+static VALUE name_err_initialize_options(int argc, VALUE *argv, VALUE self, VALUE options);
+
 /*
  * call-seq:
  *   NameError.new([msg, *, name])  -> name_error
@@ -1363,12 +1365,30 @@ rb_name_error_str(VALUE str, const char *fmt, ...)
 static VALUE
 name_err_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE options;
+    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    return name_err_initialize_options(argc, argv, self, options);
+}
+
+static VALUE
+name_err_initialize_options(int argc, VALUE *argv, VALUE self, VALUE options)
+{
+    ID keywords[1];
+    VALUE values[numberof(keywords)];
     VALUE name;
     VALUE iseqw = Qnil;
+    int i;
 
+    keywords[0] = id_receiver;
+    rb_get_kwargs(options, keywords, 0, numberof(values), values);
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
     rb_ivar_set(self, id_name, name);
+    for (i = 0; i < numberof(keywords); ++i) {
+	if (values[i] != Qundef) {
+	    rb_ivar_set(self, keywords[i], values[i]);
+	}
+    }
     {
 	const rb_execution_context_t *ec = GET_EC();
 	rb_control_frame_t *cfp =
@@ -1416,6 +1436,8 @@ name_err_local_variables(VALUE self)
     return vars;
 }
 
+static VALUE nometh_err_initialize_options(int argc, VALUE *argv, VALUE self, VALUE options);
+
 /*
  * call-seq:
  *   NoMethodError.new([msg, *, name [, args [, priv]]])  -> no_method_error
@@ -1429,9 +1451,17 @@ name_err_local_variables(VALUE self)
 static VALUE
 nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
+    VALUE options;
+    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    return nometh_err_initialize_options(argc, argv, self, options);
+}
+
+static VALUE
+nometh_err_initialize_options(int argc, VALUE *argv, VALUE self, VALUE options)
+{
     VALUE priv = (argc > 3) && (--argc, RTEST(argv[argc])) ? Qtrue : Qfalse;
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
-    name_err_initialize(argc, argv, self);
+    name_err_initialize_options(argc, argv, self, options);
     rb_ivar_set(self, id_args, args);
     rb_ivar_set(self, id_private_call_p, RTEST(priv) ? Qtrue : Qfalse);
     return self;
