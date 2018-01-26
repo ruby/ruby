@@ -19,9 +19,7 @@
 language: c
 dist: trusty
 
-# temporary workaround for https://github.com/travis-ci/travis-ci/issues/8892
-sudo: required
-group: deprecated-2017Q4
+sudo: false
 
 compiler:
   - gcc
