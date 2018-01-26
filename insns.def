@@ -680,6 +680,7 @@ defineclass
 (ID id, ISEQ class_iseq, rb_num_t flags)
 (VALUE cbase, VALUE super)
 (VALUE val)
+// attr bool handles_frame = true;
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -829,6 +830,7 @@ leave
 ()
 (VALUE val)
 (VALUE val)
+// attr bool handles_frame = true;
 {
     if (OPT_CHECKED_RUN) {
 	const VALUE *const bp = vm_base_ptr(reg_cfp);
@@ -1380,6 +1382,7 @@ opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
 ()
+// attr bool handles_frame = true;
 {
     reg_cfp = (funcptr)(ec, reg_cfp);
 
