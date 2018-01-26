@@ -1705,14 +1705,10 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
     }
 
     if (!NIL_P(options)) {
-	static ID keywords[2];
+	ID keywords[2];
 	VALUE values[2];
-	if (!keywords[0]) {
-	    CONST_ID(keywords[0], "receiver");
-	}
-	if (!keywords[1]) {
-	    CONST_ID(keywords[1], "key");
-	}
+	keywords[0] = id_receiver;
+	keywords[1] = id_key;
 	rb_get_kwargs(options, keywords, 0, 2, values);
 	if (values[0] != Qundef) {
 	    receiver = values[0];
