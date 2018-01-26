@@ -60,9 +60,9 @@ ruby_version_is "2.5" do
       @hash.should == { 'a' => 1, 'b' => 2, 'c' => 3, 'd' => 4 }
     end
 
-    it "does not prevent conflicts between new keys and old ones" do
+    it "prevents conflicts between new keys and old ones" do
       @hash.transform_keys!(&:succ)
-      @hash.should == { e: 1 }
+      @hash.should == { b: 1, c: 2, d: 3, e: 4 }
     end
 
     it "partially modifies the contents if we broke from the block" do
@@ -70,7 +70,7 @@ ruby_version_is "2.5" do
         break if v == :c
         v.succ
       end
-      @hash.should == { c: 1, d: 4 }
+      @hash.should == { b: 1, c: 2 }
     end
 
     it "keeps later pair if new keys conflict" do
