@@ -736,6 +736,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_FLOCK 1
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
+!if $(RT_VAR) >= 120
+#define HAVE_NAN 1
+!endif
 #define HAVE_HYPOT 1
 #define HAVE_FMOD 1
 #define HAVE_FREXP 1

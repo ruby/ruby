@@ -185,6 +185,10 @@ RUBY_EXTERN int isnan(double);
 # endif
 #endif
 
+#ifndef HAVE_NAN
+RUBY_EXTERN double nan(const char *);
+#endif
+
 #ifndef HAVE_NEXTAFTER
 RUBY_EXTERN double nextafter(double x, double y);
 #endif
