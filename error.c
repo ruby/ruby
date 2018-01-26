@@ -1692,8 +1692,6 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE message;
     VALUE options;
-    VALUE receiver = Qnil;
-    VALUE key = Qnil;
 
     rb_scan_args(argc, argv, "01:", &message, &options);
 
@@ -1711,15 +1709,12 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
 	keywords[1] = id_key;
 	rb_get_kwargs(options, keywords, 0, 2, values);
 	if (values[0] != Qundef) {
-	    receiver = values[0];
+	    rb_ivar_set(self, id_receiver, values[0]);
 	}
 	if (values[1] != Qundef) {
-	    key = values[1];
+	    rb_ivar_set(self, id_key, values[1]);
 	}
     }
-
-    rb_ivar_set(self, id_receiver, receiver);
-    rb_ivar_set(self, id_key, key);
 
     return self;
 }
