@@ -1681,6 +1681,55 @@ rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
 
 /*
  * call-seq:
+ *   KeyError.new(message=nil, receiver: nil, key: nil) -> key_error
+ *
+ * Construct a new +KeyError+ exception with the given message,
+ * receiver and key.
+ */
+
+static VALUE
+key_err_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE message;
+    VALUE options;
+    VALUE receiver = Qnil;
+    VALUE key = Qnil;
+
+    rb_scan_args(argc, argv, "01:", &message, &options);
+
+    if (NIL_P(message)) {
+	rb_call_super(0, NULL);
+    }
+    else {
+	rb_call_super(1, &message);
+    }
+
+    if (!NIL_P(options)) {
+	static ID keywords[2];
+	VALUE values[2];
+	if (!keywords[0]) {
+	    CONST_ID(keywords[0], "receiver");
+	}
+	if (!keywords[1]) {
+	    CONST_ID(keywords[1], "key");
+	}
+	rb_get_kwargs(options, keywords, 0, 2, values);
+	if (values[0] != Qundef) {
+	    receiver = values[0];
+	}
+	if (values[1] != Qundef) {
+	    key = values[1];
+	}
+    }
+
+    rb_ivar_set(self, id_receiver, receiver);
+    rb_ivar_set(self, id_key, key);
+
+    return self;
+}
+
+/*
+ * call-seq:
  *   SyntaxError.new([msg])  -> syntax_error
  *
  * Construct a SyntaxError exception.
@@ -2299,6 +2348,7 @@ Init_Exception(void)
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eKeyError      = rb_define_class("KeyError", rb_eIndexError);
+    rb_define_method(rb_eKeyError, "initialize", key_err_initialize, -1);
     rb_define_method(rb_eKeyError, "receiver", key_err_receiver, 0);
     rb_define_method(rb_eKeyError, "key", key_err_key, 0);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
