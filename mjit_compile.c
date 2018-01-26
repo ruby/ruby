@@ -581,6 +581,7 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
             status->success = FALSE;
         }
 
+        fprintf(f, "  cfp->sp = cfp->bp + 1;\n"); /* pop result to resolve consistency error */
         fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
         /* TODO: is there a case that vm_pop_frame returns 0? */
         fprintf(f, "  vm_pop_frame(ec, cfp, cfp->ep);\n");
