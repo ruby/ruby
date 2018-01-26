@@ -1690,29 +1690,21 @@ rb_key_err_new(VALUE mesg, VALUE recv, VALUE key)
 static VALUE
 key_err_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE message;
     VALUE options;
 
-    rb_scan_args(argc, argv, "01:", &message, &options);
-
-    if (NIL_P(message)) {
-	rb_call_super(0, NULL);
-    }
-    else {
-	rb_call_super(1, &message);
-    }
+    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
 
     if (!NIL_P(options)) {
 	ID keywords[2];
-	VALUE values[2];
+	VALUE values[numberof(keywords)];
+	int i;
 	keywords[0] = id_receiver;
 	keywords[1] = id_key;
-	rb_get_kwargs(options, keywords, 0, 2, values);
-	if (values[0] != Qundef) {
-	    rb_ivar_set(self, id_receiver, values[0]);
-	}
-	if (values[1] != Qundef) {
-	    rb_ivar_set(self, id_key, values[1]);
+	rb_get_kwargs(options, keywords, 0, numberof(values), values);
+	for (i = 0; i < numberof(values); ++i) {
+	    if (values[i] != Qundef) {
+		rb_ivar_set(self, keywords[i], values[i]);
+	    }
 	}
     }
 
