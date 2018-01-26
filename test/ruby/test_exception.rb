@@ -842,6 +842,67 @@ end.join
       alias inspect pretty_inspect
     end
 
+  def test_name_error_new_default
+    error = NameError.new
+    assert_equal("NameError", error.message)
+  end
+
+  def test_name_error_new_message
+    error = NameError.new("Message")
+    assert_equal("Message", error.message)
+  end
+
+  def test_name_error_new_name
+    error = NameError.new("Message")
+    assert_nil(error.name)
+
+    error = NameError.new("Message", :foo)
+    assert_equal(:foo, error.name)
+  end
+
+  def test_name_error_new_receiver
+    receiver = Object.new
+
+    error = NameError.new
+    assert_raise(ArgumentError) {error.receiver}
+    assert_equal("NameError", error.message)
+  end
+
+  def test_nomethod_error_new_default
+    error = NoMethodError.new
+    assert_equal("NoMethodError", error.message)
+  end
+
+  def test_nomethod_error_new_message
+    error = NoMethodError.new("Message")
+    assert_equal("Message", error.message)
+  end
+
+  def test_nomethod_error_new_name
+    error = NoMethodError.new("Message")
+    assert_nil(error.name)
+
+    error = NoMethodError.new("Message", :foo)
+    assert_equal(:foo, error.name)
+  end
+
+  def test_nomethod_error_new_name_args
+    error = NoMethodError.new("Message", :foo)
+    assert_nil(error.args)
+
+    error = NoMethodError.new("Message", :foo, [1, 2])
+    assert_equal([:foo, [1, 2]], [error.name, error.args])
+  end
+
+  def test_nomethod_error_new_name_args_priv
+    error = NoMethodError.new("Message", :foo, [1, 2])
+    assert_not_predicate(error, :private_call?)
+
+    error = NoMethodError.new("Message", :foo, [1, 2], true)
+    assert_equal([:foo, [1, 2], true],
+                 [error.name, error.args, error.private_call?])
+  end
+
   def test_name_error_info_const
     obj = PrettyObject.new
 
