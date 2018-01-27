@@ -752,8 +752,8 @@ describe "The defined? keyword for a scoped constant" do
     defined?(DefinedSpecs::String).should be_nil
   end
 
-  it "returns 'constant' when a constant is defined on top-level but not on the class" do
-    defined?(DefinedSpecs::Basic::String).should == "constant"
+  it "returns nil when a constant is defined on top-level but not on the class" do
+    defined?(DefinedSpecs::Basic::String).should be_nil
   end
 
   it "returns 'constant' if the scoped-scoped constant is defined" do
