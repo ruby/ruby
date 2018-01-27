@@ -520,20 +520,6 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 ])
 RUBY_TRY_CFLAGS(-Qunused-arguments, [RUBY_APPEND_OPTIONS(rb_cv_wsuppress_flags, -Qunused-arguments)])
 
-for n in huge_val infinity nan; do
-    m=AS_TR_CPP($n)
-    AC_CACHE_CHECK([whether $m is available without C99 option], rb_cv_$n,
-	[AC_COMPILE_IFELSE(
-	    [AC_LANG_BOOL_COMPILE_TRY(AC_INCLUDES_DEFAULT([@%:@include <math.h>
-@%:@ifndef $m
-@%:@error no $m
-@%:@endif
-]), [1])], [eval rb_cv_$n=yes], [eval rb_cv_$n=no])])
-    AS_IF([eval test '"$rb_cv_'$n'"' = yes], [
-	AC_DEFINE_UNQUOTED([HAVE_]$m)
-    ])
-done
-
 AC_ARG_WITH(compress-debug-sections,
 	AS_HELP_STRING([--with-compress-debug-sections=type],
 	    [enable debug section compression]),
