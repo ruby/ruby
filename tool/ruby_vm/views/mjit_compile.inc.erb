@@ -41,7 +41,7 @@ fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_enco
 fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1); /* Note: This line makes JIT slow */
 
 switch (insn) {
-% RubyVM::BareInstructions.to_a.each do |insn|
+% (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
 %   case insn.name
@@ -320,6 +320,11 @@ switch (insn) {
     fprintf(f, "    <%= decl %>;\n");
 %     end
 
+%     # Set const expressions for `RubyVM::OperandsUnifications` insn
+%     insn.preamble.each do |amble|
+    fprintf(f, "<%= amble.expr %>\n");
+%     end
+%
 %     # Initialize operands
 %     insn.opes.each_with_index do |ope, i|
     fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
@@ -351,27 +356,6 @@ switch (insn) {
 %       end
 %     end
 %
-%   end
-    break;
-% end
-%
-% RubyVM::OperandsUnifications.to_a.each do |insn|
-  case BIN(<%= insn.name %>):
-%   case insn.name
-%   when 'getlocal_WC_0'
-    fprint_getlocal(f, b->stack_size++, operands[0], 0);
-%   when 'getlocal_WC_1'
-    fprint_getlocal(f, b->stack_size++, operands[0], 1);
-%   when 'setlocal_WC_0'
-    fprint_setlocal(f, --b->stack_size, operands[0], 0);
-%   when 'setlocal_WC_1'
-    fprint_setlocal(f, --b->stack_size, operands[0], 1);
-%   when 'putobject_INT2FIX_0_'
-    fprintf(f, "  stack[%d] = INT2FIX(0);\n", b->stack_size++);
-%   when 'putobject_INT2FIX_1_'
-    fprintf(f, "  stack[%d] = INT2FIX(1);\n", b->stack_size++);
-%   else
-%     raise "generating #{insn.name} (OperandsUnification) is not supported yet"
 %   end
     break;
 % end

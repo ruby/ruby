@@ -30,28 +30,6 @@ struct compile_branch {
     int finish_p; /* if TRUE, compilation in this branch should stop and let another branch to be compiled */
 };
 
-static void
-fprint_getlocal(FILE *f, unsigned int push_pos, lindex_t idx, rb_num_t level)
-{
-    /* COLLECT_USAGE_REGISTER_HELPER is necessary? */
-    fprintf(f, "  stack[%d] = *(vm_get_ep(reg_cfp->ep, 0x%"PRIxVALUE") - 0x%"PRIxVALUE");\n", push_pos, level, idx);
-    fprintf(f, "  RB_DEBUG_COUNTER_INC(lvar_get);\n");
-    if (level > 0) {
-        fprintf(f, "  RB_DEBUG_COUNTER_INC(lvar_get_dynamic);\n");
-    }
-}
-
-static void
-fprint_setlocal(FILE *f, unsigned int pop_pos, lindex_t idx, rb_num_t level)
-{
-    /* COLLECT_USAGE_REGISTER_HELPER is necessary? */
-    fprintf(f, "  vm_env_write(vm_get_ep(reg_cfp->ep, 0x%"PRIxVALUE"), -(int)0x%"PRIxVALUE", stack[%d]);\n", level, idx, pop_pos);
-    fprintf(f, "  RB_DEBUG_COUNTER_INC(lvar_set);\n");
-    if (level > 0) {
-        fprintf(f, "  RB_DEBUG_COUNTER_INC(lvar_set_dynamic);\n");
-    }
-}
-
 /* Returns iseq from cc if it's available and still not obsoleted. */
 static const rb_iseq_t *
 get_iseq_if_available(CALL_CACHE cc)
