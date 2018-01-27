@@ -40,8 +40,6 @@ switch (insn) {
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
 %   case insn.name
-%   when 'nop'
-    /* nop */
 %   when 'getlocal'
     fprint_getlocal(f, b->stack_size++, operands[0], operands[1]);
 %   when 'setlocal'
@@ -69,8 +67,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = GET_GLOBAL((VALUE)0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
 %   when 'setglobal'
     fprintf(f, "  SET_GLOBAL((VALUE)0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
-%   when 'putnil'
-    fprintf(f, "  stack[%d] = Qnil;\n", b->stack_size++);
 %   when 'putself'
     fprintf(f, "  stack[%d] = cfp->self;\n", b->stack_size++);
 %   when 'putobject'
@@ -85,12 +81,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = rb_str_concat_literals(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'tostring'
-    fprintf(f, "  {\n");
-    fprintf(f, "    VALUE rb_obj_as_string_result(VALUE str, VALUE obj);\n");
-    fprintf(f, "    stack[%d] = rb_obj_as_string_result(stack[%d], stack[%d]);\n", b->stack_size-2, b->stack_size-1, b->stack_size-2);
-    fprintf(f, "  }\n");
-    b->stack_size--;
 %   when 'freezestring'
     fprintf(f, "  vm_freezestring(stack[%d], 0x%"PRIxVALUE");\n", b->stack_size-1, operands[0]);
 %   when 'toregexp'
@@ -102,8 +92,6 @@ switch (insn) {
     fprintf(f, "    rb_ary_clear(ary);\n");
     fprintf(f, "  }\n");
     b->stack_size += 1 - (unsigned int)operands[1];
-%   when 'intern'
-    fprintf(f, "  stack[%d] = rb_str_intern(stack[%d]);\n", b->stack_size-1, b->stack_size-1);
 %   when 'newarray'
     fprintf(f, "  stack[%d] = rb_ary_new4(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
@@ -119,9 +107,6 @@ switch (insn) {
         fprintf(f, "  vm_expandarray(cfp, stack[%d], 0x%"PRIxVALUE", (int)0x%"PRIxVALUE");\n", --b->stack_size, operands[0], operands[1]);
         b->stack_size += space_size;
     }
-%   when 'concatarray'
-    fprintf(f, "  stack[%d] = vm_concat_array(stack[%d], stack[%d]);\n", b->stack_size-2, b->stack_size-2, b->stack_size-1);
-    b->stack_size--;
 %   when 'splatarray'
     fprintf(f, "  stack[%d] = vm_splat_array(0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-1, operands[0], b->stack_size-1);
 %   when 'newhash'
@@ -138,21 +123,10 @@ switch (insn) {
 %   when 'newrange'
     fprintf(f, "  stack[%d] = rb_range_new(stack[%d], stack[%d], (int)0x%"PRIxVALUE");\n", b->stack_size-2, b->stack_size-2, b->stack_size-1, operands[0]);
     b->stack_size--;
-%   when 'pop'
-    b->stack_size--;
-%   when 'dup'
-    fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size, b->stack_size-1);
-    b->stack_size++;
 %   when 'dupn'
     fprintf(f, "  MEMCPY(stack + %d, stack + %d, VALUE, 0x%"PRIxVALUE");\n",
             b->stack_size, b->stack_size - (unsigned int)operands[0], operands[0]);
     b->stack_size += (unsigned int)operands[0];
-%   when 'swap'
-    fprintf(f, "  {\n");
-    fprintf(f, "    VALUE tmp = stack[%d];\n", b->stack_size-1);
-    fprintf(f, "    stack[%d] = stack[%d];\n", b->stack_size-1, b->stack_size-2);
-    fprintf(f, "    stack[%d] = tmp;\n", b->stack_size-2);
-    fprintf(f, "  }\n");
 %   when 'reverse'
     {
         unsigned int n, i, base;
@@ -407,15 +381,31 @@ switch (insn) {
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_regexpmatch2(recv, obj)");
 %   else
     fprintf(f, "{\n");
-    fprintf(f, "    VALUE ret;\n");
 %
+%     # Prepare return value variables
+%     pop_names = insn.pops.map { |pop| pop.fetch(:name) }
+%     insn.rets.each do |ret|
+%       next if pop_names.include?(ret.fetch(:name))
+    fprintf(f, "    <%= ret.fetch(:decl) %>;\n");
+%     end
+%
+%     # Prepare popped value variables
+%     insn.pops.reverse.each_with_index do |pop, i|
+    fprintf(f, "    <%= pop.fetch(:decl) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
+%     end
+%
+%     # Print insn body in insns.def
 %     insn.expr.expr.each_line do |line|
     fprintf(f, <%= to_cstr.call(line) %>);
 %     end
 %
-    fprintf(f, "    stack[%d] = ret;\n", b->stack_size);
+%     # Set return values
+%     insn.rets.each_with_index do |ret, i|
+    fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size - <%= insn.pops.size - i %>);
+%     end
     fprintf(f, "}\n");
 %
+%     # Move JIT compiler's internal stack pointer
 %     if insn.has_attribute?('sp_inc')
 %       raise 'sp_inc attribute is not supported yet'
 %     else
