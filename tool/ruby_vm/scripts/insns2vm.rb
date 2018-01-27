@@ -42,31 +42,31 @@ module RubyVM::Insns2VM
       end
 
       this.on "-Dname", "--enable=name[,name...]", Array, <<-'end'
-        This option used to override VM option that is defined in
+        This option was used to override VM option that is defined in
         vm_opts.h. Now it is officially unsupported because vm_opts.h to
         remain mismatched with this option must break things.  Just edit
         vm_opts.h directly.
       end
 
       this.on "-Uname", "--disable=name[,name...]", Array, <<-'end'
-        This option used to override VM option that is defined in
+        This option was used to override VM option that is defined in
         vm_opts.h. Now it is officially unsupported because vm_opts.h to
         remain mismatched with this option must break things.  Just edit
         vm_opts.h directly.
       end
 
       this.on "-i", "--insnsdef=FILE", "--instructions-def", <<-'end'
-        This option used to specify alternative path to insns.def.  For
+        This option was used to specify alternative path to insns.def.  For
         the same reason to ignore -I, we no longer support this.
       end
 
       this.on "-o", "--opt-operanddef=FILE", "--opt-operand-def", <<-'end'
-        This option used to specify alternative path to opt_operand.def.
+        This option was used to specify alternative path to opt_operand.def.
         For the same reason to ignore -I, we no longer support this.
       end
 
       this.on "-u", "--opt-insnunifdef=FILE", "--opt-insn-unif-def", <<-'end'
-        This option used to specify alternative path to
+        This option was used to specify alternative path to
         opt_insn_unif.def.  For the same reason to ignore -I, we no
         longer support this.
       end
