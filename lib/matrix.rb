@@ -319,14 +319,14 @@ class Matrix
   def []=(i, j, v)
     raise FrozenError, "can't modify frozen Matrix" if frozen?
     if both_ranges?(i, j)
-      raise_row_and_col_range_outside_matrix(i, j)
+      raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(i, j)
       set_row_and_col_range(i, j, v)
     elsif one_is_range?(i, j)
       set_range(i, j, v)
     else
       i = CoercionHelper.coerce_to_int(i)
       j = CoercionHelper.coerce_to_int(j)
-      raise_indices_outside_matrix(i, j)
+      raise IndexError, "indices are outside of matrix" unless indices_within_matrix?(i, j)
       set_value(i, j, v)
     end
   end
@@ -365,54 +365,18 @@ class Matrix
 
   private :indices_within_matrix?, :both_ranges?, :one_is_range?
 
-  def raise_row_and_col_range_outside_matrix(row_range, col_range)
-    raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(row_range, col_range)
-  end
-
-  def raise_row_range_outside_matrix(row_range)
-    raise IndexError, "expected row range is outside of matrix" unless range_within_row_range?(row_range)
-  end
-
-  def raise_col_range_outside_matrix(col_range)
-    raise IndexError, "expected column range is outside of matrix" unless range_within_column_range?(col_range)
-  end
-
-  def raise_indices_outside_matrix(row, col)
-    raise IndexError, "indices are outside of matrix" unless indices_within_matrix?(row, col)
-  end
-
-  private :raise_row_and_col_range_outside_matrix, :raise_row_range_outside_matrix, :raise_col_range_outside_matrix, :raise_indices_outside_matrix
-
-  def raise_matrix_wrong_dimensions(row_range, col_range, matrix)
-    Matrix.Raise ErrDimensionMismatch unless ranges_and_dimensions_equal?(row_range, col_range, matrix)
-  end
-
-  def raise_column_matrix_wrong_dimension(matrix)
-    Matrix.Raise ErrDimensionMismatch unless matrix.column_count == 1
-  end
-
-  def raise_row_matrix_wrong_dimension(matrix)
-    Matrix.Raise ErrDimensionMismatch unless matrix.row_count == 1
-  end
-
-  def raise_vector_wrong_size(range, vector)
-    raise ArgumentError, "vector to be set has wrong size" unless range.size == vector.size
-  end
-
-  private :raise_matrix_wrong_dimensions, :raise_column_matrix_wrong_dimension, :raise_row_matrix_wrong_dimension, :raise_vector_wrong_size
-
   def set_value(row, col, value)
     @rows[row][col] = value
   end
 
   def set_range(row, col, value)
     if row.is_a?(Range)
-      raise_row_range_outside_matrix(row)
+      raise IndexError, "expected row range is outside of matrix" unless range_within_row_range?(row)
       col = CoercionHelper.coerce_to_int(col)
       set_row_range(row, col, value)
     else
       row = CoercionHelper.coerce_to_int(row)
-      raise_col_range_outside_matrix(col)
+      raise IndexError, "expected column range is outside of matrix" unless range_within_column_range?(col)
       set_col_range(row, col, value)
     end
   end
@@ -420,7 +384,7 @@ class Matrix
 
   def set_row_and_col_range(row_range, col_range, value)
     if value.is_a?(Matrix)
-      raise_matrix_wrong_dimensions(row_range, col_range, value)
+      Matrix.Raise ErrDimensionMismatch unless ranges_and_dimensions_equal?(row_range, col_range, value)
       row_range.each do |i|
         @rows[i][col_range] = value.rows[i][col_range]
       end
@@ -434,10 +398,10 @@ class Matrix
 
   def set_row_range(row_range, col, value)
     if value.is_a?(Vector)
-      raise_vector_wrong_size(row_range, value)
+      raise ArgumentError, "vector to be set has wrong size" unless row_range.size == value.size
       set_column_vector(row_range, col, value)
     elsif value.is_a?(Matrix)
-      raise_column_matrix_wrong_dimension(value)
+      Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
       set_column_vector(row_range, col, value.column(0))
     else
       @rows[row_range].map!{|e| e[col] = value }
@@ -453,10 +417,10 @@ class Matrix
 
   def set_col_range(row, col_range, value)
     if value.is_a?(Vector)
-      raise_vector_wrong_size(col_range, value)
+      raise ArgumentError, "vector to be set has wrong size" unless col_range.size == value.size
       @rows[row][col_range] = value.to_a
     elsif value.is_a?(Matrix)
-      raise_row_matrix_wrong_dimension(value)
+      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
       @rows[row][col_range] = value.row(0).to_a
     else
       @rows[row][col_range] = Array.new(col_range.size, value)
@@ -1966,11 +1930,11 @@ class Vector
   def []=(i, v)
     raise FrozenError, "can't modify frozen Vector" if frozen?
     if i.is_a?(Range)
-      raise_range_outside_vector(i)
+      raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(i)
       set_range(i, v)
     else
       i = Matrix::CoercionHelper.coerce_to_int(i)
-      raise_index_outside_vector_error(i)
+      raise IndexError unless i.between?(-size, size-1)
       set_value(i, v)
     end
   end
@@ -1983,34 +1947,16 @@ class Vector
 
   private :range_within_vector_range?
 
-  def raise_index_outside_vector_error(index)
-    raise IndexError unless index.between?(-size, size-1)
-  end
-
-  def raise_range_outside_vector(range)
-    raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(range)
-  end
-
-  def raise_vector_wrong_size(range, vector)
-    raise ArgumentError, "vector to be set has wrong size" unless range.size == vector.size
-  end
-
-  def raise_matrix_wrong_dimension(matrix)
-    Matrix.Raise ErrDimensionMismatch unless matrix.row_count == 1
-  end
-
-  private :raise_index_outside_vector_error, :raise_range_outside_vector, :raise_vector_wrong_size, :raise_matrix_wrong_dimension
-
   def set_value(index, value)
     @elements[index] = value
   end
 
   def set_range(range, value)
     if value.is_a?(Vector)
-      raise_vector_wrong_size(range, value)
+      raise ArgumentError, "vector to be set has wrong size" unless range.size == value.size
       @elements[range] = value.elements
     elsif value.is_a?(Matrix)
-      raise_matrix_wrong_dimension(value)
+      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
       @elements[range] = value.row(0).elements
     else
       @elements[range] = Array.new(range.size, value)
