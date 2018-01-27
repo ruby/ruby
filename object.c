@@ -3595,7 +3595,7 @@ rb_Array(VALUE val)
     VALUE tmp = rb_check_array_type(val);
 
     if (NIL_P(tmp)) {
-	tmp = rb_check_convert_type_with_id(val, T_ARRAY, "Array", idTo_a);
+	tmp = rb_check_to_array(val);
 	if (NIL_P(tmp)) {
 	    return rb_ary_new3(1, val);
 	}

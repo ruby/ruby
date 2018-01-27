@@ -655,6 +655,12 @@ rb_check_array_type(VALUE ary)
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
+VALUE
+rb_check_to_array(VALUE ary)
+{
+    return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
+}
+
 /*
  *  call-seq:
  *     Array.try_convert(obj) -> array or nil
