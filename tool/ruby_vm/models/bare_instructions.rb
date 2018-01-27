@@ -115,7 +115,7 @@ class RubyVM::BareInstructions
   end
 
   def inspect
-    sprintf "#<%s@%s:%d>", @name, @loc[0], @loc[1]
+    sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
   end
 
   private
