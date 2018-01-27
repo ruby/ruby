@@ -2004,6 +2004,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}insns_info.inc
 mjit_compile.$(OBJEXT): {$(VPATH)}internal.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.c
+mjit_compile.$(OBJEXT): {$(VPATH)}mjit_compile.inc
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
 load.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 load.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
