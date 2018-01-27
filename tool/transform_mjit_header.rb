@@ -70,8 +70,8 @@ module MJITHeader
 
   # Return true if CC with CFLAGS compiles successfully the current code.
   # Use STAGE in the message in case of a compilation failure
-  def self.check_code!(code, cc, cflags, stage:)
-    Tempfile.create(['', '.c']) do |f|
+  def self.check_code!(code, cc, cflags, stage)
+    Tempfile.open(['', '.c']) do |f|
       f.puts code
       f.close
       unless system("#{cc} #{cflags} #{f.path} 2>#{File::NULL}")
@@ -98,7 +98,7 @@ module MJITHeader
     code.lines.partition { |l| !l.start_with?('#') }.flatten.join('')
   end
 
-  def self.write(code, out:)
+  def self.write(code, out)
     FileUtils.mkdir_p(File.dirname(out))
     File.write("#{out}.new", code)
     FileUtils.mv("#{out}.new", out)
@@ -130,11 +130,11 @@ end
 MJITHeader.remove_default_macros!(code)
 
 # Check initial file correctness
-MJITHeader.check_code!(code, cc, cflags, stage: 'initial')
+MJITHeader.check_code!(code, cc, cflags, 'initial')
 
 if MJITHeader.windows? # transformation is broken with Windows headers for now
   STDERR.puts "\nSkipped transforming external functions to static on Windows."
-  MJITHeader.write(code, out: outfile)
+  MJITHeader.write(code, outfile)
   exit 0
 end
 STDERR.puts "\nTransforming external functions to static:"
@@ -175,6 +175,6 @@ loop do
 end
 
 # Check the final file correctness
-MJITHeader.check_code!(code, cc, cflags, stage: 'final')
+MJITHeader.check_code!(code, cc, cflags, 'final')
 
-MJITHeader.write(code, out: outfile)
+MJITHeader.write(code, outfile)
