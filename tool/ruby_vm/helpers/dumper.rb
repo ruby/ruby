@@ -80,11 +80,9 @@ class RubyVM::Dumper
       . join
   end
 
-  def initialize path
+  def initialize dst
     @erb   = {}
     @empty = new_binding
-    dst    = Pathname.new Dir.getwd
-    dst   += path
     @file  = cstr dst.realdirpath.to_path
   end
 

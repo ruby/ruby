@@ -16,9 +16,10 @@ require_relative '../models/typemap'
 require_relative '../loaders/vm_opts_h'
 
 class ApplicationController
-  def generate i
+  def generate i, destdir
     path = Pathname.new i
-    dumper = RubyVM::Dumper.new i
+    dst = Pathname.new(destdir).join(i)
+    dumper = RubyVM::Dumper.new dst
     return [path, dumper]
   end
 end
