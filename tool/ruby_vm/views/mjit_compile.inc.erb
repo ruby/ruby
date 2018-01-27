@@ -23,6 +23,12 @@
 %   'once',                # low priority
 %   'opt_call_c_function', # low priority
 % ]
+%
+% to_cstr = lambda do |line|
+%   normalized = line.gsub(/\t/, ' ' * 8)
+%   indented = normalized.sub(/\A/, '    ')
+%   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
+% end
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
 fprintf(f, "  cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
@@ -399,12 +405,26 @@ switch (insn) {
     fprintf(f, "  stack[%d] = vm_opt_regexpmatch1((VALUE)0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-1, operands[0], b->stack_size-1);
 %   when 'opt_regexpmatch2'
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_regexpmatch2(recv, obj)");
-%   when 'bitblt'
-    fprintf(f, "  stack[%d] = rb_str_new2(\"a bit of bacon, lettuce and tomato\");\n", b->stack_size++);
-%   when 'answer'
-    fprintf(f, "  stack[%d] = INT2FIX(42);\n", b->stack_size++);
 %   else
-%     raise "generating #{insn.name} (BaseInstructions) is not supported yet"
+    fprintf(f, "{\n");
+    fprintf(f, "    VALUE ret;\n");
+%
+%     insn.expr.expr.each_line do |line|
+    fprintf(f, <%= to_cstr.call(line) %>);
+%     end
+%
+    fprintf(f, "    stack[%d] = ret;\n", b->stack_size);
+    fprintf(f, "}\n");
+%
+%     if insn.has_attribute?('sp_inc')
+%       raise 'sp_inc attribute is not supported yet'
+%     else
+%       sp_inc = insn.rets.size - insn.pops.size
+%       if sp_inc != 0
+    b->stack_size += <%= sp_inc %>;
+%       end
+%     end
+%
 %   end
     break;
 % end
