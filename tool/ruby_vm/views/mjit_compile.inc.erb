@@ -7,17 +7,15 @@
 % # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 % # details.
 <%= render 'copyright' %>
+%
+% # This is an ERB template that generates Ruby code that generates C code that
+% # generates JIT-ed C code.
 <%= render 'notice', locals: {
     this_file: 'is the main part of compile_insn() in mjit_compile.c',
     edit: __FILE__,
 } -%>
 %
-% # This is an ERB template that generates Ruby code that generates C code that
-% # generates JIT-ed C code.
-%
 % unsupported_insns = [
-%   'getblockparam',       # TODO: support this
-%   'setblockparam',       # TODO: support this
 %   'getblockparamproxy',  # TODO: support this
 %   'defineclass',         # low priority
 %   'opt_call_c_function', # low priority
@@ -28,44 +26,25 @@
 %   indented = normalized.sub(/\A/, '    ')
 %   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
 % end
+%
+% # Available variables and macros in JIT-ed function:
+% #   ec: the first argument of _mjitXXX
+% #   reg_cfp: the second argument of _mjitXXX
+% #   GET_CFP(): refers to `reg_cfp`
+% #   GET_EP(): refers to `reg_cfp->ep`
+% #   GET_SELF(): refers to `reg_cfp->self`
+% #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
-fprintf(f, "  cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
+fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
 /* Move stack pointer to let stack values be used by VM when exception is raised */
-fprintf(f, "  cfp->sp = cfp->bp + %d;\n", b->stack_size + 1); /* Note: This line makes JIT slow */
+fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1); /* Note: This line makes JIT slow */
 
 switch (insn) {
 % RubyVM::BareInstructions.to_a.each do |insn|
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
 %   case insn.name
-%   when 'getlocal'
-    fprint_getlocal(f, b->stack_size++, operands[0], operands[1]);
-%   when 'setlocal'
-    fprint_setlocal(f, --b->stack_size, operands[0], operands[1]);
-%   when 'getspecial'
-    fprintf(f, "  stack[%d] = vm_getspecial(ec, VM_EP_LEP(cfp->ep), 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", b->stack_size++, operands[0], operands[1]);
-%   when 'setspecial'
-    fprintf(f, "  lep_svar_set(ec, VM_EP_LEP(cfp->ep), 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
-%   when 'getinstancevariable'
-    fprintf(f, "  stack[%d] = vm_getinstancevariable(cfp->self, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", b->stack_size++, operands[0], operands[1]);
-%   when 'setinstancevariable'
-    fprintf(f, "  vm_setinstancevariable(cfp->self, 0x%"PRIxVALUE", stack[%d], 0x%"PRIxVALUE");\n", operands[0], --b->stack_size, operands[1]);
-%   when 'getclassvariable'
-    fprintf(f, "  stack[%d] = rb_cvar_get(vm_get_cvar_base(rb_vm_get_cref(cfp->ep), cfp), 0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
-%   when 'setclassvariable'
-    fprintf(f, "  vm_ensure_not_refinement_module(cfp->self);\n");
-    fprintf(f, "  rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(cfp->ep), cfp), 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
-%   when 'getconstant'
-    fprintf(f, "  stack[%d] = vm_get_ev_const(ec, stack[%d], 0x%"PRIxVALUE", 0);\n", b->stack_size-1, b->stack_size-1, operands[0]);
-%   when 'setconstant'
-    fprintf(f, "  vm_check_if_namespace(stack[%d]);\n", b->stack_size-2);
-    fprintf(f, "  vm_ensure_not_refinement_module(cfp->self);\n");
-    fprintf(f, "  rb_const_set(stack[%d], 0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-2, operands[0], b->stack_size-1);
-%   when 'putself'
-    fprintf(f, "  stack[%d] = cfp->self;\n", b->stack_size++);
-%   when 'putspecialobject'
-    fprintf(f, "  stack[%d] = vm_get_special_object(cfp->ep, (enum vm_special_object_type)0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
 %   when 'concatstrings'
     fprintf(f, "  stack[%d] = rb_str_concat_literals(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
@@ -88,8 +67,8 @@ switch (insn) {
         unsigned int space_size;
         space_size = (unsigned int)operands[0] + (unsigned int)((int)operands[1] & 0x01);
 
-        fprintf(f, "  cfp->sp = cfp->bp + %d;\n", b->stack_size); /* For `VALUE ary` argument. TODO: cfp->sp should be set once */
-        fprintf(f, "  vm_expandarray(cfp, stack[%d], 0x%"PRIxVALUE", (int)0x%"PRIxVALUE");\n", --b->stack_size, operands[0], operands[1]);
+        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size); /* For `VALUE ary` argument. TODO: reg_cfp->sp should be set once */
+        fprintf(f, "  vm_expandarray(reg_cfp, stack[%d], 0x%"PRIxVALUE", (int)0x%"PRIxVALUE");\n", --b->stack_size, operands[0], operands[1]);
         b->stack_size += space_size;
     }
 %   when 'newhash'
@@ -133,15 +112,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size - 1 - (unsigned int)operands[0], b->stack_size-1);
 %   when 'adjuststack'
     b->stack_size -= (unsigned int)operands[0];
-%   when 'defined'
-    fprintf(f, "  stack[%d] = vm_defined(ec, cfp, 0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", stack[%d]);\n",
-            b->stack_size-1, operands[0], operands[1], operands[2], b->stack_size-1);
-%   when 'checkkeyword'
-    fprintf(f, "  stack[%d] = vm_check_keyword(0x%"PRIxVALUE", 0x%"PRIxVALUE", cfp->ep);\n",
-            b->stack_size++, operands[0], operands[1]);
-%   when 'tracecoverage'
-    fprintf(f, "  vm_dtrace((rb_event_flag_t)0x%"PRIxVALUE", ec);\n", operands[0]);
-    fprintf(f, "  EXEC_EVENT_HOOK(ec, (rb_event_flag_t)0x%"PRIxVALUE", cfp->self, 0, 0, 0, 0x%"PRIxVALUE");\n", operands[0], operands[1]);
 %   when 'send'
     b->stack_size += compile_send(f, insn, operands, b->stack_size, TRUE);
     fprint_trace_cancel(f, b->stack_size);
@@ -164,11 +134,11 @@ switch (insn) {
         fprintf(f, "  {\n");
         fprintf(f, "    struct rb_calling_info calling;\n");
         fprintf(f, "    calling.argc = %d;\n", ci->orig_argc);
-        fprintf(f, "    vm_caller_setup_arg_block(ec, cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE", TRUE);\n", operands[0], operands[2]);
-        fprintf(f, "    calling.recv = cfp->self;\n");
-        fprintf(f, "    vm_search_super_method(ec, cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[0], operands[1]);
+        fprintf(f, "    vm_caller_setup_arg_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE", TRUE);\n", operands[0], operands[2]);
+        fprintf(f, "    calling.recv = reg_cfp->self;\n");
+        fprintf(f, "    vm_search_super_method(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[0], operands[1]);
         fprintf(f, "    {\n");
-        fprintf(f, "      VALUE v = (*((CALL_CACHE)0x%"PRIxVALUE")->call)(ec, cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[1], operands[0], operands[1]);
+        fprintf(f, "      VALUE v = (*((CALL_CACHE)0x%"PRIxVALUE")->call)(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[1], operands[0], operands[1]);
         fprintf(f, "      if (v == Qundef && (v = mjit_exec(ec)) == Qundef) {\n"); /* TODO: we need some check to call `mjit_exec` directly (skipping setjmp), but not done yet */
         fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
         fprintf(f, "        stack[%d] = vm_exec(ec);\n", b->stack_size - push_count - 1);
@@ -191,13 +161,13 @@ switch (insn) {
         fprintf(f, "    calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
         fprintf(f, "    calling.recv = Qundef; /* should not be used */\n");
 
-        fprintf(f, "    block_handler = VM_CF_BLOCK_HANDLER(cfp);\n");
+        fprintf(f, "    block_handler = VM_CF_BLOCK_HANDLER(reg_cfp);\n");
         fprintf(f, "    if (block_handler == VM_BLOCK_HANDLER_NONE) {\n");
         fprintf(f, "      rb_vm_localjump_error(\"no block given (yield)\", Qnil, 0);\n");
         fprintf(f, "    }\n");
 
         fprintf(f, "    {\n");
-        fprintf(f, "      VALUE v = vm_invoke_block(ec, cfp, &calling, 0x%"PRIxVALUE", block_handler);\n", operands[0]);
+        fprintf(f, "      VALUE v = vm_invoke_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", block_handler);\n", operands[0]);
         fprintf(f, "      if (v == Qundef && (v = mjit_exec(ec)) == Qundef) {\n");
         fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
         fprintf(f, "        stack[%d] = vm_exec(ec);\n", b->stack_size - ci->orig_argc);
@@ -218,10 +188,10 @@ switch (insn) {
         status->success = FALSE;
     }
 
-    fprintf(f, "  cfp->sp = cfp->bp + 1;\n"); /* pop result to resolve consistency error */
+    fprintf(f, "  reg_cfp->sp = reg_cfp->bp + 1;\n"); /* pop result to resolve consistency error */
     fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
     /* TODO: is there a case that vm_pop_frame returns 0? */
-    fprintf(f, "  vm_pop_frame(ec, cfp, cfp->ep);\n");
+    fprintf(f, "  vm_pop_frame(ec, reg_cfp, reg_cfp->ep);\n");
 #if OPT_CALL_THREADED_CODE
     fprintf(f, "  ec->retval = stack[%d];\n", b->stack_size-1);
     fprintf(f, "  return 0;\n");
@@ -233,7 +203,7 @@ switch (insn) {
     b->finish_p = TRUE;
 %   when 'throw'
     fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "  ec->errinfo = vm_throw(ec, cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
+    fprintf(f, "  ec->errinfo = vm_throw(ec, reg_cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
     fprintf(f, "  EC_JUMP_TAG(ec, ec->tag->state);\n");
     b->finish_p = TRUE;
 %   when 'jump'
@@ -269,13 +239,13 @@ switch (insn) {
     compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
     next_pos = pos + insn_len(insn) + (unsigned int)operands[1];
 %   when 'getinlinecache'
-    fprintf(f, "  stack[%d] = vm_ic_hit_p(0x%"PRIxVALUE", cfp->ep);\n", b->stack_size, operands[1]);
+    fprintf(f, "  stack[%d] = vm_ic_hit_p(0x%"PRIxVALUE", reg_cfp->ep);\n", b->stack_size, operands[1]);
     fprintf(f, "  if (stack[%d] != Qnil) {\n", b->stack_size);
     fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
     fprintf(f, "  }\n");
     b->stack_size++;
 %   when 'setinlinecache'
-    fprintf(f, "  vm_ic_update(0x%"PRIxVALUE", stack[%d], cfp->ep);\n", operands[0], b->stack_size-1);
+    fprintf(f, "  vm_ic_update(0x%"PRIxVALUE", stack[%d], reg_cfp->ep);\n", operands[0], b->stack_size-1);
 %   when 'opt_case_dispatch'
     {
         struct case_dispatch_var arg;
