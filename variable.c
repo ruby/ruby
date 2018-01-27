@@ -2513,6 +2513,11 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    if (ce->value == Qundef && !check_autoload_required(tmp, id, 0) &&
 		    !rb_autoloading_value(tmp, id, 0))
 		return (int)Qfalse;
+
+	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+		return (int)Qfalse;
+	    }
+
 	    return (int)Qtrue;
 	}
 	if (!recurse) break;
