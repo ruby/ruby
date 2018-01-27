@@ -20,7 +20,6 @@
 %   'setblockparam',       # TODO: support this
 %   'getblockparamproxy',  # TODO: support this
 %   'defineclass',         # low priority
-%   'once',                # low priority
 %   'opt_call_c_function', # low priority
 % ]
 %
@@ -63,26 +62,14 @@ switch (insn) {
     fprintf(f, "  vm_check_if_namespace(stack[%d]);\n", b->stack_size-2);
     fprintf(f, "  vm_ensure_not_refinement_module(cfp->self);\n");
     fprintf(f, "  rb_const_set(stack[%d], 0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-2, operands[0], b->stack_size-1);
-%   when 'getglobal'
-    fprintf(f, "  stack[%d] = GET_GLOBAL((VALUE)0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
-%   when 'setglobal'
-    fprintf(f, "  SET_GLOBAL((VALUE)0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
 %   when 'putself'
     fprintf(f, "  stack[%d] = cfp->self;\n", b->stack_size++);
-%   when 'putobject'
-    fprintf(f, "  stack[%d] = (VALUE)0x%"PRIxVALUE";\n", b->stack_size++, operands[0]);
 %   when 'putspecialobject'
     fprintf(f, "  stack[%d] = vm_get_special_object(cfp->ep, (enum vm_special_object_type)0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
-%   when 'putiseq'
-    fprintf(f, "  stack[%d] = (VALUE)0x%"PRIxVALUE";\n", b->stack_size++, operands[0]);
-%   when 'putstring'
-    fprintf(f, "  stack[%d] = rb_str_resurrect(0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
 %   when 'concatstrings'
     fprintf(f, "  stack[%d] = rb_str_concat_literals(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'freezestring'
-    fprintf(f, "  vm_freezestring(stack[%d], 0x%"PRIxVALUE");\n", b->stack_size-1, operands[0]);
 %   when 'toregexp'
     fprintf(f, "  {\n");
     fprintf(f, "    VALUE rb_reg_new_ary(VALUE ary, int options);\n");
@@ -96,8 +83,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = rb_ary_new4(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'duparray'
-    fprintf(f, "  stack[%d] = rb_ary_resurrect(0x%"PRIxVALUE");\n", b->stack_size++, operands[0]);
 %   when 'expandarray'
     {
         unsigned int space_size;
@@ -107,8 +92,6 @@ switch (insn) {
         fprintf(f, "  vm_expandarray(cfp, stack[%d], 0x%"PRIxVALUE", (int)0x%"PRIxVALUE");\n", --b->stack_size, operands[0], operands[1]);
         b->stack_size += space_size;
     }
-%   when 'splatarray'
-    fprintf(f, "  stack[%d] = vm_splat_array(0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-1, operands[0], b->stack_size-1);
 %   when 'newhash'
     fprintf(f, "  {\n");
     fprintf(f, "    VALUE val;\n");
@@ -120,9 +103,6 @@ switch (insn) {
     fprintf(f, "    stack[%d] = val;\n", b->stack_size - (unsigned int)operands[0]);
     fprintf(f, "  }\n");
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'newrange'
-    fprintf(f, "  stack[%d] = rb_range_new(stack[%d], stack[%d], (int)0x%"PRIxVALUE");\n", b->stack_size-2, b->stack_size-2, b->stack_size-1, operands[0]);
-    b->stack_size--;
 %   when 'dupn'
     fprintf(f, "  MEMCPY(stack + %d, stack + %d, VALUE, 0x%"PRIxVALUE");\n",
             b->stack_size, b->stack_size - (unsigned int)operands[0], operands[0]);
@@ -156,9 +136,6 @@ switch (insn) {
 %   when 'defined'
     fprintf(f, "  stack[%d] = vm_defined(ec, cfp, 0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", stack[%d]);\n",
             b->stack_size-1, operands[0], operands[1], operands[2], b->stack_size-1);
-%   when 'checkmatch'
-    fprintf(f, "  stack[%d] = vm_check_match(ec, stack[%d], stack[%d], 0x%"PRIxVALUE");\n", b->stack_size-2, b->stack_size-2, b->stack_size-1, operands[0]);
-    b->stack_size--;
 %   when 'checkkeyword'
     fprintf(f, "  stack[%d] = vm_check_keyword(0x%"PRIxVALUE", 0x%"PRIxVALUE", cfp->ep);\n",
             b->stack_size++, operands[0], operands[1]);
@@ -168,20 +145,6 @@ switch (insn) {
 %   when 'send'
     b->stack_size += compile_send(f, insn, operands, b->stack_size, TRUE);
     fprint_trace_cancel(f, b->stack_size);
-%   when 'opt_str_freeze'
-    fprintf(f, "  if (BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG)) {\n");
-    fprintf(f, "    stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, operands[0]);
-    fprintf(f, "  } else {\n");
-    fprintf(f, "    stack[%d] = rb_funcall(rb_str_resurrect(0x%"PRIxVALUE"), idFreeze, 0);\n", b->stack_size, operands[0]);
-    fprintf(f, "  }\n");
-    b->stack_size++;
-%   when 'opt_str_uminus'
-    fprintf(f, "  if (BASIC_OP_UNREDEFINED_P(BOP_UMINUS, STRING_REDEFINED_OP_FLAG)) {\n");
-    fprintf(f, "    stack[%d] = 0x%"PRIxVALUE";\n", b->stack_size, operands[0]);
-    fprintf(f, "  } else {\n");
-    fprintf(f, "    stack[%d] = rb_funcall(rb_str_resurrect(0x%"PRIxVALUE"), idUMinus, 0);\n", b->stack_size, operands[0]);
-    fprintf(f, "  }\n");
-    b->stack_size++;
 %   when 'opt_newarray_max'
     fprintf(f, "  stack[%d] = vm_opt_newarray_max(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
@@ -382,16 +345,19 @@ switch (insn) {
 %   else
     fprintf(f, "{\n");
 %
-%     # Prepare return value variables
-%     pop_names = insn.pops.map { |pop| pop.fetch(:name) }
-%     insn.rets.each do |ret|
-%       next if pop_names.include?(ret.fetch(:name))
-    fprintf(f, "    <%= ret.fetch(:decl) %>;\n");
+%     # Declare variables for operands, popped values and return values
+%     insn.declarations.each do |decl|
+    fprintf(f, "    <%= decl %>;\n");
+%     end
+
+%     # Initialize operands
+%     insn.opes.each_with_index do |ope, i|
+    fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
 %     end
 %
-%     # Prepare popped value variables
-%     insn.pops.reverse.each_with_index do |pop, i|
-    fprintf(f, "    <%= pop.fetch(:decl) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
+%     # Initialize popped values
+%     insn.pops.reverse_each.with_index.reverse_each do |pop, i|
+    fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
 %     end
 %
 %     # Print insn body in insns.def
