@@ -93,7 +93,10 @@ else
   module DebugSystem
     def system(*args, exception: true, **opts)
       STDERR.puts [*args, **opts].inspect if $DEBUG
-      ret = super(*args, **opts, exception: exception)
+      if RUBY_VERSION >= "2.6"
+        opts[:exception] = exception
+      end
+      ret = super(*args, **opts)
       raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
       ret
     end
@@ -104,6 +107,7 @@ else
 end
 
 class VCS
+  prepend(DebugSystem) if defined?(DebugSystem)
   class NotFoundError < RuntimeError; end
 
   @@dirs = []
