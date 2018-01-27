@@ -194,7 +194,7 @@ vm_check_ints_blocking(rb_execution_context_t *ec)
 static int
 vm_living_thread_num(rb_vm_t *vm)
 {
-    return (int)vm->living_thread_num;
+    return vm->living_thread_num;
 }
 
 #if THREAD_DEBUG

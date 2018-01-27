@@ -526,8 +526,8 @@ typedef struct rb_vm_struct {
 
     struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
-    size_t living_thread_num;
     VALUE thgroup_default;
+    int living_thread_num;
 
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
