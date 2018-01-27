@@ -1059,6 +1059,7 @@ VALUE rb_ary_aref1(VALUE ary, VALUE i);
 VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
+VALUE rb_check_to_array(VALUE ary);
 #if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
