@@ -136,7 +136,7 @@ RUBY_EXTERN double lgamma_r(double, int *);
 RUBY_EXTERN double cbrt(double);
 #endif
 
-#if !defined(HAVE_INFINITY) || !defined(HAVE_NAN)
+#if !defined(INFINITY) || !defined(NAN)
 union bytesequence4_or_float {
   unsigned char bytesequence[4];
   float float_value;
@@ -147,12 +147,14 @@ union bytesequence4_or_float {
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_infinity;
 # define INFINITY (rb_infinity.float_value)
+# define USE_RB_INFINITY 1
 #endif
 
 #ifndef NAN
 /** @internal */
 RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 # define NAN (rb_nan.float_value)
+# define USE_RB_NAN 1
 #endif
 
 #ifndef HUGE_VAL
