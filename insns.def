@@ -38,7 +38,12 @@
 
    - Attribute pragmas are optional, and can include arbitrary C
      expressions.  You can write anything there but as of writing,
-     attribute named sp_inc is supported.
+     supported attributes are:
+
+       * sp_inc: Used to dynamically calculate sp increase in
+         `insn_stack_increase`.
+
+       * handles_frame: If it is true, VM moves pc before insn body.
 
    - Attributes can access operands, but not stack (push/pop) variables.
 
