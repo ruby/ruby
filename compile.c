@@ -5040,7 +5040,7 @@ static int
 compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     /* massign to var in "for"
-     * args.length == 1 && Array === (tmp = args[0]) ? tmp : args
+     * (args.length == 1 && Array.try_convert(args[0])) || args
      */
     const int line = nd_line(node);
     const NODE *var = node->nd_var;
@@ -5056,8 +5056,9 @@ compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     ADD_INSN1(ret, line, putobject, INT2FIX(0));
     ADD_CALL(ret, line, idAREF, INT2FIX(1));
     ADD_INSN1(ret, line, putobject, rb_cArray);
-    ADD_INSN1(ret, line, topn, INT2FIX(1));
-    ADD_CALL(ret, line, idEqq, INT2FIX(1));
+    ADD_INSN(ret, line, swap);
+    ADD_CALL(ret, line, rb_intern("try_convert"), INT2FIX(1));
+    ADD_INSN(ret, line, dup);
     ADD_INSNL(ret, line, branchunless, not_ary);
     ADD_INSN(ret, line, swap);
     ADD_LABEL(ret, not_ary);
