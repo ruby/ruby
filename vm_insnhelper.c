@@ -1237,15 +1237,19 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
     VALUE *base = cfp->sp;
     const VALUE *ptr;
     rb_num_t len;
+    const VALUE obj = ary;
 
-    if (!RB_TYPE_P(ary, T_ARRAY)) {
-	ary = rb_ary_to_ary(ary);
+    if (!RB_TYPE_P(ary, T_ARRAY) && NIL_P(ary = rb_check_array_type(ary))) {
+	ary = obj;
+	ptr = &ary;
+	len = 1;
+    }
+    else {
+	ptr = RARRAY_CONST_PTR(ary);
+	len = (rb_num_t)RARRAY_LEN(ary);
     }
 
     cfp->sp += space_size;
-
-    ptr = RARRAY_CONST_PTR(ary);
-    len = (rb_num_t)RARRAY_LEN(ary);
 
     if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
