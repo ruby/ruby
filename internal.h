@@ -2066,6 +2066,19 @@ rb_obj_builtin_type(VALUE obj)
 # define FLEX_ARY_LEN 1 /* VALUE ary[1]; */
 #endif
 
+/*
+ * For declaring bitfields out of non-unsigned int types:
+ *   struct date {
+ *      BITFIELD(enum months) month:4;
+ *      ...
+ *   };
+ */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+# define BITFIELD(type) type
+#else
+# define BITFIELD(type) unsigned int
+#endif
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
