@@ -14,13 +14,14 @@ require 'optparse'
 require_relative '../controllers/application_controller.rb'
 
 def router argv
-  targets = generate_parser.parse argv
+  options = { destdir: Dir.getwd }
+  targets = generate_parser(options).parse argv
   return targets.map do |i|
-    next ApplicationController.new.generate i
+    next ApplicationController.new.generate i, options[:destdir]
   end
 end
 
-def generate_parser
+def generate_parser(options)
   OptionParser.new do |this|
     this.on "-I", "--srcdir=DIR", <<-'end'
       Historically this option has been passed to the script.  This is
@@ -78,7 +79,8 @@ def generate_parser
       THIS IS THE ONLY OPTION THAT WORKS today.  Change destination
       directory from the current working directory to the given path.
     begin
-      Dir.chdir dir
+      raise "directory was not found in '#{dir}'" unless Dir.eixst?(dir)
+      options[:destdir] = dir
     end
 
     this.on "-V", "--[no-]verbose", <<-'end'
