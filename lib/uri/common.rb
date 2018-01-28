@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #--
 # = uri/common.rb
 #
@@ -342,17 +342,17 @@ module URI
 
   TBLENCWWWCOMP_ = {} # :nodoc:
   256.times do |i|
-    TBLENCWWWCOMP_[i.chr] = '%%%02X' % i
+    TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:
   256.times do |i|
     h, l = i>>4, i&15
-    TBLDECWWWCOMP_['%%%X%X' % [h, l]] = i.chr
-    TBLDECWWWCOMP_['%%%x%X' % [h, l]] = i.chr
-    TBLDECWWWCOMP_['%%%X%x' % [h, l]] = i.chr
-    TBLDECWWWCOMP_['%%%x%x' % [h, l]] = i.chr
+    TBLDECWWWCOMP_[-('%%%X%X' % [h, l])] = -i.chr
+    TBLDECWWWCOMP_[-('%%%x%X' % [h, l])] = -i.chr
+    TBLDECWWWCOMP_[-('%%%X%x' % [h, l])] = -i.chr
+    TBLDECWWWCOMP_[-('%%%x%x' % [h, l])] = -i.chr
   end
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
@@ -468,7 +468,7 @@ module URI
       if isindex
         if sep.empty?
           val = key
-          key = ''
+          key = +''
         end
         isindex = false
       end
@@ -482,7 +482,7 @@ module URI
       if val
         val.gsub!(/\+|%\h\h/, TBLDECWWWCOMP_)
       else
-        val = ''
+        val = +''
       end
 
       ary << [key, val]
