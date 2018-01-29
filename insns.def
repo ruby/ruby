@@ -1083,18 +1083,15 @@ opt_eq
 /* optimized X!=Y. */
 DEFINE_INSN
 opt_neq
-(CALL_INFO ci, CALL_CACHE cc, CALL_INFO ci_eq, CALL_CACHE cc_eq)
+(CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
-// attr bool handles_frame = true;
 {
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	ADD_PC(2); /* !!! */
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1199,10 +1196,9 @@ opt_aset
 /* recv[str] = set */
 DEFINE_INSN
 opt_aset_with
-(CALL_INFO ci, CALL_CACHE cc, VALUE key)
+(VALUE key, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE val)
 (VALUE val)
-// attr bool handles_frame = true;
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -1210,29 +1206,26 @@ opt_aset_with
 	val = tmp;
     }
     else {
-	/* other */
-	PUSH(recv);
-	PUSH(rb_str_resurrect(key));
+	TOPN(0) = rb_str_resurrect(key);
 	PUSH(val);
-	CALL_SIMPLE_METHOD(recv);
+	ADD_PC(1); /* !!! */
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
 /* recv[str] */
 DEFINE_INSN
 opt_aref_with
-(CALL_INFO ci, CALL_CACHE cc, VALUE key)
+(VALUE key, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
-// attr bool handles_frame = true;
 {
     val = vm_opt_aref_with(recv, key);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
 	PUSH(rb_str_resurrect(key));
-	CALL_SIMPLE_METHOD(recv);
+	ADD_PC(1); /* !!! */
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 

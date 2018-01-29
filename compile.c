@@ -2954,9 +2954,9 @@ insn_set_specialized_instruction(rb_iseq_t *iseq, INSN *iobj, int insn_id)
 	VALUE *old_operands = iobj->operands;
 	iobj->operand_size = 4;
 	iobj->operands = (VALUE *)compile_data_alloc(iseq, iobj->operand_size * sizeof(VALUE));
-	iobj->operands[0] = old_operands[0];
+	iobj->operands[0] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
 	iobj->operands[1] = Qfalse; /* CALL_CACHE */
-	iobj->operands[2] = (VALUE)new_callinfo(iseq, idEq, 1, 0, NULL, FALSE);
+	iobj->operands[2] = old_operands[0];
 	iobj->operands[3] = Qfalse; /* CALL_CACHE */
     }
 
@@ -6092,9 +6092,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
-	    ADD_INSN3(ret, line, opt_aref_with,
+	    ADD_INSN3(ret, line, opt_aref_with, str,
 		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
-		      NULL/* CALL_CACHE */, str);
+		      NULL/* CALL_CACHE */);
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -7106,9 +7106,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		ADD_INSN(ret, line, swap);
 		ADD_INSN1(ret, line, topn, INT2FIX(1));
 	    }
-	    ADD_INSN3(ret, line, opt_aset_with,
+	    ADD_INSN3(ret, line, opt_aset_with, str,
 		      new_callinfo(iseq, idASET, 2, 0, NULL, FALSE),
-		      NULL/* CALL_CACHE */, str);
+		      NULL/* CALL_CACHE */);
 	    ADD_INSN(ret, line, pop);
 	    break;
 	}
