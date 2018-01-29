@@ -313,6 +313,58 @@ describe Mock, ".verify_call" do
   end
 end
 
+describe Mock, ".verify_call mixing mocks and stubs" do
+  before :each do
+    MSpec.stub(:actions)
+    MSpec.stub(:current).and_return(double("spec state").as_null_object)
+
+    @mock = double('verify_call')
+  end
+
+  after :each do
+    ScratchPad.clear
+    Mock.cleanup
+  end
+
+  it "checks the mock arguments when a mock is defined after a stub" do
+    Mock.install_method @mock, :method_call, :stub
+    Mock.install_method(@mock, :method_call, :mock).with("arg")
+
+    -> {
+      @mock.method_call
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \(\)/)
+
+    -> {
+      @mock.method_call("a", "b")
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \("a", "b"\)/)
+
+    -> {
+      @mock.method_call("foo")
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \("foo"\)/)
+
+    @mock.method_call("arg")
+  end
+
+  it "checks the mock arguments when a stub is defined after a mock" do
+    Mock.install_method(@mock, :method_call, :mock).with("arg")
+    Mock.install_method @mock, :method_call, :stub
+
+    -> {
+      @mock.method_call
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \(\)/)
+
+    -> {
+      @mock.method_call("a", "b")
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \("a", "b"\)/)
+
+    -> {
+      @mock.method_call("foo")
+    }.should raise_error(SpecExpectationNotMetError, /called with unexpected arguments \("foo"\)/)
+
+    @mock.method_call("arg")
+  end
+end
+
 describe Mock, ".verify_count" do
   before :each do
     MSpec.stub(:actions)
@@ -396,6 +448,11 @@ describe Mock, ".verify_count mixing mocks and stubs" do
   it "verifies the calls to the mocked method when a mock is defined after a stub" do
     Mock.install_method @mock, :method_call, :stub
     Mock.install_method @mock, :method_call, :mock
+
+    -> {
+      Mock.verify_count
+    }.should raise_error(SpecExpectationNotMetError, /received it 0 times/)
+
     @mock.method_call
     Mock.verify_count
   end
@@ -403,6 +460,11 @@ describe Mock, ".verify_count mixing mocks and stubs" do
   it "verifies the calls to the mocked method when a mock is defined before a stub" do
     Mock.install_method @mock, :method_call, :mock
     Mock.install_method @mock, :method_call, :stub
+
+    -> {
+      Mock.verify_count
+    }.should raise_error(SpecExpectationNotMetError, /received it 0 times/)
+
     @mock.method_call
     Mock.verify_count
   end
@@ -415,7 +477,6 @@ describe Mock, ".cleanup" do
 
     @mock = double('cleanup')
     @proxy = Mock.install_method @mock, :method_call
-    @stub = Mock.install_method @mock, :method_call, :stub
   end
 
   after :each do
@@ -449,6 +510,8 @@ describe Mock, ".cleanup" do
   end
 
   it "removes all stubs" do
+    Mock.cleanup # remove @proxy
+    @stub = Mock.install_method @mock, :method_call, :stub
     Mock.stubs.should == { Mock.replaced_key(@mock, :method_call) => [@stub] }
     Mock.cleanup
     Mock.stubs.should == {}
