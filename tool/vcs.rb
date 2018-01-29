@@ -91,10 +91,10 @@ else
   end
   using DebugPOpen
   module DebugSystem
-    def system(*args, exception: true, **opts)
+    def system(*args, **opts)
       STDERR.puts [*args, **opts].inspect if $DEBUG
       if RUBY_VERSION >= "2.6"
-        opts[:exception] = exception
+        opts[:exception] = true unless opts.key?(:exception)
       end
       ret = super(*args, **opts)
       raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
