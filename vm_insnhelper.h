@@ -194,14 +194,6 @@ enum vm_regan_acttype {
 #define USE_IC_FOR_SPECIALIZED_METHOD 1
 #endif
 
-#define CALL_SIMPLE_METHOD(recv_) do { \
-    struct rb_calling_info calling; \
-    calling.block_handler = VM_BLOCK_HANDLER_NONE; \
-    calling.argc = ci->orig_argc; \
-    vm_search_method(ci, cc, calling.recv = (recv_)); \
-    CALL_METHOD(&calling, ci, cc); \
-} while (0)
-
 #define NEXT_CLASS_SERIAL() (++ruby_vm_class_serial)
 #define GET_GLOBAL_METHOD_STATE() (ruby_vm_global_method_state)
 #define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
