@@ -69,9 +69,11 @@ class RubyVM::BareInstructions
     return @variables                                        \
       . values                                               \
       . group_by {|h| h[:type] }                             \
+      . sort_by  {|t, v| t }                                 \
       . map      {|t, v| [t, v.map {|i| i[:name] }.sort ] }  \
-      . map      {|t, v| sprintf("%s %s", t, v.join(', ')) } \
-      . sort
+      . map      {|t, v|
+        sprintf("MAYBE_UNUSED(%s) %s", t, v.join(', '))
+      }
   end
 
   def preamble
@@ -127,8 +129,7 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_num_t', 'sp_inc', rets.size - pops.size
-    generate_attribute 'bool', 'handles_frame', \
-      opes.any? {|o| /CALL_INFO/ =~ o[:type] }
+    generate_attribute 'bool', 'handles_frame', false
   end
 
   def typesplit a
