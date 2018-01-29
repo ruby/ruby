@@ -2798,6 +2798,7 @@ vm.$(OBJEXT): {$(VPATH)}id.h
 vm.$(OBJEXT): {$(VPATH)}id_table.h
 vm.$(OBJEXT): {$(VPATH)}insns.def
 vm.$(OBJEXT): {$(VPATH)}insns.inc
+vm.$(OBJEXT): {$(VPATH)}insns_info.inc
 vm.$(OBJEXT): {$(VPATH)}intern.h
 vm.$(OBJEXT): {$(VPATH)}internal.h
 vm.$(OBJEXT): {$(VPATH)}io.h

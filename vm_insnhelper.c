@@ -10,6 +10,7 @@
 
 /* finish iseq array */
 #include "insns.inc"
+#include "insns_info.inc"
 #include <math.h>
 #include "constant.h"
 #include "internal.h"

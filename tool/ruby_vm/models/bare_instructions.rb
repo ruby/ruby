@@ -49,15 +49,8 @@ class RubyVM::BareInstructions
   end
 
   def call_attribute name
-    return sprintf 'CALL_ATTRIBUTE(%s)', [
-      name, @name, @opes.map {|i| i[:name] }
-    ].flatten.compact.join(', ')
-  end
-
-  def sp_inc
-    return @attrs.fetch "sp_inc" do |k|
-      return generate_attribute k, 'rb_snum_t', rets.size - pops.size
-    end
+    return sprintf 'attr_%s_%s(%s)', name, @name, \
+                   @opes.map {|i| i[:name] }.compact.join(', ')
   end
 
   def has_attribute? k
@@ -65,10 +58,6 @@ class RubyVM::BareInstructions
   end
 
   def attributes
-    # need to generate predefined attribute defaults
-    sp_inc
-    # other_attribute
-    # ...
     return @attrs.values
   end
 
@@ -120,19 +109,25 @@ class RubyVM::BareInstructions
 
   private
 
-  def generate_attribute k, t, v
-    attr = RubyVM::Attribute.new \
-      insn: self, \
-      name: k, \
-      type: t, \
-      location: [], \
+  def generate_attribute t, k, v
+    @attrs[k] ||= RubyVM::Attribute.new \
+      insn: self,                       \
+      name: k,                          \
+      type: t,                          \
+      location: [],                     \
       expr: v.to_s + ';'
     return @attrs[k] ||= attr
   end
 
   def predefine_attributes
-    generate_attribute 'sp_inc', 'rb_snum_t', rets.size - pops.size
-    generate_attribute 'handles_frame', 'bool', \
+    generate_attribute 'const char*', 'name', "insn_name(#{bin})"
+    generate_attribute 'enum ruby_vminsn_type', 'bin', bin
+    generate_attribute 'rb_num_t', 'open', opes.size
+    generate_attribute 'rb_num_t', 'popn', pops.size
+    generate_attribute 'rb_num_t', 'retn', rets.size
+    generate_attribute 'rb_num_t', 'width', width
+    generate_attribute 'rb_num_t', 'sp_inc', rets.size - pops.size
+    generate_attribute 'bool', 'handles_frame', \
       opes.any? {|o| /CALL_INFO/ =~ o[:type] }
   end
 
