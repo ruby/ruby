@@ -167,6 +167,11 @@ default:                        \
 
 #endif
 
+#define EXEC_EC_CFP() do { \
+    RESTORE_REGS(); \
+    NEXT_INSN(); \
+} while (0)
+
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
 #if OPT_CALL_THREADED_CODE

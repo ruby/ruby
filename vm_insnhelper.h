@@ -130,8 +130,7 @@ enum vm_regan_acttype {
 #define CALL_METHOD(calling, ci, cc) do { \
     VALUE v = (*(cc)->call)(ec, GET_CFP(), (calling), (ci), (cc)); \
     if (v == Qundef && (v = mjit_exec(ec)) == Qundef) { \
-	RESTORE_REGS(); \
-	NEXT_INSN(); \
+        EXEC_EC_CFP(); \
     } \
     else { \
 	val = v; \
