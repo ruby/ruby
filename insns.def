@@ -709,6 +709,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool handles_frame = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -772,6 +773,7 @@ opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
 (VALUE val)
+// attr bool handles_frame = true;
 // attr rb_snum_t sp_inc = -ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -786,6 +788,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool handles_frame = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -803,6 +806,7 @@ invokeblock
 (CALL_INFO ci)
 (...)
 (VALUE val)
+// attr bool handles_frame = true;
 // attr rb_snum_t sp_inc = 1 - ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -1002,10 +1006,7 @@ opt_plus
     val = vm_opt_plus(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1019,10 +1020,7 @@ opt_minus
     val = vm_opt_minus(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1036,10 +1034,7 @@ opt_mult
     val = vm_opt_mult(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1053,10 +1048,7 @@ opt_div
     val = vm_opt_div(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1070,10 +1062,7 @@ opt_mod
     val = vm_opt_mod(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1087,10 +1076,7 @@ opt_eq
     val = opt_eq_func(recv, obj, ci, cc);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1100,6 +1086,7 @@ opt_neq
 (CALL_INFO ci, CALL_CACHE cc, CALL_INFO ci_eq, CALL_CACHE cc_eq)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool handles_frame = true;
 {
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
@@ -1121,10 +1108,7 @@ opt_lt
     val = vm_opt_lt(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1138,10 +1122,7 @@ opt_le
     val = vm_opt_le(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1155,10 +1136,7 @@ opt_gt
     val = vm_opt_gt(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1172,10 +1150,7 @@ opt_ge
     val = vm_opt_ge(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1189,10 +1164,7 @@ opt_ltlt
     val = vm_opt_ltlt(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1206,10 +1178,7 @@ opt_aref
     val = vm_opt_aref(recv, obj);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1223,11 +1192,7 @@ opt_aset
     val = vm_opt_aset(recv, obj, set);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	PUSH(obj);
-	PUSH(set);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1237,6 +1202,7 @@ opt_aset_with
 (CALL_INFO ci, CALL_CACHE cc, VALUE key)
 (VALUE recv, VALUE val)
 (VALUE val)
+// attr bool handles_frame = true;
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -1258,6 +1224,7 @@ opt_aref_with
 (CALL_INFO ci, CALL_CACHE cc, VALUE key)
 (VALUE recv)
 (VALUE val)
+// attr bool handles_frame = true;
 {
     val = vm_opt_aref_with(recv, key);
 
@@ -1279,9 +1246,7 @@ opt_length
     val = vm_opt_length(recv, BOP_LENGTH);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1295,9 +1260,7 @@ opt_size
     val = vm_opt_length(recv, BOP_SIZE);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1311,9 +1274,7 @@ opt_empty_p
     val = vm_opt_empty_p(recv);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1327,9 +1288,7 @@ opt_succ
     val = vm_opt_succ(recv);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1343,9 +1302,7 @@ opt_not
     val = vm_opt_not(ci, cc, recv);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(recv);
-	CALL_SIMPLE_METHOD(recv);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
@@ -1369,10 +1326,7 @@ opt_regexpmatch2
     val = vm_opt_regexpmatch2(obj2, obj1);
 
     if (val == Qundef) {
-	/* other */
-	PUSH(obj2);
-	PUSH(obj1);
-	CALL_SIMPLE_METHOD(obj2);
+	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
 
