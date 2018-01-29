@@ -21,7 +21,6 @@ INSN_ENTRY(<%= insn.name %>)
 % insn.preamble.each do |konst|
 <%= render_c_expr konst -%>
 % end
-%
 % insn.opes.each_with_index do |ope, i|
     <%= ope[:name] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
 % end
@@ -32,8 +31,6 @@ INSN_ENTRY(<%= insn.name %>)
     DEBUG_ENTER_INSN(INSN_ATTR(name));
 % if insn.handles_frame?
     ADD_PC(INSN_ATTR(width));
-% end
-% unless insn.pops.empty?
     POPN(INSN_ATTR(popn));
 % end
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
@@ -41,13 +38,16 @@ INSN_ENTRY(<%= insn.name %>)
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), <%= i %>, <%= ope[:name] %>);
 % end
 <%= render_c_expr insn.expr -%>
-% unless insn.rets.empty?
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-%   insn.rets.each_with_index do |ret, i|
+% if insn.handles_frame?
+%   insn.rets.reverse_each do |ret|
     PUSH(<%= insn.cast_to_VALUE ret %>);
 %   end
-% end
-% unless insn.handles_frame?
+% else
+    ADJ_SP(INSN_ATTR(sp_inc));
+%   insn.rets.reverse_each.with_index do |ret, i|
+    TOPN(<%= i %>) = <%= insn.cast_to_VALUE ret %>;
+%   end
     ADD_PC(INSN_ATTR(width));
     PREFETCH(GET_PC());
 % end

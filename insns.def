@@ -366,7 +366,6 @@ concatstrings
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
-    POPN(num);
 }
 
 /* push the result of to_s. */
@@ -403,7 +402,6 @@ toregexp
     VALUE rb_reg_new_ary(VALUE ary, int options);
     VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
-    POPN(cnt);
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
 }
@@ -427,7 +425,6 @@ newarray
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
-    POPN(num);
 }
 
 /* dup array */
@@ -494,7 +491,6 @@ newhash
     if (num) {
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
     }
-    POPN(num);
 }
 
 /* put new Range object.(Range.new(low, high, flag)) */
@@ -545,6 +541,7 @@ dupn
 
     INC_SP(n); /* alloca */
     MEMCPY(dst, src, VALUE, n);
+    DEC_SP(n);
 }
 
 /* swap top 2 vals */
@@ -606,7 +603,7 @@ setn
 (VALUE val)
 // attr rb_snum_t sp_inc = 0;
 {
-    TOPN(n-1) = val;
+    TOPN(n) = val;
 }
 
 /* empty current stack */
@@ -617,7 +614,7 @@ adjuststack
 (...)
 // attr rb_snum_t sp_inc = -(rb_snum_t)n;
 {
-    DEC_SP(n);
+    /* none */
 }
 
 /**********************************************************/
@@ -757,7 +754,6 @@ opt_newarray_max
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
-    POPN(num);
 }
 
 DEFINE_INSN
@@ -768,7 +764,6 @@ opt_newarray_min
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
-    POPN(num);
 }
 
 /* Invoke method without block */
