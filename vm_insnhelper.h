@@ -101,6 +101,22 @@ enum vm_regan_acttype {
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
   /* set current stack value as x */
+#ifdef _MSC_VER
+/* Workaround needed for adding negative number to a pointer */
+#define ADJ_SP(x)  do { \
+    rb_snum_t adj = (x); \
+    if (adj >= 0) { \
+        INC_SP(adj); \
+    } \
+    else { \
+        SIGNED_VALUE dec = -1; \
+        dec *= adj; \
+        DEC_SP(dec); \
+    } \
+} while (0)
+#else
+#define ADJ_SP(x)  INC_SP(x)
+#endif
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
