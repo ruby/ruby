@@ -9270,12 +9270,13 @@ method_type_name(rb_method_type_t type)
 static void
 rb_raw_iseq_info(char *buff, const int buff_size, const rb_iseq_t *iseq)
 {
-    if (iseq->body->location.label) {
+    if (iseq->body && iseq->body->location.label) {
 	VALUE path = rb_iseq_path(iseq);
+	VALUE n = iseq->body->location.first_lineno;
 	snprintf(buff, buff_size, "%s %s@%s:%d", buff,
 		 RSTRING_PTR(iseq->body->location.label),
 		 RSTRING_PTR(path),
-		 FIX2INT(iseq->body->location.first_lineno));
+		 n ? FIX2INT(n) : 0 );
     }
 }
 
@@ -9345,8 +9346,12 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    break;
 	  }
 	  case T_DATA: {
+	    const struct rb_block *block;
 	    const rb_iseq_t *iseq;
-	    if (rb_obj_is_proc(obj) && (iseq = vm_proc_iseq(obj)) != NULL) {
+	    if (rb_obj_is_proc(obj) &&
+		(block = vm_proc_block(obj)) != NULL &&
+		(vm_block_type(block) == block_type_iseq) &&
+		(iseq = vm_block_iseq(block)) != NULL) {
 		rb_raw_iseq_info(buff, buff_size, iseq);
 	    }
 	    else {
