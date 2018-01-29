@@ -485,17 +485,8 @@ ruby_init_loadpath_safe(int safe_level)
     ID id_initial_load_path_mark;
     const char *paths = ruby_initial_load_paths;
 #if defined LOAD_RELATIVE
-# if defined HAVE_DLADDR || defined __CYGWIN__ || defined _WIN32
-#   define VARIABLE_LIBPATH 1
-# else
-#   define VARIABLE_LIBPATH 0
-# endif
-# if VARIABLE_LIBPATH
     char *libpath;
     VALUE sopath;
-# else
-    char libpath[MAXPATHLEN + 1];
-# endif
     size_t baselen;
     char *p;
 
@@ -527,11 +518,10 @@ ruby_init_loadpath_safe(int safe_level)
 #elif defined(HAVE_DLADDR)
     sopath = dladdr_path((void *)(VALUE)expand_include_path);
     libpath = RSTRING_PTR(sopath);
+#else
+# error relative load path is not supported on this platform.
 #endif
 
-#if !VARIABLE_LIBPATH
-    libpath[sizeof(libpath) - 1] = '\0';
-#endif
 #if defined DOSISH && !defined _WIN32
     translit_char(libpath, '\\', '/');
 #elif defined __CYGWIN__
@@ -582,26 +572,12 @@ ruby_init_loadpath_safe(int safe_level)
 	    p = p2;
 	}
 #endif
-#if !VARIABLE_LIBPATH
-	*p = 0;
-#endif
     }
-#if !VARIABLE_LIBPATH
-    else {
-	strlcpy(libpath, ".", sizeof(libpath));
-	p = libpath + 1;
-    }
-    baselen = p - libpath;
-#define PREFIX_PATH() rb_str_new(libpath, baselen)
-#else
     baselen = p - libpath;
     rb_str_resize(sopath, baselen);
     libpath = RSTRING_PTR(sopath);
 #define PREFIX_PATH() sopath
-#endif
-
 #define BASEPATH() rb_str_buf_cat(rb_str_buf_new(baselen+len), libpath, baselen)
-
 #define RUBY_RELATIVE(path, len) rb_str_buf_cat(BASEPATH(), (path), (len))
 #else
     const size_t exec_prefix_len = strlen(ruby_exec_prefix);
