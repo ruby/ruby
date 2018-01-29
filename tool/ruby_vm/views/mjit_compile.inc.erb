@@ -32,8 +32,12 @@
 % #   reg_cfp: the second argument of _mjitXXX
 % #   GET_CFP(): refers to `reg_cfp`
 % #   GET_EP(): refers to `reg_cfp->ep`
+% #   GET_SP(): refers to `reg_cfp->sp`
 % #   GET_SELF(): refers to `reg_cfp->self`
 % #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
+% #   EXEC_EC_CFP(): refers to `val = vm_exec(ec)` with frame setup
+% #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
+% #   TOPN(): refers to `reg_cfp->sp`, which needs to have correct sp (of course)
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
 fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
@@ -123,9 +127,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = vm_opt_newarray_min(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'opt_send_without_block'
-    b->stack_size += compile_send(f, insn, operands, b->stack_size, FALSE);
-    fprint_trace_cancel(f, b->stack_size);
 %   when 'invokesuper'
     {
         CALL_INFO ci = (CALL_INFO)operands[0];
@@ -314,48 +315,47 @@ switch (insn) {
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_regexpmatch2(recv, obj)");
 %   else
     fprintf(f, "{\n");
+    {
+%     # compiler: Prepare operands which may be used by `insn.call_attribute`
+%     insn.opes.each_with_index do |ope, i|
+        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+%     end
 %
-%     # Declare variables for operands, popped values and return values
+%     # JIT: Declare variables for operands, popped values and return values
 %     insn.declarations.each do |decl|
-    fprintf(f, "    <%= decl %>;\n");
+        fprintf(f, "    <%= decl %>;\n");
 %     end
 
-%     # Set const expressions for `RubyVM::OperandsUnifications` insn
+%     # JIT: Set const expressions for `RubyVM::OperandsUnifications` insn
 %     insn.preamble.each do |amble|
-    fprintf(f, "<%= amble.expr %>\n");
+        fprintf(f, "<%= amble.expr %>\n");
 %     end
 %
-%     # Initialize operands
+%     # JIT: Initialize operands
 %     insn.opes.each_with_index do |ope, i|
-    fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
+        fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
 %     end
 %
-%     # Initialize popped values
+%     # JIT: Initialize popped values
 %     insn.pops.reverse_each.with_index.reverse_each do |pop, i|
-    fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
+        fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
 %     end
 %
-%     # Print insn body in insns.def
+%     # JIT: Print insn body in insns.def
 %     insn.expr.expr.each_line do |line|
-    fprintf(f, <%= to_cstr.call(line) %>);
+        fprintf(f, <%= to_cstr.call(line) %>);
 %     end
 %
-%     # Set return values
-%     insn.rets.each_with_index do |ret, i|
-    fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size - <%= insn.pops.size - i %>);
+%     # JIT: Set return values
+%     insn.rets.reverse_each.with_index do |ret, i|
+%       # TOPN(n) = ...
+        fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
 %     end
-    fprintf(f, "}\n");
+        fprintf(f, "}\n");
 %
-%     # Move JIT compiler's internal stack pointer
-%     if insn.has_attribute?('sp_inc')
-%       raise 'sp_inc attribute is not supported yet'
-%     else
-%       sp_inc = insn.rets.size - insn.pops.size
-%       if sp_inc != 0
-    b->stack_size += <%= sp_inc %>;
-%       end
-%     end
-%
+%     # compiler: Move JIT compiler's internal stack pointer
+        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+    }
 %   end
     break;
 % end
