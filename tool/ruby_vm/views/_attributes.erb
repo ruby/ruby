@@ -5,10 +5,13 @@
 %# granted, to either  redistribute and/or modify this file,  provided that the
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %#
+#ifndef RUBY_VM_EXEC_H
+/* can't #include "vm_exec.h" here... */
 typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
+#endif
 
 % attrs = RubyVM::Instructions.map(&:attributes).flatten
 %
