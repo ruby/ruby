@@ -1988,7 +1988,7 @@ rb_str_times(VALUE str, VALUE times)
  *  details of the format string.
  *
  *     "%05d" % 123                              #=> "00123"
- *     "%-5s: %08x" % [ "ID", self.object_id ]   #=> "ID   : 200e14d6"
+ *     "%-5s: %016x" % [ "ID", self.object_id ]  #=> "ID   : 00002b054ec93168"
  *     "foo = %{foo}" % { :foo => 'bar' }        #=> "foo = bar"
  */
 
