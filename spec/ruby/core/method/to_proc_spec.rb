@@ -55,6 +55,10 @@ describe "Method#to_proc" do
     x.baz(1,2,3,&m).should == [1,2,3]
   end
 
+  it "returns a proc whose binding has the same receiver as the method" do
+    @meth.receiver.should == @meth.to_proc.binding.receiver
+  end
+
   # #5926
   it "returns a proc that can receive a block" do
     x = Object.new

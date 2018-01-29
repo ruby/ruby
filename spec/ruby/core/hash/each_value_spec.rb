@@ -18,6 +18,6 @@ describe "Hash#each_value" do
     values.should == h.values
   end
 
-  it_behaves_like(:hash_iteration_no_block, :each_value)
-  it_behaves_like(:enumeratorized_with_origin_size, :each_value, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :each_value
+  it_behaves_like :enumeratorized_with_origin_size, :each_value, { 1 => 2, 3 => 4, 5 => 6 }
 end

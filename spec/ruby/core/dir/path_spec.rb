@@ -11,5 +11,5 @@ describe "Dir#path" do
     DirSpecs.delete_mock_dirs
   end
 
-  it_behaves_like(:dir_path, :path)
+  it_behaves_like :dir_path, :path
 end

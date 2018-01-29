@@ -4,9 +4,9 @@ require File.expand_path('../shared/key', __FILE__)
 require File.expand_path('../shared/index', __FILE__)
 
 describe "Hash#key?" do
-  it_behaves_like(:hash_key_p, :key?)
+  it_behaves_like :hash_key_p, :key?
 end
 
 describe "Hash#key" do
-  it_behaves_like(:hash_index, :key)
+  it_behaves_like :hash_index, :key
 end

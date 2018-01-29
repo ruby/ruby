@@ -526,7 +526,7 @@ describe "File.open" do
 
   ruby_version_is "2.3" do
     platform_is :linux do
-      if defined?(File::TMPFILE)
+      guard -> { defined?(File::TMPFILE) } do
         it "creates an unnamed temporary file with File::TMPFILE" do
           dir = tmp("tmpfilespec")
           mkdir_p dir

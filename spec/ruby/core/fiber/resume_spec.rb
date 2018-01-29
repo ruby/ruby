@@ -7,6 +7,11 @@ with_feature :fiber do
   end
 
   describe "Fiber#resume" do
+    it "raises a FiberError if the Fiber tries to resume itself" do
+      fiber = Fiber.new { fiber.resume }
+      -> { fiber.resume }.should raise_error(FiberError, /double resume/)
+    end
+
     it "returns control to the calling Fiber if called from one" do
       fiber1 = Fiber.new { :fiber1 }
       fiber2 = Fiber.new { fiber1.resume; :fiber2 }

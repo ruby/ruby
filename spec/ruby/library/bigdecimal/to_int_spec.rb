@@ -4,5 +4,5 @@ require 'bigdecimal'
 
 
 describe "BigDecimal#to_int" do
-  it_behaves_like(:bigdecimal_to_int, :to_int)
+  it_behaves_like :bigdecimal_to_int, :to_int
 end

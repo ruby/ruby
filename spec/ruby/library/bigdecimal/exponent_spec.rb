@@ -3,7 +3,7 @@ require File.expand_path('../shared/power', __FILE__)
 require 'bigdecimal'
 
 describe "BigDecimal#**" do
-  it_behaves_like(:bigdecimal_power, :**)
+  it_behaves_like :bigdecimal_power, :**
 end
 
 describe "BigDecimal#exponent" do

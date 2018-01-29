@@ -631,3 +631,28 @@ describe "Method#define_method when passed an UnboundMethod object" do
     @obj.method(:n).parameters.should == @obj.method(:m).parameters
   end
 end
+
+describe "Method#define_method when passed a Proc object" do
+  describe "and a method is defined inside" do
+    it "defines the nested method in the default definee where the Proc was created" do
+      prc = nil
+      t = Class.new do
+        prc = -> {
+          def nested_method_in_proc_for_define_method
+            42
+          end
+        }
+      end
+
+      c = Class.new do
+        define_method(:test, prc)
+      end
+
+      o = c.new
+      o.test
+      o.should_not have_method :nested_method_in_proc_for_define_method
+
+      t.new.nested_method_in_proc_for_define_method.should == 42
+    end
+  end
+end

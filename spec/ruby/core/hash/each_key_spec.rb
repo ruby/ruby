@@ -18,6 +18,6 @@ describe "Hash#each_key" do
     keys.should == h.keys
   end
 
-  it_behaves_like(:hash_iteration_no_block, :each_key)
-  it_behaves_like(:enumeratorized_with_origin_size, :each_key, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :each_key
+  it_behaves_like :enumeratorized_with_origin_size, :each_key, { 1 => 2, 3 => 4, 5 => 6 }
 end

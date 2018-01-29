@@ -1,8 +1,6 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 
-has_yield_self = VersionGuard.new("2.5").match? || PlatformGuard.implementation?(:truffleruby)
-
-if has_yield_self
+ruby_version_is "2.5" do
   describe "Kernel#yield_self" do
     it "yields self" do
       object = Object.new

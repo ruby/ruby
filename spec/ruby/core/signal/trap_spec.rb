@@ -113,6 +113,12 @@ platform_is_not :windows do
       Signal.trap(:HUP, "IGNORE").should == "IGNORE"
     end
   end
+
+  describe "Signal.trap" do
+    it "returns SYSTEM_DEFAULT if passed DEFAULT and no handler was ever set" do
+      Signal.trap("PROF", "DEFAULT").should == "SYSTEM_DEFAULT"
+    end
+  end
 end
 
 describe "Signal.trap" do

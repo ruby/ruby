@@ -147,4 +147,24 @@ describe "Literal Regexps" do
     pattern.should_not =~ 'fooF'
     pattern.should_not =~ 'T'
   end
+
+  escapable_terminators =  ['!', '"', '#', '%', '&', "'", ',', '-', ':', ';', '@', '_', '`']
+
+  it "supports escaping characters when used as a terminator" do
+    escapable_terminators.each do |c|
+      ref = "(?-mix:#{c})"
+      pattern = eval("%r" + c + "\\" + c + c)
+      pattern.to_s.should == ref
+    end
+  end
+
+  it "treats an escaped non-escapable character normally when used as a terminator" do
+    all_terminators = [*("!".."/"), *(":".."@"), *("[".."`"), *("{".."~")]
+    special_cases = ['(', '{', '[', '<', '\\', '=', '~']
+    (all_terminators - special_cases - escapable_terminators).each do |c|
+      ref = "(?-mix:\\#{c})"
+      pattern = eval("%r" + c + "\\" + c + c)
+      pattern.to_s.should == ref
+    end
+  end
 end

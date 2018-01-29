@@ -3,7 +3,7 @@ require File.expand_path('../../../shared/enumerator/rewind', __FILE__)
 require File.expand_path('../fixtures/common', __FILE__)
 
 describe "Enumerator#rewind" do
-  it_behaves_like(:enum_rewind, :rewind)
+  it_behaves_like :enum_rewind, :rewind
 
   it "calls the enclosed object's rewind method if one exists" do
     obj = mock('rewinder')

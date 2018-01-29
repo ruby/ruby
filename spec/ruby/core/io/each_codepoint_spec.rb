@@ -4,7 +4,7 @@ require File.expand_path('../shared/codepoints', __FILE__)
 
 # See redmine #1667
 describe "IO#each_codepoint" do
-  it_behaves_like(:io_codepoints, :codepoints)
+  it_behaves_like :io_codepoints, :codepoints
 end
 
 describe "IO#each_codepoint" do

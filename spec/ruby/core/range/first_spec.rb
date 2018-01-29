@@ -2,7 +2,7 @@ require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../shared/begin', __FILE__)
 
 describe "Range#first" do
-  it_behaves_like(:range_begin, :first)
+  it_behaves_like :range_begin, :first
 
   it "returns the specified number of elements from the beginning" do
     (0..2).first(2).should == [0, 1]

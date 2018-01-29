@@ -1,7 +1,12 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes.rb', __FILE__)
+require File.expand_path('../../../shared/hash/key_error', __FILE__)
 
 describe "String#%" do
+  context "when key is missing from passed-in hash" do
+    it_behaves_like :key_error, -> (obj, key) { "%{#{key}}" % obj }, { a: 5 }
+  end
+
   it "formats multiple expressions" do
     ("%b %x %d %s" % [10, 10, 10, 10]).should == "1010 a 10 10"
   end
@@ -762,10 +767,6 @@ describe "String#%" do
   describe "when format string contains %{} sections" do
     it "replaces %{} sections with values from passed-in hash" do
       ("%{foo}bar" % {foo: 'oof'}).should == "oofbar"
-    end
-
-    it "raises KeyError if key is missing from passed-in hash" do
-      lambda {"%{foo}" % {}}.should raise_error(KeyError)
     end
 
     it "should raise ArgumentError if no hash given" do

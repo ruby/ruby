@@ -56,4 +56,40 @@ describe "NoMethodError#message" do
       e.message.match(/private method/).should_not == nil
     end
   end
+
+  it "calls receiver.inspect only when calling Exception#message" do
+    ScratchPad.record []
+    test_class = Class.new do
+      def inspect
+        ScratchPad << :inspect_called
+        "<inspect>"
+      end
+    end
+    instance = test_class.new
+    begin
+      instance.bar
+    rescue Exception => e
+      e.name.should == :bar
+      ScratchPad.recorded.should == []
+      e.message.should =~ /undefined method.+\bbar\b/
+      ScratchPad.recorded.should == [:inspect_called]
+    end
+  end
+
+  it "fallbacks to a simpler representation of the receiver when receiver.inspect raises an exception" do
+    test_class = Class.new do
+      def inspect
+        raise NoMethodErrorSpecs::InstanceException
+      end
+    end
+    instance = test_class.new
+    begin
+      instance.bar
+    rescue Exception => e
+      e.name.should == :bar
+      message = e.message
+      message.should =~ /undefined method.+\bbar\b/
+      message.should include test_class.inspect
+    end
+  end
 end

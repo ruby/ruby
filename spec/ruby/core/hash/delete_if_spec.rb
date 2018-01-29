@@ -39,6 +39,6 @@ describe "Hash#delete_if" do
     lambda { HashSpecs.empty_frozen_hash.delete_if { true } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :delete_if)
-  it_behaves_like(:enumeratorized_with_origin_size, :delete_if, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :delete_if
+  it_behaves_like :enumeratorized_with_origin_size, :delete_if, { 1 => 2, 3 => 4, 5 => 6 }
 end
