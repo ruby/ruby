@@ -4,7 +4,7 @@ require File.expand_path('../shared/commercial', __FILE__)
 
 describe "Date#commercial" do
 
-  it_behaves_like(:date_commercial, :commercial)
+  it_behaves_like :date_commercial, :commercial
 
 end
 

@@ -22,7 +22,7 @@ describe "Kernel.proc" do
     l.lambda?.should be_true
   end
 
-  it_behaves_like(:kernel_lambda, :proc)
+  it_behaves_like :kernel_lambda, :proc
 
   it "returns from the creation site of the proc, not just the proc itself" do
     @reached_end_of_method = nil

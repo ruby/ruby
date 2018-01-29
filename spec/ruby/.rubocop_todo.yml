@@ -89,11 +89,6 @@ Lint/MultipleCompare:
   Exclude:
     - 'language/precedence_spec.rb'
 
-# Offense count: 8
-Lint/NestedMethodDefinition:
-  Exclude:
-    - 'language/def_spec.rb'
-
 # Offense count: 12
 Lint/ParenthesesAsGroupedExpression:
   Exclude:

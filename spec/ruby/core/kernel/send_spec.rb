@@ -64,5 +64,5 @@ describe "Kernel#send" do
     KernelSpecs::Foo.new.send(:aka).should == 'done2'
   end
 
-  it_behaves_like(:basicobject_send, :send)
+  it_behaves_like :basicobject_send, :send
 end

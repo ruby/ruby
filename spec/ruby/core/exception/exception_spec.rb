@@ -3,7 +3,7 @@ require File.expand_path('../fixtures/common', __FILE__)
 require File.expand_path('../shared/new', __FILE__)
 
 describe "Exception.exception" do
-  it_behaves_like(:exception_new, :exception)
+  it_behaves_like :exception_new, :exception
 end
 
 describe "Exception" do

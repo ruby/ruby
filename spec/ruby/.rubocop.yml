@@ -60,6 +60,11 @@ Lint/EmptyWhen:
     - language/case_spec.rb
     - optional/capi/spec_helper.rb
 
+Lint/NestedMethodDefinition:
+  Exclude:
+    - language/def_spec.rb
+    - language/fixtures/def.rb
+
 Lint/UriRegexp:
   Exclude:
     - 'library/uri/regexp_spec.rb'

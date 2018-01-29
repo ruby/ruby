@@ -1,4 +1,5 @@
 require File.expand_path('../spec_helper', __FILE__)
+require File.expand_path('../../../shared/hash/key_error', __FILE__)
 
 load_extension("hash")
 
@@ -135,6 +136,12 @@ describe "C-API Hash function" do
 
     it "raises a KeyError if the key is not found and no default is set" do
       lambda { @s.rb_hash_fetch(@hsh, :c) }.should raise_error(KeyError)
+    end
+
+    context "when key is not found" do
+      it_behaves_like :key_error, -> (obj, key) {
+        @s.rb_hash_fetch(obj, key)
+      }, { a: 1 }
     end
   end
 

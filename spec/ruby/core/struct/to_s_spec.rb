@@ -8,5 +8,5 @@ describe "Struct#to_s" do
     car.inspect.should == car.to_s
   end
 
-  it_behaves_like(:struct_inspect, :to_s)
+  it_behaves_like :struct_inspect, :to_s
 end

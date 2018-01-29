@@ -32,6 +32,6 @@ describe "Hash#keep_if" do
     lambda { HashSpecs.empty_frozen_hash.keep_if { false } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :keep_if)
-  it_behaves_like(:enumeratorized_with_origin_size, :keep_if, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :keep_if
+  it_behaves_like :enumeratorized_with_origin_size, :keep_if, { 1 => 2, 3 => 4, 5 => 6 }
 end

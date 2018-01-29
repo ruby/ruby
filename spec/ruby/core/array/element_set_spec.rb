@@ -350,11 +350,13 @@ describe "Array#[]= with [m..n]" do
   it "returns non-array value if non-array value assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2..4] = 10).should == 10
+    (a.[]=(2..4, 10)).should == 10
   end
 
   it "returns array if array assigned" do
     a = [1, 2, 3, 4, 5]
     (a[2..4] = [7, 8]).should == [7, 8]
+    (a.[]=(2..4, [7, 8])).should == [7, 8]
   end
 
   it "just sets the section defined by range to nil even if the rhs is nil" do
@@ -394,15 +396,32 @@ describe "Array#[]= with [m..n]" do
     a.should == [1, 2, 3, 8, 4, 5]
   end
 
-  it "accepts Range subclasses" do
-    a = [1, 2, 3, 4]
-    range_incl = ArraySpecs::MyRange.new(1, 2)
-    range_excl = ArraySpecs::MyRange.new(-3, -1, true)
+  describe "Range subclasses" do
+    before :each do
+      @range_incl = ArraySpecs::MyRange.new(1, 2)
+      @range_excl = ArraySpecs::MyRange.new(-3, -1, true)
+    end
 
-    a[range_incl] = ["a", "b"]
-    a.should == [1, "a", "b", 4]
-    a[range_excl] = ["A", "B"]
-    a.should == [1, "A", "B", 4]
+    it "accepts Range subclasses" do
+      a = [1, 2, 3, 4]
+
+      a[@range_incl] = ["a", "b"]
+      a.should == [1, "a", "b", 4]
+      a[@range_excl] = ["A", "B"]
+      a.should == [1, "A", "B", 4]
+    end
+
+    it "returns non-array value if non-array value assigned" do
+      a = [1, 2, 3, 4, 5]
+      (a[@range_incl] = 10).should == 10
+      (a.[]=(@range_incl, 10)).should == 10
+    end
+
+    it "returns array if array assigned" do
+      a = [1, 2, 3, 4, 5]
+      (a[@range_incl] = [7, 8]).should == [7, 8]
+      a.[]=(@range_incl, [7, 8]).should == [7, 8]
+    end
   end
 end
 

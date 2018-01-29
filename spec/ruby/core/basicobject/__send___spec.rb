@@ -6,5 +6,5 @@ describe "BasicObject#__send__" do
     BasicObject.should have_public_instance_method(:__send__)
   end
 
-  it_behaves_like(:basicobject_send, :__send__)
+  it_behaves_like :basicobject_send, :__send__
 end

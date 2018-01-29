@@ -49,5 +49,5 @@ describe "String#scanf" do
 end
 
 describe "String#scanf with block" do
-  it_behaves_like(:scanf_string_block_scanf, :scanf)
+  it_behaves_like :scanf_string_block_scanf, :scanf
 end

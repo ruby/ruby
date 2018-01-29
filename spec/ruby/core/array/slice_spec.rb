@@ -156,5 +156,5 @@ describe "Array#slice!" do
 end
 
 describe "Array#slice" do
-  it_behaves_like(:array_slice, :slice)
+  it_behaves_like :array_slice, :slice
 end

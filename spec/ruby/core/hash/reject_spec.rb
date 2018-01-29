@@ -49,8 +49,8 @@ describe "Hash#reject" do
     reject_pairs.should == reject_bang_pairs
   end
 
-  it_behaves_like(:hash_iteration_no_block, :reject)
-  it_behaves_like(:enumeratorized_with_origin_size, :reject, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :reject
+  it_behaves_like :enumeratorized_with_origin_size, :reject, { 1 => 2, 3 => 4, 5 => 6 }
 end
 
 describe "Hash#reject!" do
@@ -95,6 +95,6 @@ describe "Hash#reject!" do
     lambda { HashSpecs.frozen_hash.reject! { false } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :reject!)
-  it_behaves_like(:enumeratorized_with_origin_size, :reject!, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :reject!
+  it_behaves_like :enumeratorized_with_origin_size, :reject!, { 1 => 2, 3 => 4, 5 => 6 }
 end

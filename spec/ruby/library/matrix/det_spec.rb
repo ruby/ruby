@@ -3,5 +3,5 @@ require File.expand_path('../shared/determinant', __FILE__)
 require 'matrix'
 
 describe "Matrix#det" do
-  it_behaves_like(:determinant, :det)
+  it_behaves_like :determinant, :det
 end

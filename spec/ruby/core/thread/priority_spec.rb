@@ -2,13 +2,14 @@ require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Thread#priority" do
-  before do
+  before :each do
     @current_priority = Thread.current.priority
     ThreadSpecs.clear_state
     @thread = Thread.new { Thread.pass until ThreadSpecs.state == :exit }
+    Thread.pass until @thread.alive?
   end
 
-  after do
+  after :each do
     ThreadSpecs.state = :exit
     @thread.join
   end
@@ -31,12 +32,14 @@ describe "Thread#priority" do
 end
 
 describe "Thread#priority=" do
-  before do
+  before :each do
     ThreadSpecs.clear_state
-    @thread = Thread.new {}
+    @thread = Thread.new { Thread.pass until ThreadSpecs.state == :exit }
+    Thread.pass until @thread.alive?
   end
 
-  after do
+  after :each do
+    ThreadSpecs.state = :exit
     @thread.join
   end
 
@@ -61,8 +64,9 @@ describe "Thread#priority=" do
   end
 
   it "sets priority even when the thread has died" do
-    @thread.join
-    @thread.priority = 3
-    @thread.priority.should == 3
+    thread = Thread.new {}
+    thread.join
+    thread.priority = 3
+    thread.priority.should == 3
   end
 end

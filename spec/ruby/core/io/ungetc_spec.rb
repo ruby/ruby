@@ -31,6 +31,22 @@ describe "IO#ungetc" do
     @io.getc.should == ?c
   end
 
+  it "interprets the codepoint in the external encoding" do
+    @io.set_encoding(Encoding::UTF_8)
+    @io.ungetc(233)
+    c = @io.getc
+    c.encoding.should == Encoding::UTF_8
+    c.should == "é"
+    c.bytes.should == [195, 169]
+
+    @io.set_encoding(Encoding::IBM437)
+    @io.ungetc(130)
+    c = @io.getc
+    c.encoding.should == Encoding::IBM437
+    c.bytes.should == [130]
+    c.encode(Encoding::UTF_8).should == "é"
+  end
+
   it "pushes back one character when invoked at the end of the stream" do
     # read entire content
     @io.read

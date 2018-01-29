@@ -3,7 +3,7 @@ require File.expand_path('../../../shared/complex/numeric/real', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
 
 describe "Numeric#real" do
-  it_behaves_like(:numeric_real, :real)
+  it_behaves_like :numeric_real, :real
 end
 
 describe "Numeric#real?" do

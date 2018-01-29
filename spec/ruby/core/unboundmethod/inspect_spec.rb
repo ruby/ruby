@@ -3,5 +3,5 @@ require File.expand_path('../fixtures/classes', __FILE__)
 require File.expand_path('../shared/to_s', __FILE__)
 
 describe "UnboundMethod#inspect" do
-  it_behaves_like(:unboundmethod_to_s, :inspect)
+  it_behaves_like :unboundmethod_to_s, :inspect
 end

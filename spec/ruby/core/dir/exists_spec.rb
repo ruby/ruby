@@ -11,5 +11,5 @@ describe "Dir.exists?" do
     DirSpecs.delete_mock_dirs
   end
 
-  it_behaves_like(:dir_exist, :exists?)
+  it_behaves_like :dir_exist, :exists?
 end

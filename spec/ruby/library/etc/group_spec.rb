@@ -3,7 +3,7 @@ require File.expand_path('../shared/windows', __FILE__)
 require 'etc'
 
 describe "Etc.group" do
-  it_behaves_like(:etc_on_windows, :group)
+  it_behaves_like :etc_on_windows, :group
 
   platform_is_not :windows do
     it "raises a RuntimeError for parallel iteration" do

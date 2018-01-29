@@ -31,5 +31,5 @@ describe "IO#scanf" do
 end
 
 describe "IO#scanf with block" do
-  it_behaves_like(:scanf_io_block_scanf, :scanf)
+  it_behaves_like :scanf_io_block_scanf, :scanf
 end

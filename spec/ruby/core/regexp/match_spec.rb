@@ -12,7 +12,7 @@ describe :regexp_match, shared: true do
 end
 
 describe "Regexp#=~" do
-  it_behaves_like(:regexp_match, :=~)
+  it_behaves_like :regexp_match, :=~
 
   it "returns the index of the first character of the matching region" do
     (/(.)(.)(.)/ =~ "abc").should == 0
@@ -24,7 +24,7 @@ describe "Regexp#=~" do
 end
 
 describe "Regexp#match" do
-  it_behaves_like(:regexp_match, :match)
+  it_behaves_like :regexp_match, :match
 
   it "returns a MatchData object" do
     /(.)(.)(.)/.match("abc").should be_kind_of(MatchData)

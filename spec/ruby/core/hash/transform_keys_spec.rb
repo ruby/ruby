@@ -60,17 +60,39 @@ ruby_version_is "2.5" do
       @hash.should == { 'a' => 1, 'b' => 2, 'c' => 3, 'd' => 4 }
     end
 
-    it "prevents conflicts between new keys and old ones" do
-      @hash.transform_keys!(&:succ)
-      @hash.should == { b: 1, c: 2, d: 3, e: 4 }
+    # https://bugs.ruby-lang.org/issues/14380
+    ruby_version_is ""..."2.6" do
+      it "does not prevent conflicts between new keys and old ones" do
+        @hash.transform_keys!(&:succ)
+        @hash.should == { e: 1 }
+      end
     end
 
-    it "partially modifies the contents if we broke from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
+    ruby_version_is "2.6" do
+      it "prevents conflicts between new keys and old ones" do
+        @hash.transform_keys!(&:succ)
+        @hash.should == { b: 1, c: 2, d: 3, e: 4 }
       end
-      @hash.should == { b: 1, c: 2 }
+    end
+
+    ruby_version_is ""..."2.6" do
+      it "partially modifies the contents if we broke from the block" do
+        @hash.transform_keys! do |v|
+          break if v == :c
+          v.succ
+        end
+        @hash.should == { c: 1, d: 4 }
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "returns the processed keys if we broke from the block" do
+        @hash.transform_keys! do |v|
+          break if v == :c
+          v.succ
+        end
+        @hash.should == { b: 1, c: 2 }
+      end
     end
 
     it "keeps later pair if new keys conflict" do

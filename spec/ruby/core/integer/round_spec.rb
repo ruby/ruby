@@ -3,8 +3,8 @@ require File.expand_path('../shared/to_i', __FILE__)
 require File.expand_path('../shared/integer_rounding', __FILE__)
 
 describe "Integer#round" do
-  it_behaves_like(:integer_to_i, :round)
-  it_behaves_like(:integer_rounding_positive_precision, :round)
+  it_behaves_like :integer_to_i, :round
+  it_behaves_like :integer_rounding_positive_precision, :round
 
   ruby_version_is ""..."2.5" do # Not just since 2.4
     it "rounds itself as a float if passed a positive precision" do

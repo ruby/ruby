@@ -4,12 +4,12 @@ require File.expand_path('../shared/local', __FILE__)
 require File.expand_path('../shared/time_params', __FILE__)
 
 describe "Time.new" do
-  it_behaves_like(:time_now, :new)
+  it_behaves_like :time_now, :new
 end
 
 describe "Time.new" do
-  it_behaves_like(:time_local, :new)
-  it_behaves_like(:time_params, :new)
+  it_behaves_like :time_local, :new
+  it_behaves_like :time_params, :new
 end
 
 describe "Time.new with a utc_offset argument" do

@@ -53,6 +53,9 @@ module NoMethodErrorSpecs
   end
 
   class NoMethodErrorD; end
+
+  class InstanceException < Exception
+  end
 end
 
 class NameErrorSpecs

@@ -37,6 +37,6 @@ end
 
 ruby_version_is "2.5" do
   describe "Array#append" do
-    it_behaves_like(:array_push, :append)
+    it_behaves_like :array_push, :append
   end
 end

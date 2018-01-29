@@ -1,5 +1,6 @@
 require File.expand_path('../../../spec_helper', __FILE__)
 require File.expand_path('../fixtures/classes', __FILE__)
+require File.expand_path('../../../shared/hash/key_error', __FILE__)
 
 ruby_version_is "2.3" do
   describe "Hash#fetch_values" do
@@ -15,10 +16,7 @@ ruby_version_is "2.3" do
     end
 
     describe "with unmatched keys" do
-      it "raises a KeyError" do
-        ->{ @hash.fetch_values :z }.should raise_error(KeyError)
-        ->{ @hash.fetch_values :a, :z }.should raise_error(KeyError)
-      end
+      it_behaves_like :key_error, ->(obj, key) { obj.fetch_values(key) }, Hash.new(a: 5)
 
       it "returns the default value from block" do
         @hash.fetch_values(:z) { |key| "`#{key}' is not found" }.should == ["`z' is not found"]

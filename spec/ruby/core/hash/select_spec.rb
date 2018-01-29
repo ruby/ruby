@@ -40,8 +40,8 @@ describe "Hash#select" do
     @empty.select.should be_an_instance_of(Enumerator)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :select)
-  it_behaves_like(:enumeratorized_with_origin_size, :select, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :select
+  it_behaves_like :enumeratorized_with_origin_size, :select, { 1 => 2, 3 => 4, 5 => 6 }
 end
 
 describe "Hash#select!" do
@@ -78,6 +78,6 @@ describe "Hash#select!" do
     lambda { HashSpecs.frozen_hash.select! { true } }.should raise_error(frozen_error_class)
   end
 
-  it_behaves_like(:hash_iteration_no_block, :select!)
-  it_behaves_like(:enumeratorized_with_origin_size, :select!, { 1 => 2, 3 => 4, 5 => 6 })
+  it_behaves_like :hash_iteration_no_block, :select!
+  it_behaves_like :enumeratorized_with_origin_size, :select!, { 1 => 2, 3 => 4, 5 => 6 }
 end

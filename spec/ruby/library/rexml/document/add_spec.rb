@@ -49,9 +49,9 @@ describe :rexml_document_add, shared: true do
 end
 
 describe "REXML::Document#add" do
-  it_behaves_like(:rexml_document_add, :add)
+  it_behaves_like :rexml_document_add, :add
 end
 
 describe "REXML::Document#<<" do
-  it_behaves_like(:rexml_document_add, :<<)
+  it_behaves_like :rexml_document_add, :<<
 end
