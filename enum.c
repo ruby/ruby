@@ -388,8 +388,10 @@ enum_size_over_p(VALUE obj, long n)
  *  call-seq:
  *     enum.find_all { |obj| block } -> array
  *     enum.select   { |obj| block } -> array
+ *     enum.filter   { |obj| block } -> array
  *     enum.find_all                 -> an_enumerator
  *     enum.select                   -> an_enumerator
+ *     enum.filter                   -> an_enumerator
  *
  *  Returns an array containing all elements of +enum+
  *  for which the given +block+ returns a true value.
@@ -400,6 +402,8 @@ enum_size_over_p(VALUE obj, long n)
  *     (1..10).find_all { |i|  i % 3 == 0 }   #=> [3, 6, 9]
  *
  *     [1,2,3,4,5].select { |num|  num.even?  }   #=> [2, 4]
+ *
+ *     [:foo, :bar].filter { |x| x == :foo }   #=> [:foo]
  *
  *  See also Enumerable#reject.
  */
@@ -3994,6 +3998,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "find_index", enum_find_index, -1);
     rb_define_method(rb_mEnumerable, "find_all", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "select", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable, "filter", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);

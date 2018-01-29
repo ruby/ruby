@@ -2377,6 +2377,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "collect_concat", lazy_flat_map, 0);
     rb_define_method(rb_cLazy, "select", lazy_select, 0);
     rb_define_method(rb_cLazy, "find_all", lazy_select, 0);
+    rb_define_method(rb_cLazy, "filter", lazy_select, 0);
     rb_define_method(rb_cLazy, "reject", lazy_reject, 0);
     rb_define_method(rb_cLazy, "grep", lazy_grep, 1);
     rb_define_method(rb_cLazy, "grep_v", lazy_grep_v, 1);
