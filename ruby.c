@@ -2194,6 +2194,12 @@ opt_W_getter(ID id, void *data)
     }
 }
 
+static VALUE
+f_executed_p(VALUE self)
+{
+   return rb_funcall(rb_progname, rb_intern("=="), 1, rb_source_location(NULL));
+}
+
 /*! Defines built-in variables */
 void
 ruby_prog_init(void)
@@ -2218,6 +2224,8 @@ ruby_prog_init(void)
      * arguments.
      */
     rb_define_global_const("ARGV", rb_argv);
+
+    rb_define_global_function("executed?", f_executed_p, 0);
 }
 
 void
