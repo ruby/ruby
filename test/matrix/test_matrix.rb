@@ -644,6 +644,8 @@ class TestMatrix < Test::Unit::TestCase
     m7 = Matrix.zero(3, 2)
     m8 = Matrix[[1, 3, 4], [5, 6, 9]].freeze
     m9 = Matrix[[1,2],[2,1]]
+    m10 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    m11 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     v1 = Vector[3, 5, 6, 7]
     v2 = Vector[4, 5, 6]
 
@@ -683,10 +685,20 @@ class TestMatrix < Test::Unit::TestCase
       m7[0..2, 1] = m5
       Matrix[[0, 1],[0, 2], [0, 3]] == m7
     end
-
+    # Set negative range
     assert_block do
       m9[-2..1, 1] = 45
       Matrix[[1, 45], [2, 45]] == m9
+    end
+    # Set ranges when first is greater than last
+    assert_block do
+      m10[1..-1, 1] = 78
+      Matrix[[1, 2, 3], [4, 78, 6], [7, 78, 9]] == m10
+    end
+
+    assert_block do
+      m11[1, 2..-1] = 78
+      Matrix[[1, 2, 3], [4, 5, 78], [7, 8, 9]] == m11
     end
 
     # Error checking

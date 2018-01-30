@@ -36,6 +36,7 @@ class TestVector < Test::Unit::TestCase
     v6 = Vector[7, 8, 9].freeze
     v7 = Vector[2, 3, 5]
     v8 = Vector[3, 4, 5]
+    v9 = Vector[4, 8, 9, 11, 30]
     m1 = Matrix[[1, 3]]
 
     assert_block do
@@ -66,6 +67,11 @@ class TestVector < Test::Unit::TestCase
     assert_block do
       v8[-2..0] = 57
       Vector[57, 57, 57]
+    end
+
+    assert_block do
+      v9[1..-2] = Vector[1, 2, 3]
+      Vector[4, 1, 2, 3, 30] == v9
     end
 
     assert_raise(IndexError) {v1[5..6] = 17}
