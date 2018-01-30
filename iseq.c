@@ -1491,30 +1491,24 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
 }
 
 static VALUE
-id_to_name(ID id, VALUE default_value)
-{
-    VALUE str = rb_id2str(id);
-    if (!str) {
-	str = default_value;
-    }
-    else if (!rb_str_symname_p(str)) {
-	str = rb_str_inspect(str);
-    }
-    return str;
-}
-
-static VALUE
 local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
 {
     VALUE i;
+    VALUE name;
     ID lid;
 
     for (i = 0; i < level; i++) {
 	diseq = diseq->body->parent_iseq;
     }
-    lid = diseq->body->local_table[diseq->body->local_table_size +
-				   VM_ENV_DATA_SIZE - 1 - op];
-    return id_to_name(lid, INT2FIX('*'));
+    lid = diseq->body->local_table[diseq->body->local_table_size - op - 1];
+    name = rb_id2str(lid);
+    if (!name) {
+	name = rb_sprintf("?%d", diseq->body->local_table_size - (int)op);
+    }
+    else if (!rb_str_symname_p(name)) {
+	name = rb_str_inspect(name);
+    }
+    return name;
 }
 
 int rb_insn_unified_local_var_level(VALUE);
@@ -1557,10 +1551,10 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_LINDEX:{
 	int level;
 	if (types[op_no+1] == TS_NUM && pnop) {
-	    ret = local_var_name(iseq, *pnop, op);
+	    ret = local_var_name(iseq, *pnop, op - VM_ENV_DATA_SIZE);
 	}
 	else if ((level = rb_insn_unified_local_var_level(insn)) >= 0) {
-	    ret = local_var_name(iseq, (VALUE)level, op);
+	    ret = local_var_name(iseq, (VALUE)level, op - VM_ENV_DATA_SIZE);
 	}
 	else {
 	    ret = rb_inspect(INT2FIX(op));
@@ -1802,7 +1796,6 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     unsigned int size;
     unsigned int i;
     long l;
-    const ID *tbl;
     size_t n;
     enum {header_minlen = 72};
     st_table *done_iseq = 0;
@@ -1844,9 +1837,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     }
 
     /* show local table information */
-    tbl = iseq->body->local_table;
-
-    if (tbl) {
+    if (iseq->body->local_table) {
 	rb_str_catf(str,
 		    "local table (size: %d, argc: %d "
 		    "[opts: %d, rest: %d, post: %d, block: %d, kw: %d@%d, kwrest: %d])\n",
@@ -1860,10 +1851,10 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 		    iseq->body->param.flags.has_kw ? iseq->body->param.keyword->required_num : -1,
 		    iseq->body->param.flags.has_kwrest ? iseq->body->param.keyword->rest_start : -1);
 
-	for (i = 0; i < iseq->body->local_table_size; i++) {
-	    int li = (int)i;
+	for (i = iseq->body->local_table_size; i > 0;) {
+	    int li = iseq->body->local_table_size - --i - 1;
 	    long width;
-	    VALUE name = id_to_name(tbl[i], 0);
+	    VALUE name = local_var_name(iseq, 0, i);
 	    char argi[0x100] = "";
 	    char opti[0x100] = "";
 
@@ -1883,12 +1874,9 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 		     (iseq->body->param.flags.has_post && iseq->body->param.post_start <= li && li < iseq->body->param.post_start + iseq->body->param.post_num) ? "Post" : "",
 		     (iseq->body->param.flags.has_block && iseq->body->param.block_start == li) ? "Block" : "");
 
-	    rb_str_catf(str, "[%2d] ", iseq->body->local_table_size - i);
+	    rb_str_catf(str, "[%2d] ", i + 1);
 	    width = RSTRING_LEN(str) + 11;
-	    if (name)
-		rb_str_append(str, name);
-	    else
-		rb_str_cat2(str, "?");
+	    rb_str_append(str, name);
 	    if (*argi) rb_str_catf(str, "<%s>", argi);
 	    if ((width -= RSTRING_LEN(str)) > 0) rb_str_catf(str, "%*s", (int)width, "");
 	}
