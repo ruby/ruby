@@ -72,7 +72,7 @@ ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 $(BANG)if "$$(BASERUBY)" == ""
 BASERUBY = echo executable host ruby is required.  use --with-baseruby option.^& exit 1
 HAVE_BASERUBY = no
-$(BANG)elseif [$$(BASERUBY) -eexit 2> nul] == 0
+$(BANG)elseif [($$(BASERUBY) -eexit) > nul 2> nul] == 0
 HAVE_BASERUBY = yes
 $(BANG)else
 HAVE_BASERUBY = no
