@@ -54,6 +54,11 @@
     fprintf(f, "/* --- END: <%= line.strip %> --- */\n\n");
 
 %   elsif line =~ /\A\s+JUMP\((?<jump>[^)]+)\);\s+\z/
+%     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
+%     insn.rets.reverse_each.with_index do |ret, i|
+%       # TOPN(n) = ...
+        fprintf(f, "            stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
+%     end
         next_pos = pos + insn_len(insn) + (unsigned int)<%= Regexp.last_match[:jump] %>;
         fprintf(f, "            goto label_%d;\n", next_pos);
 %   else

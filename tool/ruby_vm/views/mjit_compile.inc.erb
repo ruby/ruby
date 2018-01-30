@@ -75,12 +75,6 @@ switch (insn) {
     fprintf(f, "  ec->errinfo = vm_throw(ec, reg_cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
     fprintf(f, "  EC_JUMP_TAG(ec, ec->tag->state);\n");
     b->finish_p = TRUE;
-%   when 'getinlinecache'
-    fprintf(f, "  stack[%d] = vm_ic_hit_p(0x%"PRIxVALUE", reg_cfp->ep);\n", b->stack_size, operands[1]);
-    fprintf(f, "  if (stack[%d] != Qnil) {\n", b->stack_size);
-    fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
-    fprintf(f, "  }\n");
-    b->stack_size++;
 %   when 'opt_case_dispatch'
     {
         struct case_dispatch_var arg;
