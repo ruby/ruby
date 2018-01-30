@@ -157,7 +157,9 @@ loop do
     code[decl_range] = decl.sub(/{.+}/m, ';')
   elsif extern_names.include?(decl_name) && (decl =~ /#{MJITHeader::FUNC_HEADER_REGEXP};/)
     decl.sub!(/(extern|static|inline) /, ' ')
-    STDERR.puts "transform_mjit_header: making declaration of '#{decl_name}' static inline"
+    unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
+      STDERR.puts "transform_mjit_header: making declaration of '#{decl_name}' static inline"
+    end
 
     code[decl_range] = "static inline #{decl}"
   elsif (match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)) && (header = match[0]) !~ /static/
@@ -169,7 +171,9 @@ loop do
     end
 
     header.sub!(/(extern|inline) /, ' ')
-    STDERR.puts "transform_mjit_header: making external definition of '#{decl_name}' static inline"
+    unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
+      STDERR.puts "transform_mjit_header: making external definition of '#{decl_name}' static inline"
+    end
     code[decl_range] = "static inline #{header}#{decl}"
   end
 end
