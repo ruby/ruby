@@ -44,6 +44,7 @@
 % #   EXEC_EC_CFP(): refers to `val = vm_exec(ec)` with frame setup
 % #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
 % #   TOPN(): refers to `reg_cfp->sp`, which needs to have correct sp (of course)
+% #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, same problem here
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
 fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
@@ -55,73 +56,6 @@ switch (insn) {
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
 %   case insn.name
-%   when 'concatstrings'
-    fprintf(f, "  stack[%d] = rb_str_concat_literals(0x%"PRIxVALUE", stack + %d);\n",
-            b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
-    b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'toregexp'
-    fprintf(f, "  {\n");
-    fprintf(f, "    VALUE rb_reg_new_ary(VALUE ary, int options);\n");
-    fprintf(f, "    VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);\n");
-    fprintf(f, "    const VALUE ary = rb_ary_tmp_new_from_values(0, 0x%"PRIxVALUE", stack + %d);\n", operands[1], b->stack_size - (unsigned int)operands[1]);
-    fprintf(f, "    stack[%d] = rb_reg_new_ary(ary, (int)0x%"PRIxVALUE");\n", b->stack_size - (unsigned int)operands[1], operands[0]);
-    fprintf(f, "    rb_ary_clear(ary);\n");
-    fprintf(f, "  }\n");
-    b->stack_size += 1 - (unsigned int)operands[1];
-%   when 'newarray'
-    fprintf(f, "  stack[%d] = rb_ary_new4(0x%"PRIxVALUE", stack + %d);\n",
-            b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
-    b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'expandarray'
-    {
-        unsigned int space_size;
-        space_size = (unsigned int)operands[0] + (unsigned int)((int)operands[1] & 0x01);
-
-        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size); /* For `VALUE ary` argument. TODO: reg_cfp->sp should be set once */
-        fprintf(f, "  vm_expandarray(reg_cfp, stack[%d], 0x%"PRIxVALUE", (int)0x%"PRIxVALUE");\n", --b->stack_size, operands[0], operands[1]);
-        b->stack_size += space_size;
-    }
-%   when 'newhash'
-    fprintf(f, "  {\n");
-    fprintf(f, "    VALUE val;\n");
-    fprintf(f, "    RUBY_DTRACE_CREATE_HOOK(HASH, 0x%"PRIxVALUE");\n", operands[0]);
-    fprintf(f, "    val = rb_hash_new_with_size(0x%"PRIxVALUE" / 2);\n", operands[0]);
-    if (operands[0]) {
-        fprintf(f, "    rb_hash_bulk_insert(0x%"PRIxVALUE", stack + %d, val);\n", operands[0], b->stack_size - (unsigned int)operands[0]);
-    }
-    fprintf(f, "    stack[%d] = val;\n", b->stack_size - (unsigned int)operands[0]);
-    fprintf(f, "  }\n");
-    b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'dupn'
-    fprintf(f, "  MEMCPY(stack + %d, stack + %d, VALUE, 0x%"PRIxVALUE");\n",
-            b->stack_size, b->stack_size - (unsigned int)operands[0], operands[0]);
-    b->stack_size += (unsigned int)operands[0];
-%   when 'reverse'
-    {
-        unsigned int n, i, base;
-        n = (unsigned int)operands[0];
-        base = b->stack_size - n;
-
-        fprintf(f, "  {\n");
-        fprintf(f, "    VALUE v0;\n");
-        fprintf(f, "    VALUE v1;\n");
-        for (i = 0; i < n/2; i++) {
-            fprintf(f, "    v0 = stack[%d];\n", base + i);
-            fprintf(f, "    v1 = stack[%d];\n", base + n - i - 1);
-            fprintf(f, "    stack[%d] = v1;\n", base + i);
-            fprintf(f, "    stack[%d] = v0;\n", base + n - i - 1);
-        }
-        fprintf(f, "  }\n");
-    }
-%   when 'reput'
-    fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size-1, b->stack_size-1);
-%   when 'topn'
-    fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size, b->stack_size - 1 - (unsigned int)operands[0]);
-    b->stack_size++;
-%   when 'setn'
-    fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size - 1 - (unsigned int)operands[0], b->stack_size-1);
-%   when 'adjuststack'
-    b->stack_size -= (unsigned int)operands[0];
 %   when 'opt_newarray_max'
     fprintf(f, "  stack[%d] = vm_opt_newarray_max(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
@@ -195,8 +129,6 @@ switch (insn) {
     fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
     fprintf(f, "  }\n");
     b->stack_size++;
-%   when 'setinlinecache'
-    fprintf(f, "  vm_ic_update(0x%"PRIxVALUE", stack[%d], reg_cfp->ep);\n", operands[0], b->stack_size-1);
 %   when 'opt_case_dispatch'
     {
         struct case_dispatch_var arg;
