@@ -69,7 +69,7 @@ describe :file_path, shared: true do
             File.open(@dir, File::RDWR | File::TMPFILE) do |f|
               -> { f.send(@method) }.should raise_error(IOError)
             end
-          rescue Errno::EOPNOTSUPP
+          rescue Errno::EOPNOTSUPP, Errno::EINVAL
             # EOPNOTSUPP: no support from the filesystem
             1.should == 1
           end
