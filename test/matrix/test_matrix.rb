@@ -646,6 +646,8 @@ class TestMatrix < Test::Unit::TestCase
     m9 = Matrix[[1,2],[2,1]]
     m10 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     m11 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    m12 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    m13 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     v1 = Vector[3, 5, 6, 7]
     v2 = Vector[4, 5, 6]
 
@@ -699,6 +701,16 @@ class TestMatrix < Test::Unit::TestCase
     assert_block do
       m11[1, 2..-1] = 78
       Matrix[[1, 2, 3], [4, 5, 78], [7, 8, 9]] == m11
+    end
+
+    assert_block do
+      m12[2, 1..-1] = Vector[65, 713]
+      Matrix[[1, 2, 3], [4, 5, 6], [7, 65, 713]] == m12
+    end
+
+    assert_block do
+      m13[1..-1, 1..-1] = Matrix.zero(2, 2)
+      Matrix[[1, 2, 3], [4, 0, 0], [7, 0, 0]] == m13
     end
 
     # Error checking

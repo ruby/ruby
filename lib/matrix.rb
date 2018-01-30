@@ -319,6 +319,8 @@ class Matrix
   def []=(i, j, v)
     raise FrozenError, "can't modify frozen Matrix" if frozen?
     if both_ranges?(i, j)
+      i = convert_range(i, row_count) if i.begin > i.end
+      j = convert_range(j, column_count) if j.begin > j.end
       raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(i, j)
       set_row_and_col_range(i, j, v)
     elsif one_is_range?(i, j)
@@ -333,23 +335,8 @@ class Matrix
   alias set_element []=
   alias set_component []=
 
-  def max_and_min_within_count?(max, min, count)
-    (max <= (count - 1)) && (min >= (-count))
-  end
-
   def range_within_count?(range, count)
-    range_begin = range.begin
-    range_end = range.end
-    if range_begin > range_end
-      if range.exclude_end?
-        range_end = range_end < 0 ? range_end + 1 : range_end - 1
-        max_and_min_within_count?(range_begin, range_end, count)
-      else
-        max_and_min_within_count?(range_begin, range_end, count)
-      end
-    else
-      max_and_min_within_count?(range.max, range.min, count)
-    end
+    (range.max <= (count - 1)) && (range.min >= (-count))
   end
 
   def range_within_matrix_range?(row_range, col_range)
@@ -357,10 +344,10 @@ class Matrix
   end
 
   def ranges_and_dimensions_equal?(row, col, matrix)
-    range_size(row, row_count) == matrix.row_count && range_size(col, column_count) == matrix.column_count
+    row.size == matrix.row_count && col.size == matrix.column_count
   end
 
-  private :max_and_min_within_count?, :range_within_count?, :range_within_matrix_range?, :ranges_and_dimensions_equal?
+  private :range_within_count?, :range_within_matrix_range?, :ranges_and_dimensions_equal?
 
   def indices_within_matrix?(row_index, col_index)
     row_index.between?(-row_count, row_count-1) && col_index.between?(-column_count, column_count-1)
@@ -374,21 +361,11 @@ class Matrix
     row.is_a?(Range) || col.is_a?(Range)
   end
 
-  private :indices_within_matrix?, :both_ranges?, :one_is_range?
-
-  def range_size(range, count)
-    range_begin = range.begin
-    range_end = range.end
-    if range_begin > range_end
-      if range.exclude_end?
-        count + range_end - range_begin
-      else
-        count + range_end - range_begin + 1
-      end
-    else
-      range.size
-    end
+  def convert_range(range, count)
+    range.exclude_end? ? range.begin...(count + range.end) : range.begin..(count + range.end)
   end
+
+  private :indices_within_matrix?, :both_ranges?, :one_is_range?, :convert_range
 
   def set_value(row, col, value)
     @rows[row][col] = value
@@ -396,11 +373,13 @@ class Matrix
 
   def set_range(row, col, value)
     if row.is_a?(Range)
+      row = convert_range(row, row_count) if row.begin > row.end
       raise IndexError, "expected row range is outside of matrix" unless range_within_count?(row, row_count)
       col = CoercionHelper.coerce_to_int(col)
       set_row_range(row, col, value)
     else
       row = CoercionHelper.coerce_to_int(row)
+      col = convert_range(col, column_count) if col.begin > col.end
       raise IndexError, "expected column range is outside of matrix" unless range_within_count?(col, column_count)
       set_col_range(row, col, value)
     end
@@ -409,12 +388,13 @@ class Matrix
   def set_row_and_col_range(row_range, col_range, value)
     if value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless ranges_and_dimensions_equal?(row_range, col_range, value)
-      row_range.each do |i|
-        @rows[i][col_range] = value.rows[i][col_range]
+      value.each_with_index do |e, row, col|
+        r = row_range.first + row
+        c = col_range.first + col
+        @rows[r][c] = e
       end
     else
-      col_range_size = range_size(col_range, column_count)
-      value_to_set = Array.new(col_range_size, value)
+      value_to_set = Array.new(col_range.size, value)
       row_range.each do |i|
         @rows[i][col_range] = value_to_set
       end
@@ -422,9 +402,8 @@ class Matrix
   end
 
   def set_row_range(row_range, col, value)
-    row_range_size = range_size(row_range, row_count)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless row_range_size == value.size
+      raise ArgumentError, "vector to be set has wrong size" unless row_range.size == value.size
       set_column_vector(row_range, col, value)
     elsif value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
@@ -442,20 +421,19 @@ class Matrix
   end
 
   def set_col_range(row, col_range, value)
-    col_range_size = range_size(col_range, column_count)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless col_range_size == value.size
+      raise ArgumentError, "vector to be set has wrong size" unless col_range.size == value.size
       @rows[row][col_range] = value.to_a
     elsif value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
       @rows[row][col_range] = value.row(0).to_a
     else
-      @rows[row][col_range] = Array.new(col_range_size, value)
+      @rows[row][col_range] = Array.new(col_range.size, value)
     end
   end
 
 
-  private :range_size, :set_value, :set_range, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
+  private :set_value, :set_range, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
 
 
 
@@ -1957,6 +1935,7 @@ class Vector
   def []=(i, v)
     raise FrozenError, "can't modify frozen Vector" if frozen?
     if i.is_a?(Range)
+      i = convert_range(i) if i.begin > i.end
       raise IndexError, 'expected range is outside of vector' unless range_within_vector_range?(i)
       set_range(i, v)
     else
@@ -1968,48 +1947,23 @@ class Vector
   alias set_element []=
   alias set_component []=
 
-  def range_within_count?(max, min, size)
-    (max <= (size - 1)) && (min >= (-size))
+  def convert_range(range)
+    range.exclude_end? ? range.begin...(size + range.end) : range.begin..(size + range.end)
   end
 
   def range_within_vector_range?(range)
-    range_begin = range.begin
-    range_end = range.end
-    if range_begin > range_end
-      if range.exclude_end?
-        range_within_count?(range_begin, range_end - 1, size)
-      else
-        range_within_count?(range_begin, range_end, size)
-      end
-    else
-      range_within_count?(range.max, range.min, size)
-    end
+    (range.max <= (size - 1)) && (range.min >= (-size))
   end
 
-  def range_size(range, count)
-    range_begin = range.begin
-    range_end = range.end
-    if range_begin > range_end
-      if range.exclude_end?
-        count + range_end - range_begin
-      else
-        count + range_end - range_begin + 1
-      end
-    else
-      range.size
-    end
-  end
-
-  private :range_within_count?, :range_within_vector_range?, :range_size
+  private :convert_range, :range_within_vector_range?
 
   def set_value(index, value)
     @elements[index] = value
   end
 
   def set_range(range, value)
-    range_size = range_size(range, size)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless range_size == value.size
+      raise ArgumentError, "vector to be set has wrong size" unless range.size == value.size
       @elements[range] = value.elements
     elsif value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
