@@ -94,7 +94,9 @@ else
     def system(*args, **opts)
       STDERR.puts [*args, **opts].inspect if $DEBUG
       if RUBY_VERSION >= "2.6"
-        opts[:exception] = true unless opts.key?(:exception)
+        exception = opts.fetch(:exception) {opts[:exception] = true}
+      else
+        exception = opts.delete(:exception) {true}
       end
       ret = super(*args, **opts)
       raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
