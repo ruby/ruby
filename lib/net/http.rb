@@ -104,13 +104,12 @@ module Net   #:nodoc:
   # open for multiple requests in the block if the server indicates it
   # supports persistent connections.
   #
+  # If you wish to re-use a connection across multiple HTTP requests without
+  # automatically closing it you can use ::new and then call #start and
+  # #finish manually.
+  #
   # The request types Net::HTTP supports are listed below in the section "HTTP
   # Request Classes".
-  #
-  # If you wish to re-use a connection across multiple HTTP requests without
-  # automatically closing it you can use ::new instead of ::start.  #request
-  # will automatically open a connection to the server if one is not currently
-  # open.  You can manually close the connection with #finish.
   #
   # For all the Net::HTTP request objects and shortcut request methods you may
   # supply either a String for the request path or a URI from which Net::HTTP
