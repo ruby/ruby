@@ -49,10 +49,13 @@
 %     insn_name = Regexp.last_match[:insn_name]
 %     dispatch_insn = RubyVM::BareInstructions.fetch(insn_name)
 
-        fprintf(f, "\n/* --- BEGIN: <%= line.strip %> --- */\n");
+    fprintf(f, "\n/* --- BEGIN: <%= line.strip %> --- */\n");
 <%= render 'mjit_compile_insn', locals: { insn: dispatch_insn, dispatched: true } -%>
-        fprintf(f, "/* --- END: <%= line.strip %> --- */\n\n");
+    fprintf(f, "/* --- END: <%= line.strip %> --- */\n\n");
 
+%   elsif line =~ /\A\s+JUMP\((?<jump>[^)]+)\);\s+\z/
+        next_pos = pos + insn_len(insn) + (unsigned int)<%= Regexp.last_match[:jump] %>;
+        fprintf(f, "            goto label_%d;\n", next_pos);
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
 %   end
@@ -80,3 +83,8 @@
 % end
     }
     fprintf(f, "}\n");
+%
+% # compiler: If insn has conditional JUMP, the branch which is not targeted by JUMP should be compiled too.
+% if insn.expr.expr =~ /if\s+\([^{}]+\)\s+\{[^{}]+JUMP\([^)]+\);[^{}]+\}/
+    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+% end

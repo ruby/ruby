@@ -75,38 +75,6 @@ switch (insn) {
     fprintf(f, "  ec->errinfo = vm_throw(ec, reg_cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
     fprintf(f, "  EC_JUMP_TAG(ec, ec->tag->state);\n");
     b->finish_p = TRUE;
-%   when 'jump'
-    next_pos = pos + insn_len(insn) + (unsigned int)operands[0];
-    fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "  goto label_%d;\n", next_pos);
-%   when 'branchif'
-    fprintf(f, "  if (RTEST(stack[%d])) {\n", --b->stack_size);
-    fprintf(f, "    RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
-    fprintf(f, "  }\n");
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
-    next_pos = pos + insn_len(insn) + (unsigned int)operands[0];
-%   when 'branchunless'
-    fprintf(f, "  if (!RTEST(stack[%d])) {\n", --b->stack_size);
-    fprintf(f, "    RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
-    fprintf(f, "  }\n");
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
-    next_pos = pos + insn_len(insn) + (unsigned int)operands[0];
-%   when 'branchnil'
-    fprintf(f, "  if (NIL_P(stack[%d])) {\n", --b->stack_size);
-    fprintf(f, "    RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[0]);
-    fprintf(f, "  }\n");
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
-    next_pos = pos + insn_len(insn) + (unsigned int)operands[0];
-%   when 'branchiftype'
-    fprintf(f, "  if (TYPE(stack[%d]) == (int)0x%"PRIxVALUE") {\n", --b->stack_size, operands[0]);
-    fprintf(f, "    RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "    goto label_%d;\n", pos + insn_len(insn) + (unsigned int)operands[1]);
-    fprintf(f, "  }\n");
-    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
-    next_pos = pos + insn_len(insn) + (unsigned int)operands[1];
 %   when 'getinlinecache'
     fprintf(f, "  stack[%d] = vm_ic_hit_p(0x%"PRIxVALUE", reg_cfp->ep);\n", b->stack_size, operands[1]);
     fprintf(f, "  if (stack[%d] != Qnil) {\n", b->stack_size);
@@ -144,5 +112,5 @@ switch (insn) {
 }
 
 /* if next_pos is already compiled, next instruction won't be compiled in C code and needs `goto`. */
-if ((next_pos < body->iseq_size && status->compiled_for_pos[next_pos]) || insn == BIN(jump))
+if ((next_pos < body->iseq_size && status->compiled_for_pos[next_pos]))
     fprintf(f, "  goto label_%d;\n", next_pos);
