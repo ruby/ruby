@@ -128,7 +128,7 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'popn', pops.size
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
-    generate_attribute 'rb_num_t', 'sp_inc', rets.size - pops.size
+    generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
     generate_attribute 'bool', 'handles_frame', false
   end
 
