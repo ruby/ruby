@@ -521,17 +521,11 @@ update-simplecov:
 update-coverage: update-simplecov update-simplecov-html update-doclie
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc
+	  vmtc.inc vm.inc mjit_compile.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
 	  $(srcdir)/tool/insns2vm.rb
-	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
-
-mjit_compile.inc: $(srcdir)/insns.def vm_opts.h \
-	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \
-	  $(srcdir)/tool/insns2vm.rb $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb
 	$(ECHO) generating $@
 	$(Q) $(BASERUBY) -Ku $(srcdir)/tool/insns2vm.rb $(INSNS2VMOPT) $@
 
