@@ -21,7 +21,7 @@
 % # JIT: Declare variables for operands, popped values and return values
 % ret_decls = insn.rets.map { |r| "MAYBE_UNUSED(#{r.fetch(:type)}) #{r.fetch(:name)}"} # TODO: fix #declarations to return Hash...
 % insn.declarations.each do |decl|
-%   next if dispatched && ret_decls.include?(decl) # return value should be propagated to dispatcher
+%   next if dispatched && ret_decls.include?(decl) # return value should be propagated to dispatcher. TODO: assert it's the same as dispatcher
         fprintf(f, "    <%= decl %>;\n");
 % end
 

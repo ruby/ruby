@@ -33,6 +33,7 @@
 % #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
 % #   TOPN(): refers to `reg_cfp->sp`, which needs to have correct sp (of course)
 % #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, same problem here
+% #   DISPATCH_ORIGINAL_INSN(): expanded in _mjit_compile_insn.erb
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
 fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
@@ -44,14 +45,6 @@ switch (insn) {
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
 %   case insn.name
-%   when 'opt_newarray_max'
-    fprintf(f, "  stack[%d] = vm_opt_newarray_max(0x%"PRIxVALUE", stack + %d);\n",
-            b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
-    b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'opt_newarray_min'
-    fprintf(f, "  stack[%d] = vm_opt_newarray_min(0x%"PRIxVALUE", stack + %d);\n",
-            b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
-    b->stack_size += 1 - (unsigned int)operands[0];
 %   when 'leave'
     /* NOTE: We don't use YARV's stack on JIT. So vm_stack_consistency_error isn't run
        during execution and we check stack_size here instead. */
@@ -130,57 +123,16 @@ switch (insn) {
         fprintf(f, "      goto label_%lu;\n", arg.base_pos + operands[1]);
         fprintf(f, "  }\n");
     }
-%   when 'opt_minus'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_minus(recv, obj)");
-%   when 'opt_mult'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_mult(recv, obj)");
-%   when 'opt_div'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_div(recv, obj)");
-%   when 'opt_mod'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_mod(recv, obj)");
-%   when 'opt_eq'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2,
-            "opt_eq_func(recv, obj, 0x%"PRIxVALUE", 0x%"PRIxVALUE")", operands[0], operands[1]);
 %   when 'opt_neq'
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2,
             "vm_opt_neq(0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", recv, obj)",
             operands[0], operands[1], operands[2], operands[3]);
-%   when 'opt_lt'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_lt(recv, obj)");
-%   when 'opt_le'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_le(recv, obj)");
-%   when 'opt_gt'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_gt(recv, obj)");
-%   when 'opt_ge'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_ge(recv, obj)");
-%   when 'opt_ltlt'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_ltlt(recv, obj)");
-%   when 'opt_aref'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_aref(recv, obj)");
-%   when 'opt_aset'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 3, "vm_opt_aset(recv, obj, obj2)");
 %   when 'opt_aset_with'
     b->stack_size += fprint_opt_call_with_key(f, insn, operands[0], operands[1], operands[2], b->stack_size, 3,
             "vm_opt_aset_with(recv, 0x%"PRIxVALUE", obj)", operands[2]);
 %   when 'opt_aref_with'
     b->stack_size += fprint_opt_call_with_key(f, insn, operands[0], operands[1], operands[2], b->stack_size, 2,
             "vm_opt_aref_with(recv, 0x%"PRIxVALUE")", operands[2]);
-%   when 'opt_length'
-    fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 1, "vm_opt_length(recv, BOP_LENGTH)");
-%   when 'opt_size'
-    fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 1, "vm_opt_length(recv, BOP_SIZE)");
-%   when 'opt_empty_p'
-    fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 1, "vm_opt_empty_p(recv)");
-%   when 'opt_succ'
-    fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 1, "vm_opt_succ(recv)");
-%   when 'opt_not'
-    fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 1,
-            "vm_opt_not(0x%"PRIxVALUE", 0x%"PRIxVALUE", recv)", operands[0], operands[1]);
-    break;
-%   when 'opt_regexpmatch1'
-    fprintf(f, "  stack[%d] = vm_opt_regexpmatch1((VALUE)0x%"PRIxVALUE", stack[%d]);\n", b->stack_size-1, operands[0], b->stack_size-1);
-%   when 'opt_regexpmatch2'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_regexpmatch2(recv, obj)");
 %   else
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   end
