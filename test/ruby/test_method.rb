@@ -926,6 +926,11 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(m1.source_location, m2.source_location, bug)
   end
 
+  def test_super_method_after_bind
+    assert_nil String.instance_method(:length).bind(String.new).super_method,
+      '[ruby-core:85231] [Bug #14421]'
+  end
+
   def rest_parameter(*rest)
     rest
   end

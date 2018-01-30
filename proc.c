@@ -2725,6 +2725,7 @@ method_super_method(VALUE method)
 
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
+    if (!iclass) return Qnil;
     super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
     mid = data->me->called_id;
     if (!super_class) return Qnil;
