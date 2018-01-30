@@ -20,6 +20,12 @@
 %   'defineclass',         # low priority
 %   'opt_call_c_function', # low priority
 % ]
+% trace_enablable_insns = [ # TODO: we should do this (at least) in all places where EXEC_EC_CFP is called.
+%   'opt_send_without_block',
+%   'send',
+%   'invokeblock',
+%   'invokesuper',
+% ]
 %
 % to_cstr = lambda do |line|
 %   normalized = line.gsub(/\t/, ' ' * 8)
@@ -124,59 +130,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = vm_opt_newarray_min(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);
     b->stack_size += 1 - (unsigned int)operands[0];
-%   when 'invokesuper'
-    {
-        CALL_INFO ci = (CALL_INFO)operands[0];
-        unsigned int push_count = ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
-
-        fprintf(f, "  {\n");
-        fprintf(f, "    struct rb_calling_info calling;\n");
-        fprintf(f, "    calling.argc = %d;\n", ci->orig_argc);
-        fprintf(f, "    vm_caller_setup_arg_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE", TRUE);\n", operands[0], operands[2]);
-        fprintf(f, "    calling.recv = reg_cfp->self;\n");
-        fprintf(f, "    vm_search_super_method(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[0], operands[1]);
-        fprintf(f, "    {\n");
-        fprintf(f, "      VALUE v = (*((CALL_CACHE)0x%"PRIxVALUE")->call)(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE");\n", operands[1], operands[0], operands[1]);
-        fprintf(f, "      if (v == Qundef && (v = mjit_exec(ec)) == Qundef) {\n"); /* TODO: we need some check to call `mjit_exec` directly (skipping setjmp), but not done yet */
-        fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
-        fprintf(f, "        stack[%d] = vm_exec(ec);\n", b->stack_size - push_count - 1);
-        fprintf(f, "      } else {\n");
-        fprintf(f, "        stack[%d] = v;\n", b->stack_size - push_count - 1);
-        fprintf(f, "      }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "  }\n");
-        b->stack_size -= push_count;
-        fprint_trace_cancel(f, b->stack_size);
-    }
-%   when 'invokeblock'
-    {
-        CALL_INFO ci = (CALL_INFO)operands[0];
-        fprintf(f, "  {\n");
-        fprintf(f, "    struct rb_calling_info calling;\n");
-        fprintf(f, "    VALUE block_handler;\n");
-
-        fprintf(f, "    calling.argc = %d;\n", ci->orig_argc);
-        fprintf(f, "    calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-        fprintf(f, "    calling.recv = Qundef; /* should not be used */\n");
-
-        fprintf(f, "    block_handler = VM_CF_BLOCK_HANDLER(reg_cfp);\n");
-        fprintf(f, "    if (block_handler == VM_BLOCK_HANDLER_NONE) {\n");
-        fprintf(f, "      rb_vm_localjump_error(\"no block given (yield)\", Qnil, 0);\n");
-        fprintf(f, "    }\n");
-
-        fprintf(f, "    {\n");
-        fprintf(f, "      VALUE v = vm_invoke_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", block_handler);\n", operands[0]);
-        fprintf(f, "      if (v == Qundef && (v = mjit_exec(ec)) == Qundef) {\n");
-        fprintf(f, "        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
-        fprintf(f, "        stack[%d] = vm_exec(ec);\n", b->stack_size - ci->orig_argc);
-        fprintf(f, "      } else {\n");
-        fprintf(f, "        stack[%d] = v;\n", b->stack_size - ci->orig_argc);
-        fprintf(f, "      }\n");
-        fprintf(f, "    }\n");
-        fprintf(f, "  }\n");
-        b->stack_size += 1 - ci->orig_argc;
-        fprint_trace_cancel(f, b->stack_size);
-    }
 %   when 'leave'
     /* NOTE: We don't use YARV's stack on JIT. So vm_stack_consistency_error isn't run
        during execution and we check stack_size here instead. */
@@ -353,6 +306,14 @@ switch (insn) {
 %     # compiler: Move JIT compiler's internal stack pointer
         b->stack_size += <%= insn.call_attribute('sp_inc') %>;
     }
+%
+%     # We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
+%     if trace_enablable_insns.include?(insn.name)
+    fprintf(f, "if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
+    fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
+    fprintf(f, "    return Qundef; /* cancel JIT */\n");
+    fprintf(f, "}\n");
+%     end
 %   end
     break;
 % end
