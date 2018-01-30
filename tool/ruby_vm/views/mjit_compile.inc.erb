@@ -20,18 +20,6 @@
 %   'defineclass',         # low priority
 %   'opt_call_c_function', # low priority
 % ]
-% trace_enablable_insns = [ # TODO: we should do this (at least) in all places where EXEC_EC_CFP is called.
-%   'opt_send_without_block',
-%   'send',
-%   'invokeblock',
-%   'invokesuper',
-% ]
-%
-% to_cstr = lambda do |line|
-%   normalized = line.gsub(/\t/, ' ' * 8)
-%   indented = normalized.sub(/\A/, '    ')
-%   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
-% end
 %
 % # Available variables and macros in JIT-ed function:
 % #   ec: the first argument of _mjitXXX
@@ -142,8 +130,6 @@ switch (insn) {
         fprintf(f, "      goto label_%lu;\n", arg.base_pos + operands[1]);
         fprintf(f, "  }\n");
     }
-%   when 'opt_plus'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_plus(recv, obj)");
 %   when 'opt_minus'
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_minus(recv, obj)");
 %   when 'opt_mult'
@@ -196,56 +182,7 @@ switch (insn) {
 %   when 'opt_regexpmatch2'
     b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2, "vm_opt_regexpmatch2(recv, obj)");
 %   else
-    fprintf(f, "{\n");
-    {
-%     # compiler: Prepare operands which may be used by `insn.call_attribute`
-%     insn.opes.each_with_index do |ope, i|
-        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
-%     end
-%
-%     # JIT: Declare variables for operands, popped values and return values
-%     insn.declarations.each do |decl|
-        fprintf(f, "    <%= decl %>;\n");
-%     end
-
-%     # JIT: Set const expressions for `RubyVM::OperandsUnifications` insn
-%     insn.preamble.each do |amble|
-        fprintf(f, "<%= amble.expr %>\n");
-%     end
-%
-%     # JIT: Initialize operands
-%     insn.opes.each_with_index do |ope, i|
-        fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
-%     end
-%
-%     # JIT: Initialize popped values
-%     insn.pops.reverse_each.with_index.reverse_each do |pop, i|
-        fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
-%     end
-%
-%     # JIT: Print insn body in insns.def
-%     insn.expr.expr.each_line do |line|
-        fprintf(f, <%= to_cstr.call(line) %>);
-%     end
-%
-%     # JIT: Set return values
-%     insn.rets.reverse_each.with_index do |ret, i|
-%       # TOPN(n) = ...
-        fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
-%     end
-        fprintf(f, "}\n");
-%
-%     # compiler: Move JIT compiler's internal stack pointer
-        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
-    }
-%
-%     # We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
-%     if trace_enablable_insns.include?(insn.name)
-    fprintf(f, "if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
-    fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
-    fprintf(f, "    return Qundef; /* cancel JIT */\n");
-    fprintf(f, "}\n");
-%     end
+<%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   end
     break;
 % end
