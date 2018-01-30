@@ -116,9 +116,6 @@ switch (insn) {
     fprintf(f, "  stack[%d] = stack[%d];\n", b->stack_size - 1 - (unsigned int)operands[0], b->stack_size-1);
 %   when 'adjuststack'
     b->stack_size -= (unsigned int)operands[0];
-%   when 'send'
-    b->stack_size += compile_send(f, insn, operands, b->stack_size, TRUE);
-    fprint_trace_cancel(f, b->stack_size);
 %   when 'opt_newarray_max'
     fprintf(f, "  stack[%d] = vm_opt_newarray_max(0x%"PRIxVALUE", stack + %d);\n",
             b->stack_size - (unsigned int)operands[0], operands[0], b->stack_size - (unsigned int)operands[0]);

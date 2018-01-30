@@ -92,40 +92,6 @@ fprint_call_method(FILE *f, VALUE ci_v, VALUE cc_v, unsigned int result_pos, int
     fprintf(f, "    }\n");
 }
 
-/* Compile send and opt_send_without_block instructions to `f`, and return stack size change */
-static int
-compile_send(FILE *f, int insn, const VALUE *operands, unsigned int stack_size, int with_block)
-{
-    CALL_INFO ci = (CALL_INFO)operands[0];
-    CALL_CACHE cc = (CALL_CACHE)operands[1];
-    unsigned int argc = ci->orig_argc; /* unlike `ci->orig_argc`, `argc` may include blockarg */
-    if (with_block) {
-        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
-    }
-
-    /* Allows to skip `vm_search_method` and inline cc->call equivalent. This is required to enable `inline_p`. */
-    if (inlinable_iseq_p(ci, cc, get_iseq_if_available(cc))) {
-        fprintf(f, "  if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %llu || RCLASS_SERIAL(CLASS_OF(stack[%d])) != %llu)) {\n", cc->method_state, stack_size - 1 - argc, cc->class_serial);
-        fprintf(f, "    reg_cfp->pc -= %d;\n", insn_len(insn));
-        fprintf(f, "    return Qundef; /* cancel JIT */\n");
-        fprintf(f, "  }\n");
-    }
-
-    fprintf(f, "  {\n");
-    fprintf(f, "    struct rb_calling_info calling;\n");
-    if (with_block) {
-        fprintf(f, "    vm_caller_setup_arg_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
-    }
-    else {
-        fprintf(f, "    calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
-    }
-    fprintf(f, "    calling.argc = %d;\n", ci->orig_argc);
-    fprintf(f, "    calling.recv = stack[%d];\n", stack_size - 1 - argc);
-    fprint_call_method(f, operands[0], operands[1], stack_size - argc - 1, TRUE);
-    fprintf(f, "  }\n");
-    return -argc;
-}
-
 static void
 fprint_opt_call_variables(FILE *f, int insn, unsigned int stack_size, unsigned int argc)
 {
