@@ -1783,6 +1783,8 @@ VALUE rb_check_symbol(volatile VALUE *namep);
 # if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 #   if HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
+#   elif defined(__clang__) /* [ruby-core:85266] [Bug #14425] */
+#     define rb_varargs_bad_length(argc, vargc) ((argc)/((argc) <= (vargc)))
 #   else
 #     define rb_varargs_bad_length(argc, vargc) ((argc)/((argc) == (vargc)))
 #   endif
