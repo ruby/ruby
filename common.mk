@@ -193,7 +193,7 @@ main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 exts enc trans: $(SHOWFLAGS)
 showflags:
 	$(MESSAGE_BEGIN) \
-	"	BASERUBY = `$(BASERUBY) -v`" \
+	"	BASERUBY = $(BASERUBY)" \
 	"	CC = $(CC)" \
 	"	LD = $(LD)" \
 	"	LDSHARED = $(LDSHARED)" \
