@@ -27,6 +27,9 @@
 % #   GET_CFP(): refers to `reg_cfp`
 % #   GET_EP(): refers to `reg_cfp->ep`
 % #   GET_SP(): refers to `reg_cfp->sp`
+% #   INC_SP(): refers to `reg_cfp->sp`
+% #   SET_SV(): refers to `reg_cfp->sp`
+% #   PUSH(): refers to `SET_SV()`, `INC_SP()`
 % #   GET_SELF(): refers to `reg_cfp->self`
 % #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
 % #   EXEC_EC_CFP(): refers to `val = vm_exec(ec)` with frame setup
@@ -123,16 +126,6 @@ switch (insn) {
         fprintf(f, "      goto label_%lu;\n", arg.base_pos + operands[1]);
         fprintf(f, "  }\n");
     }
-%   when 'opt_neq'
-    b->stack_size += fprint_opt_call(f, insn, operands[0], operands[1], b->stack_size, 2,
-            "vm_opt_neq(0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", 0x%"PRIxVALUE", recv, obj)",
-            operands[0], operands[1], operands[2], operands[3]);
-%   when 'opt_aset_with'
-    b->stack_size += fprint_opt_call_with_key(f, insn, operands[0], operands[1], operands[2], b->stack_size, 3,
-            "vm_opt_aset_with(recv, 0x%"PRIxVALUE", obj)", operands[2]);
-%   when 'opt_aref_with'
-    b->stack_size += fprint_opt_call_with_key(f, insn, operands[0], operands[1], operands[2], b->stack_size, 2,
-            "vm_opt_aref_with(recv, 0x%"PRIxVALUE")", operands[2]);
 %   else
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   end
