@@ -26,8 +26,7 @@ Here is a basic refinement:
   end
 
 First, a class +C+ is defined.  Next a refinement for +C+ is created using
-Module#refine.  Refinements only modify classes, not modules so the argument
-must be a class.
+Module#refine. Refinements can modify both classes and modules.
 
 Module#refine creates an anonymous module that contains the changes or
 refinements to the class (+C+ in the example).  +self+ in the refine block is
