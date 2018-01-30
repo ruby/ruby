@@ -336,7 +336,7 @@ class Matrix
   alias set_component []=
 
   def range_within_count?(range, count)
-    (range.max <= (count - 1)) && (range.min >= (-count))
+    (range.max < count) && (range.min >= (-count))
   end
 
   def range_within_matrix_range?(row_range, col_range)
@@ -1952,7 +1952,7 @@ class Vector
   end
 
   def range_within_vector_range?(range)
-    (range.max <= (size - 1)) && (range.min >= (-size))
+    (range.max < size) && (range.min >= (-size))
   end
 
   private :convert_range, :range_within_vector_range?
