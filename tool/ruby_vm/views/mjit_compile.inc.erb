@@ -37,6 +37,8 @@
 % #   TOPN(): refers to `reg_cfp->sp`, which needs to have correct sp (of course)
 % #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, same problem here
 % #   DISPATCH_ORIGINAL_INSN(): expanded in _mjit_compile_insn.erb
+% #   THROW_EXCEPTION(): specially defined for JIT
+% #   RESTORE_REGS(): specially defined for `leave`
 
 /* Move program counter to meet catch table condition and for JIT execution cancellation. */
 fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
@@ -49,32 +51,13 @@ switch (insn) {
   case BIN(<%= insn.name %>):
 %   case insn.name
 %   when 'leave'
-    /* NOTE: We don't use YARV's stack on JIT. So vm_stack_consistency_error isn't run
-       during execution and we check stack_size here instead. */
     if (b->stack_size != 1) {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
         status->success = FALSE;
     }
-
-    fprintf(f, "  reg_cfp->sp = reg_cfp->bp + 1;\n"); /* pop result to resolve consistency error */
-    fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
-    /* TODO: is there a case that vm_pop_frame returns 0? */
-    fprintf(f, "  vm_pop_frame(ec, reg_cfp, reg_cfp->ep);\n");
-#if OPT_CALL_THREADED_CODE
-    fprintf(f, "  ec->retval = stack[%d];\n", b->stack_size-1);
-    fprintf(f, "  return 0;\n");
-#else
-    fprintf(f, "  return stack[%d];\n", b->stack_size-1);
-#endif
-    /* stop compilation in this branch. to simulate stack properly,
-       remaining insns should be compiled from another branch */
-    b->finish_p = TRUE;
-%   when 'throw'
-    fprintf(f, "  RUBY_VM_CHECK_INTS(ec);\n");
-    fprintf(f, "  ec->errinfo = vm_throw(ec, reg_cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
-    fprintf(f, "  EC_JUMP_TAG(ec, ec->tag->state);\n");
-    b->finish_p = TRUE;
+    fprintf(f, "  reg_cfp->sp = reg_cfp->bp + 1;\n"); /* move sp for popped value */
+<%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   else
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   end

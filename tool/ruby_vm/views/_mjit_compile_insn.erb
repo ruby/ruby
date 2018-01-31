@@ -7,7 +7,7 @@
 %
 % to_cstr = lambda do |line|
 %   normalized = line.gsub(/\t/, ' ' * 8)
-%   indented = normalized.sub(/\A/, '    ')
+%   indented = normalized.sub(/\A(?!#)/, '    ') # avoid indenting preprocessor
 %   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
 % end
 %
@@ -78,6 +78,13 @@
         next_pos = pos + insn_len(insn) + (unsigned int)<%= dest %>;
         fprintf(f, "            goto label_%d;\n", next_pos);
 %     end
+%   elsif line =~ /\A\s+RESTORE_REGS\(\);\s+\z/ # for `leave` only
+#if OPT_CALL_THREADED_CODE
+        fprintf(f, "        rb_ec_thread_ptr(ec)->retval = val;\n");
+        fprintf(f, "        return 0;\n");
+#else
+        fprintf(f, "        return val;\n");
+#endif
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
 %   end
@@ -109,4 +116,9 @@
 % # compiler: If insn has conditional JUMP, the branch which is not targeted by JUMP should be compiled too.
 % if insn.expr.expr =~ /if\s+\([^{}]+\)\s+\{[^{}]+JUMP\([^)]+\);[^{}]+\}/
     compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+% end
+%
+% # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compieled. TODO: create attr for it?
+% if insn.expr.expr =~ /\sTHROW_EXCEPTION\([^)]+\);/ || insn.expr.expr =~ /\sRESTORE_REGS\(\);/
+    b->finish_p = TRUE;
 % end
