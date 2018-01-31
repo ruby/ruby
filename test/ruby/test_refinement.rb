@@ -1673,6 +1673,49 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  class ParentDefiningPrivateMethod
+    private
+    def some_inherited_method
+    end
+  end
+
+  module MixinDefiningPrivateMethod
+    private
+    def some_included_method
+    end
+  end
+
+  class SomeChildClassToRefine < ParentDefiningPrivateMethod
+    include MixinDefiningPrivateMethod
+    private
+    def some_method
+    end
+  end
+
+  def test_refine_inherited_method_with_visibility_changes
+    Module.new do
+      refine(SomeChildClassToRefine) do
+        def some_inherited_method; end
+        def some_included_method; end
+        def some_method; end
+      end
+    end
+
+    obj = SomeChildClassToRefine.new
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_inherited_method
+    end
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_included_method
+    end
+
+    assert_raise_with_message(NoMethodError, /private/) do
+      obj.some_method
+    end
+  end
+
   private
 
   def eval_using(mod, s)

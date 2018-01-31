@@ -1,3 +1,18 @@
+Wed Jan 31 22:12:48 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	adjust indent
+
+	* vm_insnhelper.c (vm_call_method_each_type): adjust indent of a
+	  block in switch.
+
+	visibility of inherited method
+
+	* vm_insnhelper.c (vm_call_method_each_type): honor the original
+	  visibility of inherited methods when a refinement is defined but
+	  not activated.  [ruby-core:82209] [Bug #13776]
+
+	Author:    Mon_Ouie (Mon ouie) <mon.ouie@gmail.com>
+
 Wed Jan 31 20:47:07 2018  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	HTTPHeader#add_field should allow binary [Bug #13926]
