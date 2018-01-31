@@ -1,3 +1,13 @@
+Wed Jan 31 20:09:50 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	date_core.c: fix error in DateTime docs
+
+	* ext/date/date_core.c: [DOC] fix format string for DateTime#rfc3339.
+	  Reported by Andreas Rayo Kniep.  [ruby-core:68418] [Bug #10936]
+
+	* ext/date/date_core.c: [DOC] ditto for DateTime#iso8601 and
+	  DateTime#xmlschema; other small improvements.
+
 Wed Jan 31 20:04:47 2018  Marcus Stollsteimer  <sto.mar@web.de>
 
 	lib/ostruct.rb: [DOC] revise docs for OpenStruct
