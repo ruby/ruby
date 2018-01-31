@@ -750,7 +750,7 @@ ruby_tgamma(const double d)
 #define tgamma(d) ruby_tgamma(d)
 #endif
 
-#if defined LGAMMA_R_M0_FIX
+#if defined LGAMMA_R_PM0_FIX
 static inline double
 ruby_lgamma_r(const double d, int *sign)
 {
@@ -758,6 +758,9 @@ ruby_lgamma_r(const double d, int *sign)
     if (isinf(g)) {
 	if (d == 0.0 && signbit(d)) {
 	    *sign = -1;
+	    return INFINITY;
+	} else if (d == 0.0 && !signbit(d)) {
+	    *sign = 1;
 	    return INFINITY;
 	}
     }

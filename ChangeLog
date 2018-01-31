@@ -1,3 +1,11 @@
+Wed Jan 31 22:46:36 2018  Rei Odaira  <Rei.Odaira@gmail.com>
+
+	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)
+	  returns positive infinity, in addition to lgamma_r(-0.0).
+	  AIX returns an incorrect result of negative infinity.
+
+	* math.c (ruby_lgamma_r): handle +0.0, in addition to -0.0.
+
 Wed Jan 31 22:32:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	ext: check if null byte is contained
