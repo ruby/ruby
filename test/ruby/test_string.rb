@@ -1540,6 +1540,11 @@ class TestString < Test::Unit::TestCase
     assert_equal("2000aaa", "1999zzz".succ)
     assert_equal("AAAA0000", "ZZZ9999".succ)
     assert_equal("**+", "***".succ)
+
+    bug = '[ruby-core:83062] [Bug #13952]'
+    s = "\xff".b
+    assert_not_predicate(s, :ascii_only?)
+    assert_predicate(s.succ, :ascii_only?, bug)
   end
 
   def test_succ!

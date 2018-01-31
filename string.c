@@ -3700,6 +3700,7 @@ str_succ(VALUE str)
             }
             carry_pos = s - sbeg;
 	}
+	ENC_CODERANGE_SET(str, ENC_CODERANGE_UNKNOWN);
     }
     RESIZE_CAPA(str, slen + carry_len);
     sbeg = RSTRING_PTR(str);

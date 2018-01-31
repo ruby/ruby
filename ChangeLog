@@ -1,3 +1,11 @@
+Wed Jan 31 22:29:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: fix ASCII-only on succ
+
+	* string.c (str_succ): clear coderange cache when no alpha-numeric
+	  character case, carried part may become ASCII-only.
+	  [ruby-core:83062] [Bug #13952]
+
 Wed Jan 31 22:28:20 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	pack.c: unpack "M" may be ASCII only
