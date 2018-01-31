@@ -6194,6 +6194,20 @@ pipe_finalize(rb_io_t *fptr, int noraise)
 #endif
     pipe_del_fptr(fptr);
 }
+
+static void
+pipe_register_fptr(rb_io_t *fptr)
+{
+    struct pipe_list *list;
+
+    if (fptr->finalize != pipe_finalize) return;
+
+    for (list = pipe_list; list; list = list->next) {
+	if (list->fptr == fptr) return;
+    }
+
+    pipe_add_fptr(fptr);
+}
 #endif
 
 void
@@ -7146,8 +7160,7 @@ io_reopen(VALUE io, VALUE nfile)
     else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
     fptr->finalize = orig->finalize;
 #if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    if (fptr->finalize == pipe_finalize)
-	pipe_add_fptr(fptr);
+    pipe_register_fptr(fptr);
 #endif
 
     fd = fptr->fd;
@@ -7329,8 +7342,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr->finalize = orig->finalize;
 #if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    if (fptr->finalize == pipe_finalize)
-	pipe_add_fptr(fptr);
+    pipe_register_fptr(fptr);
 #endif
 
     fd = ruby_dup(orig->fd);
