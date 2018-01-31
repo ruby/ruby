@@ -1,3 +1,7 @@
+Wed Jan 31 20:47:07 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	HTTPHeader#add_field should allow binary [Bug #13926]
+
 Wed Jan 31 20:42:11 2018  Marcus Stollsteimer  <sto.mar@web.de>
 
 	ri.1: rewrite ri man page

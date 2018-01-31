@@ -45,6 +45,9 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal 2, @c.length
     assert_equal ['aaa', 'bbb', '3'], @c.get_fields('aaa')
 
+    @c['aaa'] = "aaa\xff"
+    assert_equal 2, @c.length
+
     assert_raise(ArgumentError){ @c['foo'] = "a\nb" }
     assert_raise(ArgumentError){ @c['foo'] = ["a\nb"] }
   end
@@ -73,9 +76,9 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_equal 'a, b, c, d, d', @c['My-Header']
     assert_equal ['a', 'b', 'c', 'd, d'], @c.get_fields('My-Header')
     assert_raise(ArgumentError){ @c.add_field 'My-Header', "d\nd" }
-    @c.add_field 'My-Header', ['e', ['f', 7]]
-    assert_equal 'a, b, c, d, d, e, f, 7', @c['My-Header']
-    assert_equal ['a', 'b', 'c', 'd, d', 'e', 'f', '7'], @c.get_fields('My-Header')
+    @c.add_field 'My-Header', ['e', ["\xff", 7]]
+    assert_equal "a, b, c, d, d, e, \xff, 7", @c['My-Header']
+    assert_equal ['a', 'b', 'c', 'd, d', 'e', "\xff", '7'], @c.get_fields('My-Header')
   end
 
   def test_get_fields
