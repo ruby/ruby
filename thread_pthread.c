@@ -1313,17 +1313,21 @@ void
 rb_thread_wakeup_timer_thread(void)
 {
     /* must be safe inside sighandler, so no mutex */
-    ATOMIC_INC(timer_thread_pipe.writing);
-    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
-    ATOMIC_DEC(timer_thread_pipe.writing);
+    if (timer_thread_pipe.owner_process == getpid()) {
+	ATOMIC_INC(timer_thread_pipe.writing);
+	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
+	ATOMIC_DEC(timer_thread_pipe.writing);
+    }
 }
 
 static void
 rb_thread_wakeup_timer_thread_low(void)
 {
-    ATOMIC_INC(timer_thread_pipe.writing);
-    rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
-    ATOMIC_DEC(timer_thread_pipe.writing);
+    if (timer_thread_pipe.owner_process == getpid()) {
+	ATOMIC_INC(timer_thread_pipe.writing);
+	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
+	ATOMIC_DEC(timer_thread_pipe.writing);
+    }
 }
 
 /* VM-dependent API is not available for this function */

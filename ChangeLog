@@ -1,3 +1,12 @@
+Wed Jan 31 22:48:41 2018  Eric Wong  <normalperson@yhbt.net>
+
+	thread_pthread.c: do not wakeup inside child processes
+
+	* thread_pthread.c (rb_thread_wakeup_timer_thread): check
+	  ownership before incrementing
+	  (rb_thread_wakeup_timer_thread_low): ditto
+	  [Bug #13794] [ruby-core:83064]
+
 Wed Jan 31 22:46:36 2018  Rei Odaira  <Rei.Odaira@gmail.com>
 
 	* configure.in (rb_cv_lgamma_r_pm0): check if lgamma_r(+0.0)
