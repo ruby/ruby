@@ -1,3 +1,11 @@
+Wed Jan 31 20:23:49 2018  sorah (Shota Fukumori)  <her@sorah.jp>
+
+	Add documents on Process::CLOCK_* constants
+
+	* process.c: Add documents on Process::CLOCK_* constants.
+	  Patch by Sunao Komuro <sunao-komuro@cookpad.com>.
+	  Closes [GH-1567] [Bug #13386]
+
 Wed Jan 31 20:11:20 2018  Marcus Stollsteimer  <sto.mar@web.de>
 
 	ri.1: fix errors in ri man page
