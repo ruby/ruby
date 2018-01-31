@@ -6150,23 +6150,16 @@ pipe_add_fptr(rb_io_t *fptr)
 static void
 pipe_del_fptr(rb_io_t *fptr)
 {
-    struct pipe_list *list = pipe_list;
+    struct pipe_list **prev = &pipe_list;
     struct pipe_list *tmp;
 
-    if (list->fptr == fptr) {
-	pipe_list = list->next;
-	free(list);
-	return;
-    }
-
-    while (list->next) {
-	if (list->next->fptr == fptr) {
-	    tmp = list->next;
-	    list->next = list->next->next;
+    while ((tmp = *prev) != 0) {
+	if (tmp->fptr == fptr) {
+	    *prev = tmp->next;
 	    free(tmp);
 	    return;
 	}
-	list = list->next;
+	prev = &tmp->next;
     }
 }
 
