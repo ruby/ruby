@@ -1,3 +1,9 @@
+Wed Jan 31 22:32:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	ext: check if null byte is contained
+
+	[ruby-dev:50267] [Bug #13953]
+
 Wed Jan 31 22:29:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	string.c: fix ASCII-only on succ

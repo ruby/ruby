@@ -89,7 +89,8 @@ static char **readline_attempted_completion_function(const char *text,
                                                      int start, int end);
 
 #define OutputStringValue(str) do {\
-    SafeStringValue(str);\
+    StringValueCStr(str);\
+    rb_check_safe_obj(str);\
     (str) = rb_str_conv_enc((str), rb_enc_get(str), rb_locale_encoding());\
 } while (0)\
 
