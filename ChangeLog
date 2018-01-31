@@ -1,3 +1,10 @@
+Wed Jan 31 22:28:20 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	pack.c: unpack "M" may be ASCII only
+
+	* pack.c (pack_unpack_internal): set ASCII only properly on "M",
+	  may be ASCII only.  [ruby-core:83055] [Bug #13949]
+
 Wed Jan 31 22:26:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	string.c: ASCII-incompatible is not ASCII only
