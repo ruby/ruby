@@ -212,7 +212,7 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/cmath
 [lib/csv.rb]
-  James Edward Gray II (jeg2)
+  Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
 [lib/fileutils.rb]
   _unmaintained_
