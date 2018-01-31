@@ -1,3 +1,9 @@
+Wed Jan 31 22:51:59 2018  Pete Higgins  <pete@peterhiggins.org>
+
+	* thread_sync.c (Init_thread_sync): Remove confusing doc comments,
+	  which are picked up by rdoc unexpectedly, from Queue and
+	  SizedQueue.  [Fix GH-1450]
+
 Wed Jan 31 22:48:41 2018  Eric Wong  <normalperson@yhbt.net>
 
 	thread_pthread.c: do not wakeup inside child processes
