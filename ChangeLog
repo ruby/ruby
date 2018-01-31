@@ -1,3 +1,12 @@
+Wed Jan 31 20:11:20 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	ri.1: fix errors in ri man page
+
+	* man/ri.1: fix some errors in ri man page (add missing options,
+	  remove options that do not exist, fix formatter list).
+
+	  Reported by Josh Cheek.  [ruby-core:68065] [Bug #10838]
+
 Wed Jan 31 20:09:50 2018  Marcus Stollsteimer  <sto.mar@web.de>
 
 	date_core.c: fix error in DateTime docs
