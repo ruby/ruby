@@ -855,7 +855,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 	rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (trace_arg->data == Qundef) {
-	rb_bug("tp_attr_return_value_m: unreachable");
+        rb_bug("rb_tracearg_return_value: unreachable");
     }
     return trace_arg->data;
 }
@@ -870,7 +870,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 	rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (trace_arg->data == Qundef) {
-	rb_bug("tp_attr_raised_exception_m: unreachable");
+        rb_bug("rb_tracearg_raised_exception: unreachable");
     }
     return trace_arg->data;
 }
@@ -885,7 +885,7 @@ rb_tracearg_object(rb_trace_arg_t *trace_arg)
 	rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (trace_arg->data == Qundef) {
-	rb_bug("tp_attr_raised_exception_m: unreachable");
+        rb_bug("rb_tracearg_object: unreachable");
     }
     return trace_arg->data;
 }
