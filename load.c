@@ -629,6 +629,8 @@ rb_load_internal0(rb_thread_t *th, VALUE fname, int wrap)
     th->top_wrapper = wrapper;
 
     if (state) {
+	/* usually state == TAG_RAISE only, except for
+	 * rb_iseq_load_iseq case */
 	VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
 	if (NIL_P(exc)) return state;
 	th->errinfo = exc;

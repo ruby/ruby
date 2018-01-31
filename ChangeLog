@@ -1,3 +1,11 @@
+Wed Jan 31 22:24:05 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	vm.c: fetch retval iff necessary
+
+	* vm.c (rb_vm_make_jump_tag_but_local_jump): get rid of fetching
+	  retval when it is not used.  it is necessary for local jump
+	  state only.
+
 Wed Jan 31 22:16:00 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	compile.c: fix stack consitency error
