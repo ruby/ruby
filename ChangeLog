@@ -1,3 +1,10 @@
+Wed Jan 31 22:26:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: ASCII-incompatible is not ASCII only
+
+	* string.c (tr_trans): ASCII-incompatible encoding strings cannot
+	  be ASCII-only even if valid.  [ruby-core:83056] [Bug #13950]
+
 Wed Jan 31 22:24:05 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	vm.c: fetch retval iff necessary
