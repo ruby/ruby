@@ -1,3 +1,22 @@
+Wed Jan 31 20:42:11 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	ri.1: rewrite ri man page
+
+	* man/ri.1: update the (very outdated) ri man page:
+	  * update document date
+	  * fix document title formatting and volume name
+	  * update descriptions and options to current ri --help text
+	  * fix some mdoc formatting errors (missing escaping of `\',
+	    wrong macro for bullet list items)
+	  * various rewordings and other improvements
+
+	improve man pages
+
+	* man/ruby.1, man/erb.1, man/goruby.1, man/irb.1:
+	  fix document title formatting and volume name,
+	  improve "REPORTING BUGS" section: fix mdoc formatting error
+	  (wrong macro for bullet list items), small rewordings.
+
 Wed Jan 31 20:25:09 2018  Shugo Maeda  <shugo@ruby-lang.org>
 
 	lib/net/imap.rb: Ignore trailing space for Microsoft Exchange Server
