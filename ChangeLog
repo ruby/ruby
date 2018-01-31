@@ -1,3 +1,17 @@
+Wed Jan 31 22:16:00 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	compile.c: fix stack consitency error
+
+	* compile.c (iseq_compile_each0): fix stack consitency error on
+	  attr-assign with safe navigation operator when the receiver is
+	  nil, should pop it too.  [ruby-core:83078] [Bug #13964]
+
+	test_call.rb: refine test_safe_call
+
+	* test/ruby/test_call.rb (test_safe_call): rhs should not be
+	  evaluated when the receiver is nil.  simplified the assertion
+	  for  [Bug #13964].
+
 Wed Jan 31 22:12:48 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	adjust indent
