@@ -53,14 +53,31 @@
 <%= render 'mjit_compile_insn', locals: { insn: dispatch_insn, dispatched: true } -%>
     fprintf(f, "/* --- END: <%= line.strip %> --- */\n\n");
 
-%   elsif line =~ /\A\s+JUMP\((?<jump>[^)]+)\);\s+\z/
+%   elsif line =~ /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
 %     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
 %     insn.rets.reverse_each.with_index do |ret, i|
 %       # TOPN(n) = ...
         fprintf(f, "            stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
 %     end
-        next_pos = pos + insn_len(insn) + (unsigned int)<%= Regexp.last_match[:jump] %>;
+%
+%     dest = Regexp.last_match[:dest]
+%     if insn.name == 'opt_case_dispatch' # special case... TODO: use another macro to avoid checking name
+        {
+            struct case_dispatch_var arg;
+            arg.f = f;
+            arg.base_pos = pos + insn_len(insn);
+            arg.last_value = Qundef;
+
+            fprintf(f, "    switch (<%= dest %>) {\n");
+            st_foreach(RHASH_TBL_RAW(hash), compile_case_dispatch_each, (VALUE)&arg);
+            fprintf(f, "      case %lu:\n", else_offset);
+            fprintf(f, "        goto label_%lu;\n", arg.base_pos + else_offset);
+            fprintf(f, "    }\n");
+        }
+%     else
+        next_pos = pos + insn_len(insn) + (unsigned int)<%= dest %>;
         fprintf(f, "            goto label_%d;\n", next_pos);
+%     end
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
 %   end

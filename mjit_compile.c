@@ -45,9 +45,9 @@ compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
     if (var->last_value != value) {
         offset = FIX2INT(value);
         var->last_value = value;
-        fprintf(var->f, "    case %d:\n", offset);
-        fprintf(var->f, "      goto label_%d;\n", var->base_pos + offset);
-        fprintf(var->f, "      break;\n");
+        fprintf(var->f, "      case %d:\n", offset);
+        fprintf(var->f, "        goto label_%d;\n", var->base_pos + offset);
+        fprintf(var->f, "        break;\n");
     }
     return ST_CONTINUE;
 }

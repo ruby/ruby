@@ -75,19 +75,6 @@ switch (insn) {
     fprintf(f, "  ec->errinfo = vm_throw(ec, reg_cfp, 0x%"PRIxVALUE", stack[%d]);\n", operands[0], --b->stack_size);
     fprintf(f, "  EC_JUMP_TAG(ec, ec->tag->state);\n");
     b->finish_p = TRUE;
-%   when 'opt_case_dispatch'
-    {
-        struct case_dispatch_var arg;
-        arg.f = f;
-        arg.base_pos = pos + insn_len(insn);
-        arg.last_value = Qundef;
-
-        fprintf(f, "  switch (vm_case_dispatch(0x%"PRIxVALUE", 0x%"PRIxVALUE", stack[%d])) {\n", operands[0], operands[1], --b->stack_size);
-        st_foreach(RHASH_TBL_RAW(operands[0]), compile_case_dispatch_each, (VALUE)&arg);
-        fprintf(f, "    case %lu:\n", operands[1]);
-        fprintf(f, "      goto label_%lu;\n", arg.base_pos + operands[1]);
-        fprintf(f, "  }\n");
-    }
 %   else
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
 %   end
