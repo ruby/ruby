@@ -1814,8 +1814,9 @@ class TestProcess < Test::Unit::TestCase
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
+      io2 = io.dup
       IO.popen("echo") {|f| io.reopen(f)}
-      io.reopen(io.dup)
+      io.reopen(io2)
     end;
   end
 

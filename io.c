@@ -6194,21 +6194,30 @@ pipe_finalize(rb_io_t *fptr, int noraise)
 #endif
     pipe_del_fptr(fptr);
 }
+#endif
 
 static void
-pipe_register_fptr(rb_io_t *fptr)
+fptr_copy_finalizer(rb_io_t *fptr, const rb_io_t *orig)
 {
-    struct pipe_list *list;
-
-    if (fptr->finalize != pipe_finalize) return;
-
-    for (list = pipe_list; list; list = list->next) {
-	if (list->fptr == fptr) return;
-    }
-
-    pipe_add_fptr(fptr);
-}
+#if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
+    void (*const old_finalize)(struct rb_io_t*,int) = fptr->finalize;
 #endif
+
+    fptr->finalize = orig->finalize;
+
+#if defined(__CYGWIN__) || !defined(HAVE_WORKING_FORK)
+    if (old_finalize == pipe_finalize) {
+	struct pipe_list *list;
+	for (list = pipe_list; list; list = list->next) {
+	    if (list->fptr == fptr) break;
+	}
+	if (!list) pipe_add_fptr(fptr);
+    }
+    else {
+	pipe_del_fptr(fptr);
+    }
+#endif
+}
 
 void
 rb_io_synchronized(rb_io_t *fptr)
@@ -7158,10 +7167,7 @@ io_reopen(VALUE io, VALUE nfile)
     fptr->lineno = orig->lineno;
     if (RTEST(orig->pathv)) fptr->pathv = orig->pathv;
     else if (!IS_PREP_STDIO(fptr)) fptr->pathv = Qnil;
-    fptr->finalize = orig->finalize;
-#if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    pipe_register_fptr(fptr);
-#endif
+    fptr_copy_finalizer(fptr, orig);
 
     fd = fptr->fd;
     fd2 = orig->fd;
@@ -7340,10 +7346,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
-    fptr->finalize = orig->finalize;
-#if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
-    pipe_register_fptr(fptr);
-#endif
+    fptr_copy_finalizer(fptr, orig);
 
     fd = ruby_dup(orig->fd);
     fptr->fd = fd;
