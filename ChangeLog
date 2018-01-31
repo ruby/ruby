@@ -1,3 +1,14 @@
+Wed Jan 31 20:02:29 2018  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	rational.c: fix rdoc
+
+	* rational.c: [DOC] fix wrong indentations and comment out some lines
+	  in code examples to make them valid Ruby code and syntax highlighted
+	  on the rendered page.
+
+	[ci skip] [Bug #13233]
+	Author: Marcus Stollsteimer sto.mar@web.de
+
 Wed Jan 31 19:57:09 2018  Eric Wong  <normalperson@yhbt.net>
 
 	doc: Add example for Symbol#to_s
