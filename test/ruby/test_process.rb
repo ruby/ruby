@@ -246,11 +246,14 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       system(RUBY, '-e', 'exit',  'rlimit_bogus'.to_sym => 123)
     end
-    assert_separately([],<<-"end;") # [ruby-core:82033] [Bug #13744]
+    assert_separately([],"#{<<-"begin;"}\n#{<<~'end;'}")
+    BUG = "[ruby-core:82033] [Bug #13744]"
+    RUBY = "#{RUBY}"
+    begin;
       assert(system("#{RUBY}", "-e",
                  "exit([3600,3600] == Process.getrlimit(:CPU))",
-             'rlimit_cpu'.to_sym => 3600))
-      assert_raise(ArgumentError) do
+             'rlimit_cpu'.to_sym => 3600), BUG)
+      assert_raise(ArgumentError, BUG) do
         system("#{RUBY}", '-e', 'exit',  :rlimit_bogus => 123)
       end
     end;

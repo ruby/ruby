@@ -659,7 +659,9 @@ CODE
       assert_raise(ArgumentError) {S("mypassword".encode(enc)).crypt(S("aa"))}
     end
 
-    @cls == String and assert_no_memory_leak([], 's = ""', <<~'end;') # do
+    @cls == String and
+      assert_no_memory_leak([], 's = ""', "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       1000.times { s.crypt(-"..").clear  }
     end;
   end
