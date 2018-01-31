@@ -1,3 +1,15 @@
+Wed Jan 31 19:57:09 2018  Eric Wong  <normalperson@yhbt.net>
+
+	doc: Add example for Symbol#to_s
+
+	* string.c: add example for Symbol#to_s.
+
+	The docs for Symbol#to_s only include an example for
+	Symbol#id2name, but not for #to_s which is an alias;
+	the docs should include examples for both methods.
+
+	From: Marcus Stollsteimer <sto.mar@web.de>
+
 Wed Jan 31 19:49:44 2018  Reiner Herrmann  <reiner@reiner-h.de>
 
 	* lib/mkmf.rb (create_makefile): sort lists of source and object
