@@ -1810,6 +1810,15 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_popen_reopen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      io = File.open(IO::NULL)
+      IO.popen("echo") {|f| io.reopen(f)}
+      io.reopen(io.dup)
+    end;
+  end
+
   def test_execopts_new_pgroup
     return unless windows?
 
