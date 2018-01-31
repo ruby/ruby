@@ -1,3 +1,10 @@
+Wed Jan 31 20:25:09 2018  Shugo Maeda  <shugo@ruby-lang.org>
+
+	lib/net/imap.rb: Ignore trailing space for Microsoft Exchange Server
+
+	Based on the patch by keysen (Jeremy Carlier).
+	[ruby-core:81641] [Bug #13649]
+
 Wed Jan 31 20:23:49 2018  sorah (Shota Fukumori)  <her@sorah.jp>
 
 	Add documents on Process::CLOCK_* constants

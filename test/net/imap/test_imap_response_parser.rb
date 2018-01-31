@@ -291,4 +291,17 @@ EOF
     assert_equal("test.xml", body.parts[1].disposition.param["FILENAME"])
     assert_equal(nil, body.parts[1].language)
   end
+
+  # [Bug #13649]
+  def test_status
+    parser = Net::IMAP::ResponseParser.new
+    response = parser.parse("* STATUS INBOX (UIDNEXT 1 UIDVALIDITY 1234)\r\n")
+    assert_equal("STATUS", response.name)
+    assert_equal("INBOX", response.data.mailbox)
+    assert_equal(1234, response.data.attr["UIDVALIDITY"])
+    response = parser.parse("* STATUS INBOX (UIDNEXT 1 UIDVALIDITY 1234) \r\n")
+    assert_equal("STATUS", response.name)
+    assert_equal("INBOX", response.data.mailbox)
+    assert_equal(1234, response.data.attr["UIDVALIDITY"])
+  end
 end
