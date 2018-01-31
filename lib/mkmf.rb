@@ -2200,11 +2200,15 @@ RULES
     RbConfig.expand(srcdir = srcprefix.dup)
 
     ext = ".#{$OBJEXT}"
-    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+    orig_srcs = Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].sort
     if not $objs
       srcs = $srcs || orig_srcs
-      objs = srcs.inject(Hash.new {[]}) {|h, f| h[File.basename(f, ".*") << ext] <<= f; h}
-      $objs = objs.keys
+      $objs = []
+      objs = srcs.inject(Hash.new {[]}) {|h, f|
+        h.key?(o = File.basename(f, ".*") << ext) or $objs << o
+        h[o] <<= f
+        h
+      }
       unless objs.delete_if {|b, f| f.size == 1}.empty?
         dups = objs.sort.map {|b, f|
           "#{b[/.*\./]}{#{f.collect {|n| n[/([^.]+)\z/]}.join(',')}}"

@@ -1,3 +1,9 @@
+Wed Jan 31 19:49:44 2018  Reiner Herrmann  <reiner@reiner-h.de>
+
+	* lib/mkmf.rb (create_makefile): sort lists of source and object
+	  files in generated Makefile, unless given by extconf.rb.
+	  [Fix GH-1367]
+
 Fri Dec 15 03:48:55 2017  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* version.h: Bump version to 2.3.7
