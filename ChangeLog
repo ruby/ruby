@@ -1,3 +1,23 @@
+Wed Jan 31 20:04:47 2018  Marcus Stollsteimer  <sto.mar@web.de>
+
+	lib/ostruct.rb: [DOC] revise docs for OpenStruct
+
+	* update paragraph on implementation:
+	  define_singleton_method is used, not define_method
+	* add call-seq with return values for each_pair
+	* adopt description of dig from Array and Hash
+	* fix description of the hash method
+	* :nodoc: initialize_copy, respond_to_missing?
+	* other small improvements, e.g. use the term `attribute' in the docs
+	  (instead of `member'), which is clearer for users of the class
+	* improve code examples: e.g. use more consistent style (always use
+	  double quotes, drop `p' and `puts', ...), update inspect output,
+	  use example data that is not prone to change (like population)
+	* add more code examples
+	* fix some small errors and grammar
+
+	[ruby-core:79265] [Bug #13159]
+
 Wed Jan 31 20:02:29 2018  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	rational.c: fix rdoc
