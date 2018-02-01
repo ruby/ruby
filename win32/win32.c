@@ -7119,7 +7119,11 @@ rb_w32_write(int fd, const void *buf, size_t size)
 
     if ((_osfile(fd) & FTEXT) &&
         (!(_osfile(fd) & FPIPE) || fd == fileno(stdout) || fd == fileno(stderr))) {
-	return _write(fd, buf, size);
+	ssize_t w = _write(fd, buf, size);
+	if (w == (ssize_t)-1 && errno == EINVAL) {
+	    errno = map_errno(GetLastError());
+	}
+	return w;
     }
 
     rb_acrt_lowio_lock_fh(fd);
