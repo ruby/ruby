@@ -412,21 +412,6 @@ rb_ary_freeze(VALUE ary)
     return rb_obj_freeze(ary);
 }
 
-/*
- *  call-seq:
- *     ary.frozen?  -> true or false
- *
- *  Return +true+ if this array is frozen (or temporarily frozen
- *  while being sorted). See also Object#frozen?
- */
-
-static VALUE
-rb_ary_frozen_p(VALUE ary)
-{
-    if (OBJ_FROZEN(ary)) return Qtrue;
-    return Qfalse;
-}
-
 /* This can be used to take a snapshot of an array (with
    e.g. rb_ary_replace) and check later whether the array has been
    modified from the snapshot.  The snapshot is cheap, though if
@@ -6243,7 +6228,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
     rb_define_method(rb_cArray, "to_h", rb_ary_to_h, 0);
     rb_define_method(rb_cArray, "to_ary", rb_ary_to_ary_m, 0);
-    rb_define_method(rb_cArray, "frozen?",  rb_ary_frozen_p, 0);
 
     rb_define_method(rb_cArray, "==", rb_ary_equal, 1);
     rb_define_method(rb_cArray, "eql?", rb_ary_eql, 1);
