@@ -8,7 +8,7 @@
 %;
 
 /* insn <%= insn.pretty_name %> */
-INSN_ENTRY(<%= insn.name %>)
+COLD_INSN_ENTRY(<%= insn.name %>)
 {
     vm_trace(ec, GET_CFP(), GET_PC());
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);

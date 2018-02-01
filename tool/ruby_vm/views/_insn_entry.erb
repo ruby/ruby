@@ -8,7 +8,7 @@
 %;
 
 /* insn <%= insn.pretty_name %> */
-INSN_ENTRY(<%= insn.name %>)
+<%= insn.entrypoint %>
 {
 %#  NAME_OF_CURRENT_INSN is used in vm_exec.h
 #   define NAME_OF_CURRENT_INSN <%= insn.name %>

@@ -16,6 +16,11 @@ typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
+enum rb_branch_prediction_tag {
+    rb_branch_is_neither_hot_nor_cold = 0,
+    rb_branch_is_hot,
+    rb_branch_is_cold
+};
 
 #ifdef __GCC__
 /* TODO: machine dependent prefetch instruction */
@@ -62,6 +67,14 @@ error !
   static rb_control_frame_t * \
     FUNC_FASTCALL(LABEL(insn))(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp) {
 
+#if GCC_VERSION_SINCE(4, 3, 0)
+#define HOT_INSN_ENTRY(insn)  __attribute__((__hot__))  INSN_ENTRY(insn)
+#define COLD_INSN_ENTRY(insn) __attribute__((__cold__)) INSN_ENTRY(insn)
+#else
+#define HOT_INSN_ENTRY(insn)  INSN_ENTRY(insn)
+#define COLD_INSN_ENTRY(insn) INSN_ENTRY(insn)
+#endif
+
 #define END_INSN(insn) return reg_cfp;}
 
 #define NEXT_INSN() return reg_cfp;
@@ -86,9 +99,17 @@ error !
 
 #define INSN_DISPATCH_SIG(insn)
 
-#define INSN_ENTRY(insn) \
-  LABEL(insn): \
-  INSN_ENTRY_SIG(insn); \
+#define INSN_ENTRY(insn) LABEL(insn): INSN_ENTRY_SIG(insn);
+
+#if GCC_VERSION_SINCE(5, 1, 0)
+#define HOT_INSN_ENTRY(insn) \
+  LABEL(insn): __attribute__((__hot__));  INSN_ENTRY_SIG(insn);
+#define COLD_INSN_ENTRY(insn) \
+  LABEL(insn): __attribute__((__cold__)); INSN_ENTRY_SIG(insn);
+#else
+#define HOT_INSN_ENTRY(insn)  INSN_ENTRY(insn)
+#define COLD_INSN_ENTRY(insn) INSN_ENTRY(insn)
+#endif
 
 /* dispatcher */
 #if defined(__GNUC__) && (defined(__i386__) || defined(__x86_64__)) && __GNUC__ == 3
