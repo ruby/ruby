@@ -11,6 +11,11 @@ typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
 typedef rb_iseq_t *ISEQ;
+enum rb_branch_prediction_tag {
+    rb_branch_is_neither_hot_nor_cold = 0,
+    rb_branch_is_hot,
+    rb_branch_is_cold
+};
 #endif
 
 % attrs = RubyVM::Instructions.map(&:attributes).flatten

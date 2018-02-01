@@ -45,6 +45,9 @@
 
        * handles_frame: If it is true, VM moves pc before insn body.
 
+       * hotspot_p: specifies hot/cold spot; instructs C compiler the
+         instruction is highly/rarely executed.
+
    - Attributes can access operands, but not stack (push/pop) variables.
 
    - An instruction's body is a pure C block, copied verbatimly into
@@ -1349,6 +1352,7 @@ bitblt
 ()
 ()
 (VALUE ret)
+// attr enum rb_branch_prediction_tag hotspot_p = rb_branch_is_cold;
 {
     ret = rb_str_new2("a bit of bacon, lettuce and tomato");
 }
@@ -1359,6 +1363,7 @@ answer
 ()
 ()
 (VALUE ret)
+// attr enum rb_branch_prediction_tag hotspot_p = rb_branch_is_cold;
 {
     ret = INT2FIX(42);
 }

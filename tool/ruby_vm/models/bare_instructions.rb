@@ -48,6 +48,16 @@ class RubyVM::BareInstructions
     return "BIN(#{name})"
   end
 
+  def entrypoint
+    case t = @attrs['hotspot_p'].expr.expr
+    when /rb_branch_is_neither_hot_nor_cold/ then macro = 'INSN_ENTRY'
+    when /rb_branch_is_hot/ then macro = 'HOT_INSN_ENTRY'
+    when /rb_branch_is_cold/ then macro = 'COLD_INSN_ENTRY'
+    else raise "unknown branch type #{t} for #{pretty_name}"
+    end
+    return sprintf "%s(%s)", macro, name
+  end
+
   def call_attribute name
     return sprintf 'attr_%s_%s(%s)', name, @name, \
                    @opes.map {|i| i[:name] }.compact.join(', ')
@@ -130,6 +140,8 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
     generate_attribute 'bool', 'handles_frame', false
+    generate_attribute 'enum rb_branch_prediction_tag', 'hotspot_p', \
+        'rb_branch_is_neither_hot_nor_cold'
   end
 
   def typesplit a
