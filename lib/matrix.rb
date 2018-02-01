@@ -2080,9 +2080,12 @@ class Vector
     Vector.Raise ErrDimensionMismatch if size != v.size
     prod = magnitude * v.magnitude
     raise ZeroVectorError, "Can't get angle of zero vector" if prod == 0
-    return Math.acos(inner_product(v) / prod) if independent?(v)
-    non_zero_index = find_index { |el| !el.zero? }
-    (self[non_zero_index] * v[non_zero_index]).positive? ? 0.0 : Math::PI
+    dot = inner_product(v)
+    if dot.abs > prod
+      dot.positive? ? 0 : Math::PI
+    else
+      Math.acos(dot / prod)
+    end
   end
 
   #--

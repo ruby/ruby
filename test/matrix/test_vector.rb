@@ -222,7 +222,7 @@ class TestVector < Test::Unit::TestCase
     assert_in_epsilon(Math::PI, Vector[1, 0].angle_with(Vector[-1, 0]))
     assert_in_epsilon(Math::PI/2, Vector[1, 0].angle_with(Vector[0, -1]))
     assert_in_epsilon(Math::PI/4, Vector[2, 2].angle_with(Vector[0, 1]))
-    assert_equal(Vector[1, 1].angle_with(Vector[1, 1]), 0.0)
+    assert_in_delta(0.0, Vector[1, 1].angle_with(Vector[1, 1]), 0.00001)
     assert_equal(Vector[6, 6].angle_with(Vector[7, 7]), 0.0)
     assert_equal(Vector[6, 6].angle_with(Vector[-7, -7]), Math::PI)
 
