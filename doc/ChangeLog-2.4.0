@@ -4690,7 +4690,7 @@ Thu May 19 13:22:44 2016  Kazuki Yamaguchi  <k@rhe.jp>
 	* ext/openssl/ossl.c (Init_openssl): register an ex_data index for
 	  X509_STORE and X509_STORE_CTX respectively. Since they don't share
 	  the ex_data index registry, we can't use the same index.
-	  (ossl_verify_cb): use the the correct index.
+	  (ossl_verify_cb): use the correct index.
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_verify_callback): ditto.
 
