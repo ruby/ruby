@@ -296,6 +296,14 @@ class TestForwardable < Test::Unit::TestCase
     end
   end
 
+  def test_non_module
+    str = String.new
+    str.extend Forwardable
+    str.instance_variable_set("@h", 42)
+    str.def_delegator("@h", :to_s, :forty_two)
+    assert_equal("42", str.forty_two)
+  end
+
   private
 
   def forwardable_class(
