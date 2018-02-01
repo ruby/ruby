@@ -40,6 +40,15 @@
         fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
 % end
 %
+% # JIT: move sp and pc if necessary
+% if insn.handles_frame?
+        fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos)); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+% else
+        fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + pos));
+        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
+% end
+%
 % # JIT: Print insn body in insns.def
 % insn.expr.expr.each_line do |line|
 %   # Special macro expansion for ones that can't be resolved by macro redefinition.

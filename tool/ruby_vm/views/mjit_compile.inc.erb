@@ -40,30 +40,13 @@
 % #   THROW_EXCEPTION(): specially defined for JIT
 % #   RESTORE_REGS(): specially defined for `leave`
 
-/* Move program counter to meet catch table condition and for JIT execution cancellation. */
-fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos));
-/* Move stack pointer to let stack values be used by VM when exception is raised */
-fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1); /* Note: This line makes JIT slow */
-
 switch (insn) {
 % (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
-%   case insn.name
-%   when 'leave'
-    if (b->stack_size != 1) {
-        if (mjit_opts.warnings || mjit_opts.verbose)
-            fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
-        status->success = FALSE;
-    }
-    fprintf(f, "  reg_cfp->sp = reg_cfp->bp + 1;\n"); /* move sp for popped value */
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
-%   else
-<%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
-%   end
     break;
 % end
-%
 % # We don't support InstructionsUnifications yet because it's not used for now.
 % # We don't support TraceInstructions yet. There is no blocker for it but it's just not implemented.
   default:
