@@ -4091,10 +4091,11 @@ rb_f_system(int argc, VALUE *argv)
     status = PST2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
     if (eargp->exception) {
-        VALUE str = rb_str_buf_new(0);
+        VALUE str = rb_str_new_cstr("Command failed with");
         pst_message(str, (rb_pid_t)-1, status);
-        rb_raise(rb_eRuntimeError, "Command failed with%"PRIsVALUE": %s",
-                 str, RSTRING_PTR(eargp->invoke.sh.shell_script));
+        rb_str_cat_cstr(str, ": ");
+        rb_str_append(str, eargp->invoke.sh.shell_script);
+        rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
     }
     else {
         return Qfalse;
