@@ -4523,8 +4523,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
     }
     if (fptr->wbuf.len) {
 	if (noraise) {
-	    if ((int)io_flush_buffer_sync(fptr) < 0 && NIL_P(err))
-		err = Qtrue;
+	    io_flush_buffer_sync(fptr);
 	}
 	else {
 	    if (io_fflush(fptr) < 0 && NIL_P(err))
@@ -4543,7 +4542,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 	/* stdio_file is deallocated anyway
          * even if fclose failed.  */
 	if ((maygvl_fclose(stdio_file, noraise) < 0) && NIL_P(err))
-	    err = noraise ? Qtrue : INT2NUM(errno);
+	    if (!noraise) err = INT2NUM(errno);
     }
     else if (0 <= fd) {
 	/* fptr->fd may be closed even if close fails.
@@ -4554,7 +4553,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 	keepgvl |= !(mode & FMODE_WRITABLE);
 	keepgvl |= noraise;
 	if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
-	    err = noraise ? Qtrue : INT2NUM(errno);
+	    if (!noraise) err = INT2NUM(errno);
     }
 
     if (!NIL_P(err) && !noraise) {
