@@ -932,7 +932,9 @@ VALUE rb_const_get_at(VALUE, ID);
 VALUE rb_const_get_from(VALUE, ID);
 void rb_const_set(VALUE, ID, VALUE);
 VALUE rb_const_remove(VALUE, ID);
+#if 0 /* EXPERIMENTAL: remove if no problem */
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
+#endif
 VALUE rb_cvar_defined(VALUE, ID);
 void rb_cvar_set(VALUE, ID, VALUE);
 VALUE rb_cvar_get(VALUE, ID);

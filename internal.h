@@ -1837,6 +1837,7 @@ VALUE rb_attr_delete(VALUE, ID);
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 void rb_deprecate_constant(VALUE mod, const char *name);
+NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 
 /* version.c */
 extern const char ruby_engine[];
