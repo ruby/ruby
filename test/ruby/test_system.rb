@@ -165,14 +165,15 @@ class TestSystem < Test::Unit::TestCase
     ruby = EnvUtil.rubybin
     assert_nothing_raised do
       system('feature_14235', exception: false)
-      system("'#{ruby}' -e 'exit 1'", exception: false)
+    end
+    assert_nothing_raised do
+      system("'#{ruby}' -e abort", exception: false)
     end
     assert_raise(Errno::ENOENT) do
       system('feature_14235', exception: true)
     end
-    e = assert_raise(RuntimeError) do
-      system("'#{ruby}' -e 'exit 1'", exception: true)
+    assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
+      system("'#{ruby}' -e abort", exception: true)
     end
-    assert_match /\ACommand failed with exit 1:/, e.message
   end
 end
