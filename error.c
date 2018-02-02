@@ -1355,7 +1355,7 @@ static VALUE name_err_initialize_options(int argc, VALUE *argv, VALUE self, VALU
 
 /*
  * call-seq:
- *   NameError.new([msg, *, name])  -> name_error
+ *   NameError.new(msg [, name])  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
  * parameter may subsequently be examined using the <code>NameError.name</code>
