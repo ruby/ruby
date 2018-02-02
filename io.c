@@ -610,6 +610,14 @@ is_socket(int fd, VALUE path)
 
 static const char closed_stream[] = "closed stream";
 
+static void
+io_fd_check_closed(int fd)
+{
+    if (fd < 0) {
+	rb_raise(rb_eIOError, closed_stream);
+    }
+}
+
 void
 rb_eof_error(void)
 {
@@ -635,9 +643,7 @@ void
 rb_io_check_closed(rb_io_t *fptr)
 {
     rb_io_check_initialized(fptr);
-    if (fptr->fd < 0) {
-	rb_raise(rb_eIOError, closed_stream);
-    }
+    io_fd_check_closed(fptr->fd);
 }
 
 static rb_io_t *
@@ -1099,9 +1105,7 @@ io_fflush(rb_io_t *fptr)
 int
 rb_io_wait_readable(int f)
 {
-    if (f < 0) {
-	rb_raise(rb_eIOError, closed_stream);
-    }
+    io_fd_check_closed(f);
     switch (errno) {
       case EINTR:
 #if defined(ERESTART)
@@ -1125,9 +1129,7 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
-    if (f < 0) {
-	rb_raise(rb_eIOError, closed_stream);
-    }
+    io_fd_check_closed(f);
     switch (errno) {
       case EINTR:
 #if defined(ERESTART)
