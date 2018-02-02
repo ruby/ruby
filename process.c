@@ -545,11 +545,18 @@ pst_pid(VALUE st)
     return rb_attr_get(st, id_pid);
 }
 
+static VALUE pst_message_status(VALUE str, int status);
+
 static void
 pst_message(VALUE str, rb_pid_t pid, int status)
 {
-    if (pid != (rb_pid_t)-1)
-        rb_str_catf(str, "pid %ld", (long)pid);
+    rb_str_catf(str, "pid %ld", (long)pid);
+    pst_message_status(str, status);
+}
+
+static VALUE
+pst_message_status(VALUE str, int status)
+{
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
 	const char *signame = ruby_signal_name(stopsig);
@@ -578,6 +585,7 @@ pst_message(VALUE str, rb_pid_t pid, int status)
 	rb_str_cat2(str, " (core dumped)");
     }
 #endif
+    return str;
 }
 
 
@@ -4092,8 +4100,7 @@ rb_f_system(int argc, VALUE *argv)
     if (status == EXIT_SUCCESS) return Qtrue;
     if (eargp->exception) {
         VALUE str = rb_str_new_cstr("Command failed with");
-        pst_message(str, (rb_pid_t)-1, status);
-        rb_str_cat_cstr(str, ": ");
+        rb_str_cat_cstr(pst_message_status(str, status), ": ");
         rb_str_append(str, eargp->invoke.sh.shell_script);
         rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
     }
