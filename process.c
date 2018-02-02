@@ -548,7 +548,8 @@ pst_pid(VALUE st)
 static void
 pst_message(VALUE str, rb_pid_t pid, int status)
 {
-    rb_str_catf(str, "pid %ld", (long)pid);
+    if (pid != (rb_pid_t)-1)
+        rb_str_catf(str, "pid %ld", (long)pid);
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
 	const char *signame = ruby_signal_name(stopsig);
@@ -4090,8 +4091,10 @@ rb_f_system(int argc, VALUE *argv)
     status = PST2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
     if (eargp->exception) {
-        rb_raise(rb_eRuntimeError, "Command failed with status (%d): %s",
-                 WEXITSTATUS(status), RSTRING_PTR(eargp->invoke.sh.shell_script));
+        VALUE str = rb_str_buf_new(0);
+        pst_message(str, (rb_pid_t)-1, status);
+        rb_raise(rb_eRuntimeError, "Command failed with%"PRIsVALUE": %s",
+                 str, RSTRING_PTR(eargp->invoke.sh.shell_script));
     }
     else {
         return Qfalse;
