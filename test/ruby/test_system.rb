@@ -167,10 +167,16 @@ class TestSystem < Test::Unit::TestCase
       system('feature_14235', exception: false)
     end
     assert_nothing_raised do
+      system(ruby, "-e", "abort", exception: false)
+    end
+    assert_nothing_raised do
       system("'#{ruby}' -e abort", exception: false)
     end
     assert_raise(Errno::ENOENT) do
       system('feature_14235', exception: true)
+    end
+    assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
+      system(ruby, "-e", "abort", exception: true)
     end
     assert_raise_with_message(RuntimeError, /\ACommand failed with exit /) do
       system("'#{ruby}' -e abort", exception: true)
