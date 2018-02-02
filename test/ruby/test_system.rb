@@ -170,13 +170,9 @@ class TestSystem < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) do
       system('feature_14235', exception: true)
     end
-    assert_raise(RuntimeError) do
+    e = assert_raise(RuntimeError) do
       system("'#{ruby}' -e 'exit 1'", exception: true)
     end
-    begin
-      system("'#{ruby}' -e 'exit 1'", exception: true)
-    rescue RuntimeError => e
-      assert_equal true, e.message.include?('status (1)')
-    end
+    assert_match /\ACommand failed with exit 1:/, e.message
   end
 end
