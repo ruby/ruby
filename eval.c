@@ -641,7 +641,7 @@ rb_exc_fatal(VALUE mesg)
 void
 rb_interrupt(void)
 {
-    rb_raise(rb_eInterrupt, "%s", "");
+    rb_raise(rb_eInterrupt, "");
 }
 
 enum {raise_opt_cause, raise_max_opt}; /*< \private */
