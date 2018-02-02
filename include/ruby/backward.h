@@ -48,6 +48,7 @@ DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_struct_ptr);
 
 /* variable.c */
 DECLARE_DEPRECATED_INTERNAL_FEATURE(rb_generic_ivar_table);
+ERRORFUNC(("internal function"), VALUE rb_mod_const_missing(VALUE, VALUE));
 
 /* vm.c */
 DEPRECATED(int rb_frame_method_id_and_class(ID *idp, VALUE *klassp));
