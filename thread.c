@@ -1160,6 +1160,16 @@ timeval_add(struct timeval *dst, const struct timeval *tv)
     }
 }
 
+static void
+timeval_sub(struct timeval *dst, const struct timeval *tv)
+{
+    dst->tv_sec -= tv->tv_sec;
+    if ((dst->tv_usec -= tv->tv_usec) < 0) {
+	--dst->tv_sec;
+	dst->tv_usec += 1000000;
+    }
+}
+
 static int
 timeval_update_expire(struct timeval *tv, const struct timeval *to)
 {
@@ -1172,11 +1182,8 @@ timeval_update_expire(struct timeval *tv, const struct timeval *to)
 		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
 		 (time_t)to->tv_sec, (long)to->tv_usec,
 		 (time_t)tvn.tv_sec, (long)tvn.tv_usec);
-    tv->tv_sec = to->tv_sec - tvn.tv_sec;
-    if ((tv->tv_usec = to->tv_usec - tvn.tv_usec) < 0) {
-	--tv->tv_sec;
-	tv->tv_usec += 1000000;
-    }
+    *tv = *to;
+    timeval_sub(tv, &tvn);
     return 0;
 }
 
