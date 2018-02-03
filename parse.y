@@ -836,6 +836,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
+%token <id> '\\'	"backslash"
 %token tUPLUS		RUBY_TOKEN(UPLUS)  "unary+"
 %token tUMINUS		RUBY_TOKEN(UMINUS) "unary-"
 %token tPOW		RUBY_TOKEN(POW)    "**"
