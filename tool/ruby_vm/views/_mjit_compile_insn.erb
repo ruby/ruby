@@ -52,9 +52,7 @@
 % # JIT: Print insn body in insns.def
 % insn.expr.expr.each_line do |line|
 %   # Special macro expansion for ones that can't be resolved by macro redefinition.
-%   if line =~ /\A\s+ADD_PC\((?<add_pc>[^)]+)\);\s+(\/\*.+\*\/)?\s+\z/ # TODO: create some another macro to avoid this
-        /* ADD_PC ignored */
-%   elsif line =~ /\A\s+DISPATCH_ORIGINAL_INSN\((?<insn_name>[^)]+)\);\s+\z/
+%   if line =~ /\A\s+DISPATCH_ORIGINAL_INSN\((?<insn_name>[^)]+)\);\s+\z/
         fprintf(f, "            return Qundef; /* cancel JIT */\n");
 %   elsif line =~ /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
 %     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
