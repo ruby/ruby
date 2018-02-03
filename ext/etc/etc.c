@@ -1014,7 +1014,7 @@ etc_nprocessors(VALUE obj)
 
     ncpus = etc_nprocessors_affin();
     if (ncpus != -1) {
-       return INT2NUM(ncpus);
+	return INT2NUM(ncpus);
     }
     /* fallback to _SC_NPROCESSORS_ONLN */
 #endif

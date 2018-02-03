@@ -1551,7 +1551,7 @@ strio_external_encoding(VALUE self)
 static VALUE
 strio_internal_encoding(VALUE self)
 {
-     return Qnil;
+    return Qnil;
 }
 
 /*
