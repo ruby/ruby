@@ -7535,7 +7535,7 @@ parser_yylex(struct parser_params *p)
 		set_file_encoding(p, p->lex.pcur, p->lex.pend);
 	    }
 	}
-	p->lex.pcur = p->lex.pend;
+	lex_goto_eol(p);
         dispatch_scan_event(p, tCOMMENT);
         fallthru = TRUE;
 	/* fall through */
