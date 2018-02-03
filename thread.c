@@ -99,6 +99,10 @@ static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 static const char *thread_status_name(rb_thread_t *th, int detail);
+static void timeval_add(struct timeval *, const struct timeval *);
+static void timeval_sub(struct timeval *, const struct timeval *);
+static int timeval_update_expire(struct timeval *, const struct timeval *);
+static void getclockofday(struct timeval *);
 
 #define eKillSignal INT2FIX(0)
 #define eTerminateSignal INT2FIX(1)
@@ -481,8 +485,6 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
     }
 }
 
-static struct timeval double2timeval(double d);
-
 void
 rb_thread_terminate_all(void)
 {
@@ -848,12 +850,9 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 }
 
 
-/* +infty, for this purpose */
-#define DELAY_INFTY 1E30
-
 struct join_arg {
     rb_thread_t *target, *waiting;
-    double delay;
+    struct timeval *limit;
 };
 
 static VALUE
@@ -882,11 +881,15 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiting;
-    const int forever = p->delay == DELAY_INFTY;
-    const double limit = forever ? 0 : timeofday() + p->delay;
+    struct timeval to;
+
+    if (p->limit) {
+        getclockofday(&to);
+        timeval_add(&to, p->limit);
+    }
 
     while (target_th->status != THREAD_KILLED) {
-	if (forever) {
+	if (!p->limit) {
 	    th->status = THREAD_STOPPED_FOREVER;
 	    th->vm->sleeper++;
 	    rb_check_deadlock(th->vm);
@@ -894,17 +897,13 @@ thread_join_sleep(VALUE arg)
 	    th->vm->sleeper--;
 	}
 	else {
-	    double now = timeofday();
-	    struct timeval tv;
-
-	    if (now > limit) {
+            if (timeval_update_expire(p->limit, &to)) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
 		return Qfalse;
 	    }
-	    tv = double2timeval(limit - now);
 	    th->status = THREAD_STOPPED;
-	    native_sleep(th, &tv);
+	    native_sleep(th, p->limit);
 	}
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
 	th->status = THREAD_RUNNABLE;
@@ -915,7 +914,7 @@ thread_join_sleep(VALUE arg)
 }
 
 static VALUE
-thread_join(rb_thread_t *target_th, double delay)
+thread_join(rb_thread_t *target_th, struct timeval *tv)
 {
     rb_thread_t *th = GET_THREAD();
     struct join_arg arg;
@@ -929,7 +928,7 @@ thread_join(rb_thread_t *target_th, double delay)
 
     arg.target = target_th;
     arg.waiting = th;
-    arg.delay = delay;
+    arg.limit = tv;
 
     thread_debug("thread_join (thid: %"PRI_THREAD_ID", status: %s)\n",
 		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
@@ -974,6 +973,8 @@ thread_join(rb_thread_t *target_th, double delay)
     return target_th->self;
 }
 
+static struct timeval double2timeval(double);
+
 /*
  *  call-seq:
  *     thr.join          -> thr
@@ -1016,15 +1017,30 @@ thread_join(rb_thread_t *target_th, double delay)
 static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
-    double delay = DELAY_INFTY;
     VALUE limit;
+    struct timeval timeval;
+    struct timeval *tv = 0;
 
     rb_scan_args(argc, argv, "01", &limit);
-    if (!NIL_P(limit)) {
-	delay = rb_num2dbl(limit);
+
+    /*
+     * This supports INFINITY and negative values, so we can't use
+     * rb_time_interval right now...
+     */
+    switch (TYPE(limit)) {
+      case T_NIL: break;
+      case T_FIXNUM:
+      case T_BIGNUM:
+        timeval.tv_sec = NUM2TIMET(limit);
+        timeval.tv_usec = 0;
+        tv = &timeval;
+        break;
+      default:
+        timeval = double2timeval(rb_num2dbl(limit));
+        tv = &timeval;
     }
 
-    return thread_join(rb_thread_ptr(self), delay);
+    return thread_join(rb_thread_ptr(self), tv);
 }
 
 /*
@@ -1045,7 +1061,7 @@ static VALUE
 thread_value(VALUE self)
 {
     rb_thread_t *th = rb_thread_ptr(self);
-    thread_join(th, DELAY_INFTY);
+    thread_join(th, 0);
     return th->value;
 }
 
