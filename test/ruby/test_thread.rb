@@ -1,6 +1,7 @@
 # -*- coding: us-ascii -*-
 # frozen_string_literal: false
 require 'test/unit'
+require "rbconfig/sizeof"
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -225,6 +226,14 @@ class TestThread < Test::Unit::TestCase
     t1.kill if t1
     t2.kill if t2
     t3.kill if t3
+  end
+
+  def test_join_limits
+    [ RbConfig::LIMITS['FIXNUM_MAX'], RbConfig::LIMITS['UINT64_MAX'],
+      Float::INFINITY ].each do |limit|
+      t = Thread.new {}
+      assert_same t, t.join(limit), "limit=#{limit.inspect}"
+    end
   end
 
   def test_kill_main_thread
