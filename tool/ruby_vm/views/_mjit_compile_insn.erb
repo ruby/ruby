@@ -42,11 +42,11 @@
 %
 % # JIT: move sp and pc if necessary
 % if insn.handles_frame?
-        fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos)); /* ADD_PC(INSN_ATTR(width)); */
-        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+        fprintf(f, "    reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos)); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
 % else
-        fprintf(f, "  reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + pos));
-        fprintf(f, "  reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
+        fprintf(f, "    reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + pos));
+        fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
 % end
 %
 % # JIT: Print insn body in insns.def
@@ -89,10 +89,10 @@
 %     end
 %   elsif line =~ /\A\s+RESTORE_REGS\(\);\s+\z/ # for `leave` only
 #if OPT_CALL_THREADED_CODE
-        fprintf(f, "        rb_ec_thread_ptr(ec)->retval = val;\n");
-        fprintf(f, "        return 0;\n");
+        fprintf(f, "            rb_ec_thread_ptr(ec)->retval = val;\n");
+        fprintf(f, "            return 0;\n");
 #else
-        fprintf(f, "        return val;\n");
+        fprintf(f, "            return val;\n");
 #endif
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
