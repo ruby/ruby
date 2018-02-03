@@ -94,7 +94,6 @@ static ID id_locals;
 static void sleep_timeval(rb_thread_t *th, struct timeval time, int spurious_check);
 static void sleep_forever(rb_thread_t *th, int nodeadlock, int spurious_check);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
-static double timeofday(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
@@ -199,6 +198,17 @@ static int
 vm_living_thread_num(rb_vm_t *vm)
 {
     return vm->living_thread_num;
+}
+
+static inline struct timespec *
+timespec_for(struct timespec *ts, const struct timeval *tv)
+{
+    if (tv) {
+        ts->tv_sec = tv->tv_sec;
+        ts->tv_nsec = tv->tv_usec * 1000;
+        return ts;
+    }
+    return 0;
 }
 
 #if THREAD_DEBUG
@@ -1243,24 +1253,6 @@ rb_thread_sleep_deadly_allow_spurious_wakeup(void)
 {
     thread_debug("rb_thread_sleep_deadly_allow_spurious_wakeup\n");
     sleep_forever(GET_THREAD(), TRUE, FALSE);
-}
-
-static double
-timeofday(void)
-{
-#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
-    struct timespec tp;
-
-    if (clock_gettime(CLOCK_MONOTONIC, &tp) == 0) {
-        return (double)tp.tv_sec + (double)tp.tv_nsec * 1e-9;
-    }
-    else
-#endif
-    {
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-        return (double)tv.tv_sec + (double)tv.tv_usec * 1e-6;
-    }
 }
 
 void
@@ -3763,17 +3755,20 @@ retryable(int e)
 #define restore_fdset(fds1, fds2) \
     ((fds1) ? rb_fd_dup(fds1, fds2) : (void)0)
 
-static inline void
-update_timeval(struct timeval *timeout, double limit)
+static inline int
+update_timeval(struct timeval *timeout, const struct timeval *to)
 {
     if (timeout) {
-	double d = limit - timeofday();
+        struct timeval tvn;
 
-	timeout->tv_sec = (time_t)d;
-	timeout->tv_usec = (int)((d-(double)timeout->tv_sec)*1e6);
-	if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
-	if (timeout->tv_usec < 0) timeout->tv_usec = 0;
+        getclockofday(&tvn);
+        *timeout = *to;
+        timeval_sub(timeout, &tvn);
+
+        if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
+        if (timeout->tv_usec < 0) timeout->tv_usec = 0;
     }
+    return TRUE;
 }
 
 static int
@@ -3785,22 +3780,18 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     rb_fdset_t MAYBE_UNUSED(orig_read);
     rb_fdset_t MAYBE_UNUSED(orig_write);
     rb_fdset_t MAYBE_UNUSED(orig_except);
-    double limit = 0;
-    struct timeval wait_rest;
+    struct timeval to;
     rb_thread_t *th = GET_THREAD();
 
 #define do_select_update() \
     (restore_fdset(readfds, &orig_read), \
      restore_fdset(writefds, &orig_write), \
      restore_fdset(exceptfds, &orig_except), \
-     update_timeval(timeout, limit), \
-     TRUE)
+     update_timeval(timeout, &to))
 
     if (timeout) {
-	limit = timeofday();
-	limit += (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
-	wait_rest = *timeout;
-	timeout = &wait_rest;
+        getclockofday(&to);
+        timeval_add(&to, timeout);
     }
 
 #define fd_init_copy(f) \
@@ -3934,57 +3925,37 @@ ppoll(struct pollfd *fds, nfds_t nfds,
 }
 #endif
 
-static inline void
-update_timespec(struct timespec *timeout, double limit)
-{
-    if (timeout) {
-	double d = limit - timeofday();
-
-	timeout->tv_sec = (long)d;
-	timeout->tv_nsec = (long)((d-(double)timeout->tv_sec)*1e9);
-	if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
-	if (timeout->tv_nsec < 0) timeout->tv_nsec = 0;
-    }
-}
-
 /*
  * returns a mask of events
  */
 int
-rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
+rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds;
     int result = 0, lerrno;
-    double limit = 0;
     struct timespec ts;
-    struct timespec *timeout = NULL;
+    struct timeval to;
     rb_thread_t *th = GET_THREAD();
 
-#define poll_update() \
-    (update_timespec(timeout, limit), \
-     TRUE)
-
-    if (tv) {
-	ts.tv_sec = tv->tv_sec;
-	ts.tv_nsec = tv->tv_usec * 1000;
-	limit = timeofday();
-	limit += (double)tv->tv_sec + (double)tv->tv_usec * 1e-6;
-	timeout = &ts;
+    if (timeout) {
+        getclockofday(&to);
+        timeval_add(&to, timeout);
     }
 
     fds.fd = fd;
     fds.events = (short)events;
 
     do {
-	fds.revents = 0;
-	lerrno = 0;
-	BLOCKING_REGION({
-	    result = ppoll(&fds, 1, timeout, NULL);
-	    if (result < 0) lerrno = errno;
-	}, ubf_select, th, FALSE);
+        fds.revents = 0;
+        lerrno = 0;
+        BLOCKING_REGION({
+            result = ppoll(&fds, 1, timespec_for(&ts, timeout), NULL);
+            if (result < 0) lerrno = errno;
+        }, ubf_select, th, FALSE);
 
-	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    } while (result < 0 && retryable(errno = lerrno) && poll_update());
+        RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    } while (result < 0 && retryable(errno = lerrno) &&
+            update_timeval(timeout, &to));
     if (result < 0) return -1;
 
     if (fds.revents & POLLNVAL) {
