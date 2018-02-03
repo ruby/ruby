@@ -6159,7 +6159,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_float(x, y);
     }
     else {
-	return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
     }
     return dx / dy;
 }

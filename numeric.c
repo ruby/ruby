@@ -3629,7 +3629,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return (double)FIX2LONG(x) / RFLOAT_VALUE(y);
     }
     else {
-        return RFLOAT_VALUE(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
     }
 }
 

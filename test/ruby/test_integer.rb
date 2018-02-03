@@ -464,4 +464,19 @@ class TestInteger < Test::Unit::TestCase
     end
     assert_equal([0, 1], 10.digits(o))
   end
+
+  def test_fdiv
+    assert_equal(1.0, 1.fdiv(1))
+    assert_equal(0.5, 1.fdiv(2))
+  end
+
+  def test_obj_fdiv
+    o = Object.new
+    def o.coerce(x); [x, 0.5]; end
+    assert_equal(2.0, 1.fdiv(o))
+    o = Object.new
+    def o.coerce(x); [self, x]; end
+    def o.fdiv(x); 1; end
+    assert_equal(1.0, 1.fdiv(o))
+  end
 end
