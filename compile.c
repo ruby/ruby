@@ -2455,6 +2455,20 @@ same_debug_pos_p(LINK_ELEMENT *iobj1, LINK_ELEMENT *iobj2)
 }
 
 static int
+is_frozen_putstring(INSN *insn, VALUE *op)
+{
+    if (IS_INSN_ID(insn, putstring)) {
+        *op = OPERAND_AT(insn, 0);
+        return 1;
+    }
+    else if (IS_INSN_ID(insn, putobject)) { /* frozen_string_literal */
+        *op = OPERAND_AT(insn, 0);
+        return RB_TYPE_P(*op, T_STRING);
+    }
+    return 0;
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
@@ -2574,16 +2588,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
      * putobject "beg".."end"
      */
     if (IS_INSN_ID(iobj, checkmatch)) {
-	INSN *range = (INSN *)get_prev_insn(iobj);
-	INSN *beg, *end;
+        INSN *range = (INSN *)get_prev_insn(iobj);
+        INSN *beg, *end;
+        VALUE str_beg, str_end;
 
 	if (range && IS_INSN_ID(range, newrange) &&
-		(end = (INSN *)get_prev_insn(range)) != 0 &&
-		IS_INSN_ID(end, putstring) &&
-		(beg = (INSN *)get_prev_insn(end)) != 0 &&
-		IS_INSN_ID(beg, putstring)) {
-	    VALUE str_beg = OPERAND_AT(beg, 0);
-	    VALUE str_end = OPERAND_AT(end, 0);
+                (end = (INSN *)get_prev_insn(range)) != 0 &&
+                is_frozen_putstring(end, &str_end) &&
+                (beg = (INSN *)get_prev_insn(end)) != 0 &&
+                is_frozen_putstring(beg, &str_beg)) {
 	    int excl = FIX2INT(OPERAND_AT(range, 0));
 	    VALUE lit_range = rb_range_new(str_beg, str_end, excl);
 

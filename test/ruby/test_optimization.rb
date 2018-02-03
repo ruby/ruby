@@ -557,12 +557,14 @@ class TestRubyOptimization < Test::Unit::TestCase
       when "1.8.0"..."1.8.8" then :bar
       end
     end;
-    iseq = RubyVM::InstructionSequence.compile(code)
-    insn = iseq.disasm
-    assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
-    assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-    assert_no_match(/putstring/, insn)
-    assert_no_match(/newrange/, insn)
+    [ nil, { frozen_string_literal: true } ].each do |opt|
+      iseq = RubyVM::InstructionSequence.compile(code, nil, nil, opt)
+      insn = iseq.disasm
+      assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
+      assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
+      assert_no_match(/putstring/, insn)
+      assert_no_match(/newrange/, insn)
+    end
   end
 
   def test_branch_condition_backquote
