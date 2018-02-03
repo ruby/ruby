@@ -1798,8 +1798,9 @@ vm_exec(rb_execution_context_t *ec)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        result = mjit_exec(ec);
       vm_loop_start:
-        if ((result = mjit_exec(ec)) == Qundef)
+        if (result == Qundef)
             result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
@@ -1883,6 +1884,7 @@ vm_exec(rb_execution_context_t *ec)
 		    *ec->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 		    ec->errinfo = Qnil;
+                    result = Qundef;
 		    goto vm_loop_start;
 		}
 	    }
@@ -1922,6 +1924,7 @@ vm_exec(rb_execution_context_t *ec)
 			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->body->iseq_encoded + entry->cont;
 			    ec->errinfo = Qnil;
+                            result = Qundef;
 			    goto vm_loop_start;
 			}
 		    }
@@ -1956,6 +1959,7 @@ vm_exec(rb_execution_context_t *ec)
 			}
 			ec->errinfo = Qnil;
 			VM_ASSERT(ec->tag->state == TAG_NONE);
+                        result = Qundef;
 			goto vm_loop_start;
 		    }
 		}
@@ -2007,6 +2011,8 @@ vm_exec(rb_execution_context_t *ec)
 	    state = 0;
 	    ec->tag->state = TAG_NONE;
 	    ec->errinfo = Qnil;
+
+            result = Qundef;
 	    goto vm_loop_start;
 	}
 	else {

@@ -53,15 +53,9 @@
 % insn.expr.expr.each_line do |line|
 %   # Special macro expansion for ones that can't be resolved by macro redefinition.
 %   if line =~ /\A\s+ADD_PC\((?<add_pc>[^)]+)\);\s+(\/\*.+\*\/)?\s+\z/ # TODO: create some another macro to avoid this
-        operands += <%= Regexp.last_match[:add_pc] %>; /* ADD_PC() !!! */
+        /* ADD_PC ignored */
 %   elsif line =~ /\A\s+DISPATCH_ORIGINAL_INSN\((?<insn_name>[^)]+)\);\s+\z/
-%     insn_name = Regexp.last_match[:insn_name]
-%     dispatch_insn = RubyVM::BareInstructions.fetch(insn_name)
-
-    fprintf(f, "\n/* --- BEGIN: <%= line.strip %> --- */\n");
-<%= render 'mjit_compile_insn', locals: { insn: dispatch_insn, dispatched: true } -%>
-    fprintf(f, "/* --- END: <%= line.strip %> --- */\n\n");
-
+        fprintf(f, "            return Qundef; /* cancel JIT */\n");
 %   elsif line =~ /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
 %     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
 %     insn.rets.reverse_each.with_index do |ret, i|
