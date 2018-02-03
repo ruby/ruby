@@ -506,7 +506,7 @@ rb_thread_terminate_all(void)
 	terminate_all(vm, th);
 
 	while (vm_living_thread_num(vm) > 1) {
-	    struct timeval tv = double2timeval(1.0);
+	    struct timeval tv = { 1, 0 };
 	    /*
 	     * Thread exiting routine in thread_start_func_2 notify
 	     * me when the last sub-thread exit.
