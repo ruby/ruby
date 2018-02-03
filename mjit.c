@@ -108,7 +108,7 @@ extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_
 #define dlclose(handle) (CloseHandle(handle))
 #define RTLD_NOW  -1
 
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((pid), INFINITE), GetExitCodeProcess((pid), (stat_loc)))
+#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)))
 #define WIFEXITED(S) ((S) != STILL_ACTIVE)
 #define WEXITSTATUS(S) (S)
 #define WIFSIGNALED(S) (0)
