@@ -2210,7 +2210,9 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
                 }
             }
             eargp->invoke.cmd.argv_buf = argv_buf;
-            eargp->invoke.cmd.command_name = hide_obj(rb_str_new_cstr(RSTRING_PTR(argv_buf)));
+            eargp->invoke.cmd.command_name =
+                hide_obj(rb_str_subseq(argv_buf, 0, strlen(RSTRING_PTR(argv_buf))));
+            rb_enc_copy(eargp->invoke.cmd.command_name, prog);
         }
     }
 #endif
