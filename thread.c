@@ -1040,7 +1040,6 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     switch (TYPE(limit)) {
       case T_NIL: break;
       case T_FIXNUM:
-      case T_BIGNUM:
         timeval.tv_sec = NUM2TIMET(limit);
         timeval.tv_usec = 0;
         tv = &timeval;
