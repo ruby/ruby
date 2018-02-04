@@ -77,7 +77,7 @@ module MJITHeader
       unless system("#{cc} #{cflags} #{f.path} 2>#{File::NULL}")
         STDERR.puts "error in #{stage} header file:"
         system("#{cc} #{cflags} #{f.path}")
-        exit 1
+        exit false
       end
     end
   end
@@ -111,8 +111,7 @@ module MJITHeader
 end
 
 if ARGV.size != 3
-  STDERR.puts 'Usage: transform_mjit_header.rb <c-compiler> <header file> <out>'
-  exit 1
+  abort 'Usage: transform_mjit_header.rb <c-compiler> <header file> <out>'
 end
 
 cc      = ARGV[0]
@@ -133,11 +132,11 @@ MJITHeader.remove_default_macros!(code)
 MJITHeader.check_code!(code, cc, cflags, 'initial')
 
 if MJITHeader.windows? # transformation is broken with Windows headers for now
-  STDERR.puts "\nSkipped transforming external functions to static on Windows."
+  puts "\nSkipped transforming external functions to static on Windows."
   MJITHeader.write(code, outfile)
-  exit 0
+  exit
 end
-STDERR.puts "\nTransforming external functions to static:"
+puts "\nTransforming external functions to static:"
 
 code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
 stop_pos     = code.match(/^#/).begin(0) # See `separate_macro_and_code`. This ignores proprocessors.
@@ -153,12 +152,12 @@ loop do
   decl_name = MJITHeader.decl_name_of(decl)
 
   if MJITHeader::IGNORED_FUNCTIONS.include?(decl_name) && /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
-    STDERR.puts "transform_mjit_header: changing definition of '#{decl_name}' to declaration"
+    puts "transform_mjit_header: changing definition of '#{decl_name}' to declaration"
     code[decl_range] = decl.sub(/{.+}/m, ';')
   elsif extern_names.include?(decl_name) && (decl =~ /#{MJITHeader::FUNC_HEADER_REGEXP};/)
     decl.sub!(/(extern|static|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      STDERR.puts "transform_mjit_header: making declaration of '#{decl_name}' static inline"
+      puts "transform_mjit_header: making declaration of '#{decl_name}' static inline"
     end
 
     code[decl_range] = "static inline #{decl}"
@@ -167,12 +166,12 @@ loop do
     decl[match.begin(0)...match.end(0)] = ''
 
     if decl =~ /\bstatic\b/
-      STDERR.puts "warning: a static decl inside external definition of '#{decl_name}'"
+      puts "warning: a static decl inside external definition of '#{decl_name}'"
     end
 
     header.sub!(/(extern|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      STDERR.puts "transform_mjit_header: making external definition of '#{decl_name}' static inline"
+      puts "transform_mjit_header: making external definition of '#{decl_name}' static inline"
     end
     code[decl_range] = "static inline #{header}#{decl}"
   end
