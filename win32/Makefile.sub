@@ -209,6 +209,9 @@ OUTFLAG       = -Fe
 !if !defined(COUTFLAG)
 COUTFLAG      = -Fo
 !endif
+!if !defined(CPPOUTFLAG)
+CPPOUTFLAG    = -Fi
+!endif
 !if !defined(CSRCFLAG)
 CSRCFLAG      = -Tc
 !endif
