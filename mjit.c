@@ -78,6 +78,7 @@
 #include <dlfcn.h>
 #endif
 
+#include "internal.h"
 #include "vm_core.h"
 #include "mjit.h"
 #include "version.h"
