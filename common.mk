@@ -202,7 +202,7 @@ rb_mjit_header.h: PHONY probes.h
 
 $(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
 	$(ECHO) building $@
-	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
+	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
 
 .PHONY: showflags
 exts enc trans: $(SHOWFLAGS)
