@@ -52,11 +52,11 @@ module MJITHeader
   def self.decl_name_of(decl)
     ident_regex = /\w+/
     decl = decl.gsub(/^#.+$/, '') # remove macros
-    reduced_decl = decl.gsub(/#{ATTR_REGEXP}/, '') # remove attributes
+    reduced_decl = decl.gsub(ATTR_REGEXP, '') # remove attributes
     su1_regex = /{[^{}]*}/
-    su2_regex = /{([^{}]|su1_regex)*}/
-    su3_regex = /{([^{}]|su2_regex)*}/ # 3 nested structs/unions is probably enough
-    reduced_decl.gsub!(/#{su3_regex}/, '') # remove strutcs/unions in the header
+    su2_regex = /{([^{}]|#{su1_regex})*}/
+    su3_regex = /{([^{}]|#{su2_regex})*}/ # 3 nested structs/unions is probably enough
+    reduced_decl.gsub!(su3_regex, '') # remove structs/unions in the header
     id_seq_regex = /\s*(#{ident_regex}(\s+|\s*[*]+\s*))*/
     # Process function header:
     match = /\A#{id_seq_regex}(?<name>#{ident_regex})\s*\(/.match(reduced_decl)
