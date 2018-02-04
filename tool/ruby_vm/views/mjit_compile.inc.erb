@@ -44,8 +44,7 @@ switch (insn) {
 % (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
-%   opt_send_dispatch = insn.expr.expr =~ /if \(val == Qundef\) {\s+DISPATCH_ORIGINAL_INSN\(opt_send_without_block\);\s+}/
-%   if %w[opt_send_without_block send].include?(insn.name) || opt_send_dispatch
+%   if %w[opt_send_without_block send].include?(insn.name)
 <%= render 'mjit_compile_send', locals: { insn: insn } -%>
 %   end
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
