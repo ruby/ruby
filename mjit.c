@@ -113,6 +113,10 @@ extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_
 typedef intptr_t pid_t;
 #endif
 
+#ifndef va_copy
+#define va_copy(dest, src) ((dest) = (src))
+#endif
+
 /* A copy of MJIT portion of MRI options since MJIT initialization.  We
    need them as MJIT threads still can work when the most MRI data were
    freed. */
