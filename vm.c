@@ -298,6 +298,7 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 static VALUE rb_block_param_proxy;
 
+#include "mjit.h"
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.c"
@@ -1786,8 +1787,10 @@ vm_exec(rb_execution_context_t *ec)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        result = mjit_exec(ec);
       vm_loop_start:
-	result = vm_exec_core(ec, initial);
+	if (result == Qundef)
+	    result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
@@ -1870,6 +1873,7 @@ vm_exec(rb_execution_context_t *ec)
 		    *ec->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 		    ec->errinfo = Qnil;
+                    result = Qundef;
 		    goto vm_loop_start;
 		}
 	    }
@@ -1909,6 +1913,7 @@ vm_exec(rb_execution_context_t *ec)
 			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->body->iseq_encoded + entry->cont;
 			    ec->errinfo = Qnil;
+                            result = Qundef;
 			    goto vm_loop_start;
 			}
 		    }
@@ -1943,6 +1948,7 @@ vm_exec(rb_execution_context_t *ec)
 			}
 			ec->errinfo = Qnil;
 			VM_ASSERT(ec->tag->state == TAG_NONE);
+                        result = Qundef;
 			goto vm_loop_start;
 		    }
 		}
@@ -1994,6 +2000,7 @@ vm_exec(rb_execution_context_t *ec)
 	    state = 0;
 	    ec->tag->state = TAG_NONE;
 	    ec->errinfo = Qnil;
+            result = Qundef;
 	    goto vm_loop_start;
 	}
 	else {
@@ -2122,6 +2129,8 @@ rb_vm_mark(void *ptr)
 	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
+
+        mjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -2742,6 +2751,12 @@ core_hash_merge_kwd(int argc, VALUE *argv)
     return hash;
 }
 
+static VALUE
+mjit_enabled_p(void)
+{
+    return mjit_init_p ? Qtrue : Qfalse;
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2795,6 +2810,7 @@ Init_VM(void)
     VALUE opts;
     VALUE klass;
     VALUE fcore;
+    VALUE mjit;
 
     /* ::RubyVM */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
@@ -2825,6 +2841,10 @@ Init_VM(void)
     rb_obj_freeze(klass);
     rb_gc_register_mark_object(fcore);
     rb_mRubyVMFrozenCore = fcore;
+
+    /* RubyVM::MJIT */
+    mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
+    rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
 
     /*
      * Document-class: Thread

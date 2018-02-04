@@ -359,7 +359,7 @@ rb_thread_debug(
 
     if (debug_mutex_initialized == 1) {
 	debug_mutex_initialized = 0;
-	native_mutex_initialize(&debug_mutex);
+        rb_native_mutex_initialize(&debug_mutex);
     }
 
     va_start(args, fmt);
@@ -377,31 +377,31 @@ rb_vm_gvl_destroy(rb_vm_t *vm)
 {
     gvl_release(vm);
     gvl_destroy(vm);
-    native_mutex_destroy(&vm->thread_destruct_lock);
+    rb_native_mutex_destroy(&vm->thread_destruct_lock);
 }
 
 void
 rb_nativethread_lock_initialize(rb_nativethread_lock_t *lock)
 {
-    native_mutex_initialize(lock);
+    rb_native_mutex_initialize(lock);
 }
 
 void
 rb_nativethread_lock_destroy(rb_nativethread_lock_t *lock)
 {
-    native_mutex_destroy(lock);
+    rb_native_mutex_destroy(lock);
 }
 
 void
 rb_nativethread_lock_lock(rb_nativethread_lock_t *lock)
 {
-    native_mutex_lock(lock);
+    rb_native_mutex_lock(lock);
 }
 
 void
 rb_nativethread_lock_unlock(rb_nativethread_lock_t *lock)
 {
-    native_mutex_unlock(lock);
+    rb_native_mutex_unlock(lock);
 }
 
 static int
@@ -417,15 +417,15 @@ unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, in
 	    RUBY_VM_CHECK_INTS(th->ec);
 	}
 
-	native_mutex_lock(&th->interrupt_lock);
+        rb_native_mutex_lock(&th->interrupt_lock);
     } while (RUBY_VM_INTERRUPTED_ANY(th->ec) &&
-	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
+             (rb_native_mutex_unlock(&th->interrupt_lock), TRUE));
 
     VM_ASSERT(th->unblock.func == NULL);
 
     th->unblock.func = func;
     th->unblock.arg = arg;
-    native_mutex_unlock(&th->interrupt_lock);
+    rb_native_mutex_unlock(&th->interrupt_lock);
 
     return TRUE;
 }
@@ -433,15 +433,15 @@ unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, in
 static void
 unblock_function_clear(rb_thread_t *th)
 {
-    native_mutex_lock(&th->interrupt_lock);
+    rb_native_mutex_lock(&th->interrupt_lock);
     th->unblock.func = NULL;
-    native_mutex_unlock(&th->interrupt_lock);
+    rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
 static void
 rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
 {
-    native_mutex_lock(&th->interrupt_lock);
+    rb_native_mutex_lock(&th->interrupt_lock);
     if (trap) {
 	RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
     }
@@ -454,7 +454,7 @@ rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
     else {
 	/* none */
     }
-    native_mutex_unlock(&th->interrupt_lock);
+    rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
 void
@@ -585,7 +585,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
     if (atfork)
 	return;
 
-    native_mutex_destroy(&th->interrupt_lock);
+    rb_native_mutex_destroy(&th->interrupt_lock);
     native_thread_destroy(th);
 }
 
@@ -739,10 +739,10 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	rb_fiber_close(th->ec->fiber_ptr);
     }
-    native_mutex_lock(&th->vm->thread_destruct_lock);
+    rb_native_mutex_lock(&th->vm->thread_destruct_lock);
     /* make sure vm->running_thread never point me after this point.*/
     th->vm->running_thread = NULL;
-    native_mutex_unlock(&th->vm->thread_destruct_lock);
+    rb_native_mutex_unlock(&th->vm->thread_destruct_lock);
     thread_cleanup_func(th, FALSE);
     gvl_release(th->vm);
 
@@ -773,7 +773,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     th->pending_interrupt_mask_stack = rb_ary_dup(current_th->pending_interrupt_mask_stack);
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
 
-    native_mutex_initialize(&th->interrupt_lock);
+    rb_native_mutex_initialize(&th->interrupt_lock);
 
     /* kick thread */
     err = native_thread_create(th);
@@ -4096,12 +4096,12 @@ timer_thread_function(void *arg)
      * vm->running_thread switch. however it guarantees th->running_thread
      * point to valid pointer or NULL.
      */
-    native_mutex_lock(&vm->thread_destruct_lock);
+    rb_native_mutex_lock(&vm->thread_destruct_lock);
     /* for time slice */
     if (vm->running_thread) {
 	RUBY_VM_SET_TIMER_INTERRUPT(vm->running_thread->ec);
     }
-    native_mutex_unlock(&vm->thread_destruct_lock);
+    rb_native_mutex_unlock(&vm->thread_destruct_lock);
 
     /* check signal */
     rb_threadptr_check_signal(vm->main_thread);
@@ -4936,8 +4936,8 @@ Init_Thread(void)
 	    /* acquire global vm lock */
 	    gvl_init(th->vm);
 	    gvl_acquire(th->vm, th);
-	    native_mutex_initialize(&th->vm->thread_destruct_lock);
-	    native_mutex_initialize(&th->interrupt_lock);
+            rb_native_mutex_initialize(&th->vm->thread_destruct_lock);
+            rb_native_mutex_initialize(&th->interrupt_lock);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
 	    th->pending_interrupt_queue_checked = 0;
