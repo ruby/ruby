@@ -506,7 +506,7 @@ VALUE
     return ary;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 {
     VALUE ary;
@@ -640,7 +640,7 @@ rb_check_array_type(VALUE ary)
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_ary);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_check_to_array(VALUE ary)
 {
     return rb_check_convert_type_with_id(ary, T_ARRAY, "Array", idTo_a);
@@ -1297,7 +1297,7 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
     return rb_ary_subseq(ary, beg, len);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
     long beg, len;

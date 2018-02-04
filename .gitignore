@@ -195,3 +195,6 @@ lcov*.info
 # /win32/
 /win32/*.ico
 /win32/.time
+
+# MJIT
+/rb_mjit_header.h

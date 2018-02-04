@@ -325,7 +325,7 @@ exec_hooks_protected(rb_execution_context_t *ec, rb_vm_t *vm, rb_hook_list_t *li
     return state;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_exec_event_hooks(rb_trace_arg_t *trace_arg, int pop_p)
 {
     rb_execution_context_t *ec = trace_arg->ec;

@@ -54,6 +54,7 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 EXTOUT = @EXTOUT@
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
+MJIT_MIN_HEADER = $(EXTOUT)/include/$(arch)/rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
 
 empty =
 CC_VERSION = @CC_VERSION@
@@ -68,7 +69,7 @@ debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
 XCFLAGS = @XCFLAGS@
-CPPFLAGS = @CPPFLAGS@ $(INCFLAGS)
+CPPFLAGS = @CPPFLAGS@ $(INCFLAGS) -DMJIT_HEADER_BUILD_DIR=\""$(EXTOUT)/include/$(arch)"\" -DLIBRUBYARG_SHARED=\""$(LIBRUBYARG_SHARED)"\" -DLIBRUBY_LIBDIR=\""$(prefix)/lib"\" -DMJIT_HEADER_INSTALL_DIR=\""$(prefix)/include/$(RUBY_BASE_NAME)-$(ruby_version)/$(arch)"\"
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = @EXTLDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
@@ -407,6 +408,15 @@ probes.@OBJEXT@: $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
 
+rb_mjit_header.h: PHONY probes.h
+	$(ECHO) building $@
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(COUTFLAG) $@.new -E -P -dD
+	$(Q) (cmp $@.new $@ && $(ECHO0) $@ unchanged && $(RM) $@.new) || $(MV) $@.new $@
+
+$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
+	$(ECHO) building $@
+	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
+
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
 ruby-glommed.$(OBJEXT):
@@ -511,7 +521,7 @@ update-simplecov:
 update-coverage: update-simplecov update-simplecov-html update-doclie
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc
+	  vmtc.inc vm.inc mjit_compile.inc
 
 $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(srcdir)/defs/opt_operand.def $(srcdir)/defs/opt_insn_unif.def \

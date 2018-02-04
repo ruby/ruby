@@ -62,6 +62,7 @@ static struct {
 static void
 rb_class_clear_method_cache(VALUE klass, VALUE arg)
 {
+    mjit_remove_class_serial(RCLASS_SERIAL(klass));
     RCLASS_SERIAL(klass) = rb_next_class_serial();
 
     if (RB_TYPE_P(klass, T_ICLASS)) {
@@ -171,7 +172,7 @@ rb_free_method_entry(const rb_method_entry_t *me)
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
-static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
 static inline rb_method_entry_t *
 lookup_method_table(VALUE klass, ID id)
@@ -222,7 +223,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
     cfunc->invoker = call_cfunc_invoker_func(argc);
 }
 
-static void
+MJIT_FUNC_EXPORTED void
 method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
     *(rb_method_definition_t **)&me->def = def;
@@ -336,7 +337,7 @@ method_definition_reset(const rb_method_entry_t *me)
     }
 }
 
-static rb_method_definition_t *
+MJIT_FUNC_EXPORTED rb_method_definition_t *
 method_definition_create(rb_method_type_t type, ID mid)
 {
     rb_method_definition_t *def;
@@ -401,7 +402,7 @@ rb_method_entry_clone(const rb_method_entry_t *src_me)
     return me;
 }
 
-const rb_callable_method_entry_t *
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID called_id, VALUE defined_class)
 {
     rb_method_definition_t *def = src_me->def;
@@ -812,7 +813,7 @@ method_entry_get(VALUE klass, ID id, VALUE *defined_class_ptr)
     return method_entry_get_without_cache(klass, id, defined_class_ptr);
 }
 
-const rb_method_entry_t *
+MJIT_FUNC_EXPORTED const rb_method_entry_t *
 rb_method_entry(VALUE klass, ID id)
 {
     return method_entry_get(klass, id, NULL);
@@ -853,7 +854,7 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     return cme;
 }
 
-const rb_callable_method_entry_t *
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry(VALUE klass, ID id)
 {
     VALUE defined_class;
@@ -886,7 +887,7 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
     return me;
 }
 
-const rb_callable_method_entry_t *
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
@@ -900,7 +901,7 @@ rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr
     return method_entry_resolve_refinement(klass, id, FALSE, defined_class_ptr);
 }
 
-const rb_callable_method_entry_t *
+MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     VALUE defined_class, *dcp = defined_class_ptr ? defined_class_ptr : &defined_class;
@@ -1462,7 +1463,7 @@ original_method_definition(const rb_method_definition_t *def)
     return def;
 }
 
-static int
+MJIT_FUNC_EXPORTED int
 rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2)
 {
     d1 = original_method_definition(d1);

@@ -243,7 +243,8 @@ vm_push_frame(rb_execution_context_t *ec,
     *sp++ = specval     /* ep[-1] / block handler or prev env ptr */;
     *sp   = type;       /* ep[-0] / ENV_FLAGS */
 
-    cfp->ep = sp;
+    /* Store initial value of ep as bp to skip calculation cost of bp on JIT cancellation. */
+    cfp->ep = cfp->bp = sp;
     cfp->sp = sp + 1;
 
 #if VM_DEBUG_BP_CHECK
@@ -1295,6 +1296,18 @@ vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
+MJIT_FUNC_EXPORTED void
+vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE klass)
+{
+    cc->me = rb_callable_method_entry(klass, ci->mid);
+    VM_ASSERT(callable_method_entry_p(cc->me));
+    cc->call = vm_call_general;
+#if OPT_INLINE_METHOD_CACHE
+    cc->method_state = GET_GLOBAL_METHOD_STATE();
+    cc->class_serial = RCLASS_SERIAL(klass);
+#endif
+}
+
 static void
 vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE recv)
 {
@@ -1312,13 +1325,7 @@ vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE 
     }
     RB_DEBUG_COUNTER_INC(mc_inline_miss);
 #endif
-    cc->me = rb_callable_method_entry(klass, ci->mid);
-    VM_ASSERT(callable_method_entry_p(cc->me));
-    cc->call = vm_call_general;
-#if OPT_INLINE_METHOD_CACHE
-    cc->method_state = GET_GLOBAL_METHOD_STATE();
-    cc->class_serial = RCLASS_SERIAL(klass);
-#endif
+    vm_search_method_slowpath(ci, cc, klass);
 }
 
 static inline int
@@ -1458,7 +1465,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
     return opt_eql_func(obj1, obj2, &ci, &cc);
 }
 
-static VALUE vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
+extern VALUE vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
 
 static VALUE
 check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_check_match_type type)
@@ -1562,9 +1569,9 @@ static inline VALUE vm_call_method(rb_execution_context_t *ec, rb_control_frame_
 
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size);
 
-static rb_method_definition_t *method_definition_create(rb_method_type_t type, ID mid);
-static void method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
-static int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+extern rb_method_definition_t *method_definition_create(rb_method_type_t type, ID mid);
+extern void method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
 static const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
@@ -1590,7 +1597,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
     return vm_call_iseq_setup_normal(ec, cfp, calling, ci, cc, 0, param, local);
 }
 
-static inline int
+int
 simple_iseq_p(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt == FALSE &&

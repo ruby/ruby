@@ -4490,7 +4490,7 @@ rb_uint128t2big(uint128_t n)
     return big;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_int128t2big(int128_t n)
 {
     int neg = 0;

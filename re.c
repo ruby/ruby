@@ -2891,7 +2891,7 @@ rb_reg_init_str_enc(VALUE re, VALUE s, rb_encoding *enc, int options)
     return re;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_reg_new_ary(VALUE ary, int opt)
 {
     return rb_reg_new_str(rb_reg_preprocess_dregexp(ary, opt), opt);
