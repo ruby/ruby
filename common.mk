@@ -200,7 +200,7 @@ rb_mjit_header.h: PHONY probes.h
 	$(Q) $(CPP) $(MJIT_HEADER_FLAGS) $(CFLAGS_NO_ARCH) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(CPPOUTFLAG)vm.new
 	$(Q) $(IFCHANGE) $@ vm.new
 
-$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
+$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb $(PREP)
 	$(ECHO) building $@
 	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
 
