@@ -409,7 +409,7 @@ probes.@OBJEXT@: $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 
 rb_mjit_header.h: PHONY probes.h
 	$(ECHO) building $@
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(COUTFLAG) $@.new -E -P -dD
+	$(Q) $(CC) $(CFLAGS_NO_ARCH) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(COUTFLAG) $@.new -E -P -dD
 	$(Q) $(IFCHANGE) $@ $@.new
 
 # DTrace static library hacks described here:
