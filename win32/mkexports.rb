@@ -7,7 +7,7 @@ module RbConfig
 end
 
 class Exports
-  PrivateNames = /(?:Init_|ruby_static_id_|.*_threadptr_|rb_ec_|DllMain\b)/
+  PrivateNames = /(?:Init_|ruby_static_id_|DllMain\b)/
 
   @@subclass = []
   def self.inherited(klass)

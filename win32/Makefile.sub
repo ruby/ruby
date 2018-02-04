@@ -1192,7 +1192,7 @@ rb_mjit_header.h: PHONY probes.h
 	$(Q) $(IFCHANGE) $@ vm.i
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc
+	  vmtc.inc vm.inc mjit_compile.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \

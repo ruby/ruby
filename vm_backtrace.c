@@ -520,7 +520,7 @@ bt_iter_cfunc(void *ptr, const rb_control_frame_t *cfp, ID mid)
     loc->body.cfunc.prev_loc = arg->prev_loc;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     struct bt_iter_arg arg;
@@ -595,7 +595,7 @@ rb_backtrace_to_str_ary(VALUE self)
     return bt->strary;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;

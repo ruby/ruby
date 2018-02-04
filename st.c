@@ -2171,7 +2171,7 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 
 /* Mimics ruby's { foo => bar } syntax. This function is placed here
    because it touches table internals and write barriers at once. */
-void
+MJIT_FUNC_EXPORTED void
 rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 {
     st_index_t n;

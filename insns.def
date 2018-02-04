@@ -695,8 +695,7 @@ defineclass
 		  class_iseq->body->iseq_encoded, GET_SP(),
 		  class_iseq->body->local_table_size,
 		  class_iseq->body->stack_max);
-    RESTORE_REGS();
-    NEXT_INSN();
+    EXEC_EC_CFP();
 }
 
 /**********************************************************/
@@ -823,8 +822,7 @@ invokeblock
 
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci, block_handler);
     if (val == Qundef) {
-	RESTORE_REGS();
-	NEXT_INSN();
+        EXEC_EC_CFP();
     }
 }
 
@@ -1090,7 +1088,9 @@ opt_neq
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
 	ADD_PC(2); /* !!! */
+#endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
@@ -1206,9 +1206,11 @@ opt_aset_with
 	val = tmp;
     }
     else {
+#ifndef MJIT_HEADER
 	TOPN(0) = rb_str_resurrect(key);
 	PUSH(val);
 	ADD_PC(1); /* !!! */
+#endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
@@ -1223,8 +1225,10 @@ opt_aref_with
     val = vm_opt_aref_with(recv, key);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
 	PUSH(rb_str_resurrect(key));
 	ADD_PC(1); /* !!! */
+#endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
     }
 }
@@ -1339,8 +1343,7 @@ opt_call_c_function
 	THROW_EXCEPTION(err);
     }
 
-    RESTORE_REGS();
-    NEXT_INSN();
+    EXEC_EC_CFP();
 }
 
 /* BLT */

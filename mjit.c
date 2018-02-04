@@ -83,6 +83,8 @@
 #include "mjit.h"
 #include "version.h"
 #include "gc.h"
+#include "constant.h"
+#include "id_table.h"
 #include "ruby_assert.h"
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
@@ -194,6 +196,9 @@ static char *header_file;
 static char *pch_file;
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
 static char *tmp_dir;
+/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
+   This is used to invalidate obsoleted CALL_CACHE. */
+static VALUE valid_class_serials;
 /* Ruby level interface module.  */
 VALUE rb_mMJIT;
 
@@ -1081,6 +1086,19 @@ child_after_fork(void)
     /* TODO: Should we initiate MJIT in the forked Ruby.  */
 }
 
+static enum rb_id_table_iterator_result
+valid_class_serials_add_i(ID key, VALUE v, void *unused)
+{
+    rb_const_entry_t *ce = (rb_const_entry_t *)v;
+    VALUE value = ce->value;
+
+    if (!rb_is_const_id(key)) return ID_TABLE_CONTINUE;
+    if (RB_TYPE_P(value, T_MODULE) || RB_TYPE_P(value, T_CLASS)) {
+        mjit_add_class_serial(RCLASS_SERIAL(value));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
 /* Default permitted number of units with a JIT code kept in
    memory.  */
 #define DEFAULT_CACHE_SIZE 1000
@@ -1148,6 +1166,14 @@ mjit_init(struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_client_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
     rb_native_cond_initialize(&mjit_worker_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
     rb_native_cond_initialize(&mjit_gc_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
+
+    /* Initialize class_serials cache for compilation */
+    valid_class_serials = rb_hash_new();
+    rb_obj_hide(valid_class_serials);
+    rb_gc_register_mark_object(valid_class_serials);
+    if (RCLASS_CONST_TBL(rb_cObject)) {
+        rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
+    }
 
     /* Initialize worker thread */
     finish_worker_p = FALSE;
@@ -1232,4 +1258,40 @@ mjit_mark(void)
     }
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
     RUBY_MARK_LEAVE("mjit");
+}
+
+/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+void
+mjit_add_class_serial(rb_serial_t class_serial)
+{
+    if (!mjit_init_p)
+        return;
+
+    CRITICAL_SECTION_START(3, "in mjit_add_class_serial");
+    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
+    CRITICAL_SECTION_FINISH(3, "in mjit_add_class_serial");
+}
+
+/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+void
+mjit_remove_class_serial(rb_serial_t class_serial)
+{
+    if (!mjit_init_p)
+        return;
+
+    CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
+    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
+    CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
+}
+
+/* Return TRUE if class_serial is not obsoleted. This can be used in MJIT worker. */
+int
+mjit_valid_class_serial_p(rb_serial_t class_serial)
+{
+    int found_p;
+
+    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
+    found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
+    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
+    return found_p;
 }

@@ -480,7 +480,7 @@ struct rb_global_variable {
     struct trace_var *trace;
 };
 
-struct rb_global_entry*
+MJIT_FUNC_EXPORTED struct rb_global_entry*
 rb_global_entry(ID id)
 {
     struct rb_global_entry *entry;
@@ -790,7 +790,7 @@ rb_f_untrace_var(int argc, const VALUE *argv)
     return Qnil;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_gvar_get(struct rb_global_entry *entry)
 {
     struct rb_global_variable *var = entry->var;
@@ -823,7 +823,7 @@ trace_en(struct rb_global_variable *var)
     return Qnil;		/* not reached */
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_gvar_set(struct rb_global_entry *entry, VALUE val)
 {
     struct trace_data trace;
@@ -858,7 +858,7 @@ rb_gv_get(const char *name)
     return rb_gvar_get(entry);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_gvar_defined(struct rb_global_entry *entry)
 {
     if (entry->var->getter == rb_gvar_undef_getter) return Qfalse;
@@ -2010,7 +2010,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     return 0;
 }
 
-int
+MJIT_FUNC_EXPORTED int
 rb_autoloading_value(VALUE mod, ID id, VALUE* value)
 {
     VALUE load;
@@ -2211,7 +2211,7 @@ rb_autoload_p(VALUE mod, ID id)
     return (ele = check_autoload_data(load)) ? ele->feature : Qnil;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_const_warn_if_deprecated(const rb_const_entry_t *ce, VALUE klass, ID id)
 {
     if (RB_CONST_DEPRECATED_P(ce)) {
@@ -2294,7 +2294,7 @@ rb_const_get_at(VALUE klass, ID id)
     return rb_const_get_0(klass, id, TRUE, FALSE, FALSE);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_from(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, TRUE, TRUE, TRUE);
@@ -2306,7 +2306,7 @@ rb_public_const_get(VALUE klass, ID id)
     return rb_const_get_0(klass, id, FALSE, TRUE, TRUE);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_public_const_get_at(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, TRUE, FALSE, TRUE);
@@ -2544,7 +2544,7 @@ rb_const_defined_at(VALUE klass, ID id)
     return rb_const_defined_0(klass, id, TRUE, FALSE, FALSE);
 }
 
-int
+MJIT_FUNC_EXPORTED int
 rb_public_const_defined_from(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, TRUE, TRUE, TRUE);
@@ -3123,7 +3123,7 @@ rb_st_copy(VALUE obj, struct st_table *orig_tbl)
     return new_tbl;
 }
 
-rb_const_entry_t *
+MJIT_FUNC_EXPORTED rb_const_entry_t *
 rb_const_lookup(VALUE klass, ID id)
 {
     struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);

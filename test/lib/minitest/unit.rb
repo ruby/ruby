@@ -956,7 +956,9 @@ module MiniTest
         puts if @verbose
         $stdout.flush
 
-        leakchecker.check("#{inst.class}\##{inst.__name__}")
+        unless RubyVM::MJIT.enabled? # compiler process is wrongly considered as leaked
+          leakchecker.check("#{inst.class}\##{inst.__name__}")
+        end
 
         inst._assertions
       }

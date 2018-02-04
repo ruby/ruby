@@ -20,7 +20,7 @@ static inline VALUE vm_yield_with_cref(rb_execution_context_t *ec, int argc, con
 static inline VALUE vm_yield(rb_execution_context_t *ec, int argc, const VALUE *argv);
 static inline VALUE vm_yield_with_block(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE block_handler);
 static inline VALUE vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args);
-static VALUE vm_exec(rb_execution_context_t *ec);
+VALUE vm_exec(rb_execution_context_t *ec);
 static void vm_set_eval_stack(rb_execution_context_t * th, const rb_iseq_t *iseq, const rb_cref_t *cref, const struct rb_block *base_block);
 static int vm_collect_local_variables_in_heap(const VALUE *dfp, const struct local_var_list *vars);
 
@@ -38,7 +38,9 @@ typedef enum call_type {
 static VALUE send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope);
 static VALUE vm_call0_body(rb_execution_context_t* ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, const VALUE *argv);
 
-static VALUE
+#ifndef MJIT_HEADER
+
+MJIT_FUNC_EXPORTED VALUE
 vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *me)
 {
     struct rb_calling_info calling_entry, *calling;
@@ -252,6 +254,8 @@ rb_current_receiver(void)
     return cfp->self;
 }
 
+#endif /* #ifndef MJIT_HEADER */
+
 static inline void
 stack_check(rb_execution_context_t *ec)
 {
@@ -261,6 +265,8 @@ stack_check(rb_execution_context_t *ec)
 	rb_ec_stack_overflow(ec, FALSE);
     }
 }
+
+#ifndef MJIT_HEADER
 
 static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE recv, ID mid);
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
@@ -633,7 +639,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
     UNREACHABLE;
 }
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
 			 int argc, const VALUE *argv, int priv)
 {
@@ -658,6 +664,8 @@ make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
     }
     return rb_class_new_instance(n, args, exc);
 }
+
+#endif /* #ifndef MJIT_HEADER */
 
 static void
 raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VALUE obj,
@@ -739,6 +747,8 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     if (work) ALLOCV_END(work);
     return result;
 }
+
+#ifndef MJIT_HEADER
 
 /*!
  * Calls a method
@@ -2175,3 +2185,5 @@ Init_vm_eval(void)
     id_tag = rb_intern_const("tag");
     id_value = rb_intern_const("value");
 }
+
+#endif /* #ifndef MJIT_HEADER */

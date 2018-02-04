@@ -1,0 +1,133 @@
+% # -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+% # Copyright (c) 2018 Takashi Kokubun.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+% trace_enablable_insns = [
+%   'opt_send_without_block',
+%   'send',
+%   'invokeblock',
+%   'invokesuper',
+% ]
+%
+% to_cstr = lambda do |line|
+%   normalized = line.gsub(/\t/, ' ' * 8)
+%   indented = normalized.sub(/\A(?!#)/, '    ') # avoid indenting preprocessor
+%   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
+% end
+%
+    fprintf(f, "{\n");
+    {
+% # compiler: Prepare operands which may be used by `insn.call_attribute`
+% insn.opes.each_with_index do |ope, i|
+        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+% end
+%
+% # JIT: Declare variables for operands, popped values and return values
+% ret_decls = insn.rets.map { |r| "MAYBE_UNUSED(#{r.fetch(:type)}) #{r.fetch(:name)}"} # TODO: fix #declarations to return Hash...
+% insn.declarations.each do |decl|
+%   next if dispatched && ret_decls.include?(decl) # return value should be propagated to dispatcher. TODO: assert it's the same as dispatcher
+        fprintf(f, "    <%= decl %>;\n");
+% end
+
+% # JIT: Set const expressions for `RubyVM::OperandsUnifications` insn
+% insn.preamble.each do |amble|
+        fprintf(f, "<%= amble.expr %>\n");
+% end
+%
+% # JIT: Initialize operands
+% insn.opes.each_with_index do |ope, i|
+        fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
+% end
+%
+% # JIT: Initialize popped values
+% insn.pops.reverse_each.with_index.reverse_each do |pop, i|
+        fprintf(f, "    <%= pop.fetch(:name) %> = stack[%d];\n", b->stack_size - <%= i + 1 %>);
+% end
+%
+% # JIT: move sp and pc if necessary
+% if insn.handles_frame?
+        fprintf(f, "    reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos)); /* ADD_PC(INSN_ATTR(width)); */
+        fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+% else
+        fprintf(f, "    reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + pos));
+        fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1);
+% end
+%
+% # JIT: Print insn body in insns.def
+% insn.expr.expr.each_line do |line|
+%   # Special macro expansion for ones that can't be resolved by macro redefinition.
+%   if line =~ /\A\s+DISPATCH_ORIGINAL_INSN\((?<insn_name>[^)]+)\);\s+\z/
+        fprintf(f, "            return Qundef; /* cancel JIT */\n");
+%   elsif line =~ /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
+%     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
+%     insn.rets.reverse_each.with_index do |ret, i|
+%       # TOPN(n) = ...
+        fprintf(f, "            stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
+%     end
+%
+%     dest = Regexp.last_match[:dest]
+%     if insn.name == 'opt_case_dispatch' # special case... TODO: use another macro to avoid checking name
+        {
+            struct case_dispatch_var arg;
+            arg.f = f;
+            arg.base_pos = pos + insn_len(insn);
+            arg.last_value = Qundef;
+
+            fprintf(f, "    switch (<%= dest %>) {\n");
+            st_foreach(RHASH_TBL_RAW(hash), compile_case_dispatch_each, (VALUE)&arg);
+            fprintf(f, "      case %lu:\n", else_offset);
+            fprintf(f, "        goto label_%lu;\n", arg.base_pos + else_offset);
+            fprintf(f, "    }\n");
+        }
+%     else
+        next_pos = pos + insn_len(insn) + (unsigned int)<%= dest %>;
+        fprintf(f, "            goto label_%d;\n", next_pos);
+%     end
+%   elsif line =~ /\A\s+RESTORE_REGS\(\);\s+\z/ # for `leave` only
+#if OPT_CALL_THREADED_CODE
+        fprintf(f, "            rb_ec_thread_ptr(ec)->retval = val;\n");
+        fprintf(f, "            return 0;\n");
+#else
+        fprintf(f, "            return val;\n");
+#endif
+%   else
+        fprintf(f, <%= to_cstr.call(line) %>);
+%   end
+% end
+%
+% # JIT: Set return values
+% unless dispatched
+%   insn.rets.reverse_each.with_index do |ret, i|
+%     # TOPN(n) = ...
+        fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
+%   end
+% end
+%
+% # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
+% if trace_enablable_insns.include?(insn.name)
+        fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
+        fprintf(f, "        reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
+        fprintf(f, "        return Qundef; /* cancel JIT */\n");
+        fprintf(f, "    }\n");
+% end
+%
+% # compiler: Move JIT compiler's internal stack pointer
+% unless dispatched
+        b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+% end
+    }
+    fprintf(f, "}\n");
+%
+% # compiler: If insn has conditional JUMP, the branch which is not targeted by JUMP should be compiled too.
+% if insn.expr.expr =~ /if\s+\([^{}]+\)\s+\{[^{}]+JUMP\([^)]+\);[^{}]+\}/
+    compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
+% end
+%
+% # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compieled. TODO: create attr for it?
+% if insn.expr.expr =~ /\sTHROW_EXCEPTION\([^)]+\);/ || insn.expr.expr =~ /\sRESTORE_REGS\(\);/
+    b->finish_p = TRUE;
+% end

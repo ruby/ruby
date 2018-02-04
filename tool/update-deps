@@ -120,6 +120,7 @@ FILES_NEED_VPATH = %w[
   known_errors.inc
   lex.c
   miniprelude.c
+  mjit_compile.inc
   newline.c
   node_name.inc
   opt_sc.inc

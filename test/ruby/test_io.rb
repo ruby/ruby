@@ -2135,6 +2135,12 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_autoclose_true_closed_by_finalizer
+    if RubyVM::MJIT.enabled?
+      # This is skipped but this test passes with AOT mode.
+      # At least it should not be a JIT compiler's bug.
+      skip "MJIT worker does IO which is unexpected for this test"
+    end
+
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
     t = Tempfile.new(pre)
@@ -2150,7 +2156,7 @@ class TestIO < Test::Unit::TestCase
       assert_raise(Errno::EBADF, feature2250) {t.close}
     end
   ensure
-    t.close!
+    t&.close!
   end
 
   def test_autoclose_false_closed_by_finalizer
