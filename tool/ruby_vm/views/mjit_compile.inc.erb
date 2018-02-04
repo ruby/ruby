@@ -44,7 +44,13 @@ switch (insn) {
 % (RubyVM::BareInstructions.to_a + RubyVM::OperandsUnifications.to_a).each do |insn|
 %   next if unsupported_insns.include?(insn.name)
   case BIN(<%= insn.name %>):
+%   case insn.name
+%   when 'opt_send_without_block', 'send'
+<%= render 'mjit_compile_send', locals: { insn: insn } -%>
 <%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
+%   else
+<%= render 'mjit_compile_insn', locals: { insn: insn, dispatched: false } -%>
+%   end
     break;
 % end
 % # We don't support InstructionsUnifications yet because it's not used for now.

@@ -36,6 +36,33 @@ struct case_dispatch_var {
     VALUE last_value;
 };
 
+/* Returns iseq from cc if it's available and still not obsoleted. */
+static const rb_iseq_t *
+get_iseq_if_available(CALL_CACHE cc)
+{
+    if (GET_GLOBAL_METHOD_STATE() == cc->method_state
+        && mjit_valid_class_serial_p(cc->class_serial)
+        && cc->me && cc->me->def->type == VM_METHOD_TYPE_ISEQ) {
+        return rb_iseq_check(cc->me->def->body.iseq.iseqptr);
+    }
+    return NULL;
+}
+
+/* TODO: move to somewhere shared with vm_args.c */
+#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
+#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
+
+/* Returns TRUE if iseq is inlinable, otherwise NULL. This becomes TRUE in the same condition
+   as CI_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup. */
+static int
+inlinable_iseq_p(CALL_INFO ci, CALL_CACHE cc, const rb_iseq_t *iseq)
+{
+    extern int simple_iseq_p(const rb_iseq_t *iseq);
+    return iseq != NULL
+        && simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT) /* top of vm_callee_setup_arg */
+        && (!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)); /* CI_SET_FASTPATH */
+}
+
 static int
 compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
 {
