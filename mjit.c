@@ -69,6 +69,10 @@
    constraint.  So the correct version of code based on SIGCHLD and
    WNOHANG waitpid would be very complicated.  */
 
+#ifdef __sun
+#define __EXTENSIONS__ 1
+#endif
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -76,10 +80,6 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <dlfcn.h>
-#endif
-
-#ifdef __sun
-#define __EXTENSIONS__ 1
 #endif
 
 #include "vm_core.h"
