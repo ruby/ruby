@@ -200,6 +200,16 @@ vm_living_thread_num(rb_vm_t *vm)
     return vm->living_thread_num;
 }
 
+/*
+ * poll() is supported by many OSes, but so far Linux is the only
+ * one we know of that supports using poll() in all places select()
+ * would work.
+ */
+#if defined(HAVE_POLL) && defined(__linux__)
+#  define USE_POLL
+#endif
+
+#ifdef USE_POLL
 static inline struct timespec *
 timespec_for(struct timespec *ts, const struct timeval *tv)
 {
@@ -210,6 +220,7 @@ timespec_for(struct timespec *ts, const struct timeval *tv)
     }
     return 0;
 }
+#endif
 
 #if THREAD_DEBUG
 #ifdef HAVE_VA_ARGS_MACRO
@@ -3878,15 +3889,6 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     }
     return do_select(max, read, write, except, timeout);
 }
-
-/*
- * poll() is supported by many OSes, but so far Linux is the only
- * one we know of that supports using poll() in all places select()
- * would work.
- */
-#if defined(HAVE_POLL) && defined(__linux__)
-#  define USE_POLL
-#endif
 
 #ifdef USE_POLL
 
