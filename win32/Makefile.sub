@@ -1186,6 +1186,15 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
+rb_mjit_header.h: PHONY probes.h
+	$(ECHO) building $@
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c -P
+	$(Q) (cmp vm.i $@ && $(ECHO0) $@ unchanged && $(RM) vm.i) || $(MV) vm.i $@
+
+$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
+	$(ECHO) building $@
+	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
+
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc
 
