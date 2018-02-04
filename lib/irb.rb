@@ -709,7 +709,7 @@ end
 class Binding
   # :nodoc:
   def irb
-    IRB.setup(eval("__FILE__"))
+    IRB.setup(eval("__FILE__"), argv: [])
     IRB::Irb.new(IRB::WorkSpace.new(self)).run(IRB.conf)
   end
 end

@@ -13,10 +13,10 @@
 module IRB # :nodoc:
 
   # initialize config
-  def IRB.setup(ap_path)
+  def IRB.setup(ap_path, argv: ::ARGV)
     IRB.init_config(ap_path)
     IRB.init_error
-    IRB.parse_opts
+    IRB.parse_opts(argv: argv)
     IRB.run_config
     IRB.load_modules
 
@@ -122,9 +122,9 @@ module IRB # :nodoc:
   end
 
   # option analyzing
-  def IRB.parse_opts
+  def IRB.parse_opts(argv: ::ARGV)
     load_path = []
-    while opt = ARGV.shift
+    while opt = argv.shift
       case opt
       when "-f"
         @CONF[:RC] = false
@@ -136,7 +136,7 @@ module IRB # :nodoc:
       when "-w"
         $VERBOSE = true
       when /^-W(.+)?/
-        opt = $1 || ARGV.shift
+        opt = $1 || argv.shift
         case opt
         when "0"
           $VERBOSE = nil
@@ -146,19 +146,19 @@ module IRB # :nodoc:
           $VERBOSE = true
         end
       when /^-r(.+)?/
-        opt = $1 || ARGV.shift
+        opt = $1 || argv.shift
         @CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
-        opt = $1 || ARGV.shift
+        opt = $1 || argv.shift
         load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
       when '-U'
         set_encoding("UTF-8", "UTF-8")
       when /^-E(.+)?/, /^--encoding(?:=(.+))?/
-        opt = $1 || ARGV.shift
+        opt = $1 || argv.shift
         set_encoding(*opt.split(':', 2))
       when "--inspect"
-        if /^-/ !~ ARGV.first
-          @CONF[:INSPECT_MODE] = ARGV.shift
+        if /^-/ !~ argv.first
+          @CONF[:INSPECT_MODE] = argv.shift
         else
           @CONF[:INSPECT_MODE] = true
         end
@@ -177,7 +177,7 @@ module IRB # :nodoc:
       when "--noverbose"
         @CONF[:VERBOSE] = false
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
-        opt = $1 || ARGV.shift
+        opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern
         @CONF[:PROMPT_MODE] = prompt_mode
       when "--noprompt"
@@ -189,13 +189,13 @@ module IRB # :nodoc:
       when "--tracer"
         @CONF[:USE_TRACER] = true
       when /^--back-trace-limit(?:=(.+))?/
-        @CONF[:BACK_TRACE_LIMIT] = ($1 || ARGV.shift).to_i
+        @CONF[:BACK_TRACE_LIMIT] = ($1 || argv.shift).to_i
       when /^--context-mode(?:=(.+))?/
-        @CONF[:CONTEXT_MODE] = ($1 || ARGV.shift).to_i
+        @CONF[:CONTEXT_MODE] = ($1 || argv.shift).to_i
       when "--single-irb"
         @CONF[:SINGLE_IRB] = true
       when /^--irb_debug(?:=(.+))?/
-        @CONF[:DEBUG_LEVEL] = ($1 || ARGV.shift).to_i
+        @CONF[:DEBUG_LEVEL] = ($1 || argv.shift).to_i
       when "-v", "--version"
         print IRB.version, "\n"
         exit 0
@@ -204,7 +204,7 @@ module IRB # :nodoc:
         IRB.print_usage
         exit 0
       when "--"
-        if opt = ARGV.shift
+        if opt = argv.shift
           @CONF[:SCRIPT] = opt
           $0 = opt
         end
