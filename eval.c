@@ -17,6 +17,7 @@
 #include "gc.h"
 #include "ruby/vm.h"
 #include "vm_core.h"
+#include "mjit.h"
 #include "probes_helper.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
@@ -217,6 +218,8 @@ ruby_cleanup(volatile int ex)
 	    sysex = EXIT_FAILURE;
 	}
     }
+
+    mjit_finish(); /* We still need ISeqs here. */
 
     ruby_finalize_1();
 
