@@ -1189,7 +1189,7 @@ probes.h: {$(VPATH)}probes.dmyh
 rb_mjit_header.h: PHONY probes.h
 	$(ECHO) building $@
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c -P
-	$(Q) (cmp vm.i $@ && $(ECHO0) $@ unchanged && $(RM) vm.i) || $(MV) vm.i $@
+	$(Q) $(IFCHANGE) $@ vm.i
 
 $(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
 	$(ECHO) building $@
