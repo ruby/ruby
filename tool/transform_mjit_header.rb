@@ -166,7 +166,7 @@ loop do
     extern_names << decl_name
     decl[match.begin(0)...match.end(0)] = ''
 
-    if decl =~ /static/
+    if decl =~ /\bstatic\b/
       STDERR.puts "warning: a static decl inside external definition of '#{decl_name}'"
     end
 
