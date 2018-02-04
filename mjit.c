@@ -118,6 +118,17 @@ typedef intptr_t pid_t;
 #define va_copy(dest, src) ((dest) = (src))
 #endif
 
+/* Atomically set function pointer if possible. */
+#ifdef _WIN32
+# ifdef InterlockedExchangePointer
+#  define MJIT_ATOMIC_SET(var, val) InterlockedExchangePointer(&(var), val)
+# else
+#  define MJIT_ATOMIC_SET(var, val) (void)((var) = (val))
+# endif
+#else
+# define MJIT_ATOMIC_SET(var, val) ATOMIC_SET(var, val)
+#endif
+
 /* A copy of MJIT portion of MRI options since MJIT initialization.  We
    need them as MJIT threads still can work when the most MRI data were
    freed. */
@@ -800,7 +811,7 @@ worker(void)
             CRITICAL_SECTION_START(3, "in jit func replace");
             if (node->unit->iseq) { /* Check whether GCed or not */
                 /* Usage of jit_code might be not in a critical section.  */
-                ATOMIC_SET(node->unit->iseq->body->jit_func, func);
+                MJIT_ATOMIC_SET(node->unit->iseq->body->jit_func, func);
             }
             remove_from_list(node, &unit_queue);
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
