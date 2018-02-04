@@ -192,6 +192,10 @@ all: $(SHOWFLAGS) main docs
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs $(MJIT_MIN_HEADER)
 	@$(NULLCMD)
 
+$(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
+	$(ECHO) building $@
+	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
+
 .PHONY: showflags
 exts enc trans: $(SHOWFLAGS)
 showflags:
