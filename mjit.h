@@ -80,6 +80,9 @@ extern void mjit_free_iseq(const rb_iseq_t *iseq);
 extern void mjit_mark(void);
 extern struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec);
 extern void mjit_cont_free(struct mjit_cont *cont);
+extern void mjit_add_class_serial(rb_serial_t class_serial);
+extern void mjit_remove_class_serial(rb_serial_t class_serial);
+extern int mjit_valid_class_serial_p(rb_serial_t class_serial);
 
 /* A threshold used to reject long iseqs from JITting as such iseqs
    takes too much time to be compiled.  */

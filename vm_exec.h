@@ -167,8 +167,26 @@ default:                        \
 
 #endif
 
+#ifdef MJIT_HEADER
+#define EXEC_EC_CFP() do { \
+    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
+    val = vm_exec(ec); \
+} while (0)
+#else
+#define EXEC_EC_CFP() do { \
+    RESTORE_REGS(); \
+    NEXT_INSN(); \
+} while (0)
+#endif
+
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
+#ifdef MJIT_HEADER
+#define THROW_EXCEPTION(exc) do { \
+    ec->errinfo = (VALUE)(exc); \
+    EC_JUMP_TAG(ec, ec->tag->state); \
+} while (0)
+#else
 #if OPT_CALL_THREADED_CODE
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
@@ -176,6 +194,7 @@ default:                        \
 } while (0)
 #else
 #define THROW_EXCEPTION(exc) return (VALUE)(exc)
+#endif
 #endif
 
 #define SCREG(r) (reg_##r)

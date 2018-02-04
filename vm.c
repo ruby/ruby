@@ -293,7 +293,7 @@ static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
-static VALUE vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
+extern VALUE vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
 static VALUE rb_block_param_proxy;
@@ -302,17 +302,24 @@ static VALUE rb_block_param_proxy;
 #include "vm_insnhelper.h"
 #include "vm_exec.h"
 #include "vm_insnhelper.c"
+
+#ifndef MJIT_HEADER
+
 #include "vm_exec.c"
 
 #include "vm_method.c"
+#endif /* #ifndef MJIT_HEADER */
 #include "vm_eval.c"
+#ifndef MJIT_HEADER
 
 #define PROCDEBUG 0
 
 rb_serial_t
 rb_next_class_serial(void)
 {
-    return NEXT_CLASS_SERIAL();
+    rb_serial_t class_serial = NEXT_CLASS_SERIAL();
+    mjit_add_class_serial(class_serial);
+    return class_serial;
 }
 
 VALUE rb_cRubyVM;
@@ -339,7 +346,7 @@ rb_vm_inc_const_missing_count(void)
 
 VALUE rb_class_path_no_cache(VALUE _klass);
 
-int
+MJIT_FUNC_EXPORTED int
 rb_dtrace_setup(rb_execution_context_t *ec, VALUE klass, ID id,
 		struct ruby_dtrace_method_hook_args *args)
 {
@@ -499,7 +506,7 @@ rb_vm_get_binding_creatable_next_cfp(const rb_execution_context_t *ec, const rb_
     return 0;
 }
 
-rb_control_frame_t *
+MJIT_FUNC_EXPORTED rb_control_frame_t *
 rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, cfp)) bp();
@@ -511,6 +518,8 @@ rb_vm_get_ruby_level_next_cfp(const rb_execution_context_t *ec, const rb_control
     }
     return 0;
 }
+
+#endif /* #ifndef MJIT_HEADER */
 
 static rb_control_frame_t *
 vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
@@ -545,6 +554,8 @@ rb_vm_pop_cfunc_frame(void)
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
+
+#ifndef MJIT_HEADER
 
 void
 rb_vm_rewind_cfp(rb_execution_context_t *ec, rb_control_frame_t *cfp)
@@ -880,7 +891,7 @@ rb_proc_dup(VALUE self)
 }
 
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_captured_block *captured, VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
@@ -1157,14 +1168,14 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
 }
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
 		  int argc, const VALUE *argv, VALUE block_handler)
 {
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, block_handler, TRUE);
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
 		  int argc, const VALUE *argv, VALUE passed_block_handler)
 {
@@ -1391,7 +1402,7 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
     return exc;
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 {
     VALUE exc = make_localjump_error(mesg, value, reason);
@@ -1775,7 +1786,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
   };
  */
 
-static VALUE
+MJIT_FUNC_EXPORTED VALUE
 vm_exec(rb_execution_context_t *ec)
 {
     enum ruby_tag_type state;
@@ -1789,8 +1800,8 @@ vm_exec(rb_execution_context_t *ec)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = mjit_exec(ec);
       vm_loop_start:
-	if (result == Qundef)
-	    result = vm_exec_core(ec, initial);
+        if (result == Qundef)
+            result = vm_exec_core(ec, initial);
 	VM_ASSERT(ec->tag == &_tag);
 	if ((state = _tag.state) != TAG_NONE) {
 	    err = (struct vm_throw_data *)result;
@@ -2000,6 +2011,7 @@ vm_exec(rb_execution_context_t *ec)
 	    state = 0;
 	    ec->tag->state = TAG_NONE;
 	    ec->errinfo = Qnil;
+
             result = Qundef;
 	    goto vm_loop_start;
 	}
@@ -3423,5 +3435,7 @@ vm_collect_usage_register(int reg, int isset)
 	(*ruby_vm_collect_usage_func_register)(reg, isset);
 }
 #endif
+
+#endif /* #ifndef MJIT_HEADER */
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

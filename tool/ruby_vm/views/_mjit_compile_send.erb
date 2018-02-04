@@ -1,0 +1,74 @@
+% # -*- mode:c; style:ruby; coding: utf-8; indent-tabs-mode: nil -*-
+% # Copyright (c) 2018 Takashi Kokubun.  All rights reserved.
+% #
+% # This file is a part of  the programming language Ruby.  Permission is hereby
+% # granted, to either  redistribute and/or modify this file,  provided that the
+% # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
+% # details.
+%
+% # Optimized case of send / opt_send_without_block instructions.
+    {
+% # compiler: Prepare operands which may be used by `insn.call_attribute`
+% insn.opes.each_with_index do |ope, i|
+        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+% end
+%
+        const rb_iseq_t *iseq;
+        unsigned int argc = ci->orig_argc; /* unlike `ci->orig_argc`, `argc` may include blockarg */
+% if insn.name == 'send'
+        argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
+% end
+
+        if (inlinable_iseq_p(ci, cc, iseq = get_iseq_if_available(cc))) {
+            int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
+
+% # JIT: move sp and pc if necessary
+            fprintf(f, "    reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + next_pos)); /* ADD_PC(INSN_ATTR(width)); */
+            fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+
+% # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
+            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %llu || RCLASS_SERIAL(CLASS_OF(stack[%d])) != %llu)) {\n", cc->method_state, b->stack_size - 1 - argc, cc->class_serial);
+            fprintf(f, "        reg_cfp->pc = (VALUE *)0x%"PRIxVALUE";\n", (VALUE)(body->iseq_encoded + pos));
+            fprintf(f, "        return Qundef; /* cancel JIT */\n");
+            fprintf(f, "    }\n");
+
+% # JIT: Print insn body in insns.def
+            fprintf(f, "    {\n");
+            fprintf(f, "        struct rb_calling_info calling;\n");
+% if insn.name == 'send'
+            fprintf(f, "        vm_caller_setup_arg_block(ec, reg_cfp, &calling, 0x%"PRIxVALUE", 0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
+% else
+            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+% end
+            fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
+            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
+
+% # JIT: Special CALL_METHOD. Inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH. TODO: modify VM to share code with here
+            fprintf(f, "        {\n");
+            fprintf(f, "            VALUE v;\n");
+            fprintf(f, "            VALUE *argv = reg_cfp->sp - calling.argc;\n");
+            fprintf(f, "            reg_cfp->sp = argv - 1;\n"); /* recv */
+            fprintf(f, "            vm_push_frame(ec, 0x%"PRIxVALUE", VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling.recv, "
+                    "calling.block_handler, 0x%"PRIxVALUE", 0x%"PRIxVALUE", argv + %d, %d, %d);\n",
+                    (VALUE)iseq, (VALUE)cc->me, (VALUE)iseq->body->iseq_encoded, param_size, iseq->body->local_table_size - param_size, iseq->body->stack_max);
+            fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
+            fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
+            fprintf(f, "                v = vm_exec(ec);\n");
+            fprintf(f, "            }\n");
+            fprintf(f, "            stack[%d] = v;\n", b->stack_size - argc - 1);
+            fprintf(f, "        }\n");
+
+            fprintf(f, "    }\n");
+
+% # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
+            fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
+            fprintf(f, "        reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
+            fprintf(f, "        return Qundef; /* cancel JIT */\n");
+            fprintf(f, "    }\n");
+
+% # compiler: Move JIT compiler's internal stack pointer
+            b->stack_size += <%= insn.call_attribute('sp_inc') %>;
+
+            break;
+        }
+    }
