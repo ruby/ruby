@@ -533,6 +533,8 @@ AS_IF([test "$GCC" = yes], [
     # a mistake of silly C extensions.
     RUBY_TRY_CFLAGS(-D_FORTIFY_SOURCE=2, [RUBY_APPEND_OPTION(XCFLAGS, -D_FORTIFY_SOURCE=2)])
 
+    : ${MJIT_HEADER_FLAGS='-P -dD'}
+
     # -fstack-protector
     AS_CASE(["$target_os"],
     [mingw*], [
@@ -2450,6 +2452,7 @@ LIBEXT=a
 
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
+AC_SUBST(MJIT_HEADER_FLAGS)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl

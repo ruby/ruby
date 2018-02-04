@@ -192,6 +192,11 @@ all: $(SHOWFLAGS) main docs
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs $(MJIT_MIN_HEADER)
 	@$(NULLCMD)
 
+rb_mjit_header.h: PHONY probes.h
+	$(ECHO) building $@
+	$(Q) $(CPP) $(MJIT_HEADER_FLAGS) $(CFLAGS_NO_ARCH) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c $(COUTFLAG)$@.new
+	$(Q) $(IFCHANGE) $@ $@.new
+
 $(MJIT_MIN_HEADER): rb_mjit_header.h $(srcdir)/tool/transform_mjit_header.rb
 	$(ECHO) building $@
 	$(BASERUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC)" rb_mjit_header.h $@
