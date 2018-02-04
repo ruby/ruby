@@ -283,6 +283,7 @@ LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -ou
 LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS) -DMJIT_HEADER_BUILD_DIR=\""$(EXTOUT)/include/$(arch)"\" -DLIBRUBYARG_SHARED=\""$(LIBRUBYARG_SHARED)"\" -DLIBRUBY_LIBDIR=\""$(prefix)/lib"\" -DMJIT_HEADER_INSTALL_DIR=\""$(prefix)/include/$(RUBY_BASE_NAME)-$(ruby_version)/$(arch)"\"
+MJIT_HEADER_FLAGS = -P
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS =
@@ -1191,11 +1192,6 @@ probes.h: {$(VPATH)}probes.dmyh
 	@$(ECHO) making dummy <<$(DEST_FILE)
 #include "$(*F).dmyh"
 <<KEEP
-
-rb_mjit_header.h: PHONY probes.h
-	$(ECHO) building $@
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -DMJIT_HEADER $(srcdir)/vm.c -P
-	$(Q) $(IFCHANGE) $@ vm.i
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc mjit_compile.inc
