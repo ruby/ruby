@@ -78,7 +78,10 @@
 #include <dlfcn.h>
 #endif
 
-#include "internal.h"
+#ifdef __sun
+#define __EXTENSIONS__ 1
+#endif
+
 #include "vm_core.h"
 #include "mjit.h"
 #include "version.h"
