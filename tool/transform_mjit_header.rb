@@ -77,7 +77,7 @@ module MJITHeader
   # Return true if CC with CFLAGS compiles successfully the current code.
   # Use STAGE in the message in case of a compilation failure
   def self.check_code!(code, cc, cflags, stage)
-    Tempfile.open(['', '.c']) do |f|
+    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
       f.puts code
       f.close
       unless system("#{cc} #{cflags} #{f.path}", err: File::NULL)
