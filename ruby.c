@@ -1551,9 +1551,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    opt->intern.enc.name = int_enc_name;
     }
 
-    if (opt->mjit.on)
-        mjit_init(&opt->mjit);
-
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
@@ -1609,6 +1606,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
+
+    if (opt->mjit.on)
+        /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath_safe(). */
+        mjit_init(&opt->mjit);
+
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);

@@ -202,6 +202,13 @@ static VALUE valid_class_serials;
 /* Ruby level interface module.  */
 VALUE rb_mMJIT;
 
+#ifdef _WIN32
+/* Linker option to enable libruby in the build directory. */
+static char *libruby_build;
+/* Linker option to enable libruby in the directory after install. */
+static char *libruby_installed;
+#endif
+
 /* Return time in milliseconds as a double.  */
 static double
 real_ms_time(void)
@@ -629,10 +636,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
     int exit_code;
     static const char *input[] = {NULL, NULL};
     static const char *output[] = {"-o",  NULL, NULL};
-    static const char *libs[] = {
+    const char *libs[] = {
 #ifdef _WIN32
+        /* Look for ruby.dll.a in build and install directories. */
+        libruby_installed,
+        libruby_build,
         /* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
-        "-L" LIBRUBY_LIBDIR,
         LIBRUBYARG_SHARED,
         "-lmsvcrt",
 # ifdef __GNUC__
@@ -1051,6 +1060,12 @@ static void
 init_header_filename(void)
 {
     FILE *f;
+    /* Root path of the running ruby process. Equal to RbConfig::TOPDIR.  */
+    VALUE basedir_val;
+    char *basedir;
+
+    basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+    basedir = StringValueCStr(basedir_val);
 
     header_file = xmalloc(strlen(MJIT_HEADER_BUILD_DIR) + 2 + strlen(RUBY_MJIT_HEADER_FILE));
     if (header_file == NULL)
@@ -1061,10 +1076,12 @@ init_header_filename(void)
 
     if ((f = fopen(header_file, "r")) == NULL) {
         xfree(header_file);
-        header_file = xmalloc(strlen(MJIT_HEADER_INSTALL_DIR) + 2 + strlen(RUBY_MJIT_HEADER_FILE));
+        header_file = xmalloc(strlen(basedir) + 1 + strlen(MJIT_HEADER_INSTALL_DIR) + 1 + strlen(RUBY_MJIT_HEADER_FILE) + 1);
         if (header_file == NULL)
             return;
-        strcpy(header_file, MJIT_HEADER_INSTALL_DIR);
+        strcpy(header_file, basedir);
+        strcat(header_file, "/");
+        strcat(header_file, MJIT_HEADER_INSTALL_DIR);
         strcat(header_file, "/");
         strcat(header_file, RUBY_MJIT_HEADER_FILE);
         if ((f = fopen(header_file, "r")) == NULL) {
@@ -1074,6 +1091,16 @@ init_header_filename(void)
         }
     }
     fclose(f);
+
+#ifdef _WIN32
+    libruby_build = xmalloc(2 + strlen(basedir) + 1);
+    strcpy(libruby_build, "-L");
+    strcat(libruby_build, basedir);
+    libruby_installed = xmalloc(2 + strlen(basedir) + 4 + 1);
+    strcpy(libruby_installed, "-L");
+    strcat(libruby_installed, basedir);
+    strcat(libruby_installed, "/lib");
+#endif
 }
 
 /* This is called after each fork in the child in to switch off MJIT
