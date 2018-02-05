@@ -22,7 +22,7 @@ enum rb_mjit_iseq_func {
     /* ISEQ included not compilable insn or some assertion failed  */
     NOT_COMPILABLE_JIT_ISEQ_FUNC = 2,
     /* End mark */
-    LAST_JIT_ISEQ_FUNC = 3,
+    LAST_JIT_ISEQ_FUNC = 3
 };
 
 /* C compiler used to generate native code. */
@@ -32,7 +32,7 @@ enum rb_mjit_cc {
     /* GNU Compiler Collection */
     MJIT_CC_GCC = 1,
     /* LLVM/Clang */
-    MJIT_CC_CLANG = 2,
+    MJIT_CC_CLANG = 2
 };
 
 /* MJIT options which can be defined on the MRI command line.  */
