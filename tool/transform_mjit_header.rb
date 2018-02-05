@@ -80,9 +80,10 @@ module MJITHeader
     Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
       f.puts code
       f.close
-      unless system("#{cc} #{cflags} #{f.path}", err: File::NULL)
+      cmd = "#{cc} #{cflags} #{f.path}"
+      unless system(cmd, err: File::NULL)
         STDERR.puts "error in #{stage} header file:"
-        system("#{cc} #{cflags} #{f.path}")
+        system(cmd)
         exit false
       end
     end
