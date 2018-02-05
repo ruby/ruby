@@ -123,7 +123,7 @@ typedef intptr_t pid_t;
 /* Atomically set function pointer if possible. */
 #ifdef _WIN32
 # ifdef InterlockedExchangePointer
-#  define MJIT_ATOMIC_SET(var, val) InterlockedExchangePointer(&(var), val)
+#  define MJIT_ATOMIC_SET(var, val) InterlockedExchangePointer((void **)&(var), (void *)val)
 # else
 #  define MJIT_ATOMIC_SET(var, val) (void)((var) = (val))
 # endif
