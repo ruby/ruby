@@ -1735,7 +1735,7 @@ rb_ary_resize(VALUE ary, long len)
  *     a[3, 0] = "B"               #=> [1, 2, "A", "B"]
  */
 
-static VALUE
+VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
@@ -1808,7 +1808,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
     return ary;
 }
 
-static VALUE
+VALUE
 rb_ary_length(VALUE ary);
 
 static VALUE
@@ -1920,7 +1920,7 @@ rb_ary_reverse_each(VALUE ary)
  *     [].length                  #=> 0
  */
 
-static VALUE
+VALUE
 rb_ary_length(VALUE ary)
 {
     long len = RARRAY_LEN(ary);
@@ -1936,7 +1936,7 @@ rb_ary_length(VALUE ary)
  *     [].empty?   #=> true
  */
 
-static VALUE
+VALUE
 rb_ary_empty_p(VALUE ary)
 {
     if (RARRAY_LEN(ary) == 0)
