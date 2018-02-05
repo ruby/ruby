@@ -73,6 +73,15 @@
 #define __EXTENSIONS__ 1
 #endif
 
+#include "internal.h"
+#include "vm_core.h"
+#include "mjit.h"
+#include "version.h"
+#include "gc.h"
+#include "constant.h"
+#include "id_table.h"
+#include "ruby_assert.h"
+
 #ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
@@ -81,14 +90,6 @@
 #include <sys/time.h>
 #include <dlfcn.h>
 #endif
-
-#include "vm_core.h"
-#include "mjit.h"
-#include "version.h"
-#include "gc.h"
-#include "constant.h"
-#include "id_table.h"
-#include "ruby_assert.h"
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
