@@ -14,7 +14,7 @@ unless File.respond_to? :realpath
 end
 
 def IO.pread(*args)
-  STDERR.puts(*args.inspect) if $DEBUG
+  STDERR.puts(args.inspect) if $DEBUG
   popen(*args) {|f|f.read}
 end
 
