@@ -11,6 +11,7 @@ module MJITHeader
   ATTR_VALUE_REGEXP  = /[^()]|\([^()]*\)/
   ATTR_REGEXP        = /__attribute__\s*\(\((#{ATTR_VALUE_REGEXP})*\)\)/
   FUNC_HEADER_REGEXP = /\A(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
+  TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr)_/
 
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
   RECURSIVE_MACROS = %w[
@@ -167,6 +168,11 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
 
     code[decl_range] = "static inline #{decl}"
   elsif (match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)) && (header = match[0]) !~ /static/
+    unless decl_name.match(MJITHeader::TARGET_NAME_REGEXP)
+      puts "#{PROGRAM}: SKIPPED to transform #{decl_name}"
+      next
+    end
+
     extern_names << decl_name
     decl[match.begin(0)...match.end(0)] = ''
 
