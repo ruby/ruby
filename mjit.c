@@ -1125,7 +1125,7 @@ mjit_init(struct mjit_options *opts)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
     if (mjit_opts.cc == MJIT_CC_DEFAULT) {
-#if defined(__MACH__)
+#if defined(__clang__)
         mjit_opts.cc = MJIT_CC_CLANG;
         verbose(2, "MJIT: CC defaults to clang");
 #else
