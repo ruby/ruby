@@ -127,7 +127,7 @@
     compile_insns(f, body, b->stack_size, pos + insn_len(insn), status);
 % end
 %
-% # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compieled. TODO: create attr for it?
+% # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compiled. TODO: create attr for it?
 % if insn.expr.expr =~ /\sTHROW_EXCEPTION\([^)]+\);/ || insn.expr.expr =~ /\sRESTORE_REGS\(\);/
     b->finish_p = TRUE;
 % end
