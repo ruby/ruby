@@ -5,6 +5,8 @@
 require 'fileutils'
 require 'tempfile'
 
+PROGRAM = File.basename($0, ".*")
+
 module MJITHeader
   ATTR_VALUE_REGEXP  = /[^()]|\([^()]*\)/
   ATTR_REGEXP        = /__attribute__\s*\(\((#{ATTR_VALUE_REGEXP})*\)\)/
@@ -115,7 +117,7 @@ module MJITHeader
 end
 
 if ARGV.size != 3
-  abort 'Usage: transform_mjit_header.rb <c-compiler> <header file> <out>'
+  abort "Usage: #{$0} <c-compiler> <header file> <out>"
 end
 
 cc      = ARGV[0]
@@ -153,12 +155,12 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
   decl_name = MJITHeader.decl_name_of(decl)
 
   if MJITHeader::IGNORED_FUNCTIONS.include?(decl_name) && /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
-    puts "transform_mjit_header: changing definition of '#{decl_name}' to declaration"
+    puts "#{PROGRAM}: changing definition of '#{decl_name}' to declaration"
     code[decl_range] = decl.sub(/{.+}/m, ';')
   elsif extern_names.include?(decl_name) && (decl =~ /#{MJITHeader::FUNC_HEADER_REGEXP};/)
     decl.sub!(/(extern|static|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      puts "transform_mjit_header: making declaration of '#{decl_name}' static inline"
+      puts "#{PROGRAM}: making declaration of '#{decl_name}' static inline"
     end
 
     code[decl_range] = "static inline #{decl}"
@@ -172,7 +174,7 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
 
     header.sub!(/(extern|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
-      puts "transform_mjit_header: making external definition of '#{decl_name}' static inline"
+      puts "#{PROGRAM}: making external definition of '#{decl_name}' static inline"
     end
     code[decl_range] = "static inline #{header}#{decl}"
   end
