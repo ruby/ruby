@@ -1777,7 +1777,7 @@ rb_nativethread_self(void)
 static void *
 mjit_worker(void *arg)
 {
-    void (*worker_func)(void) = arg;
+    void (*worker_func)(void) = (void(*)(void))arg;
 
     if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
         fprintf(stderr, "Cannot enable cancelation in MJIT worker\n");
@@ -1791,7 +1791,7 @@ mjit_worker(void *arg)
 
 /* Launch MJIT thread. Returns FALSE if it fails to create thread. */
 int
-rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void))
+rb_thread_create_mjit_thread(void (*child_hook)(void), void *worker_func)
 {
     pthread_attr_t attr;
     pthread_t worker_pid;

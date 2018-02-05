@@ -440,7 +440,7 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
-        unit->iseq->body->jit_func = NULL;
+        unit->iseq->body->jit_func = 0;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     xfree(unit);
@@ -682,7 +682,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
-static void *
+static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
     char c_file[70], so_file[70], funcname[35];
@@ -744,7 +744,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!success) {
         if (!mjit_opts.save_temps)
             remove(c_file);
-        return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
     start_time = real_ms_time();
@@ -755,7 +755,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         remove(c_file);
     if (!success) {
         verbose(2, "Failed to generate so: %s", so_file);
-        return (void *)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
     func = load_func_from_so(so_file, funcname, unit);
@@ -771,7 +771,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
                     RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
         CRITICAL_SECTION_FINISH(3, "end of jit");
     }
-    return func;
+    return (mjit_func_t)func;
 }
 
 /* Set to TRUE to finish worker.  */
@@ -810,7 +810,7 @@ worker(void)
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (node) {
-            void *func = convert_unit_to_func(node->unit);
+            mjit_func_t func = convert_unit_to_func(node->unit);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             if (node->unit->iseq) { /* Check whether GCed or not */
@@ -985,7 +985,7 @@ unload_units(void)
         /* Unload the worst node. */
         verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
         unit = worst_node->unit;
-        unit->iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
+        unit->iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
         remove_from_list(worst_node, &active_units);
 
         assert(unit->handle != NULL);
@@ -1005,7 +1005,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     if (!mjit_init_p)
         return;
 
-    iseq->body->jit_func = (void *)NOT_READY_JIT_ISEQ_FUNC;
+    iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     create_unit(iseq);
     if (iseq->body->jit_unit == NULL)
         /* Failure in creating the unit.  */
@@ -1177,7 +1177,7 @@ mjit_init(struct mjit_options *opts)
     /* Initialize worker thread */
     finish_worker_p = FALSE;
     worker_finished = FALSE;
-    if (rb_thread_create_mjit_thread(child_after_fork, worker) == FALSE) {
+    if (rb_thread_create_mjit_thread(child_after_fork, (void *)worker) == FALSE) {
         mjit_init_p = FALSE;
         rb_native_mutex_destroy(&mjit_engine_mutex);
         rb_native_cond_destroy(&mjit_pch_wakeup);
