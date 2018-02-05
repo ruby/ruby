@@ -24,7 +24,7 @@ main()
     conftest(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
     exit(0);
 }],
-	rb_cv_va_copy=[$1],
+	rb_cv_va_copy="$1",
         rb_cv_va_copy="",
         rb_cv_va_copy="")dnl
     fi
