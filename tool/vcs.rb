@@ -103,6 +103,7 @@ else
         exception = opts.fetch(:exception) {opts[:exception] = true}
       elsif opts
         exception = opts.delete(:exception) {true}
+        args.pop if opts.empty?
       end
       ret = super(*args)
       raise "Command failed with status (#$?): #{args[0]}" if exception and !ret
