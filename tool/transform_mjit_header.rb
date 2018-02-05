@@ -133,17 +133,19 @@ if MJITHeader.windows?
 end
 MJITHeader.remove_predefined_macros!(code)
 
-# Check initial file correctness
-MJITHeader.check_code!(code, cc, cflags, 'initial')
-
 if MJITHeader.windows? # transformation is broken with Windows headers for now
+  MJITHeader.check_code!(code, cc, cflags, 'initial')
   puts "\nSkipped transforming external functions to static on Windows."
   MJITHeader.write(code, outfile)
   exit
+else
+  macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
+
+  # Check initial file correctness in the manner of final output.
+  MJITHeader.check_code!("#{code}#{macro}", cc, cflags, 'initial')
 end
 puts "\nTransforming external functions to static:"
 
-macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
 stop_pos     = -1
 extern_names = []
 
