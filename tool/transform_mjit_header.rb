@@ -99,7 +99,7 @@ module MJITHeader
 
   # This makes easier to process code
   def self.separate_macro_and_code(code)
-    code.lines.partition { |l| !l.start_with?('#') }.flatten.join('')
+    code.lines.partition { |l| l.start_with?('#') }.map! {|lines| lines.join('')}
   end
 
   def self.write(code, out)
@@ -142,7 +142,7 @@ if MJITHeader.windows? # transformation is broken with Windows headers for now
 end
 puts "\nTransforming external functions to static:"
 
-code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
+macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
 stop_pos     = -1
 extern_names = []
 
@@ -177,6 +177,8 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
     code[decl_range] = "static inline #{header}#{decl}"
   end
 end
+
+code << macro
 
 # Check the final file correctness
 MJITHeader.check_code!(code, cc, cflags, 'final')
