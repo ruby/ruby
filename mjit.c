@@ -119,10 +119,6 @@ extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_
 typedef intptr_t pid_t;
 #endif
 
-#ifndef va_copy
-#define va_copy(dest, src) ((dest) = (src))
-#endif
-
 /* Atomically set function pointer if possible. */
 #ifdef _WIN32
 # ifdef InterlockedExchangePointer
