@@ -104,7 +104,7 @@ module MJITHeader
 
   def self.write(code, out)
     FileUtils.mkdir_p(File.dirname(out))
-    File.write("#{out}.new", code)
+    File.binwrite("#{out}.new", code)
     FileUtils.mv("#{out}.new", out)
   end
 
@@ -119,7 +119,7 @@ if ARGV.size != 3
 end
 
 cc      = ARGV[0]
-code    = File.read(ARGV[1]) # Current version of the header file.
+code    = File.binread(ARGV[1]) # Current version of the header file.
 outfile = ARGV[2]
 if cc =~ /\Acl(\z| |\.exe)/
   cflags = '-DMJIT_HEADER -Zs'
