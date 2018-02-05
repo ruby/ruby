@@ -1755,7 +1755,7 @@ rb_hash_size(VALUE hash)
  *
  */
 
-static VALUE
+VALUE
 rb_hash_empty_p(VALUE hash)
 {
     return RHASH_EMPTY_P(hash) ? Qtrue : Qfalse;

@@ -1001,7 +1001,7 @@ opt_plus
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_plus(recv, obj);
+    val = vm_opt_plus(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1015,7 +1015,7 @@ opt_minus
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_minus(recv, obj);
+    val = vm_opt_minus(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1029,7 +1029,7 @@ opt_mult
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_mult(recv, obj);
+    val = vm_opt_mult(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1043,7 +1043,7 @@ opt_div
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_div(recv, obj);
+    val = vm_opt_div(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1057,7 +1057,7 @@ opt_mod
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_mod(recv, obj);
+    val = vm_opt_mod(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1102,7 +1102,7 @@ opt_lt
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_lt(recv, obj);
+    val = vm_opt_lt(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1116,7 +1116,7 @@ opt_le
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_le(recv, obj);
+    val = vm_opt_le(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1130,7 +1130,7 @@ opt_gt
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_gt(recv, obj);
+    val = vm_opt_gt(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1144,7 +1144,7 @@ opt_ge
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_ge(recv, obj);
+    val = vm_opt_ge(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1158,7 +1158,7 @@ opt_ltlt
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_ltlt(recv, obj);
+    val = vm_opt_ltlt(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1172,7 +1172,7 @@ opt_aref
 (VALUE recv, VALUE obj)
 (VALUE val)
 {
-    val = vm_opt_aref(recv, obj);
+    val = vm_opt_aref(recv, obj, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1186,7 +1186,7 @@ opt_aset
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
 {
-    val = vm_opt_aset(recv, obj, set);
+    val = vm_opt_aset(recv, obj, set, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1200,7 +1200,7 @@ opt_aset_with
 (VALUE recv, VALUE val)
 (VALUE val)
 {
-    VALUE tmp = vm_opt_aset_with(recv, key, val);
+    VALUE tmp = vm_opt_aset_with(recv, key, val, cc);
 
     if (tmp != Qundef) {
 	val = tmp;
@@ -1222,7 +1222,7 @@ opt_aref_with
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_aref_with(recv, key);
+    val = vm_opt_aref_with(recv, key, cc);
 
     if (val == Qundef) {
 #ifndef MJIT_HEADER
@@ -1240,7 +1240,7 @@ opt_length
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_length(recv, BOP_LENGTH);
+    val = vm_opt_length(recv, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1254,7 +1254,7 @@ opt_size
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_length(recv, BOP_SIZE);
+    val = vm_opt_length(recv, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1268,7 +1268,7 @@ opt_empty_p
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_empty_p(recv);
+    val = vm_opt_empty_p(recv, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1282,7 +1282,7 @@ opt_succ
 (VALUE recv)
 (VALUE val)
 {
-    val = vm_opt_succ(recv);
+    val = vm_opt_succ(recv, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1320,7 +1320,7 @@ opt_regexpmatch2
 (VALUE obj2, VALUE obj1)
 (VALUE val)
 {
-    val = vm_opt_regexpmatch2(obj2, obj1);
+    val = vm_opt_regexpmatch2(obj2, obj1, cc);
 
     if (val == Qundef) {
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);

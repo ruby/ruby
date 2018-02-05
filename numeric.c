@@ -1006,7 +1006,7 @@ rb_float_uminus(VALUE flt)
  * Returns a new Float which is the sum of +float+ and +other+.
  */
 
-static VALUE
+VALUE
 flo_plus(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FIXNUM)) {
@@ -1030,7 +1030,7 @@ flo_plus(VALUE x, VALUE y)
  * Returns a new Float which is the difference of +float+ and +other+.
  */
 
-static VALUE
+VALUE
 flo_minus(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FIXNUM)) {
@@ -1054,7 +1054,7 @@ flo_minus(VALUE x, VALUE y)
  * Returns a new Float which is the product of +float+ and +other+.
  */
 
-static VALUE
+VALUE
 flo_mul(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FIXNUM)) {
@@ -1078,7 +1078,7 @@ flo_mul(VALUE x, VALUE y)
  * Returns a new Float which is the result of dividing +float+ by +other+.
  */
 
-static VALUE
+VALUE
 flo_div(VALUE x, VALUE y)
 {
     long f_y;
@@ -1176,7 +1176,7 @@ ruby_float_mod(double x, double y)
  *     6543.21.modulo(137.24)   #=> 92.92999999999961
  */
 
-static VALUE
+VALUE
 flo_mod(VALUE x, VALUE y)
 {
     double fy;
@@ -1489,7 +1489,7 @@ rb_float_gt(VALUE x, VALUE y)
  * so an implementation-dependent value is returned.
  */
 
-static VALUE
+VALUE
 flo_ge(VALUE x, VALUE y)
 {
     double a, b;
@@ -1526,7 +1526,7 @@ flo_ge(VALUE x, VALUE y)
  * so an implementation-dependent value is returned.
  */
 
-static VALUE
+VALUE
 flo_lt(VALUE x, VALUE y)
 {
     double a, b;
@@ -1563,7 +1563,7 @@ flo_lt(VALUE x, VALUE y)
  * so an implementation-dependent value is returned.
  */
 
-static VALUE
+VALUE
 flo_le(VALUE x, VALUE y)
 {
     double a, b;
@@ -4212,7 +4212,7 @@ fix_lt(VALUE x, VALUE y)
     }
 }
 
-static VALUE
+VALUE
 int_lt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
@@ -4252,7 +4252,7 @@ fix_le(VALUE x, VALUE y)
     }
 }
 
-static VALUE
+VALUE
 int_le(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {

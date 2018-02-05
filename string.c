@@ -1859,7 +1859,7 @@ rb_str_bytesize(VALUE str)
  *     "".empty?        #=> true
  */
 
-static VALUE
+VALUE
 rb_str_empty(VALUE str)
 {
     if (RSTRING_LEN(str) == 0)
@@ -3764,7 +3764,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
  *     "cat o' 9 tails" =~ 9      #=> nil
  */
 
-static VALUE
+VALUE
 rb_str_match(VALUE x, VALUE y)
 {
     if (SPECIAL_CONST_P(y)) goto generic;
