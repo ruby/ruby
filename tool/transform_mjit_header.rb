@@ -24,24 +24,28 @@ module MJITHeader
   # Return start..stop of last decl in CODE ending STOP
   def self.find_decl(code, stop)
     level = 0
-    stop.downto(0) do |i|
-      if level == 0 && stop != i && decl_found?(code, i)
-        return decl_start(code, i)..stop
-      elsif code[i] == '}'
+    i = stop
+    while i = code.rindex(/[;{}]/, i)
+      if level == 0 && stop != i && decl_found?($&, i)
+        return decl_start($&, i)..stop
+      end
+      case $&
+      when '}'
         level += 1
-      elsif code[i] == '{'
+      when '{'
         level -= 1
       end
+      i -= 1
     end
-    0..-1
+    nil
   end
 
   def self.decl_found?(code, i)
-    i == 0 || code[i] == ';' || code[i] == '}'
+    i == 0 || code == ';' || code == '}'
   end
 
   def self.decl_start(code, i)
-    if i == 0 && code[i] != ';' && code[i] != '}'
+    if i == 0 && code != ';' && code != '}'
       0
     else
       i + 1
@@ -139,14 +143,11 @@ end
 puts "\nTransforming external functions to static:"
 
 code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
-stop_pos     = code.match(/^#/).begin(0) # See `separate_macro_and_code`. This ignores proprocessors.
+stop_pos     = -1
 extern_names = []
 
 # This loop changes function declarations to static inline.
-loop do
-  decl_range = MJITHeader.find_decl(code, stop_pos)
-  break if decl_range.end < 0
-
+while (decl_range = MJITHeader.find_decl(code, stop_pos))
   stop_pos = decl_range.begin - 1
   decl = code[decl_range]
   decl_name = MJITHeader.decl_name_of(decl)
