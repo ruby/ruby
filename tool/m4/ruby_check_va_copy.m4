@@ -14,9 +14,11 @@ conftest(int n, ...)
     va_start(ap, n);
     CONFTEST_VA_COPY(ap2, ap);
     for (i = 0; i < n; i++) if ((int)va_arg(ap, int) != n - i - 1) abort();
+    va_end(ap);
     CONFTEST_VA_COPY(ap, ap2);
     for (i = 0; i < n; i++) if ((int)va_arg(ap, int) != n - i - 1) abort();
     va_end(ap);
+    va_end(ap2);
 }
 int
 main()
