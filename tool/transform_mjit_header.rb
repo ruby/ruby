@@ -93,10 +93,9 @@ module MJITHeader
     code.gsub!(/^#define #{Regexp.union(RECURSIVE_MACROS)} .*$/, '')
   end
 
-  # -dD outputs those macros, and it produces redefinition warnings
-  def self.remove_default_macros!(code)
-    code.gsub!(/^#define __STDC_.+$/, '')
-    code.gsub!(/^#define assert\([^\)]+\) .+$/, '')
+  # -dD outputs those macros, and it produces redefinition warnings or errors
+  def self.remove_predefined_macros!(code)
+    code.sub!(/\A(#define [^\n]+|\n)*(#define MJIT_HEADER 1\n)/, '\2')
   end
 
   # This makes easier to process code
@@ -132,7 +131,7 @@ end
 if MJITHeader.windows?
   MJITHeader.remove_harmful_macros!(code)
 end
-MJITHeader.remove_default_macros!(code)
+MJITHeader.remove_predefined_macros!(code)
 
 # Check initial file correctness
 MJITHeader.check_code!(code, cc, cflags, 'initial')
