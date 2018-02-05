@@ -1598,7 +1598,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
 }
 
 int
-simple_iseq_p(const rb_iseq_t *iseq)
+rb_simple_iseq_p(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt == FALSE &&
            iseq->body->param.flags.has_rest == FALSE &&
@@ -1612,7 +1612,7 @@ static inline int
 vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
 		    const rb_iseq_t *iseq, VALUE *argv, int param_size, int local_size)
 {
-    if (LIKELY(simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT))) {
+    if (LIKELY(rb_simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT))) {
 	rb_control_frame_t *cfp = ec->cfp;
 
 	CALLER_SETUP_ARG(cfp, calling, ci); /* splat arg */
@@ -2604,7 +2604,7 @@ vm_callee_setup_block_arg_arg0_check(VALUE *argv)
 static int
 vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *calling, const struct rb_call_info *ci, const rb_iseq_t *iseq, VALUE *argv, const enum arg_setup_type arg_setup_type)
 {
-    if (simple_iseq_p(iseq)) {
+    if (rb_simple_iseq_p(iseq)) {
 	rb_control_frame_t *cfp = ec->cfp;
 	VALUE arg0;
 
