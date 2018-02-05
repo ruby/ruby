@@ -292,8 +292,9 @@ pathobj_realpath(VALUE pathobj)
     }
 }
 
-/* A forward declaration  */
+/* Forward declarations */
 struct rb_mjit_unit;
+struct rb_execution_context_struct;
 
 struct rb_iseq_constant_body {
     enum iseq_type {
@@ -419,7 +420,8 @@ struct rb_iseq_constant_body {
     unsigned int stack_max; /* for stack overflow check */
 
     /* The following fields are MJIT related info.  */
-    void *jit_func; /* function pointer for loaded native code */
+    VALUE (*jit_func)(struct rb_execution_context_struct *,
+                      struct rb_control_frame_struct *); /* function pointer for loaded native code */
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
 };
