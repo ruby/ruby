@@ -1244,6 +1244,26 @@ AS_IF([test "$rb_cv_va_args_macro" = yes], [
   AC_DEFINE(HAVE_VA_ARGS_MACRO)
 ])
 
+AC_CACHE_CHECK([appropriate way to simulate va_copy], rb_cv_va_copy, [dnl
+    RUBY_CHECK_VA_COPY([va_copy], [va_copy((dst),(src))])
+    RUBY_CHECK_VA_COPY([VA_COPY macro], [VA_COPY((dst),(src))])
+    RUBY_CHECK_VA_COPY([__va_copy], [__va_copy((dst),(src))])
+    RUBY_CHECK_VA_COPY([__builtin_va_copy], [__builtin_va_copy((dst),(src))])
+    RUBY_CHECK_VA_COPY([va_copy via struct assignment],
+        [do (dst) = (src); while (0)])
+    RUBY_CHECK_VA_COPY([va_copy via pointer assignment],
+        [do *(dst) = *(src); while (0)])
+    RUBY_CHECK_VA_COPY([va_copy via memcpy],
+        [memcpy(&(dst), &(src), sizeof(va_list))])
+])
+if test "x$rb_cv_va_copy" = x; then
+    AC_ERROR([no way to simulate va_copy])
+else
+    m4_pushdef([macro], AS_TR_CPP(HAVE_$1))
+    AC_DEFINE_UNQUOTED(macro($rb_cv_va_copy))
+    m4_popdef([macro])
+fi
+
 AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
 rb_cv_have_alignas=no
 RUBY_WERROR_FLAG([

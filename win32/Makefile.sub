@@ -618,6 +618,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
+#define HAVE_VA_COPY 1
 !if $(MSC_VER) > 1100
 #define NORETURN(x) __declspec(noreturn) x
 !endif
