@@ -83,9 +83,14 @@ module MJITHeader
       f.close
       cmd = "#{cc} #{cflags} #{f.path}"
       unless system(cmd, err: File::NULL)
-        STDERR.puts "error in #{stage} header file:"
-        system(cmd)
-        exit false
+        out = IO.popen(cmd, err: [:child, :out], &:read)
+        STDERR.puts "error in #{stage} header file:\n#{out}"
+
+        if match = out.match(/error: conflicting types for '(?<name>[^']+)'/)
+          unless (related_lines = code.lines.grep(/#{match[:name]}/)).empty?
+            STDERR.puts "possibly related lines:\n#{related_lines.join("\n")}"
+          end
+        end
       end
     end
   end
