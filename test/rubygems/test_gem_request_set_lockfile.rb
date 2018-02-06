@@ -31,7 +31,7 @@ class TestGemRequestSetLockfile < Gem::TestCase
   def write_lockfile lockfile
     @lock_file = File.expand_path "#{@gem_deps_file}.lock"
 
-    open @lock_file, 'w' do |io|
+    File.open @lock_file, 'w' do |io|
       io.write lockfile
     end
   end
@@ -387,7 +387,7 @@ DEPENDENCIES
           s.add_dependency 'c', '~> 1.0'
         end
 
-        open 'b.gemspec', 'w' do |io|
+        File.open 'b.gemspec', 'w' do |io|
           io.write b.to_ruby
         end
 
@@ -400,7 +400,7 @@ DEPENDENCIES
       Dir.chdir 'c' do
         c = Gem::Specification.new 'c', 1
 
-        open 'c.gemspec', 'w' do |io|
+        File.open 'c.gemspec', 'w' do |io|
           io.write c.to_ruby
         end
 
@@ -455,7 +455,7 @@ DEPENDENCIES
 
     gem_deps_lock_file = "#{@gem_deps_file}.lock"
 
-    open gem_deps_lock_file, 'w' do |io|
+    File.open gem_deps_lock_file, 'w' do |io|
       io.write 'hello'
     end
 

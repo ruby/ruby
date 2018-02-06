@@ -24,7 +24,7 @@ class TestGemDoctor < Gem::TestCase
 
     FileUtils.rm b.spec_file
 
-    open c.spec_file, 'w' do |io|
+    File.open c.spec_file, 'w' do |io|
       io.write 'this will raise an exception when evaluated.'
     end
 
@@ -77,7 +77,7 @@ Removed directory gems/c-2
 
     FileUtils.rm b.spec_file
 
-    open c.spec_file, 'w' do |io|
+    File.open c.spec_file, 'w' do |io|
       io.write 'this will raise an exception when evaluated.'
     end
 

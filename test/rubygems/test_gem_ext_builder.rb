@@ -32,7 +32,7 @@ class TestGemExtBuilder < Gem::TestCase
     results = []
 
     Dir.chdir @ext do
-      open 'Makefile', 'w' do |io|
+      File.open 'Makefile', 'w' do |io|
         io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
@@ -72,7 +72,7 @@ install:
     results = []
 
     Dir.chdir @ext do
-      open 'Makefile', 'w' do |io|
+      File.open 'Makefile', 'w' do |io|
         io.puts <<-MAKEFILE
 all:
 \t@#{Gem.ruby} -e "puts %Q{all: \#{ENV['DESTDIR']}}"
@@ -107,7 +107,7 @@ install:
 
     extconf_rb = File.join ext_dir, 'extconf.rb'
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
         require 'mkmf'
 
@@ -168,7 +168,7 @@ install:
 
     extconf_rb = File.join ext_dir, 'extconf.rb'
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
         require 'mkmf'
 
@@ -290,7 +290,7 @@ install:
 
     FileUtils.mkdir_p @spec.gem_dir
 
-    open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
+    File.open File.join(@spec.gem_dir, "extconf.rb"), "w" do |f|
       f.write <<-'RUBY'
         puts "IN EXTCONF"
         extconf_args = File.join File.dirname(__FILE__), 'extconf_args'
@@ -323,7 +323,7 @@ install:
 
     build_info_file = File.join build_info_dir, "#{@spec.full_name}.info"
 
-    open build_info_file, 'w' do |io|
+    File.open build_info_file, 'w' do |io|
       io.puts '--with-foo-dir=/nonexistent'
     end
 

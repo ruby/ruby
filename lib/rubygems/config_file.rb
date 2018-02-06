@@ -458,7 +458,7 @@ if you believe they were disclosed to a third party.
 
   # Writes out this config file, replacing its source.
   def write
-    open config_file_name, 'w' do |io|
+    File.open config_file_name, 'w' do |io|
       io.write to_yaml
     end
   end

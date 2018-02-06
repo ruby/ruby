@@ -346,7 +346,7 @@ class Gem::TestCase::SpecFetcherSetup
   end
 
   def write_spec spec # :nodoc:
-    open spec.spec_file, 'w' do |io|
+    File.open spec.spec_file, 'w' do |io|
       io.write spec.to_ruby_for_cache
     end
   end

@@ -223,7 +223,7 @@ class Gem::RequestSet::Lockfile
   def write
     content = to_s
 
-    open "#{@gem_deps_file}.lock", 'w' do |io|
+    File.open "#{@gem_deps_file}.lock", 'w' do |io|
       io.write content
     end
   end

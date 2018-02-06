@@ -229,7 +229,7 @@ class TestGemSourceGit < Gem::TestCase
       Dir.chdir 'b' do
         b = Gem::Specification.new 'b', 1
 
-        open 'b.gemspec', 'w' do |io|
+        File.open 'b.gemspec', 'w' do |io|
           io.write b.to_ruby
         end
 

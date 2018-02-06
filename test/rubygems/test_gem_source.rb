@@ -110,7 +110,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, a1.spec_name
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       Marshal.dump a1, io
     end
 
@@ -163,7 +163,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       Marshal.dump latest_specs, io
     end
 
@@ -187,7 +187,7 @@ class TestGemSource < Gem::TestCase
 
     cache_file = File.join cache_dir, "latest_specs.#{Gem.marshal_version}"
 
-    open cache_file, 'wb' do |io|
+    File.open cache_file, 'wb' do |io|
       # Setup invalid data in the cache:
       io.write Marshal.dump(latest_specs)[0, 10]
     end

@@ -578,7 +578,7 @@ module Gem::Security
   def self.write pemmable, path, permissions = 0600, passphrase = nil, cipher = KEY_CIPHER
     path = File.expand_path path
 
-    open path, 'wb', permissions do |io|
+    File.open path, 'wb', permissions do |io|
       if passphrase and cipher
         io.write pemmable.to_pem cipher, passphrase
       else

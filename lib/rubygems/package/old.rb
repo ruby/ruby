@@ -80,7 +80,7 @@ class Gem::Package::Old < Gem::Package
 
         FileUtils.mkdir_p File.dirname destination
 
-        open destination, 'wb', entry['mode'] do |out|
+        File.open destination, 'wb', entry['mode'] do |out|
           out.write file_data
         end
 

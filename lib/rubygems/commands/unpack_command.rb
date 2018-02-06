@@ -94,7 +94,7 @@ command help for an example.
 
         spec_file = File.basename spec.spec_file
 
-        open spec_file, 'w' do |io|
+        File.open spec_file, 'w' do |io|
           io.write metadata
         end
       else
@@ -176,7 +176,7 @@ command help for an example.
 
     metadata = nil
 
-    open path, Gem.binary_mode do |io|
+    File.open path, Gem.binary_mode do |io|
       tar = Gem::Package::TarReader.new io
       tar.each_entry do |entry|
         case entry.full_name

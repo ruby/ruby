@@ -206,7 +206,7 @@ class Gem::Installer
     ruby_executable = false
     existing = nil
 
-    open generated_bin, 'rb' do |io|
+    File.open generated_bin, 'rb' do |io|
       next unless io.gets =~ /^#!/ # shebang
       io.gets # blankline
 
@@ -427,7 +427,7 @@ class Gem::Installer
   # specifications directory.
 
   def write_spec
-    open spec_file, 'w' do |file|
+    File.open spec_file, 'w' do |file|
       spec.installed_by_version = Gem.rubygems_version
 
       file.puts spec.to_ruby_for_cache
@@ -464,7 +464,12 @@ class Gem::Installer
   def generate_bin # :nodoc:
     return if spec.executables.nil? or spec.executables.empty?
 
-    Dir.mkdir @bin_dir unless File.exist? @bin_dir
+    begin
+      Dir.mkdir @bin_dir
+    rescue SystemCallError
+      raise unless File.directory? @bin_dir
+    end
+
     raise Gem::FilePermissionError.new(@bin_dir) unless File.writable? @bin_dir
 
     spec.executables.each do |filename|
@@ -863,7 +868,7 @@ TEXT
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
-    open build_info_file, 'w' do |io|
+    File.open build_info_file, 'w' do |io|
       @build_args.each do |arg|
         io.puts arg
       end

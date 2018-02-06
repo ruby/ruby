@@ -7,7 +7,7 @@ class TestGemPackageOld < Gem::TestCase
   def setup
     super
 
-    open 'old_format.gem', 'wb' do |io|
+    File.open 'old_format.gem', 'wb' do |io|
       io.write SIMPLE_GEM
     end
 

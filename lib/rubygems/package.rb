@@ -219,7 +219,7 @@ class Gem::Package
       next unless stat.file?
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
-        open file, 'rb' do |src_io|
+        File.open file, 'rb' do |src_io|
           dst_io.write src_io.read 16384 until src_io.eof?
         end
       end
@@ -380,7 +380,7 @@ EOM
 
         FileUtils.mkdir_p mkdir, mkdir_options
 
-        open destination, 'wb' do |out|
+        File.open destination, 'wb' do |out|
           out.write entry.read
           FileUtils.chmod entry.header.mode, destination
         end if entry.file?
