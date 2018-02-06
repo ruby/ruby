@@ -69,7 +69,7 @@ debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
 XCFLAGS = @XCFLAGS@
-CPPFLAGS = @CPPFLAGS@ $(INCFLAGS) -DMJIT_HEADER_BUILD_DIR=\""$(EXTOUT)/include/$(arch)"\" -DLIBRUBYARG_SHARED=\""$(LIBRUBYARG_SHARED)"\" -DMJIT_HEADER_INSTALL_DIR=\""include/$(RUBY_BASE_NAME)-$(ruby_version)/$(arch)"\"
+CPPFLAGS = @CPPFLAGS@ $(INCFLAGS) $(MJIT_CPPFLAGS)
 MJIT_HEADER_FLAGS = @MJIT_HEADER_FLAGS@
 MJIT_HEADER_SUFFIX =
 MJIT_HEADER_ARCH =
