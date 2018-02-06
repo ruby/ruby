@@ -81,6 +81,7 @@
 #include "constant.h"
 #include "id_table.h"
 #include "ruby_assert.h"
+#include "ruby/util.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -221,15 +222,7 @@ real_ms_time(void)
 
 /* Make and return copy of STR in the heap.  Return NULL in case of a
    failure.  */
-static char *
-get_string(const char *str)
-{
-    char *res;
-
-    if ((res = xmalloc(strlen(str) + 1)) != NULL)
-        strcpy(res, str);
-    return res;
-}
+#define get_string ruby_strdup
 
 static void
 sprint_uniq_filename(char *str, unsigned long id, const char *prefix, const char *suffix)
