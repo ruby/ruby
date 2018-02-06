@@ -1062,7 +1062,7 @@ build_header_path(const char *basedir, size_t baselen, const char *dir, size_t d
     p = path;
     p = append_str2(p, basedir, baselen);
     p = append_str2(p, dir, dirlen);
-    append_str2(p, header_basename, sizeof(header_basename));
+    p = append_str2(p, header_basename, sizeof(header_basename));
     return path;
 }
 
