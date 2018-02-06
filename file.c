@@ -6126,7 +6126,7 @@ define_filetest_function(const char *name, VALUE (*func)(ANYARGS), int argc)
     rb_define_singleton_method(rb_cFile, name, func, argc);
 }
 
-static const char null_device[] =
+const char ruby_null_device[] =
 #if defined DOSISH
     "NUL"
 #elif defined AMIGA || defined __amigaos__
@@ -6368,7 +6368,7 @@ Init_File(void)
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
     /* Name of the null device */
-    rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(null_device));
+    rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
     rb_define_method(rb_cFile, "to_path",  rb_file_path, 0);

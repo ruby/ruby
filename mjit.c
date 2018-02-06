@@ -198,13 +198,13 @@ static char *header_file;
 static char *pch_file;
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
 static char *tmp_dir;
-/* Portable /dev/null, fetched from file.c */
-static char *null_device;
 /* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
    This is used to invalidate obsoleted CALL_CACHE. */
 static VALUE valid_class_serials;
 /* Ruby level interface module.  */
 VALUE rb_mMJIT;
+/* Portable /dev/null, defined in file.c */
+extern const char *ruby_null_device;
 
 #ifdef _WIN32
 /* Linker option to enable libruby in the build directory. */
@@ -323,7 +323,7 @@ start_process(const char *path, char *const *argv)
 #else
     {
         /* Not calling IO functions between fork and exec for safety */
-        FILE *f = fopen(null_device, "w");
+        FILE *f = fopen(ruby_null_device, "w");
         int dev_null = fileno(f);
         fclose(f);
 
@@ -1228,10 +1228,6 @@ mjit_init(struct mjit_options *opts)
     else {
         tmp_dir = get_string("/tmp");
     }
-    {
-        VALUE file_null = rb_const_get(rb_cFile, rb_intern("NULL"));
-        null_device = get_string(StringValuePtr(file_null));
-    }
 
     init_header_filename();
     pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
@@ -1316,7 +1312,6 @@ mjit_finish(void)
         remove(pch_file);
 
     xfree(tmp_dir); tmp_dir = NULL;
-    xfree(null_device); null_device = NULL;
     xfree(pch_file); pch_file = NULL;
     xfree(header_file); header_file = NULL;
 
