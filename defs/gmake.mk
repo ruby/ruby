@@ -48,7 +48,7 @@ define archcmd
 %.i: %.$(1).i
 endef
 
-$(foreach arch,$(filter -arch=%,$(subst -arch ,-arch=,$(ARCH_FLAG))),\
+$(foreach arch,$(arch_flags),\
 	$(eval $(call archcmd,$(patsubst -arch=%,%,$(value arch)),$(patsubst -arch=%,-arch %,$(value arch)))))
 endif
 
@@ -143,4 +143,24 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
+endif
+
+ifeq ($(filter 0 1,$(words $(arch_flags))),)
+$(foreach x,$(patsubst -arch=%,%,$(arch_flags)), \
+	  $(eval $$(MJIT_HEADER:.h=)-$(value x).h \
+		 $$(MJIT_MIN_HEADER:.h=)-$(value x).h \
+		 : ARCH_FLAG := -arch $(value x)))
+
+mjit_min_headers := $(patsubst -arch=%,$(MJIT_MIN_HEADER:.h=-%.h),$(arch_flags))
+$(MJIT_MIN_HEADER): $(mjit_min_headers)
+	@ set -e; set $(patsubst -arch=%,%,$(arch_flags)); \
+	cd $(@D); h=$(@F:.h=); set -x; \
+	cp $$h-$$1.h $$h.h.new; shift; \
+	for arch; do \
+	  mv $$h.h.new $$h.h.tmp; \
+	  diff -B -D__$${arch}__ $$h.h.tmp $$h-$$arch.h > $$h.h.new || :; \
+	done
+	$(RM) $@.tmp
+	$(IFCHANGE) $@ $@.new
+
 endif
