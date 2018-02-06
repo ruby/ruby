@@ -1077,6 +1077,9 @@ init_header_filename(void)
     VALUE basedir_val;
     char *basedir;
     size_t baselen;
+#ifdef _WIN32
+    char *p;
+#endif
 
     basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
     basedir = StringValuePtr(basedir_val);
