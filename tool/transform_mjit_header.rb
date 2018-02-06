@@ -91,6 +91,7 @@ module MJITHeader
             STDERR.puts "possibly related lines:\n#{related_lines.join("\n")}"
           end
         end
+        exit false
       end
     end
   end
