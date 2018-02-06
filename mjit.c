@@ -1198,7 +1198,7 @@ mjit_init(struct mjit_options *opts)
     /* Initialize worker thread */
     finish_worker_p = FALSE;
     worker_finished = FALSE;
-    if (rb_thread_create_mjit_thread(child_after_fork, (void *)worker) == FALSE) {
+    if (!rb_thread_create_mjit_thread(child_after_fork, worker)) {
         mjit_init_p = FALSE;
         rb_native_mutex_destroy(&mjit_engine_mutex);
         rb_native_cond_destroy(&mjit_pch_wakeup);
