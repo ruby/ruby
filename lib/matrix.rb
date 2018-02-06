@@ -1446,16 +1446,25 @@ class Matrix
     @rows.collect(&:dup)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_f)
   def elements_to_f
     warn "Matrix#elements_to_f is deprecated, use map(&:to_f)", uplevel: 1
     map(&:to_f)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_i)
   def elements_to_i
     warn "Matrix#elements_to_i is deprecated, use map(&:to_i)", uplevel: 1
     map(&:to_i)
   end
 
+  # Deprecated.
+  #
+  # Use map(&:to_r)
   def elements_to_r
     warn "Matrix#elements_to_r is deprecated, use map(&:to_r)", uplevel: 1
     map(&:to_r)
