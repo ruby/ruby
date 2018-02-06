@@ -1263,13 +1263,11 @@ AC_CACHE_CHECK([appropriate way to simulate va_copy], rb_cv_va_copy, [dnl
     RUBY_CHECK_VA_COPY([va_copy via memcpy],
         [memcpy(&(dst), &(src), sizeof(va_list))])
 ])
-if test "x$rb_cv_va_copy" = x; then
+AS_IF([test "x$rb_cv_va_copy" = x], [
     AC_ERROR([no way to simulate va_copy])
-else
-    m4_pushdef([macro], AS_TR_CPP(HAVE_$1))
-    AC_DEFINE_UNQUOTED(macro($rb_cv_va_copy))
-    m4_popdef([macro])
-fi
+], [
+    AC_DEFINE_UNQUOTED(AS_TR_CPP(HAVE_$rb_cv_va_copy))
+])
 
 AC_CACHE_CHECK([for alignas() syntax], rb_cv_have_alignas, [
 rb_cv_have_alignas=no
