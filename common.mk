@@ -210,6 +210,14 @@ $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(srcdir)/tool/transform_mjit_hea
 $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
 	$(ECHO) building $@
 	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC) $(ARCH_FLAG)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
+	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
+	$(Q) $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
+	  -e "src, dest = ARGV" \
+	  -e "exit if File.identical?(src, dest) or cmp(src, dest) rescue nil" \
+	  -e "ln_sf('../'*dest.count('/')+src, dest) rescue" \
+	  -e "ln(src, dest) rescue" \
+	  -e "cp(src, dest)" \
+	  $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 .PHONY: showflags
 exts enc trans: $(SHOWFLAGS)
