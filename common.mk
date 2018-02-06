@@ -213,8 +213,9 @@ $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(MJIT_HEADER:.h=)$(MJIT_HEADER_S
 	$(Q) $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
 	  -e "src, dest = ARGV" \
 	  -e "exit if File.identical?(src, dest) or cmp(src, dest) rescue nil" \
-	  -e "ln_sf('../'*dest.count('/')+src, dest) rescue" \
-	  -e "ln(src, dest) rescue" \
+	  -e "def noraise; yield; rescue; rescue NotImplementedError; end" \
+	  -e "noraise {ln_sf('../'*dest.count('/')+src, dest)} or" \
+	  -e "noraise {ln(src, dest)} or" \
 	  -e "cp(src, dest)" \
 	  $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
