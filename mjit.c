@@ -220,8 +220,7 @@ real_ms_time(void)
     return tv.tv_usec / 1000.0 + tv.tv_sec * 1000.0;
 }
 
-/* Make and return copy of STR in the heap.  Return NULL in case of a
-   failure.  */
+/* Make and return copy of STR in the heap. */
 #define get_string ruby_strdup
 
 static void
