@@ -884,11 +884,3 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 	}
     }
 }
-
-#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
-#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
-
-#define CALLER_SETUP_ARG(cfp, calling, ci) do { \
-    if (UNLIKELY(IS_ARGS_SPLAT(ci))) vm_caller_setup_arg_splat((cfp), (calling)); \
-    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) vm_caller_setup_arg_kw((cfp), (calling), (ci)); \
-} while (0)
