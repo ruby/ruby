@@ -287,6 +287,8 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS) -DMJIT_HEADER_BUILD_DIR=\""$(EXTOUT)/include/$(arch)"\" -DLIBRUBYARG_SHARED=\""$(LIBRUBYARG_SHARED)"\" -DMJIT_HEADER_INSTALL_DIR=\""include/$(RUBY_BASE_NAME)-$(ruby_version)/$(arch)"\"
 MJIT_HEADER_FLAGS = -P
+MJIT_HEADER_SUFFIX =
+MJIT_HEADER_ARCH =
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS =
