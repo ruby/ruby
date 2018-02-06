@@ -42,8 +42,8 @@ result = pkg_config("openssl") && have_header("openssl/ssl.h")
 
 unless result
   result = have_header("openssl/ssl.h")
-  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests")}
-  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init")}
+  result &&= %w[crypto libeay32].any? {|lib| have_library(lib, "OpenSSL_add_all_digests") || have_library(lib, "OPENSSL_init_crypto")}
+  result &&= %w[ssl ssleay32].any? {|lib| have_library(lib, "SSL_library_init") || have_library(lib, "OPENSSL_init_ssl")}
   unless result
     Logging::message "=== Checking for required stuff failed. ===\n"
     Logging::message "Makefile wasn't created. Fix the errors above.\n"
@@ -54,7 +54,7 @@ end
 unless have_header("openssl/conf_api.h")
   raise "OpenSSL 0.9.6 or later required."
 end
-unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h")
+unless OpenSSL.check_func("SSL_library_init()", "openssl/ssl.h") || OpenSSL.check_func("OPENSSL_init_ssl", "openssl/ssl.h")
   raise "Ignore OpenSSL broken by Apple.\nPlease use another openssl. (e.g. using `configure --with-openssl-dir=/path/to/openssl')"
 end
 
