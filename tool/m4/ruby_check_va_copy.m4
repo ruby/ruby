@@ -1,5 +1,5 @@
 # -*- Autoconf -*-
-m4_define(RUBY_CHECK_VA_COPY, [
+AC_DEFUN([RUBY_CHECK_VA_COPY], [
     if test "x$rb_cv_va_copy" = x; then
         AC_TRY_RUN(
 [#include <stdlib.h>

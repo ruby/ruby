@@ -6,6 +6,13 @@ AC_CONFIG_MACRO_DIRS(tool/m4)
 
 AC_PREREQ(2.67)
 
+dnl   override AC_CHECKING
+dnl   placed here due to aclocal(1)'s
+dnl   ignoring this definition in separate files
+AC_DEFUN([AC_CHECKING],[dnl
+AC_REQUIRE([_COLORIZE_RESULT_PREPARE])dnl
+AS_MESSAGE([checking ${msg_checking}$1${msg_reset}...])])dnl
+
 AC_DISABLE_OPTION_CHECKING
 
 AC_ARG_VAR([cflags], [additional CFLAGS])
