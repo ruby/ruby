@@ -285,7 +285,7 @@ LDSHARED_0 = @if exist $(@).manifest $(MINIRUBY) -run -e wait_writable -- -n 10 
 LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -outputresource:$(@);2
 LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
-CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS) $(MJIT_CPPFLAGS)
+CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 MJIT_HEADER_FLAGS = -P
 MJIT_HEADER_SUFFIX =
 MJIT_HEADER_ARCH =
@@ -997,6 +997,7 @@ s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
 <<KEEP
+XCFLAGS = $(XCFLAGS) $(MJIT_CPPFLAGS)
 
 miniruby: miniruby$(EXEEXT)
 
