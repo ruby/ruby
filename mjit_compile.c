@@ -48,10 +48,6 @@ get_iseq_if_available(CALL_CACHE cc)
     return NULL;
 }
 
-/* TODO: move to somewhere shared with vm_args.c */
-#define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
-#define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
-
 /* Returns TRUE if iseq is inlinable, otherwise NULL. This becomes TRUE in the same condition
    as CI_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup. */
 static int
