@@ -127,9 +127,9 @@ class TestStubSpecification < Gem::TestCase
       extconf_rb = File.join s.gem_dir, s.extensions.first
       FileUtils.mkdir_p File.dirname extconf_rb
 
-      open extconf_rb, 'w' do |f|
+      File.open extconf_rb, 'w' do |f|
         f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -149,7 +149,7 @@ class TestStubSpecification < Gem::TestCase
     spec = new_default_spec 'default', 1
     spec.extensions << 'extconf.rb'
 
-    open spec.loaded_from, 'w' do |io|
+    File.open spec.loaded_from, 'w' do |io|
       io.write spec.to_ruby_for_cache
     end
 
@@ -198,7 +198,7 @@ class TestStubSpecification < Gem::TestCase
 
   def stub_with_version
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_v 2 ruby lib
@@ -221,7 +221,7 @@ end
 
   def stub_without_version
     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_v ruby lib
@@ -245,7 +245,7 @@ end
 
   def stub_with_extension
     spec = File.join @gemhome, 'specifications', 'stub_e-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub_e 2 ruby lib
@@ -271,7 +271,7 @@ end
 
   def stub_without_extension
     spec = File.join @gemhome, 'specifications', 'stub-2.gemspec'
-    open spec, 'w' do |io|
+    File.open spec, 'w' do |io|
       io.write <<-STUB
 # -*- encoding: utf-8 -*-
 # stub: stub 2 ruby lib

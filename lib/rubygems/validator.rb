@@ -34,7 +34,7 @@ class Gem::Validator
   # gem_path:: [String] Path to gem file
 
   def verify_gem_file(gem_path)
-    open gem_path, Gem.binary_mode do |file|
+    File.open gem_path, Gem.binary_mode do |file|
       gem_data = file.read
       verify_gem gem_data
     end
@@ -109,7 +109,7 @@ class Gem::Validator
 
         good, gone, unreadable = nil, nil, nil, nil
 
-        open gem_path, Gem.binary_mode do |file|
+        File.open gem_path, Gem.binary_mode do |file|
           package = Gem::Package.new gem_path
 
           good, gone = package.contents.partition { |file_name|
@@ -134,7 +134,7 @@ class Gem::Validator
 
               source = File.join gem_directory, entry['path']
 
-              open source, Gem.binary_mode do |f|
+              File.open source, Gem.binary_mode do |f|
                 unless f.read == data then
                   errors[gem_name][entry['path']] = "Modified from original"
                 end

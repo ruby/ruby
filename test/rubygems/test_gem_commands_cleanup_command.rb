@@ -158,7 +158,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     assert_path_exists @a_1_1.gem_dir
   ensure
     FileUtils.chmod 0755, @gemhome
-  end unless win_platform? || Process.uid == 0
+  end unless win_platform? || Process.uid.zero?
 
   def test_execute_dry_run
     @cmd.options[:args] = %w[a]

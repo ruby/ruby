@@ -23,11 +23,11 @@ class Gem::Package::FileSource < Gem::Package::Source # :nodoc: all
   end
 
   def with_write_io &block
-    open path, 'wb', &block
+    File.open path, 'wb', &block
   end
 
   def with_read_io &block
-    open path, 'rb', &block
+    File.open path, 'rb', &block
   end
 
 end

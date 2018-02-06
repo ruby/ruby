@@ -70,7 +70,7 @@ class TestGemResolverGitSpecification < Gem::TestCase
     Dir.chdir 'git/a' do
       FileUtils.mkdir_p 'ext/lib'
 
-      open 'ext/extconf.rb', 'w' do |io|
+      File.open 'ext/extconf.rb', 'w' do |io|
         io.puts 'require "mkmf"'
         io.puts 'create_makefile "a"'
       end

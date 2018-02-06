@@ -93,7 +93,7 @@ class Gem::Security::TrustDir
 
     destination = cert_path certificate
 
-    open destination, 'wb', @permissions[:trusted_cert] do |io|
+    File.open destination, 'wb', @permissions[:trusted_cert] do |io|
       io.write certificate.to_pem
     end
   end

@@ -24,7 +24,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_class_new_old_format
-    open 'old_format.gem', 'wb' do |io|
+    File.open 'old_format.gem', 'wb' do |io|
       io.write SIMPLE_GEM
     end
 
@@ -45,7 +45,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -110,8 +110,8 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir_p 'lib/empty'
 
-    open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
-    open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
+    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+    File.open 'lib/extra.rb', 'w' do |io| io.write '# lib/extra.rb' end
 
     package = Gem::Package.new 'bogus.gem'
     package.spec = spec
@@ -140,7 +140,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     spec.files = %w[lib/code.rb lib/code_sym.rb]
 
     FileUtils.mkdir_p 'lib'
-    open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
+    File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
     File.symlink('code.rb', 'lib/code_sym.rb')
@@ -179,7 +179,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -218,7 +218,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -261,7 +261,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -311,7 +311,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -348,7 +348,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     FileUtils.mkdir 'lib'
 
-    open 'lib/code.rb', 'w' do |io|
+    File.open 'lib/code.rb', 'w' do |io|
       io.write '# lib/code.rb'
     end
 
@@ -408,7 +408,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    open 'empty.gem', 'wb' do |io|
+    File.open 'empty.gem', 'wb' do |io|
       io.write gem.string
     end
 
@@ -620,7 +620,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    open 'mismatch.gem', 'wb' do |io|
+    File.open 'mismatch.gem', 'wb' do |io|
       io.write gem.string
     end
 
@@ -670,7 +670,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       end
     end
 
-    open 'data_checksum_missing.gem', 'wb' do |io|
+    File.open 'data_checksum_missing.gem', 'wb' do |io|
       io.write gem.string
     end
 
@@ -773,7 +773,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     FileUtils.mkdir 'lib'
     FileUtils.touch 'lib/code.rb'
 
-    open @gem, 'wb' do |gem_io|
+    File.open @gem, 'wb' do |gem_io|
       Gem::Package::TarWriter.new gem_io do |gem|
         build.add_metadata gem
         build.add_contents gem
@@ -804,7 +804,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_truncate
-    open 'bad.gem', 'wb' do |io|
+    File.open 'bad.gem', 'wb' do |io|
       io.write File.read(@gem, 1024) # don't care about newlines
     end
 
