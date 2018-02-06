@@ -91,6 +91,7 @@
 #include <sys/time.h>
 #include <dlfcn.h>
 #endif
+#include <errno.h>
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
@@ -698,6 +699,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     sprintf(funcname, "_mjit%d", unit->id);
 
     f = fopen(c_file, "w");
+    if (f == NULL) {
+        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(errno));
+        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+    }
+
     /* -include-pch is used for Clang */
     if (mjit_opts.cc == MJIT_CC_GCC) {
         const char *s = pch_file;
