@@ -574,6 +574,17 @@ static const char *CLANG_COMMON_ARGS[] = {"clang", "-O2", "-fPIC", "-shared", "-
 
 #endif /* #if __MACH__ */
 
+#ifdef _MSC_VER
+static const char *VC_COMMON_ARGS_DEBUG[] = {"cl.exe", "-nologo", "-O0", "-Zi", "-MD", "-LD", NULL};
+static const char *VC_COMMON_ARGS[] = {"cl.exe", "-nologo",
+# if _MSC_VER < 1400
+    "-O2b2xg-",
+# else
+    "-O2sy-",
+# endif
+    "-MD", "-LD", NULL};
+#endif
+
 static const char *CLANG_USE_PCH_ARGS[] = {"-include-pch", NULL, "-Wl,-undefined", "-Wl,dynamic_lookup", NULL};
 static const char *CLANG_EMIT_PCH_ARGS[] = {"-emit-pch", NULL};
 
@@ -586,6 +597,10 @@ static void
 make_pch(void)
 {
     int exit_code;
+#ifdef _MSC_VER
+    /* XXX TODO */
+    exit_code = 0;
+#else
     static const char *input[] = {NULL, NULL};
     static const char *output[] = {"-o",  NULL, NULL};
     char **args;
@@ -610,6 +625,7 @@ make_pch(void)
 
     exit_code = exec_process(cc_path, args);
     xfree(args);
+#endif
 
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
@@ -624,29 +640,50 @@ make_pch(void)
     CRITICAL_SECTION_FINISH(3, "in make_pch");
 }
 
+#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
+#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+
 /* Compile C file to so. It returns 1 if it succeeds. */
 static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
     static const char *input[] = {NULL, NULL};
-    static const char *output[] = {"-o",  NULL, NULL};
+    static const char *output[] = {"-o", NULL, NULL};
     const char *libs[] = {
-#ifdef _WIN32
+#ifdef _MSC_VER
+        LIBRUBYARG_SHARED,
+        "-link",
+        libruby_installed,
+        libruby_build,
+#else
+# ifdef _WIN32
         /* Look for ruby.dll.a in build and install directories. */
         libruby_installed,
         libruby_build,
         /* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
         LIBRUBYARG_SHARED,
         "-lmsvcrt",
-# ifdef __GNUC__
+#  ifdef __GNUC__
         "-lgcc",
+#  endif
 # endif
 #endif
         NULL};
     char **args;
 
     input[0] = c_file;
+#ifdef _MSC_VER
+    {
+        char *p = (char *)output[0] = xmalloc(3 + strlen(so_file) + 1);
+        p = append_str(p, "-Fe");
+        p = append_str(p, so_file);
+        *p = '\0';
+    }
+    args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
+                     output, input, libs);
+    xfree(output[0]);
+#else
     output[1] = so_file;
     if (mjit_opts.cc == MJIT_CC_CLANG) {
         CLANG_USE_PCH_ARGS[1] = pch_file;
@@ -657,6 +694,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
         args = form_args(5, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
                          GCC_USE_PCH_ARGS, input, output, libs);
     }
+#endif
     if (args == NULL)
         return FALSE;
 
@@ -1057,9 +1095,9 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
    ones to prevent changing C compiler for security reasons.  */
 #define GCC_PATH "gcc"
 #define CLANG_PATH "clang"
-
-#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
-#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+#ifdef _MSC_VER
+# define VC_PATH "cl.exe"
+#endif
 
 static void
 init_header_filename(void)
@@ -1090,11 +1128,20 @@ init_header_filename(void)
     fclose(f);
 
 #ifdef _WIN32
+# ifdef _MSC_VER
+    p = libruby_build = xmalloc(9 + baselen + 1);
+    p = append_str(p, "-LIBPATH:");
+#else
     p = libruby_build = xmalloc(2 + baselen + 1);
     p = append_str(p, "-L");
+#endif
     p = append_str2(p, basedir, baselen);
     *p = '\0';
+# ifdef _MSC_VER
+    libruby_installed = xmalloc(9 + baselen + 4 + 1);
+#else
     libruby_installed = xmalloc(2 + baselen + 4 + 1);
+#endif
     p = append_str2(libruby_installed, libruby_build, p - libruby_build);
     p = append_str(p, "/lib");
     *p = '\0';
@@ -1150,22 +1197,30 @@ mjit_init(struct mjit_options *opts)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
     if (mjit_opts.cc == MJIT_CC_DEFAULT) {
-#if defined(__clang__)
+#if _MSC_VER
+        verbose(2, "MJIT: CC defaults to cl");
+#else
+# if defined(__clang__)
         mjit_opts.cc = MJIT_CC_CLANG;
         verbose(2, "MJIT: CC defaults to clang");
-#else
+# else
         mjit_opts.cc = MJIT_CC_GCC;
         verbose(2, "MJIT: CC defaults to gcc");
+# endif
 #endif
     }
 
     /* Initialize variables for compilation */
     pch_status = PCH_NOT_READY;
+#ifdef _MSC_VER
+    cc_path = VC_PATH;
+#else
     if (mjit_opts.cc == MJIT_CC_CLANG) {
         cc_path = CLANG_PATH;
     } else {
         cc_path = GCC_PATH;
     }
+#endif
 
     if (getenv("TMP") != NULL) { /* For MinGW */
         tmp_dir = get_string(getenv("TMP"));

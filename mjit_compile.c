@@ -137,6 +137,9 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.success = TRUE;
     status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
 
+#ifdef _WIN32
+    fprintf(f, "__declspec(dllexport)\n");
+#endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
     fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
 
