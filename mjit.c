@@ -683,6 +683,8 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     return func;
 }
 
+#define MJIT_TMP_PREFIX "_ruby_mjit_"
+
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
@@ -694,8 +696,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     void *func;
     double start_time, end_time;
 
-    sprint_uniq_filename(c_file, unit->id, "_ruby_mjit", ".c");
-    sprint_uniq_filename(so_file, unit->id, "_ruby_mjit", ".so");
+    sprint_uniq_filename(c_file, unit->id, MJIT_TMP_PREFIX, ".c");
+    sprint_uniq_filename(so_file, unit->id, MJIT_TMP_PREFIX, ".so");
     sprintf(funcname, "_mjit%d", unit->id);
 
     f = fopen(c_file, "w");
@@ -1171,7 +1173,7 @@ mjit_init(struct mjit_options *opts)
     }
 
     init_header_filename();
-    pch_file = get_uniq_filename(0, "_mjit_h", ".h.gch");
+    pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
     if (header_file == NULL || pch_file == NULL) {
         mjit_init_p = FALSE;
         verbose(1, "Failure in MJIT header file name initialization\n");
