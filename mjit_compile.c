@@ -137,29 +137,29 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.success = TRUE;
     status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
 
-    fprintf(f, "VALUE %s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp) {\n", funcname);
-    fprintf(f, "  VALUE *stack = reg_cfp->sp;\n");
+    fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
+    fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
 
     /* Simulate `opt_pc` in setup_parameters_complex */
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");
-        fprintf(f, "  switch (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded) {\n");
+        fprintf(f, "    switch (reg_cfp->pc - reg_cfp->iseq->body->iseq_encoded) {\n");
         for (i = 0; i <= body->param.opt_num; i++) {
             VALUE pc_offset = body->param.opt_table[i];
-            fprintf(f, "    case %"PRIdVALUE":\n", pc_offset);
-            fprintf(f, "      goto label_%"PRIdVALUE";\n", pc_offset);
+            fprintf(f, "      case %"PRIdVALUE":\n", pc_offset);
+            fprintf(f, "        goto label_%"PRIdVALUE";\n", pc_offset);
         }
-        fprintf(f, "  }\n");
+        fprintf(f, "    }\n");
     }
 
     /* ISeq might be used for catch table too. For that usage, this code cancels JIT execution. */
-    fprintf(f, "  if (reg_cfp->pc != 0x%"PRIxVALUE") {\n", (VALUE)body->iseq_encoded);
-    fprintf(f, "    return Qundef;\n");
-    fprintf(f, "  }\n");
+    fprintf(f, "    if (reg_cfp->pc != 0x%"PRIxVALUE") {\n", (VALUE)body->iseq_encoded);
+    fprintf(f, "        return Qundef;\n");
+    fprintf(f, "    }\n");
 
     compile_insns(f, body, 0, 0, &status);
-    fprintf(f, "}\n");
+    fprintf(f, "\n} /* end of %s */\n", funcname);
 
     xfree(status.compiled_for_pos);
     return status.success;
