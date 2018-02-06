@@ -1057,23 +1057,6 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 
-static char *
-build_header_path(const char *basedir, size_t baselen, const char *dir, size_t dirlen)
-{
-    static const char header_basename[] = "/" RUBY_MJIT_HEADER_FILE;
-    char *p, *path = xmalloc(baselen + dirlen + sizeof(header_basename));
-    if (path == NULL)
-        return NULL;
-    p = path;
-    p = append_str2(p, basedir, baselen);
-    p = append_str2(p, dir, dirlen);
-    p = append_str2(p, header_basename, sizeof(header_basename));
-    return path;
-}
-
-#define BUILD_HEADER_PATH(basedir, baselen, dir) \
-    build_header_path(basedir, baselen, dir, rb_strlen_lit(dir))
-
 static void
 init_header_filename(void)
 {
@@ -1082,27 +1065,23 @@ init_header_filename(void)
     VALUE basedir_val;
     char *basedir;
     size_t baselen;
-#ifdef _WIN32
+    static const char header_name[] =
+        "/" MJIT_HEADER_INSTALL_DIR "/" RUBY_MJIT_HEADER_FILE;
     char *p;
-#endif
 
     basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
     basedir = StringValuePtr(basedir_val);
     baselen = RSTRING_LEN(basedir_val);
 
-    header_file = BUILD_HEADER_PATH(basedir, baselen, "/"MJIT_HEADER_BUILD_DIR);
+    header_file = xmalloc(baselen + sizeof(header_name));
     if (header_file == NULL)
         return;
+    p = append_str2(header_file, basedir, baselen);
+    p = append_str2(p, header_name, sizeof(header_name));
     if ((f = fopen(header_file, "r")) == NULL) {
         xfree(header_file);
-        header_file = BUILD_HEADER_PATH(basedir, baselen, "/"MJIT_HEADER_INSTALL_DIR);
-        if (header_file == NULL)
-            return;
-        if ((f = fopen(header_file, "r")) == NULL) {
-            xfree(header_file);
-            header_file = NULL;
-            return;
-        }
+        header_file = NULL;
+        return;
     }
     fclose(f);
 
