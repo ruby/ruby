@@ -247,10 +247,10 @@ get_uniq_filename(unsigned long id, const char *prefix, const char *suffix)
     ++size;
     str = xmalloc(size);
     if (size <= (int)sizeof(buff)) {
-	memcpy(str, buff, size);
+        memcpy(str, buff, size);
     }
     else {
-	sprint_uniq_filename(str, size, id, prefix, suffix);
+        sprint_uniq_filename(str, size, id, prefix, suffix);
     }
     return str;
 }
@@ -755,9 +755,9 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     if (c_file_len >= (int)sizeof(c_file_buff)) {
-	++c_file_len;
-	c_file = alloca(c_file_len);
-	c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
+        ++c_file_len;
+        c_file = alloca(c_file_len);
+        c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     }
     ++c_file_len;
     so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
@@ -1206,8 +1206,8 @@ system_tmpdir(void)
     WCHAR tmppath[_MAX_PATH];
     UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
     if (len) {
-	tmpdir = rb_w32_wstr_to_mbstr(CP_UTF8, tmppath, -1, NULL);
-	return get_string(tmpdir);
+        tmpdir = rb_w32_wstr_to_mbstr(CP_UTF8, tmppath, -1, NULL);
+        return get_string(tmpdir);
     }
 #elif defined _CS_DARWIN_USER_TEMP_DIR
     #ifndef MAXPATHLEN
@@ -1216,18 +1216,18 @@ system_tmpdir(void)
     char path[MAXPATHLEN];
     size_t len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
     if (len > 0) {
-	tmpdir = xmalloc(len);
-	if (len > sizeof(path)) {
-	    confstr(_CS_DARWIN_USER_TEMP_DIR, tmpdir, len);
-	}
-	else {
-	    memcpy(tmpdir, path, len);
-	}
-	return tmpdir;
+        tmpdir = xmalloc(len);
+        if (len > sizeof(path)) {
+            confstr(_CS_DARWIN_USER_TEMP_DIR, tmpdir, len);
+        }
+        else {
+            memcpy(tmpdir, path, len);
+        }
+        return tmpdir;
     }
 #endif
     if (!(tmpdir = getenv("TMPDIR")) &&
-	!(tmpdir = getenv("TMP"))) {
+        !(tmpdir = getenv("TMP"))) {
         return get_string("/tmp");
     }
     return get_string(tmpdir);
