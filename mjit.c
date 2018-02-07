@@ -87,6 +87,9 @@
 #include <winsock2.h>
 #include <windows.h>
 #else
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <dlfcn.h>
@@ -323,9 +326,7 @@ start_process(const char *path, char *const *argv)
 #else
     {
         /* Not calling IO functions between fork and exec for safety */
-        FILE *f = fopen(ruby_null_device, "w");
-        int dev_null = fileno(f);
-        fclose(f);
+        int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
         if ((pid = vfork()) == 0) {
             if (mjit_opts.verbose == 0) {
@@ -335,6 +336,7 @@ start_process(const char *path, char *const *argv)
                 dup2(dev_null, STDERR_FILENO);
                 dup2(dev_null, STDOUT_FILENO);
             }
+            (void)close(dev_null);
             pid = execvp(path, argv); /* Pid will be negative on an error */
             /* Even if we successfully found CC to compile PCH we still can
              fail with loading the CC in very rare cases for some reasons.
@@ -342,6 +344,7 @@ start_process(const char *path, char *const *argv)
             verbose(1, "MJIT: Error in execvp: %s\n", path);
             _exit(1);
         }
+        (void)close(dev_null);
     }
 #endif
     return pid;
