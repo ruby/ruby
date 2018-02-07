@@ -225,7 +225,7 @@ timeval_for(struct timeval *tv, const struct timespec *ts)
 {
     if (tv && ts) {
         tv->tv_sec = ts->tv_sec;
-        tv->tv_usec = ts->tv_nsec / 1000;
+        tv->tv_usec = (suseconds_t)(ts->tv_nsec / 1000);
         return tv;
     }
     return 0;
