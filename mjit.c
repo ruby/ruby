@@ -682,7 +682,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
     }
     args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
                      output, input, libs);
-    xfree(output[0]);
 #else
     output[1] = so_file;
     if (mjit_opts.cc == MJIT_CC_CLANG) {
@@ -700,6 +699,9 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     exit_code = exec_process(cc_path, args);
     xfree(args);
+#ifdef _MSC_VER
+    xfree((char *)output[0]);
+#endif
 
     if (exit_code != 0)
         verbose(2, "compile_c_to_so: compile error: %d", exit_code);
@@ -1110,6 +1112,15 @@ init_header_filename(void)
     static const char header_name[] =
         "/" MJIT_HEADER_INSTALL_DIR "/" RUBY_MJIT_HEADER_FILE;
     char *p;
+#ifdef _WIN32
+    static const char libpathflag[] =
+# ifdef _MSC_VER
+        "-LIBPATH:"
+# else
+        "-L"
+# endif
+            ;
+#endif
 
     basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
     basedir = StringValuePtr(basedir_val);
@@ -1128,20 +1139,12 @@ init_header_filename(void)
     fclose(f);
 
 #ifdef _WIN32
-# ifdef _MSC_VER
-    p = libruby_build = xmalloc(9 + baselen + 1);
-    p = append_str(p, "-LIBPATH:");
-#else
-    p = libruby_build = xmalloc(2 + baselen + 1);
-    p = append_str(p, "-L");
-#endif
+    p = libruby_build = xmalloc(sizeof(libpathflag)-1 + baselen + 1);
+    p = append_str(p, libpathflag);
     p = append_str2(p, basedir, baselen);
     *p = '\0';
-# ifdef _MSC_VER
-    libruby_installed = xmalloc(9 + baselen + 4 + 1);
-#else
-    libruby_installed = xmalloc(2 + baselen + 4 + 1);
-#endif
+
+    libruby_installed = xmalloc(sizeof(libpathflag)-1 + baselen + 4 + 1);
     p = append_str2(libruby_installed, libruby_build, p - libruby_build);
     p = append_str(p, "/lib");
     *p = '\0';
