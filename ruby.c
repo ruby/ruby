@@ -17,6 +17,7 @@
 #endif
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
+#include "ruby/version.h"
 #include "internal.h"
 #include "eval_intern.h"
 #include "dln.h"
