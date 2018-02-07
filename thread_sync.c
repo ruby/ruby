@@ -252,8 +252,8 @@ rb_mutex_lock(VALUE self)
 
 	while (mutex->th != th) {
 	    enum rb_thread_status prev_status = th->status;
-	    struct timeval *timeout = 0;
-	    struct timeval tv = { 0, 100000 }; /* 100ms */
+	    struct timespec *timeout = 0;
+	    struct timespec ts = { 0, 100000000 }; /* 100ms */
 
 	    th->status = THREAD_STOPPED_FOREVER;
 	    th->locking_mutex = self;
@@ -265,7 +265,7 @@ rb_mutex_lock(VALUE self)
 	     */
 	    if ((vm_living_thread_num(th->vm) == th->vm->sleeper) &&
 		!patrol_thread) {
-		timeout = &tv;
+		timeout = &ts;
 		patrol_thread = th;
 	    }
 
@@ -427,8 +427,8 @@ rb_mutex_sleep_forever(VALUE time)
 static VALUE
 rb_mutex_wait_for(VALUE time)
 {
-    struct timeval *t = (struct timeval *)time;
-    sleep_timeval(GET_THREAD(), *t, 0); /* permit spurious check */
+    struct timespec *t = (struct timespec*)time;
+    sleep_timespec(GET_THREAD(), *t, 0); /* permit spurious check */
     return Qnil;
 }
 
@@ -447,7 +447,10 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
 	rb_ensure(rb_mutex_sleep_forever, Qnil, rb_mutex_lock, self);
     }
     else {
-	rb_ensure(rb_mutex_wait_for, (VALUE)&t, rb_mutex_lock, self);
+        struct timespec ts;
+        VALUE tsp = (VALUE)timespec_for(&ts, &t);
+
+        rb_ensure(rb_mutex_wait_for, tsp, rb_mutex_lock, self);
     }
     end = time(0) - beg;
     return INT2FIX(end);
