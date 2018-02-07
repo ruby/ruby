@@ -365,13 +365,12 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
 static struct timespec
 native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
-    int ret;
     struct timespec timeout;
     struct timespec now;
 
 #if USE_MONOTONIC_COND
     if (cond->clockid == CLOCK_MONOTONIC) {
-	ret = clock_gettime(cond->clockid, &now);
+	int ret = clock_gettime(cond->clockid, &now);
 	if (ret != 0)
 	    rb_sys_fail("clock_gettime()");
 	goto out;
