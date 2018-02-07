@@ -334,6 +334,7 @@ class Matrix
   end
   alias set_element []=
   alias set_component []=
+  private :set_element, :set_component
 
   def range_within_count?(range, count)
     (range.max < count) && (range.min >= (-count))
@@ -1946,6 +1947,7 @@ class Vector
   end
   alias set_element []=
   alias set_component []=
+  private :set_element, :set_component
 
   def convert_range(range)
     range.exclude_end? ? range.begin...(size + range.end) : range.begin..(size + range.end)
