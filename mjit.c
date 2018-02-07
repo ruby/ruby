@@ -229,10 +229,10 @@ real_ms_time(void)
 /* Make and return copy of STR in the heap. */
 #define get_string ruby_strdup
 
-static void
-sprint_uniq_filename(char *str, unsigned long id, const char *prefix, const char *suffix)
+static int
+sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    sprintf(str, "%s/%sp%luu%lu%s", tmp_dir, prefix, (unsigned long) getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%luu%lu%s", tmp_dir, prefix, (unsigned long) getpid(), id, suffix);
 }
 
 /* Return an unique file name in /tmp with PREFIX and SUFFIX and
@@ -241,9 +241,18 @@ sprint_uniq_filename(char *str, unsigned long id, const char *prefix, const char
 static char *
 get_uniq_filename(unsigned long id, const char *prefix, const char *suffix)
 {
-    char str[70];
-    sprint_uniq_filename(str, id, prefix, suffix);
-    return get_string(str);
+    char buff[70], *str = buff;
+    int size = sprint_uniq_filename(buff, sizeof(buff), id, prefix, suffix);
+    str = 0;
+    ++size;
+    str = xmalloc(size);
+    if (size <= (int)sizeof(buff)) {
+	memcpy(str, buff, size);
+    }
+    else {
+	sprint_uniq_filename(str, size, id, prefix, suffix);
+    }
+    return str;
 }
 
 /* Print the arguments according to FORMAT to stderr only if MJIT
@@ -735,14 +744,25 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file[70], so_file[70], funcname[35];
+    char c_file_buff[70], *c_file = c_file_buff, *so_file, funcname[35];
     int success;
     FILE *f;
     void *func;
     double start_time, end_time;
+    int c_file_len = (int)sizeof(c_file_buff);
+    static const char c_ext[] = ".c";
+    static const char so_ext[] = DLEXT;
 
-    sprint_uniq_filename(c_file, unit->id, MJIT_TMP_PREFIX, ".c");
-    sprint_uniq_filename(so_file, unit->id, MJIT_TMP_PREFIX, ".so");
+    c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
+    if (c_file_len >= (int)sizeof(c_file_buff)) {
+	++c_file_len;
+	c_file = alloca(c_file_len);
+	c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
+    }
+    ++c_file_len;
+    so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
+    memcpy(so_file, c_file, c_file_len - sizeof(c_ext));
+    memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
     sprintf(funcname, "_mjit%d", unit->id);
 
     f = fopen(c_file, "w");
