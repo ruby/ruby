@@ -1197,6 +1197,42 @@ valid_class_serials_add_i(ID key, VALUE v, void *unused)
     return ID_TABLE_CONTINUE;
 }
 
+static char *
+system_tmpdir(void)
+{
+    char *tmpdir;
+    /* c.f. ext/etc/etc.c:etc_systmpdir() */
+#ifdef _WIN32
+    WCHAR tmppath[_MAX_PATH];
+    UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
+    if (len) {
+	tmpdir = rb_w32_wstr_to_mbstr(CP_UTF8, tmppath, -1, NULL);
+	return get_string(tmpdir);
+    }
+#elif defined _CS_DARWIN_USER_TEMP_DIR
+    #ifndef MAXPATHLEN
+    #define MAXPATHLEN 1024
+    #endif
+    char path[MAXPATHLEN];
+    size_t len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
+    if (len > 0) {
+	tmpdir = xmalloc(len);
+	if (len > sizeof(path)) {
+	    confstr(_CS_DARWIN_USER_TEMP_DIR, tmpdir, len);
+	}
+	else {
+	    memcpy(tmpdir, path, len);
+	}
+	return tmpdir;
+    }
+#endif
+    if (!(tmpdir = getenv("TMPDIR")) &&
+	!(tmpdir = getenv("TMP"))) {
+	tmpdir = "/tmp";
+    }
+    return get_string(tmpdir);
+}
+
 /* Default permitted number of units with a JIT code kept in
    memory.  */
 #define DEFAULT_CACHE_SIZE 1000
@@ -1248,12 +1284,7 @@ mjit_init(struct mjit_options *opts)
     }
 #endif
 
-    if (getenv("TMP") != NULL) { /* For MinGW */
-        tmp_dir = get_string(getenv("TMP"));
-    }
-    else {
-        tmp_dir = get_string("/tmp");
-    }
+    tmp_dir = system_tmpdir();
 
     init_header_filename();
     pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
