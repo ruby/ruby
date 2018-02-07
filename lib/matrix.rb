@@ -323,8 +323,16 @@ class Matrix
       j = convert_range(j, column_count) if j.begin > j.end
       raise IndexError, "expected ranges are outside of matrix" unless range_within_matrix_range?(i, j)
       set_row_and_col_range(i, j, v)
-    elsif one_is_range?(i, j)
-      set_range(i, j, v)
+    elsif i.is_a?(Range)
+      i = convert_range(i, row_count) if i.begin > i.end
+      raise IndexError, "expected row range is outside of matrix" unless range_within_count?(i, row_count)
+      j = CoercionHelper.coerce_to_int(j)
+      set_row_range(i, j, v)
+    elsif j.is_a?(Range)
+      i = CoercionHelper.coerce_to_int(i)
+      j = convert_range(j, column_count) if j.begin > j.end
+      raise IndexError, "expected column range is outside of matrix" unless range_within_count?(j, column_count)
+      set_col_range(i, j, v)
     else
       i = CoercionHelper.coerce_to_int(i)
       j = CoercionHelper.coerce_to_int(j)
@@ -358,32 +366,15 @@ class Matrix
     row.is_a?(Range) && col.is_a?(Range)
   end
 
-  def one_is_range?(row, col)
-    row.is_a?(Range) || col.is_a?(Range)
-  end
 
   def convert_range(range, count)
     range.exclude_end? ? range.begin...(count + range.end) : range.begin..(count + range.end)
   end
 
-  private :indices_within_matrix?, :both_ranges?, :one_is_range?, :convert_range
+  private :indices_within_matrix?, :both_ranges?, :convert_range
 
   def set_value(row, col, value)
     @rows[row][col] = value
-  end
-
-  def set_range(row, col, value)
-    if row.is_a?(Range)
-      row = convert_range(row, row_count) if row.begin > row.end
-      raise IndexError, "expected row range is outside of matrix" unless range_within_count?(row, row_count)
-      col = CoercionHelper.coerce_to_int(col)
-      set_row_range(row, col, value)
-    else
-      row = CoercionHelper.coerce_to_int(row)
-      col = convert_range(col, column_count) if col.begin > col.end
-      raise IndexError, "expected column range is outside of matrix" unless range_within_count?(col, column_count)
-      set_col_range(row, col, value)
-    end
   end
 
   def set_row_and_col_range(row_range, col_range, value)
@@ -434,7 +425,7 @@ class Matrix
   end
 
 
-  private :set_value, :set_range, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
+  private :set_value, :set_row_and_col_range, :set_row_range, :set_column_vector, :set_col_range
 
 
 
