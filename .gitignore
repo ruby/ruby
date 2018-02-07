@@ -198,3 +198,4 @@ lcov*.info
 
 # MJIT
 /rb_mjit_header.h
+/include/ruby-*/*/rb_mjit_header-*.h
