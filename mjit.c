@@ -87,14 +87,14 @@
 #include <winsock2.h>
 #include <windows.h>
 #else
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <dlfcn.h>
 #endif
 #include <errno.h>
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
