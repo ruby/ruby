@@ -192,6 +192,15 @@ COMPILE_PRELUDE = $(srcdir)/tool/generic_erb.rb $(srcdir)/template/prelude.c.tmp
 
 SHOWFLAGS = showflags
 
+MAKE_LINK = $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
+	  -e "src, dest = ARGV" \
+	  -e "exit if File.identical?(src, dest) or cmp(src, dest) rescue nil" \
+	  -e "def noraise; yield; rescue; rescue NotImplementedError; end" \
+	  -e "noraise {ln_sf('../'*dest.count('/')+src, dest)} or" \
+	  -e "noraise {ln(src, dest)} or" \
+	  -e "cp(src, dest)"
+
+
 all: $(SHOWFLAGS) main docs
 
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs $(MJIT_MIN_HEADER)
@@ -210,14 +219,7 @@ $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(MJIT_HEADER:.h=)$(MJIT_HEADER_S
 	$(ECHO) building $@
 	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC) $(ARCH_FLAG)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
-	$(Q) $(MINIRUBY) -rfileutils -e "include FileUtils::Verbose" \
-	  -e "src, dest = ARGV" \
-	  -e "exit if File.identical?(src, dest) or cmp(src, dest) rescue nil" \
-	  -e "def noraise; yield; rescue; rescue NotImplementedError; end" \
-	  -e "noraise {ln_sf('../'*dest.count('/')+src, dest)} or" \
-	  -e "noraise {ln(src, dest)} or" \
-	  -e "cp(src, dest)" \
-	  $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
+	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 .PHONY: showflags
 exts enc trans: $(SHOWFLAGS)

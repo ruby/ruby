@@ -162,5 +162,7 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers)
 	done
 	$(RM) $@.tmp
 	$(IFCHANGE) $@ $@.new
+	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
+	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 endif
