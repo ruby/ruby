@@ -24,12 +24,14 @@ class TestJIT < Test::Unit::TestCase
   # Shorthand for normal test cases
   def assert_eval_with_jit(script, stdout: nil, success_count:)
     out, err = eval_with_jit(script, verbose: 1, min_calls: 1)
-    actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
-    assert_equal(
-      success_count, actual,
-      "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
-      "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}",
-    )
+    if jit_available?
+      actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+      assert_equal(
+        success_count, actual,
+        "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
+        "script:\n#{code_block(script)}\nstderr:\n#{code_block(err)}",
+      )
+    end
     if stdout
       assert_match(stdout, out, "Expected stderr #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
