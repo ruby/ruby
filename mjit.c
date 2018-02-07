@@ -1107,7 +1107,7 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
 static void
 init_header_filename(void)
 {
-    FILE *f;
+    int fd;
     /* Root path of the running ruby process. Equal to RbConfig::TOPDIR.  */
     VALUE basedir_val;
     char *basedir;
@@ -1134,12 +1134,12 @@ init_header_filename(void)
         return;
     p = append_str2(header_file, basedir, baselen);
     p = append_str2(p, header_name, sizeof(header_name));
-    if ((f = fopen(header_file, "r")) == NULL) {
+    if ((fd = rb_cloexec_open(header_file, O_RDONLY, 0)) < 0) {
         xfree(header_file);
         header_file = NULL;
         return;
     }
-    fclose(f);
+    (void)close(fd);
 
 #ifdef _WIN32
     p = libruby_build = xmalloc(sizeof(libpathflag)-1 + baselen + 1);
