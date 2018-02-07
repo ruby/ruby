@@ -660,7 +660,7 @@ rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
     report_bug_valist(RSTRING_PTR(file), line, fmt, NULL, args);
 }
 
-void
+MJIT_FUNC_EXPORTED void
 rb_assert_failure(const char *file, int line, const char *name, const char *expr)
 {
     FILE *out = stderr;
