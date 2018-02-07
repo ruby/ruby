@@ -366,7 +366,6 @@ static struct timespec
 native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
     int ret;
-    struct timeval tv;
     struct timespec timeout;
     struct timespec now;
 
@@ -381,25 +380,14 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
     if (cond->clockid != CLOCK_REALTIME)
 	rb_bug("unsupported clockid %"PRIdVALUE, (SIGNED_VALUE)cond->clockid);
 #endif
-
-    ret = gettimeofday(&tv, 0);
-    if (ret != 0)
-	rb_sys_fail(0);
-    now.tv_sec = tv.tv_sec;
-    now.tv_nsec = tv.tv_usec * 1000;
+    rb_timespec_now(&now);
 
 #if USE_MONOTONIC_COND
   out:
 #endif
     timeout.tv_sec = now.tv_sec;
     timeout.tv_nsec = now.tv_nsec;
-    timeout.tv_sec += timeout_rel.tv_sec;
-    timeout.tv_nsec += timeout_rel.tv_nsec;
-
-    if (timeout.tv_nsec >= 1000*1000*1000) {
-	timeout.tv_sec++;
-	timeout.tv_nsec -= 1000*1000*1000;
-    }
+    timespec_add(&timeout, &timeout_rel);
 
     if (timeout.tv_sec < now.tv_sec)
 	timeout.tv_sec = TIMET_MAX;
@@ -905,7 +893,6 @@ register_cached_thread_and_wait(void)
 {
     rb_nativethread_cond_t cond = RB_NATIVETHREAD_COND_INIT;
     volatile rb_thread_t *th_area = 0;
-    struct timeval tv;
     struct timespec ts;
     struct cached_thread_entry *entry =
       (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
@@ -914,9 +901,8 @@ register_cached_thread_and_wait(void)
 	return 0; /* failed -> terminate thread immediately */
     }
 
-    gettimeofday(&tv, 0);
-    ts.tv_sec = tv.tv_sec + 60;
-    ts.tv_nsec = tv.tv_usec * 1000;
+    rb_timespec_now(&ts);
+    ts.tv_sec += 60;
 
     rb_native_mutex_lock(&thread_cache_lock);
     {
@@ -1072,18 +1058,13 @@ ubf_pthread_cond_signal(void *ptr)
 }
 
 static void
-native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
+native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 {
     struct timespec timeout;
     rb_nativethread_lock_t *lock = &th->interrupt_lock;
     rb_nativethread_cond_t *cond = &th->native_thread_data.sleep_cond;
 
-    if (timeout_tv) {
-	struct timespec timeout_rel;
-
-	timeout_rel.tv_sec = timeout_tv->tv_sec;
-	timeout_rel.tv_nsec = timeout_tv->tv_usec * 1000;
-
+    if (timeout_rel) {
 	/* Solaris cond_timedwait() return EINVAL if an argument is greater than
 	 * current_time + 100,000,000.  So cut up to 100,000,000.  This is
 	 * considered as a kind of spurious wakeup.  The caller to native_sleep
@@ -1092,12 +1073,12 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	 * See also [Bug #1341] [ruby-core:29702]
 	 * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
 	 */
-	if (timeout_rel.tv_sec > 100000000) {
-	    timeout_rel.tv_sec = 100000000;
-	    timeout_rel.tv_nsec = 0;
+	if (timeout_rel->tv_sec > 100000000) {
+	    timeout_rel->tv_sec = 100000000;
+	    timeout_rel->tv_nsec = 0;
 	}
 
-	timeout = native_cond_timeout(cond, timeout_rel);
+	timeout = native_cond_timeout(cond, *timeout_rel);
     }
 
     GVL_UNLOCK_BEGIN();
@@ -1111,8 +1092,8 @@ native_sleep(rb_thread_t *th, struct timeval *timeout_tv)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    if (!timeout_tv)
-                rb_native_cond_wait(cond, lock);
+	    if (!timeout_rel)
+		rb_native_cond_wait(cond, lock);
 	    else
 		native_cond_timedwait(cond, lock, &timeout);
 	}
