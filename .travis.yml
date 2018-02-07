@@ -52,12 +52,12 @@ before_script:
   - "chmod -R a-w ."
   - "chmod u+w build config_1st config_2nd"
   - "cd build"
-  - "../configure -C --disable-install-doc --with-gcc=$CC $CONFIG_FLAG"
+  - "../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=$CC $CONFIG_FLAG"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
   - "(cd .. && exec diff -ru config_1st config_2nd)"
-  - "make -s $JOBS"
+  - "make -s $JOBS && make install"
 
 script:
   - "make -s test TESTOPTS=--color=never"
