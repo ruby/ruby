@@ -1228,7 +1228,7 @@ system_tmpdir(void)
 #endif
     if (!(tmpdir = getenv("TMPDIR")) &&
 	!(tmpdir = getenv("TMP"))) {
-	tmpdir = "/tmp";
+        return get_string("/tmp");
     }
     return get_string(tmpdir);
 }
