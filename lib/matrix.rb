@@ -390,8 +390,8 @@ class Matrix
     if value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless ranges_and_dimensions_equal?(row_range, col_range, value)
       value.each_with_index do |e, row, col|
-        r = row_range.first + row
-        c = col_range.first + col
+        r = row_range.begin + row
+        c = col_range.begin + col
         @rows[r][c] = e
       end
     else
@@ -416,7 +416,7 @@ class Matrix
 
   def set_column_vector(row_range, col, value)
     value.each_with_index do |e, index|
-      r = row_range.first + index
+      r = row_range.begin + index
       @rows[r][col] = e
     end
   end
