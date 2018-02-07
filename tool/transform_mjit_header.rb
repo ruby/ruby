@@ -13,6 +13,13 @@ module MJITHeader
   FUNC_HEADER_REGEXP = /\A(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
   TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr)_/
 
+  # Predefined macros for compilers which are already supported by MJIT.
+  # We're going to support cl.exe too (WIP) but `cl.exe -E` can't produce macro.
+  SUPPORTED_CC_MACROS = [
+    '__GNUC__', # gcc
+    '__clang__', # clang
+  ]
+
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
   RECURSIVE_MACROS = %w[
     RASCTRYINFO
@@ -121,6 +128,15 @@ module MJITHeader
   def self.windows?
     RUBY_PLATFORM =~ /mswin|mingw|msys/
   end
+
+  def self.cl_exe?(cc)
+    cc =~ /\Acl(\z| |\.exe)/
+  end
+
+  # If code has macro which only supported compilers predefine, return true.
+  def self.supported_header?(code)
+    SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{macro}\b/ }
+  end
 end
 
 if ARGV.size != 3
@@ -130,10 +146,16 @@ end
 cc      = ARGV[0]
 code    = File.binread(ARGV[1]) # Current version of the header file.
 outfile = ARGV[2]
-if cc =~ /\Acl(\z| |\.exe)/
+if MJITHeader.cl_exe?(cc)
   cflags = '-DMJIT_HEADER -Zs'
 else
   cflags = '-S -DMJIT_HEADER -fsyntax-only -Werror=implicit-function-declaration -Werror=implicit-int -Wfatal-errors'
+end
+
+if !MJITHeader.cl_exe?(cc) && !MJITHeader.supported_header?(code)
+  puts "This compiler (#{cc}) looks not supported for MJIT. Giving up to generate MJIT header."
+  MJITHeader.write("#error MJIT does not support '#{cc}' yet", outfile)
+  exit
 end
 
 if MJITHeader.windows?
