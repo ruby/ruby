@@ -93,10 +93,12 @@ module MJITHeader
         out = IO.popen(cmd, err: [:child, :out], &:read)
         STDERR.puts "error in #{stage} header file:\n#{out}"
 
-        if match = out.match(/error: conflicting types for '(?<name>[^']+)'/)
-          unless (related_lines = code.lines.grep(/#{match[:name]}/)).empty?
-            STDERR.puts "possibly related lines:\n#{related_lines.join("\n")}"
-          end
+        if match = out.match(/error: conflicting types for '[^']+'/)
+          STDERR.puts "\nDumping information for debugging:\n"\
+            "[ORIGINAL_HEADER_BEGIN]-----------------\n#{File.binread(ARGV[1])}\n"\
+            "[ORIGINAL_HEADER_END]-----------------\n\n"\
+            "[TRANSFORMED_HEADER_BEGIN]-----------------\n#{code}\n"\
+            "[TRANSFORMED_HEADER_END]-----------------\n"
         end
         exit false
       end
