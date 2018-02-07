@@ -404,7 +404,7 @@ class Matrix
 
   def set_row_range(row_range, col, value)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless row_range.size == value.size
+      Matrix.Raise ErrDimensionMismatch unless row_range.size == value.size
       set_column_vector(row_range, col, value)
     elsif value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
@@ -423,7 +423,7 @@ class Matrix
 
   def set_col_range(row, col_range, value)
     if value.is_a?(Vector)
-      raise ArgumentError, "vector to be set has wrong size" unless col_range.size == value.size
+      Matrix.Raise ErrDimensionMismatch unless col_range.size == value.size
       @rows[row][col_range] = value.to_a
     elsif value.is_a?(Matrix)
       Matrix.Raise ErrDimensionMismatch unless value.row_count == 1

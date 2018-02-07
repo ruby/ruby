@@ -714,8 +714,8 @@ class TestMatrix < Test::Unit::TestCase
     end
 
     # Error checking
-    assert_raise(ArgumentError){ m2[0..1, 2] = v2 }
-    assert_raise(ArgumentError){ m2[1, 0..2] = v1 }
+    assert_raise(Matrix::ErrDimensionMismatch){ m2[0..1, 2] = v2 }
+    assert_raise(Matrix::ErrDimensionMismatch){ m2[1, 0..2] = v1 }
     assert_raise(IndexError){ m2[0..2, 0] = v1 }
     assert_raise(IndexError){ m2[3..5, 3..5] = 10 }
     assert_raise(IndexError){ m2[3..5, 5] = 10 }
