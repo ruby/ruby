@@ -135,7 +135,7 @@ module MJITHeader
 
   # If code has macro which only supported compilers predefine, return true.
   def self.supported_header?(code)
-    SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{macro}\b/ }
+    SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{Regexp.escape(macro)}\b/ }
   end
 end
 
