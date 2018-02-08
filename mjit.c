@@ -757,7 +757,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (c_file_len >= (int)sizeof(c_file_buff)) {
         ++c_file_len;
         c_file = alloca(c_file_len);
-        c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
+        c_file_len = sprint_uniq_filename(c_file, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     }
     ++c_file_len;
     so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
