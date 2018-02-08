@@ -28,58 +28,48 @@ class TestVector < Test::Unit::TestCase
   end
 
   def test_set_element
-    v1 = Vector[1, 3, 4, 5]
-    v2 = Vector[1, 2, 3, 4, 5, 6]
-    v3 = Vector[1, 2]
-    v4 = Vector[5, 6, 7, 8, 9]
-    v5 = Vector[6, 7, 8]
-    v6 = Vector[7, 8, 9].freeze
-    v7 = Vector[2, 3, 5]
-    v8 = Vector[3, 4, 5]
-    v9 = Vector[4, 8, 9, 11, 30]
-    m1 = Matrix[[1, 3]]
 
     assert_block do
-      v1[2] = 5
-      Vector[1, 3, 5, 5] == v1
+      v = Vector[1, 3, 4, 5]
+      v[2] = 5
+      v == Vector[1, 3, 5, 5]
     end
 
     assert_block do
-      v2[0..2] = 8
-      Vector[8, 8, 8, 4, 5, 6] == v2
+      v = Vector[1, 2, 3, 4, 5, 6]
+      v[0..2] = 8
+      v == Vector[8, 8, 8, 4, 5, 6]
     end
 
     assert_block do
-      v4[1..2] = v3
-      Vector[5, 1, 2, 8, 9] == v4
+      v = Vector[5, 6, 7, 8, 9]
+      v[1..2] = Vector[1, 2]
+      v == Vector[5, 1, 2, 8, 9]
     end
 
     assert_block do
-      v5[1..2] = m1
-      Vector[6, 1, 3] == v5
+      v = Vector[6, 7, 8]
+      v[1..2] = Matrix[[1, 3]]
+      v == Vector[6, 1, 3]
     end
 
     assert_block do
-      v7[-2] = 13
-      Vector[2, 3, 13]
+      v = Vector[2, 3, 5]
+      v[-2] = 13
+      v == Vector[2, 13, 5]
     end
 
     assert_block do
-      v8[-2..0] = 57
-      Vector[57, 57, 57]
+      v = Vector[4, 8, 9, 11, 30]
+      v[1..-2] = Vector[1, 2, 3]
+      v == Vector[4, 1, 2, 3, 30]
     end
 
-    assert_block do
-      v9[1..-2] = Vector[1, 2, 3]
-      Vector[4, 1, 2, 3, 30] == v9
-    end
-
-    assert_raise(IndexError) {v1[5..6] = 17}
-    assert_raise(IndexError) {v1[6] = 17}
-    assert_raise(Matrix::ErrDimensionMismatch) {v1[0..2] = Matrix[[1], [2], [3]]}
-
-    assert_raise(ArgumentError) {v2[0..2] = Vector[1, 2, 3, 4, 5, 6]}
-    assert_raise(FrozenError) { v6[0..1] = 5}
+    assert_raise(IndexError) {Vector[1, 3, 4, 5][5..6] = 17}
+    assert_raise(IndexError) {Vector[1, 3, 4, 5][6] = 17}
+    assert_raise(Matrix::ErrDimensionMismatch) {Vector[1, 3, 4, 5][0..2] = Matrix[[1], [2], [3]]}
+    assert_raise(ArgumentError) {Vector[1, 2, 3, 4, 5, 6][0..2] = Vector[1, 2, 3, 4, 5, 6]}
+    assert_raise(FrozenError) { Vector[7, 8, 9].freeze[0..1] = 5}
   end
 
   def test_map!
