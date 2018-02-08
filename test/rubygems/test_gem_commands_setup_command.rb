@@ -6,9 +6,7 @@ require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
 
-  gem = File.exist?(gem = File.expand_path("bin/gem", @@project_dir)) ?
-    [ENV["RUBY"] || "ruby", gem] : ["gem"]
-  BUNDLER_VERS = IO.popen(gem + %w[list -e bundler], &:read)[/([^() ]+)\)\Z/, 1] || "1.16.1" if Gem::USE_BUNDLER_FOR_GEMDEPS
+  BUNDLER_VERS = "1.16.1"
 
   def setup
     super
@@ -24,8 +22,6 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     File.open 'lib/rubygems.rb',           'w' do |io| io.puts '# rubygems.rb'  end
     File.open 'lib/rubygems/test_case.rb', 'w' do |io| io.puts '# test_case.rb' end
     File.open 'lib/rubygems/ssl_certs/rubygems.org/foo.pem', 'w' do |io| io.puts 'PEM'       end
-
-    return unless Gem::USE_BUNDLER_FOR_GEMDEPS
 
     FileUtils.mkdir_p 'bundler/exe'
     FileUtils.mkdir_p 'bundler/lib/bundler'
