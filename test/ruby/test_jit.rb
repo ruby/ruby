@@ -11,6 +11,8 @@ class TestJIT < Test::Unit::TestCase
   ]
 
   def test_jit
+    skip unless jit_supported?
+
     assert_eval_with_jit('print proc { 1 + 1 }.call', stdout: '2', success_count: 1)
   end
 
@@ -56,8 +58,6 @@ class TestJIT < Test::Unit::TestCase
     "```\n#{code}\n```\n\n"
   end
 
-  # If this is false, tests which require JIT should be skipped.
-  # When this is not checked, probably the test expects Ruby to behave in the same way even if JIT is not supported.
   def jit_supported?
     return @jit_supported if defined?(@jit_supported)
 
