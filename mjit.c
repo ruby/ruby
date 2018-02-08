@@ -658,9 +658,9 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    static const char *input[] = {NULL, NULL};
-    static const char *output[] = {"-o", NULL, NULL};
-    const char *libs[] = {
+    const char *input[] = {NULL, NULL};
+    const char *output[] = {"-o", NULL, NULL};
+    static const char *const libs[] = {
 #ifdef _MSC_VER
         LIBRUBYARG_SHARED,
         "-link",
