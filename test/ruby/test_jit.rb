@@ -62,7 +62,8 @@ class TestJIT < Test::Unit::TestCase
     return @jit_supported if defined?(@jit_supported)
 
     begin
-      @jit_supported = eval_with_jit('proc {}.call', verbose: 1, min_calls: 1, timeout: 10)
+      _, err = eval_with_jit('proc {}.call', verbose: 1, min_calls: 1, timeout: 10)
+      @jit_supported = err.match?(JIT_SUCCESS_PREFIX)
     rescue Timeout::Error
       $stderr.puts "TestJIT: #jit_supported? check timed out"
       @jit_supported = false
