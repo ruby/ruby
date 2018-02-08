@@ -83,6 +83,9 @@ class TestVector < Test::Unit::TestCase
   end
 
   def test_freeze
+    v = Vector[1,2,3].freeze
+
+    assert_equal true, v.frozen?
     assert_raise(FrozenError){ Vector[2].freeze[0] = 56 }
     assert_equal Vector[1, 2], Vector[1, 2].freeze
     assert_equal Vector[1, 2], Vector[1, 2].freeze

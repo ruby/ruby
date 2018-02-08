@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
-require 'matrix'
+require_relative 'matrix'
 
 class SubMatrix < Matrix
 end
@@ -777,6 +777,8 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_freeze
+    m = Matrix[[1, 2, 3],[4, 5, 6]].freeze
+    assert_equal true, m.frozen?
     assert_raise(FrozenError){ Matrix[[1,2]].freeze[0, 1] = 56 }
     assert_equal Matrix[[1,2]], Matrix[[1,2]].freeze
     assert_equal Matrix[[1,2]], Matrix[[1,2]].freeze
