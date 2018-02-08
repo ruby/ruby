@@ -1199,6 +1199,10 @@ valid_class_serials_add_i(ID key, VALUE v, void *unused)
     return ID_TABLE_CONTINUE;
 }
 
+#ifdef _WIN32
+UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
+#endif
+
 static char *
 system_tmpdir(void)
 {
