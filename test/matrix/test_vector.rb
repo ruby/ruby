@@ -30,18 +30,6 @@ class TestVector < Test::Unit::TestCase
   def test_set_element
 
     assert_block do
-      v = Vector[1, 3, 4, 5]
-      v[2] = 5
-      v == Vector[1, 3, 5, 5]
-    end
-
-    assert_block do
-      v = Vector[1, 2, 3, 4, 5, 6]
-      v[0..2] = 8
-      v == Vector[8, 8, 8, 4, 5, 6]
-    end
-
-    assert_block do
       v = Vector[5, 6, 7, 8, 9]
       v[1..2] = Vector[1, 2]
       v == Vector[5, 1, 2, 8, 9]
@@ -51,6 +39,18 @@ class TestVector < Test::Unit::TestCase
       v = Vector[6, 7, 8]
       v[1..2] = Matrix[[1, 3]]
       v == Vector[6, 1, 3]
+    end
+
+    assert_block do
+      v = Vector[1, 2, 3, 4, 5, 6]
+      v[0..2] = 8
+      v == Vector[8, 8, 8, 4, 5, 6]
+    end
+
+    assert_block do
+      v = Vector[1, 3, 4, 5]
+      v[2] = 5
+      v == Vector[1, 3, 5, 5]
     end
 
     assert_block do
@@ -80,6 +80,12 @@ class TestVector < Test::Unit::TestCase
     assert_equal v1, v1.map!{|e| e - 8}
     assert_raise(FrozenError) { v2.map!{|e| e + 2 }}
     assert_raise(FrozenError){ v3.map!{} }
+  end
+
+  def test_freeze
+    assert_raise(FrozenError){ Vector[2].freeze[0] = 56 }
+    assert_equal Vector[1, 2], Vector[1, 2].freeze
+    assert_equal Vector[1, 2], Vector[1, 2].freeze
   end
 
   def test_identity

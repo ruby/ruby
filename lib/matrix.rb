@@ -519,7 +519,7 @@ class Matrix
   alias map! collect!
 
   def freeze
-    @rows.map!(&:freeze).freeze
+    @rows.freeze
     super
   end
 

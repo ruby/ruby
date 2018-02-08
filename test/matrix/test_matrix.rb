@@ -776,6 +776,12 @@ class TestMatrix < Test::Unit::TestCase
     assert_raise(FrozenError) { m4.map!{} }
   end
 
+  def test_freeze
+    assert_raise(FrozenError){ Matrix[[1,2]].freeze[0, 1] = 56 }
+    assert_equal Matrix[[1,2]], Matrix[[1,2]].freeze
+    assert_equal Matrix[[1,2]], Matrix[[1,2]].freeze
+  end
+
   def test_eigenvalues_and_eigenvectors_symmetric
     m = Matrix[
       [8, 1],
