@@ -635,97 +635,125 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_set_element
-    m1 = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
-    m2 = Matrix[[5, 8, 9], [2, 3, 4]]
-    m3 = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
-    m4 = Matrix[[7, 8, 0, 9]]
-    m5 = Matrix[[1], [2], [3]]
-    m6 = Matrix.zero(2, 4)
-    m7 = Matrix.zero(3, 2)
-    m8 = Matrix[[1, 3, 4], [5, 6, 9]].freeze
-    m9 = Matrix[[1,2],[2,1]]
-    m10 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    m11 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    m12 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    m13 = Matrix[[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    v1 = Vector[3, 5, 6, 7]
-    v2 = Vector[4, 5, 6]
 
-    # Set element
     assert_block do
-      m1[2, 3] = 52
-      Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 52]] == m1
-    end
-    # Set element for ranges
-    assert_block do
-      m2[0..1, 0..2] = 40
-      Matrix[[40, 40, 40],[40, 40, 40]] == m2
-    end
-    # Set row to vector
-    assert_block do
-      m1[2, 0..3] = v1
-      Matrix[[1,2,3,4], [5,6,7,8], [3, 5, 6, 7]] == m1
-    end
-    # Set entries to entries of matrix
-    assert_block do
-      m2 = Matrix[[5, 8, 9], [2, 3, 4]]
-      m3[0..1, 0..2] = m2
-      Matrix[[5, 8, 9, 4], [2, 3, 4, 8], [9, 10, 11, 12]] == m3
-    end
-    # Set column to vector
-    assert_block do
-      m3[0..2, 3] = v2
-      Matrix[[5, 8, 9, 4], [2, 3, 4, 5], [9, 10, 11, 6]] == m3
-    end
-    # Set row to row matrix
-    assert_block do
-      m6[1, 0...4] = m4
-      Matrix[[0, 0, 0, 0], [7, 8, 0, 9]] == m6
-    end
-    # Set column to column matrix
-    assert_block do
-      m7[0..2, 1] = m5
-      Matrix[[0, 1],[0, 2], [0, 3]] == m7
-    end
-    # Set negative range
-    assert_block do
-      m9[-2..1, 1] = 45
-      Matrix[[1, 45], [2, 45]] == m9
-    end
-    # Set ranges when first is greater than last
-    assert_block do
-      m10[1..-1, 1] = 78
-      Matrix[[1, 2, 3], [4, 78, 6], [7, 78, 9]] == m10
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0..1, 2..3] = Matrix[[54, 76], [82, 90]]
+      m == Matrix[[1, 2, 54, 76], [5, 6, 82, 90], [9, 10, 11, 12]]
     end
 
     assert_block do
-      m11[1, 2..-1] = 78
-      Matrix[[1, 2, 3], [4, 5, 78], [7, 8, 9]] == m11
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0..1, 2..3] = 234
+      m == Matrix[[1, 2, 234, 234], [5, 6, 234, 234], [9, 10, 11, 12]]
     end
 
     assert_block do
-      m12[2, 1..-1] = Vector[65, 713]
-      Matrix[[1, 2, 3], [4, 5, 6], [7, 65, 713]] == m12
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0...3, 2] = Vector[40, 50, 70]
+      m == Matrix[[1, 2, 40, 4], [5, 6, 50, 8], [9, 10, 70, 12]]
     end
 
     assert_block do
-      m13[1..-1, 1..-1] = Matrix.zero(2, 2)
-      Matrix[[1, 2, 3], [4, 0, 0], [7, 0, 0]] == m13
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0..2, 2] = Matrix[[40], [50], [70]]
+      m == Matrix[[1, 2, 40, 4], [5, 6, 50, 8], [9, 10, 70, 12]]
     end
 
-    # Error checking
-    assert_raise(Matrix::ErrDimensionMismatch){ m2[0..1, 2] = v2 }
-    assert_raise(Matrix::ErrDimensionMismatch){ m2[1, 0..2] = v1 }
-    assert_raise(IndexError){ m2[0..2, 0] = v1 }
-    assert_raise(IndexError){ m2[3..5, 3..5] = 10 }
-    assert_raise(IndexError){ m2[3..5, 5] = 10 }
-    assert_raise(IndexError){ m2[5, 3..5] = 10 }
-    assert_raise(IndexError){ m2[5, 5] = 10 }
-    assert_raise(Matrix::ErrDimensionMismatch){ m1[0..1, 0..3] = m2 }
-    assert_raise(Matrix::ErrDimensionMismatch){ m1[0...2, 3] = Matrix[[3, 5, 7]] }
-    assert_raise(Matrix::ErrDimensionMismatch){ m1[1, 0..3] = Matrix[[1],[5]] }
-    assert_raise(FrozenError){ m8[1, 2] = 5}
-    assert_raise(FrozenError){ m8[0...1, 2] = 5}
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0..2, 2] = 68
+      m == Matrix[[1, 2, 68, 4], [5, 6, 68, 8], [9, 10, 68, 12]]
+    end
+
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[2, 1..2] = Vector[56, 900]
+      m == Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 56, 900, 12]]
+    end
+
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[2, 1..2] = Matrix[[56, 900]]
+      m == Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 56, 900, 12]]
+    end
+
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[2, 1...4] = 700
+      m == Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 700, 700, 700]]
+    end
+
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0, 3] = 700
+      m == Matrix[[1, 2, 3, 700], [5, 6, 7, 8], [9, 10, 11, 12]]
+    end
+
+    # begin greater than end ranges
+
+    assert_block do
+      m = Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12]]
+      m[0...-1, 2..-1] = Matrix[[54, 76], [82, 90]]
+      m == Matrix[[1, 2, 54, 76], [5, 6, 82, 90], [9, 10, 11, 12]]
+    end
+
+    assert_raise(FrozenError) do
+      Matrix[[1, 2], [3, 4]].freeze[1, 1] = 28
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][1..2, 3..4] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][1..2, 0..1] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][0...2, 3..4] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][0..2, 1] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][0, 1..2] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][2, 6] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][1, 6] = 15
+    end
+
+    assert_raise(IndexError) do
+      Matrix[[1, 2], [3, 4]][2, 0] = 15
+    end
+
+    assert_raise(Matrix::ErrDimensionMismatch) do
+      Matrix[[1, 2], [3, 4]][0...2, 0..1] = Matrix[[1],[2]]
+    end
+
+    assert_raise(Matrix::ErrDimensionMismatch) do
+      Matrix[[1, 2], [3, 4]][0...2, 1] = Vector[2, 3, 4]
+    end
+
+    assert_raise(Matrix::ErrDimensionMismatch) do
+      Matrix[[1, 2], [3, 4]][0...2, 1] = Matrix[[2, 3, 4]]
+    end
+
+    assert_raise(Matrix::ErrDimensionMismatch) do
+      Matrix[[1, 2], [3, 4]][1, 0..1] = Vector[2, 3, 4]
+    end
+
+    assert_raise(Matrix::ErrDimensionMismatch) do
+      Matrix[[1, 2], [3, 4]][1, 0..1] = Matrix[[2], [3], [4]]
+    end
+
   end
 
   def test_map!

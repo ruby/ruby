@@ -401,7 +401,7 @@ class Matrix
       Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
       set_column_vector(row_range, col, value.column(0))
     else
-      @rows[row_range].map!{|e| e[col] = value }
+      @rows[row_range].each{|e| e[col] = value }
     end
   end
 
