@@ -2478,6 +2478,7 @@ LIBEXT=a
 AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(MJIT_HEADER_FLAGS)dnl
+AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -2966,6 +2967,9 @@ AC_ARG_ENABLE(multiarch,
 	      [multiarch=], [unset multiarch])
 AS_IF([test ${multiarch+set}], [
    AC_DEFINE(ENABLE_MULTIARCH)
+   MJIT_HEADER_INSTALL_DIR=include/'${arch}/${RUBY_VERSION_NAME}'
+], [
+   MJIT_HEADER_INSTALL_DIR=include/'${RUBY_VERSION_NAME}/${arch}'
 ])
 
 archlibdir='${libdir}/${arch}'
