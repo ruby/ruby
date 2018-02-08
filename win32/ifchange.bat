@@ -35,6 +35,10 @@ if "%opt%" == "--timestamp" (
     set color=%opt:~8%
     shift
     goto :optloop
+) else if "%opt%" == "--debug" (
+    shift
+    echo on
+    goto :optloop
 )
 if "%opt%" == "" goto :end
 

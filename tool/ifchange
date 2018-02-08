@@ -31,6 +31,9 @@ until [ $# -eq 0 ]; do
 	--color=*)
 	    color=`expr \( "$1" : '[^=]*=\(.*\)' \)`
 	    ;;
+	--debug)
+	    set -x
+	    ;;
 	*)
 	    break
 	    ;;
