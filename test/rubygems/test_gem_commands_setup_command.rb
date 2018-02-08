@@ -6,7 +6,9 @@ require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
 
-  BUNDLER_VERS = `gem list -e bundler`[/([^() ]+)\)\Z/, 1] || "1.16.1"
+  gem = File.exist?(gem = File.expand_path("bin/gem", @@project_dir)) ?
+    [ENV["RUBY"] || "ruby", gem] : ["gem"]
+  BUNDLER_VERS = IO.popen(gem + %w[list -e bundler], &:read)[/([^() ]+)\)\Z/, 1] || "1.16.1"
 
   def setup
     super
