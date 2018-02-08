@@ -206,8 +206,6 @@ static char *tmp_dir;
 static VALUE valid_class_serials;
 /* Ruby level interface module.  */
 VALUE rb_mMJIT;
-/* Portable /dev/null, defined in file.c */
-extern const char ruby_null_device[];
 
 #ifdef _WIN32
 /* Linker option to enable libruby in the build directory. */
