@@ -3785,7 +3785,11 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     rb_fdset_t MAYBE_UNUSED(orig_write);
     rb_fdset_t MAYBE_UNUSED(orig_except);
     struct timespec to;
-    struct timespec ts;
+    struct timespec ts
+#if defined(__GNUC__) && (__GNUC__ == 7 || __GNUC__ == 8)
+        = {0, 0}
+#endif
+        ;
     rb_thread_t *th = GET_THREAD();
 
 #define do_select_update() \
