@@ -43,12 +43,12 @@ class TestJIT < Test::Unit::TestCase
 
   # Run Ruby script with --jit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
-  def eval_with_jit(script, verbose: 0, min_calls: 5)
+  def eval_with_jit(script, verbose: 0, min_calls: 5, timeout: JIT_TIMEOUT)
     stdout, stderr, status = EnvUtil.invoke_ruby(
       ['--disable-gems', '--jit-wait', "--jit-verbose=#{verbose}", "--jit-min-calls=#{min_calls}", '-e', script],
-      '', true, true, timeout: JIT_TIMEOUT,
+      '', true, true, timeout: timeout,
     )
-    assert_equal(true, status.success?, "Failed to run script with JIT:\n#{code_block(script)}")
+    assert_equal(true, status.success?, "Failed to run script with JIT:\n#{code_block(script)}\nstdout:\n#{code_block(stdout)}\nstderr:\n#{code_block(stderr)}")
     [stdout, stderr]
   end
 
@@ -61,7 +61,11 @@ class TestJIT < Test::Unit::TestCase
   def jit_supported?
     return @jit_supported if defined?(@jit_supported)
 
-    out = IO.popen("#{RbConfig::CONFIG['CC']} --version", err: [:child, :out], &:read)
-    @jit_supported = $?.success? && SUPPORTED_COMPILERS.any? { |cc| out.match(/\b#{Regexp.escape(cc)}\b/) }
+    begin
+      @jit_supported = eval_with_jit('proc {}.call', verbose: 1, min_calls: 1, timeout: 10)
+    rescue Timeout::Error
+      $stderr.puts "TestJIT: #jit_supported? check timed out"
+      @jit_supported = false
+    end
   end
 end
