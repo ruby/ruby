@@ -659,37 +659,40 @@ compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
     const char *input[] = {NULL, NULL};
-    const char *output[] = {"-o", NULL, NULL};
+    const char *output[] = {
+#ifndef _MSC_VER
+        "-o",
+#endif
+        NULL, NULL};
     const char *libs[] = {
-#ifdef _MSC_VER
+#ifdef _WIN32
+# ifdef _MSC_VER
         LIBRUBYARG_SHARED,
         "-link",
         libruby_installed,
         libruby_build,
-#else
-# ifdef _WIN32
+# else
         /* Look for ruby.dll.a in build and install directories. */
         libruby_installed,
         libruby_build,
         /* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
         LIBRUBYARG_SHARED,
         "-lmsvcrt",
-#  ifdef __GNUC__
         "-lgcc",
-#  endif
 # endif
 #endif
         NULL};
     char **args;
+#ifdef _MSC_VER
+    char *p;
+#endif
 
     input[0] = c_file;
 #ifdef _MSC_VER
-    {
-        char *p = (char *)output[0] = xmalloc(3 + strlen(so_file) + 1);
-        p = append_str(p, "-Fe");
-        p = append_str(p, so_file);
-        *p = '\0';
-    }
+    p = (char *)output[0] = xmalloc(3 + strlen(so_file) + 1);
+    p = append_str(p, "-Fe");
+    p = append_str(p, so_file);
+    *p = '\0';
     args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
                      output, input, libs);
 #else
@@ -1150,13 +1153,12 @@ init_header_filename(void)
     verlen = strlen(ruby_version);
 
     header_file = xmalloc(baselen + sizeof(header_name) + verlen + 2);
-    if (header_file == NULL)
-        return;
     p = append_str2(header_file, basedir, baselen);
     p = append_str2(p, header_name, sizeof(header_name)-1);
     p = append_str2(p, ruby_version, verlen);
     p = append_str2(p, ".h", 3);
     if ((fd = rb_cloexec_open(header_file, O_RDONLY, 0)) < 0) {
+        verbose(2, "Cannot access header file %s\n", header_file);
         xfree(header_file);
         header_file = NULL;
         return;
