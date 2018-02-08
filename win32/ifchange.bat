@@ -4,6 +4,7 @@
 set timestamp=
 set keepsuffix=
 set empty=
+set color=auto
 :optloop
 for %%I in (%1) do set opt=%%~I
 if "%opt%" == "--timestamp" (
@@ -24,6 +25,14 @@ if "%opt%" == "--timestamp" (
     goto :optloop
 ) else if "%opt%" == "--empty" (
     set empty=yes
+    shift
+    goto :optloop
+) else if "%opt%" == "--color" (
+    set color=always
+    shift
+    goto :optloop
+) else if "%opt:~0,8%" == "--color=" (
+    set color=%opt:~8%
     shift
     goto :optloop
 )
