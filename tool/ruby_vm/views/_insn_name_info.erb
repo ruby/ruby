@@ -13,7 +13,9 @@
 %
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
 extern const char *rb_vm_insn_name_info;
+MJIT_SYMBOL_EXPORT_BEGIN
 extern const unsigned short rb_vm_insn_name_offset[];
+MJIT_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
 const unsigned short rb_vm_insn_name_offset[] = {

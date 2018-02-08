@@ -1302,7 +1302,7 @@ rb_source_location(int *pline)
     }
 }
 
-const char *
+MJIT_FUNC_EXPORTED const char *
 rb_source_location_cstr(int *pline)
 {
     VALUE path = rb_source_location(pline);

@@ -270,9 +270,11 @@ void xfree(void*);
 #define RUBY_FUNC_EXPORTED
 #endif
 
-/* MJIT_FUNC_EXPORTED is used for functions which are exported only for MJIT
+/* These macros are used for functions which are exported only for MJIT
    and NOT ensured to be exported in future versions. */
 #define MJIT_FUNC_EXPORTED RUBY_FUNC_EXPORTED
+#define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
+#define MJIT_SYMBOL_EXPORT_END RUBY_SYMBOL_EXPORT_END
 
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern

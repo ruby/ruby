@@ -3263,7 +3263,7 @@ rb_str_equal(VALUE str1, VALUE str2)
  * Two strings are equal if they have the same length and content.
  */
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_str_eql(VALUE str1, VALUE str2)
 {
     if (str1 == str2) return Qtrue;
