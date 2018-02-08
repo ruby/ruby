@@ -1242,6 +1242,7 @@ void rb_call_end_proc(VALUE data);
 void rb_mark_end_proc(void);
 
 /* file.c */
+extern const char ruby_null_device[];
 VALUE rb_home_dir_of(VALUE user, VALUE result);
 VALUE rb_default_home_dir(VALUE result);
 VALUE rb_realpath_internal(VALUE basedir, VALUE path, int strict);
