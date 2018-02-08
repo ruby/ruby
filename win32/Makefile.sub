@@ -144,6 +144,9 @@ sitearch = $(ARCH)-$(RT)
 !if !defined(ruby_version)
 ruby_version = $(MAJOR).$(MINOR).0
 !endif
+!if !defined(RUBY_VERSION_NAME)
+RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
+!endif
 
 !ifndef RUBY_SO_NAME
 RUBY_SO_NAME = $(RT)-$(RUBY_BASE_NAME)$(ruby_version:.=)
