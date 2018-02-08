@@ -152,7 +152,7 @@ $(foreach x,$(patsubst -arch=%,%,$(arch_flags)), \
 		 : ARCH_FLAG := -arch $(value x)))
 
 mjit_min_headers := $(patsubst -arch=%,$(MJIT_MIN_HEADER:.h=-%.h),$(arch_flags))
-$(MJIT_MIN_HEADER): $(mjit_min_headers)
+$(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 	@ set -e; set $(patsubst -arch=%,%,$(arch_flags)); \
 	cd $(@D); h=$(@F:.h=); set -x; \
 	cp $$h-$$1.h $$h.h.new; shift; \
