@@ -11133,7 +11133,7 @@ static void *
 nogvl_copy_stream_func(void *arg)
 {
     struct copy_stream_struct *stp = (struct copy_stream_struct *)arg;
-#ifdef USE_SENDFILE
+#if defined(USE_SENDFILE) || defined(USE_COPY_FILE_RANGE)
     int ret;
 #endif
 
@@ -11151,7 +11151,7 @@ nogvl_copy_stream_func(void *arg)
 
     nogvl_copy_stream_read_write(stp);
 
-#ifdef USE_SENDFILE
+#if defined(USE_SENDFILE) || defined(USE_COPY_FILE_RANGE)
   finish:
 #endif
     return 0;
