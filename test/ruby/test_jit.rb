@@ -37,7 +37,7 @@ class TestJIT < Test::Unit::TestCase
       )
     end
     if stdout
-      assert_match(stdout, out, "Expected stderr #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
+      assert_match(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
   end
 
