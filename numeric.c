@@ -1603,7 +1603,7 @@ flo_le(VALUE x, VALUE y)
  *  so an implementation-dependent value is returned.
  */
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_float_eql(VALUE x, VALUE y)
 {
     if (RB_TYPE_P(y, T_FLOAT)) {
