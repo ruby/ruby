@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'shellwords'
 
 # Test for --jit option
 class TestJIT < Test::Unit::TestCase
