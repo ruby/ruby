@@ -747,6 +747,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 {
     char c_file_buff[70], *c_file = c_file_buff, *so_file, funcname[35];
     int success;
+    int fd;
     FILE *f;
     void *func;
     double start_time, end_time;
@@ -766,9 +767,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
     sprintf(funcname, "_mjit%d", unit->id);
 
-    f = fopen(c_file, "w");
-    if (f == NULL) {
-        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(errno));
+    fd = rb_cloexec_open(c_file, O_WRONLY|O_EXCL|O_CREAT, 0600);
+    if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
+        int e = errno;
+        if (fd >= 0) (void)close(fd);
+        verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
         return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
