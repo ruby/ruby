@@ -85,10 +85,8 @@ module MJITHeader
   # Return true if CC with CFLAGS compiles successfully the current code.
   # Use STAGE in the message in case of a compilation failure
   def self.check_code!(code, cc, cflags, stage)
-    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
-      f.puts code
-      f.close
-      cmd = "#{cc} #{cflags} #{f.path}"
+    with_code(code) do |path|
+      cmd = "#{cc} #{cflags} #{path}"
       unless system(cmd, err: File::NULL)
         out = IO.popen(cmd, err: [:child, :out], &:read)
         STDERR.puts "error in #{stage} header file:\n#{out}"
@@ -139,6 +137,25 @@ module MJITHeader
   def self.supported_header?(code)
     SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{Regexp.escape(macro)}\b/ }
   end
+
+  # This checks if syntax check outputs "error: conflicting types for 'restrict'".
+  # If it's true, this script regards platform as AIX and add -std=c99 as workaround.
+  def self.conflicting_types?(code, cc, cflags)
+    with_code(code) do |path|
+      cmd = "#{cc} #{cflags} #{path}"
+      out = IO.popen(cmd, err: [:child, :out], &:read)
+      !$?.success? && out.match?(/error: conflicting types for '[^']+'/)
+    end
+  end
+
+  def self.with_code(code)
+    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
+      f.puts code
+      f.close
+      return yield(f.path)
+    end
+  end
+  private_class_method :with_code
 end
 
 if ARGV.size != 3
@@ -160,22 +177,25 @@ if !MJITHeader.cl_exe?(cc) && !MJITHeader.supported_header?(code)
   exit
 end
 
-if MJITHeader.windows?
-  MJITHeader.remove_harmful_macros!(code)
-end
 MJITHeader.remove_predefined_macros!(code)
 
 if MJITHeader.windows? # transformation is broken with Windows headers for now
+  MJITHeader.remove_harmful_macros!(code)
   MJITHeader.check_code!(code, cc, cflags, 'initial')
   puts "\nSkipped transforming external functions to static on Windows."
   MJITHeader.write(code, outfile)
   exit
-else
-  macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
-
-  # Check initial file correctness in the manner of final output.
-  MJITHeader.check_code!("#{code}#{macro}", cc, cflags, 'initial')
 end
+
+macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
+code_to_check = "#{code}#{macro}" # macro should not affect code again
+
+if MJITHeader.conflicting_types?(code_to_check, cc, cflags)
+  cflags = "#{clags} -std=c99" # For AIX gcc
+end
+
+# Check initial file correctness in the manner of final output.
+MJITHeader.check_code!(code_to_check, cc, cflags, 'initial')
 puts "\nTransforming external functions to static:"
 
 stop_pos     = -1
