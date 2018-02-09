@@ -686,13 +686,15 @@ compile_c_to_so(const char *c_file, const char *so_file)
     char **args;
 #ifdef _MSC_VER
     char *p;
+    int solen;
 #endif
 
     input[0] = c_file;
 #ifdef _MSC_VER
-    p = (char *)output[0] = xmalloc(3 + strlen(so_file) + 1);
+    solen = strlen(so_file);
+    p = (char *)output[0] = xmalloc(3 + solen + 1);
     p = append_str(p, "-Fe");
-    p = append_str(p, so_file);
+    p = append_str2(p, so_file, solen);
     *p = '\0';
     args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
                      output, input, libs);
