@@ -191,7 +191,7 @@ macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not wor
 code_to_check = "#{code}#{macro}" # macro should not affect code again
 
 if MJITHeader.conflicting_types?(code_to_check, cc, cflags)
-  cflags = "#{clags} -std=c99" # For AIX gcc
+  cflags = "#{cflags} -std=c99" # For AIX gcc
 end
 
 # Check initial file correctness in the manner of final output.
