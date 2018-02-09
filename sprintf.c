@@ -1275,7 +1275,7 @@ ruby_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 static int
 ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
 {
-    int ret;
+    ssize_t ret;
     rb_printf_buffer f;
 
     f._flags = __SWR | __SSTR;
@@ -1283,9 +1283,12 @@ ruby_do_vsnprintf(char *str, size_t n, const char *fmt, va_list ap)
     f._bf._size = f._w = str ? (n - 1) : 0;
     f.vwrite = BSD__sfvwrite;
     f.vextra = 0;
-    ret = (int)BSD_vfprintf(&f, fmt, ap);
+    ret = BSD_vfprintf(&f, fmt, ap);
     if (str) *f._p = 0;
-    return ret;
+#if SIZEOF_SIZE_T > SIZEOF_INT
+    if (n > INT_MAX) return INT_MAX;
+#endif
+    return (int)ret;
 }
 
 int
