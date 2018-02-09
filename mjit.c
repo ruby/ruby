@@ -336,6 +336,7 @@ start_process(const char *path, char *const *argv)
         int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
         if ((pid = vfork()) == 0) {
+            umask(0077);
             if (mjit_opts.verbose == 0) {
                 /* CC can be started in a thread using a file which has been
                    already removed while MJIT is finishing.  Discard the
