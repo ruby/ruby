@@ -450,8 +450,8 @@ VCSUP = rem
 !endif
 ruby_pc = $(RUBY_BASE_NAME)-$(MAJOR).$(MINOR).pc
 
-MESSAGE_BEGIN = @for %I in (
-MESSAGE_END = ) do @echo.%~I
+MESSAGE_BEGIN = @(for %I in (
+MESSAGE_END = ) do @echo.%~I)
 ECHO_BEGIN = @echo.
 ECHO_END =
 
