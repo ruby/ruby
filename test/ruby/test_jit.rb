@@ -61,6 +61,12 @@ class TestJIT < Test::Unit::TestCase
   def jit_supported?
     return @jit_supported if defined?(@jit_supported)
 
+    # Experimental. If you want to ensure JIT is working with this test, please set this for now.
+    if ENV.key?('RUBY_FORCE_TEST_JIT')
+      return @jit_supported = true
+    end
+
+    # Very pessimistic check. With this check, we can't ensure JIT is working.
     begin
       _, err = eval_with_jit('proc {}.call', verbose: 1, min_calls: 1, timeout: 10)
       @jit_supported = err.match?(JIT_SUCCESS_PREFIX)
