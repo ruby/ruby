@@ -61,7 +61,7 @@ before_script:
 
 script:
   - "make -s test TESTOPTS=--color=never"
-  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal'"
+  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
   - "make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
