@@ -179,7 +179,6 @@ RANLIB        = @RANLIB@
 AS            = @AS@
 ASFLAGS       = @ASFLAGS@ $(INCFLAGS)
 IFCHANGE      = $(srcdir)/tool/ifchange
-SET_LC_MESSAGES = env LC_MESSAGES=C
 OBJDUMP       = @OBJDUMP@
 OBJCOPY       = @OBJCOPY@
 HAVE_GIT      = @HAVE_GIT@
