@@ -653,6 +653,7 @@ make_pch(void)
 
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+#define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
 /* Compile C file to so. It returns 1 if it succeeds. */
 static int
@@ -693,7 +694,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
 #ifdef _MSC_VER
     solen = strlen(so_file);
     p = (char *)output[0] = xmalloc(3 + solen + 1);
-    p = append_str(p, "-Fe");
+    p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
     args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
@@ -1152,6 +1153,7 @@ init_header_filename(void)
     size_t verlen;
     static const char header_name[] =
         "/" MJIT_HEADER_INSTALL_DIR "/" RUBY_MJIT_HEADER_NAME;
+    const size_t header_name_len = sizeof(header_name) - 1;
     char *p;
 #ifdef _WIN32
     static const char libpathflag[] =
@@ -1161,6 +1163,7 @@ init_header_filename(void)
         "-L"
 # endif
             ;
+    const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 
     basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
@@ -1168,11 +1171,11 @@ init_header_filename(void)
     baselen = RSTRING_LEN(basedir_val);
     verlen = strlen(ruby_version);
 
-    header_file = xmalloc(baselen + sizeof(header_name) + verlen + 2);
+    header_file = xmalloc(baselen + header_name_len + verlen + rb_strlen_lit(".h") + 1);
     p = append_str2(header_file, basedir, baselen);
-    p = append_str2(p, header_name, sizeof(header_name)-1);
+    p = append_str2(p, header_name, header_name_len);
     p = append_str2(p, ruby_version, verlen);
-    p = append_str2(p, ".h", 3);
+    p = append_str2(p, ".h", rb_strlen_lit(".h") + 1);
     if ((fd = rb_cloexec_open(header_file, O_RDONLY, 0)) < 0) {
         verbose(2, "Cannot access header file %s\n", header_file);
         xfree(header_file);
@@ -1182,14 +1185,14 @@ init_header_filename(void)
     (void)close(fd);
 
 #ifdef _WIN32
-    p = libruby_build = xmalloc(sizeof(libpathflag)-1 + baselen + 1);
+    p = libruby_build = xmalloc(libpathflag_len + baselen + 1);
     p = append_str(p, libpathflag);
     p = append_str2(p, basedir, baselen);
     *p = '\0';
 
-    libruby_installed = xmalloc(sizeof(libpathflag)-1 + baselen + 4 + 1);
+    libruby_installed = xmalloc(libpathflag_len + baselen + rb_strlen_lit("/lib") + 1);
     p = append_str2(libruby_installed, libruby_build, p - libruby_build);
-    p = append_str(p, "/lib");
+    p = append_lit(p, "/lib");
     *p = '\0';
 #endif
 }
