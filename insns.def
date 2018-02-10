@@ -951,9 +951,12 @@ getinlinecache
 ()
 (VALUE val)
 {
-    val = vm_ic_hit_p(ic, GET_EP());
-    if (val != Qnil) {
+    if (vm_ic_hit_p(ic, GET_EP())) {
+	val = ic->ic_value.value;
 	JUMP(dst);
+    }
+    else {
+	val = Qnil;
     }
 }
 

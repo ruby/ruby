@@ -1429,6 +1429,17 @@ class TestModule < Test::Unit::TestCase
     assert_warn(/deprecated/, bug12382) {c.class_eval "FOO"}
   end
 
+  NIL = nil
+  FALSE = false
+  deprecate_constant(:NIL, :FALSE)
+
+  def test_deprecate_nil_constant
+    w = EnvUtil.verbose_warning {2.times {FALSE}}
+    assert_equal(1, w.scan("::FALSE").size, w)
+    w = EnvUtil.verbose_warning {2.times {NIL}}
+    assert_equal(1, w.scan("::NIL").size, w)
+  end
+
   def test_constants_with_private_constant
     assert_not_include(::TestModule.constants, :PrivateClass)
     assert_not_include(::TestModule.constants(true), :PrivateClass)
