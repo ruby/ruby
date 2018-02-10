@@ -1021,25 +1021,55 @@ define print_lineno
     set $pos = $pos - 1
   end
 
-  set $i = 0
+  set $index = 0
   set $size = $iseq->body->insns_info.size
   set $table = $iseq->body->insns_info.body
   set $positions = $iseq->body->insns_info.positions
   #printf "size: %d\n", $size
   if $size == 0
   else
-    set $i = 1
-    while $i < $size
-      #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $positions[$i], $table[$i].line_no, $pos
-      if $positions[$i] > $pos
-        loop_break
+  if $size == 1
+    printf "%d", $table[0].line_no
+  else
+    if $positions
+      # get_insn_info_linear_search
+      set $index = 1
+      while $index < $size
+        #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $positions[$i], $table[$i].line_no, $pos
+        if $positions[$index] > $pos
+          loop_break
+        end
+        set $index = $index + 1
+        if $positions[$index] == $pos
+          loop_break
+        end
       end
-      set $i = $i + 1
-      if $positions[$i] == $pos
-        loop_break
+    else
+      # get_insn_info_succinct_bitvector
+      set $sd = $iseq->body->insns_info.succ_index_table
+      set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
+      if $pos < $immediate_table_size
+        set $i = $pos / 9
+        set $j = $pos % 9
+        set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
+      else
+        set $block_index = ($pos - $immediate_table_size) / 512
+        set $block = &$sd->succ_part[$block_index]
+        set $block_bit_index = ($pos - $immediate_table_size) % 512
+        set $small_block_index = $block_bit_index / 64
+        set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
+        set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
+        set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
+        set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
+        set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
+        set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
+        set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
+        set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
+        set $index = $block->rank + $small_block_popcount + $popcnt
       end
     end
-    printf "%d", $table[$i-1].line_no
+    printf "%d", $table[$index-1].line_no
+  end
   end
 end
 
