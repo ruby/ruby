@@ -786,16 +786,21 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     /* -include-pch is used for Clang */
     if (mjit_opts.cc == MJIT_CC_GCC) {
         const char *s = pch_file;
+        const char *e = s + strlen(s);
+        static const char suffix[] = ".gch";
+
         fprintf(f, "#include \"");
+        /* chomp .gch suffix */
+        if (e > s+sizeof(suffix)-1 && strcmp(e-sizeof(suffix)+1, suffix) == 0) {
+            e -= sizeof(suffix)-1;
+        }
         /* print pch_file except .gch */
-        for (; strcmp(s, ".gch") != 0; s++) {
+        for (; s < e; s++) {
             switch(*s) {
-              case '\\':
-                fprintf(f, "\\%c", *s);
-                break;
-              default:
-                fprintf(f, "%c", *s);
+              case '\\': case '"':
+                fputc('\\', f);
             }
+            fputc(*s, f);
         }
         fprintf(f, "\"\n");
     }
