@@ -1234,3 +1234,13 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
+
+mjit_config.h:
+	@$(ECHO) making <<$@
+#ifndef RUBY_MJIT_CONFIG_H
+#define RUBY_MJIT_CONFIG_H 1
+<<KEEP
+	@(set sep=#define MJIT_CC ) & \
+	for %I in ($(CC)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	$(Q)echo /* MJIT_CC */>> $@
+	$(Q)echo #endif /* RUBY_MJIT_CONFIG_H */ >> $@
