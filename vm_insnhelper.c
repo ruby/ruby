@@ -3265,16 +3265,13 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 
 #undef id_cmp
 
-static VALUE
+static int
 vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
-    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE() &&
-	(ic->ic_cref == NULL || ic->ic_cref == rb_vm_get_cref(reg_ep))) {
-	return ic->ic_value.value;
+    if (ic->ic_serial == GET_GLOBAL_CONSTANT_STATE()) {
+	return (ic->ic_cref == NULL || ic->ic_cref == rb_vm_get_cref(reg_ep));
     }
-    else {
-	return Qnil;
-    }
+    return FALSE;
 }
 
 static void
