@@ -491,16 +491,22 @@ class VCS
       end
     end
 
-    def commit
+    def last_changed_revision
       rev = cmd_read(%W"#{COMMAND} svn info"+[STDERR=>[:child, :out]])[/^Last Changed Rev: (\d+)/, 1]
       com = cmd_read(%W"#{COMMAND} svn find-rev r#{rev}").chomp
+      return rev, com
+    end
+
+    def commit(opts = {})
+      dryrun = opts.fetch(:dryrun) {$DEBUG} if opts
+      rev, com = last_changed_revision
       head = cmd_read(%W"#{COMMAND} symbolic-ref --short HEAD").chomp
 
       commits = cmd_read([COMMAND, "log", "--reverse", "--format=%H %ae %ce", "#{com}..@"], "rb").split("\n")
       commits.each_with_index do |l, i|
         r, a, c = l.split
         dcommit = [COMMAND, "svn", "dcommit"]
-        dcommit.insert(-2, "-n") if $DEBUG
+        dcommit.insert(-2, "-n") if dryrun
         dcommit << "--add-author-from" unless a == c
         dcommit << r
         system(*dcommit) or return false
