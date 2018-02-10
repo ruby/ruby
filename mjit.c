@@ -573,10 +573,10 @@ free_list(struct rb_mjit_unit_list *list)
 
    XXX_USE_PCH_ARAGS define additional options to use the precomiled
    header.  */
-static const char *GCC_DEBUG_ARGS[] = {"-O0", "-g", NULL};
-static const char *GCC_OPTIMIZE_ARGS[] = {"-O2", NULL};
+static const char *const GCC_DEBUG_ARGS[] = {"-O0", "-g", NULL};
+static const char *const GCC_OPTIMIZE_ARGS[] = {"-O2", NULL};
 
-static const char *GCC_COMMON_ARGS[] = {
+static const char *const GCC_COMMON_ARGS[] = {
     MJIT_CC,
 #ifdef __clang__
 # ifdef __MACH__
@@ -592,7 +592,7 @@ static const char *GCC_COMMON_ARGS[] = {
     NULL
 };
 
-static const char *GCC_LDSHARED_ARGS[] = {
+static const char *const GCC_LDSHARED_ARGS[] = {
     "-Wl,-undefined", "-Wl,dynamic_lookup",
     NULL
 };
@@ -605,7 +605,7 @@ static const char GCC_USE_PCH_ARGS[] =
 #endif
     ;
 
-static const char *GCC_EMIT_PCH_ARGS[] = {
+static const char *const GCC_EMIT_PCH_ARGS[] = {
 #ifdef __clang__
     "-emit-pch",
 #endif
@@ -613,9 +613,9 @@ static const char *GCC_EMIT_PCH_ARGS[] = {
 };
 
 #ifdef _MSC_VER
-static const char *VC_COMMON_ARGS[] = {MJIT_CC, "-MD", "-LD", NULL};
-static const char *VC_DEBUG_ARGS[] = {"-O0", "-Zi", NULL};
-static const char *VC_OPTIMIZE_ARGS[] = {
+static const char *const VC_COMMON_ARGS[] = {MJIT_CC, "-MD", "-LD", NULL};
+static const char *const VC_DEBUG_ARGS[] = {"-O0", "-Zi", NULL};
+static const char *const VC_OPTIMIZE_ARGS[] = {
 # if _MSC_VER < 1400
     "-O2b2xg-",
 # else
