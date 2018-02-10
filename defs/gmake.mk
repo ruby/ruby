@@ -154,13 +154,14 @@ $(foreach x,$(patsubst -arch=%,%,$(arch_flags)), \
 mjit_min_headers := $(patsubst -arch=%,$(MJIT_MIN_HEADER:.h=-%.h),$(arch_flags))
 $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 	@ set -e; set $(patsubst -arch=%,%,$(arch_flags)); \
-	cd $(@D); h=$(@F:.h=); set -x; \
-	cp $$h-$$1.h $$h.h.new; shift; \
-	for arch; do \
-	  mv $$h.h.new $$h.h.tmp; \
-	  diff -B -D__$${arch}__ $$h.h.tmp $$h-$$arch.h > $$h.h.new || :; \
-	done
-	$(RM) $@.tmp
+	cd $(@D); h=$(@F:.h=); \
+	exec > $(@F).new; \
+	echo '#if 0'; \
+	for arch; do\
+	  echo "#elif defined __$${arch}__"; \
+	  echo "# include \"$$h-$$arch.h\""; \
+	done; \
+	echo "#else"; echo "# error unsupported platform"; echo "#endif"
 	$(IFCHANGE) $@ $@.new
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
 	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
