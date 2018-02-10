@@ -757,6 +757,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     int c_file_len = (int)sizeof(c_file_buff);
     static const char c_ext[] = ".c";
     static const char so_ext[] = DLEXT;
+    const int access_mode =
+#ifdef O_BINARY
+        O_BINARY|
+#endif
+        O_WRONLY|O_EXCL|O_CREAT;
 
     c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     if (c_file_len >= (int)sizeof(c_file_buff)) {
@@ -770,7 +775,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
     sprintf(funcname, "_mjit%d", unit->id);
 
-    fd = rb_cloexec_open(c_file, O_WRONLY|O_EXCL|O_CREAT, 0600);
+    fd = rb_cloexec_open(c_file, access_mode, 0600);
     if (fd < 0 || (f = fdopen(fd, "w")) == NULL) {
         int e = errno;
         if (fd >= 0) (void)close(fd);
