@@ -560,6 +560,11 @@ free_list(struct rb_mjit_unit_list *list)
     }
 }
 
+#include "mjit_config.h"
+#ifndef MJIT_CC
+#define MJIT_CC "cc"
+#endif
+
 /* XXX_COMMONN_ARGS define the command line arguments of XXX C
    compiler used by MJIT.
 
@@ -568,36 +573,56 @@ free_list(struct rb_mjit_unit_list *list)
 
    XXX_USE_PCH_ARAGS define additional options to use the precomiled
    header.  */
-static const char *GCC_COMMON_ARGS_DEBUG[] = {"gcc", "-O0", "-g", "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib", NULL};
-static const char *GCC_COMMON_ARGS[] = {"gcc", "-O2", "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib", NULL};
-static const char *GCC_USE_PCH_ARGS[] = {"-I/tmp", NULL};
-static const char *GCC_EMIT_PCH_ARGS[] = {NULL};
+static const char *GCC_DEBUG_ARGS[] = {"-O0", "-g", NULL};
+static const char *GCC_OPTIMIZE_ARGS[] = {"-O2", NULL};
 
-#ifdef __MACH__
-
-static const char *CLANG_COMMON_ARGS_DEBUG[] = {"clang", "-O0", "-g", "-dynamic", "-I/usr/local/include", "-L/usr/local/lib", "-w", "-bundle", NULL};
-static const char *CLANG_COMMON_ARGS[] = {"clang", "-O2", "-dynamic", "-I/usr/local/include", "-L/usr/local/lib", "-w", "-bundle", NULL};
-
+static const char *GCC_COMMON_ARGS[] = {
+    MJIT_CC,
+#ifdef __clang__
+# ifdef __MACH__
+    "-dynamic",
+# else
+    "-fPIC", "-shared",
+# endif /* #if __MACH__ */
+    "-w", "-bundle",
 #else
+    "-Wfatal-errors", "-fPIC", "-shared", "-w",
+    "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib",
+#endif
+    NULL
+};
 
-static const char *CLANG_COMMON_ARGS_DEBUG[] = {"clang", "-O0", "-g", "-fPIC", "-shared", "-I/usr/local/include", "-L/usr/local/lib", "-w", "-bundle", NULL};
-static const char *CLANG_COMMON_ARGS[] = {"clang", "-O2", "-fPIC", "-shared", "-I/usr/local/include", "-L/usr/local/lib", "-w", "-bundle", NULL};
+static const char *GCC_LDSHARED_ARGS[] = {
+    "-Wl,-undefined", "-Wl,dynamic_lookup",
+    NULL
+};
 
-#endif /* #if __MACH__ */
+static const char GCC_USE_PCH_ARGS[] =
+#ifdef __clang__
+    "-include-pch"
+#else
+    "-I"
+#endif
+    ;
+
+static const char *GCC_EMIT_PCH_ARGS[] = {
+#ifdef __clang__
+    "-emit-pch",
+#endif
+    NULL
+};
 
 #ifdef _MSC_VER
-static const char *VC_COMMON_ARGS_DEBUG[] = {"cl.exe", "-nologo", "-O0", "-Zi", "-MD", "-LD", NULL};
-static const char *VC_COMMON_ARGS[] = {"cl.exe", "-nologo",
+static const char *VC_COMMON_ARGS[] = {MJIT_CC, "-MD", "-LD", NULL};
+static const char *VC_DEBUG_ARGS[] = {"-O0", "-Zi", NULL};
+static const char *VC_OPTIMIZE_ARGS[] = {
 # if _MSC_VER < 1400
     "-O2b2xg-",
 # else
     "-O2sy-",
 # endif
-    "-MD", "-LD", NULL};
+    NULL};
 #endif
-
-static const char *CLANG_USE_PCH_ARGS[] = {"-include-pch", NULL, "-Wl,-undefined", "-Wl,dynamic_lookup", NULL};
-static const char *CLANG_EMIT_PCH_ARGS[] = {"-emit-pch", NULL};
 
 /* Status of the the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
@@ -612,19 +637,17 @@ make_pch(void)
     /* XXX TODO */
     exit_code = 0;
 #else
-    static const char *input[] = {NULL, NULL};
-    static const char *output[] = {"-o",  NULL, NULL};
+    const char *last_args[4];
     char **args;
 
     verbose(2, "Creating precompiled header");
-    input[0] = header_file;
-    output[1] = pch_file;
-    if (mjit_opts.cc == MJIT_CC_CLANG)
-        args = form_args(4, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
-                         CLANG_EMIT_PCH_ARGS, input, output);
-    else
-        args = form_args(4, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
-                         GCC_EMIT_PCH_ARGS, input, output);
+    last_args[0] = "-o";
+    last_args[1] = pch_file;
+    last_args[2] = header_file;
+    last_args[3] = NULL;
+    args = form_args(4, GCC_COMMON_ARGS,
+                     (mjit_opts.debug ? GCC_DEBUG_ARGS : GCC_OPTIMIZE_ARGS),
+                     GCC_EMIT_PCH_ARGS, last_args);
     if (args == NULL) {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
@@ -660,12 +683,14 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *input[] = {NULL, NULL};
-    const char *output[] = {
+    const char *files[] = {
+#ifdef __GNUC__
+        GCC_USE_PCH_ARGS, NULL,
+#endif
 #ifndef _MSC_VER
         "-o",
 #endif
-        NULL, NULL};
+        NULL, NULL, NULL};
     const char *libs[] = {
 #ifdef _WIN32
 # ifdef _MSC_VER
@@ -690,26 +715,22 @@ compile_c_to_so(const char *c_file, const char *so_file)
     int solen;
 #endif
 
-    input[0] = c_file;
+    files[numberof(files)-2] = c_file;
 #ifdef _MSC_VER
     solen = strlen(so_file);
-    p = (char *)output[0] = xmalloc(3 + solen + 1);
+    files[0] = p = xmalloc(rb_strlen_lit("-Fe") + solen + 1);
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
-    args = form_args(4, (mjit_opts.debug ? VC_COMMON_ARGS_DEBUG : VC_COMMON_ARGS),
-                     output, input, libs);
+    args = form_args(4, VC_COMMON_ARGS,
+                     (mjit_opts.debug ? VC_DEBUG_ARGS : VC_OPTIMIZE_ARGS),
+                     files, libs);
 #else
-    output[1] = so_file;
-    if (mjit_opts.cc == MJIT_CC_CLANG) {
-        CLANG_USE_PCH_ARGS[1] = pch_file;
-        args = form_args(5, (mjit_opts.debug ? CLANG_COMMON_ARGS_DEBUG : CLANG_COMMON_ARGS),
-                         CLANG_USE_PCH_ARGS, input, output, libs);
-    }
-    else {
-        args = form_args(5, (mjit_opts.debug ? GCC_COMMON_ARGS_DEBUG : GCC_COMMON_ARGS),
-                         GCC_USE_PCH_ARGS, input, output, libs);
-    }
+    files[1] = pch_file;
+    files[numberof(files)-3] = so_file;
+    args = form_args(5, GCC_COMMON_ARGS,
+                     (mjit_opts.debug ? GCC_DEBUG_ARGS : GCC_OPTIMIZE_ARGS),
+                     GCC_LDSHARED_ARGS, files, libs);
 #endif
     if (args == NULL)
         return FALSE;
@@ -717,7 +738,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     exit_code = exec_process(cc_path, args);
     xfree(args);
 #ifdef _MSC_VER
-    xfree((char *)output[0]);
+    xfree((char *)files[0]);
 #endif
 
     if (exit_code != 0)
@@ -785,7 +806,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     /* -include-pch is used for Clang */
-    if (mjit_opts.cc == MJIT_CC_GCC) {
+#ifndef __clang__
+    {
         const char *s = pch_file;
         const char *e = s + strlen(s);
         static const char suffix[] = ".gch";
@@ -805,6 +827,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         }
         fprintf(f, "\"\n");
     }
+#endif
 
 #ifdef _WIN32
     fprintf(f, "void _pei386_runtime_relocator(void){}\n");
@@ -1136,8 +1159,7 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
 #define RUBY_MJIT_HEADER_NAME "rb_mjit_min_header-"
 /* GCC and CLANG executable paths.  TODO: The paths should absolute
    ones to prevent changing C compiler for security reasons.  */
-#define GCC_PATH "gcc"
-#define CLANG_PATH "clang"
+#define GCC_PATH GCC_COMMON_ARGS[0]
 #ifdef _MSC_VER
 # define VC_PATH "cl.exe"
 #endif
@@ -1285,17 +1307,11 @@ mjit_init(struct mjit_options *opts)
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
-    if (mjit_opts.cc == MJIT_CC_DEFAULT) {
+    {
 #if _MSC_VER
         verbose(2, "MJIT: CC defaults to cl");
 #else
-# if defined(__clang__)
-        mjit_opts.cc = MJIT_CC_CLANG;
-        verbose(2, "MJIT: CC defaults to clang");
-# else
-        mjit_opts.cc = MJIT_CC_GCC;
-        verbose(2, "MJIT: CC defaults to gcc");
-# endif
+        verbose(2, "MJIT: CC defaults to %s", GCC_PATH);
 #endif
     }
 
@@ -1304,11 +1320,7 @@ mjit_init(struct mjit_options *opts)
 #ifdef _MSC_VER
     cc_path = VC_PATH;
 #else
-    if (mjit_opts.cc == MJIT_CC_CLANG) {
-        cc_path = CLANG_PATH;
-    } else {
-        cc_path = GCC_PATH;
-    }
+    cc_path = GCC_PATH;
 #endif
 
     tmp_dir = system_tmpdir();

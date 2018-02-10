@@ -206,7 +206,10 @@ main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs $(MJIT_MIN_HEADER)
 	@$(NULLCMD)
 
 .PHONY: mjit-headers
-mjit-headers: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time $(MJIT_MIN_HEADER)
+mjit-headers: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time $(MJIT_MIN_HEADER) mjit_config.h
+
+mjit.$(OBJEXT): mjit_config.h
+mjit_config.h: Makefile
 
 $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.h)
