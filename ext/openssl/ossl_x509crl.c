@@ -237,7 +237,11 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
 
     GetX509CRL(self, crl);
     asn1time = ossl_x509_time_adjust(NULL, time);
+#ifdef HAVE_X509_CRL_SET1_LASTUPDATE
+    if (!X509_CRL_set1_lastUpdate(crl, asn1time)) {
+#else
     if (!X509_CRL_set_lastUpdate(crl, asn1time)) {
+#endif
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CRLError, "X509_CRL_set_lastUpdate");
     }
@@ -264,7 +268,11 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
 
     GetX509CRL(self, crl);
     asn1time = ossl_x509_time_adjust(NULL, time);
+#ifdef HAVE_X509_CRL_SET1_NEXTUPDATE
+    if (!X509_CRL_set1_nextUpdate(crl, asn1time)) {
+#else
     if (!X509_CRL_set_nextUpdate(crl, asn1time)) {
+#endif
 	ASN1_TIME_free(asn1time);
 	ossl_raise(eX509CRLError, "X509_CRL_set_nextUpdate");
     }

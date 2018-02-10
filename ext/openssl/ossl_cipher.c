@@ -31,6 +31,10 @@
     GetCipher((obj), (ctx)); \
 } while (0)
 
+# if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#  define EVP_CIPHER_CTX_flags(c)       EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(c))
+# endif
+
 /*
  * Classes
  */

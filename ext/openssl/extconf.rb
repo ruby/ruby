@@ -122,6 +122,10 @@ engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
 
+# newer, OpenSSL-dubbed versions of SSLeay*() exist, and the old names may be
+# removed in future versions of OpenSSL
+have_func("SSLeay_version")
+
 # added in 0.9.8X
 have_func("EVP_CIPHER_CTX_new")
 have_func("EVP_CIPHER_CTX_free")
@@ -188,6 +192,10 @@ OpenSSL.check_func_or_macro("SSL_CTX_set_tmp_ecdh_callback", "openssl/ssl.h") # 
 OpenSSL.check_func_or_macro("SSL_CTX_set_min_proto_version", "openssl/ssl.h")
 have_func("SSL_CTX_get_security_level")
 have_func("X509_get0_notBefore")
+have_func("X509_set1_notBefore")
+have_func("X509_set1_notAfter")
+have_func("X509_CRL_set1_lastUpdate")
+have_func("X509_CRL_set1_nextUpdate")
 have_func("SSL_SESSION_get_protocol_version")
 
 Logging::message "=== Checking done. ===\n"

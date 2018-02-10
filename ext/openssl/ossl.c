@@ -1010,10 +1010,12 @@ Init_openssl(void)
      */
     /* CRYPTO_malloc_init(); */
     /* ENGINE_load_builtin_engines(); */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     OpenSSL_add_ssl_algorithms();
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     SSL_load_error_strings();
+#endif
 
     /*
      * FIXME:
@@ -1048,7 +1050,11 @@ Init_openssl(void)
     /*
      * Version of OpenSSL the ruby OpenSSL extension is running with
      */
+#ifdef HAVE_SSLEAY_VERSION
     rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
+#else
+    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
+#endif
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with

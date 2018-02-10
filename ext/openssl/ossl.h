@@ -19,6 +19,11 @@
 #include <ruby/thread.h>
 #include <openssl/opensslv.h>
 #include <openssl/err.h>
+#include <openssl/bn.h>
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/dsa.h>
+#include <openssl/dh.h>
 #include <openssl/asn1.h>
 #include <openssl/x509v3.h>
 #include <openssl/ssl.h>

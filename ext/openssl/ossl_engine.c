@@ -147,7 +147,9 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     OSSL_ENGINE_LOAD_IF_MATCH(openssl);
+#endif
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
@@ -165,7 +167,9 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
 {
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
     ENGINE_cleanup();
+#endif
     return Qnil;
 }
 
