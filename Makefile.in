@@ -543,7 +543,7 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	\
 	printf '#define MJIT_CC_COMMON ' && \
-	printf ' "%s",' $(CC) && \
+	if test -n "$(CC)"; then printf ' "%s",' $(CC); fi && \
 	echo; \
 	\
 	printf '#define MJIT_CFLAGS ' && \
@@ -551,19 +551,19 @@ mjit_config.h:
 	echo; \
 	\
 	printf '#define MJIT_OPTFLAGS ' && \
-	printf ' "%s",' $(optflags) && \
+	if test -n "$(optflags)"; then printf ' "%s",' $(optflags); fi && \
 	echo; \
 	\
 	printf '#define MJIT_DEBUGFLAGS ' && \
-	printf ' "%s",' $(debugflags) && \
+	if test -n "$(debugflags)"; then printf ' "%s",' $(debugflags); fi && \
 	echo; \
 	\
 	printf '#define MJIT_LDSHARED ' && \
-	printf ' "%s",' @LDSHARED@ && \
+	if test -n "@LDSHARED@"; then printf ' "%s",' @LDSHARED@; fi && \
 	echo; \
 	\
 	printf '#define MJIT_DLDFLAGS ' && \
-	printf ' "%s",' @DLDFLAGS@ && \
+	if test -n "@DLDFLAGS@"; then printf ' "%s",' @DLDFLAGS@; fi && \
 	echo; \
 	\
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
