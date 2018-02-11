@@ -9452,7 +9452,7 @@ obj_info(VALUE obj)
 }
 #endif
 
-const char *
+MJIT_FUNC_EXPORTED const char *
 rb_obj_info(VALUE obj)
 {
     if (!rb_special_const_p(obj)) {
