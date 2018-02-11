@@ -573,16 +573,19 @@ free_list(struct rb_mjit_unit_list *list)
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
-static const char *const CC_COMMON_ARGS[] = {
-    MJIT_CC_COMMON MJIT_CFLAGS
 #if defined __GNUC__ && !defined __clang__
-    "-Wfatal-errors", "-fPIC", "-shared", "-w",
+#define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
     "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib",
+#else
+#define GCC_PIC_FLAGS /* empty */
 #endif
+
+static const char *const CC_COMMON_ARGS[] = {
+    MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS
     NULL
 };
 
-static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED NULL};
+static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
 
 #ifdef __clang__
