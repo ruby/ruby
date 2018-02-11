@@ -542,28 +542,28 @@ mjit_config.h:
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	\
-	set x $(CC) && shift && printf '#define MJIT_CC_COMMON ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_CC_COMMON ' && \
+	printf ' "%s",' $(CC) && \
 	echo; \
 	\
-	set x -w $(ARCH_FLAG) && shift && printf '#define MJIT_CFLAGS ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_CFLAGS ' && \
+	printf ' "%s",' -w $(ARCH_FLAG) && \
 	echo; \
 	\
-	set x $(optflags) && shift && printf '#define MJIT_OPTFLAGS ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_OPTFLAGS ' && \
+	printf ' "%s",' $(optflags) && \
 	echo; \
 	\
-	set x $(debugflags) && shift && printf '#define MJIT_DEBUGFLAGS ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_DEBUGFLAGS ' && \
+	printf ' "%s",' $(debugflags) && \
 	echo; \
 	\
-	set x @LDSHARED@ && shift && printf '#define MJIT_LDSHARED ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_LDSHARED ' && \
+	printf ' "%s",' @LDSHARED@ && \
 	echo; \
 	\
-	set x @DLDFLAGS@ && shift && printf '#define MJIT_DLDFLAGS ' && \
-	for w do printf '"'$$w'", '; done; \
+	printf '#define MJIT_DLDFLAGS ' && \
+	printf ' "%s",' @DLDFLAGS@ && \
 	echo; \
 	\
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
