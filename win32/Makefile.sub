@@ -1258,7 +1258,7 @@ mjit_config.h:
 	@echo /* MJIT_CFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_OPTFLAGS ) & \
-	for %I in ($(OPTFLAGS)) do @(call echo.%%sep%%"%%~I" \& set sep= ) >> $@
+	for %I in ($(OPTFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_OPTFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_DEBUGFLAGS ) & \
