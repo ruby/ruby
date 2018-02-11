@@ -213,7 +213,11 @@ OUTFLAG       = -Fe
 COUTFLAG      = -Fo
 !endif
 !if !defined(CPPOUTFLAG)
+! if $(MSC_VER) < 1600
+CPPOUTFLAG    = >
+! else
 CPPOUTFLAG    = -Fi
+! endif
 !endif
 !if !defined(CSRCFLAG)
 CSRCFLAG      = -Tc
@@ -289,7 +293,11 @@ LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -ou
 LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
+!if "$(CPPOUTFLAG)" == ">"
+MJIT_HEADER_FLAGS =
+!else
 MJIT_HEADER_FLAGS = -P
+!endif
 MJIT_HEADER_SUFFIX =
 MJIT_HEADER_ARCH =
 MJIT_HEADER_INSTALL_DIR = include/$(RUBY_VERSION_NAME)/$(arch)
