@@ -24,7 +24,7 @@
 
 % # JIT: move sp and pc if necessary
             fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
-            fprintf(f, "    reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
 
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
             fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc->method_state);
@@ -63,7 +63,7 @@
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
             fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
-            fprintf(f, "        reg_cfp->sp = reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
+            fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
             fprintf(f, "        return Qundef; /* cancel JIT */\n");
             fprintf(f, "    }\n");
 
