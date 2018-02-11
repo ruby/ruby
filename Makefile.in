@@ -568,3 +568,4 @@ mjit_config.h:
 	\
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
+	cat $@ # debugging
