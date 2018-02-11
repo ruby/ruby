@@ -40,7 +40,16 @@
 %
 % # JIT: Initialize operands
 % insn.opes.each_with_index do |ope, i|
-        fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";\n", operands[<%= i %>]);
+        fprintf(f, "    <%= ope.fetch(:name) %> = (<%= ope.fetch(:type) %>)0x%"PRIxVALUE";", operands[<%= i %>]);
+%   case ope.fetch(:type)
+%   when 'ID'
+        comment_id(f, (ID)operands[<%= i %>]);
+%   when 'CALL_INFO'
+        comment_id(f, ((CALL_INFO)operands[<%= i %>])->mid);
+%   when 'VALUE'
+        if (SYMBOL_P((VALUE)operands[<%= i %>])) comment_id(f, SYM2ID((VALUE)operands[<%= i %>]));
+%   end
+        fprintf(f, "\n");
 % end
 %
 % # JIT: Initialize popped values

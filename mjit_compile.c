@@ -75,6 +75,28 @@ compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
+static void
+comment_id(FILE *f, ID id)
+{
+    VALUE name = rb_id2str(id);
+    const char *p, *e;
+    char c, prev = '\0';
+
+    if (!name) return;
+    p = RSTRING_PTR(name);
+    e = RSTRING_END(name);
+    fputs("/* :\"", f);
+    for (; p < e; ++p) {
+	switch (c = *p) {
+	  case '*': case '/': if (prev != (c ^ ('/' ^ '*'))) break;
+	  case '\\': case '"': fputc('\\', f);
+	}
+	fputc(c, f);
+	prev = c;
+    }
+    fputs("\" */", f);
+}
+
 static void compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
                           unsigned int pos, struct compile_status *status);
 
