@@ -562,14 +562,6 @@ free_list(struct rb_mjit_unit_list *list)
 
 #include "mjit_config.h"
 
-/* XXX_COMMONN_ARGS define the command line arguments of XXX C
-   compiler used by MJIT.
-
-   XXX_EMIT_PCH_ARGS define additional options to generate the
-   precomiled header.
-
-   XXX_USE_PCH_ARAGS define additional options to use the precomiled
-   header.  */
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
@@ -588,11 +580,6 @@ static const char *const CC_COMMON_ARGS[] = {
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
 
-#ifdef __clang__
-static const char GCC_USE_PCH_ARGS[] = "-include-pch";
-static const char GCC_EMIT_PCH_ARGS[] = "-emit-pch";
-#endif
-
 #define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 /* Status of the the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
@@ -609,7 +596,7 @@ make_pch(void)
 #else
     const char *rest_args[] = {
 # ifdef __clang__
-        GCC_EMIT_PCH_ARGS,
+        "-emit-pch",
 # endif
         "-o", pch_file, header_file,
         NULL,
@@ -655,7 +642,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     int exit_code;
     const char *files[] = {
 #ifdef __clang__
-        GCC_USE_PCH_ARGS, NULL,
+        "-include-pch", NULL,
 #endif
 #ifndef _MSC_VER
         "-o",
