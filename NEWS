@@ -52,4 +52,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Implementation improvements
 
+* `--jit` option to enable JIT compiler is added. [Feature #14235] [experimental]
+
 === Miscellaneous changes
