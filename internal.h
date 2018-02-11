@@ -780,12 +780,15 @@ struct rb_subclass_entry {
 #if defined(HAVE_LONG_LONG)
 typedef unsigned LONG_LONG rb_serial_t;
 #define SERIALT2NUM ULL2NUM
+#define PRI_SERIALT_PREFIX PRI_LL_PREFIX
 #elif defined(HAVE_UINT64_T)
 typedef uint64_t rb_serial_t;
 #define SERIALT2NUM SIZET2NUM
+#define PRI_SERIALT_PREFIX PRI_64_PREFIX
 #else
 typedef unsigned long rb_serial_t;
 #define SERIALT2NUM ULONG2NUM
+#define PRI_SERIALT_PREFIX PRI_LONG_PREFIX
 #endif
 
 struct rb_classext_struct {
