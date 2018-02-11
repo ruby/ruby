@@ -561,9 +561,6 @@ free_list(struct rb_mjit_unit_list *list)
 }
 
 #include "mjit_config.h"
-#ifndef MJIT_CC
-#define MJIT_CC "cc"
-#endif
 
 /* XXX_COMMONN_ARGS define the command line arguments of XXX C
    compiler used by MJIT.
@@ -573,11 +570,11 @@ free_list(struct rb_mjit_unit_list *list)
 
    XXX_USE_PCH_ARAGS define additional options to use the precomiled
    header.  */
-static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS, NULL};
-static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS, NULL};
+static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
+static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 static const char *const CC_COMMON_ARGS[] = {
-    MJIT_CC_COMMON, MJIT_CFLAGS,
+    MJIT_CC_COMMON MJIT_CFLAGS
 #if defined __GNUC__ && !defined __clang__
     "-Wfatal-errors", "-fPIC", "-shared", "-w",
     "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib",
@@ -585,11 +582,8 @@ static const char *const CC_COMMON_ARGS[] = {
     NULL
 };
 
-static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED, NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {
-    MJIT_DLDFLAGS,
-    NULL
-};
+static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED NULL};
+static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
 
 #ifdef __clang__
 static const char GCC_USE_PCH_ARGS[] = "-include-pch";
