@@ -109,6 +109,7 @@ module MJITHeader
   end
 
   # -dD outputs those macros, and it produces redefinition warnings or errors
+  # This assumes common.mk passes `-DMJIT_HEADER` first when it creates rb_mjit_header.h.
   def self.remove_predefined_macros!(code)
     code.sub!(/\A(#define [^\n]+|\n)*(#define MJIT_HEADER 1\n)/, '\2')
   end
