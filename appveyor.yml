@@ -53,3 +53,9 @@ test_script:
   - nmake -l test-spec
 matrix:
   fast_finish: true
+notifications:
+  - provider: Slack
+    incoming_webhook:
+      secure: WHfGy/gGheFHswUm9HsjNj3zDfbFX7UIGentpC1Z8eHeExOoJKoUSDYLxcw+15GYRnhZWL1LCtNdguTQ23bJRrS9tWeJ66OQ/msj5bb0iz4= # #alerts
+    on_build_success: true # to test notification
+    on_build_failure: true
