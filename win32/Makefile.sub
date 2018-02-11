@@ -1248,8 +1248,30 @@ mjit_config.h:
 #ifndef RUBY_MJIT_CONFIG_H
 #define RUBY_MJIT_CONFIG_H 1
 <<KEEP
-	@(set sep=#define MJIT_CC ) & \
+	@
+	@(set sep=#define MJIT_CC_COMMON ) & \
 	for %I in ($(CC)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
-	@echo /* MJIT_CC */>> $@
+	@echo /* MJIT_CC_COMMON */>> $@
+	@
+	@(set sep=#define MJIT_CFLAGS ) & \
+	for %I in ($(RUNTIMEFLAG) $(ARCH_FLAG)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	@echo /* MJIT_CFLAGS */>> $@
+	@
+	@(set sep=#define MJIT_OPTFLAGS ) & \
+	for %I in ($(OPTFLAGS)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	@echo /* MJIT_OPTFLAGS */>> $@
+	@
+	@(set sep=#define MJIT_DEBUGFLAGS ) & \
+	for %I in ($(DEBUGFLAGS)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	@echo /* MJIT_DEBUGFLAGS */>> $@
+	@
+	@(set sep=#define MJIT_LDSHARED ) & \
+	for %I in ($(LDSHARED)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	@echo /* MJIT_LDSHARED */>> $@
+	@
+	@(set sep=#define MJIT_DLDFLAGS ) & \
+	for %I in ($(DLDFLAGS)) do @(call echo.%%sep%%"%%~I" \& set sep= ,) >> $@
+	@echo /* MJIT_DLDFLAGS */>> $@
+	@
 	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
 	@$(Q:@=: :) type $@

@@ -573,57 +573,30 @@ free_list(struct rb_mjit_unit_list *list)
 
    XXX_USE_PCH_ARAGS define additional options to use the precomiled
    header.  */
-static const char *const GCC_DEBUG_ARGS[] = {"-O0", "-g", NULL};
-static const char *const GCC_OPTIMIZE_ARGS[] = {"-O2", NULL};
+static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS, NULL};
+static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS, NULL};
 
-static const char *const GCC_COMMON_ARGS[] = {
-    MJIT_CC,
-#ifdef __clang__
-# ifdef __MACH__
-    "-dynamic",
-# else
-    "-fPIC", "-shared",
-# endif /* #if __MACH__ */
-    "-w", "-bundle",
-#else
+static const char *const CC_COMMON_ARGS[] = {
+    MJIT_CC_COMMON, MJIT_CFLAGS,
+#if defined __GNUC__ && !defined __clang__
     "-Wfatal-errors", "-fPIC", "-shared", "-w",
     "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib",
 #endif
     NULL
 };
 
-static const char *const GCC_LDSHARED_ARGS[] = {
-    "-Wl,-undefined", "-Wl,dynamic_lookup",
+static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED, NULL};
+static const char *const CC_DLDFLAGS_ARGS[] = {
+    MJIT_DLDFLAGS,
     NULL
 };
 
-static const char GCC_USE_PCH_ARGS[] =
 #ifdef __clang__
-    "-include-pch"
-#else
-    "-I"
-#endif
-    ;
-
-static const char *const GCC_EMIT_PCH_ARGS[] = {
-#ifdef __clang__
-    "-emit-pch",
-#endif
-    NULL
-};
-
-#ifdef _MSC_VER
-static const char *const VC_COMMON_ARGS[] = {MJIT_CC, "-MD", "-LD", NULL};
-static const char *const VC_DEBUG_ARGS[] = {"-O0", "-Zi", NULL};
-static const char *const VC_OPTIMIZE_ARGS[] = {
-# if _MSC_VER < 1400
-    "-O2b2xg-",
-# else
-    "-O2sy-",
-# endif
-    NULL};
+static const char GCC_USE_PCH_ARGS[] = "-include-pch";
+static const char GCC_EMIT_PCH_ARGS[] = "-emit-pch";
 #endif
 
+#define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 /* Status of the the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
@@ -637,17 +610,17 @@ make_pch(void)
     /* XXX TODO */
     exit_code = 0;
 #else
-    const char *last_args[4];
+    const char *rest_args[] = {
+# ifdef __clang__
+        GCC_EMIT_PCH_ARGS,
+# endif
+        "-o", pch_file, header_file,
+        NULL,
+    };
     char **args;
 
     verbose(2, "Creating precompiled header");
-    last_args[0] = "-o";
-    last_args[1] = pch_file;
-    last_args[2] = header_file;
-    last_args[3] = NULL;
-    args = form_args(4, GCC_COMMON_ARGS,
-                     (mjit_opts.debug ? GCC_DEBUG_ARGS : GCC_OPTIMIZE_ARGS),
-                     GCC_EMIT_PCH_ARGS, last_args);
+    args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
@@ -684,7 +657,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
     const char *files[] = {
-#ifdef __GNUC__
+#ifdef __clang__
         GCC_USE_PCH_ARGS, NULL,
 #endif
 #ifndef _MSC_VER
@@ -722,16 +695,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
-    args = form_args(4, VC_COMMON_ARGS,
-                     (mjit_opts.debug ? VC_DEBUG_ARGS : VC_OPTIMIZE_ARGS),
-                     files, libs);
 #else
     files[1] = pch_file;
     files[numberof(files)-3] = so_file;
-    args = form_args(5, GCC_COMMON_ARGS,
-                     (mjit_opts.debug ? GCC_DEBUG_ARGS : GCC_OPTIMIZE_ARGS),
-                     GCC_LDSHARED_ARGS, files, libs);
 #endif
+    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                     CC_DLDFLAGS_ARGS, files, libs);
     if (args == NULL)
         return FALSE;
 
@@ -764,6 +733,23 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 }
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
+
+#ifndef __clang__
+static const char *
+header_name_end(const char *s)
+{
+    const char *e = s + strlen(s);
+#ifdef __GNUC__
+    static const char suffix[] = ".gch";
+
+    /* chomp .gch suffix */
+    if (e > s+sizeof(suffix)-1 && strcmp(e-sizeof(suffix)+1, suffix) == 0) {
+        e -= sizeof(suffix)-1;
+    }
+#endif
+    return e;
+}
+#endif
 
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
@@ -805,18 +791,18 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
+#ifdef __clang__
     /* -include-pch is used for Clang */
-#ifndef __clang__
+#else
     {
+# ifdef __GNUC__
         const char *s = pch_file;
-        const char *e = s + strlen(s);
-        static const char suffix[] = ".gch";
+# else
+        const char *s = header_file;
+# endif
+        const char *e = header_name_end(s);
 
         fprintf(f, "#include \"");
-        /* chomp .gch suffix */
-        if (e > s+sizeof(suffix)-1 && strcmp(e-sizeof(suffix)+1, suffix) == 0) {
-            e -= sizeof(suffix)-1;
-        }
         /* print pch_file except .gch */
         for (; s < e; s++) {
             switch(*s) {
@@ -1159,10 +1145,7 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
 #define RUBY_MJIT_HEADER_NAME "rb_mjit_min_header-"
 /* GCC and CLANG executable paths.  TODO: The paths should absolute
    ones to prevent changing C compiler for security reasons.  */
-#define GCC_PATH GCC_COMMON_ARGS[0]
-#ifdef _MSC_VER
-# define VC_PATH "cl.exe"
-#endif
+#define CC_PATH CC_COMMON_ARGS[0]
 
 static void
 init_header_filename(void)
@@ -1307,21 +1290,11 @@ mjit_init(struct mjit_options *opts)
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
-    {
-#if _MSC_VER
-        verbose(2, "MJIT: CC defaults to cl");
-#else
-        verbose(2, "MJIT: CC defaults to %s", GCC_PATH);
-#endif
-    }
+    verbose(2, "MJIT: CC defaults to %s", CC_PATH);
 
     /* Initialize variables for compilation */
     pch_status = PCH_NOT_READY;
-#ifdef _MSC_VER
-    cc_path = VC_PATH;
-#else
-    cc_path = GCC_PATH;
-#endif
+    cc_path = CC_PATH;
 
     tmp_dir = system_tmpdir();
 
