@@ -53,10 +53,8 @@ switch (insn) {
 % # We don't support InstructionsUnifications yet because it's not used for now.
 % # We don't support TraceInstructions yet. There is no blocker for it but it's just not implemented.
   default:
-    if (mjit_opts.warnings || mjit_opts.verbose >= 3)
-        /* passing excessive arguments to suppress warning in insns_info.inc as workaround... */
-        fprintf(stderr, "MJIT warning: Failed to compile instruction: %s (%s: %d...)\n",
-                insn_name(insn), insn_op_types(insn), insn_len(insn) > 0 ? insn_op_type(insn, 0) : 0);
+    if (mjit_opts.warnings || mjit_opts.verbose)
+        fprintf(stderr, "MJIT warning: Skipped to compile unsupported instruction: %s\n", insn_name(insn));
     status->success = FALSE;
     break;
 }
