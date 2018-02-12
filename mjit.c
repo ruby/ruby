@@ -735,6 +735,14 @@ header_name_end(const char *s)
 }
 #endif
 
+static void
+print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, const char *c_file)
+{
+    verbose(1, "JIT %s (%.1fms): %s@%s:%d -> %s", result,
+            duration, RSTRING_PTR(unit->iseq->body->location.label),
+            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+}
+
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
@@ -830,6 +838,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!success) {
         if (!mjit_opts.save_temps)
             remove(c_file);
+        print_jit_result("failure", unit, 0, c_file);
         return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
 
@@ -853,8 +862,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         CRITICAL_SECTION_START(3, "end of jit");
         add_to_list(node, &active_units);
         if (unit->iseq)
-            verbose(1, "JIT success (%.1fms): %s@%s:%d -> %s", end_time - start_time, RSTRING_PTR(unit->iseq->body->location.label),
-                    RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
+            print_jit_result("success", unit, end_time - start_time, c_file);
         CRITICAL_SECTION_FINISH(3, "end of jit");
     }
     return (mjit_func_t)func;
