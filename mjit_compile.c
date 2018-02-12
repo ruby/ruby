@@ -164,8 +164,8 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
 #endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
     fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
-    fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)%p;\n",
-            body->iseq_encoded);
+    fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
+            (VALUE)body->iseq_encoded);
 
     /* Simulate `opt_pc` in setup_parameters_complex */
     if (body->param.flags.has_opt) {
