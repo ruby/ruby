@@ -470,7 +470,12 @@ class TestJIT < Test::Unit::TestCase
 
   # The shortest way to test one proc
   def assert_compile_once(script, result_inspect:)
-    assert_eval_with_jit("p proc { #{script} }.call", stdout: "#{result_inspect}\n", success_count: 1)
+    if script.match?(/\A\n.+\n\z/m)
+      script = script.gsub(/^/, '  ')
+    else
+      script = " #{script} "
+    end
+    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1)
   end
 
   # Shorthand for normal test cases
