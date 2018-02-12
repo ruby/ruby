@@ -539,9 +539,7 @@ dupn
     void *dst = GET_SP();
     void *src = STACK_ADDR_FROM_TOP(n);
 
-    INC_SP(n); /* alloca */
     MEMCPY(dst, src, VALUE, n);
-    DEC_SP(n);
 }
 
 /* swap top 2 vals */
