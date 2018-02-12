@@ -270,7 +270,6 @@ usage(const char *name, int help)
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
     };
     static const struct message mjit_options[] = {
-        M("--jit-cc=cc",         "", "C compiler to generate native code (gcc, clang)"),
         M("--jit-warnings",      "", "Enable printing MJIT warnings"),
         M("--jit-debug",         "", "Enable MJIT debugging (very slow)"),
         M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
@@ -912,28 +911,11 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
-static enum rb_mjit_cc
-parse_mjit_cc(const char *s)
-{
-    if (strcmp(s, "gcc") == 0) {
-        return MJIT_CC_GCC;
-    }
-    else if (strcmp(s, "clang") == 0) {
-        return MJIT_CC_CLANG;
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "invalid C compiler `%s' (available C compilers: gcc, clang)", s);
-    }
-}
-
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
     mjit_opt->on = 1;
     if (*s == 0) return;
-    if (strncmp(s, "-cc=", 4) == 0) {
-        mjit_opt->cc = parse_mjit_cc(s + 4);
-    }
     else if (strcmp(s, "-warnings") == 0) {
         mjit_opt->warnings = 1;
     }
