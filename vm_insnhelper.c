@@ -3647,7 +3647,12 @@ vm_opt_aref(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
 	     BASIC_OP_UNREDEFINED_P(BOP_AREF, ARRAY_REDEFINED_OP_FLAG)) {
-	return rb_ary_aref1(recv, obj);
+        if (FIXNUM_P(obj)) {
+            return rb_ary_entry_internal(recv, FIX2LONG(obj));
+        }
+        else {
+            return rb_ary_aref1(recv, obj);
+        }
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
 	     BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {

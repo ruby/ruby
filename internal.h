@@ -1093,6 +1093,22 @@ VALUE rb_check_to_array(VALUE ary);
     })
 #endif
 
+static inline VALUE
+rb_ary_entry_internal(VALUE ary, long offset)
+{
+    long len = RARRAY_LEN(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
+    if (len == 0) return Qnil;
+    if (offset < 0) {
+        offset += len;
+        if (offset < 0) return Qnil;
+    }
+    else if (len <= offset) {
+        return Qnil;
+    }
+    return ptr[offset];
+}
+
 /* bignum.c */
 extern const char ruby_digitmap[];
 double rb_big_fdiv_double(VALUE x, VALUE y);
