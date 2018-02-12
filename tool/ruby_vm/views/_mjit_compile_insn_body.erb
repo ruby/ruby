@@ -23,7 +23,7 @@
 %     # For `leave`. We can't proceed next ISeq in the same JIT function.
 %     expr.gsub!(/^(?<indent>\s*)RESTORE_REGS\(\);\n/) do
 %       indent = Regexp.last_match[:indent]
-%       <<~RESTORE_REGS
+%       <<-RESTORE_REGS.gsub(/^ +/, '')
 %         #if OPT_CALL_THREADED_CODE
 %         #{indent}rb_ec_thread_ptr(ec)->retval = val;
 %         #{indent}return 0;
