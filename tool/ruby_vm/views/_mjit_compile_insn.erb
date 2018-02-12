@@ -61,9 +61,7 @@
 % end
 %
 % # JIT: Print insn body in insns.def
-% insn.expr.expr.each_line do |line|
-<%= render 'mjit_compile_insn_line', locals: { line: line, insn: insn } -%>
-% end
+<%= render 'mjit_compile_insn_body', locals: { insn: insn } -%>
 %
 % # JIT: Set return values
 % unless dispatched
