@@ -35,13 +35,17 @@ module TestJITSupport
   end
 end
 
-return unless TestJITSupport.supported?
-
 # Test for --jit option
 class TestJIT < Test::Unit::TestCase
   include TestJITSupport
   # Ensure all supported insns can be compiled. Only basic tests are included.
   # TODO: ensure --dump=insns includes the expected insn
+
+  def setup
+    unless TestJITSupport.supported?
+      skip 'JIT seems not supported on this platform'
+    end
+  end
 
   def test_compile_insn_nop
     assert_compile_once('nil rescue true', result_inspect: 'nil')
