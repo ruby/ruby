@@ -13,12 +13,6 @@
 %   'invokesuper',
 % ]
 %
-% to_cstr = lambda do |line|
-%   normalized = line.gsub(/\t/, ' ' * 8)
-%   indented = normalized.sub(/\A(?!#)/, '    ') # avoid indenting preprocessor
-%   rstring2cstr(indented.rstrip).sub(/"\z/, '\\n"')
-% end
-%
     fprintf(f, "{\n");
     {
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
@@ -68,44 +62,7 @@
 %
 % # JIT: Print insn body in insns.def
 % insn.expr.expr.each_line do |line|
-%   # Special macro expansion for ones that can't be resolved by macro redefinition.
-%   if line =~ /\A\s+DISPATCH_ORIGINAL_INSN\((?<insn_name>[^)]+)\);\s+\z/
-        fprintf(f, "            return Qundef; /* cancel JIT */\n");
-%   elsif line =~ /\A\s+JUMP\((?<dest>[^)]+)\);\s+\z/
-%     # Before we `goto` next insn, we need to set return values, especially for getinlinecache
-%     insn.rets.reverse_each.with_index do |ret, i|
-%       # TOPN(n) = ...
-        fprintf(f, "            stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
-%     end
-%
-%     dest = Regexp.last_match[:dest]
-%     if insn.name == 'opt_case_dispatch' # special case... TODO: use another macro to avoid checking name
-        {
-            struct case_dispatch_var arg;
-            arg.f = f;
-            arg.base_pos = pos + insn_len(insn);
-            arg.last_value = Qundef;
-
-            fprintf(f, "    switch (<%= dest %>) {\n");
-            st_foreach(RHASH_TBL_RAW(hash), compile_case_dispatch_each, (VALUE)&arg);
-            fprintf(f, "      case %lu:\n", else_offset);
-            fprintf(f, "        goto label_%lu;\n", arg.base_pos + else_offset);
-            fprintf(f, "    }\n");
-        }
-%     else
-        next_pos = pos + insn_len(insn) + (unsigned int)<%= dest %>;
-        fprintf(f, "            goto label_%d;\n", next_pos);
-%     end
-%   elsif line =~ /\A\s+RESTORE_REGS\(\);\s+\z/ # for `leave` only
-#if OPT_CALL_THREADED_CODE
-        fprintf(f, "            rb_ec_thread_ptr(ec)->retval = val;\n");
-        fprintf(f, "            return 0;\n");
-#else
-        fprintf(f, "            return val;\n");
-#endif
-%   else
-        fprintf(f, <%= to_cstr.call(line) %>);
-%   end
+<%= render 'mjit_compile_insn_line', locals: { line: line, insn: insn } -%>
 % end
 %
 % # JIT: Set return values
