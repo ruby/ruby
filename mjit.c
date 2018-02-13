@@ -298,8 +298,7 @@ form_args(int num, ...)
         len += args_len(args);
     }
     va_end(argp);
-    if ((res = xmalloc((len + 1) * sizeof(char *))) == NULL)
-        return NULL;
+    res = xmalloc((len + 1) * sizeof(char *));
     for (i = disp = 0; i < num; i++) {
         args = va_arg(argp2, char **);
         len = args_len(args);
