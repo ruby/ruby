@@ -1254,7 +1254,7 @@ exec_with_sh(const char *prog, char **argv, char **envp)
 }
 
 #else
-#define try_with_sh(prog, argv, envp) (void)0
+#define try_with_sh(err, prog, argv, envp) (void)0
 #endif
 
 /* This function should be async-signal-safe.  Actually it is. */
