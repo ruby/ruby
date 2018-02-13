@@ -46,5 +46,6 @@ int rb_public_const_defined(VALUE klass, ID id);
 int rb_public_const_defined_at(VALUE klass, ID id);
 int rb_public_const_defined_from(VALUE klass, ID id);
 rb_const_entry_t *rb_const_lookup(VALUE klass, ID id);
+int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
 
 #endif /* CONSTANT_H */
