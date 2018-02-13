@@ -249,13 +249,13 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     (1..100).detect  => #<Enumerator: 1..100:detect>
- *     (1..100).find    => #<Enumerator: 1..100:find>
+ *     (1..100).detect  #=> #<Enumerator: 1..100:detect>
+ *     (1..100).find    #=> #<Enumerator: 1..100:find>
  *
- *     (1..10).detect	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..10).find	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
- *     (1..100).detect	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
- *     (1..100).find	{ |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..10).detect   { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..10).find     { |i| i % 5 == 0 and i % 7 == 0 }   #=> nil
+ *     (1..100).detect  { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
+ *     (1..100).find    { |i| i % 5 == 0 and i % 7 == 0 }   #=> 35
  *
  */
 
@@ -2274,13 +2274,13 @@ enum_each_with_index(int argc, VALUE *argv, VALUE obj)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *      (1..3).reverse_each { |v| p v }
+ *     (1..3).reverse_each { |v| p v }
  *
- *    produces:
+ *  produces:
  *
- *      3
- *      2
- *      1
+ *     3
+ *     2
+ *     1
  */
 
 static VALUE
