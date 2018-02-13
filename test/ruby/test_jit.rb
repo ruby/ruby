@@ -419,11 +419,40 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('[1] << 2', result_inspect: '[1, 2]')
   end
 
-  def test_compile_insn_opt_aref_aset
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '8')
+  def test_compile_insn_opt_aref
+    # optimized call (optimized JIT) -> send call
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '21', success_count: 2, min_calls: 1)
+    begin;
+      obj = Object.new
+      def obj.[](h)
+        h
+      end
+
+      block = proc { |h| h[1] }
+      print block.call({ 1 => 2 })
+      print block.call(obj)
+    end;
+
+    # send call -> optimized call (send JIT) -> optimized call
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '122', success_count: 1, min_calls: 2)
+    begin;
+      obj = Object.new
+      def obj.[](h)
+        h
+      end
+
+      block = proc { |h| h[1] }
+      print block.call(obj)
+      print block.call({ 1 => 2 })
+      print block.call({ 1 => 2 })
+    end;
+  end
+
+  def test_compile_insn_opt_aset
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5')
     begin;
       hash = { '1' => 2 }
-      hash['1'] + hash[1.to_s] + (hash['2'] = 2) + (hash[2.to_s] = 2)
+      (hash['2'] = 2) + (hash[1.to_s] = 3)
     end;
   end
 
@@ -479,8 +508,8 @@ class TestJIT < Test::Unit::TestCase
   end
 
   # Shorthand for normal test cases
-  def assert_eval_with_jit(script, stdout: nil, success_count:)
-    out, err = eval_with_jit(script, verbose: 1, min_calls: 1)
+  def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1)
+    out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
     assert_equal(
       success_count, actual,
