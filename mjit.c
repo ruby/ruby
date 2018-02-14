@@ -1123,7 +1123,7 @@ mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
-    while ((enum rb_mjit_iseq_func)body->jit_func == NOT_READY_JIT_ISEQ_FUNC) {
+    while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         CRITICAL_SECTION_START(3, "in mjit_get_iseq_func for a client wakeup");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func for a client wakeup");
