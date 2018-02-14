@@ -568,6 +568,21 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
   end
 
+  def test_peephole_dstr
+    code = "#{<<~'begin;'}\n#{<<~'end;'}"
+    begin;
+      exp = (-'a').object_id
+      z = 'a'
+      exp == (-"#{z}").object_id
+    end;
+    [ false, true ].each do |fsl|
+      iseq = RubyVM::InstructionSequence.compile(code,
+                                                 frozen_string_literal: fsl)
+      assert_equal(true, iseq.eval,
+                  "[ruby-core:85542] [Bug #14475] fsl: #{fsl}")
+    end
+  end
+
   def test_branch_condition_backquote
     bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
     class << self
