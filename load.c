@@ -172,22 +172,27 @@ get_loading_table(void)
     return GET_VM()->loading_table;
 }
 
+static st_data_t
+feature_key(const char *str, size_t len)
+{
+    return st_hash(str, len, 0xfea7009e);
+}
+
 static void
-features_index_add_single(VALUE short_feature, VALUE offset)
+features_index_add_single(const char* str, size_t len, VALUE offset)
 {
     struct st_table *features_index;
     VALUE this_feature_index = Qnil;
-    char *short_feature_cstr;
+    st_data_t short_feature_key;
 
     Check_Type(offset, T_FIXNUM);
-    Check_Type(short_feature, T_STRING);
-    short_feature_cstr = StringValueCStr(short_feature);
+    short_feature_key = feature_key(str, len);
 
     features_index = get_loaded_features_index_raw();
-    st_lookup(features_index, (st_data_t)short_feature_cstr, (st_data_t *)&this_feature_index);
+    st_lookup(features_index, short_feature_key, (st_data_t *)&this_feature_index);
 
     if (NIL_P(this_feature_index)) {
-	st_insert(features_index, (st_data_t)ruby_strdup(short_feature_cstr), (st_data_t)offset);
+	st_insert(features_index, short_feature_key, (st_data_t)offset);
     }
     else if (RB_TYPE_P(this_feature_index, T_FIXNUM)) {
 	VALUE feature_indexes[2];
@@ -196,7 +201,7 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 	this_feature_index = (VALUE)xcalloc(1, sizeof(struct RArray));
 	RBASIC(this_feature_index)->flags = T_ARRAY; /* fake VALUE, do not mark/sweep */
 	rb_ary_cat(this_feature_index, feature_indexes, numberof(feature_indexes));
-	st_insert(features_index, (st_data_t)short_feature_cstr, (st_data_t)this_feature_index);
+	st_insert(features_index, short_feature_key, (st_data_t)this_feature_index);
     }
     else {
 	Check_Type(this_feature_index, T_ARRAY);
@@ -215,7 +220,6 @@ features_index_add_single(VALUE short_feature, VALUE offset)
 static void
 features_index_add(VALUE feature, VALUE offset)
 {
-    VALUE short_feature;
     const char *feature_str, *feature_end, *ext, *p;
 
     feature_str = StringValuePtr(feature);
@@ -231,26 +235,20 @@ features_index_add(VALUE feature, VALUE offset)
 
     p = ext ? ext : feature_end;
     while (1) {
-	long beg;
-
 	p--;
 	while (p >= feature_str && *p != '/')
 	    p--;
 	if (p < feature_str)
 	    break;
 	/* Now *p == '/'.  We reach this point for every '/' in `feature`. */
-	beg = p + 1 - feature_str;
-	short_feature = rb_str_subseq(feature, beg, feature_end - p - 1);
-	features_index_add_single(short_feature, offset);
+	features_index_add_single(p + 1, feature_end - p - 1, offset);
 	if (ext) {
-	    short_feature = rb_str_subseq(feature, beg, ext - p - 1);
-	    features_index_add_single(short_feature, offset);
+	    features_index_add_single(p + 1, ext - p - 1, offset);
 	}
     }
-    features_index_add_single(feature, offset);
+    features_index_add_single(feature_str, feature_end - feature_str, offset);
     if (ext) {
-	short_feature = rb_str_subseq(feature, 0, ext - feature_str);
-	features_index_add_single(short_feature, offset);
+	features_index_add_single(feature_str, ext - feature_str, offset);
     }
 }
 
@@ -262,7 +260,6 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
 	rb_ary_free(obj);
 	xfree((void *)obj);
     }
-    xfree((char *)key);
     return ST_DELETE;
 }
 
@@ -375,6 +372,7 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     long i, len, elen, n;
     st_table *loading_tbl, *features_index;
     st_data_t data;
+    st_data_t key;
     int type;
 
     if (fn) *fn = 0;
@@ -391,7 +389,8 @@ rb_feature_p(const char *feature, const char *ext, int rb, int expanded, const c
     features = get_loaded_features();
     features_index = get_loaded_features_index();
 
-    st_lookup(features_index, (st_data_t)feature, (st_data_t *)&this_feature_index);
+    key = feature_key(feature, strlen(feature));
+    st_lookup(features_index, key, (st_data_t *)&this_feature_index);
     /* We search `features` for an entry such that either
          "#{features[i]}" == "#{load_path[j]}/#{feature}#{e}"
        for some j, or
@@ -1192,7 +1191,7 @@ Init_load(void)
     rb_define_virtual_variable("$LOADED_FEATURES", get_loaded_features, 0);
     vm->loaded_features = rb_ary_new();
     vm->loaded_features_snapshot = rb_ary_tmp_new(0);
-    vm->loaded_features_index = st_init_strtable();
+    vm->loaded_features_index = st_init_numtable();
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);
