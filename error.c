@@ -2320,6 +2320,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *      * FloatDomainError
  *    * RegexpError
  *    * RuntimeError -- default for +raise+
+ *      * FrozenError
  *    * SystemCallError
  *      * Errno::*
  *    * ThreadError
