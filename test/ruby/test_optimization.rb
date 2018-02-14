@@ -557,8 +557,9 @@ class TestRubyOptimization < Test::Unit::TestCase
       when "1.8.0"..."1.8.8" then :bar
       end
     end;
-    [ nil, { frozen_string_literal: true } ].each do |opt|
-      iseq = RubyVM::InstructionSequence.compile(code, nil, nil, opt)
+    [ true, false ].each do |opt|
+      iseq = RubyVM::InstructionSequence.compile(code,
+                                                 frozen_string_literal: opt)
       insn = iseq.disasm
       assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
       assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
