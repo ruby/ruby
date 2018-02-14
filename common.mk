@@ -215,7 +215,7 @@ mjit_config.h: Makefile
 # So `-DMJIT_HEADER` should be passed first when rb_mjit_header.h is generated.
 $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.h)
-	$(Q) $(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
+	$(Q) $(MINIRUBY) $(srcdir)/tool/ruby_vm/scripts/preprocessor.rb $(srcdir)/vm.c > $(@F:.time=.h).new
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
 
 $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
