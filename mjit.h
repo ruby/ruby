@@ -103,7 +103,7 @@ mjit_exec(rb_execution_context_t *ec)
 
     func = body->jit_func;
     if (UNLIKELY(mjit_opts.wait && mjit_opts.min_calls == total_calls && mjit_target_iseq_p(body)
-                 && (enum rb_mjit_iseq_func)func == NOT_ADDED_JIT_ISEQ_FUNC)) {
+                 && func == (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC)) {
         mjit_add_iseq_to_process(iseq);
         func = mjit_get_iseq_func(body);
     }
