@@ -2290,7 +2290,7 @@ AS_IF([test x"$enable_pthread" = xyes], [
 	AC_DEFINE(NON_SCALAR_THREAD_ID)
     ])
     AC_CHECK_FUNCS(sched_yield pthread_attr_setinheritsched \
-	pthread_attr_get_np pthread_attr_getstack \
+	pthread_attr_get_np pthread_attr_getstack pthread_attr_getguardsize \
 	pthread_get_stackaddr_np pthread_get_stacksize_np \
 	thr_stksegment pthread_stackseg_np pthread_getthrds_np \
 	pthread_condattr_setclock \
