@@ -538,7 +538,7 @@ un-runnable:
 mjit_config.h:
 	$(ECHO) making $@
 	@{ \
-	$(Q:@=:) set -x; \
+	test "$(Q)" = @ || set -x; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	\
