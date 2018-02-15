@@ -2804,6 +2804,34 @@ rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func
     return result;
 }
 
+static VALUE
+append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
+{
+    long beg, len;
+    if (FIXNUM_P(idx)) {
+	beg = FIX2LONG(idx);
+    }
+    /* check if idx is Range */
+    else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
+	if (len > 0) {
+	    const VALUE *const src = RARRAY_CONST_PTR(ary);
+	    const long end = beg + len;
+	    const long prevlen = RARRAY_LEN(result);
+	    if (beg < olen) {
+		rb_ary_cat(result, src + beg, end > olen ? olen-beg : len);
+	    }
+	    if (end > olen) {
+		rb_ary_store(result, prevlen + len - 1, Qnil);
+	    }
+	}
+	return result;
+    }
+    else {
+	beg = NUM2LONG(idx);
+    }
+    return rb_ary_push(result, rb_ary_entry(ary, beg));
+}
+
 /*
  *  call-seq:
  *     ary.values_at(selector, ...)  -> new_ary
@@ -2825,7 +2853,13 @@ rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func
 static VALUE
 rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 {
-    return rb_get_values_at(ary, RARRAY_LEN(ary), argc, argv, rb_ary_entry);
+    long i, olen = RARRAY_LEN(ary);
+    VALUE result = rb_ary_new_capa(argc);
+    for (i = 0; i < argc; ++i) {
+	append_values_at_single(result, ary, olen, argv[i]);
+    }
+    RB_GC_GUARD(ary);
+    return result;
 }
 
 
