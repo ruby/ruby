@@ -212,6 +212,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.oflush # oflush may be issued after "a" is already sent.
       s.print "b"
       s.flush
+      sleep 0.1
       assert_include(["b", "ab"], m.readpartial(10))
     }
   end
