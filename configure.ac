@@ -2256,7 +2256,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
-	AC_CHECK_LIB($pthread_lib, pthread_kill,
+	AC_CHECK_LIB($pthread_lib, pthread_create,
 		     rb_with_pthread=yes, rb_with_pthread=no)
 	AS_IF([test "$rb_with_pthread" = "yes"], [ break; fi
     done
