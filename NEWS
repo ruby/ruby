@@ -54,4 +54,6 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * `--jit` option to enable JIT compiler is added. [Feature #14235] [experimental]
 
+* VM generator script renewal; makes the generated VM more optimized. [GH-1779]
+
 === Miscellaneous changes
