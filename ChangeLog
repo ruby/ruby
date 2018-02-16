@@ -1,16 +1,10 @@
 Sat Feb 17 01:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
-	load.c: backtrace of circular require
+	Merge RubyGems 2.7.6 from upstream.
 
-	* load.c (load_lock): print backtrace of circular require via
-	  `Warning.warn` [ruby-core:80850] [Bug #13505]
+	It fixed some security vulnerabilities.
 
-	  Send the backtrace of the circular require warning as a single String to Warning.warn
-
-	* load.c: send as a single string.
-	* error.c: expose the string formatted by rb_warning as rb_warning_string().
-	* test/ruby/test_exception.rb: update tests.
-	  [ruby-core:80850] [Bug #13505]
+	http://blog.rubygems.org/2018/02/15/2.7.6-released.html
 
 	fix regexp literal warning.
 
