@@ -1811,17 +1811,31 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    arg->readable += (len - 1) * 2;
 	    v = r_entry0(v, idx, arg);
 	    values = rb_ary_new2(len);
-	    for (i=0; i<len; i++) {
-		VALUE n = rb_sym2str(RARRAY_AREF(mem, i));
-		slot = r_symbol(arg);
-
-		if (!rb_str_equal(n, slot)) {
-		    rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (:%"PRIsVALUE" for :%"PRIsVALUE")",
-			     rb_class_name(klass),
-			     slot, n);
+	    {
+		VALUE keywords;
+		int keyword_init = RTEST(rb_struct_s_keyword_init(klass));
+		if (keyword_init) {
+		    keywords = rb_hash_new();
+		    rb_ary_push(values, keywords);
 		}
-                rb_ary_push(values, r_object(arg));
-		arg->readable -= 2;
+
+		for (i=0; i<len; i++) {
+		    VALUE n = rb_sym2str(RARRAY_AREF(mem, i));
+		    slot = r_symbol(arg);
+
+		    if (!rb_str_equal(n, slot)) {
+			rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (:%"PRIsVALUE" for :%"PRIsVALUE")",
+				 rb_class_name(klass),
+				 slot, n);
+		    }
+		    if (keyword_init) {
+			rb_hash_aset(keywords, RARRAY_AREF(mem, i), r_object(arg));
+		    }
+		    else {
+			rb_ary_push(values, r_object(arg));
+		    }
+		    arg->readable -= 2;
+		}
 	    }
             rb_struct_initialize(v, values);
             v = r_leave(v, arg);
