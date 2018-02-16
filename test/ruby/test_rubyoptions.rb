@@ -947,6 +947,8 @@ class TestRubyOptions < Test::Unit::TestCase
       [
         ['"foo" << "bar"', err],
         ['"foo#{123}bar" << "bar"', err],
+        ['+"foo#{123}bar" << "bar"', []],
+        ['-"foo#{123}bar" << "bar"', freeze && debug ? with_debug_pat : wo_debug_pat],
       ].each do |code, expected|
         assert_in_out_err(opt, code, [], expected, [opt, code])
       end

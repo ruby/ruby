@@ -2846,11 +2846,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (IS_INSN_ID(iobj, freezestring) &&
+	NIL_P(OPERAND_AT(iobj, 0)) &&
 	IS_NEXT_INSN_ID(&iobj->link, send)) {
 	INSN *niobj = (INSN *)iobj->link.next;
 	struct rb_call_info *ci = (struct rb_call_info *)OPERAND_AT(niobj, 0);
 	/*
-	 *  freezestring debug_info
+	 *  freezestring nil # no debug_info
 	 *  send <:+@, 0, ARG_SIMPLE>  # :-@, too
 	 * =>
 	 *  send <:+@, 0, ARG_SIMPLE>  # :-@, too
