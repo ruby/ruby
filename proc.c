@@ -3078,6 +3078,7 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
 void
 Init_Proc(void)
 {
+#undef rb_intern
     /* Proc */
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_alloc_func(rb_cProc);

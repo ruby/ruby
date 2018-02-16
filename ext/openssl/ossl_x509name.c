@@ -502,6 +502,7 @@ ossl_x509name_to_der(VALUE self)
 void
 Init_ossl_x509name(void)
 {
+#undef rb_intern
     VALUE utf8str, ptrstr, ia5str, hash;
 
 #if 0

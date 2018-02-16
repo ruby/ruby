@@ -1400,6 +1400,7 @@ define_thread_class(VALUE outer, const char *name, VALUE super)
 static void
 Init_thread_sync(void)
 {
+#undef rb_intern
 #if 0
     rb_cMutex = rb_define_class("Mutex", rb_cObject); /* teach rdoc Mutex */
     rb_cConditionVariable = rb_define_class("ConditionVariable", rb_cObject); /* teach rdoc ConditionVariable */

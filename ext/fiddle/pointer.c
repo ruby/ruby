@@ -677,6 +677,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
 void
 Init_fiddle_pointer(void)
 {
+#undef rb_intern
     id_to_ptr = rb_intern("to_ptr");
 
     /* Document-class: Fiddle::Pointer

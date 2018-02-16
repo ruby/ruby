@@ -498,6 +498,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
 void
 Init_objspace_dump(VALUE rb_mObjSpace)
 {
+#undef rb_intern
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif

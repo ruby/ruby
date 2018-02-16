@@ -1622,6 +1622,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 void
 Init_stringio(void)
 {
+#undef rb_intern
     VALUE StringIO = rb_define_class("StringIO", rb_cData);
 
     rb_include_module(StringIO, rb_mEnumerable);
