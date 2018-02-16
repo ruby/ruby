@@ -571,14 +571,14 @@ class TestRubyOptimization < Test::Unit::TestCase
   def test_peephole_dstr
     code = "#{<<~'begin;'}\n#{<<~'end;'}"
     begin;
-      exp = (-'a').object_id
+      exp = -'a'
       z = 'a'
-      exp == (-"#{z}").object_id
+      [exp, -"#{z}"]
     end;
     [ false, true ].each do |fsl|
       iseq = RubyVM::InstructionSequence.compile(code,
                                                  frozen_string_literal: fsl)
-      assert_equal(true, iseq.eval,
+      assert_same(*iseq.eval,
                   "[ruby-core:85542] [Bug #14475] fsl: #{fsl}")
     end
   end
