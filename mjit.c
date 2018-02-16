@@ -1410,9 +1410,9 @@ mjit_add_class_serial(rb_serial_t class_serial)
     if (!mjit_init_p)
         return;
 
-    CRITICAL_SECTION_START(3, "in mjit_add_class_serial");
+    /* Do not wrap CRITICAL_SECTION here. This function is only called in main thread
+       and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it. */
     rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
-    CRITICAL_SECTION_FINISH(3, "in mjit_add_class_serial");
 }
 
 /* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
