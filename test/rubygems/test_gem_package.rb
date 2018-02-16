@@ -507,6 +507,21 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
+  def test_install_location_suffix
+    package = Gem::Package.new @gem
+
+    filename = "../#{File.basename(@destination)}suffix.rb"
+
+    e = assert_raises Gem::Package::PathError do
+      package.install_location filename, @destination
+    end
+
+    parent = File.expand_path File.join @destination, filename
+
+    assert_equal("installing into parent path #{parent} of " +
+                 "#{@destination} is not allowed", e.message)
+  end
+
   def test_load_spec
     entry = StringIO.new Gem.gzip @spec.to_yaml
     def entry.full_name() 'metadata.gz' end
@@ -664,6 +679,32 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_match %r%nonexistent.gem$%,           e.message
   end
 
+  def test_verify_duplicate_file
+    FileUtils.mkdir_p 'lib'
+    FileUtils.touch 'lib/code.rb'
+
+    build = Gem::Package.new @gem
+    build.spec = @spec
+    build.setup_signer
+    open @gem, 'wb' do |gem_io|
+      Gem::Package::TarWriter.new gem_io do |gem|
+        build.add_metadata gem
+        build.add_contents gem
+
+        gem.add_file_simple 'a.sig', 0444, 0
+        gem.add_file_simple 'a.sig', 0444, 0
+      end
+    end
+
+    package = Gem::Package.new @gem
+
+    e = assert_raises Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal 'duplicate files in the package: ("a.sig")', e.message
+  end
+
   def test_verify_security_policy
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
@@ -721,7 +762,13 @@ class TestGemPackage < Gem::Package::TarTestCase
 
         # write bogus data.tar.gz to foil signature
         bogus_data = Gem.gzip 'hello'
-        gem.add_file_simple 'data.tar.gz', 0444, bogus_data.length do |io|
+        fake_signer = Class.new do
+          def digest_name; 'SHA512'; end
+          def digest_algorithm; Digest(:SHA512); end
+          def key; 'key'; end
+          def sign(*); 'fake_sig'; end
+        end
+        gem.add_file_signed 'data2.tar.gz', 0444, fake_signer.new do |io|
           io.write bogus_data
         end
 

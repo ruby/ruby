@@ -2584,7 +2584,22 @@ duplicate dependency on b (>= 1.2.3), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal '"over at my cool site" is not a URI', e.message
+      assert_equal '"over at my cool site" is not a valid HTTP URI', e.message
+
+      @a1.homepage = 'ftp://rubygems.org'
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
+
+      @a1.homepage = 'http://rubygems.org'
+      assert_equal true, @a1.validate
+
+      @a1.homepage = 'https://rubygems.org'
+      assert_equal true, @a1.validate
+
     end
   end
 

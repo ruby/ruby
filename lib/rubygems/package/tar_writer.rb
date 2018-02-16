@@ -195,6 +195,8 @@ class Gem::Package::TarWriter
       digest_name == signer.digest_name
     end
 
+    raise "no #{signer.digest_name} in #{digests.values.compact}" unless signature_digest
+
     if signer.key then
       signature = signer.sign signature_digest.digest
 

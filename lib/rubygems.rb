@@ -9,7 +9,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = '2.4.5.4'
+  VERSION = '2.4.5.5'
 end
 
 # Must be first since it unloads the prelude from 1.9.2
