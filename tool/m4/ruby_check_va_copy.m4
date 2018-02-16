@@ -1,11 +1,11 @@
 # -*- Autoconf -*-
 AC_DEFUN([RUBY_CHECK_VA_COPY], [
-    if test "x$rb_cv_va_copy" = x; then
-        AC_TRY_RUN(
-[#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#define CONFTEST_VA_COPY(dst, src) $2
+    AS_IF([test "x$rb_cv_va_copy" = x], [dnl
+        AC_TRY_LINK(
+[@%:@include <stdlib.h>
+@%:@include <stdarg.h>
+@%:@include <string.h>
+@%:@define CONFTEST_VA_COPY(dst, src) $2
 void
 conftest(int n, ...)
 {
@@ -19,16 +19,12 @@ conftest(int n, ...)
     for (i = 0; i < n; i++) if ((int)va_arg(ap, int) != n - i - 1) abort();
     va_end(ap);
     va_end(ap2);
-}
-int
-main()
-{
-    conftest(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-    exit(0);
 }],
-	rb_cv_va_copy="$1",
-        rb_cv_va_copy="",
-        rb_cv_va_copy="")dnl
-    fi
+[
+    conftest(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+],
+    [rb_cv_va_copy="$1"],
+    [rb_cv_va_copy=""])dnl
+    ])dnl
 ])dnl
 dnl
