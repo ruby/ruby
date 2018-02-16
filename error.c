@@ -162,10 +162,16 @@ rb_warning_s_warn(VALUE mod, VALUE str)
     return Qnil;
 }
 
+VALUE
+rb_warning_warn(VALUE mod, VALUE str)
+{
+    return rb_funcallv(mod, id_warn, 1, &str);
+}
+
 static void
 rb_write_warning_str(VALUE str)
 {
-    rb_funcall(rb_mWarning, id_warn, 1, str);
+    rb_warning_warn(rb_mWarning, str);
 }
 
 static VALUE
@@ -252,6 +258,14 @@ rb_warning(const char *fmt, ...)
 	    rb_write_warning_str(mesg);
 	}
     }
+}
+
+VALUE
+rb_warning_string(const char *fmt, ...)
+{
+    with_warning_string(mesg, 0, fmt) {
+    }
+    return mesg;
 }
 
 #if 0

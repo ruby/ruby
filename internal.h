@@ -1033,6 +1033,8 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
 NORETURN(void ruby_only_for_internal_use(const char *));
 #define ONLY_FOR_INTERNAL_USE(func) ruby_only_for_internal_use(func)
+VALUE rb_warning_warn(VALUE mod, VALUE str);
+VALUE rb_warning_string(const char *fmt, ...);
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
@@ -1641,7 +1643,7 @@ void rb_backtrace_print_as_bugreport(void);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
-void rb_backtrace_print_to(VALUE output);
+void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
 VALUE rb_vm_backtrace_object(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN

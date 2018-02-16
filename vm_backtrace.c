@@ -778,10 +778,15 @@ rb_backtrace(void)
     vm_backtrace_print(stderr);
 }
 
+struct print_to_arg {
+    VALUE (*iter)(VALUE recv, VALUE str);
+    VALUE output;
+};
+
 static void
 oldbt_print_to(void *data, VALUE file, int lineno, VALUE name)
 {
-    VALUE output = (VALUE)data;
+    const struct print_to_arg *arg = data;
     VALUE str = rb_sprintf("\tfrom %"PRIsVALUE":%d:in ", file, lineno);
 
     if (NIL_P(name)) {
@@ -790,16 +795,19 @@ oldbt_print_to(void *data, VALUE file, int lineno, VALUE name)
     else {
 	rb_str_catf(str, " `%"PRIsVALUE"'\n", name);
     }
-    rb_io_write(output, str);
+    (*arg->iter)(arg->output, str);
 }
 
 void
-rb_backtrace_print_to(VALUE output)
+rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
 {
     struct oldbt_arg arg;
+    struct print_to_arg parg;
 
+    parg.iter = iter;
+    parg.output = output;
     arg.func = oldbt_print_to;
-    arg.data = (void *)output;
+    arg.data = &parg;
     backtrace_each(GET_THREAD(),
 		   oldbt_init,
 		   oldbt_iter_iseq,
