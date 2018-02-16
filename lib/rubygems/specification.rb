@@ -15,6 +15,7 @@ require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
 require 'rubygems/util/list'
 require 'stringio'
+require 'uri'
 
 ##
 # The Specification class contains the information for a Gem.  Typically
@@ -2813,10 +2814,16 @@ http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard li
       raise Gem::InvalidSpecificationException, "#{lazy} is not a summary"
     end
 
-    if homepage and not homepage.empty? and
-       homepage !~ /\A[a-z][a-z\d+.-]*:/i then
-      raise Gem::InvalidSpecificationException,
-            "\"#{homepage}\" is not a URI"
+    # Make sure a homepage is valid HTTP/HTTPS URI
+    if homepage and not homepage.empty?
+      begin
+        homepage_uri = URI.parse(homepage)
+        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
+          raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
+        end
+      rescue URI::InvalidURIError
+        raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
+      end
     end
 
     # Warnings
