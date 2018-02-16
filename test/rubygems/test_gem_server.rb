@@ -405,7 +405,7 @@ class TestGemServer < Gem::TestCase
     #
     #
     #  <a href="." title=".">[www]</a>
-    regex_match = /xsshomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
+    regex_match = /xsshomepagegem 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)[\s]+<a href="\." title="\.">\[www\]<\/a>/
     assert_match regex_match, @res.body
   end
 
@@ -460,7 +460,7 @@ class TestGemServer < Gem::TestCase
     #
     #
     #  <a href="." title=".">[www]</a>
-    regex_match = /invalidhomepagegem 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="\." title="\.">\[www\]<\/a>/
+    regex_match = /invalidhomepagegem 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)[\s]+<a href="\." title="\.">\[www\]<\/a>/
     assert_match regex_match, @res.body
   end
 
@@ -487,7 +487,7 @@ class TestGemServer < Gem::TestCase
     assert_equal 200, @res.status
     assert_match 'validhomepagegemhttp 1', @res.body
 
-    regex_match = /validhomepagegemhttp 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
+    regex_match = /validhomepagegemhttp 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)[\s]+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
     assert_match regex_match, @res.body
   end
 
@@ -514,7 +514,7 @@ class TestGemServer < Gem::TestCase
     assert_equal 200, @res.status
     assert_match 'validhomepagegemhttps 1', @res.body
 
-    regex_match = /validhomepagegemhttps 1<\/b>[\n\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)[\n\s]+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
+    regex_match = /validhomepagegemhttps 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)[\s]+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
     assert_match regex_match, @res.body
   end
 
