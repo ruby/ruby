@@ -336,6 +336,171 @@ class TestGemServer < Gem::TestCase
     assert_match 'z 9', @res.body
   end
 
+
+  def test_xss_homepage_fix_289313
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'xsshomepagegem', 1
+    spec.homepage = "javascript:confirm(document.domain)"
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'xsshomepagegem 1', @res.body
+
+    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
+    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
+    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
+    # validated in future versions of Gem::Specification.
+    #
+    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
+    #
+    # Variant #1 - rdoc not installed
+    #
+    #   <b>xsshomepagegem 1</b>
+    #
+    #
+    #  <span title="rdoc not installed">[rdoc]</span>
+    #
+    #
+    #
+    #  <a href="." title=".">[www]</a>
+    #
+    # Variant #2 - rdoc installed
+    #
+    #   <b>xsshomepagegem 1</b>
+    #
+    #
+    #  <a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>
+    #
+    #
+    #
+    #  <a href="." title=".">[www]</a>
+    regex_match = /xsshomepagegem 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/xsshomepagegem-1\/">\[rdoc\]<\/a>)[\s]+<a href="\." title="\.">\[www\]<\/a>/
+    assert_match regex_match, @res.body
+  end
+
+  def test_invalid_homepage
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'invalidhomepagegem', 1
+    spec.homepage = "notavalidhomepageurl"
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'invalidhomepagegem 1', @res.body
+
+    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
+    # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
+    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
+    # validated in future versions of Gem::Specification.
+    #
+    # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
+    #
+    # Variant #1 - rdoc not installed
+    #
+    #   <b>invalidhomepagegem 1</b>
+    #
+    #
+    #  <span title="rdoc not installed">[rdoc]</span>
+    #
+    #
+    #
+    #  <a href="." title=".">[www]</a>
+    #
+    # Variant #2 - rdoc installed
+    #
+    #   <b>invalidhomepagegem 1</b>
+    #
+    #
+    #  <a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>
+    #
+    #
+    #
+    #  <a href="." title=".">[www]</a>
+    regex_match = /invalidhomepagegem 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/invalidhomepagegem-1\/">\[rdoc\]<\/a>)[\s]+<a href="\." title="\.">\[www\]<\/a>/
+    assert_match regex_match, @res.body
+  end
+
+  def test_valid_homepage_http
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'validhomepagegemhttp', 1
+    spec.homepage = "http://rubygems.org"
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'validhomepagegemhttp 1', @res.body
+
+    regex_match = /validhomepagegemhttp 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttp-1\/">\[rdoc\]<\/a>)[\s]+<a href="http:\/\/rubygems\.org" title="http:\/\/rubygems\.org">\[www\]<\/a>/
+    assert_match regex_match, @res.body
+  end
+
+  def test_valid_homepage_https
+    data = StringIO.new "GET / HTTP/1.0\r\n\r\n"
+    dir = "#{@gemhome}2"
+
+    spec = util_spec 'validhomepagegemhttps', 1
+    spec.homepage = "https://rubygems.org"
+
+    specs_dir = File.join dir, 'specifications'
+    FileUtils.mkdir_p specs_dir
+
+    open File.join(specs_dir, spec.spec_name), 'w' do |io|
+      io.write spec.to_ruby
+    end
+
+    server = Gem::Server.new dir, process_based_port, false
+
+    @req.parse data
+
+    server.root @req, @res
+
+    assert_equal 200, @res.status
+    assert_match 'validhomepagegemhttps 1', @res.body
+
+    regex_match = /validhomepagegemhttps 1<\/b>[\s]+(<span title="rdoc not installed">\[rdoc\]<\/span>|<a href="\/doc_root\/validhomepagegemhttps-1\/">\[rdoc\]<\/a>)[\s]+<a href="https:\/\/rubygems\.org" title="https:\/\/rubygems\.org">\[www\]<\/a>/
+    assert_match regex_match, @res.body
+  end
+
   def test_specs
     data = StringIO.new "GET /specs.#{Gem.marshal_version} HTTP/1.0\r\n\r\n"
     @req.parse data

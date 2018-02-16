@@ -1,3 +1,22 @@
+Sat Feb 17 01:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	load.c: backtrace of circular require
+
+	* load.c (load_lock): print backtrace of circular require via
+	  `Warning.warn` [ruby-core:80850] [Bug #13505]
+
+	  Send the backtrace of the circular require warning as a single String to Warning.warn
+
+	* load.c: send as a single string.
+	* error.c: expose the string formatted by rb_warning as rb_warning_string().
+	* test/ruby/test_exception.rb: update tests.
+	  [ruby-core:80850] [Bug #13505]
+
+	fix regexp literal warning.
+
+	* test/rubygems/test_gem_server.rb: eliminate duplicated character class warning.
+	  [Bug #14481]
+
 Thu Feb  1 04:00:53 2018  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	Remove debug print introduced in r52386

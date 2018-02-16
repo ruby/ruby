@@ -36,6 +36,31 @@ EOF
     assert_match %r{- user2@example.com}, @ui.output
   end
 
+  def test_show_owners_dont_load_objects
+    skip "testing a psych-only API" unless defined?(::Psych::DisallowedClass)
+
+    response = <<EOF
+---
+- email: !ruby/object:Object {}
+  id: 1
+  handle: user1
+- email: user2@example.com
+- id: 3
+  handle: user3
+- id: 4
+EOF
+
+    @fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners.yaml"] = [response, 200, 'OK']
+
+    assert_raises Psych::DisallowedClass do
+      use_ui @ui do
+        @cmd.show_owners("freewill")
+      end
+    end
+
+  end
+
+
   def test_show_owners_setting_up_host_through_env_var
     response = "- email: user1@example.com\n"
     host = "http://rubygems.example"
