@@ -623,6 +623,18 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
       executables = nil if executables.empty?
       executables.last["is_last"] = true if executables
 
+      # Pre-process spec homepage for safety reasons
+      begin
+        homepage_uri = URI.parse(spec.homepage)
+        if [URI::HTTP, URI::HTTPS].member? homepage_uri.class
+          homepage_uri = spec.homepage
+        else
+          homepage_uri = "."
+        end
+      rescue URI::InvalidURIError
+        homepage_uri = "."
+      end
+
       specs << {
         "authors"             => spec.authors.sort.join(", "),
         "date"                => spec.date.to_s,
@@ -632,7 +644,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
         "only_one_executable" => (executables && executables.size == 1),
         "full_name"           => spec.full_name,
         "has_deps"            => !deps.empty?,
-        "homepage"            => spec.homepage,
+        "homepage"            => homepage_uri,
         "name"                => spec.name,
         "rdoc_installed"      => Gem::RDoc.new(spec).rdoc_installed?,
         "ri_installed"        => Gem::RDoc.new(spec).ri_installed?,
