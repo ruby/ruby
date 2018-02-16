@@ -214,7 +214,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 	args.values[i] = (void *)&generic_args[i];
     }
     args.values[argc] = NULL;
-    args.fn = NUM2PTR(cfunc);
+    args.fn = (void(*)(void))NUM2PTR(cfunc);
 
     (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 
