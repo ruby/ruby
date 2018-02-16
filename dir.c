@@ -1446,7 +1446,7 @@ nogvl_opendir_at(void *ptr)
 			       O_DIRECTORY|
 #  endif /* O_DIRECTORY */
 			       0);
-    int fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+    int fd = openat(oaa->basefd, oaa->path, opendir_flags);
 
     dirp = fd >= 0 ? fdopendir(fd) : 0;
     if (!dirp) {
@@ -1454,7 +1454,7 @@ nogvl_opendir_at(void *ptr)
 
 	switch (gc_for_fd_with_gvl(e)) {
 	  default:
-	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, 0, opendir_flags);
+	    if (fd < 0) fd = openat(oaa->basefd, oaa->path, opendir_flags);
 	    if (fd >= 0) dirp = fdopendir(fd);
 	    if (dirp) return dirp;
 
