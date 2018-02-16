@@ -597,11 +597,14 @@ make_pch(void)
 # ifdef __clang__
         "-emit-pch",
 # endif
-        "-o", pch_file, header_file,
+        "-o", NULL, NULL,
         NULL,
     };
     char **args;
+    int len = sizeof(rest_args) / sizeof(const char *);
 
+    rest_args[len - 2] = header_file;
+    rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
     args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
