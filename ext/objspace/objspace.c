@@ -936,6 +936,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
 void
 Init_objspace(void)
 {
+#undef rb_intern
     VALUE rb_mObjSpace;
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */

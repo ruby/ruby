@@ -548,6 +548,7 @@ static VALUE mark(VALUE self)
 
 void Init_psych_parser(void)
 {
+#undef rb_intern
 #if 0
     mPsych = rb_define_module("Psych");
 #endif

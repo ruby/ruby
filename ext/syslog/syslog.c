@@ -420,6 +420,7 @@ static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
  */
 void Init_syslog(void)
 {
+#undef rb_intern
     mSyslog = rb_define_module("Syslog");
 
     mSyslogConstants    = rb_define_module_under(mSyslog, "Constants");

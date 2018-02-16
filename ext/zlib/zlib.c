@@ -4477,6 +4477,7 @@ zlib_gunzip_run(VALUE arg)
 void
 Init_zlib(void)
 {
+#undef rb_intern
     VALUE mZlib, cZStream, cDeflate, cInflate;
 #if GZIP_SUPPORT
     VALUE cGzipFile, cGzipWriter, cGzipReader;

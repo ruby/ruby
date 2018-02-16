@@ -521,6 +521,7 @@ static VALUE set_line_width(VALUE self, VALUE width)
 
 void Init_psych_emitter(void)
 {
+#undef rb_intern
     VALUE psych     = rb_define_module("Psych");
     VALUE handler   = rb_define_class_under(psych, "Handler", rb_cObject);
     cPsychEmitter   = rb_define_class_under(psych, "Emitter", handler);

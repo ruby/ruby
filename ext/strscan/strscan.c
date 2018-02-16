@@ -1412,6 +1412,7 @@ inspect2(struct strscanner *p)
 void
 Init_strscan(void)
 {
+#undef rb_intern
     ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 

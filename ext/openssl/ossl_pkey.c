@@ -389,6 +389,7 @@ ossl_pkey_verify(VALUE self, VALUE digest, VALUE sig, VALUE data)
 void
 Init_ossl_pkey(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

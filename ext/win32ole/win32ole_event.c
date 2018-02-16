@@ -1264,6 +1264,7 @@ fev_get_handler(VALUE self)
 void
 Init_win32ole_event(void)
 {
+#undef rb_intern
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");

@@ -1335,6 +1335,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
  */
 void Init_generator(void)
 {
+#undef rb_intern
     rb_require("json/common");
 
     mJSON = rb_define_module("JSON");

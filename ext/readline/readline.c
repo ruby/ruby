@@ -1996,8 +1996,8 @@ Init_readline(void)
                                readline_s_get_special_prefixes, 0);
 
 #if USE_INSERT_IGNORE_ESCAPE
-    CONST_ID(id_orig_prompt, "orig_prompt");
-    CONST_ID(id_last_prompt, "last_prompt");
+    id_orig_prompt = rb_intern("orig_prompt");
+    id_last_prompt = rb_intern("last_prompt");
 #endif
 
     history = rb_obj_alloc(rb_cObject);
