@@ -6,7 +6,12 @@ require 'rubygems/commands/setup_command'
 
 class TestGemCommandsSetupCommand < Gem::TestCase
 
-  BUNDLER_VERS = "1.16.1"
+  bundler_gemspec = File.expand_path("../../../bundler/lib/bundler/version.rb", __FILE__)
+  if File.exist?(bundler_gemspec)
+    BUNDLER_VERS = File.read(bundler_gemspec).match(/VERSION = "(#{Gem::Version::VERSION_PATTERN})"/)[1]
+  else
+    BUNDLER_VERS = "1.16.1"
+  end
 
   def setup
     super

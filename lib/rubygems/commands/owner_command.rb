@@ -64,7 +64,7 @@ permission to.
     end
 
     with_response response do |resp|
-      owners = YAML.load resp.body
+      owners = Gem::SafeYAML.load resp.body
 
       say "Owners for gem: #{name}"
       owners.each do |owner|
