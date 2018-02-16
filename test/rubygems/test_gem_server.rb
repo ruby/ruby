@@ -377,9 +377,9 @@ class TestGemServer < Gem::TestCase
     assert_equal 200, @res.status
     assert_match 'xsshomepagegem 1', @res.body
 
-    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
+    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a
     # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
-    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
+    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be
     # validated in future versions of Gem::Specification.
     #
     # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
@@ -432,9 +432,9 @@ class TestGemServer < Gem::TestCase
     assert_equal 200, @res.status
     assert_match 'invalidhomepagegem 1', @res.body
 
-    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a 
+    # This verifies that the homepage for this spec is not displayed and is set to ".", because it's not a
     # valid HTTP/HTTPS URL and could be unsafe in an HTML context.  We would prefer to throw an exception here,
-    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be 
+    # but spec.homepage is currently free form and not currently required to be a URL, this behavior may be
     # validated in future versions of Gem::Specification.
     #
     # There are two variant we're checking here, one where rdoc is not present, and one where rdoc is present in the same regex:
