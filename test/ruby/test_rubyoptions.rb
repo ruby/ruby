@@ -944,9 +944,11 @@ class TestRubyOptions < Test::Unit::TestCase
     frozen.product(debugs) do |(opt1, freeze), (opt2, debug)|
       opt = opts + [opt1, opt2].compact
       err = !freeze ? [] : debug ? with_debug_pat : wo_debug_pat
-      assert_in_out_err(opt, '"foo" << "bar"', [], err)
-      if freeze
-        assert_in_out_err(opt, '"foo#{123}bar" << "bar"', [], err)
+      [
+        ['"foo" << "bar"', err],
+        ['"foo#{123}bar" << "bar"', err],
+      ].each do |code, expected|
+        assert_in_out_err(opt, code, [], expected, [opt, code])
       end
     end
   end
