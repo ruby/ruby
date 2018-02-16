@@ -809,4 +809,18 @@ class TestRequire < Test::Unit::TestCase
       end;
     end
   end
+
+  def test_symlink_load_path
+    Dir.mktmpdir {|tmp|
+      Dir.mkdir(File.join(tmp, "real"))
+      begin
+        File.symlink "real", File.join(tmp, "symlink")
+      rescue NotImplementedError, Errno::EACCES
+        skip "File.symlink is not implemented"
+      end
+      File.write(File.join(tmp, "real/a.rb"), "print __FILE__")
+      result = IO.popen([EnvUtil.rubybin, "-I#{tmp}/symlink", "-e", "require 'a.rb'"], &:read)
+      assert_operator(result, :end_with?, "/real/a.rb")
+    }
+  end
 end
