@@ -176,9 +176,6 @@ INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
 
-PRE_LIBRUBY_UPDATE = $(MINIRUBY) -e 'ARGV[1] or File.unlink(ARGV[0]) rescue nil' -- \
-			$(LIBRUBY_EXTS) $(LIBRUBY_SO_UPDATE)
-
 TESTSDIR      = $(srcdir)/test
 TEST_EXCLUDES = --excludes-dir=$(TESTSDIR)/excludes --name=!/memory_leak/
 EXCLUDE_TESTFRAMEWORK = --exclude=/testunit/ --exclude=/minitest/
