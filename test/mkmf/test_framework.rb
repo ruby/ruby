@@ -10,7 +10,7 @@ class TestMkmf
         FileUtils.mkdir_p(hdrdir)
         File.write("#{hdrdir}/#{hdrname}", "")
         src = "#{fwdir}/main.c"
-        File.write(src, "void #{fw}(void) {}")
+        File.write(src, "void #{fw}(void) {}\n")
         cmd = LINK_SO.dup
         RbConfig.expand(cmd, RbConfig::CONFIG.merge("OBJS"=>src))
         cmd.gsub!("$@", "#{fwdir}/#{fw}")
