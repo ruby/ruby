@@ -1057,6 +1057,12 @@ $(STUBPROGRAM):	rubystub.$(OBJEXT) $(LIBRUBY) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME)
 		$(Q) $(LDSHARED_2)
 !endif
 
+!if "$(LIBRUBY_SO_UPDATE)" == ""
+PRE_LIBRUBY_UPDATE = $(RM) $(LIBRUBY_EXTS)
+!else
+PRE_LIBRUBY_UPDATE =
+!endif
+
 $(LIBRUBY_A):	$(OBJS) $(INITOBJS)
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)

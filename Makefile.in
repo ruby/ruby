@@ -241,6 +241,8 @@ $(PROGRAM):
 		$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(MAINLIBS) $(LIBS) $(EXTLIBS) $(OUTFLAG)$@
 		$(Q) $(POSTLINK)
 
+PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(exec) $(RM) $(LIBRUBY_EXTS)
+
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
