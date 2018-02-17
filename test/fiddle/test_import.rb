@@ -64,7 +64,7 @@ module Fiddle
       assert_equal(SIZEOF_VOIDP, LIBC.sizeof("FILE*"))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct.malloc()))
-      assert_equal(SIZEOF_LONG_LONG, LIBC.sizeof("long long"))
+      assert_equal(SIZEOF_LONG_LONG, LIBC.sizeof("long long")) if defined?(SIZEOF_LONG_LONG)
     end
 
     Fiddle.constants.grep(/\ATYPE_(?!VOID\z)(.*)/) do
