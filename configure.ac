@@ -1166,7 +1166,12 @@ RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@include <sys/resource.h>
 ])
 RUBY_REPLACE_TYPE(off_t, [], OFFT)
-RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID)
+RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
+@%:@ include <time.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TIME_H
+@%:@ include <sys/time.h>
+@%:@endif])
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -1534,13 +1539,6 @@ AC_CHECK_TYPES([struct timespec], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@endif])
 
 AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
-@%:@ include <time.h>
-@%:@endif
-@%:@ifdef HAVE_SYS_TIME_H
-@%:@ include <sys/time.h>
-@%:@endif])
-
-AC_CHECK_TYPES([clockid_t], [], [], [@%:@ifdef HAVE_TIME_H
 @%:@ include <time.h>
 @%:@endif
 @%:@ifdef HAVE_SYS_TIME_H
