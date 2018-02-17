@@ -184,8 +184,12 @@ enum vm_regan_acttype {
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
 
-extern VALUE make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
-				      int argc, const VALUE *argv, int priv);
+extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+
+extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
+					 int argc, const VALUE *argv, int priv);
 
 static inline struct vm_throw_data *
 THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)

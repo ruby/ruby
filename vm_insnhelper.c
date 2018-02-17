@@ -1569,10 +1569,6 @@ static inline VALUE vm_call_method(rb_execution_context_t *ec, rb_control_frame_
 
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size);
 
-extern rb_method_definition_t *method_definition_create(rb_method_type_t type, ID mid);
-extern void method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
-extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
-
 static const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
@@ -2034,9 +2030,10 @@ vm_call_opt_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct
 
     if (!(ci->mid = rb_check_id(&sym))) {
 	if (rb_method_basic_definition_p(CLASS_OF(calling->recv), idMethodMissing)) {
-	    VALUE exc = make_no_method_exception(rb_eNoMethodError, 0, calling->recv,
-						 rb_long2int(calling->argc), &TOPN(i),
-						 ci->flag & (VM_CALL_FCALL|VM_CALL_VCALL));
+	    VALUE exc =
+		rb_make_no_method_exception(rb_eNoMethodError, 0, calling->recv,
+					    rb_long2int(calling->argc), &TOPN(i),
+					    ci->flag & (VM_CALL_FCALL|VM_CALL_VCALL));
 	    rb_exc_raise(exc);
 	}
 	TOPN(i) = rb_str_intern(sym);
@@ -2215,9 +2212,9 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 	    RB_OBJ_WRITE(me, &me->def->body.alias.original_me, cme);
 	}
 	else {
-	    method_definition_set((rb_method_entry_t *)me,
-				  method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id),
-				  (void *)cme);
+	    rb_method_definition_t *def =
+		rb_method_definition_create(VM_METHOD_TYPE_ALIAS, me->def->original_id);
+	    rb_method_definition_set((rb_method_entry_t *)me, def, (void *)cme);
 	}
     }
     else {

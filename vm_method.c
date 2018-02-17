@@ -224,7 +224,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(), int argc)
 }
 
 MJIT_FUNC_EXPORTED void
-method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
+rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
     *(rb_method_definition_t **)&me->def = def;
 
@@ -338,7 +338,7 @@ method_definition_reset(const rb_method_entry_t *me)
 }
 
 MJIT_FUNC_EXPORTED rb_method_definition_t *
-method_definition_create(rb_method_type_t type, ID mid)
+rb_method_definition_create(rb_method_type_t type, ID mid)
 {
     rb_method_definition_t *def;
     def = ZALLOC(rb_method_definition_t);
@@ -429,8 +429,8 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
     METHOD_ENTRY_COMPLEMENTED_SET(me);
     if (!def) {
-	def = method_definition_create(VM_METHOD_TYPE_REFINED, called_id);
-	method_definition_set(me, def, &refined);
+	def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, called_id);
+	rb_method_definition_set(me, def, &refined);
     }
 
     VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
@@ -460,6 +460,7 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 	    struct rb_method_entry_struct *orig_me;
 	    VALUE owner;
 	} refined;
+	rb_method_definition_t *def;
 
 	rb_vm_check_redefinition_opt_method(me, me->owner);
 
@@ -471,7 +472,8 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
 	METHOD_ENTRY_FLAGS_COPY(refined.orig_me, me);
 	refined.owner = owner;
 
-	method_definition_set(me, method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id), (void *)&refined);
+	def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id);
+	rb_method_definition_set(me, def, (void *)&refined);
 	METHOD_ENTRY_VISI_SET(me, METHOD_VISI_PUBLIC);
     }
 }
@@ -593,8 +595,8 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     /* create method entry */
     me = rb_method_entry_create(mid, defined_class, visi, NULL);
-    if (def == NULL) def = method_definition_create(type, original_id);
-    method_definition_set(me, def, opts);
+    if (def == NULL) def = rb_method_definition_create(type, original_id);
+    rb_method_definition_set(me, def, opts);
 
     rb_clear_method_cache_by_class(klass);
 
