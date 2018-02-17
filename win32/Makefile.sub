@@ -1064,6 +1064,9 @@ PRE_LIBRUBY_UPDATE =
 !endif
 
 $(LIBRUBY_A):	$(OBJS) $(INITOBJS)
+!if "$(EXTSTATIC)" != ""
+		@-$(PRE_LIBRUBY_UPDATE)
+!endif
 		$(ECHO) linking static-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ $(OBJS) $(INITOBJS)
 
@@ -1073,7 +1076,9 @@ $(LIBRUBY):	$(RUBYDEF)
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(DLDOBJS)
+!if "$(EXTSTATIC)" == ""
 		@-$(PRE_LIBRUBY_UPDATE)
+!endif
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) \
 			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) -Fe$@ -link $(LDFLAGS) \
