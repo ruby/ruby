@@ -640,8 +640,8 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 }
 
 MJIT_FUNC_EXPORTED VALUE
-make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
-			 int argc, const VALUE *argv, int priv)
+rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
+			    int argc, const VALUE *argv, int priv)
 {
     int n = 0;
     enum {
@@ -700,8 +700,8 @@ raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VA
     }
 
     {
-	exc = make_no_method_exception(exc, format, obj, argc, argv,
-				       last_call_status & (MISSING_FCALL|MISSING_VCALL));
+	exc = rb_make_no_method_exception(exc, format, obj, argc, argv,
+					  last_call_status & (MISSING_FCALL|MISSING_VCALL));
 	if (!(last_call_status & MISSING_MISSING)) {
 	    rb_vm_pop_cfunc_frame();
 	}
@@ -891,9 +891,9 @@ send_internal(int argc, const VALUE *argv, VALUE recv, call_type scope)
     id = rb_check_id(&vid);
     if (!id) {
 	if (rb_method_basic_definition_p(CLASS_OF(recv), idMethodMissing)) {
-	    VALUE exc = make_no_method_exception(rb_eNoMethodError, 0,
-						 recv, argc, argv,
-						 scope != CALL_PUBLIC);
+	    VALUE exc = rb_make_no_method_exception(rb_eNoMethodError, 0,
+						    recv, argc, argv,
+						    scope != CALL_PUBLIC);
 	    rb_exc_raise(exc);
 	}
 	if (!SYMBOL_P(*argv)) {
