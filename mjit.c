@@ -676,7 +676,9 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_str2(p, so_file, solen);
     *p = '\0';
 #else
+# ifdef __clang__
     files[1] = pch_file;
+# endif
     files[numberof(files)-3] = so_file;
 #endif
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
