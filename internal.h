@@ -85,25 +85,6 @@ extern "C" {
 # define STATIC_ASSERT(name, expr) typedef int static_assert_##name##_check[1 - 2*!(expr)]
 #endif
 
-#if defined(HAVE_VA_COPY)
-/* OK, nothing to do */
-#elif defined(HAVE_VA_COPY_MACRO)
-#define va_copy(dst, src) VA_COPY((dst), (src))
-#elif defined(HAVE___VA_COPY)
-#define va_copy(dst, src) __va_copy((dst), (src))
-#elif defined(HAVE___BUILTIN_VA_COPY)
-#define va_copy(dst, src) __builtin_va_copy((dst), (src))
-#elif defined(HAVE_VA_COPY_VIA_STRUCT_ASSIGNMENT)
-#define va_copy(dst, src) do (dst) = (src); while (0)
-#elif defined(HAVE_VA_COPY_VIA_POINTER_ASSIGNMENT)
-#define va_copy(dst, src) do *(dst) = *(src); while (0)
-#elif defined(HAVE_VA_COPY_VIA_MEMCPY)
-#include <string.h>
-#define va_copy(dst, src) memcpy(&(dst), &(src), sizeof(va_list))
-#else
-#error >>>> no way to simuate va_copy <<<<
-#endif
-
 #define SIGNED_INTEGER_TYPE_P(int_type) (0 > ((int_type)0)-1)
 #define SIGNED_INTEGER_MAX(sint_type) \
   (sint_type) \
