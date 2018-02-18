@@ -3802,6 +3802,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     rb_fdset_t MAYBE_UNUSED(orig_write);
     rb_fdset_t MAYBE_UNUSED(orig_except);
     struct timespec end;
+    struct timespec *tsp = 0;
     struct timespec ts
 #if defined(__GNUC__) && (__GNUC__ == 7 || __GNUC__ == 8)
         = {0, 0}
@@ -3813,11 +3814,12 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     (restore_fdset(readfds, &orig_read), \
      restore_fdset(writefds, &orig_write), \
      restore_fdset(exceptfds, &orig_except), \
-     update_timespec(&ts, &end))
+     update_timespec(tsp, &end))
 
     if (timeout) {
         getclockofday(&end);
         timespec_add(&end, timespec_for(&ts, timeout));
+        tsp = &ts;
     }
 
 #define fd_init_copy(f) \
@@ -3832,7 +3834,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
 
 	BLOCKING_REGION({
 	    result = native_fd_select(n, readfds, writefds, exceptfds,
-				      timeval_for(timeout, &ts), th);
+				      timeval_for(timeout, tsp), th);
 	    if (result < 0) lerrno = errno;
 	}, ubf_select, th, FALSE);
 
@@ -3974,7 +3976,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     } while (result < 0 && retryable(errno = lerrno) &&
-            update_timespec(&ts, &end));
+            update_timespec(tsp, &end));
     if (result < 0) return -1;
 
     if (fds.revents & POLLNVAL) {
