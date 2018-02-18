@@ -286,27 +286,21 @@ args_len(char *const *args)
 static char **
 form_args(int num, ...)
 {
-    va_list argp, argp2;
-    size_t len, disp;
+    va_list argp;
+    size_t len, n;
     int i;
     char **args, **res;
 
     va_start(argp, num);
-    va_copy(argp2, argp);
+    res = NULL;
     for (i = len = 0; i < num; i++) {
         args = va_arg(argp, char **);
-        len += args_len(args);
+        n = args_len(args);
+        REALLOC_N(res, char *, len + n + 1);
+        MEMCPY(res + len, args, char *, n + 1);
+        len += n;
     }
     va_end(argp);
-    res = xmalloc((len + 1) * sizeof(char *));
-    for (i = disp = 0; i < num; i++) {
-        args = va_arg(argp2, char **);
-        len = args_len(args);
-        memmove(res + disp, args, len * sizeof(char *));
-        disp += len;
-    }
-    res[disp] = NULL;
-    va_end(argp2);
     return res;
 }
 
