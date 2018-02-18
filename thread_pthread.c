@@ -365,33 +365,25 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
 static struct timespec
 native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
-    struct timespec timeout;
-    struct timespec now;
+    struct timespec abs;
 
 #if USE_MONOTONIC_COND
     if (cond->clockid == CLOCK_MONOTONIC) {
-	int ret = clock_gettime(cond->clockid, &now);
-	if (ret != 0)
-	    rb_sys_fail("clock_gettime()");
+	getclockofday(&abs);
 	goto out;
     }
 
     if (cond->clockid != CLOCK_REALTIME)
 	rb_bug("unsupported clockid %"PRIdVALUE, (SIGNED_VALUE)cond->clockid);
 #endif
-    rb_timespec_now(&now);
+    rb_timespec_now(&abs);
 
 #if USE_MONOTONIC_COND
   out:
 #endif
-    timeout.tv_sec = now.tv_sec;
-    timeout.tv_nsec = now.tv_nsec;
-    timespec_add(&timeout, &timeout_rel);
+    timespec_add(&abs, &timeout_rel);
 
-    if (timeout.tv_sec < now.tv_sec)
-	timeout.tv_sec = TIMET_MAX;
-
-    return timeout;
+    return abs;
 }
 
 #define native_cleanup_push pthread_cleanup_push
