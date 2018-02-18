@@ -1061,6 +1061,8 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
       case T_NIL: break;
       case T_FIXNUM:
         timespec.tv_sec = NUM2TIMET(limit);
+        if (timespec.tv_sec < 0)
+            timespec.tv_sec = 0;
         timespec.tv_nsec = 0;
         ts = &timespec;
         break;
@@ -1116,8 +1118,8 @@ double2timespec(struct timespec *ts, double d)
     if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
         return NULL;
     }
-    else if (d <= TIMESPEC_SEC_MIN) {
-        ts->tv_sec = TIMESPEC_SEC_MIN;
+    else if (d <= 0) {
+        ts->tv_sec = 0;
         ts->tv_nsec = 0;
     }
     else {
