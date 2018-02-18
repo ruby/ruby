@@ -839,7 +839,7 @@ native_thread_init_stack(rb_thread_t *th)
 static void *
 thread_start_func_1(void *th_ptr)
 {
-  rb_thread_t *th = th_ptr;
+    rb_thread_t *th = th_ptr;
 #if USE_THREAD_CACHE
   thread_start:
 #endif
