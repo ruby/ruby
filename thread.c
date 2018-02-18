@@ -73,6 +73,7 @@
 #include "ruby/debug.h"
 #include "internal.h"
 #include "iseq.h"
+#include "vm_core.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -2242,10 +2243,6 @@ rb_threadptr_signal_exit(rb_thread_t *th)
     argv[1] = rb_str_new2("exit");
     rb_threadptr_raise(th->vm->main_thread, 2, argv);
 }
-
-#if defined(POSIX_SIGNAL) && defined(SIGSEGV) && defined(HAVE_SIGALTSTACK)
-#define USE_SIGALTSTACK
-#endif
 
 int
 rb_ec_set_raised(rb_execution_context_t *ec)
