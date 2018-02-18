@@ -1197,6 +1197,26 @@ timespec_sub(struct timespec *dst, const struct timespec *tv)
     }
 }
 
+static int
+timespec_cmp(const struct timespec *a, const struct timespec *b)
+{
+    if (a->tv_sec > b->tv_sec) {
+        return 1;
+    }
+    else if (a->tv_sec < b->tv_sec) {
+        return -1;
+    }
+    else {
+        if (a->tv_nsec > b->tv_nsec) {
+            return 1;
+        }
+        else if (a->tv_nsec < b->tv_nsec) {
+            return -1;
+        }
+        return 0;
+    }
+}
+
 /*
  * @end is the absolute time when @ts is set to expire
  * Returns true if @end has past
@@ -1208,8 +1228,7 @@ timespec_update_expire(struct timespec *ts, const struct timespec *end)
     struct timespec now;
 
     getclockofday(&now);
-    if (end->tv_sec < now.tv_sec) return 1;
-    if (end->tv_sec == now.tv_sec && end->tv_nsec <= now.tv_nsec) return 1;
+    if (timespec_cmp(&now, end) >= 0) return 1;
     thread_debug("timespec_update_expire: "
 		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
 		 (time_t)end->tv_sec, (long)end->tv_nsec,
