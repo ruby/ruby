@@ -3784,17 +3784,10 @@ retryable(int e)
     ((fds1) ? rb_fd_dup(fds1, fds2) : (void)0)
 
 static inline int
-update_timespec(struct timespec *timeout, const struct timespec *to)
+update_timespec(struct timespec *timeout, const struct timespec *end)
 {
     if (timeout) {
-        struct timespec now;
-
-        getclockofday(&now);
-        *timeout = *to;
-        timespec_sub(timeout, &now);
-
-        if (timeout->tv_sec < 0)  timeout->tv_sec = 0;
-        if (timeout->tv_nsec < 0) timeout->tv_nsec = 0;
+        return !timespec_update_expire(timeout, end);
     }
     return TRUE;
 }
@@ -3808,7 +3801,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     rb_fdset_t MAYBE_UNUSED(orig_read);
     rb_fdset_t MAYBE_UNUSED(orig_write);
     rb_fdset_t MAYBE_UNUSED(orig_except);
-    struct timespec to;
+    struct timespec end;
     struct timespec ts
 #if defined(__GNUC__) && (__GNUC__ == 7 || __GNUC__ == 8)
         = {0, 0}
@@ -3820,11 +3813,11 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     (restore_fdset(readfds, &orig_read), \
      restore_fdset(writefds, &orig_write), \
      restore_fdset(exceptfds, &orig_except), \
-     update_timespec(&ts, &to))
+     update_timespec(&ts, &end))
 
     if (timeout) {
-        getclockofday(&to);
-        timespec_add(&to, timespec_for(&ts, timeout));
+        getclockofday(&end);
+        timespec_add(&end, timespec_for(&ts, timeout));
     }
 
 #define fd_init_copy(f) \
@@ -3958,13 +3951,13 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     struct pollfd fds;
     int result = 0, lerrno;
     struct timespec ts;
-    struct timespec to;
+    struct timespec end;
     struct timespec *tsp = 0;
     rb_thread_t *th = GET_THREAD();
 
     if (timeout) {
-        getclockofday(&to);
-        timespec_add(&to, timespec_for(&ts, timeout));
+        getclockofday(&end);
+        timespec_add(&end, timespec_for(&ts, timeout));
         tsp = &ts;
     }
 
@@ -3981,7 +3974,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     } while (result < 0 && retryable(errno = lerrno) &&
-            update_timespec(&ts, &to));
+            update_timespec(&ts, &end));
     if (result < 0) return -1;
 
     if (fds.revents & POLLNVAL) {
