@@ -1003,7 +1003,7 @@ thread_join(rb_thread_t *target_th, struct timespec *ts)
     return target_th->self;
 }
 
-static struct timespec double2timespec(double);
+static struct timespec *double2timespec(struct timespec *, double);
 
 /*
  *  call-seq:
@@ -1065,8 +1065,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
         ts = &timespec;
         break;
       default:
-        timespec = double2timespec(rb_num2dbl(limit));
-        ts = &timespec;
+        ts = double2timespec(&timespec, rb_num2dbl(limit));
     }
 
     return thread_join(rb_thread_ptr(self), ts);
@@ -1108,31 +1107,28 @@ thread_value(VALUE self)
 #define TIMESPEC_SEC_MAX TIMET_MAX
 #define TIMESPEC_SEC_MIN TIMET_MIN
 
-static struct timespec
-double2timespec(double d)
+static struct timespec *
+double2timespec(struct timespec *ts, double d)
 {
     /* assume timespec.tv_sec has same signedness as time_t */
     const double TIMESPEC_SEC_MAX_PLUS_ONE = TIMET_MAX_PLUS_ONE;
 
-    struct timespec time;
-
     if (TIMESPEC_SEC_MAX_PLUS_ONE <= d) {
-        time.tv_sec = TIMESPEC_SEC_MAX;
-        time.tv_nsec = 999999999;
+        return NULL;
     }
     else if (d <= TIMESPEC_SEC_MIN) {
-        time.tv_sec = TIMESPEC_SEC_MIN;
-        time.tv_nsec = 0;
+        ts->tv_sec = TIMESPEC_SEC_MIN;
+        ts->tv_nsec = 0;
     }
     else {
-        time.tv_sec = (time_t)d;
-        time.tv_nsec = (long)((d - (time_t)d) * 1e9);
-        if (time.tv_nsec < 0) {
-            time.tv_nsec += (long)1e9;
-            time.tv_sec -= 1;
+        ts->tv_sec = (time_t)d;
+        ts->tv_nsec = (long)((d - (time_t)d) * 1e9);
+        if (ts->tv_nsec < 0) {
+            ts->tv_nsec += (long)1e9;
+            ts->tv_sec -= 1;
         }
     }
-    return time;
+    return ts;
 }
 
 static void
