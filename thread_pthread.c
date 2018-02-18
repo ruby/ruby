@@ -180,9 +180,11 @@ gvl_destroy(rb_vm_t *vm)
 }
 
 #if defined(HAVE_WORKING_FORK)
+static void thread_cache_reset(void);
 static void
 gvl_atfork(rb_vm_t *vm)
 {
+    thread_cache_reset();
     gvl_init(vm);
     gvl_acquire(vm, GET_THREAD());
 }
@@ -457,7 +459,7 @@ native_thread_destroy(rb_thread_t *th)
 #endif
 
 #if USE_THREAD_CACHE
-static rb_thread_t *register_cached_thread_and_wait(void);
+static rb_thread_t *register_cached_thread_and_wait(rb_nativethread_id_t);
 #endif
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -837,11 +839,11 @@ native_thread_init_stack(rb_thread_t *th)
 static void *
 thread_start_func_1(void *th_ptr)
 {
+  rb_thread_t *th = th_ptr;
 #if USE_THREAD_CACHE
   thread_start:
 #endif
     {
-	rb_thread_t *th = th_ptr;
 #if !defined USE_NATIVE_THREAD_INIT
 	VALUE stack_start;
 #endif
@@ -861,10 +863,7 @@ thread_start_func_1(void *th_ptr)
 #if USE_THREAD_CACHE
     if (1) {
 	/* cache thread */
-	rb_thread_t *th;
-	if ((th = register_cached_thread_and_wait()) != 0) {
-	    th_ptr = (void *)th;
-	    th->thread_id = pthread_self();
+	if ((th = register_cached_thread_and_wait(th->thread_id)) != 0) {
 	    goto thread_start;
 	}
     }
@@ -873,86 +872,79 @@ thread_start_func_1(void *th_ptr)
 }
 
 struct cached_thread_entry {
-    volatile rb_thread_t **th_area;
-    rb_nativethread_cond_t *cond;
-    struct cached_thread_entry *next;
+    rb_nativethread_cond_t cond;
+    rb_nativethread_id_t thread_id;
+    rb_thread_t *th;
+    struct list_node node;
 };
-
 
 #if USE_THREAD_CACHE
 static rb_nativethread_lock_t thread_cache_lock = RB_NATIVETHREAD_LOCK_INIT;
-struct cached_thread_entry *cached_thread_root;
+static LIST_HEAD(cached_thread_head);
+
+#  if defined(HAVE_WORKING_FORK)
+static void
+thread_cache_reset(void)
+{
+    rb_native_mutex_initialize(&thread_cache_lock);
+    list_head_init(&cached_thread_head);
+}
+#  endif
 
 static rb_thread_t *
-register_cached_thread_and_wait(void)
+register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
 {
-    rb_nativethread_cond_t cond = RB_NATIVETHREAD_COND_INIT;
-    volatile rb_thread_t *th_area = 0;
-    struct timespec ts;
-    struct cached_thread_entry *entry =
-      (struct cached_thread_entry *)malloc(sizeof(struct cached_thread_entry));
+    struct timespec end;
+    struct cached_thread_entry entry;
 
-    if (entry == 0) {
-	return 0; /* failed -> terminate thread immediately */
-    }
+    rb_native_cond_initialize(&entry.cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    entry.th = NULL;
+    entry.thread_id = thread_self_id;
 
-    rb_timespec_now(&ts);
-    ts.tv_sec += 60;
+    getclockofday(&end);
+    end.tv_sec += 60;
 
     rb_native_mutex_lock(&thread_cache_lock);
     {
-	entry->th_area = &th_area;
-	entry->cond = &cond;
-	entry->next = cached_thread_root;
-	cached_thread_root = entry;
+        list_add(&cached_thread_head, &entry.node);
 
-	native_cond_timedwait(&cond, &thread_cache_lock, &ts);
+        native_cond_timedwait(&entry.cond, &thread_cache_lock, &end);
 
-	{
-	    struct cached_thread_entry *e, **prev = &cached_thread_root;
+        if (entry.th == NULL) { /* unused */
+            list_del(&entry.node);
+        }
 
-	    while ((e = *prev) != 0) {
-		if (e == entry) {
-		    *prev = e->next;
-		    break;
-		}
-		prev = &e->next;
-	    }
-	}
-
-	free(entry); /* ok */
-        rb_native_cond_destroy(&cond);
+        rb_native_cond_destroy(&entry.cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
 
-    return (rb_thread_t *)th_area;
+    return entry.th;
 }
+#else
+#  if defined(HAVE_WORKING_FORK)
+static void thread_cache_reset(void) { }
+#  endif
 #endif
 
 static int
 use_cached_thread(rb_thread_t *th)
 {
-    int result = 0;
 #if USE_THREAD_CACHE
     struct cached_thread_entry *entry;
 
-    if (cached_thread_root) {
-        rb_native_mutex_lock(&thread_cache_lock);
-	entry = cached_thread_root;
-	{
-	    if (cached_thread_root) {
-		cached_thread_root = entry->next;
-		*entry->th_area = th;
-		result = 1;
-	    }
-	}
-	if (result) {
-	    rb_native_cond_signal(entry->cond);
-	}
-	rb_native_mutex_unlock(&thread_cache_lock);
+    rb_native_mutex_lock(&thread_cache_lock);
+    entry = list_pop(&cached_thread_head, struct cached_thread_entry, node);
+    if (entry) {
+        entry->th = th;
+        /* th->thread_id must be set before signal for Thread#name= */
+        th->thread_id = entry->thread_id;
+        fill_thread_id_str(th);
+        rb_native_cond_signal(&entry->cond);
     }
+    rb_native_mutex_unlock(&thread_cache_lock);
+    return !!entry;
 #endif
-    return result;
+    return 0;
 }
 
 static int
