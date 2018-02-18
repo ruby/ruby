@@ -913,10 +913,10 @@ register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
         if (entry.th == NULL) { /* unused */
             list_del(&entry.node);
         }
-
-        rb_native_cond_destroy(&entry.cond);
     }
     rb_native_mutex_unlock(&thread_cache_lock);
+
+    rb_native_cond_destroy(&entry.cond);
 
     return entry.th;
 }
