@@ -911,11 +911,11 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiting;
-    struct timespec to;
+    struct timespec end;
 
     if (p->limit) {
-        getclockofday(&to);
-        timespec_add(&to, p->limit);
+        getclockofday(&end);
+        timespec_add(&end, p->limit);
     }
 
     while (target_th->status != THREAD_KILLED) {
@@ -927,7 +927,7 @@ thread_join_sleep(VALUE arg)
 	    th->vm->sleeper--;
 	}
 	else {
-            if (timespec_update_expire(p->limit, &to)) {
+            if (timespec_update_expire(p->limit, &end)) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
 		return Qfalse;
@@ -1197,19 +1197,24 @@ timespec_sub(struct timespec *dst, const struct timespec *tv)
     }
 }
 
+/*
+ * @end is the absolute time when @ts is set to expire
+ * Returns true if @end has past
+ * Updates @ts and returns false otherwise
+ */
 static int
-timespec_update_expire(struct timespec *ts, const struct timespec *to)
+timespec_update_expire(struct timespec *ts, const struct timespec *end)
 {
     struct timespec now;
 
     getclockofday(&now);
-    if (to->tv_sec < now.tv_sec) return 1;
-    if (to->tv_sec == now.tv_sec && to->tv_nsec <= now.tv_nsec) return 1;
+    if (end->tv_sec < now.tv_sec) return 1;
+    if (end->tv_sec == now.tv_sec && end->tv_nsec <= now.tv_nsec) return 1;
     thread_debug("timespec_update_expire: "
 		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
-		 (time_t)to->tv_sec, (long)to->tv_nsec,
+		 (time_t)end->tv_sec, (long)end->tv_nsec,
 		 (time_t)now.tv_sec, (long)now.tv_nsec);
-    *ts = *to;
+    *ts = *end;
     timespec_sub(ts, &now);
     return 0;
 }
@@ -1217,17 +1222,17 @@ timespec_update_expire(struct timespec *ts, const struct timespec *to)
 static void
 sleep_timespec(rb_thread_t *th, struct timespec ts, int spurious_check)
 {
-    struct timespec to;
+    struct timespec end;
     enum rb_thread_status prev_status = th->status;
 
-    getclockofday(&to);
-    timespec_add(&to, &ts);
+    getclockofday(&end);
+    timespec_add(&end, &ts);
     th->status = THREAD_STOPPED;
     RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &ts);
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	if (timespec_update_expire(&ts, &to))
+	if (timespec_update_expire(&ts, &end))
 	    break;
 	if (!spurious_check)
 	    break;
