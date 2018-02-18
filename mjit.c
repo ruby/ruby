@@ -680,12 +680,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     files[numberof(files)-3] = so_file;
 #endif
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-#ifdef _MSC_VER
-                     files, libs, CC_DLDFLAGS_ARGS
-#else
-                     CC_DLDFLAGS_ARGS, files, libs
-#endif
-                     );
+                     files, libs, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
