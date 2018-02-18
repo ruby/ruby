@@ -234,6 +234,13 @@ class TestThread < Test::Unit::TestCase
       t = Thread.new {}
       assert_same t, t.join(limit), "limit=#{limit.inspect}"
     end
+    t = Thread.new { sleep }
+    [ -1, -0.1, RbConfig::LIMITS['FIXNUM_MIN'], RbConfig::LIMITS['INT64_MIN'],
+      -Float::INFINITY
+    ].each do |limit|
+      assert_nil t.join(limit), "limit=#{limit.inspect}"
+    end
+    t.kill
   end
 
   def test_kill_main_thread
