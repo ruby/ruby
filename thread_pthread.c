@@ -894,15 +894,13 @@ thread_cache_reset(void)
 static rb_thread_t *
 register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
 {
-    struct timespec end;
+    struct timespec end = { 60, 0 };
     struct cached_thread_entry entry;
 
     rb_native_cond_initialize(&entry.cond, RB_CONDATTR_CLOCK_MONOTONIC);
     entry.th = NULL;
     entry.thread_id = thread_self_id;
-
-    getclockofday(&end);
-    end.tv_sec += 60;
+    end = native_cond_timeout(&entry.cond, end);
 
     rb_native_mutex_lock(&thread_cache_lock);
     {
