@@ -24,7 +24,7 @@ end
 MINIRUBY = <%=miniruby%>
 SCRIPT_ARGS = <%=script_args%>
 EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
-	   --make-flags='MINIRUBY=$(MINIRUBY)'
+	   --make-flags="MINIRUBY='$(MINIRUBY)'"
 
 all: exts gems
 exts:
