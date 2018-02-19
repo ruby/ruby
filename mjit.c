@@ -574,7 +574,7 @@ static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL}
 static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
 
 #define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
-/* Status of the the precompiled header creation.  The status is
+/* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
