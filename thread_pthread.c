@@ -1763,18 +1763,20 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
 {
     pthread_attr_t attr;
     pthread_t worker_pid;
+    int ret = FALSE;
 
     pthread_atfork(NULL, NULL, child_hook);
-    if (pthread_attr_init(&attr) == 0
-        /* jit_worker thread is not to be joined */
-        && pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) == 0
+
+    if (pthread_attr_init(&attr) != 0) return ret;
+
+    /* jit_worker thread is not to be joined */
+    if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) == 0
         && pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) == 0
         && pthread_create(&worker_pid, &attr, mjit_worker, (void *)worker_func) == 0) {
-        return TRUE;
+        ret = TRUE;
     }
-    else {
-        return FALSE;
-    }
+    pthread_attr_destroy(&attr);
+    return ret;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
