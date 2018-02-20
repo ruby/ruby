@@ -1134,6 +1134,19 @@ rb_random_bytes(VALUE obj, long n)
     return genrand_bytes(rnd, n);
 }
 
+/*
+ * call-seq: Random.bytes(size) -> a_string
+ *
+ * Returns a random binary string.  The argument size specified the length of
+ * the result string.
+ */
+static VALUE
+random_s_bytes(VALUE obj, VALUE len)
+{
+    rb_random_t *rnd = rand_start(&default_rand);
+    return genrand_bytes(rnd, NUM2LONG(rb_to_int(len)));
+}
+
 static VALUE
 range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 {
@@ -1636,6 +1649,7 @@ InitVM_Random(void)
 
     rb_define_singleton_method(rb_cRandom, "srand", rb_f_srand, -1);
     rb_define_singleton_method(rb_cRandom, "rand", random_s_rand, -1);
+    rb_define_singleton_method(rb_cRandom, "bytes", random_s_bytes, 1);
     rb_define_singleton_method(rb_cRandom, "new_seed", random_seed, 0);
     rb_define_singleton_method(rb_cRandom, "urandom", random_raw_seed, 1);
     rb_define_private_method(CLASS_OF(rb_cRandom), "state", random_s_state, 0);

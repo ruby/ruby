@@ -34,6 +34,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Proc#call doesn't change $SAFE any more. [Feature #14250]
 
+* Random
+
+  * New methods:
+
+    * added Random.bytes. [Feature #4938]
+
 === Stdlib updates (outstanding ones only)
 
 * Matrix
