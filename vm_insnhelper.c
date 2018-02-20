@@ -14,8 +14,6 @@
 #include <math.h>
 #include "constant.h"
 #include "internal.h"
-#include "probes.h"
-#include "probes_helper.h"
 #include "ruby/config.h"
 #include "debug_counter.h"
 
