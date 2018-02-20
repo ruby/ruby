@@ -1227,8 +1227,11 @@ system_tmpdir(void)
     WCHAR tmppath[_MAX_PATH];
     UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
     if (len) {
-        tmpdir = rb_w32_wstr_to_mbstr(CP_UTF8, tmppath, -1, NULL);
-        return get_string(tmpdir);
+        int blen = WideCharToMultiByte(CP_UTF8, 0, tmppath, len, NULL, 0, NULL, NULL);
+        tmpdir= xmalloc(blen + 1);
+        WideCharToMultiByte(CP_UTF8, 0, tmppath, len, tmpdir, blen, NULL, NULL);
+        tmpdir[blen] = '\0';
+        return tmpdir;
     }
 #elif defined _CS_DARWIN_USER_TEMP_DIR
     #ifndef MAXPATHLEN
