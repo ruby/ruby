@@ -747,8 +747,8 @@ rb_num2ll_inline(VALUE x)
 double rb_num2dbl(VALUE);
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
 
-VALUE rb_uint2big(VALUE);
-VALUE rb_int2big(SIGNED_VALUE);
+VALUE rb_uint2big(uintptr_t);
+VALUE rb_int2big(intptr_t);
 
 VALUE rb_newobj(void);
 VALUE rb_newobj_of(VALUE, VALUE);
