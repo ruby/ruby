@@ -827,10 +827,14 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     in_jit = TRUE;
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
 
-    verbose(2, "start compile: %s@%s:%d -> %s", RSTRING_PTR(unit->iseq->body->location.label),
-            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
-    fprintf(f, "/* %s@%s:%d */\n\n", RSTRING_PTR(unit->iseq->body->location.label),
-            RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno));
+    {
+        VALUE s = rb_iseq_path(unit->iseq);
+        const char *label = RSTRING_PTR(unit->iseq->body->location.label);
+        const char *path = RSTRING_PTR(s);
+        int lineno = FIX2INT(unit->iseq->body->location.first_lineno);
+        verbose(2, "start compile: %s@%s:%d -> %s", label, path, lineno, c_file);
+        fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
+    }
     success = mjit_compile(f, unit->iseq->body, funcname);
 
     /* release blocking mjit_gc_start_hook */
