@@ -647,7 +647,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     const char *libs[] = {
 #ifdef _WIN32
 # ifdef _MSC_VER
-        LIBRUBYARG_SHARED,
+        MJIT_LIBS
         "-link",
         libruby_installed,
         libruby_build,
@@ -655,8 +655,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
         /* Look for ruby.dll.a in build and install directories. */
         libruby_installed,
         libruby_build,
-        /* Link to ruby.dll.a, because Windows DLLs don't allow unresolved symbols. */
-        LIBRUBYARG_SHARED,
+        MJIT_LIBS
         "-lmsvcrt",
         "-lgcc",
 # endif
