@@ -1010,7 +1010,6 @@ s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
 <<KEEP
-XCFLAGS = $(XCFLAGS) $(MJIT_CPPFLAGS)
 
 miniruby: miniruby$(EXEEXT)
 
@@ -1258,6 +1257,8 @@ mjit_config.h:
 	@echo making <<$@
 #ifndef RUBY_MJIT_CONFIG_H
 #define RUBY_MJIT_CONFIG_H 1
+
+#define MJIT_HEADER_INSTALL_DIR "$(MJIT_HEADER_INSTALL_DIR)"
 <<KEEP
 	@
 	@(set sep=#define MJIT_CC_COMMON ) & \
@@ -1284,5 +1285,10 @@ mjit_config.h:
 	for %I in ($(DLDFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_DLDFLAGS */>> $@
 	@
+	@(set sep=#define MJIT_LIBS ) & \
+	for %I in ($(LIBRUBYARG_SHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	@echo /* MJIT_LIBS */>> $@
+	@
+	@echo.>> $@
 	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
 	@$(Q:@=: :) type $@
