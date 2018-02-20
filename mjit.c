@@ -1268,6 +1268,9 @@ check_tmpdir(const char *dir)
 
     if (!dir) return FALSE;
     if (stat(dir, &st)) return FALSE;
+#ifndef S_ISDIR
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
     if (!S_ISDIR(st.st_mode)) return FALSE;
 #ifndef _WIN32
 # ifndef S_IWOTH
@@ -1280,8 +1283,9 @@ check_tmpdir(const char *dir)
         return FALSE;
 # endif
     }
+    if (access(dir, W_OK)) return FALSE;
 #endif
-    return access(dir, W_OK) == 0;
+    return TRUE;
 }
 
 static char *
