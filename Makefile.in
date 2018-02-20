@@ -544,33 +544,22 @@ un-runnable:
 mjit_config.h:
 	$(ECHO) making $@
 	@{ \
+	quote() { \
+	    printf "#define $$1"; shift; \
+	    $${1+printf ' "%s"'$$sep "$$@"}; \
+	    echo; \
+	}; \
 	test "$(Q)" = @ || set -x; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
-	\
-	printf '#define MJIT_CC_COMMON ' && \
-	if test -n "$(CC)"; then printf ' "%s",' $(CC); fi && \
 	echo; \
-	\
-	printf '#define MJIT_CFLAGS ' && \
-	printf ' "%s",' -w $(ARCH_FLAG) && \
+	sep=,; \
+	quote "MJIT_CC_COMMON  " $(CC); \
+	quote "MJIT_CFLAGS     " -w $(ARCH_FLAG); \
+	quote "MJIT_OPTFLAGS   " $(optflags); \
+	quote "MJIT_DEBUGFLAGS " $(debugflags); \
+	quote "MJIT_LDSHARED   " @LDSHARED@; \
+	quote "MJIT_DLDFLAGS   " @DLDFLAGS@; \
 	echo; \
-	\
-	printf '#define MJIT_OPTFLAGS ' && \
-	if test -n "$(optflags)"; then printf ' "%s",' $(optflags); fi && \
-	echo; \
-	\
-	printf '#define MJIT_DEBUGFLAGS ' && \
-	if test -n "$(debugflags)"; then printf ' "%s",' $(debugflags); fi && \
-	echo; \
-	\
-	printf '#define MJIT_LDSHARED ' && \
-	if test -n "@LDSHARED@"; then printf ' "%s",' @LDSHARED@; fi && \
-	echo; \
-	\
-	printf '#define MJIT_DLDFLAGS ' && \
-	if test -n "@DLDFLAGS@"; then printf ' "%s",' @DLDFLAGS@; fi && \
-	echo; \
-	\
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
