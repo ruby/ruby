@@ -17,7 +17,11 @@
 #include "vm_debug.h"
 #include "iseq.h"
 #include "eval_intern.h"
+#ifndef MJIT_HEADER
 #include "probes.h"
+#else
+#include "probes.dmyh"
+#endif
 #include "probes_helper.h"
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);

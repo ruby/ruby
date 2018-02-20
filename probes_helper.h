@@ -2,7 +2,6 @@
 #define RUBY_PROBES_HELPER_H
 
 #include "ruby/ruby.h"
-#include "probes.h"
 
 struct ruby_dtrace_method_hook_args {
     const char *classname;

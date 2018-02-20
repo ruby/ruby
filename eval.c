@@ -18,6 +18,7 @@
 #include "ruby/vm.h"
 #include "vm_core.h"
 #include "mjit.h"
+#include "probes.h"
 #include "probes_helper.h"
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
