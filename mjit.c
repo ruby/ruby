@@ -1228,16 +1228,15 @@ UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 #endif
 
 static char *
-system_tmpdir(void)
+system_default_tmpdir(void)
 {
-    char *tmpdir;
     /* c.f. ext/etc/etc.c:etc_systmpdir() */
 #ifdef _WIN32
     WCHAR tmppath[_MAX_PATH];
     UINT len = rb_w32_system_tmpdir(tmppath, numberof(tmppath));
     if (len) {
         int blen = WideCharToMultiByte(CP_UTF8, 0, tmppath, len, NULL, 0, NULL, NULL);
-        tmpdir= xmalloc(blen + 1);
+        char *tmpdir = xmalloc(blen + 1);
         WideCharToMultiByte(CP_UTF8, 0, tmppath, len, tmpdir, blen, NULL, NULL);
         tmpdir[blen] = '\0';
         return tmpdir;
@@ -1249,7 +1248,7 @@ system_tmpdir(void)
     char path[MAXPATHLEN];
     size_t len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
     if (len > 0) {
-        tmpdir = xmalloc(len);
+        char *tmpdir = xmalloc(len);
         if (len > sizeof(path)) {
             confstr(_CS_DARWIN_USER_TEMP_DIR, tmpdir, len);
         }
@@ -1259,11 +1258,44 @@ system_tmpdir(void)
         return tmpdir;
     }
 #endif
-    if (!(tmpdir = getenv("TMPDIR")) &&
-        !(tmpdir = getenv("TMP"))) {
-        return get_string("/tmp");
+    return 0;
+}
+
+static int
+check_tmpdir(const char *dir)
+{
+    struct stat st;
+
+    if (!dir) return FALSE;
+    if (stat(dir, &st)) return FALSE;
+    if (!S_ISDIR(st.st_mode)) return FALSE;
+#ifndef _WIN32
+# ifndef S_IWOTH
+#   define S_IWOTH 002
+# endif
+    if (st.st_mode & S_IWOTH) {
+# ifdef S_ISVTX
+        if (!(st.st_mode & S_ISVTX)) return FALSE;
+# else
+        return FALSE;
+# endif
     }
-    return get_string(tmpdir);
+#endif
+    return access(dir, W_OK) == 0;
+}
+
+static char *
+system_tmpdir(void)
+{
+    char *tmpdir;
+# define RETURN_ENV(name) \
+    if (check_tmpdir(tmpdir = getenv(name))) return get_string(tmpdir)
+    RETURN_ENV("TMPDIR");
+    RETURN_ENV("TMP");
+    tmpdir = system_default_tmpdir();
+    if (check_tmpdir(tmpdir)) return tmpdir;
+    return get_string("/tmp");
+# undef RETURN_ENV
 }
 
 /* Default permitted number of units with a JIT code kept in
@@ -1298,6 +1330,7 @@ mjit_init(struct mjit_options *opts)
     cc_path = CC_PATH;
 
     tmp_dir = system_tmpdir();
+    verbose(2, "MJIT: tmp_dir is %s", tmp_dir);
 
     init_header_filename();
     pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
