@@ -238,10 +238,10 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define RB_LONG2FIX(i) RB_INT2FIX(i)
 #define LONG2FIX(i) RB_INT2FIX(i)
 #define rb_fix_new(v) RB_INT2FIX(v)
-VALUE rb_int2inum(SIGNED_VALUE);
+VALUE rb_int2inum(intptr_t);
 
 #define rb_int_new(v) rb_int2inum(v)
-VALUE rb_uint2inum(VALUE);
+VALUE rb_uint2inum(uintptr_t);
 
 #define rb_uint_new(v) rb_uint2inum(v)
 
