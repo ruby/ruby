@@ -560,7 +560,7 @@ static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 #if defined __GNUC__ && !defined __clang__
 #define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
-    "-pipe", "-nostartfiles", "-nodefaultlibs", "-nostdlib",
+    "-pipe",
 #else
 #define GCC_PIC_FLAGS /* empty */
 #endif
@@ -571,7 +571,16 @@ static const char *const CC_COMMON_ARGS[] = {
 };
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {MJIT_DLDFLAGS NULL};
+static const char *const CC_DLDFLAGS_ARGS[] = {
+    MJIT_DLDFLAGS
+#if defined __GNUC__ && !defined __clang__
+    "-nostartfiles",
+# ifndef _WIN32
+    "-nodefaultlibs", "-nostdlib",
+# endif
+#endif
+    NULL
+};
 
 #define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 /* Status of the precompiled header creation.  The status is
