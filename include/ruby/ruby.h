@@ -1763,15 +1763,19 @@ VALUE rb_check_symbol(volatile VALUE *namep);
     (((argc) <= (vargc)) ? (argc) : \
      (rb_fatal("argc(%d) exceeds actual arguments(%d)", \
 	       argc, vargc), 0))
+# define rb_varargs_argc_valid_p(argc, vargc) \
+    ((argc) == 0 ? (vargc) <= 1 : /* [ruby-core:85266] [Bug #14425] */ \
+     (argc) == (vargc))
 # if defined(HAVE_BUILTIN___BUILTIN_CHOOSE_EXPR_CONSTANT_P)
 #   if HAVE_ATTRIBUTE_ERRORFUNC
 ERRORFUNC((" argument length doesn't match"), int rb_varargs_bad_length(int,int));
 #   else
-#     define rb_varargs_bad_length(argc, vargc) ((argc)/((argc) == (vargc)))
+#     define rb_varargs_bad_length(argc, vargc) \
+	((argc)/rb_varargs_argc_valid_p(argc, vargc))
 #   endif
 #   define rb_varargs_argc_check(argc, vargc) \
     __builtin_choose_expr(__builtin_constant_p(argc), \
-	(((argc) == (vargc)) ? (argc) : \
+	(rb_varargs_argc_valid_p(argc, vargc) ? (argc) : \
 	 rb_varargs_bad_length(argc, vargc)), \
 	rb_varargs_argc_check_runtime(argc, vargc))
 # else
