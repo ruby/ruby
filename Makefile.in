@@ -546,7 +546,7 @@ mjit_config.h:
 	@{ \
 	quote() { \
 	    printf "#define $$1"; shift; \
-	    $${1+printf ' "%s"'$$sep "$$@"}; \
+	    printf ''$${1+' "%s"'$$sep} "$$@"; \
 	    echo; \
 	}; \
 	test "$(Q)" = @ || set -x; \
