@@ -239,10 +239,10 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/dbm
 [ext/etc]
-  _unmaintained_
+  Ruby core team
   https://github.com/ruby/etc
 [ext/fcntl]
-  _unmaintained_
+  Ruby core team
   https://github.com/ruby/fcntl
 [ext/fiddle]
   Aaron Patterson (tenderlove)
@@ -272,7 +272,7 @@ Zachary Scott (zzak)
   _unmaintained_
   https://github.com/ruby/strscan
 [ext/zlib]
-  _unmaintained_
+  NARUSE, Yui (naruse)
   https://github.com/ruby/zlib
 
 == Bundled gems upstream repositories
