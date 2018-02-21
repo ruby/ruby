@@ -147,6 +147,27 @@ rb_class_detach_module_subclasses(VALUE klass)
     rb_class_foreach_subclass(klass, class_detach_module_subclasses, Qnil);
 }
 
+static VALUE
+class_proc_call(VALUE first_arg, VALUE klass, int argc, const VALUE *argv, VALUE passed_proc)
+{
+    return rb_funcallv(klass, rb_intern("new"), argc, argv);
+}
+
+/*
+ *  call-seq:
+ *     klass.to_proc -> Proc
+ *
+ *  Creates a proc that will create class instances with arguments:
+ *
+ *     [0, 1, 2].map(&Array) #=> [[], [nil], [nil, nil]]
+ */
+static VALUE
+rb_class_to_proc(VALUE klass)
+{
+    return rb_func_proc_new(class_proc_call, klass);
+}
+
+
 /**
  * Allocates a struct RClass for a new class.
  *
@@ -560,6 +581,8 @@ Init_class_hierarchy(void)
     RBASIC_SET_CLASS(rb_cModule, rb_cClass);
     RBASIC_SET_CLASS(rb_cObject, rb_cClass);
     RBASIC_SET_CLASS(rb_cBasicObject, rb_cClass);
+
+    rb_define_method(rb_cClass, "to_proc", rb_class_to_proc, 0);
 }
 
 

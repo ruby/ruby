@@ -105,6 +105,21 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_to_proc
+    c = Class.new do
+      attr_reader :value
+
+      def initialize(value)
+        @value = value
+      end
+    end
+
+    assert_equal(1, c.to_proc.call(1).value)
+    assert_equal(2, c.to_proc.call(2).value)
+    assert_equal([1, 2], c.to_proc.call([1, 2]).value)
+    assert_raise(ArgumentError) { c.to_proc.call(1, 2) }
+  end
+
   def test_extend_object
     c = Class.new
     assert_raise(TypeError) do
