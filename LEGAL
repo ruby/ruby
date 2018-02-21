@@ -143,9 +143,8 @@ Oniguruma LICENSE
  */
 
 https://github.com/k-takata/Onigmo/
-http://www.geocities.jp/kosako3/oniguruma/
-http://www.ruby-lang.org/cgi-bin/cvsweb.cgi/oniguruma/
-http://www.freebsd.org/cgi/cvsweb.cgi/ports/devel/oniguruma/
+https://github.com/kkos/oniguruma
+https://svnweb.freebsd.org/ports/head/devel/oniguruma/
 
    When this software is partly used or it is distributed with Ruby,
    this of Ruby follows the license of Ruby.
@@ -362,6 +361,8 @@ random.c
     Any feedback is very welcome.
     http://www.math.keio.ac.jp/matumoto/emt.html
     email: matumoto@math.keio.ac.jp
+
+  The Wayback Machine url: http://web.archive.org/web/19990429082237/http://www.math.keio.ac.jp/matumoto/emt.html
 
 vm_dump.c:procstat_vm
 
@@ -755,6 +756,8 @@ ext/win32ole/win32ole.c:
     You may distribute under the terms of either the GNU General Public
     License or the Artistic License, as specified in the README file
     of the Perl distribution.
+
+  The Wayback Machine url: http://web.archive.org/web/19970607104352/http://www.activeware.com:80/
 
 lib/rdoc/generator/template/darkfish/css/fonts.css:
 
