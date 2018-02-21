@@ -88,10 +88,10 @@ class BenchmarkDriver
         # ex) ruby-a::/path/to/ruby-a
         label = $1.strip
         path = $2
-        version = `#{path} -v`.chomp
+        version = `#{path} --version`.chomp
       else
         path = e
-        version = label = `#{path} -v`.chomp
+        version = label = `#{path} --version`.chomp
       end
       [path, label, version]
     }.compact
