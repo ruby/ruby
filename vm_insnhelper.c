@@ -10,7 +10,9 @@
 
 /* finish iseq array */
 #include "insns.inc"
+#ifndef MJIT_HEADER
 #include "insns_info.inc"
+#endif
 #include <math.h>
 #include "constant.h"
 #include "internal.h"
