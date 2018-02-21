@@ -20,6 +20,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Binding
+
+  * added Binding#source_location.  [Feature #14230]
+    This method returns the source location of binding, a 2-element array of `__FILE__` and `__LINE__`.  Traditionally, the same information could be retrieved by `eval("[__FILE__, __LINE__]", binding)`, but we are planning to change this behavior so that `Kernel#eval` ignores binding's source location [Bug #4352].  So, users should use this newly-introduced method instead of `Kernel#eval`.
+
 * Dir
 
   * New methods:
