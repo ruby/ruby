@@ -340,7 +340,7 @@ End
 Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
 Asia/Tokyo  Sat May  5 15:00:00 1951 UTC = Sun May  6 01:00:00 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Sat Sep  8 13:59:59 1951 UTC = Sat Sep  8 23:59:59 1951 JDT isdst=1 gmtoff=36000
-Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sun Sep  9 00:00:00 1951 JST isdst=0 gmtoff=32400
+Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sat Sep  8 23:00:00 1951 JST isdst=0 gmtoff=32400
 End
 Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 gmtoff=32400
 Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
