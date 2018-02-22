@@ -1506,7 +1506,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const struct rb_block *base_block;
     unsigned int dump = opt->dump & dump_exit_bits;
 
-#ifndef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
+#ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
     opt->mjit.on = 1;
 #endif
 
