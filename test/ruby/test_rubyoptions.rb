@@ -3,6 +3,7 @@ require 'test/unit'
 
 require 'tmpdir'
 require 'tempfile'
+require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
   def write_file(filename, content)
@@ -171,14 +172,16 @@ class TestRubyOptions < Test::Unit::TestCase
       end
       assert_equal([], e)
     end
-    assert_in_out_err(%w(--version --jit)) do |r, e|
-      assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-      if RubyVM::MJIT.enabled?
-        assert_equal(RUBY_DESCRIPTION, r[0])
-      else
-        assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+    if JITSupport.supported?
+      assert_in_out_err(%w(--version --jit)) do |r, e|
+        assert_match(VERSION_PATTERN_WITH_JIT, r[0])
+        if RubyVM::MJIT.enabled?
+          assert_equal(RUBY_DESCRIPTION, r[0])
+        else
+          assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+        end
+        assert_equal([], e)
       end
-      assert_equal([], e)
     end
   end
 
