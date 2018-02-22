@@ -1522,6 +1522,7 @@ class TestProcess < Test::Unit::TestCase
   rescue NotImplementedError
   else
     assert_kind_of(Integer, max)
+    assert_predicate(max, :positive?)
     skip "not limited to NGROUPS_MAX" if /darwin/ =~ RUBY_PLATFORM
     gs = Process.groups
     assert_operator(gs.size, :<=, max)
