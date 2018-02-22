@@ -2159,14 +2159,12 @@ command_args	:   {
 			    lookahead = 1;
 			}
 			if (lookahead) CMDARG_POP();
-			$<val>$ = p->cmdarg_stack;
 			CMDARG_PUSH(1);
 			if (lookahead) CMDARG_PUSH(0);
 		    }
 		  call_args
 		    {
-			/* CMDARG_POP() */
-			CMDARG_SET($<val>1);
+			CMDARG_POP();
 			$$ = $2;
 		    }
 		;
@@ -2287,18 +2285,12 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: paren!(0) %*/
 		    }
-		| tLPAREN_ARG
+		| tLPAREN_ARG stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
 		    {
-			$<val>1 = p->cmdarg_stack;
-			CMDARG_SET(0);
-		    }
-		  stmt {SET_LEX_STATE(EXPR_ENDARG);} rparen
-		    {
-			CMDARG_SET($<val>1);
 		    /*%%%*/
-			$$ = $3;
+			$$ = $2;
 		    /*% %*/
-		    /*% ripper: paren!($3) %*/
+		    /*% ripper: paren!($2) %*/
 		    }
 		| tLPAREN compstmt ')'
 		    {
@@ -3034,13 +3026,11 @@ lambda		:   {
 		    }
 		  f_larglist
 		    {
-			$<val>$ = p->cmdarg_stack;
-			CMDARG_SET(0);
+			CMDARG_PUSH(0);
 		    }
 		  lambda_body
 		    {
 			p->lex.lpar_beg = $<num>2;
-			CMDARG_SET($<val>4);
 			CMDARG_POP();
 		    /*%%%*/
 			$$ = NEW_LAMBDA($3, $5, &@$);
@@ -3217,14 +3207,12 @@ brace_block	: '{' brace_body '}'
 		;
 
 brace_body	: {$<vars>$ = dyna_push(p);}
-		  {$<val>$ = p->cmdarg_stack >> 1; CMDARG_SET(0);}
 		  opt_block_param compstmt
 		    {
 		    /*%%%*/
-			$$ = NEW_ITER($3, $4, &@$);
+			$$ = NEW_ITER($2, $3, &@$);
 		    /*% %*/
-		    /*% ripper: brace_block!(escape_Qundef($3), $4) %*/
-			CMDARG_SET($<val>2);
+		    /*% ripper: brace_block!(escape_Qundef($2), $3) %*/
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -3649,7 +3637,7 @@ string_dvar	: tGVAR
 
 symbol		: tSYMBEG sym
 		    {
-			SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+			SET_LEX_STATE(EXPR_END);
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -3665,7 +3653,7 @@ sym		: fname
 
 dsym		: tSYMBEG xstring_contents tSTRING_END
 		    {
-			SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+			SET_LEX_STATE(EXPR_END);
 		    /*%%%*/
 			$$ = dsym_node(p, $2, &@$);
 		    /*% %*/
@@ -5792,7 +5780,7 @@ parser_string_term(struct parser_params *p, int func)
     if (func & STR_FUNC_REGEXP) {
 	set_yylval_num(regx_options(p));
 	dispatch_scan_event(p, tREGEXP_END);
-	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+	SET_LEX_STATE(EXPR_END);
 	return tREGEXP_END;
     }
     if ((func & STR_FUNC_LABEL) && IS_LABEL_SUFFIX(0)) {
@@ -5800,7 +5788,7 @@ parser_string_term(struct parser_params *p, int func)
 	SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
 	return tLABEL_END;
     }
-    SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+    SET_LEX_STATE(EXPR_END);
     return tSTRING_END;
 }
 
@@ -5816,7 +5804,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 
     if (func & STR_FUNC_TERM) {
 	if (func & STR_FUNC_QWORDS) nextc(p); /* delayed term */
-	SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+	SET_LEX_STATE(EXPR_END);
 	p->lex.strterm = 0;
 	return func & STR_FUNC_REGEXP ? tREGEXP_END : tSTRING_END;
     }
@@ -6163,7 +6151,7 @@ set_number_literal(struct parser_params *p, VALUE v,
     }
     set_yylval_literal(v);
     add_mark_object(p, v);
-    SET_LEX_STATE(EXPR_END|EXPR_ENDARG);
+    SET_LEX_STATE(EXPR_END);
     return type;
 }
 
@@ -7433,8 +7421,6 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
 		}
 		if (COND_P()) return keyword_do_cond;
 		if (CMDARG_P() && !IS_lex_state_for(state, EXPR_CMDARG))
-		    return keyword_do_block;
-		if (IS_lex_state_for(state, (EXPR_BEG | EXPR_ENDARG)))
 		    return keyword_do_block;
 		return keyword_do;
 	    }
