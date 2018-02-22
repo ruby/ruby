@@ -32,7 +32,11 @@ class RubyVM::Dumper
   rescue Errno::ENOENT
     raise "don't know how to generate #{path}"
   else
-    erb = ERB.new src, nil, '%-'
+    if RUBY_VERSION >= '2.6'
+      erb = ERB.new(src, trim_mode: '%-')
+    else
+      erb = ERB.new(src, nil, '%-')
+    end
     erb.filename = path.realpath.to_path
     return erb
   end
