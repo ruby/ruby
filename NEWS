@@ -38,8 +38,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * New methods:
 
-    * added Dir#each_child and Dir#children instance methods.
-      [Feature #13969]
+    * added Dir#each_child and Dir#children instance methods. [Feature #13969]
 
 * Kernel
 
