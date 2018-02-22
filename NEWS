@@ -35,6 +35,18 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Kernel.#system takes :exception option to raise an exception on failure. [Feature #14386]
 
+* KeyError
+
+  * KeyError#initialize accepts :receiver and :key options to set receiver and key in Ruby code. [Feature #14313]
+
+* NameError
+
+  * NameError#initialize accepts :receiver option to set receiver in Ruby code. [Feature #14313]
+
+* NoMethodError
+
+  * NoMethodError#initialize accepts :receiver option to set receiver in Ruby code. [Feature #14313]
+
 * Proc
 
   * Proc#call doesn't change $SAFE any more. [Feature #14250]
