@@ -34,7 +34,8 @@ unchanged = color.pass("unchanged")
 updated = color.fail("updated")
 
 result = templates.map do |template|
-  if RUBY_VERSION >= '2.6'
+  match = ERB.version.match(/\Aerb\.rb \[(?<version>[^ ]+) /)
+  if match && match[:version] >= '2.2.0' # Ruby 2.6+
     erb = ERB.new(File.read(template), trim_mode: '%-')
   else
     erb = ERB.new(File.read(template), nil, '%-')
