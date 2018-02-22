@@ -99,10 +99,10 @@ class TestRubyOptions < Test::Unit::TestCase
 
   VERSION_PATTERN_WITH_JIT =
     case RUBY_ENGINE
-    when 'jruby'
-      VERSIN_PATTERN
-    else
+    when 'ruby'
       /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+JIT \[#{q[RUBY_PLATFORM]}\]$/
+    else
+      VERSION_PATTERN
     end
   private_constant :VERSION_PATTERN_WITH_JIT
 
