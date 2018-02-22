@@ -2847,9 +2847,11 @@ version.$(OBJEXT): {$(VPATH)}config.h
 version.$(OBJEXT): {$(VPATH)}defines.h
 version.$(OBJEXT): {$(VPATH)}intern.h
 version.$(OBJEXT): {$(VPATH)}missing.h
+version.$(OBJEXT): {$(VPATH)}mjit.h
 version.$(OBJEXT): {$(VPATH)}st.h
 version.$(OBJEXT): {$(VPATH)}subst.h
 version.$(OBJEXT): {$(VPATH)}version.c
+version.$(OBJEXT): {$(VPATH)}vm_core.h
 vm.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 vm.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm.$(OBJEXT): $(CCAN_DIR)/list/list.h
