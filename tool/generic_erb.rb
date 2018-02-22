@@ -34,7 +34,11 @@ unchanged = color.pass("unchanged")
 updated = color.fail("updated")
 
 result = templates.map do |template|
-  erb = ERB.new(File.read(template), nil, '%-')
+  if RUBY_VERSION >= '2.6'
+    erb = ERB.new(File.read(template), trim_mode: '%-')
+  else
+    erb = ERB.new(File.read(template), nil, '%-')
+  end
   erb.filename = template
   source ? erb.src : proc{erb.result(binding)}.call
 end

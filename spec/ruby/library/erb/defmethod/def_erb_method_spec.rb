@@ -50,7 +50,11 @@ END
     MY_INPUT4_FOR_ERB = input
     class MyClass4ForErb
       extend ERB::DefMethod
-      erb = ERB.new(MY_INPUT4_FOR_ERB, nil, '<>')
+      if RUBY_VERSION >= '2.6'
+        erb = ERB.new(MY_INPUT4_FOR_ERB, trim_mode: '<>')
+      else
+        erb = ERB.new(MY_INPUT4_FOR_ERB, nil, '<>')
+      end
       def_erb_method('render()', erb)
       def initialize(items)
         @items = items

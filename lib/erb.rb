@@ -115,7 +115,7 @@ require "cgi/util"
 #     James Edward Gray II
 #   }.gsub(/^  /, '')
 #
-#   message = ERB.new(template, 0, "%<>")
+#   message = ERB.new(template, trim_mode: "%<>")
 #
 #   # Set up template data.
 #   to = "Community Spokesman <spokesman@ruby_community.org>"
@@ -263,7 +263,7 @@ class ERB
 
   # Returns revision information for the erb.rb module.
   def self.version
-    "erb.rb [2.1.0 #{ERB::Revision.split[1]}]"
+    "erb.rb [2.2.0 #{ERB::Revision.split[1]}]"
   end
 end
 
@@ -777,11 +777,11 @@ class ERB
   #    def build
   #      b = binding
   #      # create and run templates, filling member data variables
-  #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), 0, "", "@product").result b
+  #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@product").result b
   #        <%= PRODUCT[:name] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRODUCT
-  #      ERB.new(<<-'END_PRICE'.gsub(/^\s+/, ""), 0, "", "@price").result b
+  #      ERB.new(<<-'END_PRICE'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@price").result b
   #        <%= PRODUCT[:name] %> -- <%= PRODUCT[:cost] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRICE
@@ -802,7 +802,22 @@ class ERB
   #  Chicken Fried Steak -- 9.95
   #  A well messages pattie, breaded and fried.
   #
-  def initialize(str, safe_level=nil, trim_mode=nil, eoutvar='_erbout')
+  def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
+    # Complex initializer for $SAFE deprecation at Feature #14256, which should be removed at Ruby 2.7.
+    if safe_level != NOT_GIVEN
+      warn 'warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.'
+    else
+      safe_level = nil
+    end
+    if legacy_trim_mode != NOT_GIVEN
+      warn 'warning: Passing trim_mode with the 3rd argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, trim_mode: ...) instead.'
+      trim_mode = legacy_trim_mode
+    end
+    if legacy_eoutvar != NOT_GIVEN
+      warn 'warning: Passing eoutvar with the 4th argument of ERB.new is deprecated. Use keyword argument like ERB.new(str, eoutvar: ...) instead.'
+      eoutvar = legacy_eoutvar
+    end
+
     @safe_level = safe_level
     compiler = make_compiler(trim_mode)
     set_eoutvar(compiler, eoutvar)
@@ -810,6 +825,8 @@ class ERB
     @filename = nil
     @lineno = 0
   end
+  NOT_GIVEN = Object.new
+  private_constant :NOT_GIVEN
 
   ##
   # Creates a new compiler for ERB.  See ERB::Compiler.new for details

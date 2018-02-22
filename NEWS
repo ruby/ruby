@@ -69,6 +69,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+* ERB
+
+  * 2nd, 3rd and 4th arguments of ERB.new are deprecated. 2nd argument (safe_level) will be dropped in the future
+    and some of those arguments (trim_mode, eoutvar) are changed to keyword arguments. [Feature #14256]
+
 * Matrix
 
   * New method:
