@@ -42,7 +42,9 @@ class Rational_Test < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_kind_of(Integer, Rational(1,2).hash)
+    h = Rational(1,2).hash
+    assert_kind_of(Integer, h)
+    assert_nothing_raised {h.to_s}
 
     h = {}
     h[Rational(0)] = 0

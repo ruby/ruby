@@ -48,8 +48,12 @@ class Complex_Test < Test::Unit::TestCase
   end
 
   def test_hash
-    assert_kind_of(Integer, Complex(1,2).hash)
-    assert_kind_of(Integer, Complex(1.0,2.0).hash)
+    h = Complex(1,2).hash
+    assert_kind_of(Integer, h)
+    assert_nothing_raised {h.to_s}
+    h = Complex(1.0,2.0).hash
+    assert_kind_of(Integer, h)
+    assert_nothing_raised {h.to_s}
 
     h = {}
     h[Complex(0)] = 0

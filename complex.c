@@ -1250,7 +1250,7 @@ nucomp_hash(VALUE self)
     n = rb_hash(dat->imag);
     h[1] = NUM2LONG(n);
     v = rb_memhash(h, sizeof(h));
-    return LONG2FIX(v);
+    return ST2FIX(v);
 }
 
 /* :nodoc: */
