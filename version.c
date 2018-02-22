@@ -11,6 +11,8 @@
 
 #include "ruby/ruby.h"
 #include "version.h"
+#include "vm_core.h"
+#include "mjit.h"
 #include <stdio.h>
 
 #ifndef EXIT_SUCCESS
@@ -31,6 +33,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION;
+const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH_JIT;
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
@@ -65,6 +68,7 @@ Init_version(void)
     rb_define_global_const("RUBY_REVISION", MKINT(revision));
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints'
+     * This might be overwritten by mjit_init().
      */
     rb_define_global_const("RUBY_DESCRIPTION", MKSTR(description));
     /*
@@ -86,7 +90,12 @@ Init_version(void)
 void
 ruby_show_version(void)
 {
-    PRINT(description);
+    if (mjit_opts.on) {
+        PRINT(description_with_jit);
+    }
+    else {
+        PRINT(description);
+    }
 #ifdef RUBY_LAST_COMMIT_TITLE
     fputs("last_commit=" RUBY_LAST_COMMIT_TITLE, stdout);
 #endif

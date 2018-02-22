@@ -1506,6 +1506,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const struct rb_block *base_block;
     unsigned int dump = opt->dump & dump_exit_bits;
 
+#ifndef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
+    opt->mjit.on = 1;
+#endif
+
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
 	const char *const progname =
 	    (argc > 0 && argv && argv[0] ? argv[0] :
@@ -1538,6 +1542,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
+        mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() is still not called here. */
 	ruby_show_version();
 	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
@@ -1590,9 +1595,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
 
-#ifndef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
     if (opt->mjit.on)
-#endif
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath_safe(). */
         mjit_init(&opt->mjit);
 

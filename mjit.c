@@ -1314,12 +1314,16 @@ system_tmpdir(void)
 /* Minimum value for JIT cache size.  */
 #define MIN_CACHE_SIZE 10
 
+extern const char ruby_description_with_jit[];
+
 /* Initialize MJIT.  Start a thread creating the precompiled header and
    processing ISeqs.  The function should be called first for using MJIT.
    If everything is successfull, MJIT_INIT_P will be TRUE.  */
 void
 mjit_init(struct mjit_options *opts)
 {
+    VALUE rb_description;
+
     mjit_opts = *opts;
     mjit_init_p = TRUE;
 
@@ -1365,6 +1369,11 @@ mjit_init(struct mjit_options *opts)
     if (RCLASS_CONST_TBL(rb_cObject)) {
         rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
     }
+
+    /* Overwrites RUBY_DESCRIPTION constant */
+    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_description = rb_usascii_str_new_static(ruby_description_with_jit, strlen(ruby_description_with_jit));
+    rb_define_global_const("RUBY_DESCRIPTION", rb_obj_freeze(rb_description));
 
     /* Initialize worker thread */
     finish_worker_p = FALSE;

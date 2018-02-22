@@ -96,6 +96,15 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   private_constant :VERSION_PATTERN
 
+  VERSION_PATTERN_WITH_JIT =
+    case RUBY_ENGINE
+    when 'jruby'
+      VERSIN_PATTERN
+    else
+      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+JIT \[#{q[RUBY_PLATFORM]}\]$/
+    end
+  private_constant :VERSION_PATTERN_WITH_JIT
+
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
@@ -155,7 +164,20 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_version
     assert_in_out_err(%w(--version)) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      assert_equal(RUBY_DESCRIPTION, r[0])
+      if RubyVM::MJIT.enabled?
+        assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+      else
+        assert_equal(RUBY_DESCRIPTION, r[0])
+      end
+      assert_equal([], e)
+    end
+    assert_in_out_err(%w(--version --jit)) do |r, e|
+      assert_match(VERSION_PATTERN_WITH_JIT, r[0])
+      if RubyVM::MJIT.enabled?
+        assert_equal(RUBY_DESCRIPTION, r[0])
+      else
+        assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+      end
       assert_equal([], e)
     end
   end
