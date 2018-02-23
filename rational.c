@@ -2748,6 +2748,7 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "inspect", nurat_inspect, 0);
 
     rb_define_private_method(rb_cRational, "marshal_dump", nurat_marshal_dump, 0);
+    /* :nodoc: */
     compat = rb_define_class_under(rb_cRational, "compatible", rb_cObject);
     rb_define_private_method(compat, "marshal_load", nurat_marshal_load, 1);
     rb_marshal_define_compat(rb_cRational, compat, nurat_dumper, nurat_loader);
