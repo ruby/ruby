@@ -1378,6 +1378,16 @@ rand_random(int argc, VALUE *argv, VALUE obj, rb_random_t *rnd)
     return rand_range(obj, rnd, vmax);
 }
 
+/*
+ * call-seq:
+ *   prng.random_number      -> float
+ *   prng.random_number(max) -> number
+ *   prng.rand               -> float
+ *   prng.rand(max)          -> number
+ *
+ * Generates formatted random number from raw random bytes.
+ * See Random#rand.
+ */
 static VALUE
 rand_random_number(int argc, VALUE *argv, VALUE obj)
 {
@@ -1644,6 +1654,8 @@ InitVM_Random(void)
     {
 	/* Direct access to Ruby's Pseudorandom number generator (PRNG). */
 	VALUE rand_default = Init_Random_default();
+	/* The default Pseudorandom number generator.  Used by class
+	 * methods of Random. */
 	rb_define_const(rb_cRandom, "DEFAULT", rand_default);
     }
 
@@ -1656,6 +1668,7 @@ InitVM_Random(void)
     rb_define_private_method(CLASS_OF(rb_cRandom), "left", random_s_left, 0);
 
     {
+	/* Format raw random number as Random does */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(rb_cRandom, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);

@@ -2767,6 +2767,7 @@ core_hash_merge_kwd(int argc, VALUE *argv)
     return hash;
 }
 
+/* Returns true if JIT is enabled */
 static VALUE
 mjit_enabled_p(void)
 {

@@ -2905,6 +2905,11 @@ encoded_dup(VALUE newstr, VALUE str, int encidx)
     return str_encode_associate(newstr, encidx);
 }
 
+/*
+ * Document-class: Encoding::Converter
+ *
+ * Encoding conversion class.
+ */
 static void
 econv_free(void *ptr)
 {

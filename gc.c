@@ -8586,6 +8586,7 @@ wmap_has_key(VALUE self, VALUE key)
     return NIL_P(wmap_aref(self, key)) ? Qfalse : Qtrue;
 }
 
+/* Returns the number of referenced objects */
 static VALUE
 wmap_size(VALUE self)
 {
@@ -9526,6 +9527,13 @@ rb_gcdebug_sentinel(VALUE obj, const char *name)
 #endif /* GC_DEBUG */
 
 #if GC_DEBUG_STRESS_TO_CLASS
+/*
+ *  call-seq:
+ *    GC.add_stress_to_class(class[, ...])
+ *
+ *  Raises NoMemoryError when allocating an instance of the given classes.
+ *
+ */
 static VALUE
 rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
 {
@@ -9538,6 +9546,14 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *    GC.remove_stress_to_class(class[, ...])
+ *
+ *  No longer raises NoMemoryError when allocating an instance of the
+ *  given classes.
+ *
+ */
 static VALUE
 rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 {
@@ -9645,6 +9661,7 @@ Init_GC(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_PLANES")), SIZET2NUM(HEAP_PAGE_BITMAP_PLANES));
     OBJ_FREEZE(gc_constants);
+    /* internal constants */
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
     rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
@@ -9706,9 +9723,9 @@ Init_GC(void)
     rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
 #endif
 
-    /* ::GC::OPTS, which shows GC build options */
     {
 	VALUE opts;
+	/* GC build options */
 	rb_define_const(rb_mGC, "OPTS", opts = rb_ary_new());
 #define OPT(o) if (o) rb_ary_push(opts, rb_fstring_lit(#o))
 	OPT(GC_DEBUG);

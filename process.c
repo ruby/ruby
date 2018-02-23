@@ -394,6 +394,12 @@ parent_redirect_close(int fd)
 #endif
 
 /*
+ * Document-module: Process
+ *
+ * Module to handle processes.
+ */
+
+/*
  *  call-seq:
  *     Process.pid   -> integer
  *
@@ -7974,6 +7980,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
+    /* Placeholder for rusage */
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
     /* An obsolete name of Process::Tms for the backward compatibility */
     rb_define_const(rb_cStruct, "Tms", rb_cProcessTms);
