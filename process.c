@@ -7662,6 +7662,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "waitall", proc_waitall, 0);
     rb_define_module_function(rb_mProcess, "detach", proc_detach, 1);
 
+    /* :nodoc: */
     rb_cWaiter = rb_define_class_under(rb_mProcess, "Waiter", rb_cThread);
     rb_undef_alloc_func(rb_cWaiter);
     rb_undef_method(CLASS_OF(rb_cWaiter), "new");

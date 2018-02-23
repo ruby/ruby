@@ -298,6 +298,7 @@ end_with_asciichar(VALUE str, int c)
 	rb_str_end_with_asciichar(str, c);
 }
 
+/* :nodoc: */
 static VALUE
 warning_write(int argc, VALUE *argv, VALUE buf)
 {
@@ -2411,6 +2412,7 @@ Init_Exception(void)
     rb_define_method(rb_mWarning, "warn", rb_warning_s_warn, 1);
     rb_extend_object(rb_mWarning, rb_mWarning);
 
+    /* :nodoc: */
     rb_cWarningBuffer = rb_define_class_under(rb_mWarning, "buffer", rb_cString);
     rb_define_method(rb_cWarningBuffer, "write", warning_write, -1);
 

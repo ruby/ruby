@@ -8324,6 +8324,7 @@ wmap_final_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     return ST_CONTINUE;
 }
 
+/* :nodoc: */
 static VALUE
 wmap_finalize(VALUE self, VALUE objid)
 {
