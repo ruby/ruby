@@ -7115,6 +7115,7 @@ Init_Bignum(void)
 #ifndef RUBY_INTEGER_UNIFICATION
     rb_cBignum = rb_cInteger;
 #endif
+    /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Bignum", rb_cInteger);
     rb_deprecate_constant(rb_cObject, "Bignum");
 
