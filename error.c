@@ -1652,6 +1652,13 @@ nometh_err_args(VALUE self)
     return rb_attr_get(self, id_args);
 }
 
+/*
+ * call-seq:
+ *   no_method_error.private_call?  -> true or false
+ *
+ * Return true if the caused method was called as private.
+ */
+
 static VALUE
 nometh_err_private_call_p(VALUE self)
 {

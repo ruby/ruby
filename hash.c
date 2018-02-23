@@ -3186,6 +3186,19 @@ hash_proc_call(VALUE key, VALUE hash, int argc, const VALUE *argv, VALUE passed_
     return rb_hash_aref(hash, *argv);
 }
 
+/*
+ * call-seq:
+ *   hash.to_proc -> proc
+ *
+ * Returns a Proc which maps keys to values.
+ *
+ *   h = {a:1, b:2}
+ *   hp = h.to_proc
+ *   hp.call(:a)          #=> 1
+ *   hp.call(:b)          #=> 2
+ *   hp.call(:c)          #=> nil
+ *   [:a, :b, :c].map(&h) #=> [1, 2, nil]
+ */
 static VALUE
 rb_hash_to_proc(VALUE hash)
 {

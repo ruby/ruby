@@ -6069,6 +6069,13 @@ heredoc_dedent(struct parser_params *p, VALUE array)
     return array;
 }
 
+/*
+ *  call-seq:
+ *    Ripper.dedent_string(input, width)   -> string
+ *
+ *  Strips leading +width+ whitespaces from +input+, and returns
+ *  stripped column width.
+ */
 static VALUE
 parser_dedent_string(VALUE self, VALUE input, VALUE width)
 {
@@ -11309,6 +11316,12 @@ ripper_value(VALUE self, VALUE obj)
 }
 #endif
 
+/*
+ *  call-seq:
+ *    Ripper.lex_state_name(integer)   -> string
+ *
+ *  Returns a string representation of lex_state.
+ */
 static VALUE
 ripper_lex_state_name(VALUE self, VALUE state)
 {

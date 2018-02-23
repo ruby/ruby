@@ -12928,10 +12928,14 @@ Init_IO(void)
     rb_cIO = rb_define_class("IO", rb_cObject);
     rb_include_module(rb_cIO, rb_mEnumerable);
 
+    /* exception to wait for reading. see IO.select. */
     rb_mWaitReadable = rb_define_module_under(rb_cIO, "WaitReadable");
+    /* exception to wait for writing. see IO.select. */
     rb_mWaitWritable = rb_define_module_under(rb_cIO, "WaitWritable");
+    /* exception to wait for reading by EAGAIN. see IO.select. */
     rb_eEAGAINWaitReadable = rb_define_class_under(rb_cIO, "EAGAINWaitReadable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitReadable, rb_mWaitReadable);
+    /* exception to wait for writing by EAGAIN. see IO.select. */
     rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
 #if EAGAIN == EWOULDBLOCK
@@ -12942,13 +12946,17 @@ Init_IO(void)
     /* same as IO::EAGAINWaitWritable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else
+    /* exception to wait for reading by EWOULDBLOCK. see IO.select. */
     rb_eEWOULDBLOCKWaitReadable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitReadable, rb_mWaitReadable);
+    /* exception to wait for writing by EWOULDBLOCK. see IO.select. */
     rb_eEWOULDBLOCKWaitWritable = rb_define_class_under(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEWOULDBLOCK);
     rb_include_module(rb_eEWOULDBLOCKWaitWritable, rb_mWaitWritable);
 #endif
+    /* exception to wait for reading by EINPROGRESS. see IO.select. */
     rb_eEINPROGRESSWaitReadable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitReadable", rb_eEINPROGRESS);
     rb_include_module(rb_eEINPROGRESSWaitReadable, rb_mWaitReadable);
+    /* exception to wait for writing by EINPROGRESS. see IO.select. */
     rb_eEINPROGRESSWaitWritable = rb_define_class_under(rb_cIO, "EINPROGRESSWaitWritable", rb_eEINPROGRESS);
     rb_include_module(rb_eEINPROGRESSWaitWritable, rb_mWaitWritable);
 

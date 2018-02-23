@@ -649,6 +649,13 @@ queue_closed_p(VALUE self)
     return FL_TEST_RAW(self, QUEUE_CLOSED) != 0;
 }
 
+/*
+ *  Document-class: ClosedQueueError
+ *
+ *  The exception class which will be raised when pushing into a close
+ *  Queue.  See Queue#close and SizedQueue#close.
+ */
+
 NORETURN(static void raise_closed_queue_error(VALUE self));
 
 static void
@@ -1181,6 +1188,15 @@ rb_szqueue_clear(VALUE self)
     wakeup_all(szqueue_pushq(sq));
     return self;
 }
+
+/*
+ * Document-method: SizedQueue#length
+ * call-seq:
+ *   length
+ *   size
+ *
+ * Returns the length of the queue.
+ */
 
 static VALUE
 rb_szqueue_length(VALUE self)

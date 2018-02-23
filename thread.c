@@ -3182,6 +3182,19 @@ rb_thread_aref(VALUE thread, VALUE key)
     return rb_thread_local_aref(thread, id);
 }
 
+/*
+ *  call-seq:
+ *      thr.fetch(sym)           -> obj
+ *      thr.fetch(sym) { }       -> obj
+ *      thr.fetch(sym, default)  -> obj
+ *
+ *  Returns a fiber-local for the given key. If the key can't be
+ *  found, there are several options: With no other arguments, it will
+ *  raise a <code>KeyError</code> exception; if <i>default</i> is
+ *  given, then that will be returned; if the optional code block is
+ *  specified, then that will be run and its result returned.
+ *  See Thread#[] and Hash#fetch.
+ */
 static VALUE
 rb_thread_fetch(int argc, VALUE *argv, VALUE self)
 {

@@ -2859,6 +2859,26 @@ dir_s_each_child(int argc, VALUE *argv, VALUE io)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     dir.each_child {| filename | block }  -> nil
+ *     dir.each_child                        -> an_enumerator
+ *
+ *  Calls the block once for each entry except for "." and ".." in
+ *  this directory, passing the filename of each entry as a parameter
+ *  to the block.
+ *
+ *  If no block is given, an enumerator is returned instead.
+ *
+ *     d = Dir.new("testdir")
+ *     d.each_child  {|x| puts "Got #{x}" }
+ *
+ *  <em>produces:</em>
+ *
+ *     Got config.h
+ *     Got main.rb
+ *
+ */
 static VALUE
 dir_each_child_m(VALUE dir)
 {
@@ -2866,6 +2886,17 @@ dir_each_child_m(VALUE dir)
     return dir_each_entry(dir, dir_yield, Qnil, TRUE);
 }
 
+/*
+ *  call-seq:
+ *     dir.children  -> array
+ *
+ *  Returns an array containing all of the filenames except for "."
+ *  and ".." in this directory.
+ *
+ *     d = Dir.new("testdir")
+ *     d.children   #=> ["config.h", "main.rb"]
+ *
+ */
 static VALUE
 dir_collect_children(VALUE dir)
 {
