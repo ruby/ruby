@@ -3407,7 +3407,7 @@ rb_Float(VALUE val)
     return rb_convert_type(val, T_FLOAT, "Float", "to_f");
 }
 
-FUNC_MINIMIZED(static VALUE rb_f_float(VALUE obj, VALUE arg)); /*!< \private */
+static VALUE FUNC_MINIMIZED(rb_f_float(VALUE obj, VALUE arg)); /*!< \private */
 
 /*
  *  call-seq:
