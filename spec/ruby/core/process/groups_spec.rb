@@ -53,9 +53,8 @@ describe "Process.groups=" do
 
       platform_is_not :aix do
         it "raises Errno::EPERM" do
-          groups = Process.groups
           lambda {
-            Process.groups = groups
+            Process.groups = [0]
           }.should raise_error(Errno::EPERM)
         end
       end
