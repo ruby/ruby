@@ -5460,6 +5460,7 @@ Init_Numeric(void)
 #ifndef RUBY_INTEGER_UNIFICATION
     rb_cFixnum = rb_cInteger;
 #endif
+    /* An obsolete class, use Integer */
     rb_define_const(rb_cObject, "Fixnum", rb_cInteger);
     rb_deprecate_constant(rb_cObject, "Fixnum");
 

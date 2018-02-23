@@ -7975,7 +7975,8 @@ InitVM_process(void)
 
 #if defined(HAVE_TIMES) || defined(_WIN32)
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
-    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms); /* for the backward compatibility */
+    /* An obsolete name of Process::Tms for the backward compatibility */
+    rb_define_const(rb_cStruct, "Tms", rb_cProcessTms);
     rb_deprecate_constant(rb_cStruct, "Tms");
 #endif
 
