@@ -1729,10 +1729,10 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
     rb_iseq_t *iseq;            // cfp[2], iseq
     VALUE self;                 // cfp[3], self
     const VALUE *ep;            // cfp[4], env pointer
-    const void *block_code;     // cfp[5], blcok code
+    const void *block_code;     // cfp[5], block code
   };
 
-  struct rb_captured_blcok {
+  struct rb_captured_block {
     VALUE self;
     VALUE *ep;
     union code;
