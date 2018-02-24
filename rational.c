@@ -2368,6 +2368,18 @@ islettere(int c)
     return (c == 'e' || c == 'E');
 }
 
+static VALUE
+negate_num(VALUE num)
+{
+    if (FIXNUM_P(num)) {
+	return rb_int_uminus(num);
+    }
+    else {
+	BIGNUM_NEGATE(num);
+	return rb_big_norm(num);
+    }
+}
+
 static int
 read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 {
@@ -2422,7 +2434,7 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 	    else {
 		if (fn != ZERO) exp = rb_int_minus(exp, fn);
 		if (INT_NEGATIVE_P(exp)) {
-		    *div = f_expt10(exp);
+		    *div = f_expt10(negate_num(exp));
 		}
 		else {
 		    *num = rb_int_mul(n, f_expt10(exp));
@@ -2483,13 +2495,7 @@ parse_rat(const char *s, const char *const e, int strict)
     }
 
     if (sign == '-') {
-	if (FIXNUM_P(num)) {
-	    num = rb_int_uminus(num);
-	}
-	else {
-	    BIGNUM_NEGATE(num);
-	    num = rb_big_norm(num);
-	}
+	num = negate_num(num);
     }
 
     if (!canonicalization || den != ONE)
