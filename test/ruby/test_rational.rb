@@ -110,6 +110,7 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal(Rational(3),Rational('3'))
     assert_equal(Rational(1),Rational('3.0','3.0'))
     assert_equal(Rational(1),Rational('3/3','3/3'))
+    assert_equal(Rational(111, 1), Rational('1.11e+2'))
     assert_equal(Rational(111, 10), Rational('1.11e+1'))
     assert_equal(Rational(111, 10), Rational('1.11e1'))
     assert_equal(Rational(111, 100), Rational('1.11e0'))
