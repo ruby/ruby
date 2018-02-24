@@ -1453,7 +1453,14 @@ mjit_mark(void)
     CRITICAL_SECTION_START(4, "mjit_mark");
     for (node = unit_queue.head; node != NULL; node = node->next) {
         if (node->unit->iseq) { /* ISeq is still not GCed */
-            rb_gc_mark((VALUE)node->unit->iseq);
+            VALUE iseq = (VALUE)node->unit->iseq;
+            CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
+
+            /* Don't wrap critical section with this. This may trigger GC,
+               and in that case mjit_gc_start_hook causes deadlock. */
+            rb_gc_mark(iseq);
+
+            CRITICAL_SECTION_START(4, "mjit_mark rb_gc_mark");
         }
     }
     CRITICAL_SECTION_FINISH(4, "mjit_mark");
