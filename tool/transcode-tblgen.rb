@@ -1078,7 +1078,7 @@ if __FILE__ == $0
   end
 
   libs1 = $".dup
-  if RUBY_VERSION >= '2.6'
+  if ERB.version[/\d+\.\d+/] >= '2.2'
     erb = ERB.new(src, trim_mode: '%')
   else
     erb = ERB.new(src, nil, '%')
