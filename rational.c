@@ -422,38 +422,6 @@ nurat_s_alloc(VALUE klass)
     return nurat_s_new_internal(klass, ZERO, ONE);
 }
 
-#if 0
-static VALUE
-nurat_s_new_bang(int argc, VALUE *argv, VALUE klass)
-{
-    VALUE num, den;
-
-    switch (rb_scan_args(argc, argv, "11", &num, &den)) {
-      case 1:
-	if (!k_integer_p(num))
-	    num = f_to_i(num);
-	den = ONE;
-	break;
-      default:
-	if (!k_integer_p(num))
-	    num = f_to_i(num);
-	if (!k_integer_p(den))
-	    den = f_to_i(den);
-
-        if (INT_NEGATIVE_P(den)) {
-	    num = rb_int_uminus(num);
-	    den = rb_int_uminus(den);
-        }
-        else if (INT_ZERO_P(den)) {
-            rb_num_zerodiv();
-        }
-	break;
-    }
-
-    return nurat_s_new_internal(klass, num, den);
-}
-#endif
-
 inline static VALUE
 f_rational_new_bang1(VALUE klass, VALUE x)
 {
@@ -1227,39 +1195,6 @@ nurat_coerce(VALUE self, VALUE other)
 	     rb_obj_classname(other), rb_obj_classname(self));
     return Qnil;
 }
-
-#if 0
-/* :nodoc: */
-static VALUE
-nurat_idiv(VALUE self, VALUE other)
-{
-    return f_idiv(self, other);
-}
-
-/* :nodoc: */
-static VALUE
-nurat_quot(VALUE self, VALUE other)
-{
-    return f_truncate(f_div(self, other));
-}
-
-/* :nodoc: */
-static VALUE
-nurat_quotrem(VALUE self, VALUE other)
-{
-    VALUE val = f_truncate(f_div(self, other));
-    return rb_assoc_new(val, f_sub(self, f_mul(other, val)));
-}
-#endif
-
-#if 0
-/* :nodoc: */
-static VALUE
-nurat_true(VALUE self)
-{
-    return Qtrue;
-}
-#endif
 
 /*
  *  call-seq:
@@ -2199,17 +2134,6 @@ float_decode_internal(VALUE self, VALUE *rf, VALUE *rn)
     *rn = INT2FIX(n);
 }
 
-#if 0
-static VALUE
-float_decode(VALUE self)
-{
-    VALUE f, n;
-
-    float_decode_internal(self, &f, &n);
-    return rb_assoc_new(f, n);
-}
-#endif
-
 /*
  * call-seq:
  *    flt.to_r  ->  rational
@@ -2699,12 +2623,7 @@ Init_Rational(void)
     rb_define_alloc_func(rb_cRational, nurat_s_alloc);
     rb_undef_method(CLASS_OF(rb_cRational), "allocate");
 
-#if 0
-    rb_define_private_method(CLASS_OF(rb_cRational), "new!", nurat_s_new_bang, -1);
-    rb_define_private_method(CLASS_OF(rb_cRational), "new", nurat_s_new, -1);
-#else
     rb_undef_method(CLASS_OF(rb_cRational), "new");
-#endif
 
     rb_define_global_function("Rational", nurat_f_rational, -1);
 
@@ -2724,15 +2643,6 @@ Init_Rational(void)
     rb_define_method(rb_cRational, "==", nurat_eqeq_p, 1);
     rb_define_method(rb_cRational, "coerce", nurat_coerce, 1);
 
-#if 0
-    rb_define_method(rb_cRational, "quot", nurat_quot, 1);
-    rb_define_method(rb_cRational, "quotrem", nurat_quotrem, 1);
-#endif
-
-#if 0
-    rb_define_method(rb_cRational, "rational?", nurat_true, 0);
-    rb_define_method(rb_cRational, "exact?", nurat_true, 0);
-#endif
     rb_define_method(rb_cRational, "positive?", nurat_positive_p, 0);
     rb_define_method(rb_cRational, "negative?", nurat_negative_p, 0);
     rb_define_method(rb_cRational, "abs", rb_rational_abs, 0);
