@@ -7051,7 +7051,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
     rb_check_arity(argc, 1, 2);
 
     if (argc == 1) {
-        return rb_funcall(num, rb_intern("**"), 1, argv[0]);
+        return rb_int_pow(num, argv[0]);
     }
     else {
         VALUE const a = num;
