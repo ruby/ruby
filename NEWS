@@ -98,7 +98,13 @@ with all sufficient information, see the ChangeLog file or Redmine
   Ruby 2.5 improves block passing performance. [Feature #14045]
   Additionally, Ruby 2.6 improves the performance of passed block calling.
 
-* `--jit` option to enable JIT compiler is added. [Feature #14235] [experimental]
+* Introduce an initial implementation of JIT (Just-in-time) compiler. [Feature #14235] [experimental]
+  * `--jit` option is added to enable JIT. `--jit-verbose=1` is good for inspection. See `ruby --help` for others.
+  * This JIT relies on C compiler used to build Ruby, on runtime. Only gcc and clang are supported for the JIT
+    for now, and MinGW support has some issues.
+  * As of 2.6.0-preview1, we're just preparing infrastructure for JIT and very few optimizations are implemented.
+    So it's not ready for benchmarking Ruby's JIT performance yet. It's known that current JIT enablement makes
+    Rails application slower for now.
 
 * VM generator script renewal; makes the generated VM more optimized. [GH-1779]
 
