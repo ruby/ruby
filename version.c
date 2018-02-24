@@ -32,8 +32,8 @@ const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
-const char ruby_description[] = RUBY_DESCRIPTION;
-const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH_JIT;
+const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
+const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
