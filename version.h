@@ -60,17 +60,11 @@
 # define RUBY_REVISION_STR ""
 #endif
 
-# define RUBY_DESCRIPTION	    \
+# define RUBY_DESCRIPTION_WITH(opt) \
     "ruby "RUBY_VERSION		    \
     RUBY_PATCHLEVEL_STR		    \
     " ("RUBY_RELEASE_DATE	    \
-    RUBY_REVISION_STR") "	    \
-    "["RUBY_PLATFORM"]"
-# define RUBY_DESCRIPTION_WITH_JIT  \
-    "ruby "RUBY_VERSION             \
-    RUBY_PATCHLEVEL_STR             \
-    " ("RUBY_RELEASE_DATE           \
-    RUBY_REVISION_STR") +JIT "      \
+    RUBY_REVISION_STR")"opt" "	    \
     "["RUBY_PLATFORM"]"
 # define RUBY_COPYRIGHT		    \
     "ruby - Copyright (C) "	    \
