@@ -2437,7 +2437,7 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 		    *div = f_expt10(negate_num(exp));
 		}
 		else {
-		    *num = rb_int_mul(n, f_expt10(exp));
+		    if (exp != ZERO) *num = rb_int_mul(n, f_expt10(exp));
 		    *div = ONE;
 		}
 	    }
