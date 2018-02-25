@@ -545,6 +545,24 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set.new(1..10), set)
   end
 
+  def test_filter!
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i <= 10 }
+    assert_equal(nil, ret)
+    assert_equal(Set.new(1..10), set)
+
+    set = Set.new(1..10)
+    ret = set.filter! { |i| i % 3 != 0 }
+    assert_same(set, ret)
+    assert_equal(Set[1,2,4,5,7,8,10], set)
+
+    set = Set.new(1..10)
+    enum = set.filter!
+    assert_equal(set.size, enum.size)
+    assert_equal(nil, enum.each { |i| i <= 10 })
+    assert_equal(Set.new(1..10), set)
+  end
+
   def test_merge
     set = Set[1,2,3]
 

@@ -424,6 +424,9 @@ class Set
     self if size != n
   end
 
+  # Equivalent to Set#select!
+  alias filter! select!
+
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)

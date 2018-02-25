@@ -6298,6 +6298,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "select!", rb_ary_select_bang, 0);
+    rb_define_method(rb_cArray, "filter", rb_ary_select, 0);
+    rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);

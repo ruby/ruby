@@ -1017,6 +1017,44 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.slice)
   end
 
+  def test_filter
+    assert_equal({3=>4,5=>6}, @cls[1=>2,3=>4,5=>6].filter {|k, v| k + v >= 7 })
+
+    base = @cls[ 1 => 'one', '2' => false, true => 'true', 'cat' => 99 ]
+    h1   = @cls[ '2' => false, 'cat' => 99 ]
+    h2   = @cls[ 1 => 'one', true => 'true' ]
+    h3   = @cls[ 1 => 'one', true => 'true', 'cat' => 99 ]
+
+    h = base.dup
+    assert_equal(h, h.filter { true })
+    assert_equal(@cls[], h.filter { false })
+
+    h = base.dup
+    assert_equal(h1, h.filter {|k,v| k.instance_of?(String) })
+
+    assert_equal(h2, h.filter {|k,v| v.instance_of?(String) })
+
+    assert_equal(h3, h.filter {|k,v| v })
+    assert_equal(base, h)
+
+    h.instance_variable_set(:@foo, :foo)
+    h.default = 42
+    h.taint
+    h = h.filter {true}
+    assert_instance_of(Hash, h)
+    assert_not_predicate(h, :tainted?)
+    assert_nil(h.default)
+    assert_not_send([h, :instance_variable_defined?, :@foo])
+  end
+
+  def test_filter!
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal(h, h.filter! {|k, v| k + v >= 7 })
+    assert_equal({3=>4,5=>6}, h)
+    h = @cls[1=>2,3=>4,5=>6]
+    assert_equal(nil, h.filter!{true})
+  end
+
   def test_clear2
     assert_equal({}, @cls[1=>2,3=>4,5=>6].clear)
     h = @cls[1=>2,3=>4,5=>6]

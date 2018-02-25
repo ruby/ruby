@@ -170,6 +170,7 @@ class TestArray < Test::Unit::TestCase
   def test_find_all_0
     assert_respond_to([], :find_all)
     assert_respond_to([], :select)       # Alias
+    assert_respond_to([], :filter)       # Alias
     assert_equal([], [].find_all{ |obj| obj == "foo"})
 
     x = ["foo", "bar", "baz", "baz", 1, 2, 3, 3, 4]
@@ -2298,6 +2299,25 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[ 1, 2, 3, 4, 5 ]
     assert_equal(a, a.keep_if { |i| i > 3 })
+    assert_equal(@cls[4, 5], a)
+  end
+
+  def test_filter
+    assert_equal([0, 2], [0, 1, 2, 3].filter {|x| x % 2 == 0 })
+  end
+
+  # alias for select!
+  def test_filter!
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(nil, a.filter! { true })
+    assert_equal(@cls[1, 2, 3, 4, 5], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.filter! { false })
+    assert_equal(@cls[], a)
+
+    a = @cls[ 1, 2, 3, 4, 5 ]
+    assert_equal(a, a.filter! { |i| i > 3 })
     assert_equal(@cls[4, 5], a)
   end
 

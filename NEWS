@@ -20,6 +20,13 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Core classes updates (outstanding ones only)
 
+* Array
+
+  * Aliased methods:
+
+    * Array#filter is a new alias for Array#select [Feature #13784]
+    * Array#filter! is a new alias for Array#select! [Feature #13784]
+
 * Binding
 
   * New methods:
@@ -39,6 +46,25 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New methods:
 
     * added Dir#each_child and Dir#children instance methods. [Feature #13969]
+
+* Enumerable
+
+  * Aliased methods:
+
+    * Enumerable#filter is a new alias for Enumerable#select [Feature #13784]
+
+* Enumerator::Lazy
+
+  * Aliased methods:
+
+    * Enumerator::Lazy#filter is a new alias for Enumerator::Lazy#select [Feature #13784]
+
+* Hash
+
+  * Aliased methods:
+
+    * Hash#filter is a new alias for Hash#select [Feature #13784]
+    * Hash#filter! is a new alias for Hash#select! [Feature #13784]
 
 * Kernel
 
@@ -79,6 +105,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New method:
 
     * Matrix#antisymmetric?
+
+* Set
+
+  * Aliased methods:
+
+    * Set#filter! is a new alias for Set#select! [Feature #13784]
 
 === Compatibility issues (excluding feature bug fixes)
 
