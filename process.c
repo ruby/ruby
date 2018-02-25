@@ -4111,6 +4111,7 @@ rb_f_system(int argc, VALUE *argv)
         rb_str_cat_cstr(pst_message_status(str, status), ": ");
         rb_str_append(str, eargp->invoke.sh.shell_script);
         rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
+        RB_GC_GUARD(execarg_obj);
     }
     else {
         return Qfalse;
