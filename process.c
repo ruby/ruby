@@ -4097,8 +4097,9 @@ rb_f_system(int argc, VALUE *argv)
     if (pid < 0) {
         if (eargp->exception) {
             int err = errno;
-            rb_syserr_fail_str(err, eargp->invoke.sh.shell_script);
+            VALUE command = eargp->invoke.sh.shell_script;
             RB_GC_GUARD(execarg_obj);
+            rb_syserr_fail_str(err, command);
         }
         else {
             return Qnil;
@@ -4107,11 +4108,12 @@ rb_f_system(int argc, VALUE *argv)
     status = PST2INT(rb_last_status_get());
     if (status == EXIT_SUCCESS) return Qtrue;
     if (eargp->exception) {
+        VALUE command = eargp->invoke.sh.shell_script;
         VALUE str = rb_str_new_cstr("Command failed with");
         rb_str_cat_cstr(pst_message_status(str, status), ": ");
-        rb_str_append(str, eargp->invoke.sh.shell_script);
-        rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
+        rb_str_append(str, command);
         RB_GC_GUARD(execarg_obj);
+        rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
     }
     else {
         return Qfalse;
