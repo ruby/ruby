@@ -253,4 +253,8 @@ class TestDefined < Test::Unit::TestCase
     assert_equal(nil, obj.func_defined_non_existing_func, bug_11212)
     assert_equal(true, obj.called, bug_11212)
   end
+
+  def test_top_level_constant_not_defined
+    assert_nil(defined?(TestDefined::Object))
+  end
 end
