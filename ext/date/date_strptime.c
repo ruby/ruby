@@ -113,9 +113,9 @@ read_digits(const char *s, VALUE *n, size_t width)
     }
 }
 
-#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k)), v)
-#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k)))
-#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k)))
+#define set_hash(k,v) rb_hash_aset(hash, ID2SYM(rb_intern(k"")), v)
+#define ref_hash(k) rb_hash_aref(hash, ID2SYM(rb_intern(k"")))
+#define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k"")))
 
 #define fail() \
 { \
