@@ -234,18 +234,6 @@ def package(vcs, rev, destdir, tmp = nil)
     v = v[0]
   end
 
-  unless File.exist?("#{v}/ChangeLog")
-    # get last revision from previous ChangeLog archive
-    last_ChangeLog = Dir["#{v}/doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
-    open(last_ChangeLog) do |f|
-      f.readline
-      unless /\Ar(\d+) / =~ f.readline
-        abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
-      end
-      vcs.export_changelog(url, $1.to_i, revision.to_i, "#{v}/ChangeLog")
-    end
-  end
-
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
   version or return
@@ -289,6 +277,18 @@ def package(vcs, rev, destdir, tmp = nil)
   end
   def (clean = []).add(n) push(n); n end
   Dir.chdir(v) do
+    unless File.exist?("ChangeLog")
+      # get last revision from previous ChangeLog archive
+      last_ChangeLog = Dir["doc/ChangeLog-*"].grep(/-(\d+)\z/) {|n| [$1.to_i, n]}.max[1]
+      open(last_ChangeLog) do |f|
+        f.readline
+        unless /\Ar(\d+) / =~ f.readline
+          abort "#{File.basename $0}: Cannot find revision from '#{last_ChangeLog}'"
+        end
+        vcs.export_changelog(url, $1.to_i, revision.to_i, "ChangeLog")
+      end
+    end
+
     File.open(clean.add("cross.rb"), "w") do |f|
       f.puts "Object.__send__(:remove_const, :CROSS_COMPILING) if defined?(CROSS_COMPILING)"
       f.puts "CROSS_COMPILING=true"
