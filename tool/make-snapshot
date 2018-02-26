@@ -54,6 +54,11 @@ if gzip = ENV.delete("GZIP")
   PACKAGES["gzip"].concat(gzip.shellsplit)
 end
 
+if mflags = ENV["GNUMAKEFLAGS"] and /\A-(\S*)j\d*/ =~ mflags
+  mflags = mflags.gsub(/(\A|\s)(-\S*)j\d*/, '\1\2')
+  mflags.strip!
+  ENV["GNUMAKEFLAGS"] = (mflags unless mflags.empty?)
+end
 ENV["LC_ALL"] = ENV["LANG"] = "C"
 SVNURL = URI.parse("http://svn.ruby-lang.org/repos/ruby/")
 GITURL = URI.parse("git://github.com/ruby/ruby.git")
