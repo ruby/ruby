@@ -452,7 +452,6 @@ class VCS
 
     def export(revision, url, dir, keep_temp = false)
       ret = system(COMMAND, "clone", "-s", (@srcdir || '.').to_s, "-b", url, dir)
-      FileUtils.rm_rf("#{dir}/.git") if ret and !keep_temp
       ret
     end
 
