@@ -32,7 +32,8 @@ class RubyVM::Dumper
   rescue Errno::ENOENT
     raise "don't know how to generate #{path}"
   else
-    if RUBY_VERSION >= '2.6'
+    match = ERB.version.match(/\Aerb\.rb \[(?<version>[^ ]+) /)
+    if match && match[:version] >= '2.2.0' # Ruby 2.6+
       erb = ERB.new(src, trim_mode: '%-')
     else
       erb = ERB.new(src, nil, '%-')
