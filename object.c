@@ -50,6 +50,7 @@ VALUE rb_cFalseClass; /*!< FalseClass class */
 #define id_init_clone       idInitialize_clone
 #define id_init_dup         idInitialize_dup
 #define id_const_missing    idConst_missing
+static ID id_to_f;
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -3131,7 +3132,7 @@ rb_convert_to_integer(VALUE val, int base)
       arg_error:
 	rb_raise(rb_eArgError, "base specified for non string value");
     }
-    tmp = convert_type(val, "Integer", "to_int", FALSE);
+    tmp = convert_type_with_id(val, "Integer", idTo_int, FALSE, -1);
     if (!RB_INTEGER_TYPE_P(tmp)) {
 	return rb_to_integer(val, "to_i");
     }
@@ -3404,7 +3405,7 @@ rb_Float(VALUE val)
       case T_STRING:
 	return DBL2NUM(rb_str_to_dbl(val, TRUE));
     }
-    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
+    return rb_convert_type_with_id(val, T_FLOAT, "Float", id_to_f);
 }
 
 static VALUE FUNC_MINIMIZED(rb_f_float(VALUE obj, VALUE arg)); /*!< \private */
@@ -3437,7 +3438,7 @@ numeric_to_float(VALUE val)
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into Float",
 		 rb_obj_class(val));
     }
-    return rb_convert_type(val, T_FLOAT, "Float", "to_f");
+    return rb_convert_type_with_id(val, T_FLOAT, "Float", id_to_f);
 }
 
 /*!
@@ -3471,8 +3472,6 @@ rb_check_to_float(VALUE val)
     }
     return rb_check_convert_type(val, T_FLOAT, "Float", "to_f");
 }
-
-static ID id_to_f;
 
 static inline int
 basic_to_f_p(VALUE klass)
@@ -3547,7 +3546,7 @@ rb_num2dbl(VALUE val)
 	    rb_raise(rb_eTypeError, "no implicit conversion to float from string");
 	}
     }
-    val = rb_convert_type(val, T_FLOAT, "Float", "to_f");
+    val = rb_convert_type_with_id(val, T_FLOAT, "Float", id_to_f);
     return RFLOAT_VALUE(val);
 }
 
