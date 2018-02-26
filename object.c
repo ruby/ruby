@@ -3132,7 +3132,7 @@ rb_convert_to_integer(VALUE val, int base)
 	rb_raise(rb_eArgError, "base specified for non string value");
     }
     tmp = convert_type(val, "Integer", "to_int", FALSE);
-    if (NIL_P(tmp)) {
+    if (!RB_INTEGER_TYPE_P(tmp)) {
 	return rb_to_integer(val, "to_i");
     }
     return tmp;

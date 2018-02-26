@@ -92,6 +92,17 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(2 ** 50, Integer(2.0 ** 50))
     assert_raise(TypeError) { Integer(nil) }
 
+    bug14552 = '[ruby-core:85813]'
+    obj = Object.new
+    def obj.to_int; "str"; end
+    assert_raise(TypeError, bug14552) { Integer(obj) }
+    def obj.to_i; 42; end
+    assert_equal(42, Integer(obj), bug14552)
+
+    obj = Object.new
+    def obj.to_i; "str"; end
+    assert_raise(TypeError) { Integer(obj) }
+
     bug6192 = '[ruby-core:43566]'
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-16be"))}
     assert_raise(Encoding::CompatibilityError, bug6192) {Integer("0".encode("utf-16le"))}
