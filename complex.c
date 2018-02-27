@@ -32,14 +32,15 @@ static VALUE nucomp_abs(VALUE self);
 static VALUE nucomp_arg(VALUE self);
 
 static ID id_abs, id_arg,
-    id_denominator, id_expt, id_fdiv,
-    id_negate, id_numerator, id_quo,
+    id_denominator, id_fdiv, id_numerator, id_quo,
     id_real_p, id_to_f,
     id_i_real, id_i_imag,
     id_finite_p, id_infinite_p, id_rationalize,
     id_PI;
 #define id_to_i idTo_i
 #define id_to_r idTo_r
+#define id_negate idUMinus
+#define id_expt idPow
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
@@ -2120,9 +2121,7 @@ Init_Complex(void)
     id_abs = rb_intern("abs");
     id_arg = rb_intern("arg");
     id_denominator = rb_intern("denominator");
-    id_expt = rb_intern("**");
     id_fdiv = rb_intern("fdiv");
-    id_negate = rb_intern("-@");
     id_numerator = rb_intern("numerator");
     id_quo = rb_intern("quo");
     id_real_p = rb_intern("real?");
