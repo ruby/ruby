@@ -50,7 +50,7 @@ VALUE rb_cFalseClass; /*!< FalseClass class */
 #define id_init_clone       idInitialize_clone
 #define id_init_dup         idInitialize_dup
 #define id_const_missing    idConst_missing
-static ID id_to_f;
+#define id_to_f             idTo_f
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -4117,7 +4117,6 @@ InitVM_Object(void)
 void
 Init_Object(void)
 {
-    id_to_f = rb_intern_const("to_f");
     id_dig = rb_intern_const("dig");
     InitVM(Object);
 }

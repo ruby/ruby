@@ -962,7 +962,7 @@ nurat_fdiv(VALUE self, VALUE other)
 	return nurat_to_f(div);
     if (RB_FLOAT_TYPE_P(div))
 	return div;
-    return rb_funcall(div, rb_intern("to_f"), 0);
+    return rb_funcall(div, idTo_f, 0);
 }
 
 inline static VALUE
