@@ -9,9 +9,9 @@ describe "Array#reject" do
     ary = [1, 2, 3, 4, 5]
     ary.reject { true }.should == []
     ary.reject { false }.should == ary
-    ary.reject { false }.object_id.should_not == ary.object_id
+    ary.reject { false }.should_not equal ary
     ary.reject { nil }.should == ary
-    ary.reject { nil }.object_id.should_not == ary.object_id
+    ary.reject { nil }.should_not equal ary
     ary.reject { 5 }.should == []
     ary.reject { |i| i < 3 }.should == [3, 4, 5]
     ary.reject { |i| i % 2 == 0 }.should == [1, 3, 5]

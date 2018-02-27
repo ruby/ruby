@@ -14,7 +14,7 @@ with_feature :encoding do
     it "returns self after emptying it" do
       cleared = @s.clear
       cleared.should == ""
-      cleared.object_id.should == @s.object_id
+      cleared.should equal @s
     end
 
     it "preserves its encoding" do

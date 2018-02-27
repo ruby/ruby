@@ -15,25 +15,8 @@ with_feature :encoding do
     end
 
     it "returns the default external encoding" do
-      Encoding.default_external = Encoding::UTF_8
-      Encoding.default_external.should == Encoding::UTF_8
-    end
-
-    describe "with command line options" do
-      it "is not changed by the -U option" do
-        result = ruby_exe("print Encoding.default_external", options: '-U')
-        result.should == Encoding.default_external.name
-      end
-
-      it "returns the encoding specified by '-E external'" do
-        result = ruby_exe("print Encoding.default_external", options: '-E euc-jp')
-        result.should == "EUC-JP"
-      end
-
-      it "returns the encoding specified by '-E external:'" do
-        result = ruby_exe("print Encoding.default_external", options: '-E Shift_JIS:')
-        result.should == "Shift_JIS"
-      end
+      Encoding.default_external = Encoding::SHIFT_JIS
+      Encoding.default_external.should == Encoding::SHIFT_JIS
     end
   end
 
@@ -47,8 +30,14 @@ with_feature :encoding do
     end
 
     it "sets the default external encoding" do
-      Encoding.default_external = Encoding::UTF_8
-      Encoding.default_external.should == Encoding::UTF_8
+      Encoding.default_external = Encoding::SHIFT_JIS
+      Encoding.default_external.should == Encoding::SHIFT_JIS
+      Encoding.find('external').should == Encoding::SHIFT_JIS
+    end
+
+    it "also sets the filesystem encoding" do
+      Encoding.default_external = Encoding::SHIFT_JIS
+      Encoding.find('filesystem').should == Encoding::SHIFT_JIS
     end
 
     it "can accept a name of an encoding as a String" do

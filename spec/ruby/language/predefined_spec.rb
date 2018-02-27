@@ -44,11 +44,11 @@ describe "Predefined global $~" do
   it "is set to contain the MatchData object of the last match if successful" do
     md = /foo/.match 'foo'
     $~.should be_kind_of(MatchData)
-    $~.object_id.should == md.object_id
+    $~.should equal md
 
     /bar/ =~ 'bar'
     $~.should be_kind_of(MatchData)
-    $~.object_id.should_not == md.object_id
+    $~.should_not equal md
   end
 
   it "is set to nil if the last match was unsuccessful" do
@@ -828,7 +828,7 @@ end
 
 describe "Global variable $\"" do
   it "is an alias for $LOADED_FEATURES" do
-    $".object_id.should == $LOADED_FEATURES.object_id
+    $".should equal $LOADED_FEATURES
   end
 
   it "is read-only" do

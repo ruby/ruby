@@ -5,7 +5,7 @@ describe :array_collect, shared: true do
     a = ['a', 'b', 'c', 'd']
     b = a.send(@method) { |i| i + '!' }
     b.should == ["a!", "b!", "c!", "d!"]
-    b.object_id.should_not == a.object_id
+    b.should_not equal a
   end
 
   it "does not return subclass instance" do
@@ -70,7 +70,7 @@ describe :array_collect_b, shared: true do
   it "returns self" do
     a = [1, 2, 3, 4, 5]
     b = a.send(@method) {|i| i+1 }
-    a.object_id.should == b.object_id
+    a.should equal b
   end
 
   it "returns the evaluated value of block but its contents is partially modified, if it broke in the block" do

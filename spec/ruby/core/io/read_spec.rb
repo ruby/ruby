@@ -257,7 +257,7 @@ describe "IO#read" do
   it "returns the given buffer" do
     buf = ""
 
-    @io.read(nil, buf).object_id.should == buf.object_id
+    @io.read(nil, buf).should equal buf
   end
 
   it "coerces the second argument to string and uses it as a buffer" do
@@ -265,7 +265,7 @@ describe "IO#read" do
     obj = mock("buff")
     obj.should_receive(:to_str).any_number_of_times.and_return(buf)
 
-    @io.read(15, obj).object_id.should_not == obj.object_id
+    @io.read(15, obj).should_not equal obj
     buf.should == @contents
   end
 

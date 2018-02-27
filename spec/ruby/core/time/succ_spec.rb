@@ -14,6 +14,6 @@ describe "Time#succ" do
     -> {
       t2 = t1.succ
     }.should complain(/Time#succ is obsolete/)
-    t1.object_id.should_not == t2.object_id
+    t1.should_not equal t2
   end
 end
