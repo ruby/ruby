@@ -2548,6 +2548,12 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 	    return rb_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
     }
     else {
+        if (!k_numeric_p(a1)) {
+            a1 = rb_check_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
+        }
+        if (!k_numeric_p(a2)) {
+            a2 = rb_check_convert_type_with_id(a2, T_RATIONAL, "Rational", idTo_r);
+        }
 	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
 	    (!f_integer_p(a1) || !f_integer_p(a2)))
 	    return f_div(a1, a2);
