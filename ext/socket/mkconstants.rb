@@ -74,7 +74,7 @@ def each_name(pat)
 end
 
 erb_new = lambda do |src, safe, trim|
-  if RUBY_VERSION >= '2.6'
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
     ERB.new(src, trim_mode: trim)
   else
     ERB.new(src, safe, trim)

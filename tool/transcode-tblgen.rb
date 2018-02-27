@@ -1078,7 +1078,7 @@ if __FILE__ == $0
   end
 
   libs1 = $".dup
-  if ERB.version[/\d+\.\d+/] >= '2.2'
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
     erb = ERB.new(src, trim_mode: '%')
   else
     erb = ERB.new(src, nil, '%')

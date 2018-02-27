@@ -121,7 +121,7 @@ ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
 if File.exist?(depend = File.join($srcdir, "depend"))
-  if ERB.version[/\d+\.\d+/] >= '2.2'
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
     erb = ERB.new(File.read(depend), trim_mode: '%')
   else
     erb = ERB.new(File.read(depend), nil, '%')
@@ -139,7 +139,7 @@ open(ARGV[0], 'wb') {|f|
 }
 if MODULE_TYPE == :static
   filename = "encinit.c.erb"
-  if ERB.version[/\d+\.\d+/] >= '2.2'
+  if ERB.instance_method(:initialize).parameters.assoc(:key) # Ruby 2.6+
     erb = ERB.new(File.read(File.join($srcdir, filename)), trim_mode: '%-')
   else
     erb = ERB.new(File.read(File.join($srcdir, filename)), nil, '%-')
