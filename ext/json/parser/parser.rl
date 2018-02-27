@@ -138,6 +138,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id, i_create_additions,
             fhold; fbreak;
         } else {
             if (NIL_P(json->object_class)) {
+                OBJ_FREEZE(last_name);
                 rb_hash_aset(*result, last_name, v);
             } else {
                 rb_funcall(*result, i_aset, 2, last_name, v);
