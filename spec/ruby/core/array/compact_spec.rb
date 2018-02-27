@@ -50,7 +50,7 @@ describe "Array#compact!" do
 
   it "returns self if some nil elements are removed" do
     a = ['a', nil, 'b', false, 'c']
-    a.compact!.object_id.should == a.object_id
+    a.compact!.should equal a
   end
 
   it "returns nil if there are no nil elements to remove" do

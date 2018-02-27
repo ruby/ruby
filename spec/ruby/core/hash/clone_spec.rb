@@ -7,7 +7,7 @@ describe "Hash#clone" do
     clone = hash.clone
 
     clone.should == hash
-    clone.object_id.should_not == hash.object_id
+    clone.should_not equal hash
   end
 end
 

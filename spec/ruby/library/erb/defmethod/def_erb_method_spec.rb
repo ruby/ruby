@@ -1,5 +1,6 @@
 require 'erb'
 require File.expand_path('../../../../spec_helper', __FILE__)
+require File.expand_path('../../fixtures/classes', __FILE__)
 
 describe "ERB::DefMethod.def_erb_method" do
 
@@ -50,11 +51,7 @@ END
     MY_INPUT4_FOR_ERB = input
     class MyClass4ForErb
       extend ERB::DefMethod
-      if RUBY_VERSION >= '2.6'
-        erb = ERB.new(MY_INPUT4_FOR_ERB, trim_mode: '<>')
-      else
-        erb = ERB.new(MY_INPUT4_FOR_ERB, nil, '<>')
-      end
+      erb = ERBSpecs.new_erb(MY_INPUT4_FOR_ERB, trim_mode: '<>')
       def_erb_method('render()', erb)
       def initialize(items)
         @items = items

@@ -188,7 +188,7 @@ describe "C-API String function" do
       str1 = "hi"
       str2 = @s.rb_str_new3 str1
       str1.should == str2
-      str1.object_id.should_not == str2.object_id
+      str1.should_not equal str2
     end
   end
 
@@ -217,7 +217,7 @@ describe "C-API String function" do
       str1 = "hi"
       str2 = @s.rb_str_dup str1
       str1.should == str2
-      str1.object_id.should_not == str2.object_id
+      str1.should_not equal str2
     end
   end
 

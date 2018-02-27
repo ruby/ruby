@@ -105,7 +105,7 @@ describe "Hash#compare_by_identity" do
     @idh[foo] = true
     @idh[foo] = true
     @idh.size.should == 1
-    @idh.keys.first.object_id.should == foo.object_id
+    @idh.keys.first.should equal foo
   end
 
   ruby_bug "#12855", "2.2.0"..."2.4.1" do

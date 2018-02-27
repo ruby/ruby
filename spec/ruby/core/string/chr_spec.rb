@@ -4,7 +4,7 @@ with_feature :encoding do
   describe "String#chr" do
     it "returns a copy of self" do
       s = 'e'
-      s.object_id.should_not == s.chr.object_id
+      s.should_not equal s.chr
     end
 
     it "returns a String" do

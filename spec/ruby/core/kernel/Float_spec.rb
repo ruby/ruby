@@ -6,7 +6,7 @@ describe :kernel_float, shared: true do
     float = 1.12
     float2 = @object.send(:Float, float)
     float2.should == float
-    float2.object_id.should == float.object_id
+    float2.should equal float
   end
 
   it "returns a Float for Fixnums" do

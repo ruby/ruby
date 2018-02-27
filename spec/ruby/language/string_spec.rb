@@ -42,6 +42,15 @@ describe "Ruby character strings" do
     "#@ip#@ip".should == 'xxxxxx'
   end
 
+  it "don't get confused by partial interpolation character sequences" do
+    "#@".should == '#@'
+    "#@ ".should == '#@ '
+    "#@@".should == '#@@'
+    "#@@ ".should == '#@@ '
+    "#$ ".should == '#$ '
+    "#\$".should == '#$'
+  end
+
   it "taints the result of interpolation when an interpolated value is tainted" do
     "#{"".taint}".tainted?.should be_true
 

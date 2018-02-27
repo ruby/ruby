@@ -158,6 +158,8 @@ guard -> { max_uint <= fixnum_max } do
 end
 ```
 
+Custom guards are better than a simple `if` as they allow [mspec commands](https://github.com/ruby/mspec/issues/30#issuecomment-312487779) to work properly.
+
 In general, the usage of guards should be minimized as possible.
 
 There are no guards to define implementation-specific behavior because
