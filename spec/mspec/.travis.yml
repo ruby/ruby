@@ -20,6 +20,6 @@ matrix:
       - gem update --system
   - jdk: oraclejdk8
     install:
-      - curl -L https://github.com/graalvm/truffleruby/releases/download/vm-enterprise-0.28/truffleruby-testing-0.28.tar.gz | tar xz
+      - curl -L https://github.com/oracle/truffleruby/releases/download/vm-enterprise-0.28/truffleruby-testing-0.28.tar.gz | tar xz
       - source truffleruby/setup_env
       - bundle install
