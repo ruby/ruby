@@ -1671,6 +1671,7 @@ InitVM_Random(void)
 	/* Format raw random number as Random does */
 	VALUE m = rb_define_module_under(rb_cRandom, "Formatter");
 	rb_include_module(rb_cRandom, m);
+	rb_extend_object(rb_cRandom, m);
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
