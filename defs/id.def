@@ -38,6 +38,7 @@ firstline, predefined = __LINE__+1, %[\
   to_a
   to_s
   to_i
+  to_f
   to_r
   bt
   bt_locations
