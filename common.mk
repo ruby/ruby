@@ -1537,6 +1537,7 @@ complex.$(OBJEXT): {$(VPATH)}defines.h
 complex.$(OBJEXT): {$(VPATH)}encoding.h
 complex.$(OBJEXT): {$(VPATH)}intern.h
 complex.$(OBJEXT): {$(VPATH)}internal.h
+complex.$(OBJEXT): {$(VPATH)}id.h
 complex.$(OBJEXT): {$(VPATH)}io.h
 complex.$(OBJEXT): {$(VPATH)}missing.h
 complex.$(OBJEXT): {$(VPATH)}onigmo.h
@@ -1631,6 +1632,7 @@ dir.$(OBJEXT): {$(VPATH)}encindex.h
 dir.$(OBJEXT): {$(VPATH)}encoding.h
 dir.$(OBJEXT): {$(VPATH)}intern.h
 dir.$(OBJEXT): {$(VPATH)}internal.h
+dir.$(OBJEXT): {$(VPATH)}id.h
 dir.$(OBJEXT): {$(VPATH)}io.h
 dir.$(OBJEXT): {$(VPATH)}missing.h
 dir.$(OBJEXT): {$(VPATH)}onigmo.h
