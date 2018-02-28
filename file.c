@@ -1082,6 +1082,17 @@ no_gvl_fstat(void *data)
     return (VALUE)fstat(arg->file.fd, arg->st);
 }
 
+static int
+fstat_without_gvl(int fd, struct stat *st)
+{
+    no_gvl_stat_data data;
+
+    data.file.fd = fd;
+    data.st = st;
+
+    return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_fstat, &data, fd);
+}
+
 static void *
 no_gvl_stat(void * data)
 {
@@ -1090,27 +1101,38 @@ no_gvl_stat(void * data)
 }
 
 static int
+stat_without_gvl(const char *path, struct stat *st)
+{
+    no_gvl_stat_data data;
+
+    data.file.path = path;
+    data.st = st;
+
+    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data,
+						  RUBY_UBF_IO, NULL);
+}
+
+static int
 rb_stat(VALUE file, struct stat *st)
 {
     VALUE tmp;
-    VALUE result;
-    no_gvl_stat_data data;
+    int result;
 
-    data.st = st;
     tmp = rb_check_convert_type_with_id(file, T_FILE, "IO", idTo_io);
     if (!NIL_P(tmp)) {
 	rb_io_t *fptr;
 
 	GetOpenFile(tmp, fptr);
-	data.file.fd = fptr->fd;
-	result = rb_thread_io_blocking_region(no_gvl_fstat, &data, fptr->fd);
-	return (int)result;
+	result = fstat_without_gvl(fptr->fd, st);
+	file = tmp;
     }
-    FilePathValue(file);
-    file = rb_str_encode_ospath(file);
-    data.file.path = StringValueCStr(file);
-    result = (VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data, RUBY_UBF_IO, NULL);
-    return (int)result;
+    else {
+	FilePathValue(file);
+	file = rb_str_encode_ospath(file);
+	result = stat_without_gvl(RSTRING_PTR(file), st);
+    }
+    RB_GC_GUARD(file);
+    return result;
 }
 
 /*
@@ -1130,7 +1152,8 @@ rb_file_s_stat(VALUE klass, VALUE fname)
     struct stat st;
 
     FilePathValue(fname);
-    if (rb_stat(fname, &st) < 0) {
+    fname = rb_str_encode_ospath(fname);
+    if (stat_without_gvl(RSTRING_PTR(fname), &st) < 0) {
 	rb_sys_fail_path(fname);
     }
     return rb_stat_new(&st);
