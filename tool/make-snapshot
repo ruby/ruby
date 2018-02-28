@@ -130,7 +130,7 @@ path = ENV["PATH"].split(File::PATH_SEPARATOR)
 end
 
 %w[BASERUBY RUBY MINIRUBY].each do |var|
-  `#{ENV[var]} --disable-gem -e1 2>&1`
+  %x[#{ENV[var]} --disable-gem -e1 2>&1]
   if $?.success?
     ENV[var] += ' --disable-gem'
   end
@@ -470,7 +470,7 @@ revisions.collect {|rev| package(vcs, rev, destdir, tmp)}.flatten.each do |name|
   end
   str = open(name, "rb") {|f| f.read}
   if $s3
-    `aws s3 cp #{name} s3://ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}`
+    %x[aws s3 cp #{name} s3://ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}]
     FileUtils.rm_f name
     name = "https://s3.amazonaws.com/ftp.r-l.o/pub/#{$s3}/#{Pathname(name).basename}"
   end
