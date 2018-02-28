@@ -98,7 +98,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * ERB
 
   * Add :trim_mode and :eoutvar keyword arguments to ERB.new. Now non-keyword arguments other than first one
-    are softly deprecated and will be removed when Ruby 2.5 becomes EOL.
+    are softly deprecated and will be removed when Ruby 2.5 becomes EOL. [Feature #14256]
 
   * erb command's -S option is deprecated, which will be removed in the next version.
 
