@@ -303,6 +303,14 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realpath_special_symlink
+    IO.pipe do |r, w|
+      if File.pipe?(path = "/dev/fd/#{r.fileno}")
+        assert_file.identical?(File.realpath(path), path)
+      end
+    end
+  end
+
   def test_realdirpath
     Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
       realdir = File.realpath(tmpdir)
