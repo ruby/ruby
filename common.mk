@@ -570,6 +570,7 @@ clean-local:: clean-runnable
 	$(Q)$(RM) $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
 	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
 	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
+	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
 	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
 	-$(Q) $(RMDIR) enc/jis enc/trans enc 2> $(NULL) || exit 0
 clean-runnable:: PHONY
