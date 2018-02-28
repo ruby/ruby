@@ -9334,23 +9334,21 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 static void
 ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
 {
-    VALUE listv;
-    ibf_offset_t *list = ALLOCV_N(ibf_offset_t, listv, RARRAY_LEN(dump->obj_list));
+    VALUE list = rb_ary_tmp_new(RARRAY_LEN(dump->obj_list));
     int i, size;
 
     for (i=0; i<RARRAY_LEN(dump->obj_list); i++) {
 	VALUE obj = RARRAY_AREF(dump->obj_list, i);
 	ibf_offset_t offset = lbf_dump_object_object(dump, obj);
-	list[i] = offset;
+	rb_ary_push(list, UINT2NUM(offset));
     }
     size = i;
     header->object_list_offset = ibf_dump_pos(dump);
 
     for (i=0; i<size; i++) {
-	ibf_offset_t offset = list[i];
+	ibf_offset_t offset = NUM2UINT(RARRAY_AREF(list, i));
 	IBF_WV(offset);
     }
-    ALLOCV_END(listv);
 
     header->object_list_size = size;
 }
