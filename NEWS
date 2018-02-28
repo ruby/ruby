@@ -97,8 +97,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * ERB
 
-  * 2nd, 3rd and 4th arguments of ERB.new are deprecated. 2nd argument (safe_level) will be dropped in the future
-    and some of those arguments (trim_mode, eoutvar) are changed to keyword arguments. [Feature #14256]
+  * Add :trim_mode and :eoutvar keyword arguments to ERB.new. Now non-keyword arguments other than first one
+    are softly deprecated and will be removed when Ruby 2.5 becomes EOL.
+
+  * erb command's -S option is deprecated, which will be removed in the next version.
 
 * Matrix
 
