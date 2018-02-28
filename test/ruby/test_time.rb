@@ -1104,6 +1104,8 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_strftime_no_hidden_garbage
+    skip unless Thread.list.size == 1
+
     fmt = %w(Y m d).map { |x| "%#{x}" }.join('-') # defeats optimization
     t = Time.at(0).getutc
     ObjectSpace.count_objects(res = {}) # creates strings on first call
