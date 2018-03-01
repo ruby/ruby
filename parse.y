@@ -9585,7 +9585,7 @@ assign_in_cond(struct parser_params *p, NODE *node)
     if (!node->nd_value) return 1;
     if (is_static_content(node->nd_value)) {
 	/* reports always */
-	parser_warn(p, node->nd_value, "found = in conditional, should be ==");
+	parser_warn(p, node->nd_value, "found `= literal' in conditional, should be ==");
     }
     return 1;
 }
