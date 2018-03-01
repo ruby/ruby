@@ -810,7 +810,7 @@ static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 {
     fbuffer_append_char(buffer, '"');
 #ifdef HAVE_RUBY_ENCODING_H
-    obj = rb_funcall(obj, i_encode, 1, CEncoding_UTF_8);
+    obj = rb_str_encode(obj, CEncoding_UTF_8, 0, Qnil);
 #endif
     if (state->ascii_only) {
         convert_UTF8_to_JSON_ASCII(buffer, obj);
