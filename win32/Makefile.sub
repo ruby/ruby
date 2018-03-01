@@ -301,6 +301,15 @@ MJIT_HEADER_FLAGS = -P
 MJIT_HEADER_SUFFIX =
 MJIT_HEADER_ARCH =
 MJIT_HEADER_INSTALL_DIR = include/$(RUBY_VERSION_NAME)/$(arch)
+!ifndef MJIT_CC
+MJIT_CC = $(CC)
+!endif
+!ifndef MJIT_OPTFLAGS
+MJIT_OPTFLAGS = $(OPTFLAGS)
+!endif
+!ifndef MJIT_DEBUGFLAGS
+MJIT_DEBUGFLAGS = $(DEBUGFLAGS)
+!endif
 
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS =
@@ -1262,7 +1271,7 @@ mjit_config.h:
 <<KEEP
 	@
 	@(set sep=#define MJIT_CC_COMMON ) & \
-	for %I in ($(CC)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_CC)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_CC_COMMON */>> $@
 	@
 	@(set sep=#define MJIT_CFLAGS ) & \
@@ -1270,11 +1279,11 @@ mjit_config.h:
 	@echo /* MJIT_CFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_OPTFLAGS ) & \
-	for %I in ($(OPTFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_OPTFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_OPTFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_DEBUGFLAGS ) & \
-	for %I in ($(DEBUGFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_DEBUGFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_DEBUGFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_LDSHARED ) & \
