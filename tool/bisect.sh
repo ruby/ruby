@@ -21,15 +21,15 @@ case $1 in
     exec git bisect run "$path" "run-$1"
     ;;
   run-miniruby )
-    $MAKE srcs || exit 125
     cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
+    $MAKE srcs || exit 125
     $MAKE Makefile || exit 125
     $MAKE mini || exit 125
     $MAKE run || exit 1
     ;;
   run-ruby )
-    $MAKE srcs || exit 125
     cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
+    $MAKE srcs || exit 125
     $MAKE Makefile || exit 125
     $MAKE program || exit 125
     $MAKE runruby || exit 1
