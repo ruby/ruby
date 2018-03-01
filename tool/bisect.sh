@@ -21,25 +21,30 @@ case $1 in
     exec git bisect run "$path" "run-$1"
     ;;
   run-miniruby )
-    cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
-    $MAKE srcs || exit 125
-    $MAKE Makefile || exit 125
-    $MAKE mini || exit 125
-    $MAKE run || exit 1
+    prep=mini
+    run=run
     ;;
   run-ruby )
-    cd "${0%/*}" || exit 125 # assume a copy of this script is in builddir
-    $MAKE srcs || exit 125
-    $MAKE Makefile || exit 125
-    $MAKE program || exit 125
-    $MAKE runruby || exit 1
+    prep=program
+    run=runruby
     ;;
   "" )
-    echo foo bar
+    echo missing command 1>&2
+    exit 1
     ;;
   * )
     echo unknown command "'$1'" 1>&2
     exit 1
     ;;
 esac
-exit 0
+
+case "$0" in
+*/*)
+    # assume a copy of this script is in builddir
+    cd `echo "$0" | sed 's:\(.*\)/.*:\1:'` || exit 125
+    ;;
+esac
+for target in srcs Makefile $prep; do
+    $MAKE $target || exit 125
+done
+exec $MAKE $run
