@@ -8880,7 +8880,7 @@ ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    rb_bug("unsupported");
+    rb_raise(rb_eArgError, "unsupported");
     return Qnil;
 }
 
@@ -8920,7 +8920,7 @@ ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_heade
 	return rb_eStandardError;
     }
 
-    rb_bug("ibf_load_object_class: unknown class (%d)", (int)cindex);
+    rb_raise(rb_eArgError, "ibf_load_object_class: unknown class (%d)", (int)cindex);
 }
 
 
