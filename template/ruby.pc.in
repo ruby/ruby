@@ -38,6 +38,7 @@ sitehdrdir=@sitehdrdir@
 rubyarchhdrdir=@rubyarchhdrdir@
 vendorarchhdrdir=@vendorarchhdrdir@
 sitearchhdrdir=@sitearchhdrdir@
+MAINLIBS=@MAINLIBS@
 SOEXT=@SOEXT@
 LIBPATH=@LIBPATH@
 LIBRUBY_A=@LIBRUBY_A@

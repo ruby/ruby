@@ -18,6 +18,7 @@ AC_DISABLE_OPTION_CHECKING
 AC_ARG_VAR([cflags], [additional CFLAGS])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
+ORIG_LIBS=$LIBS
 
 { # environment section
 
@@ -2245,13 +2246,11 @@ AS_IF([test x"$enable_pthread" = xyes], [
 	AC_DEFINE(_THREAD_SAFE)
 	AC_DEFINE(HAVE_LIBPTHREAD)
 	AC_CHECK_HEADERS(pthread_np.h, [], [], [@%:@include <pthread.h>])
-	AS_CASE([$pthread_lib],
-	[c],    [],
-	[root], [],
-	[c_r],  [MAINLIBS="-pthread $MAINLIBS"],
-	        [AS_CASE(["$target_os"],
-		    [openbsd*|mirbsd*], [LIBS="-pthread $LIBS"],
-		    [LIBS="-l$pthread_lib $LIBS"])])
+	AS_CASE(["$pthread_lib:$target_os"],
+		[c:*], [],
+		[root:*], [],
+		[c_r:*|*:openbsd*|*:mirbsd*],  [LIBS="-pthread $LIBS"],
+		[LIBS="-l$pthread_lib $LIBS"])
     ], [
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     ])
@@ -2935,7 +2934,7 @@ LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
 LIBRUBYARG='$(LIBRUBYARG_STATIC)'
-SOLIBS=
+SOLIBS='$(MAINLIBS)'
 
 AS_CASE(["$target_os"],
   [cygwin*|mingw*|haiku*|darwin*], [
@@ -2999,9 +2998,6 @@ AS_CASE("$enable_shared", [yes], [
   LIBRUBY_RELATIVE=no
   test -z "$CCDLFLAGS" || CFLAGS="$CFLAGS $CCDLFLAGS"
   ENABLE_SHARED=yes
-  AS_IF([test "$rb_cv_binary_elf" = yes], [
-    SOLIBS='$(LIBS)'
-  ])
 
   # libdir can be overridden in config.site file (on OpenSUSE at least).
   libdir_basename=lib
@@ -3036,7 +3032,6 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	],
     [freebsd*|dragonfly*], [
-	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
 	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
@@ -3045,7 +3040,6 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	],
     [netbsd*], [
-	SOLIBS='$(LIBS)'
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO="${LIBRUBY_SONAME}"'.$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
@@ -3056,11 +3050,9 @@ AS_CASE("$enable_shared", [yes], [
 	])
 	],
     [openbsd*|mirbsd*], [
-	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
-	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)'
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
@@ -3078,7 +3070,7 @@ AS_CASE("$enable_shared", [yes], [
     [aix*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-bnoentry" "$XLDFLAGS" "$LDFLAGS_OPTDIR"])
 	LIBRUBYARG_SHARED='-L${libdir} -l${RUBY_SO_NAME}'
-	SOLIBS='-lm -lc'
+	LIBS="$LIBS -lm -lc"
 	],
     [darwin*], [
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
@@ -3098,7 +3090,6 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT)'
 	LIBRUBY_SONAME='lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).$(SOEXT)'
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_INSTALL_NAME).$(SOEXT)'
-	SOLIBS='$(LIBS)'
 	],
     [interix*], [
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
@@ -3341,7 +3332,6 @@ AS_CASE(["$target_os"],
 	    ])
 	LIBRUBY_ALIASES=''
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
-	SOLIBS='$(LIBS)'
 	AS_IF([test x"$enable_shared" = xyes], [
 	    LIBRUBY='lib$(RUBY_SO_NAME).dll.a'
 	], [
@@ -3441,6 +3431,13 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 ])
 
+MAINLIBS="$LIBS"
+LIBS=$ORIG_LIBS
+AS_IF([test -n "${LIBS}"], [
+    libspat=`echo "${LIBS}" | sed 's/[[][|.*$^]]/\\&/g;s/^  */ /;s/^  *$/ /'`
+    MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
+])
+LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
 CPPFLAGS="$CPPFLAGS "'$(DEFS)'
 test -z "$CPPFLAGS" || CPPFLAGS="$CPPFLAGS "; CPPFLAGS="$CPPFLAGS"'${cppflags}'
 AS_IF([test -n "${cflags+set}"], [

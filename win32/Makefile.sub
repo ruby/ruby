@@ -312,6 +312,7 @@ MJIT_DEBUGFLAGS = $(DEBUGFLAGS)
 !endif
 
 DLDFLAGS = $(LDFLAGS) -dll
+MAINLIBS = $(LIBS)
 SOLIBS =
 RCFILES = $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
 !ifndef RCFLAGS
@@ -865,7 +866,8 @@ s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,$(LDFLAGS),;t t
-s,@LIBS@,$(LIBS),;t t
+s,@LIBS@,,;t t
+s,@MAINLIBS@,$(MAINLIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
 s,@prefix@,$(prefix),;t t
 s,@program_transform_name@,s,.*,$(PROGRAM_PREFIX)&$(PROGRAM_SUFFIX),,;t t
@@ -953,7 +955,7 @@ s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
 s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,;t t
 s,@LIBRUBYARG@,$$(LIBRUBYARG_SHARED),;t t
-s,@LIBRUBYARG_STATIC@,$$(LIBRUBY_A),;t t
+s,@LIBRUBYARG_STATIC@,$$(LIBRUBY_A) $$(MAINLIBS),;t t
 s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
