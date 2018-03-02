@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.summary = "Console interface"
   s.email = "nobu@ruby-lang.org"
   s.description = "add console capabilities to IO instances."
-  s.required_ruby_version = ">= 2.0.0"
+  s.required_ruby_version = ">= 2.1.0"
   s.homepage = "https://github.com/ruby/io-console"
   s.authors = ["Nobu Nakada"]
   s.require_path = %[lib]

@@ -17,9 +17,6 @@
 #ifndef RARRAY_CONST_PTR
 # define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
 #endif
-#ifndef HAVE_RB_FUNCALLV
-# define rb_funcallv rb_funcall2
-#endif
 
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
