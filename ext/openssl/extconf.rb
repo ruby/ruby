@@ -40,6 +40,7 @@ result = pkg_config("openssl") && have_header("openssl/ssl.h")
 def find_openssl_library
   if $mswin || $mingw
     # required for static OpenSSL libraries
+    have_library("ws2_32")
     have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
     have_library("crypt32")
   end

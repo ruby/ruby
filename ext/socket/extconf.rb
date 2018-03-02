@@ -433,6 +433,7 @@ end
 case RUBY_PLATFORM
 when /mswin(32|64)|mingw/
   test_func = "WSACleanup"
+  have_library("iphlpapi")
   have_library("ws2_32", "WSACleanup", headers)
 when /cygwin/
   test_func = "socket(0,0,0)"
