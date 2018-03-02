@@ -14,9 +14,6 @@
 #ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#ifndef RARRAY_CONST_PTR
-# define RARRAY_CONST_PTR(ary) RARRAY_PTR(ary)
-#endif
 
 #if defined HAVE_TERMIOS_H
 # include <termios.h>
@@ -98,10 +95,6 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
     }
     return rb_funcallv(recv, vid, argc, argv);
 }
-#endif
-
-#ifndef HAVE_RB_SYM2STR
-# define rb_sym2str(sym) rb_id2str(SYM2ID(sym))
 #endif
 
 typedef struct {
