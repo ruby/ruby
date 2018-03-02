@@ -866,7 +866,7 @@ s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,$(LDFLAGS),;t t
-s,@LIBS@,user32,;t t
+s,@LIBS@,user32.lib,;t t
 s,@MAINLIBS@,$(MAINLIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
 s,@prefix@,$(prefix),;t t
