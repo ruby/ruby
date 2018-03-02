@@ -2238,7 +2238,7 @@ AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
 	AC_CHECK_LIB($pthread_lib, pthread_create,
 		     rb_with_pthread=yes, rb_with_pthread=no)
-	AS_IF([test "$rb_with_pthread" = "yes"], [ break; fi
+	AS_IF([test "$rb_with_pthread" = "yes"], [break])
     done
     AS_IF([test x"$rb_with_pthread" = xyes], [
 	AC_DEFINE(_REENTRANT)
@@ -2930,7 +2930,7 @@ AC_SUBST(XRUBY)
 AC_SUBST(BOOTSTRAPRUBY)
 AC_SUBST(EXTOUT, [${EXTOUT=.ext}])
 
-])RSTMAKEFILE=""
+FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_SO_NAME)-static.a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG_STATIC='-l$(RUBY_SO_NAME)-static'
