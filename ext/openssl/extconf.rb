@@ -33,6 +33,9 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
+if $mswin || $mingw
+  have_library("ws2_32")
+end
 
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
@@ -40,7 +43,6 @@ result = pkg_config("openssl") && have_header("openssl/ssl.h")
 def find_openssl_library
   if $mswin || $mingw
     # required for static OpenSSL libraries
-    have_library("ws2_32")
     have_library("gdi32") # OpenSSL <= 1.0.2 (for RAND_screen())
     have_library("crypt32")
   end
