@@ -310,6 +310,9 @@ MJIT_OPTFLAGS = $(OPTFLAGS)
 !ifndef MJIT_DEBUGFLAGS
 MJIT_DEBUGFLAGS = $(DEBUGFLAGS)
 !endif
+!ifndef MJIT_LDSHARED
+MJIT_LDSHARED = $(MJITCC) -LD
+!endif
 
 DLDFLAGS = $(LDFLAGS) -dll
 MAINLIBS = $(LIBS)
@@ -1289,7 +1292,7 @@ mjit_config.h:
 	@echo /* MJIT_DEBUGFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_LDSHARED ) & \
-	for %I in ($(LDSHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_LDSHARED)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_LDSHARED */>> $@
 	@
 	@(set sep=#define MJIT_DLDFLAGS ) & \
