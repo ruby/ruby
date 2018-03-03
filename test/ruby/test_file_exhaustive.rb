@@ -744,12 +744,14 @@ class TestFileExhaustive < Test::Unit::TestCase
     when /darwin/
       ["\u{feff}", *"\u{2000}"..."\u{2100}"].each do |c|
         file = regular_file + c
+        full_path = File.expand_path(file)
+        mesg = proc {File.basename(full_path).dump}
         begin
           open(file) {}
         rescue
-          assert_equal(file, File.expand_path(file), c.dump)
+          assert_equal(file, full_path, mesg)
         else
-          assert_equal(regular_file, File.expand_path(file), c.dump)
+          assert_equal(regular_file, full_path, mesg)
         end
       end
     end
