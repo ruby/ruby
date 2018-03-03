@@ -37,7 +37,7 @@
 % #   PUSH(): refers to `SET_SV()`, `INC_SP()`
 % #   GET_SELF(): refers to `reg_cfp->self`
 % #   GET_LEP(): refers to `VM_EP_LEP(reg_cfp->ep)`
-% #   EXEC_EC_CFP(): refers to `val = vm_exec(ec)` with frame setup
+% #   EXEC_EC_CFP(): refers to `val = vm_exec(ec, TRUE)` with frame setup
 % #   CALL_METHOD(): using `GET_CFP()` and `EXEC_EC_CFP()`
 % #   TOPN(): refers to `reg_cfp->sp`, which needs to have correct sp (of course)
 % #   STACK_ADDR_FROM_TOP(): refers to `reg_cfp->sp`, same problem here
