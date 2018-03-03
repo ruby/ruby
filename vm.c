@@ -1006,7 +1006,7 @@ invoke_block(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, cons
 		  ec->cfp->sp + arg_size,
 		  iseq->body->local_table_size - arg_size,
 		  iseq->body->stack_max);
-    return vm_exec(ec);
+    return vm_exec(ec, TRUE);
 }
 
 static VALUE
@@ -1027,7 +1027,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
-    ret = vm_exec(ec);
+    ret = vm_exec(ec, TRUE);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
     RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     return ret;
@@ -1788,13 +1788,16 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
     VALUE *ep;                       // ep
     void *code;                      //
   };
+
+  If mjit_exec is already called before calling vm_exec, `mjit_enable_p` should
+  be FALSE to avoid calling `mjit_exec` twice.
  */
 
 MJIT_FUNC_EXPORTED VALUE
-vm_exec(rb_execution_context_t *ec)
+vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 {
     enum ruby_tag_type state;
-    VALUE result;
+    VALUE result = Qundef;
     VALUE initial = 0;
     struct vm_throw_data *err;
 
@@ -1802,7 +1805,8 @@ vm_exec(rb_execution_context_t *ec)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        result = mjit_exec(ec);
+        if (mjit_enable_p)
+            result = mjit_exec(ec);
       vm_loop_start:
         if (result == Qundef)
             result = vm_exec_core(ec, initial);
@@ -2047,7 +2051,7 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
-    val = vm_exec(ec);
+    val = vm_exec(ec, TRUE);
     return val;
 }
 
@@ -2058,7 +2062,7 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
     VALUE val;
 
     vm_set_main_stack(ec, iseq);
-    val = vm_exec(ec);
+    val = vm_exec(ec, TRUE);
     return val;
 }
 

@@ -693,7 +693,7 @@ defineclass
 		  class_iseq->body->iseq_encoded, GET_SP(),
 		  class_iseq->body->local_table_size,
 		  class_iseq->body->stack_max);
-    EXEC_EC_CFP();
+    EXEC_EC_CFP(TRUE);
 }
 
 /**********************************************************/
@@ -820,7 +820,7 @@ invokeblock
 
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci, block_handler);
     if (val == Qundef) {
-        EXEC_EC_CFP();
+        EXEC_EC_CFP(TRUE);
     }
 }
 
@@ -1344,7 +1344,7 @@ opt_call_c_function
 	THROW_EXCEPTION(err);
     }
 
-    EXEC_EC_CFP();
+    EXEC_EC_CFP(TRUE);
 }
 
 /* BLT */
