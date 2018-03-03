@@ -1,72 +1,79 @@
 # frozen_string_literal: false
-# BigDecimal extends the native Integer class to provide the #to_d method.
 #
-# When you require the BigDecimal library in your application, this method will
-# be available on Integer objects.
+#--
+# bigdecimal/util extends various native classes to provide the #to_d method,
+# and provides BigDecimal#to_d and BigDecimal#to_digits.
+#++
+
+
 class Integer < Numeric
   # call-seq:
   #     int.to_d  -> bigdecimal
   #
-  # Convert +int+ to a BigDecimal and return it.
+  # Returns the value of +int+ as a BigDecimal.
   #
   #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
-  #     42.to_d
-  #     # => 0.42e2
+  #     42.to_d   # => 0.42e2
+  #
+  # See also BigDecimal::new.
   #
   def to_d
     BigDecimal(self)
   end
 end
 
-# BigDecimal extends the native Float class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on Float objects.
+
 class Float < Numeric
   # call-seq:
-  #     flt.to_d  -> bigdecimal
+  #     float.to_d             -> bigdecimal
+  #     float.to_d(precision)  -> bigdecimal
   #
-  # Convert +flt+ to a BigDecimal and return it.
+  # Returns the value of +float+ as a BigDecimal.
+  # The +precision+ parameter is used to determine the number of
+  # significant digits for the result (the default is Float::DIG).
   #
   #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
-  #     0.5.to_d
-  #     # => 0.5e0
+  #     0.5.to_d         # => 0.5e0
+  #     1.234.to_d(2)    # => 0.12e1
+  #
+  # See also BigDecimal::new.
   #
   def to_d(precision=nil)
     BigDecimal(self, precision || Float::DIG)
   end
 end
 
-# BigDecimal extends the native String class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on String objects.
+
 class String
   # call-seq:
-  #     string.to_d  -> bigdecimal
+  #     str.to_d  -> bigdecimal
   #
-  # Convert +string+ to a BigDecimal and return it.
+  # Returns the result of interpreting leading characters in +str+
+  # as a BigDecimal.
   #
   #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
-  #     "0.5".to_d
-  #     # => 0.5e0
+  #     "0.5".to_d             # => 0.5e0
+  #     "123.45e1".to_d        # => 0.12345e4
+  #     "45.67 degrees".to_d   # => 0.4567e2
+  #
+  # See also BigDecimal::new.
   #
   def to_d
-    BigDecimal(self)
+    begin
+      BigDecimal(self)
+    rescue ArgumentError
+      BigDecimal(0)
+    end
   end
 end
 
-# BigDecimal extends the native Numeric class to provide the #to_digits and
-# #to_d methods.
-#
-# When you require BigDecimal in your application, this method will be
-# available on BigDecimal objects.
+
 class BigDecimal < Numeric
   # call-seq:
   #     a.to_digits -> string
@@ -74,12 +81,11 @@ class BigDecimal < Numeric
   # Converts a BigDecimal to a String of the form "nnnnnn.mmm".
   # This method is deprecated; use BigDecimal#to_s("F") instead.
   #
-  #     require 'bigdecimal'
   #     require 'bigdecimal/util'
   #
   #     d = BigDecimal.new("3.14")
-  #     d.to_digits
-  #     # => "3.14"
+  #     d.to_digits                  # => "3.14"
+  #
   def to_digits
     if self.nan? || self.infinite? || self.zero?
       self.to_s
@@ -94,35 +100,35 @@ class BigDecimal < Numeric
   #     a.to_d -> bigdecimal
   #
   # Returns self.
+  #
+  #     require 'bigdecimal/util'
+  #
+  #     d = BigDecimal.new("3.14")
+  #     d.to_d                       # => 0.314e1
+  #
   def to_d
     self
   end
 end
 
-# BigDecimal extends the native Rational class to provide the #to_d method.
-#
-# When you require BigDecimal in your application, this method will be
-# available on Rational objects.
+
 class Rational < Numeric
   # call-seq:
-  #   r.to_d(precision)   -> bigdecimal
+  #     rat.to_d(precision)  -> bigdecimal
   #
-  # Converts a Rational to a BigDecimal.
+  # Returns the value as a BigDecimal.
   #
-  # The required +precision+ parameter is used to determine the amount of
-  # significant digits for the result. See BigDecimal#div for more information,
-  # as it is used along with the #denominator and the +precision+ for
-  # parameters.
+  # The required +precision+ parameter is used to determine the number of
+  # significant digits for the result.
   #
-  #   r = (22/7.0).to_r
-  #   # => (7077085128725065/2251799813685248)
-  #   r.to_d(3)
-  #   # => 0.314e1
+  #     require 'bigdecimal'
+  #     require 'bigdecimal/util'
+  #
+  #     Rational(22, 7).to_d(3)   # => 0.314e1
+  #
+  # See also BigDecimal::new.
+  #
   def to_d(precision)
-    if precision <= 0
-      raise ArgumentError, "negative precision"
-    end
-    num = self.numerator
-    BigDecimal(num).div(self.denominator, precision)
+    BigDecimal(self, precision)
   end
 end

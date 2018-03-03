@@ -9,6 +9,8 @@
 #ifndef  RUBY_BIG_DECIMAL_H
 #define  RUBY_BIG_DECIMAL_H 1
 
+#define RUBY_NO_OLD_COMPATIBILITY
+
 #include "ruby/ruby.h"
 #include <float.h>
 

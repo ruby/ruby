@@ -231,6 +231,7 @@ static inline VALUE BigDecimal_div2(VALUE, VALUE, VALUE);
 static Real*
 GetVpValueWithPrec(VALUE v, long prec, int must)
 {
+    ENTER(1);
     Real *pv;
     VALUE num, bg;
     char szD[128];
@@ -296,6 +297,7 @@ again:
 
       case T_BIGNUM:
 	bg = rb_big2str(v, 10);
+	PUSH(bg);
 	return VpCreateRbObject(strlen(RSTRING_PTR(bg)) + VpBaseFig() + 1,
 				RSTRING_PTR(bg));
       default:
@@ -1319,25 +1321,14 @@ BigDecimal_divide(Real **c, Real **res, Real **div, VALUE self, VALUE r)
     return Qnil;
 }
 
- /* call-seq:
-  * div(value, digits)
-  * quo(value)
-  *
-  * Divide by the specified value.
-  *
-  * e.g.
-  *   c = a.div(b,n)
-  *
-  * digits:: If specified and less than the number of significant digits of the
-  *          result, the result is rounded to that number of digits, according
-  *          to BigDecimal.mode.
-  *
-  * If digits is 0, the result is the same as the / operator. If not, the
-  * result is an integer BigDecimal, by analogy with Float#div.
-  *
-  * The alias quo is provided since <code>div(value, 0)</code> is the same as
-  * computing the quotient; see BigDecimal#divmod.
-  */
+/* call-seq:
+ *   a / b       -> bigdecimal
+ *   quo(value)  -> bigdecimal
+ *
+ * Divide by the specified value.
+ *
+ * See BigDecimal#div.
+ */
 static VALUE
 BigDecimal_div(VALUE self, VALUE r)
 /* For c = self/r: with round operation */
@@ -1603,6 +1594,37 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
     }
 }
 
+ /*
+  * Document-method: BigDecimal#div
+  *
+  * call-seq:
+  *   div(value, digits)  -> bigdecimal or integer
+  *
+  * Divide by the specified value.
+  *
+  * digits:: If specified and less than the number of significant digits of the
+  *          result, the result is rounded to that number of digits, according
+  *          to BigDecimal.mode.
+  *
+  *          If digits is 0, the result is the same as for the / operator
+  *          or #quo.
+  *
+  *          If digits is not specified, the result is an integer,
+  *          by analogy with Float#div; see also BigDecimal#divmod.
+  *
+  * Examples:
+  *
+  *   a = BigDecimal("4")
+  *   b = BigDecimal("3")
+  *
+  *   a.div(b, 3)  # => 0.133e1
+  *
+  *   a.div(b, 0)  # => 0.1333333333333333333e1
+  *   a / b        # => 0.1333333333333333333e1
+  *   a.quo(b)     # => 0.1333333333333333333e1
+  *
+  *   a.div(b)     # => 1
+  */
 static VALUE
 BigDecimal_div3(int argc, VALUE *argv, VALUE self)
 {
@@ -3193,6 +3215,19 @@ get_vp_value:
  *
  * Note also that in mathematics, there is no particular concept of negative
  * or positive zero; true mathematical zero has no sign.
+ *
+ * == bigdecimal/util
+ *
+ * When you require +bigdecimal/util+, the #to_d method will be
+ * available on BigDecimal and the native Integer, Float, Rational,
+ * and String classes:
+ *
+ *	require 'bigdecimal/util'
+ *
+ *      42.to_d         # => 0.42e2
+ *      0.5.to_d        # => 0.5e0
+ *      (2/3r).to_d(3)  # => 0.667e0
+ *      "0.5".to_d      # => 0.5e0
  *
  * == License
  *
@@ -5921,17 +5956,12 @@ Exit:
 }
 
 /*
- *
- * nf: digit position for operation.
- *
- */
-VP_EXPORT int
-VpMidRound(Real *y, unsigned short f, ssize_t nf)
-/*
  * Round relatively from the decimal point.
  *    f: rounding mode
  *   nf: digit location to round from the decimal point.
  */
+VP_EXPORT int
+VpMidRound(Real *y, unsigned short f, ssize_t nf)
 {
     /* fracf: any positive digit under rounding position? */
     /* fracf_1further: any positive digits under one further than the rounding position? */

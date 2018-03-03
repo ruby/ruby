@@ -1,5 +1,5 @@
 # coding: utf-8
-_VERSION = '1.3.0'
+_VERSION = '1.3.2'
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
@@ -33,4 +33,5 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake", "~> 10.0"
   s.add_development_dependency "rake-compiler", "~> 0.9"
   s.add_development_dependency "minitest", "~> 4.7.5"
+  s.add_development_dependency "pry"
 end
