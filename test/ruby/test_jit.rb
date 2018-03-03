@@ -131,7 +131,15 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('/#{true}/ =~ "true"', result_inspect: '0')
   end
 
-  def test_compile_insn_intern_newarray_duparray
+  def test_compile_insn_newarray
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '[1, 2, 3]')
+    begin;
+      a, b, c = 1, 2, 3
+      [a, b, c]
+    end;
+  end
+
+  def test_compile_insn_intern_duparray
     assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]')
   end
 
@@ -460,6 +468,46 @@ class TestJIT < Test::Unit::TestCase
     assert_equal("MJIT\n" * 5, out)
     assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1 -> .+_ruby_mjit_p\d+u\d+\.c$/, err)
     assert_match(/^Successful MJIT finish$/, err)
+  end
+
+  def test_local_stack_on_exception
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2)
+    begin;
+      def b
+        raise
+      rescue
+        2
+      end
+
+      def a
+        # Calling #b should be vm_exec, not direct mjit_exec.
+        # Otherwise `1` on local variable would be purged.
+        1 + b
+      end
+
+      print a
+    end;
+  end
+
+  def test_local_stack_with_sp_motion_by_blockargs
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2)
+    begin;
+      def b(base)
+        1
+      end
+
+      # This method is simple enough to have false in catch_except_p.
+      # So local_stack_p would be true in JIT compiler.
+      def a
+        m = method(:b)
+
+        # ci->flag has VM_CALL_ARGS_BLOCKARG and cfp->sp is moved in vm_caller_setup_arg_block.
+        # So, for this send insn, JIT-ed code should use cfp->sp instead of local variables for stack.
+        Module.module_eval(&m)
+      end
+
+      print a
+    end;
   end
 
   private
