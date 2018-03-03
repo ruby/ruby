@@ -2461,6 +2461,7 @@ AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
 AC_SUBST(MJIT_CC, [${MJIT_CC-'$(CC)'}])dnl
 AC_SUBST(MJIT_OPTFLAGS, [${MJIT_OPTFLAGS-'$(optflags)'}])dnl
 AC_SUBST(MJIT_DEBUGFLAGS, [${MJIT_DEBUGFLAGS-'$(debugflags)'}])dnl
+AC_SUBST(MJIT_LDSHARED)dnl
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
@@ -3430,6 +3431,8 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 		const char arch[[]] = __ARCHITECTURE__;], [puts(arch);],
 		[rb_cv_architecture_available=yes], [rb_cv_architecture_available=no]))
 ])
+
+: ${MJIT_LDSHARED=`echo "$LDSHARED" | sed ['s|\$(LD)|'"${LD}"'|g;s|\$(CC)|$(MJIT_CC)|g']`}
 
 MAINLIBS="$LIBS"
 LIBS=$ORIG_LIBS
