@@ -424,6 +424,7 @@ struct rb_iseq_constant_body {
                       struct rb_control_frame_struct *); /* function pointer for loaded native code */
     long unsigned total_calls; /* number of total calls with `mjit_exec()` */
     struct rb_mjit_unit *jit_unit;
+    char catch_except_p; /* If a frame of this ISeq may catch exception, set TRUE */
 };
 
 /* T_IMEMO/iseq */
