@@ -819,8 +819,8 @@ invokeblock
     }
 
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci, block_handler);
-    if (val == Qundef) {
-        EXEC_EC_CFP(TRUE);
+    if (val == Qundef && (val = mjit_exec(ec)) == Qundef) {
+        EXEC_EC_CFP(FALSE);
     }
 }
 
