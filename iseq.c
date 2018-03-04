@@ -1809,6 +1809,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     rb_str_cat2(str, "== disasm: ");
 
     rb_str_concat(str, iseq_inspect(iseq));
+    rb_str_catf(str, " (catch: %s)", iseq->body->catch_except_p ? "TRUE" : "FALSE");
     if ((l = RSTRING_LEN(str)) < header_minlen) {
 	rb_str_resize(str, header_minlen);
 	memset(RSTRING_PTR(str) + l, '=', header_minlen - l);

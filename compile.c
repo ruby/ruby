@@ -1254,6 +1254,53 @@ new_child_iseq_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc,
     return ret_iseq;
 }
 
+/* Set body->catch_except_p to TRUE if the ISeq may catch an exception. If it is FALSE,
+   JIT-ed code may be optimized.  If we are extremely conservative, we should set TRUE
+   if catch table exists.  But we want to optimize while loop, which always has catch
+   table entries for break/next/redo.
+
+   So this function sets TRUE for limited ISeqs with break/next/redo catch table entries
+   whose child ISeq would really raise an exception. */
+static void
+update_catch_except_flags(struct rb_iseq_constant_body *body)
+{
+    unsigned int pos;
+    size_t i;
+    int insn;
+    const struct iseq_catch_table *ct = body->catch_table;
+
+    /* This assumes that a block has parent_iseq which may catch an exception from the block, and that
+       BREAK/NEXT/REDO catch table entries are used only when `throw` insn is used in the block. */
+    if (body->parent_iseq != NULL) {
+        pos = 0;
+        while (pos < body->iseq_size) {
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+            insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
+#else
+            insn = (int)body->iseq_encoded[pos];
+#endif
+            if (insn == BIN(throw)) {
+                struct rb_iseq_constant_body *parent_body = body->parent_iseq->body;
+                parent_body->catch_except_p = TRUE;
+            }
+            pos += insn_len(insn);
+        }
+    }
+
+    if (ct == NULL)
+        return;
+
+    for (i = 0; i < ct->size; i++) {
+        const struct iseq_catch_table_entry *entry = &ct->entries[i];
+        if (entry->type != CATCH_TYPE_BREAK
+            && entry->type != CATCH_TYPE_NEXT
+            && entry->type != CATCH_TYPE_REDO) {
+            body->catch_except_p = TRUE;
+            break;
+        }
+    }
+}
+
 static int
 iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
@@ -1298,6 +1345,8 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     debugs("[compile step 5 (iseq_translate_threaded_code)] \n");
     if (!rb_iseq_translate_threaded_code(iseq)) return COMPILE_NG;
+
+    update_catch_except_flags(iseq->body);
 
     if (compile_debug > 1) {
 	VALUE str = rb_iseq_disasm(iseq);
