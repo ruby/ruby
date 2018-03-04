@@ -20,6 +20,9 @@
 struct compile_status {
     int success; /* has TRUE if compilation has had no issue */
     int *compiled_for_pos; /* compiled_for_pos[pos] has TRUE if the pos is compiled */
+    /* If TRUE, JIT-ed code will use local variables to store pushed values instead of
+       using VM's stack and moving stack pointer. */
+    int local_stack_p;
 };
 
 /* Storage to keep data which is consistent in each conditional branch.
@@ -151,6 +154,20 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
     }
 }
 
+/* Print the block to cancel JIT execution. */
+static void
+compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct compile_status *status)
+{
+    unsigned int i;
+    fprintf(f, "\ncancel:\n");
+    if (status->local_stack_p) {
+        for (i = 0; i < body->stack_max; i++) {
+            fprintf(f, "    *((VALUE *)reg_cfp->bp + %d) = stack[%d];\n", i + 1, i);
+        }
+    }
+    fprintf(f, "    return Qundef;\n");
+}
+
 /* Compile ISeq to C code in F.  It returns 1 if it succeeds to compile. */
 int
 mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname)
@@ -158,12 +175,18 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     struct compile_status status;
     status.success = TRUE;
     status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
+    status.local_stack_p = !body->catch_except_p;
 
 #ifdef _WIN32
     fprintf(f, "__declspec(dllexport)\n");
 #endif
     fprintf(f, "VALUE\n%s(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)\n{\n", funcname);
-    fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
+    if (status.local_stack_p) {
+        fprintf(f, "    VALUE stack[%d];\n", body->stack_max);
+    }
+    else {
+        fprintf(f, "    VALUE *stack = reg_cfp->sp;\n");
+    }
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
@@ -186,6 +209,7 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     fprintf(f, "    }\n");
 
     compile_insns(f, body, 0, 0, &status);
+    compile_cancel_handler(f, body, &status);
     fprintf(f, "\n} /* end of %s */\n", funcname);
 
     xfree(status.compiled_for_pos);
