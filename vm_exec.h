@@ -167,18 +167,6 @@ default:                        \
 
 #endif
 
-#ifdef MJIT_HEADER
-#define EXEC_EC_CFP(mjit_enable_p) do { \
-    VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
-    val = vm_exec(ec, mjit_enable_p); \
-} while (0)
-#else
-#define EXEC_EC_CFP(mjit_enable_p) do { \
-    RESTORE_REGS(); \
-    NEXT_INSN(); \
-} while (0)
-#endif
-
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
 #ifdef MJIT_HEADER

@@ -453,7 +453,7 @@ expandarray
 (...)
 // attr rb_snum_t sp_inc = num - 1 + (flag & 1 ? 1 : 0);
 {
-    vm_expandarray(GET_CFP(), ary, num, (int)flag);
+    vm_expandarray(GET_SP(), ary, num, (int)flag);
 }
 
 /* concat two arrays */
@@ -693,7 +693,8 @@ defineclass
 		  class_iseq->body->iseq_encoded, GET_SP(),
 		  class_iseq->body->local_table_size,
 		  class_iseq->body->stack_max);
-    EXEC_EC_CFP(TRUE);
+    RESTORE_REGS();
+    NEXT_INSN();
 }
 
 /**********************************************************/
@@ -819,8 +820,8 @@ invokeblock
     }
 
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci, block_handler);
-    if (val == Qundef && (val = mjit_exec(ec)) == Qundef) {
-        EXEC_EC_CFP(FALSE);
+    if (val == Qundef) {
+        EXEC_EC_CFP(val);
     }
 }
 
@@ -1344,7 +1345,8 @@ opt_call_c_function
 	THROW_EXCEPTION(err);
     }
 
-    EXEC_EC_CFP(TRUE);
+    RESTORE_REGS();
+    NEXT_INSN();
 }
 
 /* BLT */
