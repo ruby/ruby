@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 with_feature :encoding do
   describe "Encoding::UndefinedConversionError#destination_encoding_name" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#eql?" do
   it "returns true if self and other have the same whole number of seconds" do

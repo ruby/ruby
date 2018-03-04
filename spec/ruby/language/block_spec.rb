@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/block', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/block'
 
 describe "A block yielded a single" do
   before :all do

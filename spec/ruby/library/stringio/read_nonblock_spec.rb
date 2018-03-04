@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require "stringio"
-require File.expand_path('../shared/read', __FILE__)
-require File.expand_path('../shared/sysread', __FILE__)
+require_relative 'shared/read'
+require_relative 'shared/sysread'
 
 describe "StringIO#read_nonblock when passed length, buffer" do
   it_behaves_like :stringio_read, :read_nonblock

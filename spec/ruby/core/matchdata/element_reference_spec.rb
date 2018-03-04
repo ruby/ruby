@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#[]" do
   it "acts as normal array indexing [index]" do

@@ -1,7 +1,7 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/hash_strings_ascii8bit', __FILE__)
-require File.expand_path('../fixtures/hash_strings_utf8', __FILE__)
-require File.expand_path('../fixtures/hash_strings_usascii', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/hash_strings_ascii8bit'
+require_relative 'fixtures/hash_strings_utf8'
+require_relative 'fixtures/hash_strings_usascii'
 
 describe "Hash literal" do
   it "{} should return an empty hash" do

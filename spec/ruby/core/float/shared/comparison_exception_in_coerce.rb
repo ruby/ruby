@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :float_comparison_exception_in_coerce, shared: true do
   ruby_version_is ""..."2.5" do

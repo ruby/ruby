@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_modulo, shared: true do
   it "returns the remainder when this value is divided by other" do

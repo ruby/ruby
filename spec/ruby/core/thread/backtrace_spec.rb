@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Thread#backtrace" do
   it "returns the current backtrace of a thread" do

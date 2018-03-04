@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/match_operators', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/match_operators'
 
 describe "The !~ operator" do
   before :each do

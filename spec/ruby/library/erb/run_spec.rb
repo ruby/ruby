@@ -1,5 +1,5 @@
 require 'erb'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "ERB#run" do
   # TODO: what is this? why does it not use

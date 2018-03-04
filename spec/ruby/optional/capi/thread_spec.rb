@@ -1,5 +1,5 @@
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../../../core/thread/shared/wakeup', __FILE__)
+require_relative 'spec_helper'
+require_relative '../../core/thread/shared/wakeup'
 
 load_extension("thread")
 

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/valid_ordinal', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/valid_ordinal'
 require 'date'
 
 describe "Date.valid_ordinal?" do

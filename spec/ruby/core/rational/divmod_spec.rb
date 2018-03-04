@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/divmod', __FILE__)
+require_relative '../../shared/rational/divmod'
 
 describe "Rational#divmod when passed a Rational" do
   it_behaves_like :rational_divmod_rat, :divmod

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Hash#clone" do
   it "copies instance variable but not the objects they refer to" do

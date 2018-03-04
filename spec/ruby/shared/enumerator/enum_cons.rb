@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/enumerator/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/enumerator/classes'
 
 describe :enum_cons, shared: true do
   it "returns an enumerator of the receiver with iteration of each_cons for each array of n concecutive elements" do

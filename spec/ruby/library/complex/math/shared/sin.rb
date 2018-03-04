@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_sin, shared: true do
   it "returns the sine of the passed argument expressed in radians" do

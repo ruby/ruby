@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/equal_value', __FILE__)
+require_relative '../../shared/rational/equal_value'
 
 describe "Rational#==" do
   it_behaves_like :rational_equal_value, :==

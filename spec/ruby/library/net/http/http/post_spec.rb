@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
 require 'uri'
-require File.expand_path('../fixtures/http_server', __FILE__)
+require_relative 'fixtures/http_server'
 
 ruby_version_is '2.4' do
   describe "Net::HTTP.post" do

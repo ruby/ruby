@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/code_loading', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/code_loading'
 
 describe "Kernel#require_relative with a relative path" do
   it "needs to be reviewed for spec completeness"

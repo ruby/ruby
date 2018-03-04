@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/modulo', __FILE__)
+require_relative '../../shared/rational/modulo'
 
 describe "Rational#%" do
   it_behaves_like :rational_modulo, :%

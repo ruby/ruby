@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/readchar', __FILE__)
+require_relative 'shared/readchar'
 
 describe "StringIO#readbyte" do
   it_behaves_like :stringio_readchar, :readbyte

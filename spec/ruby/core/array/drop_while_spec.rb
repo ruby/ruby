@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#drop_while" do
   it "removes elements from the start of the array while the block evaluates to true" do

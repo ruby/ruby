@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/constants', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/constants'
 
 describe "Module#const_get" do
   it "accepts a String or Symbol name" do

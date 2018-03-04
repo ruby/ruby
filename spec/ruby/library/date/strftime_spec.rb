@@ -1,5 +1,5 @@
 require 'date'
-require File.expand_path('../../../shared/time/strftime_for_date', __FILE__)
+require_relative '../../shared/time/strftime_for_date'
 
 describe "Date#strftime" do
   before :all do

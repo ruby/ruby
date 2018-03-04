@@ -1,4 +1,4 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
 
 describe "Net::HTTPGenericRequest#set_body_internal when passed string" do

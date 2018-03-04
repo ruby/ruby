@@ -1,6 +1,6 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 
 describe :enumerator_lazy_to_enum, shared: true do
   before :each do

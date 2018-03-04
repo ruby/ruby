@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/div', __FILE__)
+require_relative '../../shared/rational/div'
 
 describe "Rational#div" do
   it_behaves_like :rational_div, :div

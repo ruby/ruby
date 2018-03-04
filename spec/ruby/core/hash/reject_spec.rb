@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/iteration', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/iteration'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Hash#reject" do
   it "returns a new hash removing keys for which the block yields true" do

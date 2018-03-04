@@ -1,7 +1,7 @@
 # -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
 
 describe :string_unpack_8bit, shared: true do
   it "decodes one byte for a single format character" do

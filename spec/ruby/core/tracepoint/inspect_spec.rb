@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe 'TracePoint#inspect' do
   it 'returns a string containing a human-readable TracePoint status' do

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/matched_size.rb', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/matched_size'
 require 'strscan'
 
 describe "StringScanner#matched_size" do

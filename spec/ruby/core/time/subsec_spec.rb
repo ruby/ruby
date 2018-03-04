@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#subsec" do
   it "returns 0 as a Fixnum for a Time with a whole number of seconds" do

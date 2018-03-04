@@ -1,4 +1,4 @@
-require File.expand_path('../shared/keep_if', __FILE__)
+require_relative 'shared/keep_if'
 
 describe "Array#keep_if" do
   it "returns the same array if no changes were made" do

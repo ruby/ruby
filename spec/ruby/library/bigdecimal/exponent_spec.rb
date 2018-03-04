@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/power', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/power'
 require 'bigdecimal'
 
 describe "BigDecimal#**" do

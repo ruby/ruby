@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes.rb', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :symbol_slice, shared: true do
   describe "with an Integer index" do

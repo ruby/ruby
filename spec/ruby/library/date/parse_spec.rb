@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/parse', __FILE__)
-require File.expand_path('../shared/parse_us', __FILE__)
-require File.expand_path('../shared/parse_eu', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/parse'
+require_relative 'shared/parse_us'
+require_relative 'shared/parse_eu'
 require 'date'
 
 describe "Date#parse" do

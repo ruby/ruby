@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/local', __FILE__)
-require File.expand_path('../shared/time_params', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/local'
+require_relative 'shared/time_params'
 
 describe "Time.mktime" do
   it_behaves_like :time_local, :mktime

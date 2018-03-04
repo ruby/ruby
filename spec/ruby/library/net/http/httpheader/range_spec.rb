@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/set_range', __FILE__)
+require_relative 'fixtures/classes'
+require_relative 'shared/set_range'
 
 describe "Net::HTTPHeader#range" do
   before :each do

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/common', __FILE__)
+require_relative '../fixtures/common'
 
 describe :proc_call, shared: true do
   it "invokes self" do

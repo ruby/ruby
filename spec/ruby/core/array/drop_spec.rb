@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#drop" do
   it "removes the specified number of elements from the start of the array" do

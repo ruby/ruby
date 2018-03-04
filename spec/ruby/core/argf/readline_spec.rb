@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/gets', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/gets'
 
 describe "ARGF.readline" do
   it_behaves_like :argf_gets, :readline

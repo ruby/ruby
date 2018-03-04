@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # arcsine : (-1.0, 1.0) --> (-PI/2, PI/2)
 describe "Math.asin" do

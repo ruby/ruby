@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/complex/polar', __FILE__)
+require_relative '../../shared/complex/polar'
 
 describe "Complex.polar" do
   it_behaves_like :complex_polar_class, :polar

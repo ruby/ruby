@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/constants', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/constants'
+require_relative 'fixtures/classes'
 
 describe "Module.constants" do
   it "returns an array of the names of all toplevel constants" do

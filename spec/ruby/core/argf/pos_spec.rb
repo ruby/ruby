@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/pos', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/pos'
 
 describe "ARGF.pos" do
   it_behaves_like :argf_pos, :pos

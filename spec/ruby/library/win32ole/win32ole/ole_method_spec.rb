@@ -1,5 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/ole_method', __FILE__)
+require_relative '../fixtures/classes'
+require_relative 'shared/ole_method'
 
 platform_is :windows do
   require 'win32ole'

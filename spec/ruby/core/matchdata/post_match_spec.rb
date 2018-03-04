@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#post_match" do
   it "returns the string after the match equiv. special var $'" do

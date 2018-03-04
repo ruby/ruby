@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/http_server', __FILE__)
-require File.expand_path('../shared/request_head', __FILE__)
+require_relative 'fixtures/http_server'
+require_relative 'shared/request_head'
 
 describe "Net::HTTP#request_head" do
   it_behaves_like :net_ftp_request_head, :request_head

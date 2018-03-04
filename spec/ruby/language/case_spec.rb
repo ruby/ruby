@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "The 'case'-construct" do
   it "evaluates the body of the when clause matching the case target expression" do

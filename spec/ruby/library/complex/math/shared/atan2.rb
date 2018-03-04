@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_atan2, shared: true do
   it "returns the arc tangent of the passed arguments" do

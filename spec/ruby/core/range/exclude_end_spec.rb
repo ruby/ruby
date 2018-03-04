@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Range#exclude_end?" do
   it "returns false if the range does not exclude the end value" do

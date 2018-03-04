@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/complex/Complex', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/complex/Complex'
 
 describe "Kernel.Complex()" do
   it_behaves_like :kernel_Complex, :Complex

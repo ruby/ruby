@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 with_feature :encoding do
   describe :io_external_encoding_write, shared: true do

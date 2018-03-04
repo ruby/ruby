@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/constants', __FILE__)
-require File.expand_path('../fixtures/constant_unicode', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/constants'
+require_relative 'fixtures/constant_unicode'
 
 describe "Module#const_defined?" do
   it "returns true if the given Symbol names a constant defined in the receiver" do

@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../shared/verbose', __FILE__)
+require_relative '../spec_helper'
+require_relative 'shared/verbose'
 
 describe "The -W command line option" do
   before :each do

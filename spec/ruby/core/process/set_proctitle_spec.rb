@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 # Note that there's no way to get the current process title defined as a spec
 # somewhere. Process.setproctitle explicitly does not change `$0` so the only

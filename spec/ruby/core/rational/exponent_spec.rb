@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/exponent', __FILE__)
+require_relative '../../shared/rational/exponent'
 
 describe "Rational#**" do
   it_behaves_like :rational_exponent, :**

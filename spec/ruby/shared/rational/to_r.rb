@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_to_r, shared: true do
   conflicts_with :Prime do

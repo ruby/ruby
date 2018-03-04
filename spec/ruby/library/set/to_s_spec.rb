@@ -1,4 +1,4 @@
-require File.expand_path('../shared/inspect', __FILE__)
+require_relative 'shared/inspect'
 require 'set'
 
 ruby_version_is "2.5" do

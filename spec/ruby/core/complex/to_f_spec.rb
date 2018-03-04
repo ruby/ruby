@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Complex#to_f" do
   describe "when the imaginary part is Fixnum 0" do

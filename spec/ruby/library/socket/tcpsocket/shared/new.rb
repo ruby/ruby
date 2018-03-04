@@ -1,5 +1,5 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/classes', __FILE__)
+require_relative '../../../../spec_helper'
+require_relative '../../fixtures/classes'
 
 describe :tcpsocket_new, shared: true do
   it "requires a hostname and a port as arguments" do

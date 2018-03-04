@@ -1,5 +1,5 @@
 # -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe :range_cover_and_include, shared: true do
   it "returns true if other is an element of self" do

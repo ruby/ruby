@@ -1,7 +1,7 @@
 # -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
 
 describe "Array#pack with format 'x'" do
   it_behaves_like :array_pack_basic, 'x'

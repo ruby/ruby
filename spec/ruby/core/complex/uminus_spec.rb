@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Complex#-@" do
   it "sends #-@ to the real and imaginary parts and returns a Complex with the resulting respective parts" do

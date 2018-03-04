@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :kernel_Complex, shared: true do
   describe "when passed [Complex, Complex]" do

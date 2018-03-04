@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "MatchData#end" do
   it "returns the offset of the end of the nth element" do

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/getc', __FILE__)
+require_relative 'shared/getc'
 
 describe "StringIO#getc" do
   it_behaves_like :stringio_getc, :getc

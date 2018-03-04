@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Proc#lambda?" do
   it "returns true if the Proc was created from a block with the lambda keyword" do

@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/variables', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/variables'
 
 describe "Multiple assignment" do
   context "with a single RHS value" do

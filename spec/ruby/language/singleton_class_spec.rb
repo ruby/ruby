@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/class', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/class'
 
 describe "A singleton class" do
   it "is TrueClass for true" do

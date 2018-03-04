@@ -1,4 +1,4 @@
-require File.expand_path('../shared/abs', __FILE__)
+require_relative 'shared/abs'
 
 describe "Numeric#abs" do
   it_behaves_like :numeric_abs, :abs

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_to_s, shared: true do
   it "returns a string representation of self" do

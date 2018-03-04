@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "Enumerator::Yielder#<<" do
   # TODO: There's some common behavior between yield and <<; move to a shared spec

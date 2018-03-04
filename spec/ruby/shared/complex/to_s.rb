@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :complex_to_s, shared: true do
   describe "when self's real component is 0" do

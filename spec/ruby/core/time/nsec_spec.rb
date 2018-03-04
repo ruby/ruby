@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#nsec" do
   it "returns 0 for a Time constructed with a whole number of seconds" do

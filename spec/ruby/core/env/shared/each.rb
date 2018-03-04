@@ -1,4 +1,4 @@
-require File.expand_path('../../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../enumerable/shared/enumeratorized'
 
 describe :env_each, shared: true do
   it "returns each pair" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../dir/fixtures/common', __FILE__)
+require_relative '../../dir/fixtures/common'
 
 describe :open_directory, shared: true do
   it "opens directories" do

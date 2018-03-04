@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 # Describes Numeric#step shared specs between different argument styles.
 # To be able to do it, the @step_args var must contain a Proc that transforms

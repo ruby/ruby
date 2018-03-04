@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#public_constant" do
   it "can only be passed constant names defined in the target (self) module" do

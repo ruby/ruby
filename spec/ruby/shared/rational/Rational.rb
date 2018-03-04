@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/rational', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/rational'
 
 describe :kernel_Rational, shared: true do
   describe "passed Integer" do

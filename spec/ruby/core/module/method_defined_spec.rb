@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Module#method_defined?" do
   it "returns true if a public or private method with the given name is defined in self, self's ancestors or one of self's included modules" do

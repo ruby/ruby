@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe :resists_cve_2011_4815, shared: true do
   it "resists CVE-2011-4815 by having different hash codes in different processes" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/enumerator/each', __FILE__)
+require_relative '../../shared/enumerator/each'
 
 describe "Enumerator#inject" do
   it_behaves_like :enum_each, :each

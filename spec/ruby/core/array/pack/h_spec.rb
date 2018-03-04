@@ -1,8 +1,8 @@
 # -*- encoding: ascii-8bit -*-
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/encodings', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/encodings'
 
 describe "Array#pack with format 'H'" do
   it_behaves_like :array_pack_basic, 'H'

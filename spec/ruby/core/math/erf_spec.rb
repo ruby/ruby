@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
 
 # erf method is the "error function" encountered in integrating the normal
 # distribution (which is a normalized form of the Gaussian function).

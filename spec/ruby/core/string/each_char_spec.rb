@@ -1,5 +1,5 @@
-require File.expand_path('../shared/chars', __FILE__)
-require File.expand_path('../shared/each_char_without_block', __FILE__)
+require_relative 'shared/chars'
+require_relative 'shared/each_char_without_block'
 
 describe "String#each_char" do
   it_behaves_like :string_chars, :each_char

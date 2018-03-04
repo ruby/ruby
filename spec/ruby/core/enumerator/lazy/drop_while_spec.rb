@@ -1,7 +1,7 @@
 # -*- encoding: us-ascii -*-
 
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#drop_while" do
   before :each do

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/new_ascii', __FILE__)
-require File.expand_path('../shared/new_ascii_8bit', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/new_ascii'
+require_relative 'shared/new_ascii_8bit'
 
 describe "Regexp.new" do
   it_behaves_like :regexp_new_ascii, :new

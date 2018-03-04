@@ -1,6 +1,6 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative 'fixtures/classes'
 
 describe "Net::HTTPHeader#initialize_http_header when passed Hash" do
   before :each do

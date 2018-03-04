@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Integer#fdiv" do
   it "performs floating-point division between self and a fixnum" do

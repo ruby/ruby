@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe 'TracePoint#raised_exception' do
   it 'returns value from exception raised on the :raise event' do

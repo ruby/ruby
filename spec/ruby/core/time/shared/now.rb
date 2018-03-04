@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :time_now, shared: true do
   it "creates a subclass instance if called on a subclass" do

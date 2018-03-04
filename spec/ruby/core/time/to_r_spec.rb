@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#to_r" do
   it "returns the a Rational representing seconds and subseconds since the epoch" do

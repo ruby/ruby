@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :enum_with_index, shared: true do
 
-  require File.expand_path('../../../fixtures/enumerator/classes', __FILE__)
+  require_relative '../../fixtures/enumerator/classes'
 
   before :each do
     @enum = [1, 2, 3, 4].to_enum

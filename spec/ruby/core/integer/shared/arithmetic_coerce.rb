@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :integer_arithmetic_coerce_rescue, shared: true do
   it "rescues exception (StandardError and subclasses) raised in other#coerce and raises TypeError" do

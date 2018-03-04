@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/yield', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/yield'
 
 # Note that these specs use blocks defined as { |*a| ... } to capture the
 # arguments with which the block is invoked. This is slightly confusing

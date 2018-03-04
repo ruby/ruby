@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/modulo', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/modulo'
 
 describe "BigDecimal#%" do
   it_behaves_like :bigdecimal_modulo, :%

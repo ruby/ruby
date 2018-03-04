@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#initialize_copy" do
   it "should retain singleton methods when duped" do

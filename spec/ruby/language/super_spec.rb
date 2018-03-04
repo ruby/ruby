@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/super', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/super'
 
 describe "The super keyword" do
   it "calls the method on the calling class" do

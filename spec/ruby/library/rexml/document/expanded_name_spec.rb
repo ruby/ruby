@@ -1,5 +1,5 @@
 require 'rexml/document'
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe :document_expanded_name, shared: true do
   it "returns an empty string for root" do # root nodes have no expanded name
