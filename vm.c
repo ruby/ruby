@@ -1793,13 +1793,16 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
   be FALSE to avoid calling `mjit_exec` twice.
  */
 
+static inline VALUE
+handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
+		 VALUE errinfo, VALUE *initial);
+
 MJIT_FUNC_EXPORTED VALUE
 vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 {
     enum ruby_tag_type state;
     VALUE result = Qundef;
     VALUE initial = 0;
-    struct vm_throw_data *err;
 
     EC_PUSH_TAG(ec);
 
@@ -1807,9 +1810,33 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         if (mjit_enable_p)
             result = mjit_exec(ec);
-	goto vm_loop_start;
+	goto vm_loop_start; /* fallback to the VM */
     }
     else {
+	result = ec->errinfo;
+	rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
+	while ((result = handle_exception(ec, state, result, &initial)) == Qundef) {
+	    /* caught a jump, exec the handler */
+	  vm_loop_start:
+	    if (result == Qundef)
+		result = vm_exec_core(ec, initial);
+	    VM_ASSERT(ec->tag == &_tag);
+	    /* when caught `throw`, `tag.state` is set. */
+	    if ((state = _tag.state) == TAG_NONE) break;
+	    _tag.state = TAG_NONE;
+	}
+    }
+    EC_POP_TAG();
+    return result;
+}
+
+static inline VALUE
+handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
+		 VALUE errinfo, VALUE *initial)
+{
+    struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
+
+    for (;;) {
 	unsigned int i;
 	const struct iseq_catch_table_entry *entry;
 	const struct iseq_catch_table *ct;
@@ -1819,10 +1846,6 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 	VALUE type;
 	const rb_control_frame_t *escape_cfp;
 
-	err = (struct vm_throw_data *)ec->errinfo;
-	rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
-
-      exception_handler:
 	cont_pc = cont_sp = 0;
 	catch_iseq = NULL;
 
@@ -1867,11 +1890,10 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 			}
 			if (catch_iseq == NULL) {
 			    ec->errinfo = Qnil;
-			    result = THROW_DATA_VAL(err);
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
 			    hook_before_rewind(ec, ec->cfp, TRUE, state, err);
 			    rb_vm_pop_frame(ec);
-			    goto finish_vme;
+			    return THROW_DATA_VAL(err);
 			}
 		    }
 		    /* through */
@@ -1879,13 +1901,12 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 		else {
 		    /* TAG_BREAK */
 #if OPT_STACK_CACHING
-		    initial = THROW_DATA_VAL(err);
+		    *initial = THROW_DATA_VAL(err);
 #else
 		    *ec->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 		    ec->errinfo = Qnil;
-                    result = Qundef;
-		    goto vm_loop_start;
+		    return Qundef;
 		}
 	    }
 	}
@@ -1924,8 +1945,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 			if (cfp == escape_cfp) {
 			    cfp->pc = cfp->iseq->body->iseq_encoded + entry->cont;
 			    ec->errinfo = Qnil;
-                            result = Qundef;
-			    goto vm_loop_start;
+			    return Qundef;
 			}
 		    }
 		}
@@ -1952,15 +1972,14 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 
 			if (state != TAG_REDO) {
 #if OPT_STACK_CACHING
-			    initial = THROW_DATA_VAL(err);
+			    *initial = THROW_DATA_VAL(err);
 #else
 			    *ec->cfp->sp++ = THROW_DATA_VAL(err);
 #endif
 			}
 			ec->errinfo = Qnil;
 			VM_ASSERT(ec->tag->state == TAG_NONE);
-                        result = Qundef;
-			goto vm_loop_start;
+			return Qundef;
 		    }
 		}
 	    }
@@ -2012,8 +2031,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 	    ec->tag->state = TAG_NONE;
 	    ec->errinfo = Qnil;
 
-            result = Qundef;
-	    goto vm_loop_start;
+	    return Qundef;
 	}
 	else {
 	    hook_before_rewind(ec, ec->cfp, FALSE, state, err);
@@ -2021,27 +2039,14 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 	    if (VM_FRAME_FINISHED_P(ec->cfp)) {
 		rb_vm_pop_frame(ec);
 		ec->errinfo = (VALUE)err;
-		EC_TMPPOP_TAG();
+		ec->tag = ec->tag->prev;
 		EC_JUMP_TAG(ec, state);
 	    }
 	    else {
 		rb_vm_pop_frame(ec);
-		goto exception_handler;
 	    }
 	}
-      vm_loop_start:
-        if (result == Qundef)
-            result = vm_exec_core(ec, initial);
-	VM_ASSERT(ec->tag == &_tag);
-	if ((state = _tag.state) != TAG_NONE) {
-	    err = (struct vm_throw_data *)result;
-	    _tag.state = TAG_NONE;
-	    goto exception_handler;
-	}
     }
-  finish_vme:
-    EC_POP_TAG();
-    return result;
 }
 
 /* misc */
