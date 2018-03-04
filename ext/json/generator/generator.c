@@ -237,6 +237,7 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
     int escape_len;
     unsigned char c;
     char buf[6] = { '\\', 'u' };
+    int ascii_only = rb_enc_str_asciionly_p(string);
 
     for (start = 0, end = 0; end < len;) {
         p = ptr + end;
@@ -281,14 +282,17 @@ static void convert_UTF8_to_JSON(FBuffer *buffer, VALUE string)
                     break;
                 default:
                     {
-                        unsigned short clen = trailingBytesForUTF8[c] + 1;
-                        if (end + clen > len) {
-                            rb_raise(rb_path2class("JSON::GeneratorError"),
-                                    "partial character in source, but hit end");
-                        }
-                        if (!isLegalUTF8((UTF8 *) p, clen)) {
-                            rb_raise(rb_path2class("JSON::GeneratorError"),
-                                    "source sequence is illegal/malformed utf-8");
+                        unsigned short clen = 1;
+                        if (!ascii_only) {
+                            clen += trailingBytesForUTF8[c];
+                            if (end + clen > len) {
+                                rb_raise(rb_path2class("JSON::GeneratorError"),
+                                        "partial character in source, but hit end");
+                            }
+                            if (!isLegalUTF8((UTF8 *) p, clen)) {
+                                rb_raise(rb_path2class("JSON::GeneratorError"),
+                                        "source sequence is illegal/malformed utf-8");
+                            }
                         }
                         end += clen;
                     }
