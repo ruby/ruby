@@ -1808,8 +1808,8 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (mjit_enable_p)
-            result = mjit_exec(ec);
+        if (!mjit_enable_p || (result = mjit_exec(ec)) == Qundef)
+            result = vm_exec_core(ec, initial);
 	goto vm_loop_start; /* fallback to the VM */
     }
     else {
@@ -1817,9 +1817,8 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 	rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
 	while ((result = handle_exception(ec, state, result, &initial)) == Qundef) {
 	    /* caught a jump, exec the handler */
+	    result = vm_exec_core(ec, initial);
 	  vm_loop_start:
-	    if (result == Qundef)
-		result = vm_exec_core(ec, initial);
 	    VM_ASSERT(ec->tag == &_tag);
 	    /* when caught `throw`, `tag.state` is set. */
 	    if ((state = _tag.state) == TAG_NONE) break;
