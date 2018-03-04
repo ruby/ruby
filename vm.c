@@ -1807,15 +1807,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         if (mjit_enable_p)
             result = mjit_exec(ec);
-      vm_loop_start:
-        if (result == Qundef)
-            result = vm_exec_core(ec, initial);
-	VM_ASSERT(ec->tag == &_tag);
-	if ((state = _tag.state) != TAG_NONE) {
-	    err = (struct vm_throw_data *)result;
-	    _tag.state = TAG_NONE;
-	    goto exception_handler;
-	}
+	goto vm_loop_start;
     }
     else {
 	unsigned int i;
@@ -2036,6 +2028,15 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 		rb_vm_pop_frame(ec);
 		goto exception_handler;
 	    }
+	}
+      vm_loop_start:
+        if (result == Qundef)
+            result = vm_exec_core(ec, initial);
+	VM_ASSERT(ec->tag == &_tag);
+	if ((state = _tag.state) != TAG_NONE) {
+	    err = (struct vm_throw_data *)result;
+	    _tag.state = TAG_NONE;
+	    goto exception_handler;
 	}
     }
   finish_vme:
