@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'tempfile'
 
 describe "Tempfile#close when passed no argument or [false]" do

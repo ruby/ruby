@@ -1,8 +1,8 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/server', __FILE__)
-require File.expand_path('../shared/gettextfile', __FILE__)
-require File.expand_path('../shared/getbinaryfile', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'spec_helper'
+require_relative 'fixtures/server'
+require_relative 'shared/gettextfile'
+require_relative 'shared/getbinaryfile'
 
 describe "Net::FTP#get (binary mode)" do
   before :each do

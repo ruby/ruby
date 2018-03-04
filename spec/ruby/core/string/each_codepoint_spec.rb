@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/codepoints', __FILE__)
-require File.expand_path('../shared/each_codepoint_without_block', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/codepoints'
+require_relative 'shared/each_codepoint_without_block'
 
 with_feature :encoding do
   describe "String#each_codepoint" do

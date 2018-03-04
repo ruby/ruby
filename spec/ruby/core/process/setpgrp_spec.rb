@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 # TODO: put these in the right files.
 describe "Process.setpgrp and Process.getpgrp" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../../../shared/hash/key_error', __FILE__)
+require_relative '../../../shared/hash/key_error'
 
 describe :kernel_sprintf, shared: true do
   def format(*args)

@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/cover_and_include', __FILE__)
-require File.expand_path('../shared/cover', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/cover_and_include'
+require_relative 'shared/cover'
 
 describe "Range#===" do
   it "returns the result of calling #include? on self" do

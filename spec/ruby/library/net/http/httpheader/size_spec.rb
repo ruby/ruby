@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/size', __FILE__)
+require_relative 'fixtures/classes'
+require_relative 'shared/size'
 
 describe "Net::HTTPHeader#size" do
   it_behaves_like :net_httpheader_size, :size

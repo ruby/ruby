@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#to_f" do
   it "returns the float number of seconds + usecs since the epoch" do

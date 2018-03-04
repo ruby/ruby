@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/sprintf', __FILE__)
-require File.expand_path('../shared/sprintf_encoding', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/sprintf'
+require_relative 'shared/sprintf_encoding'
 
 describe "Kernel#sprintf" do
   it_behaves_like :kernel_sprintf, -> (format, *args) {

@@ -1,6 +1,6 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/urandom', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/urandom'
 
 ruby_version_is "2.3"..."2.5" do
   describe "Random.raw_seed" do

@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/hash/key_error', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/hash/key_error'
 
 describe "ENV.fetch" do
   it "returns a value" do

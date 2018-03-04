@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/reflection', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/reflection'
+require_relative 'fixtures/classes'
 
 describe :kernel_singleton_methods, shared: true do
   it "returns an empty Array for an object with no singleton methods" do

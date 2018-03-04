@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_divmod_rat, shared: true do
   it "returns the quotient as Integer and the remainder as Rational" do

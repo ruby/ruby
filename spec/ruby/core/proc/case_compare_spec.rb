@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/call', __FILE__)
-require File.expand_path('../shared/call_arguments', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/call'
+require_relative 'shared/call_arguments'
 
 describe "Proc#===" do
   it_behaves_like :proc_call, :===

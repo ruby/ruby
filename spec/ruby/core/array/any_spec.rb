@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Array#any?" do
   describe 'with no block given (a default block of { |x| x } is implicit)' do

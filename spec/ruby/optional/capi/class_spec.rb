@@ -1,5 +1,5 @@
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../fixtures/class', __FILE__)
+require_relative 'spec_helper'
+require_relative 'fixtures/class'
 
 load_extension("class")
 compile_extension("class_under_autoload")

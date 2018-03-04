@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#<=>" do
   it "returns -1, 0, 1 when self is less than, equal, or greater than other" do

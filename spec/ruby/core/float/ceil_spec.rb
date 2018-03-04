@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#ceil" do
   it "returns the smallest Integer greater than or equal to self" do

@@ -1,6 +1,6 @@
 # encoding: utf-8
-require File.expand_path('../spec_helper', __FILE__)
-require File.expand_path('../../../shared/string/times', __FILE__)
+require_relative 'spec_helper'
+require_relative '../../shared/string/times'
 
 load_extension('string')
 

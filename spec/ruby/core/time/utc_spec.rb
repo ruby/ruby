@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/gm', __FILE__)
-require File.expand_path('../shared/gmtime', __FILE__)
-require File.expand_path('../shared/time_params', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/gm'
+require_relative 'shared/gmtime'
+require_relative 'shared/time_params'
 
 describe "Time#utc?" do
   it "returns true if time represents a time in UTC (GMT)" do

@@ -1,5 +1,5 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../fixtures/marshal_data', __FILE__)
+require_relative '../fixtures/marshal_data'
 require 'stringio'
 
 describe :marshal_load, shared: true do

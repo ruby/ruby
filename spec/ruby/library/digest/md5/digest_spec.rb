@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/constants', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/constants'
 
 describe "Digest::MD5#digest" do
 

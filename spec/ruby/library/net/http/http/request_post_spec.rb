@@ -1,7 +1,7 @@
-require File.expand_path('../../../../../spec_helper', __FILE__)
+require_relative '../../../../spec_helper'
 require 'net/http'
-require File.expand_path('../fixtures/http_server', __FILE__)
-require File.expand_path('../shared/request_post', __FILE__)
+require_relative 'fixtures/http_server'
+require_relative 'shared/request_post'
 
 describe "Net::HTTP#request_post" do
   it_behaves_like :net_ftp_request_post, :request_post

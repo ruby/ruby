@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Symbol#<=> with Symbol" do
   it "compares individual characters based on their ascii value" do

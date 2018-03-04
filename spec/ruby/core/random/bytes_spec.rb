@@ -1,5 +1,5 @@
 # -*- encoding: binary -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Random#bytes" do
   it "returns a String" do

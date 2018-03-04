@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/comparison', __FILE__)
-require File.expand_path('../shared/greater_than', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/comparison'
+require_relative 'shared/greater_than'
 
 ruby_version_is "2.3" do
   describe "Hash#>=" do

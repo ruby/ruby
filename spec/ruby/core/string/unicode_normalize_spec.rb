@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 # Examples taken from http://www.unicode.org/reports/tr15/#Norm_Forms
 

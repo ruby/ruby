@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/basicobject/method_missing', __FILE__)
+require_relative '../../shared/basicobject/method_missing'
 
 describe "BasicObject#method_missing" do
   it "is a private method" do

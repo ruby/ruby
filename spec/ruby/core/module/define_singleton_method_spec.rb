@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Module#define_singleton_method" do
   it "defines the given method as an class method with the given name in self" do

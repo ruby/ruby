@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe :matchdata_eql, shared: true do
   it "returns true if both operands have equal target strings, patterns, and match positions" do

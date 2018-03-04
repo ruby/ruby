@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/each_char', __FILE__)
+require_relative 'shared/each_char'
 
 describe "StringIO#chars" do
   it_behaves_like :stringio_each_char, :chars

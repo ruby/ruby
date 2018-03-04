@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :complex_abs, shared: true do
   it "returns the modulus: |a + bi| = sqrt((a ^ 2) + (b ^ 2))" do

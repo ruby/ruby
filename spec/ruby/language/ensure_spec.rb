@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/ensure', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/ensure'
 
 describe "An ensure block inside a begin block" do
   before :each do

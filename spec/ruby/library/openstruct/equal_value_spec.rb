@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require "ostruct"
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative 'fixtures/classes'
 
 describe "OpenStruct#==" do
   before :each do

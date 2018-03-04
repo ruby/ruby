@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/next', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/next'
 
 describe "The next statement from within the block" do
   before :each do

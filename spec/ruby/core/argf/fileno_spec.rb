@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/fileno', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/fileno'
 
 describe "ARGF.fileno" do
   it_behaves_like :argf_fileno, :fileno

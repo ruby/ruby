@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_cosh, shared: true do
   it "returns the hyperbolic cosine of the passed argument" do

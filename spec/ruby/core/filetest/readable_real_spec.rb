@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/readable_real', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/readable_real'
 
 describe "FileTest.readable_real?" do
   it_behaves_like :file_readable_real, :readable_real?, FileTest

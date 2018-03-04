@@ -1,4 +1,4 @@
-require File.expand_path('../../../shared/rational/comparison', __FILE__)
+require_relative '../../shared/rational/comparison'
 
 describe "Rational#<=> when passed a Rational object" do
   it_behaves_like :rational_cmp_rat, :<=>

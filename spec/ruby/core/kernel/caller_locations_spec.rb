@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/caller_locations', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/caller_locations'
 
 describe 'Kernel#caller_locations' do
   it 'is a private method' do

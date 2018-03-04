@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/eof', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/eof'
 
 describe "ARGF.eof" do
   it_behaves_like :argf_eof, :eof

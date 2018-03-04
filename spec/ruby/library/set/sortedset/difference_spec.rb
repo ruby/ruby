@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'set'
-require File.expand_path('../shared/difference', __FILE__)
+require_relative 'shared/difference'
 
 describe "SortedSet#difference" do
   it_behaves_like :sorted_set_difference, :difference

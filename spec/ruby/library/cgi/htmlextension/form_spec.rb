@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'cgi'
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative 'fixtures/common'
 
 describe "CGI::HtmlExtension#form" do
   before :each do

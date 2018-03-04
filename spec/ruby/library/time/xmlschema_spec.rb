@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/xmlschema', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/xmlschema'
 require 'time'
 
 describe "Time.xmlschema" do

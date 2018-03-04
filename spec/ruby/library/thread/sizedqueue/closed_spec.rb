@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'thread'
-require File.expand_path('../../shared/queue/closed', __FILE__)
+require_relative '../shared/queue/closed'
 
 ruby_version_is "2.3" do
   describe "SizedQueue#closed?" do

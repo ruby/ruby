@@ -1,4 +1,4 @@
-require File.expand_path('../enumerable_enumeratorized', __FILE__)
+require_relative 'enumerable_enumeratorized'
 
 describe :enumerable_find, shared: true do
   # #detect and #find are aliases, so we only need one function

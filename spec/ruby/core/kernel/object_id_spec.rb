@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/kernel/object_id', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/kernel/object_id'
 
 describe "Kernel#object_id" do
   it_behaves_like :object_id, :object_id, Object

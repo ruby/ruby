@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/common', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 ruby_version_is ''...'2.3' do
-  require File.expand_path('../shared/closed', __FILE__)
+  require_relative 'shared/closed'
 end
 
 describe "Dir#close" do

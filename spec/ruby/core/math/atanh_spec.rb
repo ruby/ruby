@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../fixtures/math/common', __FILE__)
-require File.expand_path('../../../shared/math/atanh', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../fixtures/math/common'
+require_relative '../../shared/math/atanh'
 
 describe "Math.atanh" do
   it_behaves_like :math_atanh_base, :atanh, Math

@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Math.lgamma" do
   it "returns [Infinity, 1] when passed 0" do

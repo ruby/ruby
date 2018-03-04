@@ -1,5 +1,5 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/random_bytes.rb', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/random_bytes'
 
 if defined?(OpenSSL::Random.pseudo_bytes)
   describe "OpenSSL::Random.pseudo_bytes" do

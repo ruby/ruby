@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/executable', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/executable'
 
 describe "File.executable?" do
   it_behaves_like :file_executable, :executable?, File

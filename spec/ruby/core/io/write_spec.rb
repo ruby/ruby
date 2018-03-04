@@ -1,8 +1,8 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/write', __FILE__)
-require File.expand_path('../shared/binwrite', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/write'
+require_relative 'shared/binwrite'
 
 describe "IO#write on a file" do
   before :each do

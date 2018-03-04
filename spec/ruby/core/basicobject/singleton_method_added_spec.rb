@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/singleton_method', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/singleton_method'
 
 describe "BasicObject#singleton_method_added" do
   before :each do

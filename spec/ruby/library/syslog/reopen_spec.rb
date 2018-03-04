@@ -1,7 +1,7 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 platform_is_not :windows do
-  require File.expand_path('../shared/reopen', __FILE__)
+  require_relative 'shared/reopen'
   require 'syslog'
 
   describe "Syslog.reopen" do

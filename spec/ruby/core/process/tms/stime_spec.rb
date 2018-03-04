@@ -1,4 +1,4 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 describe "Process::Tms#stime" do
   it "needs to be reviewed for spec completeness"

@@ -1,7 +1,7 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/constants', __FILE__)
-require File.expand_path('../fixtures/constants_sclass', __FILE__)
-require File.expand_path('../fixtures/constant_visibility', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/constants'
+require_relative 'fixtures/constants_sclass'
+require_relative 'fixtures/constant_visibility'
 
 # Read the documentation in fixtures/constants.rb for the guidelines and
 # rationale for the structure and organization of these specs.

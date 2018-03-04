@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/extract_range_matched', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/extract_range_matched'
 require 'strscan'
 
 describe "StringScanner#post_match" do

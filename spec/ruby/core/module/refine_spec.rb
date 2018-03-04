@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/refine', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/refine'
 
 describe "Module#refine" do
   it "runs its block in an anonymous module" do

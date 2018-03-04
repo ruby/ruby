@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :hash_store, shared: true do
   it "associates the key with the value and return the value" do

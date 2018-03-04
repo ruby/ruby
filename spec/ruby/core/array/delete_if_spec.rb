@@ -1,8 +1,8 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../shared/enumeratorize', __FILE__)
-require File.expand_path('../shared/delete_if', __FILE__)
-require File.expand_path('../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/classes'
+require_relative 'shared/enumeratorize'
+require_relative 'shared/delete_if'
+require_relative '../enumerable/shared/enumeratorized'
 
 describe "Array#delete_if" do
   before do

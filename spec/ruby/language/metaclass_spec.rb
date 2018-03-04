@@ -1,6 +1,6 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/class', __FILE__)
-require File.expand_path('../fixtures/metaclass', __FILE__)
+require_relative '../spec_helper'
+require_relative '../fixtures/class'
+require_relative 'fixtures/metaclass'
 
 describe "self in a metaclass body (class << obj)" do
   it "is TrueClass for true" do

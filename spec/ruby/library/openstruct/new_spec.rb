@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'ostruct'
 
 describe "OpenStruct.new when passed [Hash]" do

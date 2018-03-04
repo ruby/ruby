@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/rectangular', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/rectangular'
 
 describe "Matrix#rect" do
   it_behaves_like :matrix_rectangular, :rect

@@ -1,7 +1,7 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 with_feature :readline do
-  require File.expand_path('../shared/size', __FILE__)
+  require_relative 'shared/size'
 
   describe "Readline::HISTORY.length" do
     it_behaves_like :readline_history_size, :length

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_cos, shared: true do
   it "returns the cosine of the argument expressed in radians" do

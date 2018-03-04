@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/each_byte', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/each_byte'
 
 describe "ARGF.each_byte" do
   it_behaves_like :argf_each_byte, :each_byte

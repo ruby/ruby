@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/arithmetic_coerce', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/arithmetic_coerce'
 
 describe "Integer#+" do
   ruby_version_is "2.4"..."2.5" do

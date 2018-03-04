@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../../../shared/file/owned', __FILE__)
-require File.expand_path('../fixtures/classes', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../../../shared/file/owned'
+require_relative 'fixtures/classes'
 
 describe "File::Stat#owned?" do
   it_behaves_like :file_owned, :owned?, FileStat

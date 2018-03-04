@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
-require File.expand_path('../../../shared/complex/arg', __FILE__)
+require_relative '../../shared/complex/arg'
 
 describe "Complex#angle" do
   it_behaves_like :complex_arg, :angle

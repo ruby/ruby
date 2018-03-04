@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/encoded_strings', __FILE__)
+require_relative '../fixtures/encoded_strings'
 
 describe :array_inspect, shared: true do
   it "returns a string" do

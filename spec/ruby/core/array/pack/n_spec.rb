@@ -1,8 +1,8 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../shared/basic', __FILE__)
-require File.expand_path('../shared/numeric_basic', __FILE__)
-require File.expand_path('../shared/integer', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
+require_relative 'shared/basic'
+require_relative 'shared/numeric_basic'
+require_relative 'shared/integer'
 
 describe "Array#pack with format 'N'" do
   it_behaves_like :array_pack_basic, 'N'

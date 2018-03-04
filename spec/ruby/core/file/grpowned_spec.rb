@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/file/grpowned', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/file/grpowned'
 
 describe "File.grpowned?" do
   it_behaves_like :file_grpowned, :grpowned?, File

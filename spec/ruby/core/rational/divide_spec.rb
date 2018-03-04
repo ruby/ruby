@@ -1,5 +1,5 @@
-require File.expand_path('../../../shared/rational/divide', __FILE__)
-require File.expand_path('../../../shared/rational/arithmetic_exception_in_coerce', __FILE__)
+require_relative '../../shared/rational/divide'
+require_relative '../../shared/rational/arithmetic_exception_in_coerce'
 
 describe "Rational#/" do
   it_behaves_like :rational_divide, :/

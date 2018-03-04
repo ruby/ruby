@@ -1,5 +1,5 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
-require File.expand_path('../../fixtures/encoded_strings', __FILE__)
+require_relative '../fixtures/classes'
+require_relative '../fixtures/encoded_strings'
 
 describe :array_join_with_default_separator, shared: true do
   before :each do

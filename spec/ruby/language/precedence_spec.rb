@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/precedence', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/precedence'
 
 # Specifying the behavior of operators in combination could
 # lead to combinatorial explosion. A better way seems to be
@@ -296,15 +296,14 @@ describe "Operators" do
     lambda { eval("1...2...3")  }.should raise_error(SyntaxError)
   end
 
-# XXX: this is commented now due to a bug in compiler, which cannot
-# distinguish between range and flip-flop operator so far. zenspider is
-# currently working on a new lexer, which will be able to do that.
-# As soon as it's done, these piece should be reenabled.
-#
-#  it ".. ... have higher precedence than ? :" do
-#    (1..2 ? 3 : 4).should == 3
-#    (1...2 ? 3 : 4).should == 3
-#  end
+ it ".. ... have higher precedence than ? :" do
+   # Use variables to avoid warnings
+   from = 1
+   to = 2
+   # These are Range instances, not flip-flop
+   (from..to ? 3 : 4).should == 3
+   (from...to ? 3 : 4).should == 3
+ end
 
   it "? : is right-associative" do
     (true ? 2 : 3 ? 4 : 5).should == 2

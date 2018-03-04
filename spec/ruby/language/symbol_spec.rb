@@ -1,4 +1,4 @@
-require File.expand_path('../../spec_helper', __FILE__)
+require_relative '../spec_helper'
 
 describe "A Symbol literal" do
   it "is a ':' followed by any number of valid characters" do

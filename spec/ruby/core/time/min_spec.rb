@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Time#min" do
   it "returns the minute of the hour (0..59) for a local Time" do

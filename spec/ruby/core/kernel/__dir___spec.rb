@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Kernel#__dir__" do
   it "returns the real name of the directory containing the currently-executing file" do

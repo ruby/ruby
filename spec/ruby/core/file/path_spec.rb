@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/path', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/path'
 
 describe "File#path" do
   it_behaves_like :file_path, :path

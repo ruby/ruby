@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/getc', __FILE__)
+require_relative 'shared/getc'
 
 # This method is added by io/console on require.
 describe "StringIO#getch" do

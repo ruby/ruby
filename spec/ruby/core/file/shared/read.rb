@@ -1,4 +1,4 @@
-require File.expand_path('../../../dir/fixtures/common', __FILE__)
+require_relative '../../dir/fixtures/common'
 
 describe :file_read_directory, shared: true do
   platform_is :darwin, :linux, :openbsd, :windows do

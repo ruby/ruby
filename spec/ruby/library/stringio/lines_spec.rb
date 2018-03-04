@@ -1,6 +1,6 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 require 'stringio'
-require File.expand_path('../shared/each', __FILE__)
+require_relative 'shared/each'
 
 describe "StringIO#lines when passed a separator" do
   it_behaves_like :stringio_each_separator, :lines

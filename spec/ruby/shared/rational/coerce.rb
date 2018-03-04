@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe :rational_coerce, shared: true do
   it "returns the passed argument, self as Float, when given a Float" do

@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_sinh, shared: true do
   it "returns the hyperbolic sin of the argument" do

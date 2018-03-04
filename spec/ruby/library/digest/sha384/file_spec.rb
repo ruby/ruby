@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../shared/constants', __FILE__)
-require File.expand_path('../../../../core/file/shared/read', __FILE__)
+require_relative '../../../spec_helper'
+require_relative 'shared/constants'
+require_relative '../../../core/file/shared/read'
 
 describe "Digest::SHA384.file" do
 

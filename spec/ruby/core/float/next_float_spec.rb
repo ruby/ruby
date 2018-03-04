@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "Float#next_float" do
   it "returns a float the smallest possible step greater than the receiver" do

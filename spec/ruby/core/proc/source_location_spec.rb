@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/source_location', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/source_location'
 
 describe "Proc#source_location" do
   before :each do

@@ -1,5 +1,5 @@
-require File.expand_path('../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/def', __FILE__)
+require_relative '../spec_helper'
+require_relative 'fixtures/def'
 
 # Language-level method behaviour
 describe "Redefining a method" do

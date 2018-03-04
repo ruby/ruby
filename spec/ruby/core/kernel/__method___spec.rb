@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../fixtures/__method__', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'fixtures/__method__'
 
 describe "Kernel.__method__" do
   it "returns the current method, even when aliased" do

@@ -1,7 +1,7 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 
 ruby_version_is ''...'2.5' do
-  require File.expand_path('../shared/sqrt', __FILE__)
+  require_relative 'shared/sqrt'
 
   describe "Math#rsqrt" do
     it_behaves_like :mathn_math_sqrt, :_, IncludesMath.new

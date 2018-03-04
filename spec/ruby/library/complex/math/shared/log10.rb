@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_log10, shared: true do
   it "returns the base-10 logarithm of the passed argument" do

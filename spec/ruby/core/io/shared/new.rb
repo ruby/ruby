@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.

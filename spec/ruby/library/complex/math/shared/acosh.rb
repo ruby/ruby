@@ -1,4 +1,4 @@
-require File.expand_path('../../fixtures/classes', __FILE__)
+require_relative '../fixtures/classes'
 
 describe :complex_math_acosh, shared: true do
   it "returns the principle value of the inverse hyperbolic cosine of the argument" do

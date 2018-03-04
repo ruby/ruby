@@ -1,4 +1,4 @@
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 platform_is :aix do
   # In AIX, if getrlimit(2) is called multiple times with RLIMIT_DATA,

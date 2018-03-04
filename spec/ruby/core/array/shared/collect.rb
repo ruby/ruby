@@ -1,4 +1,4 @@
-require File.expand_path('../../../enumerable/shared/enumeratorized', __FILE__)
+require_relative '../../enumerable/shared/enumeratorized'
 
 describe :array_collect, shared: true do
   it "returns a copy of array with each element replaced by the value returned by block" do

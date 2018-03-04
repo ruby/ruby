@@ -1,8 +1,8 @@
 # encoding: utf-8
 
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../../../shared/time/strftime_for_date', __FILE__)
-require File.expand_path('../../../shared/time/strftime_for_time', __FILE__)
+require_relative '../../spec_helper'
+require_relative '../../shared/time/strftime_for_date'
+require_relative '../../shared/time/strftime_for_time'
 
 describe "Time#strftime" do
   before :all do

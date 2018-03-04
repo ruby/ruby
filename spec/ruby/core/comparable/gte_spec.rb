@@ -1,5 +1,5 @@
-require File.expand_path('../fixtures/classes', __FILE__)
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative 'fixtures/classes'
+require_relative '../../spec_helper'
 
 describe "Comparable#>=" do
   it "calls #<=> on self with other and returns true if #<=> returns 0 or any Integer greater than 0" do

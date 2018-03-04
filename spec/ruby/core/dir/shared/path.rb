@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
-require File.expand_path('../../fixtures/common', __FILE__)
-require File.expand_path('../closed', __FILE__)
+require_relative '../../../spec_helper'
+require_relative '../fixtures/common'
+require_relative 'closed'
 
 describe :dir_path, shared: true do
   it "returns the path that was supplied to .new or .open" do

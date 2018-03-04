@@ -1,5 +1,5 @@
-require File.expand_path('../../../spec_helper', __FILE__)
-require File.expand_path('../shared/read', __FILE__)
+require_relative '../../spec_helper'
+require_relative 'shared/read'
 
 platform_is_not :windows do
   describe 'ARGF.read_nonblock' do

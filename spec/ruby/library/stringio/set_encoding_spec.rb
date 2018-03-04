@@ -1,5 +1,5 @@
 require 'stringio'
-require File.expand_path('../../../spec_helper', __FILE__)
+require_relative '../../spec_helper'
 
 describe "StringIO#set_encoding" do
   it "sets the encoding of the underlying String" do

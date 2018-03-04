@@ -1,6 +1,6 @@
-require File.expand_path('../../../../spec_helper', __FILE__)
+require_relative '../../../spec_helper'
 require 'thread'
-require File.expand_path('../../shared/queue/clear', __FILE__)
+require_relative '../shared/queue/clear'
 
 describe "Thread::SizedQueue#clear" do
   it_behaves_like :queue_clear, :clear, -> { SizedQueue.new(10) }
