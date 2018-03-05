@@ -1205,6 +1205,17 @@ q.pop
     assert_predicate(status, :success?, bug9751)
   end if Process.respond_to?(:fork)
 
+  def test_fork_while_locked
+    m = Mutex.new
+    thrs = []
+    3.times do |i|
+      thrs << Thread.new { m.synchronize { Process.waitpid2(fork{})[1] } }
+    end
+    thrs.each do |t|
+      assert_predicate t.value, :success?, '[ruby-core:85940] [Bug #14578]'
+    end
+  end if Process.respond_to?(:fork)
+
   def test_subclass_no_initialize
     t = Module.new do
       break eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")
