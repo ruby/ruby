@@ -13,18 +13,17 @@ Markdown: Basics
 Getting the Gist of Markdown's Formatting Syntax
 ------------------------------------------------
 
-This page offers a brief overview of what it's like to use Markdown.
-The [syntax page] [s] provides complete, detailed documentation for
-every feature, but Markdown should be very easy to pick up simply by
-looking at a few examples of it in action. The examples on this page
-are written in a before/after style, showing example syntax and the
+This page provides an overview of how to use Markdown.
+The [syntax page] [s] provides complete and detailed documentation for
+every feature of Markdown, but it should be sufficient to learn from a few examples. The examples on this page
+are written in a before-and-after style, showing syntax examples and the
 HTML output produced by Markdown.
 
-It's also helpful to simply try Markdown out; the [Dingus] [d] is a
-web application that allows you type your own Markdown-formatted text
+It's helpful to experiment with Markdown; the [Dingus] [d] is a
+web application that allows you to type your own Markdown-formatted text
 and translate it to XHTML.
 
-**Note:** This document is itself written using Markdown; you
+**Note:** This document itself is written using Markdown; you
 can [see the source for it by adding '.text' to the URL] [src].
 
   [s]: /projects/markdown/syntax  "Markdown Syntax"
@@ -34,10 +33,10 @@ can [see the source for it by adding '.text' to the URL] [src].
 
 ## Paragraphs, Headers, Blockquotes ##
 
-A paragraph is simply one or more consecutive lines of text, separated
-by one or more blank lines. (A blank line is any line that looks like a
-blank line -- a line containing nothing spaces or tabs is considered
-blank.) Normal paragraphs should not be intended with spaces or tabs.
+A paragraph is one or more consecutive lines of text separated
+by one or more blank lines. (A blank line is any line that does not
+contain anything -- a line containing no spaces or tabs is considered
+blank.) Normally, paragraphs should not be written with spaces or tabs.
 
 Markdown offers two styles of headers: *Setext* and *atx*.
 Setext-style headers for `<h1>` and `<h2>` are created by
@@ -188,7 +187,7 @@ Output:
 
 Markdown supports two styles for creating links: *inline* and
 *reference*. With both styles, you use square brackets to delimit the
-text you want to turn into a link.
+text that is to be turned into a link.
 
 Inline-style links use parentheses immediately after the link text.
 For example:
@@ -227,7 +226,7 @@ Output:
     title="MSN Search">MSN</a>.</p>
 
 The title attribute is optional. Link names may contain letters,
-numbers and spaces, but are *not* case sensitive:
+numbers or spaces, but are *not* case sensitive:
 
     I start my morning with a cup of coffee and
     [The New York Times][NY Times].
@@ -288,8 +287,8 @@ and `>` characters will be escaped automatically.
 
 Markdown:
 
-    If you want your page to validate under XHTML 1.0 Strict,
-    you've got to put paragraph tags in your blockquotes:
+    If you want your page to be validated under XHTML 1.0 Strict,
+    you need to put paragraph tags in your blockquotes:
 
         <blockquote>
             <p>For example.</p>
