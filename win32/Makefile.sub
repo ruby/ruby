@@ -531,7 +531,8 @@ $(SCRIPTPROGRAMS): $(STUBPROGRAM)
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
 
-$(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
+.PHONY: reconfig
+reconfig $(MKFILES): $(srcdir)/common.mk $(srcdir)/version.h \
 	    $(win_srcdir)/Makefile.sub $(win_srcdir)/configure.bat \
 	    $(win_srcdir)/setup.mak $(win_srcdir)/enc-setup.mak \
 	    $(srcdir)/enc/Makefile.in
