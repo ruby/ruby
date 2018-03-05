@@ -19,19 +19,19 @@ describe "Proc#source_location" do
   it "sets the first value to the path of the file in which the proc was defined" do
     file = @proc.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.dirname(__FILE__) + '/fixtures/source_location.rb'
+    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
 
     file = @proc_new.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.dirname(__FILE__) + '/fixtures/source_location.rb'
+    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
 
     file = @lambda.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.dirname(__FILE__) + '/fixtures/source_location.rb'
+    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
 
     file = @method.source_location.first
     file.should be_an_instance_of(String)
-    file.should == File.dirname(__FILE__) + '/fixtures/source_location.rb'
+    file.should == File.realpath('../fixtures/source_location.rb', __FILE__)
   end
 
   it "sets the last value to a Fixnum representing the line on which the proc was defined" do
