@@ -415,6 +415,20 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
 	list_head_init(&mutex->waitq);
     }
 }
+
+/*
+ * All other threads are dead in the a new child process, so waitqs
+ * contain references to dead threads which we need to clean up
+ */
+static void
+rb_mutex_cleanup_keeping_mutexes(const rb_thread_t *current_thread)
+{
+    rb_mutex_t *mutex = current_thread->keeping_mutexes;
+    while (mutex) {
+        list_head_init(&mutex->waitq);
+        mutex = mutex->next_mutex;
+    }
+}
 #endif
 
 static VALUE
