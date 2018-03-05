@@ -1212,7 +1212,7 @@ async_bug_fd(const char *mesg, int errno_arg, int fd)
     char buff[64];
     size_t n = strlcpy(buff, mesg, sizeof(buff));
     if (n < sizeof(buff)-3) {
-	ruby_snprintf(buff, sizeof(buff)-n, "(%d)", fd);
+	ruby_snprintf(buff+n, sizeof(buff)-n, "(%d)", fd);
     }
     rb_async_bug_errno(buff, errno_arg);
 }
