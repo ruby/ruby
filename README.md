@@ -66,7 +66,7 @@ send the following phrase:
     subscribe
 
 in the mail body (not subject) to the address
-<mailto:ruby-talk-request@ruby-lang.org>.
+<ruby-talk-request@ruby-lang.org>.
 
 ## How to compile and install
 
@@ -172,4 +172,4 @@ See the file [CONTRIBUTING.md](CONTRIBUTING.md)
 Ruby was originally designed and developed by Yukihiro Matsumoto (Matz) in
 1995.
 
-<mailto:matz@ruby-lang.org>
+<matz@ruby-lang.org>
