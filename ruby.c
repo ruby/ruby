@@ -1149,7 +1149,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		if (v > 0377)
 		    rb_rs = Qnil;
 		else if (v == 0 && numlen >= 2) {
-		    rb_rs = rb_str_new2("\n\n");
+		    rb_rs = rb_str_new2("");
 		}
 		else {
 		    c = v & 0xff;
