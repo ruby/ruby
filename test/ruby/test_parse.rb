@@ -1129,6 +1129,27 @@ x = __ENCODING__
     end
   end
 
+  def test_whitespace_warning
+    assert_raise_with_message(SyntaxError, /backslash/) do
+      eval("\\foo")
+    end
+    assert_raise_with_message(SyntaxError, /escaped space/) do
+      eval("\\ ")
+    end
+    assert_raise_with_message(SyntaxError, /escaped horizontal tab/) do
+      eval("\\\t")
+    end
+    assert_raise_with_message(SyntaxError, /escaped form feed/) do
+      eval("\\\f")
+    end
+    assert_raise_with_message(SyntaxError, /escaped carriage return/) do
+      assert_warn(/middle of line/) {eval("\\\r")}
+    end
+    assert_raise_with_message(SyntaxError, /escaped vertical tab/) do
+      eval("\\\v")
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
