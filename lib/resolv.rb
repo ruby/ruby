@@ -609,16 +609,6 @@ class Resolv
       end
     end
 
-
-    def self.rangerand(range) # :nodoc:
-      base = range.begin
-      len = range.end - range.begin
-      if !range.exclude_end?
-        len += 1
-      end
-      base + random(len)
-    end
-
     RequestID = {} # :nodoc:
     RequestIDMutex = Thread::Mutex.new # :nodoc:
 
@@ -627,7 +617,7 @@ class Resolv
       RequestIDMutex.synchronize {
         h = (RequestID[[host, port]] ||= {})
         begin
-          id = rangerand(0x0000..0xffff)
+          id = random(0x0000..0xffff)
         end while h[id]
         h[id] = true
       }
@@ -648,7 +638,7 @@ class Resolv
 
     def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
       begin
-        port = rangerand(1024..65535)
+        port = random(1024..65535)
         udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE, # POSIX
              Errno::EACCES, # SunOS: See PRIV_SYS_NFS in privileges(5)
