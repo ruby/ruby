@@ -579,7 +579,6 @@ module Test
         end
       end
 
-      private
       def _run_suites(suites, type)
         result = super
         report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
