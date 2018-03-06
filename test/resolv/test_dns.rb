@@ -212,8 +212,8 @@ class TestResolvDNS < Test::Unit::TestCase
 
   def test_ipv6_create
     ref = '[Bug #11910] [ruby-core:72559]'
-    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1')
-    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1')
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1'), ref
+    assert_instance_of Resolv::IPv6, Resolv::IPv6.create('::1:127.0.0.1'), ref
   end
 
   def test_ipv6_should_be_16
