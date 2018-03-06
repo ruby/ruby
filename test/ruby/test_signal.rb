@@ -83,9 +83,9 @@ class TestSignal < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { SignalException.new("\u{30eb 30d3 30fc}") }
     Signal.list.each do |signm, signo|
       next if signm == "EXIT"
-      assert_equal(SignalException.new(signm).signo, signo)
-      assert_equal(SignalException.new(signm.to_sym).signo, signo)
-      assert_equal(SignalException.new(signo).signo, signo)
+      assert_equal(signo, SignalException.new(signm).signo, signm)
+      assert_equal(signo, SignalException.new(signm.to_sym).signo, signm)
+      assert_equal(signo, SignalException.new(signo).signo, signo)
     end
   end
 
@@ -241,7 +241,7 @@ class TestSignal < Test::Unit::TestCase
 EOS
 
         signame = Marshal.load(child)
-        assert_equal(signame, "INT")
+        assert_equal("INT", signame)
       end
     end
   end if Process.respond_to?(:kill)
