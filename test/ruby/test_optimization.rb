@@ -741,4 +741,16 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
     assert_equal(:ok, obj.a())
   end
+
+  def test_blockparam_in_rescue
+    obj = Object.new
+    def obj.foo(&b)
+      raise
+    rescue
+      b.call
+    end
+    result = nil
+    assert_equal(42, obj.foo {result = 42})
+    assert_equal(42, result)
+  end
 end
