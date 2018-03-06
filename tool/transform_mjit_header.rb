@@ -20,6 +20,11 @@ module MJITHeader
     '__clang__', # clang
   ]
 
+  # These macros are relied on this script's transformation
+  PREFIXED_MACROS = [
+    'ALWAYS_INLINE',
+  ]
+
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
   RECURSIVE_MACROS = %w[
     RASCTRYINFO
@@ -29,6 +34,25 @@ module MJITHeader
   IGNORED_FUNCTIONS = [
     'vm_search_method_slowpath', # This increases the time to compile when inlined. So we use it as external function.
     'rb_equal_opt', # Not used from VM and not compilable
+  ]
+
+  ALWAYS_INLINED_FUNCTIONS = [
+    'vm_opt_plus',
+    'vm_opt_minus',
+    'vm_opt_mult',
+    'vm_opt_div',
+    'vm_opt_mod',
+    'vm_opt_neq',
+    'vm_opt_lt',
+    'vm_opt_le',
+    'vm_opt_gt',
+    'vm_opt_ge',
+    'vm_opt_ltlt',
+    'vm_opt_aref',
+    'vm_opt_aset',
+    'vm_opt_aref_with',
+    'vm_opt_aset_with',
+    'vm_opt_not',
   ]
 
   # Return start..stop of last decl in CODE ending STOP
@@ -106,9 +130,11 @@ module MJITHeader
     code.sub!(/\A(#define [^\n]+|\n)*(#define MJIT_HEADER 1\n)/, '\2')
   end
 
-  # This makes easier to process code
+  # Return [macro, others]. But others include PREFIXED_MACROS to be used in code.
   def self.separate_macro_and_code(code)
-    code.lines.partition { |l| l.start_with?('#') }.map! {|lines| lines.join('')}
+    code.lines.partition do |l|
+      l.start_with?('#') && PREFIXED_MACROS.all? { |m| !l.start_with?("#define #{m}") }
+    end.map! { |lines| lines.join('') }
   end
 
   def self.write(code, out)
@@ -203,6 +229,11 @@ while (decl_range = MJITHeader.find_decl(code, stop_pos))
   if MJITHeader::IGNORED_FUNCTIONS.include?(decl_name) && /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
     puts "#{PROGRAM}: changing definition of '#{decl_name}' to declaration"
     code[decl_range] = decl.sub(/{.+}/m, ';')
+  elsif MJITHeader::ALWAYS_INLINED_FUNCTIONS.include?(decl_name) && match = /#{MJITHeader::FUNC_HEADER_REGEXP}{/.match(decl)
+    header = match[0].sub(/{\z/, '').strip
+    header = "static inline #{header.sub(/\A((static|inline) )+/, '')}"
+    decl[match.begin(0)...match.end(0)] = '{' # remove header
+    code[decl_range] = "\nALWAYS_INLINE(#{header});\n#{header} #{decl}"
   elsif extern_names.include?(decl_name) && (decl =~ /#{MJITHeader::FUNC_HEADER_REGEXP};/)
     decl.sub!(/(extern|static|inline) /, ' ')
     unless decl_name =~ /\Aattr_\w+_\w+\z/ # skip too-many false-positive warnings in insns_info.inc.
