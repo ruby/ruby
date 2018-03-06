@@ -156,6 +156,12 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+
+    # 10
+    url = URI.parse('http://example.com/path?query#fragment')
+    url.query = ''
+    url.fragment = ''
+    assert_equal('http://example.com/path', url.to_s, "[Bug #11149]")
   end
 
   def test_merge
