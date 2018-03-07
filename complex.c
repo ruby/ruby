@@ -1869,15 +1869,12 @@ string_to_c(VALUE self)
 static VALUE
 nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE a1, a2, backref;
+    VALUE a1, a2;
 
     rb_scan_args(argc, argv, "11", &a1, &a2);
 
     if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
 	rb_raise(rb_eTypeError, "can't convert nil into Complex");
-
-    backref = rb_backref_get();
-    rb_match_busy(backref);
 
     if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_c_strict(a1);
@@ -1886,8 +1883,6 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_c_strict(a2);
     }
-
-    rb_backref_set(backref);
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
 	{
