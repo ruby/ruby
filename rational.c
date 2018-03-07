@@ -2498,7 +2498,7 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE a1, a2, backref;
+    VALUE a1, a2;
 
     rb_scan_args(argc, argv, "11", &a1, &a2);
 
@@ -2515,9 +2515,6 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 	    a2 = RCOMPLEX(a2)->real;
     }
 
-    backref = rb_backref_get();
-    rb_match_busy(backref);
-
     if (RB_FLOAT_TYPE_P(a1)) {
 	a1 = float_to_r(a1);
     }
@@ -2531,8 +2528,6 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
     else if (RB_TYPE_P(a2, T_STRING)) {
 	a2 = string_to_r_strict(a2);
     }
-
-    rb_backref_set(backref);
 
     if (RB_TYPE_P(a1, T_RATIONAL)) {
 	if (argc == 1 || (k_exact_one_p(a2)))
