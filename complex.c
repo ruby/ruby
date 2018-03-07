@@ -354,20 +354,24 @@ nucomp_real_check(VALUE num)
 inline static VALUE
 nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 {
+    int complex_r, complex_i;
 #ifdef CANONICALIZATION_FOR_MATHN
     if (k_exact_zero_p(imag) && canonicalization)
 	return real;
 #endif
-    if (f_real_p(real) && f_real_p(imag))
+    complex_r = RB_TYPE_P(real, T_COMPLEX);
+    complex_i = RB_TYPE_P(imag, T_COMPLEX);
+    if (!complex_r && !complex_i) {
 	return nucomp_s_new_internal(klass, real, imag);
-    else if (f_real_p(real)) {
+    }
+    else if (!complex_r) {
 	get_dat1(imag);
 
 	return nucomp_s_new_internal(klass,
 				     f_sub(real, dat->imag),
 				     f_add(ZERO, dat->real));
     }
-    else if (f_real_p(imag)) {
+    else if (!complex_i) {
 	get_dat1(real);
 
 	return nucomp_s_new_internal(klass,
