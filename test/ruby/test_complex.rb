@@ -958,4 +958,16 @@ class Complex_Test < Test::Unit::TestCase
   def test_known_bug
   end
 
+  def test_canonicalize_internal
+    obj = Class.new(Numeric) do
+      attr_accessor :real
+      alias real? real
+    end.new
+    obj.real = true
+    c = Complex.rect(obj, 1);
+    obj.real = false
+    c = c.conj
+    assert_equal(obj, c.real)
+    assert_equal(-1, c.imag)
+  end
 end
