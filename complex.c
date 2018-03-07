@@ -625,9 +625,9 @@ nucomp_imag(VALUE self)
 static VALUE
 nucomp_negate(VALUE self)
 {
-  get_dat1(self);
-  return f_complex_new2(CLASS_OF(self),
-			f_negate(dat->real), f_negate(dat->imag));
+    get_dat1(self);
+    return f_complex_new2(CLASS_OF(self),
+			  f_negate(dat->real), f_negate(dat->imag));
 }
 
 /*

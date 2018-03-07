@@ -45,7 +45,7 @@ static ID id_abs, id_idiv, id_integer_p,
 inline static VALUE \
 f_##n(VALUE x, VALUE y)\
 {\
-  return rb_funcall(x, (op), 1, y);\
+    return rb_funcall(x, (op), 1, y); \
 }
 
 #define fun1(n) \
