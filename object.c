@@ -3035,15 +3035,16 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
     return v;
 }
 
+#define try_to_int(val, mid, raise) \
+    convert_type_with_id(val, "Integer", mid, raise, -1)
 
 static VALUE
-rb_to_integer(VALUE val, const char *method)
+rb_to_integer(VALUE val, const char *method, ID mid)
 {
     VALUE v;
 
-    if (FIXNUM_P(val)) return val;
-    if (RB_TYPE_P(val, T_BIGNUM)) return val;
-    v = convert_type(val, "Integer", method, TRUE);
+    if (RB_INTEGER_TYPE_P(val)) return val;
+    v = try_to_int(val, mid, TRUE);
     if (!RB_INTEGER_TYPE_P(v)) {
         conversion_mismatch(val, "Integer", method, v);
     }
@@ -3085,7 +3086,7 @@ rb_check_to_integer(VALUE val, const char *method)
 VALUE
 rb_to_int(VALUE val)
 {
-    return rb_to_integer(val, "to_int");
+    return rb_to_integer(val, "to_int", idTo_int);
 }
 
 /**
@@ -3100,7 +3101,10 @@ rb_to_int(VALUE val)
 VALUE
 rb_check_to_int(VALUE val)
 {
-    return rb_check_to_integer(val, "to_int");
+    if (RB_INTEGER_TYPE_P(val)) return val;
+    val = try_to_int(val, idTo_int, FALSE);
+    if (RB_INTEGER_TYPE_P(val)) return val;
+    return Qnil;
 }
 
 static VALUE
@@ -3134,7 +3138,7 @@ rb_convert_to_integer(VALUE val, int base)
     }
     tmp = convert_type_with_id(val, "Integer", idTo_int, FALSE, -1);
     if (!RB_INTEGER_TYPE_P(tmp)) {
-	return rb_to_integer(val, "to_i");
+	return rb_to_integer(val, "to_i", idTo_i);
     }
     return tmp;
 
