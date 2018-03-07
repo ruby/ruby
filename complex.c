@@ -486,7 +486,7 @@ imp1(sinh)
 static VALUE
 m_cos(VALUE x)
 {
-    if (f_real_p(x))
+    if (!RB_TYPE_P(x, T_COMPLEX))
 	return m_cos_bang(x);
     {
 	get_dat1(x);
@@ -501,7 +501,7 @@ m_cos(VALUE x)
 static VALUE
 m_sin(VALUE x)
 {
-    if (f_real_p(x))
+    if (!RB_TYPE_P(x, T_COMPLEX))
 	return m_sin_bang(x);
     {
 	get_dat1(x);
