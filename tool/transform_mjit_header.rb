@@ -53,6 +53,9 @@ module MJITHeader
     'vm_opt_aref_with',
     'vm_opt_aset_with',
     'vm_opt_not',
+    'vm_getinstancevariable',
+    'vm_setinstancevariable',
+    'vm_setivar',
   ]
 
   # Return start..stop of last decl in CODE ending STOP
