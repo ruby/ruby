@@ -639,16 +639,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_enable
     ary = []
+    args = nil
     trace = TracePoint.new(:call){|tp|
       next if !target_thread?
       ary << tp.method_id
     }
     foo
-    trace.enable{
+    trace.enable{|*a|
+      args = a
       foo
     }
     foo
     assert_equal([:foo], ary)
+    assert_equal([], args)
 
     trace = TracePoint.new{}
     begin
@@ -663,17 +666,20 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_disable
     ary = []
+    args = nil
     trace = TracePoint.trace(:call){|tp|
       next if !target_thread?
       ary << tp.method_id
     }
     foo
-    trace.disable{
+    trace.disable{|*a|
+      args = a
       foo
     }
     foo
     trace.disable
     assert_equal([:foo, :foo], ary)
+    assert_equal([], args)
 
     trace = TracePoint.new{}
     trace.enable{
