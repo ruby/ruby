@@ -842,7 +842,7 @@ module URI
     #   #=> #<URI::HTTP:0x000000008e89e8 URL:http://my.example.com/?id=1>
     #
     def query=(v)
-      return @query = nil unless v
+      return @query = nil unless v && !v.empty?
       raise InvalidURIError, "query conflicts with opaque" if @opaque
 
       x = v.to_str
@@ -933,7 +933,7 @@ module URI
     #   #=> #<URI::HTTP:0x000000007a81f8 URL:http://my.example.com/?id=25#time=1305212086>
     #
     def fragment=(v)
-      return @fragment = nil unless v
+      return @fragment = nil unless v && !v.empty?
 
       x = v.to_str
       v = x.dup if x.equal? v
