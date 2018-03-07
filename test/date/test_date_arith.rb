@@ -3,11 +3,18 @@ require 'test/unit'
 require 'date'
 
 class TestDateArith < Test::Unit::TestCase
+  class Rat < Numeric
+    def to_r; self; end
+  end
 
   def test_new_offset
     d = DateTime.new(2002, 3, 14)
     assert_equal(Rational(9, 24), d.new_offset(Rational(9, 24)).offset)
     assert_equal(Rational(9, 24), d.new_offset('+0900').offset)
+    n = Rat.new
+    assert_raise(TypeError) do
+      Timeout.timeout(1) {d.new_offset(n)}
+    end
   end
 
   def test__plus
@@ -36,6 +43,13 @@ class TestDateArith < Test::Unit::TestCase
     end
     assert_raise(e) do
       DateTime.new(2000,2,29) + Time.mktime(2000,2,29)
+    end
+    n = Rat.new
+    assert_raise(e) do
+      Timeout.timeout(1) {Date.new(2000,2,29) + n}
+    end
+    assert_raise(e) do
+      Timeout.timeout(1) {DateTime.new(2000,2,29) + n}
     end
   end
 
