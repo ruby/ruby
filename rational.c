@@ -429,10 +429,6 @@ f_rational_new_bang1(VALUE klass, VALUE x)
 }
 
 #ifdef CANONICALIZATION_FOR_MATHN
-#define CANON
-#endif
-
-#ifdef CANON
 static int canonicalization = 0;
 
 RUBY_FUNC_EXPORTED void

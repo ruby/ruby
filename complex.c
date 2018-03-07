@@ -329,10 +329,6 @@ f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 }
 
 #ifdef CANONICALIZATION_FOR_MATHN
-#define CANON
-#endif
-
-#ifdef CANON
 static int canonicalization = 0;
 
 RUBY_FUNC_EXPORTED void
@@ -358,15 +354,9 @@ nucomp_real_check(VALUE num)
 inline static VALUE
 nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 {
-#ifdef CANON
-#define CL_CANON
-#ifdef CL_CANON
+#ifdef CANONICALIZATION_FOR_MATHN
     if (k_exact_zero_p(imag) && canonicalization)
 	return real;
-#else
-    if (f_zero_p(imag) && canonicalization)
-	return real;
-#endif
 #endif
     if (f_real_p(real) && f_real_p(imag))
 	return nucomp_s_new_internal(klass, real, imag);
