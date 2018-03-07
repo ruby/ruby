@@ -4,7 +4,7 @@ require 'date'
 
 class TestDateArith < Test::Unit::TestCase
 
-  def new_offset
+  def test_new_offset
     d = DateTime.new(2002, 3, 14)
     assert_equal(Rational(9, 24), d.new_offset(Rational(9, 24)).offset)
     assert_equal(Rational(9, 24), d.new_offset('+0900').offset)
