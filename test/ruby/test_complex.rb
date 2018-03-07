@@ -970,4 +970,18 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(obj, c.real)
     assert_equal(-1, c.imag)
   end
+
+  def test_canonicalize_polar
+    obj = Class.new(Numeric) do
+      def initialize
+        @x = 2
+      end
+      def real?
+        (@x -= 1) > 0
+      end
+    end.new
+    assert_raise(TypeError) do
+      Complex.polar(1, obj)
+    end
+  end
 end
