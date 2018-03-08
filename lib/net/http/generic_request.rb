@@ -17,6 +17,7 @@ class Net::HTTPGenericRequest
       raise ArgumentError, "not an HTTP URI" unless URI::HTTP === uri_or_path
       raise ArgumentError, "no host component for URI" unless uri_or_path.hostname
       @uri = uri_or_path.dup
+      raise ArgumentError, "no host component for URI" unless @uri.hostname
       host = @uri.hostname.dup
       host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
