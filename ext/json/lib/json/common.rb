@@ -180,27 +180,30 @@ module JSON
   end
 
   # Generate a JSON document from the Ruby data structure _obj_ and return
-  # it. _state_ is * a JSON::State object,
-  # * or a Hash like object (responding to to_hash),
-  # * an object convertible into a hash by a to_h method,
-  # that is used as or to configure a State object.
+  # it. _opts_ is
+  # * a Hash like object (responding to +to_hash+),
+  # * or an object convertible into a hash by a +to_h+ method,
+  # * or a <tt>JSON::State</tt> object.
   #
-  # It defaults to a state object, that creates the shortest possible JSON text
-  # in one line, checks for circular data structures and doesn't allow NaN,
+  # If hash-alike or hash-convertible object is provided, it is internally
+  # converted into a State object.
+  #
+  # The default options are set to create the shortest possible JSON text
+  # in one line, check for circular data structures and do not allow NaN,
   # Infinity, and -Infinity.
   #
-  # A _state_ hash can have the following keys:
-  # * *indent*: a string used to indent levels (default: ''),
-  # * *space*: a string that is put after, a : or , delimiter (default: ''),
-  # * *space_before*: a string that is put before a : pair delimiter (default: ''),
-  # * *object_nl*: a string that is put at the end of a JSON object (default: ''),
-  # * *array_nl*: a string that is put at the end of a JSON array (default: ''),
+  # An _opts_ hash can have the following keys:
+  # * *indent*: a string used to indent levels (default: <tt>''</tt>),
+  # * *space*: a string that is put after a <tt>:</tt> pair delimiter (default: <tt>''</tt>),
+  # * *space_before*: a string that is put before a <tt>:</tt> pair delimiter (default: <tt>''</tt>),
+  # * *object_nl*: a string that is put at the end of a JSON object (default: <tt>''</tt>),
+  # * *array_nl*: a string that is put at the end of a JSON array (default: <tt>''</tt>),
   # * *allow_nan*: true if NaN, Infinity, and -Infinity should be
   #   generated, otherwise an exception is thrown if these values are
   #   encountered. This options defaults to false.
   # * *max_nesting*: The maximum depth of nesting allowed in the data
   #   structures from which JSON is to be generated. Disable depth checking
-  #   with :max_nesting => false, it defaults to 100.
+  #   with <tt>max_nesting: false</tt>, it defaults to 100.
   #
   # See also the fast_generate for the fastest creation method with the least
   # amount of sanity checks, and the pretty_generate method for some
