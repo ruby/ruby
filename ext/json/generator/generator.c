@@ -328,6 +328,76 @@ static char *fstrndup(const char *ptr, unsigned long len) {
  *
  */
 
+/* Explanation of the following: that's the only way to not pollute
+ * standard library's docs with GeneratorMethods::<ClassName> which
+ * are uninformative and take a large place in a list of classes
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Array
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Bignum
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::FalseClass
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Fixnum
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Float
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Hash
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Integer
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::NilClass
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::Object
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::String
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::String::Extend
+ * :nodoc:
+ */
+
+/*
+ * Document-module: JSON::Ext::Generator::GeneratorMethods::TrueClass
+ * :nodoc:
+ */
+
 /*
  * call-seq: to_json(state = nil)
  *
