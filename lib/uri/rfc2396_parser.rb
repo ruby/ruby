@@ -315,13 +315,13 @@ module URI
     #
     # :call-seq:
     #   unescape( str )
-    #   unescape( str, unsafe )
+    #   unescape( str, escaped )
     #
     # == Args
     #
     # +str+::
     #    String to remove escapes from
-    # +unsafe+::
+    # +escaped+::
     #    Regexp to apply. Defaults to self.regexp[:ESCAPED]
     #
     # == Description
@@ -329,7 +329,7 @@ module URI
     # Removes escapes from +str+
     #
     def unescape(str, escaped = @regexp[:ESCAPED])
-      str.gsub(escaped) { [$&[1, 2].hex].pack('C') }.force_encoding(str.encoding)
+      str.gsub(escaped) { [$&[1, 2]].pack('H2').force_encoding(str.encoding) }
     end
 
     @@to_s = Kernel.instance_method(:to_s)
