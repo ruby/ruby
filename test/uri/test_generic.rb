@@ -156,6 +156,15 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(nil, url.user)
     assert_equal(nil, url.password)
     assert_equal(nil, url.userinfo)
+
+    # 10
+    # https://url.spec.whatwg.org/#cannot-have-a-username-password-port
+    url = URI.parse('http://user:pass@example.com:1234')
+    url.scheme = 'file'
+    assert_equal(nil, url.user)
+    assert_equal(nil, url.password)
+    assert_equal(nil, url.userinfo)
+    assert_equal(nil, url.port)
   end
 
   def test_merge

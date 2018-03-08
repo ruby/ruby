@@ -361,6 +361,11 @@ module URI
     #
     def scheme=(v)
       check_scheme(v)
+      if v == 'file'
+        set_user(nil)
+        set_password(nil)
+        set_port(nil)
+      end
       set_scheme(v)
       v
     end
