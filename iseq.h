@@ -28,44 +28,25 @@ rb_call_info_kw_arg_bytes(int keyword_len)
     return sizeof(struct rb_call_info_kw_arg) + sizeof(VALUE) * (keyword_len - 1);
 }
 
-enum iseq_mark_ary_index {
-    ISEQ_MARK_ARY_COVERAGE,
-    ISEQ_MARK_ARY_FLIP_CNT,
-    ISEQ_MARK_ARY_ORIGINAL_ISEQ,
-    ISEQ_MARK_ARY_INITIAL_SIZE
-};
-
-static inline VALUE
-iseq_mark_ary_create(int flip_cnt)
-{
-    VALUE ary = rb_ary_tmp_new(ISEQ_MARK_ARY_INITIAL_SIZE);
-    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_COVERAGE */
-    rb_ary_push(ary, INT2FIX(flip_cnt)); /* ISEQ_MARK_ARY_FLIP_CNT */
-    rb_ary_push(ary, Qnil);              /* ISEQ_MARK_ARY_ORIGINAL_ISEQ */
-    return ary;
-}
-
-#define ISEQ_MARK_ARY(iseq)           (iseq)->body->mark_ary
-
-#define ISEQ_COVERAGE(iseq)           RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE)
-#define ISEQ_COVERAGE_SET(iseq, cov)  RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_COVERAGE, cov)
+#define ISEQ_COVERAGE(iseq)           iseq->body->variable.coverage
+#define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &iseq->body->variable.coverage, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
 
-#define ISEQ_FLIP_CNT(iseq) FIX2INT(RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT))
+#define ISEQ_FLIP_CNT(iseq) (iseq)->body->variable.flip_count
 
 static inline int
 ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 {
-    int cnt = ISEQ_FLIP_CNT(iseq);
-    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_FLIP_CNT, INT2FIX(cnt+1));
+    int cnt = iseq->body->variable.flip_count;
+    iseq->body->variable.flip_count += 1;
     return cnt;
 }
 
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 {
-    VALUE str = RARRAY_AREF(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ);
+    VALUE str = iseq->body->variable.original_iseq;
     if (RTEST(str)) return (VALUE *)RSTRING_PTR(str);
     return NULL;
 }
@@ -73,14 +54,14 @@ ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, Qnil);
+    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, Qnil);
 }
 
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
     VALUE str = rb_str_tmp_new(size * sizeof(VALUE));
-    RARRAY_ASET(ISEQ_MARK_ARY(iseq), ISEQ_MARK_ARY_ORIGINAL_ISEQ, str);
+    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, str);
     return (VALUE *)RSTRING_PTR(str);
 }
 
@@ -94,6 +75,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
+#define ISEQ_TRANSLATED       IMEMO_FL_USER3
+#define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
 struct iseq_compile_data {
     /* GC is needed */
@@ -173,7 +156,6 @@ void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
 			    VALUE exception, VALUE body);
 
 /* iseq.c */
-void rb_iseq_add_mark_object(const rb_iseq_t *iseq, VALUE obj);
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
