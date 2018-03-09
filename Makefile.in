@@ -69,7 +69,8 @@ optflags = @optflags@
 debugflags = @debugflags@
 warnflags = @warnflags@ @strict_warnflags@
 cppflags = @cppflags@
-XCFLAGS = @XCFLAGS@
+MATHN = @MATHN@
+XCFLAGS = @XCFLAGS@ $(MATHN:yes=-DCANONICALIZATION_FOR_MATHN)
 CPPFLAGS = @CPPFLAGS@ $(INCFLAGS)
 MJIT_HEADER_FLAGS = @MJIT_HEADER_FLAGS@
 MJIT_HEADER_SUFFIX =

@@ -60,6 +60,9 @@ icondirs=$(ICONDIRS)
 icondirs=$(icondirs:\=/)
 iconinc=-I$(icondirs: = -I)
 !endif
+!if !defined(MATHN)
+MATHN = yes
+!endif
 ###############
 
 .SUFFIXES: .def .lib
@@ -285,6 +288,9 @@ ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
 XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
+!if "$(MATHN)" == "yes"
+XCFLAGS = $(XCFLAGS) -DCANONICALIZATION_FOR_MATHN
+!endif
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
@@ -825,7 +831,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
 !endif
-#define CANONICALIZATION_FOR_MATHN 1
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"

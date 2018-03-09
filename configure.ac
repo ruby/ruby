@@ -76,7 +76,6 @@ AC_SUBST(TEENY)
 AC_SUBST(RUBY_PROGRAM_VERSION)
 AC_SUBST(RUBY_API_VERSION, '$(MAJOR).$(MINOR)')
 RUBY_PATCHLEVEL=`sed -n 's/^#define RUBY_PATCHLEVEL //p' $srcdir/version.h`
-AC_DEFINE(CANONICALIZATION_FOR_MATHN)
 dnl checks for alternative programs
 AC_CANONICAL_BUILD
 RUBY_RM_RECURSIVE
@@ -1397,6 +1396,12 @@ AS_IF([test "$rb_cv_func_exported" != no], [
 ])
 
 RUBY_APPEND_OPTION(XCFLAGS, -DRUBY_EXPORT)
+
+AC_ARG_ENABLE(mathn,
+    AS_HELP_STRING([--disable-mathn], [disable canonicalization for mathn]),
+    [mathn=$enableval], [mathn=yes])
+test "x$mathn" = xyes || mathn=
+AC_SUBST(MATHN, $mathn)
 
 AC_CACHE_CHECK(for function name string predefined identifier,
     rb_cv_function_name_string,
