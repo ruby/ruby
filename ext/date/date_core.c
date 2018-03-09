@@ -9017,8 +9017,6 @@ Init_date_core(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    assert(fprintf(stderr, "assert() is now active\n"));
-
     id_cmp = rb_intern("<=>");
     id_le_p = rb_intern("<=");
     id_ge_p = rb_intern(">=");
