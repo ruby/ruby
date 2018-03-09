@@ -58,9 +58,9 @@ f_##n(VALUE x)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIXNUM_ZERO_P(y))
+    if (FIXNUM_ZERO_P(y))
 	return x;
-    else if (FIXNUM_P(x) && FIXNUM_ZERO_P(x))
+    if (FIXNUM_ZERO_P(x))
 	return y;
     return rb_funcall(x, '+', 1, y);
 }
@@ -68,7 +68,7 @@ f_add(VALUE x, VALUE y)
 inline static VALUE
 f_div(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y) && FIX2LONG(y) == 1)
+    if (y == ONE)
 	return x;
     if (RB_INTEGER_TYPE_P(x))
 	return rb_int_div(x, y);
@@ -91,26 +91,13 @@ binop(mod, '%')
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
-    if (FIXNUM_P(y)) {
-	long iy = FIX2LONG(y);
-	if (iy == 0) {
-	    if (RB_INTEGER_TYPE_P(x))
-		return ZERO;
-	}
-	else if (iy == 1)
-	    return x;
-    }
-    else if (FIXNUM_P(x)) {
-	long ix = FIX2LONG(x);
-	if (ix == 0) {
-	    if (RB_INTEGER_TYPE_P(y))
-		return ZERO;
-	}
-	else if (ix == 1)
-	    return y;
-	return rb_int_mul(x, y);
-    }
-    else if (RB_TYPE_P(x, T_BIGNUM))
+    if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
+	return ZERO;
+    if (y == ONE) return x;
+    if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
+	return ZERO;
+    if (x == ONE) return y;
+    else if (RB_INTEGER_TYPE_P(x))
 	return rb_int_mul(x, y);
     return rb_funcall(x, '*', 1, y);
 }
