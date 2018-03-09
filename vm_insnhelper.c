@@ -3282,11 +3282,10 @@ vm_ic_update(IC ic, VALUE val, const VALUE *reg_ep)
 }
 
 static VALUE
-vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, IC ic)
+vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_thread_t *const RUNNING_THREAD_ONCE_DONE = (rb_thread_t *)(0x1);
-    union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)ic;
 
   again:
     if (is->once.running_thread == RUNNING_THREAD_ONCE_DONE) {
@@ -3295,10 +3294,10 @@ vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, IC ic)
     else if (is->once.running_thread == NULL) {
 	VALUE val;
 	is->once.running_thread = th;
-	val = is->once.value = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
+	val = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
+	RB_OBJ_WRITE(ec->cfp->iseq, &is->once.value, val);
 	/* is->once.running_thread is cleared by vm_once_clear() */
 	is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
-	rb_iseq_add_mark_object(ec->cfp->iseq, val);
 	return val;
     }
     else if (is->once.running_thread == th) {

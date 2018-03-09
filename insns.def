@@ -972,11 +972,11 @@ setinlinecache
 /* run iseq only once */
 DEFINE_INSN
 once
-(ISEQ iseq, IC ic)
+(ISEQ iseq, ISE ise)
 ()
 (VALUE val)
 {
-    val = vm_once_dispatch(ec, iseq, ic);
+    val = vm_once_dispatch(ec, iseq, ise);
 }
 
 /* case dispatcher, jump by table if possible */

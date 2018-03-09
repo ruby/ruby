@@ -18,6 +18,7 @@ RubyVM::Typemap = {
   "GENTRY"         => %w[G TS_GENTRY],
   "IC"             => %w[K TS_IC],
   "ID"             => %w[I TS_ID],
+  "ISE"            => %w[T TS_ISE],
   "ISEQ"           => %w[S TS_ISEQ],
   "OFFSET"         => %w[O TS_OFFSET],
   "VALUE"          => %w[V TS_VALUE],
