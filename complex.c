@@ -65,20 +65,6 @@ f_##n(VALUE x, VALUE y)\
     return rb_funcall(x, id_##n, 1, y);\
 }
 
-#define math1(n) \
-inline static VALUE \
-m_##n(VALUE x)\
-{\
-    return rb_funcall(rb_mMath, id_##n, 1, x);\
-}
-
-#define math2(n) \
-inline static VALUE \
-m_##n(VALUE x, VALUE y)\
-{\
-    return rb_funcall(rb_mMath, id_##n, 2, x, y);\
-}
-
 #define PRESERVE_SIGNEDZERO
 
 inline static VALUE
