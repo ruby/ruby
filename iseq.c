@@ -116,10 +116,10 @@ rb_iseq_free(const rb_iseq_t *iseq)
 }
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-static int
+static VALUE
 rb_vm_insn_addr2insn2(const void *addr)
 {
-    int insn;
+    VALUE insn;
     const void * const *table = rb_vm_get_insns_address_table();
 
     for (insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
@@ -131,14 +131,14 @@ rb_vm_insn_addr2insn2(const void *addr)
 }
 #endif
 
-static int
+static VALUE
 rb_vm_insn_null_translator(const void *addr)
 {
-    return (int)addr;
+    return (VALUE)addr;
 }
 
 typedef void iseq_value_itr_t(void *ctx, VALUE obj);
-typedef int rb_vm_insns_translator_t(const void *addr);
+typedef VALUE rb_vm_insns_translator_t(const void *addr);
 
 static int
 iseq_extract_values(const VALUE *code, size_t pos, iseq_value_itr_t * func, void *data, rb_vm_insns_translator_t * translator)
