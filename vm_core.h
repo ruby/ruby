@@ -412,7 +412,7 @@ struct rb_iseq_constant_body {
     struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
 
     struct {
-      rb_num_t flip_count;
+      rb_snum_t flip_count;
       VALUE coverage;
       VALUE original_iseq;
     } variable;
