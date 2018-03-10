@@ -206,16 +206,75 @@ static const struct signals {
 };
 
 static const char signame_prefix[3] = "SIG";
+static const int signame_prefix_len = (int)sizeof(signame_prefix);
 
 static int
-signm2signo(const char *nm)
+signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
 {
     const struct signals *sigs;
+    VALUE vsig = *sig_ptr;
+    const char *nm;
+    long len;
+    int prefix = 0;
 
-    for (sigs = siglist; sigs->signm; sigs++)
-	if (strcmp(sigs->signm, nm) == 0)
-	    return sigs->signo;
-    return 0;
+    if (RB_SYMBOL_P(vsig)) {
+	*sig_ptr = vsig = rb_sym2str(vsig);
+    }
+    else if (!RB_TYPE_P(vsig, T_STRING)) {
+	VALUE str = rb_check_string_type(vsig);
+	if (NIL_P(str)) {
+	    rb_raise(rb_eArgError, "bad signal type %s",
+		     rb_obj_classname(vsig));
+	}
+	*sig_ptr = vsig = str;
+    }
+
+    rb_must_asciicompat(vsig);
+    RSTRING_GETMEM(vsig, nm, len);
+    if (memchr(nm, '\0', len)) {
+	rb_raise(rb_eArgError, "signal name with null byte");
+    }
+
+    if (len > 0 && nm[0] == '-') {
+	if (!negative)
+	    rb_raise(rb_eArgError, "negative signal name: % "PRIsVALUE, vsig);
+	prefix = 1;
+    }
+    else {
+	negative = 0;
+    }
+    if (len >= prefix + signame_prefix_len) {
+	if (memcmp(nm + prefix, signame_prefix, sizeof(signame_prefix)) == 0)
+	    prefix += signame_prefix_len;
+    }
+    if (len <= (long)prefix) {
+      unsupported:
+	if (prefix == signame_prefix_len) {
+	    prefix = 0;
+	}
+	else if (prefix > signame_prefix_len) {
+	    prefix -= signame_prefix_len;
+	    len -= prefix;
+	    vsig = rb_str_subseq(vsig, prefix, len);
+	    prefix = 0;
+	}
+	else {
+	    len -= prefix;
+	    vsig = rb_str_subseq(vsig, prefix, len);
+	    prefix = signame_prefix_len;
+	}
+	rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+		 prefix, signame_prefix, vsig);
+    }
+
+    if (prefix_ptr) *prefix_ptr = prefix;
+    for (sigs = siglist + !exit; sigs->signm; sigs++) {
+	if (memcmp(sigs->signm, nm + prefix, len - prefix) == 0 &&
+	    sigs->signm[len - prefix] == '\0') {
+	    return negative ? -sigs->signo : sigs->signo;
+	}
+    }
+    goto unsupported;
 }
 
 static const char*
@@ -284,7 +343,6 @@ esignal_init(int argc, VALUE *argv, VALUE self)
     int argnum = 1;
     VALUE sig = Qnil;
     int signo;
-    const char *signm;
 
     if (argc > 0) {
 	sig = rb_check_to_integer(argv[0], "to_int");
@@ -305,19 +363,11 @@ esignal_init(int argc, VALUE *argv, VALUE self)
 	}
     }
     else {
-	int len = sizeof(signame_prefix);
-	if (SYMBOL_P(sig)) sig = rb_sym2str(sig); else StringValue(sig);
-	signm = RSTRING_PTR(sig);
-	if (strncmp(signm, signame_prefix, len) == 0) {
-	    signm += len;
-	    len = 0;
+	int prefix;
+	signo = signm2signo(&sig, FALSE, FALSE, &prefix);
+	if (prefix != signame_prefix_len) {
+	    sig = rb_str_append(rb_str_new_cstr("SIG"), sig);
 	}
-	signo = signm2signo(signm);
-	if (!signo) {
-	    rb_raise(rb_eArgError, "unsupported name `%.*s%"PRIsVALUE"'",
-		     len, signame_prefix, sig);
-	}
-	sig = rb_sprintf("SIG%s", signm);
     }
     rb_call_super(1, &sig);
     rb_ivar_set(self, id_signo, INT2NUM(signo));
@@ -402,51 +452,18 @@ rb_f_kill(int argc, const VALUE *argv)
 #ifndef HAVE_KILLPG
 #define killpg(pg, sig) kill(-(pg), (sig))
 #endif
-    int negative = 0;
     int sig;
     int i;
     VALUE str;
-    const char *s;
 
     rb_check_arity(argc, 2, UNLIMITED_ARGUMENTS);
 
-    switch (TYPE(argv[0])) {
-      case T_FIXNUM:
+    if (FIXNUM_P(argv[0])) {
 	sig = FIX2INT(argv[0]);
-	break;
-
-      case T_SYMBOL:
-	str = rb_sym2str(argv[0]);
-	goto str_signal;
-
-      case T_STRING:
+    }
+    else {
 	str = argv[0];
-      str_signal:
-	s = RSTRING_PTR(str);
-	if (s[0] == '-') {
-	    negative++;
-	    s++;
-	}
-	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
-	    s += 3;
-	if ((sig = signm2signo(s)) == 0) {
-	    long ofs = s - RSTRING_PTR(str);
-	    if (ofs) str = rb_str_subseq(str, ofs, RSTRING_LEN(str)-ofs);
-	    rb_raise(rb_eArgError, "unsupported name `SIG%"PRIsVALUE"'", str);
-	}
-
-	if (negative)
-	    sig = -sig;
-	break;
-
-      default:
-	str = rb_check_string_type(argv[0]);
-	if (!NIL_P(str)) {
-	    goto str_signal;
-	}
-	rb_raise(rb_eArgError, "bad signal type %s",
-		 rb_obj_classname(argv[0]));
-	break;
+	sig = signm2signo(&str, TRUE, FALSE, NULL);
     }
 
     if (argc <= 1) return INT2FIX(0);
@@ -1204,7 +1221,6 @@ static int
 trap_signm(VALUE vsig)
 {
     int sig = -1;
-    const char *s;
 
     if (FIXNUM_P(vsig)) {
 	sig = FIX2INT(vsig);
@@ -1213,18 +1229,7 @@ trap_signm(VALUE vsig)
 	}
     }
     else {
-	if (RB_SYMBOL_P(vsig)) {
-	    vsig = rb_sym2str(vsig);
-	}
-	s = StringValueCStr(vsig);
-	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
-	    s += 3;
-	sig = signm2signo(s);
-	if (sig == 0 && strcmp(s, "EXIT") != 0) {
-	    long ofs = s - RSTRING_PTR(vsig);
-	    if (ofs) vsig = rb_str_subseq(vsig, ofs, RSTRING_LEN(vsig)-ofs);
-	    rb_raise(rb_eArgError, "unsupported signal SIG%"PRIsVALUE"", vsig);
-	}
+	sig = signm2signo(&vsig, FALSE, TRUE, NULL);
     }
     return sig;
 }
