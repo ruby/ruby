@@ -8751,7 +8751,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
 
     ISEQ_COVERAGE_SET(iseq, Qnil);
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
-    iseq->body->variable.flip_count = (int)body->variable.flip_count;
+    iseq->body->variable.flip_count = body->variable.flip_count;
 
     {
 	VALUE realpath = Qnil, path = ibf_load_object(load, body->location.pathobj);

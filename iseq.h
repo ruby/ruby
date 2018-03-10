@@ -35,10 +35,10 @@ rb_call_info_kw_arg_bytes(int keyword_len)
 
 #define ISEQ_FLIP_CNT(iseq) (iseq)->body->variable.flip_count
 
-static inline int
+static inline rb_snum_t
 ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 {
-    int cnt = iseq->body->variable.flip_count;
+    rb_snum_t cnt = iseq->body->variable.flip_count;
     iseq->body->variable.flip_count += 1;
     return cnt;
 }
