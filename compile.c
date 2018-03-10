@@ -1246,6 +1246,15 @@ new_child_iseq_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc,
     return ret_iseq;
 }
 
+static void
+set_catch_except_p(struct rb_iseq_constant_body *body)
+{
+    body->catch_except_p = TRUE;
+    if (body->parent_iseq != NULL) {
+        set_catch_except_p(body->parent_iseq->body);
+    }
+}
+
 /* Set body->catch_except_p to TRUE if the ISeq may catch an exception. If it is FALSE,
    JIT-ed code may be optimized.  If we are extremely conservative, we should set TRUE
    if catch table exists.  But we want to optimize while loop, which always has catch
@@ -1273,7 +1282,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
 #endif
             if (insn == BIN(throw)) {
                 struct rb_iseq_constant_body *parent_body = body->parent_iseq->body;
-                parent_body->catch_except_p = TRUE;
+                set_catch_except_p(parent_body);
             }
             pos += insn_len(insn);
         }

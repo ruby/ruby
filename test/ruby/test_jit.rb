@@ -510,6 +510,25 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_catching_deep_exception
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 4)
+    begin;
+      def catch_true(paths, prefixes) # catch_except_p: TRUE
+        prefixes.each do |prefix| # catch_except_p: TRUE
+          paths.each do |path| # catch_except_p: FALSE
+            return path
+          end
+        end
+      end
+
+      def wrapper(paths, prefixes)
+        catch_true(paths, prefixes)
+      end
+
+      print wrapper(['1'], ['2'])
+    end;
+  end
+
   private
 
   # The shortest way to test one proc
