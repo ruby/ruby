@@ -1,6 +1,6 @@
 /*
  *  (c) 1995 Microsoft Corporation. All rights reserved.
- *  Developed by ActiveWare Internet Corp., now kown as
+ *  Developed by ActiveWare Internet Corp., now known as
  *  ActiveState Tool Corp., http://www.ActiveState.com
  *
  *  Other modifications Copyright (c) 1997, 1998 by Gurusamy Sarathy
