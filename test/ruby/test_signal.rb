@@ -87,6 +87,8 @@ class TestSignal < Test::Unit::TestCase
       assert_equal(signo, SignalException.new(signm.to_sym).signo, signm)
       assert_equal(signo, SignalException.new(signo).signo, signo)
     end
+    e = assert_raise(ArgumentError) {SignalException.new("-SIGEXIT")}
+    assert_not_match(/SIG-SIG/, e.message)
   end
 
   def test_interrupt
