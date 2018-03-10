@@ -353,7 +353,8 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_report_on_exception
-    assert_separately([], <<~"end;") #do
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       q1 = Thread::Queue.new
       q2 = Thread::Queue.new
 
@@ -404,6 +405,19 @@ class TestThread < Test::Unit::TestCase
         }
         assert_equal(true, q1.pop)
         Thread.pass while th.alive?
+      }
+
+      assert_warn(/report 5/, "should defaults to the global flag at the start") {
+        th = Thread.start {
+          Thread.current.report_on_exception = true
+          Thread.current.abort_on_exception = true
+          q2.pop
+          raise "report 5"
+        }
+        assert_raise_with_message(RuntimeError, "report 5") {
+          q2.push(true)
+          Thread.pass while th.alive?
+        }
       }
     end;
   end
