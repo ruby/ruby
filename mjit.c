@@ -926,9 +926,8 @@ worker(void)
         }
     }
 
-    CRITICAL_SECTION_START(3, "in the end of worker to update worker_finished");
+    /* To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here. */
     worker_finished = TRUE;
-    CRITICAL_SECTION_FINISH(3, "in the end of worker to update worker_finished");
 }
 
 /* MJIT info related to an existing continutaion.  */
