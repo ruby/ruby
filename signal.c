@@ -1206,23 +1206,17 @@ trap_signm(VALUE vsig)
     int sig = -1;
     const char *s;
 
-    switch (TYPE(vsig)) {
-      case T_FIXNUM:
+    if (FIXNUM_P(vsig)) {
 	sig = FIX2INT(vsig);
 	if (sig < 0 || sig >= NSIG) {
 	    rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
 	}
-	break;
-
-      case T_SYMBOL:
-	vsig = rb_sym2str(vsig);
-	s = RSTRING_PTR(vsig);
-	goto str_signal;
-
-      default:
-	s = StringValuePtr(vsig);
-
-      str_signal:
+    }
+    else {
+	if (RB_SYMBOL_P(vsig)) {
+	    vsig = rb_sym2str(vsig);
+	}
+	s = StringValueCStr(vsig);
 	if (strncmp(signame_prefix, s, sizeof(signame_prefix)) == 0)
 	    s += 3;
 	sig = signm2signo(s);

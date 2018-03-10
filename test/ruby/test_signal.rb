@@ -164,6 +164,8 @@ class TestSignal < Test::Unit::TestCase
       assert_raise(ArgumentError) { Signal.trap("XXXXXXXXXX", "SIG_DFL") }
 
       assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Signal.trap("\u{30eb 30d3 30fc}", "SIG_DFL") }
+
+      assert_raise(ArgumentError) { Signal.trap("EXIT\0") {} }
     ensure
       Signal.trap(:INT, oldtrap) if oldtrap
     end
