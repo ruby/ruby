@@ -6280,10 +6280,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	    if (ptr_end < p->lex.pend) rb_str_cat(str, "\n", 1);
 	    lex_goto_eol(p);
 	    if (p->heredoc_indent > 0) {
-		set_yylval_str(str);
-		add_mark_object(p, str);
-		flush_string_content(p, enc);
-		return tSTRING_CONTENT;
+		goto flush_str;
 	    }
 	    if (nextc(p) == -1) {
 		if (str) {
@@ -6315,10 +6312,11 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
-		VALUE lit;
 	      flush:
-		add_mark_object(p, lit = STR_NEW3(tok(p), toklen(p), enc, func));
-		set_yylval_str(lit);
+		str = STR_NEW3(tok(p), toklen(p), enc, func);
+	      flush_str:
+		set_yylval_str(str);
+		add_mark_object(p, str);
 		flush_string_content(p, enc);
 		return tSTRING_CONTENT;
 	    }
