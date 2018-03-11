@@ -6017,7 +6017,6 @@ static NODE *
 heredoc_dedent(struct parser_params *p, NODE *root)
 {
     NODE *node, *str_node, *prev_node;
-    int bol = TRUE;
     int indent = p->heredoc_indent;
     VALUE prev_lit = 0;
 
@@ -6030,8 +6029,9 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 
     while (str_node) {
 	VALUE lit = str_node->nd_lit;
-	if (bol) dedent_string(lit, indent);
-	bol = TRUE;
+	if (str_node->flags & NODE_FL_NEWLINE) {
+	    dedent_string(lit, indent);
+	}
 	if (!prev_lit) {
 	    prev_lit = lit;
 	}
@@ -6055,7 +6055,6 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	    if ((str_node = node->nd_head) != 0) {
 		enum node_type type = nd_type(str_node);
 		if (type == NODE_STR || type == NODE_DSTR) break;
-		bol = FALSE;
 		prev_lit = 0;
 		str_node = 0;
 	    }
@@ -6204,6 +6203,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     long len;
     VALUE str = 0;
     rb_encoding *enc = p->enc;
+    int bol;
 
     eos = RSTRING_PTR(here->term);
     len = RSTRING_LEN(here->term) - 2; /* here->term includes term_len and func */
@@ -6242,7 +6242,8 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	p->lex.strterm = 0;
 	return 0;
     }
-    if (was_bol(p) && whole_match_p(p, eos, len, indent)) {
+    bol = was_bol(p);
+    if (bol && whole_match_p(p, eos, len, indent)) {
 	dispatch_heredoc_end(p);
 	heredoc_restore(p, &p->lex.strterm->u.heredoc);
 	p->lex.strterm = 0;
@@ -6317,6 +6318,9 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	      flush_str:
 		set_yylval_str(str);
 		add_mark_object(p, str);
+#ifndef RIPPER
+		if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+#endif
 		flush_string_content(p, enc);
 		return tSTRING_CONTENT;
 	    }
@@ -6339,6 +6343,9 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
     add_mark_object(p, str);
+#ifndef RIPPER
+    if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
+#endif
     return tSTRING_CONTENT;
 }
 
