@@ -515,6 +515,8 @@ class TestRegexp < Test::Unit::TestCase
     s = ".........."
     5.times { s.sub!(".", "") }
     assert_equal(".....", s)
+
+    assert_equal("\\\u{3042}", Regexp.new("\\\u{3042}").source)
   end
 
   def test_equal

@@ -2537,11 +2537,13 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
         if (!MBCLEN_CHARFOUND_P(chlen)) {
+          invalid_multibyte:
             errcpy(err, "invalid multibyte character");
             return -1;
         }
         chlen = MBCLEN_CHARFOUND_LEN(chlen);
         if (1 < chlen || (*p & 0x80)) {
+          multibyte:
             rb_str_buf_cat(buf, p, chlen);
             p += chlen;
             if (*encp == 0)
@@ -2558,6 +2560,16 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
             if (p == end) {
                 errcpy(err, "too short escape sequence");
                 return -1;
+            }
+            chlen = rb_enc_precise_mbclen(p, end, enc);
+            if (!MBCLEN_CHARFOUND_P(chlen)) {
+                goto invalid_multibyte;
+            }
+            if ((chlen = MBCLEN_CHARFOUND_LEN(chlen)) > 1) {
+		/* include the previous backslash */
+                --p;
+                ++chlen;
+                goto multibyte;
             }
             switch (c = *p++) {
               case '1': case '2': case '3':
