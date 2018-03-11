@@ -545,6 +545,13 @@ class TestJIT < Test::Unit::TestCase
   def assert_eval_with_jit(script, stdout: nil, success_count:, min_calls: 1)
     out, err = eval_with_jit(script, verbose: 1, min_calls: min_calls)
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
+
+    # Debugging on CI
+    if stderr.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory")
+      puts "test/ruby/test_jit.rb: ENV content:"
+      pp ENV
+    end
+
     assert_equal(
       success_count, actual,
       "Expected #{success_count} times of JIT success, but succeeded #{actual} times.\n\n"\
