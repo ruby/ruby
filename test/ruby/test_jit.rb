@@ -547,7 +547,7 @@ class TestJIT < Test::Unit::TestCase
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
 
     # Debugging on CI
-    if stderr.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory")
+    if err.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory")
       puts "test/ruby/test_jit.rb: ENV content:"
       pp ENV
     end
