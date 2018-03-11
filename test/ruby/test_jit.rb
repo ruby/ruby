@@ -548,8 +548,8 @@ class TestJIT < Test::Unit::TestCase
 
     # Debugging on CI
     if err.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory")
-      puts "test/ruby/test_jit.rb: ENV content:"
-      pp ENV
+      $stderr.puts "test/ruby/test_jit.rb: ENV content:"
+      PP.pp(ENV, $stderr)
     end
 
     assert_equal(
