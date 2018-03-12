@@ -1254,5 +1254,13 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
     _, err2, status1 = EnvUtil.invoke_ruby(['-e', "#{test_method}; begin; foo; end"], '', true, true)
     assert_equal(err2, out1)
+
+    if $stderr.tty?
+      e = RuntimeError.new("a\n")
+      message = assert_nothing_raised(ArgumentError, proc {e.pretty_inspect}) do
+        e.full_message
+      end
+      assert_operator(message, :end_with?, "\n")
+    end
   end
 end

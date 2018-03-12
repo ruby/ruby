@@ -129,15 +129,13 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	}
 	else {
 	    const char *tail = 0;
-	    long len = elen;
 
 	    if (emesg == Qundef && highlight) write_warn(str, bold);
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
-		len = tail - einfo;
+		write_warn2(str, einfo, tail - einfo);
 		tail++;		/* skip newline */
-		write_warn2(str, einfo, len);
 	    }
 	    else {
 		write_warn_str(str, emesg);
@@ -159,7 +157,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		    if (einfo[elen-1] == '\n') --elen;
 		    write_warn(str, bold);
 		}
-		write_warn2(str, tail, elen - len - 1);
+		if (tail < einfo+elen) write_warn2(str, tail, einfo+elen-tail);
 	    }
 	    if (tail ? (highlight || einfo[elen-1] != '\n') : !epath) {
 		if (highlight) write_warn(str, reset);
