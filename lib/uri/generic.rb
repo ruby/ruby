@@ -375,6 +375,10 @@ module URI
     # see also URI::Generic.check_user, URI::Generic.check_password
     #
     def check_userinfo(user, password = nil)
+      if @scheme && @scheme == 'file'
+        raise InvalidURIError,
+          "can not set userinfo with file scheme"
+      end
       if !password
         user, password = split_userinfo(user)
       end
@@ -396,6 +400,11 @@ module URI
       if @opaque
         raise InvalidURIError,
           "can not set user with opaque"
+      end
+
+      if @scheme && @scheme == 'file'
+        raise InvalidURIError,
+          "can not set userinfo with file scheme"
       end
 
       return v unless v
@@ -420,6 +429,11 @@ module URI
       if @opaque
         raise InvalidURIError,
           "can not set password with opaque"
+      end
+
+      if @scheme && @scheme == 'file'
+        raise InvalidURIError,
+          "can not set userinfo with file scheme"
       end
       return v unless v
 
@@ -446,7 +460,7 @@ module URI
       end
       check_userinfo(*userinfo)
       set_userinfo(*userinfo)
-      # returns userinfo
+      userinfo
     end
 
     #
@@ -688,6 +702,9 @@ module URI
       elsif !v.kind_of?(Integer) && parser.regexp[:PORT] !~ v
         raise InvalidComponentError,
           "bad component(expected port component): #{v.inspect}"
+      elsif @scheme && @scheme == 'file'
+        raise InvalidURIError,
+          "can not set port with file scheme"
       end
 
       return true
