@@ -474,7 +474,7 @@ EOT
         failed = []
         obj.each do |*a, &b|
           if blk.call(*a, &b)
-            failed << a.size > 1 ? a : a[0]
+            failed << (a.size > 1 ? a : a[0])
           end
         end
         assert(failed.empty?, message(m) {failed.pretty_inspect})
