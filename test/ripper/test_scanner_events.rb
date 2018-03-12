@@ -840,6 +840,11 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
                  scan('sp', "%w(  w  )")
     assert_equal [],
                  scan('sp', "p(/ /)")
+
+    assert_equal ["\\\n"],
+                 scan('sp', "\\\n")
+    assert_equal ['\ '],
+                 scan('sp', '\ ')
   end
 
   # `nl' event always means End-Of-Statement.

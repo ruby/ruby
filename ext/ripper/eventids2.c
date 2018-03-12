@@ -1,12 +1,13 @@
-#define tIGNORED_NL      (tLAST_TOKEN + 1)
-#define tCOMMENT         (tLAST_TOKEN + 2)
-#define tEMBDOC_BEG      (tLAST_TOKEN + 3)
-#define tEMBDOC          (tLAST_TOKEN + 4)
-#define tEMBDOC_END      (tLAST_TOKEN + 5)
-#define tSP              (tLAST_TOKEN + 6)
-#define tHEREDOC_BEG     (tLAST_TOKEN + 7)
-#define tHEREDOC_END     (tLAST_TOKEN + 8)
-#define k__END__         (tLAST_TOKEN + 9)
+enum {
+    tIGNORED_NL  = tLAST_TOKEN + 1,
+    tCOMMENT,
+    tEMBDOC_BEG,
+    tEMBDOC,
+    tEMBDOC_END,
+    tHEREDOC_BEG,
+    tHEREDOC_END,
+    k__END__
+};
 
 typedef struct {
     ID ripper_id_backref;

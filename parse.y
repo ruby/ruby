@@ -838,7 +838,7 @@ static void token_info_pop(struct parser_params*, const char *token, const rb_co
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
 %token <id> '\\'	"backslash"
-%token tSPACE		"escaped space"
+%token tSP		"escaped space"
 %token <id> '\t' 	"escaped horizontal tab"
 %token <id> '\f'	"escaped form feed"
 %token <id> '\r'	"escaped carriage return"
@@ -8106,7 +8106,7 @@ parser_yylex(struct parser_params *p)
 	    dispatch_scan_event(p, tSP);
 	    goto retry; /* skip \\n */
 	}
-	if (c == ' ') return tSPACE;
+	if (c == ' ') return tSP;
 	if (ISSPACE(c)) return c;
 	pushback(p, c);
 	return '\\';
