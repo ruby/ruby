@@ -40,7 +40,7 @@ class Pathname
   # chop_basename(path) -> [pre-basename, basename] or nil
   def chop_basename(path) # :nodoc:
     base = File.basename(path)
-    if /\A#{SEPARATOR_PAT}?\z/o =~ base
+    if /\A#{SEPARATOR_PAT}?\z/o.match?(base)
       return nil
     else
       return path[0, path.rindex(base)], base
@@ -62,7 +62,7 @@ class Pathname
   def prepend_prefix(prefix, relpath) # :nodoc:
     if relpath.empty?
       File.dirname(prefix)
-    elsif /#{SEPARATOR_PAT}/o =~ prefix
+    elsif /#{SEPARATOR_PAT}/o.match?(prefix)
       prefix = File.dirname(prefix)
       prefix = File.join(prefix, "") if File.basename(prefix + 'a') != 'a'
       prefix + relpath
@@ -113,7 +113,7 @@ class Pathname
       end
     end
     pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-    if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
+    if /#{SEPARATOR_PAT}/o.match?(File.basename(pre))
       names.shift while names[0] == '..'
     end
     self.class.new(prepend_prefix(pre, File.join(*names)))
@@ -162,7 +162,7 @@ class Pathname
       names.unshift base if base != '.'
     end
     pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-    if /#{SEPARATOR_PAT}/o =~ File.basename(pre)
+    if /#{SEPARATOR_PAT}/o.match?(File.basename(pre))
       names.shift while names[0] == '..'
     end
     if names.empty?
@@ -208,7 +208,7 @@ class Pathname
   # pathnames which points to roots such as <tt>/usr/..</tt>.
   #
   def root?
-    !!(chop_basename(@path) == nil && /#{SEPARATOR_PAT}/o =~ @path)
+    !!(chop_basename(@path) == nil && /#{SEPARATOR_PAT}/o.match?(@path))
   end
 
   # Predicate method for testing whether a path is absolute.
@@ -380,7 +380,7 @@ class Pathname
       basename_list2.shift
     end
     r1 = chop_basename(prefix1)
-    if !r1 && (r1 = /#{SEPARATOR_PAT}/o =~ File.basename(prefix1))
+    if !r1 && (r1 = /#{SEPARATOR_PAT}/o.match?(File.basename(prefix1)))
       while !basename_list2.empty? && basename_list2.first == '..'
         index_list2.shift
         basename_list2.shift
