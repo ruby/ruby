@@ -660,10 +660,6 @@ class TestEnumerator < Test::Unit::TestCase
     u = [0, 1, 0, 1].to_enum.lazy.uniq
     assert_equal([0, 1], u.force)
     assert_equal([0, 1], u.force)
-
-    u = (1..Float::INFINITY).lazy.uniq{|x| (x**2) % 10 }
-    assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
-    assert_equal([1, 2, 3, 4, 5, 10], u.first(6))
   end
 end
 
