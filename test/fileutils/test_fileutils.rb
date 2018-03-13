@@ -449,6 +449,45 @@ class TestFileUtils < Test::Unit::TestCase
     cp_r 'tmp/src', 'tmp/dest/', remove_destination: true
   end if have_symlink?
 
+  def test_cp_lr
+    check_singleton :cp_lr
+
+    cp_lr 'data', 'tmp'
+    TARGETS.each do |fname|
+      assert_same_file fname, "tmp/#{fname}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_lr 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    my_rm_rf 'tmp/cpr_src'
+    my_rm_rf 'tmp/cpr_dest'
+
+    bug3588 = '[ruby-core:31360]'
+    mkdir 'tmp2'
+    assert_nothing_raised(ArgumentError, bug3588) do
+      cp_lr 'tmp', 'tmp2'
+    end
+    assert_directory 'tmp2/tmp'
+    assert_raise(ArgumentError, bug3588) do
+      cp_lr 'tmp2', 'tmp2/new_tmp2'
+    end
+
+    bug12892 = '[ruby-core:77885] [Bug #12892]'
+    assert_raise(Errno::ENOENT, bug12892) do
+      cp_lr 'non/existent', 'tmp'
+    end
+  end if have_hardlink?
+
   def test_mv
     check_singleton :mv
 
