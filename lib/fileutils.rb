@@ -309,14 +309,14 @@ module FileUtils
   #   FileUtils.rm_r site_ruby + '/mylib', :force => true
   #   FileUtils.cp_lr 'lib/', site_ruby + '/mylib'
   #
-  #   # Examples of copying several files to target directory.
+  #   # Examples of linking several files to target directory.
   #   FileUtils.cp_lr %w(mail.rb field.rb debug/), site_ruby + '/tmail'
   #   FileUtils.cp_lr Dir.glob('*.rb'), '/home/aamine/lib/ruby', :noop => true, :verbose => true
   #
-  #   # If you want to copy all contents of a directory instead of the
+  #   # If you want to link all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
   #   # use following code.
-  #   FileUtils.cp_lr 'src/.', 'dest'  # cp_r('src', 'dest') makes src/dest, but this doesn't.
+  #   FileUtils.cp_lr 'src/.', 'dest'  # cp_lr('src', 'dest') makes dest/src, but this doesn't.
   #
   def cp_lr(src, dest, noop: nil, verbose: nil,
             dereference_root: true, remove_destination: false)
