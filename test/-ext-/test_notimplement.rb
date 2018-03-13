@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require '-test-/notimplement'
 
-class TestNotImplement < Test::Unit::TestCase
+class Test_NotImplement < Test::Unit::TestCase
   def test_funcall_notimplement
     bug3662 = '[ruby-dev:41953]'
     assert_raise(NotImplementedError, bug3662) {

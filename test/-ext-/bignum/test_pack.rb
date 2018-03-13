@@ -4,7 +4,7 @@
 require 'test/unit'
 require "-test-/bignum"
 
-class TestBignum < Test::Unit::TestCase
+class Test_Bignum < Test::Unit::TestCase
   class TestPack < Test::Unit::TestCase
 
     MSWORD_FIRST = Integer::INTEGER_PACK_MSWORD_FIRST

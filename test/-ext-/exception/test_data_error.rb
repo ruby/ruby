@@ -2,7 +2,7 @@
 require 'test/unit'
 
 module Bug
-  class TestException < Test::Unit::TestCase
+  class Test_ExceptionDE < Test::Unit::TestCase
     def test_cleanup_data_error
       bug9167 = '[ruby-core:58643] [Bug #9167]'
       assert_normal_exit(<<-'end;', bug9167) # do

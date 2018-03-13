@@ -2,7 +2,7 @@
 require 'test/unit'
 require "-test-/bignum"
 
-class TestBignum < Test::Unit::TestCase
+class Test_Bignum < Test::Unit::TestCase
   class TestBigZero < Test::Unit::TestCase
     def test_equal_0
       bug8204 = '[ruby-core:53893] [Bug #8204]'

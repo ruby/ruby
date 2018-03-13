@@ -2,7 +2,7 @@
 require 'test/unit'
 require '-test-/integer'
 
-class TestInteger < Test::Unit::TestCase
+class Test_Integer < Test::Unit::TestCase
   FIXNUM_MIN = RbConfig::LIMITS['FIXNUM_MIN']
   FIXNUM_MAX = RbConfig::LIMITS['FIXNUM_MAX']
 
