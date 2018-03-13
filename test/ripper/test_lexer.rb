@@ -90,4 +90,9 @@ class TestRipper::Lexer < Test::Unit::TestCase
     ]
     assert_equal expect, Ripper.lex(src).map {|e| e[1]}
   end
+
+  def test_slice
+    assert_equal "string\#{nil}\n",
+      Ripper.slice(%(<<HERE\nstring\#{nil}\nHERE), "heredoc_beg .*? nl $(.*?) heredoc_end", 1)
+  end
 end
