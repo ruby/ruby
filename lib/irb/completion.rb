@@ -169,18 +169,9 @@ module IRB
         else
           # func1.func2
           candidates = []
+          to_ignore = ignored_modules
           ObjectSpace.each_object(Module){|m|
-            begin
-              name = m.name
-            rescue Exception
-              name = ""
-            end
-            begin
-              next if name != "IRB::Context" and
-                /^(IRB|SLex|RubyLex|RubyToken)/ =~ name
-            rescue Exception
-              next
-            end
+            next if (to_ignore.include?(m) rescue true)
             candidates.concat m.instance_methods(false).collect{|x| x.to_s}
           }
           candidates.sort!
@@ -217,6 +208,32 @@ module IRB
           #receiver + " " + e
         end
       end
+    end
+
+    def self.ignored_modules
+      # We could cache the result, but this is very fast already.
+      # By using this approach, we avoid Module#name calls, which are
+      # relatively slow when there are a lot of anonymous modules defined.
+      require 'set'
+      s = Set.new
+
+      scanner = lambda do |m|
+        next if s.include?(m) # IRB::ExtendCommandBundle::EXCB recurses.
+        s << m
+        m.constants(false).each do |c|
+          value = m.const_get(c)
+          scanner.call(value) if value.is_a?(Module)
+        end
+      end
+
+      %i(IRB SLex RubyLex RubyToken).each do |sym|
+        next unless Object.const_defined?(sym)
+        scanner.call(Object.const_get(sym))
+      end
+
+      s.delete(IRB::Context) if defined?(IRB::Context)
+
+      s
     end
   end
 end
