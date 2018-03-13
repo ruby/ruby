@@ -78,8 +78,6 @@ compile_case_dispatch_each(VALUE key, VALUE value, VALUE arg)
     return ST_CONTINUE;
 }
 
-#define MJIT_COMMENT_ID 0
-
 /* Calling rb_id2str in MJIT worker causes random SEGV. So this is disabled by default. */
 static void
 comment_id(FILE *f, ID id)
