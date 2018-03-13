@@ -186,7 +186,7 @@ class Ripper
       if m = /[^\w\s$()\[\]{}?*+\.]/.match(pattern)
         raise CompileError, "invalid char in pattern: #{m[0].inspect}"
       end
-      buf = ''
+      buf = +''
       pattern.scan(/(?:\w+|\$\(|[()\[\]\{\}?*+\.]+)/) do |tok|
         case tok
         when /\w/
