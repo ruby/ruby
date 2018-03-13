@@ -152,14 +152,32 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		if (highlight) write_warn(str, reset);
 		write_warn2(str, "\n", 1);
 	    }
-	    if (tail) {
-		int eol = einfo[elen-1] == '\n';
-		if (eol && highlight) --elen;
-		if (tail < einfo+elen) {
-		    if (highlight) write_warn(str, bold);
+	    if (tail && einfo+elen > tail) {
+		if (!highlight) {
 		    write_warn2(str, tail, einfo+elen-tail);
-		    if (highlight) write_warn(str, reset);
-		    if (highlight || !eol) write_warn2(str, "\n", 1);
+		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
+		}
+		else {
+		    elen -= tail - einfo;
+		    einfo = tail;
+		    while (elen > 0) {
+			tail = memchr(einfo, '\n', elen);
+			if (!tail || tail > einfo) {
+			    write_warn(str, bold);
+			    write_warn2(str, einfo, tail ? tail-einfo : elen);
+			    write_warn(str, reset);
+			    if (!tail) {
+				write_warn2(str, "\n", 1);
+				break;
+			    }
+			}
+			elen -= tail - einfo;
+			einfo = tail;
+			do ++tail; while (tail < einfo+elen && *tail == '\n');
+			write_warn2(str, einfo, tail-einfo);
+			elen -= tail - einfo;
+			einfo = tail;
+		    }
 		}
 	    }
 	    else if (!epath) {
