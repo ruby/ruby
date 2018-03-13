@@ -214,12 +214,11 @@ module IRB
       # We could cache the result, but this is very fast already.
       # By using this approach, we avoid Module#name calls, which are
       # relatively slow when there are a lot of anonymous modules defined.
-      require 'set'
-      s = Set.new
+      s = {}
 
       scanner = lambda do |m|
         next if s.include?(m) # IRB::ExtendCommandBundle::EXCB recurses.
-        s << m
+        s[m] = true
         m.constants(false).each do |c|
           value = m.const_get(c)
           scanner.call(value) if value.is_a?(Module)
