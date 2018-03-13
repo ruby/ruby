@@ -102,6 +102,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * erb command's -S option is deprecated, which will be removed in the next version.
 
+* FileUtils
+
+  * New method:
+
+    * FileUtils#cp_lr [Feature #4189]
+
 * Matrix
 
   * New method:
