@@ -1262,5 +1262,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_operator(message, :end_with?, "\n")
     message = message.gsub(/\e\[[\d;]*m/, '')
     assert_not_operator(message, :end_with?, "\n\n")
+    e = RuntimeError.new("a\n\nb\n\nc")
+    message = assert_nothing_raised(ArgumentError, proc {e.pretty_inspect}) do
+      e.full_message
+    end
+    assert_all?(message.lines) do |m|
+      /\e\[\d[;\d]*m[^\e]*\n/ !~ m
+    end
   end
 end
