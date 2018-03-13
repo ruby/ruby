@@ -153,14 +153,16 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 		write_warn2(str, "\n", 1);
 	    }
 	    if (tail) {
-		if (highlight) {
-		    if (einfo[elen-1] == '\n') --elen;
-		    write_warn(str, bold);
+		int eol = einfo[elen-1] == '\n';
+		if (eol && highlight) --elen;
+		if (tail < einfo+elen) {
+		    if (highlight) write_warn(str, bold);
+		    write_warn2(str, tail, einfo+elen-tail);
+		    if (highlight) write_warn(str, reset);
+		    if (highlight || !eol) write_warn2(str, "\n", 1);
 		}
-		if (tail < einfo+elen) write_warn2(str, tail, einfo+elen-tail);
 	    }
-	    if (tail ? (highlight || einfo[elen-1] != '\n') : !epath) {
-		if (highlight) write_warn(str, reset);
+	    else if (!epath) {
 		write_warn2(str, "\n", 1);
 	    }
 	}
