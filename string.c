@@ -10364,7 +10364,7 @@ rb_str_symname_p(VALUE sym)
     ptr = RSTRING_PTR(sym);
     len = RSTRING_LEN(sym);
     if ((resenc != enc && !rb_str_is_ascii_only_p(sym)) || len != (long)strlen(ptr) ||
-	!rb_enc_symname_p(ptr, enc) || !sym_printable(ptr, ptr + len, enc)) {
+	!rb_enc_symname2_p(ptr, len, enc) || !sym_printable(ptr, ptr + len, enc)) {
 	return FALSE;
     }
     return TRUE;
@@ -10394,7 +10394,11 @@ rb_str_quote_unprintable(VALUE str)
 MJIT_FUNC_EXPORTED VALUE
 rb_id_quote_unprintable(ID id)
 {
-    return rb_str_quote_unprintable(rb_id2str(id));
+    VALUE str = rb_id2str(id);
+    if (!rb_str_symname_p(str)) {
+	return rb_str_inspect(str);
+    }
+    return str;
 }
 
 /*
