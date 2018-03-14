@@ -18,7 +18,6 @@ AC_DISABLE_OPTION_CHECKING
 AC_ARG_VAR([cflags], [additional CFLAGS])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
-ORIG_LIBS=$LIBS
 
 { # environment section
 
@@ -716,13 +715,16 @@ AS_CASE(["$target_os"],
 dnl Checks for libraries.
 AS_CASE(["$target_os"],[*bsd*|dragonfly*],[],[ac_cv_func_daemon=no])
 
+AS_UNSET(ORIG_LIBS)
 POSTLINK=:
 AC_SUBST(POSTLINK)
 AS_CASE(["$target_os"],
 [nextstep*], [	],
 [openstep*], [	],
 [rhapsody*], [	],
-[darwin*], [	RUBY_PREPEND_OPTION(LIBS, -lobjc)
+[darwin*], [
+		ORIG_LIBS="$LIBS"
+		RUBY_PREPEND_OPTION(LIBS, -lobjc)
 		RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE -D_DARWIN_C_SOURCE -D_DARWIN_UNLIMITED_SELECT -D_REENTRANT)
 		AC_MSG_CHECKING(whether Mac OS X 10.5 or later)
 		AC_TRY_CPP([#include <AvailabilityMacros.h>
@@ -959,6 +961,7 @@ main()
 		ac_cv_func_round=no
 		],
 [	LIBS="-lm $LIBS"])
+: ${ORIG_LIBS=$LIBS}
 
 AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
