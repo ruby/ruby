@@ -3108,40 +3108,57 @@ rb_check_to_int(VALUE val)
 }
 
 static VALUE
-rb_convert_to_integer(VALUE val, int base)
+rb_check_to_i(VALUE val)
+{
+    if (RB_INTEGER_TYPE_P(val)) return val;
+    val = try_to_int(val, idTo_i, FALSE);
+    if (RB_INTEGER_TYPE_P(val)) return val;
+    return Qnil;
+}
+
+static VALUE
+rb_convert_to_integer(VALUE val, int base, int raise_exception)
 {
     VALUE tmp;
 
     if (RB_FLOAT_TYPE_P(val)) {
-	double f;
-	if (base != 0) goto arg_error;
-	f = RFLOAT_VALUE(val);
-	if (FIXABLE(f)) return LONG2FIX((long)f);
-	return rb_dbl2big(f);
+        double f;
+        if (base != 0) goto arg_error;
+        f = RFLOAT_VALUE(val);
+        if (FIXABLE(f)) return LONG2FIX((long)f);
+        return rb_dbl2big(f);
     }
     else if (RB_INTEGER_TYPE_P(val)) {
-	if (base != 0) goto arg_error;
-	return val;
+        if (base != 0) goto arg_error;
+        return val;
     }
     else if (RB_TYPE_P(val, T_STRING)) {
-	return rb_str_to_inum(val, base, TRUE);
+        return rb_str_convert_to_inum(val, base, TRUE, raise_exception);
     }
     else if (NIL_P(val)) {
-	if (base != 0) goto arg_error;
-	rb_raise(rb_eTypeError, "can't convert nil into Integer");
+        if (base != 0) goto arg_error;
+        if (!raise_exception) return Qnil;
+        rb_raise(rb_eTypeError, "can't convert nil into Integer");
     }
     if (base != 0) {
-	tmp = rb_check_string_type(val);
-	if (!NIL_P(tmp)) return rb_str_to_inum(tmp, base, TRUE);
+        tmp = rb_check_string_type(val);
+        if (!NIL_P(tmp)) return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
       arg_error:
-	rb_raise(rb_eArgError, "base specified for non string value");
+        if (!raise_exception) return Qnil;
+        rb_raise(rb_eArgError, "base specified for non string value");
     }
-    tmp = convert_type_with_id(val, "Integer", idTo_int, FALSE, -1);
-    if (!RB_INTEGER_TYPE_P(tmp)) {
-	return rb_to_integer(val, "to_i", idTo_i);
-    }
-    return tmp;
 
+    tmp = rb_protect(rb_check_to_int, val, NULL);
+    if (RB_INTEGER_TYPE_P(tmp)) return tmp;
+    rb_set_errinfo(Qnil);
+
+    if (!raise_exception) {
+        VALUE result = rb_protect(rb_check_to_i, val, NULL);
+        rb_set_errinfo(Qnil);
+        return result;
+    }
+
+    return rb_to_integer(val, "to_i", idTo_i);
 }
 
 /**
@@ -3153,7 +3170,19 @@ rb_convert_to_integer(VALUE val, int base)
 VALUE
 rb_Integer(VALUE val)
 {
-    return rb_convert_to_integer(val, 0);
+    return rb_convert_to_integer(val, 0, TRUE);
+}
+
+static int
+opts_exception_p(VALUE opts)
+{
+    static ID kwds[1];
+    VALUE exception;
+    if (!kwds[0]) {
+        kwds[0] = rb_intern_const("exception");
+    }
+    rb_get_kwargs(opts, kwds, 0, 1, &exception);
+    return exception != Qfalse;
 }
 
 /*
@@ -3183,20 +3212,20 @@ rb_Integer(VALUE val)
 static VALUE
 rb_f_integer(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE arg = Qnil;
+    VALUE arg = Qnil, opts = Qnil;
     int base = 0;
 
-    switch (argc) {
+    switch (rb_scan_args(argc, argv, "11:", NULL, NULL, &opts)) {
       case 2:
-	base = NUM2INT(argv[1]);
+        base = NUM2INT(argv[1]);
       case 1:
-	arg = argv[0];
-	break;
+        arg = argv[0];
+        break;
       default:
-	/* should cause ArgumentError */
-	rb_scan_args(argc, argv, "11", NULL, NULL);
+        UNREACHABLE;
     }
-    return rb_convert_to_integer(arg, base);
+
+    return rb_convert_to_integer(arg, base, opts_exception_p(opts));
 }
 
 /*!

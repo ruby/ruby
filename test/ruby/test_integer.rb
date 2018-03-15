@@ -127,6 +127,40 @@ class TestInteger < Test::Unit::TestCase
     end;
   end
 
+  def test_Integer_with_exception_keyword
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Integer("1z", exception: false))
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Integer(Object.new, exception: false))
+    }
+    assert_nothing_raised(ArgumentError) {
+      o = Object.new
+      def o.to_i; 42.5; end
+      assert_equal(nil, Integer(o, exception: false))
+    }
+    assert_nothing_raised(ArgumentError) {
+      o = Object.new
+      def o.to_i; raise; end
+      assert_equal(nil, Integer(o, exception: false))
+    }
+    assert_nothing_raised(ArgumentError) {
+      o = Object.new
+      def o.to_int; raise; end
+      assert_equal(nil, Integer(o, exception: false))
+    }
+
+    assert_raise(ArgumentError) {
+      Integer("1z", exception: true)
+    }
+    assert_raise(TypeError) {
+      Integer(nil, exception: true)
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Integer(nil, exception: false))
+    }
+  end
+
   def test_int_p
     assert_not_predicate(1.0, :integer?)
     assert_predicate(1, :integer?)

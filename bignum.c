@@ -4230,7 +4230,7 @@ rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base)
 }
 
 VALUE
-rb_str_to_inum(VALUE str, int base, int badcheck)
+rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception)
 {
     VALUE ret;
     const char *s;
@@ -4242,10 +4242,19 @@ rb_str_to_inum(VALUE str, int base, int badcheck)
     RSTRING_GETMEM(str, s, len);
     ret = rb_cstr_parse_inum(s, len, (badcheck ? NULL : &end), base);
     if (NIL_P(ret)) {
-	if (badcheck) invalid_integer(str);
-	ret = INT2FIX(0);
+        if (badcheck) {
+            if (!raise_exception) return Qnil;
+            invalid_integer(str);
+        }
+        ret = INT2FIX(0);
     }
     return ret;
+}
+
+VALUE
+rb_str_to_inum(VALUE str, int base, int badcheck)
+{
+    return rb_str_convert_to_inum(str, base, badcheck, TRUE);
 }
 
 VALUE
