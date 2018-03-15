@@ -93,6 +93,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * added Random.bytes. [Feature #4938]
 
+* String
+
+  * String#split yields each substrings to the block if given. [Feature #4780]
+
 === Stdlib updates (outstanding ones only)
 
 * ERB
