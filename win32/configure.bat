@@ -11,7 +11,7 @@ echo> ~tmp~.mak ####
 echo>> ~tmp~.mak conf = %0
 echo>> ~tmp~.mak $(conf): nul
 echo>> ~tmp~.mak 	@del ~setup~.mak
-echo>> ~tmp~.mak 	@-$(MAKE) -l$(MAKEFLAGS) -f $(@D)/setup.mak \
+echo>> ~tmp~.mak 	@$(MAKE) -l$(MAKEFLAGS) -f $(@D)/setup.mak \
 if exist pathlist.tmp del pathlist.tmp
 echo>confargs.tmp #define CONFIGURE_ARGS \
 :loop
@@ -252,5 +252,6 @@ echo>>~setup~.mak 	@if exist Makefile.old del Makefile.old
 echo>>~setup~.mak 	@if exist Makefile ren Makefile Makefile.old
 echo>>~setup~.mak 	@ren Makefile.new Makefile
 nmake -alf ~setup~.mak MAKEFILE=Makefile.new
+exit /b %ERRORLEVEL%
 :exit
 @endlocal
