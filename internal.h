@@ -1101,6 +1101,7 @@ size_t rb_big_size(VALUE);
 VALUE rb_integer_float_cmp(VALUE x, VALUE y);
 VALUE rb_integer_float_eq(VALUE x, VALUE y);
 VALUE rb_cstr_parse_inum(const char *str, ssize_t len, char **endp, int base);
+VALUE rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception);
 VALUE rb_big_comp(VALUE x);
 VALUE rb_big_aref(VALUE x, VALUE y);
 VALUE rb_big_abs(VALUE x);
