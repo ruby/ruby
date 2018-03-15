@@ -390,6 +390,7 @@ f_complex_new2(VALUE klass, VALUE x, VALUE y)
     return nucomp_s_canonicalize_internal(klass, x, y);
 }
 
+static VALUE nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise);
 static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
@@ -428,7 +429,22 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
 {
-    return nucomp_s_convert(argc, argv, rb_cComplex);
+    VALUE a1, a2, opts = Qnil;
+    int raise = TRUE;
+
+    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+        a2 = Qundef;
+    }
+    if (!NIL_P(opts)) {
+        static ID kwds[1];
+        VALUE exception;
+        if (!kwds[0]) {
+            kwds[0] = rb_intern_const("exception");
+        }
+        rb_get_kwargs(opts, kwds, 0, 1, &exception);
+        raise = (exception != Qfalse);
+    }
+    return nucomp_convert(rb_cComplex, a1, a2, raise);
 }
 
 #define imp1(n) \
@@ -1735,8 +1751,7 @@ skip_ws(const char **s)
 }
 
 static int
-parse_comp(const char *s, int strict,
-	   VALUE *num)
+parse_comp(const char *s, int strict, VALUE *num)
 {
     char *buf, *b;
     VALUE tmp;
@@ -1747,14 +1762,14 @@ parse_comp(const char *s, int strict,
 
     skip_ws(&s);
     if (!read_comp(&s, strict, num, &b)) {
-	ret = 0;
+        ret = 0;
     }
     else {
-	skip_ws(&s);
+        skip_ws(&s);
 
-	if (strict)
-	    if (*s != '\0')
-		ret = 0;
+        if (strict)
+            if (*s != '\0')
+                ret = 0;
     }
     ALLOCV_END(tmp);
 
@@ -1762,7 +1777,7 @@ parse_comp(const char *s, int strict,
 }
 
 static VALUE
-string_to_c_strict(VALUE self)
+string_to_c_strict(VALUE self, int raise)
 {
     char *s;
     VALUE num;
@@ -1771,8 +1786,10 @@ string_to_c_strict(VALUE self)
 
     s = RSTRING_PTR(self);
 
-    if (!s || memchr(s, '\0', RSTRING_LEN(self)))
+    if (!s || memchr(s, '\0', RSTRING_LEN(self))) {
+        if (!raise) return Qnil;
 	rb_raise(rb_eArgError, "string contains null byte");
+    }
 
     if (s && s[RSTRING_LEN(self)]) {
 	rb_str_modify(self);
@@ -1784,6 +1801,7 @@ string_to_c_strict(VALUE self)
 	s = (char *)"";
 
     if (!parse_comp(s, 1, &num)) {
+        if (!raise) return Qnil;
 	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
 		 self);
     }
@@ -1839,21 +1857,25 @@ string_to_c(VALUE self)
 }
 
 static VALUE
-nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
+to_complex(VALUE val)
 {
-    VALUE a1, a2;
+    return rb_convert_type(val, T_COMPLEX, "Complex", "to_c");
+}
 
-    rb_scan_args(argc, argv, "11", &a1, &a2);
-
-    if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
+static VALUE
+nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
+{
+    if (NIL_P(a1) || NIL_P(a2))
 	rb_raise(rb_eTypeError, "can't convert nil into Complex");
 
     if (RB_TYPE_P(a1, T_STRING)) {
-	a1 = string_to_c_strict(a1);
+	a1 = string_to_c_strict(a1, raise);
+        if (NIL_P(a1)) return Qnil;
     }
 
     if (RB_TYPE_P(a2, T_STRING)) {
-	a2 = string_to_c_strict(a2);
+	a2 = string_to_c_strict(a2, raise);
+        if (NIL_P(a2)) return Qnil;
     }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
@@ -1875,16 +1897,19 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
-	if (argc == 1 || (k_exact_zero_p(a2)))
+	if (a2 == Qundef || (k_exact_zero_p(a2)))
 	    return a1;
     }
 
-    if (argc == 1) {
+    if (a2 == Qundef) {
 	if (k_numeric_p(a1) && !f_real_p(a1))
 	    return a1;
 	/* should raise exception for consistency */
-	if (!k_numeric_p(a1))
-	    return rb_convert_type(a1, T_COMPLEX, "Complex", "to_c");
+	if (!k_numeric_p(a1)) {
+            if (!raise)
+                return rb_protect(to_complex, a1, NULL);
+	    return to_complex(a1);
+        }
     }
     else {
 	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
@@ -1895,11 +1920,33 @@ nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
     }
 
     {
+        int argc;
 	VALUE argv2[2];
 	argv2[0] = a1;
-	argv2[1] = a2;
+        if (a2 == Qundef) {
+            argv2[1] = Qnil;
+            argc = 1;
+        }
+        else {
+            if (!raise && !RB_INTEGER_TYPE_P(a2) && !RB_FLOAT_TYPE_P(a2) && !RB_TYPE_P(a2, T_RATIONAL))
+                return Qnil;
+            argv2[1] = a2;
+            argc = 2;
+        }
 	return nucomp_s_new(argc, argv2, klass);
     }
+}
+
+static VALUE
+nucomp_s_convert(int argc, VALUE *argv, VALUE klass)
+{
+    VALUE a1, a2;
+
+    if (rb_scan_args(argc, argv, "11", &a1, &a2) == 1) {
+        a2 = Qundef;
+    }
+
+    return nucomp_convert(klass, a1, a2, TRUE);
 }
 
 /* --- */
