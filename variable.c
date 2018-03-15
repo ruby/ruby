@@ -2856,6 +2856,23 @@ cvar_front_klass(VALUE klass)
     return RCLASS_SUPER(klass);
 }
 
+static void
+cvar_overtaken(VALUE front, VALUE target, ID id)
+{
+    if (front && target != front) {
+	st_data_t did = (st_data_t)id;
+
+	if (RTEST(ruby_verbose)) {
+	    rb_warning("class variable % "PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
+		       ID2SYM(id), rb_class_name(original_module(front)),
+		       rb_class_name(original_module(target)));
+	}
+	if (BUILTIN_TYPE(front) == T_CLASS) {
+	    st_delete(RCLASS_IV_TBL(front), &did, 0);
+	}
+    }
+}
+
 #define CVAR_FOREACH_ANCESTORS(klass, v, r) \
     for (klass = cvar_front_klass(klass); klass; klass = RCLASS_SUPER(klass)) { \
 	if (cvar_lookup_at(klass, id, (v))) { \
@@ -2876,18 +2893,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     tmp = klass;
     CVAR_LOOKUP(0, {if (!front) front = klass; target = klass;});
     if (target) {
-	if (front && target != front) {
-	    st_data_t did = id;
-
-	    if (RTEST(ruby_verbose)) {
-		rb_warning("class variable %"PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
-			   QUOTE_ID(id), rb_class_name(original_module(front)),
-			   rb_class_name(original_module(target)));
-	    }
-	    if (BUILTIN_TYPE(front) == T_CLASS) {
-		st_delete(RCLASS_IV_TBL(front),&did,0);
-	    }
-	}
+	cvar_overtaken(front, target, id);
     }
     else {
 	target = tmp;
@@ -2913,18 +2919,7 @@ rb_cvar_get(VALUE klass, ID id)
 	rb_name_err_raise("uninitialized class variable %1$s in %2$s",
 			  tmp, ID2SYM(id));
     }
-    if (front && target != front) {
-	st_data_t did = id;
-
-	if (RTEST(ruby_verbose)) {
-	    rb_warning("class variable %"PRIsVALUE" of %"PRIsVALUE" is overtaken by %"PRIsVALUE"",
-		       QUOTE_ID(id), rb_class_name(original_module(front)),
-		       rb_class_name(original_module(target)));
-	}
-	if (BUILTIN_TYPE(front) == T_CLASS) {
-	    st_delete(RCLASS_IV_TBL(front),&did,0);
-	}
-    }
+    cvar_overtaken(front, target, id);
     return (VALUE)value;
 }
 
