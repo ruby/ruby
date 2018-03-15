@@ -68,6 +68,14 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Kernel
 
+  * Kernel.#Complex takes :exception option to specify the way of error handling  [Feature #12732]
+
+  * Kernel.#Float takes :exception option to specify the way of error handling  [Feature #12732]
+
+  * Kernel.#Integer takes :exception option to specify the way of error handling  [Feature #12732]
+
+  * Kernel.#Rational takes :exception option to specify the way of error handling  [Feature #12732]
+
   * Kernel.#system takes :exception option to raise an exception on
     failure. [Feature #14386]
 
