@@ -1044,6 +1044,22 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     return str;
 }
 
+static int
+key_symbol_p(VALUE key, VALUE val, VALUE arg)
+{
+    if (SYMBOL_P(key)) return ST_CONTINUE;
+    *(int *)arg = FALSE;
+    return ST_STOP;
+}
+
+static int
+kwd_append(VALUE key, VALUE val, VALUE str)
+{
+    if (!SYMBOL_P(key)) rb_raise(rb_eRuntimeError, "non-symbol key inserted");
+    rb_str_catf(str, "% "PRIsVALUE": %"PRIsVALUE", ", key, val);
+    return ST_CONTINUE;
+}
+
 static VALUE
 append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 {
@@ -1071,15 +1087,28 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 	const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
 
 	if (argc > 0) {
+	    VALUE kwds = Qnil;
+
 	    rb_str_buf_cat2(str, "(");
+
+	    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+		int all_key = TRUE;
+		rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
+		if (all_key) kwds = argv[--argc];
+	    }
 
 	    while (argc--) {
 		VALUE arg = *argv++;
 
 		rb_str_append(str, rb_inspect(arg));
-		rb_str_buf_cat2(str, argc > 0 ? ", " : ")");
+		rb_str_buf_cat2(str, ", ");
 		OBJ_INFECT(str, arg);
 	    }
+	    if (!NIL_P(kwds)) {
+		rb_hash_foreach(kwds, kwd_append, str);
+	    }
+	    rb_str_set_len(str, RSTRING_LEN(str)-2);
+	    rb_str_buf_cat2(str, ")");
 	}
     }
 
