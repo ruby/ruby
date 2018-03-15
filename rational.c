@@ -525,7 +525,9 @@ f_rational_new_no_reduce2(VALUE klass, VALUE x, VALUE y)
     return nurat_s_canonicalize_internal_no_reduce(klass, x, y);
 }
 
+static VALUE nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise);
 static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
+
 /*
  * call-seq:
  *    Rational(x, y)  ->  rational
@@ -564,7 +566,22 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 static VALUE
 nurat_f_rational(int argc, VALUE *argv, VALUE klass)
 {
-    return nurat_s_convert(argc, argv, rb_cRational);
+    VALUE a1, a2, opts = Qnil;
+    int raise = TRUE;
+
+    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+        a2 = Qundef;
+    }
+    if (!NIL_P(opts)) {
+        static ID kwds[1];
+        VALUE exception;
+        if (!kwds[0]) {
+            kwds[0] = rb_intern_const("exception");
+        }
+        rb_get_kwargs(opts, kwds, 0, 1, &exception);
+        raise = (exception != Qfalse);
+    }
+    return nurat_convert(rb_cRational, a1, a2, raise);
 }
 
 /*
@@ -2363,7 +2380,7 @@ skip_ws(const char *s, const char *e)
 }
 
 static VALUE
-parse_rat(const char *s, const char *const e, int strict)
+parse_rat(const char *s, const char *const e, int strict, int raise)
 {
     int sign;
     VALUE num, den, ndiv, ddiv;
@@ -2384,6 +2401,7 @@ parse_rat(const char *s, const char *const e, int strict)
 	    den = ndiv;
 	}
 	else if (den == ZERO) {
+            if (!raise) return Qnil;
 	    rb_num_zerodiv();
 	}
 	else if (strict && skip_ws(s, e) != e) {
@@ -2411,20 +2429,23 @@ parse_rat(const char *s, const char *const e, int strict)
 }
 
 static VALUE
-string_to_r_strict(VALUE self)
+string_to_r_strict(VALUE self, int raise)
 {
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 1);
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 1, raise);
     if (NIL_P(num)) {
-	rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
-		 self);
+        if (!raise) return Qnil;
+        rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
+                 self);
     }
 
-    if (RB_FLOAT_TYPE_P(num))
-	rb_raise(rb_eFloatDomainError, "Infinity");
+    if (RB_FLOAT_TYPE_P(num)) {
+        if (!raise) return Qnil;
+        rb_raise(rb_eFloatDomainError, "Infinity");
+    }
     return num;
 }
 
@@ -2463,7 +2484,7 @@ string_to_r(VALUE self)
 
     rb_must_asciicompat(self);
 
-    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0);
+    num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0, TRUE);
 
     if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
@@ -2475,7 +2496,7 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 {
     VALUE num;
 
-    num = parse_rat(s, s + strlen(s), strict);
+    num = parse_rat(s, s + strlen(s), strict, TRUE);
 
     if (RB_FLOAT_TYPE_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
@@ -2483,66 +2504,118 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 }
 
 static VALUE
+to_rational(VALUE val)
+{
+    return rb_convert_type_with_id(val, T_RATIONAL, "Rational", idTo_r);
+}
+
+static VALUE
+nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
+{
+    VALUE a1 = numv, a2 = denv;
+    int state;
+
+    if (NIL_P(a1) || NIL_P(a2))
+        rb_raise(rb_eTypeError, "can't convert nil into Rational");
+
+    if (RB_TYPE_P(a1, T_COMPLEX)) {
+        if (k_exact_zero_p(RCOMPLEX(a1)->imag))
+            a1 = RCOMPLEX(a1)->real;
+    }
+
+    if (RB_TYPE_P(a2, T_COMPLEX)) {
+        if (k_exact_zero_p(RCOMPLEX(a2)->imag))
+            a2 = RCOMPLEX(a2)->real;
+    }
+
+    if (RB_FLOAT_TYPE_P(a1)) {
+        a1 = float_to_r(a1);
+    }
+    else if (RB_TYPE_P(a1, T_STRING)) {
+        a1 = string_to_r_strict(a1, raise);
+        if (!raise && NIL_P(a1)) return Qnil;
+    }
+
+    if (RB_FLOAT_TYPE_P(a2)) {
+        a2 = float_to_r(a2);
+    }
+    else if (RB_TYPE_P(a2, T_STRING)) {
+        a2 = string_to_r_strict(a2, raise);
+        if (!raise && NIL_P(a2)) return Qnil;
+    }
+
+    if (RB_TYPE_P(a1, T_RATIONAL)) {
+        if (a2 == Qundef || (k_exact_one_p(a2)))
+            return a1;
+    }
+
+    if (a2 == Qundef) {
+        if (!k_integer_p(a1)) {
+            if (!raise) {
+                VALUE result = rb_protect(to_rational, a1, NULL);
+                rb_set_errinfo(Qnil);
+                return result;
+            }
+            return to_rational(a1);
+        }
+    }
+    else {
+        if (!k_numeric_p(a1)) {
+            if (!raise) {
+                a1 = rb_protect(to_rational, a1, &state);
+                if (state) {
+                    rb_set_errinfo(Qnil);
+                    return Qnil;
+                }
+            }
+            else {
+                a1 = rb_check_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
+            }
+        }
+        if (!k_numeric_p(a2)) {
+            if (!raise) {
+                a2 = rb_protect(to_rational, a2, &state);
+                if (state) {
+                    rb_set_errinfo(Qnil);
+                    return Qnil;
+                }
+            }
+            else {
+                a2 = rb_check_convert_type_with_id(a2, T_RATIONAL, "Rational", idTo_r);
+            }
+        }
+        if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
+                (!f_integer_p(a1) || !f_integer_p(a2)))
+            return f_div(a1, a2);
+    }
+
+    {
+        int argc;
+        VALUE argv2[2];
+        argv2[0] = a1;
+        if (a2 == Qundef) {
+            argv2[1] = Qnil;
+            argc = 1;
+        }
+        else {
+            if (!k_integer_p(a2) && !raise) return Qnil;
+            argv2[1] = a2;
+            argc = 2;
+        }
+        return nurat_s_new(argc, argv2, klass);
+    }
+}
+
+static VALUE
 nurat_s_convert(int argc, VALUE *argv, VALUE klass)
 {
     VALUE a1, a2;
 
-    rb_scan_args(argc, argv, "11", &a1, &a2);
-
-    if (NIL_P(a1) || (argc == 2 && NIL_P(a2)))
-	rb_raise(rb_eTypeError, "can't convert nil into Rational");
-
-    if (RB_TYPE_P(a1, T_COMPLEX)) {
-	if (k_exact_zero_p(RCOMPLEX(a1)->imag))
-	    a1 = RCOMPLEX(a1)->real;
+    if (rb_scan_args(argc, argv, "11", &a1, &a2) == 1) {
+        a2 = Qundef;
     }
 
-    if (RB_TYPE_P(a2, T_COMPLEX)) {
-	if (k_exact_zero_p(RCOMPLEX(a2)->imag))
-	    a2 = RCOMPLEX(a2)->real;
-    }
-
-    if (RB_FLOAT_TYPE_P(a1)) {
-	a1 = float_to_r(a1);
-    }
-    else if (RB_TYPE_P(a1, T_STRING)) {
-	a1 = string_to_r_strict(a1);
-    }
-
-    if (RB_FLOAT_TYPE_P(a2)) {
-	a2 = float_to_r(a2);
-    }
-    else if (RB_TYPE_P(a2, T_STRING)) {
-	a2 = string_to_r_strict(a2);
-    }
-
-    if (RB_TYPE_P(a1, T_RATIONAL)) {
-	if (argc == 1 || (k_exact_one_p(a2)))
-	    return a1;
-    }
-
-    if (argc == 1) {
-	if (!k_integer_p(a1))
-	    return rb_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
-    }
-    else {
-        if (!k_numeric_p(a1)) {
-            a1 = rb_check_convert_type_with_id(a1, T_RATIONAL, "Rational", idTo_r);
-        }
-        if (!k_numeric_p(a2)) {
-            a2 = rb_check_convert_type_with_id(a2, T_RATIONAL, "Rational", idTo_r);
-        }
-	if ((k_numeric_p(a1) && k_numeric_p(a2)) &&
-	    (!f_integer_p(a1) || !f_integer_p(a2)))
-	    return f_div(a1, a2);
-    }
-
-    {
-	VALUE argv2[2];
-	argv2[0] = a1;
-	argv2[1] = a2;
-	return nurat_s_new(argc, argv2, klass);
-    }
+    return nurat_convert(klass, a1, a2, TRUE);
 }
 
 /*

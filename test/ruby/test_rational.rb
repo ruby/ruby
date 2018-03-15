@@ -805,6 +805,30 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise(ZeroDivisionError) {Rational("1/0")}
   end
 
+  def test_Rational_without_exception
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, Rational("5/3x", exception: false))
+    }
+    assert_nothing_raised(ZeroDivisionError) {
+      assert_equal(nil, Rational("1/0", exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(Object.new, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, Object.new, exception: false))
+    }
+
+    o = Object.new;
+    def o.to_r; raise; end
+    assert_nothing_raised(RuntimeError) {
+      assert_equal(nil, Rational(o, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, o, exception: false))
+    }
+  end
+
   def test_to_i
     assert_equal(1, Rational(3,2).to_i)
     assert_equal(1, Integer(Rational(3,2)))
