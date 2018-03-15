@@ -258,29 +258,6 @@ AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" =
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
 
-AS_CASE(["$target_cpu-$target_os"], [[i[3-6]86*]], [
-	 AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
-			 AC_TRY_LINK([unsigned long atomic_var;],
-				     [
-				      __sync_val_compare_and_swap(&atomic_var, 0, 1);
-				      ],
-				      [rb_cv_gcc_compiler_cas=yes],
-				      [rb_cv_gcc_compiler_cas=no])])
-	 AS_IF([test "$rb_cv_gcc_compiler_cas" = no], [
-		 unset rb_cv_gcc_compiler_cas
-		 save_CFLAGS="$CFLAGS"
-		 CFLAGS="$CFLAGS -march=i486"
-		 AC_CACHE_CHECK([for __sync_val_compare_and_swap with -march=i486], [rb_cv_gcc_compiler_cas], [
-				 AC_TRY_LINK([unsigned long atomic_var;],
-					     [
-					      __sync_val_compare_and_swap(&atomic_var, 0, 1);
-					      ],
-					      [rb_cv_gcc_compiler_cas=yes
-					       ARCH_FLAG="-march=i486"],
-					      [rb_cv_gcc_compiler_cas=no])])
-		 CFLAGS="$save_CFLAGS"
-	 ])])
-
 AS_CASE(["$target_os"], [darwin*], [
 if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
   ac_cv_prog_ac_ct_RANLIB=:
@@ -662,6 +639,23 @@ AS_IF([test "$GCC" = yes], [
     for oflag in -fexcess-precision=standard -fp-model\ precise; do
 	RUBY_TRY_CFLAGS($oflag, [RUBY_APPEND_OPTION(XCFLAGS, $oflag)])
     done
+])
+
+AS_CASE(["$target_cpu"], [[i[3-6]86*]], [
+    AC_CACHE_CHECK([for __sync_val_compare_and_swap], [rb_cv_gcc_compiler_cas], [
+	AC_TRY_LINK([unsigned long atomic_var;],
+	    [__sync_val_compare_and_swap(&atomic_var, 0, 1);],
+	    [rb_cv_gcc_compiler_cas=yes],
+	    [
+	    save_CFLAGS="$CFLAGS" CFLAGS="$CFLAGS -march=i486"
+	    AC_TRY_LINK([unsigned long atomic_var;],
+		[__sync_val_compare_and_swap(&atomic_var, 0, 1);],
+		[rb_cv_gcc_compiler_cas=i486],
+		[rb_cv_gcc_compiler_cas=no])
+	    CFLAGS="$save_CFLAGS"
+	    ])
+    ])
+    AS_IF([test "$rb_cv_gcc_compiler_cas" = i486], [ARCH_FLAG="-march=i486"])
 ])
 
 AC_ARG_WITH(opt-dir,
