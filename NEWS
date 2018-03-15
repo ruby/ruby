@@ -132,6 +132,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * Set#filter! is a new alias for Set#select! [Feature #13784]
 
+* URI
+
+  * Add URI::File to handle file URI scheme [Feature #14035]
+
 === Compatibility issues (excluding feature bug fixes)
 
 === Stdlib compatibility issues (excluding feature bug fixes)

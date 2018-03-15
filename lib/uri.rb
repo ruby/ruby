@@ -41,7 +41,7 @@
 #   #=> URI::RSYNC
 #
 #   URI.scheme_list
-#   #=> {"FTP"=>URI::FTP, "HTTP"=>URI::HTTP, "HTTPS"=>URI::HTTPS,
+#   #=> {"FILE"=>URI::File, "FTP"=>URI::FTP, "HTTP"=>URI::HTTP, "HTTPS"=>URI::HTTPS,
 #        "LDAP"=>URI::LDAP, "LDAPS"=>URI::LDAPS, "MAILTO"=>URI::MailTo,
 #        "RSYNC"=>URI::RSYNC}
 #
@@ -65,6 +65,7 @@
 # == Class tree
 #
 # - URI::Generic (in uri/generic.rb)
+#   - URI::File - (in uri/file.rb)
 #   - URI::FTP - (in uri/ftp.rb)
 #   - URI::HTTP - (in uri/http.rb)
 #     - URI::HTTPS - (in uri/https.rb)
@@ -104,6 +105,7 @@ end
 
 require 'uri/common'
 require 'uri/generic'
+require 'uri/file'
 require 'uri/ftp'
 require 'uri/http'
 require 'uri/https'
