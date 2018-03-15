@@ -746,6 +746,27 @@ class Complex_Test < Test::Unit::TestCase
 
   end
 
+  def test_Complex_without_exception
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex('5x', exception: false))
+    }
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(Object.new, exception: false))
+    }
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(1, Object.new, exception: false))
+    }
+
+    o = Object.new
+    def o.to_c; raise; end
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(o, exception: false))
+    }
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(1, o, exception: false))
+    }
+  end
+
   def test_respond
     c = Complex(1,1)
     assert_not_respond_to(c, :%)
