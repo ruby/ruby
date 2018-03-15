@@ -84,12 +84,12 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def trapping_usr1
+  def trapping_usr2
     @usr1_rcvd  = 0
-    trap(:USR1) { @usr1_rcvd += 1 }
+    trap(:USR2) { @usr1_rcvd += 1 }
     yield
   ensure
-    trap(:USR1, "DEFAULT")
+    trap(:USR2, "DEFAULT")
   end
 
   def test_pipe
@@ -865,13 +865,13 @@ class TestIO < Test::Unit::TestCase
         rescue Errno::EBADF
           skip "nonblocking IO for pipe is not implemented"
         end
-        trapping_usr1 do
+        trapping_usr2 do
           nr = 30
           begin
             pid = fork do
               s1.close
               IO.select([s2])
-              Process.kill(:USR1, Process.ppid)
+              Process.kill(:USR2, Process.ppid)
               buf = String.new(capacity: 16384)
               nil while s2.read(16384, buf)
             end
