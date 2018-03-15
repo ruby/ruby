@@ -7602,6 +7602,35 @@ static const char isspacetable[256] = {
 
 #define ascii_isspace(c) isspacetable[(unsigned char)(c)]
 
+static long
+split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
+{
+    if (empty_count >= 0 && len == 0) {
+	return empty_count + 1;
+    }
+    if (empty_count > 0) {
+	/* make different substrings */
+	if (result) {
+	    do {
+		rb_ary_push(result, str_new_empty(str));
+	    } while (--empty_count > 0);
+	}
+	else {
+	    do {
+		rb_yield(str_new_empty(str));
+	    } while (--empty_count > 0);
+	}
+    }
+    str = rb_str_subseq(str, beg, len);
+    if (result) {
+	rb_ary_push(result, str);
+    }
+    else {
+	rb_yield(str);
+    }
+    return empty_count;
+}
+
 /*
  *  call-seq:
  *     str.split(pattern=nil, [limit])   -> an_array
@@ -7660,20 +7689,27 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
     VALUE spat;
     VALUE limit;
     enum {awk, string, regexp} split_type;
-    long beg, end, i = 0;
+    long beg, end, i = 0, empty_count = -1;
     int lim = 0;
     VALUE result, tmp;
 
+    result = rb_block_given_p() ? Qfalse : Qnil;
     if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
 	lim = NUM2INT(limit);
 	if (lim <= 0) limit = Qnil;
 	else if (lim == 1) {
 	    if (RSTRING_LEN(str) == 0)
-		return rb_ary_new2(0);
-	    return rb_ary_new3(1, rb_str_dup(str));
+		return result ? rb_ary_new2(0) : str;
+	    tmp = rb_str_dup(str);
+	    if (!result) {
+		rb_yield(tmp);
+		return str;
+	    }
+	    return rb_ary_new3(1, tmp);
 	}
 	i = 1;
     }
+    if (NIL_P(limit) && !lim) empty_count = 0;
 
     enc = STR_ENC_GET(str);
     split_type = regexp;
@@ -7712,7 +7748,9 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    result = rb_ary_new();
+#define SPLIT_STR(beg, len) (empty_count = split_string(result, str, beg, len, empty_count))
+
+    if (result) result = rb_ary_new();
     beg = 0;
     if (split_type == awk) {
 	char *ptr = RSTRING_PTR(str);
@@ -7736,7 +7774,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    }
 		}
 		else if (ascii_isspace(c)) {
-		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
+		    SPLIT_STR(beg, end-beg);
 		    skip = 1;
 		    beg = ptr - bptr;
 		    if (!NIL_P(limit)) ++i;
@@ -7763,7 +7801,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		    }
 		}
 		else if (rb_isspace(c)) {
-		    rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
+		    SPLIT_STR(beg, end-beg);
 		    skip = 1;
 		    beg = ptr - bptr;
 		    if (!NIL_P(limit)) ++i;
@@ -7792,8 +7830,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		ptr = t;
 		continue;
 	    }
-	    rb_ary_push(result, rb_str_subseq(str, substr_start - str_start,
-					      (ptr+end) - substr_start));
+	    SPLIT_STR(substr_start - str_start, (ptr+end) - substr_start);
 	    ptr += end + slen;
 	    substr_start = ptr;
 	    if (!NIL_P(limit) && lim <= ++i) break;
@@ -7812,14 +7849,11 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 	    regs = RMATCH_REGS(rb_backref_get());
 	    if (start == end && BEG(0) == END(0)) {
 		if (!ptr) {
-		    rb_ary_push(result, str_new_empty(str));
+		    SPLIT_STR(0, 0);
 		    break;
 		}
 		else if (last_null == 1) {
-		    rb_ary_push(result, rb_str_subseq(str, beg,
-						      rb_enc_fast_mbclen(ptr+beg,
-									 ptr+len,
-									 enc)));
+		    SPLIT_STR(beg, rb_enc_fast_mbclen(ptr+beg, ptr+len, enc));
 		    beg = start;
 		}
 		else {
@@ -7832,37 +7866,23 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
 		}
 	    }
 	    else {
-		rb_ary_push(result, rb_str_subseq(str, beg, end-beg));
+		SPLIT_STR(beg, end-beg);
 		beg = start = END(0);
 	    }
 	    last_null = 0;
 
 	    for (idx=1; idx < regs->num_regs; idx++) {
 		if (BEG(idx) == -1) continue;
-		if (BEG(idx) == END(idx))
-		    tmp = str_new_empty(str);
-		else
-		    tmp = rb_str_subseq(str, BEG(idx), END(idx)-BEG(idx));
-		rb_ary_push(result, tmp);
+		SPLIT_STR(BEG(idx), END(idx)-BEG(idx));
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
     if (RSTRING_LEN(str) > 0 && (!NIL_P(limit) || RSTRING_LEN(str) > beg || lim < 0)) {
-	if (RSTRING_LEN(str) == beg)
-	    tmp = str_new_empty(str);
-	else
-	    tmp = rb_str_subseq(str, beg, RSTRING_LEN(str)-beg);
-	rb_ary_push(result, tmp);
-    }
-    if (NIL_P(limit) && lim == 0) {
-	long len;
-	while ((len = RARRAY_LEN(result)) > 0 &&
-	       (tmp = RARRAY_AREF(result, len-1), RSTRING_LEN(tmp) == 0))
-	    rb_ary_pop(result);
+	SPLIT_STR(beg, RSTRING_LEN(str)-beg);
     }
 
-    return result;
+    return result ? result : str;
 }
 
 VALUE

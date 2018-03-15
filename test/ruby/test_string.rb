@@ -1699,7 +1699,46 @@ CODE
     assert_equal([S("a"), S(""), S("b"), S("c"), S("")], S("a||b|c|").split(S('|'), -1))
 
     assert_equal([], "".split(//, 1))
+  ensure
+    $; = fs
+  end
 
+  def test_split_with_block
+    fs, $; = $;, nil
+    result = []; S(" a   b\t c ").split {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c")], result)
+    result = []; S(" a   b\t c ").split(S(" ")) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c")], result)
+
+    result = []; S(" a | b | c ").split(S("|")) {|s| result << s}
+    assert_equal([S(" a "), S(" b "), S(" c ")], result)
+
+    result = []; S("aXXbXXcXX").split(/X./) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c")], result)
+
+    result = []; S("abc").split(//) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c")], result)
+
+    result = []; S("a|b|c").split(S('|'), 1) {|s| result << s}
+    assert_equal([S("a|b|c")], result)
+
+    result = []; S("a|b|c").split(S('|'), 2) {|s| result << s}
+    assert_equal([S("a"), S("b|c")], result)
+    result = []; S("a|b|c").split(S('|'), 3) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c")], result)
+
+    result = []; S("a|b|c|").split(S('|'), -1) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c"), S("")], result)
+    result = []; S("a|b|c||").split(S('|'), -1) {|s| result << s}
+    assert_equal([S("a"), S("b"), S("c"), S(""), S("")], result)
+
+    result = []; S("a||b|c|").split(S('|')) {|s| result << s}
+    assert_equal([S("a"), S(""), S("b"), S("c")], result)
+    result = []; S("a||b|c|").split(S('|'), -1) {|s| result << s}
+    assert_equal([S("a"), S(""), S("b"), S("c"), S("")], result)
+
+    result = []; "".split(//, 1) {|s| result << s}
+    assert_equal([], result)
   ensure
     $; = fs
   end
@@ -1762,6 +1801,7 @@ CODE
     s.split("b", 1).map(&:upcase!)
     assert_equal("abc", s)
   end
+
   def test_squeeze
     assert_equal(S("abc"), S("aaabbbbccc").squeeze)
     assert_equal(S("aa bb cc"), S("aa   bb      cc").squeeze(S(" ")))
