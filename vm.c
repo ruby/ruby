@@ -2742,10 +2742,18 @@ m_core_hash_merge_ptr(int argc, VALUE *argv, VALUE recv)
     return hash;
 }
 
+static void
+kw_check_symbol(VALUE key)
+{
+    if (!SYMBOL_P(key)) {
+	rb_raise(rb_eTypeError, "hash key %+"PRIsVALUE" is not a Symbol",
+		 key);
+    }
+}
 static int
 kwmerge_i(VALUE key, VALUE value, VALUE hash)
 {
-    Check_Type(key, T_SYMBOL);
+    kw_check_symbol(key);
     rb_hash_aset(hash, key, value);
     return ST_CONTINUE;
 }
@@ -2753,7 +2761,7 @@ kwmerge_i(VALUE key, VALUE value, VALUE hash)
 static int
 kwcheck_i(VALUE key, VALUE value, VALUE hash)
 {
-    Check_Type(key, T_SYMBOL);
+    kw_check_symbol(key);
     return ST_CONTINUE;
 }
 
