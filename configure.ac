@@ -253,6 +253,8 @@ done
 AC_SUBST(CC_VERSION, $cc_version)
 AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 
+: ${DLDFLAGS="$LDFLAGS"}
+
 RUBY_UNIVERSAL_ARCH
 AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "$universal_binary" = no], [
     RUBY_DEFAULT_ARCH("$target_cpu")
@@ -408,7 +410,6 @@ RUBY_WERROR_FLAG([
     cd .. && rm -fr tmp.$$.try_link
 ])
 
-: ${DLDFLAGS="$LDFLAGS"}
 : ${RPATHFLAG=''}
 rpathflag=''
 AS_IF([test x"${RPATHFLAG}" = x], [
@@ -3895,6 +3896,7 @@ config_summary "dynamic library ext" "$DLEXT"
 config_summary "CFLAGS"              "$cflags"
 config_summary "CPPFLAGS"            "$cppflags"
 config_summary "LDFLAGS"             "$LDFLAGS"
+config_summary "DLDFLAGS"            "$DLDFLAGS"
 config_summary "optflags"            "$optflags"
 config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
