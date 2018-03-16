@@ -90,6 +90,11 @@ class TestRegexp < Test::Unit::TestCase
     rescue ArgumentError
       :ok
     end
+    re = Regexp.union(/\//, "")
+    re2 = eval(re.inspect)
+    assert_equal(re.to_s, re2.to_s)
+    assert_equal(re.source, re2.source)
+    assert_equal(re, re2)
   end
 
   def test_word_boundary
