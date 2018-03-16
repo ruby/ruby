@@ -9552,17 +9552,31 @@ rb_iseq_complete(const rb_iseq_t *iseq)
 }
 #endif
 
+#ifdef __sparc
+#define IBF_ISEQ_DEBUG 1
+#endif
+#ifndef IBF_ISEQ_DEBUG
+#define IBF_ISEQ_DEBUG 0
+#endif
+
 static rb_iseq_t *
 ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 {
     int iseq_index = (int)(VALUE)index_iseq;
 
+#if IBF_ISEQ_DEBUG
+    fprintf(stderr, "ibf_load_iseq: index_iseq=%p iseq_list=%p\n",
+	    index_iseq, (void *)load->iseq_list);
+#endif
     if (iseq_index == -1) {
 	return NULL;
     }
     else {
 	VALUE iseqv = rb_ary_entry(load->iseq_list, iseq_index);
 
+#if IBF_ISEQ_DEBUG
+	fprintf(stderr, "ibf_load_iseq: iseqv=%p\n", (void *)iseqv);
+#endif
 	if (iseqv != Qnil) {
 	    return (rb_iseq_t *)iseqv;
 	}
