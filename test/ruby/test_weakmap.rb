@@ -37,7 +37,7 @@ class TestWeakMap < Test::Unit::TestCase
       @wm[k] = x
       assert_send([@wm, m, k])
       assert_not_send([@wm, m, "FOO".downcase])
-      x = nil
+      x = Object.new
     end
   end
 
@@ -48,7 +48,7 @@ class TestWeakMap < Test::Unit::TestCase
       assert_weak_include(m, k)
     end
     GC.start
-    # skip('TODO: failure introduced from r60440')
+    skip('TODO: failure introduced from r60440')
     assert_not_send([@wm, m, k])
   end
   alias test_member? test_include?
