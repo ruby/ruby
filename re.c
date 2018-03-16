@@ -351,7 +351,7 @@ rb_reg_check(VALUE re)
 
 static void
 rb_reg_expr_str(VALUE str, const char *s, long len,
-	rb_encoding *enc, rb_encoding *resenc)
+		rb_encoding *enc, rb_encoding *resenc, int term)
 {
     const char *p, *pend;
     int cr = ENC_CODERANGE_UNKNOWN;
@@ -372,7 +372,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		    break;
 		}
 	    }
-	    else if (c != '/' && rb_enc_isprint(c, enc)) {
+	    else if (c != term && rb_enc_isprint(c, enc)) {
 		p += clen;
 	    }
 	    else {
@@ -399,11 +399,6 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		p += n;
 		continue;
 	    }
-	    else if (c == '/') {
-		char c = '\\';
-		rb_str_buf_cat(str, &c, 1);
-		rb_str_buf_cat(str, p, clen);
-	    }
 	    else if (c == -1) {
 		clen = rb_enc_precise_mbclen(p, pend, enc);
 		if (!MBCLEN_CHARFOUND_P(clen)) {
@@ -419,6 +414,11 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 		    clen = MBCLEN_CHARFOUND_LEN(clen);
 		    rb_str_buf_cat(str, p, clen);
 		}
+	    }
+	    else if (c == term) {
+		char c = '\\';
+		rb_str_buf_cat(str, &c, 1);
+		rb_str_buf_cat(str, p, clen);
 	    }
 	    else if (rb_enc_isprint(c, enc)) {
 		rb_str_buf_cat(str, p, clen);
@@ -452,7 +452,7 @@ rb_reg_desc(const char *s, long len, VALUE re)
     else {
 	rb_enc_associate(str, rb_usascii_encoding());
     }
-    rb_reg_expr_str(str, s, len, enc, resenc);
+    rb_reg_expr_str(str, s, len, enc, resenc, '/');
     rb_str_buf_cat2(str, "/");
     if (re) {
 	char opts[4];
@@ -513,6 +513,7 @@ rb_reg_inspect(VALUE re)
     return rb_reg_desc(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), re);
 }
 
+static VALUE rb_reg_str_with_term(VALUE re, int term);
 
 /*
  *  call-seq:
@@ -536,6 +537,12 @@ rb_reg_inspect(VALUE re)
 
 static VALUE
 rb_reg_to_s(VALUE re)
+{
+    return rb_reg_str_with_term(re, '/');
+}
+
+static VALUE
+rb_reg_str_with_term(VALUE re, int term)
 {
     int options, opt;
     const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
@@ -615,7 +622,7 @@ rb_reg_to_s(VALUE re)
 
     rb_str_buf_cat2(str, ":");
     if (rb_enc_asciicompat(enc)) {
-	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL, term);
 	rb_str_buf_cat2(str, ")");
     }
     else {
@@ -635,7 +642,7 @@ rb_reg_to_s(VALUE re)
 	memcpy(paren, s, n);
 	rb_str_resize(str, RSTRING_LEN(str) - n);
 
-	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL);
+	rb_reg_expr_str(str, (char*)ptr, len, enc, NULL, term);
 	rb_str_buf_cat(str, paren, n);
     }
     rb_enc_copy(str, re);
@@ -664,7 +671,7 @@ rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, co
 
     rb_enc_associate(desc, enc);
     rb_str_buf_cat2(desc, ": /");
-    rb_reg_expr_str(desc, s, len, enc, resenc);
+    rb_reg_expr_str(desc, s, len, enc, resenc, '/');
     opts[0] = '/';
     option_to_str(opts + 1, options);
     rb_str_buf_cat2(desc, opts);
@@ -3651,7 +3658,7 @@ rb_reg_s_union(VALUE self, VALUE args0)
                 else {
                     has_asciionly = 1;
                 }
-		v = rb_reg_to_s(v);
+		v = rb_reg_str_with_term(v, -1);
 	    }
 	    else {
                 rb_encoding *enc;
