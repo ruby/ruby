@@ -411,11 +411,7 @@ struct rb_iseq_constant_body {
 				      */
     struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
 
-    struct {
-      rb_num_t flip_count;
-      VALUE coverage;
-      VALUE original_iseq;
-    } variable;
+    VALUE mark_ary;     /* Array: includes operands which should be GC marked */
 
     unsigned int local_table_size;
     unsigned int is_size;
@@ -1014,7 +1010,6 @@ enum vm_svar_index {
 
 /* inline cache */
 typedef struct iseq_inline_cache_entry *IC;
-typedef union iseq_inline_storage_entry *ISE;
 typedef struct rb_call_info *CALL_INFO;
 typedef struct rb_call_cache *CALL_CACHE;
 
