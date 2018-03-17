@@ -8204,7 +8204,13 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
     if (pos % align) {
-        rb_str_modify_expand(dump->str, align - (pos % align));
+        long size = (long)pos - (pos % align) + align;
+#if SIZEOF_LONG > SIZEOF_INT
+        if (pos >= UINT_MAX) {
+            rb_raise(rb_eRuntimeError, "dump size exceeds");
+        }
+#endif
+        rb_str_resize(dump->str, size);
     }
 }
 
@@ -9553,6 +9559,10 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 static const ibf_offset_t *
 ibf_iseq_list(const struct ibf_load *load)
 {
+    if (load->header->iseq_list_offset % sizeof(ibf_offset_t)) {
+        rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
+                 load->header->iseq_list_offset);
+    }
     return (ibf_offset_t *)(load->buff + load->header->iseq_list_offset);
 }
 
