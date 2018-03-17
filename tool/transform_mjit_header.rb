@@ -114,8 +114,8 @@ module MJITHeader
   def self.check_code!(code, cc, cflags, stage)
     with_code(code) do |path|
       cmd = "#{cc} #{cflags} #{path}"
-      unless system(cmd, err: File::NULL)
-        out = IO.popen(cmd, err: [:child, :out], &:read)
+      out = IO.popen(cmd, err: [:child, :out], &:read)
+      unless $?.success?
         STDERR.puts "error in #{stage} header file:\n#{out}"
         exit false
       end
