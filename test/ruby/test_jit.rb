@@ -547,9 +547,16 @@ class TestJIT < Test::Unit::TestCase
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
 
     # Debugging on CI
-    if err.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory")
-      $stderr.puts "test/ruby/test_jit.rb: ENV content:"
-      PP.pp(ENV, $stderr)
+    if err.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory") && RbConfig::CONFIG['CC'] == 'gcc'
+      $stderr.puts "\ntest/ruby/test_jit.rb: DEBUG OUTPUT:"
+      cc1 = %x`gcc -print-prog-name=cc1`.rstrip
+      if $?.success?
+        $stderr.puts "cc1 path: #{cc1}"
+        $stderr.puts "executable?: #{File.executable?(cc1)}"
+        $stderr.puts "ls:\n#{IO.popen(['ls', '-la', File.dirname(cc1)], &:read)}"
+      else
+        $stderr.puts 'Failed to fetch cc1 path'
+      end
     end
 
     assert_equal(
