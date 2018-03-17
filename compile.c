@@ -8140,9 +8140,6 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 
 /* ISeq binary format */
 
-#ifdef __sparc
-#define IBF_ISEQ_DEBUG 1
-#endif
 #ifndef IBF_ISEQ_DEBUG
 #define IBF_ISEQ_DEBUG 0
 #endif
@@ -8190,7 +8187,22 @@ struct ibf_load {
 static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
-    return (unsigned int)rb_str_strlen(dump->str);
+    long pos = RSTRING_LEN(dump->str);
+#if SIZEOF_LONG > SIZEOF_INT
+    if (pos >= UINT_MAX) {
+        rb_raise(rb_eRuntimeError, "dump size exceeds");
+    }
+#endif
+    return (unsigned int)pos;
+}
+
+static void
+ibf_dump_align(struct ibf_dump *dump, size_t align)
+{
+    ibf_offset_t pos = ibf_dump_pos(dump);
+    if (pos % align) {
+        rb_str_modify_expand(dump->str, align - (pos % align));
+    }
 }
 
 static ibf_offset_t
@@ -8826,6 +8838,7 @@ ibf_dump_iseq_list(struct ibf_dump *dump, struct ibf_header *header)
 	list[i] = (ibf_offset_t)NUM2LONG(rb_ary_entry(dump->iseq_list, i));
     }
 
+    ibf_dump_align(dump, sizeof(ibf_offset_t));
     header->iseq_list_offset = ibf_dump_write(dump, list, sizeof(ibf_offset_t) * size);
     header->iseq_list_size = (unsigned int)size;
 }
@@ -8866,6 +8879,7 @@ ibf_dump_id_list(struct ibf_dump *dump, struct ibf_header *header)
 
     st_foreach(dump->id_table, ibf_dump_id_list_i, (st_data_t)&arg);
 
+    ibf_dump_align(dump, sizeof(long));
     header->id_list_offset = ibf_dump_write(dump, arg.list, sizeof(long) * size);
     header->id_list_size = (unsigned int)size;
 }
@@ -9416,6 +9430,7 @@ ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
 	rb_ary_push(list, UINT2NUM(offset));
     }
     size = i;
+    ibf_dump_align(dump, sizeof(ibf_offset_t));
     header->object_list_offset = ibf_dump_pos(dump);
 
     for (i=0; i<size; i++) {
