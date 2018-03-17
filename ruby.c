@@ -175,8 +175,10 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
-static NODE *load_file(VALUE, VALUE, int, ruby_cmdline_options_t *);
-static void forbid_setid(const char *, ruby_cmdline_options_t *);
+static NODE *load_file(VALUE parser, VALUE fname, VALUE f, int script,
+		       ruby_cmdline_options_t *opt);
+static VALUE open_load_file(VALUE fname_v, int *xflag);
+static void forbid_setid(const char *, const ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
 
 static struct {
@@ -423,6 +425,8 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 				ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE,
 				Qnil);
 }
+#else
+# define str_conv_enc(str, from, to) (str)
 #endif
 
 void ruby_init_loadpath_safe(int safe_level);
@@ -1050,6 +1054,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  case 'x':
 	    if (envopt) goto noenvopt;
+	    forbid_setid("-x");
 	    opt->xflag = TRUE;
 	    s++;
 	    if (*s && chdir(s) < 0) {
@@ -1439,6 +1444,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
     NODE *tree = 0;
     VALUE parser;
+    VALUE script_name;
     const rb_iseq_t *iseq;
     rb_encoding *enc, *lenc;
 #if UTF8_PATH
@@ -1514,6 +1520,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	    argc--;
 	    argv++;
 	}
+	if (opt->script[0] == '-' && !opt->script[1]) {
+	    forbid_setid("program input from stdin");
+	}
     }
 
     opt->script_name = rb_str_new_cstr(opt->script);
@@ -1560,9 +1569,17 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	ienc = enc;
 #endif
     }
-    rb_enc_associate(opt->script_name, lenc);
+    script_name = opt->script_name;
+    rb_enc_associate(opt->script_name,
+		     IF_UTF8_PATH(uenc = rb_utf8_encoding(), lenc));
+#if UTF8_PATH
+    if (uenc != lenc) {
+	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
+	opt->script = RSTRING_PTR(opt->script_name);
+    }
+#endif
     rb_obj_freeze(opt->script_name);
-    if (IF_UTF8_PATH((uenc = rb_utf8_encoding()) != lenc, 1)) {
+    if (IF_UTF8_PATH(uenc != lenc, 1)) {
 	long i;
 	VALUE load_path = GET_VM()->load_path;
 	const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
@@ -1598,12 +1615,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	rb_funcallv(rb_cISeq, rb_intern_const("compile_option="), 1, &option);
 #undef SET_COMPILE_OPTION
     }
-#if UTF8_PATH
-    if (uenc != lenc) {
-	opt->script_name = str_conv_enc(opt->script_name, uenc, lenc);
-	opt->script = RSTRING_PTR(opt->script_name);
-    }
-#endif
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
@@ -1641,13 +1652,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 	tree = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
     }
     else {
-	if (opt->script[0] == '-' && !opt->script[1]) {
-	    forbid_setid("program input from stdin");
-	}
-
+	VALUE f;
 	base_block = toplevel_context(toplevel_binding);
 	rb_parser_set_context(parser, base_block, TRUE);
-	tree = load_file(parser, opt->script_name, 1, opt);
+	f = open_load_file(script_name, &opt->xflag);
+	tree = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
@@ -1704,7 +1713,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     {
 	VALUE path = Qnil;
 	if (!opt->e_script && strcmp(opt->script, "-")) {
-	    path = rb_realpath_internal(Qnil, opt->script_name, 1);
+	    path = rb_realpath_internal(Qnil, script_name, 1);
 	}
 	base_block = toplevel_context(toplevel_binding);
 	iseq = rb_iseq_new_main(tree, opt->script_name, path, vm_block_iseq(base_block));
@@ -1743,7 +1752,6 @@ struct load_file_arg {
     VALUE parser;
     VALUE fname;
     int script;
-    int xflag;
     ruby_cmdline_options_t *opt;
     VALUE f;
 };
@@ -1761,7 +1769,6 @@ load_file_internal(VALUE argp_v)
     NODE *tree = 0;
     rb_encoding *enc;
     ID set_encoding;
-    int xflag = argp->xflag;
 
     argp->script = 0;
     CONST_ID(set_encoding, "set_encoding");
@@ -1777,11 +1784,9 @@ load_file_internal(VALUE argp_v)
 	enc = rb_ascii8bit_encoding();
 	rb_funcall(f, set_encoding, 1, rb_enc_from_encoding(enc));
 
-	if (xflag || opt->xflag) {
+	if (opt->xflag) {
 	    line_start--;
 	  search_shebang:
-	    forbid_setid("-x");
-	    opt->xflag = FALSE;
 	    while (!NIL_P(line = rb_io_gets(f))) {
 		line_start++;
 		RSTRING_GETMEM(line, str, len);
@@ -1874,7 +1879,8 @@ load_file_internal(VALUE argp_v)
 static VALUE
 open_load_file(VALUE fname_v, int *xflag)
 {
-    const char *fname = StringValueCStr(fname_v);
+    const char *fname = (fname_v = rb_str_encode_ospath(fname_v),
+			 StringValueCStr(fname_v));
     long flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
@@ -1975,15 +1981,14 @@ restore_load_file(VALUE arg)
 }
 
 static NODE *
-load_file(VALUE parser, VALUE fname, int script, ruby_cmdline_options_t *opt)
+load_file(VALUE parser, VALUE fname, VALUE f, int script, ruby_cmdline_options_t *opt)
 {
     struct load_file_arg arg;
     arg.parser = parser;
     arg.fname = fname;
     arg.script = script;
     arg.opt = opt;
-    arg.xflag = 0;
-    arg.f = open_load_file(rb_str_encode_ospath(fname), &arg.xflag);
+    arg.f = f;
     return (NODE *)rb_ensure(load_file_internal, (VALUE)&arg,
 			     restore_load_file, (VALUE)&arg);
 }
@@ -1998,17 +2003,15 @@ rb_load_file(const char *fname)
 void *
 rb_load_file_str(VALUE fname_v)
 {
-    ruby_cmdline_options_t opt;
-
-    return load_file(rb_parser_new(), fname_v, 0, cmdline_options_init(&opt));
+    return rb_parser_load_file(rb_parser_new(), fname_v);
 }
 
 void *
 rb_parser_load_file(VALUE parser, VALUE fname_v)
 {
     ruby_cmdline_options_t opt;
-
-    return load_file(parser, fname_v, 0, cmdline_options_init(&opt));
+    VALUE f = open_load_file(fname_v, &cmdline_options_init(&opt)->xflag);
+    return load_file(parser, fname_v, f, 0, &opt);
 }
 
 /*
@@ -2117,7 +2120,7 @@ init_ids(ruby_cmdline_options_t *opt)
 
 #undef forbid_setid
 static void
-forbid_setid(const char *s, ruby_cmdline_options_t *opt)
+forbid_setid(const char *s, const ruby_cmdline_options_t *opt)
 {
     if (opt->setids & 1)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
