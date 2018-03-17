@@ -7225,12 +7225,13 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 
 /*
  *  call-seq:
- *     ios.reopen(other_IO)         -> ios
- *     ios.reopen(path, mode_str)   -> ios
+ *     ios.reopen(other_IO)             -> ios
+ *     ios.reopen(path, mode, [, opt])  -> ios
  *
  *  Reassociates <em>ios</em> with the I/O stream given in
  *  <i>other_IO</i> or to a new stream opened on <i>path</i>. This may
  *  dynamically change the actual class of this stream.
+ *  The +mode+ and +opt+ parameters accept the same values as IO.open.
  *
  *     f1 = File.new("testfile")
  *     f2 = File.new("testfile")
