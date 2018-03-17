@@ -8140,6 +8140,9 @@ rb_method_for_self_aset(VALUE name, VALUE arg, rb_insn_func_t func)
 
 /* ISeq binary format */
 
+#ifdef __sparc
+#define IBF_ISEQ_DEBUG 1
+#endif
 #ifndef IBF_ISEQ_DEBUG
 #define IBF_ISEQ_DEBUG 0
 #endif
