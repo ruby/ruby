@@ -1125,15 +1125,29 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(3, "in add_iseq_to_process");
 }
 
+/* For this timeout seconds, --jit-wait will wait for JIT compilation finish. */
+#define MJIT_WAIT_TIMEOUT_SECONDS 60
+
 /* Wait for JIT compilation finish for --jit-wait. This should only return a function pointer
    or NOT_COMPILABLE_JIT_ISEQ_FUNC. */
 mjit_func_t
-mjit_get_iseq_func(const struct rb_iseq_constant_body *body)
+mjit_get_iseq_func(struct rb_iseq_constant_body *body)
 {
     struct timeval tv;
+    int tries = 0;
     tv.tv_sec = 0;
     tv.tv_usec = 1000;
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
+        tries++;
+        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS) {
+            CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
+            body->jit_func = (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
+            CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
+            if (mjit_opts.warnings || mjit_opts.verbose)
+                fprintf(stderr, "MJIT warning: timed out to wait for JIT finish\n");
+            break;
+        }
+
         CRITICAL_SECTION_START(3, "in mjit_get_iseq_func for a client wakeup");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func for a client wakeup");
