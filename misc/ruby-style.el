@@ -55,7 +55,7 @@
  '("bsd"
    (c-basic-offset . 4)
    (tab-width . 8)
-   (indent-tabs-mode . t)
+   (indent-tabs-mode . nil)
    (setq show-trailing-whitespace t)
    (c-offsets-alist
     (case-label . *)
