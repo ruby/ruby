@@ -847,7 +847,11 @@ module DRb
     def self.getservername
       host = Socket::gethostname
       begin
-        Socket::gethostbyname(host)[0]
+        Socket::getaddrinfo(host, nil,
+                                  Socket::AF_UNSPEC,
+                                  Socket::SOCK_STREAM,
+                                  0,
+                                  Socket::AI_PASSIVE)[0][3]
       rescue
         'localhost'
       end
