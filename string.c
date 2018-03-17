@@ -7633,7 +7633,8 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
 
 /*
  *  call-seq:
- *     str.split(pattern=nil, [limit])   -> an_array
+ *     str.split(pattern=nil, [limit])                -> an_array
+ *     str.split(pattern=nil, [limit]) {|sub| block } -> str
  *
  *  Divides <i>str</i> into substrings based on a delimiter, returning an array
  *  of these substrings.
@@ -7680,6 +7681,9 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
  *     "1:2:3".split(/(:)()()/, 2)     #=> ["1", ":", "", "", "2:3"]
  *
  *     "".split(',', -1)               #=> []
+ *
+ *  If a block is given, invoke the block with each split substrings.
+ *
  */
 
 static VALUE
