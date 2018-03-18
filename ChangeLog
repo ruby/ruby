@@ -1,3 +1,16 @@
+Mon Mar 19 00:27:06 2018  Koichi Sasada  <ko1@atdot.net>
+
+	thread_pthread: do not corrupt stack
+
+	This fixes stuck test/ruby/test_io.rb with FIBER_USE_NATIVE=0 on
+	GNU/Linux because linked-list pointers used by glibc get
+	corrupted when fiber stacks are copied.
+
+	Thanks to wanabe for finding the bug and original patch.
+
+	* thread_pthread (native_thread_init_stack): fix stack corruption
+	  [Bug #13387]
+
 Mon Mar 19 00:22:52 2018  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
 
 	TracePoint#enable, #disable: Don't yield any argument. [Bug #14057]
