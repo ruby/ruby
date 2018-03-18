@@ -1,3 +1,14 @@
+Sun Mar 18 23:23:48 2018  Koichi Sasada  <ko1@atdot.net>
+
+	skip unless PLATFORM is darwin.
+
+Sun Mar 18 23:23:48 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Treat NULL reference case [Bug #13566]
+
+	Fix C level backtrace on Darwin
+	SEGV caused by invalid instruction call.
+
 Sun Mar 18 23:11:29 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ARFLAGS): check if deterministic mode flag is
