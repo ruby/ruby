@@ -9330,7 +9330,7 @@ static ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
 };
 
 static ibf_offset_t
-lbf_dump_object_object(struct ibf_dump *dump, VALUE obj)
+ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_header obj_header;
     ibf_offset_t current_offset = ibf_dump_pos(dump);
@@ -9435,7 +9435,7 @@ ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
 
     for (i=0; i<RARRAY_LEN(dump->obj_list); i++) {
 	VALUE obj = RARRAY_AREF(dump->obj_list, i);
-	ibf_offset_t offset = lbf_dump_object_object(dump, obj);
+	ibf_offset_t offset = ibf_dump_object_object(dump, obj);
 	rb_ary_push(list, UINT2NUM(offset));
     }
     size = i;
