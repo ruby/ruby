@@ -1,3 +1,12 @@
+Mon Mar 19 00:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Clarify the behavior of IO.write without offset in write mode.
+
+	https://github.com/ruby/ruby/pull/1571
+
+	Patch by takanabe (Takayuki Watanabe) [fix GH-1571]
+	[Bug #11638]
+
 Mon Mar 19 00:16:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	parse.y: token info with BOM

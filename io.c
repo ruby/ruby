@@ -10023,8 +10023,8 @@ io_s_write(int argc, VALUE *argv, int binary)
  *  Opens the file, optionally seeks to the given <i>offset</i>, writes
  *  <i>string</i>, then returns the length written.
  *  <code>write</code> ensures the file is closed before returning.
- *  If <i>offset</i> is not given, the file is truncated.  Otherwise,
- *  it is not truncated.
+ *  If <i>offset</i> is not given in write mode, the file is truncated.
+ *  Otherwise, it is not truncated.
  *
  *  If the last argument is a hash, it specifies option for internal
  *  open().  The key would be the following.  open_args: is exclusive
