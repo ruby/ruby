@@ -1,3 +1,10 @@
+Mon Mar 19 00:34:38 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: unknown reparse tags
+
+	* win32/win32.c (rb_w32_read_reparse_point): skip unknown reparse tags.
+	  [Bug #14047]
+
 Mon Mar 19 00:32:31 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_lazy_enumerator.rb: test for [Bug #14082]
