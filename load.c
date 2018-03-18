@@ -95,6 +95,15 @@ rb_construct_expanded_load_path(enum expand_type type, int *has_relative, int *h
     rb_ary_replace(vm->load_path_snapshot, vm->load_path);
 }
 
+static VALUE
+load_path_getcwd(void)
+{
+    char *cwd = my_getcwd();
+    VALUE cwd_str = rb_filesystem_str_new_cstr(cwd);
+    xfree(cwd);
+    return cwd_str;
+}
+
 VALUE
 rb_get_expanded_load_path(void)
 {
@@ -106,7 +115,7 @@ rb_get_expanded_load_path(void)
 	int has_relative = 0, has_non_cache = 0;
 	rb_construct_expanded_load_path(EXPAND_ALL, &has_relative, &has_non_cache);
 	if (has_relative) {
-	    vm->load_path_check_cache = rb_dir_getwd_ospath();
+	    vm->load_path_check_cache = load_path_getcwd();
 	}
 	else if (has_non_cache) {
 	    /* Non string object. */
@@ -124,7 +133,7 @@ rb_get_expanded_load_path(void)
     }
     else if (vm->load_path_check_cache) {
 	int has_relative = 1, has_non_cache = 1;
-	VALUE cwd = rb_dir_getwd_ospath();
+	VALUE cwd = load_path_getcwd();
 	if (!rb_str_equal(vm->load_path_check_cache, cwd)) {
 	    /* Current working directory or filesystem encoding was changed.
 	       Expand relative load path and non-cacheable objects again. */

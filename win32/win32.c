@@ -4654,61 +4654,43 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
 }
 
 /* License: Ruby's */
-static char *
-w32_getcwd(char *buffer, int size, UINT cp)
+char *
+rb_w32_getcwd(char *buffer, int size)
 {
-    WCHAR *p;
-    int wlen, len;
+    char *p = buffer;
+    int len;
 
-    len = GetCurrentDirectoryW(0, NULL);
+    len = GetCurrentDirectory(0, NULL);
     if (!len) {
 	errno = map_errno(GetLastError());
 	return NULL;
     }
 
-    if (buffer && size < len) {
-	errno = ERANGE;
-	return NULL;
-    }
-
-    p = ALLOCA_N(WCHAR, len);
-    if (!GetCurrentDirectoryW(len, p)) {
-	errno = map_errno(GetLastError());
-        return NULL;
-    }
-
-    wlen = translate_wchar(p, L'\\', L'/') - p + 1;
-    len = WideCharToMultiByte(cp, 0, p, wlen, NULL, 0, NULL, NULL);
-    if (buffer) {
+    if (p) {
 	if (size < len) {
 	    errno = ERANGE;
 	    return NULL;
 	}
     }
     else {
-	buffer = malloc(len);
-	if (!buffer) {
+	p = malloc(len);
+	size = len;
+	if (!p) {
 	    errno = ENOMEM;
 	    return NULL;
 	}
     }
-    WideCharToMultiByte(cp, 0, p, wlen, buffer, len, NULL, NULL);
 
-    return buffer;
-}
+    if (!GetCurrentDirectory(size, p)) {
+	errno = map_errno(GetLastError());
+	if (!buffer)
+	    free(p);
+        return NULL;
+    }
 
-/* License: Ruby's */
-char *
-rb_w32_getcwd(char *buffer, int size)
-{
-    return w32_getcwd(buffer, size, filecp());
-}
+    translate_char(p, '\\', '/', filecp());
 
-/* License: Ruby's */
-char *
-rb_w32_ugetcwd(char *buffer, int size)
-{
-    return w32_getcwd(buffer, size, CP_UTF8);
+    return p;
 }
 
 /* License: Artistic or GPL */
