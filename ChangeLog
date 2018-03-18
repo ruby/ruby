@@ -1,3 +1,25 @@
+Sun Mar 18 23:59:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	dup String#partition return value
+
+	* string.c (rb_str_partition): return duplicated receiver, when no
+	  splits. [Bug#13925]
+
+	Author: Seiei Miyagi hanachin@gmail.com
+
+	dup String#rpartition return value
+
+	* string.c (rb_str_rpartition): return duplicated receiver, when no
+	  splits. [Bug#13925]
+
+	Author: Seiei Miyagi hanachin@gmail.com
+
+	dup String#split return value
+
+	* string.c (rb_str_split): return duplicated receiver, when no splits.
+	  patched by tompng (tomoya ishida) in , and the test case by Seiei
+	  Miyagi hanachin@gmail.com. [Bug#13925] [Fix GH-1705]
+
 Sun Mar 18 23:57:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	ruby.c: paragraph mode by -00
