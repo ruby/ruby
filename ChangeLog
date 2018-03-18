@@ -1,3 +1,14 @@
+Sun Mar 18 23:11:29 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (ARFLAGS): check if deterministic mode flag is
+	  effective, which is on by default on Ubuntu.
+
+	* configure.in: use libtool on macOS to suppress a warning against
+	  debug_counter.o, which has no symbols unless USE_DEBUG_COUNTER is
+	  set to non-zero.
+
+	* configure.in: use newer libtool only
+
 Sat Feb 17 01:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Merge RubyGems 2.7.6 from upstream.
