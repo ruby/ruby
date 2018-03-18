@@ -84,6 +84,11 @@ class TestTimeTZ < Test::Unit::TestCase
 
   has_right_tz &&= have_tz_offset?("right/America/Los_Angeles")
   has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
+  CORRECT_TOKYO_DST_1951 = with_tz("Asia/Tokyo") {
+    if Time.local(1951, 5, 6, 12, 0, 0).dst? # noon, DST
+      Time.local(1951, 5, 6, 1, 0, 0).dst?   # DST with fixed tzdata
+    end
+  }
 
   def time_to_s(t)
     t.to_s
@@ -126,8 +131,9 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_asia_tokyo
     with_tz(tz="Asia/Tokyo") {
-      assert_time_constructor(tz, "1951-05-06 03:00:00 +1000", :local, [1951,5,6,2,0,0])
-      assert_time_constructor(tz, "1951-05-06 03:59:59 +1000", :local, [1951,5,6,2,59,59])
+      h = CORRECT_TOKYO_DST_1951 ? 0 : 2
+      assert_time_constructor(tz, "1951-05-06 0#{h+1}:00:00 +1000", :local, [1951,5,6,h,0,0])
+      assert_time_constructor(tz, "1951-05-06 0#{h+1}:59:59 +1000", :local, [1951,5,6,h,59,59])
       assert_time_constructor(tz, "2010-06-10 06:13:28 +0900", :local, [2010,6,10,6,13,28])
     }
   end
@@ -329,10 +335,19 @@ America/Managua  Wed Jan  1 05:00:00 1997 UTC = Tue Dec 31 23:00:00 1996 CST isd
 Asia/Singapore  Sun Aug  8 16:30:00 1965 UTC = Mon Aug  9 00:00:00 1965 SGT isdst=0 gmtoff=27000
 Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
 Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
+End
+  gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' : <<'End'
+Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
+Asia/Tokyo  Sat May  5 15:00:00 1951 UTC = Sun May  6 01:00:00 1951 JDT isdst=1 gmtoff=36000
+Asia/Tokyo  Sat Sep  8 13:59:59 1951 UTC = Sat Sep  8 23:59:59 1951 JDT isdst=1 gmtoff=36000
+Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sat Sep  8 23:00:00 1951 JST isdst=0 gmtoff=32400
+End
 Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 gmtoff=32400
 Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Fri Sep  7 15:59:59 1951 UTC = Sat Sep  8 01:59:59 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Fri Sep  7 16:00:00 1951 UTC = Sat Sep  8 01:00:00 1951 JST isdst=0 gmtoff=32400
+End
+  gen_zdump_test <<'End'
 America/St_Johns  Sun Mar 11 03:30:59 2007 UTC = Sun Mar 11 00:00:59 2007 NST isdst=0 gmtoff=-12600
 America/St_Johns  Sun Mar 11 03:31:00 2007 UTC = Sun Mar 11 01:01:00 2007 NDT isdst=1 gmtoff=-9000
 America/St_Johns  Sun Nov  4 02:30:59 2007 UTC = Sun Nov  4 00:00:59 2007 NDT isdst=1 gmtoff=-9000
