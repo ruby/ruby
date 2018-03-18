@@ -1,3 +1,7 @@
+Mon Mar 19 00:22:52 2018  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	TracePoint#enable, #disable: Don't yield any argument. [Bug #14057]
+
 Mon Mar 19 00:21:00 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Clarify the behavior of IO.write without offset in write mode.

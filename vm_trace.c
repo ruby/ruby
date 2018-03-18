@@ -1087,7 +1087,7 @@ tracepoint_enable_m(VALUE tpval)
     rb_tracepoint_enable(tpval);
 
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil,
+	return rb_ensure(rb_yield, Qundef,
 			 previous_tracing ? rb_tracepoint_enable : rb_tracepoint_disable,
 			 tpval);
     }
@@ -1138,7 +1138,7 @@ tracepoint_disable_m(VALUE tpval)
     rb_tracepoint_disable(tpval);
 
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, Qnil,
+	return rb_ensure(rb_yield, Qundef,
 			 previous_tracing ? rb_tracepoint_enable : rb_tracepoint_disable,
 			 tpval);
     }
