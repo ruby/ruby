@@ -1,3 +1,10 @@
+Mon Mar 19 00:04:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/forwardable.rb (_delegator_method): leave the backtrace
+	  untouched during accessor.  forwardable.rb does not appear in
+	  the backtrace during delegated method because of tail-call
+	  optimization.
+
 Sun Mar 18 23:59:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	dup String#partition return value

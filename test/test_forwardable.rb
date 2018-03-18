@@ -225,18 +225,21 @@ class TestForwardable < Test::Unit::TestCase
   class Foo
     extend Forwardable
 
+    attr_accessor :bar
     def_delegator :bar, :baz
     def_delegator :caller, :itself, :c
-
-    class Exception
-    end
   end
 
   def test_backtrace_adjustment
+    obj = Foo.new
+    def (obj.bar = Object.new).baz
+      foo
+    end
     e = assert_raise(NameError) {
-      Foo.new.baz
+      obj.baz
     }
-    assert_not_match(/\/forwardable\.rb/, e.backtrace[0])
+    assert_not_match(/\/forwardable\.rb/, e.backtrace[0],
+                     proc {RubyVM::InstructionSequence.of(obj.method(:baz)).disassemble})
     assert_equal(caller(0, 1)[0], Foo.new.c[0])
   end
 
