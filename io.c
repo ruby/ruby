@@ -7226,7 +7226,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *fp)
 /*
  *  call-seq:
  *     ios.reopen(other_IO)             -> ios
- *     ios.reopen(path, mode, [, opt])  -> ios
+ *     ios.reopen(path, mode [, opt])   -> ios
  *
  *  Reassociates <em>ios</em> with the I/O stream given in
  *  <i>other_IO</i> or to a new stream opened on <i>path</i>. This may
