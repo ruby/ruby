@@ -397,6 +397,7 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_with_objects
+    skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
     code = "[]"+100.times.map{|i|"<</#{i}/"}.join
     iseq = RubyVM::InstructionSequence.compile(code)
     bin = assert_nothing_raised do
