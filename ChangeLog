@@ -1,3 +1,19 @@
+Sun Mar 18 23:36:24 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	added workaround for APFS file format.
+
+	* TestFileExhaustive#test_atime: It fails with nano-sec precise. I
+	  changed to use unixtime for this assertion for APFS.
+
+	* TestFileExhaustive#test_expand_path: skip assertion when given
+	  invalid charactor on APFS.
+
+	[Bug #13816]
+
+Sun Mar 18 23:36:04 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	High Sierra's APFS cannot use invalid filenames [Bug #13816]
+
 Sun Mar 18 23:31:44 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	test_framework.rb: for case-sensitive filesystem
