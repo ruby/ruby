@@ -1,3 +1,7 @@
+Sun Mar 18 23:26:20 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	fix the case High Sierra's mincore(2) may return -128 [Bug #13895]
+
 Sun Mar 18 23:23:48 2018  Koichi Sasada  <ko1@atdot.net>
 
 	skip unless PLATFORM is darwin.
