@@ -4202,7 +4202,7 @@ static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
 static void
-fptr_finalize_flush(rb_io_t *fptr, int noraise)
+fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 {
     VALUE err = Qnil;
     int fd = fptr->fd;
@@ -4250,7 +4250,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise)
          * We assumes it is closed.  */
 
 	/**/
-	int keepgvl = !(mode & FMODE_WRITABLE);
+	keepgvl |= !(mode & FMODE_WRITABLE);
 	keepgvl |= noraise;
 	if ((maygvl_close(fd, keepgvl) < 0) && NIL_P(err))
 	    err = noraise ? Qtrue : INT2NUM(errno);
@@ -4271,7 +4271,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise)
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    fptr_finalize_flush(fptr, noraise);
+    fptr_finalize_flush(fptr, noraise, FALSE);
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -4351,6 +4351,13 @@ rb_io_memsize(const rb_io_t *fptr)
     return size;
 }
 
+#ifdef _WIN32
+/* keep GVL while closing to prevent crash on Windows */
+# define KEEPGVL TRUE
+#else
+# define KEEPGVL FALSE
+#endif
+
 int rb_notify_fd_close(int fd);
 static rb_io_t *
 io_close_fptr(VALUE io)
@@ -4375,8 +4382,8 @@ io_close_fptr(VALUE io)
 
     fd = fptr->fd;
     busy = rb_notify_fd_close(fd);
-    fptr_finalize_flush(fptr, FALSE);
     if (busy) {
+	fptr_finalize_flush(fptr, FALSE, KEEPGVL);
 	do rb_thread_schedule(); while (rb_notify_fd_close(fd));
     }
     rb_io_fptr_cleanup(fptr, FALSE);

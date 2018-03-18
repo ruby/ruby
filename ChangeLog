@@ -1,3 +1,16 @@
+Mon Mar 19 00:06:43 2018  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
+
+	io.c: fix segfault with closing socket on Windows
+
+	* io.c (fptr_finalize_flush): add an argument to keep GVL.
+
+	* io.c (fptr_finalize): adjust for above change.
+
+	* io.c (io_close_fptr): closing without GVL causes another exception
+	  while raising exception in another thread. This causes segfault on
+	  Windows. Keep GVL while closing when another thread raises.
+	  [Bug #13856]
+
 Mon Mar 19 00:04:08 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/forwardable.rb (_delegator_method): leave the backtrace
