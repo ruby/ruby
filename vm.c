@@ -928,15 +928,17 @@ invoke_bmethod(rb_thread_t *th, const rb_iseq_t *iseq, VALUE self, const rb_bloc
     int arg_size = iseq->body->param.size;
     VALUE ret;
 
-    vm_push_frame(th, iseq, type | VM_FRAME_FLAG_FINISH | VM_FRAME_FLAG_BMETHOD, self,
-		  VM_ENVVAL_PREV_EP_PTR(block->ep),
-		  (VALUE)me, /* cref or method (TODO: can we ignore cref?) */
-		  iseq->body->iseq_encoded + opt_pc,
-		  th->cfp->sp + arg_size, iseq->body->local_size - arg_size,
-		  iseq->body->stack_max);
+    rb_control_frame_t *cfp =
+	vm_push_frame(th, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
+		      VM_ENVVAL_PREV_EP_PTR(block->ep),
+		      (VALUE)me, /* cref or method (TODO: can we ignore cref?) */
+		      iseq->body->iseq_encoded + opt_pc,
+		      th->cfp->sp + arg_size, iseq->body->local_size - arg_size,
+		      iseq->body->stack_max);
 
     RUBY_DTRACE_METHOD_ENTRY_HOOK(th, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_CALL, self, me->def->original_id, me->owner, Qnil);
+    cfp->flag |= VM_FRAME_FLAG_FINISH;
     ret = vm_exec(th);
     EXEC_EVENT_HOOK(th, RUBY_EVENT_RETURN, self, me->def->original_id, me->owner, ret);
     RUBY_DTRACE_METHOD_RETURN_HOOK(th, me->owner, me->def->original_id);

@@ -1,3 +1,11 @@
+Sun Mar 18 23:52:37 2018  Kazuki Tsujimoto  <kazuki@callcc.net>
+
+	vm.c: fix `cfp consistency error' which occurs when raising exception
+	in bmethod call event
+
+	* vm.c (invoke_bmethod): set FINISH flag just before calling vm_exec.
+	  [Bug #13705]
+
 Sun Mar 18 23:36:24 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	added workaround for APFS file format.
