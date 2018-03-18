@@ -1,3 +1,10 @@
+Mon Mar 19 00:16:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: token info with BOM
+
+	* parse.y (parser_prepare): set token_info_enabled flag first, before
+	  returning at BOM. [Bug #13998]
+
 Mon Mar 19 00:06:43 2018  Hiroshi Shirosaki  <h.shirosaki@gmail.com>
 
 	io.c: fix segfault with closing socket on Windows

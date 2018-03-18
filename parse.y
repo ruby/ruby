@@ -7364,6 +7364,7 @@ static void
 parser_prepare(struct parser_params *parser)
 {
     int c = nextc();
+    parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
     switch (c) {
       case '#':
 	if (peek('!')) parser->has_shebang = 1;
@@ -7384,7 +7385,6 @@ parser_prepare(struct parser_params *parser)
     pushback(c);
     parser->enc = rb_enc_get(lex_lastline);
     deferred_nodes = 0;
-    parser->token_info_enabled = !compile_for_eval && RTEST(ruby_verbose);
 }
 
 #define IS_ARG() IS_lex_state(EXPR_ARG_ANY)

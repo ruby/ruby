@@ -406,6 +406,16 @@ class TestRubyOptions < Test::Unit::TestCase
       t.puts " end"
       t.flush
       assert_in_out_err(["-w", t.path], "", [], [], '[ruby-core:25442]')
+
+      err = ["#{t.path}:2: warning: mismatched indentations at 'end' with 'begin' at 1"]
+      t.rewind
+      t.truncate(0)
+      t.print "\u{feff}"
+      t.puts "begin"
+      t.puts " end"
+      t.flush
+      assert_in_out_err(["-w", t.path], "", [], err)
+      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
     }
   end
 
