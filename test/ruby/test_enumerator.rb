@@ -575,13 +575,22 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal Float::INFINITY, [:foo].cycle.size
     assert_equal 10, [:foo, :bar].cycle(5).size
     assert_equal 0,  [:foo, :bar].cycle(-10).size
+    assert_equal Float::INFINITY, {foo: 1}.cycle.size
+    assert_equal 10, {foo: 1, bar: 2}.cycle(5).size
+    assert_equal 0,  {foo: 1, bar: 2}.cycle(-10).size
     assert_equal 0,  [].cycle.size
     assert_equal 0,  [].cycle(5).size
+    assert_equal 0,  {}.cycle.size
+    assert_equal 0,  {}.cycle(5).size
 
     assert_equal nil, @obj.cycle.size
     assert_equal nil, @obj.cycle(5).size
     assert_equal Float::INFINITY, @sized.cycle.size
     assert_equal 126, @sized.cycle(3).size
+    assert_equal Float::INFINITY, [].to_enum { 42 }.cycle.size
+    assert_equal 0, [].to_enum { 0 }.cycle.size
+
+    assert_raise(TypeError) {[].to_enum { 0 }.cycle("").size}
   end
 
   def test_size_for_loops

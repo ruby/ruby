@@ -1,3 +1,18 @@
+Mon Mar 19 00:32:31 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/ruby/test_lazy_enumerator.rb: test for [Bug #14082]
+
+	enum.c: check argument first
+
+	* enum.c (enum_cycle_size): check an argument before the size of the
+	  receiver, if it is given.
+
+Mon Mar 19 00:32:31 2018  Marc-Andre Lafortune  <ruby-core@marc-andre.ca>
+
+	Fix size on Enumerable#cycle when the size is 0 [Bug #14082].
+
+	Patch by Kenichi Kamiya
+
 Mon Mar 19 00:28:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_here_document): an escaped newline is not an

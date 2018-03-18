@@ -2678,17 +2678,19 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
-    long mul;
+    long mul = 0;
     VALUE n = Qnil;
-    VALUE size = enum_size(self, args, 0);
-
-    if (size == Qnil) return Qnil;
+    VALUE size;
 
     if (args && (RARRAY_LEN(args) > 0)) {
 	n = RARRAY_AREF(args, 0);
+	if (!NIL_P(n)) mul = NUM2LONG(n);
     }
-    if (n == Qnil) return DBL2NUM(INFINITY);
-    mul = NUM2LONG(n);
+
+    size = enum_size(self, args, 0);
+    if (NIL_P(size) || size == INT2FIX(0)) return size;
+
+    if (NIL_P(n)) return DBL2NUM(INFINITY);
     if (mul <= 0) return INT2FIX(0);
     return rb_funcall(size, '*', 1, LONG2FIX(mul));
 }
