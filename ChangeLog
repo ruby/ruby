@@ -1,3 +1,10 @@
+Sun Mar 18 23:57:32 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	ruby.c: paragraph mode by -00
+
+	* ruby.c (proc_options): set to paragraph mode, if -00 is given, as
+	  well as perl and -R0 option in 0.49. [Bug #13736]
+
 Sun Mar 18 23:55:23 2018  Eric Wong  <normalperson@yhbt.net>
 
 	process: block/unblock signals around fork
