@@ -1,3 +1,20 @@
+Sun Mar 18 23:31:44 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	test_framework.rb: for case-sensitive filesystem
+
+	* test/mkmf/test_framework.rb (test_single_framework): fix header
+	  file name for case-sensitive filesystem. it may not be same as
+	  the framework name, but should be the actual file name.
+	  [Bug #13489]
+
+	* test/mkmf/test_framework.rb (test_multi_frameworks): ditto.
+
+	test_file_exhaustive.rb: check case-sensitive fs
+
+	* test/ruby/test_file_exhaustive.rb (test_expand_path): dump expanded
+	  file name, not only appended char, for case-sensitive filesystem.
+	  [Bug #13489]
+
 Sun Mar 18 23:29:14 2018  Masaki Suketa <masaki.suketa@nifty.ne.jp>
 
 	* test/win32ole/test_word.rb: word quit without confirmation dialog to
