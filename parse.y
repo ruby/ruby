@@ -4889,7 +4889,7 @@ yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 {
     rb_ast_t *ast;
     p->ruby_sourcefile_string = rb_str_new_frozen(fname);
-    p->ruby_sourcefile = RSTRING_PTR(fname);
+    p->ruby_sourcefile = StringValueCStr(fname);
     p->ruby_sourceline = line - 1;
 
     p->ast = ast = rb_ast_new();
