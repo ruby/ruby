@@ -45,7 +45,7 @@
     And add ((|RUBYW_INSTALL_NAME|)) to change the name of the
     executable without console window if also you want.
 
-(3) Run `((%nmake up%))'
+(3) Run `((%nmake up%))' if you are building from SVN source.
 
 (4) Run `((%nmake%))'
 
