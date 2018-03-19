@@ -31,7 +31,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
 
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
 
@@ -46,7 +46,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     keys = { :rubygems_api_key => 'KEY' }
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
 
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
 
@@ -59,7 +59,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     keys = { :rubygems_api_key => 'KEY', :other => 'OTHER' }
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
 
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
 
@@ -163,7 +163,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     other_api_key = 'f46dbb18bb6a9c97cdc61b5b85c186a17403cdcbf'
 
     FileUtils.mkdir_p File.dirname(Gem.configuration.credentials_path)
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write Hash[:other_api_key, other_api_key].to_yaml
     end
     util_sign_in [api_key, 200, 'OK']

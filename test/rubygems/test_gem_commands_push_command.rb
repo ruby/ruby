@@ -132,7 +132,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -166,7 +166,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -193,7 +193,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -235,7 +235,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys
@@ -266,7 +266,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     }
 
     FileUtils.mkdir_p File.dirname Gem.configuration.credentials_path
-    open Gem.configuration.credentials_path, 'w' do |f|
+    File.open Gem.configuration.credentials_path, 'w' do |f|
       f.write keys.to_yaml
     end
     Gem.configuration.load_api_keys

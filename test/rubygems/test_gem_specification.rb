@@ -922,7 +922,7 @@ dependencies: []
   end
 
   def test_self_load_relative
-    open 'a-2.gemspec', 'w' do |io|
+    File.open 'a-2.gemspec', 'w' do |io|
       io.write @a2.to_ruby_for_cache
     end
 
@@ -1111,7 +1111,7 @@ dependencies: []
   end
 
   def test_self_remove_spec_removed
-    open @a1.spec_file, 'w' do |io|
+    File.open @a1.spec_file, 'w' do |io|
       io.write @a1.to_ruby
     end
 
@@ -1363,13 +1363,13 @@ dependencies: []
 
     assert_empty @ext.build_args
 
-    open @ext.build_info_file, 'w' do |io|
+    File.open @ext.build_info_file, 'w' do |io|
       io.puts
     end
 
     assert_empty @ext.build_args
 
-    open @ext.build_info_file, 'w' do |io|
+    File.open @ext.build_info_file, 'w' do |io|
       io.puts '--with-foo-dir=wherever'
     end
 
@@ -1385,9 +1385,9 @@ dependencies: []
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -1435,9 +1435,9 @@ dependencies: []
     extconf_rb = File.join spec.gem_dir, spec.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
         end
@@ -1461,7 +1461,7 @@ dependencies: []
 
   def test_build_extensions_extensions_dir_unwritable
     skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid == 0
+    skip 'skipped in root privilege' if Process.uid.zero?
 
     ext_spec
 
@@ -1470,9 +1470,9 @@ dependencies: []
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -1487,7 +1487,7 @@ dependencies: []
     @ext.build_extensions
     refute_path_exists @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform? or Process.uid == 0) then
+    unless ($DEBUG or win_platform? or Process.uid.zero?) then
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -1503,9 +1503,9 @@ dependencies: []
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -1552,9 +1552,9 @@ dependencies: []
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"
@@ -2883,7 +2883,22 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_equal '"over at my cool site" is not a URI', e.message
+      assert_equal '"over at my cool site" is not a valid HTTP URI', e.message
+
+      @a1.homepage = 'ftp://rubygems.org'
+
+      e = assert_raises Gem::InvalidSpecificationException do
+        @a1.validate
+      end
+
+      assert_equal '"ftp://rubygems.org" is not a valid HTTP URI', e.message
+
+      @a1.homepage = 'http://rubygems.org'
+      assert_equal true, @a1.validate
+
+      @a1.homepage = 'https://rubygems.org'
+      assert_equal true, @a1.validate
+
     end
   end
 
@@ -3419,9 +3434,9 @@ end
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
 
-    open extconf_rb, 'w' do |f|
+    File.open extconf_rb, 'w' do |f|
       f.write <<-'RUBY'
-        open 'Makefile', 'w' do |f|
+        File.open 'Makefile', 'w' do |f|
           f.puts "clean:\n\techo clean"
           f.puts "default:\n\techo built"
           f.puts "install:\n\techo installed"

@@ -104,23 +104,28 @@ class Gem::Package::TarHeader
     fields = header.unpack UNPACK_FORMAT
 
     new :name     => fields.shift,
-        :mode     => fields.shift.oct,
-        :uid      => fields.shift.oct,
-        :gid      => fields.shift.oct,
-        :size     => fields.shift.oct,
-        :mtime    => fields.shift.oct,
-        :checksum => fields.shift.oct,
+        :mode     => strict_oct(fields.shift),
+        :uid      => strict_oct(fields.shift),
+        :gid      => strict_oct(fields.shift),
+        :size     => strict_oct(fields.shift),
+        :mtime    => strict_oct(fields.shift),
+        :checksum => strict_oct(fields.shift),
         :typeflag => fields.shift,
         :linkname => fields.shift,
         :magic    => fields.shift,
-        :version  => fields.shift.oct,
+        :version  => strict_oct(fields.shift),
         :uname    => fields.shift,
         :gname    => fields.shift,
-        :devmajor => fields.shift.oct,
-        :devminor => fields.shift.oct,
+        :devmajor => strict_oct(fields.shift),
+        :devminor => strict_oct(fields.shift),
         :prefix   => fields.shift,
 
         :empty => empty
+  end
+
+  def self.strict_oct(str)
+    return str.oct if str =~ /\A[0-7]*\z/
+    raise ArgumentError, "#{str.inspect} is not an octal string"
   end
 
   ##

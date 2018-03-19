@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = "2.7.3"
+  VERSION = "2.7.6"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -161,7 +161,7 @@ module Gem
   # these are defined in Ruby 1.8.7, hence the need for this convoluted setup.
 
   READ_BINARY_ERRORS = begin
-    read_binary_errors = [Errno::EACCES, Errno::EROFS]
+    read_binary_errors = [Errno::EACCES, Errno::EROFS, Errno::ENOSYS]
     read_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
     read_binary_errors
   end.freeze
@@ -171,7 +171,7 @@ module Gem
   # these are defined in Ruby 1.8.7.
 
   WRITE_BINARY_ERRORS = begin
-    write_binary_errors = []
+    write_binary_errors = [Errno::ENOSYS]
     write_binary_errors << Errno::ENOTSUP if Errno.const_defined?(:ENOTSUP)
     write_binary_errors
   end.freeze
@@ -871,19 +871,19 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Safely read a file in binary mode on all platforms.
 
   def self.read_binary(path)
-    open path, 'rb+' do |f|
+    File.open path, 'rb+' do |f|
       f.flock(File::LOCK_EX)
       f.read
     end
   rescue *READ_BINARY_ERRORS
-    open path, 'rb' do |f|
+    File.open path, 'rb' do |f|
       f.read
     end
   rescue Errno::ENOLCK # NFS
     if Thread.main != Thread.current
       raise
     else
-      open path, 'rb' do |f|
+      File.open path, 'rb' do |f|
         f.read
       end
     end

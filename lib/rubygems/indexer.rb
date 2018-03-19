@@ -2,6 +2,7 @@
 require 'rubygems'
 require 'rubygems/package'
 require 'time'
+require 'tmpdir'
 
 begin
   gem 'builder'
@@ -64,7 +65,7 @@ class Gem::Indexer
     @build_modern = options[:build_modern]
 
     @dest_directory = directory
-    @directory = File.join(Dir.tmpdir, "gem_generate_index_#{$$}")
+    @directory = Dir.mktmpdir 'gem_generate_index'
 
     marshal_name = "Marshal.#{Gem.marshal_version}"
 
@@ -123,7 +124,7 @@ class Gem::Indexer
         marshal_name = File.join @quick_marshal_dir, spec_file_name
 
         marshal_zipped = Gem.deflate Marshal.dump(spec)
-        open marshal_name, 'wb' do |io| io.write marshal_zipped end
+        File.open marshal_name, 'wb' do |io| io.write marshal_zipped end
 
         files << marshal_name
 
@@ -261,7 +262,7 @@ class Gem::Indexer
 
     zipped = Gem.deflate data
 
-    open "#{filename}.#{extension}", 'wb' do |io|
+    File.open "#{filename}.#{extension}", 'wb' do |io|
       io.write zipped
     end
   end
@@ -427,7 +428,7 @@ class Gem::Indexer
 
     specs_index = compact_specs specs_index.uniq.sort
 
-    open dest, 'wb' do |io|
+    File.open dest, 'wb' do |io|
       Marshal.dump specs_index, io
     end
   end

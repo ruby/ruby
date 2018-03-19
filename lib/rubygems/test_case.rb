@@ -488,7 +488,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     gemspec = "#{name}.gemspec"
 
-    open File.join(directory, gemspec), 'w' do |io|
+    File.open File.join(directory, gemspec), 'w' do |io|
       io.write git_spec.to_ruby
     end
 
@@ -592,7 +592,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Reads a Marshal file at +path+
 
   def read_cache(path)
-    open path.dup.untaint, 'rb' do |io|
+    File.open path.dup.untaint, 'rb' do |io|
       Marshal.load io.read
     end
   end
@@ -612,7 +612,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     dir = File.dirname path
     FileUtils.mkdir_p dir unless File.directory? dir
 
-    open path, 'wb' do |io|
+    File.open path, 'wb' do |io|
       yield io if block_given?
     end
 
@@ -727,7 +727,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
     install_default_specs(*specs)
 
     specs.each do |spec|
-      open spec.loaded_from, 'w' do |io|
+      File.open spec.loaded_from, 'w' do |io|
         io.write spec.to_ruby_for_cache
       end
     end
@@ -1363,7 +1363,7 @@ Also, a list:
       yield specification if block_given?
     end
 
-    open File.join(directory, "#{name}.gemspec"), 'w' do |io|
+    File.open File.join(directory, "#{name}.gemspec"), 'w' do |io|
       io.write vendor_spec.to_ruby
     end
 
