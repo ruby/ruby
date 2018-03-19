@@ -445,10 +445,17 @@ class TestRubyOptions < Test::Unit::TestCase
           "begin", "if false", "for _ in []", "while false",
           "def foo", "class X", "module M",
           ["-> do", "end"], ["-> {", "}"],
+          ["if false;", "else ; end"],
+          ["if false;", "elsif false ; end"],
+          ["begin", "rescue ; end"],
+          ["begin rescue", "else ; end"],
+          ["begin", "ensure ; end"],
+          ["case nil", "when true; end"],
         ].each do
           |b, e = 'end'|
           src = ["#{b}\n", " #{e}\n"]
           k = b[/\A\S+/]
+          e = e[/\A\S+/]
 
           a.for("no directives with #{b}") do
             err = ["#{t.path}:2: warning: mismatched indentations at '#{e}' with '#{k}' at 1"]
