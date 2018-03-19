@@ -1461,6 +1461,7 @@ dependencies: []
 
   def test_build_extensions_extensions_dir_unwritable
     skip 'chmod not supported' if Gem.win_platform?
+    skip 'skipped in root privilege' if Process.uid == 0
 
     ext_spec
 
@@ -1486,7 +1487,7 @@ dependencies: []
     @ext.build_extensions
     refute_path_exists @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform?) then
+    unless ($DEBUG or win_platform? or Process.uid == 0) then
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
       FileUtils.chmod 0755, @ext.base_dir
     end

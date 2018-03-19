@@ -1336,6 +1336,7 @@ class TestPathname < Test::Unit::TestCase
         assert_equal([Pathname("d"), Pathname("d/x")], a)
 
         skip "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
+        skip 'skipped in root privilege' if Process.uid == 0
         a = [];
         assert_raise_with_message(Errno::EACCES, %r{d/x}) do
           Pathname(".").find(ignore_error: false) {|v| a << v }
