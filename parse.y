@@ -738,6 +738,7 @@ PRINTF_ARGS(static void parser_compile_error(struct parser_params*, const char *
 
 static void token_info_push(struct parser_params*, const char *token, const rb_code_location_t *loc);
 static void token_info_pop(struct parser_params*, const char *token, const rb_code_location_t *loc);
+static void token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, const rb_code_location_t *loc);
 %}
 
 %pure-parser
@@ -2718,6 +2719,36 @@ k_def		: keyword_def
 		    }
 		;
 
+k_rescue	: keyword_rescue
+		    {
+			token_info_warn(p, "rescue", p->token_info, &@$);
+		    }
+		;
+
+k_ensure	: keyword_ensure
+		    {
+			token_info_warn(p, "ensure", p->token_info, &@$);
+		    }
+		;
+
+k_when		: keyword_when
+		    {
+			token_info_warn(p, "when", p->token_info, &@$);
+		    }
+		;
+
+k_else		: keyword_else
+		    {
+			token_info_warn(p, "else", p->token_info, &@$);
+		    }
+		;
+
+k_elsif 	: keyword_elsif
+		    {
+			token_info_warn(p, "elsif", p->token_info, &@$);
+		    }
+		;
+
 k_end		: keyword_end
 		    {
 			token_info_pop(p, "end", &@$);
@@ -2741,7 +2772,7 @@ do		: term
 		;
 
 if_tail		: opt_else
-		| keyword_elsif expr_value then
+		| k_elsif expr_value then
 		  compstmt
 		  if_tail
 		    {
@@ -2754,7 +2785,7 @@ if_tail		: opt_else
 		;
 
 opt_else	: none
-		| keyword_else compstmt
+		| k_else compstmt
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -3236,7 +3267,7 @@ do_body 	: {$<vars>$ = dyna_push(p);}
 		    }
 		;
 
-case_body	: keyword_when args then
+case_body	: k_when args then
 		  compstmt
 		  cases
 		    {
@@ -3252,7 +3283,7 @@ cases		: opt_else
 		| case_body
 		;
 
-opt_rescue	: keyword_rescue exc_list exc_var then
+opt_rescue	: k_rescue exc_list exc_var then
 		  compstmt
 		  opt_rescue
 		    {
@@ -3291,7 +3322,7 @@ exc_var		: tASSOC lhs
 		| none
 		;
 
-opt_ensure	: keyword_ensure compstmt
+opt_ensure	: k_ensure compstmt
 		    {
 		    /*%%%*/
 			$$ = $2;
@@ -4488,22 +4519,29 @@ token_info_push(struct parser_params *p, const char *token, const rb_code_locati
 static void
 token_info_pop(struct parser_params *p, const char *token, const rb_code_location_t *loc)
 {
-    token_info *ptinfo_beg = p->token_info, ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
-    setup_token_info(ptinfo_end, p->lex.pbeg, loc);
+    token_info *ptinfo_beg = p->token_info;
 
     if (!ptinfo_beg) return;
     p->token_info = ptinfo_beg->next;
 
     /* indentation check of matched keywords (begin..end, if..end, etc.) */
-    if (!p->token_info_enabled) goto ok; /* the check is off */
-    if (ptinfo_beg->linenum == ptinfo_end->linenum) goto ok; /* ignore one-line block */
-    if (ptinfo_beg->nonspc || ptinfo_end->nonspc) goto ok; /* ignore keyword in the middle of a line */
-    if (ptinfo_beg->column == ptinfo_end->column) goto ok; /* the indents are matched */
+    token_info_warn(p, token, ptinfo_beg, loc);
+    xfree(ptinfo_beg);
+}
+
+static void
+token_info_warn(struct parser_params *p, const char *token, token_info *ptinfo_beg, const rb_code_location_t *loc)
+{
+    token_info ptinfo_end_body, *ptinfo_end = &ptinfo_end_body;
+    if (!p->token_info_enabled) return;
+    if (!ptinfo_beg) return;
+    setup_token_info(ptinfo_end, p->lex.pbeg, loc);
+    if (ptinfo_beg->linenum == ptinfo_end->linenum) return; /* ignore one-line block */
+    if (ptinfo_beg->nonspc || ptinfo_end->nonspc) return; /* ignore keyword in the middle of a line */
+    if (ptinfo_beg->column == ptinfo_end->column) return; /* the indents are matched */
     rb_warn3L(ptinfo_end->linenum,
 	      "mismatched indentations at '%s' with '%s' at %d",
 	      WARN_S(token), WARN_S(ptinfo_beg->token), WARN_I(ptinfo_beg->linenum));
-ok:
-    xfree(ptinfo_beg);
 }
 
 static int
