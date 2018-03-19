@@ -1870,11 +1870,12 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 		}
 	    }
 
-	    snprintf(argi, sizeof(argi), "%s%s%s%s%s",	/* arg, opts, rest, post  block */
+	    snprintf(argi, sizeof(argi), "%s%s%s%s%s%s",	/* arg, opts, rest, post, kwrest, block */
 		     iseq->body->param.lead_num > li ? "Arg" : "",
 		     opti,
 		     (iseq->body->param.flags.has_rest && iseq->body->param.rest_start == li) ? "Rest" : "",
 		     (iseq->body->param.flags.has_post && iseq->body->param.post_start <= li && li < iseq->body->param.post_start + iseq->body->param.post_num) ? "Post" : "",
+		     (iseq->body->param.flags.has_kwrest && iseq->body->param.keyword->rest_start == li) ? "Kwrest" : "",
 		     (iseq->body->param.flags.has_block && iseq->body->param.block_start == li) ? "Block" : "");
 
 	    rb_str_catf(str, "[%2d] ", i + 1);
