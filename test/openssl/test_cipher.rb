@@ -297,6 +297,13 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal tag1, tag2
   end if has_cipher?("aes-128-gcm")
 
+  def test_non_aead_cipher_set_auth_data
+    assert_raise(OpenSSL::Cipher::CipherError) {
+      cipher = OpenSSL::Cipher.new("aes-128-cfb").encrypt
+      cipher.auth_data = "123"
+    }
+  end if has_cipher?("aes-128-gcm")
+
   private
 
   def new_encryptor(algo, **kwargs)

@@ -546,18 +546,19 @@ ossl_x509_get_public_key(VALUE self)
 
 /*
  * call-seq:
- *    cert.public_key = key => key
+ *    cert.public_key = key
  */
 static VALUE
 ossl_x509_set_public_key(VALUE self, VALUE key)
 {
     X509 *x509;
+    EVP_PKEY *pkey;
 
     GetX509(self, x509);
-    if (!X509_set_pubkey(x509, GetPKeyPtr(key))) { /* DUPs pkey */
-	ossl_raise(eX509CertError, NULL);
-    }
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
+    if (!X509_set_pubkey(x509, pkey))
+	ossl_raise(eX509CertError, "X509_set_pubkey");
     return key;
 }
 
@@ -594,9 +595,9 @@ ossl_x509_verify(VALUE self, VALUE key)
     X509 *x509;
     EVP_PKEY *pkey;
 
-    pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
     GetX509(self, x509);
-
+    pkey = GetPKeyPtr(key);
+    ossl_pkey_check_public_key(pkey);
     switch (X509_verify(x509, pkey)) {
       case 1:
 	return Qtrue;

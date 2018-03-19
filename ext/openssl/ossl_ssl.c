@@ -996,12 +996,7 @@ ossl_sslctx_get_ciphers(VALUE self)
     int i, num;
 
     GetSSLCTX(self, ctx);
-    if(!ctx){
-        rb_warning("SSL_CTX is not initialized.");
-        return Qnil;
-    }
     ciphers = SSL_CTX_get_ciphers(ctx);
-
     if (!ciphers)
         return rb_ary_new();
 
@@ -1049,10 +1044,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     }
 
     GetSSLCTX(self, ctx);
-    if(!ctx){
-        ossl_raise(eSSLError, "SSL_CTX is not initialized.");
-        return Qnil;
-    }
     if (!SSL_CTX_set_cipher_list(ctx, StringValueCStr(str))) {
         ossl_raise(eSSLError, "SSL_CTX_set_cipher_list");
     }
@@ -2446,6 +2437,10 @@ Init_ossl_ssl(void)
      * A callback invoked when a session is removed from the internal cache.
      *
      * The callback is invoked with an SSLContext and a Session.
+     *
+     * IMPORTANT NOTE: It is currently not possible to use this safely in a
+     * multi-threaded application. The callback is called inside a global lock
+     * and it can randomly cause deadlock on Ruby thread switching.
      */
     rb_attr(cSSLContext, rb_intern("session_remove_cb"), 1, 1, Qfalse);
 
