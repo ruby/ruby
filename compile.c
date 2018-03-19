@@ -1534,9 +1534,9 @@ iseq_calc_param_size(rb_iseq_t *iseq)
     }
 }
 
-static void
+static int
 iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
-			    const struct rb_args_info *args)
+			    const struct rb_args_info *args, int arg_size)
 {
     const NODE *node = args->kw_args;
     struct rb_iseq_param_keyword *keyword;
@@ -1546,8 +1546,15 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
     iseq->body->param.flags.has_kw = TRUE;
     iseq->body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-    keyword->bits_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_cflag);
 
+    while (node) {
+	kw++;
+	node = node->nd_next;
+    }
+    arg_size += kw;
+    keyword->bits_start = arg_size++;
+
+    node = args->kw_args;
     while (node) {
 	const NODE *val_node = node->nd_body->nd_value;
 	VALUE dv;
@@ -1579,14 +1586,13 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	    rb_ary_push(default_values, dv);
 	}
 
-	kw++;
 	node = node->nd_next;
     }
 
     keyword->num = kw;
 
     if (args->kw_rest_arg->nd_vid != 0) {
-	keyword->rest_start =  get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+	keyword->rest_start = arg_size++;
 	iseq->body->param.flags.has_kwrest = TRUE;
     }
     keyword->required_num = rkw;
@@ -1603,6 +1609,7 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 
 	keyword->default_values = dvs;
     }
+    return arg_size;
 }
 
 static int
@@ -1615,10 +1622,11 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	ID rest_id = 0;
 	int last_comma = 0;
 	ID block_id = 0;
+	int arg_size;
 
 	EXPECT_NODE("iseq_set_arguments", node_args, NODE_ARGS, COMPILE_NG);
 
-	iseq->body->param.lead_num = (int)args->pre_args_num;
+	iseq->body->param.lead_num = arg_size = (int)args->pre_args_num;
 	if (iseq->body->param.lead_num > 0) iseq->body->param.flags.has_lead = TRUE;
 	debugs("  - argc: %d\n", iseq->body->param.lead_num);
 
@@ -1628,12 +1636,6 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	    rest_id = 0;
 	}
 	block_id = args->block_arg;
-
-	if (args->first_post_arg) {
-	    iseq->body->param.post_start = get_dyna_var_idx_at_raw(iseq, args->first_post_arg);
-	    iseq->body->param.post_num = args->post_args_num;
-	    iseq->body->param.flags.has_post = TRUE;
-	}
 
 	if (args->opt_args) {
 	    const NODE *node = args->opt_args;
@@ -1667,17 +1669,43 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	    iseq->body->param.flags.has_opt = TRUE;
 	    iseq->body->param.opt_num = i;
 	    iseq->body->param.opt_table = opt_table;
+	    arg_size += i;
+	}
+
+	if (rest_id) {
+	    iseq->body->param.rest_start = arg_size++;
+	    iseq->body->param.flags.has_rest = TRUE;
+	    assert(iseq->body->param.rest_start != -1);
+	}
+
+	if (args->first_post_arg) {
+	    iseq->body->param.post_start = arg_size;
+	    iseq->body->param.post_num = args->post_args_num;
+	    iseq->body->param.flags.has_post = TRUE;
+	    arg_size += args->post_args_num;
+
+	    if (iseq->body->param.flags.has_rest) { /* TODO: why that? */
+		iseq->body->param.post_start = iseq->body->param.rest_start + 1;
+	    }
 	}
 
 	if (args->kw_args) {
-	    iseq_set_arguments_keywords(iseq, optargs, args);
+	    arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
 	}
 	else if (args->kw_rest_arg) {
 	    struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-	    keyword->rest_start = get_dyna_var_idx_at_raw(iseq, args->kw_rest_arg->nd_vid);
+	    keyword->rest_start = arg_size++;
 	    iseq->body->param.keyword = keyword;
 	    iseq->body->param.flags.has_kwrest = TRUE;
 	}
+
+	if (block_id) {
+	    iseq->body->param.block_start = arg_size++;
+	    iseq->body->param.flags.has_block = TRUE;
+	}
+
+	iseq_calc_param_size(iseq);
+	iseq->body->param.size = arg_size;
 
 	if (args->pre_init) { /* m_init */
 	    COMPILE_POPPED(optargs, "init arguments (m)", args->pre_init);
@@ -1685,23 +1713,6 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 	if (args->post_init) { /* p_init */
 	    COMPILE_POPPED(optargs, "init arguments (p)", args->post_init);
 	}
-
-	if (rest_id) {
-	    iseq->body->param.rest_start = get_dyna_var_idx_at_raw(iseq, rest_id);
-	    iseq->body->param.flags.has_rest = TRUE;
-	    assert(iseq->body->param.rest_start != -1);
-
-	    if (iseq->body->param.post_start == 0) { /* TODO: why that? */
-		iseq->body->param.post_start = iseq->body->param.rest_start + 1;
-	    }
-	}
-
-	if (block_id) {
-	    iseq->body->param.block_start = get_dyna_var_idx_at_raw(iseq, block_id);
-	    iseq->body->param.flags.has_block = TRUE;
-	}
-
-	iseq_calc_param_size(iseq);
 
 	if (iseq->body->type == ISEQ_TYPE_BLOCK) {
 	    if (iseq->body->param.flags.has_opt    == FALSE &&
