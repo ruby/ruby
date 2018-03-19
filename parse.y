@@ -4053,7 +4053,7 @@ kwrest_mark	: tPOW
 
 f_kwrest	: kwrest_mark tIDENTIFIER
 		    {
-			shadowing_lvar(p, get_id($2));
+			arg_var(p, shadowing_lvar(p, get_id($2)));
 		    /*%%%*/
 			$$ = $2;
 		    /*% %*/
@@ -9919,8 +9919,11 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	}
 
 	kw_bits = internal_id(p);
-	if (kw_rest_arg && is_junk_id(kw_rest_arg)) vtable_pop(p->lvtbl->args, 1);
-	vtable_pop(p->lvtbl->args, vtable_size(required_kw_vars) + vtable_size(kw_vars) + (block != 0));
+
+	/* reorder */
+	vtable_pop(p->lvtbl->args,
+		   vtable_size(required_kw_vars) + vtable_size(kw_vars)
+		   + (block != 0) + (kw_rest_arg != 0));
 
 	for (i=0; i<vtable_size(required_kw_vars); i++) arg_var(p, required_kw_vars->tbl[i]);
 	for (i=0; i<vtable_size(kw_vars); i++) arg_var(p, kw_vars->tbl[i]);
@@ -9935,9 +9938,6 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	args->kw_rest_arg->nd_cflag = kw_bits;
     }
     else if (kw_rest_arg) {
-	if (block) vtable_pop(p->lvtbl->args, 1); /* reorder */
-	arg_var(p, kw_rest_arg);
-	if (block) arg_var(p, block);
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
     }
 
