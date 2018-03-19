@@ -1498,18 +1498,24 @@ local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
     VALUE i;
     VALUE name;
     ID lid;
+    int idx;
 
     for (i = 0; i < level; i++) {
 	diseq = diseq->body->parent_iseq;
     }
-    lid = diseq->body->local_table[diseq->body->local_table_size - op - 1];
+    idx = diseq->body->local_table_size - (int)op - 1;
+    lid = diseq->body->local_table[idx];
     name = rb_id2str(lid);
     if (!name) {
-	name = rb_sprintf("?%d", diseq->body->local_table_size - (int)op);
+	name = rb_str_new_cstr("?");
     }
     else if (!rb_str_symname_p(name)) {
 	name = rb_str_inspect(name);
     }
+    else {
+	name = rb_str_dup(name);
+    }
+    rb_str_catf(name, "@%d", idx);
     return name;
 }
 
