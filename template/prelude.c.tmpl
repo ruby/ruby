@@ -86,9 +86,7 @@ Prelude.new(output && output[/\w+(?=_prelude.c\b)/] || 'prelude', ARGV, vpath).i
 % preludes.each {|i, prelude, lines, sub|
 
 %   name = prelude_name(*prelude)
-static const struct {
-  char L0[<%=name.size%><%=%>];
-} prelude_name<%=i%><%=%> = {"<%=c_esc(name)%>"};
+static const char prelude_name<%=i%><%=%>[] = "<%=c_esc(name)%>";
 static const struct {
 %   size = beg = 0
 %   lines.each_with_index {|(line, comment), n|
@@ -138,7 +136,8 @@ prelude_prefix_path(VALUE self)
 % end
 
 % unless preludes.empty?
-#define PRELUDE_STR(n) rb_usascii_str_new_static(prelude_##n.L0, sizeof(prelude_##n))
+#define PRELUDE_NAME(n) rb_usascii_str_new_static(prelude_name##n, sizeof(prelude_name##n)-1)
+#define PRELUDE_CODE(n) rb_usascii_str_new_static(prelude_code##n.L0, sizeof(prelude_code##n))
 #if defined __GNUC__ && __GNUC__ >= 5
 # pragma GCC diagnostic push
 # pragma GCC diagnostic error "-Wmissing-field-initializers"
@@ -189,8 +188,8 @@ prelude_require(VALUE self, VALUE nth)
 %   @preludes.each_value do |i, prelude, lines, sub|
 %     if sub
       case <%=i%><%=%>:
-	code = PRELUDE_STR(code<%=i%><%=%>);
-	name = PRELUDE_STR(name<%=i%><%=%>);
+	code = PRELUDE_CODE(<%=i%><%=%>);
+	name = PRELUDE_NAME(<%=i%><%=%>);
 	break;
 %     end
 %   end
@@ -222,7 +221,7 @@ Init_<%=@init_name%><%=%>(void)
 % end
 % preludes.each do |i, prelude, lines, sub|
 %   next if sub
-    prelude_eval(PRELUDE_STR(code<%=i%><%=%>), PRELUDE_STR(name<%=i%><%=%>), 1);
+    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), 1);
 % end
 % if @have_sublib
     rb_gc_force_recycle(prelude);
