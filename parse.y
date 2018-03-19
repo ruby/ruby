@@ -2721,13 +2721,15 @@ k_def		: keyword_def
 
 k_rescue	: keyword_rescue
 		    {
-			token_info_warn(p, "rescue", p->token_info, &@$);
+			if (p->token_info && strcmp(p->token_info->token, "begin") == 0)
+			    token_info_warn(p, "rescue", p->token_info, &@$);
 		    }
 		;
 
 k_ensure	: keyword_ensure
 		    {
-			token_info_warn(p, "ensure", p->token_info, &@$);
+			if (p->token_info && strcmp(p->token_info->token, "begin") == 0)
+			    token_info_warn(p, "ensure", p->token_info, &@$);
 		    }
 		;
 
