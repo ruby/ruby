@@ -1,6 +1,8 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
+if defined?(OpenSSL::TestUtils)
+
 class OpenSSL::TestHMAC < OpenSSL::TestCase
   def test_hmac
     # RFC 2202 2. Test Cases for HMAC-MD5
@@ -37,4 +39,6 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
     second = h1.update("test").hexdigest
     assert_equal first, second
   end
-end if defined?(OpenSSL::TestUtils)
+end
+
+end

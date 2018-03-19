@@ -13,7 +13,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     # @cert2   @ocsp_cert
 
     ca_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
-    @ca_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @ca_key = Fixtures.pkey("rsa1024")
     ca_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
@@ -22,7 +22,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       ca_subj, @ca_key, 1, ca_exts, nil, nil)
 
     cert_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA2")
-    @cert_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @cert_key = Fixtures.pkey("rsa1024")
     cert_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
@@ -31,14 +31,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       cert_subj, @cert_key, 5, cert_exts, @ca_cert, @ca_key)
 
     cert2_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCert")
-    @cert2_key = OpenSSL::TestUtils::TEST_KEY_RSA1024
+    @cert2_key = Fixtures.pkey("rsa1024")
     cert2_exts = [
     ]
     @cert2 = OpenSSL::TestUtils.issue_cert(
       cert2_subj, @cert2_key, 10, cert2_exts, @cert, @cert_key)
 
     ocsp_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCAOCSP")
-    @ocsp_key = OpenSSL::TestUtils::TEST_KEY_RSA2048
+    @ocsp_key = Fixtures.pkey("rsa2048")
     ocsp_exts = [
       ["extendedKeyUsage", "OCSPSigning", true],
     ]
@@ -122,7 +122,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
     assert_equal true, req.verify([@cert], store, OpenSSL::OCSP::NOINTERN)
     ret = req.verify([@cert], store)
-    if ret || OpenSSL::OPENSSL_VERSION =~ /OpenSSL/ && OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10002000
+    if ret || openssl?(1, 0, 2) || libressl?(2, 4, 2)
       assert_equal true, ret
     else
       # RT2560; OCSP_request_verify() does not find signer cert from 'certs' when

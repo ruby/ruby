@@ -55,6 +55,7 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_equal(false, bn1.eql?(bn3))
     assert_equal(bn1.hash, bn2.hash)
     assert_not_equal(bn3.hash, bn1.hash)
+    assert_instance_of(String, bn1.hash.to_s)
   end
 end
 

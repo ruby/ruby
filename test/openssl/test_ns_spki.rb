@@ -17,8 +17,8 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
   end
 
   def test_build_data
-    key1 = OpenSSL::TestUtils::TEST_KEY_RSA1024
-    key2 = OpenSSL::TestUtils::TEST_KEY_RSA2048
+    key1 = Fixtures.pkey("rsa1024")
+    key2 = Fixtures.pkey("rsa2048")
     spki = OpenSSL::Netscape::SPKI.new
     spki.challenge = "RandomString"
     spki.public_key = key1.public_key

@@ -1,9 +1,9 @@
 # frozen_string_literal: false
 require_relative 'utils'
-require 'stringio'
+
+if defined?(OpenSSL::TestUtils)
 
 class OpenSSL::TestBuffering < OpenSSL::TestCase
-
   class IO
     include OpenSSL::Buffering
 
@@ -85,5 +85,6 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
     end
     assert_equal([97, 98, 99], res)
   end
+end
 
-end if defined?(OpenSSL::TestUtils)
+end

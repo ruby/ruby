@@ -1,8 +1,9 @@
 # frozen_string_literal: false
 require_relative 'utils'
 
-class OpenSSL::TestEngine < OpenSSL::TestCase
+if defined?(OpenSSL::TestUtils) && defined?(OpenSSL::Engine)
 
+class OpenSSL::TestEngine < OpenSSL::TestCase
   def test_engines_free # [ruby-dev:44173]
     with_openssl <<-'end;'
       OpenSSL::Engine.load("openssl")
@@ -51,32 +52,28 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
   end
 
   def test_openssl_engine_cipher_rc4
-    with_openssl <<-'end;'
-      begin
-        engine = get_engine
-        algo = "RC4" #AES is not supported by openssl Engine (<=1.0.0e)
-        data = "a" * 1000
-        key = OpenSSL::Random.random_bytes(16)
-        # suppress message from openssl Engine's RC4 cipher [ruby-core:41026]
-        err_back = $stderr.dup
-        $stderr.reopen(IO::NULL)
-        encrypted = crypt_data(data, key, :encrypt) { engine.cipher(algo) }
-        decrypted = crypt_data(encrypted, key, :decrypt) { OpenSSL::Cipher.new(algo) }
-        assert_equal(data, decrypted)
-      ensure
-        if err_back
-          $stderr.reopen(err_back)
-          err_back.close
-        end
-      end
+    begin
+      OpenSSL::Cipher.new("rc4")
+    rescue OpenSSL::Cipher::CipherError
+      pend "RC4 is not supported"
+    end
+
+    with_openssl(<<-'end;', ignore_stderr: true)
+      engine = get_engine
+      algo = "RC4"
+      data = "a" * 1000
+      key = OpenSSL::Random.random_bytes(16)
+      encrypted = crypt_data(data, key, :encrypt) { engine.cipher(algo) }
+      decrypted = crypt_data(encrypted, key, :decrypt) { OpenSSL::Cipher.new(algo) }
+      assert_equal(data, decrypted)
     end;
   end
 
   private
 
   # this is required because OpenSSL::Engine methods change global state
-  def with_openssl(code)
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;")
+  def with_openssl(code, **opts)
+    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;", **opts)
       require #{__FILE__.dump}
       include OpenSSL::TestEngine::Utils
       #{code}
@@ -95,5 +92,6 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
       cipher.update(data) + cipher.final
     end
   end
+end
 
-end if defined?(OpenSSL::TestUtils) && defined?(OpenSSL::Engine)
+end

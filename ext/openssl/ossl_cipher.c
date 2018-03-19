@@ -631,13 +631,11 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     cipher.auth_tag = string -> string
  *
- *  Sets the authentication tag to verify the contents of the
- *  ciphertext. The tag must be set after calling Cipher#decrypt,
- *  Cipher#key= and Cipher#iv=, but before assigning the associated
- *  authenticated data using Cipher#auth_data= and of course, before
- *  decrypting any of the ciphertext. After all decryption is
- *  performed, the tag is verified automatically in the call to
- *  Cipher#final.
+ *  Sets the authentication tag to verify the integrity of the ciphertext.
+ *  This can be called only when the cipher supports AE. The tag must be set
+ *  after calling Cipher#decrypt, Cipher#key= and Cipher#iv=, but before
+ *  calling Cipher#final. After all decryption is performed, the tag is
+ *  verified automatically in the call to Cipher#final.
  *
  *  For OCB mode, the tag length must be supplied with #auth_tag_len=
  *  beforehand.

@@ -306,7 +306,6 @@ class OpenSSL::TestX509Name < OpenSSL::TestCase
   end
 
   def test_add_entry_street
-    return if OpenSSL::OPENSSL_VERSION_NUMBER < 0x009080df # 0.9.8m
     # openssl/crypto/objects/obj_mac.h 1.83
     dn = [
       ["DC", "org"],
