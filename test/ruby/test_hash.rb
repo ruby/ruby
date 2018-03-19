@@ -1497,6 +1497,13 @@ class TestHash < Test::Unit::TestCase
     assert_equal(%w(1.0  2.1  3.2), y.values_at(:a, :b, :c))
   end
 
+  def test_broken_hash_value
+    bug14218 = '[ruby-core:84395] [Bug #14218]'
+
+    assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; a < 0 && b < 0 && a + b > 0}, bug14218)
+    assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; 0 + a + b != 0 + b + a}, bug14218)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)
