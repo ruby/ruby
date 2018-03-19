@@ -2719,17 +2719,27 @@ k_def		: keyword_def
 		    }
 		;
 
+k_do		: keyword_do
+		    {
+			token_info_push(p, "do", &@$);
+		    }
+		;
+
+k_do_block	: keyword_do_block
+		    {
+			token_info_push(p, "do", &@$);
+		    }
+		;
+
 k_rescue	: keyword_rescue
 		    {
-			if (p->token_info && strcmp(p->token_info->token, "begin") == 0)
-			    token_info_warn(p, "rescue", p->token_info, &@$);
+			token_info_warn(p, "rescue", p->token_info, &@$);
 		    }
 		;
 
 k_ensure	: keyword_ensure
 		    {
-			if (p->token_info && strcmp(p->token_info->token, "begin") == 0)
-			    token_info_warn(p, "ensure", p->token_info, &@$);
+			token_info_warn(p, "ensure", p->token_info, &@$);
 		    }
 		;
 
@@ -3105,7 +3115,7 @@ lambda_body	: tLAMBEG compstmt '}'
 		    }
 		;
 
-do_block	: keyword_do_block do_body keyword_end
+do_block	: k_do_block do_body k_end
 		    {
 			$$ = $2;
 		    /*%%%*/
@@ -3235,7 +3245,7 @@ brace_block	: '{' brace_body '}'
 			nd_set_line($$, @1.end_pos.lineno);
 		    /*% %*/
 		    }
-		| keyword_do do_body keyword_end
+		| k_do do_body k_end
 		    {
 			$$ = $2;
 		    /*%%%*/
