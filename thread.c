@@ -392,7 +392,7 @@ unblock_function_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, in
 	}
 
 	native_mutex_lock(&th->interrupt_lock);
-    } while (RUBY_VM_INTERRUPTED_ANY(th->ec) &&
+    } while (!th->ec->raised_flag && RUBY_VM_INTERRUPTED_ANY(th->ec) &&
 	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
 
     VM_ASSERT(th->unblock.func == NULL);
