@@ -8442,11 +8442,14 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
     int code_index;
     VALUE *code = IBF_R(body->iseq_encoded, VALUE, iseq_size);
 
+    struct rb_iseq_constant_body *load_body = iseq->body;
     struct rb_call_info *ci_entries = iseq->body->ci_entries;
     struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
     struct rb_call_cache *cc_entries = iseq->body->cc_entries;
     union iseq_inline_storage_entry *is_entries = iseq->body->is_entries;
 
+    load_body->iseq_encoded = code;
+    load_body->iseq_size = 0;
     for (code_index=0; code_index<iseq_size;) {
 	const VALUE insn = code[code_index++];
 	const char *types = insn_op_types(insn);
@@ -8487,14 +8490,15 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		break;
 	      default:
 		/* code[code_index] = op; */
-		break;
+		continue;
 	    }
+	    load_body->iseq_size = code_index + 1;
 	}
 	if (insn_len(insn) != op_index+1) {
 	    rb_raise(rb_eRuntimeError, "operand size mismatch");
 	}
     }
-
+    load_body->iseq_size = code_index;
 
     return code;
 }
@@ -8793,7 +8797,6 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     /* memcpy(load_body, load->buff + offset, sizeof(*load_body)); */
     load_body->type = body->type;
     load_body->stack_max = body->stack_max;
-    load_body->iseq_size = body->iseq_size;
     load_body->param = body->param;
     load_body->local_table_size = body->local_table_size;
     load_body->is_size = body->is_size;
@@ -8852,7 +8855,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->parent_iseq          = ibf_load_iseq(load, body->parent_iseq);
     load_body->local_iseq           = ibf_load_iseq(load, body->local_iseq);
 
-    load_body->iseq_encoded         = ibf_load_code(load, iseq, body);
+    ibf_load_code(load, iseq, body);
 
     rb_iseq_translate_threaded_code(iseq);
 }
