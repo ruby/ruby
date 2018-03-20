@@ -217,7 +217,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
     if (iseq->body) {
 	const struct rb_iseq_constant_body *body = iseq->body;
 
-	if(FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
+	if (FL_TEST(iseq, ISEQ_MARKABLE_ISEQ)) {
 	    rb_iseq_each_value(iseq, each_insn_value, NULL);
 	}
 
