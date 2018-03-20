@@ -803,7 +803,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     }
     obj = *argv++;
     mid = SYM2ID(callback_arg);
-    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid);
+    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid, NULL);
     th = GET_THREAD();
     if (!NIL_P(blockarg)) {
 	vm_passed_block_handler_set(th, blockarg);
