@@ -239,7 +239,7 @@ node_children(rb_ast_t *ast, NODE *node)
 	    return ary;
 	}
       case NODE_MASGN:
-        if (node->nd_args != NODE_SPECIAL_NO_NAME_REST) {
+        if (NODE_NAMED_REST_P(node->nd_args)) {
 	    return rb_ary_new_from_node_args(ast, 3, node->nd_value, node->nd_head, node->nd_args);
         }
 	return rb_ary_new_from_node_args(ast, 2, node->nd_value, node->nd_head);
@@ -253,7 +253,7 @@ node_children(rb_ast_t *ast, NODE *node)
 	goto asgn;
       case NODE_CVASGN:
       asgn:
-        if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+        if (NODE_REQUIRED_KEYWORD_P(node)) {
 	    return rb_ary_new_from_node_args(ast, 0);
         }
 	return rb_ary_new_from_node_args(ast, 1, node->nd_value);
@@ -404,7 +404,7 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_KW_ARG:
 	return rb_ary_new_from_node_args(ast, 2, node->nd_body, node->nd_next);
       case NODE_POSTARG:
-	if (node->nd_1st != NODE_SPECIAL_NO_NAME_REST) {
+	if (NODE_NAMED_REST_P(node->nd_1st)) {
 	    return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
 	}
 	return rb_ary_new_from_node_args(ast, 1, node->nd_2nd);

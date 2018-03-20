@@ -342,7 +342,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("example: a, b = foo");
 	F_NODE(nd_value, "rhsn");
 	F_NODE(nd_head, "lhsn");
-	if (node->nd_args != NODE_SPECIAL_NO_NAME_REST) {
+	if (NODE_NAMED_REST_P(node->nd_args)) {
 	    LAST_NODE;
 	    F_NODE(nd_args, "splatn");
 	}
@@ -356,7 +356,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: [nd_vid](lvar) = [nd_value]");
 	ANN("example: x = foo");
 	F_ID(nd_vid, "local variable");
-	if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	if (NODE_REQUIRED_KEYWORD_P(node)) {
 	    F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
 	}
 	else {
@@ -377,7 +377,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("format: [nd_vid](current dvar) = [nd_value]");
 	ANN("example: 1.times { x = foo }");
 	F_ID(nd_vid, "local variable");
-	if (node->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	if (NODE_REQUIRED_KEYWORD_P(node)) {
 	    F_MSG(nd_value, "rvalue", "NODE_SPECIAL_REQUIRED_KEYWORD (required keyword argument)");
 	}
 	else {
@@ -955,7 +955,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	ANN("post arguments");
 	ANN("format: *[nd_1st], [nd_2nd..] = ..");
 	ANN("example: a, *rest, z = foo");
-	if (node->nd_1st != NODE_SPECIAL_NO_NAME_REST) {
+	if (NODE_NAMED_REST_P(node->nd_1st)) {
 	    F_NODE(nd_1st, "rest argument");
 	}
 	else {

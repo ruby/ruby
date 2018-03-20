@@ -469,7 +469,9 @@ typedef struct RNode {
 #define NEW_ATTRASGN(r,m,a,loc) NEW_NODE(NODE_ATTRASGN,r,m,a,loc)
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
+#define NODE_REQUIRED_KEYWORD_P(node) ((node)->nd_value == NODE_SPECIAL_REQUIRED_KEYWORD)
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
+#define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
