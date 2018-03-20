@@ -2196,10 +2196,10 @@ class TestIO < Test::Unit::TestCase
 
   def test_read_command
     assert_equal("foo\n", IO.read("|echo foo"))
-    assert_warn(/invoke external command/) do
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
       File.read("|#{EnvUtil.rubybin} -e puts")
     end
-    assert_warn(/invoke external command/) do
+    assert_raise(Errno::ENOENT, Errno::EINVAL) do
       File.binread("|#{EnvUtil.rubybin} -e puts")
     end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
