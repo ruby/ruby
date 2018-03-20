@@ -9955,10 +9955,9 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	int i;
 
 	while (kwn) {
-	    NODE *val_node = kwn->nd_body->nd_value;
 	    ID vid = kwn->nd_body->nd_vid;
 
-	    if (val_node == NODE_SPECIAL_REQUIRED_KEYWORD) {
+	    if (NODE_REQUIRED_KEYWORD_P(kwn->nd_body)) {
 		vtable_add(required_kw_vars, vid);
 	    }
 	    else {

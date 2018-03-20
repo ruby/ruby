@@ -4088,7 +4088,7 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
     const NODE *rhsn = node->nd_value;
     const NODE *splatn = node->nd_args;
     const NODE *lhsn = node->nd_head;
-    int lhs_splat = (splatn && splatn != NODE_SPECIAL_NO_NAME_REST) ? 1 : 0;
+    int lhs_splat = (splatn && NODE_NAMED_REST_P(splatn)) ? 1 : 0;
 
     if (!popped || splatn || !compile_massign_opt(iseq, ret, rhsn, lhsn)) {
 	int llen = 0;
@@ -4145,12 +4145,12 @@ compile_massign(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
 		const NODE *postn = splatn->nd_2nd;
 		const NODE *restn = splatn->nd_1st;
 		int num = (int)postn->nd_alen;
-		int flag = 0x02 | ((restn == NODE_SPECIAL_NO_NAME_REST) ? 0x00 : 0x01);
+		int flag = 0x02 | (NODE_NAMED_REST_P(restn) ? 0x01 : 0x00);
 
 		ADD_INSN2(ret, nd_line(splatn), expandarray,
 			  INT2FIX(num), INT2FIX(flag));
 
-		if (restn != NODE_SPECIAL_NO_NAME_REST) {
+		if (NODE_NAMED_REST_P(restn)) {
 		    CHECK(compile_massign_lhs(iseq, ret, restn));
 		}
 		while (postn) {
