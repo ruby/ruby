@@ -1652,6 +1652,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; 0 + a + b != 0 + b + a}, bug14218)
   end
 
+  def test_path_to_key
+    x = @cls[x: 3, y: [1,2,3], z: @cls[a: @cls[w: 100]]]
+    y = @cls[]
+
+    assert_equal([:z, :a], x.path_to_key(:w))
+    assert_equal([], y.path_to_key(:w))
+    assert_equal([], y.path_to_key(:inexistent))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)

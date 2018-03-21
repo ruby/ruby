@@ -4511,6 +4511,49 @@ env_update(VALUE env, VALUE hash)
 }
 
 /*
+ * call-seq:
+ *   hsh.path_to_key(key)   -> array
+ *
+ * Return an array containing the path towards getting to the given key.
+ *
+ *   h = { x: 3, y: [1,2,3], z: { w: { a: 1000}} }
+ *   h.path_to_key(:a)  #=> [:z, :w]
+ */
+static VALUE
+rb_hash_path_to_key(VALUE hash, VALUE key)
+{
+    VALUE path = rb_ary_new2(0);
+    VALUE prev_hsh = rb_hash_new();
+
+    VALUE keys;
+    VALUE curr_key;
+    VALUE curr_element;
+
+    while(!rb_eql(hash, Qnil) && !rb_hash_eql(prev_hsh, hash)){
+        keys = rb_hash_keys(hash);
+        prev_hsh = hash;
+
+        for (int i = 0; i < RARRAY_LEN(keys); ++i)
+        {
+            curr_key = RARRAY_AREF(keys, i);
+
+            if(rb_eql(key, curr_key))
+                return path;
+
+            rb_ary_push(path, curr_key);
+
+            curr_element = rb_hash_aref(hash, curr_key);
+
+            if (RB_TYPE_P(curr_element, T_HASH))
+                hash = curr_element;
+            else
+                path = rb_ary_new2(0);
+        }
+    }
+    return path;
+}
+
+/*
  *  A Hash is a dictionary-like collection of unique keys and their values.
  *  Also called associative arrays, they are similar to Arrays, but where an
  *  Array uses integers as its index, a Hash allows you to use any object
@@ -4710,6 +4753,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "include?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash, "member?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash, "has_key?", rb_hash_has_key, 1);
+    rb_define_method(rb_cHash, "path_to_key", rb_hash_path_to_key, 1);
     rb_define_method(rb_cHash, "has_value?", rb_hash_has_value, 1);
     rb_define_method(rb_cHash, "key?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash, "value?", rb_hash_has_value, 1);
