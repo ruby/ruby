@@ -1661,6 +1661,13 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], y.path_to_key(:inexistent))
   end
 
+  def test_path_to_key_recursive_hash
+    x = @cls[]
+    x[:b] = x
+
+    assert_equal([], x.path_to_key(:inexistent))
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)

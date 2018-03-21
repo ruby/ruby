@@ -4540,9 +4540,12 @@ rb_hash_path_to_key(VALUE hash, VALUE key)
             if(rb_eql(key, curr_key))
                 return path;
 
-            rb_ary_push(path, curr_key);
-
             curr_element = rb_hash_aref(hash, curr_key);
+
+            if (rb_hash_eql(hash, curr_element))
+                return path;
+
+            rb_ary_push(path, curr_key);
 
             if (RB_TYPE_P(curr_element, T_HASH))
                 hash = curr_element;
