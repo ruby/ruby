@@ -9141,8 +9141,7 @@ new_regexp_gen(struct parser_params *parser, NODE *node, int options)
 		if (reg_fragment_check(tail, options) && prev && !NIL_P(prev->nd_lit)) {
 		    VALUE lit = prev == node ? prev->nd_lit : prev->nd_head->nd_lit;
 		    if (!literal_concat0(parser, lit, tail)) {
-			node = 0;
-			break;
+			return NEW_NIL(); /* dummy node on error */
 		    }
 		    rb_str_resize(tail, 0);
 		    prev->nd_next = list->nd_next;
