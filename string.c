@@ -7641,8 +7641,8 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
  *
  *  If <i>pattern</i> is a <code>String</code>, then its contents are used as
  *  the delimiter when splitting <i>str</i>. If <i>pattern</i> is a single
- *  space, <i>str</i> is split on whitespace, with leading whitespace and runs
- *  of contiguous whitespace characters ignored.
+ *  space, <i>str</i> is split on whitespace, with leading and trailing
+ *  whitespace and runs of contiguous whitespace characters ignored.
  *
  *  If <i>pattern</i> is a <code>Regexp</code>, <i>str</i> is divided where the
  *  pattern matches. Whenever the pattern matches a zero-length string,
@@ -7665,8 +7665,8 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
  *  When the input +str+ is empty an empty Array is returned as the string is
  *  considered to have no fields to split.
  *
- *     " now's  the time".split        #=> ["now's", "the", "time"]
- *     " now's  the time".split(' ')   #=> ["now's", "the", "time"]
+ *     " now's  the time ".split       #=> ["now's", "the", "time"]
+ *     " now's  the time ".split(' ')  #=> ["now's", "the", "time"]
  *     " now's  the time".split(/ /)   #=> ["", "now's", "", "the", "time"]
  *     "1, 2.34,56, 7".split(%r{,\s*}) #=> ["1", "2.34", "56", "7"]
  *     "hello".split(//)               #=> ["h", "e", "l", "l", "o"]
