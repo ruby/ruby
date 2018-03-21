@@ -5642,7 +5642,14 @@ tokadd_string(struct parser_params *p,
 	    switch (c) {
 	      case '\n':
 		if (func & STR_FUNC_QWORDS) break;
-		if (func & STR_FUNC_EXPAND) continue;
+		if (func & STR_FUNC_EXPAND) {
+		    if (!(func & STR_FUNC_INDENT) || (p->heredoc_indent < 0))
+			continue;
+		    if (c == term) {
+			c = '\\';
+			goto terminate;
+		    }
+		}
 		tokadd(p, '\\');
 		break;
 
@@ -5723,6 +5730,7 @@ tokadd_string(struct parser_params *p,
         }
 	tokadd(p, c);
     }
+  terminate:
     if (enc) *encp = enc;
     return c;
 }
