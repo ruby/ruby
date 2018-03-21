@@ -406,8 +406,8 @@ class TestISeq < Test::Unit::TestCase
       skip e.message if /compile with coverage/ =~ e.message
       raise
     end
-    iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
     skip "trace events does not load correctly since r62851"
+    iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
     assert_equal(iseq.to_a, iseq2.to_a)
   end
 end
