@@ -479,7 +479,7 @@ prepare_iseq_build(rb_iseq_t *iseq,
 }
 
 #if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
-static void validate_get_insn_info(rb_iseq_t *iseq);
+static void validate_get_insn_info(const rb_iseq_t *iseq);
 #endif
 
 void
@@ -1576,7 +1576,7 @@ get_insn_info(const rb_iseq_t *iseq, size_t pos)
 
 #if VM_CHECK_MODE > 0 && VM_INSN_INFO_TABLE_IMPL > 0
 static void
-validate_get_insn_info(rb_iseq_t *iseq)
+validate_get_insn_info(const rb_iseq_t *iseq)
 {
     size_t i;
     for (i = 0; i < iseq->body->iseq_size; i++) {
