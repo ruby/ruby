@@ -946,7 +946,25 @@ module URI
     end
 
     #
-    # Checks if URI has a path
+    # Returns true if URI is hierarchical
+    #
+    # == Description
+    #
+    # URI has components listed in order of decreashing signficance from left to right
+    # see RFC3986 https://tools.ietf.org/html/rfc3986 1.2.3
+    #
+    # == Usage
+    #
+    #   require 'uri'
+    #
+    #   uri = URI.parse("http://my.example.com/")
+    #   => #<URI::HTTP http://my.example.com/>
+    #   uri.hierarchical?
+    #   # => true
+    #   uri = URI.parse("mailto:joe@example.com")
+    #   => #<URI::MailTo mailto:joe@example.com>
+    #   uri.hierarchical?
+    #   # => false
     #
     def hierarchical?
       if @path
@@ -957,7 +975,7 @@ module URI
     end
 
     #
-    # Checks if URI is an absolute one
+    # Returns true if URI has a scheme (e.g. http:// or https://) specified
     #
     def absolute?
       if @scheme
@@ -969,7 +987,7 @@ module URI
     alias absolute absolute?
 
     #
-    # Checks if URI is relative
+    # Returns true if URI does not have a scheme (e.g. http:// or https://) specified
     #
     def relative?
       !absolute?
