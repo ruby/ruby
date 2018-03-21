@@ -2789,9 +2789,7 @@ env_clone(const rb_env_t *env, const rb_cref_t *cref)
  *  call-seq:
  *     prc.binding    -> binding
  *
- *  Returns the binding associated with <i>prc</i>. Note that
- *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
- *  <code>Binding</code> object as its second parameter.
+ *  Returns the binding associated with <i>prc</i>.
  *
  *     def fred(param)
  *       proc {}
