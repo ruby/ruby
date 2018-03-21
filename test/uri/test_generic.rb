@@ -774,6 +774,24 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal 'http://example', uri.to_s
   end
 
+  def test_hierarchical
+    hierarchical = URI.parse('http://a.b.c/example')
+    opaque = URI.parse('mailto:mduerst@ifi.unizh.ch')
+
+    assert hierarchical.hierarchical?
+    refute opaque.hierarchical?
+  end
+
+  def test_absolute
+    abs_uri = URI.parse('http://a.b.c/')
+    not_abs = URI.parse('a.b.c')
+
+    refute not_abs.absolute?
+
+    assert abs_uri.absolute
+    assert abs_uri.absolute?
+  end
+
   def test_ipv6
     assert_equal("[::1]", URI("http://[::1]/bar/baz").host)
     assert_equal("::1", URI("http://[::1]/bar/baz").hostname)
