@@ -6301,7 +6301,13 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 	return 0;
     }
     bol = was_bol(p);
-    if (bol && whole_match_p(p, eos, len, indent)) {
+    /* `heredoc_line_indent == -1` means
+     * - "after an interpolation in the same line", or
+     * - "in a continuing line"
+     */
+    if (bol &&
+	(p->heredoc_line_indent != -1 || (p->heredoc_line_indent = 0)) &&
+	whole_match_p(p, eos, len, indent)) {
 	dispatch_heredoc_end(p);
 	heredoc_restore(p, &p->lex.strterm->u.heredoc);
 	p->lex.strterm = 0;
@@ -6371,6 +6377,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		goto restore;
 	    }
 	    if (c != '\n') {
+		if (c == '\\') p->heredoc_line_indent = -1;
 	      flush:
 		str = STR_NEW3(tok(p), toklen(p), enc, func);
 	      flush_str:
