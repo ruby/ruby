@@ -982,11 +982,18 @@ CODE
       "\u{1f469 200d 2764 fe0f 200d 1f469}",
     ].each do |g|
       assert_equal [g], g.each_grapheme_cluster.to_a
+      assert_equal 1, g.each_grapheme_cluster.size
     end
 
-    assert_equal ["\u000A", "\u0308"], "\u{a 308}".each_grapheme_cluster.to_a
-    assert_equal ["\u000D", "\u0308"], "\u{d 308}".each_grapheme_cluster.to_a
-    assert_equal ["a", "b", "c"], "abc".b.each_grapheme_cluster.to_a
+    [
+      ["\u{a 308}", ["\u000A", "\u0308"]],
+      ["\u{d 308}", ["\u000D", "\u0308"]],
+      ["abc", ["a", "b", "c"]],
+    ].each do |str, grapheme_clusters|
+      assert_equal grapheme_clusters, str.each_grapheme_cluster.to_a
+      assert_equal grapheme_clusters.size, str.each_grapheme_cluster.size
+    end
+
     s = ("x"+"\u{10ABCD}"*250000)
     assert_empty(s.each_grapheme_cluster {s.clear})
   end
