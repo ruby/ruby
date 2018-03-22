@@ -1273,10 +1273,8 @@ rb_complex_finite_p(VALUE self)
  * call-seq:
  *    cmp.infinite?  ->  nil or 1
  *
- * Returns values corresponding to the value of +cmp+'s magnitude:
- *
- * +finite+::    +nil+
- * ++Infinity+:: ++1+
+ * Returns +1+ if +cmp+'s real or imaginary value is an infinite number,
+ * otherwise returns +nil+.
  *
  *  For example:
  *
