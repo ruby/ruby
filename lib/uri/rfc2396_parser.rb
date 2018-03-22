@@ -329,7 +329,9 @@ module URI
     # Removes escapes from +str+
     #
     def unescape(str, escaped = @regexp[:ESCAPED])
-      str.gsub(escaped) { [$&[1, 2]].pack('H2').force_encoding(str.encoding) }
+      enc = str.encoding
+      enc = Encoding::UTF_8 if enc == Encoding::US_ASCII
+      str.gsub(escaped) { [$&[1, 2]].pack('H2').force_encoding(enc) }
     end
 
     @@to_s = Kernel.instance_method(:to_s)
