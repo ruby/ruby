@@ -220,7 +220,7 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     else {
 	if (!NIL_P(pass)) passwd = StringValuePtr(pass);
 	arg = ossl_to_der_if_possible(arg);
-	in = ossl_obj2bio(arg);
+	in = ossl_obj2bio(&arg);
 	rsa = PEM_read_bio_RSAPrivateKey(in, NULL, ossl_pem_passwd_cb, passwd);
 	if (!rsa) {
 	    OSSL_BIO_reset(in);

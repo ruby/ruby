@@ -188,7 +188,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
         	ec = EC_KEY_new();
         	group = arg;
         } else {
-            BIO *in = ossl_obj2bio(arg);
+            BIO *in = ossl_obj2bio(&arg);
 
             if (!NIL_P(pass)) {
 		passwd = StringValuePtr(pass);
@@ -792,7 +792,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
             if ((group = EC_GROUP_dup(arg1_group)) == NULL)
                 ossl_raise(eEC_GROUP, "EC_GROUP_dup");
         } else {
-            BIO *in = ossl_obj2bio(arg1);
+            BIO *in = ossl_obj2bio(&arg1);
 
             group = PEM_read_bio_ECPKParameters(in, NULL, NULL, NULL);
             if (!group) {
@@ -1307,7 +1307,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
 
             point = EC_POINT_bn2point(group, bn, NULL, ossl_bn_ctx);
         } else {
-            BIO *in = ossl_obj2bio(arg1);
+            BIO *in = ossl_obj2bio(&arg1);
 
 /* BUG: finish me */
 

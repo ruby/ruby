@@ -115,7 +115,7 @@ ossl_x509crl_initialize(int argc, VALUE *argv, VALUE self)
 	return self;
     }
     arg = ossl_to_der_if_possible(arg);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     crl = PEM_read_bio_X509_CRL(in, &x, NULL, NULL);
     DATA_PTR(self) = x;
     if (!crl) {

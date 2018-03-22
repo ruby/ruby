@@ -13,46 +13,20 @@
 #endif
 
 BIO *
-ossl_obj2bio(VALUE obj)
+ossl_obj2bio(volatile VALUE *pobj)
 {
+    VALUE obj = *pobj;
     BIO *bio;
 
-    if (RB_TYPE_P(obj, T_FILE)) {
-	rb_io_t *fptr;
-	FILE *fp;
-	int fd;
-
-	GetOpenFile(obj, fptr);
-	rb_io_check_readable(fptr);
-	if ((fd = rb_cloexec_dup(FPTR_TO_FD(fptr))) < 0){
-	    rb_sys_fail(0);
-	}
-        rb_update_max_fd(fd);
-	if (!(fp = fdopen(fd, "r"))){
-	    int e = errno;
-	    close(fd);
-	    rb_syserr_fail(e, 0);
-	}
-	if (!(bio = BIO_new_fp(fp, BIO_CLOSE))){
-	    fclose(fp);
-	    ossl_raise(eOSSLError, NULL);
-	}
-    }
-    else {
-	StringValue(obj);
-	bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LENINT(obj));
-	if (!bio) ossl_raise(eOSSLError, NULL);
-    }
+    if (RB_TYPE_P(obj, T_FILE))
+	obj = rb_funcallv(obj, rb_intern("read"), 0, NULL);
+    StringValue(obj);
+    bio = BIO_new_mem_buf(RSTRING_PTR(obj), RSTRING_LENINT(obj));
+    if (!bio)
+	ossl_raise(eOSSLError, "BIO_new_mem_buf");
+    *pobj = obj;
 
     return bio;
-}
-
-BIO *
-ossl_protect_obj2bio(VALUE obj, int *status)
-{
-     BIO *ret = NULL;
-     ret = (BIO*)rb_protect((VALUE(*)_((VALUE)))ossl_obj2bio, obj, status);
-     return ret;
 }
 
 VALUE

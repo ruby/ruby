@@ -1,3 +1,36 @@
+Thu Mar 22 12:28:23 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	merge https://github.com/ruby/openssl/commit/3af2635f117f8da563d180bc1c58702aecb16e0c
+	patched by Kazuki Yamaguchi <k@rhe.jp>
+
+	bio: prevent possible GC issue in ossl_obj2bio()
+
+	Prevent the new object created by StringValue() from being GCed.
+	Luckily, as none of the callers of ossl_obj2bio() reads from the
+	returned BIO after possible triggering GC, this has not been a real
+	problem.
+
+	As a bonus, ossl_protect_obj2bio() function which is no longer used
+	anywhere is removed.
+
+	merge https://github.com/ruby/openssl/commit/f842b0d5c5e37527c11954a4b7a98c8d9cc57865
+	patched by Kazuki Yamaguchi <k@rhe.jp>
+
+	bio: do not use the FILE BIO method in ossl_obj2bio()
+
+	Read everything from an IO object into a String first and use the
+	memory buffer BIO method just as we do for String inputs.
+
+	For MSVC builds, the FILE BIO method uses the "UPLINK" interface that
+	requires the application to provide OPENSSL_Applink() function. For us,
+	the "application" means ruby.exe, in which we can't do anything. As a
+	workaround, avoid using the FILE BIO method at all.
+
+	Usually private keys or X.509 certificates aren't that large and the
+	temporarily increased memory usage hopefully won't be an issue.
+
+	ext/openssl/ossl_version.h (OpenSSL::VERSION): bump to 1.1.1.
+
 Thu Mar 22 11:24:43 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (set_pioinfo_extra): use more reliable way to search

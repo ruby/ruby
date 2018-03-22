@@ -215,6 +215,16 @@ class OpenSSL::TestX509Certificate < Test::Unit::TestCase
     assert_equal(true, cert.check_private_key(@rsa2048))
   end
 
+  def test_read_from_file
+    cert = issue_cert(@ca, @rsa2048, 1, Time.now, Time.now+3600, [],
+                      nil, nil, OpenSSL::Digest::SHA1.new)
+    Tempfile.create("cert") { |f|
+      f << cert.to_pem
+      f.rewind
+      assert_equal cert.to_der, OpenSSL::X509::Certificate.new(f).to_der
+    }
+  end
+
   private
 
   def certificate_error_returns_false

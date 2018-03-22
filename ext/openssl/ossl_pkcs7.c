@@ -193,7 +193,7 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     VALUE ret, data;
 
     ret = NewPKCS7(cPKCS7);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     out = NULL;
     pkcs7 = SMIME_read_PKCS7(in, &out);
     BIO_free(in);
@@ -225,7 +225,7 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     SafeGetPKCS7(pkcs7, p7);
     if(!NIL_P(data) && PKCS7_is_detached(p7))
 	flg |= PKCS7_DETACHED;
-    in = NIL_P(data) ? NULL : ossl_obj2bio(data);
+    in = NIL_P(data) ? NULL : ossl_obj2bio(&data);
     if(!(out = BIO_new(BIO_s_mem()))){
         BIO_free(in);
         ossl_raise(ePKCS7Error, NULL);
@@ -262,7 +262,7 @@ ossl_pkcs7_s_sign(int argc, VALUE *argv, VALUE klass)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     ret = NewPKCS7(cPKCS7);
-    in = ossl_obj2bio(data);
+    in = ossl_obj2bio(&data);
     if(NIL_P(certs)) x509s = NULL;
     else{
 	x509s = ossl_protect_x509_ary2sk(certs, &status);
@@ -318,7 +318,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
     else ciph = GetCipherPtr(cipher); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     ret = NewPKCS7(cPKCS7);
-    in = ossl_obj2bio(data);
+    in = ossl_obj2bio(&data);
     x509s = ossl_protect_x509_ary2sk(certs, &status);
     if(status){
 	BIO_free(in);
@@ -369,7 +369,7 @@ ossl_pkcs7_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "01", &arg) == 0)
 	return self;
     arg = ossl_to_der_if_possible(arg);
-    in = ossl_obj2bio(arg);
+    in = ossl_obj2bio(&arg);
     p7 = PEM_read_bio_PKCS7(in, &pkcs, NULL, NULL);
     if (!p7) {
 	OSSL_BIO_reset(in);
@@ -760,7 +760,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(indata)) indata = ossl_pkcs7_get_data(self);
-    in = NIL_P(indata) ? NULL : ossl_obj2bio(indata);
+    in = NIL_P(indata) ? NULL : ossl_obj2bio(&indata);
     if(NIL_P(certs)) x509s = NULL;
     else{
 	x509s = ossl_protect_x509_ary2sk(certs, &status);
@@ -827,7 +827,7 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
 	if(!PKCS7_content_new(pkcs7, NID_pkcs7_data))
 	    ossl_raise(ePKCS7Error, NULL);
     }
-    in = ossl_obj2bio(data);
+    in = ossl_obj2bio(&data);
     if(!(out = PKCS7_dataInit(pkcs7, NULL))) goto err;
     for(;;){
 	if((len = BIO_read(in, buf, sizeof(buf))) <= 0)
