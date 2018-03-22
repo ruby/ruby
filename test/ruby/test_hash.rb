@@ -1573,6 +1573,14 @@ class TestHash < Test::Unit::TestCase
 
     x.transform_keys!.with_index {|k, i| "#{k}.#{i}" }
     assert_equal(%w(a!.0 b!.1 c!.2), x.keys)
+
+    x = @cls[1 => :a, -1 => :b]
+    x.transform_keys! {|k| -k }
+    assert_equal([-1, :a, 1, :b], x.flatten)
+
+    x = @cls[true => :a, false => :b]
+    x.transform_keys! {|k| !k }
+    assert_equal([false, :a, true, :b], x.flatten)
   end
 
   def test_transform_values
