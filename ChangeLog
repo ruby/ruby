@@ -1,3 +1,10 @@
+Thu Mar 22 15:38:43 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	Removed the obstacle to running test-all with VC14.
+
+	* test/fiddle/test_import.rb (LIBC.fprintf): VC14's `fprintf` is very distinct
+	  name, then, just ignore this test.
+
 Thu Mar 22 12:28:23 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	merge https://github.com/ruby/openssl/commit/3af2635f117f8da563d180bc1c58702aecb16e0c
