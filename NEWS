@@ -59,6 +59,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * Enumerator::Lazy#filter is a new alias for Enumerator::Lazy#select [Feature #13784]
 
+* Exception
+
+  * Exception#full_message takes :highlight and :order options [Bug #14324]
+
 * Hash
 
   * Aliased methods:
