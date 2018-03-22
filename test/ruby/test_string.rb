@@ -989,9 +989,6 @@ CODE
     assert_equal ["a", "b", "c"], "abc".b.each_grapheme_cluster.to_a
     s = ("x"+"\u{10ABCD}"*250000)
     assert_empty(s.each_grapheme_cluster {s.clear})
-
-    assert_nil "\u{20 200d}".each_grapheme_cluster.size
-    assert_nil "\u{a 308}".each_grapheme_cluster.size
   end
 
   def test_grapheme_clusters
