@@ -8426,7 +8426,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 static VALUE
 rb_str_each_grapheme_cluster(VALUE str)
 {
-    RETURN_SIZED_ENUMERATOR(str, 0, 0, rb_str_each_char_size);
+    RETURN_ENUMERATOR(str, 0, 0);
     return rb_str_enumerate_grapheme_clusters(str, 0);
 }
 
