@@ -1,7 +1,7 @@
 require 'timeout'
 
 def progress(n = 5)
-  n.times {|i| print i; STDOUT.flush; sleep 1; i+= 1}
+  n.times {|i| print i; STDOUT.flush; sleep 1}
   puts "never reach"
 end
 
