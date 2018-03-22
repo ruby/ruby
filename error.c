@@ -886,7 +886,7 @@ static VALUE rb_eNOERROR;
 static ID id_cause, id_message, id_backtrace;
 static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
 static ID id_receiver, id_iseq, id_local_variables;
-static ID id_private_call_p;
+static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
 #define id_mesg idMesg
@@ -981,20 +981,75 @@ void rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALU
 
 /*
  * call-seq:
- *   exception.full_message  ->  string
+ *    Exception.to_tty?   ->  true or false
  *
- * Returns formatted string of <i>exception</i>.
+ * Returns +true+ if exception messages will be sent to a tty.
+ */
+static VALUE
+exc_s_to_tty_p(VALUE self)
+{
+    return rb_stderr_tty_p() ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq:
+ *   exception.full_message(highlight: bool, order: [:top or :bottom]) ->  string
+ *
+ * Returns formatted string of _exception_.
  * The returned string is formatted using the same format that Ruby uses
- * when printing an uncaught exceptions to stderr. So it may differ by
- * <code>$stderr.tty?</code> at the timing of a call.
+ * when printing an uncaught exceptions to stderr.
+ *
+ * If _highlight_ is +true+ the default error handler will send the
+ * messages to a tty.
+ *
+ * _order_ must be either of +:top+ or +:bottom+, and places the error
+ * message and the innermost backtrace come at the top or the bottom.
+ *
+ * The default values of these options depend on <code>$stderr</code>
+ * and its +tty?+ at the timing of a call.
  */
 
 static VALUE
-exc_full_message(VALUE exc)
+exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE str = rb_str_new2("");
-    VALUE errat = rb_get_backtrace(exc);
-    rb_error_write(exc, errat, str, Qnil, Qnil);
+    VALUE opt, str, errat;
+    enum {kw_highlight, kw_order, kw_max_};
+    static ID kw[kw_max_];
+    VALUE args[kw_max_] = {Qnil, Qnil};
+
+    rb_scan_args(argc, argv, "0:", &opt);
+    if (!NIL_P(opt)) {
+	if (!kw[0]) {
+#define INIT_KW(n) kw[kw_##n] = rb_intern_const(#n)
+	    INIT_KW(highlight);
+	    INIT_KW(order);
+#undef INIT_KW
+	}
+	rb_get_kwargs(opt, kw, 0, kw_max_, args);
+	switch (args[kw_highlight]) {
+	  default:
+	    rb_raise(rb_eArgError, "expected true or false as "
+		     "highlight: %+"PRIsVALUE, args[kw_highlight]);
+	  case Qundef: args[kw_highlight] = Qnil; break;
+	  case Qtrue: case Qfalse: case Qnil: break;
+	}
+	if (args[kw_order] == Qundef) {
+	    args[kw_order] = Qnil;
+	}
+	else {
+	    ID id = rb_check_id(&args[kw_order]);
+	    if (id == id_bottom) args[kw_order] = Qtrue;
+	    else if (id == id_top) args[kw_order] = Qfalse;
+	    else {
+		rb_raise(rb_eArgError, "expected :top or :down as "
+			 "order: %+"PRIsVALUE, args[kw_order]);
+	    }
+	}
+    }
+    str = rb_str_new2("");
+    errat = rb_get_backtrace(exc);
+
+    rb_error_write(exc, errat, str, args[kw_highlight], args[kw_order]);
     return str;
 }
 
@@ -2345,12 +2400,13 @@ Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
+    rb_define_singleton_method(rb_eException, "to_tty?", exc_s_to_tty_p, 0);
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "==", exc_equal, 1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_message, 0);
-    rb_define_method(rb_eException, "full_message", exc_full_message, 0);
+    rb_define_method(rb_eException, "full_message", exc_full_message, -1);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
     rb_define_method(rb_eException, "backtrace_locations", exc_backtrace_locations, 0);
@@ -2439,6 +2495,8 @@ Init_Exception(void)
     id_errno = rb_intern_const("errno");
     id_i_path = rb_intern_const("@path");
     id_warn = rb_intern_const("warn");
+    id_top = rb_intern_const("top");
+    id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
 }
 

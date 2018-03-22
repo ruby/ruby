@@ -1269,5 +1269,27 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_all?(message.lines) do |m|
       /\e\[\d[;\d]*m[^\e]*\n/ !~ m
     end
+
+    e = RuntimeError.new("testerror")
+    message = e.full_message(highlight: false)
+    assert_not_match(/\e/, message)
+
+    bt = ["test:100", "test:99", "test:98", "test:1"]
+    e = assert_raise(RuntimeError) {raise RuntimeError, "testerror", bt}
+
+    message = e.full_message(highlight: false, order: :top)
+    assert_not_match(/\e/, message)
+    assert_operator(message.count("\n"), :>, 2)
+    assert_operator(message, :start_with?, "test:100: testerror (RuntimeError)\n")
+    assert_operator(message, :end_with?, "test:1\n")
+
+    message = e.full_message(highlight: false, order: :bottom)
+    assert_not_match(/\e/, message)
+    assert_operator(message.count("\n"), :>, 2)
+    assert_operator(message, :start_with?, "Traceback (most recent call last):")
+    assert_operator(message, :end_with?, "test:100: testerror (RuntimeError)\n")
+
+    message = e.full_message(highlight: true)
+    assert_match(/\e/, message)
   end
 end
