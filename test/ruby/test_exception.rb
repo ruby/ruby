@@ -1277,19 +1277,35 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     bt = ["test:100", "test:99", "test:98", "test:1"]
     e = assert_raise(RuntimeError) {raise RuntimeError, "testerror", bt}
 
+    bottom = "test:100: testerror (RuntimeError)\n"
+    top = "test:1\n"
+    remark = "Traceback (most recent call last):"
+
     message = e.full_message(highlight: false, order: :top)
     assert_not_match(/\e/, message)
     assert_operator(message.count("\n"), :>, 2)
-    assert_operator(message, :start_with?, "test:100: testerror (RuntimeError)\n")
-    assert_operator(message, :end_with?, "test:1\n")
+    assert_operator(message, :start_with?, bottom)
+    assert_operator(message, :end_with?, top)
 
     message = e.full_message(highlight: false, order: :bottom)
     assert_not_match(/\e/, message)
     assert_operator(message.count("\n"), :>, 2)
-    assert_operator(message, :start_with?, "Traceback (most recent call last):")
-    assert_operator(message, :end_with?, "test:100: testerror (RuntimeError)\n")
+    assert_operator(message, :start_with?, remark)
+    assert_operator(message, :end_with?, bottom)
 
     message = e.full_message(highlight: true)
     assert_match(/\e/, message)
+
+    message = e.full_message
+    if Exception.to_tty?
+      assert_match(/\e/, message)
+      message = message.gsub(/\e\[[\d;]*m/, '')
+      assert_operator(message, :start_with?, remark)
+      assert_operator(message, :end_with?, bottom)
+    else
+      assert_not_match(/\e/, message)
+      assert_operator(message, :start_with?, bottom)
+      assert_operator(message, :end_with?, top)
+    end
   end
 end
