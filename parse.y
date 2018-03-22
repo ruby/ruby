@@ -9963,36 +9963,28 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
 	 * #=> <reorder>
 	 * variable order: kr1, k1, k2, internal_id, krest, &b
 	 */
-	ID kw_bits;
+	ID kw_bits = internal_id(p), *required_kw_vars, *kw_vars;
+	struct vtable *vtargs = p->lvtbl->args;
 	NODE *kwn = kw_args;
-	struct vtable *required_kw_vars = vtable_alloc(NULL);
-	struct vtable *kw_vars = vtable_alloc(NULL);
-	int i;
 
+	vtable_pop(vtargs, !!block + !!kw_rest_arg);
+	required_kw_vars = kw_vars = &vtargs->tbl[vtargs->pos];
 	while (kwn) {
-	    ID vid = kwn->nd_body->nd_vid;
-
-	    if (NODE_REQUIRED_KEYWORD_P(kwn->nd_body)) {
-		vtable_add(required_kw_vars, vid);
-	    }
-	    else {
-		vtable_add(kw_vars, vid);
-	    }
-
+	    if (!NODE_REQUIRED_KEYWORD_P(kwn->nd_body))
+		--kw_vars;
+	    --required_kw_vars;
 	    kwn = kwn->nd_next;
 	}
 
-	kw_bits = internal_id(p);
-
-	/* reorder */
-	vtable_pop(p->lvtbl->args,
-		   vtable_size(required_kw_vars) + vtable_size(kw_vars)
-		   + (block != 0) + (kw_rest_arg != 0));
-
-	for (i=0; i<vtable_size(required_kw_vars); i++) arg_var(p, required_kw_vars->tbl[i]);
-	for (i=0; i<vtable_size(kw_vars); i++) arg_var(p, kw_vars->tbl[i]);
-	vtable_free(required_kw_vars);
-	vtable_free(kw_vars);
+	for (kwn = kw_args; kwn; kwn = kwn->nd_next) {
+	    ID vid = kwn->nd_body->nd_vid;
+	    if (NODE_REQUIRED_KEYWORD_P(kwn->nd_body)) {
+		*required_kw_vars++ = vid;
+	    }
+	    else {
+		*kw_vars++ = vid;
+	    }
+	}
 
 	arg_var(p, kw_bits);
 	if (kw_rest_arg) arg_var(p, kw_rest_arg);
