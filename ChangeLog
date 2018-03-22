@@ -1,3 +1,24 @@
+Thu Mar 22 11:24:43 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (set_pioinfo_extra): use more reliable way to search
+	  the position of pioinfo of VC14, and also support debug library of it.
+	  patched by davispuh AT gmail.com
+	  [ruby-core:76644] [Bug #12644]
+	  this fixes also [Bug #12631]
+
+Thu Mar 22 11:24:43 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: suppress warnings
+
+	* win32/win32.c (set_pioinfo_extra): remove "/*" within comment.
+
+Thu Mar 22 11:24:43 2018  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	Support MSVC14 and 15 [Bug #11118]
+
+	Search _pioinfo which is not exported after MSVC14.
+	[Bug #12014] [GH-884]
+
 Mon Mar 19 00:34:38 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	win32.c: unknown reparse tags
