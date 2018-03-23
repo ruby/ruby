@@ -195,18 +195,26 @@ describe "The rescue keyword" do
     ScratchPad.recorded.should == [:one, :else_ran, :ensure_ran, :outside_begin]
   end
 
-  it "will execute an else block even without rescue and ensure" do
-    lambda {
-      eval <<-ruby
+  else_without_rescue = lambda {
+    eval <<-ruby
         begin
           ScratchPad << :begin
         else
           ScratchPad << :else
         end
       ruby
-    }.should complain(/else without rescue is useless/)
+  }
 
-    ScratchPad.recorded.should == [:begin, :else]
+  ruby_version_is ""..."2.6" do
+    it "will execute an else block even without rescue and ensure" do
+      else_without_rescue.should complain(/else without rescue is useless/)
+
+      ScratchPad.recorded.should == [:begin, :else]
+    end
+  end
+
+  ruby_version_is "2.6" do
+    else_without_rescue.should raise_error(SyntaxError)
   end
 
   it "will not execute an else block if an exception was raised" do

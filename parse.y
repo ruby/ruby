@@ -1000,7 +1000,7 @@ bodystmt	: compstmt
 			    $$ = NEW_RESCUE($1, $2, $3, &@$);
 			}
 			else if ($3) {
-			    rb_warn0("else without rescue is useless");
+			    compile_error(p, "else without rescue is useless");
 			    $$ = block_append(p, $$, $3);
 			}
 			if ($4) {
