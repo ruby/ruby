@@ -3778,7 +3778,7 @@ enum rb_realpath_mode {
 };
 
 static int
-realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
+realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE fallback,
 	     VALUE loopcheck, enum rb_realpath_mode mode, int last)
 {
     const char *pend = unresolved + strlen(unresolved);
@@ -3841,6 +3841,12 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
 #endif
                 if (ret == -1) {
 		    int e = errno;
+		    if (e == ENOENT && !NIL_P(fallback)) {
+			if (rb_stat(fallback, &sbuf) == 0) {
+			    rb_str_replace(*resolvedp, fallback);
+			    return 0;
+			}
+		    }
 		    if (mode == RB_REALPATH_CHECK) return -1;
 		    if (e == ENOENT) {
 			if (mode == RB_REALPATH_STRICT || !last || *unresolved_firstsep)
@@ -3872,7 +3878,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved,
 			*resolvedp = link;
 			*prefixlenp = link_prefixlen;
 		    }
-		    if (realpath_rec(prefixlenp, resolvedp, link_names,
+		    if (realpath_rec(prefixlenp, resolvedp, link_names, testpath,
 				     loopcheck, mode, !*unresolved_firstsep))
 			return -1;
 		    RB_GC_GUARD(link_orig);
@@ -3960,14 +3966,14 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
 
     loopcheck = rb_hash_new();
     if (curdir_names) {
-	if (realpath_rec(&prefixlen, &resolved, curdir_names, loopcheck, mode, 0))
+	if (realpath_rec(&prefixlen, &resolved, curdir_names, Qnil, loopcheck, mode, 0))
 	    return Qnil;
     }
     if (basedir_names) {
-	if (realpath_rec(&prefixlen, &resolved, basedir_names, loopcheck, mode, 0))
+	if (realpath_rec(&prefixlen, &resolved, basedir_names, Qnil, loopcheck, mode, 0))
 	    return Qnil;
     }
-    if (realpath_rec(&prefixlen, &resolved, path_names, loopcheck, mode, 1))
+    if (realpath_rec(&prefixlen, &resolved, path_names, Qnil, loopcheck, mode, 1))
 	return Qnil;
 
     if (origenc != enc && rb_enc_str_asciionly_p(resolved))
