@@ -408,6 +408,7 @@ static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs,
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc);
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc);
 static NODE *new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, const YYLTYPE *loc);
+static NODE *new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_else, NODE *ensure, const YYLTYPE *loc);
 
 static NODE *const_decl(struct parser_params *p, NODE* path, const YYLTYPE *loc);
 
@@ -991,24 +992,23 @@ begin_block	: '{' top_compstmt '}'
 
 bodystmt	: compstmt
 		  opt_rescue
-		  opt_else
+		  k_else {if (!$2) {yyerror1(&@3, "else without rescue is useless");}}
+		  compstmt
 		  opt_ensure
 		    {
 		    /*%%%*/
-			$$ = $1;
-			if ($2) {
-			    $$ = NEW_RESCUE($1, $2, $3, &@$);
-			}
-			else if ($3) {
-			    compile_error(p, "else without rescue is useless");
-			    $$ = block_append(p, $$, $3);
-			}
-			if ($4) {
-			    $$ = NEW_ENSURE($$, $4, &@$);
-			}
-			fixpos($$, $1);
+			$$ = new_bodystmt(p, $1, $2, $5, $6, &@$);
 		    /*% %*/
-		    /*% ripper: bodystmt!(escape_Qundef($1), escape_Qundef($2), escape_Qundef($3), escape_Qundef($4)) %*/
+		    /*% ripper: bodystmt!(escape_Qundef($1), escape_Qundef($2), escape_Qundef($5), escape_Qundef($6)) %*/
+		    }
+		| compstmt
+		  opt_rescue
+		  opt_ensure
+		    {
+		    /*%%%*/
+			$$ = new_bodystmt(p, $1, $2, 0, $3, &@$);
+		    /*% %*/
+		    /*% ripper: bodystmt!(escape_Qundef($1), escape_Qundef($2), Qnil, escape_Qundef($3)) %*/
 		    }
 		;
 
@@ -10198,6 +10198,25 @@ static VALUE
 var_field(struct parser_params *p, VALUE a)
 {
     return ripper_new_yylval(p, get_id(a), dispatch1(var_field, a), 0);
+}
+#endif
+
+#ifndef RIPPER
+static NODE *
+new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_else, NODE *ensure, const YYLTYPE *loc)
+{
+    NODE *result = head;
+    if (rescue) {
+        result = NEW_RESCUE(head, rescue, rescue_else, loc);
+    }
+    else if (rescue_else) {
+        result = block_append(p, result, rescue_else);
+    }
+    if (ensure) {
+        result = NEW_ENSURE(result, ensure, loc);
+    }
+    fixpos(result, head);
+    return result;
 }
 #endif
 
