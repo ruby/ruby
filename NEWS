@@ -18,6 +18,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * refinements take place at block passing.  [Feature #14223]
 
+* `else` without `rescue` is now causes a syntax error.  [EXPERIMENTAL]
+
 === Core classes updates (outstanding ones only)
 
 * Array

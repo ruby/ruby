@@ -14,13 +14,12 @@ class TestParse < Test::Unit::TestCase
   end
 
   def test_else_without_rescue
-    x = eval <<-END, nil, __FILE__, __LINE__+1
+    assert_syntax_error(<<-END, /else without rescue/)
       begin
       else
         42
       end
     END
-    assert_equal(42, x)
   end
 
   def test_alias_backref
