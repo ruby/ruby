@@ -19,8 +19,7 @@ AC_ARG_VAR([cflags], [additional CFLAGS])
 AC_ARG_VAR([cppflags], [additional CPPFLAGS])
 AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
 
-{ # environment section
-
+: "environment section" && {
 HAVE_BASERUBY=yes
 AC_ARG_WITH(baseruby,
 	AS_HELP_STRING([--with-baseruby=RUBY], [use RUBY as baseruby; RUBY is the pathname of ruby]),
@@ -378,10 +377,9 @@ AS_IF([test -f conf$$.dir/src/cdcmd], [
 rm -fr conf$$.dir
 AC_MSG_RESULT([$CHDIR])
 AC_SUBST(CHDIR)
-
 }
-{ # compiler section
 
+: "compiler section" && {
 RUBY_WERROR_FLAG([
     AC_MSG_CHECKING([whether CFLAGS is valid])
     AC_TRY_COMPILE([], [],
@@ -673,10 +671,9 @@ AC_ARG_WITH(opt-dir,
 
 test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $ARCH_FLAG\""
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
-
 }
-{ # header and library section
 
+: "header and library section" && {
 AC_ARG_WITH(winnt-ver,
   AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0501)]),
   [with_winnt_ver="$withval"], [with_winnt_ver="0x0501"])
@@ -2413,11 +2410,9 @@ main(int argc, char *argv[])
 	rb_cv_fork_with_pthread=yes)])
     test x$rb_cv_fork_with_pthread = xyes || AC_DEFINE(CANNOT_FORK_WITH_PTHREAD)
 ])
-
-
 }
-{ # runtime section
 
+: "runtime section" && {
 dnl wheather use dln_a_out or not
 AC_ARG_WITH(dln-a-out,
 	AS_HELP_STRING([--with-dln-a-out], [use dln_a_out if possible]),
@@ -3219,8 +3214,8 @@ AS_IF([test x"$gcov" = xyes], [
 
 RUBY_SETJMP_TYPE
 }
-{ # build section
 
+: "build section" && {
 dnl build rdoc index if requested
 RDOCTARGET=""
 CAPITARGET=""
