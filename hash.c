@@ -4528,12 +4528,13 @@ rb_hash_path_to_key(VALUE hash, VALUE key)
     VALUE keys;
     VALUE curr_key;
     VALUE curr_element;
+    int i;
 
     while(!rb_eql(hash, Qnil) && !rb_hash_eql(prev_hsh, hash)){
         keys = rb_hash_keys(hash);
         prev_hsh = hash;
 
-        for (int i = 0; i < RARRAY_LEN(keys); ++i)
+        for (i = 0; i < RARRAY_LEN(keys); ++i)
         {
             curr_key = RARRAY_AREF(keys, i);
 
