@@ -1945,9 +1945,6 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions, 
 	    positions[insns_info_index]             = code_index;
 	    return TRUE;
 	}
-	else {
-	    return FALSE;
-	}
     }
     else if (list->type == ISEQ_ELEMENT_ADJUST) {
 	ADJUST *adjust = (ADJUST *)list;
@@ -1958,13 +1955,11 @@ add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions, 
 	    positions[insns_info_index]             = code_index;
 	    return TRUE;
 	}
-	else {
-	    return FALSE;
-	}
     }
     else {
 	VM_UNREACHABLE(add_insn_info);
     }
+    return FALSE;
 }
 
 /**
