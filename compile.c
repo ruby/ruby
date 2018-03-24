@@ -1933,31 +1933,30 @@ fix_sp_depth(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 }
 
 static int
-add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions, int insns_info_index, int code_index, LINK_ELEMENT *list)
+add_insn_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions,
+              int insns_info_index, int code_index, const INSN *iobj)
 {
-    if (list->type == ISEQ_ELEMENT_INSN) {
-	INSN *iobj = (INSN *)list;
-	if (insns_info_index == 0 ||
-	    insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
-	    insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
-	    insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
-	    insns_info[insns_info_index].events     = iobj->insn_info.events;
-	    positions[insns_info_index]             = code_index;
-	    return TRUE;
-	}
+    if (insns_info_index == 0 ||
+        insns_info[insns_info_index-1].line_no != iobj->insn_info.line_no ||
+        insns_info[insns_info_index-1].events  != iobj->insn_info.events) {
+        insns_info[insns_info_index].line_no    = iobj->insn_info.line_no;
+        insns_info[insns_info_index].events     = iobj->insn_info.events;
+        positions[insns_info_index]             = code_index;
+        return TRUE;
     }
-    else if (list->type == ISEQ_ELEMENT_ADJUST) {
-	ADJUST *adjust = (ADJUST *)list;
-	if (insns_info_index > 0 ||
-	    insns_info[insns_info_index-1].line_no != adjust->line_no) {
-	    insns_info[insns_info_index].line_no    = adjust->line_no;
-	    insns_info[insns_info_index].events     = 0;
-	    positions[insns_info_index]             = code_index;
-	    return TRUE;
-	}
-    }
-    else {
-	VM_UNREACHABLE(add_insn_info);
+    return FALSE;
+}
+
+static int
+add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions,
+                int insns_info_index, int code_index, const ADJUST *adjust)
+{
+    if (insns_info_index > 0 ||
+        insns_info[insns_info_index-1].line_no != adjust->line_no) {
+        insns_info[insns_info_index].line_no    = adjust->line_no;
+        insns_info[insns_info_index].events     = 0;
+        positions[insns_info_index]             = code_index;
+        return TRUE;
     }
     return FALSE;
 }
@@ -2176,7 +2175,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			return COMPILE_NG;
 		    }
 		}
-		if (add_insn_info(insns_info, positions, insns_info_index, code_index, (LINK_ELEMENT *)iobj)) insns_info_index++;
+		if (add_insn_info(insns_info, positions, insns_info_index, code_index, iobj)) insns_info_index++;
 		code_index += len;
 		break;
 	    }
@@ -2201,7 +2200,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		if (adjust->line_no != -1) {
 		    const int diff = orig_sp - sp;
 		    if (diff > 0) {
-			if (add_insn_info(insns_info, positions, insns_info_index, code_index, (LINK_ELEMENT *)adjust)) insns_info_index++;
+			if (add_adjust_info(insns_info, positions, insns_info_index, code_index, adjust)) insns_info_index++;
 		    }
 		    if (diff > 1) {
 			generated_iseq[code_index++] = BIN(adjuststack);
