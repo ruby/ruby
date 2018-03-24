@@ -79,6 +79,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * File.lutime  [Feature #4052]
 
+* Exception
+
+  * Exception#full_message takes :highlight and :order options [Bug #14324]
+
 * Hash
 
   * New methods:
