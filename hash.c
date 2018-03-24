@@ -4518,17 +4518,18 @@ env_update(VALUE env, VALUE hash)
  *
  *   h = { x: 3, y: [1,2,3], z: { w: { a: 1000}} }
  *   h.path_to_key(:a)  #=> [:z, :w]
+ *   h.path_to_key(:x)  #=> []
+ *   h.path_to_key(:k)  #=> nil
  */
 static VALUE
 rb_hash_path_to_key(VALUE hash, VALUE key)
 {
     VALUE path = rb_ary_new2(0);
     VALUE prev_hsh = rb_hash_new();
-
     VALUE keys;
     VALUE curr_key;
     VALUE curr_element;
-    int i;
+    long i;
 
     while(!rb_eql(hash, Qnil) && !rb_hash_eql(prev_hsh, hash)){
         keys = rb_hash_keys(hash);
@@ -4544,17 +4545,17 @@ rb_hash_path_to_key(VALUE hash, VALUE key)
             curr_element = rb_hash_aref(hash, curr_key);
 
             if (rb_hash_eql(hash, curr_element))
-                return path;
+                return Qnil;
 
             rb_ary_push(path, curr_key);
 
             if (RB_TYPE_P(curr_element, T_HASH))
                 hash = curr_element;
             else
-                path = rb_ary_new2(0);
+                rb_ary_delete(path, curr_key);
         }
     }
-    return path;
+    return Qnil;
 }
 
 /*
