@@ -507,6 +507,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     m = Object.new
     def m.f() :ok; end
     def m.f2(a = nil) a; end
+    def m.f3(**a) a; end
     o = {a: 1}
     assert_raise_with_message(ArgumentError, /unknown keyword: a/) {
       m.f(**o)
@@ -517,9 +518,16 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, m.f(*a, **o), '[ruby-core:83638] [Bug #10856]')
 
     o = {a: 42}
-    assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    assert_warning(/splat keyword/) do
+      assert_equal({a: 42}, m.f2(**o), '[ruby-core:82280] [Bug #13791]')
+    end
+    assert_warning('') do
+      assert_equal({a: 42}, m.f3(**o), 'splat to kwrest')
+    end
 
-    assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    assert_warning('') do
+      assert_equal({a: 42}, m.f2("a".to_sym => 42), '[ruby-core:82291] [Bug #13793]')
+    end
 
     o = {}
     a = [:ok]
