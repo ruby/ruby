@@ -509,6 +509,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     const int max_argc = (iseq->body->param.flags.has_rest == FALSE) ? min_argc + iseq->body->param.opt_num : UNLIMITED_ARGUMENTS;
     int opt_pc = 0;
     int given_argc;
+    int kw_splat = FALSE;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
     VALUE * const orig_sp = ec->cfp->sp;
@@ -600,10 +601,12 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	}
     }
 
+    if (ci->flag & VM_CALL_KW_SPLAT) {
+	kw_splat = !iseq->body->param.flags.has_rest;
+    }
     if (given_argc > min_argc &&
 	(iseq->body->param.flags.has_kw || iseq->body->param.flags.has_kwrest ||
-	 (!iseq->body->param.flags.has_rest && given_argc > max_argc &&
-	  (ci->flag & VM_CALL_KW_SPLAT))) &&
+	 (kw_splat && given_argc > max_argc)) &&
 	args->kw_argv == NULL) {
 	if (args_pop_keyword_hash(args, &keyword_hash)) {
 	    given_argc--;
@@ -666,6 +669,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     }
     else if (!NIL_P(keyword_hash) && RHASH_SIZE(keyword_hash) > 0) {
 	argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
+    }
+    else if (kw_splat && NIL_P(keyword_hash)) {
+	rb_warning("passing splat keyword arguments as a single Hash"
+		   " to `% "PRIsVALUE"'", rb_id2str(ci->mid));
     }
 
     if (iseq->body->param.flags.has_block) {
