@@ -505,7 +505,7 @@ cond = proc {|ext, *|
   }
   incl.sort!
   excl.sort!.collect! {|d| d+"/"}
-  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|e| d.start_with?(e)}}
+  nil while incl.reject! {|d| excl << d+"/" if excl.any? {|x| d.start_with?(x)}}
   exts |= incl
   if $LIBRUBYARG_SHARED.empty? and CONFIG["EXTSTATIC"] == "static"
     exts.delete_if {|d| File.fnmatch?("-*", d)}
