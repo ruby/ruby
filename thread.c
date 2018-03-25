@@ -385,7 +385,7 @@ set_unblock_function(rb_thread_t *th, rb_unblock_function_t *func, void *arg,
 	}
 
 	native_mutex_lock(&th->interrupt_lock);
-    } while (RUBY_VM_INTERRUPTED_ANY(th) &&
+    } while (!th->raised_flag && RUBY_VM_INTERRUPTED_ANY(th) &&
 	     (native_mutex_unlock(&th->interrupt_lock), TRUE));
 
     if (old) *old = th->unblock;
