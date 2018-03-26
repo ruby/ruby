@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 =begin
   TODO: test call-seq parsing
@@ -327,7 +327,7 @@ VALUE cFoo = boot_defclass("Foo", 0);
 
     klass = util_get_class content, 'cFoo'
     assert_equal "this is the Foo boot class", klass.comment.text
-    assert_equal nil, klass.superclass
+    assert_nil klass.superclass
   end
 
   def test_do_aliases_missing_class
@@ -1377,7 +1377,7 @@ commercial() -> Date <br />
 
     parser.find_modifiers comment, method_obj
 
-    assert_equal nil, method_obj.document_self
+    assert_nil method_obj.document_self
   end
 
   def test_find_modifiers_yields

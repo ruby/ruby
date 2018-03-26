@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 begin
-  gem 'minitest', '~> 4.0' unless defined?(Test::Unit)
+  gem 'minitest', '~> 5.0'
 rescue NoMethodError, Gem::LoadError
   # for ruby tests
 end
@@ -29,7 +29,7 @@ require 'rdoc'
 # * <code>@pwd</code> containing the current working directory
 # * FileUtils, pp, Tempfile, Dir.tmpdir and StringIO
 
-class RDoc::TestCase < MiniTest::Unit::TestCase
+class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
 
   ##
   # Abstract test-case setup

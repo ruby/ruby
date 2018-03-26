@@ -169,7 +169,7 @@ module RDoc::Text
 
     encoding = text.encoding
 
-    text = text.gsub %r%Document-method:\s+[\w:.#=!?]+%, ''
+    text = text.gsub %r%Document-method:\s+[\w:.#=!?|^&<>~+-/*\%@`\[\]]+%, ''
 
     space = ' '
     space = RDoc::Encoding.change_encoding space, encoding if encoding

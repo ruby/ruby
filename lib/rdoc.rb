@@ -65,7 +65,7 @@ module RDoc
   ##
   # RDoc version you are using
 
-  VERSION = '6.0.1'
+  VERSION = '6.0.3'
 
   ##
   # Method visibilities
@@ -125,8 +125,6 @@ module RDoc
 
   autoload :RDoc,           'rdoc/rdoc'
 
-  autoload :TestCase,       'rdoc/test_case'
-
   autoload :CrossReference, 'rdoc/cross_reference'
   autoload :ERBIO,          'rdoc/erbio'
   autoload :ERBPartial,     'rdoc/erb_partial'
@@ -153,7 +151,7 @@ module RDoc
 
   autoload :Comment,        'rdoc/comment'
 
-  autoload :I18n,           'rdoc/i18n'
+  require 'rdoc/i18n'
 
   # code objects
   #

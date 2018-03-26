@@ -94,6 +94,13 @@ class C7
   CONST_NODOC = :const_nodoc # :nodoc:
 end
 
+class C8
+  class << self
+    class S1
+    end
+  end
+end
+
 module M1
   def m
   end

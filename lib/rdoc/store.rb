@@ -117,6 +117,11 @@ class RDoc::Store
   attr_accessor :encoding
 
   ##
+  # The lazy constants alias will be discovered in passing
+
+  attr_reader :unmatched_constant_alias
+
+  ##
   # Creates a new Store of +type+ that will load or save to +path+
 
   def initialize path = nil, type = nil
@@ -152,6 +157,8 @@ class RDoc::Store
 
     @unique_classes = nil
     @unique_modules = nil
+
+    @unmatched_constant_alias = {}
   end
 
   ##
@@ -539,7 +546,7 @@ class RDoc::Store
   def load_cache
     #orig_enc = @encoding
 
-    open cache_path, 'rb' do |io|
+    File.open cache_path, 'rb' do |io|
       @cache = Marshal.load io.read
     end
 
@@ -585,6 +592,8 @@ class RDoc::Store
     case obj
     when RDoc::NormalClass then
       @classes_hash[klass_name] = obj
+    when RDoc::SingleClass then
+      @classes_hash[klass_name] = obj
     when RDoc::NormalModule then
       @modules_hash[klass_name] = obj
     end
@@ -596,7 +605,7 @@ class RDoc::Store
   def load_class_data klass_name
     file = class_file klass_name
 
-    open file, 'rb' do |io|
+    File.open file, 'rb' do |io|
       Marshal.load io.read
     end
   rescue Errno::ENOENT => e
@@ -611,7 +620,7 @@ class RDoc::Store
   def load_method klass_name, method_name
     file = method_file klass_name, method_name
 
-    open file, 'rb' do |io|
+    File.open file, 'rb' do |io|
       obj = Marshal.load io.read
       obj.store = self
       obj.parent =
@@ -631,7 +640,7 @@ class RDoc::Store
   def load_page page_name
     file = page_file page_name
 
-    open file, 'rb' do |io|
+    File.open file, 'rb' do |io|
       obj = Marshal.load io.read
       obj.store = self
       obj
@@ -778,7 +787,7 @@ class RDoc::Store
 
     marshal = Marshal.dump @cache
 
-    open cache_path, 'wb' do |io|
+    File.open cache_path, 'wb' do |io|
       io.write marshal
     end
   end
@@ -854,7 +863,7 @@ class RDoc::Store
 
     marshal = Marshal.dump klass
 
-    open path, 'wb' do |io|
+    File.open path, 'wb' do |io|
       io.write marshal
     end
   end
@@ -879,7 +888,7 @@ class RDoc::Store
 
     marshal = Marshal.dump method
 
-    open method_file(full_name, method.full_name), 'wb' do |io|
+    File.open method_file(full_name, method.full_name), 'wb' do |io|
       io.write marshal
     end
   end
@@ -901,7 +910,7 @@ class RDoc::Store
 
     marshal = Marshal.dump page
 
-    open path, 'wb' do |io|
+    File.open path, 'wb' do |io|
       io.write marshal
     end
   end

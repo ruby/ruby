@@ -1277,7 +1277,8 @@ class TestRDocClassModule < XrefTestCase
     n1 = @xref_data.add_module RDoc::NormalClass, 'N1'
     n1_k2 = n1.add_module RDoc::NormalClass, 'N2'
 
-    n1.add_module_alias n1_k2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    n1.add_module_alias n1_k2, n1_k2.name, a1, @xref_data
 
     n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
     refute_nil n1_a1_c
@@ -1301,7 +1302,8 @@ class TestRDocClassModule < XrefTestCase
     n1 = @xref_data.add_module RDoc::NormalModule, 'N1'
     n1_n2 = n1.add_module RDoc::NormalModule, 'N2'
 
-    n1.add_module_alias n1_n2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    n1.add_module_alias n1_n2, n1_n2.name, a1, @xref_data
 
     n1_a1_c = n1.constants.find { |c| c.name == 'A1' }
     refute_nil n1_a1_c
@@ -1326,7 +1328,8 @@ class TestRDocClassModule < XrefTestCase
     l1_l2 = l1.add_module RDoc::NormalModule, 'L2'
     o1 = @xref_data.add_module RDoc::NormalModule, 'O1'
 
-    o1.add_module_alias l1_l2, 'A1', @xref_data
+    a1 = RDoc::Constant.new 'A1', '', ''
+    o1.add_module_alias l1_l2, l1_l2.name, a1, @xref_data
 
     o1_a1_c = o1.constants.find { |c| c.name == 'A1' }
     refute_nil o1_a1_c
@@ -1358,7 +1361,8 @@ class TestRDocClassModule < XrefTestCase
     const.record_location top_level
     const.is_alias_for = klass
 
-    top_level.add_module_alias klass, 'A', top_level
+    a = RDoc::Constant.new 'A', '', ''
+    top_level.add_module_alias klass, klass.name, a, top_level
 
     object.add_constant const
 

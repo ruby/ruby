@@ -177,6 +177,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     @size = 0
     @token_listeners = nil
+    content = RDoc::Encoding.remove_magic_comment content
     @scanner = RDoc::RipperStateLex.parse(content)
     @content = content
     @scanner_point = 0
@@ -306,7 +307,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
             container.find_module_named rhs_name
           end
 
-    container.add_module_alias mod, constant.name, @top_level if mod
+    container.add_module_alias mod, rhs_name, constant, @top_level
   end
 
   ##
@@ -355,12 +356,15 @@ class RDoc::Parser::Ruby < RDoc::Parser
     given_name << name_t[:text]
 
     is_self = name_t[:kind] == :on_op && name_t[:text] == '<<'
+    new_modules = []
     while !is_self && (tk = peek_tk) and :on_op == tk[:kind] and '::' == tk[:text] do
       prev_container = container
       container = container.find_module_named name_t[:text]
       container ||=
         if ignore_constants then
-          RDoc::Context.new
+          c = RDoc::NormalModule.new name_t[:text]
+          new_modules << [prev_container, c]
+          c
         else
           c = prev_container.add_module RDoc::NormalModule, name_t[:text]
           c.ignore unless prev_container.document_children
@@ -385,7 +389,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     skip_tkspace false
 
-    return [container, name_t, given_name]
+    return [container, name_t, given_name, new_modules]
   end
 
   ##
@@ -760,7 +764,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     line_no = tk[:line_no]
 
     declaration_context = container
-    container, name_t, given_name = get_class_or_module container
+    container, name_t, given_name, = get_class_or_module container
 
     if name_t[:kind] == :on_const
       cls = parse_class_regular container, declaration_context, single,
@@ -877,10 +881,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     return unless name =~ /^\w+$/
 
+    new_modules = []
     if :on_op == peek_tk[:kind] && '::' == peek_tk[:text] then
       unget_tk tk
 
-      container, name_t, = get_class_or_module container, ignore_constants
+      container, name_t, _, new_modules = get_class_or_module container, true
 
       name = name_t[:text]
     end
@@ -906,6 +911,14 @@ class RDoc::Parser::Ruby < RDoc::Parser
       return false
     end
     get_tk
+
+    unless ignore_constants
+      new_modules.each do |prev_c, new_module|
+        prev_c.add_module_by_normal_module new_module
+        new_module.ignore unless prev_c.document_children
+        @top_level.add_to_classes_or_modules new_module
+      end
+    end
 
     value = ''
     con = RDoc::Constant.new name, value, comment
@@ -2074,13 +2087,16 @@ class RDoc::Parser::Ruby < RDoc::Parser
           $stderr.puts @file_name
           return
         end
-        bytes = ''
 
         if @scanner_point >= @scanner.size
           now_line_no = @scanner[@scanner.size - 1][:line_no]
         else
           now_line_no = peek_tk[:line_no]
         end
+        first_tk_index = @scanner.find_index { |tk| tk[:line_no] == now_line_no }
+        last_tk_index = @scanner.find_index { |tk| tk[:line_no] == now_line_no + 1 }
+        last_tk_index = last_tk_index ? last_tk_index - 1 : @scanner.size - 1
+        code = @scanner[first_tk_index..last_tk_index].map{ |t| t[:text] }.join
 
         $stderr.puts <<-EOF
 
@@ -2089,12 +2105,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
         EOF
 
-        unless bytes.empty? then
+        unless code.empty? then
+          $stderr.puts code
           $stderr.puts
-          now_line_no = peek_tk[:line_no]
-          start_index = @scanner.find_index { |tk| tk[:line_no] == now_line_no }
-          end_index = @scanner.find_index { |tk| tk[:line_no] == now_line_no + 1 } - 1
-          $stderr.puts @scanner[start_index..end_index].join
         end
 
         raise e

@@ -36,11 +36,6 @@ class RDoc::RDoc
   GENERATORS = {}
 
   ##
-  # File pattern to exclude
-
-  attr_accessor :exclude
-
-  ##
   # Generator instance used for creating output
 
   attr_accessor :generator
@@ -93,7 +88,6 @@ class RDoc::RDoc
 
   def initialize
     @current       = nil
-    @exclude       = nil
     @generator     = nil
     @last_modified = {}
     @old_siginfo   = nil
@@ -116,7 +110,7 @@ class RDoc::RDoc
   def gather_files files
     files = ["."] if files.empty?
 
-    file_list = normalized_file_list files, true, @exclude
+    file_list = normalized_file_list files, true, @options.exclude
 
     file_list = file_list.uniq
 
@@ -188,7 +182,7 @@ class RDoc::RDoc
       error "#{dir} exists and is not a directory" unless File.directory? dir
 
       begin
-        open flag_file do |io|
+        File.open flag_file do |io|
           unless force then
             Time.parse io.gets
 
@@ -232,8 +226,11 @@ option)
 
   def update_output_dir(op_dir, time, last = {})
     return if @options.dry_run or not @options.update_output_dir
+    unless ENV['SOURCE_DATE_EPOCH'].nil?
+      time = Time.at(ENV['SOURCE_DATE_EPOCH'].to_i).gmtime
+    end
 
-    open output_flag_file(op_dir), "w" do |f|
+    File.open output_flag_file(op_dir), "w" do |f|
       f.puts time.rfc2822
       last.each do |n, t|
         f.puts "#{n}\t#{t.rfc2822}"
@@ -261,7 +258,7 @@ option)
 
     patterns.split.each do |patt|
       candidates = Dir.glob(File.join(in_dir, patt))
-      result.concat normalized_file_list(candidates)
+      result.concat normalized_file_list(candidates, false, @options.exclude)
     end
 
     result
@@ -468,8 +465,6 @@ The internal error was:
       handle_pipe
       exit
     end
-
-    @exclude = @options.exclude
 
     unless @options.coverage_report then
       @last_modified = setup_output_dir @options.op_dir, @options.force_update

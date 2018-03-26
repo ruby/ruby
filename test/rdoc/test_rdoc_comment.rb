@@ -1,7 +1,7 @@
 # coding: us-ascii
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocComment < RDoc::TestCase
 
@@ -77,7 +77,7 @@ call-seq:
 
     comment.extract_call_seq m
 
-    assert_equal nil, m.call_seq
+    assert_nil m.call_seq
   end
 
   def test_extract_call_seq_no_blank

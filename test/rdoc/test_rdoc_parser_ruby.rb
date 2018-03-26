@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocParserRuby < RDoc::TestCase
 
@@ -231,8 +231,8 @@ class C; end
     @parser.look_for_directives_in @top_level, comment
 
     section = @top_level.current_section
-    assert_equal nil, section.title
-    assert_equal nil, section.comment
+    assert_nil   section.title
+    assert_nil   section.comment
 
     assert_equal "# how to make a section:\n# # :section: new section\n",
                  comment.text
@@ -304,6 +304,67 @@ ruby
     sum = klass.method_list.first
     assert_equal 'sum',      sum.name
     assert_equal @top_level, sum.file
+  end
+
+  def test_parse_on_ignored_nl_with_nil_text
+    util_parser <<ruby
+class Foo
+  def meth
+    variable # comment
+      .chain
+  end
+end
+ruby
+
+    expected = <<EXPECTED
+<span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">meth</span>
+  <span class="ruby-identifier">variable</span> <span class="ruby-comment"># comment</span>
+    .<span class="ruby-identifier">chain</span>
+<span class="ruby-keyword">end</span>
+EXPECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @store.find_class_named 'Foo'
+    meth = foo.method_list.first
+
+    assert_equal 'meth',     meth.name
+    assert_equal @top_level, meth.file
+
+    markup_code = meth.markup_code.sub(/^.*\n/, '')
+    assert_equal expected, markup_code
+  end
+
+  def test_parse_redefined_op_with_constant
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new '', @top_level
+
+    util_parser <<ruby
+def meth
+  Integer::**()
+  return Integer::**()
+  break Integer::**()
+  case Integer::**()
+  when Integer::**()
+  end
+  while Integer::**()
+  end
+  yield Integer::**()
+  defined? Integer::**()
+  if Integer::**()
+  end
+end
+ruby
+
+    tk = @parser.get_tk
+
+    @parser.parse_method klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    meth = klass.method_list.first
+    assert_equal 'meth',     meth.name
   end
 
   def test_parse_alias
@@ -813,6 +874,31 @@ end
     assert_match(/Expected class name or '<<'\. Got/, err)
   end
 
+  def test_parse_syntax_error_code
+    @options.verbosity = 2
+    stds = capture_io do
+      begin
+        util_parser <<INVALID_CODE
+# invalid class name
+class Invalid::@@Code
+end
+INVALID_CODE
+        @parser.scan
+      rescue
+      end
+    end
+    err = stds[1]
+
+    expected = <<EXPECTED
+RDoc::Parser::Ruby failure around line 2 of
+#{@filename}
+
+class Invalid::@@Code
+EXPECTED
+
+    assert_match(expected, err)
+  end
+
   def test_parse_multi_ghost_methods
     util_parser <<-'CLASS'
 class Foo
@@ -1139,7 +1225,7 @@ EOF
     assert_equal @top_level, foo.file
     assert_equal 1,          foo.line
 
-    assert_equal nil,        foo.viewer
+    assert_nil               foo.viewer
     assert_equal true,       foo.document_children
     assert_equal true,       foo.document_self
     assert_equal false,      foo.done_documenting
@@ -1202,21 +1288,21 @@ EOF
     assert_equal @top_level,  foo.file
     assert_equal 1,           foo.line
 
-    assert_equal [],        foo.aliases
-    assert_equal nil,       foo.block_params
-    assert_equal nil,       foo.call_seq
-    assert_equal nil,       foo.is_alias_for
-    assert_equal nil,       foo.viewer
-    assert_equal true,      foo.document_children
-    assert_equal true,      foo.document_self
-    assert_equal '',        foo.params
-    assert_equal false,     foo.done_documenting
-    assert_equal false,     foo.dont_rename_initialize
-    assert_equal false,     foo.force_documentation
-    assert_equal klass,     foo.parent
-    assert_equal false,     foo.singleton
-    assert_equal :public,   foo.visibility
-    assert_equal "\n",      foo.text
+    assert_equal [],          foo.aliases
+    assert_nil                foo.block_params
+    assert_nil                foo.call_seq
+    assert_nil                foo.is_alias_for
+    assert_nil                foo.viewer
+    assert_equal true,        foo.document_children
+    assert_equal true,        foo.document_self
+    assert_equal '',          foo.params
+    assert_equal false,       foo.done_documenting
+    assert_equal false,       foo.dont_rename_initialize
+    assert_equal false,       foo.force_documentation
+    assert_equal klass,       foo.parent
+    assert_equal false,       foo.singleton
+    assert_equal :public,     foo.visibility
+    assert_equal "\n",        foo.text
     assert_equal klass.current_section, foo.section
 
     stream = [
@@ -1302,6 +1388,9 @@ EOF
 
     @parser.parse_constant klass, tk, @comment
 
+    assert_equal [], klass.modules.map(&:full_name)
+    assert_equal ['Foo::B', 'Foo::A'], klass.classes.map(&:full_name)
+    assert_equal ['Foo::A'], klass.constants.map(&:full_name)
     assert_equal 'Foo::A', klass.find_module_named('A').full_name
   end
 
@@ -1516,19 +1605,19 @@ end
     assert_equal 1,           foo.line
 
     assert_equal [],      foo.aliases
-    assert_equal nil,     foo.block_params
-    assert_equal nil,     foo.call_seq
+    assert_nil            foo.block_params
+    assert_nil            foo.call_seq
     assert_equal true,    foo.document_children
     assert_equal true,    foo.document_self
     assert_equal false,   foo.done_documenting
     assert_equal false,   foo.dont_rename_initialize
     assert_equal false,   foo.force_documentation
-    assert_equal nil,     foo.is_alias_for
+    assert_nil            foo.is_alias_for
     assert_equal '',      foo.params
     assert_equal klass,   foo.parent
     assert_equal false,   foo.singleton
     assert_equal 'add_my_method :foo', foo.text
-    assert_equal nil,     foo.viewer
+    assert_nil            foo.viewer
     assert_equal :public, foo.visibility
     assert_equal klass.current_section, foo.section
 
@@ -1726,10 +1815,10 @@ end
     assert_equal 1,           foo.line
 
     assert_equal [],        foo.aliases
-    assert_equal nil,       foo.block_params
-    assert_equal nil,       foo.call_seq
-    assert_equal nil,       foo.is_alias_for
-    assert_equal nil,       foo.viewer
+    assert_nil              foo.block_params
+    assert_nil              foo.call_seq
+    assert_nil              foo.is_alias_for
+    assert_nil              foo.viewer
     assert_equal true,      foo.document_children
     assert_equal true,      foo.document_self
     assert_equal '()',      foo.params
@@ -2981,12 +3070,12 @@ RUBY
 
     @parser.skip_tkspace
 
-    assert_equal nil, @parser.parse_symbol_in_arg
+    assert_nil @parser.parse_symbol_in_arg
     @parser.get_tk # skip ','
 
     @parser.skip_tkspace
 
-    assert_equal nil, @parser.parse_symbol_in_arg
+    assert_nil @parser.parse_symbol_in_arg
   end
 
   def test_parse_statements_alias_method
@@ -3090,7 +3179,7 @@ end
     assert_equal 'category', directive
     assert_equal 'test', value
 
-    assert_equal nil, parser.get_tk
+    assert_nil parser.get_tk
   end
 
   def test_read_directive_allow
@@ -3100,7 +3189,7 @@ end
 
     assert_nil directive
 
-    assert_equal nil, parser.get_tk
+    assert_nil parser.get_tk
   end
 
   def test_read_directive_empty
@@ -3110,7 +3199,7 @@ end
 
     assert_nil directive
 
-    assert_equal nil, parser.get_tk
+    assert_nil parser.get_tk
   end
 
   def test_read_directive_no_comment
@@ -3120,7 +3209,7 @@ end
 
     assert_nil directive
 
-    assert_equal nil, parser.get_tk
+    assert_nil parser.get_tk
   end
 
   def test_read_directive_one_liner
@@ -3197,14 +3286,14 @@ end
     util_parser '"#{"#{"a")}" if b}"'
 
     assert_equal '"#{"#{"a")}" if b}"', @parser.get_tk[:text]
-    assert_equal nil, @parser.get_tk
+    assert_nil @parser.get_tk
   end
 
   def test_sanity_interpolation_curly
     util_parser '%{ #{} }'
 
     assert_equal '%{ #{} }', @parser.get_tk[:text]
-    assert_equal nil, @parser.get_tk
+    assert_nil @parser.get_tk
   end
 
   def test_sanity_interpolation_format
@@ -3840,6 +3929,152 @@ end
 
     @parser2 = RDoc::Parser::Ruby.new @top_level2, @filename,
                                       second_file_content, @options, @stats
+  end
+
+  def test_parse_const_third_party
+    util_parser <<-CLASS
+class A
+  true if B
+  true if B::C
+  true if B::C::D
+
+  module B
+  end
+end
+    CLASS
+
+    tk = @parser.get_tk
+
+    @parser.parse_class @top_level, RDoc::Parser::Ruby::NORMAL, tk, @comment
+
+    a = @top_level.classes.first
+    assert_equal 'A', a.full_name
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_equal ['A::B'], visible
+  end
+
+  def test_parse_const_alias_defined_elsewhere
+    util_parser <<-CLASS
+module A
+  Aliased = Defined
+end
+
+module A
+  class Defined
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @top_level.modules.first
+    assert_equal 'A', a.full_name
+    aliased = a.constants.first
+    assert_equal 'A::Aliased', aliased.full_name
+    assert_equal [], a.modules.map(&:full_name)
+    assert_equal ['A::Defined', 'A::Aliased'], a.classes.map(&:full_name)
+    assert_equal ['A::Aliased'], a.constants.map(&:full_name)
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_equal ['A'], visible
+  end
+
+  def test_parse_const_alias_defined_far_away
+    util_parser <<-CLASS
+module A
+  Aliased = ::B::C::Defined
+end
+
+module B
+  module C
+    class Defined
+    end
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @top_level.modules.first
+    assert_equal 'A', a.full_name
+    assert_empty a.classes
+    assert_empty a.modules
+    assert_equal ['A::Aliased'], a.constants.map(&:full_name)
+
+    defined = @store.find_class_named 'B::C::Defined'
+    assert_equal 'B::C::Defined', defined.full_name
+
+    aliased = @store.find_class_named 'B::C::Aliased'
+    assert_equal 'B::C::Aliased', aliased.full_name
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_equal ['A', 'B', 'B::C'], visible
+  end
+
+  def test_parse_const_alias_defined_elsewhere
+    util_parser <<-CLASS
+module A
+  Aliased = Defined
+end
+
+module A
+  class Defined
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @top_level.modules.first
+    assert_equal 'A', a.full_name
+    aliased = a.constants.first
+    assert_equal 'A::Aliased', aliased.full_name
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_equal ['A'], visible
+  end
+
+  def test_parse_const_alias_defined_far_away
+    util_parser <<-CLASS
+module A
+  Aliased = ::B::C::Defined
+end
+
+module B
+  module C
+    class Defined
+    end
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @top_level.modules.first
+    assert_equal 'A', a.full_name
+    assert_empty a.classes
+    assert_empty a.modules
+    assert_equal ['A::Aliased'], a.constants.map(&:full_name)
+
+    defined = @store.find_class_named 'B::C::Defined'
+    assert_equal 'B::C::Defined', defined.full_name
+
+    aliased = @store.find_class_named 'B::C::Aliased'
+    assert_equal 'B::C::Aliased', aliased.full_name
+
+    visible = @store.all_modules.reject { |mod| mod.suppressed? }
+    visible = visible.map { |mod| mod.full_name }
+
+    assert_equal ['A', 'B', 'B::C'], visible
   end
 
 end

@@ -1217,7 +1217,7 @@ Usage: #{opt.program_name} [options] [names...]
   def write_options
     RDoc.load_yaml
 
-    open '.rdoc_options', 'w' do |io|
+    File.open '.rdoc_options', 'w' do |io|
       io.set_encoding Encoding::UTF_8
 
       YAML.dump self, io

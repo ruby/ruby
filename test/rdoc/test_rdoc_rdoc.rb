@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocRDoc < RDoc::TestCase
 
@@ -115,7 +115,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_load_options_invalid
     temp_dir do
-      open '.rdoc_options', 'w' do |io|
+      File.open '.rdoc_options', 'w' do |io|
         io.write "a: !ruby.yaml.org,2002:str |\nfoo"
       end
 
@@ -181,13 +181,67 @@ class TestRDocRDoc < RDoc::TestCase
     assert_match %r"#{dev}$",           err
   end
 
+  def test_normalized_file_list_with_dot_doc
+    expected_files = []
+    files = temp_dir do |dir|
+      a = File.expand_path('a.rb')
+      b = File.expand_path('b.rb')
+      c = File.expand_path('c.rb')
+      FileUtils.touch a
+      FileUtils.touch b
+      FileUtils.touch c
+
+      dot_doc = File.expand_path('.document')
+      FileUtils.touch dot_doc
+      open(dot_doc, 'w') do |f|
+        f.puts 'a.rb'
+        f.puts 'b.rb'
+      end
+      expected_files << a
+      expected_files << b
+
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_equal expected_files, files
+  end
+
+  def test_normalized_file_list_with_dot_doc_overridden_by_exclude_option
+    expected_files = []
+    files = temp_dir do |dir|
+      a = File.expand_path('a.rb')
+      b = File.expand_path('b.rb')
+      c = File.expand_path('c.rb')
+      FileUtils.touch a
+      FileUtils.touch b
+      FileUtils.touch c
+
+      dot_doc = File.expand_path('.document')
+      FileUtils.touch dot_doc
+      open(dot_doc, 'w') do |f|
+        f.puts 'a.rb'
+        f.puts 'b.rb'
+      end
+      expected_files << a
+
+      @rdoc.options.exclude = Regexp.new(['b.rb'].join('|'))
+      @rdoc.normalized_file_list [File.realpath(dir)]
+    end
+
+    files = files.map { |file| File.expand_path file }
+
+    assert_equal expected_files, files
+  end
+
   def test_parse_file
     @rdoc.store = RDoc::Store.new
 
     temp_dir do |dir|
       @rdoc.options.root = Pathname(Dir.pwd)
 
-      open 'test.txt', 'w' do |io|
+      File.open 'test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -223,7 +277,7 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do |dir|
       @rdoc.options.parse %W[--root #{test_path}]
 
-      open 'include.txt', 'w' do |io|
+      File.open 'include.txt', 'w' do |io|
         io.puts ':include: test.txt'
       end
 
@@ -244,7 +298,7 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.options.page_dir = Pathname('pages')
       @rdoc.options.root = Pathname(Dir.pwd)
 
-      open 'pages/test.txt', 'w' do |io|
+      File.open 'pages/test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -263,7 +317,7 @@ class TestRDocRDoc < RDoc::TestCase
     temp_dir do |dir|
       @rdoc.options.root = Pathname(dir)
 
-      open 'test.txt', 'w' do |io|
+      File.open 'test.txt', 'w' do |io|
         io.puts 'hi'
       end
 
@@ -296,7 +350,6 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_parse_file_forbidden
     skip 'chmod not supported' if Gem.win_platform?
-    skip 'skipped in root privilege' if Process.uid == 0
 
     @rdoc.store = RDoc::Store.new
 
@@ -340,7 +393,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_remove_unparseable_tags_emacs
     temp_dir do
-      open 'TAGS', 'wb' do |io| # emacs
+      File.open 'TAGS', 'wb' do |io| # emacs
         io.write "\f\nlib/foo.rb,43\n"
       end
 
@@ -354,7 +407,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_remove_unparseable_tags_vim
     temp_dir do
-      open 'TAGS', 'w' do |io| # emacs
+      File.open 'TAGS', 'w' do |io| # emacs
         io.write "!_TAG_"
       end
 
@@ -393,7 +446,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists
     Dir.mktmpdir {|path|
-      open @rdoc.output_flag_file(path), 'w' do |io|
+      File.open @rdoc.output_flag_file(path), 'w' do |io|
         io.puts Time.at 0
         io.puts "./lib/rdoc.rb\t#{Time.at 86400}"
       end
@@ -407,7 +460,7 @@ class TestRDocRDoc < RDoc::TestCase
 
   def test_setup_output_dir_exists_empty_created_rid
     Dir.mktmpdir {|path|
-      open @rdoc.output_flag_file(path), 'w' do end
+      File.open @rdoc.output_flag_file(path), 'w' do end
 
       e = assert_raises RDoc::Error do
         @rdoc.setup_output_dir path, false
@@ -465,6 +518,25 @@ class TestRDocRDoc < RDoc::TestCase
       @rdoc.update_output_dir d, Time.now, {}
 
       refute File.exist? "#{d}/created.rid"
+    end
+  end
+
+  def test_update_output_dir_with_reproducible_time
+    Dir.mktmpdir do |d|
+      backup_epoch = ENV['SOURCE_DATE_EPOCH']
+      ruby_birthday = Time.parse 'Wed, 24 Feb 1993 21:00:00 +0900'
+      ENV['SOURCE_DATE_EPOCH'] = ruby_birthday.to_i.to_s
+
+      @rdoc.update_output_dir d, Time.now, {}
+
+      assert File.exist? "#{d}/created.rid"
+
+      f = File.open("#{d}/created.rid", 'r')
+      head_timestamp = Time.parse f.gets.chomp
+      f.close
+      assert_equal ruby_birthday, head_timestamp
+
+      ENV['SOURCE_DATE_EPOCH'] = backup_epoch
     end
   end
 

@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 require 'ripper'
 
 class RDoc::RipperStateLex
@@ -83,6 +84,15 @@ class RDoc::RipperStateLex
       when '&&', '||', '+=', '-=', '*=', '**=',
            '&=', '|=', '^=', '<<=', '>>=', '||=', '&&='
         @lex_state = EXPR_BEG
+      when '::'
+        case @lex_state
+        when EXPR_ARG, EXPR_CMDARG
+          @lex_state = EXPR_DOT
+        when EXPR_FNAME, EXPR_DOT
+          @lex_state = EXPR_ARG
+        else
+          @lex_state = EXPR_BEG
+        end
       else
         case @lex_state
         when EXPR_FNAME, EXPR_DOT
@@ -109,8 +119,10 @@ class RDoc::RipperStateLex
         else
           @lex_state = EXPR_BEG
         end
-      when 'begin'
+      when 'begin', 'case', 'when'
         @lex_state = EXPR_BEG
+      when 'return', 'break'
+        @lex_state = EXPR_MID
       else
         if @lex_state == EXPR_FNAME
           @lex_state = EXPR_END
@@ -245,7 +257,7 @@ class RDoc::RipperStateLex
       case @lex_state
       when EXPR_FNAME
         @lex_state = EXPR_ENDFN
-      when EXPR_CLASS
+      when EXPR_CLASS, EXPR_CMDARG, EXPR_MID
         @lex_state = EXPR_ARG
       else
         @lex_state = EXPR_CMDARG
@@ -330,8 +342,10 @@ class RDoc::RipperStateLex
       @heredoc_queue << retrieve_heredoc_info(tk)
       @inner_lex.lex_state = EXPR_END unless RIPPER_HAS_LEX_STATE
     when :on_nl, :on_ignored_nl, :on_comment, :on_heredoc_end then
-      unless @heredoc_queue.empty?
+      if !@heredoc_queue.empty?
         get_heredoc_tk(*@heredoc_queue.shift)
+      elsif tk[:text].nil? # :on_ignored_nl sometimes gives nil
+        tk[:text] = ''
       end
     when :on_words_beg then
       tk = get_words_tk(tk)

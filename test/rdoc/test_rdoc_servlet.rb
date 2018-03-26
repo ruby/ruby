@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocServlet < RDoc::TestCase
 
@@ -69,7 +69,7 @@ class TestRDocServlet < RDoc::TestCase
       FileUtils.mkdir 'css'
 
       now = Time.now
-      open 'css/rdoc.css', 'w' do |io| io.write 'h1 { color: red }' end
+      File.open 'css/rdoc.css', 'w' do |io| io.write 'h1 { color: red }' end
       File.utime now, now, 'css/rdoc.css'
 
       @s.asset_dirs[:darkfish] = '.'
@@ -143,7 +143,7 @@ class TestRDocServlet < RDoc::TestCase
 
       @s.asset_dirs[:darkfish] = '.'
 
-      @req.path = '/mount/path/css/rdoc.css'
+      @req.path = '/mount/path/css/rdoc.css'.dup
 
       @s.do_GET @req, @res
 
