@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupFormatter < RDoc::TestCase
 
@@ -111,15 +111,15 @@ class TestRDocMarkupFormatter < RDoc::TestCase
 
     assert_equal 'http',        scheme
     assert_equal 'example/foo', url
-    assert_equal nil,           id
+    assert_nil   id
   end
 
   def test_parse_url_anchor
     scheme, url, id = @to.parse_url '#foottext-1'
 
-    assert_equal nil,           scheme
+    assert_nil   scheme
     assert_equal '#foottext-1', url
-    assert_equal nil,           id
+    assert_nil   id
   end
 
   def test_parse_url_link
@@ -127,7 +127,7 @@ class TestRDocMarkupFormatter < RDoc::TestCase
 
     assert_equal 'link',       scheme
     assert_equal 'README.txt', url
-    assert_equal nil,          id
+    assert_nil   id
   end
 
   def test_parse_url_link_id
@@ -135,7 +135,7 @@ class TestRDocMarkupFormatter < RDoc::TestCase
 
     assert_equal 'link',                 scheme
     assert_equal 'README.txt#label-foo', url
-    assert_equal nil,                    id
+    assert_nil   id
   end
 
   def test_parse_url_rdoc_label
@@ -143,7 +143,7 @@ class TestRDocMarkupFormatter < RDoc::TestCase
 
     assert_equal 'link', scheme
     assert_equal '#foo', url
-    assert_equal nil,    id
+    assert_nil   id
 
     scheme, url, id = @to.parse_url 'rdoc-label:foo:bar'
 
@@ -157,13 +157,13 @@ class TestRDocMarkupFormatter < RDoc::TestCase
 
     assert_equal 'http',               scheme
     assert_equal 'http://example/foo', url
-    assert_equal nil,                  id
+    assert_nil   id
 
     scheme, url, id = @to.parse_url 'https://example/foo'
 
     assert_equal 'https',               scheme
     assert_equal 'https://example/foo', url
-    assert_equal nil,                   id
+    assert_nil   id
   end
 
   def test_convert_tt_special
@@ -173,4 +173,3 @@ class TestRDocMarkupFormatter < RDoc::TestCase
   end
 
 end
-

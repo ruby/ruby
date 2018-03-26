@@ -1,7 +1,7 @@
 # coding: utf-8
 # frozen_string_literal: true
 
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupParser < RDoc::TestCase
 
@@ -1068,7 +1068,7 @@ the time
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
 
-    assert_equal nil, parser.skip(:NONE, false)
+    assert_nil parser.skip(:NONE, false)
 
     assert_equal [:NEWLINE, "\n", 9, 0], parser.peek_token
   end

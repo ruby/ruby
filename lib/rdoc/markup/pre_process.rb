@@ -266,6 +266,7 @@ class RDoc::Markup::PreProcess
     end
 
     content = RDoc::Encoding.read_file full_name, encoding, true
+    content = RDoc::Encoding.remove_magic_comment content
 
     # strip magic comment
     content = content.sub(/\A# .*coding[=:].*$/, '').lstrip

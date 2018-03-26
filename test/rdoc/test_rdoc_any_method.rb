@@ -133,7 +133,7 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
@@ -143,6 +143,19 @@ method(a, b) { |c, d| ... }
     aliased_method = Marshal.load Marshal.dump(@c2_a)
 
     aliased_method.store = @store
+
+    assert_equal 'C2#a',  aliased_method.full_name
+    assert_equal 'C2',    aliased_method.parent_name
+    assert_equal '()',    aliased_method.params
+    assert_equal @c2_b,   aliased_method.is_alias_for, 'is_alias_for'
+    assert                aliased_method.display?
+  end
+
+  def test_marshal_load_aliased_method_with_nil_singleton
+    aliased_method = Marshal.load Marshal.dump(@c2_a)
+
+    aliased_method.store = @store
+    aliased_method.is_alias_for = ["C2", nil, "b"]
 
     assert_equal 'C2#a',  aliased_method.full_name
     assert_equal 'C2',    aliased_method.parent_name
@@ -207,9 +220,9 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
-    assert_equal nil,            loaded.file
+    assert_nil                   loaded.file
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
     assert_nil                   loaded.is_alias_for
@@ -264,7 +277,7 @@ method(a, b) { |c, d| ... }
     assert_equal 'Klass#method', loaded.full_name
     assert_equal 'method',       loaded.name
     assert_equal 'param',        loaded.params
-    assert_equal nil,            loaded.singleton # defaults to nil
+    assert_nil                   loaded.singleton # defaults to nil
     assert_equal :public,        loaded.visibility
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
@@ -467,4 +480,3 @@ method(a, b) { |c, d| ... }
   end
 
 end
-

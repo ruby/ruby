@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'rdoc/test_case'
+require 'minitest_helper'
 
 class TestRDocMarkupToMarkdown < RDoc::Markup::TextFormatterTestCase
 

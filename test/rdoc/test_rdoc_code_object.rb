@@ -213,7 +213,7 @@ class TestRDocCodeObject < XrefTestCase
   end
 
   def test_file_name
-    assert_equal nil, @co.file_name
+    assert_nil @co.file_name
 
     @co.record_location @store.add_file 'lib/file.rb'
 

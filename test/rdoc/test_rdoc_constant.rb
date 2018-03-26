@@ -118,7 +118,7 @@ class TestRDocConstant < XrefTestCase
     assert_equal cm,             loaded.parent
     assert_equal section,        loaded.section
 
-    assert loaded.display?
+    assert                       loaded.display?
   end
 
   def test_marshal_load_version_0
