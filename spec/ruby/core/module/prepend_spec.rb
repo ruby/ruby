@@ -104,6 +104,20 @@ describe "Module#prepend" do
     c.new.alias.should == :m
   end
 
+  it "reports the class for the owner of an aliased method on the class" do
+    m = Module.new
+    c = Class.new { prepend(m); def meth; :c end; alias_method :alias, :meth }
+    c.instance_method(:alias).owner.should == c
+  end
+
+  ruby_version_is "2.3" do
+    it "reports the class for the owner of a method aliased from the prepended module" do
+      m = Module.new { def meth; :m end }
+      c = Class.new { prepend(m); alias_method :alias, :meth }
+      c.instance_method(:alias).owner.should == c
+    end
+  end
+
   it "sees an instance of a prepended class as kind of the prepended module" do
     m = Module.new
     c = Class.new { prepend(m) }
