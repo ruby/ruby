@@ -13,9 +13,11 @@ ruby_version_is '2.4' do
         @lazy.force.should == [0, 1]
       end
 
-      it 'return same value after rewind' do
-        @lazy.force.should == [0, 1]
-        @lazy.force.should == [0, 1]
+      ruby_bug "#14495", "2.4"..."2.5.1" do
+        it 'return same value after rewind' do
+          @lazy.force.should == [0, 1]
+          @lazy.force.should == [0, 1]
+        end
       end
 
       it 'sets the size to nil' do
@@ -33,9 +35,11 @@ ruby_version_is '2.4' do
         @lazy.force.should == [0, 1]
       end
 
-      it 'return same value after rewind' do
-        @lazy.force.should == [0, 1]
-        @lazy.force.should == [0, 1]
+      ruby_bug "#14495", "2.4"..."2.5.1" do
+        it 'return same value after rewind' do
+          @lazy.force.should == [0, 1]
+          @lazy.force.should == [0, 1]
+        end
       end
 
       it 'sets the size to nil' do
@@ -56,10 +60,12 @@ ruby_version_is '2.4' do
         @lazy = enum.lazy
       end
 
-      it 'return same value after rewind' do
-        enum = @lazy.uniq { |_, label| label.downcase }
-        enum.force.should == [[0, 'foo'], [2, 'bar']]
-        enum.force.should == [[0, 'foo'], [2, 'bar']]
+      ruby_bug "#14495", "2.4"..."2.5.1" do
+        it 'return same value after rewind' do
+          enum = @lazy.uniq { |_, label| label.downcase }
+          enum.force.should == [[0, 'foo'], [2, 'bar']]
+          enum.force.should == [[0, 'foo'], [2, 'bar']]
+        end
       end
 
       it 'returns all yield arguments as an array' do

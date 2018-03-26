@@ -122,6 +122,18 @@ describe "Dir.glob" do
     Dir.glob('**/**/**').empty?.should == false
   end
 
+  it "handles simple filename patterns" do
+    Dir.glob('.dotfile').should == ['.dotfile']
+  end
+
+  it "handles simple directory patterns" do
+    Dir.glob('.dotsubdir/').should == ['.dotsubdir/']
+  end
+
+  it "handles simple directory patterns applied to non-directories" do
+    Dir.glob('nondotfile/').should == []
+  end
+
   platform_is_not(:windows) do
     it "matches the literal character '\\' with option File::FNM_NOESCAPE" do
       Dir.mkdir 'foo?bar'
