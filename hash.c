@@ -4522,40 +4522,48 @@ env_update(VALUE env, VALUE hash)
  *   h.path_to_key(:k)  #=> nil
  */
 static VALUE
-rb_hash_path_to_key(VALUE hash, VALUE key)
+hash_path_to_key(VALUE hash, VALUE key, int recurse)
 {
-    VALUE path = rb_ary_new2(0);
-    VALUE prev_hsh = rb_hash_new();
     VALUE keys;
+    keys = rb_hash_keys(hash);
+    long keys_length = RARRAY_LEN(keys);
+    VALUE path = rb_ary_new2(keys_length);
     VALUE curr_key;
     VALUE curr_element;
+    VALUE recurr_path;
     long i;
+    if (recurse) return Qnil;
 
-    while(!rb_eql(hash, Qnil) && !rb_hash_eql(prev_hsh, hash)){
-        keys = rb_hash_keys(hash);
-        prev_hsh = hash;
+    for (i = 0; i < keys_length; ++i){
+        curr_key = RARRAY_AREF(keys, i);
 
-        for (i = 0; i < RARRAY_LEN(keys); ++i)
-        {
-            curr_key = RARRAY_AREF(keys, i);
+        if(rb_eql(key, curr_key)){
+            return path;
+        }
 
-            if(rb_eql(key, curr_key))
-                return path;
+        curr_element = rb_hash_aref(hash, curr_key);
 
-            curr_element = rb_hash_aref(hash, curr_key);
+        if (RB_TYPE_P(curr_element, T_HASH) && !rb_hash_eql(hash, curr_element)){
+            recurr_path = rb_exec_recursive(hash_path_to_key, curr_element, key);
 
-            if (rb_hash_eql(hash, curr_element))
-                return Qnil;
-
-            rb_ary_push(path, curr_key);
-
-            if (RB_TYPE_P(curr_element, T_HASH))
-                hash = curr_element;
-            else
-                rb_ary_delete(path, curr_key);
+            if (!NIL_P(recurr_path)){
+                rb_ary_push(path, curr_key);
+                return rb_ary_concat(path, recurr_path);
+            }
+        }
+        else{
+            path = rb_ary_new2(keys_length);
         }
     }
+
     return Qnil;
+}
+
+
+static VALUE
+rb_hash_path_to_key(VALUE hash, VALUE key)
+{
+    return hash_path_to_key(hash, key, 0);
 }
 
 /*

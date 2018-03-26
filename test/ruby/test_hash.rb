@@ -1653,22 +1653,24 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_path_to_key
-    x = @cls[x: 3, y: [1,2,3], z: @cls[a: @cls[w: 100]]]
+    x = @cls[x: @cls[e: 1], y: [1,2,3], z: @cls[a: @cls[w: 100]]]
     y = @cls[]
     z = @cls[a: @cls[b: 1, c: 10]]
 
     assert_equal([:z, :a], x.path_to_key(:w))
     assert_equal([], x.path_to_key(:x))
+    assert_equal([:a], z.path_to_key(:c))
     assert_equal(nil, y.path_to_key(:w))
     assert_equal(nil, y.path_to_key(:inexistent))
-    assert_equal([:a], z.path_to_key(:c))
   end
 
   def test_path_to_key_recursive_hash
     x = @cls[z: @cls[a: @cls[w: 100]]]
-    x[:b] = x
-    assert_equal(nil, x.path_to_key(:inexistent))
+    x[:b] = @cls[d: x]
+    x[:b][:d][:e] = x
+
     assert_equal([:z,:a], x.path_to_key(:w))
+    assert_equal(nil, x.path_to_key(:inexistent))
   end
 
   class TestSubHash < TestHash
