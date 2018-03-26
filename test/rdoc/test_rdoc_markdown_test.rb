@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'minitest/autorun'
+require 'minitest_helper'
 require 'pp'
 
 require 'rdoc'
