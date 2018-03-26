@@ -1255,7 +1255,7 @@ nucomp_inspect(VALUE self)
  * call-seq:
  *    cmp.finite?  ->  true or false
  *
- * Returns +true+ if +cmp+'s magnitude is a finite number,
+ * Returns +true+ if +cmp+'s real and imaginary values are both finite numbers,
  * otherwise returns +false+.
  */
 static VALUE
