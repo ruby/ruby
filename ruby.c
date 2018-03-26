@@ -238,7 +238,7 @@ usage(const char *name, int help)
 	M("-s",		   "",			   "enable some switch parsing for switches after script name"),
 	M("-S",		   "",			   "look for the script using PATH environment variable"),
 	M("-T[level=1]",   "",			   "turn on tainting checks"),
-	M("-v",		   ", --verbose",	   "print version number, then turn on verbose mode"),
+	M("-v",		   "",			   "print the version number, then turn on verbose mode"),
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
@@ -254,6 +254,7 @@ usage(const char *name, int help)
 	  "enable or disable features. see below for available features"),
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
+	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
 	M("--version",                              "", "print the version"),
 	M("--help",			            "", "show this message, -h for short message"),
     };
