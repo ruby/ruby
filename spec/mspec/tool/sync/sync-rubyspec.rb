@@ -13,7 +13,6 @@ IMPLS = {
   mri: {
     git: "https://github.com/ruby/ruby.git",
     master: "trunk",
-    merge_message: "Update to ruby/spec@",
   },
 }
 
@@ -64,7 +63,7 @@ class RubyImplementation
   end
 
   def last_merge_message
-    message = @data[:merge_message] || "Merge ruby/spec commit"
+    message = @data[:merge_message] || "Update to ruby/spec@"
     message.gsub!("ruby/spec", "ruby/mspec") if MSPEC
     message
   end
