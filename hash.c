@@ -4510,28 +4510,21 @@ env_update(VALUE env, VALUE hash)
     return env;
 }
 
-/*
- * call-seq:
- *   hsh.path_to_key(key)   -> array
- *
- * Return an array containing the path towards getting to the given key.
- *
- *   h = { x: 3, y: [1,2,3], z: { w: { a: 1000}} }
- *   h.path_to_key(:a)  #=> [:z, :w]
- *   h.path_to_key(:x)  #=> []
- *   h.path_to_key(:k)  #=> nil
- */
 static VALUE
 hash_path_to_key(VALUE hash, VALUE key, int recurse)
 {
     VALUE keys;
-    keys = rb_hash_keys(hash);
-    long keys_length = RARRAY_LEN(keys);
-    VALUE path = rb_ary_new2(keys_length);
+    long keys_length;
+    long i;
+    VALUE path;
     VALUE curr_key;
     VALUE curr_element;
     VALUE recurr_path;
-    long i;
+
+    keys = rb_hash_keys(hash);
+    keys_length = RARRAY_LEN(keys);
+    path = rb_ary_new2(keys_length);
+
     if (recurse) return Qnil;
 
     for (i = 0; i < keys_length; ++i){
@@ -4559,7 +4552,17 @@ hash_path_to_key(VALUE hash, VALUE key, int recurse)
     return Qnil;
 }
 
-
+/*
+ * call-seq:
+ *   hsh.path_to_key(key)   -> array
+ *
+ * Return an array containing the path towards getting to the given key.
+ *
+ *   h = { x: 3, y: [1,2,3], z: { w: { a: 1000}} }
+ *   h.path_to_key(:a)  #=> [:z, :w]
+ *   h.path_to_key(:x)  #=> []
+ *   h.path_to_key(:k)  #=> nil
+ */
 static VALUE
 rb_hash_path_to_key(VALUE hash, VALUE key)
 {
