@@ -1219,7 +1219,7 @@ const char concatenated_literal[[]] = "literals" "to"
     [rb_cv_string_literal_concatenation=no])]
 )
 AS_IF([test "$rb_cv_string_literal_concatenation" = no], [
-  AC_DEFINE(NO_STRING_LITERAL_CONCATENATION,1)
+  AC_MSG_ERROR([No string literal concatenation])
 ])
 
 AC_CACHE_CHECK(for variable length prototypes and stdarg.h, rb_cv_stdarg,
