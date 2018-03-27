@@ -255,7 +255,7 @@ usage(const char *name, int help)
 	M("--external-encoding=encoding",           ", --internal-encoding=encoding",
 	  "specify the default external or internal character encoding"),
 	M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
-	M("--version",                              "", "print the version"),
+	M("--version",                              "", "print the version number, then exit"),
 	M("--help",			            "", "show this message, -h for short message"),
     };
     static const struct message dumps[] = {
