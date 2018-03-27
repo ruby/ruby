@@ -565,4 +565,52 @@ class TestQueue < Test::Unit::TestCase
       puts 'exit'
     INPUT
   end
+
+  def test_fork_while_queue_waiting
+    q = Queue.new
+    sq = SizedQueue.new(1)
+    thq = Thread.new { q.pop }
+    thsq = Thread.new { sq.pop }
+    Thread.pass until thq.stop? && thsq.stop?
+
+    pid = fork do
+      exit!(1) if q.num_waiting != 0
+      exit!(2) if sq.num_waiting != 0
+      exit!(6) unless q.empty?
+      exit!(7) unless sq.empty?
+      q.push :child_q
+      sq.push :child_sq
+      exit!(3) if q.pop != :child_q
+      exit!(4) if sq.pop != :child_sq
+      exit!(0)
+    end
+    _, s = Process.waitpid2(pid)
+    assert_predicate s, :success?, 'no segfault [ruby-core:86316] [Bug #14634]'
+
+    q.push :thq
+    sq.push :thsq
+    assert_equal :thq, thq.value
+    assert_equal :thsq, thsq.value
+
+    sq.push(1)
+    th = Thread.new { q.pop; sq.pop }
+    thsq = Thread.new { sq.push(2) }
+    Thread.pass until th.stop? && thsq.stop?
+    pid = fork do
+      exit!(1) if q.num_waiting != 0
+      exit!(2) if sq.num_waiting != 0
+      exit!(3) unless q.empty?
+      exit!(4) if sq.empty?
+      exit!(5) if sq.pop != 1
+      exit!(0)
+    end
+    _, s = Process.waitpid2(pid)
+    assert_predicate s, :success?, 'no segfault [ruby-core:86316] [Bug #14634]'
+
+    assert_predicate thsq, :stop?
+    assert_equal 1, sq.pop
+    assert_same sq, thsq.value
+    q.push('restart th')
+    assert_equal 2, th.value
+  end if Process.respond_to?(:fork)
 end
