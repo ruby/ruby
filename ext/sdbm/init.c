@@ -826,6 +826,7 @@ fsdbm_each_pair(VALUE obj)
     GetDBM2(obj, dbmp, dbm);
     for (key = sdbm_firstkey(dbm); key.dptr; key = sdbm_nextkey(dbm)) {
 	val = sdbm_fetch(dbm, key);
+	if (!val.dptr) rb_raise(rb_eDBMError, "not found");
 	keystr = rb_external_str_new(key.dptr, key.dsize);
 	valstr = rb_external_str_new(val.dptr, val.dsize);
 	rb_yield(rb_assoc_new(keystr, valstr));

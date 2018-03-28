@@ -721,8 +721,12 @@ getpair(char *pag, datum key)
 	if ((i = seepair(pag, n, key.dptr, key.dsize)) == 0)
 		return nullitem;
 
-	val.dptr = pag + GET_SHORT(ino,i + 1);
-	val.dsize = GET_SHORT(ino,i) - GET_SHORT(ino,i + 1);
+	n = GET_SHORT(ino,i + 1);
+	if (n <= 0 || n > PBLKSIZ)
+		return nullitem;
+
+	val.dptr = pag + n;
+	val.dsize = GET_SHORT(ino,i) - n;
 	return val;
 }
 
@@ -747,10 +751,16 @@ getnkey(char *pag, int num)
 	if (GET_SHORT(ino,0) == 0 || num > GET_SHORT(ino,0))
 		return nullitem;
 
-	off = (num > 1) ? GET_SHORT(ino,num - 1) : PBLKSIZ;
+	off = PBLKSIZ;
+	if (num > 1 && ((off = GET_SHORT(ino,num - 1)) < 0 || off > PBLKSIZ))
+		return nullitem;
 
-	key.dptr = pag + GET_SHORT(ino,num);
-	key.dsize = off - GET_SHORT(ino,num);
+	num = GET_SHORT(ino,num);
+	if (num < 0 || num > off)
+		return nullitem;
+
+	key.dptr = pag + num;
+	key.dsize = off - num;
 
 	return key;
 }
