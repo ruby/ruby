@@ -293,7 +293,7 @@ module WEBrick
           data << "Set-Cookie: " << cookie.to_s << CRLF
         }
         data << CRLF
-        _write_data(socket, data)
+        socket.write(data)
       end
     end
 
@@ -401,13 +401,13 @@ module WEBrick
               @body.readpartial( @buffer_size, buf ) # there is no need to clear buf?
               data << format("%x", buf.bytesize) << CRLF
               data << buf << CRLF
-              _write_data(socket, data)
+              socket.write(data)
               data.clear
               @sent_size += buf.bytesize
             end
           rescue EOFError # do nothing
           end
-          _write_data(socket, "0#{CRLF}#{CRLF}")
+          socket.write("0#{CRLF}#{CRLF}")
         else
           size = @header['content-length'].to_i
           _send_file(socket, @body, 0, size)
@@ -428,13 +428,13 @@ module WEBrick
           data = ""
           data << format("%x", buf.bytesize) << CRLF
           data << buf << CRLF
-          _write_data(socket, data)
+          socket.write(data)
           @sent_size += buf.bytesize
         end
-        _write_data(socket, "0#{CRLF}#{CRLF}")
+        socket.write("0#{CRLF}#{CRLF}")
       else
         if @body && @body.bytesize > 0
-          _write_data(socket, @body)
+          socket.write(@body)
           @sent_size = @body.bytesize
         end
       end
@@ -449,18 +449,19 @@ module WEBrick
 
       if size == 0
         while buf = input.read(@buffer_size)
-          _write_data(output, buf)
+          output.write(buf)
         end
       else
         while size > 0
           sz = @buffer_size < size ? @buffer_size : size
           buf = input.read(sz)
-          _write_data(output, buf)
+          output.write(buf)
           size -= buf.bytesize
         end
       end
     end
 
+    # preserved for compatibility with some 3rd-party handlers
     def _write_data(socket, data)
       socket << data
     end
