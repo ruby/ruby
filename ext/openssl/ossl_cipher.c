@@ -560,6 +560,8 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
     in_len = RSTRING_LEN(data);
 
     GetCipher(self, ctx);
+    if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
+	ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
     if (!ossl_cipher_update_long(ctx, NULL, &out_len, in, in_len))
         ossl_raise(eCipherError, "couldn't set additional authenticated data");

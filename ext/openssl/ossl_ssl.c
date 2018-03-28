@@ -427,6 +427,13 @@ ossl_sslctx_session_remove_cb(SSL_CTX *ctx, SSL_SESSION *sess)
     void *ptr;
     int state = 0;
 
+    /*
+     * This callback is also called for all sessions in the internal store
+     * when SSL_CTX_free() is called.
+     */
+    if (rb_during_gc())
+	return;
+
     OSSL_Debug("SSL SESSION remove callback entered");
 
     if ((ptr = SSL_CTX_get_ex_data(ctx, ossl_ssl_ex_ptr_idx)) == NULL)
@@ -1427,21 +1434,25 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
     }
 
     ilen = NUM2INT(len);
-    if(NIL_P(str)) str = rb_str_new(0, ilen);
-    else{
-        StringValue(str);
-        rb_str_modify(str);
-        rb_str_resize(str, ilen);
+    if (NIL_P(str))
+	str = rb_str_new(0, ilen);
+    else {
+	StringValue(str);
+	if (RSTRING_LEN(str) >= ilen)
+	    rb_str_modify(str);
+	else
+	    rb_str_modify_expand(str, ilen - RSTRING_LEN(str));
     }
-    if(ilen == 0) return str;
+    OBJ_TAINT(str);
+    rb_str_set_len(str, 0);
+    if (ilen == 0)
+	return str;
 
     GetSSL(self, ssl);
     GetOpenFile(ossl_ssl_get_io(self), fptr);
     if (ssl) {
-	if(!nonblock && SSL_pending(ssl) <= 0)
-	    rb_thread_wait_fd(FPTR_TO_FD(fptr));
 	for (;;){
-	    nread = SSL_read(ssl, RSTRING_PTR(str), RSTRING_LENINT(str));
+	    nread = SSL_read(ssl, RSTRING_PTR(str), ilen);
 	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
@@ -1481,8 +1492,6 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
 
   end:
     rb_str_set_len(str, nread);
-    OBJ_TAINT(str);
-
     return str;
 }
 
