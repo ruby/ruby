@@ -25,6 +25,28 @@ unixsock_connect_internal(VALUE a)
 			        arg->sockaddrlen, 0);
 }
 
+static VALUE
+unixsock_path_value(VALUE path)
+{
+#ifdef __linux__
+#define TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE 0
+
+    VALUE name = path;
+#if TO_STR_FOR_LINUX_ABSTRACT_NAMESPACE
+    const int isstr = !NIL_P(name = rb_check_string_type(name));
+#else
+    const int isstr = RB_TYPE_P(name, T_STRING);
+#endif
+    if (isstr) {
+        if (RSTRING_LEN(name) == 0 || RSTRING_PTR(name)[0] == '\0') {
+            rb_check_safe_obj(name);
+            return name;             /* ignore encoding */
+        }
+    }
+#endif
+    return rb_get_path(path);
+}
+
 VALUE
 rsock_init_unixsock(VALUE sock, VALUE path, int server)
 {
@@ -33,7 +55,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     int fd, status;
     rb_io_t *fptr;
 
-    FilePathValue(path);
+    path = unixsock_path_value(path);
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {

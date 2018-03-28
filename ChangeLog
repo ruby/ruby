@@ -1,3 +1,10 @@
+Wed Mar 28 21:24:24 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	unixsocket.c: abstract namespace
+
+	* ext/socket/unixsocket.c (unixsock_path_value): fix r62991 for
+	  Linux abstract namespace.
+
 Wed Mar 28 19:36:24 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	pack.c: fix underflow
