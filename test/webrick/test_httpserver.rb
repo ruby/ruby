@@ -409,4 +409,71 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     }
     assert_equal(0, requested, "Server responded to #{requested} requests after shutdown")
   end
+
+  def test_gigantic_request_header
+    log_tester = lambda {|log, access_log|
+      assert_equal 1, log.size
+      assert log[0].include?('ERROR headers too large')
+    }
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount('/', WEBrick::HTTPServlet::FileHandler, __FILE__)
+      TCPSocket.open(addr, port) do |c|
+        c.write("GET / HTTP/1.0\r\n")
+        junk = "X-Junk: #{' ' * 1024}\r\n"
+        assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
+          loop { c.write(junk) }
+        end
+      end
+    }
+  end
+
+  def test_eof_in_chunk
+    log_tester = lambda do |log, access_log|
+      assert_equal 1, log.size
+      assert log[0].include?('ERROR bad chunk data size')
+    end
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount_proc('/', ->(req, res) { res.body = req.body })
+      TCPSocket.open(addr, port) do |c|
+        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
+                "Transfer-Encoding: chunked\r\n\r\n5\r\na")
+        c.shutdown(Socket::SHUT_WR) # trigger EOF in server
+        res = c.read
+        assert_match %r{\AHTTP/1\.1 400 }, res
+      end
+    }
+  end
+
+  def test_big_chunks
+    nr_out = 3
+    buf = 'big' # 3 bytes is bigger than 2!
+    config = { :InputBufferSize => 2 }.freeze
+    total = 0
+    all = ''
+    TestWEBrick.start_httpserver(config){|server, addr, port, log|
+      server.mount_proc('/', ->(req, res) {
+        err = []
+        ret = req.body do |chunk|
+          n = chunk.bytesize
+          n > config[:InputBufferSize] and err << "#{n} > :InputBufferSize"
+          total += n
+          all << chunk
+        end
+        ret.nil? or err << 'req.body should return nil'
+        (buf * nr_out) == all or err << 'input body does not match expected'
+        res.header['connection'] = 'close'
+        res.body = err.join("\n")
+      })
+      TCPSocket.open(addr, port) do |c|
+        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
+                "Transfer-Encoding: chunked\r\n\r\n")
+        chunk = "#{buf.bytesize.to_s(16)}\r\n#{buf}\r\n"
+        nr_out.times { c.write(chunk) }
+        c.write("0\r\n\r\n")
+        head, body = c.read.split("\r\n\r\n")
+        assert_match %r{\AHTTP/1\.1 200 OK}, head
+        assert_nil body
+      end
+    }
+  end
 end
