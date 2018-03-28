@@ -112,6 +112,11 @@ module WEBrick
             raise HTTPStatus::RequestRangeNotSatisfiable if body.empty?
             body << "--" << boundary << "--" << CRLF
             res["content-type"] = "multipart/byteranges; boundary=#{boundary}"
+            if req.http_version < '1.1'
+              res['connection'] = 'close'
+            else
+              res.chunked = true
+            end
             res.body = body
           elsif range = ranges[0]
             first, last = prepare_range(range, filesize)
