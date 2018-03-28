@@ -441,4 +441,21 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     s&.shutdown
     th&.join
   end
+
+  def test_gigantic_request_header
+    log_tester = lambda {|log, access_log|
+      assert_equal 1, log.size
+      assert log[0].include?('ERROR headers too large')
+    }
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount('/', WEBrick::HTTPServlet::FileHandler, __FILE__)
+      TCPSocket.open(addr, port) do |c|
+        c.write("GET / HTTP/1.0\r\n")
+        junk = -"X-Junk: #{' ' * 1024}\r\n"
+        assert_raise(Errno::ECONNRESET, Errno::EPIPE) do
+          loop { c.write(junk) }
+        end
+      end
+    }
+  end
 end
