@@ -15,16 +15,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def get_res_body(res)
-    body = res.body
-    if defined? body.read
-      begin
-        body.read
-      ensure
-        body.close
-      end
-    else
-      body
-    end
+    sio = StringIO.new
+    sio.binmode
+    res.send_body(sio)
+    sio.string
   end
 
   def make_range_request(range_spec)
@@ -76,6 +70,23 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
     res = make_range_response(filename, "bytes=0-0, -2")
     assert_match(%r{^multipart/byteranges}, res["content-type"])
+    body = get_res_body(res)
+    boundary = /; boundary=(.+)/.match(res['content-type'])[1]
+    off = filesize - 2
+    last = filesize - 1
+
+    exp = "--#{boundary}\r\n" \
+          "Content-Type: text/plain\r\n" \
+          "Content-Range: bytes 0-0/#{filesize}\r\n" \
+          "\r\n" \
+          "#{IO.read(__FILE__, 1)}\r\n" \
+          "--#{boundary}\r\n" \
+          "Content-Type: text/plain\r\n" \
+          "Content-Range: bytes #{off}-#{last}/#{filesize}\r\n" \
+          "\r\n" \
+          "#{IO.read(__FILE__, 2, off)}\r\n" \
+          "--#{boundary}--\r\n"
+    assert_equal exp, body
   end
 
   def test_filehandler

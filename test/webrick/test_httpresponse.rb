@@ -168,5 +168,38 @@ module WEBrick
       }
       assert_equal 0, logger.messages.length
     end
+
+    def test_send_body_proc
+      @res.body = Proc.new { |out| out.write('hello') }
+      IO.pipe do |r, w|
+        @res.send_body(w)
+        w.close
+        r.binmode
+        assert_equal 'hello', r.read
+      end
+      assert_equal 0, logger.messages.length
+    end
+
+    def test_send_body_proc_chunked
+      @res.body = Proc.new { |out| out.write('hello') }
+      @res.chunked = true
+      IO.pipe do |r, w|
+        @res.send_body(w)
+        w.close
+        r.binmode
+        assert_equal "5\r\nhello\r\n0\r\n\r\n", r.read
+      end
+      assert_equal 0, logger.messages.length
+    end
+
+    def test_set_error
+      status = 400
+      message = 'missing attribute'
+      @res.status = status
+      error = WEBrick::HTTPStatus[status].new(message)
+      body = @res.set_error(error)
+      assert_match(/#{@res.reason_phrase}/, body)
+      assert_match(/#{message}/, body)
+    end
   end
 end

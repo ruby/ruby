@@ -1,3 +1,101 @@
+Wed Mar 28 23:08:46 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	get rid of test error/failure on Windows introduced at r62955
+
+	* lib/webrick/httpresponse.rb (send_body_io): use seek if
+	  NotImplementedError is raised in IO.copy_stream with offset.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): ditto.
+
+Wed Mar 28 23:08:46 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: support Proc objects as body responses
+
+	* lib/webrick/httpresponse.rb (send_body): call send_body_proc
+	  (send_body_proc): new method
+	  (class ChunkedWrapper): new class
+
+	* test/webrick/test_httpresponse.rb (test_send_body_proc): new test
+	  (test_send_body_proc_chunked): ditto
+	  [Feature #855]
+
+	webrick: favor .write over << method
+
+	This will make the next change to use IO.copy_stream
+	easier-to-read.  When we can drop Ruby 2.4 support in a few
+	years, this will allow us to use writev(2) with multiple
+	arguments for headers and chunked responses.
+
+	* lib/webrick/cgi.rb (write): new wrapper method
+	  lib/webrick/httpresponse.rb: (send_header): use socket.write
+	  (send_body_io): ditto
+	  (send_body_string): ditto
+	  (send_body_proc): ditto
+	  (_write_data): ditto
+	  (ChunkedWrapper#write): ditto
+	  (_send_file): ditto
+
+	webrick/httpresponse: IO.copy_stream for regular files
+
+	Remove the redundant _send_file method since its functionality
+	is unnecessary with IO.copy_stream.  IO.copy_stream also allows
+	the use of sendfile under some OSes to speed up copies to
+	non-TLS sockets.
+
+	Testing with "curl >/dev/null" and "ruby -run -e httpd" to
+	read a 1G file over Linux loopback reveals a reduction from
+	around ~0.770 to ~0.490 seconds on the client side.
+
+	* lib/webrick/httpresponse.rb (send_body_io): use IO.copy_stream
+	  (_send_file): remove
+	  [Feature #14237]
+
+	webrick: use IO.copy_stream for single range response
+
+	This is also compatible with range responses generated
+	by Rack::File (tested with rack 2.0.3).
+
+	* lib/webrick/httpresponse.rb (send_body_io): use Content-Range
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  use File object for the single range case
+	* test/webrick/test_filehandler.rb (get_res_body): use send_body
+	  to test result
+
+	test/webrick/test_filehandler.rb: stricter multipart range test
+
+	We need to ensure we generate compatibile output in
+	the face of future changes
+
+	* test/webrick/test_filehandler.rb (test_make_partial_content):
+	  check response body
+
+	webrick: quiet warning for multi-part ranges
+
+	Content-Length is ignored by WEBrick::HTTPResponse even if we
+	calculate it, so instead we chunk responses to HTTP/1.1 clients
+	and terminate HTTP/1.0 connections.
+
+	* lib/webrick/httpservlet/filehandler.rb (make_partial_content):
+	  quiet warning
+
+	webrick/httpresponse: make ChunkedWrapper copy_stream-compatible
+
+	The .write method needs to return the number of bytes written
+	to avoid confusing IO.copy_stream.
+
+	* lib/webrick/httpresponse.rb (ChunkedWrapper#write): return bytes written
+	  (ChunkedWrapper#<<): return self
+
+	webrick: use IO.copy_stream for multipart response
+
+	Use the new Proc response body feature to generate a multipart
+	range response dynamically.  We use a flat array to minimize
+	object overhead as much as possible; as many ranges may fit
+	into an HTTP request header.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): new method
+	  (make_partial_content): use multipart_body
+
 Wed Mar 28 21:24:24 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	unixsocket.c: abstract namespace

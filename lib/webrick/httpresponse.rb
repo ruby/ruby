@@ -310,6 +310,8 @@ module WEBrick
     def send_body(socket) # :nodoc:
       if @body.respond_to? :readpartial then
         send_body_io(socket)
+      elsif @body.respond_to?(:call) then
+        send_body_proc(socket)
       else
         send_body_string(socket)
       end
@@ -428,9 +430,20 @@ module WEBrick
           end
           _write_data(socket, "0#{CRLF}#{CRLF}")
         else
-          size = @header['content-length'].to_i
-          _send_file(socket, @body, 0, size)
-          @sent_size = size
+          if %r{\Abytes (\d+)-(\d+)/\d+\z} =~ @header['content-range']
+            offset = $1.to_i
+            size = $2.to_i - offset + 1
+          else
+            offset = nil
+            size = @header['content-length']
+            size = size.to_i if size
+          end
+          begin
+            @sent_size = IO.copy_stream(@body, socket, size, offset)
+          rescue NotImplementedError
+            @body.seek(offset, IO::SEEK_SET)
+            @sent_size = IO.copy_stream(@body, socket, size)
+          end
         end
       ensure
         @body.close
@@ -459,24 +472,41 @@ module WEBrick
       end
     end
 
-    def _send_file(output, input, offset, size)
-      while offset > 0
-        sz = @buffer_size < size ? @buffer_size : size
-        buf = input.read(sz)
-        offset -= buf.bytesize
+    def send_body_proc(socket)
+      if @request_method == "HEAD"
+        # do nothing
+      elsif chunked?
+        @body.call(ChunkedWrapper.new(socket, self))
+        _write_data(socket, "0#{CRLF}#{CRLF}")
+      else
+        size = @header['content-length'].to_i
+        @body.call(socket)
+        @sent_size = size
+      end
+    end
+
+    class ChunkedWrapper
+      def initialize(socket, resp)
+        @socket = socket
+        @resp = resp
       end
 
-      if size == 0
-        while buf = input.read(@buffer_size)
-          _write_data(output, buf)
-        end
-      else
-        while size > 0
-          sz = @buffer_size < size ? @buffer_size : size
-          buf = input.read(sz)
-          _write_data(output, buf)
-          size -= buf.bytesize
-        end
+      def write(buf)
+        return 0 if buf.empty?
+        socket = @socket
+        @resp.instance_eval {
+          size = buf.bytesize
+          data = "#{size.to_s(16)}#{CRLF}#{buf}#{CRLF}"
+          _write_data(socket, data)
+          data.clear
+          @sent_size += size
+          size
+        }
+      end
+
+      def <<(*buf)
+        write(buf)
+        self
       end
     end
 
