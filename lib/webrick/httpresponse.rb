@@ -410,9 +410,15 @@ module WEBrick
           buf.clear
           socket.write("0#{CRLF}#{CRLF}")
         else
-          size = @header['content-length']
-          size = size.to_i if size
-          @sent_size = IO.copy_stream(@body, socket, size)
+          if %r{\Abytes (\d+)-(\d+)/\d+\z} =~ @header['content-range']
+            offset = $1.to_i
+            size = $2.to_i - offset + 1
+          else
+            offset = nil
+            size = @header['content-length']
+            size = size.to_i if size
+          end
+          @sent_size = IO.copy_stream(@body, socket, size, offset)
         end
       ensure
         @body.close

@@ -20,16 +20,10 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
   end
 
   def get_res_body(res)
-    body = res.body
-    if defined? body.read
-      begin
-        body.read
-      ensure
-        body.close
-      end
-    else
-      body
-    end
+    sio = StringIO.new
+    sio.binmode
+    res.send_body(sio)
+    sio.string
   end
 
   def make_range_request(range_spec)
