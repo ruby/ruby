@@ -1,3 +1,13 @@
+Thu Mar 28 15:24:15 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	Fix setting method visibility on method wrapped with prepend
+
+	Ignore prepended modules when looking for already defined methods on a
+	class to set the visibility on.
+	[Fix GH-1834]
+
+	From: Dylan Thacker-Smith Dylan.Smith@shopify.com
+
 Thu Mar 28 15:02:43 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	resolv.rb: close socket

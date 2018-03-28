@@ -1864,6 +1864,25 @@ class TestModule < Test::Unit::TestCase
     end;
   end
 
+  def test_prepend_private_super
+    wrapper = Module.new do
+      def wrapped
+        super + 1
+      end
+    end
+
+    klass = Class.new do
+      prepend wrapper
+
+      def wrapped
+        1
+      end
+      private :wrapped
+    end
+
+    assert_equal(2, klass.new.wrapped)
+  end
+
   def test_class_variables
     m = Module.new
     m.class_variable_set(:@@foo, 1)

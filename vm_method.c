@@ -1029,8 +1029,9 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 {
     rb_method_entry_t *me;
     VALUE defined_class;
+    VALUE origin_class = RCLASS_ORIGIN(klass);
 
-    me = search_method(klass, name, &defined_class);
+    me = search_method(origin_class, name, &defined_class);
     if (!me && RB_TYPE_P(klass, T_MODULE)) {
 	me = search_method(rb_cObject, name, &defined_class);
     }
@@ -1043,7 +1044,7 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     if (METHOD_ENTRY_VISI(me) != visi) {
 	rb_vm_check_redefinition_opt_method(me, klass);
 
-	if (klass == defined_class || RCLASS_ORIGIN(klass) == defined_class) {
+	if (klass == defined_class || origin_class == defined_class) {
 	    METHOD_ENTRY_VISI_SET(me, visi);
 
 	    if (me->def->type == VM_METHOD_TYPE_REFINED && me->def->body.refined.orig_me) {
