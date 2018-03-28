@@ -66,7 +66,7 @@ static datum getpair proto((char *, datum));
 static int   delpair proto((char *, datum));
 static int   chkpage proto((char *));
 static datum getnkey proto((char *, int));
-static int   splpage proto((char *, char *, long));
+static void  splpage proto((char *, char *, long));
 #if SEEDUPS
 static int   duppair proto((char *, datum));
 #endif
@@ -128,7 +128,7 @@ static int makroom proto((DBM *, long, int));
 #define OFF_PAG(off)	(long) (off) * PBLKSIZ
 #define OFF_DIR(off)	(long) (off) * DBLKSIZ
 
-static const long masks[] = {
+static long masks[] = {
 	000000000000L, 000000000001L, 000000000003L,
 	000000000007L, 000000000017L, 000000000037L,
 	000000000077L, 000000000177L, 000000000377L,
@@ -142,7 +142,7 @@ static const long masks[] = {
 	007777777777L, 017777777777L
 };
 
-const datum nullitem = {NULL, 0};
+datum nullitem = {NULL, 0};
 
 DBM *
 sdbm_open(register char *file, register int flags, register int mode)
@@ -384,8 +384,7 @@ makroom(register DBM *db, long int hash, int need)
 /*
  * split the current page
  */
-		if (splpage(pag, new, db->hmask + 1))
-			return 0;
+		(void) splpage(pag, new, db->hmask + 1);
 /*
  * address of the new page
  */
@@ -722,12 +721,8 @@ getpair(char *pag, datum key)
 	if ((i = seepair(pag, n, key.dptr, key.dsize)) == 0)
 		return nullitem;
 
-	n = GET_SHORT(ino,i + 1);
-	if (n <= 0 || n > PBLKSIZ)
-		return nullitem;
-
-	val.dptr = pag + n;
-	val.dsize = GET_SHORT(ino,i) - n;
+	val.dptr = pag + GET_SHORT(ino,i + 1);
+	val.dsize = GET_SHORT(ino,i) - GET_SHORT(ino,i + 1);
 	return val;
 }
 
@@ -752,16 +747,10 @@ getnkey(char *pag, int num)
 	if (GET_SHORT(ino,0) == 0 || num > GET_SHORT(ino,0))
 		return nullitem;
 
-	off = PBLKSIZ;
-	if (num > 1 && ((off = GET_SHORT(ino,num - 1)) < 0 || off > PBLKSIZ))
-		return nullitem;
+	off = (num > 1) ? GET_SHORT(ino,num - 1) : PBLKSIZ;
 
-	num = GET_SHORT(ino,num);
-	if (num < 0 || num > off)
-		return nullitem;
-
-	key.dptr = pag + num;
-	key.dsize = off - num;
+	key.dptr = pag + GET_SHORT(ino,num);
+	key.dsize = off - GET_SHORT(ino,num);
 
 	return key;
 }
@@ -852,12 +841,11 @@ seepair(char *pag, register int n, register char *key, register int siz)
 	return 0;
 }
 
-static int
+static void
 splpage(char *pag, char *new, long int sbit)
 {
 	datum key;
 	datum val;
-	int error = 0;
 
 	register int n;
 	register int off = PBLKSIZ;
@@ -870,16 +858,10 @@ splpage(char *pag, char *new, long int sbit)
 
 	n = GET_SHORT(ino,0);
 	for (ino++; n > 0; ino += 2) {
-		int k = GET_SHORT(ino,0);
-		int v = GET_SHORT(ino,1);
-		if (k < 0 || k > off || v < 0 || v > k) {
-			error = 1;
-			break;
-		}
-		key.dptr = cur + k;
-		key.dsize = off - k;
-		val.dptr = cur + v;
-		val.dsize = k - v;
+		key.dptr = cur + GET_SHORT(ino,0);
+		key.dsize = off - GET_SHORT(ino,0);
+		val.dptr = cur + GET_SHORT(ino,1);
+		val.dsize = GET_SHORT(ino,0) - GET_SHORT(ino,1);
 /*
  * select the page pointer (by looking at sbit) and insert
  */
@@ -892,8 +874,6 @@ splpage(char *pag, char *new, long int sbit)
 	debug(("%d split %d/%d\n", ((short *) cur)[0] / 2,
 	       ((short *) new)[0] / 2,
 	       ((short *) pag)[0] / 2));
-
-	return error;
 }
 
 /*

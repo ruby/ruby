@@ -52,7 +52,7 @@ typedef struct {
 	int dsize;
 } datum;
 
-extern const datum nullitem;
+extern datum nullitem;
 
 #if defined(__STDC__)
 #define proto(p) p
