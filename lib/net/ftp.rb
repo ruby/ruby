@@ -1297,7 +1297,7 @@ module Net
           s = super(len, String.new, true)
           return s.empty? ? nil : s
         else
-          result = ""
+          result = String.new
           while s = super(DEFAULT_BLOCKSIZE, String.new, true)
             break if s.empty?
             result << s
