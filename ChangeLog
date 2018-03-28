@@ -1,3 +1,22 @@
+Thu Mar 28 15:02:43 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	resolv.rb: close socket
+
+	* lib/resolv.rb (UnconnectedUDP#lazy_initialize): store new
+	  sockets before binding, so the sockets get closed when the
+	  requester is closing.
+
+	* lib/resolv.rb (ConnectedUDP#lazy_initialize): ditto.
+
+	* lib/resolv.rb (UnconnectedUDP#close): synchronize to get rid of
+	  race condition.
+
+	* lib/resolv.rb (ConnectedUDP#close): ditto.
+
+	[Bug #14571]
+
+	From: quixoten (Devin Christensen) quixoten@gmail.com
+
 Thu Mar 28 14:59:27 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	socket.c: null byte at Socket.getnameinfo

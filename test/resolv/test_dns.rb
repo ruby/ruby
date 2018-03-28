@@ -3,6 +3,7 @@ require 'test/unit'
 require 'resolv'
 require 'socket'
 require 'tempfile'
+require 'minitest/mock'
 
 class TestResolvDNS < Test::Unit::TestCase
   def setup
@@ -220,5 +221,23 @@ class TestResolvDNS < Test::Unit::TestCase
       }
     }
     assert_operator(2**14, :<, m.to_s.length)
+  end
+
+  def assert_no_fd_leak
+    socket = assert_throw(self) do |tag|
+      Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
+        yield.getname("8.8.8.8")
+      end
+    end
+
+    assert_predicate(socket, :closed?, "file descriptor leaked")
+  end
+
+  def test_no_fd_leak_connected
+    assert_no_fd_leak {Resolv::DNS.new(nameserver_port: [['127.0.0.1', 53]])}
+  end
+
+  def test_no_fd_leak_unconnected
+    assert_no_fd_leak {Resolv::DNS.new}
   end
 end
