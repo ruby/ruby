@@ -114,9 +114,9 @@ class Dir
       end
       n = nil
       prefix, suffix = basename
-      prefix = prefix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
       prefix = (String.try_convert(prefix) or
                 raise ArgumentError, "unexpected prefix: #{prefix.inspect}")
+      prefix = prefix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
       suffix &&= (String.try_convert(suffix) or
                   raise ArgumentError, "unexpected suffix: #{suffix.inspect}")
       suffix &&= suffix.delete("#{File::SEPARATOR}#{File::ALT_SEPARATOR}")
