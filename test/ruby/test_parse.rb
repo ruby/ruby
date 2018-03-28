@@ -899,6 +899,12 @@ x = __ENCODING__
     assert_equal(line, obj.location.lineno, bug)
   end
 
+  def test_eof_in_def
+    assert_raise(SyntaxError) { eval("def m\n\0""end") }
+    assert_raise(SyntaxError) { eval("def m\n\C-d""end") }
+    assert_raise(SyntaxError) { eval("def m\n\C-z""end") }
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}

@@ -1,3 +1,10 @@
+Thu Mar 28 13:48:35 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	parse.y: end of script at newline
+
+	* parse.y (parser_yylex): deal with end of script chars just after
+	  ignored newline as other places. [Bug #14206]
+
 Thu Mar 28 13:42:55 2018  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	[DOC] IO.new accepts external_encoding
