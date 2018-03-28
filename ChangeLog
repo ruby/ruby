@@ -1,3 +1,86 @@
+Wed Mar 28 18:04:37 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: use IO.copy_stream for multipart response
+
+	Use the new Proc response body feature to generate a multipart
+	range response dynamically.  We use a flat array to minimize
+	object overhead as much as possible; as many ranges may fit
+	into an HTTP request header.
+
+	* lib/webrick/httpservlet/filehandler.rb (multipart_body): new method
+	  (make_partial_content): use multipart_body
+
+	webrick/httprequest: limit request headers size
+
+	We use the same 112 KB limit started (AFAIK) by Mongrel, Thin,
+	and Puma to prevent malicious users from using up all the memory
+	with a single request.  This also limits the damage done by
+	excessive ranges in multipart Range: requests.
+
+	Due to the way we rely on IO#gets and the desire to keep
+	the code simple, the actual maximum header may be 4093 bytes
+	larger than 112 KB, but we're splitting hairs at that point.
+
+	* lib/webrick/httprequest.rb: define MAX_HEADER_LENGTH
+	  (read_header): raise when headers exceed max length
+
+	webrick/httpservlet/cgihandler: reduce memory use
+
+	WEBrick::HTTPRequest#body can be passed a block to process the
+	body in chunks.  Use this feature to avoid building a giant
+	string in memory.
+
+	* lib/webrick/httpservlet/cgihandler.rb (do_GET):
+	  avoid reading entire request body into memory
+	  (do_POST is aliased to do_GET, so it handles bodies)
+
+	webrick/httprequest: raise correct exception
+
+	"BadRequest" alone does not resolve correctly, it is in the
+	HTTPStatus namespace.
+
+	* lib/webrick/httprequest.rb (read_chunked): use correct exception
+	* test/webrick/test_httpserver.rb (test_eof_in_chunk): new test
+
+	webrick/httprequest: use InputBufferSize for chunked requests
+
+	While WEBrick::HTTPRequest#body provides a Proc interface
+	for streaming large request bodies, clients must not force
+	the server to use an excessively large chunk size.
+
+	* lib/webrick/httprequest.rb (read_chunk_size): limit each
+	  read and block.call to :InputBufferSize in config.
+	* test/webrick/test_httpserver.rb (test_big_chunks): new test
+
+	webrick: add test for Digest auth-int
+
+	No changes to the actual code, this is a new test for
+	a feature for which no tests existed.  I don't understand
+	the Digest authentication code well at all, but this is
+	necessary for the subsequent change.
+
+	* test/webrick/test_httpauth.rb (test_digest_auth_int): new test
+	  (credentials_for_request): support bodies with POST
+
+	webrick/httpauth/digestauth: stream req.body
+
+	WARNING! WARNING! WARNING!  LIKELY BROKEN CHANGE
+
+	Pass a proc to WEBrick::HTTPRequest#body to avoid reading a
+	potentially large request body into memory during
+	authentication.
+
+	WARNING! this will break apps completely which want to do
+	something with the body besides calculating the MD5 digest
+	of it.
+
+	Also, keep in mind that probably nobody uses "auth-int".
+	Servers such as Apache, lighttpd, nginx don't seem to
+	support it; nor does curl when using POST/PUT bodies;
+	and we didn't have tests for it until now...
+
+	* lib/webrick/httpauth/digestauth.rb (_authenticate): stream req.body
+
 Wed Mar 28 15:48:30 2018  Kazuki Yamaguchi <k@rhe.jp>
 
 	backport some changes from openssl gem v2.0.6 and v2.0.7.
