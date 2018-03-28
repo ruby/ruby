@@ -1,3 +1,15 @@
+Wed Mar 28 23:35:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	unixsocket.c: check NUL bytes
+
+	* ext/socket/unixsocket.c (rsock_init_unixsock): check NUL bytes.
+	  https://hackerone.com/reports/302997
+
+	unixsocket.c: abstract namespace
+
+	* ext/socket/unixsocket.c (unixsock_path_value): fix r62991 for
+	  Linux abstract namespace.
+
 Wed Mar 28 23:30:32 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Ignore file separator from tmpfile/tmpdir name.
