@@ -1,3 +1,10 @@
+Thu Mar 28 14:59:27 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	socket.c: null byte at Socket.getnameinfo
+
+	* ext/socket/socket.c (sock_s_getnameinfo): check null byte. patched by
+	  tommy (Masahiro Tomita) in . [Bug #13994]
+
 Thu Mar 28 14:53:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	date_core.c: defensive code

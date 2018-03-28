@@ -105,6 +105,8 @@ class TestSocket < Test::Unit::TestCase
 
   def test_getnameinfo
     assert_raise(SocketError) { Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"]) }
+    assert_raise(ArgumentError) {Socket.getnameinfo(["AF_INET", "http\0", "example.net"])}
+    assert_raise(ArgumentError) {Socket.getnameinfo(["AF_INET", "http", "example.net\0"])}
   end
 
   def test_ip_address_list
