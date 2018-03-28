@@ -33,7 +33,7 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
     int fd, status;
     rb_io_t *fptr;
 
-    SafeStringValue(path);
+    FilePathValue(path);
 
     INIT_SOCKADDR_UN(&sockaddr, sizeof(struct sockaddr_un));
     if (sizeof(sockaddr.sun_path) < (size_t)RSTRING_LEN(path)) {
