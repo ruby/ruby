@@ -128,7 +128,7 @@ static int makroom proto((DBM *, long, int));
 #define OFF_PAG(off)	(long) (off) * PBLKSIZ
 #define OFF_DIR(off)	(long) (off) * DBLKSIZ
 
-static long masks[] = {
+static const long masks[] = {
 	000000000000L, 000000000001L, 000000000003L,
 	000000000007L, 000000000017L, 000000000037L,
 	000000000077L, 000000000177L, 000000000377L,
@@ -142,7 +142,7 @@ static long masks[] = {
 	007777777777L, 017777777777L
 };
 
-datum nullitem = {NULL, 0};
+const datum nullitem = {NULL, 0};
 
 DBM *
 sdbm_open(register char *file, register int flags, register int mode)
