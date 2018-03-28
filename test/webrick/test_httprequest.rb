@@ -237,6 +237,7 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
+    expect = File.read(__FILE__).freeze
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
@@ -253,7 +254,14 @@ GET /
     msg << "0" << crlf
     req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
     req.parse(StringIO.new(msg))
-    assert_equal(File.read(__FILE__), req.body)
+    assert_equal(expect, req.body)
+
+    # chunked req.body_reader
+    req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+    req.parse(StringIO.new(msg))
+    dst = StringIO.new
+    IO.copy_stream(req.body_reader, dst)
+    assert_equal(expect, dst.string)
   end
 
   def test_forwarded
