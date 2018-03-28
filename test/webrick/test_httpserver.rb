@@ -458,4 +458,21 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       end
     }
   end
+
+  def test_eof_in_chunk
+    log_tester = lambda do |log, access_log|
+      assert_equal 1, log.size
+      assert log[0].include?('ERROR bad chunk data size')
+    end
+    TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
+      server.mount_proc('/', ->(req, res) { res.body = req.body })
+      TCPSocket.open(addr, port) do |c|
+        c.write("POST / HTTP/1.1\r\nHost: example.com\r\n" \
+                "Transfer-Encoding: chunked\r\n\r\n5\r\na")
+        c.shutdown(Socket::SHUT_WR) # trigger EOF in server
+        res = c.read
+        assert_match %r{\AHTTP/1\.1 400 }, res
+      end
+    }
+  end
 end

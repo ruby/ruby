@@ -511,7 +511,7 @@ module WEBrick
       while chunk_size > 0
         data = read_data(socket, chunk_size) # read chunk-data
         if data.nil? || data.bytesize != chunk_size
-          raise BadRequest, "bad chunk data size."
+          raise HTTPStatus::BadRequest, "bad chunk data size."
         end
         read_line(socket)                    # skip CRLF
         block.call(data)
