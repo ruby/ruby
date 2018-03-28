@@ -1,3 +1,12 @@
+Mon Mar 28 14:45:02 2018  Koichi Sasada  <ko1@atdot.net>
+
+	check array for zsuper. [Bug #14279]
+
+	* compile.c (iseq_compile_each0): for zsuper (NODE_ZSUPER), we need to
+	  check given argument is Array or not.
+
+	* test/ruby/test_super.rb: add a test for this bug.
+
 Sun Mar 28 14:40:25 2018  Eric Wong  <normalperson@yhbt.net>
 
 	net/ftp: fix FrozenError in BufferedSocket
