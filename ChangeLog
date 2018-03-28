@@ -1,3 +1,10 @@
+Thu Mar 28 14:50:52 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	string.c: clear substring code range
+
+	* string.c (str_substr): substring of broken code range string may be
+	  valid or broken. patch by tommy (Masahiro Tomita) at [Bug #14388].
+
 Thu Mar 28 14:48:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	win32.c: memcpy instead of strlcpy

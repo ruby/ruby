@@ -2287,6 +2287,7 @@ rb_str_substr(VALUE str, long beg, long len)
 	str2 = str_new_shared(rb_obj_class(str2), str2);
 	RSTRING(str2)->as.heap.ptr += ofs;
 	RSTRING(str2)->as.heap.len = len;
+	ENC_CODERANGE_CLEAR(str2);
     }
     else {
 	str2 = rb_str_new_with_class(str, p, len);

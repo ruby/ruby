@@ -2330,6 +2330,12 @@ class TestString < Test::Unit::TestCase
     assert_not_equal(str.object_id, (+str).object_id)
     assert_equal(str.object_id, (-str).object_id)
   end
+
+  def test_substr_code_range
+    data = "\xff" + "a"*200
+    assert_not_predicate(data, :valid_encoding?)
+    assert_predicate(data[100..-1], :valid_encoding?)
+  end
 end
 
 class TestString2 < TestString
