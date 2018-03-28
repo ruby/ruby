@@ -410,9 +410,9 @@ module WEBrick
           buf.clear
           socket.write("0#{CRLF}#{CRLF}")
         else
-          size = @header['content-length'].to_i
-          _send_file(socket, @body, 0, size)
-          @sent_size = size
+          size = @header['content-length']
+          size = size.to_i if size
+          @sent_size = IO.copy_stream(@body, socket, size)
         end
       ensure
         @body.close
@@ -472,27 +472,6 @@ module WEBrick
         }
       end
       alias :<< :write
-    end
-
-    def _send_file(output, input, offset, size)
-      while offset > 0
-        sz = @buffer_size < size ? @buffer_size : size
-        buf = input.read(sz)
-        offset -= buf.bytesize
-      end
-
-      if size == 0
-        while buf = input.read(@buffer_size)
-          output.write(buf)
-        end
-      else
-        while size > 0
-          sz = @buffer_size < size ? @buffer_size : size
-          buf = input.read(sz)
-          output.write(buf)
-          size -= buf.bytesize
-        end
-      end
     end
 
     # preserved for compatibility with some 3rd-party handlers
