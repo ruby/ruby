@@ -22,6 +22,15 @@ static struct code_page_table {
 
 #define IS_DIR_SEPARATOR_P(c) (c == L'\\' || c == L'/')
 #define IS_DIR_UNC_P(c) (IS_DIR_SEPARATOR_P(c[0]) && IS_DIR_SEPARATOR_P(c[1]))
+static int
+IS_ABSOLUTE_PATH_P(const WCHAR *path, size_t len)
+{
+    if (len < 2) return FALSE;
+    if (ISALPHA(path[0]))
+        return len > 2 && path[1] == L':' && IS_DIR_SEPARATOR_P(path[2]);
+    else
+        return IS_DIR_UNC_P(path);
+}
 
 /* MultiByteToWideChar() doesn't work with code page 51932 */
 #define INVALID_CODE_PAGE 51932
@@ -315,7 +324,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	}
 	whome_len = wcslen(whome);
 
-	if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+	if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
 	    free(wpath);
 	    xfree(whome);
 	    rb_raise(rb_eArgError, "non-absolute home");
@@ -397,7 +406,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 	    }
 	    whome_len = wcslen(whome);
 
-	    if (PathIsRelativeW(whome) && !(whome_len >= 2 && IS_DIR_UNC_P(whome))) {
+	    if (!IS_ABSOLUTE_PATH_P(whome, whome_len)) {
 		free(wpath);
 		free(wdir);
 		xfree(whome);
@@ -523,7 +532,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     buffer_pos[0] = L'\0';
 
     /* tainted if path is relative */
-    if (!tainted && PathIsRelativeW(buffer) && !(buffer_len >= 2 && IS_DIR_UNC_P(buffer)))
+    if (!tainted && !IS_ABSOLUTE_PATH_P(buffer, buffer_len))
 	tainted = 1;
 
     /* FIXME: Make this more robust */
