@@ -1128,7 +1128,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	else if (ISDIGIT(*p)) {
 	    errno = 0;
 	    len = STRTOUL(p, (char**)&p, 10);
-	    if (errno) {
+	    if (len < 0 || errno) {
 		rb_raise(rb_eRangeError, "pack length too big");
 	    }
 	}
