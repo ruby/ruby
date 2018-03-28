@@ -1,3 +1,7 @@
+Wed Mar 28 23:30:32 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
+
+	Ignore file separator from tmpfile/tmpdir name.
+
 Wed Mar 28 23:27:23 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	dir.c: check NUL bytes
