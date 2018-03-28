@@ -371,5 +371,31 @@ puts Tempfile.new('foo').path
     }
     assert_file.not_exist?(path)
   end
-end
 
+  TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
+
+  def test_open_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    t = Tempfile.open([TRAVERSAL_PATH, 'foo'])
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  ensure
+    t.close!
+  end
+
+  def test_new_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    t = Tempfile.new(TRAVERSAL_PATH + 'foo')
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  ensure
+    t.close!
+  end
+
+  def test_create_traversal_dir
+    expect = Dir.glob(TRAVERSAL_PATH + '*').count
+    Tempfile.create(TRAVERSAL_PATH + 'foo')
+    actual = Dir.glob(TRAVERSAL_PATH + '*').count
+    assert_equal expect, actual
+  end
+end
