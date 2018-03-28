@@ -1,3 +1,13 @@
+Wed Mar 28 23:27:23 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	dir.c: check NUL bytes
+
+	* dir.c (GlobPathValue): should be used in rb_push_glob only.
+	  other methods should use FilePathValue.
+	  https://hackerone.com/reports/302338
+
+	* dir.c (rb_push_glob): expand GlobPathValue
+
 Sat Feb 17 01:24:49 2018  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	Merge RubyGems 2.7.6 from upstream.

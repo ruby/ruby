@@ -149,6 +149,9 @@ class TestDir < Test::Unit::TestCase
 
     assert_equal([File.join(@root, "a")], Dir.glob(File.join(@root, 'a\\')))
     assert_equal((?a..?f).map {|f| File.join(@root, f) }.sort, Dir.glob(File.join(@root, '[abc/def]')).sort)
+    assert_raise(ArgumentError) {
+      Dir.glob([[@root, File.join(@root, "*")].join("\0")])
+    }
   end
 
   def test_glob_recursive
@@ -179,6 +182,7 @@ class TestDir < Test::Unit::TestCase
 
   def test_foreach
     assert_equal(Dir.foreach(@root).to_a.sort, %w(. ..) + (?a..?z).to_a)
+    assert_raise(ArgumentError) {Dir.foreach(@root+"\0").to_a}
   end
 
   def test_dir_enc
