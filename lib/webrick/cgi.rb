@@ -265,6 +265,10 @@ module WEBrick
         @out_port << data
       end
 
+      def write(data)
+        @out_port.write(data)
+      end
+
       def cert
         return nil unless defined?(OpenSSL)
         if pem = @env["SSL_SERVER_CERT"]
