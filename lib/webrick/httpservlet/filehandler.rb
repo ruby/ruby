@@ -116,17 +116,10 @@ module WEBrick
           elsif range = ranges[0]
             first, last = prepare_range(range, filesize)
             raise HTTPStatus::RequestRangeNotSatisfiable if first < 0
-            if last == filesize - 1
-              content = io.dup
-              content.pos = first
-            else
-              io.pos = first
-              content = io.read(last-first+1)
-            end
             res['content-type'] = mtype
             res['content-range'] = "bytes #{first}-#{last}/#{filesize}"
             res['content-length'] = last - first + 1
-            res.body = content
+            res.body = io.dup
           else
             raise HTTPStatus::BadRequest
           end
