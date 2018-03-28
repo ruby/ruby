@@ -509,12 +509,16 @@ module WEBrick
     def read_chunked(socket, block)
       chunk_size, = read_chunk_size(socket)
       while chunk_size > 0
-        data = read_data(socket, chunk_size) # read chunk-data
-        if data.nil? || data.bytesize != chunk_size
-          raise HTTPStatus::BadRequest, "bad chunk data size."
-        end
+        begin
+          sz = [ chunk_size, @buffer_size ].min
+          data = read_data(socket, sz) # read chunk-data
+          if data.nil? || data.bytesize != sz
+            raise HTTPStatus::BadRequest, "bad chunk data size."
+          end
+          block.call(data)
+        end while (chunk_size -= sz) > 0
+
         read_line(socket)                    # skip CRLF
-        block.call(data)
         chunk_size, = read_chunk_size(socket)
       end
       read_header(socket)                    # trailer + CRLF
