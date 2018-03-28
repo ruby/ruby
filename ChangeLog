@@ -1,3 +1,15 @@
+Wed Mar 28 23:48:24 2018  Eric Wong  <normalperson@yhbt.net>
+
+	webrick: prevent response splitting and header injection
+
+	Original patch by tenderlove (with minor style adjustments).
+
+	* lib/webrick/httpresponse.rb (send_header): call check_header
+	  (check_header): raise on embedded CRLF in header value
+	* test/webrick/test_httpresponse.rb
+	  (test_prevent_response_splitting_headers): new test
+	* (test_prevent_response_splitting_cookie_headers): ditto
+
 Wed Mar 28 23:45:36 2018  Eric Wong  <normalperson@yhbt.net>
 
 	webrick: use IO.copy_stream for multipart response
