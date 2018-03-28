@@ -3386,11 +3386,11 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 		if (bitset & 1) {
 		    switch (BUILTIN_TYPE(p)) {
 		      default: { /* majority case */
-			  gc_report(2, objspace, "page_sweep: free %s\n", obj_info((VALUE)p));
+			  gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 #if USE_RGENGC && RGENGC_CHECK_MODE
 			  if (!is_full_marking(objspace)) {
-			      if (RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %s - old while minor GC.", obj_info((VALUE)p));
-			      if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %s - remembered.", obj_info((VALUE)p));
+			      if (RVALUE_OLD_P((VALUE)p)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+			      if (rgengc_remembered(objspace, (VALUE)p)) rb_bug("page_sweep: %p - remembered.", (void *)p);
 			  }
 #endif
 			  if (obj_free(objspace, (VALUE)p)) {
@@ -5729,18 +5729,18 @@ NOINLINE(static void gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t
 static void
 gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
-    gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %s -> %s\n", obj_info(a), obj_info(b));
+    gc_report(2, objspace, "gc_writebarrier_incremental: [LG] %p -> %s\n", (void *)a, obj_info(b));
 
     if (RVALUE_BLACK_P(a)) {
 	if (RVALUE_WHITE_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(a)) {
-		gc_report(2, objspace, "gc_writebarrier_incremental: [IN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(2, objspace, "gc_writebarrier_incremental: [IN] %p -> %s\n", (void *)a, obj_info(b));
 		gc_mark_from(objspace, b, a);
 	    }
 	}
 	else if (RVALUE_OLD_P(a) && !RVALUE_OLD_P(b)) {
 	    if (!RVALUE_WB_UNPROTECTED(b)) {
-		gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [GN] %p -> %s\n", (void *)a, obj_info(b));
 		RVALUE_AGE_SET_OLD(objspace, b);
 
 		if (RVALUE_BLACK_P(b)) {
@@ -5748,7 +5748,7 @@ gc_writebarrier_incremental(VALUE a, VALUE b, rb_objspace_t *objspace)
 		}
 	    }
 	    else {
-		gc_report(1, objspace, "gc_writebarrier_incremental: [LL] %s -> %s\n", obj_info(a), obj_info(b));
+		gc_report(1, objspace, "gc_writebarrier_incremental: [LL] %p -> %s\n", (void *)a, obj_info(b));
 		gc_remember_unprotected(objspace, b);
 	    }
 	}
@@ -9037,65 +9037,65 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		     (int)RARRAY_LEN(obj));
 	    break;
 	  case T_STRING: {
-	      snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
-	      break;
+	    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
+	    break;
 	  }
 	  case T_CLASS: {
-	      VALUE class_path = rb_class_path_cached(obj);
-	      if (!NIL_P(class_path)) {
-		  snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
-	      }
-	      break;
+	    VALUE class_path = rb_class_path_cached(obj);
+	    if (!NIL_P(class_path)) {
+		snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
+	    }
+	    break;
 	  }
 	  case T_DATA: {
-	      const char * const type_name = rb_objspace_data_type_name(obj);
-	      if (type_name) {
-		  snprintf(buff, buff_size, "%s %s", buff, type_name);
-	      }
-	      break;
+	    const char * const type_name = rb_objspace_data_type_name(obj);
+	    if (type_name) {
+		snprintf(buff, buff_size, "%s %s", buff, type_name);
+	    }
+	    break;
 	  }
 	  case T_IMEMO: {
-	      const char *imemo_name;
-	      switch (imemo_type(obj)) {
+	    const char *imemo_name;
+	    switch (imemo_type(obj)) {
 #define IMEMO_NAME(x) case imemo_##x: imemo_name = #x; break;
-		  IMEMO_NAME(none);
-		  IMEMO_NAME(cref);
-		  IMEMO_NAME(svar);
-		  IMEMO_NAME(throw_data);
-		  IMEMO_NAME(ifunc);
-		  IMEMO_NAME(memo);
-		  IMEMO_NAME(ment);
-		  IMEMO_NAME(iseq);
+		IMEMO_NAME(none);
+		IMEMO_NAME(cref);
+		IMEMO_NAME(svar);
+		IMEMO_NAME(throw_data);
+		IMEMO_NAME(ifunc);
+		IMEMO_NAME(memo);
+		IMEMO_NAME(ment);
+		IMEMO_NAME(iseq);
 		default: rb_bug("unknown IMEMO");
 #undef IMEMO_NAME
-	      }
-	      snprintf(buff, buff_size, "%s %s", buff, imemo_name);
+	    }
+	    snprintf(buff, buff_size, "%s %s", buff, imemo_name);
 
-	      switch (imemo_type(obj)) {
-		case imemo_ment: {
-		    const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
-		    snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
-			     rb_id2name(me->called_id),
-			     method_type_name(me->def->type),
-			     me->def->alias_count,
-			     obj_info(me->owner),
-			     obj_info(me->defined_class));
-		    break;
-		}
-		case imemo_iseq: {
-		    const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
-
-		    if (iseq->body->location.label) {
-			snprintf(buff, buff_size, "%s %s@%s:%d", buff,
-				 RSTRING_PTR(iseq->body->location.label),
-				 RSTRING_PTR(iseq->body->location.path),
-				 FIX2INT(iseq->body->location.first_lineno));
-		    }
-		    break;
-		}
-		default:
-		  break;
+	    switch (imemo_type(obj)) {
+	      case imemo_ment: {
+		const rb_method_entry_t *me = &RANY(obj)->as.imemo.ment;
+		snprintf(buff, buff_size, "%s (called_id: %s, type: %s, alias: %d, owner: %s, defined_class: %s)", buff,
+			 rb_id2name(me->called_id),
+			 method_type_name(me->def->type),
+			 me->def->alias_count,
+			 obj_info(me->owner),
+			 obj_info(me->defined_class));
+		break;
 	      }
+	      case imemo_iseq: {
+		const rb_iseq_t *iseq = (const rb_iseq_t *)obj;
+
+		if (iseq->body->location.label) {
+		    snprintf(buff, buff_size, "%s %s@%s:%d", buff,
+			     RSTRING_PTR(iseq->body->location.label),
+			     RSTRING_PTR(iseq->body->location.path),
+			     FIX2INT(iseq->body->location.first_lineno));
+		}
+		break;
+	      }
+	      default:
+		break;
+	    }
 	  }
 	  default:
 	    break;

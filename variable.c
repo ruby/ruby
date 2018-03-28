@@ -317,10 +317,11 @@ rb_class_path_no_cache(VALUE klass)
 VALUE
 rb_class_path_cached(VALUE klass)
 {
-    st_table *ivtbl = RCLASS_IV_TBL(klass);
+    st_table *ivtbl;
     st_data_t n;
 
-    if (!ivtbl) return Qnil;
+    if (!RCLASS_EXT(klass)) return Qnil;
+    if (!(ivtbl = RCLASS_IV_TBL(klass))) return Qnil;
     if (st_lookup(ivtbl, (st_data_t)classpath, &n)) return (VALUE)n;
     if (st_lookup(ivtbl, (st_data_t)tmp_classpath, &n)) return (VALUE)n;
     return Qnil;

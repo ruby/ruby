@@ -1,3 +1,26 @@
+Thu Mar 28 14:14:25 2018  URABE Shyouhei  <shyouhei@ruby-lang.org>
+
+	fix SEGV touching uninitialized memory
+	This function can be called from boot_defclass().
+	No assumption can be made about object internals.
+
+	fix SEGV touching uninitialized memory
+	This function can be called from InitVM_Object().
+	No assumption can be made about object internals.
+
+	fix SEGV touching uninitialized local variable
+	This imemo_name is used uninitialized because the switch
+	above does not cover all possible imemo types.
+
+	fix SEGV inspecting already freed objects
+	obj_info() assumes the given object is alive. Passing freed
+	objects to it results in SEGV.
+
+	fix SEGV inspecting uninitialized objects
+	obj_info() assumes the given object is alive. OTOH
+	gc_writebarrier_incremental is called before or in middle of
+	object initialization. Can casue SEGV.
+
 Thu Mar 28 13:56:17 2018  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	raise error if value contains CR/LF in iniheader of
