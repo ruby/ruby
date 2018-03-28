@@ -1,3 +1,10 @@
+Wed Mar 28 23:37:18 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	pack.c: fix underflow
+
+	* pack.c (pack_unpack_internal): get rid of underflow.
+	  https://hackerone.com/reports/298246
+
 Wed Mar 28 23:35:28 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	unixsocket.c: check NUL bytes
