@@ -433,7 +433,12 @@ module WEBrick
             size = @header['content-length']
             size = size.to_i if size
           end
-          @sent_size = IO.copy_stream(@body, socket, size, offset)
+          begin
+            @sent_size = IO.copy_stream(@body, socket, size, offset)
+          rescue NotImplementedError
+            @body.seek(offset, IO::SEEK_SET)
+            @sent_size = IO.copy_stream(@body, socket, size)
+          end
         end
       ensure
         @body.close

@@ -100,7 +100,12 @@ module WEBrick
                 "#{CRLF}"
               )
 
-              IO.copy_stream(body, socket, last - first + 1, first)
+              begin
+                IO.copy_stream(body, socket, last - first + 1, first)
+              rescue NotImplementedError
+                body.seek(first, IO::SEEK_SET)
+                IO.copy_stream(body, socket, last - first + 1)
+              end
               socket.write(CRLF)
             end while parts[0]
             socket.write("--#{boundary}--#{CRLF}")
