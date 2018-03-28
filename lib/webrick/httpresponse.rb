@@ -467,7 +467,7 @@ module WEBrick
       end
 
       def write(buf)
-        return if buf.empty?
+        return 0 if buf.empty?
         socket = @socket
         @resp.instance_eval {
           size = buf.bytesize
@@ -475,9 +475,14 @@ module WEBrick
           socket.write(data)
           data.clear
           @sent_size += size
+          size
         }
       end
-      alias :<< :write
+
+      def <<(*buf)
+        write(buf)
+        self
+      end
     end
 
     # preserved for compatibility with some 3rd-party handlers
