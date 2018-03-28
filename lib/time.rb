@@ -136,7 +136,7 @@ class Time
       zone = zone.upcase
       if /\A([+-])(\d\d)(:?)(\d\d)(?:\3(\d\d))?\z/ =~ zone
         off = ($1 == '-' ? -1 : 1) * (($2.to_i * 60 + $4.to_i) * 60 + $5.to_i)
-      elsif /\A[+-]\d\d\z/ =~ zone
+      elsif zone.match?(/\A[+-]\d\d\z/)
         off = zone.to_i * 3600
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
@@ -168,11 +168,7 @@ class Time
       #   They are not appropriate for specific time zone such as
       #   Europe/London because time zone neutral,
       #   So -00:00 and -0000 are treated as UTC.
-      if /\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i =~ zone
-        true
-      else
-        false
-      end
+      zone.match?(/\A(?:-00:00|-0000|-00|UTC|Z|UT)\z/i)
     end
     private :zone_utc?
 
@@ -521,14 +517,14 @@ class Time
     # You must require 'time' to use this method.
     #
     def httpdate(date)
-      if /\A\s*
+      if date.match?(/\A\s*
           (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\x20
           (\d{2})\x20
           (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\x20
           (\d{4})\x20
           (\d{2}):(\d{2}):(\d{2})\x20
           GMT
-          \s*\z/ix =~ date
+          \s*\z/ix)
         self.rfc2822(date).utc
       elsif /\A\s*
              (?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\x20
