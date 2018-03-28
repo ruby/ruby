@@ -86,6 +86,30 @@ module WEBrick
         return false
       end
 
+      # returns a lambda for webrick/httpresponse.rb send_body_proc
+      def multipart_body(body, parts, boundary, mtype, filesize)
+        lambda do |socket|
+          begin
+            begin
+              first = parts.shift
+              last = parts.shift
+              socket.write(
+                "--#{boundary}#{CRLF}" \
+                "Content-Type: #{mtype}#{CRLF}" \
+                "Content-Range: bytes #{first}-#{last}/#{filesize}#{CRLF}" \
+                "#{CRLF}"
+              )
+
+              IO.copy_stream(body, socket, last - first + 1, first)
+              socket.write(CRLF)
+            end while parts[0]
+            socket.write("--#{boundary}--#{CRLF}")
+          ensure
+            body.close
+          end
+        end
+      end
+
       def make_partial_content(req, res, filename, filesize)
         mtype = HTTPUtils::mime_type(filename, @config[:MimeTypes])
         unless ranges = HTTPUtils::parse_range_header(req['range'])
@@ -96,28 +120,20 @@ module WEBrick
           if ranges.size > 1
             time = Time.now
             boundary = "#{time.sec}_#{time.usec}_#{Process::pid}"
-            body = ''
-            ranges.each{|range|
-              first, last = prepare_range(range, filesize)
-              next if first < 0
-              io.pos = first
-              content = io.read(last-first+1)
-              body << "--" << boundary << CRLF
-              body << "Content-Type: #{mtype}" << CRLF
-              body << "Content-Range: bytes #{first}-#{last}/#{filesize}" << CRLF
-              body << CRLF
-              body << content
-              body << CRLF
+            parts = []
+            ranges.each {|range|
+              prange = prepare_range(range, filesize)
+              next if prange[0] < 0
+              parts.concat(prange)
             }
-            raise HTTPStatus::RequestRangeNotSatisfiable if body.empty?
-            body << "--" << boundary << "--" << CRLF
+            raise HTTPStatus::RequestRangeNotSatisfiable if parts.empty?
             res["content-type"] = "multipart/byteranges; boundary=#{boundary}"
             if req.http_version < '1.1'
               res['connection'] = 'close'
             else
               res.chunked = true
             end
-            res.body = body
+            res.body = multipart_body(io.dup, parts, boundary, mtype, filesize)
           elsif range = ranges[0]
             first, last = prepare_range(range, filesize)
             raise HTTPStatus::RequestRangeNotSatisfiable if first < 0
