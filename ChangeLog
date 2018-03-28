@@ -1,3 +1,12 @@
+Thu Mar 28 14:53:57 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	date_core.c: defensive code
+
+	* ext/date/date_core.c (f_cmp): check comparison failure.
+
+	* ext/date/date_core.c (d_lite_step): deal with the comparison
+	  result more defensively. [Bug #14549]
+
 Thu Mar 28 14:50:52 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	string.c: clear substring code range
