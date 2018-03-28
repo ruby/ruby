@@ -145,22 +145,23 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
           res.body = dig.hexdigest
         end
       end
-        http = Net::HTTP.new(o_addr, o_port)
-        IO.pipe do |rd, wr|
-          headers = {
-            'Content-Type' => 'application/octet-stream',
-            'Transfer-Encoding' => 'chunked',
-          }
-          post = Net::HTTP::Post.new('/', headers)
-          th = Thread.new { nr.times { wr.write(rand_str) }; wr.close }
-          post.body_stream = rd
-          http.request(post) do |res|
-            assert_equal 'text/plain', res['content-type']
-            assert_equal 32, res.content_length
-            assert_equal exp, res.body
-          end
-          assert_nil th.value
+
+      http = Net::HTTP.new(o_addr, o_port)
+      IO.pipe do |rd, wr|
+        headers = {
+          'Content-Type' => 'application/octet-stream',
+          'Transfer-Encoding' => 'chunked',
+        }
+        post = Net::HTTP::Post.new('/', headers)
+        th = Thread.new { nr.times { wr.write(rand_str) }; wr.close }
+        post.body_stream = rd
+        http.request(post) do |res|
+          assert_equal 'text/plain', res['content-type']
+          assert_equal 32, res.content_length
+          assert_equal exp, res.body
         end
+        assert_nil th.value
+      end
 
       TestWEBrick.start_httpproxy do |p_server, p_addr, p_port, p_log|
         http = Net::HTTP.new(o_addr, o_port, p_addr, p_port)
