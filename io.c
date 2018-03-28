@@ -7558,8 +7558,7 @@ rb_io_make_open_file(VALUE obj)
  *    If +mode+ parameter is given, this parameter will be bitwise-ORed.
  *
  *  :\external_encoding ::
- *    External encoding for the IO.  "-" is a synonym for the default external
- *    encoding.
+ *    External encoding for the IO.
  *
  *  :\internal_encoding ::
  *    Internal encoding for the IO.  "-" is a synonym for the default internal
