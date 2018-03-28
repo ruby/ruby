@@ -16,6 +16,21 @@ class HTTPHeaderTest < Test::Unit::TestCase
     @c = C.new
   end
 
+  def test_initialize
+    @c.initialize_http_header("foo"=>"abc")
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header("foo"=>"abc", "bar"=>"xyz")
+    assert_equal "xyz", @c["bar"]
+    @c.initialize_http_header([["foo", "abc"]])
+    assert_equal "abc", @c["foo"]
+    @c.initialize_http_header([["foo", "abc"], ["bar","xyz"]])
+    assert_equal "xyz", @c["bar"]
+    assert_raise(NoMethodError){ @c.initialize_http_header("foo"=>[]) }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\nb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\rb") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\xff") }
+  end
+
   def test_size
     assert_equal 0, @c.size
     @c['a'] = 'a'

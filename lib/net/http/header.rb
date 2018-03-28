@@ -15,7 +15,11 @@ module Net::HTTPHeader
     return unless initheader
     initheader.each do |key, value|
       warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
-      @header[key.downcase] = [value.strip]
+      value = value.strip # raise error for invalid byte sequences
+      if value.count("\r\n") > 0
+        raise ArgumentError, 'header field value cannot include CR/LF'
+      end
+      @header[key.downcase] = [value]
     end
   end
 
@@ -71,9 +75,9 @@ module Net::HTTPHeader
       append_field_value(ary, val)
       @header[key.downcase] = ary
     else
-      val = val.to_s
-      if /[\r\n]/n =~ val.b
-        raise ArgumentError, 'header field value cannnot include CR/LF'
+      val = val.to_s # for compatibility use to_s instead of to_str
+      if val.b.count("\r\n") > 0
+          raise ArgumentError, 'header field value cannnot include CR/LF'
       end
       @header[key.downcase] = [val]
     end
