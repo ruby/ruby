@@ -772,7 +772,7 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 {$(VPATH)}vm.inc: $(srcdir)/template/vm.inc.tmpl
 
 common-srcs: {$(VPATH)}parse.c {$(VPATH)}lex.c {$(VPATH)}enc/trans/newline.c {$(VPATH)}id.c \
-	     srcs-lib srcs-ext
+	     srcs-lib srcs-ext incs
 
 srcs: common-srcs srcs-enc
 

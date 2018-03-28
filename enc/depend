@@ -137,7 +137,7 @@ clean:
 % end
 % @ignore_error = $nmake ? '' : ' 2> /dev/null || true'
 % unless inplace
-	$(Q)$(RM) enc/unicode/name2ctype.h
+	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
 	$(Q)$(RM) enc/jis/props.h
 	-$(Q)$(RMDIR) enc/unicode<%=@ignore_error%>
 % end
@@ -148,7 +148,7 @@ clean:
 clean-srcs:
 	$(Q)$(RM) <%=pathrep['$(TRANSCSRCS)']%>
 	-$(Q)$(RMDIR) <%=pathrep['enc/trans']%><%=@ignore_error%>
-	$(Q)$(RM) enc/unicode/name2ctype.h
+	$(Q)$(RM) enc/unicode/*/casefold.h enc/unicode/*/name2ctype.h
 	$(Q)$(RM) enc/jis/props.h
 	-$(Q)$(RMDIR) <%=pathrep['enc/unicode']%><%=@ignore_error%>
 	-$(Q)$(RMDIR) <%=pathrep['enc/props']%><%=@ignore_error%>
