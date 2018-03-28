@@ -1,3 +1,12 @@
+Thu Mar 28 14:48:13 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	win32.c: memcpy instead of strlcpy
+
+	* win32/win32.c (cmdglob): memcpy the exact size instead of
+	  strlcpy with +1.
+
+	* win32/win32.c (w32_cmdvector): ditto, with NUL-terminating.
+
 Mon Mar 28 14:45:02 2018  Koichi Sasada  <ko1@atdot.net>
 
 	check array for zsuper. [Bug #14279]
