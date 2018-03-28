@@ -1,3 +1,13 @@
+Wed Mar 28 19:24:20 2018  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	dir.c: check NUL bytes
+
+	* dir.c (GlobPathValue): should be used in rb_push_glob only.
+	  other methods should use FilePathValue.
+	  https://hackerone.com/reports/302338
+
+	* dir.c (rb_push_glob): expand GlobPathValue
+
 Wed Mar 28 18:04:37 2018  Eric Wong  <normalperson@yhbt.net>
 
 	webrick: prevent response splitting and header injection

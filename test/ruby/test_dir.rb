@@ -156,6 +156,9 @@ class TestDir < Test::Unit::TestCase
     open(File.join(@root, "}}a"), "wb") {}
     assert_equal(%w(}}{} }}a).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '}}{\{\},a}')))
     assert_equal(%w(}}{} }}a b c).map {|f| File.join(@root, f)}, Dir.glob(File.join(@root, '{\}\}{\{\},a},b,c}')))
+    assert_raise(ArgumentError) {
+      Dir.glob([[@root, File.join(@root, "*")].join("\0")])
+    }
   end
 
   def test_glob_recursive
@@ -191,10 +194,12 @@ class TestDir < Test::Unit::TestCase
 
   def test_entries
     assert_entries(Dir.open(@root) {|dir| dir.entries})
+    assert_raise(ArgumentError) {Dir.entries(@root+"\0")}
   end
 
   def test_foreach
     assert_entries(Dir.foreach(@root).to_a)
+    assert_raise(ArgumentError) {Dir.foreach(@root+"\0").to_a}
   end
 
   def test_dir_enc
