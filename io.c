@@ -1678,7 +1678,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
 static VALUE
 io_write_m(int argc, VALUE *argv, VALUE io)
 {
-    if (argc > 1) {
+    if (argc != 1) {
 	return io_writev(argc, argv, io);
     }
     else {

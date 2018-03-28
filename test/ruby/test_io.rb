@@ -1287,6 +1287,13 @@ class TestIO < Test::Unit::TestCase
     assert_empty(err)
   end
 
+  def test_write_no_args
+    IO.pipe do |r, w|
+      assert_equal 0, w.write, '[ruby-core:86285] [Bug #14338]'
+      assert_equal :wait_readable, r.read_nonblock(1, exception: false)
+    end
+  end
+
   def test_write_non_writable
     with_pipe do |r, w|
       assert_raise(IOError) do
