@@ -547,7 +547,7 @@ class TestJIT < Test::Unit::TestCase
     actual = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
 
     # Debugging on CI
-    if err.include?("gcc: error trying to exec 'cc1': execvp: No such file or directory") && RbConfig::CONFIG['CC'] == 'gcc'
+    if err.include?("error trying to exec 'cc1': execvp: No such file or directory") && RbConfig::CONFIG['CC'] == 'gcc'
       $stderr.puts "\ntest/ruby/test_jit.rb: DEBUG OUTPUT:"
       cc1 = %x`gcc -print-prog-name=cc1`.rstrip
       if $?.success?
