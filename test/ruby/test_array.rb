@@ -535,6 +535,8 @@ class TestArray < Test::Unit::TestCase
     # Enumerable#collect without block returns an Enumerator.
     #assert_equal([1, 2, 3], @cls[1, 2, 3].collect)
     assert_kind_of Enumerator, @cls[1, 2, 3].collect
+
+    assert_equal([[1, 2, 3]], [[1, 2, 3]].collect(&->(a, b, c) {[a, b, c]}))
   end
 
   # also update map!
