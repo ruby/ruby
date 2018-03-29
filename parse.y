@@ -157,7 +157,6 @@ struct local_vars {
     struct vtable *past;
 # endif
     struct local_vars *prev;
-    stack_type cmdargs, cond; /* XXX: backup for cmdargs_stack and p->cond_stack.  Because this is not a part of local variables, refactoring is needed. */
 };
 
 #define DVARS_INHERIT ((void*)1)
@@ -2271,13 +2270,12 @@ primary		: literal
 		    }
 		| k_begin
 		    {
-			$<val>1 = p->cmdarg_stack;
-			CMDARG_SET(0);
+			CMDARG_PUSH(0);
 		    }
 		  bodystmt
 		  k_end
 		    {
-			CMDARG_SET($<val>1);
+			CMDARG_POP();
 		    /*%%%*/
 			set_line_body($3, @1.end_pos.lineno);
 			$$ = NEW_BEGIN($3, &@$);
@@ -3267,14 +3265,14 @@ brace_body	: {$<vars>$ = dyna_push(p);}
 		;
 
 do_body 	: {$<vars>$ = dyna_push(p);}
-		  {$<val>$ = p->cmdarg_stack; CMDARG_SET(0);}
+		  {CMDARG_PUSH(0);}
 		  opt_block_param bodystmt
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($3, $4, &@$);
 		    /*% %*/
 		    /*% ripper: do_block!(escape_Qundef($3), $4) %*/
-			CMDARG_SET($<val>2);
+			CMDARG_POP();
 			dyna_pop(p, $<vars>1);
 		    }
 		;
@@ -3621,10 +3619,8 @@ string_content	: tSTRING_CONTENT
 		    }
 		| tSTRING_DBEG
 		    {
-			$<val>1 = p->cond_stack;
-			$<val>$ = p->cmdarg_stack;
-			COND_SET(0);
-			CMDARG_SET(0);
+			CMDARG_PUSH(0);
+			COND_PUSH(0);
 		    }
 		    {
 			/* need to backup p->lex.strterm so that a string literal `%!foo,#{ !0 },bar!` can be parsed */
@@ -3645,8 +3641,8 @@ string_content	: tSTRING_CONTENT
 		    }
 		  compstmt tSTRING_DEND
 		    {
-			COND_SET($<val>1);
-			CMDARG_SET($<val>2);
+			COND_POP();
+			CMDARG_POP();
 			p->lex.strterm = $<strterm>3;
 			SET_LEX_STATE($<num>4);
 			p->lex.brace_nest = $<num>5;
@@ -8006,10 +8002,11 @@ parser_yylex(struct parser_params *p)
 	return c;
 
       case '}':
+	/* tSTRING_DEND does COND_POP and CMDARG_POP in the yacc's rule */
+	if (!p->lex.brace_nest--) return tSTRING_DEND;
 	COND_POP();
 	CMDARG_POP();
 	SET_LEX_STATE(EXPR_END);
-	if (!p->lex.brace_nest--) return tSTRING_DEND;
 	p->lex.paren_nest--;
 	return c;
 
@@ -10260,10 +10257,8 @@ local_push(struct parser_params *p, int toplevel_scope)
 # if WARN_PAST_SCOPE
     local->past = 0;
 # endif
-    local->cmdargs = p->cmdarg_stack;
-    CMDARG_SET(0);
-    local->cond = p->cond_stack;
-    COND_SET(0);
+    CMDARG_PUSH(0);
+    COND_PUSH(0);
     p->lvtbl = local;
 }
 
@@ -10284,8 +10279,8 @@ local_pop(struct parser_params *p)
 # endif
     vtable_free(p->lvtbl->args);
     vtable_free(p->lvtbl->vars);
-    CMDARG_SET(p->lvtbl->cmdargs);
-    COND_SET(p->lvtbl->cond);
+    CMDARG_POP();
+    COND_POP();
     xfree(p->lvtbl);
     p->lvtbl = local;
 }
