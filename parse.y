@@ -123,24 +123,24 @@ typedef VALUE stack_type;
 static const rb_code_location_t NULL_LOC = { {0, -1}, {0, -1} };
 
 # define SHOW_BITSTACK(stack, name) (p->debug ? rb_parser_show_bitstack(p, stack, name, __LINE__) : (void)0)
-# define BITSTACK_PUSH(stack, n) (((stack) = ((stack)<<1)|((n)&1)), SHOW_BITSTACK(stack, #stack"(push)"))
-# define BITSTACK_POP(stack)	 (((stack) = (stack) >> 1), SHOW_BITSTACK(stack, #stack"(pop)"))
-# define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(stack, #stack), (stack)&1)
-# define BITSTACK_SET(stack, n)	 ((stack)=(n), SHOW_BITSTACK(stack, #stack"(set)"))
+# define BITSTACK_PUSH(stack, n) (((p->stack) = ((p->stack)<<1)|((n)&1)), SHOW_BITSTACK(p->stack, #stack"(push)"))
+# define BITSTACK_POP(stack)	 (((p->stack) = (p->stack) >> 1), SHOW_BITSTACK(p->stack, #stack"(pop)"))
+# define BITSTACK_SET_P(stack)	 (SHOW_BITSTACK(p->stack, #stack), (p->stack)&1)
+# define BITSTACK_SET(stack, n)	 ((p->stack)=(n), SHOW_BITSTACK(p->stack, #stack"(set)"))
 
 /* A flag to identify keyword_do_cond, "do" keyword after condition expression.
    Examples: `while ... do`, `until ... do`, and `for ... in ... do` */
-#define COND_PUSH(n)	BITSTACK_PUSH(p->cond_stack, (n))
-#define COND_POP()	BITSTACK_POP(p->cond_stack)
-#define COND_P()	BITSTACK_SET_P(p->cond_stack)
-#define COND_SET(n)	BITSTACK_SET(p->cond_stack, (n))
+#define COND_PUSH(n)	BITSTACK_PUSH(cond_stack, (n))
+#define COND_POP()	BITSTACK_POP(cond_stack)
+#define COND_P()	BITSTACK_SET_P(cond_stack)
+#define COND_SET(n)	BITSTACK_SET(cond_stack, (n))
 
 /* A flag to identify keyword_do_block; "do" keyword after command_call.
    Example: `foo 1, 2 do`. */
-#define CMDARG_PUSH(n)	BITSTACK_PUSH(p->cmdarg_stack, (n))
-#define CMDARG_POP()	BITSTACK_POP(p->cmdarg_stack)
-#define CMDARG_P()	BITSTACK_SET_P(p->cmdarg_stack)
-#define CMDARG_SET(n)	BITSTACK_SET(p->cmdarg_stack, (n))
+#define CMDARG_PUSH(n)	BITSTACK_PUSH(cmdarg_stack, (n))
+#define CMDARG_POP()	BITSTACK_POP(cmdarg_stack)
+#define CMDARG_P()	BITSTACK_SET_P(cmdarg_stack)
+#define CMDARG_SET(n)	BITSTACK_SET(cmdarg_stack, (n))
 
 struct vtable {
     ID *tbl;
