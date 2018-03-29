@@ -2534,6 +2534,7 @@ static VALUE
 rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
 {
     long offset = 0;
+    long len;
     VALUE ary;
 
     /* can contain null bytes as separators */
@@ -2546,19 +2547,21 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
     }
     ary = rb_ary_new();
 
-    while (offset < RSTRING_LEN(str)) {
-	char *p, *pend;
+    while (offset < (len = RSTRING_LEN(str))) {
 	int status;
-	p = RSTRING_PTR(str) + offset;
-	status = push_glob(ary, rb_enc_str_new(p, strlen(p), rb_enc_get(str)),
+        long rest = len - offset;
+        const char *pbeg = RSTRING_PTR(str), *p = pbeg + offset;
+        const char *pend = memchr(p, '\0', rest);
+        if (pend) {
+            rest = ++pend - p;
+            offset = pend - pbeg;
+        }
+        else {
+            offset = len;
+        }
+	status = push_glob(ary, rb_str_subseq(str, p-pbeg, rest),
 			   base, flags);
 	if (status) GLOB_JUMP_TAG(status);
-	if (offset >= RSTRING_LEN(str)) break;
-	p += strlen(p) + 1;
-	pend = RSTRING_PTR(str) + RSTRING_LEN(str);
-	while (p < pend && !*p)
-	    p++;
-	offset = p - RSTRING_PTR(str);
     }
 
     return ary;
