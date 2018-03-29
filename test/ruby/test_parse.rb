@@ -1149,6 +1149,20 @@ x = __ENCODING__
     end
   end
 
+  def test_command_def_cmdarg
+    o = Object.new
+    def o.m(*); end
+    assert_nothing_raised(SyntaxError) do
+      eval(<<-EVAL)
+        o.m def x()
+        end
+
+        x = [].tap do
+        end
+      EVAL
+    end
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
