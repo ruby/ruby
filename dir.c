@@ -2698,6 +2698,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
  *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
  *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
+ *     Dir.glob(["*.rb", "*.h"])           #=> ["main.rb", "config.h"]
  *
  *     rbfiles = File.join("**", "*.rb")
  *     Dir.glob(rbfiles)                   #=> ["main.rb",
