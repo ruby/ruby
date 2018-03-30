@@ -143,10 +143,12 @@ They are quite similar to those of
 .Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -copyright
-Prints the copyright notice.
+Prints the copyright notice, and quits immediately without running any
+script.
 .Pp
 .It Fl -version
-Prints the version of Ruby interpreter.
+Prints the version of Ruby interpreter, and quits immediately without
+running any script.
 .Pp
 .It Fl 0 Ns Op Ar octal
 (The digit
@@ -457,8 +459,9 @@ Enables verbose mode without printing version message at the
 beginning.  It sets the
 .Li "$VERBOSE"
 variable to true.
-If this switch is given, and no other switches are present, Ruby quits
-after printing its version.
+If this switch is given, and no script arguments (script file or
+.Fl e
+options) are present, Ruby quits immediately.
 .El
 .Pp
 .Sh ENVIRONMENT
