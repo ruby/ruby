@@ -5605,6 +5605,26 @@ compile_return(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     return COMPILE_OK;
 }
 
+static int
+compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
+{
+    CHECK(COMPILE_(ret, "nd_body", node, popped));
+
+    if (!popped && !all_string_result_p(node)) {
+	const int line = nd_line(node);
+	const unsigned int flag = VM_CALL_FCALL;
+	LABEL *isstr = NEW_LABEL(line);
+	ADD_INSN(ret, line, dup);
+	ADD_INSN2(ret, line, branchiftype, INT2FIX(T_STRING), isstr);
+	LABEL_REF(isstr);
+	ADD_INSN(ret, line, dup);
+	ADD_SEND_R(ret, line, idTo_s, INT2FIX(0), NULL, INT2FIX(flag), NULL);
+	ADD_INSN(ret, line, tostring);
+	ADD_LABEL(ret, isstr);
+    }
+    return COMPILE_OK;
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
 /**
   compile each node
@@ -6769,25 +6789,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	}
 	break;
       }
-      case NODE_EVSTR:{
-	CHECK(COMPILE(ret, "nd_body", node->nd_body));
-
-	if (popped) {
-	    ADD_INSN(ret, line, pop);
-	}
-	else if (!all_string_result_p(node->nd_body)) {
-	    const unsigned int flag = VM_CALL_FCALL;
-	    LABEL *isstr = NEW_LABEL(line);
-	    ADD_INSN(ret, line, dup);
-	    ADD_INSN2(ret, line, branchiftype, INT2FIX(T_STRING), isstr);
-	    LABEL_REF(isstr);
-	    ADD_INSN(ret, line, dup);
-	    ADD_SEND_R(ret, line, idTo_s, INT2FIX(0), NULL, INT2FIX(flag), NULL);
-	    ADD_INSN(ret, line, tostring);
-	    ADD_LABEL(ret, isstr);
-	}
+      case NODE_EVSTR:
+	CHECK(compile_evstr(iseq, ret, node->nd_body, popped));
 	break;
-      }
       case NODE_DREGX:{
 	compile_dregx(iseq, ret, node);
 
