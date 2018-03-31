@@ -4768,10 +4768,10 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 		node_body ? nd_last_column(node_body) : last_column,
 		type == NODE_IF ? "then" : "else",
 		branches);
+	    end_label = NEW_LABEL(line);
+	    ADD_INSNL(then_seq, line, jump, end_label);
 	}
 	ADD_SEQ(ret, then_seq);
-	end_label = NEW_LABEL(line);
-	ADD_INSNL(ret, line, jump, end_label);
     }
 
     if (else_label->refcnt) {
