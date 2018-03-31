@@ -1,5 +1,5 @@
-require "#{File.dirname(__FILE__)}/../../spec_helper"
-require "#{File.dirname(__FILE__)}/fixtures/file_types"
+require_relative '../../spec_helper'
+require_relative 'fixtures/file_types'
 
 describe "File.ftype" do
   before :all do
