@@ -1,5 +1,5 @@
-require "#{File.dirname __FILE__}/../../../spec_helper"
-require "#{File.dirname __FILE__}/../fixtures/classes"
+require_relative '../../../spec_helper'
+require_relative '../fixtures/classes'
 
 describe :method_to_s, shared: true do
   before :each do
