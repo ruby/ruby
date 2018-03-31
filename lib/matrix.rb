@@ -368,7 +368,7 @@ class Matrix
 
 
   def convert_range(range, count)
-    range.exclude_end? ? range.begin...(count + range.end) : range.begin..(count + range.end)
+    Range.new(range.begin, range.end + count, range.exclude_end?)
   end
 
   private :indices_within_matrix?, :both_ranges?, :convert_range
@@ -1941,7 +1941,7 @@ class Vector
   private :set_element, :set_component
 
   def convert_range(range)
-    range.exclude_end? ? range.begin...(size + range.end) : range.begin..(size + range.end)
+    Range.new(range.begin, range.end + size, range.exclude_end?)
   end
 
   def range_within_vector_range?(range)
