@@ -421,7 +421,7 @@ with all sufficient information, see the ChangeLog file or Redmine
       * It also facilitates supporting new syntax in the future.
     * Support many new syntaxes of Ruby from the past few years.
     * Use "frozen_string_literal: true".
-      This reduces document generation time by 5%.
+      Performance survey: https://gist.github.com/aycabta/abdfaa75ea8a6877eeb734e942e73800
     * Support did_you_mean.
 
 * Rubygems
