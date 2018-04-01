@@ -89,6 +89,9 @@ class TestTimeTZ < Test::Unit::TestCase
       Time.local(1951, 5, 6, 1, 0, 0).dst?   # DST with fixed tzdata
     end
   }
+  CORRECT_KIRITIMATI_SKIP_1994 = with_tz("Pacific/Kiritimati") {
+    Time.local(1994, 12, 31, 0, 0, 0).year == 1995
+  }
 
   def time_to_s(t)
     t.to_s
@@ -178,9 +181,17 @@ class TestTimeTZ < Test::Unit::TestCase
 
   def test_pacific_kiritimati
     with_tz(tz="Pacific/Kiritimati") {
-      assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
-      assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,1,0,0,0])
-      assert_time_constructor(tz, "1995-01-02 23:59:59 +1400", :local, [1995,1,1,23,59,59])
+      assert_time_constructor(tz, "1994-12-30 00:00:00 -1000", :local, [1994,12,30,0,0,0])
+      assert_time_constructor(tz, "1994-12-30 23:59:59 -1000", :local, [1994,12,30,23,59,59])
+      if CORRECT_KIRITIMATI_SKIP_1994
+        assert_time_constructor(tz, "1995-01-01 00:00:00 +1400", :local, [1994,12,31,0,0,0])
+        assert_time_constructor(tz, "1995-01-01 23:59:59 +1400", :local, [1994,12,31,23,59,59])
+        assert_time_constructor(tz, "1995-01-01 00:00:00 +1400", :local, [1995,1,1,0,0,0])
+      else
+        assert_time_constructor(tz, "1994-12-31 23:59:59 -1000", :local, [1994,12,31,23,59,59])
+        assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,1,0,0,0])
+        assert_time_constructor(tz, "1995-01-02 23:59:59 +1400", :local, [1995,1,1,23,59,59])
+      end
       assert_time_constructor(tz, "1995-01-02 00:00:00 +1400", :local, [1995,1,2,0,0,0])
     }
   end
