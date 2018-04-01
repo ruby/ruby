@@ -375,9 +375,18 @@ Europe/London  Sun Aug 10 00:59:59 1947 UTC = Sun Aug 10 02:59:59 1947 BDST isds
 Europe/London  Sun Aug 10 01:00:00 1947 UTC = Sun Aug 10 02:00:00 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 01:59:59 1947 UTC = Sun Nov  2 02:59:59 1947 BST isdst=1 gmtoff=3600
 Europe/London  Sun Nov  2 02:00:00 1947 UTC = Sun Nov  2 02:00:00 1947 GMT isdst=0 gmtoff=0
+End
+  if CORRECT_KIRITIMATI_SKIP_1994
+    gen_zdump_test <<'End'
+Pacific/Kiritimati  Sat Dec 31 09:59:59 1994 UTC = Fri Dec 30 23:59:59 1994 LINT isdst=0 gmtoff=-36000
+Pacific/Kiritimati  Sat Dec 31 10:00:00 1994 UTC = Sun Jan  1 00:00:00 1995 LINT isdst=0 gmtoff=50400
+End
+  else
+    gen_zdump_test <<'End'
 Pacific/Kiritimati  Sun Jan  1 09:59:59 1995 UTC = Sat Dec 31 23:59:59 1994 LINT isdst=0 gmtoff=-36000
 Pacific/Kiritimati  Sun Jan  1 10:00:00 1995 UTC = Mon Jan  2 00:00:00 1995 LINT isdst=0 gmtoff=50400
 End
+  end
   gen_zdump_test <<'End' if has_right_tz
 right/America/Los_Angeles  Fri Jun 30 23:59:60 1972 UTC = Fri Jun 30 16:59:60 1972 PDT isdst=1 gmtoff=-25200
 right/America/Los_Angeles  Wed Dec 31 23:59:60 2008 UTC = Wed Dec 31 15:59:60 2008 PST isdst=0 gmtoff=-28800
