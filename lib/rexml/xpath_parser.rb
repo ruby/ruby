@@ -321,9 +321,10 @@ module REXML
             all_siblings = node.parent.children
             current_index = all_siblings.index( node )
             following_siblings = all_siblings[ current_index+1 .. -1 ]
-            results += expr( path_stack.dclone, following_siblings )
+            results += following_siblings
           end
           nodeset = results
+          node_types = ELEMENTS
 
         when :preceding_sibling
           results = []
