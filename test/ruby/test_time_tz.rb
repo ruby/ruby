@@ -434,5 +434,6 @@ End
   gen_variational_zdump_test "lisbon", <<'End' if has_lisbon_tz
 Europe/Lisbon  Mon Jan  1 00:36:31 1912 UTC = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2192
 Europe/Lisbon  Mon Jan  1 00:36:44 1912 UT = Sun Dec 31 23:59:59 1911 LMT isdst=0 gmtoff=-2205
+Europe/Lisbon  Sun Dec 31 23:59:59 1911 UT = Sun Dec 31 23:23:14 1911 LMT isdst=0 gmtoff=-2205
 End
 end
