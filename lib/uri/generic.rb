@@ -950,7 +950,7 @@ module URI
     #
     # == Description
     #
-    # URI has components listed in order of decreashing signficance from left to right
+    # URI has components listed in order of decreasing signficance from left to right
     # see RFC3986 https://tools.ietf.org/html/rfc3986 1.2.3
     #
     # == Usage
