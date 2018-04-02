@@ -241,7 +241,12 @@ module MakeMakefile
     $topdir ||= RbConfig::CONFIG["topdir"]
     $arch_hdrdir = "$(extout)/include/$(arch)"
   else
-    abort "mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h"
+    abort <<MESSAGE
+mkmf.rb can't find header files for ruby at #{$hdrdir}/ruby.h
+
+You might have to install separate package for the ruby development
+environment, ruby-dev or ruby-devel for example.
+MESSAGE
   end
 
   CONFTEST = "conftest".freeze
