@@ -114,10 +114,10 @@ def sync_default_gems(gem)
     `cp -f ../io-console/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
   when "csv"
-    `rm -rf lib/csv.rb test/csv lib/csv.gemspec`
+    `rm -rf lib/csv* test/csv`
     `cp -rf ../csv/lib/* lib`
     `cp -rf ../csv/test/csv test`
-    `cp -f ../csv/csv.gemspec lib`
+    `cp -f ../csv/csv.gemspec lib/csv`
   when "webrick"
     `rm -rf lib/webrick test/webrick`
     `cp -rf ../webrick/lib/webrick lib`
