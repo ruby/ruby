@@ -1771,11 +1771,11 @@ VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
     const rb_method_entry_t *me;
-    VALUE klass;
+    VALUE klass = RCLASS_ORIGIN(rb_singleton_class_get(obj));
     ID id = rb_check_id(&vid);
 
     if (!id) {
-	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
+	if (!NIL_P(klass) &&
 	    respond_to_missing_p(klass, obj, vid, FALSE)) {
 	    id = rb_intern_str(vid);
 	    return mnew_missing(klass, obj, id, rb_cMethod);
@@ -1784,7 +1784,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
 	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
 			  obj, vid);
     }
-    if (NIL_P(klass = rb_singleton_class_get(obj)) ||
+    if (NIL_P(klass) ||
 	UNDEFINED_METHOD_ENTRY_P(me = rb_method_entry_at(klass, id)) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
 	vid = ID2SYM(id);
