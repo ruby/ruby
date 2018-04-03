@@ -385,6 +385,6 @@ class TestFiber < Test::Unit::TestCase
         Fiber.new{Fiber.yield :ok}.resume
       }.join
     }.join
-    assert_euqal :ok, ret, '[Bug #14642]'
+    assert_equal :ok, ret, '[Bug #14642]'
   end
 end
