@@ -21,7 +21,7 @@ AC_DEFUN([_COLORIZE_RESULT_PREPARE], [
     AS_REQUIRE_SHELL_FN([colorize_result],
 	[AS_FUNCTION_DESCRIBE([colorize_result], [MSG], [Colorize result])],
         [AS_CASE(["$[]1"],
-            [yes], [AS_ECHO(["${msg_result_yes}$[]1${msg_reset}]")],
-            [no], [AS_ECHO(["${msg_result_no}$[]1${msg_reset}]")],
-            [AS_ECHO(["${msg_result_other}$[]1${msg_reset}]")])])
+            [yes], [AS_ECHO(["${msg_result_yes}$[]1${msg_reset}"])],
+            [no], [AS_ECHO(["${msg_result_no}$[]1${msg_reset}"])],
+            [AS_ECHO(["${msg_result_other}$[]1${msg_reset}"])])])
 ])dnl
