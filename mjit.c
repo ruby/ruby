@@ -1380,6 +1380,7 @@ mjit_init(struct mjit_options *opts)
     rb_obj_hide(valid_class_serials);
     rb_gc_register_mark_object(valid_class_serials);
     mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
+    mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
     if (RCLASS_CONST_TBL(rb_cObject)) {
         rb_id_table_foreach(RCLASS_CONST_TBL(rb_cObject), valid_class_serials_add_i, NULL);
     }
