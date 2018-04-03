@@ -118,6 +118,101 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     }
   end
 
+  def test_big_bodies
+    require 'digest/md5'
+    rand_str = File.read(__FILE__)
+    rand_str.freeze
+    nr = 1024 ** 2 / rand_str.size # bigger works, too
+    exp = Digest::MD5.new
+    nr.times { exp.update(rand_str) }
+    exp = exp.hexdigest
+    TestWEBrick.start_httpserver do |o_server, o_addr, o_port, o_log|
+      o_server.mount_proc('/') do |req, res|
+        case req.request_method
+        when 'GET'
+          res['content-type'] = 'application/octet-stream'
+          if req.path == '/length'
+            res['content-length'] = (nr * rand_str.size).to_s
+          else
+            res.chunked = true
+          end
+          res.body = ->(socket) { nr.times { socket.write(rand_str) } }
+        when 'POST'
+          dig = Digest::MD5.new
+          req.body { |buf| dig.update(buf); buf.clear }
+          res['content-type'] = 'text/plain'
+          res['content-length'] = '32'
+          res.body = dig.hexdigest
+        end
+      end
+
+      http = Net::HTTP.new(o_addr, o_port)
+      IO.pipe do |rd, wr|
+        headers = {
+          'Content-Type' => 'application/octet-stream',
+          'Transfer-Encoding' => 'chunked',
+        }
+        post = Net::HTTP::Post.new('/', headers)
+        th = Thread.new { nr.times { wr.write(rand_str) }; wr.close }
+        post.body_stream = rd
+        http.request(post) do |res|
+          assert_equal 'text/plain', res['content-type']
+          assert_equal 32, res.content_length
+          assert_equal exp, res.body
+        end
+        assert_nil th.value
+      end
+
+      TestWEBrick.start_httpproxy do |p_server, p_addr, p_port, p_log|
+        http = Net::HTTP.new(o_addr, o_port, p_addr, p_port)
+        http.request_get('/length') do |res|
+          assert_equal(nr * rand_str.size, res.content_length)
+          dig = Digest::MD5.new
+          res.read_body { |buf| dig.update(buf); buf.clear }
+          assert_equal exp, dig.hexdigest
+        end
+        http.request_get('/') do |res|
+          assert_predicate res, :chunked?
+          dig = Digest::MD5.new
+          res.read_body { |buf| dig.update(buf); buf.clear }
+          assert_equal exp, dig.hexdigest
+        end
+
+        IO.pipe do |rd, wr|
+          headers = {
+            'Content-Type' => 'application/octet-stream',
+            'Content-Length' => (nr * rand_str.size).to_s,
+          }
+          post = Net::HTTP::Post.new('/', headers)
+          th = Thread.new { nr.times { wr.write(rand_str) }; wr.close }
+          post.body_stream = rd
+          http.request(post) do |res|
+            assert_equal 'text/plain', res['content-type']
+            assert_equal 32, res.content_length
+            assert_equal exp, res.body
+          end
+          assert_nil th.value
+        end
+
+        IO.pipe do |rd, wr|
+          headers = {
+            'Content-Type' => 'application/octet-stream',
+            'Transfer-Encoding' => 'chunked',
+          }
+          post = Net::HTTP::Post.new('/', headers)
+          th = Thread.new { nr.times { wr.write(rand_str) }; wr.close }
+          post.body_stream = rd
+          http.request(post) do |res|
+            assert_equal 'text/plain', res['content-type']
+            assert_equal 32, res.content_length
+            assert_equal exp, res.body
+          end
+          assert_nil th.value
+        end
+      end
+    end
+  end
+
   def make_certificate(key, cn)
     subject = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=#{cn}")
     exts = [

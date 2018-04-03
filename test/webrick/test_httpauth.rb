@@ -230,7 +230,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
         log.reject! {|line| pat =~ line }
       }
       assert_equal([], log)
-    }
+   }
     TestWEBrick.start_httpserver({}, log_tester) {|server, addr, port, log|
       realm = "wb auth-int realm"
       path = "/digest_auth_int"
