@@ -2425,7 +2425,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
-void rb_threadptr_root_fiber_setup(rb_thread_t *th);
+void rb_threadptr_root_fiber_setup_by_parent(rb_thread_t *th);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
 static void
@@ -2533,7 +2533,7 @@ static void
 th_init(rb_thread_t *th, VALUE self)
 {
     th->self = self;
-    rb_threadptr_root_fiber_setup(th);
+    rb_threadptr_root_fiber_setup_by_parent(th);
 
     /* allocate thread stack */
 #ifdef USE_SIGALTSTACK
