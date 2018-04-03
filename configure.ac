@@ -35,7 +35,7 @@ AS_IF([test "$HAVE_BASERUBY" = yes -a "`RUBYOPT=- $BASERUBY -e 'print 42' 2>/dev
     AS_IF([test "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42' 2>/dev/null`" = 42], [
 	BASERUBY="$BASERUBY --disable=gems"
     ])
-    $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub
+    $BASERUBY -C "$srcdir" tool/downloader.rb -d tool -e gnu config.guess config.sub >&AS_MESSAGE_FD
 ], [
     BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
     HAVE_BASERUBY=no
@@ -3743,7 +3743,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 (
   AS_IF([test "x$CONFIGURE_TTY" = xyes], [color=--color], [color=])
   exec ${srcdir}/tool/ifchange $color "${config_h}" -
-) || AC_MSG_ERROR([failed to create ${config_h}])
+) >&AS_MESSAGE_FD || AC_MSG_ERROR([failed to create ${config_h}])
 tr -d '\015' < largefile.h > confdefs.h
 rm largefile.h
 
@@ -3857,6 +3857,7 @@ AC_OUTPUT
 }
 }
 
+AS_IF([test "$silent" = yes], [], [
 AS_IF([${FOLD+:} false], [], [
 AS_IF([test "`echo abcdefg hijklmno | fold -s -w10 | sed 1d`" = hijklmno], [FOLD="fold"], [FOLD=])
 ])
@@ -3902,3 +3903,4 @@ config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
 echo ""
 echo "---"
+])
