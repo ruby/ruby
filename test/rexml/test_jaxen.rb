@@ -13,11 +13,11 @@ module REXMLTests
     include REXML
 
     def test_axis ; process_test_case("axis") ; end
-    def _test_basic ; process_test_case("basic") ; end
-    def _test_basicupdate ; process_test_case("basicupdate") ; end
-    def _test_contents ; process_test_case("contents") ; end
-    def _test_defaultNamespace ; process_test_case("defaultNamespace") ; end
-    def _test_fibo ; process_test_case("fibo") ; end
+    def test_basic ; process_test_case("basic") ; end
+    def test_basicupdate ; process_test_case("basicupdate") ; end
+    def test_contents ; process_test_case("contents") ; end
+    def test_defaultNamespace ; process_test_case("defaultNamespace") ; end
+    def test_fibo ; process_test_case("fibo") ; end
     def _test_id ; process_test_case("id") ; end
     def _test_jaxen24 ; process_test_case("jaxen24") ; end
     def _test_lang ; process_test_case("lang") ; end
@@ -77,26 +77,34 @@ module REXMLTests
     # processes a tests/document/context/valueOf or tests/document/context/test/valueOf node
     def process_value_of(context, variables, namespaces, value_of)
       expected = value_of.text
-      matched = XPath.first(context,
-                            value_of.attributes["select"],
-                            namespaces,
-                            variables)
+      xpath = value_of.attributes["select"]
+      matched = XPath.first(context, xpath, namespaces, variables)
+
+      message = ""
+      context.each_with_index do |node, i|
+        message << "Node#{i}:\n"
+        message << node.to_s
+      end
+      message << "XPath: <#{xpath}>\n"
+      message << "Matched <#{matched.class}>"
+
       if expected.nil?
-        assert_nil(matched)
+        assert_nil(matched, message)
       else
         case matched
         when Element
-          assert_equal(expected, matched.name)
+          assert_equal(expected, matched.text, message)
         when Attribute, Text, Comment, TrueClass, FalseClass
-          assert_equal(expected, matched.to_s)
+          assert_equal(expected, matched.to_s, message)
         when Instruction
-          assert_equal(expected, matched.content)
-        when Integer
-          assert_equal(exected.to_f, matched)
+          assert_equal(expected, matched.content, message)
+        when Integer, Float
+          assert_equal(expected.to_f, matched, message)
         when String
-          assert_equal(expected, matched)
+          assert_equal(expected, matched, message)
         else
-          flunk("Unexpected match value: <#{matched.inspect}>")
+          flunk("#{message}\n" +
+                "Unexpected match value: <#{matched.inspect}>")
         end
       end
     end

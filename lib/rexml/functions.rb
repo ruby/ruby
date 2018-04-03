@@ -86,10 +86,14 @@ module REXML
     # Helper method.
     def Functions::get_namespace( node_set = nil )
       if node_set == nil
-        yield @@context[:node] if defined? @@context[:node].namespace
+        yield @@context[:node] if @@context[:node].respond_to?(:namespace)
       else
         if node_set.respond_to? :each
-          node_set.each { |node| yield node if defined? node.namespace }
+          result = []
+          node_set.each do |node|
+            result << yield(node) if node.respond_to?(:namespace)
+          end
+          result
         elsif node_set.respond_to? :namespace
           yield node_set
         end
