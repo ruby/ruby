@@ -258,32 +258,6 @@ module WEBrick
     end
 
     ##
-    # Prepares the HTTPRequest object for use as the
-    # source for IO.copy_stream
-
-    def body_reader
-      @body_tmp = []
-      @body_rd = Fiber.new do
-        body do |buf|
-          @body_tmp << buf
-          Fiber.yield
-        end
-      end
-      @body_rd.resume # grab the first chunk and yield
-      self
-    end
-
-    # for IO.copy_stream.  Note: we may return a larger string than +size+
-    # here; but IO.copy_stream does not care.
-    def readpartial(size, buf = ''.b) # :nodoc
-      res = @body_tmp.shift or raise EOFError, 'end of file reached'
-      buf.replace(res)
-      res.clear
-      @body_rd.resume # get more chunks
-      buf
-    end
-
-    ##
     # Request query as a Hash
 
     def query
