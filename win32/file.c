@@ -264,7 +264,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
     long wpath_len = 0, wdir_len = 0;
-    char *fullpath = NULL;
     wchar_t *wfullpath = NULL, *wpath = NULL, *wpath_pos = NULL;
     wchar_t *wdir = NULL, *wdir_pos = NULL;
     wchar_t *whome = NULL, *buffer = NULL, *buffer_pos = NULL;
@@ -596,9 +595,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     if (wfullpath != wfullpath_buffer)
 	xfree(wfullpath);
-
-    if (fullpath)
-	xfree(fullpath);
 
     rb_enc_associate(result, path_encoding);
     return result;
