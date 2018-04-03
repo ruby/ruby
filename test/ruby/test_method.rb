@@ -790,6 +790,9 @@ class TestMethod < Test::Unit::TestCase
     class << o; prepend Module.new; end
     m = assert_nothing_raised(NameError, bug14658) {o.singleton_method(:bar)}
     assert_equal(:bar, m.call, bug14658)
+
+    o = Object.new
+    assert_raise(NameError, bug14658) {o.singleton_method(:bar)}
   end
 
   Feature9783 = '[ruby-core:62212] [Feature #9783]'
