@@ -391,7 +391,7 @@ puts Tempfile.new('foo').path
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
   ensure
-    t.close!
+    t&.close!
   end
 
   def test_create_traversal_dir
@@ -400,6 +400,6 @@ puts Tempfile.new('foo').path
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
   ensure
-    t.close
+    t&.close
   end
 end
