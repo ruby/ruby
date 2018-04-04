@@ -51,6 +51,7 @@ module REXML
       @parser = REXML::Parsers::XPathParser.new
       @namespaces = nil
       @variables = {}
+      @nest = 0
     end
 
     def namespaces=( namespaces={} )
@@ -151,9 +152,11 @@ module REXML
     ALL = [ :attribute, :element, :text, :processing_instruction, :comment ]
     ELEMENTS = [ :element ]
     def expr( path_stack, nodeset, context=nil )
+      # enter(:expr, path_stack, nodeset)
       node_types = ELEMENTS
       return nodeset if path_stack.length == 0 || nodeset.length == 0
       while path_stack.length > 0
+        # trace(:while, path_stack, nodeset)
         if nodeset.length == 0
           path_stack.clear
           return []
@@ -165,6 +168,7 @@ module REXML
         when :qname
           prefix = path_stack.shift
           name = path_stack.shift
+          # enter(:qname, path_stack, prefix, name, nodeset)
           nodeset.delete_if do |node|
             # FIXME: This DOUBLES the time XPath searches take
             ns = get_namespace( node, prefix )
@@ -176,6 +180,7 @@ module REXML
               node.name == name and
               node.namespace == ns )
           end
+          # leave(:qname, path_stack, nodeset)
           node_types = ELEMENTS
 
         when :any
@@ -206,12 +211,14 @@ module REXML
           nt = nil
           nodeset.each do |node|
             nt = node.node_type
+            # trace(:child, nt, node)
             new_nodeset += node.children if nt == :element or nt == :document
           end
           nodeset = new_nodeset
           node_types = ELEMENTS
 
         when :literal
+          # trace(:literal, path_stack, nodeset)
           return path_stack.shift
 
         when :attribute
@@ -277,6 +284,7 @@ module REXML
           new_nodeset = []
           subcontext = { :size => nodeset.size }
           pred = path_stack.shift
+          # enter(:predicate, pred, nodeset)
           nodeset.each_with_index { |node, index|
             subcontext[ :node ] = node
             subcontext[ :index ] = index+1
@@ -294,6 +302,7 @@ module REXML
             end
           }
           nodeset = new_nodeset
+          # leave(:predicate_return, nodeset)
 =begin
           predicate = path_stack.shift
           ns = nodeset.clone
@@ -393,6 +402,7 @@ module REXML
           left = expr( path_stack.shift, nodeset.dup, context )
           right = expr( path_stack.shift, nodeset.dup, context )
           res = equality_relational_compare( left, op, right )
+          # trace(op, left, right, res)
           return res
 
         when :and
@@ -465,8 +475,24 @@ module REXML
         end
       end # while
       return nodeset
+    # ensure
+    #   leave(:expr, path_stack, nodeset)
     end
 
+    def trace(*args)
+      indent = "  " * @nest
+      puts("#{indent}#{args.inspect}")
+    end
+
+    def enter(tag, *args)
+      trace(:enter, tag, *args)
+      @nest += 1
+    end
+
+    def leave(tag, *args)
+      @nest -= 1
+      trace(:leave, tag, *args)
+    end
 
     ##########################################################
     # FIXME
