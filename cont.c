@@ -1464,18 +1464,6 @@ rb_fiber_start(void)
     VM_UNREACHABLE(rb_fiber_start);
 }
 
-#ifdef _WIN32
-static HANDLE
-win32_convert_thread_to_fiber(void)
-{
-    HANDLE fib_handle = ConvertThreadToFiber(0);
-    if (!fib_handle) {
-        rb_bug("rb_threadptr_root_fiber_setup_by_child: ConvertThreadToFiber() failed - %s\n", rb_w32_strerror(-1));
-    }
-    return fib_handle;
-}
-#endif
-
 static rb_fiber_t *
 root_fiber_alloc(rb_thread_t *th)
 {
@@ -1489,18 +1477,26 @@ root_fiber_alloc(rb_thread_t *th)
     th->root_fiber = fib;
     DATA_PTR(fibval) = fib;
     fib->cont.self = fibval;
+
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
+    /* setup fib_handle for root Fiber */
     if (fib->fib_handle == 0) {
-        fib->fib_handle = win32_convert_thread_to_fiber();
+        if ((fib->fib_handle = ConvertThreadToFiber(0)) == 0) {
+            rb_bug("root_fiber_alloc: ConvertThreadToFiber() failed - %s\n", rb_w32_strerror(-1));
+        }
+    }
+    else {
+        rb_bug("root_fiber_alloc: fib_handle is not NULL.");
     }
 #endif
 #endif
+
     return fib;
 }
 
 void
-rb_threadptr_root_fiber_setup_by_parent(rb_thread_t *th)
+rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
     rb_fiber_t *fib = ruby_mimmalloc(sizeof(rb_fiber_t));
     MEMZERO(fib, rb_fiber_t, 1);
@@ -1509,23 +1505,8 @@ rb_threadptr_root_fiber_setup_by_parent(rb_thread_t *th)
     fib->cont.saved_ec.thread_ptr = th;
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
     th->ec = &fib->cont.saved_ec;
-}
 
-void
-rb_threadptr_root_fiber_setup_by_child(rb_thread_t *th)
-{
-#if FIBER_USE_NATIVE
-#ifdef _WIN32
-    rb_fiber_t *fib = th->ec->fiber_ptr;
-
-    if (fib->fib_handle == 0) {
-        fib->fib_handle = win32_convert_thread_to_fiber();
-    }
-    else {
-        rb_bug("rb_threadptr_root_fiber_setup_by_child: fib_handle is not NULL.");
-    }
-#endif
-#endif
+    /* NOTE: On WIN32, fib_handle is not allocated yet. */
 }
 
 void
