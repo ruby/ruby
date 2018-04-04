@@ -375,7 +375,7 @@ module REXML
 
         when :variable
           var_name = path_stack.shift
-          return @variables[ var_name ]
+          return [@variables[var_name]]
 
         # :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
         # TODO: Special case for :or and :and -- not evaluate the right
