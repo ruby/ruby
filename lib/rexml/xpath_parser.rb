@@ -236,8 +236,16 @@ module REXML
           nodeset = new_nodeset
 
         when :parent
-          nodeset = nodeset.collect{|n| n.parent}.compact
-          #nodeset = expr(path_stack.dclone, nodeset.collect{|n| n.parent}.compact)
+          new_nodeset = []
+          nodeset.each do |node|
+            if node.is_a?(Attribute)
+              parent = node.element
+            else
+              parent = node.parent
+            end
+            new_nodeset << parent if parent
+          end
+          nodeset = new_nodeset
           node_types = ELEMENTS
 
         when :ancestor
