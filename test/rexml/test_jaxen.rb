@@ -18,9 +18,9 @@ module REXMLTests
     def test_contents ; process_test_case("contents") ; end
     def test_defaultNamespace ; process_test_case("defaultNamespace") ; end
     def test_fibo ; process_test_case("fibo") ; end
-    def _test_id ; process_test_case("id") ; end
-    def _test_jaxen24 ; process_test_case("jaxen24") ; end
-    def _test_lang ; process_test_case("lang") ; end
+    def test_id ; process_test_case("id") ; end
+    def test_jaxen24 ; process_test_case("jaxen24") ; end
+    def test_lang ; process_test_case("lang") ; end
     def _test_message ; process_test_case("message") ; end
     def _test_moreover ; process_test_case("moreover") ; end
     def _test_much_ado ; process_test_case("much_ado") ; end
@@ -111,8 +111,8 @@ module REXMLTests
 
     # processes a tests/document/context/test node ( where @exception is false or doesn't exist )
     def process_nominal_test(context, variables, namespaces, test)
-      select = test.attributes["select"]
-      matched = XPath.match(context, select, namespaces, variables)
+      xpath = test.attributes["select"]
+      matched = XPath.match(context, xpath, namespaces, variables)
       # might be a test with no count attribute, but nested valueOf elements
       expected = test.attributes["count"]
       if expected
