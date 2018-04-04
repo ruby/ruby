@@ -6623,7 +6623,7 @@ gc_enter(rb_objspace_t *objspace, const char *event)
     mjit_gc_start_hook();
 
     during_gc = TRUE;
-    gc_report(1, objspace, "gc_entr: %s [%s]\n", event, gc_current_status(objspace));
+    gc_report(1, objspace, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
     gc_record(objspace, 0, event);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
 }
