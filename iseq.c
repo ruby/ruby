@@ -1806,6 +1806,15 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
     return ret;
 }
 
+static VALUE
+right_strip(VALUE str)
+{
+    const char *beg = RSTRING_PTR(str), *end = RSTRING_END(str);
+    while (end-- > beg && *end == ' ');
+    rb_str_set_len(str, end - beg + 1);
+    return str;
+}
+
 /**
  * Disassemble a instruction
  * Iseq -> Iseq inspect object
@@ -1867,12 +1876,13 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
 	}
     }
 
+    right_strip(str);
     if (ret) {
 	rb_str_cat2(str, "\n");
 	rb_str_concat(ret, str);
     }
     else {
-	printf("%s\n", RSTRING_PTR(str));
+	printf("%.*s\n", (int)RSTRING_LEN(str), RSTRING_PTR(str));
     }
     return len;
 }
@@ -2011,7 +2021,7 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 	    if (*argi) rb_str_catf(str, "<%s>", argi);
 	    if ((width -= RSTRING_LEN(str)) > 0) rb_str_catf(str, "%*s", (int)width, "");
 	}
-	rb_str_cat2(str, "\n");
+	rb_str_cat_cstr(right_strip(str), "\n");
     }
 
     /* show each line */
