@@ -515,7 +515,9 @@ module REXML
         rest = FilterExpr( path, n )
         if rest != path
           if rest and rest[0] == ?/
-            return RelativeLocationPath(rest, n)
+            rest = RelativeLocationPath(rest, n)
+            parsed.concat(n)
+            return rest
           end
         end
         rest = LocationPath(rest, n) if rest =~ /\A[\/\.\@\[\w*]/
