@@ -21,8 +21,9 @@ module REXMLTests
     def test_id ; process_test_case("id") ; end
     def test_jaxen24 ; process_test_case("jaxen24") ; end
     def test_lang ; process_test_case("lang") ; end
+    # document() function for XSLT isn't supported
     def _test_message ; process_test_case("message") ; end
-    def _test_moreover ; process_test_case("moreover") ; end
+    def test_moreover ; process_test_case("moreover") ; end
     def _test_much_ado ; process_test_case("much_ado") ; end
     def _test_namespaces ; process_test_case("namespaces") ; end
     def _test_nitf ; process_test_case("nitf") ; end
@@ -80,13 +81,7 @@ module REXMLTests
       xpath = value_of.attributes["select"]
       matched = XPath.first(context, xpath, namespaces, variables)
 
-      message = ""
-      context.each_with_index do |node, i|
-        message << "Node#{i}:\n"
-        message << node.to_s
-      end
-      message << "XPath: <#{xpath}>\n"
-      message << "Matched <#{matched.class}>"
+      message = user_message(context, xpath, matched)
 
       if expected.nil?
         assert_nil(matched, message)
@@ -117,11 +112,12 @@ module REXMLTests
       expected = test.attributes["count"]
       if expected
         assert_equal(Integer(expected, 10),
-                     matched.size)
+                     matched.size,
+                     user_message(context, xpath, matched))
       end
 
       XPath.each(test, "valueOf") do |value_of|
-        process_value_of(mathched, variables, namespaces, value_of)
+        process_value_of(matched, variables, namespaces, value_of)
       end
     end
 
@@ -131,6 +127,17 @@ module REXMLTests
       assert_raise do
         XPath.match(context, select, namespaces, variables)
       end
+    end
+
+    def user_message(context, xpath, matched)
+      message = ""
+      context.each_with_index do |node, i|
+        message << "Node#{i}:\n"
+        message << "#{node}\n"
+      end
+      message << "XPath: <#{xpath}>\n"
+      message << "Matched <#{matched}>"
+      message
     end
   end
 end

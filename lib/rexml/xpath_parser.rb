@@ -212,7 +212,19 @@ module REXML
           nodeset.each do |node|
             nt = node.node_type
             # trace(:child, nt, node)
-            new_nodeset += node.children if nt == :element or nt == :document
+            case nt
+            when :element
+              new_nodeset.concat(node.children)
+            when :document
+              node.children.each do |child|
+                case child
+                when XMLDecl, Text
+                  # ignore
+                else
+                  new_nodeset << child
+                end
+              end
+            end
           end
           nodeset = new_nodeset
           node_types = ELEMENTS
