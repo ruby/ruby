@@ -6178,9 +6178,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
-	dy = rb_big2dbl(y);
-	if (isinf(dx) || isinf(dy))
-	    return big_fdiv_int(x, y);
+	return big_fdiv_int(x, y);
     }
     else if (RB_FLOAT_TYPE_P(y)) {
 	dy = RFLOAT_VALUE(y);
