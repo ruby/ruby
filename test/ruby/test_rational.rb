@@ -837,6 +837,7 @@ class Rational_Test < Test::Unit::TestCase
   def test_to_f
     assert_equal(1.5, Rational(3,2).to_f)
     assert_equal(1.5, Float(Rational(3,2)))
+    assert_equal(1e-23, Rational(1, 10**23).to_f, "Bug #14637")
   end
 
   def test_to_c
