@@ -643,7 +643,6 @@ thread_do_start(rb_thread_t *th, VALUE args)
 }
 
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
-void rb_threadptr_root_fiber_setup_by_child(rb_thread_t *th);
 
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
@@ -663,7 +662,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_bug("thread_start_func_2 must not be used for main thread");
 
     ruby_thread_set_native(th);
-    rb_threadptr_root_fiber_setup_by_child(th);
 
     th->ec->machine.stack_start = stack_start;
 #ifdef __ia64
