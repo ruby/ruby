@@ -8231,13 +8231,17 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
     if (pos % align) {
-        long size = (long)pos - (pos % align) + align;
+        static const char padding[sizeof(VALUE)];
+        size_t size = align - ((size_t)pos % align);
 #if SIZEOF_LONG > SIZEOF_INT
-        if (pos >= UINT_MAX) {
+        if (pos + size >= UINT_MAX) {
             rb_raise(rb_eRuntimeError, "dump size exceeds");
         }
 #endif
-        rb_str_resize(dump->str, size);
+        for (; size > sizeof(padding); size -= sizeof(padding)) {
+            rb_str_cat(dump->str, padding, sizeof(padding));
+        }
+        rb_str_cat(dump->str, padding, size);
     }
 }
 
