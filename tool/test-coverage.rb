@@ -70,13 +70,28 @@ def invoke_simplecov_formatter
   res = Marshal.load(File.binread(TEST_COVERAGE_DATA_FILE))
   simplecov_result = {}
   base_dir = File.dirname(__dir__)
+  cur_dir = Dir.pwd
 
   res.each do |path, cov|
-    next unless path.start_with?(base_dir)
+    next unless path.start_with?(base_dir) || path.start_with?(cur_dir)
     next if path.start_with?(File.join(base_dir, "test"))
     simplecov_result[path] = cov[:lines]
   end
 
+  a, b = base_dir, cur_dir
+  until a == b
+    if a.size > b.size
+      a = File.dirname(a)
+    else
+      b = File.dirname(b)
+    end
+  end
+  root_dir = a
+
+  SimpleCov.configure do
+    root(root_dir)
+    coverage_dir(File.join(cur_dir, "coverage"))
+  end
   res = SimpleCov::Result.new(simplecov_result)
   res.command_name = "Ruby's `make test-all`"
   SimpleCov::Formatter::HTMLFormatter.new.format(res)
