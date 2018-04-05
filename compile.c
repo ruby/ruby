@@ -8612,9 +8612,9 @@ ibf_load_insns_info_body(const struct ibf_load *load, const struct rb_iseq_const
 }
 
 static unsigned int *
-ibf_dump_insns_info_positions(struct ibf_dump *dump, const rb_iseq_t *iseq)
+ibf_dump_insns_info_positions(struct ibf_dump *dump, const struct rb_iseq_constant_body *body)
 {
-    return IBF_W(iseq->body->insns_info.positions, unsigned int, iseq->body->insns_info.size);
+    return IBF_W(body->insns_info.positions, unsigned int, body->insns_info.size);
 }
 
 static unsigned int *
@@ -8765,7 +8765,10 @@ static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body dump_body;
+    unsigned int *positions;
+#if VM_INSN_INFO_TABLE_IMPL == 2
     dump_body = *iseq->body;
+#endif
 
     dump_body.location.pathobj = ibf_dump_object(dump, dump_body.location.pathobj); /* TODO: freeze */
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
@@ -8776,11 +8779,12 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.param.keyword =        ibf_dump_param_keyword(dump, iseq);
     dump_body.insns_info.body =      ibf_dump_insns_info_body(dump, iseq);
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    rb_iseq_insns_info_decode_positions(iseq);
+    positions = rb_iseq_insns_info_decode_positions(&dump_body);
+    dump_body.insns_info.positions = positions;
 #endif
-    dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, iseq);
+    dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, &dump_body);
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    rb_iseq_insns_info_encode_positions(iseq);
+    ruby_xfree(positions);
 #endif
     dump_body.local_table =          ibf_dump_local_table(dump, iseq);
     dump_body.catch_table =          ibf_dump_catch_table(dump, iseq);

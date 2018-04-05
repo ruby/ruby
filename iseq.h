@@ -143,6 +143,7 @@ VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void ibf_load_iseq_complete(rb_iseq_t *iseq);
 const rb_iseq_t *iseq_ibf_load(VALUE str);
 VALUE iseq_ibf_load_extra_data(VALUE str);
+unsigned int *rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
@@ -164,7 +165,6 @@ void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_trace_on_all(void);
 void rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq);
-void rb_iseq_insns_info_decode_positions(const rb_iseq_t *iseq);
 
 VALUE rb_iseqw_new(const rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseqw_to_iseq(VALUE iseqw);
