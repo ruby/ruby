@@ -8870,15 +8870,15 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->param.keyword        = ibf_load_param_keyword(load, body);
     load_body->insns_info.body      = ibf_load_insns_info_body(load, body);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, body);
-#if VM_INSN_INFO_TABLE_IMPL == 2
-    rb_iseq_insns_info_encode_positions(iseq);
-#endif
     load_body->local_table          = ibf_load_local_table(load, body);
     load_body->catch_table          = ibf_load_catch_table(load, body);
     load_body->parent_iseq          = ibf_load_iseq(load, body->parent_iseq);
     load_body->local_iseq           = ibf_load_iseq(load, body->local_iseq);
 
     ibf_load_code(load, iseq, body);
+#if VM_INSN_INFO_TABLE_IMPL == 2
+    rb_iseq_insns_info_encode_positions(iseq);
+#endif
 
     rb_iseq_translate_threaded_code(iseq);
 }
