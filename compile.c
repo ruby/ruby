@@ -8782,6 +8782,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 #if VM_INSN_INFO_TABLE_IMPL == 2
     positions = rb_iseq_insns_info_decode_positions(&dump_body);
     dump_body.insns_info.positions = positions;
+    dump_body.insns_info.succ_index_table = 0;
 #endif
     dump_body.insns_info.positions = ibf_dump_insns_info_positions(dump, &dump_body);
 #if VM_INSN_INFO_TABLE_IMPL == 2
