@@ -396,18 +396,37 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
-  def test_to_binary_with_objects
+  def assert_iseq_to_binary(code, mesg = nil)
     skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
-    code = "[]"+100.times.map{|i|"<</#{i}/"}.join
     iseq = RubyVM::InstructionSequence.compile(code)
-    bin = assert_nothing_raised do
+    bin = assert_nothing_raised(mesg) do
       iseq.to_binary
     rescue RuntimeError => e
       skip e.message if /compile with coverage/ =~ e.message
       raise
     end
-    skip "trace events does not load correctly since r62851"
+    10.times do
+      assert_equal(bin, iseq.to_binary, mesg)
+    end
     iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
-    assert_equal(iseq.to_a, iseq2.to_a)
+    assert_equal(iseq.to_a, iseq2.to_a, mesg)
+    iseq2
+  end
+
+  def test_to_binary_with_objects
+    assert_iseq_to_binary("[]"+100.times.map{|i|"<</#{i}/"}.join)
+  end
+
+  def test_to_binary_line_info
+    assert_iseq_to_binary("#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #14660]').eval
+    begin;
+      class P
+        def p; end
+        def q; end
+        E = ""
+        N = "#{E}"
+        attr_reader :i
+      end
+    end;
   end
 end
