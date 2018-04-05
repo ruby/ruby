@@ -498,15 +498,14 @@ rb_iseq_insns_info_encode_positions(const rb_iseq_t *iseq)
 #endif
 }
 
-void
-rb_iseq_insns_info_decode_positions(const rb_iseq_t *iseq)
+unsigned int *
+rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body)
 {
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    int size = iseq->body->insns_info.size;
-    int max_pos = iseq->body->iseq_size;
-    struct succ_index_table *sd = iseq->body->insns_info.succ_index_table;
-    if (iseq->body->insns_info.positions) ruby_xfree(iseq->body->insns_info.positions);
-    iseq->body->insns_info.positions = succ_index_table_invert(max_pos, sd, size);
+    int size = body->insns_info.size;
+    int max_pos = body->iseq_size;
+    struct succ_index_table *sd = body->insns_info.succ_index_table;
+    return succ_index_table_invert(max_pos, sd, size);
 #endif
 }
 
