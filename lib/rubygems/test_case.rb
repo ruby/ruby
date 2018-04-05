@@ -295,7 +295,16 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     @orig_LOAD_PATH = $LOAD_PATH.dup
     $LOAD_PATH.map! { |s|
-      (expand_path = File.expand_path(s)) == s ? s : expand_path.untaint
+      expand_path = File.expand_path(s)
+      if expand_path != s
+        expand_path.untaint
+        if s.instance_variable_defined?(:@gem_prelude_index)
+          expand_path.instance_variable_set(:@gem_prelude_index, expand_path)
+        end
+        expand_path.freeze if s.frozen?
+        s = expand_path
+      end
+      s
     }
 
     Dir.chdir @tempdir
