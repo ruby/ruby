@@ -8276,6 +8276,7 @@ ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
 #define IBF_WV(variable)   ibf_dump_write(dump, &(variable), sizeof(variable))
 #define IBF_WP(b, type, n) ibf_dump_write(dump, (b), sizeof(type) * (n))
 #define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type) * (n))
+#define IBF_ZERO(variable) memset(&(variable), 0, sizeof(variable))
 
 static int
 ibf_table_lookup(struct st_table *table, st_data_t key)
@@ -9121,6 +9122,7 @@ ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_regexp regexp;
     VALUE srcstr = RREGEXP_SRC(obj);
+    IBF_ZERO(regexp);
     regexp.option = (char)rb_reg_options(obj);
     regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
     IBF_WV(regexp);
@@ -9212,6 +9214,7 @@ ibf_dump_object_struct(struct ibf_dump *dump, VALUE obj)
     if (rb_obj_is_kind_of(obj, rb_cRange)) {
 	struct ibf_object_struct_range range;
 	VALUE beg, end;
+	IBF_ZERO(range);
 	range.len = 3;
 	range.class_index = 0;
 
@@ -9272,7 +9275,7 @@ ibf_dump_object_data(struct ibf_dump *dump, VALUE obj)
 	long len = strlen(name) + 1;
 	IBF_WV(type);
 	IBF_WV(len);
-	IBF_WP(name, char, strlen(name) + 1);
+	IBF_WP(name, char, len);
     }
     else {
 	ibf_dump_object_unsupported(dump, obj);
@@ -9380,6 +9383,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_header obj_header;
     ibf_offset_t current_offset = ibf_dump_pos(dump);
+    IBF_ZERO(obj_header);
     obj_header.type = TYPE(obj);
 
     if (SPECIAL_CONST_P(obj)) {
