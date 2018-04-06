@@ -80,7 +80,7 @@ module RubyVM::Insns2VM
         THIS IS THE ONLY OPTION THAT WORKS today.  Change destination
         directory from the current working directory to the given path.
       begin
-        raise "directory was not found in '#{dir}'" unless Dir.eixst?(dir)
+        raise "directory was not found in '#{dir}'" unless Dir.exist?(dir)
         options[:destdir] = dir
       end
 
