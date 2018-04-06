@@ -98,8 +98,6 @@ is_global_name_punct(const int c)
     return (ruby_global_name_punct_bits[(c - 0x20) / 32] >> (c % 32)) & 1;
 }
 
-ID rb_intern_cstr_without_pindown(const char *, long, rb_encoding *);
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
 size_t rb_sym_immortal_count(void);
