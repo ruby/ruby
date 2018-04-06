@@ -436,7 +436,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     http.request(req) { |res| assert_equal('404', res.code) }
     exp = %Q(ERROR `/notexist\\n/foo' not found.\n)
     assert_equal 1, log_ary.size
-    assert log_ary[0].include?(exp)
+    assert_operator log_ary[0], :include?, exp
   ensure
     s&.shutdown
     th&.join
@@ -445,7 +445,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
   def test_gigantic_request_header
     log_tester = lambda {|log, access_log|
       assert_equal 1, log.size
-      assert log[0].include?('ERROR headers too large')
+      assert_operator log[0], :include?, 'ERROR headers too large'
     }
     TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
       server.mount('/', WEBrick::HTTPServlet::FileHandler, __FILE__)
@@ -462,7 +462,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
   def test_eof_in_chunk
     log_tester = lambda do |log, access_log|
       assert_equal 1, log.size
-      assert log[0].include?('ERROR bad chunk data size')
+      assert_operator log[0], :include?, 'ERROR bad chunk data size'
     end
     TestWEBrick.start_httpserver({}, log_tester){|server, addr, port, log|
       server.mount_proc('/', ->(req, res) { res.body = req.body })
