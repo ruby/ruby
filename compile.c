@@ -9625,11 +9625,11 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
 #if IBF_ISEQ_DEBUG
     fprintf(stderr, "ibf_load_iseq_complete: load=%p iseq=%p prev=%p\n",
 	    load, iseq, prev_src_iseq);
-    fprintf(stderr, "ibf_load_iseq_complete: list=%p(%p+%x) index=%i/%u\n",
+    fprintf(stderr, "ibf_load_iseq_complete: list=%p(%p+%#x) index=%i/%u\n",
 	    ibf_iseq_list(load),
 	    load->buff, load->header->iseq_list_offset,
 	    iseq->aux.loader.index, load->header->iseq_list_size);
-    fprintf(stderr, "ibf_load_iseq_complete: offset=%u size=%u\n",
+    fprintf(stderr, "ibf_load_iseq_complete: offset=%#x size=%#x\n",
 	    ibf_iseq_list(load)[iseq->aux.loader.index],
 	    load->header->size);
 #endif
