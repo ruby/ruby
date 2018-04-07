@@ -396,6 +396,12 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
+  def hexdump(bin)
+    bin.unpack1("H*").gsub(/.{1,32}/) {|s|
+      "#{'%04x:' % $~.begin(0)}#{s.gsub(/../, " \\&").tap{|_|_[24]&&="-"}}\n"
+    }
+  end
+
   def assert_iseq_to_binary(code, mesg = nil)
     skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
     iseq = RubyVM::InstructionSequence.compile(code)
@@ -406,10 +412,13 @@ class TestISeq < Test::Unit::TestCase
       raise
     end
     10.times do
-      assert_equal(bin, iseq.to_binary, mesg)
+      bin2 = iseq.to_binary
+      assert_equal(bin, bin2, message(mesg) {diff hexdump(bin), hexdump(bin2)})
     end
     iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
-    assert_equal(iseq.to_a, iseq2.to_a, mesg)
+    a1 = iseq.to_a
+    a2 = iseq2.to_a
+    assert_equal(a1, a2, message(mesg) {diff iseq.disassemble, iseq2.disassemble})
     iseq2
   end
 
