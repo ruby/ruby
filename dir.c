@@ -2653,7 +2653,7 @@ dir_s_aref(int argc, VALUE *argv, VALUE obj)
  *
  *  <code>*</code>::
  *    Matches any file. Can be restricted by other values in the glob.
- *    Equivalent to <code>/ .* /x</code> in regexp.
+ *    Equivalent to <code>/ .* /mx</code> in regexp.
  *
  *    <code>*</code>::     Matches all files
  *    <code>c*</code>::    Matches all files beginning with <code>c</code>
