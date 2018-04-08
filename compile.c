@@ -9089,7 +9089,7 @@ static void
 ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 {
     double dbl = RFLOAT_VALUE(obj);
-    IBF_W(&dbl, double, 1);
+    (void)IBF_W(&dbl, double, 1);
 }
 
 static VALUE
@@ -9115,7 +9115,7 @@ ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
 
     buff[0] = encindex;
     buff[1] = len;
-    IBF_W(buff, long, 2);
+    (void)IBF_W(buff, long, 2);
     IBF_WP(ptr, char, len);
 }
 
@@ -9146,7 +9146,7 @@ ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
     IBF_ZERO(regexp);
     regexp.option = (char)rb_reg_options(obj);
     regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
-    IBF_W(&regexp, struct ibf_object_regexp, 1);
+    (void)IBF_W(&regexp, struct ibf_object_regexp, 1);
 }
 
 static VALUE
@@ -9166,7 +9166,7 @@ static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
     long i, len = (int)RARRAY_LEN(obj);
-    IBF_W(&len, long, 1);
+    (void)IBF_W(&len, long, 1);
     for (i=0; i<len; i++) {
 	long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
 	IBF_WV(index);
@@ -9197,7 +9197,7 @@ ibf_dump_object_hash_i(st_data_t key, st_data_t val, st_data_t ptr)
     long keyval[2];
     keyval[0] = (long)ibf_dump_object(dump, (VALUE)key);
     keyval[1] = (long)ibf_dump_object(dump, (VALUE)val);
-    IBF_W(keyval, long, 2);
+    (void)IBF_W(keyval, long, 2);
     return ST_CONTINUE;
 }
 
@@ -9205,7 +9205,7 @@ static void
 ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj)
 {
     long len = RHASH_SIZE(obj);
-    IBF_W(&len, long, 1);
+    (void)IBF_W(&len, long, 1);
     if (len > 0) st_foreach(RHASH(obj)->ntbl, ibf_dump_object_hash_i, (st_data_t)dump);
 }
 
@@ -9269,7 +9269,7 @@ ibf_dump_object_bignum(struct ibf_dump *dump, VALUE obj)
     ssize_t slen = BIGNUM_SIGN(obj) > 0 ? len : len * -1;
     BDIGIT *d = BIGNUM_DIGITS(obj);
 
-    IBF_W(&slen, ssize_t, 1);
+    (void)IBF_W(&slen, ssize_t, 1);
     IBF_WP(d, BDIGIT, len);
 }
 
@@ -9296,7 +9296,7 @@ ibf_dump_object_data(struct ibf_dump *dump, VALUE obj)
 	long data[2];
 	data[0] = IBF_OBJECT_DATA_ENCODING;
 	data[1] = len;
-	IBF_W(data, long, 2);
+	(void)IBF_W(data, long, 2);
 	IBF_WP(name, char, len);
     }
     else {
@@ -9330,7 +9330,7 @@ ibf_dump_object_complex_rational(struct ibf_dump *dump, VALUE obj)
     data[0] = (long)ibf_dump_object(dump, RCOMPLEX(obj)->real);
     data[1] = (long)ibf_dump_object(dump, RCOMPLEX(obj)->imag);
 
-    IBF_W(data, long, 2);
+    (void)IBF_W(data, long, 2);
 }
 
 static VALUE
@@ -9352,7 +9352,7 @@ ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
     VALUE str = rb_sym2str(obj);
     long str_index = (long)ibf_dump_object(dump, str);
-    IBF_W(&str_index, long, 1);
+    (void)IBF_W(&str_index, long, 1);
 }
 
 static VALUE
@@ -9422,7 +9422,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 	obj_header.frozen = TRUE;
 	obj_header.internal = TRUE;
 	IBF_WV(obj_header);
-	IBF_W(&obj, VALUE, 1);
+	(void)IBF_W(&obj, VALUE, 1);
     }
     else {
 	obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
