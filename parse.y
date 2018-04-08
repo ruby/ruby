@@ -6130,10 +6130,10 @@ heredoc_dedent(struct parser_params *p, VALUE array)
 
 /*
  *  call-seq:
- *    Ripper.dedent_string(input, width)   -> string
+ *    Ripper.dedent_string(input, width)   -> Integer
  *
- *  Strips leading +width+ whitespaces from +input+, and returns
- *  stripped column width.
+ *  Strips up to +width+ leading whitespaces from +input+,
+ *  and returns the stripped column width.
  */
 static VALUE
 parser_dedent_string(VALUE self, VALUE input, VALUE width)
