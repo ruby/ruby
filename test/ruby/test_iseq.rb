@@ -403,7 +403,6 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def assert_iseq_to_binary(code, mesg = nil)
-    skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
     iseq = RubyVM::InstructionSequence.compile(code)
     bin = assert_nothing_raised(mesg) do
       iseq.to_binary
