@@ -9487,6 +9487,7 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 	    ibf_offset_t *offsets = (ibf_offset_t *)(load->header->object_list_offset + load->buff);
 	    ibf_offset_t offset = offsets[object_index];
 	    const struct ibf_object_header *header = IBF_OBJHEADER(offset);
+	    size_t value_offset;
 
 #if IBF_ISEQ_DEBUG
 	    fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
@@ -9494,10 +9495,11 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 	    fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
 	            header->type, header->special_const, header->frozen, header->internal);
 #endif
-	    if ((const char *)(header + 1) - load->buff >= RSTRING_LEN(load->str)) {
-		rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, offset);
-            }
-	    offset = (ibf_offset_t)((const char *)(header + 1) - load->buff);
+	    value_offset = (const char *)(header + 1) - load->buff;
+	    if (value_offset >= (size_t)RSTRING_LEN(load->str)) {
+		rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, value_offset);
+	    }
+	    offset = (ibf_offset_t)value_offset;
 
 	    if (header->special_const) {
 		const VALUE *vp = IBF_OBJBODY(VALUE, offset);
