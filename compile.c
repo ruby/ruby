@@ -8272,7 +8272,9 @@ ibf_load_alloc(const struct ibf_load *load, ibf_offset_t offset, int size)
     return buff;
 }
 
-#define IBF_W(b, type, n) (type *)(VALUE)ibf_dump_write(dump, (b), sizeof(type) * (n))
+#define IBF_W_ALIGN(type) (RUBY_ALIGNOF(type) > 1 ? ibf_dump_align(dump, RUBY_ALIGNOF(type)) : (void)0)
+
+#define IBF_W(b, type, n) (IBF_W_ALIGN(type), (type *)(VALUE)IBF_WP(b, type, n))
 #define IBF_WV(variable)   ibf_dump_write(dump, &(variable), sizeof(variable))
 #define IBF_WP(b, type, n) ibf_dump_write(dump, (b), sizeof(type) * (n))
 #define IBF_R(val, type, n) (type *)ibf_load_alloc(load, IBF_OFFSET(val), sizeof(type) * (n))
@@ -8798,7 +8800,8 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.variable.coverage      = Qnil;
     dump_body.variable.original_iseq = Qnil;
 
-    return ibf_dump_write(dump, &dump_body, sizeof(dump_body));
+    IBF_W_ALIGN(struct rb_iseq_constant_body);
+    return IBF_WV(dump_body);
 }
 
 static VALUE
@@ -9009,7 +9012,10 @@ struct ibf_object_symbol {
 };
 
 #define IBF_OBJHEADER(offset)     (struct ibf_object_header *)(load->buff + (offset))
-#define IBF_OBJBODY(type, offset) (type *)(load->buff + sizeof(struct ibf_object_header) + (offset))
+#define IBF_OBJBODY(type, offset) (type *)(load->buff + IBF_OBJALIGNED(type, offset))
+#define IBF_OBJALIGNED(type, offset) \
+    (((sizeof(struct ibf_object_header) + (offset) - 1) / RUBY_ALIGNOF(type) + 1) * \
+     RUBY_ALIGNOF(type))
 
 NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj));
 
@@ -9071,7 +9077,7 @@ static void
 ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 {
     double dbl = RFLOAT_VALUE(obj);
-    ibf_dump_write(dump, &dbl, sizeof(dbl));
+    IBF_W(&dbl, double, 1);
 }
 
 static VALUE
@@ -9087,6 +9093,7 @@ ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
     long encindex = (long)rb_enc_get_index(obj);
     long len = RSTRING_LEN(obj);
     const char *ptr = RSTRING_PTR(obj);
+    long buff[2];
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
 	rb_encoding *enc = rb_enc_from_index((int)encindex);
@@ -9094,8 +9101,9 @@ ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
 	encindex = RUBY_ENCINDEX_BUILTIN_MAX + ibf_dump_object(dump, rb_str_new2(enc_name));
     }
 
-    IBF_WV(encindex);
-    IBF_WV(len);
+    buff[0] = encindex;
+    buff[1] = len;
+    IBF_W(buff, long, 2);
     IBF_WP(ptr, char, len);
 }
 
@@ -9126,7 +9134,7 @@ ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
     IBF_ZERO(regexp);
     regexp.option = (char)rb_reg_options(obj);
     regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
-    IBF_WV(regexp);
+    IBF_W(&regexp, struct ibf_object_regexp, 1);
 }
 
 static VALUE
@@ -9146,7 +9154,7 @@ static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
     long i, len = (int)RARRAY_LEN(obj);
-    IBF_WV(len);
+    IBF_W(&len, long, 1);
     for (i=0; i<len; i++) {
 	long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
 	IBF_WV(index);
@@ -9174,10 +9182,10 @@ static int
 ibf_dump_object_hash_i(st_data_t key, st_data_t val, st_data_t ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    long key_index = (long)ibf_dump_object(dump, (VALUE)key);
-    long val_index = (long)ibf_dump_object(dump, (VALUE)val);
-    IBF_WV(key_index);
-    IBF_WV(val_index);
+    long keyval[2];
+    keyval[0] = (long)ibf_dump_object(dump, (VALUE)key);
+    keyval[1] = (long)ibf_dump_object(dump, (VALUE)val);
+    IBF_W(keyval, long, 2);
     return ST_CONTINUE;
 }
 
@@ -9185,7 +9193,7 @@ static void
 ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj)
 {
     long len = RHASH_SIZE(obj);
-    IBF_WV(len);
+    IBF_W(&len, long, 1);
     if (len > 0) st_foreach(RHASH(obj)->ntbl, ibf_dump_object_hash_i, (st_data_t)dump);
 }
 
@@ -9249,7 +9257,7 @@ ibf_dump_object_bignum(struct ibf_dump *dump, VALUE obj)
     ssize_t slen = BIGNUM_SIGN(obj) > 0 ? len : len * -1;
     BDIGIT *d = BIGNUM_DIGITS(obj);
 
-    IBF_WV(slen);
+    IBF_W(&slen, ssize_t, 1);
     IBF_WP(d, BDIGIT, len);
 }
 
@@ -9272,10 +9280,11 @@ ibf_dump_object_data(struct ibf_dump *dump, VALUE obj)
     if (rb_data_is_encoding(obj)) {
 	rb_encoding *enc = rb_to_encoding(obj);
 	const char *name = rb_enc_name(enc);
-	enum ibf_object_data_type type = IBF_OBJECT_DATA_ENCODING;
 	long len = strlen(name) + 1;
-	IBF_WV(type);
-	IBF_WV(len);
+	long data[2];
+	data[0] = IBF_OBJECT_DATA_ENCODING;
+	data[1] = len;
+	IBF_W(data, long, 2);
 	IBF_WP(name, char, len);
     }
     else {
@@ -9304,11 +9313,11 @@ ibf_load_object_data(const struct ibf_load *load, const struct ibf_object_header
 static void
 ibf_dump_object_complex_rational(struct ibf_dump *dump, VALUE obj)
 {
-    long real = (long)ibf_dump_object(dump, RCOMPLEX(obj)->real);
-    long imag = (long)ibf_dump_object(dump, RCOMPLEX(obj)->imag);
+    long data[2];
+    data[0] = (long)ibf_dump_object(dump, RCOMPLEX(obj)->real);
+    data[1] = (long)ibf_dump_object(dump, RCOMPLEX(obj)->imag);
 
-    IBF_WV(real);
-    IBF_WV(imag);
+    IBF_W(data, long, 2);
 }
 
 static VALUE
@@ -9330,7 +9339,7 @@ ibf_dump_object_symbol(struct ibf_dump *dump, VALUE obj)
 {
     VALUE str = rb_sym2str(obj);
     long str_index = (long)ibf_dump_object(dump, str);
-    IBF_WV(str_index);
+    IBF_W(&str_index, long, 1);
 }
 
 static VALUE
@@ -9376,7 +9385,7 @@ static ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* T_ICLASS 0x1c */
     ibf_dump_object_unsupported, /* T_ZOMBIE 0x1d */
     ibf_dump_object_unsupported, /* 0x1e */
-    ibf_dump_object_unsupported  /* 0x1f */
+    ibf_dump_object_unsupported, /* 0x1f */
 };
 
 static ibf_offset_t
@@ -9397,7 +9406,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 	obj_header.frozen = TRUE;
 	obj_header.internal = TRUE;
 	IBF_WV(obj_header);
-	IBF_WV(obj);
+	IBF_W(&obj, VALUE, 1);
     }
     else {
 	obj_header.internal = (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
@@ -9444,7 +9453,7 @@ static ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* T_ICLASS 0x1c */
     ibf_load_object_unsupported, /* T_ZOMBIE 0x1d */
     ibf_load_object_unsupported, /* 0x1e */
-    ibf_load_object_unsupported  /* 0x1f */
+    ibf_load_object_unsupported, /* 0x1f */
 };
 
 static VALUE
@@ -9489,7 +9498,7 @@ ibf_dump_object_list(struct ibf_dump *dump, struct ibf_header *header)
 	rb_ary_push(list, UINT2NUM(offset));
     }
     size = i;
-    ibf_dump_align(dump, sizeof(ibf_offset_t));
+    IBF_W_ALIGN(ibf_offset_t);
     header->object_list_offset = ibf_dump_pos(dump);
 
     for (i=0; i<size; i++) {
@@ -9609,10 +9618,6 @@ iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 static const ibf_offset_t *
 ibf_iseq_list(const struct ibf_load *load)
 {
-    if (load->header->iseq_list_offset % sizeof(ibf_offset_t)) {
-        rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
-                 load->header->iseq_list_offset);
-    }
     return (ibf_offset_t *)(load->buff + load->header->iseq_list_offset);
 }
 
@@ -9621,19 +9626,18 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
 {
     struct ibf_load *load = RTYPEDDATA_DATA(iseq->aux.loader.obj);
     rb_iseq_t *prev_src_iseq = load->iseq;
+    const ibf_offset_t offset = ibf_iseq_list(load)[iseq->aux.loader.index];
     load->iseq = iseq;
 #if IBF_ISEQ_DEBUG
-    fprintf(stderr, "ibf_load_iseq_complete: load=%p iseq=%p prev=%p\n",
-	    load, iseq, prev_src_iseq);
-    fprintf(stderr, "ibf_load_iseq_complete: list=%p(%p+%#x) index=%i/%u\n",
-	    ibf_iseq_list(load),
-	    load->buff, load->header->iseq_list_offset,
-	    iseq->aux.loader.index, load->header->iseq_list_size);
-    fprintf(stderr, "ibf_load_iseq_complete: offset=%#x size=%#x\n",
-	    ibf_iseq_list(load)[iseq->aux.loader.index],
+    fprintf(stderr, "ibf_load_iseq_complete: index=%#x offset=%#x size=%#x\n",
+	    iseq->aux.loader.index, offset,
 	    load->header->size);
 #endif
-    ibf_load_iseq_each(load, iseq, ibf_iseq_list(load)[iseq->aux.loader.index]);
+    if (offset % sizeof(VALUE)) {
+        rb_raise(rb_eArgError, "unaligned iseq offset: %#x @ %u",
+                 offset, iseq->aux.loader.index);
+    }
+    ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
     load->iseq = prev_src_iseq;
@@ -9729,6 +9733,18 @@ ibf_load_setup(struct ibf_load *load, VALUE loader_obj, VALUE str)
     }
     if (strcmp(load->buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
 	rb_raise(rb_eRuntimeError, "unmatched platform");
+    }
+    if (load->header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
+        rb_raise(rb_eArgError, "unaligned iseq list offset: %u",
+                 load->header->iseq_list_offset);
+    }
+    if (load->header->id_list_offset % RUBY_ALIGNOF(long)) {
+        rb_raise(rb_eArgError, "unaligned ID list offset: %u",
+                 load->header->id_list_offset);
+    }
+    if (load->header->object_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
+        rb_raise(rb_eArgError, "unaligned object list offset: %u",
+                 load->header->object_list_offset);
     }
 }
 
