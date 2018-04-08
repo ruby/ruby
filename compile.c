@@ -8958,6 +8958,8 @@ struct ibf_object_header {
     unsigned int frozen: 1;
     unsigned int internal: 1;
 };
+static const size_t ibf_object_header_align =
+    RUBY_ALIGNOF(struct ibf_object_header);
 
 enum ibf_object_class_index {
     IBF_OBJECT_CLASS_OBJECT,
@@ -9011,11 +9013,21 @@ struct ibf_object_symbol {
     long str;
 };
 
-#define IBF_OBJHEADER(offset)     (struct ibf_object_header *)(load->buff + (offset))
-#define IBF_OBJBODY(type, offset) (type *)(load->buff + IBF_OBJALIGNED(type, offset))
-#define IBF_OBJALIGNED(type, offset) \
-    (((sizeof(struct ibf_object_header) + (offset) - 1) / RUBY_ALIGNOF(type) + 1) * \
-     RUBY_ALIGNOF(type))
+#define IBF_ALIGNED_OFFSET(align, offset) /* offset > 0 */ \
+    ((((offset) - 1) / (align) + 1) * (align))
+#define IBF_OBJHEADER(offset)     (const struct ibf_object_header *)\
+    ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(ibf_object_header_align, offset))
+#define IBF_OBJBODY(type, offset) (const type *)\
+    ibf_load_check_offset(load, IBF_ALIGNED_OFFSET(RUBY_ALIGNOF(type), offset))
+
+static const void *
+ibf_load_check_offset(const struct ibf_load *load, size_t offset)
+{
+    if (offset >= (size_t)RSTRING_LEN(load->str)) {
+	rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, offset);
+    }
+    return load->buff + offset;
+}
 
 NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj));
 
@@ -9057,7 +9069,7 @@ ibf_dump_object_class(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_class(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    enum ibf_object_class_index *cindexp = IBF_OBJBODY(enum ibf_object_class_index, offset);
+    const enum ibf_object_class_index *cindexp = IBF_OBJBODY(enum ibf_object_class_index, offset);
     enum ibf_object_class_index cindex = *cindexp;
 
     switch (cindex) {
@@ -9083,7 +9095,7 @@ ibf_dump_object_float(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_float(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    double *dblp = IBF_OBJBODY(double, offset);
+    const double *dblp = IBF_OBJBODY(double, offset);
     return DBL2NUM(*dblp);
 }
 
@@ -9295,11 +9307,12 @@ ibf_dump_object_data(struct ibf_dump *dump, VALUE obj)
 static VALUE
 ibf_load_object_data(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
-    const enum ibf_object_data_type *typep = IBF_OBJBODY(enum ibf_object_data_type, offset);
-    /* const long *lenp = IBF_OBJBODY(long, offset + sizeof(enum ibf_object_data_type)); */
-    const char *data = IBF_OBJBODY(char, offset + sizeof(enum ibf_object_data_type) + sizeof(long));
+    const long *body = IBF_OBJBODY(long, offset);
+    const enum ibf_object_data_type type = (enum ibf_object_data_type)body[0];
+    /* const long len = body[1]; */
+    const char *data = (const char *)&body[2];
 
-    switch (*typep) {
+    switch (type) {
       case IBF_OBJECT_DATA_ENCODING:
 	{
 	    VALUE encobj = rb_enc_from_encoding(rb_enc_find(data));
@@ -9392,9 +9405,12 @@ static ibf_offset_t
 ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_header obj_header;
-    ibf_offset_t current_offset = ibf_dump_pos(dump);
+    ibf_offset_t current_offset;
     IBF_ZERO(obj_header);
     obj_header.type = TYPE(obj);
+
+    ibf_dump_align(dump, sizeof(ibf_offset_t));
+    current_offset = ibf_dump_pos(dump);
 
     if (SPECIAL_CONST_P(obj)) {
 	if (RB_TYPE_P(obj, T_SYMBOL) ||
@@ -9478,8 +9494,13 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 	    fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
 	            header->type, header->special_const, header->frozen, header->internal);
 #endif
+	    if ((const char *)(header + 1) - load->buff >= RSTRING_LEN(load->str)) {
+		rb_raise(rb_eIndexError, "object offset out of range: %"PRIdSIZE, offset);
+            }
+	    offset = (ibf_offset_t)((const char *)(header + 1) - load->buff);
+
 	    if (header->special_const) {
-		VALUE *vp = IBF_OBJBODY(VALUE, offset);
+		const VALUE *vp = IBF_OBJBODY(VALUE, offset);
 #if IBF_ISEQ_DEBUG
 		fprintf(stderr, "ibf_load_object: vp=%p\n", vp);
 #endif
