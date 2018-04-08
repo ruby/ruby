@@ -9472,8 +9472,17 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 	    ibf_offset_t offset = offsets[object_index];
 	    const struct ibf_object_header *header = IBF_OBJHEADER(offset);
 
+#if IBF_ISEQ_DEBUG
+	    fprintf(stderr, "ibf_load_object: list=%#x offsets=%p offset=%#x\n",
+	            load->header->object_list_offset, offsets, offset);
+	    fprintf(stderr, "ibf_load_object: type=%#x special=%d frozen=%d internal=%d\n",
+	            header->type, header->special_const, header->frozen, header->internal);
+#endif
 	    if (header->special_const) {
 		VALUE *vp = IBF_OBJBODY(VALUE, offset);
+#if IBF_ISEQ_DEBUG
+		fprintf(stderr, "ibf_load_object: vp=%p\n", vp);
+#endif
 		obj = *vp;
 	    }
 	    else {
@@ -9482,6 +9491,10 @@ ibf_load_object(const struct ibf_load *load, VALUE object_index)
 
 	    rb_ary_store(load->obj_list, (long)object_index, obj);
 	}
+#if IBF_ISEQ_DEBUG
+	fprintf(stderr, "ibf_load_object: index=%#"PRIxVALUE" obj=%#"PRIxVALUE"\n",
+	        object_index, obj);
+#endif
 	return obj;
     }
 }
