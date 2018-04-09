@@ -516,11 +516,12 @@ class TestRubyLiteral < Test::Unit::TestCase
       }
     }
     bug2407 = '[ruby-dev:39798]'
-    head.each {|h|
-      if /^0/ =~ h
-        assert_syntax_error("#{h}_", /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
+    head.grep_v(/^0/) do |s|
+      head.grep(/^0/) do |h|
+        h = "#{s}#{h}_"
+        assert_syntax_error(h, /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
-    }
+    end
   end
 
   def test_float
