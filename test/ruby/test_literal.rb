@@ -518,11 +518,7 @@ class TestRubyLiteral < Test::Unit::TestCase
     bug2407 = '[ruby-dev:39798]'
     head.each {|h|
       if /^0/ =~ h
-        begin
-          eval("#{h}_")
-        rescue SyntaxError => e
-          assert_match(/numeric literal without digits\Z/, e.message, bug2407)
-        end
+        assert_syntax_error("#{h}_", /numeric literal without digits\Z/, "#{bug2407}: #{h.inspect}")
       end
     }
   end
