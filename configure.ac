@@ -984,6 +984,7 @@ AC_CHECK_HEADERS(net/socket.h)
 AC_CHECK_HEADERS(process.h)
 AC_CHECK_HEADERS(pwd.h)
 AC_CHECK_HEADERS(setjmpex.h)
+AC_CHECK_HEADERS(stdalign.h)
 AC_CHECK_HEADERS(sys/attr.h)
 AC_CHECK_HEADERS(sys/fcntl.h)
 AC_CHECK_HEADERS(sys/file.h)
@@ -1279,13 +1280,16 @@ AC_CACHE_CHECK([for alignof() syntax], rb_cv_have_alignof,[
 rb_cv_have_alignof=no
 RUBY_WERROR_FLAG([
 for expr in \
-    "_Alignof" \
     "alignof" \
+    "_Alignof" \
     "__alignof" \
     "__alignof__" \
 ;
 do
-    AC_TRY_COMPILE([],[return (int)$expr(int);],
+    AC_TRY_COMPILE([
+    @%:@ifdef HAVE_STDALIGN_H
+    @%:@include <stdalign.h>
+    @%:@endif],[return (int)$expr(int);],
         [rb_cv_have_alignof="$expr"; break], [])
 done
 ])])
