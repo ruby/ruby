@@ -135,6 +135,9 @@ extern "C" {
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
+#ifdef HAVE_STDALIGN_H
+# include <stdalign.h>
+#endif
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
