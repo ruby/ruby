@@ -1480,7 +1480,8 @@ rb_thread_sync_reset_all(void)
         list_head_init(queue_waitq(q));
         q->num_waiting = 0;
     }
-    list_for_each(&szqueue_list, sq, q.live) {
+    list_for_each(&szqueue_list, q, live) {
+        sq = container_of(q, struct rb_szqueue, q);
         list_head_init(szqueue_waitq(sq));
         list_head_init(szqueue_pushq(sq));
         sq->num_waiting_push = 0;
