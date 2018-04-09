@@ -6132,6 +6132,8 @@ heredoc_dedent(struct parser_params *p, VALUE array)
  *  call-seq:
  *    Ripper.dedent_string(input, width)   -> Integer
  *
+ *  USE OF RIPPER LIBRARY ONLY.
+ *
  *  Strips up to +width+ leading whitespaces from +input+,
  *  and returns the stripped column width.
  */
