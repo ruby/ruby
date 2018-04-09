@@ -6841,6 +6841,15 @@ parse_rational(struct parser_params *p, char *str, int len, int seen_point)
 }
 
 static enum yytokentype
+no_digits(struct parser_params *p)
+{
+    yyerror0("numeric literal without digits");
+    if (peek(p, '_')) nextc(p);
+    /* dummy 0, for tUMINUS_NUM at numeric */
+    return set_integer_literal(p, INT2FIX(0), 0);
+}
+
+static enum yytokentype
 parse_numeric(struct parser_params *p, int c)
 {
     int is_float, seen_point, seen_e, nondigit;
@@ -6854,7 +6863,6 @@ parse_numeric(struct parser_params *p, int c)
 	c = nextc(p);
     }
     if (c == '0') {
-#define no_digits() do {yyerror0("numeric literal without digits"); return 0;} while (0)
 	int start = toklen(p);
 	c = nextc(p);
 	if (c == 'x' || c == 'X') {
@@ -6875,7 +6883,7 @@ parse_numeric(struct parser_params *p, int c)
 	    pushback(p, c);
 	    tokfix(p);
 	    if (toklen(p) == start) {
-		no_digits();
+		return no_digits(p);
 	    }
 	    else if (nondigit) goto trailing_uc;
 	    suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
@@ -6899,7 +6907,7 @@ parse_numeric(struct parser_params *p, int c)
 	    pushback(p, c);
 	    tokfix(p);
 	    if (toklen(p) == start) {
-		no_digits();
+		return no_digits(p);
 	    }
 	    else if (nondigit) goto trailing_uc;
 	    suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
@@ -6923,7 +6931,7 @@ parse_numeric(struct parser_params *p, int c)
 	    pushback(p, c);
 	    tokfix(p);
 	    if (toklen(p) == start) {
-		no_digits();
+		return no_digits(p);
 	    }
 	    else if (nondigit) goto trailing_uc;
 	    suffix = number_literal_suffix(p, NUM_SUFFIX_ALL);
@@ -6937,7 +6945,7 @@ parse_numeric(struct parser_params *p, int c)
 	    /* prefixed octal */
 	    c = nextc(p);
 	    if (c == -1 || c == '_' || !ISDIGIT(c)) {
-		no_digits();
+		return no_digits(p);
 	    }
 	}
 	if (c >= '0' && c <= '7') {
