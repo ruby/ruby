@@ -199,6 +199,42 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
     return rb_enc_symname2_p(name, strlen(name), enc);
 }
 
+static int
+rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
+{
+    int c, len;
+    const char *end = name + nlen;
+
+    if (nlen < 1) return FALSE;
+    if (ISASCII(*name)) return ISUPPER(*name);
+    c = rb_enc_precise_mbclen(name, end, enc);
+    if (!MBCLEN_CHARFOUND_P(c)) return FALSE;
+    len = MBCLEN_CHARFOUND_LEN(c);
+    c = rb_enc_mbc_to_codepoint(name, end, enc);
+    if (ONIGENC_IS_UNICODE(enc)) {
+	static int ctype_titlecase = 0;
+	if (rb_enc_isupper(c, enc)) return TRUE;
+	if (rb_enc_islower(c, enc)) return FALSE;
+	if (!ctype_titlecase) {
+	    static const UChar cname[] = "titlecaseletter";
+	    static const UChar *const end = cname + sizeof(cname) - 1;
+	    ctype_titlecase = ONIGENC_PROPERTY_NAME_TO_CTYPE(enc, cname, end);
+	}
+	if (rb_enc_isctype(c, ctype_titlecase, enc)) return TRUE;
+    }
+    else {
+	/* fallback to case-folding */
+	OnigUChar fold[ONIGENC_GET_CASE_FOLD_CODES_MAX_NUM];
+	const OnigUChar *beg = (const OnigUChar *)name;
+	int r = enc->mbc_case_fold(ONIGENC_CASE_FOLD,
+				   &beg, (const OnigUChar *)end,
+				   fold, enc);
+	if (r > 0 && (r != len || memcmp(fold, name, r)))
+	    return TRUE;
+    }
+    return FALSE;
+}
+
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
@@ -279,7 +315,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 	break;
 
       default:
-	type = ISUPPER(*m) ? ID_CONST : ID_LOCAL;
+	type = rb_sym_constant_char_p(m, e-m, enc) ? ID_CONST : ID_LOCAL;
       id:
 	if (m >= e || (*m != '_' && !ISALPHA(*m) && ISASCII(*m))) {
 	    if (len > 1 && *(e-1) == '=') {
