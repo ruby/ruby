@@ -2480,7 +2480,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 	if (!id) {
 	    part = rb_str_subseq(name, beglen, len);
 	    OBJ_FREEZE(part);
-	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
+	    if (!rb_is_const_name(part)) {
 		name = part;
 		goto wrong_name;
 	    }
@@ -2633,7 +2633,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 	if (!id) {
 	    part = rb_str_subseq(name, beglen, len);
 	    OBJ_FREEZE(part);
-	    if (!ISUPPER(*pbeg) || !rb_is_const_name(part)) {
+	    if (!rb_is_const_name(part)) {
 		name = part;
 		goto wrong_name;
 	    }
