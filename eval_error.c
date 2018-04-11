@@ -221,9 +221,9 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 }
 
 void
-rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
+rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
 {
-    volatile VALUE eclass = Qundef, emesg = Qundef;
+    volatile VALUE eclass;
 
     if (NIL_P(errinfo))
 	return;
@@ -231,13 +231,7 @@ rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALUE rev
     if (errat == Qundef) {
 	errat = Qnil;
     }
-    if ((eclass = CLASS_OF(errinfo)) != Qundef) {
-	VALUE e = rb_check_funcall(errinfo, rb_intern("message"), 0, 0);
-	if (e != Qundef) {
-	    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
-	    emesg = e;
-	}
-    }
+    eclass = CLASS_OF(errinfo);
     if (NIL_P(reverse) || NIL_P(highlight)) {
 	VALUE tty = (VALUE)rb_stderr_tty_p();
 	if (NIL_P(reverse)) reverse = tty;
@@ -269,11 +263,14 @@ rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALUE rev
     }
 }
 
+VALUE rb_get_message(VALUE exc);
+
 void
 rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 {
     volatile int raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
+    volatile VALUE emesg = Qundef;
 
     if (NIL_P(errinfo))
 	return;
@@ -283,8 +280,12 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     if (EC_EXEC_TAG() == TAG_NONE) {
 	errat = rb_get_backtrace(errinfo);
     }
+    if (emesg == Qundef) {
+	emesg = Qnil;
+	emesg = rb_get_message(errinfo);
+    }
 
-    rb_error_write(errinfo, errat, Qnil, Qnil, Qnil);
+    rb_error_write(errinfo, emesg, errat, Qnil, Qnil, Qnil);
 
     EC_POP_TAG();
     ec->errinfo = errinfo;
