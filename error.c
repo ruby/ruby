@@ -980,7 +980,16 @@ exc_to_s(VALUE exc)
 }
 
 /* FIXME: Include eval_error.c */
-void rb_error_write(VALUE errinfo, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse);
+
+VALUE
+rb_get_message(VALUE exc)
+{
+    VALUE e = rb_check_funcall(exc, id_message, 0, 0);
+    if (e == Qundef) return Qnil;
+    if (!RB_TYPE_P(e, T_STRING)) e = rb_check_string_type(e);
+    return e;
+}
 
 /*
  * call-seq:
@@ -1015,7 +1024,7 @@ exc_s_to_tty_p(VALUE self)
 static VALUE
 exc_full_message(int argc, VALUE *argv, VALUE exc)
 {
-    VALUE opt, str, errat;
+    VALUE opt, str, emesg, errat;
     enum {kw_highlight, kw_order, kw_max_};
     static ID kw[kw_max_];
     VALUE args[kw_max_] = {Qnil, Qnil};
@@ -1051,8 +1060,9 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     }
     str = rb_str_new2("");
     errat = rb_get_backtrace(exc);
+    emesg = rb_get_message(exc);
 
-    rb_error_write(exc, errat, str, args[kw_highlight], args[kw_order]);
+    rb_error_write(exc, emesg, errat, str, args[kw_highlight], args[kw_order]);
     return str;
 }
 
