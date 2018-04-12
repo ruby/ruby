@@ -643,26 +643,18 @@ MJIT_FUNC_EXPORTED VALUE
 rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
 			    int argc, const VALUE *argv, int priv)
 {
-    int n = 0;
-    enum {
-	arg_mesg,
-	arg_name,
-	arg_args,
-	arg_priv,
-	args_size
-    };
-    VALUE args[args_size];
+    VALUE name = argv[0];
 
     if (!format) {
 	format = rb_fstring_cstr("undefined method `%s' for %s%s%s");
     }
-    args[n++] = rb_name_err_mesg_new(format, obj, argv[0]);
-    args[n++] = argv[0];
     if (exc == rb_eNoMethodError) {
-	args[n++] = rb_ary_new4(argc - 1, argv + 1);
-	args[n++] = priv ? Qtrue : Qfalse;
+	VALUE args = rb_ary_new4(argc - 1, argv + 1);
+	return rb_nomethod_err_new(format, obj, name, args, priv);
     }
-    return rb_class_new_instance(n, args, exc);
+    else {
+	return rb_name_err_new(format, obj, name);
+    }
 }
 
 #endif /* #ifndef MJIT_HEADER */
