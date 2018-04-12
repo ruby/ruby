@@ -451,6 +451,7 @@ class TestRubyOptions < Test::Unit::TestCase
           ["begin rescue", "else ; end"],
           ["begin", "ensure ; end"],
           ["case nil", "when true; end"],
+          ["case nil; when true", "end"],
         ].each do
           |b, e = 'end'|
           src = ["#{b}\n", " #{e}\n"]
