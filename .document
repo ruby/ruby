@@ -28,4 +28,7 @@ COPYING
 COPYING.ja
 CONTRIBUTING.md
 
+# win32/README.win32 linked from README.md
+win32
+
 doc
