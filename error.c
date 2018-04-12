@@ -888,7 +888,7 @@ static VALUE rb_eNOERROR;
 
 static ID id_cause, id_message, id_backtrace;
 static ID id_name, id_key, id_args, id_Errno, id_errno, id_i_path;
-static ID id_receiver, id_iseq, id_local_variables;
+static ID id_receiver, id_recv, id_iseq, id_local_variables;
 static ID id_private_call_p, id_top, id_bottom;
 #define id_bt idBt
 #define id_bt_locations idBt_locations
@@ -1434,7 +1434,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_control_frame_t *cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp);
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
     rb_ivar_set(exc, id_name, method);
-    if (recv != Qundef) rb_ivar_set(exc, id_receiver, recv);
+    if (recv != Qundef) rb_ivar_set(exc, id_recv, recv);
     if (cfp) rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
     return exc;
 }
@@ -1700,7 +1700,7 @@ name_err_receiver(VALUE self)
 {
     VALUE *ptr, recv, mesg;
 
-    recv = rb_ivar_lookup(self, id_receiver, Qundef);
+    recv = rb_ivar_lookup(self, id_recv, Qundef);
     if (recv != Qundef) return recv;
 
     mesg = rb_attr_get(self, id_mesg);
@@ -2516,6 +2516,7 @@ Init_Exception(void)
     id_top = rb_intern_const("top");
     id_bottom = rb_intern_const("bottom");
     id_iseq = rb_make_internal_id();
+    id_recv = rb_make_internal_id();
 }
 
 void
