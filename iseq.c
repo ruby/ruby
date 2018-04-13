@@ -235,7 +235,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 
 	    for (j = 0; i < body->param.keyword->num; i++, j++) {
 		VALUE obj = body->param.keyword->default_values[j];
-		if (obj != Qundef) {
+		if (!SPECIAL_CONST_P(obj)) {
 		    rb_gc_mark(obj);
 		}
 	    }
