@@ -1020,4 +1020,9 @@ class TestRubyOptions < Test::Unit::TestCase
       end
     end
   end
+
+  def test_null_script
+    skip "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
+    assert_in_out_err([IO::NULL], success: true)
+  end
 end
