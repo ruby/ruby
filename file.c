@@ -5959,7 +5959,7 @@ ruby_is_fd_loadable(int fd)
     if (S_ISREG(st.st_mode))
 	return 1;
 
-    if (S_ISFIFO(st.st_mode))
+    if (S_ISFIFO(st.st_mode) || S_ISCHR(st.st_mode))
 	return -1;
 
     if (S_ISDIR(st.st_mode))
