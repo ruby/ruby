@@ -511,6 +511,12 @@ module IRB
         irb_bug = false
       end
 
+      if STDOUT.tty?
+        attr = ATTR_TTY
+        print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
+      else
+        attr = ATTR_PLAIN
+      end
       messages = []
       lasts = []
       levels = 0
@@ -518,7 +524,12 @@ module IRB
         count = 0
         exc.backtrace.each do |m|
           m = @context.workspace.filter_backtrace(m) or next unless irb_bug
-          m = sprintf("%9d: from %s", (count += 1), m)
+          count += 1
+          if attr == ATTR_TTY
+            m = sprintf("%9d: from %s", count, m)
+          else
+            m = "\tfrom #{m}"
+          end
           if messages.size < @context.back_trace_limit
             messages.push(m)
           elsif lasts.size < @context.back_trace_limit
@@ -527,16 +538,23 @@ module IRB
           end
         end
       end
-      attr = STDOUT.tty? ? ATTR_TTY : ATTR_PLAIN
-      print "#{attr[1]}Traceback#{attr[]} (most recent call last):\n"
-      unless lasts.empty?
-        puts lasts.reverse
-        printf "... %d levels...\n", levels if levels > 0
+      if attr == ATTR_TTY
+        unless lasts.empty?
+          puts lasts.reverse
+          printf "... %d levels...\n", levels if levels > 0
+        end
+        puts messages.reverse
       end
-      puts messages.reverse
-      messages = exc.to_s.split(/\n/)
-      print "#{attr[1]}#{exc.class} (#{attr[4]}#{messages.shift}#{attr[0, 1]})#{attr[]}\n"
-      puts messages.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
+      m = exc.to_s.split(/\n/)
+      print "#{attr[1]}#{exc.class} (#{attr[4]}#{m.shift}#{attr[0, 1]})#{attr[]}\n"
+      puts m.map {|s| "#{attr[1]}#{s}#{attr[]}\n"}
+      if attr == ATTR_PLAIN
+        puts messages
+        unless lasts.empty?
+          puts lasts
+          printf "... %d levels...\n", levels if levels > 0
+        end
+      end
       print "Maybe IRB bug!\n" if irb_bug
     end
 
