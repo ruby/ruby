@@ -1596,6 +1596,9 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
 	for (i = 0; i < RARRAY_LEN(default_values); i++) {
 	    VALUE dv = RARRAY_AREF(default_values, i);
 	    if (dv == complex_mark) dv = Qundef;
+	    if (!SPECIAL_CONST_P(dv)) {
+		RB_OBJ_WRITTEN(iseq, Qundef, dv);
+	    }
 	    dvs[i] = dv;
 	}
 
@@ -2082,6 +2085,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    rb_hash_rehash(map);
 			    freeze_hide_obj(map);
 			    generated_iseq[code_index + 1 + j] = map;
+			    RB_OBJ_WRITTEN(iseq, Qundef, map);
 			    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
@@ -2094,6 +2098,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    VALUE v = operands[j];
 			    generated_iseq[code_index + 1 + j] = v;
 			    if (!SPECIAL_CONST_P(v)) {
+				RB_OBJ_WRITTEN(iseq, Qundef, v);
 				FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 			    }
 			    break;
@@ -2104,6 +2109,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    generated_iseq[code_index + 1 + j] = v;
 			    /* to mark ruby object */
 			    if (!SPECIAL_CONST_P(v)) {
+				RB_OBJ_WRITTEN(iseq, Qundef, v);
 				FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 			    }
 			    break;
@@ -2280,6 +2286,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
 	    entry->start = label_get_position((LABEL *)(ptr[1] & ~1));
 	    entry->end = label_get_position((LABEL *)(ptr[2] & ~1));
 	    entry->iseq = (rb_iseq_t *)ptr[3];
+	    RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
 	    /* stack depth */
 	    if (ptr[4]) {
@@ -8478,13 +8485,25 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 	    switch (types[op_index]) {
 	      case TS_CDHASH:
 	      case TS_VALUE:
-		code[code_index] = ibf_load_object(load, op);
-		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-		break;
+	        {
+		    VALUE v = ibf_load_object(load, op);
+		    code[code_index] = v;
+		    if (!SPECIAL_CONST_P(v)) {
+			RB_OBJ_WRITTEN(iseq, Qundef, v);
+			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+		    }
+		    break;
+		}
 	      case TS_ISEQ:
-		code[code_index] = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
-		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-		break;
+	        {
+		    VALUE v = (VALUE)ibf_load_iseq(load, (const rb_iseq_t *)op);
+		    code[code_index] = v;
+		    if (!SPECIAL_CONST_P(v)) {
+			RB_OBJ_WRITTEN(iseq, Qundef, v);
+			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+		    }
+		    break;
+		}
 	      case TS_IC:
 		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 	      case TS_ISE:
