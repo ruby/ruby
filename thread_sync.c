@@ -696,7 +696,7 @@ queue_closed_p(VALUE self)
 /*
  *  Document-class: ClosedQueueError
  *
- *  The exception class which will be raised when pushing into a close
+ *  The exception class which will be raised when pushing into a closed
  *  Queue.  See Queue#close and SizedQueue#close.
  */
 
