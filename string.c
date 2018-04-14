@@ -7682,7 +7682,7 @@ split_string(VALUE result, VALUE str, long beg, long len, long empty_count)
  *
  *     "".split(',', -1)               #=> []
  *
- *  If a block is given, invoke the block with each split substrings.
+ *  If a block is given, invoke the block with each split substring.
  *
  */
 
