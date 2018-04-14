@@ -305,7 +305,7 @@ module FileUtils
   #
   # +src+ can be a list of files.
   #
-  #   # Installing ruby library "mylib" under the site_ruby
+  #   # Installing the library "mylib" under the site_ruby directory.
   #   FileUtils.rm_r site_ruby + '/mylib', :force => true
   #   FileUtils.cp_lr 'lib/', site_ruby + '/mylib'
   #
@@ -315,7 +315,7 @@ module FileUtils
   #
   #   # If you want to link all contents of a directory instead of the
   #   # directory itself, c.f. src/x -> dest/x, src/y -> dest/y,
-  #   # use following code.
+  #   # use the following code.
   #   FileUtils.cp_lr 'src/.', 'dest'  # cp_lr('src', 'dest') makes dest/src, but this doesn't.
   #
   def cp_lr(src, dest, noop: nil, verbose: nil,
@@ -381,7 +381,7 @@ module FileUtils
   # Both of +src+ and +dest+ must be a path name.
   # +src+ must exist, +dest+ must not exist.
   #
-  # If +dereference_root+ is true, this method dereference tree root.
+  # If +dereference_root+ is true, this method dereferences the tree root.
   #
   # If +remove_destination+ is true, this method removes each destination file before copy.
   #
