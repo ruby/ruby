@@ -262,7 +262,7 @@ module IRB
     # to #last_value.
     def set_last_value(value)
       @last_value = value
-      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
+      @workspace.local_variable_set :_, value
     end
 
     # Sets the +mode+ of the prompt in this context.
