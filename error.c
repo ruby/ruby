@@ -325,7 +325,7 @@ warning_write(int argc, VALUE *argv, VALUE buf)
  *    warning 1
  *    warning 2
  *
- * If the <code>:uplevel</code> keyword is given, the string will
+ * If the <code>uplevel</code> keyword argument is given, the string will
  * be prepended with information for the given caller frame in
  * the same format used by the <code>rb_warn</code> C function.
  *
@@ -1090,7 +1090,7 @@ exc_message(VALUE exc)
  * call-seq:
  *   exception.inspect   -> string
  *
- * Return this exception's class name and message
+ * Return this exception's class name and message.
  */
 
 static VALUE
