@@ -1255,7 +1255,7 @@ nucomp_inspect(VALUE self)
  * call-seq:
  *    cmp.finite?  ->  true or false
  *
- * Returns +true+ if +cmp+'s real and imaginary values are both finite numbers,
+ * Returns +true+ if +cmp+'s real and imaginary parts are both finite numbers,
  * otherwise returns +false+.
  */
 static VALUE
@@ -1273,7 +1273,7 @@ rb_complex_finite_p(VALUE self)
  * call-seq:
  *    cmp.infinite?  ->  nil or 1
  *
- * Returns +1+ if +cmp+'s real or imaginary value is an infinite number,
+ * Returns +1+ if +cmp+'s real or imaginary part is an infinite number,
  * otherwise returns +nil+.
  *
  *  For example:
