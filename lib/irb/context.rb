@@ -376,8 +376,12 @@ module IRB
       @debug_level > 0
     end
 
-    def evaluate(line, line_no) # :nodoc:
+    def evaluate(line, line_no, exception: nil) # :nodoc:
       @line_no = line_no
+      if exception
+        line = "begin ::Kernel.raise _; rescue _.class; #{line}; end"
+        @workspace.local_variable_set(:_, exception)
+      end
       set_last_value(@workspace.evaluate(self, line, irb_path, line_no))
     end
 

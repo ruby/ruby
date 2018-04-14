@@ -40,5 +40,14 @@ module TestIRB
       assert_same(obj, @context.last_value)
       assert_same(obj, @context.evaluate('_', 1))
     end
+
+    def test_evaluate_with_exception
+      assert_nil(@context.evaluate("$!", 1))
+      e = assert_raise_with_message(RuntimeError, 'foo') {
+        @context.evaluate("raise 'foo'", 1)
+      }
+      assert_equal('foo', e.message)
+      assert_same(e, @context.evaluate('$!', 1, exception: e))
+    end
   end
 end

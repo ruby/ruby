@@ -439,6 +439,8 @@ module IRB
 
     # Evaluates input for this session.
     def eval_input
+      last_error = nil
+
       @scanner.set_prompt do
         |ltype, indent, continue, line_no|
         if ltype
@@ -488,7 +490,7 @@ module IRB
         signal_status(:IN_EVAL) do
           begin
             line.untaint
-            @context.evaluate(line, line_no)
+            @context.evaluate(line, line_no, exception: last_error)
             output_value if @context.echo?
             exc = nil
           rescue Interrupt => exc
@@ -497,6 +499,7 @@ module IRB
           rescue Exception => exc
           end
           if exc
+            last_error = exc
             handle_exception(exc)
           end
         end
