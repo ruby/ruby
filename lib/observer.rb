@@ -112,7 +112,6 @@
 #   Current price: 79
 #   --- Sun Jun 09 00:10:25 CDT 2002: Price below 80: 79
 module Observable
-
   #
   # Add +observer+ as an observer on this object. So that it will receive
   # notifications.
@@ -153,11 +152,7 @@ module Observable
   # Return the number of observers associated with this object.
   #
   def count_observers
-    if defined? @observer_peers
-      @observer_peers.size
-    else
-      0
-    end
+    defined?(@observer_peers) ? @observer_peers.size : 0
   end
 
   #
@@ -175,11 +170,7 @@ module Observable
   # #notify_observers call.
   #
   def changed?
-    if defined? @observer_state and @observer_state
-      true
-    else
-      false
-    end
+    defined?(@observer_state) && @observer_state
   end
 
   #
@@ -200,5 +191,4 @@ module Observable
       @observer_state = false
     end
   end
-
 end
