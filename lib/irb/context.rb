@@ -11,6 +11,7 @@
 #
 require "irb/workspace"
 require "irb/inspector"
+require "irb/input-method"
 require "irb/output-method"
 
 module IRB
