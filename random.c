@@ -1084,7 +1084,7 @@ random_ulong_limited_big(VALUE obj, rb_random_t *rnd, VALUE vmax)
 static VALUE genrand_bytes(rb_random_t *rnd, long n);
 
 /*
- * call-seq: prng.bytes(size) -> a_string
+ * call-seq: prng.bytes(size) -> string
  *
  * Returns a random binary string containing +size+ bytes.
  *
@@ -1135,10 +1135,10 @@ rb_random_bytes(VALUE obj, long n)
 }
 
 /*
- * call-seq: Random.bytes(size) -> a_string
+ * call-seq: Random.bytes(size) -> string
  *
- * Returns a random binary string.  The argument size specified the length of
- * the result string.
+ * Returns a random binary string.
+ * The argument +size+ specifies the length of the returned string.
  */
 static VALUE
 random_s_bytes(VALUE obj, VALUE len)
