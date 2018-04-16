@@ -423,6 +423,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_to_binary_with_objects
     assert_iseq_to_binary("[]"+100.times.map{|i|"<</#{i}/"}.join)
+    assert_iseq_to_binary("@x ||= (1..2)")
   end
 
   def test_to_binary_line_info

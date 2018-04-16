@@ -9259,6 +9259,7 @@ ibf_dump_object_struct(struct ibf_dump *dump, VALUE obj)
 	range.beg = (long)ibf_dump_object(dump, beg);
 	range.end = (long)ibf_dump_object(dump, end);
 
+	IBF_W_ALIGN(struct ibf_object_struct_range);
 	IBF_WV(range);
     }
     else {
@@ -9425,7 +9426,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     IBF_ZERO(obj_header);
     obj_header.type = TYPE(obj);
 
-    ibf_dump_align(dump, sizeof(ibf_offset_t));
+    IBF_W_ALIGN(ibf_offset_t);
     current_offset = ibf_dump_pos(dump);
 
     if (SPECIAL_CONST_P(obj)) {
