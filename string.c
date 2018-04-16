@@ -5966,7 +5966,7 @@ rb_str_dump(VALUE str)
     char *q, *qend;
     VALUE result;
     int u8 = (encidx == rb_utf8_encindex());
-    static const char nonascii_suffix[] = ".force_encoding(\"%s\")";
+    static const char nonascii_suffix[] = ".dup.force_encoding(\"%s\")";
 
     len = 2;			/* "" */
     if (!rb_enc_asciicompat(enc)) {
@@ -6285,13 +6285,19 @@ str_undump(VALUE str)
 		break;
 	    }
 	    else {
+		static const char force_encoding_suffix[] = ".force_encoding\(\"";
+		static const char dup_suffix[] = ".dup";
 		const char *encname;
 		int encidx;
 		ptrdiff_t size;
 
-		size = rb_strlen_lit(".force_encoding(\"");
+		/* check separately for strings dumped by older versions */
+		size = sizeof(dup_suffix) - 1;
+		if (s_end - s > size && memcmp(s, dup_suffix, size) == 0) s += size;
+
+		size = sizeof(force_encoding_suffix) - 1;
 		if (s_end - s <= size) goto invalid_format;
-		if (memcmp(s, ".force_encoding(\"", size) != 0) goto invalid_format;
+		if (memcmp(s, force_encoding_suffix, size) != 0) goto invalid_format;
 		s += size;
 
 		if (utf8) {
