@@ -418,7 +418,7 @@ describe "String#dump" do
   end
 
   it "includes .force_encoding(name) if the encoding isn't ASCII compatible" do
-    "\u{876}".encode('utf-16be').dump.should == "\"\\bv\".force_encoding(\"UTF-16BE\")"
-    "\u{876}".encode('utf-16le').dump.should == "\"v\\b\".force_encoding(\"UTF-16LE\")"
+    "\u{876}".encode('utf-16be').dump.end_with?(".force_encoding(\"UTF-16BE\")").should be_true
+    "\u{876}".encode('utf-16le').dump.end_with?(".force_encoding(\"UTF-16LE\")").should be_true
   end
 end
