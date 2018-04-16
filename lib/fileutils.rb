@@ -656,8 +656,8 @@ module FileUtils
   #
   # For details of this security vulnerability, see Perl's case:
   #
-  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
-  # * http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
+  # * https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
+  # * https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
   #
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
