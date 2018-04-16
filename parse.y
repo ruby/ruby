@@ -2749,7 +2749,9 @@ k_when		: keyword_when
 
 k_else		: keyword_else
 		    {
-			token_info_warn(p, "else", p->token_info, 1, &@$);
+			token_info *ptinfo_beg = p->token_info;
+			int same = ptinfo_beg && strcmp(ptinfo_beg->token, "case") != 0;
+			token_info_warn(p, "else", p->token_info, same, &@$);
 		    }
 		;
 
