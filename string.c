@@ -6289,14 +6289,14 @@ str_undump(VALUE str)
 		int encidx;
 		ptrdiff_t size;
 
-		if (utf8) {
-		    rb_raise(rb_eRuntimeError, "dumped string contained Unicode escape but used force_encoding");
-		}
-
 		size = rb_strlen_lit(".force_encoding(\"");
 		if (s_end - s <= size) goto invalid_format;
 		if (memcmp(s, ".force_encoding(\"", size) != 0) goto invalid_format;
 		s += size;
+
+		if (utf8) {
+		    rb_raise(rb_eRuntimeError, "dumped string contained Unicode escape but used force_encoding");
+		}
 
 		encname = s;
 		s = memchr(s, '"', s_end-s);
