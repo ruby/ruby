@@ -304,19 +304,17 @@ class TestCSV::Features < TestCSV
   end
 
   def test_inspect_shows_headers_when_available
-    CSV.new("one,two,three\n1,2,3\n", headers: true) do |csv|
-      assert_include(csv.inspect, "headers:true", "Header hint not shown.")
-      csv.shift  # load headers
-      assert_match(/headers:\[[^\]]+\]/, csv.inspect)
-    end
+    csv = CSV.new("one,two,three\n1,2,3\n", headers: true)
+    assert_include(csv.inspect, "headers:true", "Header hint not shown.")
+    csv.shift  # load headers
+    assert_match(/headers:\[[^\]]+\]/, csv.inspect)
   end
 
   def test_inspect_encoding_is_ascii_compatible
-    CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE")) do |csv|
-      assert_send([Encoding, :compatible?,
-                   Encoding.find("US-ASCII"), csv.inspect.encoding],
-                  "inspect() was not ASCII compatible.")
-    end
+    csv = CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE"))
+    assert_send([Encoding, :compatible?,
+                 Encoding.find("US-ASCII"), csv.inspect.encoding],
+                "inspect() was not ASCII compatible.")
   end
 
   def test_version
