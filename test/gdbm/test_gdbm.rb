@@ -164,7 +164,7 @@ if defined? GDBM
       open_db_child(dbname) do
         assert_raise(Errno::EWOULDBLOCK, Errno::EAGAIN, Errno::EACCES) {
           GDBM.open(dbname, 0644) {|gdbm|
-            assert_instance_of(GDBM, gdbm)
+            assert(false)
           }
         }
       end
