@@ -255,29 +255,22 @@ class TestArray < Test::Unit::TestCase
   def test_MINUS # '-'
     assert_equal(@cls[],  @cls[1] - @cls[1])
     assert_equal(@cls[1], @cls[1, 2, 3, 4, 5] - @cls[2, 3, 4, 5])
-    # Ruby 1.8 feature change
-    #assert_equal(@cls[1], @cls[1, 2, 1, 3, 1, 4, 1, 5] - @cls[2, 3, 4, 5])
     assert_equal(@cls[1, 1, 1, 1], @cls[1, 2, 1, 3, 1, 4, 1, 5] - @cls[2, 3, 4, 5])
     a = @cls[]
     1000.times { a << 1 }
     assert_equal(1000, a.length)
-    #assert_equal(@cls[1], a - @cls[2])
     assert_equal(@cls[1] * 1000, a - @cls[2])
-    #assert_equal(@cls[1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 1],  @cls[1, 2, 1] - @cls[2])
     assert_equal(@cls[1, 2, 3], @cls[1, 2, 3] - @cls[4, 5, 6])
   end
 
   def test_MINUS_big_array # '-'
     assert_equal(@cls[1]*64, @cls[1, 2, 3, 4, 5]*64 - @cls[2, 3, 4, 5]*64)
-    # Ruby 1.8 feature change
-    #assert_equal(@cls[1], @cls[1, 2, 1, 3, 1, 4, 1, 5]*64 - @cls[2, 3, 4, 5]*64)
     assert_equal(@cls[1, 1, 1, 1]*64, @cls[1, 2, 1, 3, 1, 4, 1, 5]*64 - @cls[2, 3, 4, 5]*64)
     a = @cls[]
     1000.times { a << 1 }
     assert_equal(1000, a.length)
-    #assert_equal(@cls[1], a - @cls[2])
-   assert_equal(@cls[1] * 1000, a - @cls[2])
+    assert_equal(@cls[1] * 1000, a - @cls[2])
   end
 
   def test_LSHIFT # '<<'
@@ -356,9 +349,6 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[10, 11, 12], a[-91..-89])
 
     assert_nil(a[10, -3])
-    # Ruby 1.8 feature change:
-    # Array#[size..x] returns [] instead of nil.
-    #assert_nil(a[10..7])
     assert_equal [], a[10..7]
 
     assert_raise(TypeError) {a['cat']}
@@ -414,33 +404,29 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, a[10..19] = b)
     assert_equal(@cls[*(0..9).to_a] + b + @cls[*(20..99).to_a], a)
 
-    # Ruby 1.8 feature change:
-    # assigning nil does not remove elements.
-=begin
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[0,1] = nil)
-    assert_equal(@cls[*(1..99).to_a], a)
+    assert_equal(@cls[nil] + @cls[*(1..99).to_a], a)
 
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[10,10] = nil)
-    assert_equal(@cls[*(0..9).to_a] + @cls[*(20..99).to_a], a)
+    assert_equal(@cls[*(0..9).to_a] + @cls[nil] + @cls[*(20..99).to_a], a)
 
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[-1, 1] = nil)
-    assert_equal(@cls[*(0..98).to_a], a)
+    assert_equal(@cls[*(0..98).to_a] + @cls[nil], a)
 
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[-10, 10] = nil)
-    assert_equal(@cls[*(0..89).to_a], a)
+    assert_equal(@cls[*(0..89).to_a] + @cls[nil], a)
 
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[0,1000] = nil)
-    assert_equal(@cls[] , a)
+    assert_equal(@cls[nil] , a)
 
     a = @cls[*(0..99).to_a]
     assert_equal(nil, a[10..19] = nil)
-    assert_equal(@cls[*(0..9).to_a] + @cls[*(20..99).to_a], a)
-=end
+    assert_equal(@cls[*(0..9).to_a] + @cls[nil] + @cls[*(20..99).to_a], a)
 
     a = @cls[1, 2, 3]
     a[1, 0] = a
@@ -531,9 +517,6 @@ class TestArray < Test::Unit::TestCase
 
     assert_equal([], @cls[].collect { 99 })
 
-    # Ruby 1.9 feature change:
-    # Enumerable#collect without block returns an Enumerator.
-    #assert_equal([1, 2, 3], @cls[1, 2, 3].collect)
     assert_kind_of Enumerator, @cls[1, 2, 3].collect
 
     assert_equal([[1, 2, 3]], [[1, 2, 3]].collect(&->(a, b, c) {[a, b, c]}))
@@ -1250,9 +1233,6 @@ class TestArray < Test::Unit::TestCase
     a = @cls[1, 2, 3]
     assert_equal(@cls[1, 2, 3, 4, 5], a.push(4, 5))
     assert_equal(@cls[1, 2, 3, 4, 5, nil], a.push(nil))
-    # Ruby 1.8 feature:
-    # Array#push accepts any number of arguments.
-    #assert_raise(ArgumentError, "a.push()") { a.push() }
     a.push
     assert_equal @cls[1, 2, 3, 4, 5, nil], a
     a.push 6, 7
@@ -1319,9 +1299,6 @@ class TestArray < Test::Unit::TestCase
     a = @cls[*%w( dog cat bee ant )]
     assert_equal(@cls[*%w(ant bee cat dog)], a.reverse!)
     assert_equal(@cls[*%w(ant bee cat dog)], a)
-    # Ruby 1.8 feature change:
-    # Array#reverse always returns self.
-    #assert_nil(@cls[].reverse!)
     assert_equal @cls[], @cls[].reverse!
   end
 
@@ -1406,9 +1383,6 @@ class TestArray < Test::Unit::TestCase
     assert_nil(a.slice(-101..-1))
 
     assert_nil(a.slice(10, -3))
-    # Ruby 1.8 feature change:
-    # Array#slice[size..x] always returns [].
-    #assert_nil(a.slice(10..7))
     assert_equal @cls[], a.slice(10..7)
   end
 

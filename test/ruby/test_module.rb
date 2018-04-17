@@ -462,9 +462,6 @@ class TestModule < Test::Unit::TestCase
     assert_equal([:cClass], (class << CClass; self; end).instance_methods(false))
     assert_equal([], (class << BClass; self; end).instance_methods(false))
     assert_equal([:cm2], (class << AClass; self; end).instance_methods(false))
-    # Ruby 1.8 feature change:
-    # #instance_methods includes protected methods.
-    #assert_equal([:aClass], AClass.instance_methods(false))
     assert_equal([:aClass, :aClass2], AClass.instance_methods(false).sort)
     assert_equal([:aClass, :aClass2],
         (AClass.instance_methods(true) - Object.instance_methods(true)).sort)
