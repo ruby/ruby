@@ -117,7 +117,6 @@ class TestBasicInstructions < Test::Unit::TestCase
     assert_equal({1=>2}, {1=>2})
     assert_equal({1=>2, 3=>4}, {1=>2, 3=>4})
     assert_equal({1=>2, 3=>4}, {3=>4, 1=>2})
-    # assert_equal({1=>2, 3=>4}, {1,2, 3,4}) # 1.9 doesn't support
     assert_equal({"key"=>"val"}, {"key"=>"val"})
   end
 
