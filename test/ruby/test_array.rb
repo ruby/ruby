@@ -735,7 +735,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[]
     i = 0
     a.each { |e|
-      assert_equal(a[i], e)
+      assert(false, "Never get here")
       i += 1
     }
     assert_equal(0, i)
@@ -755,7 +755,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[]
     i = 0
     a.each_index { |ind|
-      assert_equal(i, ind)
+      assert(false, "Never get here")
       i += 1
     }
     assert_equal(0, i)
