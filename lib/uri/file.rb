@@ -33,9 +33,6 @@ module URI
     # If an Array is used, the components must be passed in the
     # order <code>[host, path]</code>.
     #
-    # If the path supplied is absolute, it will be escaped in order to
-    # make it absolute in the URI.
-    #
     # Examples:
     #
     #     require 'uri'
@@ -44,7 +41,7 @@ module URI
     #     uri1.to_s  # => "file://host.example.com/path/file.zip"
     #
     #     uri2 = URI::File.build({:host => 'host.example.com',
-    #       :path => 'ruby/src'})
+    #       :path => '/ruby/src'})
     #     uri2.to_s  # => "file://host.example.com/ruby/src"
     #
     def self.build(args)
