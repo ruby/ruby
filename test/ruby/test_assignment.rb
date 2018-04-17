@@ -129,17 +129,17 @@ class TestAssignment < Test::Unit::TestCase
     }
 
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self.foo += 1})
+      o.instance_eval {self.foo += 1}
     }
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self.foo &&= 1})
+      o.instance_eval {self.foo &&= 1}
     }
 
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(43, o.instance_eval {self[0] += 1})
+      o.instance_eval {self[0] += 1}
     }
     assert_raise(NoMethodError, bug11096) {
-      assert_equal(1, o.instance_eval {self[0] &&= 1})
+      o.instance_eval {self[0] &&= 1}
     }
   end
 
