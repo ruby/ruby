@@ -5,14 +5,14 @@ require 'uri/generic'
 module URI
 
   #
-  # The "file" URI is defined by RFC8089
+  # The "file" URI is defined by RFC8089.
   #
   class File < Generic
-    # A Default port of nil for URI::File
+    # A Default port of nil for URI::File.
     DEFAULT_PORT = nil
 
     #
-    # An Array of the available components for URI::File
+    # An Array of the available components for URI::File.
     #
     COMPONENT = [
       :scheme,
@@ -30,20 +30,22 @@ module URI
     # The components should be provided either as an Array, or as a Hash
     # with keys formed by preceding the component names with a colon.
     #
-    # If an Array is used, the components must be passed in the order
-    # [host, path]
+    # If an Array is used, the components must be passed in the
+    # order <code>[host, path]</code>.
     #
     # If the path supplied is absolute, it will be escaped in order to
-    # make it absolute in the URI. Examples:
+    # make it absolute in the URI.
+    #
+    # Examples:
     #
     #     require 'uri'
     #
-    #     uri = URI::File.build(['host.example.com', '/path/file.zip'])
-    #     puts uri.to_s  ->  file://host.example.com/path/file.zip
+    #     uri1 = URI::File.build(['host.example.com', '/path/file.zip'])
+    #     uri1.to_s  # => "file://host.example.com/path/file.zip"
     #
     #     uri2 = URI::File.build({:host => 'host.example.com',
     #       :path => 'ruby/src'})
-    #     puts uri2.to_s  ->  file://host.example.com/ruby/src
+    #     uri2.to_s  # => "file://host.example.com/ruby/src"
     #
     def self.build(args)
       tmp = Util::make_components_hash(self, args)
