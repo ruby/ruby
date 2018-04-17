@@ -1196,6 +1196,10 @@ x = __ENCODING__
     end
   end
 
+  def test_cdmarg_after_command_args_and_tlbrace_arg
+    assert_valid_syntax('let () { m(a) do; end }')
+  end
+
 =begin
   def test_past_scope_variable
     assert_warning(/past scope/) {catch {|tag| eval("BEGIN{throw tag}; tap {a = 1}; a")}}
