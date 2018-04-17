@@ -6285,7 +6285,7 @@ str_undump(VALUE str)
 		break;
 	    }
 	    else {
-		static const char force_encoding_suffix[] = ".force_encoding\(\"";
+		static const char force_encoding_suffix[] = ".force_encoding(\""; /* "\")" */
 		static const char dup_suffix[] = ".dup";
 		const char *encname;
 		int encidx;
