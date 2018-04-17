@@ -480,11 +480,10 @@ class TestAssignment < Test::Unit::TestCase
     assert_equal 1, a
     assert_equal [2, 3], b
 
-    # not supported yet
-    #a, *b, c = 1, 2, 3, 4
-    #assert_equal 1, a
-    #assert_equal [2,3], b
-    #assert_equal 4, c
+    a, *b, c = 1, 2, 3, 4
+    assert_equal 1, a
+    assert_equal [2,3], b
+    assert_equal 4, c
 
     a = 1, 2
     assert_equal [1, 2], a
