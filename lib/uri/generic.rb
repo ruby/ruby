@@ -267,12 +267,13 @@ module URI
     #
     attr_reader :query
 
-    # returns the opaque part of the URI.
+    # Returns the opaque part of the URI.
     #
     #   URI("mailto:foo@example.org").opaque #=> "foo@example.org"
+    #   URI("http://foo/bar/baz").opaque     #=> nil
     #
-    # Portion of the path that does make use of the slash '/'.
-    # The path typically refers to the absolute path and the opaque part.
+    # The portion of the path that does not make use of the slash '/'.
+    # The path typically refers to an absolute path or an opaque part.
     # (See RFC2396 Section 3 and 5.2.)
     #
     attr_reader :opaque
