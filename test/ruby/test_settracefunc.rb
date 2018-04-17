@@ -729,13 +729,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
   end
 
   def test_tracepoint_raised_exception
-    trace = TracePoint.new(:call, :return){|tp|
+    trace = TracePoint.new(:call, :return, :raise){|tp|
       next if !target_thread?
       case tp.event
       when :call, :return
         assert_raise(RuntimeError) { tp.raised_exception }
       when :raise
-        assert_equal(XYZZYError, tp.raised_exception)
+        assert_kind_of(XYZZYException, tp.raised_exception)
       end
     }
     trace.enable{
