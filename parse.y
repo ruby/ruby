@@ -2170,7 +2170,20 @@ command_args	:   {
 		    }
 		  call_args
 		    {
+			/* call_args can be followed by tLBRACE_ARG (that does CMDARG_PUSH(0) in the lexer)
+			 * but the push must be done after CMDARG_POP() in the parser.
+			 * So this code does CMDARG_POP() to pop 0 pushed by tLBRACE_ARG,
+			 * CMDARG_POP() to pop 1 pushed by command_args,
+			 * and CMDARG_PUSH(0) to restore back the flag set by tLBRACE_ARG.
+			 */
+			int lookahead = 0;
+			switch (yychar) {
+			  case tLBRACE_ARG:
+			    lookahead = 1;
+			}
+			if (lookahead) CMDARG_POP();
 			CMDARG_POP();
+			if (lookahead) CMDARG_PUSH(0);
 			$$ = $2;
 		    }
 		;
