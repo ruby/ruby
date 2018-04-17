@@ -812,14 +812,16 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_inspect
     events = []
+    th = nil
     trace = TracePoint.new{|tp|
-      next if !target_thread?
+      next if !target_thread? && th != Thread.current
       events << [tp.event, tp.inspect]
     }
     assert_equal("#<TracePoint:disabled>", trace.inspect)
     trace.enable{
       assert_equal("#<TracePoint:enabled>", trace.inspect)
-      Thread.new{}.join
+      th = Thread.new{}
+      th.join
     }
     assert_equal("#<TracePoint:disabled>", trace.inspect)
     events.each{|(ev, str)|
