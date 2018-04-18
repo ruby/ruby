@@ -6679,11 +6679,11 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     const int *seq = s->vt100.seq;
     int count = s->vt100.state;
-    int arg1 = 1;
+    int arg0, arg1 = 1;
     COORD pos;
 
     if (!GetConsoleScreenBufferInfo(handle, &csbi)) return;
-    if (count > 0 && seq[0] > 0) arg1 = seq[0];
+    if (arg0 = (count > 0 && seq[0] > 0)) arg1 = seq[0];
     switch (w) {
       case L'm':
 	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr, &s->vt100.reverse));
@@ -6742,19 +6742,19 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 	SetConsoleCursorPosition(handle, pos);
 	break;
       case L'J':
-	switch (arg1) {
+	switch (arg0 ? arg1 : 0) {
 	  case 0:	/* erase after cursor */
 	    constat_clear(handle, csbi.wAttributes,
 			  (csbi.dwSize.X * (csbi.srWindow.Bottom - csbi.dwCursorPosition.Y + 1)
 			   - csbi.dwCursorPosition.X),
 			  csbi.dwCursorPosition);
 	    break;
-	  case 1:	/* erase before cursor */
+	  case 1:	/* erase before *and* cursor */
 	    pos.X = 0;
 	    pos.Y = csbi.srWindow.Top;
 	    constat_clear(handle, csbi.wAttributes,
 			  (csbi.dwSize.X * (csbi.dwCursorPosition.Y - csbi.srWindow.Top)
-			   + csbi.dwCursorPosition.X),
+			   + csbi.dwCursorPosition.X + 1),
 			  pos);
 	    break;
 	  case 2:	/* erase entire screen */
@@ -6774,17 +6774,17 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
 	}
 	break;
       case L'K':
-	switch (arg1) {
+	switch (arg0 ? arg1 : 0) {
 	  case 0:	/* erase after cursor */
 	    constat_clear(handle, csbi.wAttributes,
 			  (csbi.dwSize.X - csbi.dwCursorPosition.X),
 			  csbi.dwCursorPosition);
 	    break;
-	  case 1:	/* erase before cursor */
+	  case 1:	/* erase before *and* cursor */
 	    pos.X = 0;
 	    pos.Y = csbi.dwCursorPosition.Y;
 	    constat_clear(handle, csbi.wAttributes,
-			  csbi.dwCursorPosition.X, pos);
+			  csbi.dwCursorPosition.X + 1, pos);
 	    break;
 	  case 2:	/* erase entire line */
 	    pos.X = 0;
