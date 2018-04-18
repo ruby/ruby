@@ -417,6 +417,9 @@ static inline void rsock_maybe_wait_fd(int fd) { }
 #  ifdef MSG_DONTWAIT
 #    define MSG_DONTWAIT_RELIABLE 1
 #  endif
+#  ifndef SO_ORIGINAL_DST
+#    define SO_ORIGINAL_DST 80
+#  endif
 #else /* some systems (mswin/mingw) need these.  ref: r36946 */
 #  define rsock_maybe_fd_writable(fd) rb_thread_fd_writable((fd))
 #  define rsock_maybe_wait_fd(fd) rb_thread_wait_fd((fd))
