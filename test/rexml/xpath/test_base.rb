@@ -860,11 +860,9 @@ module REXMLTests
 </a>
       XML
 
-      for v,p in [[6, "sum(/a/b)"],
-        [9, "sum(//b | //d)"],
-        [3, "sum(/a/e/@*)"] ]
-        assert_equal( v, XPath::match( d, p ).first )
-      end
+      assert_equal([6], XPath::match(d, "sum(/a/b)"))
+      assert_equal([9], XPath::match(d, "sum(//b | //d)"))
+      assert_equal([3], XPath::match(d, "sum(/a/e/@*)"))
     end
 
     def test_xpath_namespace
