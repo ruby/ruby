@@ -149,7 +149,7 @@ module Fiddle
     end
 
     def test_no_message_with_debug
-      assert_in_out_err(%w[--debug -rfiddle/import], 'p Fiddle::Importer', ['Fiddle::Importer'])
+      assert_in_out_err(%w[--debug --disable=gems -rfiddle/import], 'p Fiddle::Importer', ['Fiddle::Importer'])
     end
   end
 end if defined?(Fiddle)
