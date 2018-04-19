@@ -1006,7 +1006,7 @@ EOF
       </a>"
       d = Document.new(data)
       res = d.elements.to_a( "//c" ).collect {|e| e.attributes['id'].to_i}
-      assert_equal( res, res.sort )
+      assert_equal((1..12).to_a, res)
     end
 
     def ticket_61_fixture(doc, xpath)
