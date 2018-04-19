@@ -706,8 +706,8 @@ module REXMLTests
       XML
       d = REXML::Document.new( source )
       r = REXML::XPath.match( d, %q{/a/*/*[1]} )
-      assert_equal( 1, r.size )
-      r.each { |el| assert_equal( '1', el.attribute('id').value ) }
+      assert_equal(["1"],
+                   r.collect {|element| element.attribute("id").value})
     end
 
     def test_descendant_or_self_ordering
@@ -841,9 +841,8 @@ module REXMLTests
 </a>
       EOL
       d = REXML::Document.new( string )
-      c1 = XPath.match( d, '/a/*/*[1]' )
-      assert_equal( 1, c1.length )
-      assert_equal( 'c1', c1[0].name )
+      cs = XPath.match( d, '/a/*/*[1]' )
+      assert_equal(["c1"], cs.collect(&:name))
     end
 
     def test_sum
