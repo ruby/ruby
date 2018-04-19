@@ -692,7 +692,18 @@ module REXMLTests
     end
 
     def test_ordering
-      source = "<a><b><c id='1'/><c id='2'/></b><b><d id='1'/><d id='2'/></b></a>"
+      source = <<-XML
+<a>
+  <b>
+    <c id='1'/>
+    <c id='2'/>
+  </b>
+  <b>
+    <d id='3'/>
+    <d id='4'/>
+  </b>
+</a>
+      XML
       d = REXML::Document.new( source )
       r = REXML::XPath.match( d, %q{/a/*/*[1]} )
       assert_equal( 1, r.size )
@@ -836,11 +847,19 @@ module REXMLTests
     end
 
     def test_sum
-      d = Document.new("<a>"+
-      "<b>1</b><b>2</b><b>3</b>"+
-      "<c><d>1</d><d>2</d></c>"+
-      "<e att='1'/><e att='2'/>"+
-      "</a>")
+      d = Document.new(<<-XML)
+<a>
+  <b>1</b>
+  <b>2</b>
+  <b>3</b>
+  <c>
+    <d>1</d>
+    <d>2</d>
+  </c>
+  <e att='1'/>
+  <e att='2'/>
+</a>
+      XML
 
       for v,p in [[6, "sum(/a/b)"],
         [9, "sum(//b | //d)"],
