@@ -18,7 +18,7 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_beg, id_end, id_excl, id_integer_p, id_add, id_mul, id_div;
+static ID id_beg, id_end, id_excl;
 #define id_cmp idCmp
 #define id_succ idSucc
 
@@ -522,7 +522,10 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
-    VALUE is_int = rb_check_funcall(v, id_integer_p, 0, 0);
+    ID id_integer_p;
+    VALUE is_int;
+    CONST_ID(id_integer_p, "integer?");
+    is_int = rb_check_funcall(v, id_integer_p, 0, 0);
     return RTEST(is_int) && is_int != Qundef;
 }
 
@@ -562,6 +565,9 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
     VALUE low = rb_to_int(beg);
     VALUE high = rb_to_int(end);
     VALUE mid, org_high;
+    ID id_div;
+    CONST_ID(id_div, "div");
+
     if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
     org_high = high;
 
@@ -703,12 +709,12 @@ range_bsearch(VALUE range)
 	VALUE diff = LONG2FIX(1);
 	RETURN_ENUMERATOR(range, 0, 0);
 	while (1) {
-	    VALUE mid = rb_funcall(beg, id_add, 1, diff);
+	    VALUE mid = rb_funcall(beg, '+', 1, diff);
 	    BSEARCH_CHECK(mid);
 	    if (smaller) {
 		return bsearch_integer_range(beg, mid, 0);
 	    }
-	    diff = rb_funcall(diff, id_mul, 1, LONG2FIX(2));
+	    diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
 	}
     }
     else {
@@ -1383,10 +1389,6 @@ Init_Range(void)
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
-    id_integer_p = rb_intern("integer?");
-    id_add = rb_intern("+");
-    id_mul = rb_intern("*");
-    id_div = rb_intern("div");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
