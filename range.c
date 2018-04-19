@@ -960,7 +960,7 @@ range_min(int argc, VALUE *argv, VALUE range)
 	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
 	VALUE e = RANGE_END(range);
-	int c = OPTIMIZED_CMP(b, e, cmp_opt);
+	int c = NIL_P(e) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0 || (c == 0 && EXCL(range)))
 	    return Qnil;
@@ -990,6 +990,8 @@ range_max(int argc, VALUE *argv, VALUE range)
 {
     VALUE e = RANGE_END(range);
     int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
+
+    if (NIL_P(e)) return Qnil;
 
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
         return rb_call_super(argc, argv);
@@ -1200,9 +1202,17 @@ range_include(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
-	VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
-	return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+    else if (RB_TYPE_P(beg, T_STRING)) {
+	if (RB_TYPE_P(end, T_STRING)) {
+	    VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+	    return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+	}
+	else if (NIL_P(end)) {
+	    VALUE r = rb_funcall(beg, id_cmp, 1, val);
+	    if (NIL_P(r)) return Qfalse;
+	    if (rb_cmpint(r, beg, val) <= 0) return Qtrue;
+	    return Qfalse;
+	}
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);
@@ -1239,7 +1249,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 {
     if (r_less(beg, val) <= 0) {
 	int excl = EXCL(range);
-	if (r_less(val, end) <= -excl)
+	if (NIL_P(end) || r_less(val, end) <= -excl)
 	    return Qtrue;
     }
     return Qfalse;
