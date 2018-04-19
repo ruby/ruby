@@ -2536,6 +2536,7 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
     long offset = 0;
     long len;
     VALUE ary;
+    int warned = FALSE;
 
     /* can contain null bytes as separators */
     if (!RB_TYPE_P((str), T_STRING)) {
@@ -2553,6 +2554,10 @@ rb_push_glob(VALUE str, VALUE base, int flags) /* '\0' is delimiter */
         const char *pbeg = RSTRING_PTR(str), *p = pbeg + offset;
         const char *pend = memchr(p, '\0', rest);
         if (pend) {
+            if (!warned) {
+                rb_warn("use glob patterns list instead of nul-separated patterns");
+                warned = TRUE;
+            }
             rest = ++pend - p;
             offset = pend - pbeg;
         }
