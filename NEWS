@@ -152,6 +152,11 @@ with all sufficient information, see the ChangeLog file or Redmine
     and File.readlines do not invoke external commands even if the path
     starts with the pipe character |.  [Feature #14245]
 
+* Dir
+
+  * Dir.glob with '\0'-separated pattern list will be deprecated, and
+    is now warned.  [Feature #14643]
+
 === Stdlib compatibility issues (excluding feature bug fixes)
 
 === C API updates
