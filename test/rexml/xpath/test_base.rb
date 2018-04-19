@@ -632,29 +632,36 @@ module REXMLTests
           <c id='a'/>
         </b>
         <c id='b'/>
+        <c id='c'/>
+        <c/>
       </a>")
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[local-name()='c' and @id='b']").size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[ local-name()='c' and @id='b' ]").size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        "//*[ local-name() = 'c' and @id = 'b' ]").size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[@id]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[(@id)]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[ @id ]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[ (@id) ]').size )
-      assert_equal( 1,
-        REXML::XPath.match(doc, '/a/c[( @id )]').size )
-      assert_equal( 1, REXML::XPath.match(doc.root,
-        '/a/c[ ( @id ) ]').size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        '/a/c [ ( @id ) ] ').size )
-      assert_equal( 1, REXML::XPath.match(doc,
-        ' / a / c [ ( @id ) ] ').size )
+      match = lambda do |xpath|
+        REXML::XPath.match(doc, xpath).collect(&:to_s)
+      end
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[local-name()='c' and @id='b']"))
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[ local-name()='c' and @id='b' ]"))
+      assert_equal(["<c id='b'/>"],
+                   match.call("//*[ local-name() = 'c' and @id = 'b' ]"))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[@id]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[(@id)]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ @id ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ (@id) ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[( @id )]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c[ ( @id ) ]'))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/a/c [ ( @id ) ] '))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call(' / a / c [ ( @id ) ] '))
+      assert_equal(["<c id='b'/>", "<c id='c'/>"],
+                   match.call('/ a / child:: c [( @id )] /'))
     end
 
     def test_text_nodes
