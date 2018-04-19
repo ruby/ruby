@@ -581,6 +581,8 @@ class TestRange < Test::Unit::TestCase
 
     ary = [0, 100, 100, 100, 200]
     assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 100 })
+
+    assert_equal(1_000_001, (0...).bsearch {|i| i > 1_000_000 })
   end
 
   def test_bsearch_for_float
@@ -632,6 +634,8 @@ class TestRange < Test::Unit::TestCase
 
     assert_in_delta(1.0, (0.0..inf).bsearch {|x| Math.log(x) >= 0 })
     assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
+
+    assert_equal(1_000_000.0.next_float, (0.0..).bsearch {|x| x > 1_000_000 })
   end
 
   def check_bsearch_values(range, search, a)
@@ -733,6 +737,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+    assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
   end
