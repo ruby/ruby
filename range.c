@@ -18,7 +18,7 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_beg, id_end, id_excl, id_integer_p, id_div;
+static ID id_beg, id_end, id_excl, id_integer_p, id_add, id_mul, id_div;
 #define id_cmp idCmp
 #define id_succ idSucc
 
@@ -526,6 +526,62 @@ is_integer_p(VALUE v)
     return RTEST(is_int) && is_int != Qundef;
 }
 
+static VALUE
+bsearch_integer_range(VALUE beg, VALUE end, int excl)
+{
+    VALUE satisfied = Qnil;
+    int smaller;
+
+#define BSEARCH_CHECK(expr) \
+    do { \
+	VALUE val = (expr); \
+	VALUE v = rb_yield(val); \
+	if (FIXNUM_P(v)) { \
+	    if (v == INT2FIX(0)) return val; \
+	    smaller = (SIGNED_VALUE)v < 0; \
+	} \
+	else if (v == Qtrue) { \
+	    satisfied = val; \
+	    smaller = 1; \
+	} \
+	else if (v == Qfalse || v == Qnil) { \
+	    smaller = 0; \
+	} \
+	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
+	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
+	    if (!cmp) return val; \
+	    smaller = cmp < 0; \
+	} \
+	else { \
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
+		     " (must be numeric, true, false or nil)", \
+		     rb_obj_class(v)); \
+	} \
+    } while (0)
+
+    VALUE low = rb_to_int(beg);
+    VALUE high = rb_to_int(end);
+    VALUE mid, org_high;
+    if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
+    org_high = high;
+
+    while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
+	mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+	BSEARCH_CHECK(mid);
+	if (smaller) {
+	    high = mid;
+	}
+	else {
+	    low = rb_funcall(mid, '+', 1, INT2FIX(1));
+	}
+    }
+    if (rb_equal(low, org_high)) {
+	BSEARCH_CHECK(low);
+	if (!smaller) return Qnil;
+    }
+    return satisfied;
+}
+
 /*
  *  call-seq:
  *     rng.bsearch {|obj| block }  -> value
@@ -598,33 +654,6 @@ range_bsearch(VALUE range)
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH_CHECK(expr) \
-    do { \
-	VALUE val = (expr); \
-	VALUE v = rb_yield(val); \
-	if (FIXNUM_P(v)) { \
-	    if (v == INT2FIX(0)) return val; \
-	    smaller = (SIGNED_VALUE)v < 0; \
-	} \
-	else if (v == Qtrue) { \
-	    satisfied = val; \
-	    smaller = 1; \
-	} \
-	else if (v == Qfalse || v == Qnil) { \
-	    smaller = 0; \
-	} \
-	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
-	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
-	    if (!cmp) return val; \
-	    smaller = cmp < 0; \
-	} \
-	else { \
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
-		     " (must be numeric, true, false or nil)", \
-		     rb_obj_class(v)); \
-	} \
-    } while (0)
-
 #define BSEARCH(conv) \
     do { \
 	RETURN_ENUMERATOR(range, 0, 0); \
@@ -661,34 +690,26 @@ range_bsearch(VALUE range)
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
 	int64_t low  = double_as_int64(RFLOAT_VALUE(rb_Float(beg)));
-	int64_t high = double_as_int64(RFLOAT_VALUE(rb_Float(end)));
+	int64_t high = double_as_int64(NIL_P(end) ? HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
 	int64_t mid, org_high;
 	BSEARCH(int64_as_double_to_num);
     }
 #endif
     else if (is_integer_p(beg) && is_integer_p(end)) {
-	VALUE low = rb_to_int(beg);
-	VALUE high = rb_to_int(end);
-	VALUE mid, org_high;
 	RETURN_ENUMERATOR(range, 0, 0);
-	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
-	org_high = high;
-
-	while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-	    mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+	return bsearch_integer_range(beg, end, EXCL(range));
+    }
+    else if (is_integer_p(beg) && NIL_P(end)) {
+	VALUE diff = LONG2FIX(1);
+	RETURN_ENUMERATOR(range, 0, 0);
+	while (1) {
+	    VALUE mid = rb_funcall(beg, id_add, 1, diff);
 	    BSEARCH_CHECK(mid);
 	    if (smaller) {
-		high = mid;
+		return bsearch_integer_range(beg, mid, 0);
 	    }
-	    else {
-		low = rb_funcall(mid, '+', 1, INT2FIX(1));
-	    }
+	    diff = rb_funcall(diff, id_mul, 1, LONG2FIX(2));
 	}
-	if (rb_equal(low, org_high)) {
-	    BSEARCH_CHECK(low);
-	    if (!smaller) return Qnil;
-	}
-	return satisfied;
     }
     else {
 	rb_raise(rb_eTypeError, "can't do binary search for %s", rb_obj_classname(beg));
@@ -1363,6 +1384,8 @@ Init_Range(void)
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
     id_integer_p = rb_intern("integer?");
+    id_add = rb_intern("+");
+    id_mul = rb_intern("*");
     id_div = rb_intern("div");
 
     rb_cRange = rb_struct_define_without_accessor(
