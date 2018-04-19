@@ -4325,6 +4325,50 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
     return beg;
 }
 
+VALUE
+rb_str_upto_endless_each(VALUE beg, VALUE (*each)(VALUE, VALUE), VALUE arg)
+{
+    VALUE current;
+    ID succ;
+
+    CONST_ID(succ, "succ");
+    /* both edges are all digits */
+    if (is_ascii_string(beg) && ISDIGIT(RSTRING_PTR(beg)[0]) &&
+	all_digits_p(RSTRING_PTR(beg), RSTRING_LEN(beg))) {
+	VALUE b, args[2], fmt = rb_fstring_cstr("%.*d");
+	int width = RSTRING_LENINT(beg);
+	b = rb_str_to_inum(beg, 10, FALSE);
+	if (FIXNUM_P(b)) {
+	    long bi = FIX2LONG(b);
+	    rb_encoding *usascii = rb_usascii_encoding();
+
+	    while (FIXABLE(bi)) {
+		(*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg);
+		bi++;
+	    }
+	    b = LONG2NUM(bi);
+	}
+	args[0] = INT2FIX(width);
+	while (1) {
+	    args[1] = b;
+	    (*each)(rb_str_format(numberof(args), args, fmt), arg);
+	    b = rb_funcallv(b, succ, 0, 0);
+	}
+    }
+    /* normal case */
+    current = rb_str_dup(beg);
+    while (1) {
+	VALUE next = rb_funcallv(current, succ, 0, 0);
+	(*each)(current, arg);
+	current = next;
+	StringValue(current);
+	if (RSTRING_LEN(current) == 0)
+	    break;
+    }
+
+    return beg;
+}
+
 static int
 include_range_i(VALUE str, VALUE arg)
 {

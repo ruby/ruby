@@ -37,7 +37,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
+    if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(end)) {
 	VALUE v;
 
 	v = rb_funcall(beg, id_cmp, 1, end);
@@ -400,7 +400,19 @@ range_step(int argc, VALUE *argv, VALUE range)
 	step = check_step_domain(step);
     }
 
-    if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
+    if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
+	long i = FIX2LONG(b), unit = FIX2LONG(step);
+	while (1) {
+	    rb_yield(LONG2FIX(i));
+	    if (i + unit < i) break;
+	    i += unit;
+	}
+	b = LONG2NUM(i);
+
+	for (;; b = rb_funcallv(b, id_succ, 0, 0))
+	    rb_yield(b);
+    }
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
 	long end = FIX2LONG(e);
 	long i, unit = FIX2LONG(step);
 
@@ -414,16 +426,21 @@ range_step(int argc, VALUE *argv, VALUE range)
 	}
 
     }
-    else if (SYMBOL_P(b) && SYMBOL_P(e)) { /* symbols are special */
+    else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
 	VALUE args[2], iter[2];
-
-	args[0] = rb_sym2str(e);
-	args[1] = EXCL(range) ? Qtrue : Qfalse;
 	iter[0] = INT2FIX(1);
 	iter[1] = step;
-	rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+
+	if (NIL_P(e)) {
+	    rb_str_upto_endless_each(rb_sym2str(b), sym_step_i, (VALUE)iter);
+	}
+	else {
+	    args[0] = rb_sym2str(e);
+	    args[1] = EXCL(range) ? Qtrue : Qfalse;
+	    rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+	}
     }
-    else if (ruby_float_step(b, e, step, EXCL(range))) {
+    else if (ruby_float_step(b, e, step, EXCL(range), TRUE)) {
 	/* done */
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
@@ -433,7 +450,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	VALUE v = b;
 	int i = 0;
 
-	while (RTEST(rb_funcall(v, op, 1, e))) {
+	while (NIL_P(e) || RTEST(rb_funcall(v, op, 1, e))) {
 	    rb_yield(v);
 	    i++;
 	    v = rb_funcall(b, '+', 1, rb_funcall(INT2NUM(i), '*', 1, step));
@@ -446,11 +463,17 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    VALUE args[2], iter[2];
 
 	    b = tmp;
-	    args[0] = e;
-	    args[1] = EXCL(range) ? Qtrue : Qfalse;
 	    iter[0] = INT2FIX(1);
 	    iter[1] = step;
-	    rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
+
+	    if (NIL_P(e)) {
+		rb_str_upto_endless_each(b, step_i, (VALUE)iter);
+	    }
+	    else {
+		args[0] = e;
+		args[1] = EXCL(range) ? Qtrue : Qfalse;
+		rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
+	    }
 	}
 	else {
 	    VALUE args[2];
@@ -746,7 +769,18 @@ range_each(VALUE range)
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
-    if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
+    if (FIXNUM_P(beg) && NIL_P(end)) {
+	long i = FIX2LONG(beg);
+	while (FIXABLE(i)) {
+	    rb_yield(LONG2FIX(i++));
+	}
+	beg = LONG2NUM(i);
+
+      inf_loop:
+	for (;; beg = rb_funcallv(beg, id_succ, 0, 0))
+	    rb_yield(beg);
+    }
+    else if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
 	long lim = FIX2LONG(end);
 	long i;
 
@@ -767,18 +801,27 @@ range_each(VALUE range)
 	VALUE tmp = rb_check_string_type(beg);
 
 	if (!NIL_P(tmp)) {
-	    VALUE args[2];
+	    if (!NIL_P(end)) {
+		VALUE args[2];
 
-	    args[0] = end;
-	    args[1] = EXCL(range) ? Qtrue : Qfalse;
-	    rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
+		args[0] = end;
+		args[1] = EXCL(range) ? Qtrue : Qfalse;
+		rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
+	    }
+	    else if (RB_TYPE_P(beg, T_STRING)) {
+		rb_str_upto_endless_each(beg, each_i, 0);
+	    }
+	    else goto inf_loop;
 	}
 	else {
 	    if (!discrete_object_p(beg)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(beg));
 	    }
-	    range_each_func(range, each_i, 0);
+	    if (!NIL_P(end))
+		range_each_func(range, each_i, 0);
+	    else
+		goto inf_loop;
 	}
     }
     return range;
@@ -1012,7 +1055,8 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     if (!rb_range_values(range, &b, &e, &excl))
 	return Qfalse;
     beg = NUM2LONG(b);
-    end = NUM2LONG(e);
+    end = NIL_P(e) ? -1 : NUM2LONG(e);
+    if (NIL_P(e)) excl = 0;
     origbeg = beg;
     origend = end;
     if (beg < 0) {
@@ -1072,16 +1116,16 @@ range_to_s(VALUE range)
 static VALUE
 inspect_range(VALUE range, VALUE dummy, int recur)
 {
-    VALUE str, str2;
+    VALUE str, str2 = Qundef;
 
     if (recur) {
 	return rb_str_new2(EXCL(range) ? "(... ... ...)" : "(... .. ...)");
     }
     str = rb_inspect(RANGE_BEG(range));
-    str2 = rb_inspect(RANGE_END(range));
+    if (!NIL_P(RANGE_END(range))) str2 = rb_inspect(RANGE_END(range));
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
-    rb_str_append(str, str2);
+    if (str2 != Qundef) rb_str_append(str, str2);
     OBJ_INFECT(str, range);
 
     return str;

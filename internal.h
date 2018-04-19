@@ -1404,7 +1404,7 @@ enum ruby_num_rounding_mode {
 
 int rb_num_to_uint(VALUE val, unsigned int *ret);
 VALUE ruby_num_interval_step_size(VALUE from, VALUE to, VALUE step, int excl);
-int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl);
+int ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless);
 double ruby_float_mod(double x, double y);
 int rb_num_negative_p(VALUE);
 VALUE rb_int_succ(VALUE num);
@@ -2013,6 +2013,7 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
+VALUE rb_str_upto_endless_each(VALUE, VALUE (*each)(), VALUE);
 
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
