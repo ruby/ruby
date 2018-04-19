@@ -4068,6 +4068,35 @@ env_keep_if(VALUE ehash)
 }
 
 /*
+ *  call-seq:
+ *     ENV.slice(*keys) -> a_hash
+ *
+ *  Returns a hash containing only the given keys from ENV and their values.
+ *
+ *     ENV.slice("TERM","HOME")  #=> {"TERM"=>"xterm-256color", "HOME"=>"/Users/rhc"}
+ */
+static VALUE
+env_slice(int argc, VALUE *argv)
+{
+    int i;
+    VALUE key, value, result;
+
+    if (argc == 0) {
+        return rb_hash_new();
+    }
+    result = rb_hash_new_with_size(argc);
+
+    for (i = 0; i < argc; i++) {
+        key = argv[i];
+        value = rb_f_getenv(Qnil, key);
+        if (value != Qnil)
+            rb_hash_aset(result, key, value);
+    }
+
+    return result;
+}
+
+/*
  * call-seq:
  *   ENV.clear
  *
@@ -4749,6 +4778,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "delete", env_delete_m, 1);
     rb_define_singleton_method(envtbl, "delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl, "keep_if", env_keep_if, 0);
+    rb_define_singleton_method(envtbl, "slice", env_slice, -1);
     rb_define_singleton_method(envtbl, "clear", rb_env_clear, 0);
     rb_define_singleton_method(envtbl, "reject", env_reject, 0);
     rb_define_singleton_method(envtbl, "reject!", env_reject_bang, 0);
