@@ -432,7 +432,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	iter[1] = step;
 
 	if (NIL_P(e)) {
-	    rb_str_upto_endless_each(rb_sym2str(b), sym_step_i, (VALUE)iter);
+	    rb_str_upto_endless_each(rb_sym2str(b), (VALUE (*)(VALUE, VALUE))sym_step_i, (VALUE)iter);
 	}
 	else {
 	    args[0] = rb_sym2str(e);
@@ -467,7 +467,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    iter[1] = step;
 
 	    if (NIL_P(e)) {
-		rb_str_upto_endless_each(b, step_i, (VALUE)iter);
+		rb_str_upto_endless_each(b, (VALUE (*)(VALUE, VALUE))step_i, (VALUE)iter);
 	    }
 	    else {
 		args[0] = e;
@@ -836,7 +836,7 @@ range_each(VALUE range)
 		rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
 	    }
 	    else if (RB_TYPE_P(beg, T_STRING)) {
-		rb_str_upto_endless_each(beg, each_i, 0);
+		rb_str_upto_endless_each(beg, (VALUE (*)(VALUE, VALUE))each_i, 0);
 	    }
 	    else goto inf_loop;
 	}
