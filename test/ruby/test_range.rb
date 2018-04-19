@@ -79,22 +79,27 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1, (1..2).min)
     assert_equal(nil, (2..1).min)
     assert_equal(1, (1...2).min)
+    assert_equal(1, (1..).min)
 
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
     assert_equal(1, (1.0...2.0).min)
+    assert_equal(1, (1.0..).min)
 
     assert_equal(0, (0..0).min)
     assert_equal(nil, (0...0).min)
 
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
+    assert_equal([0,1,2], (0..).min(3))
   end
 
   def test_max
     assert_equal(2, (1..2).max)
     assert_equal(nil, (2..1).max)
     assert_equal(1, (1...2).max)
+    assert_equal(nil, (1..).max)
+    assert_equal(nil, (1...).max)
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
@@ -109,6 +114,7 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
+    # XXX: How should (0...).max(3) behave?
   end
 
   def test_initialize_twice
@@ -360,6 +366,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal("a", ("a"..."c").first)
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
+
+    assert_equal([0, 1, 2], (0..nil).first(3))
+    assert_equal(0, (0..nil).first)
+    assert_equal("a", ("a"..nil).first)
+    # XXX: How should (0...).last(3) behave?
   end
 
   def test_to_s
@@ -389,6 +400,8 @@ class TestRange < Test::Unit::TestCase
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
+    assert_operator(5..nil, :===, 11)
+    assert_not_operator(5..nil, :===, 0)
   end
 
   def test_eqq_time
@@ -396,6 +409,8 @@ class TestRange < Test::Unit::TestCase
     t = Time.now
     assert_nothing_raised(TypeError, bug11113) {
       assert_operator(t..(t+10), :===, t+5)
+      assert_operator(t.., :===, t+5)
+      assert_not_operator(t.., :===, t-5)
     }
   end
 
@@ -430,6 +445,8 @@ class TestRange < Test::Unit::TestCase
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
     assert_include(0...10, 5)
+    assert_include(5..., 10)
+    assert_not_include(5..., 0)
   end
 
   def test_cover
@@ -438,6 +455,9 @@ class TestRange < Test::Unit::TestCase
     assert_operator("a"..."z", :cover?, "y")
     assert_not_operator("a"..."z", :cover?, "z")
     assert_operator("a".."z", :cover?, "cc")
+    assert_not_operator(5..., :cover?, 0)
+    assert_not_operator(5..., :cover?, "a")
+    assert_operator(5.., :cover?, 10)
   end
 
   def test_beg_len
@@ -515,6 +535,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
+    assert_nil ("a"..."z").size
+
+    assert_nil (1...).size
+    assert_nil (1.0...).size
+    assert_nil ("a"...).size
   end
 
   def test_bsearch_typechecks_return_values
