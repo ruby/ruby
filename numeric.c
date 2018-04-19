@@ -2469,11 +2469,11 @@ ruby_float_step_size(double beg, double end, double unit, int excl)
 }
 
 int
-ruby_float_step(VALUE from, VALUE to, VALUE step, int excl)
+ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless)
 {
     if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
 	double beg = NUM2DBL(from);
-	double end = NUM2DBL(to);
+	double end = (allow_endless && NIL_P(to)) ? HUGE_VAL : NUM2DBL(to);
 	double unit = NUM2DBL(step);
 	double n = ruby_float_step_size(beg, end, unit, excl);
 	long i;
@@ -2712,7 +2712,7 @@ num_step(int argc, VALUE *argv, VALUE from)
 	    }
 	}
     }
-    else if (!ruby_float_step(from, to, step, FALSE)) {
+    else if (!ruby_float_step(from, to, step, FALSE, FALSE)) {
 	VALUE i = from;
 
 	if (inf) {
