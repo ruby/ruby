@@ -7,19 +7,20 @@
 % # details.
 %
 % # Optimized case of send / opt_send_without_block instructions.
-    {
+{
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
 % insn.opes.each_with_index do |ope, i|
-        MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
+    MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 %
+    if (has_valid_method_type(cc)) {
         const rb_iseq_t *iseq;
         unsigned int argc = ci->orig_argc; /* unlike `ci->orig_argc`, `argc` may include blockarg */
 % if insn.name == 'send'
         argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
 % end
 
-        if (inlinable_iseq_p(ci, cc, iseq = get_iseq_if_available(cc))) {
+        if (cc->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc, iseq = rb_iseq_check(cc->me->def->body.iseq.iseqptr))) {
             int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
 
             fprintf(f, "{\n");
@@ -88,3 +89,4 @@
             break;
         }
     }
+}
