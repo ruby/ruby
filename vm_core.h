@@ -539,6 +539,7 @@ typedef struct rb_vm_struct {
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
 
+    rb_serial_t fork_gen;
     struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
     VALUE thgroup_default;

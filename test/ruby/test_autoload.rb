@@ -285,6 +285,32 @@ p Foo::Bar
     end
   end
 
+  def test_autoload_fork
+    EnvUtil.default_warning do
+      Tempfile.create(['autoload', '.rb']) {|file|
+        file.puts 'sleep 0.3; class AutoloadTest; end'
+        file.close
+        add_autoload(file.path)
+        begin
+          thrs = []
+          3.times do
+            thrs << Thread.new { AutoloadTest; nil }
+            thrs << Thread.new { fork { AutoloadTest } }
+          end
+          thrs.each(&:join)
+          thrs.each do |th|
+            pid = th.value or next
+            _, status = Process.waitpid2(pid)
+            assert_predicate status, :success?
+          end
+        ensure
+          remove_autoload_constant
+          assert_nil $!, '[ruby-core:86410] [Bug #14634]'
+        end
+      }
+    end
+  end if Process.respond_to?(:fork)
+
   def add_autoload(path)
     (@autoload_paths ||= []) << path
     ::Object.class_eval {autoload(:AutoloadTest, path)}
