@@ -62,7 +62,6 @@ typedef struct rb_mutex_struct {
 static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
-static void rb_thread_sync_reset_all(void);
 #endif
 static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
 
@@ -547,17 +546,15 @@ void rb_mutex_allow_trap(VALUE self, int val)
 /* Queue */
 
 #define queue_waitq(q) UNALIGNED_MEMBER_PTR(q, waitq)
-#define queue_live(q) UNALIGNED_MEMBER_PTR(q, live)
 PACKED_STRUCT_UNALIGNED(struct rb_queue {
-    struct list_node live;
     struct list_head waitq;
+    rb_serial_t fork_gen;
     const VALUE que;
     int num_waiting;
 });
 
 #define szqueue_waitq(sq) UNALIGNED_MEMBER_PTR(sq, q.waitq)
 #define szqueue_pushq(sq) UNALIGNED_MEMBER_PTR(sq, pushq)
-#define szqueue_live(sq) UNALIGNED_MEMBER_PTR(sq, q.live)
 PACKED_STRUCT_UNALIGNED(struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
@@ -574,14 +571,6 @@ queue_mark(void *ptr)
     rb_gc_mark(q->que);
 }
 
-static void
-queue_free(void *ptr)
-{
-    struct rb_queue *q = ptr;
-    list_del(queue_live(q));
-    ruby_xfree(ptr);
-}
-
 static size_t
 queue_memsize(const void *ptr)
 {
@@ -590,7 +579,7 @@ queue_memsize(const void *ptr)
 
 static const rb_data_type_t queue_data_type = {
     "queue",
-    {queue_mark, queue_free, queue_memsize,},
+    {queue_mark, RUBY_TYPED_DEFAULT_FREE, queue_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -602,8 +591,22 @@ queue_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, struct rb_queue, &queue_data_type, q);
     list_head_init(queue_waitq(q));
-    list_add(&queue_list, queue_live(q));
     return obj;
+}
+
+static int
+queue_fork_check(struct rb_queue *q)
+{
+    rb_serial_t fork_gen = GET_VM()->fork_gen;
+
+    if (q->fork_gen == fork_gen) {
+        return 0;
+    }
+    /* forked children can't reach into parent thread stacks */
+    q->fork_gen = fork_gen;
+    list_head_init(queue_waitq(q));
+    q->num_waiting = 0;
+    return 1;
 }
 
 static struct rb_queue *
@@ -612,6 +615,8 @@ queue_ptr(VALUE obj)
     struct rb_queue *q;
 
     TypedData_Get_Struct(obj, struct rb_queue, &queue_data_type, q);
+    queue_fork_check(q);
+
     return q;
 }
 
@@ -625,14 +630,6 @@ szqueue_mark(void *ptr)
     queue_mark(&sq->q);
 }
 
-static void
-szqueue_free(void *ptr)
-{
-    struct rb_szqueue *sq = ptr;
-    list_del(szqueue_live(sq));
-    ruby_xfree(ptr);
-}
-
 static size_t
 szqueue_memsize(const void *ptr)
 {
@@ -641,7 +638,7 @@ szqueue_memsize(const void *ptr)
 
 static const rb_data_type_t szqueue_data_type = {
     "sized_queue",
-    {szqueue_mark, szqueue_free, szqueue_memsize,},
+    {szqueue_mark, RUBY_TYPED_DEFAULT_FREE, szqueue_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -653,7 +650,6 @@ szqueue_alloc(VALUE klass)
 					&szqueue_data_type, sq);
     list_head_init(szqueue_waitq(sq));
     list_head_init(szqueue_pushq(sq));
-    list_add(&szqueue_list, szqueue_live(sq));
     return obj;
 }
 
@@ -663,6 +659,11 @@ szqueue_ptr(VALUE obj)
     struct rb_szqueue *sq;
 
     TypedData_Get_Struct(obj, struct rb_szqueue, &szqueue_data_type, sq);
+    if (queue_fork_check(&sq->q)) {
+        list_head_init(szqueue_pushq(sq));
+        sq->num_waiting_push = 0;
+    }
+
     return sq;
 }
 
@@ -1281,10 +1282,9 @@ rb_szqueue_empty_p(VALUE self)
 
 
 /* ConditionalVariable */
-/* TODO: maybe this can be IMEMO */
 struct rb_condvar {
     struct list_head waitq;
-    struct list_node live;
+    rb_serial_t fork_gen;
 };
 
 /*
@@ -1315,14 +1315,6 @@ struct rb_condvar {
  *    }
  */
 
-static void
-condvar_free(void *ptr)
-{
-    struct rb_condvar *cv = ptr;
-    list_del(&cv->live);
-    ruby_xfree(ptr);
-}
-
 static size_t
 condvar_memsize(const void *ptr)
 {
@@ -1331,7 +1323,7 @@ condvar_memsize(const void *ptr)
 
 static const rb_data_type_t cv_data_type = {
     "condvar",
-    {0, condvar_free, condvar_memsize,},
+    {0, RUBY_TYPED_DEFAULT_FREE, condvar_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1339,8 +1331,14 @@ static struct rb_condvar *
 condvar_ptr(VALUE self)
 {
     struct rb_condvar *cv;
+    rb_serial_t fork_gen = GET_VM()->fork_gen;
 
     TypedData_Get_Struct(self, struct rb_condvar, &cv_data_type, cv);
+
+    /* forked children can't reach into parent thread stacks */
+    if (cv->fork_gen != fork_gen) {
+        list_head_init(&cv->waitq);
+    }
 
     return cv;
 }
@@ -1353,7 +1351,6 @@ condvar_alloc(VALUE klass)
 
     obj = TypedData_Make_Struct(klass, struct rb_condvar, &cv_data_type, cv);
     list_head_init(&cv->waitq);
-    list_add(&condvar_list, &cv->live);
 
     return obj;
 }
@@ -1466,32 +1463,6 @@ define_thread_class(VALUE outer, const char *name, VALUE super)
     rb_define_const(rb_cObject, name, klass);
     return klass;
 }
-
-#if defined(HAVE_WORKING_FORK)
-/* we must not reference stacks of dead threads in a forked child */
-static void
-rb_thread_sync_reset_all(void)
-{
-    struct rb_queue *q = 0;
-    struct rb_szqueue *sq = 0;
-    struct rb_condvar *cv = 0;
-
-    list_for_each(&queue_list, q, live) {
-        list_head_init(queue_waitq(q));
-        q->num_waiting = 0;
-    }
-    list_for_each(&szqueue_list, q, live) {
-        sq = container_of(q, struct rb_szqueue, q);
-        list_head_init(szqueue_waitq(sq));
-        list_head_init(szqueue_pushq(sq));
-        sq->num_waiting_push = 0;
-        sq->q.num_waiting = 0;
-    }
-    list_for_each(&condvar_list, cv, live) {
-        list_head_init(&cv->waitq);
-    }
-}
-#endif
 
 static void
 Init_thread_sync(void)
