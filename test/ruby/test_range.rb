@@ -245,10 +245,13 @@ class TestRange < Test::Unit::TestCase
     (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
     assert_equal([4294967295, 4294967297], a)
 
-    a = []
     max = RbConfig::LIMITS["FIXNUM_MAX"]
+    a = []
     (max..).step {|x| a << x; break if a.size == 2 }
     assert_equal([max, max+1], a)
+    a = []
+    (max..).step(max) {|x| a << x; break if a.size == 4 }
+    assert_equal([max, 2*max, 3*max, 4*max], a)
 
     o1 = Object.new
     o2 = Object.new

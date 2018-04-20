@@ -408,7 +408,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	} while (FIXABLE(i));
 	b = LONG2NUM(i);
 
-	for (;; b = rb_funcallv(b, id_succ, 0, 0))
+	for (;; b = rb_big_plus(b, step))
 	    rb_yield(b);
     }
     else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
