@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
+require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
   def test_new
@@ -243,6 +244,11 @@ class TestRange < Test::Unit::TestCase
     a = []
     (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
     assert_equal([4294967295, 4294967297], a)
+
+    a = []
+    max = RbConfig::LIMITS["FIXNUM_MAX"]
+    (max..).step {|x| a << x; break if a.size == 2 }
+    assert_equal([max, max+1], a)
 
     o1 = Object.new
     o2 = Object.new
