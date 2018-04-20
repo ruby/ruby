@@ -529,6 +529,41 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_attr_reader
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, min_calls: 2)
+    begin;
+      class A
+        attr_reader :a, :b
+
+        def initialize
+          @a = 2
+        end
+
+        def test
+          a
+        end
+
+        def undefined
+          b
+        end
+      end
+
+      a = A.new
+      print(a.test * a.test)
+      p(a.undefined)
+      p(a.undefined)
+
+      # redefinition
+      class A
+        def test
+          3
+        end
+      end
+
+      print(2 * a.test)
+    end;
+  end
+
   private
 
   # The shortest way to test one proc
