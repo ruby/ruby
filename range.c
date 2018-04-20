@@ -402,11 +402,10 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
 	long i = FIX2LONG(b), unit = FIX2LONG(step);
-	while (1) {
+	do {
 	    rb_yield(LONG2FIX(i));
-	    if (i + unit < i) break;
-	    i += unit;
-	}
+	    i += unit;          /* FIXABLE+FIXABLE never overflow */
+	} while (FIXABLE(i));
 	b = LONG2NUM(i);
 
 	for (;; b = rb_funcallv(b, id_succ, 0, 0))
