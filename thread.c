@@ -652,11 +652,6 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
-# ifdef USE_SIGALTSTACK
-    void rb_register_sigaltstack(rb_thread_t *th);
-
-    rb_register_sigaltstack(th);
-# endif
 
     if (th == th->vm->main_thread)
 	rb_bug("thread_start_func_2 must not be used for main thread");

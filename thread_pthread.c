@@ -840,6 +840,7 @@ static void *
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
+    RB_ALTSTACK_INIT(void *altstack);
 #if USE_THREAD_CACHE
   thread_start:
 #endif
@@ -868,6 +869,7 @@ thread_start_func_1(void *th_ptr)
 	}
     }
 #endif
+    RB_ALTSTACK_FREE(altstack);
     return 0;
 }
 

@@ -2216,6 +2216,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	    vm->frozen_strings = 0;
 	}
 	rb_vm_gvl_destroy(vm);
+	RB_ALTSTACK_FREE(vm->main_altstack);
 	if (objspace) {
 	    rb_objspace_free(objspace);
 	}
@@ -2473,9 +2474,6 @@ thread_free(void *ptr)
 	RUBY_GC_INFO("main thread\n");
     }
     else {
-#ifdef USE_SIGALTSTACK
-	free(th->altstack);
-#endif
 	ruby_xfree(ptr);
     }
 
@@ -2535,11 +2533,6 @@ th_init(rb_thread_t *th, VALUE self)
     th->self = self;
     rb_threadptr_root_fiber_setup(th);
 
-    /* allocate thread stack */
-#ifdef USE_SIGALTSTACK
-    /* altstack of main thread is reallocated in another place */
-    th->altstack = malloc(rb_sigaltstack_size());
-#endif
     {
 	/* vm_stack_size is word number.
 	 * th->vm->default_params.thread_vm_stack_size is byte size. */
