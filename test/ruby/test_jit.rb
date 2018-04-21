@@ -351,7 +351,7 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_compile_insn_branchiftype
+  def test_compile_insn_checktype
     assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"')
     begin;
       a = '2'
