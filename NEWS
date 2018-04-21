@@ -120,6 +120,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String#split yields each substrings to the block if given. [Feature #4780]
 
+* Struct
+
+  * Aliased methods:
+
+    * Struct#filter is a new alias for Struct#select [Feature #13784]
+
 === Stdlib updates (outstanding ones only)
 
 * ERB
