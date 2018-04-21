@@ -747,6 +747,8 @@ queue_closed_result(VALUE self, struct rb_queue *q)
  *	  end
  *	end
  *
+ *	consumer.join
+ *
  */
 
 /*
