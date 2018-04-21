@@ -28,7 +28,7 @@ module REXMLTests
     def _test_namespaces ; process_test_case("namespaces") ; end
     def _test_nitf ; process_test_case("nitf") ; end
     def _test_numbers ; process_test_case("numbers") ; end
-    def _test_pi ; process_test_case("pi") ; end
+    def test_pi ; process_test_case("pi") ; end
     def _test_pi2 ; process_test_case("pi2") ; end
     def _test_simple ; process_test_case("simple") ; end
     def _test_testNamespaces ; process_test_case("testNamespaces") ; end
@@ -79,29 +79,12 @@ module REXMLTests
     def process_value_of(context, variables, namespaces, value_of)
       expected = value_of.text
       xpath = value_of.attributes["select"]
-      matched = XPath.first(context, xpath, namespaces, variables)
+      matched = XPath.match(context, xpath, namespaces, variables)
 
       message = user_message(context, xpath, matched)
-
-      if expected.nil?
-        assert_nil(matched, message)
-      else
-        case matched
-        when Element
-          assert_equal(expected, matched.text, message)
-        when Attribute, Text, Comment, TrueClass, FalseClass
-          assert_equal(expected, matched.to_s, message)
-        when Instruction
-          assert_equal(expected, matched.content, message)
-        when Integer, Float
-          assert_equal(expected.to_f, matched, message)
-        when String
-          assert_equal(expected, matched, message)
-        else
-          flunk("#{message}\n" +
-                "Unexpected match value: <#{matched.inspect}>")
-        end
-      end
+      assert_equal(expected || "",
+                   REXML::Functions.string(matched),
+                   message)
     end
 
     # processes a tests/document/context/test node ( where @exception is false or doesn't exist )
