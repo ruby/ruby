@@ -186,9 +186,12 @@ module REXML
       rv
     end
 
-    # UNTESTED
     def Functions::concat( *objects )
-      objects.join
+      concatenated = ""
+      objects.each do |object|
+        concatenated << string(object)
+      end
+      concatenated
     end
 
     # Fixed by Mike Stok
