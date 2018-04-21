@@ -199,18 +199,18 @@ struct iseq_compile_data_ensure_node_stack {
 #define ADD_INSN(seq, line, insn) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
-/* insert an instruction before prev */
-#define INSERT_BEFORE_INSN(prev, line, insn) \
-  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+/* insert an instruction before next */
+#define INSERT_BEFORE_INSN(next, line, insn) \
+  ELEM_INSERT_PREV(&(next)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
-/* insert an instruction with some operands (1, 2, 3, 5) before prev */
-#define INSERT_BEFORE_INSN1(prev, line, insn, op1) \
-  ELEM_INSERT_PREV(&(prev)->link, (LINK_ELEMENT *) \
+/* insert an instruction with some operands (1, 2, 3, 5) before next */
+#define INSERT_BEFORE_INSN1(next, line, insn, op1) \
+  ELEM_INSERT_PREV(&(next)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
