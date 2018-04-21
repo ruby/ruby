@@ -331,7 +331,7 @@ class TestSymbol < Test::Unit::TestCase
 
   def test_match_method
     assert_equal("bar", :"foobarbaz".match(/bar/).to_s)
-    assert_nil(:"".match(nil))
+    assert_raise(TypeError) { :"".match(nil) }
 
     o = Regexp.new('foo')
     def o.match(x, y, z); x + y + z; end
@@ -386,11 +386,7 @@ class TestSymbol < Test::Unit::TestCase
   end
 
   def test_match_p_nil
-    /backref/ =~ 'backref'
-    # must match here, but not in a separate method, e.g., assert_send,
-    # to check if $~ is affected or not.
-    assert_equal(false, :''.match?(nil))
-    assert_equal('backref', $&)
+    assert_raise(TypeError) { :''.match?(nil) }
   end
 
   def test_symbol_popped
