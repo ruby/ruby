@@ -655,6 +655,16 @@ checkkeyword
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
 
+/* check if val is type. */
+DEFINE_INSN
+checktype
+(rb_num_t type)
+(VALUE val)
+(VALUE ret)
+{
+    ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
+}
+
 /* fire a coverage event (currently, this is used for line coverage and branch coverage) */
 DEFINE_INSN
 tracecoverage
@@ -921,19 +931,6 @@ branchnil
 ()
 {
     if (NIL_P(val)) {
-	RUBY_VM_CHECK_INTS(ec);
-	JUMP(dst);
-    }
-}
-
-/* if val is type, set PC to (PC + dst). */
-DEFINE_INSN
-branchiftype
-(rb_num_t type, OFFSET dst)
-(VALUE val)
-()
-{
-    if (TYPE(val) == (int)type) {
 	RUBY_VM_CHECK_INTS(ec);
 	JUMP(dst);
     }
