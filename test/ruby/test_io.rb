@@ -3760,4 +3760,36 @@ __END__
       con.close
     end
   end if Socket.const_defined?(:MSG_OOB)
+
+  def test_recycled_fd_close
+    dot = -'.'
+    IO.pipe do |sig_rd, sig_wr|
+      noex = Thread.new do # everything right and never see exceptions :)
+        until sig_rd.wait_readable(0)
+          IO.pipe do |r, w|
+            th = Thread.new { r.read(1) }
+            w.write(dot)
+            assert_equal(dot, th.value)
+          end
+        end
+        sig_rd.read(4)
+      end
+      1000.times do # stupid things and make exceptions:
+        IO.pipe do |r,w|
+          th = Thread.new do
+            begin
+              r.read(1)
+            rescue IOError => e
+              e
+            end
+          end
+          Thread.pass until th.stop?
+          r.close
+          assert_match(/stream closed/, th.value.message)
+        end
+      end
+      sig_wr.write 'done'
+      assert_equal 'done', noex.value ,'r63216'
+    end
+  end
 end
