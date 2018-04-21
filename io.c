@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "ruby_atomic.h"
+#include "ccan/list/list.h"
 
 #undef free
 #define free(x) xfree(x)
@@ -4654,15 +4655,14 @@ rb_io_memsize(const rb_io_t *fptr)
 # define KEEPGVL FALSE
 #endif
 
-int rb_notify_fd_close(int fd);
+int rb_notify_fd_close(int fd, struct list_head *);
 static rb_io_t *
 io_close_fptr(VALUE io)
 {
     rb_io_t *fptr;
-    int fd;
     VALUE write_io;
     rb_io_t *write_fptr;
-    int busy;
+    LIST_HEAD(busy);
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
@@ -4676,11 +4676,9 @@ io_close_fptr(VALUE io)
     if (!fptr) return 0;
     if (fptr->fd < 0) return 0;
 
-    fd = fptr->fd;
-    busy = rb_notify_fd_close(fd);
-    if (busy) {
-	fptr_finalize_flush(fptr, FALSE, KEEPGVL);
-	do rb_thread_schedule(); while (rb_notify_fd_close(fd));
+    if (rb_notify_fd_close(fptr->fd, &busy)) {
+	fptr_finalize_flush(fptr, FALSE, KEEPGVL); /* calls close(fptr->fd) */
+	do rb_thread_schedule(); while (!list_empty(&busy));
     }
     rb_io_fptr_cleanup(fptr, FALSE);
     return fptr;
@@ -7185,7 +7183,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_update_max_fd(fd);
             fptr->fd = fd;
 	}
-	rb_notify_fd_close(fd);
+	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {
 	    if (io_seek(fptr, pos, SEEK_SET) < 0 && errno) {
 		rb_sys_fail_path(fptr->pathv);
