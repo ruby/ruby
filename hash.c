@@ -817,7 +817,7 @@ rb_hash_rehash(VALUE hash)
     return hash;
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_hash_default_value(VALUE hash, VALUE key)
 {
     if (rb_method_basic_definition_p(CLASS_OF(hash), id_default)) {
@@ -848,12 +848,7 @@ rb_hash_default_value(VALUE hash, VALUE key)
 VALUE
 rb_hash_aref(VALUE hash, VALUE key)
 {
-    st_data_t val;
-
-    if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
-	return rb_hash_default_value(hash, key);
-    }
-    return (VALUE)val;
+    return rb_hash_aref_internal(hash, key);
 }
 
 VALUE

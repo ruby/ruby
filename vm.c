@@ -8,6 +8,11 @@
 
 **********************************************************************/
 
+#ifdef MJIT_HEADER
+#include "st.c"
+#undef PREFETCH
+#endif
+
 #include "internal.h"
 #include "ruby/vm.h"
 #include "ruby/st.h"

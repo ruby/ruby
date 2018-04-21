@@ -11,7 +11,7 @@ module MJITHeader
   ATTR_VALUE_REGEXP  = /[^()]|\([^()]*\)/
   ATTR_REGEXP        = /__attribute__\s*\(\(#{ATTR_VALUE_REGEXP}*\)\)/
   FUNC_HEADER_REGEXP = /\A(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
-  TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr)_/
+  TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr|st)_/
 
   # Predefined macros for compilers which are already supported by MJIT.
   # We're going to support cl.exe too (WIP) but `cl.exe -E` can't produce macro.
