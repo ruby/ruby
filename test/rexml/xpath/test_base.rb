@@ -873,7 +873,12 @@ module REXMLTests
     end
 
     def test_xpath_namespace
-      d = REXML::Document.new("<tag1 xmlns='ns1'><tag2 xmlns='ns2'/><tada>xa</tada></tag1>")
+      d = REXML::Document.new(<<-XML)
+<tag1 xmlns='ns1'>
+  <tag2 xmlns='ns2'/>
+  <tada>xa</tada>
+</tag1>
+      XML
       x = d.root
       num = 0
       x.each_element('tada') {  num += 1 }
