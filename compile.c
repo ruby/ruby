@@ -203,6 +203,10 @@ struct iseq_compile_data_ensure_node_stack {
 #define INSERT_BEFORE_INSN(next, line, insn) \
   ELEM_INSERT_PREV(&(next)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
 
+/* insert an instruction after prev */
+#define INSERT_AFTER_INSN(prev, line, insn) \
+  ELEM_INSERT_NEXT(&(prev)->link, (LINK_ELEMENT *) new_insn_body(iseq, (line), BIN(insn), 0))
+
 /* add an instruction with some operands (1, 2, 3, 5) */
 #define ADD_INSN1(seq, line, insn, op1) \
   ADD_ELEM((seq), (LINK_ELEMENT *) \
@@ -211,6 +215,11 @@ struct iseq_compile_data_ensure_node_stack {
 /* insert an instruction with some operands (1, 2, 3, 5) before next */
 #define INSERT_BEFORE_INSN1(next, line, insn, op1) \
   ELEM_INSERT_PREV(&(next)->link, (LINK_ELEMENT *) \
+           new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
+
+/* insert an instruction with some operands (1, 2, 3, 5) after prev */
+#define INSERT_AFTER_INSN1(prev, line, insn, op1) \
+  ELEM_INSERT_NEXT(&(prev)->link, (LINK_ELEMENT *) \
            new_insn_body(iseq, (line), BIN(insn), 1, (VALUE)(op1)))
 
 #define LABEL_REF(label) ((label)->refcnt++)
@@ -2543,10 +2552,99 @@ is_frozen_putstring(INSN *insn, VALUE *op)
 }
 
 static int
+optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
+{
+    /*
+     *   putobject obj
+     *   dup
+     *   checktype T_XXX
+     *   branchif l1
+     * l2:
+     *   ...
+     * l1:
+     *
+     * => obj is a T_XXX
+     *
+     *   putobject obj (T_XXX)
+     *   jump L1
+     * L1:
+     *
+     * => obj is not a T_XXX
+     *
+     *   putobject obj (T_XXX)
+     *   jump L2
+     * L2:
+     */
+    int line;
+    INSN *niobj, *ciobj, *dup = 0;
+    LABEL *dest = 0;
+    VALUE type;
+
+    switch (INSN_OF(iobj)) {
+      case BIN(putstring):
+	type = INT2FIX(T_STRING);
+	break;
+      case BIN(putnil):
+	type = INT2FIX(T_NIL);
+	break;
+      case BIN(putobject):
+	type = INT2FIX(TYPE(OPERAND_AT(iobj, 0)));
+	break;
+      default: return FALSE;
+    }
+
+    ciobj = (INSN *)get_next_insn(iobj);
+    if (IS_INSN_ID(ciobj, jump)) {
+	ciobj = (INSN *)get_next_insn((INSN*)OPERAND_AT(ciobj, 0));
+    }
+    if (IS_INSN_ID(ciobj, dup)) {
+	ciobj = (INSN *)get_next_insn(dup = ciobj);
+    }
+    if (!ciobj || !IS_INSN_ID(ciobj, checktype)) return FALSE;
+    niobj = (INSN *)get_next_insn(ciobj);
+    if (!niobj) {
+      no_branch:
+	/* TODO: putobject true/false */
+	return FALSE;
+    }
+    switch (INSN_OF(niobj)) {
+      case BIN(branchif):
+	if (OPERAND_AT(ciobj, 0) == type) {
+	    dest = (LABEL *)OPERAND_AT(niobj, 0);
+	}
+	break;
+      case BIN(branchunless):
+	if (OPERAND_AT(ciobj, 0) != type) {
+	    dest = (LABEL *)OPERAND_AT(niobj, 0);
+	}
+	break;
+      default:
+	goto no_branch;
+    }
+    line = ciobj->insn_info.line_no;
+    if (!dest) {
+	if (niobj->link.next && IS_LABEL(niobj->link.next)) {
+	    dest = (LABEL *)niobj->link.next; /* reuse label */
+	}
+	else {
+	    dest = NEW_LABEL(line);
+	    ELEM_INSERT_NEXT(&niobj->link, &dest->link);
+	}
+    }
+    INSERT_AFTER_INSN1(iobj, line, jump, dest);
+    LABEL_REF(dest);
+    if (!dup) INSERT_AFTER_INSN(iobj, line, pop);
+    return TRUE;
+}
+
+static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
+
   again:
+    optimize_checktype(iseq, iobj);
+
     if (IS_INSN_ID(iobj, jump)) {
 	INSN *niobj, *diobj, *piobj;
 	diobj = (INSN *)get_destination_insn(iobj);
