@@ -30,7 +30,7 @@ module REXMLTests
     def _test_numbers ; process_test_case("numbers") ; end
     def test_pi ; process_test_case("pi") ; end
     def _test_pi2 ; process_test_case("pi2") ; end
-    def _test_simple ; process_test_case("simple") ; end
+    def test_simple ; process_test_case("simple") ; end
     def _test_testNamespaces ; process_test_case("testNamespaces") ; end
     def _test_text ; process_test_case("text") ; end
     def _test_underscore ; process_test_case("underscore") ; end
