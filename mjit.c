@@ -1105,7 +1105,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit_node *node;
 
-    if (!mjit_init_p)
+    if (!mjit_init_p || pch_status == PCH_FAILED)
         return;
 
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
@@ -1139,7 +1139,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
     tv.tv_usec = 1000;
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         tries++;
-        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS) {
+        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
             CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
