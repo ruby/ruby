@@ -3652,7 +3652,7 @@ vm_opt_aref(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
 	     BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
-	return rb_hash_aref(recv, obj);
+	return rb_hash_aref_internal(recv, obj);
     }
     else {
 	return Qundef;
@@ -3687,7 +3687,7 @@ vm_opt_aref_with(VALUE recv, VALUE key)
     if (!SPECIAL_CONST_P(recv) && RBASIC_CLASS(recv) == rb_cHash &&
 	BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG) &&
 	rb_hash_compare_by_id_p(recv) == Qfalse) {
-	return rb_hash_aref(recv, key);
+	return rb_hash_aref_internal(recv, key);
     }
     else {
 	return Qundef;

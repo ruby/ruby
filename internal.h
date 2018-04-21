@@ -1335,6 +1335,17 @@ VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 #define HASH_PROC_DEFAULT FL_USER2
 
+static inline VALUE
+rb_hash_aref_internal(VALUE hash, VALUE key)
+{
+    st_data_t val;
+
+    if (!RHASH(hash)->ntbl || !st_lookup(RHASH(hash)->ntbl, key, &val)) {
+        return rb_hash_default_value(hash, key);
+    }
+    return (VALUE)val;
+}
+
 /* inits.c */
 void rb_call_inits(void);
 
