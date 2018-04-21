@@ -3767,28 +3767,32 @@ __END__
       noex = Thread.new do # everything right and never see exceptions :)
         until sig_rd.wait_readable(0)
           IO.pipe do |r, w|
-            th = Thread.new { r.read(1) }
+            th = Thread.new { r.sysread(1) }
             w.write(dot)
+            assert_same th, th.join(30), '"good" reader timeout'
             assert_equal(dot, th.value)
           end
         end
         sig_rd.read(4)
       end
-      1000.times do # stupid things and make exceptions:
+      1000.times do |i| # stupid things and make exceptions:
         IO.pipe do |r,w|
           th = Thread.new do
             begin
-              r.read(1)
+              while r.gets
+              end
             rescue IOError => e
               e
             end
           end
           Thread.pass until th.stop?
           r.close
+          assert_same th, th.join(30), '"bad" reader timeout'
           assert_match(/stream closed/, th.value.message)
         end
       end
       sig_wr.write 'done'
+      assert_same noex, noex.join(30), '"good" writer timeout'
       assert_equal 'done', noex.value ,'r63216'
     end
   end
