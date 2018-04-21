@@ -123,9 +123,9 @@ module REXMLTests
 
     # processes a tests/document/context/test node ( where @exception is true )
     def process_exceptional_test(context, variables, namespaces, test)
-      select = test.attributes["select"]
+      xpath = test.attributes["select"]
       assert_raise(REXML::ParseException) do
-        XPath.match(context, select, namespaces, variables)
+        XPath.match(context, xpath, namespaces, variables)
       end
     end
 
