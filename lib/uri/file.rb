@@ -49,9 +49,9 @@ module URI
       super(tmp)
     end
 
-    # protected setter for the host component +v+
+    # Protected setter for the host component +v+.
     #
-    # see also URI::Generic.host=
+    # See also URI::Generic.host=.
     #
     def set_host(v)
       v = "" if v.nil? || v == "localhost"
