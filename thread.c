@@ -1527,7 +1527,10 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
     }
     EC_POP_TAG();
 
-    /* must be deleted before jump */
+    /*
+     * must be deleted before jump
+     * this will delete either from waiting_fds or on-stack LIST_HEAD(busy)
+     */
     list_del(&wfd.wfd_node);
 
     if (state) {
@@ -2260,35 +2263,36 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 }
 
 int
-rb_notify_fd_close(int fd)
+rb_notify_fd_close(int fd, struct list_head *busy)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0;
-    int busy;
+    struct waiting_fd *next = 0;
 
-    busy = 0;
-    list_for_each(&vm->waiting_fds, wfd, wfd_node) {
+    list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
 	if (wfd->fd == fd) {
 	    rb_thread_t *th = wfd->th;
 	    VALUE err;
 
-	    busy = 1;
-	    if (!th) {
-		continue;
-	    }
-	    wfd->th = 0;
+	    list_del(&wfd->wfd_node);
+	    list_add(busy, &wfd->wfd_node);
+
 	    err = th->vm->special_exceptions[ruby_error_stream_closed];
 	    rb_threadptr_pending_interrupt_enque(th, err);
 	    rb_threadptr_interrupt(th);
 	}
     }
-    return busy;
+    return !list_empty(busy);
 }
 
 void
 rb_thread_fd_close(int fd)
 {
-    while (rb_notify_fd_close(fd)) rb_thread_schedule();
+    LIST_HEAD(busy);
+
+    if (rb_notify_fd_close(fd, &busy)) {
+	do rb_thread_schedule(); while (!list_empty(&busy));
+    }
 }
 
 /*
