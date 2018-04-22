@@ -1129,7 +1129,9 @@ module Net
     end
 
     def tcp_socket(host, port)
-      Socket.tcp(host, port, :connect_timeout => @open_timeout)
+      s = Socket.tcp(host, port, :connect_timeout => @open_timeout)
+      s.setsockopt(:SOL_SOCKET, :SO_KEEPALIVE, true)
+      s
     rescue Errno::ETIMEDOUT
       raise Net::OpenTimeout, "Timeout to open TCP connection to " +
         "#{host}:#{port} (exceeds #{@open_timeout} seconds)"
