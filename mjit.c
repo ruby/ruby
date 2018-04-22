@@ -101,7 +101,7 @@ extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
 
-extern void rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
+extern void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_signal(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
@@ -1370,10 +1370,10 @@ mjit_init(struct mjit_options *opts)
 
     /* Initialize mutex */
     rb_native_mutex_initialize(&mjit_engine_mutex);
-    rb_native_cond_initialize(&mjit_pch_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
-    rb_native_cond_initialize(&mjit_client_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
-    rb_native_cond_initialize(&mjit_worker_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
-    rb_native_cond_initialize(&mjit_gc_wakeup, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&mjit_pch_wakeup);
+    rb_native_cond_initialize(&mjit_client_wakeup);
+    rb_native_cond_initialize(&mjit_worker_wakeup);
+    rb_native_cond_initialize(&mjit_gc_wakeup);
 
     /* Initialize class_serials cache for compilation */
     valid_class_serials = rb_hash_new();
