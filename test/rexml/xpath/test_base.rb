@@ -877,6 +877,7 @@ module REXMLTests
 <tag1 xmlns='ns1'>
   <tag2 xmlns='ns2'/>
   <tada>xa</tada>
+  <tada xmlns=''>xb</tada>
 </tag1>
       XML
       x = d.root

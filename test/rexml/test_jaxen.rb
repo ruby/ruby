@@ -56,6 +56,8 @@ module REXMLTests
     def process_context(doc, context)
       test_context = XPath.match(doc, context.attributes["select"])
       namespaces = context.namespaces
+      namespaces.delete("var")
+      namespaces = nil if namespaces.empty?
       variables = {}
       var_namespace = "http://jaxen.org/test-harness/var"
       XPath.each(context,
