@@ -24,14 +24,17 @@ module REXMLTests
     # document() function for XSLT isn't supported
     def _test_message ; process_test_case("message") ; end
     def test_moreover ; process_test_case("moreover") ; end
-    def _test_much_ado ; process_test_case("much_ado") ; end
-    def _test_namespaces ; process_test_case("namespaces") ; end
-    def _test_nitf ; process_test_case("nitf") ; end
+    def test_much_ado ; process_test_case("much_ado") ; end
+    def test_namespaces ; process_test_case("namespaces") ; end
+    def test_nitf ; process_test_case("nitf") ; end
+    # Exception should be considered
     def _test_numbers ; process_test_case("numbers") ; end
     def test_pi ; process_test_case("pi") ; end
     def test_pi2 ; process_test_case("pi2") ; end
     def test_simple ; process_test_case("simple") ; end
+    # TODO: namespace node is needed
     def _test_testNamespaces ; process_test_case("testNamespaces") ; end
+    # document() function for XSLT isn't supported
     def _test_text ; process_test_case("text") ; end
     def test_underscore ; process_test_case("underscore") ; end
     def _test_web ; process_test_case("web") ; end

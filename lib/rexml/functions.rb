@@ -154,12 +154,16 @@ module REXML
         case object
         when Array
           string(object[0])
-        when Numeric
-          integer = object.to_i
-          if object == integer
-            "%d" % integer
+        when Float
+          if object.nan?
+            "NaN"
           else
-            object.to_s
+            integer = object.to_i
+            if object == integer
+              "%d" % integer
+            else
+              object.to_s
+            end
           end
         when nil
           ""

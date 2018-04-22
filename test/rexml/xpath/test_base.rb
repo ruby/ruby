@@ -713,7 +713,7 @@ module REXMLTests
       XML
       d = REXML::Document.new( source )
       r = REXML::XPath.match( d, %q{/a/*/*[1]} )
-      assert_equal(["1"],
+      assert_equal(["1", "3"],
                    r.collect {|element| element.attribute("id").value})
     end
 
@@ -849,7 +849,7 @@ module REXMLTests
       EOL
       d = REXML::Document.new( string )
       cs = XPath.match( d, '/a/*/*[1]' )
-      assert_equal(["c1"], cs.collect(&:name))
+      assert_equal(["c1", "c2"], cs.collect(&:name))
     end
 
     def test_sum
