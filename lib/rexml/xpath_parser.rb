@@ -169,16 +169,20 @@ module REXML
           prefix = path_stack.shift
           name = path_stack.shift
           # enter(:qname, path_stack, prefix, name, nodeset)
-          nodeset.delete_if do |node|
-            # FIXME: This DOUBLES the time XPath searches take
-            ns = get_namespace( node, prefix )
+          nodeset.select! do |node|
             if node.node_type == :element
-              if node.name == name
+              if prefix.nil?
+                node.name == name
+              elsif prefix.empty?
+                node.name == name and node.namespace == ""
+              else
+                node.name == name and
+                  # FIXME: This DOUBLES the time XPath searches take
+                  node.namespace == get_namespace(node, prefix)
               end
+            else
+              false
             end
-            !(node.node_type == :element and
-              node.name == name and
-              node.namespace == ns )
           end
           # leave(:qname, path_stack, nodeset)
           node_types = ELEMENTS

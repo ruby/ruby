@@ -271,10 +271,12 @@ module REXML
       #   String, if a name match
       #NodeTest
       #  | ('*' | NCNAME ':' '*' | QNAME)                NameTest
-      #  | NODE_TYPE '(' ')'                              NodeType
+      #  | '*' ':' NCNAME                                NameTest since XPath 2.0
+      #  | NODE_TYPE '(' ')'                             NodeType
       #  | PI '(' LITERAL ')'                            PI
       #    | '[' expr ']'                                Predicate
-      NCNAMETEST= /^(#{NCNAME_STR}):\*/u
+      PREFIX_WILDCARD = /^\*:(#{NCNAME_STR})/u
+      LOCAL_NAME_WILDCARD = /^(#{NCNAME_STR}):\*/u
       QNAME     = Namespace::NAMESPLIT
       NODE_TYPE  = /^(comment|text|node)\(\s*\)/m
       PI        = /^processing-instruction\(/
@@ -282,6 +284,13 @@ module REXML
         original_path = path
         path = path.lstrip
         case path
+        when PREFIX_WILDCARD
+          prefix = nil
+          name = $1
+          path = $'
+          parsed << :qname
+          parsed << prefix
+          parsed << name
         when /^\*/
           path = $'
           parsed << :any
@@ -301,7 +310,7 @@ module REXML
           end
           parsed << :processing_instruction
           parsed << (literal || '')
-        when NCNAMETEST
+        when LOCAL_NAME_WILDCARD
           prefix = $1
           path = $'
           parsed << :namespace
