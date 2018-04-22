@@ -46,6 +46,7 @@ sitedir = @sitedir@
 archlibdir = @archlibdir@
 ruby_version = @ruby_version@
 RUBY_VERSION_NAME = @RUBY_VERSION_NAME@
+UNIVERSAL_ARCHNAMES = @UNIVERSAL_ARCHNAMES@
 
 TESTUI = console
 TESTS =
@@ -555,6 +556,7 @@ mjit_config.h:
 	    $${1+printf} $${1+' "%s"'$$sep} $${1+"$$@"}; \
 	    echo; \
 	}; \
+	archs="$(UNIVERSAL_ARCHNAMES)"; \
 	test "$(Q)" = @ || set -x; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
@@ -563,12 +565,18 @@ mjit_config.h:
 	quote MJIT_HEADER_INSTALL_DIR "$(MJIT_HEADER_INSTALL_DIR)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
-	quote "MJIT_CFLAGS     " -w $(ARCH_FLAG); \
+	quote "MJIT_CFLAGS     $${archs:+ MJIT_ARCHFLAG}" -w; \
 	quote "MJIT_OPTFLAGS   " $(MJIT_OPTFLAGS); \
 	quote "MJIT_DEBUGFLAGS " $(MJIT_DEBUGFLAGS); \
 	quote "MJIT_LDSHARED   " $(MJIT_LDSHARED); \
 	quote "MJIT_DLDFLAGS   " @DLDFLAGS@; \
 	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
+	$${archs:+echo} $${archs:+'#if 0'}; \
+	for arch in $$archs; do \
+	    echo "#elif defined __$${arch%=*}__"; \
+	    quote "  MJIT_ARCHFLAG " -arch $${arch%=*}; \
+	done; \
+	$${archs:+echo} $${archs:+'#endif'}; \
 	echo; \
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
