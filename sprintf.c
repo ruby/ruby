@@ -203,7 +203,7 @@ get_hash(volatile VALUE *hash, int argc, const VALUE *argv)
  *  any additional arguments.  Within the format string, any characters
  *  other than format sequences are copied to the result.
  *
- *  The syntax of a format sequence is follows.
+ *  The syntax of a format sequence is as follows.
  *
  *    %[flags][width][.precision]type
  *
