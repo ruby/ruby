@@ -73,7 +73,7 @@ class CGI
       @expires = nil
       if name.kind_of?(String)
         @name = name
-        %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
+        %r|^(.*/)|.match(ENV["SCRIPT_NAME"].to_s)
         @path = ($1 or "")
         @secure = false
         @httponly = false
@@ -91,7 +91,7 @@ class CGI
       if options["path"]
         @path = options["path"]
       else
-        %r|^(.*/)|.match(ENV["SCRIPT_NAME"])
+        %r|^(.*/)|.match(ENV["SCRIPT_NAME"].to_s)
         @path = ($1 or "")
       end
       @domain = options["domain"]
