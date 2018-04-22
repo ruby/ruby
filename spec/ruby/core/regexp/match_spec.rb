@@ -91,15 +91,6 @@ describe "Regexp#match" do
     end
   end
 
-  it "resets $~ if passed nil" do
-    # set $~
-    /./.match("a")
-    $~.should be_kind_of(MatchData)
-
-    /1/.match(nil)
-    $~.should be_nil
-  end
-
   it "raises TypeError when the given argument cannot be coarce to String" do
     f = 1
     lambda { /foo/.match(f)[0] }.should raise_error(TypeError)
@@ -132,10 +123,6 @@ ruby_version_is "2.4" do
     it "takes matching position as the 2nd argument" do
       /str/i.match?('string', 0).should be_true
       /str/i.match?('string', 1).should be_false
-    end
-
-    it "returns false when given nil" do
-      /./.match?(nil).should be_false
     end
   end
 end
