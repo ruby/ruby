@@ -56,9 +56,9 @@ static struct {
     defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
     defined(HAVE_CLOCK_GETTIME)
 static pthread_condattr_t condattr_mono;
-static pthread_condattr_t *const condattr_monotonic = &condattr_mono;
+static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 #else
-static const void *condattr_monotonic;
+static const void *const condattr_monotonic = NULL;
 #endif
 
 #if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
@@ -400,7 +400,7 @@ Init_native_thread(rb_thread_t *th)
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
         int r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
-        if (r) rb_bug_errno("pthread_condattr_setclock", r);
+        if (r) condattr_monotonic = NULL;
     }
 #endif
     pthread_key_create(&ruby_native_thread_key, NULL);
