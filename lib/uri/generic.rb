@@ -245,8 +245,8 @@ module URI
 
     # Returns the port component of the URI.
     #
-    #   URI("http://foo/bar/baz").port      #=> "80"
-    #   URI("http://foo:8080/bar/baz").port #=> "8080"
+    #   URI("http://foo/bar/baz").port      #=> 80
+    #   URI("http://foo:8080/bar/baz").port #=> 8080
     #
     attr_reader :port
 
