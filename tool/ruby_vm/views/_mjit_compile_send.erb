@@ -29,11 +29,15 @@
                 fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
             }
 
-% # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
-<%= render 'mjit_compile_send_guard' -%>
-
 % # JIT: move sp and pc if necessary
 <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
+
+% # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
+            fprintf(f, "    if (UNLIKELY(GET_GLOBAL_METHOD_STATE() != %"PRI_SERIALT_PREFIX"u ||\n", cc->method_state);
+            fprintf(f, "        RCLASS_SERIAL(CLASS_OF(stack[%d])) != %"PRI_SERIALT_PREFIX"u)) {\n", b->stack_size - 1 - argc, cc->class_serial);
+            fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
+            fprintf(f, "        goto cancel;\n");
+            fprintf(f, "    }\n");
 
 % # JIT: Print insn body in insns.def
             fprintf(f, "    {\n");
@@ -84,19 +88,5 @@
             fprintf(f, "}\n");
             break;
         }
-% if insn.name == 'opt_send_without_block'
-        else if (cc->me->def->type == VM_METHOD_TYPE_IVAR) {
-% # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
-<%= render 'mjit_compile_send_guard' -%>
-
-% # JIT: vm_call_ivar without sp motion
-            fprintf(f, "    stack[%d] = vm_getivar(stack[%d], (ID)0x%"PRIxVALUE", NULL, (CALL_CACHE)0x%"PRIxVALUE", 1);\n",
-                    b->stack_size - argc - 1, b->stack_size - argc - 1, cc->me->def->body.attr.id, (VALUE)cc);
-
-% # compiler: Move JIT compiler's internal stack pointer
-            b->stack_size += <%= insn.call_attribute('sp_inc') %>;
-            break;
-        }
-% end
     }
 }
