@@ -136,21 +136,40 @@ module REXML
     # An object of a type other than the four basic types is converted to a
     # string in a way that is dependent on that type.
     def Functions::string( object=nil )
-      #object = @context unless object
-      if object.instance_of? Array
-        string( object[0] )
-      elsif defined? object.node_type
-        if object.node_type == :attribute
+      object = @@context[:node] if object.nil?
+      if object.respond_to?(:node_type)
+        case object.node_type
+        when :attribute
           object.value
-        elsif object.node_type == :element || object.node_type == :document
+        when :element
           string_value(object)
+        when :document
+          string_value(object.root)
+        when :processing_instruction
+          object.content
         else
           object.to_s
         end
-      elsif object.nil?
-        return ""
       else
-        object.to_s
+        case object
+        when Array
+          string(object[0])
+        when Float
+          if object.nan?
+            "NaN"
+          else
+            integer = object.to_i
+            if object == integer
+              "%d" % integer
+            else
+              object.to_s
+            end
+          end
+        when nil
+          ""
+        else
+          object.to_s
+        end
       end
     end
 
@@ -171,9 +190,12 @@ module REXML
       rv
     end
 
-    # UNTESTED
     def Functions::concat( *objects )
-      objects.join
+      concatenated = ""
+      objects.each do |object|
+        concatenated << string(object)
+      end
+      concatenated
     end
 
     # Fixed by Mike Stok

@@ -281,6 +281,17 @@ class TestEnv < Test::Unit::TestCase
     end
   end
 
+  def test_slice
+    ENV.clear
+    ENV["foo"] = "bar"
+    ENV["baz"] = "qux"
+    ENV["bar"] = "rab"
+    assert_equal({}, ENV.slice())
+    assert_equal({}, ENV.slice(""))
+    assert_equal({}, ENV.slice("unknown"))
+    assert_equal({"foo"=>"bar", "baz"=>"qux"}, ENV.slice("foo", "baz"))
+  end
+
   def test_clear
     ENV.clear
     assert_equal(0, ENV.size)

@@ -1033,6 +1033,7 @@ module REXML
     #    p attr.expanded_name+" => "+attr.value
     #  }
     def each_attribute # :yields: attribute
+      return to_enum(__method__) unless block_given?
       each_value do |val|
         if val.kind_of? Attribute
           yield val
@@ -1048,6 +1049,7 @@ module REXML
     #  doc = Document.new '<a x="1" y="2"/>'
     #  doc.root.attributes.each {|name, value| p name+" => "+value }
     def each
+      return to_enum(__method__) unless block_given?
       each_attribute do |attr|
         yield [attr.expanded_name, attr.value]
       end

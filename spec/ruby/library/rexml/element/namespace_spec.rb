@@ -1,6 +1,8 @@
 require 'rexml/document'
 require_relative '../../../spec_helper'
 
+=begin
+# FIXME
 describe "REXML::Element#namespace" do
   before :each do
     @doc = REXML::Document.new("<a xmlns='1' xmlns:y='2'><b/><c xmlns:z='3'/></a>")
@@ -25,3 +27,4 @@ describe "REXML::Element#namespace" do
     @elem.namespace("z").should be_nil
   end
 end
+=end

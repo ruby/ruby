@@ -554,7 +554,7 @@ typedef RETSIGTYPE ruby_sigaction_t(int);
 #endif
 
 #ifdef USE_SIGALTSTACK
-int
+static int
 rb_sigaltstack_size(void)
 {
     /* XXX: BSD_vfprintf() uses >1500KiB stack and x86-64 need >5KiB stack. */
@@ -577,19 +577,18 @@ rb_sigaltstack_size(void)
 }
 
 /* alternate stack for SIGSEGV */
-void
-rb_register_sigaltstack(rb_thread_t *th)
+void *
+rb_register_sigaltstack(void)
 {
     stack_t newSS, oldSS;
 
-    if (!th->altstack)
-	rb_bug("rb_register_sigaltstack: th->altstack not initialized\n");
-
-    newSS.ss_sp = th->altstack;
     newSS.ss_size = rb_sigaltstack_size();
+    newSS.ss_sp = xmalloc(newSS.ss_size);
     newSS.ss_flags = 0;
 
     sigaltstack(&newSS, &oldSS); /* ignore error. */
+
+    return newSS.ss_sp;
 }
 #endif /* USE_SIGALTSTACK */
 
@@ -1532,9 +1531,7 @@ Init_signal(void)
 	install_sighandler(SIGILL, (sighandler_t)sigill);
 #endif
 #ifdef SIGSEGV
-# ifdef USE_SIGALTSTACK
-	rb_register_sigaltstack(GET_THREAD());
-# endif
+	RB_ALTSTACK_INIT(GET_VM()->main_altstack);
 	install_sighandler(SIGSEGV, (sighandler_t)sigsegv);
 #endif
     }

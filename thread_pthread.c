@@ -43,7 +43,7 @@ void rb_native_mutex_destroy(rb_nativethread_lock_t *lock);
 void rb_native_cond_signal(rb_nativethread_cond_t *cond);
 void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
-void rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags);
+void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
 void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
 static struct {
@@ -52,14 +52,13 @@ static struct {
 } timer_thread;
 #define TIMER_THREAD_CREATED_P() (timer_thread.created != 0)
 
-#define RB_CONDATTR_CLOCK_MONOTONIC 1
-
-#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && defined(HAVE_CLOCKID_T) && \
+#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && \
     defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
     defined(HAVE_CLOCK_GETTIME)
-#define USE_MONOTONIC_COND 1
+static pthread_condattr_t condattr_mono;
+static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 #else
-#define USE_MONOTONIC_COND 0
+static const void *const condattr_monotonic = NULL;
 #endif
 
 #if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
@@ -161,9 +160,9 @@ static void
 gvl_init(rb_vm_t *vm)
 {
     rb_native_mutex_initialize(&vm->gvl.lock);
-    rb_native_cond_initialize(&vm->gvl.cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    rb_native_cond_initialize(&vm->gvl.switch_cond, RB_CONDATTR_CLOCK_MONOTONIC);
-    rb_native_cond_initialize(&vm->gvl.switch_wait_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&vm->gvl.cond);
+    rb_native_cond_initialize(&vm->gvl.switch_cond);
+    rb_native_cond_initialize(&vm->gvl.switch_wait_cond);
     vm->gvl.acquired = 0;
     vm->gvl.waiting = 0;
     vm->gvl.need_yield = 0;
@@ -262,38 +261,18 @@ rb_native_mutex_destroy(pthread_mutex_t *lock)
 }
 
 void
-rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
+rb_native_cond_initialize(rb_nativethread_cond_t *cond)
 {
-    int r;
-# if USE_MONOTONIC_COND
-    pthread_condattr_t attr;
-
-    pthread_condattr_init(&attr);
-
-    cond->clockid = CLOCK_REALTIME;
-    if (flags & RB_CONDATTR_CLOCK_MONOTONIC) {
-	r = pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-	if (r == 0) {
-	    cond->clockid = CLOCK_MONOTONIC;
-	}
-    }
-
-    r = pthread_cond_init(&cond->cond, &attr);
-    pthread_condattr_destroy(&attr);
-# else
-    r = pthread_cond_init(&cond->cond, NULL);
-# endif
+    int r = pthread_cond_init(cond, condattr_monotonic);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_init", r);
     }
-
-    return;
 }
 
 void
 rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 {
-    int r = pthread_cond_destroy(&cond->cond);
+    int r = pthread_cond_destroy(cond);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_destroy", r);
     }
@@ -314,7 +293,7 @@ rb_native_cond_signal(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
-	r = pthread_cond_signal(&cond->cond);
+	r = pthread_cond_signal(cond);
     } while (r == EAGAIN);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_signal", r);
@@ -326,7 +305,7 @@ rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
 {
     int r;
     do {
-	r = pthread_cond_broadcast(&cond->cond);
+	r = pthread_cond_broadcast(cond);
     } while (r == EAGAIN);
     if (r != 0) {
         rb_bug_errno("rb_native_cond_broadcast", r);
@@ -336,7 +315,7 @@ rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
 void
 rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 {
-    int r = pthread_cond_wait(&cond->cond, mutex);
+    int r = pthread_cond_wait(cond, mutex);
     if (r != 0) {
 	rb_bug_errno("pthread_cond_wait", r);
     }
@@ -354,7 +333,7 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
      * Let's hide it from arch generic code.
      */
     do {
-	r = pthread_cond_timedwait(&cond->cond, mutex, ts);
+	r = pthread_cond_timedwait(cond, mutex, ts);
     } while (r == EINTR);
 
     if (r != 0 && r != ETIMEDOUT) {
@@ -369,20 +348,12 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 {
     struct timespec abs;
 
-#if USE_MONOTONIC_COND
-    if (cond->clockid == CLOCK_MONOTONIC) {
-	getclockofday(&abs);
-	goto out;
+    if (condattr_monotonic) {
+        getclockofday(&abs);
     }
-
-    if (cond->clockid != CLOCK_REALTIME)
-	rb_bug("unsupported clockid %"PRIdVALUE, (SIGNED_VALUE)cond->clockid);
-#endif
-    rb_timespec_now(&abs);
-
-#if USE_MONOTONIC_COND
-  out:
-#endif
+    else {
+        rb_timespec_now(&abs);
+    }
     timespec_add(&abs, &timeout_rel);
 
     return abs;
@@ -426,6 +397,12 @@ static void native_thread_init(rb_thread_t *th);
 void
 Init_native_thread(rb_thread_t *th)
 {
+#if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    if (condattr_monotonic) {
+        int r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
+        if (r) condattr_monotonic = NULL;
+    }
+#endif
     pthread_key_create(&ruby_native_thread_key, NULL);
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
@@ -444,7 +421,7 @@ native_thread_init(rb_thread_t *th)
 #ifdef USE_UBF_LIST
     list_node_init(&nd->ubf_list);
 #endif
-    rb_native_cond_initialize(&nd->sleep_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&nd->sleep_cond);
     ruby_thread_set_native(th);
 }
 
@@ -840,6 +817,7 @@ static void *
 thread_start_func_1(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
+    RB_ALTSTACK_INIT(void *altstack);
 #if USE_THREAD_CACHE
   thread_start:
 #endif
@@ -868,6 +846,7 @@ thread_start_func_1(void *th_ptr)
 	}
     }
 #endif
+    RB_ALTSTACK_FREE(altstack);
     return 0;
 }
 
@@ -897,7 +876,7 @@ register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
     struct timespec end = { 60, 0 };
     struct cached_thread_entry entry;
 
-    rb_native_cond_initialize(&entry.cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&entry.cond);
     entry.th = NULL;
     entry.thread_id = thread_self_id;
     end = native_cond_timeout(&entry.cond, end);
@@ -1502,7 +1481,7 @@ thread_timer(void *p)
 
 #if !USE_SLEEPY_TIMER_THREAD
     rb_native_mutex_initialize(&timer_thread_lock);
-    rb_native_cond_initialize(&timer_thread_cond, RB_CONDATTR_CLOCK_MONOTONIC);
+    rb_native_cond_initialize(&timer_thread_cond);
     rb_native_mutex_lock(&timer_thread_lock);
 #endif
     while (system_working > 0) {

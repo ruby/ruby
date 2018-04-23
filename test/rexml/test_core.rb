@@ -877,18 +877,18 @@ EOL
       EOL
 
       # The most common case.  People not caring about the namespaces much.
-      assert_equal( "XY", XPath.match( doc, "/test/a/text()" ).join )
-      assert_equal( "XY", XPath.match( doc, "/test/x:a/text()" ).join )
+      assert_equal( "XY", XPath.match( doc, "/*:test/*:a/text()" ).join )
+      assert_equal( "XY", XPath.match( doc, "/*:test/x:a/text()" ).join )
       # Surprising?  I don't think so, if you believe my definition of the "common case"
-      assert_equal( "XYZ", XPath.match( doc, "//a/text()" ).join )
+      assert_equal( "XYZ", XPath.match( doc, "//*:a/text()" ).join )
 
       # These are the uncommon cases.  Namespaces are actually important, so we define our own
       # mappings, and pass them in.
       assert_equal( "XY", XPath.match( doc, "/f:test/f:a/text()", { "f" => "1" } ).join )
       # The namespaces are defined, and override the original mappings
-      assert_equal( "", XPath.match( doc, "/test/a/text()", { "f" => "1" } ).join )
+      assert_equal( "XY", XPath.match( doc, "/*:test/*:a/text()", { "f" => "1" } ).join )
       assert_equal( "", XPath.match( doc, "/x:test/x:a/text()", { "f" => "1" } ).join )
-      assert_equal( "", XPath.match( doc, "//a/text()", { "f" => "1" } ).join )
+      assert_equal( "XYZ", XPath.match( doc, "//*:a/text()", { "f" => "1" } ).join )
     end
 
     def test_processing_instruction
@@ -1390,8 +1390,8 @@ ENDXML
 
     def test_ticket_102
       doc = REXML::Document.new '<doc xmlns="ns"><item name="foo"/></doc>'
-      assert_equal( "foo", doc.root.elements["item"].attribute("name","ns").to_s )
-      assert_equal( "item", doc.root.elements["item[@name='foo']"].name )
+      assert_equal( "foo", doc.root.elements["*:item"].attribute("name","ns").to_s )
+      assert_equal( "item", doc.root.elements["*:item[@name='foo']"].name )
     end
 
     def test_ticket_14
@@ -1420,11 +1420,11 @@ ENDXML
       doc = REXML::Document.new(
         '<doc xmlns="ns" xmlns:phantom="ns"><item name="foo">text</item></doc>'
       )
-      assert_equal 'text', doc.text( "/doc/item[@name='foo']" )
+      assert_equal 'text', doc.text( "/*:doc/*:item[@name='foo']" )
       assert_equal "name='foo'",
-        doc.root.elements["item"].attribute("name", "ns").inspect
+        doc.root.elements["*:item"].attribute("name", "ns").inspect
       assert_equal "<item name='foo'>text</item>",
-        doc.root.elements["item[@name='foo']"].to_s
+        doc.root.elements["*:item[@name='foo']"].to_s
     end
 
     def test_ticket_135

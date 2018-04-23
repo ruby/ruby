@@ -508,7 +508,7 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 #endif
 
 void
-rb_native_cond_initialize(rb_nativethread_cond_t *cond, int flags)
+rb_native_cond_initialize(rb_nativethread_cond_t *cond)
 {
     cond->next = (struct cond_event_entry *)cond;
     cond->prev = (struct cond_event_entry *)cond;

@@ -1666,7 +1666,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	    ret = rb_iseq_defined_string(deftype);
 	    if (ret) break;
 	}
-	else if (insn == BIN(branchiftype) && op_no == 0) {
+	else if (insn == BIN(checktype) && op_no == 0) {
 	    const char *type_str = rb_type_str((enum ruby_value_type)op);
 	    if (type_str) {
 		ret = rb_str_new_cstr(type_str); break;

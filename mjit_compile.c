@@ -39,16 +39,12 @@ struct case_dispatch_var {
     VALUE last_value;
 };
 
-/* Returns iseq from cc if it's available and still not obsoleted. */
-static const rb_iseq_t *
-get_iseq_if_available(CALL_CACHE cc)
+/* Returns TRUE if call cache is still not obsoleted and cc->me->def->type is available. */
+static int
+has_valid_method_type(CALL_CACHE cc)
 {
-    if (GET_GLOBAL_METHOD_STATE() == cc->method_state
-        && mjit_valid_class_serial_p(cc->class_serial)
-        && cc->me && cc->me->def->type == VM_METHOD_TYPE_ISEQ) {
-        return rb_iseq_check(cc->me->def->body.iseq.iseqptr);
-    }
-    return NULL;
+    return GET_GLOBAL_METHOD_STATE() == cc->method_state
+        && mjit_valid_class_serial_p(cc->class_serial) && cc->me;
 }
 
 /* Returns TRUE if iseq is inlinable, otherwise NULL. This becomes TRUE in the same condition
@@ -180,6 +176,7 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
     status.local_stack_p = !body->catch_except_p;
 
+    /* For performance, disable stack consistency check on JIT unless debugging */
     if (!mjit_opts.debug) {
         fprintf(f, "#undef OPT_CHECKED_RUN\n");
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");

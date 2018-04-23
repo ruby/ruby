@@ -18,7 +18,7 @@
 #include <math.h>
 
 VALUE rb_cRange;
-static ID id_beg, id_end, id_excl, id_integer_p, id_div;
+static ID id_beg, id_end, id_excl;
 #define id_cmp idCmp
 #define id_succ idSucc
 
@@ -37,7 +37,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
+    if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(end)) {
 	VALUE v;
 
 	v = rb_funcall(beg, id_cmp, 1, end);
@@ -400,7 +400,18 @@ range_step(int argc, VALUE *argv, VALUE range)
 	step = check_step_domain(step);
     }
 
-    if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
+    if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
+	long i = FIX2LONG(b), unit = FIX2LONG(step);
+	do {
+	    rb_yield(LONG2FIX(i));
+	    i += unit;          /* FIXABLE+FIXABLE never overflow */
+	} while (FIXABLE(i));
+	b = LONG2NUM(i);
+
+	for (;; b = rb_big_plus(b, step))
+	    rb_yield(b);
+    }
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(step)) { /* fixnums are special */
 	long end = FIX2LONG(e);
 	long i, unit = FIX2LONG(step);
 
@@ -414,16 +425,21 @@ range_step(int argc, VALUE *argv, VALUE range)
 	}
 
     }
-    else if (SYMBOL_P(b) && SYMBOL_P(e)) { /* symbols are special */
+    else if (SYMBOL_P(b) && (NIL_P(e) || SYMBOL_P(e))) { /* symbols are special */
 	VALUE args[2], iter[2];
-
-	args[0] = rb_sym2str(e);
-	args[1] = EXCL(range) ? Qtrue : Qfalse;
 	iter[0] = INT2FIX(1);
 	iter[1] = step;
-	rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+
+	if (NIL_P(e)) {
+	    rb_str_upto_endless_each(rb_sym2str(b), (VALUE (*)(VALUE, VALUE))sym_step_i, (VALUE)iter);
+	}
+	else {
+	    args[0] = rb_sym2str(e);
+	    args[1] = EXCL(range) ? Qtrue : Qfalse;
+	    rb_block_call(rb_sym2str(b), rb_intern("upto"), 2, args, sym_step_i, (VALUE)iter);
+	}
     }
-    else if (ruby_float_step(b, e, step, EXCL(range))) {
+    else if (ruby_float_step(b, e, step, EXCL(range), TRUE)) {
 	/* done */
     }
     else if (rb_obj_is_kind_of(b, rb_cNumeric) ||
@@ -433,7 +449,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 	VALUE v = b;
 	int i = 0;
 
-	while (RTEST(rb_funcall(v, op, 1, e))) {
+	while (NIL_P(e) || RTEST(rb_funcall(v, op, 1, e))) {
 	    rb_yield(v);
 	    i++;
 	    v = rb_funcall(b, '+', 1, rb_funcall(INT2NUM(i), '*', 1, step));
@@ -446,11 +462,17 @@ range_step(int argc, VALUE *argv, VALUE range)
 	    VALUE args[2], iter[2];
 
 	    b = tmp;
-	    args[0] = e;
-	    args[1] = EXCL(range) ? Qtrue : Qfalse;
 	    iter[0] = INT2FIX(1);
 	    iter[1] = step;
-	    rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
+
+	    if (NIL_P(e)) {
+		rb_str_upto_endless_each(b, (VALUE (*)(VALUE, VALUE))step_i, (VALUE)iter);
+	    }
+	    else {
+		args[0] = e;
+		args[1] = EXCL(range) ? Qtrue : Qfalse;
+		rb_block_call(b, rb_intern("upto"), 2, args, step_i, (VALUE)iter);
+	    }
 	}
 	else {
 	    VALUE args[2];
@@ -499,8 +521,70 @@ double_as_int64(double d)
 static int
 is_integer_p(VALUE v)
 {
-    VALUE is_int = rb_check_funcall(v, id_integer_p, 0, 0);
+    ID id_integer_p;
+    VALUE is_int;
+    CONST_ID(id_integer_p, "integer?");
+    is_int = rb_check_funcall(v, id_integer_p, 0, 0);
     return RTEST(is_int) && is_int != Qundef;
+}
+
+static VALUE
+bsearch_integer_range(VALUE beg, VALUE end, int excl)
+{
+    VALUE satisfied = Qnil;
+    int smaller;
+
+#define BSEARCH_CHECK(expr) \
+    do { \
+	VALUE val = (expr); \
+	VALUE v = rb_yield(val); \
+	if (FIXNUM_P(v)) { \
+	    if (v == INT2FIX(0)) return val; \
+	    smaller = (SIGNED_VALUE)v < 0; \
+	} \
+	else if (v == Qtrue) { \
+	    satisfied = val; \
+	    smaller = 1; \
+	} \
+	else if (v == Qfalse || v == Qnil) { \
+	    smaller = 0; \
+	} \
+	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
+	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
+	    if (!cmp) return val; \
+	    smaller = cmp < 0; \
+	} \
+	else { \
+	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
+		     " (must be numeric, true, false or nil)", \
+		     rb_obj_class(v)); \
+	} \
+    } while (0)
+
+    VALUE low = rb_to_int(beg);
+    VALUE high = rb_to_int(end);
+    VALUE mid, org_high;
+    ID id_div;
+    CONST_ID(id_div, "div");
+
+    if (excl) high = rb_funcall(high, '-', 1, INT2FIX(1));
+    org_high = high;
+
+    while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
+	mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+	BSEARCH_CHECK(mid);
+	if (smaller) {
+	    high = mid;
+	}
+	else {
+	    low = rb_funcall(mid, '+', 1, INT2FIX(1));
+	}
+    }
+    if (rb_equal(low, org_high)) {
+	BSEARCH_CHECK(low);
+	if (!smaller) return Qnil;
+    }
+    return satisfied;
 }
 
 /*
@@ -575,33 +659,6 @@ range_bsearch(VALUE range)
      * (-1...0.0).bsearch to yield -0.0.
      */
 
-#define BSEARCH_CHECK(expr) \
-    do { \
-	VALUE val = (expr); \
-	VALUE v = rb_yield(val); \
-	if (FIXNUM_P(v)) { \
-	    if (v == INT2FIX(0)) return val; \
-	    smaller = (SIGNED_VALUE)v < 0; \
-	} \
-	else if (v == Qtrue) { \
-	    satisfied = val; \
-	    smaller = 1; \
-	} \
-	else if (v == Qfalse || v == Qnil) { \
-	    smaller = 0; \
-	} \
-	else if (rb_obj_is_kind_of(v, rb_cNumeric)) { \
-	    int cmp = rb_cmpint(rb_funcall(v, id_cmp, 1, INT2FIX(0)), v, INT2FIX(0)); \
-	    if (!cmp) return val; \
-	    smaller = cmp < 0; \
-	} \
-	else { \
-	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE \
-		     " (must be numeric, true, false or nil)", \
-		     rb_obj_class(v)); \
-	} \
-    } while (0)
-
 #define BSEARCH(conv) \
     do { \
 	RETURN_ENUMERATOR(range, 0, 0); \
@@ -638,34 +695,26 @@ range_bsearch(VALUE range)
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
     else if (RB_TYPE_P(beg, T_FLOAT) || RB_TYPE_P(end, T_FLOAT)) {
 	int64_t low  = double_as_int64(RFLOAT_VALUE(rb_Float(beg)));
-	int64_t high = double_as_int64(RFLOAT_VALUE(rb_Float(end)));
+	int64_t high = double_as_int64(NIL_P(end) ? HUGE_VAL : RFLOAT_VALUE(rb_Float(end)));
 	int64_t mid, org_high;
 	BSEARCH(int64_as_double_to_num);
     }
 #endif
     else if (is_integer_p(beg) && is_integer_p(end)) {
-	VALUE low = rb_to_int(beg);
-	VALUE high = rb_to_int(end);
-	VALUE mid, org_high;
 	RETURN_ENUMERATOR(range, 0, 0);
-	if (EXCL(range)) high = rb_funcall(high, '-', 1, INT2FIX(1));
-	org_high = high;
-
-	while (rb_cmpint(rb_funcall(low, id_cmp, 1, high), low, high) < 0) {
-	    mid = rb_funcall(rb_funcall(high, '+', 1, low), id_div, 1, INT2FIX(2));
+	return bsearch_integer_range(beg, end, EXCL(range));
+    }
+    else if (is_integer_p(beg) && NIL_P(end)) {
+	VALUE diff = LONG2FIX(1);
+	RETURN_ENUMERATOR(range, 0, 0);
+	while (1) {
+	    VALUE mid = rb_funcall(beg, '+', 1, diff);
 	    BSEARCH_CHECK(mid);
 	    if (smaller) {
-		high = mid;
+		return bsearch_integer_range(beg, mid, 0);
 	    }
-	    else {
-		low = rb_funcall(mid, '+', 1, INT2FIX(1));
-	    }
+	    diff = rb_funcall(diff, '*', 1, LONG2FIX(2));
 	}
-	if (rb_equal(low, org_high)) {
-	    BSEARCH_CHECK(low);
-	    if (!smaller) return Qnil;
-	}
-	return satisfied;
     }
     else {
 	rb_raise(rb_eTypeError, "can't do binary search for %s", rb_obj_classname(beg));
@@ -746,7 +795,18 @@ range_each(VALUE range)
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
 
-    if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
+    if (FIXNUM_P(beg) && NIL_P(end)) {
+	long i = FIX2LONG(beg);
+	while (FIXABLE(i)) {
+	    rb_yield(LONG2FIX(i++));
+	}
+	beg = LONG2NUM(i);
+
+      inf_loop:
+	for (;; beg = rb_funcallv(beg, id_succ, 0, 0))
+	    rb_yield(beg);
+    }
+    else if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
 	long lim = FIX2LONG(end);
 	long i;
 
@@ -767,18 +827,27 @@ range_each(VALUE range)
 	VALUE tmp = rb_check_string_type(beg);
 
 	if (!NIL_P(tmp)) {
-	    VALUE args[2];
+	    if (!NIL_P(end)) {
+		VALUE args[2];
 
-	    args[0] = end;
-	    args[1] = EXCL(range) ? Qtrue : Qfalse;
-	    rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
+		args[0] = end;
+		args[1] = EXCL(range) ? Qtrue : Qfalse;
+		rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
+	    }
+	    else if (RB_TYPE_P(beg, T_STRING)) {
+		rb_str_upto_endless_each(beg, (VALUE (*)(VALUE, VALUE))each_i, 0);
+	    }
+	    else goto inf_loop;
 	}
 	else {
 	    if (!discrete_object_p(beg)) {
 		rb_raise(rb_eTypeError, "can't iterate from %s",
 			 rb_obj_classname(beg));
 	    }
-	    range_each_func(range, each_i, 0);
+	    if (!NIL_P(end))
+		range_each_func(range, each_i, 0);
+	    else
+		goto inf_loop;
 	}
     }
     return range;
@@ -917,7 +986,7 @@ range_min(int argc, VALUE *argv, VALUE range)
 	struct cmp_opt_data cmp_opt = { 0, 0 };
 	VALUE b = RANGE_BEG(range);
 	VALUE e = RANGE_END(range);
-	int c = OPTIMIZED_CMP(b, e, cmp_opt);
+	int c = NIL_P(e) ? -1 : OPTIMIZED_CMP(b, e, cmp_opt);
 
 	if (c > 0 || (c == 0 && EXCL(range)))
 	    return Qnil;
@@ -947,6 +1016,8 @@ range_max(int argc, VALUE *argv, VALUE range)
 {
     VALUE e = RANGE_END(range);
     int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
+
+    if (NIL_P(e)) return Qnil;
 
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
         return rb_call_super(argc, argv);
@@ -1012,7 +1083,8 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     if (!rb_range_values(range, &b, &e, &excl))
 	return Qfalse;
     beg = NUM2LONG(b);
-    end = NUM2LONG(e);
+    end = NIL_P(e) ? -1 : NUM2LONG(e);
+    if (NIL_P(e)) excl = 0;
     origbeg = beg;
     origend = end;
     if (beg < 0) {
@@ -1072,16 +1144,16 @@ range_to_s(VALUE range)
 static VALUE
 inspect_range(VALUE range, VALUE dummy, int recur)
 {
-    VALUE str, str2;
+    VALUE str, str2 = Qundef;
 
     if (recur) {
 	return rb_str_new2(EXCL(range) ? "(... ... ...)" : "(... .. ...)");
     }
     str = rb_inspect(RANGE_BEG(range));
-    str2 = rb_inspect(RANGE_END(range));
+    if (!NIL_P(RANGE_END(range))) str2 = rb_inspect(RANGE_END(range));
     str = rb_str_dup(str);
     rb_str_cat(str, "...", EXCL(range) ? 3 : 2);
-    rb_str_append(str, str2);
+    if (str2 != Qundef) rb_str_append(str, str2);
     OBJ_INFECT(str, range);
 
     return str;
@@ -1156,9 +1228,17 @@ range_include(VALUE range, VALUE val)
 	!NIL_P(rb_check_to_integer(end, "to_int"))) {
 	return r_cover_p(range, beg, end, val);
     }
-    else if (RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING)) {
-	VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
-	return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+    else if (RB_TYPE_P(beg, T_STRING)) {
+	if (RB_TYPE_P(end, T_STRING)) {
+	    VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
+	    return rb_str_include_range_p(beg, end, val, RANGE_EXCL(range));
+	}
+	else if (NIL_P(end)) {
+	    VALUE r = rb_funcall(beg, id_cmp, 1, val);
+	    if (NIL_P(r)) return Qfalse;
+	    if (rb_cmpint(r, beg, val) <= 0) return Qtrue;
+	    return Qfalse;
+	}
     }
     /* TODO: ruby_frame->this_func = rb_intern("include?"); */
     return rb_call_super(1, &val);
@@ -1195,7 +1275,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 {
     if (r_less(beg, val) <= 0) {
 	int excl = EXCL(range);
-	if (r_less(val, end) <= -excl)
+	if (NIL_P(end) || r_less(val, end) <= -excl)
 	    return Qtrue;
     }
     return Qfalse;
@@ -1308,8 +1388,6 @@ Init_Range(void)
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
     id_excl = rb_intern("excl");
-    id_integer_p = rb_intern("integer?");
-    id_div = rb_intern("div");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,

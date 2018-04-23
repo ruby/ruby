@@ -101,7 +101,13 @@
 #endif
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
-#define USE_SIGALTSTACK
+#  define USE_SIGALTSTACK
+void *rb_register_sigaltstack(void);
+#  define RB_ALTSTACK_INIT(var) var = rb_register_sigaltstack()
+#  define RB_ALTSTACK_FREE(var) xfree(var)
+#else /* noop */
+#  define RB_ALTSTACK_INIT(var)
+#  define RB_ALTSTACK_FREE(var)
 #endif
 
 /*****************/
@@ -412,9 +418,9 @@ struct rb_iseq_constant_body {
     struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
 
     struct {
-      rb_snum_t flip_count;
-      VALUE coverage;
-      VALUE original_iseq;
+	rb_snum_t flip_count;
+	VALUE coverage;
+	VALUE original_iseq;
     } variable;
 
     unsigned int local_table_size;
@@ -538,7 +544,11 @@ typedef struct rb_vm_struct {
 
     struct rb_thread_struct *main_thread;
     struct rb_thread_struct *running_thread;
+#ifdef USE_SIGALTSTACK
+    void *main_altstack;
+#endif
 
+    rb_serial_t fork_gen;
     struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
     VALUE thgroup_default;
@@ -882,9 +892,6 @@ typedef struct rb_thread_struct {
     /* misc */
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
-#ifdef USE_SIGALTSTACK
-    void *altstack;
-#endif
     uint32_t running_time_us; /* 12500..800000 */
     VALUE name;
 } rb_thread_t;

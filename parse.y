@@ -1903,6 +1903,22 @@ arg		: lhs '=' arg_rhs
 		    /*% %*/
 		    /*% ripper: dot3!($1, $3) %*/
 		    }
+		| arg tDOT2
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_DOT2($1, new_nil(&@$), &@$);
+		    /*% %*/
+		    /*% ripper: dot2!($1, Qnil) %*/
+		    }
+		| arg tDOT3
+		    {
+		    /*%%%*/
+			value_expr($1);
+			$$ = NEW_DOT3($1, new_nil(&@$), &@$);
+		    /*% %*/
+		    /*% ripper: dot3!($1, Qnil) %*/
+		    }
 		| arg '+' arg
 		    {
 			$$ = call_bin_op(p, $1, '+', $3, &@2, &@$);

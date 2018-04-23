@@ -3,6 +3,7 @@ require 'test/unit'
 require 'delegate'
 require 'timeout'
 require 'bigdecimal'
+require 'rbconfig/sizeof'
 
 class TestRange < Test::Unit::TestCase
   def test_new
@@ -11,6 +12,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal((0...2), Range.new(0, 2, true))
 
     assert_raise(ArgumentError) { (1.."3") }
+
+    assert_equal((0..nil), Range.new(0, nil, false))
+    assert_equal((0...nil), Range.new(0, nil, true))
 
     obj = Object.new
     def obj.<=>(other)
@@ -31,14 +35,17 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], ("a" .. "a").to_a)
     assert_equal(["a"], ("a" ... "b").to_a)
     assert_equal(["a", "b"], ("a" .. "b").to_a)
+    assert_equal([*"a".."z", "aa"], ("a"..).take(27))
   end
 
   def test_range_numeric_string
     assert_equal(["6", "7", "8"], ("6".."8").to_a, "[ruby-talk:343187]")
     assert_equal(["6", "7"], ("6"..."8").to_a)
     assert_equal(["9", "10"], ("9".."10").to_a)
+    assert_equal(["9", "10"], ("9"..).take(2))
     assert_equal(["09", "10"], ("09".."10").to_a, "[ruby-dev:39361]")
     assert_equal(["9", "10"], (SimpleDelegator.new("9").."10").to_a)
+    assert_equal(["9", "10"], (SimpleDelegator.new("9")..).take(2))
     assert_equal(["9", "10"], ("9"..SimpleDelegator.new("10")).to_a)
   end
 
@@ -73,22 +80,27 @@ class TestRange < Test::Unit::TestCase
     assert_equal(1, (1..2).min)
     assert_equal(nil, (2..1).min)
     assert_equal(1, (1...2).min)
+    assert_equal(1, (1..).min)
 
     assert_equal(1.0, (1.0..2.0).min)
     assert_equal(nil, (2.0..1.0).min)
     assert_equal(1, (1.0...2.0).min)
+    assert_equal(1, (1.0..).min)
 
     assert_equal(0, (0..0).min)
     assert_equal(nil, (0...0).min)
 
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
+    assert_equal([0,1,2], (0..).min(3))
   end
 
   def test_max
     assert_equal(2, (1..2).max)
     assert_equal(nil, (2..1).max)
     assert_equal(1, (1...2).max)
+    assert_equal(nil, (1..).max)
+    assert_equal(nil, (1...).max)
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
@@ -103,6 +115,7 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
+    # XXX: How should (0...).max(3) behave?
   end
 
   def test_initialize_twice
@@ -123,9 +136,10 @@ class TestRange < Test::Unit::TestCase
     assert_equal(r, Marshal.load(Marshal.dump(r)))
     r = 1...2
     assert_equal(r, Marshal.load(Marshal.dump(r)))
-    s = Marshal.dump(r)
-    s.sub!(/endi./n, 'end0')
-    assert_raise(ArgumentError) {Marshal.load(s)}
+    r = (1..)
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
+    r = (1...)
+    assert_equal(r, Marshal.load(Marshal.dump(r)))
   end
 
   def test_bad_value
@@ -135,6 +149,8 @@ class TestRange < Test::Unit::TestCase
   def test_exclude_end
     assert_not_predicate(0..1, :exclude_end?)
     assert_predicate(0...1, :exclude_end?)
+    assert_not_predicate(0.., :exclude_end?)
+    assert_predicate(0..., :exclude_end?)
   end
 
   def test_eq
@@ -145,8 +161,17 @@ class TestRange < Test::Unit::TestCase
     assert_not_equal(r, (1..2))
     assert_not_equal(r, (0..2))
     assert_not_equal(r, (0...1))
+    assert_not_equal(r, (0..nil))
     subclass = Class.new(Range)
     assert_equal(r, subclass.new(0,1))
+
+    r = (0..nil)
+    assert_equal(r, r)
+    assert_equal(r, (0..nil))
+    assert_not_equal(r, 0)
+    assert_not_equal(r, (0...nil))
+    subclass = Class.new(Range)
+    assert_equal(r, subclass.new(0,nil))
   end
 
   def test_eql
@@ -159,12 +184,22 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(r, :eql?, 0...1)
     subclass = Class.new(Range)
     assert_operator(r, :eql?, subclass.new(0,1))
+
+    r = (0..nil)
+    assert_operator(r, :eql?, r)
+    assert_operator(r, :eql?, 0..nil)
+    assert_not_operator(r, :eql?, 0)
+    assert_not_operator(r, :eql?, 0...nil)
+    subclass = Class.new(Range)
+    assert_operator(r, :eql?, subclass.new(0,nil))
   end
 
   def test_hash
     assert_kind_of(Integer, (0..1).hash)
     assert_equal((0..1).hash, (0..1).hash)
     assert_not_equal((0..1).hash, (0...1).hash)
+    assert_equal((0..nil).hash, (0..nil).hash)
+    assert_not_equal((0..nil).hash, (0...nil).hash)
   end
 
   def test_step
@@ -173,14 +208,28 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
 
     a = []
+    (0..).step {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], a)
+
+    a = []
     (0..10).step(2) {|x| a << x }
     assert_equal([0, 2, 4, 6, 8, 10], a)
 
+    a = []
+    (0..).step(2) {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 2, 4, 6, 8, 10, 12, 14, 16, 18], a)
+
     assert_raise(ArgumentError) { (0..10).step(-1) { } }
     assert_raise(ArgumentError) { (0..10).step(0) { } }
+    assert_raise(ArgumentError) { (0..).step(-1) { } }
+    assert_raise(ArgumentError) { (0..).step(0) { } }
 
     a = []
     ("a" .. "z").step(2) {|x| a << x }
+    assert_equal(%w(a c e g i k m o q s u w y), a)
+
+    a = []
+    ("a" .. ).step(2) {|x| a << x; break if a.size == 13 }
     assert_equal(%w(a c e g i k m o q s u w y), a)
 
     a = []
@@ -192,12 +241,24 @@ class TestRange < Test::Unit::TestCase
     assert_equal([4294967295, 4294967297], a)
     zero = (2**32).coerce(0).first
     assert_raise(ArgumentError) { (2**32-1 .. 2**32+1).step(zero) { } }
+    a = []
+    (2**32-1 .. ).step(2) {|x| a << x; break if a.size == 2 }
+    assert_equal([4294967295, 4294967297], a)
+
+    max = RbConfig::LIMITS["FIXNUM_MAX"]
+    a = []
+    (max..).step {|x| a << x; break if a.size == 2 }
+    assert_equal([max, max+1], a)
+    a = []
+    (max..).step(max) {|x| a << x; break if a.size == 4 }
+    assert_equal([max, 2*max, 3*max, 4*max], a)
 
     o1 = Object.new
     o2 = Object.new
     def o1.<=>(x); -1; end
     def o2.<=>(x); 0; end
     assert_raise(TypeError) { (o1..o2).step(1) { } }
+    assert_raise(TypeError) { (o1..).step(1) { } }
 
     class << o1; self; end.class_eval do
       define_method(:succ) { o2 }
@@ -214,6 +275,10 @@ class TestRange < Test::Unit::TestCase
 
     a = []
     (0..2).step(0.5) {|x| a << x }
+    assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
+
+    a = []
+    (0..).step(0.5) {|x| a << x; break if a.size == 5 }
     assert_equal([0, 0.5, 1.0, 1.5, 2.0], a)
 
     a = []
@@ -238,6 +303,10 @@ class TestRange < Test::Unit::TestCase
     a = []
     (0..10).each {|x| a << x }
     assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], a)
+
+    a = []
+    (0..).each {|x| a << x; break if a.size == 10 }
+    assert_equal([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], a)
 
     o1 = Object.new
     o2 = Object.new
@@ -285,6 +354,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
     assert_equal(1, (0...1).end)
+    assert_equal(0, (0..nil).begin)
+    assert_equal(nil, (0..nil).end)
+    assert_equal(nil, (0...nil).end)
   end
 
   def test_first_last
@@ -303,11 +375,18 @@ class TestRange < Test::Unit::TestCase
     assert_equal("a", ("a"..."c").first)
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
+
+    assert_equal([0, 1, 2], (0..nil).first(3))
+    assert_equal(0, (0..nil).first)
+    assert_equal("a", ("a"..nil).first)
+    # XXX: How should (0...).last(3) behave?
   end
 
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
+    assert_equal("0..", (0..nil).to_s)
+    assert_equal("0...", (0...nil).to_s)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
@@ -318,6 +397,8 @@ class TestRange < Test::Unit::TestCase
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
+    assert_equal("0..", (0..nil).inspect)
+    assert_equal("0...", (0...nil).inspect)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
@@ -328,6 +409,8 @@ class TestRange < Test::Unit::TestCase
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
+    assert_operator(5..nil, :===, 11)
+    assert_not_operator(5..nil, :===, 0)
   end
 
   def test_eqq_time
@@ -335,6 +418,8 @@ class TestRange < Test::Unit::TestCase
     t = Time.now
     assert_nothing_raised(TypeError, bug11113) {
       assert_operator(t..(t+10), :===, t+5)
+      assert_operator(t.., :===, t+5)
+      assert_not_operator(t.., :===, t-5)
     }
   end
 
@@ -369,6 +454,8 @@ class TestRange < Test::Unit::TestCase
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
     assert_include(0...10, 5)
+    assert_include(5..., 10)
+    assert_not_include(5..., 0)
   end
 
   def test_cover
@@ -377,6 +464,9 @@ class TestRange < Test::Unit::TestCase
     assert_operator("a"..."z", :cover?, "y")
     assert_not_operator("a"..."z", :cover?, "z")
     assert_operator("a".."z", :cover?, "cc")
+    assert_not_operator(5..., :cover?, 0)
+    assert_not_operator(5..., :cover?, "a")
+    assert_operator(5.., :cover?, 10)
   end
 
   def test_beg_len
@@ -454,6 +544,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal 6, (1...6.3).size
     assert_equal 5, (1.1...6).size
     assert_equal 42, (1..42).each.size
+    assert_nil ("a"..."z").size
+
+    assert_nil (1...).size
+    assert_nil (1.0...).size
+    assert_nil ("a"...).size
   end
 
   def test_bsearch_typechecks_return_values
@@ -495,6 +590,8 @@ class TestRange < Test::Unit::TestCase
 
     ary = [0, 100, 100, 100, 200]
     assert_equal(1, (0...ary.size).bsearch {|i| ary[i] >= 100 })
+
+    assert_equal(1_000_001, (0...).bsearch {|i| i > 1_000_000 })
   end
 
   def test_bsearch_for_float
@@ -546,6 +643,8 @@ class TestRange < Test::Unit::TestCase
 
     assert_in_delta(1.0, (0.0..inf).bsearch {|x| Math.log(x) >= 0 })
     assert_in_delta(7.0, (0.0..10).bsearch {|x| 7.0 - x })
+
+    assert_equal(1_000_000.0.next_float, (0.0..).bsearch {|x| x > 1_000_000 })
   end
 
   def check_bsearch_values(range, search, a)
@@ -647,6 +746,7 @@ class TestRange < Test::Unit::TestCase
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| ary[i - bignum] >= 100 })
     assert_equal(bignum + 0, (bignum...bignum+ary.size).bsearch {|i| true })
     assert_equal(nil, (bignum...bignum+ary.size).bsearch {|i| false })
+    assert_equal(bignum * 2 + 1, (bignum...).bsearch {|i| i > bignum * 2 })
 
     assert_raise(TypeError) { ("a".."z").bsearch {} }
   end
