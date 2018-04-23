@@ -3769,7 +3769,7 @@ __END__
           IO.pipe do |r, w|
             th = Thread.new { r.sysread(1) }
             w.write(dot)
-            assert_same th, th.join(30), '"good" reader timeout'
+            assert_same th, th.join(15), '"good" reader timeout'
             assert_equal(dot, th.value)
           end
         end
@@ -3786,13 +3786,14 @@ __END__
             end
           end
           Thread.pass until th.stop?
+          assert_nil th.join(0.001)
           r.close
           assert_same th, th.join(30), '"bad" reader timeout'
           assert_match(/stream closed/, th.value.message)
         end
       end
       sig_wr.write 'done'
-      assert_same noex, noex.join(30), '"good" writer timeout'
+      assert_same noex, noex.join(20), '"good" writer timeout'
       assert_equal 'done', noex.value ,'r63216'
     end
   end
