@@ -2909,6 +2909,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
 	    if (previ == BIN(putobject) || previ == BIN(putnil) ||
 		previ == BIN(putself) || previ == BIN(putstring) ||
+		previ == BIN(dup) ||
+		previ == BIN(getlocal) ||
+		previ == BIN(getblockparam) ||
+		previ == BIN(getblockparamproxy) ||
+		/* getinstancevariable may issue a warning */
 		previ == BIN(duparray)) {
 		/* just push operand or static value and pop soon, no
 		 * side effects */
