@@ -20,6 +20,9 @@
 #include "mjit.h"
 #include "probes.h"
 #include "probes_helper.h"
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 NORETURN(void rb_raise_jump(VALUE, VALUE));
 
@@ -52,6 +55,14 @@ ruby_setup(void)
 	return 0;
 
     ruby_init_stack((void *)&state);
+
+    /*
+     * Disable THP early before mallocs happen because we want this to
+     * affect as many future pages as possible for CoW-friendliness
+     */
+#if defined(__linux__) && defined(PR_SET_THP_DISABLE)
+    prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
+#endif
     Init_BareVM();
     Init_heap();
     Init_vm_objects();
