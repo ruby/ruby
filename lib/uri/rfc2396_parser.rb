@@ -58,7 +58,7 @@ module URI
     # :startdoc:
   end # REGEXP
 
-  # Class that Parses String's into URI's.
+  # Class that parses String's into URI's.
   #
   # It contains a Hash set of patterns and Regexp's that match and validate.
   #
@@ -199,7 +199,7 @@ module URI
     # == Description
     #
     # Parses +uri+ and constructs either matching URI scheme object
-    # (file, FTP, HTTP, HTTPS, LDAP, LDAPS, or MailTo) or URI::Generic.
+    # (File, FTP, HTTP, HTTPS, LDAP, LDAPS, or MailTo) or URI::Generic.
     #
     # == Usage
     #
