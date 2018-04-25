@@ -3,11 +3,11 @@ require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/raise'
 
 describe "Thread#raise" do
-  it "ignores dead threads" do
+  it "ignores dead threads and returns nil" do
     t = Thread.new { :dead }
     Thread.pass while t.alive?
-    -> { t.raise("Kill the thread") }.should_not raise_error
-    -> { t.value }.should_not raise_error
+    t.raise("Kill the thread").should == nil
+    t.join
   end
 end
 
