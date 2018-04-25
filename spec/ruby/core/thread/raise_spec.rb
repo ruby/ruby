@@ -151,7 +151,7 @@ describe "Thread#raise on a running thread" do
         1/0
       rescue ZeroDivisionError
         raised = true
-        loop { }
+        loop { Thread.pass }
       end
     end
     begin
