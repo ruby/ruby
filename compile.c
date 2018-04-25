@@ -2893,6 +2893,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		    ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
 		}
 		if (cond) {
+		    if (prev_dup) {
+			pobj = new_insn_core(iseq, pobj->insn_info.line_no, BIN(putnil), 0, NULL);
+			ELEM_INSERT_NEXT(&iobj->link, &pobj->link);
+		    }
 		    iobj->insn_id = BIN(jump);
 		    goto again;
 		}
