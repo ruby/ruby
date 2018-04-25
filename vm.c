@@ -554,7 +554,7 @@ rb_vm_pop_cfunc_frame(void)
     rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, Qnil);
+    EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_C_RETURN, cfp->self, me->def->original_id, me->called_id, me->owner, Qnil);
     RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     vm_pop_frame(ec, cfp, cfp->ep);
 }
@@ -1851,7 +1851,7 @@ vm_exce_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 
 	while (ec->cfp->pc == 0 || ec->cfp->iseq == 0) {
 	    if (UNLIKELY(VM_FRAME_TYPE(ec->cfp) == VM_FRAME_MAGIC_CFUNC)) {
-		EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
+		EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
 				rb_vm_frame_method_entry(ec->cfp)->def->original_id,
 				rb_vm_frame_method_entry(ec->cfp)->called_id,
 				rb_vm_frame_method_entry(ec->cfp)->owner, Qnil);

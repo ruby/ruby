@@ -1848,4 +1848,21 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal ["c-call", base_line + 35],   events[9] # Thread#set_trace_func
     assert_equal nil,                          events[10]
   end
+
+  def test_c_return_trace_raises_after_ruby_block_raises
+    array = [1]
+    trace = TracePoint.new(:c_return) do |tp|
+      if tp.defined_class == Array && tp.method_id == :each
+        raise 'from tracepoint'
+      end
+    end
+    err = assert_raise(RuntimeError) do
+      trace.enable do
+        array.each do
+          raise 'from each block'
+        end
+      end
+    end
+    assert_equal 'from tracepoint', err.message
+  end
 end
