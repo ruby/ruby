@@ -354,9 +354,6 @@ module URI
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
 
-  HTML5ASCIIINCOMPAT = defined? Encoding::UTF_7 ? [Encoding::UTF_7, Encoding::UTF_16BE, Encoding::UTF_16LE,
-    Encoding::UTF_32BE, Encoding::UTF_32LE] : [] # :nodoc:
-
   # Encodes given +str+ to URL-encoded form data.
   #
   # This method doesn't convert *, -, ., 0-9, A-Z, _, a-z, but does convert SP
