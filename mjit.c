@@ -1176,13 +1176,20 @@ init_header_filename(void)
     const size_t header_name_len = sizeof(header_name) - 1;
     char *p;
 #ifdef _WIN32
+    static const char libdirname[] = "/"
+# ifdef LIBDIR_BASENAME
+	LIBDIR_BASENAME
+# else
+	"lib"
+# endif
+	;
     static const char libpathflag[] =
 # ifdef _MSC_VER
         "-LIBPATH:"
 # else
         "-L"
 # endif
-            ;
+	;
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 
@@ -1210,9 +1217,9 @@ init_header_filename(void)
     p = append_str2(p, basedir, baselen);
     *p = '\0';
 
-    libruby_installed = xmalloc(libpathflag_len + baselen + rb_strlen_lit("/lib") + 1);
+    libruby_installed = xmalloc(libpathflag_len + baselen + sizeof(libdirname));
     p = append_str2(libruby_installed, libruby_build, p - libruby_build);
-    p = append_lit(p, "/lib");
+    p = append_str(p, libdirname);
     *p = '\0';
 #endif
 }
