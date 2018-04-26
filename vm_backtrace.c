@@ -1276,7 +1276,7 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     const rb_callable_method_entry_t *cme;
 
-    for (i=0; i<limit && cfp != end_cfp;) {
+    for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
 	if (cfp->iseq && cfp->pc) {
 	    if (start > 0) {
 		start--;
@@ -1296,7 +1296,6 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 
 	    i++;
 	}
-	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
     return i;
