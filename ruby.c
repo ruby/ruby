@@ -507,7 +507,7 @@ ruby_init_loadpath_safe(int safe_level)
     char *libpath;
     VALUE sopath;
     size_t baselen;
-    char *p;
+    const char *p;
 
 #if defined _WIN32 || defined __CYGWIN__
     {
@@ -549,11 +549,11 @@ ruby_init_loadpath_safe(int safe_level)
 	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
 	if (newsize > 0) {
 	    VALUE rubylib = rb_str_new(0, newsize);
-	    p = RSTRING_PTR(rubylib);
-	    if (cygwin_conv_path(win_to_posix, libpath, p, newsize) == 0) {
+	    char *p2 = RSTRING_PTR(rubylib);
+	    if (cygwin_conv_path(win_to_posix, libpath, p2, newsize) == 0) {
 		rb_str_resize(sopath, 0);
 		sopath = rubylib;
-		libpath = p;
+		libpath = p2;
 	    }
 	}
     }
@@ -570,7 +570,7 @@ ruby_init_loadpath_safe(int safe_level)
 	const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir) - 1;
 
 #ifdef ENABLE_MULTIARCH
-	char *p2 = NULL;
+	const char *p2 = NULL;
 
       multiarch:
 #endif
