@@ -289,7 +289,6 @@ class TestNumeric < Test::Unit::TestCase
     i <<= 1 until (bigflo - i).to_i < bignum
     bigflo -= i >> 1
     assert_equal(bigflo.to_i, (0.0).step(bigflo-1.0, 1.0).size)
-    assert_operator((0.0).step(bignum.to_f, 1.0).size, :>=, bignum) # may loose precision
 
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 10]
     assert_step [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, to: 10]
