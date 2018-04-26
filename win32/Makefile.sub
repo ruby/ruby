@@ -834,6 +834,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
+!if "$(libdir_basename)" != "lib"
+#define LIBDIR_BASENAME "$(libdir_basename)"
+!endif
 !if "$(EXTSTATIC)" == "static"
 #define EXTSTATIC 1
 !endif
