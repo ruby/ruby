@@ -564,6 +564,16 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_clean_so
+    Dir.mktmpdir("jit_test_clean_so_") do |dir|
+      code = "x = 0; 10.times {|i|x+=i}"
+      eval_with_jit({"TMPDIR"=>dir}, code)
+      assert_send([Dir, :empty?, dir])
+      eval_with_jit({"TMPDIR"=>dir}, code, save_temps: true)
+      assert_not_send([Dir, :empty?, dir])
+    end
+  end
+
   private
 
   # The shortest way to test one proc
@@ -606,7 +616,7 @@ class TestJIT < Test::Unit::TestCase
 
   # Run Ruby script with --jit-wait (Synchronous JIT compilation).
   # Returns [stdout, stderr]
-  def eval_with_jit(script, **opts)
+  def eval_with_jit(env = nil, script, **opts)
     stdout, stderr, status = super
     assert_equal(true, status.success?, "Failed to run script with JIT:\n#{code_block(script)}\nstdout:\n#{code_block(stdout)}\nstderr:\n#{code_block(stderr)}")
     [stdout, stderr]

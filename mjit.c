@@ -115,7 +115,7 @@ extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_
 #define dlopen(name,flag) ((void*)LoadLibrary(name))
 #define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
-#define dlclose(handle) (CloseHandle(handle))
+#define dlclose(handle) (FreeLibrary(handle))
 #define RTLD_NOW  -1
 
 #define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)))
@@ -148,6 +148,10 @@ struct rb_mjit_unit {
     /* Dlopen handle of the loaded object file.  */
     void *handle;
     const rb_iseq_t *iseq;
+#ifdef _WIN32
+    /* DLL cannot be removed while loaded on Windows */
+    char *so_file;
+#endif
     /* Only used by unload_units. Flag to check this unit is currently on stack or not. */
     char used_code_p;
 };
@@ -442,12 +446,30 @@ mjit_free_iseq(const rb_iseq_t *iseq)
 }
 
 static void
+clean_so_file(struct rb_mjit_unit *unit)
+{
+#ifdef _WIN32
+# undef Sleep
+    char *so_file = unit->so_file;
+    if (so_file) {
+        unit->so_file = NULL;
+        if (remove(so_file)) {
+            fprintf(stderr, "failed to remove \"%s\": %s\n",
+                    so_file, strerror(errno));
+        }
+        free(so_file);
+    }
+#endif
+}
+
+static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
         unit->iseq->body->jit_func = 0;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
+    clean_so_file(unit);
     xfree(unit);
 }
 
@@ -865,8 +887,13 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     func = load_func_from_so(so_file, funcname, unit);
-    if (!mjit_opts.save_temps)
+    if (!mjit_opts.save_temps) {
+#ifdef _WIN32
+        unit->so_file = strdup(so_file);
+#else
         remove(so_file);
+#endif
+    }
 
     if ((ptrdiff_t)func > (ptrdiff_t)LAST_JIT_ISEQ_FUNC) {
         struct rb_mjit_unit_node *node = create_list_node(unit);
@@ -1095,6 +1122,7 @@ unload_units(void)
         assert(unit->handle != NULL);
         dlclose(unit->handle);
         unit->handle = NULL;
+        clean_so_file(unit);
     }
     verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
