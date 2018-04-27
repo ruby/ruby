@@ -208,10 +208,8 @@ static VALUE valid_class_serials;
 VALUE rb_mMJIT;
 
 #ifdef _WIN32
-/* Linker option to enable libruby in the build directory. */
-static char *libruby_build;
-/* Linker option to enable libruby in the directory after install. */
-static char *libruby_installed;
+/* Linker option to enable libruby. */
+static char *libruby_pathflag;
 #endif
 
 /* Return time in milliseconds as a double.  */
@@ -582,6 +580,15 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
     NULL
 };
 
+static const char *const CC_LIBS[] = {
+    MJIT_LIBS
+#if defined __GNUC__ && !defined __clang__ && !defined _WIN32
+    "-lmsvcrt",
+    "-lgcc",
+#endif
+    NULL
+};
+
 #define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 /* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
@@ -652,45 +659,37 @@ compile_c_to_so(const char *c_file, const char *so_file)
 #ifndef _MSC_VER
         "-o",
 #endif
-        NULL, NULL, NULL};
-    const char *libs[] = {
+        NULL, NULL,
 #ifdef _WIN32
 # ifdef _MSC_VER
-        MJIT_LIBS
         "-link",
-        libruby_installed,
-        libruby_build,
-# else
-        /* Look for ruby.dll.a in build and install directories. */
-        libruby_installed,
-        libruby_build,
-        MJIT_LIBS
-        "-lmsvcrt",
-        "-lgcc",
 # endif
+        libruby_pathflag,
 #endif
-        NULL};
+        NULL,
+    };
     char **args;
 #ifdef _MSC_VER
     char *p;
     int solen;
 #endif
 
-    files[numberof(files)-2] = c_file;
 #ifdef _MSC_VER
     solen = strlen(so_file);
     files[0] = p = xmalloc(rb_strlen_lit("-Fe") + solen + 1);
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
+    files[1] = c_file;
 #else
 # ifdef __clang__
     files[1] = pch_file;
 # endif
-    files[numberof(files)-3] = so_file;
+    files[numberof(files)-3] = c_file;
+    files[numberof(files)-4] = so_file;
 #endif
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, libs, CC_DLDFLAGS_ARGS);
+                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
@@ -1162,6 +1161,8 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
    ones to prevent changing C compiler for security reasons.  */
 #define CC_PATH CC_COMMON_ARGS[0]
 
+extern VALUE ruby_archlibdir_path, ruby_prefix_path;
+
 static void
 init_header_filename(void)
 {
@@ -1176,13 +1177,6 @@ init_header_filename(void)
     const size_t header_name_len = sizeof(header_name) - 1;
     char *p;
 #ifdef _WIN32
-    static const char libdirname[] = "/"
-# ifdef LIBDIR_BASENAME
-	LIBDIR_BASENAME
-# else
-	"lib"
-# endif
-	;
     static const char libpathflag[] =
 # ifdef _MSC_VER
         "-LIBPATH:"
@@ -1193,7 +1187,7 @@ init_header_filename(void)
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 
-    basedir_val = rb_const_get(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
+    basedir_val = ruby_prefix_path;
     basedir = StringValuePtr(basedir_val);
     baselen = RSTRING_LEN(basedir_val);
     verlen = strlen(ruby_version);
@@ -1212,14 +1206,12 @@ init_header_filename(void)
     (void)close(fd);
 
 #ifdef _WIN32
-    p = libruby_build = xmalloc(libpathflag_len + baselen + 1);
+    basedir_val = ruby_archlibdir_path;
+    basedir = StringValuePtr(basedir_val);
+    baselen = RSTRING_LEN(basedir_val);
+    libruby_pathflag = p = xmalloc(libpathflag_len + baselen + 1);
     p = append_str(p, libpathflag);
     p = append_str2(p, basedir, baselen);
-    *p = '\0';
-
-    libruby_installed = xmalloc(libpathflag_len + baselen + sizeof(libdirname));
-    p = append_str2(libruby_installed, libruby_build, p - libruby_build);
-    p = append_str(p, libdirname);
     *p = '\0';
 #endif
 }
