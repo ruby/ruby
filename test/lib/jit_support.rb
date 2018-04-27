@@ -7,9 +7,12 @@ module JITSupport
   ]
 
   module_function
-  def eval_with_jit(script, verbose: 0, min_calls: 5, timeout: JIT_TIMEOUT)
-    EnvUtil.invoke_ruby(
-      ['--disable-gems', '--jit-wait', "--jit-verbose=#{verbose}", "--jit-min-calls=#{min_calls}", '-e', script],
+  def eval_with_jit(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, timeout: JIT_TIMEOUT)
+    args = ['--disable-gems', '--jit-wait', "--jit-verbose=#{verbose}", "--jit-min-calls=#{min_calls}"]
+    args << '--jit-save-temps' if save_temps
+    args << '-e' << script
+    args.unshift(env) if env
+    EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,
     )
   end
