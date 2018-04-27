@@ -455,14 +455,11 @@ _=_\\
 #{prolog_script}=end
 EOS
 
-$script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
-                               :stub, :trans) do
+installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name, :stub, :trans)
+$script_installer = Class.new(installer) do
   ruby_shebang = File.join(bindir, ruby_install_name)
   if File::ALT_SEPARATOR
     ruby_bin = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
-    if $cmdtype == 'exe'
-      stub = File.open("rubystub.exe", "rb") {|f| f.read} << "\n" rescue nil
-    end
   end
   if trans = CONFIG["program_transform_name"]
     exp = []
@@ -523,7 +520,20 @@ $script_installer = Struct.new(:ruby_shebang, :ruby_bin, :ruby_install_name,
     end
   end
 
-  break new(ruby_shebang, ruby_bin, ruby_install_name, stub, trans)
+  def self.get_rubystub
+    stubfile = "rubystub.exe"
+    stub = File.open(stubfile, "rb") {|f| f.read} << "\n"
+  rescue => e
+    abort "No #{stubfile}: #{e}"
+  else
+    stub
+  end
+
+  def stub
+    super or self.stub = self.class.get_rubystub
+  end
+
+  break new(ruby_shebang, ruby_bin, ruby_install_name, nil, trans)
 end
 
 install?(:local, :comm, :bin, :'bin-comm') do
