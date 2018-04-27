@@ -581,10 +581,12 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
 };
 
 static const char *const CC_LIBS[] = {
+#ifdef _WIN32
     MJIT_LIBS
-#if defined __GNUC__ && !defined __clang__ && !defined _WIN32
+# if defined __GNUC__ && !defined __clang__
     "-lmsvcrt",
     "-lgcc",
+# endif
 #endif
     NULL
 };
@@ -653,13 +655,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
     const char *files[] = {
-#ifdef __clang__
-        "-include-pch", NULL,
-#endif
 #ifndef _MSC_VER
         "-o",
 #endif
         NULL, NULL,
+#ifdef __clang__
+        "-include-pch", NULL,
+#endif
 #ifdef _WIN32
 # ifdef _MSC_VER
         "-link",
@@ -683,10 +685,10 @@ compile_c_to_so(const char *c_file, const char *so_file)
     files[1] = c_file;
 #else
 # ifdef __clang__
-    files[1] = pch_file;
+    files[4] = pch_file;
 # endif
-    files[numberof(files)-3] = c_file;
-    files[numberof(files)-4] = so_file;
+    files[2] = c_file;
+    files[1] = so_file;
 #endif
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
