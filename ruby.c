@@ -502,21 +502,22 @@ VALUE ruby_archlibdir_path, ruby_prefix_path;
 void
 ruby_init_loadpath_safe(int safe_level)
 {
+#if !defined ENABLE_MULTIARCH
+# define RUBY_ARCH_PATH ""
+#elif defined RUBY_ARCH
+# define RUBY_ARCH_PATH "/"RUBY_ARCH
+#else
+# define RUBY_ARCH_PATH "/"RUBY_PLATFORM
+#endif
     static const char libdir[] = "/"
 #ifdef LIBDIR_BASENAME
 	LIBDIR_BASENAME
 #else
 	"lib"
 #endif
-#ifdef ENABLE_MULTIARCH
-	"/"RUBY_ARCH
-#endif
-	;
+	RUBY_ARCH_PATH;
     const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir)
-#ifdef ENABLE_MULTIARCH
-	- rb_strlen_lit("/"RUBY_ARCH)
-#endif
-	- 1;
+	- rb_strlen_lit(RUBY_ARCH_PATH) - 1;
     VALUE load_path, archlibdir = 0;
     ID id_initial_load_path_mark;
     const char *paths = ruby_initial_load_paths;
