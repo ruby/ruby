@@ -502,6 +502,10 @@ VALUE ruby_archlibdir_path, ruby_prefix_path;
 void
 ruby_init_loadpath_safe(int safe_level)
 {
+    VALUE load_path, archlibdir = 0;
+    ID id_initial_load_path_mark;
+    const char *paths = ruby_initial_load_paths;
+#if defined LOAD_RELATIVE
 #if !defined ENABLE_MULTIARCH
 # define RUBY_ARCH_PATH ""
 #elif defined RUBY_ARCH
@@ -518,10 +522,6 @@ ruby_init_loadpath_safe(int safe_level)
 	RUBY_ARCH_PATH;
     const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir)
 	- rb_strlen_lit(RUBY_ARCH_PATH) - 1;
-    VALUE load_path, archlibdir = 0;
-    ID id_initial_load_path_mark;
-    const char *paths = ruby_initial_load_paths;
-#if defined LOAD_RELATIVE
     char *libpath;
     VALUE sopath;
     size_t baselen;
