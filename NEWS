@@ -18,7 +18,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * refinements take place at block passing.  [Feature #14223]
 
-* `else` without `rescue` is now causes a syntax error.  [EXPERIMENTAL]
+* `else` without `rescue` now causes a syntax error.  [EXPERIMENTAL]
 
 * constant names may start with a non-ASCII capital letter. [Feature #13770]
 
@@ -118,7 +118,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * String
 
-  * String#split yields each substrings to the block if given. [Feature #4780]
+  * String#split yields each substring to the block if given. [Feature #4780]
 
 === Stdlib updates (outstanding ones only)
 
