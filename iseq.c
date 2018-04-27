@@ -1800,7 +1800,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	break;
 
       default:
-	rb_bug("insn_operand_intern: unknown operand type: %c", type);
+	rb_bug("unknown operand type: %c", type);
     }
     return ret;
 }
@@ -1903,7 +1903,7 @@ catch_type(int type)
       case CATCH_TYPE_NEXT:
 	return "next";
       default:
-	rb_bug("unknown catch type (%d)", type);
+	rb_bug("unknown catch type: %d", type);
 	return 0;
     }
 }
@@ -2310,7 +2310,7 @@ ruby_node_name(int node)
     switch (node) {
 #include "node_name.inc"
       default:
-	rb_bug("unknown node (%d)", node);
+	rb_bug("unknown node: %d", node);
 	return 0;
     }
 }
@@ -2341,7 +2341,7 @@ exception_type2symbol(VALUE type)
       case CATCH_TYPE_REDO:   CONST_ID(id, "redo");   break;
       case CATCH_TYPE_NEXT:   CONST_ID(id, "next");   break;
       default:
-	rb_bug("exception_type2symbol: unknown type %d", (int)type);
+	rb_bug("unknown exception type: %d", (int)type);
     }
     return ID2SYM(id);
 }
@@ -2413,7 +2413,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
       case ISEQ_TYPE_EVAL:   type = sym_eval;   break;
       case ISEQ_TYPE_MAIN:   type = sym_main;   break;
       case ISEQ_TYPE_PLAIN:  type = sym_plain;  break;
-      default: rb_bug("unsupported iseq type");
+      default: rb_bug("unsupported iseq type: %d", (int)iseq->body->type);
     };
 
     /* locals */
