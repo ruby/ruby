@@ -449,7 +449,6 @@ static void
 clean_so_file(struct rb_mjit_unit *unit)
 {
 #ifdef _WIN32
-# undef Sleep
     char *so_file = unit->so_file;
     if (so_file) {
         unit->so_file = NULL;
