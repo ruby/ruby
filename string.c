@@ -4192,8 +4192,6 @@ all_digits_p(const char *s, long len)
     return 1;
 }
 
-static VALUE str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE);
-
 static int
 str_upto_i(VALUE str, VALUE arg)
 {
@@ -4240,11 +4238,11 @@ rb_str_upto(int argc, VALUE *argv, VALUE beg)
 
     rb_scan_args(argc, argv, "11", &end, &exclusive);
     RETURN_ENUMERATOR(beg, argc, argv);
-    return str_upto_each(beg, end, RTEST(exclusive), str_upto_i, Qnil);
+    return rb_str_upto_each(beg, end, RTEST(exclusive), str_upto_i, Qnil);
 }
 
-static VALUE
-str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE arg)
+VALUE
+rb_str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE arg)
 {
     VALUE current, after_end;
     ID succ;
@@ -4326,7 +4324,7 @@ str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALUE a
 }
 
 VALUE
-rb_str_upto_endless_each(VALUE beg, VALUE (*each)(VALUE, VALUE), VALUE arg)
+rb_str_upto_endless_each(VALUE beg, int (*each)(VALUE, VALUE), VALUE arg)
 {
     VALUE current;
     ID succ;
@@ -4343,7 +4341,7 @@ rb_str_upto_endless_each(VALUE beg, VALUE (*each)(VALUE, VALUE), VALUE arg)
 	    rb_encoding *usascii = rb_usascii_encoding();
 
 	    while (FIXABLE(bi)) {
-		(*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg);
+		if ((*each)(rb_enc_sprintf(usascii, "%.*ld", width, bi), arg)) break;
 		bi++;
 	    }
 	    b = LONG2NUM(bi);
@@ -4351,7 +4349,7 @@ rb_str_upto_endless_each(VALUE beg, VALUE (*each)(VALUE, VALUE), VALUE arg)
 	args[0] = INT2FIX(width);
 	while (1) {
 	    args[1] = b;
-	    (*each)(rb_str_format(numberof(args), args, fmt), arg);
+	    if ((*each)(rb_str_format(numberof(args), args, fmt), arg)) break;
 	    b = rb_funcallv(b, succ, 0, 0);
 	}
     }
@@ -4359,7 +4357,7 @@ rb_str_upto_endless_each(VALUE beg, VALUE (*each)(VALUE, VALUE), VALUE arg)
     current = rb_str_dup(beg);
     while (1) {
 	VALUE next = rb_funcallv(current, succ, 0, 0);
-	(*each)(current, arg);
+	if ((*each)(current, arg)) break;
 	current = next;
 	StringValue(current);
 	if (RSTRING_LEN(current) == 0)
@@ -4417,7 +4415,7 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 	}
 #endif
     }
-    str_upto_each(beg, end, RTEST(exclusive), include_range_i, (VALUE)&val);
+    rb_str_upto_each(beg, end, RTEST(exclusive), include_range_i, (VALUE)&val);
 
     return NIL_P(val) ? Qtrue : Qfalse;
 }
