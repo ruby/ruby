@@ -45,7 +45,7 @@ wakeup_all(struct list_head *head)
 /* Mutex */
 
 typedef struct rb_mutex_struct {
-    struct rb_thread_struct volatile *th;
+    rb_thread_t *th;
     struct rb_mutex_struct *next_mutex;
     struct list_head waitq; /* protected by GVL */
 } rb_mutex_t;
@@ -55,7 +55,7 @@ static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 #endif
-static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th);
+static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th);
 
 /*
  *  Document-class: Mutex
@@ -318,7 +318,7 @@ rb_mutex_owned_p(VALUE self)
 }
 
 static const char *
-rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
+rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th)
 {
     const char *err = NULL;
 
@@ -330,7 +330,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t volatile *th)
     }
     else {
 	struct sync_waiter *cur = 0, *next = 0;
-	rb_mutex_t *volatile *th_mutex = &th->keeping_mutexes;
+	rb_mutex_t **th_mutex = &th->keeping_mutexes;
 
 	mutex->th = 0;
 	list_for_each_safe(&mutex->waitq, cur, next, node) {
