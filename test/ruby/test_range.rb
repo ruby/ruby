@@ -288,6 +288,19 @@ class TestRange < Test::Unit::TestCase
     o = Object.new
     def o.to_int() 1 end
     assert_nothing_raised("[ruby-dev:34558]") { (0..2).step(o) {|x| } }
+
+    o = Object.new
+    class << o
+      def to_str() "a" end
+      def <=>(other) to_str <=> other end
+    end
+
+    a = []
+    (o.."c").step(1) {|x| a << x}
+    assert_equal(["a", "b", "c"], a)
+    a = []
+    (o..).step(1) {|x| a << x; break if a.size >= 3}
+    assert_equal(["a", "b", "c"], a)
   end
 
   def test_step_ruby_core_35753
@@ -348,6 +361,19 @@ class TestRange < Test::Unit::TestCase
     a = []
     r2.each {|x| a << x }
     assert_equal([], a)
+
+    o = Object.new
+    class << o
+      def to_str() "a" end
+      def <=>(other) to_str <=> other end
+    end
+
+    a = []
+    (o.."c").each {|x| a << x}
+    assert_equal(["a", "b", "c"], a)
+    a = []
+    (o..).each {|x| a << x; break if a.size >= 3}
+    assert_equal(["a", "b", "c"], a)
   end
 
   def test_begin_end
