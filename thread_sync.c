@@ -4,14 +4,6 @@
 static VALUE rb_cMutex, rb_cQueue, rb_cSizedQueue, rb_cConditionVariable;
 static VALUE rb_eClosedQueueError;
 
-/*
- * keep these globally so we can walk and reinitialize them at fork
- * in the child process
- */
-static LIST_HEAD(szqueue_list);
-static LIST_HEAD(queue_list);
-static LIST_HEAD(condvar_list);
-
 /* sync_waiter is always on-stack */
 struct sync_waiter {
     rb_thread_t *th;
