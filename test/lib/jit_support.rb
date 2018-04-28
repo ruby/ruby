@@ -33,4 +33,12 @@ module JITSupport
       err.match?(JIT_SUCCESS_PREFIX)
     end
   end
+
+  def remove_mjit_logs(stderr)
+    if RubyVM::MJIT.enabled?
+      stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
+    else
+      stderr
+    end
+  end
 end
