@@ -451,7 +451,7 @@ EOL
     end
 
     def test_external_entity
-      xp = '//*:channel/*:title'
+      xp = '//channel/title'
 
       %w{working.rss broken.rss}.each do |path|
         File.open(File.join(fixture_path(path))) do |file|

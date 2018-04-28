@@ -84,7 +84,7 @@ module REXMLTests
     def process_value_of(context, variables, namespaces, value_of)
       expected = value_of.text
       xpath = value_of.attributes["select"]
-      matched = XPath.match(context, xpath, namespaces, variables)
+      matched = XPath.match(context, xpath, namespaces, variables, strict: true)
 
       message = user_message(context, xpath, matched)
       assert_equal(expected || "",
@@ -95,7 +95,7 @@ module REXMLTests
     # processes a tests/document/context/test node ( where @exception is false or doesn't exist )
     def process_nominal_test(context, variables, namespaces, test)
       xpath = test.attributes["select"]
-      matched = XPath.match(context, xpath, namespaces, variables)
+      matched = XPath.match(context, xpath, namespaces, variables, strict: true)
       # might be a test with no count attribute, but nested valueOf elements
       expected = test.attributes["count"]
       if expected
@@ -113,7 +113,7 @@ module REXMLTests
     def process_exceptional_test(context, variables, namespaces, test)
       xpath = test.attributes["select"]
       assert_raise(REXML::ParseException) do
-        XPath.match(context, xpath, namespaces, variables)
+        XPath.match(context, xpath, namespaces, variables, strict: true)
       end
     end
 
