@@ -562,7 +562,7 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
 	sep=; \
-	quote MJIT_HEADER_INSTALL_DIR "$(MJIT_HEADER_INSTALL_DIR)"; \
+	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
 	quote "MJIT_CFLAGS     $${archs:+ MJIT_ARCHFLAG}" -w; \

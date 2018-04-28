@@ -60,7 +60,8 @@ RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 MJIT_HEADER   = rb_mjit_header.h
-MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
+MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
+MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
 MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
