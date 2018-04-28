@@ -418,6 +418,24 @@ module Psych
   # to control the output format.  If an IO object is passed in, the YAML will
   # be dumped to that IO object.
   #
+  # Currently supported options are:
+  #
+  # [<tt>:indentation</tt>]   Number of space characters used to indent.
+  #                           Acceptable value should be in <tt>0..9</tt> range,
+  #                           otherwise option is ignored.
+  #
+  #                           Default: <tt>2</tt>.
+  # [<tt>:line_width</tt>]    Max character to wrap line at.
+  #
+  #                           Default: <tt>0</tt> (meaning "wrap at 81").
+  # [<tt>:canonical</tt>]     Write "canonical" YAML form (very verbose, yet
+  #                           strictly formal).
+  #
+  #                           Default: <tt>false</tt>.
+  # [<tt>:header</tt>]        Write <tt>%YAML [version]</tt> at the beginning of document.
+  #
+  #                           Default: <tt>false</tt>.
+  #
   # Example:
   #
   #   # Dump an array, get back a YAML string
@@ -427,10 +445,10 @@ module Psych
   #   Psych.dump(['a', 'b'], StringIO.new)  # => #<StringIO:0x000001009d0890>
   #
   #   # Dump an array with indentation set
-  #   Psych.dump(['a', ['b']], :indentation => 3) # => "---\n- a\n-  - b\n"
+  #   Psych.dump(['a', ['b']], indentation: 3) # => "---\n- a\n-  - b\n"
   #
   #   # Dump an array to an IO with indentation set
-  #   Psych.dump(['a', ['b']], StringIO.new, :indentation => 3)
+  #   Psych.dump(['a', ['b']], StringIO.new, indentation: 3)
   def self.dump o, io = nil, options = {}
     if Hash === io
       options = io
@@ -492,7 +510,7 @@ module Psych
   ###
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
-  # the specified default return value, which defaults to an empty Hash
+  # the specified +fallback+ return value, which defaults to +false+.
   def self.load_file filename, fallback: false
     File.open(filename, 'r:bom|utf-8') { |f|
       self.load f, filename, fallback: FALLBACK.new(fallback)
