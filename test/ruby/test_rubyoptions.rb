@@ -6,6 +6,13 @@ require 'tempfile'
 require_relative '../lib/jit_support'
 
 class TestRubyOptions < Test::Unit::TestCase
+  NO_JIT_DESCRIPTION =
+    if RubyVM::MJIT.enabled?
+      RUBY_DESCRIPTION.sub(/\+JIT /, '')
+    else
+      RUBY_DESCRIPTION
+    end
+
   def write_file(filename, content)
     File.open(filename, "w") {|f|
       f << content
@@ -109,9 +116,7 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      description = RUBY_DESCRIPTION
-      description = description.sub(/\+JIT /, '') if RubyVM::MJIT.enabled?
-      assert_equal(description, r[0])
+      assert_equal(NO_JIT_DESCRIPTION, r[0])
       assert_equal([], e)
     end
 
@@ -637,7 +642,7 @@ class TestRubyOptions < Test::Unit::TestCase
         -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
       )x,
       %r(
-        #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
+        #{ Regexp.quote(NO_JIT_DESCRIPTION) }\n\n
       )x,
       %r(
         (?:--\s(?:.+\n)*\n)?
