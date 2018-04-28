@@ -109,7 +109,9 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      assert_equal(RUBY_DESCRIPTION, r[0])
+      description = RUBY_DESCRIPTION
+      description = description.gsub(/\+JIT /, '') if RubyVM::MJIT.enabled?
+      assert_equal(description, r[0])
       assert_equal([], e)
     end
 
