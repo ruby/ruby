@@ -880,10 +880,12 @@ module REXMLTests
   <tada xmlns=''>xb</tada>
 </tag1>
       XML
-      x = d.root
-      num = 0
-      x.each_element('tada') {  num += 1 }
-      assert_equal(1, num)
+      actual = []
+      d.root.each_element('tada') do |element|
+        actual << element.to_s
+      end
+      assert_equal(["<tada>xa</tada>", "<tada xmlns=''>xb</tada>"],
+                   actual)
     end
 
     def test_ticket_39

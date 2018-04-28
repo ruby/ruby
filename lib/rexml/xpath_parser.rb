@@ -47,11 +47,12 @@ module REXML
     include XMLTokens
     LITERAL    = /^'([^']*)'|^"([^"]*)"/u
 
-    def initialize( )
+    def initialize(strict: false)
       @parser = REXML::Parsers::XPathParser.new
       @namespaces = nil
       @variables = {}
       @nest = 0
+      @strict = strict
     end
 
     def namespaces=( namespaces={} )
@@ -139,7 +140,9 @@ module REXML
     end
 
     private
-
+    def strict?
+      @strict
+    end
 
     # Returns a String namespace for a node, given a prefix
     # The rules are:
@@ -474,7 +477,13 @@ module REXML
               if prefix.nil?
                 raw_node.name == name
               elsif prefix.empty?
-                raw_node.name == name and raw_node.namespace == ""
+                if strict?
+                  raw_node.name == name and raw_node.namespace == ""
+                else
+                  # FIXME: This DOUBLES the time XPath searches take
+                  ns = get_namespace(raw_node, prefix)
+                  raw_node.name == name and raw_node.namespace == ns
+                end
               else
                 # FIXME: This DOUBLES the time XPath searches take
                 ns = get_namespace(raw_node, prefix)

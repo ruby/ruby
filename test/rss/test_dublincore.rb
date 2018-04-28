@@ -103,8 +103,6 @@ EOR
     end
 
     def test_to_s
-      skip # FIXME
-
       assert_dc_to_s(@rss10_source, @rss10_parents, false)
       assert_dc_to_s(@rss10_source, @rss10_parents, true)
 
