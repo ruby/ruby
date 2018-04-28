@@ -7,12 +7,10 @@ describe "String.new" do
     str.should be_an_instance_of(String)
   end
 
-  ruby_version_is "2.3" do
-    it "accepts an encoding argument" do
-      xA4xA2 = [0xA4, 0xA2].pack('CC').force_encoding 'utf-8'
-      str = String.new(xA4xA2, encoding: 'euc-jp')
-      str.encoding.should == Encoding::EUC_JP
-    end
+  it "accepts an encoding argument" do
+    xA4xA2 = [0xA4, 0xA2].pack('CC').force_encoding 'utf-8'
+    str = String.new(xA4xA2, encoding: 'euc-jp')
+    str.encoding.should == Encoding::EUC_JP
   end
 
   ruby_version_is "2.4" do

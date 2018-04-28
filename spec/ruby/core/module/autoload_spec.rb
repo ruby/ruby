@@ -400,52 +400,51 @@ describe "Module#autoload" do
       ModuleSpecs::Autoload.send(:remove_const, :Concur)
     end
 
-    ruby_bug "#10892", ""..."2.3" do
-      it "blocks others threads while doing an autoload" do
-        file_path     = fixture(__FILE__, "repeated_concurrent_autoload.rb")
-        autoload_path = file_path.sub(/\.rb\Z/, '')
-        mod_count     = 30
-        thread_count  = 16
+    # https://bugs.ruby-lang.org/issues/10892
+    it "blocks others threads while doing an autoload" do
+      file_path     = fixture(__FILE__, "repeated_concurrent_autoload.rb")
+      autoload_path = file_path.sub(/\.rb\Z/, '')
+      mod_count     = 30
+      thread_count  = 16
 
-        mod_names = []
-        mod_count.times do |i|
-          mod_name = :"Mod#{i}"
-          Object.autoload mod_name, autoload_path
-          mod_names << mod_name
-        end
+      mod_names = []
+      mod_count.times do |i|
+        mod_name = :"Mod#{i}"
+        Object.autoload mod_name, autoload_path
+        mod_names << mod_name
+      end
 
-        barrier = ModuleSpecs::CyclicBarrier.new thread_count
-        ScratchPad.record ModuleSpecs::ThreadSafeCounter.new
+      barrier = ModuleSpecs::CyclicBarrier.new thread_count
+      ScratchPad.record ModuleSpecs::ThreadSafeCounter.new
 
-        threads = (1..thread_count).map do
-          Thread.new do
-            mod_names.each do |mod_name|
-              break false unless barrier.enabled?
+      threads = (1..thread_count).map do
+        Thread.new do
+          mod_names.each do |mod_name|
+            break false unless barrier.enabled?
 
-              was_last_one_in = barrier.await # wait for all threads to finish the iteration
-              # clean up so we can autoload the same file again
-              $LOADED_FEATURES.delete(file_path) if was_last_one_in && $LOADED_FEATURES.include?(file_path)
-              barrier.await # get ready for race
+            was_last_one_in = barrier.await # wait for all threads to finish the iteration
+            # clean up so we can autoload the same file again
+            $LOADED_FEATURES.delete(file_path) if was_last_one_in && $LOADED_FEATURES.include?(file_path)
+            barrier.await # get ready for race
 
-              begin
-                Object.const_get(mod_name).foo
-              rescue NoMethodError
-                barrier.disable!
-                break false
-              end
+            begin
+              Object.const_get(mod_name).foo
+            rescue NoMethodError
+              barrier.disable!
+              break false
             end
           end
         end
+      end
 
-        # check that no thread got a NoMethodError because of partially loaded module
-        threads.all? {|t| t.value}.should be_true
+      # check that no thread got a NoMethodError because of partially loaded module
+      threads.all? {|t| t.value}.should be_true
 
-        # check that the autoloaded file was evaled exactly once
-        ScratchPad.recorded.get.should == mod_count
+      # check that the autoloaded file was evaled exactly once
+      ScratchPad.recorded.get.should == mod_count
 
-        mod_names.each do |mod_name|
-          Object.send(:remove_const, mod_name)
-        end
+      mod_names.each do |mod_name|
+        Object.send(:remove_const, mod_name)
       end
     end
 

@@ -26,11 +26,6 @@ describe "StringIO#close_read" do
 
     io = StringIO.new("example")
     io.close_read
-    ruby_version_is ''...'2.3' do
-      lambda { io.close_read }.should raise_error(IOError)
-    end
-    ruby_version_is '2.3' do
-      io.close_read.should == nil
-    end
+    io.close_read.should == nil
   end
 end

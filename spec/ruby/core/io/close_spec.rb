@@ -38,19 +38,10 @@ describe "IO#close" do
     lambda { @io.write "data" }.should_not raise_error(IOError)
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises an IOError if closed" do
-      @io.close
-      lambda { @io.close }.should raise_error(IOError)
-    end
-  end
+  it "does nothing if already closed" do
+    @io.close
 
-  ruby_version_is "2.3" do
-    it "does nothing if already closed" do
-      @io.close
-
-      @io.close.should be_nil
-    end
+    @io.close.should be_nil
   end
 
   ruby_version_is '2.5' do

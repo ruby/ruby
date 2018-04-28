@@ -17,6 +17,13 @@ module HashSpecs
     end
   end
 
+  class SubHashSettingInInitialize < Hash
+    def initialize(*args, &block)
+      self[:foo] = :bar
+      super(*args, &block)
+    end
+  end
+
   class DefaultHash < Hash
     def default(key)
       100

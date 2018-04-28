@@ -30,16 +30,14 @@ describe :socket_recv_nonblock, shared: true do
     @s1.recv_nonblock(5).should == "aaa"
   end
 
-  ruby_version_is "2.3" do
-    it "allows an output buffer as third argument" do
-      @s1.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
-      @s2.send("data", 0, @s1.getsockname)
-      IO.select([@s1], nil, nil, 2)
+  it "allows an output buffer as third argument" do
+    @s1.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
+    @s2.send("data", 0, @s1.getsockname)
+    IO.select([@s1], nil, nil, 2)
 
-      buf = "foo"
-      @s1.recv_nonblock(5, 0, buf)
-      buf.should == "data"
-    end
+    buf = "foo"
+    @s1.recv_nonblock(5, 0, buf)
+    buf.should == "data"
   end
 
   it "does not block if there's no data available" do

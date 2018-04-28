@@ -16,17 +16,8 @@ describe "StringIO#close" do
     lambda { @io.write('x') }.should raise_error(IOError)
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises an IOError when self was already closed" do
-      @io.close
-      lambda { @io.close }.should raise_error(IOError)
-    end
-  end
-
-  ruby_version_is "2.3" do
-    it "does not raise anything when self was already closed" do
-      @io.close
-      lambda { @io.close }.should_not raise_error(IOError)
-    end
+  it "does not raise anything when self was already closed" do
+    @io.close
+    lambda { @io.close }.should_not raise_error(IOError)
   end
 end

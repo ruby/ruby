@@ -58,15 +58,13 @@ describe "Kernel.loop" do
     lambda{ loop do raise StandardError end }.should raise_error( StandardError )
   end
 
-  ruby_version_is "2.3" do
-    it "returns StopIteration#result, the result value of a finished iterator" do
-      e = Enumerator.new { |y|
-        y << 1
-        y << 2
-        :stopped
-      }
-      loop { e.next }.should == :stopped
-    end
+  it "returns StopIteration#result, the result value of a finished iterator" do
+    e = Enumerator.new { |y|
+      y << 1
+      y << 2
+      :stopped
+    }
+    loop { e.next }.should == :stopped
   end
 
   describe "when no block is given" do

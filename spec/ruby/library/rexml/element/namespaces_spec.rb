@@ -28,4 +28,5 @@ describe "REXML::Element#namespaces" do
     values = ["2", "3", "1"]
     @elem.namespaces.values.sort.should == values.sort
   end
+
 end

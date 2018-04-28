@@ -455,6 +455,38 @@ module Super
     end
   end
 
+  module ZSuperWithRestReassigned
+    class A
+      def a(*args)
+        args
+      end
+    end
+
+    class B < A
+      def a(*args)
+        args = ["foo"]
+
+        super
+      end
+    end
+  end
+
+  module ZSuperWithRestReassignedWithScalar
+    class A
+      def a(*args)
+        args
+      end
+    end
+
+    class B < A
+      def a(*args)
+        args = "foo"
+
+        super
+      end
+    end
+  end
+
   module ZSuperWithUnderscores
     class A
       def m(*args)

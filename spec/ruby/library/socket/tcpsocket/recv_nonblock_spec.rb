@@ -27,10 +27,8 @@ describe "TCPSocket#recv_nonblock" do
     @socket.recv_nonblock(50).should == "TCPSocket#recv_nonblock"
   end
 
-  ruby_version_is '2.3' do
-    it 'returns :wait_readable in exceptionless mode' do
-      @socket = TCPSocket.new @hostname, @server.port
-      @socket.recv_nonblock(50, exception: false).should == :wait_readable
-    end
+  it 'returns :wait_readable in exceptionless mode' do
+    @socket = TCPSocket.new @hostname, @server.port
+    @socket.recv_nonblock(50, exception: false).should == :wait_readable
   end
 end

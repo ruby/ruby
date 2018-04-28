@@ -32,6 +32,15 @@ describe :dir_glob, shared: true do
     end
   end
 
+  ruby_version_is "2.6" do
+    it "splits the string on \\0 if there is only one string given and warns" do
+      -> {
+        Dir.send(@method, "file_o*\0file_t*").should ==
+          %w!file_one.ext file_two.ext!
+      }.should complain(/warning: use glob patterns list instead of nul-separated patterns/)
+    end
+  end
+
   it "matches non-dotfiles with '*'" do
     expected = %w[
       brace

@@ -13,7 +13,7 @@ ruby_version_is '2.4' do
         @lazy.force.should == [0, 1]
       end
 
-      ruby_bug "#14495", "2.4"..."2.5.1" do
+      ruby_bug "#14495", "2.4"..."2.5.2" do
         it 'return same value after rewind' do
           @lazy.force.should == [0, 1]
           @lazy.force.should == [0, 1]
@@ -35,7 +35,7 @@ ruby_version_is '2.4' do
         @lazy.force.should == [0, 1]
       end
 
-      ruby_bug "#14495", "2.4"..."2.5.1" do
+      ruby_bug "#14495", "2.4"..."2.5.2" do
         it 'return same value after rewind' do
           @lazy.force.should == [0, 1]
           @lazy.force.should == [0, 1]
@@ -60,7 +60,7 @@ ruby_version_is '2.4' do
         @lazy = enum.lazy
       end
 
-      ruby_bug "#14495", "2.4"..."2.5.1" do
+      ruby_bug "#14495", "2.4"..."2.5.2" do
         it 'return same value after rewind' do
           enum = @lazy.uniq { |_, label| label.downcase }
           enum.force.should == [[0, 'foo'], [2, 'bar']]

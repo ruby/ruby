@@ -11,17 +11,7 @@ describe "IO#close_on_exec=" do
     rm_r @name
   end
 
-  guard -> { platform_is :windows and ruby_version_is ""..."2.3" } do
-    it "returns false from #respond_to?" do
-      @io.respond_to?(:close_on_exec=).should be_false
-    end
-
-    it "raises a NotImplementedError when called" do
-      lambda { @io.close_on_exec = true }.should raise_error(NotImplementedError)
-    end
-  end
-
-  guard -> { platform_is_not :windows or ruby_version_is "2.3" } do
+  guard -> { platform_is_not :windows } do
     it "sets the close-on-exec flag if true" do
       @io.close_on_exec = true
       @io.close_on_exec?.should == true
@@ -72,17 +62,7 @@ describe "IO#close_on_exec?" do
     rm_r @name
   end
 
-  guard -> { platform_is :windows and ruby_version_is ""..."2.3" } do
-    it "returns false from #respond_to?" do
-      @io.respond_to?(:close_on_exec?).should be_false
-    end
-
-    it "raises a NotImplementedError when called" do
-      lambda { @io.close_on_exec? }.should raise_error(NotImplementedError)
-    end
-  end
-
-  guard -> { platform_is_not :windows or ruby_version_is "2.3" } do
+  guard -> { platform_is_not :windows } do
     it "returns true by default" do
       @io.close_on_exec?.should == true
     end

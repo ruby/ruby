@@ -41,9 +41,7 @@ describe "IO.binread" do
     lambda { IO.binread @fname, -1 }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.3" do # MRI leaks the fd on older versions
-    it "raises an Errno::EINVAL when not passed a valid offset" do
-      lambda { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
-    end
+  it "raises an Errno::EINVAL when not passed a valid offset" do
+    lambda { IO.binread @fname, 0, -1  }.should raise_error(Errno::EINVAL)
   end
 end

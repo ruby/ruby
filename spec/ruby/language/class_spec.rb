@@ -13,11 +13,9 @@ describe "The class keyword" do
     ClassSpecsKeywordWithSemicolon.should be_an_instance_of(Class)
   end
 
-  ruby_version_is "2.3" do
-    it "does not raise a SyntaxError when opening a class without a semicolon" do
-      eval "class ClassSpecsKeywordWithoutSemicolon end"
-      ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
-    end
+  it "does not raise a SyntaxError when opening a class without a semicolon" do
+    eval "class ClassSpecsKeywordWithoutSemicolon end"
+    ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
   end
 end
 

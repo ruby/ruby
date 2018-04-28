@@ -2,8 +2,8 @@ require 'bigdecimal'
 
 describe :bigdecimal_eql, shared: true do
   before :each do
-    @bg6543_21 = BigDecimal.new("6543.21")
-    @bg5667_19 = BigDecimal.new("5667.19")
+    @bg6543_21 = BigDecimal("6543.21")
+    @bg5667_19 = BigDecimal("5667.19")
     @a = BigDecimal("1.0000000000000000000000000000000000000000005")
     @b = BigDecimal("1.00000000000000000000000000000000000000000005")
     @bigint = BigDecimal("1000.0")

@@ -26,11 +26,6 @@ describe "StringIO#close_write" do
 
     io = StringIO.new("example")
     io.close_write
-    ruby_version_is ''...'2.3' do
-      lambda { io.close_write }.should raise_error(IOError)
-    end
-    ruby_version_is '2.3' do
-      io.close_write.should == nil
-    end
+    io.close_write.should == nil
   end
 end

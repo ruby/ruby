@@ -76,21 +76,19 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == "firstline\377"
   end
 
-  ruby_version_is "2.3" do
-    it "allows an output buffer as third argument" do
-      socket = TCPSocket.new('127.0.0.1', @port)
-      socket.write("data")
+  it "allows an output buffer as third argument" do
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.write("data")
 
-      client = @server.accept
-      buf = "foo"
-      begin
-        client.recv(4, 0, buf)
-      ensure
-        client.close
-      end
-      buf.should == "data"
-
-      socket.close
+    client = @server.accept
+    buf = "foo"
+    begin
+      client.recv(4, 0, buf)
+    ensure
+      client.close
     end
+    buf.should == "data"
+
+    socket.close
   end
 end

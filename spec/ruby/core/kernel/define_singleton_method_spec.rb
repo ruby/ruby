@@ -86,16 +86,14 @@ describe "Kernel#define_singleton_method" do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.3" do
-    it "does not use the caller block when no block is given" do
-      o = Object.new
-      def o.define(name)
-        define_singleton_method(name)
-      end
-
-      lambda {
-        o.define(:foo) { raise "not used" }
-      }.should raise_error(ArgumentError)
+  it "does not use the caller block when no block is given" do
+    o = Object.new
+    def o.define(name)
+      define_singleton_method(name)
     end
+
+    lambda {
+      o.define(:foo) { raise "not used" }
+    }.should raise_error(ArgumentError)
   end
 end

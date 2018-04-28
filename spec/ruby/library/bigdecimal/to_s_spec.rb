@@ -34,11 +34,11 @@ describe "BigDecimal#to_s" do
     @bigdec.to_s(3).should =~ re
 
     str1 = '-123.45678 90123 45678 9'
-    BigDecimal.new("-123.45678901234567890").to_s('5F').should ==  str1
+    BigDecimal("-123.45678901234567890").to_s('5F').should ==  str1
     # trailing zeroes removed
-    BigDecimal.new("1.00000000000").to_s('1F').should == "1.0"
+    BigDecimal("1.00000000000").to_s('1F').should == "1.0"
     # 0 is treated as no spaces
-    BigDecimal.new("1.2345").to_s('0F').should == "1.2345"
+    BigDecimal("1.2345").to_s('0F').should == "1.2345"
   end
 
   it "can return a leading space for values > 0" do
@@ -47,15 +47,15 @@ describe "BigDecimal#to_s" do
   end
 
   it "removes trailing spaces in floating point notation" do
-    BigDecimal.new('-123.45678901234567890').to_s('F').should == "-123.4567890123456789"
-    BigDecimal.new('1.2500').to_s('F').should == "1.25"
-    BigDecimal.new('0000.00000').to_s('F').should == "0.0"
-    BigDecimal.new('-00.000010000').to_s('F').should == "-0.00001"
-    BigDecimal.new("5.00000E-2").to_s("F").should == "0.05"
+    BigDecimal('-123.45678901234567890').to_s('F').should == "-123.4567890123456789"
+    BigDecimal('1.2500').to_s('F').should == "1.25"
+    BigDecimal('0000.00000').to_s('F').should == "0.0"
+    BigDecimal('-00.000010000').to_s('F').should == "-0.00001"
+    BigDecimal("5.00000E-2").to_s("F").should == "0.05"
 
-    BigDecimal.new("500000").to_s("F").should == "500000.0"
-    BigDecimal.new("5E2").to_s("F").should == "500.0"
-    BigDecimal.new("-5E100").to_s("F").should == "-5" + "0" * 100 + ".0"
+    BigDecimal("500000").to_s("F").should == "500000.0"
+    BigDecimal("5E2").to_s("F").should == "500.0"
+    BigDecimal("-5E100").to_s("F").should == "-5" + "0" * 100 + ".0"
   end
 
   it "can use engineering notation" do
@@ -66,7 +66,7 @@ describe "BigDecimal#to_s" do
     @bigdec.to_s("F").should == @bigdec_str
     @bigneg.to_s("F").should == @bigneg_str
     str2 = "+123.45678901 23456789"
-    BigDecimal.new('123.45678901234567890').to_s('+8F').should == str2
+    BigDecimal('123.45678901234567890').to_s('+8F').should == str2
   end
 
 end

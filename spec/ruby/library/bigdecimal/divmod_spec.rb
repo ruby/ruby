@@ -36,7 +36,7 @@ describe "BigDecimal#mod_part_of_divmod" do
   it_behaves_like :bigdecimal_modulo, :mod_part_of_divmod
 
   it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal.new("5667.19")
+    bd5667 = BigDecimal("5667.19")
 
     lambda { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
     lambda { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
@@ -96,8 +96,8 @@ describe "BigDecimal#divmod" do
 
   it "can be reversed with * and +" do
     # Example taken from BigDecimal documentation
-    a = BigDecimal.new("42")
-    b = BigDecimal.new("9")
+    a = BigDecimal("42")
+    b = BigDecimal("9")
     q, m = a.divmod(b)
     c = q * b + m
     a.should == c

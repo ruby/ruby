@@ -524,28 +524,26 @@ describe "File.open" do
     File.size(@file).should == 0
   end
 
-  ruby_version_is "2.3" do
-    platform_is :linux do
-      guard -> { defined?(File::TMPFILE) } do
-        it "creates an unnamed temporary file with File::TMPFILE" do
-          dir = tmp("tmpfilespec")
-          mkdir_p dir
-          begin
+  platform_is :linux do
+    guard -> { defined?(File::TMPFILE) } do
+      it "creates an unnamed temporary file with File::TMPFILE" do
+        dir = tmp("tmpfilespec")
+        mkdir_p dir
+        begin
+          Dir["#{dir}/*"].should == []
+          File.open(dir, "r+", flags: File::TMPFILE) do |io|
+            io.write("ruby")
+            io.flush
+            io.rewind
+            io.read.should == "ruby"
             Dir["#{dir}/*"].should == []
-            File.open(dir, "r+", flags: File::TMPFILE) do |io|
-              io.write("ruby")
-              io.flush
-              io.rewind
-              io.read.should == "ruby"
-              Dir["#{dir}/*"].should == []
-            end
-          rescue Errno::EOPNOTSUPP, Errno::EINVAL
-            # EOPNOTSUPP: no support from the filesystem
-            # EINVAL: presumably bug in glibc
-            1.should == 1
-          ensure
-            rm_r dir
           end
+        rescue Errno::EOPNOTSUPP, Errno::EINVAL
+          # EOPNOTSUPP: no support from the filesystem
+          # EINVAL: presumably bug in glibc
+          1.should == 1
+        ensure
+          rm_r dir
         end
       end
     end
@@ -586,22 +584,20 @@ describe "File.open" do
     @fh = File.open(@file, options)
   end
 
-  ruby_version_is "2.3" do
-    it "accepts extra flags as a keyword argument and combine with a string mode" do
-      lambda {
-        File.open(@file, "w", flags: File::EXCL) { }
-      }.should raise_error(Errno::EEXIST)
+  it "accepts extra flags as a keyword argument and combine with a string mode" do
+    lambda {
+      File.open(@file, "w", flags: File::EXCL) { }
+    }.should raise_error(Errno::EEXIST)
 
-      lambda {
-        File.open(@file, mode: "w", flags: File::EXCL) { }
-      }.should raise_error(Errno::EEXIST)
-    end
+    lambda {
+      File.open(@file, mode: "w", flags: File::EXCL) { }
+    }.should raise_error(Errno::EEXIST)
+  end
 
-    it "accepts extra flags as a keyword argument and combine with an integer mode" do
-      lambda {
-        File.open(@file, File::WRONLY | File::CREAT, flags: File::EXCL) { }
-      }.should raise_error(Errno::EEXIST)
-    end
+  it "accepts extra flags as a keyword argument and combine with an integer mode" do
+    lambda {
+      File.open(@file, File::WRONLY | File::CREAT, flags: File::EXCL) { }
+    }.should raise_error(Errno::EEXIST)
   end
 
   platform_is_not :windows do

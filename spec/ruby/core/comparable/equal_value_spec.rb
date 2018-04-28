@@ -48,16 +48,8 @@ describe "Comparable#==" do
       a.should_receive(:<=>).once.and_return("abc")
     end
 
-    ruby_version_is ""..."2.3" do
-      it "returns false" do
-        (a == b).should be_false
-      end
-    end
-
-    ruby_version_is "2.3" do
-      it "raises an ArgumentError" do
-        lambda { (a == b) }.should raise_error(ArgumentError)
-      end
+    it "raises an ArgumentError" do
+      lambda { (a == b) }.should raise_error(ArgumentError)
     end
   end
 
@@ -67,17 +59,8 @@ describe "Comparable#==" do
         a.should_receive(:<=>).once.and_raise(StandardError)
       end
 
-      ruby_version_is ""..."2.3" do
-        # Behaviour confirmed by MRI test suite
-        it "returns false" do
-          (a == b).should be_false
-        end
-      end
-
-      ruby_version_is "2.3" do
-        it "lets it go through" do
-          lambda { (a == b) }.should raise_error(StandardError)
-        end
+      it "lets it go through" do
+        lambda { (a == b) }.should raise_error(StandardError)
       end
     end
 
@@ -87,16 +70,8 @@ describe "Comparable#==" do
         a.should_receive(:<=>).once.and_raise(TypeError)
       end
 
-      ruby_version_is ""..."2.3" do
-        it "returns false" do
-          (a == b).should be_false
-        end
-      end
-
-      ruby_version_is "2.3" do
-        it "lets it go through" do
-          lambda { (a == b) }.should raise_error(TypeError)
-        end
+      it "lets it go through" do
+        lambda { (a == b) }.should raise_error(TypeError)
       end
     end
 

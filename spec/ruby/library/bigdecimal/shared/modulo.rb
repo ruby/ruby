@@ -18,8 +18,8 @@ describe :bigdecimal_modulo, shared: true do
   end
 
   it "returns self modulo other" do
-    bd6543 = BigDecimal.new("6543.21")
-    bd5667 = BigDecimal.new("5667.19")
+    bd6543 = BigDecimal("6543.21")
+    bd5667 = BigDecimal("5667.19")
     a = BigDecimal("1.0000000000000000000000000000000000000000005")
     b = BigDecimal("1.00000000000000000000000000000000000000000005")
 
@@ -107,7 +107,7 @@ end
 
 describe :bigdecimal_modulo_zerodivisionerror, shared: true do
   it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal.new("5667.19")
+    bd5667 = BigDecimal("5667.19")
 
     lambda { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
     lambda { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)

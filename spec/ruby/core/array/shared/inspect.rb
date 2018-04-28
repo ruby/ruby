@@ -121,24 +121,11 @@ describe :array_inspect, shared: true do
       array.send(@method).encoding.name.should == "US-ASCII"
     end
 
-    ruby_version_is ''...'2.3' do
-      it "raises if inspected result is not default external encoding" do
-        utf_16be = mock("utf_16be")
-        utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
+    it "does not raise if inspected result is not default external encoding" do
+      utf_16be = mock("utf_16be")
+      utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
 
-        lambda {
-          [utf_16be].send(@method)
-        }.should raise_error(Encoding::CompatibilityError)
-      end
-    end
-
-    ruby_version_is '2.3' do
-      it "does not raise if inspected result is not default external encoding" do
-        utf_16be = mock("utf_16be")
-        utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
-
-        [utf_16be].send(@method).should == '["utf_16be \u3042"]'
-      end
+      [utf_16be].send(@method).should == '["utf_16be \u3042"]'
     end
   end
 end

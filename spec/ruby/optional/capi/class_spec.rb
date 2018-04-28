@@ -257,34 +257,20 @@ describe "C-API Class function" do
       }.should raise_error(TypeError)
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError when given a mismatched class to superclass" do
-        CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
-        lambda { @s.rb_define_class_under(CApiClassSpecs,
-                                          "ClassUnder6",
-                                          Class.new)
-        }.should raise_error(TypeError)
-      end
-    end
-
-    ruby_version_is ""..."2.3" do
-      it "raises a NameError when given a mismatched class to superclass" do
-        CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
-        lambda { @s.rb_define_class_under(CApiClassSpecs,
-                                          "ClassUnder6",
-                                          Class.new)
-        }.should raise_error(NameError)
-      end
+    it "raises a TypeError when given a mismatched class to superclass" do
+      CApiClassSpecs::ClassUnder6 = Class.new(CApiClassSpecs::Super)
+      lambda { @s.rb_define_class_under(CApiClassSpecs,
+                                        "ClassUnder6",
+                                        Class.new)
+      }.should raise_error(TypeError)
     end
 
     it "defines a class for an existing Autoload" do
       ClassUnderAutoload.name.should == "ClassUnderAutoload"
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError if class is defined and its superclass mismatches the given one" do
-        lambda { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
-      end
+    it "raises a TypeError if class is defined and its superclass mismatches the given one" do
+      lambda { @s.rb_define_class_under(CApiClassSpecs, "Sub", Object) }.should raise_error(TypeError)
     end
   end
 
@@ -310,10 +296,8 @@ describe "C-API Class function" do
       ClassIdUnderAutoload.name.should == "ClassIdUnderAutoload"
     end
 
-    ruby_version_is "2.3" do
-      it "raises a TypeError if class is defined and its superclass mismatches the given one" do
-        lambda { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
-      end
+    it "raises a TypeError if class is defined and its superclass mismatches the given one" do
+      lambda { @s.rb_define_class_id_under(CApiClassSpecs, :Sub, Object) }.should raise_error(TypeError)
     end
   end
 
