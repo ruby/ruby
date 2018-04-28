@@ -2,6 +2,7 @@
 
 require 'test/unit'
 require 'open3'
+require_relative 'lib/jit_support'
 
 class TestOpen3 < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
@@ -126,7 +127,7 @@ class TestOpen3 < Test::Unit::TestCase
           i.close
           STDERR.reopen(old)
           assert_equal("zo", o.read)
-          assert_equal("ze", r.read)
+          assert_equal("ze", JITSupport.remove_mjit_logs(r.read))
         }
       }
     }
