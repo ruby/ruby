@@ -813,9 +813,14 @@ range_each(VALUE range)
 	    rb_yield(LONG2FIX(i));
 	}
     }
-    else if (SYMBOL_P(beg) && SYMBOL_P(end)) { /* symbols are special */
+    else if (SYMBOL_P(beg) && (NIL_P(end) || SYMBOL_P(end))) { /* symbols are special */
 	beg = rb_sym2str(beg);
-	rb_str_upto_each(beg, rb_sym2str(end), EXCL(range), sym_each_i, 0);
+	if (NIL_P(end)) {
+	    rb_str_upto_endless_each(beg, sym_each_i, 0);
+	}
+	else {
+	    rb_str_upto_each(beg, rb_sym2str(end), EXCL(range), sym_each_i, 0);
+	}
     }
     else {
 	VALUE tmp = rb_check_string_type(beg);
