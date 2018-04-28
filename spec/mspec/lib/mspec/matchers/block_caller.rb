@@ -10,7 +10,11 @@ class BlockingMatcher
       blocking = false
     end
 
-    while !started and status = thread.status and status != "sleep"
+    Thread.pass while !started
+
+    # Wait until the Thread status is "sleep" (then it's blocking)
+    # or nil (the Thread finished execution, it did not block)
+    while status = thread.status and status != "sleep"
       Thread.pass
     end
     thread.kill

@@ -7,17 +7,22 @@ script:
   - bundle exec rspec
 matrix:
   include:
-  - rvm: 2.2.9
-  - rvm: 2.3.6
-  - rvm: 2.4.3
-  - rvm: 2.5.0
+  - rvm: 2.3.7
+  - rvm: 2.4.4
     before_install:
       # https://github.com/travis-ci/travis-ci/issues/8978
       - gem update --system
+      - gem install bundler
+  - rvm: 2.5.1
+    before_install:
+      # https://github.com/travis-ci/travis-ci/issues/8978
+      - gem update --system
+      - gem install bundler
   - rvm: ruby-head
     before_install:
       # https://github.com/travis-ci/travis-ci/issues/8978
       - gem update --system
+      - gem install bundler
   - jdk: oraclejdk8
     install:
       - curl -L https://github.com/oracle/truffleruby/releases/download/vm-enterprise-0.28/truffleruby-testing-0.28.tar.gz | tar xz
