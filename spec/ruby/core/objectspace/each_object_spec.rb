@@ -184,18 +184,9 @@ describe "ObjectSpace.each_object" do
       hidden.should == nil
     end
 
-    ruby_version_is ""..."2.3" do
-      it "does not walk singleton classes" do
-        @sclass.should be_kind_of(@meta)
-        ObjectSpace.each_object(@meta).to_a.should_not include(@sclass)
-      end
-    end
-
-    ruby_version_is "2.3" do
-      it "walks singleton classes" do
-        @sclass.should be_kind_of(@meta)
-        ObjectSpace.each_object(@meta).to_a.should include(@sclass)
-      end
+    it "walks singleton classes" do
+      @sclass.should be_kind_of(@meta)
+      ObjectSpace.each_object(@meta).to_a.should include(@sclass)
     end
   end
 
@@ -211,10 +202,8 @@ describe "ObjectSpace.each_object" do
     expected = [ a, b, c, d ]
 
     # singleton classes should be walked only on >= 2.3
-    ruby_version_is "2.3" do
-      expected << c_sclass
-      c_sclass.should be_kind_of(a.singleton_class)
-    end
+    expected << c_sclass
+    c_sclass.should be_kind_of(a.singleton_class)
 
     b.extend Enumerable # included modules should not be walked
 

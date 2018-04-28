@@ -371,11 +371,23 @@ describe "The rescue keyword" do
   end
 
   it "evaluates rescue expressions only when needed" do
-    invalid_rescuer = Object.new
     begin
-      :foo
-    rescue invalid_rescuer
-    end.should == :foo
+      ScratchPad << :foo
+    rescue -> { ScratchPad << :bar; StandardError }.call
+    end
+
+    ScratchPad.recorded.should == [:foo]
+  end
+
+  it "suppresses exception from block when raises one from rescue expression" do
+    -> {
+      begin
+        raise "from block"
+      rescue (raise "from rescue expression")
+      end
+    }.should raise_error(RuntimeError, "from rescue expression") do |e|
+      e.cause.message.should == "from block"
+    end
   end
 
   it "should splat the handling Error classes" do

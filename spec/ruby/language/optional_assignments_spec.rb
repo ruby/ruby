@@ -181,6 +181,52 @@ describe 'Optional variable assignments' do
         @a.b.should == 20
       end
     end
+
+    describe 'using a #[]' do
+      before do
+        @a = {}
+      end
+
+      it 'leaves new variable unassigned' do
+        @a[:k] &&= 10
+
+        @a.key?(:k).should == false
+      end
+
+      it 'leaves false' do
+        @a[:k] = false
+        @a[:k] &&= 10
+
+        @a[:k].should == false
+      end
+
+      it 'leaves nil' do
+        @a[:k] = nil
+        @a[:k] &&= 10
+
+        @a[:k].should == nil
+      end
+
+      it 'does not evaluate the right side when not needed' do
+        @a[:k] = nil
+        @a[:k] &&= raise('should not be executed')
+        @a[:k].should == nil
+      end
+
+      it 'does re-assign a variable with a truthy value' do
+        @a[:k] = 10
+        @a[:k] &&= 20
+
+        @a[:k].should == 20
+      end
+
+      it 'does re-assign a variable with a truthy value when using an inline rescue' do
+        @a[:k] = 10
+        @a[:k] &&= 20 rescue 30
+
+        @a[:k].should == 20
+      end
+    end
   end
 
   describe 'using compunded constants' do

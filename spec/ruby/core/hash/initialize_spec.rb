@@ -9,14 +9,35 @@ describe "Hash#initialize" do
   it "can be used to reset default_proc" do
     h = { "foo" => 1, "bar" => 2 }
     h.default_proc.should == nil
-    h.instance_eval { initialize { |_, k| k * 2 } }
+    h.send(:initialize) { |_, k| k * 2 }
     h.default_proc.should_not == nil
     h["a"].should == "aa"
+  end
+
+  it "can be used to reset the default value" do
+    h = {}
+    h.default = 42
+    h.default.should == 42
+    h.send(:initialize, 1)
+    h.default.should == 1
+    h.send(:initialize)
+    h.default.should == nil
   end
 
   it "receives the arguments passed to Hash#new" do
     HashSpecs::NewHash.new(:one, :two)[0].should == :one
     HashSpecs::NewHash.new(:one, :two)[1].should == :two
+  end
+
+  it "does not change the storage, only the default value or proc" do
+    h = HashSpecs::SubHashSettingInInitialize.new
+    h.to_a.should == [[:foo, :bar]]
+
+    h = HashSpecs::SubHashSettingInInitialize.new(:default)
+    h.to_a.should == [[:foo, :bar]]
+
+    h = HashSpecs::SubHashSettingInInitialize.new { :default_block }
+    h.to_a.should == [[:foo, :bar]]
   end
 
   it "returns self" do

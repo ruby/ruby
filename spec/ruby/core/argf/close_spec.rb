@@ -20,21 +20,10 @@ describe "ARGF.close" do
     end
   end
 
-  ruby_version_is ""..."2.3" do
-    it "raises an IOError if called on a closed stream" do
-      argf [@file1_name] do
-        lambda { @argf.close }.should_not raise_error
-        lambda { @argf.close }.should raise_error(IOError)
-      end
-    end
-  end
-
-  ruby_version_is "2.3" do
-    it "doesn't raise an IOError if called on a closed stream" do
-      argf [@file1_name] do
-        lambda { @argf.close }.should_not raise_error
-        lambda { @argf.close }.should_not raise_error
-      end
+  it "doesn't raise an IOError if called on a closed stream" do
+    argf [@file1_name] do
+      lambda { @argf.close }.should_not raise_error
+      lambda { @argf.close }.should_not raise_error
     end
   end
 end

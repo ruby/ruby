@@ -29,10 +29,8 @@ describe "UNIXServer#accept_nonblock" do
       @socket.should be_kind_of(UNIXSocket)
     end
 
-    ruby_version_is '2.3' do
-      it 'returns :wait_readable in exceptionless mode' do
-        @server.accept_nonblock(exception: false).should == :wait_readable
-      end
+    it 'returns :wait_readable in exceptionless mode' do
+      @server.accept_nonblock(exception: false).should == :wait_readable
     end
   end
 end

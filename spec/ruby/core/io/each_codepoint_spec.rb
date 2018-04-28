@@ -37,9 +37,7 @@ describe "IO#each_codepoint" do
     @io.close if @io
   end
 
-  ruby_version_is "2.3" do # earlier versions stay blocked
-    it "raises an exception at incomplete character before EOF when conversion takes place" do
-      lambda { @io.each_codepoint {} }.should raise_error(ArgumentError)
-    end
+  it "raises an exception at incomplete character before EOF when conversion takes place" do
+    lambda { @io.each_codepoint {} }.should raise_error(ArgumentError)
   end
 end

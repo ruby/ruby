@@ -87,23 +87,10 @@ describe :hash_to_s, shared: true do
     { nil => nil }.untrust.send(@method).untrusted?.should be_true
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises if inspected result is not default external encoding" do
-      utf_16be = mock("utf_16be")
-      utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
+  it "does not raise if inspected result is not default external encoding" do
+    utf_16be = mock("utf_16be")
+    utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
 
-      lambda {
-        {a: utf_16be}.send(@method)
-      }.should raise_error(Encoding::CompatibilityError)
-    end
-  end
-
-  ruby_version_is '2.3' do
-    it "does not raise if inspected result is not default external encoding" do
-      utf_16be = mock("utf_16be")
-      utf_16be.should_receive(:inspect).and_return(%<"utf_16be \u3042">.encode!(Encoding::UTF_16BE))
-
-      {a: utf_16be}.send(@method).should == '{:a=>"utf_16be \u3042"}'
-    end
+    {a: utf_16be}.send(@method).should == '{:a=>"utf_16be \u3042"}'
   end
 end

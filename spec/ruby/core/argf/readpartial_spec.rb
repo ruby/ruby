@@ -54,15 +54,13 @@ describe "ARGF.readpartial" do
     end
   end
 
-  ruby_version_is "2.3" do
-    it "raises an EOFError if the exception was raised while reading the last file" do
-      argf [@file1_name, @file2_name] do
-        @argf.readpartial(@file1.size)
-        @argf.readpartial(1)
-        @argf.readpartial(@file2.size)
-        lambda { @argf.readpartial(1) }.should raise_error(EOFError)
-        lambda { @argf.readpartial(1) }.should raise_error(EOFError)
-      end
+  it "raises an EOFError if the exception was raised while reading the last file" do
+    argf [@file1_name, @file2_name] do
+      @argf.readpartial(@file1.size)
+      @argf.readpartial(1)
+      @argf.readpartial(@file2.size)
+      lambda { @argf.readpartial(1) }.should raise_error(EOFError)
+      lambda { @argf.readpartial(1) }.should raise_error(EOFError)
     end
   end
 

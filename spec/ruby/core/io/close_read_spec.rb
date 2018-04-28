@@ -19,20 +19,10 @@ describe "IO#close_read" do
     lambda { @io.read }.should raise_error(IOError)
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises an IOError on subsequent invocations" do
-      @io.close_read
+  it "does nothing on subsequent invocations" do
+    @io.close_read
 
-      lambda { @io.close_read }.should raise_error(IOError)
-    end
-  end
-
-  ruby_version_is '2.3' do
-    it "does nothing on subsequent invocations" do
-      @io.close_read
-
-      @io.close_read.should be_nil
-    end
+    @io.close_read.should be_nil
   end
 
   it "allows subsequent invocation of close" do
@@ -62,19 +52,9 @@ describe "IO#close_read" do
     io.closed?.should == true
   end
 
-  ruby_version_is ''...'2.3' do
-    it "raises IOError on closed stream" do
-      @io.close
+  it "does nothing on closed stream" do
+    @io.close
 
-      lambda { @io.close_read }.should raise_error(IOError)
-    end
-  end
-
-  ruby_version_is '2.3' do
-    it "does nothing on closed stream" do
-      @io.close
-
-      @io.close_read.should be_nil
-    end
+    @io.close_read.should be_nil
   end
 end

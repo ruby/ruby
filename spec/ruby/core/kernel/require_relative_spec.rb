@@ -40,6 +40,48 @@ describe "Kernel#require_relative with a relative path" do
     ScratchPad.recorded.should == [:loaded]
   end
 
+  describe "in an #instance_eval with a" do
+
+    it "synthetic file base name loads a file base name relative to the working directory" do
+      Dir.chdir @abs_dir do
+        Object.new.instance_eval("require_relative(#{File.basename(@path).inspect})", "foo.rb").should be_true
+      end
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "synthetic file path loads a relative path relative to the working directory plus the directory of the synthetic path" do
+      Dir.chdir @abs_dir do
+        Object.new.instance_eval("require_relative(File.join('..', #{File.basename(@path).inspect}))", "bar/foo.rb").should be_true
+      end
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    platform_is_not :windows do
+      it "synthetic relative file path with a Windows path separator specified loads a relative path relative to the working directory" do
+        Dir.chdir @abs_dir do
+          Object.new.instance_eval("require_relative(#{File.basename(@path).inspect})", "bar\\foo.rb").should be_true
+        end
+        ScratchPad.recorded.should == [:loaded]
+      end
+    end
+
+    it "absolute file path loads a path relative to the absolute path" do
+      Object.new.instance_eval("require_relative(#{@path.inspect})", __FILE__).should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    it "absolute file path loads a path relative to the root directory" do
+      root = @abs_path
+      until File.dirname(root) == root
+        root = File.dirname(root)
+      end
+      root_relative = @abs_path[root.size..-1]
+      Object.new.instance_eval("require_relative(#{root_relative.inspect})", "/").should be_true
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+  end
+
   it "loads a file defining many methods" do
     require_relative("#{@dir}/methods_fixture.rb").should be_true
     ScratchPad.recorded.should == [:loaded]

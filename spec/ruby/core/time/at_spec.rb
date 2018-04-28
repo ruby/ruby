@@ -34,7 +34,7 @@ describe "Time.at" do
     describe "passed BigDecimal" do
       it "doesn't round input value" do
         require 'bigdecimal'
-        Time.at(BigDecimal.new('1.1')).to_f.should == 1.1
+        Time.at(BigDecimal('1.1')).to_f.should == 1.1
       end
     end
   end

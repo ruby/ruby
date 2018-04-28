@@ -108,7 +108,7 @@ describe "Hash#compare_by_identity" do
     @idh.keys.first.should equal foo
   end
 
-  ruby_bug "#12855", "2.2.0"..."2.4.1" do
+  ruby_bug "#12855", ""..."2.4.1" do
     it "gives different identity for string literals" do
       @idh['foo'] = 1
       @idh['foo'] = 2

@@ -36,10 +36,8 @@ describe "String#crypt" do
     lambda { "hello".crypt("a\x00") }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.3" do
-    it "raises an ArgumentError when the string contains NUL character" do
-      lambda { "poison\0null".crypt("aa") }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when the string contains NUL character" do
+    lambda { "poison\0null".crypt("aa") }.should raise_error(ArgumentError)
   end
 
   it "calls #to_str to converts the salt arg to a String" do

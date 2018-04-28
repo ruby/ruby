@@ -18,3 +18,12 @@ end
 describe "StringIO#read_nonblock when passed length" do
   it_behaves_like :stringio_sysread_length, :read_nonblock
 end
+
+describe "StringIO#read_nonblock" do
+
+  it "accepts an exception option" do
+    stringio = StringIO.new('foo')
+    stringio.read_nonblock(3, exception: false).should == 'foo'
+  end
+
+end

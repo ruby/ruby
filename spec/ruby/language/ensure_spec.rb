@@ -66,6 +66,18 @@ describe "An ensure block inside a begin block" do
       :ensure
     end.should == :begin
   end
+
+  it "sets exception cause if raises exception in block and in ensure" do
+    -> {
+      begin
+        raise "from block"
+      ensure
+        raise "from ensure"
+      end
+    }.should raise_error(RuntimeError, "from ensure") do |e|
+      e.cause.message.should == "from block"
+    end
+  end
 end
 
 describe "The value of an ensure expression," do
@@ -116,6 +128,34 @@ describe "An ensure block inside a method" do
 
   it "has an impact on the method's explicit return value" do
     @obj.explicit_return_in_method_with_ensure.should == :ensure
+  end
+
+  it "has an impact on the method's explicit return value from rescue if returns explicitly" do
+    @obj.explicit_return_in_rescue_and_explicit_return_in_ensure.should == "returned in ensure"
+  end
+
+  it "has no impact on the method's explicit return value from rescue if returns implicitly" do
+    @obj.explicit_return_in_rescue_and_implicit_return_in_ensure.should == "returned in rescue"
+  end
+
+  it "suppresses exception raised in method if returns value explicitly" do
+    @obj.raise_and_explicit_return_in_ensure.should == "returned in ensure"
+  end
+
+  it "suppresses exception raised in rescue if returns value explicitly" do
+    @obj.raise_in_rescue_and_explicit_return_in_ensure.should == "returned in ensure"
+  end
+
+  it "overrides exception raised in rescue if raises exception itself" do
+    -> {
+      @obj.raise_in_rescue_and_raise_in_ensure
+    }.should raise_error(RuntimeError, "raised in ensure")
+  end
+
+  it "suppresses exception raised in method if raises exception itself" do
+    -> {
+      @obj.raise_in_method_and_raise_in_ensure
+    }.should raise_error(RuntimeError, "raised in ensure")
   end
 end
 

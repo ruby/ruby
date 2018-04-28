@@ -222,19 +222,17 @@ describe "Module#define_method" do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "2.3" do
-    it "does not use the caller block when no block is given" do
-      o = Object.new
-      def o.define(name)
-        self.class.class_eval do
-          define_method(name)
-        end
+  it "does not use the caller block when no block is given" do
+    o = Object.new
+    def o.define(name)
+      self.class.class_eval do
+        define_method(name)
       end
-
-      lambda {
-        o.define(:foo) { raise "not used" }
-      }.should raise_error(ArgumentError)
     end
+
+    lambda {
+      o.define(:foo) { raise "not used" }
+    }.should raise_error(ArgumentError)
   end
 
   it "does not change the arity check style of the original proc" do

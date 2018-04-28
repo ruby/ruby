@@ -69,12 +69,10 @@ describe "Array#flatten" do
     [1, z, 6].flatten.should == [1, 2, 3, 4, 5, 6]
   end
 
-  ruby_version_is "2.3" do
-    it "does not call #to_ary on elements beyond the given level" do
-      obj = mock("1")
-      obj.should_not_receive(:to_ary)
-      [[obj]].flatten(1)
-    end
+  it "does not call #to_ary on elements beyond the given level" do
+    obj = mock("1")
+    obj.should_not_receive(:to_ary)
+    [[obj]].flatten(1)
   end
 
   it "returns subclass instance for Array subclasses" do
