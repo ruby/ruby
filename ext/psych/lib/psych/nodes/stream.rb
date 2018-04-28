@@ -33,6 +33,8 @@ module Psych
         super()
         @encoding = encoding
       end
+
+      def stream?; true; end
     end
   end
 end

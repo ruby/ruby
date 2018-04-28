@@ -56,6 +56,8 @@ module Psych
       def root
         children.first
       end
+
+      def document?; true; end
     end
   end
 end

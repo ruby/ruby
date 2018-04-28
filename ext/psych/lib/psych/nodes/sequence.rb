@@ -77,6 +77,8 @@ module Psych
         @implicit = implicit
         @style    = style
       end
+
+      def sequence?; true; end
     end
   end
 end

@@ -63,6 +63,13 @@ module Psych
         io
       end
       alias :to_yaml :yaml
+
+      def alias?;    false; end
+      def document?; false; end
+      def mapping?;  false; end
+      def scalar?;   false; end
+      def sequence?; false; end
+      def stream?;   false; end
     end
   end
 end
