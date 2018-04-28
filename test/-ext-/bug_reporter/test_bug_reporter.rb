@@ -4,10 +4,12 @@ require 'tmpdir'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
+    description = RUBY_DESCRIPTION
+    description = description.sub(/\+JIT /, '') if RubyVM::MJIT.enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,
-      /#{ Regexp.quote(RUBY_DESCRIPTION) }\n\n/,
+      /#{ Regexp.quote(description) }\n\n/,
       :*,
       /Sample bug reporter: 12345/,
       :*
