@@ -834,10 +834,9 @@ range_each(VALUE range)
 		args[1] = EXCL(range) ? Qtrue : Qfalse;
 		rb_block_call(tmp, rb_intern("upto"), 2, args, each_i, 0);
 	    }
-	    else if (RB_TYPE_P(beg, T_STRING)) {
-		rb_str_upto_endless_each(beg, (VALUE (*)(VALUE, VALUE))each_i, 0);
+	    else {
+		rb_str_upto_endless_each(tmp, (VALUE (*)(VALUE, VALUE))each_i, 0);
 	    }
-	    else goto inf_loop;
 	}
 	else {
 	    if (!discrete_object_p(beg)) {
