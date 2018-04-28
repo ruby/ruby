@@ -35,7 +35,7 @@ specs in a manner compatible with multiple Ruby implementations.
 
 ## Requirements
 
-MSpec requires Ruby 2.2 or more recent.
+MSpec requires Ruby 2.3 or more recent.
 
 ## Bundler
 
