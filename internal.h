@@ -2012,7 +2012,8 @@ VALUE rb_gcd_gmp(VALUE x, VALUE y);
 /* internal use */
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 #endif
-VALUE rb_str_upto_endless_each(VALUE, VALUE (*each)(VALUE, VALUE), VALUE);
+VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
+VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
