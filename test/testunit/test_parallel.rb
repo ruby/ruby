@@ -5,6 +5,7 @@ require 'timeout'
 module TestParallel
   PARALLEL_RB = "#{File.dirname(__FILE__)}/../lib/test/unit/parallel.rb"
   TESTS = "#{File.dirname(__FILE__)}/tests_for_parallel"
+  TIMEOUT = RubyVM::MJIT.enabled? ? 100 : 10 # use large timeout for --jit-wait
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
@@ -43,7 +44,7 @@ module TestParallel
     end
 
     def test_run
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
@@ -55,7 +56,7 @@ module TestParallel
     end
 
     def test_run_multiple_testcase_in_one_file
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_second.rb test"
         assert_match(/^okay/,@worker_out.gets)
@@ -70,7 +71,7 @@ module TestParallel
     end
 
     def test_accept_run_command_multiple_times
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         assert_match(/^ready/,@worker_out.gets)
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         assert_match(/^okay/,@worker_out.gets)
@@ -91,7 +92,7 @@ module TestParallel
     end
 
     def test_p
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         @worker_in.puts "run #{TESTS}/ptest_first.rb test"
         while buf = @worker_out.gets
           break if /^p (.+?)$/ =~ buf
@@ -101,7 +102,7 @@ module TestParallel
     end
 
     def test_done
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         @worker_in.puts "run #{TESTS}/ptest_forth.rb test"
         while buf = @worker_out.gets
           break if /^done (.+?)$/ =~ buf
@@ -124,7 +125,7 @@ module TestParallel
     end
 
     def test_quit
-      Timeout.timeout(10) do
+      Timeout.timeout(TIMEOUT) do
         @worker_in.puts "quit"
         assert_match(/^bye$/m,@worker_out.read)
       end
@@ -160,40 +161,40 @@ module TestParallel
                         "--ruby", @options[:ruby].join(" "),
                         "-j","0", out: File::NULL, err: o)
       o.close
-      Timeout.timeout(10) {
+      Timeout.timeout(TIMEOUT) {
         assert_match(/Error: parameter of -j option should be greater than 0/,@test_out.read)
       }
     end
 
     def test_should_run_all_without_any_leaks
       spawn_runner
-      buf = Timeout.timeout(10) {@test_out.read}
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^9 tests/,buf)
     end
 
     def test_should_retry_failed_on_workers
       spawn_runner
-      buf = Timeout.timeout(10) {@test_out.read}
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying\.+$/,buf)
     end
 
     def test_no_retry_option
       spawn_runner "--no-retry"
-      buf = Timeout.timeout(10) {@test_out.read}
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       refute_match(/^Retrying\.+$/,buf)
       assert_match(/^ +\d+\) Failure:\nTestD#test_fail_at_worker/,buf)
     end
 
     def test_jobs_status
       spawn_runner "--jobs-status"
-      buf = Timeout.timeout(10) {@test_out.read}
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/\d+=ptest_(first|second|third|forth) */,buf)
     end
 
     def test_separate
       # this test depends to --jobs-status
       spawn_runner "--jobs-status", "--separate"
-      buf = Timeout.timeout(10) {@test_out.read}
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert(buf.scan(/(\d+?)[:=]/).flatten.uniq.size > 1)
     end
   end
