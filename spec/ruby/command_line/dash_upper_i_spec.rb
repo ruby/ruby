@@ -11,7 +11,7 @@ describe "The -I command line option" do
 
   it "adds the path at the front of $LOAD_PATH" do
     lines = ruby_exe(@script, options: "-I fixtures").lines
-    if File.basename(ruby_exe[0], ".*") == "miniruby"
+    if PlatformGuard.implementation? :ruby
       # In a MRI checkout, $PWD ends up as the first entry in $LOAD_PATH.
       # So just assert that it's at the beginning.
       idx = lines.index { |l| l.include?("fixtures") }
