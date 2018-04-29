@@ -2941,6 +2941,16 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
 		rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e, "write would block");
 	    }
 	}
+
+#ifdef __APPLE__
+	/* Mac OS X sometimes reports EPROTOTYPE when it actually means EPIPE. 
+	 * https://bugs.ruby-lang.org/issues/14713
+	 */
+	if (e == EPROTOTYPE) {
+	    e = EPIPE;
+	}
+#endif
+
 	rb_syserr_fail_path(e, fptr->pathv);
     }
 
