@@ -31,19 +31,21 @@ describe "The -I command line option" do
   end
 end
 
-describe "The -I command line option" do
-  before :each do
-    @script = fixture __FILE__, "loadpath.rb"
-    @fixtures = File.dirname(@script)
-    @symlink = tmp("loadpath_symlink")
-    File.symlink(@fixtures, @symlink)
-  end
+platform_is_not :windows do
+  describe "The -I command line option" do
+    before :each do
+      @script = fixture __FILE__, "loadpath.rb"
+      @fixtures = File.dirname(@script)
+      @symlink = tmp("loadpath_symlink")
+      File.symlink(@fixtures, @symlink)
+    end
 
-  after :each do
-    rm_r @symlink
-  end
+    after :each do
+      rm_r @symlink
+    end
 
-  it "does not expand symlinks" do
-    ruby_exe(@script, options: "-I #{@symlink}").lines.should include "#{@symlink}\n"
+    it "does not expand symlinks" do
+      ruby_exe(@script, options: "-I #{@symlink}").lines.should include "#{@symlink}\n"
+    end
   end
 end
