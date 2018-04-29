@@ -1290,6 +1290,16 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
 	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
 				     "sendmsg(2) would block");
 	}
+
+#ifdef __APPLE__
+	/* Mac OS X sometimes reports EPROTOTYPE when it actually means EPIPE. 
+	 * https://bugs.ruby-lang.org/issues/14713
+	 */
+	if (e == EPROTOTYPE) {
+	    e = EPIPE;
+	}
+#endif
+
 	rb_syserr_fail(e, "sendmsg(2)");
     }
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
