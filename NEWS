@@ -191,3 +191,15 @@ with all sufficient information, see the ChangeLog file or Redmine
 * VM generator script renewal; makes the generated VM more optimized. [GH-1779]
 
 === Miscellaneous changes
+
+* On macOS, shared libraries no longer include a full version number of ruby in their names.
+  This eliminates the burden of each teeny upgrade on the platform that users need to rebuild every extension library.
+
+  * Before:
+    * libruby.2.6.0.dylib
+    * libruby.2.6.dylib -> libruby.2.6.0.dylib
+    * libruby.dylib -> libruby.2.6.0.dylib
+
+  * After:
+    * libruby.2.6.dylib
+    * libruby.dylib -> libruby.2.6.dylib
