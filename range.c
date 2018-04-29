@@ -786,6 +786,7 @@ static VALUE
 range_each(VALUE range)
 {
     VALUE beg, end;
+    long i, lim;
 
     RETURN_SIZED_ENUMERATOR(range, 0, 0, range_enum_size);
 
@@ -793,24 +794,65 @@ range_each(VALUE range)
     end = RANGE_END(range);
 
     if (FIXNUM_P(beg) && NIL_P(end)) {
-	long i = FIX2LONG(beg);
+      fixnum_endless:
+	i = FIX2LONG(beg);
 	while (FIXABLE(i)) {
 	    rb_yield(LONG2FIX(i++));
 	}
 	beg = LONG2NUM(i);
-
-      inf_loop:
-	for (;; beg = rb_funcallv(beg, id_succ, 0, 0))
+      bignum_endless:
+	for (;; beg = rb_big_plus(beg, INT2FIX(1)))
 	    rb_yield(beg);
     }
     else if (FIXNUM_P(beg) && FIXNUM_P(end)) { /* fixnums are special */
-	long lim = FIX2LONG(end);
-	long i;
-
+      fixnum_loop:
+	lim = FIX2LONG(end);
 	if (!EXCL(range))
 	    lim += 1;
 	for (i = FIX2LONG(beg); i < lim; i++) {
 	    rb_yield(LONG2FIX(i));
+	}
+    }
+    else if (RB_INTEGER_TYPE_P(beg) && (NIL_P(end) || RB_INTEGER_TYPE_P(end))) {
+	if (SPECIAL_CONST_P(end) || RBIGNUM_POSITIVE_P(end)) { /* end >= FIXNUM_MIN */
+	    if (!FIXNUM_P(beg)) {
+		if (RBIGNUM_NEGATIVE_P(beg)) {
+		    do {
+			rb_yield(beg);
+		    } while (!FIXNUM_P(beg = rb_big_plus(beg, INT2FIX(1))));
+		    if (NIL_P(end)) goto fixnum_endless;
+		    if (FIXNUM_P(end)) goto fixnum_loop;
+		}
+		else {
+		    if (NIL_P(end)) goto bignum_endless;
+		    if (FIXNUM_P(end)) return range;
+		}
+	    }
+	    if (FIXNUM_P(beg)) {
+		i = FIX2LONG(beg);
+		do {
+		    rb_yield(LONG2FIX(i));
+		} while (POSFIXABLE(++i));
+		beg = LONG2NUM(i);
+	    }
+	    ASSUME(!FIXNUM_P(beg));
+	    ASSUME(!SPECIAL_CONST_P(end));
+	}
+	if (!FIXNUM_P(beg) && RBIGNUM_SIGN(beg) == RBIGNUM_SIGN(end)) {
+	    if (EXCL(range)) {
+		while (rb_big_cmp(beg, end) == INT2FIX(-1)) {
+		    rb_yield(beg);
+		    beg = rb_big_plus(beg, INT2FIX(1));
+		}
+	    }
+	    else {
+		VALUE c;
+		while ((c = rb_big_cmp(beg, end)) != INT2FIX(1)) {
+		    rb_yield(beg);
+		    if (c == INT2FIX(0)) break;
+		    beg = rb_big_plus(beg, INT2FIX(1));
+		}
+	    }
 	}
     }
     else if (SYMBOL_P(beg) && (NIL_P(end) || SYMBOL_P(end))) { /* symbols are special */
@@ -841,7 +883,8 @@ range_each(VALUE range)
 	    if (!NIL_P(end))
 		range_each_func(range, each_i, 0);
 	    else
-		goto inf_loop;
+		for (;; beg = rb_funcallv(beg, id_succ, 0, 0))
+		    rb_yield(beg);
 	}
     }
     return range;
