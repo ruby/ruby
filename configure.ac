@@ -2968,7 +2968,7 @@ AC_ARG_WITH(soname,
 	[
 	    AS_CASE(["$target_os"],
 	    [darwin*], [
-	        RUBY_SO_NAME='$(RUBY_BASE_NAME).$(RUBY_PROGRAM_VERSION)'
+	        RUBY_SO_NAME='$(RUBY_BASE_NAME).$(RUBY_API_VERSION)'
 	    ],
 	    [cygwin*], [
 	        RUBY_SO_NAME='$(RUBY_BASE_NAME)$(MAJOR)$(MINOR)0'
@@ -3076,6 +3076,9 @@ AS_CASE("$enable_shared", [yes], [
 	LIBS="$LIBS -lm -lc"
 	],
     [darwin*], [
+	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT)'
+	LIBRUBY_SONAME='$(LIBRUBY_SO)'
+	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(SOEXT)'
 	LIBRUBY_LDSHARED='$(CC) -dynamiclib'
 	AS_IF([test "$load_relative" = yes], [
 	    libprefix="@executable_path/../${libdir_basename}"
@@ -3090,9 +3093,6 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "'-Wl,-unexported_symbol,*_threadptr_*'
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS "' $(XLDFLAGS)'
-	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT)'
-	LIBRUBY_SONAME='lib$(RUBY_BASE_NAME).$(RUBY_API_VERSION).$(SOEXT)'
-	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_INSTALL_NAME).$(SOEXT)'
 	],
     [interix*], [
 	LIBRUBYARG_SHARED='-L. -L${libdir} -l$(RUBY_SO_NAME)'
