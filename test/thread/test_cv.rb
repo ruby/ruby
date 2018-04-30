@@ -228,8 +228,14 @@ INPUT
     end
     thrs.each { 3.times { Thread.pass } }
     pid = fork do
-      mutex.synchronize { condvar.broadcast }
-      exit!(0)
+      th = Thread.new do
+        mutex.synchronize { condvar.wait(mutex) }
+        :ok
+      end
+      until th.join(0.01)
+        mutex.synchronize { condvar.broadcast }
+      end
+      exit!(th.value == :ok ? 0 : 1)
     end
     _, s = Process.waitpid2(pid)
     assert_predicate s, :success?, 'no segfault [ruby-core:86316] [Bug #14634]'
