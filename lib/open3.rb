@@ -657,8 +657,8 @@ module Open3
       end
       pid = spawn(*cmd, cmd_opts)
       wait_thrs << Process.detach(pid)
-      r.close if r
-      w2.close if w2
+      r&.close
+      w2&.close
       r = r2
     }
     result = parent_io + [wait_thrs]
