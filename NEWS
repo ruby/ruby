@@ -141,6 +141,41 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * Matrix#antisymmetric?
 
+* REXML
+
+  * Improved some XPath implementations:
+
+    * concat() function: Stringify all arguments before concatenating
+
+    * string() function: Support context node
+
+    * string() function: Support processing instruction node
+
+    * Support "*:#{ELEMENT_NAME}" syntax in XPath 2.0
+
+  * Fixed some XPath implementations:
+
+    * "//#{ELEMENT_NAME}[#{POSITION}]" case
+
+    * string() function: Fix function(document) returns nodes that are
+      out of root elements.
+
+    * "/ #{ELEMENT_NAME} " case
+
+    * "/ #{ELEMENT_NAME} [ #{PREDICATE} ]" case
+
+    * "/ #{AXIS}:: #{ELEMENT_NAME} " case
+
+    * "#{N}-#{M}" case: One ore more white spaces were required before "-"
+
+    * "/child::node()" case
+
+    * "#{FUNCTION}()/#{PATH}" case
+
+    * "@#{ATTRIBUTE}/parent::" case
+
+    * "name(#{NODE_SET})" case
+
 * Set
 
   * Aliased methods:
