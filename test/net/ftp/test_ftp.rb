@@ -425,7 +425,7 @@ class FTPTest < Test::Unit::TestCase
           end
           conn.print(l, "\r\n")
         end
-      rescue Errno::EPIPE, Errno::EPROTOTYPE
+      rescue Errno::EPIPE
       ensure
         assert_nil($!)
         conn.close
