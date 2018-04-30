@@ -955,8 +955,7 @@ internal_write_func(void *ptr)
 static void*
 internal_write_func2(void *ptr)
 {
-    struct io_internal_write_struct *iis = ptr;
-    return (void*)(intptr_t)write(iis->fd, iis->buf, iis->capa);
+    return (void*)internal_write_func(ptr);
 }
 
 #ifdef HAVE_WRITEV
