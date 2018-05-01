@@ -156,7 +156,7 @@ struct rb_fiber_struct {
     rb_context_t cont;
     VALUE first_proc;
     struct rb_fiber_struct *prev;
-    const enum fiber_status status;
+    enum fiber_status status;
     /* If a fiber invokes "transfer",
      * then this fiber can't "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
@@ -223,13 +223,13 @@ rb_ec_verify(const rb_execution_context_t *ec)
 #endif
 
 static void
-fiber_status_set(const rb_fiber_t *fib, enum fiber_status s)
+fiber_status_set(rb_fiber_t *fib, enum fiber_status s)
 {
     if (0) fprintf(stderr, "fib: %p, status: %s -> %s\n", (void *)fib, fiber_status_name(fib->status), fiber_status_name(s));
     VM_ASSERT(!FIBER_TERMINATED_P(fib));
     VM_ASSERT(fib->status != s);
     fiber_verify(fib);
-    *((enum fiber_status *)&fib->status) = s;
+    fib->status = s;
 }
 
 void
