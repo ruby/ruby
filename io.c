@@ -4671,8 +4671,8 @@ io_close_fptr(VALUE io)
     VALUE write_io;
     rb_io_t *write_fptr;
     struct list_head busy;
-    busy.n.next = busy.n.prev = &busy.n;
 
+    list_head_init(&busy);
     write_io = GetWriteIO(io);
     if (io != write_io) {
         write_fptr = RFILE(write_io)->fptr;
