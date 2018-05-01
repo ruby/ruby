@@ -2289,8 +2289,8 @@ void
 rb_thread_fd_close(int fd)
 {
     struct list_head busy;
-    busy.n.next = busy.n.prev = &busy.n;
 
+    list_head_init(&busy);
     if (rb_notify_fd_close(fd, &busy)) {
 	do rb_thread_schedule(); while (!list_empty(&busy));
     }
