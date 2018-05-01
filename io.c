@@ -4670,7 +4670,8 @@ io_close_fptr(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    LIST_HEAD(busy);
+    struct list_head busy;
+    busy.n.next = busy.n.prev = &busy.n;
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
