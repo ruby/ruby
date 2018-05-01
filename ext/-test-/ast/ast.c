@@ -179,7 +179,8 @@ dump_array(rb_ast_t *ast, NODE *node)
 static VALUE
 node_children(rb_ast_t *ast, NODE *node)
 {
-    switch (nd_type(node)) {
+    enum node_type type = nd_type(node);
+    switch (type) {
       case NODE_BLOCK:
 	return dump_block(ast, node);
       case NODE_IF:
@@ -227,7 +228,6 @@ node_children(rb_ast_t *ast, NODE *node)
       andor:
 	{
 	    VALUE ary = rb_ary_new();
-	    enum node_type type = nd_type(node);
 
 	    while (1) {
 		rb_ary_push(ary, NEW_CHILD(ast, node->nd_1st));
@@ -417,7 +417,7 @@ node_children(rb_ast_t *ast, NODE *node)
 	break;
     }
 
-    rb_bug("dump_node: unknown node: %s", ruby_node_name(nd_type(node)));
+    rb_bug("node_children: unknown node: %s", ruby_node_name(type));
 }
 
 static VALUE
