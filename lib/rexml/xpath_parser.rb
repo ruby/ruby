@@ -434,7 +434,7 @@ module REXML
         while path_stack[0] == :predicate
           path_stack.shift # :predicate
           predicate_expression = path_stack.shift.dclone
-          nodesets = predicate(predicate_expression, nodesets)
+          nodesets = evaluate_predicate(predicate_expression, nodesets)
         end
         if nodesets.size == 1
           ordered_nodeset = nodesets[0]
@@ -578,7 +578,7 @@ module REXML
       new_nodeset
     end
 
-    def predicate(expression, nodesets)
+    def evaluate_predicate(expression, nodesets)
       # enter(:predicate, expression, nodesets)
       new_nodesets = nodesets.collect do |nodeset|
         new_nodeset = []
@@ -612,6 +612,7 @@ module REXML
         end
         new_nodeset
       end
+      new_nodesets
     # ensure
     #   leave(:predicate, new_nodesets)
     end
@@ -731,7 +732,6 @@ module REXML
 
     def following(node)
       followings = []
-      position = 1
       following_node = next_sibling_node(node)
       while following_node
         followings << XPathNode.new(following_node,
@@ -768,8 +768,8 @@ module REXML
         # trace(:child, node_type, node)
         case node_type
         when :element
-          nodesets << raw_node.children.collect.with_index do |node, i|
-            XPathNode.new(node, position: i + 1)
+          nodesets << raw_node.children.collect.with_index do |child_node, i|
+            XPathNode.new(child_node, position: i + 1)
           end
         when :document
           new_nodeset = []
