@@ -574,6 +574,17 @@ class TestJIT < Test::Unit::TestCase
     end
   end
 
+  def test_lambda_longjmp
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '5', success_count: 1)
+    begin;
+      fib = lambda do |x|
+        return x if x == 0 || x == 1
+        fib.call(x-1) + fib.call(x-2)
+      end
+      print fib.call(5)
+    end;
+  end
+
   private
 
   # The shortest way to test one proc
