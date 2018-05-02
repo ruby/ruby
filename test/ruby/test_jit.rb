@@ -19,10 +19,6 @@ class TestJIT < Test::Unit::TestCase
     :answer,
 
     # TODO: write tests for them
-    :getlocal,
-    :setlocal,
-    :getlocal_WC_1,
-    :setlocal_WC_1,
     :reput,
     :tracecoverage,
   ]
@@ -56,6 +52,23 @@ class TestJIT < Test::Unit::TestCase
     begin;
       foo = 1
       foo
+    end;
+
+    insns = %i[setlocal getlocal setlocal_WC_0 getlocal_WC_0 setlocal_WC_1 getlocal_WC_1]
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", success_count: 3, stdout: '168', insns: insns)
+    begin;
+      def foo
+        a = 0
+        [1, 2].each do |i|
+          a += i
+          [3, 4].each do |j|
+            a *= j
+          end
+        end
+        a
+      end
+
+      print foo
     end;
   end
 
