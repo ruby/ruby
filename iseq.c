@@ -1831,10 +1831,10 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
 
     insn_name_buff = insn_name(insn);
     if (1) {
-	rb_str_catf(str, "%04"PRIuSIZE" %-16s ", pos, insn_name_buff);
+	rb_str_catf(str, "%04"PRIuSIZE" %-28s ", pos, insn_name_buff);
     }
     else {
-	rb_str_catf(str, "%04"PRIuSIZE" %-16.*s ", pos,
+	rb_str_catf(str, "%04"PRIuSIZE" %-28.*s ", pos,
 		    (int)strcspn(insn_name_buff, "_"), insn_name_buff);
     }
 
