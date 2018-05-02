@@ -163,6 +163,8 @@ class TestFloat < Test::Unit::TestCase
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*268)+".0p-2099"))
       assert_equal(-31.0*2**-1027, Float("-0x1f"+("0"*600)+".0p-3427"))
     end
+
+    assert_equal(1.0e10, Float("1.0_"+"00000"*Float::DIG+"e10"))
   end
 
   def test_divmod
