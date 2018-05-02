@@ -197,4 +197,25 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG"))
     assert_equal('&lt;BR&gt;<A HREF="url"></A>', unescape_element(escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"]))
   end
+
+  def test_escape_string_subclass
+    sc = Class.new(String).freeze
+    str = sc.new('>')
+    msg = '[ruby-core:86847] [Bug #14732]'
+    assert_not_instance_of String, str
+
+    html = escapeHTML(str)
+    assert_instance_of sc, html, msg
+    assert_equal '&gt;', html
+    orig = unescapeHTML(html)
+    assert_instance_of sc, orig, msg
+    assert_equal '>', orig
+
+    url = escape(str)
+    assert_instance_of sc, url, msg
+    assert_equal '%3E', url
+    orig = unescape(url)
+    assert_instance_of sc, orig, msg
+    assert_equal '>', orig
+  end
 end
