@@ -916,14 +916,19 @@ INSNS2VMOPT = --srcdir="$(srcdir)"
 srcs_vpath = {$(VPATH)}
 
 # TODO: dependencies on tool/ruby_vm scripts.
-$(srcs_vpath)opt_sc.inc: $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb
-$(srcs_vpath)optinsn.inc: $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb
-$(srcs_vpath)optunifs.inc: $(srcdir)/tool/ruby_vm/views/optunifs.inc.erb
-$(srcs_vpath)insns.inc: $(srcdir)/tool/ruby_vm/views/insns.inc.erb
-$(srcs_vpath)insns_info.inc: $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb
-$(srcs_vpath)vmtc.inc: $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb
-$(srcs_vpath)vm.inc: $(srcdir)/tool/ruby_vm/views/vm.inc.erb
-$(srcs_vpath)mjit_compile.inc: $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb \
+inc_common_headers = $(srcdir)/tool/ruby_vm/views/_copyright.erb $(srcdir)/tool/ruby_vm/views/_notice.erb
+$(srcs_vpath)opt_sc.inc: $(srcdir)/tool/ruby_vm/views/opt_sc.inc.erb $(inc_common_headers)
+$(srcs_vpath)optinsn.inc: $(srcdir)/tool/ruby_vm/views/optinsn.inc.erb $(inc_common_headers)
+$(srcs_vpath)optunifs.inc: $(srcdir)/tool/ruby_vm/views/optunifs.inc.erb $(inc_common_headers)
+$(srcs_vpath)insns.inc: $(srcdir)/tool/ruby_vm/views/insns.inc.erb $(inc_common_headers)
+$(srcs_vpath)insns_info.inc: $(srcdir)/tool/ruby_vm/views/insns_info.inc.erb $(inc_common_headers) \
+  $(srcdir)/tool/ruby_vm/views/_insn_type_chars.erb $(srcdir)/tool/ruby_vm/views/_insn_name_info.erb \
+  $(srcdir)/tool/ruby_vm/views/_insn_len_info.erb $(srcdir)/tool/ruby_vm/views/_insn_operand_info.erb \
+  $(srcdir)/tool/ruby_vm/views/_attributes.erb $(srcdir)/tool/ruby_vm/views/_insn_stack_increase.erb
+$(srcs_vpath)vmtc.inc: $(srcdir)/tool/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
+$(srcs_vpath)vm.inc: $(srcdir)/tool/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
+  $(srcdir)/tool/ruby_vm/views/_insn_entry.erb $(srcdir)/tool/ruby_vm/views/_trace_instruction.erb
+$(srcs_vpath)mjit_compile.inc: $(srcdir)/tool/ruby_vm/views/mjit_compile.inc.erb $(inc_common_headers) \
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn.erb $(srcdir)/tool/ruby_vm/views/_mjit_compile_send.erb \
   $(srcdir)/tool/ruby_vm/views/_mjit_compile_insn_body.erb $(srcdir)/tool/ruby_vm/views/_mjit_compile_pc_and_sp.erb
 
