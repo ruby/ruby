@@ -6,11 +6,45 @@ require_relative '../lib/jit_support'
 # Test for --jit option
 class TestJIT < Test::Unit::TestCase
   include JITSupport
-  # Ensure all supported insns can be compiled. Only basic tests are included.
+
+  # trace_* insns are not compiled for now...
+  TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
+    # not supported yet
+    :getblockparamproxy,
+    :defineclass,
+    :opt_call_c_function,
+
+    # joke
+    :bitblt,
+    :answer,
+
+    # TODO: write tests for them
+    :getlocal,
+    :setlocal,
+    :getlocal_WC_1,
+    :setlocal_WC_1,
+    :reput,
+    :tracecoverage,
+    :opt_aref_with,
+  ]
+
+  def self.untested_insns
+    @untested_insns ||= (RubyVM::INSTRUCTION_NAMES.map(&:to_sym) - TEST_PENDING_INSNS)
+  end
 
   def setup
     unless JITSupport.supported?
       skip 'JIT seems not supported on this platform'
+    end
+
+    # ruby -w -Itest/lib test/ruby/test_jit.rb
+    if $VERBOSE && !defined?(@@at_exit_hooked)
+      at_exit do
+        unless TestJIT.untested_insns.empty?
+          warn "untested insns are found!: #{TestJIT.untested_insns.join(' ')}"
+        end
+      end
+      @@at_exit_hooked = true
     end
   end
 
@@ -116,7 +150,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putstring_concatstrings_tostring
-    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[tostring])
+    assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
 
   def test_compile_insn_freezestring
@@ -140,7 +174,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_intern_duparray
-    assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[duparray])
+    assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
 
   def test_compile_insn_expandarray
@@ -193,7 +227,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_reverse
-    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; e == 3', result_inspect: 'true', insns: %i[reverse])
+    assert_compile_once('q, (w, e), r = 1, [2, 3], 4; [q, w, e, r]', result_inspect: '[1, 2, 3, 4]', insns: %i[reverse])
   end
 
   def test_compile_insn_reput
@@ -368,7 +402,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checkmatch_opt_case_dispatch
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[opt_case_dispatch])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '"world"', insns: %i[checkmatch opt_case_dispatch])
     begin;
       case 'hello'
       when 'hello'
@@ -424,7 +458,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_aset
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
     begin;
       hash = { '1' => 2 }
       (hash['2'] = 2) + (hash[1.to_s] = 3)
@@ -432,7 +466,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_length_size
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '4', insns: %i[opt_length])
+    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '4', insns: %i[opt_length opt_size])
     begin;
       array = [1, 2]
       array.length + array.size
@@ -622,6 +656,7 @@ class TestJIT < Test::Unit::TestCase
         $stderr.puts
         warn "'#{insn}' insn is not included in the script. Actual insns are: #{used_insns.join(' ')}\n", uplevel: uplevel
       end
+      TestJIT.untested_insns.delete(insn)
     end
 
     assert_equal(
@@ -635,6 +670,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   # Collect block's insns or defined method's insns, which are expected to be JIT-ed.
+  # Note that this intentionally excludes insns in script's toplevel because they are not JIT-ed.
   def method_insns(script)
     insns = []
     RubyVM::InstructionSequence.compile(script).to_a.last.each do |(insn, *args)|
