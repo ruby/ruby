@@ -59,7 +59,7 @@ optimized_escape_html(VALUE str)
 	  case '<':
 	  case '>':
 	    if (!dest) {
-		dest = rb_str_buf_new(len);
+		dest = rb_str_new_with_class(str, 0, 0);
 	    }
 
 	    rb_str_cat(dest, cstr + beg, i - beg);
@@ -151,7 +151,7 @@ optimized_unescape_html(VALUE str)
 	    i += clen;
 	    if (overflow || cc >= charlimit || cstr[i] != ';') continue;
 	    if (!dest) {
-		dest = rb_str_buf_new(len);
+		dest = rb_str_new_with_class(str, 0, 0);
 	    }
 	    rb_str_cat(dest, cstr + beg, plen);
 	    if (charlimit > 256) {
@@ -168,7 +168,7 @@ optimized_unescape_html(VALUE str)
 	    continue;
 	}
 	if (!dest) {
-	    dest = rb_str_buf_new(len);
+	    dest = rb_str_new_with_class(str, 0, 0);
 	}
 	rb_str_cat(dest, cstr + beg, plen);
 	rb_str_cat(dest, &c, 1);
@@ -219,7 +219,7 @@ optimized_escape(VALUE str)
 	const unsigned char c = (unsigned char)cstr[i];
 	if (!url_unreserved_char(c)) {
 	    if (!dest) {
-		dest = rb_str_buf_new(len);
+		dest = rb_str_new_with_class(str, 0, 0);
 	    }
 
 	    rb_str_cat(dest, cstr + beg, i - beg);
@@ -278,7 +278,7 @@ optimized_unescape(VALUE str, VALUE encoding)
 	}
 
 	if (!dest) {
-	    dest = rb_str_buf_new(len);
+	    dest = rb_str_new_with_class(str, 0, 0);
 	}
 
 	rb_str_cat(dest, cstr + beg, i - beg);
