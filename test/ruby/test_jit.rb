@@ -25,7 +25,6 @@ class TestJIT < Test::Unit::TestCase
     :setlocal_WC_1,
     :reput,
     :tracecoverage,
-    :opt_aref_with,
   ]
 
   def self.untested_insns
@@ -455,6 +454,10 @@ class TestJIT < Test::Unit::TestCase
       print block.call({ 1 => 2 })
       print block.call({ 1 => 2 })
     end;
+  end
+
+  def test_compile_insn_opt_aref_with
+    assert_compile_once("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
   end
 
   def test_compile_insn_opt_aset
