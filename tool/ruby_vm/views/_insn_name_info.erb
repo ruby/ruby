@@ -23,6 +23,7 @@ const unsigned short rb_vm_insn_name_offset[] = {
     <%= d.map {|i| sprintf("%4d", i) }.join(', ') %>,
 % end
 };
+const int rb_vm_max_insn_name_size = <%= RubyVM::Instructions.map {|i| i.name.size }.max %>;
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);
 
 PACKED_STRUCT(struct rb_vm_insn_name_info_tag {
