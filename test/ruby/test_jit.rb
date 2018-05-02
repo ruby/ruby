@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'tmpdir'
 require_relative '../lib/jit_support'
 
 # Test for --jit option
