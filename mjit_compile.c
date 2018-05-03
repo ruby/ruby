@@ -122,18 +122,18 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
  #include "mjit_compile.inc"
 /*****************/
 
-    if (next_pos < body->iseq_size && ALREADY_COMPILED_P(status, next_pos)) {
+    /* If next_pos is already compiled and this branch is not finished yet,
+       next instruction won't be compiled in C code next and will need `goto`. */
+    if (!b->finish_p && next_pos < body->iseq_size && ALREADY_COMPILED_P(status, next_pos)) {
+        fprintf(f, "goto label_%d;\n", next_pos);
+
         /* Verify stack size assumption is the same among multiple branches */
         if ((unsigned int)status->stack_size_for_pos[next_pos] != b->stack_size) {
             if (mjit_opts.warnings || mjit_opts.verbose)
                 fprintf(stderr, "MJIT warning: JIT stack assumption is not the same between branches (%d != %u)\n",
                         status->stack_size_for_pos[next_pos], b->stack_size);
             status->success = FALSE;
-            return next_pos;
         }
-
-        /* If next_pos is already compiled, next instruction won't be compiled in C code and needs `goto`. */
-        fprintf(f, "goto label_%d;\n", next_pos);
     }
 
     return next_pos;
