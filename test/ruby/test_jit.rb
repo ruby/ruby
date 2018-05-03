@@ -612,6 +612,37 @@ class TestJIT < Test::Unit::TestCase
 
       print(2 * a.test)
     end;
+
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "true", success_count: 1, min_calls: 2)
+    begin;
+      class Hoge
+        attr_reader :foo
+
+        def initialize
+          @foo = []
+          @bar = nil
+        end
+      end
+
+      class Fuga < Hoge
+        def initialize
+          @bar = nil
+          @foo = []
+        end
+      end
+
+      def test(recv)
+        recv.foo.empty?
+      end
+
+      hoge = Hoge.new
+      fuga = Fuga.new
+
+      test(hoge) # VM: cc set index=1
+      test(hoge) # JIT: compile with index=1
+      test(fuga) # JIT -> VM: cc set index=2
+      print test(hoge) # JIT: should use index=1, not index=2 in cc
+    end;
   end
 
   def test_clean_so
