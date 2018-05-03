@@ -73,7 +73,3 @@ switch (insn) {
     status->success = FALSE;
     break;
 }
-
-/* if next_pos is already compiled, next instruction won't be compiled in C code and needs `goto`. */
-if ((next_pos < body->iseq_size && status->compiled_for_pos[next_pos]))
-    fprintf(f, "goto label_%d;\n", next_pos);
