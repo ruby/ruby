@@ -14,12 +14,16 @@
 #include "insns_info.inc"
 #include "vm_insnhelper.h"
 
+/* Macros to check if a position is already compiled using compile_status.stack_size_for_pos */
+#define NOT_COMPILED_STACK_SIZE -1
+#define ALREADY_COMPILED_P(status, pos) (status->stack_size_for_pos[pos] != NOT_COMPILED_STACK_SIZE)
+
 /* Storage to keep compiler's status.  This should have information
    which is global during one `mjit_compile` call.  Ones conditional
    in each branch should be stored in `compile_branch`.  */
 struct compile_status {
     int success; /* has TRUE if compilation has had no issue */
-    int *compiled_for_pos; /* compiled_for_pos[pos] has TRUE if the pos is compiled */
+    int *stack_size_for_pos; /* stack_size_for_pos[pos] has stack size for the position (otherwise -1) */
     /* If TRUE, JIT-ed code will use local variables to store pushed values instead of
        using VM's stack and moving stack pointer. */
     int local_stack_p;
@@ -118,6 +122,20 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
  #include "mjit_compile.inc"
 /*****************/
 
+    if (next_pos < body->iseq_size && ALREADY_COMPILED_P(status, next_pos)) {
+        /* Verify stack size assumption is the same among multiple branches */
+        if ((unsigned int)status->stack_size_for_pos[next_pos] != b->stack_size) {
+            if (mjit_opts.warnings || mjit_opts.verbose)
+                fprintf(stderr, "MJIT warning: JIT stack assumption is not the same between branches (%d != %u)\n",
+                        status->stack_size_for_pos[next_pos], b->stack_size);
+            status->success = FALSE;
+            return next_pos;
+        }
+
+        /* If next_pos is already compiled, next instruction won't be compiled in C code and needs `goto`. */
+        fprintf(f, "goto label_%d;\n", next_pos);
+    }
+
     return next_pos;
 }
 
@@ -133,13 +151,13 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
     branch.stack_size = stack_size;
     branch.finish_p = FALSE;
 
-    while (pos < body->iseq_size && !status->compiled_for_pos[pos] && !branch.finish_p) {
+    while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
         insn = rb_vm_insn_addr2insn((void *)body->iseq_encoded[pos]);
 #else
         insn = (int)body->iseq_encoded[pos];
 #endif
-        status->compiled_for_pos[pos] = TRUE;
+        status->stack_size_for_pos[pos] = (int)branch.stack_size;
 
         fprintf(f, "\nlabel_%d: /* %s */\n", pos, insn_name(insn));
         pos = compile_insn(f, body, insn, body->iseq_encoded + (pos+1), pos, status, &branch);
@@ -173,8 +191,9 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
 {
     struct compile_status status;
     status.success = TRUE;
-    status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
     status.local_stack_p = !body->catch_except_p;
+    status.stack_size_for_pos = ALLOC_N(int, body->iseq_size);
+    memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
 
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
     if (!mjit_opts.debug) {
@@ -217,6 +236,6 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     compile_cancel_handler(f, body, &status);
     fprintf(f, "\n} /* end of %s */\n", funcname);
 
-    xfree(status.compiled_for_pos);
+    xfree(status.stack_size_for_pos);
     return status.success;
 }
