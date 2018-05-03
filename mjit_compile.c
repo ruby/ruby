@@ -176,7 +176,7 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.compiled_for_pos = ZALLOC_N(int, body->iseq_size);
     status.local_stack_p = !body->catch_except_p;
 
-    /* For performance, disable stack consistency check on JIT unless debugging */
+    /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
     if (!mjit_opts.debug) {
         fprintf(f, "#undef OPT_CHECKED_RUN\n");
         fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
