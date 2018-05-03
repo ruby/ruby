@@ -927,24 +927,29 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
 #define USE_IC_FOR_IVAR 1
 #endif
 
-ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IC, struct rb_call_cache *, int));
+/* `index` argument is used in MJIT to inline index value of call cache */
+ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IC, struct rb_call_cache *, st_index_t, int));
 static inline VALUE
-vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
+vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, st_index_t index, int is_attr)
 {
 #if USE_IC_FOR_IVAR
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE val = Qundef;
-	if (LIKELY(is_attr ?
+        if (LIKELY(index > 0 || is_attr ?
 		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_unset, cc->aux.index > 0) :
 		   RB_DEBUG_COUNTER_INC_UNLESS(ivar_get_ic_miss_serial,
 					       ic->ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass)))) {
-	    st_index_t index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
+            if (index == 0) {
+                index = !is_attr ? ic->ic_value.index : (cc->aux.index - 1);
+            }
+            else {
+                index--; /* MJIT passes `cc->aux.index` as `index`. This will be `cc->aux.index - 1` */
+            }
 	    if (LIKELY(index < ROBJECT_NUMIV(obj))) {
 		val = ROBJECT_IVPTR(obj)[index];
 	    }
 	}
 	else {
-	    st_data_t index;
 	    struct st_table *iv_index_tbl = ROBJECT_IV_INDEX_TBL(obj);
 
 	    if (iv_index_tbl) {
@@ -1032,7 +1037,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
 static inline VALUE
 vm_getinstancevariable(VALUE obj, ID id, IC ic)
 {
-    return vm_getivar(obj, id, ic, 0, 0);
+    return vm_getivar(obj, id, ic, NULL, 0, FALSE);
 }
 
 static inline void
@@ -1944,7 +1949,7 @@ static VALUE
 vm_call_ivar(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     cfp->sp -= 1;
-    return vm_getivar(calling->recv, cc->me->def->body.attr.id, NULL, cc, 1);
+    return vm_getivar(calling->recv, cc->me->def->body.attr.id, NULL, cc, 0, TRUE);
 }
 
 static VALUE
