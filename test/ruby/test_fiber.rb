@@ -347,50 +347,6 @@ class TestFiber < Test::Unit::TestCase
     EOS
   end
 
-  def invoke_rec script, vm_stack_size, machine_stack_size, use_length = true
-    env = {}
-    env['RUBY_FIBER_VM_STACK_SIZE'] = vm_stack_size.to_s if vm_stack_size
-    env['RUBY_FIBER_MACHINE_STACK_SIZE'] = machine_stack_size.to_s if machine_stack_size
-    out = Dir.mktmpdir("test_fiber") {|tmpdir|
-      out, err, status = EnvUtil.invoke_ruby([env, '-e', script], '', true, true, chdir: tmpdir, timeout: 30)
-      assert(!status.signaled?, FailDesc[status, nil, err])
-      out
-    }
-    use_length ? out.length : out
-  end
-
-  def test_stack_size
-    h_default = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', nil, nil, false))
-    h_0 = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 0, 0, false))
-    h_large = eval(invoke_rec('p RubyVM::DEFAULT_PARAMS', 1024 * 1024 * 5, 1024 * 1024 * 10, false))
-
-    assert_operator(h_default[:fiber_vm_stack_size], :>, h_0[:fiber_vm_stack_size])
-    assert_operator(h_default[:fiber_vm_stack_size], :<, h_large[:fiber_vm_stack_size])
-    assert_operator(h_default[:fiber_machine_stack_size], :>=, h_0[:fiber_machine_stack_size])
-    assert_operator(h_default[:fiber_machine_stack_size], :<=, h_large[:fiber_machine_stack_size])
-
-    # check VM machine stack size
-    script = '$stdout.sync=true; def rec; print "."; rec; end; Fiber.new{rec}.resume'
-    size_default = invoke_rec script, nil, nil
-    assert_operator(size_default, :>, 0)
-    size_0 = invoke_rec script, 0, nil
-    assert_operator(size_default, :>, size_0)
-    size_large = invoke_rec script, 1024 * 1024 * 5, nil
-    assert_operator(size_default, :<, size_large)
-
-    return if /mswin|mingw/ =~ RUBY_PLATFORM
-
-    # check machine stack size
-    # Note that machine stack size may not change size (depend on OSs)
-    script = '$stdout.sync=true; def rec; print "."; 1.times{1.times{1.times{rec}}}; end; Fiber.new{rec}.resume'
-    vm_stack_size = 1024 * 1024
-    size_default = invoke_rec script, vm_stack_size, nil
-    size_0 = invoke_rec script, vm_stack_size, 0
-    assert_operator(size_default, :>=, size_0)
-    size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
-    assert_operator(size_default, :<=, size_large)
-  end
-
   def test_separate_lastmatch
     bug7678 = '[ruby-core:51331]'
     /a/ =~ "a"

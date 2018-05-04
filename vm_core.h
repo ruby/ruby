@@ -976,13 +976,15 @@ typedef struct rb_thread_struct {
     rb_fiber_t *root_fiber;
     rb_jmpbuf_t root_jmpbuf;
 
+    VALUE scheduler;
+    unsigned blocking;
+
     /* misc */
     VALUE name;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
 #endif
-
 } rb_thread_t;
 
 typedef enum {

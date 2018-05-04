@@ -408,84 +408,30 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
 }
 #endif /* MSG_DONTWAIT_RELIABLE */
 
-/* returns true if SOCK_CLOEXEC is supported */
-int rsock_detect_cloexec(int fd)
+static int
+rsock_socket0(int domain, int type, int proto)
 {
 #ifdef SOCK_CLOEXEC
-    int flags = fcntl(fd, F_GETFD);
-
-    if (flags == -1)
-	rb_bug("rsock_detect_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
-
-    if (flags & FD_CLOEXEC)
-	return 1;
+    type |= SOCK_CLOEXEC;
 #endif
-    return 0;
-}
 
-#ifdef SOCK_CLOEXEC
-static int
-rsock_socket0(int domain, int type, int proto)
-{
-    int ret;
-    static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
+#ifdef SOCK_NONBLOCK
+    type |= SOCK_NONBLOCK;
+#endif
 
-    if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
-        ret = socket(domain, type|SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT, proto);
-        if (ret >= 0) {
-            if (ret <= 2)
-                goto fix_cloexec;
-            goto update_max_fd;
-        }
-    }
-    else if (cloexec_state < 0) { /* usually runs once only for detection */
-        ret = socket(domain, type|SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT, proto);
-        if (ret >= 0) {
-            cloexec_state = rsock_detect_cloexec(ret);
-            if (cloexec_state == 0 || ret <= 2)
-                goto fix_cloexec;
-            goto update_max_fd;
-        }
-        else if (ret == -1 && errno == EINVAL) {
-            /* SOCK_CLOEXEC is available since Linux 2.6.27.  Linux 2.6.18 fails with EINVAL */
-            ret = socket(domain, type, proto);
-            if (ret != -1) {
-                cloexec_state = 0;
-                /* fall through to fix_cloexec */
-            }
-        }
-    }
-    else { /* cloexec_state == 0 */
-        ret = socket(domain, type, proto);
-    }
-    if (ret == -1)
+    int result = socket(domain, type, proto);
+
+    if (result == -1)
         return -1;
-fix_cloexec:
-    rb_maygvl_fd_fix_cloexec(ret);
-    if (RSOCK_NONBLOCK_DEFAULT) {
-        rsock_make_fd_nonblock(ret);
-    }
-update_max_fd:
-    rb_update_max_fd(ret);
 
-    return ret;
+    rb_fd_fix_cloexec(result);
+
+#ifndef SOCK_NONBLOCK
+    rsock_make_fd_nonblock(result);
+#endif
+
+    return result;
 }
-#else /* !SOCK_CLOEXEC */
-static int
-rsock_socket0(int domain, int type, int proto)
-{
-    int ret = socket(domain, type, proto);
-
-    if (ret == -1)
-        return -1;
-    rb_fd_fix_cloexec(ret);
-    if (RSOCK_NONBLOCK_DEFAULT) {
-        rsock_make_fd_nonblock(ret);
-    }
-
-    return ret;
-}
-#endif /* !SOCK_CLOEXEC */
 
 int
 rsock_socket(int domain, int type, int proto)
@@ -637,6 +583,10 @@ rsock_connect(int fd, const struct sockaddr *sockaddr, int len, int socks)
 void
 rsock_make_fd_nonblock(int fd)
 {
+#ifdef _WIN32
+    return;
+#endif
+
     int flags;
 #ifdef F_GETFL
     flags = fcntl(fd, F_GETFL);
@@ -653,56 +603,34 @@ rsock_make_fd_nonblock(int fd)
 }
 
 static int
-cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len,
-	       int nonblock)
+cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len)
 {
-    int ret;
     socklen_t len0 = 0;
-#ifdef HAVE_ACCEPT4
-    static int try_accept4 = 1;
-#endif
-    if (RSOCK_NONBLOCK_DEFAULT) {
-        nonblock = 1;
-    }
     if (address_len) len0 = *address_len;
+
 #ifdef HAVE_ACCEPT4
-    if (try_accept4) {
-        int flags = 0;
-#ifdef SOCK_CLOEXEC
-        flags |= SOCK_CLOEXEC;
-#endif
+    int flags = SOCK_CLOEXEC;
+
 #ifdef SOCK_NONBLOCK
-        if (nonblock) {
-            flags |= SOCK_NONBLOCK;
-        }
+    flags |= SOCK_NONBLOCK;
 #endif
-        ret = accept4(socket, address, address_len, flags);
-        /* accept4 is available since Linux 2.6.28, glibc 2.10. */
-        if (ret != -1) {
-            if (ret <= 2)
-                rb_maygvl_fd_fix_cloexec(ret);
+
+    int result = accept4(socket, address, address_len, flags);
+    if (result == -1) return -1;
+
 #ifndef SOCK_NONBLOCK
-            if (nonblock) {
-                rsock_make_fd_nonblock(ret);
-            }
+    rsock_make_fd_nonblock(result);
 #endif
-            if (address_len && len0 < *address_len) *address_len = len0;
-            return ret;
-        }
-        if (errno != ENOSYS) {
-            return -1;
-        }
-        try_accept4 = 0;
-    }
+#else
+    int result = accept(socket, address, address_len);
+    if (result == -1) return -1;
+
+    rb_maygvl_fd_fix_cloexec(result);
+    rsock_make_fd_nonblock(result);
 #endif
-    ret = accept(socket, address, address_len);
-    if (ret == -1) return -1;
+
     if (address_len && len0 < *address_len) *address_len = len0;
-    rb_maygvl_fd_fix_cloexec(ret);
-    if (nonblock) {
-        rsock_make_fd_nonblock(ret);
-    }
-    return ret;
+    return result;
 }
 
 VALUE
@@ -712,7 +640,7 @@ rsock_s_accept_nonblock(VALUE klass, VALUE ex, rb_io_t *fptr,
     int fd2;
 
     rb_io_set_nonblock(fptr);
-    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len, 1);
+    fd2 = cloexec_accept(fptr->fd, (struct sockaddr*)sockaddr, len);
     if (fd2 < 0) {
 	int e = errno;
 	switch (e) {
@@ -744,7 +672,7 @@ static VALUE
 accept_blocking(void *data)
 {
     struct accept_arg *arg = data;
-    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len, 0);
+    return (VALUE)cloexec_accept(arg->fd, arg->sockaddr, arg->len);
 }
 
 VALUE
