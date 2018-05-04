@@ -1265,6 +1265,12 @@ io_fflush(rb_io_t *fptr)
 int
 rb_io_wait_readable(int f)
 {
+    VALUE scheduler = rb_current_thread_scheduler();
+    if (scheduler != Qnil) {
+        VALUE result = rb_funcall(scheduler, rb_intern("wait_readable"), 1, INT2NUM(f));
+        return RTEST(result);
+    }
+    
     io_fd_check_closed(f);
     switch (errno) {
       case EINTR:
@@ -1289,6 +1295,12 @@ rb_io_wait_readable(int f)
 int
 rb_io_wait_writable(int f)
 {
+    VALUE scheduler = rb_current_thread_scheduler();
+    if (scheduler != Qnil) {
+        VALUE result = rb_funcall(scheduler, rb_intern("wait_writable"), 1, INT2NUM(f));
+        return RTEST(result);
+    }
+    
     io_fd_check_closed(f);
     switch (errno) {
       case EINTR:
@@ -10892,6 +10904,23 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
     return FALSE;
 }
 
+struct wait_for_single_fd {
+    VALUE scheduler;
+
+    int fd;
+    short events;
+
+    VALUE result;
+};
+
+void * rb_thread_scheduler_wait_for_single_fd(void * _args) {
+    struct wait_for_single_fd *args = (struct wait_for_single_fd *)_args;
+
+    args->result = rb_funcall(args->scheduler, rb_intern("wait_for_single_fd"), 3, INT2NUM(args->fd), INT2NUM(args->events), Qnil);
+
+    return NULL;
+}
+
 #if USE_POLL
 #  define IOWAIT_SYSCALL "poll"
 STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN);
@@ -10899,6 +10928,13 @@ STATIC_ASSERT(pollout_expected, POLLOUT == RB_WAITFD_OUT);
 static int
 nogvl_wait_for_single_fd(int fd, short events)
 {
+    VALUE scheduler = rb_current_thread_scheduler();
+    if (scheduler != Qnil) {
+        struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
+        rb_thread_call_with_gvl(rb_thread_scheduler_wait_for_single_fd, &args);
+        return RTEST(args.result);
+    }
+
     struct pollfd fds;
 
     fds.fd = fd;
@@ -10911,6 +10947,13 @@ nogvl_wait_for_single_fd(int fd, short events)
 static int
 nogvl_wait_for_single_fd(int fd, short events)
 {
+    VALUE scheduler = rb_current_thread_scheduler();
+    if (scheduler != Qnil) {
+        struct wait_for_single_fd args = {.scheduler = scheduler, .fd = fd, .events = events};
+        rb_thread_call_with_gvl(rb_thread_scheduler_wait_for_single_fd, &args);
+        return RTEST(args.result);
+    }
+
     rb_fdset_t fds;
     int ret;
 

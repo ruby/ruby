@@ -1804,6 +1804,29 @@ rb_fiber_new(rb_block_call_func_t func, VALUE obj)
     return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), &shared_fiber_pool);
 }
 
+static VALUE
+rb_f_fiber_kw(int argc, VALUE* argv, int kw_splat)
+{
+    VALUE scheduler = rb_current_thread_scheduler();
+    VALUE fiber = Qnil;
+    
+    if (scheduler != Qnil) {
+        fiber = rb_funcall_passing_block_kw(scheduler, rb_intern("fiber"), argc, argv, kw_splat);
+    } else {
+        fiber = fiber_initialize(fiber_alloc(rb_cFiber), rb_block_proc(), &shared_fiber_pool);
+    }
+
+    rb_funcall(fiber, rb_intern("resume"), 0);
+
+    return fiber;
+}
+
+static VALUE
+rb_f_fiber(int argc, VALUE *argv, VALUE obj)
+{
+    return rb_f_fiber_kw(argc, argv, rb_keyword_given_p());
+}
+
 static void rb_fiber_terminate(rb_fiber_t *fiber, int need_interrupt);
 
 void
@@ -2454,6 +2477,8 @@ Init_Cont(void)
     rb_define_method(rb_cFiber, "raise", rb_fiber_raise, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
+
+    rb_define_global_function("Fiber", rb_f_fiber, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
     rb_cFiberPool = rb_define_class("Pool", rb_cFiber);

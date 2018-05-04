@@ -2620,6 +2620,8 @@ thread_mark(void *ptr)
     RUBY_MARK_UNLESS_NULL(th->locking_mutex);
     RUBY_MARK_UNLESS_NULL(th->name);
 
+    RUBY_MARK_UNLESS_NULL(th->scheduler);
+
     RUBY_MARK_LEAVE("thread");
 }
 
@@ -2733,6 +2735,9 @@ th_init(rb_thread_t *th, VALUE self)
 {
     th->self = self;
     rb_threadptr_root_fiber_setup(th);
+
+    th->exclusive = 0;
+    th->scheduler = Qnil;
 
     if (self == 0) {
         size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
@@ -3294,12 +3299,14 @@ Init_VM(void)
 	vm->self = TypedData_Wrap_Struct(rb_cRubyVM, &vm_data_type, vm);
 
 	/* create main thread */
-        th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+	th->self = TypedData_Wrap_Struct(rb_cThread, &thread_data_type, th);
+
 	vm->main_thread = th;
 	vm->running_thread = th;
 	th->vm = vm;
 	th->top_wrapper = 0;
 	th->top_self = rb_vm_top_self();
+
 	rb_thread_set_current(th);
 
 	rb_vm_living_threads_insert(vm, th);
