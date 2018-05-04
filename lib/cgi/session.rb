@@ -406,8 +406,8 @@ class CGI
               @hash[CGI::unescape(k)] = Marshal.restore(CGI::unescape(v))
             end
           ensure
-            f.close unless f.nil?
-            lockf.close if lockf
+            f&.close
+            lockf&.close
           end
         end
         @hash
@@ -426,8 +426,8 @@ class CGI
           f.close
           File.rename @path+".new", @path
         ensure
-          f.close if f
-          lockf.close if lockf
+          f&.close
+          lockf&.close
         end
       end
 
