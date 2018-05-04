@@ -3270,6 +3270,13 @@ pipe_nocrash(int filedes[2], VALUE fds)
 #define O_BINARY 0
 #endif
 
+static VALUE
+rb_thread_sleep_that_takes_VALUE_as_sole_argument(VALUE n)
+{
+    rb_thread_sleep(NUM2INT(n));
+    return Qundef;
+}
+
 static int
 handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
 {
@@ -3291,7 +3298,7 @@ handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
             return 0;
         }
         else {
-            rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
+            rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, 1, &state);
             if (status) *status = state;
             if (!state) return 0;
         }
