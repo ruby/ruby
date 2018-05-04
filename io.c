@@ -4629,20 +4629,35 @@ clear_codeconv(rb_io_t *fptr)
     clear_writeconv(fptr);
 }
 
-int
-rb_io_fptr_finalize(rb_io_t *fptr)
+void
+rb_io_fptr_finalize_internal(void *ptr)
 {
-    if (!fptr) return 0;
+    rb_io_t *fptr = ptr;
+
+    if (!ptr) return;
     fptr->pathv = Qnil;
     if (0 <= fptr->fd)
-	rb_io_fptr_cleanup(fptr, TRUE);
+        rb_io_fptr_cleanup(fptr, TRUE);
     fptr->write_lock = 0;
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
     free(fptr);
-    return 1;
 }
+
+#undef rb_io_fptr_finalize
+int
+rb_io_fptr_finalize(rb_io_t *fptr)
+{
+    if (!fptr) {
+        return 0;
+    }
+    else {
+        rb_io_fptr_finalize_internal(fptr);
+        return 1;
+    }
+}
+#define rb_io_fptr_finalize(fptr) rb_io_fptr_finalize_internal(fptr)
 
 RUBY_FUNC_EXPORTED size_t
 rb_io_memsize(const rb_io_t *fptr)
