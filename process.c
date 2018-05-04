@@ -3298,7 +3298,7 @@ handle_fork_error(int err, int *status, int *ep, volatile int *try_gc_p)
             return 0;
         }
         else {
-            rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, 1, &state);
+            rb_protect(rb_thread_sleep_that_takes_VALUE_as_sole_argument, INT2FIX(1), &state);
             if (status) *status = state;
             if (!state) return 0;
         }
