@@ -119,6 +119,8 @@ module Random::Formatter
   #
   # The result may contain any byte: "\x00" - "\xff".
   #
+  #   require 'securerandom'
+  #
   #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
   #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
   #
@@ -139,6 +141,8 @@ module Random::Formatter
   #
   # The result may contain 0-9 and a-f.
   #
+  #   require 'securerandom'
+  #
   #   p SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
   #   p SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   #
@@ -157,6 +161,8 @@ module Random::Formatter
   # It may be larger in the future.
   #
   # The result may contain A-Z, a-z, 0-9, "+", "/" and "=".
+  #
+  #   require 'securerandom'
   #
   #   p SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
   #   p SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
@@ -185,6 +191,8 @@ module Random::Formatter
   # The result may contain A-Z, a-z, 0-9, "-" and "_".
   # "=" is also used if _padding_ is true.
   #
+  #   require 'securerandom'
+  #
   #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
   #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
   #
@@ -203,6 +211,8 @@ module Random::Formatter
   end
 
   # SecureRandom.uuid generates a random v4 UUID (Universally Unique IDentifier).
+  #
+  #   require 'securerandom'
   #
   #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
   #   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
@@ -235,6 +245,8 @@ module Random::Formatter
   # generated.
   #
   # The result may contain whatever characters are in the source array.
+  #
+  #   require 'securerandom'
   #
   #   p SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
   #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
@@ -280,6 +292,8 @@ module Random::Formatter
   # It may be larger in the future.
   #
   # The result may contain A-Z, a-z and 0-9.
+  #
+  #   require 'securerandom'
   #
   #   p SecureRandom.alphanumeric #=> "2BuBuLf3WfSKyQbR"
   #   p SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
