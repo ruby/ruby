@@ -1165,14 +1165,14 @@ XXX
   # Version
   #
   def version
-    @version || (defined?(::Version) && ::Version)
+    (defined?(@version) && @version) || (defined?(::Version) && ::Version)
   end
 
   #
   # Release code
   #
   def release
-    @release || (defined?(::Release) && ::Release) || (defined?(::RELEASE) && ::RELEASE)
+    (defined?(@release) && @release) || (defined?(::Release) && ::Release) || (defined?(::RELEASE) && ::RELEASE)
   end
 
   #
