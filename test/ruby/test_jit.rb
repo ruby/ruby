@@ -322,6 +322,16 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_send_without_block
     assert_compile_once('print', result_inspect: 'nil', insns: %i[opt_send_without_block])
+
+    # recursive inline
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '120', success_count: 1, min_calls: 2)
+    begin;
+      def fact(i)
+        return i if i <= 1
+        i * fact(i - 1)
+      end
+      print fact(5)
+    end;
   end
 
   def test_compile_insn_invokesuper
