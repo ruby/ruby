@@ -58,6 +58,9 @@
                 fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
                 fprintf(f, "            v = vm_exec(ec, TRUE);\n");
             }
+            else if (body == iseq->body) { /* inline recursive call */
+                fprintf(f, "            v = %s(ec, ec->cfp);\n", status->funcname);
+            }
             else {
                 fprintf(f, "            if ((v = mjit_exec(ec)) == Qundef) {\n");
                 fprintf(f, "                VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n"); /* This is vm_call0_body's code after vm_call_iseq_setup */
