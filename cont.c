@@ -769,6 +769,8 @@ fiber_entry(void *arg)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON)
 #endif
 
+#define ERRNOMSG strerror(errno)
+
 static char*
 fiber_machine_stack_alloc(size_t size)
 {
@@ -793,13 +795,13 @@ fiber_machine_stack_alloc(size_t size)
 	errno = 0;
 	ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 	if (ptr == MAP_FAILED) {
-	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber: %s", strerror(errno));
+	    rb_raise(rb_eFiberError, "can't alloc machine stack to fiber: %s", ERRNOMSG);
 	}
 
 	/* guard page setup */
 	page = ptr + STACK_DIR_UPPER(size - RB_PAGE_SIZE, 0);
 	if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
-	    rb_raise(rb_eFiberError, "mprotect failed");
+	    rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
 	}
     }
 
