@@ -750,6 +750,7 @@ fiber_set_stack_location(void)
     th->ec->machine.stack_start = (void*)(((VALUE)ptr & RB_PAGE_MASK) + STACK_UPPER((void *)&ptr, 0, RB_PAGE_SIZE));
 }
 
+NORETURN(static VOID CALLBACK fiber_entry(void *arg));
 static VOID CALLBACK
 fiber_entry(void *arg)
 {
@@ -757,6 +758,13 @@ fiber_entry(void *arg)
     rb_fiber_start();
 }
 #else /* _WIN32 */
+
+NORETURN(static void fiber_entry(void *arg));
+static void
+fiber_entry(void *arg)
+{
+    rb_fiber_start();
+}
 
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
@@ -841,7 +849,7 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     context->uc_stack.ss_size = size;
     fib->ss_sp = ptr;
     fib->ss_size = size;
-    makecontext(context, rb_fiber_start, 0);
+    makecontext(context, fiber_entry, 0);
     sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
