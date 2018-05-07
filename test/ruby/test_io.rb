@@ -49,8 +49,8 @@ class TestIO < Test::Unit::TestCase
     end
     flunk("timeout") unless wt.join(10) && rt.join(10)
   ensure
-    w.close unless !w || w.closed?
-    r.close unless !r || r.closed?
+    w&.close
+    r&.close
     (wt.kill; wt.join) if wt
     (rt.kill; rt.join) if rt
     raise we if we
@@ -62,8 +62,8 @@ class TestIO < Test::Unit::TestCase
     begin
       yield r, w
     ensure
-      r.close unless r.closed?
-      w.close unless w.closed?
+      r.close
+      w.close
     end
   end
 
@@ -2325,7 +2325,7 @@ End
       t
     end
   ensure
-    t.close(true) if t and block_given?
+    t&.close(true) if block_given?
   end
 
   def test_reopen_encoding
@@ -3160,7 +3160,7 @@ __END__
         f.ioctl(tiocgwinsz, winsize)
       }
     ensure
-      f.close if f
+      f&.close
     end
   end if /^(?:i.?86|x86_64)-linux/ =~ RUBY_PLATFORM
 
