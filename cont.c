@@ -1600,12 +1600,10 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 #if FIBER_USE_NATIVE
     fiber_setcontext(next_fib, fib);
     /* restored */
-#ifndef _WIN32
+#ifdef MAX_MACHINE_STACK_CACHE
     if (terminated_machine_stack.ptr) {
 	if (machine_stack_cache_index < MAX_MACHINE_STACK_CACHE) {
-	    machine_stack_cache[machine_stack_cache_index].ptr = terminated_machine_stack.ptr;
-	    machine_stack_cache[machine_stack_cache_index].size = terminated_machine_stack.size;
-	    machine_stack_cache_index++;
+	    machine_stack_cache[machine_stack_cache_index++] = terminated_machine_stack;
 	}
 	else {
 	    if (terminated_machine_stack.ptr != fib->cont.machine.stack) {
@@ -1743,11 +1741,13 @@ rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
     rb_fiber_close(fib);
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
+    fib->context.uc_stack.ss_sp = NULL;
+#endif
+#ifdef MAX_MACHINE_STACK_CACHE
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
     terminated_machine_stack.ptr = fib->ss_sp;
     terminated_machine_stack.size = fib->ss_size / sizeof(VALUE);
     fib->ss_sp = NULL;
-    fib->context.uc_stack.ss_sp = NULL;
     fib->cont.machine.stack = NULL;
     fib->cont.machine.stack_size = 0;
 #endif
