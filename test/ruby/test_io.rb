@@ -633,7 +633,7 @@ class TestIO < Test::Unit::TestCase
           assert_equal(bigcontent[30, 40], File.read("bigdst"))
           assert_equal(0, f.pos)
         rescue NotImplementedError
-          #skip "pread(2) is not implemtented."
+          #skip "pread(2) is not implemented."
         end
       }
     }
