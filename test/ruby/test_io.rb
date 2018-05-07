@@ -2691,7 +2691,6 @@ __END__
   end
 
   def test_flush_in_finalizer1
-    require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
     tmp = Tempfile.open("bug3910") {|t|
       path = t.path
@@ -2717,7 +2716,6 @@ __END__
   end
 
   def test_flush_in_finalizer2
-    require 'tempfile'
     bug3910 = '[ruby-dev:42341]'
     Tempfile.open("bug3910") {|t|
       path = t.path
