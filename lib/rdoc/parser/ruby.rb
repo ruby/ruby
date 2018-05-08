@@ -363,6 +363,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       container ||=
         if ignore_constants then
           c = RDoc::NormalModule.new name_t[:text]
+          c.store = @store
           new_modules << [prev_container, c]
           c
         else
