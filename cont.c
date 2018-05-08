@@ -142,6 +142,18 @@ enum fiber_status {
 #define FIBER_RUNNABLE_P(fib)   (FIBER_CREATED_P(fib) || FIBER_SUSPENDED_P(fib))
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
+static inline void
+fiber_context_create(ucontext_t *context, void (*func)(void *), void *arg, void *ptr, size_t size)
+{
+    getcontext(context);
+    context->uc_link = NULL;
+    context->uc_stack.ss_sp = ptr;
+    context->uc_stack.ss_size = size;
+    makecontext(context, func, 0);
+}
+#endif
+
+#if FIBER_USE_NATIVE && !defined(_WIN32)
 #define MAX_MACHINE_STACK_CACHE  10
 static int machine_stack_cache_index = 0;
 typedef struct machine_stack_cache_struct {
@@ -838,18 +850,13 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     }
     sec->machine.stack_maxsize = size;
 #else /* not WIN32 */
-    ucontext_t *context = &fib->context;
     char *ptr;
     STACK_GROW_DIR_DETECTION;
 
-    getcontext(context);
     ptr = fiber_machine_stack_alloc(size);
-    context->uc_link = NULL;
-    context->uc_stack.ss_sp = ptr;
-    context->uc_stack.ss_size = size;
     fib->ss_sp = ptr;
     fib->ss_size = size;
-    makecontext(context, fiber_entry, 0);
+    fiber_context_create(&fib->context, fiber_entry, NULL, fib->ss_sp, fib->ss_size);
     sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
