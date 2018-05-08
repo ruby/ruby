@@ -1859,7 +1859,6 @@ class TestIO < Test::Unit::TestCase
 
   def test_pos
     make_tempfile {|t|
-
       open(t.path, IO::RDWR|IO::CREAT|IO::TRUNC, 0600) do |f|
         f.write "Hello"
         assert_equal(5, f.pos)
@@ -2258,13 +2257,13 @@ class TestIO < Test::Unit::TestCase
 
   def test_reopen_inherit
     mkcdtmpdir {
-      system(EnvUtil.rubybin, '-e', <<"End")
+      system(EnvUtil.rubybin, '-e', <<-"End")
         f = open("out", "w")
         STDOUT.reopen(f)
         STDERR.reopen(f)
         system(#{EnvUtil.rubybin.dump}, '-e', 'STDOUT.print "out"')
         system(#{EnvUtil.rubybin.dump}, '-e', 'STDERR.print "err"')
-End
+      End
       assert_equal("outerr", File.read("out"))
     }
   end
@@ -2565,7 +2564,6 @@ End
     return unless defined?(Fcntl::F_GETFL)
 
     make_tempfile {|t|
-
       fd = IO.sysopen(t.path, "w")
       assert_kind_of(Integer, fd)
       %w[r r+ w+ a+].each do |mode|
@@ -2849,7 +2847,7 @@ __END__
   end
 
   def test_fcntl_lock_linux
-    pad=0
+    pad = 0
     Tempfile.create(self.class.name) do |f|
       r, w = IO.pipe
       pid = fork do
