@@ -1433,6 +1433,12 @@ rb_eval_string(const char *str)
     return ruby_eval_string_from_file(str, "eval");
 }
 
+static VALUE
+eval_string_protect(VALUE str)
+{
+    return rb_eval_string((char *)str);
+}
+
 /**
  * Evaluates the given string in an isolated binding.
  *
@@ -1446,7 +1452,7 @@ rb_eval_string(const char *str)
 VALUE
 rb_eval_string_protect(const char *str, int *pstate)
 {
-    return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, pstate);
+    return rb_protect(eval_string_protect, (VALUE)str, pstate);
 }
 
 /**
