@@ -5828,7 +5828,7 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
  *   [42, {foo: :bar}].dig(1, :foo)    #=> :bar
  */
 
-VALUE
+static VALUE
 rb_ary_dig(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
