@@ -143,7 +143,7 @@ enum fiber_status {
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
 static inline void
-fiber_context_create(ucontext_t *context, void (*func)(void *), void *arg, void *ptr, size_t size)
+fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, size_t size)
 {
     getcontext(context);
     context->uc_link = NULL;
