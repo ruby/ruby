@@ -567,7 +567,6 @@ class TestIO < Test::Unit::TestCase
               w2.nonblock = true
             rescue Errno::EBADF
               skip "nonblocking IO for pipe is not implemented"
-              break
             end
             s = w2.syswrite("a" * 100000)
             t = Thread.new { sleep 0.1; r2.read }
