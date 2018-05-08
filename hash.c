@@ -3065,7 +3065,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *   g.dig(:foo, :bar)           #=> TypeError: no implicit conversion of Symbol into Integer
  */
 
-VALUE
+static VALUE
 rb_hash_dig(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
