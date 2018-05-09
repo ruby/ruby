@@ -20,12 +20,11 @@
 % # sp motion is optimized away for `handles_frame? #=> false` case.
 % # Thus sp should be set properly before `goto cancel`.
 % if insn.handles_frame?
-            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + stack_size + 1 - <%= insn.pops.size %>;\n"); /* POPN(INSN_ATTR(popn)); */
-%
 %           # JIT-only behavior (pushing JIT's local variables to VM's stack):
             {
                 rb_snum_t i, push_size;
                 push_size = -<%= insn.call_attribute('sp_inc') %> + <%= insn.rets.size %> - <%= insn.pops.size %>;
+                fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %ld + 1;\n", push_size); /* POPN(INSN_ATTR(popn)); */
                 for (i = 0; i < push_size; i++) { /* TODO: use memcpy? */
                     fprintf(f, "    *(reg_cfp->sp + %ld) = stack[%ld];\n", i - push_size, (rb_snum_t)b->stack_size - push_size + i);
                 }
