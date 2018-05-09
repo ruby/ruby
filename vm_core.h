@@ -823,7 +823,7 @@ typedef struct rb_execution_context_struct {
 	VALUE *register_stack_end;
 	size_t register_stack_maxsize;
 #endif
-	jmp_buf regs;
+	RUBY_ALIGNAS(SIZEOF_VALUE) jmp_buf regs;
     } machine;
 } rb_execution_context_t;
 
