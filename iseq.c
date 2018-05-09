@@ -222,7 +222,6 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	}
 
 	rb_gc_mark(body->variable.coverage);
-	rb_gc_mark(body->variable.original_iseq);
 	rb_gc_mark(body->location.label);
 	rb_gc_mark(body->location.base_label);
 	rb_gc_mark(body->location.pathobj);

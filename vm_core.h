@@ -420,7 +420,7 @@ struct rb_iseq_constant_body {
     struct {
 	rb_snum_t flip_count;
 	VALUE coverage;
-	VALUE original_iseq;
+	VALUE *original_iseq;
     } variable;
 
     unsigned int local_table_size;
