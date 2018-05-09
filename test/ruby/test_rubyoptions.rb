@@ -579,7 +579,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
   if /linux|freebsd|netbsd|openbsd|darwin/ =~ RUBY_PLATFORM
     PSCMD = EnvUtil.find_executable("ps", "-o", "command", "-p", $$.to_s) {|out| /ruby/=~out}
-    PSCMD.pop if PSCMD
+    PSCMD&.pop
   end
 
   def test_set_program_name
