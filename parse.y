@@ -10968,24 +10968,30 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 #ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define ADD2HEAP(new, cnt, ptr) (p->heap = (new), (new)->cnt = (cnt), (ptr))
+/* Keep the order; NEWHEAP then xmalloc and ADD2HEAP to get rid of
+ * potential memory leak */
+#define NEWHEAP() rb_imemo_tmpbuf_parser_heap(0, p->heap, 0)
+#define ADD2HEAP(new, cnt, ptr) ((p->heap = (new))->ptr = (ptr), \
+			   (new)->cnt = (cnt), (ptr))
 
 void *
 rb_parser_malloc(struct parser_params *p, size_t size)
 {
     size_t cnt = HEAPCNT(1, size);
+    rb_imemo_tmpbuf_t *n = NEWHEAP();
     void *ptr = xmalloc(size);
-    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
-    return p->heap->ptr;
+
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void *
 rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
 {
     size_t cnt = HEAPCNT(nelem, size);
+    rb_imemo_tmpbuf_t *n = NEWHEAP();
     void *ptr = xcalloc(nelem, size);
-    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
-    return p->heap->ptr;
+
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void *
@@ -11003,9 +11009,9 @@ rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
 	    }
 	} while ((n = n->next) != NULL);
     }
+    n = NEWHEAP();
     ptr = xrealloc(ptr, size);
-    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
-    return p->heap->ptr;
+    return ADD2HEAP(n, cnt, ptr);
 }
 
 void

@@ -8141,9 +8141,17 @@ void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
     void *ptr;
+    VALUE imemo;
+    rb_imemo_tmpbuf_t *tmpbuf;
 
+    /* Keep the order; allocate an empty imemo first then xmalloc, to
+     * get rid of potential memory leak */
+    imemo = rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(NULL, 0);
+    *store = imemo;
     ptr = ruby_xmalloc0(size);
-    *store = rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(ptr, cnt);
+    tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
+    tmpbuf->ptr = ptr;
+    tmpbuf->cnt = cnt;
     return ptr;
 }
 
