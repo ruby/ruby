@@ -4,9 +4,7 @@
 
 # tc_features.rb
 #
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 begin
   require "zlib"
@@ -313,7 +311,7 @@ class TestCSV::Features < TestCSV
   def test_inspect_encoding_is_ascii_compatible
     csv = CSV.new("one,two,three\n1,2,3\n".encode("UTF-16BE"))
     assert_send([Encoding, :compatible?,
-                 Encoding.find("US-ASCII"), csv.inspect.encoding],
+                  Encoding.find("US-ASCII"), csv.inspect.encoding],
                 "inspect() was not ASCII compatible.")
   end
 
@@ -321,7 +319,7 @@ class TestCSV::Features < TestCSV
     assert_not_nil(CSV::VERSION)
     assert_instance_of(String, CSV::VERSION)
     assert_predicate(CSV::VERSION, :frozen?)
-    assert_match(/\A\d\.\d\.\d\Z/, CSV::VERSION)
+    assert_match(/\A\d\.\d\.\d\z/, CSV::VERSION)
   end
 
   def test_accepts_comment_skip_lines_option
@@ -352,11 +350,13 @@ class TestCSV::Features < TestCSV
   end
 
   def test_comment_rows_are_ignored_with_heredoc
-    c = CSV.new(<<~EOL, skip_lines: ".")
-    1,foo
-    .2,bar
-    3,baz
+    sample_data = <<~EOL
+      1,foo
+      .2,bar
+      3,baz
     EOL
+
+    c = CSV.new(sample_data, skip_lines: ".")
     assert_equal [["1", "foo"], ["3", "baz"]], c.each.to_a
   end
 

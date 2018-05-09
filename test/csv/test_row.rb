@@ -4,9 +4,7 @@
 
 # tc_row.rb
 #
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 require_relative "base"
 
@@ -304,6 +302,17 @@ class TestCSV::Row < TestCSV
     end
   end
 
+  def test_each_pair
+    assert_equal([
+                   ["A", 1],
+                   ["B", 2],
+                   ["C", 3],
+                   ["A", 4],
+                   ["A", nil],
+                 ],
+                 @row.each_pair.to_a)
+  end
+
   def test_enumerable
     assert_equal( [["A", 1], ["A", 4], ["A", nil]],
                   @row.select { |pair| pair.first == "A" } )
@@ -323,7 +332,7 @@ class TestCSV::Row < TestCSV
 
   def test_to_hash
     hash = @row.to_hash
-    assert_equal({"A" => nil, "B" => 2, "C" => 3}, hash)
+    assert_equal({"A" => @row["A"], "B" => @row["B"], "C" => @row["C"]}, hash)
     hash.keys.each_with_index do |string_key, h|
       assert_predicate(string_key, :frozen?)
       assert_same(string_key, @row.headers[h])
@@ -376,5 +385,38 @@ class TestCSV::Row < TestCSV
   def test_can_be_compared_when_not_a_row
     r = @row == []
     assert_equal false, r
+  end
+
+  def test_dig_by_index
+    assert_equal(2, @row.dig(1))
+
+    assert_nil(@row.dig(100))
+  end
+
+  def test_dig_by_header
+    assert_equal(2, @row.dig("B"))
+
+    assert_nil(@row.dig("Missing"))
+  end
+
+  def test_dig_cell
+    row = CSV::Row.new(%w{A}, [["foo", ["bar", ["baz"]]]])
+
+    assert_equal("foo", row.dig(0, 0))
+    assert_equal("bar", row.dig(0, 1, 0))
+
+    assert_equal("foo", row.dig("A", 0))
+    assert_equal("bar", row.dig("A", 1, 0))
+  end
+
+  def test_dig_cell_no_dig
+    row = CSV::Row.new(%w{A}, ["foo"])
+
+    assert_raise(TypeError) do
+      row.dig(0, 0)
+    end
+    assert_raise(TypeError) do
+      row.dig("A", 0)
+    end
   end
 end
