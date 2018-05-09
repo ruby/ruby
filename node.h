@@ -487,7 +487,7 @@ typedef struct rb_ast_struct {
     VALUE mark_ary;
     rb_ast_body_t body;
 } rb_ast_t;
-rb_ast_t *rb_ast_new();
+rb_ast_t *rb_ast_new(void);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_dispose(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
