@@ -2355,6 +2355,16 @@ open_func(void *ptr)
     return NULL;
 }
 
+static void
+rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
+{
+    eargp->dup2_tmpbuf =
+        rb_imemo_tmpbuf_auto_free_pointer(
+            ruby_xmalloc(
+                run_exec_dup2_tmpbuf_size(
+                    len)));
+}
+
 static VALUE
 rb_execarg_parent_start1(VALUE execarg_obj)
 {
@@ -2409,10 +2419,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
 
     ary = eargp->fd_dup2;
     if (ary != Qfalse) {
-        size_t len = run_exec_dup2_tmpbuf_size(RARRAY_LEN(ary));
-        VALUE tmpbuf = hide_obj(rb_str_new(0, len));
-        rb_str_set_len(tmpbuf, len);
-        eargp->dup2_tmpbuf = tmpbuf;
+        rb_execarg_allocate_dup2_tmpbuf(eargp, RARRAY_LEN(ary));
     }
 
     unsetenv_others = eargp->unsetenv_others_given && eargp->unsetenv_others_do;
@@ -2775,10 +2782,10 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
     long n, i;
     int ret;
     int extra_fd = -1;
-    struct run_exec_dup2_fd_pair *pairs = 0;
+    struct rb_imemo_tmpbuf_struct *buf = (void *)tmpbuf;
+    struct run_exec_dup2_fd_pair *pairs = (void *)buf->ptr;
 
     n = RARRAY_LEN(ary);
-    pairs = (struct run_exec_dup2_fd_pair *)RSTRING_PTR(tmpbuf);
 
     /* initialize oldfd and newfd: O(n) */
     for (i = 0; i < n; i++) {
@@ -3155,10 +3162,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     if (sargp) {
         VALUE ary = sargp->fd_dup2;
         if (ary != Qfalse) {
-            size_t len = run_exec_dup2_tmpbuf_size(RARRAY_LEN(ary));
-            VALUE tmpbuf = hide_obj(rb_str_new(0, len));
-            rb_str_set_len(tmpbuf, len);
-            sargp->dup2_tmpbuf = tmpbuf;
+            rb_execarg_allocate_dup2_tmpbuf(sargp, RARRAY_LEN(ary));
         }
     }
 
