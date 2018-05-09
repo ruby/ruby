@@ -27,7 +27,6 @@ struct compile_status {
     /* If TRUE, JIT-ed code will use local variables to store pushed values instead of
        using VM's stack and moving stack pointer. */
     int local_stack_p;
-    const char *funcname; /* the method name which is being compiled */
 };
 
 /* Storage to keep data which is consistent in each conditional branch.
@@ -194,7 +193,6 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.success = TRUE;
     status.local_stack_p = !body->catch_except_p;
     status.stack_size_for_pos = ALLOC_N(int, body->iseq_size);
-    status.funcname = funcname;
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
 
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
