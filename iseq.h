@@ -63,7 +63,7 @@ static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
     return iseq->body->variable.original_iseq =
-        ruby_xmalloc2(sizeof(VALUE), size);
+        ruby_xmalloc2(size, sizeof(VALUE));
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
