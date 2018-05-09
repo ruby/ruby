@@ -2675,7 +2675,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    remove_unreachable_chunk(iseq, iobj->link.next);
 	    goto again;
 	}
-	else if (IS_INSN_ID(diobj, leave) ? !(dniobj = 0) :
+	else if (dniobj = 0,
+		 IS_INSN_ID(diobj, leave) ||
 		 (diobj->operand_size == 0 &&
 		  (dniobj = (INSN *)get_next_insn(diobj)) != 0 &&
 		  (IS_INSN_ID(dniobj, leave) || (dniobj = 0)))) {
