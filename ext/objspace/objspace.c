@@ -625,7 +625,7 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
 	imemo_type_ids[5] = rb_intern("imemo_memo");
 	imemo_type_ids[6] = rb_intern("imemo_ment");
 	imemo_type_ids[7] = rb_intern("imemo_iseq");
-	imemo_type_ids[8] = rb_intern("imemo_alloc");
+	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
 	imemo_type_ids[9] = rb_intern("imemo_parser_strterm");
     }
 

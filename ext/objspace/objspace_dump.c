@@ -205,7 +205,7 @@ imemo_name(int imemo)
 	TYPE_STR(memo);
 	TYPE_STR(ment);
 	TYPE_STR(iseq);
-	TYPE_STR(alloc);
+	TYPE_STR(tmpbuf);
 	TYPE_STR(ast);
 	TYPE_STR(parser_strterm);
       default:

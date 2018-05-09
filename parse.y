@@ -183,7 +183,7 @@ typedef struct rb_strterm_struct rb_strterm_t;
                      token
 */
 struct parser_params {
-    rb_imemo_alloc_t *heap;
+    rb_imemo_tmpbuf_t *heap;
 
     YYSTYPE *lval;
 
@@ -2505,7 +2505,7 @@ primary		: literal
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
 			ID *tbl = ALLOC_N(ID, 2);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-			add_mark_object(p, rb_imemo_alloc_auto_free_pointer(tbl));
+			add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(tbl));
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -9988,7 +9988,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     NODE *node;
 
     args = ZALLOC(struct rb_args_info);
-    add_mark_object(p, rb_imemo_alloc_auto_free_pointer(args));
+    add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(args));
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
@@ -10350,7 +10350,7 @@ local_tbl(struct parser_params *p)
     if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 1);
     buf[0] = cnt;
 
-    add_mark_object(p, rb_imemo_alloc_auto_free_pointer(buf));
+    add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(buf));
 
     return buf;
 }
@@ -10975,7 +10975,7 @@ rb_parser_malloc(struct parser_params *p, size_t size)
 {
     size_t cnt = HEAPCNT(1, size);
     void *ptr = xmalloc(size);
-    p->heap = rb_imemo_alloc_parser_heap(ptr, p->heap, cnt);
+    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
     return p->heap->ptr;
 }
 
@@ -10984,14 +10984,14 @@ rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
 {
     size_t cnt = HEAPCNT(nelem, size);
     void *ptr = xcalloc(nelem, size);
-    p->heap = rb_imemo_alloc_parser_heap(ptr, p->heap, cnt);
+    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
     return p->heap->ptr;
 }
 
 void *
 rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
 {
-    rb_imemo_alloc_t *n;
+    rb_imemo_tmpbuf_t *n;
     size_t cnt = HEAPCNT(1, size);
 
     if (ptr && (n = p->heap) != NULL) {
@@ -11004,14 +11004,14 @@ rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
 	} while ((n = n->next) != NULL);
     }
     ptr = xrealloc(ptr, size);
-    p->heap = rb_imemo_alloc_parser_heap(ptr, p->heap, cnt);
+    p->heap = rb_imemo_tmpbuf_parser_heap(ptr, p->heap, cnt);
     return p->heap->ptr;
 }
 
 void
 rb_parser_free(struct parser_params *p, void *ptr)
 {
-    rb_imemo_alloc_t **prev = &p->heap, *n;
+    rb_imemo_tmpbuf_t **prev = &p->heap, *n;
 
     while ((n = *prev) != NULL) {
 	if (n->ptr == ptr) {
