@@ -434,7 +434,7 @@ typedef struct RVALUE {
 	    struct rb_method_entry_struct ment;
 	    const rb_iseq_t iseq;
 	    rb_env_t env;
-	    struct rb_imemo_alloc_struct alloc;
+	    struct rb_imemo_tmpbuf_struct alloc;
 	    rb_ast_t ast;
 	} imemo;
 	struct {
@@ -2025,28 +2025,28 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 }
 
 static VALUE
-rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+rb_imemo_tmpbuf_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
-    VALUE flags = T_IMEMO | (imemo_alloc << FL_USHIFT);
+    VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
     return newobj_of(v0, flags, v1, v2, v3, FALSE);
 }
 
 VALUE
-rb_imemo_alloc_auto_free_pointer(void *buf)
+rb_imemo_tmpbuf_auto_free_pointer(void *buf)
 {
-    return rb_imemo_new(imemo_alloc, (VALUE)buf, 0, 0, 0);
+    return rb_imemo_new(imemo_tmpbuf, (VALUE)buf, 0, 0, 0);
 }
 
 VALUE
-rb_imemo_alloc_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
+rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
 {
-    return rb_imemo_alloc_new((VALUE)buf, 0, (VALUE)cnt, 0);
+    return rb_imemo_tmpbuf_new((VALUE)buf, 0, (VALUE)cnt, 0);
 }
 
-rb_imemo_alloc_t *
-rb_imemo_alloc_parser_heap(void *buf, rb_imemo_alloc_t *old_heap, size_t cnt)
+rb_imemo_tmpbuf_t *
+rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 {
-    return (rb_imemo_alloc_t *)rb_imemo_alloc_new((VALUE)buf, (VALUE)old_heap, (VALUE)cnt, 0);
+    return (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new((VALUE)buf, (VALUE)old_heap, (VALUE)cnt, 0);
 }
 
 #if IMEMO_DEBUG
@@ -2382,7 +2382,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    GC_ASSERT(VM_ENV_ESCAPED_P(RANY(obj)->as.imemo.env.ep));
 	    xfree((VALUE *)RANY(obj)->as.imemo.env.env);
 	    break;
-	  case imemo_alloc:
+	  case imemo_tmpbuf:
 	    xfree(RANY(obj)->as.imemo.alloc.ptr);
 	    break;
 	  case imemo_ast:
@@ -3308,7 +3308,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
       case T_RATIONAL:
       case T_COMPLEX:
       case T_IMEMO:
-	if (imemo_type_p(obj, imemo_alloc)) {
+	if (imemo_type_p(obj, imemo_tmpbuf)) {
 	    size += RANY(obj)->as.imemo.alloc.cnt * sizeof(VALUE);
 	}
 	break;
@@ -4556,9 +4556,9 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
       case imemo_iseq:
 	rb_iseq_mark((rb_iseq_t *)obj);
 	return;
-      case imemo_alloc:
+      case imemo_tmpbuf:
 	{
-	    const rb_imemo_alloc_t *m = &RANY(obj)->as.imemo.alloc;
+	    const rb_imemo_tmpbuf_t *m = &RANY(obj)->as.imemo.alloc;
 	    do {
 		rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
 	    } while ((m = m->next) != NULL);
@@ -8143,7 +8143,7 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
     void *ptr;
 
     ptr = ruby_xmalloc0(size);
-    *store = rb_imemo_alloc_auto_free_maybe_mark_buffer(ptr, cnt);
+    *store = rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(ptr, cnt);
     return ptr;
 }
 
@@ -8162,7 +8162,7 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
-    rb_imemo_alloc_t *s = (rb_imemo_alloc_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
+    rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
 	void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
 	s->cnt = 0;
@@ -9397,7 +9397,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		IMEMO_NAME(memo);
 		IMEMO_NAME(ment);
 		IMEMO_NAME(iseq);
-		IMEMO_NAME(alloc);
+		IMEMO_NAME(tmpbuf);
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }

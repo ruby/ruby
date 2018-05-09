@@ -864,7 +864,7 @@ enum imemo_type {
     imemo_memo           =  5,
     imemo_ment           =  6,
     imemo_iseq           =  7,
-    imemo_alloc          =  8,
+    imemo_tmpbuf         =  8,
     imemo_ast            =  9,
     imemo_parser_strterm = 10
 };
@@ -952,17 +952,17 @@ rb_vm_ifunc_proc_new(VALUE (*func)(ANYARGS), const void *data)
     return rb_vm_ifunc_new(func, data, 0, UNLIMITED_ARGUMENTS);
 }
 
-typedef struct rb_imemo_alloc_struct {
+typedef struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE reserved;
     VALUE *ptr; /* malloc'ed buffer */
-    struct rb_imemo_alloc_struct *next; /* next imemo */
+    struct rb_imemo_tmpbuf_struct *next; /* next imemo */
     size_t cnt; /* buffer size in VALUE */
-} rb_imemo_alloc_t;
+} rb_imemo_tmpbuf_t;
 
-VALUE rb_imemo_alloc_auto_free_pointer(void *buf);
-VALUE rb_imemo_alloc_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
-rb_imemo_alloc_t *rb_imemo_alloc_parser_heap(void *buf, rb_imemo_alloc_t *old_heap, size_t cnt);
+VALUE rb_imemo_tmpbuf_auto_free_pointer(void *buf);
+VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
+rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
 void rb_strterm_mark(VALUE obj);
 
