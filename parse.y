@@ -2505,7 +2505,7 @@ primary		: literal
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
 			ID *tbl = ALLOC_N(ID, 2);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-			add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)tbl, 0, 0, 0));
+			add_mark_object(p, (VALUE)rb_imemo_alloc_new(tbl));
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -9988,7 +9988,7 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     NODE *node;
 
     args = ZALLOC(struct rb_args_info);
-    add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)args, 0, 0, 0));
+    add_mark_object(p, (VALUE)rb_imemo_alloc_new(args));
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
@@ -10350,7 +10350,7 @@ local_tbl(struct parser_params *p)
     if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 1);
     buf[0] = cnt;
 
-    add_mark_object(p, (VALUE)rb_imemo_alloc_new((VALUE)buf, 0, 0, 0));
+    add_mark_object(p, (VALUE)rb_imemo_alloc_new(buf));
 
     return buf;
 }
@@ -10968,16 +10968,15 @@ rb_parser_set_yydebug(VALUE self, VALUE flag)
 #ifndef RIPPER
 #ifdef YYMALLOC
 #define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
-#define NEWHEAP() rb_imemo_alloc_new(0, (VALUE)p->heap, 0, 0)
-#define ADD2HEAP(new, cnt, ptr) ((p->heap = (new))->ptr = (ptr), \
-			   (new)->cnt = (cnt), (ptr))
+#define ADD2HEAP(new, cnt, ptr) (p->heap = (new), (new)->cnt = (cnt), (ptr))
 
 void *
 rb_parser_malloc(struct parser_params *p, size_t size)
 {
     size_t cnt = HEAPCNT(1, size);
-    rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xmalloc(size);
+    rb_imemo_alloc_t *n = rb_imemo_alloc_new(ptr);
+    n->next = p->heap;
 
     return ADD2HEAP(n, cnt, ptr);
 }
@@ -10986,8 +10985,9 @@ void *
 rb_parser_calloc(struct parser_params *p, size_t nelem, size_t size)
 {
     size_t cnt = HEAPCNT(nelem, size);
-    rb_imemo_alloc_t *n = NEWHEAP();
     void *ptr = xcalloc(nelem, size);
+    rb_imemo_alloc_t *n = rb_imemo_alloc_new(ptr);
+    n->next = p->heap;
 
     return ADD2HEAP(n, cnt, ptr);
 }
@@ -11007,8 +11007,9 @@ rb_parser_realloc(struct parser_params *p, void *ptr, size_t size)
 	    }
 	} while ((n = n->next) != NULL);
     }
-    n = NEWHEAP();
     ptr = xrealloc(ptr, size);
+    n = rb_imemo_alloc_new(ptr);
+    n->next = p->heap;
     return ADD2HEAP(n, cnt, ptr);
 }
 
