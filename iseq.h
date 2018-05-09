@@ -46,25 +46,23 @@ ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 {
-    rb_imemo_alloc_t *str = (void *)iseq->body->variable.original_iseq;
-    if (RTEST(str)) return str->ptr;
+    VALUE str = iseq->body->variable.original_iseq;
+    if (RTEST(str)) return (VALUE *)RSTRING_PTR(str);
     return NULL;
 }
 
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    rb_free_tmp_buffer(&iseq->body->variable.original_iseq);
-    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, Qfalse);
+    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, Qnil);
 }
 
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
-    VALUE str;
-    VALUE *ptr = rb_alloc_tmp_buffer_with_count(&str, sizeof(VALUE), size);
+    VALUE str = rb_str_tmp_new(size * sizeof(VALUE));
     RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, str);
-    return ptr;
+    return (VALUE *)RSTRING_PTR(str);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
