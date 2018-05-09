@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "version"
+
 Gem::Specification.new do |spec|
   spec.name          = "csv"
-  spec.version       = "1.0.2"
+  spec.version       = CSV::VERSION
   spec.authors       = ["James Edward Gray II", "Kouhei Sutou"]
   spec.email         = [nil, "kou@cozmixng.org"]
 
