@@ -2025,10 +2025,10 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 }
 
 rb_imemo_alloc_t *
-rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+rb_imemo_alloc_new(void *buf)
 {
     VALUE flags = T_IMEMO | (imemo_alloc << FL_USHIFT);
-    return (rb_imemo_alloc_t *)newobj_of(v0, flags, v1, v2, v3, FALSE);
+    return (rb_imemo_alloc_t *)newobj_of(0, flags, (VALUE)buf, 0, 0, FALSE);
 }
 
 #if IMEMO_DEBUG
@@ -8125,9 +8125,8 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
     rb_imemo_alloc_t *s;
     void *ptr;
 
-    s = rb_imemo_alloc_new(0, 0, 0, 0);
     ptr = ruby_xmalloc0(size);
-    s->ptr = (VALUE*)ptr;
+    s = rb_imemo_alloc_new(ptr);
     s->cnt = cnt;
     *store = (VALUE)s;
     return ptr;

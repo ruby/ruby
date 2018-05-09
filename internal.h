@@ -960,7 +960,7 @@ typedef struct rb_imemo_alloc_struct {
     size_t cnt; /* buffer size in VALUE */
 } rb_imemo_alloc_t;
 
-rb_imemo_alloc_t *rb_imemo_alloc_new(VALUE, VALUE, VALUE, VALUE);
+rb_imemo_alloc_t *rb_imemo_alloc_new(void *buf);
 
 void rb_strterm_mark(VALUE obj);
 
