@@ -8929,7 +8929,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     dump_body.ci_entries =           ibf_dump_ci_entries(dump, iseq);
     dump_body.cc_entries =           NULL;
     dump_body.variable.coverage      = Qnil;
-    dump_body.variable.original_iseq = Qnil;
+    dump_body.variable.original_iseq = NULL;
 
     IBF_W_ALIGN(struct rb_iseq_constant_body);
     return IBF_WV(dump_body);

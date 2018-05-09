@@ -46,23 +46,24 @@ ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
 {
-    VALUE str = iseq->body->variable.original_iseq;
-    if (RTEST(str)) return (VALUE *)RSTRING_PTR(str);
-    return NULL;
+    return iseq->body->variable.original_iseq;
 }
 
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, Qnil);
+    void *ptr = iseq->body->variable.original_iseq;
+    iseq->body->variable.original_iseq = NULL;
+    if (ptr) {
+        ruby_xfree(ptr);
+    }
 }
 
 static inline VALUE *
 ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 {
-    VALUE str = rb_str_tmp_new(size * sizeof(VALUE));
-    RB_OBJ_WRITE(iseq, &iseq->body->variable.original_iseq, str);
-    return (VALUE *)RSTRING_PTR(str);
+    return iseq->body->variable.original_iseq =
+        ruby_xmalloc2(sizeof(VALUE), size);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
