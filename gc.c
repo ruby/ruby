@@ -2024,11 +2024,29 @@ rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
     return newobj_of(v0, flags, v1, v2, v3, TRUE);
 }
 
-rb_imemo_alloc_t *
-rb_imemo_alloc_new(void *buf)
+static VALUE
+rb_imemo_alloc_new(VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 {
     VALUE flags = T_IMEMO | (imemo_alloc << FL_USHIFT);
-    return (rb_imemo_alloc_t *)newobj_of(0, flags, (VALUE)buf, 0, 0, FALSE);
+    return newobj_of(v0, flags, v1, v2, v3, FALSE);
+}
+
+VALUE
+rb_imemo_alloc_auto_free_pointer(void *buf)
+{
+    return rb_imemo_new(imemo_alloc, (VALUE)buf, 0, 0, 0);
+}
+
+VALUE
+rb_imemo_alloc_auto_free_maybe_mark_buffer(void *buf, size_t cnt)
+{
+    return rb_imemo_alloc_new((VALUE)buf, 0, (VALUE)cnt, 0);
+}
+
+rb_imemo_alloc_t *
+rb_imemo_alloc_parser_heap(void *buf, rb_imemo_alloc_t *old_heap, size_t cnt)
+{
+    return (rb_imemo_alloc_t *)rb_imemo_alloc_new((VALUE)buf, (VALUE)old_heap, (VALUE)cnt, 0);
 }
 
 #if IMEMO_DEBUG
@@ -8122,13 +8140,10 @@ ruby_mimfree(void *ptr)
 void *
 rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 {
-    rb_imemo_alloc_t *s;
     void *ptr;
 
     ptr = ruby_xmalloc0(size);
-    s = rb_imemo_alloc_new(ptr);
-    s->cnt = cnt;
-    *store = (VALUE)s;
+    *store = rb_imemo_alloc_auto_free_maybe_mark_buffer(ptr, cnt);
     return ptr;
 }
 
