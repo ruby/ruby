@@ -4,9 +4,7 @@
 
 # tc_data_converters.rb
 #
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 require_relative "base"
 
@@ -67,6 +65,55 @@ class TestCSV::DataConverters < TestCSV
     assert_instance_of(String, CSV::Converters[:date_time]["junk"])
   end
 
+  def test_builtin_date_time_converter_iso8601_date
+    iso8601_string = "2018-01-14"
+    datetime = DateTime.new(2018, 1, 14)
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_minute
+    iso8601_string = "2018-01-14T22:25"
+    datetime = DateTime.new(2018, 1, 14, 22, 25)
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_second
+    iso8601_string = "2018-01-14T22:25:19"
+    datetime = DateTime.new(2018, 1, 14, 22, 25, 19)
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_under_second
+    iso8601_string = "2018-01-14T22:25:19.1"
+    datetime = DateTime.new(2018, 1, 14, 22, 25, 19.1)
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_under_second_offset
+    iso8601_string = "2018-01-14T22:25:19.1+09:00"
+    datetime = DateTime.new(2018, 1, 14, 22, 25, 19.1, "+9")
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_offset
+    iso8601_string = "2018-01-14T22:25:19+09:00"
+    datetime = DateTime.new(2018, 1, 14, 22, 25, 19, "+9")
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
+  def test_builtin_date_time_converter_iso8601_utc
+    iso8601_string = "2018-01-14T22:25:19Z"
+    datetime = DateTime.new(2018, 1, 14, 22, 25, 19)
+    assert_equal(datetime,
+                 CSV::Converters[:date_time][iso8601_string])
+  end
+
   def test_convert_with_builtin_integer
     # setup parser...
     assert_respond_to(@parser, :convert)
@@ -105,7 +152,7 @@ class TestCSV::DataConverters < TestCSV
     end
 
     # gives us proper number conversion
-    assert_equal( [String, String, Integer, String, Float],
+    assert_equal( [String, String, 0.class, String, Float],
                   @parser.shift.map { |field| field.class } )
   end
 
@@ -114,7 +161,7 @@ class TestCSV::DataConverters < TestCSV
     assert_nothing_raised(Exception) { @parser.convert(:numeric) }
 
     # and use
-    assert_equal( [String, String, Integer, String, Float],
+    assert_equal( [String, String, 0.class, String, Float],
                   @parser.shift.map { |field| field.class } )
   end
 
@@ -125,7 +172,7 @@ class TestCSV::DataConverters < TestCSV
     assert_nothing_raised(Exception) { @parser.convert(:all) }
 
     # and use
-    assert_equal( [String, String, Integer, String, Float, DateTime],
+    assert_equal( [String, String, 0.class, String, Float, DateTime],
                   @parser.shift.map { |field| field.class } )
   end
 
@@ -269,5 +316,15 @@ class TestCSV::DataConverters < TestCSV
                   row.to_a )
     assert_respond_to(row, :unconverted_fields)
     assert_equal(Array.new, row.unconverted_fields)
+  end
+
+  def test_nil_value
+    assert_equal(["nil", "", "a"],
+                 CSV.parse_line(',"",a', nil_value: "nil"))
+  end
+
+  def test_empty_value
+    assert_equal([nil, "empty", "a"],
+                 CSV.parse_line(',"",a', empty_value: "empty"))
   end
 end

@@ -4,9 +4,7 @@
 
 # tc_encodings.rb
 #
-#  Created by James Edward Gray II on 2008-09-13.
-#  Copyright 2008 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 require_relative "base"
 
@@ -254,6 +252,22 @@ class TestCSV::Encodings < TestCSV
       csv << ["foo".force_encoding("ISO-8859-1"), "\u3042"]
     end
     assert_equal(["foo,\u3042\n".encode(Encoding::Windows_31J), Encoding::Windows_31J], [s, s.encoding], bug9766)
+  end
+
+  def test_row_separator_detection_with_invalid_encoding
+    csv = CSV.new("invalid,\xF8\r\nvalid,x\r\n".force_encoding("UTF-8"),
+                  encoding: "UTF-8")
+    assert_equal("\r\n", csv.row_sep)
+  end
+
+  def test_invalid_encoding_row_error
+    csv = CSV.new("invalid,\xF8\r\nvalid,x\r\n".force_encoding("UTF-8"),
+                  encoding: "UTF-8")
+    error = assert_raise(CSV::MalformedCSVError) do
+      csv.shift
+    end
+    assert_equal("Invalid byte sequence in UTF-8 in line 1.",
+                 error.message)
   end
 
   private

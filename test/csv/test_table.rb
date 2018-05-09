@@ -4,9 +4,7 @@
 
 # tc_table.rb
 #
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 require_relative "base"
 
@@ -263,6 +261,15 @@ class TestCSV::Table < TestCSV
     @table.each { |row| assert_instance_of(CSV::Row, row) }
   end
 
+  def test_each_split
+    yielded_values = []
+    @table.each do |column1, column2, column3|
+      yielded_values << [column1, column2, column3]
+    end
+    assert_equal(@rows.collect(&:to_a),
+                 yielded_values)
+  end
+
   def test_enumerable
     assert_equal( @rows.values_at(0, 2),
                   @table.select { |row| (row["B"] % 2).zero? } )
@@ -312,7 +319,7 @@ class TestCSV::Table < TestCSV
     assert_equal(CSV::Row.new(%w[A B C], [13, 14, 15]), @table[-1])
   end
 
-  def test_delete_mixed
+  def test_delete_mixed_one
     ##################
     ### Mixed Mode ###
     ##################
@@ -321,6 +328,28 @@ class TestCSV::Table < TestCSV
 
     # delete a col
     assert_equal(@rows.map { |row| row["A"] }, @table.delete("A"))
+
+    # verify resulting table
+    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
+    B,C
+    2,3
+    8,9
+    END_RESULT
+  end
+
+  def test_delete_mixed_multiple
+    ##################
+    ### Mixed Mode ###
+    ##################
+    # delete row and col
+    second_row = @rows[1]
+    a_col = @rows.map { |row| row["A"] }
+    a_col_without_second_row = a_col[0..0] + a_col[2..-1]
+    assert_equal([
+                   second_row,
+                   a_col_without_second_row,
+                 ],
+                 @table.delete(1, "A"))
 
     # verify resulting table
     assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
@@ -493,5 +522,71 @@ class TestCSV::Table < TestCSV
                  Encoding.find("US-ASCII"),
                  @table.inspect.encoding],
             "inspect() was not ASCII compatible." )
+  end
+
+  def test_dig_mixed
+    # by row
+    assert_equal(@rows[0], @table.dig(0))
+    assert_nil(@table.dig(100))  # empty row
+
+    # by col
+    assert_equal([2, 5, 8], @table.dig("B"))
+    assert_equal([nil] * @rows.size, @table.dig("Z"))  # empty col
+
+    # by row then col
+    assert_equal(2, @table.dig(0, 1))
+    assert_equal(6, @table.dig(1, "C"))
+
+    # by col then row
+    assert_equal(5, @table.dig("B", 1))
+    assert_equal(9, @table.dig("C", 2))
+  end
+
+  def test_dig_by_column
+    @table.by_col!
+
+    assert_equal([2, 5, 8], @table.dig(1))
+    assert_equal([2, 5, 8], @table.dig("B"))
+
+    # by col then row
+    assert_equal(5, @table.dig("B", 1))
+    assert_equal(9, @table.dig("C", 2))
+  end
+
+  def test_dig_by_row
+    @table.by_row!
+
+    assert_equal(@rows[1], @table.dig(1))
+    assert_raise(TypeError) { @table.dig("B") }
+
+    # by row then col
+    assert_equal(2, @table.dig(0, 1))
+    assert_equal(6, @table.dig(1, "C"))
+  end
+
+  def test_dig_cell
+    table = CSV::Table.new([CSV::Row.new(["A"], [["foo", ["bar", ["baz"]]]])])
+
+    # by row, col then cell
+    assert_equal("foo", table.dig(0, "A", 0))
+    assert_equal(["baz"], table.dig(0, "A", 1, 1))
+
+    # by col, row then cell
+    assert_equal("foo", table.dig("A", 0, 0))
+    assert_equal(["baz"], table.dig("A", 0, 1, 1))
+  end
+
+  def test_dig_cell_no_dig
+    table = CSV::Table.new([CSV::Row.new(["A"], ["foo"])])
+
+    # by row, col then cell
+    assert_raise(TypeError) do
+      table.dig(0, "A", 0)
+    end
+
+    # by col, row then cell
+    assert_raise(TypeError) do
+      table.dig("A", 0, 0)
+    end
   end
 end

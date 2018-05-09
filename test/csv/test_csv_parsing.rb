@@ -4,9 +4,7 @@
 
 # tc_csv_parsing.rb
 #
-#  Created by James Edward Gray II on 2005-10-31.
-#  Copyright 2005 James Edward Gray II. You can redistribute or modify this code
-#  under the terms of Ruby's license.
+# Created by James Edward Gray II on 2005-10-31.
 
 require "timeout"
 
@@ -168,7 +166,7 @@ class TestCSV::Parsing < TestCSV
         assert_send([csv.lineno, :<, 4])
       end
     rescue CSV::MalformedCSVError
-      assert_equal( "Unquoted fields do not allow \\r or \\n (line 4).",
+      assert_equal( "Unquoted fields do not allow \\r or \\n in line 4.",
                     $!.message )
     end
 
@@ -229,6 +227,16 @@ class TestCSV::Parsing < TestCSV
       ",""
     DATA
     assert_parse_errors_out(data, field_size_limit: 5)
+  end
+
+  def test_col_sep_comma
+    assert_equal([["a", "b", nil, "d"]],
+                 CSV.parse("a,b,,d", col_sep: ","))
+  end
+
+  def test_col_sep_space
+    assert_equal([["a", "b", nil, "d"]],
+                 CSV.parse("a b  d", col_sep: " "))
   end
 
   private
