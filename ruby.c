@@ -759,6 +759,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
+    void *ptr;
 
     while (ISSPACE(*s)) s++;
     if (!*s) return;
@@ -781,7 +782,8 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     argc = RSTRING_LEN(argary) / sizeof(ap);
     ap = 0;
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
-    argv = (char **)RSTRING_PTR(argary);
+    argv = ptr = ALLOC_N(char *, argc);
+    MEMMOVE(argv, RSTRING_PTR(argary), char *, argc);
 
     while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {
 	argv += i;
@@ -794,6 +796,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 	}
     }
 
+    ruby_xfree(ptr);
     /* get rid of GC */
     rb_str_resize(argary, 0);
     rb_str_resize(argstr, 0);
