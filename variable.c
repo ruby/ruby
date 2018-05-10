@@ -1908,6 +1908,7 @@ autoload_c_free(void *ptr)
 {
     struct autoload_const *ac = ptr;
     list_del(&ac->cnode);
+    xfree(ac);
 }
 
 static size_t
@@ -1990,7 +1991,7 @@ rb_autoload_str(VALUE mod, ID id, VALUE file)
     }
     file = rb_fstring(file);
     if (!autoload_featuremap) {
-        autoload_featuremap = rb_hash_new();
+        autoload_featuremap = rb_hash_new_compare_by_id();
         rb_obj_hide(autoload_featuremap);
         rb_gc_register_mark_object(autoload_featuremap);
     }
@@ -2036,12 +2037,12 @@ autoload_delete(VALUE mod, ID id)
 	ele = get_autoload_data((VALUE)load, &ac);
 	VM_ASSERT(!list_empty(&ele->constants));
 
-	/* list_del_init to make list_del in autoload_c_free idempotent: */
+	/*
+	 * we must delete here to avoid "already initialized" warnings
+	 * with parallel autoload.  list_del_init makes list_del in
+	 * autoload_c_free idempotent
+	 */
 	list_del_init(&ac->cnode);
-
-	if (list_empty(&ele->constants)) {
-	    rb_hash_delete(autoload_featuremap, ele->feature);
-	}
 
 	if (tbl->num_entries == 0) {
 	    n = autoload;
