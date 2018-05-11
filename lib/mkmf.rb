@@ -1982,6 +1982,7 @@ cxxflags = #{CONFIG['cxxflags']}
 optflags = #{CONFIG['optflags']}
 debugflags = #{CONFIG['debugflags']}
 warnflags = #{$warnflags}
+cppflags = #{CONFIG['cppflags']}
 CCDLFLAGS = #{$static ? '' : CONFIG['CCDLFLAGS']}
 CFLAGS   = $(CCDLFLAGS) #$CFLAGS $(ARCH_FLAG)
 INCFLAGS = -I. #$INCFLAGS
