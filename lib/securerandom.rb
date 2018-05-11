@@ -22,25 +22,25 @@
 #
 #   require 'securerandom'
 #
-#   p SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
-#   p SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
-#   p SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
+#   SecureRandom.hex(10) #=> "52750b30ffbc7de3b362"
+#   SecureRandom.hex(10) #=> "92b15d6c8dc4beb5f559"
+#   SecureRandom.hex(13) #=> "39b290146bea6ce975c37cfc23"
 #
 # Generate random base64 strings:
 #
-#   p SecureRandom.base64(10) #=> "EcmTPZwWRAozdA=="
-#   p SecureRandom.base64(10) #=> "KO1nIU+p9DKxGg=="
-#   p SecureRandom.base64(12) #=> "7kJSM/MzBJI+75j8"
+#   SecureRandom.base64(10) #=> "EcmTPZwWRAozdA=="
+#   SecureRandom.base64(10) #=> "KO1nIU+p9DKxGg=="
+#   SecureRandom.base64(12) #=> "7kJSM/MzBJI+75j8"
 #
 # Generate random binary strings:
 #
-#   p SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
-#   p SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
+#   SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
+#   SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
 #
 # Generate UUIDs:
 #
-#   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
-#   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+#   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+#   SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
 #
 
 module SecureRandom
@@ -121,8 +121,8 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
-  #   p SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
+  #   SecureRandom.random_bytes #=> "\xD8\\\xE0\xF4\r\xB2\xFC*WM\xFF\x83\x18\xF45\xB6"
+  #   SecureRandom.random_bytes #=> "m\xDC\xFC/\a\x00Uf\xB2\xB2P\xBD\xFF6S\x97"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -143,8 +143,8 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
-  #   p SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
+  #   SecureRandom.hex #=> "eb693ec8252cd630102fd0d0fb7c3485"
+  #   SecureRandom.hex #=> "91dc3bfb4de5b11d029d376634589b61"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -164,8 +164,8 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
-  #   p SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
+  #   SecureRandom.base64 #=> "/2BuBuLf3+WfSKyQbRcc/A=="
+  #   SecureRandom.base64 #=> "6BbW0pxO0YENxn38HMUbcQ=="
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -193,11 +193,11 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
-  #   p SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
+  #   SecureRandom.urlsafe_base64 #=> "b4GOKm4pOYU_-BOXcrUGDg"
+  #   SecureRandom.urlsafe_base64 #=> "UZLdOkzop70Ddx-IJR0ABg"
   #
-  #   p SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
-  #   p SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
+  #   SecureRandom.urlsafe_base64(nil, true) #=> "i0XQ-7gglIsHGV2_BNPrdQ=="
+  #   SecureRandom.urlsafe_base64(nil, true) #=> "-M8rLhr7JEpJlqFGUMmOxg=="
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -214,9 +214,9 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
-  #   p SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
-  #   p SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
+  #   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
+  #   SecureRandom.uuid #=> "bad85eb9-0713-4da7-8d36-07a8e4b00eab"
+  #   SecureRandom.uuid #=> "62936e70-1815-439b-bf89-8492855a7e6b"
   #
   # The version 4 UUID is purely random (except the version).
   # It doesn't contain meaningful information such as MAC addresses, timestamps, etc.
@@ -248,8 +248,8 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
-  #   p SecureRandom.choose([*'0'..'9'], 5) #=> "27309"
+  #   SecureRandom.choose([*'l'..'r'], 16) #=> "lmrqpoonmmlqlron"
+  #   SecureRandom.choose([*'0'..'9'], 5)  #=> "27309"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
@@ -295,8 +295,8 @@ module Random::Formatter
   #
   #   require 'securerandom'
   #
-  #   p SecureRandom.alphanumeric #=> "2BuBuLf3WfSKyQbR"
-  #   p SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
+  #   SecureRandom.alphanumeric     #=> "2BuBuLf3WfSKyQbR"
+  #   SecureRandom.alphanumeric(10) #=> "i6K93NdqiH"
   #
   # If a secure random number generator is not available,
   # +NotImplementedError+ is raised.
