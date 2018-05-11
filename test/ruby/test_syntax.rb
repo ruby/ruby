@@ -46,7 +46,7 @@ class TestSyntax < Test::Unit::TestCase
       assert_raise(ArgumentError, enc.name) {load(f.path)}
     end
   ensure
-    f.close! if f
+    f&.close!
   end
 
   def test_script_lines
@@ -63,7 +63,7 @@ class TestSyntax < Test::Unit::TestCase
       end
     end
   ensure
-    f.close! if f
+    f&.close!
   end
 
   def test_newline_in_block_parameters
