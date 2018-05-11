@@ -278,6 +278,9 @@ struct parser_params {
 #endif
 };
 
+#define new_tmpbuf() \
+    (rb_imemo_tmpbuf_t *)add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(NULL))
+
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
@@ -2511,9 +2514,10 @@ primary		: literal
 			ID id = internal_id(p);
 			NODE *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
 			NODE *args, *scope, *internal_var = NEW_DVAR(id, &@2);
+			rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 			ID *tbl = ALLOC_N(ID, 2);
 			tbl[0] = 1 /* length of local var table */; tbl[1] = id /* internal id */;
-			add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(tbl));
+			tmpbuf->ptr = (VALUE *)tbl;
 
 			switch (nd_type($2)) {
 			  case NODE_LASGN:
@@ -9994,9 +9998,10 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     int saved_line = p->ruby_sourceline;
     struct rb_args_info *args;
     NODE *node;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     args = ZALLOC(struct rb_args_info);
-    add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(args));
+    tmpbuf->ptr = (VALUE *)args;
     node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
     if (p->error_p) return node;
 
@@ -10344,9 +10349,11 @@ local_tbl(struct parser_params *p)
     int cnt = cnt_args + cnt_vars;
     int i, j;
     ID *buf;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
 
     if (cnt <= 0) return 0;
     buf = ALLOC_N(ID, cnt + 1);
+    tmpbuf->ptr = (void *)buf;
     MEMCPY(buf+1, p->lvtbl->args->tbl, ID, cnt_args);
     /* remove IDs duplicated to warn shadowing */
     for (i = 0, j = cnt_args+1; i < cnt_vars; ++i) {
@@ -10355,10 +10362,8 @@ local_tbl(struct parser_params *p)
 	    buf[j++] = id;
 	}
     }
-    if (--j < cnt) REALLOC_N(buf, ID, (cnt = j) + 1);
+    if (--j < cnt) tmpbuf->ptr = (void *)REALLOC_N(buf, ID, (cnt = j) + 1);
     buf[0] = cnt;
-
-    add_mark_object(p, rb_imemo_tmpbuf_auto_free_pointer(buf));
 
     return buf;
 }
