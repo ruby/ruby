@@ -160,13 +160,17 @@ module MJITHeader
     SUPPORTED_CC_MACROS.any? { |macro| code =~ /^#\s*define\s+#{Regexp.escape(macro)}\b/ }
   end
 
-  # This checks if syntax check outputs "error: conflicting types for 'restrict'".
-  # If it's true, this script regards platform as AIX and add -std=c99 as workaround.
+  # This checks if syntax check outputs one of the following messages.
+  #    "error: conflicting types for 'restrict'"
+  #    "error: redefinition of parameter 'restrict'"
+  # If it's true, this script regards platform as AIX or Solaris and adds -std=c99 as workaround.
   def self.conflicting_types?(code, cc, cflags)
     with_code(code) do |path|
       cmd = "#{cc} #{cflags} #{path}"
       out = IO.popen(cmd, err: [:child, :out], &:read)
-      !$?.success? && out.match?(/error: conflicting types for '[^']+'/)
+      !$?.success? &&
+        (out.match?(/error: conflicting types for '[^']+'/) ||
+         out.match?(/error: redefinition of parameter '[^']+'/))
     end
   end
 
