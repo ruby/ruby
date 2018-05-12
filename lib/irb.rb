@@ -498,8 +498,8 @@ module IRB
             raise
           rescue Exception => exc
           end
+          last_error = exc
           if exc
-            last_error = exc
             handle_exception(exc)
           end
         end
