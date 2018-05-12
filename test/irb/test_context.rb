@@ -7,16 +7,16 @@ require 'rubygems' if defined?(Gem)
 module TestIRB
   class TestContext < Test::Unit::TestCase
     class TestInputMethod < ::IRB::InputMethod
-      attr_reader :line, :line_no
+      attr_reader :list, :line_no
 
       def initialize(list = [])
         super("test")
         @line_no = 0
-        @line = list
+        @list = list
       end
 
       def gets
-        @list[@line_no.tap {@line_no += 1}]
+        @list[@line_no]&.tap {@line_no += 1}
       end
 
       def eof?
