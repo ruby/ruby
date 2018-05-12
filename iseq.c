@@ -79,38 +79,36 @@ rb_iseq_free(const rb_iseq_t *iseq)
 {
     RUBY_FREE_ENTER("iseq");
 
-    if (iseq) {
+    if (iseq && iseq->body) {
 	mjit_free_iseq(iseq); /* Notify MJIT */
-	if (iseq->body) {
-	    ruby_xfree((void *)iseq->body->iseq_encoded);
-	    ruby_xfree((void *)iseq->body->insns_info.body);
-	    if (iseq->body->insns_info.positions) ruby_xfree((void *)iseq->body->insns_info.positions);
+	ruby_xfree((void *)iseq->body->iseq_encoded);
+	ruby_xfree((void *)iseq->body->insns_info.body);
+	if (iseq->body->insns_info.positions) ruby_xfree((void *)iseq->body->insns_info.positions);
 #if VM_INSN_INFO_TABLE_IMPL == 2
-	    if (iseq->body->insns_info.succ_index_table) ruby_xfree(iseq->body->insns_info.succ_index_table);
+	if (iseq->body->insns_info.succ_index_table) ruby_xfree(iseq->body->insns_info.succ_index_table);
 #endif
-	    ruby_xfree((void *)iseq->body->local_table);
-	    ruby_xfree((void *)iseq->body->is_entries);
+	ruby_xfree((void *)iseq->body->local_table);
+	ruby_xfree((void *)iseq->body->is_entries);
 
-	    if (iseq->body->ci_entries) {
-		unsigned int i;
-		struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
-		for (i=0; i<iseq->body->ci_kw_size; i++) {
-		    const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
-		    ruby_xfree((void *)kw_arg);
-		}
-		ruby_xfree(iseq->body->ci_entries);
-		ruby_xfree(iseq->body->cc_entries);
+	if (iseq->body->ci_entries) {
+	    unsigned int i;
+	    struct rb_call_info_with_kwarg *ci_kw_entries = (struct rb_call_info_with_kwarg *)&iseq->body->ci_entries[iseq->body->ci_size];
+	    for (i=0; i<iseq->body->ci_kw_size; i++) {
+		const struct rb_call_info_kw_arg *kw_arg = ci_kw_entries[i].kw_arg;
+		ruby_xfree((void *)kw_arg);
 	    }
-	    ruby_xfree((void *)iseq->body->catch_table);
-	    ruby_xfree((void *)iseq->body->param.opt_table);
-
-	    if (iseq->body->param.keyword != NULL) {
-		ruby_xfree((void *)iseq->body->param.keyword->default_values);
-		ruby_xfree((void *)iseq->body->param.keyword);
-	    }
-	    compile_data_free(ISEQ_COMPILE_DATA(iseq));
-	    ruby_xfree(iseq->body);
+	    ruby_xfree(iseq->body->ci_entries);
+	    ruby_xfree(iseq->body->cc_entries);
 	}
+	ruby_xfree((void *)iseq->body->catch_table);
+	ruby_xfree((void *)iseq->body->param.opt_table);
+
+	if (iseq->body->param.keyword != NULL) {
+	    ruby_xfree((void *)iseq->body->param.keyword->default_values);
+	    ruby_xfree((void *)iseq->body->param.keyword);
+	}
+	compile_data_free(ISEQ_COMPILE_DATA(iseq));
+	ruby_xfree(iseq->body);
     }
     RUBY_FREE_LEAVE("iseq");
 }
