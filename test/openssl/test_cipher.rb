@@ -44,6 +44,9 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     s2 = cipher.update(pt) << cipher.final
 
     assert_equal s1, s2
+
+    cipher2 = OpenSSL::Cipher.new("DES-EDE3-CBC").encrypt
+    assert_raise(ArgumentError) { cipher2.pkcs5_keyivgen(pass, salt, -1, "MD5") }
   end
 
   def test_info
