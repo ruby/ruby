@@ -232,6 +232,29 @@
 #   #<struct User id=2, name="Gandalf">
 #   bash-3.2$ ruby optparse-test.rb --user 3
 #   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
+#
+# === Store options to a Hash
+#
+# The +into+ option of +order+, +parse+ and so on methods stores command line options into a Hash.
+#
+#   require 'optparse'
+#
+#   params = {}
+#   OptionParser.new do |opts|
+#     opts.on('-a')
+#     opts.on('-b NUM', Integer)
+#     opts.on('-v', '--verbose')
+#   end.parse!(into: params)
+#   p params
+#
+# output:
+#   bash-3.2$ ruby optparse-test.rb -a
+#   {:a=>true}
+#   bash-3.2$ ruby optparse-test.rb -a -v
+#   {:a=>true, :verbose=>true}
+#   $ ruby optparse-test.rb -a -b 100
+#   {:a=>true, :b=>100}
+#
 # === Complete example
 #
 # The following example is a complete Ruby program.  You can run it and see the
