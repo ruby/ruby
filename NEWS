@@ -176,6 +176,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * "name(#{NODE_SET})" case
 
+* RSS
+
+  * RSS::Parser.parse: Accept options as Hash. :validate,
+    :ignore_unknown_element, :parser_class options are available.
+
 * Set
 
   * Aliased methods:
