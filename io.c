@@ -9310,7 +9310,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  So, the remote side of SSL sends a partial record,
  *  <code>IO.select</code> notifies readability but
  *  <code>OpenSSL::SSL::SSLSocket</code> cannot decrypt a byte and
- *  <code>OpenSSL::SSL::SSLSocket#readpartial</code> will blocks.
+ *  <code>OpenSSL::SSL::SSLSocket#readpartial</code> will block.
  *
  *  Also, the remote side can request SSL renegotiation which forces
  *  the local SSL engine to write some data.
@@ -9333,7 +9333,7 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *  However it is not the best way to use <code>IO.select</code>.
  *
  *  The writability notified by select(2) doesn't show
- *  how many bytes writable.
+ *  how many bytes are writable.
  *  <code>IO#write</code> method blocks until given whole string is written.
  *  So, <code>IO#write(two or more bytes)</code> can block after writability is notified by <code>IO.select</code>.
  *  <code>IO#write_nonblock</code> is required to avoid the blocking.
