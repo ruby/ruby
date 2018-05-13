@@ -8900,10 +8900,10 @@ static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body dump_body;
-    unsigned int *positions;
 #if VM_INSN_INFO_TABLE_IMPL == 2
-    dump_body = *iseq->body;
+    unsigned int *positions;
 #endif
+    dump_body = *iseq->body;
 
     dump_body.location.pathobj = ibf_dump_object(dump, dump_body.location.pathobj); /* TODO: freeze */
     dump_body.location.base_label = ibf_dump_object(dump, dump_body.location.base_label);
