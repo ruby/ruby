@@ -436,7 +436,7 @@ class OptionParser
       candidates = []
       block.call do |k, *v|
         (if Regexp === k
-           kn = "".freeze
+           kn = ""
            k === key
          else
            kn = defined?(k.id2name) ? k.id2name : k
@@ -1976,7 +1976,7 @@ XXX
   #
   class ParseError < RuntimeError
     # Reason which caused the error.
-    Reason = 'parse error'.freeze
+    Reason = 'parse error'
 
     def initialize(*args)
       @args = args
@@ -2039,42 +2039,42 @@ XXX
   # Raises when ambiguously completable string is encountered.
   #
   class AmbiguousOption < ParseError
-    const_set(:Reason, 'ambiguous option'.freeze)
+    const_set(:Reason, 'ambiguous option')
   end
 
   #
   # Raises when there is an argument for a switch which takes no argument.
   #
   class NeedlessArgument < ParseError
-    const_set(:Reason, 'needless argument'.freeze)
+    const_set(:Reason, 'needless argument')
   end
 
   #
   # Raises when a switch with mandatory argument has no argument.
   #
   class MissingArgument < ParseError
-    const_set(:Reason, 'missing argument'.freeze)
+    const_set(:Reason, 'missing argument')
   end
 
   #
   # Raises when switch is undefined.
   #
   class InvalidOption < ParseError
-    const_set(:Reason, 'invalid option'.freeze)
+    const_set(:Reason, 'invalid option')
   end
 
   #
   # Raises when the given argument does not match required format.
   #
   class InvalidArgument < ParseError
-    const_set(:Reason, 'invalid argument'.freeze)
+    const_set(:Reason, 'invalid argument')
   end
 
   #
   # Raises when the given argument word can't be completed uniquely.
   #
   class AmbiguousArgument < InvalidArgument
-    const_set(:Reason, 'ambiguous argument'.freeze)
+    const_set(:Reason, 'ambiguous argument')
   end
 
   #
