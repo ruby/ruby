@@ -964,6 +964,24 @@ VALUE rb_imemo_tmpbuf_auto_free_pointer(void *buf);
 VALUE rb_imemo_tmpbuf_auto_free_maybe_mark_buffer(void *buf, size_t cnt);
 rb_imemo_tmpbuf_t *rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt);
 
+#define RB_IMEMO_TMPBUF_PTR(v) \
+    ((void *)(((const struct rb_imemo_tmpbuf_struct *)(v))->ptr))
+
+static inline VALUE
+rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
+{
+    const void *src;
+    void *dst;
+    size_t len;
+
+    SafeStringValue(str);
+    len = RSTRING_LEN(str);
+    src = RSTRING_PTR(str);
+    dst = ruby_xmalloc(len);
+    memcpy(dst, src, len);
+    return rb_imemo_tmpbuf_auto_free_pointer(dst);
+}
+
 void rb_strterm_mark(VALUE obj);
 
 /*! MEMO
@@ -1679,8 +1697,17 @@ struct rb_execarg {
  * The beginning one is for /bin/sh used by exec_with_sh.
  * The last one for terminating NULL used by execve.
  * See rb_exec_fillarg() in process.c. */
-#define ARGVSTR2ARGC(argv_str) (RSTRING_LEN(argv_str) / sizeof(char *) - 2)
-#define ARGVSTR2ARGV(argv_str) ((char **)RSTRING_PTR(argv_str) + 1)
+#define ARGVSTR2ARGV(argv_str) ((char **)RB_IMEMO_TMPBUF_PTR(argv_str) + 1)
+
+static inline size_t
+ARGVSTR2ARGC(VALUE argv_str)
+{
+    size_t i = 0;
+    char *const *p = ARGVSTR2ARGV(argv_str);
+    while (p[i++])
+        ;
+    return i - 1;
+}
 
 rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
