@@ -1283,7 +1283,7 @@ proc_exec_cmd(const char *prog, VALUE argv_str, VALUE envp_str)
     rb_w32_uaspawn(P_OVERLAY, prog, argv);
     return errno;
 #else
-    envp = envp_str ? (char **)RSTRING_PTR(envp_str) : NULL;
+    envp = envp_str ? RB_IMEMO_TMPBUF_PTR(envp_str) : NULL;
     if (envp_str)
         execve(prog, argv, envp); /* async-signal-safe */
     else
@@ -1324,7 +1324,7 @@ proc_exec_sh(const char *str, VALUE envp_str)
     }
 #else
     if (envp_str)
-        execle("/bin/sh", "sh", "-c", str, (char *)NULL, (char **)RSTRING_PTR(envp_str)); /* async-signal-safe */
+        execle("/bin/sh", "sh", "-c", str, (char *)NULL, RB_IMEMO_TMPBUF_PTR(envp_str)); /* async-signal-safe */
     else
         execl("/bin/sh", "sh", "-c", str, (char *)NULL); /* async-signal-safe (since SUSv4) */
 #endif	/* _WIN32 */
@@ -2264,7 +2264,8 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
             p += strlen(p) + 1;
         }
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
-        eargp->invoke.cmd.argv_str = argv_str;
+        eargp->invoke.cmd.argv_str =
+            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(argv_str);
     }
     RB_GC_GUARD(execarg_obj);
 }
@@ -2464,7 +2465,8 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         p = NULL;
         rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
-        eargp->envp_str = envp_str;
+        eargp->envp_str =
+            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(envp_str);
         eargp->envp_buf = envp_buf;
 
         /*
