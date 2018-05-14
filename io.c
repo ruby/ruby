@@ -10607,7 +10607,6 @@ struct copy_stream_struct {
     const char *syserr;
     int error_no;
     const char *notimp;
-    rb_fdset_t fds;
     VALUE th;
 };
 
@@ -10653,6 +10652,8 @@ maygvl_copy_stream_continue_p(int has_gvl, struct copy_stream_struct *stp)
 #endif
 
 #if USE_POLL
+STATIC_ASSERT(pollin_expected, POLLIN == RB_WAITFD_IN);
+STATIC_ASSERT(pollout_expected, POLLOUT == RB_WAITFD_OUT);
 static int
 nogvl_wait_for_single_fd(int fd, short events)
 {
@@ -10663,6 +10664,31 @@ nogvl_wait_for_single_fd(int fd, short events)
 
     return poll(&fds, 1, -1);
 }
+#else /* !USE_POLL */
+static int
+nogvl_wait_for_single_fd(int fd, short events)
+{
+    rb_fdset_t fds;
+    int ret;
+
+    rb_fd_init(&fds);
+    rb_fd_set(fd, &fds);
+
+    switch (events) {
+      case RB_WAITFD_IN:
+        ret = rb_fd_select(fd + 1, &fds, 0, 0, 0);
+        break;
+      case RB_WAITFD_OUT:
+        ret = rb_fd_select(fd + 1, 0, &fds, 0, 0);
+        break;
+      default:
+        assert(0 && "not supported yet, should never get here");
+    }
+
+    rb_fd_term(&fds);
+    return ret;
+}
+#endif /* !USE_POLL */
 
 static int
 maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
@@ -10674,46 +10700,17 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
 	    ret = rb_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN, NULL);
 	}
 	else {
-	    ret = nogvl_wait_for_single_fd(stp->src_fd, POLLIN);
+	    ret = nogvl_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN);
 	}
     } while (ret == -1 && maygvl_copy_stream_continue_p(has_gvl, stp));
 
     if (ret == -1) {
-        stp->syserr = "poll";
+        stp->syserr = IOWAIT_SYSCALL;
         stp->error_no = errno;
         return -1;
     }
     return 0;
 }
-#else /* !USE_POLL */
-static int
-maygvl_select(int has_gvl, int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
-{
-    if (has_gvl)
-        return rb_thread_fd_select(n, rfds, wfds, efds, timeout);
-    else
-        return rb_fd_select(n, rfds, wfds, efds, timeout);
-}
-
-static int
-maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
-{
-    int ret;
-
-    do {
-	rb_fd_zero(&stp->fds);
-	rb_fd_set(stp->src_fd, &stp->fds);
-        ret = maygvl_select(has_gvl, rb_fd_max(&stp->fds), &stp->fds, NULL, NULL, NULL);
-    } while (ret == -1 && maygvl_copy_stream_continue_p(has_gvl, stp));
-
-    if (ret == -1) {
-        stp->syserr = "select";
-        stp->error_no = errno;
-        return -1;
-    }
-    return 0;
-}
-#endif /* !USE_POLL */
 
 static int
 nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
@@ -10721,13 +10718,7 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     int ret;
 
     do {
-#if USE_POLL
-	ret = nogvl_wait_for_single_fd(stp->dst_fd, POLLOUT);
-#else
-	rb_fd_zero(&stp->fds);
-	rb_fd_set(stp->dst_fd, &stp->fds);
-        ret = rb_fd_select(rb_fd_max(&stp->fds), NULL, &stp->fds, NULL, NULL);
-#endif
+	ret = nogvl_wait_for_single_fd(stp->dst_fd, RB_WAITFD_OUT);
     } while (ret == -1 && maygvl_copy_stream_continue_p(0, stp));
 
     if (ret == -1) {
@@ -11360,9 +11351,6 @@ copy_stream_body(VALUE arg)
         return copy_stream_fallback(stp);
     }
 
-    rb_fd_set(src_fd, &stp->fds);
-    rb_fd_set(dst_fd, &stp->fds);
-
     rb_thread_call_without_gvl(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
     return Qnil;
 }
@@ -11377,7 +11365,6 @@ copy_stream_finalize(VALUE arg)
     if (stp->close_dst) {
         rb_io_close_m(stp->dst);
     }
-    rb_fd_term(&stp->fds);
     if (stp->syserr) {
         rb_syserr_fail(stp->error_no, stp->syserr);
     }
@@ -11443,7 +11430,6 @@ rb_io_s_copy_stream(int argc, VALUE *argv, VALUE io)
     else
         st.src_offset = NUM2OFFT(src_offset);
 
-    rb_fd_init(&st.fds);
     rb_ensure(copy_stream_body, (VALUE)&st, copy_stream_finalize, (VALUE)&st);
 
     return OFFT2NUM(st.total);
