@@ -31,7 +31,10 @@ class TestWaitForSingleFD < Test::Unit::TestCase
 
     # FreeBSD 8.2 or prior sticks this
     # http://bugs.ruby-lang.org/issues/5524
-    skip if /freebsd[1-8]/ =~ RUBY_PLATFORM
+    if /freebsd([\d\.]+)/ =~ RUBY_PLATFORM
+      ver = $1.to_r
+      skip 'FreeBSD <= 8.2' if ver <= 8.2r
+    end
     with_pipe do |r,w|
       wfd = w.fileno
       w.close
