@@ -52,5 +52,8 @@ class TestWaitForSingleFD < Test::Unit::TestCase
     end
   end
 
-
+  def test_wait_for_kqueue
+    skip 'no kqueue' unless IO.respond_to?(:kqueue_test_wait)
+    assert_equal RB_WAITFD_IN, IO.kqueue_test_wait
+  end
 end
