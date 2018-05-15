@@ -787,7 +787,7 @@ typedef struct rb_execution_context_struct {
 
     /* interrupt flags */
     rb_atomic_t interrupt_flag;
-    unsigned long interrupt_mask;
+    rb_atomic_t interrupt_mask; /* size should match flag */
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
