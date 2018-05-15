@@ -836,16 +836,7 @@ main()
 		    AS_IF([test x"$define_xopen_source" != x], [
 		        break
 		    ])
-		    # Both AC_TRY_CPP and AC_TRY_COMPILE should pass
-		    # because some options may not be set to CPPFLAGS.
-		    AC_TRY_CPP([
-			#define _XOPEN_SOURCE ${tmp_xpg}00
-			#include <unistd.h>
-			#ifndef _XPG${tmp_xpg}
-			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
-			#endif
-			], [
-			AC_TRY_COMPILE([
+		    RUBY_WERROR_FLAG([AC_TRY_COMPILE([
 			#define _XOPEN_SOURCE ${tmp_xpg}00
 			#include <unistd.h>
 			#ifndef _XPG${tmp_xpg}
@@ -853,7 +844,7 @@ main()
 			#endif
 			], [],
 			[define_xopen_source=${tmp_xpg}00], [])
-			], [])
+			])
 		  done
 		  AS_IF([test x"$define_xopen_source" = x], [
 		    define_xopen_source=no
@@ -861,6 +852,16 @@ main()
 		  AC_MSG_RESULT($define_xopen_source)
 		  AS_IF([test x"$define_xopen_source" != xno], [
 		    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
+		    # On Solaris, with gcc, "-std=gnu99" would be needed
+		    # for using "-D_XOPEN_SOURCE=nnn" when nnn >= 600.
+		    # ("-std=gnu99" have been added to both $warnflags and
+		    #  $strict_warnflags. During the above AC_TRY_COMPILE,
+		    #  $warnflags is effective, but the value will later be
+		    #  replaced with $rb_cv_warnflags.)
+		    AS_CASE(["${warnflags}"],
+		    [*-std=gnu99*], [
+		      RUBY_APPEND_OPTIONS(CPPFLAGS, -std=gnu99)
+		    ])
 		  ])
 		])
 		],
