@@ -30,7 +30,8 @@ VALUE rb_eLocalJumpError;
 VALUE rb_eSysStackError;
 
 ID ruby_static_id_signo, ruby_static_id_status;
-static ID id_cause;
+extern ID ruby_static_id_cause;
+#define id_cause ruby_static_id_cause
 
 #define exception_error GET_VM()->special_exceptions[ruby_error_reenter]
 
@@ -1950,5 +1951,4 @@ Init_eval(void)
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");
-    id_cause = rb_intern_const("cause");
 }
