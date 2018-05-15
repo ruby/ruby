@@ -74,7 +74,7 @@ err:
     if (kqfd >= 0) close(kqfd);
     if (msg) {
         if (e) rb_syserr_fail(e, msg);
-        rb_raise(rb_eRuntimeError, msg);
+        rb_raise(rb_eRuntimeError, "%s", msg);
     }
     return ret;
 }
