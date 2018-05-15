@@ -206,8 +206,15 @@ vm_living_thread_num(const rb_vm_t *vm)
  * one we know of that supports using poll() in all places select()
  * would work.
  */
-#if defined(HAVE_POLL) && defined(__linux__)
-#  define USE_POLL
+#if defined(HAVE_POLL)
+#  if defined(__linux__)
+#    define USE_POLL
+#  endif
+#  if defined(__FreeBSD_version) && __FreeBSD_version >= 1100000
+#    define USE_POLL
+     /* FreeBSD does not set POLLOUT when POLLHUP happens */
+#    define POLLERR_SET (POLLHUP | POLLERR)
+#  endif
 #endif
 
 static struct timespec *
@@ -3923,6 +3930,10 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 #define POLLOUT_SET (POLLWRBAND | POLLWRNORM | POLLOUT | POLLERR)
 #define POLLEX_SET (POLLPRI)
 
+#ifndef POLLERR_SET /* defined for FreeBSD for now */
+#  define POLLERR_SET (0)
+#endif
+
 #ifndef HAVE_PPOLL
 /* TODO: don't ignore sigmask */
 int
@@ -4003,6 +4014,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 	result |= RB_WAITFD_OUT;
     if (fds.revents & POLLEX_SET)
 	result |= RB_WAITFD_PRI;
+
+    /* all requested events are ready if there is an error */
+    if (fds.revents & POLLERR_SET)
+	result |= events;
 
     return result;
 }
