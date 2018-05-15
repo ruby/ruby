@@ -5,7 +5,6 @@
 
 require 'erb'
 require 'optparse'
-require 'fileutils'
 $:.unshift(File.dirname(__FILE__))
 require 'vpath'
 require 'colorize'
@@ -55,7 +54,8 @@ if output
       dir, base = File.split(output)
       timestamp = File.join(dir, ".time." + base)
     end
-    FileUtils.touch(timestamp)
+    File.open(timestamp, 'a') {}
+    File.utime(nil, nil, timestamp)
   end
 else
   print result
