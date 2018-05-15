@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require "rbconfig/sizeof"
+require "timeout"
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -228,19 +229,34 @@ class TestThread < Test::Unit::TestCase
     t3.kill if t3
   end
 
-  def test_join_limits
-    [ RbConfig::LIMITS['FIXNUM_MAX'], RbConfig::LIMITS['UINT64_MAX'],
-      Float::INFINITY ].each do |limit|
+  { 'FIXNUM_MAX' => RbConfig::LIMITS['FIXNUM_MAX'],
+    'UINT64_MAX' => RbConfig::LIMITS['UINT64_MAX'],
+    'INFINITY'   => Float::INFINITY
+  }.each do |name, limit|
+    define_method("test_join_limit_#{name}") do
       t = Thread.new {}
       assert_same t, t.join(limit), "limit=#{limit.inspect}"
     end
-    t = Thread.new { sleep }
-    [ -1, -0.1, RbConfig::LIMITS['FIXNUM_MIN'], RbConfig::LIMITS['INT64_MIN'],
-      -Float::INFINITY
-    ].each do |limit|
-      assert_nil t.join(limit), "limit=#{limit.inspect}"
+  end
+
+  { 'minus_1'        => -1,
+    'minus_0_1'      => -0.1,
+    'FIXNUM_MIN'     => RbConfig::LIMITS['FIXNUM_MIN'],
+    'INT64_MIN'      => RbConfig::LIMITS['INT64_MIN'],
+    'minus_INFINITY' => -Float::INFINITY
+  }.each do |name, limit|
+    define_method("test_join_limit_negative_#{name}") do
+      t = Thread.new { sleep }
+      begin
+        assert_nothing_raised(Timeout::Error) do
+          Timeout.timeout(30) do
+            assert_nil t.join(limit), "limit=#{limit.inspect}"
+          end
+        end
+      ensure
+        t.kill
+      end
     end
-    t.kill
   end
 
   def test_kill_main_thread
