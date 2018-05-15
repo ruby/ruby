@@ -457,6 +457,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Wno-parentheses-equality \
 		 -Wno-constant-logical-operand \
 		 -Wno-self-assign \
+		 -Wno-cast-function-type \
 		 -Wunused-variable \
 		 -Werror=implicit-int \
 		 -Werror=pointer-arith \
