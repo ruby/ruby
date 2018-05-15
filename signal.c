@@ -1012,7 +1012,7 @@ static void
 signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_execution_context_t *ec = GET_EC();
-    volatile unsigned long old_interrupt_mask = ec->interrupt_mask;
+    volatile rb_atomic_t old_interrupt_mask = ec->interrupt_mask;
     enum ruby_tag_type state;
 
     /*
