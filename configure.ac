@@ -1016,13 +1016,17 @@ AS_IF([test "x$with_gmp" != xno],
 AC_ARG_WITH([jemalloc],
   [AS_HELP_STRING([--with-jemalloc],[use jemalloc allocator])],
   [with_jemalloc=$withval], [with_jemalloc=no])
-AS_IF([test "x$with_jemalloc" = xyes],[
+AS_IF([test "x$with_jemalloc" != xno],[
   AC_SEARCH_LIBS([malloc_conf], [jemalloc],
-    [AC_DEFINE(HAVE_LIBJEMALLOC, 1)], [with_jemalloc=no])
+    [
+      AC_DEFINE(HAVE_LIBJEMALLOC, 1)
+      with_jemalloc=yes
+    ],
+    [test x$with_jemalloc = xyes && with_jemalloc=no])
   AC_CHECK_HEADER(jemalloc/jemalloc.h, [
     AC_DEFINE(RUBY_ALTERNATIVE_MALLOC_HEADER, [<jemalloc/jemalloc.h>])
   ])
-  AS_IF([test "x$with_jemalloc" = xno], [
+  AS_IF([test "x$with_jemalloc" != xyes], [
     AC_CACHE_CHECK([for jemalloc with JEMALLOC_MANGLE], rb_cv_jemalloc_demangle,
       [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@define JEMALLOC_MANGLE 1
       @%:@ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
@@ -1038,11 +1042,13 @@ AS_IF([test "x$with_jemalloc" = xyes],[
     AC_DEFINE(JEMALLOC_MANGLE)
     with_jemalloc=yes
   ])
-  AS_IF([test "x$with_jemalloc" = xyes],
+  AS_CASE(["$with_jemalloc"],
+    [yes],
     [
       AC_DEFINE(HAVE_MALLOC_CONF)
       ac_cv_func_malloc_usable_size=yes
     ],
+    [no],
     [AC_MSG_ERROR([jemalloc requested but not found])
   ])
 ])
