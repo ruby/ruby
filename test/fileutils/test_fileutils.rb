@@ -233,7 +233,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_assert_output_lines
     assert_raise(MiniTest::Assertion) {
-      Timeout.timeout(0.1) {
+      Timeout.timeout(0.5) {
         assert_output_lines([]) {
           Thread.current.report_on_exception = false
           raise "ok"
@@ -834,13 +834,15 @@ class TestFileUtils < Test::Unit::TestCase
     check_singleton :ln_s
 
     TARGETS.each do |fname|
-      fname = "../#{fname}"
-      lnfname = 'tmp/lnsdest'
-      ln_s fname, lnfname
-      assert FileTest.symlink?(lnfname), 'not symlink'
-      assert_equal fname, File.readlink(lnfname)
-    ensure
-      rm_f lnfname
+      begin
+        fname = "../#{fname}"
+        lnfname = 'tmp/lnsdest'
+        ln_s fname, lnfname
+        assert FileTest.symlink?(lnfname), 'not symlink'
+        assert_equal fname, File.readlink(lnfname)
+      ensure
+        rm_f lnfname
+      end
     end
   end if have_symlink? and !no_broken_symlink?
 
@@ -1611,6 +1613,10 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cd
     check_singleton :cd
+  end
+
+  def test_cd_result
+    assert_equal 42, cd('.') { 42 }
   end
 
   def test_chdir
