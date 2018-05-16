@@ -592,39 +592,6 @@ AS_IF([test "$GCC" = yes], [
 	    ], [ansi_options=])
 	    test "x${ansi_options}" = x || break
 	done
-	AC_MSG_CHECKING(whether _XOPEN_SOURCE is already given)
-	AC_TRY_COMPILE([#include <unistd.h>
-		#ifndef _XOPEN_SOURCE
-		#error _XOPEN_SOURCE is not defined
-		#endif
-		], [],
-	        [given_xopen_source=yes], [given_xopen_source=no])
-	AC_MSG_RESULT($given_xopen_source)
-	AS_IF([test $given_xopen_source = no], [
-	  AC_MSG_CHECKING(appropriate _XOPEN_SOURCE value to define)
-	  define_xopen_source=""
-	  for tmp_xpg in 7 6 5; do
-	    AS_IF([test x"$define_xopen_source" != x], [
-	      break
-	    ])
-	    RUBY_WERROR_FLAG([AC_TRY_COMPILE([
-		#define _XOPEN_SOURCE ${tmp_xpg}00
-		#include <unistd.h>
-		#ifndef _XPG${tmp_xpg}
-		#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
-		#endif
-		], [],
-		[define_xopen_source=${tmp_xpg}00], [])
-		])
-	  done
-	  AS_IF([test x"$define_xopen_source" = x], [
-	    define_xopen_source=no
-	  ])
-	  AC_MSG_RESULT($define_xopen_source)
-	  AS_IF([test x"$define_xopen_source" != xno], [
-	    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
-	  ])
-	])
     ],
     [
       # ANSI (no XCFLAGS because this is C only)
@@ -865,6 +832,39 @@ main()
 		ac_cv_c_inline=no],
 [solaris*], [	LIBS="-lm $LIBS"
 		ac_cv_func_vfork=no
+		AC_MSG_CHECKING(whether _XOPEN_SOURCE is already given)
+		AC_TRY_COMPILE([#include <unistd.h>
+			#ifndef _XOPEN_SOURCE
+			#error _XOPEN_SOURCE is not defined
+			#endif
+			], [],
+		        [given_xopen_source=yes], [given_xopen_source=no])
+		AC_MSG_RESULT($given_xopen_source)
+		AS_IF([test $given_xopen_source = no], [
+		  AC_MSG_CHECKING(appropriate _XOPEN_SOURCE value to define)
+		  define_xopen_source=""
+		  for tmp_xpg in 7 6 5; do
+		    AS_IF([test x"$define_xopen_source" != x], [
+		      break
+		    ])
+		    RUBY_WERROR_FLAG([AC_TRY_COMPILE([
+			#define _XOPEN_SOURCE ${tmp_xpg}00
+			#include <unistd.h>
+			#ifndef _XPG${tmp_xpg}
+			#error _XPG${tmp_xpg} should be defined by _XOPEN_SOURCE=${tmp_xpg}00
+			#endif
+			], [],
+			[define_xopen_source=${tmp_xpg}00], [])
+			])
+		  done
+		  AS_IF([test x"$define_xopen_source" = x], [
+		    define_xopen_source=no
+		  ])
+		  AC_MSG_RESULT($define_xopen_source)
+		  AS_IF([test x"$define_xopen_source" != xno], [
+		    RUBY_APPEND_OPTIONS(CPPFLAGS, -D_XOPEN_SOURCE=$define_xopen_source)
+		  ])
+		])
 		],
 [haiku*], [
 		LIBS="$LIBS" # m lib is include in root
