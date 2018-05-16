@@ -523,8 +523,6 @@ module FileUtils
         if destent.exist?
           if destent.directory?
             raise Errno::EEXIST, d
-          else
-            destent.remove_file if rename_cannot_overwrite_file?
           end
         end
         begin
@@ -546,15 +544,6 @@ module FileUtils
 
   alias move mv
   module_function :move
-
-  def rename_cannot_overwrite_file?   #:nodoc:
-    if defined?(RbConfig)
-      /emx/ =~ RbConfig::CONFIG['host_os']
-    else
-      /emx/ =~ RUBY_PLATFORM
-    end
-  end
-  private_module_function :rename_cannot_overwrite_file?
 
   #
   # Remove file(s) specified in +list+.  This method cannot remove directories.
