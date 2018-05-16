@@ -125,6 +125,7 @@
 # For options that require an argument, option specification strings may include an
 # option name in all caps. If an option is used without the required argument,
 # an exception will be raised.
+#
 #   require 'optparse'
 #
 #   options = {}
@@ -137,9 +138,9 @@
 #
 # Used:
 #
-#   bash-3.2$ ruby optparse-test.rb -r
+#   $ ruby optparse-test.rb -r
 #   optparse-test.rb:9:in `<main>': missing argument: -r (OptionParser::MissingArgument)
-#   bash-3.2$ ruby optparse-test.rb -r my-library
+#   $ ruby optparse-test.rb -r my-library
 #   You required my-library!
 #
 # === Type Coercion
@@ -187,13 +188,12 @@
 #   end.parse!
 #
 # Used:
-#   bash-3.2$ ruby optparse-test.rb  -t nonsense
+#
+#   $ ruby optparse-test.rb  -t nonsense
 #   ... invalid argument: -t nonsense (OptionParser::InvalidArgument)
-#   from ... time.rb:5:in `block in <top (required)>'
-#   from optparse-test.rb:31:in `<main>'
-#   bash-3.2$ ruby optparse-test.rb  -t 10-11-12
+#   $ ruby optparse-test.rb  -t 10-11-12
 #   2010-11-12 00:00:00 -0500
-#   bash-3.2$ ruby optparse-test.rb  -t 9:30
+#   $ ruby optparse-test.rb  -t 9:30
 #   2014-08-13 09:30:00 -0400
 #
 # ==== Creating Custom Conversions
@@ -225,12 +225,13 @@
 #
 #   op.parse!
 #
-# output:
-#   bash-3.2$ ruby optparse-test.rb --user 1
+# Used:
+#
+#   $ ruby optparse-test.rb --user 1
 #   #<struct User id=1, name="Sam">
-#   bash-3.2$ ruby optparse-test.rb --user 2
+#   $ ruby optparse-test.rb --user 2
 #   #<struct User id=2, name="Gandalf">
-#   bash-3.2$ ruby optparse-test.rb --user 3
+#   $ ruby optparse-test.rb --user 3
 #   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
 #
 # === Store options to a Hash
@@ -245,12 +246,14 @@
 #     opts.on('-b NUM', Integer)
 #     opts.on('-v', '--verbose')
 #   end.parse!(into: params)
+#
 #   p params
 #
-# output:
-#   bash-3.2$ ruby optparse-test.rb -a
+# Used:
+#
+#   $ ruby optparse-test.rb -a
 #   {:a=>true}
-#   bash-3.2$ ruby optparse-test.rb -a -v
+#   $ ruby optparse-test.rb -a -v
 #   {:a=>true, :verbose=>true}
 #   $ ruby optparse-test.rb -a -b 100
 #   {:a=>true, :b=>100}
