@@ -149,14 +149,13 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 	SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
 
-#define GVL_UNLOCK_BEGIN() do { \
-  rb_thread_t *_th_stored = GET_THREAD(); \
-  RB_GC_SAVE_MACHINE_CONTEXT(_th_stored); \
-  gvl_release(_th_stored->vm);
+#define GVL_UNLOCK_BEGIN(th) do { \
+  RB_GC_SAVE_MACHINE_CONTEXT(th); \
+  gvl_release(th->vm);
 
-#define GVL_UNLOCK_END() \
-  gvl_acquire(_th_stored->vm, _th_stored); \
-  rb_thread_set_current(_th_stored); \
+#define GVL_UNLOCK_END(th) \
+  gvl_acquire(th->vm, th); \
+  rb_thread_set_current(th); \
 } while(0)
 
 #ifdef __GNUC__
@@ -168,14 +167,13 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #else
 #define only_if_constant(expr, notconst) notconst
 #endif
-#define BLOCKING_REGION(exec, ubf, ubfarg, fail_if_interrupted) do { \
-    rb_thread_t *__th = GET_THREAD(); \
+#define BLOCKING_REGION(th, exec, ubf, ubfarg, fail_if_interrupted) do { \
     struct rb_blocking_region_buffer __region; \
-    if (blocking_region_begin(__th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
+    if (blocking_region_begin(th, &__region, (ubf), (ubfarg), fail_if_interrupted) || \
 	/* always return true unless fail_if_interrupted */ \
 	!only_if_constant(fail_if_interrupted, TRUE)) { \
 	exec; \
-	blocking_region_end(__th, &__region); \
+	blocking_region_end(th, &__region); \
     }; \
 } while(0)
 
@@ -1399,7 +1397,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
 	data2 = th;
     }
 
-    BLOCKING_REGION({
+    BLOCKING_REGION(th, {
 	val = func(data1);
 	saved_errno = errno;
     }, ubf, data2, fail_if_interrupted);
@@ -1527,10 +1525,10 @@ rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	BLOCKING_REGION({
+	BLOCKING_REGION(wfd.th, {
 	    val = func(data1);
 	    saved_errno = errno;
-	}, ubf_select, rb_ec_thread_ptr(ec), FALSE);
+	}, ubf_select, wfd.th, FALSE);
     }
     EC_POP_TAG();
 
@@ -3847,7 +3845,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     do {
 	lerrno = 0;
 
-	BLOCKING_REGION({
+	BLOCKING_REGION(th, {
 	    result = native_fd_select(n, readfds, writefds, exceptfds,
 				      timeval_for(timeout, tsp), th);
 	    if (result < 0) lerrno = errno;
@@ -3988,7 +3986,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     do {
         fds.revents = 0;
         lerrno = 0;
-        BLOCKING_REGION({
+        BLOCKING_REGION(th, {
             result = ppoll(&fds, 1, tsp, NULL);
             if (result < 0) lerrno = errno;
         }, ubf_select, th, FALSE);

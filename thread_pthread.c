@@ -1044,7 +1044,7 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 	timeout = native_cond_timeout(cond, *timeout_rel);
     }
 
-    GVL_UNLOCK_BEGIN();
+    GVL_UNLOCK_BEGIN(th);
     {
         rb_native_mutex_lock(lock);
 	th->unblock.func = ubf_pthread_cond_signal;
@@ -1065,7 +1065,7 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 
 	rb_native_mutex_unlock(lock);
     }
-    GVL_UNLOCK_END();
+    GVL_UNLOCK_END(th);
 
     thread_debug("native_sleep done\n");
 }
