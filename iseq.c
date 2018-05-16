@@ -228,12 +228,13 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	RUBY_MARK_UNLESS_NULL((VALUE)body->parent_iseq);
 
 	if (body->param.flags.has_kw && ISEQ_COMPILE_DATA(iseq) == NULL) {
+	    const struct rb_iseq_param_keyword *const keyword = body->param.keyword;
 	    int i, j;
 
-	    i = body->param.keyword->required_num;
+	    i = keyword->required_num;
 
-	    for (j = 0; i < body->param.keyword->num; i++, j++) {
-		VALUE obj = body->param.keyword->default_values[j];
+	    for (j = 0; i < keyword->num; i++, j++) {
+		VALUE obj = keyword->default_values[j];
 		if (!SPECIAL_CONST_P(obj)) {
 		    rb_gc_mark(obj);
 		}
@@ -2706,6 +2707,7 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
 {
     int i, r;
     const struct rb_iseq_constant_body *const body = iseq->body;
+    const struct rb_iseq_param_keyword *const keyword = body->param.keyword;
     VALUE a, args = rb_ary_new2(body->param.size);
     ID req, opt, rest, block, key, keyrest;
 #define PARAM_TYPE(type) rb_ary_push(a = rb_ary_new2(2), ID2SYM(type))
@@ -2757,29 +2759,29 @@ rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc)
     }
     if (body->param.flags.has_kw) {
 	i = 0;
-	if (body->param.keyword->required_num > 0) {
+	if (keyword->required_num > 0) {
 	    ID keyreq;
 	    CONST_ID(keyreq, "keyreq");
-	    for (; i < body->param.keyword->required_num; i++) {
+	    for (; i < keyword->required_num; i++) {
 		PARAM_TYPE(keyreq);
-		if (rb_id2str(body->param.keyword->table[i])) {
-		    rb_ary_push(a, ID2SYM(body->param.keyword->table[i]));
+		if (rb_id2str(keyword->table[i])) {
+		    rb_ary_push(a, ID2SYM(keyword->table[i]));
 		}
 		rb_ary_push(args, a);
 	    }
 	}
 	CONST_ID(key, "key");
-	for (; i < body->param.keyword->num; i++) {
+	for (; i < keyword->num; i++) {
 	    PARAM_TYPE(key);
-	    if (rb_id2str(body->param.keyword->table[i])) {
-		rb_ary_push(a, ID2SYM(body->param.keyword->table[i]));
+	    if (rb_id2str(keyword->table[i])) {
+		rb_ary_push(a, ID2SYM(keyword->table[i]));
 	    }
 	    rb_ary_push(args, a);
 	}
     }
     if (body->param.flags.has_kwrest) {
 	CONST_ID(keyrest, "keyrest");
-	rb_ary_push(args, PARAM(body->param.keyword->rest_start, keyrest));
+	rb_ary_push(args, PARAM(keyword->rest_start, keyrest));
     }
     if (body->param.flags.has_block) {
 	CONST_ID(block, "block");
