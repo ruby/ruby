@@ -210,8 +210,9 @@ int
 rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
 {
     int ret;
+    rb_thread_t *th = GET_THREAD();
 
-    BLOCKING_REGION(ret = rb_w32_wait_events_blocking(events, num, timeout),
+    BLOCKING_REGION(th, ret = rb_w32_wait_events_blocking(events, num, timeout),
 		    ubf_handle, ruby_thread_from_native(), FALSE);
     return ret;
 }
@@ -264,8 +265,9 @@ int WINAPI
 rb_w32_Sleep(unsigned long msec)
 {
     int ret;
+    rb_thread_t *th = GET_THREAD();
 
-    BLOCKING_REGION(ret = rb_w32_sleep(msec),
+    BLOCKING_REGION(th, ret = rb_w32_sleep(msec),
 		    ubf_handle, ruby_thread_from_native(), FALSE);
     return ret;
 }
@@ -276,7 +278,7 @@ native_sleep(rb_thread_t *th, struct timespec *ts)
     const volatile DWORD msec = (ts) ?
 	(DWORD)(ts->tv_sec * 1000 + ts->tv_nsec / 1000000) : INFINITE;
 
-    GVL_UNLOCK_BEGIN();
+    GVL_UNLOCK_BEGIN(th);
     {
 	DWORD ret;
 
@@ -299,7 +301,7 @@ native_sleep(rb_thread_t *th, struct timespec *ts)
 	th->unblock.arg = 0;
         rb_native_mutex_unlock(&th->interrupt_lock);
     }
-    GVL_UNLOCK_END();
+    GVL_UNLOCK_END(th);
 }
 
 void
