@@ -473,6 +473,16 @@ class TestRange < Test::Unit::TestCase
     assert_operator(c.new(0)..c.new(10), :===, c.new(5), bug12003)
   end
 
+  def test_eqq_non_iteratable
+    k = Class.new do
+      include Comparable
+      attr_reader :i
+      def initialize(i) @i = i; end
+      def <=>(o); i <=> o.i; end
+    end
+    assert_operator(k.new(0)..k.new(2), :===, k.new(1))
+  end
+
   def test_include
     assert_include("a".."z", "c")
     assert_not_include("a".."z", "5")
