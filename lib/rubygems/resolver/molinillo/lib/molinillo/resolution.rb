@@ -465,7 +465,7 @@ module Gem::Resolver::Molinillo
       def push_state_for_requirements(new_requirements, requires_sort = true, new_activated = activated)
         new_requirements = sort_dependencies(new_requirements.uniq, new_activated, conflicts) if requires_sort
         new_requirement = new_requirements.shift
-        new_name = new_requirement ? name_for(new_requirement) : ''.freeze
+        new_name = new_requirement ? name_for(new_requirement) : ''
         possibilities = new_requirement ? search_for(new_requirement) : []
         handle_missing_or_push_dependency_state DependencyState.new(
           new_name, new_requirements, new_activated,
