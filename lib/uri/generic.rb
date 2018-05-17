@@ -1543,11 +1543,16 @@ module URI
     end
 
     def self.use_proxy?(hostname, addr, port, no_proxy) # :nodoc:
-      no_proxy.scan(/(?!\.)([^:,\s]+)(?::(\d+))?/) {|p_host, p_port|
+      hostname = hostname.downcase
+      dothostname = ".#{hostname}"
+      no_proxy.scan(/([^:,\s]+)(?::(\d+))?/) {|p_host, p_port|
         if !p_port || port == p_port.to_i
-          if /(\A|\.)#{Regexp.quote p_host}\z/i =~ hostname
-            return false
-          elsif addr
+          if p_host.start_with?('.')
+            return false if hostname.end_with?(p_host.downcase)
+          else
+            return false if dothostname.end_with?(".#{p_host.downcase}")
+          end
+          if addr
             begin
               return false if IPAddr.new(p_host).include?(addr)
             rescue IPAddr::InvalidAddressError
