@@ -898,7 +898,7 @@ class URI::TestGeneric < Test::Unit::TestCase
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
     with_proxy_env('http_proxy'=>'http://127.0.0.1:8080', 'no_proxy'=>'.example.org') {|env|
-      assert_nil(URI("http://example.org/").find_proxy(env))
+      assert_equal(URI('http://127.0.0.1:8080'), URI("http://example.org/").find_proxy(env))
       assert_nil(URI("http://www.example.org/").find_proxy(env))
     }
   end
@@ -940,7 +940,13 @@ class URI::TestGeneric < Test::Unit::TestCase
       ['example.com', nil, 80, 'example.com:80', false],
       ['example.com', nil, 80, 'example.org,example.com:80,example.net', false],
       ['foo.example.com', nil, 80, 'example.com', false],
+      ['foo.example.com', nil, 80, '.example.com', false],
+      ['example.com', nil, 80, '.example.com', true],
+      ['xample.com', nil, 80, '.example.com', true],
+      ['fooexample.com', nil, 80, '.example.com', true],
       ['foo.example.com', nil, 80, 'example.com:80', false],
+      ['foo.eXample.com', nil, 80, 'example.com:80', false],
+      ['foo.example.com', nil, 80, 'eXample.com:80', false],
       ['foo.example.com', nil, 80, 'example.com:443', true],
       ['127.0.0.1', '127.0.0.1', 80, '10.224.0.0/22', true],
       ['10.224.1.1', '10.224.1.1', 80, '10.224.1.1', false],
