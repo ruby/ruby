@@ -933,7 +933,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   def self.env_requirement(gem_name)
     @env_requirements_by_name ||= {}
     @env_requirements_by_name[gem_name] ||= begin
-      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || '>= 0'.freeze
+      req = ENV["GEM_REQUIREMENT_#{gem_name.upcase}"] || '>= 0'
       Gem::Requirement.create(req)
     end
   end
