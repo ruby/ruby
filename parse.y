@@ -9110,7 +9110,7 @@ parser_token_value_print(struct parser_params *p, enum yytokentype type, const Y
 	break;
       case tBACK_REF:
 #ifndef RIPPER
-	rb_parser_printf(p, "$%c", valp->node->nd_nth);
+	rb_parser_printf(p, "$%c", (int)valp->node->nd_nth);
 #else
 	rb_parser_printf(p, "%"PRIsVALUE, valp->val);
 #endif
