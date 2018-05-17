@@ -116,6 +116,10 @@ with all sufficient information, see the ChangeLog file or Redmine
 
     * added Random.bytes. [Feature #4938]
 
+* Range
+
+  * Range#=== now uses #cover? instead of #include? method. [Feature #14575]
+
 * String
 
   * String#split yields each substring to the block if given. [Feature #4780]

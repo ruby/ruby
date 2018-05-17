@@ -1212,6 +1212,8 @@ range_inspect(VALUE range)
     return rb_exec_recursive(inspect_range, range, 0);
 }
 
+static VALUE range_include_internal(VALUE range, VALUE val);
+
 /*
  *  call-seq:
  *     rng === obj       ->  true or false
@@ -1234,7 +1236,9 @@ range_inspect(VALUE range)
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    return rb_funcall(range, rb_intern("include?"), 1, val);
+    VALUE ret = range_include_internal(range, val);
+    if (ret != Qundef) return ret;
+    return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
 
 
@@ -1254,6 +1258,14 @@ range_eqq(VALUE range, VALUE val)
 
 static VALUE
 range_include(VALUE range, VALUE val)
+{
+    VALUE ret = range_include_internal(range, val);
+    if (ret != Qundef) return ret;
+    return rb_call_super(1, &val);
+}
+
+static VALUE
+range_include_internal(VALUE range, VALUE val)
 {
     VALUE beg = RANGE_BEG(range);
     VALUE end = RANGE_END(range);
@@ -1277,8 +1289,7 @@ range_include(VALUE range, VALUE val)
 	    return Qfalse;
 	}
     }
-    /* TODO: ruby_frame->this_func = rb_intern("include?"); */
-    return rb_call_super(1, &val);
+    return Qundef;
 }
 
 
