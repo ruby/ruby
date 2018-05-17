@@ -1517,11 +1517,6 @@ Init_vm_trace(void)
     Init_postponed_job();
 }
 
-typedef struct rb_postponed_job_struct {
-    rb_postponed_job_func_t func;
-    void *data;
-} rb_postponed_job_t;
-
 #define MAX_POSTPONED_JOB                  1000
 #define MAX_POSTPONED_JOB_SPECIAL_ADDITION   24
 
@@ -1529,34 +1524,21 @@ static void
 Init_postponed_job(void)
 {
     rb_vm_t *vm = GET_VM();
-    vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
-    vm->postponed_job_index = 0;
+    vm->postponed_jobs = st_init_numtable();
 }
 
 enum postponed_job_register_result {
     PJRR_SUCCESS     = 0,
-    PJRR_FULL        = 1,
-    PJRR_INTERRUPTED = 2
+    PJRR_FULL        = 1
 };
 
 static enum postponed_job_register_result
 postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
-		       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
+		       unsigned int flags, rb_postponed_job_func_t func, void *data, size_t max)
 {
-    rb_postponed_job_t *pjob;
+    if (vm->postponed_jobs->num_entries >= max) return PJRR_FULL;
 
-    if (expected_index >= max) return PJRR_FULL; /* failed */
-
-    if (ATOMIC_CAS(vm->postponed_job_index, expected_index, expected_index+1) == expected_index) {
-	pjob = &vm->postponed_job_buffer[expected_index];
-    }
-    else {
-	return PJRR_INTERRUPTED;
-    }
-
-    /* unused: pjob->flags = flags; */
-    pjob->func = func;
-    pjob->data = data;
+    st_add_direct(vm->postponed_jobs, (st_index_t)func, (st_data_t)data);
 
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
 
@@ -1571,11 +1553,9 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
-  begin:
-    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
+    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB )) {
       case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
-      case PJRR_INTERRUPTED: goto begin;
       default: rb_bug("unreachable\n");
     }
 }
@@ -1586,22 +1566,14 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 {
     rb_execution_context_t *ec = GET_EC();
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
-    rb_postponed_job_t *pjob;
-    int i, index;
 
-  begin:
-    index = vm->postponed_job_index;
-    for (i=0; i<index; i++) {
-	pjob = &vm->postponed_job_buffer[i];
-	if (pjob->func == func) {
-	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
-	    return 2;
-	}
+    if (st_lookup(vm->postponed_jobs, (st_data_t)func, 0)) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
+        return 2;
     }
-    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
+    switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION)) {
       case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
-      case PJRR_INTERRUPTED: goto begin;
       default: rb_bug("unreachable\n");
     }
 }
@@ -1620,12 +1592,12 @@ rb_postponed_job_flush(rb_vm_t *vm)
     {
 	EC_PUSH_TAG(ec);
 	if (EC_EXEC_TAG() == TAG_NONE) {
-	    int index;
-	    while ((index = vm->postponed_job_index) > 0) {
-		if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
-		    rb_postponed_job_t *pjob = &vm->postponed_job_buffer[index-1];
-		    (*pjob->func)(pjob->data);
-		}
+            st_data_t k, v;
+            while (st_shift(vm->postponed_jobs, &k, &v)) {
+                rb_postponed_job_func_t func = (rb_postponed_job_func_t)k;
+                void *arg = (void *)v;
+
+                func(arg);
 	    }
 	}
 	EC_POP_TAG();
