@@ -1518,7 +1518,6 @@ Init_vm_trace(void)
 }
 
 typedef struct rb_postponed_job_struct {
-    unsigned long flags; /* reserved */
     rb_postponed_job_func_t func;
     void *data;
 } rb_postponed_job_t;
@@ -1555,7 +1554,7 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
 	return PJRR_INTERRUPTED;
     }
 
-    pjob->flags = flags;
+    /* unused: pjob->flags = flags; */
     pjob->func = func;
     pjob->data = data;
 
