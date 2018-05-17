@@ -1535,7 +1535,7 @@ Init_postponed_job(void)
 }
 
 enum postponed_job_register_result {
-    PJRR_SUCESS      = 0,
+    PJRR_SUCCESS     = 0,
     PJRR_FULL        = 1,
     PJRR_INTERRUPTED = 2
 };
@@ -1561,7 +1561,7 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
 
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
 
-    return PJRR_SUCESS;
+    return PJRR_SUCCESS;
 }
 
 
@@ -1574,7 +1574,7 @@ rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void
 
   begin:
     switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB, vm->postponed_job_index)) {
-      case PJRR_SUCESS     : return 1;
+      case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
       default: rb_bug("unreachable\n");
@@ -1600,7 +1600,7 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
 	}
     }
     switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
-      case PJRR_SUCESS     : return 1;
+      case PJRR_SUCCESS    : return 1;
       case PJRR_FULL       : return 0;
       case PJRR_INTERRUPTED: goto begin;
       default: rb_bug("unreachable\n");
