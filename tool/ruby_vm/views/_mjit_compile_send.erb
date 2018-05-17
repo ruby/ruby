@@ -84,19 +84,5 @@
             fprintf(f, "}\n");
             break;
         }
-% if insn.name == 'opt_send_without_block'
-        else if (cc->me->def->type == VM_METHOD_TYPE_IVAR && !(ci->flag & VM_CALL_ARGS_SPLAT)) { /* CI_SET_FASTPATH with vm_call_ivar */
-% # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
-<%= render 'mjit_compile_send_guard' -%>
-
-% # JIT: vm_call_ivar without sp motion
-            fprintf(f, "    stack[%d] = vm_getivar(stack[%d], (ID)0x%"PRIxVALUE", NULL, (CALL_CACHE)0x%"PRIxVALUE", (st_index_t)%ld, 1);\n",
-                    b->stack_size - argc - 1, b->stack_size - argc - 1, cc->me->def->body.attr.id, (VALUE)cc, (long)cc->aux.index);
-
-% # compiler: Move JIT compiler's internal stack pointer
-            b->stack_size += <%= insn.call_attribute('sp_inc') %>;
-            break;
-        }
-% end
     }
 }
