@@ -23,9 +23,9 @@ class Gem::StubSpecification < Gem::BasicSpecification
 
     # These are common require paths.
     REQUIRE_PATHS = { # :nodoc:
-      'lib'  => 'lib'.freeze,
-      'test' => 'test'.freeze,
-      'ext'  => 'ext'.freeze,
+      'lib'  => 'lib',
+      'test' => 'test',
+      'ext'  => 'ext',
     }
 
     # These are common require path lists.  This hash is used to optimize
@@ -37,7 +37,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
     }
 
     def initialize data, extensions
-      parts          = data[PREFIX.length..-1].split(" ".freeze, 4)
+      parts          = data[PREFIX.length..-1].split(" ", 4)
       @name          = parts[0].freeze
       @version       = if Gem::Version.correct?(parts[1])
                          Gem::Version.new(parts[1])
@@ -54,7 +54,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
                        end
 
       path_list = parts.last
-      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0".freeze).map! { |x|
+      @require_paths = REQUIRE_PATH_LIST[path_list] || path_list.split("\0").map! { |x|
         REQUIRE_PATHS[x] || x
       }
     end
