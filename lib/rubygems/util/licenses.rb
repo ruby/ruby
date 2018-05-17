@@ -4,7 +4,7 @@ require 'rubygems/text'
 class Gem::Licenses
   extend Gem::Text
 
-  NONSTANDARD = 'Nonstandard'.freeze
+  NONSTANDARD = 'Nonstandard'
 
   # Software Package Data Exchange (SPDX) standard open-source software
   # license identifiers
