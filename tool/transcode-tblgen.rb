@@ -145,7 +145,7 @@ class ActionMap
                 else
                   b = $1.to_i(16)
                   e = $2.to_i(16)
-                  b.upto(e) {|c| set[c] = true }
+                  b.upto(e) {|_| set[_] = true }
                 end
               }
               i = nil
@@ -297,10 +297,10 @@ class ActionMap
         raise ArgumentError, "ambiguous pattern: #{prefix}" if min.length != prefix.length
         h[action] = true
       end
-      region_rects.each {|min, max, action|
+      for min, _, action in region_rects
         raise ArgumentError, "ambiguous pattern: #{prefix}" if !min.empty?
         h[action] = true
-      }
+      end
       tree = Action.new(block.call(prefix, h.keys))
       h.clear
     else
