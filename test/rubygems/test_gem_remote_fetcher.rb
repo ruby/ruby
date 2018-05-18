@@ -541,7 +541,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     def fetcher.fetch_http(uri, mtime, head = nil)
-      Gem.gzip 'foo'
+      Gem::Util.gzip 'foo'
     end
 
     assert_equal 'foo', fetcher.fetch_path(@uri + 'foo.gz')

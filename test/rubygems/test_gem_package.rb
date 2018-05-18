@@ -524,6 +524,21 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_exists extracted
   end
 
+  if Gem.win_platform?
+    def test_extract_tar_gz_case_insensitive
+      package = Gem::Package.new @gem
+
+      tgz_io = util_tar_gz do |tar|
+        tar.add_file 'foo/file.rb', 0644 do |io| io.write 'hi' end
+      end
+
+      package.extract_tar_gz tgz_io, @destination.upcase
+
+      extracted = File.join @destination, 'foo/file.rb'
+      assert_path_exists extracted
+    end
+  end
+
   def test_install_location
     package = Gem::Package.new @gem
 
@@ -607,7 +622,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_load_spec
-    entry = StringIO.new Gem.gzip @spec.to_yaml
+    entry = StringIO.new Gem::Util.gzip @spec.to_yaml
     def entry.full_name() 'metadata.gz' end
 
     package = Gem::Package.new 'nonexistent.gem'
@@ -637,7 +652,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = data_tgz.string
 
     gem = util_tar do |tar|
-      metadata_gz = Gem.gzip @spec.to_yaml
+      metadata_gz = Gem::Util.gzip @spec.to_yaml
 
       tar.add_file 'metadata.gz', 0444 do |io|
         io.write metadata_gz
@@ -684,7 +699,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     data_tgz = data_tgz.string
 
     gem = util_tar do |tar|
-      metadata_gz = Gem.gzip @spec.to_yaml
+      metadata_gz = Gem::Util.gzip @spec.to_yaml
 
       tar.add_file 'metadata.gz', 0444 do |io|
         io.write metadata_gz
@@ -721,7 +736,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_verify_corrupt
     tf = Tempfile.open 'corrupt' do |io|
-      data = Gem.gzip 'a' * 10
+      data = Gem::Util.gzip 'a' * 10
       io.write \
         tar_file_header('metadata.gz', "\000x", 0644, data.length, Time.now)
       io.write data
@@ -845,7 +860,7 @@ class TestGemPackage < Gem::Package::TarTestCase
         build.add_contents gem
 
         # write bogus data.tar.gz to foil signature
-        bogus_data = Gem.gzip 'hello'
+        bogus_data = Gem::Util.gzip 'hello'
         fake_signer = Class.new do
           def digest_name; 'SHA512'; end
           def digest_algorithm; Digest(:SHA512); end
@@ -903,6 +918,40 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_equal "package is corrupt, exception while verifying: whatever (ArgumentError) in #{@gem}", e.message
+
+    valid_metadata = ["metadata", "metadata.gz"]
+    valid_metadata.each do |vm|
+      $spec_loaded = false
+      $good_name = vm
+
+      entry = Object.new
+      def entry.full_name() $good_name end
+
+      package = Gem::Package.new(@gem)
+      package.instance_variable_set(:@files, [])
+      def package.load_spec(entry) $spec_loaded = true end
+
+      package.verify_entry(entry)
+
+      assert $spec_loaded
+    end
+
+    invalid_metadata = ["metadataxgz", "foobar\nmetadata", "metadata\nfoobar"]
+    invalid_metadata.each do |vm|
+      $spec_loaded = false
+      $bad_name = vm
+
+      entry = Object.new
+      def entry.full_name() $bad_name  end
+
+      package = Gem::Package.new(@gem)
+      package.instance_variable_set(:@files, [])
+      def package.load_spec(entry) $spec_loaded = true end
+
+      package.verify_entry(entry)
+
+      refute $spec_loaded
+    end
   end
 
   def test_spec

@@ -347,7 +347,7 @@ class Gem::Indexer
     data = Gem.read_binary path
     compressed_data = Gem.read_binary "#{path}.#{extension}"
 
-    unless data == Gem.inflate(compressed_data) then
+    unless data == Gem::Util.inflate(compressed_data) then
       raise "Compressed file #{compressed_path} does not match uncompressed file #{path}"
     end
   end

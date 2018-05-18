@@ -492,7 +492,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     specs = Marshal.dump specs
 
     if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'
@@ -553,7 +553,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     specs = Marshal.dump specs
 
     if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'
@@ -852,7 +852,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
     specs = Marshal.dump specs
 
     if req.path =~ /\.gz$/ then
-      specs = Gem.gzip specs
+      specs = Gem::Util.gzip specs
       res['content-type'] = 'application/x-gzip'
     else
       res['content-type'] = 'application/octet-stream'

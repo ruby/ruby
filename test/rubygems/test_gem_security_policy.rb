@@ -450,7 +450,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}
@@ -473,7 +473,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}
@@ -502,7 +502,7 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     @spec.cert_chain = [PUBLIC_CERT.to_s]
 
-    metadata_gz = Gem.gzip @spec.to_yaml
+    metadata_gz = Gem::Util.gzip @spec.to_yaml
 
     package = Gem::Package.new 'nonexistent.gem'
     package.checksums[Gem::Security::DIGEST_NAME] = {}

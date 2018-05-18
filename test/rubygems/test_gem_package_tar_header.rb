@@ -158,7 +158,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
       header_s[124, 12] = val
       io = TempIO.new header_s
       assert_raises ArgumentError do
-        new_header = Gem::Package::TarHeader.from io
+        Gem::Package::TarHeader.from io
       end
       io.close! if io.respond_to? :close!
     end

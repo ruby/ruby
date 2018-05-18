@@ -64,7 +64,7 @@ class Gem::FakeFetcher
       data.call
     else
       if path.to_s =~ /gz$/ and not data.nil? and not data.empty? then
-        data = Gem.gunzip data
+        data = Gem::Util.gunzip data
       end
 
       data

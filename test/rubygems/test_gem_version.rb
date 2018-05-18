@@ -46,6 +46,7 @@ class TestGemVersion < Gem::TestCase
   def test_class_correct
     assert_equal true,  Gem::Version.correct?("5.1")
     assert_equal false, Gem::Version.correct?("an incorrect version")
+    assert_equal false, Gem::Version.correct?(nil)
   end
 
   def test_class_new_subclass

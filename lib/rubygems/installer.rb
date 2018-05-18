@@ -7,6 +7,7 @@
 
 require 'rubygems/command'
 require 'rubygems/exceptions'
+require 'rubygems/deprecate'
 require 'rubygems/package'
 require 'rubygems/ext'
 require 'rubygems/user_interaction'
@@ -26,6 +27,8 @@ require 'fileutils'
 # file.  See Gem.pre_install and Gem.post_install for details.
 
 class Gem::Installer
+
+  extend Gem::Deprecate
 
   ##
   # Paths where env(1) might live.  Some systems are broken and have it in
@@ -777,13 +780,14 @@ TEXT
   ##
   # Logs the build +output+ in +build_dir+, then raises Gem::Ext::BuildError.
   #
-  # TODO:  Delete this for RubyGems 3.  It remains for API compatibility
+  # TODO:  Delete this for RubyGems 4.  It remains for API compatibility
 
   def extension_build_error(build_dir, output, backtrace = nil) # :nodoc:
     builder = Gem::Ext::Builder.new spec, @build_args
 
     builder.build_error build_dir, output, backtrace
   end
+  deprecate :extension_build_error, :none, 2018, 12
 
   ##
   # Reads the file index and extracts each file into the gem directory.

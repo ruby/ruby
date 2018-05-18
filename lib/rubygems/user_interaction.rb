@@ -6,6 +6,7 @@
 #++
 
 require 'rubygems/util'
+require 'rubygems/deprecate'
 
 ##
 # Module that defines the default UserInteraction.  Any class including this
@@ -169,6 +170,8 @@ end
 # Gem::StreamUI implements a simple stream based user interface.
 
 class Gem::StreamUI
+
+  extend Gem::Deprecate
 
   ##
   # The input stream
@@ -384,6 +387,7 @@ class Gem::StreamUI
   def debug(statement)
     @errs.puts statement
   end
+  deprecate :debug, :none, 2018, 12
 
   ##
   # Terminate the application with exit code +status+, running any exit

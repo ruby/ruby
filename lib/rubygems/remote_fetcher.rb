@@ -293,7 +293,7 @@ class Gem::RemoteFetcher
 
     if data and !head and uri.to_s =~ /\.gz$/
       begin
-        data = Gem.gunzip data
+        data = Gem::Util.gunzip data
       rescue Zlib::GzipFile::Error
         raise FetchError.new("server did not return a valid file", uri.to_s)
       end

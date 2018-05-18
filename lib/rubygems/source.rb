@@ -155,7 +155,7 @@ class Gem::Source
     uri.path << '.rz'
 
     spec = fetcher.fetch_path uri
-    spec = Gem.inflate spec
+    spec = Gem::Util.inflate spec
 
     if update_cache? then
       FileUtils.mkdir_p cache_dir

@@ -127,7 +127,7 @@ class TestGemServer < Gem::TestCase
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
     assert_equal 'application/x-gzip', @res['content-type']
     assert_equal [['a', Gem::Version.new(2), Gem::Platform::RUBY]],
-                 Marshal.load(Gem.gunzip(@res.body))
+                 Marshal.load(Gem::Util.gunzip(@res.body))
   end
 
   def test_listen
@@ -177,7 +177,7 @@ class TestGemServer < Gem::TestCase
     assert_match %r| \d\d:\d\d:\d\d |, @res['date']
     assert_equal 'application/x-gzip', @res['content-type']
     assert_equal [['a', v('3.a'), Gem::Platform::RUBY]],
-                 Marshal.load(Gem.gunzip(@res.body))
+                 Marshal.load(Gem::Util.gunzip(@res.body))
   end
 
   def test_quick_gemdirs
@@ -236,7 +236,7 @@ class TestGemServer < Gem::TestCase
     assert @res['date']
     assert_equal 'application/x-deflate', @res['content-type']
 
-    spec = Marshal.load Gem.inflate(@res.body)
+    spec = Marshal.load Gem::Util.inflate(@res.body)
     assert_equal 'a', spec.name
     assert_equal Gem::Version.new(1), spec.version
   end
@@ -253,7 +253,7 @@ class TestGemServer < Gem::TestCase
     assert @res['date']
     assert_equal 'application/x-deflate', @res['content-type']
 
-    spec = Marshal.load Gem.inflate(@res.body)
+    spec = Marshal.load Gem::Util.inflate(@res.body)
     assert_equal 'a', spec.name
     assert_equal Gem::Version.new(1), spec.version
     assert_equal Gem::Platform.local, spec.platform
@@ -269,7 +269,7 @@ class TestGemServer < Gem::TestCase
     assert @res['date']
     assert_equal 'application/x-deflate', @res['content-type']
 
-    spec = Marshal.load Gem.inflate(@res.body)
+    spec = Marshal.load Gem::Util.inflate(@res.body)
     assert_equal 'a', spec.name
     assert_equal v('3.a'), spec.version
   end
@@ -286,7 +286,7 @@ class TestGemServer < Gem::TestCase
     assert @res['date']
     assert_equal 'application/x-deflate', @res['content-type']
 
-    spec = Marshal.load Gem.inflate(@res.body)
+    spec = Marshal.load Gem::Util.inflate(@res.body)
     assert_equal 'a-b', spec.name
     assert_equal v('3.a'), spec.version
   end
@@ -303,7 +303,7 @@ class TestGemServer < Gem::TestCase
     assert @res['date']
     assert_equal 'application/x-deflate', @res['content-type']
 
-    spec = Marshal.load Gem.inflate(@res.body)
+    spec = Marshal.load Gem::Util.inflate(@res.body)
     assert_equal 'a-b-1', spec.name
     assert_equal v('3.a'), spec.version
   end
@@ -571,7 +571,7 @@ class TestGemServer < Gem::TestCase
     assert_equal [['a', Gem::Version.new(1), Gem::Platform::RUBY],
                   ['a', Gem::Version.new(2), Gem::Platform::RUBY],
                   ['a', v('3.a'), Gem::Platform::RUBY]],
-                 Marshal.load(Gem.gunzip(@res.body))
+                 Marshal.load(Gem::Util.gunzip(@res.body))
   end
 
   def test_uri_encode
