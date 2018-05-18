@@ -7,7 +7,7 @@ class RDoc::Markup::AttributeManager
   ##
   # The NUL character
 
-  NULL = "\000".freeze
+  NULL = "\000"
 
   #--
   # We work by substituting non-printing characters in to the text. For now
