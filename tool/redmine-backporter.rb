@@ -215,7 +215,7 @@ class << Readline
     console.print prompt
     console.flush
     line = ''
-    while 1
+    while true
       case c = console.getch
       when "\r", "\n"
         puts
