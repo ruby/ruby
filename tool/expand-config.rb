@@ -15,8 +15,6 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
   ARGV.shift
 end
 
-re = /@(#{config.keys.map {|k| Regexp.quote(k)}.join('|')})@/
-
 if $output
   output = open($output, "wb", $mode &&= $mode.oct)
   output.chmod($mode) if $mode

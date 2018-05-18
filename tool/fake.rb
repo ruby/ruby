@@ -14,7 +14,6 @@ $:.unshift(builddir)
 posthook = proc do
   config = RbConfig::CONFIG
   mkconfig = RbConfig::MAKEFILE_CONFIG
-  extout = File.expand_path(mkconfig["EXTOUT"], builddir)
   [
     ["top_srcdir", $top_srcdir],
     ["topdir", $topdir],

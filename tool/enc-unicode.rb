@@ -229,7 +229,6 @@ def parse_GraphemeBreakProperty(data)
 end
 
 def parse_block(data)
-  current = nil
   cps = []
   blocks = []
   data_foreach('Blocks.txt') do |line|

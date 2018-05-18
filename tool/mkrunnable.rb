@@ -95,7 +95,6 @@ config.each_value {|s| RbConfig.expand(s, config)}
 srcdir = config["srcdir"] ||= File.dirname(__FILE__)
 top_srcdir = config["top_srcdir"] ||= File.dirname(srcdir)
 extout = ARGV[0] || config["EXTOUT"]
-version = config["ruby_version"]
 arch = config["arch"]
 bindir = config["bindir"]
 libdirname = config["libdirname"]
@@ -104,7 +103,6 @@ vendordir = config["vendordir"]
 rubylibdir = config["rubylibdir"]
 rubyarchdir = config["rubyarchdir"]
 archdir = "#{extout}/#{arch}"
-rubylibs = [vendordir, rubylibdir, rubyarchdir]
 [bindir, libdir, archdir].uniq.each do |dir|
   File.directory?(dir) or mkdir_p(dir)
 end
