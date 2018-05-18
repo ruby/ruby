@@ -205,7 +205,7 @@ class << Readline
   def readline(prompt = '')
     console = IO.console
     console.binmode
-    ly, lx = console.winsize
+    _, lx = console.winsize
     if /mswin|mingw/ =~ RUBY_PLATFORM or /^(?:vt\d\d\d|xterm)/i =~ ENV["TERM"]
       cls = "\r\e[2K"
     else
@@ -329,7 +329,7 @@ def status_char(obj)
 end
 
 console = IO.console
-row, col = console.winsize
+row, = console.winsize
 @query['limit'] = row - 2
 puts "Backporter #{VERSION}".color(bold: true) + " for #{TARGET_VERSION}"
 
