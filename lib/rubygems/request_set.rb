@@ -171,7 +171,9 @@ class Gem::RequestSet
         rescue Gem::RuntimeRequirementNotMetError => e
           recent_match = req.spec.set.find_all(req.request).sort_by(&:version).reverse_each.find do |s|
             s = s.spec
-            s.required_ruby_version.satisfied_by?(Gem.ruby_version) && s.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+            s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+              s.required_rubygems_version.satisfied_by?(Gem.rubygems_version) &&
+              Gem::Platform.installable?(s)
           end
           if recent_match
             suggestion = "The last version of #{req.request} to support your Ruby & RubyGems was #{recent_match.version}. Try installing it with `gem install #{recent_match.name} -v #{recent_match.version}`"

@@ -387,7 +387,7 @@ class TestGem < Gem::TestCase
     assert_equal %w[https://rubygems.org/], Gem.default_sources
   end
 
-  def test_self_detect_gemdeps
+  def test_self_use_gemdeps
     skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
@@ -399,7 +399,7 @@ class TestGem < Gem::TestCase
     begin
       Dir.chdir 'detect/a/b'
 
-      assert_equal add_bundler_full_name([]), Gem.detect_gemdeps.map(&:full_name)
+      assert_equal add_bundler_full_name([]), Gem.use_gemdeps.map(&:full_name)
     ensure
       Dir.chdir @tempdir
     end
@@ -1214,7 +1214,7 @@ class TestGem < Gem::TestCase
     input = "\x1F\x8B\b\0\xED\xA3\x1AQ\0\x03\xCBH" +
             "\xCD\xC9\xC9\a\0\x86\xA6\x106\x05\0\0\0"
 
-    output = Gem.gunzip input
+    output = Gem::Util.gunzip input
 
     assert_equal 'hello', output
 
@@ -1226,7 +1226,7 @@ class TestGem < Gem::TestCase
   def test_self_gzip
     input = 'hello'
 
-    output = Gem.gzip input
+    output = Gem::Util.gzip input
 
     zipped = StringIO.new output
 
@@ -1450,12 +1450,12 @@ class TestGem < Gem::TestCase
 
     ENV['RUBYGEMS_GEMDEPS'] = path
 
-    Gem.detect_gemdeps
+    Gem.use_gemdeps
 
     assert_equal add_bundler_full_name(%W(a-1 b-1 c-1)), loaded_spec_names
   end
 
-  def test_auto_activation_of_detected_gemdeps_file
+  def test_auto_activation_of_used_gemdeps_file
     skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     util_clear_gems
 
@@ -1476,7 +1476,7 @@ class TestGem < Gem::TestCase
     ENV['RUBYGEMS_GEMDEPS'] = "-"
 
     expected_specs = [a, b, (Gem::USE_BUNDLER_FOR_GEMDEPS || nil) && util_spec("bundler", Bundler::VERSION), c].compact
-    assert_equal expected_specs, Gem.detect_gemdeps.sort_by { |s| s.name }
+    assert_equal expected_specs, Gem.use_gemdeps.sort_by { |s| s.name }
   end
 
   LIB_PATH = File.expand_path "../../../lib".dup.untaint, __FILE__.dup.untaint

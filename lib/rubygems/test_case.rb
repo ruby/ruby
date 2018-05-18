@@ -88,6 +88,8 @@ end
 
 class Gem::TestCase < MiniTest::Unit::TestCase
 
+  extend Gem::Deprecate
+
   attr_accessor :fetcher # :nodoc:
 
   attr_accessor :gem_repo # :nodoc:
@@ -672,11 +674,13 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   end
 
   ##
-  # TODO:  remove in RubyGems 3.0
+  # TODO:  remove in RubyGems 4.0
 
   def quick_spec name, version = '2' # :nodoc:
     util_spec name, version
   end
+  deprecate :quick_spec, :util_spec, 2018, 12
+
 
   ##
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,
@@ -774,7 +778,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   ##
   # new_spec is deprecated as it is never used.
   #
-  # TODO:  remove in RubyGems 3.0
+  # TODO:  remove in RubyGems 4.0
 
   def new_spec name, version, deps = nil, *files # :nodoc:
     require 'rubygems/specification'
@@ -815,6 +819,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     spec
   end
+  # TODO: mark deprecate after replacing util_spec from new_spec
+  # deprecate :new_spec, :none, 2018, 12
 
   def new_default_spec(name, version, deps = nil, *files)
     spec = util_spec name, version, deps

@@ -2,6 +2,7 @@
 ##
 # The Dependency class holds a Gem name and a Gem::Requirement.
 
+require "rubygems/bundler_version_finder"
 require "rubygems/requirement"
 
 class Gem::Dependency

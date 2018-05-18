@@ -183,7 +183,7 @@ command help for an example.
         when 'metadata' then
           metadata = entry.read
         when 'metadata.gz' then
-          metadata = Gem.gunzip entry.read
+          metadata = Gem::Util.gunzip entry.read
         end
       end
     end

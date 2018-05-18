@@ -4,6 +4,8 @@
 # Each exception needs a brief description and the scenarios where it is
 # likely to be raised
 
+require 'rubygems/deprecate'
+
 ##
 # Base exception class for RubyGems.  All exception raised by RubyGems are a
 # subclass of this one.
@@ -11,10 +13,12 @@ class Gem::Exception < RuntimeError
 
   ##
   #--
-  # TODO: remove in RubyGems 3, nobody sets this
+  # TODO: remove in RubyGems 4, nobody sets this
 
   attr_accessor :source_exception # :nodoc:
 
+  extend Gem::Deprecate
+  deprecate :source_exception, :none, 2018, 12
 end
 
 class Gem::CommandLineError < Gem::Exception; end

@@ -113,7 +113,7 @@ class Gem::DependencyInstaller
 
   ##
   #--
-  # TODO remove, no longer used
+  # TODO remove at RubyGems 4, no longer used
 
   def add_found_dependencies to_do, dependency_list # :nodoc:
     seen = {}
@@ -163,6 +163,7 @@ class Gem::DependencyInstaller
 
     dependency_list.remove_specs_unsatisfied_by dependencies
   end
+  deprecate :add_found_dependencies, :none, 2018, 12
 
   ##
   # Creates an AvailableSet to install from based on +dep_or_name+ and
@@ -321,7 +322,7 @@ class Gem::DependencyInstaller
   # Gathers all dependencies necessary for the installation from local and
   # remote sources unless the ignore_dependencies was given.
   #--
-  # TODO remove at RubyGems 3
+  # TODO remove at RubyGems 4
 
   def gather_dependencies # :nodoc:
     specs = @available.all_specs
@@ -354,6 +355,7 @@ class Gem::DependencyInstaller
 
     @gems_to_install = dependency_list.dependency_order.reverse
   end
+  deprecate :gather_dependencies, :none, 2018, 12
 
   def in_background what # :nodoc:
     fork_happened = false

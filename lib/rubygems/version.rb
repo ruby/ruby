@@ -170,6 +170,7 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct? version
+    return false if version.nil?
     !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
   end
 

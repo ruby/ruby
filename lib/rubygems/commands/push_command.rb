@@ -13,7 +13,7 @@ class Gem::Commands::PushCommand < Gem::Command
 The push command uploads a gem to the push server (the default is
 https://rubygems.org) and adds it to the index.
 
-The gem can be removed from the index (but only the index) using the yank
+The gem can be removed from the index and deleted from the server using the yank
 command.  For further discussion see the help for the yank command.
     EOF
   end

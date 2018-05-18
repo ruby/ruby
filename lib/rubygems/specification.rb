@@ -40,6 +40,8 @@ require 'uri'
 
 class Gem::Specification < Gem::BasicSpecification
 
+  extend Gem::Deprecate
+
   # REFACTOR: Consider breaking out this version stuff into a separate
   # module. There's enough special stuff around it that it may justify
   # a separate class.
@@ -715,6 +717,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Deprecated: You must now specify the executable name to  Gem.bin_path.
 
   attr_writer :default_executable
+  deprecate :default_executable=, :none,       2018, 12
 
   ##
   # Allows deinstallation of gems with legacy platforms.
@@ -1810,6 +1813,7 @@ class Gem::Specification < Gem::BasicSpecification
     end
     result
   end
+  deprecate :default_executable,  :none,       2018, 12
 
   ##
   # The default value for specification attribute +name+
@@ -2018,6 +2022,7 @@ class Gem::Specification < Gem::BasicSpecification
   def has_rdoc # :nodoc:
     true
   end
+  deprecate :has_rdoc,            :none,       2018, 12
 
   ##
   # Deprecated and ignored.
@@ -2027,8 +2032,10 @@ class Gem::Specification < Gem::BasicSpecification
   def has_rdoc= ignored # :nodoc:
     @has_rdoc = true
   end
+  deprecate :has_rdoc=,           :none,       2018, 12
 
   alias :has_rdoc? :has_rdoc # :nodoc:
+  deprecate :has_rdoc?,           :none,       2018, 12
 
   ##
   # True if this gem has files in test_files
@@ -3074,16 +3081,6 @@ open-ended dependency on #{dep} is not recommended
     @require_paths
   end
 
-  extend Gem::Deprecate
-
-  # TODO:
-  # deprecate :has_rdoc,            :none,       2011, 10
-  # deprecate :has_rdoc?,           :none,       2011, 10
-  # deprecate :has_rdoc=,           :none,       2011, 10
-  # deprecate :default_executable,  :none,       2011, 10
-  # deprecate :default_executable=, :none,       2011, 10
-  # deprecate :file_name,           :cache_file, 2011, 10
-  # deprecate :full_gem_path,     :cache_file, 2011, 10
 end
 
 # DOC: What is this and why is it here, randomly, at the end of this file?
