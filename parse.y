@@ -9823,6 +9823,10 @@ cond0(struct parser_params *p, NODE *node, int method_op, const YYLTYPE *loc)
 		warn_unless_e_option(p, node, "regex literal in condition");
 	    nd_set_type(node, NODE_MATCH);
 	}
+	else if (node->nd_lit == Qtrue ||
+		 node->nd_lit == Qfalse) {
+	    /* booleans are OK, e.g., while true */
+	}
 	else {
 	    if (!method_op)
 		parser_warning(p, node, "literal in condition");
