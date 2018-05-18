@@ -3783,27 +3783,37 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #define rb_fd_no_init(fds) (void)(fds)
 #endif
 
-static inline int
-retryable(int e)
+static int
+wait_retryable(int *result, int errnum, struct timespec *timeout,
+                const struct timespec *end)
 {
-    if (e == EINTR) return TRUE;
+    if (*result < 0) {
+        switch (errnum) {
+          case EINTR:
 #ifdef ERESTART
-    if (e == ERESTART) return TRUE;
+          case ERESTART:
 #endif
+            *result = 0;
+            if (timeout && timespec_update_expire(timeout, end)) {
+                timeout->tv_sec = 0;
+                timeout->tv_nsec = 0;
+            }
+            return TRUE;
+        }
+        return FALSE;
+    }
+    else if (*result == 0) {
+	/* check for spurious wakeup */
+        if (timeout) {
+            return !timespec_update_expire(timeout, end);
+        }
+        return TRUE;
+    }
     return FALSE;
 }
 
 #define restore_fdset(fds1, fds2) \
     ((fds1) ? rb_fd_dup(fds1, fds2) : (void)0)
-
-static inline int
-update_timespec(struct timespec *timeout, const struct timespec *end)
-{
-    if (timeout) {
-        return !timespec_update_expire(timeout, end);
-    }
-    return TRUE;
-}
 
 static int
 do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
@@ -3827,7 +3837,7 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     (restore_fdset(readfds, &orig_read), \
      restore_fdset(writefds, &orig_write), \
      restore_fdset(exceptfds, &orig_except), \
-     update_timespec(tsp, &end))
+     TRUE)
 
     if (timeout) {
         getclockofday(&end);
@@ -3852,13 +3862,16 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
 	}, ubf_select, th, FALSE);
 
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    } while (result < 0 && retryable(errno = lerrno) && do_select_update());
+    } while (wait_retryable(&result, lerrno, tsp, &end) && do_select_update());
 
 #define fd_term(f) if (f##fds) rb_fd_term(&orig_##f)
     fd_term(read);
     fd_term(write);
     fd_term(except);
 #undef fd_term
+    if (result < 0) {
+	errno = lerrno;
+    }
 
     return result;
 }
@@ -3992,9 +4005,11 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         }, ubf_select, th, FALSE);
 
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    } while (result < 0 && retryable(errno = lerrno) &&
-            update_timespec(tsp, &end));
-    if (result < 0) return -1;
+    } while (wait_retryable(&result, lerrno, tsp, &end));
+    if (result < 0) {
+	errno = lerrno;
+	return -1;
+    }
 
     if (fds.revents & POLLNVAL) {
 	errno = EBADF;
