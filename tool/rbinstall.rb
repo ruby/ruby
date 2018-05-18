@@ -590,7 +590,7 @@ install?(:local, :comm, :man) do
           STDIN.reopen(f)
           begin
             destfile << suffix
-            IO.popen(compress) {|f| f.read}
+            IO.popen(compress, &:read)
           ensure
             STDIN.reopen(stdin)
             stdin.close
