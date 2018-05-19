@@ -300,7 +300,6 @@ pathobj_realpath(VALUE pathobj)
 
 /* Forward declarations */
 struct rb_mjit_unit;
-struct rb_execution_context_struct;
 
 struct rb_iseq_constant_body {
     enum iseq_type {
