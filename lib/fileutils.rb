@@ -1145,12 +1145,11 @@ module FileUtils
   module StreamUtils_
     private
 
-    def fu_windows?
-      if defined?(RbConfig)
-        /mswin|mingw|bccwin|emx/ =~ RbConfig::CONFIG['host_os']
-      else
-        /mswin|mingw|bccwin|emx/ =~ RUBY_PLATFORM
-      end
+    case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
+    when /mswin|mingw/
+      def fu_windows?; true end
+    else
+      def fu_windows?; false end
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
