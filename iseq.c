@@ -1503,13 +1503,19 @@ get_insn_info_succinct_bitvector(const rb_iseq_t *iseq, size_t pos)
     const struct rb_iseq_constant_body *const body = iseq->body;
     size_t size = body->insns_info.size;
     const struct iseq_insn_info_entry *insns_info = body->insns_info.body;
-    const unsigned int *positions = body->insns_info.positions;
     const int debug = 0;
 
     if (debug) {
-	printf("size: %"PRIuSIZE"\n", size);
-	printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
-	       (size_t)0, positions[0], insns_info[0].line_no, pos);
+#if VM_CHECK_MODE > 0
+        const unsigned int *positions = body->insns_info.positions;
+        printf("size: %"PRIuSIZE"\n", size);
+        printf("insns_info[%"PRIuSIZE"]: position: %d, line: %d, pos: %"PRIuSIZE"\n",
+               (size_t)0, positions[0], insns_info[0].line_no, pos);
+#else
+        printf("size: %"PRIuSIZE"\n", size);
+        printf("insns_info[%"PRIuSIZE"]: line: %d, pos: %"PRIuSIZE"\n",
+               (size_t)0, insns_info[0].line_no, pos);
+#endif
     }
 
     if (size == 0) {
