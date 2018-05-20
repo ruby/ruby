@@ -505,6 +505,11 @@ PRELUDE_C = $(srcdir)/prelude.c
 !else
 PRELUDE_C = prelude.c
 !endif
+!if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
+GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
+!else
+GOLF_PRELUDE_C = golf_prelude.c
+!endif
 RBCONFIG      = ./.rbconfig.time
 
 !include $(srcdir)/common.mk
