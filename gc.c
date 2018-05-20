@@ -3797,7 +3797,7 @@ gc_sweep(rb_objspace_t *objspace)
 #endif
     }
     else {
-	struct heap_page *page;
+	struct heap_page *page = NULL;
 	gc_sweep_start(objspace);
 
         list_for_each(&heap_eden->pages, page, page_node) {
