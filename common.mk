@@ -299,6 +299,7 @@ golf: $(LIBRUBY) $(GOLFOBJS) PHONY
 		MAINOBJ=goruby.$(OBJEXT) \
 		EXTOBJS="golf_prelude.$(OBJEXT) $(EXTOBJS)" \
 		PROGRAM=$(GORUBY)$(EXEEXT) \
+		V=$(V) \
 	program
 capi: $(CAPIOUT)/.timestamp PHONY
 
