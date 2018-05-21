@@ -50,6 +50,11 @@ class Object
     puts "#{a}ello, #{b}orld#{c}"
   end
 
+  def f(m = 100)
+    1.upto(m){|n|puts'FizzBuzz
+'[i=n**4%-15,i+13]||n}
+  end
+
   alias say puts
 
   def do_while
