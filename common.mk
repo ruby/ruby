@@ -1414,6 +1414,7 @@ help: PHONY
 	"  distclean:           clean for repository" \
 	"  change:              make change log template" \
 	"  golf:                for golfers" \
+	"  goruby:              same as golf" \
 	"" \
 	"see DeveloperHowto for more detail: " \
 	"  https://bugs.ruby-lang.org/projects/ruby/wiki/DeveloperHowto" \
