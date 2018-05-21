@@ -230,7 +230,7 @@ ary_resize_capa(VALUE ary, long capacity)
             MEMCPY((VALUE *)RARRAY(ary)->as.ary, ptr, VALUE, len);
             FL_SET_EMBED(ary);
             ARY_SET_LEN(ary, len);
-	    ruby_xfree((VALUE *)ptr);
+            ruby_sized_xfree((VALUE *)ptr, RARRAY(ary)->as.heap.aux.capa);
         }
     }
 }
@@ -243,7 +243,7 @@ ary_shrink_capa(VALUE ary)
     assert(!ARY_SHARED_P(ary));
     assert(old_capa >= capacity);
     if (old_capa > capacity)
-	REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity);
+        SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, old_capa);
 }
 
 static void
