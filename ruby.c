@@ -470,12 +470,57 @@ ruby_init_loadpath(void)
     ruby_init_loadpath_safe(0);
 }
 
-#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR) && !defined(__CYGWIN__)
+#if defined(LOAD_RELATIVE)
 static VALUE
-dladdr_path(const void* addr)
+runtime_libruby_path(void)
 {
+#if defined _WIN32 || defined __CYGWIN__
+    DWORD len = RSTRING_EMBED_LEN_MAX, ret;
+    VALUE path;
+    VALUE wsopath = rb_str_new(0, len*sizeof(WCHAR));
+    WCHAR *wlibpath;
+    char *libpath;
+
+    while (wlibpath = (WCHAR *)RSTRING_PTR(wsopath),
+	   ret = GetModuleFileNameW(libruby, wlibpath, len),
+	   (ret == len))
+    {
+	rb_str_modify_expand(wsopath, len*sizeof(WCHAR));
+	rb_str_set_len(wsopath, (len += len)*sizeof(WCHAR));
+    }
+    if (!ret || ret > len) rb_fatal("failed to get module file name");
+#if defined __CYGWIN__
+    {
+	const int win_to_posix = CCP_WIN_W_TO_POSIX | CCP_RELATIVE;
+	size_t newsize = cygwin_conv_path(win_to_posix, wlibpath, 0, 0);
+	if (!newsize) rb_fatal("failed to convert module path to cygwin");
+	path = rb_str_new(0, newsize);
+	libpath = RSTRING_PTR(path);
+	if (cygwin_conv_path(win_to_posix, wlibpath, libpath, newsize)) {
+	    rb_str_resize(path, 0);
+	}
+    }
+#else
+    {
+	DWORD i;
+	for (len = ret, i = 0; i < len; ++i) {
+	    if (wlibpath[i] == L'\\') {
+		wlibpath[i] = L'/';
+		ret = i+1;	/* chop after the last separator */
+	    }
+	}
+    }
+    len = WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, NULL, 0, NULL, NULL);
+    path = rb_utf8_str_new(0, len);
+    libpath = RSTRING_PTR(path);
+    WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, libpath, len, NULL, NULL);
+#endif
+    rb_str_resize(wsopath, 0);
+    return path;
+#elif defined(HAVE_DLADDR)
     Dl_info dli;
     VALUE fname, path;
+    const void* addr = (void *)(VALUE)expand_include_path;
 
     if (!dladdr(addr, &dli)) {
 	return rb_str_new(0, 0);
@@ -492,6 +537,9 @@ dladdr_path(const void* addr)
     }
     rb_str_resize(fname, 0);
     return path;
+#else
+# error relative load path is not supported on this platform.
+#endif
 }
 #endif
 
@@ -527,55 +575,9 @@ ruby_init_loadpath_safe(int safe_level)
     size_t baselen;
     const char *p;
 
-#if defined _WIN32 || defined __CYGWIN__
-    {
-	DWORD len = RSTRING_EMBED_LEN_MAX, ret, i;
-	VALUE wsopath = rb_str_new(0, len*sizeof(WCHAR));
-	WCHAR *wlibpath;
-	while (wlibpath = (WCHAR *)RSTRING_PTR(wsopath),
-	       ret = GetModuleFileNameW(libruby, wlibpath, len),
-	       (ret == len))
-	{
-	    rb_str_modify_expand(wsopath, len*sizeof(WCHAR));
-	    rb_str_set_len(wsopath, (len += len)*sizeof(WCHAR));
-	}
-	if (!ret || ret > len) rb_fatal("failed to get module file name");
-	for (len = ret, i = 0; i < len; ++i) {
-	    if (wlibpath[i] == L'\\') {
-		wlibpath[i] = L'/';
-		ret = i+1;	/* chop after the last separator */
-	    }
-	}
-	len = WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, NULL, 0, NULL, NULL);
-	sopath = rb_utf8_str_new(0, len);
-	libpath = RSTRING_PTR(sopath);
-	WideCharToMultiByte(CP_UTF8, 0, wlibpath, ret, libpath, len, NULL, NULL);
-	rb_str_resize(wsopath, 0);
-    }
-#elif defined(HAVE_DLADDR)
-    sopath = dladdr_path((void *)(VALUE)expand_include_path);
+    sopath = runtime_libruby_path();
     libpath = RSTRING_PTR(sopath);
-#else
-# error relative load path is not supported on this platform.
-#endif
 
-#if defined DOSISH && !defined _WIN32
-    translit_char(libpath, '\\', '/');
-#elif defined __CYGWIN__
-    {
-	const int win_to_posix = CCP_WIN_A_TO_POSIX | CCP_RELATIVE;
-	size_t newsize = cygwin_conv_path(win_to_posix, libpath, 0, 0);
-	if (newsize > 0) {
-	    VALUE rubylib = rb_str_new(0, newsize);
-	    char *p2 = RSTRING_PTR(rubylib);
-	    if (cygwin_conv_path(win_to_posix, libpath, p2, newsize) == 0) {
-		rb_str_resize(sopath, 0);
-		sopath = rubylib;
-		libpath = p2;
-	    }
-	}
-    }
-#endif
     p = strrchr(libpath, '/');
     if (p) {
 	static const char bindir[] = "/bin";
