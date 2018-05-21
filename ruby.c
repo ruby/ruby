@@ -561,15 +561,6 @@ ruby_init_loadpath_safe(int safe_level)
 #else
 # define RUBY_ARCH_PATH "/"RUBY_PLATFORM
 #endif
-    static const char libdir[] = "/"
-#ifdef LIBDIR_BASENAME
-	LIBDIR_BASENAME
-#else
-	"lib"
-#endif
-	RUBY_ARCH_PATH;
-    const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir)
-	- rb_strlen_lit(RUBY_ARCH_PATH) - 1;
     char *libpath;
     VALUE sopath;
     size_t baselen;
@@ -580,6 +571,15 @@ ruby_init_loadpath_safe(int safe_level)
 
     p = strrchr(libpath, '/');
     if (p) {
+	static const char libdir[] = "/"
+#ifdef LIBDIR_BASENAME
+	    LIBDIR_BASENAME
+#else
+	    "lib"
+#endif
+	    RUBY_ARCH_PATH;
+	const ptrdiff_t libdir_len = (ptrdiff_t)sizeof(libdir)
+	    - rb_strlen_lit(RUBY_ARCH_PATH) - 1;
 	static const char bindir[] = "/bin";
 	const ptrdiff_t bindir_len = (ptrdiff_t)sizeof(bindir) - 1;
 
