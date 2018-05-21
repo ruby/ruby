@@ -294,8 +294,11 @@ miniruby$(EXEEXT): config.status $(ALLOBJS) $(ARCHFILE)
 objs: $(ALLOBJS)
 
 GORUBY = go$(RUBY_INSTALL_NAME)
-golf: $(LIBRUBY) $(GOLFOBJS) PHONY
+GOLF = $(GORUBY)
+golf: $(GOLF)
+$(GOLF): $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(Q) $(MAKE) $(mflags) \
+		GOLF=golf2 \
 		MAINOBJ=goruby.$(OBJEXT) \
 		EXTOBJS="golf_prelude.$(OBJEXT) $(EXTOBJS)" \
 		PROGRAM=$(GORUBY)$(EXEEXT) \
