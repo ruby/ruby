@@ -258,7 +258,7 @@ loaded_features_index_clear_i(st_data_t key, st_data_t val, st_data_t arg)
     VALUE obj = (VALUE)val;
     if (!SPECIAL_CONST_P(obj)) {
 	rb_ary_free(obj);
-	xfree((void *)obj);
+	ruby_sized_xfree((void *)obj, sizeof(struct RArray));
     }
     return ST_DELETE;
 }
