@@ -4737,7 +4737,7 @@ vtable_alloc_gen(struct parser_params *p, int line, struct vtable *prev)
     tbl->prev = prev;
 #ifndef RIPPER
     if (p->debug) {
-	rb_parser_printf(p, "vtable_alloc:%d: %p\n", line, tbl);
+	rb_parser_printf(p, "vtable_alloc:%d: %p\n", line, (void *)tbl);
     }
 #endif
     return tbl;
@@ -4750,7 +4750,7 @@ vtable_free_gen(struct parser_params *p, int line, const char *name,
 {
 #ifndef RIPPER
     if (p->debug) {
-	rb_parser_printf(p, "vtable_free:%d: %s(%p)\n", line, name, tbl);
+	rb_parser_printf(p, "vtable_free:%d: %s(%p)\n", line, name, (void *)tbl);
     }
 #endif
     if (!DVARS_TERMINAL_P(tbl)) {
@@ -4769,7 +4769,7 @@ vtable_add_gen(struct parser_params *p, int line, const char *name,
 #ifndef RIPPER
     if (p->debug) {
 	rb_parser_printf(p, "vtable_add:%d: %s(%p), %s\n",
-			 line, name, tbl, rb_id2name(id));
+			 line, name, (void *)tbl, rb_id2name(id));
     }
 #endif
     if (DVARS_TERMINAL_P(tbl)) {
@@ -4791,7 +4791,7 @@ vtable_pop_gen(struct parser_params *p, int line, const char *name,
 {
     if (p->debug) {
 	rb_parser_printf(p, "vtable_pop:%d: %s(%p), %d\n",
-			 line, name, tbl, n);
+			 line, name, (void *)tbl, n);
     }
     if (tbl->pos < n) {
 	rb_parser_fatal(p, "vtable_pop: unreachable (%d < %d)", tbl->pos, n);
