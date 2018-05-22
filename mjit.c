@@ -771,6 +771,15 @@ print_jit_result(const char *result, const struct rb_mjit_unit *unit, const doub
             RSTRING_PTR(rb_iseq_path(unit->iseq)), FIX2INT(unit->iseq->body->location.first_lineno), c_file);
 }
 
+static void
+remove_file(const char *filename)
+{
+    if (remove(filename) && (mjit_opts.warnings || mjit_opts.verbose)) {
+        fprintf(stderr, "MJIT warning: failed to remove \"%s\": %s\n",
+                filename, strerror(errno));
+    }
+}
+
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
@@ -869,7 +878,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     fclose(f);
     if (!success) {
         if (!mjit_opts.save_temps)
-            remove(c_file);
+            remove_file(c_file);
         print_jit_result("failure", unit, 0, c_file);
         return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
     }
@@ -879,7 +888,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     end_time = real_ms_time();
 
     if (!mjit_opts.save_temps)
-        remove(c_file);
+        remove_file(c_file);
     if (!success) {
         verbose(2, "Failed to generate so: %s", so_file);
         return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
@@ -890,7 +899,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #ifdef _WIN32
         unit->so_file = strdup(so_file);
 #else
-        remove(so_file);
+        remove_file(so_file);
 #endif
     }
 
@@ -1466,7 +1475,7 @@ mjit_finish(void)
 
     /* cleanup temps */
     if (!mjit_opts.save_temps)
-        remove(pch_file);
+        remove_file(pch_file);
 
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
