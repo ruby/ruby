@@ -109,10 +109,16 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_classvariable
-    assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[getclassvariable setclassvariable])
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 1, insns: %i[getclassvariable setclassvariable])
     begin;
-      @@foo = 1
-      @@foo
+      class Foo
+        def self.foo
+          @@foo = 1
+          @@foo
+        end
+      end
+
+      print Foo.foo
     end;
   end
 
@@ -675,7 +681,7 @@ class TestJIT < Test::Unit::TestCase
     else
       script = " #{script} "
     end
-    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: 4)
+    assert_eval_with_jit("p proc {#{script}}.call", stdout: "#{result_inspect}\n", success_count: 1, insns: insns, uplevel: 2)
   end
 
   # Shorthand for normal test cases
@@ -714,6 +720,10 @@ class TestJIT < Test::Unit::TestCase
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
+    err_lines = err.lines.reject! { |l| l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || l == "Successful MJIT finish\n" }
+    unless err_lines.empty?
+      warn err_lines.join(''), uplevel: uplevel
+    end
   end
 
   # Collect block's insns or defined method's insns, which are expected to be JIT-ed.
@@ -724,6 +734,8 @@ class TestJIT < Test::Unit::TestCase
       case insn
       when :putiseq, :send
         insns += collect_insns(args.last)
+      when :defineclass
+        insns += collect_insns(args[1])
       end
     end
     insns.uniq
