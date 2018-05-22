@@ -298,7 +298,7 @@ GOLF = $(GORUBY)
 golf: $(GOLF)
 $(GOLF): $(LIBRUBY) $(GOLFOBJS) PHONY
 	$(Q) $(MAKE) $(mflags) \
-		GOLF=golf2 \
+		GOLF=_dummy_golf_target_to_avoid_conflict_just_in_case_ \
 		MAINOBJ=goruby.$(OBJEXT) \
 		EXTOBJS="golf_prelude.$(OBJEXT) $(EXTOBJS)" \
 		PROGRAM=$(GORUBY)$(EXEEXT) \
