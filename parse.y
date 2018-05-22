@@ -4577,7 +4577,7 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
 
     /* indentation check of matched keywords (begin..end, if..end, etc.) */
     token_info_warn(p, token, ptinfo_beg, 1, loc);
-    xfree(ptinfo_beg);
+    ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
 static void
@@ -4755,9 +4755,9 @@ vtable_free_gen(struct parser_params *p, int line, const char *name,
 #endif
     if (!DVARS_TERMINAL_P(tbl)) {
 	if (tbl->tbl) {
-	    xfree(tbl->tbl);
+	    ruby_sized_xfree(tbl->tbl, tbl->capa * sizeof(ID));
 	}
-	xfree(tbl);
+	ruby_sized_xfree(tbl, sizeof(tbl));
     }
 }
 #define vtable_free(tbl) vtable_free_gen(p, __LINE__, #tbl, tbl)
@@ -4778,7 +4778,7 @@ vtable_add_gen(struct parser_params *p, int line, const char *name,
     }
     if (tbl->pos == tbl->capa) {
 	tbl->capa = tbl->capa * 2;
-	REALLOC_N(tbl->tbl, ID, tbl->capa);
+	SIZED_REALLOC_N(tbl->tbl, ID, tbl->capa, tbl->pos);
     }
     tbl->tbl[tbl->pos++] = id;
 }
@@ -10340,7 +10340,7 @@ local_pop(struct parser_params *p)
     vtable_free(p->lvtbl->vars);
     CMDARG_POP();
     COND_POP();
-    xfree(p->lvtbl);
+    ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
     p->lvtbl = local;
 }
 
@@ -10469,7 +10469,7 @@ dyna_pop(struct parser_params *p, const struct vtable *lvargs)
 	dyna_pop_1(p);
 	if (!p->lvtbl->args) {
 	    struct local_vars *local = p->lvtbl->prev;
-	    xfree(p->lvtbl);
+	    ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
 	    p->lvtbl = local;
 	}
     }
@@ -10817,7 +10817,7 @@ parser_free(void *ptr)
     struct local_vars *local, *prev;
 
     if (p->tokenbuf) {
-        xfree(p->tokenbuf);
+        ruby_sized_xfree(p->tokenbuf, p->toksiz);
     }
     for (local = p->lvtbl; local; local = prev) {
 	if (local->vars) xfree(local->vars);
