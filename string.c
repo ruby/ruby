@@ -7035,7 +7035,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		if (enc != e1) may_modify = 1;
 	    }
 	    if ((offset = t - buf) + tlen > max) {
-		size_t old = max + termlen;
+		size_t MAYBE_UNUSED(old) = max + termlen;
 		max = offset + tlen + (send - s);
 		SIZED_REALLOC_N(buf, char, max + termlen, old);
 		t = buf + offset;
@@ -7108,7 +7108,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		if (enc != e1) may_modify = 1;
 	    }
 	    if ((offset = t - buf) + tlen > max) {
-		size_t old = max + termlen;
+		size_t MAYBE_UNUSED(old) = max + termlen;
 		max = offset + tlen + (long)((send - s) * 1.2);
 		SIZED_REALLOC_N(buf, char, max + termlen, old);
 		t = buf + offset;
