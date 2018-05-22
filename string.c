@@ -147,7 +147,8 @@ VALUE rb_cSymbol;
     }\
     else {\
 	assert(!FL_TEST((str), STR_SHARED)); \
-	REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)(capacity) + (termlen));\
+	SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, \
+			(size_t)(capacity) + (termlen), STR_HEAP_SIZE(str)); \
 	RSTRING(str)->as.heap.aux.capa = (capacity);\
     }\
 } while (0)
@@ -1586,7 +1587,8 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
 		RSTRING(str)->as.heap.ptr = ALLOC_N(char, (size_t)capa + termlen);
 	    }
 	    else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
-		REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)capa + termlen);
+		SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
+			(size_t)capa + termlen, STR_HEAP_SIZE(str));
 	    }
 	    RSTRING(str)->as.heap.len = len;
 	    TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
@@ -2710,7 +2712,8 @@ rb_str_resize(VALUE str, long len)
 	}
 	else if ((capa = RSTRING(str)->as.heap.aux.capa) < len ||
 		 (capa - len) > (len < 1024 ? len : 1024)) {
-	    REALLOC_N(RSTRING(str)->as.heap.ptr, char, (size_t)len + termlen);
+	    SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
+	                    (size_t)len + termlen, STR_HEAP_SIZE(str));
 	    RSTRING(str)->as.heap.aux.capa = len;
 	}
 	else if (len == slen) return str;
@@ -6482,7 +6485,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	    while (current_buffer) {
 		previous_buffer = current_buffer;
 		current_buffer  = current_buffer->next;
-		xfree(previous_buffer);
+		ruby_sized_xfree(previous_buffer, previous_buffer->capa);
 	    }
 	    rb_raise(rb_eArgError, "input string invalid");
 	}
@@ -6494,7 +6497,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 
     if (buffer_count==1) {
 	target = rb_str_new_with_class(source, (const char*)current_buffer->space, target_length);
-	xfree(current_buffer);
+	ruby_sized_xfree(current_buffer, current_buffer->capa);
     }
     else {
 	char *target_current;
@@ -6508,7 +6511,7 @@ rb_str_casemap(VALUE source, OnigCaseFoldType *flags, rb_encoding *enc)
 	    target_current += current_buffer->used;
 	    previous_buffer = current_buffer;
 	    current_buffer  = current_buffer->next;
-	    xfree(previous_buffer);
+	    ruby_sized_xfree(previous_buffer, previous_buffer->capa);
 	}
     }
 
@@ -7032,8 +7035,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		if (enc != e1) may_modify = 1;
 	    }
 	    if ((offset = t - buf) + tlen > max) {
+		size_t old = max + termlen;
 		max = offset + tlen + (send - s);
-		REALLOC_N(buf, char, max + termlen);
+		SIZED_REALLOC_N(buf, char, max + termlen, old);
 		t = buf + offset;
 	    }
 	    rb_enc_mbcput(c, t, enc);
@@ -7104,8 +7108,9 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 		if (enc != e1) may_modify = 1;
 	    }
 	    if ((offset = t - buf) + tlen > max) {
+		size_t old = max + termlen;
 		max = offset + tlen + (long)((send - s) * 1.2);
-		REALLOC_N(buf, char, max + termlen);
+		SIZED_REALLOC_N(buf, char, max + termlen, old);
 		t = buf + offset;
 	    }
 	    if (s != t) {
