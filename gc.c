@@ -2978,7 +2978,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		if (RTYPEDDATA_P(p)) {
 		    RDATA(p)->dfree = RANY(p)->as.typeddata.type->function.dfree;
 		}
-		if (RANY(p)->as.data.dfree == (RUBY_DATA_FUNC)-1) {
+		if (RANY(p)->as.data.dfree == RUBY_DEFAULT_FREE) {
 		    xfree(DATA_PTR(p));
 		}
 		else if (RANY(p)->as.data.dfree) {
