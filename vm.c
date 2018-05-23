@@ -634,28 +634,25 @@ check_env_value(const rb_env_t *env)
     return Qnil;		/* unreachable */
 }
 
-static void
-vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler, VALUE *procvalptr)
+static VALUE
+vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
 {
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
-	*procvalptr = rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
-	return;
+        return  rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 
       case block_handler_type_symbol:
       case block_handler_type_proc:
-	*procvalptr = block_handler;
-	return;
+        return block_handler;
     }
     VM_UNREACHABLE(vm_block_handler_escape);
-    return;
+    return Qnil;
 }
 
 static VALUE
 vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
 {
-    VALUE blockprocval = Qfalse;
     const VALUE * const ep = cfp->ep;
     const rb_env_t *env;
     const rb_iseq_t *env_iseq;
@@ -685,7 +682,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 	VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
 	if (block_handler != VM_BLOCK_HANDLER_NONE) {
-	    vm_block_handler_escape(ec, block_handler, &blockprocval);
+            VALUE blockprocval = vm_block_handler_escape(ec, block_handler);
 	    VM_STACK_ENV_WRITE(ep, VM_ENV_DATA_INDEX_SPECVAL, blockprocval);
 	}
     }
@@ -710,8 +707,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
      */
 
     env_size = local_size +
-	       1 /* envval */ +
-	       (blockprocval ? 1 : 0) /* blockprocval */;
+	       1 /* envval */;
     env_body = ALLOC_N(VALUE, env_size);
     MEMCPY(env_body, ep - (local_size - 1 /* specval */), VALUE, local_size);
 
@@ -729,7 +725,6 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     env = vm_env_new(env_ep, env_body, env_size, env_iseq);
 
-    if (blockprocval) RB_OBJ_WRITE(env, &env_ep[2], blockprocval);
     cfp->ep = env_ep;
     VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
     VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */

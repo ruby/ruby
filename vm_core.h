@@ -1084,7 +1084,6 @@ enum {
 #define VM_ENV_DATA_INDEX_SPECVAL    (-1) /* ep[-1] */
 #define VM_ENV_DATA_INDEX_FLAGS      ( 0) /* ep[ 0] */
 #define VM_ENV_DATA_INDEX_ENV        ( 1) /* ep[ 1] */
-#define VM_ENV_DATA_INDEX_ENV_PROC   ( 2) /* ep[ 2] */
 
 #define VM_ENV_INDEX_LAST_LVAR              (-VM_ENV_DATA_SIZE)
 
@@ -1221,16 +1220,6 @@ static inline const rb_env_t *
 VM_ENV_ENVVAL_PTR(const VALUE *ep)
 {
     return (const rb_env_t *)VM_ENV_ENVVAL(ep);
-}
-
-static inline VALUE
-VM_ENV_PROCVAL(const VALUE *ep)
-{
-    VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(VM_ENV_LOCAL_P(ep));
-    VM_ASSERT(VM_ENV_BLOCK_HANDLER(ep) != VM_BLOCK_HANDLER_NONE);
-
-    return ep[VM_ENV_DATA_INDEX_ENV_PROC];
 }
 
 static inline const rb_env_t *
