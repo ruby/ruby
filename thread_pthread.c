@@ -432,7 +432,7 @@ native_thread_destroy(rb_thread_t *th)
 }
 
 #ifndef USE_THREAD_CACHE
-#define USE_THREAD_CACHE 0
+#define USE_THREAD_CACHE 1
 #endif
 
 #if USE_THREAD_CACHE
@@ -870,10 +870,19 @@ thread_cache_reset(void)
 }
 #  endif
 
+/*
+ * number of seconds to cache for, I think 1-5s is sufficient to obviate
+ * the need for thread pool in many network programs (taking into account
+ * worst case network latency across the globe) without wasting memory
+ */
+#ifndef THREAD_CACHE_TIME
+#  define THREAD_CACHE_TIME 3
+#endif
+
 static rb_thread_t *
 register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
 {
-    struct timespec end = { 60, 0 };
+    struct timespec end = { THREAD_CACHE_TIME, 0 };
     struct cached_thread_entry entry;
 
     rb_native_cond_initialize(&entry.cond);
