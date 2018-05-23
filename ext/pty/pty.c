@@ -224,6 +224,21 @@ no_mesg(char *slavedevice, int nomesg)
 }
 #endif
 
+#if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
+static inline int
+ioctl_I_PUSH(int fd, const char *const name)
+{
+    int ret = 0;
+# if defined(I_FIND)
+    ret = ioctl(fd, I_FIND, name);
+# endif
+    if (ret == 0) {
+      ret = ioctl(fd, I_PUSH, name);
+    }
+    return ret;
+}
+#endif
+
 static int
 get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, int fail)
 {
@@ -268,9 +283,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     rb_update_max_fd(slavefd);
 
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if (ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
-    if (ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
-    if (ioctl(slavefd, I_PUSH, "ttcompat") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
+    if (ioctl_I_PUSH(slavefd, "ttcompat") == -1) goto error;
 #endif
 
     *master = masterfd;
@@ -352,9 +367,9 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     if((slavefd = rb_cloexec_open(slavedevice, O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(slavefd);
 #if defined(I_PUSH) && !defined(__linux__) && !defined(_AIX)
-    if(ioctl(slavefd, I_PUSH, "ptem") == -1) goto error;
-    if(ioctl(slavefd, I_PUSH, "ldterm") == -1) goto error;
-    ioctl(slavefd, I_PUSH, "ttcompat");
+    if(ioctl_I_PUSH(slavefd, "ptem") == -1) goto error;
+    if(ioctl_I_PUSH(slavefd, "ldterm") == -1) goto error;
+    ioctl_I_PUSH(slavefd, "ttcompat");
 #endif
     *master = masterfd;
     *slave = slavefd;
