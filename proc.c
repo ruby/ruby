@@ -706,13 +706,6 @@ proc_new(VALUE klass, int8_t is_lambda)
 	cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
 
 	if ((block_handler = rb_vm_frame_block_handler(cfp)) != VM_BLOCK_HANDLER_NONE) {
-	    const VALUE *lep = rb_vm_ep_local_ep(cfp->ep);
-
-	    if (VM_ENV_ESCAPED_P(lep)) {
-		procval = VM_ENV_PROCVAL(lep);
-		goto return_existing_proc;
-	    }
-
 	    if (is_lambda) {
 		rb_warn(proc_without_block);
 	    }
@@ -730,13 +723,12 @@ proc_new(VALUE klass, int8_t is_lambda)
       case block_handler_type_proc:
 	procval = VM_BH_TO_PROC(block_handler);
 
-      return_existing_proc:
 	if (RBASIC_CLASS(procval) == klass) {
 	    return procval;
 	}
 	else {
 	    VALUE newprocval = rb_proc_dup(procval);
-	    RBASIC_SET_CLASS(newprocval, klass);
+            RBASIC_SET_CLASS(newprocval, klass);
 	    return newprocval;
 	}
 	break;

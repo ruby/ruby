@@ -1408,4 +1408,12 @@ class TestProc < Test::Unit::TestCase
       m {}
     end;
   end
+
+  def method_for_test_proc_without_block_for_symbol
+    binding.eval('proc')
+  end
+
+  def test_proc_without_block_for_symbol
+    assert_equal('1', method_for_test_proc_without_block_for_symbol(&:to_s).call(1), '[Bug #14782]')
+  end
 end
