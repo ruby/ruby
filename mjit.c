@@ -216,6 +216,8 @@ VALUE rb_mMJIT;
 static char *libruby_pathflag;
 #endif
 
+static void remove_file(const char *filename);
+
 /* Return time in milliseconds as a double.  */
 static double
 real_ms_time(void)
@@ -452,10 +454,7 @@ clean_so_file(struct rb_mjit_unit *unit)
     char *so_file = unit->so_file;
     if (so_file) {
         unit->so_file = NULL;
-        if (remove(so_file)) {
-            fprintf(stderr, "failed to remove \"%s\": %s\n",
-                    so_file, strerror(errno));
-        }
+        remove_file(so_file);
         free(so_file);
     }
 #endif
