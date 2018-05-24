@@ -436,7 +436,7 @@ native_thread_destroy(rb_thread_t *th)
 #endif
 
 #if USE_THREAD_CACHE
-static rb_thread_t *register_cached_thread_and_wait(rb_nativethread_id_t);
+static rb_thread_t *register_cached_thread_and_wait(void);
 #endif
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -841,7 +841,7 @@ thread_start_func_1(void *th_ptr)
 #if USE_THREAD_CACHE
     if (1) {
 	/* cache thread */
-	if ((th = register_cached_thread_and_wait(th->thread_id)) != 0) {
+	if ((th = register_cached_thread_and_wait()) != 0) {
 	    goto thread_start;
 	}
     }
@@ -880,14 +880,14 @@ thread_cache_reset(void)
 #endif
 
 static rb_thread_t *
-register_cached_thread_and_wait(rb_nativethread_id_t thread_self_id)
+register_cached_thread_and_wait(void)
 {
     struct timespec end = { THREAD_CACHE_TIME, 0 };
     struct cached_thread_entry entry;
 
     rb_native_cond_initialize(&entry.cond);
     entry.th = NULL;
-    entry.thread_id = thread_self_id;
+    entry.thread_id = pthread_self();
     end = native_cond_timeout(&entry.cond, end);
 
     rb_native_mutex_lock(&thread_cache_lock);
