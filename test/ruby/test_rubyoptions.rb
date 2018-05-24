@@ -116,7 +116,11 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      assert_equal(NO_JIT_DESCRIPTION, r[0])
+      if RbConfig::CONFIG['cppflags'].match?(/(\A|\s)-DMJIT_FORCE_ENABLE\b/)
+        assert_equal(RUBY_DESCRIPTION, r[0])
+      else
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      end
       assert_equal([], e)
     end
 
