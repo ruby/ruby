@@ -5420,7 +5420,7 @@ rb_w32_fstati128(int fd, struct stati128 *st)
     return ret;
 }
 
-#if !defined FILE_INVALID_FILE_ID && !defined __MINGW32__
+#if (!defined FILE_INVALID_FILE_ID && !defined __MINGW32__) || (defined __MINGW32__ && !defined(FILE_SUPPORTS_INTEGRITY_STREAMS))
 typedef struct {
     BYTE  Identifier[16];
 } FILE_ID_128;

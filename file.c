@@ -617,10 +617,12 @@ rb_stat_ino(VALUE self)
             SIZEOF_STRUCT_STAT_ST_INO, 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER|
             INTEGER_PACK_2COMP);
-#elif SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
-    return ULL2NUM(get_stat(self)->st_ino);
 #else
-    return ULONG2NUM(get_stat(self)->st_ino);
+    #ifdef SIZEOF_STRUCT_STAT_ST_INO > SIZEOF_LONG
+      return ULL2NUM(get_stat(self)->st_ino);
+    #else
+      return ULONG2NUM(get_stat(self)->st_ino);
+    #endif
 #endif
 }
 
