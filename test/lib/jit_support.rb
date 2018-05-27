@@ -19,7 +19,11 @@ module JITSupport
       $stderr.puts "TestJIT: #jit_supported? check timed out"
       false
     else
-      err.match?(JIT_SUCCESS_PREFIX)
+      err.match?(JIT_SUCCESS_PREFIX).tap do |success|
+        unless success
+          $stderr.puts "TestJIT.check_support stderr:\n```\n#{err}\n```\n"
+        end
+      end
     end
   end
 
