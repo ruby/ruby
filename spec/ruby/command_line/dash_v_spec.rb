@@ -7,7 +7,7 @@ describe "The -v command line option" do
   describe "when used alone" do
     it "prints version and ends" do
       ruby_description =
-        if RubyVM::MJIT.enabled?
+        if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
           # fake.rb always drops +JIT from RUBY_DESCRIPTION. This resurrects that.
           RUBY_DESCRIPTION.sub(/ \[[^\]]+\]$/, ' +JIT\0')
         else
