@@ -797,11 +797,6 @@ define nd_new
 end
 
 
-define nd_cfnc
-  printf "%su1.cfunc%s: ", $color_highlite, $color_end
-  p ($arg0).u1.cfunc
-end
-
 define nd_argc
   printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
