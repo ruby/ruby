@@ -248,7 +248,6 @@ typedef struct RNode {
 	struct RNode *node;
 	ID id;
 	VALUE value;
-	VALUE (*cfunc)(ANYARGS);
 	ID *tbl;
     } u1;
     union {
@@ -350,7 +349,6 @@ typedef struct RNode {
 #define nd_noex  u3.id
 #define nd_defn  u3.node
 
-#define nd_cfnc  u1.cfunc
 #define nd_argc  u2.argc
 
 #define nd_cpath u1.node
