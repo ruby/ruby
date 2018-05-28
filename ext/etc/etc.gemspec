@@ -1,10 +1,8 @@
-# coding: utf-8
 # frozen_string_literal: true
 
 Gem::Specification.new do |spec|
   spec.name          = "etc"
-  spec.version       = "1.0.0"
-  spec.date          = '2017-12-13'
+  spec.version       = "1.0.1"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
