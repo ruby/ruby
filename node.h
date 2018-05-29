@@ -345,7 +345,6 @@ typedef struct RNode {
 #define nd_args  u3.node
 #define nd_ainfo u3.args
 
-#define nd_noex  u3.id
 #define nd_defn  u3.node
 
 #define nd_cpath u1.node

@@ -768,12 +768,6 @@ define nd_args
   rp ($arg0).u3.node
 end
 
-
-define nd_noex
-  printf "%su1.id%s: ", $color_highlite, $color_end
-  p ($arg0).u1.id
-end
-
 define nd_defn
   printf "%su3.node%s: ", $color_highlite, $color_end
   rp ($arg0).u3.node
