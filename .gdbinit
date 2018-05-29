@@ -797,12 +797,6 @@ define nd_new
 end
 
 
-define nd_argc
-  printf "%su2.argc%s: ", $color_highlite, $color_end
-  p ($arg0).u2.argc
-end
-
-
 define nd_cname
   printf "%su1.id%s: ", $color_highlite, $color_end
   p ($arg0).u1.id
