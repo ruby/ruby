@@ -335,7 +335,6 @@ typedef struct RNode {
 
 #define nd_lit   u1.value
 
-#define nd_frml  u2.argc
 #define nd_rest  u1.id
 #define nd_opt   u1.node
 #define nd_pid   u1.id

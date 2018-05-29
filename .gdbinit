@@ -742,12 +742,6 @@ define nd_lit
   rp ($arg0).u1.value
 end
 
-
-define nd_frml
-  printf "%su1.node%s: ", $color_highlite, $color_end
-  rp ($arg0).u1.node
-end
-
 define nd_rest
   printf "%su2.argc%s: ", $color_highlite, $color_end
   p ($arg0).u2.argc
