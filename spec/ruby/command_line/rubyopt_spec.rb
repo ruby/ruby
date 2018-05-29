@@ -22,22 +22,14 @@ describe "Processing RUBYOPT" do
     result.should =~ /value of \$DEBUG is true/
   end
 
-  ruby_description =
-    if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
-      # fake.rb always drops +JIT from RUBY_DESCRIPTION. This resurrects that.
-      RUBY_DESCRIPTION.sub(/ \[[^\]]+\]$/, ' +JIT\0')
-    else
-      RUBY_DESCRIPTION
-    end
-
   it "prints the version number for '-v'" do
     ENV["RUBYOPT"] = '-v'
-    ruby_exe("")[/\A.*/].should == ruby_description
+    ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
   end
 
   it "ignores whitespace around the option" do
     ENV["RUBYOPT"] = ' -v '
-    ruby_exe("")[/\A.*/].should == ruby_description
+    ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION
   end
 
   it "sets $VERBOSE to true for '-w'" do
