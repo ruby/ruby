@@ -262,7 +262,6 @@ typedef struct RNode {
 	long state;
 	struct rb_global_entry *entry;
 	struct rb_args_info *args;
-	long cnt;
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
@@ -324,7 +323,6 @@ typedef struct RNode {
 #define nd_cval  u3.value
 
 #define nd_oid   u1.id
-#define nd_cnt   u3.cnt
 #define nd_tbl   u1.tbl
 
 #define nd_var   u1.node

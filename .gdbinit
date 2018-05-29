@@ -698,12 +698,6 @@ define nd_cval
   rp ($arg0).u3.value
 end
 
-
-define nd_cnt
-  printf "%su3.cnt%s: ", $color_highlite, $color_end
-  p ($arg0).u3.cnt
-end
-
 define nd_tbl
   printf "%su1.tbl%s: ", $color_highlite, $color_end
   p ($arg0).u1.tbl
