@@ -214,7 +214,8 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     fprintf(f, "    static const VALUE *const original_body_iseq = (VALUE *)0x%"PRIxVALUE";\n",
             (VALUE)body->iseq_encoded);
 
-    /* Simulate `opt_pc` in setup_parameters_complex */
+    /* Simulate `opt_pc` in setup_parameters_complex. Other PCs which may be passed by catch tables
+       are not considered since vm_exec doesn't call mjit_exec for catch tables. */
     if (body->param.flags.has_opt) {
         int i;
         fprintf(f, "\n");
@@ -226,11 +227,6 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
         }
         fprintf(f, "    }\n");
     }
-
-    /* ISeq might be used for catch table too. For that usage, this code cancels JIT execution. */
-    fprintf(f, "    if (reg_cfp->pc != original_body_iseq) {\n");
-    fprintf(f, "        return Qundef;\n");
-    fprintf(f, "    }\n");
 
     compile_insns(f, body, 0, 0, &status);
     compile_cancel_handler(f, body, &status);
