@@ -234,6 +234,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * VM generator script renewal; makes the generated VM more optimized. [GH-1779]
 
+* Thread cache enabled for pthreads platforms [Feature #14757]
+
 === Miscellaneous changes
 
 * On macOS, shared libraries no longer include a full version number of ruby in their names.
