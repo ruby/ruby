@@ -11,7 +11,7 @@ module TestGemCommandsQueryCommandSetup
     @specs = add_gems_to_fetcher
     @stub_ui = Gem::MockGemUi.new
     @stub_fetcher = Gem::FakeFetcher.new
-    
+
     @stub_fetcher.data["#{@gem_repo}Marshal.#{Gem.marshal_version}"] = proc do
       raise Gem::RemoteFetcher::FetchError
     end
