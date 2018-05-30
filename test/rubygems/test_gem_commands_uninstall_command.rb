@@ -238,7 +238,7 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     @cmd.handle_options %w[]
 
     assert_equal false,                    @cmd.options[:check_dev]
-    assert_equal nil,                      @cmd.options[:install_dir]
+    assert_nil                             @cmd.options[:install_dir]
     assert_equal true,                     @cmd.options[:user_install]
     assert_equal Gem::Requirement.default, @cmd.options[:version]
     assert_equal false,                    @cmd.options[:vendor]
@@ -291,5 +291,31 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     assert_equal output.first, "Gem 'd' is not installed"
   end
 
+  def test_execute_with_gem_uninstall_error
+    util_make_gems
+
+    @cmd.options[:args] = %w[a]
+
+    uninstall_exception = lambda do |_a|
+      ex = Gem::UninstallError.new
+      ex.spec = @spec
+
+      raise ex
+    end
+
+    e = nil
+    @cmd.stub :uninstall, uninstall_exception do
+      use_ui @ui do
+        e = assert_raises Gem::MockGemUi::TermError do
+          @cmd.execute
+        end
+      end
+
+      assert_equal 1, e.exit_code
+    end
+
+    assert_empty @ui.output
+    assert_match %r!Error: unable to successfully uninstall '#{@spec.name}'!, @ui.error
+  end
 end
 

@@ -64,6 +64,38 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "ERROR:  Gemspec file not found: some_gem\n", @ui.error
   end
 
+  def test_execute_outside_dir
+    gemspec_dir = File.join @tempdir, 'build_command_gem'
+    gemspec_file = File.join gemspec_dir, @gem.spec_name
+
+    FileUtils.mkdir_p gemspec_dir
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: some_gem-2.gem", output.shift
+    assert_equal [], output
+
+    gem_file = File.join gemspec_dir, File.basename(@gem.cache_file)
+    assert File.exist?(gem_file)
+
+    spec = Gem::Package.new(gem_file).spec
+
+    assert_equal "some_gem", spec.name
+    assert_equal "this is a summary", spec.summary
+  end
+
   def test_can_find_gemspecs_without_dot_gemspec
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 

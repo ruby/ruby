@@ -110,6 +110,10 @@ class Gem::Installer
   class FakePackage
     attr_accessor :spec
 
+    attr_accessor :dir_mode
+    attr_accessor :prog_mode
+    attr_accessor :data_mode
+
     def initialize(spec)
       @spec = spec
     end
@@ -178,6 +182,10 @@ class Gem::Installer
     end
 
     process_options
+
+    @package.dir_mode = options[:dir_mode]
+    @package.prog_mode = options[:prog_mode]
+    @package.data_mode = options[:data_mode]
 
     if options[:user_install] and not options[:unpack] then
       @gem_home = Gem.user_dir
@@ -298,7 +306,8 @@ class Gem::Installer
     FileUtils.rm_rf gem_dir
     FileUtils.rm_rf spec.extension_dir
 
-    FileUtils.mkdir_p gem_dir
+    dir_mode = options[:dir_mode]
+    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0700
 
     if @options[:install_as_default] then
       extract_bin
@@ -314,6 +323,8 @@ class Gem::Installer
       write_spec
       write_cache_file
     end
+
+    File.chmod(dir_mode, gem_dir) if dir_mode
 
     say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
 
@@ -468,7 +479,7 @@ class Gem::Installer
     return if spec.executables.nil? or spec.executables.empty?
 
     begin
-      Dir.mkdir @bin_dir
+      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0700].compact
     rescue SystemCallError
       raise unless File.directory? @bin_dir
     end
@@ -486,7 +497,8 @@ class Gem::Installer
       end
 
       mode = File.stat(bin_path).mode
-      FileUtils.chmod mode | 0111, bin_path unless (mode | 0111) == mode
+      dir_mode = options[:prog_mode] || (mode | 0111)
+      FileUtils.chmod dir_mode, bin_path unless dir_mode == mode
 
       check_executable_overwrite filename
 
@@ -511,8 +523,9 @@ class Gem::Installer
 
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, 'wb', 0755 do |file|
+    File.open bin_script_path, 'wb', 0700 do |file|
       file.print app_script_text(filename)
+      file.chmod(options[:prog_mode] || 0755)
     end
 
     verbose bin_script_path
@@ -705,7 +718,7 @@ class Gem::Installer
   end
 
   def verify_gem_home(unpack = false) # :nodoc:
-    FileUtils.mkdir_p gem_home
+    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0700
     raise Gem::FilePermissionError, gem_home unless
       unpack or File.writable?(gem_home)
   end
@@ -736,7 +749,7 @@ version = "#{Gem::Requirement.default}.a"
 
 if ARGV.first
   str = ARGV.first
-  str = str.dup.force_encoding("BINARY") if str.respond_to? :force_encoding
+  str = str.dup.force_encoding("BINARY")
   if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
     version = $1
     ARGV.shift
@@ -868,7 +881,8 @@ TEXT
 
     build_info_dir = File.join gem_home, 'build_info'
 
-    FileUtils.mkdir_p build_info_dir
+    dir_mode = options[:dir_mode]
+    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0700
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
@@ -877,6 +891,8 @@ TEXT
         io.puts arg
       end
     end
+
+    File.chmod(dir_mode, build_info_dir) if dir_mode
   end
 
   ##

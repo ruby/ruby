@@ -78,9 +78,9 @@ class Gem::Package::Old < Gem::Package
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname destination
+        FileUtils.mkdir_p File.dirname(destination), :mode => dir_mode && 0700
 
-        File.open destination, 'wb', entry['mode'] do |out|
+        File.open destination, 'wb', file_mode(entry['mode']) do |out|
           out.write file_data
         end
 
@@ -144,17 +144,9 @@ class Gem::Package::Old < Gem::Package
       end
     end
 
-    yaml_error = if RUBY_VERSION < '1.9' then
-                   YAML::ParseError
-                 elsif YAML.const_defined?(:ENGINE) && YAML::ENGINE.yamler == 'syck' then
-                   YAML::ParseError
-                 else
-                   YAML::SyntaxError
-                 end
-
     begin
       @spec = Gem::Specification.from_yaml yaml
-    rescue yaml_error
+    rescue YAML::SyntaxError
       raise Gem::Exception, "Failed to parse gem specification out of gem file"
     end
   rescue ArgumentError

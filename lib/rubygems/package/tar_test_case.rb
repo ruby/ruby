@@ -94,13 +94,7 @@ class Gem::Package::TarTestCase < Gem::TestCase
       ASCIIZ(dname, 155)     # char prefix[155];   ASCII + (Z unless filled)
     ]
 
-    format = "C100C8C8C8C12C12C8CC100C6C2C32C32C8C8C155"
-    h = if RUBY_VERSION >= "1.9" then
-          arr.join
-        else
-          arr = arr.join("").split(//).map{|x| x[0]}
-          arr.pack format
-        end
+    h = arr.join
     ret = h + "\0" * (512 - h.size)
     assert_equal(512, ret.size)
     ret

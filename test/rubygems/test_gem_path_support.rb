@@ -29,7 +29,7 @@ class TestGemPathSupport < Gem::TestCase
     assert_equal expected, ps.path
   end
 
-  if defined?(File::ALT_SEPARATOR) and File::ALT_SEPARATOR
+  if File::ALT_SEPARATOR
     def test_initialize_home_normalize
       alternate = @tempdir.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
       ps = Gem::PathSupport.new "GEM_HOME" => alternate

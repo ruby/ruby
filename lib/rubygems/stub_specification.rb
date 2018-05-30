@@ -8,12 +8,8 @@ class Gem::StubSpecification < Gem::BasicSpecification
   # :nodoc:
   PREFIX = "# stub: "
 
-  OPEN_MODE = # :nodoc:
-    if Object.const_defined? :Encoding then
-      'r:UTF-8:-'
-    else
-      'r'
-    end
+  # :nodoc:
+  OPEN_MODE = 'r:UTF-8:-'
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,

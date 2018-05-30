@@ -104,6 +104,22 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal expected, YAML.load(checksums)
   end
 
+  def test_build_time_source_date_epoch
+    ENV["SOURCE_DATE_EPOCH"] = "123456789"
+
+    spec = Gem::Specification.new 'build', '1'
+    spec.summary = 'build'
+    spec.authors = 'build'
+    spec.files = ['lib/code.rb']
+    spec.date = Time.at 0
+    spec.rubygems_version = Gem::Version.new '0'
+
+
+    package = Gem::Package.new spec.file_name
+
+    assert_equal Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc, package.build_time
+  end
+
   def test_add_files
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/empty]
@@ -579,7 +595,6 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_install_location_extra_slash
-    skip 'no File.realpath on 1.8' if RUBY_VERSION < '1.9'
     package = Gem::Package.new @gem
 
     file = 'foo//file.rb'.dup
@@ -752,7 +767,7 @@ class TestGemPackage < Gem::Package::TarTestCase
                    e.message
       io
     end
-    tf.close! if tf.respond_to? :close!
+    tf.close!
   end
 
   def test_verify_empty

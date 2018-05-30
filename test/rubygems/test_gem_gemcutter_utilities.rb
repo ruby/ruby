@@ -8,6 +8,8 @@ class TestGemGemcutterUtilities < Gem::TestCase
 
   def setup
     super
+    # below needed for random testing, class property
+    Gem.configuration.disable_default_gem_server = nil
 
     ENV['RUBYGEMS_HOST'] = nil
     Gem.configuration.rubygems_api_key = nil

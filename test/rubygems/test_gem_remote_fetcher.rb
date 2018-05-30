@@ -118,7 +118,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @a1.loaded_from = File.join(@gemhome, 'specifications', @a1.full_name)
 
     Gem::RemoteFetcher.fetcher = nil
-
+    @stub_ui = Gem::MockGemUi.new
     @fetcher = Gem::RemoteFetcher.fetcher
   end
 
@@ -175,7 +175,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_no_proxy
-    use_ui @ui do
+    use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
       assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
     end
@@ -267,7 +267,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     fetch = Gem::RemoteFetcher.new nil, dns
     begin
       old_verbose, Gem.configuration.verbose = Gem.configuration.verbose, 1
-      endpoint = use_ui @ui do
+      endpoint = use_ui @stub_ui do
         fetch.api_endpoint(uri)
       end
     ensure
@@ -276,7 +276,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     assert_equal uri, endpoint
 
-    assert_equal "Getting SRV record failed: timeout!\n", @ui.output
+    assert_equal "Getting SRV record failed: timeout!\n", @stub_ui.output
 
     dns.verify
   end
@@ -625,7 +625,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_implicit_no_proxy
-    use_ui @ui do
+    use_ui @stub_ui do
       ENV['http_proxy'] = 'http://fakeurl:12345'
       fetcher = Gem::RemoteFetcher.new :no_proxy
       @fetcher = fetcher
@@ -634,7 +634,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_implicit_proxy
-    use_ui @ui do
+    use_ui @stub_ui do
       ENV['http_proxy'] = @proxy_uri
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
@@ -643,7 +643,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_implicit_upper_case_proxy
-    use_ui @ui do
+    use_ui @stub_ui do
       ENV['HTTP_PROXY'] = @proxy_uri
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
@@ -652,7 +652,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_implicit_proxy_no_env
-    use_ui @ui do
+    use_ui @stub_ui do
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -764,7 +764,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_observe_no_proxy_env_single_host
-    use_ui @ui do
+    use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
       ENV["no_proxy"] = URI::parse(@server_uri).host
       fetcher = Gem::RemoteFetcher.new nil
@@ -774,7 +774,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_observe_no_proxy_env_list
-    use_ui @ui do
+    use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
       ENV["no_proxy"] = "fakeurl.com, #{URI::parse(@server_uri).host}"
       fetcher = Gem::RemoteFetcher.new nil
@@ -796,7 +796,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_yaml_error_on_size
-    use_ui @ui do
+    use_ui @stub_ui do
       self.class.enable_yaml = false
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher

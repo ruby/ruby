@@ -253,6 +253,31 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty out, out.inspect
   end
 
+  def test_skip_many_gems
+    a = util_spec 'a'
+    b = util_spec 'b'
+    c = util_spec 'c'
+
+    install_gem a
+    install_gem b
+    install_gem c
+
+    @cmd.options[:args] = %w[a b c]
+    @cmd.options[:skip] = ['a', 'c']
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+
+    assert_equal "Restoring gems to pristine condition...", out.shift
+    assert_equal "Skipped #{a.full_name}, it was given through options", out.shift
+    assert_equal "Restored #{b.full_name}", out.shift
+    assert_equal "Skipped #{c.full_name}, it was given through options", out.shift
+    assert_empty out, out.inspect
+  end
+
   def test_execute_many_multi_repo
     a = util_spec 'a'
     install_gem a
@@ -488,4 +513,3 @@ class TestGemCommandsPristineCommand < Gem::TestCase
   end
 
 end
-

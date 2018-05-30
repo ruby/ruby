@@ -145,8 +145,6 @@ class Gem::Package::TarReader::Entry
   def rewind
     check_closed
 
-    raise Gem::Package::NonSeekableIO unless @io.respond_to? :pos=
-
     @io.pos = @orig_pos
     @read = 0
   end

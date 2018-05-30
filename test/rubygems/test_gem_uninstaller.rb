@@ -177,10 +177,12 @@ class TestGemUninstaller < Gem::InstallerTestCase
     gem_dir = File.join @gemhome, 'gems', @spec.full_name
 
     Gem.pre_uninstall do
+      sleep(0.1) if win_platform?
       assert File.exist?(gem_dir), 'gem_dir should exist'
     end
 
     Gem.post_uninstall do
+      sleep(0.1) if win_platform?
       refute File.exist?(gem_dir), 'gem_dir should not exist'
     end
 
@@ -212,7 +214,7 @@ class TestGemUninstaller < Gem::InstallerTestCase
     default_spec = new_default_spec 'default', '2'
     install_default_gems default_spec
 
-    spec = new_spec 'default', '2'
+    spec = util_spec 'default', '2'
     install_gem spec
 
     Gem::Specification.reset
@@ -481,5 +483,23 @@ create_makefile '#{@spec.name}'
 
     assert_match %r!r-1 depends on q \(= 1, development\)!, lines.shift
     assert_match %r!Successfully uninstalled q-1!, lines.last
+  end
+
+  def test_uninstall_no_permission
+    uninstaller = Gem::Uninstaller.new @spec.name, :executables => true
+
+    stub_rm_r = lambda do |*args|
+      _path = args.shift
+      options = args.shift || Hash.new
+      # Uninstaller calls a method in RDoc which also calls FileUtils.rm_rf which
+      # is an alias for FileUtils#rm_r, so skip if we're using the force option
+      raise Errno::EPERM unless options[:force]
+    end
+
+    FileUtils.stub :rm_r, stub_rm_r do
+      assert_raises Gem::UninstallError do
+        uninstaller.uninstall
+      end
+    end
   end
 end

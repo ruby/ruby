@@ -27,7 +27,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
+      Gem::Ext::ConfigureBuilder.build nil, @dest_path, output
     end
 
     assert_match(/^current directory:/, output.shift)
@@ -50,7 +50,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
     error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
-        Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
+        Gem::Ext::ConfigureBuilder.build nil, @dest_path, output
       end
     end
 
@@ -76,7 +76,7 @@ class TestGemExtConfigureBuilder < Gem::TestCase
 
     output = []
     Dir.chdir @ext do
-      Gem::Ext::ConfigureBuilder.build nil, nil, @dest_path, output
+      Gem::Ext::ConfigureBuilder.build nil, @dest_path, output
     end
 
     assert_contains_make_command 'clean', output[1]

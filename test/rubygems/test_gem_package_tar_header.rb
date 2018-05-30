@@ -160,7 +160,7 @@ group\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000
       assert_raises ArgumentError do
         Gem::Package::TarHeader.from io
       end
-      io.close! if io.respond_to? :close!
+      io.close!
     end
   end
 

@@ -11,7 +11,7 @@ require 'tempfile'
 class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
   FileEntry = FileUtils::Entry_ # :nodoc:
 
-  def self.build(extension, directory, dest_path, results, args=[], lib_dir=nil)
+  def self.build(extension, dest_path, results, args=[], lib_dir=nil)
     tmp_dest = Dir.mktmpdir(".gem.", ".")
 
     # Some versions of `mktmpdir` return absolute paths, which will break make
@@ -23,9 +23,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
     # spaces do not work.
     #
     # Details: https://github.com/rubygems/rubygems/issues/977#issuecomment-171544940
-    #
-    # TODO: Make this unconditional when rubygems no longer supports Ruby 1.9.x.
-    tmp_dest = get_relative_path(tmp_dest) unless Gem.win_platform? && RUBY_VERSION <= '2.0'
+    tmp_dest = get_relative_path(tmp_dest)
 
     Tempfile.open %w"siteconf .rb", "." do |siteconf|
       siteconf.puts "require 'rbconfig'"

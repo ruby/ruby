@@ -129,11 +129,7 @@ that is a dependency of an existing gem.  You can use the
 
     specs.each do |spec|
       options[:version] = spec.version
-
-      begin
-        Gem::Uninstaller.new(spec.name, options).uninstall
-      rescue Gem::InstallError
-      end
+      uninstall_gem spec.name
     end
 
     alert "Uninstalled all gems in #{options[:install_dir]}"
@@ -153,14 +149,27 @@ that is a dependency of an existing gem.  You can use the
     deps = deplist.strongly_connected_components.flatten.reverse
 
     deps.map(&:name).uniq.each do |gem_name|
-      begin
-        Gem::Uninstaller.new(gem_name, options).uninstall
-      rescue Gem::GemNotInHomeException => e
-        spec = e.spec
-        alert("In order to remove #{spec.name}, please execute:\n" +
-              "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
-      end
+      uninstall_gem(gem_name)
     end
   end
 
+  def uninstall_gem(gem_name)
+    uninstall(gem_name)
+  rescue Gem::InstallError
+    nil
+  rescue Gem::GemNotInHomeException => e
+    spec = e.spec
+    alert("In order to remove #{spec.name}, please execute:\n" +
+          "\tgem uninstall #{spec.name} --install-dir=#{spec.installation_path}")
+  rescue Gem::UninstallError => e
+    spec = e.spec
+    alert_error("Error: unable to successfully uninstall '#{spec.name}' which is " +
+          "located at '#{spec.full_gem_path}'. This is most likely because" +
+          "the current user does not have the appropriate permissions")
+    terminate_interaction 1
+  end
+
+  def uninstall(gem_name)
+    Gem::Uninstaller.new(gem_name, options).uninstall
+  end
 end

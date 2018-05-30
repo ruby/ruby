@@ -2,7 +2,7 @@
 # TODO: $SAFE = 1
 
 begin
-  gem 'minitest', '~> 4.0'
+  gem 'minitest', '~> 5.0'
 rescue NoMethodError, Gem::LoadError
   # for ruby tests
 end
@@ -16,6 +16,16 @@ end
 begin
   gem 'minitest'
 rescue Gem::LoadError
+end
+
+begin
+  require 'simplecov'
+  SimpleCov.start do
+    add_filter "/test/"
+    add_filter "/bundler/"
+    add_filter "/lib/rubygems/resolver/molinillo"
+  end
+rescue LoadError
 end
 
 # We have to load these up front because otherwise we'll try to load
@@ -86,7 +96,7 @@ end
 #
 # Tests are always run at a safe level of 1.
 
-class Gem::TestCase < MiniTest::Unit::TestCase
+class Gem::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
 
   extend Gem::Deprecate
 
@@ -595,7 +605,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   def mu_pp(obj)
     s = String.new
     s = PP.pp obj, s
-    s = s.force_encoding(Encoding.default_external) if defined? Encoding
+    s = s.force_encoding(Encoding.default_external)
     s.chomp
   end
 
@@ -819,8 +829,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
 
     spec
   end
-  # TODO: mark deprecate after replacing util_spec from new_spec
-  # deprecate :new_spec, :none, 2018, 12
+  deprecate :new_spec, :none, 2018, 12
 
   def new_default_spec(name, version, deps = nil, *files)
     spec = util_spec name, version, deps
@@ -845,7 +854,7 @@ class Gem::TestCase < MiniTest::Unit::TestCase
   # Creates a spec with +name+, +version+.  +deps+ can specify the dependency
   # or a +block+ can be given for full customization of the specification.
 
-  def util_spec name, version = 2, deps = nil # :yields: specification
+  def util_spec name, version = 2, deps = nil, *files # :yields: specification
     raise "deps or block, not both" if deps and block_given?
 
     spec = Gem::Specification.new do |s|
@@ -858,6 +867,8 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       s.summary     = "this is a summary"
       s.description = "This is a test description"
 
+      s.files.push(*files) unless files.empty?
+
       yield s if block_given?
     end
 
@@ -867,6 +878,19 @@ class Gem::TestCase < MiniTest::Unit::TestCase
       deps.keys.sort.each do |n|
         spec.add_dependency n, (deps[n] || '>= 0')
       end
+    end
+
+    unless files.empty? then
+      write_file spec.spec_file do |io|
+        io.write spec.to_ruby_for_cache
+      end
+
+      util_build_gem spec
+
+      cache_file = File.join @tempdir, 'gems', "#{spec.full_name}.gem"
+      FileUtils.mkdir_p File.dirname cache_file
+      FileUtils.mv spec.cache_file, cache_file
+      FileUtils.rm spec.spec_file
     end
 
     Gem::Specification.reset

@@ -103,6 +103,32 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     assert_equal "I changed it!\n", File.read(gem_bin_path)
   end
 
+  def test_env_shebang_flag
+    gem_bin_path = gem_install 'a'
+    write_file gem_bin_path do |io|
+      io.puts 'I changed it!'
+    end
+
+    @cmd.options[:document] = []
+    @cmd.options[:env_shebang] = true
+    @cmd.execute
+
+    default_gem_bin_path = File.join @install_dir, 'bin', 'gem'
+    default_bundle_bin_path = File.join @install_dir, 'bin', 'bundle'
+
+    ruby_exec = sprintf Gem.default_exec_format, 'ruby'
+
+    if Gem.win_platform?
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_gem_bin_path)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
+      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_bin_path)
+    else
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_gem_bin_path)
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
+      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(gem_bin_path)
+    end
+  end
+
   def test_pem_files_in
     assert_equal %w[rubygems/ssl_certs/rubygems.org/foo.pem],
                  @cmd.pem_files_in('lib').sort
@@ -207,11 +233,8 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_show_release_notes
-    @default_external = nil
-    if Object.const_defined? :Encoding
-      @default_external = @ui.outs.external_encoding
-      @ui.outs.set_encoding Encoding::US_ASCII
-    end
+    @default_external = @ui.outs.external_encoding
+    @ui.outs.set_encoding Encoding::US_ASCII
 
     @cmd.options[:previous_version] = Gem::Version.new '2.0.2'
 
@@ -256,7 +279,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     EXPECTED
 
     output = @ui.output
-    output.force_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
+    output.force_encoding Encoding::UTF_8
 
     assert_equal expected, output
   ensure
