@@ -20,5 +20,10 @@ ruby_version_is "2.5" do
       enum.peek.should equal object
       enum.first.should equal object
     end
+
+    it "has an alias `then`" do
+      object = Object.new
+      object.then { 42 }.should equal 42
+    end
   end
 end
