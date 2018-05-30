@@ -114,17 +114,23 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.execute
 
     default_gem_bin_path = File.join @install_dir, 'bin', 'gem'
-    default_bundle_bin_path = File.join @install_dir, 'bin', 'bundle'
+    if Gem::USE_BUNDLER_FOR_GEMDEPS
+      default_bundle_bin_path = File.join @install_dir, 'bin', 'bundle'
+    end
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
 
     if Gem.win_platform?
       assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_gem_bin_path)
-      assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
+      if Gem::USE_BUNDLER_FOR_GEMDEPS
+        assert_match %r%\A#!\s*#{ruby_exec}%, File.read(default_bundle_bin_path)
+      end
       assert_match %r%\A#!\s*#{ruby_exec}%, File.read(gem_bin_path)
     else
       assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_gem_bin_path)
-      assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
+      if Gem::USE_BUNDLER_FOR_GEMDEPS
+        assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(default_bundle_bin_path)
+      end
       assert_match %r%\A#!/usr/bin/env #{ruby_exec}%, File.read(gem_bin_path)
     end
   end
