@@ -10,7 +10,7 @@ require 'rbconfig'
 require 'thread'
 
 module Gem
-  VERSION = "2.7.7"
+  VERSION = "3.0.0.beta1"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -247,7 +247,7 @@ module Gem
 
   ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
-  # is not given, the gem's default_executable is chosen, otherwise the
+  # is not given, an exception will be raised, otherwise the
   # specified executable's path is returned.  +requirements+ allows
   # you to specify specific gem versions.
 
@@ -295,7 +295,7 @@ module Gem
 
   ##
   # Find the full path to the executable for gem +name+.  If the +exec_name+
-  # is not given, the gem's default_executable is chosen, otherwise the
+  # is not given, an exception will be raised, otherwise the
   # specified executable's path is returned.  +requirements+ allows
   # you to specify specific gem versions.
   #
@@ -371,11 +371,6 @@ module Gem
     spec = @loaded_specs[gem_name]
     return nil if spec.nil?
     spec.datadir
-  end
-
-  class << self
-    extend Gem::Deprecate
-    deprecate :datadir, "spec.datadir", 2016, 10
   end
 
   ##
@@ -582,20 +577,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
 
   def self.find_home
-    windows = File::ALT_SEPARATOR
-    if not windows or RUBY_VERSION >= '1.9' then
-      File.expand_path "~"
-    else
-      ['HOME', 'USERPROFILE'].each do |key|
-        return File.expand_path ENV[key] if ENV[key]
-      end
-
-      if ENV['HOMEDRIVE'] && ENV['HOMEPATH'] then
-        File.expand_path "#{ENV['HOMEDRIVE']}#{ENV['HOMEPATH']}"
-      end
-    end
+    Dir.home
   rescue
-    if windows then
+    if Gem.win_platform? then
       File.expand_path File.join(ENV['HOMEDRIVE'] || ENV['SystemDrive'], '/')
     else
       File.expand_path "/"
@@ -696,44 +680,31 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     return if @yaml_loaded
     return unless defined?(gem)
 
-    test_syck = ENV['TEST_SYCK']
+    begin
+      gem 'psych', '>= 2.0.0'
+    rescue Gem::LoadError
+      # It's OK if the user does not have the psych gem installed.  We will
+      # attempt to require the stdlib version
+    end
 
-    # Only Ruby 1.8 and 1.9 have syck
-    test_syck = false unless /^1\./ =~ RUBY_VERSION
-
-    unless test_syck
-      begin
-        gem 'psych', '>= 2.0.0'
-      rescue Gem::LoadError
-        # It's OK if the user does not have the psych gem installed.  We will
-        # attempt to require the stdlib version
+    begin
+      # Try requiring the gem version *or* stdlib version of psych.
+      require 'psych'
+    rescue ::LoadError
+      # If we can't load psych, thats fine, go on.
+    else
+      # If 'yaml' has already been required, then we have to
+      # be sure to switch it over to the newly loaded psych.
+      if defined?(YAML::ENGINE) && YAML::ENGINE.yamler != "psych"
+        YAML::ENGINE.yamler = "psych"
       end
 
-      begin
-        # Try requiring the gem version *or* stdlib version of psych.
-        require 'psych'
-      rescue ::LoadError
-        # If we can't load psych, thats fine, go on.
-      else
-        # If 'yaml' has already been required, then we have to
-        # be sure to switch it over to the newly loaded psych.
-        if defined?(YAML::ENGINE) && YAML::ENGINE.yamler != "psych"
-          YAML::ENGINE.yamler = "psych"
-        end
-
-        require 'rubygems/psych_additions'
-        require 'rubygems/psych_tree'
-      end
+      require 'rubygems/psych_additions'
+      require 'rubygems/psych_tree'
     end
 
     require 'yaml'
     require 'rubygems/safe_yaml'
-
-    # If we're supposed to be using syck, then we may have to force
-    # activate it via the YAML::ENGINE API.
-    if test_syck and defined?(YAML::ENGINE)
-      YAML::ENGINE.yamler = "syck" unless YAML::ENGINE.syck?
-    end
 
     # Now that we're sure some kind of yaml library is loaded, pull
     # in our hack to deal with Syck's DefaultKey ugliness.
@@ -1376,7 +1347,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   autoload :ConfigFile,         'rubygems/config_file'
   autoload :Dependency,         'rubygems/dependency'
   autoload :DependencyList,     'rubygems/dependency_list'
-  autoload :DependencyResolver, 'rubygems/resolver'
   autoload :Installer,          'rubygems/installer'
   autoload :Licenses,           'rubygems/util/licenses'
   autoload :PathSupport,        'rubygems/path_support'
@@ -1397,24 +1367,21 @@ end
 require 'rubygems/exceptions'
 
 # REFACTOR: This should be pulled out into some kind of hacks file.
-gem_preluded = Gem::GEM_PRELUDE_SUCKAGE and defined? Gem
-unless gem_preluded then # TODO: remove guard after 1.9.2 dropped
+begin
+  ##
+  # Defaults the operating system (or packager) wants to provide for RubyGems.
+
+  require 'rubygems/defaults/operating_system'
+rescue LoadError
+end
+
+if defined?(RUBY_ENGINE) then
   begin
     ##
-    # Defaults the operating system (or packager) wants to provide for RubyGems.
+    # Defaults the Ruby implementation wants to provide for RubyGems
 
-    require 'rubygems/defaults/operating_system'
+    require "rubygems/defaults/#{RUBY_ENGINE}"
   rescue LoadError
-  end
-
-  if defined?(RUBY_ENGINE) then
-    begin
-      ##
-      # Defaults the Ruby implementation wants to provide for RubyGems
-
-      require "rubygems/defaults/#{RUBY_ENGINE}"
-    rescue LoadError
-    end
   end
 end
 

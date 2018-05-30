@@ -48,7 +48,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
 
     assert_equal credentials[:rubygems_api_key], api_key
 
-    assert_equal credentials[host], nil
+    assert_nil credentials[host]
   end
 
   def test_execute_with_host_supplied

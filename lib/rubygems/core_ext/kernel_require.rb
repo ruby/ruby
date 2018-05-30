@@ -11,13 +11,8 @@ module Kernel
 
   RUBYGEMS_ACTIVATION_MONITOR = Monitor.new # :nodoc:
 
-  if defined?(gem_original_require) then
-    # Ruby ships with a custom_require, override its require
-    remove_method :require
-  else
-    ##
-    # The Kernel#require from before RubyGems was loaded.
-
+  # Make sure we have a reference to Ruby's original Kernel#require
+  unless defined?(gem_original_require)
     alias gem_original_require require
     private :gem_original_require
   end

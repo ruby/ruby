@@ -13,9 +13,9 @@ require 'rubygems/platform'
 require 'rubygems/deprecate'
 require 'rubygems/basic_specification'
 require 'rubygems/stub_specification'
+require 'rubygems/specification_policy'
 require 'rubygems/util/list'
 require 'stringio'
-require 'uri'
 
 ##
 # The Specification class contains the information for a Gem.  Typically
@@ -135,7 +135,7 @@ class Gem::Specification < Gem::BasicSpecification
     :autorequire               => nil,
     :bindir                    => 'bin',
     :cert_chain                => [],
-    :date                      => TODAY,
+    :date                      => nil,
     :dependencies              => [],
     :description               => nil,
     :email                     => nil,
@@ -788,52 +788,22 @@ class Gem::Specification < Gem::BasicSpecification
   end
   private_class_method :installed_stubs
 
-  if [].respond_to? :flat_map
-    def self.map_stubs(dirs, pattern) # :nodoc:
-      dirs.flat_map { |dir|
-        base_dir = File.dirname dir
-        gems_dir = File.join base_dir, "gems"
-        gemspec_stubs_in(dir, pattern) { |path| yield path, base_dir, gems_dir }
-      }
-    end
-  else # FIXME: remove when 1.8 is dropped
-    def self.map_stubs(dirs, pattern) # :nodoc:
-      dirs.map { |dir|
-        base_dir = File.dirname dir
-        gems_dir = File.join base_dir, "gems"
-        gemspec_stubs_in(dir, pattern) { |path| yield path, base_dir, gems_dir }
-      }.flatten 1
-    end
+  def self.map_stubs(dirs, pattern) # :nodoc:
+    dirs.flat_map { |dir|
+      base_dir = File.dirname dir
+      gems_dir = File.join base_dir, "gems"
+      gemspec_stubs_in(dir, pattern) { |path| yield path, base_dir, gems_dir }
+    }
   end
   private_class_method :map_stubs
 
-  uniq_takes_a_block = false
-  [1,2].uniq { uniq_takes_a_block = true }
-
-  if uniq_takes_a_block
-    def self.uniq_by(list, &block) # :nodoc:
-      list.uniq(&block)
-    end
-  else # FIXME: remove when 1.8 is dropped
-    def self.uniq_by(list) # :nodoc:
-      values = {}
-      list.each { |item|
-        value = yield item
-        values[value] ||= item
-      }
-      values.values
-    end
+  def self.uniq_by(list, &block) # :nodoc:
+    list.uniq(&block)
   end
   private_class_method :uniq_by
 
-  if [].respond_to? :sort_by!
-    def self.sort_by! list, &block
-      list.sort_by!(&block)
-    end
-  else # FIXME: remove when 1.8 is dropped
-    def self.sort_by! list, &block
-      list.replace list.sort_by(&block)
-    end
+  def self.sort_by! list, &block
+    list.sort_by!(&block)
   end
   private_class_method :sort_by!
 
@@ -1185,11 +1155,7 @@ class Gem::Specification < Gem::BasicSpecification
     file = file.dup.untaint
     return unless File.file?(file)
 
-    code = if defined? Encoding
-             File.read file, :mode => 'r:UTF-8:-'
-           else
-             File.read file
-           end
+    code = File.read file, :mode => 'r:UTF-8:-'
 
     code.untaint
 
@@ -1747,13 +1713,16 @@ class Gem::Specification < Gem::BasicSpecification
     }
   end
 
-  ##
-  # The date this gem was created.  Lazily defaults to the current UTC date.
+  # The date this gem was created.
   #
-  # There is no need to set this in your gem specification.
+  # If SOURCE_DATE_EPOCH is set as an environment variable, use that to support
+  # reproducible builds; otherwise, default to the current UTC date.
+  #
+  # Details on SOURCE_DATE_EPOCH:
+  # https://reproducible-builds.org/specs/source-date-epoch/
 
   def date
-    @date ||= TODAY
+    @date ||= ENV["SOURCE_DATE_EPOCH"] ? Time.utc(*Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc.to_a[3..5].reverse) : TODAY
   end
 
   DateLike = Object.new # :nodoc:
@@ -2620,32 +2589,23 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def to_yaml(opts = {}) # :nodoc:
-    if (YAML.const_defined?(:ENGINE) && !YAML::ENGINE.syck?) ||
-        (defined?(Psych) && YAML == Psych) then
-      # Because the user can switch the YAML engine behind our
-      # back, we have to check again here to make sure that our
-      # psych code was properly loaded, and load it if not.
-      unless Gem.const_defined?(:NoAliasYAMLTree)
-        require 'rubygems/psych_tree'
-      end
-
-      builder = Gem::NoAliasYAMLTree.create
-      builder << self
-      ast = builder.tree
-
-      io = StringIO.new
-      io.set_encoding Encoding::UTF_8 if Object.const_defined? :Encoding
-
-      Psych::Visitors::Emitter.new(io).accept(ast)
-
-      io.string.gsub(/ !!null \n/, " \n")
-    else
-      YAML.quick_emit object_id, opts do |out|
-        out.map taguri, to_yaml_style do |map|
-          encode_with map
-        end
-      end
+    # Because the user can switch the YAML engine behind our
+    # back, we have to check again here to make sure that our
+    # psych code was properly loaded, and load it if not.
+    unless Gem.const_defined?(:NoAliasYAMLTree)
+      require 'rubygems/psych_tree'
     end
+
+    builder = Gem::NoAliasYAMLTree.create
+    builder << self
+    ast = builder.tree
+
+    io = StringIO.new
+    io.set_encoding Encoding::UTF_8
+
+    Psych::Visitors::Emitter.new(io).accept(ast)
+
+    io.string.gsub(/ !!null \n/, " \n")
   end
 
   ##
@@ -2691,330 +2651,39 @@ class Gem::Specification < Gem::BasicSpecification
     extend Gem::UserInteraction
     normalize
 
-    nil_attributes = self.class.non_nil_attributes.find_all do |attrname|
-      instance_variable_get("@#{attrname}").nil?
-    end
-
-    unless nil_attributes.empty? then
-      raise Gem::InvalidSpecificationException,
-        "#{nil_attributes.join ', '} must not be nil"
-    end
-
-    if packaging and rubygems_version != Gem::VERSION then
-      raise Gem::InvalidSpecificationException,
-            "expected RubyGems version #{Gem::VERSION}, was #{rubygems_version}"
-    end
-
-    @@required_attributes.each do |symbol|
-      unless self.send symbol then
-        raise Gem::InvalidSpecificationException,
-              "missing value for attribute #{symbol}"
-      end
-    end
-
-    if !name.is_a?(String) then
-      raise Gem::InvalidSpecificationException,
-            "invalid value for attribute name: \"#{name.inspect}\" must be a string"
-    elsif name !~ /[a-zA-Z]/ then
-      raise Gem::InvalidSpecificationException,
-            "invalid value for attribute name: #{name.dump} must include at least one letter"
-    elsif name !~ VALID_NAME_PATTERN then
-      raise Gem::InvalidSpecificationException,
-            "invalid value for attribute name: #{name.dump} can only include letters, numbers, dashes, and underscores"
-    end
-
-    if raw_require_paths.empty? then
-      raise Gem::InvalidSpecificationException,
-            'specification must have at least one require_path'
-    end
-
-    @files.delete_if            { |x| File.directory?(x) && !File.symlink?(x) }
-    @test_files.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
-    @executables.delete_if      { |x| File.directory?(File.join(@bindir, x)) }
-    @extra_rdoc_files.delete_if { |x| File.directory?(x) && !File.symlink?(x) }
-    @extensions.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
-
-    non_files = files.reject { |x| File.file?(x) || File.symlink?(x) }
-
-    unless not packaging or non_files.empty? then
-      raise Gem::InvalidSpecificationException,
-            "[\"#{non_files.join "\", \""}\"] are not files"
-    end
-
-    if files.include? file_name then
-      raise Gem::InvalidSpecificationException,
-            "#{full_name} contains itself (#{file_name}), check your files list"
-    end
-
-    unless specification_version.is_a?(Integer)
-      raise Gem::InvalidSpecificationException,
-            'specification_version must be an Integer (did you mean version?)'
-    end
-
-    case platform
-    when Gem::Platform, Gem::Platform::RUBY then # ok
-    else
-      raise Gem::InvalidSpecificationException,
-            "invalid platform #{platform.inspect}, see Gem::Platform"
-    end
-
-    self.class.array_attributes.each do |field|
-      val = self.send field
-      klass = case field
-              when :dependencies
-                Gem::Dependency
-              else
-                String
-              end
-
-      unless Array === val and val.all? { |x| x.kind_of?(klass) } then
-        raise(Gem::InvalidSpecificationException,
-              "#{field} must be an Array of #{klass}")
-      end
-    end
-
-    [:authors].each do |field|
-      val = self.send field
-      raise Gem::InvalidSpecificationException, "#{field} may not be empty" if
-        val.empty?
-    end
-
-    unless Hash === metadata
-      raise Gem::InvalidSpecificationException,
-              'metadata must be a hash'
-    end
-
-    validate_metadata
-
-    licenses.each { |license|
-      if license.length > 64
-        raise Gem::InvalidSpecificationException,
-          "each license must be 64 characters or less"
-      end
-
-      if !Gem::Licenses.match?(license)
-        suggestions = Gem::Licenses.suggestions(license)
-        message = <<-warning
-license value '#{license}' is invalid.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-        warning
-        message += "Did you mean #{suggestions.map { |s| "'#{s}'"}.join(', ')}?\n" unless suggestions.nil?
-        warning(message)
-      end
-    }
-
-    warning <<-warning if licenses.empty?
-licenses is empty, but is recommended.  Use a license identifier from
-http://spdx.org/licenses or '#{Gem::Licenses::NONSTANDARD}' for a nonstandard license.
-    warning
-
-    validate_permissions
-
-    # reject lazy developers:
-
-    lazy = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, '')
-
-    unless authors.grep(/FI XME|TO DO/x).empty? then
-      raise Gem::InvalidSpecificationException, "#{lazy} is not an author"
-    end
-
-    unless Array(email).grep(/FI XME|TO DO/x).empty? then
-      raise Gem::InvalidSpecificationException, "#{lazy} is not an email"
-    end
-
-    if description =~ /FI XME|TO DO/x then
-      raise Gem::InvalidSpecificationException, "#{lazy} is not a description"
-    end
-
-    if summary =~ /FI XME|TO DO/x then
-      raise Gem::InvalidSpecificationException, "#{lazy} is not a summary"
-    end
-
-    # Make sure a homepage is valid HTTP/HTTPS URI
-    if homepage and not homepage.empty?
-      begin
-        homepage_uri = URI.parse(homepage)
-        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
-          raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
-        end
-      rescue URI::InvalidURIError
-        raise Gem::InvalidSpecificationException, "\"#{homepage}\" is not a valid HTTP URI"
-      end
-    end
-
-    # Warnings
-
-    %w[author homepage summary files].each do |attribute|
-      value = self.send attribute
-      warning "no #{attribute} specified" if value.nil? or value.empty?
-    end
-
-    if description == summary then
-      warning 'description and summary are identical'
-    end
-
-    # TODO: raise at some given date
-    warning "deprecated autorequire specified" if autorequire
-
-    executables.each do |executable|
-      executable_path = File.join(bindir, executable)
-      shebang = File.read(executable_path, 2) == '#!'
-
-      warning "#{executable_path} is missing #! line" unless shebang
-    end
-
-    files.each do |file|
-      next unless File.symlink?(file)
-      warning "#{file} is a symlink, which is not supported on all platforms"
-    end
-
-    validate_dependencies
-
-    true
+    validation_policy = Gem::SpecificationPolicy.new(self)
+    validation_policy.packaging = packaging
+    validation_policy.validate
   ensure
     if $! or @warnings > 0 then
       alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
     end
   end
 
+  def keep_only_files_and_directories
+    @executables.delete_if      { |x| File.directory?(File.join(@bindir, x)) }
+    @extensions.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
+    @extra_rdoc_files.delete_if { |x| File.directory?(x) && !File.symlink?(x) }
+    @files.delete_if            { |x| File.directory?(x) && !File.symlink?(x) }
+    @test_files.delete_if       { |x| File.directory?(x) && !File.symlink?(x) }
+  end
+
   def validate_metadata
-    url_validation_regex = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
-    link_keys = %w(
-      bug_tracker_uri
-      changelog_uri
-      documentation_uri
-      homepage_uri
-      mailing_list_uri
-      source_code_uri
-      wiki_uri
-    )
-
-    metadata.each do|key, value|
-      if !key.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                "metadata keys must be a String"
-      end
-
-      if key.size > 128
-        raise Gem::InvalidSpecificationException,
-                "metadata key too large (#{key.size} > 128)"
-      end
-
-      if !value.kind_of?(String)
-        raise Gem::InvalidSpecificationException,
-                "metadata values must be a String"
-      end
-
-      if value.size > 1024
-        raise Gem::InvalidSpecificationException,
-                "metadata value too large (#{value.size} > 1024)"
-      end
-
-      if link_keys.include? key
-        if value !~ url_validation_regex
-          raise Gem::InvalidSpecificationException,
-                 "metadata['#{key}'] has invalid link: #{value.inspect}"
-        end
-      end
-    end
+    Gem::SpecificationPolicy.new(self).validate_metadata
   end
 
   ##
   # Checks that dependencies use requirements as we recommend.  Warnings are
   # issued when dependencies are open-ended or overly strict for semantic
   # versioning.
-
-  def validate_dependencies # :nodoc:
-    # NOTE: see REFACTOR note in Gem::Dependency about types - this might be brittle
-    seen = Gem::Dependency::TYPES.inject({}) { |types, type| types.merge({ type => {}}) }
-
-    error_messages = []
-    warning_messages = []
-    dependencies.each do |dep|
-      if prev = seen[dep.type][dep.name] then
-        error_messages << <<-MESSAGE
-duplicate dependency on #{dep}, (#{prev.requirement}) use:
-    add_#{dep.type}_dependency '#{dep.name}', '#{dep.requirement}', '#{prev.requirement}'
-        MESSAGE
-      end
-
-      seen[dep.type][dep.name] = dep
-
-      prerelease_dep = dep.requirements_list.any? do |req|
-        Gem::Requirement.new(req).prerelease?
-      end
-
-      warning_messages << "prerelease dependency on #{dep} is not recommended" if
-        prerelease_dep && !version.prerelease?
-
-      overly_strict = dep.requirement.requirements.length == 1 &&
-        dep.requirement.requirements.any? do |op, version|
-          op == '~>' and
-            not version.prerelease? and
-            version.segments.length > 2 and
-            version.segments.first != 0
-        end
-
-      if overly_strict then
-        _, dep_version = dep.requirement.requirements.first
-
-        base = dep_version.segments.first 2
-
-        warning_messages << <<-WARNING
-pessimistic dependency on #{dep} may be overly strict
-  if #{dep.name} is semantically versioned, use:
-    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}', '>= #{dep_version}'
-        WARNING
-      end
-
-      open_ended = dep.requirement.requirements.all? do |op, version|
-        not version.prerelease? and (op == '>' or op == '>=')
-      end
-
-      if open_ended then
-        op, dep_version = dep.requirement.requirements.first
-
-        base = dep_version.segments.first 2
-
-        bugfix = if op == '>' then
-                   ", '> #{dep_version}'"
-                 elsif op == '>=' and base != dep_version.segments then
-                   ", '>= #{dep_version}'"
-                 end
-
-        warning_messages << <<-WARNING
-open-ended dependency on #{dep} is not recommended
-  if #{dep.name} is semantically versioned, use:
-    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
-        WARNING
-      end
-    end
-    if error_messages.any?
-      raise Gem::InvalidSpecificationException, error_messages.join
-    end
-    if warning_messages.any?
-      warning_messages.each { |warning_message| warning warning_message }
-    end
+  def validate_dependencies
+    Gem::SpecificationPolicy.new(self).validate_dependencies
   end
 
   ##
   # Checks to see if the files to be packaged are world-readable.
-
   def validate_permissions
-    return if Gem.win_platform?
-
-    files.each do |file|
-      next unless File.file?(file)
-      next if File.stat(file).mode & 0444 == 0444
-      warning "#{file} is not world-readable"
-    end
-
-    executables.each do |name|
-      exec = File.join @bindir, name
-      next unless File.file?(exec)
-      next if File.stat(exec).executable?
-      warning "#{exec} is not executable"
-    end
+    Gem::SpecificationPolicy.new(self).validate_permissions
   end
 
   ##
@@ -3024,7 +2693,11 @@ open-ended dependency on #{dep} is not recommended
 
   def version= version
     @version = Gem::Version.create(version)
-    self.required_rubygems_version = '> 1.3.1' if @version.prerelease?
+    # skip to set required_ruby_version when pre-released rubygems.
+    # It caused to raise CircularDependencyError
+    if @version.prerelease? && @name.strip != "rubygems"
+      self.required_rubygems_version = '> 1.3.1'
+    end
     invalidate_memoized_attributes
 
     return @version

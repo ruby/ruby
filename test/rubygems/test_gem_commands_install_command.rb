@@ -201,6 +201,38 @@ class TestGemCommandsInstallCommand < Gem::TestCase
     assert_match(/ould not find a valid gem 'nonexistent'/, @ui.error)
   end
 
+  def test_execute_dependency_nonexistent
+    spec_fetcher do |fetcher|
+      fetcher.spec 'foo', 2, 'bar' => '0.5'
+    end
+
+    @cmd.options[:args] = ['foo']
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+
+      assert_equal 2, e.exit_code
+    end
+
+    expected = <<-EXPECTED
+ERROR:  Could not find a valid gem 'bar' (= 0.5) (required by 'foo' (>= 0)) in any repository
+    EXPECTED
+
+    assert_equal expected, @ui.error
+  end
+
+  def test_execute_http_proxy
+    use_ui @ui do
+      e = assert_raises ArgumentError, @ui.error do
+        @cmd.handle_options %w[-p=foo.bar.com]
+      end
+
+     assert_match "Invalid uri scheme for =foo.bar.com\nPreface URLs with one of [\"http://\", \"https://\", \"file://\", \"s3://\"]", e.message
+    end
+  end
+
   def test_execute_bad_source
     spec_fetcher
 
@@ -380,7 +412,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
   end
 
   def test_execute_rdoc
-    skip if RUBY_VERSION <= "1.8.7"
     specs = spec_fetcher do |fetcher|
       fetcher.gem 'a', 2
     end
@@ -414,6 +445,42 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_path_exists File.join(a2.doc_dir, 'ri')
     assert_path_exists File.join(a2.doc_dir, 'rdoc')
+  end
+
+  def test_execute_rdoc_with_path
+    specs = spec_fetcher do |fetcher|
+      fetcher.gem 'a', 2
+    end
+  
+    Gem.done_installing(&Gem::RDoc.method(:generation_hook))
+  
+    @cmd.options[:document] = %w[rdoc ri]
+    @cmd.options[:domain] = :local
+    @cmd.options[:install_dir] = 'whatever'
+  
+    a2 = specs['a-2']
+    FileUtils.mv a2.cache_file, @tempdir
+  
+    @cmd.options[:args] = %w[a]
+  
+    use_ui @ui do
+      # Don't use Dir.chdir with a block, it warnings a lot because
+      # of a downstream Dir.chdir with a block
+      old = Dir.getwd
+  
+      begin
+        Dir.chdir @tempdir
+        assert_raises Gem::MockGemUi::SystemExitException, @ui.error do
+          @cmd.execute
+        end
+      ensure
+        Dir.chdir old
+      end
+    end
+  
+    wait_for_child_process_to_exit
+  
+    assert_path_exists 'whatever/doc/a-2', 'documentation not installed'
   end
 
   def test_execute_saves_build_args
@@ -581,7 +648,8 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_empty @cmd.installed_specs
 
-    msg = "ERROR:  Can't use --version w/ multiple gems. Use name:ver instead."
+    msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
+      " version requirments using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
 
     assert_empty @ui.output
     assert_equal msg, @ui.error.chomp

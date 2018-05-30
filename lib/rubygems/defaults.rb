@@ -176,7 +176,26 @@ module Gem
   end
 
   ##
-  # Default options for gem commands.
+  # Default options for gem commands for Ruby packagers.
+  #
+  # The options here should be structured as an array of string "gem"
+  # command names as keys and a string of the default options as values.
+  #
+  # Example:
+  #
+  # def self.operating_system_defaults
+  #   {
+  #       'install' => '--no-rdoc --no-ri --env-shebang',
+  #       'update' => '--no-rdoc --no-ri --env-shebang'
+  #   }
+  # end
+
+  def self.operating_system_defaults
+    {}
+  end
+
+  ##
+  # Default options for gem commands for Ruby implementers.
   #
   # The options here should be structured as an array of string "gem"
   # command names as keys and a string of the default options as values.

@@ -15,7 +15,7 @@ module Gem::Util
     data = StringIO.new(data, 'r')
 
     unzipped = Zlib::GzipReader.new(data).read
-    unzipped.force_encoding Encoding::BINARY if Object.const_defined? :Encoding
+    unzipped.force_encoding Encoding::BINARY
     unzipped
   end
 
@@ -26,7 +26,7 @@ module Gem::Util
     require 'zlib'
     require 'stringio'
     zipped = StringIO.new(String.new, 'w')
-    zipped.set_encoding Encoding::BINARY if Object.const_defined? :Encoding
+    zipped.set_encoding Encoding::BINARY
 
     Zlib::GzipWriter.wrap zipped do |io| io.write data end
 
@@ -67,13 +67,11 @@ module Gem::Util
     end
   end
 
-  NULL_DEVICE = defined?(IO::NULL) ? IO::NULL : Gem.win_platform? ? 'NUL' : '/dev/null'
-
   ##
   # Invokes system, but silences all output.
 
   def self.silent_system *command
-    opt = {:out => NULL_DEVICE, :err => [:child, :out]}
+    opt = {:out => IO::NULL, :err => [:child, :out]}
     if Hash === command.last
       opt.update(command.last)
       cmds = command[0...-1]
@@ -86,15 +84,13 @@ module Gem::Util
 
     @silent_mutex ||= Mutex.new
 
-    null_device = NULL_DEVICE
-
     @silent_mutex.synchronize do
       begin
         stdout = STDOUT.dup
         stderr = STDERR.dup
 
-        STDOUT.reopen null_device, 'w'
-        STDERR.reopen null_device, 'w'
+        STDOUT.reopen IO::NULL, 'w'
+        STDERR.reopen IO::NULL, 'w'
 
         return system(*command)
       ensure

@@ -171,7 +171,7 @@ class Gem::Resolver
   include Molinillo::UI
 
   def output
-    @output ||= debug? ? $stdout : File.open(Gem::Util::NULL_DEVICE, 'w')
+    @output ||= debug? ? $stdout : File.open(IO::NULL, 'w')
   end
 
   def debug?
@@ -313,11 +313,6 @@ class Gem::Resolver
   private :amount_constrained
 
 end
-
-##
-# TODO remove in RubyGems 3
-
-Gem::DependencyResolver = Gem::Resolver # :nodoc:
 
 require 'rubygems/resolver/activation_request'
 require 'rubygems/resolver/conflict'

@@ -36,10 +36,6 @@ class TestGemResolver < Gem::TestCase
     flunk e.message
   end
 
-  def test_self_compatibility
-    assert_same Gem::Resolver, Gem::DependencyResolver
-  end
-
   def test_self_compose_sets_best_set
     best_set = @DR::BestSet.new
 
@@ -666,12 +662,12 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_second_level_backout
-    b1 = new_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb"
-    b2 = new_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
-    c1 = new_spec "c", "1"
-    c2 = new_spec "c", "2"
-    d1 = new_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
-    d2 = new_spec "d", "2", { "c" => "< 2" },  "lib/d.rb"
+    b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb"
+    b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
+    c1 = util_spec "c", "1"
+    c2 = util_spec "c", "2"
+    d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
+    d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d.rb"
 
     s = set(b1, b2, c1, c2, d1, d2)
 
@@ -688,11 +684,11 @@ class TestGemResolver < Gem::TestCase
     sourceB = Gem::Source.new 'http://example.com/b'
     sourceC = Gem::Source.new 'http://example.com/c'
 
-    spec_A_1 = new_spec 'some-dep', '0.0.1'
-    spec_A_2 = new_spec 'some-dep', '1.0.0'
-    spec_B_1 = new_spec 'some-dep', '0.0.1'
-    spec_B_2 = new_spec 'some-dep', '0.0.2'
-    spec_C_1 = new_spec 'some-dep', '0.1.0'
+    spec_A_1 = util_spec 'some-dep', '0.0.1'
+    spec_A_2 = util_spec 'some-dep', '1.0.0'
+    spec_B_1 = util_spec 'some-dep', '0.0.1'
+    spec_B_2 = util_spec 'some-dep', '0.0.2'
+    spec_C_1 = util_spec 'some-dep', '0.1.0'
 
     set = StaticSet.new [
       Gem::Resolver::SpecSpecification.new(nil, spec_B_1, sourceB),

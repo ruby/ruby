@@ -25,6 +25,28 @@ class TestGemRequestConnectionPool < Gem::TestCase
     super
   end
 
+  def test_to_proxy_substring
+    pools = Gem::Request::ConnectionPools.new nil, []
+
+    env_no_proxy = %w[
+      ems.example
+    ]
+
+    no_proxy = pools.send :no_proxy?, 'rubygems.example', env_no_proxy
+
+    refute no_proxy, 'mismatch'
+  end
+
+  def test_to_proxy_empty_string
+    pools = Gem::Request::ConnectionPools.new nil, []
+
+    env_no_proxy = [""]
+
+    no_proxy = pools.send :no_proxy?, 'ems.example', env_no_proxy
+
+    refute no_proxy, 'mismatch'
+  end
+
   def test_checkout_same_connection
     uri = URI.parse('http://example/some_endpoint')
 
@@ -86,8 +108,7 @@ class TestGemRequestConnectionPool < Gem::TestCase
 
     net_http_args = pools.send :net_http_args, URI('http://[::1]'), nil
 
-    expected_host = RUBY_VERSION >= "1.9.3" ? "::1" : "[::1]"
-    assert_equal [expected_host, 80], net_http_args
+    assert_equal ["::1", 80], net_http_args
   end
 
   def test_net_http_args_proxy

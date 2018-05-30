@@ -39,7 +39,7 @@ class Gem::Ext::Builder
       make_program = (/mswin/ =~ RUBY_PLATFORM) ? 'nmake' : 'make'
     end
 
-    destdir = '"DESTDIR=%s"' % ENV['DESTDIR'] if RUBY_VERSION > '2.0'
+    destdir = '"DESTDIR=%s"' % ENV['DESTDIR']
 
     ['clean', '', 'install'].each do |target|
       # Pass DESTDIR via command line to override what's in MAKEFLAGS
@@ -160,11 +160,19 @@ EOF
       FileUtils.mkdir_p dest_path
 
       CHDIR_MUTEX.synchronize do
-        Dir.chdir extension_dir do
-          results = builder.build(extension, @gem_dir, dest_path,
+        pwd = Dir.getwd
+        Dir.chdir extension_dir
+        begin
+          results = builder.build(extension, dest_path,
                                   results, @build_args, lib_dir)
 
           verbose { results.join("\n") }
+        ensure
+          begin
+            Dir.chdir pwd
+          rescue SystemCallError
+            Dir.chdir dest_path
+          end
         end
       end
 
@@ -218,4 +226,3 @@ EOF
   end
 
 end
-

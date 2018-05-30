@@ -94,7 +94,17 @@ command help for an example.
 
         spec_file = File.basename spec.spec_file
 
-        File.open spec_file, 'w' do |io|
+        FileUtils.mkdir_p @options[:target] if @options[:target]
+
+        destination = begin
+          if @options[:target]
+            File.join @options[:target], spec_file
+          else
+            spec_file
+          end
+        end
+
+        File.open destination, 'w' do |io|
           io.write metadata
         end
       else

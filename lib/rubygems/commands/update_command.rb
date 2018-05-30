@@ -85,17 +85,26 @@ command to remove old versions.
   end
 
   def execute
-
     if options[:system] then
       update_rubygems
       return
     end
 
-    say "Updating installed gems"
-
     hig = highest_installed_gems
 
     gems_to_update = which_to_update hig, options[:args].uniq
+
+    if options[:explain]
+      say "Gems to update:"
+
+      gems_to_update.each do |(name, version)|
+        say "  #{name}-#{version}"
+      end
+
+      return
+    end
+
+    say "Updating installed gems"
 
     updated = update_gems gems_to_update
 

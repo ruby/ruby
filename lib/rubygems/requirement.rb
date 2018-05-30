@@ -133,6 +133,7 @@ class Gem::Requirement
       @requirements = [DefaultRequirement]
     else
       @requirements = requirements.map! { |r| self.class.parse r }
+      sort_requirements!
     end
   end
 
@@ -146,6 +147,7 @@ class Gem::Requirement
     new = new.map { |r| self.class.parse r }
 
     @requirements.concat new
+    sort_requirements!
   end
 
   ##
@@ -183,11 +185,11 @@ class Gem::Requirement
   end
 
   def as_list # :nodoc:
-    requirements.map { |op, version| "#{op} #{version}" }.sort
+    requirements.map { |op, version| "#{op} #{version}" }
   end
 
   def hash # :nodoc:
-    requirements.sort.hash
+    requirements.hash
   end
 
   def marshal_dump # :nodoc:
@@ -264,7 +266,8 @@ class Gem::Requirement
   end
 
   def == other # :nodoc:
-    Gem::Requirement === other and to_s == other.to_s
+    return unless Gem::Requirement === other
+    requirements == other.requirements
   end
 
   private
@@ -277,6 +280,14 @@ class Gem::Requirement
       if r[0].kind_of? Gem::SyckDefaultKey
         r[0] = "="
       end
+    end
+  end
+
+  def sort_requirements! # :nodoc:
+    @requirements.sort! do |l, r| 
+      comp = l.last <=> r.last # first, sort by the requirement's version
+      next comp unless comp == 0
+      l.first <=> r.first # then, sort by the operator (for stability)
     end
   end
 end

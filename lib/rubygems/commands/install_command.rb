@@ -134,7 +134,8 @@ to write the specification by hand.  For example:
   def check_version # :nodoc:
     if options[:version] != Gem::Requirement.default and
          get_all_gem_names.size > 1 then
-      alert_error "Can't use --version w/ multiple gems. Use name:ver instead."
+      alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
+                  " version requirments using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1
     end
   end
@@ -148,7 +149,7 @@ to write the specification by hand.  For example:
 
     @installed_specs = []
 
-    ENV.delete 'GEM_PATH' if options[:install_dir].nil? and RUBY_VERSION > '1.9'
+    ENV.delete 'GEM_PATH' if options[:install_dir].nil?
 
     check_install_dir
     check_version
@@ -250,16 +251,21 @@ to write the specification by hand.  For example:
 
     get_all_gem_names_and_versions.each do |gem_name, gem_version|
       gem_version ||= options[:version]
+      domain = options[:domain]
+      domain = :local unless options[:suggest_alternate]
 
       begin
         install_gem gem_name, gem_version
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
-      rescue Gem::GemNotFoundException, Gem::UnsatisfiableDependencyError => e
-        domain = options[:domain]
-        domain = :local unless options[:suggest_alternate]
+      rescue Gem::GemNotFoundException => e
         show_lookup_failure e.name, e.version, e.errors, domain
+
+        exit_code |= 2
+      rescue Gem::UnsatisfiableDependencyError => e
+        show_lookup_failure e.name, e.version, e.errors, domain,
+                            "'#{gem_name}' (#{gem_version})"
 
         exit_code |= 2
       end
@@ -300,4 +306,3 @@ to write the specification by hand.  For example:
   end
 
 end
-

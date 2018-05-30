@@ -25,8 +25,8 @@ class TestGemResolverInstallerSet < Gem::TestCase
   end
 
   def test_add_always_install_errors
-    @fetcher = Gem::FakeFetcher.new
-    Gem::RemoteFetcher.fetcher = @fetcher
+    @stub_fetcher = Gem::FakeFetcher.new
+    Gem::RemoteFetcher.fetcher = @stub_fetcher
 
     set = Gem::Resolver::InstallerSet.new :both
 
@@ -197,7 +197,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     def (set.remote_set).prefetch(_)
       raise "called"
     end
-    assert_equal nil, set.prefetch(nil)
+    assert_nil set.prefetch(nil)
   end
 
   def test_prerelease_equals

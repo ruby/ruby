@@ -29,7 +29,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     Dir.chdir @ext do
       result =
-        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
 
       assert_same result, output
     end
@@ -54,7 +54,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
       output = []
 
       Dir.chdir @ext do
-        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
       end
 
       assert_equal "creating Makefile\n", output[2]
@@ -77,7 +77,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
       assert_raises Gem::InstallError do
         Dir.chdir @ext do
-          Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+          Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
         end
       end
 
@@ -103,7 +103,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     error = assert_raises Gem::InstallError do
       Dir.chdir @ext do
-        Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+        Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
       end
     end
 
@@ -130,7 +130,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
     end
 
     refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
@@ -172,7 +172,7 @@ end
     output = []
 
     Dir.chdir @ext do
-      Gem::Ext::ExtConfBuilder.build 'extconf.rb', nil, @dest_path, output
+      Gem::Ext::ExtConfBuilder.build 'extconf.rb', @dest_path, output
     end
 
     assert_contains_make_command 'clean', output[4]
@@ -231,4 +231,3 @@ end
   end
 
 end
-

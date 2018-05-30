@@ -36,9 +36,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask
-    skip 'TTY detection broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     Timeout.timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
@@ -48,21 +45,15 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_no_tty
-    skip 'TTY detection broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
     Timeout.timeout(0.1) do
       answer = @sui.ask("what is your favorite color?")
-      assert_equal nil, answer
+      assert_nil answer
     end
   end
 
   def test_ask_for_password
-    skip 'Always uses $stdin on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     Timeout.timeout(1) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
@@ -72,21 +63,15 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_for_password_no_tty
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
     Timeout.timeout(0.1) do
       answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
-      assert_equal nil, answer
+      assert_nil answer
     end
   end
 
   def test_ask_yes_no_no_tty_with_default
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
     Timeout.timeout(0.1) do
@@ -99,9 +84,6 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask_yes_no_no_tty_without_default
-    skip 'TTY handling is broken on windows' if
-      Gem.win_platform? && RUBY_VERSION <= '1.9.2'
-
     @in.tty = false
 
     Timeout.timeout(0.1) do

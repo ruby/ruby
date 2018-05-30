@@ -45,6 +45,7 @@ class Gem::CommandManager
     :fetch,
     :generate_index,
     :help,
+    :info,
     :install,
     :list,
     :lock,

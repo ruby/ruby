@@ -8,7 +8,7 @@ class Gem::Licenses
 
   # Software Package Data Exchange (SPDX) standard open-source software
   # license identifiers
-  IDENTIFIERS = %w(
+  LICENSE_IDENTIFIERS = %w(
       0BSD
       AAL
       ADSL
@@ -19,6 +19,8 @@ class Gem::Licenses
       AFL-3.0
       AGPL-1.0
       AGPL-3.0
+      AGPL-3.0-only
+      AGPL-3.0-or-later
       AMDPLPA
       AML
       AMPAS
@@ -41,9 +43,11 @@ class Gem::Licenses
       Artistic-1.0-Perl
       Artistic-1.0-cl8
       Artistic-2.0
+      BSD-1-Clause
       BSD-2-Clause
       BSD-2-Clause-FreeBSD
       BSD-2-Clause-NetBSD
+      BSD-2-Clause-Patent
       BSD-3-Clause
       BSD-3-Clause-Attribution
       BSD-3-Clause-Clear
@@ -96,6 +100,8 @@ class Gem::Licenses
       CC0-1.0
       CDDL-1.0
       CDDL-1.1
+      CDLA-Permissive-1.0
+      CDLA-Sharing-1.0
       CECILL-1.0
       CECILL-1.1
       CECILL-2.0
@@ -124,9 +130,11 @@ class Gem::Licenses
       EFL-1.0
       EFL-2.0
       EPL-1.0
+      EPL-2.0
       EUDatagrid
       EUPL-1.0
       EUPL-1.1
+      EUPL-1.2
       Entessa
       ErlPL-1.1
       Eurosym
@@ -138,13 +146,23 @@ class Gem::Licenses
       Frameworx-1.0
       FreeImage
       GFDL-1.1
+      GFDL-1.1-only
+      GFDL-1.1-or-later
       GFDL-1.2
+      GFDL-1.2-only
+      GFDL-1.2-or-later
       GFDL-1.3
+      GFDL-1.3-only
+      GFDL-1.3-or-later
       GL2PS
       GPL-1.0
       GPL-1.0+
+      GPL-1.0-only
+      GPL-1.0-or-later
       GPL-2.0
       GPL-2.0+
+      GPL-2.0-only
+      GPL-2.0-or-later
       GPL-2.0-with-GCC-exception
       GPL-2.0-with-autoconf-exception
       GPL-2.0-with-bison-exception
@@ -152,6 +170,8 @@ class Gem::Licenses
       GPL-2.0-with-font-exception
       GPL-3.0
       GPL-3.0+
+      GPL-3.0-only
+      GPL-3.0-or-later
       GPL-3.0-with-GCC-exception
       GPL-3.0-with-autoconf-exception
       Giftware
@@ -177,10 +197,16 @@ class Gem::Licenses
       LAL-1.3
       LGPL-2.0
       LGPL-2.0+
+      LGPL-2.0-only
+      LGPL-2.0-or-later
       LGPL-2.1
       LGPL-2.1+
+      LGPL-2.1-only
+      LGPL-2.1-or-later
       LGPL-3.0
       LGPL-3.0+
+      LGPL-3.0-only
+      LGPL-3.0-or-later
       LGPLLR
       LPL-1.0
       LPL-1.02
@@ -317,7 +343,6 @@ class Gem::Licenses
       W3C-19980720
       W3C-20150513
       WTFPL
-      WXwindows
       Watcom-1.0
       Wsuipa
       X11
@@ -349,17 +374,49 @@ class Gem::Licenses
       mpich2
       psfrag
       psutils
+      wxWindows
       xinetd
       xpp
       zlib-acknowledgement
   ).freeze
 
+  # exception identifiers
+  EXCEPTION_IDENTIFIERS = %w(
+      389-exception
+      Autoconf-exception-2.0
+      Autoconf-exception-3.0
+      Bison-exception-2.2
+      Bootloader-exception
+      CLISP-exception-2.0
+      Classpath-exception-2.0
+      DigiRule-FOSS-exception
+      FLTK-exception
+      Fawkes-Runtime-exception
+      Font-exception-2.0
+      GCC-exception-2.0
+      GCC-exception-3.1
+      LZMA-exception
+      Libtool-exception
+      Linux-syscall-note
+      Nokia-Qt-exception-1.1
+      OCCT-exception-1.0
+      Qwt-exception-1.0
+      WxWindows-exception-3.1
+      eCos-exception-2.0
+      freertos-exception-2.0
+      gnu-javamail-exception
+      i2p-gpl-java-exception
+      mif-exception
+      openvpn-openssl-exception
+      u-boot-exception-2.0
+  ).freeze
+
   REGEXP = %r{
     \A
     (
-      #{Regexp.union(IDENTIFIERS)}
+      #{Regexp.union(LICENSE_IDENTIFIERS)}
       \+?
-      (\s WITH \s .+)?
+      (\s WITH \s #{Regexp.union(EXCEPTION_IDENTIFIERS)})?
       | #{NONSTANDARD}
     )
     \Z
@@ -370,7 +427,7 @@ class Gem::Licenses
   end
 
   def self.suggestions(license)
-    by_distance = IDENTIFIERS.group_by do |identifier|
+    by_distance = LICENSE_IDENTIFIERS.group_by do |identifier|
       levenshtein_distance(identifier, license)
     end
     lowest = by_distance.keys.min

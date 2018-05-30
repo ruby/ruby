@@ -9,26 +9,6 @@
 # Ruby 1.9.x has introduced some things that are awkward, and we need to
 # support them, so we define some constants to use later.
 #++
-module Gem
-  # Only MRI 1.9.2 has the custom prelude.
-  GEM_PRELUDE_SUCKAGE = RUBY_VERSION =~ /^1\.9\.2/ and RUBY_ENGINE == "ruby"
-end
-
-# Gem::QuickLoader exists in the gem prelude code in ruby 1.9.2 itself.
-# We gotta get rid of it if it's there, before we do anything else.
-if Gem::GEM_PRELUDE_SUCKAGE and defined?(Gem::QuickLoader) then
-  Gem::QuickLoader.remove
-
-  $LOADED_FEATURES.delete Gem::QuickLoader.path_to_full_rubygems_library
-
-  if path = $LOADED_FEATURES.find {|n| n.end_with? '/rubygems.rb'} then
-    raise LoadError, "another rubygems is already loaded from #{path}"
-  end
-
-  class << Gem
-    remove_method :try_activate if Gem.respond_to?(:try_activate, true)
-  end
-end
 
 module Gem
   RubyGemsVersion = VERSION

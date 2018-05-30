@@ -31,11 +31,11 @@ class TestGem < Gem::TestCase
 
   def test_self_finish_resolve
     save_loaded_features do
-      a1 = new_spec "a", "1", "b" => "> 0"
-      b1 = new_spec "b", "1", "c" => ">= 1"
-      b2 = new_spec "b", "2", "c" => ">= 2"
-      c1 = new_spec "c", "1"
-      c2 = new_spec "c", "2"
+      a1 = util_spec "a", "1", "b" => "> 0"
+      b1 = util_spec "b", "1", "c" => ">= 1"
+      b2 = util_spec "b", "2", "c" => ">= 2"
+      c1 = util_spec "c", "1"
+      c2 = util_spec "c", "2"
 
       install_specs c1, c2, b1, b2, a1
 
@@ -53,13 +53,13 @@ class TestGem < Gem::TestCase
 
   def test_self_finish_resolve_wtf
     save_loaded_features do
-      a1 = new_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
-      b1 = new_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb" # this
-      b2 = new_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
-      c1 = new_spec "c", "1"                                # this
-      c2 = new_spec "c", "2"
-      d1 = new_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
-      d2 = new_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
+      a1 = util_spec "a", "1", "b" => "> 0", "d" => "> 0"    # this
+      b1 = util_spec "b", "1", { "c" => ">= 1" }, "lib/b.rb" # this
+      b2 = util_spec "b", "2", { "c" => ">= 2" }, "lib/b.rb"
+      c1 = util_spec "c", "1"                                # this
+      c2 = util_spec "c", "2"
+      d1 = util_spec "d", "1", { "c" => "< 2" },  "lib/d.rb"
+      d2 = util_spec "d", "2", { "c" => "< 2" },  "lib/d.rb" # this
 
       install_specs c1, c2, b1, b2, d1, d2, a1
 
@@ -77,11 +77,11 @@ class TestGem < Gem::TestCase
 
   def test_self_finish_resolve_respects_loaded_specs
     save_loaded_features do
-      a1 = new_spec "a", "1", "b" => "> 0"
-      b1 = new_spec "b", "1", "c" => ">= 1"
-      b2 = new_spec "b", "2", "c" => ">= 2"
-      c1 = new_spec "c", "1"
-      c2 = new_spec "c", "2"
+      a1 = util_spec "a", "1", "b" => "> 0"
+      b1 = util_spec "b", "1", "c" => ">= 1"
+      b2 = util_spec "b", "2", "c" => ">= 2"
+      c1 = util_spec "c", "1"
+      c2 = util_spec "c", "2"
 
       install_specs c1, c2, b1, b2, a1
 
@@ -130,6 +130,75 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1], installed.map { |spec| spec.full_name }
   end
 
+  def test_self_install_permissions
+    assert_self_install_permissions
+  end
+
+  def test_self_install_permissions_umask_0
+    umask = File.umask(0)
+    assert_self_install_permissions
+  ensure
+    File.umask(umask)
+  end
+
+  def test_self_install_permissions_umask_077
+    umask = File.umask(077)
+    assert_self_install_permissions
+  ensure
+    File.umask(umask)
+  end
+
+  def assert_self_install_permissions
+    mask = /mingw|mswin/ =~ RUBY_PLATFORM ? 0700 : 0777
+    options = {
+      :dir_mode => 0500,
+      :prog_mode => 0510,
+      :data_mode => 0640,
+      :wrappers => true,
+    }
+    Dir.chdir @tempdir do
+      Dir.mkdir 'bin'
+      File.open 'bin/foo.cmd', 'w' do |fp|
+        fp.chmod(0755)
+        fp.puts 'p'
+      end
+
+      Dir.mkdir 'data'
+      File.open 'data/foo.txt', 'w' do |fp|
+        fp.puts 'blah'
+      end
+
+      spec_fetcher do |f|
+        f.gem 'foo', 1 do |s|
+          s.executables = ['foo.cmd']
+          s.files = %w[bin/foo.cmd data/foo.txt]
+        end
+      end
+      Gem.install 'foo', Gem::Requirement.default, options
+    end
+
+    prog_mode = (options[:prog_mode] & mask).to_s(8)
+    dir_mode = (options[:dir_mode] & mask).to_s(8)
+    data_mode = (options[:data_mode] & mask).to_s(8)
+    expected = {
+      'bin/foo.cmd' => prog_mode,
+      'gems/foo-1' => dir_mode,
+      'gems/foo-1/bin' => dir_mode,
+      'gems/foo-1/data' => dir_mode,
+      'gems/foo-1/bin/foo.cmd' => prog_mode,
+      'gems/foo-1/data/foo.txt' => data_mode,
+    }
+    result = {}
+    Dir.chdir @gemhome do
+      expected.each_key do |n|
+        result[n] = (File.stat(n).mode & mask).to_s(8)
+      end
+    end
+    assert_equal(expected, result)
+  ensure
+    File.chmod(0700, *Dir.glob(@gemhome+'/gems/**/').map {|path| path.untaint})
+  end
+
   def test_require_missing
     save_loaded_features do
       assert_raises ::LoadError do
@@ -140,7 +209,7 @@ class TestGem < Gem::TestCase
 
   def test_require_does_not_glob
     save_loaded_features do
-      a1 = new_spec "a", "1", nil, "lib/a1.rb"
+      a1 = util_spec "a", "1", nil, "lib/a1.rb"
 
       install_specs a1
 
@@ -388,7 +457,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_use_gemdeps
-    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     FileUtils.mkdir_p 'detect/a/b'
@@ -542,9 +610,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_find_files_with_gemfile
-    # write_file(File.join Dir.pwd, 'Gemfile') fails on travis 1.8.7 with $SAFE=1
-    skip if RUBY_VERSION <= "1.8.7"
-
     cwd = File.expand_path("test/rubygems", @@project_dir)
     actual_load_path = $LOAD_PATH.unshift(cwd).dup
 
@@ -577,7 +642,7 @@ class TestGem < Gem::TestCase
     assert_equal expected, Gem.find_files('sff/discover').sort
     assert_equal expected, Gem.find_files('sff/**.rb').sort, '[ruby-core:31730]'
   ensure
-    assert_equal cwd, actual_load_path.shift unless RUBY_VERSION <= "1.8.7"
+    assert_equal cwd, actual_load_path.shift
   end
 
   def test_self_find_latest_files
@@ -793,7 +858,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_refresh
-    skip 'Insecure operation - mkdir' if RUBY_VERSION <= "1.8.7"
     util_make_gems
 
     a1_spec = @a1.spec_file
@@ -813,7 +877,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_refresh_keeps_loaded_specs_activated
-    skip 'Insecure operation - mkdir' if RUBY_VERSION <= "1.8.7"
     util_make_gems
 
     a1_spec = @a1.spec_file
@@ -1188,13 +1251,12 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_needs_picks_up_unresolved_deps
-    skip 'loading from unsafe file' if RUBY_VERSION <= "1.8.7"
     save_loaded_features do
       util_clear_gems
       a = util_spec "a", "1"
       b = util_spec "b", "1", "c" => nil
       c = util_spec "c", "2"
-      d =  new_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
+      d =  util_spec "d", "1", {'e' => '= 1'}, "lib/d.rb"
       e = util_spec "e", "1"
 
       install_specs a, c, b, e, d
@@ -1217,9 +1279,6 @@ class TestGem < Gem::TestCase
     output = Gem::Util.gunzip input
 
     assert_equal 'hello', output
-
-    return unless Object.const_defined? :Encoding
-
     assert_equal Encoding::BINARY, output.encoding
   end
 
@@ -1231,53 +1290,7 @@ class TestGem < Gem::TestCase
     zipped = StringIO.new output
 
     assert_equal 'hello', Zlib::GzipReader.new(zipped).read
-
-    return unless Object.const_defined? :Encoding
-
     assert_equal Encoding::BINARY, output.encoding
-  end
-
-  if Gem.win_platform? && '1.9' > RUBY_VERSION
-    # Ruby 1.9 properly handles ~ path expansion, so no need to run such tests.
-    def test_self_user_home_userprofile
-
-      Gem.clear_paths
-
-      # safe-keep env variables
-      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
-
-      # prepare for the test
-      ENV.delete('HOME')
-      ENV['USERPROFILE'] = "W:\\Users\\RubyUser"
-
-      assert_equal 'W:/Users/RubyUser', Gem.user_home
-
-    ensure
-      ENV['HOME'] = orig_home
-      ENV['USERPROFILE'] = orig_user_profile
-    end
-
-    def test_self_user_home_user_drive_and_path
-      Gem.clear_paths
-
-      # safe-keep env variables
-      orig_home, orig_user_profile = ENV['HOME'], ENV['USERPROFILE']
-      orig_home_drive, orig_home_path = ENV['HOMEDRIVE'], ENV['HOMEPATH']
-
-      # prepare the environment
-      ENV.delete('HOME')
-      ENV.delete('USERPROFILE')
-      ENV['HOMEDRIVE'] = 'Z:'
-      ENV['HOMEPATH'] = "\\Users\\RubyUser"
-
-      assert_equal 'Z:/Users/RubyUser', Gem.user_home
-
-    ensure
-      ENV['HOME'] = orig_home
-      ENV['USERPROFILE'] = orig_user_profile
-      ENV['HOMEDRIVE'] = orig_home_drive
-      ENV['HOMEPATH'] = orig_home_path
-    end
   end
 
   def test_self_vendor_dir
@@ -1305,7 +1318,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_load_plugins
-    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     plugin_path = File.join "lib", "rubygems_plugin.rb"
 
     Dir.chdir @tempdir do
@@ -1360,8 +1372,8 @@ class TestGem < Gem::TestCase
     write_file File.join(@tempdir, 'lib', "g.rb") { |fp| fp.puts "" }
     write_file File.join(@tempdir, 'lib', 'm.rb') { |fp| fp.puts "" }
 
-    g = new_spec 'g', '1', nil, "lib/g.rb"
-    m = new_spec 'm', '1', nil, "lib/m.rb"
+    g = util_spec 'g', '1', nil, "lib/g.rb"
+    m = util_spec 'm', '1', nil, "lib/m.rb"
 
     install_gem g, :install_dir => Gem.dir
     m0 = install_gem m, :install_dir => Gem.dir
@@ -1416,8 +1428,8 @@ class TestGem < Gem::TestCase
     write_file File.join(@tempdir, 'lib', "g.rb") { |fp| fp.puts "" }
     write_file File.join(@tempdir, 'lib', 'm.rb') { |fp| fp.puts "" }
 
-    g = new_spec 'g', '1', nil, "lib/g.rb"
-    m = new_spec 'm', '1', nil, "lib/m.rb"
+    g = util_spec 'g', '1', nil, "lib/g.rb"
+    m = util_spec 'm', '1', nil, "lib/m.rb"
 
     install_gem g, :install_dir => Gem.dir
     install_gem m, :install_dir => Gem.dir
@@ -1434,9 +1446,9 @@ class TestGem < Gem::TestCase
   def test_auto_activation_of_specific_gemdeps_file
     util_clear_gems
 
-    a = new_spec "a", "1", nil, "lib/a.rb"
-    b = new_spec "b", "1", nil, "lib/b.rb"
-    c = new_spec "c", "1", nil, "lib/c.rb"
+    a = util_spec "a", "1", nil, "lib/a.rb"
+    b = util_spec "b", "1", nil, "lib/b.rb"
+    c = util_spec "c", "1", nil, "lib/c.rb"
 
     install_specs a, b, c
 
@@ -1456,12 +1468,11 @@ class TestGem < Gem::TestCase
   end
 
   def test_auto_activation_of_used_gemdeps_file
-    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     util_clear_gems
 
-    a = new_spec "a", "1", nil, "lib/a.rb"
-    b = new_spec "b", "1", nil, "lib/b.rb"
-    c = new_spec "c", "1", nil, "lib/c.rb"
+    a = util_spec "a", "1", nil, "lib/a.rb"
+    b = util_spec "b", "1", nil, "lib/b.rb"
+    c = util_spec "c", "1", nil, "lib/c.rb"
 
     install_specs a, b, c
 
@@ -1496,9 +1507,9 @@ class TestGem < Gem::TestCase
   def test_looks_for_gemdeps_files_automatically_on_start
     util_clear_gems
 
-    a = new_spec "a", "1", nil, "lib/a.rb"
-    b = new_spec "b", "1", nil, "lib/b.rb"
-    c = new_spec "c", "1", nil, "lib/c.rb"
+    a = util_spec "a", "1", nil, "lib/a.rb"
+    b = util_spec "b", "1", nil, "lib/b.rb"
+    c = util_spec "c", "1", nil, "lib/c.rb"
 
     install_specs a, b, c
 
@@ -1513,12 +1524,7 @@ class TestGem < Gem::TestCase
     path = File.join @tempdir, "gem.deps.rb"
     cmd = [Gem.ruby.dup.untaint, "-I#{LIB_PATH.untaint}",
            "-I#{BUNDLER_LIB_PATH.untaint}", "-rrubygems"]
-    if RUBY_VERSION < '1.9'
-      cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
-      cmd = cmd.join(' ')
-    else
-      cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
-    end
+    cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
@@ -1537,9 +1543,9 @@ class TestGem < Gem::TestCase
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
     util_clear_gems
 
-    a = new_spec "a", "1", nil, "lib/a.rb"
-    b = new_spec "b", "1", nil, "lib/b.rb"
-    c = new_spec "c", "1", nil, "lib/c.rb"
+    a = util_spec "a", "1", nil, "lib/a.rb"
+    b = util_spec "b", "1", nil, "lib/b.rb"
+    c = util_spec "c", "1", nil, "lib/c.rb"
 
     install_specs a, b, c
 
@@ -1556,12 +1562,7 @@ class TestGem < Gem::TestCase
     path = File.join @tempdir, "gem.deps.rb"
     cmd = [Gem.ruby.dup.untaint, "-Csub1", "-I#{LIB_PATH.untaint}",
            "-I#{BUNDLER_LIB_PATH.untaint}", "-rrubygems"]
-    if RUBY_VERSION < '1.9'
-      cmd << "-e 'puts Gem.loaded_specs.values.map(&:full_name).sort'"
-      cmd = cmd.join(' ')
-    else
-      cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
-    end
+    cmd << "-eputs Gem.loaded_specs.values.map(&:full_name).sort"
 
     File.open path, "w" do |f|
       f.puts "gem 'a'"
@@ -1590,7 +1591,7 @@ class TestGem < Gem::TestCase
 
     assert_equal old_style, Gem.find_unresolved_default_spec("foo.rb")
     assert_equal old_style, Gem.find_unresolved_default_spec("bar.rb")
-    assert_equal nil, Gem.find_unresolved_default_spec("baz.rb")
+    assert_nil              Gem.find_unresolved_default_spec("baz.rb")
 
     Gem.clear_default_specs
 
@@ -1603,8 +1604,8 @@ class TestGem < Gem::TestCase
 
     assert_equal new_style, Gem.find_unresolved_default_spec("foo.rb")
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
-    assert_equal nil, Gem.find_unresolved_default_spec("exec")
-    assert_equal nil, Gem.find_unresolved_default_spec("README")
+    assert_nil              Gem.find_unresolved_default_spec("exec")
+    assert_nil              Gem.find_unresolved_default_spec("README")
   end
 
   def test_default_gems_use_full_paths
@@ -1696,7 +1697,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_automatic
-    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     spec = util_spec 'a', 1
@@ -1717,7 +1717,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_automatic_missing
-    skip 'Insecure operation - chdir' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], '-'
 
     Gem.use_gemdeps
@@ -1746,7 +1745,6 @@ class TestGem < Gem::TestCase
   end
 
   def test_use_gemdeps_missing_gem
-    skip 'Insecure operation - read' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
 
     File.open 'x', 'w' do |io|
@@ -1781,7 +1779,6 @@ You may need to `gem install -g` to install missing gems
   end if Gem::USE_BUNDLER_FOR_GEMDEPS
 
   def test_use_gemdeps_specific
-    skip 'Insecure operation - read' if RUBY_VERSION <= "1.8.7"
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
 
     spec = util_spec 'a', 1
@@ -1799,6 +1796,13 @@ You may need to `gem install -g` to install missing gems
     assert_equal add_bundler_full_name(%W(a-1)), loaded_spec_names
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
+  end
+
+  def test_operating_system_defaults
+    operating_system_defaults = Gem.operating_system_defaults
+
+    assert operating_system_defaults != nil
+    assert operating_system_defaults.is_a? Hash
   end
 
   def test_platform_defaults

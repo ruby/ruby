@@ -54,10 +54,23 @@ class Gem::Request::ConnectionPools # :nodoc:
     host = host.downcase
 
     env_no_proxy.any? do |pattern|
-      pattern = pattern.downcase
+      env_no_proxy_pattern = pattern.downcase.dup
 
-      host[-pattern.length, pattern.length] == pattern or
-        (pattern.start_with? '.' and pattern[1..-1] == host)
+      # Remove dot in front of pattern for wildcard matching
+      env_no_proxy_pattern[0] = "" if env_no_proxy_pattern[0] == "."
+
+      host_tokens = host.split(".")
+      pattern_tokens = env_no_proxy_pattern.split(".")
+
+      intersection = (host_tokens - pattern_tokens) | (pattern_tokens - host_tokens)
+
+      # When we do the split into tokens we miss a dot character, so add it back if we need it
+      missing_dot = intersection.length > 0 ? 1 : 0
+      start = intersection.join(".").size + missing_dot
+
+      no_proxy_host = host[start..-1]
+
+      env_no_proxy_pattern == no_proxy_host
     end
   end
 
