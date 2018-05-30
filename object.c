@@ -564,12 +564,13 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
 
 /*
  *  call-seq:
+ *     obj.then {|x| block }          -> an_object
  *     obj.yield_self {|x| block }    -> an_object
  *
  *  Yields self to the block and returns the result of the block.
  *
+ *     3.next.then {|x| x**x }.to_s             #=> "256"
  *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
- *     3.next.yield_self {|x| x**x }.to_s       #=> "256"
  *
  */
 
@@ -4065,6 +4066,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
     rb_define_method(rb_mKernel, "itself", rb_obj_itself, 0);
     rb_define_method(rb_mKernel, "yield_self", rb_obj_yield_self, 0);
+    rb_define_method(rb_mKernel, "then", rb_obj_yield_self, 0);
     rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
     rb_define_method(rb_mKernel, "initialize_dup", rb_obj_init_dup_clone, 1);
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_dup_clone, 1);
