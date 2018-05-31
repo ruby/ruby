@@ -75,6 +75,7 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 		RUBY="$(MINIRUBY)" MINIRUBY="$(MINIRUBY)" $(mflags)
 
 COMMONOBJS    = array.$(OBJEXT) \
+		ast.$(OBJEXT) \
 		bignum.$(OBJEXT) \
 		class.$(OBJEXT) \
 		compar.$(OBJEXT) \
@@ -1445,6 +1446,12 @@ array.$(OBJEXT): {$(VPATH)}ruby_assert.h
 array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
 array.$(OBJEXT): {$(VPATH)}util.h
+ast.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+ast.$(OBJEXT): $(top_srcdir)/include/ruby.h
+ast.$(OBJEXT): {$(VPATH)}encoding.h
+ast.$(OBJEXT): {$(VPATH)}internal.h
+ast.$(OBJEXT): {$(VPATH)}node.h
+ast.$(OBJEXT): {$(VPATH)}vm_core.h
 bignum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 bignum.$(OBJEXT): $(top_srcdir)/include/ruby.h
 bignum.$(OBJEXT): {$(VPATH)}bignum.c

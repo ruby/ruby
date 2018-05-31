@@ -479,7 +479,7 @@ rb_ast_node_inspect(VALUE self)
 void
 Init_ast(void)
 {
-    rb_mAST = rb_define_module("AST");
+    rb_mAST = rb_define_module_under(rb_cRubyVM, "AST");
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
 
     rb_define_alloc_func(rb_cNode, rb_ast_node_alloc);

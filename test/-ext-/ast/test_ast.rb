@@ -1,38 +1,39 @@
 # frozen_string_literal: false
 require 'test/unit'
-require "-test-/ast"
 
-module AST
-  class Node
-    class CodePosition
-      include Comparable
-      attr_reader :lineno, :column
-      def initialize(lineno, column)
-        @lineno = lineno
-        @column = column
-      end
+class RubyVM
+  module AST
+    class Node
+      class CodePosition
+        include Comparable
+        attr_reader :lineno, :column
+        def initialize(lineno, column)
+          @lineno = lineno
+          @column = column
+        end
 
-      def <=>(other)
-        case
-        when lineno < other.lineno
-          -1
-        when lineno == other.lineno
-          column <=> other.column
-        when lineno > other.lineno
-          1
+        def <=>(other)
+          case
+          when lineno < other.lineno
+            -1
+          when lineno == other.lineno
+            column <=> other.column
+          when lineno > other.lineno
+            1
+          end
         end
       end
-    end
 
-    def beg_pos
-      CodePosition.new(first_lineno, first_column)
-    end
+      def beg_pos
+        CodePosition.new(first_lineno, first_column)
+      end
 
-    def end_pos
-      CodePosition.new(last_lineno, last_column)
-    end
+      def end_pos
+        CodePosition.new(last_lineno, last_column)
+      end
 
-    alias to_s inspect
+      alias to_s inspect
+    end
   end
 end
 
@@ -62,7 +63,7 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      ast = AST.parse_file(@path)
+      ast = RubyVM::AST.parse_file(@path)
       raise "Syntax error: #{@path}" if ast.nil?
       @ast = ast
     end
@@ -132,7 +133,7 @@ class TestAst < Test::Unit::TestCase
 
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = RubyVM::AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[1]
     assert_equal("NODE_STR", node.type)
     assert_equal(0, node.first_column)
