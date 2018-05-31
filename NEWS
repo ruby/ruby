@@ -120,6 +120,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Range#=== now uses #cover? instead of #include? method. [Feature #14575]
 
+* RubyVM::AST
+
+  * RubyVM::AST.parse parses a given string and returns AST nodes. [experimental]
+  * RubyVM::AST.parse_file parses a given file and returns AST nodes. [experimental]
+
 * String
 
   * String#split yields each substring to the block if given. [Feature #4780]
