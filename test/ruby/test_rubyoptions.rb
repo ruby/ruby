@@ -594,7 +594,7 @@ class TestRubyOptions < Test::Unit::TestCase
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
-      end while Process.wait(pid, Process::WNOHANG)
+      end until Process.wait(pid, Process::WNOHANG)
       assert_match(/hello world/, ps)
       Process.kill :KILL, pid
       Process.wait(pid)
@@ -620,7 +620,7 @@ class TestRubyOptions < Test::Unit::TestCase
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
-      end while Process.wait(pid, Process::WNOHANG)
+      end until Process.wait(pid, Process::WNOHANG)
       assert_match(/hello world/, ps)
       Process.kill :KILL, pid
       Process.wait(pid)
