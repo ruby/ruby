@@ -54,15 +54,11 @@ rb_ast_s_parse(VALUE module, VALUE str)
 {
     VALUE obj;
     rb_ast_t *ast = 0;
-    rb_binding_t *toplevel_binding;
 
     const VALUE parser = rb_parser_new();
 
-    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
-                  toplevel_binding);
-
     str = rb_check_string_type(str);
-    rb_parser_set_context(parser, &toplevel_binding->block, 1);
+    rb_parser_set_context(parser, NULL, 1);
     ast = rb_parser_compile_string_path(parser, rb_str_new_cstr("no file name"), str, 1);
 
     if (!ast->body.root) return Qnil;
@@ -77,18 +73,14 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
 {
     VALUE obj, f;
     rb_ast_t *ast = 0;
-    rb_binding_t *toplevel_binding;
     rb_encoding *enc = rb_utf8_encoding();
 
     const VALUE parser = rb_parser_new();
 
-    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
-                  toplevel_binding);
-
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    rb_parser_set_context(parser, &toplevel_binding->block, 1);
+    rb_parser_set_context(parser, NULL, 1);
     ast = rb_parser_compile_file_path(parser, path, f, 1);
 
     rb_io_close(f);
