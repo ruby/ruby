@@ -483,6 +483,7 @@ Init_ast(void)
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
 
     rb_define_alloc_func(rb_cNode, rb_ast_node_alloc);
+    rb_undef_method(CLASS_OF(rb_cNode), "new");
     rb_define_singleton_method(rb_mAST, "parse", rb_ast_s_parse, 1);
     rb_define_singleton_method(rb_mAST, "parse_file", rb_ast_s_parse_file, 1);
     rb_define_method(rb_cNode, "type", rb_ast_node_type, 0);
