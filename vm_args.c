@@ -671,8 +671,15 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 	argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
     }
     else if (kw_splat && NIL_P(keyword_hash)) {
-	rb_warning("passing splat keyword arguments as a single Hash"
-		   " to `% "PRIsVALUE"'", rb_id2str(ci->mid));
+	if (RTEST(ruby_verbose)) {
+	    VALUE path = rb_iseq_path(iseq);
+	    VALUE line = rb_iseq_first_lineno(iseq);
+	    VALUE label = rb_iseq_label(iseq);
+	    rb_compile_warning(NIL_P(path) ? NULL : RSTRING_PTR(path), FIX2INT(line),
+			       "in `%s': the last argument was passed as a single Hash",
+			       NIL_P(label) ? NULL : RSTRING_PTR(label));
+	    rb_warning("although a splat keyword arguments here");
+	}
     }
 
     if (iseq->body->param.flags.has_block) {
