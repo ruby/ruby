@@ -1449,6 +1449,7 @@ array.$(OBJEXT): {$(VPATH)}util.h
 ast.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ast.$(OBJEXT): $(top_srcdir)/include/ruby.h
 ast.$(OBJEXT): {$(VPATH)}encoding.h
+ast.$(OBJEXT): {$(VPATH)}id.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
 ast.$(OBJEXT): {$(VPATH)}node.h
 ast.$(OBJEXT): {$(VPATH)}vm_core.h
