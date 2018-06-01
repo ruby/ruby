@@ -7785,9 +7785,9 @@ objspace_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
 }
 
 enum memop_type {
-    MEMOP_TYPE_MALLOC  = 1,
-    MEMOP_TYPE_FREE    = 2,
-    MEMOP_TYPE_REALLOC = 3
+    MEMOP_TYPE_MALLOC  = 0,
+    MEMOP_TYPE_FREE,
+    MEMOP_TYPE_REALLOC
 };
 
 static inline void
