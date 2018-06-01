@@ -272,9 +272,9 @@ $(LIBRUBY_SO):
 		-$(Q) $(OBJCOPY) -w -L '$(SYMBOL_PREFIX)Init_*' -L '$(SYMBOL_PREFIX)ruby_static_id_*' \
 			-L '$(SYMBOL_PREFIX)*_threadptr_*' -L '$(SYMBOL_PREFIX)*_ec_*' $@
 		$(Q) $(POSTLINK)
-		@-$(MINIRUBY) -e 'ARGV.each{|link| File.delete link rescue nil; \
-						  File.symlink "$(LIBRUBY_SO)", link}' \
-				$(LIBRUBY_ALIASES) || true
+		@-$(MINIRUBY) -e 'so, *aliases = ARGV; aliases.uniq!; aliases.delete(File.basename(so)); \
+				  aliases.each { |link| File.delete link rescue nil; File.symlink so, link }' \
+				$(LIBRUBY_SO) $(LIBRUBY_ALIASES) || true
 
 LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
 $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)

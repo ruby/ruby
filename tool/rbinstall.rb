@@ -360,7 +360,7 @@ install?(:local, :arch, :lib, :'lib-arch') do
   install lib, libdir, :mode => $prog_mode, :strip => $strip unless lib == arc
   install arc, libdir, :mode => $data_mode unless CONFIG["INSTALL_STATIC_LIBRARY"] == "no"
   if dll == lib and dll != arc
-    for link in CONFIG["LIBRUBY_ALIASES"].split
+    for link in CONFIG["LIBRUBY_ALIASES"].split - [File.basename(dll)]
       ln_sf(dll, File.join(libdir, link))
     end
   end
