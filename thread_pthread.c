@@ -399,7 +399,10 @@ Init_native_thread(rb_thread_t *th)
 {
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
-        int r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
+        int r = pthread_condattr_init(condattr_monotonic);
+        if (r == 0) {
+            r = pthread_condattr_setclock(condattr_monotonic, CLOCK_MONOTONIC);
+        }
         if (r) condattr_monotonic = NULL;
     }
 #endif
