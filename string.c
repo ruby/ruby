@@ -4724,7 +4724,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
     }
 
     if (SPECIAL_CONST_P(indx)) goto generic;
-    switch (TYPE(indx)) {
+    switch (BUILTIN_TYPE(indx)) {
       case T_REGEXP:
 	rb_str_subpat_set(str, indx, INT2FIX(0), val);
 	return val;
@@ -9628,14 +9628,11 @@ rb_str_start_with(int argc, VALUE *argv, VALUE str)
 
     for (i=0; i<argc; i++) {
 	VALUE tmp = argv[i];
-	switch (TYPE(tmp)) {
-	  case T_REGEXP:
-	    {
-		bool r = rb_reg_start_with_p(tmp, str);
-		if (r) return Qtrue;
-	    }
-	    break;
-	  default:
+	if (RB_TYPE_P(tmp, T_REGEXP)) {
+	    if (rb_reg_start_with_p(tmp, str))
+		return Qtrue;
+	}
+	else {
 	    StringValue(tmp);
 	    rb_enc_check(str, tmp);
 	    if (RSTRING_LEN(str) < RSTRING_LEN(tmp)) continue;
