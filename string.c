@@ -9611,8 +9611,10 @@ rb_str_rpartition(VALUE str, VALUE sep)
  *     str.start_with?([prefixes]+)   -> true or false
  *
  *  Returns true if +str+ starts with one of the +prefixes+ given.
+ *  Each +prefixes+ should be a String or a Regexp.
  *
  *    "hello".start_with?("hell")               #=> true
+ *    "hello".start_with?(/H/i)                 #=> true
  *
  *    # returns true if one of the prefixes matches.
  *    "hello".start_with?("heaven", "hell")     #=> true
