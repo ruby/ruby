@@ -50,7 +50,6 @@ Racc:: A LALR(1) parser generator written in Ruby.
 RbConfig:: Information of your configure and build of Ruby
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
-REXML:: An XML toolkit for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
 Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
@@ -95,6 +94,7 @@ CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 RDoc:: Produces HTML and command-line documentation for Ruby
+REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
 Scanf:: A Ruby implementation of the C function scanf(3)
 WEBrick:: An HTTP server toolkit for Ruby

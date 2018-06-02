@@ -118,8 +118,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/resolv.rb]
   Tanaka Akira (akr)
-[lib/rexml/*]
-  Kouhei Sutou (kou)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
@@ -218,6 +216,8 @@ Zachary Scott (zzak)
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
+[lib/rexml/*]
+  Kouhei Sutou (kou)
 [lib/rss.rb, lib/rss/*]
   Kouhei Sutou (kou)
 [lib/scanf.rb]
