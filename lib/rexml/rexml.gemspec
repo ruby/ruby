@@ -1,4 +1,4 @@
-require_relative "rexml/rexml"
+require_relative "rexml"
 
 Gem::Specification.new do |spec|
   spec.name          = "rexml"
