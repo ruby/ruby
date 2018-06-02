@@ -421,7 +421,7 @@ probes.stamp: $(DTRACE_REBUILD_OBJS)
 	fi
 	$(Q) touch $@
 
-probes.@OBJEXT@: $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
+probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	@$(ECHO) processing probes in object files
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)

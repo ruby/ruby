@@ -139,7 +139,16 @@ $(TIMESTAMPDIR)/.exec.time:
 .PHONY: commit
 commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS)))
 	@$(BASERUBY) -C "$(srcdir)" -I./tool -rvcs -e 'VCS.detect(".").commit'
-	$(Q)$(MAKE) $(mflags) Q=$(Q) srcs_vpath='$(srcdir)/' REVISION_FORCE=PHONY update-src srcs all-incs
+	+$(Q) \
+	{ \
+	  cd "$(srcdir)"; \
+	  sed 's/^@.*@$$//;s/@[A-Z][A-Z_0-9]*@//g;/^all-incs:/d' defs/gmake.mk Makefile.in; \
+	  sed 's/{[.;]*$$([a-zA-Z0-9_]*)}//g' common.mk; \
+	} | \
+	$(MAKE) $(mflags) Q=$(Q) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
+		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
+		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY -f - \
+		update-src srcs all-incs
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
 extract-gems: update-gems
