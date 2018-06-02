@@ -95,6 +95,9 @@ end
 #   has many prime factors. e.g. for Prime#prime? .
 
 class Prime
+
+  VERSION = "0.1.0"
+
   include Enumerable
   include Singleton
 

@@ -40,7 +40,6 @@ OptionParser:: Ruby-oriented class for command-line option analysis
 OpenStruct:: Class to build custom data structures, similar to a Hash
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
-Prime:: Prime numbers and factorization library
 profile.rb:: Runs the Ruby Profiler__
 Profiler__:: Provides a way to profile your Ruby application
 PStore:: Implements a file based persistence mechanism based on a Hash
@@ -93,6 +92,7 @@ CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Logger:: Provides a simple logging utility for outputting messages
+Prime:: Prime numbers and factorization library
 RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
