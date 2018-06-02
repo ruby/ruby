@@ -68,8 +68,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
-[lib/logger.rb]
-  Naotoshi Seo (sonots)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/mkmf.rb]
@@ -213,6 +211,8 @@ Zachary Scott (zzak)
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
+[lib/logger.rb]
+  Naotoshi Seo (sonots)
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
