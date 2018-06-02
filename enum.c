@@ -218,7 +218,7 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 
     memo = MEMO_NEW(item, 0, 0);
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
-    return INT2NUM(memo->u3.cnt);
+    return LONG2NUM(memo->u3.cnt);
 }
 
 static VALUE
