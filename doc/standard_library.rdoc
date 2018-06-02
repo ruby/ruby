@@ -24,7 +24,6 @@ Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-Logger:: Provides a simple logging utility for outputting messages
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Matrix:: Represents a mathematical matrix.
 Monitor:: Provides an object or module to use safely by more than one thread
@@ -93,6 +92,7 @@ Bundler:: Manage your Ruby application's gem dependencies
 CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
+Logger:: Provides a simple logging utility for outputting messages
 RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
