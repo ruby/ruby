@@ -52,7 +52,6 @@ resolv-replace.rb:: Replace Socket DNS with Resolv
 Resolv::  Thread-aware DNS resolver library in Ruby
 REXML:: An XML toolkit for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
-RSS:: Family of libraries that support various formats of XML "feeds"
 Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
@@ -96,6 +95,7 @@ CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 RDoc:: Produces HTML and command-line documentation for Ruby
+RSS:: Family of libraries that support various formats of XML "feeds"
 Scanf:: A Ruby implementation of the C function scanf(3)
 WEBrick:: An HTTP server toolkit for Ruby
 

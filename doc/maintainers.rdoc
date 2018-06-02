@@ -122,8 +122,6 @@ Zachary Scott (zzak)
   Kouhei Sutou (kou)
 [lib/rinda/*]
   Masatoshi SEKI (seki)
-[lib/rss.rb, lib/rss/*]
-  Kouhei Sutou (kou)
 [lib/rubygems.rb, lib/ubygems.rb, lib/rubygems/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/rubygems/rubygems
@@ -220,6 +218,8 @@ Zachary Scott (zzak)
 [lib/rdoc.rb, lib/rdoc/*]
   Eric Hodel (drbrain), Hiroshi SHIBATA (hsbt)
   https://github.com/ruby/rdoc
+[lib/rss.rb, lib/rss/*]
+  Kouhei Sutou (kou)
 [lib/scanf.rb]
   David A. Black (dblack)
   https://github.com/ruby/scanf
