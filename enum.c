@@ -218,7 +218,7 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 
     memo = MEMO_NEW(item, 0, 0);
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
-    return LONG2NUM(memo->u3.cnt);
+    return ULONG2NUM(memo->u3.cnt);
 }
 
 static VALUE
@@ -286,7 +286,7 @@ find_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     ENUM_WANT_SVALUE();
 
     if (rb_equal(i, memo->v2)) {
-	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
+	MEMO_V1_SET(memo, ULONG2NUM(memo->u3.cnt));
 	rb_iter_break();
     }
     memo->u3.cnt++;
@@ -299,7 +299,7 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     struct MEMO *memo = MEMO_CAST(memop);
 
     if (RTEST(rb_yield_values2(argc, argv))) {
-	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
+	MEMO_V1_SET(memo, ULONG2NUM(memo->u3.cnt));
 	rb_iter_break();
     }
     memo->u3.cnt++;
@@ -693,7 +693,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                 if (FIXNUM_P(e)) {
                     n += FIX2LONG(e); /* should not overflow long type */
                     if (!FIXABLE(n)) {
-                        v = rb_big_plus(LONG2NUM(n), v);
+                        v = rb_big_plus(ULONG2NUM(n), v);
                         n = 0;
                     }
                 }
@@ -2234,7 +2234,7 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 {
     long n = MEMO_CAST(memo)->u3.cnt++;
 
-    return rb_yield_values(2, rb_enum_values_pack(argc, argv), INT2NUM(n));
+    return rb_yield_values(2, rb_enum_values_pack(argc, argv), ULONG2NUM(n));
 }
 
 /*
