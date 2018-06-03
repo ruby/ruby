@@ -1148,8 +1148,8 @@ rb_proc_location(VALUE self)
     return iseq_location(rb_proc_get_iseq(self, 0));
 }
 
-static VALUE
-unnamed_parameters(int arity)
+VALUE
+rb_unnamed_parameters(int arity)
 {
     VALUE a, param = rb_ary_new2((arity < 0) ? -arity : arity);
     int n = (arity < 0) ? ~arity : arity;
@@ -1183,7 +1183,7 @@ rb_proc_parameters(VALUE self)
     int is_proc;
     const rb_iseq_t *iseq = rb_proc_get_iseq(self, &is_proc);
     if (!iseq) {
-	return unnamed_parameters(rb_proc_arity(self));
+	return rb_unnamed_parameters(rb_proc_arity(self));
     }
     return rb_iseq_parameters(iseq, is_proc);
 }
@@ -2567,7 +2567,7 @@ rb_method_parameters(VALUE method)
 {
     const rb_iseq_t *iseq = rb_method_iseq(method);
     if (!iseq) {
-	return unnamed_parameters(method_arity(method));
+	return rb_unnamed_parameters(method_arity(method));
     }
     return rb_iseq_parameters(iseq, 0);
 }

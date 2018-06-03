@@ -218,4 +218,6 @@ void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 
+VALUE rb_unnamed_parameters(int arity);
+
 #endif /* RUBY_METHOD_H */
