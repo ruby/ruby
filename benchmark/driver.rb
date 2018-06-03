@@ -209,6 +209,11 @@ class BenchmarkDriver
 
     output({
       real: "Execution time (sec)",
+      utime: "user CPU time",
+      stime: "system CPU time",
+      cutime: "user CPU time of children",
+      cstime: "system CPU time of children",
+      total: "all CPU time",
       peak: "Memory usage (peak) (B)",
       size: "Memory usage (last size) (B)",
     }[@measure_target])
@@ -332,12 +337,12 @@ class BenchmarkDriver
 
   def measure executable, file
     case @measure_target
-    when :real
+    when :real, :utime, :stime, :cutime, :cstime, :total
       cmd = "#{executable} #{@ruby_arg} #{file}"
       m = Benchmark.measure{
         system(cmd, out: File::NULL)
       }
-      result = m.real
+      result = m.__send__(@measure_target)
     when :peak, :size
       tmp = Tempfile.new("benchmark-memory-wrapper-data")
       wrapper = "#{File.join(__dir__, 'memory_wrapper.rb')} #{tmp.path} #{@measure_target}"
@@ -405,7 +410,8 @@ if __FILE__ == $0
     o.on('--ruby-arg [ARG]', "Optional argument for ruby"){|a|
       opt[:ruby_arg] = a
     }
-    o.on('--measure-target [TARGET]', 'real (execution time), peak, size (memory)'){|mt|
+    o.on('--measure-target [TARGET]',
+         'real (execution time), peak, size (memory), total'){|mt|
       opt[:measure_target] = mt.to_sym
     }
     o.on('--rawdata-output [FILE]', 'output rawdata'){|r|
