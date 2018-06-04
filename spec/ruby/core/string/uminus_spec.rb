@@ -31,14 +31,12 @@ describe 'String#-@' do
       (-"unfrozen string").should_not equal(-"another unfrozen string")
     end
 
-    it "is an identity function if the string is frozen" do
+    it "deduplicates frozen strings" do
       dynamic = %w(this string is frozen).join(' ').freeze
 
-      (-dynamic).should equal(dynamic)
-
       dynamic.should_not equal("this string is frozen".freeze)
-      (-dynamic).should_not equal("this string is frozen".freeze)
-      (-dynamic).should_not equal(-"this string is frozen".freeze)
+      (-dynamic).should equal("this string is frozen".freeze)
+      (-dynamic).should equal(-"this string is frozen".freeze)
     end
   end
 end
