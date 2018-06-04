@@ -2607,20 +2607,16 @@ str_uplus(VALUE str)
  * call-seq:
  *   -str  -> str (frozen)
  *
- * If the string is frozen, then return the string itself.
+ * Return a frozen, possibly pre-existing
+ * copy of the string.
  *
- * If the string is not frozen, return a frozen, possibly pre-existing
- * copy of it.
+ * String will be deduplicated as long as it is not tainted,
+ * or has any instance vars set on it.
  */
 static VALUE
 str_uminus(VALUE str)
 {
-    if (OBJ_FROZEN(str)) {
-	return str;
-    }
-    else {
-	return rb_fstring(str);
-    }
+    return rb_fstring(str);
 }
 
 RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
