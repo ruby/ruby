@@ -4850,9 +4850,6 @@ gc_mark_roots(rb_objspace_t *objspace, const char **categoryp)
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(objspace, ec);
 
-    MARK_CHECKPOINT("encodings");
-    rb_gc_mark_encodings();
-
     /* mark protected global variables */
     MARK_CHECKPOINT("global_list");
     for (list = global_list; list; list = list->next) {
