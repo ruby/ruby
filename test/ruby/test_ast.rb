@@ -138,4 +138,16 @@ class TestAst < Test::Unit::TestCase
     assert_equal("NODE_STR", node.type)
     assert_equal(0, node.first_column)
   end
+
+  def test_column_of_heredoc
+    node = RubyVM::AST.parse("<<-SRC\nddddddd\nSRC\n").children[1]
+    assert_equal("NODE_STR", node.type)
+    assert_equal(0, node.first_column)
+    assert_equal(6, node.last_column)
+
+    node = RubyVM::AST.parse("<<SRC\nddddddd\nSRC\n").children[1]
+    assert_equal("NODE_STR", node.type)
+    assert_equal(0, node.first_column)
+    assert_equal(5, node.last_column)
+  end
 end
