@@ -46,8 +46,9 @@ module DTrace
       IO.popen(cmd, err: [:child, :out], &:readlines)
     end
 
-    miniruby = "#{RbConfig::TOPDIR}/miniruby#{RbConfig::CONFIG["EXEEXT"]}"
-    RUBYBIN =  File.exist?(miniruby) ? miniruby : EnvUtil.rubybin
+    miniruby = "miniruby#{RbConfig::CONFIG["EXEEXT"]}"
+    miniruby = File.join(File.dirname(EnvUtil.rubybin), miniruby)
+    RUBYBIN = File.exist?(miniruby) ? miniruby : EnvUtil.rubybin
 
     def trap_probe d_program, ruby_program
       d = Tempfile.new(%w'probe .d')
@@ -60,8 +61,8 @@ module DTrace
 
       d_path  = d.path
       rb_path = rb.path
-
-      cmd = [*DTRACE_CMD, "-q", "-s", d_path, "-c", "#{RUBYBIN} -I#{INCLUDE} #{rb_path}"]
+      cmd = "#{RUBYBIN} --disable=gems -I#{INCLUDE} #{rb_path}"
+      cmd = [*DTRACE_CMD, "-q", "-s", d_path, "-c", cmd ]
       if sudo = @@sudo
         [RbConfig::CONFIG["LIBPATHENV"], "RUBY", "RUBYOPT"].each do |name|
           if name and val = ENV[name]
