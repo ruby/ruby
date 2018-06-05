@@ -168,7 +168,7 @@ RUBY_EXTERN const union bytesequence4_or_float rb_nan;
 #    include <ieeefp.h>
 #    endif
 #  define isinf(x) (!finite(x) && !isnan(x))
-#  elif __cplusplus >= 201103L
+#  elif defined(__cplusplus) && __cplusplus >= 201103L
 #    include <cmath> // it must include constexpr bool isinf(double);
 #  else
 RUBY_EXTERN int isinf(double);
@@ -178,7 +178,7 @@ RUBY_EXTERN int isinf(double);
 
 #ifndef isnan
 # ifndef HAVE_ISNAN
-#  if __cplusplus >= 201103L
+#  if defined(__cplusplus) && __cplusplus >= 201103L
 #    include <cmath> // it must include constexpr bool isnan(double);
 #  else
 RUBY_EXTERN int isnan(double);
