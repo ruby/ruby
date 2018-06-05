@@ -111,7 +111,7 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
-  SRCDIR = File.expand_path("../../../..", __FILE__)
+  SRCDIR = File.expand_path("../../..", __FILE__)
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
     define_method("test_ranges:#{path}") do
