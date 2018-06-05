@@ -260,11 +260,6 @@ rb_find_encoding(VALUE enc)
     return rb_enc_from_index(idx);
 }
 
-void
-rb_gc_mark_encodings(void)
-{
-}
-
 static int
 enc_table_expand(int newsize)
 {
