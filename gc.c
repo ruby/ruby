@@ -355,7 +355,9 @@ typedef enum {
 
     /* others */
     GPR_FLAG_IMMEDIATE_SWEEP   = 0x2000,
-    GPR_FLAG_HAVE_FINALIZE     = 0x4000
+    GPR_FLAG_HAVE_FINALIZE     = 0x4000,
+    GPR_FLAG_IMMEDIATE_MARK    = 0x8000,
+    GPR_FLAG_FULL_MARK        = 0x10000
 } gc_profile_record_flag;
 
 typedef struct gc_profile_record {
@@ -848,9 +850,9 @@ static void init_mark_stack(mark_stack_t *stack);
 
 static int ready_to_gc(rb_objspace_t *objspace);
 
-static int garbage_collect(rb_objspace_t *, int full_mark, int immediate_mark, int immediate_sweep, int reason);
+static int garbage_collect(rb_objspace_t *, int reason);
 
-static int  gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const unsigned int immediate_sweep, int reason);
+static int  gc_start(rb_objspace_t *objspace, int reason);
 static void gc_rest(rb_objspace_t *objspace);
 static inline void gc_enter(rb_objspace_t *objspace, const char *event);
 static inline void gc_exit(rb_objspace_t *objspace, const char *event);
@@ -1741,7 +1743,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 
     if (heap->free_pages == NULL &&
 	(will_be_incremental_marking(objspace) || heap_increment(objspace, heap) == FALSE) &&
-	gc_start(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ) == FALSE) {
+	gc_start(objspace, GPR_FLAG_NEWOBJ) == FALSE) {
 	rb_memerror();
     }
 }
@@ -1911,7 +1913,7 @@ newobj_slowpath(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, rb_objsp
 	}
 
 	if (ruby_gc_stressful) {
-	    if (!garbage_collect(objspace, FALSE, FALSE, FALSE, GPR_FLAG_NEWOBJ)) {
+	    if (!garbage_collect(objspace, GPR_FLAG_NEWOBJ)) {
 		rb_memerror();
 	    }
 	}
@@ -6386,7 +6388,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 }
 
 static int
-garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_mark, int immediate_sweep, int reason)
+garbage_collect(rb_objspace_t *objspace, int reason)
 {
 #if GC_PROFILE_MORE_DETAIL
     objspace->profile.prepare_time = getrusage_time();
@@ -6398,17 +6400,20 @@ garbage_collect(rb_objspace_t *objspace, int full_mark, int immediate_mark, int 
     objspace->profile.prepare_time = getrusage_time() - objspace->profile.prepare_time;
 #endif
 
-    return gc_start(objspace, full_mark, immediate_mark, immediate_sweep, reason);
+    return gc_start(objspace, reason);
 }
 
 static int
-gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark, const unsigned int immediate_sweep, int reason)
+gc_start(rb_objspace_t *objspace, int reason)
 {
-    int do_full_mark = full_mark;
-    objspace->flags.immediate_sweep = immediate_sweep;
+    unsigned int do_full_mark = !!((unsigned)reason & GPR_FLAG_FULL_MARK);
+    unsigned int immediate_mark = (unsigned)reason & GPR_FLAG_IMMEDIATE_MARK;
+
+    /* reason may be clobbered, later, so keep set immediate_sweep here */
+    objspace->flags.immediate_sweep = !!((unsigned)reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
-    if (reason != GPR_FLAG_METHOD && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
+    if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
     GC_ASSERT(gc_mode(objspace) == gc_mode_none);
     GC_ASSERT(!is_lazy_sweeping(heap_eden));
@@ -6462,8 +6467,8 @@ gc_start(rb_objspace_t *objspace, const int full_mark, const int immediate_mark,
 
     if (objspace->flags.immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
 
-    gc_report(1, objspace, "gc_start(%d, %d, %d, reason: %d) => %d, %d, %d\n",
-	      full_mark, immediate_mark, immediate_sweep, reason,
+    gc_report(1, objspace, "gc_start(reason: %d) => %u, %d, %d\n",
+	      reason,
 	      do_full_mark, !is_incremental_marking(objspace), objspace->flags.immediate_sweep);
 
     objspace->profile.count++;
@@ -6512,9 +6517,6 @@ gc_rest(rb_objspace_t *objspace)
 struct objspace_and_reason {
     rb_objspace_t *objspace;
     int reason;
-    int full_mark;
-    int immediate_mark;
-    int immediate_sweep;
 };
 
 static void
@@ -6626,24 +6628,21 @@ static void *
 gc_with_gvl(void *ptr)
 {
     struct objspace_and_reason *oar = (struct objspace_and_reason *)ptr;
-    return (void *)(VALUE)garbage_collect(oar->objspace, oar->full_mark, oar->immediate_mark, oar->immediate_sweep, oar->reason);
+    return (void *)(VALUE)garbage_collect(oar->objspace, oar->reason);
 }
 
 static int
-garbage_collect_with_gvl(rb_objspace_t *objspace, int full_mark, int immediate_mark, int immediate_sweep, int reason)
+garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
 {
     if (dont_gc) return TRUE;
     if (ruby_thread_has_gvl_p()) {
-	return garbage_collect(objspace, full_mark, immediate_mark, immediate_sweep, reason);
+	return garbage_collect(objspace, reason);
     }
     else {
 	if (ruby_native_thread_p()) {
 	    struct objspace_and_reason oar;
 	    oar.objspace = objspace;
 	    oar.reason = reason;
-	    oar.full_mark = full_mark;
-	    oar.immediate_mark = immediate_mark;
-	    oar.immediate_sweep = immediate_sweep;
 	    return (int)(VALUE)rb_thread_call_with_gvl(gc_with_gvl, (void *)&oar);
 	}
 	else {
@@ -6689,7 +6688,8 @@ static VALUE
 gc_start_internal(int argc, VALUE *argv, VALUE self)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    int full_mark = TRUE, immediate_mark = TRUE, immediate_sweep = TRUE;
+    int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
+                GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_METHOD;
     VALUE opt = Qnil;
     static ID keyword_ids[3];
 
@@ -6706,12 +6706,18 @@ gc_start_internal(int argc, VALUE *argv, VALUE self)
 
 	rb_get_kwargs(opt, keyword_ids, 0, 3, kwvals);
 
-	if (kwvals[0] != Qundef) full_mark = RTEST(kwvals[0]);
-	if (kwvals[1] != Qundef) immediate_mark = RTEST(kwvals[1]);
-	if (kwvals[2] != Qundef) immediate_sweep = RTEST(kwvals[2]);
+	if (kwvals[0] != Qundef && !RTEST(kwvals[0])) {
+            reason &= ~GPR_FLAG_FULL_MARK;
+        }
+	if (kwvals[1] != Qundef && !RTEST(kwvals[1])) {
+            reason &= ~GPR_FLAG_IMMEDIATE_MARK;
+        }
+	if (kwvals[2] != Qundef && !RTEST(kwvals[2])) {
+            reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
+        }
     }
 
-    garbage_collect(objspace, full_mark, immediate_mark, immediate_sweep, GPR_FLAG_METHOD);
+    garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
 
     return Qnil;
@@ -6728,7 +6734,9 @@ void
 rb_gc(void)
 {
     rb_objspace_t *objspace = &rb_objspace;
-    garbage_collect(objspace, TRUE, TRUE, TRUE, GPR_FLAG_CAPI);
+    int reason = GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
+                GPR_FLAG_IMMEDIATE_SWEEP | GPR_FLAG_CAPI;
+    garbage_collect(objspace, reason);
     gc_finalize_deferred(objspace);
 }
 
@@ -7799,7 +7807,13 @@ static void
 objspace_malloc_gc_stress(rb_objspace_t *objspace)
 {
     if (ruby_gc_stressful && ruby_native_thread_p()) {
-	garbage_collect_with_gvl(objspace, gc_stress_full_mark_after_malloc_p(), TRUE, TRUE, GPR_FLAG_STRESS | GPR_FLAG_MALLOC);
+        int reason = GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP |
+                                     GPR_FLAG_STRESS | GPR_FLAG_MALLOC;
+
+        if (gc_stress_full_mark_after_malloc_p()) {
+            reason |= GPR_FLAG_FULL_MARK;
+        }
+        garbage_collect_with_gvl(objspace, reason);
     }
 }
 
@@ -7826,7 +7840,7 @@ objspace_malloc_increase(rb_objspace_t *objspace, void *mem, size_t new_size, si
 		gc_rest(objspace); /* gc_rest can reduce malloc_increase */
 		goto retry;
 	    }
-	    garbage_collect_with_gvl(objspace, FALSE, FALSE, FALSE, GPR_FLAG_MALLOC);
+	    garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
 	}
     }
 
@@ -7904,7 +7918,9 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
 #define TRY_WITH_GC(alloc) do { \
         objspace_malloc_gc_stress(objspace); \
 	if (!(alloc) && \
-	    (!garbage_collect_with_gvl(objspace, TRUE, TRUE, TRUE, GPR_FLAG_MALLOC) || /* full/immediate mark && immediate sweep */ \
+            (!garbage_collect_with_gvl(objspace, GPR_FLAG_FULL_MARK | \
+                GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP | \
+                GPR_FLAG_MALLOC) || \
 	     !(alloc))) { \
 	    ruby_memerror(); \
 	} \
