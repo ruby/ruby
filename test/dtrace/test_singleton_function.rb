@@ -18,7 +18,7 @@ ruby$target:::method-entry
 	}
 
 	assert_equal 10, foo_calls.length
-	line = '2'
+	line = '3'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -38,7 +38,7 @@ ruby$target:::method-return
 	}
 
 	assert_equal 10, foo_calls.length
-	line = '2'
+	line = '3'
 	foo_calls.each { |f| assert_equal line, f[3] }
 	foo_calls.each { |f| assert_equal rb_file, f[2] }
       }
@@ -46,6 +46,7 @@ ruby$target:::method-return
 
     def ruby_program
       <<-eoruby
+      TracePoint.new{}.enable
       class Foo
 	def self.foo; end
       end
