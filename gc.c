@@ -859,19 +859,15 @@ static void gc_marks(rb_objspace_t *objspace, int full_mark);
 static void gc_marks_start(rb_objspace_t *objspace, int full);
 static int  gc_marks_finish(rb_objspace_t *objspace);
 static void gc_marks_rest(rb_objspace_t *objspace);
-#if GC_ENABLE_INCREMENTAL_MARK
 static void gc_marks_step(rb_objspace_t *objspace, int slots);
 static void gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap);
-#endif
 
 static void gc_sweep(rb_objspace_t *objspace);
 static void gc_sweep_start(rb_objspace_t *objspace);
 static void gc_sweep_finish(rb_objspace_t *objspace);
 static int  gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap);
 static void gc_sweep_rest(rb_objspace_t *objspace);
-#if GC_ENABLE_LAZY_SWEEP
 static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
-#endif
 
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
@@ -1736,16 +1732,12 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-#if GC_ENABLE_LAZY_SWEEP
     if (is_lazy_sweeping(heap)) {
 	gc_sweep_continue(objspace, heap);
     }
-#endif
-#if GC_ENABLE_INCREMENTAL_MARK
     else if (is_incremental_marking(objspace)) {
 	gc_marks_continue(objspace, heap);
     }
-#endif
 
     if (heap->free_pages == NULL &&
 	(will_be_incremental_marking(objspace) || heap_increment(objspace, heap) == FALSE) &&
@@ -3762,11 +3754,11 @@ gc_sweep_rest(rb_objspace_t *objspace)
     }
 }
 
-#if GC_ENABLE_LAZY_SWEEP
 static void
 gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(dont_gc == FALSE);
+    if (!GC_ENABLE_LAZY_SWEEP) return;
 
     gc_enter(objspace, "sweep_continue");
 #if USE_RGENGC
@@ -3777,7 +3769,6 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     gc_sweep_step(objspace, heap);
     gc_exit(objspace, "sweep_continue");
 }
-#endif
 
 static void
 gc_sweep(rb_objspace_t *objspace)
@@ -5620,10 +5611,10 @@ gc_marks_finish(rb_objspace_t *objspace)
     return TRUE;
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static void
 gc_marks_step(rb_objspace_t *objspace, int slots)
 {
+#if GC_ENABLE_INCREMENTAL_MARK
     GC_ASSERT(is_marking(objspace));
 
     if (gc_mark_stacked_objects_incremental(objspace, slots)) {
@@ -5633,8 +5624,8 @@ gc_marks_step(rb_objspace_t *objspace, int slots)
 	}
     }
     if (0) fprintf(stderr, "objspace->marked_slots: %d\n", (int)objspace->marked_slots);
-}
 #endif
+}
 
 static void
 gc_marks_rest(rb_objspace_t *objspace)
@@ -5659,19 +5650,19 @@ gc_marks_rest(rb_objspace_t *objspace)
     gc_sweep(objspace);
 }
 
-#if GC_ENABLE_INCREMENTAL_MARK
 static void
 gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
 {
-    int slots = 0;
-    const char *from;
-
     GC_ASSERT(dont_gc == FALSE);
+#if GC_ENABLE_INCREMENTAL_MARK
 
     gc_enter(objspace, "marks_continue");
 
     PUSH_MARK_FUNC_DATA(NULL);
     {
+        int slots = 0;
+        const char *from;
+
 	if (heap->pooled_pages) {
 	    while (heap->pooled_pages && slots < HEAP_PAGE_OBJ_LIMIT) {
 		struct heap_page *page = heap_move_pooled_pages_to_free_pages(heap);
@@ -5696,8 +5687,8 @@ gc_marks_continue(rb_objspace_t *objspace, rb_heap_t *heap)
     POP_MARK_FUNC_DATA();
 
     gc_exit(objspace, "marks_continue");
-}
 #endif
+}
 
 static void
 gc_marks(rb_objspace_t *objspace, int full_mark)
