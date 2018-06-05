@@ -26,7 +26,7 @@ module DTrace
     def probe type = 'array'
       <<-eoprobe
 ruby$target:::#{type}-create
-/arg1/
+/arg1 && arg2/
 {
   printf("%d %s %d\\n", arg0, copyinstr(arg1), arg2);
 }
