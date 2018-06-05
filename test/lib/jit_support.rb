@@ -42,7 +42,7 @@ module JITSupport
     return @supported if defined?(@supported)
     @supported = JITSupport.check_support.tap do |supported|
       unless supported
-        warn "JIT tests are skiped since JIT seems not working. Set RUBY_FORCE_TEST_JIT=1 to let it fail.", uplevel: 1
+        warn "JIT tests are skipped since JIT seems not working. Set RUBY_FORCE_TEST_JIT=1 to let it fail.", uplevel: 1
       end
     end
   end
