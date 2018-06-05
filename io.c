@@ -1626,6 +1626,16 @@ io_fwritev(int argc, VALUE *argv, rb_io_t *fptr)
 
     return n;
 }
+
+static int
+iovcnt_ok(int iovcnt)
+{
+#ifdef IOV_MAX
+    return iovcnt < IOV_MAX;
+#else /* GNU/Hurd has writev, but no IOV_MAX */
+    return 1;
+#endif
+}
 #endif /* HAVE_WRITEV */
 
 static VALUE
@@ -1649,7 +1659,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
 
     for (i = 0; i < argc; i += cnt) {
 #ifdef HAVE_WRITEV
-	if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) && ((cnt = argc - i) < IOV_MAX)) {
+	if ((fptr->mode & (FMODE_SYNC|FMODE_TTY)) && iovcnt_ok(cnt = argc - i)) {
 	    n = io_fwritev(cnt, &argv[i], fptr);
 	}
 	else
