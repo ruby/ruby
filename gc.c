@@ -6336,8 +6336,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace)
 
 	if (inc > malloc_limit) {
 	    malloc_limit = (size_t)(inc * gc_params.malloc_limit_growth_factor);
-	    if (gc_params.malloc_limit_max > 0 && /* ignore max-check if 0 */
-		malloc_limit > gc_params.malloc_limit_max) {
+	    if (malloc_limit > gc_params.malloc_limit_max) {
 		malloc_limit = gc_params.malloc_limit_max;
 	    }
 	}
@@ -7587,6 +7586,9 @@ ruby_gc_set_params(int safe_level)
 
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT", &gc_params.malloc_limit_min, 0);
     get_envparam_size  ("RUBY_GC_MALLOC_LIMIT_MAX", &gc_params.malloc_limit_max, 0);
+    if (!gc_params.malloc_limit_max) { /* ignore max-check if 0 */
+        gc_params.malloc_limit_max = SIZE_MAX;
+    }
     get_envparam_double("RUBY_GC_MALLOC_LIMIT_GROWTH_FACTOR", &gc_params.malloc_limit_growth_factor, 1.0, 0.0, FALSE);
 
 #if RGENGC_ESTIMATE_OLDMALLOC
