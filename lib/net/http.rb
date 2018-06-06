@@ -575,7 +575,7 @@ module Net   #:nodoc:
     #
     # _opt_ sets following values by its accessor.
     # The keys are ca_file, ca_path, cert, cert_store, ciphers,
-    # close_on_empty_response, key, open_timeout, read_timeout, ssl_timeout,
+    # close_on_empty_response, key, open_timeout, read_timeout, write_timeout, ssl_timeout,
     # ssl_version, use_ssl, verify_callback, verify_depth and verify_mode.
     # If you set :use_ssl as true, you can use https and default value of
     # verify_mode is set as OpenSSL::SSL::VERIFY_PEER.
@@ -673,6 +673,7 @@ module Net   #:nodoc:
       @started = false
       @open_timeout = 60
       @read_timeout = 60
+      @write_timeout = 60
       @continue_timeout = nil
       @max_retries = 1
       @debug_output = nil
@@ -741,6 +742,12 @@ module Net   #:nodoc:
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
+    # Number of seconds to wait for one block to be write (via one write(2)
+    # call). Any number may be used, including Floats for fractional
+    # seconds. If the HTTP object cannot write data in this many seconds,
+    # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
+    attr_reader :write_timeout
+
     # Maximum number of times to retry an idempotent request in case of
     # Net::ReadTimeout, IOError, EOFError, Errno::ECONNRESET,
     # Errno::ECONNABORTED, Errno::EPIPE, OpenSSL::SSL::SSLError,
@@ -761,6 +768,12 @@ module Net   #:nodoc:
     def read_timeout=(sec)
       @socket.read_timeout = sec if @socket
       @read_timeout = sec
+    end
+
+    # Setter for the write_timeout attribute.
+    def write_timeout=(sec)
+      @socket.write_timeout = sec if @socket
+      @write_timeout = sec
     end
 
     # Seconds to wait for 100 Continue response. If the HTTP object does not
@@ -944,6 +957,7 @@ module Net   #:nodoc:
       if use_ssl?
         if proxy?
           plain_sock = BufferedIO.new(s, read_timeout: @read_timeout,
+                                      write_timeout: @write_timeout,
                                       continue_timeout: @continue_timeout,
                                       debug_output: @debug_output)
           buf = "CONNECT #{@address}:#{@port} HTTP/#{HTTPVersion}\r\n"
@@ -985,6 +999,7 @@ module Net   #:nodoc:
         D "SSL established"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
+                               write_timeout: @write_timeout,
                                continue_timeout: @continue_timeout,
                                debug_output: @debug_output)
       on_connect

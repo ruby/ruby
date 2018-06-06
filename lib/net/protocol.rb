@@ -77,11 +77,18 @@ module Net # :nodoc:
 
   class ReadTimeout            < Timeout::Error; end
 
+  ##
+  # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
+  # response cannot be read within the read_timeout.
+
+  class WriteTimeout            < Timeout::Error; end
+
 
   class BufferedIO   #:nodoc: internal use only
-    def initialize(io, read_timeout: 60, continue_timeout: nil, debug_output: nil)
+    def initialize(io, read_timeout: 60, write_timeout: 60, continue_timeout: nil, debug_output: nil)
       @io = io
       @read_timeout = read_timeout
+      @write_timeout = write_timeout
       @continue_timeout = continue_timeout
       @debug_output = debug_output
       @rbuf = ''.b
@@ -89,6 +96,7 @@ module Net # :nodoc:
 
     attr_reader :io
     attr_accessor :read_timeout
+    attr_accessor :write_timeout
     attr_accessor :continue_timeout
     attr_accessor :debug_output
 
@@ -237,9 +245,32 @@ module Net # :nodoc:
 
     def write0(*strs)
       @debug_output << strs.map(&:dump).join if @debug_output
-      len = @io.write(*strs)
-      @written_bytes += len
-      len
+      case len = @io.write_nonblock(*strs, exception: false)
+      when Integer
+        orig_len = len
+        strs.each_with_index do |str, i|
+          @written_bytes += str.bytesize
+          len -= str.bytesize
+          if len == 0
+            if strs.size == i+1
+              return orig_len
+            else
+              strs = strs[i+1..] # rest
+              break
+            end
+          elsif len < 0
+            strs = strs[i..] # str and rest
+            strs[0] = str[len, -len]
+            break
+          else # len > 0
+            # next
+          end
+        end
+        # continue looping
+      when :wait_writable
+        @io.to_io.wait_writable(@write_timeout) or raise Net::WriteTimeout
+        # continue looping
+      end while true
     end
 
     #
