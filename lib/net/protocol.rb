@@ -245,7 +245,7 @@ module Net # :nodoc:
 
     def write0(*strs)
       @debug_output << strs.map(&:dump).join if @debug_output
-      case len = @io.write_nonblock(*strs, exception: false)
+      case len = @io.write_nonblock(strs.join, exception: false)
       when Integer
         orig_len = len
         strs.each_with_index do |str, i|
