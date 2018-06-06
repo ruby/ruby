@@ -1434,6 +1434,31 @@ mjit_init(struct mjit_options *opts)
     }
 }
 
+static void
+stop_worker(void)
+{
+    stop_worker_p = TRUE;
+    while (!worker_stopped) {
+        verbose(3, "Sending cancel signal to worker");
+        CRITICAL_SECTION_START(3, "in stop_worker");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in stop_worker");
+    }
+}
+
+VALUE
+mjit_pause(void)
+{
+    VALUE ret = worker_stopped ? Qfalse : Qtrue;
+
+    if (!mjit_init_p) {
+        rb_raise(rb_eRuntimeError, "MJIT is not enabled");
+    }
+
+    stop_worker();
+    return ret;
+}
+
 /* Finish the threads processing units and creating PCH, finalize
    and free MJIT data.  It should be called last during MJIT
    life.  */
@@ -1458,13 +1483,7 @@ mjit_finish(void)
     CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
 
     /* Stop worker */
-    stop_worker_p = TRUE;
-    while (!worker_stopped) {
-        verbose(3, "Sending cancel signal to workers");
-        CRITICAL_SECTION_START(3, "in mjit_finish");
-        rb_native_cond_broadcast(&mjit_worker_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in mjit_finish");
-    }
+    stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
     rb_native_cond_destroy(&mjit_pch_wakeup);
