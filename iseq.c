@@ -118,15 +118,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 static VALUE
 rb_vm_insn_addr2insn2(const void *addr)
 {
-    VALUE insn;
-    const void * const *table = rb_vm_get_insns_address_table();
-
-    for (insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
-	if (table[insn] == addr) {
-	    return insn;
-	}
-    }
-    rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
+    return (VALUE)rb_vm_insn_addr2insn(addr);
 }
 #endif
 

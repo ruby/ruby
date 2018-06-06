@@ -11,6 +11,7 @@
 
 #include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "ruby/util.h"
 #include "internal.h"
 #include "encindex.h"
 #include <math.h>
@@ -755,20 +756,33 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 }
 
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-int
-rb_vm_insn_addr2insn(const void *addr) /* cold path */
-{
-    int insn;
-    const void * const *table = rb_vm_get_insns_address_table();
+static st_table *addr2insn;
 
+void
+rb_addr2insn_init(void)
+{
+    const void * const *table = rb_vm_get_insns_address_table();
+    st_data_t insn;
+
+    addr2insn = st_init_numtable_with_size(VM_INSTRUCTION_SIZE);
     for (insn = 0; insn < VM_INSTRUCTION_SIZE; insn++) {
-	if (table[insn] == addr) {
-	    return insn;
-	}
+        st_add_direct(addr2insn, (st_data_t)table[insn], insn);
     }
+}
+
+int
+rb_vm_insn_addr2insn(const void *addr)
+{
+    st_data_t key = (st_data_t)addr;
+    st_data_t val;
+
+    if (st_lookup(addr2insn, key, &val)) {
+        return (int)val;
+    }
+
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
-#endif
+#endif /* OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE */
 
 VALUE *
 rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
