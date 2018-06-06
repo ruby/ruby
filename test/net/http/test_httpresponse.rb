@@ -422,7 +422,7 @@ EOS
 
     res = Net::HTTPResponse.read_new(io)
     assert_equal(nil, res.message)
-    assert_raise Net::HTTPServerException do
+    assert_raise Net::HTTPClientException do
       res.error!
     end
   end
