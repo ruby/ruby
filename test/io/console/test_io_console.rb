@@ -7,11 +7,6 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
-end
-
-defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
-  Bug6116 = '[ruby-dev:45309]'
-
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x
   def set_winsize_setup
@@ -21,6 +16,10 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
   def set_winsize_teardown
     trap(:TTOU, @old_ttou) if @old_ttou
   end
+end
+
+defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
+  Bug6116 = '[ruby-dev:45309]'
 
   def test_raw
     helper {|m, s|
