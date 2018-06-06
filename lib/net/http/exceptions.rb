@@ -20,7 +20,15 @@ class Net::HTTPServerException < Net::ProtoServerError
   # We cannot use the name "HTTPServerError", it is the name of the response.
   include Net::HTTPExceptions
 end
+
+# for compatibility
+Net::HTTPClientException = Net::HTTPServerException
+
 class Net::HTTPFatalError < Net::ProtoFatalError
   include Net::HTTPExceptions
 end
 
+module Net
+  deprecate_constant(:HTTPServerException)
+  deprecate_constant(:ProtoServerError)
+end
