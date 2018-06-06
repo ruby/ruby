@@ -689,7 +689,14 @@ rb_math_sqrt(VALUE x)
 static VALUE
 math_cbrt(VALUE unused_obj, VALUE x)
 {
-    return DBL2NUM(cbrt(Get_Double(x)));
+    double f = Get_Double(x);
+    double r = cbrt(f);
+#if defined __GLIBC__
+    if (isfinite(r)) {
+	r = (2.0 * r + (f / r / r)) / 3.0;
+    }
+#endif
+    return DBL2NUM(r);
 }
 
 /*
