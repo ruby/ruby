@@ -245,32 +245,32 @@ module Net # :nodoc:
 
     def write0(*strs)
       @debug_output << strs.map(&:dump).join if @debug_output
-      case len = @io.write_nonblock(strs.join, exception: false)
-      when Integer
-        orig_len = len
-        strs.each_with_index do |str, i|
-          @written_bytes += str.bytesize
+      orig_written_bytes = @written_bytes
+      strs.each_with_index do |str, i|
+        need_retry = true
+        case len = @io.write_nonblock(str, exception: false)
+        when Integer
+          @written_bytes += len
           len -= str.bytesize
           if len == 0
             if strs.size == i+1
-              return orig_len
+              return @written_bytes - orig_written_bytes
             else
-              strs = strs[i+1..] # rest
-              break
+              need_retry = false
+              # next string
             end
           elsif len < 0
-            strs = strs[i..] # str and rest
-            strs[0] = str[len, -len]
-            break
+            str = str[len, -len]
           else # len > 0
-            # next
+            need_retry = false
+            # next string
           end
-        end
-        # continue looping
-      when :wait_writable
-        @io.to_io.wait_writable(@write_timeout) or raise Net::WriteTimeout
-        # continue looping
-      end while true
+          # continue looping
+        when :wait_writable
+          @io.to_io.wait_writable(@write_timeout) or raise Net::WriteTimeout
+          # continue looping
+        end while need_retry
+      end
     end
 
     #
