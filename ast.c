@@ -58,10 +58,13 @@ rb_ast_s_parse(VALUE module, VALUE str)
     const VALUE parser = rb_parser_new();
 
     str = rb_check_string_type(str);
-    rb_parser_set_context(parser, NULL, 1);
+    rb_parser_set_context(parser, NULL, 0);
     ast = rb_parser_compile_string_path(parser, rb_str_new_cstr("no file name"), str, 1);
 
-    if (!ast->body.root) return Qnil;
+    if (!ast->body.root) {
+        rb_ast_dispose(ast);
+        rb_exc_raise(GET_EC()->errinfo);
+    }
 
     obj = ast_new_internal(ast, (NODE *)ast->body.root);
 
@@ -80,12 +83,15 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    rb_parser_set_context(parser, NULL, 1);
+    rb_parser_set_context(parser, NULL, 0);
     ast = rb_parser_compile_file_path(parser, path, f, 1);
 
     rb_io_close(f);
 
-    if (!ast->body.root) return Qnil;
+    if (!ast->body.root) {
+        rb_ast_dispose(ast);
+        rb_exc_raise(GET_EC()->errinfo);
+    }
 
     obj = ast_new_internal(ast, (NODE *)ast->body.root);
 
