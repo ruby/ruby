@@ -150,4 +150,25 @@ class TestAst < Test::Unit::TestCase
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
   end
+
+  def test_parse_raises_syntax_error
+    assert_raise(SyntaxError) { RubyVM::AST.parse("end") }
+  end
+
+  def test_parse_file_raises_syntax_error
+    Tempfile.create(%w"test_ast .rb") do |f|
+      f.puts "end"
+      f.close
+      path = f.path
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /keyword_end/, [], success: true)
+      begin;
+        path = ARGV[0]
+        begin
+          RubyVM::AST.parse_file(path)
+        rescue SyntaxError => e
+          puts e.message
+        end
+      end;
+    end
+  end
 end
