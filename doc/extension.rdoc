@@ -746,7 +746,7 @@ be assigned to sval, which should be a pointer of the type specified.
 ==== Ruby object to C struct
 
 To retrieve the C pointer from the Data object, use the macro
-Data_Get_Struct().
+TypedData_Get_Struct().
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
 
