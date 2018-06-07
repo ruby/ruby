@@ -742,10 +742,11 @@ module Net   #:nodoc:
     # it raises a Net::ReadTimeout exception. The default value is 60 seconds.
     attr_reader :read_timeout
 
-    # Number of seconds to wait for one block to be write (via one write(2)
+    # Number of seconds to wait for one block to be written (via one write(2)
     # call). Any number may be used, including Floats for fractional
     # seconds. If the HTTP object cannot write data in this many seconds,
     # it raises a Net::WriteTimeout exception. The default value is 60 seconds.
+    # Net::WriteTimeout is not raised on Windows.
     attr_reader :write_timeout
 
     # Maximum number of times to retry an idempotent request in case of
