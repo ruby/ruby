@@ -538,12 +538,12 @@ module TestNetHTTP_version_1_1_methods
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
-      conn.write_timeout = 0.01
+      conn.read_timeout = conn.write_timeout = 0.01
       conn.open_timeout = 0.1
 
       th = Thread.new do
-        assert_raise(Net::WriteTimeout) {
-          conn.post('/', "a"*5_000_000)
+        assert_raise(Net::WriteTimeout, Net::ReadTimeout) {
+          conn.post('/', "a"*50_000_000)
         }
       end
       assert th.join(10), bug4246
