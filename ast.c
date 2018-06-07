@@ -1,3 +1,4 @@
+/* indent-tabs-mode: nil */
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "internal.h"
@@ -380,7 +381,7 @@ node_children(rb_ast_t *ast, NODE *node)
       dot:
         return rb_ary_new_from_node_args(ast, 2, node->nd_beg, node->nd_end);
       case NODE_SELF:
-      return rb_ary_new_from_node_args(ast, 0);
+        return rb_ary_new_from_node_args(ast, 0);
       case NODE_NIL:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_TRUE:
