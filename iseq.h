@@ -94,7 +94,6 @@ struct iseq_compile_data {
     VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
     int loopval_popped;	/* used by NODE_BREAK */
-    int cached_const;
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
     int last_line;
