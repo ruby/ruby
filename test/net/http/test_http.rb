@@ -530,8 +530,6 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def test_timeout_during_HTTP_session_write
-    skip "write returns immediately on Windows" if windows?
-
     th = nil
     # listen for connections... but deliberately do not read
     TCPServer.open('localhost', 0) {|server|
@@ -539,12 +537,12 @@ module TestNetHTTP_version_1_1_methods
 
       conn = Net::HTTP.new('localhost', port)
       conn.write_timeout = 0.01
+      conn.read_timeout = 0.01 if windows?
       conn.open_timeout = 0.1
 
       th = Thread.new do
-        assert_raise(Net::WriteTimeout) {
-          conn.post('/', "a"*5_000_000)
-        }
+        err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
+        assert_raise(err) { conn.post('/', "a"*5_000_000) }
       end
       assert th.join(10)
     }
