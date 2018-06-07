@@ -428,7 +428,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_OP_ASGN1:
 	ANN("array assignment with operator");
-	ANN("format: [nd_value] [ [nd_args->nd_body] ] [nd_vid]= [nd_args->nd_head]");
+	ANN("format: [nd_recv] [ [nd_args->nd_head] ] [nd_mid]= [nd_args->nd_body]");
 	ANN("example: ary[1] += foo");
 	F_NODE(nd_recv, "receiver");
 	F_ID(nd_mid, "operator");
@@ -439,7 +439,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_OP_ASGN2:
 	ANN("attr assignment with operator");
-	ANN("format: [nd_value].[attr] [nd_next->nd_mid]= [nd_value]");
+	ANN("format: [nd_recv].[attr] [nd_next->nd_mid]= [nd_value]");
 	ANN("          where [attr]: [nd_next->nd_vid]");
 	ANN("example: struct.field += foo");
 	F_NODE(nd_recv, "receiver");
