@@ -8174,11 +8174,17 @@ rb_str_each_line(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *     str.lines(separator=$/)  -> an_array
+ *     str.lines(separator=$/ [, getline_args])  -> an_array
  *
  *  Returns an array of lines in <i>str</i> split using the supplied
  *  record separator (<code>$/</code> by default).  This is a
- *  shorthand for <code>str.each_line(separator).to_a</code>.
+ *  shorthand for <code>str.each_line(separator, getline_args).to_a</code>.
+ *
+ *  See IO.readlines for details about getline_args.
+ *
+ *     "hello\nworld\n".lines              #=> ["hello\n", "world\n"]
+ *     "hello  world".lines(' ')           #=> ["hello ", " ", "world"]
+ *     "hello\nworld\n".lines(chomp: true) #=> ["hello", "world"]
  *
  *  If a block is given, which is a deprecated form, works the same as
  *  <code>each_line</code>.
