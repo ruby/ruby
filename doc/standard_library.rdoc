@@ -90,6 +90,7 @@ CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Logger:: Provides a simple logging utility for outputting messages
+Matrix:: Represents a mathematical matrix.
 OpenStruct:: Class to build custom data structures, similar to a Hash
 Prime:: Prime numbers and factorization library
 RDoc:: Produces HTML and command-line documentation for Ruby
