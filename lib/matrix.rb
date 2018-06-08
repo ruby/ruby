@@ -12,7 +12,7 @@
 # Original Documentation:: Gavin Sinclair (sourced from <i>Ruby in a Nutshell</i> (Matsumoto, O'Reilly))
 ##
 
-require "e2mmap.rb"
+require "e2mmap"
 
 module ExceptionForMatrix # :nodoc:
   extend Exception2MessageMapper
