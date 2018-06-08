@@ -79,7 +79,7 @@ module Net # :nodoc:
 
   ##
   # WriteTimeout, a subclass of Timeout::Error, is raised if a chunk of the
-  # response cannot be write within the write_timeout.
+  # response cannot be written within the write_timeout.  Not raised on Windows.
 
   class WriteTimeout            < Timeout::Error; end
 
