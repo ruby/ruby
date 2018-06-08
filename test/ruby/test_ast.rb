@@ -178,4 +178,32 @@ class TestAst < Test::Unit::TestCase
     assert_equal([:x], lv)
     assert_equal("NODE_LASGN", body.type)
   end
+
+  def test_call
+    node = RubyVM::AST.parse("nil.foo")
+    _, _, body = *node.children
+    assert_equal("NODE_CALL", body.type)
+    recv, mid, args = body.children
+    assert_equal("NODE_NIL", recv.type)
+    assert_equal(:foo, mid)
+    assert_nil(args)
+  end
+
+  def test_fcall
+    node = RubyVM::AST.parse("foo()")
+    _, _, body = *node.children
+    assert_equal("NODE_FCALL", body.type)
+    mid, args = body.children
+    assert_equal(:foo, mid)
+    assert_nil(args)
+  end
+
+  def test_vcall
+    node = RubyVM::AST.parse("foo")
+    _, _, body = *node.children
+    assert_equal("NODE_VCALL", body.type)
+    mid, args = body.children
+    assert_equal(:foo, mid)
+    assert_nil(args)
+  end
 end
