@@ -298,13 +298,13 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_OPCALL:
       case NODE_QCALL:
         return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_recv),
-                                    ID2SYM(node->nd_vid),
+                                    ID2SYM(node->nd_mid),
                                     NEW_CHILD(ast, node->nd_args));
       case NODE_FCALL:
-        return rb_ary_new_from_args(2, ID2SYM(node->nd_vid),
+        return rb_ary_new_from_args(2, ID2SYM(node->nd_mid),
                                     NEW_CHILD(ast, node->nd_args));
       case NODE_VCALL:
-        return rb_ary_new_from_args(1, ID2SYM(node->nd_vid));
+        return rb_ary_new_from_args(1, ID2SYM(node->nd_mid));
       case NODE_SUPER:
         return rb_ary_new_from_node_args(ast, 1, node->nd_args);
       case NODE_ZSUPER:
