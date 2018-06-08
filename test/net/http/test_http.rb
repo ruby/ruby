@@ -549,8 +549,8 @@ module TestNetHTTP_version_1_1_methods
       assert th.join(10)
     }
   ensure
-    th.kill
-    th.join
+    th&.kill
+    th&.join
   end
 
   def test_timeout_during_HTTP_session
