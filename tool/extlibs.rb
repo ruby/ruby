@@ -65,7 +65,7 @@ class ExtLibs
     when '.zip'
       pid = Process.spawn("unzip", inp, "-d", dir)
     end
-    f&.close
+    f.close if f
     Process.wait(pid)
     $?.success? or raise "failed to extract #{cache}"
   end
