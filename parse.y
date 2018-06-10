@@ -59,7 +59,10 @@
 	  (Current).end_pos = YYRHSLOC(Rhs, N).end_pos;			\
 	}								\
       else								\
-	RUBY_SET_YYLLOC_OF_NONE(Current);				\
+        {                                                               \
+          (Current).beg_pos = YYRHSLOC(Rhs, 0).end_pos;                 \
+          (Current).end_pos = YYRHSLOC(Rhs, 0).end_pos;                 \
+        }                                                               \
     while (0)
 
 #define RUBY_SET_YYLLOC_FROM_STRTERM_HEREDOC(Current)			\
@@ -747,6 +750,10 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %pure-parser
 %lex-param {struct parser_params *p}
 %parse-param {struct parser_params *p}
+%initial-action
+{
+    RUBY_SET_YYLLOC_OF_NONE(@$);
+};
 
 %union {
     VALUE val;
