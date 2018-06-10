@@ -10263,7 +10263,11 @@ new_bodystmt(struct parser_params *p, NODE *head, NODE *rescue, NODE *rescue_els
 {
     NODE *result = head;
     if (rescue) {
-        result = NEW_RESCUE(head, rescue, rescue_else, loc);
+        NODE *tmp = rescue_else ? rescue_else : rescue;
+        YYLTYPE rescue_loc = code_loc_gen(&head->nd_loc, &tmp->nd_loc);
+
+        result = NEW_RESCUE(head, rescue, rescue_else, &rescue_loc);
+        nd_set_line(result, rescue->nd_loc.beg_pos.lineno);
     }
     else if (rescue_else) {
         result = block_append(p, result, rescue_else);
