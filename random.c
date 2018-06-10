@@ -563,7 +563,7 @@ fill_random_seed(uint32_t *seed, size_t cnt)
 
     memset(seed, 0, len);
 
-    fill_random_bytes(seed, len, TRUE);
+    fill_random_bytes(seed, len, FALSE);
 
     gettimeofday(&tv, 0);
     seed[0] ^= tv.tv_usec;
@@ -635,7 +635,7 @@ random_raw_seed(VALUE self, VALUE size)
     long n = NUM2ULONG(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
-    if (fill_random_bytes(RSTRING_PTR(buf), n, FALSE))
+    if (fill_random_bytes(RSTRING_PTR(buf), n, TRUE))
 	rb_raise(rb_eRuntimeError, "failed to get urandom");
     return buf;
 }
