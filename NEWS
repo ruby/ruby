@@ -129,6 +129,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * String#split yields each substring to the block if given. [Feature #4780]
 
+* TracePoint
+
+  * New methods:
+
+    * TracePoint#parameters [Feature #14694]
+
 === Stdlib updates (outstanding ones only)
 
 * ERB
