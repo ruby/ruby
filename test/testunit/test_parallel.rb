@@ -151,7 +151,7 @@ module TestParallel
       rescue Timeout::Error
         Process.kill(:KILL, @test_pid) if @test_pid
       ensure
-        @test_out.close if @test_out
+        @test_out&.close
       end
     end
 
