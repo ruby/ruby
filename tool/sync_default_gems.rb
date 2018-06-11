@@ -132,9 +132,10 @@ def sync_default_gems(gem)
     `cp -f ../csv/csv.gemspec lib/csv`
   when "webrick"
     `rm -rf lib/webrick* test/webrick`
-    `cp -rf ../webrick/lib/webrick lib`
+    `cp -rf ../webrick/lib/webrick* lib`
     `cp -rf ../webrick/test/webrick test`
     `cp -f ../webrick/webrick.gemspec lib/webrick`
+    `git checkout lib/webrick/.document`
   when "dbm"
     `rm -rf ext/dbm test/dbm`
     `cp -rf ../dbm/ext/dbm ext`
