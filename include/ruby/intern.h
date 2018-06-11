@@ -335,7 +335,15 @@ void rb_fd_set(int, rb_fdset_t *);
 void rb_w32_fd_copy(rb_fdset_t *, const fd_set *, int);
 #define rb_fd_dup(d, s)	rb_w32_fd_dup((d), (s))
 void rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src);
-#define rb_fd_select(n, rfds, wfds, efds, timeout)	rb_w32_select((n), (rfds) ? ((rb_fdset_t*)(rfds))->fdset : NULL, (wfds) ? ((rb_fdset_t*)(wfds))->fdset : NULL, (efds) ? ((rb_fdset_t*)(efds))->fdset: NULL, (timeout))
+static inline int
+rb_fd_select(int n, rb_fdset_t *rfds, rb_fdset_t *wfds, rb_fdset_t *efds, struct timeval *timeout)
+{
+    return rb_w32_select(n,
+                         rfds ? rfds->fdset : NULL,
+                         wfds ? wfds->fdset : NULL,
+                         efds ? efds->fdset : NULL,
+                         timeout);
+}
 #define rb_fd_resize(n, f)	((void)(f))
 
 #define rb_fd_ptr(f)	((f)->fdset)
