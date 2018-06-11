@@ -21,6 +21,12 @@
 # * https://github.com/ruby/cmath
 # * https://github.com/ruby/strscan
 # * https://github.com/ruby/ipaddr
+# * https://github.com/ruby/logger
+# * https://github.com/ruby/prime
+# * https://github.com/ruby/matrix
+# * https://github.com/ruby/ostruct
+# * https://github.com/ruby/rexml
+# * https://github.com/ruby/rss
 #
 
 $repositories = {
@@ -45,6 +51,12 @@ $repositories = {
   cmath: 'ruby/cmath',
   strscan: 'ruby/strscan',
   ipaddr: 'ruby/ipaddr',
+  logger: 'ruby/logger',
+  prime: 'ruby/prime',
+  matrix: 'ruby/matrix',
+  ostruct: 'ruby/ostruct',
+  rexml: 'ruby/rexml',
+  rss: 'ruby/rss',
 }
 
 def sync_default_gems(gem)
@@ -187,6 +199,36 @@ def sync_default_gems(gem)
     `cp -rf ../ipaddr/lib/* lib`
     `cp -rf ../ipaddr/test/test_ipaddr.rb test`
     `cp -f ../ipaddr/ipaddr.gemspec lib`
+  when "logger"
+    `rm -rf lib/logger.rb test/logger`
+    `cp -rf ../logger/lib/* lib`
+    `cp -rf ../logger/test/logger test`
+    `cp -f ../logger/logger.gemspec lib`
+  when "prime"
+    `rm -rf lib/prime.rb test/test_prime.rb`
+    `cp -rf ../prime/lib/* lib`
+    `cp -rf ../prime/test/test_prime.rb test`
+    `cp -f ../prime/prime.gemspec lib`
+  when "matrix"
+    `rm -rf lib/matrix* test/matrix`
+    `cp -rf ../matrix/lib/* lib`
+    `cp -rf ../matrix/test/matrix test`
+    `cp -f ../matrix/matrix.gemspec lib/matrix`
+  when "ostruct"
+    `rm -rf lib/ostruct.rb test/ostruct`
+    `cp -rf ../ostruct/lib/* lib`
+    `cp -rf ../ostruct/test/ostruct test`
+    `cp -f ../ostruct/ostruct.gemspec lib`
+  when "rexml"
+    `rm -rf lib/rexml* test/rexml`
+    `cp -rf ../rexml/lib/* lib`
+    `cp -rf ../rexml/test/rexml test`
+    `cp -f ../rexml/rexml.gemspec lib/rexml`
+  when "rss"
+    `rm -rf lib/rss* test/rss`
+    `cp -rf ../rss/lib/* lib`
+    `cp -rf ../rss/test/rss test`
+    `cp -f ../rss/rss.gemspec lib/rss`
   else
   end
 end
