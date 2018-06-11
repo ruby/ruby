@@ -361,7 +361,7 @@ puts Tempfile.new('foo').path
     f.close
     assert_file.exist?(path)
   ensure
-    f.close if f && !f.closed?
+    f&.close
     File.unlink path if path
   end
 
