@@ -131,7 +131,7 @@ def sync_default_gems(gem)
     `cp -rf ../csv/test/csv test`
     `cp -f ../csv/csv.gemspec lib/csv`
   when "webrick"
-    `rm -rf lib/webrick test/webrick`
+    `rm -rf lib/webrick* test/webrick`
     `cp -rf ../webrick/lib/webrick lib`
     `cp -rf ../webrick/test/webrick test`
     `cp -f ../webrick/webrick.gemspec lib/webrick`
