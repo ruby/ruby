@@ -655,11 +655,9 @@ add_modules(VALUE *req_list, const char *mod)
     VALUE feature;
 
     if (!list) {
-	*req_list = list = rb_ary_new();
-	RBASIC_CLEAR_CLASS(list);
+	*req_list = list = rb_ary_tmp_new(0);
     }
-    feature = rb_str_new2(mod);
-    RBASIC_CLEAR_CLASS(feature);
+    feature = rb_str_cat_cstr(rb_str_tmp_new(0), mod);
     rb_ary_push(list, feature);
 }
 
