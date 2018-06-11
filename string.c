@@ -2607,11 +2607,10 @@ str_uplus(VALUE str)
  * call-seq:
  *   -str  -> str (frozen)
  *
- * Return a frozen, possibly pre-existing
- * copy of the string.
+ * Returns a frozen, possibly pre-existing copy of the string.
  *
- * String will be deduplicated as long as it is not tainted,
- * or has any instance vars set on it.
+ * The string will be deduplicated as long as it is not tainted,
+ * or has any instance variables set on it.
  */
 static VALUE
 str_uminus(VALUE str)
@@ -3148,7 +3147,7 @@ rb_str_hash_cmp(VALUE str1, VALUE str2)
  * call-seq:
  *    str.hash   -> integer
  *
- * Return a hash based on the string's length, content and encoding.
+ * Returns a hash based on the string's length, content and encoding.
  *
  * See also Object#hash.
  */
@@ -9278,7 +9277,7 @@ rb_str_crypt(VALUE str, VALUE salt)
  *  call-seq:
  *     str.ord   -> integer
  *
- *  Return the <code>Integer</code> ordinal of a one-character string.
+ *  Returns the <code>Integer</code> ordinal of a one-character string.
  *
  *     "a".ord         #=> 97
  */
@@ -9613,7 +9612,7 @@ rb_str_rpartition(VALUE str, VALUE sep)
  *     str.start_with?([prefixes]+)   -> true or false
  *
  *  Returns true if +str+ starts with one of the +prefixes+ given.
- *  Each +prefixes+ should be a String or a Regexp.
+ *  Each of the +prefixes+ should be a String or a Regexp.
  *
  *    "hello".start_with?("hell")               #=> true
  *    "hello".start_with?(/H/i)                 #=> true
