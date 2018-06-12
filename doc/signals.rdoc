@@ -46,7 +46,7 @@ unsafe.
   including Array, Hash, String, Struct, Time.
 
 * Common Array, Hash, String, Struct operations which do not execute a block
-  are generally safe; but beware if iteration is occuring elsewhere.
+  are generally safe; but beware if iteration is occurring elsewhere.
 
 * Hash#[], Hash#[]= (unless Hash.new was given an unsafe block)
 
