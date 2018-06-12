@@ -4572,7 +4572,8 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 static int have_precisetime = -1;
 
-static void get_systemtime(FILETIME *ft)
+static void
+get_systemtime(FILETIME *ft)
 {
     typedef void (WINAPI *get_time_func)(FILETIME *ft);
     static get_time_func func = (get_time_func)-1;
@@ -4592,11 +4593,13 @@ static void get_systemtime(FILETIME *ft)
 }
 
 /* License: Ruby's */
-static int
-filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
+/* split FILETIME value into UNIX time and sub-seconds in NT ticks */
+static time_t
+filetime_split(const FILETIME* ft, long *subsec)
 {
     ULARGE_INTEGER tmp;
     unsigned LONG_LONG lt;
+    const unsigned LONG_LONG subsec_unit = (unsigned LONG_LONG)10 * 1000 * 1000;
 
     tmp.LowPart = ft->dwLowDateTime;
     tmp.HighPart = ft->dwHighDateTime;
@@ -4606,13 +4609,10 @@ filetime_to_timeval(const FILETIME* ft, struct timeval *tv)
        convert it into UNIX time (since 1970/01/01 00:00:00 UTC).
        the first leap second is at 1972/06/30, so we doesn't need to think
        about it. */
-    lt /= 10;	/* to usec */
-    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * 1000 * 1000;
+    lt -= (LONG_LONG)((1970-1601)*365.2425) * 24 * 60 * 60 * subsec_unit;
 
-    tv->tv_sec = (long)(lt / (1000 * 1000));
-    tv->tv_usec = (long)(lt % (1000 * 1000));
-
-    return tv->tv_sec > 0 ? 0 : -1;
+    *subsec = (long)(lt % subsec_unit);
+    return (time_t)(lt / subsec_unit);
 }
 
 /* License: Ruby's */
@@ -4620,9 +4620,11 @@ int __cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {
     FILETIME ft;
+    long subsec;
 
     get_systemtime(&ft);
-    filetime_to_timeval(&ft, tv);
+    tv->tv_sec = filetime_split(&ft, &subsec);
+    tv->tv_usec = subsec / 10;
 
     return 0;
 }
@@ -4634,10 +4636,12 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
     switch (clock_id) {
       case CLOCK_REALTIME:
 	{
-	    struct timeval tv;
-	    gettimeofday(&tv, NULL);
-	    sp->tv_sec = tv.tv_sec;
-	    sp->tv_nsec = tv.tv_usec * 1000;
+	    FILETIME ft;
+	    long subsec;
+
+	    get_systemtime(&ft);
+	    sp->tv_sec = filetime_split(&ft, &subsec);
+	    sp->tv_nsec = subsec * 100;
 	    return 0;
 	}
       case CLOCK_MONOTONIC:
@@ -5488,12 +5492,11 @@ stati128_handle(HANDLE h, struct stati128 *st)
 static time_t
 filetime_to_unixtime(const FILETIME *ft)
 {
-    struct timeval tv;
+    long subsec;
+    time_t t = filetime_split(ft, &subsec);
 
-    if (filetime_to_timeval(ft, &tv) == (time_t)-1)
-	return 0;
-    else
-	return tv.tv_sec;
+    if (t < 0) return 0;
+    return t;
 }
 
 /* License: Ruby's */
