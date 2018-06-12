@@ -42,6 +42,11 @@
 #   SecureRandom.alphanumeric(10) #=> "S8baxMJnPl"
 #   SecureRandom.alphanumeric(10) #=> "aOxAg8BAJe"
 #
+# Generate alphanumeric strings:
+#
+#   p SecureRandom.alphanumeric(10) #=> "S8baxMJnPl"
+#   p SecureRandom.alphanumeric(10) #=> "aOxAg8BAJe"
+#
 # Generate UUIDs:
 #
 #   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
