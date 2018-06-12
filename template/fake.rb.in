@@ -32,7 +32,7 @@ class Object
   CROSS_COMPILING = RUBY_PLATFORM
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
-  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>RubyVM::MJIT.enabled? ?
+  <%=n%> = <%if n=='RUBY_DESCRIPTION' %>RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled? ?
     <%=arg['RUBY_DESCRIPTION_WITH_JIT'].inspect%> :
     <%end%><%=v.inspect%>
 % }
