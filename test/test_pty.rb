@@ -18,8 +18,8 @@ class TestPTY < Test::Unit::TestCase
   else
     assert_equal("a\r\n", r.gets)
   ensure
-    r.close if r
-    w.close if w
+    r&.close
+    w&.close
     Process.wait pid if pid
   end
 
@@ -239,4 +239,3 @@ class TestPTY < Test::Unit::TestCase
     skip $!
   end
 end if defined? PTY
-
