@@ -37,6 +37,11 @@
 #   SecureRandom.random_bytes(10) #=> "\016\t{\370g\310pbr\301"
 #   SecureRandom.random_bytes(10) #=> "\323U\030TO\234\357\020\a\337"
 #
+# Generate alphanumeric strings:
+#
+#   SecureRandom.alphanumeric(10) #=> "S8baxMJnPl"
+#   SecureRandom.alphanumeric(10) #=> "aOxAg8BAJe"
+#
 # Generate UUIDs:
 #
 #   SecureRandom.uuid #=> "2d931510-d99f-494a-8c67-87feb05e1594"
