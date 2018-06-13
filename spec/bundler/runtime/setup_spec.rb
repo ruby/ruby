@@ -159,6 +159,10 @@ RSpec.describe "Bundler.setup" do
 
       load_path = clean_load_path(out.split("\n"))
 
+      unless Bundler.load.specs["bundler"].empty?
+        load_path.delete_if {|path| path =~ /bundler/ }
+      end
+
       expect(load_path).to start_with(
         "/gems/rails-2.3.2/lib",
         "/gems/activeresource-2.3.2/lib",

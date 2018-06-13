@@ -131,7 +131,12 @@ module Bundler
           # method 2
           SharedHelpers.chdir(destination) do
             git_retry %(fetch --force --quiet --tags "#{path}")
-            git "reset --hard #{@revision}"
+
+            begin
+              git "reset --hard #{@revision}"
+            rescue GitCommandError
+              raise MissingGitRevisionError.new(@revision, URICredentialsFilter.credential_filtered_uri(uri))
+            end
 
             if submodules
               git_retry "submodule update --init --recursive"

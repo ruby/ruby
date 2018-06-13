@@ -498,10 +498,10 @@ module Spec
       ENV["BUNDLER_SPEC_RUBYGEMS_VERSION"] = old if block_given?
     end
 
-    def simulate_windows
+    def simulate_windows(platform = mswin)
       old = ENV["BUNDLER_SPEC_WINDOWS"]
       ENV["BUNDLER_SPEC_WINDOWS"] = "true"
-      simulate_platform mswin do
+      simulate_platform platform do
         yield
       end
     ensure

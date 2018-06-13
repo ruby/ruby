@@ -29,7 +29,12 @@ module Bundler
         @hooks = {}
         @load_paths = {}
 
-        load_index(global_index_file, true)
+        begin
+          load_index(global_index_file, true)
+        rescue GenericSystemCallError
+          # no need to fail when on a read-only FS, for example
+          nil
+        end
         load_index(local_index_file) if SharedHelpers.in_bundle?
       end
 

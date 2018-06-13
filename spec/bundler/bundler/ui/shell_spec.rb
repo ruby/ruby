@@ -59,6 +59,15 @@ RSpec.describe Bundler::UI::Shell do
       it "prints to stderr" do
         expect { subject.error("error!!!") }.to output("error!!!\n").to_stderr
       end
+
+      context "when stderr is closed" do
+        it "doesn't report anything" do
+          output = capture(:stderr, :closed => true) do
+            subject.error("Something went wrong")
+          end
+          expect(output).to_not eq("Something went wrong\n")
+        end
+      end
     end
   end
 end

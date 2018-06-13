@@ -10,7 +10,7 @@ module Bundler
     end
 
     def setup(*groups)
-      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen?
+      @definition.ensure_equivalent_gemfile_and_lockfile if Bundler.frozen_bundle?
 
       groups.map!(&:to_sym)
 

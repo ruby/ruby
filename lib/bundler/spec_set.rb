@@ -37,7 +37,10 @@ module Bundler
         elsif check
           return false
         elsif raise_on_missing
-          raise "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
+          others = lookup[dep.name] if match_current_platform
+          message = "Unable to find a spec satisfying #{dep} in the set. Perhaps the lockfile is corrupted?"
+          message += " Found #{others.join(", ")} that did not match the current platform." if others && !others.empty?
+          raise GemNotFound, message
         end
       end
 

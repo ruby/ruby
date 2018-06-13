@@ -21,6 +21,7 @@ module Bundler
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
         @uri        = options["uri"] || ""
+        @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"] || "master"
         @submodules = options["submodules"]
@@ -77,7 +78,7 @@ module Bundler
                 nil
               end
 
-        "#{uri} (at #{at}#{rev})"
+        "#{@safe_uri} (at #{at}#{rev})"
       end
 
       def name

@@ -67,7 +67,7 @@ RSpec.describe "bundle install" do
       if type == :env
         ENV["BUNDLE_PATH"] = location
       elsif type == :global
-        bundle "config path #{location}", "no-color" => nil
+        bundle! "config path #{location}", "no-color" => nil
       end
     end
 
@@ -78,6 +78,16 @@ RSpec.describe "bundle install" do
 
         expect(vendored_gems("gems/rack-1.0.0")).to be_directory
         expect(bundled_app("vendor2")).not_to be_directory
+        expect(the_bundle).to include_gems "rack 1.0.0"
+      end
+
+      it "installs gems to ." do
+        set_bundle_path(type, ".")
+        bundle! "config --global disable_shared_gems true"
+
+        bundle! :install
+
+        expect([bundled_app("cache/rack-1.0.0.gem"), bundled_app("gems/rack-1.0.0"), bundled_app("specifications/rack-1.0.0.gemspec")]).to all exist
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
 

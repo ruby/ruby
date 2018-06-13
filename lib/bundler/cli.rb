@@ -717,6 +717,8 @@ module Bundler
       command_name = current_command.name
       return if PARSEABLE_COMMANDS.include?(command_name)
 
+      return unless SharedHelpers.md5_available?
+
       latest = Fetcher::CompactIndex.
                new(nil, Source::Rubygems::Remote.new(URI("https://rubygems.org")), nil).
                send(:compact_index_client).

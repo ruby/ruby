@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::Source::Git::GitProxy do
+  let(:path) { Pathname("path") }
   let(:uri) { "https://github.com/bundler/bundler.git" }
-  subject { described_class.new(Pathname("path"), uri, "HEAD") }
+  let(:ref) { "HEAD" }
+  let(:revision) { nil }
+  let(:git_source) { nil }
+  subject { described_class.new(path, uri, ref, revision, git_source) }
 
   context "with configured credentials" do
     it "adds username and password to URI" do
@@ -110,6 +114,26 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
       it "does not strip out msysgit specific additions in the version string" do
         expect(subject.full_version).to eq("1.2.3.msysgit.0")
+      end
+    end
+  end
+
+  describe "#copy_to" do
+    let(:destination) { tmpdir("copy_to_path") }
+    let(:submodules) { false }
+
+    context "when given a SHA as a revision" do
+      let(:revision) { "abcd" * 10 }
+
+      it "fails gracefully when resetting to the revision fails" do
+        expect(subject).to receive(:git_retry).with(start_with("clone ")) { destination.mkpath }
+        expect(subject).to receive(:git_retry).with(start_with("fetch "))
+        expect(subject).to receive(:git).with("reset --hard #{revision}").and_raise(Bundler::Source::Git::GitCommandError, "command")
+        expect(subject).not_to receive(:git)
+
+        expect { subject.copy_to(destination, submodules) }.
+          to raise_error(Bundler::Source::Git::MissingGitRevisionError,
+            "Revision #{revision} does not exist in the repository #{uri}. Maybe you misspelled it?")
       end
     end
   end

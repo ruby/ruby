@@ -51,8 +51,9 @@ RSpec.describe "bundle add" do
     end
 
     it "adds multiple version constraints when specified" do
-      bundle "add 'foo' --version='< 3.0, > 1.1'"
-      expect(bundled_app("Gemfile").read).to match(/gem "foo", "< 3.0", "> 1.1"/)
+      requirements = ["< 3.0", "> 1.0"]
+      bundle "add 'foo' --version='#{requirements.join(", ")}'"
+      expect(bundled_app("Gemfile").read).to match(/gem "foo", #{Gem::Requirement.new(requirements).as_list.map(&:dump).join(', ')}/)
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end

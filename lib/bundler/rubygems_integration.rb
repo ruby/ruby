@@ -132,7 +132,11 @@ module Bundler
     end
 
     def inflate(obj)
-      Gem.inflate(obj)
+      if defined?(Gem::Util)
+        Gem::Util.inflate(obj)
+      else
+        Gem.inflate(obj)
+      end
     end
 
     def sources=(val)
@@ -570,8 +574,10 @@ module Bundler
       @replaced_methods.each do |(sym, klass), method|
         redefine_method(klass, sym, method)
       end
-      post_reset_hooks.reject! do |proc|
-        proc.binding.eval("__FILE__") == __FILE__
+      if Binding.public_method_defined?(:source_location)
+        post_reset_hooks.reject! {|proc| proc.binding.source_location[0] == __FILE__ }
+      else
+        post_reset_hooks.reject! {|proc| proc.binding.eval("__FILE__") == __FILE__ }
       end
       @replaced_methods.clear
     end

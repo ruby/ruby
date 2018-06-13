@@ -97,6 +97,14 @@ RSpec.describe "bundle lock" do
     expect { read_lockfile }.to raise_error(Errno::ENOENT)
   end
 
+  it "writes to custom location using --lockfile when a default lockfile is present" do
+    bundle "install"
+    bundle "lock --lockfile=lock"
+
+    expect(out).to match(/Writing lockfile to.+lock/)
+    expect(read_lockfile("lock")).to eq(@lockfile)
+  end
+
   it "update specific gems using --update" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("10.0.2", "10.0.1")
 

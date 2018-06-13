@@ -23,7 +23,7 @@ module Bundler
 
       check_trust_policy
 
-      if options[:deployment] || options[:frozen] || Bundler.frozen?
+      if options[:deployment] || options[:frozen] || Bundler.frozen_bundle?
         unless Bundler.default_lockfile.exist?
           flag   = "--deployment flag" if options[:deployment]
           flag ||= "--frozen flag"     if options[:frozen]
@@ -63,7 +63,7 @@ module Bundler
       definition.validate_runtime!
 
       installer = Installer.install(Bundler.root, definition, options)
-      Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen?
+      Bundler.load.cache if Bundler.app_cache.exist? && !options["no-cache"] && !Bundler.frozen_bundle?
 
       Bundler.ui.confirm "Bundle complete! #{dependencies_count_for(definition)}, #{gems_installed_for(definition)}."
       Bundler::CLI::Common.output_without_groups_message

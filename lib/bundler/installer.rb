@@ -70,7 +70,7 @@ module Bundler
       create_bundle_path
 
       ProcessLock.lock do
-        if Bundler.frozen?
+        if Bundler.frozen_bundle?
           @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
         end
 
@@ -90,7 +90,7 @@ module Bundler
         end
         install(options)
 
-        lock unless Bundler.frozen?
+        lock unless Bundler.frozen_bundle?
         Standalone.new(options[:standalone], @definition).generate if options[:standalone]
       end
     end
@@ -135,7 +135,11 @@ module Bundler
         end
 
         File.open(binstub_path, "w", 0o777 & ~File.umask) do |f|
-          f.puts ERB.new(template, nil, "-").result(binding)
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
 
@@ -171,7 +175,11 @@ module Bundler
         executable_path = Pathname(spec.full_gem_path).join(spec.bindir, executable).relative_path_from(bin_path)
         executable_path = executable_path
         File.open "#{bin_path}/#{executable}", "w", 0o755 do |f|
-          f.puts ERB.new(template, nil, "-").result(binding)
+          if RUBY_VERSION >= "2.6"
+            f.puts ERB.new(template, :trim_mode => "-").result(binding)
+          else
+            f.puts ERB.new(template, nil, "-").result(binding)
+          end
         end
       end
     end

@@ -44,7 +44,12 @@ module Bundler
     end
 
     def gem_install_message
-      "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
+      remotes = spec.source.remotes
+      if remotes.size == 1
+        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{remotes.first}'` succeeds before bundling."
+      else
+        "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
+      end
     end
 
     def spec_settings

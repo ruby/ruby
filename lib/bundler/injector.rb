@@ -12,8 +12,11 @@ module Bundler
       @options = options
     end
 
+    # @param [Pathname] gemfile_path The Gemfile in which to inject the new dependency.
+    # @param [Pathname] lockfile_path The lockfile in which to inject the new dependency.
+    # @return [Array]
     def inject(gemfile_path, lockfile_path)
-      if Bundler.frozen?
+      if Bundler.frozen_bundle?
         # ensure the lock and Gemfile are synced
         Bundler.definition.ensure_equivalent_gemfile_and_lockfile(true)
       end
@@ -84,9 +87,6 @@ module Bundler
     def append_to(gemfile_path, new_gem_lines)
       gemfile_path.open("a") do |f|
         f.puts
-        if @options["timestamp"] || @options["timestamp"].nil?
-          f.puts "# Added at #{Time.now} by #{`whoami`.chomp}:"
-        end
         f.puts new_gem_lines
       end
     end

@@ -115,4 +115,36 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       expect(the_bundle).to include_gems "platform_specific 1.0 RUBY"
     end
   end
+
+  it "recovers when the lockfile is missing a platform-specific gem" do
+    build_repo2 do
+      build_gem "requires_platform_specific" do |s|
+        s.add_dependency "platform_specific"
+      end
+    end
+    simulate_windows x64_mingw do
+      lockfile <<-L
+        GEM
+          remote: file:#{gem_repo2}/
+          specs:
+            platform_specific (1.0-x86-mingw32)
+            requires_platform_specific (1.0)
+              platform_specific
+
+        PLATFORMS
+          x64-mingw32
+          x86-mingw32
+
+        DEPENDENCIES
+          requires_platform_specific
+      L
+
+      install_gemfile! <<-G, :verbose => true
+        source "file://#{gem_repo2}"
+        gem "requires_platform_specific"
+      G
+
+      expect(the_bundle).to include_gem "platform_specific 1.0 x64-mingw32"
+    end
+  end
 end

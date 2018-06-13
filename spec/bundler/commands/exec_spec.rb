@@ -606,6 +606,24 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
+    context "the executable raises an error without a backtrace", :bundler => "< 2" do
+      let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
+      let(:exit_code) { 1 }
+      let(:expected) { super() << "\nbundler: failed to load command: #{path} (#{path})" }
+      let(:expected_err) { "Err: Err" }
+
+      it_behaves_like "it runs"
+    end
+
+    context "the executable raises an error without a backtrace", :bundler => "2" do
+      let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
+      let(:exit_code) { 1 }
+      let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\nErr: Err" }
+      let(:expected) { super() }
+
+      it_behaves_like "it runs"
+    end
+
     context "when the file uses the current ruby shebang", :ruby_repo do
       let(:shebang) { "#!#{Gem.ruby}" }
       it_behaves_like "it runs"
@@ -700,30 +718,60 @@ __FILE__: #{path.to_s.inspect}
       end
     end
 
-    context "signals being trapped by bundler" do
-      let(:executable) { strip_whitespace <<-RUBY }
-        #{shebang}
-        begin
-          Thread.new do
-            puts 'Started' # For process sync
-            STDOUT.flush
-            sleep 1 # ignore quality_spec
-            raise "Didn't receive INT at all"
-          end.join
-        rescue Interrupt
-          puts "foo"
+    context "signal handling" do
+      let(:test_signals) do
+        open3_reserved_signals = %w[CHLD CLD PIPE]
+        reserved_signals = %w[SEGV BUS ILL FPE VTALRM KILL STOP EXIT]
+        bundler_signals = %w[INT]
+
+        Signal.list.keys - (bundler_signals + reserved_signals + open3_reserved_signals)
+      end
+
+      context "signals being trapped by bundler" do
+        let(:executable) { strip_whitespace <<-RUBY }
+          #{shebang}
+          begin
+            Thread.new do
+              puts 'Started' # For process sync
+              STDOUT.flush
+              sleep 1 # ignore quality_spec
+              raise "Didn't receive INT at all"
+            end.join
+          rescue Interrupt
+            puts "foo"
+          end
+        RUBY
+
+        it "receives the signal", :ruby => ">= 1.9.3" do
+          bundle!("exec #{path}") do |_, o, thr|
+            o.gets # Consumes 'Started' and ensures that thread has started
+            Process.kill("INT", thr.pid)
+          end
+
+          expect(out).to eq("foo")
         end
-      RUBY
+      end
 
-      it "receives the signal" do
-        skip "popen3 doesn't provide a way to get pid " unless RUBY_VERSION >= "1.9.3"
+      context "signals not being trapped by bunder" do
+        let(:executable) { strip_whitespace <<-RUBY }
+          #{shebang}
 
-        bundle("exec #{path}") do |_, o, thr|
-          o.gets # Consumes 'Started' and ensures that thread has started
-          Process.kill("INT", thr.pid)
+          signals = #{test_signals.inspect}
+          result = signals.map do |sig|
+            Signal.trap(sig, "IGNORE")
+          end
+          puts result.select { |ret| ret == "IGNORE" }.count
+        RUBY
+
+        it "makes sure no unexpected signals are restored to DEFAULT" do
+          test_signals.each do |n|
+            Signal.trap(n, "IGNORE")
+          end
+
+          bundle!("exec #{path}")
+
+          expect(out).to eq(test_signals.count.to_s)
         end
-
-        expect(out).to eq("foo")
       end
     end
   end

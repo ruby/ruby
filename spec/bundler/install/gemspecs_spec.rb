@@ -46,6 +46,23 @@ RSpec.describe "bundle install" do
     expect(the_bundle).to include_gems "activesupport 2.3.2"
   end
 
+  it "does not hang when gemspec has incompatible encoding" do
+    create_file "foo.gemspec", <<-G
+      Gem::Specification.new do |gem|
+        gem.name = "pry-byebug"
+        gem.version = "3.4.2"
+        gem.author = "David Rodriguez"
+        gem.summary = "Good stuff"
+      end
+    G
+
+    install_gemfile <<-G, :env => { "LANG" => "C" }
+      gemspec
+    G
+
+    expect(out).to include("Bundle complete!")
+  end
+
   context "when ruby version is specified in gemspec and gemfile" do
     it "installs when patch level is not specified and the version matches" do
       build_lib("foo", :path => bundled_app) do |s|

@@ -33,7 +33,9 @@ module Bundler
 
           # first try to fetch any new bytes on the existing file
           if retrying.nil? && local_path.file?
-            FileUtils.cp local_path, local_temp_path
+            SharedHelpers.filesystem_access(local_temp_path) do
+              FileUtils.cp local_path, local_temp_path
+            end
             headers["If-None-Match"] = etag_for(local_temp_path)
             headers["Range"] =
               if local_temp_path.size.nonzero?
@@ -78,6 +80,13 @@ module Bundler
 
           update(local_path, remote_path, :retrying)
         end
+      rescue Errno::EACCES
+        raise Bundler::PermissionError,
+          "Bundler does not have write access to create a temp directory " \
+          "within #{Dir.tmpdir}. Bundler must have write access to your " \
+          "systems temp directory to function properly. "
+      rescue Zlib::GzipFile::Error
+        raise Bundler::HTTPError
       end
 
       def etag_for(path)

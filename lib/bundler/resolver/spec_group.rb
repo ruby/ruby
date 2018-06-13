@@ -14,7 +14,6 @@ module Bundler
         @version = exemplary_spec.version
         @source = exemplary_spec.source
 
-        @required_by = []
         @activated_platforms = []
         @dependencies = nil
         @specs        = Hash.new do |specs, platform|

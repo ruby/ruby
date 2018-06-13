@@ -424,6 +424,47 @@ RSpec.describe "bundle update in more complicated situations" do
     bundle "update"
     expect(the_bundle).to include_gems "thin 1.0"
   end
+
+  context "when the lockfile is for a different platform" do
+    before do
+      build_repo4 do
+        build_gem("a", "0.9")
+        build_gem("a", "0.9") {|s| s.platform = "java" }
+        build_gem("a", "1.1")
+        build_gem("a", "1.1") {|s| s.platform = "java" }
+      end
+
+      gemfile <<-G
+        source "file://#{gem_repo4}"
+        gem "a"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: file://#{gem_repo4}
+          specs:
+            a (0.9-java)
+
+        PLATFORMS
+          java
+
+        DEPENDENCIES
+          a
+      L
+
+      simulate_platform linux
+    end
+
+    it "allows updating" do
+      bundle! :update, :all => true
+      expect(the_bundle).to include_gem "a 1.1"
+    end
+
+    it "allows updating a specific gem" do
+      bundle! "update a"
+      expect(the_bundle).to include_gem "a 1.1"
+    end
+  end
 end
 
 RSpec.describe "bundle update without a Gemfile.lock" do
