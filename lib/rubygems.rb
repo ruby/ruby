@@ -175,7 +175,7 @@ module Gem
     write_binary_errors
   end.freeze
 
-  USE_BUNDLER_FOR_GEMDEPS = false # :nodoc:
+  USE_BUNDLER_FOR_GEMDEPS = true # :nodoc:
 
   @@win_platform = nil
 

@@ -385,6 +385,12 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Add URI::File to handle file URI scheme.  [Feature #14035]
 
+[Bundler]
+
+  * Add Bundler to Standard Library. [Feature #12733]
+
+  * Use 1.16.1. It's latest stable version.
+
 === Compatibility issues (excluding feature bug fixes)
 
 [File]

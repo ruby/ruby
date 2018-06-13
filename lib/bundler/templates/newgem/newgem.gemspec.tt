@@ -1,0 +1,49 @@
+<%- if RUBY_VERSION < "2.0.0" -%>
+# coding: utf-8
+<%- end -%>
+
+lib = File.expand_path("../lib", __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+require "<%= config[:namespaced_path] %>/version"
+
+Gem::Specification.new do |spec|
+  spec.name          = <%= config[:name].inspect %>
+  spec.version       = <%= config[:constant_name] %>::VERSION
+  spec.authors       = [<%= config[:author].inspect %>]
+  spec.email         = [<%= config[:email].inspect %>]
+
+  spec.summary       = %q{TODO: Write a short summary, because RubyGems requires one.}
+  spec.description   = %q{TODO: Write a longer description or delete this line.}
+  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+<%- if config[:mit] -%>
+  spec.license       = "MIT"
+<%- end -%>
+
+  # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
+  # to allow pushing to a single host or delete this section to allow pushing to any host.
+  if spec.respond_to?(:metadata)
+    spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com'"
+  else
+    raise "RubyGems 2.0 or newer is required to protect against " \
+      "public gem pushes."
+  end
+
+  spec.files         = `git ls-files -z`.split("\x0").reject do |f|
+    f.match(%r{^(test|spec|features)/})
+  end
+  spec.bindir        = "exe"
+  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.require_paths = ["lib"]
+<%- if config[:ext] -%>
+  spec.extensions    = ["ext/<%= config[:underscored_name] %>/extconf.rb"]
+<%- end -%>
+
+  spec.add_development_dependency "bundler", "~> <%= config[:bundler_version] %>"
+  spec.add_development_dependency "rake", "~> 10.0"
+<%- if config[:ext] -%>
+  spec.add_development_dependency "rake-compiler"
+<%- end -%>
+<%- if config[:test] -%>
+  spec.add_development_dependency "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
+<%- end -%>
+end

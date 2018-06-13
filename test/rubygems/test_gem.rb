@@ -14,7 +14,7 @@ end
 
 class TestGem < Gem::TestCase
 
-  PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
+  PLUGINS_LOADED = []
 
   def setup
     super
@@ -1491,10 +1491,9 @@ class TestGem < Gem::TestCase
   end
 
   LIB_PATH = File.expand_path "../../../lib".dup.untaint, __FILE__.dup.untaint
-
   if Gem::USE_BUNDLER_FOR_GEMDEPS
     BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
-    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
+    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}"
   end
 
   def add_bundler_full_name(names)
@@ -1538,7 +1537,7 @@ class TestGem < Gem::TestCase
     out = IO.popen(cmd, &:read).split(/\n/)
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_looks_for_gemdeps_files_automatically_on_start_in_parent_dir
     util_clear_gems
@@ -1578,7 +1577,7 @@ class TestGem < Gem::TestCase
     Dir.rmdir "sub1"
 
     assert_equal ["b-1", "c-1"], out - out0
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_register_default_spec
     Gem.clear_default_specs
@@ -1757,27 +1756,26 @@ class TestGem < Gem::TestCase
     else
       platform = " #{platform}"
     end
-    expected =
-      if Gem::USE_BUNDLER_FOR_GEMDEPS
-        <<-EXPECTED
+    expected = if Gem::USE_BUNDLER_FOR_GEMDEPS
+                 <<-EXPECTED
 Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
 You may need to `gem install -g` to install missing gems
 
-        EXPECTED
-      else
-        <<-EXPECTED
+      EXPECTED
+    else
+      <<-EXPECTED
 Unable to resolve dependency: user requested 'a (>= 0)'
 You may need to `gem install -g` to install missing gems
 
-        EXPECTED
-      end
+      EXPECTED
+    end
 
     assert_output nil, expected do
       Gem.use_gemdeps
     end
   ensure
     ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
-  end if Gem::USE_BUNDLER_FOR_GEMDEPS
+  end
 
   def test_use_gemdeps_specific
     rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], 'x'
