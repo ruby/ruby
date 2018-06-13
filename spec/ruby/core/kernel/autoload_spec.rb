@@ -60,6 +60,25 @@ describe "Kernel#autoload" do
       ruby_exe(fixture(__FILE__, "autoload_frozen.rb")).should == "#{frozen_error_class} - nil"
     end
   end
+
+  describe "when called from included module's method" do
+    before :all do
+      @path = fixture(__FILE__, "autoload_from_included_module.rb")
+      KernelSpecs::AutoloadMethodIncluder.new.setup_autoload(@path)
+    end
+
+    it "setups the autoload on the included module" do
+      KernelSpecs::AutoloadMethod.autoload?(:AutoloadFromIncludedModule).should == @path
+    end
+
+    it "the autoload is reacheable from the class too" do
+      KernelSpecs::AutoloadMethodIncluder.autoload?(:AutoloadFromIncludedModule).should == @path
+    end
+
+    it "the autoload relative to the included module works" do
+      KernelSpecs::AutoloadMethod::AutoloadFromIncludedModule.loaded.should == :autoload_from_included_module
+    end
+  end
 end
 
 describe "Kernel#autoload?" do
@@ -106,6 +125,25 @@ describe "Kernel.autoload" do
     p = mock('path')
     p.should_receive(:to_path).and_return @non_existent
     Kernel.autoload :KSAutoloadAA, p
+  end
+
+  describe "when called from included module's method" do
+    before :all do
+      @path = fixture(__FILE__, "autoload_from_included_module2.rb")
+      KernelSpecs::AutoloadMethodIncluder2.new.setup_autoload(@path)
+    end
+
+    it "setups the autoload on the included module" do
+      KernelSpecs::AutoloadMethod2.autoload?(:AutoloadFromIncludedModule2).should == @path
+    end
+
+    it "the autoload is reacheable from the class too" do
+      KernelSpecs::AutoloadMethodIncluder2.autoload?(:AutoloadFromIncludedModule2).should == @path
+    end
+
+    it "the autoload relative to the included module works" do
+      KernelSpecs::AutoloadMethod2::AutoloadFromIncludedModule2.loaded.should == :autoload_from_included_module2
+    end
   end
 end
 

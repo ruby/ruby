@@ -4,9 +4,9 @@ require_relative 'fixtures/classes'
 describe "Enumerable#any?" do
   before :each do
     @enum = EnumerableSpecs::Numerous.new
-    @empty = EnumerableSpecs::Empty.new()
-    @enum1 = [0, 1, 2, -1]
-    @enum2 = [nil, false, true]
+    @empty = EnumerableSpecs::Empty.new
+    @enum1 = EnumerableSpecs::Numerous.new(0, 1, 2, -1)
+    @enum2 = EnumerableSpecs::Numerous.new(nil, false, true)
   end
 
   it "always returns false on empty enumeration" do
@@ -86,7 +86,7 @@ describe "Enumerable#any?" do
       @enum2.any? { |i| i == nil }.should == true
     end
 
-    it "any? should return false if the block never returns other than false or nil" do
+    it "returns false if the block never returns other than false or nil" do
       @enum.any? { false }.should == false
       @enum.any? { nil }.should == false
 
@@ -134,32 +134,21 @@ describe "Enumerable#any?" do
 
     it "gathers initial args as elements when each yields multiple" do
       multi = EnumerableSpecs::YieldsMulti.new
-      multi.any? {|e| e == 1 }.should be_true
+      yielded = []
+      multi.any? { |e| yielded << e; false }.should == false
+      yielded.should == [1, 3, 6]
     end
 
     it "yields multiple arguments when each yields multiple" do
       multi = EnumerableSpecs::YieldsMulti.new
       yielded = []
-      multi.any? {|e, i| yielded << [e, i] }
-      yielded.should == [[1, 2]]
+      multi.any? { |*args| yielded << args; false }.should == false
+      yielded.should == [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
     end
-
   end
 
   ruby_version_is "2.5" do
     describe 'when given a pattern argument' do
-      class EnumerableSpecs::Pattern
-        attr_reader :yielded
-        def initialize(&block)
-          @block = block
-          @yielded = []
-        end
-        def ===(*args)
-          @yielded << args
-          @block.call(*args)
-        end
-      end
-
       it "calls `===` on the pattern the return value " do
         pattern = EnumerableSpecs::Pattern.new { |x| x == 2 }
         @enum1.any?(pattern).should == true
@@ -195,7 +184,7 @@ describe "Enumerable#any?" do
         {a: 1, b: 2}.any?(pattern).should == true
       end
 
-      it "any? should return false if the block never returns other than false or nil" do
+      it "returns false if the block never returns other than false or nil" do
         pattern = EnumerableSpecs::Pattern.new { |x| nil }
         @enum1.any?(pattern).should == false
         pattern.yielded.should == [[0], [1], [2], [-1]]
@@ -204,7 +193,7 @@ describe "Enumerable#any?" do
         {a: 1}.any?(pattern).should == false
       end
 
-      it "does not hide exceptions out of the block" do
+      it "does not hide exceptions out of pattern#===" do
         pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
         lambda {
           @enum.any?(pattern)
@@ -212,13 +201,10 @@ describe "Enumerable#any?" do
       end
 
       it "calls the pattern with gathered array when yielded with multiple arguments" do
+        multi = EnumerableSpecs::YieldsMulti.new
         pattern = EnumerableSpecs::Pattern.new { false }
-        EnumerableSpecs::YieldsMixed2.new.any?(pattern).should == false
-        pattern.yielded.should == EnumerableSpecs::YieldsMixed2.gathered_yields.map { |x| [x] }
-
-        pattern = EnumerableSpecs::Pattern.new { false }
-        {a: 1, b: 2}.any?(pattern).should == false
-        pattern.yielded.should == [[[:a, 1]], [[:b, 2]]]
+        multi.any?(pattern).should == false
+        pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
       end
     end
   end

@@ -196,13 +196,9 @@ describe "The super keyword" do
     Super::ZSuperWithRestReassigned::B.new.a("bar").should == ["foo"]
   end
 
-  # Don't run this spec on Appveyor because it uses old Ruby versions
-  # The specs ends with segfault on old versions so let's just disable it
-  platform_is_not :windows do
-    # https://bugs.ruby-lang.org/issues/14279
-    it "wraps into array and passes along reassigned rest args with non-array scalar value" do
-      Super::ZSuperWithRestReassignedWithScalar::B.new.a("bar").should == ["foo"]
-    end
+  # https://bugs.ruby-lang.org/issues/14279
+  it "wraps into array and passes along reassigned rest args with non-array scalar value" do
+    Super::ZSuperWithRestReassignedWithScalar::B.new.a("bar").should == ["foo"]
   end
 
   it "invokes methods from a chain of anonymous modules" do
