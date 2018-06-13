@@ -30,10 +30,6 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-The Ruby distribution files can be found on the following FTP site:
-
-ftp://ftp.ruby-lang.org/pub/ruby/
-
 The trunk of the Ruby source tree can be checked out with the following
 command:
 
