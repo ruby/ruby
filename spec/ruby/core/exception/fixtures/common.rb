@@ -46,6 +46,26 @@ module ExceptionSpecs
       ""
     end
   end
+
+  class InitializeException < StandardError
+    attr_reader :ivar
+
+    def initialize(message = nil)
+      super
+      @ivar = 1
+    end
+
+    def initialize_copy(other)
+      super
+      ScratchPad.record object_id
+    end
+  end
+
+  module ExceptionModule
+    def repr
+      1
+    end
+  end
 end
 
 module NoMethodErrorSpecs

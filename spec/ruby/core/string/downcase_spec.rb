@@ -23,8 +23,64 @@ describe "String#downcase" do
   end
 
   ruby_version_is '2.4' do
-    it "works for all of Unicode" do
-      "ÄÖÜ".downcase.should == "äöü"
+    describe "full Unicode case mapping" do
+      it "works for all of Unicode with no option" do
+        "ÄÖÜ".downcase.should == "äöü"
+      end
+
+      it "updates string metadata" do
+        downcased = "\u{212A}ING".downcase
+
+        downcased.should == "king"
+        downcased.size.should == 4
+        downcased.bytesize.should == 4
+        downcased.ascii_only?.should be_true
+      end
+    end
+
+    describe "ASCII-only case mapping" do
+      it "does not downcase non-ASCII characters" do
+        "CÅR".downcase(:ascii).should == "cÅr"
+      end
+    end
+
+    describe "full Unicode case mapping adapted for Turkic languages" do
+      it "downcases characters according to Turkic semantics" do
+        "İ".downcase(:turkic).should == "i"
+      end
+
+      it "allows Lithuanian as an extra option" do
+        "İ".downcase(:turkic, :lithuanian).should == "i"
+      end
+
+      it "does not allow any other additional option" do
+        lambda { "İ".downcase(:turkic, :ascii) }.should raise_error(ArgumentError)
+      end
+    end
+
+    describe "full Unicode case mapping adapted for Lithuanian" do
+      it "currently works the same as full Unicode case mapping" do
+        "İS".downcase(:lithuanian).should == "i\u{307}s"
+      end
+
+      it "allows Turkic as an extra option (and applies Turkic semantics)" do
+        "İS".downcase(:lithuanian, :turkic).should == "is"
+      end
+
+      it "does not allow any other additional option" do
+        lambda { "İS".downcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      end
+    end
+
+    describe "case folding" do
+      it "case folds special characters" do
+        "ß".downcase.should == "ß"
+        "ß".downcase(:fold).should == "ss"
+      end
+    end
+
+    it "does not allow invalid options" do
+      lambda { "ABC".downcase(:invalid_option) }.should raise_error(ArgumentError)
     end
   end
 
@@ -47,10 +103,81 @@ describe "String#downcase!" do
   end
 
   ruby_version_is '2.4' do
-    it "modifies self in place for all of Unicode" do
-      a = "ÄÖÜ"
-      a.downcase!.should equal(a)
-      a.should == "äöü"
+    describe "full Unicode case mapping" do
+      it "modifies self in place for all of Unicode with no option" do
+        a = "ÄÖÜ"
+        a.downcase!
+        a.should == "äöü"
+      end
+
+      it "updates string metadata" do
+        downcased = "\u{212A}ING"
+        downcased.downcase!
+
+        downcased.should == "king"
+        downcased.size.should == 4
+        downcased.bytesize.should == 4
+        downcased.ascii_only?.should be_true
+      end
+    end
+
+    describe "ASCII-only case mapping" do
+      it "does not downcase non-ASCII characters" do
+        a = "CÅR"
+        a.downcase!(:ascii)
+        a.should == "cÅr"
+      end
+    end
+
+    describe "full Unicode case mapping adapted for Turkic languages" do
+      it "downcases characters according to Turkic semantics" do
+        a = "İ"
+        a.downcase!(:turkic)
+        a.should == "i"
+      end
+
+      it "allows Lithuanian as an extra option" do
+        a = "İ"
+        a.downcase!(:turkic, :lithuanian)
+        a.should == "i"
+      end
+
+      it "does not allow any other additional option" do
+        lambda { a = "İ"; a.downcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
+      end
+    end
+
+    describe "full Unicode case mapping adapted for Lithuanian" do
+      it "currently works the same as full Unicode case mapping" do
+        a = "İS"
+        a.downcase!(:lithuanian)
+        a.should == "i\u{307}s"
+      end
+
+      it "allows Turkic as an extra option (and applies Turkic semantics)" do
+        a = "İS"
+        a.downcase!(:lithuanian, :turkic)
+        a.should == "is"
+      end
+
+      it "does not allow any other additional option" do
+        lambda { a = "İS"; a.downcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      end
+    end
+
+    describe "case folding" do
+      it "case folds special characters" do
+        a = "ß"
+        a.downcase!
+        a.should == "ß"
+
+        a.downcase!(:fold)
+        a.should == "ss"
+      end
+    end
+
+    it "does not allow invalid options" do
+      lambda { a = "ABC"; a.downcase!(:invalid_option) }.should raise_error(ArgumentError)
     end
   end
 

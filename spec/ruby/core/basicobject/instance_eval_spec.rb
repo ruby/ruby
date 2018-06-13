@@ -177,4 +177,12 @@ end
     end
     err.backtrace.first.split(":")[0..1].should == ["b_file", "-98"]
   end
+
+  it "has access to the caller's local variables" do
+    x = nil
+
+    instance_eval "x = :value"
+
+    x.should == :value
+  end
 end

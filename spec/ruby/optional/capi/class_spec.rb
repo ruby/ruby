@@ -95,6 +95,12 @@ describe "C-API Class function" do
       obj.call_super_method.should == :super_method
     end
 
+    it "calls the method in the superclass with the correct self" do
+      @s.define_call_super_method CApiClassSpecs::SubSelf, "call_super_method"
+      obj = CApiClassSpecs::SubSelf.new
+      obj.call_super_method.should equal obj
+    end
+
     it "calls the method in the superclass through two native levels" do
       @s.define_call_super_method CApiClassSpecs::Sub, "call_super_method"
       @s.define_call_super_method CApiClassSpecs::SubSub, "call_super_method"
