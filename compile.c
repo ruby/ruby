@@ -7188,10 +7188,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       case NODE_DOT2:
       case NODE_DOT3:{
 	int excl = type == NODE_DOT3;
+	VALUE flag = INT2FIX(excl);
 	const NODE *b = node->nd_beg;
 	const NODE *e = node->nd_end;
-	VALUE flag = INT2FIX(excl | (e ? 0 : 2));
-	if (number_literal_p(b) && e && number_literal_p(e)) {
+	if (number_literal_p(b) && number_literal_p(e)) {
 	    if (!popped) {
 		VALUE val = rb_range_new(b->nd_lit, e->nd_lit, excl);
 		iseq_add_mark_object_compile_time(iseq, val);
