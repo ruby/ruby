@@ -6209,8 +6209,10 @@ rb_big_pow(VALUE x, VALUE y)
     if (y == INT2FIX(0)) return INT2FIX(1);
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
-	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x)) && d != round(d))
-	    return rb_funcall(rb_complex_raw1(x), idPow, 1, y);
+	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x)) && d != round(d)) {
+	    x = DBL2NUM(pow(-rb_big2dbl(x),  d));
+	    return rb_complex_polar(x, DBL2NUM(d * M_PI));
+	}
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
 	y = bignorm(y);
@@ -6223,7 +6225,7 @@ rb_big_pow(VALUE x, VALUE y)
 	yy = FIX2LONG(y);
 
 	if (yy < 0)
-	    return rb_funcall(rb_rational_raw1(x), idPow, 1, y);
+	    return rb_rational_raw(INT2FIX(1), rb_big_pow(x, INT2NUM(-yy)));
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
