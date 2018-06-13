@@ -13,8 +13,16 @@ describe "String#dump" do
     "foo\n".untrust.dump.untrusted?.should == true
   end
 
+  it "does not take into account if a string is frozen" do
+    "foo".freeze.dump.frozen?.should == false
+  end
+
   it "returns a subclass instance" do
     StringSpecs::MyString.new.dump.should be_an_instance_of(StringSpecs::MyString)
+  end
+
+  it "wraps string with \"" do
+    "foo".dump.should == '"foo"'
   end
 
   it "returns a string with special characters replaced with \\<char> notation" do
@@ -35,10 +43,11 @@ describe "String#dump" do
     ].should be_computed_by(:dump)
   end
 
-  it "returns a string with \\#<char> when # is followed by $, @, {" do
-    [ ["\#$", '"\\#$"'],
-      ["\#@", '"\\#@"'],
-      ["\#{", '"\\#{"']
+  it "returns a string with \\#<char> when # is followed by $, @, @@, {" do
+    [ ["\#$PATH", '"\\#$PATH"'],
+      ["\#@a",    '"\\#@a"'],
+      ["\#@@a",   '"\\#@@a"'],
+      ["\#{a}",   '"\\#{a}"']
     ].should be_computed_by(:dump)
   end
 
@@ -381,7 +390,7 @@ describe "String#dump" do
   end
 
   ruby_version_is '2.4' do
-    it "returns a string with multi-byte UTF-8 characters replaced by \\u{} notation with lower-case hex digits" do
+    it "returns a string with multi-byte UTF-8 characters replaced by \\u{} notation with upper-case hex digits" do
       [ [0200.chr('utf-8'), '"\u0080"'],
         [0201.chr('utf-8'), '"\u0081"'],
         [0202.chr('utf-8'), '"\u0082"'],
@@ -420,5 +429,11 @@ describe "String#dump" do
   it "includes .force_encoding(name) if the encoding isn't ASCII compatible" do
     "\u{876}".encode('utf-16be').dump.end_with?(".force_encoding(\"UTF-16BE\")").should be_true
     "\u{876}".encode('utf-16le').dump.end_with?(".force_encoding(\"UTF-16LE\")").should be_true
+  end
+
+  it "keeps origin encoding" do
+    "foo".encode("ISO-8859-1").dump.encoding.should == Encoding::ISO_8859_1
+    "foo".encode('windows-1251').dump.encoding.should == Encoding::Windows_1251
+    1.chr.dump.encoding.should == Encoding::US_ASCII
   end
 end

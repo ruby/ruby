@@ -328,4 +328,18 @@ module EnumerableSpecs
       EnumerableMapping.new(self, block)
     end
   end
+
+  class Pattern
+    attr_reader :yielded
+
+    def initialize(&block)
+      @block = block
+      @yielded = []
+    end
+
+    def ===(*args)
+      @yielded << args
+      @block.call(*args)
+    end
+  end
 end # EnumerableSpecs utility classes
