@@ -13,8 +13,8 @@ class TestRange < Test::Unit::TestCase
 
     assert_raise(ArgumentError) { (1.."3") }
 
-    assert_equal((0..nil), Range.new(0, nil, false))
-    assert_equal((0...nil), Range.new(0, nil, true))
+    assert_equal((0..), Range.new(0, nil, false))
+    assert_equal((0...), Range.new(0, nil, true))
 
     obj = Object.new
     def obj.<=>(other)
@@ -161,15 +161,15 @@ class TestRange < Test::Unit::TestCase
     assert_not_equal(r, (1..2))
     assert_not_equal(r, (0..2))
     assert_not_equal(r, (0...1))
-    assert_not_equal(r, (0..nil))
+    assert_not_equal(r, (0..))
     subclass = Class.new(Range)
     assert_equal(r, subclass.new(0,1))
 
-    r = (0..nil)
+    r = (0..)
     assert_equal(r, r)
-    assert_equal(r, (0..nil))
+    assert_equal(r, (0..))
     assert_not_equal(r, 0)
-    assert_not_equal(r, (0...nil))
+    assert_not_equal(r, (0...))
     subclass = Class.new(Range)
     assert_equal(r, subclass.new(0,nil))
   end
@@ -185,11 +185,11 @@ class TestRange < Test::Unit::TestCase
     subclass = Class.new(Range)
     assert_operator(r, :eql?, subclass.new(0,1))
 
-    r = (0..nil)
+    r = (0..)
     assert_operator(r, :eql?, r)
-    assert_operator(r, :eql?, 0..nil)
+    assert_operator(r, :eql?, 0..)
     assert_not_operator(r, :eql?, 0)
-    assert_not_operator(r, :eql?, 0...nil)
+    assert_not_operator(r, :eql?, 0...)
     subclass = Class.new(Range)
     assert_operator(r, :eql?, subclass.new(0,nil))
   end
@@ -198,8 +198,8 @@ class TestRange < Test::Unit::TestCase
     assert_kind_of(Integer, (0..1).hash)
     assert_equal((0..1).hash, (0..1).hash)
     assert_not_equal((0..1).hash, (0...1).hash)
-    assert_equal((0..nil).hash, (0..nil).hash)
-    assert_not_equal((0..nil).hash, (0...nil).hash)
+    assert_equal((0..).hash, (0..).hash)
+    assert_not_equal((0..).hash, (0...).hash)
   end
 
   def test_step
@@ -380,9 +380,9 @@ class TestRange < Test::Unit::TestCase
     assert_equal(0, (0..1).begin)
     assert_equal(1, (0..1).end)
     assert_equal(1, (0...1).end)
-    assert_equal(0, (0..nil).begin)
-    assert_equal(nil, (0..nil).end)
-    assert_equal(nil, (0...nil).end)
+    assert_equal(0, (0..).begin)
+    assert_equal(nil, (0..).end)
+    assert_equal(nil, (0...).end)
   end
 
   def test_first_last
@@ -402,17 +402,17 @@ class TestRange < Test::Unit::TestCase
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
 
-    assert_equal([0, 1, 2], (0..nil).first(3))
-    assert_equal(0, (0..nil).first)
-    assert_equal("a", ("a"..nil).first)
+    assert_equal([0, 1, 2], (0..).first(3))
+    assert_equal(0, (0..).first)
+    assert_equal("a", ("a"..).first)
     # XXX: How should (0...).last(3) behave?
   end
 
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
-    assert_equal("0..", (0..nil).to_s)
-    assert_equal("0...", (0...nil).to_s)
+    assert_equal("0..", (0..).to_s)
+    assert_equal("0...", (0...).to_s)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").to_s, :tainted?, bug11767)
@@ -423,8 +423,8 @@ class TestRange < Test::Unit::TestCase
   def test_inspect
     assert_equal("0..1", (0..1).inspect)
     assert_equal("0...1", (0...1).inspect)
-    assert_equal("0..", (0..nil).inspect)
-    assert_equal("0...", (0...nil).inspect)
+    assert_equal("0..", (0..).inspect)
+    assert_equal("0...", (0...).inspect)
 
     bug11767 = '[ruby-core:71811] [Bug #11767]'
     assert_predicate(("0".taint.."1").inspect, :tainted?, bug11767)
@@ -435,8 +435,8 @@ class TestRange < Test::Unit::TestCase
   def test_eqq
     assert_operator(0..10, :===, 5)
     assert_not_operator(0..10, :===, 11)
-    assert_operator(5..nil, :===, 11)
-    assert_not_operator(5..nil, :===, 0)
+    assert_operator(5.., :===, 11)
+    assert_not_operator(5.., :===, 0)
   end
 
   def test_eqq_time

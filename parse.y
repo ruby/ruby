@@ -1916,24 +1916,16 @@ arg		: lhs '=' arg_rhs
 		| arg tDOT2
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @2.end_pos;
-                        loc.end_pos = @2.end_pos;
-
 			value_expr($1);
-			$$ = NEW_DOT2($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT2($1, 0, &@$);
 		    /*% %*/
 		    /*% ripper: dot2!($1, Qnil) %*/
 		    }
 		| arg tDOT3
 		    {
 		    /*%%%*/
-                        YYLTYPE loc;
-                        loc.beg_pos = @2.end_pos;
-                        loc.end_pos = @2.end_pos;
-
 			value_expr($1);
-			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
+			$$ = NEW_DOT3($1, 0, &@$);
 		    /*% %*/
 		    /*% ripper: dot3!($1, Qnil) %*/
 		    }
