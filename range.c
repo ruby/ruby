@@ -37,7 +37,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(end)) {
+    if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && end != Qundef) {
 	VALUE v;
 
 	v = rb_funcall(beg, id_cmp, 1, end);
@@ -47,15 +47,16 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 
     RANGE_SET_EXCL(range, exclude_end);
     RANGE_SET_BEG(range, beg);
-    RANGE_SET_END(range, end);
+    RANGE_SET_END(range, end == Qundef ? Qnil : end);
 }
 
 VALUE
-rb_range_new(VALUE beg, VALUE end, int exclude_end)
+rb_range_new(VALUE beg, VALUE end, int flag)
 {
     VALUE range = rb_obj_alloc(rb_cRange);
 
-    range_init(range, beg, end, RBOOL(exclude_end));
+    if (flag & 2) end = Qundef;
+    range_init(range, beg, end, RBOOL(flag & 1));
     return range;
 }
 
@@ -85,6 +86,7 @@ range_initialize(int argc, VALUE *argv, VALUE range)
 
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     range_modify(range);
+    if (NIL_P(end)) end = Qundef;
     range_init(range, beg, end, RBOOL(RTEST(flags)));
     return Qnil;
 }
@@ -1339,7 +1341,7 @@ range_dumper(VALUE range)
 
     rb_ivar_set(v, id_excl, RANGE_EXCL(range));
     rb_ivar_set(v, id_beg, RANGE_BEG(range));
-    rb_ivar_set(v, id_end, RANGE_END(range));
+    if (!NIL_P(RANGE_END(range))) rb_ivar_set(v, id_end, RANGE_END(range));
     return v;
 }
 
@@ -1354,7 +1356,7 @@ range_loader(VALUE range, VALUE obj)
 
     range_modify(range);
     beg = rb_ivar_get(obj, id_beg);
-    end = rb_ivar_get(obj, id_end);
+    end = rb_ivar_lookup(obj, id_end, Qundef);
     excl = rb_ivar_get(obj, id_excl);
     if (!NIL_P(excl)) {
 	range_init(range, beg, end, RBOOL(RTEST(excl)));
