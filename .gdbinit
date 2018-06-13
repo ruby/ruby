@@ -1307,3 +1307,34 @@ define dump_node
                         ((struct RString*)$str)->as.heap.ptr : \
                         ((struct RString*)$str)->as.ary)
 end
+
+define print_flags
+  printf "RUBY_FL_WB_PROTECTED: %s\n", RBASIC($arg0)->flags & RUBY_FL_WB_PROTECTED ? "1" : "0"
+  printf "RUBY_FL_PROMOTED0   : %s\n", RBASIC($arg0)->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
+  printf "RUBY_FL_PROMOTED1   : %s\n", RBASIC($arg0)->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
+  printf "RUBY_FL_FINALIZE    : %s\n", RBASIC($arg0)->flags & RUBY_FL_FINALIZE ? "1" : "0"
+  printf "RUBY_FL_TAINT       : %s\n", RBASIC($arg0)->flags & RUBY_FL_TAINT ? "1" : "0"
+  printf "RUBY_FL_UNTRUSTED   : %s\n", RBASIC($arg0)->flags & RUBY_FL_UNTRUSTED ? "1" : "0"
+  printf "RUBY_FL_EXIVAR      : %s\n", RBASIC($arg0)->flags & RUBY_FL_EXIVAR ? "1" : "0"
+  printf "RUBY_FL_FREEZE      : %s\n", RBASIC($arg0)->flags & RUBY_FL_FREEZE ? "1" : "0"
+
+  printf "RUBY_FL_USER0       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER0 ? "1" : "0"
+  printf "RUBY_FL_USER1       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER1 ? "1" : "0"
+  printf "RUBY_FL_USER2       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER2 ? "1" : "0"
+  printf "RUBY_FL_USER3       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER3 ? "1" : "0"
+  printf "RUBY_FL_USER4       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER4 ? "1" : "0"
+  printf "RUBY_FL_USER5       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER5 ? "1" : "0"
+  printf "RUBY_FL_USER6       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER6 ? "1" : "0"
+  printf "RUBY_FL_USER7       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER7 ? "1" : "0"
+  printf "RUBY_FL_USER8       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER8 ? "1" : "0"
+  printf "RUBY_FL_USER9       : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER9 ? "1" : "0"
+  printf "RUBY_FL_USER10      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER10 ? "1" : "0"
+  printf "RUBY_FL_USER11      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER11 ? "1" : "0"
+  printf "RUBY_FL_USER12      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER12 ? "1" : "0"
+  printf "RUBY_FL_USER13      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER13 ? "1" : "0"
+  printf "RUBY_FL_USER14      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER14 ? "1" : "0"
+  printf "RUBY_FL_USER15      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER15 ? "1" : "0"
+  printf "RUBY_FL_USER16      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER16 ? "1" : "0"
+  printf "RUBY_FL_USER17      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER17 ? "1" : "0"
+  printf "RUBY_FL_USER18      : %s\n", RBASIC($arg0)->flags & RUBY_FL_USER18 ? "1" : "0"
+end
