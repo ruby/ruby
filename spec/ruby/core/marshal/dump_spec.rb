@@ -539,6 +539,16 @@ describe "Marshal.dump" do
 
   end
 
+  describe "when passed a StringIO" do
+
+    it "should raise an error" do
+      require "stringio"
+
+      lambda { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
+    end
+
+  end
+
   it "raises a TypeError if marshalling a Method instance" do
     lambda { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
   end

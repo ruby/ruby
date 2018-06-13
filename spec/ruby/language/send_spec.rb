@@ -198,9 +198,17 @@ describe "Invoking a method" do
       lambda { no_such_method }.should raise_error NameError
     end
 
+    it "should omit the method_missing call from the backtrace for NameError" do
+      lambda { no_such_method }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
+    end
+
     it "raises NoMethodError if invoked as an unambiguous method call" do
       lambda { no_such_method() }.should raise_error NoMethodError
       lambda { no_such_method(1,2,3) }.should raise_error NoMethodError
+    end
+
+    it "should omit the method_missing call from the backtrace for NoMethodError" do
+      lambda { no_such_method() }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
     end
   end
 

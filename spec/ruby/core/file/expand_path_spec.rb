@@ -109,8 +109,8 @@ describe "File.expand_path" do
       File.expand_path(Dir.pwd).should == Dir.pwd
       File.expand_path('~/').should == @home
       File.expand_path('~/..badfilename').should == "#{@home}/..badfilename"
-      File.expand_path('..').should == Dir.pwd.split('/')[0...-1].join("/")
       File.expand_path('~/a','~/b').should == "#{@home}/a"
+      File.expand_path('..').should == File.dirname(Dir.pwd)
     end
 
     it "does not replace multiple '/' at the beginning of the path" do

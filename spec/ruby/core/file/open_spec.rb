@@ -604,7 +604,7 @@ describe "File.open" do
     describe "on a FIFO" do
       before :each do
         @fifo = tmp("File_open_fifo")
-        system "mkfifo #{@fifo}"
+        File.mkfifo(@fifo)
       end
 
       after :each do

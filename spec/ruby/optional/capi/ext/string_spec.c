@@ -12,6 +12,19 @@
 extern "C" {
 #endif
 
+/* Make sure the RSTRING_PTR and the bytes are in native memory.
+ * On TruffleRuby RSTRING_PTR and the bytes remain in managed memory
+ * until they must be written to native memory.
+ * In some specs we want to test using the native memory. */
+char* NATIVE_RSTRING_PTR(VALUE str) {
+  char* ptr = RSTRING_PTR(str);
+  char** native = malloc(sizeof(char*));
+  *native = ptr;
+  ptr = *native;
+  free(native);
+  return ptr;
+}
+
 #ifdef HAVE_RB_CSTR2INUM
 VALUE string_spec_rb_cstr2inum(VALUE self, VALUE str, VALUE inum) {
   int num = FIX2INT(inum);
@@ -64,6 +77,10 @@ VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
   }
 
   return buf;
+}
+
+VALUE string_spec_rb_str_capacity(VALUE self, VALUE str) {
+  return SIZET2NUM(rb_str_capacity(str));
 }
 #endif
 
@@ -180,6 +197,10 @@ VALUE string_spec_rb_str_length(VALUE self, VALUE str) {
 #ifdef HAVE_RB_STR_NEW
 VALUE string_spec_rb_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_str_new(RSTRING_PTR(str), FIX2INT(len));
+}
+
+VALUE string_spec_rb_str_new_native(VALUE self, VALUE str, VALUE len) {
+  return rb_str_new(NATIVE_RSTRING_PTR(str), FIX2INT(len));
 }
 
 VALUE string_spec_rb_str_new_offset(VALUE self, VALUE str, VALUE offset, VALUE len) {
@@ -358,6 +379,11 @@ VALUE string_spec_RSTRING_PTR_assign(VALUE self, VALUE str, VALUE chr) {
   return Qnil;
 }
 
+VALUE string_spec_RSTRING_PTR_set(VALUE self, VALUE str, VALUE i, VALUE chr) {
+  RSTRING_PTR(str)[FIX2INT(i)] = (char) FIX2INT(chr);
+  return str;
+}
+
 VALUE string_spec_RSTRING_PTR_after_funcall(VALUE self, VALUE str, VALUE cb) {
   /* Silence gcc 4.3.2 warning about computed value not used */
   if(RSTRING_PTR(str)) { /* force it out */
@@ -365,6 +391,19 @@ VALUE string_spec_RSTRING_PTR_after_funcall(VALUE self, VALUE str, VALUE cb) {
   }
 
   return rb_str_new2(RSTRING_PTR(str));
+}
+
+VALUE string_spec_RSTRING_PTR_after_yield(VALUE self, VALUE str) {
+  char* ptr = NATIVE_RSTRING_PTR(str);
+  long len = RSTRING_LEN(str);
+  VALUE from_rstring_ptr;
+
+  ptr[0] = '1';
+  rb_yield(str);
+  ptr[2] = '2';
+
+  from_rstring_ptr = rb_str_new(ptr, len);
+  return from_rstring_ptr;
 }
 #endif
 
@@ -480,6 +519,7 @@ void Init_string_spec(void) {
 
 #ifdef HAVE_RB_STR_BUF_NEW
   rb_define_method(cls, "rb_str_buf_new", string_spec_rb_str_buf_new, 2);
+  rb_define_method(cls, "rb_str_capacity", string_spec_rb_str_capacity, 1);
 #endif
 
 #ifdef HAVE_RB_STR_BUF_NEW2
@@ -540,6 +580,7 @@ void Init_string_spec(void) {
 
 #ifdef HAVE_RB_STR_NEW
   rb_define_method(cls, "rb_str_new", string_spec_rb_str_new, 2);
+  rb_define_method(cls, "rb_str_new_native", string_spec_rb_str_new_native, 2);
   rb_define_method(cls, "rb_str_new_offset", string_spec_rb_str_new_offset, 3);
 #endif
 
@@ -643,8 +684,9 @@ void Init_string_spec(void) {
 #ifdef HAVE_RSTRING_PTR
   rb_define_method(cls, "RSTRING_PTR_iterate", string_spec_RSTRING_PTR_iterate, 1);
   rb_define_method(cls, "RSTRING_PTR_assign", string_spec_RSTRING_PTR_assign, 2);
-  rb_define_method(cls, "RSTRING_PTR_after_funcall",
-      string_spec_RSTRING_PTR_after_funcall, 2);
+  rb_define_method(cls, "RSTRING_PTR_set", string_spec_RSTRING_PTR_set, 3);
+  rb_define_method(cls, "RSTRING_PTR_after_funcall", string_spec_RSTRING_PTR_after_funcall, 2);
+  rb_define_method(cls, "RSTRING_PTR_after_yield", string_spec_RSTRING_PTR_after_yield, 1);
 #endif
 
 #ifdef HAVE_STRINGVALUE
