@@ -371,7 +371,7 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 		args[0] = LONG2NUM(lev + 1);
 		args[1] = INT2FIX(1);
 		location = rb_vm_thread_backtrace_locations(2, args, GET_THREAD()->self);
-		if (!NIL_P(uplevel)) {
+		if (!NIL_P(location)) {
 		    location = rb_ary_entry(location, 0);
 		}
 	    }
