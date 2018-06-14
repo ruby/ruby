@@ -30,5 +30,4 @@ end
 
 module Net
   deprecate_constant(:HTTPServerException)
-  deprecate_constant(:ProtoServerError)
 end
