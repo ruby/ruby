@@ -6965,7 +6965,7 @@ int_pow_tmp3(VALUE x, VALUE y, VALUE m, int nega_flg)
         x = rb_int_modulo(x, m);
     }
 
-    if (nega_flg && rb_num_positive_int_p(tmp)) {
+    if (nega_flg && rb_int_positive_p(tmp)) {
         tmp = rb_int_minus(tmp, m);
     }
     return tmp;
@@ -7070,14 +7070,14 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
         if ( ! RB_INTEGER_TYPE_P(b)) {
             rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless a 1st argument is integer");
         }
-        if (rb_num_negative_int_p(b)) {
+        if (rb_int_negative_p(b)) {
             rb_raise(rb_eRangeError, "Integer#pow() 1st argument cannot be negative when 2nd argument specified");
         }
         if (!RB_INTEGER_TYPE_P(m)) {
             rb_raise(rb_eTypeError, "Integer#pow() 2nd argument not allowed unless all arguments are integers");
         }
 
-        if (rb_num_negative_int_p(m)) {
+        if (rb_int_negative_p(m)) {
             m = rb_int_uminus(m);
             nega_flg = 1;
         }
