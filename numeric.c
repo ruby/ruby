@@ -296,6 +296,18 @@ int_neg_p(VALUE num)
 }
 
 int
+rb_int_positive_p(VALUE num)
+{
+    return int_pos_p(num);
+}
+
+int
+rb_int_negative_p(VALUE num)
+{
+    return int_neg_p(num);
+}
+
+int
 rb_num_negative_p(VALUE num)
 {
     return rb_num_negative_int_p(num);
