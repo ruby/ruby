@@ -2202,8 +2202,10 @@ AS_IF([test "$rb_cv_rshift_sign" = yes], [
   AC_DEFINE(RSHIFT(x,y), (((x)<0) ? ~((~(x))>>(int)(y)) : (x)>>(int)(y)))
 ])
 
-AS_IF([test x"$ac_cv_func_gettimeofday" != xyes], [
-    AC_MSG_ERROR(gettimeofday() must exist)
+AS_CASE(["$ac_cv_func_gettimeofday:$ac_cv_func_clock_gettime"],
+[*yes*], [],
+[
+    AC_MSG_ERROR(clock_gettime() or gettimeofday() must exist)
 ])
 
 AS_IF([test "$ac_cv_func_sysconf" = yes], [

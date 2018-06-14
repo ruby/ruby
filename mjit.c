@@ -222,10 +222,22 @@ static void remove_file(const char *filename);
 static double
 real_ms_time(void)
 {
+#ifdef HAVE_CLOCK_GETTIME
+    struct timespec  tv;
+# ifdef CLOCK_MONOTONIC
+    const clockid_t c = CLOCK_MONOTONIC;
+# else
+    const clockid_t c = CLOCK_REALTIME;
+# endif
+
+    clock_gettime(c, &tv);
+    return tv.tv_nsec / 1000000.0 + tv.tv_sec * 1000.0;
+#else
     struct timeval  tv;
 
     gettimeofday(&tv, NULL);
     return tv.tv_usec / 1000.0 + tv.tv_sec * 1000.0;
+#endif
 }
 
 /* Make and return copy of STR in the heap. */

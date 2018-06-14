@@ -7340,8 +7340,9 @@ rb_clock_gettime(int argc, VALUE *argv)
     if (SYMBOL_P(clk_id)) {
         /*
          * Non-clock_gettime clocks are provided by symbol clk_id.
-         *
-         * gettimeofday is always available on platforms supported by Ruby.
+         */
+#ifdef HAVE_GETTIMEOFDAY
+        /*
          * GETTIMEOFDAY_BASED_CLOCK_REALTIME is used for
          * CLOCK_REALTIME if clock_gettime is not available.
          */
@@ -7356,6 +7357,7 @@ rb_clock_gettime(int argc, VALUE *argv)
             denominators[num_denominators++] = 1000000000;
             goto success;
         }
+#endif
 
 #define RUBY_TIME_BASED_CLOCK_REALTIME ID2SYM(id_TIME_BASED_CLOCK_REALTIME)
         if (clk_id == RUBY_TIME_BASED_CLOCK_REALTIME) {
