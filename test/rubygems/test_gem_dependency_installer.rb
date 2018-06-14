@@ -445,9 +445,13 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv f1_gem, @tempdir
     inst = nil
 
-    Dir.chdir @tempdir do
+    pwd = Dir.getwd
+    Dir.chdir @tempdir
+    begin
       inst = Gem::DependencyInstaller.new
       inst.install 'f'
+    ensure
+      Dir.chdir pwd
     end
 
     assert_equal %w[f-1], inst.installed_gems.map { |s| s.full_name }
