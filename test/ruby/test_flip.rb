@@ -2,7 +2,16 @@
 require 'test/unit'
 
 class TestFlip < Test::Unit::TestCase
+  def setup
+    @verbose_bak, $VERBOSE = $VERBOSE, nil
+  end
+
+  def teardown
+    $VERBOSE = @verbose_bak
+  end
+
   def test_flip_flop
+    eval <<-END
     assert_equal [4,5], (1..9).select {|n| true if (n==4)..(n==5)}
     assert_equal [4,5], (1..9).select {|n| true if (n==4)...(n==5)}
     assert_equal [2], (1..9).select {|n| true if (n==2)..(n%2).zero?}
@@ -10,6 +19,7 @@ class TestFlip < Test::Unit::TestCase
     assert_equal [4,5,7,8], (1..9).select {|n| true if (n==4)...(n==5) or (n==7)...(n==8)}
     assert_equal [nil, 2, 3, 4, nil], (1..5).map {|x| x if (x==2..x==4)}
     assert_equal [1, nil, nil, nil, 5], (1..5).map {|x| x if !(x==2..x==4)}
+    END
   end
 
   def test_hidden_key
@@ -25,13 +35,13 @@ class TestFlip < Test::Unit::TestCase
   def test_shared_eval
     bug7671 = '[ruby-core:51296]'
     vs = (1..9).to_a
-    vs.select {|n| if n==2..n==16 then 1 end}
+    eval("vs.select {|n| if n==2..n==16 then 1 end}")
     v = eval("vs.select {|n| if n==3..n==6 then 1 end}")
     assert_equal([*3..6], v, bug7671)
   end
 
   def test_shared_thread
-    ff = proc {|n| true if n==3..n==5}
+    ff = eval("proc {|n| true if n==3..n==5}")
     v = 1..9
     a = true
     th = Thread.new {

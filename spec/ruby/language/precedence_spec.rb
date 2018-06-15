@@ -301,8 +301,14 @@ describe "Operators" do
    from = 1
    to = 2
    # These are Range instances, not flip-flop
-   (from..to ? 3 : 4).should == 3
-   (from...to ? 3 : 4).should == 3
+   @verbose = $VERBOSE
+   $VERBOSE = nil
+   begin
+     (eval("from..to") ? 3 : 4).should == 3
+     (eval("from...to") ? 3 : 4).should == 3
+   ensure
+     $VERBOSE = @verbose
+   end
  end
 
   it "? : is right-associative" do
