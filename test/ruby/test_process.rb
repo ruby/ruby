@@ -2046,7 +2046,11 @@ EOS
 
   def test_clock_gettime_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_gettime(n)
+    begin
+      t = Process.clock_gettime(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_gettime(:#{n})")
   end
 
@@ -2124,7 +2128,11 @@ EOS
 
   def test_clock_getres_GETTIMEOFDAY_BASED_CLOCK_REALTIME
     n = :GETTIMEOFDAY_BASED_CLOCK_REALTIME
-    t = Process.clock_getres(n)
+    begin
+      t = Process.clock_getres(n)
+    rescue Errno::EINVAL
+      return
+    end
     assert_kind_of(Float, t, "Process.clock_getres(:#{n})")
     assert_equal(1000, Process.clock_getres(n, :nanosecond))
   end
