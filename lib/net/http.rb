@@ -659,6 +659,7 @@ module Net   #:nodoc:
     # The +address+ should be a DNS hostname or IP address.
     def initialize(address, port = nil)
       @address = address
+      @servername = nil
       @port    = (port || HTTP.default_port)
       @local_host = nil
       @local_port = nil
@@ -987,15 +988,16 @@ module Net   #:nodoc:
         D "starting SSL for #{conn_address}:#{conn_port}..."
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
+        hostname = @servername || @address
         # Server Name Indication (SNI) RFC 3546
-        s.hostname = @address if s.respond_to? :hostname=
+        s.hostname = hostname if s.respond_to? :hostname=
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-          s.post_connection_check(@address)
+          s.post_connection_check(hostname)
         end
         D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
