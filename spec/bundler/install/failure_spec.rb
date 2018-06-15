@@ -18,7 +18,7 @@ RSpec.describe "bundle install" do
         source "file:\/\/localhost#{gem_repo2}"
         gem "rails"
       G
-      expect(last_command.bundler_err).to end_with(<<-M.strip)
+      expect(last_command.bundler_err).to end_with(normalize_uri_file(<<-M.strip))
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
 Make sure that `gem install activesupport -v '2.3.2' --source 'file://localhost#{gem_repo2}/'` succeeds before bundling.
 
@@ -51,7 +51,7 @@ In Gemfile:
           gem "rails"
         end
       G
-      expect(last_command.bundler_err).to end_with(<<-M.strip)
+      expect(last_command.bundler_err).to end_with(normalize_uri_file(<<-M.strip))
 An error occurred while installing activesupport (2.3.2), and Bundler cannot continue.
 Make sure that `gem install activesupport -v '2.3.2' --source 'file://localhost#{gem_repo2}/'` succeeds before bundling.
 

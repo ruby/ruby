@@ -338,7 +338,11 @@ module Bundler
       end
 
       def remove_auth(remote)
-        remote.dup.tap {|uri| uri.user = uri.password = nil }.to_s
+        if remote.user || remote.password
+          remote.dup.tap {|uri| uri.user = uri.password = nil }.to_s
+        else
+          remote.to_s
+        end
       end
 
       def installed_specs

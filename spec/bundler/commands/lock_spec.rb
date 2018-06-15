@@ -19,7 +19,7 @@ RSpec.describe "bundle lock" do
       gem "foo"
     G
 
-    @lockfile = strip_lockfile <<-L
+    @lockfile = strip_lockfile(normalize_uri_file(<<-L))
       GEM
         remote: file://localhost#{repo}/
         specs:
@@ -244,7 +244,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(mingw) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
+    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
       GEM
         remote: file://localhost#{gem_repo4}/
         specs:
@@ -269,7 +269,7 @@ RSpec.describe "bundle lock" do
 
     simulate_platform(rb) { bundle! :lock }
 
-    expect(the_bundle.lockfile).to read_as(strip_whitespace(<<-G))
+    expect(the_bundle.lockfile).to read_as(normalize_uri_file(strip_whitespace(<<-G)))
       GEM
         remote: file://localhost#{gem_repo4}/
         specs:

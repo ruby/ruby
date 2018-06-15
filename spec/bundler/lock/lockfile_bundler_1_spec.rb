@@ -1240,7 +1240,7 @@ RSpec.describe "the lockfile format", :bundler => "< 2" do
     expect(the_bundle).to include_gems "omg 1.0"
 
     # Confirm that duplicate specs do not appear
-    expect(File.read(bundled_app("Gemfile.lock"))).to eq(strip_whitespace(<<-L))
+    lockfile_should_be(<<-L)
       GIT
         remote: #{lib_path("omg")}
         revision: #{revision}
