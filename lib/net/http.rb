@@ -824,6 +824,7 @@ module Net   #:nodoc:
       :@ca_file,
       :@ca_path,
       :@cert,
+      :@extra_chain_cert,
       :@cert_store,
       :@ciphers,
       :@key,
@@ -839,6 +840,7 @@ module Net   #:nodoc:
       :ca_file,
       :ca_path,
       :cert,
+      :extra_chain_cert,
       :cert_store,
       :ciphers,
       :key,
@@ -863,6 +865,10 @@ module Net   #:nodoc:
     # Sets an OpenSSL::X509::Certificate object as client certificate.
     # (This method is appeared in Michal Rokos's OpenSSL extension).
     attr_accessor :cert
+
+    # Sets the extra X509 certificates to be added to the certificate chain.
+    # See OpenSSL::SSL::SSLContext#extra_chain_cert=
+    attr_accessor :extra_chain_cert
 
     # Sets the X509::Store to verify peer certificate.
     attr_accessor :cert_store
