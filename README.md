@@ -20,7 +20,7 @@ extensible.
 *   Dynamic Loading of Object Files (on some architectures)
 *   Highly Portable (works on many Unix-like/POSIX compatible platforms as
     well as Windows, macOS, Haiku, etc.) cf.
-    https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/SupportedPlatforms
+    https://github.com/ruby/ruby/blob/trunk/doc/contributing.rdoc#platform-maintainers
 
 
 ## How to get Ruby
