@@ -242,6 +242,21 @@ timeval_for(struct timeval *tv, const struct timespec *ts)
     return 0;
 }
 
+static void
+timeout_prepare(struct timespec **tsp,
+            struct timespec *ts, struct timespec *end,
+            const struct timeval *timeout)
+{
+    if (timeout) {
+        getclockofday(end);
+        timespec_add(end, timespec_for(ts, timeout));
+        *tsp = ts;
+    }
+    else {
+	*tsp = 0;
+    }
+}
+
 #if THREAD_DEBUG
 #ifdef HAVE_VA_ARGS_MACRO
 void rb_thread_debug(const char *file, int line, const char *fmt, ...);
@@ -3830,26 +3845,15 @@ do_select(int n, rb_fdset_t *const readfds, rb_fdset_t *const writefds,
     rb_fdset_t MAYBE_UNUSED(orig_read);
     rb_fdset_t MAYBE_UNUSED(orig_write);
     rb_fdset_t MAYBE_UNUSED(orig_except);
-    struct timespec end;
-    struct timespec *tsp = 0;
-    struct timespec ts
-#if defined(__GNUC__) && (__GNUC__ == 7 || __GNUC__ == 8)
-        = {0, 0}
-#endif
-        ;
+    struct timespec ts, end, *tsp;
     rb_thread_t *th = GET_THREAD();
 
+    timeout_prepare(&tsp, &ts, &end, timeout);
 #define do_select_update() \
     (restore_fdset(readfds, &orig_read), \
      restore_fdset(writefds, &orig_write), \
      restore_fdset(exceptfds, &orig_except), \
      TRUE)
-
-    if (timeout) {
-        getclockofday(&end);
-        timespec_add(&end, timespec_for(&ts, timeout));
-        tsp = &ts;
-    }
 
 #define fd_init_copy(f) \
     (f##fds) ? rb_fd_init_copy(&orig_##f, f##fds) : rb_fd_no_init(&orig_##f)
@@ -3988,17 +3992,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds;
     int result = 0, lerrno;
-    struct timespec ts;
-    struct timespec end;
-    struct timespec *tsp = 0;
+    struct timespec ts, end, *tsp;
     rb_thread_t *th = GET_THREAD();
 
-    if (timeout) {
-        getclockofday(&end);
-        timespec_add(&end, timespec_for(&ts, timeout));
-        tsp = &ts;
-    }
-
+    timeout_prepare(&tsp, &ts, &end, timeout);
     fds.fd = fd;
     fds.events = (short)events;
 
