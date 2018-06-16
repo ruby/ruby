@@ -219,6 +219,10 @@ static char *libruby_pathflag;
 static void remove_file(const char *filename);
 
 /* Return time in milliseconds as a double.  */
+#ifdef __APPLE__
+double ruby_real_ms_time(void);
+#define real_ms_time() ruby_real_ms_time()
+#else
 static double
 real_ms_time(void)
 {
@@ -239,6 +243,7 @@ real_ms_time(void)
     return tv.tv_usec / 1000.0 + tv.tv_sec * 1000.0;
 #endif
 }
+#endif
 
 /* Make and return copy of STR in the heap. */
 #define get_string ruby_strdup
