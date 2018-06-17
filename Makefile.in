@@ -81,6 +81,7 @@ MJIT_CC = @MJIT_CC@
 MJIT_OPTFLAGS = @MJIT_OPTFLAGS@
 MJIT_DEBUGFLAGS = @MJIT_DEBUGFLAGS@
 MJIT_LDSHARED = @MJIT_LDSHARED@
+MJIT_DLDFLAGS = @DLDFLAGS@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = @EXTLDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
@@ -558,6 +559,7 @@ mjit_config.h:
 	    echo; \
 	}; \
 	archs="$(UNIVERSAL_ARCHNAMES)"; \
+	archs="$${archs:-$(ARCH_FLAG:-arch=)}"; \
 	test "$(Q)" = @ || set -x; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
@@ -570,7 +572,7 @@ mjit_config.h:
 	quote "MJIT_OPTFLAGS   " $(MJIT_OPTFLAGS); \
 	quote "MJIT_DEBUGFLAGS " $(MJIT_DEBUGFLAGS); \
 	quote "MJIT_LDSHARED   " $(MJIT_LDSHARED); \
-	quote "MJIT_DLDFLAGS   " @DLDFLAGS@; \
+	quote "MJIT_DLDFLAGS   $${archs:+ MJIT_ARCHFLAG}" $(MJIT_DLDFLAGS); \
 	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
 	$${archs:+echo} $${archs:+'#if 0'}; \
 	for arch in $$archs; do \
