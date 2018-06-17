@@ -115,9 +115,9 @@ describe :rational_exponent, shared: true do
     end
 
     it "returns a complex number if self is negative and the passed argument is not 0" do
-      (Rational(-3, 2) ** 1.5).should be_close(Complex(-3.374618290464398e-16, -1.8371173070873836), TOLERANCE)
-      (Rational(3, -2) ** 1.5).should be_close(Complex(-3.374618290464398e-16, -1.8371173070873836), TOLERANCE)
-      (Rational(3, -2) ** -1.5).should be_close(Complex(-9.998869008783402e-17, 0.5443310539518174), TOLERANCE)
+      (Rational(-3, 2) ** 1.5).should be_close(Complex(0.0, -1.8371173070873836), TOLERANCE)
+      (Rational(3, -2) ** 1.5).should be_close(Complex(0.0, -1.8371173070873836), TOLERANCE)
+      (Rational(3, -2) ** -1.5).should be_close(Complex(0.0, 0.5443310539518174), TOLERANCE)
     end
 
     it "returns Complex(1.0) when the passed argument is 0.0" do
