@@ -20,7 +20,11 @@
 #define ZERO INT2FIX(0)
 #define ONE INT2FIX(1)
 #define TWO INT2FIX(2)
+#if USE_FLONUM
 #define RFLOAT_0 DBL2NUM(0)
+#else
+static VALUE RFLOAT_0;
+#endif
 #if defined(HAVE_SIGNBIT) && defined(__GNUC__) && defined(__sun) && \
     !defined(signbit)
 extern int signbit(double);
@@ -2270,6 +2274,10 @@ Init_Complex(void)
      */
     rb_define_const(rb_cComplex, "I",
 		    f_complex_new_bang2(rb_cComplex, ZERO, ONE));
+
+#if !USE_FLONUM
+    rb_gc_register_mark_object(RFLOAT_0 = DBL2NUM(0.0));
+#endif
 
     rb_provide("complex.so");	/* for backward compatibility */
 }
