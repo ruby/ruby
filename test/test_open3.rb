@@ -55,9 +55,9 @@ class TestOpen3 < Test::Unit::TestCase
     i.close
     assert_equal("baz", o.read)
   ensure
-    i.close if !i.closed?
-    o.close if !o.closed?
-    e.close if !e.closed?
+    i.close
+    o.close
+    e.close
     t.join
   end
 
@@ -104,8 +104,8 @@ class TestOpen3 < Test::Unit::TestCase
     r, w = IO.pipe
     yield r, w
   ensure
-    r.close if !r.closed?
-    w.close if !w.closed?
+    r.close
+    w.close
   end
 
   def with_reopen(io, arg)
@@ -114,7 +114,7 @@ class TestOpen3 < Test::Unit::TestCase
     yield old
   ensure
     io.reopen(old)
-    old.close if old && !old.closed?
+    old.close
   end
 
   def test_popen2
