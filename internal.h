@@ -1171,6 +1171,7 @@ VALUE rb_complex_plus(VALUE, VALUE);
 VALUE rb_complex_mul(VALUE, VALUE);
 VALUE rb_complex_abs(VALUE x);
 VALUE rb_complex_sqrt(VALUE x);
+VALUE rb_dbl_complex_polar(double abs, double ang);
 
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);

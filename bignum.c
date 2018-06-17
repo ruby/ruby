@@ -6209,9 +6209,8 @@ rb_big_pow(VALUE x, VALUE y)
     if (y == INT2FIX(0)) return INT2FIX(1);
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
-	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x)) && d != round(d)) {
-	    x = DBL2NUM(pow(-rb_big2dbl(x),  d));
-	    return rb_complex_polar(x, DBL2NUM(d * M_PI));
+	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
+	    return rb_dbl_complex_polar(pow(-rb_big2dbl(x), d), d);
 	}
     }
     else if (RB_BIGNUM_TYPE_P(y)) {

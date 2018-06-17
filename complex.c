@@ -540,6 +540,28 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 					  f_mul(x, m_sin(y)));
 }
 
+/* returns a Complex or Float of ang*PI-rotated abs */
+VALUE
+rb_dbl_complex_polar(double abs, double ang)
+{
+    double fi;
+    const double fr = modf(ang, &fi);
+    int pos = fr == +0.5;
+
+    if (pos || fr == -0.5) {
+	if ((modf(fi / 2.0, &fi) != fr) ^ pos) abs = -abs;
+	return rb_complex_new(RFLOAT_0, DBL2NUM(abs));
+    }
+    else if (fr == 0.0) {
+	if (modf(fi / 2.0, &fi) != 0.0) abs = -abs;
+	return DBL2NUM(abs);
+    }
+    else {
+	ang *= M_PI;
+	return rb_complex_new(DBL2NUM(abs * cos(ang)), DBL2NUM(abs * sin(ang)));
+    }
+}
+
 /*
  * call-seq:
  *    Complex.polar(abs[, arg])  ->  complex
