@@ -1608,9 +1608,10 @@ rb_thread_create_timer_thread(void)
 #endif
 	    return;
 	}
-
+#if USE_SLEEPY_TIMER_THREAD
 	/* validate pipe on this process */
 	timer_thread_pipe.owner_process = getpid();
+#endif
 	timer_thread.created = 1;
     }
 }
