@@ -1744,6 +1744,7 @@ void rb_gc_unregister_address(VALUE*);
 
 ID rb_intern(const char*);
 ID rb_intern2(const char*, long);
+ID rb_intern_static(const char*, long);
 ID rb_intern_str(VALUE str);
 const char *rb_id2name(ID);
 ID rb_check_id(volatile VALUE *);

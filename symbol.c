@@ -601,6 +601,20 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     return intern_str(str, 1);
 }
 
+ID
+rb_intern_static(const char *name, long len)
+{
+    VALUE sym;
+    struct RString fake_str;
+    VALUE str = rb_setup_fake_str(&fake_str, name, len, rb_usascii_encoding());
+    OBJ_FREEZE(str);
+
+    sym = lookup_str_sym(str);
+    if (sym) return rb_sym2id(sym);
+    str = rb_usascii_str_new_static(name, len); /* make true string */
+    return intern_str(str, 0);
+}
+
 static ID
 next_id_base(void)
 {

@@ -859,6 +859,7 @@ VALUE rb_sym_all_symbols(void);
 #define rb_usascii_str_new_literal(str) rb_usascii_str_new_lit(str)
 #define rb_utf8_str_new_literal(str) rb_utf8_str_new_lit(str)
 #define rb_enc_str_new_literal(str, enc) rb_enc_str_new_lit(str, enc)
+#define rb_intern_lit(str) rb_intern_static(str, rb_strlen_lit(str))
 
 /* struct.c */
 VALUE rb_struct_new(VALUE, ...);
