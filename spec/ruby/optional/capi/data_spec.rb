@@ -19,11 +19,6 @@ describe "CApiWrappedStruct" do
     @s.get_struct(a).should == 1024
   end
 
-  it "allows for using NULL as the klass for Data_Wrap_Struct" do
-    a = @s.wrap_struct_null(1024)
-    @s.get_struct(a).should == 1024
-  end
-
   describe "RDATA()" do
     it "returns the struct data" do
       a = @s.wrap_struct(1024)

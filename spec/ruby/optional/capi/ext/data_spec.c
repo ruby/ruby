@@ -38,12 +38,6 @@ VALUE sws_wrap_struct(VALUE self, VALUE val) {
   return Data_Wrap_Struct(rb_cObject, &sample_wrapped_struct_mark, &sample_wrapped_struct_free, bar);
 }
 
-VALUE sws_wrap_struct_null(VALUE self, VALUE val) {
-  struct sample_wrapped_struct* bar = (struct sample_wrapped_struct *)malloc(sizeof(struct sample_wrapped_struct));
-  bar->foo = FIX2INT(val);
-  return Data_Wrap_Struct(0, &sample_wrapped_struct_mark, &sample_wrapped_struct_free, bar);
-}
-
 VALUE sws_get_struct(VALUE self, VALUE obj) {
   struct sample_wrapped_struct* bar;
   Data_Get_Struct(obj, struct sample_wrapped_struct, bar);
@@ -84,7 +78,6 @@ void Init_data_spec(void) {
 
   cls = rb_define_class("CApiWrappedStructSpecs", rb_cObject);
   rb_define_method(cls, "wrap_struct", sws_wrap_struct, 1);
-  rb_define_method(cls, "wrap_struct_null", sws_wrap_struct_null, 1);
   rb_define_method(cls, "get_struct", sws_get_struct, 1);
   rb_define_method(cls, "get_struct_rdata", sws_get_struct_rdata, 1);
   rb_define_method(cls, "get_struct_data_ptr", sws_get_struct_data_ptr, 1);
