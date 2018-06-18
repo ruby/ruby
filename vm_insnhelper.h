@@ -36,7 +36,18 @@ RUBY_SYMBOL_EXPORT_END
 /* deal with stack                                        */
 /**********************************************************/
 
-#define PUSH(x) (SET_SV(x), INC_SP(1))
+static inline int
+rb_obj_hidden_p(VALUE obj)
+{
+    if (SPECIAL_CONST_P(obj)) {
+        return FALSE;
+    }
+    else {
+        return RBASIC_CLASS(obj) ? FALSE : TRUE;
+    }
+}
+
+#define PUSH(x) (VM_ASSERT(!rb_obj_hidden_p(x)), SET_SV(x), INC_SP(1))
 #define TOPN(n) (*(GET_SP()-(n)-1))
 #define POPN(n) (DEC_SP(n))
 #define POP()   (DEC_SP(1))
