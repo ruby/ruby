@@ -1185,7 +1185,7 @@ Init_openssl(void)
     /*
      * Get ID of to_der
      */
-    ossl_s_to_der = rb_intern("to_der");
+    ossl_s_to_der = rb_intern_lit("to_der");
 
 #if !defined(HAVE_OPENSSL_110_THREADING_API)
     Init_ossl_locks();

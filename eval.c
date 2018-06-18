@@ -1584,7 +1584,7 @@ rb_mod_s_used_modules(void)
 	cref = CREF_NEXT(cref);
     }
 
-    return rb_funcall(ary, rb_intern("uniq"), 0);
+    return rb_funcall(ary, rb_intern_lit("uniq"), 0);
 }
 
 /*!

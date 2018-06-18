@@ -1060,7 +1060,7 @@ nurat_expt(VALUE self, VALUE other)
 	return rb_float_pow(nurat_to_f(self), other);
     }
     else {
-	return rb_num_coerce_bin(self, other, rb_intern("**"));
+	return rb_num_coerce_bin(self, other, rb_intern_lit("**"));
     }
 }
 
@@ -1117,7 +1117,7 @@ rb_rational_cmp(VALUE self, VALUE other)
 	}
     }
     else {
-	return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+	return rb_num_coerce_cmp(self, other, rb_intern_lit("<=>"));
     }
 }
 
@@ -1572,10 +1572,10 @@ nurat_to_r(VALUE self)
     return self;
 }
 
-#define id_ceil rb_intern("ceil")
+#define id_ceil rb_intern_lit("ceil")
 #define f_ceil(x) rb_funcall((x), id_ceil, 0)
 
-#define id_quo rb_intern("quo")
+#define id_quo rb_intern_lit("quo")
 #define f_quo(x,y) rb_funcall((x), id_quo, 1, (y))
 
 #define f_reciprocal(x) f_quo(ONE, (x))
@@ -1933,10 +1933,10 @@ rb_rational_den(VALUE rat)
     return nurat_denominator(rat);
 }
 
-#define id_numerator rb_intern("numerator")
+#define id_numerator rb_intern_lit("numerator")
 #define f_numerator(x) rb_funcall((x), id_numerator, 0)
 
-#define id_denominator rb_intern("denominator")
+#define id_denominator rb_intern_lit("denominator")
 #define f_denominator(x) rb_funcall((x), id_denominator, 0)
 
 #define id_to_r idTo_r
@@ -1979,7 +1979,7 @@ VALUE
 rb_numeric_quo(VALUE x, VALUE y)
 {
     if (RB_FLOAT_TYPE_P(y)) {
-        return rb_funcall(x, rb_intern("fdiv"), 1, y);
+        return rb_funcall(x, rb_intern_lit("fdiv"), 1, y);
     }
 
     if (canonicalization) {
@@ -2667,11 +2667,11 @@ Init_Rational(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_abs = rb_intern("abs");
-    id_idiv = rb_intern("div");
-    id_integer_p = rb_intern("integer?");
-    id_i_num = rb_intern("@numerator");
-    id_i_den = rb_intern("@denominator");
+    id_abs = rb_intern_lit("abs");
+    id_idiv = rb_intern_lit("div");
+    id_integer_p = rb_intern_lit("integer?");
+    id_i_num = rb_intern_lit("@numerator");
+    id_i_den = rb_intern_lit("@denominator");
 
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 

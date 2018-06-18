@@ -537,7 +537,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 	static ID keyword_ids[1];
 
 	if (!keyword_ids[0]) {
-	    keyword_ids[0] = rb_intern("keyword_init");
+	    keyword_ids[0] = rb_intern_lit("keyword_init");
 	}
 	rb_get_kwargs(argv[argc-1], keyword_ids, 0, 1, kwargs);
 	--argc;
@@ -1307,9 +1307,9 @@ InitVM_Struct(void)
 void
 Init_Struct(void)
 {
-    id_members = rb_intern("__members__");
-    id_back_members = rb_intern("__members_back__");
-    id_keyword_init = rb_intern("__keyword_init__");
+    id_members = rb_intern_lit("__members__");
+    id_back_members = rb_intern_lit("__members_back__");
+    id_keyword_init = rb_intern_lit("__keyword_init__");
 
     InitVM(Struct);
 }

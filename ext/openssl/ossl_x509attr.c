@@ -117,8 +117,8 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
 	}
 	return self;
     }
-    rb_funcall(self, rb_intern("oid="), 1, oid);
-    rb_funcall(self, rb_intern("value="), 1, value);
+    rb_funcall(self, rb_intern_lit("oid="), 1, oid);
+    rb_funcall(self, rb_intern_lit("value="), 1, value);
 
     return self;
 }
@@ -205,8 +205,8 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
     int i, asn1_tag;
 
     OSSL_Check_Kind(value, cASN1Data);
-    asn1_tag = NUM2INT(rb_attr_get(value, rb_intern("@tag")));
-    asn1_value = rb_attr_get(value, rb_intern("@value"));
+    asn1_tag = NUM2INT(rb_attr_get(value, rb_intern_lit("@tag")));
+    asn1_value = rb_attr_get(value, rb_intern_lit("@value"));
     if (asn1_tag != V_ASN1_SET)
 	ossl_raise(eASN1Error, "argument must be ASN1::Set");
     if (!RB_TYPE_P(asn1_value, T_ARRAY))
@@ -271,7 +271,7 @@ ossl_x509attr_get_value(VALUE self)
     ossl_str_adjust(str, p);
     sk_ASN1_TYPE_free(sk);
 
-    return rb_funcall(mASN1, rb_intern("decode"), 1, str);
+    return rb_funcall(mASN1, rb_intern_lit("decode"), 1, str);
 }
 
 /*

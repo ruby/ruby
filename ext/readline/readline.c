@@ -1904,11 +1904,11 @@ Init_readline(void)
 
     using_history();
 
-    id_call = rb_intern("call");
+    id_call = rb_intern_lit("call");
     completion_proc = rb_intern(COMPLETION_PROC);
     completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
-    id_pre_input_hook = rb_intern("pre_input_hook");
+    id_pre_input_hook = rb_intern_lit("pre_input_hook");
 #endif
 #if defined(HAVE_RL_SPECIAL_PREFIXES)
     id_special_prefixes = rb_intern("special_prefixes");
@@ -1996,8 +1996,8 @@ Init_readline(void)
                                readline_s_get_special_prefixes, 0);
 
 #if USE_INSERT_IGNORE_ESCAPE
-    id_orig_prompt = rb_intern("orig_prompt");
-    id_last_prompt = rb_intern("last_prompt");
+    id_orig_prompt = rb_intern_lit("orig_prompt");
+    id_last_prompt = rb_intern_lit("last_prompt");
 #endif
 
     history = rb_obj_alloc(rb_cObject);

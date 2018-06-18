@@ -3821,7 +3821,7 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
 	rb_check_arity(argc, 1, 2);
     re = argv[0];
     argv[0] = str;
-    result = rb_funcallv(get_pat(re), rb_intern("match"), argc, argv);
+    result = rb_funcallv(get_pat(re), rb_intern_lit("match"), argc, argv);
     if (!NIL_P(result) && rb_block_given_p()) {
 	return rb_yield(result);
     }
@@ -10966,10 +10966,10 @@ Init_String(void)
     rb_define_method(rb_cString, "dump", rb_str_dump, 0);
     rb_define_method(rb_cString, "undump", str_undump, 0);
 
-    sym_ascii      = ID2SYM(rb_intern("ascii"));
-    sym_turkic     = ID2SYM(rb_intern("turkic"));
-    sym_lithuanian = ID2SYM(rb_intern("lithuanian"));
-    sym_fold       = ID2SYM(rb_intern("fold"));
+    sym_ascii      = ID2SYM(rb_intern_lit("ascii"));
+    sym_turkic     = ID2SYM(rb_intern_lit("turkic"));
+    sym_lithuanian = ID2SYM(rb_intern_lit("lithuanian"));
+    sym_fold       = ID2SYM(rb_intern_lit("fold"));
 
     rb_define_method(rb_cString, "upcase", rb_str_upcase, -1);
     rb_define_method(rb_cString, "downcase", rb_str_downcase, -1);
@@ -11062,8 +11062,8 @@ Init_String(void)
 
     /* define UnicodeNormalize module here so that we don't have to look it up */
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
-    id_normalize               = rb_intern("normalize");
-    id_normalized_p            = rb_intern("normalized?");
+    id_normalize               = rb_intern_lit("normalize");
+    id_normalized_p            = rb_intern_lit("normalized?");
 
     rb_define_method(rb_cString, "unicode_normalize", rb_str_unicode_normalize, -1);
     rb_define_method(rb_cString, "unicode_normalize!", rb_str_unicode_normalize_bang, -1);

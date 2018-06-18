@@ -393,7 +393,7 @@ dump_output(struct dump_config *dc, VALUE opts, VALUE output, const char *filena
 	rb_io_t *fptr;
 	rb_require("tempfile");
 	tmp = rb_assoc_new(rb_str_new_cstr(filename), rb_str_new_cstr(".json"));
-	tmp = rb_funcallv(rb_path2class("Tempfile"), rb_intern("create"), 1, &tmp);
+	tmp = rb_funcallv(rb_path2class("Tempfile"), rb_intern_lit("create"), 1, &tmp);
       io:
 	dc->string = rb_io_get_write_io(tmp);
 	rb_io_flush(dc->string);
@@ -506,11 +506,11 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "dump", objspace_dump, -1);
     rb_define_module_function(rb_mObjSpace, "dump_all", objspace_dump_all, -1);
 
-    sym_output = ID2SYM(rb_intern("output"));
-    sym_stdout = ID2SYM(rb_intern("stdout"));
-    sym_string = ID2SYM(rb_intern("string"));
-    sym_file   = ID2SYM(rb_intern("file"));
-    sym_full   = ID2SYM(rb_intern("full"));
+    sym_output = ID2SYM(rb_intern_lit("output"));
+    sym_stdout = ID2SYM(rb_intern_lit("stdout"));
+    sym_string = ID2SYM(rb_intern_lit("string"));
+    sym_file   = ID2SYM(rb_intern_lit("file"));
+    sym_full   = ID2SYM(rb_intern_lit("full"));
 
     /* force create static IDs */
     rb_obj_gc_flags(rb_mObjSpace, 0, 0);

@@ -2178,7 +2178,7 @@ autoload_require(VALUE arg)
 
     ele = rb_check_typeddata(ac->ad, &autoload_data_i_type);
     /* this may release GVL and switch threads: */
-    state->result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1,
+    state->result = rb_funcall(rb_vm_top_self(), rb_intern_lit("require"), 1,
 			       ele->feature);
 
     return state->result;

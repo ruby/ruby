@@ -2002,9 +2002,9 @@ time_init_1(int argc, VALUE *argv, VALUE time)
     vtm.utc_offset = Qnil;
     if (!NIL_P(v[6])) {
         VALUE arg = v[6];
-        if (arg == ID2SYM(rb_intern("dst")))
+        if (arg == ID2SYM(rb_intern_lit("dst")))
             vtm.isdst = 1;
-        else if (arg == ID2SYM(rb_intern("std")))
+        else if (arg == ID2SYM(rb_intern_lit("std")))
             vtm.isdst = 0;
         else
             vtm.utc_offset = utc_offset_arg(arg);
@@ -4835,19 +4835,19 @@ Init_Time(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_quo = rb_intern("quo");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
-    id_submicro = rb_intern("submicro");
-    id_nano_num = rb_intern("nano_num");
-    id_nano_den = rb_intern("nano_den");
-    id_offset = rb_intern("offset");
-    id_zone = rb_intern("zone");
-    id_nanosecond = rb_intern("nanosecond");
-    id_microsecond = rb_intern("microsecond");
-    id_millisecond = rb_intern("millisecond");
-    id_nsec = rb_intern("nsec");
-    id_usec = rb_intern("usec");
+    id_quo = rb_intern_lit("quo");
+    id_div = rb_intern_lit("div");
+    id_divmod = rb_intern_lit("divmod");
+    id_submicro = rb_intern_lit("submicro");
+    id_nano_num = rb_intern_lit("nano_num");
+    id_nano_den = rb_intern_lit("nano_den");
+    id_offset = rb_intern_lit("offset");
+    id_zone = rb_intern_lit("zone");
+    id_nanosecond = rb_intern_lit("nanosecond");
+    id_microsecond = rb_intern_lit("microsecond");
+    id_millisecond = rb_intern_lit("millisecond");
+    id_nsec = rb_intern_lit("nsec");
+    id_usec = rb_intern_lit("usec");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);

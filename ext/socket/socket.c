@@ -151,7 +151,7 @@ sock_initialize(int argc, VALUE *argv, VALUE sock)
 static VALUE
 io_call_close(VALUE io)
 {
-    return rb_funcallv(io, rb_intern("close"), 0, 0);
+    return rb_funcallv(io, rb_intern_lit("close"), 0, 0);
 }
 
 static VALUE
@@ -2099,5 +2099,5 @@ Init_socket(void)
     rb_define_singleton_method(rb_cSocket, "ip_address_list", socket_s_ip_address_list, 0);
 
 #undef rb_intern
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_writable = ID2SYM(rb_intern_lit("wait_writable"));
 }

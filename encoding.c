@@ -794,8 +794,8 @@ rb_enc_get_index(VALUE obj)
 	i = enc_get_index_str(obj);
 	break;
       case T_FILE:
-	tmp = rb_funcallv(obj, rb_intern("internal_encoding"), 0, 0);
-	if (NIL_P(tmp)) obj = rb_funcallv(obj, rb_intern("external_encoding"), 0, 0);
+	tmp = rb_funcallv(obj, rb_intern_lit("internal_encoding"), 0, 0);
+	if (NIL_P(tmp)) obj = rb_funcallv(obj, rb_intern_lit("external_encoding"), 0, 0);
 	else obj = tmp;
 	if (NIL_P(obj)) break;
       case T_DATA:

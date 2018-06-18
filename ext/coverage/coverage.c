@@ -32,18 +32,18 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
     if (argc == 0) {
 	mode = 0; /* compatible mode */
     }
-    else if (opt == ID2SYM(rb_intern("all"))) {
+    else if (opt == ID2SYM(rb_intern_lit("all"))) {
 	mode = COVERAGE_TARGET_LINES | COVERAGE_TARGET_BRANCHES | COVERAGE_TARGET_METHODS;
     }
     else {
 	mode = 0;
 	opt = rb_convert_type(opt, T_HASH, "Hash", "to_hash");
 
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("lines")))))
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern_lit("lines")))))
 	    mode |= COVERAGE_TARGET_LINES;
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("branches")))))
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern_lit("branches")))))
 	    mode |= COVERAGE_TARGET_BRANCHES;
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
+	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern_lit("methods")))))
 	    mode |= COVERAGE_TARGET_METHODS;
 	if (mode == 0) {
 	    rb_raise(rb_eRuntimeError, "no measuring target is specified");
@@ -123,7 +123,7 @@ method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 	    const rb_method_entry_t *me = (rb_method_entry_t *) v;
 	    VALUE path, first_lineno, first_column, last_lineno, last_column;
 	    VALUE data[5], ncoverage, methods;
-	    VALUE methods_id = ID2SYM(rb_intern("methods"));
+	    VALUE methods_id = ID2SYM(rb_intern_lit("methods"));
 	    VALUE klass;
 	    const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
 	    if (me != me2) continue;
@@ -181,16 +181,16 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
 	    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	    lines = rb_ary_dup(lines);
 	    rb_ary_freeze(lines);
-	    rb_hash_aset(h, ID2SYM(rb_intern("lines")), lines);
+	    rb_hash_aset(h, ID2SYM(rb_intern_lit("lines")), lines);
 	}
 
 	if (current_mode & COVERAGE_TARGET_BRANCHES) {
 	    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-	    rb_hash_aset(h, ID2SYM(rb_intern("branches")), branch_coverage(branches));
+	    rb_hash_aset(h, ID2SYM(rb_intern_lit("branches")), branch_coverage(branches));
 	}
 
 	if (current_mode & COVERAGE_TARGET_METHODS) {
-	    rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
+	    rb_hash_aset(h, ID2SYM(rb_intern_lit("methods")), rb_hash_new());
 	}
 
 	coverage = h;

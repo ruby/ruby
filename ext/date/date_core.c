@@ -27,25 +27,25 @@ static double positive_inf, negative_inf;
 
 #define f_boolcast(x) ((x) ? Qtrue : Qfalse)
 
-#define f_abs(x) rb_funcall(x, rb_intern("abs"), 0)
-#define f_negate(x) rb_funcall(x, rb_intern("-@"), 0)
+#define f_abs(x) rb_funcall(x, rb_intern_lit("abs"), 0)
+#define f_negate(x) rb_funcall(x, rb_intern_lit("-@"), 0)
 #define f_add(x,y) rb_funcall(x, '+', 1, y)
 #define f_sub(x,y) rb_funcall(x, '-', 1, y)
 #define f_mul(x,y) rb_funcall(x, '*', 1, y)
 #define f_div(x,y) rb_funcall(x, '/', 1, y)
-#define f_quo(x,y) rb_funcall(x, rb_intern("quo"), 1, y)
-#define f_idiv(x,y) rb_funcall(x, rb_intern("div"), 1, y)
+#define f_quo(x,y) rb_funcall(x, rb_intern_lit("quo"), 1, y)
+#define f_idiv(x,y) rb_funcall(x, rb_intern_lit("div"), 1, y)
 #define f_mod(x,y) rb_funcall(x, '%', 1, y)
-#define f_remainder(x,y) rb_funcall(x, rb_intern("remainder"), 1, y)
-#define f_expt(x,y) rb_funcall(x, rb_intern("**"), 1, y)
-#define f_floor(x) rb_funcall(x, rb_intern("floor"), 0)
-#define f_ceil(x) rb_funcall(x, rb_intern("ceil"), 0)
-#define f_truncate(x) rb_funcall(x, rb_intern("truncate"), 0)
-#define f_round(x) rb_funcall(x, rb_intern("round"), 0)
+#define f_remainder(x,y) rb_funcall(x, rb_intern_lit("remainder"), 1, y)
+#define f_expt(x,y) rb_funcall(x, rb_intern_lit("**"), 1, y)
+#define f_floor(x) rb_funcall(x, rb_intern_lit("floor"), 0)
+#define f_ceil(x) rb_funcall(x, rb_intern_lit("ceil"), 0)
+#define f_truncate(x) rb_funcall(x, rb_intern_lit("truncate"), 0)
+#define f_round(x) rb_funcall(x, rb_intern_lit("round"), 0)
 
-#define f_to_i(x) rb_funcall(x, rb_intern("to_i"), 0)
-#define f_to_r(x) rb_funcall(x, rb_intern("to_r"), 0)
-#define f_to_s(x) rb_funcall(x, rb_intern("to_s"), 0)
+#define f_to_i(x) rb_funcall(x, rb_intern_lit("to_i"), 0)
+#define f_to_r(x) rb_funcall(x, rb_intern_lit("to_r"), 0)
+#define f_to_s(x) rb_funcall(x, rb_intern_lit("to_s"), 0)
 #define f_inspect(x) rb_funcall(x, rb_intern("inspect"), 0)
 
 #define f_add3(x,y,z) f_add(f_add(x, y), z)
@@ -94,7 +94,7 @@ f_ge_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return f_boolcast(FIX2LONG(x) >= FIX2LONG(y));
-    return rb_funcall(x, rb_intern(">="), 1, y);
+    return rb_funcall(x, rb_intern_lit(">="), 1, y);
 }
 
 inline static VALUE
@@ -102,7 +102,7 @@ f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    return rb_funcall(x, rb_intern("=="), 1, y);
+    return rb_funcall(x, rb_intern_lit("=="), 1, y);
 }
 
 inline static VALUE
@@ -134,15 +134,15 @@ f_negative_p(VALUE x)
 
 #define f_positive_p(x) (!f_negative_p(x))
 
-#define f_ajd(x) rb_funcall(x, rb_intern("ajd"), 0)
-#define f_jd(x) rb_funcall(x, rb_intern("jd"), 0)
-#define f_year(x) rb_funcall(x, rb_intern("year"), 0)
-#define f_mon(x) rb_funcall(x, rb_intern("mon"), 0)
-#define f_mday(x) rb_funcall(x, rb_intern("mday"), 0)
-#define f_wday(x) rb_funcall(x, rb_intern("wday"), 0)
-#define f_hour(x) rb_funcall(x, rb_intern("hour"), 0)
-#define f_min(x) rb_funcall(x, rb_intern("min"), 0)
-#define f_sec(x) rb_funcall(x, rb_intern("sec"), 0)
+#define f_ajd(x) rb_funcall(x, rb_intern_lit("ajd"), 0)
+#define f_jd(x) rb_funcall(x, rb_intern_lit("jd"), 0)
+#define f_year(x) rb_funcall(x, rb_intern_lit("year"), 0)
+#define f_mon(x) rb_funcall(x, rb_intern_lit("mon"), 0)
+#define f_mday(x) rb_funcall(x, rb_intern_lit("mday"), 0)
+#define f_wday(x) rb_funcall(x, rb_intern_lit("wday"), 0)
+#define f_hour(x) rb_funcall(x, rb_intern_lit("hour"), 0)
+#define f_min(x) rb_funcall(x, rb_intern_lit("min"), 0)
+#define f_sec(x) rb_funcall(x, rb_intern_lit("sec"), 0)
 
 /* copied from time.c */
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
@@ -6245,7 +6245,7 @@ cmp_gen(VALUE self, VALUE other)
 	return INT2FIX(f_cmp(m_ajd(dat), other));
     else if (k_date_p(other))
 	return INT2FIX(f_cmp(m_ajd(dat), f_ajd(other)));
-    return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+    return rb_num_coerce_cmp(self, other, rb_intern_lit("<=>"));
 }
 
 static VALUE
@@ -6374,7 +6374,7 @@ equal_gen(VALUE self, VALUE other)
 	return f_eqeq_p(m_real_local_jd(dat), other);
     else if (k_date_p(other))
 	return f_eqeq_p(m_real_local_jd(dat), f_jd(other));
-    return rb_num_coerce_cmp(self, other, rb_intern("=="));
+    return rb_num_coerce_cmp(self, other, rb_intern_lit("=="));
 }
 
 /*
@@ -8436,9 +8436,9 @@ dt_lite_jisx0301(int argc, VALUE *argv, VALUE self)
 
 /* conversions */
 
-#define f_subsec(x) rb_funcall(x, rb_intern("subsec"), 0)
-#define f_utc_offset(x) rb_funcall(x, rb_intern("utc_offset"), 0)
-#define f_local3(x,y,m,d) rb_funcall(x, rb_intern("local"), 3, y, m, d)
+#define f_subsec(x) rb_funcall(x, rb_intern_lit("subsec"), 0)
+#define f_utc_offset(x) rb_funcall(x, rb_intern_lit("utc_offset"), 0)
+#define f_local3(x,y,m,d) rb_funcall(x, rb_intern_lit("local"), 3, y, m, d)
 
 /*
  * call-seq:
@@ -8608,7 +8608,7 @@ datetime_to_time(VALUE self)
 	get_d1(dup);
 
 	t = rb_funcall(rb_cTime,
-		   rb_intern("new"),
+		   rb_intern_lit("new"),
                    7,
 		   m_real_year(dat),
 		   INT2FIX(m_mon(dat)),
@@ -9017,10 +9017,10 @@ Init_date_core(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_cmp = rb_intern("<=>");
-    id_le_p = rb_intern("<=");
-    id_ge_p = rb_intern(">=");
-    id_eqeq_p = rb_intern("==");
+    id_cmp = rb_intern_lit("<=>");
+    id_le_p = rb_intern_lit("<=");
+    id_ge_p = rb_intern_lit(">=");
+    id_eqeq_p = rb_intern_lit("==");
 
     half_days_in_day = rb_rational_new2(INT2FIX(1), INT2FIX(2));
 
@@ -9613,7 +9613,7 @@ Init_date_core(void)
     rb_define_singleton_method(cDateTime, "jisx0301",
 			       datetime_s_jisx0301, -1);
 
-#define f_public(m,s) rb_funcall(m, rb_intern("public"), 1,\
+#define f_public(m,s) rb_funcall(m, rb_intern_lit("public"), 1,\
 				 ID2SYM(rb_intern(s)))
 
     f_public(cDateTime, "hour");

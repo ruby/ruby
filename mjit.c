@@ -1428,7 +1428,7 @@ mjit_init(struct mjit_options *opts)
     }
 
     /* Overwrites RUBY_DESCRIPTION constant */
-    rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(rb_cObject, rb_intern_lit("RUBY_DESCRIPTION"));
     rb_description = rb_usascii_str_new_static(ruby_description_with_jit, strlen(ruby_description_with_jit));
     rb_define_global_const("RUBY_DESCRIPTION", rb_obj_freeze(rb_description));
 

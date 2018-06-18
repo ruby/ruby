@@ -2702,7 +2702,7 @@ rb_ary_sort_by_bang(VALUE ary)
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
+    sorted = rb_block_call(ary, rb_intern_lit("sort_by"), 0, 0, sort_by_i, 0);
     rb_ary_replace(ary, sorted);
     return ary;
 }
@@ -6358,5 +6358,5 @@ Init_Array(void)
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
-    id_random = rb_intern("random");
+    id_random = rb_intern_lit("random");
 }

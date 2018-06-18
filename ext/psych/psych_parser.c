@@ -85,7 +85,7 @@ static VALUE make_exception(yaml_parser_t * parser, VALUE path)
     line = parser->context_mark.line + 1;
     column = parser->context_mark.column + 1;
 
-    return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
+    return rb_funcall(ePsychSyntaxError, rb_intern_lit("new"), 6,
 	    path,
 	    INT2NUM(line),
 	    INT2NUM(column),
@@ -128,7 +128,7 @@ static VALUE transcode_io(VALUE src, int * parser_encoding)
     VALUE io_external_encoding;
     int io_external_enc_index;
 
-    io_external_encoding = rb_funcall(src, rb_intern("external_encoding"), 0);
+    io_external_encoding = rb_funcall(src, rb_intern_lit("external_encoding"), 0);
 
     /* if no encoding is returned, assume ascii8bit. */
     if (NIL_P(io_external_encoding)) {
@@ -538,7 +538,7 @@ static VALUE mark(VALUE self)
     yaml_parser_t * parser;
 
     TypedData_Get_Struct(self, yaml_parser_t, &psych_parser_type, parser);
-    mark_klass = rb_const_get_at(cPsychParser, rb_intern("Mark"));
+    mark_klass = rb_const_get_at(cPsychParser, rb_intern_lit("Mark"));
     args[0] = INT2NUM(parser->mark.index);
     args[1] = INT2NUM(parser->mark.line);
     args[2] = INT2NUM(parser->mark.column);
@@ -569,24 +569,24 @@ void Init_psych_parser(void)
     rb_define_const(cPsychParser, "UTF16BE", INT2NUM(YAML_UTF16BE_ENCODING));
 
     rb_require("psych/syntax_error");
-    ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+    ePsychSyntaxError = rb_const_get(mPsych, rb_intern_lit("SyntaxError"));
 
     rb_define_method(cPsychParser, "parse", parse, -1);
     rb_define_method(cPsychParser, "mark", mark, 0);
 
-    id_read            = rb_intern("read");
-    id_path            = rb_intern("path");
-    id_empty           = rb_intern("empty");
-    id_start_stream    = rb_intern("start_stream");
-    id_end_stream      = rb_intern("end_stream");
+    id_read            = rb_intern_lit("read");
+    id_path            = rb_intern_lit("path");
+    id_empty           = rb_intern_lit("empty");
+    id_start_stream    = rb_intern_lit("start_stream");
+    id_end_stream      = rb_intern_lit("end_stream");
     id_start_document  = rb_intern("start_document");
     id_end_document    = rb_intern("end_document");
-    id_alias           = rb_intern("alias");
-    id_scalar          = rb_intern("scalar");
-    id_start_sequence  = rb_intern("start_sequence");
-    id_end_sequence    = rb_intern("end_sequence");
-    id_start_mapping   = rb_intern("start_mapping");
-    id_end_mapping     = rb_intern("end_mapping");
-    id_event_location  = rb_intern("event_location");
+    id_alias           = rb_intern_lit("alias");
+    id_scalar          = rb_intern_lit("scalar");
+    id_start_sequence  = rb_intern_lit("start_sequence");
+    id_end_sequence    = rb_intern_lit("end_sequence");
+    id_start_mapping   = rb_intern_lit("start_mapping");
+    id_end_mapping     = rb_intern_lit("end_mapping");
+    id_event_location  = rb_intern_lit("event_location");
 }
 /* vim: set noet sws=4 sw=4: */

@@ -140,7 +140,7 @@ olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec)
 
     hr = pri->lpVtbl->GetName(pri, &bstr);
     if (SUCCEEDED(hr)) {
-        rb_ivar_set(obj, rb_intern("typename"), WC2VSTR(bstr));
+        rb_ivar_set(obj, rb_intern_lit("typename"), WC2VSTR(bstr));
     }
 
     hr = pri->lpVtbl->GetFieldNames(pri, &count, NULL);
@@ -153,7 +153,7 @@ olerecord_set_ivar(VALUE obj, IRecordInfo *pri, void *prec)
     }
 
     fields = rb_hash_new();
-    rb_ivar_set(obj, rb_intern("fields"), fields);
+    rb_ivar_set(obj, rb_intern_lit("fields"), fields);
     for (i = 0; i < count; i++) {
         pdata = NULL;
         VariantInit(&var);
@@ -357,7 +357,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
 static VALUE
 folerecord_to_h(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("fields"));
+    return rb_ivar_get(self, rb_intern_lit("fields"));
 }
 
 /*
@@ -394,14 +394,14 @@ folerecord_to_h(VALUE self)
 static VALUE
 folerecord_typename(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("typename"));
+    return rb_ivar_get(self, rb_intern_lit("typename"));
 }
 
 static VALUE
 olerecord_ivar_get(VALUE self, VALUE name)
 {
     VALUE fields;
-    fields = rb_ivar_get(self, rb_intern("fields"));
+    fields = rb_ivar_get(self, rb_intern_lit("fields"));
     return rb_hash_fetch(fields, name);
 }
 
@@ -416,7 +416,7 @@ olerecord_ivar_set(VALUE self, VALUE name, VALUE val)
     if (p[len-1] == '=') {
         name = rb_str_subseq(name, 0, len-1);
     }
-    fields = rb_ivar_get(self, rb_intern("fields"));
+    fields = rb_ivar_get(self, rb_intern_lit("fields"));
     rb_hash_fetch(fields, name);
     return rb_hash_aset(fields, name, val);
 }

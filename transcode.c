@@ -2074,19 +2074,19 @@ make_econv_exception(rb_econv_t *ec)
         }
 
         exc = rb_exc_new3(rb_eInvalidByteSequenceError, mesg);
-        rb_ivar_set(exc, rb_intern("error_bytes"), bytes);
-        rb_ivar_set(exc, rb_intern("readagain_bytes"), bytes2);
-        rb_ivar_set(exc, rb_intern("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
+        rb_ivar_set(exc, rb_intern_lit("error_bytes"), bytes);
+        rb_ivar_set(exc, rb_intern_lit("readagain_bytes"), bytes2);
+        rb_ivar_set(exc, rb_intern_lit("incomplete_input"), ec->last_error.result == econv_incomplete_input ? Qtrue : Qfalse);
 
       set_encs:
-        rb_ivar_set(exc, rb_intern("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
-        rb_ivar_set(exc, rb_intern("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
+        rb_ivar_set(exc, rb_intern_lit("source_encoding_name"), rb_str_new2(ec->last_error.source_encoding));
+        rb_ivar_set(exc, rb_intern_lit("destination_encoding_name"), rb_str_new2(ec->last_error.destination_encoding));
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
-            rb_ivar_set(exc, rb_intern("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+            rb_ivar_set(exc, rb_intern_lit("source_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
         idx = rb_enc_find_index(ec->last_error.destination_encoding);
         if (0 <= idx)
-            rb_ivar_set(exc, rb_intern("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
+            rb_ivar_set(exc, rb_intern_lit("destination_encoding"), rb_enc_from_encoding(rb_enc_from_index(idx)));
         return exc;
     }
     if (ec->last_error.result == econv_undefined_conversion) {
@@ -2135,7 +2135,7 @@ make_econv_exception(rb_econv_t *ec)
         idx = rb_enc_find_index(ec->last_error.source_encoding);
         if (0 <= idx)
             rb_enc_associate_index(bytes, idx);
-        rb_ivar_set(exc, rb_intern("error_char"), bytes);
+        rb_ivar_set(exc, rb_intern_lit("error_char"), bytes);
         goto set_encs;
     }
     return Qnil;
@@ -4252,7 +4252,7 @@ rb_econv_check_error(rb_econv_t *ec)
 static VALUE
 ecerr_source_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("source_encoding_name"));
+    return rb_attr_get(self, rb_intern_lit("source_encoding_name"));
 }
 
 /*
@@ -4278,7 +4278,7 @@ ecerr_source_encoding_name(VALUE self)
 static VALUE
 ecerr_source_encoding(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("source_encoding"));
+    return rb_attr_get(self, rb_intern_lit("source_encoding"));
 }
 
 /*
@@ -4290,7 +4290,7 @@ ecerr_source_encoding(VALUE self)
 static VALUE
 ecerr_destination_encoding_name(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("destination_encoding_name"));
+    return rb_attr_get(self, rb_intern_lit("destination_encoding_name"));
 }
 
 /*
@@ -4302,7 +4302,7 @@ ecerr_destination_encoding_name(VALUE self)
 static VALUE
 ecerr_destination_encoding(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("destination_encoding"));
+    return rb_attr_get(self, rb_intern_lit("destination_encoding"));
 }
 
 /*
@@ -4323,7 +4323,7 @@ ecerr_destination_encoding(VALUE self)
 static VALUE
 ecerr_error_char(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("error_char"));
+    return rb_attr_get(self, rb_intern_lit("error_char"));
 }
 
 /*
@@ -4344,7 +4344,7 @@ ecerr_error_char(VALUE self)
 static VALUE
 ecerr_error_bytes(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("error_bytes"));
+    return rb_attr_get(self, rb_intern_lit("error_bytes"));
 }
 
 /*
@@ -4356,7 +4356,7 @@ ecerr_error_bytes(VALUE self)
 static VALUE
 ecerr_readagain_bytes(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("readagain_bytes"));
+    return rb_attr_get(self, rb_intern_lit("readagain_bytes"));
 }
 
 /*
@@ -4386,7 +4386,7 @@ ecerr_readagain_bytes(VALUE self)
 static VALUE
 ecerr_incomplete_input(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("incomplete_input"));
+    return rb_attr_get(self, rb_intern_lit("incomplete_input"));
 }
 
 /*
@@ -4417,33 +4417,33 @@ Init_transcode(void)
 {
     transcoder_table = st_init_strcasetable();
 
-    sym_invalid = ID2SYM(rb_intern("invalid"));
-    sym_undef = ID2SYM(rb_intern("undef"));
-    sym_replace = ID2SYM(rb_intern("replace"));
-    sym_fallback = ID2SYM(rb_intern("fallback"));
-    sym_aref = ID2SYM(rb_intern("[]"));
-    sym_xml = ID2SYM(rb_intern("xml"));
-    sym_text = ID2SYM(rb_intern("text"));
-    sym_attr = ID2SYM(rb_intern("attr"));
+    sym_invalid = ID2SYM(rb_intern_lit("invalid"));
+    sym_undef = ID2SYM(rb_intern_lit("undef"));
+    sym_replace = ID2SYM(rb_intern_lit("replace"));
+    sym_fallback = ID2SYM(rb_intern_lit("fallback"));
+    sym_aref = ID2SYM(rb_intern_lit("[]"));
+    sym_xml = ID2SYM(rb_intern_lit("xml"));
+    sym_text = ID2SYM(rb_intern_lit("text"));
+    sym_attr = ID2SYM(rb_intern_lit("attr"));
 
-    sym_invalid_byte_sequence = ID2SYM(rb_intern("invalid_byte_sequence"));
-    sym_undefined_conversion = ID2SYM(rb_intern("undefined_conversion"));
-    sym_destination_buffer_full = ID2SYM(rb_intern("destination_buffer_full"));
-    sym_source_buffer_empty = ID2SYM(rb_intern("source_buffer_empty"));
-    sym_finished = ID2SYM(rb_intern("finished"));
-    sym_after_output = ID2SYM(rb_intern("after_output"));
-    sym_incomplete_input = ID2SYM(rb_intern("incomplete_input"));
-    sym_universal_newline = ID2SYM(rb_intern("universal_newline"));
-    sym_crlf_newline = ID2SYM(rb_intern("crlf_newline"));
-    sym_cr_newline = ID2SYM(rb_intern("cr_newline"));
-    sym_partial_input = ID2SYM(rb_intern("partial_input"));
+    sym_invalid_byte_sequence = ID2SYM(rb_intern_lit("invalid_byte_sequence"));
+    sym_undefined_conversion = ID2SYM(rb_intern_lit("undefined_conversion"));
+    sym_destination_buffer_full = ID2SYM(rb_intern_lit("destination_buffer_full"));
+    sym_source_buffer_empty = ID2SYM(rb_intern_lit("source_buffer_empty"));
+    sym_finished = ID2SYM(rb_intern_lit("finished"));
+    sym_after_output = ID2SYM(rb_intern_lit("after_output"));
+    sym_incomplete_input = ID2SYM(rb_intern_lit("incomplete_input"));
+    sym_universal_newline = ID2SYM(rb_intern_lit("universal_newline"));
+    sym_crlf_newline = ID2SYM(rb_intern_lit("crlf_newline"));
+    sym_cr_newline = ID2SYM(rb_intern_lit("cr_newline"));
+    sym_partial_input = ID2SYM(rb_intern_lit("partial_input"));
 
 #ifdef ENABLE_ECONV_NEWLINE_OPTION
-    sym_newline = ID2SYM(rb_intern("newline"));
-    sym_universal = ID2SYM(rb_intern("universal"));
-    sym_crlf = ID2SYM(rb_intern("crlf"));
-    sym_cr = ID2SYM(rb_intern("cr"));
-    sym_lf = ID2SYM(rb_intern("lf"));
+    sym_newline = ID2SYM(rb_intern_lit("newline"));
+    sym_universal = ID2SYM(rb_intern_lit("universal"));
+    sym_crlf = ID2SYM(rb_intern_lit("crlf"));
+    sym_cr = ID2SYM(rb_intern_lit("cr"));
+    sym_lf = ID2SYM(rb_intern_lit("lf"));
 #endif
 
     InitVM(transcode);

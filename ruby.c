@@ -925,7 +925,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
     ename = rb_str_new(e, elen);
 
     if (*name &&
-	rb_funcall(ename, rb_intern("casecmp"), 1, *name) != INT2FIX(0)) {
+	rb_funcall(ename, rb_intern_lit("casecmp"), 1, *name) != INT2FIX(0)) {
 	rb_raise(rb_eRuntimeError,
 		 "%s already set to %"PRIsVALUE, type, *name);
     }
@@ -1454,7 +1454,7 @@ uscore_get(void)
 static VALUE
 rb_f_sub(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("sub"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern_lit("sub"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
@@ -1473,7 +1473,7 @@ rb_f_sub(int argc, VALUE *argv)
 static VALUE
 rb_f_gsub(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("gsub"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern_lit("gsub"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
@@ -1491,7 +1491,7 @@ rb_f_gsub(int argc, VALUE *argv)
 static VALUE
 rb_f_chop(void)
 {
-    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chop"), 0, 0);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern_lit("chop"), 0, 0);
     rb_lastline_set(str);
     return str;
 }
@@ -1511,7 +1511,7 @@ rb_f_chop(void)
 static VALUE
 rb_f_chomp(int argc, VALUE *argv)
 {
-    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern("chomp"), argc, argv);
+    VALUE str = rb_funcall_passing_block(uscore_get(), rb_intern_lit("chomp"), argc, argv);
     rb_lastline_set(str);
     return str;
 }
@@ -1709,7 +1709,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_argv(argc, argv);
     process_sflag(&opt->sflag);
 
-    GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
+    GetBindingPtr(rb_const_get(rb_cObject, rb_intern_lit("TOPLEVEL_BINDING")),
 		  toplevel_binding);
     /* need to acquire env from toplevel_binding each time, since it
      * may update after eval() */

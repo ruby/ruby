@@ -678,7 +678,7 @@ void
 Init_fiddle_pointer(void)
 {
 #undef rb_intern
-    id_to_ptr = rb_intern("to_ptr");
+    id_to_ptr = rb_intern_lit("to_ptr");
 
     /* Document-class: Fiddle::Pointer
      *

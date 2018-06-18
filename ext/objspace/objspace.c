@@ -239,7 +239,7 @@ count_objects_size(int argc, VALUE *argv, VALUE os)
 	    rb_hash_aset(hash, type, SIZET2NUM(counts[i]));
 	}
     }
-    rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
+    rb_hash_aset(hash, ID2SYM(rb_intern_lit("TOTAL")), SIZET2NUM(total));
     return hash;
 }
 
@@ -306,10 +306,10 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     size_t immortal_symbols = rb_sym_immortal_count();
     rb_objspace_each_objects(cs_i, &dynamic_counts);
 
-    rb_hash_aset(hash, ID2SYM(rb_intern("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
-    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
-    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
-    rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
+    rb_hash_aset(hash, ID2SYM(rb_intern_lit("mortal_dynamic_symbol")),   SIZET2NUM(dynamic_counts.mortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern_lit("immortal_dynamic_symbol")), SIZET2NUM(dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern_lit("immortal_static_symbol")),  SIZET2NUM(immortal_symbols - dynamic_counts.immortal));
+    rb_hash_aset(hash, ID2SYM(rb_intern_lit("immortal_symbol")),         SIZET2NUM(immortal_symbols));
 
     return hash;
 }
@@ -617,16 +617,16 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
     VALUE hash = setup_hash(argc, argv);
 
     if (imemo_type_ids[0] == 0) {
-	imemo_type_ids[0] = rb_intern("imemo_none");
-	imemo_type_ids[1] = rb_intern("imemo_cref");
-	imemo_type_ids[2] = rb_intern("imemo_svar");
-	imemo_type_ids[3] = rb_intern("imemo_throw_data");
-	imemo_type_ids[4] = rb_intern("imemo_ifunc");
-	imemo_type_ids[5] = rb_intern("imemo_memo");
-	imemo_type_ids[6] = rb_intern("imemo_ment");
-	imemo_type_ids[7] = rb_intern("imemo_iseq");
-	imemo_type_ids[8] = rb_intern("imemo_tmpbuf");
-	imemo_type_ids[9] = rb_intern("imemo_parser_strterm");
+	imemo_type_ids[0] = rb_intern_lit("imemo_none");
+	imemo_type_ids[1] = rb_intern_lit("imemo_cref");
+	imemo_type_ids[2] = rb_intern_lit("imemo_svar");
+	imemo_type_ids[3] = rb_intern_lit("imemo_throw_data");
+	imemo_type_ids[4] = rb_intern_lit("imemo_ifunc");
+	imemo_type_ids[5] = rb_intern_lit("imemo_memo");
+	imemo_type_ids[6] = rb_intern_lit("imemo_ment");
+	imemo_type_ids[7] = rb_intern_lit("imemo_iseq");
+	imemo_type_ids[8] = rb_intern_lit("imemo_tmpbuf");
+	imemo_type_ids[9] = rb_intern_lit("imemo_parser_strterm");
     }
 
     rb_objspace_each_objects(count_imemo_objects_i, (void *)hash);
@@ -941,7 +941,7 @@ Init_objspace(void)
 #if 0
     rb_mObjSpace = rb_define_module("ObjectSpace"); /* let rdoc know */
 #endif
-    rb_mObjSpace = rb_const_get(rb_cObject, rb_intern("ObjectSpace"));
+    rb_mObjSpace = rb_const_get(rb_cObject, rb_intern_lit("ObjectSpace"));
 
     rb_define_module_function(rb_mObjSpace, "memsize_of", memsize_of_m, 1);
     rb_define_module_function(rb_mObjSpace, "memsize_of_all", memsize_of_all_m, -1);

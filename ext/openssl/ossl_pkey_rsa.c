@@ -587,9 +587,9 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
     }
     rb_scan_args(argc, argv, "2:", &digest, &data, &options);
     rb_get_kwargs(options, kwargs_ids, 2, 0, kwargs);
-    if (kwargs[0] == ID2SYM(rb_intern("max")))
+    if (kwargs[0] == ID2SYM(rb_intern_lit("max")))
 	salt_len = -2; /* RSA_PSS_SALTLEN_MAX_SIGN */
-    else if (kwargs[0] == ID2SYM(rb_intern("digest")))
+    else if (kwargs[0] == ID2SYM(rb_intern_lit("digest")))
 	salt_len = -1; /* RSA_PSS_SALTLEN_DIGEST */
     else
 	salt_len = NUM2INT(kwargs[0]);
@@ -673,9 +673,9 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
     }
     rb_scan_args(argc, argv, "3:", &digest, &signature, &data, &options);
     rb_get_kwargs(options, kwargs_ids, 2, 0, kwargs);
-    if (kwargs[0] == ID2SYM(rb_intern("auto")))
+    if (kwargs[0] == ID2SYM(rb_intern_lit("auto")))
 	salt_len = -2; /* RSA_PSS_SALTLEN_AUTO */
-    else if (kwargs[0] == ID2SYM(rb_intern("digest")))
+    else if (kwargs[0] == ID2SYM(rb_intern_lit("digest")))
 	salt_len = -1; /* RSA_PSS_SALTLEN_DIGEST */
     else
 	salt_len = NUM2INT(kwargs[0]);

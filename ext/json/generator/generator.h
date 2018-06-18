@@ -17,7 +17,7 @@
 #endif
 
 #ifndef rb_obj_instance_variables
-#define rb_obj_instance_variables(object) rb_funcall(object, rb_intern("instance_variables"), 0)
+#define rb_obj_instance_variables(object) rb_funcall(object, rb_intern_lit("instance_variables"), 0)
 #endif
 
 #define option_given_p(opts, key) RTEST(rb_funcall(opts, i_key_p, 1, key))

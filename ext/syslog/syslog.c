@@ -586,8 +586,8 @@ void Init_syslog(void)
     rb_include_module(mSyslogConstants, mSyslogOption);
     rb_include_module(mSyslogConstants, mSyslogFacility);
     rb_include_module(mSyslogConstants, mSyslogLevel);
-    rb_funcall(mSyslogConstants, rb_intern("include"), 1, mSyslogMacros);
+    rb_funcall(mSyslogConstants, rb_intern_lit("include"), 1, mSyslogMacros);
 
     rb_define_singleton_method(mSyslogConstants, "included", mSyslogMacros_included, 1);
-    rb_funcall(mSyslog, rb_intern("include"), 1, mSyslogConstants);
+    rb_funcall(mSyslog, rb_intern_lit("include"), 1, mSyslogConstants);
 }

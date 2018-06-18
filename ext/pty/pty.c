@@ -70,7 +70,7 @@ static VALUE eChildExited;
 static VALUE
 echild_status(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("status"));
+    return rb_ivar_get(self, rb_intern_lit("status"));
 }
 
 struct pty_info {

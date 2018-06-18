@@ -686,7 +686,7 @@ strio_bytes(VALUE self)
 {
     rb_warn("StringIO#bytes is deprecated; use #each_byte instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_byte")), 0, 0);
+	return rb_enumeratorize(self, ID2SYM(rb_intern_lit("each_byte")), 0, 0);
     return strio_each_byte(self);
 }
 
@@ -863,7 +863,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 static VALUE
 strio_readchar(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getc"), 0, 0);
+    VALUE c = rb_funcall2(self, rb_intern_lit("getc"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -877,7 +877,7 @@ strio_readchar(VALUE self)
 static VALUE
 strio_readbyte(VALUE self)
 {
-    VALUE c = rb_funcall2(self, rb_intern("getbyte"), 0, 0);
+    VALUE c = rb_funcall2(self, rb_intern_lit("getbyte"), 0, 0);
     if (NIL_P(c)) rb_eof_error();
     return c;
 }
@@ -910,7 +910,7 @@ strio_chars(VALUE self)
 {
     rb_warn("StringIO#chars is deprecated; use #each_char instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_char")), 0, 0);
+	return rb_enumeratorize(self, ID2SYM(rb_intern_lit("each_char")), 0, 0);
     return strio_each_char(self);
 }
 
@@ -954,7 +954,7 @@ strio_codepoints(VALUE self)
 {
     rb_warn("StringIO#codepoints is deprecated; use #each_codepoint instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+	return rb_enumeratorize(self, ID2SYM(rb_intern_lit("each_codepoint")), 0, 0);
     return strio_each_codepoint(self);
 }
 
@@ -1170,7 +1170,7 @@ strio_gets(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_readline(int argc, VALUE *argv, VALUE self)
 {
-    VALUE line = rb_funcall2(self, rb_intern("gets"), argc, argv);
+    VALUE line = rb_funcall2(self, rb_intern_lit("gets"), argc, argv);
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -1216,7 +1216,7 @@ strio_lines(int argc, VALUE *argv, VALUE self)
 {
     rb_warn("StringIO#lines is deprecated; use #each_line instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(self, ID2SYM(rb_intern("each_line")), argc, argv);
+	return rb_enumeratorize(self, ID2SYM(rb_intern_lit("each_line")), argc, argv);
     return strio_each(argc, argv, self);
 }
 
@@ -1450,7 +1450,7 @@ strio_read(int argc, VALUE *argv, VALUE self)
 static VALUE
 strio_sysread(int argc, VALUE *argv, VALUE self)
 {
-    VALUE val = rb_funcall2(self, rb_intern("read"), argc, argv);
+    VALUE val = rb_funcall2(self, rb_intern_lit("read"), argc, argv);
     if (NIL_P(val)) {
 	rb_eof_error();
     }
@@ -1727,5 +1727,5 @@ Init_stringio(void)
 	rb_include_module(StringIO, mWritable);
     }
 
-    sym_exception = ID2SYM(rb_intern("exception"));
+    sym_exception = ID2SYM(rb_intern_lit("exception"));
 }

@@ -2990,8 +2990,8 @@ chunk_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _argp))
 {
     struct chunk_arg *argp = MEMO_FOR(struct chunk_arg, _argp);
     VALUE v, s;
-    VALUE alone = ID2SYM(rb_intern("_alone"));
-    VALUE separator = ID2SYM(rb_intern("_separator"));
+    VALUE alone = ID2SYM(rb_intern_lit("_alone"));
+    VALUE separator = ID2SYM(rb_intern_lit("_separator"));
 
     ENUM_WANT_SVALUE();
 
@@ -3043,8 +3043,8 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct chunk_arg *memo = NEW_MEMO_FOR(struct chunk_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("chunk_enumerable"));
-    memo->categorize = rb_ivar_get(enumerator, rb_intern("chunk_categorize"));
+    enumerable = rb_ivar_get(enumerator, rb_intern_lit("chunk_enumerable"));
+    memo->categorize = rb_ivar_get(enumerator, rb_intern_lit("chunk_categorize"));
     memo->prev_value = Qnil;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
@@ -3154,8 +3154,8 @@ enum_chunk(VALUE enumerable)
     RETURN_SIZED_ENUMERATOR(enumerable, 0, 0, enum_size);
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("chunk_enumerable"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("chunk_categorize"), rb_block_proc());
+    rb_ivar_set(enumerator, rb_intern_lit("chunk_enumerable"), enumerable);
+    rb_ivar_set(enumerator, rb_intern_lit("chunk_categorize"), rb_block_proc());
     rb_block_call(enumerator, idInitialize, 0, 0, chunk_i, enumerator);
     return enumerator;
 }
@@ -3202,9 +3202,9 @@ slicebefore_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct slicebefore_arg *memo = NEW_MEMO_FOR(struct slicebefore_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("slicebefore_enumerable"));
-    memo->sep_pred = rb_attr_get(enumerator, rb_intern("slicebefore_sep_pred"));
-    memo->sep_pat = NIL_P(memo->sep_pred) ? rb_ivar_get(enumerator, rb_intern("slicebefore_sep_pat")) : Qnil;
+    enumerable = rb_ivar_get(enumerator, rb_intern_lit("slicebefore_enumerable"));
+    memo->sep_pred = rb_attr_get(enumerator, rb_intern_lit("slicebefore_sep_pred"));
+    memo->sep_pat = NIL_P(memo->sep_pred) ? rb_ivar_get(enumerator, rb_intern_lit("slicebefore_sep_pat")) : Qnil;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
 
@@ -3368,15 +3368,15 @@ enum_slice_before(int argc, VALUE *argv, VALUE enumerable)
         if (argc != 0)
             rb_error_arity(argc, 0, 0);
         enumerator = rb_obj_alloc(rb_cEnumerator);
-        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pred"), rb_block_proc());
+        rb_ivar_set(enumerator, rb_intern_lit("slicebefore_sep_pred"), rb_block_proc());
     }
     else {
         VALUE sep_pat;
         rb_scan_args(argc, argv, "1", &sep_pat);
         enumerator = rb_obj_alloc(rb_cEnumerator);
-        rb_ivar_set(enumerator, rb_intern("slicebefore_sep_pat"), sep_pat);
+        rb_ivar_set(enumerator, rb_intern_lit("slicebefore_sep_pat"), sep_pat);
     }
-    rb_ivar_set(enumerator, rb_intern("slicebefore_enumerable"), enumerable);
+    rb_ivar_set(enumerator, rb_intern_lit("slicebefore_enumerable"), enumerable);
     rb_block_call(enumerator, idInitialize, 0, 0, slicebefore_i, enumerator);
     return enumerator;
 }
@@ -3432,9 +3432,9 @@ sliceafter_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     VALUE arg;
     struct sliceafter_arg *memo = NEW_MEMO_FOR(struct sliceafter_arg, arg);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("sliceafter_enum"));
-    memo->pat = rb_ivar_get(enumerator, rb_intern("sliceafter_pat"));
-    memo->pred = rb_attr_get(enumerator, rb_intern("sliceafter_pred"));
+    enumerable = rb_ivar_get(enumerator, rb_intern_lit("sliceafter_enum"));
+    memo->pat = rb_ivar_get(enumerator, rb_intern_lit("sliceafter_pat"));
+    memo->pred = rb_attr_get(enumerator, rb_intern_lit("sliceafter_pred"));
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
 
@@ -3497,9 +3497,9 @@ enum_slice_after(int argc, VALUE *argv, VALUE enumerable)
     }
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_pat"), pat);
-    rb_ivar_set(enumerator, rb_intern("sliceafter_pred"), pred);
+    rb_ivar_set(enumerator, rb_intern_lit("sliceafter_enum"), enumerable);
+    rb_ivar_set(enumerator, rb_intern_lit("sliceafter_pat"), pat);
+    rb_ivar_set(enumerator, rb_intern_lit("sliceafter_pred"), pred);
 
     rb_block_call(enumerator, idInitialize, 0, 0, sliceafter_i, enumerator);
     return enumerator;
@@ -3562,12 +3562,12 @@ slicewhen_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
     struct slicewhen_arg *memo =
 	NEW_PARTIAL_MEMO_FOR(struct slicewhen_arg, arg, inverted);
 
-    enumerable = rb_ivar_get(enumerator, rb_intern("slicewhen_enum"));
-    memo->pred = rb_attr_get(enumerator, rb_intern("slicewhen_pred"));
+    enumerable = rb_ivar_get(enumerator, rb_intern_lit("slicewhen_enum"));
+    memo->pred = rb_attr_get(enumerator, rb_intern_lit("slicewhen_pred"));
     memo->prev_elt = Qundef;
     memo->prev_elts = Qnil;
     memo->yielder = yielder;
-    memo->inverted = RTEST(rb_attr_get(enumerator, rb_intern("slicewhen_inverted")));
+    memo->inverted = RTEST(rb_attr_get(enumerator, rb_intern_lit("slicewhen_inverted")));
 
     rb_block_call(enumerable, id_each, 0, 0, slicewhen_ii, arg);
     memo = MEMO_FOR(struct slicewhen_arg, arg);
@@ -3647,9 +3647,9 @@ enum_slice_when(VALUE enumerable)
     pred = rb_block_proc();
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qfalse);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_enum"), enumerable);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_pred"), pred);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_inverted"), Qfalse);
 
     rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
     return enumerator;
@@ -3713,9 +3713,9 @@ enum_chunk_while(VALUE enumerable)
     pred = rb_block_proc();
 
     enumerator = rb_obj_alloc(rb_cEnumerator);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_enum"), enumerable);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_pred"), pred);
-    rb_ivar_set(enumerator, rb_intern("slicewhen_inverted"), Qtrue);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_enum"), enumerable);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_pred"), pred);
+    rb_ivar_set(enumerator, rb_intern_lit("slicewhen_inverted"), Qtrue);
 
     rb_block_call(enumerator, idInitialize, 0, 0, slicewhen_i, enumerator);
     return enumerator;
@@ -4071,6 +4071,6 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "sum", enum_sum, -1);
     rb_define_method(rb_mEnumerable, "uniq", enum_uniq, 0);
 
-    id_next = rb_intern("next");
-    id_div = rb_intern("div");
+    id_next = rb_intern_lit("next");
+    id_div = rb_intern_lit("div");
 }

@@ -40,7 +40,7 @@ DupConfigPtr(VALUE obj)
     long eline = -1;
 
     OSSL_Check_Kind(obj, cConfig);
-    str = rb_funcall(obj, rb_intern("to_s"), 0);
+    str = rb_funcall(obj, rb_intern_lit("to_s"), 0);
     bio = ossl_obj2bio(&str);
     conf = NCONF_new(NULL);
     if(!conf){

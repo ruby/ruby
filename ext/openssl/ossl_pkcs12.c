@@ -249,9 +249,9 @@ Init_ossl_pkcs12(void)
 
     rb_define_alloc_func(cPKCS12, ossl_pkcs12_s_allocate);
     rb_define_method(cPKCS12, "initialize_copy", ossl_pkcs12_initialize_copy, 1);
-    rb_attr(cPKCS12, rb_intern("key"), 1, 0, Qfalse);
-    rb_attr(cPKCS12, rb_intern("certificate"), 1, 0, Qfalse);
-    rb_attr(cPKCS12, rb_intern("ca_certs"), 1, 0, Qfalse);
+    rb_attr(cPKCS12, rb_intern_lit("key"), 1, 0, Qfalse);
+    rb_attr(cPKCS12, rb_intern_lit("certificate"), 1, 0, Qfalse);
+    rb_attr(cPKCS12, rb_intern_lit("ca_certs"), 1, 0, Qfalse);
     rb_define_method(cPKCS12, "initialize", ossl_pkcs12_initialize, -1);
     rb_define_method(cPKCS12, "to_der", ossl_pkcs12_to_der, 0);
 }

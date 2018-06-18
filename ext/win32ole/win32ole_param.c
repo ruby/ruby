@@ -59,7 +59,7 @@ create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE
     OLE_ADDREF(pTypeInfo);
     pparam->method_index = method_index;
     pparam->index = index;
-    rb_ivar_set(obj, rb_intern("name"), name);
+    rb_ivar_set(obj, rb_intern_lit("name"), name);
     return obj;
 }
 
@@ -116,7 +116,7 @@ oleparam_ole_param_from_index(VALUE self, ITypeInfo *pTypeInfo, UINT method_inde
     OLE_ADDREF(pTypeInfo);
     pparam->method_index = method_index;
     pparam->index = param_index - 1;
-    rb_ivar_set(self, rb_intern("name"), WC2VSTR(bstrs[param_index]));
+    rb_ivar_set(self, rb_intern_lit("name"), WC2VSTR(bstrs[param_index]));
 
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return self;
@@ -166,7 +166,7 @@ foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 static VALUE
 foleparam_name(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("name"));
+    return rb_ivar_get(self, rb_intern_lit("name"));
 }
 
 static VALUE

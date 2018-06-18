@@ -1510,7 +1510,7 @@ Init_thread_sync(void)
     DEFINE_CLASS(ConditionVariable, Object);
     rb_define_alloc_func(rb_cConditionVariable, condvar_alloc);
 
-    id_sleep = rb_intern("sleep");
+    id_sleep = rb_intern_lit("sleep");
 
     rb_define_method(rb_cConditionVariable, "initialize", rb_condvar_initialize, 0);
     rb_undef_method(rb_cConditionVariable, "initialize_copy");

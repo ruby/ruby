@@ -59,7 +59,7 @@ error_pos_str(void)
 static void
 set_backtrace(VALUE info, VALUE bt)
 {
-    ID set_backtrace = rb_intern("set_backtrace");
+    ID set_backtrace = rb_intern_lit("set_backtrace");
 
     if (rb_backtrace_p(bt)) {
 	if (rb_method_basic_definition_p(CLASS_OF(info), set_backtrace)) {

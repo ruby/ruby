@@ -473,7 +473,7 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "sign", ossl_pkey_sign, 2);
     rb_define_method(cPKey, "verify", ossl_pkey_verify, 3);
 
-    id_private_q = rb_intern("private?");
+    id_private_q = rb_intern_lit("private?");
 
     /*
      * INIT rsa, dsa, dh, ec

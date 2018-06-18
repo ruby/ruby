@@ -66,7 +66,7 @@ asn1time_to_time(const ASN1_TIME *time)
     argv[4] = INT2NUM(tm.tm_min);
     argv[5] = INT2NUM(tm.tm_sec);
 
-    return rb_funcall2(rb_cTime, rb_intern("utc"), 6, argv);
+    return rb_funcall2(rb_cTime, rb_intern_lit("utc"), 6, argv);
 }
 
 void
@@ -80,8 +80,8 @@ ossl_time_split(VALUE time, time_t *sec, int *days)
 	*days = rb_long2int(t / 86400);
     }
     else {
-	*days = NUM2INT(rb_funcall(num, rb_intern("/"), 1, INT2FIX(86400)));
-	*sec = NUM2TIMET(rb_funcall(num, rb_intern("%"), 1, INT2FIX(86400)));
+	*days = NUM2INT(rb_funcall(num, rb_intern_lit("/"), 1, INT2FIX(86400)));
+	*sec = NUM2TIMET(rb_funcall(num, rb_intern_lit("%"), 1, INT2FIX(86400)));
     }
 }
 
@@ -1331,7 +1331,7 @@ ossl_asn1obj_get_oid(VALUE self)
 
 #define OSSL_ASN1_IMPL_FACTORY_METHOD(klass) \
 static VALUE ossl_asn1_##klass(int argc, VALUE *argv, VALUE self)\
-{ return rb_funcall3(cASN1##klass, rb_intern("new"), argc, argv); }
+{ return rb_funcall3(cASN1##klass, rb_intern_lit("new"), argc, argv); }
 
 OSSL_ASN1_IMPL_FACTORY_METHOD(Boolean)
 OSSL_ASN1_IMPL_FACTORY_METHOD(Integer)
@@ -1376,12 +1376,12 @@ Init_ossl_asn1(void)
     sym_EXPLICIT = ID2SYM(rb_intern_const("EXPLICIT"));
     sym_IMPLICIT = ID2SYM(rb_intern_const("IMPLICIT"));
 
-    sivVALUE = rb_intern("@value");
-    sivTAG = rb_intern("@tag");
-    sivTAGGING = rb_intern("@tagging");
-    sivTAG_CLASS = rb_intern("@tag_class");
-    sivINDEFINITE_LENGTH = rb_intern("@indefinite_length");
-    sivUNUSED_BITS = rb_intern("@unused_bits");
+    sivVALUE = rb_intern_lit("@value");
+    sivTAG = rb_intern_lit("@tag");
+    sivTAGGING = rb_intern_lit("@tagging");
+    sivTAG_CLASS = rb_intern_lit("@tag_class");
+    sivINDEFINITE_LENGTH = rb_intern_lit("@indefinite_length");
+    sivUNUSED_BITS = rb_intern_lit("@unused_bits");
 
     /*
      * Document-module: OpenSSL::ASN1
@@ -1622,16 +1622,16 @@ Init_ossl_asn1(void)
      * Please confer Constructive and Primitive for the mappings between
      * ASN.1 data types and Ruby classes.
      */
-    rb_attr(cASN1Data, rb_intern("value"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern_lit("value"), 1, 1, 0);
     /*
      * An Integer representing the tag number of this ASN1Data. Never +nil+.
      */
-    rb_attr(cASN1Data, rb_intern("tag"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern_lit("tag"), 1, 1, 0);
     /*
      * A Symbol representing the tag class of this ASN1Data. Never +nil+.
      * See ASN1Data for possible values.
      */
-    rb_attr(cASN1Data, rb_intern("tag_class"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern_lit("tag_class"), 1, 1, 0);
     /*
      * Never +nil+. A boolean value indicating whether the encoding uses
      * indefinite length (in the case of parsing) or whether an indefinite
@@ -1649,7 +1649,7 @@ Init_ossl_asn1(void)
      * encoding, but also primitive types such as e.g. OCTET STRINGS or
      * BIT STRINGS may leverage this functionality (cf. ITU-T X.690).
      */
-    rb_attr(cASN1Data, rb_intern("indefinite_length"), 1, 1, 0);
+    rb_attr(cASN1Data, rb_intern_lit("indefinite_length"), 1, 1, 0);
     rb_define_alias(cASN1Data, "infinite_length", "indefinite_length");
     rb_define_alias(cASN1Data, "infinite_length=", "indefinite_length=");
     rb_define_method(cASN1Data, "initialize", ossl_asn1data_initialize, 3);
@@ -1726,7 +1726,7 @@ Init_ossl_asn1(void)
      * _tagging_ is not set when a ASN.1 structure is parsed using
      * OpenSSL::ASN1.decode.
      */
-    rb_attr(cASN1Primitive, rb_intern("tagging"), 1, 1, Qtrue);
+    rb_attr(cASN1Primitive, rb_intern_lit("tagging"), 1, 1, Qtrue);
     rb_undef_method(cASN1Primitive, "indefinite_length=");
     rb_undef_method(cASN1Primitive, "infinite_length=");
     rb_define_method(cASN1Primitive, "initialize", ossl_asn1_initialize, -1);
@@ -1767,7 +1767,7 @@ Init_ossl_asn1(void)
      * _tagging_ is not set when a ASN.1 structure is parsed using
      * OpenSSL::ASN1.decode.
      */
-    rb_attr(cASN1Constructive, rb_intern("tagging"), 1, 1, Qtrue);
+    rb_attr(cASN1Constructive, rb_intern_lit("tagging"), 1, 1, Qtrue);
     rb_define_method(cASN1Constructive, "initialize", ossl_asn1_initialize, -1);
     rb_define_method(cASN1Constructive, "to_der", ossl_asn1cons_to_der, 0);
     rb_define_method(cASN1Constructive, "each", ossl_asn1cons_each, 0);
@@ -1818,7 +1818,7 @@ do{\
     rb_define_method(cASN1ObjectId, "oid", ossl_asn1obj_get_oid, 0);
     rb_define_alias(cASN1ObjectId, "short_name", "sn");
     rb_define_alias(cASN1ObjectId, "long_name", "ln");
-    rb_attr(cASN1BitString, rb_intern("unused_bits"), 1, 1, 0);
+    rb_attr(cASN1BitString, rb_intern_lit("unused_bits"), 1, 1, 0);
 
     rb_define_method(cASN1EndOfContent, "initialize", ossl_asn1eoc_initialize, 0);
     rb_define_method(cASN1EndOfContent, "to_der", ossl_asn1eoc_to_der, 0);

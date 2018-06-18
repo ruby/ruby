@@ -54,7 +54,7 @@ struct ossl_verify_cb_args {
 static VALUE
 call_verify_cb_proc(struct ossl_verify_cb_args *args)
 {
-    return rb_funcall(args->proc, rb_intern("call"), 2,
+    return rb_funcall(args->proc, rb_intern_lit("call"), 2,
 		      args->preverify_ok, args->store_ctx);
 }
 
@@ -445,11 +445,11 @@ ossl_x509store_verify(int argc, VALUE *argv, VALUE self)
     VALUE ctx, proc, result;
 
     rb_scan_args(argc, argv, "11", &cert, &chain);
-    ctx = rb_funcall(cX509StoreContext, rb_intern("new"), 3, self, cert, chain);
+    ctx = rb_funcall(cX509StoreContext, rb_intern_lit("new"), 3, self, cert, chain);
     proc = rb_block_given_p() ?  rb_block_proc() :
 	   rb_iv_get(self, "@verify_callback");
     rb_iv_set(ctx, "@verify_callback", proc);
-    result = rb_funcall(ctx, rb_intern("verify"), 0);
+    result = rb_funcall(ctx, rb_intern_lit("verify"), 0);
 
     rb_iv_set(self, "@error", ossl_x509stctx_get_err(ctx));
     rb_iv_set(self, "@error_string", ossl_x509stctx_get_err_string(ctx));
@@ -832,19 +832,19 @@ Init_ossl_x509store(void)
      * pre-verification by OpenSSL has succeeded or not, and the StoreContext in
      * use. The callback must return either true or false.
      */
-    rb_attr(cX509Store, rb_intern("verify_callback"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern_lit("verify_callback"), 1, 0, Qfalse);
     /*
      * The error code set by the last call of #verify.
      */
-    rb_attr(cX509Store, rb_intern("error"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern_lit("error"), 1, 0, Qfalse);
     /*
      * The description for the error code set by the last call of #verify.
      */
-    rb_attr(cX509Store, rb_intern("error_string"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern_lit("error_string"), 1, 0, Qfalse);
     /*
      * The certificate chain constructed by the last call of #verify.
      */
-    rb_attr(cX509Store, rb_intern("chain"), 1, 0, Qfalse);
+    rb_attr(cX509Store, rb_intern_lit("chain"), 1, 0, Qfalse);
     rb_define_alloc_func(cX509Store, ossl_x509store_alloc);
     rb_define_method(cX509Store, "initialize",   ossl_x509store_initialize, -1);
     rb_undef_method(cX509Store, "initialize_copy");

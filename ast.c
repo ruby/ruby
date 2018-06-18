@@ -84,7 +84,7 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
 
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
-    rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
+    rb_funcall(f, rb_intern_lit("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     rb_parser_set_context(parser, NULL, 0);
     ast = rb_parser_compile_file_path(parser, path, f, 1);
 

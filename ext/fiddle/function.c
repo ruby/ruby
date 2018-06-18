@@ -78,7 +78,7 @@ rb_fiddle_new_function(VALUE address, VALUE arg_types, VALUE ret_type)
 static int
 parse_keyword_arg_i(VALUE key, VALUE value, VALUE self)
 {
-    if (key == ID2SYM(rb_intern("name"))) {
+    if (key == ID2SYM(rb_intern_lit("name"))) {
 	rb_iv_set(self, "@name", value);
     } else {
 	rb_raise(rb_eArgError, "unknown keyword: %"PRIsVALUE,
@@ -173,7 +173,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     cfunc    = rb_iv_get(self, "@ptr");
     types    = rb_iv_get(self, "@args");
-    cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
+    cPointer = rb_const_get(mFiddle, rb_intern_lit("Pointer"));
 
     Check_Max_Args("number of arguments", argc);
     if (argc != (i = RARRAY_LENINT(types))) {
@@ -205,7 +205,7 @@ function_call(int argc, VALUE argv[], VALUE self)
 	    if(NIL_P(src)) {
 		src = INT2FIX(0);
 	    } else if(cPointer != CLASS_OF(src)) {
-		src = rb_funcall(cPointer, rb_intern("[]"), 1, src);
+		src = rb_funcall(cPointer, rb_intern_lit("[]"), 1, src);
 	    }
 	    src = rb_Integer(src);
 	}
@@ -218,9 +218,9 @@ function_call(int argc, VALUE argv[], VALUE self)
 
     (void)rb_thread_call_without_gvl(nogvl_ffi_call, &args, 0, 0);
 
-    rb_funcall(mFiddle, rb_intern("last_error="), 1, INT2NUM(errno));
+    rb_funcall(mFiddle, rb_intern_lit("last_error="), 1, INT2NUM(errno));
 #if defined(_WIN32)
-    rb_funcall(mFiddle, rb_intern("win32_last_error="), 1, INT2NUM(errno));
+    rb_funcall(mFiddle, rb_intern_lit("win32_last_error="), 1, INT2NUM(errno));
 #endif
 
     ALLOCV_END(alloc_buffer);

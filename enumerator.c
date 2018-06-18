@@ -2457,20 +2457,20 @@ InitVM_Enumerator(void)
 void
 Init_Enumerator(void)
 {
-    id_rewind = rb_intern("rewind");
-    id_yield = rb_intern("yield");
-    id_new = rb_intern("new");
-    id_next = rb_intern("next");
-    id_result = rb_intern("result");
-    id_lazy = rb_intern("lazy");
-    id_receiver = rb_intern("receiver");
-    id_arguments = rb_intern("arguments");
-    id_memo = rb_intern("memo");
-    id_method = rb_intern("method");
-    id_force = rb_intern("force");
-    id_to_enum = rb_intern("to_enum");
+    id_rewind = rb_intern_lit("rewind");
+    id_yield = rb_intern_lit("yield");
+    id_new = rb_intern_lit("new");
+    id_next = rb_intern_lit("next");
+    id_result = rb_intern_lit("result");
+    id_lazy = rb_intern_lit("lazy");
+    id_receiver = rb_intern_lit("receiver");
+    id_arguments = rb_intern_lit("arguments");
+    id_memo = rb_intern_lit("memo");
+    id_method = rb_intern_lit("method");
+    id_force = rb_intern_lit("force");
+    id_to_enum = rb_intern_lit("to_enum");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern("cycle"));
+    sym_cycle = ID2SYM(rb_intern_lit("cycle"));
 
     InitVM(Enumerator);
 }

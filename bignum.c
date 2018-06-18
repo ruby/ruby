@@ -6057,7 +6057,7 @@ rb_big_div(VALUE x, VALUE y)
 VALUE
 rb_big_idiv(VALUE x, VALUE y)
 {
-    return rb_big_divide(x, y, rb_intern("div"));
+    return rb_big_divide(x, y, rb_intern_lit("div"));
 }
 
 VALUE
@@ -6085,7 +6085,7 @@ rb_big_remainder(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	return rb_num_coerce_bin(x, y, rb_intern("remainder"));
+	return rb_num_coerce_bin(x, y, rb_intern_lit("remainder"));
     }
     bigdivrem(x, y, 0, &z);
 
@@ -6101,7 +6101,7 @@ rb_big_divmod(VALUE x, VALUE y)
 	y = rb_int2big(FIX2LONG(y));
     }
     else if (!RB_BIGNUM_TYPE_P(y)) {
-	return rb_num_coerce_bin(x, y, rb_intern("divmod"));
+	return rb_num_coerce_bin(x, y, rb_intern_lit("divmod"));
     }
     bigdivmod(x, y, &div, &mod);
 
@@ -6188,7 +6188,7 @@ rb_big_fdiv_double(VALUE x, VALUE y)
 	    return big_fdiv_float(x, y);
     }
     else {
-	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern_lit("fdiv")));
     }
     return dx / dy;
 }

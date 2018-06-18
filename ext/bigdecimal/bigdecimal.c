@@ -110,7 +110,7 @@ rb_rational_num(VALUE rat)
 #ifdef HAVE_TYPE_STRUCT_RRATIONAL
     return RRATIONAL(rat)->num;
 #else
-    return rb_funcall(rat, rb_intern("numerator"), 0);
+    return rb_funcall(rat, rb_intern_lit("numerator"), 0);
 #endif
 }
 #endif
@@ -122,7 +122,7 @@ rb_rational_den(VALUE rat)
 #ifdef HAVE_TYPE_STRUCT_RRATIONAL
     return RRATIONAL(rat)->den;
 #else
-    return rb_funcall(rat, rb_intern("denominator"), 0);
+    return rb_funcall(rat, rb_intern_lit("denominator"), 0);
 #endif
 }
 #endif
@@ -765,7 +765,7 @@ BigDecimal_to_i(VALUE self)
     else {
 	VALUE a = BigDecimal_split(self);
 	VALUE digits = RARRAY_AREF(a, 1);
-	VALUE numerator = rb_funcall(digits, rb_intern("to_i"), 0);
+	VALUE numerator = rb_funcall(digits, rb_intern_lit("to_i"), 0);
 	VALUE ret;
 	ssize_t dpower = e - (ssize_t)RSTRING_LEN(digits);
 
@@ -773,13 +773,13 @@ BigDecimal_to_i(VALUE self)
 	    numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
 	}
 	if (dpower < 0) {
-	    ret = rb_funcall(numerator, rb_intern("div"), 1,
-			      rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+	    ret = rb_funcall(numerator, rb_intern_lit("div"), 1,
+			      rb_funcall(INT2FIX(10), rb_intern_lit("**"), 1,
 					 INT2FIX(-dpower)));
 	}
 	else {
 	    ret = rb_funcall(numerator, '*', 1,
-			     rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+			     rb_funcall(INT2FIX(10), rb_intern_lit("**"), 1,
 					INT2FIX(dpower)));
 	}
 	if (RB_TYPE_P(ret, T_FLOAT)) {
@@ -855,19 +855,19 @@ BigDecimal_to_r(VALUE self)
     a = BigDecimal_split(self);
     digits = RARRAY_AREF(a, 1);
     denomi_power = power - RSTRING_LEN(digits);
-    numerator = rb_funcall(digits, rb_intern("to_i"), 0);
+    numerator = rb_funcall(digits, rb_intern_lit("to_i"), 0);
 
     if (sign < 0) {
 	numerator = rb_funcall(numerator, '*', 1, INT2FIX(-1));
     }
     if (denomi_power < 0) {
 	return rb_Rational(numerator,
-			   rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+			   rb_funcall(INT2FIX(10), rb_intern_lit("**"), 1,
 				      INT2FIX(-denomi_power)));
     }
     else {
 	return rb_Rational1(rb_funcall(numerator, '*', 1,
-				       rb_funcall(INT2FIX(10), rb_intern("**"), 1,
+				       rb_funcall(INT2FIX(10), rb_intern_lit("**"), 1,
 						  INT2FIX(denomi_power))));
     }
 }
@@ -1075,17 +1075,17 @@ BigDecimalCmp(VALUE self, VALUE r,char op)
 
 	switch (op) {
 	case '*':
-	    return rb_num_coerce_cmp(self, r, rb_intern("<=>"));
+	    return rb_num_coerce_cmp(self, r, rb_intern_lit("<=>"));
 
 	case '=':
-	    return RTEST(rb_num_coerce_cmp(self, r, rb_intern("=="))) ? Qtrue : Qfalse;
+	    return RTEST(rb_num_coerce_cmp(self, r, rb_intern_lit("=="))) ? Qtrue : Qfalse;
 
 	case 'G':
-	    f = rb_intern(">=");
+	    f = rb_intern_lit(">=");
 	    break;
 
 	case 'L':
-	    f = rb_intern("<=");
+	    f = rb_intern_lit("<=");
 	    break;
 
 	case '>':
@@ -1477,7 +1477,7 @@ BigDecimal_divremain(VALUE self, VALUE r, Real **dv, Real **rv)
 	b = GetVpValue(r, 0);
     }
 
-    if (!b) return DoSomeOne(self, r, rb_intern("remainder"));
+    if (!b) return DoSomeOne(self, r, rb_intern_lit("remainder"));
     SAVE(b);
 
     mx = (a->MaxPrec + b->MaxPrec) *VpBaseFig();
@@ -1553,7 +1553,7 @@ BigDecimal_divmod(VALUE self, VALUE r)
 	SAVE(div); SAVE(mod);
 	return rb_assoc_new(ToValue(div), ToValue(mod));
     }
-    return DoSomeOne(self,r,rb_intern("divmod"));
+    return DoSomeOne(self,r,rb_intern_lit("divmod"));
 }
 
 /*
@@ -1571,7 +1571,7 @@ BigDecimal_div2(VALUE self, VALUE b, VALUE n)
         if (BigDecimal_DoDivmod(self, b, &div, &mod)) {
             return BigDecimal_to_i(ToValue(div));
         }
-        return DoSomeOne(self, b, rb_intern("div"));
+        return DoSomeOne(self, b, rb_intern_lit("div"));
     }
 
     /* div in BigDecimal sense */

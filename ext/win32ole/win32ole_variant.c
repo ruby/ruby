@@ -629,7 +629,7 @@ folevariant_value(VALUE self)
         }
         dim = SafeArrayGetDim(psa);
         if (dim == 1) {
-            val = rb_funcall(val, rb_intern("pack"), 1, rb_str_new2("C*"));
+            val = rb_funcall(val, rb_intern_lit("pack"), 1, rb_str_new2("C*"));
         }
     }
     return val;
@@ -707,19 +707,19 @@ Init_win32ole_variant(void)
      * represents VT_EMPTY OLE object.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Empty",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_EMPTY)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern_lit("new"), 2, Qnil, RB_INT2FIX(VT_EMPTY)));
 
     /*
      * represents VT_NULL OLE object.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Null",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_NULL)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern_lit("new"), 2, Qnil, RB_INT2FIX(VT_NULL)));
 
     /*
      * represents Nothing of VB.NET or VB.
      */
     rb_define_const(cWIN32OLE_VARIANT, "Nothing",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, Qnil, RB_INT2FIX(VT_DISPATCH)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern_lit("new"), 2, Qnil, RB_INT2FIX(VT_DISPATCH)));
 
     /*
      * represents VT_ERROR variant with DISP_E_PARAMNOTFOUND.
@@ -729,5 +729,5 @@ Init_win32ole_variant(void)
      *  fso.openTextFile(filename, WIN32OLE_VARIANT::NoParam, false)
      */
     rb_define_const(cWIN32OLE_VARIANT, "NoParam",
-            rb_funcall(cWIN32OLE_VARIANT, rb_intern("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));
+            rb_funcall(cWIN32OLE_VARIANT, rb_intern_lit("new"), 2, INT2NUM(DISP_E_PARAMNOTFOUND), RB_INT2FIX(VT_ERROR)));
 }

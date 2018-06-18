@@ -599,7 +599,7 @@ static VALUE
 num_div(VALUE x, VALUE y)
 {
     if (rb_equal(INT2FIX(0), y)) rb_num_zerodiv();
-    return rb_funcall(num_funcall1(x, '/', y), rb_intern("floor"), 0);
+    return rb_funcall(num_funcall1(x, '/', y), rb_intern_lit("floor"), 0);
 }
 
 /*
@@ -789,7 +789,7 @@ num_zero_p(VALUE num)
 static VALUE
 num_nonzero_p(VALUE num)
 {
-    if (RTEST(num_funcall0(num, rb_intern("zero?")))) {
+    if (RTEST(num_funcall0(num, rb_intern_lit("zero?")))) {
 	return Qnil;
     }
     return num;
@@ -1434,7 +1434,7 @@ flo_cmp(VALUE x, VALUE y)
 	b = RFLOAT_VALUE(y);
     }
     else {
-	if (isinf(a) && (i = rb_check_funcall(y, rb_intern("infinite?"), 0, 0)) != Qundef) {
+	if (isinf(a) && (i = rb_check_funcall(y, rb_intern_lit("infinite?"), 0, 0)) != Qundef) {
 	    if (RTEST(i)) {
 		int j = rb_cmpint(i, x, y);
 		j = (a > 0.0) ? (j > 0 ? 0 : +1) : (j < 0 ? 0 : -1);
@@ -3642,7 +3642,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return (double)FIX2LONG(x) / RFLOAT_VALUE(y);
     }
     else {
-        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
+        return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern_lit("fdiv")));
     }
 }
 
@@ -5358,9 +5358,9 @@ Init_Numeric(void)
     /* Turn off floating point exceptions for divide by zero, etc. */
     _set_Creg(0, 0);
 #endif
-    id_coerce = rb_intern("coerce");
-    id_div = rb_intern("div");
-    id_divmod = rb_intern("divmod");
+    id_coerce = rb_intern_lit("coerce");
+    id_div = rb_intern_lit("div");
+    id_divmod = rb_intern_lit("divmod");
 
     rb_eZeroDivError = rb_define_class("ZeroDivisionError", rb_eStandardError);
     rb_eFloatDomainError = rb_define_class("FloatDomainError", rb_eRangeError);
@@ -5620,8 +5620,8 @@ Init_Numeric(void)
     rb_define_method(rb_cFloat, "positive?", flo_positive_p, 0);
     rb_define_method(rb_cFloat, "negative?", flo_negative_p, 0);
 
-    id_to = rb_intern("to");
-    id_by = rb_intern("by");
+    id_to = rb_intern_lit("to");
+    id_by = rb_intern_lit("by");
 }
 
 #undef rb_float_value

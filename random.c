@@ -1690,8 +1690,8 @@ InitVM_Random(void)
 void
 Init_Random(void)
 {
-    id_rand = rb_intern("rand");
-    id_bytes = rb_intern("bytes");
+    id_rand = rb_intern_lit("rand");
+    id_bytes = rb_intern_lit("bytes");
 
     InitVM(Random);
 }

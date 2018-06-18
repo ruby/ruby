@@ -78,7 +78,7 @@ with_gvl_callback(void *ptr)
     VALUE cPointer;
     int i, type;
 
-    cPointer = rb_const_get(mFiddle, rb_intern("Pointer"));
+    cPointer = rb_const_get(mFiddle, rb_intern_lit("Pointer"));
 
     for (i = 0; i < argc; i++) {
         type = NUM2INT(RARRAY_AREF(rbargs, i));
@@ -94,7 +94,7 @@ with_gvl_callback(void *ptr)
 	    break;
 	  case TYPE_VOIDP:
 	    rb_ary_push(params,
-			rb_funcall(cPointer, rb_intern("[]"), 1,
+			rb_funcall(cPointer, rb_intern_lit("[]"), 1,
 				   PTR2NUM(*(void **)x->args[i])));
 	    break;
 	  case TYPE_LONG:
@@ -134,7 +134,7 @@ with_gvl_callback(void *ptr)
         }
     }
 
-    ret = rb_funcall2(self, rb_intern("call"), argc, RARRAY_CONST_PTR(params));
+    ret = rb_funcall2(self, rb_intern_lit("call"), argc, RARRAY_CONST_PTR(params));
     RB_GC_GUARD(params);
 
     type = NUM2INT(ctype);

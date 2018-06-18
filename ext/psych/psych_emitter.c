@@ -546,10 +546,10 @@ void Init_psych_emitter(void)
     rb_define_method(cPsychEmitter, "line_width", line_width, 0);
     rb_define_method(cPsychEmitter, "line_width=", set_line_width, 1);
 
-    id_io          = rb_intern("io");
-    id_write       = rb_intern("write");
-    id_line_width  = rb_intern("line_width");
-    id_indentation = rb_intern("indentation");
-    id_canonical   = rb_intern("canonical");
+    id_io          = rb_intern_lit("io");
+    id_write       = rb_intern_lit("write");
+    id_line_width  = rb_intern_lit("line_width");
+    id_indentation = rb_intern_lit("indentation");
+    id_canonical   = rb_intern_lit("canonical");
 }
 /* vim: set noet sws=4 sw=4: */

@@ -4658,10 +4658,10 @@ Init_Hash(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_hash = rb_intern("hash");
-    id_yield = rb_intern("yield");
-    id_default = rb_intern("default");
-    id_flatten_bang = rb_intern("flatten!");
+    id_hash = rb_intern_lit("hash");
+    id_yield = rb_intern_lit("yield");
+    id_default = rb_intern_lit("default");
+    id_flatten_bang = rb_intern_lit("flatten!");
 
     rb_cHash = rb_define_class("Hash", rb_cObject);
 

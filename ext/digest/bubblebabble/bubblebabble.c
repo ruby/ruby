@@ -143,5 +143,5 @@ Init_bubblebabble(void)
     rb_define_singleton_method(rb_cDigest_Class, "bubblebabble", rb_digest_class_s_bubblebabble, -1);
     rb_define_method(rb_mDigest_Instance, "bubblebabble", rb_digest_instance_bubblebabble, 0);
 
-    id_digest = rb_intern("digest");
+    id_digest = rb_intern_lit("digest");
 }

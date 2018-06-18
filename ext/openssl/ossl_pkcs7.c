@@ -477,15 +477,15 @@ ossl_pkcs7_get_type(VALUE self)
 
     GetPKCS7(self, p7);
     if(PKCS7_type_is_signed(p7))
-	return ID2SYM(rb_intern("signed"));
+	return ID2SYM(rb_intern_lit("signed"));
     if(PKCS7_type_is_encrypted(p7))
-	return ID2SYM(rb_intern("encrypted"));
+	return ID2SYM(rb_intern_lit("encrypted"));
     if(PKCS7_type_is_enveloped(p7))
-	return ID2SYM(rb_intern("enveloped"));
+	return ID2SYM(rb_intern_lit("enveloped"));
     if(PKCS7_type_is_signedAndEnveloped(p7))
-	return ID2SYM(rb_intern("signedAndEnveloped"));
+	return ID2SYM(rb_intern_lit("signedAndEnveloped"));
     if(PKCS7_type_is_data(p7))
-	return ID2SYM(rb_intern("data"));
+	return ID2SYM(rb_intern_lit("data"));
     return Qnil;
 }
 
@@ -697,7 +697,7 @@ ossl_pkcs7_set_certificates(VALUE self, VALUE ary)
 
     certs = pkcs7_get_certs(self);
     while((cert = sk_X509_pop(certs))) X509_free(cert);
-    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_certs_i, self);
+    rb_block_call(ary, rb_intern_lit("each"), 0, 0, ossl_pkcs7_set_certs_i, self);
 
     return ary;
 }
@@ -737,7 +737,7 @@ ossl_pkcs7_set_crls(VALUE self, VALUE ary)
 
     crls = pkcs7_get_crls(self);
     while((crl = sk_X509_CRL_pop(crls))) X509_CRL_free(crl);
-    rb_block_call(ary, rb_intern("each"), 0, 0, ossl_pkcs7_set_crls_i, self);
+    rb_block_call(ary, rb_intern_lit("each"), 0, 0, ossl_pkcs7_set_crls_i, self);
 
     return ary;
 }
@@ -1054,8 +1054,8 @@ Init_ossl_pkcs7(void)
     rb_define_singleton_method(cPKCS7, "write_smime", ossl_pkcs7_s_write_smime, -1);
     rb_define_singleton_method(cPKCS7, "sign",  ossl_pkcs7_s_sign, -1);
     rb_define_singleton_method(cPKCS7, "encrypt", ossl_pkcs7_s_encrypt, -1);
-    rb_attr(cPKCS7, rb_intern("data"), 1, 0, Qfalse);
-    rb_attr(cPKCS7, rb_intern("error_string"), 1, 1, Qfalse);
+    rb_attr(cPKCS7, rb_intern_lit("data"), 1, 0, Qfalse);
+    rb_attr(cPKCS7, rb_intern_lit("error_string"), 1, 1, Qfalse);
     rb_define_alloc_func(cPKCS7, ossl_pkcs7_alloc);
     rb_define_method(cPKCS7, "initialize_copy", ossl_pkcs7_copy, 1);
     rb_define_method(cPKCS7, "initialize", ossl_pkcs7_initialize, -1);

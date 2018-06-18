@@ -96,10 +96,10 @@ sockopt_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE voptname, VALU
     int level = rsock_level_arg(family, vlevel);
     int optname = rsock_optname_arg(family, level, voptname);
     StringValue(data);
-    rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
-    rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
-    rb_ivar_set(self, rb_intern("optname"), INT2NUM(optname));
-    rb_ivar_set(self, rb_intern("data"), data);
+    rb_ivar_set(self, rb_intern_lit("family"), INT2NUM(family));
+    rb_ivar_set(self, rb_intern_lit("level"), INT2NUM(level));
+    rb_ivar_set(self, rb_intern_lit("optname"), INT2NUM(optname));
+    rb_ivar_set(self, rb_intern_lit("data"), data);
     return self;
 }
 
@@ -124,13 +124,13 @@ rsock_sockopt_new(int family, int level, int optname, VALUE data)
 static VALUE
 sockopt_family_m(VALUE self)
 {
-    return rb_attr_get(self, rb_intern("family"));
+    return rb_attr_get(self, rb_intern_lit("family"));
 }
 
 static int
 sockopt_level(VALUE self)
 {
-    return NUM2INT(rb_attr_get(self, rb_intern("level")));
+    return NUM2INT(rb_attr_get(self, rb_intern_lit("level")));
 }
 
 /*
@@ -151,7 +151,7 @@ sockopt_level_m(VALUE self)
 static int
 sockopt_optname(VALUE self)
 {
-    return NUM2INT(rb_attr_get(self, rb_intern("optname")));
+    return NUM2INT(rb_attr_get(self, rb_intern_lit("optname")));
 }
 
 /*
@@ -182,7 +182,7 @@ sockopt_optname_m(VALUE self)
 static VALUE
 sockopt_data(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("data"));
+    VALUE v = rb_attr_get(self, rb_intern_lit("data"));
     StringValue(v);
     return v;
 }
@@ -1431,7 +1431,7 @@ sockopt_inspect(VALUE self)
 static VALUE
 sockopt_unpack(VALUE self, VALUE template)
 {
-    return rb_funcall(sockopt_data(self), rb_intern("unpack"), 1, template);
+    return rb_funcall(sockopt_data(self), rb_intern_lit("unpack"), 1, template);
 }
 
 void

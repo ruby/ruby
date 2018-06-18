@@ -527,7 +527,7 @@ finish_iseq_build(rb_iseq_t *iseq)
     if (RTEST(err)) {
 	VALUE path = pathobj_path(body->location.pathobj);
 	if (err == Qtrue) err = rb_exc_new_cstr(rb_eSyntaxError, "compile error");
-	rb_funcallv(err, rb_intern("set_backtrace"), 1, &path);
+	rb_funcallv(err, rb_intern_lit("set_backtrace"), 1, &path);
 	rb_exc_raise(err);
     }
 
@@ -662,9 +662,9 @@ rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_
 static inline rb_iseq_t *
 iseq_translate(rb_iseq_t *iseq)
 {
-    if (rb_respond_to(rb_cISeq, rb_intern("translate"))) {
+    if (rb_respond_to(rb_cISeq, rb_intern_lit("translate"))) {
 	VALUE v1 = iseqw_new(iseq);
-	VALUE v2 = rb_funcall(rb_cISeq, rb_intern("translate"), 1, v1);
+	VALUE v2 = rb_funcall(rb_cISeq, rb_intern_lit("translate"), 1, v1);
 	if (v1 != v2 && CLASS_OF(v2) == rb_cISeq) {
 	    iseq = (rb_iseq_t *)iseqw_check(v2);
 	}
@@ -714,7 +714,7 @@ rb_iseq_new_ifunc(const struct vm_ifunc *ifunc, VALUE name, VALUE path, VALUE re
 const rb_iseq_t *
 rb_iseq_load_iseq(VALUE fname)
 {
-    VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern("load_iseq"), 1, &fname);
+    VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern_lit("load_iseq"), 1, &fname);
 
     if (!SPECIAL_CONST_P(iseqv) && RBASIC_CLASS(iseqv) == rb_cISeq) {
 	return  iseqw_check(iseqv);
@@ -732,15 +732,15 @@ static inline VALUE CHECK_INTEGER(VALUE v) {(void)NUM2LONG(v); return v;}
 static enum iseq_type
 iseq_type_from_sym(VALUE type)
 {
-    const ID id_top = rb_intern("top");
-    const ID id_method = rb_intern("method");
-    const ID id_block = rb_intern("block");
-    const ID id_class = rb_intern("class");
-    const ID id_rescue = rb_intern("rescue");
-    const ID id_ensure = rb_intern("ensure");
-    const ID id_eval = rb_intern("eval");
-    const ID id_main = rb_intern("main");
-    const ID id_plain = rb_intern("plain");
+    const ID id_top = rb_intern_lit("top");
+    const ID id_method = rb_intern_lit("method");
+    const ID id_block = rb_intern_lit("block");
+    const ID id_class = rb_intern_lit("class");
+    const ID id_rescue = rb_intern_lit("rescue");
+    const ID id_ensure = rb_intern_lit("ensure");
+    const ID id_eval = rb_intern_lit("eval");
+    const ID id_main = rb_intern_lit("main");
+    const ID id_plain = rb_intern_lit("plain");
     /* ensure all symbols are static or pinned down before
      * conversion */
     const ID typeid = rb_check_id(&type);
@@ -803,7 +803,7 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
 	rb_raise(rb_eTypeError, "unsupport type: :%"PRIsVALUE, rb_sym2str(type));
     }
 
-    code_location = rb_hash_aref(misc, ID2SYM(rb_intern("code_location")));
+    code_location = rb_hash_aref(misc, ID2SYM(rb_intern_lit("code_location")));
     if (RB_TYPE_P(code_location, T_ARRAY) && RARRAY_LEN(code_location) == 4) {
 	tmp_loc.beg_pos.lineno = NUM2INT(rb_ary_entry(code_location, 0));
 	tmp_loc.beg_pos.column = NUM2INT(rb_ary_entry(code_location, 1));
@@ -2442,7 +2442,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 	    }
 	}
 	else {
-	    rb_ary_push(locals, ID2SYM(rb_intern("#arg_rest")));
+	    rb_ary_push(locals, ID2SYM(rb_intern_lit("#arg_rest")));
 	}
     }
 
@@ -2459,15 +2459,15 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		VALUE l = register_label(labels_table, iseq_body->param.opt_table[j]);
 		rb_ary_push(arg_opt_labels, l);
 	    }
-	    rb_hash_aset(params, ID2SYM(rb_intern("opt")), arg_opt_labels);
+	    rb_hash_aset(params, ID2SYM(rb_intern_lit("opt")), arg_opt_labels);
         }
 
 	/* commit */
-	if (iseq_body->param.flags.has_lead) rb_hash_aset(params, ID2SYM(rb_intern("lead_num")), INT2FIX(iseq_body->param.lead_num));
-	if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_num")), INT2FIX(iseq_body->param.post_num));
-	if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern("post_start")), INT2FIX(iseq_body->param.post_start));
-	if (iseq_body->param.flags.has_rest) rb_hash_aset(params, ID2SYM(rb_intern("rest_start")), INT2FIX(iseq_body->param.rest_start));
-	if (iseq_body->param.flags.has_block) rb_hash_aset(params, ID2SYM(rb_intern("block_start")), INT2FIX(iseq_body->param.block_start));
+	if (iseq_body->param.flags.has_lead) rb_hash_aset(params, ID2SYM(rb_intern_lit("lead_num")), INT2FIX(iseq_body->param.lead_num));
+	if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern_lit("post_num")), INT2FIX(iseq_body->param.post_num));
+	if (iseq_body->param.flags.has_post) rb_hash_aset(params, ID2SYM(rb_intern_lit("post_start")), INT2FIX(iseq_body->param.post_start));
+	if (iseq_body->param.flags.has_rest) rb_hash_aset(params, ID2SYM(rb_intern_lit("rest_start")), INT2FIX(iseq_body->param.rest_start));
+	if (iseq_body->param.flags.has_block) rb_hash_aset(params, ID2SYM(rb_intern_lit("block_start")), INT2FIX(iseq_body->param.block_start));
 	if (iseq_body->param.flags.has_kw) {
 	    VALUE keywords = rb_ary_new();
 	    int i, j;
@@ -2482,12 +2482,12 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		rb_ary_push(keywords, key);
 	    }
 
-	    rb_hash_aset(params, ID2SYM(rb_intern("kwbits")),
+	    rb_hash_aset(params, ID2SYM(rb_intern_lit("kwbits")),
 	                 INT2FIX(keyword->bits_start));
-	    rb_hash_aset(params, ID2SYM(rb_intern("keyword")), keywords);
+	    rb_hash_aset(params, ID2SYM(rb_intern_lit("keyword")), keywords);
 	}
-	if (iseq_body->param.flags.has_kwrest) rb_hash_aset(params, ID2SYM(rb_intern("kwrest")), INT2FIX(keyword->rest_start));
-	if (iseq_body->param.flags.ambiguous_param0) rb_hash_aset(params, ID2SYM(rb_intern("ambiguous_param0")), Qtrue);
+	if (iseq_body->param.flags.has_kwrest) rb_hash_aset(params, ID2SYM(rb_intern_lit("kwrest")), INT2FIX(keyword->rest_start));
+	if (iseq_body->param.flags.ambiguous_param0) rb_hash_aset(params, ID2SYM(rb_intern_lit("ambiguous_param0")), Qtrue);
     }
 
     /* body */
@@ -2545,8 +2545,8 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 		    VALUE e = rb_hash_new();
 		    int orig_argc = ci->orig_argc;
 
-		    rb_hash_aset(e, ID2SYM(rb_intern("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
-		    rb_hash_aset(e, ID2SYM(rb_intern("flag")), UINT2NUM(ci->flag));
+		    rb_hash_aset(e, ID2SYM(rb_intern_lit("mid")), ci->mid ? ID2SYM(ci->mid) : Qnil);
+		    rb_hash_aset(e, ID2SYM(rb_intern_lit("flag")), UINT2NUM(ci->flag));
 
 		    if (ci->flag & VM_CALL_KWARG) {
 			struct rb_call_info_with_kwarg *ci_kw = (struct rb_call_info_with_kwarg *)ci;
@@ -2557,10 +2557,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 			for (i = 0; i < ci_kw->kw_arg->keyword_len; i++) {
 			    rb_ary_push(kw, ci_kw->kw_arg->keywords[i]);
 			}
-			rb_hash_aset(e, ID2SYM(rb_intern("kw_arg")), kw);
+			rb_hash_aset(e, ID2SYM(rb_intern_lit("kw_arg")), kw);
 		    }
 
-		    rb_hash_aset(e, ID2SYM(rb_intern("orig_argc")),
+		    rb_hash_aset(e, ID2SYM(rb_intern_lit("orig_argc")),
 				INT2FIX(orig_argc));
 		    rb_ary_push(ary, e);
 	        }
@@ -2668,10 +2668,10 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 
     st_free_table(labels_table);
 
-    rb_hash_aset(misc, ID2SYM(rb_intern("arg_size")), INT2FIX(iseq_body->param.size));
-    rb_hash_aset(misc, ID2SYM(rb_intern("local_size")), INT2FIX(iseq_body->local_table_size));
-    rb_hash_aset(misc, ID2SYM(rb_intern("stack_max")), INT2FIX(iseq_body->stack_max));
-    rb_hash_aset(misc, ID2SYM(rb_intern("code_location")),
+    rb_hash_aset(misc, ID2SYM(rb_intern_lit("arg_size")), INT2FIX(iseq_body->param.size));
+    rb_hash_aset(misc, ID2SYM(rb_intern_lit("local_size")), INT2FIX(iseq_body->local_table_size));
+    rb_hash_aset(misc, ID2SYM(rb_intern_lit("stack_max")), INT2FIX(iseq_body->stack_max));
+    rb_hash_aset(misc, ID2SYM(rb_intern_lit("code_location")),
 	    rb_ary_new_from_args(4,
 		INT2FIX(iseq_body->location.code_location.beg_pos.lineno),
 		INT2FIX(iseq_body->location.code_location.beg_pos.column),

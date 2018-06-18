@@ -616,7 +616,7 @@ update_i(RB_BLOCK_CALL_FUNC_ARGLIST(pair, dbm))
 static VALUE
 fdbm_update(VALUE obj, VALUE other)
 {
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    rb_block_call(other, rb_intern_lit("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 
@@ -632,7 +632,7 @@ static VALUE
 fdbm_replace(VALUE obj, VALUE other)
 {
     fdbm_clear(obj);
-    rb_block_call(other, rb_intern("each_pair"), 0, 0, update_i, obj);
+    rb_block_call(other, rb_intern_lit("each_pair"), 0, 0, update_i, obj);
     return obj;
 }
 

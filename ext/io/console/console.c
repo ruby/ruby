@@ -900,7 +900,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	str = rb_funcallv(str, rb_intern("chomp!"), 0, 0);
+	str = rb_funcallv(str, rb_intern_lit("chomp!"), 0, 0);
     }
     return str;
 }
@@ -953,16 +953,16 @@ void
 Init_console(void)
 {
 #undef rb_intern
-    id_getc = rb_intern("getc");
+    id_getc = rb_intern_lit("getc");
 #if ENABLE_IO_GETPASS
-    id_gets = rb_intern("gets");
+    id_gets = rb_intern_lit("gets");
 #endif
-    id_console = rb_intern("console");
-    id_close = rb_intern("close");
-    id_min = rb_intern("min");
-    id_time = rb_intern("time");
+    id_console = rb_intern_lit("console");
+    id_close = rb_intern_lit("close");
+    id_min = rb_intern_lit("min");
+    id_time = rb_intern_lit("time");
 #ifndef HAVE_RB_F_SEND
-    id___send__ = rb_intern("__send__");
+    id___send__ = rb_intern_lit("__send__");
 #endif
     InitVM(console);
 }

@@ -121,8 +121,8 @@ foletype_s_ole_classes(VALUE self, VALUE typelib)
             "WIN32OLE_TYPE.ole_classes",
             "WIN32OLE_TYPELIB.new(typelib).ole_types");
     */
-    obj = rb_funcall(cWIN32OLE_TYPELIB, rb_intern("new"), 1, typelib);
-    return rb_funcall(obj, rb_intern("ole_types"), 0);
+    obj = rb_funcall(cWIN32OLE_TYPELIB, rb_intern_lit("new"), 1, typelib);
+    return rb_funcall(obj, rb_intern_lit("ole_types"), 0);
 }
 
 /*
@@ -186,7 +186,7 @@ oletype_set_member(VALUE self, ITypeInfo *pTypeInfo, VALUE name)
 {
     struct oletypedata *ptype;
     TypedData_Get_Struct(self, struct oletypedata, &oletype_datatype, ptype);
-    rb_ivar_set(self, rb_intern("name"), name);
+    rb_ivar_set(self, rb_intern_lit("name"), name);
     ptype->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     return self;
@@ -293,7 +293,7 @@ foletype_initialize(VALUE self, VALUE typelib, VALUE oleclass)
 static VALUE
 foletype_name(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("name"));
+    return rb_ivar_get(self, rb_intern_lit("name"));
 }
 
 static VALUE

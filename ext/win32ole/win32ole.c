@@ -381,9 +381,9 @@ static /* [local] */ HRESULT ( STDMETHODCALLTYPE Invoke )(
     }
     if (dispIdMember == DISPID_VALUE) {
         if (wFlags == DISPATCH_METHOD) {
-            mid = rb_intern("call");
+            mid = rb_intern_lit("call");
         } else if (wFlags & DISPATCH_PROPERTYGET) {
-            mid = rb_intern("value");
+            mid = rb_intern_lit("value");
         }
     }
     v = rb_funcallv(p->obj, mid, args, parg);
@@ -424,12 +424,12 @@ rbtime2vtdate(VALUE tmobj)
     double t;
     double nsec;
 
-    st.wYear = RB_FIX2INT(rb_funcall(tmobj, rb_intern("year"), 0));
-    st.wMonth = RB_FIX2INT(rb_funcall(tmobj, rb_intern("month"), 0));
-    st.wDay = RB_FIX2INT(rb_funcall(tmobj, rb_intern("mday"), 0));
-    st.wHour = RB_FIX2INT(rb_funcall(tmobj, rb_intern("hour"), 0));
-    st.wMinute = RB_FIX2INT(rb_funcall(tmobj, rb_intern("min"), 0));
-    st.wSecond = RB_FIX2INT(rb_funcall(tmobj, rb_intern("sec"), 0));
+    st.wYear = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &t);
 
@@ -438,7 +438,7 @@ rbtime2vtdate(VALUE tmobj)
      * wMilliseconds of SYSTEMTIME struct.
      * So, we need to calculate milliseconds by ourselves.
      */
-    nsec =  RB_FIX2INT(rb_funcall(tmobj, rb_intern("nsec"), 0));
+    nsec =  RB_FIX2INT(rb_funcall(tmobj, rb_intern_lit("nsec"), 0));
     nsec /= 1000000.0;
     nsec /= (24.0 * 3600.0);
     nsec /= 1000;
@@ -453,19 +453,19 @@ vtdate2rbtime(double date)
     double msec;
     double sec;
     VariantTimeToSystemTime(date, &st);
-    v = rb_funcall(rb_cTime, rb_intern("new"), 6,
+    v = rb_funcall(rb_cTime, rb_intern_lit("new"), 6,
 		      RB_INT2FIX(st.wYear),
 		      RB_INT2FIX(st.wMonth),
 		      RB_INT2FIX(st.wDay),
 		      RB_INT2FIX(st.wHour),
 		      RB_INT2FIX(st.wMinute),
 		      RB_INT2FIX(st.wSecond));
-    st.wYear = RB_FIX2INT(rb_funcall(v, rb_intern("year"), 0));
-    st.wMonth = RB_FIX2INT(rb_funcall(v, rb_intern("month"), 0));
-    st.wDay = RB_FIX2INT(rb_funcall(v, rb_intern("mday"), 0));
-    st.wHour = RB_FIX2INT(rb_funcall(v, rb_intern("hour"), 0));
-    st.wMinute = RB_FIX2INT(rb_funcall(v, rb_intern("min"), 0));
-    st.wSecond = RB_FIX2INT(rb_funcall(v, rb_intern("sec"), 0));
+    st.wYear = RB_FIX2INT(rb_funcall(v, rb_intern_lit("year"), 0));
+    st.wMonth = RB_FIX2INT(rb_funcall(v, rb_intern_lit("month"), 0));
+    st.wDay = RB_FIX2INT(rb_funcall(v, rb_intern_lit("mday"), 0));
+    st.wHour = RB_FIX2INT(rb_funcall(v, rb_intern_lit("hour"), 0));
+    st.wMinute = RB_FIX2INT(rb_funcall(v, rb_intern_lit("min"), 0));
+    st.wSecond = RB_FIX2INT(rb_funcall(v, rb_intern_lit("sec"), 0));
     st.wMilliseconds = 0;
     SystemTimeToVariantTime(&st, &sec);
     /*
@@ -481,7 +481,7 @@ vtdate2rbtime(double date)
         msec -= 60;
     }
     if (msec != 0) {
-        return rb_funcall(v, rb_intern("+"), 1, rb_float_new(msec));
+        return rb_funcall(v, rb_intern_lit("+"), 1, rb_float_new(msec));
     }
     return v;
 }
@@ -1344,7 +1344,7 @@ make_inspect(const char *class_name, VALUE detail)
 VALUE
 default_inspect(VALUE self, const char *class_name)
 {
-    VALUE detail = rb_funcall(self, rb_intern("to_s"), 0);
+    VALUE detail = rb_funcall(self, rb_intern_lit("to_s"), 0);
     return make_inspect(class_name, detail);
 }
 
@@ -2207,13 +2207,13 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "11", &target, &helpcontext);
     if (rb_obj_is_kind_of(target, cWIN32OLE_TYPE) ||
         rb_obj_is_kind_of(target, cWIN32OLE_METHOD)) {
-        helpfile = rb_funcall(target, rb_intern("helpfile"), 0);
+        helpfile = rb_funcall(target, rb_intern_lit("helpfile"), 0);
         if(strlen(StringValuePtr(helpfile)) == 0) {
-            name = rb_ivar_get(target, rb_intern("name"));
+            name = rb_ivar_get(target, rb_intern_lit("name"));
             rb_raise(rb_eRuntimeError, "no helpfile of `%s'",
                      StringValuePtr(name));
         }
-        helpcontext = rb_funcall(target, rb_intern("helpcontext"), 0);
+        helpcontext = rb_funcall(target, rb_intern_lit("helpcontext"), 0);
     } else {
         helpfile = target;
     }
@@ -2582,7 +2582,7 @@ hash2named_arg(VALUE key, VALUE val, VALUE pop)
 static VALUE
 set_argv(VARIANTARG* realargs, unsigned int beg, unsigned int end)
 {
-    VALUE argv = rb_const_get(cWIN32OLE, rb_intern("ARGV"));
+    VALUE argv = rb_const_get(cWIN32OLE, rb_intern_lit("ARGV"));
 
     Check_Type(argv, T_ARRAY);
     rb_ary_clear(argv);

@@ -533,7 +533,7 @@ rb_digest_class_init(VALUE self)
  *  };
  *
  *
- *  rb_ivar_set(cDigest_SHA1, rb_intern("metadata"),
+ *  rb_ivar_set(cDigest_SHA1, rb_intern_lit("metadata"),
  *		Data_Wrap_Struct(0, 0, 0, (void *)&sha1));
  */
 
@@ -729,12 +729,12 @@ void
 Init_digest(void)
 {
 #undef rb_intern
-    id_reset           = rb_intern("reset");
-    id_update          = rb_intern("update");
-    id_finish          = rb_intern("finish");
-    id_digest          = rb_intern("digest");
-    id_hexdigest       = rb_intern("hexdigest");
-    id_digest_length   = rb_intern("digest_length");
+    id_reset           = rb_intern_lit("reset");
+    id_update          = rb_intern_lit("update");
+    id_finish          = rb_intern_lit("finish");
+    id_digest          = rb_intern_lit("digest");
+    id_hexdigest       = rb_intern_lit("hexdigest");
+    id_digest_length   = rb_intern_lit("digest_length");
 
     /*
      * module Digest
@@ -782,7 +782,7 @@ Init_digest(void)
     rb_define_singleton_method(rb_cDigest_Class, "digest", rb_digest_class_s_digest, -1);
     rb_define_singleton_method(rb_cDigest_Class, "hexdigest", rb_digest_class_s_hexdigest, -1);
 
-    id_metadata = rb_intern("metadata");
+    id_metadata = rb_intern_lit("metadata");
 
     /* class Digest::Base < Digest::Class */
     rb_cDigest_Base = rb_define_class_under(rb_mDigest, "Base", rb_cDigest_Class);

@@ -205,9 +205,9 @@ bsock_setsockopt(int argc, VALUE *argv, VALUE sock)
     int vlen;
 
     if (argc == 1) {
-        lev = rb_funcall(argv[0], rb_intern("level"), 0);
-        optname = rb_funcall(argv[0], rb_intern("optname"), 0);
-        val = rb_funcall(argv[0], rb_intern("data"), 0);
+        lev = rb_funcall(argv[0], rb_intern_lit("level"), 0);
+        optname = rb_funcall(argv[0], rb_intern_lit("optname"), 0);
+        val = rb_funcall(argv[0], rb_intern_lit("data"), 0);
     }
     else {
         rb_scan_args(argc, argv, "30", &lev, &optname, &val);

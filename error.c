@@ -382,13 +382,13 @@ rb_warn_m(int argc, VALUE *argv, VALUE exc)
 		str = rb_str_tmp_new(0);
 	    }
 	    else if (NIL_P(location) ||
-		     NIL_P(path = rb_funcall(location, rb_intern("path"), 0))) {
+		     NIL_P(path = rb_funcall(location, rb_intern_lit("path"), 0))) {
 		str = rb_str_new_cstr("warning: ");
 	    }
 	    else {
 		str = rb_sprintf("%s:%ld: warning: ",
 		    rb_string_value_ptr(&path),
-		    NUM2LONG(rb_funcall(location, rb_intern("lineno"), 0)));
+		    NUM2LONG(rb_funcall(location, rb_intern_lit("lineno"), 0)));
 	    }
 	    RBASIC_SET_CLASS(str, rb_cWarningBuffer);
 	    rb_io_puts(argc, argv, str);

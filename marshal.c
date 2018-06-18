@@ -552,7 +552,7 @@ w_uclass(VALUE obj, VALUE super, struct dump_arg *arg)
     }
 }
 
-#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern("E") || !rb_id2str(id))
+#define to_be_skipped_id(id) (id == rb_id_encoding() || id == rb_intern_lit("E") || !rb_id2str(id))
 
 static int
 w_obj_each(st_data_t key, st_data_t val, st_data_t a)
@@ -611,7 +611,7 @@ w_encoding(VALUE encname, struct dump_call_arg *arg)
     switch (encname) {
       case Qfalse:
       case Qtrue:
-	w_symbol(ID2SYM(rb_intern("E")), arg->arg);
+	w_symbol(ID2SYM(rb_intern_lit("E")), arg->arg);
 	w_object(encname, arg->arg, limit);
       case Qnil:
 	return;

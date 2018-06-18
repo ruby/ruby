@@ -4000,7 +4000,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    }
 			    else {
 				ADD_SEND(ret, line, id_core_hash_merge_kwd, nhash);
-				if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern("dup"), INT2FIX(0));
+				if (nhash == INT2FIX(1)) ADD_SEND(ret, line, rb_intern_lit("dup"), INT2FIX(0));
 			    }
 			}
 			first = 0;
@@ -5303,7 +5303,7 @@ compile_for_masgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
     ADD_CALL(ret, line, idAREF, INT2FIX(1));
     ADD_INSN1(ret, line, putobject, rb_cArray);
     ADD_INSN(ret, line, swap);
-    ADD_CALL(ret, line, rb_intern("try_convert"), INT2FIX(1));
+    ADD_CALL(ret, line, rb_intern_lit("try_convert"), INT2FIX(1));
     ADD_INSN(ret, line, dup);
     ADD_INSNL(ret, line, branchunless, not_ary);
     ADD_INSN(ret, line, swap);
@@ -6602,7 +6602,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		if (local_body->param.flags.has_kwrest) {
 		    int idx = local_body->local_table_size - local_kwd->rest_start;
 		    ADD_GETLOCAL(args, line, idx, lvar_level);
-		    ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
+		    ADD_SEND (args, line, rb_intern_lit("dup"), INT2FIX(0));
 		}
 		else {
 		    ADD_INSN1(args, line, newhash, INT2FIX(0));
@@ -6624,7 +6624,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		int idx = local_body->local_table_size - local_kwd->rest_start;
 		ADD_GETLOCAL(args, line, idx, lvar_level);
 
-		ADD_SEND (args, line, rb_intern("dup"), INT2FIX(0));
+		ADD_SEND (args, line, rb_intern_lit("dup"), INT2FIX(0));
 		if (local_body->param.flags.has_rest) {
 		    ADD_INSN1(args, line, newarray, INT2FIX(1));
 		    ADD_INSN (args, line, concatarray);
@@ -7682,12 +7682,12 @@ get_exception_sym2type(VALUE sym)
     static VALUE symBreak, symRedo, symNext;
 
     if (symRescue == 0) {
-	symRescue = ID2SYM(rb_intern("rescue"));
-	symEnsure = ID2SYM(rb_intern("ensure"));
-	symRetry  = ID2SYM(rb_intern("retry"));
-	symBreak  = ID2SYM(rb_intern("break"));
-	symRedo   = ID2SYM(rb_intern("redo"));
-	symNext   = ID2SYM(rb_intern("next"));
+	symRescue = ID2SYM(rb_intern_lit("rescue"));
+	symEnsure = ID2SYM(rb_intern_lit("ensure"));
+	symRetry  = ID2SYM(rb_intern_lit("retry"));
+	symBreak  = ID2SYM(rb_intern_lit("break"));
+	symRedo   = ID2SYM(rb_intern_lit("redo"));
+	symNext   = ID2SYM(rb_intern_lit("next"));
     }
 
     if (sym == symRescue) return CATCH_TYPE_RESCUE;
@@ -7790,10 +7790,10 @@ iseq_build_callinfo_from_hash(rb_iseq_t *iseq, VALUE op)
     struct rb_call_info_kw_arg *kw_arg = 0;
 
     if (!NIL_P(op)) {
-	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern("mid")));
-	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern("flag")));
-	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern("orig_argc")));
-	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern("kw_arg")));
+	VALUE vmid = rb_hash_aref(op, ID2SYM(rb_intern_lit("mid")));
+	VALUE vflag = rb_hash_aref(op, ID2SYM(rb_intern_lit("flag")));
+	VALUE vorig_argc = rb_hash_aref(op, ID2SYM(rb_intern_lit("orig_argc")));
+	VALUE vkw_arg = rb_hash_aref(op, ID2SYM(rb_intern_lit("kw_arg")));
 
 	if (!NIL_P(vmid)) mid = SYM2ID(vmid);
 	if (!NIL_P(vflag)) flag = NUM2UINT(vflag);
@@ -8082,7 +8082,7 @@ rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc, VALUE locals, VALUE params,
     VALUE labels_wrapper = Data_Wrap_Struct(0, 0, st_free_table, labels_table);
     VALUE arg_opt_labels = rb_hash_aref(params, SYM(opt));
     VALUE keywords = rb_hash_aref(params, SYM(keyword));
-    VALUE sym_arg_rest = ID2SYM(rb_intern("#arg_rest"));
+    VALUE sym_arg_rest = ID2SYM(rb_intern_lit("#arg_rest"));
     DECL_ANCHOR(anchor);
     INIT_ANCHOR(anchor);
 

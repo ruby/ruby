@@ -3738,7 +3738,7 @@ rb_io_lines(int argc, VALUE *argv, VALUE io)
 {
     rb_warn("IO#lines is deprecated; use #each_line instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_line")), argc, argv);
+	return rb_enumeratorize(io, ID2SYM(rb_intern_lit("each_line")), argc, argv);
     return rb_io_each_line(argc, argv, io);
 }
 
@@ -3789,7 +3789,7 @@ rb_io_bytes(VALUE io)
 {
     rb_warn("IO#bytes is deprecated; use #each_byte instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_byte")), 0, 0);
+	return rb_enumeratorize(io, ID2SYM(rb_intern_lit("each_byte")), 0, 0);
     return rb_io_each_byte(io);
 }
 
@@ -3943,7 +3943,7 @@ rb_io_chars(VALUE io)
 {
     rb_warn("IO#chars is deprecated; use #each_char instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_char")), 0, 0);
+	return rb_enumeratorize(io, ID2SYM(rb_intern_lit("each_char")), 0, 0);
     return rb_io_each_char(io);
 }
 
@@ -4071,7 +4071,7 @@ rb_io_codepoints(VALUE io)
 {
     rb_warn("IO#codepoints is deprecated; use #each_codepoint instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(io, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+	return rb_enumeratorize(io, ID2SYM(rb_intern_lit("each_codepoint")), 0, 0);
     return rb_io_each_codepoint(io);
 }
 
@@ -4767,7 +4767,7 @@ rb_io_close_m(VALUE io)
 static VALUE
 io_call_close(VALUE io)
 {
-    rb_check_funcall(io, rb_intern("close"), 0, 0);
+    rb_check_funcall(io, rb_intern_lit("close"), 0, 0);
     return io;
 }
 
@@ -4787,7 +4787,7 @@ ignore_closed_stream(VALUE io, VALUE exc)
 static VALUE
 io_close(VALUE io)
 {
-    VALUE closed = rb_check_funcall(io, rb_intern("closed?"), 0, 0);
+    VALUE closed = rb_check_funcall(io, rb_intern_lit("closed?"), 0, 0);
     if (closed != Qundef && RTEST(closed)) return io;
     rb_rescue2(io_call_close, io, ignore_closed_stream, io,
 	       rb_eIOError, (VALUE)0);
@@ -6651,7 +6651,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
         write_fptr->mode = (fmode & ~FMODE_READABLE)| FMODE_SYNC|FMODE_DUPLEX;
         fptr->mode &= ~FMODE_WRITABLE;
         fptr->tied_io_for_writing = write_port;
-        rb_ivar_set(port, rb_intern("@tied_io_for_writing"), write_port);
+        rb_ivar_set(port, rb_intern_lit("@tied_io_for_writing"), write_port);
     }
 
 #if defined (__CYGWIN__) || !defined(HAVE_WORKING_FORK)
@@ -7392,7 +7392,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     if (io != write_io) {
         write_io = rb_obj_dup(write_io);
         fptr->tied_io_for_writing = write_io;
-        rb_ivar_set(dest, rb_intern("@tied_io_for_writing"), write_io);
+        rb_ivar_set(dest, rb_intern_lit("@tied_io_for_writing"), write_io);
     }
 
     return dest;
@@ -7574,7 +7574,7 @@ rb_f_putc(VALUE recv, VALUE ch)
     if (recv == rb_stdout) {
 	return rb_io_putc(recv, ch);
     }
-    return rb_funcallv(rb_stdout, rb_intern("putc"), 1, &ch);
+    return rb_funcallv(rb_stdout, rb_intern_lit("putc"), 1, &ch);
 }
 
 
@@ -7688,7 +7688,7 @@ rb_f_puts(int argc, VALUE *argv, VALUE recv)
     if (recv == rb_stdout) {
 	return rb_io_puts(argc, argv, recv);
     }
-    return rb_funcallv(rb_stdout, rb_intern("puts"), argc, argv);
+    return rb_funcallv(rb_stdout, rb_intern_lit("puts"), argc, argv);
 }
 
 void
@@ -8801,7 +8801,7 @@ rb_f_readline(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readline(argc, argv, argf);
     }
-    return rb_funcallv(argf, rb_intern("readline"), argc, argv);
+    return rb_funcallv(argf, rb_intern_lit("readline"), argc, argv);
 }
 
 
@@ -8855,7 +8855,7 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
     if (recv == argf) {
 	return argf_readlines(argc, argv, argf);
     }
-    return rb_funcallv(argf, rb_intern("readlines"), argc, argv);
+    return rb_funcallv(argf, rb_intern_lit("readlines"), argc, argv);
 }
 
 /*
@@ -8883,7 +8883,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
     ary = rb_ary_new();
     while (next_argv()) {
 	if (ARGF_GENERIC_INPUT_P()) {
-	    lines = rb_funcall3(ARGF.current_file, rb_intern("readlines"), argc, argv);
+	    lines = rb_funcall3(ARGF.current_file, rb_intern_lit("readlines"), argc, argv);
 	}
 	else {
 	    lines = rb_io_readlines(argc, argv, ARGF.current_file);
@@ -11275,7 +11275,7 @@ copy_stream_body(VALUE arg)
     if (src_io == argf ||
 	!(RB_TYPE_P(src_io, T_FILE) ||
 	  RB_TYPE_P(src_io, T_STRING) ||
-	  rb_respond_to(src_io, rb_intern("to_path")))) {
+	  rb_respond_to(src_io, rb_intern_lit("to_path")))) {
 	src_fd = -1;
     }
     else {
@@ -11301,7 +11301,7 @@ copy_stream_body(VALUE arg)
     if (dst_io == argf ||
 	!(RB_TYPE_P(dst_io, T_FILE) ||
 	  RB_TYPE_P(dst_io, T_STRING) ||
-	  rb_respond_to(dst_io, rb_intern("to_path")))) {
+	  rb_respond_to(dst_io, rb_intern_lit("to_path")))) {
 	dst_fd = -1;
     }
     else {
@@ -12034,7 +12034,7 @@ argf_getc(VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (ARGF_GENERIC_INPUT_P()) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getc"), 0, 0);
+	ch = rb_funcall3(ARGF.current_file, rb_intern_lit("getc"), 0, 0);
     }
     else {
 	ch = rb_io_getc(ARGF.current_file);
@@ -12074,7 +12074,7 @@ argf_getbyte(VALUE argf)
   retry:
     if (!next_argv()) return Qnil;
     if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getbyte"), 0, 0);
+	ch = rb_funcall3(ARGF.current_file, rb_intern_lit("getbyte"), 0, 0);
     }
     else {
 	ch = rb_io_getbyte(ARGF.current_file);
@@ -12114,7 +12114,7 @@ argf_readchar(VALUE argf)
   retry:
     if (!next_argv()) rb_eof_error();
     if (!RB_TYPE_P(ARGF.current_file, T_FILE)) {
-	ch = rb_funcall3(ARGF.current_file, rb_intern("getc"), 0, 0);
+	ch = rb_funcall3(ARGF.current_file, rb_intern_lit("getc"), 0, 0);
     }
     else {
 	ch = rb_io_getc(ARGF.current_file);
@@ -12232,7 +12232,7 @@ argf_each_line(int argc, VALUE *argv, VALUE argf)
 {
     RETURN_ENUMERATOR(argf, argc, argv);
     FOREACH_ARGF() {
-	argf_block_call_line(rb_intern("each_line"), argc, argv, argf);
+	argf_block_call_line(rb_intern_lit("each_line"), argc, argv, argf);
     }
     return argf;
 }
@@ -12246,7 +12246,7 @@ argf_lines(int argc, VALUE *argv, VALUE argf)
 {
     rb_warn("ARGF#lines is deprecated; use #each_line instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_line")), argc, argv);
+	return rb_enumeratorize(argf, ID2SYM(rb_intern_lit("each_line")), argc, argv);
     return argf_each_line(argc, argv, argf);
 }
 
@@ -12279,7 +12279,7 @@ argf_each_byte(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	argf_block_call(rb_intern("each_byte"), 0, 0, argf);
+	argf_block_call(rb_intern_lit("each_byte"), 0, 0, argf);
     }
     return argf;
 }
@@ -12293,7 +12293,7 @@ argf_bytes(VALUE argf)
 {
     rb_warn("ARGF#bytes is deprecated; use #each_byte instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_byte")), 0, 0);
+	return rb_enumeratorize(argf, ID2SYM(rb_intern_lit("each_byte")), 0, 0);
     return argf_each_byte(argf);
 }
 
@@ -12318,7 +12318,7 @@ argf_each_char(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	argf_block_call(rb_intern("each_char"), 0, 0, argf);
+	argf_block_call(rb_intern_lit("each_char"), 0, 0, argf);
     }
     return argf;
 }
@@ -12332,7 +12332,7 @@ argf_chars(VALUE argf)
 {
     rb_warn("ARGF#chars is deprecated; use #each_char instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_char")), 0, 0);
+	return rb_enumeratorize(argf, ID2SYM(rb_intern_lit("each_char")), 0, 0);
     return argf_each_char(argf);
 }
 
@@ -12357,7 +12357,7 @@ argf_each_codepoint(VALUE argf)
 {
     RETURN_ENUMERATOR(argf, 0, 0);
     FOREACH_ARGF() {
-	argf_block_call(rb_intern("each_codepoint"), 0, 0, argf);
+	argf_block_call(rb_intern_lit("each_codepoint"), 0, 0, argf);
     }
     return argf;
 }
@@ -12371,7 +12371,7 @@ argf_codepoints(VALUE argf)
 {
     rb_warn("ARGF#codepoints is deprecated; use #each_codepoint instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(argf, ID2SYM(rb_intern("each_codepoint")), 0, 0);
+	return rb_enumeratorize(argf, ID2SYM(rb_intern_lit("each_codepoint")), 0, 0);
     return argf_each_codepoint(argf);
 }
 
@@ -12921,12 +12921,12 @@ Init_IO(void)
     rb_eIOError = rb_define_class("IOError", rb_eStandardError);
     rb_eEOFError = rb_define_class("EOFError", rb_eIOError);
 
-    id_write = rb_intern("write");
-    id_read = rb_intern("read");
-    id_getc = rb_intern("getc");
-    id_flush = rb_intern("flush");
-    id_readpartial = rb_intern("readpartial");
-    id_set_encoding = rb_intern("set_encoding");
+    id_write = rb_intern_lit("write");
+    id_read = rb_intern_lit("read");
+    id_getc = rb_intern_lit("getc");
+    id_flush = rb_intern_lit("flush");
+    id_readpartial = rb_intern_lit("readpartial");
+    id_set_encoding = rb_intern_lit("set_encoding");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 
@@ -13240,31 +13240,31 @@ Init_IO(void)
 
     rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
-    sym_mode = ID2SYM(rb_intern("mode"));
-    sym_perm = ID2SYM(rb_intern("perm"));
-    sym_flags = ID2SYM(rb_intern("flags"));
-    sym_extenc = ID2SYM(rb_intern("external_encoding"));
-    sym_intenc = ID2SYM(rb_intern("internal_encoding"));
+    sym_mode = ID2SYM(rb_intern_lit("mode"));
+    sym_perm = ID2SYM(rb_intern_lit("perm"));
+    sym_flags = ID2SYM(rb_intern_lit("flags"));
+    sym_extenc = ID2SYM(rb_intern_lit("external_encoding"));
+    sym_intenc = ID2SYM(rb_intern_lit("internal_encoding"));
     sym_encoding = ID2SYM(rb_id_encoding());
-    sym_open_args = ID2SYM(rb_intern("open_args"));
-    sym_textmode = ID2SYM(rb_intern("textmode"));
-    sym_binmode = ID2SYM(rb_intern("binmode"));
-    sym_autoclose = ID2SYM(rb_intern("autoclose"));
-    sym_normal = ID2SYM(rb_intern("normal"));
-    sym_sequential = ID2SYM(rb_intern("sequential"));
-    sym_random = ID2SYM(rb_intern("random"));
-    sym_willneed = ID2SYM(rb_intern("willneed"));
-    sym_dontneed = ID2SYM(rb_intern("dontneed"));
-    sym_noreuse = ID2SYM(rb_intern("noreuse"));
-    sym_SET = ID2SYM(rb_intern("SET"));
-    sym_CUR = ID2SYM(rb_intern("CUR"));
-    sym_END = ID2SYM(rb_intern("END"));
+    sym_open_args = ID2SYM(rb_intern_lit("open_args"));
+    sym_textmode = ID2SYM(rb_intern_lit("textmode"));
+    sym_binmode = ID2SYM(rb_intern_lit("binmode"));
+    sym_autoclose = ID2SYM(rb_intern_lit("autoclose"));
+    sym_normal = ID2SYM(rb_intern_lit("normal"));
+    sym_sequential = ID2SYM(rb_intern_lit("sequential"));
+    sym_random = ID2SYM(rb_intern_lit("random"));
+    sym_willneed = ID2SYM(rb_intern_lit("willneed"));
+    sym_dontneed = ID2SYM(rb_intern_lit("dontneed"));
+    sym_noreuse = ID2SYM(rb_intern_lit("noreuse"));
+    sym_SET = ID2SYM(rb_intern_lit("SET"));
+    sym_CUR = ID2SYM(rb_intern_lit("CUR"));
+    sym_END = ID2SYM(rb_intern_lit("END"));
 #ifdef SEEK_DATA
-    sym_DATA = ID2SYM(rb_intern("DATA"));
+    sym_DATA = ID2SYM(rb_intern_lit("DATA"));
 #endif
 #ifdef SEEK_HOLE
-    sym_HOLE = ID2SYM(rb_intern("HOLE"));
+    sym_HOLE = ID2SYM(rb_intern_lit("HOLE"));
 #endif
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_readable = ID2SYM(rb_intern_lit("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern_lit("wait_writable"));
 }

@@ -151,8 +151,8 @@ max(int a, int b)
 #define add(x,y) (rb_funcall((x), '+', 1, (y)))
 #define sub(x,y) (rb_funcall((x), '-', 1, (y)))
 #define mul(x,y) (rb_funcall((x), '*', 1, (y)))
-#define quo(x,y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
-#define div(x,y) (rb_funcall((x), rb_intern("div"), 1, (y)))
+#define quo(x,y) (rb_funcall((x), rb_intern_lit("quo"), 1, (y)))
+#define div(x,y) (rb_funcall((x), rb_intern_lit("div"), 1, (y)))
 #define mod(x,y) (rb_funcall((x), '%', 1, (y)))
 
 /* strftime --- produce formatted time */
@@ -538,7 +538,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				off = 0;
 			}
 			else {
-				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern("round"), 0));
+				off = NUM2LONG(rb_funcall(vtm->utc_offset, rb_intern_lit("round"), 0));
 			}
 			if (off < 0) {
 				off = -off;

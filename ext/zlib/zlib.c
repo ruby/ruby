@@ -3989,7 +3989,7 @@ rb_gzreader_bytes(VALUE obj)
 {
     rb_warn("Zlib::GzipReader#bytes is deprecated; use #each_byte instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(obj, ID2SYM(rb_intern("each_byte")), 0, 0);
+	return rb_enumeratorize(obj, ID2SYM(rb_intern_lit("each_byte")), 0, 0);
     return rb_gzreader_each_byte(obj);
 }
 
@@ -4275,7 +4275,7 @@ rb_gzreader_lines(int argc, VALUE *argv, VALUE obj)
 {
     rb_warn("Zlib::GzipReader#lines is deprecated; use #each_line instead");
     if (!rb_block_given_p())
-	return rb_enumeratorize(obj, ID2SYM(rb_intern("each_line")), argc, argv);
+	return rb_enumeratorize(obj, ID2SYM(rb_intern_lit("each_line")), argc, argv);
     return rb_gzreader_each(argc, argv, obj);
 }
 
@@ -4485,7 +4485,7 @@ Init_zlib(void)
 
     mZlib = rb_define_module("Zlib");
 
-    id_dictionaries = rb_intern("@dictionaries");
+    id_dictionaries = rb_intern_lit("@dictionaries");
 
     cZError = rb_define_class_under(mZlib, "Error", rb_eStandardError);
     cStreamEnd    = rb_define_class_under(mZlib, "StreamEnd", cZError);
@@ -4658,14 +4658,14 @@ Init_zlib(void)
     rb_define_const(mZlib, "FINISH", INT2FIX(Z_FINISH));
 
 #if GZIP_SUPPORT
-    id_write = rb_intern("write");
-    id_read = rb_intern("read");
-    id_readpartial = rb_intern("readpartial");
-    id_flush = rb_intern("flush");
-    id_seek = rb_intern("seek");
-    id_close = rb_intern("close");
-    id_path = rb_intern("path");
-    id_input = rb_intern("@input");
+    id_write = rb_intern_lit("write");
+    id_read = rb_intern_lit("read");
+    id_readpartial = rb_intern_lit("readpartial");
+    id_flush = rb_intern_lit("flush");
+    id_seek = rb_intern_lit("seek");
+    id_close = rb_intern_lit("close");
+    id_path = rb_intern_lit("path");
+    id_input = rb_intern_lit("@input");
 
     cGzipFile = rb_define_class_under(mZlib, "GzipFile", rb_cObject);
     cGzError = rb_define_class_under(cGzipFile, "Error", cZError);
@@ -4779,8 +4779,8 @@ Init_zlib(void)
     /* OS code for unknown hosts */
     rb_define_const(mZlib, "OS_UNKNOWN", INT2FIX(OS_UNKNOWN));
 
-    id_level = rb_intern("level");
-    id_strategy = rb_intern("strategy");
+    id_level = rb_intern_lit("level");
+    id_strategy = rb_intern_lit("strategy");
 #endif /* GZIP_SUPPORT */
 }
 
@@ -4901,5 +4901,3 @@ Init_zlib(void)
  * Raised when the data length recorded in the gzip file footer is not equivalent
  * to the length of the actual uncompressed data.
  */
-
-

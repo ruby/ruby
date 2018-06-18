@@ -1100,7 +1100,7 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 	if (b == Qundef) return (int)Qfalse;
 	e = rb_check_funcall(range, id_end, 0, 0);
 	if (e == Qundef) return (int)Qfalse;
-	x = rb_check_funcall(range, rb_intern("exclude_end?"), 0, 0);
+	x = rb_check_funcall(range, rb_intern_lit("exclude_end?"), 0, 0);
 	if (x == Qundef) return (int)Qfalse;
 	excl = RTEST(x);
     }
@@ -1433,9 +1433,9 @@ Init_Range(void)
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
 
-    id_beg = rb_intern("begin");
-    id_end = rb_intern("end");
-    id_excl = rb_intern("excl");
+    id_beg = rb_intern_lit("begin");
+    id_end = rb_intern_lit("end");
+    id_excl = rb_intern_lit("excl");
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,

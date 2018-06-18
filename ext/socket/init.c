@@ -811,9 +811,9 @@ rsock_init_socket_init(void)
     rsock_init_socket_constants();
 
 #undef rb_intern
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
+    sym_wait_readable = ID2SYM(rb_intern_lit("wait_readable"));
 
 #if MSG_DONTWAIT_RELIABLE
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_writable = ID2SYM(rb_intern_lit("wait_writable"));
 #endif
 }

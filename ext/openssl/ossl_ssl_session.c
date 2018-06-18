@@ -145,7 +145,7 @@ ossl_ssl_session_get_time(VALUE self)
     if (t == 0)
 	return Qnil;
 
-    return rb_funcall(rb_cTime, rb_intern("at"), 1, LONG2NUM(t));
+    return rb_funcall(rb_cTime, rb_intern_lit("at"), 1, LONG2NUM(t));
 }
 
 /*
@@ -183,7 +183,7 @@ static VALUE ossl_ssl_session_set_time(VALUE self, VALUE time_v)
 
 	GetSSLSession(self, ctx);
 	if (rb_obj_is_instance_of(time_v, rb_cTime)) {
-		time_v = rb_funcall(time_v, rb_intern("to_i"), 0);
+		time_v = rb_funcall(time_v, rb_intern_lit("to_i"), 0);
 	}
 	t = NUM2LONG(time_v);
 	SSL_SESSION_set_time(ctx, t);

@@ -2594,8 +2594,8 @@ dir_glob_options(VALUE opt, VALUE *base, int *flags)
 {
     ID kw[2];
     VALUE args[2];
-    kw[0] = rb_intern("base");
-    if (flags) kw[1] = rb_intern("flags");
+    kw[0] = rb_intern_lit("base");
+    if (flags) kw[1] = rb_intern_lit("flags");
     rb_get_kwargs(opt, kw, 0, flags ? 2 : 1, args);
     if (args[0] == Qundef || NIL_P(args[0])) {
 	*base = Qnil;
@@ -2756,7 +2756,7 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
 static VALUE
 dir_open_dir(int argc, VALUE *argv)
 {
-    VALUE dir = rb_funcallv(rb_cDir, rb_intern("open"), argc, argv);
+    VALUE dir = rb_funcallv(rb_cDir, rb_intern_lit("open"), argc, argv);
 
     rb_check_typeddata(dir, &dir_data_type);
     return dir;

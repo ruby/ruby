@@ -231,7 +231,7 @@ olemethod_set_member(VALUE self, ITypeInfo *pTypeInfo, ITypeInfo *pOwnerTypeInfo
     pmethod->pOwnerTypeInfo = pOwnerTypeInfo;
     OLE_ADDREF(pOwnerTypeInfo);
     pmethod->index = index;
-    rb_ivar_set(self, rb_intern("name"), name);
+    rb_ivar_set(self, rb_intern_lit("name"), name);
     return self;
 }
 
@@ -296,7 +296,7 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
 static VALUE
 folemethod_name(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("name"));
+    return rb_ivar_get(self, rb_intern_lit("name"));
 }
 
 static VALUE
@@ -592,7 +592,7 @@ folemethod_event(VALUE self)
         return Qfalse;
     return ole_method_event(pmethod->pOwnerTypeInfo,
                             pmethod->index,
-                            rb_ivar_get(self, rb_intern("name")));
+                            rb_ivar_get(self, rb_intern_lit("name")));
 }
 
 /*

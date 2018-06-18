@@ -1180,8 +1180,8 @@ Init_load(void)
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
     rb_define_hooked_variable(var_load_path, (VALUE*)vm, load_path_getter, rb_gvar_readonly_setter);
-    rb_alias_variable(rb_intern("$-I"), id_load_path);
-    rb_alias_variable(rb_intern("$LOAD_PATH"), id_load_path);
+    rb_alias_variable(rb_intern_lit("$-I"), id_load_path);
+    rb_alias_variable(rb_intern_lit("$LOAD_PATH"), id_load_path);
     vm->load_path = rb_ary_new();
     vm->expanded_load_path = rb_ary_tmp_new(0);
     vm->load_path_snapshot = rb_ary_tmp_new(0);

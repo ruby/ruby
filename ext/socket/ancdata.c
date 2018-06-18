@@ -79,10 +79,10 @@ ancillary_initialize(VALUE self, VALUE vfamily, VALUE vlevel, VALUE vtype, VALUE
     int level = rsock_level_arg(family, vlevel);
     int type = rsock_cmsg_type_arg(family, level, vtype);
     StringValue(data);
-    rb_ivar_set(self, rb_intern("family"), INT2NUM(family));
-    rb_ivar_set(self, rb_intern("level"), INT2NUM(level));
-    rb_ivar_set(self, rb_intern("type"), INT2NUM(type));
-    rb_ivar_set(self, rb_intern("data"), data);
+    rb_ivar_set(self, rb_intern_lit("family"), INT2NUM(family));
+    rb_ivar_set(self, rb_intern_lit("level"), INT2NUM(level));
+    rb_ivar_set(self, rb_intern_lit("type"), INT2NUM(type));
+    rb_ivar_set(self, rb_intern_lit("data"), data);
     return self;
 }
 
@@ -98,7 +98,7 @@ ancdata_new(int family, int level, int type, VALUE data)
 static int
 ancillary_family(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("family"));
+    VALUE v = rb_attr_get(self, rb_intern_lit("family"));
     return NUM2INT(v);
 }
 
@@ -120,7 +120,7 @@ ancillary_family_m(VALUE self)
 static int
 ancillary_level(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("level"));
+    VALUE v = rb_attr_get(self, rb_intern_lit("level"));
     return NUM2INT(v);
 }
 
@@ -142,7 +142,7 @@ ancillary_level_m(VALUE self)
 static int
 ancillary_type(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("type"));
+    VALUE v = rb_attr_get(self, rb_intern_lit("type"));
     return NUM2INT(v);
 }
 
@@ -173,7 +173,7 @@ ancillary_type_m(VALUE self)
 static VALUE
 ancillary_data(VALUE self)
 {
-    VALUE v = rb_attr_get(self, rb_intern("data"));
+    VALUE v = rb_attr_get(self, rb_intern_lit("data"));
     StringValue(v);
     return v;
 }
@@ -216,7 +216,7 @@ ancillary_s_unix_rights(int argc, VALUE *argv, VALUE klass)
     }
 
     result = ancdata_new(AF_UNIX, SOL_SOCKET, SCM_RIGHTS, str);
-    rb_ivar_set(result, rb_intern("unix_rights"), ary);
+    rb_ivar_set(result, rb_intern_lit("unix_rights"), ary);
     return result;
 }
 #else
@@ -265,7 +265,7 @@ ancillary_unix_rights(VALUE self)
     if (level != SOL_SOCKET || type != SCM_RIGHTS)
         rb_raise(rb_eTypeError, "SCM_RIGHTS ancillary data expected");
 
-    return rb_attr_get(self, rb_intern("unix_rights"));
+    return rb_attr_get(self, rb_intern_lit("unix_rights"));
 }
 #else
 #define ancillary_unix_rights rb_f_notimplement
@@ -328,7 +328,7 @@ ancillary_timestamp(VALUE self)
 
 #define add(x,y) (rb_funcall((x), '+', 1, (y)))
 #define mul(x,y) (rb_funcall((x), '*', 1, (y)))
-#define quo(x,y) (rb_funcall((x), rb_intern("quo"), 1, (y)))
+#define quo(x,y) (rb_funcall((x), rb_intern_lit("quo"), 1, (y)))
 
 # ifdef SCM_BINTIME
     if (level == SOL_SOCKET && type == SCM_BINTIME &&
@@ -1186,9 +1186,9 @@ bsock_sendmsg_internal(VALUE sock, VALUE data, VALUE vflags,
                 cdata = rb_ary_entry(elt, 2);
             }
             else {
-                vlevel = rb_funcall(elt, rb_intern("level"), 0);
-                vtype = rb_funcall(elt, rb_intern("type"), 0);
-                cdata = rb_funcall(elt, rb_intern("data"), 0);
+                vlevel = rb_funcall(elt, rb_intern_lit("level"), 0);
+                vtype = rb_funcall(elt, rb_intern_lit("type"), 0);
+                cdata = rb_funcall(elt, rb_intern_lit("data"), 0);
             }
             level = rsock_level_arg(family, vlevel);
             type = rsock_cmsg_type_arg(family, level, vtype);
@@ -1415,7 +1415,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
     if (cmh->cmsg_level == SOL_SOCKET && cmh->cmsg_type == SCM_RIGHTS) {
         int *fdp, *end;
 	VALUE ary = rb_ary_new();
-	rb_ivar_set(ctl, rb_intern("unix_rights"), ary);
+	rb_ivar_set(ctl, rb_intern_lit("unix_rights"), ary);
         fdp = (int *)CMSG_DATA(cmh);
         end = (int *)((char *)cmh + cmh->cmsg_len);
         while ((char *)fdp + sizeof(int) <= (char *)end &&
@@ -1434,7 +1434,7 @@ make_io_for_unix_rights(VALUE ctl, struct cmsghdr *cmh, char *msg_end)
                 io = rsock_init_sock(rb_obj_alloc(rb_cSocket), fd);
             else
                 io = rb_io_fdopen(fd, O_RDWR, NULL);
-            ary = rb_attr_get(ctl, rb_intern("unix_rights"));
+            ary = rb_attr_get(ctl, rb_intern_lit("unix_rights"));
             rb_ary_push(ary, io);
             fdp++;
         }
@@ -1729,6 +1729,6 @@ rsock_init_ancdata(void)
     rb_define_method(rb_cAncillaryData, "ipv6_pktinfo_ifindex", ancillary_ipv6_pktinfo_ifindex, 0);
 #endif
 #undef rb_intern
-    sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
-    sym_wait_writable = ID2SYM(rb_intern("wait_writable"));
+    sym_wait_readable = ID2SYM(rb_intern_lit("wait_readable"));
+    sym_wait_writable = ID2SYM(rb_intern_lit("wait_writable"));
 }

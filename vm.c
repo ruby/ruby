@@ -484,7 +484,7 @@ vm_set_eval_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_cr
 static void
 vm_set_main_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq)
 {
-    VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING"));
+    VALUE toplevel_binding = rb_const_get(rb_cObject, rb_intern_lit("TOPLEVEL_BINDING"));
     rb_binding_t *bind;
 
     GetBindingPtr(toplevel_binding, bind);
@@ -2567,7 +2567,7 @@ ruby_thread_init(VALUE self)
 
     th->vm = vm;
     th_init(th, self);
-    rb_ivar_set(self, rb_intern("locals"), rb_hash_new());
+    rb_ivar_set(self, rb_intern_lit("locals"), rb_hash_new());
 
     th->top_wrapper = 0;
     th->top_self = rb_vm_top_self();

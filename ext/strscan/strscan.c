@@ -1413,10 +1413,10 @@ void
 Init_strscan(void)
 {
 #undef rb_intern
-    ID id_scanerr = rb_intern("ScanError");
+    ID id_scanerr = rb_intern_lit("ScanError");
     VALUE tmp;
 
-    id_byteslice = rb_intern("byteslice");
+    id_byteslice = rb_intern_lit("byteslice");
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
@@ -1425,10 +1425,10 @@ Init_strscan(void)
     }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
-    rb_const_set(StringScanner, rb_intern("Version"), tmp);
+    rb_const_set(StringScanner, rb_intern_lit("Version"), tmp);
     tmp = rb_str_new2("$Id$");
     rb_obj_freeze(tmp);
-    rb_const_set(StringScanner, rb_intern("Id"), tmp);
+    rb_const_set(StringScanner, rb_intern_lit("Id"), tmp);
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
@@ -1468,7 +1468,7 @@ Init_strscan(void)
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);
 
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
-    rb_alias(StringScanner, rb_intern("bol?"), rb_intern("beginning_of_line?"));
+    rb_alias(StringScanner, rb_intern_lit("bol?"), rb_intern_lit("beginning_of_line?"));
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
     rb_define_method(StringScanner, "empty?",      strscan_empty_p,     0);
     rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);

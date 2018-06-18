@@ -57,7 +57,7 @@ create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name)
     pvar->pTypeInfo = pTypeInfo;
     OLE_ADDREF(pTypeInfo);
     pvar->index = index;
-    rb_ivar_set(obj, rb_intern("name"), name);
+    rb_ivar_set(obj, rb_intern_lit("name"), name);
     return obj;
 }
 
@@ -84,7 +84,7 @@ create_win32ole_variable(ITypeInfo *pTypeInfo, UINT index, VALUE name)
 static VALUE
 folevariable_name(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("name"));
+    return rb_ivar_get(self, rb_intern_lit("name"));
 }
 
 static VALUE

@@ -25,9 +25,9 @@
 } while (0)
 
 #define OBJECT_TYPE_TEMPLATE \
-  rb_const_get(cX509Name, rb_intern("OBJECT_TYPE_TEMPLATE"))
+  rb_const_get(cX509Name, rb_intern_lit("OBJECT_TYPE_TEMPLATE"))
 #define DEFAULT_OBJECT_TYPE \
-  rb_const_get(cX509Name, rb_intern("DEFAULT_OBJECT_TYPE"))
+  rb_const_get(cX509Name, rb_intern_lit("DEFAULT_OBJECT_TYPE"))
 
 /*
  * Classes
@@ -158,7 +158,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	    VALUE args;
 	    if(NIL_P(template)) template = OBJECT_TYPE_TEMPLATE;
 	    args = rb_ary_new3(2, self, template);
-	    rb_block_call(tmp, rb_intern("each"), 0, 0, ossl_x509name_init_i, args);
+	    rb_block_call(tmp, rb_intern_lit("each"), 0, 0, ossl_x509name_init_i, args);
 	}
 	else{
 	    const unsigned char *p;
@@ -511,7 +511,7 @@ Init_ossl_x509name(void)
     mX509 = rb_define_module_under(mOSSL, "X509");
 #endif
 
-    id_aref = rb_intern("[]");
+    id_aref = rb_intern_lit("[]");
     eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
     cX509Name = rb_define_class_under(mX509, "Name", rb_cObject);
 

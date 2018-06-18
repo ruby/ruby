@@ -287,9 +287,9 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
 	    ossl_raise(eX509ExtError, NULL);
 	return self;
     }
-    rb_funcall(self, rb_intern("oid="), 1, oid);
-    rb_funcall(self, rb_intern("value="), 1, value);
-    if(argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
+    rb_funcall(self, rb_intern_lit("oid="), 1, oid);
+    rb_funcall(self, rb_intern_lit("value="), 1, value);
+    if(argc > 2) rb_funcall(self, rb_intern_lit("critical="), 1, critical);
 
     return self;
 }
@@ -451,11 +451,11 @@ Init_ossl_x509ext(void)
     rb_define_alloc_func(cX509ExtFactory, ossl_x509extfactory_alloc);
     rb_define_method(cX509ExtFactory, "initialize", ossl_x509extfactory_initialize, -1);
 
-    rb_attr(cX509ExtFactory, rb_intern("issuer_certificate"), 1, 0, Qfalse);
-    rb_attr(cX509ExtFactory, rb_intern("subject_certificate"), 1, 0, Qfalse);
-    rb_attr(cX509ExtFactory, rb_intern("subject_request"), 1, 0, Qfalse);
-    rb_attr(cX509ExtFactory, rb_intern("crl"), 1, 0, Qfalse);
-    rb_attr(cX509ExtFactory, rb_intern("config"), 1, 1, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern_lit("issuer_certificate"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern_lit("subject_certificate"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern_lit("subject_request"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern_lit("crl"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern_lit("config"), 1, 1, Qfalse);
 
     rb_define_method(cX509ExtFactory, "issuer_certificate=", ossl_x509extfactory_set_issuer_cert, 1);
     rb_define_method(cX509ExtFactory, "subject_certificate=", ossl_x509extfactory_set_subject_cert, 1);

@@ -1680,16 +1680,16 @@ void Init_ossl_ec(void)
     eEC_GROUP = rb_define_class_under(cEC_GROUP, "Error", eOSSLError);
     eEC_POINT = rb_define_class_under(cEC_POINT, "Error", eOSSLError);
 
-    s_GFp = rb_intern("GFp");
-    s_GF2m = rb_intern("GF2m");
-    s_GFp_simple = rb_intern("GFp_simple");
-    s_GFp_mont = rb_intern("GFp_mont");
-    s_GFp_nist = rb_intern("GFp_nist");
-    s_GF2m_simple = rb_intern("GF2m_simple");
+    s_GFp = rb_intern_lit("GFp");
+    s_GF2m = rb_intern_lit("GF2m");
+    s_GFp_simple = rb_intern_lit("GFp_simple");
+    s_GFp_mont = rb_intern_lit("GFp_mont");
+    s_GFp_nist = rb_intern_lit("GFp_nist");
+    s_GF2m_simple = rb_intern_lit("GF2m_simple");
 
-    ID_uncompressed = rb_intern("uncompressed");
-    ID_compressed = rb_intern("compressed");
-    ID_hybrid = rb_intern("hybrid");
+    ID_uncompressed = rb_intern_lit("uncompressed");
+    ID_compressed = rb_intern_lit("compressed");
+    ID_hybrid = rb_intern_lit("hybrid");
 
     rb_define_const(cEC, "NAMED_CURVE", INT2NUM(OPENSSL_EC_NAMED_CURVE));
 #if defined(OPENSSL_EC_EXPLICIT_CURVE)
@@ -1774,7 +1774,7 @@ void Init_ossl_ec(void)
     rb_define_alloc_func(cEC_POINT, ossl_ec_point_alloc);
     rb_define_method(cEC_POINT, "initialize", ossl_ec_point_initialize, -1);
     rb_define_method(cEC_POINT, "initialize_copy", ossl_ec_point_initialize_copy, 1);
-    rb_attr(cEC_POINT, rb_intern("group"), 1, 0, 0);
+    rb_attr(cEC_POINT, rb_intern_lit("group"), 1, 0, 0);
     rb_define_method(cEC_POINT, "eql?", ossl_ec_point_eql, 1);
     rb_define_alias(cEC_POINT, "==", "eql?");
 
@@ -1788,7 +1788,7 @@ void Init_ossl_ec(void)
     rb_define_method(cEC_POINT, "to_octet_string", ossl_ec_point_to_octet_string, 1);
     rb_define_method(cEC_POINT, "mul", ossl_ec_point_mul, -1);
 
-    id_i_group = rb_intern("@group");
+    id_i_group = rb_intern_lit("@group");
 }
 
 #else /* defined NO_EC */

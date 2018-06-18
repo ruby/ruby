@@ -9751,7 +9751,7 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     value_expr(node);
     if (type == NODE_LIT && FIXNUM_P(node->nd_lit)) {
 	warn_unless_e_option(p, node, "integer literal in conditional range");
-	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern("$."), loc), loc), loc);
+	return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(rb_intern_lit("$."), loc), loc), loc);
     }
     return cond0(p, node, FALSE, loc);
 }
@@ -10727,7 +10727,7 @@ parser_append_options(struct parser_params *p, NODE *node)
     const YYLTYPE *const LOC = &default_location;
 
     if (p->do_print) {
-	NODE *print = NEW_FCALL(rb_intern("print"),
+	NODE *print = NEW_FCALL(rb_intern_lit("print"),
 				NEW_ARRAY(NEW_GVAR(idLASTLINE, LOC), LOC),
 				LOC);
 	node = block_append(p, node, print);
@@ -10735,15 +10735,15 @@ parser_append_options(struct parser_params *p, NODE *node)
 
     if (p->do_loop) {
 	if (p->do_split) {
-	    NODE *split = NEW_GASGN(rb_intern("$F"),
+	    NODE *split = NEW_GASGN(rb_intern_lit("$F"),
 				    NEW_CALL(NEW_GVAR(idLASTLINE, LOC),
-					     rb_intern("split"), 0, LOC),
+					     rb_intern_lit("split"), 0, LOC),
 				    LOC);
 	    node = block_append(p, split, node);
 	}
 	if (p->do_chomp) {
 	    NODE *chomp = NEW_CALL(NEW_GVAR(idLASTLINE, LOC),
-				   rb_intern("chomp!"), 0, LOC);
+				   rb_intern_lit("chomp!"), 0, LOC);
 	    node = block_append(p, chomp, node);
 	}
 
@@ -11236,7 +11236,7 @@ ripper_compile_error(struct parser_params *p, const char *fmt, ...)
     va_start(args, fmt);
     str = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_funcall(p->value, rb_intern("compile_error"), 1, str);
+    rb_funcall(p->value, rb_intern_lit("compile_error"), 1, str);
     ripper_error(p);
 }
 

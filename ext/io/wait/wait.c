@@ -169,31 +169,31 @@ io_wait_writable(int argc, VALUE *argv, VALUE io)
 static int
 wait_mode_sym(VALUE mode)
 {
-    if (mode == ID2SYM(rb_intern("r"))) {
+    if (mode == ID2SYM(rb_intern_lit("r"))) {
 	return RB_WAITFD_IN;
     }
-    if (mode == ID2SYM(rb_intern("read"))) {
+    if (mode == ID2SYM(rb_intern_lit("read"))) {
 	return RB_WAITFD_IN;
     }
-    if (mode == ID2SYM(rb_intern("readable"))) {
+    if (mode == ID2SYM(rb_intern_lit("readable"))) {
 	return RB_WAITFD_IN;
     }
-    if (mode == ID2SYM(rb_intern("w"))) {
+    if (mode == ID2SYM(rb_intern_lit("w"))) {
 	return RB_WAITFD_OUT;
     }
-    if (mode == ID2SYM(rb_intern("write"))) {
+    if (mode == ID2SYM(rb_intern_lit("write"))) {
 	return RB_WAITFD_OUT;
     }
-    if (mode == ID2SYM(rb_intern("writable"))) {
+    if (mode == ID2SYM(rb_intern_lit("writable"))) {
 	return RB_WAITFD_OUT;
     }
-    if (mode == ID2SYM(rb_intern("rw"))) {
+    if (mode == ID2SYM(rb_intern_lit("rw"))) {
 	return RB_WAITFD_IN|RB_WAITFD_OUT;
     }
-    if (mode == ID2SYM(rb_intern("read_write"))) {
+    if (mode == ID2SYM(rb_intern_lit("read_write"))) {
 	return RB_WAITFD_IN|RB_WAITFD_OUT;
     }
-    if (mode == ID2SYM(rb_intern("readable_writable"))) {
+    if (mode == ID2SYM(rb_intern_lit("readable_writable"))) {
 	return RB_WAITFD_IN|RB_WAITFD_OUT;
     }
     rb_raise(rb_eArgError, "unsupported mode: %"PRIsVALUE, mode);

@@ -175,10 +175,10 @@ STDMETHODIMP EVENTSINK_Invoke(
     event = ole_search_event(ary, ev, &is_default_handler);
     if (RB_TYPE_P(event, T_ARRAY)) {
         handler = rb_ary_entry(event, 0);
-        mid = rb_intern("call");
+        mid = rb_intern_lit("call");
         is_outarg = rb_ary_entry(event, 3);
     } else {
-        handler = rb_ivar_get(obj, rb_intern("handler"));
+        handler = rb_ivar_get(obj, rb_intern_lit("handler"));
         if (handler == Qnil) {
             return NOERROR;
         }
@@ -466,8 +466,8 @@ rescue_callback(VALUE arg)
 
     VALUE error;
     VALUE e = rb_errinfo();
-    VALUE bt = rb_funcall(e, rb_intern("backtrace"), 0);
-    VALUE msg = rb_funcall(e, rb_intern("message"), 0);
+    VALUE bt = rb_funcall(e, rb_intern_lit("backtrace"), 0);
+    VALUE msg = rb_funcall(e, rb_intern_lit("message"), 0);
     bt = rb_ary_entry(bt, 0);
     error = rb_sprintf("%"PRIsVALUE": %"PRIsVALUE" (%s)\n", bt, msg, rb_obj_classname(e));
     rb_write_error_str(error);
@@ -845,7 +845,7 @@ ole_search_handler_method(VALUE handler, VALUE ev, BOOL *is_default_handler)
     if (rb_respond_to(handler, mid)) {
         return mid;
     }
-    mid = rb_intern("method_missing");
+    mid = rb_intern_lit("method_missing");
     if (rb_respond_to(handler, mid)) {
         *is_default_handler = TRUE;
         return mid;
@@ -1245,7 +1245,7 @@ evs_length(void)
 static VALUE
 fev_set_handler(VALUE self, VALUE val)
 {
-    return rb_ivar_set(self, rb_intern("handler"), val);
+    return rb_ivar_set(self, rb_intern_lit("handler"), val);
 }
 
 /*
@@ -1258,7 +1258,7 @@ fev_set_handler(VALUE self, VALUE val)
 static VALUE
 fev_get_handler(VALUE self)
 {
-    return rb_ivar_get(self, rb_intern("handler"));
+    return rb_ivar_get(self, rb_intern_lit("handler"));
 }
 
 void
@@ -1267,7 +1267,7 @@ Init_win32ole_event(void)
 #undef rb_intern
     ary_ole_event = rb_ary_new();
     rb_gc_register_mark_object(ary_ole_event);
-    id_events = rb_intern("events");
+    id_events = rb_intern_lit("events");
     cWIN32OLE_EVENT = rb_define_class("WIN32OLE_EVENT", rb_cObject);
     rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);
