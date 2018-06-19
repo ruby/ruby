@@ -613,6 +613,41 @@ describe "Module#private_constant marked constants" do
       defined?(PRIVATE_CONSTANT_IN_OBJECT).should == "constant"
     end
   end
+
+  describe "NameError by #private_constant" do
+    it "has :receiver and :name attributes" do
+      lambda do
+        ConstantVisibility::PrivConstClass::PRIVATE_CONSTANT_CLASS
+      end.should raise_error(NameError) {|e|
+        e.receiver.should == ConstantVisibility::PrivConstClass
+        e.name.should == :PRIVATE_CONSTANT_CLASS
+      }
+
+      lambda do
+        ConstantVisibility::PrivConstModule::PRIVATE_CONSTANT_MODULE
+      end.should raise_error(NameError) {|e|
+        e.receiver.should == ConstantVisibility::PrivConstModule
+        e.name.should == :PRIVATE_CONSTANT_MODULE
+      }
+    end
+
+    it "has the defined class as the :name attribute" do
+      exception = nil
+      lambda do
+        ConstantVisibility::PrivConstClassChild::PRIVATE_CONSTANT_CLASS
+      end.should raise_error(NameError) {|e|
+        e.receiver.should == ConstantVisibility::PrivConstClass
+        e.name.should == :PRIVATE_CONSTANT_CLASS
+      }
+
+      lambda do
+        ConstantVisibility::PrivConstModuleChild::PRIVATE_CONSTANT_MODULE
+      end.should raise_error(NameError) {|e|
+        e.receiver.should == ConstantVisibility::PrivConstModule
+        e.name.should == :PRIVATE_CONSTANT_MODULE
+      }
+    end
+  end
 end
 
 describe "Module#public_constant marked constants" do
