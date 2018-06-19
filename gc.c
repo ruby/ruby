@@ -5290,8 +5290,8 @@ static int
 gc_verify_heap_pages(rb_objspace_t *objspace)
 {
     int remembered_old_objects = 0;
-    remembered_old_objects = gc_verify_heap_pages_(objspace, &heap_eden->pages);
-    remembered_old_objects = gc_verify_heap_pages_(objspace, &heap_tomb->pages);
+    remembered_old_objects += gc_verify_heap_pages_(objspace, &heap_eden->pages);
+    remembered_old_objects += gc_verify_heap_pages_(objspace, &heap_tomb->pages);
     return remembered_old_objects;
 }
 
