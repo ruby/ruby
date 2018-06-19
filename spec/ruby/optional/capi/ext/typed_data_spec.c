@@ -101,12 +101,6 @@ VALUE sws_typed_wrap_struct(VALUE self, VALUE val) {
     return TypedData_Wrap_Struct(rb_cObject, &sample_typed_wrapped_struct_data_type, bar);
 }
 
-VALUE sws_typed_wrap_struct_null(VALUE self, VALUE val) {
-    struct sample_typed_wrapped_struct* bar = (struct sample_typed_wrapped_struct *)malloc(sizeof(struct sample_typed_wrapped_struct));
-    bar->foo = FIX2INT(val);
-    return TypedData_Wrap_Struct(0, &sample_typed_wrapped_struct_data_type, bar);
-}
-
 VALUE sws_typed_get_struct(VALUE self, VALUE obj) {
     struct sample_typed_wrapped_struct* bar;
     TypedData_Get_Struct(obj, struct sample_typed_wrapped_struct, &sample_typed_wrapped_struct_data_type, bar);
@@ -161,7 +155,6 @@ void Init_typed_data_spec(void) {
 
   cls = rb_define_class("CApiWrappedTypedStructSpecs", rb_cObject);
   rb_define_method(cls, "typed_wrap_struct", sws_typed_wrap_struct, 1);
-  rb_define_method(cls, "typed_wrap_struct_null", sws_typed_wrap_struct_null, 1);
   rb_define_method(cls, "typed_get_struct", sws_typed_get_struct, 1);
   rb_define_method(cls, "typed_get_struct_other", sws_typed_get_struct_different_type, 1);
   rb_define_method(cls, "typed_get_struct_parent", sws_typed_get_struct_parent_type, 1);
