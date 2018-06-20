@@ -13,10 +13,14 @@ end
 
 # TODO: verify these on non-windows, non-darwin OS
 platform_is_not :windows do
+  grpname = IO.popen(%w'id -gn', err: IO::NULL, &:read)
+  next unless $?.success?
+  grpname.chomp!
+
   describe "Etc.getgrgid" do
     before :all do
       @gid = `id -g`.strip.to_i
-      @name = `id -gn`.strip
+      @name = grpname
     end
 
     it "returns a Etc::Group struct instance for the given user" do
