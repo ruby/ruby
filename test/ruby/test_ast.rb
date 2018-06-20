@@ -72,7 +72,7 @@ class TestAst < Test::Unit::TestCase
 
     def validate_range0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST)
+      children = node.children.grep(RubyVM::AST::Node)
 
       return true if children.empty?
       # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
@@ -100,7 +100,7 @@ class TestAst < Test::Unit::TestCase
 
     def validate_not_cared0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST)
+      children = node.children.grep(RubyVM::AST::Node)
 
       @errors << { type: :first_lineno, node: node } if beg_pos.lineno == 0
       @errors << { type: :first_column, node: node } if beg_pos.column == -1
