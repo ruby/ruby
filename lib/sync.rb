@@ -38,10 +38,6 @@
 #
 #
 
-unless defined? Thread
-  raise "Thread not available for this ruby interpreter"
-end
-
 ##
 # A module that provides a two-phase lock with a counter.
 
