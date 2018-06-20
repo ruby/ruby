@@ -74,7 +74,7 @@ RSpec.describe Bundler::Definition do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "file://localhost#{gem_repo1}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -87,7 +87,7 @@ RSpec.describe Bundler::Definition do
       expect(out).to match(/re-resolving dependencies/)
       lockfile_should_be <<-G
         GEM
-          remote: file:#{gem_repo1}/
+          remote: file://localhost#{gem_repo1}/
           specs:
             rack (1.0.0)
 
@@ -152,7 +152,7 @@ RSpec.describe Bundler::Definition do
       end
 
       install_gemfile <<-G
-        source "file://#{gem_repo1}"
+        source "file://localhost#{gem_repo1}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
@@ -161,7 +161,7 @@ RSpec.describe Bundler::Definition do
       expect(out).to match(/using resolution from the lockfile/)
       lockfile_should_be <<-G
         GEM
-          remote: file:#{gem_repo1}/
+          remote: file://localhost#{gem_repo1}/
           specs:
             rack (1.0.0)
 

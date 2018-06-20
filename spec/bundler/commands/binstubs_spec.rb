@@ -86,7 +86,8 @@ RSpec.describe "bundle binstubs <gem>" do
         build_repo2 do
           build_gem "prints_loaded_gems", "1.0" do |s|
             s.executables = "print_loaded_gems"
-            s.write "bin/print_loaded_gems", <<-R
+            s.bindir = "exe"
+            s.write "exe/print_loaded_gems", <<-R
               specs = Gem.loaded_specs.values.reject {|s| Bundler.rubygems.spec_default_gem?(s) }
               puts specs.map(&:full_name).sort.inspect
             R

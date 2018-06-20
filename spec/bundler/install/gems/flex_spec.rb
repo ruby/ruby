@@ -277,25 +277,25 @@ RSpec.describe "bundle flex_install" do
     it "updates the lockfile", :bundler => "2" do
       build_repo2
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
+        source "file://localhost#{gem_repo1}"
         gem "rack"
       G
 
       install_gemfile! <<-G
-        source "file://#{gem_repo1}"
-        source "file://#{gem_repo2}" do
+        source "file://localhost#{gem_repo1}"
+        source "file://localhost#{gem_repo2}" do
         end
         gem "rack"
       G
 
       lockfile_should_be <<-L
       GEM
-        remote: file:#{gem_repo1}/
+        remote: file://localhost#{gem_repo1}/
         specs:
           rack (1.0.0)
 
       GEM
-        remote: file:#{gem_repo2}/
+        remote: file://localhost#{gem_repo2}/
         specs:
 
       PLATFORMS
