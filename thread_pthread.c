@@ -975,7 +975,6 @@ native_thread_create(rb_thread_t *th)
     return err;
 }
 
-#if USE_SLEEPY_TIMER_THREAD
 static void
 native_thread_join(pthread_t th)
 {
@@ -984,8 +983,6 @@ native_thread_join(pthread_t th)
 	rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 }
-#endif
-
 
 #if USE_NATIVE_THREAD_PRIORITY
 
@@ -1622,8 +1619,8 @@ native_stop_timer_thread(void)
     stopped = --system_working <= 0;
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
-#if USE_SLEEPY_TIMER_THREAD
     if (stopped) {
+#if USE_SLEEPY_TIMER_THREAD
 	/* prevent wakeups from signal handler ASAP */
 	timer_thread_pipe.owner_process = 0;
 
@@ -1639,18 +1636,20 @@ native_stop_timer_thread(void)
 	/* stop writing ends of pipes so timer thread notices EOF */
 	CLOSE_INVALIDATE(normal[1]);
 	CLOSE_INVALIDATE(low[1]);
+#endif
 
 	/* timer thread will stop looping when system_working <= 0: */
 	native_thread_join(timer_thread.id);
 
+#if USE_SLEEPY_TIMER_THREAD
 	/* timer thread will close the read end on exit: */
 	VM_ASSERT(timer_thread_pipe.normal[0] == -1);
 	VM_ASSERT(timer_thread_pipe.low[0] == -1);
+#endif
 
 	if (TT_DEBUG) fprintf(stderr, "joined timer thread\n");
 	timer_thread.created = 0;
     }
-#endif
     return stopped;
 }
 
