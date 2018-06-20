@@ -63,9 +63,7 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      ast = RubyVM::AST.parse_file(@path)
-      raise "Syntax error: #{@path}" if ast.nil?
-      @ast = ast
+      @ast = RubyVM::AST.parse_file(@path)
     end
 
     private
