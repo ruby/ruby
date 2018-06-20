@@ -1318,6 +1318,9 @@ vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE 
 {
     VALUE klass = CLASS_OF(recv);
 
+    VM_ASSERT(klass != Qfalse);
+    VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
+
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
 					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
