@@ -85,11 +85,16 @@ class TestIO < Test::Unit::TestCase
   end
 
   def trapping_usr2
-    @usr1_rcvd  = 0
-    trap(:USR2) { @usr1_rcvd += 1 }
-    yield
+    @usr2_rcvd  = 0
+    r, w = IO.pipe
+    trap(:USR2) do
+      w.write([@usr2_rcvd += 1].pack('L'))
+    end
+    yield r
   ensure
     trap(:USR2, "DEFAULT")
+    w&.close
+    r&.close
   end
 
   def test_pipe
@@ -864,7 +869,7 @@ class TestIO < Test::Unit::TestCase
         rescue Errno::EBADF
           skip "nonblocking IO for pipe is not implemented"
         end
-        trapping_usr2 do
+        trapping_usr2 do |rd|
           nr = 30
           begin
             pid = fork do
@@ -878,7 +883,7 @@ class TestIO < Test::Unit::TestCase
             nr.times do
               assert_equal megacontent.bytesize, IO.copy_stream("megasrc", s1)
             end
-            assert_equal(1, @usr1_rcvd)
+            assert_equal(1, rd.read(4).unpack1('L'))
           ensure
             s1.close
             _, status = Process.waitpid2(pid) if pid
