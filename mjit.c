@@ -941,7 +941,9 @@ static int worker_stopped;
 static void
 worker(void)
 {
-    make_pch();
+    if (pch_status == PCH_NOT_READY) {
+        make_pch();
+    }
     if (pch_status == PCH_FAILED) {
         mjit_init_p = FALSE;
         CRITICAL_SECTION_START(3, "in worker to update worker_stopped");
@@ -1376,6 +1378,26 @@ system_tmpdir(void)
 
 extern const char ruby_description_with_jit[];
 
+/* Start MJIT worker. Return TRUE if worker is sucessfully started. */
+static int
+start_worker(void)
+{
+    stop_worker_p = FALSE;
+    worker_stopped = FALSE;
+
+    if (!rb_thread_create_mjit_thread(child_after_fork, worker)) {
+        mjit_init_p = FALSE;
+        rb_native_mutex_destroy(&mjit_engine_mutex);
+        rb_native_cond_destroy(&mjit_pch_wakeup);
+        rb_native_cond_destroy(&mjit_client_wakeup);
+        rb_native_cond_destroy(&mjit_worker_wakeup);
+        rb_native_cond_destroy(&mjit_gc_wakeup);
+        verbose(1, "Failure in MJIT thread initialization\n");
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* Initialize MJIT.  Start a thread creating the precompiled header and
    processing ISeqs.  The function should be called first for using MJIT.
    If everything is successfull, MJIT_INIT_P will be TRUE.  */
@@ -1438,17 +1460,51 @@ mjit_init(struct mjit_options *opts)
     rb_define_global_const("RUBY_DESCRIPTION", rb_obj_freeze(rb_description));
 
     /* Initialize worker thread */
-    stop_worker_p = FALSE;
-    worker_stopped = FALSE;
-    if (!rb_thread_create_mjit_thread(child_after_fork, worker)) {
-        mjit_init_p = FALSE;
-        rb_native_mutex_destroy(&mjit_engine_mutex);
-        rb_native_cond_destroy(&mjit_pch_wakeup);
-        rb_native_cond_destroy(&mjit_client_wakeup);
-        rb_native_cond_destroy(&mjit_worker_wakeup);
-        rb_native_cond_destroy(&mjit_gc_wakeup);
-        verbose(1, "Failure in MJIT thread initialization\n");
+    start_worker();
+}
+
+static void
+stop_worker(void)
+{
+    stop_worker_p = TRUE;
+    while (!worker_stopped) {
+        verbose(3, "Sending cancel signal to worker");
+        CRITICAL_SECTION_START(3, "in stop_worker");
+        rb_native_cond_broadcast(&mjit_worker_wakeup);
+        CRITICAL_SECTION_FINISH(3, "in stop_worker");
     }
+}
+
+/* Stop JIT-compiling methods but compiled code is kept available. */
+VALUE
+mjit_pause(void)
+{
+    if (!mjit_init_p) {
+        rb_raise(rb_eRuntimeError, "MJIT is not enabled");
+    }
+    if (worker_stopped) {
+        return Qfalse;
+    }
+
+    stop_worker();
+    return Qtrue;
+}
+
+/* Restart JIT-compiling methods after mjit_pause. */
+VALUE
+mjit_resume(void)
+{
+    if (!mjit_init_p) {
+        rb_raise(rb_eRuntimeError, "MJIT is not enabled");
+    }
+    if (!worker_stopped) {
+        return Qfalse;
+    }
+
+    if (!start_worker()) {
+        rb_raise(rb_eRuntimeError, "Failed to resume MJIT worker");
+    }
+    return Qtrue;
 }
 
 /* Finish the threads processing units and creating PCH, finalize
@@ -1475,13 +1531,7 @@ mjit_finish(void)
     CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
 
     /* Stop worker */
-    stop_worker_p = TRUE;
-    while (!worker_stopped) {
-        verbose(3, "Sending cancel signal to workers");
-        CRITICAL_SECTION_START(3, "in mjit_finish");
-        rb_native_cond_broadcast(&mjit_worker_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in mjit_finish");
-    }
+    stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
     rb_native_cond_destroy(&mjit_pch_wakeup);

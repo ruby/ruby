@@ -2780,6 +2780,9 @@ mjit_enabled_p(void)
     return mjit_init_p ? Qtrue : Qfalse;
 }
 
+extern VALUE mjit_pause(void);
+extern VALUE mjit_resume(void);
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2868,6 +2871,8 @@ Init_VM(void)
     /* RubyVM::MJIT */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
+    rb_define_singleton_method(mjit, "pause", mjit_pause, 0);
+    rb_define_singleton_method(mjit, "resume", mjit_resume, 0);
 
     /*
      * Document-class: Thread
