@@ -1057,7 +1057,7 @@ class TestArray < Test::Unit::TestCase
     a = @cls[]
     assert_equal("", a.join)
     assert_equal("", a.join(','))
-    assert_equal(Encoding::US_ASCII, a.join.encoding)
+    assert_equal(Encoding.find('locale'), a.join.encoding)
 
     $, = ""
     a = @cls[1, 2]
