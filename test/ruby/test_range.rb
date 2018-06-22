@@ -582,8 +582,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal 42, (1..42).each.size
     assert_nil ("a"..."z").size
 
-    assert_nil (1...).size
-    assert_nil (1.0...).size
+    assert_equal Float::INFINITY, (1...).size
+    assert_equal Float::INFINITY, (1.0...).size
     assert_nil ("a"...).size
   end
 
