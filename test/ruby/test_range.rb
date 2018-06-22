@@ -99,8 +99,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal(2, (1..2).max)
     assert_equal(nil, (2..1).max)
     assert_equal(1, (1...2).max)
-    assert_equal(nil, (1..).max)
-    assert_equal(nil, (1...).max)
+    assert_raise(RangeError) { (1..).max }
+    assert_raise(RangeError) { (1...).max }
 
     assert_equal(2.0, (1.0..2.0).max)
     assert_equal(nil, (2.0..1.0).max)
@@ -115,7 +115,8 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
-    # XXX: How should (0...).max(3) behave?
+    assert_raise(RangeError) { (1..).max(3) }
+    assert_raise(RangeError) { (1...).max(3) }
   end
 
   def test_initialize_twice
@@ -405,7 +406,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0, 1, 2], (0..nil).first(3))
     assert_equal(0, (0..nil).first)
     assert_equal("a", ("a"..nil).first)
-    # XXX: How should (0...).last(3) behave?
+    assert_raise(RangeError) { (0..nil).last }
+    assert_raise(RangeError) { (0..nil).last(3) }
   end
 
   def test_to_s

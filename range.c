@@ -1013,6 +1013,9 @@ range_first(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_last(int argc, VALUE *argv, VALUE range)
 {
+    if (NIL_P(RANGE_END(range))) {
+        rb_raise(rb_eRangeError, "cannot get the last element of endless range");
+    }
     if (argc == 0) return RANGE_END(range);
     return rb_ary_last(argc, argv, rb_Array(range));
 }
@@ -1040,6 +1043,9 @@ static VALUE
 range_min(int argc, VALUE *argv, VALUE range)
 {
     if (rb_block_given_p()) {
+        if (NIL_P(RANGE_END(range))) {
+            rb_raise(rb_eRangeError, "cannot get the minimum of endless range with custom comparison method");
+        }
 	return rb_call_super(argc, argv);
     }
     else if (argc != 0) {
@@ -1080,7 +1086,9 @@ range_max(int argc, VALUE *argv, VALUE range)
     VALUE e = RANGE_END(range);
     int nm = FIXNUM_P(e) || rb_obj_is_kind_of(e, rb_cNumeric);
 
-    if (NIL_P(e)) return Qnil;
+    if (NIL_P(RANGE_END(range))) {
+	rb_raise(rb_eRangeError, "cannot get the maximum of endless range");
+    }
 
     if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
         return rb_call_super(argc, argv);
