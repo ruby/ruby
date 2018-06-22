@@ -1271,9 +1271,9 @@ sleep_timespec(rb_thread_t *th, struct timespec ts, unsigned int fl)
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &ts);
 	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	if (timespec_update_expire(&ts, &end))
-	    break;
 	if (!(fl & SLEEP_SPURIOUS_CHECK))
+	    break;
+	if (timespec_update_expire(&ts, &end))
 	    break;
     }
     th->status = prev_status;
