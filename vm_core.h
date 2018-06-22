@@ -565,7 +565,7 @@ typedef struct rb_vm_struct {
     unsigned int safe_level_: 1;
 
     int trace_running;
-    volatile int sleeper;
+    int sleeper;
 
     /* object management */
     VALUE mark_object_ary;
