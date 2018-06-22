@@ -93,6 +93,8 @@ class TestRange < Test::Unit::TestCase
     assert_equal([0,1,2], (0..10).min(3))
     assert_equal([0,1], (0..1).min(3))
     assert_equal([0,1,2], (0..).min(3))
+
+    assert_raise(RangeError) { (0..).min {|a, b| a <=> b } }
   end
 
   def test_max
