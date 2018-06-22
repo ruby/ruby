@@ -299,6 +299,9 @@ LDSHARED_1 = @if exist $(@).manifest $(MANIFESTTOOL) -manifest $(@).manifest -ou
 LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 !endif
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
+!if "$(USE_RUBYGEMS)" == "no"
+CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
+!endif
 !if "$(CPPOUTFLAG)" == ">"
 MJIT_HEADER_FLAGS =
 !else

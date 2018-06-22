@@ -143,12 +143,12 @@ goto :loop ;
   shift
 goto :loop ;
 :enable-rubygems
-  echo>> ~tmp~.mak 	"USE_RUBYGEMS=YES" \
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=yes" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop ;
 :disable-rubygems
-  echo>> ~tmp~.mak 	"USE_RUBYGEMS=NO" \
+  echo>> ~tmp~.mak 	"USE_RUBYGEMS=no" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop ;

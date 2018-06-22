@@ -3731,10 +3731,9 @@ AC_ARG_ENABLE(rubygems,
 	AS_HELP_STRING([--disable-rubygems], [disable rubygems by default]),
 	[enable_rubygems="$enableval"], [enable_rubygems=yes])
 AS_IF([test x"$enable_rubygems" = xno], [
-    AC_DEFINE(DISABLE_RUBYGEMS, 1)
-    USE_RUBYGEMS=NO
+    USE_RUBYGEMS=no
 ], [
-    USE_RUBYGEMS=YES
+    USE_RUBYGEMS=yes
 ])
 AC_SUBST(USE_RUBYGEMS)
 
