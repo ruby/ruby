@@ -755,6 +755,26 @@ range_size(VALUE range)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     rng.to_a                   -> array
+ *     rng.entries                -> array
+ *
+ *  Returns an array containing the items in <i>rng</i>.
+ *
+ *    (1..7).to_a  #=> [1, 2, 3, 4, 5, 6, 7]
+ *    (1..).to_a   #=> RangeError: cannot convert endless range to an array
+ */
+
+static VALUE
+range_to_a(VALUE range)
+{
+    if (NIL_P(RANGE_END(range))) {
+	rb_raise(rb_eRangeError, "cannot convert endless range to an array");
+    }
+    return rb_call_super(0, 0);
+}
+
 static VALUE
 range_enum_size(VALUE range, VALUE args, VALUE eobj)
 {
@@ -1459,6 +1479,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "min", range_min, -1);
     rb_define_method(rb_cRange, "max", range_max, -1);
     rb_define_method(rb_cRange, "size", range_size, 0);
+    rb_define_method(rb_cRange, "to_a", range_to_a, 0);
+    rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
 

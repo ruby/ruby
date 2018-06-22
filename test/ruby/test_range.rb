@@ -794,4 +794,10 @@ class TestRange < Test::Unit::TestCase
     end
     (a.."c").each {|x, &b| assert_nil(b)}
   end
+
+  def test_to_a
+    assert_equal([1,2,3,4,5], (1..5).to_a)
+    assert_equal([1,2,3,4], (1...5).to_a)
+    assert_raise(RangeError) { (1..).to_a }
+  end
 end
