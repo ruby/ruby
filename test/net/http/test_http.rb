@@ -542,7 +542,7 @@ module TestNetHTTP_version_1_1_methods
 
       th = Thread.new do
         err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
-        assert_raise(err) { conn.post('/', "a"*5_000_000) }
+        assert_raise(err, "experimental:sysctl: #{`sysctl net.ipv4.tcp_wmem`rescue nil}") { conn.post('/', "a"*5_000) }
       end
       assert th.join(10)
     }
