@@ -749,9 +749,15 @@ static VALUE
 range_size(VALUE range)
 {
     VALUE b = RANGE_BEG(range), e = RANGE_END(range);
-    if (rb_obj_is_kind_of(b, rb_cNumeric) && rb_obj_is_kind_of(e, rb_cNumeric)) {
-	return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+    if (rb_obj_is_kind_of(b, rb_cNumeric)) {
+        if (rb_obj_is_kind_of(e, rb_cNumeric)) {
+	    return ruby_num_interval_step_size(b, e, INT2FIX(1), EXCL(range));
+        }
+        if (NIL_P(e)) {
+            return DBL2NUM(HUGE_VAL);
+        }
     }
+
     return Qnil;
 }
 
