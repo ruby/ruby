@@ -171,6 +171,9 @@ struct rb_mjit_unit_list {
 
 /* TRUE if MJIT is enabled.  */
 int mjit_enabled = FALSE;
+/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
+   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
+int mjit_call_p = FALSE;
 
 /* Priority queue of iseqs waiting for JIT compilation.
    This variable is a pointer to head unit of the queue. */
@@ -1410,6 +1413,7 @@ mjit_init(struct mjit_options *opts)
 
     mjit_opts = *opts;
     mjit_enabled = TRUE;
+    mjit_call_p = TRUE;
 
     /* Normalize options */
     if (mjit_opts.min_calls == 0)
@@ -1549,6 +1553,7 @@ mjit_finish(void)
     xfree(pch_file); pch_file = NULL;
     xfree(header_file); header_file = NULL;
 
+    mjit_call_p = FALSE;
     free_list(&unit_queue);
     free_list(&active_units);
     finish_conts();
