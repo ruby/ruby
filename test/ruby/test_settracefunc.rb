@@ -1809,7 +1809,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
       define_method(:m) {}
 
       tp = TracePoint.new(:call) do
-        next unless target_thread?
         raise ''
       end
 
