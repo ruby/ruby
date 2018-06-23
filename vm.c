@@ -1789,7 +1789,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, in
  */
 
 static inline VALUE
-vm_exce_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
+vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1811,7 +1811,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
     else {
 	result = ec->errinfo;
         rb_ec_raised_reset(ec, RAISED_STACKOVERFLOW);
-        while ((result = vm_exce_handle_exception(ec, state, result, &initial)) == Qundef) {
+        while ((result = vm_exec_handle_exception(ec, state, result, &initial)) == Qundef) {
             /* caught a jump, exec the handler */
             result = vm_exec_core(ec, initial);
 	  vm_loop_start:
@@ -1826,7 +1826,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 }
 
 static inline VALUE
-vm_exce_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
+vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial)
 {
     struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
