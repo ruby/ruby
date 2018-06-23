@@ -1757,7 +1757,6 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
 
     /* jit_worker thread is not to be joined */
     if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED) == 0
-        && pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM) == 0
         && pthread_create(&worker_pid, &attr, mjit_worker, (void *)worker_func) == 0) {
         ret = TRUE;
     }
