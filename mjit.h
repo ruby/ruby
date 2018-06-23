@@ -53,7 +53,7 @@ typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 extern struct mjit_options mjit_opts;
-extern int mjit_init_p;
+extern int mjit_enabled;
 
 extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern mjit_func_t mjit_get_iseq_func(struct rb_iseq_constant_body *body);
@@ -94,7 +94,7 @@ mjit_exec(rb_execution_context_t *ec)
     long unsigned total_calls;
     mjit_func_t func;
 
-    if (!mjit_init_p)
+    if (!mjit_enabled)
         return Qundef;
 
     iseq = ec->cfp->iseq;
