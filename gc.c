@@ -8247,6 +8247,13 @@ ruby_mimmalloc(size_t size)
     {
         struct malloc_obj_info *info = mem;
         info->size = 0;
+#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+        info->gen = 0;
+        info->file = NULL;
+        info->line = 0;
+#else
+        info->file = NULL;
+#endif
         mem = info + 1;
     }
 #endif
