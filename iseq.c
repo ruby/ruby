@@ -2899,6 +2899,8 @@ rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
     rb_objspace_each_objects(trace_set_i, &turnon_events);
 }
 
+/* This is exported since Ruby 2.5 but not internally used for now. If you're going to use this, please
+   update `ruby_vm_event_enabled_flags` and set `mjit_call_p = FALSE` as well to cancel MJIT code. */
 void
 rb_iseq_trace_on_all(void)
 {

@@ -25,6 +25,7 @@
 #include "ruby/debug.h"
 
 #include "vm_core.h"
+#include "mjit.h"
 #include "iseq.h"
 #include "eval_intern.h"
 
@@ -68,6 +69,9 @@ update_global_event_hook(rb_event_flag_t vm_events)
     rb_event_flag_t enabled_iseq_events = ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS;
 
     if (new_iseq_events & ~enabled_iseq_events) {
+        /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
+        mjit_call_p = FALSE;
+
 	/* write all ISeqs iff new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
