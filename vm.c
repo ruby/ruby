@@ -2777,7 +2777,7 @@ core_hash_merge_kwd(int argc, VALUE *argv)
 static VALUE
 mjit_enabled_p(void)
 {
-    return mjit_init_p ? Qtrue : Qfalse;
+    return mjit_enabled ? Qtrue : Qfalse;
 }
 
 extern VALUE mjit_pause(void);
