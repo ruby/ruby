@@ -1069,7 +1069,6 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 		native_cond_timedwait(cond, lock, &timeout);
 	}
 	th->unblock.func = 0;
-	th->unblock.arg = 0;
 
 	rb_native_mutex_unlock(lock);
     }
