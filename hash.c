@@ -3016,6 +3016,7 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
 /*
  *  call-seq:
  *     hsh.any? [{ |(key, value)| block }]   -> true or false
+ *     hsh.any?(pattern)                     -> true or false
  *
  *  See also Enumerable#any?
  */

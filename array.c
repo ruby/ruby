@@ -5784,6 +5784,7 @@ rb_ary_drop_while(VALUE ary)
 /*
  *  call-seq:
  *     ary.any? [{ |obj| block }]   -> true or false
+ *     any.any?(pattern)            -> true or false
  *
  *  See also Enumerable#any?
  */
