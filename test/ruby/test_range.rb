@@ -240,6 +240,18 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a"], a)
 
     a = []
+    (:a .. :z).step(2) {|x| a << x }
+    assert_equal(%i(a c e g i k m o q s u w y), a)
+
+    a = []
+    (:a .. ).step(2) {|x| a << x; break if a.size == 13 }
+    assert_equal(%i(a c e g i k m o q s u w y), a)
+
+    a = []
+    (:a .. :z).step(2**32) {|x| a << x }
+    assert_equal([:a], a)
+
+    a = []
     (2**32-1 .. 2**32+1).step(2) {|x| a << x }
     assert_equal([4294967295, 4294967297], a)
     zero = (2**32).coerce(0).first
@@ -493,6 +505,8 @@ class TestRange < Test::Unit::TestCase
     assert_include("a"..."z", "y")
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
+    assert_include("a".., "c")
+    assert_not_include("a".., "5")
     assert_include(0...10, 5)
     assert_include(5..., 10)
     assert_not_include(5..., 0)
