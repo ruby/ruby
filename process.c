@@ -1230,7 +1230,12 @@ after_exec(void)
 }
 
 #define before_fork_ruby() before_exec()
-#define after_fork_ruby() (rb_threadptr_pending_interrupt_clear(GET_THREAD()), after_exec())
+static void
+after_fork_ruby(void)
+{
+    rb_threadptr_pending_interrupt_clear(GET_THREAD());
+    after_exec();
+}
 
 #include "dln.h"
 
