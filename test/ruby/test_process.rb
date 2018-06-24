@@ -1426,6 +1426,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait_without_arg
+    skip "[Bug #14867]" if RubyVM::MJIT.enabled?
     with_tmpchdir do
       write_file("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
@@ -1434,6 +1435,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_wait2
+    skip "[Bug #14867]" if RubyVM::MJIT.enabled?
     with_tmpchdir do
       write_file("foo", "sleep 0.1")
       pid = spawn(RUBY, "foo")
@@ -1442,6 +1444,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_waitall
+    skip "[Bug #14867]" if RubyVM::MJIT.enabled?
     with_tmpchdir do
       write_file("foo", "sleep 0.1")
       ps = (0...3).map { spawn(RUBY, "foo") }.sort
