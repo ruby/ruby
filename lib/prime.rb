@@ -391,13 +391,6 @@ class Prime
       @ulticheck_next_squared = 121   # @primes[@ulticheck_index + 1] ** 2
     end
 
-    # Returns the cached prime numbers.
-    def cache
-      @primes
-    end
-    alias primes cache
-    alias primes_so_far cache
-
     # Returns the +index+th prime number.
     #
     # +index+ is a 0-based index.
