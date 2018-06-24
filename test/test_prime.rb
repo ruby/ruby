@@ -27,6 +27,15 @@ class TestPrime < Test::Unit::TestCase
     assert_equal PRIMES, primes
   end
 
+  def test_integer_each_prime
+    primes = []
+    Integer.each_prime(1000) do |p|
+      break if p > 541
+      primes << p
+    end
+    assert_equal PRIMES, primes
+  end
+
   def test_each_by_prime_number_theorem
     3.upto(15) do |i|
       max = 2**i
@@ -122,6 +131,78 @@ class TestPrime < Test::Unit::TestCase
   def test_prime_each_basic_argument_checking
     assert_raise(ArgumentError) { Prime.prime?(1,2) }
     assert_raise(ArgumentError) { Prime.prime?(1.2) }
+  end
+
+  def test_prime?
+    assert_equal Prime.prime?(1), false
+    assert_equal Prime.prime?(2), true
+    assert_equal Prime.prime?(4), false
+  end
+
+  class TestPseudoPrimeGenerator < Test::Unit::TestCase
+    def test_upper_bound
+      pseudo_prime_generator = Prime::PseudoPrimeGenerator.new(42)
+      assert_equal pseudo_prime_generator.upper_bound, 42
+    end
+
+    def test_succ
+      pseudo_prime_generator = Prime::PseudoPrimeGenerator.new(42)
+      assert_raise(NotImplementedError) { pseudo_prime_generator.succ }
+    end
+
+    def test_next
+      pseudo_prime_generator = Prime::PseudoPrimeGenerator.new(42)
+      assert_raise(NotImplementedError) { pseudo_prime_generator.next }
+    end
+
+    def test_rewind
+      pseudo_prime_generator = Prime::PseudoPrimeGenerator.new(42)
+      assert_raise(NotImplementedError) { pseudo_prime_generator.rewind }
+    end
+  end
+
+  class TestTrialDivisionGenerator < Test::Unit::TestCase
+    # The first 100 prime numbers
+    PRIMES = [
+      2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37,
+      41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83,
+      89, 97, 101, 103, 107, 109, 113, 127, 131,
+      137, 139, 149, 151, 157, 163, 167, 173, 179,
+      181, 191, 193, 197, 199, 211, 223, 227, 229,
+      233, 239, 241, 251, 257, 263, 269, 271, 277,
+      281, 283, 293, 307, 311, 313, 317, 331, 337,
+      347, 349, 353, 359, 367, 373, 379, 383, 389,
+      397, 401, 409, 419, 421, 431, 433, 439, 443,
+      449, 457, 461, 463, 467, 479, 487, 491, 499,
+      503, 509, 521, 523, 541,
+    ]
+
+    def test_each
+      primes = []
+      Prime.each(nil, Prime::TrialDivisionGenerator.new) do |p|
+        break if p > 541
+        primes << p
+      end
+      assert_equal PRIMES, primes
+    end
+
+    def test_rewind
+      generator = Prime::TrialDivisionGenerator.new
+      assert_equal generator.next, 2
+      assert_equal generator.next, 3
+      generator.rewind
+      assert_equal generator.next, 2
+    end
+  end
+
+  class TestGenerator23 < Test::Unit::TestCase
+    def test_rewind
+      generator = Prime::Generator23.new
+      assert_equal generator.next, 2
+      assert_equal generator.next, 3
+      generator.rewind
+      assert_equal generator.next, 2
+    end
   end
 
   class TestInteger < Test::Unit::TestCase
