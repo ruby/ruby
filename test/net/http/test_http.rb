@@ -542,7 +542,7 @@ module TestNetHTTP_version_1_1_methods
 
       th = Thread.new do
         err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
-        assert_raise(err) { conn.post('/', "a"*5_000_000) }
+        assert_raise(err) { conn.post('/', "a"*50_000_000) }
       end
       assert th.join(10)
     }
