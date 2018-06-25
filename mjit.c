@@ -616,7 +616,9 @@ free_list(struct rb_mjit_unit_list *list)
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
-#if defined __GNUC__ && !defined __clang__
+#if defined(__GNUC__) && \
+     (!defined(__clang__) || \
+      (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
 #define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
     "-pipe",
 #else
