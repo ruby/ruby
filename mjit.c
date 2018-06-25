@@ -95,6 +95,15 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#endif
+
+#include "dln.h"
+
+#ifndef MAXPATHLEN
+#  define MAXPATHLEN 1024
+#endif
 
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
@@ -349,8 +358,19 @@ start_process(const char *path, char *const *argv)
     pid = spawnvp(_P_NOWAIT, path, argv);
 #else
     {
-        /* Not calling IO functions between fork and exec for safety */
-        int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
+        /*
+         * Not calling non-async-signal-safe functions between vfork
+         * and execv for safety
+         */
+        char fbuf[MAXPATHLEN];
+        const char *abspath = dln_find_exe_r(path, 0, fbuf, sizeof(fbuf));
+        int dev_null;
+
+        if (!abspath) {
+            fprintf(stderr, "failed to find `%s' in PATH\n", path);
+            return -1;
+        }
+        dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
         if ((pid = vfork()) == 0) {
             umask(0077);
@@ -362,11 +382,11 @@ start_process(const char *path, char *const *argv)
                 dup2(dev_null, STDOUT_FILENO);
             }
             (void)close(dev_null);
-            pid = execvp(path, argv); /* Pid will be negative on an error */
+            pid = execv(abspath, argv); /* Pid will be negative on an error */
             /* Even if we successfully found CC to compile PCH we still can
              fail with loading the CC in very rare cases for some reasons.
              Stop the forked process in this case.  */
-            verbose(1, "MJIT: Error in execvp: %s\n", path);
+            verbose(1, "MJIT: Error in execv: %s\n", abspath);
             _exit(1);
         }
         (void)close(dev_null);
@@ -1313,9 +1333,6 @@ system_default_tmpdir(void)
         return tmpdir;
     }
 #elif defined _CS_DARWIN_USER_TEMP_DIR
-    #ifndef MAXPATHLEN
-    #define MAXPATHLEN 1024
-    #endif
     char path[MAXPATHLEN];
     size_t len = confstr(_CS_DARWIN_USER_TEMP_DIR, path, sizeof(path));
     if (len > 0) {
