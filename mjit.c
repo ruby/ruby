@@ -367,7 +367,7 @@ start_process(const char *path, char *const *argv)
         int dev_null;
 
         if (!abspath) {
-            fprintf(stderr, "failed to find `%s' in PATH\n", path);
+            verbose(1, "MJIT: failed to find `%s' in PATH\n", path);
             return -1;
         }
         dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
