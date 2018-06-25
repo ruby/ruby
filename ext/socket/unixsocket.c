@@ -343,7 +343,7 @@ unix_recv_io(int argc, VALUE *argv, VALUE sock)
     enum {
         GC_REASON_EMSGSIZE = 0x1,
         GC_REASON_TRUNCATE = 0x2,
-        GC_REASON_ENOMEM = 0x4,
+        GC_REASON_ENOMEM = 0x4
     };
 
     int fd;
