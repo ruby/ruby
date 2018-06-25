@@ -946,7 +946,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #endif
     }
 
-    if ((ptrdiff_t)func > (ptrdiff_t)LAST_JIT_ISEQ_FUNC) {
+    if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         struct rb_mjit_unit_node *node = create_list_node(unit);
         CRITICAL_SECTION_START(3, "end of jit");
         add_to_list(node, &active_units);
@@ -1101,7 +1101,7 @@ mark_ec_units(rb_execution_context_t *ec)
     const rb_control_frame_t *cfp;
     rb_control_frame_t *last_cfp = ec->cfp;
     const rb_control_frame_t *end_marker_cfp;
-    ptrdiff_t i, size;
+    uintptr_t i, size;
 
     if (ec->vm_stack == NULL)
         return;
