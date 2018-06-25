@@ -26,9 +26,7 @@
         }
 %
 % # JIT: Declare variables for operands, popped values and return values
-% ret_decls = insn.rets.map { |r| "MAYBE_UNUSED(#{r.fetch(:type)}) #{r.fetch(:name)}"} # TODO: fix #declarations to return Hash...
 % insn.declarations.each do |decl|
-%   next if dispatched && ret_decls.include?(decl) # return value should be propagated to dispatcher. TODO: assert it's the same as dispatcher
         fprintf(f, "    <%= decl %>;\n");
 % end
 
@@ -63,11 +61,9 @@
 <%= render 'mjit_compile_insn_body', locals: { insn: insn } -%>
 %
 % # JIT: Set return values
-% unless dispatched
-%   insn.rets.reverse_each.with_index do |ret, i|
-%     # TOPN(n) = ...
+% insn.rets.reverse_each.with_index do |ret, i|
+%   # TOPN(n) = ...
         fprintf(f, "    stack[%d] = <%= ret.fetch(:name) %>;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> - <%= i + 1 %>);
-%   end
 % end
 %
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
@@ -82,9 +78,7 @@
 % end
 %
 % # compiler: Move JIT compiler's internal stack pointer
-% unless dispatched
         b->stack_size += <%= insn.call_attribute('sp_inc') %>;
-% end
     }
     fprintf(f, "}\n");
 %
