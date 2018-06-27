@@ -916,7 +916,7 @@ rb_nativethread_cond_t *rb_sleep_cond_get(const rb_execution_context_t *);
 void rb_sleep_cond_put(rb_nativethread_cond_t *);
 
 static void
-waitpid_notify(struct waitpid_state *w, pid_t ret)
+waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
 {
     w->ret = ret;
     list_del_init(&w->wnode);
@@ -931,7 +931,7 @@ waitpid_each(struct list_head *head)
     struct waitpid_state *w = 0, *next;
 
     list_for_each_safe(head, w, next, wnode) {
-        pid_t ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+        rb_pid_t ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
 
         if (!ret) continue;
         if (ret == -1) w->errnum = errno;
@@ -961,7 +961,7 @@ ruby_waitpid_all(rb_vm_t *vm)
 }
 
 static void
-waitpid_state_init(struct waitpid_state *w, pid_t pid, int options)
+waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
 {
     w->ret = 0;
     w->pid = pid;
