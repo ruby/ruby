@@ -39,9 +39,3 @@ end
 def with_feature(*features, &block)
   FeatureGuard.new(*features).run_if(:with_feature, &block)
 end
-
-MSpecEnv.class_eval do
-  def without_feature(*features, &block)
-    FeatureGuard.new(*features).run_unless(:without_feature, &block)
-  end
-end
