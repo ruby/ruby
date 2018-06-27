@@ -1432,8 +1432,6 @@ str_shared_replace(VALUE str, VALUE str2)
     }
 }
 
-VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
-
 VALUE
 rb_obj_as_string(VALUE obj)
 {

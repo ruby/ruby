@@ -375,7 +375,6 @@ tostring
 (VALUE val, VALUE str)
 (VALUE val)
 {
-    VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
     val = rb_obj_as_string_result(str, val);
 }
 
@@ -399,8 +398,6 @@ toregexp
 (VALUE val)
 // attr rb_snum_t sp_inc = 1 - cnt;
 {
-    VALUE rb_reg_new_ary(VALUE ary, int options);
-    VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
     rb_ary_clear(ary);
