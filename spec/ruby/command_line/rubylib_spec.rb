@@ -16,9 +16,9 @@ describe "The RUBYLIB environment variable" do
     paths.should include(dir)
   end
 
-  it "adds a colon-separated list of directories to $LOAD_PATH" do
+  it "adds a File::PATH_SEPARATOR-separated list of directories to $LOAD_PATH" do
     dir1, dir2 = tmp("rubylib/incl1"), tmp("rubylib/incl2")
-    ENV["RUBYLIB"] = "#{dir1}:#{dir2}"
+    ENV["RUBYLIB"] = "#{dir1}#{File::PATH_SEPARATOR}#{dir2}"
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
     paths.should include(dir1)
     paths.should include(dir2)
