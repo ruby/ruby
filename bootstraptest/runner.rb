@@ -373,18 +373,13 @@ def assert_finish(timeout_seconds, testsrc, message = '')
     io = IO.popen("#{@ruby} -W0 #{filename}")
     pid = io.pid
     waited = false
-    tlimit = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout_seconds
-    diff = timeout_seconds
-    while diff > 0
+    tlimit = Time.now + timeout_seconds
+    while Time.now < tlimit
       if Process.waitpid pid, Process::WNOHANG
         waited = true
         break
       end
-      if IO.select([io], nil, nil, diff)
-        while String === io.read_nonblock(1024, exception: false)
-        end
-      end
-      diff = tlimit - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      sleep 0.1
     end
     if !waited
       Process.kill(:KILL, pid)
