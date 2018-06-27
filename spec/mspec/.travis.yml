@@ -1,8 +1,5 @@
 sudo: false
 language: ruby
-before_script:
-  # https://github.com/travis-ci/travis-ci/issues/8408
-  - unset _JAVA_OPTIONS
 script:
   - bundle exec rspec
 matrix:
@@ -23,8 +20,10 @@ matrix:
       # https://github.com/travis-ci/travis-ci/issues/8978
       - gem update --system
       - gem install bundler
-  - jdk: oraclejdk8
+  - rvm: system
     install:
-      - curl -L https://github.com/oracle/truffleruby/releases/download/vm-enterprise-0.28/truffleruby-testing-0.28.tar.gz | tar xz
-      - source truffleruby/setup_env
+      - curl -L https://github.com/oracle/truffleruby/releases/download/vm-1.0.0-rc2/truffleruby-1.0.0-rc2-linux-amd64.tar.gz | tar xz
+      - export PATH="$PWD/truffleruby-1.0.0-rc2-linux-amd64/bin:$PATH"
+      - $PWD/truffleruby-1.0.0-rc2-linux-amd64/lib/truffle/post_install_hook.sh
+      - gem install bundler
       - bundle install

@@ -159,22 +159,22 @@ end
 def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
-    if MSPEC
-      sh "bundle", "exec", "rspec"
-    else
-      versions = YAML.load_file(".travis.yml")
-      versions = versions["matrix"]["include"].map { |job| job["rvm"] }
-      versions.delete "ruby-head"
-      min_version, max_version = versions.minmax
+    versions = YAML.load_file(".travis.yml")
+    versions = versions["matrix"]["include"].map { |job| job["rvm"] }
+    versions.delete "ruby-head"
+    versions.delete "system"
+    min_version, max_version = versions.minmax
 
-      run_rubyspec = -> version {
-        command = "chruby #{version} && ../mspec/bin/mspec -j"
-        sh ENV["SHELL"], "-c", command
-      }
-      run_rubyspec[min_version]
-      run_rubyspec[max_version]
-      run_rubyspec["trunk"]
-    end
+    test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
+
+    run_test = -> version {
+      command = "chruby #{version} && #{test_command}"
+      sh ENV["SHELL"], "-c", command
+    }
+
+    run_test[min_version]
+    run_test[max_version]
+    run_test["trunk"]
   end
 end
 
