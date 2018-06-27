@@ -77,31 +77,6 @@
         }
         fprintf(f, "            goto cancel;\n");
 %   else
-%     if insn.handles_frame?
-%       # If insn.handles_frame? is true, cfp->sp might be changed inside insns (like vm_caller_setup_arg_block)
-%       # and thus we need to use cfp->sp, even when local_stack_p is TRUE. When insn.handles_frame? is true,
-%       # cfp->sp should be available too because _mjit_compile_pc_and_sp.erb sets it.
         fprintf(f, <%= to_cstr.call(line) %>);
-%     else
-%       # If local_stack_p is TRUE and insn.handles_frame? is false, stack values are only available in local variables
-%       # for stack. So we need to replace those macros if local_stack_p is TRUE here.
-%       case line
-%       when /\bGET_SP\(\)/
-%         # reg_cfp->sp
-        fprintf(f, <%= to_cstr.call(line.sub(/\bGET_SP\(\)/, '%s')) %>, (status->local_stack_p ? "(stack + stack_size)" : "GET_SP()"));
-%       when /\bSTACK_ADDR_FROM_TOP\((?<num>[^)]+)\)/
-%         # #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
-%         num = Regexp.last_match[:num]
-        fprintf(f, <%= to_cstr.call(line.sub(/\bSTACK_ADDR_FROM_TOP\(([^)]+)\)/, '%s')) %>,
-                (status->local_stack_p ? "stack + (stack_size - (<%= num %>))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
-%       when /\bTOPN\((?<num>[^)]+)\)/
-%         # #define TOPN(n) (*(GET_SP()-(n)-1))
-%         num = Regexp.last_match[:num]
-        fprintf(f, <%= to_cstr.call(line.sub(/\bTOPN\(([^)]+)\)/, '%s')) %>,
-              (status->local_stack_p ? "*(stack + (stack_size - (<%= num %>) - 1))" : "TOPN(<%= num %>)"));
-%       else
-        fprintf(f, <%= to_cstr.call(line) %>);
-%       end
-%     end
 %   end
 % end

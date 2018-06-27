@@ -111,8 +111,6 @@ enum vm_regan_acttype {
 #define INC_SP(x)  (VM_REG_SP += (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define DEC_SP(x)  (VM_REG_SP -= (COLLECT_USAGE_REGISTER_HELPER(SP, SET, (x))))
 #define SET_SV(x)  (*GET_SP() = (x))
-  /* set current stack value as x */
-#define ADJ_SP(x)  INC_SP(x)
 
 /* instruction sequence C struct */
 #define GET_ISEQ() (GET_CFP()->iseq)
@@ -191,6 +189,9 @@ enum vm_regan_acttype {
 #endif
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
+
+#define WIDTH_OF_opt_send_without_block \
+    ((rb_snum_t)attr_width_opt_send_without_block(0, 0))
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */
