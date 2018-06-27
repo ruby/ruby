@@ -1237,11 +1237,11 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 }
 
 static inline void
-vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
+vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 {
     int is_splat = flag & 0x01;
     rb_num_t space_size = num + is_splat;
-    VALUE *base = sp - 1;
+    VALUE *base = cfp->sp;
     const VALUE *ptr;
     rb_num_t len;
     const VALUE obj = ary;
@@ -1255,6 +1255,8 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 	ptr = RARRAY_CONST_PTR(ary);
 	len = (rb_num_t)RARRAY_LEN(ary);
     }
+
+    cfp->sp += space_size;
 
     if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
