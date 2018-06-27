@@ -2198,7 +2198,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(["-", RUBY], <<-INPUT, timeout: 80)
+    assert_separately(%W(--disable=gems - #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2206,7 +2206,7 @@ EOS
       parent = $$
       100.times do |i|
         pid = fork {Process.kill(:QUIT, parent)}
-        IO.popen(ruby, 'r+'){}
+        IO.popen([ruby, -'--disable=gems'], -'r+'){}
         Process.wait(pid)
         $stdout.puts
         $stdout.flush
