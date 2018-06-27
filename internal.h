@@ -1083,6 +1083,7 @@ VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_check_to_array(VALUE ary);
+VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 #if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
@@ -1735,6 +1736,7 @@ bool rb_reg_start_with_p(VALUE re, VALUE str);
 void rb_backref_set_string(VALUE string, long pos, long len);
 int rb_match_count(VALUE match);
 int rb_match_nth_defined(int nth, VALUE match);
+VALUE rb_reg_new_ary(VALUE ary, int options);
 
 /* signal.c */
 extern int ruby_enable_coredump;
@@ -1804,6 +1806,7 @@ VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, VALUE passed_proc);
 VALUE rb_sym_to_proc(VALUE sym);
 char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
+VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
