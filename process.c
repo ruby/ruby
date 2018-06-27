@@ -971,7 +971,7 @@ waitpid_state_init(struct waitpid_state *w, pid_t pid, int options)
 /*
  * must be called with vm->waitpid_lock held, this is not interruptible
  */
-pid_t
+rb_pid_t
 ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
                     rb_nativethread_cond_t *cond)
 {

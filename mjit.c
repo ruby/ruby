@@ -120,7 +120,7 @@ extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lo
 extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void));
 
 /* process.c */
-pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
+rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
                           rb_nativethread_cond_t *cond);
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
