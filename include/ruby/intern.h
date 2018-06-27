@@ -254,7 +254,7 @@ void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
 	VALUE frozen_obj = (obj); \
-	if (OBJ_FROZEN(frozen_obj)) { \
+	if (RB_OBJ_FROZEN(frozen_obj)) { \
 	    rb_error_frozen_object(frozen_obj); \
 	} \
     } while (0)
