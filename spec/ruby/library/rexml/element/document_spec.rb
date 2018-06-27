@@ -14,5 +14,3 @@ describe "REXML::Element#document" do
     REXML::Element.new("standalone").document.should be_nil
   end
 end
-
-

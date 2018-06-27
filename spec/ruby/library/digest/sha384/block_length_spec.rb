@@ -9,4 +9,3 @@ describe "Digest::SHA384#block_length" do
   end
 
 end
-

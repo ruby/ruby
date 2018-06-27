@@ -87,12 +87,10 @@ Lint/MultipleCompare:
 # Offense count: 12
 Lint/ParenthesesAsGroupedExpression:
   Exclude:
-    - 'command_line/rubyopt_spec.rb'
     - 'core/string/fixtures/freeze_magic_comment.rb'
     - 'language/block_spec.rb'
     - 'language/fixtures/send.rb'
     - 'language/method_spec.rb'
-    - 'library/socket/socket/getaddrinfo_spec.rb'
 
 # Offense count: 1
 # Cop supports --auto-correct.

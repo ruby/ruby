@@ -15,4 +15,3 @@ describe "REXML::Text#to_s" do
     t.to_s.should == "&amp; &lt; &gt;"
   end
 end
-

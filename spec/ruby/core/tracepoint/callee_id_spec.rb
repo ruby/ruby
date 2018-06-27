@@ -17,4 +17,3 @@ ruby_version_is '2.4' do
     end
   end
 end
-

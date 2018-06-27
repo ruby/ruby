@@ -11,5 +11,3 @@ describe :env_key, shared: true do
     ENV.send(@method, "should_never_be_set").should be_nil
   end
 end
-
-

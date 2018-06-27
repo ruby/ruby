@@ -99,4 +99,3 @@ describe "Class.inherited" do
   end
 
 end
-

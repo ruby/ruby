@@ -23,4 +23,3 @@ describe "REXML::Attributes#[]=" do
     @e.attributes.length.should == 0
   end
 end
-

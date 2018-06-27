@@ -68,4 +68,3 @@ describe "StringIO#printf when self is not writable" do
     lambda { io.printf("test") }.should raise_error(IOError)
   end
 end
-

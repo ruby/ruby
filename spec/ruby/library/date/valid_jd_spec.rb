@@ -7,4 +7,3 @@ describe "Date.valid_jd?" do
   it_behaves_like :date_valid_jd?, :valid_jd?
 
 end
-

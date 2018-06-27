@@ -6,5 +6,3 @@ describe "Date#valid_commercial?" do
 
   it_behaves_like :date_valid_commercial?, :valid_commercial?
 end
-
-

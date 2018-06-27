@@ -6,4 +6,3 @@ describe "StringIO" do
     StringIO.should include(Enumerable)
   end
 end
-

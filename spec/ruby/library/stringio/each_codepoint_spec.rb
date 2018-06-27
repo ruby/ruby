@@ -7,4 +7,3 @@ require_relative 'shared/codepoints'
 describe "StringIO#each_codepoint" do
   it_behaves_like :stringio_codepoints, :codepoints
 end
-

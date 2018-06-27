@@ -15,6 +15,3 @@ describe "BigDecimal#+@" do
     fifth.send(:+@).should == fifth
   end
 end
-
-
-

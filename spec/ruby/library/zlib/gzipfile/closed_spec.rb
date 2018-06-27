@@ -14,4 +14,3 @@ describe "Zlib::GzipFile#closed?" do
     end
   end
 end
-

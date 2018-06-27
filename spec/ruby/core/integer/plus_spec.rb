@@ -47,4 +47,3 @@ describe "Integer#+" do
     end
   end
 end
-

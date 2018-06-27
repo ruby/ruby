@@ -25,4 +25,3 @@ describe "BigDecimal#zero?" do
   end
 
 end
-

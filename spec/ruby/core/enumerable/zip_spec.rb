@@ -39,4 +39,3 @@ describe "Enumerable#zip" do
   end
 
 end
-

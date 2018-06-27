@@ -92,7 +92,7 @@ describe "Socket#getaddrinfo" do
         ["AF_INET6", 9, "::", "::", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP],
         ["AF_INET6", 9, "0:0:0:0:0:0:0:0", "0:0:0:0:0:0:0:0", Socket::AF_INET6, Socket::SOCK_STREAM, Socket::IPPROTO_TCP]
       ]
-      res.each { |a| expected.should include (a) }
+      res.each { |a| expected.should include(a) }
     end
 
     it "accepts empty addresses for IPv6 non-passive sockets" do

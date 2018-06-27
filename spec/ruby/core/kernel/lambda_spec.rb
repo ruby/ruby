@@ -83,4 +83,3 @@ describe "Kernel.lambda" do
     KernelSpecs::Lambda.new.outer.should == :good
   end
 end
-

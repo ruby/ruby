@@ -5,4 +5,3 @@ require_relative 'shared/length'
 describe "Digest::MD5#length" do
   it_behaves_like :md5_length, :length
 end
-

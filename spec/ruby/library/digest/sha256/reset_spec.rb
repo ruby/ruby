@@ -12,4 +12,3 @@ describe "Digest::SHA256#reset" do
   end
 
 end
-

@@ -46,4 +46,3 @@ describe "REXML::Text.new" do
     t.should == "&lt;&amp;&gt;"
   end
 end
-

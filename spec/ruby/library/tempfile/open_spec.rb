@@ -79,4 +79,3 @@ describe "Tempfile.open when passed a block" do
     @tempfile.closed?.should be_true
   end
 end
-

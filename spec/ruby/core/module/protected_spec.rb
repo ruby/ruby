@@ -53,4 +53,3 @@ describe "Module#protected" do
     end.should raise_error(NameError)
   end
 end
-

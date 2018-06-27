@@ -497,6 +497,13 @@ static VALUE string_spec_rb_String(VALUE self, VALUE val) {
 }
 #endif
 
+#ifdef HAVE_RB_STRING_VALUE_CSTR
+static VALUE string_spec_rb_string_value_cstr(VALUE self, VALUE str) {
+  char *c_str = rb_string_value_cstr(&str);
+  return c_str ? Qtrue : Qfalse;
+}
+#endif
+
 void Init_string_spec(void) {
   VALUE cls;
   cls = rb_define_class("CApiStringSpecs", rb_cObject);
@@ -733,8 +740,11 @@ void Init_string_spec(void) {
 #ifdef HAVE_RB_STRING
   rb_define_method(cls, "rb_String", string_spec_rb_String, 1);
 #endif
-}
 
+#ifdef HAVE_RB_STRING_VALUE_CSTR
+  rb_define_method(cls, "rb_string_value_cstr", string_spec_rb_string_value_cstr, 1);
+#endif
+}
 #ifdef __cplusplus
 }
 #endif

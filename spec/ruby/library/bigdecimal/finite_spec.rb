@@ -32,4 +32,3 @@ describe "BigDecimal#finite?" do
     end
   end
 end
-

@@ -46,4 +46,3 @@ describe "BigDecimal#precs" do
     end
   end
 end
-

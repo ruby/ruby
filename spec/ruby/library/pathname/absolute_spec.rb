@@ -20,4 +20,3 @@ describe "Pathname#absolute?" do
   end
 
 end
-

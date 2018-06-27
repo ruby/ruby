@@ -9,4 +9,3 @@ describe "Digest::SHA256#digest_length" do
   end
 
 end
-

@@ -34,4 +34,3 @@ describe "Digest::SHA512#==" do
   end
 
 end
-

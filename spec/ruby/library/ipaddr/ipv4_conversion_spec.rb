@@ -42,5 +42,3 @@ describe "IPAddr#ipv4_mapped" do
   end
 
 end
-
-

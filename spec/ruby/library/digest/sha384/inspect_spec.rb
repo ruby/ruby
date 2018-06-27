@@ -9,4 +9,3 @@ describe "Digest::SHA384#inspect" do
   end
 
 end
-

@@ -70,4 +70,3 @@ describe "BigDecimal#to_s" do
   end
 
 end
-
