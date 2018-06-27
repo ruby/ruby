@@ -643,7 +643,9 @@ describe "Module#private_constant marked constants" do
       lambda do
         ConstantVisibility::PrivConstModuleChild::PRIVATE_CONSTANT_MODULE
       end.should raise_error(NameError) {|e|
-        e.receiver.should == ConstantVisibility::PrivConstModule
+        ruby_bug "#14853", ""..."2.5.2" do
+          e.receiver.should == ConstantVisibility::PrivConstModule
+        end
         e.name.should == :PRIVATE_CONSTANT_MODULE
       }
     end
