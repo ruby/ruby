@@ -55,6 +55,13 @@ describe "C-API Kernel function" do
     end
   end
 
+  describe "rb_frame_this_func" do
+    it "returns the name of the method called" do
+      @s.rb_frame_this_func_test.should == :rb_frame_this_func_test
+      @s.rb_frame_this_func_test_again.should == :rb_frame_this_func_test_again
+    end
+  end
+
   describe "rb_raise" do
     it "raises an exception" do
       lambda { @s.rb_raise({}) }.should raise_error(TypeError)

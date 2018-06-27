@@ -69,4 +69,25 @@ describe :io_write, shared: true do
     lambda { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
   end
 
+  describe "on a pipe" do
+    before :each do
+      @r, @w = IO.pipe
+    end
+
+    after :each do
+      @r.close
+      @w.close
+    end
+
+    it "writes the given String to the pipe" do
+      @w.send(@method, "foo")
+      @w.close
+      @r.read.should == "foo"
+    end
+
+    it "raises Errno::EPIPE if the read end is closed" do
+      @r.close
+      -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, "Broken pipe")
+    end
+  end
 end

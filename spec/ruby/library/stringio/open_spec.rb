@@ -205,4 +205,3 @@ describe "StringIO.open when passed no arguments" do
     StringIO.open.string.should == ""
   end
 end
-

@@ -24,4 +24,3 @@ describe "Zlib::GzipFile#comment" do
     end
   end
 end
-

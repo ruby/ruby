@@ -10,6 +10,11 @@ AllCops:
 Layout/TrailingWhitespace:
   Enabled: true
 
+Layout/TrailingBlankLines:
+  Enabled: true
+  Exclude:
+    - library/coverage/fixtures/some_class.rb
+
 Lint:
   Enabled: true
 

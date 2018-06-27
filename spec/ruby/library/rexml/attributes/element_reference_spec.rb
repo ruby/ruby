@@ -16,4 +16,3 @@ describe "REXML::Attributes#[]" do
     @e.attributes["chunky bacon"].should == nil
   end
 end
-

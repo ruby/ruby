@@ -44,4 +44,3 @@ describe "BigDecimal#sign" do
   end
 
 end
-

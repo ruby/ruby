@@ -213,4 +213,132 @@ describe "Kernel#eval" do
     code = fixture __FILE__, "eval_return_without_lambda.rb"
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
   end
+
+  describe "with a magic encoding comment" do
+    it "uses the magic comment encoding for the encoding of literal strings" do
+      code = "# encoding: UTF-8\n'é'.encoding".b
+      code.encoding.should == Encoding::BINARY
+      eval(code).should == Encoding::UTF_8
+    end
+
+    it "uses the magic comment encoding for parsing constants" do
+      code = <<CODE.b
+# encoding: UTF-8
+class EvalSpecs
+  Vπ = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπ")
+      EvalSpecs::Vπ.should == 3.14
+    end
+
+    it "allows an emacs-style magic comment encoding" do
+      code = <<CODE.b
+# -*- encoding: UTF-8 -*-
+class EvalSpecs
+Vπemacs = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπemacs")
+      EvalSpecs::Vπemacs.should == 3.14
+    end
+
+    it "allows spaces before the magic encoding comment" do
+      code = <<CODE.b
+\t  \t  # encoding: UTF-8
+class EvalSpecs
+  Vπspaces = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπspaces")
+      EvalSpecs::Vπspaces.should == 3.14
+    end
+
+    it "allows a shebang line before the magic encoding comment" do
+      code = <<CODE.b
+#!/usr/bin/env ruby
+# encoding: UTF-8
+class EvalSpecs
+  Vπshebang = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπshebang")
+      EvalSpecs::Vπshebang.should == 3.14
+    end
+
+    it "allows a shebang line and some spaces before the magic encoding comment" do
+      code = <<CODE.b
+#!/usr/bin/env ruby
+  # encoding: UTF-8
+class EvalSpecs
+  Vπshebang_spaces = 3.14
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπshebang_spaces")
+      EvalSpecs::Vπshebang_spaces.should == 3.14
+    end
+
+    it "allows a magic encoding comment and a subsequent frozen_string_literal magic comment" do
+      # Make sure frozen_string_literal is not default true
+      eval("'foo'".b).frozen?.should be_false
+
+      code = <<CODE.b
+# encoding: UTF-8
+# frozen_string_literal: true
+class EvalSpecs
+  Vπstring = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπstring")
+      EvalSpecs::Vπstring.should == "frozen"
+      EvalSpecs::Vπstring.encoding.should == Encoding::UTF_8
+      EvalSpecs::Vπstring.frozen?.should be_true
+    end
+
+    it "allows a magic encoding comment and a frozen_string_literal magic comment on the same line in emacs style" do
+      code = <<CODE.b
+# -*- encoding: UTF-8; frozen_string_literal: true -*-
+class EvalSpecs
+Vπsame_line = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should include(:"Vπsame_line")
+      EvalSpecs::Vπsame_line.should == "frozen"
+      EvalSpecs::Vπsame_line.encoding.should == Encoding::UTF_8
+      EvalSpecs::Vπsame_line.frozen?.should be_true
+    end
+
+    it "ignores the magic encoding comment if it is after a frozen_string_literal magic comment" do
+      code = <<CODE.b
+# frozen_string_literal: true
+# encoding: UTF-8
+class EvalSpecs
+  Vπfrozen_first = "frozen"
+end
+CODE
+      code.encoding.should == Encoding::BINARY
+      eval(code)
+      EvalSpecs.constants(false).should_not include(:"Vπfrozen_first")
+      binary_constant = "Vπfrozen_first".b.to_sym
+      EvalSpecs.constants(false).should include(binary_constant)
+      value = EvalSpecs.const_get(binary_constant)
+      value.should == "frozen"
+      value.encoding.should == Encoding::BINARY
+      value.frozen?.should be_true
+    end
+  end
 end

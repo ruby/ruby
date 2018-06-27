@@ -17,4 +17,3 @@ describe "REXML::Attribute#inspect" do
     a.inspect.should == "&&='<>'"
   end
 end
-

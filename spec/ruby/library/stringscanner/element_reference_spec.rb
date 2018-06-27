@@ -58,4 +58,3 @@ describe "StringScanner#[]" do
     @s[:day].should == "13"
   end
 end
-

@@ -19,4 +19,3 @@ describe "Zlib::GzipFile#close" do
     io.string[10..-1].should == ([3] + Array.new(9,0)).pack('C*')
   end
 end
-

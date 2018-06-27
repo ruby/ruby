@@ -43,5 +43,3 @@ describe "URI#select" do
     lambda { uri.query = 'bar' }.should raise_error(URI::InvalidURIError)
   end
 end
-
-

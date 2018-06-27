@@ -65,6 +65,12 @@ VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
 
 #endif
 
+#ifdef HAVE_RB_FRAME_THIS_FUNC
+VALUE kernel_spec_rb_frame_this_func(VALUE self) {
+  return ID2SYM(rb_frame_this_func());
+}
+#endif
+
 #ifdef HAVE_RB_ENSURE
 VALUE kernel_spec_rb_ensure(VALUE self, VALUE main_proc, VALUE arg,
                             VALUE ensure_proc, VALUE arg2) {
@@ -348,6 +354,11 @@ void Init_kernel_spec(void) {
 
 #ifdef HAVE_RB_BLOCK_PROC
   rb_define_method(cls, "rb_block_proc", kernel_spec_rb_block_proc, 0);
+#endif
+
+#ifdef HAVE_RB_FRAME_THIS_FUNC
+  rb_define_method(cls, "rb_frame_this_func_test", kernel_spec_rb_frame_this_func, 0);
+  rb_define_method(cls, "rb_frame_this_func_test_again", kernel_spec_rb_frame_this_func, 0);
 #endif
 
 #ifdef HAVE_RB_ENSURE

@@ -94,4 +94,3 @@ END
     }.should raise_error(NameError)
   end
 end
-

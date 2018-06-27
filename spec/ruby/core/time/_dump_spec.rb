@@ -53,4 +53,3 @@ describe "Time#_dump" do
     t.send(:_dump).should == "\364\001\031\200\313\000\020\004"
   end
 end
-

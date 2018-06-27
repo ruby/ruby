@@ -1,11 +1,11 @@
 require_relative '../spec_helper'
 
 describe "Processing RUBYOPT" do
-  before (:each) do
+  before :each do
     @rubyopt, ENV["RUBYOPT"] = ENV["RUBYOPT"], nil
   end
 
-  after (:each) do
+  after :each do
     ENV["RUBYOPT"] = @rubyopt
   end
 

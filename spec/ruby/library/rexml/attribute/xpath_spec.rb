@@ -17,4 +17,3 @@ describe "REXML::Attribute#xpath" do
     lambda { @attr.xpath }.should raise_error(Exception)
   end
 end
-
