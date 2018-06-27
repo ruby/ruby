@@ -1074,12 +1074,6 @@ waitpid_wait(struct waitpid_state *w)
     }
     else if (w->options & WNOHANG) {
         w->cond = 0;
-
-        /* MJIT must be waiting, but don't tell Ruby callers about it */
-        if (w->pid < 0 && !list_empty(&vm->waiting_pids)) {
-            w->ret = -1;
-            w->errnum = ECHILD;
-        }
     }
     else {
         w->cond = rb_sleep_cond_get(w->ec);

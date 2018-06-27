@@ -4,11 +4,19 @@ describe "Process.wait2" do
   before :all do
     # HACK: this kludge is temporarily necessary because some
     # misbehaving spec somewhere else does not clear processes
+    # Note: background processes are unavoidable with MJIT,
+    # but we shouldn't reap them from Ruby-space
     begin
       Process.wait(-1, Process::WNOHANG)
-      $stderr.puts "Leaked process before wait2 specs! Waiting for it"
+      without_feature :mjit do
+        $stderr.puts "Leaked process before wait2 specs! Waiting for it"
+      end
       leaked = Process.waitall
-      $stderr.puts "leaked before wait2 specs: #{leaked}"
+      $stderr.puts "leaked before wait2 specs: #{leaked}" unless leaked.empty?
+      with_feature :mjit do
+        # Ruby-space should not see PIDs used by mjit
+        leaked.should be_empty
+      end
     rescue Errno::ECHILD # No child processes
     rescue NotImplementedError
     end
