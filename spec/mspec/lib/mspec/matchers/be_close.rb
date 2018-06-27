@@ -8,7 +8,7 @@ class BeCloseMatcher
 
   def matches?(actual)
     @actual = actual
-    (@actual - @expected).abs < @tolerance
+    (@actual - @expected).abs <= @tolerance
   end
 
   def failure_message
