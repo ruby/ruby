@@ -3213,6 +3213,17 @@ vm_find_or_create_class_by_id(ID id,
     }
 }
 
+static VALUE
+vm_opt_str_freeze(VALUE str, int bop, ID id)
+{
+    if (BASIC_OP_UNREDEFINED_P(bop, STRING_REDEFINED_OP_FLAG)) {
+	return str;
+    }
+    else {
+	return rb_funcall(rb_str_resurrect(str), id, 0);
+    }
+}
+
 /* this macro is mandatory to use OPTIMIZED_CMP. What a design! */
 #define id_cmp idCmp
 
