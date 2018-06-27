@@ -20,6 +20,3 @@ describe "REXML::Attributes#each_attribute" do
     attributes.last.should == ns_uri
   end
 end
-
-
-

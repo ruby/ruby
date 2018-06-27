@@ -865,4 +865,23 @@ describe "C-API String function" do
       @s.rb_String({"bar" => "foo"}).should == '{"bar"=>"foo"}'
     end
   end
+
+  describe "rb_string_value_cstr" do
+    it "returns a non-null pointer for a simple string" do
+      @s.rb_string_value_cstr("Hello").should == true
+    end
+
+    it "returns a non-null pointer for a UTF-16 string" do
+      @s.rb_string_value_cstr("Hello".encode('UTF-16BE')).should == true
+    end
+
+    it "raises an error if a string contains a null" do
+      lambda { @s.rb_string_value_cstr("Hello\0 with a null.") }.should raise_error(ArgumentError)
+    end
+
+    it "raises an error if a UTF-16 string contains a null" do
+      lambda { @s.rb_string_value_cstr("Hello\0 with a null.".encode('UTF-16BE')) }.should raise_error(ArgumentError)
+    end
+
+  end
 end

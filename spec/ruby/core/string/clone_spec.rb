@@ -55,4 +55,3 @@ describe "String#clone" do
     clone.should == "string"
   end
 end
-

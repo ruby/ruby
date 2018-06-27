@@ -252,6 +252,7 @@
 
 /* Enumerable */
 #define HAVE_RB_ENUMERATORIZE              1
+#define HAVE_RB_ENUMERATORIZE_WITH_SIZE    1
 
 /* Exception */
 #define HAVE_RB_EXC_NEW                    1
@@ -348,6 +349,7 @@
 #define HAVE_RB_ENSURE                     1
 #define HAVE_RB_EVAL_STRING                1
 #define HAVE_RB_EXEC_RECURSIVE             1
+#define HAVE_RB_FRAME_THIS_FUNC             1
 #define HAVE_RB_F_SPRINTF                  1
 #define HAVE_RB_NEED_BLOCK                 1
 #define HAVE_RB_RAISE                      1
@@ -563,6 +565,7 @@
 #define HAVE_RB_VSPRINTF                   1
 #define HAVE_RB_STRING                     1
 #define HAVE_SAFE_STRING_VALUE             1
+#define HAVE_RB_STRING_VALUE_CSTR          1
 
 /* Struct */
 #define HAVE_RB_STRUCT_AREF                1

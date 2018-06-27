@@ -34,4 +34,3 @@ describe "Digest::SHA384#==" do
   end
 
 end
-

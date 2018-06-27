@@ -18,4 +18,3 @@ describe "REXML::Text#wrap" do
     @t.wrap("abc def", 3, true).should == "\nabc\ndef"
   end
 end
-

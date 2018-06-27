@@ -21,4 +21,3 @@ describe "REXML::Text#indent_text" do
     @t.indent_text("foo", 1, "\t", false).should == "foo"
   end
 end
-

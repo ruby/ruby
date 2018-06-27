@@ -9,4 +9,3 @@ describe "Digest::SHA256#inspect" do
   end
 
 end
-

@@ -10,4 +10,3 @@ describe "BigDecimal#quo" do
     BigDecimal("NaN").quo(BigDecimal("1")).nan?.should == true
   end
 end
-

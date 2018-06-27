@@ -12,4 +12,3 @@ describe "Digest::MD5#reset" do
   end
 
 end
-

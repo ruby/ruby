@@ -31,4 +31,3 @@ module MetaClassSpecs
   class D < C; end
 
 end
-

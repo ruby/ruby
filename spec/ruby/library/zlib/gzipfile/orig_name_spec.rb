@@ -24,4 +24,3 @@ describe "Zlib::GzipFile#orig_name" do
     end
   end
 end
-

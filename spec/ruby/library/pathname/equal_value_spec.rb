@@ -12,4 +12,3 @@ describe "Pathname#==" do
   end
 
 end
-

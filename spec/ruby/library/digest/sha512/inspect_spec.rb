@@ -9,4 +9,3 @@ describe "Digest::SHA512#inspect" do
   end
 
 end
-

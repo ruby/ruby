@@ -58,4 +58,3 @@ describe "Kernel.printf" do
     end
   end
 end
-

@@ -11,4 +11,3 @@ describe "String#%" do
     format % args
   }
 end
-

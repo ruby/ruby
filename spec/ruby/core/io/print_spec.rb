@@ -51,4 +51,3 @@ describe IO, "#print" do
     lambda { IOSpecs.closed_io.print("stuff") }.should raise_error(IOError)
   end
 end
-

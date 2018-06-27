@@ -10,4 +10,3 @@ describe "REXML::Text.read_with_substitution" do
     lambda {REXML::Text.read_with_substitution("this is illegal", /illegal/)}.should raise_error(Exception)
   end
 end
-

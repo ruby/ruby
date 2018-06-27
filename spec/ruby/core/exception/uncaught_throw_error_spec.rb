@@ -16,4 +16,3 @@ describe "UncaughtThrowError#tag" do
     end
   end
 end
-

@@ -74,4 +74,3 @@ describe "Net::HTTP#post" do
     end
   end
 end
-

@@ -7,4 +7,3 @@ describe "Date.valid_ordinal?" do
   it_behaves_like :date_valid_ordinal?, :valid_ordinal?
 
 end
-

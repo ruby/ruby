@@ -12,4 +12,3 @@ describe "Pathname#hash" do
   end
 
 end
-

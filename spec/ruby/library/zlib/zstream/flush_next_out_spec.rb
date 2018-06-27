@@ -12,5 +12,3 @@ describe "Zlib::ZStream#flush_next_out" do
     zs.flush_next_out.should == ''
   end
 end
-
-

@@ -9,4 +9,3 @@ end
 describe "IO#pos=" do
   it_behaves_like :io_set_pos, :pos=
 end
-

@@ -83,4 +83,3 @@ describe "Net::HTTPResponse#read_body" do
     end
   end
 end
-
