@@ -246,19 +246,13 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     /* Unix98 PTY */
     int masterfd = -1, slavefd = -1;
     char *slavedevice;
-    struct sigaction dfl, old;
-
-    dfl.sa_handler = SIG_DFL;
-    dfl.sa_flags = 0;
-    sigemptyset(&dfl.sa_mask);
 
 #if defined(__sun) || (defined(__FreeBSD__) && __FreeBSD_version < 902000)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     /* FreeBSD 9.2 or later supports O_CLOEXEC
      * http://www.freebsd.org/cgi/query-pr.cgi?pr=162374 */
     if ((masterfd = posix_openpt(O_RDWR|O_NOCTTY)) == -1) goto error;
-    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
-    if (grantpt(masterfd) == -1) goto grantpt_error;
+    if (rb_grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     {
@@ -272,10 +266,8 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	if ((masterfd = posix_openpt(flags)) == -1) goto error;
     }
     rb_fd_fix_cloexec(masterfd);
-    if (sigaction(SIGCHLD, &dfl, &old) == -1) goto error;
-    if (grantpt(masterfd) == -1) goto grantpt_error;
+    if (rb_grantpt(masterfd) == -1) goto error;
 #endif
-    if (sigaction(SIGCHLD, &old, NULL) == -1) goto error;
     if (unlockpt(masterfd) == -1) goto error;
     if ((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;
@@ -293,8 +285,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
-  grantpt_error:
-    sigaction(SIGCHLD, &old, NULL);
   error:
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
@@ -346,21 +336,17 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     extern char *ptsname(int);
     extern int unlockpt(int);
-    extern int grantpt(int);
 
 #if defined(__sun)
     /* workaround for Solaris 10: grantpt() doesn't work if FD_CLOEXEC is set.  [ruby-dev:44688] */
     if((masterfd = open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
-    s = signal(SIGCHLD, SIG_DFL);
-    if(grantpt(masterfd) == -1) goto error;
+    if(rb_grantpt(masterfd) == -1) goto error;
     rb_fd_fix_cloexec(masterfd);
 #else
     if((masterfd = rb_cloexec_open("/dev/ptmx", O_RDWR, 0)) == -1) goto error;
     rb_update_max_fd(masterfd);
-    s = signal(SIGCHLD, SIG_DFL);
-    if(grantpt(masterfd) == -1) goto error;
+    if(rb_grantpt(masterfd) == -1) goto error;
 #endif
-    signal(SIGCHLD, s);
     if(unlockpt(masterfd) == -1) goto error;
     if((slavedevice = ptsname(masterfd)) == NULL) goto error;
     if (no_mesg(slavedevice, nomesg) == -1) goto error;

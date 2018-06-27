@@ -1479,6 +1479,13 @@ static void *
 thread_timer(void *p)
 {
     rb_global_vm_lock_t *gvl = (rb_global_vm_lock_t *)p;
+#ifdef HAVE_PTHREAD_SIGMASK /* mainly to enable SIGCHLD */
+    {
+        sigset_t mask;
+        sigemptyset(&mask);
+        pthread_sigmask(SIG_SETMASK, &mask, NULL);
+    }
+#endif
 
     if (TT_DEBUG) WRITE_CONST(2, "start timer thread\n");
 
@@ -1763,5 +1770,23 @@ rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void)
     pthread_attr_destroy(&attr);
     return ret;
 }
+
+#define USE_NATIVE_SLEEP_COND (1)
+
+#if USE_NATIVE_SLEEP_COND
+rb_nativethread_cond_t *
+rb_sleep_cond_get(const rb_execution_context_t *ec)
+{
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+
+    return &th->native_thread_data.sleep_cond;
+}
+
+void
+rb_sleep_cond_put(rb_nativethread_cond_t *cond)
+{
+    /* no-op */
+}
+#endif /* USE_NATIVE_SLEEP_COND */
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
