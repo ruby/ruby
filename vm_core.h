@@ -92,6 +92,14 @@
 
 #define RUBY_NSIG NSIG
 
+#if defined(SIGCLD)
+#  define RUBY_SIGCHLD    (SIGCLD)
+#elif defined(SIGCHLD)
+#  define RUBY_SIGCHLD    (SIGCHLD)
+#else
+#  define RUBY_SIGCHLD    (0)
+#endif
+
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start((a),(b))
@@ -553,6 +561,9 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
+    rb_nativethread_lock_t waitpid_lock;
+    struct list_head waiting_pids; /* PID > 0: <=> struct waitpid_state */
+    struct list_head waiting_grps; /* PID <= 0: <=> struct waitpid_state */
     struct list_head waiting_fds; /* <=> struct waiting_fd */
     struct list_head living_threads;
     VALUE thgroup_default;
@@ -1561,6 +1572,8 @@ static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
     list_head_init(&vm->waiting_fds);
+    list_head_init(&vm->waiting_pids);
+    list_head_init(&vm->waiting_grps);
     list_head_init(&vm->living_threads);
     vm->living_thread_num = 0;
 }
