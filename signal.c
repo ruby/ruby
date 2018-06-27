@@ -1588,7 +1588,7 @@ fake_grantfd(int masterfd)
     errno = ENOSYS;
     return -1;
 }
-#define grantpt(fd) fake_grantfd(int)
+#define grantpt(fd) fake_grantfd(fd)
 #endif
 
 int
