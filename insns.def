@@ -730,12 +730,7 @@ opt_str_freeze
 ()
 (VALUE val)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG)) {
-	val = str;
-    }
-    else {
-	val = rb_funcall(rb_str_resurrect(str), idFreeze, 0);
-    }
+    val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 }
 
 DEFINE_INSN
@@ -744,12 +739,7 @@ opt_str_uminus
 ()
 (VALUE val)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_UMINUS, STRING_REDEFINED_OP_FLAG)) {
-	val = str;
-    }
-    else {
-	val = rb_funcall(rb_str_resurrect(str), idUMinus, 0);
-    }
+    val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 }
 
 DEFINE_INSN
