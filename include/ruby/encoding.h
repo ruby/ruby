@@ -124,6 +124,7 @@ int rb_enc_get_index(VALUE obj);
 void rb_enc_set_index(VALUE obj, int encindex);
 int rb_enc_capable(VALUE obj);
 int rb_enc_find_index(const char *name);
+int rb_enc_alias(const char *alias, const char *orig);
 int rb_to_encoding_index(VALUE);
 rb_encoding *rb_to_encoding(VALUE);
 rb_encoding *rb_find_encoding(VALUE);
