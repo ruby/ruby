@@ -360,7 +360,7 @@ module DRb
   # drb remains valid only while that object instance remains alive
   # within the server runtime.
   #
-  # For alternative mechanisms, see DRb::TimerIdConv in rdb/timeridconv.rb
+  # For alternative mechanisms, see DRb::TimerIdConv in drb/timeridconv.rb
   # and DRbNameIdConv in sample/name.rb in the full drb distribution.
   class DRbIdConv
 
