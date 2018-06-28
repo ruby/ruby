@@ -578,29 +578,34 @@ obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
 static VALUE
 encoding_name(VALUE obj, struct dump_arg *arg)
 {
-    int encidx = rb_enc_get_index(obj);
-    rb_encoding *enc = 0;
-    st_data_t name;
+    if (rb_enc_capable(obj)) {
+        int encidx = rb_enc_get_index(obj);
+        rb_encoding *enc = 0;
+        st_data_t name;
 
-    if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
-	return Qnil;
-    }
+        if (encidx <= 0 || !(enc = rb_enc_from_index(encidx))) {
+            return Qnil;
+        }
 
-    /* special treatment for US-ASCII and UTF-8 */
-    if (encidx == rb_usascii_encindex()) {
-	return Qfalse;
-    }
-    else if (encidx == rb_utf8_encindex()) {
-	return Qtrue;
-    }
+        /* special treatment for US-ASCII and UTF-8 */
+        if (encidx == rb_usascii_encindex()) {
+            return Qfalse;
+        }
+        else if (encidx == rb_utf8_encindex()) {
+            return Qtrue;
+        }
 
-    if (arg->encodings ?
-	!st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
-	(arg->encodings = st_init_strcasetable(), 1)) {
-	name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
-	st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        if (arg->encodings ?
+            !st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
+            (arg->encodings = st_init_strcasetable(), 1)) {
+            name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
+            st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        }
+        return (VALUE)name;
     }
-    return (VALUE)name;
+    else {
+        return Qnil;
+    }
 }
 
 static void
@@ -1486,7 +1491,12 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 	    VALUE val = r_object(arg);
 	    int idx = sym2encidx(sym, val);
 	    if (idx >= 0) {
-		rb_enc_associate_index(obj, idx);
+                if (rb_enc_capable(obj)) {
+                    rb_enc_associate_index(obj, idx);
+                }
+                else {
+                    rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
+                }
 		if (has_encoding) *has_encoding = TRUE;
 	    }
 	    else {

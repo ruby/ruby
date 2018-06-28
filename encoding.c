@@ -756,6 +756,12 @@ enc_capable(VALUE obj)
     }
 }
 
+int
+rb_enc_capable(VALUE obj)
+{
+    return enc_capable(obj);
+}
+
 ID
 rb_id_encoding(void)
 {
@@ -813,6 +819,8 @@ rb_enc_get_index(VALUE obj)
 static void
 enc_set_index(VALUE obj, int idx)
 {
+    if (!enc_capable(obj)) rb_bug("enc_set_index: not capable object");
+
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET_INLINED(obj, idx);
 	return;
