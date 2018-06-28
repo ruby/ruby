@@ -173,9 +173,7 @@ static VALUE encoding_spec_rb_enc_get_index(VALUE self, VALUE obj) {
 }
 #endif
 
-#if defined(HAVE_RB_ENC_SET_INDEX) \
-      && defined(HAVE_RB_ENC_FIND_INDEX) \
-      && defined(HAVE_RB_ENC_FIND_INDEX)
+#if defined(HAVE_RB_ENC_SET_INDEX) && defined(HAVE_RB_ENC_FROM_INDEX)
 static VALUE encoding_spec_rb_enc_set_index(VALUE self, VALUE obj, VALUE index) {
   int i = NUM2INT(index);
 
@@ -376,9 +374,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_get_index", encoding_spec_rb_enc_get_index, 1);
 #endif
 
-#if defined(HAVE_RB_ENC_SET_INDEX) \
-      && defined(HAVE_RB_ENC_FIND_INDEX) \
-      && defined(HAVE_RB_ENC_FIND_INDEX)
+#if defined(HAVE_RB_ENC_SET_INDEX) && defined(HAVE_RB_ENC_FROM_INDEX)
   rb_define_method(cls, "rb_enc_set_index", encoding_spec_rb_enc_set_index, 2);
 #endif
 
