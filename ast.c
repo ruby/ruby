@@ -374,9 +374,9 @@ node_children(rb_ast_t *ast, NODE *node)
       case NODE_BLOCK_PASS:
         return rb_ary_new_from_node_args(ast, 2, node->nd_head, node->nd_body);
       case NODE_DEFN:
-        return rb_ary_new_from_node_args(ast, 1, node->nd_defn);
+        return rb_ary_new_from_args(2, ID2SYM(node->nd_mid), NEW_CHILD(ast, node->nd_defn));
       case NODE_DEFS:
-        return rb_ary_new_from_node_args(ast, 2, node->nd_recv, node->nd_defn);
+        return rb_ary_new_from_args(3, NEW_CHILD(ast, node->nd_recv), ID2SYM(node->nd_mid), NEW_CHILD(ast, node->nd_defn));
       case NODE_ALIAS:
         return rb_ary_new_from_node_args(ast, 2, node->nd_1st, node->nd_2nd);
       case NODE_VALIAS:
