@@ -787,7 +787,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_ALIAS:
 	ANN("method alias statement");
-	ANN("format: alias [u1.node] [u2.node]");
+	ANN("format: alias [nd_1st] [nd_2nd]");
 	ANN("example: alias bar foo");
 	F_NODE(nd_1st, "new name");
 	LAST_NODE;
@@ -796,7 +796,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_VALIAS:
 	ANN("global variable alias statement");
-	ANN("format: alias [u1.id](gvar) [u2.id](gvar)");
+	ANN("format: alias [nd_alias](gvar) [nd_orig](gvar)");
 	ANN("example: alias $y $x");
 	F_ID(nd_alias, "new name");
 	F_ID(nd_orig, "old name");
@@ -804,7 +804,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 
       case NODE_UNDEF:
 	ANN("method alias statement");
-	ANN("format: undef [u2.node]");
+	ANN("format: undef [nd_undef]");
 	ANN("example: undef foo");
 	LAST_NODE;
 	F_NODE(nd_undef, "old name");
