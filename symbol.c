@@ -509,7 +509,7 @@ dsymbol_alloc(const VALUE klass, const VALUE str, rb_encoding * const enc, const
     const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
     long hashval;
 
-    rb_enc_associate(dsym, enc);
+    rb_enc_set_index(dsym, rb_enc_to_index(enc));
     OBJ_FREEZE(dsym);
     RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
     RSYMBOL(dsym)->id = type;
