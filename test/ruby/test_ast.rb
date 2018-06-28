@@ -204,4 +204,23 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:foo, mid)
     assert_nil(args)
   end
+
+  def test_defn
+    node = RubyVM::AST.parse("def a; end")
+    _, _, body = *node.children
+    assert_equal("NODE_DEFN", body.type)
+    mid, defn = body.children
+    assert_equal(:a, mid)
+    assert_equal("NODE_SCOPE", defn.type)
+  end
+
+  def test_defs
+    node = RubyVM::AST.parse("def a.b; end")
+    _, _, body = *node.children
+    assert_equal("NODE_DEFS", body.type)
+    recv, mid, defn = body.children
+    assert_equal("NODE_VCALL", recv.type)
+    assert_equal(:b, mid)
+    assert_equal("NODE_SCOPE", defn.type)
+  end
 end
