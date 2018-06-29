@@ -1106,7 +1106,7 @@ waitpid_no_SIGCHLD(struct waitpid_state *w)
     }
     else {
         do {
-            rb_thread_call_without_gvl(waitpid_blocking_no_SIGCHLD, &w,
+            rb_thread_call_without_gvl(waitpid_blocking_no_SIGCHLD, w,
                                        RUBY_UBF_PROCESS, 0);
         } while (w->ret < 0 && errno == EINTR && (RUBY_VM_CHECK_INTS(w->ec),1));
     }
