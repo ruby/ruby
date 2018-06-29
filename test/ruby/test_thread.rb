@@ -1286,7 +1286,12 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    assert_normal_exit(<<-_end, '[Bug #8996]', timeout: 5, timeout_error: nil)
+    opts = { timeout: 5, timeout_error: nil }
+
+    # prevent SIGABRT from slow shutdown with MJIT
+    opts[:reprieve] = 3 if RubyVM::MJIT.enabled?
+
+    assert_normal_exit(<<-_end, '[Bug #8996]', opts)
       Thread.report_on_exception = false
       trap(:TERM){exit}
       while true
