@@ -1017,7 +1017,11 @@ waitpid_nogvl(void *x)
     rb_thread_t *th = rb_ec_thread_ptr(w->ec);
 
     rb_native_mutex_lock(&th->interrupt_lock);
-    if (!w->ret) { /* we must check this before waiting */
+    /*
+     * We must check again before waiting, timer-thread may change w->ret
+     * by the time we enter this.  And we may also be interrupted.
+     */
+    if (!w->ret && !RUBY_VM_INTERRUPTED_ANY(w->ec)) {
         rb_native_cond_wait(w->cond, &th->interrupt_lock);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
