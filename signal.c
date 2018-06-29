@@ -692,7 +692,7 @@ signal_enque(int sig)
     ATOMIC_INC(signal_buff.size);
 }
 
-static sig_atomic_t sigchld_hit;
+static rb_atomic_t sigchld_hit;
 
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
@@ -705,7 +705,7 @@ sighandler(int sig)
     /* the VM always needs to handle SIGCHLD for rb_waitpid */
     if (sig == RUBY_SIGCHLD) {
         rb_vm_t *vm = GET_VM();
-        sigchld_hit = 1;
+        ATOMIC_EXCHANGE(sigchld_hit, 1);
 
         /* avoid spurious wakeup in main thread iff nobody uses trap(:CHLD) */
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
@@ -1066,8 +1066,7 @@ void ruby_waitpid_all(rb_vm_t *); /* process.c */
 void
 ruby_sigchld_handler(rb_vm_t *vm)
 {
-    if (sigchld_hit) {
-        sigchld_hit = 0;
+    if (ATOMIC_EXCHANGE(sigchld_hit, 0)) {
         ruby_waitpid_all(vm);
     }
 }
