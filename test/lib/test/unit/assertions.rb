@@ -583,6 +583,8 @@ EOT
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
                             success: nil, **opt)
+        args = Array(args).dup
+        args.insert((Hash === args[0] ? 1 : 0), '--disable=gems')
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
         if signo = status.termsig
           EnvUtil.diagnostic_reports(Signal.signame(signo), status.pid, Time.now)
