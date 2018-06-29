@@ -255,7 +255,7 @@ def show_progress(message = '')
   end
 rescue Interrupt
   $stderr.puts "\##{@count} #{@location}"
-  raise Interrupt
+  raise
 rescue Exception => err
   $stderr.print 'E'
   $stderr.puts if @verbose
