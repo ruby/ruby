@@ -524,6 +524,21 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_exists extracted
   end
 
+  if Gem.win_platform?
+    def test_extract_tar_gz_case_insensitive
+      package = Gem::Package.new @gem
+
+      tgz_io = util_tar_gz do |tar|
+        tar.add_file 'foo/file.rb', 0644 do |io| io.write 'hi' end
+      end
+
+      package.extract_tar_gz tgz_io, @destination.upcase
+
+      extracted = File.join @destination, 'foo/file.rb'
+      assert_path_exists extracted
+    end
+  end
+
   def test_install_location
     package = Gem::Package.new @gem
 

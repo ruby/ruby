@@ -429,6 +429,14 @@ EOM
     destination
   end
 
+  def normalize_path(pathname)
+    if Gem.win_platform?
+      pathname.downcase
+    else
+      pathname
+    end
+  end
+
   def mkdir_p_safe mkdir, mkdir_options, destination_dir, file_name
     destination_dir = realpath File.expand_path(destination_dir)
     parts = mkdir.split(File::SEPARATOR)
@@ -437,7 +445,7 @@ EOM
       path = File.expand_path(path + File::SEPARATOR + basename)
       lstat = File.lstat path rescue nil
       if !lstat || !lstat.directory?
-        unless path.start_with? destination_dir and (FileUtils.mkdir path, mkdir_options rescue false)
+        unless normalize_path(path).start_with? normalize_path(destination_dir) and (FileUtils.mkdir path, mkdir_options rescue false)
           raise Gem::Package::PathError.new(file_name, destination_dir)
         end
       end
