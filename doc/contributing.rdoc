@@ -53,10 +53,10 @@ on your ticket.
 
 You can report downstream issues for the following distributions via their bug tracker:
 
-* {debian}[http://bugs.debian.org/cgi-bin/pkgreport.cgi?src=ruby-defaults]
+* {debian}[https://bugs.debian.org/cgi-bin/pkgreport.cgi?src=ruby-defaults]
 * {freebsd}[http://www.freebsd.org/cgi/query-pr-summary.cgi?text=ruby]
 * {redhat}[https://bugzilla.redhat.com/buglist.cgi?bug_status=NEW&bug_status=ASSIGNED&bug_status=REOPENED&bug_status=MODIFIED]
-* {macports}[http://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
+* {macports}[https://trac.macports.org/query?status=assigned&status=new&status=reopened&port=~ruby]
 * etc (add your distribution bug tracker here)
 
 === Platform Maintainers
@@ -254,7 +254,7 @@ the {ruby-core documentation on
 ruby-lang.org}[https://www.ruby-lang.org/en/community/ruby-core/].
 
 This guide will use git for contributing.  The {git
-homepage}[http://git-scm.com/] has installation instructions with links to
+homepage}[https://git-scm.com/] has installation instructions with links to
 documentation for learning more about git. There is a mirror of the subversion
 repository on {github}[https://github.com/ruby/ruby].
 
@@ -358,7 +358,7 @@ To improve the chance your patch will be accepted please follow these simple rul
 
 First thing you should do is check out the code if you haven't already:
 
-  git clone git://github.com/ruby/ruby.git ruby-trunk
+  git clone https://github.com/ruby/ruby.git ruby-trunk
 
 Now create a dedicated branch:
 
@@ -454,7 +454,7 @@ Since git is a distributed system, you are welcome to host your git repository
 on any {publicly accessible hosting
 site}[https://git.wiki.kernel.org/index.php/GitHosting], including {hosting your
 own}[https://www.kernel.org/pub/software/scm/git/docs/user-manual.html#public-repositories]
-You may use the {'git format-patch'}[http://git-scm.com/docs/git-format-patch]
+You may use the {'git format-patch'}[https://git-scm.com/docs/git-format-patch]
 command to generate patch files to upload to redmine.  You may also use
-the {'git request-pull'}[http://git-scm.com/docs/git-request-pull] command for
+the {'git request-pull'}[https://git-scm.com/docs/git-request-pull] command for
 formatting pull request messages to redmine.
