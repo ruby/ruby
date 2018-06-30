@@ -591,7 +591,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
       pid = spawn(EnvUtil.rubybin, "test-script")
       ps = nil
-      stop = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      stop = now + 30
       begin
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
@@ -620,7 +621,8 @@ class TestRubyOptions < Test::Unit::TestCase
 
       pid = spawn(EnvUtil.rubybin, "test-script")
       ps = nil
-      stop = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
+      now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      stop = now + 30
       begin
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
