@@ -1375,6 +1375,16 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
 
     need_polling = !ubf_threads_empty();
 
+    if (SIGCHLD_LOSSY && !need_polling) {
+        rb_vm_t *vm = container_of(gvl, rb_vm_t, gvl);
+
+        rb_native_mutex_lock(&vm->waitpid_lock);
+        if (!list_empty(&vm->waiting_pids) || !list_empty(&vm->waiting_grps)) {
+            need_polling = 1;
+        }
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+    }
+
     if (gvl->waiting > 0 || need_polling) {
 	/* polling (TIME_QUANTUM_USEC usec) */
 	result = poll(pollfds, 1, TIME_QUANTUM_USEC/1000);

@@ -100,6 +100,13 @@
 #  define RUBY_SIGCHLD    (0)
 #endif
 
+/* platforms with broken or non-existent SIGCHLD work by polling */
+#if defined(__APPLE__) || defined(__WIN32__)
+#  define SIGCHLD_LOSSY (1)
+#else
+#  define SIGCHLD_LOSSY (0)
+#endif
+
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start((a),(b))
