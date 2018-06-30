@@ -1,6 +1,7 @@
 # -*- coding: us-ascii -*-
 require 'test/unit'
 
+require 'timeout'
 require 'tmpdir'
 require 'tempfile'
 require_relative '../lib/jit_support'
@@ -590,14 +591,17 @@ class TestRubyOptions < Test::Unit::TestCase
 
       pid = spawn(EnvUtil.rubybin, "test-script")
       ps = nil
+      stop = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
       begin
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
-      end until Process.wait(pid, Process::WNOHANG)
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end until Process.wait(pid, Process::WNOHANG) || now > stop
       assert_match(/hello world/, ps)
+      assert_operator now, :<, stop
       Process.kill :KILL, pid
-      Process.wait(pid)
+      Timeout.timeout(5) { Process.wait(pid) }
     end
   end
 
@@ -616,14 +620,17 @@ class TestRubyOptions < Test::Unit::TestCase
 
       pid = spawn(EnvUtil.rubybin, "test-script")
       ps = nil
+      stop = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 30
       begin
         sleep 0.1
         ps = `#{PSCMD.join(' ')} #{pid}`
         break if /hello world/ =~ ps
-      end until Process.wait(pid, Process::WNOHANG)
+        now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      end until Process.wait(pid, Process::WNOHANG) || now > stop
       assert_match(/hello world/, ps)
+      assert_operator now, :<, stop
       Process.kill :KILL, pid
-      Process.wait(pid)
+      Timeout.timeout(5) { Process.wait(pid) }
     end
   end
 
