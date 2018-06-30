@@ -3979,7 +3979,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, enum rb_realpath_mode mode
     if (origenc != enc && rb_enc_str_asciionly_p(resolved))
 	rb_enc_associate(resolved, origenc);
 
-    OBJ_TAINT(resolved);
+    OBJ_INFECT(resolved, unresolved_path);
     return resolved;
 }
 
