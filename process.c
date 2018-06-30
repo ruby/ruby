@@ -923,15 +923,27 @@ waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
     rb_native_cond_signal(w->cond);
 }
 
-/* called by both timer thread and main thread */
+#ifdef _WIN32 /* for spawnvp result from mjit.c */
+#  define waitpid_sys(pid,status,options) \
+	  (WaitForSingleObject((HANDLE)(pid), 0),\
+	   GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(status)))
+#else
+#  define waitpid_sys(pid,status,options) do_waitpid((pid),(status),(options))
+#endif
 
+/* called by timer thread */
 static void
 waitpid_each(struct list_head *head)
 {
     struct waitpid_state *w = 0, *next;
 
     list_for_each_safe(head, w, next, wnode) {
-        rb_pid_t ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+        rb_pid_t ret;
+
+        if (w->ec)
+            ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
+        else
+            ret = waitpid_sys(w->pid, &w->status, w->options | WNOHANG);
 
         if (!ret) continue;
         if (ret == -1) w->errnum = errno;
