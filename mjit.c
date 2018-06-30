@@ -408,7 +408,7 @@ exec_process(const char *path, char *const argv[])
 {
     int stat, exit_code = -2;
     pid_t pid;
-    rb_vm_t *vm = RUBY_SIGCHLD ? GET_VM() : 0;
+    rb_vm_t *vm = (RUBY_SIGCHLD || SIGCHLD_LOSSY) ? GET_VM() : 0;
     rb_nativethread_cond_t cond;
 
     if (vm) {

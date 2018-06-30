@@ -1066,7 +1066,7 @@ void ruby_waitpid_all(rb_vm_t *); /* process.c */
 void
 ruby_sigchld_handler(rb_vm_t *vm)
 {
-    if (ATOMIC_EXCHANGE(sigchld_hit, 0)) {
+    if (SIGCHLD_LOSSY || ATOMIC_EXCHANGE(sigchld_hit, 0)) {
         ruby_waitpid_all(vm);
     }
 }

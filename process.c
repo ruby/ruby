@@ -1126,7 +1126,7 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     waitpid_state_init(&w, pid, flags);
     w.ec = GET_EC();
 
-    if (RUBY_SIGCHLD) {
+    if (RUBY_SIGCHLD || SIGCHLD_LOSSY) {
         waitpid_wait(&w);
     }
     else {
