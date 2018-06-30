@@ -3,6 +3,7 @@ require_relative '../spec_helper'
 describe "The RUBYLIB environment variable" do
   before :each do
     @rubylib, ENV["RUBYLIB"] = ENV["RUBYLIB"], nil
+    @pre  = @rubylib.nil? ? '' : @rubylib + File::PATH_SEPARATOR
   end
 
   after :each do
@@ -11,14 +12,14 @@ describe "The RUBYLIB environment variable" do
 
   it "adds a directory to $LOAD_PATH" do
     dir = tmp("rubylib/incl")
-    ENV["RUBYLIB"] = dir
+    ENV["RUBYLIB"] = @pre + dir
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
     paths.should include(dir)
   end
 
   it "adds a File::PATH_SEPARATOR-separated list of directories to $LOAD_PATH" do
     dir1, dir2 = tmp("rubylib/incl1"), tmp("rubylib/incl2")
-    ENV["RUBYLIB"] = "#{dir1}#{File::PATH_SEPARATOR}#{dir2}"
+    ENV["RUBYLIB"] = @pre + "#{dir1}#{File::PATH_SEPARATOR}#{dir2}"
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
     paths.should include(dir1)
     paths.should include(dir2)
@@ -27,7 +28,7 @@ describe "The RUBYLIB environment variable" do
 
   it "adds the directory at the front of $LOAD_PATH" do
     dir = tmp("rubylib/incl_front")
-    ENV["RUBYLIB"] = dir
+    ENV["RUBYLIB"] = @pre + dir
     paths = ruby_exe("puts $LOAD_PATH").lines.map(&:chomp)
     if PlatformGuard.implementation? :ruby
       # In a MRI checkout, $PWD and some extra -I entries end up as
@@ -42,7 +43,7 @@ describe "The RUBYLIB environment variable" do
   it "adds the directory after directories added by -I" do
     dash_i_dir = tmp("dash_I_include")
     rubylib_dir = tmp("rubylib_include")
-    ENV["RUBYLIB"] = rubylib_dir
+    ENV["RUBYLIB"] = @pre + rubylib_dir
     paths = ruby_exe("puts $LOAD_PATH", options: "-I #{dash_i_dir}").lines.map(&:chomp)
     paths.should include(dash_i_dir)
     paths.should include(rubylib_dir)
@@ -52,7 +53,7 @@ describe "The RUBYLIB environment variable" do
   it "adds the directory after directories added by -I within RUBYOPT" do
     rubyopt_dir = tmp("rubyopt_include")
     rubylib_dir = tmp("rubylib_include")
-    ENV["RUBYLIB"] = rubylib_dir
+    ENV["RUBYLIB"] = @pre + rubylib_dir
     paths = ruby_exe("puts $LOAD_PATH", env: { "RUBYOPT" => "-I#{rubyopt_dir}" }).lines.map(&:chomp)
     paths.should include(rubyopt_dir)
     paths.should include(rubylib_dir)
@@ -60,7 +61,7 @@ describe "The RUBYLIB environment variable" do
   end
 
   it "keeps spaces in the value" do
-    ENV["RUBYLIB"] = " rubylib/incl "
+    ENV["RUBYLIB"] = @pre + " rubylib/incl "
     out = ruby_exe("puts $LOAD_PATH")
     out.should include(" rubylib/incl ")
   end
