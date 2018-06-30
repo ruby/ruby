@@ -101,7 +101,7 @@
 #endif
 
 /* platforms with broken or non-existent SIGCHLD work by polling */
-#if defined(__APPLE__) || defined(__WIN32__)
+#if defined(__APPLE__) || defined(__WIN32__) || defined(_WIN32)
 #  define SIGCHLD_LOSSY (1)
 #else
 #  define SIGCHLD_LOSSY (0)
