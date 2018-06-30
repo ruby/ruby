@@ -334,7 +334,7 @@ a wealth of information available at
 {documenting-ruby.org}[http://documenting-ruby.org/].
 
 There is also the {Ruby Reference
-Manual}[https://bugs.ruby-lang.org/projects/rurema] in Japanese.
+Manual}[https://github.com/rurema/doctree/wiki] in Japanese.
 
 == Contributing A Patch
 
