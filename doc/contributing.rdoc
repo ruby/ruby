@@ -374,7 +374,8 @@ trunk, or edge Ruby.
 
 Here are some general rules to follow when writing Ruby and C code for CRuby:
 
-* Indent 4 spaces for C with tabs for eight-space indentation (emacs default)
+* Indent 4 spaces for C without tabs (old codes might use tabs for eight-space indentation,
+  but newer codes recommend to use spaces only)
 * Indent 2 space tabs for Ruby
 * Do not use TABs in ruby codes
 * ANSI C style for 1.9+ for function declarations
