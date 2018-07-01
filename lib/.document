@@ -4,6 +4,7 @@
 
 bundler
 cgi
+csv
 drb
 forwardable
 irb
