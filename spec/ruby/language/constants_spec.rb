@@ -632,7 +632,6 @@ describe "Module#private_constant marked constants" do
     end
 
     it "has the defined class as the :name attribute" do
-      exception = nil
       lambda do
         ConstantVisibility::PrivConstClassChild::PRIVATE_CONSTANT_CLASS
       end.should raise_error(NameError) {|e|
