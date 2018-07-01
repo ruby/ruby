@@ -83,6 +83,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Kernel
 
+  * Kernel#then is a new alias for Kernel#yield_self [Feature #14594]
+
   * Kernel.#Complex takes :exception option to specify the way of error handling  [Feature #12732]
 
   * Kernel.#Float takes :exception option to specify the way of error handling  [Feature #12732]
