@@ -422,7 +422,7 @@ exec_process(const char *path, char *const argv[])
                      : waitpid(pid, &stat, 0);
         if (r == -1) {
             if (errno == EINTR) continue;
-            fprintf(stderr, "[%d] waitpid(%d): %s (SIGCHLD=%d,%u)\n",
+            fprintf(stderr, "[%d] waitpid(%"PRI_PIDT_PREFIX"d): %s (SIGCHLD=%d,%u)\n",
                     getpid(), pid, strerror(errno),
                     RUBY_SIGCHLD, SIGCHLD_LOSSY);
             break;
