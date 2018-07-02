@@ -1034,6 +1034,9 @@ waitpid_nogvl(void *x)
      * by the time we enter this.  And we may also be interrupted.
      */
     if (!w->ret && !RUBY_VM_INTERRUPTED_ANY(w->ec)) {
+        if (SIGCHLD_LOSSY) {
+            rb_thread_wakeup_timer_thread();
+        }
         rb_native_cond_wait(w->cond, &th->interrupt_lock);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
