@@ -268,7 +268,7 @@ real_ms_time(void)
 static int
 sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    return snprintf(str, size, "%s/%sp%luu%lu%s", tmp_dir, prefix, (unsigned long) getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
 }
 
 /* Return an unique file name in /tmp with PREFIX and SUFFIX and
@@ -422,7 +422,7 @@ exec_process(const char *path, char *const argv[])
                      : waitpid(pid, &stat, 0);
         if (r == -1) {
             if (errno == EINTR) continue;
-            fprintf(stderr, "[%d] waitpid(%"PRI_PIDT_PREFIX"d): %s (SIGCHLD=%d,%u)\n",
+            fprintf(stderr, "[%"PRI_PIDT_PREFIX"d] waitpid(%"PRI_PIDT_PREFIX"d): %s (SIGCHLD=%d,%u)\n",
                     getpid(), pid, strerror(errno),
                     RUBY_SIGCHLD, SIGCHLD_LOSSY);
             break;
