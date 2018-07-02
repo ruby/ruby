@@ -179,6 +179,9 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->ext.enc.index = -1;
     opt->intern.enc.index = -1;
     opt->features = DEFAULT_FEATURES;
+#ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
+    opt->mjit.on = MJIT_FORCE_ENABLE;
+#endif
     return opt;
 }
 
@@ -1533,10 +1536,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_binding_t *toplevel_binding;
     const struct rb_block *base_block;
     unsigned int dump = opt->dump & dump_exit_bits;
-
-#ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->mjit.on = 1;
-#endif
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
 	const char *const progname =
