@@ -937,11 +937,18 @@ internal_read_func(void *ptr)
     return read(iis->fd, iis->buf, iis->capa);
 }
 
+#if defined __APPLE__
+# define do_write_retry(code) do {ret = code;} while (ret == -1 && errno == EPROTOTYPE)
+#else
+# define do_write_retry(code) ret = code
+#endif
 static VALUE
 internal_write_func(void *ptr)
 {
     struct io_internal_write_struct *iis = ptr;
-    return write(iis->fd, iis->buf, iis->capa);
+    ssize_t ret;
+    do_write_retry(write(iis->fd, iis->buf, iis->capa));
+    return (VALUE)ret;
 }
 
 static void*
@@ -956,7 +963,9 @@ static VALUE
 internal_writev_func(void *ptr)
 {
     struct io_internal_writev_struct *iis = ptr;
-    return writev(iis->fd, iis->iov, iis->iovcnt);
+    ssize_t ret;
+    do_write_retry(writev(iis->fd, iis->iov, iis->iovcnt));
+    return (VALUE)ret;
 }
 #endif
 

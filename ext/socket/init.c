@@ -56,6 +56,12 @@ is_socket(int fd)
 }
 #endif
 
+#if defined __APPLE__
+# define do_write_retry(code) do {ret = code;} while (ret == -1 && errno == EPROTOTYPE)
+#else
+# define do_write_retry(code) ret = code
+#endif
+
 VALUE
 rsock_init_sock(VALUE sock, int fd)
 {
@@ -83,8 +89,10 @@ rsock_sendto_blocking(void *data)
 {
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
-    return (VALUE)sendto(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
-                         arg->flags, arg->to, arg->tolen);
+    ssize_t ret;
+    do_write_retry(sendto(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+			  arg->flags, arg->to, arg->tolen));
+    return (VALUE)ret;
 }
 
 VALUE
@@ -92,8 +100,10 @@ rsock_send_blocking(void *data)
 {
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
-    return (VALUE)send(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
-                       arg->flags);
+    ssize_t ret;
+    do_write_retry(send(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+			arg->flags));
+    return (VALUE)ret;
 }
 
 struct recvfrom_arg {
@@ -366,10 +376,18 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
 	rb_io_flush(sock);
     }
 
+#ifdef __APPLE__
+  again:
+#endif
     n = (long)send(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str), MSG_DONTWAIT);
     if (n < 0) {
 	int e = errno;
 
+#ifdef __APPLE__
+	if (e == EPROTOTYPE) {
+	    goto again;
+	}
+#endif
 	if (e == EWOULDBLOCK || e == EAGAIN) {
 	    if (ex == Qfalse) return sym_wait_writable;
 	    rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
