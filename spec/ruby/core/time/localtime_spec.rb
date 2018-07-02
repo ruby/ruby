@@ -90,6 +90,19 @@ describe "Time#localtime" do
 
       t.utc_offset.should == -18000
     end
+
+    it "does nothing if already in a local time zone" do
+      time = with_timezone("America/New_York") do
+        break Time.new(2005, 2, 27, 22, 50, 0)
+      end
+      zone = time.zone
+
+      with_timezone("Europe/Amsterdam") do
+        time.localtime
+      end
+
+      time.zone.should == zone
+    end
   end
 
   describe "with an argument that responds to #to_str" do
