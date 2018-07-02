@@ -206,6 +206,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     const char *nm;
     long len;
     int prefix = 0;
+    size_t left_len;
 
     if (RB_SYMBOL_P(vsig)) {
 	*sig_ptr = vsig = rb_sym2str(vsig);
@@ -258,8 +259,10 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     }
 
     if (prefix_ptr) *prefix_ptr = prefix;
+    left_len = len - prefix;
     for (sigs = siglist + !exit; sigs->signm; sigs++) {
-	if (memcmp(sigs->signm, nm + prefix, len - prefix) == 0 &&
+	if (left_len != strlen(sigs->signm)) { continue; }
+	if (memcmp(sigs->signm, nm + prefix, left_len) == 0 &&
 	    sigs->signm[len - prefix] == '\0') {
 	    return negative ? -sigs->signo : sigs->signo;
 	}
