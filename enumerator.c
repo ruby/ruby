@@ -2233,27 +2233,35 @@ lazy_drop_while(VALUE obj)
 }
 
 static VALUE
-lazy_uniq_i(VALUE i, VALUE hash, int argc, const VALUE *argv, VALUE yielder)
+lazy_uniq_i(VALUE i, int argc, const VALUE *argv, VALUE yielder)
 {
+    VALUE hash;
+
+    hash = rb_attr_get(yielder, id_memo);
+    if (NIL_P(hash)) {
+        hash = rb_obj_hide(rb_hash_new());
+        rb_ivar_set(yielder, id_memo, hash);
+    }
+
     if (rb_hash_add_new_element(hash, i, Qfalse))
 	return Qnil;
     return rb_funcallv(yielder, id_yield, argc, argv);
 }
 
 static VALUE
-lazy_uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+lazy_uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
 {
     VALUE yielder = (--argc, *argv++);
     i = rb_enum_values_pack(argc, argv);
-    return lazy_uniq_i(i, hash, argc, argv, yielder);
+    return lazy_uniq_i(i, argc, argv, yielder);
 }
 
 static VALUE
-lazy_uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+lazy_uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
 {
     VALUE yielder = (--argc, *argv++);
     i = rb_yield_values2(argc, argv);
-    return lazy_uniq_i(i, hash, argc, argv, yielder);
+    return lazy_uniq_i(i, argc, argv, yielder);
 }
 
 static VALUE
@@ -2261,9 +2269,8 @@ lazy_uniq(VALUE obj)
 {
     rb_block_call_func *const func =
 	rb_block_given_p() ? lazy_uniq_iter : lazy_uniq_func;
-    VALUE hash = rb_obj_hide(rb_hash_new());
     return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 func, hash),
+					 func, 0),
 			   0, 0);
 }
 
