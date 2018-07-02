@@ -2257,6 +2257,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
+		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 		rb_name_err_raise("private constant %2$s::%1$s referenced",
 				  tmp, ID2SYM(id));
 	    }
