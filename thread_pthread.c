@@ -427,15 +427,22 @@ native_thread_init(rb_thread_t *th)
     ruby_thread_set_native(th);
 }
 
+#ifndef USE_THREAD_CACHE
+#define USE_THREAD_CACHE 1
+#endif
+
 static void
 native_thread_destroy(rb_thread_t *th)
 {
     rb_native_cond_destroy(&th->native_thread_data.sleep_cond);
-}
 
-#ifndef USE_THREAD_CACHE
-#define USE_THREAD_CACHE 1
-#endif
+    /*
+     * prevent false positive from ruby_thread_has_gvl_p if that
+     * gets called from an interposing function wrapper
+     */
+    if (USE_THREAD_CACHE)
+        ruby_thread_set_native(0);
+}
 
 #if USE_THREAD_CACHE
 static rb_thread_t *register_cached_thread_and_wait(void);
