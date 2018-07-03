@@ -142,14 +142,21 @@ enum fiber_status {
 #define FIBER_RUNNABLE_P(fib)   (FIBER_CREATED_P(fib) || FIBER_SUSPENDED_P(fib))
 
 #if FIBER_USE_NATIVE && !defined(_WIN32)
-static inline void
+static inline int
 fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, size_t size)
 {
-    getcontext(context);
+    if (getcontext(context) < 0) return -1;
+    /*
+     * getcontext() may fail by some reasons:
+     *   1. SELinux policy banned one of "rt_sigprocmask",
+     *     "sigprocmask" or "swapcontext";
+     *   2. libseccomp (aka. syscall filter) banned one of them.
+     */
     context->uc_link = NULL;
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
     makecontext(context, func, 0);
+    return 0;
 }
 #endif
 
@@ -856,7 +863,9 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
     ptr = fiber_machine_stack_alloc(size);
     fib->ss_sp = ptr;
     fib->ss_size = size;
-    fiber_context_create(&fib->context, fiber_entry, NULL, fib->ss_sp, fib->ss_size);
+    if (fiber_context_create(&fib->context, fiber_entry, NULL, fib->ss_sp, fib->ss_size)) {
+	rb_raise(rb_eFiberError, "can't get context for creating fiber: %s", ERRNOMSG);
+    }
     sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
     sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
 #endif
