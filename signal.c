@@ -64,7 +64,7 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 
 #define FOREACH_SIGNAL(sig, offset) \
     for (sig = siglist + (offset); sig < siglist + numberof(siglist); ++sig)
-static const int LONGEST_SIGNAME = 7; /* MIGRATE and RETRACT */
+enum { LONGEST_SIGNAME = 7 }; /* MIGRATE and RETRACT */
 static const struct signals {
     char signm[LONGEST_SIGNAME + 1];
     int  signo;
