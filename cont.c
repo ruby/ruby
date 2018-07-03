@@ -141,11 +141,21 @@ enum fiber_status {
 #define FIBER_TERMINATED_P(fib) ((fib)->status == FIBER_TERMINATED)
 #define FIBER_RUNNABLE_P(fib)   (FIBER_CREATED_P(fib) || FIBER_SUSPENDED_P(fib))
 
+static VALUE rb_eFiberError;
+
 #if FIBER_USE_NATIVE && !defined(_WIN32)
 static inline void
 fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, size_t size)
 {
-    getcontext(context);
+    if (getcontext(context) < 0) {
+        rb_raise(rb_eFiberError, "can't get context for creating fiber: %s", strerror(errno));
+    }
+    /* If getcontext() failed, accessing the members of "context" can be dangerous,
+     * the makecontext() will also be meaningless, and the following code will trigger a SIGSEGV.
+     * Some possible reasons are as follows:
+     *   1. SELinux policy banned one of "rt_sigprocmask", "sigprocmask" or "swapcontext";
+     *   2. libseccomp (aka. syscall filter) banned one of them.
+     */
     context->uc_link = NULL;
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
@@ -262,7 +272,6 @@ ec_switch(rb_thread_t *th, rb_fiber_t *fib)
 static const rb_data_type_t cont_data_type, fiber_data_type;
 static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
-static VALUE rb_eFiberError;
 
 #define GetContPtr(obj, ptr)  \
     TypedData_Get_Struct((obj), rb_context_t, &cont_data_type, (ptr))
