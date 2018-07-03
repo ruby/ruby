@@ -103,7 +103,7 @@ mjit_exec(rb_execution_context_t *ec)
     total_calls = ++body->total_calls;
 
     func = body->jit_func;
-    if (UNLIKELY((ptrdiff_t)func <= (ptrdiff_t)LAST_JIT_ISEQ_FUNC)) {
+    if (UNLIKELY((uintptr_t)func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)) {
         switch ((enum rb_mjit_iseq_func)func) {
           case NOT_ADDED_JIT_ISEQ_FUNC:
             if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
