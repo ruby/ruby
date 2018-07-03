@@ -15,9 +15,9 @@ AS_MESSAGE([checking ${msg_checking}$1${msg_reset}...])])dnl
 
 AC_DISABLE_OPTION_CHECKING
 
-AC_ARG_VAR([cflags], [additional CFLAGS])
-AC_ARG_VAR([cppflags], [additional CPPFLAGS])
-AC_ARG_VAR([cxxflags], [additional CXXFLAGS])
+AC_ARG_VAR([cflags], [additional CFLAGS (ignored when CFLAGS is given)])
+AC_ARG_VAR([cppflags], [additional CPPFLAGS (ignored when CPPFLAGS is given)])
+AC_ARG_VAR([cxxflags], [additional CXXFLAGS (ignored when CXXFLAGS is given)])
 
 : "environment section" && {
 HAVE_BASERUBY=yes
