@@ -145,7 +145,15 @@ enum fiber_status {
 static inline void
 fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, size_t size)
 {
-    getcontext(context);
+    if (getcontext(context) < 0) {
+        rb_raise(rb_eFiberError, "can't get context for creating fiber: %s", ERRNOMSG);
+    }
+    /* If getcontext() failed, accessing the members of "context" can be dangerous,
+     * the makecontext() will also be meaningless, and the following code will trigger a SIGSEGV.
+     * Some possible reasons are as follows:
+     *   1. SELinux policy banned one of "rt_sigprocmask", "sigprocmask" or "swapcontext";
+     *   2. libseccomp (aka. syscall filter) banned one of them.
+     */
     context->uc_link = NULL;
     context->uc_stack.ss_sp = ptr;
     context->uc_stack.ss_size = size;
