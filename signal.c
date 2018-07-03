@@ -62,8 +62,11 @@ ruby_atomic_compare_and_swap(rb_atomic_t *ptr, rb_atomic_t cmp,
 }
 #endif
 
+#define FOREACH_SIGNAL(sig, offset) \
+    for (sig = siglist + (offset); sig < siglist + numberof(siglist); ++sig)
+static const int LONGEST_SIGNAME = 7; /* MIGRATE and RETRACT */
 static const struct signals {
-    const char *signm;
+    char signm[LONGEST_SIGNAME + 1];
     int  signo;
 } siglist [] = {
     {"EXIT", 0},
@@ -192,7 +195,6 @@ static const struct signals {
 #ifdef SIGINFO
     {"INFO", SIGINFO},
 #endif
-    {NULL, 0}
 };
 
 static const char signame_prefix[3] = "SIG";
@@ -204,7 +206,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     const struct signals *sigs;
     VALUE vsig = *sig_ptr;
     const char *nm;
-    long len;
+    long len, nmlen;
     int prefix = 0;
 
     if (RB_SYMBOL_P(vsig)) {
@@ -258,9 +260,12 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     }
 
     if (prefix_ptr) *prefix_ptr = prefix;
-    for (sigs = siglist + !exit; sigs->signm; sigs++) {
-	if (memcmp(sigs->signm, nm + prefix, len - prefix) == 0 &&
-	    sigs->signm[len - prefix] == '\0') {
+    nmlen = len - prefix;
+    nm += prefix;
+    if (nmlen > LONGEST_SIGNAME) goto unsupported;
+    FOREACH_SIGNAL(sigs, !exit) {
+	if (memcmp(sigs->signm, nm, nmlen) == 0 &&
+	    sigs->signm[nmlen] == '\0') {
 	    return negative ? -sigs->signo : sigs->signo;
 	}
     }
@@ -272,9 +277,10 @@ signo2signm(int no)
 {
     const struct signals *sigs;
 
-    for (sigs = siglist; sigs->signm; sigs++)
+    FOREACH_SIGNAL(sigs, 0) {
 	if (sigs->signo == no)
 	    return sigs->signm;
+    }
     return 0;
 }
 
@@ -1415,7 +1421,7 @@ sig_list(void)
     VALUE h = rb_hash_new();
     const struct signals *sigs;
 
-    for (sigs = siglist; sigs->signm; sigs++) {
+    FOREACH_SIGNAL(sigs, 0) {
 	rb_hash_aset(h, rb_fstring_cstr(sigs->signm), INT2FIX(sigs->signo));
     }
     return h;
