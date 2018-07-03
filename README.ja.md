@@ -43,7 +43,7 @@ https://www.ruby-lang.org/ja/downloads/
 
 SubversionのミラーをGitHubに公開しています． 以下のコマンドでリポジトリを取得できます．
 
-    $ git clone git://github.com/ruby/ruby.git
+    $ git clone https://github.com/ruby/ruby.git
 
 ## ホームページ
 
