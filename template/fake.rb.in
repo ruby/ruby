@@ -42,4 +42,9 @@ srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.read(fake), nil, fake)
-ENV["RUBYOPT"] = ["-r#{__FILE__}", ENV["RUBYOPT"]].compact.join(" ")
+ropt = "-r#{__FILE__}"
+["RUBYOPT"].each do |flag|
+  opt = ENV[flag]
+  opt = opt ? ([ropt] | opt.split).join(" ") : ropt
+  ENV[flag] = opt
+end
