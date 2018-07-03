@@ -149,7 +149,7 @@ fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, 
     /*
      * getcontext() may fail by some reasons:
      *   1. SELinux policy banned one of "rt_sigprocmask",
-     *     "sigprocmask" or "swapcontext";
+     *      "sigprocmask" or "swapcontext";
      *   2. libseccomp (aka. syscall filter) banned one of them.
      */
     context->uc_link = NULL;
