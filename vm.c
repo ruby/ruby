@@ -2675,7 +2675,7 @@ m_core_set_postexe(VALUE self)
 
 static VALUE core_hash_merge_ary(VALUE hash, VALUE ary);
 static VALUE core_hash_from_ary(VALUE ary);
-static VALUE core_hash_merge_kwd(int argc, VALUE *argv);
+static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
 
 static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv)
@@ -2746,30 +2746,17 @@ kwmerge_i(VALUE key, VALUE value, VALUE hash)
     return ST_CONTINUE;
 }
 
-static int
-kwcheck_i(VALUE key, VALUE value, VALUE hash)
-{
-    kw_check_symbol(key);
-    return ST_CONTINUE;
-}
-
 static VALUE
-m_core_hash_merge_kwd(int argc, VALUE *argv, VALUE recv)
+m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 {
-    VALUE hash;
-    REWIND_CFP(hash = core_hash_merge_kwd(argc, argv));
+    REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
     return hash;
 }
 
 static VALUE
-core_hash_merge_kwd(int argc, VALUE *argv)
+core_hash_merge_kwd(VALUE hash, VALUE kw)
 {
-    VALUE hash, kw;
-    rb_check_arity(argc, 1, 2);
-    hash = argv[0];
-    kw = rb_to_hash_type(argv[argc-1]);
-    if (argc < 2) hash = kw;
-    rb_hash_foreach(kw, argc < 2 ? kwcheck_i : kwmerge_i, hash);
+    rb_hash_foreach(rb_to_hash_type(kw), kwmerge_i, hash);
     return hash;
 }
 
@@ -2859,7 +2846,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
 #endif
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
-    rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, -1);
+    rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_define_method_id(klass, idProc, rb_block_proc, 0);
     rb_define_method_id(klass, idLambda, rb_block_lambda, 0);
     rb_obj_freeze(fcore);
