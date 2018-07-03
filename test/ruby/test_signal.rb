@@ -28,7 +28,8 @@ class TestSignal < Test::Unit::TestCase
   def test_signal_process_group
     bug4362 = '[ruby-dev:43169]'
     assert_nothing_raised(bug4362) do
-      pid = Process.spawn(EnvUtil.rubybin, '-e', 'sleep 10', :pgroup => true)
+      cmd = [ EnvUtil.rubybin, '--disable=gems' '-e', 'sleep 10' ]
+      pid = Process.spawn(*cmd, :pgroup => true)
       Process.kill(:"-TERM", pid)
       Process.waitpid(pid)
       assert_equal(true, $?.signaled?)
@@ -44,7 +45,7 @@ class TestSignal < Test::Unit::TestCase
       sig = "INT"
       term = :KILL
     end
-    IO.popen([EnvUtil.rubybin, '-e', <<-"End"], 'r+') do |io|
+    IO.popen([EnvUtil.rubybin, '--disable=gems', '-e', <<-"End"], 'r+') do |io|
         Signal.trap(:#{sig}, "EXIT")
         STDOUT.syswrite("a")
         Thread.start { sleep(2) }
@@ -232,18 +233,18 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_signame_delivered
-    10.times do
-      IO.popen([EnvUtil.rubybin, "-e", <<EOS, :err => File::NULL]) do |child|
-        Signal.trap("INT") do |signo|
-          signame = Signal.signame(signo)
-          Marshal.dump(signame, STDOUT)
-          STDOUT.flush
-          exit 0
-        end
-        Process.kill("INT", $$)
-        sleep 1  # wait signal deliver
-EOS
+    args = [EnvUtil.rubybin, "--disable=gems", "-e", <<"", :err => File::NULL]
+      Signal.trap("INT") do |signo|
+        signame = Signal.signame(signo)
+        Marshal.dump(signame, STDOUT)
+        STDOUT.flush
+        exit 0
+      end
+      Process.kill("INT", $$)
+      sleep 1  # wait signal deliver
 
+    10.times do
+      IO.popen(args) do |child|
         signame = Marshal.load(child)
         assert_equal("INT", signame)
       end
