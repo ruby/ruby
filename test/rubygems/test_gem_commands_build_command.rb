@@ -154,6 +154,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   SIGNING_KEY = key_path 'private3072'
 
   def test_build_signed_gem
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
     trust_dir = Gem::Security.trust_dir
 
     spec = util_spec 'some_gem' do |s|

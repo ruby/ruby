@@ -4,6 +4,10 @@ require 'rubygems/request'
 require 'ostruct'
 require 'base64'
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Request tests.  openssl not found.'
+end
+
 class TestGemRequest < Gem::TestCase
 
   CA_CERT_FILE     = cert_path 'ca'
@@ -491,5 +495,4 @@ ERROR:  Certificate  is an invalid CA certificate
     end
   end
 
-end
-
+end if defined?(OpenSSL::SSL)
