@@ -1369,7 +1369,7 @@ setup_communication_pipe(void)
  * @pre the calling context is in the timer thread.
  */
 static inline void
-timer_thread_sleep(rb_global_vm_lock_t* gvl)
+timer_thread_sleep(rb_vm_t *vm)
 {
     int result;
     int need_polling;
@@ -1383,8 +1383,6 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
     need_polling = !ubf_threads_empty();
 
     if (SIGCHLD_LOSSY && !need_polling) {
-        rb_vm_t *vm = container_of(gvl, rb_vm_t, gvl);
-
         rb_native_mutex_lock(&vm->waitpid_lock);
         if (!list_empty(&vm->waiting_pids) || !list_empty(&vm->waiting_grps)) {
             need_polling = 1;
@@ -1392,7 +1390,7 @@ timer_thread_sleep(rb_global_vm_lock_t* gvl)
         rb_native_mutex_unlock(&vm->waitpid_lock);
     }
 
-    if (gvl->waiting > 0 || need_polling) {
+    if (vm->gvl.waiting > 0 || need_polling) {
 	/* polling (TIME_QUANTUM_USEC usec) */
 	result = poll(pollfds, 1, TIME_QUANTUM_USEC/1000);
     }
@@ -1431,7 +1429,7 @@ static rb_nativethread_lock_t timer_thread_lock;
 static rb_nativethread_cond_t timer_thread_cond;
 
 static inline void
-timer_thread_sleep(rb_global_vm_lock_t* unused)
+timer_thread_sleep(rb_vm_t *unused)
 {
     struct timespec ts;
     ts.tv_sec = 0;
@@ -1495,7 +1493,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 static void *
 thread_timer(void *p)
 {
-    rb_global_vm_lock_t *gvl = (rb_global_vm_lock_t *)p;
+    rb_vm_t *vm = p;
 #ifdef HAVE_PTHREAD_SIGMASK /* mainly to enable SIGCHLD */
     {
         sigset_t mask;
@@ -1524,7 +1522,7 @@ thread_timer(void *p)
 	if (TT_DEBUG) WRITE_CONST(2, "tick\n");
 
         /* wait */
-	timer_thread_sleep(gvl);
+	timer_thread_sleep(vm);
     }
 #if USE_SLEEPY_TIMER_THREAD
     CLOSE_INVALIDATE(normal[0]);
@@ -1596,7 +1594,7 @@ rb_thread_create_timer_thread(void)
 	if (timer_thread.created) {
 	    rb_bug("rb_thread_create_timer_thread: Timer thread was already created\n");
 	}
-	err = pthread_create(&timer_thread.id, &attr, thread_timer, &vm->gvl);
+	err = pthread_create(&timer_thread.id, &attr, thread_timer, vm);
 	pthread_attr_destroy(&attr);
 
 	if (err == EINVAL) {
@@ -1607,7 +1605,7 @@ rb_thread_create_timer_thread(void)
 	     * default stack size is enough for them:
 	     */
 	    stack_size = 0;
-	    err = pthread_create(&timer_thread.id, NULL, thread_timer, &vm->gvl);
+	    err = pthread_create(&timer_thread.id, NULL, thread_timer, vm);
 	}
 	if (err != 0) {
 	    rb_warn("pthread_create failed for timer: %s, scheduling broken",
