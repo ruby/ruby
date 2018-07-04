@@ -187,8 +187,7 @@ class Gem::Package::TarWriter
         if digest.respond_to? :name then
           digest.name
         else
-          /::([^:]+)$/ =~ digest.class.name
-          $1
+          digest.class.name[/::([^:]+)\z/, 1]
         end
 
       digest_name == signer.digest_name

@@ -344,14 +344,19 @@ module Gem::Security
       OpenSSL::Digest::SHA256
     elsif defined?(OpenSSL::Digest::SHA1) then
       OpenSSL::Digest::SHA1
+    else
+      require 'digest'
+      Digest::SHA512
     end
 
   ##
   # Used internally to select the signing digest from all computed digests
 
   DIGEST_NAME = # :nodoc:
-    if DIGEST_ALGORITHM then
+    if DIGEST_ALGORITHM.method_defined? :name then
       DIGEST_ALGORITHM.new.name
+    else
+      DIGEST_ALGORITHM.name[/::([^:]+)\z/, 1]
     end
 
   ##
