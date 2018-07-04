@@ -1095,9 +1095,6 @@ init_leap_second_info(void)
         timew = timegmw_noleapsecond(&vtm);
 
         number_of_leap_seconds_known = NUM2INT(w2v(wsub(TIMET2WV(known_leap_seconds_limit), rb_time_unmagnify(timew))));
-        if (number_of_leap_seconds_known == 0) {
-            known_leap_seconds_limit = 0;
-        }
     }
 }
 
