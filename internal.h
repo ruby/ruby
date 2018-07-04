@@ -1249,7 +1249,7 @@ NORETURN(void ruby_deprecated_internal_feature(const char *));
 #define DEPRECATED_INTERNAL_FEATURE(func) \
     (ruby_deprecated_internal_feature(func), UNREACHABLE)
 VALUE rb_warning_warn(VALUE mod, VALUE str);
-VALUE rb_warning_string(const char *fmt, ...);
+PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
