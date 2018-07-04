@@ -9,6 +9,10 @@ rescue LoadError => e
                e.message =~ / -- openssl$/
 end
 
+unless defined?(OpenSSL::SSL) then
+  warn 'Skipping Gem::Request tests.  openssl not found.'
+end
+
 require 'rubygems/remote_fetcher'
 require 'rubygems/package'
 require 'minitest/mock'
@@ -1067,4 +1071,4 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal "/home/skillet", @fetcher.correct_for_windows_path(path)
   end
 
-end
+end if defined?(OpenSSL::SSL)

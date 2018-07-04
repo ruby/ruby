@@ -119,6 +119,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_security_policy_unknown
+    skip 'openssl is missing' unless defined?(OpenSSL::SSL)
+
     @cmd.add_install_update_options
 
     e = assert_raises OptionParser::InvalidArgument do
