@@ -4,37 +4,31 @@ describe "Process.wait2" do
   before :all do
     # HACK: this kludge is temporarily necessary because some
     # misbehaving spec somewhere else does not clear processes
-    # Note: background processes are unavoidable with MJIT,
-    # but we shouldn't reap them from Ruby-space
     begin
       Process.wait(-1, Process::WNOHANG)
-      without_feature :mjit do
-        $stderr.puts "Leaked process before wait2 specs! Waiting for it"
-      end
+      $stderr.puts "Leaked process before wait2 specs! Waiting for it"
       leaked = Process.waitall
-      $stderr.puts "leaked before wait2 specs: #{leaked}" unless leaked.empty?
-      with_feature :mjit do
-        # Ruby-space should not see PIDs used by mjit
-        leaked.should be_empty
-      end
+      $stderr.puts "leaked before wait2 specs: #{leaked}"
     rescue Errno::ECHILD # No child processes
     rescue NotImplementedError
     end
   end
 
-  platform_is_not :windows do
-    it "returns the pid and status of child process" do
-      pidf = Process.fork { Process.exit! 99 }
-      results = Process.wait2
-      results.size.should == 2
-      pidw, status = results
-      pidf.should == pidw
-      status.exitstatus.should == 99
+  without_feature :mjit do # [Bug #14867]
+    platform_is_not :windows do
+      it "returns the pid and status of child process" do
+        pidf = Process.fork { Process.exit! 99 }
+        results = Process.wait2
+        results.size.should == 2
+        pidw, status = results
+        pidf.should == pidw
+        status.exitstatus.should == 99
+      end
     end
-  end
 
-  it "raises a StandardError if no child processes exist" do
-    lambda { Process.wait2 }.should raise_error(Errno::ECHILD)
-    lambda { Process.wait2 }.should raise_error(StandardError)
+    it "raises a StandardError if no child processes exist" do
+      lambda { Process.wait2 }.should raise_error(Errno::ECHILD)
+      lambda { Process.wait2 }.should raise_error(StandardError)
+    end
   end
 end

@@ -413,10 +413,6 @@ rb_vm_gvl_destroy(rb_vm_t *vm)
     gvl_release(vm);
     gvl_destroy(vm);
     rb_native_mutex_destroy(&vm->thread_destruct_lock);
-    if (0) {
-        /* may be held by running threads */
-        rb_native_mutex_destroy(&vm->waitpid_lock);
-    }
 }
 
 void
@@ -4135,9 +4131,6 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 #endif
 
 
-/* signal.c */
-void ruby_sigchld_handler(rb_vm_t *);
-
 /*
  *
  */
@@ -4170,7 +4163,6 @@ timer_thread_function(void *arg)
     rb_native_mutex_unlock(&vm->thread_destruct_lock);
 
     /* check signal */
-    ruby_sigchld_handler(vm);
     rb_threadptr_check_signal(vm->main_thread);
 
 #if 0
@@ -4255,9 +4247,6 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     }
     rb_vm_living_threads_init(vm);
     rb_vm_living_threads_insert(vm, th);
-
-    /* may be held by MJIT threads in parent */
-    rb_native_mutex_initialize(&vm->waitpid_lock);
     vm->fork_gen++;
 
     vm->sleeper = 0;
@@ -5010,7 +4999,6 @@ Init_Thread(void)
 	    gvl_init(th->vm);
 	    gvl_acquire(th->vm, th);
             rb_native_mutex_initialize(&th->vm->thread_destruct_lock);
-            rb_native_mutex_initialize(&th->vm->waitpid_lock);
             rb_native_mutex_initialize(&th->interrupt_lock);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);
@@ -5314,25 +5302,3 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
 
     return rb_ensure(b_proc, data, rb_ary_pop, cur_th->pending_interrupt_mask_stack);
 }
-
-#ifndef USE_NATIVE_SLEEP_COND
-#  define USE_NATIVE_SLEEP_COND (0)
-#endif
-
-#if !USE_NATIVE_SLEEP_COND
-rb_nativethread_cond_t *
-rb_sleep_cond_get(const rb_execution_context_t *ec)
-{
-    rb_nativethread_cond_t *cond = ALLOC(rb_nativethread_cond_t);
-    rb_native_cond_initialize(cond);
-
-    return cond;
-}
-
-void
-rb_sleep_cond_put(rb_nativethread_cond_t *cond)
-{
-    rb_native_cond_destroy(cond);
-    xfree(cond);
-}
-#endif /* !USE_NATIVE_SLEEP_COND */
