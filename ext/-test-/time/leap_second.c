@@ -1,5 +1,6 @@
 #include "ruby.h"
 
+void reset_leap_second_info();
 static VALUE
 bug_time_s_reset_leap_second_info(VALUE klass)
 {
