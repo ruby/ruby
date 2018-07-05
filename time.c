@@ -1098,6 +1098,12 @@ init_leap_second_info(void)
     }
 }
 
+/* Use this if you want to re-run init_leap_second_info() */
+void reset_leap_second_info(void)
+{
+    this_year = 0;
+}
+
 static wideval_t
 timegmw(struct vtm *vtm)
 {
@@ -1115,7 +1121,14 @@ timegmw(struct vtm *vtm)
 
     timew = timegmw_noleapsecond(vtm);
 
-    if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
+
+    if (number_of_leap_seconds_known == 0) {
+        /* When init_leap_second_info() is executed, the timezone doesn't have
+         * leap second information. Disable leap second for calculating gmtime.
+         */
+        return timew;
+    }
+    else if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
         return wadd(timew, rb_time_magnify(WINT2WV(number_of_leap_seconds_known)));
     }
 
@@ -1148,7 +1161,14 @@ gmtimew(wideval_t timew, struct vtm *result)
 
     init_leap_second_info();
 
-    if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
+    if (number_of_leap_seconds_known == 0) {
+        /* When init_leap_second_info() is executed, the timezone doesn't have
+         * leap second information. Disable leap second for calculating gmtime.
+         */
+        gmtimew_noleapsecond(timew, result);
+        return result;
+    }
+    else if (wlt(rb_time_magnify(TIMET2WV(known_leap_seconds_limit)), timew)) {
         timew = wsub(timew, rb_time_magnify(WINT2WV(number_of_leap_seconds_known)));
         gmtimew_noleapsecond(timew, result);
         return result;

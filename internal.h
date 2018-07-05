@@ -2056,6 +2056,9 @@ VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 
+/* time.c (export) */
+void reset_leap_second_info(void);
+
 /* util.c (export) */
 extern const signed char ruby_digit36_to_number_table[];
 extern const char ruby_hexdigits[];
