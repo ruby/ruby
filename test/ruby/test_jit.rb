@@ -675,6 +675,24 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_stack_pointer_with_assignment
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    begin;
+      2.times do
+        a, b = nil
+        p a
+      end
+    end;
+  end
+
+  def test_stack_pointer_with_regexpmatch
+    skip
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    begin;
+      1000.times { break if /a/ =~ "ab" && !$~[0] }
+    end;
+  end
+
   private
 
   # The shortest way to test one proc
