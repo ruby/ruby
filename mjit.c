@@ -80,6 +80,7 @@
 #include "constant.h"
 #include "id_table.h"
 #include "ruby_assert.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/version.h"
 
@@ -117,6 +118,10 @@ extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 
 extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void));
+
+/* process.c */
+rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
+                          rb_nativethread_cond_t *cond);
 
 #define RB_CONDATTR_CLOCK_MONOTONIC 1
 
@@ -263,7 +268,7 @@ real_ms_time(void)
 static int
 sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
 {
-    return snprintf(str, size, "%s/%sp%luu%lu%s", tmp_dir, prefix, (unsigned long) getpid(), id, suffix);
+    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
 }
 
 /* Return an unique file name in /tmp with PREFIX and SUFFIX and
@@ -401,22 +406,41 @@ start_process(const char *path, char *const *argv)
 static int
 exec_process(const char *path, char *const argv[])
 {
-    int stat, exit_code;
+    int stat, exit_code = -2;
     pid_t pid;
+    rb_vm_t *vm = WAITPID_USE_SIGCHLD ? GET_VM() : 0;
+    rb_nativethread_cond_t cond;
+
+    if (vm) {
+        rb_native_cond_initialize(&cond);
+        rb_native_mutex_lock(&vm->waitpid_lock);
+    }
 
     pid = start_process(path, argv);
-    if (pid <= 0)
-        return -2;
-
-    for (;;) {
-        waitpid(pid, &stat, 0);
-        if (WIFEXITED(stat)) {
-            exit_code = WEXITSTATUS(stat);
-            break;
-        } else if (WIFSIGNALED(stat)) {
-            exit_code = -1;
+    for (;pid > 0;) {
+        pid_t r = vm ? ruby_waitpid_locked(vm, pid, &stat, 0, &cond)
+                     : waitpid(pid, &stat, 0);
+        if (r == -1) {
+            if (errno == EINTR) continue;
+            fprintf(stderr, "[%"PRI_PIDT_PREFIX"d] waitpid(%"PRI_PIDT_PREFIX"d): %s (SIGCHLD=%d,%u)\n",
+                    getpid(), pid, strerror(errno),
+                    RUBY_SIGCHLD, SIGCHLD_LOSSY);
             break;
         }
+        else if (r == pid) {
+            if (WIFEXITED(stat)) {
+                exit_code = WEXITSTATUS(stat);
+                break;
+            } else if (WIFSIGNALED(stat)) {
+                exit_code = -1;
+                break;
+            }
+        }
+    }
+
+    if (vm) {
+        rb_native_mutex_unlock(&vm->waitpid_lock);
+        rb_native_cond_destroy(&cond);
     }
     return exit_code;
 }
@@ -1491,12 +1515,15 @@ mjit_init(struct mjit_options *opts)
 static void
 stop_worker(void)
 {
+    rb_execution_context_t *ec = GET_EC();
+
     stop_worker_p = TRUE;
     while (!worker_stopped) {
         verbose(3, "Sending cancel signal to worker");
         CRITICAL_SECTION_START(3, "in stop_worker");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in stop_worker");
+        RUBY_VM_CHECK_INTS(ec);
     }
 }
 
