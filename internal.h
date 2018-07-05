@@ -2042,6 +2042,9 @@ VALUE rb_gcd_normal(VALUE self, VALUE other);
 VALUE rb_gcd_gmp(VALUE x, VALUE y);
 #endif
 
+/* signal.c (export) */
+int rb_grantpt(int fd);
+
 /* string.c (export) */
 #ifdef RUBY_ENCODING_H
 /* internal use */
