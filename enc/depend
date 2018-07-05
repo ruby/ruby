@@ -639,6 +639,8 @@ enc/unicode.$(OBJEXT): $(top_srcdir)/regint.h
 enc/unicode.$(OBJEXT): config.h
 enc/unicode.$(OBJEXT): defines.h
 enc/unicode.$(OBJEXT): enc/unicode.c
+enc/unicode.$(OBJEXT): enc/unicode/10.0.0/casefold.h
+enc/unicode.$(OBJEXT): enc/unicode/10.0.0/name2ctype.h
 enc/unicode.$(OBJEXT): intern.h
 enc/unicode.$(OBJEXT): missing.h
 enc/unicode.$(OBJEXT): onigmo.h
