@@ -4,7 +4,7 @@ void ruby_reset_leap_second_info(void);
 static VALUE
 bug_time_s_reset_leap_second_info(VALUE klass)
 {
-    reset_leap_second_info();
+    ruby_reset_leap_second_info();
     return Qnil;
 }
 
