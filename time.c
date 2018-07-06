@@ -1099,7 +1099,8 @@ init_leap_second_info(void)
 }
 
 /* Use this if you want to re-run init_leap_second_info() */
-void reset_leap_second_info(void)
+void
+ruby_reset_leap_second_info(void)
 {
     this_year = 0;
 }
