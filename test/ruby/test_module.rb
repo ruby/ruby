@@ -1422,6 +1422,21 @@ class TestModule < Test::Unit::TestCase
     RUBY
   end
 
+  def test_private_constant_const_missing
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.private_constant(:FOO)
+    class << c
+      attr_reader :const_missing_arg
+      def const_missing(name)
+        @const_missing_arg = name
+	name == :FOO ? const_get(:FOO) : super
+      end
+    end
+    assert_equal("foo", c::FOO)
+    assert_equal(:FOO, c.const_missing_arg)
+  end
+
   class PrivateClass
   end
   private_constant :PrivateClass

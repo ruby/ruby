@@ -2418,6 +2418,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     rb_mark_tbl(ec->local_storage);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash);
     RUBY_MARK_UNLESS_NULL(ec->local_storage_recursive_hash_for_trace);
+    RUBY_MARK_UNLESS_NULL(ec->private_const_reference);
 }
 
 void rb_fiber_mark_self(rb_fiber_t *fib);
