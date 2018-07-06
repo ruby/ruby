@@ -3961,8 +3961,8 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 
 #ifndef HAVE_PPOLL
 /* TODO: don't ignore sigmask */
-int
-ppoll(struct pollfd *fds, nfds_t nfds,
+static int
+ruby_ppoll(struct pollfd *fds, nfds_t nfds,
       const struct timespec *ts, const sigset_t *sigmask)
 {
     int timeout_ms;
@@ -3986,6 +3986,7 @@ ppoll(struct pollfd *fds, nfds_t nfds,
 
     return poll(fds, nfds, timeout_ms);
 }
+#  define ppoll(fds,nfds,ts,sigmask) ruby_ppoll((fds),(nfds),(ts),(sigmask))
 #endif
 
 /*
