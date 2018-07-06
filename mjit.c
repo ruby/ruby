@@ -132,7 +132,7 @@ rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
 #define dlclose(handle) (FreeLibrary(handle))
 #define RTLD_NOW  -1
 
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)))
+#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
 #define WIFEXITED(S) ((S) != STILL_ACTIVE)
 #define WEXITSTATUS(S) (S)
 #define WIFSIGNALED(S) (0)
