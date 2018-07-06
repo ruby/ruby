@@ -771,4 +771,17 @@ class TestRubyOptimization < Test::Unit::TestCase
       tap {true || tap {}}
     end;
   end
+
+  def test_jump_elimination_with_optimized_out_block
+    x = Object.new
+    def x.bug(obj)
+      if obj || obj
+        obj = obj
+      else
+        raise "[ruby-core:87830] [Bug #14897]"
+      end
+      obj
+    end
+    assert_equal(:ok, x.bug(:ok))
+  end
 end
