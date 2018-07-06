@@ -836,6 +836,7 @@ typedef struct rb_execution_context_struct {
     VALUE passed_block_handler; /* for rb_iterate */
     const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
     enum method_missing_reason method_missing_reason;
+    VALUE private_const_reference;
 
     /* for GC */
     struct {

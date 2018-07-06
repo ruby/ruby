@@ -1795,7 +1795,12 @@ rb_const_missing(VALUE klass, VALUE name)
 VALUE
 rb_mod_const_missing(VALUE klass, VALUE name)
 {
+    VALUE ref = GET_EC()->private_const_reference;
     rb_vm_pop_cfunc_frame();
+    if (ref) {
+	rb_name_err_raise("private constant %2$s::%1$s referenced",
+			  ref, name);
+    }
     uninitialized_constant(klass, name);
 
     UNREACHABLE;
@@ -2363,8 +2368,8 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	while ((ce = rb_const_lookup(tmp, id))) {
 	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
 		if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
-		rb_name_err_raise("private constant %2$s::%1$s referenced",
-				  tmp, ID2SYM(id));
+		GET_EC()->private_const_reference = tmp;
+		return Qundef;
 	    }
 	    rb_const_warn_if_deprecated(ce, tmp, id);
 	    value = ce->value;
@@ -2376,7 +2381,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
-		return Qundef;
+		goto not_found;
 	    }
 	    return value;
 	}
@@ -2389,6 +2394,8 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	goto retry;
     }
 
+  not_found:
+    GET_EC()->private_const_reference = 0;
     return Qundef;
 }
 
