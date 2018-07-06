@@ -766,6 +766,7 @@ typedef struct re_pattern_buffer {
   int repeat_range_alloc;
 
   OnigOptionType    options;
+  int            sub_anchor;        /* start-anchor for exact or map */
 
   OnigRepeatRange* repeat_range;
 
@@ -780,7 +781,6 @@ typedef struct re_pattern_buffer {
   int            anchor;            /* BEGIN_BUF, BEGIN_POS, (SEMI_)END_BUF */
   OnigDistance   anchor_dmin;       /* (SEMI_)END_BUF anchor distance */
   OnigDistance   anchor_dmax;       /* (SEMI_)END_BUF anchor distance */
-  int            sub_anchor;        /* start-anchor for exact or map */
   unsigned char *exact;
   unsigned char *exact_end;
   unsigned char  map[ONIG_CHAR_TABLE_SIZE]; /* used as BM skip or char-map */
