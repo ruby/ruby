@@ -686,10 +686,12 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_stack_pointer_with_regexpmatch
-    skip
-    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
-      1000.times { break if /a/ =~ "ab" && !$~[0] }
+      2.times do
+        break if /a/ =~ "ab" && !$~[0]
+        print $~[0]
+      end
     end;
   end
 
