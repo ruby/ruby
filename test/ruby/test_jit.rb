@@ -685,12 +685,30 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_stack_pointer_with_regexpmatch
+  def test_program_pointer_with_regexpmatch
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
       2.times do
         break if /a/ =~ "ab" && !$~[0]
         print $~[0]
+      end
+    end;
+  end
+
+  def test_pushed_values_with_opt_aset_with
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "{}{}", success_count: 1)
+    begin;
+      2.times do
+        print(Thread.current["a"] = {})
+      end
+    end;
+  end
+
+  def test_pushed_values_with_opt_aref_with
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
+    begin;
+      2.times do
+        p(Thread.current["a"])
       end
     end;
   end

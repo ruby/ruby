@@ -1260,7 +1260,9 @@ opt_aset_with
     }
     else {
         PUSH(recv);
+#ifndef MJIT_HEADER
         PUSH(rb_str_resurrect(key));
+#endif
         PUSH(val);
 #ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
@@ -1280,8 +1282,8 @@ opt_aref_with
 
     if (val == Qundef) {
         PUSH(recv);
-        PUSH(rb_str_resurrect(key));
 #ifndef MJIT_HEADER
+        PUSH(rb_str_resurrect(key));
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
