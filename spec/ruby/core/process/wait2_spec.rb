@@ -15,8 +15,7 @@ describe "Process.wait2" do
       $stderr.puts "leaked before wait2 specs: #{leaked}" unless leaked.empty?
       with_feature :mjit do
         # Ruby-space should not see PIDs used by mjit
-        # TODO: Enable this once it succeeds with -DMJIT_FORCE_ENABLE
-        # leaked.should be_empty
+        leaked.should be_empty
       end
     rescue Errno::ECHILD # No child processes
     rescue NotImplementedError
