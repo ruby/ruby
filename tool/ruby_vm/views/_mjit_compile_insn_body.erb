@@ -69,9 +69,7 @@
 %     end
 %   when /\A\s+DISPATCH_ORIGINAL_INSN\([^)]+\);\s+\z/
 %     # For `opt_xxx`'s fallbacks.
-        if (!body->catch_except_p) {
-            fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
-        }
+        fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "            goto cancel;\n");
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
