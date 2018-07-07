@@ -464,10 +464,24 @@ class TestSocket < Test::Unit::TestCase
     Addrinfo.udp("127.0.0.1", 0).bind {|s1|
       Addrinfo.udp("127.0.0.1", 0).bind {|s2|
         s1.setsockopt(:SOCKET, :TIMESTAMP, true)
-        s2.send "a", 0, s1.local_address
-        msg, _, _, stamp = s1.recvmsg
-        assert_equal("a", msg)
-        assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
+        IO.pipe do |r,w|
+          # UDP may not be reliable, keep sending until recvmsg returns:
+          th = Thread.new do
+            n = 0
+            begin
+              s2.send("a", 0, s1.local_address)
+              n += 1
+            end while IO.select([r], nil, nil, 0.1).nil?
+            n
+          end
+
+          msg, _, _, stamp = s1.recvmsg
+          w.close # stop th
+          assert_equal("a", msg)
+          assert(stamp.cmsg_is?(:SOCKET, :TIMESTAMP))
+          n = th.value
+          warn "UDP packet loss over loopback, #{n} tries needed" if n > 1
+        end
       }
     }
     t2 = Time.now.strftime("%Y-%m-%d")
