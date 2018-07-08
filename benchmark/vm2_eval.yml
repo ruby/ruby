@@ -1,8 +1,5 @@
 benchmark:
-  vm2_eval: |
-    i = 0
-    while i<6_000_000 # benchmark loop 2
-      i += 1
-      eval("1")
-    end
-loop_count: 1
+  vm2_eval: 'eval("1")
+
+'
+loop_count: 6000000

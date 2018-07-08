@@ -1,11 +1,8 @@
+prelude: |
+  module M
+  end
+  $VERBOSE = nil
 benchmark:
   vm2_module_const_set: |
-    i = 0
-    module M
-    end
-    $VERBOSE = nil
-    while i<6_000_000 # benchmark loop 2
-      i += 1
-      M.const_set(:X, Module.new)
-    end
-loop_count: 1
+    M.const_set(:X, Module.new)
+loop_count: 6000000
