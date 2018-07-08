@@ -1,13 +1,9 @@
 benchmark:
   vm1_ensure: |
-    i = 0
-    while i<30_000_000 # benchmark loop 1
-      i += 1
+    begin
       begin
-        begin
-        ensure
-        end
       ensure
       end
+    ensure
     end
-loop_count: 1
+loop_count: 30000000

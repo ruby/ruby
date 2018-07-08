@@ -1,10 +1,8 @@
+prelude: |
+  f = 0.0
 benchmark:
   vm1_float_simple: |
-    i = 0.0; f = 0.0
-    while i<30_000_000
-      i += 1
-      f += 0.1; f -= 0.1
-      f += 0.1; f -= 0.1
-      f += 0.1; f -= 0.1
-    end
-loop_count: 1
+    f += 0.1; f -= 0.1
+    f += 0.1; f -= 0.1
+    f += 0.1; f -= 0.1
+loop_count: 30000000

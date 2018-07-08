@@ -1,11 +1,8 @@
+prelude: |
+  a = 'abc'
+  b = [1, 2, 3]
 benchmark:
   vm1_length: |
-    a = 'abc'
-    b = [1, 2, 3]
-    i = 0
-    while i<30_000_000 # while loop 1
-      i += 1
-      a.length
-      b.length
-    end
-loop_count: 1
+    a.length
+    b.length
+loop_count: 30000000
