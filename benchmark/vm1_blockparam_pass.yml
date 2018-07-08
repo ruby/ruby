@@ -7,7 +7,6 @@ prelude: |
     bp_yield &b
   end
 benchmark:
-  vm1_blockparam_pass: 'bp_pass{}
-
-'
+  vm1_blockparam_pass: |
+    bp_pass{}
 loop_count: 30000000

@@ -3,7 +3,5 @@ prelude: |
     return 1
   end
 benchmark:
-  vm1_simplereturn: 'm
-
-'
+  vm1_simplereturn: m
 loop_count: 30000000
