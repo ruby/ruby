@@ -74,7 +74,7 @@ range_modify(VALUE range)
  *     Range.new(begin, end, exclude_end=false)    -> rng
  *
  *  Constructs a range using the given +begin+ and +end+. If the +exclude_end+
- *  parameter is omitted or is <code>false</code>, the +rng+ will include
+ *  parameter is omitted or is <code>false</code>, the range will include
  *  the end object; otherwise, it will be excluded.
  */
 
@@ -766,7 +766,7 @@ range_size(VALUE range)
  *     rng.to_a                   -> array
  *     rng.entries                -> array
  *
- *  Returns an array containing the items in <i>rng</i>.
+ *  Returns an array containing the items in the range.
  *
  *    (1..7).to_a  #=> [1, 2, 3, 4, 5, 6, 7]
  *    (1..).to_a   #=> RangeError: cannot convert endless range to an array
