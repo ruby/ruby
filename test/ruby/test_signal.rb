@@ -367,6 +367,6 @@ class TestSignal < Test::Unit::TestCase
       end
     end
   ensure
-    trap(:CHLD, old)
+    trap(:CHLD, old) if Signal.list['CHLD']
   end
 end
