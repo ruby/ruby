@@ -3,18 +3,11 @@
 # Ruby Benchmark driver
 #
 
-first = true
-
 begin
   require 'optparse'
 rescue LoadError
-  if first
-    first = false
-    $:.unshift File.join(File.dirname(__FILE__), '../lib')
-    retry
-  else
-    raise
-  end
+  $:.unshift File.join(File.dirname(__FILE__), '../lib')
+  require 'optparse'
 end
 
 require 'benchmark'
