@@ -1123,7 +1123,7 @@ benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
-	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
+	            --directory=$(srcdir)/benchmark $(OPTS)
 
 benchmark-each: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
