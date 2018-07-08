@@ -39,13 +39,27 @@ end
 
 if __FILE__ == $0
   opt = {
+    runner: 'ips',
+    output: 'compare',
     execs: [],
-    dir: File.dirname(__FILE__),
+    rbenvs: [],
     repeat: 1,
     verbose: 1,
+    dir: File.dirname(__FILE__),
   }
 
   parser = OptionParser.new{|o|
+    #
+    # Original benchmark-driver imitation
+    #
+    o.on('-r', '--runner [TYPE]', 'Specify runner type: ips, time, memory, once (default: ips)'){|r|
+      abort '-r, --runner must take argument but not given' if r.nil?
+      opt[:runner] = r
+    }
+    o.on('-o', '--output [TYPE]', 'Specify output type: compare, simple, markdown, record (default: compare)'){|o|
+      abort '-o, --output must take argument but not given' if o.nil?
+      opt[:output] = o
+    }
     o.on('-e', '--executables [EXECS]',
       "Specify benchmark one or more targets (e1::path1; e2::path2; e3::path3;...)"){|e|
        e.split(/;/).each{|path|
@@ -53,33 +67,39 @@ if __FILE__ == $0
        }
     }
     o.on('--rbenv [VERSIONS]', 'Specify benchmark targets with rbenv version (vX.X.X;vX.X.X;...)'){|v|
-      v.split(/;/).each{|version|
-        opt[:execs] << "#{version}::#{`RBENV_VERSION='#{version}' rbenv which ruby`.rstrip}"
-      }
+      opt[:rbenvs] << v
     }
-    o.on('-d', '--directory [DIRECTORY]', "Benchmark suites directory"){|d|
-      opt[:dir] = d
-    }
-    o.on('-p', '--pattern [PATTERN]', "Benchmark name pattern"){|p|
-      opt[:pattern] = p
-    }
-    o.on('-x', '--exclude [PATTERN]', "Benchmark exclude pattern"){|e|
-      opt[:exclude] = e
-    }
-    o.on('-r', '--repeat-count [NUM]', "Repeat count"){|n|
+    o.on('--repeat-count [NUM]', "Repeat count"){|n|
       opt[:repeat] = n.to_i
     }
-    o.on('-v', '--verbose'){|v|
-      opt[:verbose] = 2
+    o.on('--verbose [LEVEL]', 'Show some verbose outputs: 0, 1, 2 (default: 1)'){|v|
+      opt[:verbose] = Integer(v)
     }
-    o.on('-q', '--quiet', "Run without notify information except result table."){|q|
-      opt[:verbose] = 0
+
+    #
+    # benchmark/driver.rb original (deprecated, to be removed later)
+    #
+    o.on('--directory [DIRECTORY]', "Benchmark suites directory"){|d|
+      opt[:dir] = d
+    }
+    o.on('--pattern [PATTERN]', "Benchmark name pattern"){|p|
+      opt[:pattern] = p
+    }
+    o.on('--exclude [PATTERN]', "Benchmark exclude pattern"){|e|
+      opt[:exclude] = e
     }
   }
 
-  parser.parse!(ARGV)
+  yamls = parser.parse!(ARGV)
+  yamls += BenchmarkDriver.new(opt).files
 
+  # Many variables in Makefile are not `foo,bar` but `foo bar`. So it's converted here.
   execs = opt[:execs].map { |exec| ['--executables', exec.shellsplit.join(',')] }.flatten
-  yamls = BenchmarkDriver.new(opt).files
-  BenchmarkDriver.run(*yamls, *execs, "--verbose=#{opt[:verbose]}", "--repeat-count=#{opt[:repeat]}")
+  rbenv = opt[:rbenvs].map { |r| ['--rbenv', r] }
+
+  BenchmarkDriver.run(
+    *yamls, *execs, *rbenv,
+    "--runner=#{opt[:runner]}", "--output=#{opt[:output]}",
+    "--verbose=#{opt[:verbose]}", "--repeat-count=#{opt[:repeat]}",
+  )
 end
