@@ -1,11 +1,6 @@
+prelude: "@a = 1\n"
 benchmark:
   vm1_ivar: |
-    @a = 1
-
-    i = 0
-    while i<30_000_000 # while loop 1
-      i += 1
-      j = @a
-      k = @a
-    end
-loop_count: 1
+    j = @a
+    k = @a
+loop_count: 30000000

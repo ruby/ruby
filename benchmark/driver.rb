@@ -73,15 +73,13 @@ loop_count: 1
       next if @pattern && /#{@pattern}/ !~ File.basename(file)
       next if @exclude && /#{@exclude}/ =~ File.basename(file)
       case file
-      when /bm_(vm[12])_/, /bm_loop_(whileloop2?).rb/
+      when /bm_(vm2)_/, /bm_loop_(whileloop2).rb/
         flag[$1] = true
       end
       file
     }.compact
 
-    if flag['vm1'] && !flag['whileloop']
-      files << File.join(@dir, 'bm_loop_whileloop.rb')
-    elsif flag['vm2'] && !flag['whileloop2']
+    if flag['vm2'] && !flag['whileloop2']
       files << File.join(@dir, 'bm_loop_whileloop2.rb')
     end
 
