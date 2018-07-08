@@ -1,0 +1,4 @@
+benchmark:
+  marshal_dump_load_time: |
+    100000.times { Marshal.load(Marshal.dump(Time.now)) }
+loop_count: 1

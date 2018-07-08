@@ -1,0 +1,5 @@
+benchmark:
+  array_sort_float: |
+    arr = Array.new(1000) { rand }
+    10000.times { arr.sort }
+loop_count: 1
