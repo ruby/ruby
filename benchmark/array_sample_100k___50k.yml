@@ -1,0 +1,5 @@
+benchmark:
+  array_sample_100k___50k: |
+    arr = [*0...100000]
+    10_000.times {arr.sample 50_000}
+loop_count: 1
