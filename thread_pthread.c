@@ -1767,13 +1767,11 @@ mjit_worker(void *arg)
 
 /* Launch MJIT thread. Returns FALSE if it fails to create thread. */
 int
-rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void))
+rb_thread_create_mjit_thread(void (*worker_func)(void))
 {
     pthread_attr_t attr;
     pthread_t worker_pid;
     int ret = FALSE;
-
-    pthread_atfork(NULL, NULL, child_hook);
 
     if (pthread_attr_init(&attr) != 0) return ret;
 

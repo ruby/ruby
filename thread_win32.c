@@ -790,7 +790,7 @@ mjit_worker(void *arg)
 
 /* Launch MJIT thread. Returns FALSE if it fails to create thread. */
 int
-rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void))
+rb_thread_create_mjit_thread(void (*worker_func)(void))
 {
     size_t stack_size = 4 * 1024; /* 4KB is the minimum commit size */
     HANDLE thread_id = w32_create_thread(stack_size, mjit_worker, worker_func);
