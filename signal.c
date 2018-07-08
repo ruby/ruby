@@ -531,6 +531,7 @@ static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;
 } signal_buff;
+volatile unsigned int ruby_nocldwait;
 
 #ifdef __dietlibc__
 #define sighandler_t sh_t
@@ -614,12 +615,20 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     switch (signum) {
-#ifdef SA_NOCLDWAIT
       case SIGCHLD:
-	if (handler == SIG_IGN)
-	    sigact.sa_flags |= SA_NOCLDWAIT;
+	if (handler == SIG_IGN) {
+	    ruby_nocldwait = 1;
+	    if (sigact.sa_flags & SA_SIGINFO) {
+		sigact.sa_sigaction = (ruby_sigaction_t*)sighandler;
+	    }
+	    else {
+		sigact.sa_handler = sighandler;
+	    }
+	}
+	else {
+	    ruby_nocldwait = 0;
+	}
 	break;
-#endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
       case SIGSEGV:
 #ifdef SIGBUS
@@ -1183,9 +1192,6 @@ trap_handler(VALUE *cmd, int sig)
     VALUE command;
 
     if (NIL_P(*cmd)) {
-	if (sig == RUBY_SIGCHLD) {
-	    goto sig_dfl;
-	}
 	func = SIG_IGN;
     }
     else {
@@ -1216,9 +1222,6 @@ trap_handler(VALUE *cmd, int sig)
 	      case 7:
 		if (memcmp(cptr, "SIG_IGN", 7) == 0) {
 sig_ign:
-                    if (sig == RUBY_SIGCHLD) {
-                        goto sig_dfl;
-                    }
                     func = SIG_IGN;
                     *cmd = Qtrue;
 		}
