@@ -1,8 +1,5 @@
 benchmark:
-  vm2_module_ann_const_set: |
-    i = 0
-    while i<6_000_000 # benchmark loop 2
-      i += 1
-      Module.new.const_set(:X, Module.new)
-    end
-loop_count: 1
+  vm2_module_ann_const_set: 'Module.new.const_set(:X, Module.new)
+
+'
+loop_count: 6000000

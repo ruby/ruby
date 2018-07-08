@@ -1,12 +1,9 @@
+prelude: |
+  require 'thread'
+
+  m = Thread::Mutex.new
 benchmark:
-  vm2_mutex: |
-    require 'thread'
+  vm2_mutex: 'm.synchronize{}
 
-    m = Thread::Mutex.new
-
-    i = 0
-    while i<6_000_000 # benchmark loop 2
-      i += 1
-      m.synchronize{}
-    end
-loop_count: 1
+'
+loop_count: 6000000

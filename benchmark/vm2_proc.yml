@@ -1,16 +1,13 @@
+prelude: |
+  def m &b
+    b
+  end
+
+  pr = m{
+    a = 1
+  }
 benchmark:
-  vm2_proc: |
-    def m &b
-      b
-    end
+  vm2_proc: 'pr.call
 
-    pr = m{
-      a = 1
-    }
-
-    i = 0
-    while i<6_000_000 # benchmark loop 2
-      i += 1
-      pr.call
-    end
-loop_count: 1
+'
+loop_count: 6000000

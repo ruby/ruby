@@ -72,16 +72,8 @@ loop_count: 1
     files = (legacy_files + yaml_files).map{|file|
       next if @pattern && /#{@pattern}/ !~ File.basename(file)
       next if @exclude && /#{@exclude}/ =~ File.basename(file)
-      case file
-      when /bm_(vm2)_/, /bm_loop_(whileloop2).rb/
-        flag[$1] = true
-      end
       file
     }.compact
-
-    if flag['vm2'] && !flag['whileloop2']
-      files << File.join(@dir, 'bm_loop_whileloop2.rb')
-    end
 
     files.sort!
     files

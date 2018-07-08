@@ -1,3 +1,4 @@
+# loop_count is not utilized since `i` is involved in the script
 benchmark:
   vm2_case_lit: |
     i = 0
@@ -6,7 +7,7 @@ benchmark:
       @ret[i % @ret.size]
     end
 
-    while i<6_000_000 # while loop 2
+    while i<6_000_000
       case foo(i)
       when "foo" then :foo
       when true then true
