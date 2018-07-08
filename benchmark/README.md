@@ -7,7 +7,7 @@ This directory has benchmark definitions to be run with
 
 Execute `gem install benchmark-driver` and run a command like:
 
-```console
+```bash
 # Run a benchmark script with the ruby in the $PATH
 benchmark-driver benchmark/erb_render.yml
 
@@ -24,7 +24,7 @@ Using `make benchmark`, `make update-benchmark-driver` automatically downloads
 the supported version of benchmark-driver, and it runs benchmarks with the downloaded
 benchmark-driver.
 
-```console
+```bash
 # Run all benchmarks with the ruby in the $PATH and the built ruby
 make benchmark
 
@@ -40,7 +40,7 @@ make benchmark OPTS="--help"
 `make benchmark-each` is similar to `make benchmark`, but it allows to execute
 some specific benchmarks.
 
-```console
+```bash
 # Run vm1 benchmarks
 make benchmark-each ITEM=vm1
 
