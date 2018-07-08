@@ -31,6 +31,9 @@ dir="$2"
 shift 2
 [ x"$branch" = x ] && unset branch || :
 if [ -d "$dir" ]; then
+    if [ x"$(git -C "$dir" describe --tags)" = x"$branch" ]; then
+        exit 0 # already up-to-date
+    fi
     echo updating `expr "/$dir/" : '.*/\([^/][^/]*\)/'` ...
     [ $quiet ] || set -x
     $CHDIR "$dir"
