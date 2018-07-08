@@ -3,7 +3,6 @@ prelude: |
     define_method(:m){}
   end
 benchmark:
-  vm2_defined_method: 'm; m; m; m; m; m; m; m;
-
-'
+  vm2_defined_method: |
+    m; m; m; m; m; m; m; m;
 loop_count: 6000000

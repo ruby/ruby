@@ -1,5 +1,4 @@
-prelude: |2
-
+prelude: |
   class C
     def m
       1
@@ -14,7 +13,5 @@ prelude: |2
 
   obj = CC.new
 benchmark:
-  vm2_super: 'obj.m
-
-'
+  vm2_super: obj.m
 loop_count: 6000000

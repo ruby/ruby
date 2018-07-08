@@ -7,7 +7,6 @@ prelude: |
     a = 1
   }
 benchmark:
-  vm2_proc: 'pr.call
-
-'
+  vm2_proc: |
+    pr.call
 loop_count: 6000000

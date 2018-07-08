@@ -3,7 +3,6 @@ prelude: |
 
   m = Thread::Mutex.new
 benchmark:
-  vm2_mutex: 'm.synchronize{}
-
-'
+  vm2_mutex: |
+    m.synchronize{}
 loop_count: 6000000
