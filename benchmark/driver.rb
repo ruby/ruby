@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 #
-# Ruby Benchmark driver
+# Wrapper of benchmark-driver command for `make benchmark` and `make benchmark-each`.
 #
 
 begin
