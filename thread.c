@@ -4276,6 +4276,8 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
     }
 }
 
+/* mjit.c */
+void mjit_child_after_fork(void);
 void
 rb_thread_atfork(void)
 {
@@ -4286,6 +4288,7 @@ rb_thread_atfork(void)
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
+    mjit_child_after_fork();
 }
 
 static void

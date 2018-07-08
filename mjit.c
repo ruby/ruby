@@ -117,7 +117,7 @@ extern void rb_native_cond_signal(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 
-extern int rb_thread_create_mjit_thread(void (*child_hook)(void), void (*worker_func)(void));
+extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
 /* process.c */
 rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
@@ -1319,11 +1319,13 @@ init_header_filename(void)
 
 /* This is called after each fork in the child in to switch off MJIT
    engine in the child as it does not inherit MJIT threads.  */
-static void
-child_after_fork(void)
+void
+mjit_child_after_fork(void)
 {
-    verbose(3, "Switching off MJIT in a forked child");
-    mjit_enabled = FALSE;
+    if (mjit_enabled) {
+        verbose(3, "Switching off MJIT in a forked child");
+        mjit_enabled = FALSE;
+    }
     /* TODO: Should we initiate MJIT in the forked Ruby.  */
 }
 
@@ -1433,7 +1435,7 @@ start_worker(void)
     stop_worker_p = FALSE;
     worker_stopped = FALSE;
 
-    if (!rb_thread_create_mjit_thread(child_after_fork, worker)) {
+    if (!rb_thread_create_mjit_thread(worker)) {
         mjit_enabled = FALSE;
         rb_native_mutex_destroy(&mjit_engine_mutex);
         rb_native_cond_destroy(&mjit_pch_wakeup);
