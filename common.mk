@@ -808,7 +808,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: check test test-all btest btest-ruby test-basic test-knownbug
-.PHONY: run runruby parse benchmark benchmark-each tbench gdb gdb-ruby
+.PHONY: run runruby parse benchmark benchmark-each gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
 
@@ -1126,11 +1126,6 @@ benchmark-each: miniruby$(EXEEXT) PHONY
 	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
 	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
-
-tbench: miniruby$(EXEEXT) PHONY
-	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) --disable-gem" \
-	            --pattern='bmx_' --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
