@@ -1,6 +1,5 @@
-prelude: 'Const = 1
-
-'
+prelude: |
+  Const = 1
 benchmark:
   vm1_const: |
     j = Const

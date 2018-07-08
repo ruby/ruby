@@ -2,7 +2,6 @@ prelude: |
   a = 1
   b = 2
 benchmark:
-  vm1_swap: 'a, b = b, a
-
-'
+  vm1_swap: |
+    a, b = b, a
 loop_count: 30000000
