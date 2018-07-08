@@ -119,7 +119,6 @@ typedef struct {
 typedef struct obj_info obj_info_t;
 struct obj_info {
     const char *path; /* object path */
-    int fd;
     void *mapped;
     size_t mapped_size;
     uintptr_t base_addr;
@@ -525,6 +524,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	kprintf("mmap: %s\n", strerror(e));
 	goto fail;
     }
+    close(fd);
 
     ehdr = (ElfW(Ehdr) *)file;
     if (memcmp(ehdr->e_ident, "\177ELF", 4) != 0) {
@@ -532,11 +532,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	 * Huh? Maybe filename was overridden by setproctitle() and
 	 * it match non-elf file.
 	 */
-	close(fd);
 	goto fail;
     }
-
-    obj->fd = fd;
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
 
@@ -790,9 +787,8 @@ next_line:
     while (obj) {
 	obj_info_t *o = obj;
 	obj = o->next;
-	if (o->fd) {
+	if (o->mapped_size) {
 	    munmap(o->mapped, o->mapped_size);
-	    close(o->fd);
 	}
 	free(o);
     }
