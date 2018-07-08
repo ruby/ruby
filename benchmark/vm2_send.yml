@@ -6,7 +6,6 @@ prelude: |
 
   o = C.new
 benchmark:
-  vm2_send: 'o.__send__ :m
-
-'
+  vm2_send: |
+    o.__send__ :m
 loop_count: 6000000
