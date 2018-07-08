@@ -50,7 +50,7 @@ class BenchmarkDriver
   def build_yaml(file)
     magic_comment = '# prelude' # bm_so_nsieve_bits hangs without magic comment
     name = File.basename(file).sub(/\Abm_/, '').sub(/\.rb\z/, '')
-    script = File.read(file).sub(/^__END__\n(.+\n)*/m, '').sub(/\A(^#.+\n)+/m) do |comment|
+    script = File.read(file).sub(/^__END__\n(.+\n)*/m, '').sub(/\A(^#[^\n]+\n)+/m) do |comment|
       magic_comment = comment
       ''
     end
