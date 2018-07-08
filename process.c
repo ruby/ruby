@@ -935,6 +935,7 @@ waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
 #  define waitpid_sys(pid,status,options) do_waitpid((pid),(status),(options))
 #endif
 
+extern volatile unsigned int ruby_nocldwait; /* signal.c */
 /* called by timer thread */
 static void
 waitpid_each(struct list_head *head)
@@ -972,6 +973,11 @@ ruby_waitpid_all(rb_vm_t *vm)
     waitpid_each(&vm->waiting_pids);
     if (list_empty(&vm->waiting_pids)) {
         waitpid_each(&vm->waiting_grps);
+    }
+    /* emulate SA_NOCLDWAIT */
+    if (list_empty(&vm->waiting_pids) && list_empty(&vm->waiting_grps)) {
+        while (ruby_nocldwait && do_waitpid(-1, 0, WNOHANG) > 0)
+            ; /* keep looping */
     }
     rb_native_mutex_unlock(&vm->waitpid_lock);
 }
@@ -1153,10 +1159,18 @@ rb_waitpid(rb_pid_t pid, int *st, int flags)
     }
 
     if (st) *st = w.status;
-    if (w.ret > 0) {
-	rb_last_status_set(w.status, w.ret);
+    if (w.ret == -1) {
+        errno = w.errnum;
     }
-    if (w.ret == -1) errno = w.errnum;
+    else if (w.ret > 0) {
+        if (ruby_nocldwait) {
+            w.ret = -1;
+            errno = ECHILD;
+        }
+        else {
+            rb_last_status_set(w.status, w.ret);
+        }
+    }
     return w.ret;
 }
 
@@ -4306,16 +4320,22 @@ rb_f_system(int argc, VALUE *argv)
     struct rb_execarg *eargp;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
+    TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
+    eargp->nocldwait_prev = ruby_nocldwait;
+    ruby_nocldwait = 0;
     pid = rb_execarg_spawn(execarg_obj, NULL, 0);
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
         int ret, status;
         ret = rb_waitpid(pid, &status, 0);
-        if (ret == (rb_pid_t)-1)
+        if (ret == (rb_pid_t)-1) {
+            ruby_nocldwait = eargp->nocldwait_prev;
+            RB_GC_GUARD(execarg_obj);
             rb_sys_fail("Another thread waited the process started by system().");
+        }
     }
 #endif
-    TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
+    ruby_nocldwait = eargp->nocldwait_prev;
     if (pid < 0) {
         if (eargp->exception) {
             int err = errno;

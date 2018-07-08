@@ -326,4 +326,47 @@ class TestSignal < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_sigchld_ignore
+    skip 'no SIGCHLD' unless Signal.list['CHLD']
+    old = trap(:CHLD, 'IGNORE')
+    cmd = [ EnvUtil.rubybin, '--disable=gems', '-e' ]
+    assert(system(*cmd, 'exit!(0)'), 'no ECHILD')
+    t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    IO.pipe do |r, w|
+      pid = spawn(*cmd, "STDIN.read", in: r)
+      nb = Process.wait(pid, Process::WNOHANG)
+      th = Thread.new(Thread.current) do |parent|
+        Thread.pass until parent.stop? # wait for parent to Process.wait
+        w.close
+      end
+      assert_raise(Errno::ECHILD) { Process.wait(pid) }
+      assert_nil nb
+    end
+
+    IO.pipe do |r, w|
+      pids = 3.times.map { spawn(*cmd, 'exit!', out: w) }
+      w.close
+      zombies = pids.dup
+      assert_nil r.read(1), 'children dead'
+
+      Timeout.timeout(3) do
+        zombies.delete_if do |pid|
+          begin
+            Process.kill(0, pid)
+            false
+          rescue Errno::ESRCH
+            true
+          end
+        end while zombies[0]
+      end
+      assert_predicate zombies, :empty?, 'zombies leftover'
+
+      pids.each do |pid|
+        assert_raise(Errno::ECHILD) { Process.waitpid(pid) }
+      end
+    end
+  ensure
+    trap(:CHLD, old)
+  end
 end
