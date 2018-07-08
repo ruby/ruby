@@ -1,2 +1,0 @@
-require_relative 'make_fasta_output'
-prepare_fasta_output(2_500_000)

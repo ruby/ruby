@@ -41,6 +41,8 @@ GEM_HOME =
 GEM_PATH =
 GEM_VENDOR =
 
+BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
+BENCHMARK_DRIVER_GIT_REF = v0.13.2
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
 SIMPLECOV_HTML_GIT_URL = git://github.com/colszowka/simplecov-html.git
@@ -1117,14 +1119,16 @@ OPTS =
 # for example,
 #  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
 # This command compares trunk and built-ruby and 2.2.2
-benchmark: miniruby$(EXEEXT) PHONY
-	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
+benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
+	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
 	            --pattern='bm_' --directory=$(srcdir)/benchmark $(OPTS)
 
-benchmark-each: miniruby$(EXEEXT) PHONY
-	$(BASERUBY) $(srcdir)/benchmark/driver.rb -v \
-	            --executables="$(COMPARE_RUBY) -I$(srcdir)/lib -I. -I$(EXTOUT)/common --disable-gem; built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
+benchmark-each: miniruby$(EXEEXT) update-benchmark-driver PHONY
+	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
+	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
+	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
 	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
 
 run.gdb:

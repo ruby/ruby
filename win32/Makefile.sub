@@ -1182,6 +1182,10 @@ test-bundled-gems-run:
 	  exit /b %STATUS% \
 	)
 
+update-benchmark-driver:
+	$(GIT) clone https://github.com/benchmark-driver/benchmark-driver $(srcdir)/benchmark/benchmark-driver || \
+	  $(GIT) -C $(srcdir)/benchmark/benchmark-driver pull origin master
+
 $(ruby_pc): $(RBCONFIG)
 	@$(BOOTSTRAPRUBY) $(srcdir)/tool/expand-config.rb \
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \

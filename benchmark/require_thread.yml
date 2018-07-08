@@ -1,0 +1,44 @@
+prelude: |
+  require "fileutils"
+
+  def prepare
+    num_files = 10000
+
+    basename = File.dirname($0)
+    data_dir = File.join(basename, "bm_require.data")
+
+    # skip if all of files exists
+    if File.exist?(File.join(data_dir, "c#{num_files}.rb"))
+      return
+    end
+
+    FileUtils.mkdir_p(data_dir)
+
+    1.upto(num_files) do |i|
+      f = File.open("#{data_dir}/c#{i}.rb", "w")
+      f.puts <<-END
+        class C#{i}
+        end
+      END
+    end
+  end
+
+  prepare
+benchmark:
+  require_thread: |
+    $:.push File.join(File.dirname(__FILE__), "bm_require.data")
+
+    i=0
+    t = Thread.new do
+      while true
+        i = i+1 # dummy loop
+      end
+    end
+
+    1.upto(100) do |i|
+      require "c#{i}"
+    end
+
+    $:.pop
+    t.kill
+loop_count: 1

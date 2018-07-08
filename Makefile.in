@@ -515,6 +515,11 @@ gcov:
 lcov:
 	$(Q) $(BASERUBY) $(srcdir)/tool/run-lcov.rb
 
+update-benchmark-driver:
+	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/benchmark $(Q1:0=-q) \
+		--branch $(BENCHMARK_DRIVER_GIT_REF) \
+		$(BENCHMARK_DRIVER_GIT_URL) benchmark-driver $(GIT_OPTS)
+
 update-doclie:
 	$(Q) $(srcdir)/tool/git-refresh -C $(srcdir)/coverage $(Q1:0=-q) \
 		--branch $(DOCLIE_GIT_REF) \
