@@ -44,7 +44,7 @@ if __FILE__ == $0
     execs: [],
     rbenvs: [],
     repeat: 1,
-    verbose: 1,
+    verbose: [],
     dir: File.dirname(__FILE__),
   }
 
@@ -72,8 +72,8 @@ if __FILE__ == $0
     o.on('--repeat-count [NUM]', "Repeat count"){|n|
       opt[:repeat] = n.to_i
     }
-    o.on('--verbose [LEVEL]', 'Show some verbose outputs: 0, 1, 2 (default: 1)'){|v|
-      opt[:verbose] = Integer(v)
+    o.on('-v', '--verbose', 'Verbose mode. Multiple -v options increase visilibity (max: 2)'){|v|
+      opt[:verbose] << '-v'
     }
 
     #
@@ -94,12 +94,12 @@ if __FILE__ == $0
   yamls += BenchmarkDriver.new(opt).files
 
   # Many variables in Makefile are not `foo,bar` but `foo bar`. So it's converted here.
-  execs = opt[:execs].map { |exec| ['--executables', exec.shellsplit.join(',')] }.flatten
+  execs = opt[:execs].map { |exec| ['--executables', exec] }.flatten
   rbenv = opt[:rbenvs].map { |r| ['--rbenv', r] }
 
   BenchmarkDriver.run(
-    *yamls, *execs, *rbenv,
+    *yamls, *execs, *rbenv, *opt[:verbose],
     "--runner=#{opt[:runner]}", "--output=#{opt[:output]}",
-    "--verbose=#{opt[:verbose]}", "--repeat-count=#{opt[:repeat]}",
+    "--repeat-count=#{opt[:repeat]}",
   )
 end
