@@ -16,6 +16,13 @@ class TestIseqLoad < Test::Unit::TestCase
     end;
   end
 
+  def test_stressful_roundtrip
+    stress, GC.stress = GC.stress, true
+    test_bug8543
+  ensure
+    GC.stress = stress
+  end
+
   def test_case_when
     assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
     begin;

@@ -2159,6 +2159,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
+			    RB_OBJ_WRITTEN(iseq, Qundef, ic);
 			    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
@@ -7914,11 +7915,14 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			break;
 		      case TS_VALUE:
 			argv[j] = op;
+			iseq_add_mark_object_compile_time(iseq, op);
 			break;
 		      case TS_ISEQ:
 			{
 			    if (op != Qnil) {
-				argv[j] = (VALUE)iseq_build_load_iseq(iseq, op);
+				VALUE v = (VALUE)iseq_build_load_iseq(iseq, op);
+				argv[j] = v;
+				iseq_add_mark_object_compile_time(iseq, v);
 			    }
 			    else {
 				argv[j] = 0;
@@ -7929,8 +7933,9 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			op = rb_to_symbol_type(op);
 			argv[j] = (VALUE)rb_global_entry(SYM2ID(op));
 			break;
-		      case TS_IC:
 		      case TS_ISE:
+			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+		      case TS_IC:
 			argv[j] = op;
 			if (NUM2UINT(op) >= iseq->body->is_size) {
 			    iseq->body->is_size = NUM2INT(op) + 1;
@@ -7961,6 +7966,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			    }
 			    RB_GC_GUARD(op);
 			    argv[j] = map;
+			    iseq_add_mark_object_compile_time(iseq, map);
 			}
 			break;
 		      case TS_FUNCPTR:
@@ -8655,9 +8661,9 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		    }
 		    break;
 		}
-	      case TS_IC:
-		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 	      case TS_ISE:
+		FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
+	      case TS_IC:
 		code[code_index] = (VALUE)&is_entries[(int)op];
 		break;
 	      case TS_CALLINFO:
