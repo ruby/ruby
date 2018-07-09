@@ -2068,10 +2068,11 @@ glob_helper(
 	    if (status) return status;
 	}
 	if (match_dir && pathtype == path_directory) {
-	    const char *subpath = path + baselen + (baselen && path[baselen] == '/');
-	    char *tmp = join_path(subpath, namelen, dirsep, "", 0);
+	    int seplen = (baselen && path[baselen] == '/');
+	    const char *subpath = path + baselen + seplen;
+	    char *tmp = join_path(subpath, namelen - seplen, dirsep, "", 0);
 	    if (!tmp) return -1;
-	    status = glob_call_func(funcs->match, tmp + (baselen ? dirsep : 0), arg, enc);
+	    status = glob_call_func(funcs->match, tmp, arg, enc);
 	    GLOB_FREE(tmp);
 	    if (status) return status;
 	}
