@@ -1,4 +1,3 @@
-prelude: |
 benchmark:
   app_pentomino: |
     # This program is contributed by Shin Nishiyama
