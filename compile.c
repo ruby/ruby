@@ -2120,17 +2120,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		      case TS_NUM:	/* ulong */
 			generated_iseq[code_index + 1 + j] = FIX2INT(operands[j]);
 			break;
-		      case TS_ISEQ:	/* iseq */
-			{
-			    VALUE v = operands[j];
-			    generated_iseq[code_index + 1 + j] = v;
-			    if (!SPECIAL_CONST_P(v)) {
-				RB_OBJ_WRITTEN(iseq, Qundef, v);
-				FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
-			    }
-			    break;
-			}
 		      case TS_VALUE:	/* VALUE */
+		      case TS_ISEQ:	/* iseq */
 			{
 			    VALUE v = operands[j];
 			    generated_iseq[code_index + 1 + j] = v;
@@ -2141,6 +2132,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    }
 			    break;
 			}
+		      case TS_ISE: /* inline storage entry */
+			/* Treated as an IC, but may contain a markable VALUE */
+			FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 		      case TS_IC: /* inline cache */
 			{
 			    unsigned int ic_index = FIX2UINT(operands[j]);
@@ -2149,17 +2143,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
-			    break;
-			}
-		      case TS_ISE: /* inline storage entry */
-			{
-			    unsigned int ic_index = FIX2UINT(operands[j]);
-			    IC ic = (IC)&body->is_entries[ic_index];
-			    if (UNLIKELY(ic_index >= body->is_size)) {
-				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, body->is_size);
-			    }
-			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
-			    FL_SET(iseq, ISEQ_MARKABLE_ISEQ);
 			    break;
 			}
 		      case TS_CALLINFO: /* call info */
