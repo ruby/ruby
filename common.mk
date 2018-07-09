@@ -1113,24 +1113,19 @@ bisect-ruby: PHONY
 
 COMPARE_RUBY = $(BASERUBY)
 ITEM =
+ARGS = $(srcdir)/benchmark/*$(ITEM)*.yml
 OPTS =
 
 # You can pass several options through OPTS environment variable.
-# $ make benchmark OPTS="--help" displays more detail.
+# $ make benchmark ARGS="--help" displays more detail.
 # for example,
 #  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
 # This command compares trunk and built-ruby and 2.2.2
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
-	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
+	$(BASERUBY) -rrubygems $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
-	            --directory=$(srcdir)/benchmark $(OPTS)
-
-benchmark-each: miniruby$(EXEEXT) update-benchmark-driver PHONY
-	$(BASERUBY) $(srcdir)/benchmark/driver.rb \
-	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
-	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
-	            --pattern=$(ITEM) --directory=$(srcdir)/benchmark $(OPTS)
+	            $(ARGS) $(OPTS)
 
 run.gdb:
 	echo set breakpoint pending on         > run.gdb
