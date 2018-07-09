@@ -33,6 +33,8 @@ while arg = ARGV[0]
     case value
     when nil
       debugger = :gdb
+    when "lldb"
+      debugger = :lldb
     when "no"
     else
       debugger = Shellwords.shellwords(value)
@@ -139,6 +141,10 @@ if debugger or ENV['RUNRUBY_USE_GDB'] == 'true'
     end
     debugger << '--args'
   end
+  if debugger == :lldb
+    debugger = %w'lldb --'
+  end
+
   if idx = precommand.index(:debugger)
     precommand[idx, 1] = debugger
   else
