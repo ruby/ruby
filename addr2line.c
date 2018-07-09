@@ -104,7 +104,7 @@ void *alloca();
 #define SHF_COMPRESSED 0
 #endif
 
-int kprintf(const char *fmt, ...);
+static int kprintf(const char *fmt, ...);
 
 typedef struct {
     const char *dirname;
@@ -851,7 +851,7 @@ static void putce(int c)
     (void)ret;
 }
 
-int
+static int
 kprintf(const char *fmt, ...)
 {
 	va_list ap;
