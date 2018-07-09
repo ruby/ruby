@@ -66,8 +66,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/ipaddr.rb]
   Akinori MUSHA (knu)
-[lib/irb.rb, lib/irb/*]
-  Keiju ISHITSUKA (keiju)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/monitor.rb]
@@ -205,6 +203,8 @@ Zachary Scott (zzak)
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
+[lib/irb.rb, lib/irb/*]
+  Keiju ISHITSUKA (keiju)
 [lib/logger.rb]
   Naotoshi Seo (sonots)
 [lib/matrix.rb]

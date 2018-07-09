@@ -27,6 +27,7 @@
 # * https://github.com/ruby/ostruct
 # * https://github.com/ruby/rexml
 # * https://github.com/ruby/rss
+# * https://github.com/ruby/irb
 #
 
 $repositories = {
@@ -57,6 +58,7 @@ $repositories = {
   ostruct: 'ruby/ostruct',
   rexml: 'ruby/rexml',
   rss: 'ruby/rss',
+  irb: 'ruby/irb',
 }
 
 def sync_default_gems(gem)
@@ -130,6 +132,11 @@ def sync_default_gems(gem)
     `cp -rf ../csv/lib/* lib`
     `cp -rf ../csv/test/csv test`
     `cp -f ../csv/csv.gemspec lib/csv`
+  when "irb"
+    `rm -rf lib/irb* test/irb`
+    `cp -rf ../irb/lib/* lib`
+    `cp -rf ../irb/test/irb test`
+    `cp -f ../irb/irb.gemspec lib/irb`
   when "webrick"
     `rm -rf lib/webrick* test/webrick`
     `cp -rf ../webrick/lib/webrick* lib`
