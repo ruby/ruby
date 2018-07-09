@@ -12,10 +12,10 @@ Execute `gem install benchmark-driver` and run a command like:
 benchmark-driver benchmark/erb_render.yml
 
 # Run all benchmark scripts with multiple Ruby executables or options
-benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby,--jit'
+benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby --jit'
 
 # Or compare Ruby versions managed by rbenv
-benchmark-driver benchmark/*.yml --rbenv '2.5.1;2.6.0-preview2,--jit'
+benchmark-driver benchmark/*.yml --rbenv '2.5.1;2.6.0-preview2 --jit'
 ```
 
 ## make benchmark
