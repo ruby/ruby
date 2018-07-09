@@ -22,7 +22,6 @@ Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
-IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Monitor:: Provides an object or module to use safely by more than one thread
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
@@ -87,6 +86,7 @@ Bundler:: Manage your Ruby application's gem dependencies
 CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
 FileUtils:: Several file utility methods for copying, moving, removing, etc
+IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 Logger:: Provides a simple logging utility for outputting messages
 Matrix:: Represents a mathematical matrix.
 OpenStruct:: Class to build custom data structures, similar to a Hash

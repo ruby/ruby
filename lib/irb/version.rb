@@ -11,6 +11,7 @@
 #
 
 module IRB # :nodoc:
-  @RELEASE_VERSION = "0.9.6"
+  VERSION = "0.9.6"
+  @RELEASE_VERSION = VERSION
   @LAST_UPDATE_DATE = "09/06/30"
 end
