@@ -43,4 +43,8 @@ make benchmark ARGS=../benchmark/erb_render.yml
 
 # You can specify any option via $OPTS
 make benchmark OPTS="--help"
+
+# With `make benchmark`, some special runner plugins are available:
+#   -r peak, -r size
+make benchmark ITEM=vm2_bigarray OPTS="-r peak"
 ```
