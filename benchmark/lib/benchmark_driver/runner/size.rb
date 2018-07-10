@@ -13,6 +13,11 @@ class BenchmarkDriver::Runner::Size < BenchmarkDriver::Runner::Peak
 
   private
 
+  # Overriding BenchmarkDriver::Runner::Peak#metric
+  def metric
+    METRIC
+  end
+
   # Overriding BenchmarkDriver::Runner::Peak#target
   def target
     'size'
