@@ -810,7 +810,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: check test test-all btest btest-ruby test-basic test-knownbug
-.PHONY: run runruby parse benchmark benchmark-each gdb gdb-ruby
+.PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
 
@@ -1113,7 +1113,7 @@ bisect-ruby: PHONY
 
 COMPARE_RUBY = $(BASERUBY)
 ITEM =
-ARGS = $(srcdir)/benchmark/*$(ITEM)*.yml
+ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb')
 OPTS =
 
 # You can pass several options through OPTS environment variable.

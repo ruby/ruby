@@ -1,5 +1,0 @@
-benchmark:
-  time_subsec: |
-    t = Time.now
-    4000000.times { t.subsec }
-loop_count: 1

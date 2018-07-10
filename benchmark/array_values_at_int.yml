@@ -1,5 +1,0 @@
-benchmark:
-  array_values_at_int: |
-    ary = Array.new(10000) {|i| i}
-    100000.times { ary.values_at(500) }
-loop_count: 1

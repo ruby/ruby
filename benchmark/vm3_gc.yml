@@ -1,9 +1,0 @@
-benchmark:
-  vm3_gc: |
-    5000.times do
-      100.times do
-        {"xxxx"=>"yyyy"}
-      end
-      GC.start
-    end
-loop_count: 1

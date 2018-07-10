@@ -1,9 +1,0 @@
-benchmark:
-  vm_thread_alive_check1: |
-    5_000.times{
-      t = Thread.new{}
-      while t.alive?
-        Thread.pass
-      end
-    }
-loop_count: 1
