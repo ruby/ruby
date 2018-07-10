@@ -11,14 +11,17 @@ Execute `gem install benchmark_driver` and run a command like:
 # Run a benchmark script with the ruby in the $PATH
 benchmark-driver benchmark/app_fib.rb
 
-# Run all benchmark scripts with multiple Ruby executables or options
-benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby --jit'
+# Run benchmark scripts with multiple Ruby executables or options
+benchmark-driver benchmark/*.rb -e /path/to/ruby -e '/path/to/ruby --jit'
 
 # Or compare Ruby versions managed by rbenv
-benchmark-driver benchmark/*.yml --rbenv '2.5.1;2.6.0-preview2 --jit'
+benchmark-driver benchmark/*.rb --rbenv '2.5.1;2.6.0-preview2 --jit'
 
 # You can collect many metrics in many ways
-benchmark-driver benchmark/*.yml --runner memory --output markdown
+benchmark-driver benchmark/*.rb --runner memory --output markdown
+
+# Some are defined with YAML for complex setup or accurate measurement
+benchmark-driver benchmark/*.yml
 ```
 
 See also:
