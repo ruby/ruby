@@ -42,7 +42,7 @@ Usage: benchmark-driver [options] [YAML|RUBY]
 
 Using `make benchmark`, `make update-benchmark-driver` automatically downloads
 the supported version of benchmark\_driver, and it runs benchmarks with the downloaded
-benchmark-driver.
+benchmark\_driver.
 
 ```bash
 # Run all benchmarks with the ruby in the $PATH and the built ruby
