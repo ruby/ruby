@@ -1,7 +1,0 @@
-benchmark:
-  hash_aref_dsym: |
-    h = {}
-    syms = ('a'..'z').map { |s| s.to_sym }
-    syms.each { |s| h[s] = 1 }
-    200_000.times { syms.each { |s| h[s] } }
-loop_count: 1

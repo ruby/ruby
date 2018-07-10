@@ -1,5 +1,0 @@
-benchmark:
-  array_sample_100k_10: |
-    arr = [*0...100000]
-    10_000.times {arr.sample 10}
-loop_count: 1

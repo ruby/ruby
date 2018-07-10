@@ -1,4 +1,0 @@
-benchmark:
-  int_quo: |
-    5000000.times { 42.quo(3) }
-loop_count: 1
