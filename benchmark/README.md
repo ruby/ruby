@@ -16,6 +16,9 @@ benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby --jit'
 
 # Or compare Ruby versions managed by rbenv
 benchmark-driver benchmark/*.yml --rbenv '2.5.1;2.6.0-preview2 --jit'
+
+# You can collect many metrics in many ways
+benchmark-driver benchmark/*.yml --runner memory --output markdown
 ```
 
 See also:
@@ -62,6 +65,6 @@ make benchmark ARGS=../benchmark/erb_render.yml
 make benchmark OPTS="--help"
 
 # With `make benchmark`, some special runner plugins are available:
-#   -r peak, -r size
+#   -r peak, -r size, -r total, -r utime, -r stime, -r cutime, -r cstime
 make benchmark ITEM=vm2_bigarray OPTS="-r peak"
 ```
