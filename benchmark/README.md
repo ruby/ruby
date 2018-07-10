@@ -5,7 +5,7 @@ This directory has benchmark definitions to be run with
 
 ## Normal usage
 
-Execute `gem install benchmark-driver` and run a command like:
+Execute `gem install benchmark_driver` and run a command like:
 
 ```bash
 # Run a benchmark script with the ruby in the $PATH
@@ -21,7 +21,7 @@ benchmark-driver benchmark/*.yml --rbenv '2.5.1;2.6.0-preview2 --jit'
 ## make benchmark
 
 Using `make benchmark`, `make update-benchmark-driver` automatically downloads
-the supported version of benchmark-driver, and it runs benchmarks with the downloaded
+the supported version of benchmark\_driver, and it runs benchmarks with the downloaded
 benchmark-driver.
 
 ```bash
