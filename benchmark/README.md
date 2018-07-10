@@ -9,7 +9,7 @@ Execute `gem install benchmark_driver` and run a command like:
 
 ```bash
 # Run a benchmark script with the ruby in the $PATH
-benchmark-driver benchmark/erb_render.rb
+benchmark-driver benchmark/erb_fib.rb
 
 # Run all benchmark scripts with multiple Ruby executables or options
 benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby --jit'
@@ -59,7 +59,7 @@ make benchmark ITEM=vm1 OPTS=--filter=block
 
 # You can specify the benchmark by an exact filename instead of using the default argument:
 # ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb')
-make benchmark ARGS=../benchmark/erb_render.rb
+make benchmark ARGS=../benchmark/erb_render.yml
 
 # You can specify any option via $OPTS
 make benchmark OPTS="--help"
