@@ -2210,8 +2210,13 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
 
 # define rb_scan_args_isdigit(c) ((unsigned char)((c)-'0')<10)
 
-# define rb_scan_args_count_end(fmt, ofs, varc, vari) \
-    ((vari)/(!fmt[ofs] || rb_scan_args_bad_format(fmt)))
+# if defined(__has_attribute) && __has_attribute(diagnose_if)
+#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
+     (fmt[ofs] ? rb_scan_args_bad_format(fmt) : (vari))
+# else
+#  define rb_scan_args_count_end(fmt, ofs, varc, vari) \
+     ((vari)/(!fmt[ofs] || rb_scan_args_bad_format(fmt)))
+# endif
 
 # define rb_scan_args_count_block(fmt, ofs, varc, vari) \
     (fmt[ofs]!='&' ? \
@@ -2239,16 +2244,17 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
      rb_scan_args_count_var(fmt, ofs+1, varc, vari+fmt[ofs]-'0'))
 
 # define rb_scan_args_count(fmt, varc) \
-    ((!rb_scan_args_isdigit(fmt[0]) ? \
+    (!rb_scan_args_isdigit(fmt[0]) ? \
       rb_scan_args_count_var(fmt, 0, varc, 0) : \
-      rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0')) \
-     == (varc) || \
-     rb_scan_args_length_mismatch(fmt, varc))
+      rb_scan_args_count_opt(fmt, 1, varc, fmt[0]-'0'))
 
 # define rb_scan_args_verify_count(fmt, varc) \
-    ((varc)/(rb_scan_args_count(fmt, varc)))
+    ((varc)/(rb_scan_args_count(fmt, varc) == (varc) || \
+     rb_scan_args_length_mismatch(fmt, varc)))
 
-# ifdef __GNUC__
+# if defined(__has_attribute) && __has_attribute(diagnose_if)
+#  define rb_scan_args_verify(fmt, varc) 0
+# elif defined(__GNUC__)
 # define rb_scan_args_verify(fmt, varc) \
     __extension__ ({ \
 	int verify; \
@@ -2361,6 +2367,8 @@ rb_scan_args_end_idx(const char *fmt)
 }
 # endif
 
+/* NOTE: Use `char *fmt` instead of `const char *fmt` because of clang's bug*/
+/* https://bugs.llvm.org/show_bug.cgi?id=38095 */
 # define rb_scan_args0(argc, argv, fmt, varc, vars) \
     rb_scan_args_set(argc, argv, \
 		     rb_scan_args_n_lead(fmt), \
@@ -2369,17 +2377,22 @@ rb_scan_args_end_idx(const char *fmt)
 		     rb_scan_args_f_var(fmt), \
 		     rb_scan_args_f_hash(fmt), \
 		     rb_scan_args_f_block(fmt), \
-		     (rb_scan_args_verify(fmt, varc), vars))
+		     (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 ALWAYS_INLINE(static int
 rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 VALUE *vars[]));
+		 VALUE *vars[], char *fmt, int varc));
+
 inline int
 rb_scan_args_set(int argc, const VALUE *argv,
 		 int n_lead, int n_opt, int n_trail,
 		 int f_var, int f_hash, int f_block,
-		 VALUE *vars[])
+		 VALUE *vars[], RB_UNUSED_VAR(char *fmt), RB_UNUSED_VAR(int varc))
+# if defined(__has_attribute) && __has_attribute(diagnose_if)
+    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)==0,"bad scan arg format","error")))
+    __attribute__((diagnose_if(rb_scan_args_count(fmt,varc)!=varc,"variable argument length doesn't match","error")))
+# endif
 {
     int i, argi = 0, vari = 0, last_idx = -1;
     VALUE *var, hash = Qnil, last_hash = 0;
