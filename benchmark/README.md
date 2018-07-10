@@ -9,7 +9,7 @@ Execute `gem install benchmark_driver` and run a command like:
 
 ```bash
 # Run a benchmark script with the ruby in the $PATH
-benchmark-driver benchmark/erb_fib.rb
+benchmark-driver benchmark/app_fib.rb
 
 # Run all benchmark scripts with multiple Ruby executables or options
 benchmark-driver benchmark/*.yml -e /path/to/ruby -e '/path/to/ruby --jit'
