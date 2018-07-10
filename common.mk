@@ -42,7 +42,7 @@ GEM_PATH =
 GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
-BENCHMARK_DRIVER_GIT_REF = v0.14.3
+BENCHMARK_DRIVER_GIT_REF = v0.14.5
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
 SIMPLECOV_HTML_GIT_URL = git://github.com/colszowka/simplecov-html.git
