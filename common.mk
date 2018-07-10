@@ -42,7 +42,7 @@ GEM_PATH =
 GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
-BENCHMARK_DRIVER_GIT_REF = v0.14.0
+BENCHMARK_DRIVER_GIT_REF = v0.14.3
 SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
 SIMPLECOV_HTML_GIT_URL = git://github.com/colszowka/simplecov-html.git
@@ -1122,7 +1122,7 @@ OPTS =
 #  $ make benchmark COMPARE_RUBY="ruby-trunk" OPTS="-e ruby-2.2.2"
 # This command compares trunk and built-ruby and 2.2.2
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
-	$(BASERUBY) -rrubygems $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
+	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
 	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
 	            $(ARGS) $(OPTS)
