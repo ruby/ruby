@@ -32,22 +32,25 @@ describe "CVE-2018-6914 is resisted by" do
 
   it "Tempfile.create by deleting separators" do
     expect = Dir.glob(@traversal_path + '*').count
-    Tempfile.create(@traversal_path + 'foo')
-    actual = Dir.glob(@traversal_path + '*').count
-    actual.should == expect
+    Tempfile.create(@traversal_path + 'foo') do
+      actual = Dir.glob(@traversal_path + '*').count
+      actual.should == expect
+    end
   end
 
   it "Dir.mktmpdir by deleting separators" do
     expect = Dir.glob(@traversal_path + '*').count
-    Dir.mktmpdir(@traversal_path + 'foo')
-    actual = Dir.glob(@traversal_path + '*').count
-    actual.should == expect
+    Dir.mktmpdir(@traversal_path + 'foo') do
+      actual = Dir.glob(@traversal_path + '*').count
+      actual.should == expect
+    end
   end
 
   it "Dir.mktmpdir with an array by deleting separators" do
     expect = Dir.glob(@traversal_path + '*').count
-    Dir.mktmpdir([@traversal_path, 'foo'])
-    actual = Dir.glob(@traversal_path + '*').count
-    actual.should == expect
+    Dir.mktmpdir([@traversal_path, 'foo']) do
+      actual = Dir.glob(@traversal_path + '*').count
+      actual.should == expect
+    end
   end
 end
