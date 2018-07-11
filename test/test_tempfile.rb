@@ -401,8 +401,8 @@ puts Tempfile.new('foo').path
     assert_equal expect, actual
   ensure
     if t
-      File.unlink(t.path)
       t.close
+      File.unlink(t.path)
     end
   end
 end
