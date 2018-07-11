@@ -400,6 +400,9 @@ puts Tempfile.new('foo').path
     actual = Dir.glob(TRAVERSAL_PATH + '*').count
     assert_equal expect, actual
   ensure
-    t&.close
+    if t
+      File.unlink(t.path)
+      t.close
+    end
   end
 end
