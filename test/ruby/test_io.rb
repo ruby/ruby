@@ -1188,10 +1188,11 @@ class TestIO < Test::Unit::TestCase
 
   def test_copy_stream_to_duplex_io
     result = IO.pipe {|a,w|
-      Thread.start {w.puts "yes"; w.close}
+      th = Thread.start {w.puts "yes"; w.close}
       IO.popen([EnvUtil.rubybin, '-pe$_="#$.:#$_"'], "r+") {|b|
         IO.copy_stream(a, b)
         b.close_write
+        assert_join_threads([th])
         b.read
       }
     }
