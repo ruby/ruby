@@ -1335,7 +1335,7 @@ setup_communication_pipe_internal(int pipes[2])
 
     err = rb_cloexec_pipe(pipes);
     if (err != 0) {
-	rb_warn("Failed to create communication pipe for timer thread: %s",
+	rb_warn("pipe creation failed for timer: %s, scheduling broken",
 	        strerror(errno));
 	return -1;
     }
@@ -1593,11 +1593,7 @@ rb_thread_create_timer_thread(void)
 
 #if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	err = setup_communication_pipe();
-	if (err != 0) {
-	    rb_warn("pipe creation failed for timer: %s, scheduling broken",
-		    strerror(err));
-	    return;
-	}
+	if (err) return;
 #endif /* TIMER_THREAD_SLEEPY */
 
 	/* create timer thread */
