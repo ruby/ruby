@@ -46,6 +46,18 @@ void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
 void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
 void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
+
+#define TIMER_THREAD_MASK    (1)
+#define TIMER_THREAD_SLEEPY  (2|TIMER_THREAD_MASK)
+#define TIMER_THREAD_BUSY    (4|TIMER_THREAD_MASK)
+
+#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
+/* The timer thread sleeps while only one Ruby thread is running. */
+# define TIMER_IMPL TIMER_THREAD_SLEEPY
+#else
+# define TIMER_IMPL TIMER_THREAD_BUSY
+#endif
+
 static struct {
     pthread_t id;
     int created;
@@ -59,13 +71,6 @@ static pthread_condattr_t condattr_mono;
 static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 #else
 static const void *const condattr_monotonic = NULL;
-#endif
-
-#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
-/* The timer thread sleeps while only one Ruby thread is running. */
-# define USE_SLEEPY_TIMER_THREAD 1
-#else
-# define USE_SLEEPY_TIMER_THREAD 0
 #endif
 
 static void
@@ -982,6 +987,7 @@ native_thread_create(rb_thread_t *th)
     return err;
 }
 
+#if (TIMER_IMPL & TIMER_THREAD_MASK)
 static void
 native_thread_join(pthread_t th)
 {
@@ -990,6 +996,7 @@ native_thread_join(pthread_t th)
 	rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 }
+#endif /* TIMER_THREAD_MASK */
 
 #if USE_NATIVE_THREAD_PRIORITY
 
@@ -1181,7 +1188,7 @@ static int ubf_threads_empty(void) { return 1; }
  */
 #define TIME_QUANTUM_USEC (100 * 1000)
 
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 static struct {
     /*
      * Read end of each pipe is closed inside timer thread for shutdown
@@ -1419,8 +1426,9 @@ timer_thread_sleep(rb_vm_t *vm)
 	}
     }
 }
+#endif /* TIMER_THREAD_SLEEPY */
 
-#else /* USE_SLEEPY_TIMER_THREAD */
+#if TIMER_IMPL == TIMER_THREAD_BUSY
 # define PER_NANO 1000000000
 void rb_thread_wakeup_timer_thread(void) {}
 static void rb_thread_wakeup_timer_thread_low(void) {}
@@ -1438,7 +1446,7 @@ timer_thread_sleep(rb_vm_t *unused)
 
     native_cond_timedwait(&timer_thread_cond, &timer_thread_lock, &ts);
 }
-#endif /* USE_SLEEPY_TIMER_THREAD */
+#endif /* TIMER_IMPL == TIMER_THREAD_BUSY */
 
 #if !defined(SET_CURRENT_THREAD_NAME) && defined(__linux__) && defined(PR_SET_NAME)
 # define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
@@ -1508,7 +1516,7 @@ thread_timer(void *p)
     SET_CURRENT_THREAD_NAME("ruby-timer-thr");
 #endif
 
-#if !USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_BUSY
     rb_native_mutex_initialize(&timer_thread_lock);
     rb_native_cond_initialize(&timer_thread_cond);
     rb_native_mutex_lock(&timer_thread_lock);
@@ -1524,10 +1532,11 @@ thread_timer(void *p)
         /* wait */
 	timer_thread_sleep(vm);
     }
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
     CLOSE_INVALIDATE(normal[0]);
     CLOSE_INVALIDATE(low[0]);
-#else
+#endif
+#if TIMER_IMPL == TIMER_THREAD_BUSY
     rb_native_mutex_unlock(&timer_thread_lock);
     rb_native_cond_destroy(&timer_thread_cond);
     rb_native_mutex_destroy(&timer_thread_lock);
@@ -1537,6 +1546,7 @@ thread_timer(void *p)
     return NULL;
 }
 
+#if (TIMER_IMPL & TIMER_THREAD_MASK)
 static void
 rb_thread_create_timer_thread(void)
 {
@@ -1581,14 +1591,14 @@ rb_thread_create_timer_thread(void)
 	}
 # endif
 
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	err = setup_communication_pipe();
 	if (err != 0) {
 	    rb_warn("pipe creation failed for timer: %s, scheduling broken",
 		    strerror(err));
 	    return;
 	}
-#endif /* USE_SLEEPY_TIMER_THREAD */
+#endif /* TIMER_THREAD_SLEEPY */
 
 	/* create timer thread */
 	if (timer_thread.created) {
@@ -1617,21 +1627,22 @@ rb_thread_create_timer_thread(void)
 		rb_warn("timer thread stack size: system default");
 	    }
 	    VM_ASSERT(err == 0);
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	    CLOSE_INVALIDATE(normal[0]);
 	    CLOSE_INVALIDATE(normal[1]);
 	    CLOSE_INVALIDATE(low[0]);
 	    CLOSE_INVALIDATE(low[1]);
-#endif
+#endif /* TIMER_THREAD_SLEEPY */
 	    return;
 	}
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	/* validate pipe on this process */
 	timer_thread_pipe.owner_process = getpid();
-#endif
+#endif /* TIMER_THREAD_SLEEPY */
 	timer_thread.created = 1;
     }
 }
+#endif /* TIMER_IMPL & TIMER_THREAD_MASK */
 
 static int
 native_stop_timer_thread(void)
@@ -1641,7 +1652,7 @@ native_stop_timer_thread(void)
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
     if (stopped) {
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	/* prevent wakeups from signal handler ASAP */
 	timer_thread_pipe.owner_process = 0;
 
@@ -1662,7 +1673,7 @@ native_stop_timer_thread(void)
 	/* timer thread will stop looping when system_working <= 0: */
 	native_thread_join(timer_thread.id);
 
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
 	/* timer thread will close the read end on exit: */
 	VM_ASSERT(timer_thread_pipe.normal[0] == -1);
 	VM_ASSERT(timer_thread_pipe.low[0] == -1);
@@ -1727,7 +1738,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 int
 rb_reserved_fd_p(int fd)
 {
-#if USE_SLEEPY_TIMER_THREAD
+#if TIMER_IMPL == TIMER_THREAD_SLEEPY
     if ((fd == timer_thread_pipe.normal[0] ||
 	 fd == timer_thread_pipe.normal[1] ||
 	 fd == timer_thread_pipe.low[0] ||
