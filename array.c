@@ -675,7 +675,7 @@ rb_ary_s_try_convert(VALUE dummy, VALUE ary)
  *  call-seq:
  *     Array.new(size=0, default=nil)
  *     Array.new(array)
- *     Array.new(size) {|index| block }
+ *     Array.new(size) { |index| block }
  *
  *  Returns a new array.
  *
@@ -1803,7 +1803,7 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
  *  If no block is given, an Enumerator is returned.
  *
  *     a = [ "a", "b", "c" ]
- *     a.each {|x| print x, " -- " }
+ *     a.each { |x| print x, " -- " }
  *
  *  produces:
  *
@@ -1833,7 +1833,7 @@ rb_ary_each(VALUE ary)
  *  An Enumerator is returned if no block is given.
  *
  *     a = [ "a", "b", "c" ]
- *     a.each_index {|x| print x, " -- " }
+ *     a.each_index { |x| print x, " -- " }
  *
  *  produces:
  *
@@ -1860,7 +1860,7 @@ rb_ary_each_index(VALUE ary)
  *  Same as Array#each, but traverses +self+ in reverse order.
  *
  *     a = [ "a", "b", "c" ]
- *     a.reverse_each {|x| print x, " " }
+ *     a.reverse_each { |x| print x, " " }
  *
  *  produces:
  *
@@ -2550,7 +2550,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
 
 /*
  *  call-seq:
- *     ary.bsearch {|x| block }  -> elem
+ *     ary.bsearch { |x| block }  -> elem
  *
  *  By using binary search, finds a value from this array which meets
  *  the given condition in O(log n) where n is the size of the array.
@@ -2572,10 +2572,10 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  it returns nil.
  *
  *     ary = [0, 4, 7, 10, 12]
- *     ary.bsearch {|x| x >=   4 } #=> 4
- *     ary.bsearch {|x| x >=   6 } #=> 7
- *     ary.bsearch {|x| x >=  -1 } #=> 0
- *     ary.bsearch {|x| x >= 100 } #=> nil
+ *     ary.bsearch { |x| x >=   4 } #=> 4
+ *     ary.bsearch { |x| x >=   6 } #=> 7
+ *     ary.bsearch { |x| x >=  -1 } #=> 0
+ *     ary.bsearch { |x| x >= 100 } #=> nil
  *
  *  In find-any mode (this behaves like libc's bsearch(3)), the block
  *  must always return a number, and there must be two indices i and j
@@ -2592,9 +2592,9 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *
  *     ary = [0, 4, 7, 10, 12]
  *     # try to find v such that 4 <= v < 8
- *     ary.bsearch {|x| 1 - x / 4 } #=> 4 or 7
+ *     ary.bsearch { |x| 1 - x / 4 } #=> 4 or 7
  *     # try to find v such that 8 <= v < 10
- *     ary.bsearch {|x| 4 - x / 2 } #=> nil
+ *     ary.bsearch { |x| 4 - x / 2 } #=> nil
  *
  *  You must not mix the two modes at a time; the block must always
  *  return either true/false, or always return a number.  It is
@@ -2614,7 +2614,7 @@ rb_ary_bsearch(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.bsearch_index {|x| block }  -> int or nil
+ *     ary.bsearch_index { |x| block }  -> int or nil
  *
  *  By using binary search, finds an index of a value from this array which
  *  meets the given condition in O(log n) where n is the size of the array.
@@ -2746,8 +2746,8 @@ rb_ary_collect(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.collect! {|item| block }   -> ary
- *     ary.map!     {|item| block }   -> ary
+ *     ary.collect! { |item| block }   -> ary
+ *     ary.map!     { |item| block }   -> ary
  *     ary.collect!                   -> Enumerator
  *     ary.map!                       -> Enumerator
  *
@@ -2759,9 +2759,9 @@ rb_ary_collect(VALUE ary)
  *  If no block is given, an Enumerator is returned instead.
  *
  *     a = [ "a", "b", "c", "d" ]
- *     a.map! {|x| x + "!" }
+ *     a.map! { |x| x + "!" }
  *     a #=>  [ "a!", "b!", "c!", "d!" ]
- *     a.collect!.with_index {|x, i| x[0...i] }
+ *     a.collect!.with_index { |x, i| x[0...i] }
  *     a #=>  ["", "b", "c!", "d!"]
  */
 
@@ -2943,7 +2943,7 @@ select_bang_ensure(VALUE a)
 
 /*
  *  call-seq:
- *     ary.select!  {|item| block } -> ary or nil
+ *     ary.select!  { |item| block } -> ary or nil
  *     ary.select!                  -> Enumerator
  *
  *  Invokes the given block passing in successive elements from +self+,
@@ -3264,7 +3264,7 @@ rb_ary_reject_bang(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.reject  {|item| block }  -> new_ary
+ *     ary.reject  { |item| block }  -> new_ary
  *     ary.reject                   -> Enumerator
  *
  *  Returns a new array containing the items in +self+ for which the given
@@ -3301,7 +3301,7 @@ rb_ary_reject(VALUE ary)
  *  If no block is given, an Enumerator is returned instead.
  *
  *     scores = [ 97, 42, 75 ]
- *     scores.delete_if {|score| score < 80 }   #=> [97]
+ *     scores.delete_if { |score| score < 80 }   #=> [97]
  */
 
 static VALUE
@@ -4329,7 +4329,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *
  *     ary = %w[albatross dog horse]
  *     ary.max(2)                                  #=> ["horse", "dog"]
- *     ary.max(2) {|a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
+ *     ary.max(2) { |a, b| a.length <=> b.length }  #=> ["albatross", "horse"]
  */
 static VALUE
 rb_ary_max(int argc, VALUE *argv, VALUE ary)
@@ -4367,9 +4367,9 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
 /*
  *  call-seq:
  *     ary.min                     -> obj
- *     ary.min {| a,b | block }    -> obj
+ *     ary.min { | a,b | block }   -> obj
  *     ary.min(n)                  -> array
- *     ary.min(n) {| a,b | block } -> array
+ *     ary.min(n) { | a,b | block } -> array
  *
  *  Returns the object in _ary_ with the minimum value. The
  *  first form assumes all objects implement <code>Comparable</code>;
@@ -4384,7 +4384,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
  *
  *     ary = %w[albatross dog horse]
  *     ary.min(2)                                  #=> ["albatross", "dog"]
- *     ary.min(2) {|a, b| a.length <=> b.length }  #=> ["dog", "horse"]
+ *     ary.min(2) { |a, b| a.length <=> b.length }  #=> ["dog", "horse"]
  */
 static VALUE
 rb_ary_min(int argc, VALUE *argv, VALUE ary)
@@ -5765,7 +5765,7 @@ rb_ary_drop(VALUE ary, VALUE n)
  *  See also Array#take_while
  *
  *     a = [1, 2, 3, 4, 5, 0]
- *     a.drop_while {|i| i < 3 }   #=> [3, 4, 5, 0]
+ *     a.drop_while { |i| i < 3 }   #=> [3, 4, 5, 0]
  *
  */
 
@@ -5862,7 +5862,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
 /*
  * call-seq:
  *   ary.sum(init=0)                    -> number
- *   ary.sum(init=0) {|e| expr }        -> number
+ *   ary.sum(init=0) { |e| expr }        -> number
  *
  * Returns the sum of elements.
  * For example, [e1, e2, e3].sum returns init + e1 + e2 + e3.
@@ -5876,7 +5876,7 @@ finish_exact_sum(long n, VALUE r, VALUE v, int z)
  *   [].sum(0.0)                        #=> 0.0
  *   [1, 2, 3].sum                      #=> 6
  *   [3, 5.5].sum                       #=> 8.5
- *   [2.5, 3.0].sum(0.0) {|e| e * e }   #=> 15.25
+ *   [2.5, 3.0].sum(0.0) { |e| e * e }   #=> 15.25
  *   [Object.new].sum                   #=> TypeError
  *
  * The (arithmetic) mean value of an array can be obtained as follows.
@@ -6032,7 +6032,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
  *  other arrays:
  *
  *     Array.new(4) { Hash.new }  #=> [{}, {}, {}, {}]
- *     Array.new(4) {|i| i.to_s } #=> ["0", "1", "2", "3"]
+ *     Array.new(4) { |i| i.to_s } #=> ["0", "1", "2", "3"]
  *
  *  This is also a quick way to build up multi-dimensional arrays:
  *
