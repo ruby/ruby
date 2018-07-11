@@ -37,7 +37,6 @@ Usage: benchmark-driver [options] RUBY|YAML...
         --bundler                    Install and use gems specified in Gemfile
         --filter REGEXP              Filter out benchmarks with given regexp
         --run-duration SECONDS       Warmup estimates loop_count to run for this duration (default: 3)
-        --timeout SECONDS            Timeout ruby command execution with timeout(1)
     -v, --verbose                    Verbose mode. Multiple -v options increase visilibity (max: 2)
 ```
 
