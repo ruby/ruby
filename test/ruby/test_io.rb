@@ -550,6 +550,7 @@ class TestIO < Test::Unit::TestCase
     def test_copy_stream_no_busy_wait
       # JIT has busy wait on GC. It's hard to test this with JIT.
       skip "MJIT has busy wait on GC. We can't test this with JIT." if RubyVM::MJIT.enabled?
+      skip "multiple threads already active" if Thread.list.size > 1
 
       msg = 'r58534 [ruby-core:80969] [Backport #13533]'
       IO.pipe do |r,w|
@@ -3701,6 +3702,7 @@ __END__
     end
 
     def test_write_no_garbage
+      skip "multiple threads already active" if Thread.list.size > 1
       res = {}
       ObjectSpace.count_objects(res) # creates strings on first call
       [ 'foo'.b, '*' * 24 ].each do |buf|
