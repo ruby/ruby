@@ -43,10 +43,6 @@ insert_env_path(const char *envname, const char *paths, size_t size, int prepend
     setenv(envname, env, 1);
 }
 
-/* force to link libm for fiddle test */
-#include <math.h>
-double (*const ruby_libm_func)(double) = log;
-
 #define EXTOUT_DIR BUILDDIR"/"EXTOUT
 int
 main(int argc, char **argv)
