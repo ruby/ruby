@@ -834,7 +834,7 @@ $(PLATFORM_D):
 	@exit > $@
 
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT)
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(LIBS) $(OUTFLAG)$@ $<
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(LDFLAGS) $(OUTFLAG)$@ $< $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) ./miniruby$(EXEEXT) \
 	    -e 'prog, dest = ARGV; dest += "/ruby"' \
