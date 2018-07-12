@@ -51,7 +51,9 @@ static void rb_thread_wakeup_timer_thread_low(void);
 #define TIMER_THREAD_SLEEPY  (2|TIMER_THREAD_MASK)
 #define TIMER_THREAD_BUSY    (4|TIMER_THREAD_MASK)
 
-#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && defined(F_SETFL) && defined(O_NONBLOCK)
+#if defined(HAVE_POLL) && defined(HAVE_FCNTL) && defined(F_GETFL) && \
+   defined(F_SETFL) && defined(O_NONBLOCK) && \
+   defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
 /* The timer thread sleeps while only one Ruby thread is running. */
 # define TIMER_IMPL TIMER_THREAD_SLEEPY
 #else
@@ -1199,7 +1201,6 @@ static struct {
 
     /* volatile for signal handler use: */
     volatile rb_pid_t owner_process;
-    rb_atomic_t writing;
 } timer_thread_pipe = {
     {-1, -1},
     {-1, -1}, /* low priority */
@@ -1219,13 +1220,12 @@ async_bug_fd(const char *mesg, int errno_arg, int fd)
 
 /* only use signal-safe system calls here */
 static void
-rb_thread_wakeup_timer_thread_fd(volatile int *fdp)
+rb_thread_wakeup_timer_thread_fd(int fd)
 {
     ssize_t result;
-    int fd = *fdp; /* access fdp exactly once here and do not reread fdp */
 
     /* already opened */
-    if (fd >= 0 && timer_thread_pipe.owner_process == getpid()) {
+    if (fd >= 0) {
 	static const char buff[1] = {'!'};
       retry:
 	if ((result = write(fd, buff, 1)) <= 0) {
@@ -1253,9 +1253,7 @@ rb_thread_wakeup_timer_thread(void)
 {
     /* must be safe inside sighandler, so no mutex */
     if (timer_thread_pipe.owner_process == getpid()) {
-	ATOMIC_INC(timer_thread_pipe.writing);
-	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.normal[1]);
-	ATOMIC_DEC(timer_thread_pipe.writing);
+	rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.normal[1]);
     }
 }
 
@@ -1263,9 +1261,7 @@ static void
 rb_thread_wakeup_timer_thread_low(void)
 {
     if (timer_thread_pipe.owner_process == getpid()) {
-	ATOMIC_INC(timer_thread_pipe.writing);
-	rb_thread_wakeup_timer_thread_fd(&timer_thread_pipe.low[1]);
-	ATOMIC_DEC(timer_thread_pipe.writing);
+	rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.low[1]);
     }
 }
 
@@ -1303,9 +1299,9 @@ consume_communication_pipe(int fd)
 #define CLOSE_INVALIDATE(expr) \
     close_invalidate(&timer_thread_pipe.expr,"close_invalidate: "#expr)
 static void
-close_invalidate(volatile int *fdp, const char *msg)
+close_invalidate(int *fdp, const char *msg)
 {
-    int fd = *fdp; /* access fdp exactly once here and do not reread fdp */
+    int fd = *fdp;
 
     *fdp = -1;
     if (close(fd) < 0) {
@@ -1333,6 +1329,12 @@ setup_communication_pipe_internal(int pipes[2])
 {
     int err;
 
+    if (pipes[0] >= 0 || pipes[1] >= 0) {
+        VM_ASSERT(pipes[0] >= 0);
+        VM_ASSERT(pipes[1] >= 0);
+        return 0;
+    }
+
     err = rb_cloexec_pipe(pipes);
     if (err != 0) {
 	rb_warn("pipe creation failed for timer: %s, scheduling broken",
@@ -1350,20 +1352,20 @@ setup_communication_pipe_internal(int pipes[2])
 static int
 setup_communication_pipe(void)
 {
-    VM_ASSERT(timer_thread_pipe.owner_process == 0);
-    VM_ASSERT(timer_thread_pipe.normal[0] == -1);
-    VM_ASSERT(timer_thread_pipe.normal[1] == -1);
-    VM_ASSERT(timer_thread_pipe.low[0] == -1);
-    VM_ASSERT(timer_thread_pipe.low[1] == -1);
+    rb_pid_t owner = timer_thread_pipe.owner_process;
+
+    if (owner && owner != getpid()) {
+        CLOSE_INVALIDATE(normal[0]);
+        CLOSE_INVALIDATE(normal[1]);
+        CLOSE_INVALIDATE(low[0]);
+        CLOSE_INVALIDATE(low[1]);
+    }
 
     if (setup_communication_pipe_internal(timer_thread_pipe.normal) < 0) {
 	return errno;
     }
     if (setup_communication_pipe_internal(timer_thread_pipe.low) < 0) {
-	int e = errno;
-	CLOSE_INVALIDATE(normal[0]);
-	CLOSE_INVALIDATE(normal[1]);
-	return e;
+	return errno;
     }
 
     return 0;
@@ -1532,10 +1534,6 @@ thread_timer(void *p)
         /* wait */
 	timer_thread_sleep(vm);
     }
-#if TIMER_IMPL == TIMER_THREAD_SLEEPY
-    CLOSE_INVALIDATE(normal[0]);
-    CLOSE_INVALIDATE(low[0]);
-#endif
 #if TIMER_IMPL == TIMER_THREAD_BUSY
     rb_native_mutex_unlock(&timer_thread_lock);
     rb_native_cond_destroy(&timer_thread_cond);
@@ -1623,12 +1621,6 @@ rb_thread_create_timer_thread(void)
 		rb_warn("timer thread stack size: system default");
 	    }
 	    VM_ASSERT(err == 0);
-#if TIMER_IMPL == TIMER_THREAD_SLEEPY
-	    CLOSE_INVALIDATE(normal[0]);
-	    CLOSE_INVALIDATE(normal[1]);
-	    CLOSE_INVALIDATE(low[0]);
-	    CLOSE_INVALIDATE(low[1]);
-#endif /* TIMER_THREAD_SLEEPY */
 	    return;
 	}
 #if TIMER_IMPL == TIMER_THREAD_SLEEPY
@@ -1649,31 +1641,18 @@ native_stop_timer_thread(void)
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
     if (stopped) {
 #if TIMER_IMPL == TIMER_THREAD_SLEEPY
-	/* prevent wakeups from signal handler ASAP */
-	timer_thread_pipe.owner_process = 0;
-
-	/*
-	 * however, the above was not enough: the FD may already be
-	 * captured and in the middle of a write while we are running,
-	 * so wait for that to finish:
-	 */
-	while (ATOMIC_CAS(timer_thread_pipe.writing, (rb_atomic_t)0, 0)) {
-	    native_thread_yield();
-	}
-
-	/* stop writing ends of pipes so timer thread notices EOF */
-	CLOSE_INVALIDATE(normal[1]);
-	CLOSE_INVALIDATE(low[1]);
+	/* kick timer thread out of sleep */
+	rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.normal[1]);
 #endif
 
 	/* timer thread will stop looping when system_working <= 0: */
 	native_thread_join(timer_thread.id);
 
-#if TIMER_IMPL == TIMER_THREAD_SLEEPY
-	/* timer thread will close the read end on exit: */
-	VM_ASSERT(timer_thread_pipe.normal[0] == -1);
-	VM_ASSERT(timer_thread_pipe.low[0] == -1);
-#endif
+	/*
+	 * don't care if timer_thread_pipe may fill up at this point.
+	 * If we restart timer thread, signals will be processed, if
+	 * we don't, it's because we're in a different child
+	 */
 
 	if (TT_DEBUG) fprintf(stderr, "joined timer thread\n");
 	timer_thread.created = 0;
