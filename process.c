@@ -287,12 +287,30 @@ static ID id_hertz;
 #define ALWAYS_NEED_ENVP 0
 #endif
 
+static void
+assert_close_on_exec(int fd)
+{
+#if VM_CHECK_MODE > 0
+#if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(FD_CLOEXEC)
+        int flags = fcntl(fd, F_GETFD);
+        if (flags == -1) {
+                static const char m[] = "reserved FD closed unexpectedly?\n";
+                write(2, m, sizeof(m) - 1);
+                return;
+        }
+        if (flags & FD_CLOEXEC) return;
+        rb_bug("reserved FD did not have close-on-exec set");
+#else
+        rb_bug("reserved FD without close-on-exec support");
+#endif /* FD_CLOEXEC */
+#endif /* VM_CHECK_MODE */
+}
+
 static inline int
 close_unless_reserved(int fd)
 {
-    /* We should not have reserved FDs at this point */
     if (rb_reserved_fd_p(fd)) { /* async-signal-safe */
-        rb_async_bug_errno("BUG timer thread still running", 0 /* EDOOFUS */);
+        assert_close_on_exec(fd);
         return 0;
     }
     return close(fd); /* async-signal-safe */
