@@ -147,7 +147,8 @@ module IRB # :nodoc:
         @CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
         opt = $1 || argv.shift
-        load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
+        IRB.fail(LoadPathDoesNotExist) if opt.nil? || !File.directory?(opt)
+        load_path.concat(opt.split(File::PATH_SEPARATOR))
       when '-U'
         set_encoding("UTF-8", "UTF-8")
       when /^-E(.+)?/, /^--encoding(?:=(.+))?/
