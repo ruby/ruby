@@ -350,7 +350,7 @@ class TestSignal < Test::Unit::TestCase
       zombies = pids.dup
       assert_nil r.read(1), 'children dead'
 
-      Timeout.timeout(3) do
+      Timeout.timeout(10) do
         zombies.delete_if do |pid|
           begin
             Process.kill(0, pid)
