@@ -27,6 +27,7 @@ module IRB
   def_exception :CantChangeBinding, "Can't change binding to (%s)."
   def_exception :UndefinedPromptMode, "Undefined prompt mode(%s)."
   def_exception :IllegalRCGenerator, 'Define illegal RC_NAME_GENERATOR.'
-  def_exception :LoadPathDoesNotExist, 'Please pass a Load Path that exists'
+  def_exception :LoadPathDoesNotExist, "Load path does not exist: %s"
+  def_exception :LoadPathArgumentMissing, "Load path for -I flag missing"
 end
 # :startdoc:

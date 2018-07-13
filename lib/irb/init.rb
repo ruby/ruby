@@ -146,9 +146,12 @@ module IRB # :nodoc:
         opt = $1 || argv.shift
         @CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
-        opt = $1 || argv.shift
-        IRB.fail(LoadPathDoesNotExist) if opt.nil? || !File.directory?(opt)
-        load_path.concat(opt.split(File::PATH_SEPARATOR))
+        opt = ($1 || argv.shift).to_s
+        IRB.fail(LoadPathArgumentMissing) if opt.strip.empty?
+        paths = opt.split(File::PATH_SEPARATOR)
+        invalid_paths = paths.select { |path| !File.directory?(path) }
+        IRB.fail(LoadPathDoesNotExist, invalid_paths.join(', ')) if invalid_paths.any?
+        load_path.concat(paths)
       when '-U'
         set_encoding("UTF-8", "UTF-8")
       when /^-E(.+)?/, /^--encoding(?:=(.+))?/
