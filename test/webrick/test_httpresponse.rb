@@ -50,6 +50,27 @@ module WEBrick
       refute_match 'hack', io.string
     end
 
+    def test_set_redirect_response_splitting
+      url = "malicious\r\nCookie: hack"
+      assert_raises(URI::InvalidURIError) do
+        res.set_redirect(WEBrick::HTTPStatus::MultipleChoices, url)
+      end
+    end
+
+    def test_set_redirect_html_injection
+      url = 'http://example.com////?a</a><head></head><body><img src=1></body>'
+      assert_raises(WEBrick::HTTPStatus::MultipleChoices) do
+        res.set_redirect(WEBrick::HTTPStatus::MultipleChoices, url)
+      end
+      res.status = 300
+      io = StringIO.new
+      res.send_response(io)
+      io.rewind
+      res = Net::HTTPResponse.read_new(Net::BufferedIO.new(io))
+      assert_equal '300', res.code
+      refute_match /<img/, io.string
+    end
+
     def test_304_does_not_log_warning
       res.status      = 304
       res.setup_header

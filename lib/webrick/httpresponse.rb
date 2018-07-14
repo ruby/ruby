@@ -10,6 +10,7 @@
 # $IPR: httpresponse.rb,v 1.45 2003/07/11 11:02:25 gotoyuzo Exp $
 
 require 'time'
+require 'uri'
 require 'webrick/httpversion'
 require 'webrick/htmlutils'
 require 'webrick/httputils'
@@ -331,8 +332,9 @@ module WEBrick
     #   res.set_redirect WEBrick::HTTPStatus::TemporaryRedirect
 
     def set_redirect(status, url)
+      url = URI(url).to_s
       @body = "<HTML><A HREF=\"#{url}\">#{url}</A>.</HTML>\n"
-      @header['location'] = url.to_s
+      @header['location'] = url
       raise status
     end
 
