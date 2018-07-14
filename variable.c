@@ -1668,9 +1668,11 @@ check_id_type(VALUE obj, VALUE *pname,
 /*
  *  call-seq:
  *     obj.remove_instance_variable(symbol)    -> obj
+ *     obj.remove_instance_variable(string)    -> obj
  *
  *  Removes the named instance variable from <i>obj</i>, returning that
  *  variable's value.
+ *  String arguments are converted to symbols.
  *
  *     class Dummy
  *       attr_reader :var
