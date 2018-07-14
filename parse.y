@@ -390,8 +390,11 @@ static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NO
 static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {b->nd_iter = m; b->nd_loc = *loc; return b;}
 
+static NODE *prepend_pattern_args(struct parser_params*,NODE*,NODE*);
 static NODE *new_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
+static NODE *new_pattern_args(struct parser_params*,NODE*,NODE*,ID,NODE*,NODE*,const YYLTYPE*);
 static NODE *new_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
+static NODE *new_pattern_args_tail(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 static NODE *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 
 static VALUE negate_lit(struct parser_params*, VALUE);
@@ -653,8 +656,31 @@ new_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg
     return params_new(pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, escape_Qundef(block));
 }
 
+static NODE *prepend_pattern_args(struct parser_params *p, NODE *n1, NODE *n2)
+{
+    return n2;
+}
+
+static inline VALUE
+new_pattern_args(struct parser_params *p, VALUE pre_args, VALUE opt_args, VALUE rest_arg, VALUE post_args, VALUE tail, YYLTYPE *loc)
+{
+    NODE *t = (NODE *)tail;
+    VALUE kw_args = t->u1.value, kw_rest_arg = t->u2.value, block = t->u3.value;
+    return params_new(pre_args, opt_args, rest_arg, post_args, kw_args, kw_rest_arg, escape_Qundef(block));
+}
+
 static inline VALUE
 new_args_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, VALUE block, YYLTYPE *loc)
+{
+    NODE *t = rb_node_newnode(NODE_ARGS_AUX, kw_args, kw_rest_arg, block, &NULL_LOC);
+    add_mark_object(p, kw_args);
+    add_mark_object(p, kw_rest_arg);
+    add_mark_object(p, block);
+    return (VALUE)t;
+}
+
+static inline VALUE
+new_pattern_args_tail(struct parser_params *p, VALUE kw_args, VALUE kw_rest_arg, VALUE block, YYLTYPE *loc)
 {
     NODE *t = rb_node_newnode(NODE_ARGS_AUX, kw_args, kw_rest_arg, block, &NULL_LOC);
     add_mark_object(p, kw_args);
@@ -842,9 +868,26 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
+%type <node> p_case_body p_expr p_top_expr p_cases p_value
+%type <node> p_expr1
+%type <node> p_expr2
+%type <node> p_args_tail
+%type <node> p_f_arg
+%type <node> p_f_arg_item
+%type <node> p_f_args
+%type <node> p_f_args2
+%type <node> p_kw
+%type <node> p_kwarg
+%type <node> p_opt_args_tail
+%type <node> p_const
+%type <node> p_variable
+%type <node> p_primitive
+%type <node> opt_p_block_arg
 %type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
+%type <id>   p_f_rest_arg
+%type <id>   p_kwrest
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 /* escaped chars, should be ignored otherwise */
@@ -878,6 +921,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token tCOLON3		":: at EXPR_BEG"
 %token <id> tOP_ASGN	/* +=, -=  etc. */
 %token tASSOC		"=>"
+%token tPATTERN	"$("
 %token tLPAREN		"("
 %token tLPAREN_ARG	"( arg"
 %token tRPAREN		")"
@@ -1171,6 +1215,15 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    /*% ripper: END!($3) %*/
 		    }
 		| command_asgn
+		| tPATTERN p_f_args ')' '=' {
+		    SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+		    $<id>$ = p->lex.lpar_beg;
+		    p->lex.lpar_beg = 0; // FIXME: avoid 'unexpected tLAMBEG' when parsing `$(...) = {...}`
+		  } expr_value
+		    {
+			p->lex.lpar_beg = $<id>5; // FIXME: same as above
+			$$ = NEW_CASE3($6, NEW_IN($2, NEW_BEGIN(0, &@$), Qnone, &@$), &@$);
+		    }
 		| mlhs '=' command_call
 		    {
 		    /*%%%*/
@@ -2504,6 +2557,12 @@ primary		: literal
 		    /*% %*/
 		    /*% ripper: case!(Qnil, $3) %*/
 		    }
+		| k_case expr_value opt_terms
+		  p_case_body
+		  k_end
+		    {
+			$$ = NEW_CASE3($2, $4, &@$);
+		    }
 		| k_for for_var keyword_in expr_value_do
 		  compstmt
 		  k_end
@@ -3341,6 +3400,336 @@ case_body	: k_when args then
 
 cases		: opt_else
 		| case_body
+		;
+
+p_case_body	: keyword_in
+		 {
+		     SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+		     p->command_start = FALSE;
+		     $<num>$ = p->in_kwarg;
+		     p->in_kwarg = 1;
+		 }
+		  p_top_expr then
+		 {
+		     p->in_kwarg = !!$<num>2;
+		 }
+		  compstmt
+		  p_cases
+		    {
+		    /*%%%*/
+			$$ = NEW_IN($3, $6, $7, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_top_expr	: p_expr
+		| p_expr ',' p_f_args
+		    {
+			$$ = prepend_pattern_args(p, NEW_LIST($1, &@1), $3);
+		    }
+		| p_f_args2
+		| p_expr modifier_if expr_value
+		    {
+		    /*%%%*/
+			$$ = new_if(p, $3, remove_begin($1), 0, &@$);
+			fixpos($$, $3);
+		    /*% %*/
+		    /*% ripper: if_mod!($3, $1) %*/
+		    }
+		| p_expr modifier_unless expr_value
+		    {
+		    /*%%%*/
+			$$ = new_unless(p, $3, remove_begin($1), 0, &@$);
+			fixpos($$, $3);
+		    /*% %*/
+		    /*% ripper: unless_mod!($3, $1) %*/
+		    }
+		;
+
+p_expr		: p_expr tASSOC p_variable
+		    {
+		    /*%%%*/
+			NODE *n = NEW_LIST($1, &@$);
+			n = list_append(p, n, $3);
+			$$ = new_hash(p, n, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_expr1
+		;
+
+p_expr1	: p_expr2
+		| p_expr1 '|' p_expr2
+		    {
+		    /*%%%*/
+			$$ = NEW_NODE(NODE_OR, $1, $3, 0, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_expr2	: p_value
+		    {
+		    /*%%%*/
+			$$ = $1;
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_value '(' p_f_args rparen
+		    {
+			$$ = prepend_pattern_args(p, NEW_LIST($1, &@1), $3);
+		    }
+		| tLPAREN p_f_args rparen
+		    {
+			$$ = $2;
+		    }
+		;
+
+p_variable	: tIDENTIFIER
+		    {
+		    /*%%%*/
+			const char *name = rb_id2name($1);
+			if (strlen(name) > 1 && name[strlen(name)-1]  == '_') {
+			    NODE *n = gettable(p, $1, &@$);
+			    if (!(nd_type(n) == NODE_LVAR || nd_type(n) == NODE_DVAR)) {
+				compile_error(p, "%"PRIsVALUE": no such local variable", rb_id2str($1));
+			    }
+			    $$ = n;
+			}
+			else {
+			    $$ = assignable(p, $1, 0, &@$);
+			}
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_const	: tCONSTANT
+		{
+		    $$ = gettable(p, $1, &@$);
+		}
+		;
+
+p_kwarg	: p_kw
+		| p_kwarg ',' p_kw
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+opt_p_block_arg:
+		 none
+		;
+
+p_f_args	: p_f_arg ',' p_f_rest_arg p_opt_args_tail
+		    {
+		    /*%%%*/
+			$$ = new_pattern_args(p, $1, $1, $3, Qnone, $4, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_f_arg ',' p_f_rest_arg ',' p_f_arg p_opt_args_tail
+		    {
+		    /*%%%*/
+			$$ = new_pattern_args(p, $1, $1, $3, $5, $6, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_f_arg p_opt_args_tail
+		    {
+			$$ = new_args(p, $1, $1, Qnone, Qnone, $2, &@$);
+		    }
+		| p_f_args2
+		| /* none */
+		    {
+			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
+			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $$, &@0);
+		    }
+		;
+
+p_f_args2	:  p_f_rest_arg p_opt_args_tail
+		    {
+		    /*%%%*/
+			$$ = new_pattern_args(p, Qnone, Qnone, $1, Qnone, $2, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_f_rest_arg ',' p_f_arg p_opt_args_tail
+		    {
+		    /*%%%*/
+			$$ = new_pattern_args(p, Qnone, Qnone, $1, $3, $4, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_args_tail
+		    {
+			$$ = new_args(p, Qnone, Qnone, Qnone, Qnone, $1, &@0);
+		    }
+		;
+
+p_f_arg_item   : p_expr
+		    {
+		    /*%%%*/
+			$$ = NEW_LIST($1, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_f_arg	: p_f_arg_item
+		| p_f_arg ',' p_f_arg_item
+		    {
+		    /*%%%*/
+			$$ = list_concat($1, $3);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_args_tail	: p_kwarg ',' p_kwrest opt_p_block_arg
+		    {
+		    /*%%%*/
+			$$ =  new_pattern_args_tail(p, new_hash(p, $1, &@$), $3, Qnone, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_kwarg opt_p_block_arg
+		    {
+		    /*%%%*/
+			$$ =  new_pattern_args_tail(p, new_hash(p, $1, &@$), Qnone, Qnone, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| p_kwrest opt_p_block_arg
+		    {
+		    /*%%%*/
+			$$ =  new_pattern_args_tail(p, Qnone, $1, Qnone, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_opt_args_tail:
+		',' p_args_tail
+		    {
+		        $$ = $2;
+		    }
+		| /* none */
+		    {
+			$$ = new_args_tail(p, Qnone, Qnone, Qnone, &@0);
+		    }
+		;
+
+p_restarg_mark	: '*'
+		| tSTAR
+		;
+
+p_f_rest_arg	: p_restarg_mark tIDENTIFIER
+		    {
+		        $$ = $2;
+		    }
+		| p_restarg_mark
+		    {
+		        $$ = 0;
+		    }
+		;
+
+p_kw		: tLABEL p_expr
+		    {
+		    /*%%%*/
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), $2);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		| tLABEL
+		    {
+		    /*%%%*/
+			$$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@$), &@$), assignable(p, $1, 0, &@$));
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_kwrest	: kwrest_mark tIDENTIFIER
+		    {
+		        $$ = $2;
+		    }
+		| kwrest_mark
+		    {
+		        $$ = 0;
+		    }
+		;
+
+p_value	: p_primitive
+		| p_primitive tDOT2 p_primitive
+		    {
+		    /*%%%*/
+			value_expr($1);
+			value_expr($3);
+			$$ = NEW_DOT2($1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: dot2!($1, $3) %*/
+		    }
+		| p_primitive tDOT3 p_primitive
+		    {
+		    /*%%%*/
+			value_expr($1);
+			value_expr($3);
+			$$ = NEW_DOT3($1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: dot3!($1, $3) %*/
+		    }
+		| p_primitive tDOT2
+		    {
+		    /*%%%*/
+                        YYLTYPE loc;
+                        loc.beg_pos = @2.end_pos;
+                        loc.end_pos = @2.end_pos;
+
+			value_expr($1);
+			$$ = NEW_DOT2($1, new_nil(&loc), &@$);
+		    /*% %*/
+		    /*% ripper: dot2!($1, Qnil) %*/
+		    }
+		| p_primitive tDOT3
+		    {
+		    /*%%%*/
+                        YYLTYPE loc;
+                        loc.beg_pos = @2.end_pos;
+                        loc.end_pos = @2.end_pos;
+
+			value_expr($1);
+			$$ = NEW_DOT3($1, new_nil(&loc), &@$);
+		    /*% %*/
+		    /*% ripper: dot3!($1, Qnil) %*/
+		    }
+		| p_variable
+		| p_const
+		;
+
+p_primitive	: literal
+		| strings
+		| xstring
+		| regexp
+		| words
+		| qwords
+		| symbols
+		| qsymbols
+		| keyword_variable
+		    {
+		    /*%%%*/
+			if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+		    /*% %*/
+		    /*% ripper: Qnil %*/
+		    }
+		;
+
+p_cases	: opt_else
+		| p_case_body
 		;
 
 opt_rescue	: k_rescue exc_list exc_var then
@@ -8238,6 +8627,12 @@ parser_yylex(struct parser_params *p)
 	return parse_percent(p, space_seen, last_state);
 
       case '$':
+	c = nextc(p);
+	if (c == '(') {
+	    SET_LEX_STATE(EXPR_BEG|EXPR_LABEL);
+	    return tPATTERN;
+	}
+	pushback(p, c);
 	return parse_gvar(p, last_state);
 
       case '@':
@@ -9982,6 +10377,21 @@ arg_blk_pass(NODE *node1, NODE *node2)
 }
 
 
+static NODE *prepend_pattern_args(struct parser_params *p, NODE *n1, NODE *n2)
+{
+    struct rb_args_info *args = n2->nd_ainfo;
+    if (args->pre_args_num) {
+	args->pre_args_num++;
+	args->opt_args = list_concat(n1, args->opt_args);
+    }
+    else {
+	args->pre_args_num = 1;
+	args->opt_args = n1;
+    }
+
+    return n2;
+}
+
 static NODE*
 new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, NODE *post_args, NODE *tail, const YYLTYPE *loc)
 {
@@ -9996,11 +10406,30 @@ new_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, N
     args->first_post_arg = post_args ? post_args->nd_pid : 0;
 
     args->rest_arg       = rest_arg;
+    args->rest_arg_node  = 0;
 
     args->opt_args       = opt_args;
+    args->post_args_node = 0;
 
     p->ruby_sourceline = saved_line;
     nd_set_loc(tail, loc);
+
+    return tail;
+}
+
+static NODE*
+new_pattern_args(struct parser_params *p, NODE *pre_args, NODE *opt_args, ID rest_arg, NODE *post_args, NODE *tail, const YYLTYPE *loc)
+{
+    struct rb_args_info *args = tail->nd_ainfo;
+    new_args(p, pre_args, opt_args, rest_arg, post_args, tail, loc);
+    if (rest_arg) {
+	args->rest_arg_node = assignable(p, rest_arg, 0, loc);
+    }
+    else {
+	args->rest_arg_node = NEW_BEGIN(0, loc); /* dummy */
+    }
+
+    args->post_args_node = post_args;
 
     return tail;
 }
@@ -10060,6 +10489,33 @@ new_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, 
     }
     else if (kw_rest_arg) {
 	args->kw_rest_arg = NEW_DVAR(kw_rest_arg, loc);
+    }
+
+    p->ruby_sourceline = saved_line;
+    return node;
+}
+
+static NODE*
+new_pattern_args_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, ID block, const YYLTYPE *loc)
+{
+    int saved_line = p->ruby_sourceline;
+    struct rb_args_info *args;
+    NODE *node;
+    rb_imemo_tmpbuf_t *tmpbuf = new_tmpbuf();
+
+    args = ZALLOC(struct rb_args_info);
+    tmpbuf->ptr = (VALUE *)args;
+    node = NEW_NODE(NODE_ARGS, 0, 0, args, &NULL_LOC);
+    if (p->error_p) return node;
+
+    args->block_arg      = block;
+    args->kw_args        = kw_args;
+
+    if (kw_rest_arg) {
+	args->kw_rest_arg = assignable(p, kw_rest_arg, 0, loc);
+    }
+    else {
+	args->kw_rest_arg = NEW_BEGIN(0, loc); /* dummy */
     }
 
     p->ruby_sourceline = saved_line;

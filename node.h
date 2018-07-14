@@ -32,8 +32,12 @@ enum node_type {
 #define NODE_CASE        NODE_CASE
     NODE_CASE2,
 #define NODE_CASE2       NODE_CASE2
+    NODE_CASE3,
+#define NODE_CASE3       NODE_CASE3
     NODE_WHEN,
 #define NODE_WHEN        NODE_WHEN
+    NODE_IN,
+#define NODE_IN          NODE_IN
     NODE_WHILE,
 #define NODE_WHILE       NODE_WHILE
     NODE_UNTIL,
@@ -373,7 +377,9 @@ typedef struct RNode {
 #define NEW_UNLESS(c,t,e,loc) NEW_NODE(NODE_UNLESS,c,t,e,loc)
 #define NEW_CASE(h,b,loc) NEW_NODE(NODE_CASE,h,b,0,loc)
 #define NEW_CASE2(b,loc) NEW_NODE(NODE_CASE2,0,b,0,loc)
+#define NEW_CASE3(h,b,loc) NEW_NODE(NODE_CASE3,h,b,0,loc)
 #define NEW_WHEN(c,t,e,loc) NEW_NODE(NODE_WHEN,c,t,e,loc)
+#define NEW_IN(c,t,e,loc) NEW_NODE(NODE_IN,c,t,e,loc)
 #define NEW_WHILE(c,b,n,loc) NEW_NODE(NODE_WHILE,c,b,n,loc)
 #define NEW_UNTIL(c,b,n,loc) NEW_NODE(NODE_UNTIL,c,b,n,loc)
 #define NEW_FOR(i,b,loc) NEW_NODE(NODE_FOR,0,b,i,loc)
@@ -525,6 +531,8 @@ struct rb_args_info {
     NODE *kw_rest_arg;
 
     NODE *opt_args;
+    NODE *rest_arg_node;
+    NODE *post_args_node;
 };
 
 struct parser_params;

@@ -195,6 +195,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	LAST_NODE;
 	F_NODE(nd_body, "when clauses");
 	return;
+      case NODE_CASE3:
+	ANN("case(pattern) statement");
+	ANN("format: case [nd_head]; [nd_body]; end");
+	ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+	F_NODE(nd_head, "case expr");
+	LAST_NODE;
+	F_NODE(nd_body, "in clauses");
+	return;
 
       case NODE_WHEN:
 	ANN("when clause");
@@ -204,6 +212,16 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_body, "when body");
 	LAST_NODE;
 	F_NODE(nd_next, "next when clause");
+	return;
+
+      case NODE_IN:
+	ANN("in clause");
+	ANN("format: in [nd_head]; [nd_body]; (when or else) [nd_next]");
+	ANN("example: case x; in 1; foo; in 2; bar; else baz; end");
+	F_NODE(nd_head, "in value");
+	F_NODE(nd_body, "in body");
+	LAST_NODE;
+	F_NODE(nd_next, "next in clause");
 	return;
 
       case NODE_WHILE:
@@ -984,6 +1002,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_ainfo->post_init, "initialization of post-arguments");
 	F_ID(nd_ainfo->first_post_arg, "first post argument");
 	F_ID(nd_ainfo->rest_arg, "rest argument");
+	F_NODE(nd_ainfo->rest_arg_node, "rest argument node");
+	F_NODE(nd_ainfo->post_args_node, "post arguments node");
 	F_ID(nd_ainfo->block_arg, "block argument");
 	F_NODE(nd_ainfo->opt_args, "optional arguments");
 	F_NODE(nd_ainfo->kw_args, "keyword arguments");

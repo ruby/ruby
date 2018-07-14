@@ -4755,6 +4755,8 @@ Init_Hash(void)
     rb_define_method(rb_cHash, ">=", rb_hash_ge, 1);
     rb_define_method(rb_cHash, ">", rb_hash_gt, 1);
 
+    rb_define_alias(rb_cHash, "deconstruct", "itself");
+
     /* Document-class: ENV
      *
      * ENV is a hash-like accessor for environment variables.
