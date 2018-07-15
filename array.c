@@ -1623,7 +1623,7 @@ rb_ary_set_len(VALUE ary, long len)
     if (ARY_SHARED_P(ary)) {
 	rb_raise(rb_eRuntimeError, "can't set length of shared ");
     }
-    if (len > (capa = (long)ARY_CAPA(ary))) {
+    if (UNLIKELY(len > (capa = (long)ARY_CAPA(ary)))) {
 	rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     ARY_SET_LEN(ary, len);

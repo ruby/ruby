@@ -790,7 +790,7 @@ rb_check_type(VALUE x, int t)
 {
     int xt;
 
-    if (x == Qundef) {
+    if (UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
@@ -803,7 +803,7 @@ rb_check_type(VALUE x, int t)
 void
 rb_unexpected_type(VALUE x, int t)
 {
-    if (x == Qundef) {
+    if (UNLIKELY(x == Qundef)) {
 	rb_bug(UNDEF_LEAKED);
     }
 
@@ -2609,7 +2609,7 @@ make_errno_exc(const char *mesg)
     int n = errno;
 
     errno = 0;
-    if (n == 0) {
+    if (UNLIKELY(n == 0)) {
 	rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
     }
     return rb_syserr_new(n, mesg);
@@ -2622,7 +2622,7 @@ make_errno_exc_str(VALUE mesg)
 
     errno = 0;
     if (!mesg) mesg = Qnil;
-    if (n == 0) {
+    if (UNLIKELY(n == 0)) {
 	const char *s = !NIL_P(mesg) ? RSTRING_PTR(mesg) : "";
 	rb_bug("rb_sys_fail_str(%s) - errno == 0", s);
     }

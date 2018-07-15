@@ -120,20 +120,20 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
 	req_me = TRUE;
     }
 
-    if (req_block && (type & VM_ENV_FLAG_LOCAL) == 0) {
+    if (UNLIKELY(req_block && (type & VM_ENV_FLAG_LOCAL) == 0)) {
 	rb_bug("vm_push_frame: specval (%p) should be a block_ptr on %x frame", (void *)specval, magic);
     }
-    if (!req_block && (type & VM_ENV_FLAG_LOCAL) != 0) {
+    if (UNLIKELY(!req_block && (type & VM_ENV_FLAG_LOCAL) != 0)) {
 	rb_bug("vm_push_frame: specval (%p) should not be a block_ptr on %x frame", (void *)specval, magic);
     }
 
     if (req_me) {
-	if (cref_or_me_type != imemo_ment) {
+	if (UNLIKELY(cref_or_me_type != imemo_ment)) {
 	    rb_bug("vm_push_frame: (%s) should be method entry on %x frame", rb_obj_info(cref_or_me), magic);
 	}
     }
     else {
-	if (req_cref && cref_or_me_type != imemo_cref) {
+	if (UNLIKELY(req_cref && cref_or_me_type != imemo_cref)) {
 	    rb_bug("vm_push_frame: (%s) should be CREF on %x frame", rb_obj_info(cref_or_me), magic);
 	}
 	else { /* cref or Qfalse */
@@ -151,7 +151,7 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
     if (cref_or_me_type == imemo_ment) {
 	const rb_callable_method_entry_t *me = (const rb_callable_method_entry_t *)cref_or_me;
 
-	if (!callable_method_entry_p(me)) {
+	if (UNLIKELY(!callable_method_entry_p(me))) {
 	    rb_bug("vm_push_frame: ment (%s) should be callable on %x frame.", rb_obj_info(cref_or_me), magic);
 	}
     }
@@ -515,7 +515,7 @@ check_method_entry(VALUE obj, int can_be_svar)
     if (obj == Qfalse) return NULL;
 
 #if VM_CHECK_MODE > 0
-    if (!RB_TYPE_P(obj, T_IMEMO)) rb_bug("check_method_entry: unknown type: %s", rb_obj_info(obj));
+    if (UNLIKELY(!RB_TYPE_P(obj, T_IMEMO))) rb_bug("check_method_entry: unknown type: %s", rb_obj_info(obj));
 #endif
 
     switch (imemo_type(obj)) {
@@ -569,7 +569,7 @@ check_cref(VALUE obj, int can_be_svar)
     if (obj == Qfalse) return NULL;
 
 #if VM_CHECK_MODE > 0
-    if (!RB_TYPE_P(obj, T_IMEMO)) rb_bug("check_cref: unknown type: %s", rb_obj_info(obj));
+    if (UNLIKELY(!RB_TYPE_P(obj, T_IMEMO))) rb_bug("check_cref: unknown type: %s", rb_obj_info(obj));
 #endif
 
     switch (imemo_type(obj)) {
@@ -888,7 +888,7 @@ vm_get_cvar_base(const rb_cref_t *cref, rb_control_frame_t *cfp)
 {
     VALUE klass;
 
-    if (!cref) {
+    if (UNLIKELY(!cref)) {
 	rb_bug("vm_get_cvar_base: no cref");
     }
 
@@ -1551,7 +1551,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 	    bp += 1;
 	}
 #if VM_DEBUG_BP_CHECK
-	if (bp != cfp->bp_check) {
+	if (UNLIKELY(bp != cfp->bp_check)) {
 	    fprintf(stderr, "bp_check: %ld, bp: %ld\n",
 		    (long)(cfp->bp_check - GET_EC()->vm_stack),
 		    (long)(bp - GET_EC()->vm_stack));
@@ -1583,7 +1583,7 @@ static const rb_iseq_t *
 def_iseq_ptr(rb_method_definition_t *def)
 {
 #if VM_CHECK_MODE > 0
-    if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
+    if (UNLIKELY(def->type != VM_METHOD_TYPE_ISEQ)) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
 #endif
     return rb_iseq_check(def->body.iseq.iseqptr);
 }
@@ -2773,7 +2773,7 @@ vm_make_proc_with_iseq(const rb_iseq_t *blockiseq)
     const rb_control_frame_t *cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
     struct rb_captured_block *captured;
 
-    if (cfp == 0) {
+    if (UNLIKELY(cfp == 0)) {
 	rb_bug("vm_make_proc_with_iseq: unreachable");
     }
 

@@ -533,7 +533,7 @@ verify_list(ISEQ_ARG_DECLARE const char *info, LINK_ANCHOR *const anchor)
 	flag |= 0x70000;
     }
 
-    if (flag != 0) {
+    if (UNLIKELY(flag != 0)) {
 	rb_bug("list verify error: %08x (%s)", flag, info);
     }
 #endif
@@ -1424,7 +1424,7 @@ get_local_var_idx(const rb_iseq_t *iseq, ID id)
 {
     int idx = get_dyna_var_idx_at_raw(iseq->body->local_iseq, id);
 
-    if (idx < 0) {
+    if (UNLIKELY(idx < 0)) {
 	rb_bug("get_local_var_idx: %d", idx);
     }
 
@@ -1445,7 +1445,7 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
 	lv++;
     }
 
-    if (idx < 0) {
+    if (UNLIKELY(idx < 0)) {
 	rb_bug("get_dyna_var_idx: -1");
     }
 
@@ -8401,7 +8401,7 @@ ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long of
 {
     VALUE str = dump->str;
     char *ptr = RSTRING_PTR(str);
-    if ((unsigned long)(size + offset) > (unsigned long)RSTRING_LEN(str))
+    if (UNLIKELY((unsigned long)(size + offset)) > (unsigned long)RSTRING_LEN(str))
 	rb_bug("ibf_dump_overwrite: overflow");
     memcpy(ptr + offset, buff, size);
 }

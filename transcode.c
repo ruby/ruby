@@ -2581,7 +2581,7 @@ rb_econv_open_opts(const char *source_encoding, const char *destination_encoding
         replacement = Qnil;
     }
     else {
-        if (!RB_TYPE_P(opthash, T_HASH) || !OBJ_FROZEN(opthash))
+        if (UNLIKELY(!RB_TYPE_P(opthash, T_HASH) || !OBJ_FROZEN(opthash)))
             rb_bug("rb_econv_open_opts called with invalid opthash");
         replacement = rb_hash_aref(opthash, sym_replace);
     }
@@ -3874,7 +3874,7 @@ econv_convert(VALUE self, VALUE source_string)
         rb_raise(rb_eArgError, "converter already finished");
     }
 
-    if (ret != sym_source_buffer_empty) {
+    if (UNLIKELY(ret != sym_source_buffer_empty)) {
         rb_bug("unexpected result of econv_primitive_convert");
     }
 
@@ -3918,7 +3918,7 @@ econv_finish(VALUE self)
         rb_exc_raise(exc);
     }
 
-    if (ret != sym_finished) {
+    if (UNLIKELY(ret != sym_finished)) {
         rb_bug("unexpected result of econv_primitive_convert");
     }
 

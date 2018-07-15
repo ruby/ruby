@@ -541,7 +541,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 		(void *)mutexes); */
 	mutexes = mutex->next_mutex;
 	err = rb_mutex_unlock_th(mutex, th);
-	if (err) rb_bug("invalid keeping_mutexes: %s", err);
+	if (UNLIKELY(err)) rb_bug("invalid keeping_mutexes: %s", err);
     }
 }
 
@@ -553,7 +553,7 @@ rb_thread_terminate_all(void)
     rb_vm_t *volatile vm = th->vm;
     volatile int sleeping = 0;
 
-    if (vm->main_thread != th) {
+    if (UNLIKELY(vm->main_thread != th)) {
 	rb_bug("rb_thread_terminate_all: called by child thread (%p, %p)",
 	       (void *)vm->main_thread, (void *)th);
     }
@@ -682,7 +682,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
 
-    if (th == th->vm->main_thread)
+    if (UNLIKELY(th == th->vm->main_thread))
 	rb_bug("thread_start_func_2 must not be used for main thread");
 
     ruby_thread_set_native(th);
@@ -744,7 +744,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 	rb_ec_clear_current_thread_trace_func(th->ec);
 
 	/* locking_mutex must be Qfalse */
-	if (th->locking_mutex != Qfalse) {
+	if (UNLIKELY(th->locking_mutex != Qfalse)) {
 	    rb_bug("thread_start_func_2: locking_mutex must not be set (%p:%"PRIxVALUE")",
 		   (void *)th, th->locking_mutex);
 	}
@@ -1623,7 +1623,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     brb = (struct rb_blocking_region_buffer *)th->blocking_region_buffer;
     prev_unblock = th->unblock;
 
-    if (brb == 0) {
+    if (UNLIKELY(brb == 0)) {
 	rb_bug("rb_thread_call_with_gvl: called by a thread which has GVL.");
     }
 
@@ -5078,7 +5078,7 @@ rb_check_deadlock(rb_vm_t *vm)
     rb_thread_t *th = 0;
 
     if (vm_living_thread_num(vm) > vm->sleeper) return;
-    if (vm_living_thread_num(vm) < vm->sleeper) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
+    if (UNLIKELY(vm_living_thread_num(vm) < vm->sleeper)) rb_bug("sleeper must not be more than vm_living_thread_num(vm)");
     if (patrol_thread && patrol_thread != GET_THREAD()) return;
 
     list_for_each(&vm->living_threads, th, vmlt_node) {

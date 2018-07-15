@@ -106,7 +106,7 @@ mutex_free(void *ptr)
     if (mutex->th) {
 	/* rb_warn("free locked mutex"); */
 	const char *err = rb_mutex_unlock_th(mutex, mutex->th);
-	if (err) rb_bug("%s", err);
+	if (UNLIKELY(err)) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
 }

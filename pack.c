@@ -623,7 +623,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    if (explicit_endian) {
 		bigendian_p = explicit_endian == '>';
 	    }
-            if (integer_size > MAX_INTEGER_PACK_SIZE)
+            if (UNLIKELY(integer_size > MAX_INTEGER_PACK_SIZE))
                 rb_bug("unexpected intger size for pack: %d", integer_size);
             while (len-- > 0) {
                 char intbuf[MAX_INTEGER_PACK_SIZE];
@@ -831,7 +831,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 
                 if (sign < 0)
                     rb_raise(rb_eArgError, "can't compress negative numbers");
-                if (sign == 2)
+                if (UNLIKELY(sign == 2))
                     rb_bug("buffer size problem?");
 
                 cp = RSTRING_PTR(buf);
@@ -930,7 +930,7 @@ encodes(VALUE str, const char *s0, long len, int type, int tail_lf)
     }
     if (tail_lf) buff[i++] = '\n';
     rb_str_buf_cat(str, buff, i);
-    if ((size_t)i > sizeof(buff)) rb_bug("encodes() buffer overrun");
+    if (UNLIKELY((size_t)i > sizeof(buff))) rb_bug("encodes() buffer overrun");
 }
 
 static const char hex_table[] = "0123456789ABCDEF";

@@ -215,7 +215,7 @@ rb_native_mutex_lock(pthread_mutex_t *lock)
 {
     int r;
     mutex_debug("lock", lock);
-    if ((r = pthread_mutex_lock(lock)) != 0) {
+    if (UNLIKELY((r = pthread_mutex_lock(lock))) != 0) {
 	rb_bug_errno("pthread_mutex_lock", r);
     }
 }
@@ -225,7 +225,7 @@ rb_native_mutex_unlock(pthread_mutex_t *lock)
 {
     int r;
     mutex_debug("unlock", lock);
-    if ((r = pthread_mutex_unlock(lock)) != 0) {
+    if (UNLIKELY((r = pthread_mutex_unlock(lock))) != 0) {
 	rb_bug_errno("pthread_mutex_unlock", r);
     }
 }
@@ -251,7 +251,7 @@ rb_native_mutex_initialize(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_init(lock, 0);
     mutex_debug("init", lock);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_mutex_init", r);
     }
 }
@@ -261,7 +261,7 @@ rb_native_mutex_destroy(pthread_mutex_t *lock)
 {
     int r = pthread_mutex_destroy(lock);
     mutex_debug("destroy", lock);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_mutex_destroy", r);
     }
 }
@@ -270,7 +270,7 @@ void
 rb_native_cond_initialize(rb_nativethread_cond_t *cond)
 {
     int r = pthread_cond_init(cond, condattr_monotonic);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_cond_init", r);
     }
 }
@@ -279,7 +279,7 @@ void
 rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 {
     int r = pthread_cond_destroy(cond);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_cond_destroy", r);
     }
 }
@@ -301,7 +301,7 @@ rb_native_cond_signal(rb_nativethread_cond_t *cond)
     do {
 	r = pthread_cond_signal(cond);
     } while (r == EAGAIN);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_cond_signal", r);
     }
 }
@@ -313,7 +313,7 @@ rb_native_cond_broadcast(rb_nativethread_cond_t *cond)
     do {
 	r = pthread_cond_broadcast(cond);
     } while (r == EAGAIN);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
         rb_bug_errno("rb_native_cond_broadcast", r);
     }
 }
@@ -322,7 +322,7 @@ void
 rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 {
     int r = pthread_cond_wait(cond, mutex);
-    if (r != 0) {
+    if (UNLIKELY(r != 0)) {
 	rb_bug_errno("pthread_cond_wait", r);
     }
 }
@@ -342,7 +342,7 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
 	r = pthread_cond_timedwait(cond, mutex, ts);
     } while (r == EINTR);
 
-    if (r != 0 && r != ETIMEDOUT) {
+    if (UNLIKELY(r != 0 && r != ETIMEDOUT)) {
 	rb_bug_errno("pthread_cond_timedwait", r);
     }
 
@@ -792,7 +792,7 @@ ruby_init_stack(volatile VALUE *addr
 }
 
 #define CHECK_ERR(expr) \
-    {int err = (expr); if (err) {rb_bug_errno(#expr, err);}}
+    {int err = (expr); if (UNLIKELY(err)) {rb_bug_errno(#expr, err);}}
 
 static int
 native_thread_init_stack(rb_thread_t *th)
@@ -1582,7 +1582,7 @@ rb_thread_create_timer_thread(void)
 		stack_size += +((BUFSIZ - 1) / stack_min + 1) * stack_min;
 	    }
 	    err = pthread_attr_setstacksize(&attr, stack_size);
-	    if (err != 0) {
+	    if (UNLIKELY(err != 0)) {
 		rb_bug("pthread_attr_setstacksize(.., %"PRIuSIZE") failed: %s",
 			stack_size, strerror(err));
 	    }
@@ -1595,7 +1595,7 @@ rb_thread_create_timer_thread(void)
 #endif /* TIMER_THREAD_SLEEPY */
 
 	/* create timer thread */
-	if (timer_thread.created) {
+	if (UNLIKELY(timer_thread.created)) {
 	    rb_bug("rb_thread_create_timer_thread: Timer thread was already created\n");
 	}
 	err = pthread_create(&timer_thread.id, &attr, thread_timer, vm);

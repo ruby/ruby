@@ -4664,7 +4664,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
      * (256**SIZEOF_SIZE_T)*(sizeof(BDIGIT_DBL)-1) >
      * 256**SIZEOF_SIZE_T
      */
-    if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
+    if (UNLIKELY(MAX_BASE36_POWER_TABLE_ENTRIES <= power_level))
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
     if (NIL_P(base36_power_cache[base - 2][power_level])) {

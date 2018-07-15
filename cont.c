@@ -364,7 +364,7 @@ cont_free(void *ptr)
 	}
 #else /* not WIN32 */
 	if (fib->ss_sp != NULL) {
-	    if (cont->type == ROOT_FIBER_CONTEXT) {
+	    if (UNLIKELY(cont->type == ROOT_FIBER_CONTEXT)) {
 		rb_bug("Illegal root fiber parameter");
 	    }
 	    munmap((void*)fib->ss_sp, fib->ss_size);
@@ -905,7 +905,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     fiber_restore_thread(th, newfib);
 
 #ifndef _WIN32
-    if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib) {
+    if (UNLIKELY(!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib)) {
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
     }
 #endif
@@ -1508,7 +1508,7 @@ root_fiber_alloc(rb_thread_t *th)
 #ifdef _WIN32
     /* setup fib_handle for root Fiber */
     if (fib->fib_handle == 0) {
-        if ((fib->fib_handle = ConvertThreadToFiber(0)) == 0) {
+        if (UNLIKELY((fib->fib_handle = ConvertThreadToFiber(0)) == 0)) {
             rb_bug("root_fiber_alloc: ConvertThreadToFiber() failed - %s\n", rb_w32_strerror(-1));
         }
     }

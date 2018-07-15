@@ -1601,7 +1601,7 @@ singleton_class_of(VALUE obj)
     }
     if (SPECIAL_CONST_P(obj)) {
 	klass = special_singleton_class_of(obj);
-	if (NIL_P(klass))
+	if (UNLIKELY(NIL_P(klass)))
 	    rb_bug("unknown immediate %p", (void *)obj);
 	return klass;
     }

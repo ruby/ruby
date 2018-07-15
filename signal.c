@@ -821,7 +821,7 @@ reset_sigmask(int sig)
 #if defined(ruby_sigunmask)
     sigemptyset(&mask);
     sigaddset(&mask, sig);
-    if (ruby_sigunmask(SIG_UNBLOCK, &mask, NULL)) {
+    if (UNLIKELY(ruby_sigunmask(SIG_UNBLOCK, &mask, NULL))) {
 	rb_bug_errno(STRINGIZE(ruby_sigunmask)":unblock", errno);
     }
 #endif
@@ -1433,7 +1433,7 @@ sig_list(void)
 #define INSTALL_SIGHANDLER(cond, signame, signum) do {	\
 	static const char failed[] = "failed to install "signame" handler"; \
 	if (!(cond)) break; \
-	if (reserved_signal_p(signum)) rb_bug(failed); \
+	if (UNLIKELY(reserved_signal_p(signum))) rb_bug(failed); \
 	perror(failed); \
     } while (0)
 static int
