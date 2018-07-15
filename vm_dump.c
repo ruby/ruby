@@ -141,7 +141,8 @@ void
 rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
 #if 0
-    VALUE *sp = cfp->sp, *ep = cfp->ep;
+    VALUE *sp = cfp->sp;
+    const VALUE *ep = cfp->ep;
     VALUE *p, *st, *t;
 
     fprintf(stderr, "-- stack frame ------------\n");
