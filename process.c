@@ -292,16 +292,16 @@ assert_close_on_exec(int fd)
 {
 #if VM_CHECK_MODE > 0
 #if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(FD_CLOEXEC)
-        int flags = fcntl(fd, F_GETFD);
-        if (flags == -1) {
-                static const char m[] = "reserved FD closed unexpectedly?\n";
-                (void)write(2, m, sizeof(m) - 1);
-                return;
-        }
-        if (flags & FD_CLOEXEC) return;
-        rb_bug("reserved FD did not have close-on-exec set");
+    int flags = fcntl(fd, F_GETFD);
+    if (flags == -1) {
+        static const char m[] = "reserved FD closed unexpectedly?\n";
+        (void)write(2, m, sizeof(m) - 1);
+        return;
+    }
+    if (flags & FD_CLOEXEC) return;
+    rb_bug("reserved FD did not have close-on-exec set");
 #else
-        rb_bug("reserved FD without close-on-exec support");
+    rb_bug("reserved FD without close-on-exec support");
 #endif /* FD_CLOEXEC */
 #endif /* VM_CHECK_MODE */
 }
