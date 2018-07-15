@@ -1062,7 +1062,7 @@ typedef rb_control_frame_t *
   (FUNC_FASTCALL(*rb_insn_func_t))(rb_execution_context_t *, rb_control_frame_t *);
 
 #define VM_TAGGED_PTR_SET(p, tag)  ((VALUE)(p) | (tag))
-#define VM_TAGGED_PTR_REF(v, mask) ((void *)((VALUE)(v) & ~mask))
+#define VM_TAGGED_PTR_REF(v, mask) ((void *)((v) & ~mask))
 
 #define GC_GUARDED_PTR(p)     VM_TAGGED_PTR_SET((p), 0x01)
 #define GC_GUARDED_PTR_REF(p) VM_TAGGED_PTR_REF((p), 0x03)
