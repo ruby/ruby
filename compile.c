@@ -5266,7 +5266,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NO
 	    const int max_argc = ainfo->rest_arg_node ? UNLIMITED_ARGUMENTS : min_argc + (ainfo->kw_args ? 0 : !!ainfo->kw_rest_arg);
 	    LABEL *next_cond, *fin, *l2, *l3;
 	    int nth = 0;
-	    int i;
+	    int i, rest_start;
 	    next_cond = NEW_LABEL(line);
 	    fin = NEW_LABEL(line);
 	    l2 = NEW_LABEL(line);
@@ -5353,7 +5353,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NO
 		ADD_INSNL(cond_seq, nd_line(vals), branchunless, next_cond);
 	    }
 
-	    int rest_start = ainfo->pre_args_num;
+	    rest_start = ainfo->pre_args_num;
 	    args = ainfo->post_args_node;
 	    nth = 0;
 	    for (i = ainfo->post_args_num; i--; ) {
@@ -5386,8 +5386,9 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NO
 		ADD_CALL(cond_seq, nd_line(vals), rb_intern("dup"), INT2FIX(0)); // for #delete, replace stack top by duped value
 
 		if (ainfo->kw_args) {
+		    int keys_num;
 		    args = ainfo->kw_args->nd_head;
-		    int keys_num = args->nd_alen / 2;
+		    keys_num = args->nd_alen / 2;
 		    for (i = 0; i < keys_num; i++) {
 			NODE *key_node = args->nd_head;
 			NODE *value_node = args->nd_next->nd_head;
