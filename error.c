@@ -1446,9 +1446,10 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
 /*
  * call-seq:
  *   NameError.new(msg [, name])  -> name_error
+ *   NameError.new(msg [, name], receiver:)  -> name_error
  *
  * Construct a new NameError exception. If given the <i>name</i>
- * parameter may subsequently be examined using the <code>NameError.name</code>
+ * parameter may subsequently be examined using the <code>NameError#name</code>
  * method.
  */
 
