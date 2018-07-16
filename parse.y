@@ -5980,7 +5980,11 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 static enum yytokentype
 heredoc_identifier(struct parser_params *p)
 {
-    int c = nextc(p), term, func = 0, term_len = 2; /* length of "<<" */
+    /*
+     * term_len is length of `<<"END"` except `END`,
+     * in this case term_len is 4 (<, <, " and ").
+     */
+    int c = nextc(p), term, func = 0, term_len = 2;
     enum yytokentype token = tSTRING_BEG;
     long len;
     int newline = 0;
