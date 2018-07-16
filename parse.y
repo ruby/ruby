@@ -566,7 +566,7 @@ typedef struct rb_strterm_literal_struct {
 } rb_strterm_literal_t;
 
 struct rb_strterm_heredoc_struct {
-    SIGNED_VALUE sourceline;
+    SIGNED_VALUE sourceline; /* lineno of the line that contains `<<"END"` */
     VALUE term;		/* `"END"` of `<<"END"` */
     VALUE lastline;	/* the string of line that contains `<<"END"` */
     union {
