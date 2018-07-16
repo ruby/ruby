@@ -1690,9 +1690,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     Init_ext();		/* load statically linked extensions before rubygems */
     if (opt->features & FEATURE_BIT(gems)) {
 	rb_define_module("Gem");
-    }
-    if (opt->features & FEATURE_BIT(did_you_mean)) {
-	rb_define_module("DidYouMean");
+	if (opt->features & FEATURE_BIT(did_you_mean)) {
+	    rb_define_module("DidYouMean");
+	}
     }
     ruby_init_prelude();
     if ((opt->features ^ DEFAULT_FEATURES) & COMPILATION_FEATURES) {
