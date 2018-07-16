@@ -11,8 +11,8 @@ rescue LoadError
 else
   https = 'https'
 
-  # open-uri of ruby 2.2.0 accept an array of PEMs as ssl_ca_cert, but old
-  # versions are not.  so, patching OpenSSL::X509::Store#add_file instead.
+  # open-uri of ruby 2.2.0 accepts an array of PEMs as ssl_ca_cert, but old
+  # versions do not.  so, patching OpenSSL::X509::Store#add_file instead.
   class OpenSSL::X509::Store
     alias orig_add_file add_file
     def add_file(pems)
@@ -329,8 +329,9 @@ if $0 == __FILE__
       dir = destdir
       if prefix
         name = name.sub(/\A\.\//, '')
-        if name.start_with?(destdir+"/")
-          name = name[(destdir.size+1)..-1]
+        destdir2 = destdir.sub(/\A\.\//, '')
+        if name.start_with?(destdir2+"/")
+          name = name[(destdir2.size+1)..-1]
           if (dir = File.dirname(name)) == '.'
             dir = destdir
           else
