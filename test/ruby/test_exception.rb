@@ -1304,6 +1304,10 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_operator(message, :start_with?, remark)
     assert_operator(message, :end_with?, bottom)
 
+    assert_raise_with_message(ArgumentError, /:top or :bottom/) {
+      e.full_message(highlight: false, order: :middle)
+    }
+
     message = e.full_message(highlight: true)
     assert_match(/\e/, message)
 
