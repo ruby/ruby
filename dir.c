@@ -1380,10 +1380,10 @@ typedef struct {
 
 /* System call with warning */
 static int
-do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, 0);
+    int ret = fstatat(fd, path + baselen, pst, 0);
 #else
     int ret = STAT(path, pst);
 #endif
@@ -1395,10 +1395,10 @@ do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
 static int
-do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, AT_SYMLINK_NOFOLLOW);
+    int ret = fstatat(fd, path + baselen, pst, AT_SYMLINK_NOFOLLOW);
 #else
     int ret = lstat(path, pst);
 #endif
@@ -2047,7 +2047,7 @@ glob_helper(
 
     if (*base) {
 	if (match_all && pathtype == path_unknown) {
-	    if (do_lstat(fd, base, &st, flags, enc) == 0) {
+	    if (do_lstat(fd, 0, base, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -2055,7 +2055,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && (pathtype == path_unknown || pathtype == path_symlink)) {
-	    if (do_stat(fd, base, &st, flags, enc) == 0) {
+	    if (do_stat(fd, 0, base, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -2167,7 +2167,7 @@ glob_helper(
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
 		new_pathtype == path_unknown) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-		if (do_lstat(fd, buf, &st, flags, enc) == 0)
+		if (do_lstat(fd, name - buf, buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
 		else
 		    new_pathtype = path_noent;
