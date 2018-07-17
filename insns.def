@@ -1270,9 +1270,7 @@ opt_aset_with
     else {
 #ifndef MJIT_HEADER
         PUSH(recv);
-#ifndef MJIT_HEADER
         PUSH(rb_str_resurrect(key));
-#endif
         PUSH(val);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
