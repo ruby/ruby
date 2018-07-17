@@ -127,16 +127,6 @@ def sync_default_gems(gem)
     `cp -rf ../io-console/lib/console ext/io/console/lib`
     `cp -f ../io-console/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
-  when "csv"
-    `rm -rf lib/csv* test/csv`
-    `cp -rf ../csv/lib/* lib`
-    `cp -rf ../csv/test/csv test`
-    `cp -f ../csv/csv.gemspec lib/csv`
-  when "irb"
-    `rm -rf lib/irb* test/irb`
-    `cp -rf ../irb/lib/* lib`
-    `cp -rf ../irb/test/irb test`
-    `cp -f ../irb/irb.gemspec lib/irb`
   when "webrick"
     `rm -rf lib/webrick* test/webrick`
     `cp -rf ../webrick/lib/webrick* lib`
@@ -217,28 +207,22 @@ def sync_default_gems(gem)
     `cp -rf ../prime/lib/* lib`
     `cp -rf ../prime/test/test_prime.rb test`
     `cp -f ../prime/prime.gemspec lib`
-  when "matrix"
-    `rm -rf lib/matrix* test/matrix`
-    `cp -rf ../matrix/lib/* lib`
-    `cp -rf ../matrix/test/matrix test`
-    `cp -f ../matrix/matrix.gemspec lib/matrix`
   when "ostruct"
     `rm -rf lib/ostruct.rb test/ostruct`
     `cp -rf ../ostruct/lib/* lib`
     `cp -rf ../ostruct/test/ostruct test`
     `cp -f ../ostruct/ostruct.gemspec lib`
-  when "rexml"
-    `rm -rf lib/rexml* test/rexml`
-    `cp -rf ../rexml/lib/* lib`
-    `cp -rf ../rexml/test/rexml test`
-    `cp -f ../rexml/rexml.gemspec lib/rexml`
-  when "rss"
-    `rm -rf lib/rss* test/rss`
-    `cp -rf ../rss/lib/* lib`
-    `cp -rf ../rss/test/rss test`
-    `cp -f ../rss/rss.gemspec lib/rss`
+  when "rexml", "rss", "matrix", "irb", "csv"
+    sync_lib gem
   else
   end
+end
+
+def sync_lib(repo)
+  `rm -rf lib/#{repo}* test/#{repo}`
+  `cp -rf ../#{repo}/lib/* lib`
+  `cp -rf ../#{repo}/test/#{repo} test`
+  `cp -f ../#{repo}/#{repo}.gemspec lib/#{repo}`
 end
 
 if ARGV[0]
