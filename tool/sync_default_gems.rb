@@ -28,6 +28,7 @@
 # * https://github.com/ruby/rexml
 # * https://github.com/ruby/rss
 # * https://github.com/ruby/irb
+# * https://github.com/ruby/sync
 #
 
 $repositories = {
@@ -59,6 +60,7 @@ $repositories = {
   rexml: 'ruby/rexml',
   rss: 'ruby/rss',
   irb: 'ruby/irb',
+  sync: 'ruby/sync'
 }
 
 def sync_default_gems(gem)
@@ -212,6 +214,11 @@ def sync_default_gems(gem)
     `cp -rf ../ostruct/lib/* lib`
     `cp -rf ../ostruct/test/ostruct test`
     `cp -f ../ostruct/ostruct.gemspec lib`
+  when "sync"
+    `rm -rf lib/sync.rb test/thread/test_sync.rb`
+    `cp -rf ../sync/lib/* lib`
+    `cp -rf ../sync/test/thread test`
+    `cp -f ../sync/sync.gemspec lib`
   when "rexml", "rss", "matrix", "irb", "csv"
     sync_lib gem
   else

@@ -123,8 +123,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/singleton.rb]
   Yukihiro Matsumoto (matz)
-[lib/sync.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/tempfile.rb]
   _unmaintained_
 [lib/tmpdir.rb]
@@ -223,6 +221,8 @@ Zachary Scott (zzak)
 [lib/scanf.rb]
   David A. Black (dblack)
   https://github.com/ruby/scanf
+[lib/sync.rb]
+  Keiju ISHITSUKA (keiju)
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
   https://bugs.ruby-lang.org/

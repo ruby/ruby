@@ -316,6 +316,9 @@ Synchronizer_m = Sync_m
 # details.
 
 class Sync
+
+  VERSION = "0.1.0"
+
   include Sync_m
 end
 
