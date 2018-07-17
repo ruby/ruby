@@ -1236,12 +1236,12 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     }
 }
 
-static inline rb_num_t
-vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
+static inline void
+vm_expandarray(rb_control_frame_t *cfp, VALUE ary, rb_num_t num, int flag)
 {
     int is_splat = flag & 0x01;
     rb_num_t space_size = num + is_splat;
-    VALUE *base = sp;
+    VALUE *base = cfp->sp;
     const VALUE *ptr;
     rb_num_t len;
     const VALUE obj = ary;
@@ -1255,6 +1255,8 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 	ptr = RARRAY_CONST_PTR(ary);
 	len = (rb_num_t)RARRAY_LEN(ary);
     }
+
+    cfp->sp += space_size;
 
     if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
@@ -1297,7 +1299,6 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 	}
     }
     RB_GC_GUARD(ary);
-    return space_size;
 }
 
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);

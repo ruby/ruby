@@ -101,10 +101,6 @@ class RubyVM::BareInstructions
     }.join
   end
 
-  def handles_stack?
-    /\b(false|0)\b/ !~ @attrs['handles_stack'].expr.expr
-  end
-
   def inspect
     sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
   end
@@ -129,7 +125,6 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
-    generate_attribute 'bool', 'handles_stack', false
   end
 
   def typesplit a

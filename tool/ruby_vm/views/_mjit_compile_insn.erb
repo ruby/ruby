@@ -20,16 +20,6 @@
         MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 %
-% # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
-        if (status->local_stack_p) {
-% # TODO: can we use some functions to calculate this?
-% if insn.name == 'send' || insn.name == 'invokesuper'
-            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size - <%= insn.pops.size %> - ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
-% else
-            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size - <%= insn.pops.size %>);
-% end
-        }
-%
 % # JIT: Declare variables for operands, popped values and return values
 % insn.declarations.each do |decl|
         fprintf(f, "    <%= decl %>;\n");
