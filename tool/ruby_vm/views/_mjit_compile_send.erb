@@ -24,11 +24,6 @@
             int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
 
             fprintf(f, "{\n");
-% # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
-            if (status->local_stack_p) {
-                /* TODO: can we use some functions to calculate this? */
-                fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size - <%= insn.pops.size %> - ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
-            }
 
 % # JIT: Invalidate call cache if it requires vm_search_method. This allows to inline some of following things.
 <%= render 'mjit_compile_send_guard' -%>
