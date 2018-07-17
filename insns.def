@@ -43,6 +43,9 @@
        * sp_inc: Used to dynamically calculate sp increase in
          `insn_stack_increase`.
 
+       * handles_stack: If this is true, JIT makes sure that values are
+         set to VM stack.
+
    - Attributes can access operands, but not stack (push/pop) variables.
 
    - An instruction's body is a pure C block, copied verbatimly into
@@ -451,7 +454,7 @@ expandarray
 (...)
 // attr rb_snum_t sp_inc = num - 1 + (flag & 1 ? 1 : 0);
 {
-    vm_expandarray(GET_CFP(), ary, num, (int)flag);
+    INC_SP(vm_expandarray(GET_SP(), ary, num, (int)flag));
 }
 
 /* concat two arrays */
@@ -690,6 +693,7 @@ defineclass
 (ID id, ISEQ class_iseq, rb_num_t flags)
 (VALUE cbase, VALUE super)
 (VALUE val)
+// attr bool handles_stack = true;
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -716,6 +720,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool handles_stack = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -771,6 +776,7 @@ opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
 (VALUE val)
+// attr bool handles_stack = true;
 // attr rb_snum_t sp_inc = -ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -785,6 +791,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr bool handles_stack = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -802,6 +809,7 @@ invokeblock
 (CALL_INFO ci)
 (...)
 (VALUE val)
+// attr bool handles_stack = true;
 // attr rb_snum_t sp_inc = 1 - ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -828,6 +836,7 @@ leave
 ()
 (VALUE val)
 (VALUE val)
+// attr bool handles_stack = true;
 {
     if (OPT_CHECKED_RUN) {
 	const VALUE *const bp = vm_base_ptr(reg_cfp);
@@ -989,9 +998,9 @@ opt_plus
     val = vm_opt_plus(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1008,9 +1017,9 @@ opt_minus
     val = vm_opt_minus(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1027,9 +1036,9 @@ opt_mult
     val = vm_opt_mult(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1046,9 +1055,9 @@ opt_div
     val = vm_opt_div(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1065,9 +1074,9 @@ opt_mod
     val = vm_opt_mod(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1084,9 +1093,9 @@ opt_eq
     val = opt_eq_func(recv, obj, ci, cc);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1103,9 +1112,9 @@ opt_neq
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1122,9 +1131,9 @@ opt_lt
     val = vm_opt_lt(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1141,9 +1150,9 @@ opt_le
     val = vm_opt_le(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1160,9 +1169,9 @@ opt_gt
     val = vm_opt_gt(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1179,9 +1188,9 @@ opt_ge
     val = vm_opt_ge(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1198,9 +1207,9 @@ opt_ltlt
     val = vm_opt_ltlt(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1217,9 +1226,9 @@ opt_aref
     val = vm_opt_aref(recv, obj);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1236,10 +1245,10 @@ opt_aset
     val = vm_opt_aset(recv, obj, set);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(recv);
         PUSH(obj);
         PUSH(set);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1259,12 +1268,12 @@ opt_aset_with
 	val = tmp;
     }
     else {
+#ifndef MJIT_HEADER
         PUSH(recv);
 #ifndef MJIT_HEADER
         PUSH(rb_str_resurrect(key));
 #endif
         PUSH(val);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1281,8 +1290,8 @@ opt_aref_with
     val = vm_opt_aref_with(recv, key);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         PUSH(rb_str_resurrect(key));
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
@@ -1300,8 +1309,8 @@ opt_length
     val = vm_opt_length(recv, BOP_LENGTH);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1318,8 +1327,8 @@ opt_size
     val = vm_opt_length(recv, BOP_SIZE);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1336,8 +1345,8 @@ opt_empty_p
     val = vm_opt_empty_p(recv);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1354,8 +1363,8 @@ opt_succ
     val = vm_opt_succ(recv);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1372,8 +1381,8 @@ opt_not
     val = vm_opt_not(ci, cc, recv);
 
     if (val == Qundef) {
-        PUSH(recv);
 #ifndef MJIT_HEADER
+        PUSH(recv);
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1400,9 +1409,9 @@ opt_regexpmatch2
     val = vm_opt_regexpmatch2(obj2, obj1);
 
     if (val == Qundef) {
+#ifndef MJIT_HEADER
         PUSH(obj2);
         PUSH(obj1);
-#ifndef MJIT_HEADER
         ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
 	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
@@ -1415,6 +1424,7 @@ opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
 ()
+// attr bool handles_stack = true;
 {
     reg_cfp = (funcptr)(ec, reg_cfp);
 
