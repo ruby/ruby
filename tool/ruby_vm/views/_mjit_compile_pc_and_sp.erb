@@ -12,4 +12,19 @@
         }
 %
 % # JIT: move sp to use or preserve stack variables
-        fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+        if (status->local_stack_p) {
+% # sp motion is optimized away for `handles_frame? #=> false` case.
+% # Thus sp should be set properly before `goto cancel`.
+% if insn.handles_stack?
+%           # JIT-only behavior (pushing JIT's local variables to VM's stack):
+            rb_snum_t i, push_size;
+            push_size = -<%= insn.call_attribute('sp_inc') %> + <%= insn.rets.size %> - <%= insn.pops.size %>;
+            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+            for (i = 0; i < push_size; i++) { /* TODO: use memcpy? */
+                fprintf(f, "    *(reg_cfp->sp + %ld) = stack[%ld];\n", i - push_size, (rb_snum_t)b->stack_size - push_size + i);
+            }
+% end
+        }
+        else {
+            fprintf(f, "    reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1 - <%= insn.pops.size %>); /* POPN(INSN_ATTR(popn)); */
+        }

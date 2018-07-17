@@ -69,8 +69,28 @@
 %     end
 %   when /\A\s+DISPATCH_ORIGINAL_INSN\([^)]+\);\s+\z/
 %     # For `opt_xxx`'s fallbacks.
+        fprintf(f, "            reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
         fprintf(f, "            reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "            goto cancel;\n");
+%   # If local_stack_p is TRUE, stack values are only available in local variables
+%   # for stack. So we need to replace those macros if local_stack_p is TRUE here.
+%   when /\bGET_SP\(\)/
+%     # reg_cfp->sp
+        fprintf(f, <%= to_cstr.call(line.sub(/\bGET_SP\(\)/, '%s')) %>, (status->local_stack_p ? "(stack + stack_size)" : "GET_SP()"));
+%   when /\bSTACK_ADDR_FROM_TOP\((?<num>[^)]+)\)/
+%     # #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
+%     num = Regexp.last_match[:num]
+        fprintf(f, <%= to_cstr.call(line.sub(/\bSTACK_ADDR_FROM_TOP\(([^)]+)\)/, '%s')) %>,
+                (status->local_stack_p ? "stack + (stack_size - (<%= num %>))" : "STACK_ADDR_FROM_TOP(<%= num %>)"));
+%   when /\bTOPN\((?<num>[^)]+)\)/
+%     # #define TOPN(n) (*(GET_SP()-(n)-1))
+%     num = Regexp.last_match[:num]
+        fprintf(f, <%= to_cstr.call(line.sub(/\bTOPN\(([^)]+)\)/, '%s')) %>,
+                (status->local_stack_p ? "*(stack + (stack_size - (<%= num %>) - 1))" : "TOPN(<%= num %>)"));
+%   when /\bPOPN\([^)]+\)/ # skip sp motion on JIT
+        fprintf(f, <%= to_cstr.call(line.sub(/\bPOPN\((?<num>[^)]+)\)/) { Regexp.last_match[:num] }) %>);
+%   when /\bINC_SP\([^)]+\)/ # skip sp motion on JIT
+        fprintf(f, <%= to_cstr.call(line.sub(/\bINC_SP\((?<num>[^)]+)\)/) { Regexp.last_match[:num] }) %>);
 %   else
         fprintf(f, <%= to_cstr.call(line) %>);
 %   end
