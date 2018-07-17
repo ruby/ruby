@@ -49,7 +49,9 @@
 # endif
 #endif
 #ifdef HAVE_MALLOC_USABLE_SIZE
-# ifdef HAVE_MALLOC_H
+# ifdef RUBY_ALTERNATIVE_MALLOC_HEADER
+#  include RUBY_ALTERNATIVE_MALLOC_HEADER
+# elif HAVE_MALLOC_H
 #  include <malloc.h>
 # elif defined(HAVE_MALLOC_NP_H)
 #  include <malloc_np.h>
