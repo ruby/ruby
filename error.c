@@ -1061,7 +1061,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
 	    if (id == id_bottom) args[kw_order] = Qtrue;
 	    else if (id == id_top) args[kw_order] = Qfalse;
 	    else {
-		rb_raise(rb_eArgError, "expected :top or :down as "
+		rb_raise(rb_eArgError, "expected :top or :bottom as "
 			 "order: %+"PRIsVALUE, args[kw_order]);
 	    }
 	}
