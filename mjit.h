@@ -27,7 +27,9 @@ enum rb_mjit_iseq_func {
 
 /* MJIT options which can be defined on the MRI command line.  */
 struct mjit_options {
-    char on; /* flag of MJIT usage  */
+    /* Converted from "jit" feature flag to tell the enablement
+       information to ruby_show_version().  */
+    char on;
     /* Save temporary files after MRI finish.  The temporary files
        include the pre-compiled header, C code file generated for ISEQ,
        and the corresponding object file.  */
