@@ -2225,7 +2225,6 @@ struct gzfile {
     rb_encoding *enc2;
     rb_econv_t *ec;
     VALUE ecopts;
-    char *cbuf;
     VALUE path;
 };
 #define GZFILE_CBUF_CAPA 10
@@ -2275,22 +2274,13 @@ gzfile_free(void *p)
 	}
 	zstream_finalize(z);
     }
-    if (gz->cbuf) {
-	xfree(gz->cbuf);
-    }
     xfree(gz);
 }
 
 static size_t
 gzfile_memsize(const void *p)
 {
-    const struct gzfile *gz = p;
-    size_t size = sizeof(struct gzfile);
-
-    if (gz->cbuf)
-	size += GZFILE_CBUF_CAPA;
-
-    return size;
+    return sizeof(struct gzfile);
 }
 
 static const rb_data_type_t gzfile_data_type = {
@@ -2319,7 +2309,6 @@ gzfile_init(struct gzfile *gz, const struct zstream_funcs *funcs, void (*endfunc
     gz->ec = NULL;
     gz->ecflags = 0;
     gz->ecopts = Qnil;
-    gz->cbuf = 0;
     gz->path = Qnil;
 }
 
@@ -2870,22 +2859,19 @@ gzfile_getc(struct gzfile *gz)
     if (gz->ec && rb_enc_dummy_p(gz->enc2)) {
 	const unsigned char *ss, *sp, *se;
 	unsigned char *ds, *dp, *de;
+	VALUE cbuf = rb_enc_str_new(0, GZFILE_CBUF_CAPA, gz->enc);
 
-	if (!gz->cbuf) {
-	    gz->cbuf = ALLOC_N(char, GZFILE_CBUF_CAPA);
-	}
         ss = sp = (const unsigned char*)RSTRING_PTR(gz->z.buf);
         se = sp + ZSTREAM_BUF_FILLED(&gz->z);
-        ds = dp = (unsigned char *)gz->cbuf;
+        ds = dp = (unsigned char *)RSTRING_PTR(cbuf);
         de = (unsigned char *)ds + GZFILE_CBUF_CAPA;
         (void)rb_econv_convert(gz->ec, &sp, se, &dp, de, ECONV_PARTIAL_INPUT|ECONV_AFTER_OUTPUT);
         rb_econv_check_error(gz->ec);
 	dst = zstream_shift_buffer(&gz->z, sp - ss);
 	gzfile_calc_crc(gz, dst);
-	dst = rb_str_new(gz->cbuf, dp - ds);
-	rb_enc_associate(dst, gz->enc);
-	OBJ_TAINT(dst);
-	return dst;
+	rb_str_resize(cbuf, dp - ds);
+	OBJ_TAINT(cbuf);
+	return cbuf;
     }
     else {
 	buf = gz->z.buf;
