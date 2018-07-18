@@ -77,6 +77,8 @@ char *getenv();
     X(rubyopt) \
     SEP \
     X(frozen_string_literal) \
+    SEP \
+    X(jit) \
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -167,6 +169,7 @@ enum {
 	& ~FEATURE_BIT(gems)
 #endif
 	& ~FEATURE_BIT(frozen_string_literal)
+        & ~FEATURE_BIT(jit)
 	)
 };
 
@@ -180,7 +183,7 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     opt->intern.enc.index = -1;
     opt->features = DEFAULT_FEATURES;
 #ifdef MJIT_FORCE_ENABLE /* to use with: ./configure cppflags="-DMJIT_FORCE_ENABLE" */
-    opt->mjit.on = MJIT_FORCE_ENABLE;
+    opt->features |= FEATURE_BIT(jit);
 #endif
     return opt;
 }
@@ -272,6 +275,7 @@ usage(const char *name, int help)
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
+        M("jit", "",            "MJIT (default: disabled)"),
     };
     static const struct message mjit_options[] = {
         M("--jit-warnings",      "", "Enable printing MJIT warnings"),
@@ -945,7 +949,6 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
-    mjit_opt->on = 1;
     if (*s == 0) return;
     else if (strcmp(s, "-warnings") == 0) {
         mjit_opt->warnings = 1;
@@ -1327,6 +1330,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		ruby_verbose = Qtrue;
 	    }
             else if (strncmp("jit", s, 3) == 0) {
+                opt->features |= FEATURE_BIT(jit);
                 setup_mjit_options(s + 3, &opt->mjit);
             }
 	    else if (strcmp("yydebug", s) == 0) {
@@ -1568,8 +1572,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
+    if (opt->features & FEATURE_BIT(jit)) {
+        opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
+    }
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
-        mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() is still not called here. */
+        mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
 	ruby_show_version();
 	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
