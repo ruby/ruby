@@ -134,9 +134,11 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_enable
-    assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
-    assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
-    assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
+    if JITSupport.supported?
+      assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
+    end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: `foobarbazqux'/)
     assert_in_out_err(%w(--enable), "", [], /missing argument for --enable/)
