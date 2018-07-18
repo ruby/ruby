@@ -260,15 +260,15 @@ ary_double_capa(VALUE ary, long min)
 static void
 rb_ary_decrement_share(VALUE shared)
 {
-    if (shared) {
-	long num = ARY_SHARED_NUM(shared) - 1;
-	if (num == 0) {
-	    rb_ary_free(shared);
-	    rb_gc_force_recycle(shared);
-	}
-	else if (num > 0) {
-	    ARY_SET_SHARED_NUM(shared, num);
-	}
+    long num;
+    assert(ARY_SHARED_P(shared));
+    num = ARY_SHARED_NUM(shared) - 1;
+    if (num == 0) {
+        rb_ary_free(shared);
+        rb_gc_force_recycle(shared);
+    }
+    else if (num > 0) {
+        ARY_SET_SHARED_NUM(shared, num);
     }
 }
 
@@ -276,7 +276,7 @@ static void
 rb_ary_unshare(VALUE ary)
 {
     VALUE shared = RARRAY(ary)->as.heap.aux.shared;
-    rb_ary_decrement_share(shared);
+    if (shared) rb_ary_decrement_share(shared);
     FL_UNSET_SHARED(ary);
 }
 
@@ -324,7 +324,7 @@ rb_ary_modify(VALUE ary)
             FL_UNSET_SHARED(ary);
             FL_SET_EMBED(ary);
 	    MEMCPY((VALUE *)ARY_EMBED_PTR(ary), ptr, VALUE, len);
-            rb_ary_decrement_share(shared);
+            if (shared) rb_ary_decrement_share(shared);
             ARY_SET_EMBED_LEN(ary, len);
         }
 	else if (ARY_SHARED_OCCUPIED(shared) && len > ((shared_len = RARRAY_LEN(shared))>>1)) {
@@ -336,7 +336,7 @@ rb_ary_modify(VALUE ary)
 		MEMMOVE(ptr, ptr+shift, VALUE, len);
 	    });
 	    FL_SET_EMBED(shared);
-	    rb_ary_decrement_share(shared);
+	    if (shared) rb_ary_decrement_share(shared);
 	}
         else {
             VALUE *ptr = ALLOC_N(VALUE, len);
