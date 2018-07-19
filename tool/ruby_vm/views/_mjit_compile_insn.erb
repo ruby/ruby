@@ -20,6 +20,11 @@
         MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 %
+% # JIT: Declare stack_size to be used in some macro of _mjit_compile_insn_body.erb
+        if (status->local_stack_p) {
+            fprintf(f, "    MAYBE_UNUSED(unsigned int) stack_size = %u;\n", b->stack_size);
+        }
+%
 % # JIT: Declare variables for operands, popped values and return values
 % insn.declarations.each do |decl|
         fprintf(f, "    <%= decl %>;\n");
