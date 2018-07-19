@@ -3316,7 +3316,7 @@ env_str_new2(const char *ptr)
 static int env_path_tainted(const char *);
 
 static const char TZ_ENV[] = "TZ";
-extern int ruby_tz_update;
+extern bool ruby_tz_uptodate_p;
 
 static rb_encoding *
 env_encoding_for(const char *name, const char *ptr)
@@ -3400,7 +3400,7 @@ env_delete(VALUE obj, VALUE name)
 	    path_tainted = 0;
 	}
 	else if (ENVMATCH(nam, TZ_ENV)) {
-	    ruby_tz_update = 0;
+	    ruby_tz_uptodate_p = FALSE;
 	}
 	return value;
     }
@@ -3762,7 +3762,7 @@ env_aset(VALUE obj, VALUE nm, VALUE val)
 	}
     }
     else if (ENVMATCH(name, TZ_ENV)) {
-	ruby_tz_update = 0;
+	ruby_tz_uptodate_p = FALSE;
     }
     return val;
 }
