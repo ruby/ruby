@@ -1,4 +1,4 @@
-require_relative "lib/tracer"
+require_relative "tracer"
 
 Gem::Specification.new do |spec|
   spec.name          = "tracer"
