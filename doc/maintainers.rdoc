@@ -133,8 +133,6 @@ Zachary Scott (zzak)
   Tanaka Akira (akr)
 [lib/timeout.rb]
   Yukihiro Matsumoto (matz)
-[lib/tracer.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/tsort.rb]
   Tanaka Akira (akr)
 [lib/un.rb]
@@ -222,6 +220,8 @@ Zachary Scott (zzak)
   David A. Black (dblack)
   https://github.com/ruby/scanf
 [lib/sync.rb]
+  Keiju ISHITSUKA (keiju)
+[lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
 [lib/webrick.rb, lib/webrick/*]
   Eric Wong (normalperson)
