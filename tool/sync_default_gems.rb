@@ -30,6 +30,7 @@
 # * https://github.com/ruby/irb
 # * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
+# * https://github.com/ruby/shell
 #
 
 $repositories = {
@@ -62,7 +63,8 @@ $repositories = {
   rss: 'ruby/rss',
   irb: 'ruby/irb',
   sync: 'ruby/sync',
-  tracer: 'ruby/tracer'
+  tracer: 'ruby/tracer',
+  shell: 'ruby/shell'
 }
 
 def sync_default_gems(gem)
@@ -226,14 +228,14 @@ def sync_default_gems(gem)
     `cp -rf ../tracer/lib/* lib`
     `cp -rf ../tracer/test/test_tracer.rb test`
     `cp -f ../tracer/tracer.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell"
     sync_lib gem
   else
   end
 end
 
 def sync_lib(repo)
-  `rm -rf lib/#{repo}* test/#{repo}`
+  `rm -rf lib/#{repo}.rb lib/#{repo}/* test/#{repo}`
   `cp -rf ../#{repo}/lib/* lib`
   `cp -rf ../#{repo}/test/#{repo} test`
   `cp -f ../#{repo}/#{repo}.gemspec lib/#{repo}`
