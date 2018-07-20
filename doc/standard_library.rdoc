@@ -47,7 +47,6 @@ Rinda:: The Linda distributed computing paradigm in Ruby
 Gem:: Package management framework for Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
-Shell:: An idiomatic Ruby interface for common UNIX shell commands
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
 Tempfile:: A utility class for managing temporary files
@@ -93,6 +92,7 @@ RDoc:: Produces HTML and command-line documentation for Ruby
 REXML:: An XML toolkit for Ruby
 RSS:: Family of libraries that support various formats of XML "feeds"
 Scanf:: A Ruby implementation of the C function scanf(3)
+Shell:: An idiomatic Ruby interface for common UNIX shell commands
 Synchronizer:: A module that provides a two-phase lock with a counter
 Tracer:: Outputs a source level execution trace of a Ruby program
 WEBrick:: An HTTP server toolkit for Ruby

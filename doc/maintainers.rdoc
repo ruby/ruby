@@ -117,8 +117,6 @@ Zachary Scott (zzak)
   Akinori MUSHA (knu)
 [lib/securerandom.rb]
   Tanaka Akira (akr)
-[lib/shell.rb, lib/shell/*]
-  Keiju ISHITSUKA (keiju)
 [lib/shellwords.rb]
   Akinori MUSHA (knu)
 [lib/singleton.rb]
@@ -219,6 +217,8 @@ Zachary Scott (zzak)
 [lib/scanf.rb]
   David A. Black (dblack)
   https://github.com/ruby/scanf
+[lib/shell.rb, lib/shell/*]
+  Keiju ISHITSUKA (keiju)
 [lib/sync.rb]
   Keiju ISHITSUKA (keiju)
 [lib/tracer.rb]
