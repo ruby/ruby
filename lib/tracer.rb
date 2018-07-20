@@ -60,6 +60,9 @@
 # by Keiju ISHITSUKA(keiju@ishitsuka.com)
 #
 class Tracer
+
+  VERSION = "0.1.0"
+
   class << self
     # display additional debug information (defaults to false)
     attr_accessor :verbose
