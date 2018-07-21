@@ -3800,4 +3800,20 @@ __END__
       assert_equal 'done', noex.value ,'r63216'
     end
   end
+
+  def test_select_leak
+    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 30)
+      r, w = IO.pipe
+      rset = [r]
+      wset = [w]
+      Thread.new { IO.select(rset, wset, nil, 0) }.join
+    end;
+      200000.times do
+        th = Thread.new { IO.select(rset, wset) }
+        Thread.pass until th.stop?
+        th.kill
+        th.join
+      end
+    end;
+  end
 end
