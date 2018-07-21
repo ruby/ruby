@@ -152,7 +152,6 @@ class Gem::Specification < Gem::BasicSpecification
     :required_ruby_version     => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
     :requirements              => [],
-    :rubyforge_project         => nil,
     :rubygems_version          => Gem::VERSION,
     :signing_key               => nil,
     :specification_version     => CURRENT_SPECIFICATION_VERSION,
@@ -720,14 +719,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Allows deinstallation of gems with legacy platforms.
 
   attr_writer :original_platform # :nodoc:
-
-  ##
-  # The rubyforge project this gem lives under.  i.e. RubyGems'
-  # rubyforge_project is "rubygems".
-  #
-  # This option is deprecated.
-
-  attr_accessor :rubyforge_project
 
   ##
   # The Gem::Specification version of this gemspec.
@@ -1365,16 +1356,15 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@required_rubygems_version, array[7]
     spec.instance_variable_set :@original_platform,         array[8]
     spec.instance_variable_set :@dependencies,              array[9]
-    spec.instance_variable_set :@rubyforge_project,         array[10]
-    spec.instance_variable_set :@email,                     array[11]
-    spec.instance_variable_set :@authors,                   array[12]
-    spec.instance_variable_set :@description,               array[13]
-    spec.instance_variable_set :@homepage,                  array[14]
-    spec.instance_variable_set :@has_rdoc,                  array[15]
-    spec.instance_variable_set :@new_platform,              array[16]
-    spec.instance_variable_set :@platform,                  array[16].to_s
-    spec.instance_variable_set :@license,                   array[17]
-    spec.instance_variable_set :@metadata,                  array[18]
+    spec.instance_variable_set :@email,                     array[10]
+    spec.instance_variable_set :@authors,                   array[11]
+    spec.instance_variable_set :@description,               array[12]
+    spec.instance_variable_set :@homepage,                  array[13]
+    spec.instance_variable_set :@has_rdoc,                  array[14]
+    spec.instance_variable_set :@new_platform,              array[15]
+    spec.instance_variable_set :@platform,                  array[15].to_s
+    spec.instance_variable_set :@license,                   array[16]
+    spec.instance_variable_set :@metadata,                  array[17]
     spec.instance_variable_set :@loaded,                    false
     spec.instance_variable_set :@activated,                 false
 
@@ -1410,7 +1400,6 @@ class Gem::Specification < Gem::BasicSpecification
       @required_rubygems_version,
       @original_platform,
       @dependencies,
-      @rubyforge_project,
       @email,
       @authors,
       @description,
