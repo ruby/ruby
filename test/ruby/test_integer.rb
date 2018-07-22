@@ -159,6 +159,12 @@ class TestInteger < Test::Unit::TestCase
     assert_nothing_raised(TypeError) {
       assert_equal(nil, Integer(nil, exception: false))
     }
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def method_missing(*);"";end
+      assert_equal(0, Integer("0", 2))
+    end;
   end
 
   def test_int_p
