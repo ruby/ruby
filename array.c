@@ -5973,6 +5973,20 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             else
                 goto not_float;
 
+            if (isnan(f)) continue;
+            if (isnan(x)) {
+                f = x;
+                continue;
+            }
+            if (isinf(x)) {
+                if (isinf(f) && signbit(x) != signbit(f))
+                    f = NAN;
+                else
+                    f = x;
+                continue;
+            }
+            if (isinf(f)) continue;
+
             t = f + x;
             if (fabs(f) >= fabs(x))
                 c += ((f - t) + x);

@@ -3809,6 +3809,25 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
             goto some_value;
         }
 
+        if (isnan(f)) return;
+        if (isnan(x)) {
+            memo->v = i;
+            memo->f = x;
+            return;
+        }
+        if (isinf(x)) {
+            if (isinf(f) && signbit(x) != signbit(f)) {
+                memo->f = NAN;
+                memo->v = DBL2NUM(f);
+            }
+            else {
+                memo->f = x;
+                memo->v = i;
+            }
+            return;
+        }
+        if (isinf(f)) return;
+
         t = f + x;
         if (fabs(f) >= fabs(x))
             c += ((f - t) + x);
