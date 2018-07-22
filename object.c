@@ -3214,15 +3214,23 @@ rb_f_integer(int argc, VALUE *argv, VALUE obj)
     VALUE arg = Qnil, opts = Qnil;
     int base = 0;
 
-    switch (rb_scan_args(argc, argv, "11:", NULL, NULL, &opts)) {
-      case 2:
-        base = NUM2INT(argv[1]);
-      case 1:
-        arg = argv[0];
-        break;
-      default:
-        UNREACHABLE;
+    if (argc > 1) {
+        int narg = 1;
+        VALUE vbase = rb_check_to_int(argv[1]);
+        if (!NIL_P(vbase)) {
+            base = NUM2INT(vbase);
+            narg = 2;
+        }
+        if (argc > narg) {
+            VALUE hash = rb_check_hash_type(argv[argc-1]);
+            if (!NIL_P(hash)) {
+                opts = rb_extract_keywords(&hash);
+                if (!hash) --argc;
+            }
+        }
     }
+    rb_check_arity(argc, 1, 2);
+    arg = argv[0];
 
     return rb_convert_to_integer(arg, base, opts_exception_p(opts));
 }
