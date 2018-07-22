@@ -117,7 +117,11 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_verbose
     assert_in_out_err(["-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      assert_equal(RUBY_DESCRIPTION, r[0])
+      if RubyVM::MJIT.enabled? && !mjit_force_enabled?
+        assert_equal(NO_JIT_DESCRIPTION, r[0])
+      else
+        assert_equal(RUBY_DESCRIPTION, r[0])
+      end
       assert_equal([], e)
     end
 
@@ -1062,5 +1066,11 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_null_script
     skip "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
     assert_in_out_err([IO::NULL], success: true)
+  end
+
+  private
+
+  def mjit_force_enabled?
+    "#{RbConfig::CONFIG['CFLAGS']} #{RbConfig::CONFIG['CPPFLAGS']}".match?(/(\A|\s)-D ?MJIT_FORCE_ENABLE\b/)
   end
 end
