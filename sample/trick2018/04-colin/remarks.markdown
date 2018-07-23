@@ -6,7 +6,7 @@ Create a Ruby file that requires entry.rb with a series of test in it the run th
 ruby name_of_test_file.rb
 ```
 
-To create a test, call 🤔 with two arguments. The first is a string describing what this tests, the second argument is the test assertion. If the assertion is truthy, the test passes. If the assertion if falsy, the test fails.
+To create a test, call 🤔 with two arguments. The first is a string describing what this tests, the second argument is the test assertion. If the assertion is truthy, the test passes. If the assertion is falsy, the test fails.
 
 ```
 string_1 = "Hello world!"
