@@ -3808,7 +3808,7 @@ __END__
       wset = [w]
       Thread.new { IO.select(rset, wset, nil, 0) }.join
     end;
-      200_000.times do
+      20_000.times do
         th = Thread.new { IO.select(rset, wset) }
         Thread.pass until th.stop?
         th.kill
