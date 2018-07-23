@@ -3802,13 +3802,13 @@ __END__
   end
 
   def test_select_leak
-    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 30)
+    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 60)
       r, w = IO.pipe
       rset = [r]
       wset = [w]
       Thread.new { IO.select(rset, wset, nil, 0) }.join
     end;
-      200000.times do
+      200_000.times do
         th = Thread.new { IO.select(rset, wset) }
         Thread.pass until th.stop?
         th.kill
