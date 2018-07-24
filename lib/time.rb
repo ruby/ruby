@@ -245,8 +245,8 @@ class Time
     end
     private :apply_offset
 
-    def make_time(date, year, mon, day, hour, min, sec, sec_fraction, zone, now)
-      if !year && !mon && !day && !hour && !min && !sec && !sec_fraction
+    def make_time(date, year, yday, mon, day, hour, min, sec, sec_fraction, zone, now)
+      if !year && !yday && !mon && !day && !hour && !min && !sec && !sec_fraction
         raise ArgumentError, "no time information in #{date.inspect}"
       end
 
@@ -254,6 +254,17 @@ class Time
       if year || now
         off_year = year || now.year
         off = zone_offset(zone, off_year) if zone
+      end
+
+      if yday
+        mon, day = (yday-1).divmod(31)
+        mon += 1
+        day += 1
+        t = make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
+        diff = yday - t.yday
+        return t if diff.zero?
+        day += diff
+        return make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
       end
 
       if now
@@ -363,7 +374,7 @@ class Time
       d = Date._parse(date, comp)
       year = d[:year]
       year = yield(year) if year && !comp
-      make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     #
@@ -441,7 +452,7 @@ class Time
       else
         year = d[:year]
         year = yield(year) if year && block_given?
-        t = make_time(date, year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+        t = make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
       end
       t
     end

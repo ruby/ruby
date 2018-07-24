@@ -495,6 +495,16 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(true, t.utc?)
   end
 
+  def test_strptime_j
+    t = Time.strptime("2018-365", "%Y-%j")
+    assert_equal(2018, t.year)
+    assert_equal(12, t.mon)
+    assert_equal(31, t.day)
+    assert_equal(0, t.hour)
+    assert_equal(0, t.min)
+    assert_equal(0, t.sec)
+  end
+
   def test_nsec
     assert_equal(123456789, Time.parse("2000-01-01T00:00:00.123456789+00:00").tv_nsec)
   end
