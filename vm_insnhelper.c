@@ -1302,7 +1302,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 static VALUE vm_call_general(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 
 MJIT_FUNC_EXPORTED void
-vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE klass)
+rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE klass)
 {
     cc->me = rb_callable_method_entry(klass, ci->mid);
     VM_ASSERT(callable_method_entry_p(cc->me));
@@ -1333,7 +1333,7 @@ vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE 
     }
     RB_DEBUG_COUNTER_INC(mc_inline_miss);
 #endif
-    vm_search_method_slowpath(ci, cc, klass);
+    rb_vm_search_method_slowpath(ci, cc, klass);
 }
 
 static inline int
@@ -1473,7 +1473,7 @@ rb_eql_opt(VALUE obj1, VALUE obj2)
     return opt_eql_func(obj1, obj2, &ci, &cc);
 }
 
-extern VALUE vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
+extern VALUE rb_vm_call0(rb_execution_context_t *ec, VALUE, ID, int, const VALUE*, const rb_callable_method_entry_t *);
 
 static VALUE
 check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_check_match_type type)
@@ -1490,7 +1490,7 @@ check_match(rb_execution_context_t *ec, VALUE pattern, VALUE target, enum vm_che
 	const rb_callable_method_entry_t *me =
 	    rb_callable_method_entry_with_refinements(CLASS_OF(pattern), idEqq, NULL);
 	if (me) {
-	    return vm_call0(ec, pattern, idEqq, 1, &target, me);
+            return rb_vm_call0(ec, pattern, idEqq, 1, &target, me);
 	}
 	else {
 	    /* fallback to funcall (e.g. method_missing) */
@@ -1972,7 +1972,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     /* control block frame */
     ec->passed_bmethod_me = cc->me;
     GetProcPtr(cc->me->def->body.proc, proc);
-    val = vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->block_handler);
+    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->block_handler);
 
     return val;
 }

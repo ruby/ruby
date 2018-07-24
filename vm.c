@@ -12,10 +12,7 @@
 #include "ruby/vm.h"
 #include "ruby/st.h"
 
-#define vm_call0 rb_vm_call0
 #define vm_exec rb_vm_exec
-#define vm_invoke_bmethod rb_vm_invoke_bmethod
-#define vm_search_method_slowpath rb_vm_search_method_slowpath
 
 #include "gc.h"
 #include "vm_core.h"
@@ -302,7 +299,7 @@ static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
-extern VALUE vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
+extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
 static VALUE rb_block_param_proxy;
@@ -1173,7 +1170,7 @@ vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
 }
 
 MJIT_FUNC_EXPORTED VALUE
-vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
+rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
 		  int argc, const VALUE *argv, VALUE block_handler)
 {
     return invoke_block_from_c_proc(ec, proc, self, argc, argv, block_handler, TRUE);
@@ -1187,7 +1184,7 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
     vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
-	return vm_invoke_bmethod(ec, proc, self, argc, argv, passed_block_handler);
+        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, passed_block_handler);
     }
     else {
 	return vm_invoke_proc(ec, proc, self, argc, argv, passed_block_handler);

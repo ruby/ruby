@@ -1913,7 +1913,7 @@ call_method_entry(rb_execution_context_t *ec, VALUE defined_class, VALUE obj, ID
     const rb_callable_method_entry_t *cme =
 	prepare_callable_method_entry(defined_class, id, me);
     VALUE passed_block_handler = vm_passed_block_handler(ec);
-    VALUE result = vm_call0(ec, obj, id, argc, argv, cme);
+    VALUE result = rb_vm_call0(ec, obj, id, argc, argv, cme);
     vm_passed_block_handler_set(ec, passed_block_handler);
     return result;
 }
