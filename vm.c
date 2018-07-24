@@ -12,6 +12,11 @@
 #include "ruby/vm.h"
 #include "ruby/st.h"
 
+#define vm_call0 rb_vm_call0
+#define vm_exec rb_vm_exec
+#define vm_invoke_bmethod rb_vm_invoke_bmethod
+#define vm_search_method_slowpath rb_vm_search_method_slowpath
+
 #include "gc.h"
 #include "vm_core.h"
 #include "vm_debug.h"
