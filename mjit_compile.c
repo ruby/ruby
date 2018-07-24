@@ -193,6 +193,8 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     status.success = TRUE;
     status.local_stack_p = !body->catch_except_p;
     status.stack_size_for_pos = (int *)malloc(sizeof(int) * body->iseq_size);
+    if (status.stack_size_for_pos == NULL)
+        return FALSE;
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
 
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
