@@ -295,7 +295,7 @@ assert_close_on_exec(int fd)
     int flags = fcntl(fd, F_GETFD);
     if (flags == -1) {
         static const char m[] = "reserved FD closed unexpectedly?\n";
-        (void)write(2, m, sizeof(m) - 1);
+        (void)!write(2, m, sizeof(m) - 1);
         return;
     }
     if (flags & FD_CLOEXEC) return;
