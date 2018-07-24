@@ -334,7 +334,7 @@ form_args(int num, ...)
     for (i = len = 0; i < num; i++) {
         args = va_arg(argp, char **);
         n = args_len(args);
-        REALLOC_N(res, char *, len + n + 1);
+        res = (char **)realloc(res, sizeof(char *) * (len + n + 1));
         MEMCPY(res + len, args, char *, n + 1);
         len += n;
     }
@@ -717,7 +717,7 @@ make_pch(void)
     }
 
     exit_code = exec_process(cc_path, args);
-    xfree(args);
+    free(args);
 #endif
 
     CRITICAL_SECTION_START(3, "in make_pch");
@@ -766,7 +766,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
 #ifdef _MSC_VER
     solen = strlen(so_file);
-    files[0] = p = xmalloc(rb_strlen_lit("-Fe") + solen + 1);
+    files[0] = p = (char *)malloc(sizeof(char) * (rb_strlen_lit("-Fe") + solen + 1));
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
@@ -784,9 +784,9 @@ compile_c_to_so(const char *c_file, const char *so_file)
         return FALSE;
 
     exit_code = exec_process(cc_path, args);
-    xfree(args);
+    free(args);
 #ifdef _MSC_VER
-    xfree((char *)files[0]);
+    free((char *)files[0]);
 #endif
 
     if (exit_code != 0)
