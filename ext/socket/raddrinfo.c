@@ -2550,7 +2550,7 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
         rb_raise(rb_eTypeError, "neither IO nor file descriptor");
     }
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*

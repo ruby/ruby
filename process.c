@@ -2896,7 +2896,7 @@ rb_f_exec(int argc, const VALUE *argv)
     rb_exec_fail(eargp, err, errmsg);
     RB_GC_GUARD(execarg_obj);
     rb_syserr_fail_str(err, fail_str);
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #define ERRMSG(str) do { if (errmsg && 0 < errmsg_buflen) strlcpy(errmsg, (str), errmsg_buflen); } while (0)
@@ -4058,7 +4058,7 @@ rb_f_exit_bang(int argc, VALUE *argv, VALUE obj)
     }
     _exit(istatus);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void
@@ -4129,7 +4129,7 @@ rb_f_exit(int argc, const VALUE *argv)
     }
     rb_exit(istatus);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 
@@ -4166,7 +4166,7 @@ rb_f_abort(int argc, const VALUE *argv)
 	rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
     }
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void
@@ -5154,7 +5154,7 @@ rlimit_resource_type(VALUE rtype)
 
     rb_raise(rb_eArgError, "invalid resource name: % "PRIsVALUE, rtype);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(-1);
 }
 
 static rlim_t
@@ -5195,7 +5195,7 @@ rlimit_resource_value(VALUE rval)
 #endif
     rb_raise(rb_eArgError, "invalid resource value: %"PRIsVALUE, rval);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN((rlim_t)-1);
 }
 #endif
 
@@ -7034,7 +7034,7 @@ p_uid_switch(VALUE obj)
 	rb_syserr_fail(EPERM, 0);
     }
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 #else
 static VALUE
@@ -7147,7 +7147,7 @@ p_gid_switch(VALUE obj)
 	rb_syserr_fail(EPERM, 0);
     }
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 #else
 static VALUE

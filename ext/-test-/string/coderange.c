@@ -17,7 +17,7 @@ coderange_int2sym(int coderange)
 	return sym_broken;
     }
     rb_bug("wrong condition of coderange");
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /* return coderange without scan */

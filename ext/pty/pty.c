@@ -665,7 +665,7 @@ pty_check(int argc, VALUE *argv, VALUE self)
     if (!RTEST(exc)) return rb_last_status_get();
     raise_from_check(cpid, status);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE cPTY;

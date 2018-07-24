@@ -1381,7 +1381,7 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     errno = saved_errno;
     rsock_raise_socket_error("getnameinfo", error);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*

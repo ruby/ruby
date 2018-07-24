@@ -7097,7 +7097,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
             return int_pow_tmp3(rb_int_modulo(a, m), b, m, nega_flg);
         }
     }
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 /*

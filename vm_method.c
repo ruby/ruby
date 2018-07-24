@@ -118,7 +118,7 @@ rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)
 {
     rb_notimplement();
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static void

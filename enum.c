@@ -938,7 +938,7 @@ first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, params))
     MEMO_V1_SET(memo, i);
     rb_iter_break();
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE enum_take(VALUE obj, VALUE n);

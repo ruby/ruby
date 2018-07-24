@@ -728,7 +728,7 @@ rb_f_raise(int argc, VALUE *argv)
     }
     rb_raise_jump(rb_make_exception(argc, argv), *cause);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE

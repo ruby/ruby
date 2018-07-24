@@ -636,7 +636,7 @@ rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     rb_execution_context_t *ec = GET_EC();
     raise_method_missing(ec, argc, argv, obj, ec->method_missing_reason);
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1851,7 +1851,7 @@ rb_f_throw(int argc, VALUE *argv)
 
     rb_scan_args(argc, argv, "11", &tag, &value);
     rb_throw_obj(tag, value);
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void

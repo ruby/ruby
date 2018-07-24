@@ -5,7 +5,7 @@ iter_break(VALUE self)
 {
     rb_iter_break();
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE
@@ -13,7 +13,7 @@ iter_break_value(VALUE self, VALUE val)
 {
     rb_iter_break_value(val);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 void
