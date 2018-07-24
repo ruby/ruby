@@ -334,7 +334,8 @@ form_args(int num, ...)
     for (i = len = 0; i < num; i++) {
         args = va_arg(argp, char **);
         n = args_len(args);
-        res = (char **)realloc(res, sizeof(char *) * (len + n + 1));
+        if ((res = (char **)realloc(res, sizeof(char *) * (len + n + 1))) == NULL)
+            return NULL;
         MEMCPY(res + len, args, char *, n + 1);
         len += n;
     }
@@ -767,6 +768,8 @@ compile_c_to_so(const char *c_file, const char *so_file)
 #ifdef _MSC_VER
     solen = strlen(so_file);
     files[0] = p = (char *)malloc(sizeof(char) * (rb_strlen_lit("-Fe") + solen + 1));
+    if (p == NULL)
+        return FALSE;
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, solen);
     *p = '\0';
