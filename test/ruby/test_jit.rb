@@ -679,7 +679,7 @@ class TestJIT < Test::Unit::TestCase
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
     begin;
       2.times do
-        a, b = nil
+        a, _ = nil
         p a
       end
     end;
