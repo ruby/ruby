@@ -2336,7 +2336,7 @@ rb_method_entry_min_max_arity(const rb_method_entry_t *me, int *max)
 	return 0;
     }
     rb_bug("rb_method_entry_min_max_arity: invalid method entry type (%d)", def->type);
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 int

@@ -217,7 +217,7 @@ rb_struct_getmember(VALUE obj, ID id)
     }
     rb_name_err_raise("`%1$s' is not a struct member", obj, ID2SYM(id));
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE rb_struct_ref0(VALUE obj) {return RSTRUCT_GET(obj, 0);}

@@ -1734,7 +1734,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
   not_defined:
     rb_name_err_raise("instance variable %1$s not defined",
 		      obj, name);
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 NORETURN(static void uninitialized_constant(VALUE, VALUE));
@@ -1805,7 +1805,7 @@ rb_mod_const_missing(VALUE klass, VALUE name)
     }
     uninitialized_constant(klass, name);
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static void

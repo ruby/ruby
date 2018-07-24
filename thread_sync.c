@@ -1444,7 +1444,7 @@ static VALUE
 undumpable(VALUE obj)
 {
     rb_raise(rb_eTypeError, "can't dump %"PRIsVALUE, rb_obj_class(obj));
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 static VALUE

@@ -44,6 +44,13 @@ extern "C" {
 #   define ASSUME(x) ((void)(x))
 # endif
 #endif
+#ifndef UNREACHABLE_RETURN
+# ifdef UNREACHABLE
+#  define UNREACHABLE_RETURN(val) UNREACHABLE
+# else
+#  define UNREACHABLE_RETURN(val) return (val)
+# endif
+#endif
 #ifndef UNREACHABLE
 # define UNREACHABLE ((void)0)	/* unreachable */
 #endif

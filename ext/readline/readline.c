@@ -1756,7 +1756,7 @@ rb_remove_history(int index)
 #else
     rb_notimplement();
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 #endif
 }
 

@@ -487,7 +487,7 @@ num_sadded(VALUE x, VALUE name)
 	     rb_id2str(mid),
 	     rb_obj_class(x));
 
-    UNREACHABLE;
+    UNREACHABLE_RETURN(Qnil);
 }
 
 #if 0
