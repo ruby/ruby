@@ -32,6 +32,7 @@
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/shell
 # * https://github.com/ruby/forwardable
+# * https://github.com/ruby/thwait
 #
 
 $repositories = {
@@ -66,7 +67,8 @@ $repositories = {
   sync: 'ruby/sync',
   tracer: 'ruby/tracer',
   shell: 'ruby/shell',
-  forwardable: "ruby/forwardable"
+  forwardable: "ruby/forwardable",
+  thwait: "ruby/thwait"
 }
 
 def sync_default_gems(gem)
@@ -172,6 +174,10 @@ def sync_default_gems(gem)
     `cp -rf ../fcntl/ext/fcntl ext`
     `cp -f ../fcntl/fcntl.gemspec ext/fcntl`
     `git checkout ext/fcntl/depend`
+  when "thwait"
+    `rm -rf lib/thwait*`
+    `cp -rf ../thwait/lib/* lib`
+    `cp -rf ../thwait/thwait.gemspec lib`
   when "strscan"
     `rm -rf ext/strscan test/strscan`
     `cp -rf ../strscan/ext/strscan ext`
