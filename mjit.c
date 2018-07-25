@@ -741,34 +741,18 @@ make_pch(void)
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
-/* Compile C file to so. It returns 1 if it succeeds. */
+#ifdef _MSC_VER
+
+/* Compile C file to so. It returns 1 if it succeeds. (mswin) */
 static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = {
-#ifndef _MSC_VER
-        "-o",
-#endif
-        NULL, NULL,
-#ifdef __clang__
-        "-include-pch", NULL,
-#endif
-#ifdef _WIN32
-# ifdef _MSC_VER
-        "-link",
-# endif
-        libruby_pathflag,
-#endif
-        NULL,
-    };
+    const char *files[] = { NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
-#ifdef _MSC_VER
     char *p;
     int solen;
-#endif
 
-#ifdef _MSC_VER
     solen = strlen(so_file);
     files[0] = p = (char *)malloc(sizeof(char) * (rb_strlen_lit("-Fe") + solen + 1));
     if (p == NULL)
@@ -777,13 +761,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_str2(p, so_file, solen);
     *p = '\0';
     files[1] = c_file;
-#else
-# ifdef __clang__
-    files[4] = pch_file;
-# endif
-    files[2] = c_file;
-    files[1] = so_file;
-#endif
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
@@ -791,14 +768,51 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     exit_code = exec_process(cc_path, args);
     free(args);
-#ifdef _MSC_VER
     free((char *)files[0]);
-#endif
 
     if (exit_code != 0)
         verbose(2, "compile_c_to_so: compile error: %d", exit_code);
     return exit_code == 0;
 }
+
+#else
+
+/* Compile C file to so. It returns 1 if it succeeds. (non-mswin) */
+static int
+compile_c_to_so(const char *c_file, const char *so_file)
+{
+    int exit_code;
+    const char *files[] = {
+        "-o", NULL, NULL,
+# ifdef __clang__
+        "-include-pch", NULL,
+# endif
+# ifdef _WIN32
+        libruby_pathflag,
+# endif
+        NULL,
+    };
+    char **args;
+
+# ifdef __clang__
+    files[4] = pch_file;
+# endif
+    files[2] = c_file;
+    files[1] = so_file;
+    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    if (args == NULL)
+        return FALSE;
+
+    exit_code = exec_process(cc_path, args);
+    free(args);
+
+    if (exit_code != 0)
+        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
+    return exit_code == 0;
+}
+
+#endif
 
 static void *
 load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
