@@ -33,6 +33,7 @@
 # * https://github.com/ruby/shell
 # * https://github.com/ruby/forwardable
 # * https://github.com/ruby/thwait
+# * https://github.com/ruby/e2mmap
 #
 
 $repositories = {
@@ -68,7 +69,8 @@ $repositories = {
   tracer: 'ruby/tracer',
   shell: 'ruby/shell',
   forwardable: "ruby/forwardable",
-  thwait: "ruby/thwait"
+  thwait: "ruby/thwait",
+  e2mmap: "ruby/e2mmap"
 }
 
 def sync_default_gems(gem)
@@ -178,6 +180,10 @@ def sync_default_gems(gem)
     `rm -rf lib/thwait*`
     `cp -rf ../thwait/lib/* lib`
     `cp -rf ../thwait/thwait.gemspec lib`
+  when "e2mmap"
+    `rm -rf lib/e2mmap*`
+    `cp -rf ../e2mmap/lib/* lib`
+    `cp -rf ../e2mmap/e2mmap.gemspec lib`
   when "strscan"
     `rm -rf ext/strscan test/strscan`
     `cp -rf ../strscan/ext/strscan ext`
