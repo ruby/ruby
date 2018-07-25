@@ -109,7 +109,7 @@ require 'monitor'
 # 3. Create a logger for the specified file.
 #
 #      file = File.open('foo.log', File::WRONLY | File::APPEND)
-#      # To create new (and to remove old) logfile, add File::CREAT like:
+#      # To create new logfile, add File::CREAT like:
 #      # file = File.open('foo.log', File::WRONLY | File::APPEND | File::CREAT)
 #      logger = Logger.new(file)
 #
