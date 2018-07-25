@@ -15,16 +15,13 @@ CGI:: Support for the Common Gateway Interface protocol
 DEBUGGER__:: Debugging functionality for Ruby
 Delegator:: Provides three abilities to delegate method calls to an object
 DRb:: Distributed object system for Ruby
-E2MM:: Module for defining custom exceptions with specific messages
 English.rb:: Require 'English.rb' to reference global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 Find:: This module supports top-down traversal of a set of file paths
-Forwardable:: Provides delegation of specified methods to a designated object
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 MakeMakefile:: Module used to generate a Makefile for C extensions
 Monitor:: Provides an object or module to use safely by more than one thread
-Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Net::FTP:: Support for the File Transfer Protocol
 Net::HTTP:: HTTP client api for Ruby
 Net::IMAP:: Ruby client api for Internet Message Access Protocol
@@ -50,7 +47,6 @@ Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
 Singleton:: Implementation of the Singleton pattern for Ruby
 Tempfile:: A utility class for managing temporary files
-ThreadsWait:: Watches for termination of multiple threads
 Time:: Extends the Time class with methods for parsing and conversion
 Timeout:: Auto-terminate potentially long-running operations in Ruby
 tmpdir.rb:: Extends the Dir class to manage the OS temporary file path
@@ -82,10 +78,13 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Bundler:: Manage your Ruby application's gem dependencies
 CMath:: Provides Trigonometric and Transcendental functions for complex numbers
 CSV:: Provides an interface to read and write CSV files and data
+E2MM:: Module for defining custom exceptions with specific messages
 FileUtils:: Several file utility methods for copying, moving, removing, etc
+Forwardable:: Provides delegation of specified methods to a designated object
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 Logger:: Provides a simple logging utility for outputting messages
 Matrix:: Represents a mathematical matrix.
+Mutex_m:: Mixin to extend objects to be handled like a Mutex
 OpenStruct:: Class to build custom data structures, similar to a Hash
 Prime:: Prime numbers and factorization library
 RDoc:: Produces HTML and command-line documentation for Ruby
@@ -94,6 +93,7 @@ RSS:: Family of libraries that support various formats of XML "feeds"
 Scanf:: A Ruby implementation of the C function scanf(3)
 Shell:: An idiomatic Ruby interface for common UNIX shell commands
 Synchronizer:: A module that provides a two-phase lock with a counter
+ThreadsWait:: Watches for termination of multiple threads
 Tracer:: Outputs a source level execution trace of a Ruby program
 WEBrick:: An HTTP server toolkit for Ruby
 
