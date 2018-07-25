@@ -54,14 +54,10 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/delegate.rb]
   _unmaintained_
-[lib/e2mmap.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/erb.rb]
   Masatoshi SEKI (seki), Takashi Kokubun (k0kubun)
 [lib/find.rb]
   Kazuki Tsujimoto (ktsj)
-[lib/forwardable.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/getoptlong.rb]
   _unmaintained_
 [lib/ipaddr.rb]
@@ -70,8 +66,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/monitor.rb]
   Shugo Maeda (shugo)
-[lib/mutex_m.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/net/ftp.rb]
   Shugo Maeda (shugo)
 [lib/net/imap.rb]
@@ -125,8 +119,6 @@ Zachary Scott (zzak)
   _unmaintained_
 [lib/tmpdir.rb]
   _unmaintained_
-[lib/thwait.rb]
-  Keiju ISHITSUKA (keiju)
 [lib/time.rb]
   Tanaka Akira (akr)
 [lib/timeout.rb]
@@ -194,15 +186,21 @@ Zachary Scott (zzak)
 [lib/csv.rb]
   Kenta Murata (mrkn), Kouhei Sutou (kou)
   https://github.com/ruby/csv
+[lib/e2mmap.rb]
+  Keiju ISHITSUKA (keiju)
 [lib/fileutils.rb]
   _unmaintained_
   https://github.com/ruby/fileutils
+[lib/forwardable.rb]
+  Keiju ISHITSUKA (keiju)
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
 [lib/logger.rb]
   Naotoshi Seo (sonots)
 [lib/matrix.rb]
   Marc-Andre Lafortune (marcandre)
+[lib/mutex_m.rb]
+  Keiju ISHITSUKA (keiju)
 [lib/ostruct.rb]
   Marc-Andre Lafortune (marcandre)
 [lib/prime.rb]
@@ -220,6 +218,8 @@ Zachary Scott (zzak)
 [lib/shell.rb, lib/shell/*]
   Keiju ISHITSUKA (keiju)
 [lib/sync.rb]
+  Keiju ISHITSUKA (keiju)
+[lib/thwait.rb]
   Keiju ISHITSUKA (keiju)
 [lib/tracer.rb]
   Keiju ISHITSUKA (keiju)
