@@ -777,9 +777,9 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
 #else
 
-/* Compile C file to so. It returns 1 if it succeeds. (non-mswin) */
+/* Compile .c file to .o file. It returns 1 if it succeeds. (non-mswin) */
 static int
-compile_c_to_so(const char *c_file, const char *so_file)
+compile_c_to_o(const char *c_file, const char *o_file)
 {
     int exit_code;
     const char *files[] = {
@@ -787,18 +787,43 @@ compile_c_to_so(const char *c_file, const char *so_file)
 # ifdef __clang__
         "-include-pch", NULL,
 # endif
-# ifdef _WIN32
-        libruby_pathflag,
-# endif
-        NULL,
+        "-c", NULL
     };
     char **args;
 
+    files[1] = o_file;
+    files[2] = c_file;
 # ifdef __clang__
     files[4] = pch_file;
 # endif
-    files[2] = c_file;
+    args = form_args(5, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    if (args == NULL)
+        return FALSE;
+
+    exit_code = exec_process(cc_path, args);
+    free(args);
+
+    if (exit_code != 0)
+        verbose(2, "compile_c_to_o: compile error: %d", exit_code);
+    return exit_code == 0;
+}
+
+/* Compile .o file to .so file. It returns 1 if it succeeds. (non-mswin) */
+static int
+compile_o_to_so(const char *o_file, const char *so_file)
+{
+    int exit_code;
+    const char *files[] = {
+        "-o", NULL, NULL,
+# ifdef _WIN32
+        libruby_pathflag,
+# endif
+        NULL
+    };
+    char **args;
+
     files[1] = so_file;
+    files[2] = o_file;
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
@@ -808,7 +833,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     free(args);
 
     if (exit_code != 0)
-        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
+        verbose(2, "compile_o_to_so: compile error: %d", exit_code);
     return exit_code == 0;
 }
 
@@ -886,6 +911,10 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         O_BINARY|
 #endif
         O_WRONLY|O_EXCL|O_CREAT;
+#ifndef _MSC_VER
+    static const char o_ext[] = ".o";
+    char *o_file;
+#endif
 
     c_file_len = sprint_uniq_filename(c_file_buff, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     if (c_file_len >= (int)sizeof(c_file_buff)) {
@@ -894,9 +923,16 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         c_file_len = sprint_uniq_filename(c_file, c_file_len, unit->id, MJIT_TMP_PREFIX, c_ext);
     }
     ++c_file_len;
+
+#ifndef _MSC_VER
+    o_file = alloca(c_file_len - sizeof(c_ext) + sizeof(o_ext));
+    memcpy(o_file, c_file, c_file_len - sizeof(c_ext));
+    memcpy(&o_file[c_file_len - sizeof(c_ext)], o_ext, sizeof(o_ext));
+#endif
     so_file = alloca(c_file_len - sizeof(c_ext) + sizeof(so_ext));
     memcpy(so_file, c_file, c_file_len - sizeof(c_ext));
     memcpy(&so_file[c_file_len - sizeof(c_ext)], so_ext, sizeof(so_ext));
+
     sprintf(funcname, "_mjit%d", unit->id);
 
     fd = rb_cloexec_open(c_file, access_mode, 0600);
@@ -971,7 +1007,16 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     start_time = real_ms_time();
+#ifdef _MSC_VER
     success = compile_c_to_so(c_file, so_file);
+#else
+    /* splitting .c -> .o and .o -> .so to cache .o files in the future */
+    success = compile_c_to_o(c_file, o_file)
+        && compile_o_to_so(o_file, so_file);
+
+    if (!mjit_opts.save_temps)
+        remove_file(o_file);
+#endif
     end_time = real_ms_time();
 
     if (!mjit_opts.save_temps)
