@@ -34,6 +34,7 @@
 # * https://github.com/ruby/forwardable
 # * https://github.com/ruby/thwait
 # * https://github.com/ruby/e2mmap
+# * https://github.com/ruby/mutex_m
 #
 
 $repositories = {
@@ -70,7 +71,8 @@ $repositories = {
   shell: 'ruby/shell',
   forwardable: "ruby/forwardable",
   thwait: "ruby/thwait",
-  e2mmap: "ruby/e2mmap"
+  e2mmap: "ruby/e2mmap",
+  mutex_m: "ruby/mutex_m"
 }
 
 def sync_default_gems(gem)
@@ -196,7 +198,7 @@ def sync_default_gems(gem)
     `cp -rf ../sync/lib/* lib`
     `cp -rf ../sync/test/thread test`
     `cp -f ../sync/sync.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m"
     sync_lib gem
   else
   end
