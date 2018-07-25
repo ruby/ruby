@@ -31,6 +31,7 @@
 # * https://github.com/ruby/sync
 # * https://github.com/ruby/tracer
 # * https://github.com/ruby/shell
+# * https://github.com/ruby/forwardable
 #
 
 $repositories = {
@@ -64,7 +65,8 @@ $repositories = {
   irb: 'ruby/irb',
   sync: 'ruby/sync',
   tracer: 'ruby/tracer',
-  shell: 'ruby/shell'
+  shell: 'ruby/shell',
+  forwardable: "ruby/forwardable"
 }
 
 def sync_default_gems(gem)
@@ -202,16 +204,21 @@ def sync_default_gems(gem)
     `cp -rf ../tracer/lib/* lib`
     `cp -rf ../tracer/test/test_tracer.rb test`
     `cp -f ../tracer/tracer.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable"
     sync_lib gem
   else
   end
 end
 
 def sync_lib(repo)
-  `rm -rf lib/#{repo}.rb lib/#{repo}/* test/#{repo}`
+  `rm -rf lib/#{repo}.rb lib/#{repo}/* test/test_#{repo}.rb test/#{repo}`
   `cp -rf ../#{repo}/lib/* lib`
-  `cp -rf ../#{repo}/test/#{repo} test`
+  tests = if File.directory?("test/#{repo}")
+            "test/#{repo}"
+          else
+            "test/test_#{repo}.rb"
+          end
+  `cp -rf ../#{repo}/#{tests} test`
   gemspec = if File.directory?("lib/#{repo}")
               "lib/#{repo}/#{repo}.gemspec"
             else

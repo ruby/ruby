@@ -113,7 +113,8 @@ module Forwardable
   require 'forwardable/impl'
 
   # Version of +forwardable.rb+
-  FORWARDABLE_VERSION = "1.2.0"
+  VERSION = "1.2.0"
+  FORWARDABLE_VERSION = VERSION
 
   @debug = nil
   class << self
