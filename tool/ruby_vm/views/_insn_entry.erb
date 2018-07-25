@@ -30,7 +30,7 @@ INSN_ENTRY(<%= insn.name %>)
 % end
     DEBUG_ENTER_INSN(INSN_ATTR(name));
     ADD_PC(INSN_ATTR(width));
-% if insn.handles_frame?
+% if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
@@ -39,7 +39,7 @@ INSN_ENTRY(<%= insn.name %>)
 % end
 <%= render_c_expr insn.expr -%>
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
-% if insn.handles_frame?
+% if insn.handles_sp?
 %   insn.rets.reverse_each do |ret|
     PUSH(<%= insn.cast_to_VALUE ret %>);
 %   end
