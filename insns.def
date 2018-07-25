@@ -43,7 +43,7 @@
        * sp_inc: Used to dynamically calculate sp increase in
          `insn_stack_increase`.
 
-       * handles_frame: If it is true, VM deals with sp in the insn.
+       * handles_sp: If it is true, VM deals with sp in the insn.
 
    - Attributes can access operands, but not stack (push/pop) variables.
 
@@ -687,7 +687,7 @@ defineclass
 (ID id, ISEQ class_iseq, rb_num_t flags)
 (VALUE cbase, VALUE super)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
 
@@ -714,7 +714,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -768,7 +768,7 @@ opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = -ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -783,7 +783,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
@@ -801,7 +801,7 @@ invokeblock
 (CALL_INFO ci)
 (...)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = 1 - ci->orig_argc;
 {
     struct rb_calling_info calling;
@@ -828,7 +828,7 @@ leave
 ()
 (VALUE val)
 (VALUE val)
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 {
     if (OPT_CHECKED_RUN) {
 	const VALUE *const bp = vm_base_ptr(reg_cfp);
@@ -1376,7 +1376,7 @@ opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
 ()
-// attr bool handles_frame = true;
+// attr bool handles_sp = true;
 {
     reg_cfp = (funcptr)(ec, reg_cfp);
 
