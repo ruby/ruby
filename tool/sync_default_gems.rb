@@ -203,11 +203,6 @@ def sync_default_gems(gem)
     `cp -rf ../ipaddr/lib/* lib`
     `cp -rf ../ipaddr/test/test_ipaddr.rb test`
     `cp -f ../ipaddr/ipaddr.gemspec lib`
-  when "logger"
-    `rm -rf lib/logger.rb test/logger`
-    `cp -rf ../logger/lib/* lib`
-    `cp -rf ../logger/test/logger test`
-    `cp -f ../logger/logger.gemspec lib`
   when "prime"
     `rm -rf lib/prime.rb test/test_prime.rb`
     `cp -rf ../prime/lib/* lib`
@@ -228,7 +223,7 @@ def sync_default_gems(gem)
     `cp -rf ../tracer/lib/* lib`
     `cp -rf ../tracer/test/test_tracer.rb test`
     `cp -f ../tracer/tracer.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger"
     sync_lib gem
   else
   end
@@ -238,7 +233,12 @@ def sync_lib(repo)
   `rm -rf lib/#{repo}.rb lib/#{repo}/* test/#{repo}`
   `cp -rf ../#{repo}/lib/* lib`
   `cp -rf ../#{repo}/test/#{repo} test`
-  `cp -f ../#{repo}/#{repo}.gemspec lib/#{repo}`
+  gemspec = if File.directory?("lib/#{repo}")
+              "lib/#{repo}/#{repo}.gemspec"
+            else
+              "lib/#{repo}.gemspec"
+            end
+  `cp -f ../#{repo}/#{repo}.gemspec #{gemspec}`
 end
 
 if ARGV[0]
