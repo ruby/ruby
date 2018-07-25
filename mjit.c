@@ -327,15 +327,18 @@ form_args(int num, ...)
     va_list argp;
     size_t len, n;
     int i;
-    char **args, **res;
+    char **args, **res, **tmp;
 
     va_start(argp, num);
     res = NULL;
     for (i = len = 0; i < num; i++) {
         args = va_arg(argp, char **);
         n = args_len(args);
-        if ((res = (char **)realloc(res, sizeof(char *) * (len + n + 1))) == NULL)
+        if ((tmp = (char **)realloc(res, sizeof(char *) * (len + n + 1))) == NULL) {
+            free(res);
             return NULL;
+        }
+        res = tmp;
         MEMCPY(res + len, args, char *, n + 1);
         len += n;
     }
