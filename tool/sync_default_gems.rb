@@ -172,11 +172,6 @@ def sync_default_gems(gem)
     `cp -rf ../fcntl/ext/fcntl ext`
     `cp -f ../fcntl/fcntl.gemspec ext/fcntl`
     `git checkout ext/fcntl/depend`
-  when "cmath"
-    `rm -rf lib/cmath.rb test/test_cmath.rb`
-    `cp -rf ../cmath/lib/* lib`
-    `cp -rf ../cmath/test/test_cmath.rb test`
-    `cp -f ../cmath/cmath.gemspec lib`
   when "strscan"
     `rm -rf ext/strscan test/strscan`
     `cp -rf ../strscan/ext/strscan ext`
@@ -184,27 +179,12 @@ def sync_default_gems(gem)
     `cp -f ../strscan/strscan.gemspec ext/strscan`
     `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
     `git checkout ext/strscan/depend`
-  when "ipaddr"
-    `rm -rf lib/ipaddr.rb test/test_ipaddr.rb`
-    `cp -rf ../ipaddr/lib/* lib`
-    `cp -rf ../ipaddr/test/test_ipaddr.rb test`
-    `cp -f ../ipaddr/ipaddr.gemspec lib`
-  when "prime"
-    `rm -rf lib/prime.rb test/test_prime.rb`
-    `cp -rf ../prime/lib/* lib`
-    `cp -rf ../prime/test/test_prime.rb test`
-    `cp -f ../prime/prime.gemspec lib`
   when "sync"
     `rm -rf lib/sync.rb test/thread/test_sync.rb`
     `cp -rf ../sync/lib/* lib`
     `cp -rf ../sync/test/thread test`
     `cp -f ../sync/sync.gemspec lib`
-  when "tracer"
-    `rm -rf lib/tracer.rb test/test_tracer.rb`
-    `cp -rf ../tracer/lib/* lib`
-    `cp -rf ../tracer/test/test_tracer.rb test`
-    `cp -f ../tracer/tracer.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath"
     sync_lib gem
   else
   end
