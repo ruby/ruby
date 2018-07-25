@@ -35,6 +35,9 @@
 #   # this obj can be handled like Mutex
 #
 module Mutex_m
+
+  VERSION = "0.1.0"
+
   def Mutex_m.define_aliases(cl) # :nodoc:
     cl.module_eval %q{
       alias locked? mu_locked?
