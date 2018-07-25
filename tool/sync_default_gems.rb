@@ -107,11 +107,6 @@ def sync_default_gems(gem)
     `rm -f ext/psych/yaml/LICENSE`
     `cp ../psych/psych.gemspec ext/psych/`
     `git checkout ext/psych/depend`
-  when "fileutils"
-    `rm -rf lib/fileutils.rb test/fileutils lib/fileutils.gemspec`
-    `cp -rf ../fileutils/lib/* lib`
-    `cp -rf ../fileutils/test/fileutils test`
-    `cp -f ../fileutils/fileutils.gemspec lib`
   when "fiddle"
     `rm -rf ext/fiddle test/fiddle`
     `cp -rf ../fiddle/ext/fiddle ext`
@@ -133,12 +128,6 @@ def sync_default_gems(gem)
     `cp -rf ../io-console/lib/console ext/io/console/lib`
     `cp -f ../io-console/io-console.gemspec ext/io/console`
     `git checkout ext/io/console/depend`
-  when "webrick"
-    `rm -rf lib/webrick* test/webrick`
-    `cp -rf ../webrick/lib/webrick* lib`
-    `cp -rf ../webrick/test/webrick test`
-    `cp -f ../webrick/webrick.gemspec lib/webrick`
-    `git checkout lib/webrick/.document`
   when "dbm"
     `rm -rf ext/dbm test/dbm`
     `cp -rf ../dbm/ext/dbm ext`
@@ -181,11 +170,6 @@ def sync_default_gems(gem)
     `cp -rf ../fcntl/ext/fcntl ext`
     `cp -f ../fcntl/fcntl.gemspec ext/fcntl`
     `git checkout ext/fcntl/depend`
-  when "scanf"
-    `rm -rf lib/scanf.rb test/scanf`
-    `cp -rf ../scanf/lib/* lib`
-    `cp -rf ../scanf/test/scanf test`
-    `cp -f ../scanf/scanf.gemspec lib`
   when "cmath"
     `rm -rf lib/cmath.rb test/test_cmath.rb`
     `cp -rf ../cmath/lib/* lib`
@@ -208,11 +192,6 @@ def sync_default_gems(gem)
     `cp -rf ../prime/lib/* lib`
     `cp -rf ../prime/test/test_prime.rb test`
     `cp -f ../prime/prime.gemspec lib`
-  when "ostruct"
-    `rm -rf lib/ostruct.rb test/ostruct`
-    `cp -rf ../ostruct/lib/* lib`
-    `cp -rf ../ostruct/test/ostruct test`
-    `cp -f ../ostruct/ostruct.gemspec lib`
   when "sync"
     `rm -rf lib/sync.rb test/thread/test_sync.rb`
     `cp -rf ../sync/lib/* lib`
@@ -223,7 +202,7 @@ def sync_default_gems(gem)
     `cp -rf ../tracer/lib/* lib`
     `cp -rf ../tracer/test/test_tracer.rb test`
     `cp -f ../tracer/tracer.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils"
     sync_lib gem
   else
   end
