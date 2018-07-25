@@ -3802,6 +3802,7 @@ __END__
   end
 
   def test_select_leak
+    skip 'MJIT uses too much memory' if RubyVM::MJIT.enabled?
     assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 60)
       r, w = IO.pipe
       rset = [r]
