@@ -1477,6 +1477,7 @@ after_exec(void)
     after_exec_non_async_signal_safe();
 }
 
+#if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
 #define before_fork_ruby() before_exec()
 static void
 after_fork_ruby(void)
@@ -1484,6 +1485,7 @@ after_fork_ruby(void)
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     after_exec();
 }
+#endif
 
 #include "dln.h"
 
