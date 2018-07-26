@@ -24,7 +24,7 @@ module WEBrick
     #
     #   config = { :Realm => 'BasicAuth example realm' }
     #
-    #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file'
+    #   htpasswd = WEBrick::HTTPAuth::Htpasswd.new 'my_password_file', password_hash: :bcrypt
     #   htpasswd.set_passwd config[:Realm], 'username', 'password'
     #   htpasswd.flush
     #
@@ -81,7 +81,15 @@ module WEBrick
           error("%s: the user is not allowed.", userid)
           challenge(req, res)
         end
-        if password.crypt(encpass) != encpass
+
+        case encpass
+        when /\A\$2[aby]\$/
+          password_matches = BCrypt::Password.new(encpass.sub(/\A\$2[aby]\$/, '$2a$')) == password
+        else
+          password_matches = password.crypt(encpass) == encpass
+        end
+
+        unless password_matches
           error("%s: password unmatch.", userid)
           challenge(req, res)
         end
