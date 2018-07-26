@@ -121,7 +121,7 @@ class TestWEBrickHTTPAuth < Test::Unit::TestCase
     define_method(:"test_basic_auth_bad_username_htpasswd_#{hash_algo}") do
       log_tester = lambda {|log, access_log|
         assert_equal(2, log.length)
-        assert_match(/ERROR Basic WEBrick's realm: foo\\ebar: the user is not allowed./, log[0])
+        assert_match(/ERROR Basic WEBrick's realm: foo\\ebar: the user is not allowed\./, log[0])
         assert_match(/ERROR WEBrick::HTTPStatus::Unauthorized/, log[1])
       }
       TestWEBrick.start_httpserver({}, log_tester) {|server, addr, port, log|
