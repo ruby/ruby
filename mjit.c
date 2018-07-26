@@ -815,9 +815,9 @@ compile_c_to_o(const char *c_file, const char *o_file)
     return exit_code == 0;
 }
 
-/* Compile .o file to .so file. It returns 1 if it succeeds. (non-mswin) */
+/* Link .o file to .so file. It returns 1 if it succeeds. (non-mswin) */
 static int
-compile_o_to_so(const char *o_file, const char *so_file)
+link_o_to_so(const char *o_file, const char *so_file)
 {
     int exit_code;
     const char *files[] = {
@@ -840,7 +840,7 @@ compile_o_to_so(const char *o_file, const char *so_file)
     free(args);
 
     if (exit_code != 0)
-        verbose(2, "compile_o_to_so: compile error: %d", exit_code);
+        verbose(2, "link_o_to_so: link error: %d", exit_code);
     return exit_code == 0;
 }
 
@@ -1018,8 +1018,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     success = compile_c_to_so(c_file, so_file);
 #else
     /* splitting .c -> .o and .o -> .so to cache .o files in the future */
-    success = compile_c_to_o(c_file, o_file)
-        && compile_o_to_so(o_file, so_file);
+    success = compile_c_to_o(c_file, o_file) && link_o_to_so(o_file, so_file);
 
     if (!mjit_opts.save_temps)
         remove_file(o_file);
