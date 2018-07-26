@@ -1378,12 +1378,24 @@ typedef struct {
     ruby_glob_errfunc *error;
 } ruby_glob_funcs_t;
 
-/* System call with warning */
-static int
-do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+static const char *
+at_subpath(int fd, size_t baselen, const char *path)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, 0);
+    if (fd != (int)AT_FDCWD && baselen > 0) {
+	path += baselen;
+	if (*path == '/') ++path;
+    }
+#endif
+    return *path ? path : ".";
+}
+
+/* System call with warning */
+static int
+do_stat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+{
+#if USE_OPENDIR_AT
+    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, 0);
 #else
     int ret = STAT(path, pst);
 #endif
@@ -1395,10 +1407,10 @@ do_stat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 
 #if defined HAVE_LSTAT || defined lstat || USE_OPENDIR_AT
 static int
-do_lstat(int fd, const char *path, struct stat *pst, int flags, rb_encoding *enc)
+do_lstat(int fd, size_t baselen, const char *path, struct stat *pst, int flags, rb_encoding *enc)
 {
 #if USE_OPENDIR_AT
-    int ret = fstatat(fd, path, pst, AT_SYMLINK_NOFOLLOW);
+    int ret = fstatat(fd, at_subpath(fd, baselen, path), pst, AT_SYMLINK_NOFOLLOW);
 #else
     int ret = lstat(path, pst);
 #endif
@@ -1488,7 +1500,7 @@ opendir_at(int basefd, const char *path)
 }
 
 static DIR *
-do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
+do_opendir(const int basefd, size_t baselen, const char *path, int flags, rb_encoding *enc,
 	   ruby_glob_errfunc *errfunc, VALUE arg, int *status)
 {
     DIR *dirp;
@@ -1500,7 +1512,7 @@ do_opendir(const int basefd, const char *path, int flags, rb_encoding *enc,
 	path = RSTRING_PTR(tmp);
     }
 #endif
-    dirp = opendir_at(basefd, path);
+    dirp = opendir_at(basefd, at_subpath(basefd, baselen, path));
     if (!dirp) {
 	int e = errno;
 
@@ -2010,9 +2022,6 @@ glob_helper(
     int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
     int escape = !(flags & FNM_NOESCAPE);
     size_t pathlen = baselen + namelen;
-    const char *base = path;
-
-    if (fd != AT_FDCWD && *(base += baselen) == '/') base++;
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
@@ -2045,9 +2054,9 @@ glob_helper(
 	}
     }
 
-    if (*base) {
+    if (*path) {
 	if (match_all && pathtype == path_unknown) {
-	    if (do_lstat(fd, base, &st, flags, enc) == 0) {
+	    if (do_lstat(fd, baselen, path, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -2055,7 +2064,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && (pathtype == path_unknown || pathtype == path_symlink)) {
-	    if (do_stat(fd, base, &st, flags, enc) == 0) {
+	    if (do_stat(fd, baselen, path, &st, flags, enc) == 0) {
 		pathtype = IFTODT(st.st_mode);
 	    }
 	    else {
@@ -2091,14 +2100,14 @@ glob_helper(
 	if (cur + 1 == end && (*cur)->type <= ALPHA) {
 	    plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
 	    if (!plainname) return -1;
-	    dirp = do_opendir(fd, plainname, flags, enc, funcs->error, arg, &status);
+	    dirp = do_opendir(fd, basename, plainname, flags, enc, funcs->error, arg, &status);
 	    GLOB_FREE(plainname);
 	}
 	else
 # else
 	    ;
 # endif
-	dirp = do_opendir(fd, *base ? base : ".", flags, enc, funcs->error, arg, &status);
+	dirp = do_opendir(fd, baselen, path, flags, enc, funcs->error, arg, &status);
 	if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
 	    if ((magical < 2) && !recursive && (errno == EACCES)) {
@@ -2108,7 +2117,7 @@ glob_helper(
 # endif
 	    return status;
 	}
-	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *base ? base : "."));
+	IF_NORMALIZE_UTF8PATH(norm_p = need_normalization(dirp, *path ? path : "."));
 
 # if NORMALIZE_UTF8PATH
 	if (!(norm_p || magical || recursive)) {
@@ -2167,7 +2176,7 @@ glob_helper(
 	    if (recursive && dotfile < ((flags & FNM_DOTMATCH) ? 2 : 1) &&
 		new_pathtype == path_unknown) {
 		/* RECURSIVE never match dot files unless FNM_DOTMATCH is set */
-		if (do_lstat(fd, buf, &st, flags, enc) == 0)
+		if (do_lstat(fd, baselen, buf, &st, flags, enc) == 0)
 		    new_pathtype = IFTODT(st.st_mode);
 		else
 		    new_pathtype = path_noent;
