@@ -529,7 +529,7 @@ runtime_libruby_path(void)
     VALUE fname, path;
     const void* addr = (void *)(VALUE)expand_include_path;
 
-    if (!dladdr(addr, &dli)) {
+    if (!dladdr((void *)addr, &dli)) {
 	return rb_str_new(0, 0);
     }
 #ifdef __linux__
