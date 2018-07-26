@@ -381,7 +381,14 @@ start_process(const char *path, char *const *argv)
         }
         dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
+#ifdef __GNUC__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
         if ((pid = vfork()) == 0) {
+#ifdef __GNUC__
+# pragma GCC diagnostic pop
+#endif
             umask(0077);
             if (mjit_opts.verbose == 0) {
                 /* CC can be started in a thread using a file which has been
