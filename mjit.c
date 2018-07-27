@@ -162,6 +162,10 @@ struct rb_mjit_unit {
     /* Dlopen handle of the loaded object file.  */
     void *handle;
     const rb_iseq_t *iseq;
+#ifndef _MSC_VER
+    /* This is lazily deleted so that it can be used again to create a large so file. */
+    char *o_file;
+#endif
 #ifdef _WIN32
     /* DLL cannot be removed while loaded on Windows */
     char *so_file;
@@ -522,12 +526,24 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
 
+/* Lazily delete .o and/or .so files. */
 static void
-clean_so_file(struct rb_mjit_unit *unit)
+clean_object_files(struct rb_mjit_unit *unit)
 {
+#ifndef _MSC_VER
+    if (unit->o_file) {
+        char *o_file = unit->o_file;
+
+        unit->o_file = NULL;
+        remove_file(o_file);
+        free(o_file);
+    }
+#endif
+
 #ifdef _WIN32
-    char *so_file = unit->so_file;
-    if (so_file) {
+    if (unit->so_file) {
+        char *so_file = unit->so_file;
+
         unit->so_file = NULL;
         remove_file(so_file);
         free(so_file);
@@ -538,8 +554,9 @@ clean_so_file(struct rb_mjit_unit *unit)
 /* This is called in the following situations:
    1) On dequeue or `unload_units()`, associated ISeq is already GCed.
    2) The unit is not called often and unloaded by `unload_units()`.
+   3) Freeing lists on `mjit_finish()`.
 
-   `jit_func` state for 1 can be ignored because ISeq GC means it'll never be used.
+   `jit_func` value does not matter for 1 and 3 since the unit won't be used anymore.
    For the situation 2, this sets the ISeq's JIT state to NOT_COMPILED_JIT_ISEQ_FUNC
    to prevent the situation that the same methods are continously compiled.  */
 static void
@@ -549,7 +566,7 @@ free_unit(struct rb_mjit_unit *unit)
         unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
-    clean_so_file(unit);
+    clean_object_files(unit);
     xfree(unit);
 }
 
@@ -1024,11 +1041,13 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #ifdef _MSC_VER
     success = compile_c_to_so(c_file, so_file);
 #else
-    /* splitting .c -> .o and .o -> .so to cache .o files in the future */
-    success = compile_c_to_o(c_file, o_file) && link_o_to_so(o_file, so_file);
+    /* splitting .c -> .o step and .o -> .so step, to cache .o files in the future */
+    if (success = compile_c_to_o(c_file, o_file)) {
+        success = link_o_to_so(o_file, so_file);
 
-    if (!mjit_opts.save_temps)
-        remove_file(o_file);
+        if (!mjit_opts.save_temps)
+            unit->o_file = strdup(o_file); /* lazily delete on `clean_object_files()` */
+    }
 #endif
     end_time = real_ms_time();
 
@@ -1042,7 +1061,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     func = load_func_from_so(so_file, funcname, unit);
     if (!mjit_opts.save_temps) {
 #ifdef _WIN32
-        unit->so_file = strdup(so_file);
+        unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
 #else
         remove_file(so_file);
 #endif
