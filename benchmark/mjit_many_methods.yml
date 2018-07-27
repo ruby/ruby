@@ -1,0 +1,60 @@
+prelude: |
+  (1..50).each do |i|
+    eval("def call%02d() nil end" % i)
+  end
+
+# Not using eval or creating a wrapper by it to mitigate overhead
+benchmark:
+  mjit_many_methods: |
+    call01
+    call02
+    call03
+    call04
+    call05
+    call06
+    call07
+    call08
+    call09
+    call10
+    call11
+    call12
+    call13
+    call14
+    call15
+    call16
+    call17
+    call18
+    call19
+    call20
+    call21
+    call22
+    call23
+    call24
+    call25
+    call26
+    call27
+    call28
+    call29
+    call30
+    call31
+    call32
+    call33
+    call34
+    call35
+    call36
+    call37
+    call38
+    call39
+    call40
+    call41
+    call42
+    call43
+    call44
+    call45
+    call46
+    call47
+    call48
+    call49
+    call50
+
+loop_count: 4000000

@@ -808,7 +808,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     return exit_code == 0;
 }
 
-#else
+#else /* _MSC_VER */
 
 /* Compile .c file to .o file. It returns 1 if it succeeds. (non-mswin) */
 static int
@@ -870,7 +870,21 @@ link_o_to_so(const char *o_file, const char *so_file)
     return exit_code == 0;
 }
 
-#endif
+/* Link all cached .o files and build a .so file. Reload all JIT func from it. This
+   allows to avoid JIT code fragmentation and improve performance to call JIT-ed code.  */
+static void
+compact_all_jit_code(void)
+{
+    double start_time, end_time;
+    start_time = real_ms_time();
+
+    ;
+
+    end_time = real_ms_time();
+    verbose(1, "JIT compaction (%.1fms): Compacted all JIT-ed code for performance", end_time - start_time);
+}
+
+#endif /* _MSC_VER */
 
 static void *
 load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
@@ -1127,6 +1141,13 @@ worker(void)
             }
             remove_from_list(node, &unit_queue);
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
+
+#ifndef _MSC_VER
+            /* Combine .o files to one .so and reload all jit_func to improve memory locality */
+            if (unit_queue.length == 0 && active_units.length > 1) {
+                compact_all_jit_code();
+            }
+#endif
         }
     }
 
