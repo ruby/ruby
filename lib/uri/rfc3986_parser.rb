@@ -15,7 +15,7 @@ module URI
       begin
         uri = uri.to_str
       rescue NoMethodError
-        raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+        raise InvalidURIError, "bad URI(is not URI?): #{uri.inspect}"
       end
       uri.ascii_only? or
         raise InvalidURIError, "URI must be ascii only #{uri.dump}"
@@ -64,7 +64,7 @@ module URI
           m["fragment".freeze]
         ]
       else
-        raise InvalidURIError, "bad URI(is not URI?): #{uri}"
+        raise InvalidURIError, "bad URI(is not URI?): #{uri.inspect}"
       end
     end
 
