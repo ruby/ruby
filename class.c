@@ -852,7 +852,7 @@ static int include_modules_at(const VALUE klass, VALUE c, VALUE module, int sear
 static void
 ensure_includable(VALUE klass, VALUE module)
 {
-    rb_frozen_class_p(klass);
+    rb_class_modify_check(klass);
     Check_Type(module, T_MODULE);
     if (!NIL_P(rb_refinement_module_get_refined_class(module))) {
 	rb_raise(rb_eArgError, "refinement module is not allowed");

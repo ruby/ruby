@@ -539,7 +539,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 	}
     }
 
-    rb_frozen_class_p(klass);
+    rb_class_modify_check(klass);
 
     if (FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
 	VALUE refined_class = rb_refinement_module_get_refined_class(klass);
@@ -985,7 +985,7 @@ remove_method(VALUE klass, ID mid)
     VALUE self = klass;
 
     klass = RCLASS_ORIGIN(klass);
-    rb_frozen_class_p(klass);
+    rb_class_modify_check(klass);
     if (mid == object_id || mid == id__send__ || mid == idInitialize) {
 	rb_warn("removing `%s' may cause serious problems", rb_id2name(mid));
     }
@@ -1198,7 +1198,7 @@ rb_undef(VALUE klass, ID id)
     if (NIL_P(klass)) {
 	rb_raise(rb_eTypeError, "no class to undef method");
     }
-    rb_frozen_class_p(klass);
+    rb_class_modify_check(klass);
     if (id == object_id || id == id__send__ || id == idInitialize) {
 	rb_warn("undefining `%s' may cause serious problems", rb_id2name(id));
     }
@@ -1555,7 +1555,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 	rb_raise(rb_eTypeError, "no class to make alias");
     }
 
-    rb_frozen_class_p(klass);
+    rb_class_modify_check(klass);
 
   again:
     orig_me = search_method(klass, original_name, &defined_class);
