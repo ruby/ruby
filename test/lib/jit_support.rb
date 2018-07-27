@@ -28,8 +28,11 @@ module JITSupport
   end
 
   module_function
-  def eval_with_jit(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, timeout: JIT_TIMEOUT)
-    args = ['--disable-gems', '--jit-wait', "--jit-verbose=#{verbose}", "--jit-min-calls=#{min_calls}"]
+  def eval_with_jit(env = nil, script, verbose: 0, min_calls: 5, save_temps: false, max_cache: 1000, timeout: JIT_TIMEOUT)
+    args = [
+      '--disable-gems', '--jit-wait', "--jit-verbose=#{verbose}",
+      "--jit-min-calls=#{min_calls}", "--jit-max-cache=#{max_cache}",
+    ]
     args << '--jit-save-temps' if save_temps
     args << '-e' << script
     args.unshift(env) if env

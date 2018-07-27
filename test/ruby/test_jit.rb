@@ -529,6 +529,29 @@ class TestJIT < Test::Unit::TestCase
     assert_match(/^Successful MJIT finish$/, err)
   end
 
+  def test_unload_units
+    # MIN_CACHE_SIZE is 10
+    out, err = eval_with_jit("#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
+    begin;
+      10.times do |i|
+        eval(<<-EOS)
+          def mjit#{i}
+            print #{i}
+          end
+          mjit#{i}
+        EOS
+      end
+    end;
+    assert_equal('0123456789', out)
+    errs = err.lines
+    assert_match(/\A#{JIT_SUCCESS_PREFIX}: block in <main>@-e:/, errs[0])
+    9.times do |i|
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i + 1])
+    end
+    assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10])
+    assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit9@\(eval\):/, errs[11])
+  end
+
   def test_local_stack_on_exception
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2)
     begin;
