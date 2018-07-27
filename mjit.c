@@ -562,8 +562,10 @@ clean_object_files(struct rb_mjit_unit *unit)
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
-    if (unit->iseq) /* ISeq is not GCed */
+    if (unit->iseq) { /* ISeq is not GCed */
         unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        unit->iseq->body->jit_unit = NULL;
+    }
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     clean_object_files(unit);
