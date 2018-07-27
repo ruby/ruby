@@ -539,7 +539,7 @@ static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
-        unit->iseq->body->jit_func = 0;
+        unit->iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     clean_so_file(unit);
