@@ -239,8 +239,7 @@ setclassvariable
 }
 
 /* Get constant variable id. If klass is Qnil, constants
-   are searched in the current scope. If klass is Qfalse, constants
-   are searched as top level constants. Otherwise, get constant under klass
+   are searched in the current scope. Otherwise, get constant under klass
    class or module.
  */
 DEFINE_INSN
@@ -252,10 +251,7 @@ getconstant
     val = vm_get_ev_const(ec, klass, id, 0);
 }
 
-/* Set constant variable id. If klass is Qfalse, constant
-   is able to access in this scope. if klass is Qnil, set
-   top level constant. otherwise, set constant under klass
-   class or module.
+/* Set constant variable id under cbase class or module.
  */
 DEFINE_INSN
 setconstant
