@@ -236,6 +236,7 @@ struct parser_params {
     VALUE ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
+    VALUE case_labels;
     VALUE compile_option;
 
     VALUE debug_buffer;
@@ -475,6 +476,9 @@ static NODE *reg_named_capture_assign(struct parser_params* p, VALUE regexp, con
 
 static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
+
+static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
+
 #define get_id(id) (id)
 #define get_value(val) (val)
 #define get_num(num) (num)
@@ -864,6 +868,7 @@ static ID id_warn, id_warning, id_gets, id_assoc, id_or;
 # define WARN_S(s) STR_NEW2(s)
 # define WARN_I(i) INT2NUM(i)
 # define WARN_ID(i) rb_id2str(i)
+# define WARN_IVAL(i) i
 # define PRIsWARN "s"
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
@@ -886,6 +891,7 @@ PRINTF_ARGS(static void ripper_compile_error(struct parser_params*, const char *
 # define WARN_S(s) s
 # define WARN_I(i) i
 # define WARN_ID(i) rb_id2name(i)
+# define WARN_IVAL(i) NUM2INT(i)
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) WARN_ARGS_L(p->ruby_sourceline,fmt,n)
 # define WARN_ARGS_L(l,fmt,n) p->ruby_sourcefile, (l), (fmt)
@@ -995,7 +1001,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
-%type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
+%type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
 %type <node> args call_args opt_call_args
 %type <node> paren_args opt_paren_args args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
@@ -2698,21 +2704,35 @@ primary		: literal
 		    /*% ripper: until!($2, $3) %*/
 		    }
 		| k_case expr_value opt_terms
+		    {
+			$<val>$ = p->case_labels;
+			p->case_labels = Qnil;
+		    }
 		  case_body
 		  k_end
 		    {
+			if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
+			p->case_labels = $<val>4;
 		    /*%%%*/
-			$$ = NEW_CASE($2, $4, &@$);
+			$$ = NEW_CASE($2, $5, &@$);
 			fixpos($$, $2);
 		    /*% %*/
-		    /*% ripper: case!($2, $4) %*/
+		    /*% ripper: case!($2, $5) %*/
 		    }
-		| k_case opt_terms case_body k_end
+		| k_case opt_terms
 		    {
+			$<val>$ = p->case_labels;
+			p->case_labels = 0;
+		    }
+		  case_body
+		  k_end
+		    {
+			if (RTEST(p->case_labels)) rb_hash_clear(p->case_labels);
+			p->case_labels = $<val>3;
 		    /*%%%*/
-			$$ = NEW_CASE2($3, &@$);
+			$$ = NEW_CASE2($4, &@$);
 		    /*% %*/
-		    /*% ripper: case!(Qnil, $3) %*/
+		    /*% ripper: case!(Qnil, $4) %*/
 		    }
 		| k_case expr_value opt_terms
 		  p_case_body
@@ -3583,7 +3603,39 @@ do_body 	: {$<vars>$ = dyna_push(p);}
 		    }
 		;
 
-case_body	: k_when args then
+case_args	: arg_value
+		    {
+		    /*%%%*/
+			check_literal_when(p, $1, &@1);
+			$$ = NEW_LIST($1, &@$);
+		    /*% %*/
+		    /*% ripper: args_add!(args_new!, $1) %*/
+		    }
+		| tSTAR arg_value
+		    {
+		    /*%%%*/
+			$$ = NEW_SPLAT($2, &@$);
+		    /*% %*/
+		    /*% ripper: args_add_star!(args_new!, $2) %*/
+		    }
+		| case_args ',' arg_value
+		    {
+		    /*%%%*/
+			check_literal_when(p, $3, &@3);
+			$$ = last_arg_append(p, $1, $3, &@$);
+		    /*% %*/
+		    /*% ripper: args_add!($1, $3) %*/
+		    }
+		| case_args ',' tSTAR arg_value
+		    {
+		    /*%%%*/
+			$$ = rest_arg_append(p, $1, $4, &@$);
+		    /*% %*/
+		    /*% ripper: args_add_star!($1, $4) %*/
+		    }
+		;
+
+case_body	: k_when case_args then
 		  compstmt
 		  cases
 		    {
@@ -9780,6 +9832,33 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return node;
 }
 
+static void
+check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
+{
+    VALUE lit;
+
+    if (!arg || !p->case_labels) return;
+
+    lit = rb_node_case_when_optimizable_literal(arg);
+    if (lit == Qundef) return;
+    if (nd_type(arg) == NODE_STR) {
+	arg->nd_lit = add_mark_object(p, lit);
+    }
+
+    if (NIL_P(p->case_labels)) {
+	p->case_labels = rb_obj_hide(rb_hash_new());
+    }
+    else {
+	VALUE line = rb_hash_lookup(p->case_labels, lit);
+	if (!NIL_P(line)) {
+	    rb_warning1("duplicated `when' clause with line %d is ignored",
+			WARN_IVAL(line));
+	    return;
+	}
+    }
+    rb_hash_aset(p->case_labels, lit, INT2NUM(p->ruby_sourceline));
+}
+
 #else  /* !RIPPER */
 static int
 id_is_var(struct parser_params *p, ID id)
@@ -11853,6 +11932,7 @@ parser_mark(void *ptr)
     rb_gc_mark(p->ruby_sourcefile_string);
     rb_gc_mark((VALUE)p->lex.strterm);
     rb_gc_mark((VALUE)p->ast);
+    rb_gc_mark(p->case_labels);
 #ifndef RIPPER
     rb_gc_mark(p->debug_lines);
     rb_gc_mark(p->compile_option);

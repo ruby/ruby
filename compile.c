@@ -4073,8 +4073,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
     return len;
 }
 
-static VALUE
-case_when_optimizable_literal(const NODE *const node)
+VALUE
+rb_node_case_when_optimizable_literal(const NODE *const node)
 {
     switch (nd_type(node)) {
       case NODE_LIT: {
@@ -4107,20 +4107,13 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 {
     while (vals) {
 	const NODE *val = vals->nd_head;
-	VALUE lit = case_when_optimizable_literal(val);
+	VALUE lit = rb_node_case_when_optimizable_literal(val);
 
 	if (lit == Qundef) {
 	    only_special_literals = 0;
 	}
-	else {
-	    if (rb_hash_lookup(literals, lit) != Qnil) {
-		VALUE file = rb_iseq_path(iseq);
-		rb_compile_warning(RSTRING_PTR(file), nd_line(val),
-				   "duplicated when clause is ignored");
-	    }
-	    else {
-		rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
-	    }
+	else if (NIL_P(rb_hash_lookup(literals, lit))) {
+	    rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
 	}
 
 	ADD_INSN(cond_seq, nd_line(val), dup); /* dup target */

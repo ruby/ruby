@@ -384,6 +384,8 @@ typedef struct RNode {
 #define NODE_SPECIAL_NO_NAME_REST     ((NODE *)-1)
 #define NODE_NAMED_REST_P(node) ((node) != NODE_SPECIAL_NO_NAME_REST)
 
+VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 typedef struct node_buffer_struct node_buffer_t;
