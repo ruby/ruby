@@ -535,11 +535,18 @@ clean_so_file(struct rb_mjit_unit *unit)
 #endif
 }
 
+/* This is called in the following situations:
+   1) On dequeue or `unload_units()`, associated ISeq is already GCed.
+   2) The unit is not called often and unloaded by `unload_units()`.
+
+   `jit_func` state for 1 can be ignored because ISeq GC means it'll never be used.
+   For the situation 2, this sets the ISeq's JIT state to NOT_READY_JIT_ISEQ_FUNC
+   to prevent the situation that the same methods are continously compiled.  */
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
-        unit->iseq->body->jit_func = (mjit_func_t)NOT_ADDED_JIT_ISEQ_FUNC;
+        unit->iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     clean_so_file(unit);
@@ -1219,7 +1226,6 @@ unload_units(void)
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = NULL;
     struct rb_mjit_unit_node *node, *next, *worst_node;
-    struct rb_mjit_unit *unit;
     struct mjit_cont *cont;
     int delete_num, units_num = active_units.length;
 
@@ -1246,6 +1252,8 @@ unload_units(void)
     }
 
     /* Remove 1/10 units more to decrease unloading calls.  */
+    /* TODO: Calculate max total_calls in unit_queue and don't unload units
+       whose total_calls are larger than the max. */
     delete_num = active_units.length / 10;
     for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
         /* Find one unit that has the minimum total_calls. */
@@ -1263,14 +1271,9 @@ unload_units(void)
 
         /* Unload the worst node. */
         verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
-        unit = worst_node->unit;
-        unit->iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+        assert(worst_node->unit->handle != NULL);
+        free_unit(worst_node->unit);
         remove_from_list(worst_node, &active_units);
-
-        assert(unit->handle != NULL);
-        dlclose(unit->handle);
-        unit->handle = NULL;
-        clean_so_file(unit);
     }
     verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
