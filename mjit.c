@@ -540,13 +540,13 @@ clean_so_file(struct rb_mjit_unit *unit)
    2) The unit is not called often and unloaded by `unload_units()`.
 
    `jit_func` state for 1 can be ignored because ISeq GC means it'll never be used.
-   For the situation 2, this sets the ISeq's JIT state to NOT_READY_JIT_ISEQ_FUNC
+   For the situation 2, this sets the ISeq's JIT state to NOT_COMPILED_JIT_ISEQ_FUNC
    to prevent the situation that the same methods are continously compiled.  */
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
     if (unit->iseq) /* ISeq is not GCed */
-        unit->iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
+        unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     clean_so_file(unit);
@@ -907,7 +907,7 @@ remove_file(const char *filename)
 }
 
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
-   It may return NOT_COMPILABLE_JIT_ISEQ_FUNC if something went wrong. */
+   It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
@@ -954,7 +954,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         int e = errno;
         if (fd >= 0) (void)close(fd);
         verbose(1, "Failed to fopen '%s', giving up JIT for it (%s)", c_file, strerror(e));
-        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
 #ifdef __clang__
@@ -1017,7 +1017,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         if (!mjit_opts.save_temps)
             remove_file(c_file);
         print_jit_result("failure", unit, 0, c_file);
-        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     start_time = real_ms_time();
@@ -1036,7 +1036,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         remove_file(c_file);
     if (!success) {
         verbose(2, "Failed to generate so: %s", so_file);
-        return (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC;
+        return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
     func = load_func_from_so(so_file, funcname, unit);
@@ -1309,7 +1309,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 #define MJIT_WAIT_TIMEOUT_SECONDS 60
 
 /* Wait for JIT compilation finish for --jit-wait. This should only return a function pointer
-   or NOT_COMPILABLE_JIT_ISEQ_FUNC. */
+   or NOT_COMPILED_JIT_ISEQ_FUNC. */
 mjit_func_t
 mjit_get_iseq_func(struct rb_iseq_constant_body *body)
 {
@@ -1321,7 +1321,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
         tries++;
         if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
-            body->jit_func = (mjit_func_t)NOT_COMPILABLE_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
+            body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
             CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
             if (mjit_opts.warnings || mjit_opts.verbose)
                 fprintf(stderr, "MJIT warning: timed out to wait for JIT finish\n");
