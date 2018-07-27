@@ -1254,6 +1254,7 @@ PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 /* eval.c */
 VALUE rb_refinement_module_get_refined_class(VALUE module);
 extern ID ruby_static_id_signo, ruby_static_id_status;
+void rb_class_modify_check(VALUE);
 #define id_signo ruby_static_id_signo
 #define id_status ruby_static_id_status
 

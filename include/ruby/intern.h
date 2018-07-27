@@ -203,7 +203,6 @@ VALUE rb_class_protected_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_private_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_obj_singleton_methods(int, const VALUE*, VALUE);
 void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int);
-void rb_frozen_class_p(VALUE);
 void rb_undef(VALUE, ID);
 void rb_define_protected_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
 void rb_define_private_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
