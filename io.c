@@ -192,7 +192,7 @@ rb_update_max_fd(int fd)
     if (afd <= max_fd)
         return;
 
-    if (fstat(fd, &buf) != 0 && errno == EBADF) {
+    if (UNLIKELY(fstat(fd, &buf) != 0 && errno == EBADF)) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }
 
@@ -208,7 +208,7 @@ rb_maygvl_fd_fix_cloexec(int fd)
 #if defined(HAVE_FCNTL) && defined(F_GETFD) && defined(F_SETFD) && defined(FD_CLOEXEC)
     int flags, flags2, ret;
     flags = fcntl(fd, F_GETFD); /* should not fail except EBADF. */
-    if (flags == -1) {
+    if (UNLIKELY(flags == -1)) {
         rb_bug("rb_maygvl_fd_fix_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
     }
     if (fd <= 2)
@@ -217,7 +217,7 @@ rb_maygvl_fd_fix_cloexec(int fd)
         flags2 = flags | FD_CLOEXEC; /* Set CLOEXEC for non-standard file descriptors: 3, 4, 5, ... */
     if (flags != flags2) {
         ret = fcntl(fd, F_SETFD, flags2);
-        if (ret == -1) {
+        if (UNLIKELY(ret == -1)) {
             rb_bug("rb_maygvl_fd_fix_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
         }
     }
@@ -238,7 +238,7 @@ rb_fix_detect_o_cloexec(int fd)
 #if defined(O_CLOEXEC) && defined(F_GETFD)
     int flags = fcntl(fd, F_GETFD);
 
-    if (flags == -1)
+    if (UNLIKELY(flags == -1))
         rb_bug("rb_fix_detect_o_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
 
     if (flags & FD_CLOEXEC)

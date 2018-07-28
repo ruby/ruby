@@ -1585,7 +1585,7 @@ validate_get_insn_info(const rb_iseq_t *iseq)
     const struct rb_iseq_constant_body *const body = iseq->body;
     size_t i;
     for (i = 0; i < body->iseq_size; i++) {
-	if (get_insn_info_linear_search(iseq, i) != get_insn_info(iseq, i)) {
+	if (UNLIKELY(get_insn_info_linear_search(iseq, i) != get_insn_info(iseq, i))) {
 	    rb_bug("validate_get_insn_info: get_insn_info_linear_search(iseq, %"PRIuSIZE") != get_insn_info(iseq, %"PRIuSIZE")", i, i);
 	}
     }

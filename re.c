@@ -109,7 +109,7 @@ rb_memsearch_ss(const unsigned char *xs, long m, const unsigned char *ys, long n
 #define VALUE_MAX ((VALUE)~(VALUE)0)
     VALUE hx, hy, mask = VALUE_MAX >> ((SIZEOF_VALUE - m) * CHAR_BIT);
 
-    if (m > SIZEOF_VALUE)
+    if (UNLIKELY(m > SIZEOF_VALUE))
 	rb_bug("!!too long pattern string!!");
 
     if (!(y = memchr(y, *x, n - m + 1)))

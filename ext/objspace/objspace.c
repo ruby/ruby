@@ -804,7 +804,7 @@ reachable_object_from_root_i(const char *category, VALUE obj, void *ptr)
 	data->last_category = category;
 	category_str = data->last_category_str = rb_str_new2(category);
 	category_objects = data->last_category_objects = rb_ident_hash_new();
-	if (!NIL_P(rb_hash_lookup(data->categories, category_str))) {
+	if (UNLIKELY(!NIL_P(rb_hash_lookup(data->categories, category_str)))) {
 	    rb_bug("reachable_object_from_root_i: category should insert at once");
 	}
 	rb_hash_aset(data->categories, category_str, category_objects);

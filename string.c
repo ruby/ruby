@@ -2656,7 +2656,7 @@ rb_str_set_len(VALUE str, long len)
     if (STR_SHARED_P(str)) {
 	rb_raise(rb_eRuntimeError, "can't set length of shared string");
     }
-    if (len > (capa = (long)str_capacity(str, termlen)) || len < 0) {
+    if (UNLIKELY(len > (capa = (long)str_capacity(str, termlen)) || len < 0)) {
 	rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     STR_SET_LEN(str, len);
@@ -8422,7 +8422,7 @@ get_reg_grapheme_cluster(rb_encoding *enc)
 	const OnigUChar source[] = "\\X";
 	int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
 			 ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, NULL);
-	if (r) {
+	if (UNLIKELY(r)) {
 	    rb_bug("cannot compile grapheme cluster regexp");
 	}
 	if (encidx == rb_utf8_encindex()) {

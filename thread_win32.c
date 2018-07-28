@@ -430,7 +430,7 @@ native_cond_timedwait_ms(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
     rb_native_mutex_unlock(mutex);
     {
 	r = WaitForSingleObject(entry.event, msec);
-	if ((r != WAIT_OBJECT_0) && (r != WAIT_TIMEOUT)) {
+	if (UNLIKELY((r != WAIT_OBJECT_0) && (r != WAIT_TIMEOUT))) {
             rb_bug("rb_native_cond_wait: WaitForSingleObject returns %lu", r);
 	}
     }
@@ -528,7 +528,7 @@ ruby_init_stack(volatile VALUE *addr)
 }
 
 #define CHECK_ERR(expr) \
-    {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
+    {if (UNLIKELY(!(expr))) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
 
 static void
 native_thread_init_stack(rb_thread_t *th)

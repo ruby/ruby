@@ -104,11 +104,11 @@ rb_enc_from_encoding_index(int idx)
 {
     VALUE list, enc;
 
-    if (!(list = rb_encoding_list)) {
+    if (UNLIKELY(!(list = rb_encoding_list))) {
 	rb_bug("rb_enc_from_encoding_index(%d): no rb_encoding_list", idx);
     }
     enc = rb_ary_entry(list, idx);
-    if (NIL_P(enc)) {
+    if (UNLIKELY(NIL_P(enc))) {
 	rb_bug("rb_enc_from_encoding_index(%d): not created yet", idx);
     }
     return enc;
@@ -819,7 +819,7 @@ rb_enc_get_index(VALUE obj)
 static void
 enc_set_index(VALUE obj, int idx)
 {
-    if (!enc_capable(obj)) rb_bug("enc_set_index: not capable object");
+    if (UNLIKELY(!enc_capable(obj))) rb_bug("enc_set_index: not capable object");
 
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET_INLINED(obj, idx);

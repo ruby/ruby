@@ -218,7 +218,7 @@ vm_call_super(rb_execution_context_t *ec, int argc, const VALUE *argv)
     rb_control_frame_t *cfp = ec->cfp;
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(cfp);
 
-    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+    if (UNLIKELY(VM_FRAME_RUBYFRAME_P(cfp))) {
 	rb_bug("vm_call_super: should not be reached");
     }
 
@@ -1576,7 +1576,7 @@ rb_yield_refine_block(VALUE refinement, VALUE refinements)
     rb_execution_context_t *ec = GET_EC();
     VALUE block_handler = VM_CF_BLOCK_HANDLER(ec->cfp);
 
-    if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
+    if (UNLIKELY(vm_block_handler_type(block_handler) != block_handler_type_iseq)) {
 	rb_bug("rb_yield_refine_block: an iseq block is required");
     }
     else {

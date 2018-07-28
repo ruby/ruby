@@ -213,7 +213,7 @@ classname(VALUE klass, int *permanent)
 	else {
 	    path = (VALUE)n;
 	}
-	if (!RB_TYPE_P(path, T_STRING)) {
+	if (UNLIKELY(!RB_TYPE_P(path, T_STRING))) {
 	    rb_bug("class path is not set properly");
 	}
 	return path;

@@ -432,7 +432,7 @@ static void
 unregister_sym(VALUE str, VALUE sym)
 {
     st_data_t str_data = (st_data_t)str;
-    if (!st_delete(global_symbols.str_sym, &str_data, NULL)) {
+    if (UNLIKELY(!st_delete(global_symbols.str_sym, &str_data, NULL))) {
 	rb_bug("%p can't remove str from str_id (%s)", (void *)sym, RSTRING_PTR(str));
     }
 }

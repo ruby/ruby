@@ -72,7 +72,7 @@ rb_class_clear_method_cache(VALUE klass, VALUE arg)
 	}
     }
     else {
-	if (RCLASS_CALLABLE_M_TBL(klass) != 0) {
+	if (UNLIKELY(RCLASS_CALLABLE_M_TBL(klass) != 0)) {
 	    rb_obj_info_dump(klass);
 	    rb_bug("RCLASS_CALLABLE_M_TBL(klass) != 0");
 	}
@@ -787,7 +787,7 @@ verify_method_cache(VALUE klass, ID id, VALUE defined_class, rb_method_entry_t *
     rb_method_entry_t *actual_me =
       method_entry_get_without_cache(klass, id, &actual_defined_class);
 
-    if (me != actual_me || defined_class != actual_defined_class) {
+    if (UNLIKELY(me != actual_me || defined_class != actual_defined_class)) {
 	rb_bug("method cache verification failed");
     }
 }
