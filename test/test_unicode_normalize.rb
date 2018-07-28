@@ -146,7 +146,9 @@ class TestUnicodeNormalize
   generate_test_check_false :NFC, :NFKC, :nfkc
   generate_test_check_false :NFD, :NFKC, :nfkc
   generate_test_check_false :NFKD, :NFKC, :nfkc
+end
 
+class TestUnicodeNormalize
   def test_non_UTF_8
     assert_equal "\u1E0A".encode('UTF-16BE'), "D\u0307".encode('UTF-16BE').unicode_normalize(:nfc)
     assert_equal true, "\u1E0A".encode('UTF-16BE').unicode_normalized?(:nfc)
