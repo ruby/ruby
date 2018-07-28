@@ -7,6 +7,11 @@ require_relative '../lib/jit_support'
 class TestJIT < Test::Unit::TestCase
   include JITSupport
 
+  IGNORABLE_PATTERNS = [
+    /\ASuccessful MJIT finish\n\z/,
+    /\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/,
+  ]
+
   # trace_* insns are not compiled for now...
   TEST_PENDING_INSNS = RubyVM::INSTRUCTION_NAMES.select { |n| n.start_with?('trace_') }.map(&:to_sym) + [
     # not supported yet
@@ -544,7 +549,9 @@ class TestJIT < Test::Unit::TestCase
         end
       end;
       assert_equal('0123456789', out)
-      errs = err.lines
+      errs = err.lines.reject do |l|
+        IGNORABLE_PATTERNS.any? { |pat| pat.match?(l) }
+      end
       assert_match(/\A#{JIT_SUCCESS_PREFIX}: block in <main>@-e:/, errs[0])
       9.times do |i|
         assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i + 1])
@@ -776,7 +783,9 @@ class TestJIT < Test::Unit::TestCase
     if stdout
       assert_equal(stdout, out, "Expected stdout #{out.inspect} to match #{stdout.inspect} with script:\n#{code_block(script)}")
     end
-    err_lines = err.lines.reject! { |l| l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || l == "Successful MJIT finish\n" }
+    err_lines = err.lines.reject! do |l|
+      l.chomp.empty? || l.match?(/\A#{JIT_SUCCESS_PREFIX}/) || IGNORABLE_PATTERNS.any? { |pat| pat.match?(l) }
+    end
     unless err_lines.empty?
       warn err_lines.join(''), uplevel: uplevel
     end

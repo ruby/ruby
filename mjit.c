@@ -198,6 +198,8 @@ int mjit_call_p = FALSE;
 static struct rb_mjit_unit_list unit_queue;
 /* List of units which are successfully compiled. */
 static struct rb_mjit_unit_list active_units;
+/* List of compacted so files which will be deleted in `mjit_finish()`. */
+static struct rb_mjit_unit_list compact_units;
 /* The number of so far processed ISEQs, used to generate unique id.  */
 static int current_unit_num;
 /* A mutex for conitionals and critical sections.  */
@@ -774,6 +776,8 @@ make_pch(void)
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
+#define MJIT_TMP_PREFIX "_ruby_mjit_"
+
 #ifdef _MSC_VER
 
 /* Compile C file to so. It returns 1 if it succeeds. (mswin) */
@@ -808,7 +812,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     return exit_code == 0;
 }
 
-#else
+#else /* _MSC_VER */
 
 /* Compile .c file to .o file. It returns 1 if it succeeds. (non-mswin) */
 static int
@@ -841,13 +845,13 @@ compile_c_to_o(const char *c_file, const char *o_file)
     return exit_code == 0;
 }
 
-/* Link .o file to .so file. It returns 1 if it succeeds. (non-mswin) */
+/* Link .o files to .so file. It returns 1 if it succeeds. (non-mswin) */
 static int
-link_o_to_so(const char *o_file, const char *so_file)
+link_o_to_so(const char **o_files, const char *so_file)
 {
     int exit_code;
-    const char *files[] = {
-        "-o", NULL, NULL,
+    const char *options[] = {
+        "-o", NULL,
 # ifdef _WIN32
         libruby_pathflag,
 # endif
@@ -855,10 +859,9 @@ link_o_to_so(const char *o_file, const char *so_file)
     };
     char **args;
 
-    files[1] = so_file;
-    files[2] = o_file;
-    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    options[1] = so_file;
+    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                     options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
@@ -870,7 +873,94 @@ link_o_to_so(const char *o_file, const char *so_file)
     return exit_code == 0;
 }
 
+/* Link all cached .o files and build a .so file. Reload all JIT func from it. This
+   allows to avoid JIT code fragmentation and improve performance to call JIT-ed code.  */
+static void
+compact_all_jit_code(void)
+{
+    struct rb_mjit_unit *unit;
+    struct rb_mjit_unit_node *node;
+    double start_time, end_time;
+    static const char so_ext[] = DLEXT;
+    char so_file[MAXPATHLEN];
+    const char **o_files;
+    int i = 0, success;
+
+    /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
+    unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
+    if (unit == NULL) return;
+    unit->id = current_unit_num++;
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
+
+    /* NULL-ending for form_args */
+    o_files = (const char **)alloca(sizeof(char *) * (active_units.length + 1));
+    o_files[active_units.length] = NULL;
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to keep .o files");
+    for (node = active_units.head; node != NULL; node = node->next) {
+        o_files[i] = node->unit->o_file;
+        i++;
+    }
+
+    start_time = real_ms_time();
+    success = link_o_to_so(o_files, so_file);
+    end_time = real_ms_time();
+
+    /* TODO: Shrink this big critical section. For now, this is needed to prevent failure by missing .o files.
+       This assumes that o -> so link doesn't take long time because the bottleneck, which is compiler optimization,
+       is already done. But actually it takes about 500ms for 5,000 methods on my Linux machine, so it's better to
+       finish this critical section before link_o_to_so by disabling unload_units. */
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to keep .o files");
+
+    if (success) {
+        void *handle = dlopen(so_file, RTLD_NOW);
+        if (handle == NULL) {
+            if (mjit_opts.warnings || mjit_opts.verbose)
+                fprintf(stderr, "MJIT warning: failure in loading code from compacted '%s': %s\n", so_file, dlerror());
+            free(unit);
+            return;
+        }
+        unit->handle = handle;
+
+        /* lazily dlclose handle (and .so file for win32) on `mjit_finish()`. */
+        node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
+        node->unit = unit;
+        add_to_list(node, &compact_units);
+
+        if (!mjit_opts.save_temps) {
+#ifdef _WIN32
+            unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
+#else
+            remove_file(so_file);
 #endif
+        }
+
+        CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
+        for (node = active_units.head; node != NULL; node = node->next) {
+            void *func;
+            char funcname[35]; /* TODO: reconsider `35` */
+            sprintf(funcname, "_mjit%d", node->unit->id);
+
+            if ((func = dlsym(handle, funcname)) == NULL) {
+                if (mjit_opts.warnings || mjit_opts.verbose)
+                    fprintf(stderr, "MJIT warning: skipping to reload '%s' from '%s': %s\n", funcname, so_file, dlerror());
+                continue;
+            }
+
+            if (node->unit->iseq) { /* Check whether GCed or not */
+                /* Usage of jit_code might be not in a critical section.  */
+                MJIT_ATOMIC_SET(node->unit->iseq->body->jit_func, (mjit_func_t)func);
+            }
+        }
+        CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
+        verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, active_units.length, so_file);
+    }
+    else {
+        free(unit);
+        verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time);
+    }
+}
+
+#endif /* _MSC_VER */
 
 static void *
 load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit *unit)
@@ -888,8 +978,6 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     unit->handle = handle;
     return func;
 }
-
-#define MJIT_TMP_PREFIX "_ruby_mjit_"
 
 #ifndef __clang__
 static const char *
@@ -930,7 +1018,7 @@ remove_file(const char *filename)
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file_buff[70], *c_file = c_file_buff, *so_file, funcname[35];
+    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
     int success;
     int fd;
     FILE *f;
@@ -1045,7 +1133,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #else
     /* splitting .c -> .o step and .o -> .so step, to cache .o files in the future */
     if (success = compile_c_to_o(c_file, o_file)) {
-        success = link_o_to_so(o_file, so_file);
+        const char *o_files[] = { o_file, NULL };
+        success = link_o_to_so(o_files, so_file);
 
         if (!mjit_opts.save_temps)
             unit->o_file = strdup(o_file); /* lazily delete on `clean_object_files()` */
@@ -1127,6 +1216,13 @@ worker(void)
             }
             remove_from_list(node, &unit_queue);
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
+
+#ifndef _MSC_VER
+            /* Combine .o files to one .so and reload all jit_func to improve memory locality */
+            if ((unit_queue.length == 0 && active_units.length > 1) || active_units.length == mjit_opts.max_cache_size) {
+                compact_all_jit_code();
+            }
+#endif
         }
     }
 
@@ -1699,6 +1795,7 @@ mjit_finish(void)
     mjit_call_p = FALSE;
     free_list(&unit_queue);
     free_list(&active_units);
+    free_list(&compact_units);
     finish_conts();
 
     mjit_enabled = FALSE;
