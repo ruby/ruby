@@ -1397,12 +1397,15 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
 static inline void
 blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 {
+    /* entry to ubf_list still permitted at this point, make it impossible: */
+    unblock_function_clear(th);
+    /* entry to ubf_list impossible at this point, so unregister is safe: */
+    unregister_ubf_list(th);
+
     gvl_acquire(th->vm, th);
     rb_thread_set_current(th);
     thread_debug("leave blocking region (%p)\n", (void *)th);
-    unregister_ubf_list(th);
     th->blocking_region_buffer = 0;
-    unblock_function_clear(th);
     if (th->status == THREAD_STOPPED) {
 	th->status = region->prev_status;
     }
