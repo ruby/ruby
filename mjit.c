@@ -841,13 +841,13 @@ compile_c_to_o(const char *c_file, const char *o_file)
     return exit_code == 0;
 }
 
-/* Link .o file to .so file. It returns 1 if it succeeds. (non-mswin) */
+/* Link .o files to .so file. It returns 1 if it succeeds. (non-mswin) */
 static int
-link_o_to_so(const char *o_file, const char *so_file)
+link_o_to_so(const char **o_files, const char *so_file)
 {
     int exit_code;
-    const char *files[] = {
-        "-o", NULL, NULL,
+    const char *options[] = {
+        "-o", NULL,
 # ifdef _WIN32
         libruby_pathflag,
 # endif
@@ -855,10 +855,9 @@ link_o_to_so(const char *o_file, const char *so_file)
     };
     char **args;
 
-    files[1] = so_file;
-    files[2] = o_file;
-    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    options[1] = so_file;
+    args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                     options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
@@ -1059,7 +1058,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 #else
     /* splitting .c -> .o step and .o -> .so step, to cache .o files in the future */
     if (success = compile_c_to_o(c_file, o_file)) {
-        success = link_o_to_so(o_file, so_file);
+        const char *o_files[] = { o_file, NULL };
+        success = link_o_to_so(o_files, so_file);
 
         if (!mjit_opts.save_temps)
             unit->o_file = strdup(o_file); /* lazily delete on `clean_object_files()` */
