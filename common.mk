@@ -43,11 +43,11 @@ GEM_VENDOR =
 
 BENCHMARK_DRIVER_GIT_URL = https://github.com/benchmark-driver/benchmark-driver
 BENCHMARK_DRIVER_GIT_REF = v0.14.6
-SIMPLECOV_GIT_URL = git://github.com/colszowka/simplecov.git
+SIMPLECOV_GIT_URL = https://github.com/colszowka/simplecov.git
 SIMPLECOV_GIT_REF = v0.15.0
-SIMPLECOV_HTML_GIT_URL = git://github.com/colszowka/simplecov-html.git
+SIMPLECOV_HTML_GIT_URL = https://github.com/colszowka/simplecov-html.git
 SIMPLECOV_HTML_GIT_REF = v0.10.2
-DOCLIE_GIT_URL = git://github.com/ms-ati/docile.git
+DOCLIE_GIT_URL = https://github.com/ms-ati/docile.git
 DOCLIE_GIT_REF = v1.1.5
 
 STATIC_RUBY   = static-ruby
