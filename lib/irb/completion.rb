@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 #
-#   irb/completor.rb -
+#   irb/completion.rb -
 #   	$Release Version: 0.9$
 #   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
