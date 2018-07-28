@@ -926,12 +926,6 @@ compact_all_jit_code(void)
         node->unit = unit;
         add_to_list(node, &compact_units);
 
-        CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
-        for (node = active_units.head; node != NULL; node = node->next) {
-            /* set JIT */
-        }
-        CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
-
         if (!mjit_opts.save_temps) {
 #ifdef _WIN32
             unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
@@ -939,6 +933,25 @@ compact_all_jit_code(void)
             remove_file(so_file);
 #endif
         }
+
+        CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
+        for (node = active_units.head; node != NULL; node = node->next) {
+            void *func;
+            char funcname[35]; /* TODO: reconsider `35` */
+            sprintf(funcname, "_mjit%d", node->unit->id);
+
+            if ((func = dlsym(handle, funcname)) == NULL) {
+                if (mjit_opts.warnings || mjit_opts.verbose)
+                    fprintf(stderr, "MJIT warning: skipping to reload '%s' from '%s': %s\n", funcname, so_file, dlerror());
+                continue;
+            }
+
+            if (node->unit->iseq) { /* Check whether GCed or not */
+                /* Usage of jit_code might be not in a critical section.  */
+                MJIT_ATOMIC_SET(node->unit->iseq->body->jit_func, (mjit_func_t)func);
+            }
+        }
+        CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
         verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, active_units.length, so_file);
     }
     else {
@@ -1005,7 +1018,7 @@ remove_file(const char *filename)
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35];
+    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
     int success;
     int fd;
     FILE *f;
