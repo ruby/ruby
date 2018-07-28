@@ -167,6 +167,13 @@ class TestUnicodeNormalize
     assert_equal "\u1100\u1161\u11A8", "\uAC00\u11A8".unicode_normalize(:nfd)
   end
 
+  # preventive tests for (non-)bug #14934
+  def test_no_trailing_jamo
+    assert_equal "\u1100\u1176\u11a8", "\u1100\u1176\u11a8".unicode_normalize(:nfc)
+    assert_equal "\uae30\u11a7",       "\u1100\u1175\u11a7".unicode_normalize(:nfc)
+    assert_equal "\uae30\u11c3",       "\u1100\u1175\u11c3".unicode_normalize(:nfc)
+  end
+
   def test_hangul_plus_accents
     assert_equal "\uAC00\u0323\u0300", "\uAC00\u0300\u0323".unicode_normalize(:nfc)
     assert_equal "\uAC00\u0323\u0300", "\u1100\u1161\u0300\u0323".unicode_normalize(:nfc)
