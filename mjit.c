@@ -774,6 +774,8 @@ make_pch(void)
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
+#define MJIT_TMP_PREFIX "_ruby_mjit_"
+
 #ifdef _MSC_VER
 
 /* Compile C file to so. It returns 1 if it succeeds. (mswin) */
@@ -874,13 +876,58 @@ link_o_to_so(const char **o_files, const char *so_file)
 static void
 compact_all_jit_code(void)
 {
+    struct rb_mjit_unit *unit;
+    struct rb_mjit_unit_node *node;
     double start_time, end_time;
+    static const char so_ext[] = DLEXT;
+    char so_file[MAXPATHLEN];
+    const char **o_files;
+    int i = 0, success;
+
+    /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
+    unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit));
+    if (unit == NULL) return;
+    unit->id = current_unit_num++;
+    sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
+
+    /* NULL-ending for form_args */
+    o_files = (const char **)alloca(sizeof(char *) * (active_units.length + 1));
+    o_files[active_units.length] = NULL;
+    CRITICAL_SECTION_START(3, "in compact_all_jit_code to keep .o files");
+    for (node = active_units.head; node != NULL; node = node->next) {
+        o_files[i] = node->unit->o_file;
+        i++;
+    }
+
     start_time = real_ms_time();
-
-    ;
-
+    success = link_o_to_so(o_files, so_file);
     end_time = real_ms_time();
-    verbose(1, "JIT compaction (%.1fms): Compacted all JIT-ed code for performance", end_time - start_time);
+
+    /* TODO: Shrink this big critical section. For now, this is needed to prevent failure by missing .o files.
+       This assumes that o -> so link doesn't take long time because the bottleneck, which is compiler optimization,
+       is already done. But actually it takes about 500ms for 5,000 methods on my Linux machine, so it's better to
+       finish this critical section before link_o_to_so by disabling unload_units. */
+    CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to keep .o files");
+
+    if (success) {
+        CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
+        for (node = active_units.head; node != NULL; node = node->next) {
+            /* set JIT */
+        }
+        CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
+
+        if (!mjit_opts.save_temps) {
+#ifdef _WIN32
+            unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
+#else
+            remove_file(so_file);
+#endif
+        }
+        verbose(1, "JIT compaction (%.1fms): Compacted all code -> %s", end_time - start_time, so_file);
+    }
+    else {
+        verbose(1, "JIT compaction failure (%.1fms): Failed to compact all code", end_time - start_time);
+    }
 }
 
 #endif /* _MSC_VER */
@@ -901,8 +948,6 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
     unit->handle = handle;
     return func;
 }
-
-#define MJIT_TMP_PREFIX "_ruby_mjit_"
 
 #ifndef __clang__
 static const char *
@@ -943,7 +988,7 @@ remove_file(const char *filename)
 static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit)
 {
-    char c_file_buff[70], *c_file = c_file_buff, *so_file, funcname[35];
+    char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35];
     int success;
     int fd;
     FILE *f;

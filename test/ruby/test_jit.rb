@@ -9,7 +9,7 @@ class TestJIT < Test::Unit::TestCase
 
   IGNORABLE_PATTERNS = [
     /\ASuccessful MJIT finish\n\z/,
-    /\AJIT compaction \(\d+\.\dms\): Compacted all JIT-ed code for performance\n\z/,
+    /\AJIT compaction \(\d+\.\dms\): Compacted all code ->/,
   ]
 
   # trace_* insns are not compiled for now...
