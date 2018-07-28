@@ -9,10 +9,11 @@ require 'unicode_normalize/normalize'
 class TestUnicodeNormalize < Test::Unit::TestCase
 
   UNICODE_VERSION = RbConfig::CONFIG['UNICODE_VERSION']
-  UNICODE_DATA_PATH = "../enc/unicode/data/#{UNICODE_VERSION}"
+  path = File.expand_path("../enc/unicode/data/#{UNICODE_VERSION}", __dir__)
+  UNICODE_DATA_PATH = File.directory?("#{path}/ucd") ? "#{path}/ucd" : path
 
   def self.expand_filename(basename)
-    File.expand_path("#{UNICODE_DATA_PATH}/#{basename}.txt", __dir__)
+    File.expand_path("#{basename}.txt", UNICODE_DATA_PATH)
   end
 end
 
