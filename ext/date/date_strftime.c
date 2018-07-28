@@ -81,7 +81,7 @@ date_strftime_with_tmx(char *s, const size_t maxsize, const char *format,
 
     /* quick check if we even need to bother */
     if (strchr(format, '%') == NULL && strlen(format) + 1 >= maxsize) {
-      err:
+      err: COLDLABEL
 	errno = ERANGE;
 	return 0;
     }

@@ -284,21 +284,21 @@ int rb_ec_reset_raised(rb_execution_context_t *ec);
 int rb_ec_stack_check(rb_execution_context_t *ec);
 
 VALUE rb_f_eval(int argc, const VALUE *argv, VALUE self);
-VALUE rb_make_exception(int argc, const VALUE *argv);
+COLDFUNC(VALUE rb_make_exception(int argc, const VALUE *argv));
 
-NORETURN(void rb_method_name_error(VALUE, VALUE));
+NORETURN(COLDFUNC(void rb_method_name_error(VALUE, VALUE)));
 
 NORETURN(void rb_fiber_start(void));
 
-NORETURN(void rb_print_undef(VALUE, ID, rb_method_visibility_t));
-NORETURN(void rb_print_undef_str(VALUE, VALUE));
-NORETURN(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t));
-NORETURN(void rb_vm_localjump_error(const char *,VALUE, int));
+NORETURN(COLDFUNC(void rb_print_undef(VALUE, ID, rb_method_visibility_t)));
+NORETURN(COLDFUNC(void rb_print_undef_str(VALUE, VALUE)));
+NORETURN(COLDFUNC(void rb_print_inaccessible(VALUE, ID, rb_method_visibility_t)));
+NORETURN(COLDFUNC(void rb_vm_localjump_error(const char *,VALUE, int)));
 #if 0
 NORETURN(void rb_vm_jump_tag_but_local_jump(int));
 #endif
 
-VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val);
+COLDFUNC(VALUE rb_vm_make_jump_tag_but_local_jump(int state, VALUE val));
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);

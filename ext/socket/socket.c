@@ -1369,13 +1369,13 @@ sock_s_getnameinfo(int argc, VALUE *argv)
     }
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
-  error_exit_addr:
+  error_exit_addr: COLDLABEL
     saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
     errno = saved_errno;
     rsock_raise_socket_error("getaddrinfo", error);
 
-  error_exit_name:
+  error_exit_name: COLDLABEL
     saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
     errno = saved_errno;
@@ -1929,6 +1929,7 @@ socket_s_ip_address_list(VALUE self)
 #define socket_s_ip_address_list rb_f_notimplement
 #endif
 
+COLDFUNC(void Init_socket(void));
 void
 Init_socket(void)
 {

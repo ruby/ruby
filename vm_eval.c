@@ -539,7 +539,7 @@ rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry
     rb_method_visibility_t visi;
 
     if (UNDEFINED_METHOD_ENTRY_P(me)) {
-      undefined:
+      undefined: COLDLABEL
 	return scope == CALL_VCALL ? MISSING_VCALL : MISSING_NOENTRY;
     }
     if (me->def->type == VM_METHOD_TYPE_REFINED) {
@@ -720,7 +720,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, enum method_missin
     ec->method_missing_reason = call_status;
 
     if (id == idMethodMissing) {
-      missing:
+      missing: COLDLABEL
 	raise_method_missing(ec, argc, argv, obj, call_status | MISSING_MISSING);
     }
 
@@ -2140,6 +2140,7 @@ rb_current_realfilepath(void)
     return Qnil;
 }
 
+COLDFUNC(void Init_vm_eval(void));
 void
 Init_vm_eval(void)
 {

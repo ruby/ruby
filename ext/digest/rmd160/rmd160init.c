@@ -44,6 +44,7 @@ static const rb_digest_metadata_t rmd160 = {
  *  rmd160 << "message"
  *  rmd160.hexdigest                        # => "1dddbe1b..."
  */
+COLDFUNC(void Init_rmd160(void));
 void
 Init_rmd160(void)
 {

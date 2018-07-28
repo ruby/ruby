@@ -120,7 +120,7 @@ int ossl_pem_passwd_cb(char *, int, int, void *);
 /*
  * ERRor messages
  */
-NORETURN(void ossl_raise(VALUE, const char *, ...));
+NORETURN(COLDFUNC(void ossl_raise(VALUE, const char *, ...)));
 /* Clear OpenSSL error queue. If dOSSL is set, rb_warn() them. */
 void ossl_clear_error(void);
 
@@ -173,6 +173,6 @@ void ossl_debug(const char *, ...);
 #include "ossl_engine.h"
 #include "ossl_kdf.h"
 
-void Init_openssl(void);
+COLDFUNC(void Init_openssl(void));
 
 #endif /* _OSSL_H_ */

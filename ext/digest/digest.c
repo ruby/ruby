@@ -23,7 +23,7 @@ static VALUE rb_cDigest_Base;
 static ID id_reset, id_update, id_finish, id_digest, id_hexdigest, id_digest_length;
 static ID id_metadata;
 
-RUBY_EXTERN void Init_digest_base(void);
+COLDFUNC(RUBY_EXTERN void Init_digest_base(void));
 
 /*
  * Document-module: Digest
@@ -141,7 +141,7 @@ rb_digest_s_hexencode(VALUE klass, VALUE str)
     return hexencode_str_new(str);
 }
 
-NORETURN(static void rb_digest_instance_method_unimpl(VALUE self, const char *method));
+NORETURN(COLDFUNC(static void rb_digest_instance_method_unimpl(VALUE self, const char *method)));
 
 /*
  * Document-module: Digest::Instance
@@ -150,6 +150,7 @@ NORETURN(static void rb_digest_instance_method_unimpl(VALUE self, const char *me
  * object to calculate message digest values.
  */
 
+COLDFUNC(static void rb_digest_instance_method_unimpl(VALUE self, const char *method));
 static void
 rb_digest_instance_method_unimpl(VALUE self, const char *method)
 {
@@ -725,6 +726,7 @@ rb_digest_base_block_length(VALUE self)
     return INT2NUM(algo->block_len);
 }
 
+COLDFUNC(void Init_digest(void));
 void
 Init_digest(void)
 {

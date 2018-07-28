@@ -843,7 +843,7 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     if(!PKCS7_dataFinal(pkcs7, out)) goto err;
     ossl_pkcs7_set_data(self, Qnil);
 
- err:
+ err: COLDLABEL
     BIO_free_all(out);
     BIO_free(in);
     if(ERR_peek_error()){

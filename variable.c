@@ -48,6 +48,7 @@ struct ivar_update {
     int iv_extended;
 };
 
+COLDFUNC(void Init_var_tables(void));
 void
 Init_var_tables(void)
 {
@@ -1737,7 +1738,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     UNREACHABLE_RETURN(Qnil);
 }
 
-NORETURN(static void uninitialized_constant(VALUE, VALUE));
+NORETURN(COLDFUNC(static void uninitialized_constant(VALUE, VALUE)));
 static void
 uninitialized_constant(VALUE klass, VALUE name)
 {
@@ -2396,7 +2397,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	goto retry;
     }
 
-  not_found:
+  not_found: COLDLABEL
     GET_EC()->private_const_reference = 0;
     return Qundef;
 }
@@ -3210,7 +3211,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
     st_data_t val, n = id;
 
     if (!id) {
-      not_defined:
+      not_defined: COLDLABEL
 	rb_name_err_raise("class variable %1$s not defined for %2$s",
 			  mod, name);
     }

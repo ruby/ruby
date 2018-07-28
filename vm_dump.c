@@ -25,6 +25,7 @@
   ((rb_control_frame_t *)((ec)->vm_stack + (ec)->vm_stack_size) - \
    (rb_control_frame_t *)(cfp))
 
+COLDFUNC(static void control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp));
 static void
 control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -137,6 +138,7 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     fprintf(stderr, "\n");
 }
 
+COLDFUNC(void rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp));
 void
 rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -177,6 +179,7 @@ rb_vmdebug_stack_dump_raw_current(void)
     rb_vmdebug_stack_dump_raw(ec, ec->cfp);
 }
 
+COLDFUNC(void rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep));
 void
 rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
 {
@@ -196,6 +199,7 @@ rb_vmdebug_env_dump_raw(const rb_env_t *env, const VALUE *ep)
     fprintf(stderr, "---------------------------\n");
 }
 
+COLDFUNC(void rb_vmdebug_proc_dump_raw(rb_proc_t *proc));
 void
 rb_vmdebug_proc_dump_raw(rb_proc_t *proc)
 {
@@ -303,6 +307,7 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
 }
 #endif
 
+COLDFUNC(void rb_vmdebug_debug_print_register(const rb_execution_context_t *ec));
 void
 rb_vmdebug_debug_print_register(const rb_execution_context_t *ec)
 {
@@ -330,6 +335,7 @@ rb_vmdebug_thread_dump_regs(VALUE thval)
     rb_vmdebug_debug_print_register(rb_thread_ptr(thval)->ec);
 }
 
+COLDFUNC(void rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc));
 void
 rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc)
 {
@@ -359,6 +365,11 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
 #endif
 }
 
+#if OPT_STACK_CACHING
+COLDFUNC(void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, VALUE reg_a, VALUE reg_b));
+#else
+COLDFUNC(void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp));
+#endif
 void
 rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp
 #if OPT_STACK_CACHING
@@ -695,6 +706,7 @@ dump_thread(void *arg)
 }
 #endif
 
+COLDFUNC(void rb_print_backtrace(void));
 void
 rb_print_backtrace(void)
 {
@@ -947,6 +959,7 @@ rb_dump_machine_register(const ucontext_t *ctx)
 # define rb_dump_machine_register(ctx) ((void)0)
 #endif /* HAVE_PRINT_MACHINE_REGISTERS */
 
+COLDFUNC(void rb_vm_bugreport(const void *ctx));
 void
 rb_vm_bugreport(const void *ctx)
 {

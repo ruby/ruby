@@ -2875,6 +2875,7 @@ InitVM_Enumerator(void)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_Enumerator(void));
 void
 Init_Enumerator(void)
 {

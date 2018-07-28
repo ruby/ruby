@@ -495,6 +495,7 @@ objspace_dump_all(int argc, VALUE *argv, VALUE os)
     return dump_result(&dc, output);
 }
 
+COLDFUNC(void Init_objspace_dump(VALUE rb_mObjSpace));
 void
 Init_objspace_dump(VALUE rb_mObjSpace)
 {

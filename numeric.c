@@ -230,7 +230,7 @@ rb_num_get_rounding_option(VALUE opts)
 		return RUBY_NUM_ROUND_HALF_DOWN;
 	    break;
 	}
-      invalid:
+      invalid: COLDLABEL
 	rb_raise(rb_eArgError, "invalid rounding mode: % "PRIsVALUE, rounding);
     }
   noopt:
@@ -2962,7 +2962,7 @@ rb_fix2int(VALUE val)
 }
 #endif
 
-NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
+NORETURN(COLDFUNC(static void rb_out_of_short(SIGNED_VALUE num)));
 static void
 rb_out_of_short(SIGNED_VALUE num)
 {
@@ -5387,6 +5387,7 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *   puts tally * 2            #=> "||||"
  *   puts tally > 1            #=> true
  */
+COLDFUNC(void Init_Numeric(void));
 void
 Init_Numeric(void)
 {

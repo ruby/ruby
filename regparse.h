@@ -341,7 +341,11 @@ extern int    onig_renumber_name_table(regex_t* reg, GroupNumRemap* map);
 
 extern int    onig_strncmp(const UChar* s1, const UChar* s2, int n);
 extern void   onig_strcpy(UChar* dest, const UChar* src, const UChar* end);
+#ifdef RUBY
 extern void   onig_scan_env_set_error_string(ScanEnv* env, int ecode, UChar* arg, UChar* arg_end);
+#else
+extern void   onig_scan_env_set_error_string(ScanEnv* env, int ecode, UChar* arg, UChar* arg_end);
+#endif
 extern int    onig_scan_unsigned_number(UChar** src, const UChar* end, OnigEncoding enc);
 extern void   onig_reduce_nested_quantifier(Node* pnode, Node* cnode);
 extern void   onig_node_conv_to_str_node(Node* node, int raw);

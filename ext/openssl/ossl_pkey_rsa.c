@@ -628,7 +628,7 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
     EVP_MD_CTX_free(md_ctx);
     return signature;
 
-  err:
+  err: COLDLABEL
     EVP_MD_CTX_free(md_ctx);
     ossl_raise(eRSAError, NULL);
 }
@@ -721,7 +721,7 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
 	goto err;
     }
 
-  err:
+  err: COLDLABEL
     EVP_MD_CTX_free(md_ctx);
     ossl_raise(eRSAError, NULL);
 }

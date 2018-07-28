@@ -152,7 +152,7 @@ yaml_emitter_dump(yaml_emitter_t *emitter, yaml_document_t *document)
 
     return 1;
 
-error:
+error: COLDLABEL
 
     yaml_emitter_delete_document_and_anchors(emitter);
 

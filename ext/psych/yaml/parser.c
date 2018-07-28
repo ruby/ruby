@@ -419,7 +419,7 @@ yaml_parser_parse_document_start(yaml_parser_t *parser, yaml_event_t *event,
         return 1;
     }
 
-error:
+error: COLDLABEL
     yaml_free(version_directive);
     while (tag_directives.start != tag_directives.end) {
         yaml_free(tag_directives.end[-1].handle);
@@ -707,7 +707,7 @@ yaml_parser_parse_node(yaml_parser_t *parser, yaml_event_t *event,
         }
     }
 
-error:
+error: COLDLABEL
     yaml_free(anchor);
     yaml_free(tag_handle);
     yaml_free(tag_suffix);
@@ -1318,7 +1318,7 @@ yaml_parser_process_directives(yaml_parser_t *parser,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(version_directive);
     while (!STACK_EMPTY(parser, tag_directives)) {
         yaml_tag_directive_t tag_directive = POP(parser, tag_directives);
@@ -1362,7 +1362,7 @@ yaml_parser_append_tag_directive(yaml_parser_t *parser,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(copy.handle);
     yaml_free(copy.prefix);
     return 0;

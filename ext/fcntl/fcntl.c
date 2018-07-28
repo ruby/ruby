@@ -61,6 +61,7 @@ pack up your own arguments to pass as args for locking functions, etc.
  *   f.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK|m)
  *
  */
+COLDFUNC(void Init_fcntl(void));
 void
 Init_fcntl(void)
 {

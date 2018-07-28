@@ -697,7 +697,7 @@ queue_closed_p(VALUE self)
  *  Queue.  See Queue#close and SizedQueue#close.
  */
 
-NORETURN(static void raise_closed_queue_error(VALUE self));
+NORETURN(COLDFUNC(static void raise_closed_queue_error(VALUE self)));
 
 static void
 raise_closed_queue_error(VALUE self)
@@ -1154,7 +1154,7 @@ rb_szqueue_push(int argc, VALUE *argv, VALUE self)
     }
 
     if (queue_closed_p(self)) {
-      closed:
+      closed: COLDLABEL
 	raise_closed_queue_error(self);
     }
 
@@ -1427,6 +1427,7 @@ rb_condvar_broadcast(VALUE self)
 }
 
 /* :nodoc: */
+COLDFUNC(static VALUE undumpable(VALUE obj));
 static VALUE
 undumpable(VALUE obj)
 {
@@ -1442,6 +1443,7 @@ define_thread_class(VALUE outer, const char *name, VALUE super)
     return klass;
 }
 
+COLDFUNC(static void Init_thread_sync(void));
 static void
 Init_thread_sync(void)
 {

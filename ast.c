@@ -599,6 +599,7 @@ rb_ast_node_inspect(VALUE self)
     return str;
 }
 
+COLDFUNC(void Init_ast(void));
 void
 Init_ast(void)
 {

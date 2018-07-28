@@ -158,7 +158,7 @@ enc_check_encoding(VALUE obj)
     return check_encoding(RDATA(obj)->data);
 }
 
-NORETURN(static void not_encoding(VALUE enc));
+NORETURN(COLDFUNC(static void not_encoding(VALUE enc)));
 static void
 not_encoding(VALUE enc)
 {
@@ -1930,6 +1930,7 @@ rb_enc_aliases(VALUE klass)
  *
  */
 
+COLDFUNC(void Init_Encoding(void));
 void
 Init_Encoding(void)
 {

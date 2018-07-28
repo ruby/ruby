@@ -121,6 +121,7 @@ rb_digest_instance_bubblebabble(VALUE self)
  * This module adds some methods to Digest classes to perform
  * BubbleBabble encoding.
  */
+COLDFUNC(void Init_bubblebabble(void));
 void
 Init_bubblebabble(void)
 {

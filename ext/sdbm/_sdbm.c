@@ -252,7 +252,7 @@ sdbm_prep(char *dirname, char *pagname, int flags, int mode)
  */
         return db;
 
-    err:
+    err: COLDLABEL
         if (db->pagf != -1)
                 (void) close(db->pagf);
         if (db->dirf != -1)

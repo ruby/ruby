@@ -1189,7 +1189,7 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     *lenp = len;
     return Qtrue;
 
-  out_of_range:
+  out_of_range: COLDLABEL
     if (err) {
 	rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
 		 origbeg, excl ? "." : "", origend);
@@ -1469,6 +1469,7 @@ range_alloc(VALUE klass)
  *
  */
 
+COLDFUNC(void Init_Range(void));
 void
 Init_Range(void)
 {

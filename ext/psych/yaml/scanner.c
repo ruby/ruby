@@ -2090,7 +2090,7 @@ yaml_parser_scan_directive(yaml_parser_t *parser, yaml_token_t *token)
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(prefix);
     yaml_free(handle);
     yaml_free(name);
@@ -2145,7 +2145,7 @@ yaml_parser_scan_directive_name(yaml_parser_t *parser,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     return 0;
 }
@@ -2310,7 +2310,7 @@ yaml_parser_scan_tag_directive_value(yaml_parser_t *parser,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(handle_value);
     yaml_free(prefix_value);
     return 0;
@@ -2373,7 +2373,7 @@ yaml_parser_scan_anchor(yaml_parser_t *parser, yaml_token_t *token,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     return 0;
 }
@@ -2487,7 +2487,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(handle);
     yaml_free(suffix);
     return 0;
@@ -2555,7 +2555,7 @@ yaml_parser_scan_tag_handle(yaml_parser_t *parser, int directive,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     return 0;
 }
@@ -2650,7 +2650,7 @@ yaml_parser_scan_tag_uri(yaml_parser_t *parser, int directive,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     return 0;
 }
@@ -2937,7 +2937,7 @@ yaml_parser_scan_block_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     STRING_DEL(parser, leading_break);
     STRING_DEL(parser, trailing_breaks);
@@ -3367,7 +3367,7 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     STRING_DEL(parser, leading_break);
     STRING_DEL(parser, trailing_breaks);
@@ -3563,7 +3563,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
 
     return 1;
 
-error:
+error: COLDLABEL
     STRING_DEL(parser, string);
     STRING_DEL(parser, leading_break);
     STRING_DEL(parser, trailing_breaks);

@@ -470,6 +470,7 @@ allocation_generation(VALUE self, VALUE obj)
     }
 }
 
+COLDFUNC(void Init_object_tracing(VALUE rb_mObjSpace));
 void
 Init_object_tracing(VALUE rb_mObjSpace)
 {

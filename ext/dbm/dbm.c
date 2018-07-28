@@ -39,7 +39,7 @@ struct dbmdata {
     DBM *di_dbm;
 };
 
-NORETURN(static void closed_dbm(void));
+NORETURN(COLDFUNC(static void closed_dbm(void)));
 
 static void
 closed_dbm(void)
@@ -1038,6 +1038,7 @@ fdbm_reject(VALUE obj)
  *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'
  *  puts db['822']
  */
+COLDFUNC(void Init_dbm(void));
 void
 Init_dbm(void)
 {

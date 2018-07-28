@@ -542,6 +542,7 @@ boot_defclass(const char *name, VALUE super)
     return obj;
 }
 
+COLDFUNC(void Init_class_hierarchy(void));
 void
 Init_class_hierarchy(void)
 {
@@ -932,7 +933,7 @@ include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super)
 
 	tbl = RMODULE_CONST_TBL(module);
 	if (tbl && rb_id_table_size(tbl)) constant_changed = 1;
-      skip:
+      skip: COLDLABEL
 	module = RCLASS_SUPER(module);
     }
 
@@ -1596,7 +1597,7 @@ singleton_class_of(VALUE obj)
     VALUE klass;
 
     if (FIXNUM_P(obj) || FLONUM_P(obj) || STATIC_SYM_P(obj)) {
-      no_singleton:
+      no_singleton: COLDLABEL
 	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (SPECIAL_CONST_P(obj)) {
@@ -1794,14 +1795,14 @@ rb_keyword_error_new(const char *error, VALUE keys)
     return rb_exc_new_str(rb_eArgError, error_message);
 }
 
-NORETURN(static void rb_keyword_error(const char *error, VALUE keys));
+NORETURN(COLDFUNC(static void rb_keyword_error(const char *error, VALUE keys)));
 static void
 rb_keyword_error(const char *error, VALUE keys)
 {
     rb_exc_raise(rb_keyword_error_new(error, keys));
 }
 
-NORETURN(static void unknown_keyword_error(VALUE hash, const ID *table, int keywords));
+NORETURN(COLDFUNC(static void unknown_keyword_error(VALUE hash, const ID *table, int keywords)));
 static void
 unknown_keyword_error(VALUE hash, const ID *table, int keywords)
 {
@@ -2053,7 +2054,7 @@ rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
     va_end(vargs);
 
     if (argi < argc) {
-      argc_error:
+      argc_error: COLDLABEL
 	rb_error_arity(argc, n_mand, f_var ? UNLIMITED_ARGUMENTS : n_mand + n_opt);
     }
 

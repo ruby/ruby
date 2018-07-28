@@ -58,6 +58,7 @@ InitVM_resolv(void)
     rb_define_private_method(singl, "get_dns_server_list", get_dns_server_list, 0);
 }
 
+COLDFUNC(void Init_resolv(void));
 void
 Init_resolv(void)
 {

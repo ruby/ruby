@@ -612,7 +612,6 @@ rb_bug_context(const void *ctx, const char *fmt, ...)
     die();
 }
 
-
 void
 rb_bug_errno(const char *mesg, int errno_arg)
 {
@@ -756,7 +755,7 @@ rb_builtin_class_name(VALUE x)
     return etype;
 }
 
-NORETURN(static void unexpected_type(VALUE, int, int));
+NORETURN(COLDFUNC(static void unexpected_type(VALUE, int, int)));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
 static void
@@ -836,12 +835,12 @@ rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
     const char *etype;
 
     if (!RB_TYPE_P(obj, T_DATA)) {
-      wrong_type:
+      wrong_type: COLDLABEL
 	etype = builtin_class_name(obj);
 	if (!etype)
 	    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
 		     rb_obj_class(obj), data_type->wrap_struct_name);
-      wrong_datatype:
+      wrong_datatype: COLDLABEL
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
 		 etype, data_type->wrap_struct_name);
     }
@@ -2418,6 +2417,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  * fatal -- impossible to rescue
  */
 
+COLDFUNC(void Init_Exception(void));
 void
 Init_Exception(void)
 {
@@ -2549,7 +2549,7 @@ rb_raise(VALUE exc, const char *fmt, ...)
     rb_exc_raise(rb_exc_new3(exc, mesg));
 }
 
-NORETURN(static void raise_loaderror(VALUE path, VALUE mesg));
+NORETURN(COLDFUNC(static void raise_loaderror(VALUE path, VALUE mesg)));
 
 static void
 raise_loaderror(VALUE path, VALUE mesg)
@@ -2630,7 +2630,7 @@ make_errno_exc_str(VALUE mesg)
     return rb_syserr_new_str(n, mesg);
 }
 
-VALUE
+ VALUE
 rb_syserr_new(int n, const char *mesg)
 {
     VALUE arg;
@@ -2894,6 +2894,7 @@ rb_check_copyable(VALUE obj, VALUE orig)
     }
 }
 
+COLDFUNC(void Init_syserr(void));
 void
 Init_syserr(void)
 {

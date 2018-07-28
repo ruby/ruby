@@ -165,7 +165,7 @@ VALUE rb_str_conv_enc_opts(VALUE str, rb_encoding *from, rb_encoding *to, int ec
 )
 #endif
 
-PRINTF_ARGS(NORETURN(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...)), 3, 4);
+PRINTF_ARGS(NORETURN(COLDFUNC(void rb_enc_raise(rb_encoding *, VALUE, const char*, ...))), 3, 4);
 
 /* index -> rb_encoding */
 rb_encoding *rb_enc_from_index(int idx);
@@ -327,7 +327,6 @@ int rb_econv_set_replacement(rb_econv_t *ec, const unsigned char *str, size_t le
 /* result: 0:success -1:failure */
 int rb_econv_decorate_at_first(rb_econv_t *ec, const char *decorator_name);
 int rb_econv_decorate_at_last(rb_econv_t *ec, const char *decorator_name);
-
 VALUE rb_econv_open_exc(const char *senc, const char *denc, int ecflags);
 
 /* result: 0:success -1:failure */

@@ -308,13 +308,13 @@ again:
 	goto SomeOneMayDoIt;
     }
 
-SomeOneMayDoIt:
+SomeOneMayDoIt: COLDLABEL
     if (must) {
 	cannot_be_coerced_into_BigDecimal(rb_eTypeError, v);
     }
     return NULL; /* NULL means to coerce */
 
-unable_to_coerce_without_prec:
+unable_to_coerce_without_prec: COLDLABEL
     if (must) {
 	rb_raise(rb_eArgError,
 		 "%"PRIsVALUE" can't be coerced into BigDecimal without a precision",
@@ -492,7 +492,7 @@ check_rounding_mode_option(VALUE const opts)
       default:
         break;
     }
-  invalid:
+  invalid: COLDLABEL
     if (NIL_P(mode))
 	rb_raise(rb_eArgError, "invalid rounding mode: nil");
     else
@@ -822,14 +822,14 @@ BigDecimal_to_f(VALUE self)
     }
     return rb_float_new(d);
 
-overflow:
+overflow: COLDLABEL
     VpException(VP_EXCEPTION_OVERFLOW, "BigDecimal to Float conversion", 0);
     if (BIGDECIMAL_NEGATIVE_P(p))
 	return rb_float_new(VpGetDoubleNegInf());
     else
 	return rb_float_new(VpGetDoublePosInf());
 
-underflow:
+underflow: COLDLABEL
     VpException(VP_EXCEPTION_UNDERFLOW, "BigDecimal to Float conversion", 0);
     if (BIGDECIMAL_NEGATIVE_P(p))
 	return rb_float_new(-0.0);
@@ -1429,7 +1429,7 @@ BigDecimal_DoDivmod(VALUE self, VALUE r, Real **div, Real **mod)
     }
     return Qtrue;
 
-NaN:
+NaN: COLDLABEL
     GUARD_OBJ(c, VpCreateRbObject(1, "NaN"));
     GUARD_OBJ(d, VpCreateRbObject(1, "NaN"));
     *div = d;
@@ -3263,6 +3263,7 @@ get_vp_value:
  * Documented by zzak <zachary@zacharyscott.net>, mathew <meta@pobox.com>, and
  * many other contributors.
  */
+COLDFUNC(void Init_bigdecimal(void));
 void
 Init_bigdecimal(void)
 {
@@ -4020,11 +4021,11 @@ AddExponent(Real *a, SIGNED_VALUE n)
     return 1;
 
 /* Overflow/Underflow ==> Raise exception or returns 0 */
-underflow:
+underflow: COLDLABEL
     VpSetZero(a, VpGetSign(a));
     return VpException(VP_EXCEPTION_UNDERFLOW, "Exponent underflow", 0);
 
-overflow:
+overflow: COLDLABEL
     VpSetInf(a, VpGetSign(a));
     return VpException(VP_EXCEPTION_OVERFLOW, "Exponent overflow", 0);
 }
@@ -5025,7 +5026,7 @@ out_side:
     VpNmlz(r);            /* normalize r(remainder) */
     goto Exit;
 
-space_error:
+space_error: COLDLABEL
 #ifdef BIGDECIMAL_DEBUG
     if (gfDebug) {
 	printf("   word_a=%"PRIuSIZE"\n", word_a);
@@ -5656,7 +5657,7 @@ VpCtoV(Real *a, const char *int_chr, size_t ni, const char *frac, size_t nf, con
     }
     goto Final;
 
-over_flow:
+over_flow: COLDLABEL
     rb_warn("Conversion from String to BigDecimal overflow (last few digits discarded).");
 
 Final:

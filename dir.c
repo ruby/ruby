@@ -377,7 +377,7 @@ fnmatch_helper(
 	Inc(s, send, enc);
 	continue;
 
-      failed: /* try next '*' position */
+      failed: COLDLABEL /* try next '*' position */
 	if (ptmp && stmp) {
 	    p = ptmp;
 	    Inc(stmp, send, enc); /* !ISEND(*stmp) */
@@ -612,7 +612,7 @@ dir_s_open(int argc, VALUE *argv, VALUE klass)
     return dir;
 }
 
-NORETURN(static void dir_closed(void));
+NORETURN(COLDFUNC(static void dir_closed(void)));
 
 static void
 dir_closed(void)
@@ -1702,7 +1702,7 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 
     tmp = GLOB_ALLOC(struct glob_pattern);
     if (!tmp) {
-      error:
+      error: COLDLABEL
 	*tail = 0;
 	glob_free_pattern(list);
 	return 0;
@@ -3250,6 +3250,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *  directory (<code>..</code>), and the directory itself
  *  (<code>.</code>).
  */
+COLDFUNC(void Init_Dir(void));
 void
 Init_Dir(void)
 {

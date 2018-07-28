@@ -671,7 +671,7 @@ get_addr(const char *hostname, int af, struct addrinfo **res, struct addrinfo *p
 	if (hp)
 		freehostent(hp);
 #endif
- bad:
+ bad: COLDLABEL
 	*res = NULL;
 	return error;
 }

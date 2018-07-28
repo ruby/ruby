@@ -35,7 +35,7 @@ VALUE rb_eFiddleError;
 #endif
 #define TYPE_UINTPTR_T (-TYPE_INTPTR_T)
 
-void Init_fiddle_pointer(void);
+COLDFUNC(void Init_fiddle_pointer(void));
 
 /*
  * call-seq: Fiddle.malloc(size)
@@ -123,8 +123,9 @@ rb_fiddle_value2ptr(VALUE self, VALUE val)
     return PTR2NUM((void*)val);
 }
 
-void Init_fiddle_handle(void);
+COLDFUNC(void Init_fiddle_handle(void));
 
+COLDFUNC(void Init_fiddle(void));
 void
 Init_fiddle(void)
 {

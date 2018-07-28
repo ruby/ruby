@@ -9011,6 +9011,7 @@ mk_ary_of_str(long len, const char *a[])
     return o;
 }
 
+COLDFUNC(void Init_date_core(void));
 void
 Init_date_core(void)
 {

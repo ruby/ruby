@@ -29,8 +29,11 @@ extern "C" {
 #ifndef PUREFUNC
 # define PUREFUNC(x) x
 #endif
-#ifndef DEPRECATED
-# define DEPRECATED(x) x
+#ifndef COLDFUNC
+# define COLDFUNC(x) x
+#endif
+#ifndef HOTFUNC
+# define HOTFUNC(x) x
 #endif
 #ifndef DEPRECATED_BY
 # define DEPRECATED_BY(n,x) DEPRECATED(x)
@@ -88,6 +91,13 @@ extern "C" {
 #define RB_LIKELY(x)   (x)
 #define RB_UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
+
+/* label attrs */
+#if GCC_VERSION_SINCE(5,0,0)
+# define COLDLABEL __attribute__((__cold__));
+#else
+# define COLDLABEL
+#endif
 
 #ifdef __GNUC__
 #define PRINTF_ARGS(decl, string_index, first_to_check) \

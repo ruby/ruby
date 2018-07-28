@@ -704,6 +704,7 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     return e;
 }
 
+COLDFUNC(void Init_w32_codepage(void));
 void
 Init_w32_codepage(void)
 {

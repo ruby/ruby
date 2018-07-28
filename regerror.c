@@ -245,8 +245,13 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
 /* for ONIG_MAX_ERROR_MESSAGE_LEN */
 #define MAX_ERROR_PAR_LEN   30
 
+#ifdef RUBY
 extern int
 onig_error_code_to_str(UChar* s, OnigPosition code, ...)
+#else
+extern int
+onig_error_code_to_str(UChar* s, OnigPosition code, ...)
+#endif
 {
   UChar *p, *q;
   OnigErrorInfo* einfo;
@@ -310,9 +315,15 @@ onig_error_code_to_str(UChar* s, OnigPosition code, ...)
   return (int )len;
 }
 
+#ifdef RUBY
 void
 onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
                            UChar* pat, UChar* pat_end, const UChar *fmt, va_list args)
+#else
+void
+onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc,
+                           UChar* pat, UChar* pat_end, const UChar *fmt, va_list args)
+#endif
 {
   size_t need;
   int n, len;

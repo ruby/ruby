@@ -2840,8 +2840,14 @@ fetch_name(OnigCodePoint start_code, UChar** src, UChar* end,
 #endif /* USE_NAMED_GROUP */
 
 
+#ifdef RUBY
+COLDFUNC(static void onig_syntax_warn(ScanEnv *env, const char *fmt, ...));
 static void
 onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
+#else
+static void
+onig_syntax_warn(ScanEnv *env, const char *fmt, ...)
+#endif
 {
     va_list args;
     UChar buf[WARN_BUFSIZE];
@@ -7034,9 +7040,15 @@ onig_parse_make_tree(Node** root, const UChar* pattern, const UChar* end,
   return r;
 }
 
+#ifdef RUBY
 extern void
 onig_scan_env_set_error_string(ScanEnv* env, int ecode ARG_UNUSED,
 				UChar* arg, UChar* arg_end)
+#else
+extern void
+onig_scan_env_set_error_string(ScanEnv* env, int ecode ARG_UNUSED,
+				UChar* arg, UChar* arg_end)
+#endif
 {
   env->error     = arg;
   env->error_end = arg_end;

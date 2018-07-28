@@ -494,7 +494,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
 	sym = ID2SYM(lid);
-      undefined:
+      undefined: COLDLABEL
 	rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
 			  bindval, sym);
     }
@@ -1767,7 +1767,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     ID id = rb_check_id(&vid);
 
     if (NIL_P(klass) || NIL_P(klass = RCLASS_ORIGIN(klass))) {
-      undef:
+      undef: COLDLABEL
 	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
 			  obj, vid);
     }
@@ -2833,7 +2833,7 @@ proc_binding(VALUE self)
 		break;
 	    }
 	    else {
-	      error:
+	      error: COLDLABEL
 		rb_raise(rb_eArgError, "Can't create Binding from C level Proc");
 		return Qnil;
 	    }
@@ -3065,6 +3065,7 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
  *
  */
 
+COLDFUNC(void Init_Proc(void));
 void
 Init_Proc(void)
 {
@@ -3209,6 +3210,7 @@ Init_Proc(void)
  *
  */
 
+COLDFUNC(void Init_Binding(void));
 void
 Init_Binding(void)
 {

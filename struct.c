@@ -938,7 +938,7 @@ rb_struct_pos(VALUE s, VALUE *name)
     }
 }
 
-NORETURN(static void invalid_struct_pos(VALUE s, VALUE idx));
+NORETURN(COLDFUNC(static void invalid_struct_pos(VALUE s, VALUE idx)));
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
@@ -1304,6 +1304,7 @@ InitVM_Struct(void)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_Struct(void));
 void
 Init_Struct(void)
 {

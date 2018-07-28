@@ -1885,7 +1885,7 @@ check_exec_redirect_fd(VALUE v, int iskey)
         fd = fptr->fd;
     }
     else {
-      wrong:
+      wrong: COLDLABEL
         rb_raise(rb_eArgError, "wrong exec redirect");
     }
     if (fd < 0) {
@@ -1949,7 +1949,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
             eargp->fd_dup2 = check_exec_redirect1(eargp->fd_dup2, key, param);
         }
         else {
-	  wrong_symbol:
+	  wrong_symbol: COLDLABEL
             rb_raise(rb_eArgError, "wrong exec redirect symbol: %"PRIsVALUE,
                                    val);
         }
@@ -3272,7 +3272,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 
     return 0;
 
-  fail:
+  fail: COLDLABEL
     return -1;
 }
 
@@ -8447,6 +8447,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcID_Syscall, "issetugid", p_sys_issetugid, 0);
 }
 
+COLDFUNC(void Init_process(void));
 void
 Init_process(void)
 {

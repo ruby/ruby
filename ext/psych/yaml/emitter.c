@@ -389,7 +389,7 @@ yaml_emitter_append_tag_directive(yaml_emitter_t *emitter,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(copy.handle);
     yaml_free(copy.prefix);
     return 0;

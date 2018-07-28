@@ -210,7 +210,7 @@ void rb_define_singleton_method(VALUE, const char*, VALUE(*)(ANYARGS), int);
 VALUE rb_singleton_class(VALUE);
 /* compar.c */
 int rb_cmpint(VALUE, VALUE, VALUE);
-NORETURN(void rb_cmperr(VALUE, VALUE));
+NORETURN(COLDFUNC(void rb_cmperr(VALUE, VALUE)));
 /* cont.c */
 VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
@@ -241,14 +241,14 @@ VALUE rb_exc_new_cstr(VALUE, const char*);
 VALUE rb_exc_new_str(VALUE, VALUE);
 #define rb_exc_new2 rb_exc_new_cstr
 #define rb_exc_new3 rb_exc_new_str
-PRINTF_ARGS(NORETURN(void rb_loaderror(const char*, ...)), 1, 2);
-PRINTF_ARGS(NORETURN(void rb_loaderror_with_path(VALUE path, const char*, ...)), 2, 3);
-PRINTF_ARGS(NORETURN(void rb_name_error(ID, const char*, ...)), 2, 3);
-PRINTF_ARGS(NORETURN(void rb_name_error_str(VALUE, const char*, ...)), 2, 3);
-NORETURN(void rb_invalid_str(const char*, const char*));
-NORETURN(void rb_error_frozen(const char*));
-NORETURN(void rb_error_frozen_object(VALUE));
-void rb_error_untrusted(VALUE);
+PRINTF_ARGS(NORETURN(COLDFUNC(void rb_loaderror(const char*, ...))), 1, 2);
+PRINTF_ARGS(NORETURN(COLDFUNC(void rb_loaderror_with_path(VALUE path, const char*, ...))), 2, 3);
+PRINTF_ARGS(NORETURN(COLDFUNC(void rb_name_error(ID, const char*, ...))), 2, 3);
+PRINTF_ARGS(NORETURN(COLDFUNC(void rb_name_error_str(VALUE, const char*, ...))), 2, 3);
+NORETURN(COLDFUNC(void rb_invalid_str(const char*, const char*)));
+NORETURN(COLDFUNC(void rb_error_frozen(const char*)));
+NORETURN(COLDFUNC(void rb_error_frozen_object(VALUE)));
+COLDFUNC(void rb_error_untrusted(VALUE));
 void rb_check_frozen(VALUE);
 void rb_check_trusted(VALUE);
 #define rb_check_frozen_internal(obj) do { \
@@ -286,7 +286,7 @@ int rb_sourceline(void);
 const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
-NORETURN(void rb_error_arity(int, int, int));
+NORETURN(COLDFUNC(void rb_error_arity(int, int, int)));
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
@@ -367,10 +367,10 @@ typedef fd_set rb_fdset_t;
 
 #endif
 
-NORETURN(void rb_exc_raise(VALUE));
-NORETURN(void rb_exc_fatal(VALUE));
-NORETURN(VALUE rb_f_exit(int, const VALUE*));
-NORETURN(VALUE rb_f_abort(int, const VALUE*));
+NORETURN(COLDFUNC(void rb_exc_raise(VALUE)));
+NORETURN(COLDFUNC(void rb_exc_fatal(VALUE)));
+NORETURN(COLDFUNC(VALUE rb_f_exit(int, const VALUE*)));
+NORETURN(COLDFUNC(VALUE rb_f_abort(int, const VALUE*)));
 void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
@@ -387,12 +387,12 @@ int rb_method_basic_definition_p(VALUE, ID);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
 int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
-NORETURN(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj));
+NORETURN(COLDFUNC(VALUE rb_f_notimplement(int argc, const VALUE *argv, VALUE obj)));
 #if !defined(RUBY_EXPORT) && defined(_WIN32)
-RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE);
+COLDFUNC(RUBY_EXTERN VALUE (*const rb_f_notimplement_)(int, const VALUE *, VALUE));
 #define rb_f_notimplement (*rb_f_notimplement_)
 #endif
-NORETURN(void rb_interrupt(void));
+NORETURN(COLDFUNC(void rb_interrupt(void)));
 VALUE rb_apply(VALUE, ID, VALUE);
 void rb_backtrace(void);
 ID rb_frame_this_func(void);
@@ -470,7 +470,7 @@ VALUE rb_file_directory_p(VALUE,VALUE);
 VALUE rb_str_encode_ospath(VALUE);
 int rb_is_absolute_path(const char *);
 /* gc.c */
-NORETURN(void rb_memerror(void));
+NORETURN(COLDFUNC(void rb_memerror(void)));
 PUREFUNC(int rb_during_gc(void));
 void rb_gc_mark_locations(const VALUE*, const VALUE*);
 void rb_mark_tbl(struct st_table*);
@@ -542,8 +542,8 @@ VALUE rb_io_get_io(VALUE);
 VALUE rb_file_open(const char*, const char*);
 VALUE rb_file_open_str(VALUE, const char*);
 VALUE rb_gets(void);
-void rb_write_error(const char*);
-void rb_write_error2(const char*, long);
+COLDFUNC(void rb_write_error(const char*));
+COLDFUNC(void rb_write_error2(const char*, long));
 void rb_close_before_exec(int lowfd, int maxhint, VALUE noclose_fds);
 int rb_pipe(int *pipes);
 int rb_reserved_fd_p(int fd);
@@ -560,7 +560,7 @@ VALUE rb_marshal_dump(VALUE, VALUE);
 VALUE rb_marshal_load(VALUE);
 void rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE), VALUE (*loader)(VALUE, VALUE));
 /* numeric.c */
-NORETURN(void rb_num_zerodiv(void));
+NORETURN(COLDFUNC(void rb_num_zerodiv(void)));
 #define RB_NUM_COERCE_FUNCS_NEED_OPID 1
 VALUE rb_num_coerce_bin(VALUE, VALUE, ID);
 VALUE rb_num_coerce_cmp(VALUE, VALUE, ID);
@@ -630,7 +630,7 @@ NORETURN(VALUE rb_f_exec(int, const VALUE*));
 rb_pid_t rb_waitpid(rb_pid_t pid, int *status, int flags);
 void rb_syswait(rb_pid_t pid);
 rb_pid_t rb_spawn(int, const VALUE*);
-rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t);
+COLDFUNC(rb_pid_t rb_spawn_err(int, const VALUE*, char*, size_t));
 VALUE rb_proc_times(VALUE);
 VALUE rb_detach_process(rb_pid_t pid);
 /* range.c */

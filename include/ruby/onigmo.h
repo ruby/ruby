@@ -814,8 +814,13 @@ ONIG_EXTERN
 int onig_initialize(OnigEncoding encodings[], int n);
 ONIG_EXTERN
 int onig_init(void);
+#ifdef RUBY
 ONIG_EXTERN
 int onig_error_code_to_str(OnigUChar* s, OnigPosition err_code, ...);
+#else
+ONIG_EXTERN
+int onig_error_code_to_str(OnigUChar* s, OnigPosition err_code, ...);
+#endif
 ONIG_EXTERN
 void onig_set_warn_func(OnigWarnFunc f);
 ONIG_EXTERN

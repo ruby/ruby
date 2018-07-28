@@ -964,7 +964,7 @@ clear_dump_arg(struct dump_arg *arg)
     }
 }
 
-NORETURN(static inline void io_needed(void));
+NORETURN(COLDFUNC(static inline void io_needed(void)));
 static inline void
 io_needed(void)
 {
@@ -1128,7 +1128,7 @@ static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
 static VALUE path2class(VALUE path);
 
-NORETURN(static void too_short(void));
+NORETURN(COLDFUNC(static void too_short(void)));
 static void
 too_short(void)
 {
@@ -1189,7 +1189,7 @@ r_byte(struct load_arg *arg)
     return c;
 }
 
-NORETURN(static void long_toobig(int size));
+NORETURN(COLDFUNC(static void long_toobig(int size)));
 
 static void
 long_toobig(int size)
@@ -1646,7 +1646,7 @@ r_object0(struct load_arg *arg, int *ivp, VALUE extmod)
 	    }
 	    v = r_object0(arg, 0, extmod);
 	    if (rb_special_const_p(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
-	      format_error:
+	      format_error: COLDLABEL
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
 	    if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
@@ -2227,6 +2227,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
  * Since Marshal.dump outputs a string you can have _dump return a Marshal
  * string which is Marshal.loaded in _load for complex objects.
  */
+COLDFUNC(void Init_marshal(void));
 void
 Init_marshal(void)
 {

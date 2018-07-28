@@ -648,7 +648,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
     native_thread_destroy(th);
 }
 
-static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
+COLDFUNC(static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *));
 static VALUE rb_thread_to_s(VALUE thread);
 
 void
@@ -2289,6 +2289,7 @@ rb_threadptr_signal_raise(rb_thread_t *th, int sig)
     rb_threadptr_raise(th->vm->main_thread, 2, argv);
 }
 
+COLDFUNC(void rb_threadptr_signal_exit(rb_thread_t *th));
 void
 rb_threadptr_signal_exit(rb_thread_t *th)
 {
@@ -4947,7 +4948,7 @@ exec_recursive(VALUE (*func) (VALUE, VALUE, int), VALUE obj, VALUE pairid, VALUE
 	    }
 	    EC_POP_TAG();
 	    if (!recursive_pop(p.list, p.objid, p.pairid)) {
-	      invalid:
+	      invalid: COLDLABEL
 		rb_raise(rb_eTypeError, "invalid inspect_tbl pair_list "
 			 "for %+"PRIsVALUE" in %+"PRIsVALUE,
 			 sym, rb_thread_current());
@@ -5052,6 +5053,7 @@ rb_thread_backtrace_locations_m(int argc, VALUE *argv, VALUE thval)
  *     note: use sleep to stop forever
  */
 
+COLDFUNC(void Init_Thread(void));
 void
 Init_Thread(void)
 {

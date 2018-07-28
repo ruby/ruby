@@ -1534,14 +1534,14 @@ VALUE rb_proc_alloc(VALUE klass);
 VALUE rb_proc_dup(VALUE self);
 
 /* for debug */
-extern void rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
-extern void rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc);
-extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+COLDFUNC(extern void rb_vmdebug_stack_dump_raw(const rb_execution_context_t *ec, const rb_control_frame_t *cfp));
+COLDFUNC(extern void rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, const VALUE *_pc));
+COLDFUNC(extern void rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp));
 
 #define SDR() rb_vmdebug_stack_dump_raw(GET_EC(), GET_EC()->cfp)
 #define SDR2(cfp) rb_vmdebug_stack_dump_raw(GET_EC(), (cfp))
-void rb_vm_bugreport(const void *);
-NORETURN(void rb_bug_context(const void *, const char *fmt, ...));
+COLDFUNC(void rb_vm_bugreport(const void *));
+NORETURN(COLDFUNC(void rb_bug_context(const void *, const char *fmt, ...)));
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -1738,14 +1738,14 @@ VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
 int rb_signal_buff_size(void);
 void rb_signal_exec(rb_thread_t *th, int sig);
 void rb_threadptr_check_signal(rb_thread_t *mth);
-void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
-void rb_threadptr_signal_exit(rb_thread_t *th);
+COLDFUNC(void rb_threadptr_signal_raise(rb_thread_t *th, int sig));
+COLDFUNC(void rb_threadptr_signal_exit(rb_thread_t *th));
 void rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
-void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo);
+COLDFUNC(void rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo));
 void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);

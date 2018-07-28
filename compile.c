@@ -371,7 +371,7 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, int line,
 
 /* error */
 #if CPDEBUG > 0
-NORETURN(static void append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...));
+NORETURN(COLDFUNC(static void append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)));
 #endif
 
 static void
@@ -396,6 +396,7 @@ append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
 }
 
 #if 0
+COLDFUNC(static void compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...));
 static void
 compile_bug(rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
@@ -712,7 +713,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	  default:
 	    COMPILE_ERROR(ERROR_ARGS "unknown scope: %d", iseq->body->type);
 	    return COMPILE_NG;
-	  invalid_iseq_type:
+	  invalid_iseq_type: COLDLABEL
 	    COMPILE_ERROR(ERROR_ARGS "compile/ISEQ_TYPE_%s should not be reached", m);
 	    return COMPILE_NG;
 	}
@@ -7456,7 +7457,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       default:
 	UNKNOWN_NODE("iseq_compile_each", node, COMPILE_NG);
-      ng:
+      ng: COLDLABEL
 	debug_node_end();
 	return COMPILE_NG;
     }
@@ -9220,7 +9221,7 @@ ibf_load_check_offset(const struct ibf_load *load, size_t offset)
     return load->buff + offset;
 }
 
-NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj));
+NORETURN(COLDFUNC(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)));
 
 static void
 ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
@@ -9228,6 +9229,8 @@ ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
     rb_obj_info_dump(obj);
     rb_bug("ibf_dump_object_unsupported: unsupported");
 }
+
+COLDFUNC(static VALUE ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset));
 
 static VALUE
 ibf_load_object_unsupported(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)

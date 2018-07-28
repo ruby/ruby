@@ -1999,6 +1999,7 @@ utf8_to_uv(const char *p, long *lenp)
     return uv;
 }
 
+COLDFUNC(void Init_pack(void));
 void
 Init_pack(void)
 {

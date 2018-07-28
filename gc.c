@@ -6651,6 +6651,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
 
 #undef Init_stack
 
+COLDFUNC(void Init_stack(volatile VALUE *addr));
 void
 Init_stack(volatile VALUE *addr)
 {
@@ -7648,6 +7649,7 @@ rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE,
 
 static void objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t size);
 
+COLDFUNC(static void *negative_size_allocation_error_with_gvl(void *ptr));
 static void *
 negative_size_allocation_error_with_gvl(void *ptr)
 {
@@ -7655,6 +7657,7 @@ negative_size_allocation_error_with_gvl(void *ptr)
     return 0; /* should not be reached */
 }
 
+COLDFUNC(static void negative_size_allocation_error(const char *msg));
 static void
 negative_size_allocation_error(const char *msg)
 {
@@ -9780,6 +9783,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  GC::Profiler.
  */
 
+COLDFUNC(void Init_GC(void));
 void
 Init_GC(void)
 {

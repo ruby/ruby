@@ -22,7 +22,7 @@
 #define write_warn_str(str,x) NIL_P(str) ? rb_write_error_str(x) : (void)rb_str_concat((str), (x))
 #define warn_print_str(x) rb_write_error_str(x)
 
-static VALUE error_pos_str(void);
+COLDFUNC(static VALUE error_pos_str(void));
 
 static void
 error_pos(const VALUE str)
@@ -73,6 +73,7 @@ set_backtrace(VALUE info, VALUE bt)
     rb_check_funcall(info, set_backtrace, 1, &bt);
 }
 
+COLDFUNC(static void error_print(rb_execution_context_t *ec));
 static void
 error_print(rb_execution_context_t *ec)
 {
@@ -86,6 +87,7 @@ static const char underline[] = CSI_BEGIN"1;4"CSI_SGR;
 static const char bold[] = CSI_BEGIN"1"CSI_SGR;
 static const char reset[] = CSI_BEGIN""CSI_SGR;
 
+COLDFUNC(static void print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight));
 static void
 print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
 {
@@ -187,6 +189,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
     }
 }
 
+COLDFUNC(static void print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse));
 static void
 print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse)
 {
@@ -220,6 +223,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
     }
 }
 
+COLDFUNC(void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse));
 void
 rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
 {

@@ -160,7 +160,7 @@ ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 #define rb_io_modenum_flags(oflags) [<"rb_io_modenum_flags() is obsolete; use rb_io_oflags_fmode()">]
 
 VALUE rb_io_taint_check(VALUE);
-NORETURN(void rb_eof_error(void));
+NORETURN(COLDFUNC(void rb_eof_error(void)));
 
 void rb_io_read_check(rb_io_t*);
 int rb_io_read_pending(rb_io_t*);

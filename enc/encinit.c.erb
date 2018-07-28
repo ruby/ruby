@@ -11,7 +11,7 @@
 #define init_enc(name) init(Init_##name, "enc/"#name".so")
 #define init_trans(name) init(Init_trans_##name, "enc/trans/"#name".so")
 #define provide(func, name) { \
-    extern void Init_##func(void); \
+    COLDFUNC(extern void Init_##func(void)); \
     Init_##func(); \
     rb_provide(name".so"); \
 }
@@ -19,6 +19,7 @@
 void ruby_init_ext(const char *name, void (*init)(void));
 void rb_provide(const char *feature);
 
+COLDFUNC(void Init_enc(void));
 void
 Init_enc(void)
 {

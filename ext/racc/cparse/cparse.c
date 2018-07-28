@@ -591,7 +591,7 @@ parse_main(struct cparse_params *v, VALUE tok, VALUE val, int resume)
     return;
 
 
-  error:
+  error: COLDLABEL
     D_printf("error detected, status=%ld\n", v->errstatus);
     if (v->errstatus == 0) {
         v->nerr++;
@@ -812,6 +812,7 @@ reduce0(VALUE val, VALUE data, VALUE self)
                           Ruby Interface
 ----------------------------------------------------------------------- */
 
+COLDFUNC(void Init_cparse(void));
 void
 Init_cparse(void)
 {

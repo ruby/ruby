@@ -198,7 +198,7 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 	if (st) goto err;
     }
 
-  err:
+  err: COLDLABEL
     X509_free(x509);
     sk_X509_pop_free(x509s, X509_free);
     ossl_pkcs12_set_key(self, pkey);

@@ -1261,6 +1261,7 @@ fev_get_handler(VALUE self)
     return rb_ivar_get(self, rb_intern("handler"));
 }
 
+COLDFUNC(void Init_win32ole_event(void));
 void
 Init_win32ole_event(void)
 {

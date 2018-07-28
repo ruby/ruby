@@ -1226,7 +1226,7 @@ long_len:
 	}
 done:
 	FLUSH();
-error:
+error: COLDLABEL
 	return (BSD__sferror(fp) ? EOF : ret);
 	/* NOTREACHED */
 }

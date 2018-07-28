@@ -285,7 +285,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
-  error:
+  error: COLDLABEL
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
     if (fail) {
@@ -362,7 +362,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
     strlcpy(SlaveName, slavedevice, DEVICELEN);
     return 0;
 
-  error:
+  error: COLDLABEL
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
     if (fail) rb_raise(rb_eRuntimeError, "can't get Master/Slave device");
@@ -418,7 +418,7 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 	    close(masterfd);
 	}
     }
-  error:
+  error: COLDLABEL
     if (slavefd != -1) close(slavefd);
     if (masterfd != -1) close(masterfd);
     if (fail) rb_raise(rb_eRuntimeError, "can't get %s", SlaveName);
@@ -736,6 +736,7 @@ static VALUE cPTY;
  *  results obtained from use of this software.
  */
 
+COLDFUNC(void Init_pty(void));
 void
 Init_pty(void)
 {

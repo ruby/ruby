@@ -102,7 +102,7 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
 
     return 1;
 
-error:
+error: COLDLABEL
 
     yaml_parser_delete_aliases(parser);
     yaml_document_delete(document);
@@ -307,7 +307,7 @@ yaml_parser_load_scalar(yaml_parser_t *parser, yaml_event_t *first_event)
 
     return index;
 
-error:
+error: COLDLABEL
     yaml_free(tag);
     yaml_free(first_event->data.scalar.anchor);
     yaml_free(first_event->data.scalar.value);
@@ -370,7 +370,7 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
 
     return index;
 
-error:
+error: COLDLABEL
     yaml_free(tag);
     yaml_free(first_event->data.sequence_start.anchor);
     return 0;
@@ -436,7 +436,7 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
 
     return index;
 
-error:
+error: COLDLABEL
     yaml_free(tag);
     yaml_free(first_event->data.mapping_start.anchor);
     return 0;

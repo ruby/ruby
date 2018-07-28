@@ -5005,7 +5005,7 @@ rb_f_test(int argc, VALUE *argv)
     if (argc == 0) rb_check_arity(argc, 2, 3);
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) {
-      unknown:
+      unknown: COLDLABEL
 	/* unknown command */
 	if (ISPRINT(cmd)) {
 	    rb_raise(rb_eArgError, "unknown command '%s%c'", cmd == '\'' || cmd == '\\' ? "\\" : "", cmd);
@@ -6201,6 +6201,7 @@ const char ruby_null_device[] =
  *  Various constants for the methods in File can be found in File::Constants.
  */
 
+COLDFUNC(void Init_File(void));
 void
 Init_File(void)
 {

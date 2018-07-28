@@ -523,7 +523,7 @@ num_exact(VALUE v)
             v = RRATIONAL(v)->num;
     }
     else {
-      typeerror:
+      typeerror: COLDLABEL
 	rb_raise(rb_eTypeError, "can't convert %"PRIsVALUE" into an exact number",
 		 rb_obj_class(v));
     }
@@ -2023,7 +2023,7 @@ utc_offset_arg(VALUE arg)
         int n = 0;
         char *s = RSTRING_PTR(tmp);
         if (!rb_enc_str_asciicompat_p(tmp)) {
-	  invalid_utc_offset:
+	  invalid_utc_offset: COLDLABEL
             rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
 	}
 	switch (RSTRING_LEN(tmp)) {
@@ -3028,10 +3028,10 @@ find_time_t(struct tm *tptr, int utc_p, time_t *tp)
 
     return NULL;
 
-  out_of_range:
+  out_of_range: COLDLABEL
     return "time out of range";
 
-  error:
+  error: COLDLABEL
     return "gmtime/localtime error";
 }
 
@@ -4896,6 +4896,7 @@ time_load(VALUE klass, VALUE str)
  *    Time.new(2010,10,31).between?(t1, t2) #=> true
  */
 
+COLDFUNC(void Init_Time(void));
 void
 Init_Time(void)
 {

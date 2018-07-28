@@ -949,6 +949,7 @@ io_getpass(int argc, VALUE *argv, VALUE io)
 /*
  * IO console methods
  */
+COLDFUNC(void Init_console(void));
 void
 Init_console(void)
 {

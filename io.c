@@ -4041,7 +4041,7 @@ rb_io_each_codepoint(VALUE io)
 	    rb_yield(UINT2NUM(c));
 	}
 	else if (MBCLEN_INVALID_P(r)) {
-	  invalid:
+	  invalid: COLDLABEL
 	    rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(enc));
 	}
 	else if (MBCLEN_NEEDMORE_P(r)) {
@@ -5402,7 +5402,7 @@ rb_io_modestr_fmode(const char *modestr)
 	fmode |= FMODE_WRITABLE | FMODE_APPEND | FMODE_CREATE;
 	break;
       default:
-      error:
+      error: COLDLABEL
 	rb_raise(rb_eArgError, "invalid access mode %s", modestr);
     }
 
@@ -6388,7 +6388,7 @@ linux_get_maxfd(void)
     }
     /* fall through */
 
-  err:
+  err: COLDLABEL
     close(fd);
     return -1;
 }
@@ -7828,7 +7828,6 @@ rb_stderr_to_original_p(void)
 {
     return (rb_stderr == orig_stderr || RFILE(orig_stderr)->fptr->fd < 0);
 }
-
 void
 rb_write_error2(const char *mesg, long len)
 {
@@ -12924,6 +12923,7 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
  *    puts "Your screen is #{columns} wide and #{rows} tall"
  */
 
+COLDFUNC(void Init_IO(void));
 void
 Init_IO(void)
 {

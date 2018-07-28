@@ -2,6 +2,8 @@
 #include RUBY_EXTCONF_H
 #endif
 
+#include <ruby.h>
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif

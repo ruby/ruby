@@ -1170,6 +1170,7 @@ rb_f_autoload_p(VALUE obj, VALUE sym)
     return rb_mod_autoload_p(klass, sym);
 }
 
+COLDFUNC(void Init_load(void));
 void
 Init_load(void)
 {

@@ -72,6 +72,7 @@ static const struct st_hash_type symhash = {
     rb_str_hash,
 };
 
+COLDFUNC(void Init_sym(void));
 void
 Init_sym(void)
 {

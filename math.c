@@ -1024,6 +1024,7 @@ InitVM_Math(void)
     rb_define_module_function(rb_mMath, "lgamma", math_lgamma, 1);
 }
 
+COLDFUNC(void Init_Math(void));
 void
 Init_Math(void)
 {

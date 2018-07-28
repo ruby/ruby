@@ -1691,8 +1691,7 @@ rsock_bsock_recvmsg_nonblock(VALUE sock, VALUE dlen, VALUE flags, VALUE clen,
 }
 #endif
 
-void
-rsock_init_ancdata(void)
+void rsock_init_ancdata(void)
 {
 #if defined(HAVE_STRUCT_MSGHDR_MSG_CONTROL)
     /*

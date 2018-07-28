@@ -38,6 +38,7 @@ Init_enc_set_filesystem_encoding(void)
 
 void rb_encdb_declare(const char *name);
 int rb_encdb_alias(const char *alias, const char *orig);
+COLDFUNC(void Init_enc(void));
 void
 Init_enc(void)
 {

@@ -903,8 +903,13 @@ extern void onig_print_statistics(FILE* f);
 # endif
 #endif
 
+#ifdef RUBY
 extern UChar* onig_error_code_to_format(OnigPosition code);
 extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, va_list args);
+#else
+extern UChar* onig_error_code_to_format(OnigPosition code);
+extern void onig_vsnprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, va_list args);
+#endif
 extern void onig_snprintf_with_pattern(UChar buf[], int bufsize, OnigEncoding enc, UChar* pat, UChar* pat_end, const UChar *fmt, ...);
 extern int  onig_bbuf_init(BBuf* buf, OnigDistance size);
 extern int  onig_compile(regex_t* reg, const UChar* pattern, const UChar* pattern_end, OnigErrorInfo* einfo);

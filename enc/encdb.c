@@ -19,6 +19,7 @@
 #define ENC_SET_DUMMY(name, orig) rb_enc_set_dummy(name)
 #define ENC_DUMMY_UNICODE(name) rb_encdb_set_unicode(rb_enc_set_dummy(ENC_REPLICATE((name), name "BE")))
 
+COLDFUNC(void Init_encdb(void));
 void
 Init_encdb(void)
 {

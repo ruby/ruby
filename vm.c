@@ -1403,6 +1403,7 @@ make_localjump_error(const char *mesg, VALUE value, int reason)
     return exc;
 }
 
+COLDFUNC(MJIT_FUNC_EXPORTED void rb_vm_localjump_error(const char *mesg, VALUE value, int reason));
 MJIT_FUNC_EXPORTED void
 rb_vm_localjump_error(const char *mesg, VALUE value, int reason)
 {
@@ -2834,6 +2835,7 @@ static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
 #endif
 
+COLDFUNC(void Init_VM(void));
 void
 Init_VM(void)
 {
@@ -3148,7 +3150,7 @@ rb_vm_set_progname(VALUE filename)
 }
 
 extern const struct st_hash_type rb_fstring_hash_type;
-
+COLDFUNC(void Init_BareVM(void));
 void
 Init_BareVM(void)
 {
@@ -3172,6 +3174,7 @@ Init_BareVM(void)
     ruby_thread_init_stack(th);
 }
 
+COLDFUNC(void Init_vm_objects(void));
 void
 Init_vm_objects(void)
 {
@@ -3199,6 +3202,7 @@ rb_vm_top_self(void)
     return GET_VM()->top_self;
 }
 
+COLDFUNC(void Init_top_self(void));
 void
 Init_top_self(void)
 {

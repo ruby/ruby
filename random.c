@@ -1204,6 +1204,7 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
     }
 }
 
+NORETURN(COLDFUNC(static void domain_error(void)));
 static void
 domain_error(void)
 {
@@ -1211,7 +1212,7 @@ domain_error(void)
     rb_exc_raise(rb_class_new_instance(1, &error, rb_eSystemCallError));
 }
 
-NORETURN(static void invalid_argument(VALUE));
+NORETURN(COLDFUNC(static void invalid_argument(VALUE)));
 static void
 invalid_argument(VALUE arg0)
 {
@@ -1563,6 +1564,7 @@ rb_memhash(const void *ptr, long len)
 
 /* Initialize Ruby internal seeds. This function is called at very early stage
  * of Ruby startup. Thus, you can't use Ruby's object. */
+COLDFUNC(void Init_RandomSeedCore(void));
 void
 Init_RandomSeedCore(void)
 {
@@ -1640,6 +1642,7 @@ rb_reset_random_seed(void)
  * of 2**19937-1.
  */
 
+COLDFUNC(void InitVM_Random(void));
 void
 InitVM_Random(void)
 {
@@ -1686,6 +1689,7 @@ InitVM_Random(void)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_Random(void));
 void
 Init_Random(void)
 {

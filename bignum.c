@@ -3758,7 +3758,7 @@ str2big_scan_digits(const char *s, const char *str, int base, int badcheck, size
 	    if (len > 0 && !--len) break;
 	}
 	if (len && *str) {
-	  bad:
+	  bad: COLDLABEL
 	    return FALSE;
 	}
     }
@@ -4053,7 +4053,7 @@ rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits,
     } while (0)
 
     if (!str) {
-      bad:
+      bad: COLDLABEL
 	if (endp) *endp = (char *)str;
 	if (ndigits) *ndigits = num_digits;
 	return z;
@@ -6644,7 +6644,7 @@ rb_big_aref(VALUE x, VALUE y)
 	    return INT2FIX(0);
 	bigtrunc(y);
 	if (BIGSIZE(y) > sizeof(size_t)) {
-	  out_of_range:
+	  out_of_range: COLDLABEL
 	    return BIGNUM_SIGN(x) ? INT2FIX(0) : INT2FIX(1);
 	}
 #if SIZEOF_SIZE_T <= SIZEOF_LONG
@@ -7118,6 +7118,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
  *
  */
 
+COLDFUNC(void Init_Bignum(void));
 void
 Init_Bignum(void)
 {

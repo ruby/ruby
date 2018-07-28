@@ -192,7 +192,7 @@ yaml_parser_initialize(yaml_parser_t *parser)
 
     return 1;
 
-error:
+error: COLDLABEL
 
     BUFFER_DEL(parser, parser->raw_buffer);
     BUFFER_DEL(parser, parser->buffer);
@@ -366,7 +366,7 @@ yaml_emitter_initialize(yaml_emitter_t *emitter)
 
     return 1;
 
-error:
+error: COLDLABEL
 
     BUFFER_DEL(emitter, emitter->buffer);
     BUFFER_DEL(emitter, emitter->raw_buffer);
@@ -753,7 +753,7 @@ yaml_document_start_event_initialize(yaml_event_t *event,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(context, tag_directives_copy)) {
         yaml_tag_directive_t value = POP(context, tag_directives_copy);
@@ -853,7 +853,7 @@ yaml_scalar_event_initialize(yaml_event_t *event,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(anchor_copy);
     yaml_free(tag_copy);
     yaml_free(value_copy);
@@ -893,7 +893,7 @@ yaml_sequence_start_event_initialize(yaml_event_t *event,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(anchor_copy);
     yaml_free(tag_copy);
 
@@ -948,7 +948,7 @@ yaml_mapping_start_event_initialize(yaml_event_t *event,
 
     return 1;
 
-error:
+error: COLDLABEL
     yaml_free(anchor_copy);
     yaml_free(tag_copy);
 
@@ -1094,7 +1094,7 @@ yaml_document_initialize(yaml_document_t *document,
 
     return 1;
 
-error:
+error: COLDLABEL
     STACK_DEL(&context, nodes);
     yaml_free(version_directive_copy);
     while (!STACK_EMPTY(&context, tag_directives_copy)) {
@@ -1229,7 +1229,7 @@ yaml_document_add_scalar(yaml_document_t *document,
 
     return document->nodes.top - document->nodes.start;
 
-error:
+error: COLDLABEL
     yaml_free(tag_copy);
     yaml_free(value_copy);
 
@@ -1274,7 +1274,7 @@ yaml_document_add_sequence(yaml_document_t *document,
 
     return document->nodes.top - document->nodes.start;
 
-error:
+error: COLDLABEL
     STACK_DEL(&context, items);
     yaml_free(tag_copy);
 
@@ -1319,7 +1319,7 @@ yaml_document_add_mapping(yaml_document_t *document,
 
     return document->nodes.top - document->nodes.start;
 
-error:
+error: COLDLABEL
     STACK_DEL(&context, pairs);
     yaml_free(tag_copy);
 

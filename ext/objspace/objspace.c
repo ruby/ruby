@@ -933,6 +933,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
  * memory usage.
  */
 
+COLDFUNC(void Init_objspace(void));
 void
 Init_objspace(void)
 {

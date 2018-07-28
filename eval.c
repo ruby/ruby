@@ -419,7 +419,7 @@ void
 rb_class_modify_check(VALUE klass)
 {
     if (SPECIAL_CONST_P(klass)) {
-      noclass:
+      noclass: COLDLABEL
 	Check_Type(klass, T_CLASS);
     }
     if (OBJ_FROZEN(klass)) {
@@ -1902,6 +1902,7 @@ f_current_dirname(void)
     return base;
 }
 
+COLDFUNC(void Init_eval(void));
 void
 Init_eval(void)
 {

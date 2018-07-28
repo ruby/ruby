@@ -22,7 +22,7 @@ extern VALUE mX509;
  */
 ASN1_TIME *ossl_x509_time_adjust(ASN1_TIME *, VALUE);
 
-void Init_ossl_x509(void);
+COLDFUNC(void Init_ossl_x509(void));
 
 /*
  * X509Attr
@@ -32,7 +32,7 @@ extern VALUE eX509AttrError;
 
 VALUE ossl_x509attr_new(X509_ATTRIBUTE *);
 X509_ATTRIBUTE *GetX509AttrPtr(VALUE);
-void Init_ossl_x509attr(void);
+COLDFUNC(void Init_ossl_x509attr(void));
 
 /*
  * X509Cert
@@ -43,7 +43,7 @@ extern VALUE eX509CertError;
 VALUE ossl_x509_new(X509 *);
 X509 *GetX509CertPtr(VALUE);
 X509 *DupX509CertPtr(VALUE);
-void Init_ossl_x509cert(void);
+COLDFUNC(void Init_ossl_x509cert(void));
 
 /*
  * X509CRL
@@ -53,7 +53,7 @@ extern VALUE eX509CRLError;
 
 VALUE ossl_x509crl_new(X509_CRL *);
 X509_CRL *GetX509CRLPtr(VALUE);
-void Init_ossl_x509crl(void);
+COLDFUNC(void Init_ossl_x509crl(void));
 
 /*
  * X509Extension
@@ -64,7 +64,7 @@ extern VALUE eX509ExtError;
 
 VALUE ossl_x509ext_new(X509_EXTENSION *);
 X509_EXTENSION *GetX509ExtPtr(VALUE);
-void Init_ossl_x509ext(void);
+COLDFUNC(void Init_ossl_x509ext(void));
 
 /*
  * X509Name
@@ -74,7 +74,7 @@ extern VALUE eX509NameError;
 
 VALUE ossl_x509name_new(X509_NAME *);
 X509_NAME *GetX509NamePtr(VALUE);
-void Init_ossl_x509name(void);
+COLDFUNC(void Init_ossl_x509name(void));
 
 /*
  * X509Request
@@ -83,7 +83,7 @@ extern VALUE cX509Req;
 extern VALUE eX509ReqError;
 
 X509_REQ *GetX509ReqPtr(VALUE);
-void Init_ossl_x509req(void);
+COLDFUNC(void Init_ossl_x509req(void));
 
 /*
  * X509Revoked
@@ -93,7 +93,7 @@ extern VALUE eX509RevError;
 
 VALUE ossl_x509revoked_new(X509_REVOKED *);
 X509_REVOKED *DupX509RevokedPtr(VALUE);
-void Init_ossl_x509revoked(void);
+COLDFUNC(void Init_ossl_x509revoked(void));
 
 /*
  * X509Store and X509StoreContext
@@ -104,7 +104,7 @@ extern VALUE eX509StoreError;
 
 X509_STORE *GetX509StorePtr(VALUE);
 
-void Init_ossl_x509store(void);
+COLDFUNC(void Init_ossl_x509store(void));
 
 /*
  * Calls the verify callback Proc (the first parameter) with given pre-verify

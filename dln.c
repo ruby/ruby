@@ -19,7 +19,7 @@
 #define dln_notimplement --->>> dln not implemented <<<---
 #define dln_memerror abort
 #define dln_exit exit
-static void dln_loaderror(const char *format, ...);
+COLDFUNC(static void dln_loaderror(const char *format, ...));
 #endif
 #include "dln.h"
 #include "internal.h"
@@ -319,7 +319,7 @@ load_sym(int fd, struct exec *hdrp, long disp)
     }
     return buffer;
 
-  err_noexec:
+  err_noexec: COLDLABEL
     dln_errno = DLN_ENOEXEC;
     return NULL;
 }
@@ -882,7 +882,7 @@ load_1(int fd, long disp, const char *need_init)
     }
     return 0;
 
-  err_exit:
+  err_exit: COLDLABEL
     if (syms) free(syms);
     if (reloc) free(reloc);
     if (block) free((char*)block);
@@ -1040,9 +1040,9 @@ load_lib(const char *lib)
     close(fd);
     return 0;
 
-  syserr:
+  syserr: COLDLABEL
     dln_errno = errno;
-  badlib:
+  badlib: COLDLABEL
     if (fd >= 0) close(fd);
     return -1;
 }
@@ -1172,6 +1172,7 @@ dln_strerror(void)
 #endif
 
 #if defined(_AIX) && ! defined(_IA64)
+COLDFUNC(static void aix_loaderror(const char *pathname));
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1463,7 +1464,7 @@ dln_load(const char *file)
 #endif /* USE_DLN_A_OUT */
 #endif
 #if !defined(_AIX) && !defined(NeXT)
-  failed:
+  failed: COLDLABEL
     dln_loaderror("%s - %s", error, file);
 #endif
 

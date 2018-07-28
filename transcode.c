@@ -708,15 +708,15 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
 	}
 	continue;
 
-      invalid:
+      invalid: COLDLABEL
         SUSPEND(econv_invalid_byte_sequence, 1);
         continue;
 
-      incomplete:
+      incomplete: COLDLABEL
         SUSPEND(econv_incomplete_input, 27);
         continue;
 
-      undef:
+      undef: COLDLABEL
         SUSPEND(econv_undefined_conversion, 2);
         continue;
     }
@@ -1432,7 +1432,7 @@ output_hex_charref(rb_econv_t *ec)
         xfree((void *)utf);
     return 0;
 
-  fail:
+  fail: COLDLABEL
     if (utf_allocated)
         xfree((void *)utf);
     return -1;
@@ -4412,6 +4412,7 @@ ecerr_incomplete_input(VALUE self)
  */
 
 #undef rb_intern
+COLDFUNC(void Init_transcode(void));
 void
 Init_transcode(void)
 {

@@ -763,7 +763,7 @@ class_or_module_required(VALUE c)
 	break;
 
       default:
-      not_class:
+      not_class: COLDLABEL
 	rb_raise(rb_eTypeError, "class or module required");
     }
     return c;
@@ -2444,7 +2444,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
     pend = path + RSTRING_LEN(name);
 
     if (p >= pend || !*p) {
-      wrong_name:
+      wrong_name: COLDLABEL
 	rb_name_err_raise(wrong_constant_name, mod, name);
     }
 
@@ -2602,7 +2602,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
     pend = path + RSTRING_LEN(name);
 
     if (p >= pend || !*p) {
-      wrong_name:
+      wrong_name: COLDLABEL
 	rb_name_err_raise(wrong_constant_name, mod, name);
     }
 
@@ -2939,7 +2939,7 @@ convert_type(VALUE val, const char *tname, const char *method, int raise)
 }
 
 /*! \private */
-NORETURN(static void conversion_mismatch(VALUE, const char *, const char *, VALUE));
+NORETURN(COLDFUNC(static void conversion_mismatch(VALUE, const char *, const char *, VALUE)));
 static void
 conversion_mismatch(VALUE val, const char *tname, const char *method, VALUE result)
 {
@@ -3142,7 +3142,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
     if (base != 0) {
         tmp = rb_check_string_type(val);
         if (!NIL_P(tmp)) return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
-      arg_error:
+      arg_error: COLDLABEL
         if (!raise_exception) return Qnil;
         rb_raise(rb_eArgError, "base specified for non string value");
     }
@@ -3264,7 +3264,7 @@ rb_cstr_to_dbl_raise(const char *p, int badcheck, int raise, int *error)
     }
     if (p == end) {
         if (badcheck) {
-          bad:
+          bad: COLDLABEL
             if (raise)
                 rb_invalid_str(q, "Float()");
             else {
@@ -4238,6 +4238,7 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "FALSE");
 }
 
+COLDFUNC(void Init_Object(void));
 void
 Init_Object(void)
 {

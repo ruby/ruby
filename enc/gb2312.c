@@ -2,6 +2,7 @@
 #include <ruby/encoding.h>
 #include "regenc.h"
 
+COLDFUNC(void Init_gb2312(void));
 void
 Init_gb2312(void)
 {

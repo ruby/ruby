@@ -508,7 +508,7 @@ rb_hash_modify(VALUE hash)
     hash_tbl(hash);
 }
 
-NORETURN(static void no_new_key(void));
+NORETURN(COLDFUNC(static void no_new_key(void)));
 static void
 no_new_key(void)
 {
@@ -3651,7 +3651,7 @@ ruby_setenv(const char *name, const char *value)
 	    GetLastError() != ERROR_ENVVAR_NOT_FOUND) goto fail;
     }
     if (failed) {
-      fail:
+      fail: COLDLABEL
 	invalid_envname(name);
     }
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
@@ -4684,6 +4684,7 @@ env_update(VALUE env, VALUE hash)
  *  See also Object#hash and Object#eql?
  */
 
+COLDFUNC(void Init_Hash(void));
 void
 Init_Hash(void)
 {

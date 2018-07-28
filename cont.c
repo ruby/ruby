@@ -1986,6 +1986,7 @@ fiber_to_s(VALUE fibval)
  *     fiber.resume #=> FiberError: dead fiber called
  */
 
+COLDFUNC(void Init_Cont(void));
 void
 Init_Cont(void)
 {
@@ -2014,6 +2015,7 @@ Init_Cont(void)
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
+COLDFUNC(void ruby_Init_Continuation_body(void));
 void
 ruby_Init_Continuation_body(void)
 {
@@ -2025,6 +2027,7 @@ ruby_Init_Continuation_body(void)
     rb_define_global_function("callcc", rb_callcc, 0);
 }
 
+COLDFUNC(void ruby_Init_Fiber_as_Coroutine(void));
 void
 ruby_Init_Fiber_as_Coroutine(void)
 {

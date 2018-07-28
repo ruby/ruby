@@ -651,7 +651,7 @@ rb_reg_str_with_term(VALUE re, int term)
     return str;
 }
 
-NORETURN(static void rb_reg_raise(const char *s, long len, const char *err, VALUE re));
+NORETURN(COLDFUNC(static void rb_reg_raise(const char *s, long len, const char *err, VALUE re)));
 
 static void
 rb_reg_raise(const char *s, long len, const char *err, VALUE re)
@@ -678,7 +678,7 @@ rb_enc_reg_error_desc(const char *s, long len, rb_encoding *enc, int options, co
     return rb_exc_new3(rb_eRegexpError, desc);
 }
 
-NORETURN(static void rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err));
+NORETURN(COLDFUNC(static void rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)));
 
 static void
 rb_enc_reg_raise(const char *s, long len, rb_encoding *enc, int options, const char *err)
@@ -693,7 +693,7 @@ rb_reg_error_desc(VALUE str, int options, const char *err)
 				 rb_enc_get(str), options, err);
 }
 
-NORETURN(static void rb_reg_raise_str(VALUE str, int options, const char *err));
+NORETURN(COLDFUNC(static void rb_reg_raise_str(VALUE str, int options, const char *err)));
 
 static void
 rb_reg_raise_str(VALUE str, int options, const char *err)
@@ -1357,7 +1357,7 @@ static VALUE
 rb_reg_preprocess(const char *p, const char *end, rb_encoding *enc,
         rb_encoding **fixed_enc, onig_errmsg_buffer err);
 
-NORETURN(static void reg_enc_error(VALUE re, VALUE str));
+NORETURN(COLDFUNC(static void reg_enc_error(VALUE re, VALUE str)));
 
 static void
 reg_enc_error(VALUE re, VALUE str)
@@ -1896,7 +1896,7 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
 	(const unsigned char *)name, (const unsigned char *)name_end, regs);
 }
 
-NORETURN(static void name_to_backref_error(VALUE name));
+NORETURN(COLDFUNC(static void name_to_backref_error(VALUE name)));
 static void
 name_to_backref_error(VALUE name)
 {
@@ -2544,7 +2544,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
     while (p < end) {
         int chlen = rb_enc_precise_mbclen(p, end, enc);
         if (!MBCLEN_CHARFOUND_P(chlen)) {
-          invalid_multibyte:
+          invalid_multibyte: COLDLABEL
             errcpy(err, "invalid multibyte character");
             return -1;
         }
@@ -3996,6 +3996,7 @@ re_warn(const char *s)
  *  :include: doc/regexp.rdoc
  */
 
+COLDFUNC(void Init_Regexp(void));
 void
 Init_Regexp(void)
 {

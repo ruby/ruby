@@ -1183,7 +1183,7 @@ void rb_fiber_reset_root_local_storage(VALUE);
 void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(ANYARGS), VALUE (*rollback_func)(ANYARGS));
 
 /* debug.c */
-PRINTF_ARGS(void ruby_debug_printf(const char*, ...), 1, 2);
+PRINTF_ARGS(COLDFUNC(void ruby_debug_printf(const char*, ...)), 1, 2);
 
 /* dir.c */
 VALUE rb_dir_getwd_ospath(void);
@@ -1215,23 +1215,23 @@ VALUE rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary);
 extern VALUE rb_eEAGAIN;
 extern VALUE rb_eEWOULDBLOCK;
 extern VALUE rb_eEINPROGRESS;
-void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args);
+COLDFUNC(void rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args));
 VALUE rb_check_backtrace(VALUE);
-NORETURN(void rb_async_bug_errno(const char *,int));
+NORETURN(COLDFUNC(void rb_async_bug_errno(const char *,int)));
 const char *rb_builtin_type_name(int t);
 const char *rb_builtin_class_name(VALUE x);
-PRINTF_ARGS(void rb_sys_warn(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warn(int err, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_warning(const char *fmt, ...), 1, 2);
-PRINTF_ARGS(void rb_syserr_warning(int err, const char *fmt, ...), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_sys_warn(const char *fmt, ...)), 1, 2);
+PRINTF_ARGS(COLDFUNC(void rb_syserr_warn(int err, const char *fmt, ...)), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_sys_warning(const char *fmt, ...)), 1, 2);
+PRINTF_ARGS(COLDFUNC(void rb_syserr_warning(int err, const char *fmt, ...)), 2, 3);
 #ifdef RUBY_ENCODING_H
-VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
-PRINTF_ARGS(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
-PRINTF_ARGS(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...), 2, 3);
-PRINTF_ARGS(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...), 3, 4);
+COLDFUNC(VALUE rb_syntax_error_append(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list));
+PRINTF_ARGS(COLDFUNC(void rb_enc_warn(rb_encoding *enc, const char *fmt, ...)), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_sys_enc_warn(rb_encoding *enc, const char *fmt, ...)), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_syserr_enc_warn(int err, rb_encoding *enc, const char *fmt, ...)), 3, 4);
+PRINTF_ARGS(COLDFUNC(void rb_enc_warning(rb_encoding *enc, const char *fmt, ...)), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_sys_enc_warning(rb_encoding *enc, const char *fmt, ...)), 2, 3);
+PRINTF_ARGS(COLDFUNC(void rb_syserr_enc_warning(int err, rb_encoding *enc, const char *fmt, ...)), 3, 4);
 #endif
 
 #define rb_raise_cstr(etype, mesg) \
@@ -1244,14 +1244,14 @@ VALUE rb_name_err_new(VALUE mesg, VALUE recv, VALUE method);
     rb_exc_raise(rb_name_err_new(mesg, recv, name))
 #define rb_name_err_raise(mesg, recv, name) \
     rb_name_err_raise_str(rb_fstring_cstr(mesg), (recv), (name))
-VALUE rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int priv);
+COLDFUNC(VALUE rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int priv));
 VALUE rb_key_err_new(VALUE mesg, VALUE recv, VALUE name);
 #define rb_key_err_raise(mesg, recv, name) \
     rb_exc_raise(rb_key_err_new(mesg, recv, name))
-NORETURN(void ruby_deprecated_internal_feature(const char *));
+NORETURN(COLDFUNC(void ruby_deprecated_internal_feature(const char *)));
 #define DEPRECATED_INTERNAL_FEATURE(func) \
     (ruby_deprecated_internal_feature(func), UNREACHABLE)
-VALUE rb_warning_warn(VALUE mod, VALUE str);
+COLDFUNC(VALUE rb_warning_warn(VALUE mod, VALUE str));
 PRINTF_ARGS(VALUE rb_warning_string(const char *fmt, ...), 1, 2);
 
 /* eval.c */
@@ -1303,7 +1303,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
-void Init_heap(void);
+COLDFUNC(void Init_heap(void));
 void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
@@ -1382,7 +1382,7 @@ void rb_io_fptr_finalize_internal(void *ptr);
 VALUE rb_get_load_path(void);
 VALUE rb_get_expanded_load_path(void);
 int rb_require_internal(VALUE fname, int safe);
-NORETURN(void rb_load_fail(VALUE, const char*));
+NORETURN(COLDFUNC(void rb_load_fail(VALUE, const char*)));
 
 /* loadpath.c */
 extern const char ruby_exec_prefix[];
@@ -1601,7 +1601,7 @@ void rb_obj_copy_ivar(VALUE dest, VALUE obj);
 CONSTFUNC(VALUE rb_obj_equal(VALUE obj1, VALUE obj2));
 CONSTFUNC(VALUE rb_obj_not(VALUE obj));
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
-NORETURN(void rb_undefined_alloc(VALUE klass));
+NORETURN(COLDFUNC(void rb_undefined_alloc(VALUE klass)));
 double rb_num_to_dbl(VALUE val);
 VALUE rb_obj_dig(int argc, VALUE *argv, VALUE self, VALUE notfound);
 VALUE rb_immutable_obj_clone(int, VALUE *, VALUE);
@@ -1930,7 +1930,7 @@ PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 
 /* vm_dump.c */
-void rb_print_backtrace(void);
+COLDFUNC(void rb_print_backtrace(void));
 
 /* vm_eval.c */
 void Init_vm_eval(void);
@@ -1964,7 +1964,7 @@ VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
 VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval);
 
 VALUE rb_make_backtrace(void);
-void rb_backtrace_print_as_bugreport(void);
+COLDFUNC(void rb_backtrace_print_as_bugreport(void));
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);

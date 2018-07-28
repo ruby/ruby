@@ -11,6 +11,7 @@
 #include "ruby/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
+#include "ruby/defines.h"
 #include "addr2line.h"
 
 #include <stdio.h>
@@ -514,7 +515,7 @@ parse_compressed_debug_line(int num_traces, void **traces,
     obj->uncompressed_debug_line = uncompressed_debug_line;
     return 0;
 
-fail:
+fail: COLDLABEL
     free(uncompressed_debug_line);
     return -1;
 }

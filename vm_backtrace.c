@@ -776,6 +776,7 @@ oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
     }
 }
 
+COLDFUNC(void rb_backtrace_print_as_bugreport(void));
 void
 rb_backtrace_print_as_bugreport(void)
 {
@@ -1008,6 +1009,7 @@ rb_f_caller_locations(int argc, VALUE *argv)
 }
 
 /* called from Init_vm() in vm.c */
+COLDFUNC(void Init_vm_backtrace(void));
 void
 Init_vm_backtrace(void)
 {

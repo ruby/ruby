@@ -870,7 +870,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
 	}
     }
 
- err:
+ err: COLDLABEL
     ASN1_TIME_free(ths);
     ASN1_TIME_free(nxt);
     ASN1_TIME_free(rev);
