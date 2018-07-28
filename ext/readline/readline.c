@@ -820,7 +820,7 @@ readline_s_redisplay(VALUE self)
  *
  * When working with auto-complete there are some strategies that work well.
  * To get some ideas you can take a look at the
- * completion.rb[http://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
+ * completion.rb[https://svn.ruby-lang.org/repos/ruby/trunk/lib/irb/completion.rb]
  * file for irb.
  *
  * The common strategy is to take a list of possible completions and filter it

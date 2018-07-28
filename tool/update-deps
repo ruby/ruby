@@ -42,7 +42,7 @@ REV=48577
 tar xf ruby-$VER-r$REV.tar.xz
 cp -a ruby-$VER-r$REV tarball_source_dir_original
 mv ruby-$VER-r$REV tarball_source_dir_after_build
-svn co -q -r$REV http://svn.ruby-lang.org/repos/ruby/trunk ruby
+svn co -q -r$REV https://svn.ruby-lang.org/repos/ruby/trunk ruby
 (cd ruby; autoconf)
 cp -a ruby repo_source_dir_original
 mv ruby repo_source_dir_after_build
