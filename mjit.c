@@ -198,6 +198,8 @@ int mjit_call_p = FALSE;
 static struct rb_mjit_unit_list unit_queue;
 /* List of units which are successfully compiled. */
 static struct rb_mjit_unit_list active_units;
+/* List of compacted so files which will be deleted in `mjit_finish()`. */
+static struct rb_mjit_unit_list compact_units;
 /* The number of so far processed ISEQs, used to generate unique id.  */
 static int current_unit_num;
 /* A mutex for conitionals and critical sections.  */
@@ -885,7 +887,7 @@ compact_all_jit_code(void)
     int i = 0, success;
 
     /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
-    unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit));
+    unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
     if (unit == NULL) return;
     unit->id = current_unit_num++;
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
@@ -910,6 +912,20 @@ compact_all_jit_code(void)
     CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to keep .o files");
 
     if (success) {
+        void *handle = dlopen(so_file, RTLD_NOW);
+        if (handle == NULL) {
+            if (mjit_opts.warnings || mjit_opts.verbose)
+                fprintf(stderr, "MJIT warning: failure in loading code from compacted '%s': %s\n", so_file, dlerror());
+            free(unit);
+            return;
+        }
+        unit->handle = handle;
+
+        /* lazily dlclose handle (and .so file for win32) on `mjit_finish()`. */
+        node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
+        node->unit = unit;
+        add_to_list(node, &compact_units);
+
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
         for (node = active_units.head; node != NULL; node = node->next) {
             /* set JIT */
@@ -923,10 +939,11 @@ compact_all_jit_code(void)
             remove_file(so_file);
 #endif
         }
-        verbose(1, "JIT compaction (%.1fms): Compacted all code -> %s", end_time - start_time, so_file);
+        verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, active_units.length, so_file);
     }
     else {
-        verbose(1, "JIT compaction failure (%.1fms): Failed to compact all code", end_time - start_time);
+        free(unit);
+        verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time);
     }
 }
 
@@ -1189,7 +1206,7 @@ worker(void)
 
 #ifndef _MSC_VER
             /* Combine .o files to one .so and reload all jit_func to improve memory locality */
-            if (unit_queue.length == 0 && active_units.length > 1) {
+            if ((unit_queue.length == 0 && active_units.length > 1) || active_units.length == mjit_opts.max_cache_size) {
                 compact_all_jit_code();
             }
 #endif
@@ -1765,6 +1782,7 @@ mjit_finish(void)
     mjit_call_p = FALSE;
     free_list(&unit_queue);
     free_list(&active_units);
+    free_list(&compact_units);
     finish_conts();
 
     mjit_enabled = FALSE;
