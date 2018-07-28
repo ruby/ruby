@@ -285,7 +285,7 @@ Now let's build CRuby:
 
 * Checkout the CRuby source code:
 
-    git clone git://github.com/ruby/ruby.git ruby-trunk
+    git clone https://github.com/ruby/ruby.git ruby-trunk
 
 * Generate the configuration files and build:
 
@@ -317,7 +317,7 @@ For older versions of Ruby you will need to run the build setup again after
 checking out the associated branch in git, for example if you wanted to
 checkout 1.9.3:
 
-    git clone git://github.com/ruby/ruby.git --branch ruby_1_9_3
+    git clone https://github.com/ruby/ruby.git --branch ruby_1_9_3
 
 Once you checked out the source code, you can update the local copy by:
 

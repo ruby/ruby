@@ -46,7 +46,7 @@ to see the list of branches:
 
 Or if you are using git then use the following command:
 
-    $ git ls-remote git://github.com/ruby/ruby.git
+    $ git ls-remote https://github.com/ruby/ruby.git
 
 ## Ruby home page
 
