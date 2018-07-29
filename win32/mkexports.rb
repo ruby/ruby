@@ -109,7 +109,11 @@ class Exports::Mswin < Exports
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
     objdump(objs) do |l|
-      if (filetype = l[/^File Type: (.+)/, 1])..(/^\f/ =~ l)
+      if filetype
+        if /^\f/ =~ l
+          filetype = nil
+          next
+        end
         case filetype
         when /OBJECT/, /LIBRARY/
           next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
@@ -130,6 +134,8 @@ class Exports::Mswin < Exports
           next
         end
         yield l.strip, is_data
+      else
+        filetype = l[/^File Type: (.+)/, 1]
       end
     end
     yield "strcasecmp", "msvcrt.stricmp"
