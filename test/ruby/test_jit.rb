@@ -534,7 +534,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_unload_units
-    Dir.mktmpdir("jit_test_clean_so_") do |dir|
+    Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
       out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
       begin;
