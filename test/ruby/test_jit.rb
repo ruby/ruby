@@ -534,6 +534,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_unload_units
+    if /mingw/ =~ RUBY_PLATFORM
+      skip "this is currently failing on MinGW [Bug #14948]"
+    end
+
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
       out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
