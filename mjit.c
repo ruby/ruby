@@ -163,11 +163,11 @@ struct rb_mjit_unit {
     void *handle;
     const rb_iseq_t *iseq;
 #ifndef _MSC_VER
-    /* This is lazily deleted so that it can be used again to create a large so file. */
+    /* This value is always set for `compact_all_jit_code`. Also used for lazy deletion. */
     char *o_file;
 #endif
 #ifdef _WIN32
-    /* DLL cannot be removed while loaded on Windows */
+    /* DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted. */
     char *so_file;
 #endif
     /* Only used by unload_units. Flag to check this unit is currently on stack or not. */
@@ -537,7 +537,10 @@ clean_object_files(struct rb_mjit_unit *unit)
         char *o_file = unit->o_file;
 
         unit->o_file = NULL;
-        remove_file(o_file);
+        /* For compaction, unit->o_file is always set when compilation succeeds.
+           So save_temps needs to be checked here. */
+        if (!mjit_opts.save_temps)
+            remove_file(o_file);
         free(o_file);
     }
 #endif
@@ -547,6 +550,7 @@ clean_object_files(struct rb_mjit_unit *unit)
         char *so_file = unit->so_file;
 
         unit->so_file = NULL;
+        /* unit->so_file is set only when mjit_opts.save_temps is FALSE. */
         remove_file(so_file);
         free(so_file);
     }
@@ -1136,8 +1140,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         const char *o_files[] = { o_file, NULL };
         success = link_o_to_so(o_files, so_file);
 
-        if (!mjit_opts.save_temps)
-            unit->o_file = strdup(o_file); /* lazily delete on `clean_object_files()` */
+        /* Alwasy set o_file for compaction. The value is also used for lazy deletion. */
+        unit->o_file = strdup(o_file);
     }
 #endif
     end_time = real_ms_time();
