@@ -1172,8 +1172,25 @@ static void
 ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
+    rb_vm_t *vm = th->vm;
 
     register_ubf_list(th);
+
+    /*
+     * ubf_wakeup_thread() doesn't guarantee to wake up a target thread.
+     * Therefore, we repeatedly call ubf_wakeup_thread() until a target thread
+     * exit from ubf function.  We must designate a timer-thread to perform
+     * this operation.
+     */
+   rb_native_mutex_lock(&vm->gvl.lock);
+   if (!vm->gvl.timer) {
+        native_thread_data_t *last;
+
+        last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
+        if (last) rb_native_cond_signal(&last->sleep_cond);
+    }
+    rb_native_mutex_unlock(&vm->gvl.lock);
+
     ubf_wakeup_thread(th);
 }
 
