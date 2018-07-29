@@ -1588,20 +1588,22 @@ class TestProcess < Test::Unit::TestCase
       skip "this fails on FreeBSD and OpenBSD on multithreaded environment"
     end
     signal_received = []
-    Signal.trap(:CHLD)  { signal_received << true }
-    pid = nil
-    IO.pipe do |r, w|
-      pid = fork { r.read(1); exit }
-      Thread.start {
-        Thread.current.report_on_exception = false
-        raise
-      }
-      w.puts
-    end
-    Process.wait pid
-    10.times do
-      break unless signal_received.empty?
-      sleep 0.01
+    IO.pipe do |sig_r, sig_w|
+      Signal.trap(:CHLD) do
+        signal_received << true
+        sig_w.write('?')
+      end
+      pid = nil
+      IO.pipe do |r, w|
+        pid = fork { r.read(1); exit }
+        Thread.start {
+          Thread.current.report_on_exception = false
+          raise
+        }
+        w.puts
+      end
+      Process.wait pid
+      assert sig_r.wait_readable(5), 'self-pipe not readable'
     end
     assert_equal [true], signal_received, " [ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
