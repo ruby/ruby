@@ -19,10 +19,10 @@ struct args_info {
     /* basic args info */
     VALUE *argv;
     int argc;
-    const struct rb_call_info_kw_arg *kw_arg;
 
     /* additional args info */
     int rest_index;
+    const struct rb_call_info_kw_arg *kw_arg;
     VALUE *kw_argv;
     VALUE rest;
 };
