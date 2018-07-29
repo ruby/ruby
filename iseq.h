@@ -94,13 +94,13 @@ struct iseq_compile_data {
     VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
     int loopval_popped;	/* used by NODE_BREAK */
+    unsigned int ci_kw_index;
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
     int last_line;
     int label_no;
     int node_level;
     unsigned int ci_index;
-    unsigned int ci_kw_index;
     const rb_compile_option_t *option;
     struct rb_id_table *ivar_cache_table;
 #if SUPPORT_JOKE

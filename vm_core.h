@@ -813,6 +813,8 @@ typedef struct rb_execution_context_struct {
     rb_atomic_t interrupt_flag;
     rb_atomic_t interrupt_mask; /* size should match flag */
 
+    enum method_missing_reason method_missing_reason;
+
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
 
@@ -835,7 +837,6 @@ typedef struct rb_execution_context_struct {
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
     const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
-    enum method_missing_reason method_missing_reason;
     VALUE private_const_reference;
 
     /* for GC */
@@ -878,6 +879,7 @@ typedef struct rb_thread_struct {
     enum rb_thread_status status;
     int to_kill;
     int priority;
+    int pending_interrupt_queue_checked;
 
     native_thread_data_t native_thread_data;
     void *blocking_region_buffer;
@@ -893,7 +895,6 @@ typedef struct rb_thread_struct {
     /* async errinfo queue */
     VALUE pending_interrupt_queue;
     VALUE pending_interrupt_mask_stack;
-    int pending_interrupt_queue_checked;
 
     /* interrupt management */
     rb_nativethread_lock_t interrupt_lock;
@@ -915,8 +916,8 @@ typedef struct rb_thread_struct {
     rb_jmpbuf_t root_jmpbuf;
 
     /* misc */
-    unsigned int abort_on_exception: 1;
-    unsigned int report_on_exception: 1;
+    unsigned char abort_on_exception: 1;
+    unsigned char report_on_exception: 1;
     uint32_t running_time_us; /* 12500..800000 */
     VALUE name;
 } rb_thread_t;
