@@ -9,7 +9,6 @@ class TestJIT < Test::Unit::TestCase
 
   IGNORABLE_PATTERNS = [
     /\ASuccessful MJIT finish\n\z/,
-    /\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/,
   ]
 
   # trace_* insns are not compiled for now...
@@ -549,8 +548,8 @@ class TestJIT < Test::Unit::TestCase
         end
       end;
       assert_equal('0123456789', out)
-      errs = err.lines.reject do |l|
-        IGNORABLE_PATTERNS.any? { |pat| pat.match?(l) }
+      compactions, errs = err.lines.partition do |l|
+        l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/)
       end
       assert_match(/\A#{JIT_SUCCESS_PREFIX}: block in <main>@-e:/, errs[0])
       9.times do |i|
@@ -558,6 +557,10 @@ class TestJIT < Test::Unit::TestCase
       end
       assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10])
       assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit9@\(eval\):/, errs[11])
+
+      # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
+      # it should trigger compaction.
+      assert_equal(2, compactions.size)
 
       # verify .o files are deleted on unload_units
       assert_send([Dir, :empty?, dir])

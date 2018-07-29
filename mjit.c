@@ -1219,7 +1219,8 @@ worker(void)
 
 #ifndef _MSC_VER
             /* Combine .o files to one .so and reload all jit_func to improve memory locality */
-            if ((unit_queue.length == 0 && active_units.length > 1) || active_units.length == mjit_opts.max_cache_size) {
+            if ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
+                || active_units.length == mjit_opts.max_cache_size) {
                 compact_all_jit_code();
             }
 #endif
