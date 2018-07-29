@@ -807,7 +807,6 @@ typedef struct rb_execution_context_struct {
 
     struct rb_vm_tag *tag;
     struct rb_vm_protect_tag *protect_tag;
-    int raised_flag;
 
     /* interrupt flags */
     rb_atomic_t interrupt_flag;
@@ -835,6 +834,7 @@ typedef struct rb_execution_context_struct {
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
     const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
+    int raised_flag;
     enum method_missing_reason method_missing_reason;
     VALUE private_const_reference;
 
@@ -893,7 +893,6 @@ typedef struct rb_thread_struct {
     /* async errinfo queue */
     VALUE pending_interrupt_queue;
     VALUE pending_interrupt_mask_stack;
-    int pending_interrupt_queue_checked;
 
     /* interrupt management */
     rb_nativethread_lock_t interrupt_lock;
@@ -915,10 +914,13 @@ typedef struct rb_thread_struct {
     rb_jmpbuf_t root_jmpbuf;
 
     /* misc */
+    VALUE name;
+    uint32_t running_time_us; /* 12500..800000 */
+
+    /* bit flags */
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
-    uint32_t running_time_us; /* 12500..800000 */
-    VALUE name;
+    unsigned int pending_interrupt_queue_checked: 1;
 } rb_thread_t;
 
 typedef enum {

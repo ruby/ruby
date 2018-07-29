@@ -93,9 +93,9 @@ struct iseq_compile_data {
     VALUE ensure_node;
     VALUE for_iseq;
     struct iseq_compile_data_ensure_node_stack *ensure_node_stack;
-    int loopval_popped;	/* used by NODE_BREAK */
     struct iseq_compile_data_storage *storage_head;
     struct iseq_compile_data_storage *storage_current;
+    int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
     int node_level;
