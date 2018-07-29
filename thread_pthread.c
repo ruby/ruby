@@ -46,6 +46,7 @@ void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *m
 void rb_native_cond_initialize(rb_nativethread_cond_t *cond);
 void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 static void rb_thread_wakeup_timer_thread_low(void);
+static void clear_thread_cache_altstack(void);
 
 #define TIMER_THREAD_MASK    (1)
 #define TIMER_THREAD_SLEEPY  (2|TIMER_THREAD_MASK)
@@ -65,6 +66,12 @@ static struct {
     int created;
 } timer_thread;
 #define TIMER_THREAD_CREATED_P() (timer_thread.created != 0)
+
+#ifdef HAVE_SCHED_YIELD
+#define native_thread_yield() (void)sched_yield()
+#else
+#define native_thread_yield() ((void)0)
+#endif
 
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK) && \
     defined(CLOCK_REALTIME) && defined(CLOCK_MONOTONIC) && \
@@ -182,6 +189,7 @@ gvl_destroy(rb_vm_t *vm)
     rb_native_cond_destroy(&vm->gvl.switch_cond);
     rb_native_cond_destroy(&vm->gvl.cond);
     rb_native_mutex_destroy(&vm->gvl.lock);
+    clear_thread_cache_altstack();
 }
 
 #if defined(HAVE_WORKING_FORK)
@@ -367,11 +375,6 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
-#ifdef HAVE_SCHED_YIELD
-#define native_thread_yield() (void)sched_yield()
-#else
-#define native_thread_yield() ((void)0)
-#endif
 
 #if defined(SIGVTALRM) && !defined(__CYGWIN__)
 #define USE_UBF_LIST 1
@@ -452,7 +455,7 @@ native_thread_destroy(rb_thread_t *th)
 }
 
 #if USE_THREAD_CACHE
-static rb_thread_t *register_cached_thread_and_wait(void);
+static rb_thread_t *register_cached_thread_and_wait(void *);
 #endif
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -855,14 +858,13 @@ thread_start_func_1(void *th_ptr)
 #endif
     }
 #if USE_THREAD_CACHE
-    if (1) {
-	/* cache thread */
-	if ((th = register_cached_thread_and_wait()) != 0) {
-	    goto thread_start;
-	}
+    /* cache thread */
+    if ((th = register_cached_thread_and_wait(RB_ALTSTACK(altstack))) != 0) {
+        goto thread_start;
     }
-#endif
+#else
     RB_ALTSTACK_FREE(altstack);
+#endif
     return 0;
 }
 
@@ -870,6 +872,7 @@ struct cached_thread_entry {
     rb_nativethread_cond_t cond;
     rb_nativethread_id_t thread_id;
     rb_thread_t *th;
+    void *altstack;
     struct list_node node;
 };
 
@@ -896,12 +899,13 @@ thread_cache_reset(void)
 #endif
 
 static rb_thread_t *
-register_cached_thread_and_wait(void)
+register_cached_thread_and_wait(void *altstack)
 {
     struct timespec end = { THREAD_CACHE_TIME, 0 };
     struct cached_thread_entry entry;
 
     rb_native_cond_initialize(&entry.cond);
+    entry.altstack = altstack;
     entry.th = NULL;
     entry.thread_id = pthread_self();
     end = native_cond_timeout(&entry.cond, end);
@@ -919,6 +923,9 @@ register_cached_thread_and_wait(void)
     rb_native_mutex_unlock(&thread_cache_lock);
 
     rb_native_cond_destroy(&entry.cond);
+    if (!entry.th) {
+        RB_ALTSTACK_FREE(entry.altstack);
+    }
 
     return entry.th;
 }
@@ -947,6 +954,22 @@ use_cached_thread(rb_thread_t *th)
     return !!entry;
 #endif
     return 0;
+}
+
+static void
+clear_thread_cache_altstack(void)
+{
+#if USE_THREAD_CACHE
+    struct cached_thread_entry *entry;
+
+    rb_native_mutex_lock(&thread_cache_lock);
+    list_for_each(&cached_thread_head, entry, node) {
+        void MAYBE_UNUSED(*altstack) = entry->altstack;
+        entry->altstack = 0;
+        RB_ALTSTACK_FREE(altstack);
+    }
+    rb_native_mutex_unlock(&thread_cache_lock);
+#endif
 }
 
 static int

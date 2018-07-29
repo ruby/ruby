@@ -123,9 +123,11 @@
 void *rb_register_sigaltstack(void);
 #  define RB_ALTSTACK_INIT(var) var = rb_register_sigaltstack()
 #  define RB_ALTSTACK_FREE(var) xfree(var)
+#  define RB_ALTSTACK(var)  var
 #else /* noop */
 #  define RB_ALTSTACK_INIT(var)
 #  define RB_ALTSTACK_FREE(var)
+#  define RB_ALTSTACK(var) (0)
 #endif
 
 /*****************/
