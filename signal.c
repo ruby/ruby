@@ -709,9 +709,6 @@ signal_enque(int sig)
 
 static rb_atomic_t sigchld_hit;
 
-/* Prevent compiler from reordering access */
-#define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
-
 static RETSIGTYPE
 sighandler(int sig)
 {
@@ -730,7 +727,7 @@ sighandler(int sig)
     else {
         signal_enque(sig);
     }
-    rb_thread_wakeup_timer_thread();
+    rb_thread_wakeup_timer_thread(sig);
 #if !defined(BSD_SIGNAL) && !defined(POSIX_SIGNAL)
     ruby_signal(sig, sighandler);
 #endif
@@ -764,7 +761,6 @@ rb_enable_interrupt(void)
 #ifdef HAVE_PTHREAD_SIGMASK
     sigset_t mask;
     sigemptyset(&mask);
-    sigaddset(&mask, RUBY_SIGCHLD); /* timer-thread handles this */
     pthread_sigmask(SIG_SETMASK, &mask, NULL);
 #endif
 }
@@ -1077,7 +1073,6 @@ rb_trap_exit(void)
 
 void ruby_waitpid_all(rb_vm_t *); /* process.c */
 
-/* only runs in the timer-thread */
 void
 ruby_sigchld_handler(rb_vm_t *vm)
 {
