@@ -77,6 +77,9 @@ extern "C" {
 # define __has_extension __has_feature
 #endif
 
+/* Prevent compiler from reordering access */
+#define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
+
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 # define STATIC_ASSERT(name, expr) _Static_assert(expr, #name ": " #expr)
 #elif GCC_VERSION_SINCE(4, 6, 0) || __has_extension(c_static_assert)

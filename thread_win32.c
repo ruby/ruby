@@ -20,6 +20,7 @@
 
 #define native_thread_yield() Sleep(0)
 #define unregister_ubf_list(th)
+#define ubf_wakeup_all_threads() do {} while (0)
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
@@ -680,18 +681,21 @@ static struct {
 static unsigned long __stdcall
 timer_thread_func(void *dummy)
 {
+    rb_vm_t *vm = GET_VM();
     thread_debug("timer_thread\n");
     rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
     while (WaitForSingleObject(timer_thread.lock, TIME_QUANTUM_USEC/1000) ==
 	   WAIT_TIMEOUT) {
-	timer_thread_function(dummy);
+	timer_thread_function();
+	ruby_sigchld_handler(vm); /* probably no-op */
+	rb_threadptr_check_signal(vm->main_thread);
     }
     thread_debug("timer killed\n");
     return 0;
 }
 
 void
-rb_thread_wakeup_timer_thread(void)
+rb_thread_wakeup_timer_thread(int sig)
 {
     /* do nothing */
 }
@@ -766,6 +770,25 @@ int
 rb_reserved_fd_p(int fd)
 {
     return 0;
+}
+
+int
+rb_sigwait_fd_get(rb_thread_t *th)
+{
+    return -1; /* TODO */
+}
+
+void
+rb_sigwait_fd_put(rb_thread_t *th, int fd)
+{
+    rb_bug("not implemented, should not be called");
+}
+
+
+void
+rb_sigwait_sleep(const rb_thread_t *th, int fd, const struct timespec *ts)
+{
+    rb_bug("not implemented, should not be called");
 }
 
 rb_nativethread_id_t
