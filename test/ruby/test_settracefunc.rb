@@ -857,6 +857,21 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
   end
 
+  def test_tracepoint_exception_at_c_return
+    assert_nothing_raised(Timeout::Error, 'infinite trace') do
+      assert_normal_exit %q{
+        begin
+          TracePoint.new(:c_return){|tp|
+            raise
+          }.enable{
+            tap{ itself }
+          }
+        rescue
+        end
+      }, '', timeout: 3
+    end
+  end
+
   def test_tracepoint_with_multithreads
     assert_nothing_raised do
       TracePoint.new{
