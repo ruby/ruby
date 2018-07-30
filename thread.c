@@ -106,6 +106,7 @@ static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 static const char *thread_status_name(rb_thread_t *th, int detail);
 static void timespec_add(struct timespec *, const struct timespec *);
 static void timespec_sub(struct timespec *, const struct timespec *);
+static int timespec_cmp(const struct timespec *a, const struct timespec *b);
 static int timespec_update_expire(struct timespec *, const struct timespec *);
 static void getclockofday(struct timespec *);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
