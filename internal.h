@@ -2175,10 +2175,10 @@ rb_obj_builtin_type(VALUE obj)
     COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(ignored, flag))
 
 #else /* other compilers to follow? */
-# define COMPILER_WARNING_PUSH                /* nop */
-# define COMPILER_WARNING_POP                 /* nop */
-# define COMPILER_WARNING_ERROR(cond, flag)   /* nop */
-# define COMPILER_WARNING_IGNORED(cond, flag) /* nop */
+# define COMPILER_WARNING_PUSH          /* nop */
+# define COMPILER_WARNING_POP           /* nop */
+# define COMPILER_WARNING_ERROR(flag)   /* nop */
+# define COMPILER_WARNING_IGNORED(flag) /* nop */
 #endif
 
 #define COMPILER_WARNING_PRAGMA(str) COMPILER_WARNING_PRAGMA_(str)
