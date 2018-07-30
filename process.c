@@ -1144,6 +1144,9 @@ waitpid_nogvl(void *x)
             rb_sigwait_fd_put(th, sigwait_fd);
         }
         else {
+            if (!w->cond)
+                w->cond = rb_sleep_cond_get(w->ec);
+
             /* another thread calling rb_sigwait_sleep will process
              * signals for us */
             if (SIGCHLD_LOSSY) {
@@ -1152,6 +1155,16 @@ waitpid_nogvl(void *x)
             rb_native_cond_wait(w->cond, &th->interrupt_lock);
         }
     }
+
+    /*
+     * we must release th->native_thread_data.sleep_cond when
+     * re-acquiring GVL:
+     */
+    if (w->cond) {
+        rb_sleep_cond_put(w->cond);
+        w->cond = 0;
+    }
+
     rb_native_mutex_unlock(&th->interrupt_lock);
 
     if (sigwait_fd >= 0)
@@ -1183,7 +1196,10 @@ waitpid_cleanup(VALUE x)
         list_del(&w->wnode);
         rb_native_mutex_unlock(&vm->waitpid_lock);
     }
-    rb_sleep_cond_put(w->cond);
+
+    /* we may have never released and re-acquired GVL */
+    if (w->cond)
+        rb_sleep_cond_put(w->cond);
 
     return Qfalse;
 }
