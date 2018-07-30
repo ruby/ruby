@@ -194,6 +194,12 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
     }
     else {
         rb_native_mutex_unlock(&vm->gvl.lock);
+        /*
+         * GVL was not contended when we released, so we have no potential
+         * contenders for reacquisition.  Perhaps they are stuck in blocking
+         * region w/o GVL, too, so we kick them:
+         */
+        ubf_wakeup_all_threads();
         native_thread_yield();
         rb_native_mutex_lock(&vm->gvl.lock);
         rb_native_cond_broadcast(&vm->gvl.switch_wait_cond);
