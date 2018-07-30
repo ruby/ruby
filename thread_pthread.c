@@ -1613,9 +1613,10 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
 {
     struct pollfd pfd;
 
+    pfd.fd = sigwait_fd;
+    pfd.events = POLLIN;
+
     if (ubf_threads_empty()) {
-        pfd.fd = sigwait_fd;
-        pfd.events = POLLIN;
         (void)ppoll(&pfd, 1, ts, 0);
         check_signals_nogvl(th, sigwait_fd);
     }
