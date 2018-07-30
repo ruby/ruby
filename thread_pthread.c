@@ -1577,6 +1577,37 @@ rb_sigwait_fd_put(const rb_thread_t *th, int fd)
     if (old != th) assert(old == th);
 }
 
+#ifndef HAVE_PPOLL
+/* TODO: don't ignore sigmask */
+static int
+ruby_ppoll(struct pollfd *fds, nfds_t nfds,
+      const struct timespec *ts, const sigset_t *sigmask)
+{
+    int timeout_ms;
+
+    if (ts) {
+	int tmp, tmp2;
+
+	if (ts->tv_sec > INT_MAX/1000)
+	    timeout_ms = INT_MAX;
+	else {
+	    tmp = (int)(ts->tv_sec * 1000);
+	    /* round up 1ns to 1ms to avoid excessive wakeups for <1ms sleep */
+	    tmp2 = (int)((ts->tv_nsec + 999999L) / (1000L * 1000L));
+	    if (INT_MAX - tmp < tmp2)
+		timeout_ms = INT_MAX;
+	    else
+		timeout_ms = (int)(tmp + tmp2);
+	}
+    }
+    else
+	timeout_ms = -1;
+
+    return poll(fds, nfds, timeout_ms);
+}
+#  define ppoll(fds,nfds,ts,sigmask) ruby_ppoll((fds),(nfds),(ts),(sigmask))
+#endif
+
 void
 rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
 {
