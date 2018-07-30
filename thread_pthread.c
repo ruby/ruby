@@ -1565,6 +1565,10 @@ rb_thread_create_mjit_thread(void (*worker_func)(void))
     return ret;
 }
 
+#ifndef USE_NATIVE_SLEEP_COND
+#define USE_NATIVE_SLEEP_COND (1)
+#endif
+
 #if USE_NATIVE_SLEEP_COND
 rb_nativethread_cond_t *
 rb_sleep_cond_get(const rb_execution_context_t *ec)
