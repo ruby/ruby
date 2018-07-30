@@ -2147,6 +2147,43 @@ rb_obj_builtin_type(VALUE obj)
 # define BITFIELD(type) unsigned int
 #endif
 
+#if defined(_MSC_VER)
+# define COMPILER_WARNING_PUSH          __pragma(warning(push))
+# define COMPILER_WARNING_POP           __pragma(warning(pop))
+# define COMPILER_WARNING_ERROR(flag)   __pragma(warning(error: flag)))
+# define COMPILER_WARNING_IGNORED(flag) __pragma(warning(suppress: flag)))
+
+#elif defined(__clang__) /* clang 2.6 already had this feature */
+# define COMPILER_WARNING_PUSH          _Pragma("clang diagnostic push")
+# define COMPILER_WARNING_POP           _Pragma("clang diagnostic pop")
+# define COMPILER_WARNING_SPECIFIER(kind, msg) \
+    clang diagnostic kind # msg
+# define COMPILER_WARNING_ERROR(flag) \
+    COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(error, flag))
+# define COMPILER_WARNING_IGNORED(flag) \
+    COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(ignored, flag))
+
+#elif GCC_VERSION_SINCE(4, 2, 0)
+/* https://gcc.gnu.org/onlinedocs/gcc-4.2.0/gcc/Diagnostic-Pragmas.html */
+# define COMPILER_WARNING_PUSH          _Pragma("GCC diagnostic push")
+# define COMPILER_WARNING_POP           _Pragma("GCC diagnostic pop")
+# define COMPILER_WARNING_SPECIFIER(kind, msg) \
+    GCC diagnostic kind # msg
+# define COMPILER_WARNING_ERROR(flag) \
+    COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(error, flag))
+# define COMPILER_WARNING_IGNORED(flag) \
+    COMPILER_WARNING_PRAGMA(COMPILER_WARNING_SPECIFIER(ignored, flag))
+
+#else /* other compilers to follow? */
+# define COMPILER_WARNING_PUSH                /* nop */
+# define COMPILER_WARNING_POP                 /* nop */
+# define COMPILER_WARNING_ERROR(cond, flag)   /* nop */
+# define COMPILER_WARNING_ignored(cond, flag) /* nop */
+#endif
+
+#define COMPILER_WARNING_PRAGMA(str) COMPILER_WARNING_PRAGMA_(str)
+#define COMPILER_WARNING_PRAGMA_(str) _Pragma(#str)
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */

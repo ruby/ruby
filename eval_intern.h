@@ -160,10 +160,10 @@ LONG WINAPI rb_w32_stack_overflow_handler(struct _EXCEPTION_POINTERS *);
 #if defined(USE_UNALIGNED_MEMBER_ACCESS) && USE_UNALIGNED_MEMBER_ACCESS && \
     defined(__clang__)
 # define UNALIGNED_MEMBER_ACCESS(expr) __extension__({ \
-    _Pragma("GCC diagnostic push"); \
-    _Pragma("GCC diagnostic ignored \"-Waddress-of-packed-member\""); \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Waddress-of-packed-member); \
     typeof(expr) unaligned_member_access_result = (expr); \
-    _Pragma("GCC diagnostic pop"); \
+    COMPILER_WARNING_POP; \
     unaligned_member_access_result; \
 })
 #else
