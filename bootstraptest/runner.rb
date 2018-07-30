@@ -6,6 +6,7 @@
 # Never use optparse in this file.
 # Never use test/unit in this file.
 # Never use Ruby extensions in this file.
+# Maintain Ruby 1.8 compatibility for now
 
 begin
   require 'fileutils'
@@ -374,12 +375,24 @@ def assert_finish(timeout_seconds, testsrc, message = '')
     pid = io.pid
     waited = false
     tlimit = Time.now + timeout_seconds
-    while Time.now < tlimit
+    diff = timeout_seconds
+    while diff > 0
       if Process.waitpid pid, Process::WNOHANG
         waited = true
         break
       end
-      sleep 0.1
+      if io.respond_to?(:read_nonblock)
+        if IO.select([io], nil, nil, diff)
+          begin
+            io.read_nonblock(1024)
+          rescue Errno::EAGAIN, EOFError
+            break
+          end while true
+        end
+      else
+        sleep 0.1
+      end
+      diff = tlimit - Time.now
     end
     if !waited
       Process.kill(:KILL, pid)
