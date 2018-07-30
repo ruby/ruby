@@ -50,9 +50,14 @@ static void ubf_wakeup_all_threads(void);
 static int ubf_threads_empty(void);
 static int native_cond_timedwait(rb_nativethread_cond_t *, pthread_mutex_t *,
                                  const struct timespec *);
+static const struct timespec *sigwait_timeout(rb_thread_t *, int sigwait_fd,
+                                              const struct timespec *,
+                                              int *drained_p);
 
 #define TIMER_THREAD_CREATED_P() (timer_thread_pipe.owner_process == getpid())
 
+/* for testing, and in case we come across a platform w/o pipes: */
+#define BUSY_WAIT_SIGNALS (0)
 #define THREAD_INVALID ((const rb_thread_t *)-1)
 static const rb_thread_t *sigwait_th;
 
@@ -129,7 +134,12 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
         native_thread_data_t *last;
 
         last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
-        if (last) rb_native_cond_signal(&last->sleep_cond);
+        if (last) {
+            rb_native_cond_signal(&last->sleep_cond);
+        }
+        else if (!ubf_threads_empty()) {
+            rb_thread_wakeup_timer_thread(0);
+        }
     }
 }
 
@@ -1194,7 +1204,12 @@ ubf_select(void *ptr)
         native_thread_data_t *last;
 
         last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
-        if (last) rb_native_cond_signal(&last->sleep_cond);
+        if (last) {
+            rb_native_cond_signal(&last->sleep_cond);
+        }
+        else {
+            rb_thread_wakeup_timer_thread(0);
+        }
     }
     rb_native_mutex_unlock(&vm->gvl.lock);
 
@@ -1623,41 +1638,36 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
     pfd.fd = sigwait_fd;
     pfd.events = POLLIN;
 
-    if (ubf_threads_empty()) {
+    if (!BUSY_WAIT_SIGNALS && ubf_threads_empty()) {
         (void)ppoll(&pfd, 1, ts, 0);
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        static const struct timespec quantum = { 0, TIME_QUANTUM_USEC * 1000 };
-        struct timespec *endp = 0, end, now;
+        struct timespec end, diff;
+        const struct timespec *to;
+        int n = 0;
 
         if (ts) {
             getclockofday(&end);
             timespec_add(&end, ts);
-            endp = &end;
+            diff = *ts;
+            ts = &diff;
         }
-
-        getclockofday(&now);
+        /*
+         * tricky: this needs to return on spurious wakeup (no auto-retry).
+         * But we also need to distinguish between periodic quantum
+         * wakeups, so we care about the result of consume_communication_pipe
+         */
         for (;;) {
-            const struct timespec *tsp = &quantum;
-            struct timespec diff;
-            int n;
-
-            if (endp) {
-                diff = *endp;
-                timespec_sub(&diff, &now);
-                if (timespec_cmp(&diff, tsp) < 0)
-                    tsp = &diff;
-            }
-
-            n = ppoll(&pfd, 1, tsp, 0);
-            check_signals_nogvl(th, sigwait_fd);
-            if (RUBY_VM_INTERRUPTED(th->ec) || n != 0) break;
-
-            if (endp) {
-                getclockofday(&now);
-                if (timespec_cmp(&now, endp) >= 0) break;
-            }
+            to = sigwait_timeout(th, sigwait_fd, ts, &n);
+            if (n) return;
+            n = ppoll(&pfd, 1, to, 0);
+            if (check_signals_nogvl(th, sigwait_fd))
+                return;
+            if (n || RUBY_VM_INTERRUPTED(th->ec))
+                return;
+            if (ts && timespec_update_expire(&diff, &end))
+                return;
         }
     }
 }

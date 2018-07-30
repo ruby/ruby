@@ -21,6 +21,7 @@
 #define native_thread_yield() Sleep(0)
 #define unregister_ubf_list(th)
 #define ubf_wakeup_all_threads() do {} while (0)
+#define ubf_threads_empty() (1)
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
