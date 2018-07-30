@@ -352,6 +352,10 @@ form_args(int num, ...)
     return res;
 }
 
+COMPILER_WARNING_PUSH
+#ifdef __GNUC__
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
 /* Start an OS process of executable PATH with arguments ARGV.  Return
    PID of the process.
    TODO: Use the same function in process.c */
@@ -387,13 +391,7 @@ start_process(const char *path, char *const *argv)
         }
         dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
-        COMPILER_WARNING_PUSH;
-#ifdef __GNUC__
-        COMPILER_WARNING_IGNORED(-Wdeprecated-declarations);
-#endif
         if ((pid = vfork()) == 0) {
-        COMPILER_WARNING_POP;
-
             umask(0077);
             if (mjit_opts.verbose == 0) {
                 /* CC can be started in a thread using a file which has been
@@ -415,6 +413,7 @@ start_process(const char *path, char *const *argv)
 #endif
     return pid;
 }
+COMPILER_WARNING_POP
 
 /* Execute an OS process of executable PATH with arguments ARGV.
    Return -1 or -2 if failed to execute, otherwise exit code of the process.
