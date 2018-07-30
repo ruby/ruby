@@ -208,9 +208,16 @@ gvl_init(rb_vm_t *vm)
 static void
 gvl_destroy(rb_vm_t *vm)
 {
-    rb_native_cond_destroy(&vm->gvl.switch_wait_cond);
-    rb_native_cond_destroy(&vm->gvl.switch_cond);
-    rb_native_mutex_destroy(&vm->gvl.lock);
+    /*
+     * only called once at VM shutdown (not atfork), another thread
+     * may still grab vm->gvl.lock when calling gvl_release at
+     * the end of thread_start_func_2
+     */
+    if (0) {
+        rb_native_cond_destroy(&vm->gvl.switch_wait_cond);
+        rb_native_cond_destroy(&vm->gvl.switch_cond);
+        rb_native_mutex_destroy(&vm->gvl.lock);
+    }
     clear_thread_cache_altstack();
 }
 
