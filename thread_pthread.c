@@ -1664,7 +1664,7 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
             n = ppoll(&pfd, 1, to, 0);
             if (check_signals_nogvl(th, sigwait_fd))
                 return;
-            if (n || RUBY_VM_INTERRUPTED(th->ec))
+            if (n || (th && RUBY_VM_INTERRUPTED(th->ec)))
                 return;
             if (ts && timespec_update_expire(&diff, &end))
                 return;
