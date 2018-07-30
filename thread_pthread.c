@@ -100,9 +100,9 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
                  * become designated timer thread to kick vm->gvl.acquired
                  * periodically
                  */
-                ts = native_cond_timeout(&nd->sleep_cond, ts);
+                ts = native_cond_timeout(&nd->cond.gvlq, ts);
                 vm->gvl.timer = th;
-                native_cond_timedwait(&nd->sleep_cond, &vm->gvl.lock, &ts);
+                native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
                 vm->gvl.timer = 0;
                 ubf_wakeup_all_threads();
 
@@ -114,7 +114,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
                 if (vm->gvl.acquired) timer_thread_function();
             }
             else {
-                rb_native_cond_wait(&nd->sleep_cond, &vm->gvl.lock);
+                rb_native_cond_wait(&nd->cond.gvlq, &vm->gvl.lock);
             }
         } while (vm->gvl.acquired);
 
@@ -135,7 +135,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
 
         last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
         if (last) {
-            rb_native_cond_signal(&last->sleep_cond);
+            rb_native_cond_signal(&last->cond.gvlq);
         }
         else if (!ubf_threads_empty()) {
             rb_thread_wakeup_timer_thread(0);
@@ -157,7 +157,7 @@ gvl_release_common(rb_vm_t *vm)
     native_thread_data_t *next;
     vm->gvl.acquired = 0;
     next = list_top(&vm->gvl.waitq, native_thread_data_t, ubf_list);
-    if (next) rb_native_cond_signal(&next->sleep_cond);
+    if (next) rb_native_cond_signal(&next->cond.gvlq);
 
     return next;
 }
@@ -472,7 +472,9 @@ native_thread_init(rb_thread_t *th)
 #ifdef USE_UBF_LIST
     list_node_init(&nd->ubf_list);
 #endif
-    rb_native_cond_initialize(&nd->sleep_cond);
+    rb_native_cond_initialize(&nd->cond.gvlq);
+    if (&nd->cond.gvlq != &nd->cond.intr)
+        rb_native_cond_initialize(&nd->cond.intr);
     ruby_thread_set_native(th);
 }
 
@@ -483,7 +485,11 @@ native_thread_init(rb_thread_t *th)
 static void
 native_thread_destroy(rb_thread_t *th)
 {
-    rb_native_cond_destroy(&th->native_thread_data.sleep_cond);
+    native_thread_data_t *nd = &th->native_thread_data;
+
+    rb_native_cond_destroy(&nd->cond.gvlq);
+    if (&nd->cond.gvlq != &nd->cond.intr)
+        rb_native_cond_destroy(&nd->cond.intr);
 
     /*
      * prevent false positive from ruby_thread_has_gvl_p if that
@@ -1092,7 +1098,7 @@ ubf_pthread_cond_signal(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     thread_debug("ubf_pthread_cond_signal (%p)\n", (void *)th);
-    rb_native_cond_signal(&th->native_thread_data.sleep_cond);
+    rb_native_cond_signal(&th->native_thread_data.cond.intr);
 }
 
 static void
@@ -1100,7 +1106,7 @@ native_cond_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 {
     struct timespec timeout;
     rb_nativethread_lock_t *lock = &th->interrupt_lock;
-    rb_nativethread_cond_t *cond = &th->native_thread_data.sleep_cond;
+    rb_nativethread_cond_t *cond = &th->native_thread_data.cond.intr;
 
     if (timeout_rel) {
 	/* Solaris cond_timedwait() return EINVAL if an argument is greater than
@@ -1205,7 +1211,7 @@ ubf_select(void *ptr)
 
         last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
         if (last) {
-            rb_native_cond_signal(&last->sleep_cond);
+            rb_native_cond_signal(&last->cond.gvlq);
         }
         else {
             rb_thread_wakeup_timer_thread(0);
@@ -1565,7 +1571,7 @@ rb_sleep_cond_get(const rb_execution_context_t *ec)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-    return &th->native_thread_data.sleep_cond;
+    return &th->native_thread_data.cond.intr;
 }
 
 void
