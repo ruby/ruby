@@ -3972,9 +3972,9 @@ retry_fork_async_signal_safe(int *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
+        COMPILER_WARNING_PUSH;
 #ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        COMPILER_WARNING_IGNORED(-Wdeprecated-declarations);
 #endif
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
@@ -3984,9 +3984,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #else
         pid = fork();
 #endif
-#ifdef __GNUC__
-# pragma GCC diagnostic pop
-#endif
+        COMPILER_WARNING_POP;
         if (pid == 0) {/* fork succeed, child process */
             int ret;
             close(ep[0]);
@@ -4055,13 +4053,13 @@ rb_fork_ruby(int *status)
 	prefork();
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
+        COMPILER_WARNING_PUSH;
 #ifdef __GNUC__
-# pragma GCC diagnostic push
-# pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+        COMPILER_WARNING_IGNORED(-Wdeprecated-declarations);
 #endif
 	pid = fork();
 #ifdef __GNUC__
-# pragma GCC diagnostic pop
+        COMPILER_WARNING_POP;
 #endif
 	err = errno;
 	after_fork_ruby();
