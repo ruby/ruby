@@ -1178,6 +1178,9 @@ unregister_ubf_list(rb_thread_t *th)
 {
     struct list_node *node = &th->native_thread_data.ubf_list;
 
+    /* we can't allow re-entry into ubf_list_head */
+    VM_ASSERT(th->unblock.func == 0);
+
     if (!list_empty((struct list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
 	list_del_init(node);
