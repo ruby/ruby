@@ -140,6 +140,34 @@ enum_grep_v(VALUE obj, VALUE pat)
     return ary;
 }
 
+#define COUNT_BIGNUM IMEMO_FL_USER0
+#define MEMO_V3_SET(m, v) RB_OBJ_WRITE((m), &(m)->u3.value, (v))
+
+static void
+imemo_count_up(struct MEMO *memo)
+{
+    if (memo->flags & COUNT_BIGNUM) {
+	MEMO_V3_SET(memo, rb_int_succ(memo->u3.value));
+    }
+    else if (++memo->u3.cnt == 0) {
+	/* overflow */
+	unsigned long buf[2] = {0, 1};
+	MEMO_V3_SET(memo, rb_big_unpack(buf, 2));
+	memo->flags |= COUNT_BIGNUM;
+    }
+}
+
+static VALUE
+imemo_count_value(struct MEMO *memo)
+{
+    if (memo->flags & COUNT_BIGNUM) {
+	return memo->u3.value;
+    }
+    else {
+	return ULONG2NUM(memo->u3.cnt);
+    }
+}
+
 static VALUE
 count_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
@@ -148,7 +176,7 @@ count_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     ENUM_WANT_SVALUE();
 
     if (rb_equal(i, memo->v1)) {
-	memo->u3.cnt++;
+	imemo_count_up(memo);
     }
     return Qnil;
 }
@@ -159,7 +187,7 @@ count_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     struct MEMO *memo = MEMO_CAST(memop);
 
     if (RTEST(rb_yield_values2(argc, argv))) {
-	memo->u3.cnt++;
+	imemo_count_up(memo);
     }
     return Qnil;
 }
@@ -169,7 +197,7 @@ count_all_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
 {
     struct MEMO *memo = MEMO_CAST(memop);
 
-    memo->u3.cnt++;
+    imemo_count_up(memo);
     return Qnil;
 }
 
@@ -216,7 +244,7 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 
     memo = MEMO_NEW(item, 0, 0);
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
-    return INT2NUM(memo->u3.cnt);
+    return imemo_count_value(memo);
 }
 
 static VALUE
@@ -284,10 +312,10 @@ find_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     ENUM_WANT_SVALUE();
 
     if (rb_equal(i, memo->v2)) {
-	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
+	MEMO_V1_SET(memo, imemo_count_value(memo));
 	rb_iter_break();
     }
-    memo->u3.cnt++;
+    imemo_count_up(memo);
     return Qnil;
 }
 
@@ -297,10 +325,10 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
     struct MEMO *memo = MEMO_CAST(memop);
 
     if (RTEST(rb_yield_values2(argc, argv))) {
-	MEMO_V1_SET(memo, UINT2NUM(memo->u3.cnt));
+	MEMO_V1_SET(memo, imemo_count_value(memo));
 	rb_iter_break();
     }
-    memo->u3.cnt++;
+    imemo_count_up(memo);
     return Qnil;
 }
 
@@ -688,7 +716,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
                 if (FIXNUM_P(e)) {
                     n += FIX2LONG(e); /* should not overflow long type */
                     if (!FIXABLE(n)) {
-                        v = rb_big_plus(LONG2NUM(n), v);
+                        v = rb_big_plus(ULONG2NUM(n), v);
                         n = 0;
                     }
                 }
@@ -2182,9 +2210,11 @@ enum_member(VALUE obj, VALUE val)
 static VALUE
 each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 {
-    long n = MEMO_CAST(memo)->u3.cnt++;
+    struct MEMO *m = MEMO_CAST(memo);
+    VALUE n = imemo_count_value(m);
 
-    return rb_yield_values(2, rb_enum_values_pack(argc, argv), INT2NUM(n));
+    imemo_count_up(m);
+    return rb_yield_values(2, rb_enum_values_pack(argc, argv), n);
 }
 
 /*
