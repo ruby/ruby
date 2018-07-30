@@ -3959,6 +3959,10 @@ disable_child_handler_fork_child(struct child_handler_disabler_state *old, char 
     return 0;
 }
 
+COMPILER_WARNING_PUSH
+#ifdef __GNUC__
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
 static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
@@ -3972,10 +3976,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-        COMPILER_WARNING_PUSH;
-#ifdef __GNUC__
-        COMPILER_WARNING_IGNORED(-Wdeprecated-declarations);
-#endif
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
             pid = vfork();
@@ -3984,7 +3984,6 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #else
         pid = fork();
 #endif
-        COMPILER_WARNING_POP;
         if (pid == 0) {/* fork succeed, child process */
             int ret;
             close(ep[0]);
@@ -4009,6 +4008,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
             return -1;
     }
 }
+COMPILER_WARNING_POP
 
 rb_pid_t
 rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
@@ -4040,6 +4040,10 @@ rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), voi
     return pid;
 }
 
+COMPILER_WARNING_PUSH
+#ifdef __GNUC__
+COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
+#endif
 rb_pid_t
 rb_fork_ruby(int *status)
 {
@@ -4053,14 +4057,7 @@ rb_fork_ruby(int *status)
 	prefork();
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
-        COMPILER_WARNING_PUSH;
-#ifdef __GNUC__
-        COMPILER_WARNING_IGNORED(-Wdeprecated-declarations);
-#endif
 	pid = fork();
-#ifdef __GNUC__
-        COMPILER_WARNING_POP;
-#endif
 	err = errno;
 	after_fork_ruby();
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
@@ -4071,6 +4068,7 @@ rb_fork_ruby(int *status)
 	    return -1;
     }
 }
+COMPILER_WARNING_POP
 
 #endif
 
