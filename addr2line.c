@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/config.h"
+#include "ruby/defines.h"
 #include "ruby/missing.h"
 #include "addr2line.h"
 
@@ -104,7 +105,7 @@ void *alloca();
 #define SHF_COMPRESSED 0
 #endif
 
-static int kprintf(const char *fmt, ...);
+PRINTF_ARGS(static int kprintf(const char *fmt, ...), 1, 2);
 
 typedef struct {
     const char *dirname;

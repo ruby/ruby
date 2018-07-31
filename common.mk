@@ -1424,6 +1424,7 @@ help: PHONY
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.c
 addr2line.$(OBJEXT): {$(VPATH)}addr2line.h
 addr2line.$(OBJEXT): {$(VPATH)}config.h
+addr2line.$(OBJEXT): {$(VPATH)}defines.h
 addr2line.$(OBJEXT): {$(VPATH)}missing.h
 array.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 array.$(OBJEXT): $(top_srcdir)/include/ruby.h
