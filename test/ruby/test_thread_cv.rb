@@ -2,7 +2,7 @@
 require 'test/unit'
 require 'tmpdir'
 
-class TestConditionVariable < Test::Unit::TestCase
+class TestThreadConditionVariable < Test::Unit::TestCase
   ConditionVariable = Thread::ConditionVariable
   Mutex = Thread::Mutex
 

@@ -3,7 +3,7 @@ require 'test/unit'
 require 'tmpdir'
 require 'timeout'
 
-class TestQueue < Test::Unit::TestCase
+class TestThreadQueue < Test::Unit::TestCase
   Queue = Thread::Queue
   SizedQueue = Thread::SizedQueue
 
