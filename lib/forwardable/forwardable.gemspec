@@ -1,4 +1,9 @@
-require_relative "../forwardable"
+begin
+  require_relative "lib/forwardable"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "../forwardable"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "forwardable"
