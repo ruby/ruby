@@ -1,4 +1,9 @@
-require_relative "sync"
+begin
+  require_relative "lib/sync"
+rescue LoadError
+  # for Ruby core repository
+  require_relative "sync"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "sync"
