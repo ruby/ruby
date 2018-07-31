@@ -589,7 +589,7 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
 	sep=; \
-	quote MJIT_BUILD_DIR "$(dir $(realpath $(firstword $(MAKEFILE_LIST))))"; \
+	quote MJIT_BUILD_DIR "`$(CHDIR) . && pwd`"; \
 	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
