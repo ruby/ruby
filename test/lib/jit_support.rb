@@ -35,7 +35,8 @@ module JITSupport
     ]
     args << '--jit-save-temps' if save_temps
     args << '-e' << script
-    args.unshift(env) if env
+    base_env = { 'MJIT_SEARCH_BUILD_DIR' => 'true' } # workaround to skip requiring `make install` for `make test-all`
+    args.unshift(env ? base_env.merge!(env) : base_env)
     EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,
     )

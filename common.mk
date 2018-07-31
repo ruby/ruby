@@ -732,13 +732,10 @@ no-test-testframework: PHONY
 test-sample: test-basic # backward compatibility for mswin-build
 test: btest-ruby test-knownbug test-basic
 
-INPLACE_TEST = $(LIBRUBY_RELATIVE:yes=)
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
-# `make test-all` depends on `make install`: Since r62262, test_jit.rb fails if installed MJIT header is not updated
-# and --enable-load-relative is not specified. We don't have solution for this yet. See also: https://bugs.ruby-lang.org/issues/13620
-yes-test-all: programs $(INPLACE_TEST:no=install) PHONY
+yes-test-all: programs PHONY
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
