@@ -193,12 +193,7 @@ def sync_default_gems(gem)
     `cp -f ../strscan/strscan.gemspec ext/strscan`
     `rm -f ext/strscan/regenc.h ext/strscan/regint.h`
     `git checkout ext/strscan/depend`
-  when "sync"
-    `rm -rf lib/sync.rb test/thread/test_sync.rb`
-    `cp -rf ../sync/lib/* lib`
-    `cp -rf ../sync/test/thread test`
-    `cp -f ../sync/sync.gemspec lib`
-  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m"
+  when "rexml", "rss", "matrix", "irb", "csv", "shell", "logger", "ostruct", "scanf", "webrick", "fileutils", "forwardable", "prime", "tracer", "ipaddr", "cmath", "mutex_m", "sync"
     sync_lib gem
   else
   end
