@@ -181,7 +181,7 @@ def sync_default_gems(gem)
   when "thwait"
     `rm -rf lib/thwait*`
     `cp -rf ../thwait/lib/* lib`
-    `cp -rf ../thwait/thwait.gemspec lib`
+    `cp -rf ../thwait/thwait.gemspec lib/thwait`
   when "e2mmap"
     `rm -rf lib/e2mmap*`
     `cp -rf ../e2mmap/lib/* lib`
