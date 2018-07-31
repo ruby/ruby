@@ -1066,5 +1066,14 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
         raise RuntimeError, "hello"
       }
     end;
+
+    error_class = Class.new(StandardError) do
+      def backtrace; :backtrace; end
+    end
+    begin
+      raise error_class
+    rescue error_class => e
+      assert_raise(TypeError) {$@}
+    end
   end
 end
