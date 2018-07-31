@@ -321,6 +321,8 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 	salt = (unsigned char *)RSTRING_PTR(vsalt);
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
+    if (iter <= 0)
+	rb_raise(rb_eArgError, "iterations must be a positive integer");
     digest = NIL_P(vdigest) ? EVP_md5() : GetDigestPtr(vdigest);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
