@@ -10,7 +10,11 @@ PROGRAM = File.basename($0, ".*")
 module MJITHeader
   ATTR_VALUE_REGEXP  = /[^()]|\([^()]*\)/
   ATTR_REGEXP        = /__attribute__\s*\(\(#{ATTR_VALUE_REGEXP}*\)\)/
-  FUNC_HEADER_REGEXP = /\A(\s*#{ATTR_REGEXP})*[^\[{(]*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
+  # Example:
+  #   VALUE foo(int bar)
+  #   VALUE __attribute__ ((foo)) bar(int baz)
+  #   __attribute__ ((foo)) VALUE bar(int baz)
+  FUNC_HEADER_REGEXP = /\A((\s*#{ATTR_REGEXP})|[^\[{(])*\((#{ATTR_REGEXP}|[^()])*\)(\s*#{ATTR_REGEXP})*\s*/
   TARGET_NAME_REGEXP = /\A(rb|ruby|vm|insn|attr)_/
 
   # Predefined macros for compilers which are already supported by MJIT.
