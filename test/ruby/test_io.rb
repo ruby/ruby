@@ -3556,7 +3556,7 @@ __END__
   end if File::BINARY != 0
 
   def test_race_gets_and_close
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", signal: :ABRT)
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
       10.times do |i|
