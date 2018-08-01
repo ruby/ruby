@@ -146,12 +146,15 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 #ifndef ATOMIC_SIZE_INC
 # define ATOMIC_SIZE_INC(var) ATOMIC_INC(var)
 #endif
+
 #ifndef ATOMIC_SIZE_DEC
 # define ATOMIC_SIZE_DEC(var) ATOMIC_DEC(var)
 #endif
+
 #ifndef ATOMIC_SIZE_EXCHANGE
 # define ATOMIC_SIZE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 #endif
+
 #ifndef ATOMIC_SIZE_CAS
 # define ATOMIC_SIZE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 #endif
@@ -160,6 +163,7 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 # ifndef ATOMIC_PTR_EXCHANGE
 #   define ATOMIC_PTR_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 # endif
+
 # ifndef ATOMIC_PTR_CAS
 #   define ATOMIC_PTR_CAS(var, oldval, newval) ATOMIC_CAS(var, oldval, newval)
 # endif
@@ -167,6 +171,7 @@ ruby_atomic_size_exchange(size_t *ptr, size_t val)
 # ifndef ATOMIC_VALUE_EXCHANGE
 #   define ATOMIC_VALUE_EXCHANGE(var, val) ATOMIC_EXCHANGE(var, val)
 # endif
+
 # ifndef ATOMIC_VALUE_CAS
 #   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_CAS(var, oldval, val)
 # endif
@@ -186,6 +191,7 @@ ruby_atomic_ptr_exchange(const void **ptr, const void *val)
 }
 # endif
 #endif
+
 #ifndef ATOMIC_PTR_CAS
 # if SIZEOF_VOIDP == SIZEOF_SIZE_T
 #   define ATOMIC_PTR_CAS(var, oldval, val) (void *)ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
@@ -215,6 +221,7 @@ ruby_atomic_value_exchange(VALUE *ptr, VALUE val)
 }
 # endif
 #endif
+
 #ifndef ATOMIC_VALUE_CAS
 # if SIZEOF_VALUE == SIZEOF_SIZE_T
 #   define ATOMIC_VALUE_CAS(var, oldval, val) ATOMIC_SIZE_CAS(*(size_t *)&(var), (size_t)(oldval), (size_t)(val))
