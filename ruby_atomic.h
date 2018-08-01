@@ -90,6 +90,10 @@ rb_w32_atomic_cas(volatile rb_atomic_t *var, rb_atomic_t oldval, rb_atomic_t new
 #  define ATOMIC_SIZE_EXCHANGE(var, val) InterlockedExchange((LONG *)&(var), (val))
 # endif
 
+# ifdef InterlockedExchangePointer
+#   define ATOMIC_PTR_EXCHANGE(var, val) InterlockedExchangePointer((PVOID volatile *)&(var), (PVOID)(val))
+# endif /* See below for definitions of other situations */
+
 #elif defined(__sun) && defined(HAVE_ATOMIC_H)
 #include <atomic.h>
 typedef unsigned int rb_atomic_t;
