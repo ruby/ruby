@@ -140,15 +140,7 @@ typedef intptr_t pid_t;
 #endif
 
 /* Atomically set function pointer if possible. */
-#ifdef _WIN32
-# ifdef InterlockedExchangePointer
-#  define MJIT_ATOMIC_SET(var, val) InterlockedExchangePointer((void **)&(var), (void *)val)
-# else
-#  define MJIT_ATOMIC_SET(var, val) (void)((var) = (val))
-# endif
-#else
-# define MJIT_ATOMIC_SET(var, val) ATOMIC_SET(var, val)
-#endif
+#define MJIT_ATOMIC_SET(var, val) ATOMIC_PTR_EXCHANGE(var, val)
 
 /* A copy of MJIT portion of MRI options since MJIT initialization.  We
    need them as MJIT threads still can work when the most MRI data were
