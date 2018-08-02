@@ -779,13 +779,14 @@ rb_sigwait_fd_get(rb_thread_t *th)
     return -1; /* TODO */
 }
 
+NORETURN(void rb_sigwait_fd_put(rb_thread_t *, int));
 void
 rb_sigwait_fd_put(rb_thread_t *th, int fd)
 {
     rb_bug("not implemented, should not be called");
 }
 
-
+NORETURN(void rb_sigwait_sleep(const rb_thread_t *, int, const struct timespec *));
 void
 rb_sigwait_sleep(const rb_thread_t *th, int fd, const struct timespec *ts)
 {
