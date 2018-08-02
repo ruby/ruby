@@ -1478,6 +1478,11 @@ init_header_filename(void)
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 
+    basedir_val = ruby_prefix_path;
+    basedir = StringValuePtr(basedir_val);
+    baselen = RSTRING_LEN(basedir_val);
+
+#ifndef LOAD_RELATIVE
     if (getenv("MJIT_SEARCH_BUILD_DIR")) {
         /* This path is not intended to be used on production, but using build directory's
            header file here because people want to run `make test-all` without running
@@ -1485,11 +1490,7 @@ init_header_filename(void)
         basedir = MJIT_BUILD_DIR;
         baselen = strlen(basedir);
     }
-    else {
-        basedir_val = ruby_prefix_path;
-        basedir = StringValuePtr(basedir_val);
-        baselen = RSTRING_LEN(basedir_val);
-    }
+#endif
 
     header_file = xmalloc(baselen + header_name_len + 1);
     p = append_str2(header_file, basedir, baselen);
