@@ -872,6 +872,7 @@ link_o_to_so(const char **o_files, const char *so_file)
 static void
 compact_all_jit_code(void)
 {
+# ifndef _WIN32 /* This requires header transformation but we don't transform header on Windows for now */
     struct rb_mjit_unit *unit;
     struct rb_mjit_unit_node *node;
     double start_time, end_time;
@@ -921,11 +922,11 @@ compact_all_jit_code(void)
         add_to_list(node, &compact_units);
 
         if (!mjit_opts.save_temps) {
-#ifdef _WIN32
+#  ifdef _WIN32
             unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
-#else
+#  else
             remove_file(so_file);
-#endif
+#  endif
         }
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
@@ -952,6 +953,7 @@ compact_all_jit_code(void)
         free(unit);
         verbose(1, "JIT compaction failure (%.1fms): Failed to compact methods", end_time - start_time);
     }
+# endif /* _WIN32 */
 }
 
 #endif /* _MSC_VER */
