@@ -95,14 +95,20 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
         list_add_tail(&vm->gvl.waitq, &nd->ubf_list);
         do {
             if (!vm->gvl.timer) {
-                struct timespec ts = { 0, TIME_QUANTUM_USEC * 1000 };
+                static struct timespec ts;
+                static int err = ETIMEDOUT;
+
                 /*
                  * become designated timer thread to kick vm->gvl.acquired
-                 * periodically
+                 * periodically.  Continue on old timeout if it expired:
                  */
-                ts = native_cond_timeout(&nd->cond.gvlq, ts);
+                if (err == ETIMEDOUT) {
+                    ts.tv_sec = 0;
+                    ts.tv_nsec = TIME_QUANTUM_USEC * 1000;
+                    ts = native_cond_timeout(&nd->cond.gvlq, ts);
+                }
                 vm->gvl.timer = th;
-                native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
+                err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
                 vm->gvl.timer = 0;
                 ubf_wakeup_all_threads();
 
