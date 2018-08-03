@@ -824,6 +824,7 @@ static VALUE cParser_source(VALUE self)
 
 void Init_parser(void)
 {
+#undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
     mExt = rb_define_module_under(mJSON, "Ext");
