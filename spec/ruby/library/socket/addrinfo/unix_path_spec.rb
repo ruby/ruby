@@ -1,7 +1,6 @@
-require_relative '../../../spec_helper'
-require 'socket'
+require_relative '../spec_helper'
 
-platform_is_not :windows do
+with_feature :unix_socket do
   describe "Addrinfo#unix_path" do
     describe "for an ipv4 socket" do
 
@@ -25,15 +24,13 @@ platform_is_not :windows do
       end
     end
 
-    platform_is_not :windows do
-      describe "for a unix socket" do
-        before :each do
-          @addrinfo = Addrinfo.unix("/tmp/sock")
-        end
+    describe "for a unix socket" do
+      before :each do
+        @addrinfo = Addrinfo.unix("/tmp/sock")
+      end
 
-        it "returns the socket path" do
-          @addrinfo.unix_path.should == "/tmp/sock"
-        end
+      it "returns the socket path" do
+        @addrinfo.unix_path.should == "/tmp/sock"
       end
     end
   end

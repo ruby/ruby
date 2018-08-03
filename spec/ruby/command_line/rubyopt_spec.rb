@@ -22,7 +22,7 @@ describe "Processing RUBYOPT" do
     result.should =~ /value of \$DEBUG is true/
   end
 
-  unless CROSS_COMPILING
+  guard -> { not CROSS_COMPILING } do
     it "prints the version number for '-v'" do
       ENV["RUBYOPT"] = '-v'
       ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION

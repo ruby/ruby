@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket::BasicSocket#getsockname" do
@@ -20,7 +20,7 @@ describe "Socket::BasicSocket#getsockname" do
     sockaddr[0].should == @socket.addr[1]
   end
 
-  it "returns empty sockaddr for unbinded sockets" do
+  it 'returns a default socket address for a disconnected socket' do
     @socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM, 0)
     sockaddr = Socket.unpack_sockaddr_in(@socket.getsockname)
     sockaddr.should == [0, "0.0.0.0"]

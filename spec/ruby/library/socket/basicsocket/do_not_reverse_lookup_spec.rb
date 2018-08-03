@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "BasicSocket.do_not_reverse_lookup" do

@@ -27,6 +27,10 @@ describe "IO.read" do
     IO.read(@fname, {}).should == @contents
   end
 
+  it "accepts a length, and empty options Hash" do
+    IO.read(@fname, 3, {}).should == @contents[0, 3]
+  end
+
   it "accepts a length, offset, and empty options Hash" do
     IO.read(@fname, 3, 0, {}).should == @contents[0, 3]
   end

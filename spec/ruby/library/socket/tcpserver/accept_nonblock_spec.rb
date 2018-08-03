@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket::TCPServer.accept_nonblock" do
@@ -43,6 +43,42 @@ describe "Socket::TCPServer.accept_nonblock" do
 
     it 'returns :wait_readable in exceptionless mode' do
       @server.accept_nonblock(exception: false).should == :wait_readable
+    end
+  end
+end
+
+describe 'TCPServer#accept_nonblock' do
+  SocketSpecs.each_ip_protocol do |family, ip_address|
+    before do
+      @server = TCPServer.new(ip_address, 0)
+    end
+
+    after do
+      @server.close
+    end
+
+    describe 'without a connected client' do
+      it 'raises IO::WaitReadable' do
+        lambda { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
+      end
+    end
+
+    platform_is_not :windows do # spurious
+      describe 'with a connected client' do
+        before do
+          @client = TCPSocket.new(ip_address, @server.connect_address.ip_port)
+        end
+
+        after do
+          @socket.close if @socket
+          @client.close
+        end
+
+        it 'returns a TCPSocket' do
+          @socket = @server.accept_nonblock
+          @socket.should be_an_instance_of(TCPSocket)
+        end
+      end
     end
   end
 end

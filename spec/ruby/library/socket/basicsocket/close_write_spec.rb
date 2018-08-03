@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket::BasicSocket#close_write" do
@@ -15,13 +15,13 @@ describe "Socket::BasicSocket#close_write" do
     lambda { @server.write("foo") }.should raise_error(IOError)
   end
 
-  it "works on sockets with closed write ends" do
+  it 'does not raise when called on a socket already closed for writing' do
     @server.close_write
-    lambda { @server.close_write }.should_not raise_error(Exception)
+    @server.close_write
     lambda { @server.write("foo") }.should raise_error(IOError)
   end
 
-  it "does not close the socket" do
+  it 'does not fully close the socket' do
     @server.close_write
     @server.closed?.should be_false
   end
@@ -37,7 +37,7 @@ describe "Socket::BasicSocket#close_write" do
     @server.closed?.should be_true
   end
 
-  it "raises IOError on closed socket" do
+  it 'raises IOError when called on a fully closed socket' do
     @server.close
     lambda { @server.close_write }.should raise_error(IOError)
   end

@@ -1,4 +1,4 @@
-require_relative '../../../../spec_helper'
+require_relative '../../spec_helper'
 require_relative '../../fixtures/classes'
 
 describe :tcpsocket_new, shared: true do

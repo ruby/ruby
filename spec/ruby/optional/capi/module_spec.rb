@@ -30,6 +30,20 @@ describe "CApiModule" do
       }.should complain(/already initialized constant/)
       CApiModuleSpecs::C::Z.should == 8
     end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      -> {
+        CApiModuleSpecs::C.const_set(:_INVALID, 1)
+      }.should raise_error(NameError, /wrong constant name/)
+
+      @m.rb_const_set(CApiModuleSpecs::C, :_INVALID, 2)
+      @m.rb_const_get(CApiModuleSpecs::C, :_INVALID).should == 2
+
+      # Ruby-level should still not allow access
+      -> {
+        CApiModuleSpecs::C.const_get(:_INVALID)
+      }.should raise_error(NameError, /wrong constant name/)
+    end
   end
 
   describe "rb_define_module" do
@@ -139,6 +153,16 @@ describe "CApiModule" do
 
     it "resolves autoload constants in Object" do
       @m.rb_const_get(Object, :CApiModuleSpecsAutoload).should == 123
+    end
+
+    it "allows arbitrary names, including constant names not valid in Ruby" do
+      -> {
+        CApiModuleSpecs::A.const_get(:_INVALID)
+      }.should raise_error(NameError, /wrong constant name/)
+
+      -> {
+        @m.rb_const_get(CApiModuleSpecs::A, :_INVALID)
+      }.should raise_error(NameError, /uninitialized constant/)
     end
   end
 

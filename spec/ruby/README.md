@@ -92,6 +92,13 @@ In similar fashion, the following commands run the respective specs:
 
 See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md).
 
+### Socket specs from rubysl-socket
+
+Most specs under `library/socket` were imported from [the rubysl-socket project](https://github.com/rubysl/rubysl-socket).
+The 3 copyright holders of rubysl-socket, Yorick Peterse, Chuck Remes and
+Brian Shirai, [agreed to relicense those specs](https://github.com/rubysl/rubysl-socket/issues/15)
+under the MIT license in ruby/spec.
+
 ### History and RubySpec
 
 This project was originally born from [Rubinius](https://github.com/rubinius/rubinius) tests being converted to the spec style.

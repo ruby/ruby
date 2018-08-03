@@ -94,8 +94,6 @@ static VALUE encoding_spec_rb_default_external_encoding(VALUE self) {
 #endif
 
 #ifdef HAVE_RB_ENC_ALIAS
-extern int rb_enc_alias(const char* alias, const char* orig);
-
 static VALUE encoding_spec_rb_enc_alias(VALUE self, VALUE alias, VALUE orig) {
   return INT2NUM(rb_enc_alias(RSTRING_PTR(alias), RSTRING_PTR(orig)));
 }

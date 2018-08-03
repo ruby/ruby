@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "TCPServer.new" do
@@ -25,7 +25,7 @@ describe "TCPServer.new" do
       addr[2].should =~ /^#{SocketSpecs.hostname}\b/
       addr[3].should == '127.0.0.1'
     else
-      addr[2].should =~ /^#{SocketSpecs.hostnamev6}\b/
+      addr[2].should =~ /^#{SocketSpecs.hostname('::1')}\b/
       addr[3].should == '::1'
     end
   end

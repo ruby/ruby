@@ -185,6 +185,19 @@ describe 'Optional variable assignments' do
     describe 'using a #[]' do
       before do
         @a = {}
+        klass = Class.new do
+          def [](k)
+            @hash ||= {}
+            @hash[k]
+          end
+
+          def []=(k, v)
+            @hash ||= {}
+            @hash[k] = v
+            7
+          end
+        end
+        @b = klass.new
       end
 
       it 'leaves new variable unassigned' do
@@ -225,6 +238,15 @@ describe 'Optional variable assignments' do
         @a[:k] &&= 20 rescue 30
 
         @a[:k].should == 20
+      end
+
+      it 'returns the assigned value, not the result of the []= method with ||=' do
+        (@b[:k] ||= 12).should == 12
+      end
+
+      it 'returns the assigned value, not the result of the []= method with +=' do
+        @b[:k] = 17
+        (@b[:k] += 12).should == 29
       end
     end
   end

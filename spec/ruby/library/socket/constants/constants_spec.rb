@@ -1,6 +1,5 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
-include Socket::Constants
 
 describe "Socket::Constants" do
   it "defines socket types" do
@@ -85,6 +84,19 @@ describe "Socket::Constants" do
     end
     consts.each do |c|
       Socket::Constants.should have_constant(c)
+    end
+  end
+
+  platform_is_not :windows do
+    it 'defines SCM options' do
+      Socket::Constants.should have_constant('SCM_CREDENTIALS')
+    end
+
+    it 'defines error options' do
+      consts = ["EAI_ADDRFAMILY", "EAI_NODATA"]
+      consts.each do |c|
+        Socket::Constants.should have_constant(c)
+      end
     end
   end
 end
