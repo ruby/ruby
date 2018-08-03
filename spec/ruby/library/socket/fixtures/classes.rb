@@ -1,16 +1,16 @@
 require 'socket'
 
 module SocketSpecs
-  # helper to get the hostname associated to 127.0.0.1
-  def self.hostname
+  # helper to get the hostname associated to 127.0.0.1 or the given ip
+  def self.hostname(ip = "127.0.0.1")
     # Calculate each time, without caching, since the result might
     # depend on things like do_not_reverse_lookup mode, which is
     # changing from test to test
-    Socket.getaddrinfo("127.0.0.1", nil)[0][2]
+    Socket.getaddrinfo(ip, nil)[0][2]
   end
 
-  def self.hostnamev6
-    Socket.getaddrinfo("::1", nil)[0][2]
+  def self.hostname_reverse_lookup(ip = "127.0.0.1")
+    Socket.getaddrinfo(ip, nil, 0, 0, 0, 0, true)[0][2]
   end
 
   def self.addr(which=:ipv4)
@@ -45,6 +45,61 @@ module SocketSpecs
 
   def self.rm_socket(path)
     File.delete(path) if File.exist?(path)
+  end
+
+  def self.ipv6_available?
+    @ipv6_available ||= begin
+      server = TCPServer.new('::1', 0)
+    rescue Errno::EADDRNOTAVAIL
+      :no
+    else
+      server.close
+      :yes
+    end
+    @ipv6_available == :yes
+  end
+
+  def self.each_ip_protocol
+    describe 'using IPv4' do
+      yield Socket::AF_INET, '127.0.0.1', 'AF_INET'
+    end
+
+    guard -> { SocketSpecs.ipv6_available? } do
+      describe 'using IPv6' do
+        yield Socket::AF_INET6, '::1', 'AF_INET6'
+      end
+    end
+  end
+
+  def self.loop_with_timeout(timeout = 5)
+    require 'timeout'
+    time = Time.now
+
+    loop do
+      if Time.now - time >= timeout
+        raise TimeoutError, "Did not succeed within #{timeout} seconds"
+      end
+
+      sleep 0.01 # necessary on OSX; don't know why
+      yield
+    end
+  end
+
+  def self.wait_until_success(timeout = 5)
+    loop_with_timeout(timeout) do
+      begin
+        return yield
+      rescue
+      end
+    end
+  end
+
+  def self.dest_addr_req_error
+    error = Errno::EDESTADDRREQ
+    platform_is :windows do
+      error = Errno::ENOTCONN
+    end
+    error
   end
 
   # TCPServer echo server accepting one connection

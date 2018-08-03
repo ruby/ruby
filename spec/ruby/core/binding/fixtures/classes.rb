@@ -25,6 +25,18 @@ module BindingSpecs
       __FILE__
     end
 
+    def get_binding_with_send_and_line
+      [send(:binding), __LINE__]
+    end
+
+    def get_binding_and_method
+      [binding, :get_binding_and_method]
+    end
+
+    def get_binding_with_send_and_method
+      [send(:binding), :get_binding_with_send_and_method]
+    end
+
     def get_empty_binding
       binding
     end

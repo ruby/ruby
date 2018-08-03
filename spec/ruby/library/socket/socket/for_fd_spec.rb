@@ -1,6 +1,5 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
-require 'socket'
 
 describe "Socket.for_fd" do
   before :each do

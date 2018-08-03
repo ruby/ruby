@@ -6,6 +6,26 @@ with_feature :encoding do
       "abc".force_encoding('shift_jis').encoding.should == Encoding::Shift_JIS
     end
 
+    describe "with a special encoding name" do
+      before :each do
+        @original_encoding = Encoding.default_internal
+      end
+
+      after :each do
+        Encoding.default_internal = @original_encoding
+      end
+
+      it "accepts valid special encoding names" do
+        Encoding.default_internal = "US-ASCII"
+        "abc".force_encoding("internal").encoding.should == Encoding::US_ASCII
+      end
+
+      it "defaults to ASCII-8BIT if special encoding name is not set" do
+        Encoding.default_internal = nil
+        "abc".force_encoding("internal").encoding.should == Encoding::ASCII_8BIT
+      end
+    end
+
     it "accepts an Encoding instance" do
       "abc".force_encoding(Encoding::SHIFT_JIS).encoding.should == Encoding::Shift_JIS
     end

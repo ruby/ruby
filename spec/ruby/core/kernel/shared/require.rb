@@ -305,6 +305,80 @@ describe :kernel_require, shared: true do
       $LOADED_FEATURES.should include(@path)
     end
 
+    platform_is_not :windows do
+      describe "with symlinks" do
+        before :each do
+          @symlink_to_code_dir = tmp("codesymlink")
+          File.symlink(CODE_LOADING_DIR, @symlink_to_code_dir)
+
+          $LOAD_PATH.delete(CODE_LOADING_DIR)
+          $LOAD_PATH.unshift(@symlink_to_code_dir)
+        end
+
+        after :each do
+          rm_r @symlink_to_code_dir
+        end
+
+        it "does not canonicalize the path and stores a path with symlinks" do
+          symlink_path = "#{@symlink_to_code_dir}/load_fixture.rb"
+          canonical_path = "#{CODE_LOADING_DIR}/load_fixture.rb"
+          @object.require(symlink_path).should be_true
+          ScratchPad.recorded.should == [:loaded]
+
+          features = $LOADED_FEATURES.select { |path| path.end_with?('load_fixture.rb') }
+          features.should include(symlink_path)
+          features.should_not include(canonical_path)
+        end
+
+        it "stores the same path that __FILE__ returns in the required file" do
+          symlink_path = "#{@symlink_to_code_dir}/load_fixture_and__FILE__.rb"
+          @object.require(symlink_path).should be_true
+          loaded_feature = $LOADED_FEATURES.last
+          ScratchPad.recorded.should == [loaded_feature]
+        end
+      end
+
+      describe "with symlinks in the required feature and $LOAD_PATH" do
+        before :each do
+          @dir = tmp("realdir")
+          mkdir_p @dir
+          @file = "#{@dir}/realfile.rb"
+          touch(@file) { |f| f.puts 'ScratchPad << __FILE__' }
+
+          @symlink_to_dir = tmp("symdir").freeze
+          File.symlink(@dir, @symlink_to_dir)
+          @symlink_to_file = "#{@dir}/symfile.rb"
+          File.symlink("realfile.rb", @symlink_to_file)
+        end
+
+        after :each do
+          rm_r @dir, @symlink_to_dir
+        end
+
+        ruby_version_is ""..."2.4.4" do
+          it "canonicalizes neither the entry in $LOAD_PATH nor the filename passed to #require" do
+            $LOAD_PATH.unshift(@symlink_to_dir)
+            @object.require("symfile").should be_true
+            loaded_feature = "#{@symlink_to_dir}/symfile.rb"
+            ScratchPad.recorded.should == [loaded_feature]
+            $".last.should == loaded_feature
+            $LOAD_PATH[0].should == @symlink_to_dir
+          end
+        end
+
+        ruby_version_is "2.4.4" do
+          it "canonicalizes the entry in $LOAD_PATH but not the filename passed to #require" do
+            $LOAD_PATH.unshift(@symlink_to_dir)
+            @object.require("symfile").should be_true
+            loaded_feature = "#{@dir}/symfile.rb"
+            ScratchPad.recorded.should == [loaded_feature]
+            $".last.should == loaded_feature
+            $LOAD_PATH[0].should == @symlink_to_dir
+          end
+        end
+      end
+    end
+
     it "does not store the path if the load fails" do
       $LOAD_PATH << CODE_LOADING_DIR
       saved_loaded_features = $LOADED_FEATURES.dup
@@ -417,7 +491,7 @@ describe :kernel_require, shared: true do
       $LOADED_FEATURES.should include(@path)
     end
 
-    it "canonicalizes non-unique absolute paths" do
+    it "expands absolute paths containing .." do
       path = File.join CODE_LOADING_DIR, "..", "code", "load_fixture.rb"
       @object.require(path).should be_true
       $LOADED_FEATURES.should include(@path)

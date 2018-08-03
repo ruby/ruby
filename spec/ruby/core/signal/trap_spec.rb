@@ -115,6 +115,49 @@ platform_is_not :windows do
   end
 
   describe "Signal.trap" do
+    cannot_be_trapped = %w[KILL STOP] # See man 2 signal
+    reserved_signals = %w[VTALRM]
+
+    if PlatformGuard.implementation?(:ruby)
+      reserved_signals += %w[SEGV ILL FPE BUS]
+    end
+
+    if PlatformGuard.implementation?(:truffleruby)
+      if !TruffleRuby.native?
+        reserved_signals += %w[SEGV ILL FPE USR1 QUIT]
+      end
+    end
+
+    if PlatformGuard.implementation?(:jruby)
+      reserved_signals += %w[SEGV ILL FPE BUS USR1 QUIT]
+    end
+
+    cannot_be_trapped.each do |signal|
+      it "raises ArgumentError or Errno::EINVAL for SIG#{signal}" do
+        -> {
+          trap(signal, -> {})
+        }.should raise_error(StandardError) { |e|
+          [ArgumentError, Errno::EINVAL].should include(e.class)
+          e.message.should =~ /Invalid argument|Signal already used by VM or OS/
+        }
+      end
+    end
+
+    reserved_signals.each do |signal|
+      it "raises ArgumentError for reserved signal SIG#{signal}" do
+        -> {
+          trap(signal, -> {})
+        }.should raise_error(ArgumentError, /can't trap reserved signal|Signal already used by VM or OS/)
+      end
+    end
+
+    it "allows to register a handler for all known signals, except reserved signals" do
+      excluded = cannot_be_trapped + reserved_signals
+      out = ruby_exe(fixture(__FILE__, "trap_all.rb"), args: [*excluded, "2>&1"])
+      out.should == "OK\n"
+      $?.exitstatus.should == 0
+    end
+
     it "returns SYSTEM_DEFAULT if passed DEFAULT and no handler was ever set" do
       Signal.trap("PROF", "DEFAULT").should == "SYSTEM_DEFAULT"
     end

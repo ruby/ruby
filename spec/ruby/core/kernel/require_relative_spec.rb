@@ -199,6 +199,46 @@ describe "Kernel#require_relative with a relative path" do
       $LOADED_FEATURES.should include(@abs_path)
     end
 
+    platform_is_not :windows do
+      describe "with symlinks" do
+        before :each do
+          @symlink_to_code_dir = tmp("codesymlink")
+          File.symlink(CODE_LOADING_DIR, @symlink_to_code_dir)
+          @symlink_basename = File.basename(@symlink_to_code_dir)
+          @requiring_file = tmp("requiring")
+        end
+
+        after :each do
+          rm_r @symlink_to_code_dir, @requiring_file
+        end
+
+        it "does not canonicalize the path and stores a path with symlinks" do
+          symlink_path = "#{@symlink_basename}/load_fixture.rb"
+          absolute_path = "#{tmp("")}#{symlink_path}"
+          canonical_path = "#{CODE_LOADING_DIR}/load_fixture.rb"
+          touch(@requiring_file) { |f|
+            f.puts "require_relative #{symlink_path.inspect}"
+          }
+          load(@requiring_file)
+          ScratchPad.recorded.should == [:loaded]
+
+          features = $LOADED_FEATURES.select { |path| path.end_with?('load_fixture.rb') }
+          features.should include(absolute_path)
+          features.should_not include(canonical_path)
+        end
+
+        it "stores the same path that __FILE__ returns in the required file" do
+          symlink_path = "#{@symlink_basename}/load_fixture_and__FILE__.rb"
+          touch(@requiring_file) { |f|
+            f.puts "require_relative #{symlink_path.inspect}"
+          }
+          load(@requiring_file)
+          loaded_feature = $LOADED_FEATURES.last
+          ScratchPad.recorded.should == [loaded_feature]
+        end
+      end
+    end
+
     it "does not store the path if the load fails" do
       saved_loaded_features = $LOADED_FEATURES.dup
       lambda { require_relative("#{@dir}/raise_fixture.rb") }.should raise_error(RuntimeError)

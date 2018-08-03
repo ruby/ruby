@@ -1,6 +1,5 @@
-require_relative '../../../../spec_helper'
+require_relative '../../spec_helper'
 require_relative '../../fixtures/classes'
-require 'tempfile'
 
 describe :unixserver_new, shared: true do
   platform_is_not :windows do

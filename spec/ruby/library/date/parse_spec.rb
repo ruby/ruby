@@ -64,6 +64,11 @@ describe "Date#parse" do
     d = Date.parse("19101101")
     d.should == Date.civil(1910, 11, 1)
   end
+
+  it "raises a TypeError trying to parse non-String-like object" do
+    lambda { Date.parse(1) }.should raise_error(TypeError)
+    lambda { Date.parse(:invalid) }.should raise_error(TypeError)
+  end
 end
 
 describe "Date#parse with '.' separator" do

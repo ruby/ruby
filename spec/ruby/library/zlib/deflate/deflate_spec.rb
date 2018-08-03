@@ -25,7 +25,7 @@ describe "Zlib::Deflate.deflate" do
     random_generator = Random.new(0)
     deflated         = ''
 
-    Zlib.deflate(random_generator.bytes(20000)) do |chunk|
+    Zlib::Deflate.deflate(random_generator.bytes(20000)) do |chunk|
       deflated << chunk
     end
 

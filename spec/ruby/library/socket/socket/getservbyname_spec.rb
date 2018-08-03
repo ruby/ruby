@@ -1,4 +1,4 @@
-require_relative '../../../spec_helper'
+require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe "Socket#getservbyname" do
@@ -8,6 +8,14 @@ describe "Socket#getservbyname" do
 
   it "returns the port for service 'discard' with protocol 'tcp'" do
     Socket.getservbyname('discard', 'tcp').should == 9
+  end
+
+  it 'returns the port for service "http"' do
+    Socket.getservbyname('http').should == 80
+  end
+
+  it 'returns the port for service "http" with protocol "tcp"' do
+    Socket.getservbyname('http', 'tcp').should == 80
   end
 
   it "returns the port for service 'domain' with protocol 'udp'" do

@@ -23,6 +23,10 @@
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR < (minor)) || \
    (RUBY_VERSION_MAJOR == (major) && RUBY_VERSION_MINOR == (minor) && RUBY_VERSION_TEENY < (teeny)))
 
+#if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 6)
+#define RUBY_VERSION_IS_2_6
+#endif
+
 #if RUBY_VERSION_MAJOR > 2 || (RUBY_VERSION_MAJOR == 2 && RUBY_VERSION_MINOR >= 4)
 #define RUBY_VERSION_IS_2_4
 #endif
@@ -204,7 +208,9 @@
 #define HAVE_RB_DEFAULT_INTERNAL_ENCODING  1
 #define HAVE_RB_DEFAULT_EXTERNAL_ENCODING  1
 
+#ifdef RUBY_VERSION_IS_2_6
 #define HAVE_RB_ENC_ALIAS                  1
+#endif
 #define HAVE_RB_ENC_ASSOCIATE              1
 #define HAVE_RB_ENC_ASSOCIATE_INDEX        1
 #define HAVE_RB_ENC_CODEPOINT_LEN          1

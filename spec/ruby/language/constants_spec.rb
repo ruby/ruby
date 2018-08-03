@@ -458,16 +458,17 @@ describe "Module#private_constant marked constants" do
     lambda {mod::Foo}.should raise_error(NameError)
   end
 
-  it "sends #const_missing to the original class or module" do
-    mod = Module.new
-    mod.const_set :Foo, true
-    mod.send :private_constant, :Foo
-    def mod.const_missing(name)
-      @const_missing_arg = name
-      name == :Foo ? name : super
-    end
+  ruby_version_is "2.6" do
+    it "sends #const_missing to the original class or module" do
+      mod = Module.new
+      mod.const_set :Foo, true
+      mod.send :private_constant, :Foo
+      def mod.const_missing(name)
+        name == :Foo ? name : super
+      end
 
-    mod::Foo.should == :Foo
+      mod::Foo.should == :Foo
+    end
   end
 
   describe "in a module" do
