@@ -278,11 +278,11 @@ describe 'Socket.getaddrinfo' do
 
     platform_is_not :windows do
       it 'accepts a Fixnum as the protocol family' do
-        addr = Socket.getaddrinfo(nil, 'http', :INET, :DGRAM, Socket::IPPROTO_UDP)
+        addr = Socket.getaddrinfo(nil, 'discard', :INET, :DGRAM, Socket::IPPROTO_UDP)
 
         addr[0].should == [
           'AF_INET',
-          80,
+          9,
           '127.0.0.1',
           '127.0.0.1',
           Socket::AF_INET,
