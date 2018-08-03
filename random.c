@@ -302,6 +302,7 @@ VALUE rb_cRandom;
 #define id_minus '-'
 #define id_plus  '+'
 static ID id_rand, id_bytes;
+NORETURN(static void domain_error(void));
 
 /* :nodoc: */
 static void
@@ -1163,6 +1164,7 @@ range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (endp) *endp = end;
+    if (NIL_P(end)) domain_error();
     if (!rb_respond_to(end, id_minus)) return Qfalse;
     r = rb_funcallv(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
@@ -1205,7 +1207,6 @@ rand_int(VALUE obj, rb_random_t *rnd, VALUE vmax, int restrictive)
     }
 }
 
-NORETURN(static void domain_error(void));
 static void
 domain_error(void)
 {
