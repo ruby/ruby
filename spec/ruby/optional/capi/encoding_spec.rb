@@ -147,11 +147,6 @@ describe "C-API Encoding function" do
     it "returns -1 as the index for immediates" do
       @s.send(@method, 1).should == -1
     end
-
-    it "returns -1 for an object without an encoding" do
-      obj = Object.new
-      @s.send(@method, obj).should == -1
-    end
   end
 
   describe "rb_enc_set_index" do
