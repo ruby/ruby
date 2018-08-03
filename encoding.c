@@ -819,7 +819,9 @@ rb_enc_get_index(VALUE obj)
 static void
 enc_set_index(VALUE obj, int idx)
 {
-    if (!enc_capable(obj)) rb_bug("enc_set_index: not capable object");
+    if (!enc_capable(obj)) {
+        rb_raise(rb_eArgError, "cannot set encoding on non-encoding capable object");
+    }
 
     if (idx < ENCODING_INLINE_MAX) {
 	ENCODING_SET_INLINED(obj, idx);
