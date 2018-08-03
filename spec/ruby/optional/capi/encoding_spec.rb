@@ -30,6 +30,15 @@ describe :rb_enc_set_index, shared: true do
     result = @s.send(@method, str, 1)
     result.first.should == result.last
   end
+
+  ruby_version_is "2.6" do
+    it "raises an ArgumentError for a non-encoding capable object" do
+      obj = Object.new
+      -> {
+        result = @s.send(@method, obj, 1)
+      }.should raise_error(ArgumentError, "cannot set encoding on non-encoding capable object")
+    end
+  end
 end
 
 describe "C-API Encoding function" do
