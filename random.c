@@ -1164,7 +1164,7 @@ range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
 
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (endp) *endp = end;
-    if (NIL_P(end)) domain_error();
+    if (NIL_P(end)) return Qnil;
     if (!rb_respond_to(end, id_minus)) return Qfalse;
     r = rb_funcallv(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
@@ -1252,6 +1252,7 @@ rand_range(VALUE obj, rb_random_t* rnd, VALUE range)
 
     if ((v = vmax = range_values(range, &beg, &end, &excl)) == Qfalse)
 	return Qfalse;
+    if (NIL_P(v)) domain_error();
     if (!RB_TYPE_P(vmax, T_FLOAT) && (v = rb_check_to_int(vmax), !NIL_P(v))) {
 	long max;
 	vmax = v;
