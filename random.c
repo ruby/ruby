@@ -1165,8 +1165,7 @@ range_values(VALUE vmax, VALUE *begp, VALUE *endp, int *exclp)
     if (!rb_range_values(vmax, begp, &end, exclp)) return Qfalse;
     if (endp) *endp = end;
     if (NIL_P(end)) return Qnil;
-    if (!rb_respond_to(end, id_minus)) return Qfalse;
-    r = rb_funcallv(end, id_minus, 1, begp);
+    r = rb_check_funcall(end, id_minus, 1, begp);
     if (NIL_P(r)) return Qfalse;
     return r;
 }
