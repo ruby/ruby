@@ -129,6 +129,10 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_allocate
+    assert_raise(TypeError) {RubyVM::AST::Node.allocate}
+  end
+
   def test_column_with_long_heredoc_identifier
     term = "A"*257
     ast = RubyVM::AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
