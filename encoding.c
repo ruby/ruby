@@ -793,24 +793,26 @@ rb_enc_get_index(VALUE obj)
 	obj = rb_sym2str(obj);
     }
     switch (BUILTIN_TYPE(obj)) {
-      as_default:
-      default:
       case T_STRING:
+      case T_SYMBOL:
       case T_REGEXP:
 	i = enc_get_index_str(obj);
 	break;
       case T_FILE:
 	tmp = rb_funcallv(obj, rb_intern("internal_encoding"), 0, 0);
-	if (NIL_P(tmp)) obj = rb_funcallv(obj, rb_intern("external_encoding"), 0, 0);
-	else obj = tmp;
-	if (NIL_P(obj)) break;
+	if (NIL_P(tmp)) {
+	    tmp = rb_funcallv(obj, rb_intern("external_encoding"), 0, 0);
+	}
+	if (is_data_encoding(tmp)) {
+	    i = enc_check_encoding(tmp);
+	}
+	break;
       case T_DATA:
 	if (is_data_encoding(obj)) {
 	    i = enc_check_encoding(obj);
 	}
-	else {
-	    goto as_default;
-	}
+	break;
+      default:
 	break;
     }
     return i;
