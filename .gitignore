@@ -15,6 +15,7 @@
 *.obj
 *.old
 *.orig
+*.pch
 *.pdb
 *.rej
 *.s
