@@ -4273,6 +4273,9 @@ consume_communication_pipe(int fd)
 	result = read(fd, buff, sizeof(buff));
 	if (result > 0) {
 	    ret = TRUE;
+	    if (result < (ssize_t)sizeof(buff)) {
+		return ret;
+	    }
 	}
 	else if (result == 0) {
 	    return ret;
