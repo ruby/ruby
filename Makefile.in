@@ -54,6 +54,7 @@ INSTALLDOC = @INSTALLDOC@
 DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
+TIMESTAMPDIR  = $(EXTOUT)/.timestamp
 arch_hdrdir = $(EXTOUT)/include/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
 
@@ -84,6 +85,10 @@ MJIT_OPTFLAGS = @MJIT_OPTFLAGS@
 MJIT_DEBUGFLAGS = @MJIT_DEBUGFLAGS@
 MJIT_LDSHARED = @MJIT_LDSHARED@
 MJIT_DLDFLAGS = @DLDFLAGS@
+MJIT_HEADER   = rb_mjit_header.h
+MJIT_MIN_HEADER_NAME = rb_mjit_min_header-$(RUBY_PROGRAM_VERSION).h
+MJIT_MIN_HEADER = $(MJIT_HEADER_BUILD_DIR)/$(MJIT_MIN_HEADER_NAME)
+MJIT_HEADER_BUILD_DIR = $(EXTOUT)/include/$(arch)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLDFLAGS = @EXTLDFLAGS@
 XLDFLAGS = @XLDFLAGS@ $(EXTLDFLAGS)
@@ -428,6 +433,32 @@ probes.$(OBJEXT): $(srcdir)/probes.d $(DTRACE_REBUILD:yes=probes.stamp)
 	@$(ECHO) processing probes in object files
 	$(Q) $(RM) $@
 	$(Q) $(DTRACE) -G -C $(INCFLAGS) -s $(srcdir)/probes.d -o $@ $(DTRACE_REBUILD_OBJS)
+
+main: $(MJIT_MIN_HEADER)
+mjit-headers: $(MJIT_MIN_HEADER)
+clean-local::
+	$(Q)$(RM) $(MJIT_HEADER) $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
+	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
+	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
+	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
+	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
+
+# Other `-Dxxx`s preceding `-DMJIT_HEADER` will be removed in transform_mjit_header.rb.
+# So `-DMJIT_HEADER` should be passed first when rb_mjit_header.h is generated.
+$(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJEXT)
+	$(ECHO) building $(@F:.time=.h)
+	$(Q) $(CPP) -DMJIT_HEADER $(MJIT_HEADER_FLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c $(CPPOUTFLAG)$(@F:.time=.h).new
+	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.h) $(@F:.time=.h).new
+
+$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
+
+$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
+$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(srcdir)/tool/transform_mjit_header.rb $(PREP)
+$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
+	$(ECHO) building $@
+	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC) $(ARCH_FLAG)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
+	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
+	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 # DTrace static library hacks described here:
 # http://mail.opensolaris.org/pipermail/dtrace-discuss/2005-August/000207.html
