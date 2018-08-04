@@ -310,6 +310,8 @@ MJIT_HEADER_FLAGS = -P
 MJIT_HEADER_SUFFIX =
 MJIT_HEADER_ARCH =
 MJIT_HEADER_INSTALL_DIR = include/$(RUBY_VERSION_NAME)/$(arch)
+MJIT_PRECOMPILED_HEADER_NAME = rb_mjit_header-$(RUBY_PROGRAM_VERSION).pch
+MJIT_PRECOMPILED_HEADER = $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME)
 !ifndef MJIT_CC
 MJIT_CC = $(CC)
 !endif
@@ -1263,6 +1265,37 @@ probes.h: {$(VPATH)}probes.dmyh
 	@$(ECHO) making dummy <<$(DEST_FILE)
 #include "$(*F).dmyh"
 <<KEEP
+
+main: $(MJIT_PRECOMPILED_HEADER)
+mjit-headers: $(MJIT_PRECOMPILED_HEADER)
+clean-local::
+	$(Q)$(RM) $(MJIT_PRECOMPILED_HEADER_NAME) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
+	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.time) mjit_config.h
+	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.pch
+	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.$(OBJEXT)
+	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
+
+# Non-mswin environment is not using prebuilt precompiled header because upgrading compiler
+# or changing compiler options may break MJIT so build (currently only by --jit-debug though).
+#
+# But mswin is building precompiled header because cl.exe cannot leave macro after preprocess.
+# As a workaround to use macro without installing many source files, it uses precompiled header
+# without sufficient guard for a broken build.
+#
+# TODO: Fix the above issue by including VC version in header name, and create another header
+# for --jit-debug as well.
+$(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
+	$(ECHO) building $(@F:.time=.pch)
+	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
+	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fp$(@F:.time=.pch).new
+	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
+
+$(MJIT_PRECOMPILED_HEADER_NAME): $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time
+
+$(MJIT_PRECOMPILED_HEADER): $(MJIT_PRECOMPILED_HEADER_NAME)
+	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
+	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $@
+	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc mjit_compile.inc
