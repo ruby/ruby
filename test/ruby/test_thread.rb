@@ -1297,6 +1297,7 @@ q.pop
       while true
         t = Thread.new{sleep 0}
         t.raise Interrupt
+        Thread.pass # allow t to finish
       end
     _end
   end
