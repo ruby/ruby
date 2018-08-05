@@ -1551,11 +1551,6 @@ mjit_worker(void *arg)
 {
     void (*worker_func)(void) = (void(*)(void))arg;
 
-#ifdef PTHREAD_CANCEL_ENABLE
-    if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
-        fprintf(stderr, "Cannot enable cancellation in MJIT worker\n");
-    }
-#endif
 #ifdef SET_CURRENT_THREAD_NAME
     SET_CURRENT_THREAD_NAME("ruby-mjitworker"); /* 16 byte including NUL */
 #endif
