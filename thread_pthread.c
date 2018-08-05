@@ -1716,9 +1716,9 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
             check_signals_nogvl(th, sigwait_fd);
         }
         unblock_function_clear(th);
+        GVL_UNLOCK_END(th);
         rb_sigwait_fd_put(th, sigwait_fd);
         rb_sigwait_fd_migrate(th->vm);
-        GVL_UNLOCK_END(th);
     }
     else {
         native_cond_sleep(th, timeout_rel);
