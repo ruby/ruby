@@ -316,9 +316,13 @@ MJIT_PRECOMPILED_HEADER = $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_N
 MJIT_CC = $(CC)
 !endif
 !ifndef MJIT_OPTFLAGS
-MJIT_OPTFLAGS = $(OPTFLAGS)
+# Short-term TODO: Include `$(XCFLAGS) $(CPPFLAGS)` to suppress warning. Currently adding them breakes JIT.
+# Long-term  TODO: Use only $(OPTFLAGS) for performance. It requires to modify flags for precompiled header too.
+# Using flags used for building precompiled header to make JIT succeed.
+MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS)
 !endif
 !ifndef MJIT_DEBUGFLAGS
+# TODO: Make this work... Another header for debug build needs to be installed first.
 MJIT_DEBUGFLAGS = $(DEBUGFLAGS)
 !endif
 !ifndef MJIT_LDSHARED

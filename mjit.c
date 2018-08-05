@@ -732,7 +732,7 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = { NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
     char *p;
 
@@ -748,7 +748,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_str2(p, pch_file, strlen(pch_file));
     *p = '\0';
 
-    files[2] = c_file;
+    /* files[2] = "C:/.../rb_mjit_header-*.obj" */
+    files[2] = p = (char *)alloca(sizeof(char) * (strlen(pch_file) + 1));
+    p = append_str2(p, pch_file, strlen(pch_file) - strlen(".pch"));
+    p = append_lit(p, ".obj");
+    *p = '\0';
+
+    files[3] = c_file;
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
@@ -1801,7 +1807,7 @@ mjit_finish(void)
         return;
 
     /* Wait for pch finish */
-    verbose(2, "Canceling pch and worker threads");
+    verbose(2, "Canceling worker thread");
     CRITICAL_SECTION_START(3, "in mjit_finish to wakeup from pch");
     /* As our threads are detached, we could just cancel them.  But it
        is a bad idea because OS processes (C compiler) started by
