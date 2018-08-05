@@ -754,7 +754,12 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_lit(p, ".obj");
     *p = '\0';
 
-    files[3] = c_file;
+    /* files[3] = "-Tc*.c" */
+    files[3] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
+    p = append_lit(p, "-Tc");
+    p = append_str2(p, c_file, strlen(c_file));
+    *p = '\0';
+
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
