@@ -720,15 +720,12 @@ static const char *const CC_LIBS[] = {
    shared by the workers and the pch thread.  */
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
+#ifndef _MSC_VER
 /* The function producing the pre-compiled header. */
 static void
 make_pch(void)
 {
     int exit_code;
-#ifdef _MSC_VER
-    /* XXX TODO */
-    exit_code = 0;
-#else
     const char *rest_args[] = {
 # ifdef __clang__
         "-emit-pch",
@@ -754,7 +751,6 @@ make_pch(void)
 
     exit_code = exec_process(cc_path, args);
     free(args);
-#endif
 
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
@@ -768,6 +764,7 @@ make_pch(void)
     rb_native_cond_broadcast(&mjit_pch_wakeup);
     CRITICAL_SECTION_FINISH(3, "in make_pch");
 }
+#endif /* _MSC_VER */
 
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
@@ -782,19 +779,23 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = { NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
     char *p;
-    int solen;
 
-    solen = strlen(so_file);
-    files[0] = p = (char *)malloc(sizeof(char) * (rb_strlen_lit("-Fe") + solen + 1));
-    if (p == NULL)
-        return FALSE;
+    /* files[0] = "-Fe*.dll" */
+    files[0] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
     p = append_lit(p, "-Fe");
-    p = append_str2(p, so_file, solen);
+    p = append_str2(p, so_file, strlen(so_file));
     *p = '\0';
-    files[1] = c_file;
+
+    /* files[1] = "-Yu*.pch" */
+    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
+    p = append_lit(p, "-Yu");
+    p = append_str2(p, pch_file, strlen(pch_file));
+    *p = '\0';
+
+    files[2] = c_file;
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
@@ -802,7 +803,6 @@ compile_c_to_so(const char *c_file, const char *so_file)
 
     exit_code = exec_process(cc_path, args);
     free(args);
-    free((char *)files[0]);
 
     if (exit_code != 0)
         verbose(2, "compile_c_to_so: compile error: %d", exit_code);
@@ -983,17 +983,43 @@ static const char *
 header_name_end(const char *s)
 {
     const char *e = s + strlen(s);
-#ifdef __GNUC__
+# ifdef __GNUC__ /* don't chomp .pch for mswin */
     static const char suffix[] = ".gch";
 
     /* chomp .gch suffix */
     if (e > s+sizeof(suffix)-1 && strcmp(e-sizeof(suffix)+1, suffix) == 0) {
         e -= sizeof(suffix)-1;
     }
-#endif
+# endif
     return e;
 }
 #endif
+
+/* Print platform-specific prerequisites in generated code. */
+static void
+compile_prelude(FILE *f)
+{
+#ifndef __clang__ /* -include-pch is used for Clang */
+    const char *s = pch_file;
+    const char *e = header_name_end(s);
+
+    fprintf(f, "#include \"");
+    /* print pch_file except .gch for gcc, but keep .pch for mswin */
+    for (; s < e; s++) {
+        switch(*s) {
+          case '\\': case '"':
+            fputc('\\', f);
+        }
+        fputc(*s, f);
+    }
+    fprintf(f, "\"\n");
+#endif
+
+#ifdef _WIN32
+    fprintf(f, "void _pei386_runtime_relocator(void){}\n");
+    fprintf(f, "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
+#endif
+}
 
 static void
 print_jit_result(const char *result, const struct rb_mjit_unit *unit, const double duration, const char *c_file)
@@ -1063,30 +1089,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
-#ifdef __clang__
-    /* -include-pch is used for Clang */
-#else
-    {
-        const char *s = pch_file;
-        const char *e = header_name_end(s);
-
-        fprintf(f, "#include \"");
-        /* print pch_file except .gch */
-        for (; s < e; s++) {
-            switch(*s) {
-              case '\\': case '"':
-                fputc('\\', f);
-            }
-            fputc(*s, f);
-        }
-        fprintf(f, "\"\n");
-    }
-#endif
-
-#ifdef _WIN32
-    fprintf(f, "void _pei386_runtime_relocator(void){}\n");
-    fprintf(f, "int __stdcall DllMainCRTStartup(void* hinstDLL, unsigned int fdwReason, void* lpvReserved) { return 1; }\n");
-#endif
+    /* print #include of MJIT header, etc. */
+    compile_prelude(f);
 
     /* wait until mjit_gc_finish_hook is called */
     CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
@@ -1176,9 +1180,11 @@ static int worker_stopped;
 static void
 worker(void)
 {
+#ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
         make_pch();
     }
+#endif
     if (pch_status == PCH_FAILED) {
         mjit_enabled = FALSE;
         CRITICAL_SECTION_START(3, "in worker to update worker_stopped");
@@ -1697,7 +1703,11 @@ mjit_init(struct mjit_options *opts)
     verbose(2, "MJIT: CC defaults to %s", CC_PATH);
 
     /* Initialize variables for compilation */
+#ifdef _MSC_VER
+    pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
+#else
     pch_status = PCH_NOT_READY;
+#endif
     cc_path = CC_PATH;
 
     tmp_dir = system_tmpdir();
