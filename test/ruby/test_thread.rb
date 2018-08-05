@@ -952,15 +952,16 @@ _eom
   def test_thread_timer_and_interrupt
     bug5757 = '[ruby-dev:44985]'
     pid = nil
-    cmd = 'Signal.trap(:INT, "DEFAULT"); r,=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; r.read'
+    cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
     s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, opt) do |in_p, out_p, err_p, cpid|
+      assert IO.select([out_p], nil, nil, 10), 'subprocess not ready'
       out_p.gets
       pid = cpid
       t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
-      Process.wait(pid)
+      Timeout.timeout(10) { Process.wait(pid) }
       t1 = Time.now.to_f
       [$?, t1 - t0, err_p.read]
     end
