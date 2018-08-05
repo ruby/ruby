@@ -720,7 +720,49 @@ static const char *const CC_LIBS[] = {
    shared by the workers and the pch thread.  */
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
-#ifndef _MSC_VER
+#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
+#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+#define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
+
+#define MJIT_TMP_PREFIX "_ruby_mjit_"
+
+#ifdef _MSC_VER
+/* Compile C file to so. It returns 1 if it succeeds. (mswin) */
+static int
+compile_c_to_so(const char *c_file, const char *so_file)
+{
+    int exit_code;
+    const char *files[] = { NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    char **args;
+    char *p;
+
+    /* files[0] = "-Fe*.dll" */
+    files[0] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
+    p = append_lit(p, "-Fe");
+    p = append_str2(p, so_file, strlen(so_file));
+    *p = '\0';
+
+    /* files[1] = "-Yu*.pch" */
+    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
+    p = append_lit(p, "-Yu");
+    p = append_str2(p, pch_file, strlen(pch_file));
+    *p = '\0';
+
+    files[2] = c_file;
+    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
+                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    if (args == NULL)
+        return FALSE;
+
+    exit_code = exec_process(cc_path, args);
+    free(args);
+
+    if (exit_code != 0)
+        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
+    return exit_code == 0;
+}
+#else /* _MSC_VER */
+
 /* The function producing the pre-compiled header. */
 static void
 make_pch(void)
@@ -764,52 +806,6 @@ make_pch(void)
     rb_native_cond_broadcast(&mjit_pch_wakeup);
     CRITICAL_SECTION_FINISH(3, "in make_pch");
 }
-#endif /* _MSC_VER */
-
-#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
-#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
-#define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
-
-#define MJIT_TMP_PREFIX "_ruby_mjit_"
-
-#ifdef _MSC_VER
-
-/* Compile C file to so. It returns 1 if it succeeds. (mswin) */
-static int
-compile_c_to_so(const char *c_file, const char *so_file)
-{
-    int exit_code;
-    const char *files[] = { NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
-    char **args;
-    char *p;
-
-    /* files[0] = "-Fe*.dll" */
-    files[0] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
-    p = append_lit(p, "-Fe");
-    p = append_str2(p, so_file, strlen(so_file));
-    *p = '\0';
-
-    /* files[1] = "-Yu*.pch" */
-    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
-    p = append_lit(p, "-Yu");
-    p = append_str2(p, pch_file, strlen(pch_file));
-    *p = '\0';
-
-    files[2] = c_file;
-    args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
-                     files, CC_LIBS, CC_DLDFLAGS_ARGS);
-    if (args == NULL)
-        return FALSE;
-
-    exit_code = exec_process(cc_path, args);
-    free(args);
-
-    if (exit_code != 0)
-        verbose(2, "compile_c_to_so: compile error: %d", exit_code);
-    return exit_code == 0;
-}
-
-#else /* _MSC_VER */
 
 /* Compile .c file to .o file. It returns 1 if it succeeds. (non-mswin) */
 static int
