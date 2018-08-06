@@ -15,6 +15,10 @@
 #include "internal.h"
 #include "id.h"
 
+#ifdef HAVE_FLOAT_H
+#include <float.h>
+#endif
+
 /*
  * Document-class: Enumerator
  *
@@ -105,6 +109,7 @@ VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_yield, id_to_enum;
 static ID id_next, id_result, id_lazy, id_receiver, id_arguments, id_memo, id_method, id_force;
+static ID id_begin, id_end, id_step, id_exclude_end;
 static VALUE sym_each, sym_cycle;
 
 #define id_call idCall
@@ -155,6 +160,8 @@ struct proc_entry {
 
 static VALUE generator_allocate(VALUE klass);
 static VALUE generator_init(VALUE obj, VALUE proc);
+
+static VALUE rb_cArithSeq;
 
 /*
  * Enumerator
@@ -2375,6 +2382,391 @@ stop_result(VALUE self)
     return rb_attr_get(self, id_result);
 }
 
+VALUE
+rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
+                 rb_enumerator_size_func *size_fn,
+                 VALUE beg, VALUE end, VALUE step, int excl)
+{
+    VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
+                                 obj, meth, argc, argv, size_fn, Qnil);
+    rb_ivar_set(aseq, id_begin, beg);
+    rb_ivar_set(aseq, id_end, end);
+    rb_ivar_set(aseq, id_step, step);
+    rb_ivar_set(aseq, id_exclude_end, excl ? Qtrue : Qfalse);
+    return aseq;
+}
+
+static inline VALUE
+arith_seq_begin(VALUE self)
+{
+    return rb_ivar_get(self, id_begin);
+}
+
+static inline VALUE
+arith_seq_end(VALUE self)
+{
+    return rb_ivar_get(self, id_end);
+}
+
+static inline VALUE
+arith_seq_step(VALUE self)
+{
+    return rb_ivar_get(self, id_step);
+}
+
+static inline VALUE
+arith_seq_exclude_end(VALUE self)
+{
+    return rb_ivar_get(self, id_exclude_end);
+}
+
+static inline int
+arith_seq_exclude_end_p(VALUE self)
+{
+    return RTEST(arith_seq_exclude_end(self));
+}
+
+static VALUE
+arith_seq_first(int argc, VALUE *argv, VALUE self)
+{
+    VALUE b, e, s, len_1;
+
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
+
+    if (!NIL_P(e)) {
+        len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+        if (rb_num_negative_int_p(len_1)) {
+            if (argc == 0) {
+                return Qnil;
+            }
+            return rb_ary_new_capa(0);
+        }
+    }
+
+    if (argc == 0) {
+        return b;
+    }
+
+    /* TODO: optimization */
+
+    return rb_call_super(argc, argv);
+}
+
+static VALUE
+arith_seq_last(int argc, VALUE *argv, VALUE self)
+{
+    VALUE b, e, s, len_1, len, last, nv, ary;
+    int last_is_adjusted;
+    long n;
+
+    e = arith_seq_end(self);
+    if (NIL_P(e)) {
+        rb_raise(rb_eRangeError,
+                 "cannot get the last element of endless arithmetic sequence");
+    }
+
+    b = arith_seq_begin(self);
+    s = arith_seq_step(self);
+
+    len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+    if (rb_num_negative_int_p(len_1)) {
+        if (argc == 0) {
+            return Qnil;
+        }
+        return rb_ary_new_capa(0);
+    }
+
+    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    if ((last_is_adjusted = arith_seq_exclude_end_p(self) && rb_equal(last, e))) {
+        last = rb_int_minus(last, s);
+    }
+
+    if (argc == 0) {
+        return last;
+    }
+
+    if (last_is_adjusted) {
+        len = len_1;
+    }
+    else {
+        len = rb_int_plus(len_1, INT2FIX(1));
+    }
+
+    rb_scan_args(argc, argv, "1", &nv);
+    if (RTEST(rb_int_gt(nv, len))) {
+        nv = len;
+    }
+    n = NUM2LONG(nv);
+    if (n < 0) {
+        rb_raise(rb_eArgError, "negative array size");
+    }
+
+    ary = rb_ary_new_capa(n);
+    b = rb_int_minus(last, rb_int_mul(s, nv));
+    while (n) {
+        b = rb_int_plus(b, s);
+        rb_ary_push(ary, b);
+        --n;
+    }
+
+    return ary;
+}
+
+static VALUE
+arith_seq_inspect(VALUE self)
+{
+    struct enumerator *e;
+    VALUE eobj, str, eargs;
+    int range_p;
+
+    TypedData_Get_Struct(self, struct enumerator, &enumerator_data_type, e);
+
+    eobj = rb_attr_get(self, id_receiver);
+    if (NIL_P(eobj)) {
+        eobj = e->obj;
+    }
+
+    range_p = RTEST(rb_obj_is_kind_of(eobj, rb_cRange));
+    str = rb_sprintf("(%s%"PRIsVALUE"%s.", range_p ? "(" : "", eobj, range_p ? ")" : "");
+
+    rb_str_buf_append(str, rb_id2str(e->meth));
+
+    eargs = rb_attr_get(eobj, id_arguments);
+    if (NIL_P(eargs)) {
+        eargs = e->args;
+    }
+    if (eargs != Qfalse) {
+        long argc = RARRAY_LEN(eargs);
+        const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
+
+        if (argc > 0) {
+            VALUE kwds = Qnil;
+
+            rb_str_buf_cat2(str, "(");
+
+            if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+                int all_key = TRUE;
+                rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
+                if (all_key) kwds = argv[--argc];
+            }
+
+            while (argc--) {
+                VALUE arg = *argv++;
+
+                rb_str_append(str, rb_inspect(arg));
+                rb_str_buf_cat2(str, ", ");
+                OBJ_INFECT(str, arg);
+            }
+            if (!NIL_P(kwds)) {
+                rb_hash_foreach(kwds, kwd_append, str);
+            }
+            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
+            rb_str_buf_cat2(str, ")");
+        }
+    }
+
+    rb_str_buf_cat2(str, ")");
+
+    return str;
+}
+
+static VALUE
+arith_seq_eq(VALUE self, VALUE other)
+{
+    if (!RTEST(rb_obj_is_kind_of(other, rb_cArithSeq))) {
+        return Qfalse;
+    }
+
+    if (!rb_equal(arith_seq_begin(self), arith_seq_begin(other))) {
+        return Qfalse;
+    }
+
+    if (!rb_equal(arith_seq_end(self), arith_seq_end(other))) {
+        return Qfalse;
+    }
+
+    if (!rb_equal(arith_seq_step(self), arith_seq_step(other))) {
+        return Qfalse;
+    }
+
+    if (arith_seq_exclude_end_p(self) != arith_seq_exclude_end_p(other)) {
+        return Qfalse;
+    }
+
+    return Qtrue;
+}
+
+static VALUE
+arith_seq_hash(VALUE self)
+{
+    st_index_t hash;
+    VALUE v;
+
+    hash = rb_hash_start(arith_seq_exclude_end_p(self));
+    v = rb_hash(arith_seq_begin(self));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    v = rb_hash(arith_seq_end(self));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    v = rb_hash(arith_seq_step(self));
+    hash = rb_hash_uint(hash, NUM2LONG(v));
+    hash = rb_hash_end(hash);
+
+    return LONG2FIX(hash);
+}
+
+struct arith_seq_gen {
+    VALUE current;
+    VALUE end;
+    VALUE step;
+    int excl;
+};
+
+static VALUE
+arith_seq_each(VALUE self)
+{
+    VALUE c, e, s, len_1, last;
+    int x;
+
+    if (!rb_block_given_p()) return self;
+
+    c = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
+    x = arith_seq_exclude_end_p(self);
+
+    if (ruby_float_step(c, e, s, x, TRUE)) {
+        return self;
+    }
+
+    if (NIL_P(e)) {
+        while (1) {
+            rb_yield(c);
+            c = rb_int_plus(c, s);
+        }
+
+        return self;
+    }
+
+    if (rb_equal(s, INT2FIX(0))) {
+        while (1) {
+            rb_yield(c);
+        }
+
+        return self;
+    }
+
+    len_1 = rb_int_idiv(rb_int_minus(e, c), s);
+    last = rb_int_plus(c, rb_int_mul(s, len_1));
+    if (x && rb_equal(last, e)) {
+        last = rb_int_minus(last, s);
+    }
+
+    if (rb_num_negative_int_p(s)) {
+        while (RTEST(rb_int_ge(c, last))) {
+            rb_yield(c);
+            c = rb_int_plus(c, s);
+        }
+    }
+    else {
+        while (RTEST(rb_int_ge(last, c))) {
+            rb_yield(c);
+            c = rb_int_plus(c, s);
+        }
+    }
+
+    return self;
+}
+
+static double
+arith_seq_float_step_size(double beg, double end, double step, int excl)
+{
+    double const epsilon = DBL_EPSILON;
+    double n = (end - beg) / step;
+    double err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
+
+    if (isinf(step)) {
+        return step > 0 ? beg <= end : beg >= end;
+    }
+    if (step == 0) {
+        return HUGE_VAL;
+    }
+    if (err > 0.5) err = 0.5;
+    if (excl) {
+        if (n <= 0) return 0;
+        if (n < 1)
+            n = 0;
+        else
+            n = floor(n - err);
+    }
+    else {
+        if (n < 0) return 0;
+        n = floor(n + err);
+    }
+    return n + 1;
+}
+
+static VALUE
+arith_seq_size(VALUE self)
+{
+    VALUE b, e, s, len_1, len, last;
+    int x;
+
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
+    x = arith_seq_exclude_end_p(self);
+
+    if (RB_FLOAT_TYPE_P(b) || RB_FLOAT_TYPE_P(e) || RB_FLOAT_TYPE_P(s)) {
+        double ee, n;
+
+        if (NIL_P(e)) {
+            if (rb_num_negative_int_p(s)) {
+                ee = -HUGE_VAL;
+            }
+            else {
+                ee = HUGE_VAL;
+            }
+        }
+        else {
+            ee = NUM2DBL(e);
+        }
+
+        n = arith_seq_float_step_size(NUM2DBL(b), ee, NUM2DBL(s), x);
+        if (isinf(n)) return DBL2NUM(n);
+        if (POSFIXABLE(n)) return LONG2FIX(n);
+        return rb_dbl2big(n);
+    }
+
+    if (NIL_P(e)) {
+        return DBL2NUM(HUGE_VAL);
+    }
+
+    if (!rb_obj_is_kind_of(s, rb_cNumeric)) {
+        s = rb_to_int(s);
+    }
+
+    if (rb_equal(s, INT2FIX(0))) {
+        return DBL2NUM(HUGE_VAL);
+    }
+
+    len_1 = rb_int_idiv(rb_int_minus(e, b), s);
+    if (rb_num_negative_int_p(len_1)) {
+        return INT2FIX(0);
+    }
+
+    last = rb_int_plus(b, rb_int_mul(s, len_1));
+    if (x && rb_equal(last, e)) {
+        len = len_1;
+    }
+    else {
+        len = rb_int_plus(len_1, INT2FIX(1));
+    }
+
+    return len;
+}
+
 void
 InitVM_Enumerator(void)
 {
@@ -2450,6 +2842,22 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, -2);
 
+    /* ArithmeticSequence */
+    rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
+    rb_define_method(rb_cArithSeq, "begin", arith_seq_begin, 0);
+    rb_define_method(rb_cArithSeq, "end", arith_seq_end, 0);
+    rb_define_method(rb_cArithSeq, "exclude_end?", arith_seq_exclude_end, 0);
+    rb_define_method(rb_cArithSeq, "step", arith_seq_step, 0);
+    rb_define_method(rb_cArithSeq, "first", arith_seq_first, -1);
+    rb_define_method(rb_cArithSeq, "last", arith_seq_last, -1);
+    rb_define_method(rb_cArithSeq, "inspect", arith_seq_inspect, 0);
+    rb_define_method(rb_cArithSeq, "==", arith_seq_eq, 1);
+    rb_define_method(rb_cArithSeq, "===", arith_seq_eq, 1);
+    rb_define_method(rb_cArithSeq, "eql?", arith_seq_eq, 1);
+    rb_define_method(rb_cArithSeq, "hash", arith_seq_hash, 0);
+    rb_define_method(rb_cArithSeq, "each", arith_seq_each, 0);
+    rb_define_method(rb_cArithSeq, "size", arith_seq_size, 0);
+
     rb_provide("enumerator.so");	/* for backward compatibility */
 }
 
@@ -2469,6 +2877,10 @@ Init_Enumerator(void)
     id_method = rb_intern("method");
     id_force = rb_intern("force");
     id_to_enum = rb_intern("to_enum");
+    id_begin = rb_intern("begin");
+    id_end = rb_intern("end");
+    id_step = rb_intern("step");
+    id_exclude_end = rb_intern("exclude_end");
     sym_each = ID2SYM(id_each);
     sym_cycle = ID2SYM(rb_intern("cycle"));
 

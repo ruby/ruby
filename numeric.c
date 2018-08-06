@@ -2581,10 +2581,9 @@ num_step_negative_p(VALUE num)
 }
 
 static int
-num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
+num_step_extract_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE *by)
 {
     VALUE hash;
-    int desc;
 
     argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
     if (!NIL_P(hash)) {
@@ -2599,26 +2598,45 @@ num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step)
 	}
 	if (values[1] != Qundef) {
 	    if (argc > 1) rb_raise(rb_eArgError, "step is given twice");
-	    *step = values[1];
+	    *by = values[1];
 	}
     }
+
+    return argc;
+}
+
+static int
+num_step_check_fix_args(int argc, VALUE *to, VALUE *step, VALUE by, int fix_nil, int allow_zero_step)
+{
+    int desc;
+    if (by != Qundef) {
+        *step = by;
+    }
     else {
-	/* compatibility */
-	if (argc > 1 && NIL_P(*step)) {
-	    rb_raise(rb_eTypeError, "step must be numeric");
-	}
-	if (rb_equal(*step, INT2FIX(0))) {
-	    rb_raise(rb_eArgError, "step can't be 0");
-	}
+        /* compatibility */
+        if (argc > 1 && NIL_P(*step)) {
+            rb_raise(rb_eTypeError, "step must be numeric");
+        }
+        if (!allow_zero_step && rb_equal(*step, INT2FIX(0))) {
+            rb_raise(rb_eArgError, "step can't be 0");
+        }
     }
     if (NIL_P(*step)) {
 	*step = INT2FIX(1);
     }
     desc = num_step_negative_p(*step);
-    if (NIL_P(*to)) {
-	*to = desc ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+    if (fix_nil && NIL_P(*to)) {
+        *to = desc ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
     }
     return desc;
+}
+
+static int
+num_step_scan_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, int fix_nil, int allow_zero_step)
+{
+    VALUE by = Qundef;
+    argc = num_step_extract_args(argc, argv, to, step, &by);
+    return num_step_check_fix_args(argc, to, step, by, fix_nil, allow_zero_step);
 }
 
 static VALUE
@@ -2628,7 +2646,7 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
     int argc = args ? RARRAY_LENINT(args) : 0;
     const VALUE *argv = args ? RARRAY_CONST_PTR(args) : 0;
 
-    num_step_scan_args(argc, argv, &to, &step);
+    num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
 
     return ruby_num_interval_step_size(from, to, step, FALSE);
 }
@@ -2691,9 +2709,28 @@ num_step(int argc, VALUE *argv, VALUE from)
     VALUE to, step;
     int desc, inf;
 
-    RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
+    /* RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size); */
 
-    desc = num_step_scan_args(argc, argv, &to, &step);
+    if (!rb_block_given_p()) {
+        VALUE by = Qundef;
+
+        num_step_extract_args(argc, argv, &to, &step, &by);
+        if (by != Qundef) {
+            step = by;
+        }
+        if (NIL_P(step)) {
+            step = INT2FIX(1);
+        }
+        if ((NIL_P(to) || rb_obj_is_kind_of(to, rb_cNumeric)) &&
+            rb_obj_is_kind_of(step, rb_cNumeric)) {
+            return rb_arith_seq_new(from, ID2SYM(rb_frame_this_func()), argc, argv,
+                                    num_step_size, from, to, step, FALSE);
+        }
+
+        RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size);
+    }
+
+    desc = num_step_scan_args(argc, argv, &to, &step, TRUE, FALSE);
     if (rb_equal(step, INT2FIX(0))) {
 	inf = 1;
     }
