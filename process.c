@@ -928,7 +928,6 @@ struct waitpid_state {
     int status;
     int options;
     int errnum;
-    int sigwait_fd;
 };
 
 void rb_native_mutex_lock(rb_nativethread_lock_t *);
@@ -937,65 +936,13 @@ void rb_native_cond_signal(rb_nativethread_cond_t *);
 void rb_native_cond_wait(rb_nativethread_cond_t *, rb_nativethread_lock_t *);
 rb_nativethread_cond_t *rb_sleep_cond_get(const rb_execution_context_t *);
 void rb_sleep_cond_put(rb_nativethread_cond_t *);
-int rb_sigwait_fd_get(const rb_thread_t *);
-void rb_sigwait_sleep(const rb_thread_t *, int fd, const struct timespec *);
-void rb_sigwait_fd_put(const rb_thread_t *, int fd);
-
-static int
-sigwait_fd_migrate_signaled_p(struct waitpid_state *w)
-{
-    int signaled = FALSE;
-    rb_thread_t *th = w->ec ? rb_ec_thread_ptr(w->ec) : 0;
-
-    if (th) rb_native_mutex_lock(&th->interrupt_lock);
-
-    if (w->cond) {
-        rb_native_cond_signal(w->cond);
-        signaled = TRUE;
-    }
-
-    if (th) rb_native_mutex_unlock(&th->interrupt_lock);
-
-    return signaled;
-}
-
-/*
- * When a thread is done using sigwait_fd and there are other threads
- * sleeping on waitpid, we must kick one of the threads out of
- * rb_native_cond_wait so it can switch to rb_sigwait_sleep
- */
-static void
-sigwait_fd_migrate_sleeper(rb_vm_t *vm)
-{
-    struct waitpid_state *w = 0;
-
-    list_for_each(&vm->waiting_pids, w, wnode) {
-        if (sigwait_fd_migrate_signaled_p(w)) return;
-    }
-    list_for_each(&vm->waiting_grps, w, wnode) {
-        if (sigwait_fd_migrate_signaled_p(w)) return;
-    }
-}
-
-void
-rb_sigwait_fd_migrate(rb_vm_t *vm)
-{
-    rb_native_mutex_lock(&vm->waitpid_lock);
-    sigwait_fd_migrate_sleeper(vm);
-    rb_native_mutex_unlock(&vm->waitpid_lock);
-}
 
 static void
 waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
 {
     w->ret = ret;
     list_del_init(&w->wnode);
-    if (w->cond) {
-        rb_native_cond_signal(w->cond);
-    }
-    else {
-        /* w is owned by this thread */
-    }
+    rb_native_cond_signal(w->cond);
 }
 
 #ifdef _WIN32 /* for spawnvp result from mjit.c */
@@ -1007,7 +954,7 @@ waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
 #endif
 
 extern volatile unsigned int ruby_nocldwait; /* signal.c */
-/* called by timer thread or thread which acquired sigwait_fd */
+/* called by timer thread */
 static void
 waitpid_each(struct list_head *head)
 {
@@ -1061,17 +1008,6 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->options = options;
 }
 
-static const struct timespec *
-sigwait_sleep_time(void)
-{
-    if (SIGCHLD_LOSSY) {
-        static const struct timespec busy_wait = { 0, 100000000 };
-
-        return &busy_wait;
-    }
-    return 0;
-}
-
 /*
  * must be called with vm->waitpid_lock held, this is not interruptible
  */
@@ -1090,31 +1026,13 @@ ruby_waitpid_locked(rb_vm_t *vm, rb_pid_t pid, int *status, int options,
         if (w.ret == -1) w.errnum = errno;
     }
     else {
+        w.cond = cond;
         w.ec = 0;
-        w.sigwait_fd = -1;
         list_add(w.pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w.wnode);
         do {
-            if (w.sigwait_fd < 0)
-                w.sigwait_fd = rb_sigwait_fd_get(0);
-
-            if (w.sigwait_fd >= 0) {
-                w.cond = 0;
-                rb_native_mutex_unlock(&vm->waitpid_lock);
-                rb_sigwait_sleep(0, w.sigwait_fd, sigwait_sleep_time());
-                rb_native_mutex_lock(&vm->waitpid_lock);
-            }
-            else {
-                w.cond = cond;
-                rb_native_cond_wait(w.cond, &vm->waitpid_lock);
-            }
+            rb_native_cond_wait(w.cond, &vm->waitpid_lock);
         } while (!w.ret);
         list_del(&w.wnode);
-
-        /* we're done, maybe other waitpid callers are not: */
-        if (w.sigwait_fd >= 0) {
-            rb_sigwait_fd_put(0, w.sigwait_fd);
-            sigwait_fd_migrate_sleeper(vm);
-        }
     }
     if (status) {
         *status = w.status;
@@ -1129,10 +1047,7 @@ waitpid_wake(void *x)
     struct waitpid_state *w = x;
 
     /* th->interrupt_lock is already held by rb_threadptr_interrupt_common */
-    if (w->cond)
-        rb_native_cond_signal(w->cond);
-    else
-        rb_thread_wakeup_timer_thread(0); /* kick sigwait_fd */
+    rb_native_cond_signal(w->cond);
 }
 
 static void *
@@ -1147,40 +1062,11 @@ waitpid_nogvl(void *x)
      * by the time we enter this.  And we may also be interrupted.
      */
     if (!w->ret && !RUBY_VM_INTERRUPTED_ANY(w->ec)) {
-        if (w->sigwait_fd < 0)
-            w->sigwait_fd = rb_sigwait_fd_get(th);
-
-        if (w->sigwait_fd >= 0) {
-            rb_nativethread_cond_t *cond = w->cond;
-
-            w->cond = 0;
-            rb_native_mutex_unlock(&th->interrupt_lock);
-            rb_sigwait_sleep(th, w->sigwait_fd, sigwait_sleep_time());
-            rb_native_mutex_lock(&th->interrupt_lock);
-            w->cond = cond;
+        if (SIGCHLD_LOSSY) {
+            rb_thread_wakeup_timer_thread();
         }
-        else {
-            if (!w->cond)
-                w->cond = rb_sleep_cond_get(w->ec);
-
-            /* another thread calling rb_sigwait_sleep will process
-             * signals for us */
-            if (SIGCHLD_LOSSY) {
-                rb_thread_wakeup_timer_thread(0);
-            }
-            rb_native_cond_wait(w->cond, &th->interrupt_lock);
-        }
+        rb_native_cond_wait(w->cond, &th->interrupt_lock);
     }
-
-    /*
-     * we must release th->native_thread_data.sleep_cond when
-     * re-acquiring GVL:
-     */
-    if (w->cond) {
-        rb_sleep_cond_put(w->cond);
-        w->cond = 0;
-    }
-
     rb_native_mutex_unlock(&th->interrupt_lock);
 
     return 0;
@@ -1210,15 +1096,8 @@ waitpid_cleanup(VALUE x)
         list_del(&w->wnode);
         rb_native_mutex_unlock(&vm->waitpid_lock);
     }
+    rb_sleep_cond_put(w->cond);
 
-    /* we may have never released and re-acquired GVL */
-    if (w->cond)
-        rb_sleep_cond_put(w->cond);
-
-    if (w->sigwait_fd >= 0) {
-        rb_sigwait_fd_put(rb_ec_thread_ptr(w->ec), w->sigwait_fd);
-        rb_sigwait_fd_migrate(rb_ec_vm_ptr(w->ec));
-    }
     return Qfalse;
 }
 
@@ -1245,7 +1124,6 @@ waitpid_wait(struct waitpid_state *w)
     }
     else {
         w->cond = rb_sleep_cond_get(w->ec);
-        w->sigwait_fd = -1;
         /* order matters, favor specified PIDs rather than -1 or 0 */
         list_add(w->pid > 0 ? &vm->waiting_pids : &vm->waiting_grps, &w->wnode);
     }

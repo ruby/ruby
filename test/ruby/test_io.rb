@@ -3556,8 +3556,7 @@ __END__
   end if File::BINARY != 0
 
   def test_race_gets_and_close
-    opt = { signal: :ABRT, timeout: 200 }
-    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}", opt)
+    assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     bug13076 = '[ruby-core:78845] [Bug #13076]'
     begin;
       10.times do |i|
@@ -3579,9 +3578,9 @@ __END__
           w.close
           r.close
         end
-        t.each do |th|
-          assert_same(th, th.join(2), bug13076)
-        end
+        assert_nothing_raised(IOError, bug13076) {
+          t.each(&:join)
+        }
       end
     end;
   end

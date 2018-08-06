@@ -1767,7 +1767,7 @@ class TestProcess < Test::Unit::TestCase
           puts Dir.entries("/proc/self/task") - %W[. ..]
         end
         bug4920 = '[ruby-dev:43873]'
-        assert_include(1..2, data.size, bug4920)
+        assert_equal(2, data.size, bug4920)
         assert_not_include(data.map(&:to_i), pid)
       end
     else # darwin
