@@ -564,12 +564,10 @@ typedef struct rb_vm_struct {
     VALUE self;
 
     rb_global_vm_lock_t gvl;
+    rb_nativethread_lock_t    thread_destruct_lock;
 
     struct rb_thread_struct *main_thread;
-
-    /* persists across uncontended GVL release/acquire for time slice */
-    const struct rb_thread_struct *running_thread;
-
+    struct rb_thread_struct *running_thread;
 #ifdef USE_SIGALTSTACK
     void *main_altstack;
 #endif
@@ -1583,7 +1581,7 @@ void rb_vm_pop_frame(rb_execution_context_t *ec);
 void rb_thread_start_timer_thread(void);
 void rb_thread_stop_timer_thread(void);
 void rb_thread_reset_timer_thread(void);
-void rb_thread_wakeup_timer_thread(int);
+void rb_thread_wakeup_timer_thread(void);
 
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
