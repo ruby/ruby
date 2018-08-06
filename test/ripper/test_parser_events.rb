@@ -1457,8 +1457,11 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
   def test_block_variables
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
-      assert_in_out_err(["-I#{File.dirname(__FILE__)}", "-rdummyparser"],
-                        'Process.setrlimit(Process::RLIMIT_AS,100*1024*1024); puts DummyParser.new("proc{|;y|!y}").parse',
+      dir = File.dirname(__FILE__)
+      as = (RubyVM::MJIT.enabled? ? 111 : 100) * 1024 * 1024
+      assert_in_out_err(%W(-I#{dir} -rdummyparser),
+                        "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
+                        "puts DummyParser.new('proc{|;y|!y}').parse",
                         ["[fcall(proc,[],&block([],[unary(!,ref(y))]))]"], [], '[ruby-dev:39423]')
     end
   end
