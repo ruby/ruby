@@ -222,7 +222,11 @@ class TestRange < Test::Unit::TestCase
     (0..).step(2) {|x| a << x; break if a.size == 10 }
     assert_equal([0, 2, 4, 6, 8, 10, 12, 14, 16, 18], a)
 
-    assert_raise(ArgumentError) { (0..10).step(-1) { } }
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step)
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(2))
+    assert_kind_of(Enumerator::ArithmeticSequence, (0..10).step(0.5))
+    assert_kind_of(Enumerator::ArithmeticSequence, (10..0).step(-1))
+
     assert_raise(ArgumentError) { (0..10).step(0) { } }
     assert_raise(ArgumentError) { (0..).step(-1) { } }
     assert_raise(ArgumentError) { (0..).step(0) { } }

@@ -632,7 +632,7 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 4, (1..10).step(3).size
     assert_equal 3, (1...10).step(3).size
     assert_equal Float::INFINITY, (42..Float::INFINITY).step(2).size
-    assert_raise(ArgumentError){ (1..10).step(-2).size }
+    assert_equal 0, (1..10).step(-2).size
   end
 
   def test_size_for_downup_to

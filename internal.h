@@ -1995,6 +1995,11 @@ enum rb_int_parse_flags {
 };
 VALUE rb_int_parse_cstr(const char *str, ssize_t len, char **endp, size_t *ndigits, int base, int flags);
 
+/* enumerator.c (export) */
+VALUE rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
+                       rb_enumerator_size_func *size_fn,
+                       VALUE beg, VALUE end, VALUE step, int excl);
+
 /* error.c (export) */
 int rb_bug_reporter_add(void (*func)(FILE *, void *), void *data);
 NORETURN(void rb_unexpected_type(VALUE,int));

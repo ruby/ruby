@@ -23,23 +23,23 @@ describe "Numeric#step" do
 
     describe "when no block is given" do
       it "returns an Enumerator when step is 0" do
-        1.step(5, 0).should be_an_instance_of(Enumerator)
+        1.step(5, 0).should be_an_instance_of(Enumerator::ArithmeticSequence)
       end
 
       it "returns an Enumerator when step is 0.0" do
-        1.step(2, 0.0).should be_an_instance_of(Enumerator)
+        1.step(2, 0.0).should be_an_instance_of(Enumerator::ArithmeticSequence)
       end
 
       describe "returned Enumerator" do
         describe "size" do
           it "raises an ArgumentError when step is 0" do
             enum = 1.step(5, 0)
-            lambda { enum.size }.should raise_error(ArgumentError)
+            enum.size.should == Float::INFINITY
           end
 
           it "raises an ArgumentError when step is 0.0" do
             enum = 1.step(2, 0.0)
-            lambda { enum.size }.should raise_error(ArgumentError)
+            enum.size.should == Float::INFINITY
           end
         end
       end

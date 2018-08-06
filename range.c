@@ -388,17 +388,25 @@ range_step(int argc, VALUE *argv, VALUE range)
 {
     VALUE b, e, step, tmp;
 
-    RETURN_SIZED_ENUMERATOR(range, argc, argv, range_step_size);
-
     b = RANGE_BEG(range);
     e = RANGE_END(range);
     if (argc == 0) {
-	step = INT2FIX(1);
+        step = INT2FIX(1);
     }
     else {
-	rb_scan_args(argc, argv, "01", &step);
-	step = check_step_domain(step);
+        rb_scan_args(argc, argv, "01", &step);
     }
+
+    if (!rb_block_given_p()) {
+        if (rb_obj_is_kind_of(b, rb_cNumeric) && (NIL_P(e) || rb_obj_is_kind_of(e, rb_cNumeric))) {
+            return rb_arith_seq_new(range, ID2SYM(rb_frame_this_func()), argc, argv,
+                    range_step_size, b, e, step, EXCL(range));
+        }
+
+        RETURN_SIZED_ENUMERATOR(range, argc, argv, range_step_size);
+    }
+
+    step = check_step_domain(step);
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(step)) {
 	long i = FIX2LONG(b), unit = FIX2LONG(step);
