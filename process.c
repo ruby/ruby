@@ -941,6 +941,24 @@ int rb_sigwait_fd_get(const rb_thread_t *);
 void rb_sigwait_sleep(const rb_thread_t *, int fd, const struct timespec *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 
+static int
+sigwait_fd_migrate_signaled_p(struct waitpid_state *w)
+{
+    int signaled = FALSE;
+    rb_thread_t *th = w->ec ? rb_ec_thread_ptr(w->ec) : 0;
+
+    if (th) rb_native_mutex_lock(&th->interrupt_lock);
+
+    if (w->cond) {
+        rb_native_cond_signal(w->cond);
+        signaled = TRUE;
+    }
+
+    if (th) rb_native_mutex_unlock(&th->interrupt_lock);
+
+    return signaled;
+}
+
 /*
  * When a thread is done using sigwait_fd and there are other threads
  * sleeping on waitpid, we must kick one of the threads out of
@@ -952,14 +970,10 @@ sigwait_fd_migrate_sleeper(rb_vm_t *vm)
     struct waitpid_state *w = 0;
 
     list_for_each(&vm->waiting_pids, w, wnode) {
-        if (!w->cond) continue; /* somebody else already got sigwait_fd */
-        rb_native_cond_signal(w->cond);
-        return;
+        if (sigwait_fd_migrate_signaled_p(w)) return;
     }
     list_for_each(&vm->waiting_grps, w, wnode) {
-        if (!w->cond) continue; /* somebody else already got sigwait_fd */
-        rb_native_cond_signal(w->cond);
-        return;
+        if (sigwait_fd_migrate_signaled_p(w)) return;
     }
 }
 
