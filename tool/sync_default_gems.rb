@@ -167,6 +167,7 @@ def sync_default_gems(gem)
     `cp -rf ../date/test/date test`
     `cp -f ../date/date.gemspec ext/date`
     `git checkout ext/date/depend`
+    `rm -f ext/date/lib/date_core.bundle`
   when "zlib"
     `rm -rf ext/zlib test/zlib`
     `cp -rf ../zlib/ext/zlib ext`
