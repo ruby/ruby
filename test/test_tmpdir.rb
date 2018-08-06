@@ -58,6 +58,7 @@ class TestTmpdir < Test::Unit::TestCase
   end
 
   TRAVERSAL_PATH = Array.new(Dir.pwd.split('/').count, '..').join('/') + Dir.pwd + '/'
+  TRAVERSAL_PATH.delete!(':') if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_mktmpdir_traversal
     expect = Dir.glob(TRAVERSAL_PATH + '*').count
