@@ -3,7 +3,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "zlib"
   spec.version       = "1.0.0"
-  spec.date          = '2017-12-11'
   spec.authors       = ["Yukihiro Matsumoto", "UENO Katsuhiro"]
   spec.email         = ["matz@ruby-lang.org", nil]
 
