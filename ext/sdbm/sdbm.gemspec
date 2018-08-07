@@ -3,7 +3,6 @@
 Gem::Specification.new do |s|
   s.name = "sdbm"
   s.version = '1.0.0'
-  s.date = '2017-12-11'
   s.summary = "Provides a simple file-based key-value store with String keys and values."
   s.description = "Provides a simple file-based key-value store with String keys and values."
 

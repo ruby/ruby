@@ -2,7 +2,6 @@
 Gem::Specification.new do |s|
   s.name = "strscan"
   s.version = '1.0.0'
-  s.date = '2017-12-19'
   s.summary = "Provides lexical scanning operations on a String."
   s.description = "Provides lexical scanning operations on a String."
 

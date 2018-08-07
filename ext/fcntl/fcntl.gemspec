@@ -4,7 +4,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "fcntl"
   spec.version       = "1.0.0"
-  spec.date          = '2017-12-11'
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 
