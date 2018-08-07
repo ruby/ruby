@@ -765,7 +765,22 @@ compile_c_to_so(const char *c_file, const char *so_file)
     if (args == NULL)
         return FALSE;
 
-    exit_code = exec_process(cc_path, args);
+    {
+        int stdout_fileno = _fileno(stdout);
+        int orig_fd = dup(stdout_fileno);
+        int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
+
+        /* Discard cl.exe's outputs like:
+             _ruby_mjit_p12u3.c
+               Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
+           TODO: Don't discard them on --jit-verbose=2+ */
+        dup2(dev_null, stdout_fileno);
+        exit_code = exec_process(cc_path, args);
+        dup2(orig_fd, stdout_fileno);
+
+        close(orig_fd);
+        close(dev_null);
+    }
     free(args);
 
     if (exit_code != 0)
@@ -1113,7 +1128,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         const char *label = RSTRING_PTR(unit->iseq->body->location.label);
         const char *path = RSTRING_PTR(s);
         int lineno = FIX2INT(unit->iseq->body->location.first_lineno);
-        verbose(2, "start compile: %s@%s:%d -> %s", label, path, lineno, c_file);
+        verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
     success = mjit_compile(f, unit->iseq->body, funcname);
@@ -1812,7 +1827,7 @@ mjit_finish(void)
         return;
 
     /* Wait for pch finish */
-    verbose(2, "Canceling worker thread");
+    verbose(2, "Stopping worker thread");
     CRITICAL_SECTION_START(3, "in mjit_finish to wakeup from pch");
     /* As our threads are detached, we could just cancel them.  But it
        is a bad idea because OS processes (C compiler) started by

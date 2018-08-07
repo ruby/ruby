@@ -14,10 +14,10 @@
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
-extern VALUE ruby_vm_const_missing_count;
-extern rb_serial_t ruby_vm_global_method_state;
-extern rb_serial_t ruby_vm_global_constant_state;
-extern rb_serial_t ruby_vm_class_serial;
+RUBY_EXTERN VALUE ruby_vm_const_missing_count;
+RUBY_EXTERN rb_serial_t ruby_vm_global_method_state;
+RUBY_EXTERN rb_serial_t ruby_vm_global_constant_state;
+RUBY_EXTERN rb_serial_t ruby_vm_class_serial;
 
 RUBY_SYMBOL_EXPORT_END
 
