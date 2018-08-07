@@ -721,7 +721,7 @@ search_method(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
     rb_method_entry_t *me;
 
-    for (me = 0; klass; klass = RCLASS_SUPER(klass)) {
+    for (; klass; klass = RCLASS_SUPER(klass)) {
 	RB_DEBUG_COUNTER_INC(mc_search_super);
 	if ((me = lookup_method_table(klass, id)) != 0) break;
     }
