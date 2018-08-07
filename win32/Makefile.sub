@@ -316,10 +316,9 @@ MJIT_PRECOMPILED_HEADER = $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_N
 MJIT_CC = $(CC)
 !endif
 !ifndef MJIT_OPTFLAGS
-# Short-term TODO: Include `$(XCFLAGS) $(CPPFLAGS)` to suppress warning. Currently adding them breakes JIT.
-# Long-term  TODO: Use only $(OPTFLAGS) for performance. It requires to modify flags for precompiled header too.
-# Using flags used for building precompiled header to make JIT succeed.
-MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS)
+# TODO: Use only $(OPTFLAGS) for performance. It requires to modify flags for precompiled header too.
+# For now, using flags used for building precompiled header to make JIT succeed.
+MJIT_OPTFLAGS = -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 !endif
 !ifndef MJIT_DEBUGFLAGS
 # TODO: Make this work... Another header for debug build needs to be installed first.
@@ -1332,6 +1331,7 @@ mjit_config.h:
 #ifndef RUBY_MJIT_CONFIG_H
 #define RUBY_MJIT_CONFIG_H 1
 
+#define MJIT_CONFIG_ESCAPED_EQ "="
 #define MJIT_BUILD_DIR "$(MAKEDIR)"
 #define MJIT_PRECOMPILED_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME)"
 <<KEEP
@@ -1345,11 +1345,11 @@ mjit_config.h:
 	@echo /* MJIT_CFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_OPTFLAGS ) & \
-	for %I in ($(MJIT_OPTFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_OPTFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_OPTFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_DEBUGFLAGS ) & \
-	for %I in ($(MJIT_DEBUGFLAGS)) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
+	for %I in ($(MJIT_DEBUGFLAGS:^==" MJIT_CONFIG_ESCAPED_EQ ")) do @(call echo.%%sep%%"%%~I", \& set sep= ) >> $@
 	@echo /* MJIT_DEBUGFLAGS */>> $@
 	@
 	@(set sep=#define MJIT_LDSHARED ) & \
