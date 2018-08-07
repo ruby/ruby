@@ -1290,7 +1290,7 @@ clean-local::
 # for --jit-debug as well.
 $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=).time: probes.h vm.$(OBJEXT)
 	$(ECHO) building $(@F:.time=.pch)
-	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
+	$(Q) $(CC) -DMJIT_HEADER $(CFLAGS) $(XCFLAGS) -URUBY_EXPORT $(CPPFLAGS) $(srcdir)/vm.c -c -Yc \
 	  $(COUTFLAG)$(@F:.time=.)$(OBJEXT) -Fp$(@F:.time=.pch).new
 	$(Q) $(IFCHANGE) "--timestamp=$@" $(@F:.time=.pch) $(@F:.time=.pch).new
 
