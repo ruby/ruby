@@ -30,13 +30,15 @@ class TestDateMarshal < Test::Unit::TestCase
     a = d.marshal_dump
     d.freeze
     assert(d.frozen?)
-    assert_raise(FrozenError){d.marshal_load(a)}
+    expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
+    assert_raise(expected_error){d.marshal_load(a)}
 
     d = DateTime.now
     a = d.marshal_dump
     d.freeze
     assert(d.frozen?)
-    assert_raise(FrozenError){d.marshal_load(a)}
+    expected_error = defined?(FrozenError) ? FrozenError : RuntimeError
+    assert_raise(expected_error){d.marshal_load(a)}
   end
 
 end

@@ -722,9 +722,10 @@ class TestStringIO < Test::Unit::TestCase
     s = StringIO.new
     s.freeze
     bug = '[ruby-core:33648]'
-    assert_raise(FrozenError, bug) {s.puts("foo")}
-    assert_raise(FrozenError, bug) {s.string = "foo"}
-    assert_raise(FrozenError, bug) {s.reopen("")}
+    exception_class = defined?(FrozenError) ? FrozenError : RuntimeError
+    assert_raise(exception_class, bug) {s.puts("foo")}
+    assert_raise(exception_class, bug) {s.string = "foo"}
+    assert_raise(exception_class, bug) {s.reopen("")}
   end
 
   def test_frozen_string
