@@ -1,4 +1,8 @@
-require_relative "rss"
+begin
+  require_relative "lib/rss"
+rescue LoadError
+  require_relative "rss"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "rss"

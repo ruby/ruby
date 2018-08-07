@@ -1,4 +1,8 @@
-require_relative "logger"
+begin
+  require_relative "lib/logger"
+rescue LoadError
+  require_relative "logger"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "logger"

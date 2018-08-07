@@ -1,4 +1,8 @@
-require_relative "rexml"
+begin
+  require_relative "lib/rexml/rexml"
+rescue LoadError
+  require_relative "rexml"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "rexml"

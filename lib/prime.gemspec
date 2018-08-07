@@ -1,4 +1,8 @@
-require_relative "prime"
+begin
+  require_relative "lib/prime"
+rescue LoadError
+  require_relative "prime"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "prime"
