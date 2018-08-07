@@ -64,6 +64,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
       req = Net::HTTP::Post.new("/")
       req.body = "post-data"
+      req.content_type = "application/x-www-form-urlencoded"
       http.request(req){|res|
         assert_equal("1.1 localhost.localdomain:#{port}", res["via"], log.call)
         assert_equal("POST / post-data", res.body, log.call)
@@ -108,6 +109,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
       assert_equal(2, request_handler_called, log.call)
 
       req = Net::HTTP::Post.new("/")
+      req.content_type = "application/x-www-form-urlencoded"
       req.body = "post-data"
       http.request(req){|res|
         assert_nil(res["via"], log.call)
@@ -336,6 +338,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
         req = Net::HTTP::Post.new("/")
         req.body = "post-data"
+        req.content_type = "application/x-www-form-urlencoded"
         http.request(req){|res|
           via = res["via"].split(/,\s+/)
           assert(via.include?("1.1 localhost.localdomain:#{up_port}"), up_log.call + log.call)
@@ -380,6 +383,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
 
             req2 = Net::HTTP::Post.new("/")
             req2.body = "post-data"
+            req2.content_type = "application/x-www-form-urlencoded"
             http.request(req2){|res|
               assert_equal("SSL POST / post-data", res.body, up_log.call + log.call + s_log.call)
             }
