@@ -3,7 +3,18 @@ require 'test/unit'
 require 'cmath'
 
 class TestCMath < Test::Unit::TestCase
+  def test_deprecated_method
+    orig = $VERBOSE
+    $VERBOSE = true
+    assert_warning(/CMath#sqrt! is deprecated; use CMath#sqrt or Math#sqrt/) do
+      CMath.sqrt!(1)
+    end
+    assert_equal CMath.sqrt(1), CMath.sqrt!(1)
+    $VERBOSE = orig
+  end
+
   def test_sqrt
+    assert_equal 1, CMath.sqrt(1)
     assert_equal CMath.sqrt(1i), CMath.sqrt(1.0i), '[ruby-core:31672]'
     assert_equal Complex(0,2), CMath.sqrt(-4.0)
     assert_equal Complex(0,2), CMath.sqrt(-4)
@@ -13,6 +24,7 @@ class TestCMath < Test::Unit::TestCase
     assert_equal Complex(0,3), CMath.sqrt(Rational(-9))
     assert_in_delta (1.272019649514069+0.7861513777574233i), CMath.sqrt(1+2i)
     assert_in_delta 3.0i, CMath.sqrt(-9)
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.sqrt("1") }
   end
 
   def test_log
@@ -24,6 +36,13 @@ class TestCMath < Test::Unit::TestCase
   end
 
   def test_trigonometric_functions
+    assert_equal 0, CMath.asin(0)
+    assert_equal 0, CMath.acos(1)
+    assert_equal 0, CMath.atan(0)
+    assert_equal 0, CMath.asinh(0)
+    assert_equal 0, CMath.acosh(1)
+    assert_equal 0, CMath.atanh(0)
+
     assert_in_delta CMath.sinh(2).i, CMath.sin(2i)
     assert_in_delta CMath.cosh(2),   CMath.cos(2i)
     assert_in_delta CMath.tanh(2).i, CMath.tan(2i)
@@ -52,14 +71,37 @@ class TestCMath < Test::Unit::TestCase
     assert_in_delta (1.4693517443681852+1.0634400235777521i),   CMath.asinh(1+2i)
     assert_in_delta (1.528570919480998+1.1437177404024204i),    CMath.acosh(1+2i)
     assert_in_delta (0.17328679513998635+1.1780972450961724i),  CMath.atanh(1+2i)
+
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.sin("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.cos("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.tan("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.sinh("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.cosh("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.tanh("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.asin("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.atan("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.asinh("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.acosh("0") }
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.atanh("0") }
   end
 
   def test_functions
+    assert_equal (1),                                          CMath.exp(0)
     assert_in_delta (-1.1312043837568135+2.4717266720048188i), CMath.exp(1+2i)
     assert_in_delta (-1),                                      CMath.exp(Math::PI.i)
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.exp("0") }
+
+    assert_equal (0),                                          CMath.log2(1)
     assert_in_delta (1.1609640474436813+1.5972779646881088i),  CMath.log2(1+2i)
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.log2("1") }
+
+    assert_equal (0),                                          CMath.log10(1)
     assert_in_delta (0.3494850021680094+0.480828578784234i),   CMath.log10(1+2i)
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.log10("1") }
+
+    assert_equal (0),                                          CMath.atan2(0,1)
     assert_in_delta (1.3389725222944935+0.4023594781085251i),  CMath.atan2(1+2i,1)
+    assert_raise_with_message(TypeError, "Numeric Number required") { CMath.atan2("0", 1) }
   end
 
   def test_error_handling
