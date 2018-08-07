@@ -49,7 +49,7 @@ test_script:
   - set /a JOBS=%NUMBER_OF_PROCESSORS%
   - nmake -l "TESTOPTS=-v -q" btest
   - nmake -l "TESTOPTS=-v -q" test-basic
-  - nmake -l "TESTOPTS=-q -j%JOBS%" test-all
+  - nmake -l "TESTOPTS=-q -j%JOBS%" test-all RUBY_FORCE_TEST_JIT=1
   - nmake -l test-spec
 matrix:
   fast_finish: true
