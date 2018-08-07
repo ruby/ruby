@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.description = "Provides a simple file-based key-value store with String keys and values."
 
   s.require_path = %w{lib}
-  s.files = %w{ext/sdbm/_sdbm.c ext/sdbm/depend ext/sdbm/extconf.rb ext/sdbm/init.c ext/sdbm/sdbm.h}
+  s.files = %w{ext/sdbm/_sdbm.c ext/sdbm/extconf.rb ext/sdbm/init.c ext/sdbm/sdbm.h}
   s.extensions = ["ext/sdbm/extconf.rb"]
   s.required_ruby_version = ">= 2.3.0"
 
