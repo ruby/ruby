@@ -200,6 +200,10 @@ describe 'BasicSocket#send' do
 
             @client.send('a', Socket::MSG_OOB).should == 1
 
+            platform_is :freebsd do # recv hangs otherwise
+              @client.close
+            end
+
             socket, _ = @server.accept
             begin
               socket.recv(1, Socket::MSG_OOB).should == 'a'
