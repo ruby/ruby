@@ -5,7 +5,7 @@ PACKED_STRUCT_UNALIGNED(struct vtm {
     VALUE year; /* 2000 for example.  Integer. */
     VALUE subsecx; /* 0 <= subsecx < TIME_SCALE.  possibly Rational. */
     VALUE utc_offset; /* -3600 as -01:00 for example.  possibly Rational. */
-    const char *zone; /* "JST", "EST", "EDT", etc. */
+    VALUE zone; /* "JST", "EST", "EDT", etc. as String */
     unsigned int yday:9; /* 1..366 */
     unsigned int mon:4; /* 1..12 */
     unsigned int mday:5; /* 1..31 */
