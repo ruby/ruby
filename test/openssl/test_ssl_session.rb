@@ -113,6 +113,7 @@ __EOS__
     non_resumable = nil
     start_server { |port|
       server_connect_with_session(port, nil, nil) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         non_resumable = ssl.session
       }
     }
