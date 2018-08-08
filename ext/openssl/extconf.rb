@@ -114,7 +114,7 @@ engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
 
-if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER")
+if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
   $defs.push("-DNOCRYPT")
 end
 
