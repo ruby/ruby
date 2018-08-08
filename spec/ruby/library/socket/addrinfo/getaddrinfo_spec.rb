@@ -37,13 +37,13 @@ describe 'Addrinfo.getaddrinfo' do
 
   guard -> { SocketSpecs.ipv6_available? } do
     it 'sets a custom protocol family of the Addrinfo instances' do
-      array = Addrinfo.getaddrinfo('localhost', 80, Socket::PF_INET6)
+      array = Addrinfo.getaddrinfo('::1', 80, Socket::PF_INET6)
 
       array[0].pfamily.should == Socket::PF_INET6
     end
 
     it 'sets a corresponding address family based on a custom protocol family' do
-      array = Addrinfo.getaddrinfo('localhost', 80, Socket::PF_INET6)
+      array = Addrinfo.getaddrinfo('::1', 80, Socket::PF_INET6)
 
       array[0].afamily.should == Socket::AF_INET6
     end
