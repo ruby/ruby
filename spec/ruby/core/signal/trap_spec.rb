@@ -144,7 +144,7 @@ platform_is_not :windows do
     end
 
     reserved_signals.each do |signal|
-      it "raises ArgumentError for reserved signal SIG#{signal}" do
+      it "raises ArgumentError for reserved signal: SIG#{signal}" do
         -> {
           trap(signal, -> {})
         }.should raise_error(ArgumentError, /can't trap reserved signal|Signal already used by VM or OS/)
