@@ -1632,7 +1632,7 @@ localtimew(wideval_t timew, struct vtm *result)
 PACKED_STRUCT_UNALIGNED(struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:init */
+    unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:uninitialized */
     unsigned int tm_got:1;
 });
 
