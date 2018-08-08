@@ -177,7 +177,7 @@ describe 'BasicSocket#send' do
       end
     end
 
-    platform_is_not :windows do
+    platform_is_not :darwin, :windows do
       describe 'using a connected TCP socket' do
         before do
           @client = Socket.new(family, :STREAM)
