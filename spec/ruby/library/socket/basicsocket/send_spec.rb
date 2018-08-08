@@ -196,17 +196,11 @@ describe 'BasicSocket#send' do
 
         describe 'using the MSG_OOB flag' do
           it 'sends an out-of-band message' do
-            @server.setsockopt(:SOCKET, :OOBINLINE, true)
-
-            @client.send('a', Socket::MSG_OOB).should == 1
-
-            platform_is :freebsd do # recv hangs otherwise
-              @client.close
-            end
-
             socket, _ = @server.accept
+            socket.setsockopt(:SOCKET, :OOBINLINE, true)
+            @client.send('a', Socket::MSG_OOB).should == 1
             begin
-              socket.recv(1, Socket::MSG_OOB).should == 'a'
+              socket.recv(10).should == 'a'
             ensure
               socket.close
             end
