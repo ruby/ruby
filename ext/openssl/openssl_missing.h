@@ -27,9 +27,6 @@ int ossl_EC_curve_nist2nid(const char *);
 
 #if !defined(HAVE_X509_STORE_CTX_GET0_STORE)
 #  define X509_STORE_CTX_get0_store(x) ((x)->ctx)
-#elif defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL
-/* old LibreSSL provides this function but lacks the declaration */
-X509_STORE *X509_STORE_CTX_get0_store(X509_STORE_CTX *xs);
 #endif
 
 #if !defined(HAVE_SSL_IS_SERVER)
