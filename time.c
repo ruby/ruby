@@ -45,7 +45,6 @@ static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 #define MOD(n,d) ((n)<0 ? NMOD((n),(d)) : (n)%(d))
 #define VTM_WDAY_INITVAL (7)
 #define VTM_ISDST_INITVAL (3)
-#define TO_GMT_INITVAL (3)
 
 static int
 eq(VALUE x, VALUE y)
@@ -1625,10 +1624,15 @@ localtimew(wideval_t timew, struct vtm *result)
     return result;
 }
 
+#define TIME_TZMODE_LOCALTIME 0
+#define TIME_TZMODE_UTC 1
+#define TIME_TZMODE_FIXOFF 2
+#define TIME_TZMODE_UNINITIALIZED 3
+
 PACKED_STRUCT_UNALIGNED(struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    unsigned int gmt:3; /* 0:localtime 1:utc 2:fixoff 3:init */
+    unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:init */
     unsigned int tm_got:1;
 });
 
@@ -1636,22 +1640,22 @@ PACKED_STRUCT_UNALIGNED(struct time_object {
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))
 
 #define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
-#define TIME_INIT_P(tobj) ((tobj)->gmt != TO_GMT_INITVAL)
+#define TIME_INIT_P(tobj) ((tobj)->tzmode != TIME_TZMODE_UNINITIALIZED)
 
-#define TIME_UTC_P(tobj) ((tobj)->gmt == 1)
-#define TIME_SET_UTC(tobj) ((tobj)->gmt = 1)
+#define TIME_UTC_P(tobj) ((tobj)->tzmode == TIME_TZMODE_UTC)
+#define TIME_SET_UTC(tobj) ((tobj)->tzmode = TIME_TZMODE_UTC)
 
-#define TIME_LOCALTIME_P(tobj) ((tobj)->gmt == 0)
-#define TIME_SET_LOCALTIME(tobj) ((tobj)->gmt = 0)
+#define TIME_LOCALTIME_P(tobj) ((tobj)->tzmode == TIME_TZMODE_LOCALTIME)
+#define TIME_SET_LOCALTIME(tobj) ((tobj)->tzmode = TIME_TZMODE_LOCALTIME)
 
-#define TIME_FIXOFF_P(tobj) ((tobj)->gmt == 2)
+#define TIME_FIXOFF_P(tobj) ((tobj)->tzmode == TIME_TZMODE_FIXOFF)
 #define TIME_SET_FIXOFF(tobj, off) \
-    ((tobj)->gmt = 2, \
+    ((tobj)->tzmode = TIME_TZMODE_FIXOFF, \
      (tobj)->vtm.utc_offset = (off), \
      (tobj)->vtm.zone = Qnil)
 
 #define TIME_COPY_GMT(tobj1, tobj2) \
-    ((tobj1)->gmt = (tobj2)->gmt, \
+    ((tobj1)->tzmode = (tobj2)->tzmode, \
      (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
      (tobj1)->vtm.zone = (tobj2)->vtm.zone)
 
@@ -1694,7 +1698,7 @@ time_s_alloc(VALUE klass)
     struct time_object *tobj;
 
     obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
-    tobj->gmt = TO_GMT_INITVAL;
+    tobj->tzmode = TIME_TZMODE_UNINITIALIZED;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 
@@ -1801,7 +1805,7 @@ time_init_0(VALUE time)
 
     time_modify(time);
     GetNewTimeval(time, tobj);
-    tobj->gmt = 0;
+    tobj->tzmode = TIME_TZMODE_LOCALTIME;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
     rb_timespec_now(&ts);
@@ -2043,7 +2047,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     time_modify(time);
     GetNewTimeval(time, tobj);
-    tobj->gmt = 0;
+    tobj->tzmode = TIME_TZMODE_LOCALTIME;
     tobj->tm_got=0;
     tobj->timew = WINT2FIXWV(0);
 
@@ -2162,7 +2166,7 @@ time_new_timew(VALUE klass, wideval_t timew)
     struct time_object *tobj;
 
     tobj = DATA_PTR(time);	/* skip type check */
-    tobj->gmt = 0;
+    tobj->tzmode = TIME_TZMODE_LOCALTIME;
     tobj->timew = timew;
 
     return time;
@@ -4724,7 +4728,7 @@ end_submicro: ;
     }
 
     GetNewTimeval(time, tobj);
-    tobj->gmt = 0;
+    tobj->tzmode = TIME_TZMODE_LOCALTIME;
     tobj->tm_got = 0;
     tobj->timew = timew;
     if (gmt) {
