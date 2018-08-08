@@ -619,11 +619,11 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				tp = "UTC";
 				break;
 			}
-			if (vtm->zone == NULL) {
+			if (NIL_P(vtm->zone)) {
 			    i = 0;
 			}
 			else {
-                            tp = vtm->zone;
+                            tp = RSTRING_PTR(vtm->zone);
 			    if (enc) {
 				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
 				    if ((unsigned char)tp[i] > 0x7F) {
