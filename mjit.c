@@ -62,12 +62,7 @@
       | MRI machine code  |<-----------------------------
       |___________________|             loading
 
-
-   We don't use SIGCHLD signal and WNOHANG waitpid in MJIT as it
-   might mess with ruby code dealing with signals.  Also as SIGCHLD
-   signal can be delivered to non-main thread, the stack might have a
-   constraint.  So the correct version of code based on SIGCHLD and
-   WNOHANG waitpid would be very complicated.  */
+*/
 
 #ifdef __sun
 #define __EXTENSIONS__ 1
