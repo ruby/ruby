@@ -1906,7 +1906,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
 static int rlimit_type_by_sym(VALUE key);
 
 static void
-rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
+rb_execarg_adopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
 {
     VALUE ary = eargp->rlimit_limits;
     VALUE tmp, softlim, hardlim;
@@ -1935,7 +1935,7 @@ rb_execarg_addopt_rlimit(struct rb_execarg *eargp, int rtype, VALUE val)
 #endif
 
 int
-rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
+rb_execarg_adopt(VALUE execarg_obj, VALUE key, VALUE val)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
 
@@ -1947,7 +1947,7 @@ rb_execarg_addopt(VALUE execarg_obj, VALUE key, VALUE val)
         {
             int rtype = rlimit_type_by_sym(key);
             if (rtype != -1) {
-                rb_execarg_addopt_rlimit(eargp, rtype, val);
+                rb_execarg_adopt_rlimit(eargp, rtype, val);
                 RB_GC_GUARD(execarg_obj);
                 return ST_CONTINUE;
             }
@@ -2084,7 +2084,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE key = (VALUE)st_key;
     VALUE val = (VALUE)st_val;
     VALUE execarg_obj = (VALUE)arg;
-    if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
+    if (rb_execarg_adopt(execarg_obj, key, val) != ST_CONTINUE) {
 	if (SYMBOL_P(key))
 	    rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
 		     key);
@@ -2100,7 +2100,7 @@ check_exec_options_i_extract(st_data_t st_key, st_data_t st_val, st_data_t arg)
     VALUE val = (VALUE)st_val;
     VALUE *args = (VALUE *)arg;
     VALUE execarg_obj = args[0];
-    if (rb_execarg_addopt(execarg_obj, key, val) != ST_CONTINUE) {
+    if (rb_execarg_adopt(execarg_obj, key, val) != ST_CONTINUE) {
 	VALUE nonopts = args[1];
 	if (NIL_P(nonopts)) args[1] = nonopts = rb_hash_new();
 	rb_hash_aset(nonopts, key, val);
@@ -2665,7 +2665,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
             else {
                 fd2 = NUM2INT(fd2v);
             }
-            rb_execarg_addopt(execarg_obj, INT2FIX(fd), INT2FIX(fd2));
+            rb_execarg_adopt(execarg_obj, INT2FIX(fd), INT2FIX(fd2));
         }
     }
 

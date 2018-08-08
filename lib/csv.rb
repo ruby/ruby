@@ -204,18 +204,18 @@ end
 #   # Headers are part of data
 #   data = CSV.parse(<<~ROWS, headers: true)
 #     Name,Department,Salary
-#     Bob,Engeneering,1000
+#     Bob,Engineering,1000
 #     Jane,Sales,2000
 #     John,Management,5000
 #   ROWS
 #
 #   data.class      #=> CSV::Table
-#   data.first      #=> #<CSV::Row "Name":"Bob" "Department":"Engeneering" "Salary":"1000">
-#   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engeneering", "Salary"=>"1000"}
+#   data.first      #=> #<CSV::Row "Name":"Bob" "Department":"Engineering" "Salary":"1000">
+#   data.first.to_h #=> {"Name"=>"Bob", "Department"=>"Engineering", "Salary"=>"1000"}
 #
 #   # Headers provided by developer
-#   data = CSV.parse('Bob,Engeneering,1000', headers: %i[name department salary])
-#   data.first      #=> #<CSV::Row name:"Bob" department:"Engeneering" salary:"1000">
+#   data = CSV.parse('Bob,Engineering,1000', headers: %i[name department salary])
+#   data.first      #=> #<CSV::Row name:"Bob" department:"Engineering" salary:"1000">
 #
 # === Typed data reading
 #

@@ -552,7 +552,7 @@ clean_object_files(struct rb_mjit_unit *unit)
 
    `jit_func` value does not matter for 1 and 3 since the unit won't be used anymore.
    For the situation 2, this sets the ISeq's JIT state to NOT_COMPILED_JIT_ISEQ_FUNC
-   to prevent the situation that the same methods are continously compiled.  */
+   to prevent the situation that the same methods are continuously compiled.  */
 static void
 free_unit(struct rb_mjit_unit *unit)
 {
@@ -1153,7 +1153,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         o_files[0] = o_file;
         success = link_o_to_so(o_files, so_file);
 
-        /* Alwasy set o_file for compaction. The value is also used for lazy deletion. */
+        /* Always set o_file for compaction. The value is also used for lazy deletion. */
         unit->o_file = strdup(o_file);
     }
 #endif
@@ -1677,7 +1677,7 @@ system_tmpdir(void)
 
 extern const char ruby_description_with_jit[];
 
-/* Start MJIT worker. Return TRUE if worker is sucessfully started. */
+/* Start MJIT worker. Return TRUE if worker is successfully started. */
 static int
 start_worker(void)
 {
@@ -1699,7 +1699,7 @@ start_worker(void)
 
 /* Initialize MJIT.  Start a thread creating the precompiled header and
    processing ISeqs.  The function should be called first for using MJIT.
-   If everything is successfull, MJIT_INIT_P will be TRUE.  */
+   If everything is successful, MJIT_INIT_P will be TRUE.  */
 void
 mjit_init(struct mjit_options *opts)
 {
