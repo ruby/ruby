@@ -1642,19 +1642,19 @@ PACKED_STRUCT_UNALIGNED(struct time_object {
 #define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
 #define TIME_INIT_P(tobj) ((tobj)->tzmode != TIME_TZMODE_UNINITIALIZED)
 
-#define TIME_UTC_P(tobj) ((tobj)->tzmode == TIME_TZMODE_UTC)
-#define TIME_SET_UTC(tobj) ((tobj)->tzmode = TIME_TZMODE_UTC)
+#define TZMODE_UTC_P(tobj) ((tobj)->tzmode == TIME_TZMODE_UTC)
+#define TZMODE_SET_UTC(tobj) ((tobj)->tzmode = TIME_TZMODE_UTC)
 
-#define TIME_LOCALTIME_P(tobj) ((tobj)->tzmode == TIME_TZMODE_LOCALTIME)
-#define TIME_SET_LOCALTIME(tobj) ((tobj)->tzmode = TIME_TZMODE_LOCALTIME)
+#define TZMODE_LOCALTIME_P(tobj) ((tobj)->tzmode == TIME_TZMODE_LOCALTIME)
+#define TZMODE_SET_LOCALTIME(tobj) ((tobj)->tzmode = TIME_TZMODE_LOCALTIME)
 
-#define TIME_FIXOFF_P(tobj) ((tobj)->tzmode == TIME_TZMODE_FIXOFF)
-#define TIME_SET_FIXOFF(tobj, off) \
+#define TZMODE_FIXOFF_P(tobj) ((tobj)->tzmode == TIME_TZMODE_FIXOFF)
+#define TZMODE_SET_FIXOFF(tobj, off) \
     ((tobj)->tzmode = TIME_TZMODE_FIXOFF, \
      (tobj)->vtm.utc_offset = (off), \
      (tobj)->vtm.zone = Qnil)
 
-#define TIME_COPY_GMT(tobj1, tobj2) \
+#define TZMODE_COPY(tobj1, tobj2) \
     ((tobj1)->tzmode = (tobj2)->tzmode, \
      (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
      (tobj1)->vtm.zone = (tobj2)->vtm.zone)
@@ -1824,7 +1824,7 @@ time_set_utc_offset(VALUE time, VALUE off)
     GetTimeval(time, tobj);
 
     tobj->tm_got = 0;
-    TIME_SET_FIXOFF(tobj, off);
+    TZMODE_SET_FIXOFF(tobj, off);
 
     return time;
 }
@@ -2218,13 +2218,13 @@ rb_time_timespec_new(const struct timespec *ts, int offset)
 
     if (-86400 < offset && offset <  86400) { /* fixoff */
 	GetTimeval(time, tobj);
-	TIME_SET_FIXOFF(tobj, INT2FIX(offset));
+	TZMODE_SET_FIXOFF(tobj, INT2FIX(offset));
     }
     else if (offset == INT_MAX) { /* localtime */
     }
     else if (offset == INT_MAX-1) { /* UTC */
 	GetTimeval(time, tobj);
-	TIME_SET_UTC(tobj);
+	TZMODE_SET_UTC(tobj);
     }
     else {
 	rb_raise(rb_eArgError, "utc_offset out of range");
@@ -2444,7 +2444,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         GetTimeval(time, tobj);
         t = time_new_timew(klass, tobj->timew);
 	GetTimeval(t, tobj2);
-        TIME_COPY_GMT(tobj2, tobj);
+        TZMODE_COPY(tobj2, tobj);
     }
     else {
         timew = rb_time_magnify(v2w(num_exact(time)));
@@ -3352,7 +3352,7 @@ time_utc_p(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (TIME_UTC_P(tobj)) return Qtrue;
+    if (TZMODE_UTC_P(tobj)) return Qtrue;
     return Qfalse;
 }
 
@@ -3403,7 +3403,7 @@ time_localtime(VALUE time)
     struct vtm vtm;
 
     GetTimeval(time, tobj);
-    if (TIME_LOCALTIME_P(tobj)) {
+    if (TZMODE_LOCALTIME_P(tobj)) {
 	if (tobj->tm_got)
 	    return time;
     }
@@ -3416,7 +3416,7 @@ time_localtime(VALUE time)
     tobj->vtm = vtm;
 
     tobj->tm_got = 1;
-    TIME_SET_LOCALTIME(tobj);
+    TZMODE_SET_LOCALTIME(tobj);
     return time;
 }
 
@@ -3485,7 +3485,7 @@ time_gmtime(VALUE time)
     struct vtm vtm;
 
     GetTimeval(time, tobj);
-    if (TIME_UTC_P(tobj)) {
+    if (TZMODE_UTC_P(tobj)) {
 	if (tobj->tm_got)
 	    return time;
     }
@@ -3498,7 +3498,7 @@ time_gmtime(VALUE time)
     tobj->vtm = vtm;
 
     tobj->tm_got = 1;
-    TIME_SET_UTC(tobj);
+    TZMODE_SET_UTC(tobj);
     return time;
 }
 
@@ -3510,7 +3510,7 @@ time_fixoff(VALUE time)
     VALUE off;
 
     GetTimeval(time, tobj);
-    if (TIME_FIXOFF_P(tobj)) {
+    if (TZMODE_FIXOFF_P(tobj)) {
        if (tobj->tm_got)
            return time;
     }
@@ -3518,7 +3518,7 @@ time_fixoff(VALUE time)
        time_modify(time);
     }
 
-    if (TIME_FIXOFF_P(tobj))
+    if (TZMODE_FIXOFF_P(tobj))
         off = tobj->vtm.utc_offset;
     else
         off = INT2FIX(0);
@@ -3530,7 +3530,7 @@ time_fixoff(VALUE time)
     vtm_add_offset(&tobj->vtm, off);
 
     tobj->tm_got = 1;
-    TIME_SET_FIXOFF(tobj, off);
+    TZMODE_SET_FIXOFF(tobj, off);
     return time;
 }
 
@@ -3603,8 +3603,8 @@ time_getgmtime(VALUE time)
 static VALUE
 time_get_tm(VALUE time, struct time_object *tobj)
 {
-    if (TIME_UTC_P(tobj)) return time_gmtime(time);
-    if (TIME_FIXOFF_P(tobj)) return time_fixoff(time);
+    if (TZMODE_UTC_P(tobj)) return time_gmtime(time);
+    if (TZMODE_FIXOFF_P(tobj)) return time_fixoff(time);
     return time_localtime(time);
 }
 
@@ -3650,7 +3650,7 @@ time_to_s(VALUE time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    if (TIME_UTC_P(tobj))
+    if (TZMODE_UTC_P(tobj))
         return strftimev("%Y-%m-%d %H:%M:%S UTC", time, rb_usascii_encoding());
     else
         return strftimev("%Y-%m-%d %H:%M:%S %z", time, rb_usascii_encoding());
@@ -3665,14 +3665,14 @@ time_add(struct time_object *tobj, VALUE torig, VALUE offset, int sign)
         result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
     else
         result = time_new_timew(rb_cTime, wadd(tobj->timew, rb_time_magnify(v2w(offset))));
-    if (TIME_UTC_P(tobj)) {
+    if (TZMODE_UTC_P(tobj)) {
 	GetTimeval(result, tobj);
-        TIME_SET_UTC(tobj);
+        TZMODE_SET_UTC(tobj);
     }
-    else if (TIME_FIXOFF_P(tobj)) {
+    else if (TZMODE_FIXOFF_P(tobj)) {
         VALUE off = tobj->vtm.utc_offset;
         GetTimeval(result, tobj);
-        TIME_SET_FIXOFF(tobj, off);
+        TZMODE_SET_FIXOFF(tobj, off);
     }
 
     return result;
@@ -3756,7 +3756,7 @@ rb_time_succ(VALUE time)
     GetTimeval(time, tobj);
     time = time_new_timew(rb_cTime, wadd(tobj->timew, WINT2FIXWV(TIME_SCALE)));
     GetTimeval(time, tobj2);
-    TIME_COPY_GMT(tobj2, tobj);
+    TZMODE_COPY(tobj2, tobj);
     return time;
 }
 
@@ -4187,7 +4187,7 @@ time_zone(VALUE time)
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
 
-    if (TIME_UTC_P(tobj)) {
+    if (TZMODE_UTC_P(tobj)) {
 	return rb_usascii_str_new_cstr("UTC");
     }
     if (tobj->vtm.zone == Qnil)
@@ -4218,7 +4218,7 @@ rb_time_utc_offset(VALUE time)
 
     GetTimeval(time, tobj);
 
-    if (TIME_UTC_P(tobj)) {
+    if (TZMODE_UTC_P(tobj)) {
 	return INT2FIX(0);
     }
     else {
@@ -4290,7 +4290,7 @@ strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding *enc)
 
     GetTimeval(time, tobj);
     MAKE_TM(time, tobj);
-    str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew, TIME_UTC_P(tobj));
+    str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew, TZMODE_UTC_P(tobj));
     if (!str) rb_raise(rb_eArgError, "invalid format: %s", fmt);
     return str;
 }
@@ -4507,7 +4507,7 @@ time_strftime(VALUE time, VALUE format)
     }
     else {
 	VALUE str = rb_strftime_alloc(fmt, len, enc, &tobj->vtm, tobj->timew,
-				      TIME_UTC_P(tobj));
+				      TZMODE_UTC_P(tobj));
 	rb_str_tmp_frozen_release(format, tmp);
 	if (!str) rb_raise(rb_eArgError, "invalid format: %"PRIsVALUE, format);
 	return str;
@@ -4553,7 +4553,7 @@ time_mdump(VALUE time)
     nano = addv(LONG2FIX(nsec), subnano);
 
     p = 0x1UL            << 31 | /*  1 */
-	TIME_UTC_P(tobj) << 30 | /*  1 */
+	TZMODE_UTC_P(tobj) << 30 | /*  1 */
 	(year-1900)      << 14 | /* 16 */
 	(vtm.mon-1)      << 10 | /*  4 */
 	vtm.mday         <<  5 | /*  5 */
@@ -4602,7 +4602,7 @@ time_mdump(VALUE time)
             len = 1;
         rb_ivar_set(str, id_submicro, rb_str_new(buf, len));
     }
-    if (!TIME_UTC_P(tobj)) {
+    if (!TZMODE_UTC_P(tobj)) {
 	VALUE off = rb_time_utc_offset(time), div, mod;
 	divmodv(off, INT2FIX(1), &div, &mod);
 	if (rb_equal(mod, INT2FIX(0)))
@@ -4732,14 +4732,14 @@ end_submicro: ;
     tobj->tm_got = 0;
     tobj->timew = timew;
     if (gmt) {
-	TIME_SET_UTC(tobj);
+	TZMODE_SET_UTC(tobj);
     }
     else if (!NIL_P(offset)) {
 	time_set_utc_offset(time, offset);
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-	if (TIME_FIXOFF_P(tobj)) TIME_SET_LOCALTIME(tobj);
+	if (TZMODE_FIXOFF_P(tobj)) TZMODE_SET_LOCALTIME(tobj);
 	zone = rb_fstring(zone);
 	tobj->vtm.zone = zone;
     }
