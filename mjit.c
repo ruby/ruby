@@ -1782,19 +1782,8 @@ stop_worker(void)
 
 /* Stop JIT-compiling methods but compiled code is kept available. */
 VALUE
-mjit_pause(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
+mjit_pause(int wait_p)
 {
-    VALUE options = Qnil;
-    VALUE wait = Qtrue;
-    rb_scan_args(argc, argv, "0:", &options);
-
-    if (!NIL_P(options)) {
-        static ID keyword_ids[1];
-        if (!keyword_ids[0])
-            keyword_ids[0] = rb_intern("wait");
-        rb_get_kwargs(options, keyword_ids, 0, 1, &wait);
-    }
-
     if (!mjit_enabled) {
         rb_raise(rb_eRuntimeError, "MJIT is not enabled");
     }
@@ -1802,8 +1791,8 @@ mjit_pause(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
         return Qfalse;
     }
 
-    /* Flush all queued units with `wait: true` (default) */
-    if (RTEST(wait)) {
+    /* Flush all queued units with no option or `wait: true` */
+    if (wait_p) {
         struct timeval tv;
         tv.tv_sec = 0;
         tv.tv_usec = 1000;

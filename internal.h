@@ -1401,7 +1401,7 @@ VALUE rb_math_sqrt(VALUE);
 
 /* mjit.c */
 extern int mjit_enabled;
-VALUE mjit_pause(int argc, VALUE *argv, VALUE recv);
+VALUE mjit_pause(int wait_p);
 VALUE mjit_resume(void);
 
 /* newline.c */
