@@ -41,7 +41,7 @@ describe 'UDPSocket#recvfrom_nonblock' do
           before do
             @client.write('hello')
 
-            platform_is(:freebsd) { IO.select([@server]) }
+            platform_is(:darwin, :freebsd) { IO.select([@server]) }
           end
 
           it 'returns an Array containing the data and an Array' do

@@ -156,7 +156,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
 
           describe 'the returned Array' do
             before do
-              platform_is(:freebsd) { IO.select([@socket]) }
+              platform_is(:darwin, :freebsd) { IO.select([@socket]) }
               @array = @socket.recvmsg_nonblock
             end
 
