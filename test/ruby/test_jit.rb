@@ -873,27 +873,4 @@ class TestJIT < Test::Unit::TestCase
     end
     insns
   end
-
-  # Run Ruby script with --jit-wait (Synchronous JIT compilation).
-  # Returns [stdout, stderr]
-  def eval_with_jit(env = nil, script, **opts)
-    stdout, stderr = nil, nil
-    # retry 3 times while cc1 error happens.
-    3.times do |i|
-      stdout, stderr, status = super
-      assert_equal(true, status.success?, "Failed to run script with JIT:\n#{code_block(script)}\nstdout:\n#{code_block(stdout)}\nstderr:\n#{code_block(stderr)}")
-      break unless retried_stderr?(stderr)
-    end
-    [stdout, stderr]
-  end
-
-  # We're retrying cc1 not found error on gcc, which should be solved in the future but ignored for now.
-  def retried_stderr?(stderr)
-    RbConfig::CONFIG['CC'].start_with?('gcc') &&
-      stderr.include?("error trying to exec 'cc1': execvp: No such file or directory")
-  end
-
-  def code_block(code)
-    "```\n#{code}\n```\n\n"
-  end
 end
