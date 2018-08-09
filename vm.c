@@ -2770,6 +2770,23 @@ mjit_enabled_p(void)
     return mjit_enabled ? Qtrue : Qfalse;
 }
 
+static VALUE
+mjit_pause_m(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
+{
+    VALUE options = Qnil;
+    VALUE wait = Qtrue;
+    rb_scan_args(argc, argv, "0:", &options);
+
+    if (!NIL_P(options)) {
+        static ID keyword_ids[1];
+        if (!keyword_ids[0])
+            keyword_ids[0] = rb_intern("wait");
+        rb_get_kwargs(options, keyword_ids, 0, 1, &wait);
+    }
+
+    return mjit_pause(RTEST(wait));
+}
+
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64
@@ -2858,7 +2875,7 @@ Init_VM(void)
     /* RubyVM::MJIT */
     mjit = rb_define_module_under(rb_cRubyVM, "MJIT");
     rb_define_singleton_method(mjit, "enabled?", mjit_enabled_p, 0);
-    rb_define_singleton_method(mjit, "pause", mjit_pause, -1);
+    rb_define_singleton_method(mjit, "pause", mjit_pause_m, -1);
     rb_define_singleton_method(mjit, "resume", mjit_resume, 0);
 
     /*
