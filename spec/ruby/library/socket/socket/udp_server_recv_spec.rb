@@ -20,6 +20,12 @@ describe 'Socket.udp_server_recv' do
 
     @client.write('hello')
 
+    # FreeBSD sockets are not instanteous over loopback and
+    # will EAGAIN on recv.
+    platform_is :freebsd do
+      IO.select([@server])
+    end
+
     Socket.udp_server_recv([@server]) do |message, source|
       msg = message
       src = source

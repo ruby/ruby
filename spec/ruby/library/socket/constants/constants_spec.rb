@@ -89,11 +89,22 @@ describe "Socket::Constants" do
 
   platform_is_not :windows do
     it 'defines SCM options' do
-      Socket::Constants.should have_constant('SCM_CREDENTIALS')
+      platform_is :freebsd do
+        Socket::Constants.should have_constant('SCM_CREDS')
+      end
+      platform_is_not :freebsd do
+        Socket::Constants.should have_constant('SCM_CREDENTIALS')
+      end
     end
 
     it 'defines error options' do
       consts = ["EAI_ADDRFAMILY", "EAI_NODATA"]
+
+      # FreeBSD (11.1, at least) obsoletes EAI_ADDRFAMILY and EAI_NODATA
+      platform_is :freebsd do
+        consts = %w(EAI_MEMORY)
+      end
+
       consts.each do |c|
         Socket::Constants.should have_constant(c)
       end
