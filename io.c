@@ -8502,6 +8502,7 @@ argf_next_argv(VALUE argf)
 	    VALUE filename = rb_ary_shift(ARGF.argv);
 	    FilePathValue(filename);
 	    ARGF.filename = filename;
+	    filename = rb_str_encode_ospath(filename);
 	    fn = StringValueCStr(filename);
 	    if (RSTRING_LEN(filename) == 1 && fn[0] == '-') {
 		ARGF.current_file = rb_stdin;
@@ -8603,6 +8604,7 @@ argf_next_argv(VALUE argf)
 		if (!NIL_P(write_io)) {
 		    rb_io_set_write_io(ARGF.current_file, write_io);
 		}
+		RB_GC_GUARD(filename);
 	    }
 	    if (ARGF.binmode) rb_io_ascii8bit_binmode(ARGF.current_file);
 	    GetOpenFile(ARGF.current_file, fptr);
