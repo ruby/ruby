@@ -2770,9 +2770,6 @@ mjit_enabled_p(void)
     return mjit_enabled ? Qtrue : Qfalse;
 }
 
-extern VALUE mjit_pause(int argc, VALUE *argv, VALUE recv);
-extern VALUE mjit_resume(void);
-
 extern VALUE *rb_gc_stack_start;
 extern size_t rb_gc_stack_maxsize;
 #ifdef __ia64

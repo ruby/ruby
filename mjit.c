@@ -1782,7 +1782,7 @@ stop_worker(void)
 
 /* Stop JIT-compiling methods but compiled code is kept available. */
 VALUE
-mjit_pause(int argc, VALUE *argv, VALUE recv)
+mjit_pause(int argc, VALUE *argv, RB_UNUSED_VAR(VALUE self))
 {
     VALUE options = Qnil;
     VALUE wait = Qtrue;

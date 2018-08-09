@@ -54,7 +54,6 @@ struct mjit_options {
 
 typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 
-extern int mjit_enabled;
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN int mjit_call_p;

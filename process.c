@@ -148,10 +148,6 @@ static void check_uid_switch(void);
 static void check_gid_switch(void);
 static int exec_async_signal_safe(const struct rb_execarg *, char *, size_t);
 
-/* mjit.c */
-extern int mjit_enabled;
-VALUE mjit_pause(void);
-
 #if 1
 #define p_uid_from_name p_uid_from_name
 #define p_gid_from_name p_gid_from_name
@@ -2887,7 +2883,7 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
-    if (mjit_enabled) mjit_pause(); /* do not leak children */
+    if (mjit_enabled) mjit_pause(0, NULL, Qnil); /* do not leak children */
     before_exec(); /* stop timer thread before redirects */
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
