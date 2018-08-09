@@ -2844,6 +2844,8 @@ InitVM_Enumerator(void)
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
+    rb_undef_alloc_func(rb_cArithSeq);
+    rb_undef_method(CLASS_OF(rb_cArithSeq), "new");
     rb_define_method(rb_cArithSeq, "begin", arith_seq_begin, 0);
     rb_define_method(rb_cArithSeq, "end", arith_seq_end, 0);
     rb_define_method(rb_cArithSeq, "exclude_end?", arith_seq_exclude_end, 0);
