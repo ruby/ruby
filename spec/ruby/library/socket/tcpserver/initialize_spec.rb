@@ -17,8 +17,9 @@ describe 'TCPServer#initialize' do
     end
 
     platform_is_not :windows do
-      it 'sets the hostname to 0.0.0.0' do
-        @server.local_address.ip_address.should == '0.0.0.0'
+      it 'sets the hostname to 0.0.0.0 or ::' do
+        a = @server.local_address
+        a.ip_address.should == (a.ipv6? ? '::' : '0.0.0.0')
       end
     end
 
@@ -42,8 +43,9 @@ describe 'TCPServer#initialize' do
     end
 
     platform_is_not :windows do
-      it 'sets the hostname to 0.0.0.0' do
-        @server.local_address.ip_address.should == '0.0.0.0'
+      it 'sets the hostname to 0.0.0.0 or ::' do
+        a = @server.local_address
+        a.ip_address.should == (a.ipv6? ? '::' : '0.0.0.0')
       end
     end
   end

@@ -86,6 +86,8 @@ describe 'Socket#accept_nonblock' do
             @client = Socket.new(family, :STREAM, 0)
 
             @client.connect(addr)
+
+            platform_is(:freebsd) { IO.select([@server]) }
           end
 
           after do

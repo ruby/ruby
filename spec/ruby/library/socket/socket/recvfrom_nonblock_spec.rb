@@ -36,6 +36,8 @@ describe 'Socket#recvfrom_nonblock' do
       describe 'with data available' do
         before do
           @client.write('hello')
+
+          platform_is(:freebsd) { IO.select([@server]) }
         end
 
         platform_is_not :windows do
@@ -51,6 +53,8 @@ describe 'Socket#recvfrom_nonblock' do
           it 'is the same as the sent data' do
             5.times do
               @client.write('hello')
+
+              platform_is(:freebsd) { IO.select([@server]) }
 
               msg, _ = @server.recvfrom_nonblock(5)
 
