@@ -136,22 +136,22 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
       s.noecho {
         assert_not_send([s, :echo?])
         m.print "a\n"
         s.print "b\n"
-        assert_equal("b\r\n", m.readpartial(10))
-        assert_equal("a\n", s.readpartial(10))
+        assert_equal("b\r\n", m.gets)
+        assert_equal("a\n", s.gets)
       }
       assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
     }
   end
 
@@ -174,22 +174,22 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
       s.echo = false
       assert_not_send([s, :echo?])
       m.print "a\n"
       s.print "b\n"
-      assert_equal("b\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("b\r\n", m.gets)
+      assert_equal("a\n", s.gets)
       s.echo = true
       assert_send([s, :echo?])
       m.print "a\n"
       sleep 0.1
       s.print "b\n"
       sleep 0.1
-      assert_equal("a\r\nb\r\n", m.readpartial(10))
-      assert_equal("a\n", s.readpartial(10))
+      assert_equal("a\r\nb\r\n", m.gets + m.gets)
+      assert_equal("a\n", s.gets)
     }
   end
 
@@ -211,7 +211,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.iflush
       m.print "b\n"
       m.flush
-      assert_equal("b\n", s.readpartial(10))
+      assert_equal("b\n", s.gets)
     }
   end
 
@@ -232,7 +232,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       s.ioflush
       m.print "b\n"
       m.flush
-      assert_equal("b\n", s.readpartial(10))
+      assert_equal("b\n", s.gets)
     }
   end
 
