@@ -258,12 +258,12 @@ class TestArgf < Test::Unit::TestCase
   def test_inplace_nonascii
     ext = Encoding.default_external or
       skip "no default external encoding"
-    if ext == Encoding::US_ASCII
-      skip "external encoding is us-ascii"
-    end
     t = nil
-    ["\u{3042}", "\u{e9}"].any? {|n| t = make_tempfile(n.encode(ext))} or
-      skip "no name to test"
+    ["\u{3042}", "\u{e9}"].any? do |n|
+      t = make_tempfile(n.encode(ext))
+    rescue Encoding::UndefinedConversionError
+    end
+    t or skip "no name to test"
     assert_in_out_err(["-i.bak", "-", t.path],
                       "#{<<~"{#"}\n#{<<~'};'}")
     {#
