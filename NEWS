@@ -81,6 +81,10 @@ with all sufficient information, see the ChangeLog file or Redmine
     * Hash#filter is a new alias for Hash#select [Feature #13784]
     * Hash#filter! is a new alias for Hash#select! [Feature #13784]
 
+* IO
+
+  * new mode character 'x' to open files for exclusive access [Feature #11258]
+
 * Kernel
 
   * Kernel#then is a new alias for Kernel#yield_self [Feature #14594]
