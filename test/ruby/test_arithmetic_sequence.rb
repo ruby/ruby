@@ -2,6 +2,14 @@
 require 'test/unit'
 
 class TestArithmeticSequence < Test::Unit::TestCase
+  def test_new
+    assert_raise(NoMethodError) { Enumerator::ArithmeticSequence.new }
+  end
+
+  def test_allocate
+    assert_raise(TypeError) { Enumerator::ArithmeticSequence.allocate }
+  end
+
   def test_begin
     assert_equal(1, 1.step.begin)
     assert_equal(1, 1.step(10).begin)
