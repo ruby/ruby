@@ -22,7 +22,7 @@ describe 'Socket.udp_server_recv' do
 
     # FreeBSD sockets are not instanteous over loopback and
     # will EAGAIN on recv.
-    platform_is :freebsd do
+    platform_is :darwin, :freebsd do
       IO.select([@server])
     end
 
