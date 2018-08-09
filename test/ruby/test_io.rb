@@ -3555,6 +3555,14 @@ __END__
     end
   end if File::BINARY != 0
 
+  def test_exclusive_mode
+    make_tempfile do |t|
+      assert_raise(Errno::EEXIST){ open(t.path, 'wx'){} }
+      assert_raise(ArgumentError){ open(t.path, 'rx'){} }
+      assert_raise(ArgumentError){ open(t.path, 'ax'){} }
+    end
+  end
+
   def test_race_gets_and_close
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     bug13076 = '[ruby-core:78845] [Bug #13076]'
