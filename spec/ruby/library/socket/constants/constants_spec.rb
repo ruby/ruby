@@ -89,10 +89,10 @@ describe "Socket::Constants" do
 
   platform_is_not :windows do
     it 'defines SCM options' do
-      platform_is :freebsd do
+      platform_is :darwin, :freebsd do
         Socket::Constants.should have_constant('SCM_CREDS')
       end
-      platform_is_not :freebsd do
+      platform_is_not :darwin, :freebsd do
         Socket::Constants.should have_constant('SCM_CREDENTIALS')
       end
     end

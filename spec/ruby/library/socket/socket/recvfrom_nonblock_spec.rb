@@ -37,7 +37,7 @@ describe 'Socket#recvfrom_nonblock' do
         before do
           @client.write('hello')
 
-          platform_is(:freebsd) { IO.select([@server]) }
+          platform_is(:darwin, :freebsd) { IO.select([@server]) }
         end
 
         platform_is_not :windows do
@@ -54,7 +54,7 @@ describe 'Socket#recvfrom_nonblock' do
             5.times do
               @client.write('hello')
 
-              platform_is(:freebsd) { IO.select([@server]) }
+              platform_is(:darwin, :freebsd) { IO.select([@server]) }
 
               msg, _ = @server.recvfrom_nonblock(5)
 
