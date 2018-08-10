@@ -1,3 +1,5 @@
+set startup-with-shell off
+
 define hook-run
   set $color_type = 0
   set $color_highlite = 0
