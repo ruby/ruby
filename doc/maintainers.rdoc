@@ -60,8 +60,6 @@ Zachary Scott (zzak)
   Kazuki Tsujimoto (ktsj)
 [lib/getoptlong.rb]
   _unmaintained_
-[lib/ipaddr.rb]
-  Akinori MUSHA (knu)
 [lib/mkmf.rb]
   _unmaintained_
 [lib/monitor.rb]
@@ -193,6 +191,8 @@ Zachary Scott (zzak)
   https://github.com/ruby/fileutils
 [lib/forwardable.rb]
   Keiju ISHITSUKA (keiju)
+[lib/ipaddr.rb]
+  Akinori MUSHA (knu)
 [lib/irb.rb, lib/irb/*]
   Keiju ISHITSUKA (keiju)
 [lib/logger.rb]
