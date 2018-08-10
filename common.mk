@@ -683,7 +683,7 @@ clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
 	-$(Q) $(RMDIRS) $(RUBYSPEC_CAPIEXT) 2> $(NULL) || exit 0
 
-check: main test test-testframework test-almost
+check: main test test-testframework test-almost test-spec
 	$(ECHO) check succeeded
 check-ruby: test test-ruby
 
@@ -726,7 +726,8 @@ yes-test-testframework: prog PHONY
 no-test-testframework: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
-test: btest-ruby test-knownbug test-basic
+test-short: btest-ruby test-knownbug test-basic
+test: test-short
 
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
@@ -805,7 +806,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: clean clean-ext clean-local clean-enc clean-golf clean-rdoc clean-html clean-extout
 .PHONY: distclean distclean-ext distclean-local distclean-enc distclean-golf distclean-extout
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
-.PHONY: check test test-all btest btest-ruby test-basic test-knownbug
+.PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
@@ -1358,7 +1359,7 @@ info-arch: PHONY
 change: PHONY
 	$(BASERUBY) -C "$(srcdir)" ./tool/change_maker.rb $(CHANGES) > change.log
 
-exam: check test-spec
+exam: check
 
 love: sudo-precheck up all test exam install
 	@echo love is all you need
