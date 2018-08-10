@@ -6136,6 +6136,19 @@ maxgroups(void)
  *
  *     Process.groups   #=> [27, 6, 10, 11]
  *
+ *  Note that this method is just a wrapper of getgroups(2).
+ *  This means that the following characteristics of
+ *  the results are completely depends on your system:
+ *
+ *  - the result is sorted
+ *  - the result includes effective GIDs
+ *  - the result does not include duplicated GIDs
+ *
+ *  You can certainly get a sorted unique GID list of
+ *  the current process by this expression:
+ *
+ *     Process.groups.unique.sort
+ *
  */
 
 static VALUE

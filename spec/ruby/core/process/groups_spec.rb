@@ -6,8 +6,8 @@ describe "Process.groups" do
       groups = `id -G`.scan(/\d+/).map { |i| i.to_i }
       gid = Process.gid
 
-      expected = (groups.sort - [gid]).sort
-      actual = (Process.groups - [gid]).sort
+      expected = (groups.sort - [gid]).uniq.sort
+      actual = (Process.groups - [gid]).uniq.sort
       actual.should == expected
     end
   end
