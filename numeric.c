@@ -2709,8 +2709,6 @@ num_step(int argc, VALUE *argv, VALUE from)
     VALUE to, step;
     int desc, inf;
 
-    /* RETURN_SIZED_ENUMERATOR(from, argc, argv, num_step_size); */
-
     if (!rb_block_given_p()) {
         VALUE by = Qundef;
 
