@@ -6624,11 +6624,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    }
 	}
 
-	/* dummy receiver */
-	ADD_INSN1(ret, line, putobject, type == NODE_ZSUPER ? Qfalse : Qtrue);
+	ADD_INSN(ret, line, putself);
 	ADD_SEQ(ret, args);
 	ADD_INSN3(ret, line, invokesuper,
-		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | VM_CALL_FCALL, keywords, parent_block != NULL),
+		  new_callinfo(iseq, 0, argc, flag | VM_CALL_SUPER | (type == NODE_ZSUPER ? VM_CALL_ZSUPER : 0) | VM_CALL_FCALL, keywords, parent_block != NULL),
 		  Qnil, /* CALL_CACHE */
 		  parent_block);
 

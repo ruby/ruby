@@ -1775,6 +1775,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		CALL_FLAG(BLOCKISEQ);
 		CALL_FLAG(TAILCALL);
 		CALL_FLAG(SUPER);
+		CALL_FLAG(ZSUPER);
 		CALL_FLAG(KWARG);
 		CALL_FLAG(KW_SPLAT);
 		CALL_FLAG(OPT_SEND); /* maybe not reachable */

@@ -2473,7 +2473,6 @@ vm_search_super_method(const rb_execution_context_t *ec, rb_control_frame_t *reg
 		       struct rb_calling_info *calling, struct rb_call_info *ci, struct rb_call_cache *cc)
 {
     VALUE current_defined_class, klass;
-    VALUE sigval = TOPN(calling->argc);
     const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
 
     if (!me) {
@@ -2499,7 +2498,7 @@ vm_search_super_method(const rb_execution_context_t *ec, rb_control_frame_t *reg
 		 rb_obj_class(calling->recv), m);
     }
 
-    if (me->def->type == VM_METHOD_TYPE_BMETHOD && !sigval) {
+    if (me->def->type == VM_METHOD_TYPE_BMETHOD && (ci->flag & VM_CALL_ZSUPER)) {
 	rb_raise(rb_eRuntimeError,
 		 "implicit argument passing of super from method defined"
 		 " by define_method() is not supported."
