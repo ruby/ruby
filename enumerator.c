@@ -2495,6 +2495,9 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
     }
 
     rb_scan_args(argc, argv, "1", &nv);
+    if (!RB_INTEGER_TYPE_P(nv)) {
+        nv = rb_to_int(nv);
+    }
     if (RTEST(rb_int_gt(nv, len))) {
         nv = len;
     }
