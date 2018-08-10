@@ -54,6 +54,8 @@
 
 #include "mjit.h"
 
+void Init_ruby_description(void);
+
 #ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
@@ -1633,6 +1635,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath_safe(). */
         mjit_init(&opt->mjit);
 
+    Init_ruby_description();
     Init_enc();
     lenc = rb_locale_encoding();
     rb_enc_associate(rb_progname, lenc);

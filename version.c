@@ -33,7 +33,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 const int ruby_patchlevel = RUBY_PATCHLEVEL;
 const char ruby_description[] = RUBY_DESCRIPTION_WITH("");
-const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
+static const char ruby_description_with_jit[] = RUBY_DESCRIPTION_WITH(" +JIT");
 const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
@@ -67,11 +67,6 @@ Init_version(void)
      */
     rb_define_global_const("RUBY_REVISION", MKINT(revision));
     /*
-     * The full ruby version string, like <tt>ruby -v</tt> prints'
-     * This might be overwritten by mjit_init().
-     */
-    rb_define_global_const("RUBY_DESCRIPTION", MKSTR(description));
-    /*
      * The copyright string for ruby
      */
     rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
@@ -84,6 +79,23 @@ Init_version(void)
      * The version of the engine or interpreter this ruby uses.
      */
     rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
+}
+
+void
+Init_ruby_description(void)
+{
+    VALUE description;
+
+    if (mjit_opts.on) {
+        description = MKSTR(description_with_jit);
+    }
+    else {
+        description = MKSTR(description);
+    }
+    /*
+     * The full ruby version string, like <tt>ruby -v</tt> prints
+     */
+    rb_define_global_const("RUBY_DESCRIPTION", description);
 }
 
 /*! Prints the version information of the CRuby interpreter to stdout. */
