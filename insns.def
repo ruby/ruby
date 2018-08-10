@@ -716,7 +716,8 @@ send
     struct rb_calling_info calling;
 
     vm_caller_setup_arg_block(ec, reg_cfp, &calling, ci, blockiseq, FALSE);
-    vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
+    calling.recv = TOPN(calling.argc = ci->orig_argc);
+    vm_search_method(ci, cc, calling.recv);
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -783,10 +784,9 @@ invokesuper
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
     struct rb_calling_info calling;
-    calling.argc = ci->orig_argc;
 
     vm_caller_setup_arg_block(ec, reg_cfp, &calling, ci, blockiseq, TRUE);
-    calling.recv = GET_SELF();
+    calling.recv = TOPN(calling.argc = ci->orig_argc);
     vm_search_super_method(ec, GET_CFP(), &calling, ci, cc);
     CALL_METHOD(&calling, ci, cc);
 }
