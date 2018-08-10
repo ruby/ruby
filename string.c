@@ -2924,6 +2924,14 @@ VALUE
 rb_str_append(VALUE str, VALUE str2)
 {
     StringValue(str2);
+    return rb_str_buf_append(str, str2);
+}
+
+
+VALUE
+rb_str_append2(VALUE str, VALUE str2)
+{
+    StringValue(str2);
     
     if (RB_ENCODING_IS_ASCII8BIT(str)) {
         return rb_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2));
@@ -10996,7 +11004,7 @@ Init_String(void)
     rb_define_method(rb_cString, "reverse!", rb_str_reverse_bang, 0);
     rb_define_method(rb_cString, "concat", rb_str_concat_multi, -1);
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
-    rb_define_method(rb_cString, "append", rb_str_append, 1);
+    rb_define_method(rb_cString, "append", rb_str_append2, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
     rb_define_method(rb_cString, "intern", rb_str_intern, 0); /* in symbol.c */
