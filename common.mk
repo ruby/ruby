@@ -2198,7 +2198,6 @@ mjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 mjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
-mjit.$(OBJEXT): $(hdrdir)/ruby/version.h
 mjit.$(OBJEXT): $(top_srcdir)/include/ruby.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
