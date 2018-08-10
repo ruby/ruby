@@ -17,10 +17,28 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_stressful_roundtrip
-    stress, GC.stress = GC.stress, true
+    assert_separately(%w[-r-test-/iseq_load], <<-'end;;')
+  ISeq = RubyVM::InstructionSequence
+  def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
+    a = ISeq.compile(src, __FILE__, __FILE__, line).to_a
+    b = ISeq.iseq_load(a).to_a
+    warn diff(a, b) if a != b
+    assert_equal a, b
+    assert_equal a, ISeq.iseq_load(b).to_a
+  end
+  def test_bug8543
+    assert_iseq_roundtrip "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      puts "tralivali"
+      def funct(a, b)
+        a**b
+      end
+      3.times { |i| puts "Hello, world#{funct(2,i)}!" }
+    end;
+  end
+    GC.stress = true
     test_bug8543
-  ensure
-    GC.stress = stress
+    end;;
   end
 
   def test_case_when
