@@ -219,9 +219,10 @@ $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time: probes.h vm.$(OBJE
 
 $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
 
-$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time
-$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(srcdir)/tool/transform_mjit_header.rb $(PREP)
-$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: $(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
+$(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h: \
+		$(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time \
+		$(srcdir)/tool/transform_mjit_header.rb $(PREP) \
+		$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).h
 	$(ECHO) building $@
 	$(MINIRUBY) $(srcdir)/tool/transform_mjit_header.rb "$(CC) $(ARCH_FLAG)" $(MJIT_HEADER:.h=)$(MJIT_HEADER_ARCH).h $@
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
