@@ -195,6 +195,30 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal([2.0, 0.0, -2.0], seq.last(3))
   end
 
+  def test_last_with_float
+    res = (1..3).step(2).last(2.0)
+    assert_equal([1, 3], res)
+    assert_instance_of Integer, res[0]
+    assert_instance_of Integer, res[1]
+
+    res = (1..3).step(2).last(5.0)
+    assert_equal([1, 3], res)
+    assert_instance_of Integer, res[0]
+    assert_instance_of Integer, res[1]
+  end
+
+  def test_last_with_rational
+    res = (1..3).step(2).last(2r)
+    assert_equal([1, 3], res)
+    assert_instance_of Integer, res[0]
+    assert_instance_of Integer, res[1]
+
+    res = (1..3).step(2).last(10/2r)
+    assert_equal([1, 3], res)
+    assert_instance_of Integer, res[0]
+    assert_instance_of Integer, res[1]
+  end
+
   def test_to_a
     assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 1.step(10).to_a)
     assert_equal([1, 3, 5, 7, 9], 1.step(10, 2).to_a)
