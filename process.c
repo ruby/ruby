@@ -6147,7 +6147,7 @@ maxgroups(void)
  *  You can certainly get a sorted unique GID list of
  *  the current process by this expression:
  *
- *     Process.groups.unique.sort
+ *     Process.groups.uniq.sort
  *
  */
 
