@@ -144,6 +144,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
             @client.write('hello')
 
             @socket, _ = @server.accept
+            platform_is(:darwin, :freebsd) { IO.select([@socket]) }
           end
 
           after do
@@ -156,7 +157,6 @@ describe 'BasicSocket#recvmsg_nonblock' do
 
           describe 'the returned Array' do
             before do
-              platform_is(:darwin, :freebsd) { IO.select([@socket]) }
               @array = @socket.recvmsg_nonblock
             end
 
