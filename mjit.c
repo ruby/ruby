@@ -77,7 +77,6 @@
 #include "ruby_assert.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
-#include "ruby/version.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
