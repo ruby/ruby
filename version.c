@@ -95,7 +95,7 @@ Init_ruby_description(void)
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
-    rb_define_global_const("RUBY_DESCRIPTION", description);
+    rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
 }
 
 /*! Prints the version information of the CRuby interpreter to stdout. */
