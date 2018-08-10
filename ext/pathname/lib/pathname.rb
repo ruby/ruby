@@ -193,8 +193,7 @@ class Pathname
     begin
       stat1 = self.lstat
       stat2 = self.parent.lstat
-      stat1.dev == stat2.dev && stat1.ino == stat2.ino ||
-        stat1.dev != stat2.dev
+      stat1.dev != stat2.dev || stat1.ino == stat2.ino
     rescue Errno::ENOENT
       false
     end
