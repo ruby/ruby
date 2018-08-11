@@ -3549,10 +3549,33 @@ getenvsize(const WCHAR* p)
     while (*p++) p += lstrlenW(p) + 1;
     return p - porg + 1;
 }
+
 static size_t
 getenvblocksize(void)
 {
+#ifdef _MAX_ENV
+    return _MAX_ENV;
+#else
     return 32767;
+#endif
+}
+
+static int
+check_envsize(size_t n)
+{
+    if (_WIN32_WINNT < 0x0600 && rb_w32_osver() < 6) {
+	/* https://msdn.microsoft.com/en-us/library/windows/desktop/ms682653(v=vs.85).aspx */
+	/* Windows Server 2003 and Windows XP: The maximum size of the
+	 * environment block for the process is 32,767 characters. */
+	WCHAR* p = GetEnvironmentStringsW();
+	if (!p) return -1; /* never happen */
+	n += getenvsize(p);
+	FreeEnvironmentStringsW(p);
+	if (n >= getenvblocksize()) {
+	    return -1;
+	}
+    }
+    return 0;
 }
 #endif
 
@@ -3592,16 +3615,11 @@ ruby_setenv(const char *name, const char *value)
     check_envname(name);
     len = MultiByteToWideChar(CP_UTF8, 0, name, -1, NULL, 0);
     if (value) {
-	WCHAR* p = GetEnvironmentStringsW();
-	size_t n;
 	int len2;
-	if (!p) goto fail; /* never happen */
-	n = lstrlen(name) + 2 + strlen(value) + getenvsize(p);
-	FreeEnvironmentStringsW(p);
-	if (n >= getenvblocksize()) {
+	len2 = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
+	if (check_envsize((size_t)len + len2)) { /* len and len2 include '\0' */
 	    goto fail;  /* 2 for '=' & '\0' */
 	}
-	len2 = MultiByteToWideChar(CP_UTF8, 0, value, -1, NULL, 0);
 	wname = ALLOCV_N(WCHAR, buf, len + len2);
 	wvalue = wname + len;
 	MultiByteToWideChar(CP_UTF8, 0, name, -1, wname, len);
