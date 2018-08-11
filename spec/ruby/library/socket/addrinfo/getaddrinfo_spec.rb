@@ -10,10 +10,12 @@ describe 'Addrinfo.getaddrinfo' do
   end
 
   SocketSpecs.each_ip_protocol do |family, ip_address|
-    it 'sets the IP address of the Addrinfo instances' do
-      array = Addrinfo.getaddrinfo(ip_address, 80)
+    platform_is_not :solaris do
+      it 'sets the IP address of the Addrinfo instances' do
+        array = Addrinfo.getaddrinfo(ip_address, 80)
 
-      array[0].ip_address.should == ip_address
+        array[0].ip_address.should == ip_address
+      end
     end
 
     it 'sets the port of the Addrinfo instances' do
@@ -49,7 +51,7 @@ describe 'Addrinfo.getaddrinfo' do
     end
   end
 
-  platform_is_not :windows do
+  platform_is_not :solaris, :windows do
     it 'sets the default socket type of the Addrinfo instances' do
       array    = Addrinfo.getaddrinfo('localhost', 80)
       possible = [Socket::SOCK_STREAM, Socket::SOCK_DGRAM]
@@ -64,7 +66,7 @@ describe 'Addrinfo.getaddrinfo' do
     array[0].socktype.should == Socket::SOCK_DGRAM
   end
 
-  platform_is_not :windows do
+  platform_is_not :solaris, :windows do
     it 'sets the default socket protocol of the Addrinfo instances' do
       array    = Addrinfo.getaddrinfo('localhost', 80)
       possible = [Socket::IPPROTO_TCP, Socket::IPPROTO_UDP]
@@ -79,10 +81,12 @@ describe 'Addrinfo.getaddrinfo' do
     array[0].protocol.should == Socket::IPPROTO_UDP
   end
 
-  it 'sets the canonical name when AI_CANONNAME is given as a flag' do
-    array = Addrinfo
-      .getaddrinfo('localhost', 80, nil, nil, nil, Socket::AI_CANONNAME)
+  platform_is_not :solaris do
+    it 'sets the canonical name when AI_CANONNAME is given as a flag' do
+      array = Addrinfo
+        .getaddrinfo('localhost', 80, nil, nil, nil, Socket::AI_CANONNAME)
 
-    array[0].canonname.should be_an_instance_of(String)
+      array[0].canonname.should be_an_instance_of(String)
+    end
   end
 end
