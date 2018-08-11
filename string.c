@@ -2933,10 +2933,13 @@ rb_str_append2(VALUE str, VALUE str2)
 {
     StringValue(str2);
     
-    if (RB_ENCODING_IS_ASCII8BIT(str)) {
+    if (RB_ENCODING_IS_ASCII8BIT(str) || ENCODING_GET(str) == ENCODING_GET(str2)) {
         return rb_str_buf_cat(str, RSTRING_PTR(str2), RSTRING_LEN(str2));
     } else {
-        return rb_str_buf_append(str, str2);
+        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+          rb_enc_name(STR_ENC_GET(str)),
+          rb_enc_name(STR_ENC_GET(str2))
+        );
     }
 }
 
