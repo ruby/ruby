@@ -17,9 +17,6 @@
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
-/* Make and return copy of STR in the heap. */
-#define get_string ruby_strdup
-
 /* Return an unique file name in /tmp with PREFIX and SUFFIX and
    number ID.  Use getpid if ID == 0.  The return file name exists
    until the next function call.  */
@@ -517,12 +514,12 @@ system_tmpdir(void)
 {
     char *tmpdir;
 # define RETURN_ENV(name) \
-    if (check_tmpdir(tmpdir = getenv(name))) return get_string(tmpdir)
+    if (check_tmpdir(tmpdir = getenv(name))) return ruby_strdup(tmpdir)
     RETURN_ENV("TMPDIR");
     RETURN_ENV("TMP");
     tmpdir = system_default_tmpdir();
     if (check_tmpdir(tmpdir)) return tmpdir;
-    return get_string("/tmp");
+    return ruby_strdup("/tmp");
 # undef RETURN_ENV
 }
 
