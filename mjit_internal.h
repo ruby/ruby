@@ -19,20 +19,12 @@
 #  define MAXPATHLEN 1024
 #endif
 
-#define RB_CONDATTR_CLOCK_MONOTONIC 1
-
 #ifdef _WIN32
 #define dlopen(name,flag) ((void*)LoadLibrary(name))
 #define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
 #define dlclose(handle) (FreeLibrary(handle))
 #define RTLD_NOW  -1
-
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
-#define WIFEXITED(S) ((S) != STILL_ACTIVE)
-#define WEXITSTATUS(S) (S)
-#define WIFSIGNALED(S) (0)
-typedef intptr_t pid_t;
 #endif
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
