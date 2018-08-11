@@ -157,14 +157,6 @@ extern void rb_native_cond_signal(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
 
-extern char *mjit_tmp_dir;
-
-static int
-sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
-{
-    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", mjit_tmp_dir, prefix, getpid(), id, suffix);
-}
-
 /* Print the arguments according to FORMAT to stderr only if MJIT
    verbose option value is more or equal to LEVEL.  */
 PRINTF_ARGS(static void, 2, 3)
@@ -178,27 +170,6 @@ verbose(int level, const char *format, ...)
     va_end(args);
     if (mjit_opts.verbose >= level)
         fprintf(stderr, "\n");
-}
-
-extern rb_nativethread_lock_t mjit_engine_mutex;
-
-/* Start a critical section.  Use message MSG to print debug info at
-   LEVEL.  */
-static inline void
-CRITICAL_SECTION_START(int level, const char *msg)
-{
-    verbose(level, "Locking %s", msg);
-    rb_native_mutex_lock(&mjit_engine_mutex);
-    verbose(level, "Locked %s", msg);
-}
-
-/* Finish the current critical section.  Use message MSG to print
-   debug info at LEVEL. */
-static inline void
-CRITICAL_SECTION_FINISH(int level, const char *msg)
-{
-    verbose(level, "Unlocked %s", msg);
-    rb_native_mutex_unlock(&mjit_engine_mutex);
 }
 
 /* Allocate struct rb_mjit_unit_node and return it. This MUST NOT be
@@ -351,26 +322,54 @@ rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
 /* Atomically set function pointer if possible. */
 #define MJIT_ATOMIC_SET(var, val) (void)ATOMIC_PTR_EXCHANGE(var, val)
 
-extern struct mjit_options mjit_opts;
-extern int mjit_enabled;
+/* A copy of MJIT portion of MRI options since MJIT initialization.  We
+   need them as MJIT threads still can work when the most MRI data were
+   freed. */
+struct mjit_options mjit_opts;
 
-extern struct rb_mjit_unit_list mjit_unit_queue;
-extern struct rb_mjit_unit_list mjit_active_units;
-extern struct rb_mjit_unit_list mjit_compact_units;
-extern int mjit_current_unit_num;
-extern rb_nativethread_cond_t mjit_pch_wakeup;
-extern rb_nativethread_cond_t mjit_client_wakeup;
-extern rb_nativethread_cond_t mjit_worker_wakeup;
-extern rb_nativethread_cond_t mjit_gc_wakeup;
+/* TRUE if MJIT is enabled.  */
+int mjit_enabled = FALSE;
+/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
+   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
+int mjit_call_p = FALSE;
 
-extern int mjit_in_gc;
-extern int mjit_in_jit;
+/* Priority queue of iseqs waiting for JIT compilation.
+   This variable is a pointer to head unit of the queue. */
+static struct rb_mjit_unit_list unit_queue;
+/* List of units which are successfully compiled. */
+static struct rb_mjit_unit_list active_units;
+/* List of compacted so files which will be deleted in `mjit_finish()`. */
+static struct rb_mjit_unit_list compact_units;
+/* The number of so far processed ISEQs, used to generate unique id.  */
+static int current_unit_num;
+/* A mutex for conitionals and critical sections.  */
+static rb_nativethread_lock_t mjit_engine_mutex;
+/* A thread conditional to wake up `mjit_finish` at the end of PCH thread.  */
+static rb_nativethread_cond_t mjit_pch_wakeup;
+/* A thread conditional to wake up the client if there is a change in
+   executed unit status.  */
+static rb_nativethread_cond_t mjit_client_wakeup;
+/* A thread conditional to wake up a worker if there we have something
+   to add or we need to stop MJIT engine.  */
+static rb_nativethread_cond_t mjit_worker_wakeup;
+/* A thread conditional to wake up workers if at the end of GC.  */
+static rb_nativethread_cond_t mjit_gc_wakeup;
+/* True when GC is working.  */
+static int mjit_in_gc;
+/* True when JIT is working.  */
+static int mjit_in_jit;
+
+/* Path of "/tmp", which can be changed to $TMP in MinGW. */
+static char *tmp_dir;
+/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
+   This is used to invalidate obsoleted CALL_CACHE. */
+static VALUE valid_class_serials;
 
 /* --- Defined in the client thread before starting MJIT threads: ---  */
 /* Used C compiler path.  */
-const char *mjit_cc_path;
+const char *cc_path;
 /* Name of the precompiled header file.  */
-char *mjit_pch_file;
+char *pch_file;
 
 #ifndef _MSC_VER
 /* Name of the header file.  */
@@ -381,6 +380,31 @@ char *mjit_header_file;
 /* Linker option to enable libruby. */
 char *mjit_libruby_pathflag;
 #endif
+
+/* Start a critical section.  Use message MSG to print debug info at
+   LEVEL.  */
+static inline void
+CRITICAL_SECTION_START(int level, const char *msg)
+{
+    verbose(level, "Locking %s", msg);
+    rb_native_mutex_lock(&mjit_engine_mutex);
+    verbose(level, "Locked %s", msg);
+}
+
+/* Finish the current critical section.  Use message MSG to print
+   debug info at LEVEL. */
+static inline void
+CRITICAL_SECTION_FINISH(int level, const char *msg)
+{
+    verbose(level, "Unlocked %s", msg);
+    rb_native_mutex_unlock(&mjit_engine_mutex);
+}
+
+static int
+sprint_uniq_filename(char *str, size_t size, unsigned long id, const char *prefix, const char *suffix)
+{
+    return snprintf(str, size, "%s/%sp%"PRI_PIDT_PREFIX"uu%lu%s", tmp_dir, prefix, getpid(), id, suffix);
+}
 
 /* Return time in milliseconds as a double.  */
 #ifdef __APPLE__
@@ -447,11 +471,10 @@ enum pch_status_t mjit_pch_status;
 int
 mjit_valid_class_serial_p(rb_serial_t class_serial)
 {
-    extern VALUE mjit_valid_class_serials;
     int found_p;
 
     CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    found_p = st_lookup(RHASH_TBL_RAW(mjit_valid_class_serials), LONG2FIX(class_serial), NULL);
+    found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
     CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
     return found_p;
 }
@@ -648,14 +671,14 @@ compile_c_to_so(const char *c_file, const char *so_file)
     *p = '\0';
 
     /* files[1] = "-Yu*.pch" */
-    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(mjit_pch_file) + 1));
+    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
     p = append_lit(p, "-Yu");
-    p = append_str2(p, mjit_pch_file, strlen(mjit_pch_file));
+    p = append_str2(p, pch_file, strlen(pch_file));
     *p = '\0';
 
     /* files[2] = "C:/.../rb_mjit_header-*.obj" */
-    files[2] = p = (char *)alloca(sizeof(char) * (strlen(mjit_pch_file) + 1));
-    p = append_str2(p, mjit_pch_file, strlen(mjit_pch_file) - strlen(".pch"));
+    files[2] = p = (char *)alloca(sizeof(char) * (strlen(pch_file) + 1));
+    p = append_str2(p, pch_file, strlen(pch_file) - strlen(".pch"));
     p = append_lit(p, ".obj");
     *p = '\0';
 
@@ -680,7 +703,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
                Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
            TODO: Don't discard them on --jit-verbose=2+ */
         dup2(dev_null, stdout_fileno);
-        exit_code = exec_process(mjit_cc_path, args);
+        exit_code = exec_process(cc_path, args);
         dup2(orig_fd, stdout_fileno);
 
         close(orig_fd);
@@ -710,7 +733,7 @@ make_pch(void)
     int len = sizeof(rest_args) / sizeof(const char *);
 
     rest_args[len - 2] = mjit_header_file;
-    rest_args[len - 3] = mjit_pch_file;
+    rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
     args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
@@ -722,7 +745,7 @@ make_pch(void)
         return;
     }
 
-    exit_code = exec_process(mjit_cc_path, args);
+    exit_code = exec_process(cc_path, args);
     free(args);
 
     CRITICAL_SECTION_START(3, "in make_pch");
@@ -755,13 +778,13 @@ compile_c_to_o(const char *c_file, const char *o_file)
     files[1] = o_file;
     files[2] = c_file;
 # ifdef __clang__
-    files[4] = mjit_pch_file;
+    files[4] = pch_file;
 # endif
     args = form_args(5, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
-    exit_code = exec_process(mjit_cc_path, args);
+    exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
@@ -789,7 +812,7 @@ link_o_to_so(const char **o_files, const char *so_file)
     if (args == NULL)
         return FALSE;
 
-    exit_code = exec_process(mjit_cc_path, args);
+    exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code != 0)
@@ -814,14 +837,14 @@ compact_all_jit_code(void)
     /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
     unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
     if (unit == NULL) return;
-    unit->id = mjit_current_unit_num++;
+    unit->id = current_unit_num++;
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
     /* NULL-ending for form_args */
-    o_files = (const char **)alloca(sizeof(char *) * (mjit_active_units.length + 1));
-    o_files[mjit_active_units.length] = NULL;
+    o_files = (const char **)alloca(sizeof(char *) * (active_units.length + 1));
+    o_files[active_units.length] = NULL;
     CRITICAL_SECTION_START(3, "in compact_all_jit_code to keep .o files");
-    for (node = mjit_active_units.head; node != NULL; node = node->next) {
+    for (node = active_units.head; node != NULL; node = node->next) {
         o_files[i] = node->unit->o_file;
         i++;
     }
@@ -849,7 +872,7 @@ compact_all_jit_code(void)
         /* lazily dlclose handle (and .so file for win32) on `mjit_finish()`. */
         node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
         node->unit = unit;
-        add_to_list(node, &mjit_compact_units);
+        add_to_list(node, &compact_units);
 
         if (!mjit_opts.save_temps) {
 #  ifdef _WIN32
@@ -860,7 +883,7 @@ compact_all_jit_code(void)
         }
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
-        for (node = mjit_active_units.head; node != NULL; node = node->next) {
+        for (node = active_units.head; node != NULL; node = node->next) {
             void *func;
             char funcname[35]; /* TODO: reconsider `35` */
             sprintf(funcname, "_mjit%d", node->unit->id);
@@ -877,7 +900,7 @@ compact_all_jit_code(void)
             }
         }
         CRITICAL_SECTION_FINISH(3, "in compact_all_jit_code to read list");
-        verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, mjit_active_units.length, so_file);
+        verbose(1, "JIT compaction (%.1fms): Compacted %d methods -> %s", end_time - start_time, active_units.length, so_file);
     }
     else {
         free(unit);
@@ -935,11 +958,11 @@ static void
 compile_prelude(FILE *f)
 {
 #ifndef __clang__ /* -include-pch is used for Clang */
-    const char *s = mjit_pch_file;
+    const char *s = pch_file;
     const char *e = header_name_end(s);
 
     fprintf(f, "#include \"");
-    /* print mjit_pch_file except .gch for gcc, but keep .pch for mswin */
+    /* print pch_file except .gch for gcc, but keep .pch for mswin */
     for (; s < e; s++) {
         switch(*s) {
           case '\\': case '"':
@@ -1079,7 +1102,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         struct rb_mjit_unit_node *node = create_list_node(unit);
         CRITICAL_SECTION_START(3, "end of jit");
-        add_to_list(node, &mjit_active_units);
+        add_to_list(node, &active_units);
         if (unit->iseq)
             print_jit_result("success", unit, end_time - start_time, c_file);
         CRITICAL_SECTION_FINISH(3, "end of jit");
@@ -1119,11 +1142,11 @@ mjit_worker(void)
 
         /* wait until unit is available */
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((mjit_unit_queue.head == NULL || mjit_active_units.length > mjit_opts.max_cache_size) && !mjit_stop_worker_p) {
+        while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !mjit_stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
         }
-        node = get_from_list(&mjit_unit_queue);
+        node = get_from_list(&unit_queue);
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (node) {
@@ -1134,13 +1157,13 @@ mjit_worker(void)
                 /* Usage of jit_code might be not in a critical section.  */
                 MJIT_ATOMIC_SET(node->unit->iseq->body->jit_func, func);
             }
-            remove_from_list(node, &mjit_unit_queue);
+            remove_from_list(node, &unit_queue);
             CRITICAL_SECTION_FINISH(3, "in jit func replace");
 
 #ifndef _MSC_VER
             /* Combine .o files to one .so and reload all jit_func to improve memory locality */
-            if ((!mjit_opts.wait && mjit_unit_queue.length == 0 && mjit_active_units.length > 1)
-                || mjit_active_units.length == mjit_opts.max_cache_size) {
+            if ((!mjit_opts.wait && unit_queue.length == 0 && active_units.length > 1)
+                || active_units.length == mjit_opts.max_cache_size) {
                 compact_all_jit_code();
             }
 #endif

@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  mjit.c - Interface to MRI method JIT compiler for Ruby's main thread
+  mjit.c - MRI method JIT compiler functions for Ruby's main thread
 
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
 
@@ -16,52 +16,6 @@
 #include "id_table.h"
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
-
-/* A copy of MJIT portion of MRI options since MJIT initialization.  We
-   need them as MJIT threads still can work when the most MRI data were
-   freed. */
-struct mjit_options mjit_opts;
-
-/* TRUE if MJIT is enabled.  */
-int mjit_enabled = FALSE;
-/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
-   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
-int mjit_call_p = FALSE;
-
-/* Priority queue of iseqs waiting for JIT compilation.
-   This variable is a pointer to head unit of the queue. */
-struct rb_mjit_unit_list mjit_unit_queue;
-/* List of units which are successfully compiled. */
-struct rb_mjit_unit_list mjit_active_units;
-/* List of compacted so files which will be deleted in `mjit_finish()`. */
-struct rb_mjit_unit_list mjit_compact_units;
-/* The number of so far processed ISEQs, used to generate unique id.  */
-int mjit_current_unit_num;
-/* A mutex for conitionals and critical sections.  */
-rb_nativethread_lock_t mjit_engine_mutex;
-/* A thread conditional to wake up `mjit_finish` at the end of PCH thread.  */
-rb_nativethread_cond_t mjit_pch_wakeup;
-/* A thread conditional to wake up the client if there is a change in
-   executed unit status.  */
-rb_nativethread_cond_t mjit_client_wakeup;
-/* A thread conditional to wake up a worker if there we have something
-   to add or we need to stop MJIT engine.  */
-rb_nativethread_cond_t mjit_worker_wakeup;
-/* A thread conditional to wake up workers if at the end of GC.  */
-rb_nativethread_cond_t mjit_gc_wakeup;
-/* True when GC is working.  */
-int mjit_in_gc;
-/* True when JIT is working.  */
-int mjit_in_jit;
-
-/* Path of "/tmp", which can be changed to $TMP in MinGW. */
-char *mjit_tmp_dir;
-/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
-   This is used to invalidate obsoleted CALL_CACHE. */
-VALUE mjit_valid_class_serials;
-
-extern const char *mjit_cc_path;
-extern char *mjit_pch_file;
 
 #ifndef _MSC_VER
 /* Name of the header file.  */
@@ -152,7 +106,7 @@ init_list(struct rb_mjit_unit_list *list)
 }
 
 /* Free unit list. This should be called only when worker is finished
-   because node of mjit_unit_queue and one of mjit_active_units may have the same unit
+   because node of unit_queue and one of active_units may have the same unit
    during proceeding unit. */
 static void
 free_list(struct rb_mjit_unit_list *list)
@@ -246,7 +200,7 @@ create_unit(const rb_iseq_t *iseq)
     if (unit == NULL)
         return;
 
-    unit->id = mjit_current_unit_num++;
+    unit->id = current_unit_num++;
     unit->iseq = iseq;
     iseq->body->jit_unit = unit;
 }
@@ -283,20 +237,20 @@ unload_units(void)
     rb_thread_t *th = NULL;
     struct rb_mjit_unit_node *node, *next, *worst_node;
     struct mjit_cont *cont;
-    int delete_num, units_num = mjit_active_units.length;
+    int delete_num, units_num = active_units.length;
 
     /* For now, we don't unload units when ISeq is GCed. We should
        unload such ISeqs first here. */
-    for (node = mjit_active_units.head; node != NULL; node = next) {
+    for (node = active_units.head; node != NULL; node = next) {
         next = node->next;
         if (node->unit->iseq == NULL) { /* ISeq is GCed. */
             free_unit(node->unit);
-            remove_from_list(node, &mjit_active_units);
+            remove_from_list(node, &active_units);
         }
     }
 
     /* Detect units which are in use and can't be unloaded. */
-    for (node = mjit_active_units.head; node != NULL; node = node->next) {
+    for (node = active_units.head; node != NULL; node = node->next) {
         assert(node->unit != NULL && node->unit->iseq != NULL && node->unit->handle != NULL);
         node->unit->used_code_p = FALSE;
     }
@@ -308,13 +262,13 @@ unload_units(void)
     }
 
     /* Remove 1/10 units more to decrease unloading calls.  */
-    /* TODO: Calculate max total_calls in mjit_unit_queue and don't unload units
+    /* TODO: Calculate max total_calls in unit_queue and don't unload units
        whose total_calls are larger than the max. */
-    delete_num = mjit_active_units.length / 10;
-    for (; mjit_active_units.length > mjit_opts.max_cache_size - delete_num;) {
+    delete_num = active_units.length / 10;
+    for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
         /* Find one unit that has the minimum total_calls. */
         worst_node = NULL;
-        for (node = mjit_active_units.head; node != NULL; node = node->next) {
+        for (node = active_units.head; node != NULL; node = node->next) {
             if (node->unit->used_code_p) /* We can't unload code on stack. */
                 continue;
 
@@ -329,9 +283,9 @@ unload_units(void)
         verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
         assert(worst_node->unit->handle != NULL);
         free_unit(worst_node->unit);
-        remove_from_list(worst_node, &mjit_active_units);
+        remove_from_list(worst_node, &active_units);
     }
-    verbose(1, "Too many JIT code -- %d units unloaded", units_num - mjit_active_units.length);
+    verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
 
 /* Add ISEQ to be JITed in parallel with the current thread.
@@ -352,8 +306,8 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 
     node = create_list_node(iseq->body->jit_unit);
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
-    add_to_list(node, &mjit_unit_queue);
-    if (mjit_active_units.length >= mjit_opts.max_cache_size) {
+    add_to_list(node, &unit_queue);
+    if (active_units.length >= mjit_opts.max_cache_size) {
         unload_units();
     }
     verbose(3, "Sending wakeup signal to workers in mjit_add_iseq_to_process");
@@ -394,7 +348,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;
 
-/* Initialize mjit_header_file, mjit_pch_file, mjit_libruby_pathflag. Return TRUE on success. */
+/* Initialize mjit_header_file, pch_file, mjit_libruby_pathflag. Return TRUE on success. */
 static int
 init_header_filename(void)
 {
@@ -447,21 +401,21 @@ init_header_filename(void)
         (void)close(fd);
     }
 
-    mjit_pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
-    if (mjit_pch_file == NULL)
+    pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
+    if (pch_file == NULL)
         return FALSE;
 #else
     {
         static const char pch_name[] = MJIT_PRECOMPILED_HEADER_NAME;
         const size_t pch_name_len = sizeof(pch_name) - 1;
 
-        mjit_pch_file = xmalloc(baselen + pch_name_len + 1);
-        p = append_str2(mjit_pch_file, basedir, baselen);
+        pch_file = xmalloc(baselen + pch_name_len + 1);
+        p = append_str2(pch_file, basedir, baselen);
         p = append_str2(p, pch_name, pch_name_len + 1);
-        if ((fd = rb_cloexec_open(mjit_pch_file, O_RDONLY, 0)) < 0) {
-            verbose(1, "Cannot access precompiled header file: %s", mjit_pch_file);
-            xfree(mjit_pch_file);
-            mjit_pch_file = NULL;
+        if ((fd = rb_cloexec_open(pch_file, O_RDONLY, 0)) < 0) {
+            verbose(1, "Cannot access precompiled header file: %s", pch_file);
+            xfree(pch_file);
+            pch_file = NULL;
             return FALSE;
         }
         (void)close(fd);
@@ -638,10 +592,10 @@ mjit_init(struct mjit_options *opts)
 #else
     mjit_pch_status = PCH_NOT_READY;
 #endif
-    mjit_cc_path = CC_PATH;
+    cc_path = CC_PATH;
 
-    mjit_tmp_dir = system_tmpdir();
-    verbose(2, "MJIT: mjit_tmp_dir is %s", mjit_tmp_dir);
+    tmp_dir = system_tmpdir();
+    verbose(2, "MJIT: tmp_dir is %s", tmp_dir);
 
     if (!init_header_filename()) {
         mjit_enabled = FALSE;
@@ -649,9 +603,9 @@ mjit_init(struct mjit_options *opts)
         return;
     }
 
-    init_list(&mjit_unit_queue);
-    init_list(&mjit_active_units);
-    init_list(&mjit_compact_units);
+    init_list(&unit_queue);
+    init_list(&active_units);
+    init_list(&compact_units);
 
     /* Initialize mutex */
     rb_native_mutex_initialize(&mjit_engine_mutex);
@@ -661,9 +615,9 @@ mjit_init(struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
     /* Initialize class_serials cache for compilation */
-    mjit_valid_class_serials = rb_hash_new();
-    rb_obj_hide(mjit_valid_class_serials);
-    rb_gc_register_mark_object(mjit_valid_class_serials);
+    valid_class_serials = rb_hash_new();
+    rb_obj_hide(valid_class_serials);
+    rb_gc_register_mark_object(valid_class_serials);
     mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
     mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
     if (RCLASS_CONST_TBL(rb_cObject)) {
@@ -706,7 +660,7 @@ mjit_pause(int wait_p)
         tv.tv_sec = 0;
         tv.tv_usec = 1000;
 
-        while (mjit_unit_queue.length > 0) {
+        while (unit_queue.length > 0) {
             CRITICAL_SECTION_START(3, "in mjit_pause for a worker wakeup");
             rb_native_cond_broadcast(&mjit_worker_wakeup);
             CRITICAL_SECTION_FINISH(3, "in mjit_pause for a worker wakeup");
@@ -769,17 +723,17 @@ mjit_finish(void)
 
 #ifndef _MSC_VER /* mswin has prebuilt precompiled header */
     if (!mjit_opts.save_temps)
-        remove_file(mjit_pch_file);
+        remove_file(pch_file);
 
     xfree(mjit_header_file); mjit_header_file = NULL;
 #endif
-    xfree(mjit_tmp_dir); mjit_tmp_dir = NULL;
-    xfree(mjit_pch_file); mjit_pch_file = NULL;
+    xfree(tmp_dir); tmp_dir = NULL;
+    xfree(pch_file); pch_file = NULL;
 
     mjit_call_p = FALSE;
-    free_list(&mjit_unit_queue);
-    free_list(&mjit_active_units);
-    free_list(&mjit_compact_units);
+    free_list(&unit_queue);
+    free_list(&active_units);
+    free_list(&compact_units);
     finish_conts();
 
     mjit_enabled = FALSE;
@@ -794,7 +748,7 @@ mjit_mark(void)
         return;
     RUBY_MARK_ENTER("mjit");
     CRITICAL_SECTION_START(4, "mjit_mark");
-    for (node = mjit_unit_queue.head; node != NULL; node = node->next) {
+    for (node = unit_queue.head; node != NULL; node = node->next) {
         if (node->unit->iseq) { /* ISeq is still not GCed */
             VALUE iseq = (VALUE)node->unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
@@ -810,7 +764,7 @@ mjit_mark(void)
     RUBY_MARK_LEAVE("mjit");
 }
 
-/* A hook to update mjit_valid_class_serials. */
+/* A hook to update valid_class_serials. */
 void
 mjit_add_class_serial(rb_serial_t class_serial)
 {
@@ -819,10 +773,10 @@ mjit_add_class_serial(rb_serial_t class_serial)
 
     /* Do not wrap CRITICAL_SECTION here. This function is only called in main thread
        and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it. */
-    rb_hash_aset(mjit_valid_class_serials, LONG2FIX(class_serial), Qtrue);
+    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
 }
 
-/* A hook to update mjit_valid_class_serials. */
+/* A hook to update valid_class_serials. */
 void
 mjit_remove_class_serial(rb_serial_t class_serial)
 {
@@ -830,6 +784,6 @@ mjit_remove_class_serial(rb_serial_t class_serial)
         return;
 
     CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
-    rb_hash_delete_entry(mjit_valid_class_serials, LONG2FIX(class_serial));
+    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
     CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
 }
