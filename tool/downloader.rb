@@ -161,7 +161,7 @@ class Downloader
       $stdout.flush
     end
     begin
-      data = with_retry(3, [Errno::ETIMEDOUT, SocketError]) do
+      data = with_retry(3) do
         url.read(options.merge(http_options(file, since.nil? ? true : since)))
       end
     rescue OpenURI::HTTPError => http_error
@@ -267,11 +267,12 @@ class Downloader
     end
   end
 
-  def self.with_retry(max_times, exceptions, &block)
+  def self.with_retry(max_times, &block)
     times = 0
     begin
       block.call
-    rescue *exceptions => e
+    rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError => e
+      raise if e.is_a?(OpenURI::HTTPError) && e.message !~ /^50[23] / # retry only 502, 503 for http error
       times += 1
       if times <= max_times
         $stderr.puts "retrying #{e.class} (#{e.message}) after #{times ** 2} seconds..."
