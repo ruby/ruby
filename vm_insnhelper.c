@@ -1657,22 +1657,32 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
     }
 }
 
+/* Used in JIT to ensure intended me is used and to reduce memory access by inlining values. */
+ALWAYS_INLINE(static inline VALUE vm_call_iseq_setup_normal_internal(rb_execution_context_t *ec, rb_control_frame_t *cfp, int argc, VALUE recv, VALUE block_handler, const rb_callable_method_entry_t *me, const rb_iseq_t *iseq, const VALUE *pc, int param_size, int local_size, int stack_max));
 static inline VALUE
-vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
-			  int opt_pc, int param_size, int local_size)
+vm_call_iseq_setup_normal_internal(rb_execution_context_t *ec, rb_control_frame_t *cfp, int argc, VALUE recv, VALUE block_handler, const rb_callable_method_entry_t *me,
+                                   const rb_iseq_t *iseq, const VALUE *pc, int param_size, int local_size, int stack_max)
 {
-    const rb_callable_method_entry_t *me = cc->me;
-    const rb_iseq_t *iseq = def_iseq_ptr(me->def);
-    VALUE *argv = cfp->sp - calling->argc;
+    VALUE *argv = cfp->sp - argc;
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
-		  calling->block_handler, (VALUE)me,
-		  iseq->body->iseq_encoded + opt_pc, sp,
-		  local_size - param_size,
-		  iseq->body->stack_max);
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, recv,
+                  block_handler, (VALUE)me,
+                  pc, sp,
+                  local_size - param_size,
+                  stack_max);
     return Qundef;
+}
+
+static inline VALUE
+vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
+                          int opt_pc, int param_size, int local_size)
+{
+    const rb_callable_method_entry_t *me = cc->me;
+    const rb_iseq_t *iseq = def_iseq_ptr(me->def);
+    return vm_call_iseq_setup_normal_internal(ec, cfp, calling->argc, calling->recv, calling->block_handler, me, iseq,
+                                              iseq->body->iseq_encoded + opt_pc, param_size, local_size, iseq->body->stack_max);
 }
 
 static inline VALUE
