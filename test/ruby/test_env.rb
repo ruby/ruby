@@ -457,7 +457,7 @@ class TestEnv < Test::Unit::TestCase
   def test_huge_value
     huge_value = "bar" * 40960
     ENV["foo"] = "bar"
-    if /mswin|mingw/ =~ RUBY_PLATFORM
+    if /mswin|mingw/ =~ RUBY_PLATFORM && windows_version < 6
       assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
       assert_equal("bar", ENV["foo"])
     else
@@ -467,6 +467,10 @@ class TestEnv < Test::Unit::TestCase
   end
 
   if /mswin|mingw/ =~ RUBY_PLATFORM
+    def windows_version
+      @windows_version ||= %x[ver][/Version (\d+)/, 1].to_i
+    end
+
     def test_win32_blocksize
       keys = []
       len = 32767 - ENV.to_a.flatten.inject(1) {|r,e| r + e.bytesize + 1}
@@ -476,9 +480,15 @@ class TestEnv < Test::Unit::TestCase
         keys << key
         ENV[key] = val
       end
-      1.upto(12) {|i|
-        assert_raise(Errno::EINVAL) { ENV[key] = val }
-      }
+      if windows_version < 6
+        1.upto(12) {|i|
+          assert_raise(Errno::EINVAL) { ENV[key] = val }
+        }
+      else
+        1.upto(12) {|i|
+          assert_nothing_raised(Errno::EINVAL) { ENV[key] = val }
+        }
+      end
     ensure
       keys.each {|k| ENV.delete(k)}
     end
