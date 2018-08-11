@@ -1658,7 +1658,7 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 }
 
 /* Used in JIT to ensure intended me is used and to reduce memory access by inlining values. */
-ALWAYS_INLINE(static inline VALUE vm_call_iseq_setup_normal_internal(rb_execution_context_t *ec, rb_control_frame_t *cfp, int argc, VALUE recv, VALUE block_handler, const rb_callable_method_entry_t *me, const rb_iseq_t *iseq, const VALUE *pc, int param_size, int local_size, int stack_max));
+ALWAYS_INLINE(static VALUE vm_call_iseq_setup_normal_internal(rb_execution_context_t *ec, rb_control_frame_t *cfp, int argc, VALUE recv, VALUE block_handler, const rb_callable_method_entry_t *me, const rb_iseq_t *iseq, const VALUE *pc, int param_size, int local_size, int stack_max));
 static inline VALUE
 vm_call_iseq_setup_normal_internal(rb_execution_context_t *ec, rb_control_frame_t *cfp, int argc, VALUE recv, VALUE block_handler, const rb_callable_method_entry_t *me,
                                    const rb_iseq_t *iseq, const VALUE *pc, int param_size, int local_size, int stack_max)
