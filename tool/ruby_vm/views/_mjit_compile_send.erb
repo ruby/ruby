@@ -39,9 +39,7 @@
             fprintf(f, "    {\n");
             fprintf(f, "        VALUE block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % if insn.name == 'send'
-            fprintf(f, "        struct rb_calling_info calling;\n");
-            fprintf(f, "        vm_caller_setup_arg_block(ec, reg_cfp, &calling, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
-            fprintf(f, "        block_handler = calling.block_handler;\n");
+            fprintf(f, "        block_handler = vm_caller_setup_arg_block(ec, reg_cfp, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
 % end
 % # JIT: Special CALL_METHOD. Inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
             fprintf(f, "        {\n");
