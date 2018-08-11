@@ -2,20 +2,20 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe 'Addrinfo.getaddrinfo' do
-  it 'returns an Array of Addrinfo instances' do
-    array = Addrinfo.getaddrinfo('localhost', 80)
+  platform_is_not :solaris do
+    it 'returns an Array of Addrinfo instances' do
+      array = Addrinfo.getaddrinfo('localhost', 80)
 
-    array.should be_an_instance_of(Array)
-    array[0].should be_an_instance_of(Addrinfo)
+      array.should be_an_instance_of(Array)
+      array[0].should be_an_instance_of(Addrinfo)
+    end
   end
 
   SocketSpecs.each_ip_protocol do |family, ip_address|
-    platform_is_not :solaris do
-      it 'sets the IP address of the Addrinfo instances' do
-        array = Addrinfo.getaddrinfo(ip_address, 80)
+    it 'sets the IP address of the Addrinfo instances' do
+      array = Addrinfo.getaddrinfo(ip_address, 80)
 
-        array[0].ip_address.should == ip_address
-      end
+      array[0].ip_address.should == ip_address
     end
 
     it 'sets the port of the Addrinfo instances' do
