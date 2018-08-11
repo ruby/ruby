@@ -8,6 +8,7 @@ environment:
   matrix:
     - vs: "120"
 install:
+  - ver
   - chcp
   - SET BITS=%Platform:x86=32%
   - SET BITS=%BITS:x=%
