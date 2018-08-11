@@ -8,7 +8,7 @@
 
 /* NOTE: All functions in this file are executed on MJIT worker. So don't
    call Ruby methods (C functions that may call rb_funcall) or trigger
-   GC (using xmalloc, ZALLOC, etc.) in this file. */
+   GC (using ZALLOC, xmalloc, xfree, etc.) in this file. */
 
 /* We utilize widely used C compilers (GCC and LLVM Clang) to
    implement MJIT.  We feed them a C code generated from ISEQ.  The
@@ -78,7 +78,6 @@
 #include "gc.h"
 #include "ruby_assert.h"
 #include "ruby/thread.h"
-#include "ruby/util.h"
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -95,8 +94,10 @@
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
-
 #include "dln.h"
+
+#include "ruby/util.h"
+#undef strdup /* ruby_strdup may trigger GC */
 
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
@@ -885,6 +886,8 @@ compact_all_jit_code(void)
         if (!mjit_opts.save_temps) {
 #  ifdef _WIN32
             unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
+            if (unit->so_file == NULL)
+                mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
 #  else
             remove_file(so_file);
 #  endif
@@ -1085,6 +1088,10 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
         /* Alwasy set o_file for compaction. The value is also used for lazy deletion. */
         unit->o_file = strdup(o_file);
+        if (unit->o_file == NULL) {
+            mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", o_file, strerror(errno));
+            remove_file(o_file);
+        }
     }
 #endif
     end_time = real_ms_time();
@@ -1100,6 +1107,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     if (!mjit_opts.save_temps) {
 #ifdef _WIN32
         unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
+        if (unit->so_file == NULL)
+            mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
 #else
         remove_file(so_file);
 #endif
