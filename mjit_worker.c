@@ -318,7 +318,7 @@ mjit_warning(const char *format, ...)
 static struct rb_mjit_unit_node *
 create_list_node(struct rb_mjit_unit *unit)
 {
-    struct rb_mjit_unit_node *node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
+    struct rb_mjit_unit_node *node = calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
     if (node == NULL) return NULL;
     node->unit = unit;
     return node;
@@ -677,25 +677,25 @@ compile_c_to_so(const char *c_file, const char *so_file)
     char *p;
 
     /* files[0] = "-Fe*.dll" */
-    files[0] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
+    files[0] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
     p = append_lit(p, "-Fe");
     p = append_str2(p, so_file, strlen(so_file));
     *p = '\0';
 
     /* files[1] = "-Yu*.pch" */
-    files[1] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
+    files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
     p = append_lit(p, "-Yu");
     p = append_str2(p, pch_file, strlen(pch_file));
     *p = '\0';
 
     /* files[2] = "C:/.../rb_mjit_header-*.obj" */
-    files[2] = p = (char *)alloca(sizeof(char) * (strlen(pch_file) + 1));
+    files[2] = p = alloca(sizeof(char) * (strlen(pch_file) + 1));
     p = append_str2(p, pch_file, strlen(pch_file) - strlen(".pch"));
     p = append_lit(p, ".obj");
     *p = '\0';
 
     /* files[3] = "-Tc*.c" */
-    files[3] = p = (char *)alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
+    files[3] = p = alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
     p = append_lit(p, "-Tc");
     p = append_str2(p, c_file, strlen(c_file));
     *p = '\0';
@@ -846,13 +846,13 @@ compact_all_jit_code(void)
     int i = 0, success;
 
     /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
-    unit = (struct rb_mjit_unit *)calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
+    unit = calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
     if (unit == NULL) return;
     unit->id = current_unit_num++;
     sprint_uniq_filename(so_file, (int)sizeof(so_file), unit->id, MJIT_TMP_PREFIX, so_ext);
 
     /* NULL-ending for form_args */
-    o_files = (const char **)alloca(sizeof(char *) * (active_units.length + 1));
+    o_files = alloca(sizeof(char *) * (active_units.length + 1));
     o_files[active_units.length] = NULL;
     CRITICAL_SECTION_START(3, "in compact_all_jit_code to keep .o files");
     for (node = active_units.head; node != NULL; node = node->next) {
@@ -880,7 +880,7 @@ compact_all_jit_code(void)
         unit->handle = handle;
 
         /* lazily dlclose handle (and .so file for win32) on `mjit_finish()`. */
-        node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
+        node = calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
         node->unit = unit;
         add_to_list(node, &compact_units);
 
