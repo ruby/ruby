@@ -9,38 +9,11 @@
 /* Functions in this file are never executed on MJIT worker thread.
    So you can safely use Ruby methods and GC in this file. */
 
-#ifdef __sun
-#define __EXTENSIONS__ 1
-#endif
+/* To share variables privately, include mjit_worker.c instead of linking. */
+#include "mjit_worker.c"
 
-#include "internal.h"
-#include "vm_core.h"
-#include "mjit.h"
-#include "gc.h"
 #include "constant.h"
 #include "id_table.h"
-#include "ruby_assert.h"
-#include "ruby/thread.h"
-#include "ruby/util.h"
-
-#ifdef _WIN32
-#include <winsock2.h>
-#include <windows.h>
-#else
-#include <sys/wait.h>
-#include <sys/time.h>
-#include <dlfcn.h>
-#endif
-#include <errno.h>
-#ifdef HAVE_FCNTL_H
-#include <fcntl.h>
-#endif
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#endif
-
-#include "dln.h"
-#include "mjit_internal.h"
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
