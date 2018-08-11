@@ -319,8 +319,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
             CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
             CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
-            if (mjit_opts.warnings || mjit_opts.verbose)
-                fprintf(stderr, "MJIT warning: timed out to wait for JIT finish\n");
+            mjit_warning("timed out to wait for JIT finish");
             break;
         }
 
