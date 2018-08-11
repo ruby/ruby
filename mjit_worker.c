@@ -153,8 +153,6 @@ struct rb_mjit_unit_list {
     int length; /* the list length */
 };
 
-enum pch_status_t {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS};
-
 extern void rb_native_mutex_lock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_unlock(rb_nativethread_lock_t *lock);
 extern void rb_native_mutex_initialize(rb_nativethread_lock_t *lock);
@@ -202,9 +200,13 @@ static rb_nativethread_cond_t mjit_worker_wakeup;
 /* A thread conditional to wake up workers if at the end of GC.  */
 static rb_nativethread_cond_t mjit_gc_wakeup;
 /* True when GC is working.  */
-static int mjit_in_gc;
+static int in_gc;
 /* True when JIT is working.  */
-static int mjit_in_jit;
+static int in_jit;
+/* Set to TRUE to stop worker.  */
+static int stop_worker_p;
+/* Set to TRUE if worker is stopped.  */
+static int worker_stopped;
 
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
 static char *tmp_dir;
@@ -212,23 +214,22 @@ static char *tmp_dir;
    This is used to invalidate obsoleted CALL_CACHE. */
 static VALUE valid_class_serials;
 
-/* --- Defined in the client thread before starting MJIT threads: ---  */
 /* Used C compiler path.  */
-const char *cc_path;
+static const char *cc_path;
 /* Name of the precompiled header file.  */
-char *pch_file;
+static char *pch_file;
 /* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
-enum pch_status_t mjit_pch_status;
+static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
 
 #ifndef _MSC_VER
 /* Name of the header file.  */
-char *mjit_header_file;
+static char *header_file;
 #endif
 
 #ifdef _WIN32
 /* Linker option to enable libruby. */
-char *mjit_libruby_pathflag;
+static char *libruby_pathflag;
 #endif
 
 #include "mjit_config.h"
@@ -656,7 +657,7 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = { NULL, NULL, NULL, NULL, "-link", mjit_libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
     char *p;
 
@@ -728,7 +729,7 @@ make_pch(void)
     char **args;
     int len = sizeof(rest_args) / sizeof(const char *);
 
-    rest_args[len - 2] = mjit_header_file;
+    rest_args[len - 2] = header_file;
     rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
     args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
@@ -736,7 +737,7 @@ make_pch(void)
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
         CRITICAL_SECTION_START(3, "in make_pch");
-        mjit_pch_status = PCH_FAILED;
+        pch_status = PCH_FAILED;
         CRITICAL_SECTION_FINISH(3, "in make_pch");
         return;
     }
@@ -746,11 +747,11 @@ make_pch(void)
 
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
-        mjit_pch_status = PCH_SUCCESS;
+        pch_status = PCH_SUCCESS;
     } else {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
-        mjit_pch_status = PCH_FAILED;
+        pch_status = PCH_FAILED;
     }
     /* wakeup `mjit_finish` */
     rb_native_cond_broadcast(&mjit_pch_wakeup);
@@ -796,7 +797,7 @@ link_o_to_so(const char **o_files, const char *so_file)
     const char *options[] = {
         "-o", NULL,
 # ifdef _WIN32
-        mjit_libruby_pathflag,
+        libruby_pathflag,
 # endif
         NULL
     };
@@ -1031,11 +1032,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     /* wait until mjit_gc_finish_hook is called */
     CRITICAL_SECTION_START(3, "before mjit_compile to wait GC finish");
-    while (mjit_in_gc) {
+    while (in_gc) {
         verbose(3, "Waiting wakeup from GC");
         rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
     }
-    mjit_in_jit = TRUE;
+    in_jit = TRUE;
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
 
     {
@@ -1050,7 +1051,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     /* release blocking mjit_gc_start_hook */
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    mjit_in_jit = FALSE;
+    in_jit = FALSE;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);
     CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
@@ -1106,11 +1107,6 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     return (mjit_func_t)func;
 }
 
-/* Set to TRUE to stop worker.  */
-int mjit_stop_worker_p;
-/* Set to TRUE if worker is stopped.  */
-int mjit_worker_stopped;
-
 /* The function implementing a worker. It is executed in a separate
    thread by rb_thread_create_mjit_thread. It compiles precompiled header
    and then compiles requested ISeqs. */
@@ -1118,27 +1114,27 @@ void
 mjit_worker(void)
 {
 #ifndef _MSC_VER
-    if (mjit_pch_status == PCH_NOT_READY) {
+    if (pch_status == PCH_NOT_READY) {
         make_pch();
     }
 #endif
-    if (mjit_pch_status == PCH_FAILED) {
+    if (pch_status == PCH_FAILED) {
         mjit_enabled = FALSE;
-        CRITICAL_SECTION_START(3, "in worker to update mjit_worker_stopped");
-        mjit_worker_stopped = TRUE;
+        CRITICAL_SECTION_START(3, "in worker to update worker_stopped");
+        worker_stopped = TRUE;
         verbose(3, "Sending wakeup signal to client in a mjit-worker");
         rb_native_cond_signal(&mjit_client_wakeup);
-        CRITICAL_SECTION_FINISH(3, "in worker to update mjit_worker_stopped");
+        CRITICAL_SECTION_FINISH(3, "in worker to update worker_stopped");
         return; /* TODO: do the same thing in the latter half of mjit_finish */
     }
 
     /* main worker loop */
-    while (!mjit_stop_worker_p) {
+    while (!stop_worker_p) {
         struct rb_mjit_unit_node *node;
 
         /* wait until unit is available */
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !mjit_stop_worker_p) {
+        while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
         }
@@ -1167,5 +1163,5 @@ mjit_worker(void)
     }
 
     /* To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here. */
-    mjit_worker_stopped = TRUE;
+    worker_stopped = TRUE;
 }

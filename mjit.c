@@ -17,16 +17,6 @@
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
-#ifndef _MSC_VER
-/* Name of the header file.  */
-extern char *mjit_header_file;
-#endif
-
-#ifdef _WIN32
-/* Linker option to enable libruby. */
-extern char *mjit_libruby_pathflag;
-#endif
-
 /* Make and return copy of STR in the heap. */
 #define get_string ruby_strdup
 
@@ -58,12 +48,12 @@ mjit_gc_start_hook(void)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_start_hook");
-    while (mjit_in_jit) {
+    while (in_jit) {
         verbose(4, "Waiting wakeup from a worker for GC");
         rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
         verbose(4, "Getting wakeup from a worker for GC");
     }
-    mjit_in_gc = TRUE;
+    in_gc = TRUE;
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
 }
 
@@ -75,7 +65,7 @@ mjit_gc_finish_hook(void)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
-    mjit_in_gc = FALSE;
+    in_gc = FALSE;
     verbose(4, "Sending wakeup signal to workers after GC");
     rb_native_cond_broadcast(&mjit_gc_wakeup);
     CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
@@ -118,10 +108,6 @@ free_list(struct rb_mjit_unit_list *list)
         xfree(node);
     }
 }
-
-extern enum pch_status_t mjit_pch_status;
-extern int mjit_stop_worker_p;
-extern int mjit_worker_stopped;
 
 /* MJIT info related to an existing continutaion.  */
 struct mjit_cont {
@@ -295,7 +281,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit_node *node;
 
-    if (!mjit_enabled || mjit_pch_status == PCH_FAILED)
+    if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
 
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
@@ -329,7 +315,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
     tv.tv_usec = 1000;
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         tries++;
-        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || mjit_pch_status == PCH_FAILED) {
+        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
             CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
             CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
@@ -348,7 +334,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
 
 extern VALUE ruby_archlibdir_path, ruby_prefix_path;
 
-/* Initialize mjit_header_file, pch_file, mjit_libruby_pathflag. Return TRUE on success. */
+/* Initialize header_file, pch_file, libruby_pathflag. Return TRUE on success. */
 static int
 init_header_filename(void)
 {
@@ -389,13 +375,13 @@ init_header_filename(void)
         static const char header_name[] = MJIT_MIN_HEADER_NAME;
         const size_t header_name_len = sizeof(header_name) - 1;
 
-        mjit_header_file = xmalloc(baselen + header_name_len + 1);
-        p = append_str2(mjit_header_file, basedir, baselen);
+        header_file = xmalloc(baselen + header_name_len + 1);
+        p = append_str2(header_file, basedir, baselen);
         p = append_str2(p, header_name, header_name_len + 1);
-        if ((fd = rb_cloexec_open(mjit_header_file, O_RDONLY, 0)) < 0) {
-            verbose(1, "Cannot access header file: %s", mjit_header_file);
-            xfree(mjit_header_file);
-            mjit_header_file = NULL;
+        if ((fd = rb_cloexec_open(header_file, O_RDONLY, 0)) < 0) {
+            verbose(1, "Cannot access header file: %s", header_file);
+            xfree(header_file);
+            header_file = NULL;
             return FALSE;
         }
         (void)close(fd);
@@ -426,7 +412,7 @@ init_header_filename(void)
     basedir_val = ruby_archlibdir_path;
     basedir = StringValuePtr(basedir_val);
     baselen = RSTRING_LEN(basedir_val);
-    mjit_libruby_pathflag = p = xmalloc(libpathflag_len + baselen + 1);
+    libruby_pathflag = p = xmalloc(libpathflag_len + baselen + 1);
     p = append_str(p, libpathflag);
     p = append_str2(p, basedir, baselen);
     *p = '\0';
@@ -550,8 +536,8 @@ start_worker(void)
 {
     extern void mjit_worker(void);
 
-    mjit_stop_worker_p = FALSE;
-    mjit_worker_stopped = FALSE;
+    stop_worker_p = FALSE;
+    worker_stopped = FALSE;
 
     if (!rb_thread_create_mjit_thread(mjit_worker)) {
         mjit_enabled = FALSE;
@@ -588,9 +574,9 @@ mjit_init(struct mjit_options *opts)
 
     /* Initialize variables for compilation */
 #ifdef _MSC_VER
-    mjit_pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
+    pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
 #else
-    mjit_pch_status = PCH_NOT_READY;
+    pch_status = PCH_NOT_READY;
 #endif
     cc_path = CC_PATH;
 
@@ -633,8 +619,8 @@ stop_worker(void)
 {
     rb_execution_context_t *ec = GET_EC();
 
-    mjit_stop_worker_p = TRUE;
-    while (!mjit_worker_stopped) {
+    stop_worker_p = TRUE;
+    while (!worker_stopped) {
         verbose(3, "Sending cancel signal to worker");
         CRITICAL_SECTION_START(3, "in stop_worker");
         rb_native_cond_broadcast(&mjit_worker_wakeup);
@@ -650,7 +636,7 @@ mjit_pause(int wait_p)
     if (!mjit_enabled) {
         rb_raise(rb_eRuntimeError, "MJIT is not enabled");
     }
-    if (mjit_worker_stopped) {
+    if (worker_stopped) {
         return Qfalse;
     }
 
@@ -679,7 +665,7 @@ mjit_resume(void)
     if (!mjit_enabled) {
         rb_raise(rb_eRuntimeError, "MJIT is not enabled");
     }
-    if (!mjit_worker_stopped) {
+    if (!worker_stopped) {
         return Qfalse;
     }
 
@@ -706,7 +692,7 @@ mjit_finish(void)
        threads can produce temp files.  And even if the temp files are
        removed, the used C compiler still complaint about their
        absence.  So wait for a clean finish of the threads.  */
-    while (mjit_pch_status == PCH_NOT_READY) {
+    while (pch_status == PCH_NOT_READY) {
         verbose(3, "Waiting wakeup from make_pch");
         rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }
@@ -725,7 +711,7 @@ mjit_finish(void)
     if (!mjit_opts.save_temps)
         remove_file(pch_file);
 
-    xfree(mjit_header_file); mjit_header_file = NULL;
+    xfree(header_file); header_file = NULL;
 #endif
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
