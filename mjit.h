@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  mjit.h - Interface to MRI method JIT compiler
+  mjit.h - Interface to MRI method JIT compiler for Ruby's main thread
 
   Copyright (C) 2017 Vladimir Makarov <vmakarov@redhat.com>.
 

@@ -6,6 +6,10 @@
 
 **********************************************************************/
 
+/* NOTE: All functions in this file are executed on MJIT worker. So don't
+   call Ruby methods (C functions that may call rb_funcall) or trigger
+   GC (using xmalloc, ZALLOC, etc.) in this file. */
+
 #include "internal.h"
 #include "vm_core.h"
 #include "vm_exec.h"
