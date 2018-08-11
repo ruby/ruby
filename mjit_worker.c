@@ -287,14 +287,28 @@ static const char *const CC_LIBS[] = {
 PRINTF_ARGS(static void, 2, 3)
 verbose(int level, const char *format, ...)
 {
-    va_list args;
+    if (mjit_opts.verbose >= level) {
+        va_list args;
 
-    va_start(args, format);
-    if (mjit_opts.verbose >= level)
+        va_start(args, format);
         vfprintf(stderr, format, args);
-    va_end(args);
-    if (mjit_opts.verbose >= level)
+        va_end(args);
         fprintf(stderr, "\n");
+    }
+}
+
+PRINTF_ARGS(static void, 1, 2)
+mjit_warning(const char *format, ...)
+{
+    if (mjit_opts.warnings || mjit_opts.verbose) {
+        va_list args;
+
+        fprintf(stderr, "MJIT warning: ");
+        va_start(args, format);
+        vfprintf(stderr, format, args);
+        va_end(args);
+        fprintf(stderr, "\n");
+    }
 }
 
 /* Allocate struct rb_mjit_unit_node and return it. This MUST NOT be
@@ -352,9 +366,8 @@ remove_from_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
 static void
 remove_file(const char *filename)
 {
-    if (remove(filename) && (mjit_opts.warnings || mjit_opts.verbose)) {
-        fprintf(stderr, "MJIT warning: failed to remove \"%s\": %s\n",
-                filename, strerror(errno));
+    if (remove(filename)) {
+        mjit_warning("failed to remove \"%s\": %s", filename, strerror(errno));
     }
 }
 
@@ -734,8 +747,7 @@ make_pch(void)
     verbose(2, "Creating precompiled header");
     args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
-        if (mjit_opts.warnings || mjit_opts.verbose)
-            fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
+        mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
         pch_status = PCH_FAILED;
         CRITICAL_SECTION_FINISH(3, "in make_pch");
@@ -748,9 +760,9 @@ make_pch(void)
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
         pch_status = PCH_SUCCESS;
-    } else {
-        if (mjit_opts.warnings || mjit_opts.verbose)
-            fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
+    }
+    else {
+        mjit_warning("Making precompiled header failed on compilation. Stopping MJIT worker...");
         pch_status = PCH_FAILED;
     }
     /* wakeup `mjit_finish` */
@@ -859,8 +871,7 @@ compact_all_jit_code(void)
     if (success) {
         void *handle = dlopen(so_file, RTLD_NOW);
         if (handle == NULL) {
-            if (mjit_opts.warnings || mjit_opts.verbose)
-                fprintf(stderr, "MJIT warning: failure in loading code from compacted '%s': %s\n", so_file, dlerror());
+            mjit_warning("failure in loading code from compacted '%s': %s", so_file, dlerror());
             free(unit);
             return;
         }
@@ -886,8 +897,7 @@ compact_all_jit_code(void)
             sprintf(funcname, "_mjit%d", node->unit->id);
 
             if ((func = dlsym(handle, funcname)) == NULL) {
-                if (mjit_opts.warnings || mjit_opts.verbose)
-                    fprintf(stderr, "MJIT warning: skipping to reload '%s' from '%s': %s\n", funcname, so_file, dlerror());
+                mjit_warning("skipping to reload '%s' from '%s': %s", funcname, so_file, dlerror());
                 continue;
             }
 
@@ -915,8 +925,7 @@ load_func_from_so(const char *so_file, const char *funcname, struct rb_mjit_unit
 
     handle = dlopen(so_file, RTLD_NOW);
     if (handle == NULL) {
-        if (mjit_opts.warnings || mjit_opts.verbose)
-            fprintf(stderr, "MJIT warning: failure in loading code from '%s': %s\n", so_file, dlerror());
+        mjit_warning("failure in loading code from '%s': %s", so_file, dlerror());
         return (void *)NOT_ADDED_JIT_ISEQ_FUNC;
     }
 
