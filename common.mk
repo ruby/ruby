@@ -100,6 +100,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		math.$(OBJEXT) \
 		mjit.$(OBJEXT) \
 		mjit_compile.$(OBJEXT) \
+		mjit_worker.$(OBJEXT) \
 		node.$(OBJEXT) \
 		numeric.$(OBJEXT) \
 		object.$(OBJEXT) \
@@ -2215,6 +2216,7 @@ mjit.$(OBJEXT): {$(VPATH)}missing.h
 mjit.$(OBJEXT): {$(VPATH)}mjit.c
 mjit.$(OBJEXT): {$(VPATH)}mjit.h
 mjit.$(OBJEXT): {$(VPATH)}mjit_config.h
+mjit.$(OBJEXT): {$(VPATH)}mjit_internal.h
 mjit.$(OBJEXT): {$(VPATH)}node.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 mjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
@@ -2256,6 +2258,9 @@ mjit_compile.$(OBJEXT): {$(VPATH)}vm_core.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_exec.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_insnhelper.h
 mjit_compile.$(OBJEXT): {$(VPATH)}vm_opts.h
+mjit_worker.$(OBJEXT): {$(VPATH)}mjit.h
+mjit_worker.$(OBJEXT): {$(VPATH)}mjit_internal.h
+mjit_worker.$(OBJEXT): {$(VPATH)}mjit_worker.c
 node.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 node.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 node.$(OBJEXT): $(CCAN_DIR)/list/list.h
