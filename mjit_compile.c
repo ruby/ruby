@@ -51,6 +51,7 @@ struct case_dispatch_var {
 static int
 has_valid_method_type(CALL_CACHE cc)
 {
+    extern int mjit_valid_class_serial_p(rb_serial_t class_serial);
     return GET_GLOBAL_METHOD_STATE() == cc->method_state
         && mjit_valid_class_serial_p(cc->class_serial) && cc->me;
 }

@@ -76,8 +76,6 @@
 #include "vm_core.h"
 #include "mjit.h"
 #include "gc.h"
-#include "constant.h"
-#include "id_table.h"
 #include "ruby_assert.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -207,6 +205,19 @@ static const char *const CC_LIBS[] = {
 /* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
 enum pch_status_t mjit_pch_status;
+
+/* Return TRUE if class_serial is not obsoleted. */
+int
+mjit_valid_class_serial_p(rb_serial_t class_serial)
+{
+    extern VALUE mjit_valid_class_serials;
+    int found_p;
+
+    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
+    found_p = st_lookup(RHASH_TBL_RAW(mjit_valid_class_serials), LONG2FIX(class_serial), NULL);
+    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
+    return found_p;
+}
 
 /* Return the best unit from list.  The best is the first
    high priority unit or the unit whose iseq has the biggest number

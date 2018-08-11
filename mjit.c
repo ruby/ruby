@@ -85,7 +85,7 @@ int mjit_in_jit;
 char *mjit_tmp_dir;
 /* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
    This is used to invalidate obsoleted CALL_CACHE. */
-static VALUE valid_class_serials;
+VALUE mjit_valid_class_serials;
 
 extern const char *mjit_cc_path;
 extern char *mjit_pch_file;
@@ -688,9 +688,9 @@ mjit_init(struct mjit_options *opts)
     rb_native_cond_initialize(&mjit_gc_wakeup);
 
     /* Initialize class_serials cache for compilation */
-    valid_class_serials = rb_hash_new();
-    rb_obj_hide(valid_class_serials);
-    rb_gc_register_mark_object(valid_class_serials);
+    mjit_valid_class_serials = rb_hash_new();
+    rb_obj_hide(mjit_valid_class_serials);
+    rb_gc_register_mark_object(mjit_valid_class_serials);
     mjit_add_class_serial(RCLASS_SERIAL(rb_cObject));
     mjit_add_class_serial(RCLASS_SERIAL(CLASS_OF(rb_vm_top_self())));
     if (RCLASS_CONST_TBL(rb_cObject)) {
@@ -837,7 +837,7 @@ mjit_mark(void)
     RUBY_MARK_LEAVE("mjit");
 }
 
-/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+/* A hook to update mjit_valid_class_serials. */
 void
 mjit_add_class_serial(rb_serial_t class_serial)
 {
@@ -846,10 +846,10 @@ mjit_add_class_serial(rb_serial_t class_serial)
 
     /* Do not wrap CRITICAL_SECTION here. This function is only called in main thread
        and guarded by GVL, and `rb_hash_aset` may cause GC and deadlock in it. */
-    rb_hash_aset(valid_class_serials, LONG2FIX(class_serial), Qtrue);
+    rb_hash_aset(mjit_valid_class_serials, LONG2FIX(class_serial), Qtrue);
 }
 
-/* A hook to update valid_class_serials. This should NOT be used in MJIT worker. */
+/* A hook to update mjit_valid_class_serials. */
 void
 mjit_remove_class_serial(rb_serial_t class_serial)
 {
@@ -857,18 +857,6 @@ mjit_remove_class_serial(rb_serial_t class_serial)
         return;
 
     CRITICAL_SECTION_START(3, "in mjit_remove_class_serial");
-    rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
+    rb_hash_delete_entry(mjit_valid_class_serials, LONG2FIX(class_serial));
     CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
-}
-
-/* Return TRUE if class_serial is not obsoleted. This can be used in MJIT worker. */
-int
-mjit_valid_class_serial_p(rb_serial_t class_serial)
-{
-    int found_p;
-
-    CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
-    CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
-    return found_p;
 }
