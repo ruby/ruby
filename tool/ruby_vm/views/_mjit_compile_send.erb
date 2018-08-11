@@ -37,23 +37,18 @@
 
 % # JIT: Print insn body in insns.def
             fprintf(f, "    {\n");
-            fprintf(f, "        struct rb_calling_info calling;\n");
+            fprintf(f, "        VALUE block_handler = VM_BLOCK_HANDLER_NONE;\n");
 % if insn.name == 'send'
+            fprintf(f, "        struct rb_calling_info calling;\n");
             fprintf(f, "        vm_caller_setup_arg_block(ec, reg_cfp, &calling, (CALL_INFO)0x%"PRIxVALUE", (rb_iseq_t *)0x%"PRIxVALUE", FALSE);\n", operands[0], operands[2]);
-% else
-            fprintf(f, "        calling.block_handler = VM_BLOCK_HANDLER_NONE;\n");
+            fprintf(f, "        block_handler = calling.block_handler;\n");
 % end
-            fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
-            fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
-
-% # JIT: Special CALL_METHOD. Inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH. TODO: modify VM to share code with here
+% # JIT: Special CALL_METHOD. Inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
             fprintf(f, "        {\n");
             fprintf(f, "            VALUE v;\n");
-            fprintf(f, "            VALUE *argv = reg_cfp->sp - calling.argc;\n");
-            fprintf(f, "            reg_cfp->sp = argv - 1;\n"); /* recv */
-            fprintf(f, "            vm_push_frame(ec, (const rb_iseq_t *)0x%"PRIxVALUE", VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling.recv, "
-                    "calling.block_handler, 0x%"PRIxVALUE", (const VALUE *)0x%"PRIxVALUE", argv + %d, %d, %d);\n",
-                    (VALUE)iseq, (VALUE)cc->me, (VALUE)iseq->body->iseq_encoded, param_size, iseq->body->local_table_size - param_size, iseq->body->stack_max);
+            fprintf(f, "            const rb_callable_method_entry_t *me = 0x%"PRIxVALUE";\n", (VALUE)cc->me);
+            fprintf(f, "            vm_call_iseq_setup_normal_internal(ec, reg_cfp, %d, stack[%d], block_handler, me, (const rb_iseq_t *)0x%"PRIxVALUE", (const VALUE *)0x%"PRIxVALUE", %d, %d, %d);\n",
+                    argc, b->stack_size - 1 - argc, (VALUE)iseq, (VALUE)iseq->body->iseq_encoded, param_size, iseq->body->local_table_size, iseq->body->stack_max);
             if (iseq->body->catch_except_p) {
                 fprintf(f, "            VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);\n");
                 fprintf(f, "            v = vm_exec(ec, TRUE);\n");
