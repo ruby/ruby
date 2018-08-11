@@ -101,6 +101,14 @@
 #include "dln.h"
 #include "mjit_internal.h"
 
+#ifdef _WIN32
+#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
+#define WIFEXITED(S) ((S) != STILL_ACTIVE)
+#define WEXITSTATUS(S) (S)
+#define WIFSIGNALED(S) (0)
+typedef intptr_t pid_t;
+#endif
+
 /* process.c */
 rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
                           rb_nativethread_cond_t *cond);
@@ -198,7 +206,7 @@ static const char *const CC_LIBS[] = {
 
 /* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
-enum pch_status_t pch_status;
+enum pch_status_t mjit_pch_status;
 
 /* Return the best unit from list.  The best is the first
    high priority unit or the unit whose iseq has the biggest number
@@ -461,7 +469,7 @@ make_pch(void)
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: making precompiled header failed on forming args\n");
         CRITICAL_SECTION_START(3, "in make_pch");
-        pch_status = PCH_FAILED;
+        mjit_pch_status = PCH_FAILED;
         CRITICAL_SECTION_FINISH(3, "in make_pch");
         return;
     }
@@ -471,11 +479,11 @@ make_pch(void)
 
     CRITICAL_SECTION_START(3, "in make_pch");
     if (exit_code == 0) {
-        pch_status = PCH_SUCCESS;
+        mjit_pch_status = PCH_SUCCESS;
     } else {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: Making precompiled header failed on compilation. Stopping MJIT worker...\n");
-        pch_status = PCH_FAILED;
+        mjit_pch_status = PCH_FAILED;
     }
     /* wakeup `mjit_finish` */
     rb_native_cond_broadcast(&mjit_pch_wakeup);
@@ -843,11 +851,11 @@ void
 mjit_worker(void)
 {
 #ifndef _MSC_VER
-    if (pch_status == PCH_NOT_READY) {
+    if (mjit_pch_status == PCH_NOT_READY) {
         make_pch();
     }
 #endif
-    if (pch_status == PCH_FAILED) {
+    if (mjit_pch_status == PCH_FAILED) {
         mjit_enabled = FALSE;
         CRITICAL_SECTION_START(3, "in worker to update mjit_worker_stopped");
         mjit_worker_stopped = TRUE;

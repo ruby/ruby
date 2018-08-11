@@ -192,7 +192,7 @@ free_list(struct rb_mjit_unit_list *list)
     }
 }
 
-extern enum pch_status_t pch_status;
+extern enum pch_status_t mjit_pch_status;
 extern int mjit_stop_worker_p;
 extern int mjit_worker_stopped;
 
@@ -368,7 +368,7 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
     struct rb_mjit_unit_node *node;
 
-    if (!mjit_enabled || pch_status == PCH_FAILED)
+    if (!mjit_enabled || mjit_pch_status == PCH_FAILED)
         return;
 
     iseq->body->jit_func = (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC;
@@ -402,7 +402,7 @@ mjit_get_iseq_func(struct rb_iseq_constant_body *body)
     tv.tv_usec = 1000;
     while (body->jit_func == (mjit_func_t)NOT_READY_JIT_ISEQ_FUNC) {
         tries++;
-        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || pch_status == PCH_FAILED) {
+        if (tries / 1000 > MJIT_WAIT_TIMEOUT_SECONDS || mjit_pch_status == PCH_FAILED) {
             CRITICAL_SECTION_START(3, "in mjit_get_iseq_func to set jit_func");
             body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC; /* JIT worker seems dead. Give up. */
             CRITICAL_SECTION_FINISH(3, "in mjit_get_iseq_func to set jit_func");
@@ -661,9 +661,9 @@ mjit_init(struct mjit_options *opts)
 
     /* Initialize variables for compilation */
 #ifdef _MSC_VER
-    pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
+    mjit_pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
 #else
-    pch_status = PCH_NOT_READY;
+    mjit_pch_status = PCH_NOT_READY;
 #endif
     mjit_cc_path = CC_PATH;
 
@@ -779,7 +779,7 @@ mjit_finish(void)
        threads can produce temp files.  And even if the temp files are
        removed, the used C compiler still complaint about their
        absence.  So wait for a clean finish of the threads.  */
-    while (pch_status == PCH_NOT_READY) {
+    while (mjit_pch_status == PCH_NOT_READY) {
         verbose(3, "Waiting wakeup from make_pch");
         rb_native_cond_wait(&mjit_pch_wakeup, &mjit_engine_mutex);
     }
