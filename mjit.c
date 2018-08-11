@@ -291,6 +291,11 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
         return;
 
     node = create_list_node(iseq->body->jit_unit);
+    if (node == NULL) {
+        mjit_warning("failed to allocate a node to be added to unit_queue");
+        return;
+    }
+
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
     add_to_list(node, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {

@@ -319,6 +319,7 @@ static struct rb_mjit_unit_node *
 create_list_node(struct rb_mjit_unit *unit)
 {
     struct rb_mjit_unit_node *node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
+    if (node == NULL) return NULL;
     node->unit = unit;
     return node;
 }
@@ -1116,6 +1117,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         struct rb_mjit_unit_node *node = create_list_node(unit);
+        if (node == NULL) {
+            mjit_warning("failed to allocate a node to be added to active_units");
+            return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
+        }
+
         CRITICAL_SECTION_START(3, "end of jit");
         add_to_list(node, &active_units);
         if (unit->iseq)
