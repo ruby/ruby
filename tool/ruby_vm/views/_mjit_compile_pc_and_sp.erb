@@ -5,8 +5,7 @@
 % # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 % # details.
 %
-% # JIT: Move pc so that catch table lookup condition is met. If the ISeq might not catch an exception,
-% # the pc motion is optimized away and thus pc should be set properly before `goto cancel`.
+% # JIT: Move pc so that catch table lookup condition is met, and for #caller_locations and rb_profile_frames.
         fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
 %
 % # JIT: move sp to use or preserve stack variables
