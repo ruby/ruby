@@ -355,7 +355,7 @@ init_header_filename(void)
 # else
         "-L"
 # endif
-	;
+        ;
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 
@@ -538,8 +538,6 @@ system_tmpdir(void)
 static int
 start_worker(void)
 {
-    extern void mjit_worker(void);
-
     stop_worker_p = FALSE;
     worker_stopped = FALSE;
 
