@@ -1,5 +1,6 @@
 require_relative '../spec_helper'
 
+platform_is_not :"solaris2.10" do
 describe 'Socket.getifaddrs' do
   before do
     @ifaddrs = Socket.getifaddrs
@@ -105,4 +106,5 @@ describe 'Socket.getifaddrs' do
       end
     end
   end
+end
 end
