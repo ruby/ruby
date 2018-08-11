@@ -795,6 +795,25 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_caller_locations_without_catch_table
+    out, _ = eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
+    begin;
+      def b                             # 2
+        caller_locations.first          # 3
+      end                               # 4
+                                        # 5
+      def a                             # 6
+        print # <-- don't leave PC here # 7
+        b                               # 8
+      end
+      puts a
+      puts a
+    end;
+    lines = out.lines
+    assert_equal("-e:8:in `a'\n", lines[0])
+    assert_equal("-e:8:in `a'\n", lines[1])
+  end
+
   private
 
   # Some tests are stil failing on VC++.
