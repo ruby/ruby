@@ -108,7 +108,16 @@
 #define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
 #define dlclose(handle) (FreeLibrary(handle))
 #define RTLD_NOW  -1
+
+#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
+#define WIFEXITED(S) ((S) != STILL_ACTIVE)
+#define WEXITSTATUS(S) (S)
+#define WIFSIGNALED(S) (0)
+typedef intptr_t pid_t;
 #endif
+
+/* Atomically set function pointer if possible. */
+#define MJIT_ATOMIC_SET(var, val) (void)ATOMIC_PTR_EXCHANGE(var, val)
 
 #define MJIT_TMP_PREFIX "_ruby_mjit_"
 
@@ -156,6 +165,121 @@ extern void rb_native_cond_destroy(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_signal(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_broadcast(rb_nativethread_cond_t *cond);
 extern void rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex);
+
+/* process.c */
+extern rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options, rb_nativethread_cond_t *cond);
+
+/* A copy of MJIT portion of MRI options since MJIT initialization.  We
+   need them as MJIT threads still can work when the most MRI data were
+   freed. */
+struct mjit_options mjit_opts;
+
+/* TRUE if MJIT is enabled.  */
+int mjit_enabled = FALSE;
+/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
+   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
+int mjit_call_p = FALSE;
+
+/* Priority queue of iseqs waiting for JIT compilation.
+   This variable is a pointer to head unit of the queue. */
+static struct rb_mjit_unit_list unit_queue;
+/* List of units which are successfully compiled. */
+static struct rb_mjit_unit_list active_units;
+/* List of compacted so files which will be deleted in `mjit_finish()`. */
+static struct rb_mjit_unit_list compact_units;
+/* The number of so far processed ISEQs, used to generate unique id.  */
+static int current_unit_num;
+/* A mutex for conitionals and critical sections.  */
+static rb_nativethread_lock_t mjit_engine_mutex;
+/* A thread conditional to wake up `mjit_finish` at the end of PCH thread.  */
+static rb_nativethread_cond_t mjit_pch_wakeup;
+/* A thread conditional to wake up the client if there is a change in
+   executed unit status.  */
+static rb_nativethread_cond_t mjit_client_wakeup;
+/* A thread conditional to wake up a worker if there we have something
+   to add or we need to stop MJIT engine.  */
+static rb_nativethread_cond_t mjit_worker_wakeup;
+/* A thread conditional to wake up workers if at the end of GC.  */
+static rb_nativethread_cond_t mjit_gc_wakeup;
+/* True when GC is working.  */
+static int mjit_in_gc;
+/* True when JIT is working.  */
+static int mjit_in_jit;
+
+/* Path of "/tmp", which can be changed to $TMP in MinGW. */
+static char *tmp_dir;
+/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
+   This is used to invalidate obsoleted CALL_CACHE. */
+static VALUE valid_class_serials;
+
+/* --- Defined in the client thread before starting MJIT threads: ---  */
+/* Used C compiler path.  */
+const char *cc_path;
+/* Name of the precompiled header file.  */
+char *pch_file;
+/* Status of the precompiled header creation.  The status is
+   shared by the workers and the pch thread.  */
+enum pch_status_t mjit_pch_status;
+
+#ifndef _MSC_VER
+/* Name of the header file.  */
+char *mjit_header_file;
+#endif
+
+#ifdef _WIN32
+/* Linker option to enable libruby. */
+char *mjit_libruby_pathflag;
+#endif
+
+#include "mjit_config.h"
+
+#if defined(__GNUC__) && \
+     (!defined(__clang__) || \
+      (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
+#define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
+    "-pipe",
+#else
+#define GCC_PIC_FLAGS /* empty */
+#endif
+
+static const char *const CC_COMMON_ARGS[] = {
+    MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS
+    NULL
+};
+
+/* GCC and CLANG executable paths.  TODO: The paths should absolute
+   ones to prevent changing C compiler for security reasons.  */
+#define CC_PATH CC_COMMON_ARGS[0]
+
+static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
+static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
+
+static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
+static const char *const CC_DLDFLAGS_ARGS[] = {
+    MJIT_DLDFLAGS
+#if defined __GNUC__ && !defined __clang__
+    "-nostartfiles",
+# if !defined(_WIN32) && !defined(__CYGWIN__)
+    "-nodefaultlibs", "-nostdlib",
+# endif
+#endif
+    NULL
+};
+
+static const char *const CC_LIBS[] = {
+#if defined(_WIN32) || defined(__CYGWIN__)
+    MJIT_LIBS
+# if defined __GNUC__ && !defined __clang__
+#  if defined(_WIN32)
+    "-lmsvcrt",
+#  endif
+    "-lgcc",
+# endif
+#endif
+    NULL
+};
+
+#define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
 
 /* Print the arguments according to FORMAT to stderr only if MJIT
    verbose option value is more or equal to LEVEL.  */
@@ -283,104 +407,6 @@ free_unit(struct rb_mjit_unit *unit)
     xfree(unit);
 }
 
-#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
-#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
-#define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
-
-#include "mjit_config.h"
-
-#if defined(__GNUC__) && \
-     (!defined(__clang__) || \
-      (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
-#define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
-    "-pipe",
-#else
-#define GCC_PIC_FLAGS /* empty */
-#endif
-
-static const char *const CC_COMMON_ARGS[] = {
-    MJIT_CC_COMMON MJIT_CFLAGS GCC_PIC_FLAGS
-    NULL
-};
-
-/* GCC and CLANG executable paths.  TODO: The paths should absolute
-   ones to prevent changing C compiler for security reasons.  */
-#define CC_PATH CC_COMMON_ARGS[0]
-
-#ifdef _WIN32
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
-#define WIFEXITED(S) ((S) != STILL_ACTIVE)
-#define WEXITSTATUS(S) (S)
-#define WIFSIGNALED(S) (0)
-typedef intptr_t pid_t;
-#endif
-
-/* process.c */
-rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int options,
-                          rb_nativethread_cond_t *cond);
-
-/* Atomically set function pointer if possible. */
-#define MJIT_ATOMIC_SET(var, val) (void)ATOMIC_PTR_EXCHANGE(var, val)
-
-/* A copy of MJIT portion of MRI options since MJIT initialization.  We
-   need them as MJIT threads still can work when the most MRI data were
-   freed. */
-struct mjit_options mjit_opts;
-
-/* TRUE if MJIT is enabled.  */
-int mjit_enabled = FALSE;
-/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
-   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
-int mjit_call_p = FALSE;
-
-/* Priority queue of iseqs waiting for JIT compilation.
-   This variable is a pointer to head unit of the queue. */
-static struct rb_mjit_unit_list unit_queue;
-/* List of units which are successfully compiled. */
-static struct rb_mjit_unit_list active_units;
-/* List of compacted so files which will be deleted in `mjit_finish()`. */
-static struct rb_mjit_unit_list compact_units;
-/* The number of so far processed ISEQs, used to generate unique id.  */
-static int current_unit_num;
-/* A mutex for conitionals and critical sections.  */
-static rb_nativethread_lock_t mjit_engine_mutex;
-/* A thread conditional to wake up `mjit_finish` at the end of PCH thread.  */
-static rb_nativethread_cond_t mjit_pch_wakeup;
-/* A thread conditional to wake up the client if there is a change in
-   executed unit status.  */
-static rb_nativethread_cond_t mjit_client_wakeup;
-/* A thread conditional to wake up a worker if there we have something
-   to add or we need to stop MJIT engine.  */
-static rb_nativethread_cond_t mjit_worker_wakeup;
-/* A thread conditional to wake up workers if at the end of GC.  */
-static rb_nativethread_cond_t mjit_gc_wakeup;
-/* True when GC is working.  */
-static int mjit_in_gc;
-/* True when JIT is working.  */
-static int mjit_in_jit;
-
-/* Path of "/tmp", which can be changed to $TMP in MinGW. */
-static char *tmp_dir;
-/* Hash like { 1 => true, 2 => true, ... } whose keys are valid `class_serial`s.
-   This is used to invalidate obsoleted CALL_CACHE. */
-static VALUE valid_class_serials;
-
-/* --- Defined in the client thread before starting MJIT threads: ---  */
-/* Used C compiler path.  */
-const char *cc_path;
-/* Name of the precompiled header file.  */
-char *pch_file;
-
-#ifndef _MSC_VER
-/* Name of the header file.  */
-char *mjit_header_file;
-#endif
-
-#ifdef _WIN32
-/* Linker option to enable libruby. */
-char *mjit_libruby_pathflag;
-#endif
-
 /* Start a critical section.  Use message MSG to print debug info at
    LEVEL.  */
 static inline void
@@ -433,41 +459,7 @@ real_ms_time(void)
 }
 #endif
 
-static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
-static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
-
-static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
-static const char *const CC_DLDFLAGS_ARGS[] = {
-    MJIT_DLDFLAGS
-#if defined __GNUC__ && !defined __clang__
-    "-nostartfiles",
-# if !defined(_WIN32) && !defined(__CYGWIN__)
-    "-nodefaultlibs", "-nostdlib",
-# endif
-#endif
-    NULL
-};
-
-static const char *const CC_LIBS[] = {
-#if defined(_WIN32) || defined(__CYGWIN__)
-    MJIT_LIBS
-# if defined __GNUC__ && !defined __clang__
-#  if defined(_WIN32)
-    "-lmsvcrt",
-#  endif
-    "-lgcc",
-# endif
-#endif
-    NULL
-};
-
-#define CC_CODEFLAG_ARGS (mjit_opts.debug ? CC_DEBUG_ARGS : CC_OPTIMIZE_ARGS)
-
-/* Status of the precompiled header creation.  The status is
-   shared by the workers and the pch thread.  */
-enum pch_status_t mjit_pch_status;
-
-/* Return TRUE if class_serial is not obsoleted. */
+/* Return TRUE if class_serial is not obsoleted. This is used by mjit_compile.c. */
 int
 mjit_valid_class_serial_p(rb_serial_t class_serial)
 {
@@ -653,6 +645,10 @@ exec_process(const char *path, char *const argv[])
     }
     return exit_code;
 }
+
+#define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
+#define append_str(p, str) append_str2(p, str, sizeof(str)-1)
+#define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
 
 #ifdef _MSC_VER
 /* Compile C file to so. It returns 1 if it succeeds. (mswin) */
