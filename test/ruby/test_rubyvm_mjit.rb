@@ -21,7 +21,10 @@ class TestRubyVMMJIT < Test::Unit::TestCase
       print RubyVM::MJIT.pause # no JIT here
     EOS
     assert_equal('truefalsefalse', out)
-    assert_equal(5, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size)
+    assert_equal(
+      5, err.scan(/#{JITSupport::JIT_SUCCESS_PREFIX}/).size,
+      "unexpected stdout:\n```\n#{out}```\n\nstderr:\n```\n#{err}```",
+    )
   end
 
   def test_pause_wait_false
