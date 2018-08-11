@@ -318,7 +318,7 @@ mjit_warning(const char *format, ...)
 static struct rb_mjit_unit_node *
 create_list_node(struct rb_mjit_unit *unit)
 {
-    struct rb_mjit_unit_node *node = ZALLOC(struct rb_mjit_unit_node);
+    struct rb_mjit_unit_node *node = (struct rb_mjit_unit_node *)calloc(1, sizeof(struct rb_mjit_unit_node)); /* To prevent GC, don't use ZALLOC */
     node->unit = unit;
     return node;
 }
@@ -361,7 +361,7 @@ remove_from_list(struct rb_mjit_unit_node *node, struct rb_mjit_unit_list *list)
         list->head = NULL;
     }
     list->length--;
-    xfree(node);
+    free(node);
 }
 
 static void
@@ -419,7 +419,7 @@ free_unit(struct rb_mjit_unit *unit)
     if (unit->handle) /* handle is NULL if it's in queue */
         dlclose(unit->handle);
     clean_object_files(unit);
-    xfree(unit);
+    free(unit);
 }
 
 /* Start a critical section.  Use message MSG to print debug info at
