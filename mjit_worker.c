@@ -266,7 +266,7 @@ static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL}
 static const char *const CC_DLDFLAGS_ARGS[] = {
     MJIT_DLDFLAGS
 #ifdef USE_ELF /* force disable compression to get line number on addr2line.c */
-    "-Wl,--compress-debug-sections=none",
+    MJIT_DLDFLAGS_NOCOMPRESS
 #endif
 #if defined __GNUC__ && !defined __clang__
     "-nostartfiles",
