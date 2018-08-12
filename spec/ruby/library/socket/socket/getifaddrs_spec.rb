@@ -61,7 +61,7 @@ describe 'Socket.getifaddrs' do
     end
   end
 
-    platform_is_not :windows do
+  platform_is_not :windows do
     describe 'the Socket::Ifaddr broadcast address' do
       before do
         @addrs = @ifaddrs.map(&:broadaddr).compact
@@ -83,7 +83,7 @@ describe 'Socket.getifaddrs' do
 
     describe 'the Socket::Ifaddr netmask address' do
       before do
-        @addrs = @ifaddrs.map(&:netmask).compact
+        @addrs = @ifaddrs.map(&:netmask).compact.select(&:ip?)
       end
 
       it 'is an Addrinfo' do
