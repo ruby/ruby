@@ -4078,6 +4078,47 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 }
 
 static int
+when_splat_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
+                LABEL *l1, int only_special_literals, VALUE literals)
+{
+    const int line = nd_line(vals);
+
+    switch (nd_type(vals)) {
+      case NODE_ARRAY:
+        if (when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals) < 0)
+            return COMPILE_NG;
+        break;
+      case NODE_SPLAT:
+        ADD_INSN (cond_seq, line, dup);
+        CHECK(COMPILE(cond_seq, "when splat", vals->nd_head));
+        ADD_INSN1(cond_seq, line, splatarray, Qfalse);
+        ADD_INSN1(cond_seq, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+        ADD_INSNL(cond_seq, line, branchif, l1);
+        break;
+      case NODE_ARGSCAT:
+        CHECK(when_splat_vals(iseq, cond_seq, vals->nd_head, l1, only_special_literals, literals));
+        CHECK(when_splat_vals(iseq, cond_seq, vals->nd_body, l1, only_special_literals, literals));
+        break;
+      case NODE_ARGSPUSH:
+        CHECK(when_splat_vals(iseq, cond_seq, vals->nd_head, l1, only_special_literals, literals));
+        ADD_INSN (cond_seq, line, dup);
+        CHECK(COMPILE(cond_seq, "when argspush body", vals->nd_body));
+        ADD_INSN1(cond_seq, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
+        ADD_INSNL(cond_seq, line, branchif, l1);
+        break;
+      default:
+        ADD_INSN (cond_seq, line, dup);
+        CHECK(COMPILE(cond_seq, "when val", vals));
+        ADD_INSN1(cond_seq, line, splatarray, Qfalse);
+        ADD_INSN1(cond_seq, line, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+        ADD_INSNL(cond_seq, line, branchif, l1);
+        break;
+    }
+    return COMPILE_OK;
+}
+
+
+static int
 compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     switch (nd_type(node)) {
@@ -4996,10 +5037,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	      case NODE_ARGSCAT:
 	      case NODE_ARGSPUSH:
 		only_special_literals = 0;
-		ADD_INSN (cond_seq, nd_line(vals), dup);
-		CHECK(COMPILE(cond_seq, "when/cond splat", vals));
-		ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-		ADD_INSNL(cond_seq, nd_line(vals), branchif, l1);
+		CHECK(when_splat_vals(iseq, cond_seq, vals, l1, only_special_literals, literals));
 		break;
 	      default:
 		UNKNOWN_NODE("NODE_CASE", vals, COMPILE_NG);
