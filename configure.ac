@@ -543,7 +543,7 @@ AS_IF([test "$GCC" = yes], [
     ])
     AS_IF([test "x$compress_debug_sections" != xno], [
 	RUBY_APPEND_OPTION(DLDFLAGS, ${linker_flag}--compress-debug-sections=$compress_debug_sections)
-	RUBY_APPEND_OPTION(MJIT_DLDFLAGS_NOCOMPRESS, ${linker_flag}--compress-debug-sections=no)
+	RUBY_APPEND_OPTION(MJIT_DLDFLAGS_NOCOMPRESS, ${linker_flag}--compress-debug-sections=none)
     ])
 
     AS_CASE(["$target_os"],[mingw*], [
