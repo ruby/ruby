@@ -8950,6 +8950,7 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 	else {
 	    match = rb_backref_get();
 	    regs = RMATCH_REGS(match);
+	    pos = BEG(0);
 	    end = END(0);
 	}
 	if (pos == end) {
