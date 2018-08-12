@@ -254,11 +254,20 @@ static const char *const CC_COMMON_ARGS[] = {
 #define CC_PATH CC_COMMON_ARGS[0]
 
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
-static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
+static const char *const CC_OPTIMIZE_ARGS[] = {
+    MJIT_OPTFLAGS
+#ifdef USE_ELF /* at least -g1 is required to get line number on addr2line.c, and -g (-g2) is slow. */
+    "-g1",
+#endif
+    NULL
+};
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {
     MJIT_DLDFLAGS
+#ifdef USE_ELF /* force disable compression to get line number on addr2line.c */
+    "-Wl,--compress-debug-sections=none",
+#endif
 #if defined __GNUC__ && !defined __clang__
     "-nostartfiles",
 # if !defined(_WIN32) && !defined(__CYGWIN__)
