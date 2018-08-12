@@ -4955,17 +4955,13 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "case");
 
     node = node->nd_body;
+    EXPECT_NODE("NODE_CASE", node, NODE_WHEN, COMPILE_NG);
     type = nd_type(node);
     line = nd_line(node);
     lineno = nd_first_lineno(node);
     column = nd_first_column(node);
     last_lineno = nd_last_lineno(node);
     last_column = nd_last_column(node);
-
-    if (type != NODE_WHEN) {
-	COMPILE_ERROR(ERROR_ARGS "NODE_CASE: unexpected node. must be NODE_WHEN, but %s", ruby_node_name(type));
-	return COMPILE_NG;
-    }
 
     endlabel = NEW_LABEL(line);
     elselabel = NEW_LABEL(line);
