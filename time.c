@@ -2671,11 +2671,7 @@ static time_t
 timegm_noleapsecond(struct tm *tm)
 {
     long tm_year = tm->tm_year;
-    int tm_yday = tm->tm_mday;
-    if (leap_year_p(tm_year + 1900))
-	tm_yday += leap_year_yday_offset[tm->tm_mon];
-    else
-	tm_yday += common_year_yday_offset[tm->tm_mon];
+    int tm_yday = calc_tm_yday(tm->tm_year, tm->tm_mon, tm->tm_mday);
 
     /*
      *  `Seconds Since the Epoch' in SUSv3:
