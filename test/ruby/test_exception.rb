@@ -1157,4 +1157,15 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     message = e.full_message(highlight: true)
     assert_match(/\e/, message)
   end
+
+  def test_exception_in_message
+    code = "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class Bug14566 < StandardError
+        def message; raise self.class; end
+      end
+      raise Bug14566
+    end;
+    assert_in_out_err([], code, [], /Bug14566/, success: false, timeout: 1)
+  end
 end
