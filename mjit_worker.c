@@ -133,7 +133,7 @@ struct rb_mjit_unit {
     /* This value is always set for `compact_all_jit_code`. Also used for lazy deletion. */
     char *o_file;
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) || defined(USE_ELF)
     /* DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted. */
     char *so_file;
 #endif
@@ -399,7 +399,7 @@ clean_object_files(struct rb_mjit_unit *unit)
     }
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(USE_ELF)
     if (unit->so_file) {
         char *so_file = unit->so_file;
 
@@ -671,6 +671,20 @@ exec_process(const char *path, char *const argv[])
     return exit_code;
 }
 
+static void
+remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
+{
+#if defined(_WIN32) || defined(USE_ELF)
+    /* Windows can't remove files while it's used. With USE_ELF, we use it to get a line
+       number and symbol name on addr2line for debugging and future optimization. */
+    unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
+    if (unit->so_file == NULL)
+        mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
+#else
+    remove_file(so_file);
+#endif
+}
+
 #define append_str2(p, str, len) ((char *)memcpy((p), str, (len))+(len))
 #define append_str(p, str) append_str2(p, str, sizeof(str)-1)
 #define append_lit(p, str) append_str2(p, str, rb_strlen_lit(str))
@@ -893,15 +907,8 @@ compact_all_jit_code(void)
         node->unit = unit;
         add_to_list(node, &compact_units);
 
-        if (!mjit_opts.save_temps) {
-#  ifdef _WIN32
-            unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
-            if (unit->so_file == NULL)
-                mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
-#  else
-            remove_file(so_file);
-#  endif
-        }
+        if (!mjit_opts.save_temps)
+            remove_so_file(so_file, unit);
 
         CRITICAL_SECTION_START(3, "in compact_all_jit_code to read list");
         for (node = active_units.head; node != NULL; node = node->next) {
@@ -1114,15 +1121,8 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     }
 
     func = load_func_from_so(so_file, funcname, unit);
-    if (!mjit_opts.save_temps) {
-#ifdef _WIN32
-        unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
-        if (unit->so_file == NULL)
-            mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
-#else
-        remove_file(so_file);
-#endif
-    }
+    if (!mjit_opts.save_temps)
+        remove_so_file(so_file, unit);
 
     if ((uintptr_t)func > (uintptr_t)LAST_JIT_ISEQ_FUNC) {
         struct rb_mjit_unit_node *node = create_list_node(unit);
