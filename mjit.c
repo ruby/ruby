@@ -192,22 +192,20 @@ create_unit(const rb_iseq_t *iseq)
 static void
 mark_ec_units(rb_execution_context_t *ec)
 {
-    const rb_iseq_t *iseq;
     const rb_control_frame_t *cfp;
-    rb_control_frame_t *last_cfp = ec->cfp;
-    const rb_control_frame_t *end_marker_cfp;
-    uintptr_t i, size;
 
     if (ec->vm_stack == NULL)
         return;
-    end_marker_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
-    size = end_marker_cfp - last_cfp;
-    for (i = 0, cfp = end_marker_cfp - 1; i < size; i++, cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+    for (cfp = RUBY_VM_END_CONTROL_FRAME(ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        const rb_iseq_t *iseq;
         if (cfp->pc && (iseq = cfp->iseq) != NULL
             && imemo_type((VALUE) iseq) == imemo_iseq
             && (iseq->body->jit_unit) != NULL) {
             iseq->body->jit_unit->used_code_p = TRUE;
         }
+
+        if (cfp == ec->cfp)
+            break; /* reached the most recent cfp */
     }
 }
 
