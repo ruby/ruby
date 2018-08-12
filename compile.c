@@ -4067,7 +4067,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
 	    ADD_INSN1(cond_seq, nd_line(val), putobject, lit);
 	}
 	else {
-	    COMPILE(cond_seq, "when cond", val);
+	    if (!COMPILE(cond_seq, "when cond", val)) return -1;
 	}
 
 	ADD_INSN1(cond_seq, nd_line(vals), checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE));
@@ -4994,6 +4994,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	    switch (nd_type(vals)) {
 	      case NODE_ARRAY:
 		only_special_literals = when_vals(iseq, cond_seq, vals, l1, only_special_literals, literals);
+		if (only_special_literals < 0) return COMPILE_NG;
 		break;
 	      case NODE_SPLAT:
 	      case NODE_ARGSCAT:
