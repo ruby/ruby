@@ -1998,6 +1998,14 @@ AS_IF([test x"$ac_cv_func_clock_gettime" != xyes], [
     ])
 ])
 AC_CHECK_FUNCS(clock_getres) # clock_getres should be tested after clock_gettime test including librt test.
+AC_CHECK_LIB([rt], [timer_create])
+AC_CHECK_LIB([rt], [timer_settime])
+AS_IF([test x"$ac_cv_lib_rt_timer_create" = xyes], [
+    AC_DEFINE(HAVE_TIMER_CREATE, 1)
+])
+AS_IF([test x"$ac_cv_lib_rt_timer_settime" = xyes], [
+    AC_DEFINE(HAVE_TIMER_SETTIME, 1)
+])
 
 AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
   [AC_TRY_COMPILE([
