@@ -101,7 +101,9 @@ void *alloca();
 #define PATH_MAX 4096
 #endif
 
-#ifndef SHF_COMPRESSED /* compatibility with glibc < 2.22 */
+#ifdef SHF_COMPRESSED
+#include <zlib.h>
+#else /* compatibility with glibc < 2.22 */
 #define SHF_COMPRESSED 0
 #endif
 
@@ -478,6 +480,41 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     fill_lines(num_traces, traces, 0, objp, lines, offset);
 }
 
+static int
+parse_compressed_debug_line(int num_traces, void **traces,
+		 char *debug_line, unsigned long size,
+		 obj_info_t *obj, line_info_t *lines, int offset)
+{
+    void *uncompressed_debug_line;
+    ElfW(Chdr) *chdr = (ElfW(Chdr) *)debug_line;
+    unsigned long destsize = chdr->ch_size;
+    int ret = 0;
+
+    if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
+	/* unsupported compression type */
+	return -1;
+    }
+
+    uncompressed_debug_line = malloc(destsize);
+    if (!uncompressed_debug_line) return -1;
+    ret = uncompress(uncompressed_debug_line, &destsize,
+	    (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
+    if (ret != Z_OK) { /* Z_OK = 0 */
+	goto finish;
+    }
+    ret = parse_debug_line(num_traces, traces,
+	    uncompressed_debug_line,
+	    destsize,
+	    obj, lines, offset);
+    if (ret) {
+	goto finish;
+    }
+
+finish:
+    free(uncompressed_debug_line);
+    return ret ? -1 : 0;
+}
+
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
@@ -644,12 +681,20 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    if (!compressed_p &&
-	    parse_debug_line(num_traces, traces,
-			 file + debug_line_shdr->sh_offset,
-			 debug_line_shdr->sh_size,
-			 obj, lines, offset))
-	goto fail;
+    if (compressed_p) {
+	int r = parse_compressed_debug_line(num_traces, traces,
+		file + debug_line_shdr->sh_offset,
+		debug_line_shdr->sh_size,
+		obj, lines, offset);
+	if (r) goto fail;
+    }
+    else {
+	int r = parse_debug_line(num_traces, traces,
+		file + debug_line_shdr->sh_offset,
+		debug_line_shdr->sh_size,
+		obj, lines, offset);
+	if (r) goto fail;
+    }
 finish:
     return dladdr_fbase;
 fail:
