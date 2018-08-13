@@ -106,7 +106,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Module
 
-  * Module#method_defind?, Module#private_method_defined? and Module#protected_mathod_defined? now accepts the second parameter as optional. If it's true (=default), checks ancestor modules/classes, or checks only the class itself. [Feature #14944]
+  * Module#method_defined?, Module#private_method_defined? and Module#protected_method_defined? now accepts the second parameter as optional. If it's true (=default), checks ancestor modules/classes, or checks only the class itself. [Feature #14944]
 
 * NameError
 
