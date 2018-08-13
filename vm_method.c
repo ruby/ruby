@@ -1301,7 +1301,7 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
 
     me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
     if (me) {
-	if (!inc_super && me->owner != mod) return METHOD_VISI_UNDEF; 
+	if (!inc_super && me->owner != mod) return METHOD_VISI_UNDEF;
 	return METHOD_ENTRY_VISI(me);
     }
     return METHOD_VISI_UNDEF;
