@@ -104,6 +104,7 @@ void *alloca();
 #ifdef SHF_COMPRESSED
 # ifdef HAVE_LIBZ
 #  include <zlib.h>
+#  define SUPPORT_COMPRESSED_DEBUG_LINE
 # endif
 #else /* compatibility with glibc < 2.22 */
 # define SHF_COMPRESSED 0
@@ -482,6 +483,7 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     fill_lines(num_traces, traces, 0, objp, lines, offset);
 }
 
+#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
 static int
 parse_compressed_debug_line(int num_traces, void **traces,
 		 char *debug_line, unsigned long size,
@@ -516,6 +518,7 @@ finish:
     free(uncompressed_debug_line);
     return ret ? -1 : 0;
 }
+#endif
 
 /* read file and fill lines */
 static uintptr_t
@@ -684,7 +687,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     }
 
     if (compressed_p) {
-#ifdef HAVE_LIBZ
+#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
 	int r = parse_compressed_debug_line(num_traces, traces,
 		file + debug_line_shdr->sh_offset,
 		debug_line_shdr->sh_size,
