@@ -1386,7 +1386,13 @@ rb_timer_arm(rb_pid_t current) /* async signal safe */
 
           case 1: return; /* success */
           case 2:
-            rb_async_bug_errno("UBF_TIMER_POSIX state 2 unexpected", EINVAL);
+            /*
+             * it is possible to have another thread disarm, and
+             * a third thread arm finish re-arming before we get
+             * here, so we wasted a syscall with timer_settime but
+             * probably unavoidable in a signal handler.
+             */
+            return;
           default:
             rb_async_bug_errno("UBF_TIMER_POSIX unknown state", ERANGE);
         }
