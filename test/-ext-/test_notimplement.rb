@@ -14,6 +14,6 @@ class Test_NotImplement < Test::Unit::TestCase
   end
 
   def test_not_method_defined
-    assert !Bug.method_defined?(:notimplement)
+    assert !Bug::NotImplement.method_defined?(:notimplement)
   end
 end
