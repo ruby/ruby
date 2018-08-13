@@ -22,7 +22,19 @@ typedef pthread_cond_t rb_nativethread_cond_t;
 
 typedef struct native_thread_data_struct {
     struct list_node ubf_list;
-    rb_nativethread_cond_t sleep_cond;
+#if defined(__GLIBC__) || defined(__FreeBSD__)
+    union
+#else
+    /*
+     * assume the platform condvars are badly implemented and have a
+     * "memory" of which mutex they're associated with
+     */
+    struct
+#endif
+    {
+        rb_nativethread_cond_t intr; /* th->interrupt_lock */
+        rb_nativethread_cond_t gvlq; /* vm->gvl.lock */
+    } cond;
 } native_thread_data_t;
 
 #undef except
@@ -32,12 +44,12 @@ typedef struct native_thread_data_struct {
 
 typedef struct rb_global_vm_lock_struct {
     /* fast path */
-    unsigned long acquired;
+    const struct rb_thread_struct *acquired;
     rb_nativethread_lock_t lock;
 
     /* slow path */
-    volatile unsigned long waiting;
-    rb_nativethread_cond_t cond;
+    struct list_head waitq;
+    const struct rb_thread_struct *timer;
 
     /* yield */
     rb_nativethread_cond_t switch_cond;
