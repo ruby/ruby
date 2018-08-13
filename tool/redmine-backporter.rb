@@ -375,6 +375,7 @@ commands = {
     end
     id = "##{i["id"]}".color(*PRIORITIES[i["priority"]["name"]])
     sio = StringIO.new
+    sio.set_encoding("utf-8")
     sio.puts <<eom
 #{i["subject"].color(bold: true, underscore: true)}
 #{i["project"]["name"]} [#{i["tracker"]["name"]} #{id}] #{i["status"]["name"]} (#{i["created_on"]})
