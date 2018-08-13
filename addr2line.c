@@ -127,6 +127,7 @@ struct obj_info {
     const char *path; /* object path */
     void *mapped;
     size_t mapped_size;
+    void *uncompressed_debug_line;
     uintptr_t base_addr;
     obj_info_t *next;
 };
@@ -503,20 +504,18 @@ parse_compressed_debug_line(int num_traces, void **traces,
     if (!uncompressed_debug_line) return -1;
     ret = uncompress(uncompressed_debug_line, &destsize,
 	    (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
-    if (ret != Z_OK) { /* Z_OK = 0 */
-	goto finish;
-    }
+    if (ret != Z_OK) goto fail;
     ret = parse_debug_line(num_traces, traces,
 	    uncompressed_debug_line,
 	    destsize,
 	    obj, lines, offset);
-    if (ret) {
-	goto finish;
-    }
+    if (ret) goto fail;
+    obj->uncompressed_debug_line = uncompressed_debug_line;
+    return 0;
 
-finish:
+fail:
     free(uncompressed_debug_line);
-    return ret ? -1 : 0;
+    return -1;
 }
 #endif
 
@@ -843,6 +842,9 @@ next_line:
 	if (o->mapped_size) {
 	    munmap(o->mapped, o->mapped_size);
 	}
+        if (o->uncompressed_debug_line) {
+            free(o->uncompressed_debug_line);
+        }
 	free(o);
     }
     free(lines);
