@@ -468,17 +468,42 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_method_defined?
-    assert !User.method_defined?(:wombat)
-    assert User.method_defined?(:mixin)
-    assert User.method_defined?(:user)
-    assert User.method_defined?(:user2)
-    assert !User.method_defined?(:user3)
+    [User, Class.new{include User}, Class.new{prepend User}].each do |klass|
+      [[], [true]].each do |args|
+        assert !klass.method_defined?(:wombat, *args)
+        assert klass.method_defined?(:mixin, *args)
+        assert klass.method_defined?(:user, *args)
+        assert klass.method_defined?(:user2, *args)
+        assert !klass.method_defined?(:user3, *args)
 
-    assert !User.method_defined?("wombat")
-    assert User.method_defined?("mixin")
-    assert User.method_defined?("user")
-    assert User.method_defined?("user2")
-    assert !User.method_defined?("user3")
+        assert !klass.method_defined?("wombat", *args)
+        assert klass.method_defined?("mixin", *args)
+        assert klass.method_defined?("user", *args)
+        assert klass.method_defined?("user2", *args)
+        assert !klass.method_defined?("user3", *args)
+      end
+    end
+  end
+
+  def test_method_defined_without_include_super
+    assert User.method_defined?(:user, false)
+    assert !User.method_defined?(:mixin, false)
+    assert Mixin.method_defined?(:mixin, false)
+
+    User.const_set(:FOO, c = Class.new)
+
+    c.prepend(User)
+    assert !c.method_defined?(:user, false)
+    c.define_method(:user){}
+    assert c.method_defined?(:user, false)
+
+    assert !c.method_defined?(:mixin, false)
+    c.define_method(:mixin){}
+    assert c.method_defined?(:mixin, false)
+
+    assert !c.method_defined?(:userx, false)
+    c.define_method(:userx){}
+    assert c.method_defined?(:userx, false)
   end
 
   def module_exec_aux
@@ -974,8 +999,8 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_method_defined
-    c = Class.new
-    c.class_eval do
+    cl = Class.new
+    def_methods = proc do
       def foo; end
       def bar; end
       def baz; end
@@ -983,33 +1008,47 @@ class TestModule < Test::Unit::TestCase
       protected :bar
       private :baz
     end
+    cl.class_eval(&def_methods)
+    sc = Class.new(cl)
+    mod = Module.new(&def_methods)
+    only_prepend = Class.new{prepend(mod)}
+    empty_prepend = cl.clone
+    empty_prepend.prepend(Module.new)
+    overlap_prepend = cl.clone
+    overlap_prepend.prepend(mod)
 
-    assert_equal(true, c.public_method_defined?(:foo))
-    assert_equal(false, c.public_method_defined?(:bar))
-    assert_equal(false, c.public_method_defined?(:baz))
+    [[], [true], [false]].each do |args|
+      [cl, sc, only_prepend, empty_prepend, overlap_prepend].each do |c|
+        always_false = [sc, only_prepend].include?(c) && args == [false]
 
-    # Test if string arguments are converted to symbols
-    assert_equal(true, c.public_method_defined?("foo"))
-    assert_equal(false, c.public_method_defined?("bar"))
-    assert_equal(false, c.public_method_defined?("baz"))
+        assert_equal(always_false ? false : true, c.public_method_defined?(:foo, *args))
+        assert_equal(always_false ? false : false, c.public_method_defined?(:bar, *args))
+        assert_equal(always_false ? false : false, c.public_method_defined?(:baz, *args))
 
-    assert_equal(false, c.protected_method_defined?(:foo))
-    assert_equal(true, c.protected_method_defined?(:bar))
-    assert_equal(false, c.protected_method_defined?(:baz))
+        # Test if string arguments are converted to symbols
+        assert_equal(always_false ? false : true, c.public_method_defined?("foo", *args))
+        assert_equal(always_false ? false : false, c.public_method_defined?("bar", *args))
+        assert_equal(always_false ? false : false, c.public_method_defined?("baz", *args))
 
-    # Test if string arguments are converted to symbols
-    assert_equal(false, c.protected_method_defined?("foo"))
-    assert_equal(true, c.protected_method_defined?("bar"))
-    assert_equal(false, c.protected_method_defined?("baz"))
+        assert_equal(always_false ? false : false, c.protected_method_defined?(:foo, *args))
+        assert_equal(always_false ? false : true, c.protected_method_defined?(:bar, *args))
+        assert_equal(always_false ? false : false, c.protected_method_defined?(:baz, *args))
 
-    assert_equal(false, c.private_method_defined?(:foo))
-    assert_equal(false, c.private_method_defined?(:bar))
-    assert_equal(true, c.private_method_defined?(:baz))
+        # Test if string arguments are converted to symbols
+        assert_equal(always_false ? false : false, c.protected_method_defined?("foo", *args))
+        assert_equal(always_false ? false : true, c.protected_method_defined?("bar", *args))
+        assert_equal(always_false ? false : false, c.protected_method_defined?("baz", *args))
 
-    # Test if string arguments are converted to symbols
-    assert_equal(false, c.private_method_defined?("foo"))
-    assert_equal(false, c.private_method_defined?("bar"))
-    assert_equal(true, c.private_method_defined?("baz"))
+        assert_equal(always_false ? false : false, c.private_method_defined?(:foo, *args))
+        assert_equal(always_false ? false : false, c.private_method_defined?(:bar, *args))
+        assert_equal(always_false ? false : true, c.private_method_defined?(:baz, *args))
+
+        # Test if string arguments are converted to symbols
+        assert_equal(always_false ? false : false, c.private_method_defined?("foo", *args))
+        assert_equal(always_false ? false : false, c.private_method_defined?("bar", *args))
+        assert_equal(always_false ? false : true, c.private_method_defined?("baz", *args))
+      end
+    end
   end
 
   def test_top_public_private
