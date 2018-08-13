@@ -11,6 +11,8 @@ environment:
   zlib_version: "1.2.11"
   matrix:
     - vs: "120"
+    - MSYS2_ARCH: x86_64
+      MSYSTEM: MINGW64
 matrix:
   fast_finish: true
 notifications:
@@ -93,3 +95,42 @@ for:
     - nmake -l "TESTOPTS=-v -q" test-basic
     - nmake -l "TESTOPTS=-q -j%JOBS%" test-all RUBY_FORCE_TEST_JIT=1
     - nmake -l test-spec
+-
+  matrix:
+    only:
+      - MSYS2_ARCH: x86_64
+        MSYSTEM: MINGW64
+  install:
+    - ver
+    - chcp
+    - SET BITS=%Platform:x86=32%
+    - SET BITS=%BITS:x=%
+    - SET ruby_path=C:\Ruby%ruby_version:-x86=%
+    - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin
+    - ruby --version
+    - mkdir \usr\local\bin
+    - mkdir \usr\local\include
+    - mkdir \usr\local\lib
+  build_script:
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - |
+      bash -ex -c "
+        pacman --noconfirm --sync --refresh --refresh pacman
+        pacman --noconfirm --sync --refresh --refresh --sysupgrade --sysupgrade
+
+        pacman --noconfirm -S --needed base-devel"
+    - |
+      sh -c "ln -s $(which autom4te) /usr/bin/autom4te"
+      sh -c "ln -s $(which m4) /usr/bin/m4"
+      sh -c "ln -s /c/msys64/usr/share/autoconf /usr/share/autoconf"
+      sh -c "$(which autoconf)"
+    - |
+      sh -c "$(pwd)/configure --disable-install-doc --prefix=/usr/local"
+      sh -c "ln -sf $(which mingw32-make) /c/msys64/usr/bin/make.exe"
+      sh -c "mingw32-make -j$(nproc)"
+      sh -c "mingw32-make -j$(nproc) install"
+  test_script:
+    - |
+      sh -c "mingw32-make test"
+      sh -c "mingw32-make -j$(nproc) test-all RUBY_FORCE_TEST_JIT=1"
+      sh -c "mingw32-make -j$(nproc) test-spec MSPECOPT=-j"
