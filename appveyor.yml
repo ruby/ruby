@@ -118,7 +118,7 @@ for:
         pacman --noconfirm --sync --refresh --refresh pacman
         pacman --noconfirm --sync --refresh --refresh --sysupgrade --sysupgrade
 
-        pacman --noconfirm -S --needed base-devel"
+        pacman --noconfirm -S --needed base-devel mingw-w64-x86_64-gdbm"
     - |
       sh -c "ln -s $(which autom4te) /usr/bin/autom4te"
       sh -c "ln -s $(which m4) /usr/bin/m4"
