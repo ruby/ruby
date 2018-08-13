@@ -102,7 +102,8 @@ void *alloca();
 #endif
 
 #ifdef SHF_COMPRESSED
-# ifdef HAVE_LIBZ
+# if defined(ELFCOMPRESS_ZLIB) && defined(HAVE_LIBZ)
+   /* FreeBSD 11.0 lacks ELFCOMPRESS_ZLIB */
 #  include <zlib.h>
 #  define SUPPORT_COMPRESSED_DEBUG_LINE
 # endif
