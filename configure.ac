@@ -2451,6 +2451,9 @@ AS_IF([test "$rb_cv_binary_elf" = yes], [
   AC_CHECK_HEADERS([elf.h elf_abi.h])
   AS_IF([test $ac_cv_header_elf_h = yes -o $ac_cv_header_elf_abi_h = yes], [
     AC_LIBOBJ([addr2line])
+    AS_IF([test "x$compress_debug_sections" = xzlib], [
+      AC_CHECK_LIB([z], [uncompress])
+    ])
   ])
 ])
 
@@ -3067,7 +3070,11 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)'
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(RUBY_PROGRAM_VERSION)'
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-h${linker_flag:+,}"'$(@F)'])
+	AS_IF([test "$GCC" = yes], [
+	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-Wl,-h,$(@F)'
+	], [
+	    LIBRUBY_DLDFLAGS="$DLDFLAGS "'-h $(@F)'
+	])
 	XLDFLAGS="$XLDFLAGS "'-R${libdir}'
 	],
     [hpux*], [
@@ -3314,7 +3321,7 @@ AS_CASE(["$target_os"],
 	])
 	],
     [cygwin*|mingw*], [
-	LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
+	LIBRUBY_DLDFLAGS="${DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'
 	AS_CASE(["$target_os"],
 	[cygwin*], [
 	    AS_IF([test x"$enable_shared" = xyes], [
