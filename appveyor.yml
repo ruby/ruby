@@ -130,7 +130,8 @@ for:
       sh -c "mingw32-make -j$(nproc)"
       sh -c "mingw32-make -j$(nproc) install"
   test_script:
+    # Overriding TEST_EXCLUDES because `--name=!/memory_leak/` is considered as a positive filter on AppVeyor msys2.
     - |
       sh -c "mingw32-make test"
-      sh -c "mingw32-make -j$(nproc) test-all RUBY_FORCE_TEST_JIT=1"
+      sh -c "mingw32-make -j$(nproc) test-all RUBY_FORCE_TEST_JIT=1 V=1 TEST_EXCLUDES='--excludes-dir=test/excludes'"
       sh -c "mingw32-make -j$(nproc) test-spec MSPECOPT=-j"
