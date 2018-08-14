@@ -1580,12 +1580,18 @@ static void
 rb_timer_create(rb_pid_t current)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
+#  if defined(__sun)
+#    define UBF_TIMER_CLOCK CLOCK_REALTIME
+#  else /* Tested Linux and FreeBSD: */
+#    define UBF_TIMER_CLOCK CLOCK_MONOTONIC
+#  endif
+
     struct sigevent sev;
 
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = SIGVTALRM;
     sev.sigev_value.sival_ptr = &timer_posix;
-    if (!timer_create(CLOCK_MONOTONIC, &sev, &timer_posix.timerid))
+    if (!timer_create(UBF_TIMER_CLOCK, &sev, &timer_posix.timerid))
         timer_posix.owner = current;
     else
 	rb_warn("timer_create failed: %s, signals racy", strerror(errno));
