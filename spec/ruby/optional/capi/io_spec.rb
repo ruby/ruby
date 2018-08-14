@@ -236,6 +236,7 @@ describe "C-API IO function" do
 
   describe "rb_io_wait_writable" do
     it "returns false if there is no error condition" do
+      @o.errno = 0
       @o.rb_io_wait_writable(@w_io).should be_false
     end
 
@@ -254,6 +255,7 @@ describe "C-API IO function" do
   platform_is_not :windows do
     describe "rb_io_wait_readable" do
       it "returns false if there is no error condition" do
+        @o.errno = 0
         @o.rb_io_wait_readable(@r_io, false).should be_false
       end
 
@@ -271,6 +273,7 @@ describe "C-API IO function" do
           @w_io.write "rb_io_wait_readable"
         end
 
+        @o.errno = Errno::EAGAIN.new.errno
         @o.rb_io_wait_readable(@r_io, true).should be_true
         @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
 
