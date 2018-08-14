@@ -29,6 +29,8 @@ with all sufficient information, see the ChangeLog file or Redmine
     (1..).each {|index| ... }           # infinite loop from index 1
     ary.zip(1..) {|elem, index| ... }   # ary.each.with_index(1) { }
 
+* Non-Symbol key in keyword arguments hash causes an exception.
+
 === Core classes updates (outstanding ones only)
 
 * Array
