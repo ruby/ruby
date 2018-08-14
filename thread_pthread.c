@@ -55,7 +55,12 @@
 
 #ifndef UBF_TIMER
 #  if defined(HAVE_TIMER_SETTIME) && defined(HAVE_TIMER_CREATE) && \
-      defined(CLOCK_MONOTONIC) && defined(USE_UBF_LIST)
+      defined(CLOCK_MONOTONIC) && defined(USE_UBF_LIST) && \
+      !defined(__sun)
+      /*
+       * XXX somebody with Solaris experience should be able to fix this:
+       * http://rubyci.s3.amazonaws.com/unstable11s/ruby-trunk/log/20180814T042506Z.fail.html.gz
+       */
      /* preferred */
 #    define UBF_TIMER UBF_TIMER_POSIX
 #  elif defined(USE_UBF_LIST)
