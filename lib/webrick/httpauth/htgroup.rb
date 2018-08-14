@@ -63,15 +63,18 @@ module WEBrick
 
       def flush(output=nil)
         output ||= @path
-        tmp = Tempfile.new("htgroup", File::dirname(output))
+        tmp = Tempfile.create("htgroup", File::dirname(output))
         begin
           @group.keys.sort.each{|group|
             tmp.puts(format("%s: %s", group, self.members(group).join(" ")))
           }
+        ensure
           tmp.close
-          File::rename(tmp.path, output)
-        rescue
-          tmp.close(true)
+          if $!
+            File.unlink(tmp.path)
+          else
+            return File.rename(tmp.path, output)
+          end
         end
       end
 
