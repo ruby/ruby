@@ -73,6 +73,12 @@ module Fiddle
     end
 
     def test_nogvl_poll
+      # XXX hack to quiet down CI errors on EINTR from r64353
+      # [ruby-core:88360] [Misc #14937]
+      # Making pipes (and sockets) non-blocking by default would allow
+      # us to get rid of POSIX timers / timer pthread
+      # https://bugs.ruby-lang.org/issues/14968
+      IO.pipe { |r,w| IO.select([r], [w]) }
       begin
         poll = @libc['poll']
       rescue Fiddle::DLError
