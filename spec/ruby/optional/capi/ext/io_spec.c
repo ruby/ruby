@@ -144,8 +144,10 @@ NORETURN(VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p));
 
 VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   int fd = io_spec_get_fd(io);
+# if !SET_NON_BLOCKING_FAILS_ALWAYS
   char buf[RB_IO_WAIT_READABLE_BUF];
   int ret, saved_errno;
+# endif
 
   if (set_non_blocking(fd) == -1)
     rb_sys_fail("set_non_blocking failed");
@@ -173,6 +175,8 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
   }
 
   return ret ? Qtrue : Qfalse;
+# else
+  UNREACHABLE;
 # endif
 }
 #endif
