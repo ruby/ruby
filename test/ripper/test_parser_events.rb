@@ -1458,7 +1458,7 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("[fcall(proc,[],&block([],[void()]))]", parse("proc{|;y|}"))
     if defined?(Process::RLIMIT_AS)
       dir = File.dirname(__FILE__)
-      as = (RubyVM::MJIT.enabled? ? 111 : 100) * 1024 * 1024
+      as = (RubyVM::MJIT.enabled? ? 150 : 100) * 1024 * 1024
       assert_in_out_err(%W(-I#{dir} -rdummyparser),
                         "Process.setrlimit(Process::RLIMIT_AS,#{as}); "\
                         "puts DummyParser.new('proc{|;y|!y}').parse",
