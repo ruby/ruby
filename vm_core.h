@@ -879,9 +879,14 @@ typedef struct rb_thread_struct {
 #ifdef NON_SCALAR_THREAD_ID
     rb_thread_id_string_t thread_id_string;
 #endif
-    enum rb_thread_status status;
-    int to_kill;
-    int priority;
+    BITFIELD(enum rb_thread_status) status : 2;
+    /* bit flags */
+    unsigned int to_kill : 1;
+    unsigned int abort_on_exception: 1;
+    unsigned int report_on_exception: 1;
+    unsigned int pending_interrupt_queue_checked: 1;
+    int8_t priority; /* -3 .. 3 (RUBY_THREAD_PRIORITY_{MIN,MAX}) */
+    uint32_t running_time_us; /* 12500..800000 */
 
     native_thread_data_t native_thread_data;
     void *blocking_region_buffer;
@@ -919,12 +924,7 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
-    uint32_t running_time_us; /* 12500..800000 */
 
-    /* bit flags */
-    unsigned int abort_on_exception: 1;
-    unsigned int report_on_exception: 1;
-    unsigned int pending_interrupt_queue_checked: 1;
 } rb_thread_t;
 
 typedef enum {

@@ -3608,7 +3608,7 @@ rb_thread_priority_set(VALUE thread, VALUE prio)
     else if (priority < RUBY_THREAD_PRIORITY_MIN) {
 	priority = RUBY_THREAD_PRIORITY_MIN;
     }
-    target_th->priority = priority;
+    target_th->priority = (int8_t)priority;
 #endif
     return INT2NUM(target_th->priority);
 }
