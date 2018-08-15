@@ -21,6 +21,9 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def teardown
+    if ENV.key?('APPVEYOR') && /mingw/ =~ RUBY_PLATFORM
+      return
+    end
     ENV[INPUTRC] = @inputrc
     Readline.instance_variable_set("@completion_proc", nil)
     begin
