@@ -105,7 +105,7 @@ static const struct timespec *sigwait_timeout(rb_thread_t *, int sigwait_fd,
                                               int *drained_p);
 static void rb_timer_disarm(void);
 
-#define TIMER_THREAD_CREATED_P() (timer_thread_pipe.owner_process == getpid())
+#define TIMER_THREAD_CREATED_P() (signal_self_pipe.owner_process == getpid())
 
 /* for testing, and in case we come across a platform w/o pipes: */
 #define BUSY_WAIT_SIGNALS (0)
@@ -1330,7 +1330,7 @@ static struct {
 
     /* volatile for signal handler use: */
     volatile rb_pid_t owner_process;
-} timer_thread_pipe = {
+} signal_self_pipe = {
     {-1, -1},
 };
 
@@ -1410,8 +1410,8 @@ rb_thread_wakeup_timer_thread(int sig)
 {
     /* must be safe inside sighandler, so no mutex */
     rb_pid_t current = getpid();
-    if (timer_thread_pipe.owner_process == current) {
-        rb_thread_wakeup_timer_thread_fd(timer_thread_pipe.normal[1]);
+    if (signal_self_pipe.owner_process == current) {
+        rb_thread_wakeup_timer_thread_fd(signal_self_pipe.normal[1]);
 
         /*
          * system_working check is required because vm and main_thread are
@@ -1605,21 +1605,21 @@ rb_thread_create_timer_thread(void)
 {
     /* we only create the pipe, and lazy-spawn */
     rb_pid_t current = getpid();
-    rb_pid_t owner = timer_thread_pipe.owner_process;
+    rb_pid_t owner = signal_self_pipe.owner_process;
 
     if (owner && owner != current) {
-        CLOSE_INVALIDATE(timer_thread_pipe.normal[0]);
-        CLOSE_INVALIDATE(timer_thread_pipe.normal[1]);
+        CLOSE_INVALIDATE(signal_self_pipe.normal[0]);
+        CLOSE_INVALIDATE(signal_self_pipe.normal[1]);
         rb_timer_invalidate();
     }
 
-    if (setup_communication_pipe_internal(timer_thread_pipe.normal) < 0) return;
+    if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
 
     if (owner != current) {
         /* validate pipe on this process */
         rb_timer_create(current);
         sigwait_th = THREAD_INVALID;
-        timer_thread_pipe.owner_process = current;
+        signal_self_pipe.owner_process = current;
     }
     else if (UBF_TIMER == UBF_TIMER_PTHREAD) {
         /* UBF_TIMER_PTHREAD needs to recreate after fork */
@@ -1738,12 +1738,12 @@ rb_reserved_fd_p(int fd)
     if (fd == timer_pthread.low[0] || fd == timer_pthread.low[1])
         goto check_pid;
 #endif
-    if (fd == timer_thread_pipe.normal[0] || fd == timer_thread_pipe.normal[1])
+    if (fd == signal_self_pipe.normal[0] || fd == signal_self_pipe.normal[1])
         goto check_pid;
 
     return 0;
 check_pid:
-    if (timer_thread_pipe.owner_process == getpid()) /* async-signal-safe */
+    if (signal_self_pipe.owner_process == getpid()) /* async-signal-safe */
 	return 1;
     return 0;
 }
@@ -1811,8 +1811,8 @@ rb_sigwait_fd_get(const rb_thread_t *th)
 {
     rb_pid_t current = getpid();
 
-    if (timer_thread_pipe.owner_process == current &&
-        timer_thread_pipe.normal[0] >= 0) {
+    if (signal_self_pipe.owner_process == current &&
+        signal_self_pipe.normal[0] >= 0) {
 
         /*
          * no need to keep firing the timer if any thread is sleeping
@@ -1821,7 +1821,7 @@ rb_sigwait_fd_get(const rb_thread_t *th)
         rb_timer_disarm();
 
         if (ATOMIC_PTR_CAS(sigwait_th, THREAD_INVALID, th) == THREAD_INVALID) {
-            return timer_thread_pipe.normal[0];
+            return signal_self_pipe.normal[0];
         }
     }
     return -1; /* avoid thundering herd */
@@ -1832,7 +1832,7 @@ rb_sigwait_fd_put(const rb_thread_t *th, int fd)
 {
     const rb_thread_t *old;
 
-    VM_ASSERT(timer_thread_pipe.normal[0] == fd);
+    VM_ASSERT(signal_self_pipe.normal[0] == fd);
     old = ATOMIC_PTR_EXCHANGE(sigwait_th, THREAD_INVALID);
     if (old != th) assert(old == th);
 }
