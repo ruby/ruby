@@ -43,11 +43,28 @@
 
 /*
  * UBF_TIMER and ubf_list both use SIGVTALRM.
- * UBF_TIMER is to close TOCTTOU signal race on programs
- * without GVL contention blocking read/write to sockets.
  *
- * ubf_list wakeups may be triggered periodically by UBF_TIMER on
- * gvl_yield.
+ * UBF_TIMER has NOTHING to do with thread timeslices (TIMER_INTERRUPT_MASK)
+ *
+ * UBF_TIMER is to close TOCTTOU signal race on programs where we
+ * cannot rely on GVL contention (vm->gvl.timer) to perform wakeups
+ * while a thread is doing blocking I/O on sockets or pipes.  With
+ * rb_thread_call_without_gvl and similar functions:
+ *
+ * (1) Check interrupts.
+ * (2) release GVL.
+ * (2a) signal received
+ * (3) call func with data1 (blocks for a long time without ubf_timer)
+ * (4) acquire GVL.
+ *     Other Ruby threads can not run in parallel any more.
+ * (5) Check interrupts.
+ *
+ * We need UBF_TIMER to break out of (3) if (2a) happens.
+ *
+ * ubf_list wakeups may be triggered on gvl_yield.
+ *
+ * If we have vm->gvl.timer (on GVL contention), we don't need UBF_TIMER
+ * as it can perform the same tasks while doing timeslices.
  */
 #define UBF_TIMER_NONE 0
 #define UBF_TIMER_POSIX 1
@@ -154,6 +171,37 @@ designate_timer_thread(rb_vm_t *vm)
     return FALSE;
 }
 
+/*
+ * We become designated timer thread to kick vm->gvl.acquired
+ * periodically.  Continue on old timeout if it expired.
+ */
+static void
+do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
+{
+    static struct timespec ts;
+    static int err = ETIMEDOUT;
+    native_thread_data_t *nd = &th->native_thread_data;
+
+    /* take over wakeups from UBF_TIMER */
+    ubf_timer_disarm();
+
+    if (err == ETIMEDOUT) {
+        ts.tv_sec = 0;
+        ts.tv_nsec = TIME_QUANTUM_NSEC;
+        ts = native_cond_timeout(&nd->cond.gvlq, ts);
+    }
+    vm->gvl.timer = th;
+    err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
+    vm->gvl.timer = 0;
+    ubf_wakeup_all_threads();
+
+    /*
+     * Timeslice.  Warning: the process may fork while this
+     * thread is contending for GVL:
+     */
+    if (vm->gvl.acquired) timer_thread_function();
+}
+
 static void
 gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
 {
@@ -164,33 +212,10 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
 	          "we must not be in ubf_list and GVL waitq at the same time");
 
         list_add_tail(&vm->gvl.waitq, &nd->node.gvl);
+
         do {
             if (!vm->gvl.timer) {
-                static struct timespec ts;
-                static int err = ETIMEDOUT;
-
-                /* take over wakeups from UBF_TIMER */
-                ubf_timer_disarm();
-
-                /*
-                 * become designated timer thread to kick vm->gvl.acquired
-                 * periodically.  Continue on old timeout if it expired:
-                 */
-                if (err == ETIMEDOUT) {
-                    ts.tv_sec = 0;
-                    ts.tv_nsec = TIME_QUANTUM_NSEC;
-                    ts = native_cond_timeout(&nd->cond.gvlq, ts);
-                }
-                vm->gvl.timer = th;
-                err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
-                vm->gvl.timer = 0;
-                ubf_wakeup_all_threads();
-
-                /*
-                 * Timeslice.  Warning: the process may fork while this
-                 * thread is contending for GVL:
-                 */
-                if (vm->gvl.acquired) timer_thread_function();
+                do_gvl_timer(vm, th);
             }
             else {
                 rb_native_cond_wait(&nd->cond.gvlq, &vm->gvl.lock);
@@ -1368,6 +1393,10 @@ rb_thread_wakeup_timer_thread_fd(int fd)
     }
 }
 
+/*
+ * This ensures we get a SIGVTALRM in TIME_QUANTUM_MSEC if our
+ * process could not react to the original signal in time.
+ */
 static void
 ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
