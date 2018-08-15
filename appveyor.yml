@@ -103,35 +103,40 @@ for:
   install:
     - ver
     - chcp
+    - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
     - SET ruby_path=C:\Ruby%ruby_version:-x86=%
     - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin
     - ruby --version
+    - mkdir \usr\bin
+    - mkdir \usr\share
     - mkdir \usr\local\bin
     - mkdir \usr\local\include
     - mkdir \usr\local\lib
   build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
-    - |
-      bash -ex -c "
-        pacman --noconfirm --sync --refresh --refresh pacman
-        pacman --noconfirm --sync --refresh --refresh --sysupgrade --sysupgrade
-
-        pacman --noconfirm -S --needed base-devel mingw-w64-x86_64-gdbm"
-    - |
-      sh -c "ln -s $(which autom4te) /usr/bin/autom4te"
-      sh -c "ln -s $(which m4) /usr/bin/m4"
-      sh -c "ln -s /c/msys64/usr/share/autoconf /usr/share/autoconf"
-      sh -c "$(which autoconf)"
-    - |
-      sh -c "$(pwd)/configure --disable-install-doc --prefix=/usr/local"
-      sh -c "ln -sf $(which mingw32-make) /c/msys64/usr/bin/make.exe"
-      sh -c "mingw32-make -j$(nproc)"
-      sh -c "mingw32-make -j$(nproc) install"
+    - pacman --noconfirm --sync --refresh --refresh pacman
+    - pacman --noconfirm --sync --refresh --refresh --sysupgrade --sysupgrade
+    - pacman --noconfirm -S --needed base-devel mingw-w64-x86_64-gdbm
+    - sh -c "ln -s $(which autom4te) /usr/bin/autom4te"
+    # mklink \usr\bin\autom4te c:\msys64\usr\bin\autom4te
+    - sh -c "ln -s $(which m4) /usr/bin/m4"
+    # mklink \usr\bin\m4.exe c:\msys64\usr\bin\m4.exe
+    - sh -c "ln -s /c/msys64/usr/share/autoconf /usr/share/autoconf"
+    # mklink /d \usr\share\autoconf c:\msys64\usr\share\autoconf
+    - sh -c autoconf
+    - sh configure --disable-install-doc --prefix=/usr/local
+    - sh -c "ln -sf $(which mingw32-make) /c/msys64/usr/bin/make.exe"
+    # del c:\msys64\usr\bin\make.exe
+    # mklink c:\msys64\usr\bin\make.exe mingw32-make.exe
+    - dir c:\usr\bin
+    - dir c:\usr\share
+    - dir c:\msys64\usr\bin\make.exe
+    - mingw32-make -j%JOBS%
+    - mingw32-make -j%JOBS% install"
   test_script:
     # Overriding TEST_EXCLUDES because `--name=!/memory_leak/` is considered as a positive filter on AppVeyor msys2.
-    - |
-      sh -c "mingw32-make test"
-      sh -c "mingw32-make -j$(nproc) test-all RUBY_FORCE_TEST_JIT=1 V=1 TEST_EXCLUDES='--excludes-dir=test/excludes'"
-      sh -c "mingw32-make -j$(nproc) test-spec MSPECOPT=-j"
+    - mingw32-make test
+    - mingw32-make -j%JOBS% test-all RUBY_FORCE_TEST_JIT=1 V=1 TEST_EXCLUDES='--excludes-dir=test/excludes'
+    - mingw32-make -j%JOBS% test-spec MSPECOPT=-j
