@@ -743,6 +743,67 @@ static const int leap_year_days_in_month[] = {
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
 };
 
+#define M28(m) \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m)
+#define M29(m) \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m)
+#define M30(m) \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m)
+#define M31(m) \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), \
+    (m),(m),(m),(m),(m),(m),(m),(m),(m),(m), (m)
+
+static const uint8_t common_year_mon_of_yday[] = {
+    M31(1), M28(2), M31(3), M30(4), M31(5), M30(6),
+    M31(7), M31(8), M30(9), M31(10), M30(11), M31(12)
+};
+static const uint8_t leap_year_mon_of_yday[] = {
+    M31(1), M29(2), M31(3), M30(4), M31(5), M30(6),
+    M31(7), M31(8), M30(9), M31(10), M30(11), M31(12)
+};
+
+#undef M28
+#undef M29
+#undef M30
+#undef M31
+
+#define D28 \
+    1,2,3,4,5,6,7,8,9, \
+    10,11,12,13,14,15,16,17,18,19, \
+    20,21,22,23,24,25,26,27,28
+#define D29 \
+    1,2,3,4,5,6,7,8,9, \
+    10,11,12,13,14,15,16,17,18,19, \
+    20,21,22,23,24,25,26,27,28,29
+#define D30 \
+    1,2,3,4,5,6,7,8,9, \
+    10,11,12,13,14,15,16,17,18,19, \
+    20,21,22,23,24,25,26,27,28,29,30
+#define D31 \
+    1,2,3,4,5,6,7,8,9, \
+    10,11,12,13,14,15,16,17,18,19, \
+    20,21,22,23,24,25,26,27,28,29,30,31
+
+static const uint8_t common_year_mday_of_yday[] = {
+  /*  1    2    3    4    5    6    7    8    9   10   11   12 */
+    D31, D28, D31, D30, D31, D30, D31, D31, D30, D31, D30, D31
+};
+static const uint8_t leap_year_mday_of_yday[] = {
+    D31, D29, D31, D30, D31, D30, D31, D31, D30, D31, D30, D31
+};
+
+#undef D28
+#undef D29
+#undef D30
+#undef D31
+
 static int
 calc_tm_yday(long tm_year, int tm_mon, int tm_mday)
 {
@@ -827,8 +888,7 @@ static void
 gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
 {
     VALUE v;
-    int i, n, x, y;
-    const int *yday_offset;
+    int n, x, y;
     int wday;
     VALUE timev;
     wideval_t timew2, w, w2;
@@ -913,18 +973,13 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     vtm->yday = n+1;
     vtm->year = addv(vtm->year, INT2NUM(y));
 
-    if (leap_year_p(y))
-        yday_offset = leap_year_yday_offset;
-    else
-        yday_offset = common_year_yday_offset;
-
-    for (i = 0; i < 12; i++) {
-        if (yday_offset[i] < n) {
-            vtm->mon = i+1;
-            vtm->mday = n - yday_offset[i];
-        }
-        else
-            break;
+    if (leap_year_p(y)) {
+        vtm->mon = leap_year_mon_of_yday[n];
+        vtm->mday = leap_year_mday_of_yday[n];
+    }
+    else {
+        vtm->mon = common_year_mon_of_yday[n];
+        vtm->mday = common_year_mday_of_yday[n];
     }
 
     vtm->utc_offset = INT2FIX(0);
