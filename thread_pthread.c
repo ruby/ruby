@@ -1596,7 +1596,8 @@ rb_timer_create(rb_pid_t current)
     else
 	rb_warn("timer_create failed: %s, signals racy", strerror(errno));
 #endif
-    rb_timer_pthread_create(current);
+    if (UBF_TIMER == UBF_TIMER_PTHREAD)
+        ubf_timer_pthread_create(current);
 }
 
 static void
@@ -1620,7 +1621,7 @@ rb_thread_create_timer_thread(void)
         sigwait_th = THREAD_INVALID;
         timer_thread_pipe.owner_process = current;
     }
-    else {
+    else if (UBF_TIMER == UBF_TIMER_PTHREAD) {
         /* UBF_TIMER_PTHREAD needs to recreate after fork */
         rb_timer_pthread_create(current);
     }
