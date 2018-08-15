@@ -455,12 +455,9 @@ class TestEnv < Test::Unit::TestCase
   end
 
   def test_huge_value
-    if ENV.key?('APPVEYOR') && /mingw/ =~ RUBY_PLATFORM
-      skip 'failing on AppVeyor MinGW build for now'
-    end
     huge_value = "bar" * 40960
     ENV["foo"] = "bar"
-    if /mswin|mingw/ =~ RUBY_PLATFORM && windows_version < 7
+    if /mswin/ =~ RUBY_PLATFORM && windows_version < 7
       assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
       assert_equal("bar", ENV["foo"])
     else
