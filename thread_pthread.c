@@ -146,7 +146,7 @@ designate_timer_thread(rb_vm_t *vm)
 {
     native_thread_data_t *last;
 
-    last = list_tail(&vm->gvl.waitq, native_thread_data_t, ubf_list);
+    last = list_tail(&vm->gvl.waitq, native_thread_data_t, node.ubf);
     if (last) {
         rb_native_cond_signal(&last->cond.gvlq);
         return TRUE;
@@ -160,9 +160,10 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
     if (vm->gvl.acquired) {
         native_thread_data_t *nd = &th->native_thread_data;
 
-        VM_ASSERT(th->unblock.func == 0 && "we reuse ubf_list for GVL waitq");
+        VM_ASSERT(th->unblock.func == 0 &&
+	          "we must not be in ubf_list and GVL waitq at the same time");
 
-        list_add_tail(&vm->gvl.waitq, &nd->ubf_list);
+        list_add_tail(&vm->gvl.waitq, &nd->node.gvl);
         do {
             if (!vm->gvl.timer) {
                 static struct timespec ts;
@@ -196,7 +197,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
             }
         } while (vm->gvl.acquired);
 
-        list_del_init(&nd->ubf_list);
+        list_del_init(&nd->node.gvl);
 
         if (vm->gvl.need_yield) {
             vm->gvl.need_yield = 0;
@@ -224,7 +225,7 @@ gvl_release_common(rb_vm_t *vm)
 {
     native_thread_data_t *next;
     vm->gvl.acquired = 0;
-    next = list_top(&vm->gvl.waitq, native_thread_data_t, ubf_list);
+    next = list_top(&vm->gvl.waitq, native_thread_data_t, node.ubf);
     if (next) rb_native_cond_signal(&next->cond.gvlq);
 
     return next;
@@ -542,7 +543,7 @@ native_thread_init(rb_thread_t *th)
     native_thread_data_t *nd = &th->native_thread_data;
 
 #ifdef USE_UBF_LIST
-    list_node_init(&nd->ubf_list);
+    list_node_init(&nd->node.ubf);
 #endif
     rb_native_cond_initialize(&nd->cond.gvlq);
     if (&nd->cond.gvlq != &nd->cond.intr)
@@ -1229,7 +1230,7 @@ static LIST_HEAD(ubf_list_head);
 static void
 register_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.ubf_list;
+    struct list_node *node = &th->native_thread_data.node.ubf;
 
     if (list_empty((struct list_head*)node)) {
         rb_native_mutex_lock(&ubf_list_lock);
@@ -1242,7 +1243,7 @@ register_ubf_list(rb_thread_t *th)
 static void
 unregister_ubf_list(rb_thread_t *th)
 {
-    struct list_node *node = &th->native_thread_data.ubf_list;
+    struct list_node *node = &th->native_thread_data.node.ubf;
 
     /* we can't allow re-entry into ubf_list_head */
     VM_ASSERT(th->unblock.func == 0);
@@ -1308,7 +1309,7 @@ ubf_wakeup_all_threads(void)
 
     if (!ubf_threads_empty()) {
         rb_native_mutex_lock(&ubf_list_lock);
-	list_for_each(&ubf_list_head, dat, ubf_list) {
+	list_for_each(&ubf_list_head, dat, node.ubf) {
 	    th = container_of(dat, rb_thread_t, native_thread_data);
 	    ubf_wakeup_thread(th);
 	}
