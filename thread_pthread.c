@@ -103,7 +103,7 @@ static int native_cond_timedwait(rb_nativethread_cond_t *, pthread_mutex_t *,
 static const struct timespec *sigwait_timeout(rb_thread_t *, int sigwait_fd,
                                               const struct timespec *,
                                               int *drained_p);
-static void rb_timer_disarm(void);
+static void ubf_timer_disarm(void);
 
 #define TIMER_THREAD_CREATED_P() (signal_self_pipe.owner_process == getpid())
 
@@ -168,8 +168,8 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
                 static struct timespec ts;
                 static int err = ETIMEDOUT;
 
-                /* take over timing from timer */
-                rb_timer_disarm();
+                /* take over wakeups from UBF_TIMER */
+                ubf_timer_disarm();
 
                 /*
                  * become designated timer thread to kick vm->gvl.acquired
@@ -186,9 +186,8 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
                 ubf_wakeup_all_threads();
 
                 /*
-                 * Timeslice.  We can't touch thread_destruct_lock here,
-                 * as the process may fork while this thread is contending
-                 * for GVL:
+                 * Timeslice.  Warning: the process may fork while this
+                 * thread is contending for GVL:
                  */
                 if (vm->gvl.acquired) timer_thread_function();
             }
@@ -244,6 +243,10 @@ gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {
     native_thread_data_t *next;
 
+    /*
+     * Perhaps other threads are stuck in blocking region w/o GVL, too,
+     * (perhaps looping in io_close_fptr) so we kick them:
+     */
     ubf_wakeup_all_threads();
     rb_native_mutex_lock(&vm->gvl.lock);
     next = gvl_release_common(vm);
@@ -1248,7 +1251,7 @@ unregister_ubf_list(rb_thread_t *th)
         rb_native_mutex_lock(&ubf_list_lock);
         list_del_init(node);
         if (list_empty(&ubf_list_head) && !rb_signal_buff_size()) {
-            rb_timer_disarm();
+            ubf_timer_disarm();
         }
         rb_native_mutex_unlock(&ubf_list_lock);
     }
@@ -1365,7 +1368,7 @@ rb_thread_wakeup_timer_thread_fd(int fd)
 }
 
 static void
-rb_timer_arm(rb_pid_t current) /* async signal safe */
+ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if (timer_posix.owner == current && !ATOMIC_CAS(timer_posix.armed, 0, 1)) {
@@ -1435,11 +1438,11 @@ rb_thread_wakeup_timer_thread(int sig)
 
             if (ec) {
                 RUBY_VM_SET_TRAP_INTERRUPT(ec);
-                rb_timer_arm(current);
+                ubf_timer_arm(current);
             }
 	}
         else if (sig == 0 && system_working > 0) {
-            rb_timer_arm(current);
+            ubf_timer_arm(current);
         }
     }
 }
@@ -1548,7 +1551,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
 }
 
 static void
-rb_timer_invalidate(void)
+ubf_timer_invalidate(void)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     CLOSE_INVALIDATE(timer_pthread.low[0]);
@@ -1557,7 +1560,7 @@ rb_timer_invalidate(void)
 }
 
 static void
-rb_timer_pthread_create(rb_pid_t current)
+ubf_timer_pthread_create(rb_pid_t current)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
@@ -1577,7 +1580,7 @@ rb_timer_pthread_create(rb_pid_t current)
 }
 
 static void
-rb_timer_create(rb_pid_t current)
+ubf_timer_create(rb_pid_t current)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
 #  if defined(__sun)
@@ -1610,25 +1613,25 @@ rb_thread_create_timer_thread(void)
     if (owner && owner != current) {
         CLOSE_INVALIDATE(signal_self_pipe.normal[0]);
         CLOSE_INVALIDATE(signal_self_pipe.normal[1]);
-        rb_timer_invalidate();
+        ubf_timer_invalidate();
     }
 
     if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
 
     if (owner != current) {
         /* validate pipe on this process */
-        rb_timer_create(current);
+        ubf_timer_create(current);
         sigwait_th = THREAD_INVALID;
         signal_self_pipe.owner_process = current;
     }
     else if (UBF_TIMER == UBF_TIMER_PTHREAD) {
         /* UBF_TIMER_PTHREAD needs to recreate after fork */
-        rb_timer_pthread_create(current);
+        ubf_timer_pthread_create(current);
     }
 }
 
 static void
-rb_timer_disarm(void)
+ubf_timer_disarm(void)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     static const struct itimerspec zero;
@@ -1636,7 +1639,7 @@ rb_timer_disarm(void)
 
     if (LIKELY(armed) == 0) return;
     switch (armed) {
-      case 1: return; /* rb_timer_arm was arming and will disarm itself */
+      case 1: return; /* ubf_timer_arm was arming and will disarm itself */
       case 2:
         if (timer_settime(timer_posix.timerid, 0, &zero, 0))
             rb_bug_errno("timer_settime (disarm)", errno);
@@ -1650,7 +1653,7 @@ rb_timer_disarm(void)
 }
 
 static void
-rb_timer_destroy(void)
+ubf_timer_destroy(void)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     rb_pid_t current = getpid();
@@ -1658,7 +1661,7 @@ rb_timer_destroy(void)
         int err;
 
         timer_pthread.owner = 0;
-        rb_timer_disarm();
+        ubf_timer_disarm();
         rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
         err = pthread_join(timer_pthread.thid, 0);
         if (err) {
@@ -1675,7 +1678,7 @@ native_stop_timer_thread(void)
     int stopped;
     stopped = --system_working <= 0;
     if (stopped)
-        rb_timer_destroy();
+        ubf_timer_destroy();
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
     return stopped;
@@ -1818,7 +1821,7 @@ rb_sigwait_fd_get(const rb_thread_t *th)
          * no need to keep firing the timer if any thread is sleeping
          * on the signal self-pipe
          */
-        rb_timer_disarm();
+        ubf_timer_disarm();
 
         if (ATOMIC_PTR_CAS(sigwait_th, THREAD_INVALID, th) == THREAD_INVALID) {
             return signal_self_pipe.normal[0];
