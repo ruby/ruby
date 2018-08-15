@@ -104,6 +104,7 @@ for:
     - ver
     - chcp
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
+    - set MSYS_NO_PATHCONV=1
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
     - SET ruby_path=C:\Ruby%ruby_version:-x86=%
@@ -138,5 +139,5 @@ for:
   test_script:
     # Overriding TEST_EXCLUDES because `--name=!/memory_leak/` is considered as a positive filter on AppVeyor msys2.
     - mingw32-make test
-    - mingw32-make -j%JOBS% test-all RUBY_FORCE_TEST_JIT=1 V=1 TEST_EXCLUDES='--excludes-dir=test/excludes'
+    - mingw32-make -j%JOBS% test-all RUBY_FORCE_TEST_JIT=1 V=1
     - mingw32-make -j%JOBS% test-spec MSPECOPT=-j
