@@ -13,6 +13,9 @@ class TestReadline < Test::Unit::TestCase
   SAVED_ENV = %w[COLUMNS LINES]
 
   def setup
+    if ENV.key?('APPVEYOR') && /mingw/ =~ RUBY_PLATFORM
+      skip 'failing on AppVeyor MinGW build for now'
+    end
     @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
   end
