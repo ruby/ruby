@@ -21,7 +21,10 @@
 typedef pthread_cond_t rb_nativethread_cond_t;
 
 typedef struct native_thread_data_struct {
-    struct list_node ubf_list;
+    union {
+        struct list_node ubf;
+        struct list_node gvl;
+    } node;
 #if defined(__GLIBC__) || defined(__FreeBSD__)
     union
 #else
