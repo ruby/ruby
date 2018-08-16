@@ -231,7 +231,7 @@ class IMAPTest < Test::Unit::TestCase
         in_idle = false
         exception_raised = false
         c = m.new_cond
-        @threads << Thread.start do
+        raiser = Thread.start do
           m.synchronize do
             until in_idle
               c.wait(0.1)
@@ -243,6 +243,7 @@ class IMAPTest < Test::Unit::TestCase
             c.signal
           end
         end
+        @threads << raiser
         imap.idle do |res|
           m.synchronize do
             in_idle = true
@@ -260,6 +261,7 @@ class IMAPTest < Test::Unit::TestCase
       imap.logout
     ensure
       imap.disconnect if imap
+      raiser.kill unless in_idle
     end
   end
 
