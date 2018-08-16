@@ -1,9 +1,6 @@
 ---
 version: '{build}'
 shallow_clone: true
-branches:
-  only:
-    - trunk
 platform:
   - x64
 environment:
