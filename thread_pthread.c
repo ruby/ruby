@@ -247,7 +247,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
     vm->gvl.acquired = th;
     if (!vm->gvl.timer) {
         if (!designate_timer_thread(vm) && !ubf_threads_empty()) {
-            rb_thread_wakeup_timer_thread(0);
+            rb_thread_wakeup_timer_thread(-1);
         }
     }
 }
@@ -1324,10 +1324,10 @@ ubf_select(void *ptr)
      * exit from ubf function.  We must designate a timer-thread to perform
      * this operation.
      */
-   rb_native_mutex_lock(&vm->gvl.lock);
-   if (!vm->gvl.timer) {
+    rb_native_mutex_lock(&vm->gvl.lock);
+    if (!vm->gvl.timer) {
         if (!designate_timer_thread(vm)) {
-            rb_thread_wakeup_timer_thread(0);
+            rb_thread_wakeup_timer_thread(-1);
         }
     }
     rb_native_mutex_unlock(&vm->gvl.lock);
@@ -1416,7 +1416,8 @@ static void
 ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
-    if (timer_posix.owner == current && !ATOMIC_CAS(timer_posix.armed, 0, 1)) {
+    if ((!current || timer_posix.owner == current) &&
+            !ATOMIC_CAS(timer_posix.armed, 0, 1)) {
         struct itimerspec it;
 
         it.it_interval.tv_sec = it.it_value.tv_sec = 0;
@@ -1446,7 +1447,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         }
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
-    if (current == timer_pthread.owner) {
+    if (!current || current == timer_pthread.owner) {
         if (ATOMIC_EXCHANGE(timer_pthread.armed, 1) == 0)
             rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
     }
@@ -1456,8 +1457,19 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
 void
 rb_thread_wakeup_timer_thread(int sig)
 {
+    rb_pid_t current;
+
+    /* non-sighandler path */
+    if (sig <= 0) {
+        rb_thread_wakeup_timer_thread_fd(signal_self_pipe.normal[1]);
+        if (sig < 0) {
+            ubf_timer_arm(0);
+        }
+        return;
+    }
+
     /* must be safe inside sighandler, so no mutex */
-    rb_pid_t current = getpid();
+    current = getpid();
     if (signal_self_pipe.owner_process == current) {
         rb_thread_wakeup_timer_thread_fd(signal_self_pipe.normal[1]);
 
@@ -1465,7 +1477,7 @@ rb_thread_wakeup_timer_thread(int sig)
          * system_working check is required because vm and main_thread are
          * freed during shutdown
          */
-        if (sig && system_working > 0) {
+        if (system_working > 0) {
             volatile rb_execution_context_t *ec;
             rb_vm_t *vm = GET_VM();
             rb_thread_t *mth;
@@ -1485,9 +1497,6 @@ rb_thread_wakeup_timer_thread(int sig)
                 RUBY_VM_SET_TRAP_INTERRUPT(ec);
                 ubf_timer_arm(current);
             }
-	}
-        else if (sig == 0 && system_working > 0) {
-            ubf_timer_arm(current);
         }
     }
 }
