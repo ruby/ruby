@@ -121,6 +121,7 @@ static const struct timespec *sigwait_timeout(rb_thread_t *, int sigwait_fd,
                                               const struct timespec *,
                                               int *drained_p);
 static void ubf_timer_disarm(void);
+static void threadptr_trap_interrupt(rb_thread_t *);
 
 #define TIMER_THREAD_CREATED_P() (signal_self_pipe.owner_process == getpid())
 
@@ -193,7 +194,21 @@ do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
     vm->gvl.timer = th;
     err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
     vm->gvl.timer = 0;
+
     ubf_wakeup_all_threads();
+    ruby_sigchld_handler(vm);
+    if (UNLIKELY(rb_signal_buff_size())) {
+        if (th == vm->main_thread) {
+            RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
+        }
+        else {
+            /* unlock is needed because threadptr_trap_interrupt may
+             * call ubf_select which also acquires vm->gvl.lock */
+            rb_native_mutex_unlock(&vm->gvl.lock);
+            threadptr_trap_interrupt(vm->main_thread);
+            rb_native_mutex_lock(&vm->gvl.lock);
+        }
+    }
 
     /*
      * Timeslice.  Warning: the process may fork while this
