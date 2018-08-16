@@ -108,7 +108,7 @@
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
 static ID id_rewind, id_new, id_yield, id_to_enum;
-static ID id_next, id_result, id_lazy, id_receiver, id_arguments, id_memo, id_method, id_force;
+static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
 static ID id_begin, id_end, id_step, id_exclude_end;
 static VALUE sym_each, sym_cycle;
 
@@ -2875,7 +2875,6 @@ Init_Enumerator(void)
     id_new = rb_intern("new");
     id_next = rb_intern("next");
     id_result = rb_intern("result");
-    id_lazy = rb_intern("lazy");
     id_receiver = rb_intern("receiver");
     id_arguments = rb_intern("arguments");
     id_memo = rb_intern("memo");
