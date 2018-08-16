@@ -137,7 +137,6 @@ for:
     - mingw32-make -j%JOBS%
     - mingw32-make -j%JOBS% install"
   test_script:
-    # Overriding TEST_EXCLUDES because `--name=!/memory_leak/` is considered as a positive filter on AppVeyor msys2.
     - mingw32-make test
     - mingw32-make -j%JOBS% test-all RUBY_FORCE_TEST_JIT=1 V=1
     - mingw32-make -j%JOBS% test-spec MSPECOPT=-j
