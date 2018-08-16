@@ -272,17 +272,23 @@ rb_mutex_lock(VALUE self)
 	    list_add_tail(&mutex->waitq, &w.node);
 	    native_sleep(th, timeout); /* release GVL */
 	    list_del(&w.node);
+
+	    if (!mutex->th) {
+		mutex->th = th;
+	    }
+
 	    if (patrol_thread == th)
 		patrol_thread = NULL;
 
 	    th->locking_mutex = Qfalse;
-	    if (timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
+	    if (mutex->th && timeout && !RUBY_VM_INTERRUPTED(th->ec)) {
 		rb_check_deadlock(th->vm);
 	    }
 	    if (th->status == THREAD_STOPPED_FOREVER) {
 		th->status = prev_status;
 	    }
 	    th->vm->sleeper--;
+	    if (mutex->th == th) mutex_locked(th, self);
 
 	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
 	    if (!mutex->th) {
