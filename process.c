@@ -1162,6 +1162,10 @@ waitpid_nogvl(void *x)
             /* another thread calling rb_sigwait_sleep will process
              * signals for us */
             if (SIGCHLD_LOSSY) {
+                /*
+                 * XXX this may not be needed anymore with new GVL
+                 * and sigwait_fd usage
+                 */
                 rb_thread_wakeup_timer_thread(0);
             }
             rb_native_cond_wait(w->cond, &th->interrupt_lock);
