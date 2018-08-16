@@ -75,10 +75,12 @@ describe 'Addrinfo.getaddrinfo' do
     end
   end
 
-  it 'sets a custom socket protocol of the Addrinfo instances' do
-    array = Addrinfo.getaddrinfo('localhost', 80, nil, nil, Socket::IPPROTO_UDP)
+  platform_is_not :'solaris2.10' do # i386-solaris
+    it 'sets a custom socket protocol of the Addrinfo instances' do
+      array = Addrinfo.getaddrinfo('localhost', 80, nil, nil, Socket::IPPROTO_UDP)
 
-    array[0].protocol.should == Socket::IPPROTO_UDP
+      array[0].protocol.should == Socket::IPPROTO_UDP
+    end
   end
 
   platform_is_not :solaris do
