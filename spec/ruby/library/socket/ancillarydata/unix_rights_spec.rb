@@ -50,10 +50,12 @@ with_feature :ancillary_data do
       lambda { data.unix_rights }.should raise_error(TypeError)
     end
 
-    it 'raises TypeError when the type is not SCM_RIGHTS' do
-      data = Socket::AncillaryData.new(:INET, :SOCKET, :TIMESTAMP, '')
+    platform_is_not :"solaris2.10" do
+      it 'raises TypeError when the type is not SCM_RIGHTS' do
+        data = Socket::AncillaryData.new(:INET, :SOCKET, :TIMESTAMP, '')
 
-      lambda { data.unix_rights }.should raise_error(TypeError)
+        lambda { data.unix_rights }.should raise_error(TypeError)
+      end
     end
   end
 end

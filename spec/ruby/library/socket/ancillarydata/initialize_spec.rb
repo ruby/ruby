@@ -106,8 +106,10 @@ with_feature :ancillary_data do
         Socket::AncillaryData.new(:INET, :SOCKET, :RIGHTS, '').type.should == Socket::SCM_RIGHTS
       end
 
-      it 'sets the type to SCM_TIMESTAMP when using :TIMESTAMP as the type argument' do
-        Socket::AncillaryData.new(:INET, :SOCKET, :TIMESTAMP, '').type.should == Socket::SCM_TIMESTAMP
+      platform_is_not :"solaris2.10" do
+        it 'sets the type to SCM_TIMESTAMP when using :TIMESTAMP as the type argument' do
+          Socket::AncillaryData.new(:INET, :SOCKET, :TIMESTAMP, '').type.should == Socket::SCM_TIMESTAMP
+        end
       end
 
       it 'raises TypeError when using a numeric string as the type argument' do
