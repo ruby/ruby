@@ -1980,38 +1980,43 @@ lazy_grep(VALUE obj, VALUE pattern)
     return lazy_add_method(obj, 0, 0, pattern, rb_ary_new3(1, pattern), funcs);
 }
 
-static VALUE
-lazy_grep_v_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+static struct MEMO *
+lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
-    VALUE result = rb_funcall(m, id_eqq, 1, i);
-
-    if (!RTEST(result)) {
-	rb_funcall(argv[0], id_yield, 1, i);
-    }
-    return Qnil;
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
+    if (RTEST(chain)) return 0;
+    return result;
 }
 
-static VALUE
-lazy_grep_v_iter(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
+static struct MEMO *
+lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE i = rb_enum_values_pack(argc - 1, argv + 1);
-    VALUE result = rb_funcall(m, id_eqq, 1, i);
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+    VALUE value, chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
 
-    if (!RTEST(result)) {
-	rb_funcall(argv[0], id_yield, 1, rb_yield(i));
-    }
-    return Qnil;
+    if (RTEST(chain)) return 0;
+    value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    LAZY_MEMO_SET_VALUE(result, value);
+    LAZY_MEMO_RESET_PACKED(result);
+
+    return result;
 }
+
+static const lazyenum_funcs lazy_grep_v_iter_funcs = {
+    lazy_grep_v_iter_proc, 0,
+};
+
+static const lazyenum_funcs lazy_grep_v_funcs = {
+    lazy_grep_v_proc, 0,
+};
 
 static VALUE
 lazy_grep_v(VALUE obj, VALUE pattern)
 {
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 rb_block_given_p() ?
-					 lazy_grep_v_iter : lazy_grep_v_func,
-					 pattern),
-			   rb_ary_new3(1, pattern), 0);
+    const lazyenum_funcs *const funcs = rb_block_given_p() ?
+        &lazy_grep_v_iter_funcs : &lazy_grep_v_funcs;
+    return lazy_add_method(obj, 0, 0, pattern, rb_ary_new3(1, pattern), funcs);
 }
 
 static VALUE
@@ -2275,46 +2280,49 @@ lazy_drop_while(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qfalse, Qnil, &lazy_drop_while_funcs);
 }
 
-static VALUE
-lazy_uniq_i(VALUE i, int argc, const VALUE *argv, VALUE yielder)
+static int
+lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
 {
-    VALUE hash;
+    VALUE hash = rb_ary_entry(memos, memo_index);;
 
-    hash = rb_attr_get(yielder, id_memo);
     if (NIL_P(hash)) {
         hash = rb_obj_hide(rb_hash_new());
-        rb_ivar_set(yielder, id_memo, hash);
+        rb_ary_store(memos, memo_index, hash);
     }
 
-    if (rb_hash_add_new_element(hash, i, Qfalse))
-	return Qnil;
-    return rb_funcallv(yielder, id_yield, argc, argv);
+    return rb_hash_add_new_element(hash, chain, Qfalse);
 }
 
-static VALUE
-lazy_uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
+static struct MEMO *
+lazy_uniq_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder = (--argc, *argv++);
-    i = rb_enum_values_pack(argc, argv);
-    return lazy_uniq_i(i, argc, argv, yielder);
+    if (lazy_uniq_check(result->memo_value, memos, memo_index)) return 0;
+    return result;
 }
 
-static VALUE
-lazy_uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
+static struct MEMO *
+lazy_uniq_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
 {
-    VALUE yielder = (--argc, *argv++);
-    i = rb_yield_values2(argc, argv);
-    return lazy_uniq_i(i, argc, argv, yielder);
+    VALUE chain = lazyenum_yield(proc_entry, result);
+
+    if (lazy_uniq_check(chain, memos, memo_index)) return 0;
+    return result;
 }
+
+static const lazyenum_funcs lazy_uniq_iter_funcs = {
+    lazy_uniq_iter_proc, 0,
+};
+
+static const lazyenum_funcs lazy_uniq_funcs = {
+    lazy_uniq_proc, 0,
+};
 
 static VALUE
 lazy_uniq(VALUE obj)
 {
-    rb_block_call_func *const func =
-	rb_block_given_p() ? lazy_uniq_iter : lazy_uniq_func;
-    return lazy_set_method(rb_block_call(rb_cLazy, id_new, 1, &obj,
-					 func, 0),
-			   0, 0);
+    const lazyenum_funcs *const funcs =
+        rb_block_given_p() ? &lazy_uniq_iter_funcs : &lazy_uniq_funcs;
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, funcs);
 }
 
 static VALUE
