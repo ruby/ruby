@@ -4269,6 +4269,14 @@ consume_communication_pipe(int fd)
     ssize_t result;
     int ret = FALSE; /* for rb_sigwait_sleep */
 
+    /*
+     * disarm UBF_TIMER before we read, because it can become
+     * re-armed at any time via sighandler and the pipe will refill
+     * We can disarm it because this thread is now processing signals
+     * and we do not want unnecessary SIGVTALRM
+     */
+    ubf_timer_disarm();
+
     while (1) {
 	result = read(fd, buff, sizeof(buff));
 	if (result > 0) {

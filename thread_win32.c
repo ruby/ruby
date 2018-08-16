@@ -22,6 +22,7 @@
 #define unregister_ubf_list(th)
 #define ubf_wakeup_all_threads() do {} while (0)
 #define ubf_threads_empty() (1)
+#define ubf_timer_disarm() do {} while (0)
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
