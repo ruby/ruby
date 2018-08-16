@@ -145,6 +145,8 @@ module Test
             r.close if r
             nil
           else
+            r.close_on_exec = true
+            w.close_on_exec = true
             @jobserver = [r, w]
             options[:parallel] ||= 1
           end

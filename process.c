@@ -3496,7 +3496,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
     }
 
 #ifdef HAVE_WORKING_FORK
-    if (!eargp->close_others_given || eargp->close_others_do) {
+    if (eargp->close_others_do) {
         rb_close_before_exec(3, eargp->close_others_maxhint, eargp->redirect_fds); /* async-signal-safe */
     }
 #endif
@@ -4568,7 +4568,7 @@ rb_f_system(int argc, VALUE *argv)
  *          integer : the file descriptor of specified the integer
  *          io      : the file descriptor specified as io.fileno
  *      file descriptor inheritance: close non-redirected non-standard fds (3, 4, 5, ...) or not
- *        :close_others => true  : don't inherit
+ *        :close_others => false  : inherit
  *      current directory:
  *        :chdir => str
  *
@@ -4727,7 +4727,7 @@ rb_f_system(int argc, VALUE *argv)
  *    pid = spawn(command, :close_others=>true)  # close 3,4,5,... (default)
  *    pid = spawn(command, :close_others=>false) # don't close 3,4,5,...
  *
- *  :close_others is true by default for spawn and IO.popen.
+ *  :close_others is false by default for spawn and IO.popen.
  *
  *  Note that fds which close-on-exec flag is already set are closed
  *  regardless of :close_others option.

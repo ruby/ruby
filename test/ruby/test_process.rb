@@ -1009,6 +1009,15 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_close_others_default_false
+    IO.pipe do |r,w|
+      w.close_on_exec = false
+      src = "IO.new(#{w.fileno}).puts(:hi)"
+      assert_equal true, system(*%W(#{RUBY} --disable=gems -e #{src}))
+      assert_equal "hi\n", r.gets
+    end
+  end
+
   def test_execopts_redirect_self
     begin
       with_pipe {|r, w|
