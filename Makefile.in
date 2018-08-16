@@ -289,10 +289,10 @@ $(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
 
 ruby_pc = @ruby_pc@
 ruby.pc: $(ruby_pc)
-$(ruby_pc):
+$(ruby_pc): config.status
 		@./config.status --file=$@:$(srcdir)/template/ruby.pc.in
 
-ruby-runner.h: template/ruby-runner.h.in
+ruby-runner.h: template/ruby-runner.h.in config.status
 		@./config.status --file=$@:$(srcdir)/template/$(@F).in
 
 $(RBCONFIG): $(PREP)
