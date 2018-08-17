@@ -238,6 +238,7 @@ class Pathname
   #       #=> true
   def relative?
     path = @path
+    return false if path.start_with?('/')
     while r = chop_basename(path)
       path, = r
     end
