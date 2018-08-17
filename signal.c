@@ -707,7 +707,13 @@ signal_enque(int sig)
     ATOMIC_INC(signal_buff.size);
 }
 
+#if RUBY_SIGCHLD
 static rb_atomic_t sigchld_hit;
+/* destructive getter than simple predicate */
+# define GET_SIGCHLD_HIT() ATOMIC_EXCHANGE(sigchld_hit, 0)
+#else
+# define GET_SIGCHLD_HIT() 0
+#endif
 
 static RETSIGTYPE
 sighandler(int sig)
@@ -716,6 +722,7 @@ sighandler(int sig)
 
     /* the VM always needs to handle SIGCHLD for rb_waitpid */
     if (sig == RUBY_SIGCHLD) {
+#if RUBY_SIGCHLD
         rb_vm_t *vm = GET_VM();
         ATOMIC_EXCHANGE(sigchld_hit, 1);
 
@@ -723,6 +730,7 @@ sighandler(int sig)
         if (vm && ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig])) {
             signal_enque(sig);
         }
+#endif
     }
     else {
         signal_enque(sig);
@@ -1076,7 +1084,7 @@ void ruby_waitpid_all(rb_vm_t *); /* process.c */
 void
 ruby_sigchld_handler(rb_vm_t *vm)
 {
-    if (SIGCHLD_LOSSY || ATOMIC_EXCHANGE(sigchld_hit, 0)) {
+    if (SIGCHLD_LOSSY || GET_SIGCHLD_HIT()) {
         ruby_waitpid_all(vm);
     }
 }
