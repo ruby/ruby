@@ -19,6 +19,9 @@ In other words: If adding a spec might reveal a bug in
 another implementation, then it is worth adding it.
 Currently, the only module which is MRI-specific is `RubyVM`.
 
+Version guards (`ruby_version_is`) must be added for new features or features
+which change behavior or are removed. See `spec/ruby/CONTRIBUTING.md` for details.
+
 ## Running ruby/spec
 
 To run all specs:
