@@ -1016,7 +1016,7 @@ class TestProcess < Test::Unit::TestCase
       assert_equal true, system(*%W(#{RUBY} --disable=gems -e #{src}))
       assert_equal "hi\n", r.gets
     end
-  end
+  end unless windows? # passing non-stdio fds is not supported on Windows
 
   def test_execopts_redirect_self
     begin
