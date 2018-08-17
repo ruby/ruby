@@ -97,7 +97,7 @@ describe 'Socket#connect_nonblock' do
       end
     end
 
-    platform_is_not :freebsd do
+    platform_is_not :freebsd, :solaris do
       describe 'using a STREAM socket' do
         before do
           @server   = Socket.new(family, :STREAM)
