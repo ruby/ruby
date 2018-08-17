@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-with_feature :ancillary_data do
+with_feature :ancillary_data, :pktinfo do
   describe 'Socket::AncillaryData.ip_pktinfo' do
     describe 'with a source address and index' do
       before do

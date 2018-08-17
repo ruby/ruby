@@ -15,8 +15,10 @@ with_feature :ancillary_data do
         @data.cmsg_is?(:IP, :TTL).should == true
       end
 
-      it 'returns false when comparing with :IP and :PKTINFO' do
-        @data.cmsg_is?(:IP, :PKTINFO).should == false
+      with_feature :pktinfo do
+        it 'returns false when comparing with :IP and :PKTINFO' do
+          @data.cmsg_is?(:IP, :PKTINFO).should == false
+        end
       end
 
       it 'returns false when comparing with :SOCKET and :RIGHTS' do
