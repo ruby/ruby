@@ -22,6 +22,13 @@ Currently, the only module which is MRI-specific is `RubyVM`.
 Version guards (`ruby_version_is`) must be added for new features or features
 which change behavior or are removed. See `spec/ruby/CONTRIBUTING.md` for details.
 
+To verify specs are compatible with older Ruby versions:
+```
+cd spec/ruby
+$RUBY_MANAGER use 2.3.7
+../mspec/bin/mspec -j
+```
+
 ## Running ruby/spec
 
 To run all specs:
