@@ -1866,11 +1866,8 @@ rb_sleep_cond_put(rb_nativethread_cond_t *cond)
 int
 rb_sigwait_fd_get(const rb_thread_t *th)
 {
-    rb_pid_t current = getpid();
-
-    if (signal_self_pipe.owner_process == current &&
-        signal_self_pipe.normal[0] >= 0) {
-
+    if (signal_self_pipe.normal[0] >= 0) {
+        VM_ASSERT(signal_self_pipe.owner_process == getpid());
         /*
          * no need to keep firing the timer if any thread is sleeping
          * on the signal self-pipe
