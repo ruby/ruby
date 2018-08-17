@@ -155,7 +155,7 @@ rb_ast_node_type(VALUE self)
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_str_new_cstr(node_type_to_str(data->node));
+    return rb_fstring_cstr(node_type_to_str(data->node));
 }
 
 #define NEW_CHILD(ast, node) node ? ast_new_internal(ast, node) : Qnil
