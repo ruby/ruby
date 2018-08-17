@@ -2842,7 +2842,13 @@ Init_VM(void)
     VALUE fcore;
     VALUE mjit;
 
-    /* ::RubyVM */
+    /*
+     * Document-class: RubyVM
+     *
+     * RubyVM module provides some access to Ruby internal.
+     * This module is for very limited purpose, such as debugging,
+     * prototyping, and research.  Normal users must not use it.
+     */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
