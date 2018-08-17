@@ -104,7 +104,8 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * incompatible changes:
     * system() and exec() do not close non-standard file descriptors
-      (The default of :close_others option is changed to false by default.)
+      (The default of :close_others option is changed to false by default.
+       but we still set the FD_CLOEXEC flag on descriptors we create)
       [Misc #14907]
 
 * KeyError
