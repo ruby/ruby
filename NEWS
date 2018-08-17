@@ -105,6 +105,7 @@ with all sufficient information, see the ChangeLog file or Redmine
   * incompatible changes:
     * system() and exec() do not close non-standard file descriptors
       (The default of :close_others option is changed to false by default.)
+      [Misc #14907]
 
 * KeyError
 
