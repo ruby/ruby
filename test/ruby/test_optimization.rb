@@ -723,4 +723,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
     assert_equal(:ok, obj.a())
   end
+
+  def test_unconditional_branch_to_leave_block
+    assert_valid_syntax("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      tap {true || tap {}}
+    end;
+  end
 end
