@@ -1,13 +1,18 @@
 require_relative '../../spec_helper'
 
 describe "Range#step" do
+  step_enum_class = Enumerator
+  ruby_version_is "2.6" do
+    step_enum_class = Enumerator::ArithmeticSequence
+  end
+
   before :each do
     ScratchPad.record []
   end
 
-  it "returns an arithmetic sequence when no block is given" do
+  it "returns an #{step_enum_class} when no block is given" do
     enum = (1..10).step(4)
-    enum.should be_an_instance_of(Enumerator::ArithmeticSequence)
+    enum.should be_an_instance_of(step_enum_class)
     enum.to_a.should eql([1, 5, 9])
   end
 
@@ -263,7 +268,7 @@ describe "Range#step" do
   end
 
   describe "when no block is given" do
-    describe "returned Enumerator::ArithmeticSequence" do
+    describe "returned #{step_enum_class}" do
       describe "size" do
         it "raises a TypeError if step does not respond to #to_int" do
           obj = mock("Range#step non-integer")
@@ -279,9 +284,28 @@ describe "Range#step" do
           lambda { enum.size }.should raise_error(TypeError)
         end
 
-        it "returns Float::INFINITY for zero step" do
-          (-1..1).step(0).size.should == Float::INFINITY
-          (-1..1).step(0.0).size.should == Float::INFINITY
+        ruby_version_is ""..."2.6" do
+          it "raises an ArgumentError if step is 0" do
+            enum = (-1..1).step(0)
+            lambda { enum.size }.should raise_error(ArgumentError)
+          end
+
+          it "raises an ArgumentError if step is 0.0" do
+            enum = (-1..1).step(0.0)
+            lambda { enum.size }.should raise_error(ArgumentError)
+          end
+
+          it "raises an ArgumentError if step is negative" do
+            enum = (-1..1).step(-2)
+            lambda {  enum.size }.should raise_error(ArgumentError)
+          end
+        end
+
+        ruby_version_is "2.6" do
+          it "returns Float::INFINITY for zero step" do
+            (-1..1).step(0).size.should == Float::INFINITY
+            (-1..1).step(0.0).size.should == Float::INFINITY
+          end
         end
 
         it "returns the ceil of range size divided by the number of steps" do
@@ -297,9 +321,11 @@ describe "Range#step" do
           (-5...5).step(2).size.should == 5
         end
 
-        it "returns the ceil of range size divided by the number of steps even if step is negative" do
-          (-1..1).step(-1).size.should == 0
-          (1..-1).step(-1).size.should == 3
+        ruby_version_is "2.6" do
+          it "returns the ceil of range size divided by the number of steps even if step is negative" do
+            (-1..1).step(-1).size.should == 0
+            (1..-1).step(-1).size.should == 3
+          end
         end
 
         it "returns the correct number of steps when one of the arguments is a float" do
