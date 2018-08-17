@@ -22,24 +22,43 @@ describe "Numeric#step" do
     it_behaves_like :numeric_step, :step
 
     describe "when no block is given" do
-      it "returns an Enumerator when step is 0" do
-        1.step(5, 0).should be_an_instance_of(Enumerator::ArithmeticSequence)
+      step_enum_class = Enumerator
+      ruby_version_is "2.6" do
+        step_enum_class = Enumerator::ArithmeticSequence
       end
 
-      it "returns an Enumerator when step is 0.0" do
-        1.step(2, 0.0).should be_an_instance_of(Enumerator::ArithmeticSequence)
+      it "returns an #{step_enum_class} when step is 0" do
+        1.step(5, 0).should be_an_instance_of(step_enum_class)
       end
 
-      describe "returned Enumerator" do
+      it "returns an #{step_enum_class} when step is 0.0" do
+        1.step(2, 0.0).should be_an_instance_of(step_enum_class)
+      end
+
+      describe "returned #{step_enum_class}" do
         describe "size" do
-          it "raises an ArgumentError when step is 0" do
-            enum = 1.step(5, 0)
-            enum.size.should == Float::INFINITY
+          ruby_version_is ""..."2.6" do
+            it "raises an ArgumentError when step is 0" do
+              enum = 1.step(5, 0)
+              lambda { enum.size }.should raise_error(ArgumentError)
+            end
+
+            it "raises an ArgumentError when step is 0.0" do
+              enum = 1.step(2, 0.0)
+              lambda { enum.size }.should raise_error(ArgumentError)
+            end
           end
 
-          it "raises an ArgumentError when step is 0.0" do
-            enum = 1.step(2, 0.0)
-            enum.size.should == Float::INFINITY
+          ruby_version_is "2.6" do
+            it "is infinity when step is 0" do
+              enum = 1.step(5, 0)
+              enum.size.should == Float::INFINITY
+            end
+
+            it "is infinity when step is 0.0" do
+              enum = 1.step(2, 0.0)
+              enum.size.should == Float::INFINITY
+            end
           end
         end
       end
