@@ -530,6 +530,43 @@ class IMAPTest < Test::Unit::TestCase
     end
   end
 
+  def test_send_literal
+    server = create_tcp_server
+    port = server.addr[1]
+    requests = []
+    literal = nil
+    @threads << Thread.start do
+      sock = server.accept
+      begin
+        sock.print("* OK test server\r\n")
+        line = sock.gets
+        requests.push(line)
+        size = line.slice(/{(\d+)}\r\n/, 1).to_i
+        sock.print("+ Ready for literal data\r\n")
+        literal = sock.read(size)
+        requests.push(sock.gets)
+        sock.print("RUBY0001 OK TEST completed\r\n")
+        sock.gets
+        sock.print("* BYE terminating connection\r\n")
+        sock.print("RUBY0002 OK LOGOUT completed\r\n")
+      ensure
+        sock.close
+        server.close
+      end
+    end
+    begin
+      imap = Net::IMAP.new(server_addr, :port => port)
+      imap.send(:send_command, "TEST", ["\xDE\xAD\xBE\xEF".b])
+      assert_equal(2, requests.length)
+      assert_equal("RUBY0001 TEST ({4}\r\n", requests[0])
+      assert_equal("\xDE\xAD\xBE\xEF".b, literal)
+      assert_equal(")\r\n", requests[1])
+      imap.logout
+    ensure
+      imap.disconnect
+    end
+  end
+
   def test_disconnect
     server = create_tcp_server
     port = server.addr[1]
