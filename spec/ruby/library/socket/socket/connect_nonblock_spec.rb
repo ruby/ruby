@@ -97,24 +97,26 @@ describe 'Socket#connect_nonblock' do
       end
     end
 
-    describe 'using a STREAM socket' do
-      before do
-        @server   = Socket.new(family, :STREAM)
-        @client   = Socket.new(family, :STREAM)
-        @sockaddr = Socket.sockaddr_in(0, ip_address)
-      end
+    platform_is_not :freebsd do
+      describe 'using a STREAM socket' do
+        before do
+          @server   = Socket.new(family, :STREAM)
+          @client   = Socket.new(family, :STREAM)
+          @sockaddr = Socket.sockaddr_in(0, ip_address)
+        end
 
-      after do
-        @client.close
-        @server.close
-      end
+        after do
+          @client.close
+          @server.close
+        end
 
-      it 'raises IO:EINPROGRESSWaitWritable when the connection would block' do
-        @server.bind(@sockaddr)
+        it 'raises IO:EINPROGRESSWaitWritable when the connection would block' do
+          @server.bind(@sockaddr)
 
-        lambda {
-          @client.connect_nonblock(@server.getsockname)
-        }.should raise_error(IO::EINPROGRESSWaitWritable)
+          lambda {
+            @client.connect_nonblock(@server.getsockname)
+          }.should raise_error(IO::EINPROGRESSWaitWritable)
+        end
       end
     end
   end
