@@ -839,7 +839,7 @@ describe "A method" do
       ruby_version_is ""..."2.6" do
         m("a" => 1, b: 2).should == [{"a" => 1}, 2]
       end
-      ruby_version_is ""..."2.6" do
+      ruby_version_is "2.6" do
         lambda {m("a" => 1, b: 2)}.should raise_error(ArgumentError)
       end
     end
