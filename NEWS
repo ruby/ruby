@@ -102,6 +102,10 @@ with all sufficient information, see the ChangeLog file or Redmine
   * Kernel.#system takes :exception option to raise an exception on
     failure. [Feature #14386]
 
+  * incompatible changes:
+    * system() and exec() do not close non-standard file descriptors
+      (The default of :close_others option is changed to false by default.)
+
 * KeyError
 
   * KeyError#initialize accepts :receiver and :key options to set receiver and key in Ruby code. [Feature #14313]
