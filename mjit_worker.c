@@ -133,7 +133,7 @@ struct rb_mjit_unit {
     /* This value is always set for `compact_all_jit_code`. Also used for lazy deletion. */
     char *o_file;
 #endif
-#if defined(_WIN32) || defined(USE_ELF)
+#if defined(_WIN32)
     /* DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted. */
     char *so_file;
 #endif
@@ -254,13 +254,7 @@ static const char *const CC_COMMON_ARGS[] = {
 #define CC_PATH CC_COMMON_ARGS[0]
 
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
-static const char *const CC_OPTIMIZE_ARGS[] = {
-    MJIT_OPTFLAGS
-#ifdef USE_ELF /* at least -g1 is required to get line number on addr2line.c, and -g (-g2) is slow. */
-    "-g1",
-#endif
-    NULL
-};
+static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
 static const char *const CC_LDSHARED_ARGS[] = {MJIT_LDSHARED GCC_PIC_FLAGS NULL};
 static const char *const CC_DLDFLAGS_ARGS[] = {
@@ -396,7 +390,7 @@ clean_object_files(struct rb_mjit_unit *unit)
     }
 #endif
 
-#if defined(_WIN32) || defined(USE_ELF)
+#if defined(_WIN32)
     if (unit->so_file) {
         char *so_file = unit->so_file;
 
@@ -671,9 +665,8 @@ exec_process(const char *path, char *const argv[])
 static void
 remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 {
-#if defined(_WIN32) || defined(USE_ELF)
-    /* Windows can't remove files while it's used. With USE_ELF, we use it to get a line
-       number and symbol name on addr2line for debugging and future optimization. */
+#if defined(_WIN32)
+    /* Windows can't remove files while it's used. */
     unit->so_file = strdup(so_file); /* lazily delete on `clean_object_files()` */
     if (unit->so_file == NULL)
         mjit_warning("failed to allocate memory to lazily remove '%s': %s", so_file, strerror(errno));
