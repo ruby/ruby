@@ -3651,8 +3651,8 @@ rb_fork_ruby(int *status)
 
     while (1) {
 	prefork();
-	before_fork_ruby();
 	disable_child_handler_before_fork(&old);
+	before_fork_ruby();
 	pid = fork();
 	err = errno;
 	after_fork_ruby();
