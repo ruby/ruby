@@ -1469,6 +1469,7 @@ range_alloc(VALUE klass)
  *
  */
 
+COLDFUNC(void Init_Range(void));
 void
 Init_Range(void)
 {

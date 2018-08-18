@@ -48,7 +48,7 @@ void ossl_pkey_check_public_key(const EVP_PKEY *);
 EVP_PKEY *GetPKeyPtr(VALUE);
 EVP_PKEY *DupPKeyPtr(VALUE);
 EVP_PKEY *GetPrivPKeyPtr(VALUE);
-void Init_ossl_pkey(void);
+COLDFUNC(void Init_ossl_pkey(void));
 
 /*
  * RSA
@@ -57,7 +57,7 @@ extern VALUE cRSA;
 extern VALUE eRSAError;
 
 VALUE ossl_rsa_new(EVP_PKEY *);
-void Init_ossl_rsa(void);
+COLDFUNC(void Init_ossl_rsa(void));
 
 /*
  * DSA
@@ -66,7 +66,7 @@ extern VALUE cDSA;
 extern VALUE eDSAError;
 
 VALUE ossl_dsa_new(EVP_PKEY *);
-void Init_ossl_dsa(void);
+COLDFUNC(void Init_ossl_dsa(void));
 
 /*
  * DH
@@ -75,7 +75,7 @@ extern VALUE cDH;
 extern VALUE eDHError;
 
 VALUE ossl_dh_new(EVP_PKEY *);
-void Init_ossl_dh(void);
+COLDFUNC(void Init_ossl_dh(void));
 
 /*
  * EC
@@ -87,7 +87,7 @@ extern VALUE eEC_GROUP;
 extern VALUE cEC_POINT;
 extern VALUE eEC_POINT;
 VALUE ossl_ec_new(EVP_PKEY *);
-void Init_ossl_ec(void);
+COLDFUNC(void Init_ossl_ec(void));
 
 #define OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, _name, _get)		\
 /*									\

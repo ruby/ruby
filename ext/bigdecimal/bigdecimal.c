@@ -3263,6 +3263,7 @@ get_vp_value:
  * Documented by zzak <zachary@zacharyscott.net>, mathew <meta@pobox.com>, and
  * many other contributors.
  */
+COLDFUNC(void Init_bigdecimal(void));
 void
 Init_bigdecimal(void)
 {

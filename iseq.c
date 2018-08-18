@@ -3197,6 +3197,7 @@ succ_index_lookup(const struct succ_index_table *sd, int x)
  *  you see.
  */
 
+COLDFUNC(void Init_ISeq(void));
 void
 Init_ISeq(void)
 {

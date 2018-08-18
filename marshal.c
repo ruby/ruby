@@ -2227,6 +2227,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc)
  * Since Marshal.dump outputs a string you can have _dump return a Marshal
  * string which is Marshal.loaded in _load for complex objects.
  */
+COLDFUNC(void Init_marshal(void));
 void
 Init_marshal(void)
 {

@@ -173,6 +173,7 @@ void ossl_debug(const char *, ...);
 #include "ossl_engine.h"
 #include "ossl_kdf.h"
 
+COLDFUNC(void Init_openssl(void));
 void Init_openssl(void);
 
 #endif /* _OSSL_H_ */

@@ -10903,6 +10903,7 @@ rb_to_symbol(VALUE name)
  *
  */
 
+COLDFUNC(void Init_String(void));
 void
 Init_String(void)
 {

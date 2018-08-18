@@ -1154,7 +1154,7 @@ VALUE rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj);
 VALUE rb_special_singleton_class(VALUE);
 VALUE rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach);
 VALUE rb_singleton_class_get(VALUE obj);
-void Init_class_hierarchy(void);
+COLDFUNC(void Init_class_hierarchy(void));
 
 int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
@@ -1281,7 +1281,7 @@ VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
 VALUE rb_get_path_check_to_string(VALUE, int);
 VALUE rb_get_path_check_convert(VALUE, VALUE, int);
 VALUE rb_get_path_check(VALUE, int);
-void Init_File(void);
+COLDFUNC(void Init_File(void));
 int ruby_is_fd_loadable(int fd);
 
 #ifdef RUBY_FUNCTION_NAME_STRING
@@ -1303,7 +1303,7 @@ NORETURN(void rb_syserr_fail_path_in(const char *func_name, int err, VALUE path)
 /* gc.c */
 extern VALUE *ruby_initial_gc_stress_ptr;
 extern int ruby_disable_gc;
-void Init_heap(void);
+COLDFUNC(void Init_heap(void));
 void *ruby_mimmalloc(size_t size);
 void ruby_mimfree(void *ptr);
 void rb_objspace_set_event_hook(const rb_event_flag_t event);
@@ -1389,7 +1389,7 @@ extern const char ruby_exec_prefix[];
 extern const char ruby_initial_load_paths[];
 
 /* localeinit.c */
-int Init_enc_set_filesystem_encoding(void);
+COLDFUNC(int Init_enc_set_filesystem_encoding(void));
 
 /* math.c */
 VALUE rb_math_atan2(VALUE, VALUE);
@@ -1408,7 +1408,7 @@ VALUE mjit_pause(int wait_p);
 VALUE mjit_resume(void);
 
 /* newline.c */
-void Init_newline(void);
+COLDFUNC(void Init_newline(void));
 
 /* numeric.c */
 
@@ -1909,8 +1909,8 @@ rb_serial_t rb_next_class_serial(void);
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
-void Init_BareVM(void);
-void Init_vm_objects(void);
+COLDFUNC(void Init_BareVM(void));
+COLDFUNC(void Init_vm_objects(void));
 PUREFUNC(VALUE rb_vm_top_self(void));
 void rb_thread_recycle_stack_release(VALUE *);
 void rb_vm_change_state(void);
@@ -1930,7 +1930,7 @@ PUREFUNC(st_table *rb_vm_fstring_table(void));
 void rb_print_backtrace(void);
 
 /* vm_eval.c */
-void Init_vm_eval(void);
+COLDFUNC(void Init_vm_eval(void));
 VALUE rb_current_realfilepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
@@ -1949,14 +1949,14 @@ VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
 
 /* vm_method.c */
-void Init_eval_method(void);
+COLDFUNC(void Init_eval_method(void));
 int rb_method_defined_by(VALUE obj, ID mid, VALUE (*cfunc)(ANYARGS));
 
 /* miniprelude.c, prelude.c */
-void Init_prelude(void);
+COLDFUNC(void Init_prelude(void));
 
 /* vm_backtrace.c */
-void Init_vm_backtrace(void);
+COLDFUNC(void Init_vm_backtrace(void));
 VALUE rb_vm_thread_backtrace(int argc, const VALUE *argv, VALUE thval);
 VALUE rb_vm_thread_backtrace_locations(int argc, const VALUE *argv, VALUE thval);
 

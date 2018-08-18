@@ -8453,6 +8453,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcID_Syscall, "issetugid", p_sys_issetugid, 0);
 }
 
+COLDFUNC(void Init_process(void));
 void
 Init_process(void)
 {

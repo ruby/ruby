@@ -1563,6 +1563,7 @@ rb_memhash(const void *ptr, long len)
 
 /* Initialize Ruby internal seeds. This function is called at very early stage
  * of Ruby startup. Thus, you can't use Ruby's object. */
+COLDFUNC(void Init_RandomSeedCore(void));
 void
 Init_RandomSeedCore(void)
 {
@@ -1595,6 +1596,7 @@ init_randomseed(struct MT *mt)
 }
 
 /* construct Random::DEFAULT bits */
+COLDFUNC(static VALUE Init_Random_default(void));
 static VALUE
 Init_Random_default(void)
 {
@@ -1640,6 +1642,7 @@ rb_reset_random_seed(void)
  * of 2**19937-1.
  */
 
+COLDFUNC(void InitVM_Random(void));
 void
 InitVM_Random(void)
 {
@@ -1686,6 +1689,7 @@ InitVM_Random(void)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_Random(void));
 void
 Init_Random(void)
 {

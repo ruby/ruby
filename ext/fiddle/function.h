@@ -3,6 +3,6 @@
 
 #include <fiddle.h>
 
-void Init_fiddle_function(void);
+COLDFUNC(void Init_fiddle_function(void));
 
 #endif

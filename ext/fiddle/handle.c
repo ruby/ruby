@@ -374,6 +374,7 @@ fiddle_handle_sym(void *handle, VALUE symbol)
     return PTR2NUM(func);
 }
 
+COLDFUNC(void Init_fiddle_handle(void));
 void
 Init_fiddle_handle(void)
 {

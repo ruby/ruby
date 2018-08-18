@@ -1224,6 +1224,7 @@ fgdbm_reject(VALUE obj)
     return rb_hash_delete_if(fgdbm_to_hash(obj));
 }
 
+COLDFUNC(void Init_gdbm(void));
 void
 Init_gdbm(void)
 {

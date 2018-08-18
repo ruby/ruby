@@ -2835,6 +2835,7 @@ static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
 #endif
 
+COLDFUNC(void Init_VM(void));
 void
 Init_VM(void)
 {
@@ -3206,6 +3207,7 @@ rb_vm_top_self(void)
     return GET_VM()->top_self;
 }
 
+COLDFUNC(void Init_top_self(void));
 void
 Init_top_self(void)
 {

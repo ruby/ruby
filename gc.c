@@ -6651,6 +6651,7 @@ garbage_collect_with_gvl(rb_objspace_t *objspace, int reason)
 
 #undef Init_stack
 
+COLDFUNC(void Init_stack(volatile VALUE *addr));
 void
 Init_stack(volatile VALUE *addr)
 {
@@ -9780,6 +9781,7 @@ rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
  *  GC::Profiler.
  */
 
+COLDFUNC(void Init_GC(void));
 void
 Init_GC(void)
 {

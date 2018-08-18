@@ -48,6 +48,7 @@ static const rb_digest_metadata_t sha1 = {
  *  sha1 << "message"
  *  sha1.hexdigest                        # => "6f9b9af3..."
  */
+COLDFUNC(void Init_sha1(void));
 void
 Init_sha1(void)
 {

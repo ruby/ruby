@@ -2660,6 +2660,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *    Rational(-8) ** Rational(1, 3)
  *                       #=> (1.0000000000000002+1.7320508075688772i)
  */
+COLDFUNC(void Init_Rational(void));
 void
 Init_Rational(void)
 {

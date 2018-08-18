@@ -3,7 +3,7 @@
 
 VALUE cWIN32OLE_TYPELIB;
 
-void Init_win32ole_typelib(void);
+COLDFUNC(void Init_win32ole_typelib(void));
 ITypeLib * itypelib(VALUE self);
 VALUE typelib_file(VALUE ole);
 VALUE create_win32ole_typelib(ITypeLib *pTypeLib);

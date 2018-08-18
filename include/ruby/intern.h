@@ -202,11 +202,11 @@ VALUE rb_class_public_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_protected_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_class_private_instance_methods(int, const VALUE*, VALUE);
 VALUE rb_obj_singleton_methods(int, const VALUE*, VALUE);
-void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int);
-void rb_undef(VALUE, ID);
-void rb_define_protected_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
-void rb_define_private_method(VALUE, const char*, VALUE (*)(ANYARGS), int);
-void rb_define_singleton_method(VALUE, const char*, VALUE(*)(ANYARGS), int);
+COLDFUNC(void rb_define_method_id(VALUE, ID, VALUE (*)(ANYARGS), int));
+COLDFUNC(void rb_undef(VALUE, ID));
+COLDFUNC(void rb_define_protected_method(VALUE, const char*, VALUE (*)(ANYARGS), int));
+COLDFUNC(void rb_define_private_method(VALUE, const char*, VALUE (*)(ANYARGS), int));
+COLDFUNC(void rb_define_singleton_method(VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class(VALUE);
 /* compar.c */
 int rb_cmpint(VALUE, VALUE, VALUE);
@@ -375,8 +375,8 @@ void rb_remove_method(VALUE, const char*);
 void rb_remove_method_id(VALUE, ID);
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
 typedef VALUE (*rb_alloc_func_t)(VALUE);
-void rb_define_alloc_func(VALUE, rb_alloc_func_t);
-void rb_undef_alloc_func(VALUE);
+COLDFUNC(void rb_define_alloc_func(VALUE, rb_alloc_func_t));
+COLDFUNC(void rb_undef_alloc_func(VALUE));
 rb_alloc_func_t rb_get_alloc_func(VALUE);
 void rb_clear_constant_cache(void);
 void rb_clear_method_cache_by_class(VALUE);

@@ -18,6 +18,6 @@ extern VALUE cOPCSRes;
 extern VALUE cOPCSBasicRes;
 #endif
 
-void Init_ossl_ocsp(void);
+COLDFUNC(void Init_ossl_ocsp(void));
 
 #endif /* _OSSL_OCSP_H_ */

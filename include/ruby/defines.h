@@ -29,6 +29,9 @@ extern "C" {
 #ifndef PUREFUNC
 # define PUREFUNC(x) x
 #endif
+#ifndef COLDFUNC
+# define COLDFUNC(x) x
+#endif
 #ifndef DEPRECATED
 # define DEPRECATED(x) x
 #endif

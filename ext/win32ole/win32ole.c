@@ -3975,6 +3975,7 @@ check_nano_server(void)
 }
 
 
+COLDFUNC(void Init_win32ole(void));
 void
 Init_win32ole(void)
 {

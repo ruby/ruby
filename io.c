@@ -12924,6 +12924,7 @@ rb_readwrite_syserr_fail(enum rb_io_wait_readwrite writable, int n, const char *
  *    puts "Your screen is #{columns} wide and #{rows} tall"
  */
 
+COLDFUNC(void Init_IO(void));
 void
 Init_IO(void)
 {

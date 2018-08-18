@@ -3,6 +3,6 @@
 
 #include <psych.h>
 
-void Init_psych_emitter(void);
+COLDFUNC(void Init_psych_emitter(void));
 
 #endif

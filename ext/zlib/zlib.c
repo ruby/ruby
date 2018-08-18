@@ -291,7 +291,7 @@ static VALUE rb_gzreader_readlines(int, VALUE*, VALUE);
  *   - Zlib::GzipFile::NoFooter
  *
  */
-void Init_zlib(void);
+COLDFUNC(void Init_zlib(void));
 
 /*--------- Exceptions --------*/
 

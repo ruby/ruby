@@ -1038,6 +1038,7 @@ fdbm_reject(VALUE obj)
  *  db['3068'] = 'An Anycast Prefix for 6to4 Relay Routers'
  *  puts db['822']
  */
+COLDFUNC(void Init_dbm(void));
 void
 Init_dbm(void)
 {

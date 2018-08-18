@@ -915,8 +915,8 @@ objspace_internal_super_of(VALUE self, VALUE obj)
     return wrap_klass_iow(super);
 }
 
-void Init_object_tracing(VALUE rb_mObjSpace);
-void Init_objspace_dump(VALUE rb_mObjSpace);
+COLDFUNC(void Init_object_tracing(VALUE rb_mObjSpace));
+COLDFUNC(void Init_objspace_dump(VALUE rb_mObjSpace));
 
 /*
  * Document-module: ObjectSpace
@@ -933,6 +933,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
  * memory usage.
  */
 
+COLDFUNC(void Init_objspace(void));
 void
 Init_objspace(void)
 {

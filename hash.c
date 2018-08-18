@@ -4684,6 +4684,7 @@ env_update(VALUE env, VALUE hash)
  *  See also Object#hash and Object#eql?
  */
 
+COLDFUNC(void Init_Hash(void));
 void
 Init_Hash(void)
 {

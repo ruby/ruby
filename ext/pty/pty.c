@@ -736,6 +736,7 @@ static VALUE cPTY;
  *  results obtained from use of this software.
  */
 
+COLDFUNC(void Init_pty(void));
 void
 Init_pty(void)
 {

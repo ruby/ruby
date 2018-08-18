@@ -1533,6 +1533,7 @@ int ruby_enable_coredump = 0;
  * system dependent. Signal delivery semantics may also vary between
  * systems; in particular signal delivery may not always be reliable.
  */
+COLDFUNC(void Init_signal(void));
 void
 Init_signal(void)
 {

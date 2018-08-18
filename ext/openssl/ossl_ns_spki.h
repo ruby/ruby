@@ -14,6 +14,6 @@ extern VALUE mNetscape;
 extern VALUE cSPKI;
 extern VALUE eSPKIError;
 
-void Init_ossl_ns_spki(void);
+COLDFUNC(void Init_ossl_ns_spki(void));
 
 #endif /* _OSSL_NS_SPKI_H_ */

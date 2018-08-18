@@ -674,6 +674,7 @@ rb_fiddle_ptr_s_to_ptr(VALUE self, VALUE val)
     return ptr;
 }
 
+COLDFUNC(void Init_fiddle_pointer(void));
 void
 Init_fiddle_pointer(void)
 {

@@ -49,6 +49,7 @@ get_dns_server_list(VALUE self)
     return nameservers;
 }
 
+COLDFUNC(void InitVM_resolv(void));
 void
 InitVM_resolv(void)
 {
@@ -58,6 +59,7 @@ InitVM_resolv(void)
     rb_define_private_method(singl, "get_dns_server_list", get_dns_server_list, 0);
 }
 
+COLDFUNC(void Init_resolv(void));
 void
 Init_resolv(void)
 {

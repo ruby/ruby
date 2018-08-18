@@ -1885,6 +1885,7 @@ username_completion_proc_call(VALUE self, VALUE str)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_readline(void));
 void
 Init_readline(void)
 {

@@ -1062,6 +1062,7 @@ etc_nprocessors(VALUE obj)
  * All operations defined in this module are class methods, so that you can
  * include the Etc module into your class.
  */
+COLDFUNC(void Init_etc(void));
 void
 Init_etc(void)
 {

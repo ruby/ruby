@@ -1375,7 +1375,7 @@ rb_locale_encindex(void)
 
     if (rb_enc_registered("locale") < 0) {
 # if defined _WIN32
-	void Init_w32_codepage(void);
+	COLDFUNC(void Init_w32_codepage(void));
 	Init_w32_codepage();
 # endif
 	enc_alias_internal("locale", idx);
@@ -1930,6 +1930,7 @@ rb_enc_aliases(VALUE klass)
  *
  */
 
+COLDFUNC(void Init_Encoding(void));
 void
 Init_Encoding(void)
 {

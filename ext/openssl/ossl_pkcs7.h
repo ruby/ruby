@@ -15,6 +15,6 @@ extern VALUE cPKCS7Signer;
 extern VALUE cPKCS7Recipient;
 extern VALUE ePKCS7Error;
 
-void Init_ossl_pkcs7(void);
+COLDFUNC(void Init_ossl_pkcs7(void));
 
 #endif /* _OSSL_PKCS7_H_ */

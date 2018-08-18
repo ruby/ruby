@@ -4896,6 +4896,7 @@ time_load(VALUE klass, VALUE str)
  *    Time.new(2010,10,31).between?(t1, t2) #=> true
  */
 
+COLDFUNC(void Init_Time(void));
 void
 Init_Time(void)
 {

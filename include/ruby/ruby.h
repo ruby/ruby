@@ -1699,10 +1699,10 @@ void rb_glob(const char*,void(*)(const char*,VALUE,void*),VALUE);
 int ruby_glob(const char*,int,ruby_glob_func*,VALUE);
 int ruby_brace_glob(const char*,int,ruby_glob_func*,VALUE);
 
-VALUE rb_define_class(const char*,VALUE);
-VALUE rb_define_module(const char*);
-VALUE rb_define_class_under(VALUE, const char*, VALUE);
-VALUE rb_define_module_under(VALUE, const char*);
+COLDFUNC(VALUE rb_define_class(const char*,VALUE));
+COLDFUNC(VALUE rb_define_module(const char*));
+COLDFUNC(VALUE rb_define_class_under(VALUE, const char*, VALUE));
+COLDFUNC(VALUE rb_define_module_under(VALUE, const char*));
 
 void rb_include_module(VALUE,VALUE);
 void rb_extend_object(VALUE,VALUE);
@@ -1728,26 +1728,26 @@ void  rb_gvar_var_marker(VALUE *var);
 
 NORETURN(void  rb_gvar_readonly_setter(VALUE val, ID id, void *data, struct rb_global_variable *gvar));
 
-void rb_define_variable(const char*,VALUE*);
-void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
-void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS));
-void rb_define_readonly_variable(const char*,const VALUE*);
-void rb_define_const(VALUE,const char*,VALUE);
-void rb_define_global_const(const char*,VALUE);
+COLDFUNC(void rb_define_variable(const char*,VALUE*));
+COLDFUNC(void rb_define_virtual_variable(const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
+COLDFUNC(void rb_define_hooked_variable(const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
+COLDFUNC(void rb_define_readonly_variable(const char*,const VALUE*));
+COLDFUNC(void rb_define_const(VALUE,const char*,VALUE));
+COLDFUNC(void rb_define_global_const(const char*,VALUE));
 
 #define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))(func))
-void rb_define_method(VALUE,const char*,VALUE(*)(ANYARGS),int);
-void rb_define_module_function(VALUE,const char*,VALUE(*)(ANYARGS),int);
-void rb_define_global_function(const char*,VALUE(*)(ANYARGS),int);
+COLDFUNC(void rb_define_method(VALUE,const char*,VALUE(*)(ANYARGS),int));
+COLDFUNC(void rb_define_module_function(VALUE,const char*,VALUE(*)(ANYARGS),int));
+COLDFUNC(void rb_define_global_function(const char*,VALUE(*)(ANYARGS),int));
 
-void rb_undef_method(VALUE,const char*);
-void rb_define_alias(VALUE,const char*,const char*);
-void rb_define_attr(VALUE,const char*,int,int);
+COLDFUNC(void rb_undef_method(VALUE,const char*));
+COLDFUNC(void rb_define_alias(VALUE,const char*,const char*));
+COLDFUNC(void rb_define_attr(VALUE,const char*,int,int));
 
-void rb_global_variable(VALUE*);
-void rb_gc_register_mark_object(VALUE);
-void rb_gc_register_address(VALUE*);
-void rb_gc_unregister_address(VALUE*);
+COLDFUNC(void rb_global_variable(VALUE*));
+COLDFUNC(void rb_gc_register_mark_object(VALUE));
+COLDFUNC(void rb_gc_register_address(VALUE*));
+COLDFUNC(void rb_gc_unregister_address(VALUE*));
 
 ID rb_intern(const char*);
 ID rb_intern2(const char*, long);

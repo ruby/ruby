@@ -3996,6 +3996,7 @@ re_warn(const char *s)
  *  :include: doc/regexp.rdoc
  */
 
+COLDFUNC(void Init_Regexp(void));
 void
 Init_Regexp(void)
 {

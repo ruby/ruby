@@ -292,6 +292,7 @@ rb_coverage_running(VALUE klass)
  *   require "foo.rb"
  *   p Coverage.result  #=> {"foo.rb"=>[1, 1, 10, nil, nil, 1, 1, nil, 0, nil]}
  */
+COLDFUNC(void Init_coverage(void));
 void
 Init_coverage(void)
 {

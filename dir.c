@@ -3250,6 +3250,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
  *  directory (<code>..</code>), and the directory itself
  *  (<code>.</code>).
  */
+COLDFUNC(void Init_Dir(void));
 void
 Init_Dir(void)
 {

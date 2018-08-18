@@ -2418,6 +2418,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  * fatal -- impossible to rescue
  */
 
+COLDFUNC(void Init_Exception(void));
 void
 Init_Exception(void)
 {
@@ -2894,6 +2895,7 @@ rb_check_copyable(VALUE obj, VALUE orig)
     }
 }
 
+COLDFUNC(void Init_syserr(void));
 void
 Init_syserr(void)
 {

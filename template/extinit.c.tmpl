@@ -9,6 +9,7 @@
 
 void ruby_init_ext(const char *name, void (*init)(void));
 
+COLDFUNC(void Init_ext(void));
 void Init_ext(void)
 {
 % extinits.each do |f, n|

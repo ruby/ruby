@@ -245,6 +245,7 @@ cmp_clamp(VALUE x, VALUE min, VALUE max)
  *
  */
 
+COLDFUNC(void Init_Comparable(void));
 void
 Init_Comparable(void)
 {

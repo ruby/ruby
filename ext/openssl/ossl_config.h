@@ -14,6 +14,6 @@ extern VALUE cConfig;
 extern VALUE eConfigError;
 
 CONF* DupConfigPtr(VALUE obj);
-void Init_ossl_config(void);
+COLDFUNC(void Init_ossl_config(void));
 
 #endif /* _OSSL_CONFIG_H_ */

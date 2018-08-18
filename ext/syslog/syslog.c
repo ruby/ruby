@@ -418,6 +418,7 @@ static VALUE mSyslogMacros_included(VALUE mod, VALUE target)
  *
  * The syslog protocol is standardized in RFC 5424.
  */
+COLDFUNC(void Init_syslog(void));
 void Init_syslog(void)
 {
 #undef rb_intern

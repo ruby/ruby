@@ -46,6 +46,7 @@ static const rb_digest_metadata_t md5 = {
  *  md5 << "message"
  *  md5.hexdigest                        # => "78e73102..."
  */
+COLDFUNC(void Init_md5(void));
 void
 Init_md5(void)
 {

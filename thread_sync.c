@@ -1453,6 +1453,7 @@ define_thread_class(VALUE outer, const char *name, VALUE super)
     return klass;
 }
 
+COLDFUNC(static void Init_thread_sync(void));
 static void
 Init_thread_sync(void)
 {

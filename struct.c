@@ -1304,6 +1304,7 @@ InitVM_Struct(void)
 }
 
 #undef rb_intern
+COLDFUNC(void Init_Struct(void));
 void
 Init_Struct(void)
 {

@@ -48,6 +48,7 @@ struct ivar_update {
     int iv_extended;
 };
 
+COLDFUNC(void Init_var_tables(void));
 void
 Init_var_tables(void)
 {

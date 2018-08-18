@@ -5387,6 +5387,7 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *   puts tally * 2            #=> "||||"
  *   puts tally > 1            #=> true
  */
+COLDFUNC(void Init_Numeric(void));
 void
 Init_Numeric(void)
 {

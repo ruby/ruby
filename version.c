@@ -38,6 +38,7 @@ const char ruby_copyright[] = RUBY_COPYRIGHT;
 const char ruby_engine[] = "ruby";
 
 /*! Defines platform-depended Ruby-level constants */
+COLDFUNC(void Init_version(void));
 void
 Init_version(void)
 {

@@ -132,6 +132,7 @@ rb_exec_end_proc(void)
     ec->errinfo = errinfo;
 }
 
+COLDFUNC(void Init_jump(void));
 void
 Init_jump(void)
 {

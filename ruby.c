@@ -54,7 +54,7 @@
 
 #include "mjit.h"
 
-void Init_ruby_description(void);
+COLDFUNC(void Init_ruby_description(void));
 
 #ifndef HAVE_STDLIB_H
 char *getenv();

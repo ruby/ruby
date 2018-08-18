@@ -11474,6 +11474,7 @@ ripper_lex_state_name(VALUE self, VALUE state)
     return rb_parser_lex_state_name(NUM2INT(state));
 }
 
+COLDFUNC(void Init_ripper(void));
 void
 Init_ripper(void)
 {
@@ -11486,6 +11487,7 @@ Init_ripper(void)
     InitVM(ripper);
 }
 
+COLDFUNC(void InitVM_ripper(void));
 void
 InitVM_ripper(void)
 {

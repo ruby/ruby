@@ -3065,6 +3065,7 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
  *
  */
 
+COLDFUNC(void Init_Proc(void));
 void
 Init_Proc(void)
 {
@@ -3209,6 +3210,7 @@ Init_Proc(void)
  *
  */
 
+COLDFUNC(void Init_Binding(void));
 void
 Init_Binding(void)
 {

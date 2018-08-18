@@ -4025,6 +4025,7 @@ enum_uniq(VALUE obj)
  *  rely on an ordering between members of the collection.
  */
 
+COLDFUNC(void Init_Enumerable(void));
 void
 Init_Enumerable(void)
 {

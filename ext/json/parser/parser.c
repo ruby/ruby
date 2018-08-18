@@ -2064,6 +2064,7 @@ static VALUE cParser_source(VALUE self)
     return rb_str_dup(json->Vsource);
 }
 
+COLDFUNC(void Init_parser(void));
 void Init_parser(void)
 {
 #undef rb_intern

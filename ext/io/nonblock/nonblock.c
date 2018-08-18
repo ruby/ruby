@@ -131,6 +131,7 @@ rb_io_nonblock_block(int argc, VALUE *argv, VALUE io)
 #define rb_io_nonblock_block rb_f_notimplement
 #endif
 
+COLDFUNC(void Init_nonblock(void));
 void
 Init_nonblock(void)
 {

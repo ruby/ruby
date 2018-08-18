@@ -4009,6 +4009,7 @@ rb_obj_dig(int argc, VALUE *argv, VALUE obj, VALUE notfound)
  *++
  */
 
+COLDFUNC(void InitVM_Object(void));
 void
 InitVM_Object(void)
 {
@@ -4238,6 +4239,7 @@ InitVM_Object(void)
     rb_deprecate_constant(rb_cObject, "FALSE");
 }
 
+COLDFUNC(void Init_Object(void));
 void
 Init_Object(void)
 {

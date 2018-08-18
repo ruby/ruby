@@ -57,6 +57,7 @@ extern VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
 ASN1_TYPE *ossl_asn1_get_asn1type(VALUE);
 
+COLDFUNC(void Init_ossl_asn1(void));
 void Init_ossl_asn1(void);
 
 #endif

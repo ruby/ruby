@@ -19,7 +19,7 @@ extern BN_CTX *ossl_bn_ctx;
 
 VALUE ossl_bn_new(const BIGNUM *);
 BIGNUM *ossl_bn_value_ptr(volatile VALUE *);
-void Init_ossl_bn(void);
+COLDFUNC(void Init_ossl_bn(void));
 
 
 #endif /* _OSS_BN_H_ */

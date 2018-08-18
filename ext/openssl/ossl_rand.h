@@ -13,6 +13,6 @@
 extern VALUE mRandom;
 extern VALUE eRandomError;
 
-void Init_ossl_rand(void);
+COLDFUNC(void Init_ossl_rand(void));
 
 #endif /* _OSSL_RAND_H_ */

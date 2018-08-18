@@ -1468,9 +1468,10 @@ tracepoint_stat_s(VALUE self)
     return stat;
 }
 
-static void Init_postponed_job(void);
+COLDFUNC(static void Init_postponed_job(void));
 
 /* This function is called from inits.c */
+COLDFUNC(void Init_vm_trace(void));
 void
 Init_vm_trace(void)
 {

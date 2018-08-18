@@ -14,6 +14,6 @@
 extern VALUE cEngine;
 extern VALUE eEngineError;
 
-void Init_ossl_engine(void);
+COLDFUNC(void Init_ossl_engine(void));
 
 #endif /* OSSL_ENGINE_H */

@@ -1929,6 +1929,7 @@ socket_s_ip_address_list(VALUE self)
 #define socket_s_ip_address_list rb_f_notimplement
 #endif
 
+COLDFUNC(void Init_socket(void));
 void
 Init_socket(void)
 {

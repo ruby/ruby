@@ -30,7 +30,7 @@ extern VALUE mSSL;
 extern VALUE cSSLSocket;
 extern VALUE cSSLSession;
 
-void Init_ossl_ssl(void);
-void Init_ossl_ssl_session(void);
+COLDFUNC(void Init_ossl_ssl(void));
+COLDFUNC(void Init_ossl_ssl_session(void));
 
 #endif /* _OSSL_SSL_H_ */

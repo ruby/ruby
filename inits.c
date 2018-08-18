@@ -13,6 +13,7 @@
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
 
+COLDFUNC(void rb_call_inits(void));
 void
 rb_call_inits(void)
 {

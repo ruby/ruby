@@ -7118,6 +7118,7 @@ rb_int_powm(int const argc, VALUE * const argv, VALUE const num)
  *
  */
 
+COLDFUNC(void Init_Bignum(void));
 void
 Init_Bignum(void)
 {

@@ -120,6 +120,7 @@ rb_check_safe_obj(VALUE x)
     }
 }
 
+COLDFUNC(void Init_safe(void));
 void
 Init_safe(void)
 {

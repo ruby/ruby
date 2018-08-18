@@ -400,6 +400,7 @@ cgiesc_unescape(int argc, VALUE *argv, VALUE self)
     }
 }
 
+COLDFUNC(void Init_escape(void));
 void
 Init_escape(void)
 {
@@ -407,6 +408,7 @@ Init_escape(void)
     InitVM(escape);
 }
 
+COLDFUNC(void InitVM_escape(void));
 void
 InitVM_escape(void)
 {

@@ -474,6 +474,7 @@ rb_nkf_guess(VALUE obj, VALUE src)
  *  Ignore rest of -option.
  */
 
+COLDFUNC(void Init_nkf(void));
 void
 Init_nkf(void)
 {

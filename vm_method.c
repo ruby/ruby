@@ -2106,6 +2106,7 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
     return Qfalse;
 }
 
+COLDFUNC(void Init_Method(void));
 void
 Init_Method(void)
 {

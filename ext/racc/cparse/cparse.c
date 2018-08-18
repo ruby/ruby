@@ -812,6 +812,7 @@ reduce0(VALUE val, VALUE data, VALUE self)
                           Ruby Interface
 ----------------------------------------------------------------------- */
 
+COLDFUNC(void Init_cparse(void));
 void
 Init_cparse(void)
 {

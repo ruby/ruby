@@ -1302,6 +1302,7 @@ AS_IF([test "$rb_cv_have_alignof" != no], [
 
 RUBY_FUNC_ATTRIBUTE(__const__, CONSTFUNC)
 RUBY_FUNC_ATTRIBUTE(__pure__, PUREFUNC)
+RUBY_FUNC_ATTRIBUTE(__cold__, COLDFUNC)
 RUBY_FUNC_ATTRIBUTE(__noreturn__, NORETURN)
 RUBY_FUNC_ATTRIBUTE(__deprecated__, DEPRECATED)
 RUBY_FUNC_ATTRIBUTE(__deprecated__("by "@%:@n), DEPRECATED_BY(n,x), rb_cv_func_deprecated_by)

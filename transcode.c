@@ -4412,6 +4412,7 @@ ecerr_incomplete_input(VALUE self)
  */
 
 #undef rb_intern
+COLDFUNC(void Init_transcode(void));
 void
 Init_transcode(void)
 {

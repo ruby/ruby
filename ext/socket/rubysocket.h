@@ -376,20 +376,20 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
-void rsock_init_basicsocket(void);
-void rsock_init_ipsocket(void);
-void rsock_init_tcpsocket(void);
-void rsock_init_tcpserver(void);
-void rsock_init_sockssocket(void);
-void rsock_init_udpsocket(void);
-void rsock_init_unixsocket(void);
-void rsock_init_unixserver(void);
-void rsock_init_socket_constants(void);
-void rsock_init_ancdata(void);
-void rsock_init_addrinfo(void);
-void rsock_init_sockopt(void);
-void rsock_init_sockifaddr(void);
-void rsock_init_socket_init(void);
+COLDFUNC(void rsock_init_basicsocket(void));
+COLDFUNC(void rsock_init_ipsocket(void));
+COLDFUNC(void rsock_init_tcpsocket(void));
+COLDFUNC(void rsock_init_tcpserver(void));
+COLDFUNC(void rsock_init_sockssocket(void));
+COLDFUNC(void rsock_init_udpsocket(void));
+COLDFUNC(void rsock_init_unixsocket(void));
+COLDFUNC(void rsock_init_unixserver(void));
+COLDFUNC(void rsock_init_socket_constants(void));
+COLDFUNC(void rsock_init_ancdata(void));
+COLDFUNC(void rsock_init_addrinfo(void));
+COLDFUNC(void rsock_init_sockopt(void));
+COLDFUNC(void rsock_init_sockifaddr(void));
+COLDFUNC(void rsock_init_socket_init(void));
 
 NORETURN(void rsock_syserr_fail_host_port(int err, const char *, VALUE, VALUE));
 NORETURN(void rsock_syserr_fail_path(int err, const char *, VALUE));

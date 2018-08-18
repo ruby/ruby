@@ -3,6 +3,7 @@
 
 void ruby_Init_Continuation_body(void);
 
+COLDFUNC(void Init_continuation(void));
 void
 Init_continuation(void)
 {

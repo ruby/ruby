@@ -1333,6 +1333,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 /*
  *
  */
+COLDFUNC(void Init_generator(void));
 void Init_generator(void)
 {
 #undef rb_intern

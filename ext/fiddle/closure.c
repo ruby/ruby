@@ -288,6 +288,7 @@ to_i(VALUE self)
     return PTR2NUM(code);
 }
 
+COLDFUNC(void Init_fiddle_closure(void));
 void
 Init_fiddle_closure(void)
 {

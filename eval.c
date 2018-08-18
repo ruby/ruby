@@ -1902,6 +1902,7 @@ f_current_dirname(void)
     return base;
 }
 
+COLDFUNC(void Init_eval(void));
 void
 Init_eval(void)
 {

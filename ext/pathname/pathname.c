@@ -1505,6 +1505,7 @@ path_f_pathname(VALUE self, VALUE str)
  * anyway, and its documentation (e.g. through +ri+) will contain more
  * information.  In some cases, a brief description will follow.
  */
+COLDFUNC(void Init_pathname(void));
 void
 Init_pathname(void)
 {

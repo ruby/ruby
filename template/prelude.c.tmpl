@@ -200,6 +200,9 @@ prelude_require(VALUE self, VALUE nth)
 
 % end
 %end
+%unless @preludes.empty?
+COLDFUNC(void Init_<%=@init_name%><%=%>(void));
+%end
 void
 Init_<%=@init_name%><%=%>(void)
 {

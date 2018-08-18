@@ -1012,6 +1012,7 @@ fsdbm_reject(VALUE obj)
     return rb_hash_delete_if(fsdbm_to_hash(obj));
 }
 
+COLDFUNC(void Init_sdbm(void));
 void
 Init_sdbm(void)
 {

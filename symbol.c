@@ -35,6 +35,7 @@ static ID register_static_symid_str(ID, VALUE);
 STATIC_ASSERT(op_tbl_name_size, sizeof(op_tbl[0].name) == 3);
 #define op_tbl_len(i) (!op_tbl[i].name[1] ? 1 : !op_tbl[i].name[2] ? 2 : 3)
 
+COLDFUNC(static void Init_op_tbl(void));
 static void
 Init_op_tbl(void)
 {
@@ -72,6 +73,7 @@ static const struct st_hash_type symhash = {
     rb_str_hash,
 };
 
+COLDFUNC(void Init_sym(void));
 void
 Init_sym(void)
 {
