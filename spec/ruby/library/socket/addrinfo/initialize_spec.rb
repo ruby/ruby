@@ -447,7 +447,7 @@ describe "Addrinfo#initialize" do
         end
       end
 
-      platform_is_not :windows, :solaris do
+      platform_is :linux do
         describe 'and the socket type is set to SOCK_SEQPACKET' do
           before do
             @socktype = Socket::SOCK_SEQPACKET
