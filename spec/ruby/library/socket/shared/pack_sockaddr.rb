@@ -28,12 +28,25 @@ describe :socket_pack_sockaddr_in, shared: true do
     end
   end
 
-  describe 'using an IPv6 address' do
-    it 'returns a String of 28 bytes' do
-      str = Socket.public_send(@method, 80, '::1')
+  platform_is_not :solaris do
+    describe 'using an IPv6 address' do
+      it 'returns a String of 28 bytes' do
+        str = Socket.public_send(@method, 80, '::1')
 
-      str.should be_an_instance_of(String)
-      str.bytesize.should == 28
+        str.should be_an_instance_of(String)
+        str.bytesize.should == 28
+      end
+    end
+  end
+
+  platform_is :solaris do
+    describe 'using an IPv6 address' do
+      it 'returns a String of 32 bytes' do
+        str = Socket.public_send(@method, 80, '::1')
+
+        str.should be_an_instance_of(String)
+        str.bytesize.should == 32
+      end
     end
   end
 end
