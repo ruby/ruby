@@ -55,6 +55,20 @@ Notable changes
   [[GitHub #177]](https://github.com/ruby/openssl/pull/177)
 
 
+Version 2.0.8
+=============
+
+Bug fixes
+---------
+
+* OpenSSL::Cipher#pkcs5_keyivgen raises an error when a negative iteration
+  count is given.
+  [[GitHub #184]](https://github.com/ruby/openssl/pull/184)
+* Fixed build with LibreSSL 2.7.
+  [[GitHub #192]](https://github.com/ruby/openssl/issues/192)
+  [[GitHub #193]](https://github.com/ruby/openssl/pull/193)
+
+
 Version 2.0.7
 =============
 
