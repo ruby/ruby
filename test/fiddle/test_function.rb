@@ -73,10 +73,6 @@ module Fiddle
     end
 
     def test_nogvl_poll
-      if RubyVM::MJIT.enabled?
-        skip 'r64355 make `make test-all RUN_OPTS="--jit-wait"` hang and CI running it times out.'
-      end
-
       # XXX hack to quiet down CI errors on EINTR from r64353
       # [ruby-core:88360] [Misc #14937]
       # Making pipes (and sockets) non-blocking by default would allow
