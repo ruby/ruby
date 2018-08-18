@@ -8,17 +8,22 @@ describe 'Addrinfo#getnameinfo' do
         @addr = Addrinfo.tcp(ip_address, 80)
       end
 
-      it 'returns the node and service names' do
-        host, service = @addr.getnameinfo
+      platform_is_not :solaris do
+        it 'returns the node and service names' do
+          host, service = @addr.getnameinfo
+          service.should == 'http'
+        end
+      end
 
-        host.should be_an_instance_of(String)
-        service.should == 'http'
+      platform_is :solaris do
+        it 'returns the node and service names' do
+          host, service = @addr.getnameinfo
+          service.should == '80'
+        end
       end
 
       it 'accepts flags as a Fixnum as the first argument' do
         host, service = @addr.getnameinfo(Socket::NI_NUMERICSERV)
-
-        host.should be_an_instance_of(String)
         service.should == '80'
       end
     end
