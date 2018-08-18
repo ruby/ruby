@@ -219,45 +219,43 @@ describe 'Socket.getaddrinfo' do
       array[6].should be_an_instance_of(Fixnum)
     end
 
-    ipproto_tcp = Socket::IPPROTO_TCP
-    platform_is :windows do
-      ipproto_tcp = 0
-    end
-
     it 'accepts a Fixnum as the socket type' do
-      Socket.getaddrinfo(nil, 'ftp', :INET, Socket::SOCK_STREAM)[0].should == [
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, Socket::SOCK_STREAM)[0]
+      array.should == [
         'AF_INET',
         21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        ipproto_tcp
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
 
     it 'accepts a Symbol as the socket type' do
-      Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM)[0].should == [
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM)[0]
+      array.should == [
         'AF_INET',
         21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        ipproto_tcp
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
 
     it 'accepts a String as the socket type' do
-      Socket.getaddrinfo(nil, 'ftp', :INET, 'STREAM')[0].should == [
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, 'STREAM')[0]
+      array.should == [
         'AF_INET',
         21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        ipproto_tcp
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
 
     it 'accepts an object responding to #to_str as the socket type' do
@@ -265,46 +263,45 @@ describe 'Socket.getaddrinfo' do
 
       dummy.stub!(:to_str).and_return('STREAM')
 
-      Socket.getaddrinfo(nil, 'ftp', :INET, dummy)[0].should == [
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, dummy)[0]
+      array.should == [
         'AF_INET',
         21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        ipproto_tcp
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
 
     platform_is_not :windows do
       it 'accepts a Fixnum as the protocol family' do
-        addr = Socket.getaddrinfo(nil, 'discard', :INET, :DGRAM, Socket::IPPROTO_UDP)
-
-        addr[0].should == [
+        *array, proto = Socket.getaddrinfo(nil, 'discard', :INET, :DGRAM, Socket::IPPROTO_UDP)[0]
+        array.should == [
           'AF_INET',
           9,
           '127.0.0.1',
           '127.0.0.1',
           Socket::AF_INET,
           Socket::SOCK_DGRAM,
-          Socket::IPPROTO_UDP
         ]
+        [0, Socket::IPPROTO_UDP].should include(proto)
       end
     end
 
     it 'accepts a Fixnum as the flags' do
-      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
-                                Socket::IPPROTO_TCP, Socket::AI_PASSIVE)
-
-      addr[0].should == [
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
+                                Socket::IPPROTO_TCP, Socket::AI_PASSIVE)[0]
+      array.should == [
         'AF_INET',
         21,
         '0.0.0.0',
         '0.0.0.0',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        Socket::IPPROTO_TCP
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is true' do
@@ -334,18 +331,17 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is :numeric' do
-      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
+      *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, 0, :numeric)[0]
-
-      addr.should == [
+      array.should == [
         'AF_INET',
         21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
         Socket::SOCK_STREAM,
-        Socket::IPPROTO_TCP
       ]
+      [0, Socket::IPPROTO_TCP].should include(proto)
     end
   end
 
