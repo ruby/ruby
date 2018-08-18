@@ -1,288 +1,333 @@
-# -*- rdoc -*-
+# -*- markdown -*- markup: Markdown
 
-= NEWS for Ruby 2.6.0
+# NEWS for Ruby 2.6.0
 
 This document is a list of user visible feature changes made between
 releases except for bug fixes.
 
-Note that each entry is kept so brief that no reason behind or
-reference information is supplied with.  For a full list of changes
-with all sufficient information, see the ChangeLog file or Redmine
-(e.g. <tt>https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER</tt>)
+Note that each entry is kept so brief that no reason behind or reference
+information is supplied with.  For a full list of changes with all
+sufficient information, see the ChangeLog file or Redmine
+(e.g. `https://bugs.ruby-lang.org/issues/$FEATURE_OR_BUG_NUMBER`)
 
-== Changes since the 2.5.0 release
+## Changes since the 2.5.0 release
 
-=== Language changes
+### Language changes
 
-* $SAFE is a process global state and we can set 0 again. [Feature #14250]
+* `$SAFE` is a process global state and we can set 0 again.
+  [Feature #14250]
 
 * refinements take place at block passing.  [Feature #14223]
 
 * `else` without `rescue` now causes a syntax error.  [EXPERIMENTAL]
 
-* constant names may start with a non-ASCII capital letter. [Feature #13770]
+* constant names may start with a non-ASCII capital letter.
+  [Feature #13770]
 
-* An endless range is introduced.  You can write a range that has no end, like `(0..)`.
-  The following shows typical use cases.  [Feature #12912]
+* An endless range is introduced.  You can write a range that has no end,
+  like `(0..)`.  The following shows typical use cases.  [Feature #12912]
 
+    ```ruby
     ary[1..]                            # identical to ary[1..-1]
     (1..).each {|index| ... }           # infinite loop from index 1
     ary.zip(1..) {|elem, index| ... }   # ary.each.with_index(1) { }
+    ```
 
-* Non-Symbol key in keyword arguments hash causes an exception.
+* Non-`Symbol` key in keyword arguments hash causes an exception.
 
-=== Core classes updates (outstanding ones only)
+### Core classes updates (outstanding ones only)
 
-* Array
+* `Array`
 
-  * Aliased methods:
+    * Aliased methods:
 
-    * Array#filter is a new alias for Array#select [Feature #13784]
-    * Array#filter! is a new alias for Array#select! [Feature #13784]
+        * `Array#filter` is a new alias for `Array#select`.
+          [Feature #13784]
+        * `Array#filter!` is a new alias for `Array#select!`.
+          [Feature #13784]
 
-* Binding
+* `Binding`
 
-  * New methods:
+    * New methods:
 
-    * added Binding#source_location.  [Feature #14230]
+        * added `Binding#source_location`.  [Feature #14230]
 
-      This method returns the source location of binding, a 2-element
-      array of `__FILE__` and `__LINE__`.  Traditionally, the same
-      information could be retrieved by `eval("[__FILE__, __LINE__]",
-      binding)`, but we are planning to change this behavior so that
-      `Kernel#eval` ignores binding's source location [Bug #4352].
-      So, users should use this newly-introduced method instead of
-      `Kernel#eval`.
+            This method returns the source location of binding, a 2-element
+            array of `__FILE__` and `__LINE__`.  Traditionally, the same
+            information could be retrieved by `eval("[__FILE__, __LINE__]",
+            binding)`, but we are planning to change this behavior so that
+            `Kernel#eval` ignores binding's source location [Bug #4352].
+            So, users should use this newly-introduced method instead of
+            `Kernel#eval`.
 
-* Dir
+* `Dir`
 
-  * New methods:
+    * New methods:
 
-    * added Dir#each_child and Dir#children instance methods. [Feature #13969]
+        * added `Dir#each_child` and `Dir#children` instance methods.
+          [Feature #13969]
 
-* Enumerable
+* `Enumerable`
 
-  * Aliased methods:
+    * Aliased methods:
 
-    * Enumerable#filter is a new alias for Enumerable#select [Feature #13784]
+        * `Enumerable#filter` is a new alias for `Enumerable#select`.
+          [Feature #13784]
 
-* Enumerator::Lazy
+* `Enumerator::Lazy`
 
-  * Aliased methods:
+    * Aliased methods:
 
-    * Enumerator::Lazy#filter is a new alias for Enumerator::Lazy#select [Feature #13784]
+        * `Enumerator::Lazy#filter` is a new alias for
+          `Enumerator::Lazy#select`.  [Feature #13784]
 
-* Exception
+* `Exception`
 
-  * Exception#full_message takes :highlight and :order options [Bug #14324]
+    * `Exception#full_message` takes `:highlight` and `:order` options.
+      [Bug #14324]
 
-* Hash
+* `Hash`
 
-  * Aliased methods:
+    * Aliased methods:
 
-    * Hash#filter is a new alias for Hash#select [Feature #13784]
-    * Hash#filter! is a new alias for Hash#select! [Feature #13784]
+        * `Hash#filter` is a new alias for `Hash#select`.  [Feature #13784]
+        * `Hash#filter!` is a new alias for `Hash#select!`.
+          [Feature #13784]
 
-* IO
+* `IO`
 
-  * new mode character 'x' to open files for exclusive access [Feature #11258]
+    * new mode character `'x'` to open files for exclusive access.
+      [Feature #11258]
 
-* Kernel
+* `Kernel`
 
-  * Kernel#then is a new alias for Kernel#yield_self [Feature #14594]
+    * `Kernel#then` is a new alias for `Kernel#yield_self`.
+      [Feature #14594]
 
-  * Kernel.#Complex takes :exception option to specify the way of error handling  [Feature #12732]
+    * `Kernel.#Complex` takes `:exception` option to specify the way of
+      error handling.  [Feature #12732]
 
-  * Kernel.#Float takes :exception option to specify the way of error handling  [Feature #12732]
+    * `Kernel.#Float` takes `:exception` option to specify the way of error
+      handling.  [Feature #12732]
 
-  * Kernel.#Integer takes :exception option to specify the way of error handling  [Feature #12732]
+    * `Kernel.#Integer` takes `:exception` option to specify the way of
+      error handling.  [Feature #12732]
 
-  * Kernel.#Rational takes :exception option to specify the way of error handling  [Feature #12732]
+    * `Kernel.#Rational` takes `:exception` option to specify the way of
+      error handling.  [Feature #12732]
 
-  * Kernel.#system takes :exception option to raise an exception on
-    failure. [Feature #14386]
+    * `Kernel.#system` takes `:exception` option to raise an exception on
+      failure.  [Feature #14386]
 
-  * incompatible changes:
-    * system() and exec() do not close non-standard file descriptors
-      (The default of :close_others option is changed to false by default.
-      but we still set the FD_CLOEXEC flag on descriptors we create) [Misc #14907]
+    * incompatible changes:
+        * `system()` and `exec()` do not close non-standard file descriptors
+          (The default of `:close_others` option is changed to false by
+          default.  but we still set the `FD_CLOEXEC` flag on descriptors we
+          create).  [Misc #14907]
 
-* KeyError
+* `KeyError`
 
-  * KeyError#initialize accepts :receiver and :key options to set receiver and key in Ruby code. [Feature #14313]
+    * `KeyError#initialize` accepts `:receiver` and `:key` options to set
+      receiver and key in Ruby code.  [Feature #14313]
 
-* Module
+* `Module`
 
-  * Module#method_defined?, Module#private_method_defined? and Module#protected_method_defined? now accepts the second parameter as optional. If it's true (=default), checks ancestor modules/classes, or checks only the class itself. [Feature #14944]
+    * `Module#method_defined?`, `Module#private_method_defined?` and
+      `Module#protected_method_defined?` now accepts the second parameter as
+      optional. If it's `true` (=default), checks ancestor modules/classes,
+      or checks only the class itself.  [Feature #14944]
 
-* NameError
+* `NameError`
 
-  * NameError#initialize accepts :receiver option to set receiver in Ruby code. [Feature #14313]
+    * `NameError#initialize` accepts `:receiver` option to set receiver in
+      Ruby code.  [Feature #14313]
 
-* NoMethodError
+* `NoMethodError`
 
-  * NoMethodError#initialize accepts :receiver option to set receiver in Ruby code. [Feature #14313]
+    * `NoMethodError#initialize` accepts `:receiver` option to set receiver
+      in Ruby code.  [Feature #14313]
 
-* Proc
+* `Proc`
 
-  * Proc#call doesn't change $SAFE any more. [Feature #14250]
+    * `Proc#call` doesn't change `$SAFE` any more.  [Feature #14250]
 
-* Random
+* `Random`
 
-  * New methods:
+    * New methods:
 
-    * added Random.bytes. [Feature #4938]
+        * added `Random.bytes`.  [Feature #4938]
 
-* Range
+* `Range`
 
-  * Range#=== now uses #cover? instead of #include? method. [Feature #14575]
+    * `Range#===` now uses `#cover?` instead of `#include?` method.
+      [Feature #14575]
 
-* RubyVM::AST
+* `RubyVM::AST`
 
-  * RubyVM::AST.parse parses a given string and returns AST nodes. [experimental]
-  * RubyVM::AST.parse_file parses a given file and returns AST nodes. [experimental]
+    * `RubyVM::AST.parse` parses a given string and returns AST nodes.
+      [experimental]
+    * `RubyVM::AST.parse_file` parses a given file and returns AST nodes.
+      [experimental]
 
-* String
+* `String`
 
-  * String#split yields each substring to the block if given. [Feature #4780]
+    * `String#split` yields each substring to the block if given.
+      [Feature #4780]
 
-* TracePoint
+* `TracePoint`
 
-  * New methods:
+    * New methods:
 
-    * TracePoint#parameters [Feature #14694]
+        * `TracePoint#parameters` [Feature #14694]
 
-=== Stdlib updates (outstanding ones only)
+### Stdlib updates (outstanding ones only)
 
-* ERB
+* `ERB`
 
-  * Add :trim_mode and :eoutvar keyword arguments to ERB.new. Now non-keyword arguments other than first one
-    are softly deprecated and will be removed when Ruby 2.5 becomes EOL. [Feature #14256]
+    * Add `:trim_mode` and `:eoutvar` keyword arguments to `ERB.new`. Now
+      non-keyword arguments other than first one are softly deprecated and
+      will be removed when Ruby 2.5 becomes EOL.  [Feature #14256]
 
-  * erb command's -S option is deprecated, which will be removed in the next version.
+    * erb command's `-S` option is deprecated, which will be removed in the
+      next version.
 
-* FileUtils
+* `FileUtils`
 
-  * New method:
+    * New method:
 
-    * FileUtils#cp_lr [Feature #4189]
+        * `FileUtils#cp_lr`.  [Feature #4189]
 
-* Matrix
+* `Matrix`
 
-  * New method:
+    * New method:
 
-    * Matrix#antisymmetric?
+        * `Matrix#antisymmetric?`
 
-* Net
+* `Net`
 
-  * New method:
+    * New method:
 
-    * Add write_timeout keyword argument to Net::BufferedIO.new. [Feature #13396]
+        * Add `:write_timeout` keyword argument to `Net::BufferedIO.new`.
+          [Feature #13396]
 
-    * Add Net::BufferedIO#write_timeout, Net::BufferedIO#write_timeout=,
-      Net::HTTP#write_timeout, and Net::HTTP#write_timeout=. [Feature #13396]
+        * Add `Net::BufferedIO#write_timeout`,
+          `Net::BufferedIO#write_timeout=`, `Net::HTTP#write_timeout`, and
+          `Net::HTTP#write_timeout=`.  [Feature #13396]
 
-  * New constant:
+    * New constant:
 
-    * Add Net::HTTPClientException to deprecate Net::HTTPServerException,
-      whose name is misleading. [Bug #14688]
+        * Add `Net::HTTPClientException` to deprecate
+          `Net::HTTPServerException`, whose name is misleading.  [Bug #14688]
 
-* REXML
+* `REXML`
 
-  * Improved some XPath implementations:
+    * Improved some XPath implementations:
 
-    * concat() function: Stringify all arguments before concatenating
+        * `concat()` function: Stringify all arguments before concatenating
 
-    * string() function: Support context node
+        * `string()` function: Support context node
 
-    * string() function: Support processing instruction node
+        * `string()` function: Support processing instruction node
 
-    * Support "*:#{ELEMENT_NAME}" syntax in XPath 2.0
+        * Support `"*:#{ELEMENT_NAME}"` syntax in XPath 2.0
 
-  * Fixed some XPath implementations:
+    * Fixed some XPath implementations:
 
-    * "//#{ELEMENT_NAME}[#{POSITION}]" case
+        * `"//#{ELEMENT_NAME}[#{POSITION}]"` case
 
-    * string() function: Fix function(document) returns nodes that are
-      out of root elements.
+        * `string()` function: Fix `function(document)` returns nodes that
+          are out of root elements.
 
-    * "/ #{ELEMENT_NAME} " case
+        * `"/ #{ELEMENT_NAME} "` case
 
-    * "/ #{ELEMENT_NAME} [ #{PREDICATE} ]" case
+        * `"/ #{ELEMENT_NAME} [ #{PREDICATE} ]"` case
 
-    * "/ #{AXIS}:: #{ELEMENT_NAME} " case
+        * `"/ #{AXIS}:: #{ELEMENT_NAME} "` case
 
-    * "#{N}-#{M}" case: One ore more white spaces were required before "-"
+        * `"#{N}-#{M}"` case: One ore more white spaces were required before
+          `"-"`
 
-    * "/child::node()" case
+        * `"/child::node()"` case
 
-    * "#{FUNCTION}()/#{PATH}" case
+        * `"#{FUNCTION}()/#{PATH}"` case
 
-    * "@#{ATTRIBUTE}/parent::" case
+        * `"@#{ATTRIBUTE}/parent::"` case
 
-    * "name(#{NODE_SET})" case
+        * `"name(#{NODE_SET})"` case
 
-* RSS
+* `RSS`
 
-  * RSS::Parser.parse: Accept options as Hash. :validate,
-    :ignore_unknown_element, :parser_class options are available.
+    * `RSS::Parser.parse`: Accept options as `Hash`. `:validate`,
+      `:ignore_unknown_element`, `:parser_class` options are available.
 
-* Set
+* `Set`
 
-  * Aliased methods:
+    * Aliased methods:
 
-    * Set#filter! is a new alias for Set#select! [Feature #13784]
+        * `Set#filter!` is a new alias for `Set#select!`.  [Feature #13784]
 
-* URI
+* `URI`
 
-  * Add URI::File to handle file URI scheme [Feature #14035]
+    * Add `URI::File` to handle file URI scheme.  [Feature #14035]
 
-=== Compatibility issues (excluding feature bug fixes)
+### Compatibility issues (excluding feature bug fixes)
 
-* File
+* `File`
 
-  * File.read, File.binread, File.write, File.binwrite, File.foreach,
-    and File.readlines do not invoke external commands even if the path
-    starts with the pipe character |.  [Feature #14245]
+    * `File.read`, `File.binread`, `File.write`, `File.binwrite`,
+      `File.foreach`, and `File.readlines` do not invoke external commands
+      even if the path starts with the pipe character `'|'`.
+      [Feature #14245]
 
-* Dir
+* `Dir`
 
-  * Dir.glob with '\0'-separated pattern list will be deprecated, and
-    is now warned.  [Feature #14643]
+    * `Dir.glob` with `'\0'`-separated pattern list will be deprecated, and
+      is now warned.  [Feature #14643]
 
-=== Stdlib compatibility issues (excluding feature bug fixes)
+### Stdlib compatibility issues (excluding feature bug fixes)
 
-=== C API updates
+### C API updates
 
-=== Supported platform changes
+### Supported platform changes
 
-=== Implementation improvements
+### Implementation improvements
 
-* Speedup `Proc#call` because we don't need to care about `$SAFE` any more. [Feature #14318]
-  With `lc_fizzbuzz` benchmark which uses so many `Proc#call` we can measure
-  x1.4 improvements [Bug #10212].
+* Speedup `Proc#call` because we don't need to care about `$SAFE` any more.
+  [Feature #14318]
 
-* Speedup `block.call` where `block` is passed block parameter. [Feature #14330]
-  Ruby 2.5 improves block passing performance. [Feature #14045]
-  Additionally, Ruby 2.6 improves the performance of passed block calling.
+    With `lc_fizzbuzz` benchmark which uses so many `Proc#call` we can
+    measure x1.4 improvements.  [Bug #10212]
 
-* Introduce an initial implementation of JIT (Just-in-time) compiler. [Feature #14235] [experimental]
-  * `--jit` option is added to enable JIT. `--jit-verbose=1` is good for inspection. See `ruby --help` for others.
-  * This JIT relies on C compiler used to build Ruby, on runtime. Only gcc and clang are supported for the JIT
-    for now, and MinGW support has some issues.
-  * As of 2.6.0-preview1, we're just preparing infrastructure for JIT and very few optimizations are implemented.
-    So it's not ready for benchmarking Ruby's JIT performance yet. It's known that current JIT enablement makes
-    Rails application slower for now.
+* Speedup `block.call` where `block` is passed block parameter.
+  [Feature #14330]
 
-* VM generator script renewal; makes the generated VM more optimized. [GH-1779]
+    Ruby 2.5 improves block passing performance. [Feature #14045]
 
-* Thread cache enabled for pthreads platforms
-  (for `Thread.new` and `Thread.start`) [Feature #14757]
+    Additionally, Ruby 2.6 improves the performance of passed block calling.
 
-=== Miscellaneous changes
+* Introduce an initial implementation of JIT (Just-in-time) compiler.
+  [Feature #14235] [experimental]
+    * `--jit` option is added to enable JIT. `--jit-verbose=1` is good for
+      inspection.  See `ruby --help` for others.
+    * This JIT relies on C compiler used to build Ruby, on runtime.  Only
+      gcc and clang are supported for the JIT for now, and MinGW support has
+      some issues.
+    * As of 2.6.0-preview1, we're just preparing infrastructure for JIT and
+      very few optimizations are implemented.  So it's not ready for
+      benchmarking Ruby's JIT performance yet. It's known that current JIT
+      enablement makes Rails application slower for now.
 
-* On macOS, shared libraries no longer include a full version number of ruby in their names.
-  This eliminates the burden of each teeny upgrade on the platform that users need to rebuild every extension library.
+* VM generator script renewal; makes the generated VM more optimized.
+  [GH-1779]
+
+* Thread cache enabled for pthreads platforms (for `Thread.new` and
+  `Thread.start`).  [Feature #14757]
+
+### Miscellaneous changes
+
+* On macOS, shared libraries no longer include a full version number of ruby
+  in their names.  This eliminates the burden of each teeny upgrade on the
+  platform that users need to rebuild every extension library.
 
   * Before:
     * libruby.2.6.0.dylib
