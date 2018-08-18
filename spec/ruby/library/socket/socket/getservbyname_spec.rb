@@ -10,12 +10,12 @@ describe "Socket#getservbyname" do
     Socket.getservbyname('discard', 'tcp').should == 9
   end
 
-  it 'returns the port for service "http"' do
-    Socket.getservbyname('http').should == 80
+  it 'returns the port for service "ftp"' do
+    Socket.getservbyname('ftp').should == 21
   end
 
-  it 'returns the port for service "http" with protocol "tcp"' do
-    Socket.getservbyname('http', 'tcp').should == 80
+  it 'returns the port for service "ftp" with protocol "tcp"' do
+    Socket.getservbyname('ftp', 'tcp').should == 21
   end
 
   it "returns the port for service 'domain' with protocol 'udp'" do

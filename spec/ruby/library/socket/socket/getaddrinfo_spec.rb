@@ -112,14 +112,14 @@ end
 describe 'Socket.getaddrinfo' do
   describe 'without global reverse lookups' do
     it 'returns an Array' do
-      Socket.getaddrinfo(nil, 'http').should be_an_instance_of(Array)
+      Socket.getaddrinfo(nil, 'ftp').should be_an_instance_of(Array)
     end
 
     it 'accepts a Fixnum as the address family' do
-      array = Socket.getaddrinfo(nil, 'http', Socket::AF_INET)[0]
+      array = Socket.getaddrinfo(nil, 'ftp', Socket::AF_INET)[0]
 
       array[0].should == 'AF_INET'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
@@ -128,10 +128,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Fixnum as the address family using IPv6' do
-      array = Socket.getaddrinfo(nil, 'http', Socket::AF_INET6)[0]
+      array = Socket.getaddrinfo(nil, 'ftp', Socket::AF_INET6)[0]
 
       array[0].should == 'AF_INET6'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
@@ -140,10 +140,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Symbol as the address family' do
-      array = Socket.getaddrinfo(nil, 'http', :INET)[0]
+      array = Socket.getaddrinfo(nil, 'ftp', :INET)[0]
 
       array[0].should == 'AF_INET'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
@@ -152,10 +152,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Symbol as the address family using IPv6' do
-      array = Socket.getaddrinfo(nil, 'http', :INET6)[0]
+      array = Socket.getaddrinfo(nil, 'ftp', :INET6)[0]
 
       array[0].should == 'AF_INET6'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
@@ -164,10 +164,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a String as the address family' do
-      array = Socket.getaddrinfo(nil, 'http', 'INET')[0]
+      array = Socket.getaddrinfo(nil, 'ftp', 'INET')[0]
 
       array[0].should == 'AF_INET'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
@@ -176,10 +176,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a String as the address family using IPv6' do
-      array = Socket.getaddrinfo(nil, 'http', 'INET6')[0]
+      array = Socket.getaddrinfo(nil, 'ftp', 'INET6')[0]
 
       array[0].should == 'AF_INET6'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
@@ -192,10 +192,10 @@ describe 'Socket.getaddrinfo' do
 
       dummy.stub!(:to_str).and_return('127.0.0.1')
 
-      array = Socket.getaddrinfo(dummy, 'http')[0]
+      array = Socket.getaddrinfo(dummy, 'ftp')[0]
 
       array[0].should == 'AF_INET'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
@@ -208,10 +208,10 @@ describe 'Socket.getaddrinfo' do
 
       dummy.stub!(:to_str).and_return('INET')
 
-      array = Socket.getaddrinfo(nil, 'http', dummy)[0]
+      array = Socket.getaddrinfo(nil, 'ftp', dummy)[0]
 
       array[0].should == 'AF_INET'
-      array[1].should == 80
+      array[1].should == 21
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
@@ -225,9 +225,9 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Fixnum as the socket type' do
-      Socket.getaddrinfo(nil, 'http', :INET, Socket::SOCK_STREAM)[0].should == [
+      Socket.getaddrinfo(nil, 'ftp', :INET, Socket::SOCK_STREAM)[0].should == [
         'AF_INET',
-        80,
+        21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
@@ -237,9 +237,9 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Symbol as the socket type' do
-      Socket.getaddrinfo(nil, 'http', :INET, :STREAM)[0].should == [
+      Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM)[0].should == [
         'AF_INET',
-        80,
+        21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
@@ -249,9 +249,9 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a String as the socket type' do
-      Socket.getaddrinfo(nil, 'http', :INET, 'STREAM')[0].should == [
+      Socket.getaddrinfo(nil, 'ftp', :INET, 'STREAM')[0].should == [
         'AF_INET',
-        80,
+        21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
@@ -265,9 +265,9 @@ describe 'Socket.getaddrinfo' do
 
       dummy.stub!(:to_str).and_return('STREAM')
 
-      Socket.getaddrinfo(nil, 'http', :INET, dummy)[0].should == [
+      Socket.getaddrinfo(nil, 'ftp', :INET, dummy)[0].should == [
         'AF_INET',
-        80,
+        21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
@@ -293,12 +293,12 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'accepts a Fixnum as the flags' do
-      addr = Socket.getaddrinfo(nil, 'http', :INET, :STREAM,
+      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, Socket::AI_PASSIVE)
 
       addr[0].should == [
         'AF_INET',
-        80,
+        21,
         '0.0.0.0',
         '0.0.0.0',
         Socket::AF_INET,
@@ -308,11 +308,11 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is true' do
-      addr = Socket.getaddrinfo(nil, 'http', :INET, :STREAM,
+      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, 0, true)[0]
 
       addr[0].should == 'AF_INET'
-      addr[1].should == 80
+      addr[1].should == 21
 
       addr[2].should be_an_instance_of(String)
       addr[2].should_not == addr[3]
@@ -321,11 +321,11 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is :hostname' do
-      addr = Socket.getaddrinfo(nil, 'http', :INET, :STREAM,
+      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, 0, :hostname)[0]
 
       addr[0].should == 'AF_INET'
-      addr[1].should == 80
+      addr[1].should == 21
 
       addr[2].should be_an_instance_of(String)
       addr[2].should_not == addr[3]
@@ -334,12 +334,12 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'performs a reverse lookup when the reverse_lookup argument is :numeric' do
-      addr = Socket.getaddrinfo(nil, 'http', :INET, :STREAM,
+      addr = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, 0, :numeric)[0]
 
       addr.should == [
         'AF_INET',
-        80,
+        21,
         '127.0.0.1',
         '127.0.0.1',
         Socket::AF_INET,
@@ -360,10 +360,10 @@ describe 'Socket.getaddrinfo' do
     end
 
     it 'returns an address honoring the global lookup option' do
-      addr = Socket.getaddrinfo(nil, 'http', :INET)[0]
+      addr = Socket.getaddrinfo(nil, 'ftp', :INET)[0]
 
       addr[0].should == 'AF_INET'
-      addr[1].should == 80
+      addr[1].should == 21
 
       # We don't have control over this value and there's no way to test this
       # without relying on Socket.getaddrinfo()'s own behaviour (meaning this

@@ -65,7 +65,7 @@ end
 describe 'Socket.getnameinfo' do
   describe 'using a String as the first argument' do
     before do
-      @addr = Socket.sockaddr_in(80, '127.0.0.1')
+      @addr = Socket.sockaddr_in(21, '127.0.0.1')
     end
 
     it 'raises SocketError or TypeError when using an invalid String' do
@@ -76,7 +76,7 @@ describe 'Socket.getnameinfo' do
 
     describe 'without custom flags' do
       it 'returns an Array containing the hostname and service name' do
-        Socket.getnameinfo(@addr).should == [SocketSpecs.hostname_reverse_lookup, 'http']
+        Socket.getnameinfo(@addr).should == [SocketSpecs.hostname_reverse_lookup, 'ftp']
       end
     end
 
@@ -86,7 +86,7 @@ describe 'Socket.getnameinfo' do
 
         %w{127.0.0.1 ::1}.include?(array[0]).should == true
 
-        array[1].should == 'http'
+        array[1].should == 'ftp'
       end
     end
   end
@@ -98,7 +98,7 @@ describe 'Socket.getnameinfo' do
 
     describe 'using a 3 element Array as the first argument' do
       before do
-        @addr = [family_name, 80, @hostname]
+        @addr = [family_name, 21, @hostname]
       end
 
       it 'raises ArgumentError when using an invalid Array' do
@@ -110,14 +110,14 @@ describe 'Socket.getnameinfo' do
           array = Socket.getnameinfo(@addr)
           array.should be_an_instance_of(Array)
           array[0].should include(@hostname)
-          array[1].should == 'http'
+          array[1].should == 'ftp'
         end
       end
 
       platform_is_not :windows do
         describe 'using NI_NUMERICHOST as the flag' do
           it 'returns an Array containing the numeric hostname and service name' do
-            Socket.getnameinfo(@addr, Socket::NI_NUMERICHOST).should == [ip_address, 'http']
+            Socket.getnameinfo(@addr, Socket::NI_NUMERICHOST).should == [ip_address, 'ftp']
           end
         end
       end
@@ -125,7 +125,7 @@ describe 'Socket.getnameinfo' do
 
     describe 'using a 4 element Array as the first argument' do
       before do
-        @addr = [family_name, 80, ip_address, ip_address]
+        @addr = [family_name, 21, ip_address, ip_address]
       end
 
       describe 'without custom flags' do
@@ -133,22 +133,22 @@ describe 'Socket.getnameinfo' do
           array = Socket.getnameinfo(@addr)
           array.should be_an_instance_of(Array)
           array[0].should == @hostname
-          array[1].should == 'http'
+          array[1].should == 'ftp'
         end
 
         it 'uses the 3rd value as the hostname if the 4th is not present' do
-          addr = [family_name, 80, ip_address, nil]
+          addr = [family_name, 21, ip_address, nil]
 
           array = Socket.getnameinfo(addr)
           array.should be_an_instance_of(Array)
           array[0].should == @hostname
-          array[1].should == 'http'
+          array[1].should == 'ftp'
         end
       end
 
       describe 'using NI_NUMERICHOST as the flag' do
         it 'returns an Array containing the numeric hostname and service name' do
-          Socket.getnameinfo(@addr, Socket::NI_NUMERICHOST).should == [ip_address, 'http']
+          Socket.getnameinfo(@addr, Socket::NI_NUMERICHOST).should == [ip_address, 'ftp']
         end
       end
     end
