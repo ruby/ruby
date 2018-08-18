@@ -1039,7 +1039,7 @@ sig_do_nothing(int sig)
 }
 #endif
 
-static void
+static int
 signal_exec(VALUE cmd, int safe, int sig)
 {
     rb_execution_context_t *ec = GET_EC();
@@ -1053,7 +1053,7 @@ signal_exec(VALUE cmd, int safe, int sig)
      * 3. rb_signal_exec runs on queued signal
      */
     if (IMMEDIATE_P(cmd))
-	return;
+	return FALSE;
 
     ec->interrupt_mask |= TRAP_INTERRUPT_MASK;
     EC_PUSH_TAG(ec);
@@ -1069,6 +1069,7 @@ signal_exec(VALUE cmd, int safe, int sig)
 	/* XXX: should be replaced with rb_threadptr_pending_interrupt_enque() */
 	EC_JUMP_TAG(ec, state);
     }
+    return TRUE;
 }
 
 void
@@ -1093,7 +1094,8 @@ ruby_sigchld_handler(rb_vm_t *vm)
     }
 }
 
-void
+/* returns true if a trap handler was run, false otherwise */
+int
 rb_signal_exec(rb_thread_t *th, int sig)
 {
     rb_vm_t *vm = GET_VM();
@@ -1131,8 +1133,9 @@ rb_signal_exec(rb_thread_t *th, int sig)
 	rb_threadptr_signal_exit(th);
     }
     else {
-	signal_exec(cmd, safe, sig);
+	return signal_exec(cmd, safe, sig);
     }
+    return FALSE;
 }
 
 static sighandler_t

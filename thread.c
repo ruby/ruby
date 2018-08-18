@@ -187,20 +187,24 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
     }; \
 } while(0)
 
+/*
+ * returns true if this thread was spuriously interrupted, false otherwise
+ * (e.g. hit by Thread#run or ran a Ruby-level Signal.trap handler)
+ */
 #define RUBY_VM_CHECK_INTS_BLOCKING(ec) vm_check_ints_blocking(ec)
-static inline void
+static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
-	if (LIKELY(!RUBY_VM_INTERRUPTED_ANY(ec))) return;
+	if (LIKELY(!RUBY_VM_INTERRUPTED_ANY(ec))) return FALSE;
     }
     else {
 	th->pending_interrupt_queue_checked = 0;
 	RUBY_VM_SET_INTERRUPT(ec);
     }
-    rb_threadptr_execute_interrupts(th, 1);
+    return rb_threadptr_execute_interrupts(th, 1);
 }
 
 static int
@@ -1179,6 +1183,7 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 {
     enum rb_thread_status prev_status = th->status;
     enum rb_thread_status status;
+    int woke;
 
     status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
     th->status = status;
@@ -1192,8 +1197,8 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 	if (fl & SLEEP_DEADLOCKABLE) {
 	    th->vm->sleeper--;
 	}
-	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	if (!(fl & SLEEP_SPURIOUS_CHECK))
+	woke = vm_check_ints_blocking(th->ec);
+	if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
 	    break;
     }
     th->status = prev_status;
@@ -1283,6 +1288,7 @@ sleep_timespec(rb_thread_t *th, struct timespec ts, unsigned int fl)
 {
     struct timespec end;
     enum rb_thread_status prev_status = th->status;
+    int woke;
 
     getclockofday(&end);
     timespec_add(&end, &ts);
@@ -1290,8 +1296,8 @@ sleep_timespec(rb_thread_t *th, struct timespec ts, unsigned int fl)
     RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &ts);
-	RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-	if (!(fl & SLEEP_SPURIOUS_CHECK))
+	woke = vm_check_ints_blocking(th->ec);
+	if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
 	    break;
 	if (timespec_update_expire(&ts, &end))
 	    break;
@@ -2153,13 +2159,14 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
-MJIT_FUNC_EXPORTED void
+MJIT_FUNC_EXPORTED int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
     int postponed_job_interrupt = 0;
+    int ret = FALSE;
 
-    if (th->ec->raised_flag) return;
+    if (th->ec->raised_flag) return ret;
 
     while ((interrupt = threadptr_get_interrupts(th)) != 0) {
 	int sig;
@@ -2189,7 +2196,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    }
 	    th->status = THREAD_RUNNABLE;
 	    while ((sig = rb_get_next_signal()) != 0) {
-		rb_signal_exec(th, sig);
+		ret |= rb_signal_exec(th, sig);
 	    }
 	    th->status = prev_status;
 	}
@@ -2198,6 +2205,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	if (pending_interrupt && threadptr_pending_interrupt_active_p(th)) {
 	    VALUE err = rb_threadptr_pending_interrupt_deque(th, blocking_timing ? INTERRUPT_ON_BLOCKING : INTERRUPT_NONE);
 	    thread_debug("rb_thread_execute_interrupts: %"PRIdVALUE"\n", err);
+            ret = TRUE;
 
 	    if (err == Qundef) {
 		/* no error */
@@ -2237,6 +2245,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 	    rb_thread_schedule_limits(limits_us);
 	}
     }
+    return ret;
 }
 
 void
