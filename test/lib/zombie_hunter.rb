@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-# There might be compiler processes executed by MJIT
-return if RubyVM::MJIT.enabled?
-
 module ZombieHunter
   def after_teardown
     super
