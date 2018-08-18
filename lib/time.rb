@@ -575,7 +575,7 @@ class Time
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
-          (Z|[+-]\d\d:\d\d)?
+          (Z|[+-]\d\d(?::?\d\d)?)?
           \s*\z/ix =~ date
         year = $1.to_i
         mon = $2.to_i
