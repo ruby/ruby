@@ -10787,27 +10787,8 @@ simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offse
 static int
 nogvl_copy_file_range(struct copy_stream_struct *stp)
 {
-    struct stat src_stat, dst_stat;
     ssize_t ss;
-    int ret;
-
     off_t copy_length, src_offset, *src_offset_ptr;
-
-    ret = fstat(stp->src_fd, &src_stat);
-    if (ret == -1) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return -1;
-    }
-    if (!S_ISREG(src_stat.st_mode))
-        return 0;
-
-    ret = fstat(stp->dst_fd, &dst_stat);
-    if (ret == -1) {
-        stp->syserr = "fstat";
-        stp->error_no = errno;
-        return -1;
-    }
 
     src_offset = stp->src_offset;
     if (src_offset != (off_t)-1) {
@@ -10819,6 +10800,16 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 
     copy_length = stp->copy_length;
     if (copy_length == (off_t)-1) {
+	int ret;
+	struct stat src_stat;
+
+	ret = fstat(stp->src_fd, &src_stat);
+	if (ret == -1) {
+	    stp->syserr = "fstat";
+	    stp->error_no = errno;
+	    return -1;
+	}
+
 	if (src_offset == (off_t)-1) {
 	    off_t current_offset;
             errno = 0;
