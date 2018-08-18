@@ -1802,10 +1802,10 @@ vm_exec(rb_execution_context_t *ec)
 
 	while (ec->cfp->pc == 0 || ec->cfp->iseq == 0) {
 	    if (UNLIKELY(VM_FRAME_TYPE(ec->cfp) == VM_FRAME_MAGIC_CFUNC)) {
-		EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
-				rb_vm_frame_method_entry(ec->cfp)->def->original_id,
-				rb_vm_frame_method_entry(ec->cfp)->called_id,
-				rb_vm_frame_method_entry(ec->cfp)->owner, Qnil);
+		EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_C_RETURN, ec->cfp->self,
+					      rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+					      rb_vm_frame_method_entry(ec->cfp)->called_id,
+					      rb_vm_frame_method_entry(ec->cfp)->owner, Qnil);
 		RUBY_DTRACE_CMETHOD_RETURN_HOOK(ec,
 						rb_vm_frame_method_entry(ec->cfp)->owner,
 						rb_vm_frame_method_entry(ec->cfp)->def->original_id);
