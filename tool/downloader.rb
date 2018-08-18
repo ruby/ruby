@@ -272,7 +272,7 @@ class Downloader
     begin
       block.call
     rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError => e
-      raise if e.is_a?(OpenURI::HTTPError) && e.message !~ /^50[23] / # retry only 502, 503 for http error
+      raise if e.is_a?(OpenURI::HTTPError) && e.message !~ /^50[023] / # retry only 500, 502, 503 for http error
       times += 1
       if times <= max_times
         $stderr.puts "retrying #{e.class} (#{e.message}) after #{times ** 2} seconds..."
