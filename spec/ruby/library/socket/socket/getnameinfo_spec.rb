@@ -68,8 +68,10 @@ describe 'Socket.getnameinfo' do
       @addr = Socket.sockaddr_in(80, '127.0.0.1')
     end
 
-    it 'raises SocketError when using an invalid String' do
-      lambda { Socket.getnameinfo('cats') }.should raise_error(SocketError)
+    it 'raises SocketError or TypeError when using an invalid String' do
+      lambda { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
+        [SocketError, TypeError].should include(e.class)
+      }
     end
 
     describe 'without custom flags' do
