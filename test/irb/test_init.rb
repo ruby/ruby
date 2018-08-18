@@ -7,14 +7,14 @@ module TestIRB
     def test_setup_with_argv_preserves_global_argv
       argv = ["foo", "bar"]
       with_argv(argv) do
-        IRB.setup(eval("__FILE__"), argv: [])
+        IRB.setup(eval("__FILE__"), argv: %w[-f])
         assert_equal argv, ARGV
       end
     end
 
-    def test_setup_with_empty_argv_does_not_change_dollar0
+    def test_setup_with_minimum_argv_does_not_change_dollar0
       orig = $0.dup
-      IRB.setup(eval("__FILE__"), argv: [])
+      IRB.setup(eval("__FILE__"), argv: %w[-f])
       assert_equal orig, $0
     end
 
