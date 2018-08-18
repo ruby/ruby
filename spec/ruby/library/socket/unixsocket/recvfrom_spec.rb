@@ -77,6 +77,7 @@ with_feature :unix_socket do
         @server_raw.bind(Socket.sockaddr_un(@path2))
 
         @socket = UNIXSocket.for_fd(@server_raw.fileno)
+        @socket.autoclose = false
       end
 
       after do
