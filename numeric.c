@@ -5272,10 +5272,11 @@ rb_int_s_isqrt(VALUE self, VALUE num)
  *   1.object_id == a.object_id   #=> true
  *
  * There can only ever be one instance of the integer +1+, for example. Ruby ensures this
- * by preventing instantiation and duplication.
+ * by preventing instantiation. If duplication is attempted, the same instance is returned.
  *
- *   Integer.new(1)   #=> NoMethodError: undefined method `new' for Integer:Class
- *   1.dup            #=> TypeError: can't dup Integer
+ *   Integer.new(1)                   #=> NoMethodError: undefined method `new' for Integer:Class
+ *   1.dup                            #=> 1
+ *   1.object_id == 1.dup.object_id   #=> true
  *
  * For this reason, Numeric should be used when defining other numeric classes.
  *
