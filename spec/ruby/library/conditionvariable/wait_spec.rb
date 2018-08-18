@@ -23,15 +23,21 @@ describe "ConditionVariable#wait" do
     th.join
   end
 
-  it "the lock remains usable even if the thread is killed" do
+  it "reacquires the lock even if the thread is killed" do
     m = Mutex.new
     cv = ConditionVariable.new
     in_synchronize = false
+    owned = nil
 
     th = Thread.new do
       m.synchronize do
         in_synchronize = true
-        cv.wait(m)
+        begin
+          cv.wait(m)
+        ensure
+          owned = m.owned?
+          $stderr.puts "\nThe Thread doesn't own the Mutex!" unless owned
+        end
       end
     end
 
@@ -43,19 +49,24 @@ describe "ConditionVariable#wait" do
     th.kill
     th.join
 
-    m.try_lock.should == true
-    m.unlock
+    owned.should == true
   end
 
-  it "lock remains usable even if the thread is killed after being signaled" do
+  it "reacquires the lock even if the thread is killed after being signaled" do
     m = Mutex.new
     cv = ConditionVariable.new
     in_synchronize = false
+    owned = nil
 
     th = Thread.new do
       m.synchronize do
         in_synchronize = true
-        cv.wait(m)
+        begin
+          cv.wait(m)
+        ensure
+          owned = m.owned?
+          $stderr.puts "\nThe Thread doesn't own the Mutex!" unless owned
+        end
       end
     end
 
@@ -73,8 +84,7 @@ describe "ConditionVariable#wait" do
     }
 
     th.join
-    m.try_lock.should == true
-    m.unlock
+    owned.should == true
   end
 
   it "supports multiple Threads waiting on the same ConditionVariable and Mutex" do
