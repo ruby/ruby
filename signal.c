@@ -531,9 +531,7 @@ static struct {
     rb_atomic_t cnt[RUBY_NSIG];
     rb_atomic_t size;
 } signal_buff;
-#if RUBY_SIGCHLD
 volatile unsigned int ruby_nocldwait;
-#endif
 
 #ifdef __dietlibc__
 #define sighandler_t sh_t
@@ -617,8 +615,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     switch (signum) {
-#if RUBY_SIGCHLD
-      case RUBY_SIGCHLD:
+      case SIGCHLD:
 	if (handler == SIG_IGN) {
 	    ruby_nocldwait = 1;
 	    if (sigact.sa_flags & SA_SIGINFO) {
@@ -632,7 +629,6 @@ ruby_signal(int signum, sighandler_t handler)
 	    ruby_nocldwait = 0;
 	}
 	break;
-#endif
 #if defined(SA_ONSTACK) && defined(USE_SIGALTSTACK)
       case SIGSEGV:
 #ifdef SIGBUS
