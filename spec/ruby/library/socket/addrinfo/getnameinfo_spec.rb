@@ -5,26 +5,17 @@ describe 'Addrinfo#getnameinfo' do
   describe 'using an IP Addrinfo' do
     SocketSpecs.each_ip_protocol do |family, ip_address|
       before do
-        @addr = Addrinfo.tcp(ip_address, 80)
+        @addr = Addrinfo.tcp(ip_address, 21)
       end
 
-      platform_is_not :solaris do
-        it 'returns the node and service names' do
-          host, service = @addr.getnameinfo
-          service.should == 'http'
-        end
-      end
-
-      platform_is :solaris do
-        it 'returns the node and service names' do
-          host, service = @addr.getnameinfo
-          service.should == '80'
-        end
+      it 'returns the node and service names' do
+        host, service = @addr.getnameinfo
+        service.should == 'ftp'
       end
 
       it 'accepts flags as a Fixnum as the first argument' do
         host, service = @addr.getnameinfo(Socket::NI_NUMERICSERV)
-        service.should == '80'
+        service.should == '21'
       end
     end
   end
