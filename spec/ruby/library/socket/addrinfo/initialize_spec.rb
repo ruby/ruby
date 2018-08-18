@@ -360,7 +360,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows do
+        platform_is_not :windows, :solaris do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
@@ -388,7 +388,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows do
+        platform_is_not :windows, :solaris do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
@@ -447,7 +447,7 @@ describe "Addrinfo#initialize" do
         end
       end
 
-      platform_is_not :windows do
+      platform_is_not :windows, :solaris do
         describe 'and the socket type is set to SOCK_SEQPACKET' do
           before do
             @socktype = Socket::SOCK_SEQPACKET
@@ -491,7 +491,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows do
+        platform_is_not :windows, :solaris do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
