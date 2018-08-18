@@ -321,38 +321,6 @@ rb_mutex_owned_p(VALUE self)
     return owned;
 }
 
-static void
-mutex_do_unlock(rb_mutex_t *mutex, rb_thread_t *th)
-{
-    struct sync_waiter *cur = 0, *next = 0;
-    rb_mutex_t **th_mutex = &th->keeping_mutexes;
-
-    VM_ASSERT(mutex->th == th);
-
-    mutex->th = 0;
-    list_for_each_safe(&mutex->waitq, cur, next, node) {
-        list_del_init(&cur->node);
-        switch (cur->th->status) {
-          case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-          case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
-            rb_threadptr_interrupt(cur->th);
-            goto found;
-          case THREAD_STOPPED: /* probably impossible */
-            rb_bug("unexpected THREAD_STOPPED");
-          case THREAD_KILLED:
-            /* not sure about this, possible in exit GC? */
-            rb_bug("unexpected THREAD_KILLED");
-            continue;
-        }
-    }
-  found:
-    while (*th_mutex != mutex) {
-        th_mutex = &(*th_mutex)->next_mutex;
-    }
-    *th_mutex = mutex->next_mutex;
-    mutex->next_mutex = NULL;
-}
-
 static const char *
 rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th)
 {
@@ -365,7 +333,31 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th)
 	err = "Attempt to unlock a mutex which is locked by another thread";
     }
     else {
-        mutex_do_unlock(mutex, th);
+	struct sync_waiter *cur = 0, *next = 0;
+	rb_mutex_t **th_mutex = &th->keeping_mutexes;
+
+	mutex->th = 0;
+	list_for_each_safe(&mutex->waitq, cur, next, node) {
+	    list_del_init(&cur->node);
+	    switch (cur->th->status) {
+	      case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+	      case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+		rb_threadptr_interrupt(cur->th);
+		goto found;
+	      case THREAD_STOPPED: /* probably impossible */
+		rb_bug("unexpected THREAD_STOPPED");
+	      case THREAD_KILLED:
+                /* not sure about this, possible in exit GC? */
+		rb_bug("unexpected THREAD_KILLED");
+		continue;
+	    }
+	}
+      found:
+	while (*th_mutex != mutex) {
+	    th_mutex = &(*th_mutex)->next_mutex;
+	}
+	*th_mutex = mutex->next_mutex;
+	mutex->next_mutex = NULL;
     }
 
     return err;
@@ -505,20 +497,6 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
     return rb_mutex_sleep(self, timeout);
 }
 
-static VALUE
-mutex_unlock_if_owned(VALUE self)
-{
-    rb_thread_t *th = GET_THREAD();
-    rb_mutex_t *mutex;
-    GetMutexPtr(self, mutex);
-
-    /* we may not own the mutex if an exception occured */
-    if (mutex->th == th) {
-        mutex_do_unlock(mutex, th);
-    }
-    return Qfalse;
-}
-
 /*
  * call-seq:
  *    mutex.synchronize { ... }    -> result of the block
@@ -531,7 +509,7 @@ VALUE
 rb_mutex_synchronize(VALUE mutex, VALUE (*func)(VALUE arg), VALUE arg)
 {
     rb_mutex_lock(mutex);
-    return rb_ensure(func, arg, mutex_unlock_if_owned, mutex);
+    return rb_ensure(func, arg, rb_mutex_unlock, mutex);
 }
 
 /*
