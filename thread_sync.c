@@ -1379,6 +1379,12 @@ static VALUE
 do_sleep(VALUE args)
 {
     struct sleep_call *p = (struct sleep_call *)args;
+
+    if (rb_obj_class(p->mutex) == rb_cMutex) {
+        return rb_mutex_sleep(p->mutex, p->timeout);
+    }
+
+    /* FIXME: Mutex_m may still check interrupts here */
     return rb_funcallv(p->mutex, id_sleep, 1, &p->timeout);
 }
 
