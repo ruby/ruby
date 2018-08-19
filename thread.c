@@ -94,8 +94,7 @@ static ID id_locals;
 
 enum SLEEP_FLAGS {
     SLEEP_DEADLOCKABLE = 0x1,
-    SLEEP_SPURIOUS_CHECK = 0x2,
-    SLEEP_BEFORE_CHECK_INTS = 0x4
+    SLEEP_SPURIOUS_CHECK = 0x2
 };
 
 static void sleep_timespec(rb_thread_t *, struct timespec, unsigned int fl);
@@ -1188,9 +1187,7 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 
     status  = fl & SLEEP_DEADLOCKABLE ? THREAD_STOPPED_FOREVER : THREAD_STOPPED;
     th->status = status;
-    if (!(fl & SLEEP_BEFORE_CHECK_INTS)) {
-        RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    }
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == status) {
 	if (fl & SLEEP_DEADLOCKABLE) {
 	    th->vm->sleeper++;
@@ -1296,9 +1293,7 @@ sleep_timespec(rb_thread_t *th, struct timespec ts, unsigned int fl)
     getclockofday(&end);
     timespec_add(&end, &ts);
     th->status = THREAD_STOPPED;
-    if (!(fl & SLEEP_BEFORE_CHECK_INTS)) {
-        RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    }
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
 	native_sleep(th, &ts);
 	woke = vm_check_ints_blocking(th->ec);

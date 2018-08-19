@@ -438,7 +438,7 @@ rb_mutex_cleanup_keeping_mutexes(const rb_thread_t *current_thread)
 static VALUE
 rb_mutex_sleep_forever(VALUE time)
 {
-    sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_BEFORE_CHECK_INTS);
+    rb_thread_sleep_deadly_allow_spurious_wakeup();
     return Qnil;
 }
 
@@ -446,8 +446,7 @@ static VALUE
 rb_mutex_wait_for(VALUE time)
 {
     struct timespec *t = (struct timespec*)time;
-    /* permit spurious check */
-    sleep_timespec(GET_THREAD(), *t, SLEEP_BEFORE_CHECK_INTS);
+    sleep_timespec(GET_THREAD(), *t, 0); /* permit spurious check */
     return Qnil;
 }
 
