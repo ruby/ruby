@@ -83,43 +83,45 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Exception`
 
-    * `Exception#full_message` takes `:highlight` and `:order` options.
-      [Bug #14324]
+    * New options:
+
+        * `Exception#full_message` takes `:highlight` and `:order` options.
+          [Bug #14324]
 
 * `Hash`
 
     * Aliased methods:
 
         * `Hash#filter` is a new alias for `Hash#select`.  [Feature #13784]
+
         * `Hash#filter!` is a new alias for `Hash#select!`.
           [Feature #13784]
 
 * `IO`
 
-    * new mode character `'x'` to open files for exclusive access.
-      [Feature #11258]
+    * New options:
+
+        * new mode character `'x'` to open files for exclusive access.
+          [Feature #11258]
 
 * `Kernel`
 
-    * `Kernel#then` is a new alias for `Kernel#yield_self`.
-      [Feature #14594]
+    * Aliased methods:
 
-    * `Kernel.#Complex` takes `:exception` option to specify the way of
-      error handling.  [Feature #12732]
+        * `Kernel#then` is a new alias for `Kernel#yield_self`.
+          [Feature #14594]
 
-    * `Kernel.#Float` takes `:exception` option to specify the way of error
-      handling.  [Feature #12732]
+    * New options:
 
-    * `Kernel.#Integer` takes `:exception` option to specify the way of
-      error handling.  [Feature #12732]
+        * `Kernel.#Complex`, `Kernel.#Float`, `Kernel.#Integer` and
+          `Kernel.#Rational` take `:exception` option to specify the way of
+          error handling.  [Feature #12732]
 
-    * `Kernel.#Rational` takes `:exception` option to specify the way of
-      error handling.  [Feature #12732]
+        * `Kernel.#system` takes `:exception` option to raise an exception
+          on failure.  [Feature #14386]
 
-    * `Kernel.#system` takes `:exception` option to raise an exception on
-      failure.  [Feature #14386]
+    * Incompatible changes:
 
-    * incompatible changes:
         * `system()` and `exec()` do not close non-standard file descriptors
           (The default of `:close_others` option is changed to `false` by
           default.  but we still set the `FD_CLOEXEC` flag on descriptors we
@@ -127,29 +129,40 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `KeyError`
 
-    * `KeyError#initialize` accepts `:receiver` and `:key` options to set
-      receiver and key in Ruby code.  [Feature #14313]
+    * New options:
+
+        * `KeyError#initialize` accepts `:receiver` and `:key` options to
+          set receiver and key in Ruby code.  [Feature #14313]
 
 * `Module`
 
-    * `Module#method_defined?`, `Module#private_method_defined?` and
-      `Module#protected_method_defined?` now accepts the second parameter as
-      optional. If it's `true` (=default), checks ancestor modules/classes,
-      or checks only the class itself.  [Feature #14944]
+    * New methods:
+
+        * `Module#method_defined?`, `Module#private_method_defined?` and
+          `Module#protected_method_defined?` now accepts the second
+          parameter as optional. If it's `true` (=default), checks ancestor
+          modules/classes, or checks only the class itself.
+          [Feature #14944]
 
 * `NameError`
 
-    * `NameError#initialize` accepts `:receiver` option to set receiver in
-      Ruby code.  [Feature #14313]
+    * New options:
+
+        * `NameError#initialize` accepts `:receiver` option to set receiver
+          in Ruby code.  [Feature #14313]
 
 * `NoMethodError`
 
-    * `NoMethodError#initialize` accepts `:receiver` option to set receiver
-      in Ruby code.  [Feature #14313]
+    * New options:
+
+        * `NoMethodError#initialize` accepts `:receiver` option to set
+          receiver in Ruby code.  [Feature #14313]
 
 * `Proc`
 
-    * `Proc#call` doesn't change `$SAFE` any more.  [Feature #14250]
+    * Incompatible changes:
+
+        * `Proc#call` doesn't change `$SAFE` any more.  [Feature #14250]
 
 * `Random`
 
@@ -159,20 +172,27 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Range`
 
-    * `Range#===` now uses `#cover?` instead of `#include?` method.
-      [Feature #14575]
+    * Incompatible changes:
+
+        * `Range#===` now uses `#cover?` instead of `#include?` method.
+          [Feature #14575]
 
 * `RubyVM::AST`
 
-    * `RubyVM::AST.parse` parses a given string and returns AST nodes.
-      [experimental]
-    * `RubyVM::AST.parse_file` parses a given file and returns AST nodes.
-      [experimental]
+    * New methods:
+
+        * `RubyVM::AST.parse` parses a given string and returns AST nodes.
+          [experimental]
+
+        * `RubyVM::AST.parse_file` parses a given file and returns AST
+          nodes.  [experimental]
 
 * `String`
 
-    * `String#split` yields each substring to the block if given.
-      [Feature #4780]
+    * New features:
+
+        * `String#split` yields each substring to the block if given.
+          [Feature #4780]
 
 * `TracePoint`
 
@@ -184,12 +204,15 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `ERB`
 
-    * Add `:trim_mode` and `:eoutvar` keyword arguments to `ERB.new`. Now
-      non-keyword arguments other than first one are softly deprecated and
-      will be removed when Ruby 2.5 becomes EOL.  [Feature #14256]
+    * New options:
 
-    * erb command's `-S` option is deprecated, which will be removed in the
-      next version.
+        * Add `:trim_mode` and `:eoutvar` keyword arguments to `ERB.new`.
+          Now non-keyword arguments other than first one are softly
+          deprecated and will be removed when Ruby 2.5 becomes EOL.
+          [Feature #14256]
+
+        * erb command's `-S` option is deprecated, which will be removed in
+          the next version.
 
 * `FileUtils`
 
@@ -205,10 +228,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Net`
 
-    * New method:
+    * New options:
 
         * Add `:write_timeout` keyword argument to `Net::BufferedIO.new`.
           [Feature #13396]
+
+    * New methods:
 
         * Add `Net::BufferedIO#write_timeout`,
           `Net::BufferedIO#write_timeout=`, `Net::HTTP#write_timeout`, and
@@ -257,8 +282,10 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `RSS`
 
-    * `RSS::Parser.parse`: Accept options as `Hash`. `:validate`,
-      `:ignore_unknown_element`, `:parser_class` options are available.
+    * New options:
+
+        * `RSS::Parser.parse`: Accept options as `Hash`. `:validate`,
+          `:ignore_unknown_element`, `:parser_class` options are available.
 
 * `Set`
 
@@ -268,7 +295,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `URI`
 
-    * Add `URI::File` to handle file URI scheme.  [Feature #14035]
+    * New constant:
+
+        * Add `URI::File` to handle file URI scheme.  [Feature #14035]
 
 ### Compatibility issues (excluding feature bug fixes)
 
