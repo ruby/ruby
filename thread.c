@@ -4028,7 +4028,7 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
             rb_fd_set(set.sigwait_fd, set.rset);
         else
             set.rset = init_set_fd(set.sigwait_fd, &set.orig_rset);
-        if (set.sigwait_fd > set.max) {
+        if (set.sigwait_fd >= set.max) {
             set.max = set.sigwait_fd + 1;
         }
     }
