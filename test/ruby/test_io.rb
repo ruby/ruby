@@ -3829,7 +3829,7 @@ __END__
       th = Thread.new do
         begin
           IO.select(rset, wset)
-        rescue => e
+        rescue
           retry
         end while true
       end
