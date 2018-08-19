@@ -1404,14 +1404,11 @@ static VALUE
 rb_condvar_wait(int argc, VALUE *argv, VALUE self)
 {
     struct rb_condvar *cv = condvar_ptr(self);
-    VALUE mutex, timeout;
     struct sleep_call args;
     struct sync_waiter w;
 
-    rb_scan_args(argc, argv, "11", &mutex, &timeout);
+    rb_scan_args(argc, argv, "11", &args.mutex, &args.timeout);
 
-    args.mutex   = mutex;
-    args.timeout = timeout;
     w.th = GET_THREAD();
     list_add_tail(&cv->waitq, &w.node);
     rb_ensure(do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&w);
