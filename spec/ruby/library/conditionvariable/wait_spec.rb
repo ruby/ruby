@@ -23,6 +23,7 @@ describe "ConditionVariable#wait" do
     th.join
   end
 
+  platform_is_not :windows do
   it "reacquires the lock even if the thread is killed" do
     m = Mutex.new
     cv = ConditionVariable.new
@@ -117,5 +118,6 @@ describe "ConditionVariable#wait" do
 
     cv.broadcast
     threads.each(&:join)
+  end
   end
 end
