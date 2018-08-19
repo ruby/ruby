@@ -1378,7 +1378,7 @@ condvar_alloc(VALUE klass)
 static VALUE
 rb_condvar_initialize(VALUE self)
 {
-    struct rb_condvar *cv = condvar_ptr(self);;
+    struct rb_condvar *cv = condvar_ptr(self);
     list_head_init(&cv->waitq);
     return self;
 }
