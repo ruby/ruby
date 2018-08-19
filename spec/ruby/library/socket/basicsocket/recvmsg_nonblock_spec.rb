@@ -144,7 +144,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
             @client.write('hello')
 
             @socket, _ = @server.accept
-            platform_is(:darwin, :freebsd) { IO.select([@socket]) }
+            IO.select([@socket])
           end
 
           after do
