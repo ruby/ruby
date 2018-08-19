@@ -180,19 +180,18 @@ static void
 do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
 {
     static struct timespec ts;
-    static int err = ETIMEDOUT;
     native_thread_data_t *nd = &th->native_thread_data;
 
     /* take over wakeups from UBF_TIMER */
     ubf_timer_disarm();
 
-    if (err == ETIMEDOUT) {
+    if (vm->gvl.timer_err == ETIMEDOUT) {
         ts.tv_sec = 0;
         ts.tv_nsec = TIME_QUANTUM_NSEC;
         ts = native_cond_timeout(&nd->cond.gvlq, ts);
     }
     vm->gvl.timer = th;
-    err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
+    vm->gvl.timer_err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
     vm->gvl.timer = 0;
 
     ubf_wakeup_all_threads();
@@ -243,6 +242,9 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
             vm->gvl.need_yield = 0;
             rb_native_cond_signal(&vm->gvl.switch_cond);
         }
+    }
+    else { /* reset timer if uncontended */
+        vm->gvl.timer_err = ETIMEDOUT;
     }
     vm->gvl.acquired = th;
     if (!vm->gvl.timer) {
@@ -325,6 +327,7 @@ gvl_init(rb_vm_t *vm)
     list_head_init(&vm->gvl.waitq);
     vm->gvl.acquired = 0;
     vm->gvl.timer = 0;
+    vm->gvl.timer_err = ETIMEDOUT;
     vm->gvl.need_yield = 0;
     vm->gvl.wait_yield = 0;
 }

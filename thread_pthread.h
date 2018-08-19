@@ -53,6 +53,7 @@ typedef struct rb_global_vm_lock_struct {
     /* slow path */
     struct list_head waitq;
     const struct rb_thread_struct *timer;
+    int timer_err;
 
     /* yield */
     rb_nativethread_cond_t switch_cond;
