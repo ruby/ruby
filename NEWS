@@ -244,7 +244,7 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `"/ #{AXIS}:: #{ELEMENT_NAME} "` case
 
-        * `"#{N}-#{M}"` case: One ore more white spaces were required before
+        * `"#{N}-#{M}"` case: One or more white spaces were required before
           `"-"`
 
         * `"/child::node()"` case
