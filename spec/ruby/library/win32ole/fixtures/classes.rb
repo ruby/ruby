@@ -1,14 +1,15 @@
 module WIN32OLESpecs
   def self.new_ole(name)
-    retried = false
+    retries_left = 3
     begin
       WIN32OLE.new(name)
     rescue WIN32OLERuntimeError => e
-      unless retried
-        retried = true
+      if retries_left > 0
+        retries_left -= 1
         retry
+      else
+        raise e
       end
-      raise e
     end
   end
 end
