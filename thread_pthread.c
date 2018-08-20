@@ -532,10 +532,6 @@ native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
 #define native_cleanup_push pthread_cleanup_push
 #define native_cleanup_pop  pthread_cleanup_pop
 
-#if defined(USE_UBF_LIST)
-static rb_nativethread_lock_t ubf_list_lock;
-#endif
-
 static pthread_key_t ruby_native_thread_key;
 
 static void
@@ -574,9 +570,6 @@ Init_native_thread(rb_thread_t *th)
     th->thread_id = pthread_self();
     fill_thread_id_str(th);
     native_thread_init(th);
-#ifdef USE_UBF_LIST
-    rb_native_mutex_initialize(&ubf_list_lock);
-#endif
     posix_signal(SIGVTALRM, null_func);
 }
 
@@ -1268,6 +1261,14 @@ native_cond_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 
 #ifdef USE_UBF_LIST
 static LIST_HEAD(ubf_list_head);
+static rb_nativethread_lock_t ubf_list_lock = RB_NATIVETHREAD_LOCK_INIT;
+
+static void
+ubf_list_atfork(void)
+{
+    list_head_init(&ubf_list_head);
+    rb_native_mutex_initialize(&ubf_list_lock);
+}
 
 /* The thread 'th' is registered to be trying unblock. */
 static void
