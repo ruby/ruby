@@ -2283,7 +2283,7 @@ lazy_drop_while(VALUE obj)
 static int
 lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
 {
-    VALUE hash = rb_ary_entry(memos, memo_index);;
+    VALUE hash = rb_ary_entry(memos, memo_index);
 
     if (NIL_P(hash)) {
         hash = rb_obj_hide(rb_hash_new());

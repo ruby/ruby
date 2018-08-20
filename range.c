@@ -251,7 +251,7 @@ range_each_func(VALUE range, int (*func)(VALUE, VALUE), VALUE arg)
     }
     else {
 	while ((c = r_less(v, e)) <= 0) {
-	    if ((*func)(v, arg)) break;;
+	    if ((*func)(v, arg)) break;
 	    if (!c) break;
 	    v = rb_funcallv(v, id_succ, 0, 0);
 	}
