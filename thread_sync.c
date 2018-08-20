@@ -15,7 +15,7 @@ struct sync_waiter {
 static int
 wakeup_one(struct list_head *head)
 {
-    struct sync_waiter *cur = 0, *next = 0;
+    struct sync_waiter *cur = 0, *next;
 
     list_for_each_safe(head, cur, next, node) {
 	list_del_init(&cur->node);
@@ -31,7 +31,7 @@ wakeup_one(struct list_head *head)
 static void
 wakeup_all(struct list_head *head)
 {
-    struct sync_waiter *cur = 0, *next = 0;
+    struct sync_waiter *cur = 0, *next;
 
     list_for_each_safe(head, cur, next, node) {
 	list_del_init(&cur->node);
@@ -347,7 +347,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th)
 	err = "Attempt to unlock a mutex which is locked by another thread";
     }
     else {
-	struct sync_waiter *cur = 0, *next = 0;
+	struct sync_waiter *cur = 0, *next;
 	rb_mutex_t **th_mutex = &th->keeping_mutexes;
 
 	mutex->th = 0;
