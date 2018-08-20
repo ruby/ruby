@@ -175,12 +175,12 @@ struct rb_fiber_struct {
     rb_context_t cont;
     VALUE first_proc;
     struct rb_fiber_struct *prev;
-    enum fiber_status status;
+    BITFIELD(enum fiber_status status) : 2;
     /* If a fiber invokes "transfer",
      * then this fiber can't "resume" any more after that.
      * You shouldn't mix "transfer" and "resume".
      */
-    int transferred;
+    unsigned int transferred : 1;
 
 #if FIBER_USE_NATIVE
 #ifdef _WIN32
