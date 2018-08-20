@@ -4396,6 +4396,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     vm->main_thread = th;
 
     gvl_atfork(th->vm);
+    ubf_list_atfork();
 
     list_for_each(&vm->living_threads, i, vmlt_node) {
 	atfork(i, th);
