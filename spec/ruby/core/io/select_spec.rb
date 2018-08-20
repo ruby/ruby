@@ -16,8 +16,10 @@ describe "IO.select" do
 
   it "returns immediately all objects that are ready for I/O when timeout is 0" do
     @wr.syswrite("be ready")
-    result = IO.select [@rd], [@wr], nil, 0
-    result.should == [[@rd], [@wr], []]
+    IO.pipe do |_, wr|
+      result = IO.select [@rd], [wr], nil, 0
+      result.should == [[@rd], [wr], []]
+    end
   end
 
   it "returns nil after timeout if there are no objects ready for I/O" do
@@ -70,9 +72,11 @@ describe "IO.select" do
     obj.should_receive(:to_io).at_least(1).and_return(@rd)
     IO.select([obj]).should == [[obj], [], []]
 
-    obj = mock("write_io")
-    obj.should_receive(:to_io).at_least(1).and_return(@wr)
-    IO.select(nil, [obj]).should == [[], [obj], []]
+    IO.pipe do |_, wr|
+      obj = mock("write_io")
+      obj.should_receive(:to_io).at_least(1).and_return(wr)
+      IO.select(nil, [obj]).should == [[], [obj], []]
+    end
   end
 
   it "raises TypeError if supplied objects are not IO" do
