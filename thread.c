@@ -2332,8 +2332,7 @@ int
 rb_notify_fd_close(int fd, struct list_head *busy)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
-    struct waiting_fd *wfd = 0;
-    struct waiting_fd *next = 0;
+    struct waiting_fd *wfd = 0, *next;
 
     list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
 	if (wfd->fd == fd) {
