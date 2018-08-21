@@ -81,9 +81,6 @@ static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th);
  *
  */
 
-#define GetMutexPtr(obj, tobj) \
-    TypedData_Get_Struct((obj), rb_mutex_t, &mutex_data_type, (tobj))
-
 #define mutex_mark NULL
 
 static size_t
@@ -122,6 +119,15 @@ static const rb_data_type_t mutex_data_type = {
     {mutex_mark, mutex_free, mutex_memsize,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
+
+static rb_mutex_t *
+mutex_ptr(VALUE obj)
+{
+    rb_mutex_t *mutex;
+
+    TypedData_Get_Struct(obj, rb_mutex_t, &mutex_data_type, mutex);
+    return mutex;
+}
 
 VALUE
 rb_obj_is_mutex(VALUE obj)
@@ -172,16 +178,15 @@ rb_mutex_new(void)
 VALUE
 rb_mutex_locked_p(VALUE self)
 {
-    rb_mutex_t *mutex;
-    GetMutexPtr(self, mutex);
+    rb_mutex_t *mutex = mutex_ptr(self);
+
     return mutex->th ? Qtrue : Qfalse;
 }
 
 static void
 mutex_locked(rb_thread_t *th, VALUE self)
 {
-    rb_mutex_t *mutex;
-    GetMutexPtr(self, mutex);
+    rb_mutex_t *mutex = mutex_ptr(self);
 
     if (th->keeping_mutexes) {
 	mutex->next_mutex = th->keeping_mutexes;
@@ -199,9 +204,8 @@ mutex_locked(rb_thread_t *th, VALUE self)
 VALUE
 rb_mutex_trylock(VALUE self)
 {
-    rb_mutex_t *mutex;
+    rb_mutex_t *mutex = mutex_ptr(self);
     VALUE locked = Qfalse;
-    GetMutexPtr(self, mutex);
 
     if (mutex->th == 0) {
 	rb_thread_t *th = GET_THREAD();
@@ -225,8 +229,7 @@ static VALUE
 do_mutex_lock(VALUE self, int interruptible_p)
 {
     rb_thread_t *th = GET_THREAD();
-    rb_mutex_t *mutex;
-    GetMutexPtr(self, mutex);
+    rb_mutex_t *mutex = mutex_ptr(self);
 
     /* When running trap handler */
     if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
@@ -325,9 +328,7 @@ rb_mutex_owned_p(VALUE self)
 {
     VALUE owned = Qfalse;
     rb_thread_t *th = GET_THREAD();
-    rb_mutex_t *mutex;
-
-    GetMutexPtr(self, mutex);
+    rb_mutex_t *mutex = mutex_ptr(self);
 
     if (mutex->th == th)
 	owned = Qtrue;
@@ -388,8 +389,7 @@ VALUE
 rb_mutex_unlock(VALUE self)
 {
     const char *err;
-    rb_mutex_t *mutex;
-    GetMutexPtr(self, mutex);
+    rb_mutex_t *mutex = mutex_ptr(self);
 
     err = rb_mutex_unlock_th(mutex, GET_THREAD());
     if (err) rb_raise(rb_eThreadError, "%s", err);
@@ -410,14 +410,13 @@ rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 static void
 rb_mutex_abandon_locking_mutex(rb_thread_t *th)
 {
-    rb_mutex_t *mutex;
+    if (th->locking_mutex) {
+        rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
 
-    if (!th->locking_mutex) return;
-
-    GetMutexPtr(th->locking_mutex, mutex);
-    if (mutex->th == th)
-	rb_mutex_abandon_all(mutex);
-    th->locking_mutex = Qfalse;
+        if (mutex->th == th)
+            rb_mutex_abandon_all(mutex);
+        th->locking_mutex = Qfalse;
+    }
 }
 
 static void

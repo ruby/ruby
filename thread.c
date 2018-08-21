@@ -4710,7 +4710,7 @@ rb_thread_shield_wait(VALUE self)
     rb_mutex_t *m;
 
     if (!mutex) return Qfalse;
-    GetMutexPtr(mutex, m);
+    m = mutex_ptr(mutex);
     if (m->th == GET_THREAD()) return Qnil;
     rb_thread_shield_waiting_inc(self);
     rb_mutex_lock(mutex);
@@ -5197,8 +5197,7 @@ debug_deadlock_check(rb_vm_t *vm, VALUE msg)
 		    "native:%"PRI_THREAD_ID" int:%u",
 		    th->self, (void *)th, thread_id_str(th), th->ec->interrupt_flag);
 	if (th->locking_mutex) {
-	    rb_mutex_t *mutex;
-	    GetMutexPtr(th->locking_mutex, mutex);
+	    rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
 	    rb_str_catf(msg, " mutex:%p cond:%"PRIuSIZE,
 			(void *)mutex->th, rb_mutex_num_waiting(mutex));
 	}
@@ -5230,8 +5229,7 @@ rb_check_deadlock(rb_vm_t *vm)
 	    found = 1;
 	}
 	else if (th->locking_mutex) {
-	    rb_mutex_t *mutex;
-	    GetMutexPtr(th->locking_mutex, mutex);
+	    rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
 
 	    if (mutex->th == th || (!mutex->th && !list_empty(&mutex->waitq))) {
 		found = 1;
