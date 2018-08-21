@@ -1337,13 +1337,13 @@ static const int compat_leap_month_table[7] = {
 };
 
 static int
-calc_wday(int year, int month, int day)
+calc_wday(int year_mod400, int month, int day)
 {
     int a, y, m;
     int wday;
 
     a = (14 - month) / 12;
-    y = year + 4800 - a;
+    y = year_mod400 + 4800 - a;
     m = month + 12 * a - 3;
     wday = day + (153*m+2)/5 + 365*y + y/4 - y/100 + y/400 + 2;
     wday = wday % 7;
@@ -1359,7 +1359,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     time_t t;
     struct vtm vtm2;
     VALUE timev;
-    int y, wday;
+    int year_mod400, wday;
 
     /* Daylight Saving Time was introduced in 1916.
      * So we don't need to care about DST before that. */
@@ -1401,9 +1401,9 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     vtm2 = *vtm_utc;
 
     /* guess using a year before 2038. */
-    y = NUM2INT(modv(vtm_utc->year, INT2FIX(400)));
-    wday = calc_wday(y, vtm_utc->mon, 1);
-    if (vtm_utc->mon == 2 && leap_year_p(y))
+    year_mod400 = NUM2INT(modv(vtm_utc->year, INT2FIX(400)));
+    wday = calc_wday(year_mod400, vtm_utc->mon, 1);
+    if (vtm_utc->mon == 2 && leap_year_p(year_mod400))
         vtm2.year = INT2FIX(compat_leap_month_table[wday]);
     else
         vtm2.year = INT2FIX(compat_common_month_table[vtm_utc->mon-1][wday]);
