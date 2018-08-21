@@ -37,6 +37,9 @@ Lint/LiteralAsCondition:
 Lint/UnneededRequireStatement:
   Enabled: false
 
+Lint/UnneededSplatExpansion:
+  Enabled: false
+
 Lint/UnifiedInteger:
   Enabled: false
 
@@ -52,7 +55,6 @@ Lint/UselessAssignment:
 Lint/UselessComparison:
   Enabled: false
 
-# The cop registers too many false positives to `.should == something`
 Lint/Void:
   Enabled: false
 
@@ -65,10 +67,31 @@ Lint/EmptyWhen:
     - language/case_spec.rb
     - optional/capi/spec_helper.rb
 
+Lint/FormatParameterMismatch:
+  Exclude:
+    - 'core/kernel/shared/sprintf.rb'
+    - 'core/string/modulo_spec.rb'
+
 Lint/NestedMethodDefinition:
   Exclude:
     - language/def_spec.rb
     - language/fixtures/def.rb
+
+Lint/UnreachableCode:
+  Exclude:
+    - 'core/enumerator/lazy/fixtures/classes.rb'
+    - 'core/kernel/catch_spec.rb'
+    - 'core/kernel/throw_spec.rb'
+    - 'language/break_spec.rb'
+    - 'language/fixtures/break.rb'
+    - 'language/fixtures/break_lambda_toplevel.rb'
+    - 'language/fixtures/break_lambda_toplevel_block.rb'
+    - 'language/fixtures/break_lambda_toplevel_method.rb'
+    - 'language/fixtures/return.rb'
+    - 'language/next_spec.rb'
+    - 'language/return_spec.rb'
+    - 'optional/capi/kernel_spec.rb'
+    - 'shared/kernel/raise.rb'
 
 Lint/UriRegexp:
   Exclude:

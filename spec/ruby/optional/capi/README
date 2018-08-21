@@ -13,4 +13,4 @@ specs:
 5.  Name the C functions 'array_spec_rb_ary_new'.
 6.  Wrap the code in the optional/capi/ext/array_spec.c in
     '#ifdef HAVE_RB_ARY_NEW'
-6.  Attach the C function to the class using the name 'rb_ary_new'
+7.  Attach the C function to the class using the name 'rb_ary_new'
