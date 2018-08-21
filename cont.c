@@ -281,13 +281,26 @@ static VALUE rb_cContinuation;
 static VALUE rb_cFiber;
 static VALUE rb_eFiberError;
 
-#define GetContPtr(obj, ptr)  \
-    TypedData_Get_Struct((obj), rb_context_t, &cont_data_type, (ptr))
+static rb_context_t *
+cont_ptr(VALUE obj)
+{
+    rb_context_t *cont;
 
-#define GetFiberPtr(obj, ptr)  do {\
-    TypedData_Get_Struct((obj), rb_fiber_t, &fiber_data_type, (ptr)); \
-    if (!(ptr)) rb_raise(rb_eFiberError, "uninitialized fiber"); \
-} while (0)
+    TypedData_Get_Struct(obj, rb_context_t, &cont_data_type, cont);
+
+    return cont;
+}
+
+static rb_fiber_t *
+fiber_ptr(VALUE obj)
+{
+    rb_fiber_t *fib;
+
+    TypedData_Get_Struct(obj, rb_fiber_t, &fiber_data_type, fib);
+    if (!fib) rb_raise(rb_eFiberError, "uninitialized fiber");
+
+    return fib;
+}
 
 NOINLINE(static VALUE cont_capture(volatile int *volatile stat));
 
@@ -1251,9 +1264,8 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
 static VALUE
 rb_cont_call(int argc, VALUE *argv, VALUE contval)
 {
-    rb_context_t *cont;
+    rb_context_t *cont = cont_ptr(contval);
     rb_thread_t *th = GET_THREAD();
-    GetContPtr(contval, cont);
 
     if (cont_thread_value(cont) != th->self) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
@@ -1741,9 +1753,7 @@ fiber_switch(rb_fiber_t *fib, int argc, const VALUE *argv, int is_resume)
 VALUE
 rb_fiber_transfer(VALUE fibval, int argc, const VALUE *argv)
 {
-    rb_fiber_t *fib;
-    GetFiberPtr(fibval, fib);
-    return fiber_switch(fib, argc, argv, 0);
+    return fiber_switch(fiber_ptr(fibval), argc, argv, 0);
 }
 
 void
@@ -1794,8 +1804,7 @@ rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
 VALUE
 rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
 {
-    rb_fiber_t *fib;
-    GetFiberPtr(fibval, fib);
+    rb_fiber_t *fib = fiber_ptr(fibval);
 
     if (fib->prev != 0 || fib->cont.type == ROOT_FIBER_CONTEXT) {
 	rb_raise(rb_eFiberError, "double resume");
@@ -1835,9 +1844,7 @@ rb_fiber_reset_root_local_storage(VALUE thval)
 VALUE
 rb_fiber_alive_p(VALUE fibval)
 {
-    const rb_fiber_t *fib;
-    GetFiberPtr(fibval, fib);
-    return FIBER_TERMINATED_P(fib) ? Qfalse : Qtrue;
+    return FIBER_TERMINATED_P(fiber_ptr(fibval)) ? Qfalse : Qtrue;
 }
 
 /*
@@ -1909,8 +1916,7 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
 static VALUE
 rb_fiber_m_transfer(int argc, VALUE *argv, VALUE fibval)
 {
-    rb_fiber_t *fib;
-    GetFiberPtr(fibval, fib);
+    rb_fiber_t *fib = fiber_ptr(fibval);
     fib->transferred = 1;
     return fiber_switch(fib, argc, argv, 0);
 }
@@ -1956,11 +1962,10 @@ rb_fiber_s_current(VALUE klass)
 static VALUE
 fiber_to_s(VALUE fibval)
 {
-    const rb_fiber_t *fib;
+    const rb_fiber_t *fib = fiber_ptr(fibval);
     const rb_proc_t *proc;
     char status_info[0x10];
 
-    GetFiberPtr(fibval, fib);
     snprintf(status_info, 0x10, " (%s)", fiber_status_name(fib->status));
     if (!rb_obj_is_proc(fib->first_proc)) {
 	VALUE str = rb_any_to_s(fibval);
