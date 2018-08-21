@@ -512,6 +512,15 @@ describe "A method" do
     end
 
     evaluate <<-ruby do
+        def m() end
+      ruby
+
+      m().should be_nil
+      m(*[]).should be_nil
+      m(**{}).should be_nil
+    end
+
+    evaluate <<-ruby do
         def m(*) end
       ruby
 
@@ -527,6 +536,8 @@ describe "A method" do
       m().should == []
       m(1).should == [1]
       m(1, 2, 3).should == [1, 2, 3]
+      m(*[]).should == []
+      m(**{}).should == []
     end
 
     evaluate <<-ruby do
@@ -561,6 +572,8 @@ describe "A method" do
 
       m().should == {}
       m(a: 1, b: 2).should == { a: 1, b: 2 }
+      m(*[]).should == {}
+      m(**{}).should == {}
       lambda { m(2) }.should raise_error(ArgumentError)
     end
 

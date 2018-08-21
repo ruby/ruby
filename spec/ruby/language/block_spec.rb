@@ -57,7 +57,7 @@ describe "A block yielded a single" do
       result.should == [{"a" => 1, "b" => 2}, {}]
     end
 
-    describe("when non-symbol keys are in a keyword arguments Hash") do
+    describe "when non-symbol keys are in a keyword arguments Hash" do
       ruby_version_is ""..."2.6" do
         it "separates non-symbol keys and symbol keys" do
           result = m(["a" => 10, b: 2]) { |a=nil, **b| [a, b] }
