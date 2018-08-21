@@ -1873,9 +1873,6 @@ void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 
-/* thread_pthread.c, thread_win32.c */
-int rb_divert_reserved_fd(int fd);
-
 /* transcode.c */
 extern VALUE rb_cEncodingConverter;
 #ifdef RUBY_ENCODING_H
