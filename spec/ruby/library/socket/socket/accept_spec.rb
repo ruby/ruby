@@ -12,7 +12,7 @@ describe 'Socket#accept' do
       @server.close unless @server.closed?
     end
 
-    platform_is_not :aix, :darwin, :freebsd, :solaris, :windows do # hangs
+    platform_is :linux do # hangs on other platforms
       describe 'using an unbound socket'  do
         it 'raises Errno::EINVAL' do
           lambda { @server.accept }.should raise_error(Errno::EINVAL)
