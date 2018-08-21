@@ -981,6 +981,7 @@ rb_sigwait_fd_migrate(rb_vm_t *vm)
     rb_native_mutex_unlock(&vm->waitpid_lock);
 }
 
+#if RUBY_SIGCHLD
 static void
 waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
 {
@@ -994,13 +995,7 @@ waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
     }
 }
 
-#ifdef _WIN32 /* for spawnvp result from mjit.c */
-#  define waitpid_sys(pid,status,options) \
-	  (WaitForSingleObject((HANDLE)(pid), 0),\
-	   GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(status)))
-#else
 #  define waitpid_sys(pid,status,options) do_waitpid((pid),(status),(options))
-#endif
 
 extern volatile unsigned int ruby_nocldwait; /* signal.c */
 /* called by timer thread or thread which acquired sigwait_fd */
@@ -1032,10 +1027,14 @@ waitpid_each(struct list_head *head)
         }
     }
 }
+#else
+# define ruby_nocldwait 0
+#endif
 
 void
 ruby_waitpid_all(rb_vm_t *vm)
 {
+#if RUBY_SIGCHLD
     rb_native_mutex_lock(&vm->waitpid_lock);
     waitpid_each(&vm->waiting_pids);
     if (list_empty(&vm->waiting_pids)) {
@@ -1047,6 +1046,7 @@ ruby_waitpid_all(rb_vm_t *vm)
             ; /* keep looping */
     }
     rb_native_mutex_unlock(&vm->waitpid_lock);
+#endif
 }
 
 static void
@@ -4458,21 +4458,27 @@ rb_f_system(int argc, VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
     TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
+#if RUBY_SIGCHLD
     eargp->nocldwait_prev = ruby_nocldwait;
     ruby_nocldwait = 0;
+#endif
     pid = rb_execarg_spawn(execarg_obj, NULL, 0);
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
     if (pid > 0) {
         int ret, status;
         ret = rb_waitpid(pid, &status, 0);
         if (ret == (rb_pid_t)-1) {
+# if RUBY_SIGCHLD
             ruby_nocldwait = eargp->nocldwait_prev;
+# endif
             RB_GC_GUARD(execarg_obj);
             rb_sys_fail("Another thread waited the process started by system().");
         }
     }
 #endif
+#if RUBY_SIGCHLD
     ruby_nocldwait = eargp->nocldwait_prev;
+#endif
     if (pid < 0) {
         if (eargp->exception) {
             int err = errno;
