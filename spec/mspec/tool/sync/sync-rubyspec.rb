@@ -192,6 +192,7 @@ def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
     sh "git", "merge", "--ff-only", "#{impl.name}-rebased"
+    sh "git", "branch", "--delete", "#{impl.name}-rebased"
   end
 end
 
