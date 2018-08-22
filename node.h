@@ -474,7 +474,6 @@ typedef struct rb_ast_body_struct {
 typedef struct rb_ast_struct {
     VALUE flags;
     node_buffer_t *node_buffer;
-    VALUE mark_ary;
     rb_ast_body_t body;
 } rb_ast_t;
 rb_ast_t *rb_ast_new(void);
