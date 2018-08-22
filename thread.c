@@ -5256,7 +5256,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	if (lines) {
-	    long line = FIX2INT(trace_arg->data) - 1;
+	    long line = rb_sourceline() - 1;
 	    long count;
 	    VALUE num;
 	    if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
