@@ -647,6 +647,14 @@ rb_iseq_new(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath,
 rb_iseq_t *
 rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
+    VALUE coverages = rb_get_coverages();
+    if (RTEST(coverages)) {
+        if (ast->line_count >= 0) {
+            VALUE coverage = rb_default_coverage(ast->line_count);
+            rb_hash_aset(coverages, path, coverage);
+        }
+    }
+
     return rb_iseq_new_with_opt(ast, name, path, realpath, INT2FIX(0), parent, ISEQ_TYPE_TOP,
 				&COMPILE_OPTION_DEFAULT);
 }

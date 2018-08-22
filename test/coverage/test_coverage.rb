@@ -127,15 +127,6 @@ class TestCoverage < Test::Unit::TestCase
     }
   end
 
-  def test_nonpositive_linenumber
-    bug12517 = '[ruby-core:76141] [Bug #12517]'
-    assert_in_out_err(%w[-W0 -rcoverage], <<-"end;", ['{"<compiled>"=>[nil]}'], [], bug12517)
-      Coverage.start
-      RubyVM::InstructionSequence.compile(":ok", nil, "<compiled>", 0)
-      p Coverage.result
-    end;
-  end
-
   def test_eval
     bug13305 = '[ruby-core:80079] [Bug #13305]'
 
