@@ -3717,6 +3717,13 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *co
 	/* printf("useless condition eliminate (%s)\n", ruby_node_name(nd_type(cond))); */
 	ADD_INSNL(ret, nd_line(cond), jump, else_label);
 	break;
+      case NODE_ARRAY:
+      case NODE_ARGSCAT:
+      case NODE_DREGX:
+      case NODE_DSTR:
+	CHECK(COMPILE_POPPED(ret, "branch condition", cond));
+	ADD_INSNL(ret, nd_line(cond), jump, then_label);
+	break;
       case NODE_FLIP2:
 	CHECK(compile_flip_flop(iseq, ret, cond, TRUE, then_label, else_label));
 	break;
