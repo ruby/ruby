@@ -33,7 +33,7 @@ typedef enum {
 } rb_method_visibility_t;
 
 typedef struct rb_scope_visi_struct {
-    BITFIELD(rb_method_visibility_t) method_visi : 3;
+    BITFIELD(rb_method_visibility_t, method_visi, 3);
     unsigned int module_func : 1;
 } rb_scope_visibility_t;
 
@@ -155,7 +155,7 @@ enum method_optimized_type {
 };
 
 PACKED_STRUCT_UNALIGNED(struct rb_method_definition_struct {
-    BITFIELD(rb_method_type_t) type : VM_METHOD_TYPE_MINIMUM_BITS;
+    BITFIELD(rb_method_type_t, type, VM_METHOD_TYPE_MINIMUM_BITS);
     int alias_count : 28;
     int complemented_count : 28;
 
