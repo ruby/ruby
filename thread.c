@@ -5404,6 +5404,7 @@ rb_reset_coverages(void)
 {
     VALUE coverages = rb_get_coverages();
     st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
+    rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);
     if (GET_VM()->coverage_mode & COVERAGE_TARGET_BRANCHES) {

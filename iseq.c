@@ -966,6 +966,25 @@ rb_iseq_coverage(const rb_iseq_t *iseq)
     return ISEQ_COVERAGE(iseq);
 }
 
+static int
+remove_coverage_i(void *vstart, void *vend, size_t stride, void *data)
+{
+    VALUE v = (VALUE)vstart;
+    for (; v != (VALUE)vend; v += stride) {
+	if (rb_obj_is_iseq(v)) {
+            rb_iseq_t *iseq = (rb_iseq_t *)v;
+            ISEQ_COVERAGE_SET(iseq, Qnil);
+	}
+    }
+    return 0;
+}
+
+void
+rb_iseq_remove_coverage_all()
+{
+    rb_objspace_each_objects(remove_coverage_i, NULL);
+}
+
 /* define wrapper class methods (RubyVM::InstructionSequence) */
 
 static void
