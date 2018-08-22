@@ -980,7 +980,7 @@ remove_coverage_i(void *vstart, void *vend, size_t stride, void *data)
 }
 
 void
-rb_iseq_remove_coverage_all()
+rb_iseq_remove_coverage_all(void)
 {
     rb_objspace_each_objects(remove_coverage_i, NULL);
 }
