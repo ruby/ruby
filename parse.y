@@ -9301,6 +9301,11 @@ arg_append(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *loc
 	node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
 	nd_set_type(node1, NODE_ARGSCAT);
 	return node1;
+      case NODE_ARGSCAT:
+        if (nd_type(node1->nd_body) != NODE_ARRAY) break;
+        node1->nd_body = list_append(p, node1->nd_body, node2);
+        node1->nd_loc.end_pos = node1->nd_body->nd_loc.end_pos;
+        return node1;
     }
     return NEW_ARGSPUSH(node1, node2, loc);
 }
