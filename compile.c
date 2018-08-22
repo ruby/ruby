@@ -260,15 +260,6 @@ struct iseq_compile_data_ensure_node_stack {
 
 #define ADD_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
-#define ADD_TRACE_LINE_COVERAGE(seq, line) \
-  do { \
-      if (ISEQ_COVERAGE(iseq) && \
-	  ISEQ_LINE_COVERAGE(iseq) && \
-	  (line) > 0) { \
-	  RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), (line) - 1, INT2FIX(0)); \
-	  ADD_INSN2((seq), (line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_LINE), INT2FIX(line)); \
-      } \
-  } while (0)
 
 
 #define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
@@ -2021,6 +2012,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = calc_sp_depth(sp, iobj);
 		code_index += insn_data_length(iobj);
 		insn_num++;
+		if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE)) {
+		    int line = iobj->insn_info.line_no;
+		    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, INT2FIX(0));
+		}
 		iobj->insn_info.events |= events;
 		events = 0;
 		break;
@@ -5829,9 +5824,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
     }
     else {
 	if (node->flags & NODE_FL_NEWLINE) {
+	    int event = RUBY_EVENT_LINE;
 	    ISEQ_COMPILE_DATA(iseq)->last_line = line;
-	    ADD_TRACE_LINE_COVERAGE(ret, line);
-	    ADD_TRACE(ret, RUBY_EVENT_LINE);
+	    if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+		event |= RUBY_EVENT_COVERAGE_LINE;
+	    }
+	    ADD_TRACE(ret, event);
 	}
     }
 
@@ -7460,18 +7458,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       ng:
 	debug_node_end();
 	return COMPILE_NG;
-    }
-
-    /* remove tracecoverage instruction if there is no relevant instruction */
-    if (IS_TRACE(ret->last) && ((TRACE*) ret->last)->event == RUBY_EVENT_LINE) {
-	LINK_ELEMENT *insn = ret->last->prev;
-	if (IS_INSN(insn) &&
-	    IS_INSN_ID(insn, tracecoverage) &&
-	    FIX2LONG(OPERAND_AT(insn, 0)) == RUBY_EVENT_COVERAGE_LINE
-	) {
-	    ELEM_REMOVE(insn); /* remove tracecovearge */
-	    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, Qnil);
-	}
     }
 
     debug_node_end();
