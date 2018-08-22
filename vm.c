@@ -970,6 +970,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
     rb_node_init(&tmp_node, NODE_SCOPE, (VALUE)dyns, 0, 0);
     ast.root = &tmp_node;
     ast.compile_option = 0;
+    ast.line_count = -1;
 
     if (base_iseq) {
 	iseq = rb_iseq_new(&ast, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);

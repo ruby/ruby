@@ -1244,6 +1244,7 @@ new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
 
     ast.root = node;
     ast.compile_option = 0;
+    ast.line_count = -1;
 
     debugs("[new_child_iseq]> ---------------------------------------\n");
     ret_iseq = rb_iseq_new_with_opt(&ast, name,
