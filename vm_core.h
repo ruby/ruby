@@ -879,7 +879,7 @@ typedef struct rb_thread_struct {
 #ifdef NON_SCALAR_THREAD_ID
     rb_thread_id_string_t thread_id_string;
 #endif
-    BITFIELD(enum rb_thread_status) status : 2;
+    BITFIELD(enum rb_thread_status, status, 2);
     /* bit flags */
     unsigned int to_kill : 1;
     unsigned int abort_on_exception: 1;

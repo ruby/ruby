@@ -2144,14 +2144,14 @@ rb_obj_builtin_type(VALUE obj)
 /*
  * For declaring bitfields out of non-unsigned int types:
  *   struct date {
- *      BITFIELD(enum months) month:4;
+ *      BITFIELD(enum months, month, 4);
  *      ...
  *   };
  */
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-# define BITFIELD(type) type
+# define BITFIELD(type, name, size) type name : size
 #else
-# define BITFIELD(type) unsigned int
+# define BITFIELD(type, name, size) unsigned int name : size
 #endif
 
 #if defined(_MSC_VER)
