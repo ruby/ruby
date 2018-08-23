@@ -2942,6 +2942,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	    else if (previ == BIN(newarray) && iseq_pop_newarray(iseq, (INSN*)prev)) {
 		ELEM_REMOVE(&iobj->link);
 	    }
+	    else if (previ == BIN(concatarray)) {
+		INSN *piobj = (INSN *)prev;
+		INSERT_BEFORE_INSN1(piobj, piobj->insn_info.line_no, splatarray, Qfalse);
+		INSN_OF(piobj) = BIN(pop);
+	    }
 	    else if (previ == BIN(concatstrings)) {
 		if (OPERAND_AT(prev, 0) == INT2FIX(1)) {
 		    ELEM_REMOVE(prev);
