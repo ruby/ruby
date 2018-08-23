@@ -13,17 +13,11 @@ class TestReadline < Test::Unit::TestCase
   SAVED_ENV = %w[COLUMNS LINES]
 
   def setup
-    if ENV.key?('APPVEYOR') && /mingw/ =~ RUBY_PLATFORM
-      skip 'failing on AppVeyor MinGW build for now'
-    end
     @saved_env = ENV.values_at(*SAVED_ENV)
     @inputrc, ENV[INPUTRC] = ENV[INPUTRC], IO::NULL
   end
 
   def teardown
-    if ENV.key?('APPVEYOR') && /mingw/ =~ RUBY_PLATFORM
-      return
-    end
     ENV[INPUTRC] = @inputrc
     Readline.instance_variable_set("@completion_proc", nil)
     begin
@@ -418,6 +412,7 @@ class TestReadline < Test::Unit::TestCase
   end if !/EditLine|\A4\.3\z/n.match(Readline::VERSION)
 
   def test_input_metachar
+    skip("Won't pass on mingw w/readline 7.0.005 [ruby-core:45682]") if mingw?
     bug6601 = '[ruby-core:45682]'
     Readline::HISTORY << "hello"
     wo = nil
@@ -427,7 +422,7 @@ class TestReadline < Test::Unit::TestCase
     end
     assert_equal("hello", line, bug6601)
   ensure
-    wo.close
+    wo&.close
     Readline.delete_text
     Readline::HISTORY.clear
   end if !/EditLine/n.match(Readline::VERSION)
@@ -589,6 +584,11 @@ class TestReadline < Test::Unit::TestCase
     Tempfile.create("test_readline_stdin") {|stdin|
       Tempfile.create("test_readline_stdout") {|stdout|
         yield stdin, stdout
+        if windows?
+          # needed since readline holds refs to tempfiles, can't delete on Windows
+          Readline.input = STDIN
+          Readline.output = STDOUT
+        end
       }
     }
   end
