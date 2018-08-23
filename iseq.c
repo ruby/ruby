@@ -2914,14 +2914,20 @@ rb_vm_insn_addr2insn(const void *addr)
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 
+static inline int
+encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
+{
+    st_data_t key = (st_data_t)*iseq_encoded_insn;
+    st_data_t val;
 
-#define TRACE_INSN_P(insn)      ((insn) >= VM_INSTRUCTION_SIZE/2)
+    if (st_lookup(encoded_insn_data, key, &val)) {
+        insn_data_t *e = (insn_data_t *)val;
+        *iseq_encoded_insn = (VALUE) (turnon ? e->trace_encoded_insn : e->notrace_encoded_insn);
+        return e->insn_len;
+    }
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-#define INSN_CODE(insn) ((VALUE)table[insn])
-#else
-#define INSN_CODE(insn) (insn)
-#endif
+    rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
+}
 
 void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
@@ -2939,27 +2945,11 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 	unsigned int i;
 	const struct rb_iseq_constant_body *const body = iseq->body;
 	VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-	VALUE *code = rb_iseq_original_iseq(iseq);
-	const void * const *table = rb_vm_get_insns_address_table();
-#else
-	const VALUE *code = body->iseq_encoded;
-#endif
 	((rb_iseq_t *)iseq)->aux.trace_events = turnon_events;
 
 	for (i=0; i<body->iseq_size;) {
-	    int insn = (int)code[i];
 	    rb_event_flag_t events = rb_iseq_event_flags(iseq, i);
-
-	    if (events & turnon_events) {
-		if (!TRACE_INSN_P(insn)) {
-		    iseq_encoded[i] = INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
-		}
-	    }
-	    else if (TRACE_INSN_P(insn)) {
-		iseq_encoded[i] = INSN_CODE(insn - VM_INSTRUCTION_SIZE/2);
-	    }
-	    i += insn_len(insn);
+            i += encoded_iseq_trace_instrument(&iseq_encoded[i], events & turnon_events);
 	}
 	/* clear for debugging: ISEQ_ORIGINAL_ISEQ_CLEAR(iseq); */
     }
