@@ -1171,6 +1171,14 @@ module MiniTest
       def windows? platform = RUBY_PLATFORM
         /mswin|mingw/ =~ platform
       end
+
+      ##
+      # Is this running on mingw?
+
+      def mingw? platform = RUBY_PLATFORM
+        /mingw/ =~ platform
+      end
+
     end
 
     ##
