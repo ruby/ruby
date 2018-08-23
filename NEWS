@@ -336,7 +336,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Introduce an initial implementation of JIT (Just-in-time) compiler.
   [Feature #14235] [experimental]
-    * `--jit` option is added to enable JIT. `--jit-verbose=1` is good for
+    * `--enable=jit` option is added to enable JIT. `--jit-verbose=1` is good for
       inspection.  See `ruby --help` for others.
     * This JIT relies on C compiler used to build Ruby, on runtime.  Only
       gcc and clang are supported for the JIT for now, and MinGW support has
