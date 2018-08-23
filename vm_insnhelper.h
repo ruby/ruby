@@ -184,10 +184,17 @@ enum vm_regan_acttype {
 #endif
 
 #if OPT_CALL_FASTPATH
+#define CC_RESET_PURITY(cc) do { \
+    (cc)->purity = Qundef; \
+    (cc)->updated_at = ruby_vm_global_timestamp - 1; \
+} while (0)
+
 #define CI_SET_FASTPATH(cc, func, enabled) do { \
+    if (LIKELY(enabled)) CC_RESET_PURITY(cc); \
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 #else
+#define CC_RESET_PURITY(cc) /* do nothing */
 #define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
 #endif
 

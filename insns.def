@@ -45,6 +45,9 @@
 
        * handles_sp: If it is true, VM deals with sp in the insn.
 
+       * purity: describes if the instruction has a side effect or
+         not.  There are four kinds of purity: see insns_info.inc.
+
    - Attributes can access operands, but not stack (push/pop) variables.
 
    - An instruction's body is a pure C block, copied verbatimly into
@@ -57,6 +60,7 @@ nop
 ()
 ()
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     /* none */
 }
@@ -73,6 +77,7 @@ getlocal
 (lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = *(vm_get_ep(GET_EP(), level) - idx);
     RB_DEBUG_COUNTER_INC(lvar_get);
@@ -87,6 +92,7 @@ setlocal
 (lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = purity_of_lvar_access(level);
 {
     vm_env_write(vm_get_ep(GET_EP(), level), -(int)idx, val);
     RB_DEBUG_COUNTER_INC(lvar_set);
@@ -99,6 +105,7 @@ getblockparam
 (lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
@@ -121,6 +128,7 @@ setblockparam
 (lindex_t idx, rb_num_t level)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = purity_of_lvar_access(level);
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
@@ -140,6 +148,7 @@ getblockparamproxy
 (lindex_t idx, rb_num_t level)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     const VALUE *ep = vm_get_ep(GET_EP(), level);
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
@@ -183,6 +192,7 @@ getspecial
 (rb_num_t key, rb_num_t type)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = vm_getspecial(ec, GET_LEP(), key, type);
 }
@@ -193,6 +203,7 @@ setspecial
 (rb_num_t key)
 (VALUE obj)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     lep_svar_set(ec, GET_LEP(), key, obj);
 }
@@ -203,6 +214,7 @@ getinstancevariable
 (ID id, IC ic)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = vm_getinstancevariable(GET_SELF(), id, ic);
 }
@@ -213,6 +225,7 @@ setinstancevariable
 (ID id, IC ic)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     vm_setinstancevariable(GET_SELF(), id, val, ic);
 }
@@ -223,6 +236,7 @@ getclassvariable
 (ID id)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = rb_cvar_get(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id);
 }
@@ -233,6 +247,7 @@ setclassvariable
 (ID id)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     vm_ensure_not_refinement_module(GET_SELF());
     rb_cvar_set(vm_get_cvar_base(rb_vm_get_cref(GET_EP()), GET_CFP()), id, val);
@@ -247,6 +262,8 @@ getconstant
 (ID id)
 (VALUE klass)
 (VALUE val)
+/* getconstant can kick autoload, hence not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = vm_get_ev_const(ec, klass, id, 0);
 }
@@ -258,6 +275,7 @@ setconstant
 (ID id)
 (VALUE val, VALUE cbase)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     vm_check_if_namespace(cbase);
     vm_ensure_not_refinement_module(GET_SELF());
@@ -270,6 +288,8 @@ getglobal
 (GENTRY entry)
 ()
 (VALUE val)
+/* getglobal can be hooked, hence not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = GET_GLOBAL((VALUE)entry);
 }
@@ -280,6 +300,7 @@ setglobal
 (GENTRY entry)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     SET_GLOBAL((VALUE)entry, val);
 }
@@ -294,6 +315,7 @@ putnil
 ()
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = Qnil;
 }
@@ -304,6 +326,7 @@ putself
 ()
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = GET_SELF();
 }
@@ -316,6 +339,7 @@ putobject
 (VALUE val)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     /* */
 }
@@ -326,6 +350,7 @@ putspecialobject
 (rb_num_t value_type)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     enum vm_special_object_type type;
 
@@ -339,6 +364,7 @@ putiseq
 (ISEQ iseq)
 ()
 (VALUE ret)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     ret = (VALUE)iseq;
 }
@@ -349,6 +375,7 @@ putstring
 (VALUE str)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = rb_str_resurrect(str);
 }
@@ -359,6 +386,9 @@ concatstrings
 (rb_num_t num)
 (...)
 (VALUE val)
+/* This instruction does not convert things into strings.  That is
+ * expected to be done a priori. Hence it is pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
@@ -370,6 +400,8 @@ tostring
 ()
 (VALUE val, VALUE str)
 (VALUE val)
+/* Not pure because it calls methods */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = rb_obj_as_string_result(str, val);
 }
@@ -380,6 +412,7 @@ freezestring
 (VALUE debug_info)
 (VALUE str)
 (VALUE str)
+// attr enum rb_insn_purity purity = rb_insn_is_pure; /* no method calls. */
 {
     vm_freezestring(str, debug_info);
 }
@@ -392,6 +425,9 @@ toregexp
 (rb_num_t opt, rb_num_t cnt)
 (...)
 (VALUE val)
+/* In contrast to rb_str_concat_literals(), rb_reg_new_ary() DO call
+ * methods internally.  This instrtuction is not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr rb_snum_t sp_inc = 1 - cnt;
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
@@ -405,6 +441,7 @@ intern
 ()
 (VALUE str)
 (VALUE sym)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     sym = rb_str_intern(str);
 }
@@ -415,6 +452,7 @@ newarray
 (rb_num_t num)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
@@ -426,6 +464,7 @@ duparray
 (VALUE ary)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val = rb_ary_resurrect(ary);
 }
@@ -444,6 +483,8 @@ expandarray
 (rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
 (...)
+/* Not pure because it calls methods */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr rb_snum_t sp_inc = num - 1 + (flag & 1 ? 1 : 0);
 {
     vm_expandarray(GET_SP(), ary, num, (int)flag);
@@ -455,6 +496,8 @@ concatarray
 ()
 (VALUE ary1, VALUE ary2)
 (VALUE ary)
+/* Not pure because it calls methods */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     ary = vm_concat_array(ary1, ary2);
 }
@@ -465,6 +508,8 @@ splatarray
 (VALUE flag)
 (VALUE ary)
 (VALUE obj)
+/* Not pure because it calls methods */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     obj = vm_splat_array(flag, ary);
 }
@@ -475,6 +520,7 @@ newhash
 (rb_num_t num)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 1 - num;
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
@@ -492,6 +538,8 @@ newrange
 (rb_num_t flag)
 (VALUE low, VALUE high)
 (VALUE val)
+/* rb_range_new() exercises "bad value for range" check. Not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = rb_range_new(low, high, (int)flag);
 }
@@ -506,6 +554,7 @@ pop
 ()
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     (void)val;
     /* none */
@@ -517,6 +566,7 @@ dup
 ()
 (VALUE val)
 (VALUE val1, VALUE val2)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     val1 = val2 = val;
 }
@@ -527,6 +577,7 @@ dupn
 (rb_num_t n)
 (...)
 (...)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = n;
 {
     void *dst = GET_SP();
@@ -541,6 +592,7 @@ swap
 ()
 (VALUE val, VALUE obj)
 (VALUE obj, VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     /* none */
 }
@@ -551,6 +603,7 @@ reverse
 (rb_num_t n)
 (...)
 (...)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 0;
 {
     rb_num_t i;
@@ -570,6 +623,7 @@ reput
 ()
 (..., VALUE val)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 0;
 {
     /* none */
@@ -581,6 +635,7 @@ topn
 (rb_num_t n)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 1;
 {
     val = TOPN(n);
@@ -592,6 +647,7 @@ setn
 (rb_num_t n)
 (..., VALUE val)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = 0;
 {
     TOPN(n) = val;
@@ -603,6 +659,7 @@ adjuststack
 (rb_num_t n)
 (...)
 (...)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = -(rb_snum_t)n;
 {
     /* none */
@@ -618,6 +675,7 @@ defined
 (rb_num_t op_type, VALUE obj, VALUE needstr)
 (VALUE v)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_defined(op_type);
 {
     val = vm_defined(ec, GET_CFP(), op_type, obj, needstr, v);
 }
@@ -634,6 +692,8 @@ checkmatch
 (rb_num_t flag)
 (VALUE target, VALUE pattern)
 (VALUE result)
+/* Not pure because it calls methods */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     result = vm_check_match(ec, target, pattern, flag);
 }
@@ -644,6 +704,7 @@ checkkeyword
 (lindex_t kw_bits_index, lindex_t keyword_index)
 ()
 (VALUE ret)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     ret = vm_check_keyword(kw_bits_index, keyword_index, GET_EP());
 }
@@ -654,6 +715,7 @@ checktype
 (rb_num_t type)
 (VALUE val)
 (VALUE ret)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
@@ -664,6 +726,7 @@ tracecoverage
 (rb_num_t nf, VALUE data)
 ()
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     rb_event_flag_t flag = (rb_event_flag_t)nf;
 
@@ -683,6 +746,8 @@ defineclass
 (ID id, ISEQ class_iseq, rb_num_t flags)
 (VALUE cbase, VALUE super)
 (VALUE val)
+/* Has VM-global side effects; not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr bool handles_sp = true;
 {
     VALUE klass = vm_find_or_create_class_by_id(id, flags, cbase, super);
@@ -710,6 +775,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_sendish(ci, cc, blockiseq);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
@@ -718,6 +784,15 @@ send
     calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, ci, blockiseq, FALSE);
     calling.recv = TOPN(calling.argc = ci->orig_argc);
     vm_search_method(ci, cc, calling.recv);
+
+#ifdef CURRENT_INSN_IS
+    if (vm_whether_we_can_skip_this_call_site_p(
+            CURRENT_INSN_IS(pop), cc, calling.block_handler)) {
+        ADJ_SP(INSN_ATTR(sp_inc) - 1); /* pop recv and argv from stack */
+        val = Qundef;                  /* dummy retval (not used) */
+    }
+    else
+#endif
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -726,6 +801,7 @@ opt_str_freeze
 (VALUE str)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_BOP(BOP_FREEZE, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
 }
@@ -735,6 +811,7 @@ opt_str_uminus
 (VALUE str)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_BOP(BOP_UMINUS, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
 }
@@ -744,6 +821,11 @@ opt_newarray_max
 (rb_num_t num)
 (...)
 (VALUE val)
+/* This instruction typically has no side effects.  But it compares
+ * array contents each other by nature.  That part can have side
+ * effects when redefined.  No way to detect such redefinition
+ * beforehand.  We cannot but mark it being not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
@@ -754,6 +836,8 @@ opt_newarray_min
 (rb_num_t num)
 (...)
 (VALUE val)
+/* Same discussion as opt_newarray_max. Not pure. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
@@ -765,12 +849,22 @@ opt_send_without_block
 (CALL_INFO ci, CALL_CACHE cc)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_cc(cc);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = -ci->orig_argc;
 {
     struct rb_calling_info calling;
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
     vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
+
+#ifdef CURRENT_INSN_IS
+    if (vm_whether_we_can_skip_this_call_site_p(
+            CURRENT_INSN_IS(pop), cc, calling.block_handler)) {
+        ADJ_SP(INSN_ATTR(sp_inc) - 1); /* pop recv and argv from stack */
+        val = Qundef;                  /* dummy retval (not used) */
+    }
+    else
+#endif
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -780,6 +874,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_sendish(ci, cc, blockiseq);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
 {
@@ -788,6 +883,15 @@ invokesuper
     calling.block_handler = vm_caller_setup_arg_block(ec, reg_cfp, ci, blockiseq, TRUE);
     calling.recv = TOPN(calling.argc = ci->orig_argc);
     vm_search_super_method(ec, GET_CFP(), &calling, ci, cc);
+
+#ifdef CURRENT_INSN_IS
+    if (vm_whether_we_can_skip_this_call_site_p(
+            CURRENT_INSN_IS(pop), cc, calling.block_handler)) {
+        ADJ_SP(INSN_ATTR(sp_inc) - 1); /* pop recv and argv from stack */
+        val = Qundef;                  /* dummy retval (not used) */
+    }
+    else
+#endif
     CALL_METHOD(&calling, ci, cc);
 }
 
@@ -797,6 +901,7 @@ invokeblock
 (CALL_INFO ci)
 (...)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_invokeblock(ci);
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = 1 - ci->orig_argc;
 {
@@ -812,6 +917,14 @@ invokeblock
 	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
 
+#ifdef CURRENT_INSN_IS
+    if (vm_whether_we_can_skip_this_call_site_p(
+            CURRENT_INSN_IS(pop), NULL, block_handler)) {
+        ADJ_SP(INSN_ATTR(sp_inc) - 1); /* pop recv and argv from stack */
+        val = Qfalse;                  /* dummy retval (not used) */
+    }
+    else
+#endif
     val = vm_invoke_block(ec, GET_CFP(), &calling, ci, block_handler);
     if (val == Qundef) {
         EXEC_EC_CFP(val);
@@ -824,6 +937,7 @@ leave
 ()
 (VALUE val)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr bool handles_sp = true;
 {
     if (OPT_CHECKED_RUN) {
@@ -858,6 +972,7 @@ throw
 (rb_num_t throw_state)
 (VALUE throwobj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_throw(throw_state);
 {
     RUBY_VM_CHECK_INTS(ec);
     val = vm_throw(ec, GET_CFP(), throw_state, throwobj);
@@ -875,6 +990,7 @@ jump
 (OFFSET dst)
 ()
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     RUBY_VM_CHECK_INTS(ec);
     JUMP(dst);
@@ -886,6 +1002,7 @@ branchif
 (OFFSET dst)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -899,6 +1016,7 @@ branchunless
 (OFFSET dst)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (!RTEST(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -912,6 +1030,7 @@ branchnil
 (OFFSET dst)
 (VALUE val)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (NIL_P(val)) {
 	RUBY_VM_CHECK_INTS(ec);
@@ -929,6 +1048,7 @@ getinlinecache
 (OFFSET dst, IC ic)
 ()
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     if (vm_ic_hit_p(ic, GET_EP())) {
 	val = ic->ic_value.value;
@@ -945,6 +1065,7 @@ setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     vm_ic_update(ic, val, GET_EP());
 }
@@ -955,6 +1076,7 @@ once
 (ISEQ iseq, ISE ise)
 ()
 (VALUE val)
+/* Not pure because it can block other threads. */
 {
     val = vm_once_dispatch(ec, iseq, ise);
 }
@@ -965,6 +1087,7 @@ opt_case_dispatch
 (CDHASH hash, OFFSET else_offset)
 (..., VALUE key)
 ()
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 // attr rb_snum_t sp_inc = -1;
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
@@ -982,6 +1105,7 @@ opt_plus
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_PLUS, cc);
 {
     val = vm_opt_plus(recv, obj);
 
@@ -999,6 +1123,7 @@ opt_minus
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MINUS, cc);
 {
     val = vm_opt_minus(recv, obj);
 
@@ -1016,6 +1141,7 @@ opt_mult
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MULT, cc);
 {
     val = vm_opt_mult(recv, obj);
 
@@ -1033,6 +1159,7 @@ opt_div
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_DIV, cc);
 {
     val = vm_opt_div(recv, obj);
 
@@ -1050,6 +1177,7 @@ opt_mod
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MOD, cc);
 {
     val = vm_opt_mod(recv, obj);
 
@@ -1067,6 +1195,8 @@ opt_eq
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* This is complicated. */
+// attr enum rb_insn_purity purity = purity_of_opt_eq(cc);
 {
     val = opt_eq_func(recv, obj, ci, cc);
 
@@ -1084,6 +1214,8 @@ opt_neq
 (CALL_INFO ci_eq, CALL_CACHE cc_eq, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* this is even more complicated than opt_eq. */
+// attr enum rb_insn_purity purity = purity_of_opt_neq(cc_eq, cc);
 {
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
@@ -1101,6 +1233,7 @@ opt_lt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LT, cc);
 {
     val = vm_opt_lt(recv, obj);
 
@@ -1118,6 +1251,7 @@ opt_le
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LE, cc);
 {
     val = vm_opt_le(recv, obj);
 
@@ -1135,6 +1269,7 @@ opt_gt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_GT, cc);
 {
     val = vm_opt_gt(recv, obj);
 
@@ -1152,6 +1287,7 @@ opt_ge
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_GE, cc);
 {
     val = vm_opt_ge(recv, obj);
 
@@ -1169,6 +1305,8 @@ opt_ltlt
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+/* TODO: we are on the safe side now, this can be improved. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = vm_opt_ltlt(recv, obj);
 
@@ -1186,6 +1324,7 @@ opt_aref
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_AREF, cc);
 {
     val = vm_opt_aref(recv, obj);
 
@@ -1203,6 +1342,8 @@ opt_aset
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE obj, VALUE set)
 (VALUE val)
+/* TODO: we are on the safe side now, this can be improved. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     val = vm_opt_aset(recv, obj, set);
 
@@ -1220,6 +1361,8 @@ opt_aset_with
 (VALUE key, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv, VALUE val)
 (VALUE val)
+/* TODO: we are on the safe side now, this can be improved. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 {
     VALUE tmp = vm_opt_aset_with(recv, key, val);
 
@@ -1242,6 +1385,7 @@ opt_aref_with
 (VALUE key, CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_AREF, cc);
 {
     val = vm_opt_aref_with(recv, key);
 
@@ -1260,6 +1404,7 @@ opt_length
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_LENGTH, cc);
 {
     val = vm_opt_length(recv, BOP_LENGTH);
 
@@ -1277,6 +1422,7 @@ opt_size
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_SIZE, cc);
 {
     val = vm_opt_length(recv, BOP_SIZE);
 
@@ -1294,6 +1440,7 @@ opt_empty_p
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_EMPTY_P, cc);
 {
     val = vm_opt_empty_p(recv);
 
@@ -1311,6 +1458,7 @@ opt_succ
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_SUCC, cc);
 {
     val = vm_opt_succ(recv);
 
@@ -1328,6 +1476,7 @@ opt_not
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE recv)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_opt_not(cc);
 {
     val = vm_opt_not(ci, cc, recv);
 
@@ -1345,6 +1494,7 @@ opt_regexpmatch1
 (VALUE recv)
 (VALUE obj)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_BOP(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG);
 {
     val = vm_opt_regexpmatch1(recv, obj);
 }
@@ -1355,6 +1505,7 @@ opt_regexpmatch2
 (CALL_INFO ci, CALL_CACHE cc)
 (VALUE obj2, VALUE obj1)
 (VALUE val)
+// attr enum rb_insn_purity purity = purity_of_optinsn(BOP_MATCH, cc);
 {
     val = vm_opt_regexpmatch2(obj2, obj1);
 
@@ -1372,6 +1523,8 @@ opt_call_c_function
 (rb_insn_func_t funcptr)
 ()
 ()
+/* Not pure; cannot say what would happen inside. */
+// attr enum rb_insn_purity purity = rb_insn_is_not_pure;
 // attr bool handles_sp = true;
 {
     reg_cfp = (funcptr)(ec, reg_cfp);
@@ -1392,6 +1545,7 @@ bitblt
 ()
 ()
 (VALUE ret)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     ret = rb_str_new2("a bit of bacon, lettuce and tomato");
 }
@@ -1402,6 +1556,7 @@ answer
 ()
 ()
 (VALUE ret)
+// attr enum rb_insn_purity purity = rb_insn_is_pure;
 {
     ret = INT2FIX(42);
 }

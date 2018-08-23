@@ -130,6 +130,7 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
     generate_attribute 'bool', 'handles_sp', false
+    generate_attribute 'enum rb_insn_purity', 'purity', 'rb_insn_is_not_pure'
   end
 
   def typesplit a

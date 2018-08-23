@@ -154,11 +154,13 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	    }
 	    else if (cc->me->def->body.refined.orig_me) {
 		cc->me = refined_method_callable_without_refinement(cc->me);
+		CC_RESET_PURITY(cc);
 		goto again;
 	    }
 
 	    super_class = RCLASS_SUPER(super_class);
 
+	    CC_RESET_PURITY(cc);
 	    if (!super_class || !(cc->me = rb_callable_method_entry(super_class, ci->mid))) {
 		enum method_missing_reason ex = (type == VM_METHOD_TYPE_ZSUPER) ? MISSING_SUPER : 0;
 		ret = method_missing(calling->recv, ci->mid, calling->argc, argv, ex);
@@ -169,6 +171,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
 	}
       case VM_METHOD_TYPE_ALIAS:
 	cc->me = aliased_callable_method_entry(cc->me);
+	CC_RESET_PURITY(cc);
 	goto again;
       case VM_METHOD_TYPE_MISSING:
 	{
