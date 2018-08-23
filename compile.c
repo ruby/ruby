@@ -10010,6 +10010,8 @@ iseq_ibf_load(VALUE str)
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
 
+    iseq_init_trace(iseq);
+
     RB_GC_GUARD(loader_obj);
     return iseq;
 }

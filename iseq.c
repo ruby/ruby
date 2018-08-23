@@ -504,6 +504,15 @@ rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body)
 }
 #endif
 
+void
+iseq_init_trace(rb_iseq_t *iseq)
+{
+    iseq->aux.trace_events = 0;
+    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
+        rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
+    }
+}
+
 static VALUE
 finish_iseq_build(rb_iseq_t *iseq)
 {
@@ -531,10 +540,7 @@ finish_iseq_build(rb_iseq_t *iseq)
 	rb_exc_raise(err);
     }
 
-    iseq->aux.trace_events = 0;
-    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
-	rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
-    }
+    iseq_init_trace(iseq);
     return Qtrue;
 }
 
