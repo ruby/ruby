@@ -10004,7 +10004,7 @@ const rb_iseq_t *
 iseq_ibf_load(VALUE str)
 {
     struct ibf_load *load;
-    const rb_iseq_t *iseq;
+    rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup(load, loader_obj, str);
