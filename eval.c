@@ -66,7 +66,7 @@ ruby_setup(void)
 #endif
     Init_BareVM();
     Init_heap();
-    rb_addr2insn_init();
+    rb_vm_encoded_insn_data_table_init();
     Init_vm_objects();
 
     EC_PUSH_TAG(GET_EC());
