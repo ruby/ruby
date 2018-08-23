@@ -2862,6 +2862,58 @@ rb_iseq_defined_string(enum defined_type type)
     return str;
 }
 
+/* A map from encoded_insn to insn_data: decoded insn number, its len,
+ * non-trace version of encoded insn, and trace version. */
+
+static st_table *encoded_insn_data;
+typedef struct insn_data_struct {
+    int insn;
+    int insn_len;
+    void *notrace_encoded_insn;
+    void *trace_encoded_insn;
+} insn_data_t;
+static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
+
+void
+rb_vm_encoded_insn_data_table_init(void)
+{
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+    const void * const *table = rb_vm_get_insns_address_table();
+#define INSN_CODE(insn) ((VALUE)table[insn])
+#else
+#define INSN_CODE(insn) (insn)
+#endif
+    st_data_t insn;
+    encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
+
+    for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
+        st_data_t key1 = (st_data_t)INSN_CODE(insn);
+        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
+
+        insn_data[insn].insn = insn;
+        insn_data[insn].insn_len = insn_len(insn);
+        insn_data[insn].notrace_encoded_insn = (void *) key1;
+        insn_data[insn].trace_encoded_insn = (void *) key2;
+
+        st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
+        st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+    }
+}
+
+int
+rb_vm_insn_addr2insn(const void *addr)
+{
+    st_data_t key = (st_data_t)addr;
+    st_data_t val;
+
+    if (st_lookup(encoded_insn_data, key, &val)) {
+        insn_data_t *e = (insn_data_t *)val;
+        return (int)e->insn;
+    }
+
+    rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
+}
+
 
 #define TRACE_INSN_P(insn)      ((insn) >= VM_INSTRUCTION_SIZE/2)
 

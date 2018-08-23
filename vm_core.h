@@ -164,11 +164,7 @@ void *rb_register_sigaltstack(void);
 #endif /* OPT_STACK_CACHING */
 #endif /* OPT_CALL_THREADED_CODE */
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-void rb_addr2insn_init(void);
-#else
-static inline void rb_addr2insn_init(void) { }
-#endif
+void rb_vm_encoded_insn_data_table_init(void);
 typedef unsigned long rb_num_t;
 typedef   signed long rb_snum_t;
 
