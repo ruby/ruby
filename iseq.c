@@ -2890,7 +2890,7 @@ rb_vm_encoded_insn_data_table_init(void)
         st_data_t key1 = (st_data_t)INSN_CODE(insn);
         st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
 
-        insn_data[insn].insn = insn;
+        insn_data[insn].insn = (int)insn;
         insn_data[insn].insn_len = insn_len(insn);
         insn_data[insn].notrace_encoded_insn = (void *) key1;
         insn_data[insn].trace_encoded_insn = (void *) key2;
