@@ -1714,17 +1714,14 @@ static void
 ubf_timer_destroy(void)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
-    rb_pid_t current = getpid();
-    if (timer_pthread.owner == current) {
-        int err;
+    int err;
 
-        timer_pthread.owner = 0;
-        ubf_timer_disarm();
-        rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
-        err = pthread_join(timer_pthread.thid, 0);
-        if (err) {
-            rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
-        }
+    timer_pthread.owner = 0;
+    ubf_timer_disarm();
+    rb_thread_wakeup_timer_thread_fd(timer_pthread.low[1]);
+    err = pthread_join(timer_pthread.thid, 0);
+    if (err) {
+        rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 #endif
 /* no need to destroy real POSIX timers */
