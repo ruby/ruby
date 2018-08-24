@@ -398,6 +398,10 @@ ubf_sigwait(void *ignore)
 #  define BUSY_WAIT_SIGNALS (0)
 #endif
 
+#ifndef USE_EVENTFD
+#  define USE_EVENTFD (0)
+#endif
+
 #if THREAD_DEBUG
 static int debug_mutex_initialized = 1;
 static rb_nativethread_lock_t debug_mutex;
@@ -4271,9 +4275,12 @@ async_bug_fd(const char *mesg, int errno_arg, int fd)
 static int
 consume_communication_pipe(int fd)
 {
-#define CCP_READ_BUFF_SIZE 1024
+#if USE_EVENTFD
+    uint64_t buff[1];
+#else
     /* buffer can be shared because no one refers to them. */
-    static char buff[CCP_READ_BUFF_SIZE];
+    static char buff[1024];
+#endif
     ssize_t result;
     int ret = FALSE; /* for rb_sigwait_sleep */
 
@@ -4289,7 +4296,7 @@ consume_communication_pipe(int fd)
 	result = read(fd, buff, sizeof(buff));
 	if (result > 0) {
 	    ret = TRUE;
-	    if (result < (ssize_t)sizeof(buff)) {
+	    if (USE_EVENTFD || result < (ssize_t)sizeof(buff)) {
 		return ret;
 	    }
 	}
