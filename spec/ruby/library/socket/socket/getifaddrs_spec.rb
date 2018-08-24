@@ -1,6 +1,6 @@
 require_relative '../spec_helper'
 
-platform_is_not :"solaris2.10" do
+platform_is_not :aix, :"solaris2.10" do
 describe 'Socket.getifaddrs' do
   before do
     @ifaddrs = Socket.getifaddrs
