@@ -37,6 +37,13 @@
 #include <time.h>
 #include <signal.h>
 
+#if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
+#  define USE_EVENTFD (1)
+#  include <sys/eventfd.h>
+#else
+#  define USE_EVENTFD (0)
+#endif
+
 #if defined(SIGVTALRM) && !defined(__CYGWIN__)
 #  define USE_UBF_LIST 1
 #endif
@@ -1386,13 +1393,17 @@ static struct {
 static void
 rb_thread_wakeup_timer_thread_fd(int fd)
 {
+#if USE_EVENTFD
+    const uint64_t buff = 1;
+#else
+    const char buff = '!';
+#endif
     ssize_t result;
 
     /* already opened */
     if (fd >= 0) {
-	static const char buff[1] = {'!'};
       retry:
-	if ((result = write(fd, buff, 1)) <= 0) {
+	if ((result = write(fd, &buff, sizeof(buff))) <= 0) {
 	    int e = errno;
 	    switch (e) {
 	      case EINTR: goto retry;
@@ -1505,8 +1516,8 @@ rb_thread_wakeup_timer_thread(int sig)
     }
 }
 
-#define CLOSE_INVALIDATE(expr) \
-    close_invalidate(&expr,"close_invalidate: "#expr)
+#define CLOSE_INVALIDATE_PAIR(expr) \
+    close_invalidate_pair(expr,"close_invalidate: "#expr)
 static void
 close_invalidate(int *fdp, const char *msg)
 {
@@ -1515,6 +1526,19 @@ close_invalidate(int *fdp, const char *msg)
     *fdp = -1;
     if (close(fd) < 0) {
 	async_bug_fd(msg, errno, fd);
+    }
+}
+
+static void
+close_invalidate_pair(int fds[2], const char *msg)
+{
+    if (USE_EVENTFD && fds[0] == fds[1]) {
+        close_invalidate(&fds[0], msg);
+        fds[1] = -1;
+    }
+    else {
+        close_invalidate(&fds[0], msg);
+        close_invalidate(&fds[1], msg);
     }
 }
 
@@ -1544,6 +1568,18 @@ setup_communication_pipe_internal(int pipes[2])
         VM_ASSERT(pipes[1] >= 0);
         return 0;
     }
+
+    /*
+     * Don't bother with eventfd on ancient Linux 2.6.22..2.6.26 which were
+     * missing EFD_* flags, they can fall back to pipe
+     */
+#if USE_EVENTFD && defined(EFD_NONBLOCK) && defined(EFD_CLOEXEC)
+    pipes[0] = pipes[1] = eventfd(0, EFD_NONBLOCK|EFD_CLOEXEC);
+    if (pipes[0] >= 0) {
+        rb_update_max_fd(pipes[0]);
+        return 0;
+    }
+#endif
 
     err = rb_cloexec_pipe(pipes);
     if (err != 0) {
@@ -1612,8 +1648,7 @@ static void
 ubf_timer_invalidate(void)
 {
 #if UBF_TIMER == UBF_TIMER_PTHREAD
-    CLOSE_INVALIDATE(timer_pthread.low[0]);
-    CLOSE_INVALIDATE(timer_pthread.low[1]);
+    CLOSE_INVALIDATE_PAIR(timer_pthread.low);
 #endif
 }
 
@@ -1669,8 +1704,7 @@ rb_thread_create_timer_thread(void)
     rb_pid_t owner = signal_self_pipe.owner_process;
 
     if (owner && owner != current) {
-        CLOSE_INVALIDATE(signal_self_pipe.normal[0]);
-        CLOSE_INVALIDATE(signal_self_pipe.normal[1]);
+        CLOSE_INVALIDATE_PAIR(signal_self_pipe.normal);
         ubf_timer_invalidate();
     }
 
