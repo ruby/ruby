@@ -74,6 +74,7 @@
 #include "internal.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "hrtime.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -97,18 +98,14 @@ enum SLEEP_FLAGS {
     SLEEP_SPURIOUS_CHECK = 0x2
 };
 
-static void sleep_timespec(rb_thread_t *, struct timespec, unsigned int fl);
+static void sleep_hrtime(rb_thread_t *, rb_hrtime_t, unsigned int fl);
 static void sleep_forever(rb_thread_t *th, unsigned int fl);
 static void rb_thread_sleep_deadly_allow_spurious_wakeup(void);
 static int rb_threadptr_dead(rb_thread_t *th);
 static void rb_check_deadlock(rb_vm_t *vm);
 static int rb_threadptr_pending_interrupt_empty_p(const rb_thread_t *th);
 static const char *thread_status_name(rb_thread_t *th, int detail);
-static void timespec_add(struct timespec *, const struct timespec *);
-static void timespec_sub(struct timespec *, const struct timespec *);
-static int timespec_cmp(const struct timespec *a, const struct timespec *b);
-static int timespec_update_expire(struct timespec *, const struct timespec *);
-static void getclockofday(struct timespec *);
+static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 static int check_signals_nogvl(rb_thread_t *, int sigwait_fd);
@@ -229,40 +226,17 @@ vm_living_thread_num(const rb_vm_t *vm)
 #  endif
 #endif
 
-static struct timespec *
-timespec_for(struct timespec *ts, const struct timeval *tv)
-{
-    if (tv) {
-        ts->tv_sec = tv->tv_sec;
-        ts->tv_nsec = tv->tv_usec * 1000;
-        return ts;
-    }
-    return 0;
-}
-
-static struct timeval *
-timeval_for(struct timeval *tv, const struct timespec *ts)
-{
-    if (tv && ts) {
-        tv->tv_sec = ts->tv_sec;
-        tv->tv_usec = (int32_t)(ts->tv_nsec / 1000); /* 10**6 < 2**(32-1) */
-        return tv;
-    }
-    return 0;
-}
-
 static void
-timeout_prepare(struct timespec **tsp,
-            struct timespec *ts, struct timespec *end,
-            const struct timeval *timeout)
+timeout_prepare(rb_hrtime_t **to, rb_hrtime_t *rel, rb_hrtime_t *end,
+                const struct timeval *timeout)
 {
     if (timeout) {
-        getclockofday(end);
-        timespec_add(end, timespec_for(ts, timeout));
-        *tsp = ts;
+        *rel = rb_timeval2hrtime(timeout);
+        *end = rb_hrtime_add(rb_hrtime_now(), *rel);
+        *to = rel;
     }
     else {
-	*tsp = 0;
+        *to = 0;
     }
 }
 
@@ -596,13 +570,13 @@ rb_thread_terminate_all(void)
 	terminate_all(vm, th);
 
 	while (vm_living_thread_num(vm) > 1) {
-	    struct timespec ts = { 1, 0 };
+            rb_hrtime_t rel = RB_HRTIME_PER_SEC;
 	    /*
 	     * Thread exiting routine in thread_start_func_2 notify
 	     * me when the last sub-thread exit.
 	     */
 	    sleeping = 1;
-	    native_sleep(th, &ts);
+	    native_sleep(th, &rel);
 	    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 	    sleeping = 0;
 	}
@@ -931,7 +905,7 @@ rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 
 struct join_arg {
     rb_thread_t *target, *waiting;
-    struct timespec *limit;
+    rb_hrtime_t *limit;
 };
 
 static VALUE
@@ -960,11 +934,10 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiting;
-    struct timespec end;
+    rb_hrtime_t end;
 
     if (p->limit) {
-        getclockofday(&end);
-        timespec_add(&end, p->limit);
+        end = rb_hrtime_add(*p->limit, rb_hrtime_now());
     }
 
     while (target_th->status != THREAD_KILLED) {
@@ -976,7 +949,7 @@ thread_join_sleep(VALUE arg)
 	    th->vm->sleeper--;
 	}
 	else {
-            if (timespec_update_expire(p->limit, &end)) {
+            if (hrtime_update_expire(p->limit, end)) {
 		thread_debug("thread_join: timeout (thid: %"PRI_THREAD_ID")\n",
 			     thread_id_str(target_th));
 		return Qfalse;
@@ -993,7 +966,7 @@ thread_join_sleep(VALUE arg)
 }
 
 static VALUE
-thread_join(rb_thread_t *target_th, struct timespec *ts)
+thread_join(rb_thread_t *target_th, rb_hrtime_t *rel)
 {
     rb_thread_t *th = GET_THREAD();
     struct join_arg arg;
@@ -1007,7 +980,7 @@ thread_join(rb_thread_t *target_th, struct timespec *ts)
 
     arg.target = target_th;
     arg.waiting = th;
-    arg.limit = ts;
+    arg.limit = rel;
 
     thread_debug("thread_join (thid: %"PRI_THREAD_ID", status: %s)\n",
 		 thread_id_str(target_th), thread_status_name(target_th, TRUE));
@@ -1052,7 +1025,7 @@ thread_join(rb_thread_t *target_th, struct timespec *ts)
     return target_th->self;
 }
 
-static struct timespec *double2timespec(struct timespec *, double);
+static rb_hrtime_t *double2hrtime(rb_hrtime_t *, double);
 
 /*
  *  call-seq:
@@ -1097,8 +1070,7 @@ static VALUE
 thread_join_m(int argc, VALUE *argv, VALUE self)
 {
     VALUE limit;
-    struct timespec timespec;
-    struct timespec *ts = 0;
+    rb_hrtime_t rel, *to = 0;
 
     rb_scan_args(argc, argv, "01", &limit);
 
@@ -1109,17 +1081,14 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     switch (TYPE(limit)) {
       case T_NIL: break;
       case T_FIXNUM:
-        timespec.tv_sec = NUM2TIMET(limit);
-        if (timespec.tv_sec < 0)
-            timespec.tv_sec = 0;
-        timespec.tv_nsec = 0;
-        ts = &timespec;
+        rel = rb_sec2hrtime(NUM2TIMET(limit));
+        to = &rel;
         break;
       default:
-        ts = double2timespec(&timespec, rb_num2dbl(limit));
+        to = double2hrtime(&rel, rb_num2dbl(limit));
     }
 
-    return thread_join(rb_thread_ptr(self), ts);
+    return thread_join(rb_thread_ptr(self), to);
 }
 
 /*
@@ -1158,8 +1127,8 @@ thread_value(VALUE self)
 #define TIMESPEC_SEC_MAX TIMET_MAX
 #define TIMESPEC_SEC_MIN TIMET_MIN
 
-static struct timespec *
-double2timespec(struct timespec *ts, double d)
+static rb_hrtime_t *
+double2hrtime(rb_hrtime_t *hrt, double d)
 {
     /* assume timespec.tv_sec has same signedness as time_t */
     const double TIMESPEC_SEC_MAX_PLUS_ONE = TIMET_MAX_PLUS_ONE;
@@ -1168,18 +1137,31 @@ double2timespec(struct timespec *ts, double d)
         return NULL;
     }
     else if (d <= 0) {
-        ts->tv_sec = 0;
-        ts->tv_nsec = 0;
+        *hrt = 0;
     }
     else {
-        ts->tv_sec = (time_t)d;
-        ts->tv_nsec = (long)((d - (time_t)d) * 1e9);
-        if (ts->tv_nsec < 0) {
-            ts->tv_nsec += (long)1e9;
-            ts->tv_sec -= 1;
-        }
+        *hrt = (rb_hrtime_t)(d * (double)RB_HRTIME_PER_SEC);
     }
-    return ts;
+    return hrt;
+}
+
+static void
+getclockofday(struct timespec *ts)
+{
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+    if (clock_gettime(CLOCK_MONOTONIC, ts) == 0)
+        return;
+#endif
+    rb_timespec_now(ts);
+}
+
+rb_hrtime_t
+rb_hrtime_now(void)
+{
+    struct timespec ts;
+
+    getclockofday(&ts);
+    return rb_timespec2hrtime(&ts);
 }
 
 static void
@@ -1208,102 +1190,39 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
     th->status = prev_status;
 }
 
-static void
-getclockofday(struct timespec *ts)
-{
-#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
-    if (clock_gettime(CLOCK_MONOTONIC, ts) == 0)
-        return;
-#endif
-    rb_timespec_now(ts);
-}
-
-static void
-timespec_add(struct timespec *dst, const struct timespec *ts)
-{
-    if (TIMESPEC_SEC_MAX - ts->tv_sec < dst->tv_sec)
-        dst->tv_sec = TIMESPEC_SEC_MAX;
-    else
-        dst->tv_sec += ts->tv_sec;
-    if ((dst->tv_nsec += ts->tv_nsec) >= 1000000000) {
-	if (dst->tv_sec == TIMESPEC_SEC_MAX) {
-            dst->tv_nsec = 999999999;
-	}
-	else {
-            dst->tv_sec++;
-            dst->tv_nsec -= 1000000000;
-	}
-    }
-}
-
-static void
-timespec_sub(struct timespec *dst, const struct timespec *tv)
-{
-    dst->tv_sec -= tv->tv_sec;
-    if ((dst->tv_nsec -= tv->tv_nsec) < 0) {
-	--dst->tv_sec;
-	dst->tv_nsec += 1000000000;
-    }
-}
-
-static int
-timespec_cmp(const struct timespec *a, const struct timespec *b)
-{
-    if (a->tv_sec > b->tv_sec) {
-        return 1;
-    }
-    else if (a->tv_sec < b->tv_sec) {
-        return -1;
-    }
-    else {
-        if (a->tv_nsec > b->tv_nsec) {
-            return 1;
-        }
-        else if (a->tv_nsec < b->tv_nsec) {
-            return -1;
-        }
-        return 0;
-    }
-}
-
 /*
  * @end is the absolute time when @ts is set to expire
  * Returns true if @end has past
  * Updates @ts and returns false otherwise
  */
 static int
-timespec_update_expire(struct timespec *ts, const struct timespec *end)
+hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 {
-    struct timespec now;
+    rb_hrtime_t now = rb_hrtime_now();
 
-    getclockofday(&now);
-    if (timespec_cmp(&now, end) >= 0) return 1;
-    thread_debug("timespec_update_expire: "
-		 "%"PRI_TIMET_PREFIX"d.%.6ld > %"PRI_TIMET_PREFIX"d.%.6ld\n",
-		 (time_t)end->tv_sec, (long)end->tv_nsec,
-		 (time_t)now.tv_sec, (long)now.tv_nsec);
-    *ts = *end;
-    timespec_sub(ts, &now);
+    if (now > end) return 1;
+    thread_debug("hrtime_update_expire: "
+		 "%"PRI_64_PREFIX"u > %"PRI_64_PREFIX"u\n",
+                 end, now);
+    *timeout = end - now;
     return 0;
 }
 
 static void
-sleep_timespec(rb_thread_t *th, struct timespec ts, unsigned int fl)
+sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
 {
-    struct timespec end;
     enum rb_thread_status prev_status = th->status;
     int woke;
+    rb_hrtime_t end = rb_hrtime_add(rb_hrtime_now(), rel);
 
-    getclockofday(&end);
-    timespec_add(&end, &ts);
     th->status = THREAD_STOPPED;
     RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     while (th->status == THREAD_STOPPED) {
-	native_sleep(th, &ts);
+	native_sleep(th, &rel);
 	woke = vm_check_ints_blocking(th->ec);
 	if (woke && !(fl & SLEEP_SPURIOUS_CHECK))
 	    break;
-	if (timespec_update_expire(&ts, &end))
+	if (hrtime_update_expire(&rel, end))
 	    break;
     }
     th->status = prev_status;
@@ -1334,10 +1253,8 @@ void
 rb_thread_wait_for(struct timeval time)
 {
     rb_thread_t *th = GET_THREAD();
-    struct timespec ts;
 
-    timespec_for(&ts, &time);
-    sleep_timespec(th, ts, SLEEP_SPURIOUS_CHECK);
+    sleep_hrtime(th, rb_timeval2hrtime(&time), SLEEP_SPURIOUS_CHECK);
 }
 
 /*
@@ -3848,8 +3765,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
 #endif
 
 static int
-wait_retryable(int *result, int errnum, struct timespec *timeout,
-                const struct timespec *end)
+wait_retryable(int *result, int errnum, rb_hrtime_t *rel, rb_hrtime_t end)
 {
     if (*result < 0) {
         switch (errnum) {
@@ -3858,9 +3774,8 @@ wait_retryable(int *result, int errnum, struct timespec *timeout,
           case ERESTART:
 #endif
             *result = 0;
-            if (timeout && timespec_update_expire(timeout, end)) {
-                timeout->tv_sec = 0;
-                timeout->tv_nsec = 0;
+            if (rel && hrtime_update_expire(rel, end)) {
+                *rel = 0;
             }
             return TRUE;
         }
@@ -3868,8 +3783,8 @@ wait_retryable(int *result, int errnum, struct timespec *timeout,
     }
     else if (*result == 0) {
 	/* check for spurious wakeup */
-        if (timeout) {
-            return !timespec_update_expire(timeout, end);
+        if (rel) {
+            return !hrtime_update_expire(rel, end);
         }
         return TRUE;
     }
@@ -3906,15 +3821,15 @@ select_set_free(VALUE p)
     return Qfalse;
 }
 
-static const struct timespec *
-sigwait_timeout(rb_thread_t *th, int sigwait_fd, const struct timespec *orig,
+static const rb_hrtime_t *
+sigwait_timeout(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *orig,
                 int *drained_p)
 {
-    static const struct timespec quantum = { 0, TIME_QUANTUM_USEC * 1000 };
+    static const rb_hrtime_t quantum = TIME_QUANTUM_USEC * 1000;
 
     if (sigwait_fd >= 0 && (!ubf_threads_empty() || BUSY_WAIT_SIGNALS)) {
         *drained_p = check_signals_nogvl(th, sigwait_fd);
-        if (!orig || timespec_cmp(orig, &quantum) > 0)
+        if (!orig || *orig > quantum)
             return &quantum;
     }
 
@@ -3927,11 +3842,9 @@ do_select(VALUE p)
     struct select_set *set = (struct select_set *)p;
     int MAYBE_UNUSED(result);
     int lerrno;
-    struct timespec ts, end, *tsp;
-    const struct timespec *to;
-    struct timeval tv;
+    rb_hrtime_t *to, rel, end;
 
-    timeout_prepare(&tsp, &ts, &end, set->timeout);
+    timeout_prepare(&to, &rel, &end, set->timeout);
 #define restore_fdset(dst, src) \
     ((dst) ? rb_fd_dup(dst, src) : (void)0)
 #define do_select_update() \
@@ -3945,9 +3858,12 @@ do_select(VALUE p)
 	lerrno = 0;
 
 	BLOCKING_REGION(set->th, {
-	    to = sigwait_timeout(set->th, set->sigwait_fd, tsp, &drained);
+            const rb_hrtime_t *sto;
+            struct timeval tv;
+
+            sto = sigwait_timeout(set->th, set->sigwait_fd, to, &drained);
 	    result = native_fd_select(set->max, set->rset, set->wset, set->eset,
-				      timeval_for(&tv, to), set->th);
+				      rb_hrtime2timeval(&tv, sto), set->th);
 	    if (result < 0) lerrno = errno;
 	}, set->sigwait_fd >= 0 ? ubf_sigwait : ubf_select, set->th, FALSE);
 
@@ -3958,7 +3874,7 @@ do_select(VALUE p)
         }
 
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
-    } while (wait_retryable(&result, lerrno, tsp, &end) && do_select_update());
+    } while (wait_retryable(&result, lerrno, to, end) && do_select_update());
 
     if (result < 0) {
 	errno = lerrno;
@@ -4082,14 +3998,13 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[2];
     int result = 0, lerrno;
-    struct timespec ts, end, *tsp;
-    const struct timespec *to;
+    rb_hrtime_t *to, rel, end;
     int drained;
     rb_thread_t *th = GET_THREAD();
     nfds_t nfds;
     rb_unblock_function_t *ubf;
 
-    timeout_prepare(&tsp, &ts, &end, timeout);
+    timeout_prepare(&to, &rel, &end, timeout);
     fds[0].fd = fd;
     fds[0].events = (short)events;
     do {
@@ -4109,8 +4024,11 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
         lerrno = 0;
         BLOCKING_REGION(th, {
-            to = sigwait_timeout(th, fds[1].fd, tsp, &drained);
-            result = ppoll(fds, nfds, to, NULL);
+            const rb_hrtime_t *sto;
+            struct timespec ts;
+
+            sto = sigwait_timeout(th, fds[1].fd, to, &drained);
+            result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), NULL);
             if (result < 0) lerrno = errno;
         }, ubf, th, FALSE);
 
@@ -4124,7 +4042,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             rb_sigwait_fd_migrate(th->vm);
         }
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
-    } while (wait_retryable(&result, lerrno, tsp, &end));
+    } while (wait_retryable(&result, lerrno, to, end));
 
     if (result < 0) {
 	errno = lerrno;

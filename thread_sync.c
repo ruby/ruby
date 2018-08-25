@@ -248,8 +248,8 @@ do_mutex_lock(VALUE self, int interruptible_p)
 
 	while (mutex->th != th) {
 	    enum rb_thread_status prev_status = th->status;
-	    struct timespec *timeout = 0;
-	    struct timespec ts = { 0, 100000000 }; /* 100ms */
+	    rb_hrtime_t *timeout = 0;
+	    rb_hrtime_t rel = rb_msec2hrtime(100);
 
 	    th->status = THREAD_STOPPED_FOREVER;
 	    th->locking_mutex = self;
@@ -261,7 +261,7 @@ do_mutex_lock(VALUE self, int interruptible_p)
 	     */
 	    if ((vm_living_thread_num(th->vm) == th->vm->sleeper) &&
 		!patrol_thread) {
-		timeout = &ts;
+		timeout = &rel;
 		patrol_thread = th;
 	    }
 
@@ -458,8 +458,9 @@ rb_mutex_sleep_forever(VALUE time)
 static VALUE
 rb_mutex_wait_for(VALUE time)
 {
-    struct timespec *t = (struct timespec*)time;
-    sleep_timespec(GET_THREAD(), *t, 0); /* permit spurious check */
+    rb_hrtime_t *rel = (rb_hrtime_t *)time;
+    /* permit spurious check */
+    sleep_hrtime(GET_THREAD(), *rel, 0);
     return Qnil;
 }
 
@@ -472,16 +473,17 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     if (!NIL_P(timeout)) {
         t = rb_time_interval(timeout);
     }
+
     rb_mutex_unlock(self);
     beg = time(0);
     if (NIL_P(timeout)) {
 	rb_ensure(rb_mutex_sleep_forever, Qnil, mutex_lock_uninterruptible, self);
     }
     else {
-        struct timespec ts;
-        VALUE tsp = (VALUE)timespec_for(&ts, &t);
+        rb_hrtime_t rel = rb_timeval2hrtime(&t);
 
-        rb_ensure(rb_mutex_wait_for, tsp, mutex_lock_uninterruptible, self);
+        rb_ensure(rb_mutex_wait_for, (VALUE)&rel,
+                  mutex_lock_uninterruptible, self);
     }
     RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     end = time(0) - beg;

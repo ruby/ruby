@@ -2847,6 +2847,7 @@ thread.$(OBJEXT): {$(VPATH)}defines.h
 thread.$(OBJEXT): {$(VPATH)}encoding.h
 thread.$(OBJEXT): {$(VPATH)}eval_intern.h
 thread.$(OBJEXT): {$(VPATH)}gc.h
+thread.$(OBJEXT): {$(VPATH)}hrtime.h
 thread.$(OBJEXT): {$(VPATH)}id.h
 thread.$(OBJEXT): {$(VPATH)}intern.h
 thread.$(OBJEXT): {$(VPATH)}internal.h

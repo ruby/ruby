@@ -276,11 +276,16 @@ rb_w32_Sleep(unsigned long msec)
     return ret;
 }
 
-static void
-native_sleep(rb_thread_t *th, struct timespec *ts)
+static DWORD
+hrtime2msec(rb_hrtime_t hrt)
 {
-    const volatile DWORD msec = (ts) ?
-	(DWORD)(ts->tv_sec * 1000 + ts->tv_nsec / 1000000) : INFINITE;
+    return (DWORD)hrt / (DWORD)RB_HRTIME_PER_MSEC;
+}
+
+static void
+native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
+{
+    const volatile DWORD msec = rel ? hrtime2msec(*rel) : INFINITE;
 
     GVL_UNLOCK_BEGIN(th);
     {
