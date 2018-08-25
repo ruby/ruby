@@ -8,11 +8,28 @@
 
 /*
  * Hi-res monotonic clock.  It is currently nsec resolution, which has over
- * 500 years of range.
+ * 500 years of range (unsigned).
  *
  * TBD: Is nsec even necessary? usec resolution seems enough for userspace
  * and it'll be suitable for use with devices lasting over 500,000 years
  * (maybe some devices designed for long-term space travel)
+ *
+ * Current API:
+ *
+ *	* rb_hrtime_now      - current clock value (monotonic if available)
+ *	* rb_hrtime_mul      - multiply with overflow check
+ *	* rb_hrtime_add      - add with overflow check
+ *	* rb_timeval2hrtime  - convert from timeval
+ *	* rb_timespec2hrtime - convert from timespec
+ *	* rb_msec2hrtime     - convert from millisecond
+ *	* rb_sec2hrtime      - convert from time_t (seconds)
+ *	* rb_hrtime2timeval  - convert to timeval
+ *	* rb_hrtime2timespec - convert to timespec
+ *
+ * Note: no conversion to milliseconds is provided here because different
+ * functions have different limits (e.g. epoll_wait vs w32_wait_events).
+ * So we provide RB_HRTIME_PER_MSEC and similar macros for implementing
+ * this for each use case.
  */
 #define RB_HRTIME_PER_USEC ((rb_hrtime_t)1000)
 #define RB_HRTIME_PER_MSEC (RB_HRTIME_PER_USEC * (rb_hrtime_t)1000)
@@ -30,8 +47,13 @@ typedef uint64_t rb_hrtime_t;
 #endif
 
 /* thread.c */
+/* returns the value of the monotonic clock (if available) */
 rb_hrtime_t rb_hrtime_now(void);
 
+/*
+ * multiply @a and @b with overflow check and return the
+ * (clamped to RB_HRTIME_MAX) result.
+ */
 static inline rb_hrtime_t
 rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
 {
@@ -48,6 +70,10 @@ rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
     return c;
 }
 
+/*
+ * add @a and @b with overflow check and return the
+ * (clamped to RB_HRTIME_MAX) result.
+ */
 static inline rb_hrtime_t
 rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
 {
@@ -64,6 +90,9 @@ rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
     return c;
 }
 
+/*
+ * convert a timeval struct to rb_hrtime_t, clamping at RB_HRTIME_MAX
+ */
 static inline rb_hrtime_t
 rb_timeval2hrtime(const struct timeval *tv)
 {
@@ -73,6 +102,9 @@ rb_timeval2hrtime(const struct timeval *tv)
     return rb_hrtime_add(s, u);
 }
 
+/*
+ * convert a timespec struct to rb_hrtime_t, clamping at RB_HRTIME_MAX
+ */
 static inline rb_hrtime_t
 rb_timespec2hrtime(const struct timespec *ts)
 {
@@ -81,12 +113,19 @@ rb_timespec2hrtime(const struct timespec *ts)
     return rb_hrtime_add(s, (rb_hrtime_t)ts->tv_nsec);
 }
 
+/*
+ * convert a millisecond value to rb_hrtime_t, clamping at RB_HRTIME_MAX
+ */
 static inline rb_hrtime_t
 rb_msec2hrtime(unsigned long msec)
 {
     return rb_hrtime_mul((rb_hrtime_t)msec, RB_HRTIME_PER_MSEC);
 }
 
+/*
+ * convert a time_t value to rb_hrtime_t, clamping at RB_HRTIME_MAX
+ * Negative values will be clamped at 0.
+ */
 static inline rb_hrtime_t
 rb_sec2hrtime(time_t sec)
 {
@@ -95,6 +134,10 @@ rb_sec2hrtime(time_t sec)
     return rb_hrtime_mul((rb_hrtime_t)sec, RB_HRTIME_PER_SEC);
 }
 
+/*
+ * convert a rb_hrtime_t value to a timespec, suitable for calling
+ * functions like ppoll(2) or kevent(2)
+ */
 static inline struct timespec *
 rb_hrtime2timespec(struct timespec *ts, const rb_hrtime_t *hrt)
 {
@@ -106,6 +149,10 @@ rb_hrtime2timespec(struct timespec *ts, const rb_hrtime_t *hrt)
     return 0;
 }
 
+/*
+ * convert a rb_hrtime_t value to a timeval, suitable for calling
+ * functions like select(2)
+ */
 static inline struct timeval *
 rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
 {
