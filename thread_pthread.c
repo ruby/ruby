@@ -123,9 +123,9 @@ static void clear_thread_cache_altstack(void);
 static void ubf_wakeup_all_threads(void);
 static int ubf_threads_empty(void);
 static int native_cond_timedwait(rb_nativethread_cond_t *, pthread_mutex_t *,
-                                 const struct timespec *);
-static const struct timespec *sigwait_timeout(rb_thread_t *, int sigwait_fd,
-                                              const struct timespec *,
+                                 const rb_hrtime_t *abs);
+static const rb_hrtime_t *sigwait_timeout(rb_thread_t *, int sigwait_fd,
+                                              const rb_hrtime_t *,
                                               int *drained_p);
 static void ubf_timer_disarm(void);
 static void threadptr_trap_interrupt(rb_thread_t *);
@@ -159,8 +159,7 @@ static const void *const condattr_monotonic = NULL;
 #define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
 #define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
 
-static struct timespec native_cond_timeout(rb_nativethread_cond_t *,
-                                           struct timespec rel);
+static rb_hrtime_t native_cond_timeout(rb_nativethread_cond_t *, rb_hrtime_t);
 
 /*
  * Designate the next gvl.timer thread, favor the last thread in
@@ -186,19 +185,17 @@ designate_timer_thread(rb_vm_t *vm)
 static void
 do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
 {
-    static struct timespec ts;
+    static rb_hrtime_t abs;
     native_thread_data_t *nd = &th->native_thread_data;
 
     /* take over wakeups from UBF_TIMER */
     ubf_timer_disarm();
 
     if (vm->gvl.timer_err == ETIMEDOUT) {
-        ts.tv_sec = 0;
-        ts.tv_nsec = TIME_QUANTUM_NSEC;
-        ts = native_cond_timeout(&nd->cond.gvlq, ts);
+        abs = native_cond_timeout(&nd->cond.gvlq, TIME_QUANTUM_NSEC);
     }
     vm->gvl.timer = th;
-    vm->gvl.timer_err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &ts);
+    vm->gvl.timer_err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &abs);
     vm->gvl.timer = 0;
 
     ubf_wakeup_all_threads();
@@ -499,9 +496,11 @@ rb_native_cond_wait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex)
 }
 
 static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *ts)
+native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex,
+                      const rb_hrtime_t *abs)
 {
     int r;
+    struct timespec ts;
 
     /*
      * An old Linux may return EINTR. Even though POSIX says
@@ -510,7 +509,7 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
      * Let's hide it from arch generic code.
      */
     do {
-	r = pthread_cond_timedwait(cond, mutex, ts);
+	r = pthread_cond_timedwait(cond, mutex, rb_hrtime2timespec(&ts, abs));
     } while (r == EINTR);
 
     if (r != 0 && r != ETIMEDOUT) {
@@ -520,20 +519,18 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, cons
     return r;
 }
 
-static struct timespec
-native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
+static rb_hrtime_t
+native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
 {
-    struct timespec abs;
-
     if (condattr_monotonic) {
-        getclockofday(&abs);
+        return rb_hrtime_add(rb_hrtime_now(), rel);
     }
     else {
-        rb_timespec_now(&abs);
-    }
-    timespec_add(&abs, &timeout_rel);
+        struct timespec ts;
 
-    return abs;
+        rb_timespec_now(&ts);
+        return rb_hrtime_add(rb_timespec2hrtime(&ts), rel);
+    }
 }
 
 #define native_cleanup_push pthread_cleanup_push
@@ -1056,13 +1053,13 @@ thread_cache_reset(void)
  * worst case network latency across the globe) without wasting memory
  */
 #ifndef THREAD_CACHE_TIME
-#  define THREAD_CACHE_TIME 3
+#  define THREAD_CACHE_TIME ((rb_hrtime_t)3 * RB_HRTIME_PER_SEC)
 #endif
 
 static rb_thread_t *
 register_cached_thread_and_wait(void *altstack)
 {
-    struct timespec end = { THREAD_CACHE_TIME, 0 };
+    rb_hrtime_t end = THREAD_CACHE_TIME;
     struct cached_thread_entry entry;
 
     rb_native_cond_initialize(&entry.cond);
@@ -1218,28 +1215,20 @@ ubf_pthread_cond_signal(void *ptr)
 }
 
 static void
-native_cond_sleep(rb_thread_t *th, struct timespec *timeout_rel)
+native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
-    struct timespec timeout;
     rb_nativethread_lock_t *lock = &th->interrupt_lock;
     rb_nativethread_cond_t *cond = &th->native_thread_data.cond.intr;
 
-    if (timeout_rel) {
-	/* Solaris cond_timedwait() return EINVAL if an argument is greater than
-	 * current_time + 100,000,000.  So cut up to 100,000,000.  This is
-	 * considered as a kind of spurious wakeup.  The caller to native_sleep
-	 * should care about spurious wakeup.
-	 *
-	 * See also [Bug #1341] [ruby-core:29702]
-	 * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
-	 */
-	if (timeout_rel->tv_sec > 100000000) {
-	    timeout_rel->tv_sec = 100000000;
-	    timeout_rel->tv_nsec = 0;
-	}
-
-	timeout = native_cond_timeout(cond, *timeout_rel);
-    }
+    /* Solaris cond_timedwait() return EINVAL if an argument is greater than
+     * current_time + 100,000,000.  So cut up to 100,000,000.  This is
+     * considered as a kind of spurious wakeup.  The caller to native_sleep
+     * should care about spurious wakeup.
+     *
+     * See also [Bug #1341] [ruby-core:29702]
+     * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
+     */
+    const rb_hrtime_t max = (rb_hrtime_t)100000000 * RB_HRTIME_PER_SEC;
 
     GVL_UNLOCK_BEGIN(th);
     {
@@ -1252,10 +1241,19 @@ native_cond_sleep(rb_thread_t *th, struct timespec *timeout_rel)
 	    thread_debug("native_sleep: interrupted before sleep\n");
 	}
 	else {
-	    if (!timeout_rel)
+	    if (!rel) {
 		rb_native_cond_wait(cond, lock);
-	    else
-		native_cond_timedwait(cond, lock, &timeout);
+	    }
+            else {
+                rb_hrtime_t end;
+
+                if (*rel > max) {
+                    *rel = max;
+                }
+
+                end = native_cond_timeout(cond, *rel);
+		native_cond_timedwait(cond, lock, &end);
+            }
 	}
 	th->unblock.func = 0;
 
@@ -1970,15 +1968,12 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        struct timespec end, diff;
-        const struct timespec *to;
+        rb_hrtime_t rel, end;
         int n = 0;
 
         if (ts) {
-            getclockofday(&end);
-            timespec_add(&end, ts);
-            diff = *ts;
-            ts = &diff;
+            rel = rb_timespec2hrtime(ts);
+            end = rb_hrtime_add(rb_hrtime_now(), rel);
         }
         /*
          * tricky: this needs to return on spurious wakeup (no auto-retry).
@@ -1986,21 +1981,23 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
          * wakeups, so we care about the result of consume_communication_pipe
          */
         for (;;) {
-            to = sigwait_timeout(th, sigwait_fd, ts, &n);
+            const rb_hrtime_t *sto = sigwait_timeout(th, sigwait_fd, &rel, &n);
+            struct timespec tmp;
+
             if (n) return;
-            n = ppoll(&pfd, 1, to, 0);
+            n = ppoll(&pfd, 1, rb_hrtime2timespec(&tmp, sto), 0);
             if (check_signals_nogvl(th, sigwait_fd))
                 return;
             if (n || (th && RUBY_VM_INTERRUPTED(th->ec)))
                 return;
-            if (ts && timespec_update_expire(&diff, &end))
+            if (ts && hrtime_update_expire(&rel, end))
                 return;
         }
     }
 }
 
 static void
-native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
+native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     int sigwait_fd = rb_sigwait_fd_get(th);
 
@@ -2012,7 +2009,8 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
         GVL_UNLOCK_BEGIN(th);
 
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
-            rb_sigwait_sleep(th, sigwait_fd, timeout_rel);
+            struct timespec ts;
+            rb_sigwait_sleep(th, sigwait_fd, rb_hrtime2timespec(&ts, rel));
         }
         else {
             check_signals_nogvl(th, sigwait_fd);
@@ -2023,7 +2021,7 @@ native_sleep(rb_thread_t *th, struct timespec *timeout_rel)
         rb_sigwait_fd_migrate(th->vm);
     }
     else {
-        native_cond_sleep(th, timeout_rel);
+        native_cond_sleep(th, rel);
     }
 }
 
