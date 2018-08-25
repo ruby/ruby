@@ -953,6 +953,7 @@ module DRb
     # returned by #open or by #accept, then it closes this particular
     # client-server session.
     def close
+      shutdown
       if @socket
         @socket.close
         @socket = nil
