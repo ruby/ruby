@@ -1911,7 +1911,7 @@ rb_sigwait_fd_get(const rb_thread_t *th)
             return signal_self_pipe.normal[0];
         }
     }
-    return -1; /* avoid thundering herd */
+    return -1; /* avoid thundering herd and work stealing/starvation */
 }
 
 void
@@ -1996,6 +1996,43 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
     }
 }
 
+/*
+ * This function does not exclusively acquire sigwait_fd, so it
+ * cannot safely read from it.  However, it can be woken up in
+ * 4 ways:
+ *
+ * 1) ubf_select (from another thread)
+ * 2) rb_thread_wakeup_timer_thread (from signal handler)
+ * 3) any unmasked signal hitting the process
+ * 4) periodic ubf timer wakeups (after 3)
+ */
+static void
+native_ppoll_sleep(rb_thread_t *th, rb_hrtime_t *rel)
+{
+    rb_native_mutex_lock(&th->interrupt_lock);
+    th->unblock.func = ubf_select;
+    th->unblock.arg = th;
+    rb_native_mutex_unlock(&th->interrupt_lock);
+
+    GVL_UNLOCK_BEGIN(th);
+    if (!RUBY_VM_INTERRUPTED(th->ec)) {
+        struct pollfd pfd;
+        struct timespec ts;
+
+        pfd.fd = signal_self_pipe.normal[0]; /* sigwait_fd */
+        pfd.events = POLLIN;
+        (void)ppoll(&pfd, 1, rb_hrtime2timespec(&ts, rel), 0);
+
+        /*
+         * do not read the fd, here, let uplevel callers or other threads
+         * that, otherwise we may steal and starve other threads
+         */
+    }
+    unblock_function_clear(th);
+    unregister_ubf_list(th);
+    GVL_UNLOCK_END(th);
+}
+
 static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
@@ -2019,6 +2056,9 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         GVL_UNLOCK_END(th);
         rb_sigwait_fd_put(th, sigwait_fd);
         rb_sigwait_fd_migrate(th->vm);
+    }
+    else if (th == th->vm->main_thread) { /* always able to handle signals */
+        native_ppoll_sleep(th, rel);
     }
     else {
         native_cond_sleep(th, rel);
