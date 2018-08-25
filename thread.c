@@ -1155,6 +1155,11 @@ getclockofday(struct timespec *ts)
     rb_timespec_now(ts);
 }
 
+/*
+ * Don't inline this, since library call is already time consuming
+ * and we don't want "struct timespec" on stack too long for GC
+ */
+NOINLINE(rb_hrtime_t rb_hrtime_now(void));
 rb_hrtime_t
 rb_hrtime_now(void)
 {
