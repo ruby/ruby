@@ -961,14 +961,8 @@ module DRb
     end
 
     def close_shutdown_pipe
-      if @shutdown_pipe_r && !@shutdown_pipe_r.closed?
-        @shutdown_pipe_r.close
-        @shutdown_pipe_r = nil
-      end
-      if @shutdown_pipe_w && !@shutdown_pipe_w.closed?
-        @shutdown_pipe_w.close
-        @shutdown_pipe_w = nil
-      end
+      @shutdown_pipe_w.close
+      @shutdown_pipe_r.close
     end
     private :close_shutdown_pipe
 
@@ -1001,7 +995,7 @@ module DRb
 
     # Graceful shutdown
     def shutdown
-      @shutdown_pipe_w.close if @shutdown_pipe_w && !@shutdown_pipe_w.closed?
+      @shutdown_pipe_w.close
     end
 
     # Check to see if this connection is alive.
