@@ -1196,6 +1196,14 @@ sleep_forever(rb_thread_t *th, unsigned int fl)
 }
 
 /*
+ * at least gcc 7.2 and 7.3 complains about "rb_hrtime_t end"
+ * being uninitialized, maybe other versions, too.
+ */
+COMPILER_WARNING_PUSH
+#if defined(__GNUC__) && __GNUC__ == 7 && __GNUC_MINOR__ <= 3
+COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
+#endif
+/*
  * @end is the absolute time when @ts is set to expire
  * Returns true if @end has past
  * Updates @ts and returns false otherwise
@@ -1212,6 +1220,7 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
     *timeout = end - now;
     return 0;
 }
+COMPILER_WARNING_POP
 
 static void
 sleep_hrtime(rb_thread_t *th, rb_hrtime_t rel, unsigned int fl)
