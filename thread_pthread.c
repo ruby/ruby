@@ -1315,8 +1315,7 @@ static void
 ubf_wakeup_thread(rb_thread_t *th)
 {
     thread_debug("thread_wait_queue_wakeup (%"PRI_THREAD_ID")\n", thread_id_str(th));
-    if (th)
-	pthread_kill(th->thread_id, SIGVTALRM);
+    pthread_kill(th->thread_id, SIGVTALRM);
 }
 
 static void
