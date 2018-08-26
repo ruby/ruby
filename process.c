@@ -995,8 +995,6 @@ waitpid_notify(struct waitpid_state *w, rb_pid_t ret)
     }
 }
 
-#  define waitpid_sys(pid,status,options) do_waitpid((pid),(status),(options))
-
 extern volatile unsigned int ruby_nocldwait; /* signal.c */
 /* called by timer thread or thread which acquired sigwait_fd */
 static void
@@ -1005,12 +1003,7 @@ waitpid_each(struct list_head *head)
     struct waitpid_state *w = 0, *next;
 
     list_for_each_safe(head, w, next, wnode) {
-        rb_pid_t ret;
-
-        if (w->ec)
-            ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
-        else
-            ret = waitpid_sys(w->pid, &w->status, w->options | WNOHANG);
+        rb_pid_t ret = do_waitpid(w->pid, &w->status, w->options | WNOHANG);
 
         if (!ret) continue;
         if (ret == -1) w->errnum = errno;
