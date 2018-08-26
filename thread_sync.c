@@ -12,8 +12,8 @@ struct sync_waiter {
 
 #define MUTEX_ALLOW_TRAP FL_USER1
 
-static int
-wakeup_one(struct list_head *head)
+static void
+sync_wakeup(struct list_head *head, long max)
 {
     struct sync_waiter *cur = 0, *next;
 
@@ -22,24 +22,21 @@ wakeup_one(struct list_head *head)
 	if (cur->th->status != THREAD_KILLED) {
 	    rb_threadptr_interrupt(cur->th);
 	    cur->th->status = THREAD_RUNNABLE;
-	    return TRUE;
+	    if (--max == 0) return;
 	}
     }
-    return FALSE;
+}
+
+static void
+wakeup_one(struct list_head *head)
+{
+    sync_wakeup(head, 1);
 }
 
 static void
 wakeup_all(struct list_head *head)
 {
-    struct sync_waiter *cur = 0, *next;
-
-    list_for_each_safe(head, cur, next, node) {
-	list_del_init(&cur->node);
-	if (cur->th->status != THREAD_KILLED) {
-	    rb_threadptr_interrupt(cur->th);
-	    cur->th->status = THREAD_RUNNABLE;
-	}
-    }
+    sync_wakeup(head, LONG_MAX);
 }
 
 /* Mutex */
@@ -1133,9 +1130,7 @@ rb_szqueue_max_set(VALUE self, VALUE vmax)
 	diff = max - sq->max;
     }
     sq->max = max;
-    while (diff-- > 0 && wakeup_one(szqueue_pushq(sq))) {
-	/* keep waking more up */
-    }
+    sync_wakeup(szqueue_pushq(sq), diff);
     return vmax;
 }
 
