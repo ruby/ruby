@@ -142,7 +142,7 @@ static inline struct timespec *
 rb_hrtime2timespec(struct timespec *ts, const rb_hrtime_t *hrt)
 {
     if (hrt) {
-        ts->tv_sec = *hrt / RB_HRTIME_PER_SEC;
+        ts->tv_sec = (time_t)(*hrt / RB_HRTIME_PER_SEC);
         ts->tv_nsec = (int32_t)(*hrt % RB_HRTIME_PER_SEC);
         return ts;
     }
@@ -157,7 +157,7 @@ static inline struct timeval *
 rb_hrtime2timeval(struct timeval *tv, const rb_hrtime_t *hrt)
 {
     if (hrt) {
-        tv->tv_sec = *hrt / RB_HRTIME_PER_SEC;
+        tv->tv_sec = (time_t)*hrt / RB_HRTIME_PER_SEC;
         tv->tv_usec = (int32_t)((*hrt % RB_HRTIME_PER_SEC)/RB_HRTIME_PER_USEC);
 
         return tv;
