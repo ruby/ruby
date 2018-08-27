@@ -124,10 +124,12 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRI_SHORT_PREFIX "h"
 #endif
 
+#ifndef PRI_64_PREFIX
 #if SIZEOF_LONG == 8
 #define PRI_64_PREFIX PRI_LONG_PREFIX
 #elif SIZEOF_LONG_LONG == 8
 #define PRI_64_PREFIX PRI_LL_PREFIX
+#endif
 #endif
 
 #define RUBY_PRI_VALUE_MARK "\v"
