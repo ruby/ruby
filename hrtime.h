@@ -8,7 +8,8 @@
 
 /*
  * Hi-res monotonic clock.  It is currently nsec resolution, which has over
- * 500 years of range (unsigned).
+ * 500 years of range (with an unsigned 64-bit integer).  Developers
+ * targeting small systems may try 32-bit and low-resolution (milliseconds).
  *
  * TBD: Is nsec even necessary? usec resolution seems enough for userspace
  * and it'll be suitable for use with devices lasting over 500,000 years
