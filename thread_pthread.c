@@ -134,6 +134,13 @@ static void threadptr_trap_interrupt(rb_thread_t *);
 
 /* for testing, and in case we come across a platform w/o pipes: */
 #define BUSY_WAIT_SIGNALS (0)
+
+/*
+ * sigwait_th is the thread which owns sigwait_fd and sleeps on it
+ * (using ppoll).  MJIT worker can be sigwait_th==0, so we initialize
+ * it to THREAD_INVALID at startup and fork time.  It is the ONLY thread
+ * allowed to read from sigwait_fd, otherwise starvation can occur.
+ */
 #define THREAD_INVALID ((const rb_thread_t *)-1)
 static const rb_thread_t *sigwait_th;
 
@@ -1380,7 +1387,7 @@ static int ubf_threads_empty(void) { return 1; }
 
 static struct {
     /* pipes are closed in forked children when owner_process does not match */
-    int normal[2];
+    int normal[2]; /* [0] == sigwait_fd */
 
     /* volatile for signal handler use: */
     volatile rb_pid_t owner_process;
