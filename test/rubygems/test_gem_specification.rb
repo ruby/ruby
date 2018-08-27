@@ -1184,7 +1184,7 @@ dependencies: []
     gem = 'mingw'
     v   = '1.1.1'
     platforms = ['x86-mingw32', 'x64-mingw32']
-    
+
     #create specs
     platforms.each do |plat|
       spec = Gem::Specification.new(gem, v) { |s| s.platform = plat }

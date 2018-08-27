@@ -245,13 +245,13 @@ open-ended dependency on #{dep} is not recommended
 
   def validate_self_inclusion_in_files_list
     return unless files.include?(file_name)
-    
+
     error "#{full_name} contains itself (#{file_name}), check your files list"
   end
 
   def validate_specification_version
     return if specification_version.is_a?(Integer)
-    
+
     error 'specification_version must be an Integer (did you mean version?)'
   end
 
