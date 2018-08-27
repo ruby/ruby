@@ -660,7 +660,7 @@ class TestRDocContext < XrefTestCase
       'instance' => {
         :private   => [],
         :protected => [],
-        :public    => [@c1_m],
+        :public    => [@c1_plus, @c1_m],
       },
       'class' => {
         :private   => [],

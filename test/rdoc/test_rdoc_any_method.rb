@@ -85,6 +85,33 @@ method(a, b) { |c, d| ... }
     assert_equal expected, @c2_a.markup_code
   end
 
+  def test_markup_code_with_line_numbers
+    position_comment = "# File #{@file_name}, line 1"
+    tokens = [
+      { :line_no => 1, :char_no => 0, :kind => :on_comment, :text => position_comment },
+      { :line_no => 1, :char_no => position_comment.size, :kind => :on_nl, :text => "\n" },
+      { :line_no => 2, :char_no => 0, :kind => :on_const, :text => 'A' },
+      { :line_no => 2, :char_no => 1, :kind => :on_nl, :text => "\n" },
+      { :line_no => 3, :char_no => 0, :kind => :on_const, :text => 'B' }
+    ]
+
+    @c2_a.collect_tokens
+    @c2_a.add_tokens(*tokens)
+
+    assert_equal <<-EXPECTED.chomp, @c2_a.markup_code
+<span class="ruby-comment"># File xref_data.rb, line 1</span>
+<span class="ruby-constant">A</span>
+<span class="ruby-constant">B</span>
+    EXPECTED
+
+    @options.line_numbers = true
+    assert_equal <<-EXPECTED.chomp, @c2_a.markup_code
+  <span class="ruby-comment"># File xref_data.rb</span>
+<span class="line-num">1</span> <span class="ruby-constant">A</span>
+<span class="line-num">2</span> <span class="ruby-constant">B</span>
+    EXPECTED
+  end
+
   def test_markup_code_empty
     assert_equal '', @c2_a.markup_code
   end
@@ -165,7 +192,7 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_load_class_method
-    class_method = Marshal.load Marshal.dump(@c1.method_list.first)
+    class_method = Marshal.load Marshal.dump(@c1.find_class_method_named 'm')
 
     assert_equal 'C1::m', class_method.full_name
     assert_equal 'C1',    class_method.parent_name
@@ -174,7 +201,7 @@ method(a, b) { |c, d| ... }
   end
 
   def test_marshal_load_instance_method
-    instance_method = Marshal.load Marshal.dump(@c1.method_list.last)
+    instance_method = Marshal.load Marshal.dump(@c1.find_instance_method_named 'm')
 
     assert_equal 'C1#m',  instance_method.full_name
     assert_equal 'C1',    instance_method.parent_name

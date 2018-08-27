@@ -180,12 +180,19 @@ class RDoc::TomDoc < RDoc::Markup::Parser
 
       case type
       when :TEXT then
-        @section = 'Returns' if data =~ /\AReturns/
+        @section = 'Returns' if data =~ /\A(Returns|Raises)/
 
         paragraph << data
       when :NEWLINE then
         if :TEXT == peek_token[0] then
-          paragraph << ' '
+          # Lines beginning with 'Raises' in the Returns section should not be
+          # treated as multiline text
+          if 'Returns' == @section and
+            peek_token[1].start_with?('Raises') then
+            break
+          else
+            paragraph << ' '
+          end
         else
           break
         end
@@ -255,4 +262,3 @@ class RDoc::TomDoc < RDoc::Markup::Parser
   end
 
 end
-

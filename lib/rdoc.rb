@@ -62,10 +62,7 @@ module RDoc
 
   class Error < RuntimeError; end
 
-  ##
-  # RDoc version you are using
-
-  VERSION = '6.0.4'
+  require 'rdoc/version'
 
   ##
   # Method visibilities
@@ -146,7 +143,6 @@ module RDoc
 
   autoload :KNOWN_CLASSES,  'rdoc/known_classes'
 
-  autoload :RipperStateLex, 'rdoc/parser/ripper_state_lex'
   autoload :TokenStream,    'rdoc/token_stream'
 
   autoload :Comment,        'rdoc/comment'

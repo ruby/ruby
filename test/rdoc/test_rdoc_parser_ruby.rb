@@ -73,7 +73,7 @@ class C; end
 
     comment = parser.collect_first_comment
 
-    assert_equal RDoc::Comment.new("=begin\nfirst\n=end\n", @top_level), comment
+    assert_equal RDoc::Comment.new("first\n", @top_level), comment
   end
 
   def test_get_class_or_module
@@ -1313,8 +1313,16 @@ EOF
       { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" },
       { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => '' }
     ]
+    parsed_stream = foo.token_stream.map { |t|
+      {
+        :line_no => t[:line_no],
+        :char_no => t[:char_no],
+        :kind => t[:kind],
+        :text => t[:text]
+      }
+    }
 
-    assert_equal stream, foo.token_stream
+    assert_equal stream, parsed_stream
   end
 
   def test_parse_comment_method_args
@@ -2308,6 +2316,31 @@ end
     assert_equal 2, methods.length
     assert_equal 'C#foo', methods[0].full_name
     assert_equal 'C#bar', methods[1].full_name
+  end
+
+  def test_parse_statements_postfix_if_unless_with_expr_mid
+    util_parser <<-CODE
+class A
+  class B
+    def foo
+      return if nil
+    end
+  end
+
+  class C
+  end
+end
+    CODE
+
+    @parser.parse_statements @top_level, RDoc::Parser::Ruby::NORMAL, nil
+
+    a = @top_level.classes.first
+    assert_equal 'A', a.full_name, 'class A'
+    assert_equal 2, a.classes.length
+    b = a.classes[0]
+    assert_equal 'A::B', b.full_name, 'class A::B'
+    c = a.classes[1]
+    assert_equal 'A::C', c.full_name, 'class A::C'
   end
 
   def test_parse_statements_class_nested
@@ -3349,11 +3382,11 @@ end
 
     foo = @top_level.classes.first
 
-    assert_equal "=begin rdoc\nFoo comment\n=end", foo.comment.text
+    assert_equal 'Foo comment', foo.comment.text
 
     m = foo.method_list.first
 
-    assert_equal "=begin\nm comment\n=end", m.comment.text
+    assert_equal 'm comment', m.comment.text
   end
 
   def test_scan_block_comment_nested # Issue #41
@@ -3375,7 +3408,7 @@ end
     foo = @top_level.modules.first
 
     assert_equal 'Foo', foo.full_name
-    assert_equal "=begin rdoc\nfindmeindoc\n=end", foo.comment.text
+    assert_equal 'findmeindoc', foo.comment.text
 
     bar = foo.classes.first
 
@@ -3386,9 +3419,10 @@ end
   def test_scan_block_comment_notflush
   ##
   #
-  # The previous test assumes that between the =begin/=end blocs that there is
-  # only one line, or minima formatting directives. This test tests for those
-  # who use the =begin bloc with longer / more advanced formatting within.
+  # The previous test assumes that between the =begin/=end blocks that there
+  # is only one line, or minima formatting directives. This test tests for
+  # those who use the =begin bloc with longer / more advanced formatting
+  # within.
   #
   ##
     content = <<-CONTENT
@@ -3422,12 +3456,12 @@ end
 
     foo = @top_level.classes.first
 
-    assert_equal "=begin rdoc\n\n= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word\n\n=end",
+    assert_equal "= DESCRIPTION\n\nThis is a simple test class\n\n= RUMPUS\n\nIs a silly word",
       foo.comment.text
 
     m = foo.method_list.first
 
-    assert_equal "=begin rdoc\nA nice girl\n=end", m.comment.text
+    assert_equal 'A nice girl', m.comment.text
   end
 
   def test_scan_class_nested_nodoc
@@ -4016,6 +4050,157 @@ end
     visible = visible.map { |mod| mod.full_name }
 
     assert_equal ['A', 'B', 'B::C'], visible
+  end
+
+  def test_parse_include_by_dynamic_definition
+    util_parser <<-CLASS
+module A
+  class B
+    include(Module.new do
+      def e(m)
+      end
+    end)
+  end
+
+  class C
+  end
+
+  class D
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_class_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    a_c = a.find_class_named 'C'
+    assert_equal 'A::C', a_c.full_name
+    a_d = a.find_class_named 'D'
+    assert_equal 'A::D', a_d.full_name
+  end
+
+  def test_parse_include_by_dynamic_definition_without_paren
+    util_parser <<-CLASS
+module A
+  class B
+    include(Module.new do
+      def e m 
+      end
+    end)
+  end
+
+  class C
+  end
+
+  class D
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_class_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    a_c = a.find_class_named 'C'
+    assert_equal 'A::C', a_c.full_name
+    a_d = a.find_class_named 'D'
+    assert_equal 'A::D', a_d.full_name
+  end
+
+  def test_parse_include_by_dynamic_definition_via_variable
+    util_parser <<-CLASS
+module A
+  class B
+    m = Module.new do
+      def e(m)
+      end
+    end
+    include m
+  end
+
+  class C
+  end
+
+  class D
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_class_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    a_c = a.find_class_named 'C'
+    assert_equal 'A::C', a_c.full_name
+    a_d = a.find_class_named 'D'
+    assert_equal 'A::D', a_d.full_name
+  end
+
+  def test_parse_include_by_dynamic_definition_with_brace
+    util_parser <<-CLASS
+module A
+  class B
+    extend(e {
+      def f(g)
+      end
+    })
+  end
+
+  class C
+  end
+
+  class D
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_class_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    a_c = a.find_class_named 'C'
+    assert_equal 'A::C', a_c.full_name
+    a_d = a.find_class_named 'D'
+    assert_equal 'A::D', a_d.full_name
+  end
+
+  def test_parse_include_by_dynamic_definition_directly
+    util_parser <<-CLASS
+module A
+  class B
+    include Module.new do
+      def e m
+      end
+    end
+  end
+
+  class C
+  end
+
+  class D
+  end
+end
+    CLASS
+
+    @parser.scan
+
+    a = @store.find_module_named 'A'
+    assert_equal 'A', a.full_name
+    a_b = a.find_class_named 'B'
+    assert_equal 'A::B', a_b.full_name
+    a_c = a.find_class_named 'C'
+    assert_equal 'A::C', a_c.full_name
+    a_d = a.find_class_named 'D'
+    assert_equal 'A::D', a_d.full_name
   end
 
 end

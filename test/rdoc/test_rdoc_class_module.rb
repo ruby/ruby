@@ -91,6 +91,7 @@ class TestRDocClassModule < XrefTestCase
 
     assert @c1.document_self_or_methods
 
+    @c1_plus.document_self = false
     @c1_m.document_self = false
 
     assert @c1.document_self_or_methods

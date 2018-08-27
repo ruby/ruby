@@ -141,6 +141,7 @@ $TOKEN_DEBUG ||= nil
 # standard rdocable item following it.
 
 require 'ripper'
+require_relative 'ripper_state_lex'
 
 class RDoc::Parser::Ruby < RDoc::Parser
 
@@ -178,7 +179,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     @size = 0
     @token_listeners = nil
     content = RDoc::Encoding.remove_magic_comment content
-    @scanner = RDoc::RipperStateLex.parse(content)
+    @scanner = RDoc::Parser::RipperStateLex.parse(content)
     @content = content
     @scanner_point = 0
     @prev_seek = nil
@@ -249,10 +250,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
     tk = get_tk
 
     while tk && (:on_comment == tk[:kind] or :on_embdoc == tk[:kind])
-      if first_line and tk[:text] =~ /\A#!/ then
+      comment_body = retrieve_comment_body(tk)
+      if first_line and comment_body =~ /\A#!/ then
         skip_tkspace
         tk = get_tk
-      elsif first_line and tk[:text] =~ /\A#\s*-\*-/ then
+      elsif first_line and comment_body =~ /\A#\s*-\*-/ then
         first_line = false
         skip_tkspace
         tk = get_tk
@@ -261,7 +263,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         first_comment_tk_kind = tk[:kind]
 
         first_line = false
-        comment << tk[:text]
+        comment << comment_body
         tk = get_tk
 
         if :on_nl === tk then
@@ -444,28 +446,83 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
-  # Get a constant that may be surrounded by parens
+  # Get an included module that may be surrounded by parens
 
-  def get_constant_with_optional_parens
+  def get_included_module_with_optional_parens
     skip_tkspace false
+    get_tkread
+    tk = get_tk
+    end_token = get_end_token tk
+    return '' unless end_token
 
     nest = 0
+    continue = false
+    only_constant = true
 
-    while :on_lparen == (tk = peek_tk)[:kind] do
-      get_tk
-      skip_tkspace
-      nest += 1
-    end
-
-    name = get_constant
-
-    while nest > 0
-      skip_tkspace
+    while tk != nil do
+      is_element_of_constant = false
+      case tk[:kind]
+      when :on_semicolon then
+        break if nest == 0
+      when :on_lbracket then
+        nest += 1
+      when :on_rbracket then
+        nest -= 1
+      when :on_lbrace then
+        nest += 1
+      when :on_rbrace then
+        nest -= 1
+        if nest <= 0
+          # we might have a.each { |i| yield i }
+          unget_tk(tk) if nest < 0
+          break
+        end
+      when :on_lparen then
+        nest += 1
+      when end_token[:kind] then
+        if end_token[:kind] == :on_rparen
+          nest -= 1
+          break if nest <= 0
+        else
+          break if nest <= 0
+        end
+      when :on_rparen then
+        nest -= 1
+      when :on_comment, :on_embdoc then
+        @read.pop
+        if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
+          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
+          break if !continue and nest <= 0
+        end
+      when :on_comma then
+        continue = true
+      when :on_ident then
+        continue = false if continue
+      when :on_kw then
+        case tk[:text]
+        when 'def', 'do', 'case', 'for', 'begin', 'class', 'module'
+          nest += 1
+        when 'if', 'unless', 'while', 'until', 'rescue'
+          # postfix if/unless/while/until/rescue must be EXPR_LABEL
+          nest += 1 unless (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0
+        when 'end'
+          nest -= 1
+          break if nest == 0
+        end
+      when :on_const then
+        is_element_of_constant = true
+      when :on_op then
+        is_element_of_constant = true if '::' == tk[:text]
+      end
+      only_constant = false unless is_element_of_constant
       tk = get_tk
-      nest -= 1 if :on_rparen == tk[:kind]
     end
 
-    name
+    if only_constant
+      get_tkread_clean(/\s+/, ' ')
+    else
+      ''
+    end
   end
 
   ##
@@ -479,17 +536,17 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def get_end_token tk # :nodoc:
     case tk[:kind]
     when :on_lparen
-      {
-        :kind => :on_rparen,
-        :text => ')'
-      }
+      token = RDoc::Parser::RipperStateLex::Token.new
+      token[:kind] = :on_rparen
+      token[:text] = ')'
+      token
     when :on_rparen
       nil
     else
-      {
-        :kind => :on_nl,
-        :text => "\n"
-      }
+      token = RDoc::Parser::RipperStateLex::Token.new
+      token[:kind] = :on_nl
+      token[:text] = "\n"
+      token
     end
   end
 
@@ -739,9 +796,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when end_token
         if end_token == :on_rparen
           nest -= 1
-          break if RDoc::RipperStateLex.end?(tk) and nest <= 0
+          break if RDoc::Parser::RipperStateLex.end?(tk) and nest <= 0
         else
-          break if RDoc::RipperStateLex.end?(tk)
+          break if RDoc::Parser::RipperStateLex.end?(tk)
         end
       when :on_comment, :on_embdoc
         unget_tk(tk)
@@ -959,7 +1016,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       elsif (:on_kw == tk[:kind] && 'def' == tk[:text]) then
         nest += 1
       elsif (:on_kw == tk[:kind] && %w{do if unless case begin}.include?(tk[:text])) then
-        if (tk[:state] & RDoc::RipperStateLex::EXPR_LABEL) == 0
+        if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
           nest += 1
         end
       elsif [:on_rparen, :on_rbrace, :on_rbracket].include?(tk[:kind]) ||
@@ -967,7 +1024,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         nest -= 1
       elsif (:on_comment == tk[:kind] or :on_embdoc == tk[:kind]) then
         unget_tk tk
-        if nest <= 0 and RDoc::RipperStateLex.end?(tk) then
+        if nest <= 0 and RDoc::Parser::RipperStateLex.end?(tk) then
           body = get_tkread_clean(/^[ \t]+/, '')
           read_documentation_modifiers constant, RDoc::CONSTANT_MODIFIERS
           break
@@ -983,7 +1040,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           break
         end
       elsif :on_nl == tk[:kind] then
-        if nest <= 0 and RDoc::RipperStateLex.end?(tk) then
+        if nest <= 0 and RDoc::Parser::RipperStateLex.end?(tk) then
           unget_tk tk
           break
         end
@@ -1047,10 +1104,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     record_location meth
 
     meth.start_collecting_tokens
-    indent = { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => ' ' * column }
-    position_comment = { :line_no => line_no, :char_no => 1, :kind => :on_comment }
+    indent = RDoc::Parser::RipperStateLex::Token.new(1, 1, :on_sp, ' ' * column)
+    position_comment = RDoc::Parser::RipperStateLex::Token.new(line_no, 1, :on_comment)
     position_comment[:text] = "# File #{@top_level.relative_name}, line #{line_no}"
-    newline = { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" }
+    newline = RDoc::Parser::RipperStateLex::Token.new(0, 0, :on_nl, "\n")
     meth.add_tokens [position_comment, newline, indent]
 
     meth.params =
@@ -1090,10 +1147,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.line      = line_no
 
     meth.start_collecting_tokens
-    indent = { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => ' ' * column }
-    position_comment = { :line_no => line_no, :char_no => 1, :kind => :on_comment }
+    indent = RDoc::Parser::RipperStateLex::Token.new(1, 1, :on_sp, ' ' * column)
+    position_comment = RDoc::Parser::RipperStateLex::Token.new(line_no, 1, :on_comment)
     position_comment[:text] = "# File #{@top_level.relative_name}, line #{line_no}"
-    newline = { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" }
+    newline = RDoc::Parser::RipperStateLex::Token.new(0, 0, :on_nl, "\n")
     meth.add_tokens [position_comment, newline, indent]
 
     meth.call_seq = signature
@@ -1117,7 +1174,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     loop do
       skip_tkspace_comment
 
-      name = get_constant_with_optional_parens
+      name = get_included_module_with_optional_parens
 
       unless name.empty? then
         obj = container.add klass, name, comment
@@ -1258,10 +1315,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     remove_token_listener self
 
     meth.start_collecting_tokens
-    indent = { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => ' ' * column }
-    position_comment = { :line_no => line_no, :char_no => 1, :kind => :on_comment }
+    indent = RDoc::Parser::RipperStateLex::Token.new(1, 1, :on_sp, ' ' * column)
+    position_comment = RDoc::Parser::RipperStateLex::Token.new(line_no, 1, :on_comment)
     position_comment[:text] = "# File #{@top_level.relative_name}, line #{line_no}"
-    newline = { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" }
+    newline = RDoc::Parser::RipperStateLex::Token.new(0, 0, :on_nl, "\n")
     meth.add_tokens [position_comment, newline, indent]
     meth.add_tokens @token_stream
 
@@ -1361,10 +1418,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth.line   = line_no
 
     meth.start_collecting_tokens
-    indent = { :line_no => 1, :char_no => 1, :kind => :on_sp, :text => ' ' * column }
-    token = { :line_no => line_no, :char_no => 1, :kind => :on_comment }
+    indent = RDoc::Parser::RipperStateLex::Token.new(1, 1, :on_sp, ' ' * column)
+    token = RDoc::Parser::RipperStateLex::Token.new(line_no, 1, :on_comment)
     token[:text] = "# File #{@top_level.relative_name}, line #{line_no}"
-    newline = { :line_no => 0, :char_no => 0, :kind => :on_nl, :text => "\n" }
+    newline = RDoc::Parser::RipperStateLex::Token.new(0, 0, :on_nl, "\n")
     meth.add_tokens [token, newline, indent]
     meth.add_tokens @token_stream
 
@@ -1530,6 +1587,10 @@ class RDoc::Parser::Ruby < RDoc::Parser
       case tk[:kind]
       when :on_semicolon then
         break if nest == 0
+      when :on_lbracket then
+        nest += 1
+      when :on_rbracket then
+        nest -= 1
       when :on_lbrace then
         nest += 1
       when :on_rbrace then
@@ -1553,7 +1614,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       when :on_comment, :on_embdoc then
         @read.pop
         if :on_nl == end_token[:kind] and "\n" == tk[:text][-1] and
-          (!continue or (tk[:state] & RDoc::RipperStateLex::EXPR_LABEL) != 0) then
+          (!continue or (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) != 0) then
           if method && method.block_params.nil? then
             unget_tk tk
             read_documentation_modifiers method, modifiers
@@ -1655,6 +1716,17 @@ class RDoc::Parser::Ruby < RDoc::Parser
   end
 
   ##
+  # Retrieve comment body without =begin/=end
+
+  def retrieve_comment_body(tk)
+    if :on_embdoc == tk[:kind]
+      tk[:text].gsub(/\A=begin.*\n/, '').gsub(/=end\n?\z/, '')
+    else
+      tk[:text]
+    end
+  end
+
+  ##
   # The core of the Ruby parser.
 
   def parse_statements(container, single = NORMAL, current_method = nil,
@@ -1707,10 +1779,11 @@ class RDoc::Parser::Ruby < RDoc::Parser
           end
 
           while tk and (:on_comment == tk[:kind] or :on_embdoc == tk[:kind]) do
-            comment += tk[:text]
-            comment += "\n" unless "\n" == tk[:text].chars.to_a.last
+            comment_body = retrieve_comment_body(tk)
+            comment += comment_body
+            comment += "\n" unless "\n" == comment_body.chars.to_a.last
 
-            if tk[:text].size > 1 && "\n" == tk[:text].chars.to_a.last then
+            if comment_body.size > 1 && "\n" == comment_body.chars.to_a.last then
               skip_tkspace false # leading spaces
             end
             tk = get_tk
@@ -1758,7 +1831,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           end
 
         when 'until', 'while' then
-          if (tk[:state] & RDoc::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
             nest += 1
             skip_optional_do_after_expression
           end
@@ -1774,7 +1847,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           skip_optional_do_after_expression
 
         when 'case', 'do', 'if', 'unless', 'begin' then
-          if (tk[:state] & RDoc::RipperStateLex::EXPR_LABEL) == 0
+          if (tk[:state] & RDoc::Parser::RipperStateLex::EXPR_LABEL) == 0
             nest += 1
           end
 

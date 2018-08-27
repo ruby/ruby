@@ -200,7 +200,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
     content = if verbatim.ruby? or parseable? text then
                 begin
-                  tokens = RDoc::RipperStateLex.parse text
+                  tokens = RDoc::Parser::RipperStateLex.parse text
                   klass  = ' class="ruby"'
 
                   result = RDoc::TokenStream.to_html tokens
