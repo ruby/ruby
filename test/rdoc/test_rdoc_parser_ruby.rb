@@ -4087,7 +4087,7 @@ end
 module A
   class B
     include(Module.new do
-      def e m 
+      def e m
       end
     end)
   end
