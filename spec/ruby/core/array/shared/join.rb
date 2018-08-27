@@ -14,8 +14,8 @@ describe :array_join_with_default_separator, shared: true do
     [].send(@method).should == ''
   end
 
-  it "returns a US-ASCII string for an empty Array" do
-    [].send(@method).encoding.should == Encoding::US_ASCII
+  it "returns a locale-encoded string for an empty Array" do
+    [].send(@method).encoding.should == Encoding.find('locale')
   end
 
   it "returns a string formed by concatenating each String element separated by $," do

@@ -2033,7 +2033,7 @@ rb_ary_join(VALUE ary, VALUE sep)
     int taint = FALSE;
     VALUE val, tmp, result;
 
-    if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
+    if (RARRAY_LEN(ary) == 0) return rb_enc_str_new(0, 0, rb_locale_encoding());
     if (OBJ_TAINTED(ary)) taint = TRUE;
 
     if (!NIL_P(sep)) {
