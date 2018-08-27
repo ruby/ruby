@@ -271,7 +271,7 @@ class Gem::Indexer
   # List of gem file names to index.
 
   def gem_file_list
-    Dir[File.join(@dest_directory, "gems", '*.gem')]
+    Gem::Util.glob_files_in_dir("*.gem", File.join(@dest_directory, "gems"))
   end
 
   ##

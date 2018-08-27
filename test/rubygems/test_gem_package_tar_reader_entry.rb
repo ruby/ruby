@@ -34,6 +34,10 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
     assert_equal 1, @entry.bytes_read
   end
 
+  def test_size
+    assert_equal @contents.size, @entry.size
+  end
+
   def test_close
     @entry.close
 
@@ -127,6 +131,13 @@ class TestGemPackageTarReaderEntry < Gem::Package::TarTestCase
 
   def test_read_small
     assert_equal @contents[0...100], @entry.read(100)
+  end
+
+  def test_readpartial
+    assert_raises(EOFError) do
+      @entry.read(@contents.size)
+      @entry.readpartial(1)
+    end
   end
 
   def test_rewind

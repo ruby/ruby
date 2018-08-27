@@ -236,5 +236,32 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     refute_path_exists d_1.gem_dir
     refute_path_exists e_1.gem_dir
   end
+
+  def test_execute_user_install
+    c_1, = util_gem 'c', '1.0'
+    c_2, = util_gem 'c', '1.1'
+
+    d_1, = util_gem 'd', '1.0'
+    d_2, = util_gem 'd', '1.1'
+
+    c_1 = install_gem c_1, :user_install => true # pick up user install path
+    c_2 = install_gem c_2, :user_install => true # pick up user install path
+
+    d_1 = install_gem d_1
+    d_2 = install_gem d_2
+
+    Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
+
+    @cmd.handle_options %w[--user-install]
+    @cmd.options[:args] = []
+
+    @cmd.execute
+
+    refute_path_exists c_1.gem_dir
+    assert_path_exists c_2.gem_dir
+
+    assert_path_exists d_1.gem_dir
+    assert_path_exists d_2.gem_dir
+  end
 end
 

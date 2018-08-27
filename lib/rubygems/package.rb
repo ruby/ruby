@@ -119,12 +119,12 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build spec, skip_validation=false
+  def self.build spec, skip_validation=false, strict_validation=false
     gem_file = spec.file_name
 
     package = new gem_file
     package.spec = spec
-    package.build skip_validation
+    package.build skip_validation, strict_validation
 
     gem_file
   end
@@ -254,12 +254,14 @@ class Gem::Package
   ##
   # Builds this package based on the specification set by #spec=
 
-  def build skip_validation = false
+  def build skip_validation = false, strict_validation = false
+    raise ArgumentError, "skip_validation = true and strict_validation = true are incompatible" if skip_validation && strict_validation
+
     Gem.load_yaml
     require 'rubygems/security'
 
     @spec.mark_version
-    @spec.validate unless skip_validation
+    @spec.validate true, strict_validation unless skip_validation
 
     setup_signer
 

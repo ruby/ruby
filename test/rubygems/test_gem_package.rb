@@ -150,7 +150,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_add_files_symlink
-    skip 'symlink not supported' if Gem.win_platform?
+    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
 
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/code_sym.rb]
@@ -159,7 +159,15 @@ class TestGemPackage < Gem::Package::TarTestCase
     File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
-    File.symlink('code.rb', 'lib/code_sym.rb')
+    begin
+      File.symlink('code.rb', 'lib/code_sym.rb')
+    rescue Errno::EACCES => e
+      if win_platform?
+        skip "symlink - must be admin with no UAC on Windows"
+      else
+        raise e
+      end
+    end
 
     package = Gem::Package.new 'bogus.gem'
     package.spec = spec
@@ -315,6 +323,19 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal 'missing value for attribute summary', e.message
   end
 
+  def test_build_invalid_arguments
+    spec = Gem::Specification.new 'build', '1'
+
+    package = Gem::Package.new spec.file_name
+    package.spec = spec
+
+    e = assert_raises ArgumentError do
+      package.build true, true
+    end
+
+    assert_equal "skip_validation = true and strict_validation = true are incompatible", e.message
+  end
+
   def test_build_signed
     skip 'openssl is missing' unless defined?(OpenSSL::SSL)
 
@@ -451,7 +472,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_tar_gz_symlink_relative_path
-    skip 'symlink not supported' if Gem.win_platform?
+    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
 
     package = Gem::Package.new @gem
 
@@ -461,7 +482,15 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink 'lib/foo.rb', '../relative.rb', 0644
     end
 
-    package.extract_tar_gz tgz_io, @destination
+    begin
+      package.extract_tar_gz tgz_io, @destination
+    rescue Errno::EACCES => e
+      if win_platform?
+        skip "symlink - must be admin with no UAC on Windows"
+      else
+        raise e
+      end
+    end
 
     extracted = File.join @destination, 'lib/foo.rb'
     assert_path_exists extracted
@@ -472,28 +501,34 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_symlink_parent
-   skip 'symlink not supported' if Gem.win_platform?
+    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
 
-   package = Gem::Package.new @gem
+    package = Gem::Package.new @gem
 
-   tgz_io = util_tar_gz do |tar|
-     tar.mkdir       'lib',               0755
-     tar.add_symlink 'lib/link', '../..', 0644
-     tar.add_file    'lib/link/outside.txt', 0644 do |io| io.write 'hi' end
-   end
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir       'lib',               0755
+      tar.add_symlink 'lib/link', '../..', 0644
+      tar.add_file    'lib/link/outside.txt', 0644 do |io| io.write 'hi' end
+    end
 
-   # Extract into a subdirectory of @destination; if this test fails it writes
-   # a file outside destination_subdir, but we want the file to remain inside
-   # @destination so it will be cleaned up.
-   destination_subdir = File.join @destination, 'subdir'
-   FileUtils.mkdir_p destination_subdir
+    # Extract into a subdirectory of @destination; if this test fails it writes
+    # a file outside destination_subdir, but we want the file to remain inside
+    # @destination so it will be cleaned up.
+    destination_subdir = File.join @destination, 'subdir'
+    FileUtils.mkdir_p destination_subdir
 
-   e = assert_raises Gem::Package::PathError do
-     package.extract_tar_gz tgz_io, destination_subdir
-   end
+    e = assert_raises(Gem::Package::PathError, Errno::EACCES) do
+      package.extract_tar_gz tgz_io, destination_subdir
+    end
 
-   assert_equal("installing into parent path lib/link/outside.txt of " +
-                 "#{destination_subdir} is not allowed", e.message)
+    if Gem::Package::PathError === e
+      assert_equal("installing into parent path lib/link/outside.txt of " +
+                  "#{destination_subdir} is not allowed", e.message)
+    elsif win_platform?
+      skip "symlink - must be admin with no UAC on Windows"
+    else
+      raise e
+    end
   end
 
   def test_extract_tar_gz_directory

@@ -84,7 +84,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]regenerate-binstubs',
                'Regenerate gem binstubs' do |value, options|
-      options[:regenerate_binstubs] = value
+     options[:regenerate_binstubs] = value
    end
 
     add_option('-E', '--[no-]env-shebang',
@@ -468,8 +468,8 @@ By default, this RubyGems will install gem as:
         (prefix == RbConfig::CONFIG['libdir'] or
          # this one is important
          prefix == File.join(RbConfig::CONFIG['libdir'], 'ruby')) then
-         lib_dir = RbConfig::CONFIG[site_or_vendor]
-         bin_dir = RbConfig::CONFIG['bindir']
+        lib_dir = RbConfig::CONFIG[site_or_vendor]
+        bin_dir = RbConfig::CONFIG['bindir']
       else
         lib_dir = File.join prefix, 'lib'
         bin_dir = File.join prefix, 'bin'

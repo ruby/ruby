@@ -433,6 +433,39 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     refute File.exist? gem_lib
   end
 
+  def test_execute_bindir
+    a = util_spec 'a' do |s|
+      s.name = "test_gem"
+      s.executables = %w[foo]
+      s.files = %w[bin/foo]
+    end
+
+    write_file File.join(@tempdir, 'bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    write_file File.join(@tempdir, 'test_bin', 'foo') do |fp|
+      fp.puts "#!/usr/bin/ruby"
+    end
+
+    install_gem a
+
+    gem_exec = File.join @gemhome, 'bin', 'foo'
+    gem_bindir = File.join @tempdir, 'test_bin', 'foo'
+
+    FileUtils.rm gem_exec
+    FileUtils.rm gem_bindir
+
+    @cmd.handle_options ["--all", "--only-executables", "--bindir", "#{gem_bindir}"]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    refute File.exist? gem_exec
+    assert File.exist? gem_bindir
+  end
+
   def test_execute_unknown_gem_at_remote_source
     install_specs util_spec 'a'
 

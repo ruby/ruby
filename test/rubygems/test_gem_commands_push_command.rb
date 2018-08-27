@@ -95,6 +95,26 @@ class TestGemCommandsPushCommand < Gem::TestCase
                  @fetcher.last_request["Content-Type"]
   end
 
+  def test_execute_allowed_push_host
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata['allowed_push_host'] = "https://privategemserver.example"
+    end
+
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{@spec.metadata['allowed_push_host']}/api/v1/gems"] = [@response, 200, 'OK']
+    @fetcher.data["#{Gem.host}/api/v1/gems"] =
+      ['fail', 500, 'Internal Server Error']
+
+    @cmd.options[:args] = [@path]
+
+    @cmd.execute
+
+    assert_equal Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
+  end
+
   def test_sending_when_default_host_disabled
     Gem.configuration.disable_default_gem_server = true
     response = "You must specify a gem server"

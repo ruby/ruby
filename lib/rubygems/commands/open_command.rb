@@ -60,7 +60,13 @@ class Gem::Commands::OpenCommand < Gem::Command
 
   def open_gem name
     spec = spec_for name
+
     return false unless spec
+
+    if spec.default_gem?
+      say "'#{name}' is a default gem and can't be opened."
+      return false
+    end
 
     open_editor(spec.full_gem_path)
   end

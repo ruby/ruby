@@ -117,6 +117,13 @@ to write the specification by hand.  For example:
   some_extension_gem (1.0)
   $
 
+Command Alias
+==========================
+
+You can use `i` command instead of `install`.
+
+  $ gem i GEMNAME
+
     EOF
   end
 

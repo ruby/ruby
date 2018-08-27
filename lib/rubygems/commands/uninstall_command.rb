@@ -48,7 +48,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
     end
 
     add_option('-n', '--bindir DIR',
-               'Directory to remove binaries from') do |value, options|
+               'Directory to remove executables from') do |value, options|
       options[:bin_dir] = File.expand_path(value)
     end
 

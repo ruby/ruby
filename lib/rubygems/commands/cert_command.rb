@@ -87,7 +87,7 @@ class Gem::Commands::CertCommand < Gem::Command
 
     add_option('-d', '--days NUMBER_OF_DAYS',
                'Days before the certificate expires') do |days, options|
-                options[:expiration_length_days] = days.to_i
+      options[:expiration_length_days] = days.to_i
     end
   end
 

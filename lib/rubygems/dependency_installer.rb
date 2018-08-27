@@ -458,7 +458,7 @@ class Gem::DependencyInstaller
           rescue Gem::Package::FormatError
           end
         end
-      # else This is a dependency. InstallerSet handles this case
+        # else This is a dependency. InstallerSet handles this case
       end
     end
 

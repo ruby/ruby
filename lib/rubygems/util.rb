@@ -80,8 +80,6 @@ module Gem::Util
     end
     return system(*(cmds << opt))
   rescue TypeError
-    require 'thread'
-
     @silent_mutex ||= Mutex.new
 
     @silent_mutex.synchronize do
@@ -115,6 +113,18 @@ module Gem::Util
       new_here = File.expand_path('..', here)
       return if new_here == here # toplevel
       here = new_here
+    end
+  end
+
+  ##
+  # Globs for files matching +pattern+ inside of +directory+,
+  # returning absolute paths to the matching files.
+
+  def self.glob_files_in_dir(glob, base_path)
+    if RUBY_VERSION >= "2.5"
+      Dir.glob(glob, base: base_path).map! {|f| File.join(base_path, f) }
+    else
+      Dir.glob(File.expand_path(glob, base_path))
     end
   end
 

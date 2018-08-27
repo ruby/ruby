@@ -71,6 +71,10 @@ class Gem::CommandManager
     :yank,
   ]
 
+  ALIAS_COMMANDS = {
+    'i' => 'install'
+  }
+
   ##
   # Return the authoritative instance of the command manager.
 
@@ -174,6 +178,8 @@ class Gem::CommandManager
   end
 
   def find_command(cmd_name)
+    cmd_name = find_alias_command cmd_name
+
     possibilities = find_command_possibilities cmd_name
 
     if possibilities.size > 1 then
@@ -184,6 +190,11 @@ class Gem::CommandManager
     end
 
     self[possibilities.first]
+  end
+
+  def find_alias_command(cmd_name)
+    alias_name = ALIAS_COMMANDS[cmd_name]
+    alias_name ? alias_name : cmd_name
   end
 
   def find_command_possibilities(cmd_name)

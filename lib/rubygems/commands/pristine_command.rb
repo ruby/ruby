@@ -46,6 +46,12 @@ class Gem::Commands::PristineCommand < Gem::Command
       options[:env_shebang] = value
     end
 
+    add_option('-n', '--bindir DIR',
+               'Directory where executables are',
+               'located') do |value, options|
+      options[:bin_dir] = File.expand_path(value)
+    end
+
     add_version_option('restore to', 'pristine condition')
   end
 
@@ -160,12 +166,15 @@ extensions will be restored.
           install_defaults.to_s['--env-shebang']
         end
 
+      bin_dir = options[:bin_dir] if options[:bin_dir]
+
       installer_options = {
         :wrappers => true,
         :force => true,
         :install_dir => spec.base_dir,
         :env_shebang => env_shebang,
         :build_args => spec.build_args,
+        :bin_dir => bin_dir
       }
 
       if options[:only_executables] then

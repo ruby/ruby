@@ -29,6 +29,12 @@ class TestGemCommandManager < Gem::TestCase
                  e.message
   end
 
+  def test_find_alias_command
+    command = @command_manager.find_command 'i'
+
+    assert_kind_of Gem::Commands::InstallCommand, command
+  end
+
   def test_find_command_ambiguous_exact
     ins_command = Class.new
     Gem::Commands.send :const_set, :InsCommand, ins_command

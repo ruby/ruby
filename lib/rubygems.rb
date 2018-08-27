@@ -7,7 +7,6 @@
 #++
 
 require 'rbconfig'
-require 'thread'
 
 module Gem
   VERSION = "3.0.0.beta1"
@@ -526,8 +525,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   def self.find_files_from_load_path glob # :nodoc:
+    glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map { |load_path|
-      Dir["#{File.expand_path glob, load_path}#{Gem.suffix_pattern}"]
+      Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
     }.flatten.select { |file| File.file? file.untaint }
   end
 
@@ -1119,8 +1119,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     path = "rubygems_plugin"
 
     files = []
+    glob = "#{path}#{Gem.suffix_pattern}"
     $LOAD_PATH.each do |load_path|
-      globbed = Dir["#{File.expand_path path, load_path}#{Gem.suffix_pattern}"]
+      globbed = Gem::Util.glob_files_in_dir(glob, load_path)
 
       globbed.each do |load_path_file|
         files << load_path_file if File.file?(load_path_file.untaint)
