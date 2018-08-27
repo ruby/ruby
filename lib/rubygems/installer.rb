@@ -771,18 +771,19 @@ TEXT
   # return the stub script text used to launch the true Ruby script
 
   def windows_stub_script(bindir, bin_file_name)
+    rb_bindir = RbConfig::CONFIG["bindir"]
     # All comparisons should be case insensitive
-    if bindir.downcase == RbConfig::CONFIG["bindir"].downcase
+    if bindir.downcase == rb_bindir.downcase
       # stub & ruby.exe withing same folder.  Portable
       <<-TEXT
 @ECHO OFF
 @"%~dp0ruby.exe" "%~dpn0" %*
       TEXT
-    elsif bindir.downcase.start_with? RbConfig::TOPDIR.downcase
+    elsif bindir.downcase.start_with? (RbConfig::TOPDIR || File.dirname(rb_bindir)).downcase
       # stub within ruby folder, but not standard bin.  Not portable
       require 'pathname'
       from = Pathname.new bindir
-      to   = Pathname.new RbConfig::CONFIG["bindir"]
+      to   = Pathname.new rb_bindir
       rel  = to.relative_path_from from
       <<-TEXT
 @ECHO OFF
