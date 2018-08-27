@@ -284,7 +284,7 @@ class Gem::Requirement
   end
 
   def sort_requirements! # :nodoc:
-    @requirements.sort! do |l, r| 
+    @requirements.sort! do |l, r|
       comp = l.last <=> r.last # first, sort by the requirement's version
       next comp unless comp == 0
       l.first <=> r.first # then, sort by the operator (for stability)
