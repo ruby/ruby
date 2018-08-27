@@ -118,4 +118,21 @@ class TestGemPathSupport < Gem::TestCase
     ps = Gem::PathSupport.new "GEM_SPEC_CACHE" => "foo"
     assert_equal "foo", ps.spec_cache_dir
   end
+
+  def test_gem_paths_do_not_contain_symlinks
+    dir = "#{@tempdir}/realgemdir"
+    symlink = "#{@tempdir}/symdir"
+    Dir.mkdir dir
+    begin
+      File.symlink(dir, symlink)
+    rescue NotImplementedError, SystemCallError
+      skip 'symlinks not supported'
+    end
+    not_existing = "#{@tempdir}/does_not_exist"
+    path = "#{symlink}#{File::PATH_SEPARATOR}#{not_existing}"
+
+    ps = Gem::PathSupport.new "GEM_PATH" => path, "GEM_HOME" => symlink
+    assert_equal dir, ps.home
+    assert_equal [dir, not_existing], ps.path
+  end
 end

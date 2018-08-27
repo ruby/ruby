@@ -38,6 +38,8 @@ class TestGemUtil < Gem::TestCase
     # impossible to cd into it and its children
     FileUtils.chmod(0666, 'd/e')
 
+    skip 'skipped in root privilege' if Process.uid.zero?
+
     paths = Gem::Util.traverse_parents('d/e/f').to_a
 
     assert_equal File.join(@tempdir, 'd'), paths[0]

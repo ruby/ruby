@@ -170,7 +170,10 @@ class Gem::Version
   # True if the +version+ string matches RubyGems' requirements.
 
   def self.correct? version
-    return false if version.nil?
+    unless Gem::Deprecate.skip
+      warn "nil versions are discouraged and will be deprecated in Rubygems 4" if version.nil?
+    end
+
     !!(version.to_s =~ ANCHORED_VERSION_PATTERN)
   end
 
@@ -325,7 +328,9 @@ class Gem::Version
     segments.pop    while segments.size > 2
     segments.push 0 while segments.size < 2
 
-    "~> #{segments.join(".")}"
+    recommendation = "~> #{segments.join(".")}"
+    recommendation += ".a" if prerelease?
+    recommendation
   end
 
   ##

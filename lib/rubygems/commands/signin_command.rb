@@ -10,7 +10,7 @@ class Gem::Commands::SigninCommand < Gem::Command
           'It defaults to https://rubygems.org'
 
     add_option('--host HOST', 'Push to another gemcutter-compatible host') do |value, options|
-       options[:host] = value
+      options[:host] = value
     end
 
   end

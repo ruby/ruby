@@ -29,6 +29,8 @@ command.  For further discussion see the help for the yank command.
   def initialize
     super 'push', 'Push a gem up to the gem server', :host => self.host
 
+    @user_defined_host = false
+
     add_proxy_option
     add_key_option
 
@@ -36,20 +38,41 @@ command.  For further discussion see the help for the yank command.
                'Push to another gemcutter-compatible host',
                '  (e.g. https://rubygems.org)') do |value, options|
       options[:host] = value
+      @user_defined_host = true
     end
 
     @host = nil
   end
 
   def execute
-    @host = options[:host]
+    gem_name = get_one_gem_name
+    default_gem_server, push_host = get_hosts_for(gem_name)
+
+    default_host = nil
+    user_defined_host = nil
+
+    if @user_defined_host
+      user_defined_host = options[:host]
+    else
+      default_host = options[:host]
+    end
+
+    @host = if user_defined_host
+              user_defined_host
+            elsif default_gem_server
+              default_gem_server
+            elsif push_host
+              push_host
+            else
+              default_host
+            end
 
     sign_in @host
 
-    send_gem get_one_gem_name
+    send_gem(gem_name)
   end
 
-  def send_gem name
+  def send_gem(name)
     args = [:post, "api/v1/gems"]
 
     latest_rubygems_version = Gem.latest_rubygems_version
@@ -100,5 +123,15 @@ You can upgrade or downgrade to the latest release version with:
     with_response response
   end
 
+  private
+
+  def get_hosts_for(name)
+    gem_metadata = Gem::Package.new(name).spec.metadata
+
+    [
+      gem_metadata["default_gem_server"],
+      gem_metadata["allowed_push_host"]
+    ]
+  end
 end
 

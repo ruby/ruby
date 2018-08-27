@@ -202,7 +202,7 @@ class Gem::SpecFetcher
     }.compact
 
     matches = if matches.empty? && type != :prerelease
-      suggest_gems_from_name gem_name, :prerelease
+                suggest_gems_from_name gem_name, :prerelease
     else
       matches.uniq.sort_by { |name, dist| dist }
     end

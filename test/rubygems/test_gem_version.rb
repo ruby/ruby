@@ -46,7 +46,11 @@ class TestGemVersion < Gem::TestCase
   def test_class_correct
     assert_equal true,  Gem::Version.correct?("5.1")
     assert_equal false, Gem::Version.correct?("an incorrect version")
-    assert_equal false, Gem::Version.correct?(nil)
+
+    expected = "nil versions are discouraged and will be deprecated in Rubygems 4\n"
+    assert_output nil, expected do
+      Gem::Version.correct?(nil)
+    end
   end
 
   def test_class_new_subclass
@@ -158,11 +162,25 @@ class TestGemVersion < Gem::TestCase
 
   def test_approximate_recommendation
     assert_approximate_equal "~> 1.0", "1"
+    assert_approximate_satisfies_itself "1"
+
     assert_approximate_equal "~> 1.0", "1.0"
+    assert_approximate_satisfies_itself "1.0"
+
     assert_approximate_equal "~> 1.2", "1.2"
+    assert_approximate_satisfies_itself "1.2"
+
     assert_approximate_equal "~> 1.2", "1.2.0"
+    assert_approximate_satisfies_itself "1.2.0"
+
     assert_approximate_equal "~> 1.2", "1.2.3"
-    assert_approximate_equal "~> 1.2", "1.2.3.a.4"
+    assert_approximate_satisfies_itself "1.2.3"
+
+    assert_approximate_equal "~> 1.2.a", "1.2.3.a.4"
+    assert_approximate_satisfies_itself "1.2.3.a.4"
+
+    assert_approximate_equal "~> 1.9.a", "1.9.0.dev"
+    assert_approximate_satisfies_itself "1.9.0.dev"
   end
 
   def test_to_s
@@ -198,10 +216,18 @@ class TestGemVersion < Gem::TestCase
     assert v(version).prerelease?, "#{version} is a prerelease"
   end
 
-  # Assert that +expected+ is the "approximate" recommendation for +version".
+  # Assert that +expected+ is the "approximate" recommendation for +version+.
 
   def assert_approximate_equal expected, version
     assert_equal expected, v(version).approximate_recommendation
+  end
+
+  # Assert that the "approximate" recommendation for +version+ satifies +version+.
+
+  def assert_approximate_satisfies_itself version
+    gem_version = v(version)
+
+    assert Gem::Requirement.new(gem_version.approximate_recommendation).satisfied_by?(gem_version)
   end
 
   # Assert that bumping the +unbumped+ version yields the +expected+.

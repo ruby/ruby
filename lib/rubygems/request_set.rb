@@ -417,7 +417,7 @@ class Gem::RequestSet
   end
 
   def specs_in dir
-    Dir["#{dir}/specifications/*.gemspec"].map do |g|
+    Gem::Util.glob_files_in_dir("*.gemspec", File.join(dir, "specifications")).map do |g|
       Gem::Specification.load g
     end
   end

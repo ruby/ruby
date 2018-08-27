@@ -22,6 +22,12 @@ class Gem::Commands::CleanupCommand < Gem::Command
       options[:check_dev] = value
     end
 
+    add_option('--[no-]user-install',
+               'Cleanup in user\'s home directory instead',
+               'of GEM_HOME.') do |value, options|
+      options[:user_install] = value
+    end
+
     @candidate_gems  = nil
     @default_gems    = []
     @full            = nil
@@ -124,8 +130,10 @@ If no gems are named all gems in GEM_HOME are cleaned.
       spec.default_gem?
     }
 
+    uninstall_from = options[:user_install] ? Gem.user_dir : @original_home
+
     gems_to_cleanup = gems_to_cleanup.select { |spec|
-      spec.base_dir == @original_home
+      spec.base_dir == uninstall_from
     }
 
     @default_gems += default_gems

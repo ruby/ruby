@@ -25,7 +25,7 @@ module Gem::InstallUpdateOptions
     end
 
     add_option(:"Install/Update", '-n', '--bindir DIR',
-               'Directory where binary files are',
+               'Directory where executables are',
                'located') do |value, options|
       options[:bin_dir] = File.expand_path(value)
     end

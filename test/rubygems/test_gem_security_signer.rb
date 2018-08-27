@@ -135,9 +135,11 @@ toqvglr0kdbknSRRjBVLK6tsgr07aLT9gNP7mTW2PA==
   def test_sign_expired
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
-    assert_raises Gem::Security::Exception do
+    e = assert_raises Gem::Security::Exception do
       signer.sign 'hello'
     end
+
+    assert_match "certificate /CN=nobody/DC=example not valid after 1970-01-01 00:00:00 UTC", e.message
   end
 
   def test_sign_expired_auto_update

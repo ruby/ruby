@@ -21,6 +21,10 @@ class TestGemText < Gem::TestCase
     assert_equal "  text to wrap",    format_text("text to wrap", 40, 2)
   end
 
+  def test_format_text_no_space
+    assert_equal "texttowr\nap",     format_text("texttowrap", 8)
+  end
+
   def test_format_text_trailing # for two spaces after .
     text = <<-TEXT
 This line is really, really long.  So long, in fact, that it is more than eighty characters long!  The purpose of this line is for testing wrapping behavior because sometimes people don't wrap their text to eighty characters.  Without the wrapping, the text might not look good in the RSS feed.

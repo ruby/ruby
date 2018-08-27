@@ -172,9 +172,9 @@ class Gem::Specification < Gem::BasicSpecification
     when String
       v.dump
     when Numeric
-       "default_value(:#{k})"
+      "default_value(:#{k})"
     else
-       "default_value(:#{k}).dup"
+      "default_value(:#{k}).dup"
     end
   end
 
@@ -761,14 +761,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
-      Dir[File.join(dir, "*.gemspec")].each do |path|
+      Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
         yield path.untaint
       end
     end
   end
 
   def self.gemspec_stubs_in dir, pattern
-    Dir[File.join(dir, pattern)].map { |path| yield path }.select(&:valid?)
+    Gem::Util.glob_files_in_dir(pattern, dir).map { |path| yield path }.select(&:valid?)
   end
   private_class_method :gemspec_stubs_in
 
@@ -820,11 +820,11 @@ class Gem::Specification < Gem::BasicSpecification
   def self.stubs
     @@stubs ||= begin
       pattern = "*.gemspec"
-      stubs = default_stubs(pattern).concat installed_stubs(dirs, pattern)
+      stubs = Gem.loaded_specs.values + default_stubs(pattern) + installed_stubs(dirs, pattern)
       stubs = uniq_by(stubs) { |stub| stub.full_name }
 
       _resort!(stubs)
-      @@stubs_by_name = stubs.group_by(&:name)
+      @@stubs_by_name = stubs.select { |s| Gem::Platform.match s.platform }.group_by(&:name)
       stubs
     end
   end
@@ -833,13 +833,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Returns a Gem::StubSpecification for installed gem named +name+
+  # only returns stubs that match Gem.platforms
 
   def self.stubs_for name
     if @@stubs
       @@stubs_by_name[name] || []
     else
       pattern = "#{name}-*.gemspec"
-      stubs = default_stubs(pattern) + installed_stubs(dirs, pattern)
+      stubs = Gem.loaded_specs.values + default_stubs(pattern) +
+        installed_stubs(dirs, pattern).select { |s| Gem::Platform.match s.platform }
       stubs = uniq_by(stubs) { |stub| stub.full_name }.group_by(&:name)
       stubs.each_value { |v| _resort!(v) }
 
@@ -1280,11 +1282,17 @@ class Gem::Specification < Gem::BasicSpecification
     unresolved = unresolved_deps
     unless unresolved.empty? then
       w = "W" + "ARN"
-      warn "#{w}: Unresolved specs during Gem::Specification.reset:"
+      warn "#{w}: Unresolved or ambigious specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
+
+        versions = find_all_by_name(dep.name)
+        unless versions.empty?
+          warn "      Available/installed versions of this gem:"
+          versions.each { |s| warn "      - #{s.version}" }
+        end
       end
-      warn "#{w}: Clearing out unresolved specs."
+      warn "#{w}: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
       warn "Please report a bug if this causes problems."
       unresolved.clear
     end
@@ -2645,19 +2653,14 @@ class Gem::Specification < Gem::BasicSpecification
   # Raises InvalidSpecificationException if the spec does not pass the
   # checks..
 
-  def validate packaging = true
-    @warnings = 0
+  def validate packaging = true, strict = false
     require 'rubygems/user_interaction'
     extend Gem::UserInteraction
     normalize
 
     validation_policy = Gem::SpecificationPolicy.new(self)
     validation_policy.packaging = packaging
-    validation_policy.validate
-  ensure
-    if $! or @warnings > 0 then
-      alert_warning "See http://guides.rubygems.org/specification-reference/ for help"
-    end
+    validation_policy.validate(strict)
   end
 
   def keep_only_files_and_directories
@@ -2742,12 +2745,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @installed_by_version ||= nil
-  end
-
-  def warning statement # :nodoc:
-    @warnings += 1
-
-    alert_warning statement
   end
 
   def raw_require_paths # :nodoc:

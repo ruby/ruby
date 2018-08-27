@@ -179,8 +179,6 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def test_sign_in_with_bad_credentials
-    skip 'Always uses $stdin on windows' if Gem.win_platform?
-
     assert_raises Gem::MockGemUi::TermError do
       util_sign_in ['Access Denied.', 403, 'Forbidden']
     end
@@ -190,8 +188,6 @@ class TestGemGemcutterUtilities < Gem::TestCase
   end
 
   def util_sign_in response, host = nil, args = []
-    skip 'Always uses $stdin on windows' if Gem.win_platform?
-
     email    = 'you@example.com'
     password = 'secret'
 

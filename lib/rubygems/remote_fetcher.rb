@@ -384,17 +384,15 @@ class Gem::RemoteFetcher
     require 'base64'
     require 'openssl'
 
-    unless uri.user && uri.password
-      raise FetchError.new("credentials needed in s3 source, like s3://key:secret@bucket-name/", uri.to_s)
-    end
+    id, secret = s3_source_auth uri
 
     expiration ||= s3_expiration
     canonical_path = "/#{uri.host}#{uri.path}"
     payload = "GET\n\n\n#{expiration}\n#{canonical_path}"
-    digest = OpenSSL::HMAC.digest('sha1', uri.password, payload)
+    digest = OpenSSL::HMAC.digest('sha1', secret, payload)
     # URI.escape is deprecated, and there isn't yet a replacement that does quite what we want
     signature = Base64.encode64(digest).gsub("\n", '').gsub(/[\+\/=]/) { |c| BASE64_URI_TRANSLATE[c] }
-    URI.parse("https://#{uri.host}.s3.amazonaws.com#{uri.path}?AWSAccessKeyId=#{uri.user}&Expires=#{expiration}&Signature=#{signature}")
+    URI.parse("https://#{uri.host}.s3.amazonaws.com#{uri.path}?AWSAccessKeyId=#{id}&Expires=#{expiration}&Signature=#{signature}")
   end
 
   def s3_expiration
@@ -413,5 +411,22 @@ class Gem::RemoteFetcher
     @pool_lock.synchronize do
       @pools[proxy] ||= Gem::Request::ConnectionPools.new proxy, @cert_files
     end
+  end
+
+  def s3_source_auth(uri)
+    return [uri.user, uri.password] if uri.user && uri.password
+
+    s3_source = Gem.configuration[:s3_source] || Gem.configuration['s3_source']
+    host = uri.host
+    raise FetchError.new("no s3_source key exists in .gemrc", "s3://#{host}") unless s3_source
+
+    auth = s3_source[host] || s3_source[host.to_sym]
+    raise FetchError.new("no key for host #{host} in s3_source in .gemrc", "s3://#{host}") unless auth
+
+    id = auth[:id] || auth['id']
+    secret = auth[:secret] || auth['secret']
+    raise FetchError.new("s3_source for #{host} missing id or secret", "s3://#{host}") unless id and secret
+
+    [id, secret]
   end
 end

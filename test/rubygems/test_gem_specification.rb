@@ -108,7 +108,7 @@ end
     # objects are present in the @stubs collection. This test verifies that
     # this scenario works correctly.
     Gem::Specification.all = [spec]
-    Gem::Specification.find_active_stub_by_path('foo')
+    assert_equal spec, Gem::Specification.find_active_stub_by_path('foo')
   end
 
   def test_self_activate
@@ -387,8 +387,8 @@ end
 
   def test_self_activate_checks_dependencies
     a  = util_spec 'a', '1.0'
-            a.add_dependency 'c', '= 1.0'
-            a.add_dependency 'b', '~> 1.0'
+    a.add_dependency 'c', '= 1.0'
+    a.add_dependency 'b', '~> 1.0'
 
     b1 = util_spec 'b', '1.0'
     b2 = util_spec 'b', '2.0'
@@ -1124,6 +1124,88 @@ dependencies: []
 
     refute_includes Gem::Specification.all_names, 'a-1'
     refute_includes Gem::Specification.stubs.map { |s| s.full_name }, 'a-1'
+  end
+
+  def test_self_stubs
+    Gem.loaded_specs.clear
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+
+    dir_standard_specs = File.join Gem.dir, 'specifications'
+    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+
+    # Create gemspecs in three locations used in stubs
+    loaded_spec = Gem::Specification.new 'a', '3'
+    Gem.loaded_specs['a'] = loaded_spec
+    save_gemspec 'a', '2', dir_default_specs
+    save_gemspec 'a', '1', dir_standard_specs
+
+    full_names = ['a-3', 'a-2', 'a-1']
+    assert_equal full_names, Gem::Specification.stubs.map { |s| s.full_name }
+
+    Gem.loaded_specs.delete 'a'
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+  end
+
+  def test_self_stubs_for
+    Gem.loaded_specs.clear
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+
+    dir_standard_specs = File.join Gem.dir, 'specifications'
+    dir_default_specs = Gem::BasicSpecification.default_specifications_dir
+
+    # Create gemspecs in three locations used in stubs
+    loaded_spec = Gem::Specification.new 'a', '3'
+    Gem.loaded_specs['a'] = loaded_spec
+    save_gemspec 'a', '2', dir_default_specs
+    save_gemspec 'a', '1', dir_standard_specs
+
+    full_names = ['a-3', 'a-2', 'a-1']
+
+    full_names = Gem::Specification.stubs_for('a').map { |s| s.full_name }
+    assert_equal full_names, Gem::Specification.stubs_for('a').map { |s| s.full_name }
+    assert_equal 1, Gem::Specification.class_variable_get(:@@stubs_by_name).length
+
+    Gem.loaded_specs.delete 'a'
+    Gem::Specification.class_variable_set(:@@stubs, nil)
+  end
+
+  def test_self_stubs_for_mult_platforms
+    # gems for two different platforms are installed with --user-install
+    # the correct one should be returned in the array
+
+    orig_platform = Gem.platforms.dup
+
+    # create user spec
+    user_spec_dir = File.join Gem.user_dir, 'specifications'
+    FileUtils.mkdir_p(user_spec_dir)  unless Dir.exist? user_spec_dir
+    # dirs doesn't include user ?
+    Gem::Specification.dirs << user_spec_dir
+
+    gem = 'mingw'
+    v   = '1.1.1'
+    platforms = ['x86-mingw32', 'x64-mingw32']
+    
+    #create specs
+    platforms.each do |plat|
+      spec = Gem::Specification.new(gem, v) { |s| s.platform = plat }
+      File.open File.join(user_spec_dir, "#{gem}-#{v}-#{plat}.gemspec"), 'w' do |io|
+        io.write spec.to_ruby
+      end
+    end
+
+    platforms.each do |plat|
+      cur_plat = Gem::Platform.new plat
+      Gem.platforms = ['ruby', cur_plat]
+
+      Gem::Specification.class_variable_set :@@stubs, nil
+      Gem::Specification.stubs if plat == platforms.last # test loading via stubs
+      t = Gem::Specification.stubs_for 'mingw'
+
+      assert_equal 1, t.length
+      assert_equal cur_plat, t.first.platform
+    end
+
+    Gem.platforms = orig_platform
   end
 
   DATA_PATH = File.expand_path "../data", __FILE__
@@ -2615,16 +2697,6 @@ end
       expected = <<-EXPECTED
 #{w}:  prerelease dependency on b (>= 1.0.rc1) is not recommended
 #{w}:  prerelease dependency on c (>= 2.0.rc2, development) is not recommended
-#{w}:  pessimistic dependency on d (~> 1.2.3) may be overly strict
-  if d is semantically versioned, use:
-    add_runtime_dependency 'd', '~> 1.2', '>= 1.2.3'
-  if d is not semantically versioned, you can bypass this warning with:
-    add_runtime_dependency 'd', '>= 1.2.3', '< 1.3.a'
-#{w}:  pessimistic dependency on e (~> 1.2.3.4) may be overly strict
-  if e is semantically versioned, use:
-    add_runtime_dependency 'e', '~> 1.2', '>= 1.2.3.4'
-  if e is not semantically versioned, you can bypass this warning with:
-    add_runtime_dependency 'e', '>= 1.2.3.4', '< 1.2.4.a'
 #{w}:  open-ended dependency on i (>= 1.2) is not recommended
   if i is semantically versioned, use:
     add_runtime_dependency 'i', '~> 1.2'
@@ -2637,11 +2709,6 @@ end
 #{w}:  open-ended dependency on l (> 1.2.3) is not recommended
   if l is semantically versioned, use:
     add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
-#{w}:  pessimistic dependency on m (~> 2.1.0) may be overly strict
-  if m is semantically versioned, use:
-    add_runtime_dependency 'm', '~> 2.1', '>= 2.1.0'
-  if m is not semantically versioned, you can bypass this warning with:
-    add_runtime_dependency 'm', '>= 2.1.0', '< 2.2.a'
 #{w}:  See http://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 
@@ -2842,6 +2909,58 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
 
     assert_equal %w[bin/exec ext/a/extconf.rb lib/code.rb lib2 test/suite.rb].sort,
                  @a1.files
+  end
+
+  def test_unresolved_specs
+    specification = Gem::Specification.clone
+
+    specification.define_singleton_method(:unresolved_deps) do
+      { b: Gem::Dependency.new("x","1") }
+    end
+
+    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+      []
+    end
+
+    expected = <<-EXPECTED
+WARN: Unresolved or ambigious specs during Gem::Specification.reset:
+      x (= 1)
+WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
+Please report a bug if this causes problems.
+    EXPECTED
+
+    assert_output nil, expected do
+      specification.reset
+    end
+  end
+
+  def test_unresolved_specs_with_versions
+    specification = Gem::Specification.clone
+
+    specification.define_singleton_method(:unresolved_deps) do
+      { b: Gem::Dependency.new("x","1") }
+    end
+
+    specification.define_singleton_method(:find_all_by_name) do |dep_name|
+      [
+        specification.new { |s| s.name = "z", s.version = Gem::Version.new("1") },
+        specification.new { |s| s.name = "z", s.version = Gem::Version.new("2") }
+      ]
+    end
+
+    expected = <<-EXPECTED
+WARN: Unresolved or ambigious specs during Gem::Specification.reset:
+      x (= 1)
+      Available/installed versions of this gem:
+      - 1
+      - 2
+WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
+Please report a bug if this causes problems.
+    EXPECTED
+
+    assert_output nil, expected do
+      specification.reset
+    end
   end
 
   def test_validate_files_recursive

@@ -152,7 +152,7 @@ class Gem::BasicSpecification
   # The path to the data directory for this gem.
 
   def datadir
-# TODO: drop the extra ", gem_name" which is uselessly redundant
+    # TODO: drop the extra ", gem_name" which is uselessly redundant
     File.expand_path(File.join(gems_dir, full_name, "data", name)).untaint
   end
 
@@ -282,7 +282,7 @@ class Gem::BasicSpecification
                self.raw_require_paths.first
              end
            else
-            "lib" # default value for require_paths for bundler/inline
+             "lib" # default value for require_paths for bundler/inline
            end
 
     "#{self.full_gem_path}/#{dirs}".dup.untaint

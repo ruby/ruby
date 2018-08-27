@@ -187,6 +187,8 @@ class Gem::Installer
     @package.prog_mode = options[:prog_mode]
     @package.data_mode = options[:data_mode]
 
+    @bin_dir = options[:bin_dir] if options[:bin_dir]
+
     if options[:user_install] and not options[:unpack] then
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
@@ -379,7 +381,7 @@ class Gem::Installer
     @specs ||= begin
       specs = []
 
-      Dir[File.join(gem_home, "specifications", "*.gemspec")].each do |path|
+      Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|
         spec = Gem::Specification.load path.untaint
         specs << spec if spec
       end
@@ -769,15 +771,30 @@ TEXT
   # return the stub script text used to launch the true Ruby script
 
   def windows_stub_script(bindir, bin_file_name)
-    ruby = Gem.ruby.gsub(/^\"|\"$/, "").tr(File::SEPARATOR, "\\")
-    return <<-TEXT
+    # All comparisons should be case insensitive
+    if bindir.downcase == RbConfig::CONFIG["bindir"].downcase
+      # stub & ruby.exe withing same folder.  Portable
+      <<-TEXT
 @ECHO OFF
-IF NOT "%~f0" == "~f0" GOTO :WinNT
-@"#{ruby}" "#{File.join(bindir, bin_file_name)}" %1 %2 %3 %4 %5 %6 %7 %8 %9
-GOTO :EOF
-:WinNT
-@"#{ruby}" "%~dpn0" %*
-TEXT
+@"%~dp0ruby.exe" "%~dpn0" %*
+      TEXT
+    elsif bindir.downcase.start_with? RbConfig::TOPDIR.downcase
+      # stub within ruby folder, but not standard bin.  Not portable
+      require 'pathname'
+      from = Pathname.new bindir
+      to   = Pathname.new RbConfig::CONFIG["bindir"]
+      rel  = to.relative_path_from from
+      <<-TEXT
+@ECHO OFF
+@"%~dp0#{rel}/ruby.exe" "%~dpn0" %*
+      TEXT
+    else
+      # outside ruby folder, maybe -user-install or bundler.  Portable
+      <<-TEXT
+@ECHO OFF
+@ruby.exe "%~dpn0" %*
+      TEXT
+    end
   end
 
   ##
