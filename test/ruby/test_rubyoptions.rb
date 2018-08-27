@@ -920,4 +920,11 @@ class TestRubyOptions < Test::Unit::TestCase
       end
     end
   end
+
+  def test_argv_tainted
+    assert_separately(%w[- arg], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_predicate(ARGV[0], :tainted?, '[ruby-dev:50596] [Bug #14941]')
+    end;
+  end
 end
