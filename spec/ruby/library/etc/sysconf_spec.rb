@@ -24,7 +24,7 @@ platform_is_not :windows do
       Etc.sysconf(Etc::SC_STREAM_MAX).should be_kind_of(Integer)
       should_be_integer_or_nil(Etc.sysconf(Etc::SC_SYMLOOP_MAX))
       Etc.sysconf(Etc::SC_TTY_NAME_MAX).should be_kind_of(Integer)
-      Etc.sysconf(Etc::SC_TZNAME_MAX).should be_kind_of(Integer)
+      should_be_integer_or_nil(Etc.sysconf(Etc::SC_TZNAME_MAX))
       Etc.sysconf(Etc::SC_VERSION).should be_kind_of(Integer)
     end
   end
