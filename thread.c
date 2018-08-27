@@ -3854,7 +3854,7 @@ static VALUE
 do_select(VALUE p)
 {
     struct select_set *set = (struct select_set *)p;
-    int MAYBE_UNUSED(result);
+    int result = 0;
     int lerrno;
     rb_hrtime_t *to, rel, end;
 
@@ -3876,10 +3876,13 @@ do_select(VALUE p)
             struct timeval tv;
 
             sto = sigwait_timeout(set->th, set->sigwait_fd, to, &drained);
-	    result = native_fd_select(set->max, set->rset, set->wset, set->eset,
-				      rb_hrtime2timeval(&tv, sto), set->th);
-	    if (result < 0) lerrno = errno;
-	}, set->sigwait_fd >= 0 ? ubf_sigwait : ubf_select, set->th, FALSE);
+            if (!RUBY_VM_INTERRUPTED(set->th->ec)) {
+                result = native_fd_select(set->max, set->rset, set->wset,
+                                          set->eset,
+                                          rb_hrtime2timeval(&tv, sto), set->th);
+                if (result < 0) lerrno = errno;
+            }
+	}, set->sigwait_fd >= 0 ? ubf_sigwait : ubf_select, set->th, TRUE);
 
         if (set->sigwait_fd >= 0) {
             if (result > 0 && rb_fd_isset(set->sigwait_fd, set->rset))
@@ -3949,6 +3952,7 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     struct select_set set;
 
     set.th = GET_THREAD();
+    RUBY_VM_CHECK_INTS_BLOCKING(set.th->ec);
     set.max = max;
     set.sigwait_fd = rb_sigwait_fd_get(set.th);
     set.rset = read;
@@ -4018,6 +4022,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     nfds_t nfds;
     rb_unblock_function_t *ubf;
 
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
     timeout_prepare(&to, &rel, &end, timeout);
     fds[0].fd = fd;
     fds[0].events = (short)events;
@@ -4042,9 +4047,11 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             struct timespec ts;
 
             sto = sigwait_timeout(th, fds[1].fd, to, &drained);
-            result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), NULL);
-            if (result < 0) lerrno = errno;
-        }, ubf, th, FALSE);
+            if (!RUBY_VM_INTERRUPTED(th->ec)) {
+                result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), NULL);
+                if (result < 0) lerrno = errno;
+            }
+        }, ubf, th, TRUE);
 
         if (fds[1].fd >= 0) {
             if (result > 0 && fds[1].revents) {
