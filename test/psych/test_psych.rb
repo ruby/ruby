@@ -60,6 +60,22 @@ class TestPsych < Psych::TestCase
     end
   end
 
+  def test_parse
+    assert_equal %w[a b], Psych.parse("- a\n- b").to_ruby
+  end
+
+  def test_parse_default_fallback
+    assert_equal false, Psych.parse("")
+  end
+
+  def test_parse_raises_on_bad_input
+    assert_raises(Psych::SyntaxError) { Psych.parse("--- `") }
+  end
+
+  def test_parse_with_fallback
+    assert_equal 42, Psych.parse("", fallback: 42)
+  end
+
   def test_non_existing_class_on_deserialize
     e = assert_raises(ArgumentError) do
       Psych.load("--- !ruby/object:NonExistent\nfoo: 1")
@@ -103,9 +119,44 @@ class TestPsych < Psych::TestCase
     assert_equal %w{ foo bar }, docs
   end
 
+  def test_load_stream_default_fallback
+    assert_equal [], Psych.load_stream("")
+  end
+
+  def test_load_stream_raises_on_bad_input
+    assert_raises(Psych::SyntaxError) { Psych.load_stream("--- `") }
+  end
+
   def test_parse_stream
     docs = Psych.parse_stream("--- foo\n...\n--- bar\n...")
-    assert_equal %w{ foo bar }, docs.children.map { |x| x.transform }
+    assert_equal(%w[foo bar], docs.children.map(&:transform))
+  end
+
+  def test_parse_stream_with_block
+    docs = []
+    Psych.parse_stream("--- foo\n...\n--- bar\n...") do |node|
+      docs << node
+    end
+
+    assert_equal %w[foo bar], docs.map(&:to_ruby)
+  end
+
+  def test_parse_stream_default_fallback
+    docs = Psych.parse_stream("")
+    assert_equal [], docs.children.map(&:to_ruby)
+  end
+
+  def test_parse_stream_with_block_default_fallback
+    docs = []
+    Psych.parse_stream("") do |node|
+      docs << node
+    end
+
+    assert_equal [], docs.map(&:to_ruby)
+  end
+
+  def test_parse_stream_raises_on_bad_input
+    assert_raises(Psych::SyntaxError) { Psych.parse_stream("--- `") }
   end
 
   def test_add_builtin_type
@@ -135,6 +186,31 @@ class TestPsych < Psych::TestCase
     assert_equal({ 'hello' => 'world' }, got)
   end
 
+  def test_load_default_fallback
+    assert_equal false, Psych.load("")
+  end
+
+  def test_load_with_fallback
+    assert_equal 42, Psych.load("", "file", fallback: 42)
+  end
+
+  def test_load_with_fallback_nil_or_false
+    assert_nil Psych.load("", "file", fallback: nil)
+    assert_equal false, Psych.load("", "file", fallback: false)
+  end
+
+  def test_load_with_fallback_hash
+    assert_equal Hash.new, Psych.load("", "file", fallback: Hash.new)
+  end
+
+  def test_load_with_fallback_for_nil
+    assert_nil Psych.load("--- null", "file", fallback: 42)
+  end
+
+  def test_load_with_fallback_for_false
+    assert_equal false, Psych.load("--- false", "file", fallback: 42)
+  end
+
   def test_load_file
     Tempfile.create(['yikes', 'yml']) {|t|
       t.binmode
@@ -144,7 +220,7 @@ class TestPsych < Psych::TestCase
     }
   end
 
-  def test_load_file_default_return_value
+  def test_load_file_default_fallback
     Tempfile.create(['empty', 'yml']) {|t|
       assert_equal false, Psych.load_file(t.path)
     }
@@ -194,6 +270,12 @@ class TestPsych < Psych::TestCase
       t.close
       assert_equal 'hello world', Psych.parse_file(t.path).transform
     }
+  end
+
+  def test_parse_file_default_fallback
+    Tempfile.create(['empty', 'yml']) do |t|
+      assert_equal false, Psych.parse_file(t.path)
+    end
   end
 
   def test_degenerate_strings
