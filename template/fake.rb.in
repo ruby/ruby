@@ -44,7 +44,7 @@ fake = File.join(top_srcdir, "tool/fake.rb")
 eval(File.binread(fake), nil, fake)
 ropt = "-r#{__FILE__}"
 ["RUBYOPT"].each do |flag|
-  opt = ENV[flag].b
-  opt = opt ? ([ropt] | opt.split).join(" ") : ropt
+  opt = ENV[flag]
+  opt = opt ? ([ropt] | opt.b.split).join(" ") : ropt
   ENV[flag] = opt
 end
