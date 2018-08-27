@@ -909,6 +909,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_float_equal(large_number+(small_number*11), [small_number, large_number/1r, *[small_number]*10].each.sum)
     assert_float_equal(small_number, [large_number, small_number, -large_number].each.sum)
 
+    k = Class.new do
+      include Enumerable
+      def initialize(*values)
+        @values = values
+      end
+      def each(&block)
+        @values.each(&block)
+      end
+    end
+    assert_equal(+Float::INFINITY, k.new(0.0, +Float::INFINITY).sum)
+    assert_equal(+Float::INFINITY, k.new(+Float::INFINITY, 0.0).sum)
+    assert_equal(-Float::INFINITY, k.new(0.0, -Float::INFINITY).sum)
+    assert_equal(-Float::INFINITY, k.new(-Float::INFINITY, 0.0).sum)
+    assert_predicate(k.new(-Float::INFINITY, Float::INFINITY).sum, :nan?)
+
     assert_equal("abc", ["a", "b", "c"].each.sum(""))
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
 
