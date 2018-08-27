@@ -2,8 +2,12 @@ require_relative '../spec_helper'
 
 # See core/kernel/eval_spec.rb for more magic comments specs for eval()
 describe :magic_comments, shared: true do
+  before :each do
+    @default = @method == :locale ? Encoding.find('locale') : Encoding::UTF_8
+  end
+
   it "are optional" do
-    @object.call('no_magic_comment.rb').should == Encoding::UTF_8.name
+    @object.call('no_magic_comment.rb').should == @default.name
   end
 
   it "are case-insensitive" do
@@ -11,11 +15,11 @@ describe :magic_comments, shared: true do
   end
 
   it "must be at the first line" do
-    @object.call('second_line_magic_comment.rb').should == Encoding::UTF_8.name
+    @object.call('second_line_magic_comment.rb').should == @default.name
   end
 
   it "must be the first token of the line" do
-    @object.call('second_token_magic_comment.rb').should == Encoding::UTF_8.name
+    @object.call('second_token_magic_comment.rb').should == @default.name
   end
 
   it "can be after the shebang" do
@@ -40,16 +44,16 @@ describe :magic_comments, shared: true do
 end
 
 describe "Magic comments" do
-  platform_is_not :windows do
-    describe "in stdin" do
-      it_behaves_like :magic_comments, nil, -> file {
-        print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
-        ruby_exe(nil, args: "< #{fixture(__FILE__, file)}", options: "-r#{print_at_exit}")
-      }
-    end
+  describe "in stdin" do
+    it_behaves_like :magic_comments, :locale, -> file {
+      print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
+      ruby_exe(nil, args: "< #{fixture(__FILE__, file)}", options: "-r#{print_at_exit}")
+    }
+  end
 
+  platform_is_not :windows do
     describe "in an -e argument" do
-      it_behaves_like :magic_comments, nil, -> file {
+      it_behaves_like :magic_comments, :locale, -> file {
         print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
         # Use UTF-8, as it is the default source encoding for files
         code = File.read(fixture(__FILE__, file), encoding: 'utf-8')
@@ -59,28 +63,28 @@ describe "Magic comments" do
   end
 
   describe "in the main file" do
-    it_behaves_like :magic_comments, nil, -> file {
+    it_behaves_like :magic_comments, :UTF8, -> file {
       print_at_exit = fixture(__FILE__, "print_magic_comment_result_at_exit.rb")
       ruby_exe(fixture(__FILE__, file), options: "-r#{print_at_exit}")
     }
   end
 
   describe "in a loaded file" do
-    it_behaves_like :magic_comments, nil, -> file {
+    it_behaves_like :magic_comments, :UTF8, -> file {
       load fixture(__FILE__, file)
       $magic_comment_result
     }
   end
 
   describe "in a required file" do
-    it_behaves_like :magic_comments, nil, -> file {
+    it_behaves_like :magic_comments, :UTF8, -> file {
       require fixture(__FILE__, file)
       $magic_comment_result
     }
   end
 
   describe "in an eval" do
-    it_behaves_like :magic_comments, nil, -> file {
+    it_behaves_like :magic_comments, :UTF8, -> file {
       # Use UTF-8, as it is the default source encoding for files
       eval(File.read(fixture(__FILE__, file), encoding: 'utf-8'))
     }

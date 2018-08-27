@@ -57,10 +57,9 @@ describe 'The -K command line option' do
     end
   end
 
-  platform_is_not :windows do
-    it "ignores unknown codes" do
-      ruby_exe(@test_string, options: '-KZ').should ==
-        [Encoding::UTF_8.name, Encoding::UTF_8.name, nil].inspect
-    end
+  it "ignores unknown codes" do
+    locale = Encoding.find('locale')
+    ruby_exe(@test_string, options: '-KZ').should ==
+      [Encoding::UTF_8.name, locale.name, nil].inspect
   end
 end
