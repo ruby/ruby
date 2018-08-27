@@ -1256,6 +1256,18 @@ rb_thread_sleep_deadly(void)
     sleep_forever(GET_THREAD(), SLEEP_DEADLOCKABLE|SLEEP_SPURIOUS_CHECK);
 }
 
+void
+rb_thread_sleep_interruptible(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    enum rb_thread_status prev_status = th->status;
+
+    th->status = THREAD_STOPPED;
+    native_sleep(th, 0);
+    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    th->status = prev_status;
+}
+
 static void
 rb_thread_sleep_deadly_allow_spurious_wakeup(void)
 {
@@ -5408,25 +5420,3 @@ rb_uninterruptible(VALUE (*b_proc)(ANYARGS), VALUE data)
 
     return rb_ensure(b_proc, data, rb_ary_pop, cur_th->pending_interrupt_mask_stack);
 }
-
-#ifndef USE_NATIVE_SLEEP_COND
-#  define USE_NATIVE_SLEEP_COND (0)
-#endif
-
-#if !USE_NATIVE_SLEEP_COND
-rb_nativethread_cond_t *
-rb_sleep_cond_get(const rb_execution_context_t *ec)
-{
-    rb_nativethread_cond_t *cond = ALLOC(rb_nativethread_cond_t);
-    rb_native_cond_initialize(cond);
-
-    return cond;
-}
-
-void
-rb_sleep_cond_put(rb_nativethread_cond_t *cond)
-{
-    rb_native_cond_destroy(cond);
-    xfree(cond);
-}
-#endif /* !USE_NATIVE_SLEEP_COND */
