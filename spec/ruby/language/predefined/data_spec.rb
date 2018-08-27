@@ -33,8 +33,12 @@ describe "The DATA constant" do
 
   it "is set even if there is no newline after __END__" do
     path = tmp("no_newline_data.rb")
-    code = File.binread(fixture(__FILE__, "empty_data.rb"))
-    touch(path) { |f| f.write code.chomp }
+    code = File.read(fixture(__FILE__, "empty_data.rb"))
+    if /mswin|mingw/ !~ RUBY_PLATFORM
+      touch(path) { |f| f.write code.chomp }
+    else
+      File.open(path, 'wb:UTF-8') { |f| f.write code.chomp }
+    end
     begin
       ruby_exe(path).should == "30\n\"\"\n"
     ensure
