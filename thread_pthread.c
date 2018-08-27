@@ -1873,26 +1873,6 @@ rb_thread_create_mjit_thread(void (*worker_func)(void))
     return ret;
 }
 
-#ifndef USE_NATIVE_SLEEP_COND
-#define USE_NATIVE_SLEEP_COND (1)
-#endif
-
-#if USE_NATIVE_SLEEP_COND
-rb_nativethread_cond_t *
-rb_sleep_cond_get(const rb_execution_context_t *ec)
-{
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
-
-    return &th->native_thread_data.cond.intr;
-}
-
-void
-rb_sleep_cond_put(rb_nativethread_cond_t *cond)
-{
-    /* no-op */
-}
-#endif /* USE_NATIVE_SLEEP_COND */
-
 int
 rb_sigwait_fd_get(const rb_thread_t *th)
 {
