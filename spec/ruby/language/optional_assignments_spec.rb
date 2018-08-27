@@ -252,7 +252,11 @@ describe 'Optional variable assignments' do
   end
 
   describe 'using compunded constants' do
-    before do
+    before :each do
+      Object.send(:remove_const, :A) if defined? Object::A
+    end
+
+    after :each do
       Object.send(:remove_const, :A) if defined? Object::A
     end
 

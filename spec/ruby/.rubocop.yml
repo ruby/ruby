@@ -5,6 +5,8 @@ AllCops:
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
+    - language/fixtures/utf16-le-bom.rb
+    - language/fixtures/utf16-be-bom.rb
   DisabledByDefault: true
 
 Layout/TrailingWhitespace:

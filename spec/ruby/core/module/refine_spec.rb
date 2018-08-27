@@ -594,6 +594,30 @@ describe "Module#refine" do
     end
   end
 
+  it 'and alias aliases a method within a refinement module, but not outside it' do
+    Module.new do
+      using Module.new {
+        refine Array do
+          alias :orig_count :count
+        end
+      }
+      [1,2].orig_count.should == 2
+    end
+    lambda { [1,2].orig_count }.should raise_error(NoMethodError)
+  end
+
+  it 'and alias_method aliases a method within a refinement module, but not outside it' do
+    Module.new do
+      using Module.new {
+        refine Array do
+          alias_method :orig_count, :count
+        end
+      }
+      [1,2].orig_count.should == 2
+    end
+    lambda { [1,2].orig_count }.should raise_error(NoMethodError)
+  end
+
   # Refinements are inherited by module inclusion.
   # That is, using activates all refinements in the ancestors of the specified module.
   # Refinements in a descendant have priority over refinements in an ancestor.

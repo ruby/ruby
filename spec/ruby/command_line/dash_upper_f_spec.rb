@@ -1,3 +1,5 @@
+require_relative '../spec_helper'
+
 describe "the -F command line option" do
   before :each do
     @passwd  = fixture __FILE__, "passwd_file.txt"

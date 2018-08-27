@@ -44,6 +44,11 @@ class MSpecScript
                         [/_spec.rb$/,       '_tags.txt']
                       ]
 
+  set :toplevel_constants_excludes, [
+    /\wSpecs?$/,
+    /^CS_CONST\d/,
+  ]
+
   # Enable features
   MSpec.enable_feature :fiber
   MSpec.enable_feature :fiber_library

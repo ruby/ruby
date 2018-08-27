@@ -158,8 +158,27 @@ platform_is_not :windows do
       $?.exitstatus.should == 0
     end
 
+    it "returns 'DEFAULT' for the initial SIGINT handler" do
+      ruby_exe('print trap(:INT) { abort }').should == 'DEFAULT'
+    end
+
     it "returns SYSTEM_DEFAULT if passed DEFAULT and no handler was ever set" do
       Signal.trap("PROF", "DEFAULT").should == "SYSTEM_DEFAULT"
+    end
+
+    it "accepts 'SYSTEM_DEFAULT' and uses the OS handler for SIGPIPE" do
+      code = <<-RUBY
+        p Signal.trap('PIPE', 'SYSTEM_DEFAULT')
+        r, w = IO.pipe
+        r.close
+        loop { w.write("a"*1024) }
+      RUBY
+      out = ruby_exe(code)
+      status = $?
+      out.should == "nil\n"
+      status.signaled?.should == true
+      status.termsig.should be_kind_of(Integer)
+      Signal.signame(status.termsig).should == "PIPE"
     end
   end
 end
