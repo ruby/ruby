@@ -32,7 +32,14 @@ describe "The DATA constant" do
   end
 
   it "is set even if there is no newline after __END__" do
-    ruby_exe(fixture(__FILE__, "no_newline_data.rb")).should == "30\n\"\"\n"
+    path = tmp("no_newline_data.rb")
+    code = File.read(fixture(__FILE__, "empty_data.rb"))
+    touch(path) { |f| f.write code.chomp }
+    begin
+      ruby_exe(path).should == "30\n\"\"\n"
+    ensure
+      rm_r path
+    end
   end
 
   it "rewinds to the head of the main script" do
