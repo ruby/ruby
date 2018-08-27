@@ -188,15 +188,15 @@ do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
     static rb_hrtime_t abs;
     native_thread_data_t *nd = &th->native_thread_data;
 
+    vm->gvl.timer = th;
+
     /* take over wakeups from UBF_TIMER */
     ubf_timer_disarm();
 
     if (vm->gvl.timer_err == ETIMEDOUT) {
         abs = native_cond_timeout(&nd->cond.gvlq, TIME_QUANTUM_NSEC);
     }
-    vm->gvl.timer = th;
     vm->gvl.timer_err = native_cond_timedwait(&nd->cond.gvlq, &vm->gvl.lock, &abs);
-    vm->gvl.timer = 0;
 
     ubf_wakeup_all_threads();
     ruby_sigchld_handler(vm);
@@ -205,11 +205,7 @@ do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
             RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
         }
         else {
-            /* unlock is needed because threadptr_trap_interrupt may
-             * call ubf_select which also acquires vm->gvl.lock */
-            rb_native_mutex_unlock(&vm->gvl.lock);
             threadptr_trap_interrupt(vm->main_thread);
-            rb_native_mutex_lock(&vm->gvl.lock);
         }
     }
 
@@ -218,6 +214,7 @@ do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
      * thread is contending for GVL:
      */
     if (vm->gvl.acquired) timer_thread_function();
+    vm->gvl.timer = 0;
 }
 
 static void
@@ -1329,16 +1326,17 @@ ubf_select(void *ptr)
     /*
      * ubf_wakeup_thread() doesn't guarantee to wake up a target thread.
      * Therefore, we repeatedly call ubf_wakeup_thread() until a target thread
-     * exit from ubf function.  We must designate a timer-thread to perform
-     * this operation.
+     * exit from ubf function.  We must have a timer to perform this operation.
+     * We use double-checked locking here because this function may be called
+     * while vm->gvl.lock is held in do_gvl_timer
      */
-    rb_native_mutex_lock(&vm->gvl.lock);
-    if (!vm->gvl.timer) {
-        if (!designate_timer_thread(vm)) {
+    if (vm->gvl.timer != ruby_thread_from_native()) {
+        rb_native_mutex_lock(&vm->gvl.lock);
+        if (!vm->gvl.timer) {
             rb_thread_wakeup_timer_thread(-1);
         }
+        rb_native_mutex_unlock(&vm->gvl.lock);
     }
-    rb_native_mutex_unlock(&vm->gvl.lock);
 
     ubf_wakeup_thread(th);
 }
