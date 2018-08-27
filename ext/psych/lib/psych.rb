@@ -230,14 +230,16 @@ require 'psych/class_loader'
 module Psych
   # The version of libyaml Psych is using
   LIBYAML_VERSION = Psych.libyaml_version.join '.'
-
-  FALLBACK        = Struct.new :to_ruby # :nodoc:
+  # Deprecation guard
+  NOT_GIVEN = Object.new
+  private_constant :NOT_GIVEN
 
   ###
   # Load +yaml+ in to a Ruby data structure.  If multiple documents are
   # provided, the object contained in the first document will be returned.
-  # +filename+ will be used in the exception message if any exception is raised
-  # while parsing.
+  # +filename+ will be used in the exception message if any exception
+  # is raised while parsing.  If +yaml+ is empty, it returns
+  # the specified +fallback+ return value, which defaults to +false+.
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   #
@@ -247,7 +249,7 @@ module Psych
   #   Psych.load("---\n - a\n - b")   # => ['a', 'b']
   #
   #   begin
-  #     Psych.load("--- `", "file.txt")
+  #     Psych.load("--- `", filename: "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
@@ -259,8 +261,15 @@ module Psych
   #   Psych.load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.load yaml, filename = nil, fallback: false, symbolize_names: false
-    result = parse(yaml, filename, fallback: fallback)
+  # Raises a TypeError when `yaml` parameter is NilClass
+  #
+  def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false
+    if legacy_filename != NOT_GIVEN
+      filename = legacy_filename
+    end
+
+    result = parse(yaml, filename: filename)
+    return fallback unless result
     result = result.to_ruby if result
     symbolize_names!(result) if symbolize_names
     result
@@ -279,27 +288,27 @@ module Psych
   # * Hash
   #
   # Recursive data structures are not allowed by default.  Arbitrary classes
-  # can be allowed by adding those classes to the +whitelist+.  They are
+  # can be allowed by adding those classes to the +whitelist_classes+ keyword argument.  They are
   # additive.  For example, to allow Date deserialization:
   #
-  #   Psych.safe_load(yaml, [Date])
+  #   Psych.safe_load(yaml, whitelist_classes: [Date])
   #
   # Now the Date class can be loaded in addition to the classes listed above.
   #
-  # Aliases can be explicitly allowed by changing the +aliases+ parameter.
+  # Aliases can be explicitly allowed by changing the +aliases+ keyword argument.
   # For example:
   #
   #   x = []
   #   x << x
   #   yaml = Psych.dump x
   #   Psych.safe_load yaml               # => raises an exception
-  #   Psych.safe_load yaml, [], [], true # => loads the aliases
+  #   Psych.safe_load yaml, aliases: true # => loads the aliases
   #
   # A Psych::DisallowedClass exception will be raised if the yaml contains a
   # class that isn't in the whitelist.
   #
   # A Psych::BadAlias exception will be raised if the yaml contains aliases
-  # but the +aliases+ parameter is set to false.
+  # but the +aliases+ keyword argument is set to false.
   #
   # +filename+ will be used in the exception message if any exception is raised
   # while parsing.
@@ -310,18 +319,34 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, whitelist_classes = [], whitelist_symbols = [], aliases = false, filename = nil, symbolize_names: false
-    result = parse(yaml, filename)
-    return unless result
+  def self.safe_load yaml, legacy_whitelist_classes = NOT_GIVEN, legacy_whitelist_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, whitelist_classes: [], whitelist_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
+    if legacy_whitelist_classes != NOT_GIVEN
+      whitelist_classes = legacy_whitelist_classes
+    end
+
+    if legacy_whitelist_symbols != NOT_GIVEN
+      whitelist_symbols = legacy_whitelist_symbols
+    end
+
+    if legacy_aliases != NOT_GIVEN
+      aliases = legacy_aliases
+    end
+
+    if legacy_filename != NOT_GIVEN
+      filename = legacy_filename
+    end
+
+    result = parse(yaml, filename: filename)
+    return fallback unless result
 
     class_loader = ClassLoader::Restricted.new(whitelist_classes.map(&:to_s),
                                                whitelist_symbols.map(&:to_s))
     scanner      = ScalarScanner.new class_loader
-    if aliases
-      visitor = Visitors::ToRuby.new scanner, class_loader
-    else
-      visitor = Visitors::NoAliasRuby.new scanner, class_loader
-    end
+    visitor = if aliases
+                Visitors::ToRuby.new scanner, class_loader
+              else
+                Visitors::NoAliasRuby.new scanner, class_loader
+              end
     result = visitor.accept result
     symbolize_names!(result) if symbolize_names
     result
@@ -339,28 +364,38 @@ module Psych
   #   Psych.parse("---\n - a\n - b") # => #<Psych::Nodes::Document:0x00>
   #
   #   begin
-  #     Psych.parse("--- `", "file.txt")
+  #     Psych.parse("--- `", filename: "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
   #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse yaml, filename = nil, fallback: false
-    parse_stream(yaml, filename) do |node|
+  def self.parse yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: NOT_GIVEN
+    if legacy_filename != NOT_GIVEN
+      filename = legacy_filename
+    end
+
+    parse_stream(yaml, filename: filename) do |node|
       return node
     end
-    fallback
+
+    if fallback != NOT_GIVEN
+      fallback
+    else
+      false
+    end
   end
 
   ###
   # Parse a file at +filename+. Returns the Psych::Nodes::Document.
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
-  def self.parse_file filename
-    File.open filename, 'r:bom|utf-8' do |f|
-      parse f, filename
+  def self.parse_file filename, fallback: false
+    result = File.open filename, 'r:bom|utf-8' do |f|
+      parse f, filename: filename
     end
+    result || fallback
   end
 
   ###
@@ -389,14 +424,20 @@ module Psych
   #   end
   #
   #   begin
-  #     Psych.parse_stream("--- `", "file.txt")
+  #     Psych.parse_stream("--- `", filename: "file.txt")
   #   rescue Psych::SyntaxError => ex
   #     ex.file    # => 'file.txt'
   #     ex.message # => "(file.txt): found character that cannot start any token"
   #   end
   #
+  # Raises a TypeError when NilClass is passed.
+  #
   # See Psych::Nodes for more information about YAML AST.
-  def self.parse_stream yaml, filename = nil, &block
+  def self.parse_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, &block
+    if legacy_filename != NOT_GIVEN
+      filename = legacy_filename
+    end
+
     if block_given?
       parser = Psych::Parser.new(Handlers::DocumentStream.new(&block))
       parser.parse yaml, filename
@@ -497,14 +538,21 @@ module Psych
   #   end
   #   list # => ['foo', 'bar']
   #
-  def self.load_stream yaml, filename = nil
-    if block_given?
-      parse_stream(yaml, filename) do |node|
-        yield node.to_ruby
-      end
-    else
-      parse_stream(yaml, filename).children.map { |child| child.to_ruby }
+  def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: []
+    if legacy_filename != NOT_GIVEN
+      filename = legacy_filename
     end
+
+    result = if block_given?
+               parse_stream(yaml, filename: filename) do |node|
+                 yield node.to_ruby
+               end
+             else
+               parse_stream(yaml, filename: filename).children.map(&:to_ruby)
+             end
+
+    return fallback if result.is_a?(Array) && result.empty?
+    result
   end
 
   ###
@@ -513,7 +561,7 @@ module Psych
   # the specified +fallback+ return value, which defaults to +false+.
   def self.load_file filename, fallback: false
     File.open(filename, 'r:bom|utf-8') { |f|
-      self.load f, filename, fallback: FALLBACK.new(fallback)
+      self.load f, filename: filename, fallback: fallback
     }
   end
 

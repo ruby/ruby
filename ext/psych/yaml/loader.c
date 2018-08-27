@@ -72,7 +72,7 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
     assert(document);   /* Non-NULL document object is expected. */
 
     memset(document, 0, sizeof(yaml_document_t));
-    if (!STACK_INIT(parser, document->nodes, INITIAL_STACK_SIZE))
+    if (!STACK_INIT(parser, document->nodes, yaml_node_t*))
         goto error;
 
     if (!parser->stream_start_produced) {
@@ -90,7 +90,7 @@ yaml_parser_load(yaml_parser_t *parser, yaml_document_t *document)
         return 1;
     }
 
-    if (!STACK_INIT(parser, parser->aliases, INITIAL_STACK_SIZE))
+    if (!STACK_INIT(parser, parser->aliases, yaml_alias_data_t*))
         goto error;
 
     parser->document = document;
@@ -339,7 +339,7 @@ yaml_parser_load_sequence(yaml_parser_t *parser, yaml_event_t *first_event)
         if (!tag) goto error;
     }
 
-    if (!STACK_INIT(parser, items, INITIAL_STACK_SIZE)) goto error;
+    if (!STACK_INIT(parser, items, yaml_node_item_t*)) goto error;
 
     SEQUENCE_NODE_INIT(node, tag, items.start, items.end,
             first_event->data.sequence_start.style,
@@ -402,7 +402,7 @@ yaml_parser_load_mapping(yaml_parser_t *parser, yaml_event_t *first_event)
         if (!tag) goto error;
     }
 
-    if (!STACK_INIT(parser, pairs, INITIAL_STACK_SIZE)) goto error;
+    if (!STACK_INIT(parser, pairs, yaml_node_pair_t*)) goto error;
 
     MAPPING_NODE_INIT(node, tag, pairs.start, pairs.end,
             first_event->data.mapping_start.style,

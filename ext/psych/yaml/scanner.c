@@ -1188,7 +1188,7 @@ yaml_parser_decrease_flow_level(yaml_parser_t *parser)
 {
     if (parser->flow_level) {
         parser->flow_level --;
-	(void)POP(parser, parser->simple_keys);
+        (void)POP(parser, parser->simple_keys);
     }
 
     return 1;
@@ -2399,7 +2399,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
     {
         /* Set the handle to '' */
 
-        handle = yaml_malloc(1);
+        handle = YAML_MALLOC(1);
         if (!handle) goto error;
         handle[0] = '\0';
 
@@ -2451,7 +2451,7 @@ yaml_parser_scan_tag(yaml_parser_t *parser, yaml_token_t *token)
             /* Set the handle to '!'. */
 
             yaml_free(handle);
-            handle = yaml_malloc(2);
+            handle = YAML_MALLOC(2);
             if (!handle) goto error;
             handle[0] = '!';
             handle[1] = '\0';
@@ -3160,8 +3160,8 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
                         *(string.pointer++) = '"';
                         break;
 
-                    case '\'':
-                        *(string.pointer++) = '\'';
+                    case '/':
+                        *(string.pointer++) = '/';
                         break;
 
                     case '\\':
@@ -3278,6 +3278,11 @@ yaml_parser_scan_flow_scalar(yaml_parser_t *parser, yaml_token_t *token,
 
         /* Check if we are at the end of the scalar. */
 
+        /* Fix for crash unitialized value crash
+         * Credit for the bug and input is to OSS Fuzz
+         * Credit for the fix to Alex Gaynor
+         */
+        if (!CACHE(parser, 1)) goto error;
         if (CHECK(parser->buffer, single ? '\'' : '"'))
             break;
 
@@ -3507,7 +3512,7 @@ yaml_parser_scan_plain_scalar(yaml_parser_t *parser, yaml_token_t *token)
                 if (leading_blanks && (int)parser->mark.column < indent
                         && IS_TAB(parser->buffer)) {
                     yaml_parser_set_scanner_error(parser, "while scanning a plain scalar",
-                            start_mark, "found a tab character that violates indentation");
+                            start_mark, "found a tab character that violate indentation");
                     goto error;
                 }
 
@@ -3571,4 +3576,3 @@ error:
 
     return 0;
 }
-

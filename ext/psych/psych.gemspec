@@ -1,9 +1,15 @@
 # -*- encoding: utf-8 -*-
 # frozen_string_literal: true
 
+begin
+  require_relative 'lib/psych/versions'
+rescue LoadError
+  require_relative 'versions'
+end
+
 Gem::Specification.new do |s|
   s.name = "psych"
-  s.version = "3.0.3.pre1"
+  s.version = Psych::VERSION
   s.authors = ["Aaron Patterson", "SHIBATA Hiroshi", "Charles Oliver Nutter"]
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
   s.summary = "Psych is a YAML parser and emitter"
@@ -53,7 +59,7 @@ DESCRIPTION
       "ext/java/PsychEmitter.java", "ext/java/PsychLibrary.java", "ext/java/PsychParser.java", "ext/java/PsychToRuby.java",
       "ext/java/PsychYamlTree.java", "lib/psych_jars.rb", "lib/psych.jar"
     ]
-    s.requirements = "jar org.yaml:snakeyaml, 1.21"
+    s.requirements = "jar org.yaml:snakeyaml, #{Psych::DEFAULT_SNAKEYAML_VERSION}"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
     s.add_development_dependency 'ruby-maven'
   else
