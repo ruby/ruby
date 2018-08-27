@@ -214,6 +214,7 @@ describe "Kernel#eval" do
     ruby_exe(code).chomp.should == "a,b,c,e,LocalJumpError,f"
   end
 
+  # See language/magic_comment_spec.rb for more magic comments specs
   describe "with a magic encoding comment" do
     it "uses the magic comment encoding for the encoding of literal strings" do
       code = "# encoding: UTF-8\n'é'.encoding".b

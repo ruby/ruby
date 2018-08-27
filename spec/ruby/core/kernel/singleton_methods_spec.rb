@@ -36,6 +36,19 @@ describe :kernel_singleton_methods_modules, shared: true do
   it "does not return any included methods for a class including a module" do
     ReflectSpecs::D.singleton_methods(*@object).should include(:ds_pro, :ds_pub)
   end
+
+  it "for a module does not return methods in a module prepended to Module itself" do
+    require_relative 'fixtures/singleton_methods'
+    mod = SingletonMethodsSpecs::SelfExtending
+    mod.method(:mspec_test_kernel_singleton_methods).owner.should == SingletonMethodsSpecs::Prepended
+
+    ancestors = mod.singleton_class.ancestors
+    ancestors[0...2].should == [ mod.singleton_class, mod ]
+    ancestors.should include(SingletonMethodsSpecs::Prepended)
+
+    # Do not search prepended modules of `Module`, as that's a non-singleton class
+    mod.singleton_methods.should == []
+  end
 end
 
 describe :kernel_singleton_methods_supers, shared: true do
@@ -145,7 +158,6 @@ describe "Kernel#singleton_methods" do
     it_behaves_like :kernel_singleton_methods_supers, nil, true
     it_behaves_like :kernel_singleton_methods_modules, nil, true
     it_behaves_like :kernel_singleton_methods_private_supers, nil, true
-
   end
 
   describe "when passed false" do

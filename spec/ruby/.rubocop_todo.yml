@@ -110,12 +110,6 @@ Lint/RescueException:
     - 'language/rescue_spec.rb'
     - 'library/erb/filename_spec.rb'
 
-# Offense count: 1
-# Cop supports --auto-correct.
-Lint/ScriptPermission:
-  Exclude:
-    - 'command_line/fixtures/bin/launcher.rb'
-
 # Offense count: 2
 # Configuration parameters: IgnoreImplicitReferences.
 Lint/ShadowedArgument:

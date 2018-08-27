@@ -1,3 +1,5 @@
+require_relative '../spec_helper'
+
 describe "ruby -U" do
   it "sets Encoding.default_internal to UTF-8" do
      ruby_exe('print Encoding.default_internal.name',
