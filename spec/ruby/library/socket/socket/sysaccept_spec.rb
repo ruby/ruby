@@ -12,7 +12,7 @@ describe 'Socket#sysaccept' do
       @server.close
     end
 
-    platform_is_not :aix, :freebsd, :windows, :solaris, :darwin do # hangs
+    platform_is :linux do # hangs on other platforms
       describe 'using an unbound socket'  do
         it 'raises Errno::EINVAL' do
           lambda { @server.sysaccept }.should raise_error(Errno::EINVAL)
