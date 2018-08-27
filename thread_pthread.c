@@ -1320,6 +1320,7 @@ ubf_select(void *ptr)
 {
     rb_thread_t *th = (rb_thread_t *)ptr;
     rb_vm_t *vm = th->vm;
+    const rb_thread_t *cur = ruby_thread_from_native(); /* may be 0 */
 
     register_ubf_list(th);
 
@@ -1328,9 +1329,12 @@ ubf_select(void *ptr)
      * Therefore, we repeatedly call ubf_wakeup_thread() until a target thread
      * exit from ubf function.  We must have a timer to perform this operation.
      * We use double-checked locking here because this function may be called
-     * while vm->gvl.lock is held in do_gvl_timer
+     * while vm->gvl.lock is held in do_gvl_timer.
+     * There is also no need to start a timer if we're the designated
+     * sigwait_th thread, otherwise we can deadlock with a thread
+     * in unblock_function_clear.
      */
-    if (vm->gvl.timer != ruby_thread_from_native()) {
+    if (cur != vm->gvl.timer && cur != sigwait_th) {
         rb_native_mutex_lock(&vm->gvl.lock);
         if (!vm->gvl.timer) {
             rb_thread_wakeup_timer_thread(-1);
