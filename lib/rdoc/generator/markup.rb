@@ -65,16 +65,6 @@ end
 
 class RDoc::MethodAttr
 
-  @add_line_numbers = false
-
-  class << self
-    ##
-    # Allows controlling whether <tt>#markup_code</tt> adds line numbers to
-    # the source code.
-
-    attr_accessor :add_line_numbers
-  end
-
   ##
   # Prepend +src+ with line numbers.  Relies on the first line of a source
   # code listing having:
@@ -106,7 +96,7 @@ class RDoc::MethodAttr
   ##
   # Turns the method's token stream into HTML.
   #
-  # Prepends line numbers if +add_line_numbers+ is true.
+  # Prepends line numbers if +options.line_numbers+ is true.
 
   def markup_code
     return '' unless @token_stream
@@ -126,7 +116,7 @@ class RDoc::MethodAttr
     end
     src.gsub!(/^#{' ' * indent}/, '') if indent > 0
 
-    add_line_numbers(src) if RDoc::MethodAttr.add_line_numbers
+    add_line_numbers(src) if options.line_numbers
 
     src
   end
