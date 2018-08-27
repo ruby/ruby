@@ -936,21 +936,19 @@ void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
 static int
-sigwait_fd_migrate_signaled_p(struct waitpid_state *w)
+waitpid_signal(struct waitpid_state *w)
 {
-    int signaled = FALSE;
-    rb_thread_t *th = w->ec ? rb_ec_thread_ptr(w->ec) : 0;
-
-    if (th) rb_native_mutex_lock(&th->interrupt_lock);
-
-    if (w->cond) {
-        rb_native_cond_signal(w->cond);
-        signaled = TRUE;
+    if (w->ec) { /* rb_waitpid */
+        rb_threadptr_interrupt(rb_ec_thread_ptr(w->ec));
+        return TRUE;
     }
-
-    if (th) rb_native_mutex_unlock(&th->interrupt_lock);
-
-    return signaled;
+    else { /* ruby_waitpid_locked */
+        if (w->cond) {
+            rb_native_cond_signal(w->cond);
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /*
@@ -964,10 +962,10 @@ sigwait_fd_migrate_sleeper(rb_vm_t *vm)
     struct waitpid_state *w = 0;
 
     list_for_each(&vm->waiting_pids, w, wnode) {
-        if (sigwait_fd_migrate_signaled_p(w)) return;
+        if (waitpid_signal(w)) return;
     }
     list_for_each(&vm->waiting_grps, w, wnode) {
-        if (sigwait_fd_migrate_signaled_p(w)) return;
+        if (waitpid_signal(w)) return;
     }
 }
 
@@ -995,14 +993,7 @@ waitpid_each(struct list_head *head)
 
         w->ret = ret;
         list_del_init(&w->wnode);
-        if (w->ec) { /* rb_waitpid */
-            rb_threadptr_interrupt(rb_ec_thread_ptr(w->ec));
-        }
-        else { /* ruby_waitpid_locked */
-            if (w->cond) {
-                rb_native_cond_signal(w->cond);
-            }
-        }
+        waitpid_signal(w);
     }
 }
 #else
