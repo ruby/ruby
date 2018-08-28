@@ -792,7 +792,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   }
   gem_ext_dir = "#$extout/gems/#{CONFIG['arch']}"
   extensions_dir = Gem::StubSpecification.gemspec_stub("", gem_dir, gem_dir).extensions_dir
-  Gem::Specification.each_gemspec([srcdir+'/gems/*']) do |path|
+  dirs = Gem::Util.glob_files_in_dir "*/", "#{srcdir}/gems"
+  Gem::Specification.each_gemspec(dirs) do |path|
     spec = load_gemspec(path)
     next unless spec.platform == Gem::Platform::RUBY
     next unless spec.full_name == path[srcdir.size..-1][/\A\/gems\/([^\/]+)/, 1]
