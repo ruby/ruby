@@ -22,7 +22,17 @@ describe "Source files" do
 
   describe "encoded in UTF-16 LE with a BOM" do
     it "are invalid because they contain an invalid UTF-8 sequence before the encoding comment" do
-      ruby_exe(fixture(__FILE__, "utf16-le-bom.rb"), args: "2>&1").should =~ /invalid multibyte char/
+      bom = "\xFF\xFE".b
+      source = "# encoding: utf-16le\nputs 'hello'\n"
+      source = bom + source.bytes.zip([0]*source.bytesize).flatten.pack('C*')
+      path = tmp("utf16-le-bom.rb")
+
+      touch(path, "wb") { |f| f.write source }
+      begin
+        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+      ensure
+        rm_r path
+      end
     end
   end
 
@@ -34,7 +44,17 @@ describe "Source files" do
 
   describe "encoded in UTF-16 BE with a BOM" do
     it "are invalid because they contain an invalid UTF-8 sequence before the encoding comment" do
-      ruby_exe(fixture(__FILE__, "utf16-be-bom.rb"), args: "2>&1").should =~ /invalid multibyte char/
+      bom = "\xFE\xFF".b
+      source = "# encoding: utf-16be\nputs 'hello'\n"
+      source = bom + ([0]*source.bytesize).zip(source.bytes).flatten.pack('C*')
+      path = tmp("utf16-be-bom.rb")
+
+      touch(path, "wb") { |f| f.write source }
+      begin
+        ruby_exe(path, args: "2>&1").should =~ /invalid multibyte char/
+      ensure
+        rm_r path
+      end
     end
   end
 
