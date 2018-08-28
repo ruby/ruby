@@ -186,7 +186,7 @@ designate_timer_thread(rb_vm_t *vm)
 }
 
 /*
- * We become designated timer thread to kick vm->gvl.acquired
+ * We become designated timer thread to kick vm->gvl.owner
  * periodically.  Continue on old timeout if it expired.
  */
 static void
@@ -220,14 +220,14 @@ do_gvl_timer(rb_vm_t *vm, rb_thread_t *th)
      * Timeslice.  Warning: the process may fork while this
      * thread is contending for GVL:
      */
-    if (vm->gvl.acquired) timer_thread_function();
+    if (vm->gvl.owner) timer_thread_function();
     vm->gvl.timer = 0;
 }
 
 static void
 gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
 {
-    if (vm->gvl.acquired) {
+    if (vm->gvl.owner) {
         native_thread_data_t *nd = &th->native_thread_data;
 
         VM_ASSERT(th->unblock.func == 0 &&
@@ -242,7 +242,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
             else {
                 rb_native_cond_wait(&nd->cond.gvlq, &vm->gvl.lock);
             }
-        } while (vm->gvl.acquired);
+        } while (vm->gvl.owner);
 
         list_del_init(&nd->node.gvl);
 
@@ -254,7 +254,7 @@ gvl_acquire_common(rb_vm_t *vm, rb_thread_t *th)
     else { /* reset timer if uncontended */
         vm->gvl.timer_err = ETIMEDOUT;
     }
-    vm->gvl.acquired = th;
+    vm->gvl.owner = th;
     if (!vm->gvl.timer) {
         if (!designate_timer_thread(vm) && !ubf_threads_empty()) {
             rb_thread_wakeup_timer_thread(-1);
@@ -274,7 +274,7 @@ static native_thread_data_t *
 gvl_release_common(rb_vm_t *vm)
 {
     native_thread_data_t *next;
-    vm->gvl.acquired = 0;
+    vm->gvl.owner = 0;
     next = list_top(&vm->gvl.waitq, native_thread_data_t, node.ubf);
     if (next) rb_native_cond_signal(&next->cond.gvlq);
 
@@ -333,7 +333,7 @@ gvl_init(rb_vm_t *vm)
     rb_native_cond_initialize(&vm->gvl.switch_cond);
     rb_native_cond_initialize(&vm->gvl.switch_wait_cond);
     list_head_init(&vm->gvl.waitq);
-    vm->gvl.acquired = 0;
+    vm->gvl.owner = 0;
     vm->gvl.timer = 0;
     vm->gvl.timer_err = ETIMEDOUT;
     vm->gvl.need_yield = 0;
