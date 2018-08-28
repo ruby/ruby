@@ -1087,6 +1087,7 @@ size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
+VALUE rb_ary_behead(VALUE, long);
 #if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \

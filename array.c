@@ -1076,6 +1076,17 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify_check(ary);
     result = ary_take_first_or_last(argc, argv, ary, ARY_TAKE_FIRST);
     n = RARRAY_LEN(result);
+    rb_ary_behead(ary,n);
+
+    return result;
+}
+
+MJIT_FUNC_EXPORTED VALUE
+rb_ary_behead(VALUE ary, long n)
+{
+    if(n<=0) return ary;
+
+    rb_ary_modify_check(ary);
     if (ARY_SHARED_P(ary)) {
 	if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
 	  setup_occupied_shared:
@@ -1096,7 +1107,7 @@ rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
     }
     ARY_INCREASE_LEN(ary, -n);
 
-    return result;
+    return ary;
 }
 
 static VALUE
