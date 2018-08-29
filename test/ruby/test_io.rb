@@ -3839,11 +3839,13 @@ __END__
       Thread.new { IO.select(rset, wset, nil, 0) }.join
     end;
       th = Thread.new do
-        begin
-          IO.select(rset, wset)
-        rescue
-          retry
-        end while true
+        Thread.handle_interrupt(StandardError => :on_blocking) do
+          begin
+            IO.select(rset, wset)
+          rescue
+            retry
+          end while true
+        end
       end
       50_000.times do
         Thread.pass until th.stop?
