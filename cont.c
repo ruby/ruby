@@ -110,7 +110,6 @@ typedef struct rb_context_struct {
     rb_execution_context_t saved_ec;
     rb_jmpbuf_t jmpbuf;
     rb_ensure_entry_t *ensure_array;
-    rb_ensure_list_t *ensure_list;
     /* Pointer to MJIT info about the continuation.  */
     struct mjit_cont *mjit_cont;
 } rb_context_t;
