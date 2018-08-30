@@ -1981,11 +1981,13 @@ fiber_to_s(VALUE fibval)
 void
 rb_fiber_atfork(rb_thread_t *th)
 {
-    if (&th->root_fiber->cont.saved_ec != th->ec) {
-        th->root_fiber = th->ec->fiber_ptr;
-        th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
+    if (th->root_fiber) {
+        if (&th->root_fiber->cont.saved_ec != th->ec) {
+            th->root_fiber = th->ec->fiber_ptr;
+            th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
+        }
+        th->root_fiber->prev = 0;
     }
-    th->root_fiber->prev = 0;
 }
 #endif
 
