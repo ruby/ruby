@@ -64,7 +64,7 @@ rb_hrtime_mul(rb_hrtime_t a, rb_hrtime_t b)
     if (__builtin_mul_overflow(a, b, &c))
         return RB_HRTIME_MAX;
 #else
-    if (b != 0 && b > RB_HRTIME_MAX / b) /* overflow */
+    if (b != 0 && a > RB_HRTIME_MAX / b) /* overflow */
         return RB_HRTIME_MAX;
     c = a * b;
 #endif
