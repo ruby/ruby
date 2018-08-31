@@ -15,12 +15,14 @@ require_relative 'c_expr'
 class RubyVM::Attribute
   include RubyVM::CEscape
   attr_reader :insn, :key, :type, :expr
+  attr_accessor :preambles
 
   def initialize opts = {}
     @insn = opts[:insn]
     @key = opts[:name]
     @expr = RubyVM::CExpr.new location: opts[:location], expr: opts[:expr]
     @type = opts[:type]
+    @preambles = []
   end
 
   def name

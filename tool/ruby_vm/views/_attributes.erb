@@ -24,6 +24,9 @@ PUREFUNC(MAYBE_UNUSED(static <%= a.declaration %>));
 /* <%= a.pretty_name %> */
 <%= a.definition %>
 {
+% a.preambles.each do |konst|
+<%= render_c_expr konst -%>
+% end
 % str = render_c_expr a.expr
 % case str when /\A#/ then
     return
