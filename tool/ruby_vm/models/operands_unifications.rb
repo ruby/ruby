@@ -34,6 +34,9 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
     parts[:vars].each do |v|
       @variables[v[:name]] ||= v
     end
+    @attrs.each_value do |i|
+      inject_preambles i, parts[:attr_preamble]
+    end
   end
 
   def operand_shift_of var
@@ -86,6 +89,7 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
                     name, template[:name], opes.size, argv.size)
     else
       src  = []
+      src2 = []
       mod  = []
       spec = []
       vars = []
@@ -103,9 +107,14 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
             location: location,
             expr: "    #{k[:name]} = #{j};"
           }
+          src2 << {
+            location: location,
+            expr: "    MAYBE_UNUSED(#{k[:decl]}) = #{j};"
+          }
         end
       end
       src.map! {|i| RubyVM::CExpr.new i }
+      src2.map! {|i| RubyVM::CExpr.new i }
       return {
         name: name,
         signature: {
@@ -115,10 +124,15 @@ class RubyVM::OperandsUnifications < RubyVM::BareInstructions
           ret: template[:ret],
         },
         preamble: src,
+        attr_preamble: src2,
         vars: vars,
         spec: spec
       }
     end
+  end
+
+  def inject_preambles attr, spec
+    attr.preambles = spec
   end
 
   @instances = RubyVM::OptOperandDef.map do |h|
