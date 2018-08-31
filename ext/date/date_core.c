@@ -6788,7 +6788,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *
  *      %M - Minute of the hour (00..59)
  *
- *      %S - Second of the minute (00..59)
+ *      %S - Second of the minute (00..60)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
@@ -8233,7 +8233,7 @@ dt_lite_to_s(VALUE self)
  *
  *      %M - Minute of the hour (00..59)
  *
- *      %S - Second of the minute (00..59)
+ *      %S - Second of the minute (00..60)
  *
  *      %L - Millisecond of the second (000..999)
  *      %N - Fractional seconds digits, default is 9 digits (nanosecond)
