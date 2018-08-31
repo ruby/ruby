@@ -530,9 +530,15 @@ AS_IF([test "$GCC" = yes], [
 	])
     ])
     AS_IF([test "x$stack_protector" = xyes], [
-	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
-	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
-	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
+        AS_IF([test $gcc_major -ge 5], [
+            RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector-strong)
+            RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector-strong)
+            RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector-strong)
+        ], [
+            RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
+            RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
+            RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
+        ])
     ])
 
     AS_CASE("${compress_debug_sections:-zlib}",
