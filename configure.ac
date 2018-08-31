@@ -3309,6 +3309,14 @@ AS_CASE(["$target_os"],
 	],
     [darwin*], [
 	RUBY_APPEND_OPTION(CFLAGS, -pipe)
+	AC_COMPILE_IFELSE([
+	    AC_LANG_BOOL_COMPILE_TRY([@%:@include <AvailabilityMacros.h>],
+		[MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7])],
+	    [dnl
+		RUBY_APPEND_OPTION(XLDFLAGS, [-framework Security])
+		RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Security])
+	    ]dnl
+	)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework Foundation])
 	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework Foundation])
 	],
