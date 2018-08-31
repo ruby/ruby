@@ -470,6 +470,26 @@ fill_random_bytes_urandom(void *seed, size_t size)
 #endif
 
 #if 0
+#elif defined __APPLE__ && MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7
+#include <Security/Security.h>
+
+static int
+fill_random_bytes_syscall(void *seed, size_t size, int unused)
+{
+    int status = SecRandomCopyBytes(kSecRandomDefault, size, seed);
+
+    if (status != errSecSuccess) {
+# if 0
+        CFStringRef s = SecCopyErrorMessageString(status, NULL);
+        const char *m = s ? CFStringGetCStringPtr(s, kCFStringEncodingUTF8) : NULL;
+        fprintf(stderr, "SecRandomCopyBytes failed: %d: %s\n", status,
+                m ? m : "unknown");
+        if (s) CFRelease(s);
+# endif
+        return -1;
+    }
+    return 0;
+}
 #elif defined(HAVE_ARC4RANDOM_BUF)
 static int
 fill_random_bytes_syscall(void *buf, size_t size, int unused)
