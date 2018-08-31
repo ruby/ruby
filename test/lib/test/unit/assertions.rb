@@ -515,8 +515,8 @@ EOT
         $VERBOSE = verbose
       end
 
-      def assert_valid_syntax(code, *args)
-        prepare_syntax_check(code, *args) do |src, fname, line, mesg|
+      def assert_valid_syntax(code, *args, **opt)
+        prepare_syntax_check(code, *args, **opt) do |src, fname, line, mesg|
           yield if defined?(yield)
           assert_nothing_raised(SyntaxError, mesg) do
             assert_equal(:ok, syntax_check(src, fname, line), mesg)
