@@ -529,24 +529,24 @@ date__strptime_internal(const char *str, size_t slen,
 		goto matched;
 
 	      case 'Y':
-		  {
-		      VALUE n;
-		      int sign = 1;
+		{
+		    VALUE n;
+		    int sign = 1;
 
-		      if (issign(str[si])) {
-			  if (str[si] == '-')
-			      sign = -1;
-			  si++;
-		      }
-		      if (NUM_PATTERN_P())
-			  READ_DIGITS(n, 4);
-		      else
-			  READ_DIGITS_MAX(n);
-		      if (sign == -1)
-			  n = f_negate(n);
-		      set_hash("year", n);
-		      goto matched;
-		  }
+		    if (issign(str[si])) {
+			if (str[si] == '-')
+			    sign = -1;
+			si++;
+		    }
+		    if (NUM_PATTERN_P())
+			READ_DIGITS(n, 4);
+		    else
+			READ_DIGITS_MAX(n);
+		    if (sign == -1)
+			n = f_negate(n);
+		    set_hash("year", n);
+		    goto matched;
+		}
 
 	      case 'y':
 		{
