@@ -66,7 +66,13 @@ static const char abbr_months[][4] = {
 #define asubt_string() rb_str_new("\024", 1)
 #endif
 
-#define DECDIGIT "0123456789"
+static size_t
+digit_span(const char *s, const char *e)
+{
+    size_t i = 0;
+    while (s + i < e && isdigit(s[i])) i++;
+    return i;
+}
 
 static void
 s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
@@ -92,7 +98,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    y = d;
 	    d = Qnil;
 	}
-	if (!NIL_P(d) && *RSTRING_PTR(d) == '\'') {
+	if (!NIL_P(d) && RSTRING_LEN(d) > 0 && *RSTRING_PTR(d) == '\'') {
 	    y = d;
 	    d = Qnil;
 	}
@@ -103,17 +109,20 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	size_t l;
 
 	s = RSTRING_PTR(y);
-	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
+	ep = RSTRING_END(y);
+	while (s < ep && !issign(*s) && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_date;
 	bp = s;
 	if (issign((unsigned char)*s))
 	    s++;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	if (*ep) {
 	    y = d;
 	    d = rb_str_new(bp, ep - bp);
 	}
+      no_date:;
     }
 
     if (!NIL_P(m)) {
@@ -152,8 +161,10 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE iy;
 
 	s = RSTRING_PTR(y);
-	while (!issign((unsigned char)*s) && !isdigit((unsigned char)*s))
+	ep = RSTRING_END(y);
+	while (s < ep && !issign(*s) && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_year;
 	bp = s;
 	if (issign(*s)) {
 	    s++;
@@ -161,7 +172,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	}
 	if (sign)
 	    c = Qfalse;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	if (l > 2)
 	    c = Qfalse;
@@ -175,6 +186,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("year", iy);
+      no_year:;
     }
 
     if (bc)
@@ -186,10 +198,12 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE im;
 
 	s = RSTRING_PTR(m);
-	while (!isdigit((unsigned char)*s))
+	ep = RSTRING_END(m);
+	while (s < ep && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_month;
 	bp = s;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	{
 	    char *buf;
@@ -201,6 +215,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("mon", im);
+      no_month:;
     }
 
     if (!NIL_P(d)) {
@@ -209,10 +224,12 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	VALUE id;
 
 	s = RSTRING_PTR(d);
-	while (!isdigit((unsigned char)*s))
+	ep = RSTRING_END(d);
+	while (s < ep && !isdigit(*s))
 	    s++;
+	if (s >= ep) goto no_mday;
 	bp = s;
-	l = strspn(s, DECDIGIT);
+	l = digit_span(s, ep);
 	ep = s + l;
 	{
 	    char *buf;
@@ -224,6 +241,7 @@ s3e(VALUE hash, VALUE y, VALUE m, VALUE d, int bc)
 	    ALLOCV_END(vbuf);
 	}
 	set_hash("mday", id);
+      no_mday:;
     }
 
     if (!NIL_P(c))
@@ -706,16 +724,14 @@ parse_era(VALUE str, VALUE hash)
 static int
 check_year_width(VALUE y)
 {
-    char *s;
-    size_t l;
+    const char *s;
+    long l;
 
+    l = RSTRING_LEN(y);
+    if (l < 2) return 0;
     s = RSTRING_PTR(y);
-    l = strcspn(s, DECDIGIT);
-    s += l;
-    l = strspn(s, DECDIGIT);
-    if (l != 2)
-	return 0;
-    return 1;
+    if (!isdigit(s[1])) return 0;
+    return (l == 2 || !isdigit(s[2]));
 }
 
 static int

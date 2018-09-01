@@ -79,13 +79,16 @@ read_digits(const char *s, VALUE *n, size_t width)
 {
     size_t l;
 
-    l = strspn(s, "0123456789");
+    if (!width)
+        return 0;
+
+    l = 0;
+    while (ISDIGIT(s[l])) {
+        if (++l == width) break;
+    }
 
     if (l == 0)
 	return 0;
-
-    if (width < l)
-	l = width;
 
     if ((4 * l * sizeof(char)) <= (sizeof(long)*CHAR_BIT)) {
 	const char *os = s;
