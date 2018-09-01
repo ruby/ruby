@@ -413,6 +413,7 @@ class Time
     #       %9N :: nanosecond (9 digits)
     # %p :: Meridian indicator ("AM" or "PM")
     # %P :: Meridian indicator ("am" or "pm")
+    # %Q :: Number of milliseconds since 1970-01-01 00:00:00 UTC.
     # %r :: time, 12-hour (same as %I:%M:%S %p)
     # %R :: time, 24-hour (%H:%M)
     # %s :: Number of seconds since 1970-01-01 00:00:00 UTC.
@@ -434,6 +435,7 @@ class Time
     # %z :: Time zone as  hour offset from UTC (e.g. +0900)
     # %Z :: Time zone name
     # %% :: Literal "%" character
+    # %+ :: date(1) (%a %b %e %H:%M:%S %Z %Y)
 
     def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
