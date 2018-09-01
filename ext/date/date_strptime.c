@@ -118,21 +118,21 @@ read_digits(const char *s, VALUE *n, size_t width)
 #define del_hash(k) rb_hash_delete(hash, ID2SYM(rb_intern(k"")))
 
 #define fail() \
-{ \
+do { \
     set_hash("_fail", Qtrue); \
     return 0; \
-}
+} while (0)
 
 #define fail_p() (!NIL_P(ref_hash("_fail")))
 
 #define READ_DIGITS(n,w) \
-{ \
+do { \
     size_t l; \
     l = read_digits(&str[si], &n, w); \
     if (l == 0) \
 	fail();	\
     si += l; \
-}
+} while (0)
 
 #define READ_DIGITS_MAX(n) READ_DIGITS(n, LONG_MAX)
 
@@ -147,14 +147,14 @@ valid_range_p(VALUE v, int a, int b)
 }
 
 #define recur(fmt) \
-{ \
+do { \
     size_t l; \
     l = date__strptime_internal(&str[si], slen - si, \
 				fmt, sizeof fmt - 1, hash); \
     if (fail_p()) \
 	return 0; \
     si += l; \
-}
+} while (0)
 
 VALUE date_zone_to_diff(VALUE);
 
@@ -237,9 +237,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    VALUE n;
 
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, 2)
+			READ_DIGITS(n, 2);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    set_hash("_cent", n);
 		    goto matched;
 		}
@@ -278,9 +278,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    VALUE n;
 
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, 4)
+			READ_DIGITS(n, 4);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    set_hash("cwyear", n);
 		    goto matched;
 		}
@@ -358,9 +358,9 @@ date__strptime_internal(const char *str, size_t slen,
 		    }
 		    osi = si;
 		    if (NUM_PATTERN_P())
-			READ_DIGITS(n, c == 'L' ? 3 : 9)
+			READ_DIGITS(n, c == 'L' ? 3 : 9);
 		    else
-			READ_DIGITS_MAX(n)
+			READ_DIGITS_MAX(n);
 		    if (sign == -1)
 			n = f_negate(n);
 		    set_hash("sec_fraction",
@@ -539,11 +539,11 @@ date__strptime_internal(const char *str, size_t slen,
 			  si++;
 		      }
 		      if (NUM_PATTERN_P())
-			  READ_DIGITS(n, 4)
+			  READ_DIGITS(n, 4);
 		      else
-			  READ_DIGITS_MAX(n)
-		    if (sign == -1)
-			n = f_negate(n);
+			  READ_DIGITS_MAX(n);
+		      if (sign == -1)
+			  n = f_negate(n);
 		      set_hash("year", n);
 		      goto matched;
 		  }
