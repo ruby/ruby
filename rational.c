@@ -1991,6 +1991,15 @@ rb_numeric_quo(VALUE x, VALUE y)
     return nurat_div(x, y);
 }
 
+VALUE
+rb_rational_canonicalize(VALUE x)
+{
+    if (RB_TYPE_P(x, T_RATIONAL)) {
+        get_dat1(x);
+        if (f_one_p(dat->den)) return dat->num;
+    }
+    return x;
+}
 
 /*
  * call-seq:
