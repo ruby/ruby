@@ -646,12 +646,18 @@ static struct vtm *localtimew(wideval_t timew, struct vtm *result);
 static int leap_year_p(long y);
 #define leap_year_v_p(y) leap_year_p(NUM2LONG(modv((y), INT2FIX(400))))
 
+int ruby_tz_update;
+
 static struct tm *
 rb_localtime_r(const time_t *t, struct tm *result)
 {
 #if defined __APPLE__ && defined __LP64__
     if (*t != (time_t)(int)*t) return NULL;
 #endif
+    if (!ruby_tz_update) {
+	ruby_tz_update = 1;
+	tzset();
+    }
 #ifdef HAVE_GMTIME_R
     result = localtime_r(t, result);
 #else
@@ -677,7 +683,7 @@ rb_localtime_r(const time_t *t, struct tm *result)
 #endif
     return result;
 }
-#define LOCALTIME(tm, result) (tzset(),rb_localtime_r((tm), &(result)))
+#define LOCALTIME(tm, result) rb_localtime_r((tm), &(result))
 
 #ifndef HAVE_STRUCT_TM_TM_GMTOFF
 static struct tm *
