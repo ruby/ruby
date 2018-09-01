@@ -774,6 +774,7 @@ f_divide(VALUE self, VALUE other,
 	 VALUE (*func)(VALUE, VALUE), ID id)
 {
     if (RB_TYPE_P(other, T_COMPLEX)) {
+        VALUE r, n, x, y;
 	int flo;
 	get_dat2(self, other);
 
@@ -781,35 +782,28 @@ f_divide(VALUE self, VALUE other,
 	       RB_FLOAT_TYPE_P(bdat->real) || RB_FLOAT_TYPE_P(bdat->imag));
 
 	if (f_gt_p(f_abs(bdat->real), f_abs(bdat->imag))) {
-	    VALUE r, n;
-
 	    r = (*func)(bdat->imag, bdat->real);
 	    n = f_mul(bdat->real, f_add(ONE, f_mul(r, r)));
 	    if (flo)
 		return f_complex_new2(CLASS_OF(self),
 				      (*func)(self, n),
 				      (*func)(f_negate(f_mul(self, r)), n));
-	    return f_complex_new2(CLASS_OF(self),
-				  (*func)(f_add(adat->real,
-						f_mul(adat->imag, r)), n),
-				  (*func)(f_sub(adat->imag,
-						f_mul(adat->real, r)), n));
+            x = (*func)(f_add(adat->real, f_mul(adat->imag, r)), n);
+            y = (*func)(f_sub(adat->imag, f_mul(adat->real, r)), n);
 	}
 	else {
-	    VALUE r, n;
-
 	    r = (*func)(bdat->real, bdat->imag);
 	    n = f_mul(bdat->imag, f_add(ONE, f_mul(r, r)));
 	    if (flo)
 		return f_complex_new2(CLASS_OF(self),
 				      (*func)(f_mul(self, r), n),
 				      (*func)(f_negate(self), n));
-	    return f_complex_new2(CLASS_OF(self),
-				  (*func)(f_add(f_mul(adat->real, r),
-						adat->imag), n),
-				  (*func)(f_sub(f_mul(adat->imag, r),
-						adat->real), n));
+            x = (*func)(f_add(f_mul(adat->real, r), adat->imag), n);
+            y = (*func)(f_sub(f_mul(adat->imag, r), adat->real), n);
 	}
+        x = rb_rational_canonicalize(x);
+        y = rb_rational_canonicalize(y);
+        return f_complex_new2(CLASS_OF(self), x, y);
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);

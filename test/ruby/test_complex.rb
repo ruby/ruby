@@ -323,6 +323,13 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_equal(Complex(Rational(1,2),Rational(1)), c / Rational(2))
     assert_equal(Complex(Rational(3,2),Rational(3)), c / Rational(2,3))
+
+    c = Complex(1)
+    r = c / c
+    assert_instance_of(Complex, r)
+    assert_equal(1, r)
+    assert_predicate(r.real, :integer?)
+    assert_predicate(r.imag, :integer?)
   end
 
   def test_quo
