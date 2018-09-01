@@ -315,7 +315,7 @@ canon(VALUE x)
 
 #ifndef USE_PACK
 #define set_to_simple(obj, x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth)); \
     (x)->jd = _jd;\
     (x)->sg = (date_sg_t)(_sg);\
@@ -323,23 +323,23 @@ canon(VALUE x)
     (x)->mon = _mon;\
     (x)->mday = _mday;\
     (x)->flags = _flags;\
-}
+} while (0)
 #else
 #define set_to_simple(obj, x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth)); \
     (x)->jd = _jd;\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->pc = PACK2(_mon, _mday);\
     (x)->flags = _flags;\
-}
+} while (0)
 #endif
 
 #ifndef USE_PACK
 #define set_to_complex(obj, x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth));\
     (x)->jd = _jd;\
     (x)->df = _df;\
@@ -353,11 +353,11 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->min = _min;\
     (x)->sec = _sec;\
     (x)->flags = _flags;\
-}
+} while (0)
 #else
 #define set_to_complex(obj, x, _nth, _jd ,_df, _sf, _of, _sg,\
 _year, _mon, _mday, _hour, _min, _sec, _flags) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, canon(_nth));\
     (x)->jd = _jd;\
     (x)->df = _df;\
@@ -367,12 +367,12 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->year = _year;\
     (x)->pc = PACK5(_mon, _mday, _hour, _min, _sec);\
     (x)->flags = _flags;\
-}
+} while (0)
 #endif
 
 #ifndef USE_PACK
 #define copy_simple_to_complex(obj, x, y) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->df = 0;\
@@ -386,10 +386,10 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->min = 0;\
     (x)->sec = 0;\
     (x)->flags = (y)->flags;\
-}
+} while (0)
 #else
 #define copy_simple_to_complex(obj, x, y) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->df = 0;\
@@ -399,12 +399,12 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->year = (y)->year;\
     (x)->pc = PACK5(EX_MON((y)->pc), EX_MDAY((y)->pc), 0, 0, 0);\
     (x)->flags = (y)->flags;\
-}
+} while (0)
 #endif
 
 #ifndef USE_PACK
 #define copy_complex_to_simple(obj, x, y) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->sg = (date_sg_t)((y)->sg);\
@@ -412,17 +412,17 @@ _year, _mon, _mday, _hour, _min, _sec, _flags) \
     (x)->mon = (y)->mon;\
     (x)->mday = (y)->mday;\
     (x)->flags = (y)->flags;\
-}
+} while (0)
 #else
 #define copy_complex_to_simple(obj, x, y) \
-{\
+do {\
     RB_OBJ_WRITE((obj), &(x)->nth, (y)->nth);\
     (x)->jd = (y)->jd;\
     (x)->sg = (date_sg_t)((y)->sg);\
     (x)->year = (y)->year;\
     (x)->pc = PACK2(EX_MON((y)->pc), EX_MDAY((y)->pc));\
     (x)->flags = (y)->flags;\
-}
+} while (0)
 #endif
 
 /* base */
@@ -1109,7 +1109,7 @@ m_virtual_sg(union DateData *x)
 }
 
 #define canonicalize_jd(_nth, _jd) \
-{\
+do {\
     if (_jd < 0) {\
 	_nth = f_sub(_nth, INT2FIX(1));\
 	_jd += CM_PERIOD;\
@@ -1118,7 +1118,7 @@ m_virtual_sg(union DateData *x)
 	_nth = f_add(_nth, INT2FIX(1));\
 	_jd -= CM_PERIOD;\
     }\
-}
+} while (0)
 
 inline static void
 canonicalize_s_jd(VALUE obj, union DateData *x)
@@ -1928,13 +1928,13 @@ m_sec(union DateData *x)
 }
 
 #define decode_offset(of,s,h,m)\
-{\
+do {\
     int a;\
     s = (of < 0) ? '-' : '+';\
     a = (of < 0) ? -of : of;\
     h = a / HOUR_IN_SECONDS;\
     m = a % HOUR_IN_SECONDS / MINUTE_IN_SECONDS;\
-}
+} while (0)
 
 static VALUE
 of2str(int of)
@@ -2418,12 +2418,12 @@ offset_to_sec(VALUE vof, int *rof)
 /* date */
 
 #define valid_sg(sg) \
-{\
+do {\
     if (!c_valid_start_p(sg)) {\
 	sg = 0;\
 	rb_warning("invalid start is ignored");\
     }\
-}
+} while (0)
 
 static VALUE
 valid_jd_sub(int argc, VALUE *argv, VALUE klass, int need_jd)
@@ -3205,47 +3205,47 @@ s_trunc(VALUE s, VALUE *fr)
 }
 
 #define num2num_with_frac(s,n) \
-{\
+do {\
     s = s##_trunc(v##s, &fr);\
     if (f_nonzero_p(fr)) {\
 	if (argc > n)\
 	    rb_raise(rb_eArgError, "invalid fraction");\
 	fr2 = fr;\
     }\
-}
+} while (0)
 
 #define num2int_with_frac(s,n) \
-{\
+do {\
     s = NUM2INT(s##_trunc(v##s, &fr));\
     if (f_nonzero_p(fr)) {\
 	if (argc > n)\
 	    rb_raise(rb_eArgError, "invalid fraction");\
 	fr2 = fr;\
     }\
-}
+} while (0)
 
 #define canon24oc() \
-{\
+do {\
     if (rh == 24) {\
 	rh = 0;\
 	fr2 = f_add(fr2, INT2FIX(1));\
     }\
-}
+} while (0)
 
 #define add_frac() \
-{\
+do {\
     if (f_nonzero_p(fr2))\
 	ret = d_lite_plus(ret, fr2);\
-}
+} while (0)
 
 #define val2sg(vsg,dsg) \
-{\
+do {\
     dsg = NUM2DBL(vsg);\
     if (!c_valid_start_p(dsg)) {\
 	dsg = DEFAULT_SG;\
 	rb_warning("invalid start is ignored");\
     }\
-}
+} while (0)
 
 static VALUE d_lite_plus(VALUE, VALUE);
 
@@ -4689,12 +4689,12 @@ dup_obj_as_complex(VALUE self)
 }
 
 #define val2off(vof,iof) \
-{\
+do {\
     if (!offset_to_sec(vof, &iof)) {\
 	iof = 0;\
 	rb_warning("invalid offset is ignored");\
     }\
-}
+} while (0)
 
 #ifndef NDEBUG
 static VALUE
@@ -8646,7 +8646,7 @@ datetime_to_date(VALUE self)
 	VALUE new = d_lite_s_alloc_simple(cDate);
 	{
 	    get_d1b(new);
-	    copy_complex_to_simple(new, &bdat->s, &adat->c)
+	    copy_complex_to_simple(new, &bdat->s, &adat->c);
 	    bdat->s.jd = m_local_jd(adat);
 	    bdat->s.flags &= ~(HAVE_DF | HAVE_TIME | COMPLEX_DAT);
 	    return new;

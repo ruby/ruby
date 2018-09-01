@@ -263,18 +263,18 @@ regcomp(const char *source, long len, int opt)
 }
 
 #define REGCOMP(pat,opt) \
-{ \
+do { \
     if (NIL_P(pat)) \
 	pat = regcomp(pat##_source, sizeof pat##_source - 1, opt); \
-}
+} while (0)
 
 #define REGCOMP_0(pat) REGCOMP(pat, 0)
 #define REGCOMP_I(pat) REGCOMP(pat, ONIG_OPTION_IGNORECASE)
 
 #define MATCH(s,p,c) \
-{ \
+do { \
     return match(s, p, hash, c); \
-}
+} while (0)
 
 static int
 match(VALUE str, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
@@ -314,30 +314,30 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 }
 
 #define SUBS(s,p,c) \
-{ \
+do { \
     return subx(s, asp_string(), p, hash, c); \
-}
+} while (0)
 
 #ifdef TIGHT_PARSER
 #define SUBA(s,p,c) \
-{ \
+do { \
     return subx(s, asuba_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBB(s,p,c) \
-{ \
+do { \
     return subx(s, asubb_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBW(s,p,c) \
-{ \
+do { \
     return subx(s, asubw_string(), p, hash, c); \
-}
+} while (0)
 
 #define SUBT(s,p,c) \
-{ \
+do { \
     return subx(s, asubt_string(), p, hash, c); \
-}
+} while (0)
 #endif
 
 #include "zonetab.h"
