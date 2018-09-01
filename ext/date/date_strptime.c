@@ -426,9 +426,7 @@ date__strptime_internal(const char *str, size_t slen,
 		    if (sign == -1)
 			n = f_negate(n);
 		    set_hash("seconds",
-			     rb_rational_new2(n,
-					      f_expt(INT2FIX(10),
-						     INT2FIX(3))));
+			     rb_rational_new2(n, INT2FIX(1000)));
 		    goto matched;
 		}
 
