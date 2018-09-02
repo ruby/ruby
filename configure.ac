@@ -524,15 +524,18 @@ AS_IF([test "$GCC" = yes], [
 	stack_protector=no
     ])
     AS_IF([test -z "${stack_protector+set}"], [
-	RUBY_TRY_CFLAGS(-fstack-protector, [stack_protector=yes], [stack_protector=no])
-	AS_IF([test "x$stack_protector" = xyes], [
-	    RUBY_TRY_LDFLAGS(-fstack-protector, [], [stack_protector=broken])
+	AS_FOR(option, opt, [-fstack-protector-strong -fstack-protector], [
+	    RUBY_TRY_CFLAGS(option, [stack_protector=yes])
+	    AS_IF([test "x$stack_protector" = xyes], [
+		RUBY_TRY_LDFLAGS(option, [], [stack_protector=])
+	    ])
+	    AS_IF([test "x$stack_protector" = xyes], [stack_protector=option; break])
 	])
     ])
-    AS_IF([test "x$stack_protector" = xyes], [
-	RUBY_APPEND_OPTION(XCFLAGS, -fstack-protector)
-	RUBY_APPEND_OPTION(XLDFLAGS, -fstack-protector)
-	RUBY_APPEND_OPTION(LDFLAGS, -fstack-protector)
+    AS_CASE(["$stack_protector"], [-*], [
+	RUBY_APPEND_OPTION(XCFLAGS, $stack_protector)
+	RUBY_APPEND_OPTION(XLDFLAGS, $stack_protector)
+	RUBY_APPEND_OPTION(LDFLAGS, $stack_protector)
     ])
 
     AS_CASE("${compress_debug_sections:-zlib}",
