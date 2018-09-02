@@ -3744,7 +3744,7 @@ __END__
   end if Socket.const_defined?(:MSG_OOB)
 
   def test_select_leak
-    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 120)
+    assert_no_memory_leak([], <<-"end;", <<-"end;", rss: true, timeout: 240)
       r, w = IO.pipe
       rset = [r]
       wset = [w]
