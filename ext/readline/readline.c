@@ -1303,6 +1303,35 @@ readline_s_get_completion_append_character(VALUE self)
 #define readline_s_get_completion_append_character rb_f_notimplement
 #endif
 
+#ifdef HAVE_RL_COMPLETION_QUOTE_CHARACTER
+/*
+ * call-seq:
+ *   Readline.completion_quote_character -> char
+ *
+ * When called during a completion (e.g. from within your completion_proc),
+ * it will return a string containing the chracter used to quote the
+ * argument being completed, or nil if the argument is unquoted.
+ *
+ * When called at other times, it will always return nil.
+ *
+ * Note that ``Readline.completer_quote_characters`` must be set,
+ * or this method will always return nil.
+ */
+static VALUE
+readline_s_get_completion_quote_character(VALUE self)
+{
+    char buf[1];
+
+    if (rl_completion_quote_character == '\0')
+        return Qnil;
+
+    buf[0] = (char) rl_completion_quote_character;
+    return rb_locale_str_new(buf, 1);
+}
+#else
+#define readline_s_get_completion_quote_character rb_f_notimplement
+#endif
+
 #ifdef HAVE_RL_BASIC_WORD_BREAK_CHARACTERS
 /*
  * call-seq:
@@ -1958,6 +1987,8 @@ Init_readline(void)
                                readline_s_set_completion_append_character, 1);
     rb_define_singleton_method(mReadline, "completion_append_character",
                                readline_s_get_completion_append_character, 0);
+    rb_define_singleton_method(mReadline, "completion_quote_character",
+                               readline_s_get_completion_quote_character, 0);
     rb_define_singleton_method(mReadline, "basic_word_break_characters=",
                                readline_s_set_basic_word_break_characters, 1);
     rb_define_singleton_method(mReadline, "basic_word_break_characters",

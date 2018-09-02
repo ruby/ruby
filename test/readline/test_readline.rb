@@ -553,6 +553,65 @@ class TestReadline < Test::Unit::TestCase
     Readline.completer_word_break_characters = saved_completer_word_break_characters
   end
 
+  def test_completion_quote_character_completing_unquoted_argument
+    return unless Readline.respond_to?(:completion_quote_character)
+
+    quote_character = "original value"
+    Readline.completion_proc = -> (_) do
+      quote_character = Readline.completion_quote_character
+      []
+    end
+    Readline.completer_quote_characters = "'\""
+
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        stdin.write("input\t")
+        stdin.flush
+        Readline.readline("> ", false)
+      end
+    end
+
+    assert_nil(quote_character)
+  end
+
+  def test_completion_quote_character_completing_quoted_argument
+    return unless Readline.respond_to?(:completion_quote_character)
+
+    quote_character = "original value"
+    Readline.completion_proc = -> (_) do
+      quote_character = Readline.completion_quote_character
+      []
+    end
+    Readline.completer_quote_characters = "'\""
+
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        stdin.write("'input\t")
+        stdin.flush
+        Readline.readline("> ", false)
+      end
+    end
+
+    assert_equal("'", quote_character)
+  end
+
+  def test_completion_quote_character_after_completion
+    return unless Readline.respond_to?(:completion_quote_character)
+
+    Readline.completion_proc = -> (_) { [] }
+    Readline.completer_quote_characters = "'\""
+
+    with_temp_stdio do |stdin, stdout|
+      replace_stdio(stdin.path, stdout.path) do
+        stdin.write("'input\t")
+        stdin.flush
+        Readline.readline("> ", false)
+      end
+    end
+
+    assert_nil(Readline.completion_quote_character)
+  end
+
   private
 
   def replace_stdio(stdin_path, stdout_path)
