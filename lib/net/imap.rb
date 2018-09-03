@@ -999,7 +999,7 @@ module Net
     def self.decode_utf7(s)
       return s.gsub(/&([^-]+)?-/n) {
         if $1
-          ($1.tr(",", "/") + "===").unpack("m")[0].encode(Encoding::UTF_8, Encoding::UTF_16BE)
+          ($1.tr(",", "/") + "===").unpack1("m").encode(Encoding::UTF_8, Encoding::UTF_16BE)
         else
           "&"
         end
