@@ -7,9 +7,9 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
-    - vs: "120"
     - MSYS2_ARCH: x86_64
       MSYSTEM: MINGW64
+    - vs: "120"
 matrix:
   fast_finish: true
 notifications:
@@ -101,39 +101,17 @@ for:
     - ver
     - chcp
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
-    - set MSYS_NO_PATHCONV=1
-    - SET BITS=%Platform:x86=32%
-    - SET BITS=%BITS:x=%
-    - SET ruby_path=C:\Ruby%ruby_version:-x86=%
-    - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin
+    - SET PATH=C:\Ruby25-x64\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
     - ruby --version
-    - mkdir \usr\bin
-    - mkdir \usr\share
-    - mkdir \usr\local\bin
-    - mkdir \usr\local\include
-    - mkdir \usr\local\lib
   build_script:
+    # always update database
+    - C:\msys64\usr\bin\pacman.exe -Sy
+    - C:\msys64\usr\bin\pacman.exe -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-toolchain
+    - C:\msys64\usr\bin\pacman.exe -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
-    - pacman --noconfirm --sync --refresh --refresh pacman
-    - pacman --noconfirm --sync --refresh --refresh --sysupgrade --sysupgrade
-    - pacman --noconfirm -S --needed base-devel mingw-w64-x86_64-gdbm
-    - sh -c "ln -s $(which autom4te) /usr/bin/autom4te"
-    # mklink \usr\bin\autom4te c:\msys64\usr\bin\autom4te
-    - sh -c "ln -s $(which m4) /usr/bin/m4"
-    # mklink \usr\bin\m4.exe c:\msys64\usr\bin\m4.exe
-    - sh -c "ln -s /c/msys64/usr/share/autoconf /usr/share/autoconf"
-    # mklink /d \usr\share\autoconf c:\msys64\usr\share\autoconf
-    - sh -c autoconf
-    - sh configure --disable-install-doc --prefix=/usr/local
-    - sh -c "ln -sf $(which mingw32-make) /c/msys64/usr/bin/make.exe"
-    # del c:\msys64\usr\bin\make.exe
-    # mklink c:\msys64\usr\bin\make.exe mingw32-make.exe
-    - dir c:\usr\bin
-    - dir c:\usr\share
-    - dir c:\msys64\usr\bin\make.exe
-    - mingw32-make -j%JOBS%
-    - mingw32-make -j%JOBS% install"
+    - ps: .\win32\mingw_build_install_64.ps1
   test_script:
-    - mingw32-make test
-    - mingw32-make -j%JOBS% test-all RUBY_FORCE_TEST_JIT=1 V=1
-    - mingw32-make -j%JOBS% test-spec MSPECOPT=-j
+    - mingw32-make.exe test
+    - set RUBY_FORCE_TEST_JIT=1
+    - mingw32-make.exe test-all  TESTOPTS="-j %JOBS% --retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5"
+    - mingw32-make.exe test-spec MSPECOPT=-j
