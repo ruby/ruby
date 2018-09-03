@@ -90,8 +90,13 @@ extern "C" {
 #endif /* __GNUC__ >= 3 */
 
 #ifdef __GNUC__
+#ifdef __MINGW32__
+#define PRINTF_ARGS(decl, string_index, first_to_check) \
+  decl __attribute__((format(gnu_printf, string_index, first_to_check)))
+#else
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
   decl __attribute__((format(printf, string_index, first_to_check)))
+#endif
 #else
 #define PRINTF_ARGS(decl, string_index, first_to_check) decl
 #endif
