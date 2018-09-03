@@ -8,8 +8,13 @@ AC_CACHE_CHECK([for printf prefix for $1], [rb_cv_pri_prefix_]AS_TR_SH($1),[
             [@%:@include <stdio.h>
 	    @%:@include <stddef.h>
             @%:@ifdef __GNUC__
+            @%:@ifdef __MINGW32__
+            @%:@define PRINTF_ARGS(decl, string_index, first_to_check) \
+              decl __attribute__((format(gnu_printf, string_index, first_to_check)))
+            @%:@else
             @%:@define PRINTF_ARGS(decl, string_index, first_to_check) \
               decl __attribute__((format(printf, string_index, first_to_check)))
+            @%:@endif
             @%:@else
             @%:@define PRINTF_ARGS(decl, string_index, first_to_check) decl
             @%:@endif
