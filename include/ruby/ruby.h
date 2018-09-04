@@ -1076,9 +1076,6 @@ struct RFile {
     struct rb_io_t *fptr;
 };
 
-#define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
-#define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
-
 struct RData {
     struct RBasic basic;
     void (*dmark)(void*);
