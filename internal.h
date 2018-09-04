@@ -666,12 +666,9 @@ struct RComplex {
 
 #define RCOMPLEX(obj) (R_CAST(RComplex)(obj))
 
-#ifdef RCOMPLEX_SET_REAL        /* shortcut macro for internal only */
-#undef RCOMPLEX_SET_REAL
-#undef RCOMPLEX_SET_IMAG
+/* shortcut macro for internal only */
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
-#endif
 
 struct RHash {
     struct RBasic basic;
