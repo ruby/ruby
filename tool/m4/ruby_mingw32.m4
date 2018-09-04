@@ -12,6 +12,7 @@ rm -f conftest*])
 AS_IF([test "$rb_cv_mingw32" = yes], [
     target_os="mingw32"
     : ${ac_tool_prefix:="`expr "$CC" : ['\(.*-\)g\?cc[^/]*$']`"}
+    AC_DEFINE(__USE_MINGW_ANSI_STDIO, 1) dnl for gnu_printf
 ])
 ])
 AS_CASE(["$target_os"], [mingw*msvc], [
