@@ -1,11 +1,20 @@
+# frozen_string_literal: true
+
 require_relative '../../../spec_helper'
 
 with_feature :encoding do
   describe "Encoding::Converter.search_convpath" do
     before :all do
-      @perms = Encoding.name_list.permutation(2).map do |pair|
-        Encoding::Converter.search_convpath(pair.first, pair.last) rescue []
-      end
+      t = []
+      temp = ''.dup
+#      Encoding.list.reject { |e| e.dummy? }.map { |e| e.to_s }.permutation(2).each { |a| t << a if Array === a }
+#      Encoding.list.map { |e| e.to_s }.permutation(2).each { |a| t << a if Array === a }
+#      Encoding.name_list.permutation(2).each { |a| t << a if Array === a }
+       Encoding.name_list.permutation(2).each { |a| t << a if Array === a }
+      @perms = t.map do |a, b|
+        temp << "#{a.ljust(15)} #{b}"
+        Encoding::Converter.search_convpath(a, b) rescue nil
+      end.compact
     end
 
     it "returns an Array" do
@@ -64,10 +73,18 @@ with_feature :encoding do
     end
 
     it "raises an Encoding::ConverterNotFoundError if no conversion path exists" do
-      lambda do
-        Encoding::Converter.search_convpath(
-          Encoding::ASCII_8BIT, Encoding::Emacs_Mule)
-      end.should raise_error(Encoding::ConverterNotFoundError)
+#      lambda do
+#        Encoding::Converter.search_convpath(
+#          Encoding::ASCII_8BIT, Encoding::Emacs_Mule)
+#      end.should raise_error(Encoding::ConverterNotFoundError)
+      begin
+        Encoding::Converter.search_convpath(Encoding::ASCII_8BIT.to_s, Encoding::Emacs_Mule)
+      rescue => e
+        e.class.should == Encoding::ConverterNotFoundError
+      else
+        e.class.should == Encoding::ConverterNotFoundError
+      end
+
     end
   end
 end

@@ -21,7 +21,9 @@ def compile_extension(name)
   lib = "#{object_path}/#{ext}.#{RbConfig::CONFIG['DLEXT']}"
   ruby_header = "#{RbConfig::CONFIG['rubyhdrdir']}/ruby.h"
   libruby_so = RbConfig::CONFIG['LIBRUBY_SO'] if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
-
+  if /mswin|mingw/ =~ RUBY_PLATFORM
+    libruby_so = RbConfig::CONFIG["LIBRUBY"] if RbConfig::CONFIG["ENABLE_SHARED"] == "yes"
+  end
   begin
     mtime = File.mtime(lib)
   rescue Errno::ENOENT
