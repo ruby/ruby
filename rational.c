@@ -388,9 +388,6 @@ f_lcm(VALUE x, VALUE y)
 #define get_dat2(x,y) \
     struct RRational *adat = RRATIONAL(x), *bdat = RRATIONAL(y)
 
-#define RRATIONAL_SET_NUM(rat, n) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->num,(n))
-#define RRATIONAL_SET_DEN(rat, d) RB_OBJ_WRITE((rat), &((struct RRational *)(rat))->den,(d))
-
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
