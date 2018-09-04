@@ -7,9 +7,9 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
-    - vs: "120"
-    - MSYS2_ARCH: x86_64
-      MSYSTEM: MINGW64
+    - build: vs
+      vs: 120
+    - build: msys2
 matrix:
   fast_finish: true
 notifications:
@@ -46,7 +46,7 @@ for:
 -
   matrix:
     only:
-      - vs: "120"
+      - build: vs
   install:
     - ver
     - chcp
@@ -95,15 +95,16 @@ for:
 -
   matrix:
     only:
-      - MSYS2_ARCH: x86_64
-        MSYSTEM: MINGW64
+      - build: msys2
   install:
     - ver
     - chcp
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - set MSYS_NO_PATHCONV=1
-    - SET BITS=%Platform:x86=32%
-    - SET BITS=%BITS:x=%
+    - SET MSYSTEM=%Platform:x86=32%
+    - SET MSYSTEM=%MSYSTEM:x=MINGW%
+    - SET MSYS2_ARCH=%Platform:x86=i686%
+    - SET MSYS2_ARCH=%MSYS2_ARCH:x64=x86_64%
     - SET ruby_path=C:\Ruby%ruby_version:-x86=%
     - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\%MSYSTEM%\bin;C:\msys64\usr\bin
     - ruby --version
