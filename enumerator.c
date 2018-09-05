@@ -1613,6 +1613,20 @@ lazy_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+#if 0 /* for RDoc */
+/*
+ * call-seq:
+ *   lazy.to_a  -> array
+ *   lazy.force -> array
+ *
+ * Expands +lazy+ enumerator to an array.
+ * See Enumerable#to_a.
+ */
+static VALUE lazy_to_a(VALUE self)
+{
+}
+#endif
+
 static void
 lazy_set_args(VALUE lazy, VALUE args)
 {
@@ -2833,6 +2847,9 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "chunk_while", lazy_super, -1);
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
 
+#if 0 /* for RDoc */
+    rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);
+#endif
     rb_define_alias(rb_cLazy, "force", "to_a");
 
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
