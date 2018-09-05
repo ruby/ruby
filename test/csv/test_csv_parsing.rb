@@ -148,13 +148,13 @@ class TestCSV::Parsing < TestCSV
       CSV.parse_line("1,2\r,3", row_sep: "\n")
     end
 
-    bad_data = <<-END_DATA.gsub(/^ +/, "")
-    line,1,abc
-    line,2,"def\nghi"
+    bad_data = <<-CSV
+line,1,abc
+line,2,"def\nghi"
 
-    line,4,some\rjunk
-    line,5,jkl
-    END_DATA
+line,4,some\rjunk
+line,5,jkl
+    CSV
     lines = bad_data.lines.to_a
     assert_equal(6, lines.size)
     assert_match(/\Aline,4/, lines.find { |l| l =~ /some\rjunk/ })
@@ -172,13 +172,13 @@ class TestCSV::Parsing < TestCSV
 
     assert_raise(CSV::MalformedCSVError) { CSV.parse_line('1,2,"3...') }
 
-    bad_data = <<-END_DATA.gsub(/^ +/, "")
-    line,1,abc
-    line,2,"def\nghi"
+    bad_data = <<-CSV
+line,1,abc
+line,2,"def\nghi"
 
-    line,4,8'10"
-    line,5,jkl
-    END_DATA
+line,4,8'10"
+line,5,jkl
+    CSV
     lines = bad_data.lines.to_a
     assert_equal(6, lines.size)
     assert_match(/\Aline,4/, lines.find { |l| l =~ /8'10"/ })

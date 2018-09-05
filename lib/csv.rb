@@ -141,7 +141,7 @@ end
 # There are several specialized class methods for one-statement reading or writing,
 # described in the Specialized Methods section.
 #
-# If a String passed into ::new, it is internally wrapped into a StringIO object.
+# If a String is passed into ::new, it is internally wrapped into a StringIO object.
 #
 # +options+ can be used for specifying the particular CSV flavor (column
 # separators, row separators, value quoting and so on), and for data conversion,
@@ -890,8 +890,12 @@ class CSV
   #                                       attempt to parse input not conformant
   #                                       with RFC 4180, such as double quotes
   #                                       in unquoted fields.
-  # <b><tt>:nil_value</tt></b>::          TODO: WRITE ME.
-  # <b><tt>:empty_value</tt></b>::        TODO: WRITE ME.
+  # <b><tt>:nil_value</tt></b>::          When set an object, any values of an
+  #                                       empty field are replaced by the set
+  #                                       object, not nil.
+  # <b><tt>:empty_value</tt></b>::        When set an object, any values of a
+  #                                       blank string field is replaced by
+  #                                       the set object.
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -1232,7 +1236,7 @@ class CSV
           elsif @unconverted_fields
             return add_unconverted_fields(Array.new, Array.new)
           elsif @use_headers
-            return self.class::Row.new(Array.new, Array.new)
+            return self.class::Row.new(@headers, Array.new)
           else
             return Array.new
           end

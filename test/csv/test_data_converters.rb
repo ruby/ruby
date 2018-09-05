@@ -260,10 +260,10 @@ class TestCSV::DataConverters < TestCSV
       assert_equal(unconverted, row.unconverted_fields)
     end
 
-    data = <<-END_CSV.gsub(/^\s+/, "")
-    first,second,third
-    1,2,3
-    END_CSV
+    data = <<-CSV
+first,second,third
+1,2,3
+    CSV
     row = nil
     assert_nothing_raised(Exception) do
       row = CSV.parse_line( data,

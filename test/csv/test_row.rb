@@ -419,4 +419,12 @@ class TestCSV::Row < TestCSV
       row.dig("A", 0)
     end
   end
+
+  def test_dup
+    row = CSV::Row.new(["A"], ["foo"])
+    dupped_row = row.dup
+    dupped_row.delete("A")
+    assert_equal(["foo", nil],
+                 [row["A"], dupped_row["A"]])
+  end
 end

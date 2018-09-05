@@ -37,12 +37,12 @@ class TestCSV::Features < TestCSV
 
   def setup
     super
-    @sample_data = <<-END_DATA.gsub(/^ +/, "")
-    line,1,abc
-    line,2,"def\nghi"
+    @sample_data = <<-CSV
+line,1,abc
+line,2,"def\nghi"
 
-    line,4,jkl
-    END_DATA
+line,4,jkl
+    CSV
     @csv = CSV.new(@sample_data)
   end
 
@@ -225,12 +225,12 @@ class TestCSV::Features < TestCSV
   end
 
   # reported by Kev Jackson
-  def test_failing_to_escape_col_sep_bug_fix
+  def test_failing_to_escape_col_sep
     assert_nothing_raised(Exception) { CSV.new(String.new, col_sep: "|") }
   end
 
   # reported by Chris Roos
-  def test_failing_to_reset_headers_in_rewind_bug_fix
+  def test_failing_to_reset_headers_in_rewind
     csv = CSV.new("forename,surname", headers: true, return_headers: true)
     csv.each {|row| assert_predicate row, :header_row?}
     csv.rewind
@@ -238,16 +238,16 @@ class TestCSV::Features < TestCSV
   end
 
   # reported by Dave Burt
-  def test_leading_empty_fields_with_multibyte_col_sep_bug_fix
-    data = <<-END_DATA.gsub(/^\s+/, "")
-    <=><=>A<=>B<=>C
-    1<=>2<=>3
-    END_DATA
+  def test_leading_empty_fields_with_multibyte_col_sep
+    data = <<-CSV
+<=><=>A<=>B<=>C
+1<=>2<=>3
+    CSV
     parsed = CSV.parse(data, col_sep: "<=>")
     assert_equal([[nil, nil, "A", "B", "C"], ["1", "2", "3"]], parsed)
   end
 
-  def test_gzip_reader_bug_fix
+  def test_gzip_reader
     zipped = nil
     assert_nothing_raised(NoMethodError) do
       zipped = CSV.new(
@@ -261,7 +261,7 @@ class TestCSV::Features < TestCSV
     zipped.close
   end if defined?(Zlib::GzipReader)
 
-  def test_gzip_writer_bug_fix
+  def test_gzip_writer
     Tempfile.create(%w"temp .gz") {|tempfile|
       tempfile.close
       file = tempfile.path
