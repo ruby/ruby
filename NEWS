@@ -176,6 +176,7 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `Range#===` now uses `#cover?` instead of `#include?` method.
           [Feature #14575]
+	* `Range#cover?` now accepts Range object. [Feature #14473]
 
 * `RubyVM::AST`
 
