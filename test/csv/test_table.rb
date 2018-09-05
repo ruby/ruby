@@ -42,6 +42,11 @@ class TestCSV::Table < TestCSV
     assert_equal(:row, rows.mode)
     assert_equal(@table, rows)
 
+    col_or_row = rows.by_col_or_row
+    assert_equal(:row, rows.mode)
+    assert_equal(:col_or_row, col_or_row.mode)
+    assert_equal(@table, col_or_row)
+
     # destructive mode changing calls
     assert_equal(@table, @table.by_row!)
     assert_equal(:row, @table.mode)
@@ -148,13 +153,13 @@ class TestCSV::Table < TestCSV
                   @table.to_a )
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A,B,C,Type,Index
-    1,100,3,data,1
-    4,200,6,data,2
-    10,,12,data,3
-    13,,15,data,
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A,B,C,Type,Index
+1,100,3,data,1
+4,200,6,data,2
+10,,12,data,3
+13,,15,data,
+    CSV
 
     # with headers
     @header_table["Type"] = "data"
@@ -286,12 +291,12 @@ class TestCSV::Table < TestCSV
   end
 
   def test_to_csv
-    csv = <<-END_CSV.gsub(/^\s+/, "")
-    A,B,C
-    1,2,3
-    4,5,6
-    7,8,9
-    END_CSV
+    csv = <<-CSV
+A,B,C
+1,2,3
+4,5,6
+7,8,9
+    CSV
 
     # normal conversion
     assert_equal(csv, @table.to_csv)
@@ -330,11 +335,11 @@ class TestCSV::Table < TestCSV
     assert_equal(@rows.map { |row| row["A"] }, @table.delete("A"))
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    B,C
-    2,3
-    8,9
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+B,C
+2,3
+8,9
+    CSV
   end
 
   def test_delete_mixed_multiple
@@ -352,11 +357,11 @@ class TestCSV::Table < TestCSV
                  @table.delete(1, "A"))
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    B,C
-    2,3
-    8,9
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+B,C
+2,3
+8,9
+    CSV
   end
 
   def test_delete_column
@@ -369,12 +374,12 @@ class TestCSV::Table < TestCSV
     assert_equal(@rows.map { |row| row["C"] }, @table.delete("C"))
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    B
-    2
-    5
-    8
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+B
+2
+5
+8
+    CSV
   end
 
   def test_delete_row
@@ -387,11 +392,11 @@ class TestCSV::Table < TestCSV
     assert_raise(TypeError) { @table.delete("C") }
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A,B,C
-    1,2,3
-    7,8,9
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A,B,C
+1,2,3
+7,8,9
+    CSV
   end
 
   def test_delete_with_blank_rows
@@ -408,10 +413,10 @@ class TestCSV::Table < TestCSV
     assert_equal(@table, @table.delete_if { |row| (row["B"] % 2).zero? })
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A,B,C
-    4,5,6
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A,B,C
+4,5,6
+    CSV
   end
 
   def test_delete_if_row_without_block
@@ -426,10 +431,10 @@ class TestCSV::Table < TestCSV
     assert_equal(@table, enum.each { |row| (row["B"] % 2).zero? })
 
     # verify resulting table
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A,B,C
-    4,5,6
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A,B,C
+4,5,6
+    CSV
   end
 
   def test_delete_if_column
@@ -439,12 +444,12 @@ class TestCSV::Table < TestCSV
     @table.by_col!
 
     assert_equal(@table, @table.delete_if { |h, v| h > "A" })
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A
-    1
-    4
-    7
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A
+1
+4
+7
+    CSV
   end
 
   def test_delete_if_column_without_block
@@ -458,12 +463,12 @@ class TestCSV::Table < TestCSV
     assert_equal(@table.headers.size, enum.size)
 
     assert_equal(@table, enum.each { |h, v| h > "A" })
-    assert_equal(<<-END_RESULT.gsub(/^\s+/, ""), @table.to_csv)
-    A
-    1
-    4
-    7
-    END_RESULT
+    assert_equal(<<-CSV, @table.to_csv)
+A
+1
+4
+7
+    CSV
   end
 
   def test_values_at

@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "version"
+begin
+  require_relative "lib/csv/version"
+rescue LoadError
+  require_relative "version"
+end
 
 Gem::Specification.new do |spec|
   spec.name          = "csv"
@@ -13,7 +17,8 @@ Gem::Specification.new do |spec|
   spec.homepage      = "https://github.com/ruby/csv"
   spec.license       = "BSD-2-Clause"
 
-  spec.files         = ["lib/csv.rb", "lib/csv/table.rb", "lib/csv/core_ext/string.rb", "lib/csv/core_ext/array.rb", "lib/csv/row.rb", "lib/csv/version.rb", "README.md", "LICENSE.txt", "news.md"]
+  spec.files         = Dir.glob("lib/**/*.rb")
+  spec.files         += ["README.md", "LICENSE.txt", "news.md"]
   spec.require_paths = ["lib"]
   spec.required_ruby_version = ">= 2.3.0"
 

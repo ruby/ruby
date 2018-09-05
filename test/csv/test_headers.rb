@@ -13,11 +13,11 @@ class TestCSV::Headers < TestCSV
 
   def setup
     super
-    @data = <<-END_CSV.gsub(/^\s+/, "")
-    first,second,third
-    A,B,C
-    1,2,3
-    END_CSV
+    @data = <<-CSV
+first,second,third
+A,B,C
+1,2,3
+    CSV
   end
 
   def test_first_row
@@ -183,10 +183,10 @@ class TestCSV::Headers < TestCSV
 
   def test_converters
     # create test data where headers and fields look alike
-    data = <<-END_MATCHING_CSV.gsub(/^\s+/, "")
-    1,2,3
-    1,2,3
-    END_MATCHING_CSV
+    data = <<-CSV
+1,2,3
+1,2,3
+    CSV
 
     # normal converters do not affect headers
     csv = CSV.parse( data, headers:        true,
@@ -256,16 +256,16 @@ class TestCSV::Headers < TestCSV
   end
 
   def test_skip_blanks
-    @data = <<-END_CSV.gsub(/^ +/, "")
+    @data = <<-CSV
 
 
-    A,B,C
+A,B,C
 
-    1,2,3
+1,2,3
 
 
 
-    END_CSV
+    CSV
 
     expected = [%w[1 2 3]]
     CSV.parse(@data, headers: true, skip_blanks: true) do |row|
@@ -292,12 +292,27 @@ class TestCSV::Headers < TestCSV
     assert_equal(%w[first second third], csv.headers)  # after headers are read
   end
 
-  def test_blank_row_bug_fix
+  def test_blank_row
     @data += "\n#{@data}"  # add a blank row
 
     # ensure that everything returned is a Row object
     CSV.parse(@data, headers: true) do |row|
       assert_instance_of(CSV::Row, row)
     end
+  end
+
+  def test_nil_row_header
+    @data = <<-CSV
+A
+
+1
+    CSV
+
+    csv = CSV.parse(@data, headers: true)
+
+    # ensure nil row creates Row object with headers
+    row = csv[0]
+    assert_equal([["A"], [nil]],
+                 [row.headers, row.fields])
   end
 end

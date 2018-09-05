@@ -48,6 +48,11 @@ class CSV
     extend Forwardable
     def_delegators :@row, :empty?, :length, :size
 
+    def initialize_copy(other)
+      super
+      @row = @row.dup
+    end
+
     # Returns +true+ if this is a header row.
     def header_row?
       @header_row
