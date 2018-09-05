@@ -330,8 +330,8 @@ Or, update, build, install and check, by just:
 == Contributing Documentation
 
 If you're interested in contributing documentation directly to CRuby there is
-a wealth of information available at
-{documenting-ruby.org}[http://documenting-ruby.org/].
+some information available at
+{Contributing}[https://github.com/ruby/ruby#contributing].
 
 There is also the {Ruby Reference
 Manual}[https://github.com/rurema/doctree/wiki] in Japanese.
