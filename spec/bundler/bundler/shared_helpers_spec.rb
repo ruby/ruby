@@ -263,6 +263,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     it "calls the appropriate set methods" do
+      expect(subject).to receive(:set_bundle_variables)
       expect(subject).to receive(:set_path)
       expect(subject).to receive(:set_rubyopt)
       expect(subject).to receive(:set_rubylib)
