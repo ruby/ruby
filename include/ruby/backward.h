@@ -12,10 +12,6 @@ struct RClass {
 #define DECLARE_DEPRECATED_FEATURE(ver, func) \
     NORETURN(ERRORFUNC(("deprecated since "#ver), DEPRECATED(void func(void))))
 
-/* complex.c */
-DECLARE_DEPRECATED_FEATURE(2.2, rb_complex_set_real);
-DECLARE_DEPRECATED_FEATURE(2.2, rb_complex_set_imag);
-
 /* eval.c */
 DECLARE_DEPRECATED_FEATURE(2.2, rb_disable_super);
 DECLARE_DEPRECATED_FEATURE(2.2, rb_enable_super);
