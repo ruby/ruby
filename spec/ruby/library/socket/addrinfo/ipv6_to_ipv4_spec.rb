@@ -11,31 +11,33 @@ guard -> { SocketSpecs.ipv6_available? } do
       addr.ip_address.should == '192.168.1.1'
     end
 
-    it 'returns an Addrinfo for ::0.0.1.1' do
-      addr = Addrinfo.ip('::0.0.1.1').ipv6_to_ipv4
+    platform_is_not :aix do
+      it 'returns an Addrinfo for ::0.0.1.1' do
+        addr = Addrinfo.ip('::0.0.1.1').ipv6_to_ipv4
 
-      addr.should be_an_instance_of(Addrinfo)
+        addr.should be_an_instance_of(Addrinfo)
 
-      addr.afamily.should    == Socket::AF_INET
-      addr.ip_address.should == '0.0.1.1'
-    end
+        addr.afamily.should    == Socket::AF_INET
+        addr.ip_address.should == '0.0.1.1'
+      end
 
-    it 'returns an Addrinfo for ::0.0.1.0' do
-      addr = Addrinfo.ip('::0.0.1.0').ipv6_to_ipv4
+      it 'returns an Addrinfo for ::0.0.1.0' do
+        addr = Addrinfo.ip('::0.0.1.0').ipv6_to_ipv4
 
-      addr.should be_an_instance_of(Addrinfo)
+        addr.should be_an_instance_of(Addrinfo)
 
-      addr.afamily.should    == Socket::AF_INET
-      addr.ip_address.should == '0.0.1.0'
-    end
+        addr.afamily.should    == Socket::AF_INET
+        addr.ip_address.should == '0.0.1.0'
+      end
 
-    it 'returns an Addrinfo for ::0.1.0.0' do
-      addr = Addrinfo.ip('::0.1.0.0').ipv6_to_ipv4
+      it 'returns an Addrinfo for ::0.1.0.0' do
+        addr = Addrinfo.ip('::0.1.0.0').ipv6_to_ipv4
 
-      addr.should be_an_instance_of(Addrinfo)
+        addr.should be_an_instance_of(Addrinfo)
 
-      addr.afamily.should    == Socket::AF_INET
-      addr.ip_address.should == '0.1.0.0'
+        addr.afamily.should    == Socket::AF_INET
+        addr.ip_address.should == '0.1.0.0'
+      end
     end
 
     it 'returns an Addrinfo for ::ffff:192.168.1.1' do

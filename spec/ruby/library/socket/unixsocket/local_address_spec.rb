@@ -21,20 +21,24 @@ with_feature :unix_socket do
     end
 
     describe 'the returned Addrinfo' do
-      it 'uses AF_UNIX as the address family' do
-        @client.local_address.afamily.should == Socket::AF_UNIX
-      end
+      platform_is_not :aix do
+        it 'uses AF_UNIX as the address family' do
+          @client.local_address.afamily.should == Socket::AF_UNIX
+        end
 
-      it 'uses PF_UNIX as the protocol family' do
-        @client.local_address.pfamily.should == Socket::PF_UNIX
+        it 'uses PF_UNIX as the protocol family' do
+          @client.local_address.pfamily.should == Socket::PF_UNIX
+        end
       end
 
       it 'uses SOCK_STREAM as the socket type' do
         @client.local_address.socktype.should == Socket::SOCK_STREAM
       end
 
-      it 'uses an empty socket path' do
-        @client.local_address.unix_path.should == ''
+      platform_is_not :aix do
+        it 'uses an empty socket path' do
+          @client.local_address.unix_path.should == ''
+        end
       end
 
       it 'uses 0 as the protocol' do
