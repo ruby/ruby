@@ -1334,10 +1334,12 @@ range_include_internal(VALUE range, VALUE val)
     return Qundef;
 }
 
+static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
 
 /*
  *  call-seq:
- *     rng.cover?(obj)  ->  true or false
+ *     rng.cover?(obj)   ->  true or false
+ *     rng.cover?(range) ->  true or false
  *
  *  Returns <code>true</code> if +obj+ is between the begin and end of
  *  the range.
@@ -1345,9 +1347,21 @@ range_include_internal(VALUE range, VALUE val)
  *  This tests <code>begin <= obj <= end</code> when #exclude_end? is +false+
  *  and <code>begin <= obj < end</code> when #exclude_end? is +true+.
  *
- *     ("a".."z").cover?("c")    #=> true
- *     ("a".."z").cover?("5")    #=> false
- *     ("a".."z").cover?("cc")   #=> true
+ *  Returns <code>true</code> for a Range when it is covered by the reciver,
+ *  by comparing the begin and end values. If the argument can be treated as
+ *  a sequence, this method treats it that way. In the specific case of
+ *  <code>(a..b).cover?(c...d)</code> with <code>a <= c && b < d</code>,
+ *  end of sequence must be calculated, which may exhibit poor performance if
+ *  c is non-numeric. Returns <code>false</code> if the begin value of the
+ *  Range is larger than the end value.
+ *
+ *  Return
+ *     ("a".."z").cover?("c")  #=> true
+ *     ("a".."z").cover?("5")  #=> false
+ *     ("a".."z").cover?("cc") #=> true
+ *     (1..5).cover?(2..3)     #=> true
+ *     (1..5).cover?(0..6)     #=> false
+ *     (1..5).cover?(1...6)    #=> true
  */
 
 static VALUE
@@ -1357,7 +1371,46 @@ range_cover(VALUE range, VALUE val)
 
     beg = RANGE_BEG(range);
     end = RANGE_END(range);
+
+    if (rb_obj_is_kind_of(val, rb_cRange)) {
+        return RBOOL(r_cover_range_p(range, beg, end, val));
+    }
     return r_cover_p(range, beg, end, val);
+}
+
+static VALUE
+r_call_max(VALUE r)
+{
+    return rb_funcallv(r, rb_intern("max"), 0, 0);
+}
+
+static int
+r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
+{
+    VALUE val_beg, val_end, val_max;
+    int cmp_end;
+
+    val_beg = RANGE_BEG(val);
+    val_end = RANGE_END(val);
+
+    if (!NIL_P(end) && NIL_P(val_end)) return FALSE;
+    if (!NIL_P(val_end) && r_less(val_beg, val_end) > -EXCL(val)) return FALSE;
+    if (!r_cover_p(range, beg, end, val_beg)) return FALSE;
+
+    cmp_end = r_less(end, val_end);
+
+    if (EXCL(range) == EXCL(val)) {
+        return cmp_end >= 0;
+    } else if (EXCL(range)) {
+        return cmp_end > 0;
+    } else if (cmp_end >= 0) {
+        return TRUE;
+    }
+
+    val_max = rb_rescue2(r_call_max, val, NULL, Qnil, rb_eTypeError, (VALUE)0);
+    if (val_max == Qnil) return FALSE;
+
+    return r_less(end, val_max) >= 0;
 }
 
 static VALUE
