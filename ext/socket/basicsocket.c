@@ -314,7 +314,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
     level = rsock_level_arg(family, lev);
     option = rsock_optname_arg(family, level, optname);
     len = 256;
-#ifdef Qnil
+#ifdef _AIX
     switch (option) {
       case SO_DEBUG:
       case SO_REUSEADDR:
