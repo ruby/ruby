@@ -95,21 +95,23 @@ describe 'Socket#connect_address' do
   end
 
   with_feature :unix_socket do
-    describe 'using an unbound UNIX socket' do
-      before do
-        @path = SocketSpecs.socket_path
-        @server = UNIXServer.new(@path)
-        @client = UNIXSocket.new(@path)
-      end
+    platform_is_not :aix do
+      describe 'using an unbound UNIX socket' do
+        before do
+          @path = SocketSpecs.socket_path
+          @server = UNIXServer.new(@path)
+          @client = UNIXSocket.new(@path)
+        end
 
-      after do
-        @client.close
-        @server.close
-        rm_r(@path)
-      end
+        after do
+          @client.close
+          @server.close
+          rm_r(@path)
+        end
 
-      it 'raises SocketError' do
-        lambda { @client.connect_address }.should raise_error(SocketError)
+        it 'raises SocketError' do
+          lambda { @client.connect_address }.should raise_error(SocketError)
+        end
       end
     end
 

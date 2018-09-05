@@ -62,7 +62,7 @@ describe 'Socket.gethostbyaddr' do
     end
   end
 
-  guard -> { SocketSpecs.ipv6_available? } do
+  guard -> { SocketSpecs.ipv6_available? && platform_is_not(:aix) } do
     describe 'using an IPv6 address' do
       before do
         @addr = IPAddr.new('::1').hton
