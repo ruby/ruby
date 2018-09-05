@@ -1380,6 +1380,7 @@ ubf_wakeup_all_threads(void)
 #define ubf_select 0
 static void ubf_wakeup_all_threads(void) { return; }
 static int ubf_threads_empty(void) { return 1; }
+#define ubf_list_atfork() do {} while (0)
 #endif /* USE_UBF_LIST */
 
 #define TT_DEBUG 0
