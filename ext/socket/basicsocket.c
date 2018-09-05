@@ -322,7 +322,7 @@ bsock_getsockopt(VALUE sock, VALUE lev, VALUE optname)
       case SO_DONTROUTE:
       case SO_BROADCAST:
       case SO_OOBINLINE:
-        /* AIX doesn' set len for boolean options */
+        /* AIX doesn't set len for boolean options */
         len = sizeof(int);
     }
 #endif
