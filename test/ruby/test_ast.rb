@@ -155,7 +155,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_parse_file_raises_syntax_error
-    Tempfile.create("test_ast.rb") do |f|
+    Tempfile.create(["test_ast", ".rb"]) do |f|
       f.puts "end"
       f.close
       assert_raise(SyntaxError) { RubyVM::AST.parse_file(f.path) }
