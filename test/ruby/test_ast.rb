@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'tempfile'
 
 class RubyVM
   module AST
@@ -161,16 +162,7 @@ class TestAst < Test::Unit::TestCase
     Tempfile.create(%w"test_ast .rb") do |f|
       f.puts "end"
       f.close
-      path = f.path
-      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /keyword_end/, [], success: true)
-      begin;
-        path = ARGV[0]
-        begin
-          RubyVM::AST.parse_file(path)
-        rescue SyntaxError => e
-          puts e.message
-        end
-      end;
+      assert_raise(SyntaxError) { RubyVM::AST.parse_file(f.path) }
     end
   end
 
