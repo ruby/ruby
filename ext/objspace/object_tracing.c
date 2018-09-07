@@ -129,6 +129,7 @@ freeobj_i(VALUE tpval, void *data)
     }
     else {
 	if (st_delete(arg->object_table, &obj, &v)) {
+	    info = (struct allocation_info *)v;
 	    delete_unique_str(arg->str_table, info->path);
 	    delete_unique_str(arg->str_table, info->class_path);
 	    ruby_xfree(info);
