@@ -1,10 +1,8 @@
-#! ./miniruby
+#! ./miniruby -n
 
 # Used when making Ruby to generate node_name.inc.
 # See common.mk for details.
 
-while gets
-  if ~/enum node_type \{/..~/^\};/
-    ~/(NODE_.+),/ and puts("      case #{$1}:\n\treturn \"#{$1}\";")
-  end
+if (t ||= /^enum node_type \{/ =~ $_) and (t = /^\};/ !~ $_)
+  /(NODE_.+),/ =~ $_ and puts("      case #{$1}:\n\treturn \"#{$1}\";")
 end
