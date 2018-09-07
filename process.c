@@ -6408,8 +6408,7 @@ rb_daemon(int nochdir, int noclose)
 	(void)dup2(n, 0);
 	(void)dup2(n, 1);
 	(void)dup2(n, 2);
-	if (n > 2)
-	    (void)close (n);
+        (void)close(n);
     }
 #endif
     return err;
