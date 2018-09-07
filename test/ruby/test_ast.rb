@@ -155,14 +155,18 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_parse_raises_syntax_error
-    assert_raise(SyntaxError) { RubyVM::AST.parse("end") }
+    assert_raise_with_message(SyntaxError, /keyword_end/) do
+      RubyVM::AST.parse("end")
+    end
   end
 
   def test_parse_file_raises_syntax_error
     Tempfile.create(%w"test_ast .rb") do |f|
       f.puts "end"
       f.close
-      assert_raise(SyntaxError) { RubyVM::AST.parse_file(f.path) }
+      assert_raise_with_message(SyntaxError, /keyword_end/) do
+        RubyVM::AST.parse_file(f.path)
+      end
     end
   end
 
