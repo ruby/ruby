@@ -185,7 +185,9 @@ trace_object_allocations_start(VALUE self)
     else {
 	if (arg->newobj_trace == 0) {
 	    arg->newobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_NEWOBJ, newobj_i, arg);
+	    rb_gc_register_mark_object(arg->newobj_trace);
 	    arg->freeobj_trace = rb_tracepoint_new(0, RUBY_INTERNAL_EVENT_FREEOBJ, freeobj_i, arg);
+	    rb_gc_register_mark_object(arg->freeobj_trace);
 	}
 	rb_tracepoint_enable(arg->newobj_trace);
 	rb_tracepoint_enable(arg->freeobj_trace);
@@ -215,8 +217,6 @@ trace_object_allocations_stop(VALUE self)
     if (arg->running == 0) {
 	rb_tracepoint_disable(arg->newobj_trace);
 	rb_tracepoint_disable(arg->freeobj_trace);
-	arg->newobj_trace = 0;
-	arg->freeobj_trace = 0;
     }
 
     return Qnil;
