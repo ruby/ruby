@@ -19,6 +19,10 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
+#ifdef _FORTIFY_SOURCE
+VALUE rb_vm_stack_canary;
+#endif
+
 /* control stack frame */
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);

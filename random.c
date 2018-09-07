@@ -1683,6 +1683,11 @@ InitVM_Random(void)
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
+
+#ifdef _FORTIFY_SOURCE
+    fill_random_seed((void *)&rb_vm_stack_canary,
+        sizeof(rb_vm_stack_canary) / SIZEOF_UINT32_T);
+#endif
 }
 
 #undef rb_intern
