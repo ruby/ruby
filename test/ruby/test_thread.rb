@@ -168,6 +168,8 @@ class TestThread < Test::Unit::TestCase
     t1.kill
     t2.kill
     assert_operator(c1, :>, c2, "[ruby-dev:33124]") # not guaranteed
+    t1.join
+    t2.join
   end
 
   def test_new
@@ -186,8 +188,8 @@ class TestThread < Test::Unit::TestCase
     end
 
   ensure
-    t1.kill if t1
-    t2.kill if t2
+    t1&.kill.join
+    t2&.kill.join
   end
 
   def test_new_symbol_proc
@@ -203,7 +205,7 @@ class TestThread < Test::Unit::TestCase
     assert_nil(t.join(0.05))
 
   ensure
-    t.kill if t
+    t&.kill.join
   end
 
   def test_join2
@@ -309,9 +311,8 @@ class TestThread < Test::Unit::TestCase
     Thread.pass while t.alive?
     assert_equal(2, s)
     assert_raise(ThreadError) { t.wakeup }
-
   ensure
-    t.kill if t
+    t&.kill.join
   end
 
   def test_stop
@@ -432,6 +433,7 @@ class TestThread < Test::Unit::TestCase
         }
         assert_equal(false, q1.pop)
         Thread.pass while th.alive?
+        assert_raise(RuntimeError) { th.join }
       }
 
       assert_warn(/report 2/, "exception should be reported when true") {
@@ -441,6 +443,7 @@ class TestThread < Test::Unit::TestCase
         }
         assert_equal(true, q1.pop)
         Thread.pass while th.alive?
+        assert_raise(RuntimeError) { th.join }
       }
 
       assert_warn("", "the global flag should not affect already started threads") {
@@ -453,6 +456,7 @@ class TestThread < Test::Unit::TestCase
         q2.push(Thread.report_on_exception = true)
         assert_equal(false, q1.pop)
         Thread.pass while th.alive?
+        assert_raise(RuntimeError) { th.join }
       }
 
       assert_warn(/report 4/, "should defaults to the global flag at the start") {
@@ -463,6 +467,7 @@ class TestThread < Test::Unit::TestCase
         }
         assert_equal(true, q1.pop)
         Thread.pass while th.alive?
+        assert_raise(RuntimeError) { th.join }
       }
 
       assert_warn(/report 5/, "should first report and then raise with report_on_exception + abort_on_exception") {
@@ -476,6 +481,7 @@ class TestThread < Test::Unit::TestCase
           q2.push(true)
           Thread.pass while th.alive?
         }
+        assert_raise(RuntimeError) { th.join }
       }
     end;
   end
@@ -503,11 +509,10 @@ class TestThread < Test::Unit::TestCase
     es1 = e.status
     es2 = e.stop?
     assert_equal(["run", false], [es1, es2])
-
+    assert_raise(RuntimeError) { a.join }
   ensure
-    a.kill if a
-    b.kill if b
-    c.kill if c
+    b&.kill.join
+    c&.join
   end
 
   def test_switch_while_busy_loop
@@ -542,7 +547,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal($SAFE, t.safe_level)
   ensure
     $SAFE = 0
-    t.kill if t
+    t&.kill.join
   end
 
   def test_thread_local
@@ -562,7 +567,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal([:foo, :bar, :baz].sort, t.keys.sort)
 
   ensure
-    t.kill if t
+    t&.kill.join
   end
 
   def test_thread_local_fetch
@@ -594,7 +599,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:qux, e.key)
     assert_equal(t, e.receiver)
   ensure
-    t.kill if t
+    t&.kill.join
   end
 
   def test_thread_local_security
