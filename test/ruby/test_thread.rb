@@ -188,8 +188,8 @@ class TestThread < Test::Unit::TestCase
     end
 
   ensure
-    t1&.kill.join
-    t2&.kill.join
+    t1&.kill&.join
+    t2&.kill&.join
   end
 
   def test_new_symbol_proc
@@ -205,7 +205,7 @@ class TestThread < Test::Unit::TestCase
     assert_nil(t.join(0.05))
 
   ensure
-    t&.kill.join
+    t&.kill&.join
   end
 
   def test_join2
@@ -312,7 +312,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(2, s)
     assert_raise(ThreadError) { t.wakeup }
   ensure
-    t&.kill.join
+    t&.kill&.join
   end
 
   def test_stop
@@ -511,7 +511,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(["run", false], [es1, es2])
     assert_raise(RuntimeError) { a.join }
   ensure
-    b&.kill.join
+    b&.kill&.join
     c&.join
   end
 
@@ -530,7 +530,7 @@ class TestThread < Test::Unit::TestCase
     end
     assert(!flag, bug1402)
   ensure
-    waiter.kill.join
+    waiter&.kill&.join
   end
 
   def test_safe_level
@@ -547,7 +547,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal($SAFE, t.safe_level)
   ensure
     $SAFE = 0
-    t&.kill.join
+    t&.kill&.join
   end
 
   def test_thread_local
@@ -567,7 +567,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal([:foo, :bar, :baz].sort, t.keys.sort)
 
   ensure
-    t&.kill.join
+    t&.kill&.join
   end
 
   def test_thread_local_fetch
@@ -599,7 +599,7 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:qux, e.key)
     assert_equal(t, e.receiver)
   ensure
-    t&.kill.join
+    t&.kill&.join
   end
 
   def test_thread_local_security
