@@ -1869,7 +1869,7 @@ AC_CHECK_FUNCS(utimes)
 AC_CHECK_FUNCS(wait4)
 AC_CHECK_FUNCS(waitpid)
 
-AS_IF([test "$ac_cv_func_memset_s" = yes],
+AS_CASE(["$ac_cv_func_memset_s:$ac_cvs_func_qsort_s"], [*yes*],
     [RUBY_DEFINE_IF([!defined __STDC_WANT_LIB_EXT1__], [__STDC_WANT_LIB_EXT1__], 1)])
 
 AS_IF([test "$ac_cv_func_getcwd" = yes], [
