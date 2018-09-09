@@ -21,11 +21,20 @@ dist: trusty
 
 sudo: false
 
-compiler:
-  - gcc
-
-os:
-  - linux
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+    - os: linux
+      compiler: gcc-8
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-8
+      env:
+        - CC=gcc-8 AR=gcc-ar-8 NM=gcc-nm-8 RANLIB=gcc-ranlib-8
 
 before_install:
   - "CONFIG_FLAG="
