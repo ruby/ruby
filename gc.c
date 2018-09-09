@@ -6602,6 +6602,7 @@ gc_enter(rb_objspace_t *objspace, const char *event)
     mjit_gc_start_hook();
 
     during_gc = TRUE;
+    fprintf(stderr, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
     gc_report(1, objspace, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
     gc_record(objspace, 0, event);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
@@ -6615,6 +6616,7 @@ gc_exit(rb_objspace_t *objspace, const char *event)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passsed? */
     gc_record(objspace, 1, event);
     gc_report(1, objspace, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
+    fprintf(stderr, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
     during_gc = FALSE;
 
     mjit_gc_finish_hook();
