@@ -1,4 +1,5 @@
 require_relative '../spec_helper'
+require_relative '../fixtures/classes'
 
 guard -> { SocketSpecs.ipv6_available? } do
   describe 'Addrinfo#ipv6_sitelocal?' do
