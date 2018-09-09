@@ -35,6 +35,14 @@ matrix:
             - gcc-8
       env:
         - CC=gcc-8 AR=gcc-ar-8 NM=gcc-nm-8 RANLIB=gcc-ranlib-8
+    - os: linux
+      language: ruby
+      rvm: 2.3
+      stage: Running ruby/spec on 2.3 to ensure version guards are correctly added
+      before_install:
+      install:
+      before_script: chmod -R u+w spec/ruby
+      script: ruby -C spec/ruby ../mspec/bin/mspec -j .
 
 before_install:
   - "CONFIG_FLAG="
@@ -72,11 +80,6 @@ script:
   - "make -s test TESTOPTS=--color=never"
   - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
   - "make -s $JOBS test-spec MSPECOPT=-j"
-  - echo "Running ruby/spec on 2.3.7 to ensure version guards are correctly added"
-  - rvm install 2.3.7
-  - cd ../spec/ruby
-  - chmod -R u+w .
-  - ../mspec/bin/mspec -j .
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
