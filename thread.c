@@ -934,7 +934,7 @@ thread_join_sleep(VALUE arg)
 {
     struct join_arg *p = (struct join_arg *)arg;
     rb_thread_t *target_th = p->target, *th = p->waiting;
-    rb_hrtime_t end;
+    rb_hrtime_t end = 0;
 
     if (p->limit) {
         end = rb_hrtime_add(*p->limit, rb_hrtime_now());
@@ -3868,7 +3868,7 @@ do_select(VALUE p)
     struct select_set *set = (struct select_set *)p;
     int result = 0;
     int lerrno;
-    rb_hrtime_t *to, rel, end;
+    rb_hrtime_t *to, rel, end = 0;
 
     timeout_prepare(&to, &rel, &end, set->timeout);
 #define restore_fdset(dst, src) \
@@ -4028,7 +4028,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[2];
     int result = 0, lerrno;
-    rb_hrtime_t *to, rel, end;
+    rb_hrtime_t *to, rel, end = 0;
     int drained;
     rb_thread_t *th = GET_THREAD();
     nfds_t nfds;
