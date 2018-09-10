@@ -9,6 +9,8 @@ environment:
   matrix:
     - build: vs
       vs: 120
+    - build: vs
+      vs: 140
     - build: msys2
 matrix:
   fast_finish: true
