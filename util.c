@@ -242,7 +242,6 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     qsort_s(base, nel, size, cmp, d);
 }
 # define HAVE_GNU_QSORT_R 1
-# endif
 #elif !defined HAVE_GNU_QSORT_R
 /* mm.c */
 
