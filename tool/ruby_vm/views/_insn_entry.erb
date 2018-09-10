@@ -13,10 +13,12 @@ INSN_ENTRY(<%= insn.name %>)
 %#  NAME_OF_CURRENT_INSN is used in vm_exec.h
 #   define NAME_OF_CURRENT_INSN <%= insn.name %>
 #   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
-#   ifdef _FORTIFY_SOURCE
+% unless insn.complicated_return_values?
+#   if VM_CHECK_MODE > 0
     bool leaf;
     VALUE *canary;
 #   endif
+% end
 % unless insn.declarations.empty?
     <%= insn.declarations.join(";\n    ") %>;
 
@@ -37,12 +39,14 @@ INSN_ENTRY(<%= insn.name %>)
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
-#ifdef _FORTIFY_SOURCE
+% unless insn.complicated_return_values?
+#if VM_CHECK_MODE > 0
     if ((leaf = INSN_ATTR(leaf))) {
         canary = STACK_ADDR_FROM_TOP(-1);
-        *canary = rb_vm_stack_canary;
+        *canary = vm_stack_canary;
     }
 #endif
+% end
     COLLECT_USAGE_INSN(INSN_ATTR(bin));
 % insn.opes.each_with_index do |ope, i|
     COLLECT_USAGE_OPERAND(INSN_ATTR(bin), <%= i %>, <%= ope[:name] %>);
@@ -50,13 +54,9 @@ INSN_ENTRY(<%= insn.name %>)
 <%= render_c_expr insn.expr -%>
     CHECK_VM_STACK_OVERFLOW_FOR_INSN(VM_REG_CFP, INSN_ATTR(retn));
 % unless insn.complicated_return_values?
-#ifdef _FORTIFY_SOURCE
-    if (leaf && (*canary != rb_vm_stack_canary)) {
-        /* Because a method has already been called, why not call
-         * another one. */
-        VALUE inspection = rb_sprintf("broken canary at %s: %"PRIsVALUE,
-            INSN_ATTR(name), *canary);
-        RUBY_ASSERT_FAIL(StringValueCStr(inspection));
+#if VM_CHECK_MODE > 0
+    if (leaf && (*canary != vm_stack_canary)) {
+        vm_canary_is_found_dead(INSN_ATTR(bin), *canary);
     }
 #endif
 % end

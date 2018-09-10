@@ -19,10 +19,6 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
-#ifdef _FORTIFY_SOURCE
-VALUE rb_vm_stack_canary;
-#endif
-
 /* control stack frame */
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
@@ -3904,3 +3900,38 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 	}
     }
 }
+
+#if VM_CHECK_MODE > 0
+static NORETURN( NOINLINE(
+#if GCC_VERSION_SINCE(4, 3, 0)
+__attribute__((__cold__))
+#endif
+void vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)));
+static VALUE vm_stack_canary;
+
+void
+Init_vm_stack_canary(void)
+{
+    /* This has to be called _after_ our PRNG is properly set up. */
+    int n = fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+
+    VM_ASSERT(n == 0);
+}
+
+static void
+vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
+{
+    /* Because a method has already been called, why not call
+     * another one. */
+    const char *insn = rb_insns_name(i);
+    VALUE inspection = rb_inspect(c);
+    const char *str  = StringValueCStr(inspection);
+    VALUE message    = rb_sprintf("dead canary found at %s: %s", insn, str);
+    const char *msg  = StringValueCStr(message);
+
+    rb_bug(msg);
+}
+
+#elif !defined(MJIT_HEADER)
+void Init_vm_stack_canary(void) { /* nothing to do */ }
+#endif

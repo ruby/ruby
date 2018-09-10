@@ -547,7 +547,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 # define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
 
-static int
+int
 fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);
@@ -1683,11 +1683,6 @@ InitVM_Random(void)
 	rb_define_method(m, "random_number", rand_random_number, -1);
 	rb_define_method(m, "rand", rand_random_number, -1);
     }
-
-#ifdef _FORTIFY_SOURCE
-    fill_random_seed((void *)&rb_vm_stack_canary,
-        sizeof(rb_vm_stack_canary) / SIZEOF_UINT32_T);
-#endif
 }
 
 #undef rb_intern

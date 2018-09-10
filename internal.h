@@ -1910,10 +1910,6 @@ bool rb_gvar_is_traced(const struct rb_global_entry *);
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
 
-#ifdef _FORTIFY_SOURCE
-extern VALUE rb_vm_stack_canary;
-#endif
-
 /* vm.c */
 VALUE rb_obj_is_thread(VALUE obj);
 void rb_vm_mark(void *ptr);
@@ -1955,6 +1951,7 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
+void Init_vm_stack_canary(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
@@ -2107,6 +2104,9 @@ VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VAL
 #else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 #endif
+
+/* random.c */
+int fill_random_bytes(void *, size_t, int);
 
 RUBY_SYMBOL_EXPORT_END
 
