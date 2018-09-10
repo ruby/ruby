@@ -198,7 +198,7 @@ ruby_strtoul(const char *str, char **endptr, int base)
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
 #if defined HAVE_QSORT_S
-# if defined __MSVCRT__
+# if defined RUBY_MSVCRT_VERSION
 # define qsort_r(base, nel, size, arg, cmp) qsort_s(base, nel, size, cmp, arg)
 # define cmp_bsd_qsort cmp_ms_qsort
 # define HAVE_BSD_QSORT_R 1
