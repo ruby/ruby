@@ -621,12 +621,17 @@ ruby_signal(int signum, sighandler_t handler)
       case RUBY_SIGCHLD:
 	if (handler == SIG_IGN) {
 	    ruby_nocldwait = 1;
+# ifdef USE_SIGALTSTACK
 	    if (sigact.sa_flags & SA_SIGINFO) {
 		sigact.sa_sigaction = (ruby_sigaction_t*)sighandler;
 	    }
 	    else {
 		sigact.sa_handler = sighandler;
 	    }
+# else
+	    sigact.sa_handler = handler;
+	    sigact.sa_flags = 0;
+# endif
 	}
 	else {
 	    ruby_nocldwait = 0;
