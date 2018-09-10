@@ -197,27 +197,13 @@ ruby_strtoul(const char *str, char **endptr, int base)
 
 typedef int (cmpfunc_t)(const void*, const void*, void*);
 
-#if defined HAVE_QSORT_S
-# if defined RUBY_MSVCRT_VERSION
+#if defined HAVE_QSORT_S && defined RUBY_MSVCRT_VERSION
+/* In contrast to its name, Visual Studio qsort_s is incompatible with
+ * C11 in the order of the comparison function's arguments, and same
+ * as BSD qsort_r rather. */
 # define qsort_r(base, nel, size, arg, cmp) qsort_s(base, nel, size, cmp, arg)
 # define cmp_bsd_qsort cmp_ms_qsort
 # define HAVE_BSD_QSORT_R 1
-# elif defined __STDC_VERSION__ && __STDC_VERSION__ >= 201112L
-/* C11 qsort_s has the same arguments as ours */
-void
-ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void *d)
-{
-    if (!nel || !size) return;  /* nothing to sort */
-
-    /* get rid of runtime-constraints handler for MT-safeness */
-    if (!base || !cmp) return;
-    if (nel > RSIZE_MAX || size > RSIZE_MAX) return;
-
-    qsort_s(base, nel, size, cmp, d);
-}
-# else
-#   error Unknown version qsort_s
-# endif
 #endif
 
 #if defined HAVE_BSD_QSORT_R
@@ -241,6 +227,22 @@ ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void
     args.arg = d;
     qsort_r(base, nel, size, &args, cmp_bsd_qsort);
 }
+#elif defined HAVE_QSORT_S
+/* C11 qsort_s has the same arguments as GNU's, but uses
+ * runtime-constraints handler. */
+void
+ruby_qsort(void* base, const size_t nel, const size_t size, cmpfunc_t *cmp, void *d)
+{
+    if (!nel || !size) return;  /* nothing to sort */
+
+    /* get rid of runtime-constraints handler for MT-safeness */
+    if (!base || !cmp) return;
+    if (nel > RSIZE_MAX || size > RSIZE_MAX) return;
+
+    qsort_s(base, nel, size, cmp, d);
+}
+# define HAVE_GNU_QSORT_R 1
+# endif
 #elif !defined HAVE_GNU_QSORT_R
 /* mm.c */
 
