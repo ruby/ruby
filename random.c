@@ -574,12 +574,14 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 #endif
 
 int
-fill_random_bytes(void *seed, size_t size, int need_secure)
+ruby_fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);
     if (ret == 0) return ret;
     return fill_random_bytes_urandom(seed, size);
 }
+
+#define fill_random_bytes ruby_fill_random_bytes
 
 static void
 fill_random_seed(uint32_t *seed, size_t cnt)

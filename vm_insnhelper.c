@@ -3913,7 +3913,7 @@ void
 Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
-    int n = fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
 
     VM_ASSERT(n == 0);
 }
