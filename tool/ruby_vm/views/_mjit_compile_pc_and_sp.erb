@@ -5,8 +5,10 @@
 % # conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 % # details.
 %
-% # JIT: Move pc so that catch table lookup condition is met, and for #caller_locations and rb_profile_frames.
-        fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+% # JIT: Move pc for catch table on catch_except_p, and for #caller_locations and rb_profile_frames on !insn.always_leaf?
+        if (body->catch_except_p || <%= insn.always_leaf? ? 'FALSE' : 'TRUE' %>) {
+            fprintf(f, "    reg_cfp->pc = original_body_iseq + %d;\n", next_pos); /* ADD_PC(INSN_ATTR(width)); */
+        }
 %
 % # JIT: move sp to use or preserve stack variables
         if (status->local_stack_p) {
