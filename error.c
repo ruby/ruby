@@ -66,7 +66,7 @@ static const char REPORTBUG_MSG[] =
 	" or extension libraries.\n" \
 	"Bug reports are welcome.\n" \
 	""
-	"For details: http://www.ruby-lang.org/bugreport.html\n\n" \
+	"For details: https://www.ruby-lang.org/bugreport.html\n\n" \
     ;
 
 static const char *
