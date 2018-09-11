@@ -573,7 +573,7 @@ fill_random_bytes_syscall(void *seed, size_t size, int need_secure)
 # define fill_random_bytes_syscall(seed, size, need_secure) -1
 #endif
 
-static int
+int
 fill_random_bytes(void *seed, size_t size, int need_secure)
 {
     int ret = fill_random_bytes_syscall(seed, size, need_secure);

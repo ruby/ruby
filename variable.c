@@ -867,6 +867,24 @@ rb_gvar_defined(struct rb_global_entry *entry)
     return Qtrue;
 }
 
+rb_gvar_getter_t *
+rb_gvar_getter_function_of(const struct rb_global_entry *entry)
+{
+    return entry->var->getter;
+}
+
+rb_gvar_setter_t *
+rb_gvar_setter_function_of(const struct rb_global_entry *entry)
+{
+    return entry->var->setter;
+}
+
+bool
+rb_gvar_is_traced(const struct rb_global_entry *entry)
+{
+    return !!entry->var->trace;
+}
+
 static enum rb_id_table_iterator_result
 gvar_i(ID key, VALUE val, void *a)
 {
