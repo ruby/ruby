@@ -2104,7 +2104,7 @@ VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
 #endif
 
 /* random.c */
-int fill_random_bytes(void *, size_t, int);
+int ruby_fill_random_bytes(void *, size_t, int);
 
 RUBY_SYMBOL_EXPORT_END
 
