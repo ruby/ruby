@@ -105,6 +105,10 @@ class RubyVM::BareInstructions
     /\b(false|0)\b/ !~ @attrs['handles_sp'].expr.expr
   end
 
+  def always_leaf?
+    @attrs['leaf'].expr.expr == 'true;'
+  end
+
   def complicated_return_values?
     @sig[:ret].any? {|i| i == '...' }
   end
