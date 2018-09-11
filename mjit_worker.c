@@ -290,11 +290,17 @@ verbose(int level, const char *format, ...)
 {
     if (mjit_opts.verbose >= level) {
         va_list args;
+        size_t len = strlen(format);
+        char *full_format = alloca(sizeof(char) * (len + 2));
+
+        /* Creating `format + '\n'` to atomically print format and '\n'. */
+        memcpy(full_format, format, len);
+        full_format[len] = '\n';
+        full_format[len+1] = '\0';
 
         va_start(args, format);
-        vfprintf(stderr, format, args);
+        vfprintf(stderr, full_format, args);
         va_end(args);
-        fprintf(stderr, "\n");
     }
 }
 
