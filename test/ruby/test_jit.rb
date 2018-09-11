@@ -580,24 +580,26 @@ class TestJIT < Test::Unit::TestCase
           i += 1
         end
       end;
-      assert_equal('012345678910', out)
+
+      debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
+      assert_equal('012345678910', out, debug_info)
       compactions, errs = err.lines.partition do |l|
         l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/)
       end
       10.times do |i|
-        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i])
+        assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit#{i}@\(eval\):/, errs[i], debug_info)
       end
-      assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10])
-      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11])
+      assert_equal("Too many JIT code -- 1 units unloaded\n", errs[10], debug_info)
+      assert_match(/\A#{JIT_SUCCESS_PREFIX}: mjit10@\(eval\):/, errs[11], debug_info)
 
       # On --jit-wait, when the number of JIT-ed code reaches --jit-max-cache,
       # it should trigger compaction.
       unless RUBY_PLATFORM.match?(/mswin|mingw/) # compaction is not supported on Windows yet
-        assert_equal(2, compactions.size)
+        assert_equal(2, compactions.size, debug_info)
       end
 
       # verify .o files are deleted on unload_units
-      assert_send([Dir, :empty?, dir])
+      assert_send([Dir, :empty?, dir], debug_info)
     end
   end
 
