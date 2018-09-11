@@ -102,11 +102,11 @@ class RubyVM::BareInstructions
   end
 
   def handles_sp?
-    /\b(false|0)\b/ !~ @attrs['handles_sp'].expr.expr
+    /\b(false|0)\b/ !~ @attrs.fetch('handles_sp').expr.expr
   end
 
   def always_leaf?
-    @attrs['leaf'].expr.expr == 'true;'
+    @attrs.fetch('leaf').expr.expr == 'true;'
   end
 
   def complicated_return_values?
