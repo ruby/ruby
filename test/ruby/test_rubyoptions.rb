@@ -703,7 +703,7 @@ class TestRubyOptions < Test::Unit::TestCase
         You\smay\shave\sencountered\sa\sbug\sin\sthe\sRuby\sinterpreter\sor\sextension\slibraries.\n
         Bug\sreports\sare\swelcome.\n
         (?:.*\n)?
-        For\sdetails:\shttp:\/\/.*\.ruby-lang\.org/.*\n
+        For\sdetails:\shttps:\/\/.*\.ruby-lang\.org/.*\n
         \n
         (?:
           \[IMPORTANT\]\n
