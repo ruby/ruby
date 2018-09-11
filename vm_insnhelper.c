@@ -3929,7 +3929,7 @@ vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
     VALUE message    = rb_sprintf("dead canary found at %s: %s", insn, str);
     const char *msg  = StringValueCStr(message);
 
-    rb_bug(msg);
+    rb_bug("%s", msg);
 }
 
 #elif !defined(MJIT_HEADER)
