@@ -1901,6 +1901,9 @@ VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 void rb_deprecate_constant(VALUE mod, const char *name);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
+rb_gvar_getter_t *rb_gvar_getter_function_of(const struct rb_global_entry *);
+rb_gvar_setter_t *rb_gvar_setter_function_of(const struct rb_global_entry *);
+bool rb_gvar_is_traced(const struct rb_global_entry *);
 
 /* vm_insnhelper.h */
 rb_serial_t rb_next_class_serial(void);
@@ -1946,6 +1949,7 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 /* vm_insnhelper.c */
 VALUE rb_equal_opt(VALUE obj1, VALUE obj2);
 VALUE rb_eql_opt(VALUE obj1, VALUE obj2);
+void Init_vm_stack_canary(void);
 
 /* vm_method.c */
 void Init_eval_method(void);
@@ -2098,6 +2102,9 @@ VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VAL
 #else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0);
 #endif
+
+/* random.c */
+int fill_random_bytes(void *, size_t, int);
 
 RUBY_SYMBOL_EXPORT_END
 
