@@ -105,6 +105,10 @@ class RubyVM::BareInstructions
     /\b(false|0)\b/ !~ @attrs['handles_sp'].expr.expr
   end
 
+  def complicated_return_values?
+    @sig[:ret].any? {|i| i == '...' }
+  end
+
   def inspect
     sprintf "#<%s %s@%s:%d>", self.class.name, @name, @loc[0], @loc[1]
   end
@@ -130,6 +134,10 @@ class RubyVM::BareInstructions
     generate_attribute 'rb_num_t', 'width', width
     generate_attribute 'rb_snum_t', 'sp_inc', rets.size - pops.size
     generate_attribute 'bool', 'handles_sp', false
+    generate_attribute 'bool', 'leaf', opes.all? {|o|
+      # Insn with ISEQ should yield it; can never be a leaf.
+      o[:type] != 'ISEQ'
+    }
   end
 
   def typesplit a
