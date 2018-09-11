@@ -3930,6 +3930,6 @@ vm_canary_is_found_dead(enum ruby_vminsn_type i, VALUE c)
     rb_bug("dead canary found at %s: %s", insn, str);
 }
 
-#elif !defined(MJIT_HEADER)
+#else
 void Init_vm_stack_canary(void) { /* nothing to do */ }
 #endif
