@@ -33,8 +33,6 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-8
-      env:
-        - CC=gcc-8 AR=gcc-ar-8 NM=gcc-nm-8 RANLIB=gcc-ranlib-8
     - os: linux
       language: ruby
       rvm: 2.3
