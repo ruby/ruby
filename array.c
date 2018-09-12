@@ -10,6 +10,7 @@
   Copyright (C) 2000  Information-technology Promotion Agency, Japan
 
 **********************************************************************/
+#include "vm_debug.h"
 
 #include "ruby/encoding.h"
 #include "ruby/util.h"
@@ -220,6 +221,7 @@ ary_resize_capa(VALUE ary, long capacity)
 	    SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, RARRAY(ary)->as.heap.aux.capa);
         }
         ARY_SET_CAPA(ary, (capacity));
+        bp();
     }
     else {
         if (!ARY_EMBED_P(ary)) {
@@ -6261,6 +6263,12 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
  *
  */
 
+static VALUE
+ary_second(VALUE self)
+{
+  return rb_ary_entry(self, 1);
+}
+
 void
 Init_Array(void)
 {
@@ -6275,7 +6283,6 @@ Init_Array(void)
     rb_define_singleton_method(rb_cArray, "try_convert", rb_ary_s_try_convert, 1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
     rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
-
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);
     rb_define_alias(rb_cArray,  "to_s", "inspect");
     rb_define_method(rb_cArray, "to_a", rb_ary_to_a, 0);
@@ -6383,6 +6390,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
+
+    rb_define_method(rb_cArray, "second", ary_second, 0);
 
     id_random = rb_intern("random");
 }

@@ -4896,6 +4896,24 @@ time_load(VALUE klass, VALUE str)
  *    Time.new(2010,10,31).between?(t1, t2) #=> true
  */
 
+static VALUE
+time_previous_date(int argc, VALUE *argv, VALUE self)
+{
+  VALUE nth;
+  int n, sec, previous_date_sec;
+
+  rb_scan_args(argc, argv, "01", &nth);
+  if (nth == Qnil) nth = INT2FIX(1);
+  n = NUM2INT(nth);
+
+  sec = NUM2INT(time_to_i(self));
+  previous_date_sec = sec - (60 * 60 * 24 * n);
+
+  return rb_funcall(rb_cTime, rb_intern("at"), 1, INT2NUM(previous_date_sec));
+}
+
+
+
 void
 Init_Time(void)
 {
@@ -4991,6 +5009,8 @@ Init_Time(void)
     rb_define_method(rb_cTime, "subsec", time_subsec, 0);
 
     rb_define_method(rb_cTime, "strftime", time_strftime, 1);
+
+    rb_define_method(rb_cTime, "previous_date", time_previous_date, -1);
 
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
