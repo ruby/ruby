@@ -36,7 +36,7 @@ matrix:
     - os: linux
       language: ruby
       rvm: 2.3
-      stage: Running ruby/spec on 2.3 to ensure version guards are correctly added
+      name: Running ruby/spec on 2.3 to ensure version guards are correctly added
       before_install:
       install:
       before_script: chmod -R u+w spec/ruby
