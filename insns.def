@@ -753,22 +753,36 @@ send
 
 DEFINE_INSN
 opt_str_freeze
-(VALUE str)
+(VALUE str, CALL_INFO ci, CALL_CACHE cc)
 ()
 (VALUE val)
-// attr bool leaf = BASIC_OP_UNREDEFINED_P(BOP_FREEZE, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_FREEZE, idFreeze);
+
+    if (val == Qundef) {
+        PUSH(str);
+#ifndef MJIT_HEADER
+        ADD_PC(-WIDTH_OF_opt_send_without_block);
+#endif
+        DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+    }
 }
 
 DEFINE_INSN
 opt_str_uminus
-(VALUE str)
+(VALUE str, CALL_INFO ci, CALL_CACHE cc)
 ()
 (VALUE val)
-// attr bool leaf = BASIC_OP_UNREDEFINED_P(BOP_UMINUS, STRING_REDEFINED_OP_FLAG);
 {
     val = vm_opt_str_freeze(str, BOP_UMINUS, idUMinus);
+
+    if (val == Qundef) {
+        PUSH(str);
+#ifndef MJIT_HEADER
+        ADD_PC(-WIDTH_OF_opt_send_without_block);
+#endif
+        DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+    }
 }
 
 DEFINE_INSN

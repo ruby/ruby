@@ -6384,10 +6384,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = freeze_literal(iseq, node->nd_recv->nd_lit);
 	    if (node->nd_mid == idUMinus) {
-		ADD_INSN1(ret, line, opt_str_uminus, str);
+		ADD_INSN3(ret, line, opt_str_uminus, str,
+                          new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE),
+                          Qundef /* CALL_CACHE */);
 	    }
 	    else {
-		ADD_INSN1(ret, line, opt_str_freeze, str);
+		ADD_INSN3(ret, line, opt_str_freeze, str,
+                          new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE),
+                          Qundef /* CALL_CACHE */);
 	    }
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
