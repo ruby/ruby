@@ -396,4 +396,24 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal(4, (10...2).step(-2).size)
     assert_equal(Float::INFINITY, (1..).step(-1).size)
   end
+
+  def assert_num_equal_type(ary1, ary2, message=nil)
+    assert_equal(ary1.length, ary2.length, message)
+    ary1.zip(ary2) do |e1, e2|
+      assert_equal(e1.class, e2.class, message)
+      if e1.is_a? Complex
+        assert_equal(e1.real, e2.real, message)
+        assert_equal(e1.imag, e2.imag, message)
+      else
+        assert_equal(e1, e2, message)
+      end
+    end
+  end
+
+  def test_complex
+    assert_num_equal_type([1, 1+1i, 1+2i], (1..).step(1i).take(3))
+    assert_num_equal_type([1, 1+1.0i, 1+2.0i], (1..).step(1.0i).take(3))
+    assert_num_equal_type([0.0, 0.0+1.0i, 0.0+2.0i], (0.0..).step(1.0i).take(3))
+    assert_num_equal_type([0.0+0.0i, 0.0+1.0i, 0.0+2.0i], (0.0i..).step(1.0i).take(3))
+  end
 end
