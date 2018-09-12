@@ -3219,7 +3219,7 @@ vm_opt_str_freeze(VALUE str, int bop, ID id)
 	return str;
     }
     else {
-	return rb_funcall(rb_str_resurrect(str), id, 0);
+	return Qundef;
     }
 }
 
