@@ -77,8 +77,7 @@ static long pagesize;
 
 enum context_type {
     CONTINUATION_CONTEXT = 0,
-    FIBER_CONTEXT = 1,
-    ROOT_FIBER_CONTEXT = 2
+    FIBER_CONTEXT = 1
 };
 
 struct cont_saved_vm_stack {
@@ -360,6 +359,12 @@ cont_mark(void *ptr)
     RUBY_MARK_LEAVE("cont");
 }
 
+static int
+fiber_is_root_p(const rb_fiber_t *fib)
+{
+    return fib == fib->cont.saved_ec.thread_ptr->root_fiber;
+}
+
 static void
 cont_free(void *ptr)
 {
@@ -378,23 +383,16 @@ cont_free(void *ptr)
 	/* fiber */
 	const rb_fiber_t *fib = (rb_fiber_t*)cont;
 #ifdef _WIN32
-	if (cont->type != ROOT_FIBER_CONTEXT) {
+        if (!fiber_is_root_p(fib)) {
 	    /* don't delete root fiber handle */
 	    if (fib->fib_handle) {
 		DeleteFiber(fib->fib_handle);
 	    }
 	}
 #else /* not WIN32 */
+        /* fib->ss_sp == NULL is possible for root fiber */
 	if (fib->ss_sp != NULL) {
-	    if (cont->type == ROOT_FIBER_CONTEXT) {
-		rb_bug("Illegal root fiber parameter");
-	    }
 	    munmap((void*)fib->ss_sp, fib->ss_size);
-	}
-	else {
-	    /* It may reached here when finalize */
-	    /* TODO examine whether it is a bug */
-	    /* rb_bug("cont_free: release self"); */
 	}
 #endif
     }
@@ -1526,7 +1524,7 @@ root_fiber_alloc(rb_thread_t *th)
     rb_fiber_t *fib = th->ec->fiber_ptr;
 
     VM_ASSERT(DATA_PTR(fibval) == NULL);
-    VM_ASSERT(fib->cont.type == ROOT_FIBER_CONTEXT);
+    VM_ASSERT(fib->cont.type == FIBER_CONTEXT);
     VM_ASSERT(fib->status == FIBER_RESUMED);
 
     th->root_fiber = fib;
@@ -1555,7 +1553,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
 {
     rb_fiber_t *fib = ruby_mimmalloc(sizeof(rb_fiber_t));
     MEMZERO(fib, rb_fiber_t, 1);
-    fib->cont.type = ROOT_FIBER_CONTEXT;
+    fib->cont.type = FIBER_CONTEXT;
     fib->cont.saved_ec.fiber_ptr = fib;
     fib->cont.saved_ec.thread_ptr = th;
     fiber_status_set(fib, FIBER_RESUMED); /* skip CREATED */
@@ -1571,7 +1569,7 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
 	/* ignore. A root fiber object will free th->ec */
     }
     else {
-	VM_ASSERT(th->ec->fiber_ptr->cont.type == ROOT_FIBER_CONTEXT);
+	VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
 	VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
 	fiber_free(th->ec->fiber_ptr);
 
@@ -1818,7 +1816,7 @@ rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
 {
     rb_fiber_t *fib = fiber_ptr(fibval);
 
-    if (fib->prev != 0 || fib->cont.type == ROOT_FIBER_CONTEXT) {
+    if (fib->prev != 0 || fiber_is_root_p(fib)) {
 	rb_raise(rb_eFiberError, "double resume");
     }
     if (fib->transferred != 0) {
@@ -1997,7 +1995,6 @@ rb_fiber_atfork(rb_thread_t *th)
     if (th->root_fiber) {
         if (&th->root_fiber->cont.saved_ec != th->ec) {
             th->root_fiber = th->ec->fiber_ptr;
-            th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
         }
         th->root_fiber->prev = 0;
     }

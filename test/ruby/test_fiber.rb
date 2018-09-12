@@ -260,18 +260,25 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_fork_from_fiber
-    begin
-      pid = Process.fork{}
-    rescue NotImplementedError
-      return
-    else
-      Process.wait(pid)
-    end
+    skip 'fork not supported' unless Process.respond_to?(:fork)
+    pid = nil
     bug5700 = '[ruby-core:41456]'
     assert_nothing_raised(bug5700) do
       Fiber.new do
         pid = fork do
-          Fiber.new {}.transfer
+          xpid = nil
+          Fiber.new {
+            xpid = fork do
+              # enough to trigger GC on old root fiber
+              10000.times do
+                Fiber.new {}.transfer
+                Fiber.new { Fiber.yield }
+              end
+              exit!(0)
+            end
+          }.transfer
+          _, status = Process.waitpid2(xpid)
+          exit!(status.success?)
         end
       end.resume
     end
