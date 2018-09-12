@@ -253,8 +253,8 @@ fiber_status_set(rb_fiber_t *fib, enum fiber_status s)
 void
 ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 {
-    *(VALUE **)(&ec->vm_stack) = stack;
-    *(size_t *)(&ec->vm_stack_size) = size;
+    ec->vm_stack = stack;
+    ec->vm_stack_size = size;
 }
 
 static inline void
