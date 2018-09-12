@@ -2340,22 +2340,19 @@ vm_init2(rb_vm_t *vm)
 #define RECYCLE_MAX 64
 static VALUE *thread_recycle_stack_slot[RECYCLE_MAX];
 static int thread_recycle_stack_count = 0;
+#endif /* USE_THREAD_DATA_RECYCLE */
 
-static VALUE *
-thread_recycle_stack(size_t size)
+VALUE *
+rb_thread_recycle_stack(size_t size)
 {
+#if USE_THREAD_DATA_RECYCLE
     if (thread_recycle_stack_count > 0) {
 	/* TODO: check stack size if stack sizes are variable */
 	return thread_recycle_stack_slot[--thread_recycle_stack_count];
     }
-    else {
-	return ALLOC_N(VALUE, size);
-    }
+#endif /* USE_THREAD_DATA_RECYCLE */
+    return ALLOC_N(VALUE, size);
 }
-
-#else
-#define thread_recycle_stack(size) ALLOC_N(VALUE, (size))
-#endif
 
 void
 rb_thread_recycle_stack_release(VALUE *stack)
@@ -2536,7 +2533,7 @@ th_init(rb_thread_t *th, VALUE self)
 	/* vm_stack_size is word number.
 	 * th->vm->default_params.thread_vm_stack_size is byte size. */
 	size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-	ec_set_vm_stack(th->ec, thread_recycle_stack(size), size);
+	ec_set_vm_stack(th->ec, rb_thread_recycle_stack(size), size);
     }
 
     th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);

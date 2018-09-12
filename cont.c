@@ -1411,13 +1411,20 @@ fiber_init(VALUE fibval, VALUE proc)
     rb_context_t *cont = &fib->cont;
     rb_execution_context_t *sec = &cont->saved_ec;
     rb_thread_t *cth = GET_THREAD();
-    size_t fib_stack_size = cth->vm->default_params.fiber_vm_stack_size / sizeof(VALUE);
+    rb_vm_t *vm = cth->vm;
+    size_t fib_stack_bytes = vm->default_params.fiber_vm_stack_size;
+    size_t thr_stack_bytes = vm->default_params.thread_vm_stack_size;
+    VALUE *vm_stack;
 
     /* initialize cont */
     cont->saved_vm_stack.ptr = NULL;
-    ec_set_vm_stack(sec, NULL, 0);
-
-    ec_set_vm_stack(sec, ALLOC_N(VALUE, fib_stack_size), fib_stack_size);
+    if (fib_stack_bytes == thr_stack_bytes) {
+        vm_stack = rb_thread_recycle_stack(fib_stack_bytes / sizeof(VALUE));
+    }
+    else {
+        vm_stack = ruby_xmalloc(fib_stack_bytes);
+    }
+    ec_set_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
     sec->cfp = (void *)(sec->vm_stack + sec->vm_stack_size);
 
     rb_vm_push_frame(sec,
@@ -1758,19 +1765,22 @@ rb_fiber_transfer(VALUE fibval, int argc, const VALUE *argv)
 void
 rb_fiber_close(rb_fiber_t *fib)
 {
-    VALUE *vm_stack = fib->cont.saved_ec.vm_stack;
+    rb_execution_context_t *ec = &fib->cont.saved_ec;
+    VALUE *vm_stack = ec->vm_stack;
+    size_t stack_bytes = ec->vm_stack_size * sizeof(VALUE);
+
     fiber_status_set(fib, FIBER_TERMINATED);
-    if (fib->cont.type == ROOT_FIBER_CONTEXT) {
-	rb_thread_recycle_stack_release(vm_stack);
+    if (stack_bytes == rb_ec_vm_ptr(ec)->default_params.thread_vm_stack_size) {
+        rb_thread_recycle_stack_release(vm_stack);
     }
     else {
-	ruby_xfree(vm_stack);
+        ruby_xfree(vm_stack);
     }
-    ec_set_vm_stack(&fib->cont.saved_ec, NULL, 0);
+    ec_set_vm_stack(ec, NULL, 0);
 
 #if !FIBER_USE_NATIVE
     /* should not mark machine stack any more */
-    fib->cont.saved_ec.machine.stack_end = NULL;
+    ec->machine.stack_end = NULL;
 #endif
 }
 
