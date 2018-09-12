@@ -2721,7 +2721,7 @@ struct arith_seq_gen {
 /*
  * call-seq:
  *   aseq.each {|i| block } -> aseq
- *   aseq.each              -> an_enumerator
+ *   aseq.each              -> aseq
  */
 static VALUE
 arith_seq_each(VALUE self)
