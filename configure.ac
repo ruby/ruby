@@ -193,6 +193,14 @@ AS_IF([test x"${build}" != x"${host}"], [
 ])
 
 AC_PROG_CC
+AS_CASE([$CC],
+[gcc-*], [
+    gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
+    AC_PROG_CXX(g++${gcc_suffix})],
+[clang-*], [
+    gcc_prefix=clang- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
+    AC_PROG_CXX(clang++${gcc_suffix})],
+[gcc_prefix= gcc_suffix=])
 
 dnl Select the appropriate C++ compiler in OS X
 AS_CASE(["$build_os"],
@@ -266,8 +274,8 @@ if libtool 2>&1 | grep no_warning_for_no_symbols > /dev/null; then
   rb_cv_arflags='-no_warning_for_no_symbols -o'
 fi
 ])
-AC_CHECK_TOOL(RANLIB, ranlib, :)
-AC_CHECK_TOOL(AR, ar)
+AC_CHECK_TOOLS(RANLIB, [${gcc_prefix}ranlib${gcc_suffix} ranlib], :)
+AC_CHECK_TOOLS(AR, [${gcc_prefix}ar${gcc_suffix} ar])
 AS_IF([test -z "$AR"], [
   AC_CHECK_PROGS(AR, aal, ar)
 ])
@@ -316,7 +324,7 @@ AS_CASE(["$target_os"],
     ],
 [aix*],     [AC_CHECK_TOOL(NM, nm, /usr/ccs/bin/nm, /usr/ccs/bin:$PATH)],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-AC_CHECK_TOOL(NM, nm)
+AC_CHECK_TOOLS(NM, [${gcc_prefix}nm${gcc_suffix} nm])
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
