@@ -1020,10 +1020,6 @@ opt_case_dispatch
 (CDHASH hash, OFFSET else_offset)
 (..., VALUE key)
 ()
-/* Case dispatch involves hash lookup, which inevitably compares
- * several objects each other.  The same discussion to
- * opt_newarray_max also goes here. */
-// attr bool leaf = false; /* has rb_any_cmp() */
 // attr rb_snum_t sp_inc = -1;
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);

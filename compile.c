@@ -1743,27 +1743,57 @@ iseq_set_local_table(rb_iseq_t *iseq, const ID *tbl)
 static int
 cdhash_cmp(VALUE val, VALUE lit)
 {
-    if (val == lit) return 0;
-    if (SPECIAL_CONST_P(lit)) {
-	return val != lit;
+    int tval, tlit;
+
+    if (val == lit) {
+        return 0;
     }
-    if (SPECIAL_CONST_P(val) || BUILTIN_TYPE(val) != BUILTIN_TYPE(lit)) {
-	return -1;
+    else if ((tlit = OBJ_BUILTIN_TYPE(lit)) == -1) {
+        return val != lit;
     }
-    if (BUILTIN_TYPE(lit) == T_STRING) {
-	return rb_str_hash_cmp(lit, val);
+    else if ((tval = OBJ_BUILTIN_TYPE(val)) == -1) {
+        return -1;
     }
-    return !rb_eql(lit, val);
+    else if (tlit != tval) {
+        return -1;
+    }
+    else if (tlit == T_SYMBOL) {
+        return val != lit;
+    }
+    else if (tlit == T_STRING) {
+        return rb_str_hash_cmp(lit, val);
+    }
+    else if (tlit == T_BIGNUM) {
+        long x = FIX2LONG(rb_big_cmp(lit, val));
+
+        /* Given lit and val are both Bignum, x must be -1, 0, 1.
+         * There is no need to call rb_fix2int here. */
+        RUBY_ASSERT((x == 1) || (x == 0) || (x == -1));
+        return (int)x;
+    }
+    else if (tlit == T_FLOAT) {
+        return rb_float_cmp(lit, val);
+    }
+    else {
+        UNREACHABLE_RETURN(-1);
+    }
 }
 
 static st_index_t
 cdhash_hash(VALUE a)
 {
-    if (SPECIAL_CONST_P(a)) return (st_index_t)a;
-    if (RB_TYPE_P(a, T_STRING)) return rb_str_hash(a);
-    {
-	VALUE hval = rb_hash(a);
-	return (st_index_t)FIX2LONG(hval);
+    switch (OBJ_BUILTIN_TYPE(a)) {
+      case -1:
+      case T_SYMBOL:
+        return (st_index_t)a;
+      case T_STRING:
+        return rb_str_hash(a);
+      case T_BIGNUM:
+        return FIX2LONG(rb_big_hash(a));
+      case T_FLOAT:
+        return rb_dbl_long_hash(RFLOAT_VALUE(a));
+      default:
+        UNREACHABLE_RETURN(0);
     }
 }
 
