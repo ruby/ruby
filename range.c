@@ -353,6 +353,7 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    -> rng
  *     rng.step(n=1)                     -> an_enumerator
+ *     rng.step(n=1)                     -> an_arithmetic_sequence
  *
  *  Iterates over the range, passing each <code>n</code>th element to the block.
  *  If begin and end are numeric, +n+ is added for each iteration.
@@ -360,6 +361,8 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *  range elements.
  *
  *  If no block is given, an enumerator is returned instead.
+ *  Especially, the enumerator is an Enumerator::ArithmeticSequence
+ *  if begin and end of the range are numeric.
  *
  *    range = Xs.new(1)..Xs.new(10)
  *    range.step(2) {|x| puts x}
