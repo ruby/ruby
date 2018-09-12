@@ -2437,7 +2437,8 @@ time_s_now(VALUE klass)
 }
 
 static int
-get_scale(VALUE unit) {
+get_scale(VALUE unit)
+{
     if (unit == ID2SYM(id_nanosecond) || unit == ID2SYM(id_nsec)) {
         return 1000000000;
     }
@@ -3075,21 +3076,6 @@ tmcmp(struct tm *a, struct tm *b)
         return 0;
 }
 
-static VALUE
-time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
-{
-    struct vtm vtm;
-    VALUE time;
-
-    time_arg(argc, argv, &vtm);
-    if (utc_p)
-        time = time_new_timew(klass, timegmw(&vtm));
-    else
-        time = time_new_timew(klass, timelocalw(&vtm));
-    if (utc_p) return time_gmtime(time);
-    return time_localtime(time);
-}
-
 /*
  *  call-seq:
  *    Time.utc(year) -> time
@@ -3125,7 +3111,10 @@ time_utc_or_local(int argc, VALUE *argv, int utc_p, VALUE klass)
 static VALUE
 time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 {
-    return time_utc_or_local(argc, argv, TRUE, klass);
+    struct vtm vtm;
+
+    time_arg(argc, argv, &vtm);
+    return time_gmtime(time_new_timew(klass, timegmw(&vtm)));
 }
 
 /*
@@ -3156,7 +3145,10 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
 static VALUE
 time_s_mktime(int argc, VALUE *argv, VALUE klass)
 {
-    return time_utc_or_local(argc, argv, FALSE, klass);
+    struct vtm vtm;
+
+    time_arg(argc, argv, &vtm);
+    return time_localtime(time_new_timew(klass, timelocalw(&vtm)));
 }
 
 /*
