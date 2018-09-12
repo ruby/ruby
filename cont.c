@@ -493,12 +493,15 @@ static size_t
 fiber_memsize(const void *ptr)
 {
     const rb_fiber_t *fib = ptr;
-    size_t size = 0;
+    size_t size = sizeof(*fib);
+    const rb_execution_context_t *saved_ec = &fib->cont.saved_ec;
+    const rb_thread_t *th = rb_ec_thread_ptr(saved_ec);
 
-    size = sizeof(*fib);
-    if (fib->cont.type != ROOT_FIBER_CONTEXT &&
-	fib->cont.saved_ec.local_storage != NULL) {
-	size += st_memsize(fib->cont.saved_ec.local_storage);
+    /*
+     * vm.c::thread_memsize already counts th->ec->local_storage
+     */
+    if (saved_ec->local_storage && fib != th->root_fiber) {
+	size += st_memsize(saved_ec->local_storage);
     }
     size += cont_memsize(&fib->cont);
     return size;
