@@ -2654,9 +2654,11 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
 /*
  *  call-seq:
  *     num.step(by: step, to: limit) {|i| block }   ->  self
- *     num.step(by: step, to: limit)		    ->  an_enumerator
+ *     num.step(by: step, to: limit)                ->  an_enumerator
+ *     num.step(by: step, to: limit)                ->  an_arithmetic_sequence
  *     num.step(limit=nil, step=1) {|i| block }     ->  self
  *     num.step(limit=nil, step=1)                  ->  an_enumerator
+ *     num.step(limit=nil, step=1)                  ->  an_arithmetic_sequence
  *
  *  Invokes the given block with the sequence of numbers starting at +num+,
  *  incremented by +step+ (defaulted to +1+) on each call.
@@ -2685,6 +2687,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *  and increments itself using the <code>+</code> operator.
  *
  *  If no block is given, an Enumerator is returned instead.
+ *  Especially, the enumerator is an Enumerator::ArithmeticSequence
+ *  if both +limit+ and +step+ are kind of Numeric or <code>nil</code>.
  *
  *  For example:
  *
