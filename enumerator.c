@@ -2661,8 +2661,7 @@ arith_seq_each(VALUE self)
     s = arith_seq_step(self);
     x = arith_seq_exclude_end_p(self);
 
-    if (RB_TYPE_P(c, T_FLOAT) && RB_TYPE_P(s, T_FLOAT) &&
-        ruby_float_step(c, e, s, x, TRUE)) {
+    if (ruby_float_step(c, e, s, x, TRUE)) {
         return self;
     }
 
