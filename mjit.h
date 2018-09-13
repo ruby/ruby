@@ -89,7 +89,7 @@ mjit_target_iseq_p(struct rb_iseq_constant_body *body)
 /* Try to execute the current iseq in ec.  Use JIT code if it is ready.
    If it is not, add ISEQ to the compilation queue and return Qundef.  */
 static inline VALUE
-mjit_exec(rb_execution_context_t *ec, int guard_except_p)
+mjit_exec(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq;
     struct rb_iseq_constant_body *body;
@@ -102,8 +102,6 @@ mjit_exec(rb_execution_context_t *ec, int guard_except_p)
     iseq = ec->cfp->iseq;
     body = iseq->body;
     total_calls = ++body->total_calls;
-    if (guard_except_p && body->catch_except_p)
-        return Qundef;
 
     func = body->jit_func;
     if (UNLIKELY((uintptr_t)func <= (uintptr_t)LAST_JIT_ISEQ_FUNC)) {
