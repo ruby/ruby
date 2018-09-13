@@ -2572,17 +2572,19 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  */
 
 static VALUE
-rb_hash_update(VALUE hash1, VALUE hash2)
+rb_hash_update(int argc, VALUE *argv, VALUE self)
 {
-    rb_hash_modify(hash1);
-    hash2 = to_hash(hash2);
-    if (rb_block_given_p()) {
-	rb_hash_foreach(hash2, rb_hash_update_block_i, hash1);
+    rb_hash_modify(self);
+    for(int i = 0; i < argc; i++){
+      VALUE hash = to_hash(argv[i]);
+      if (rb_block_given_p()) {
+    rb_hash_foreach(hash, rb_hash_update_block_i, self);
+      }
+      else {
+    rb_hash_foreach(hash, rb_hash_update_i, self);
+      }
     }
-    else {
-	rb_hash_foreach(hash2, rb_hash_update_i, hash1);
-    }
-    return hash1;
+    return self;
 }
 
 struct update_func_arg {
@@ -2660,9 +2662,9 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  */
 
 static VALUE
-rb_hash_merge(VALUE hash1, VALUE hash2)
+rb_hash_merge(int argc, VALUE *argv, VALUE self)
 {
-    return rb_hash_update(rb_hash_dup(hash1), hash2);
+    return rb_hash_update(argc, argv, rb_hash_dup(self));
 }
 
 static int
@@ -4758,10 +4760,10 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);
-    rb_define_method(rb_cHash, "update", rb_hash_update, 1);
+    rb_define_method(rb_cHash, "update", rb_hash_update, -1);
     rb_define_method(rb_cHash, "replace", rb_hash_replace, 1);
-    rb_define_method(rb_cHash, "merge!", rb_hash_update, 1);
-    rb_define_method(rb_cHash, "merge", rb_hash_merge, 1);
+    rb_define_method(rb_cHash, "merge!", rb_hash_update, -1);
+    rb_define_method(rb_cHash, "merge", rb_hash_merge, -1);
     rb_define_method(rb_cHash, "assoc", rb_hash_assoc, 1);
     rb_define_method(rb_cHash, "rassoc", rb_hash_rassoc, 1);
     rb_define_method(rb_cHash, "flatten", rb_hash_flatten, -1);
