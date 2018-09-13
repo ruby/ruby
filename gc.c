@@ -2955,7 +2955,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     dont_gc = 1;
 
     /* running data/file finalizers are part of garbage collection */
-    gc_enter(objspace, "rb_objspace_call_finalizer");
 
     /* run data/file object's finalizers */
     for (i = 0; i < heap_allocated_pages; i++) {
@@ -2987,8 +2986,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	    p++;
 	}
     }
-
-    gc_exit(objspace, "rb_objspace_call_finalizer");
 
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
