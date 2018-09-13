@@ -6023,6 +6023,20 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     return v;
 }
 
+static VALUE
+rb_ary_swap(int arg1, int arg2, VALUE ary)
+{
+    VALUE tmp, value;
+
+    tmp = RARRAY_AREF(ary, arg1);
+    value = RARRAY_AREF(ary, arg2);
+
+    rb_ary_aset(arg1, value, ary);
+    rb_ary_aset(arg2, tmp, ary);
+
+    return ary;
+}
+
 /*
  *  Arrays are ordered, integer-indexed collections of any object.
  *
@@ -6383,6 +6397,8 @@ Init_Array(void)
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
+
+    rb_define_method(rb_cArray, "swap", rb_ary_swap, 2);
 
     id_random = rb_intern("random");
 }
