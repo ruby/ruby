@@ -4363,6 +4363,10 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     /* may be held by MJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
+
+    /* may be held by any thread in parent */
+    rb_native_mutex_initialize(&th->interrupt_lock);
+
     vm->fork_gen++;
 
     vm->sleeper = 0;
