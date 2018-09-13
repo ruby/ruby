@@ -1806,7 +1806,7 @@ vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 
     _tag.retval = Qnil;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        if (!mjit_enable_p || (result = mjit_exec(ec)) == Qundef) {
+        if (!mjit_enable_p || (result = mjit_exec(ec, FALSE)) == Qundef) {
             result = vm_exec_core(ec, initial);
         }
         goto vm_loop_start; /* fallback to the VM */
