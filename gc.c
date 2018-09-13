@@ -2955,7 +2955,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     dont_gc = 1;
 
     /* running data/file finalizers are part of garbage collection */
-    gc_enter(objspace, "rb_objspace_call_finalizer");
 
     /* run data/file object's finalizers */
     for (i = 0; i < heap_allocated_pages; i++) {
@@ -2987,8 +2986,6 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 	    p++;
 	}
     }
-
-    gc_exit(objspace, "rb_objspace_call_finalizer");
 
     if (heap_pages_deferred_final) {
 	finalize_list(objspace, heap_pages_deferred_final);
@@ -6602,6 +6599,7 @@ gc_enter(rb_objspace_t *objspace, const char *event)
     mjit_gc_start_hook();
 
     during_gc = TRUE;
+    fprintf(stderr, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
     gc_report(1, objspace, "gc_enter: %s [%s]\n", event, gc_current_status(objspace));
     gc_record(objspace, 0, event);
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_ENTER, 0); /* TODO: which parameter should be passed? */
@@ -6615,6 +6613,7 @@ gc_exit(rb_objspace_t *objspace, const char *event)
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_EXIT, 0); /* TODO: which parameter should be passsed? */
     gc_record(objspace, 1, event);
     gc_report(1, objspace, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
+    fprintf(stderr, "gc_exit: %s [%s]\n", event, gc_current_status(objspace));
     during_gc = FALSE;
 
     mjit_gc_finish_hook();
