@@ -1212,6 +1212,12 @@ name##_eqq(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo)) \
 static VALUE \
 enum_##name##_func(VALUE result, struct MEMO *memo)
 
+#define WARN_UNUSED_BLOCK(argc) do { \
+    if ((argc) > 0 && rb_block_given_p()) { \
+        rb_warn("given block not used"); \
+    } \
+} while (0)
+
 DEFINE_ENUMFUNCS(all)
 {
     if (!RTEST(result)) {
@@ -1249,6 +1255,7 @@ static VALUE
 enum_all(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
+    WARN_UNUSED_BLOCK(argc);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(all), (VALUE)memo);
     return memo->v1;
 }
@@ -1290,6 +1297,7 @@ static VALUE
 enum_any(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qfalse);
+    WARN_UNUSED_BLOCK(argc);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(any), (VALUE)memo);
     return memo->v1;
 }
@@ -1557,6 +1565,7 @@ enum_one(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo = MEMO_ENUM_NEW(Qundef);
     VALUE result;
 
+    WARN_UNUSED_BLOCK(argc);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(one), (VALUE)memo);
     result = memo->v1;
     if (result == Qundef) return Qfalse;
@@ -1598,6 +1607,8 @@ static VALUE
 enum_none(int argc, VALUE *argv, VALUE obj)
 {
     struct MEMO *memo = MEMO_ENUM_NEW(Qtrue);
+
+    WARN_UNUSED_BLOCK(argc);
     rb_block_call(obj, id_each, 0, 0, ENUMFUNC(none), (VALUE)memo);
     return memo->v1;
 }
