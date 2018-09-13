@@ -109,8 +109,20 @@ class RubyVM::BareInstructions
     @attrs.fetch('leaf').expr.expr == 'true;'
   end
 
-  def complicated_return_values?
-    @sig[:ret].any? {|i| i == '...' }
+  def handle_canary stmt
+    # Stack canary is basically a good thing that we want to add, however:
+    #
+    # - When the instruction returns variadic number of return values,
+    #   it is not easy to tell where is the stack top.  We can't but
+    #   skip it.
+    #
+    # - When the instruction body is empty (like putobject), we can
+    #   say for 100% sure that canary is a waste of time.
+    #
+    # So we skip canary for those cases.
+    return '' if @sig[:ret].any? {|i| i == '...' }
+    return '' if @expr.blank?
+    return "    #{stmt};\n"
   end
 
   def inspect
