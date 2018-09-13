@@ -2511,12 +2511,12 @@ vm_search_super_method(const rb_execution_context_t *ec, rb_control_frame_t *reg
     if (!klass) {
 	/* bound instance method of module */
 	cc->aux.method_missing_reason = MISSING_SUPER;
-	CI_SET_FASTPATH(cc, vm_call_method_missing, 1);
+        CI_SET_FASTPATH(cc, vm_call_method_missing, TRUE);
     }
     else {
 	/* TODO: use inline cache */
 	cc->me = rb_callable_method_entry(klass, ci->mid);
-	CI_SET_FASTPATH(cc, vm_call_super_method, 1);
+        CI_SET_FASTPATH(cc, vm_call_super_method, TRUE);
     }
 }
 

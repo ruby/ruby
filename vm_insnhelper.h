@@ -178,17 +178,9 @@ enum vm_regan_acttype {
  * because inline method cache does not care about receiver.
  */
 
-#ifndef OPT_CALL_FASTPATH
-#define OPT_CALL_FASTPATH 1
-#endif
-
-#if OPT_CALL_FASTPATH
 #define CI_SET_FASTPATH(cc, func, enabled) do { \
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
-#else
-#define CI_SET_FASTPATH(ci, func, enabled) /* do nothing */
-#endif
 
 #define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
 
