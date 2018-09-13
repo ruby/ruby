@@ -144,11 +144,7 @@ enum vm_regan_acttype {
    the caller frame may have stack values in the local variables and the cancelling
    the caller frame will purge them. But directly calling mjit_exec is faster... */
 #define EXEC_EC_CFP(val) do { \
-    if (ec->cfp->iseq->body->catch_except_p) { \
-        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
-        val = vm_exec(ec, TRUE); \
-    } \
-    else if ((val = mjit_exec(ec)) == Qundef) { \
+    if ((val = mjit_exec(ec, TRUE)) == Qundef) { \
         VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
         val = vm_exec(ec, FALSE); \
     } \
@@ -157,7 +153,7 @@ enum vm_regan_acttype {
 /* When calling from VM, longjmp in the callee won't purge any JIT-ed caller frames.
    So it's safe to directly call mjit_exec. */
 #define EXEC_EC_CFP(val) do { \
-    if ((val = mjit_exec(ec)) == Qundef) { \
+    if ((val = mjit_exec(ec, FALSE)) == Qundef) { \
         RESTORE_REGS(); \
         NEXT_INSN(); \
     } \
