@@ -1128,6 +1128,7 @@ class TestHash < Test::Unit::TestCase
     h1 = @cls[1=>2, 3=>4]
     h2 = {1=>3, 5=>7}
     h3 = {1=>1, 2=>4}
+    assert_equal({1=>2, 3=>4}, h1.merge())
     assert_equal({1=>3, 3=>4, 5=>7}, h1.merge(h2))
     assert_equal({1=>6, 3=>4, 5=>7}, h1.merge(h2) {|k, v1, v2| k + v1 + v2 })
     assert_equal({1=>1, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3))
