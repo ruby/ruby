@@ -1950,7 +1950,7 @@ AS_IF([test "$ac_cv_func_qsort_r" != no], [
   AC_CACHE_CHECK(whether qsort_r is GNU version, rb_cv_gnu_qsort_r,
     [AC_TRY_COMPILE([
 @%:@include <stdlib.h>
-void qsort_r(void *base, size_t nmemb, size_t size,
+void (qsort_r)(void *base, size_t nmemb, size_t size,
 	    int (*compar)(const void *, const void *, void *),
 	    void *arg);
 ],[ ],
@@ -1960,7 +1960,7 @@ void qsort_r(void *base, size_t nmemb, size_t size,
   AC_CACHE_CHECK(whether qsort_r is BSD version, rb_cv_bsd_qsort_r,
     [AC_TRY_COMPILE([
 @%:@include <stdlib.h>
-void qsort_r(void *base, size_t nmemb, size_t size,
+void (qsort_r)(void *base, size_t nmemb, size_t size,
 	     void *arg, int (*compar)(void *, const void *, const void *));
 ],[ ],
       [rb_cv_bsd_qsort_r=yes],
