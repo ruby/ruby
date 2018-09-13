@@ -3034,6 +3034,9 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
     rb_check_arity(argc, 0, 1);
     if (RHASH_EMPTY_P(hash)) return Qfalse;
     if (argc) {
+    if (rb_block_given_p()) {
+        rb_warn("given block not used");
+    }
 	args[1] = argv[0];
 
 	rb_hash_foreach(hash, any_p_i_pattern, (VALUE)args);

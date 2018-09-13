@@ -314,6 +314,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(false, @obj.all?(1..2))
   end
 
+  def test_all_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.all?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.all?([:b, 2]) {|x| x == 4 }
+    EOS
+  end
+
   def test_any
     assert_equal(true, @obj.any? {|x| x >= 3 })
     assert_equal(false, @obj.any? {|x| x > 3 })
@@ -327,6 +342,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal(true, [1, 4.2].any?(Float))
     assert_equal(false, {a: 1, b: 2}.any?(->(kv) { kv == [:foo, 42] }))
     assert_equal(true, {a: 1, b: 2}.any?(->(kv) { kv == [:b, 2] }))
+  end
+
+  def test_any_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 23].any?(1) {|x| x == 1 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).any?(34) {|x| x == 2 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.any?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.any?([:b, 2]) {|x| x == 4 }
+    EOS
   end
 
   def test_one
@@ -348,6 +378,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert([ nil, true, 99 ].one?(Integer))
   end
 
+  def test_one_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.one?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.one?([:b, 2]) {|x| x == 4 }
+    EOS
+  end
+
   def test_none
     assert(@obj.none? {|x| x == 4 })
     assert(!(@obj.none? {|x| x == 1 }))
@@ -363,6 +408,21 @@ class TestEnumerable < Test::Unit::TestCase
     assert([nil,false].none?)
     assert(![nil,false,true].none?)
     assert(@empty.none?)
+  end
+
+  def test_none_with_unused_block
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      [1, 2].none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      (1..2).none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      3.times.none?(1) {|x| x == 3 }
+    EOS
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
+      {a: 1, b: 2}.none?([:b, 2]) {|x| x == 4 }
+    EOS
   end
 
   def test_min

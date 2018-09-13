@@ -5809,6 +5809,9 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
     rb_check_arity(argc, 0, 1);
     if (!len) return Qfalse;
     if (argc) {
+    if (rb_block_given_p()) {
+        rb_warn("given block not used");
+    }
 	for (i = 0; i < RARRAY_LEN(ary); ++i) {
 	    if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qtrue;
 	}
