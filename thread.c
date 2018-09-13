@@ -1215,8 +1215,8 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 
     if (now > end) return 1;
     thread_debug("hrtime_update_expire: "
-		 "%"PRI_64_PREFIX"u > %"PRI_64_PREFIX"u\n",
-                 end, now);
+                 "%"PRI_64_PREFIX"u > %"PRI_64_PREFIX"u\n",
+                 (unsigned long)end, (unsigned long)now);
     *timeout = end - now;
     return 0;
 }
