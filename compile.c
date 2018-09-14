@@ -5811,6 +5811,25 @@ compile_evstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     return COMPILE_OK;
 }
 
+static void
+compile_frozen_string(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
+{
+    const int line = nd_line(node);
+    VALUE lit = node->nd_lit;
+
+    if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
+        VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
+        lit = rb_str_dup(lit);
+        rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
+        lit = rb_str_freeze(lit);
+    }
+    else {
+        lit = rb_fstring(lit);
+    }
+    ADD_INSN1(ret, line, putobject, lit);
+    iseq_add_mark_object_compile_time(iseq, lit);
+}
+
 static int iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped);
 /**
   compile each node
@@ -6406,11 +6425,19 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
-	    CHECK(COMPILE(ret, "recv", node->nd_recv));
-	    ADD_INSN3(ret, line, opt_aref_with, str,
-		      new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
-		      NULL/* CALL_CACHE */);
+            CHECK(COMPILE(ret, "recv", node->nd_recv));
+            if(!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal){
+                VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
+                ADD_INSN3(ret, line, opt_aref_with, str,
+                          new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
+                          NULL/* CALL_CACHE */);
+            }
+            else {
+                compile_frozen_string(iseq, ret, node->nd_args->nd_head);
+                ADD_INSN2(ret, line, opt_aref,
+                          new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE),
+                          NULL/* CALL_CACHE */);
+            }
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
 	    }
@@ -6931,17 +6958,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		ADD_INSN1(ret, line, putstring, lit);
 	    }
 	    else {
-		if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-		    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
-		    lit = rb_str_dup(lit);
-		    rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
-		    lit = rb_str_freeze(lit);
-		}
-		else {
-		    lit = rb_fstring(lit);
-		}
-		ADD_INSN1(ret, line, putobject, lit);
-		iseq_add_mark_object_compile_time(iseq, lit);
+                compile_frozen_string(iseq, ret, node);
 	    }
 	}
 	break;
