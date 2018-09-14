@@ -1,3 +1,5 @@
-README            this file
-rb_optparse.bash  bash completion script
-rb_optparse.zsh   zsh completion script
+README             this file
+rb_optparse.bash   bash completion script
+rb_optparse.zsh    zsh completion script
+lldb_cruby.py      LLDB port of debug utility
+test_lldb_cruby.rb test file for LLDB port
