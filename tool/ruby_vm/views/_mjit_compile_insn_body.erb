@@ -67,7 +67,7 @@
         next_pos = pos + insn_len(insn) + (unsigned int)<%= dest %>;
         fprintf(f, "            goto label_%d;\n", next_pos);
 %     end
-%   when /\A\s+DISPATCH_ORIGINAL_INSN\([^)]+\);\s+\z/
+%   when /\A\s+CALL_SIMPLE_METHOD\(\);\s+\z/
 %     # For `opt_xxx`'s fallbacks.
         if (status->local_stack_p) {
             fprintf(f, "            reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
