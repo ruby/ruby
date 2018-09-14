@@ -1052,7 +1052,7 @@ opt_plus
     val = vm_opt_plus(recv, obj);
 
     if (val == Qundef) {
-	CALL_SIMPLE_METHOD();
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1290,7 +1290,7 @@ opt_aref_with
 #ifndef MJIT_HEADER
 	PUSH(rb_str_resurrect(key));
 #endif
-	CALL_SIMPLE_METHOD();
+        CALL_SIMPLE_METHOD();
     }
 }
 
