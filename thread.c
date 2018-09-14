@@ -1203,6 +1203,9 @@ COMPILER_WARNING_PUSH
 #if defined(__GNUC__) && __GNUC__ == 7 && __GNUC_MINOR__ <= 3
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
+#ifndef PRIu64
+#define PRIu64 PRI_64_PREFIX "u"
+#endif
 /*
  * @end is the absolute time when @ts is set to expire
  * Returns true if @end has past
@@ -1215,7 +1218,7 @@ hrtime_update_expire(rb_hrtime_t *timeout, const rb_hrtime_t end)
 
     if (now > end) return 1;
     thread_debug("hrtime_update_expire: "
-                 "%"PRI_64_PREFIX"u > %"PRI_64_PREFIX"u\n",
+                 "%"PRIu64" > %"PRIu64"\n",
                  (uint64_t)end, (uint64_t)now);
     *timeout = end - now;
     return 0;
