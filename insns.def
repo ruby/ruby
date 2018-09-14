@@ -761,10 +761,7 @@ opt_str_freeze
 
     if (val == Qundef) {
         PUSH(rb_str_resurrect(str));
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-        DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -778,10 +775,7 @@ opt_str_uminus
 
     if (val == Qundef) {
         PUSH(rb_str_resurrect(str));
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-        DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1058,10 +1052,7 @@ opt_plus
     val = vm_opt_plus(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+	CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1075,10 +1066,7 @@ opt_minus
     val = vm_opt_minus(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1092,10 +1080,7 @@ opt_mult
     val = vm_opt_mult(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1109,10 +1094,7 @@ opt_div
     val = vm_opt_div(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1126,10 +1108,7 @@ opt_mod
     val = vm_opt_mod(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1147,10 +1126,7 @@ opt_eq
     val = opt_eq_func(recv, obj, ci, cc);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1166,10 +1142,7 @@ opt_neq
     val = vm_opt_neq(ci, cc, ci_eq, cc_eq, recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1183,10 +1156,7 @@ opt_lt
     val = vm_opt_lt(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1200,10 +1170,7 @@ opt_le
     val = vm_opt_le(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1217,10 +1184,7 @@ opt_gt
     val = vm_opt_gt(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1234,10 +1198,7 @@ opt_ge
     val = vm_opt_ge(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1251,10 +1212,7 @@ opt_ltlt
     val = vm_opt_ltlt(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1273,10 +1231,7 @@ opt_aref
     val = vm_opt_aref(recv, obj);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1293,10 +1248,7 @@ opt_aset
     val = vm_opt_aset(recv, obj, set);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1318,9 +1270,8 @@ opt_aset_with
 #ifndef MJIT_HEADER
 	TOPN(0) = rb_str_resurrect(key);
 	PUSH(val);
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1338,9 +1289,8 @@ opt_aref_with
     if (val == Qundef) {
 #ifndef MJIT_HEADER
 	PUSH(rb_str_resurrect(key));
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
 #endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+	CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1354,10 +1304,7 @@ opt_length
     val = vm_opt_length(recv, BOP_LENGTH);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1371,10 +1318,7 @@ opt_size
     val = vm_opt_length(recv, BOP_SIZE);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1388,10 +1332,7 @@ opt_empty_p
     val = vm_opt_empty_p(recv);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1405,10 +1346,7 @@ opt_succ
     val = vm_opt_succ(recv);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1422,10 +1360,7 @@ opt_not
     val = vm_opt_not(ci, cc, recv);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 
@@ -1450,10 +1385,7 @@ opt_regexpmatch2
     val = vm_opt_regexpmatch2(obj2, obj1);
 
     if (val == Qundef) {
-#ifndef MJIT_HEADER
-        ADD_PC(-WIDTH_OF_opt_send_without_block);
-#endif
-	DISPATCH_ORIGINAL_INSN(opt_send_without_block);
+        CALL_SIMPLE_METHOD();
     }
 }
 

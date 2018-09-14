@@ -13,11 +13,12 @@ INSN_ENTRY(<%= insn.name %>)
 %#  NAME_OF_CURRENT_INSN is used in vm_exec.h
 #   define NAME_OF_CURRENT_INSN <%= insn.name %>
 #   define INSN_ATTR(x) <%= insn.call_attribute(' ## x ## ') %>
+    bool leaf;
+    MAYBE_UNUSED(VALUE *) canary;
 % unless insn.declarations.empty?
     <%= insn.declarations.join(";\n    ") %>;
 
 % end
-<%= insn.handle_canary "DECLARE_CANARY" -%>
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
 % insn.preamble.each do |konst|
 <%= render_c_expr konst -%>
@@ -30,7 +31,7 @@ INSN_ENTRY(<%= insn.name %>)
     <%= pop[:name] %> = <%= insn.cast_from_VALUE pop, "TOPN(#{i})"%>;
 % end
     DEBUG_ENTER_INSN(INSN_ATTR(name));
-    ADD_PC(INSN_ATTR(width));
+    if (! (leaf = INSN_ATTR(leaf))) ADD_PC(INSN_ATTR(width));
 % if insn.handles_sp?
     POPN(INSN_ATTR(popn));
 % end
@@ -47,11 +48,12 @@ INSN_ENTRY(<%= insn.name %>)
     PUSH(<%= insn.cast_to_VALUE ret %>);
 %   end
 % else
-    ADJ_SP(INSN_ATTR(sp_inc));
+    INC_SP(INSN_ATTR(sp_inc));
 %   insn.rets.reverse_each.with_index do |ret, i|
     TOPN(<%= i %>) = <%= insn.cast_to_VALUE ret %>;
 %   end
 % end
+    if (leaf) ADD_PC(INSN_ATTR(width));
     END_INSN(<%= insn.name %>);
 #   undef INSN_ATTR
 #   undef NAME_OF_CURRENT_INSN
