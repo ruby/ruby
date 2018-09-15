@@ -2607,9 +2607,9 @@ static VALUE
 rb_hash_update(int argc, VALUE *argv, VALUE self)
 {
     int i;
+    bool block_given = rb_block_given_p();
 
     rb_hash_modify(self);
-    bool block_given = rb_block_given_p();
     for(i = 0; i < argc; i++){
       VALUE hash = to_hash(argv[i]);
       if (block_given) {
@@ -2694,7 +2694,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *  More than one hash can be given to this method as arguments, then
  *  the method returns a new hash containing the contents of the reciever
  *  itself and all hashes given as arguments. The method also can be called 
- *  with no argument, then the receiver itself will be returned;
+ *  with no argument, then a new hash, whose content is same as that of receiver, will be returned;
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
