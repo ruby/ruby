@@ -189,7 +189,10 @@ class MSpecScript
     end
 
     patterns.each do |pattern|
-      expanded = File.expand_path(pattern)
+      expanded = File.realpath(pattern)
+    rescue Errno::ENOENT
+      next
+    else
       if File.file?(expanded) && expanded.end_with?('.rb')
         return [expanded]
       elsif File.directory?(expanded)
