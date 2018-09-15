@@ -3855,4 +3855,11 @@ __END__
       th.join
     end;
   end
+
+  def test_external_encoding_index
+    IO.pipe {|r, w|
+      assert_raise(TypeError) {Marshal.dump(r)}
+      assert_raise(TypeError) {Marshal.dump(w)}
+    }
+  end
 end
