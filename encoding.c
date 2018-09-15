@@ -803,7 +803,7 @@ rb_enc_get_index(VALUE obj)
 	if (NIL_P(tmp)) {
 	    tmp = rb_funcallv(obj, rb_intern("external_encoding"), 0, 0);
 	}
-	if (is_data_encoding(tmp)) {
+	if (is_obj_encoding(tmp)) {
 	    i = enc_check_encoding(tmp);
 	}
 	break;
