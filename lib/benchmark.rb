@@ -439,6 +439,9 @@ module Benchmark
 
     #
     # An in-place version of #add.
+    # Changes the times of this Tms object by making it the sum of the times
+    # for this Tms object, plus the time required to execute
+    # the code block (+blk+).
     #
     def add!(&blk)
       t = Benchmark.measure(&blk)
@@ -452,7 +455,7 @@ module Benchmark
 
     #
     # Returns a new Tms object obtained by memberwise summation
-    # of the individual times for this Tms object with those of the other
+    # of the individual times for this Tms object with those of the +other+
     # Tms object.
     # This method and #/() are useful for taking statistics.
     #
@@ -460,20 +463,20 @@ module Benchmark
 
     #
     # Returns a new Tms object obtained by memberwise subtraction
-    # of the individual times for the other Tms object from those of this
+    # of the individual times for the +other+ Tms object from those of this
     # Tms object.
     #
     def -(other); memberwise(:-, other) end
 
     #
     # Returns a new Tms object obtained by memberwise multiplication
-    # of the individual times for this Tms object by _x_.
+    # of the individual times for this Tms object by +x+.
     #
     def *(x); memberwise(:*, x) end
 
     #
     # Returns a new Tms object obtained by memberwise division
-    # of the individual times for this Tms object by _x_.
+    # of the individual times for this Tms object by +x+.
     # This method and #+() are useful for taking statistics.
     #
     def /(x); memberwise(:/, x) end
@@ -529,7 +532,7 @@ module Benchmark
     #
     # Returns a new Tms object obtained by memberwise operation +op+
     # of the individual times for this Tms object with those of the other
-    # Tms object.
+    # Tms object (+x+).
     #
     # +op+ can be a mathematical operation such as <tt>+</tt>, <tt>-</tt>,
     # <tt>*</tt>, <tt>/</tt>
