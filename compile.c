@@ -6405,6 +6405,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 1 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
 	    CHECK(COMPILE(ret, "recv", node->nd_recv));
@@ -7398,6 +7399,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    nd_type(node->nd_args) == NODE_ARRAY && node->nd_args->nd_alen == 2 &&
 	    nd_type(node->nd_args->nd_head) == NODE_STR &&
 	    ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
+            !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
 	    ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
 	{
 	    VALUE str = freeze_literal(iseq, node->nd_args->nd_head->nd_lit);
