@@ -3596,6 +3596,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
     if (n == 0 || varlen == 0) {
       if (IS_NULL(snode)) {
 	if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
+          onig_node_free(top_root);
 	  top_root = root = onig_node_list_add(NULL_NODE, prev_node);
 	  if (IS_NULL(root)) {
 	    onig_node_free(prev_node);
@@ -3627,6 +3628,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
 	}
       }
       if (IS_NULL(root) && IS_NOT_NULL(prev_node)) {
+        onig_node_free(top_root);
 	top_root = root = onig_node_list_add(NULL_NODE, prev_node);
 	if (IS_NULL(root)) {
 	  onig_node_free(prev_node);
@@ -3677,6 +3679,7 @@ expand_case_fold_string(Node* node, regex_t* reg)
     if (r != 0) goto mem_err;
 
     if (IS_NOT_NULL(prev_node) && IS_NULL(root)) {
+      onig_node_free(top_root);
       top_root = root = onig_node_list_add(NULL_NODE, prev_node);
       if (IS_NULL(root)) {
 	onig_node_free(srem);

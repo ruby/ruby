@@ -633,11 +633,12 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
 		if (!h) continue;
 		s = dlsym(h, strtab + sym->st_name);
-		if (!s) continue;
-		if (dladdr(s, &info)) {
+		if (s && dladdr(s, &info)) {
 		    dladdr_fbase = (uintptr_t)info.dli_fbase;
+                    dlclose(h);
 		    break;
 		}
+                dlclose(h);
 	    }
 	    if (ehdr->e_type == ET_EXEC) {
 		obj->base_addr = 0;
@@ -705,6 +706,9 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 finish:
     return dladdr_fbase;
 fail:
+    if (file != NULL) {
+        munmap(file, (size_t)filesize);
+    }
     return (uintptr_t)-1;
 }
 
