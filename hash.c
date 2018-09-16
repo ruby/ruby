@@ -2548,28 +2548,18 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *     hsh.merge!()                                           -> hsh
- *     hsh.update()                                           -> hsh
- *     hsh.merge!(other_hash)                                 -> hsh
- *     hsh.update(other_hash)                                 -> hsh
- *     hsh.merge!(other_hash1, other_hash2)                   -> hsh
- *     hsh.update(other_hash1, other_hash2)                   -> hsh
- *     hsh.merge!(other_hash){|key, oldval, newval| block}    -> hsh
- *     hsh.update(other_hash){|key, oldval, newval| block}    -> hsh
- *     hsh.merge!(other_hash1, other_hash2){|key, oldval, newval| block}
+ *     hsh.merge!(other_hash1, other_hash2, ...)              -> hsh
+ *     hsh.update(other_hash1, other_hash2, ...)              -> hsh
+ *     hsh.merge!(other_hash1, other_hash2, ...){|key, oldval, newval| block}
  *                                                            -> hsh
- *     hsh.update(other_hash1, other_hash2){|key, oldval, newval| block}
+ *     hsh.update(other_hash1, other_hash2, ...){|key, oldval, newval| block}
  *                                                            -> hsh
  *
- *  Adds the contents of _other_hash_ to _hsh_.  If no block is specified,
- *  entries with duplicate keys are overwritten with the values from
- *  _other_hash_, otherwise the value of each duplicate key is determined by
+ *  Adds the contents of _other_hash_s to _hsh_ repeatedly. If no block is
+ *  specified, entries with duplicate keys are overwritten with the values from
+ *  each _other_hash_, otherwise the value of each duplicate key is determined by
  *  calling the block with the key, its value in _hsh_ and its value in
- *  _other_hash_.
- *
- *  More than one hash can be given to this method as arguments, then
- *  the method adds the contents of each hash to receiver repeatedly
- *  in the way written above. The method also can be called with no argument,
+ *  each _other_hash_. The method also can be called with no argument,
  *  then nothing will change in the receiver.
  *
  *     h1 = { "a" => 100, "b" => 200 }
@@ -2588,12 +2578,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *     h1.merge!(h2, h3)
  *                     #=> {"a"=>100, "b"=>100, "c"=>300, "d"=>400}
  *     h1              #=> {"a"=>100, "b"=>100, "c"=>300, "d"=>400}
- *
- *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 254, "c" => 300 }
- *     h1.merge!(h2) { |key, v1, v2| v1 }
- *                     #=> {"a"=>100, "b"=>200, "c"=>300}
- *     h1              #=> {"a"=>100, "b"=>200, "c"=>300}
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
@@ -2678,23 +2662,18 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 
 /*
  *  call-seq:
- *     hsh.merge()                                        ->
- *     hsh.merge(other_hash)                              -> new_hash
- *     hsh.merge(other_hash1, other_hash2)                -> new_hash
- *     hsh.merge(other_hash){|key, oldval, newval| block} -> new_hash
- *     hsh.merge(other_hash1, other_hash2){|key, oldval, newval| block}
+ *     hsh.merge(other_hash1, other_hash2, ...)           -> new_hash
+ *     hsh.merge(other_hash1, other_hash2, ...){|key, oldval, newval| block}
  *                                                        -> new_hash
  *
- *  Returns a new hash containing the contents of <i>other_hash</i> and
+ *  Returns a new hash containing the contents of <i>other_hash</i>s and
  *  the contents of <i>hsh</i>. If no block is specified, the value for
- *  entries with duplicate keys will be that of <i>other_hash</i>. Otherwise
- *  the value for each duplicate key is determined by calling the block
- *  with the key, its value in <i>hsh</i> and its value in <i>other_hash</i>.
- *
- *  More than one hash can be given to this method as arguments, then
- *  the method returns a new hash containing the contents of the reciever
- *  itself and all hashes given as arguments. The method also can be called 
- *  with no argument, then a new hash, whose content is same as that of receiver, will be returned;
+ *  entries with duplicate keys will be that of each <i>other_hash</i>.
+ *  Otherwise the value for each duplicate key is determined by calling
+ *  the block with the key, its value in <i>hsh</i> and its value
+ *  in each <i>other_hash</i>. The method also can be called with no argument,
+ *  then a new hash, whose content is same as that of the receiver,
+ *  will be returned;
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
