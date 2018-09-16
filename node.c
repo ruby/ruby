@@ -803,7 +803,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	return;
 
       case NODE_UNDEF:
-	ANN("method alias statement");
+	ANN("method undef statement");
 	ANN("format: undef [nd_undef]");
 	ANN("example: undef foo");
 	LAST_NODE;
