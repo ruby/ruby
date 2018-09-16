@@ -238,7 +238,7 @@ class Pathname
   #       #=> true
   def relative?
     path = @path
-    return false if path.start_with?('/')
+    return false if path.start_with?(File::SEPARATOR)
     while r = chop_basename(path)
       path, = r
     end
