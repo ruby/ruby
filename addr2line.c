@@ -532,8 +532,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Shdr) *shdr, *shstr_shdr;
     ElfW(Shdr) *debug_line_shdr = NULL, *gnu_debuglink_shdr = NULL;
     int fd;
-    off_t filesize;
-    char *file;
+    off_t filesize = 0;
+    char *file = NULL;
     ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
