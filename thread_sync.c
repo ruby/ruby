@@ -799,10 +799,12 @@ queue_do_push(VALUE self, struct rb_queue *q, VALUE obj)
  *
  * - +close+ will be ignored.
  *
- * - calling enq/push/<< will raise an exception.
+ * - calling enq/push/<< will raise a +ClosedQueueError+.
  *
  * - when +empty?+ is false, calling deq/pop/shift will return an object
  *   from the queue as usual.
+ * - when +empty?+ is true, deq(false) will not suspend the thread and will return nil.
+ *   deq(true) will raise a +ThreadError+.
  *
  * ClosedQueueError is inherited from StopIteration, so that you can break loop block.
  *
