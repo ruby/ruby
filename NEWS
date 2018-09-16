@@ -195,6 +195,12 @@ sufficient information, see the ChangeLog file or Redmine
         * `String#split` yields each substring to the block if given.
           [Feature #4780]
 
+* `Struct`
+
+    * Aliased method:
+
+        * `Struct#filter` is a new alias for `Struct#select` [Feature #13784]
+
 * `TracePoint`
 
     * New methods:
