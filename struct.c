@@ -1297,6 +1297,7 @@ InitVM_Struct(void)
     rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);
     rb_define_method(rb_cStruct, "[]=", rb_struct_aset, 2);
     rb_define_method(rb_cStruct, "select", rb_struct_select, -1);
+    rb_define_method(rb_cStruct, "filter", rb_struct_select, -1);
     rb_define_method(rb_cStruct, "values_at", rb_struct_values_at, -1);
 
     rb_define_method(rb_cStruct, "members", rb_struct_members_m, 0);

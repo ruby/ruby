@@ -212,6 +212,13 @@ module TestStruct
     assert_raise(ArgumentError) { o.select(1) }
   end
 
+  def test_filter
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal([1, 3, 5], o.filter {|v| v % 2 != 0 })
+    assert_raise(ArgumentError) { o.filter(1) }
+  end
+
   def test_big_struct
     klass1 = @Struct.new(*('a'..'z').map(&:to_sym))
     o = klass1.new
