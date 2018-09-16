@@ -193,8 +193,10 @@ module Test
 
       class Worker
         def self.launch(ruby,args=[])
+          scale = EnvUtil.subprocess_timeout_scale
           io = IO.popen([*ruby, "-W1",
                         "#{File.dirname(__FILE__)}/unit/parallel.rb",
+                        *("--subprocess-timeout-scale=#{scale}" if scale),
                         *args], "rb+")
           new(io, io.pid, :waiting)
         end
