@@ -2233,6 +2233,7 @@ mjit_compile.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 mjit_compile.$(OBJEXT): $(CCAN_DIR)/list/list.h
 mjit_compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 mjit_compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+mjit_compile.$(OBJEXT): $(hdrdir)/ruby/version.h
 mjit_compile.$(OBJEXT): $(top_srcdir)/include/ruby.h
 mjit_compile.$(OBJEXT): {$(VPATH)}config.h
 mjit_compile.$(OBJEXT): {$(VPATH)}defines.h
@@ -2242,6 +2243,7 @@ mjit_compile.$(OBJEXT): {$(VPATH)}insns.inc
 mjit_compile.$(OBJEXT): {$(VPATH)}insns_info.inc
 mjit_compile.$(OBJEXT): {$(VPATH)}intern.h
 mjit_compile.$(OBJEXT): {$(VPATH)}internal.h
+mjit_compile.$(OBJEXT): {$(VPATH)}iseq.h
 mjit_compile.$(OBJEXT): {$(VPATH)}method.h
 mjit_compile.$(OBJEXT): {$(VPATH)}missing.h
 mjit_compile.$(OBJEXT): {$(VPATH)}mjit.h
