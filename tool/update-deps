@@ -13,9 +13,9 @@
 #   1. Compile ruby with -save-temps=obj option.
 #      Ex.  ./configure debugflags='-save-temps=obj -g' && make all golf
 #   2. Run tool/update-deps to show dependency problems.
-#      Ex.  ruby tool/update-deps
+#      Ex.  ./ruby tool/update-deps
 #   3. Use --fix to fix makefiles.
-#      Ex.  ruby tool/update-deps --fix
+#      Ex.  ./ruby tool/update-deps --fix
 #
 # Other usages:
 #   *  Fix makefiles using previously detected dependency problems
