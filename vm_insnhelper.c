@@ -2380,7 +2380,7 @@ vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct 
     }
     else {
 	cc->aux.method_missing_reason = stat;
-        CC_SET_FASTPATH(cc, vm_call_method_missing, 1);
+        CC_SET_FASTPATH(cc, vm_call_method_missing, TRUE);
 	return vm_call_method_missing(ec, cfp, calling, ci, cc);
     }
 }
@@ -2401,7 +2401,7 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 		if (ci->flag & VM_CALL_VCALL) stat |= MISSING_VCALL;
 
 		cc->aux.method_missing_reason = stat;
-                CC_SET_FASTPATH(cc, vm_call_method_missing, 1);
+		CC_SET_FASTPATH(cc, vm_call_method_missing, TRUE);
 		return vm_call_method_missing(ec, cfp, calling, ci, cc);
 	    }
 	    return vm_call_method_each_type(ec, cfp, calling, ci, cc);
