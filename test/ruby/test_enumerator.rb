@@ -476,6 +476,12 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([1], y.yield(1))
     assert_equal([1, 2], y.yield(2))
     assert_equal([1, 2, 3], y.yield(3))
+    assert_equal([1, 2, 3, 4], y.yield(4, 5))
+
+    a = []
+    y = Enumerator::Yielder.new {|*x| a.concat(x) }
+    assert_equal([1], y.yield(1))
+    assert_equal([1, 2, 3], y.yield(2, 3))
 
     assert_raise(LocalJumpError) { Enumerator::Yielder.new }
   end
