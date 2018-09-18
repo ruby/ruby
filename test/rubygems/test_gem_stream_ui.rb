@@ -156,14 +156,14 @@ class TestGemStreamUI < Gem::TestCase
   def test_download_reporter_anything
     @cfg.verbose = 0
     reporter = @sui.download_reporter
-    assert_kind_of Gem::StreamUI::VerboseDownloadReporter, reporter
+    assert_kind_of Gem::StreamUI::ThreadedDownloadReporter, reporter
   end
 
-  def test_verbose_download_reporter
+  def test_threaded_download_reporter
     @cfg.verbose = true
     reporter = @sui.download_reporter
     reporter.fetch 'a.gem', 1024
-    assert_equal "Fetching: a.gem", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress
@@ -171,7 +171,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter = @sui.download_reporter
     reporter.fetch 'a.gem', 1024
     reporter.update 512
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_once
@@ -180,7 +180,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     reporter.update 510
     reporter.update 512
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_complete
@@ -189,7 +189,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 1024
     reporter.update 510
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem ( 50%)\rFetching: a.gem (100%)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_nil_length
@@ -198,7 +198,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', nil
     reporter.update 1024
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_progress_zero_length
@@ -207,7 +207,7 @@ class TestGemStreamUI < Gem::TestCase
     reporter.fetch 'a.gem', 0
     reporter.update 1024
     reporter.done
-    assert_equal "Fetching: a.gem\rFetching: a.gem (1024B)\rFetching: a.gem (1024B)\n", @out.string
+    assert_equal "Fetching a.gem\n", @out.string
   end
 
   def test_verbose_download_reporter_no_tty

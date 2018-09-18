@@ -27,6 +27,7 @@ require 'rbconfig'
 # +:backtrace+:: See #backtrace
 # +:sources+:: Sets Gem::sources
 # +:verbose+:: See #verbose
+# +:concurrent_downloads+:: See #concurrent_downloads
 #
 # gemrc files may exist in various locations and are read and merged in
 # the following order:
@@ -43,6 +44,7 @@ class Gem::ConfigFile
   DEFAULT_BULK_THRESHOLD = 1000
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
+  DEFAULT_CONCURRENT_DOWNLOADS = 8
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -103,6 +105,11 @@ class Gem::ConfigFile
   # * :loud -- Extra output
 
   attr_accessor :verbose
+
+  ##
+  # Number of gem downloads that should be performed concurrently.
+
+  attr_accessor :concurrent_downloads
 
   ##
   # True if we want to update the SourceInfoCache every time, false otherwise
@@ -177,6 +184,7 @@ class Gem::ConfigFile
     @bulk_threshold = DEFAULT_BULK_THRESHOLD
     @verbose = DEFAULT_VERBOSITY
     @update_sources = DEFAULT_UPDATE_SOURCES
+    @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
@@ -200,6 +208,7 @@ class Gem::ConfigFile
     @path                       = @hash[:gempath]                    if @hash.key? :gempath
     @update_sources             = @hash[:update_sources]             if @hash.key? :update_sources
     @verbose                    = @hash[:verbose]                    if @hash.key? :verbose
+    @concurrent_downloads       = @hash[:concurrent_downloads]       if @hash.key? :concurrent_downloads
     @disable_default_gem_server = @hash[:disable_default_gem_server] if @hash.key? :disable_default_gem_server
     @sources                    = @hash[:sources]                    if @hash.key? :sources
 
@@ -414,6 +423,9 @@ if you believe they were disclosed to a third party.
     yaml_hash[:sources] = Gem.sources.to_a
     yaml_hash[:update_sources] = @hash.fetch(:update_sources, DEFAULT_UPDATE_SOURCES)
     yaml_hash[:verbose] = @hash.fetch(:verbose, DEFAULT_VERBOSITY)
+
+    yaml_hash[:concurrent_downloads] =
+      @hash.fetch(:concurrent_downloads, DEFAULT_CONCURRENT_DOWNLOADS)
 
     yaml_hash[:ssl_verify_mode] =
       @hash[:ssl_verify_mode] if @hash.key? :ssl_verify_mode
