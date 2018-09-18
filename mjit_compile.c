@@ -57,14 +57,14 @@ has_valid_method_type(CALL_CACHE cc)
 }
 
 /* Returns TRUE if iseq is inlinable, otherwise NULL. This becomes TRUE in the same condition
-   as CI_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup. */
+   as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup. */
 static int
 inlinable_iseq_p(CALL_INFO ci, CALL_CACHE cc, const rb_iseq_t *iseq)
 {
     extern int rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
         && rb_simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT) /* Top of vm_callee_setup_arg. In this case, opt_pc is 0. */
-        && (!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)); /* CI_SET_FASTPATH */
+        && (!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)); /* CC_SET_FASTPATH */
 }
 
 static int

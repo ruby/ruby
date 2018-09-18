@@ -177,7 +177,7 @@ enum vm_regan_acttype {
  * because inline method cache does not care about receiver.
  */
 
-#define CI_SET_FASTPATH(cc, func, enabled) do { \
+#define CC_SET_FASTPATH(cc, func, enabled) do { \
     if (LIKELY(enabled)) ((cc)->call = (func)); \
 } while (0)
 
