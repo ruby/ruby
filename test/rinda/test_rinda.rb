@@ -601,6 +601,8 @@ module RingIPv6
       return # IPv6 address for multicast not available
     rescue Errno::ENETDOWN
       return # Network is down
+    rescue Errno::EHOSTUNREACH
+      return # Unreachable for some reason
     end
     begin
       yield v6mc
