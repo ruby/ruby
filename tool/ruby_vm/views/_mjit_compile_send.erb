@@ -21,7 +21,7 @@
         argc += ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0);
 % end
 
-        if (cc->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc, iseq = rb_iseq_check(cc->me->def->body.iseq.iseqptr))) { /* CI_SET_FASTPATH in vm_callee_setup_arg */
+        if (cc->me->def->type == VM_METHOD_TYPE_ISEQ && inlinable_iseq_p(ci, cc, iseq = rb_iseq_check(cc->me->def->body.iseq.iseqptr))) { /* CC_SET_FASTPATH in vm_callee_setup_arg */
             int param_size = iseq->body->param.size; /* TODO: check calling->argc for argument_arity_error */
 
             fprintf(f, "{\n");
