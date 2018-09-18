@@ -84,17 +84,21 @@ class Gem::Resolver::Specification
   def install options = {}
     require 'rubygems/installer'
 
-    destination = options[:install_dir] || Gem.dir
-
-    Gem.ensure_gem_subdirectories destination
-
-    gem = source.download spec, destination
+    gem = download options
 
     installer = Gem::Installer.at gem, options
 
     yield installer if block_given?
 
     @spec = installer.install
+  end
+
+  def download options
+    dir = options[:install_dir] || Gem.dir
+
+    Gem.ensure_gem_subdirectories dir
+
+    source.download spec, dir
   end
 
   ##

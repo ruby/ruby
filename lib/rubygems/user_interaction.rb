@@ -512,11 +512,10 @@ class Gem::StreamUI
   # Return a download reporter object chosen from the current verbosity
 
   def download_reporter(*args)
-    case Gem.configuration.verbose
-    when nil, false
+    if [nil, false].include?(Gem.configuration.verbose) || !@outs.tty?
       SilentDownloadReporter.new(@outs, *args)
     else
-      VerboseDownloadReporter.new(@outs, *args)
+      ThreadedDownloadReporter.new(@outs, *args)
     end
   end
 
@@ -553,9 +552,11 @@ class Gem::StreamUI
   end
 
   ##
-  # A progress reporter that prints out messages about the current progress.
+  # A progress reporter that behaves nicely with threaded downloading.
 
-  class VerboseDownloadReporter
+  class ThreadedDownloadReporter
+
+    MUTEX = Mutex.new
 
     ##
     # The current file name being displayed
@@ -563,71 +564,43 @@ class Gem::StreamUI
     attr_reader :file_name
 
     ##
-    # The total bytes in the file
-
-    attr_reader :total_bytes
-
-    ##
-    # The current progress (0 to 100)
-
-    attr_reader :progress
-
-    ##
-    # Creates a new verbose download reporter that will display on
+    # Creates a new threaded download reporter that will display on
     # +out_stream+.  The other arguments are ignored.
 
     def initialize(out_stream, *args)
       @out = out_stream
-      @progress = 0
     end
 
     ##
-    # Tells the download reporter that the +file_name+ is being fetched and
-    # contains +total_bytes+.
+    # Tells the download reporter that the +file_name+ is being fetched.
+    # The other arguments are ignored.
 
-    def fetch(file_name, total_bytes)
-      @file_name = file_name
-      @total_bytes = total_bytes.to_i
-      @units = @total_bytes.zero? ? 'B' : '%'
-
-      update_display(false)
+    def fetch(file_name, *args)
+      if @file_name.nil?
+        @file_name = file_name
+        locked_puts "Fetching #{@file_name}"
+      end
     end
 
     ##
-    # Updates the verbose download reporter for the given number of +bytes+.
+    # Updates the threaded download reporter for the given number of +bytes+.
 
     def update(bytes)
-      new_progress = if @units == 'B' then
-                       bytes
-                     else
-                       ((bytes.to_f * 100) / total_bytes.to_f).ceil
-                     end
-
-      return if new_progress == @progress
-
-      @progress = new_progress
-      update_display
+      # Do nothing.
     end
 
     ##
     # Indicates the download is complete.
 
     def done
-      @progress = 100 if @units == '%'
-      update_display(true, true)
+      # Do nothing.
     end
 
     private
-
-    def update_display(show_progress = true, new_line = false) # :nodoc:
-      return unless @out.tty?
-
-      if show_progress then
-        @out.print "\rFetching: %s (%3d%s)" % [@file_name, @progress, @units]
-      else
-        @out.print "Fetching: %s" % @file_name
+    def locked_puts(message)
+      MUTEX.synchronize do
+        @out.puts message
       end
-      @out.puts if new_line
     end
   end
 end
