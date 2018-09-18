@@ -107,7 +107,7 @@
  */
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
-static ID id_rewind, id_new, id_yield, id_to_enum;
+static ID id_rewind, id_new, id_to_enum;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
 static ID id_begin, id_end, id_step, id_exclude_end;
 static VALUE sym_each, sym_cycle;
@@ -1272,9 +1272,12 @@ yielder_yield(VALUE obj, VALUE args)
 
 /* :nodoc: */
 static VALUE
-yielder_yield_push(VALUE obj, VALUE args)
+yielder_yield_push(VALUE obj, VALUE arg)
 {
-    yielder_yield(obj, args);
+    struct yielder *ptr = yielder_ptr(obj);
+
+    rb_proc_call_with_block(ptr->proc, 1, &arg, Qnil);
+
     return obj;
 }
 
@@ -1517,7 +1520,7 @@ lazy_init_yielder(VALUE val, VALUE m, int argc, VALUE *argv)
     }
 
     if (cont) {
-	rb_funcall2(yielder, id_yield, 1, &(result->memo_value));
+	rb_funcall2(yielder, idLTLT, 1, &(result->memo_value));
     }
     if (LAZY_MEMO_BREAK_P(result)) {
 	rb_iter_break();
@@ -1829,7 +1832,9 @@ lazy_map(VALUE obj)
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, yielder))
 {
-    return rb_funcallv(yielder, id_yield, argc, argv);
+    VALUE arg = rb_enum_values_pack(argc, argv);
+
+    return rb_funcallv(yielder, idLTLT, 1, &arg);
 }
 
 static VALUE
@@ -1844,12 +1849,12 @@ lazy_flat_map_to_ary(VALUE obj, VALUE yielder)
 {
     VALUE ary = rb_check_array_type(obj);
     if (NIL_P(ary)) {
-	rb_funcall(yielder, id_yield, 1, obj);
+	rb_funcall(yielder, idLTLT, 1, obj);
     }
     else {
 	long i;
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    rb_funcall(yielder, id_yield, 1, RARRAY_AREF(ary, i));
+	    rb_funcall(yielder, idLTLT, 1, RARRAY_AREF(ary, i));
 	}
     }
     return Qnil;
@@ -1862,7 +1867,7 @@ lazy_flat_map_proc(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
     if (RB_TYPE_P(result, T_ARRAY)) {
 	long i;
 	for (i = 0; i < RARRAY_LEN(result); i++) {
-	    rb_funcall(argv[0], id_yield, 1, RARRAY_AREF(result, i));
+	    rb_funcall(argv[0], idLTLT, 1, RARRAY_AREF(result, i));
 	}
     }
     else {
@@ -2060,7 +2065,7 @@ lazy_zip_arrays_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, arrays))
     for (i = 0; i < RARRAY_LEN(arrays); i++) {
 	rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
-    rb_funcall(yielder, id_yield, 1, ary);
+    rb_funcall(yielder, idLTLT, 1, ary);
     rb_ivar_set(yielder, id_memo, LONG2NUM(++count));
     return Qnil;
 }
@@ -2093,7 +2098,7 @@ lazy_zip_func(RB_BLOCK_CALL_FUNC_ARGLIST(val, zip_args))
 		       rb_eStopIteration, (VALUE)0);
 	rb_ary_push(ary, v);
     }
-    rb_funcall(yielder, id_yield, 1, ary);
+    rb_funcall(yielder, idLTLT, 1, ary);
     return Qnil;
 }
 
@@ -2950,7 +2955,7 @@ InitVM_Enumerator(void)
     rb_define_alloc_func(rb_cYielder, yielder_allocate);
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
     rb_define_method(rb_cYielder, "yield", yielder_yield, -2);
-    rb_define_method(rb_cYielder, "<<", yielder_yield_push, -2);
+    rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
 
     /* ArithmeticSequence */
     rb_cArithSeq = rb_define_class_under(rb_cEnumerator, "ArithmeticSequence", rb_cEnumerator);
@@ -2978,7 +2983,6 @@ void
 Init_Enumerator(void)
 {
     id_rewind = rb_intern("rewind");
-    id_yield = rb_intern("yield");
     id_new = rb_intern("new");
     id_next = rb_intern("next");
     id_result = rb_intern("result");
