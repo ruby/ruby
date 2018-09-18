@@ -143,7 +143,7 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     dup2(slave,0);
     dup2(slave,1);
     dup2(slave,2);
-    if (slave < 0 && slave > 2) (void)!close(slave);
+    if (slave < 0 || slave > 2) (void)!close(slave);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
     if (seteuid(getuid())) ERROR_EXIT("seteuid()");
 #endif
