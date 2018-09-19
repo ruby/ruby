@@ -90,6 +90,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Hash`
 
+    * Modified methods:
+
+        * `Hash#merge`, `update`, `merge!` and `update!` now accept multiple
+           arguments.  [Feature #15111]
+
     * Aliased methods:
 
         * `Hash#filter` is a new alias for `Hash#select`.  [Feature #13784]
