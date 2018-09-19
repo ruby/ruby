@@ -4316,17 +4316,6 @@ vm_opt_not(CALL_INFO ci, CALL_CACHE cc, VALUE recv)
 }
 
 static VALUE
-vm_opt_regexpmatch1(VALUE recv, VALUE obj)
-{
-    if (BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
-	return rb_reg_match(recv, obj);
-    }
-    else {
-	return rb_funcall(recv, idEqTilde, 1, obj);
-    }
-}
-
-static VALUE
 vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 {
     if (CLASS_OF(recv) == rb_cString &&
