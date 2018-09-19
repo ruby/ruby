@@ -20,7 +20,7 @@ module Net::HTTPHeader
       else
         value = value.strip # raise error for invalid byte sequences
         if value.count("\r\n") > 0
-          raise ArgumentError, 'header field value cannot include CR/LF'
+          raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
         end
         @header[key.downcase] = [value]
       end
