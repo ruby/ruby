@@ -4372,6 +4372,10 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 	BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
 	return rb_reg_match(obj, recv);
     }
+    else if (CLASS_OF(recv) == rb_cRegexp &&
+        BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
+	return rb_reg_match(recv, obj);
+    }
     else {
 	return Qundef;
     }

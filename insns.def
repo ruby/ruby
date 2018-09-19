@@ -1428,17 +1428,6 @@ opt_not
     }
 }
 
-/* optimized regexp match */
-DEFINE_INSN
-opt_regexpmatch1
-(VALUE recv)
-(VALUE obj)
-(VALUE val)
-// attr bool leaf = false; /* rb_reg_prepare_enc() may rb_raise() that calls rb_funcallv() */
-{
-    val = vm_opt_regexpmatch1(recv, obj);
-}
-
 /* optimized regexp match 2 */
 DEFINE_INSN
 opt_regexpmatch2

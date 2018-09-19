@@ -3272,6 +3272,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		  case idMOD:	 SP_INSN(mod);	  return COMPILE_OK;
 		  case idEq:	 SP_INSN(eq);	  return COMPILE_OK;
 		  case idNeq:	 SP_INSN(neq);	  return COMPILE_OK;
+		  case idEqTilde:SP_INSN(regexpmatch2);return COMPILE_OK;
 		  case idLT:	 SP_INSN(lt);	  return COMPILE_OK;
 		  case idLE:	 SP_INSN(le);	  return COMPILE_OK;
 		  case idGT:	 SP_INSN(gt);	  return COMPILE_OK;
@@ -7591,26 +7592,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    break;
 	}
 
-	if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-	    /* TODO: detect by node */
-	    if (recv->last == recv->anchor.next &&
-		INSN_OF(recv->last) == BIN(putobject) &&
-		nd_type(node) == NODE_MATCH2) {
-		ADD_SEQ(ret, val);
-		ADD_INSN1(ret, line, opt_regexpmatch1,
-			  OPERAND_AT(recv->last, 0));
-	    }
-	    else {
-		ADD_SEQ(ret, recv);
-		ADD_SEQ(ret, val);
-		ADD_INSN2(ret, line, opt_regexpmatch2, new_callinfo(iseq, idEqTilde, 1, 0, NULL, FALSE), Qnil);
-	    }
-	}
-	else {
-	    ADD_SEQ(ret, recv);
-	    ADD_SEQ(ret, val);
-	    ADD_SEND(ret, line, idEqTilde, INT2FIX(1));
-	}
+        ADD_SEQ(ret, recv);
+        ADD_SEQ(ret, val);
+        ADD_SEND(ret, line, idEqTilde, INT2FIX(1));
 
 	if (node->nd_args) {
 	    compile_named_capture_assign(iseq, ret, node->nd_args);
