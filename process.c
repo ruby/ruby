@@ -1106,7 +1106,11 @@ waitpid_cleanup(VALUE x)
 {
     struct waitpid_state *w = (struct waitpid_state *)x;
 
-    if (w->ret == 0) {
+    /*
+     * XXX w->ret is sometimes set but list_del is still needed, here,
+     * Not sure why, so we unconditionally do list_del here:
+     */
+    if (TRUE || w->ret == 0) {
         rb_vm_t *vm = rb_ec_vm_ptr(w->ec);
 
         rb_native_mutex_lock(&vm->waitpid_lock);
