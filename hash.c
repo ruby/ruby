@@ -2568,7 +2568,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h2 = { "b" => 254, "c" => 300 }
- *     h3 = { "b" => 100, "d" => 400 }
  *     h1.merge!(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
  *     h1              #=> {"a"=>100, "b"=>254, "c"=>300}
  *
