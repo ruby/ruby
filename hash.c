@@ -2559,8 +2559,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  specified, entries with duplicate keys are overwritten with the values from
  *  each _other_hash_, otherwise the value of each duplicate key is determined by
  *  calling the block with the key, its value in _hsh_ and its value in
- *  each _other_hash_. The method also can be called with no argument,
- *  then nothing will change in the receiver.
+ *  each _other_hash_.
  *
  *     h1 = { "a" => 100, "b" => 200 }
  *     h1.merge!()     #=> {"a"=>100, "b"=>200}
