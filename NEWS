@@ -264,9 +264,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Matrix`
 
-    * New method:
+    * New methods:
 
         * `Matrix#antisymmetric?`
+
+        * `Matrix#reflexive?`
 
 * `Net`
 
