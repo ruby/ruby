@@ -39,6 +39,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Array`
 
+    * New methods:
+
+        * Added `Array#union` instance method.
+          [Feature #14097]
+
     * Aliased methods:
 
         * `Array#filter` is a new alias for `Array#select`.
