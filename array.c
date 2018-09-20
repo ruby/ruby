@@ -4271,6 +4271,32 @@ ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
     return ST_CONTINUE;
 }
 
+
+static void
+rb_ary_union(VALUE ary_union, VALUE ary)
+{
+    int i;
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        VALUE elt = rb_ary_elt(ary, i);
+        if (rb_ary_includes_by_eql(ary_union, elt)) continue;
+        rb_ary_push(ary_union, elt);
+    }
+}
+
+
+static void
+rb_ary_union_hash(VALUE hash, VALUE ary2)
+{
+    long i;
+    for (i=0; i<RARRAY_LEN(ary2); i++) {
+	VALUE elt = RARRAY_AREF(ary2, i);
+	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+	    RB_OBJ_WRITTEN(hash, Qundef, elt);
+	}
+    }
+}
+
+
 /*
  *  call-seq:
  *     ary | other_ary     -> new_ary
@@ -4283,42 +4309,77 @@ ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
  *     [ "a", "b", "c" ] | [ "c", "d", "a" ]    #=> [ "a", "b", "c", "d" ]
  *     [ "c", "d", "a" ] | [ "a", "b", "c" ]    #=> [ "c", "d", "a", "b" ]
  *
- *  See also Array#uniq.
+ *  See also Array#union.
  */
 
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3;
-    long i;
 
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary1) + RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
 	ary3 = rb_ary_new();
-	for (i=0; i<RARRAY_LEN(ary1); i++) {
-	    VALUE elt = rb_ary_elt(ary1, i);
-	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
-	    rb_ary_push(ary3, elt);
-	}
-	for (i=0; i<RARRAY_LEN(ary2); i++) {
-	    VALUE elt = rb_ary_elt(ary2, i);
-	    if (rb_ary_includes_by_eql(ary3, elt)) continue;
-	    rb_ary_push(ary3, elt);
-	}
+	rb_ary_union(ary3, ary1);
+	rb_ary_union(ary3, ary2);
 	return ary3;
     }
 
     hash = ary_make_hash(ary1);
-    for (i=0; i<RARRAY_LEN(ary2); i++) {
-	VALUE elt = RARRAY_AREF(ary2, i);
-	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-	    RB_OBJ_WRITTEN(hash, Qundef, elt);
-	}
-    }
+    rb_ary_union_hash(hash, ary2);
+
     ary3 = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary3;
 }
+
+
+/*
+ *  call-seq:
+ *     ary.union(other_ary1, other_ary2,...)   -> ary
+ *
+ *  Set Union --- Returns a new array by joining +other_ary+s with +self+,
+ *  excluding any duplicates and preserving the order from the given arrays.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ "a", "b", "c" ].union( [ "c", "d", "a" ] )    #=> [ "a", "b", "c", "d" ]
+ *     [ "a" ].union( [ ["e", "b"], ["a", "c", "b"] ] )    #=> [ "a", "e", "b", "c" ]
+ *     [ "a" ].union #=> [ "a" ]
+ *
+ *  See also Array#|.
+ */
+
+static VALUE
+rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
+{
+    int i;
+    long sum;
+    VALUE hash, ary_union;
+
+    sum = RARRAY_LEN(ary);
+    for (i = 0; i < argc; i++){
+	argv[i] = to_ary(argv[i]);
+	sum += RARRAY_LEN(argv[i]);
+    }
+
+    if (sum <= SMALL_ARRAY_LEN) {
+	ary_union = rb_ary_new();
+
+	rb_ary_union(ary_union, ary);
+	for (i = 0; i < argc; i++) rb_ary_union(ary_union, argv[i]);
+
+	return ary_union;
+    }
+
+    hash = ary_make_hash(ary);
+    for (i = 0; i < argc; i++) rb_ary_union_hash(hash, argv[i]);
+
+    ary_union = rb_hash_values(hash);
+    ary_recycle_hash(hash);
+    return ary_union;
+}
+
 
 /*
  *  call-seq:
@@ -6296,6 +6357,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "first", rb_ary_first, -1);
     rb_define_method(rb_cArray, "last", rb_ary_last, -1);
     rb_define_method(rb_cArray, "concat", rb_ary_concat_multi, -1);
+    rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");

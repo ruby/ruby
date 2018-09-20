@@ -1884,6 +1884,44 @@ class TestArray < Test::Unit::TestCase
     assert_equal((1..128).to_a, b)
   end
 
+  def test_union
+    assert_equal(@cls[],  @cls[].union(@cls[]))
+    assert_equal(@cls[1], @cls[1].union(@cls[]))
+    assert_equal(@cls[1], @cls[].union(@cls[1]))
+    assert_equal(@cls[1], @cls[].union(@cls[], @cls[1]))
+    assert_equal(@cls[1], @cls[1].union(@cls[1]))
+    assert_equal(@cls[1], @cls[1].union(@cls[1], @cls[1], @cls[1]))
+
+    assert_equal(@cls[1,2], @cls[1].union(@cls[2]))
+    assert_equal(@cls[1,2], @cls[1, 1].union(@cls[2, 2]))
+    assert_equal(@cls[1,2], @cls[1, 2].union(@cls[1, 2]))
+    assert_equal(@cls[1,2], @cls[1, 1].union(@cls[1, 1], @cls[1, 2], @cls[2, 1], @cls[2, 2, 2]))
+
+    a = %w(a b c)
+    b = %w(a b c d e)
+    c = a.union(b)
+    assert_equal(c, b)
+    assert_not_same(c, b)
+    assert_equal(%w(a b c), a)
+    assert_equal(%w(a b c d e), b)
+    assert(a.none?(&:frozen?))
+    assert(b.none?(&:frozen?))
+    assert(c.none?(&:frozen?))
+  end
+
+  def test_union_big_array
+    assert_equal(@cls[1,2], (@cls[1]*64).union(@cls[2]*64))
+    assert_equal(@cls[1,2,3], (@cls[1, 2]*64).union(@cls[1, 2]*64, @cls[3]*60))
+
+    a = (1..64).to_a
+    b = (1..128).to_a
+    c = a | b
+    assert_equal(c, b)
+    assert_not_same(c, b)
+    assert_equal((1..64).to_a, a)
+    assert_equal((1..128).to_a, b)
+  end
+
   def test_combination
     a = @cls[]
     assert_equal(1, a.combination(0).size)
