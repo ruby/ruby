@@ -563,7 +563,8 @@ class TestKeywordArguments < Test::Unit::TestCase
 
   def test_dynamic_symbol_keyword
     bug10266 = '[ruby-dev:48564] [Bug #10266]'
-    assert_separately(['-', bug10266], <<-'end;') #    do
+    assert_separately(['-', bug10266], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
       bug = ARGV.shift
       "hoge".to_sym
       assert_nothing_raised(bug) {eval("def a(hoge:); end")}
@@ -745,5 +746,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(d7: :ok)[i], "#{i}: d7"); i+=1
 
     assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
+  end
+
+  def test_splat_empty_hash_with_block_passing
+    assert_valid_syntax("bug15087(**{}, &nil)")
   end
 end
