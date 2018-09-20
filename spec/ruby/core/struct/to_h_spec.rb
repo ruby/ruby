@@ -12,4 +12,12 @@ describe "Struct#to_h" do
     car.to_h[:make] = 'Suzuki'
     car.make.should == 'Ford'
   end
+
+  ruby_version_is "2.6" do
+    it "converts [key, value] pairs returned by the block to a hash" do
+      car = StructClasses::Car.new('Ford', 'Ranger')
+      h = car.to_h {|k, v| [k.to_s, "#{v}".downcase]}
+      h.should == {"make" => "ford", "model" => "ranger", "year" => ""}
+    end
+  end
 end

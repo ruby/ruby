@@ -44,6 +44,11 @@ sufficient information, see the ChangeLog file or Redmine
         * Added `Array#union` instance method.
           [Feature #14097]
 
+    * Modified methods:
+
+        * `Array#to_h` now maps elements to new keys and values by the
+	  block if given.  [Feature #15143]
+
     * Aliased methods:
 
         * `Array#filter` is a new alias for `Array#select`.
@@ -74,6 +79,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Enumerable`
 
+    * Modified methods:
+
+        * `Enumerable#to_h` now maps elements to new keys and values
+	  by the block if given.  [Feature #15143]
+
     * Aliased methods:
 
         * `Enumerable#filter` is a new alias for `Enumerable#select`.
@@ -85,6 +95,13 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `Enumerator::Lazy#filter` is a new alias for
           `Enumerator::Lazy#select`.  [Feature #13784]
+
+* `ENV`
+
+    * Modified methods:
+
+        * `ENV.to_h` now maps names and values to new keys and values
+	  by the block if given.  [Feature #15143]
 
 * `Exception`
 
@@ -99,6 +116,9 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `Hash#merge`, `update`, `merge!` and `update!` now accept multiple
            arguments.  [Feature #15111]
+
+        * `Hash#to_h` now maps keys and values to new keys and values
+	  by the block if given.  [Feature #15143]
 
     * Aliased methods:
 
@@ -206,6 +226,11 @@ sufficient information, see the ChangeLog file or Redmine
           [Feature #4780]
 
 * `Struct`
+
+    * Modified methods:
+
+        * `Hash#to_h` now maps keys and values to new keys and values
+	  by the block if given.  [Feature #15143]
 
     * Aliased method:
 

@@ -2171,13 +2171,20 @@ rb_ary_to_a(VALUE ary)
 
 /*
  *  call-seq:
- *     ary.to_h     -> hash
+ *     ary.to_h            -> hash
+ *     ary.to_h { block }  -> hash
  *
  *  Returns the result of interpreting <i>ary</i> as an array of
  *  <tt>[key, value]</tt> pairs.
  *
  *     [[:foo, :bar], [1, 2]].to_h
  *       # => {:foo => :bar, 1 => 2}
+ *
+ *  If a block is given, the results of the block on each element of
+ *  the array will be used as pairs.
+ *
+ *     ["foo", "bar"].to_h {|s| [s.ord, s]}
+ *       # => {102=>"foo", 98=>"bar"}
  */
 
 static VALUE
@@ -2185,8 +2192,11 @@ rb_ary_to_h(VALUE ary)
 {
     long i;
     VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary));
+    int block_given = rb_block_given_p();
+
     for (i=0; i<RARRAY_LEN(ary); i++) {
-	const VALUE elt = rb_ary_elt(ary, i);
+	const VALUE e = rb_ary_elt(ary, i);
+	const VALUE elt = block_given ? rb_yield_force_blockarg(e) : e;
 	const VALUE key_value_pair = rb_check_array_type(elt);
 	if (NIL_P(key_value_pair)) {
 	    rb_raise(rb_eTypeError, "wrong element type %"PRIsVALUE" at %ld (expected array)",

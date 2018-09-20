@@ -1359,6 +1359,7 @@ VALUE rb_hash_values(VALUE hash);
 VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 #define HASH_PROC_DEFAULT FL_USER2
+VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 
 /* inits.c */
 void rb_call_inits(void);

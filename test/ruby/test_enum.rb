@@ -144,8 +144,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([], inf.to_a)
   end
 
-  def test_to_h
-    obj = Object.new
+  StubToH = Object.new.tap do |obj|
     def obj.each(*args)
       yield(*args)
       yield [:key, :value]
@@ -157,6 +156,12 @@ class TestEnumerable < Test::Unit::TestCase
       yield kvp
     end
     obj.extend Enumerable
+    obj.freeze
+  end
+
+  def test_to_h
+    obj = StubToH
+
     assert_equal({
       :hello => :world,
       :key => :value,
@@ -171,6 +176,27 @@ class TestEnumerable < Test::Unit::TestCase
 
     e = assert_raise(ArgumentError) {
       obj.to_h([1])
+    }
+    assert_equal "element has wrong array length (expected 2, was 1)", e.message
+  end
+
+  def test_to_h_block
+    obj = StubToH
+
+    assert_equal({
+      "hello" => "world",
+      "key" => "value",
+      "other_key" => "other_value",
+      "obtained" => "via_to_ary",
+    }, obj.to_h(:hello, :world) {|k, v| [k.to_s, v.to_s]})
+
+    e = assert_raise(TypeError) {
+      obj.to_h {:not_an_array}
+    }
+    assert_equal "wrong element type Symbol (expected array)", e.message
+
+    e = assert_raise(ArgumentError) {
+      obj.to_h {[1]}
     }
     assert_equal "element has wrong array length (expected 2, was 1)", e.message
   end

@@ -847,6 +847,16 @@ class TestHash < Test::Unit::TestCase
     assert_equal("nope42", h[42])
   end
 
+  def test_to_h_block
+    h = @h.to_h {|k, v| [k.to_s, v.to_s]}
+    assert_equal({
+                   "1"=>"one", "2"=>"two", "3"=>"three", to_s=>"self",
+                   "true"=>"true", ""=>"nil", "nil"=>""
+                 },
+                 h)
+    assert_instance_of(Hash, h)
+  end
+
   def test_nil_to_h
     h = nil.to_h
     assert_equal({}, h)

@@ -613,38 +613,42 @@ enum_to_a(int argc, VALUE *argv, VALUE obj)
 static VALUE
 enum_to_h_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 {
-    VALUE key_value_pair;
     ENUM_WANT_SVALUE();
     rb_thread_check_ints();
-    key_value_pair = rb_check_array_type(i);
-    if (NIL_P(key_value_pair)) {
-	rb_raise(rb_eTypeError, "wrong element type %s (expected array)",
-	    rb_builtin_class_name(i));
-    }
-    if (RARRAY_LEN(key_value_pair) != 2) {
-        rb_raise(rb_eArgError, "element has wrong array length (expected 2, was %ld)",
-	    RARRAY_LEN(key_value_pair));
-    }
-    rb_hash_aset(hash, RARRAY_AREF(key_value_pair, 0), RARRAY_AREF(key_value_pair, 1));
-    return Qnil;
+    return rb_hash_set_pair(hash, i);
+}
+
+static VALUE
+enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+{
+    rb_thread_check_ints();
+    return rb_hash_set_pair(hash, rb_yield_values2(argc, argv));
 }
 
 /*
  *  call-seq:
- *     enum.to_h(*args)  -> hash
+ *     enum.to_h(*args)        -> hash
+ *     enum.to_h(*args) {...}  -> hash
  *
  *  Returns the result of interpreting <i>enum</i> as a list of
  *  <tt>[key, value]</tt> pairs.
  *
  *     %i[hello world].each_with_index.to_h
  *       # => {:hello => 0, :world => 1}
+ *
+ *  If a block is given, the results of the block on each element of
+ *  the array will be used as pairs.
+ *
+ *     (1..5).to_h {|x| [x, x ** 2]}
+ *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
  */
 
 static VALUE
 enum_to_h(int argc, VALUE *argv, VALUE obj)
 {
     VALUE hash = rb_hash_new();
-    rb_block_call(obj, id_each, argc, argv, enum_to_h_i, hash);
+    rb_block_call_func *iter = rb_block_given_p() ? enum_to_h_ii : enum_to_h_i;
+    rb_block_call(obj, id_each, argc, argv, iter, hash);
     OBJ_INFECT(hash, obj);
     return hash;
 }

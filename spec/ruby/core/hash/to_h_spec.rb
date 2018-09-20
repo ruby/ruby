@@ -7,6 +7,12 @@ describe "Hash#to_h" do
     h.to_h.should equal(h)
   end
 
+  ruby_version_is "2.6" do
+    it "converts [key, value] pairs returned by the block to a hash" do
+      {a: 1, b: 2}.to_h {|k, v| [k.to_s, v*v]}.should == { "a" => 1, "b" => 4 }
+    end
+  end
+
   describe "when called on a subclass of Hash" do
     before :each do
       @h = HashSpecs::MyHash.new

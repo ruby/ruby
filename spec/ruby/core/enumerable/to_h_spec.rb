@@ -43,4 +43,12 @@ describe "Enumerable#to_h" do
     enum = EnumerableSpecs::EachDefiner.new([:x])
     lambda { enum.to_h }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is "2.6" do
+    it "converts [key, value] pairs returned by the block to a hash" do
+      enum = EnumerableSpecs::EachDefiner.new(:a, :b)
+      i = 0
+      enum.to_h {|k| [k, i += 1]}.should == { a: 1, b: 2 }
+    end
+  end
 end
