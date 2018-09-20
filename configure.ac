@@ -397,6 +397,11 @@ RUBY_WERROR_FLAG([
 	AC_MSG_ERROR([something wrong with CFLAGS="$CFLAGS"])
 	]
     )
+
+    # now Xcode linker warns for deprecated architecture and wrongly
+    # installed TBD files.
+    AS_CASE(["$target_os"], [darwin*], [ac_c_werror_flag=])
+
     AC_MSG_CHECKING([whether LDFLAGS is valid])
     {
 	mkdir tmp.$$.try_link &&
