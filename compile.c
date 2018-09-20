@@ -5095,7 +5095,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 	ADD_INSNL(cond_seq, nd_line(orig_node), jump, endlabel);
     }
 
-    if (only_special_literals) {
+    if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
 	iseq_add_mark_object_compile_time(iseq, literals);
 
 	ADD_INSN(ret, nd_line(orig_node), dup);
