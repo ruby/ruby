@@ -43,7 +43,7 @@ class RubyVM::Scanner
 
   def scan! re
     scan re or raise sprintf "parse error at %s:%d near:\n %s...", \
-        @__FILE__, @__LINE__, @str[pos, 32]
+        @__FILE__, @__LINE__, @str[@pos, 32]
   end
 
   def [] key
