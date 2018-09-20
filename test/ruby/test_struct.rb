@@ -362,6 +362,13 @@ module TestStruct
     assert_equal({a:1, b:2, c:3, d:4, e:5, f:6}, o.to_h)
   end
 
+  def test_to_h_block
+    klass = @Struct.new(:a, :b, :c, :d, :e, :f)
+    o = klass.new(1, 2, 3, 4, 5, 6)
+    assert_equal({"a" => 1, "b" => 4, "c" => 9, "d" => 16, "e" => 25, "f" => 36},
+                 o.to_h {|k, v| [k.to_s, v*v]})
+  end
+
   def test_question_mark_in_member
     klass = @Struct.new(:a, :b?)
     x = Object.new

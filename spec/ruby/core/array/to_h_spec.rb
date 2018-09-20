@@ -34,4 +34,11 @@ describe "Array#to_h" do
   it "does not accept arguments" do
     lambda { [].to_h(:a, :b) }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is "2.6" do
+    it "converts [key, value] pairs returned by the block to a hash" do
+      i = 0
+      [:a, :b].to_h {|k| [k, i += 1]}.should == { a: 1, b: 2 }
+    end
+  end
 end

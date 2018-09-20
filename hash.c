@@ -2122,17 +2122,58 @@ rb_hash_to_hash(VALUE hash)
     return hash;
 }
 
+VALUE
+rb_hash_set_pair(VALUE hash, VALUE arg)
+{
+    VALUE pair;
+
+    pair = rb_check_array_type(arg);
+    if (NIL_P(pair)) {
+        rb_raise(rb_eTypeError, "wrong element type %s (expected array)",
+                 rb_builtin_class_name(arg));
+    }
+    if (RARRAY_LEN(pair) != 2) {
+        rb_raise(rb_eArgError, "element has wrong array length (expected 2, was %ld)",
+                 RARRAY_LEN(pair));
+    }
+    rb_hash_aset(hash, RARRAY_AREF(pair, 0), RARRAY_AREF(pair, 1));
+    return hash;
+}
+
+static int
+to_h_i(VALUE key, VALUE value, VALUE hash)
+{
+    rb_hash_set_pair(hash, rb_yield_values(2, key, value));
+    return ST_CONTINUE;
+}
+
+static VALUE
+rb_hash_to_h_block(VALUE hash)
+{
+    VALUE h = rb_hash_new_with_size(RHASH_SIZE(hash));
+    rb_hash_foreach(hash, to_h_i, h);
+    OBJ_INFECT(h, hash);
+    return h;
+}
+
 /*
  *  call-seq:
- *     hsh.to_h     -> hsh or new_hash
+ *     hsh.to_h                         -> hsh or new_hash
+ *     hsh.to_h {|key, value| block }   -> new_hash
  *
  *  Returns +self+. If called on a subclass of Hash, converts
  *  the receiver to a Hash object.
+ *
+ *  If a block is given, the results of the block on each pair of
+ *  the receiver will be used as pairs.
  */
 
 static VALUE
 rb_hash_to_h(VALUE hash)
 {
+    if (rb_block_given_p()) {
+        return rb_hash_to_h_block(hash);
+    }
     if (rb_obj_class(hash) != rb_cHash) {
 	const VALUE flags = RBASIC(hash)->flags;
 	hash = hash_dup(hash, rb_cHash, flags & HASH_PROC_DEFAULT);
@@ -4460,7 +4501,6 @@ env_index(VALUE dmy, VALUE value)
 /*
  * call-seq:
  *   ENV.to_hash -> hash
- *   ENV.to_h    -> hash
  *
  * Creates a hash with a copy of the environment variables.
  *
@@ -4482,6 +4522,24 @@ env_to_hash(void)
 	env++;
     }
     FREE_ENVIRON(environ);
+    return hash;
+}
+
+/*
+ * call-seq:
+ *   ENV.to_h                        -> hash
+ *   ENV.to_h {|name, value| block } -> hash
+ *
+ * Creates a hash with a copy of the environment variables.
+ *
+ */
+static VALUE
+env_to_h(void)
+{
+    VALUE hash = env_to_hash();
+    if (rb_block_given_p()) {
+        hash = rb_hash_to_h_block(hash);
+    }
     return hash;
 }
 
@@ -4873,7 +4931,7 @@ Init_Hash(void)
     rb_define_singleton_method(envtbl, "key?", env_has_key, 1);
     rb_define_singleton_method(envtbl, "value?", env_has_value, 1);
     rb_define_singleton_method(envtbl, "to_hash", env_to_hash, 0);
-    rb_define_singleton_method(envtbl, "to_h", env_to_hash, 0);
+    rb_define_singleton_method(envtbl, "to_h", env_to_h, 0);
     rb_define_singleton_method(envtbl, "assoc", env_assoc, 1);
     rb_define_singleton_method(envtbl, "rassoc", env_rassoc, 1);
 

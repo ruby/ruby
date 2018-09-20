@@ -880,9 +880,14 @@ rb_struct_to_h(VALUE s)
     VALUE h = rb_hash_new_with_size(RSTRUCT_LEN(s));
     VALUE members = rb_struct_members(s);
     long i;
+    int block_given = rb_block_given_p();
 
     for (i=0; i<RSTRUCT_LEN(s); i++) {
-	rb_hash_aset(h, rb_ary_entry(members, i), RSTRUCT_GET(s, i));
+        VALUE k = rb_ary_entry(members, i), v = RSTRUCT_GET(s, i);
+        if (block_given)
+            rb_hash_set_pair(h, rb_yield_values(2, k, v));
+        else
+            rb_hash_aset(h, k, v);
     }
     return h;
 }

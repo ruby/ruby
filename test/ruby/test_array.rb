@@ -1585,15 +1585,17 @@ class TestArray < Test::Unit::TestCase
     $, = nil
   end
 
+  StubToH = [
+    [:key, :value],
+    Object.new.tap do |kvp|
+      def kvp.to_ary
+        [:obtained, :via_to_ary]
+      end
+    end,
+  ]
+
   def test_to_h
-    kvp = Object.new
-    def kvp.to_ary
-      [:obtained, :via_to_ary]
-    end
-    array = [
-      [:key, :value],
-      kvp,
-    ]
+    array = StubToH
     assert_equal({key: :value, obtained: :via_to_ary}, array.to_h)
 
     e = assert_raise(TypeError) {
@@ -1604,6 +1606,27 @@ class TestArray < Test::Unit::TestCase
     assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h}
     e = assert_raise(ArgumentError) {
       [[:first_one, :ok], [1, 2], [:not_ok]].to_h
+    }
+    assert_equal "wrong array length at 2 (expected 2, was 1)", e.message
+  end
+
+  def test_to_h_block
+    array = StubToH
+    assert_equal({"key" => "value", "obtained" => "via_to_ary"},
+                 array.to_h {|k, v| [k.to_s, v.to_s]})
+
+    assert_equal({first_one: :ok, not_ok: :ng},
+                 [[:first_one, :ok], :not_ok].to_h {|k, v| [k, v || :ng]})
+
+    e = assert_raise(TypeError) {
+      [[:first_one, :ok], :not_ok].to_h {|k, v| v ? [k, v] : k}
+    }
+    assert_equal "wrong element type Symbol at 1 (expected array)", e.message
+    array = [1]
+    k = eval("class C\u{1f5ff}; self; end").new
+    assert_raise_with_message(TypeError, /C\u{1f5ff}/) {array.to_h {k}}
+    e = assert_raise(ArgumentError) {
+      [[:first_one, :ok], [1, 2], [:not_ok]].to_h {|kv| kv}
     }
     assert_equal "wrong array length at 2 (expected 2, was 1)", e.message
   end

@@ -399,6 +399,8 @@ class TestEnv < Test::Unit::TestCase
 
   def test_to_h
     assert_equal(ENV.to_hash, ENV.to_h)
+    assert_equal(ENV.map {|k, v| ["$#{k}", v.size]}.to_h,
+                 ENV.to_h {|k, v| ["$#{k}", v.size]})
   end
 
   def test_reject
