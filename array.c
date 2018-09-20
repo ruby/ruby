@@ -4282,6 +4282,18 @@ rb_ary_union(VALUE ary_union, VALUE ary)
     }
 }
 
+static void
+rb_ary_union_hash(VALUE hash, VALUE ary2)
+{
+    long i;
+    for (i = 0; i < RARRAY_LEN(ary2); i++) {
+        VALUE elt = RARRAY_AREF(ary2, i);
+        if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+            RB_OBJ_WRITTEN(hash, Qundef, elt);
+        }
+    }
+}
+
 /*
  *  call-seq:
  *     ary | other_ary     -> new_ary
@@ -4301,7 +4313,6 @@ static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3;
-    long i;
 
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary1) + RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
@@ -4312,12 +4323,8 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     }
 
     hash = ary_make_hash(ary1);
-    for (i=0; i<RARRAY_LEN(ary2); i++) {
-	VALUE elt = RARRAY_AREF(ary2, i);
-	if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-	    RB_OBJ_WRITTEN(hash, Qundef, elt);
-	}
-    }
+    rb_ary_union_hash(hash, ary2);
+
     ary3 = rb_hash_values(hash);
     ary_recycle_hash(hash);
     return ary3;
@@ -4343,7 +4350,6 @@ static VALUE
 rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
 {
     int i;
-    long j;
     long sum;
     VALUE hash, ary_union;
 
@@ -4363,17 +4369,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     }
 
     hash = ary_make_hash(ary);
-
-    for (i = 0; i < argc; i++) {
-        VALUE argv_i = argv[i];
-
-        for (j = 0; j < RARRAY_LEN(argv_i); j++) {
-            VALUE elt = RARRAY_AREF(argv_i, j);
-            if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-                RB_OBJ_WRITTEN(hash, Qundef, elt);
-            }
-        }
-    }
+    for (i = 0; i < argc; i++) rb_ary_union_hash(hash, argv[i]);
 
     ary_union = rb_hash_values(hash);
     ary_recycle_hash(hash);
