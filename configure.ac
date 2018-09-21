@@ -211,18 +211,6 @@ AS_CASE(["$build_os"],
       [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
       [xicc],                       [: ${CXX=icpc}],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
-
-    # Xcode linker warns for deprecated architecture and wrongly
-    # installed TBD files.
-    CC_WRAPPER=""
-    AS_IF([! $CC -E -xc - <<SRC >/dev/null 2>&1], [
-	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ >= 10
-	@%:@error ignore linker warnings
-	@%:@endif
-SRC
-	CC_WRAPPER=`PWD=; cd "$srcdir/tool" && pwd`/darwin-cc
-	CC="$CC_WRAPPER $CC"
-    ])
   ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
@@ -259,6 +247,21 @@ RUBY_CPPOUTFILE
 AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
+
+AS_CASE(["$build_os"],
+  [darwin1*.*], [
+    # Xcode linker warns for deprecated architecture and wrongly
+    # installed TBD files.
+    CC_WRAPPER=""
+    AS_IF([! $CC -E -xc - <<SRC >/dev/null 2>&1], [
+	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ >= 10
+	@%:@error ignore linker warnings
+	@%:@endif
+SRC
+	CC_WRAPPER=`PWD=; cd "$srcdir/tool" && pwd`/darwin-cc
+	CC="$CC_WRAPPER $CC"
+    ])
+  ])
 
 cc_version=
 for option in --version -v -V -qversion; do
