@@ -4350,7 +4350,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
  *     [ "a", "b", "c" ].union( [ "c", "d", "a" ] )    #=> [ "a", "b", "c", "d" ]
- *     [ "a" ].union( [ ["e", "b"], ["a", "c", "b"] ] )    #=> [ "a", "e", "b", "c" ]
+ *     [ "a" ].union( ["e", "b"], ["a", "c", "b"] )    #=> [ "a", "e", "b", "c" ]
  *     [ "a" ].union #=> [ "a" ]
  *
  *  See also Array#|.
