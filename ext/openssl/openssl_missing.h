@@ -185,7 +185,7 @@ IMPL_KEY_ACCESSOR3(DSA, pqg, p, q, g, (p == obj->p || q == obj->q || g == obj->g
 #if !defined(OPENSSL_NO_DH)
 IMPL_PKEY_GETTER(DH, dh)
 IMPL_KEY_ACCESSOR2(DH, key, pub_key, priv_key, (pub_key == obj->pub_key || (obj->priv_key && priv_key == obj->priv_key)))
-IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || obj->q && q == obj->q || g == obj->g))
+IMPL_KEY_ACCESSOR3(DH, pqg, p, q, g, (p == obj->p || (obj->q && q == obj->q) || g == obj->g))
 static inline ENGINE *DH_get0_engine(DH *dh) { return dh->engine; }
 #endif
 
