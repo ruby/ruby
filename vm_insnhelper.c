@@ -3868,7 +3868,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 	VM_ASSERT(vm_event_flags & events);
 
 	/* increment PC because source line is calculated with PC-1 */
-	if (event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) {
+	if ((event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) != 0) {
 	    VM_ASSERT(event == RUBY_EVENT_CLASS ||
 		      event == RUBY_EVENT_CALL  ||
 		      event == RUBY_EVENT_B_CALL);
@@ -3889,7 +3889,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_COVERAGE_LINE, GET_SELF(), 0, 0, 0, Qundef);
 	    reg_cfp->pc--;
 	}
-	if (event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) {
+	if ((event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) != 0) {
 	    VM_ASSERT(event == RUBY_EVENT_END ||
 		      event == RUBY_EVENT_RETURN  ||
 		      event == RUBY_EVENT_B_RETURN);
