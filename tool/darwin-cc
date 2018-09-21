@@ -1,0 +1,6 @@
+#!/bin/bash
+exec 2> >(exec grep -v \
+  -e '^ld: warning: The [a-z0-9_][a-z0-9_]* architecture is deprecated for macOS' \
+  -e '^ld: warning: text-based stub file /System/Library/Frameworks/' \
+  >&2)
+exec "$@"

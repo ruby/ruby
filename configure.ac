@@ -211,6 +211,18 @@ AS_CASE(["$build_os"],
       [xcc|x/usr/bin/cc],           [: ${CXX=c++}],
       [xicc],                       [: ${CXX=icpc}],
       [xclang|x/usr/bin/clang],     [: ${CXX=clang++}])
+
+    # Xcode linker warns for deprecated architecture and wrongly
+    # installed TBD files.
+    CC_WRAPPER=""
+    AS_IF([! $CC -E -xc - <<SRC >/dev/null 2>&1], [
+	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ >= 10
+	@%:@error ignore linker warnings
+	@%:@endif
+SRC
+	CC_WRAPPER=`PWD=; cd "$srcdir/tool" && pwd`/darwin-cc
+	CC="$CC_WRAPPER $CC"
+    ])
   ])
 test -z "$CXX" || ac_cv_prog_CXX="$CXX"
 
@@ -397,10 +409,6 @@ RUBY_WERROR_FLAG([
 	AC_MSG_ERROR([something wrong with CFLAGS="$CFLAGS"])
 	]
     )
-
-    # now Xcode linker warns for deprecated architecture and wrongly
-    # installed TBD files.
-    AS_CASE(["$target_os"], [darwin*], [ac_c_werror_flag=])
 
     AC_MSG_CHECKING([whether LDFLAGS is valid])
     {
@@ -3814,6 +3822,13 @@ AC_SUBST(BUILTIN_TRANSOBJS)
 PACKAGE=$RUBY_BASE_NAME
 AC_SUBST(PACKAGE)
 AS_MESSAGE([$PACKAGE library version = $ruby_version])
+
+AS_CASE(["$build_os"], [darwin1*.*], [
+    AS_IF([test x"$CC_WRAPPER" != x], [
+	CC="${CC@%:@$CC_WRAPPER }"
+	CPP="${CPP@%:@$CC_WRAPPER }"
+    ])
+])
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])
 
