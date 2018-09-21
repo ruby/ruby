@@ -445,12 +445,14 @@ module WEBrick
 
     def read_request_line(socket)
       @request_line = read_line(socket, MAX_URI_LENGTH) if socket
+      raise HTTPStatus::EOFError unless @request_line
+
       @request_bytes = @request_line.bytesize
       if @request_bytes >= MAX_URI_LENGTH and @request_line[-1, 1] != LF
         raise HTTPStatus::RequestURITooLarge
       end
+
       @request_time = Time.now
-      raise HTTPStatus::EOFError unless @request_line
       if /^(\S+)\s+(\S++)(?:\s+HTTP\/(\d+\.\d+))?\r?\n/mo =~ @request_line
         @request_method = $1
         @unparsed_uri   = $2
