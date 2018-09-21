@@ -57,19 +57,19 @@ class TestDebug < Test::Unit::TestCase
     binds_check binds, bug7635
   end
 
-  class MyRelation 
-    include Enumerable 
- 
+  class MyRelation
+    include Enumerable
+
     def each
       yield :each_entry
-    end 
-   end 
- 
+    end
+   end
+
   def test_lazy_block
     x = MyRelation.new.any? do
       Bug::Debug.inspector
       true
-    end 
+    end
     assert_equal true, x, '[Bug #15105]'
   end
 end
