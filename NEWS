@@ -229,7 +229,7 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Modified methods:
 
-        * `Hash#to_h` now maps keys and values to new keys and values
+        * `Struct#to_h` now maps keys and values to new keys and values
 	  by the block if given.  [Feature #15143]
 
     * Aliased method:
