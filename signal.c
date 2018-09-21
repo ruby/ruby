@@ -886,7 +886,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     /* SP in ucontext is not decremented yet when `push` failed, so
      * the fault page can be the next. */
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
-	(sp_page <= fault_page && fault_page <= bp_page)) {
+        (sp_page <= fault_page && fault_page <= bp_page)) {
 	rb_execution_context_t *ec = GET_EC();
 	int crit = FALSE;
 	if ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
