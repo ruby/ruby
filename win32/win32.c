@@ -6686,7 +6686,8 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     COORD pos;
 
     if (!GetConsoleScreenBufferInfo(handle, &csbi)) return;
-    if (arg0 = (count > 0 && seq[0] > 0)) arg1 = seq[0];
+    arg0 = (count > 0 && seq[0] > 0);
+    if (arg0) arg1 = seq[0];
     switch (w) {
       case L'm':
 	SetConsoleTextAttribute(handle, constat_attr(count, seq, csbi.wAttributes, s->vt100.attr, &s->vt100.reverse));

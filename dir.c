@@ -177,7 +177,7 @@ has_nonascii(const char *ptr, size_t len)
 #endif
 
 #ifndef IFTODT
-# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & S_IFMT-1) + 1))
+# define IFTODT(m)	(((m) & S_IFMT) / ((~S_IFMT & (S_IFMT-1)) + 1))
 #endif
 
 typedef enum {
