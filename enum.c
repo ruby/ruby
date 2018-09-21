@@ -637,7 +637,7 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *       # => {:hello => 0, :world => 1}
  *
  *  If a block is given, the results of the block on each element of
- *  the array will be used as pairs.
+ *  the enum will be used as pairs.
  *
  *     (1..5).to_h {|x| [x, x ** 2]}
  *       #=> {1=>1, 2=>4, 3=>9, 4=>16, 5=>25}
