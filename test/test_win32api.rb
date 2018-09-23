@@ -1,8 +1,11 @@
 # frozen_string_literal: false
 require "test/unit"
 begin
+  $VERBOSE, verbose = nil, $VERBOSE
   require "Win32API"
 rescue LoadError
+ensure
+  $VERBOSE = verbose
 end
 
 class TestWin32API < Test::Unit::TestCase
