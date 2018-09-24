@@ -531,6 +531,7 @@ enum ruby_basic_operators {
     BOP_MAX,
     BOP_MIN,
     BOP_CALL,
+    BOP_AND,
 
     BOP_LAST_
 };
