@@ -1568,7 +1568,7 @@ vm_base_ptr(const rb_control_frame_t *cfp)
 #include "vm_args.c"
 
 static inline VALUE vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, int opt_pc, int param_size, int local_size);
-static inline VALUE vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, int opt_pc, int param_size, int local_size);
+ALWAYS_INLINE(static VALUE vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me, int opt_pc, int param_size, int local_size));
 static inline VALUE vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc, int opt_pc);
 static VALUE vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
 static VALUE vm_call_method_nome(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc);
@@ -1598,7 +1598,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
     const rb_iseq_t *iseq = def_iseq_ptr(cc->me->def);
     int param = iseq->body->param.size;
     int local = iseq->body->local_table_size;
-    return vm_call_iseq_setup_normal(ec, cfp, calling, ci, cc, 0, param, local);
+    return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, param, local);
 }
 
 int
@@ -1650,7 +1650,7 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 		     int opt_pc, int param_size, int local_size)
 {
     if (LIKELY(!(ci->flag & VM_CALL_TAILCALL))) {
-	return vm_call_iseq_setup_normal(ec, cfp, calling, ci, cc, opt_pc, param_size, local_size);
+        return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, opt_pc, param_size, local_size);
     }
     else {
 	return vm_call_iseq_setup_tailcall(ec, cfp, calling, ci, cc, opt_pc);
@@ -1658,10 +1658,9 @@ vm_call_iseq_setup_2(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
 }
 
 static inline VALUE
-vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc,
+vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me,
                           int opt_pc, int param_size, int local_size)
 {
-    const rb_callable_method_entry_t *me = cc->me;
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + param_size;
