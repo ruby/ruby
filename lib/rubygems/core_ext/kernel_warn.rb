@@ -7,14 +7,14 @@ if RUBY_VERSION >= "2.5"
     Module.new {define_method(:warn, original_warn)}
     original_warn = method(:warn)
 
-    module_function define_method(:warn) {|message, uplevel: nil|
+    module_function define_method(:warn) {|*messages, uplevel: nil|
       if uplevel
         while (loc, = caller_locations(uplevel, 1); loc && loc.path.start_with?(path))
           uplevel += 1
         end
-        original_warn.call(message, uplevel: uplevel + 1)
+        original_warn.call(*messages, uplevel: uplevel)
       else
-        original_warn.call(message)
+        original_warn.call(*messages)
       end
     }
   end
