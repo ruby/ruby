@@ -53,6 +53,7 @@ module MJITHeader
     'vm_opt_ge',
     'vm_opt_ltlt',
     'vm_opt_and',
+    'vm_opt_or',
     'vm_opt_aref',
     'vm_opt_aset',
     'vm_opt_aref_with',

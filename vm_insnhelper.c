@@ -3665,6 +3665,18 @@ vm_opt_and(VALUE recv, VALUE obj)
 }
 
 static VALUE
+vm_opt_or(VALUE recv, VALUE obj)
+{
+    if (FIXNUM_2_P(recv, obj) &&
+        BASIC_OP_UNREDEFINED_P(BOP_OR, INTEGER_REDEFINED_OP_FLAG)) {
+        return LONG2NUM(FIX2LONG(recv) | FIX2LONG(obj));
+    }
+    else {
+        return Qundef;
+    }
+}
+
+static VALUE
 vm_opt_aref(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
