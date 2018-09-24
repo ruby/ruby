@@ -412,6 +412,24 @@ class TestGemRequire < Gem::TestCase
     end
   end
 
+  if RUBY_VERSION >= "2.5"
+    def test_no_kernel_require_in_warn_with_uplevel
+      lib = File.realpath("../../../lib", __FILE__)
+      Dir.mktmpdir("warn_test") do |dir|
+        File.write(dir + "/sub.rb", "warn 'uplevel', 'test', uplevel: 1\n")
+        File.write(dir + "/main.rb", "require 'sub'\n")
+        _, err = capture_subprocess_io do
+          system(@@ruby, "-w", "-rpp", "--disable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+        end
+        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
+        _, err = capture_subprocess_io do
+          system(@@ruby, "-w", "-rpp", "--enable=gems", "-I", lib, "-C", dir, "-I.", "main.rb")
+        end
+        assert_equal "main.rb:1: warning: uplevel\ntest\n", err
+      end
+    end
+  end
+
   def silence_warnings
     old_verbose, $VERBOSE = $VERBOSE, false
     yield
