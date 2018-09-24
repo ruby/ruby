@@ -422,4 +422,11 @@ GET /
       req.body
     }
   end
+
+  def test_eof_raised_when_line_is_nil
+    assert_raise(WEBrick::HTTPStatus::EOFError) {
+      req = WEBrick::HTTPRequest.new(WEBrick::Config::HTTP)
+      req.parse(StringIO.new(""))
+    }
+  end
 end
