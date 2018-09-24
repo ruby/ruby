@@ -47,7 +47,7 @@
             fprintf(f, "        calling.argc = %d;\n", ci->orig_argc);
             fprintf(f, "        calling.recv = stack[%d];\n", b->stack_size - 1 - argc);
 
-% # JIT: Special CALL_METHOD. Inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH. TODO: modify VM to share code with here
+% # JIT: Special CALL_METHOD. Bypass cc->call and inline vm_call_iseq_setup_normal for vm_call_iseq_setup_func FASTPATH.
             fprintf(f, "        {\n");
             fprintf(f, "            VALUE v;\n");
             fprintf(f, "            vm_call_iseq_setup_normal(ec, reg_cfp, &calling, (const rb_callable_method_entry_t *)0x%"PRIxVALUE", 0, %d, %d);\n",
