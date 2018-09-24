@@ -1048,10 +1048,14 @@ module Test
           raise OptionParser::InvalidArgument, "timeout scale must be positive" unless scale > 0
           options[:timeout_scale] = scale
         end
+      end
+
+      def non_options(files, options)
         if scale = options[:timeout_scale] or
           (scale = ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and (scale = scale.to_f) > 0)
           EnvUtil.subprocess_timeout_scale = scale
         end
+        super
       end
     end
 
