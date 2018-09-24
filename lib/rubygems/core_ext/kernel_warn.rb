@@ -9,8 +9,15 @@ if RUBY_VERSION >= "2.5"
 
     module_function define_method(:warn) {|*messages, uplevel: nil|
       if uplevel
-        while (loc, = caller_locations(uplevel, 1); loc && loc.path.start_with?(path))
-          uplevel += 1
+        uplevel, = [uplevel].pack("l!").unpack("l!")
+        if uplevel >= 0
+          start = 0
+          begin
+            loc, = caller_locations(start, 1)
+            break start += uplevel unless loc
+            start += 1
+          end while (loc.path.start_with?(path) or (uplevel -= 1) >= 0)
+          uplevel = start
         end
         original_warn.call(*messages, uplevel: uplevel)
       else
