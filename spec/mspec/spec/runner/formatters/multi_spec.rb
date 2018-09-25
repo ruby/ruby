@@ -9,10 +9,10 @@ describe MultiFormatter, "#aggregate_results" do
     @file = double("file").as_null_object
 
     File.stub(:delete)
-    YAML.stub(:load)
+    File.stub(:read)
 
     @hash = { "files"=>1, "examples"=>1, "expectations"=>2, "failures"=>0, "errors"=>0 }
-    File.stub(:open).and_yield(@file).and_return(@hash)
+    YAML.stub(:load).and_return(@hash)
 
     @formatter = MultiFormatter.new
     @formatter.timer.stub(:format).and_return("Finished in 42 seconds")
