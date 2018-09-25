@@ -1,5 +1,3 @@
-require 'mspec/utils/deprecate'
-
 class RaiseErrorMatcher
   def initialize(exception, message, &block)
     @exception = exception

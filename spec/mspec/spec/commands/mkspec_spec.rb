@@ -167,13 +167,13 @@ describe MkSpec, "#write_requires" do
   end
 
   it "writes the spec_helper require line" do
-    @file.should_receive(:puts).with("require File.expand_path('../../../../spec_helper', __FILE__)")
+    @file.should_receive(:puts).with("require_relative '../../../spec_helper'")
     @script.write_requires("spec/core/tcejbo", "spec/core/tcejbo/inspect_spec.rb")
   end
 
   it "writes require lines for each library specified on the command line" do
     @file.stub(:puts)
-    @file.should_receive(:puts).with("require File.expand_path('../../../../spec_helper', __FILE__)")
+    @file.should_receive(:puts).with("require_relative '../../../spec_helper'")
     @file.should_receive(:puts).with("require 'complex'")
     @script.config[:requires] << 'complex'
     @script.write_requires("spec/core/tcejbo", "spec/core/tcejbo/inspect_spec.rb")
