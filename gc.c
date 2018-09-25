@@ -1948,6 +1948,9 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
     rb_objspace_t *objspace = &rb_objspace;
     VALUE obj;
 
+    RB_DEBUG_COUNTER_INC(obj_newobj);
+    (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
+
 #if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
 	long i, cnt = RARRAY_LEN(stress_to_class);
@@ -1964,6 +1967,8 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 	return newobj_init(klass, flags, v1, v2, v3, wb_protected, objspace, obj);
     }
     else {
+        RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
+
 	return wb_protected ?
 	  newobj_slowpath_wb_protected(klass, flags, v1, v2, v3, objspace) :
 	  newobj_slowpath_wb_unprotected(klass, flags, v1, v2, v3, objspace);
@@ -2256,7 +2261,20 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_HASH:
 	if (RANY(obj)->as.hash.ntbl) {
 	    st_free_table(RANY(obj)->as.hash.ntbl);
+
+            if (RHASH_SIZE(obj) >= 8) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge8);
+            }
+            if (RHASH_SIZE(obj) >= 4) {
+                RB_DEBUG_COUNTER_INC(obj_hash_ge4);
+            }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_hash_under4);
+            }
 	}
+        else {
+            RB_DEBUG_COUNTER_INC(obj_hash_empty);
+        }
 	break;
       case T_REGEXP:
 	if (RANY(obj)->as.regexp.ptr) {
@@ -7959,6 +7977,7 @@ objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 
     size = objspace_malloc_prepare(objspace, size);
     TRY_WITH_GC(mem = malloc(size));
+    RB_DEBUG_COUNTER_INC(heap_xmalloc);
     return objspace_malloc_fixup(objspace, mem, size);
 }
 
@@ -8012,11 +8031,11 @@ objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t ol
 
     objspace_malloc_increase(objspace, mem, new_size, old_size, MEMOP_TYPE_REALLOC);
 
+    RB_DEBUG_COUNTER_INC(heap_xrealloc);
     return mem;
 }
 
-#if CALC_EXACT_MALLOC_SIZE
-#if USE_GC_MALLOC_OBJ_INFO_DETAILS
+#if CALC_EXACT_MALLOC_SIZE && USE_GC_MALLOC_OBJ_INFO_DETAILS
 
 #define MALLOC_INFO_GEN_SIZE 100
 #define MALLOC_INFO_SIZE_SIZE 10
@@ -8037,8 +8056,8 @@ mmalloc_info_file_i(st_data_t key, st_data_t val, st_data_t dmy)
 }
 
 __attribute__((destructor))
-static void
-malloc_info_show_results(void)
+void
+rb_malloc_info_show_results(void)
 {
     int i;
 
@@ -8064,7 +8083,11 @@ malloc_info_show_results(void)
         st_foreach(malloc_info_file_table, mmalloc_info_file_i, 0);
     }
 }
-#endif
+#else
+void
+rb_malloc_info_show_results(void)
+{
+}
 #endif
 
 static void
@@ -8129,6 +8152,7 @@ objspace_xfree(rb_objspace_t *objspace, void *ptr, size_t old_size)
     old_size = objspace_malloc_size(objspace, ptr, old_size);
 
     free(ptr);
+    RB_DEBUG_COUNTER_INC(heap_xfree);
 
     objspace_malloc_increase(objspace, ptr, 0, old_size, MEMOP_TYPE_FREE);
 }
