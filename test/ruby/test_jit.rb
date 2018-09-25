@@ -19,7 +19,6 @@ class TestJIT < Test::Unit::TestCase
     :opt_call_c_function,
 
     # joke
-    :bitblt,
     :answer,
 
     # TODO: write tests for them
