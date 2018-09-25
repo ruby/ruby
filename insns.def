@@ -1216,6 +1216,34 @@ opt_ltlt
     }
 }
 
+/* optimized X&Y. */
+DEFINE_INSN
+opt_and
+(CALL_INFO ci, CALL_CACHE cc)
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    val = vm_opt_and(recv, obj);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
+/* optimized X|Y. */
+DEFINE_INSN
+opt_or
+(CALL_INFO ci, CALL_CACHE cc)
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    val = vm_opt_or(recv, obj);
+
+    if (val == Qundef) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
 /* [] */
 DEFINE_INSN
 opt_aref

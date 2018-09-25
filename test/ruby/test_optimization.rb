@@ -187,6 +187,16 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('String', '<<', 'assert_equal "b", "a" << "b"')
   end
 
+  def test_fixnum_and
+    assert_equal 1, 1&3
+    assert_redefine_method('Integer', '&', 'assert_equal 3, 1&3')
+  end
+
+  def test_fixnum_or
+    assert_equal 3, 1|3
+    assert_redefine_method('Integer', '|', 'assert_equal 1, 3|1')
+  end
+
   def test_array_plus
     assert_equal [1,2], [1]+[2]
     assert_redefine_method('Array', '+', 'assert_equal [2], [1]+[2]')
