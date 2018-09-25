@@ -1683,21 +1683,6 @@ glob_make_pattern(const char *p, const char *e, int flags, rb_encoding *enc)
 	    const enum glob_pattern_type non_magic = (USE_NAME_ON_FS || FNM_SYSCASE) ? PLAIN : ALPHA;
 	    char *buf;
 
-	    if (magic == BRACE) {
-		/* brace pattern is parsed after expansion */
-		buf = GLOB_ALLOC_N(char, e-p+1);
-		if (!buf) {
-		    GLOB_FREE(tmp);
-		    goto error;
-		}
-		memcpy(buf, p, e-p);
-		buf[e-p] = '\0';
-		tmp->type = BRACE;
-		tmp->str = buf;
-		*tail = tmp;
-		tmp->next = 0;
-		return list;
-	    }
 	    if (!(FNM_SYSCASE || magic > non_magic) && !recursive && *m) {
 		const char *m2;
 		while (has_magic(m+1, m2 = find_dirsep(m+1, e, flags, enc), flags, enc) <= non_magic &&
@@ -2060,7 +2045,7 @@ join_path_from_pattern(struct glob_pattern **beg)
 {
     struct glob_pattern *p;
     char *path = NULL;
-    size_t path_len;
+    size_t path_len = 0;
 
     for (p = *beg; p; p = p->next) {
 	const char *str;
@@ -2070,6 +2055,7 @@ join_path_from_pattern(struct glob_pattern **beg)
 	    break;
 	  default:
 	    str = p->str;
+	    if (!str) continue;
 	}
 	if (!path) {
 	    path_len = strlen(str);
@@ -2137,7 +2123,9 @@ glob_helper(
 #endif
 	    break;
 	  case BRACE:
-	    brace = 1;
+	    if (!recursive) {
+		brace = 1;
+	    }
 	    break;
 	  case MAGICAL:
 	    magical = 2;
