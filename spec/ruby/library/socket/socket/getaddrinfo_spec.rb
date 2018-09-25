@@ -115,7 +115,7 @@ describe 'Socket.getaddrinfo' do
       Socket.getaddrinfo(nil, 'ftp').should be_an_instance_of(Array)
     end
 
-    it 'accepts a Fixnum as the address family' do
+    it 'accepts an Integer as the address family' do
       array = Socket.getaddrinfo(nil, 'ftp', Socket::AF_INET)[0]
 
       array[0].should == 'AF_INET'
@@ -123,11 +123,11 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
-    it 'accepts a Fixnum as the address family using IPv6' do
+    it 'accepts an Integer as the address family using IPv6' do
       array = Socket.getaddrinfo(nil, 'ftp', Socket::AF_INET6)[0]
 
       array[0].should == 'AF_INET6'
@@ -135,8 +135,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts a Symbol as the address family' do
@@ -147,8 +147,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts a Symbol as the address family using IPv6' do
@@ -159,8 +159,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts a String as the address family' do
@@ -171,8 +171,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts a String as the address family using IPv6' do
@@ -183,8 +183,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '::1'
       array[3].should == '::1'
       array[4].should == Socket::AF_INET6
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts an object responding to #to_str as the host' do
@@ -199,8 +199,8 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
     it 'accepts an object responding to #to_str as the address family' do
@@ -215,11 +215,11 @@ describe 'Socket.getaddrinfo' do
       array[2].should == '127.0.0.1'
       array[3].should == '127.0.0.1'
       array[4].should == Socket::AF_INET
-      array[5].should be_an_instance_of(Fixnum)
-      array[6].should be_an_instance_of(Fixnum)
+      array[5].should be_kind_of(Integer)
+      array[6].should be_kind_of(Integer)
     end
 
-    it 'accepts a Fixnum as the socket type' do
+    it 'accepts an Integer as the socket type' do
       *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, Socket::SOCK_STREAM)[0]
       array.should == [
         'AF_INET',
@@ -276,7 +276,7 @@ describe 'Socket.getaddrinfo' do
     end
 
     platform_is_not :windows do
-      it 'accepts a Fixnum as the protocol family' do
+      it 'accepts an Integer as the protocol family' do
         *array, proto = Socket.getaddrinfo(nil, 'discard', :INET, :DGRAM, Socket::IPPROTO_UDP)[0]
         array.should == [
           'AF_INET',
@@ -290,7 +290,7 @@ describe 'Socket.getaddrinfo' do
       end
     end
 
-    it 'accepts a Fixnum as the flags' do
+    it 'accepts an Integer as the flags' do
       *array, proto = Socket.getaddrinfo(nil, 'ftp', :INET, :STREAM,
                                 Socket::IPPROTO_TCP, Socket::AI_PASSIVE)[0]
       array.should == [

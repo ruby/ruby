@@ -1,3 +1,5 @@
+require_relative '../../spec_helper'
+
 describe "Complex#negative?" do
   it "is undefined" do
     c = Complex(1)

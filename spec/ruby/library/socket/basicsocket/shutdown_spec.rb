@@ -19,7 +19,7 @@ platform_is_not :windows do # hangs
         @server.close
       end
 
-      describe 'using a Fixnum' do
+      describe 'using an Integer' do
         it 'shuts down a socket for reading' do
           @client.shutdown(Socket::SHUT_RD)
 

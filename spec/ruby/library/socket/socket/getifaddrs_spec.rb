@@ -25,7 +25,7 @@ describe 'Socket.getifaddrs' do
   describe 'each returned Socket::Ifaddr' do
     it 'has an interface index' do
       @ifaddrs.each do |ifaddr|
-        ifaddr.ifindex.should be_an_instance_of(Fixnum)
+        ifaddr.ifindex.should be_kind_of(Integer)
       end
     end
 
@@ -37,7 +37,7 @@ describe 'Socket.getifaddrs' do
 
     it 'has a set of flags' do
       @ifaddrs.each do |ifaddr|
-        ifaddr.flags.should be_an_instance_of(Fixnum)
+        ifaddr.flags.should be_kind_of(Integer)
       end
     end
   end
@@ -55,7 +55,7 @@ describe 'Socket.getifaddrs' do
 
     it 'has an address family' do
       @addrs.each do |addr|
-        addr.afamily.should be_an_instance_of(Fixnum)
+        addr.afamily.should be_kind_of(Integer)
         addr.afamily.should_not == Socket::AF_UNSPEC
       end
     end
@@ -75,7 +75,7 @@ describe 'Socket.getifaddrs' do
 
       it 'has an address family' do
         @addrs.each do |addr|
-          addr.afamily.should be_an_instance_of(Fixnum)
+          addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
         end
       end
@@ -94,7 +94,7 @@ describe 'Socket.getifaddrs' do
 
       it 'has an address family' do
         @addrs.each do |addr|
-          addr.afamily.should be_an_instance_of(Fixnum)
+          addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
         end
       end

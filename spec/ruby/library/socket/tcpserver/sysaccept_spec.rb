@@ -21,7 +21,7 @@ describe "TCPServer#sysaccept" do
 
       fd = @server.sysaccept
 
-      fd.should be_an_instance_of(Fixnum)
+      fd.should be_kind_of(Integer)
     ensure
       sock.close if sock && !sock.closed?
       IO.for_fd(fd).close if fd
@@ -55,10 +55,10 @@ describe 'TCPServer#sysaccept' do
         @client.close
       end
 
-      it 'returns a new file descriptor as a Fixnum' do
+      it 'returns a new file descriptor as an Integer' do
         @fd = @server.sysaccept
 
-        @fd.should be_an_instance_of(Fixnum)
+        @fd.should be_kind_of(Integer)
         @fd.should_not == @client.fileno
       end
     end

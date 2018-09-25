@@ -1,5 +1,3 @@
-require_relative '../../spec_helper'
-
 describe :complex_image, shared: true do
   it "returns the imaginary part of self" do
     Complex(1, 0).send(@method).should == 0

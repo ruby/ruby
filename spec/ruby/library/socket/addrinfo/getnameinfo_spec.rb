@@ -13,7 +13,7 @@ describe 'Addrinfo#getnameinfo' do
         service.should == 'ftp'
       end
 
-      it 'accepts flags as a Fixnum as the first argument' do
+      it 'accepts flags as an Integer as the first argument' do
         host, service = @addr.getnameinfo(Socket::NI_NUMERICSERV)
         service.should == '21'
       end

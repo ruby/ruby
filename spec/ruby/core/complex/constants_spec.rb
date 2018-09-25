@@ -1,5 +1,7 @@
-require_relative '../../shared/complex/constants'
+require_relative '../../spec_helper'
 
 describe "Complex::I" do
-  it_behaves_like :complex_I, :I
+  it "is Complex(0, 1)" do
+    Complex::I.should eql(Complex(0, 1))
+  end
 end

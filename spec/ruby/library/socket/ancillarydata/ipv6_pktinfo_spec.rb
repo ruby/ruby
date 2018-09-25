@@ -44,7 +44,7 @@ with_feature :ancillary_data, :ipv6_pktinfo do
         end
 
         it 'stores the ifindex at index 1' do
-          @info[1].should be_an_instance_of(Fixnum)
+          @info[1].should be_kind_of(Integer)
         end
       end
 
@@ -63,7 +63,7 @@ with_feature :ancillary_data, :ipv6_pktinfo do
       end
 
       describe 'the ifindex' do
-        it 'is a Fixnum' do
+        it 'is an Integer' do
           @data.ipv6_pktinfo[1].should == 4
         end
       end

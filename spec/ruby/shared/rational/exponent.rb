@@ -2,7 +2,8 @@ require_relative '../../spec_helper'
 
 describe :rational_exponent, shared: true do
   describe "when passed Rational" do
-    conflicts_with :Prime do
+    # Guard against the Mathn library
+    guard -> { !defined?(Math.rsqrt) } do
       it "returns Rational(1) if the exponent is Rational(0)" do
         (Rational(0) ** Rational(0)).should eql(Rational(1))
         (Rational(1) ** Rational(0)).should eql(Rational(1))
@@ -45,7 +46,8 @@ describe :rational_exponent, shared: true do
       (Rational(3, -bignum_value) ** -4).should == Rational(7237005577332262213973186563042994240829374041602535252466099000494570602496, 81)
     end
 
-    conflicts_with :Prime do
+    # Guard against the Mathn library
+    guard -> { !defined?(Math.rsqrt) } do
       it "returns Rational(1, 1) when the passed argument is 0" do
         (Rational(3, 4) ** 0).should eql(Rational(1, 1))
         (Rational(-3, 4) ** 0).should eql(Rational(1, 1))

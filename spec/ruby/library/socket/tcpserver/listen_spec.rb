@@ -15,7 +15,7 @@ describe 'TCPServer#listen' do
       @server.listen(1).should == 0
     end
 
-    it "raises when the given argument can't be coerced to a Fixnum" do
+    it "raises when the given argument can't be coerced to an Integer" do
       lambda { @server.listen('cats') }.should raise_error(TypeError)
     end
   end

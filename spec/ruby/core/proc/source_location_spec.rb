@@ -69,4 +69,18 @@ describe "Proc#source_location" do
     ProcSpecs::SourceLocation.my_detached_proc_new.source_location.last.should == 51
     ProcSpecs::SourceLocation.my_detached_lambda.source_location.last.should == 46
   end
+
+  it "returns the same value for a proc-ified method as the method reports" do
+    method = ProcSpecs::SourceLocation.method(:my_proc)
+    proc = method.to_proc
+
+    method.source_location.should == proc.source_location
+  end
+
+  it "returns nil for a core method that has been proc-ified" do
+    method = [].method(:<<)
+    proc = method.to_proc
+
+    proc.source_location.should == nil
+  end
 end

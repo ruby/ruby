@@ -199,6 +199,65 @@ describe "Module#autoload" do
     end
   end
 
+  describe "the autoload is removed when the same file is required directly without autoload" do
+    before :each do
+      module ModuleSpecs::Autoload
+        autoload :RequiredDirectly, fixture(__FILE__, "autoload_required_directly.rb")
+      end
+      @path = fixture(__FILE__, "autoload_required_directly.rb")
+      @check = -> {
+        [
+          defined?(ModuleSpecs::Autoload::RequiredDirectly),
+          ModuleSpecs::Autoload.autoload?(:RequiredDirectly)
+        ]
+      }
+      ScratchPad.record @check
+    end
+
+    after :each do
+      ModuleSpecs::Autoload.send(:remove_const, :RequiredDirectly)
+    end
+
+    it "with a full path" do
+      @check.call.should == ["constant", @path]
+      require @path
+      ScratchPad.recorded.should == [nil, nil]
+      @check.call.should == ["constant", nil]
+    end
+
+    it "with a relative path" do
+      @check.call.should == ["constant", @path]
+      $:.push File.dirname(@path)
+      begin
+        require "autoload_required_directly.rb"
+      ensure
+        $:.pop
+      end
+      ScratchPad.recorded.should == [nil, nil]
+      @check.call.should == ["constant", nil]
+    end
+
+    it "in a nested require" do
+      nested = fixture(__FILE__, "autoload_required_directly_nested.rb")
+      nested_require = -> {
+        result = nil
+        ScratchPad.record -> {
+          result = [@check.call, Thread.new { @check.call }.value]
+        }
+        require nested
+        result
+      }
+      ScratchPad.record nested_require
+
+      @check.call.should == ["constant", @path]
+      require @path
+      cur, other = ScratchPad.recorded
+      cur.should == [nil, nil]
+      other.should == [nil, nil]
+      @check.call.should == ["constant", nil]
+    end
+  end
+
   describe "during the autoload before the constant is assigned" do
     before :each do
       @path = fixture(__FILE__, "autoload_during_autoload.rb")

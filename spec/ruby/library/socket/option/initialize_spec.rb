@@ -5,7 +5,7 @@ describe 'Socket::Option#initialize' do
     @bool = [0].pack('i')
   end
 
-  describe 'using Fixnums' do
+  describe 'using Integers' do
     it 'returns a Socket::Option' do
       opt = Socket::Option
         .new(Socket::AF_INET, Socket::SOL_SOCKET, Socket::SO_KEEPALIVE, @bool)

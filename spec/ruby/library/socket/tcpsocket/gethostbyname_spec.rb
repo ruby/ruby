@@ -70,7 +70,7 @@ describe 'TCPSocket#gethostbyname' do
       end
 
       it 'includes the address family as the 3rd value' do
-        @array[2].should be_an_instance_of(Fixnum)
+        @array[2].should be_kind_of(Integer)
       end
 
       it 'includes the IP addresses as all the remaining values' do

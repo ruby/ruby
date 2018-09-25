@@ -20,7 +20,7 @@ describe :socket_socketpair, shared: true do
       end
     end
 
-    describe 'using a Fixnum as the 1st and 2nd argument' do
+    describe 'using an Integer as the 1st and 2nd argument' do
       it 'returns two Socket objects' do
         s1, s2 = Socket.public_send(@method, Socket::AF_UNIX, Socket::SOCK_STREAM)
 
@@ -116,7 +116,7 @@ describe :socket_socketpair, shared: true do
       end
     end
 
-    it 'accepts a custom protocol as a Fixnum as the 3rd argument' do
+    it 'accepts a custom protocol as an Integer as the 3rd argument' do
       s1, s2 = Socket.public_send(@method, :UNIX, :STREAM, Socket::IPPROTO_IP)
       s1.should be_an_instance_of(Socket)
       s2.should be_an_instance_of(Socket)

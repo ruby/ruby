@@ -1,3 +1,5 @@
+require_relative '../../spec_helper'
+
 describe "Complex#rationalize" do
   it "raises RangeError if self has non-zero imaginary part" do
     lambda { Complex(1,5).rationalize }.should raise_error(RangeError)

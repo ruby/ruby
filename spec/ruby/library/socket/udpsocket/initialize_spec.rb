@@ -10,7 +10,7 @@ describe 'UDPSocket#initialize' do
     @socket.should be_an_instance_of(UDPSocket)
   end
 
-  it 'initializes a new UDPSocket using a Fixnum' do
+  it 'initializes a new UDPSocket using an Integer' do
     @socket = UDPSocket.new(Socket::AF_INET)
     @socket.should be_an_instance_of(UDPSocket)
   end
