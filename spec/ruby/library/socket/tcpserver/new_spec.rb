@@ -10,7 +10,7 @@ describe "TCPServer.new" do
     @server = TCPServer.new('127.0.0.1', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     # on some platforms (Mac), MRI
     # returns comma at the end.
     addr[2].should =~ /^#{SocketSpecs.hostname}\b/
@@ -20,7 +20,7 @@ describe "TCPServer.new" do
   it "binds to localhost and a port with either IPv4 or IPv6" do
     @server = TCPServer.new(SocketSpecs.hostname, 0)
     addr = @server.addr
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     if addr[0] == 'AF_INET'
       addr[2].should =~ /^#{SocketSpecs.hostname}\b/
       addr[3].should == '127.0.0.1'
@@ -34,7 +34,7 @@ describe "TCPServer.new" do
     @server = TCPServer.new('', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     addr[2].should == '0.0.0.0'
     addr[3].should == '0.0.0.0'
   end
@@ -43,7 +43,7 @@ describe "TCPServer.new" do
     @server = TCPServer.new('', 0)
     addr = @server.addr
     addr[0].should == 'AF_INET'
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
     addr[2].should == '0.0.0.0'
     addr[3].should == '0.0.0.0'
   end
@@ -56,7 +56,7 @@ describe "TCPServer.new" do
 
     @server = TCPServer.new(SocketSpecs.hostname, port)
     addr = @server.addr
-    addr[1].should be_kind_of(Fixnum)
+    addr[1].should be_kind_of(Integer)
 
     # TODO: This should also accept strings like 'https', but I don't know how to
     # pick such a service port that will be able to reliably bind...

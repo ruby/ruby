@@ -1,5 +1,3 @@
-require_relative '../../spec_helper'
-
 describe :complex_divide, shared: true do
   describe "with Complex" do
     it "divides according to the usual rule for complex numbers" do

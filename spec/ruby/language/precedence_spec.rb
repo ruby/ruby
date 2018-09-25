@@ -136,7 +136,7 @@ describe "Operators" do
     # Guard against the Mathn library
     # TODO: Make these specs not rely on specific behaviour / result values
     # by using mocks.
-    conflicts_with :Prime do
+    guard -> { !defined?(Math.rsqrt) } do
       (2*1/2).should_not == 2*(1/2)
     end
 

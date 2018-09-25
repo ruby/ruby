@@ -566,6 +566,11 @@ describe "Marshal.dump" do
     lambda { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
   end
 
+  it "raises a TypeError if dumping a Mutex instance" do
+    m = Mutex.new
+    lambda { Marshal.dump(m) }.should raise_error(TypeError)
+  end
+
   it "returns an untainted string if object is untainted" do
     Marshal.dump(Object.new).tainted?.should be_false
   end

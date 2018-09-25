@@ -20,7 +20,7 @@ describe 'TCPSocket#initialize' do
         @server.close
       end
 
-      it 'returns a TCPSocket when using a Fixnum as the port' do
+      it 'returns a TCPSocket when using an Integer as the port' do
         @client = TCPSocket.new(ip_address, @port)
         @client.should be_an_instance_of(TCPSocket)
       end

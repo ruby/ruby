@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 
 with_feature :ancillary_data do
   describe 'Socket::AncillaryData#initialize' do
-    describe 'using Fixnums for the family, level, and type' do
+    describe 'using Integers for the family, level, and type' do
       before do
         @data = Socket::AncillaryData
           .new(Socket::AF_INET, Socket::IPPROTO_IP, Socket::IP_RECVTTL, 'ugh')

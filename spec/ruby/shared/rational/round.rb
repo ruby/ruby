@@ -47,8 +47,11 @@ describe :rational_round, shared: true do
     it "returns a Rational" do
       @rational.round(1).should be_kind_of(Rational)
       @rational.round(2).should be_kind_of(Rational)
-      Rational(0, 1).round(1).should be_kind_of(Rational)
-      Rational(2, 1).round(1).should be_kind_of(Rational)
+      # Guard against the Mathn library
+      guard -> { !defined?(Math.rsqrt) } do
+        Rational(0, 1).round(1).should be_kind_of(Rational)
+        Rational(2, 1).round(1).should be_kind_of(Rational)
+      end
     end
 
     it "moves the truncation point n decimal places right" do

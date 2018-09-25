@@ -34,7 +34,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "ad hoc"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Fixnum)
+    @msg[1][1].should be_kind_of(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 
@@ -46,7 +46,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "ad hoc"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Fixnum)
+    @msg[1][1].should be_kind_of(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 
@@ -59,7 +59,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "connection-based"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Fixnum)
+    @msg[1][1].should be_kind_of(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 

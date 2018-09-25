@@ -20,14 +20,12 @@ describe "Math.acos" do
     Math.acos(0.75).should be_close(0.722734247813416, TOLERANCE)
   end
 
-  conflicts_with :Complex do
-    it "raises an Errno::EDOM if the argument is greater than 1.0" do
-      lambda { Math.acos(1.0001) }.should raise_error(Errno::EDOM)
-    end
+  it "raises an Math::DomainError if the argument is greater than 1.0" do
+    lambda { Math.acos(1.0001) }.should raise_error(Math::DomainError)
+  end
 
-    it "raises an Errno::EDOM if the argument is less than -1.0" do
-      lambda { Math.acos(-1.0001) }.should raise_error(Errno::EDOM)
-    end
+  it "raises an Math::DomainError if the argument is less than -1.0" do
+    lambda { Math.acos(-1.0001) }.should raise_error(Math::DomainError)
   end
 
   it "raises a TypeError if the string argument cannot be coerced with Float()" do

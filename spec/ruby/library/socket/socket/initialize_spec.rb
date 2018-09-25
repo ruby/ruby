@@ -9,7 +9,7 @@ describe 'Socket#initialize' do
     @socket.close if @socket
   end
 
-  describe 'using a Fixnum as the 1st and 2nd arguments' do
+  describe 'using an Integer as the 1st and 2nd arguments' do
     it 'returns a Socket' do
       @socket = Socket.new(Socket::AF_INET, Socket::SOCK_STREAM)
 
@@ -58,7 +58,7 @@ describe 'Socket#initialize' do
   end
 
   describe 'using a custom protocol' do
-    it 'returns a Socket when using a Fixnum' do
+    it 'returns a Socket when using an Integer' do
       @socket = Socket.new(:INET, :STREAM, Socket::IPPROTO_TCP)
 
       @socket.should be_an_instance_of(Socket)

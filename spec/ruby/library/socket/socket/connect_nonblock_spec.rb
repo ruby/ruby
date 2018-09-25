@@ -94,7 +94,7 @@ describe 'Socket#connect_nonblock' do
         @client.connect_nonblock(@server.connect_address).should == 0
       end
 
-      it 'raises TypeError when passed a Fixnum' do
+      it 'raises TypeError when passed an Integer' do
         lambda { @client.connect_nonblock(666) }.should raise_error(TypeError)
       end
     end

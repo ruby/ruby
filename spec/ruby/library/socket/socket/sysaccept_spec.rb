@@ -75,10 +75,10 @@ describe 'Socket#sysaccept' do
           @client.close
         end
 
-        it 'returns an Array containing a Fixnum and an Addrinfo' do
+        it 'returns an Array containing an Integer and an Addrinfo' do
           @fd, addrinfo = @server.sysaccept
 
-          @fd.should be_an_instance_of(Fixnum)
+          @fd.should be_kind_of(Integer)
           addrinfo.should be_an_instance_of(Addrinfo)
         end
 

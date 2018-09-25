@@ -3,7 +3,8 @@ require_relative '../fixtures/classes'
 
 describe :struct_select, shared: true do
   it "raises an ArgumentError if given any non-block arguments" do
-    lambda { StructClasses::Car.new.send(@method, 1) { } }.should raise_error(ArgumentError)
+    struct = StructClasses::Car.new
+    -> { struct.send(@method, 1) { } }.should raise_error(ArgumentError)
   end
 
   it "returns a new array of elements for which block is true" do

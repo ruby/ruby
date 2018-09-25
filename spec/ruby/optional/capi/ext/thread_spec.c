@@ -27,7 +27,7 @@ static VALUE thread_spec_rb_thread_alone() {
 /* This is unblocked by unblock_func(). */
 static void* blocking_gvl_func(void* data) {
   int rfd = *(int *)data;
-  char dummy;
+  char dummy = ' ';
   ssize_t r;
 
   do {
@@ -36,7 +36,7 @@ static void* blocking_gvl_func(void* data) {
 
   close(rfd);
 
-  return (void*)((r == 1) ? Qtrue : Qfalse);
+  return (void*)((r == 1 && dummy == 'A') ? Qtrue : Qfalse);
 }
 
 static void unblock_gvl_func(void *data) {
@@ -57,7 +57,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl(VALUE self) {
   void* ret;
 
   if (pipe(fds) == -1) {
-    return Qfalse;
+    rb_raise(rb_eRuntimeError, "could not create pipe");
   }
   ret = rb_thread_call_without_gvl(blocking_gvl_func, &fds[0],
                                    unblock_gvl_func, &fds[1]);
@@ -82,7 +82,7 @@ static VALUE thread_spec_rb_thread_call_without_gvl_with_ubf_io(VALUE self) {
   void* ret;
 
   if (pipe(fds) == -1) {
-    return Qfalse;
+    rb_raise(rb_eRuntimeError, "could not create pipe");
   }
 
   ret = rb_thread_call_without_gvl(blocking_gvl_func_for_udf_io,

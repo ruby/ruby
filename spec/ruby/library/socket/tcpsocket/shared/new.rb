@@ -72,7 +72,7 @@ describe :tcpsocket_new, shared: true do
         @socket.addr[3].should == SocketSpecs.addr(:ipv6)
       end
 
-      @socket.addr[1].should be_kind_of(Fixnum)
+      @socket.addr[1].should be_kind_of(Integer)
       @socket.addr[2].should =~ /^#{@hostname}/
     end
   end

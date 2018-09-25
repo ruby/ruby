@@ -1,5 +1,3 @@
-require_relative '../../../spec_helper'
-
 describe :float_arg, shared: true do
   it "returns NaN if NaN" do
     f = nan_value
