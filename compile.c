@@ -6443,17 +6443,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	INIT_ANCHOR(args);
 #if SUPPORT_JOKE
 	if (nd_type(node) == NODE_VCALL) {
-	    ID id_bitblt;
 	    ID id_answer;
 
-	    CONST_ID(id_bitblt, "bitblt");
 	    CONST_ID(id_answer, "the_answer_to_life_the_universe_and_everything");
 
-	    if (mid == id_bitblt) {
-		ADD_INSN(ret, line, bitblt);
-		break;
-	    }
-	    else if (mid == id_answer) {
+            if (mid == id_answer) {
 		ADD_INSN(ret, line, answer);
 		break;
 	    }

@@ -1438,16 +1438,6 @@ opt_call_c_function
     NEXT_INSN();
 }
 
-/* BLT */
-DEFINE_INSN
-bitblt
-()
-()
-(VALUE ret)
-{
-    ret = rb_str_new2("a bit of bacon, lettuce and tomato");
-}
-
 /* The Answer to Life, the Universe, and Everything */
 DEFINE_INSN
 answer
