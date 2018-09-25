@@ -89,72 +89,13 @@ class MSpecMain < MSpecScript
   def register; end
 
   def multi_exec(argv)
-    MSpec.register_files @files
-
     require 'mspec/runner/formatters/multi'
     formatter = MultiFormatter.new
-    if config[:formatter]
-      warn "formatter options is ignored due to multi option"
-    end
+    warn "formatter options is ignored due to multi option" if config[:formatter]
 
-    output_files = []
+    require 'mspec/runner/parallel'
     processes = cores(@files.size)
-    children = processes.times.map { |i|
-      name = tmp "mspec-multi-#{i}"
-      output_files << name
-
-      env = {
-        "SPEC_TEMP_DIR" => "rubyspec_temp_#{i}",
-        "MSPEC_MULTI" => i.to_s
-      }
-      command = argv + ["-fy", "-o", name]
-      $stderr.puts "$ #{command.join(' ')}" if $MSPEC_DEBUG
-      IO.popen([env, *command, close_others: false], "rb+")
-    }
-
-    puts children.map { |child| child.gets }.uniq
-    formatter.start
-    last_files = {}
-
-    until @files.empty?
-      IO.select(children)[0].each { |io|
-        reply = io.read(1)
-        case reply
-        when '.'
-          formatter.unload
-        when nil
-          raise "Worker died!"
-        else
-          while chunk = (io.read_nonblock(4096) rescue nil)
-            reply += chunk
-          end
-          reply.chomp!('.')
-          msg = "A child mspec-run process printed unexpected output on STDOUT"
-          if last_file = last_files[io]
-            msg += " while running #{last_file}"
-          end
-          abort "\n#{msg}: #{reply.inspect}"
-        end
-
-        unless @files.empty?
-          file = @files.shift
-          last_files[io] = file
-          io.puts file
-        end
-      }
-    end
-
-    success = true
-    children.each { |child|
-      child.puts "QUIT"
-      _pid, status = Process.wait2(child.pid)
-      success &&= status.success?
-      child.close
-    }
-
-    formatter.aggregate_results(output_files)
-    formatter.finish
-    success
+    ParallelRunner.new(@files, processes, formatter, argv).run
   end
 
   def run

@@ -50,6 +50,7 @@ module MSpec
 
   def self.process
     STDOUT.puts RUBY_DESCRIPTION
+    STDOUT.flush
 
     actions :start
     files
@@ -58,9 +59,8 @@ module MSpec
 
   def self.each_file(&block)
     if ENV["MSPEC_MULTI"]
-      STDOUT.print "."
-      STDOUT.flush
-      while file = STDIN.gets and file = file.chomp
+      while file = STDIN.gets
+        file = file.chomp
         return if file == "QUIT"
         yield file
         begin
