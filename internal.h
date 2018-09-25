@@ -1070,8 +1070,6 @@ VALUE rb_gvar_get(struct rb_global_entry *);
 VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
 VALUE rb_gvar_defined(struct rb_global_entry *);
 
-struct vtm; /* defined by timev.h */
-
 /* array.c */
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
@@ -1751,14 +1749,6 @@ VALUE rb_reg_new_ary(VALUE ary, int options);
 /* signal.c */
 extern int ruby_enable_coredump;
 int rb_get_next_signal(void);
-
-/* strftime.c */
-#ifdef RUBY_ENCODING_H
-VALUE rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
-			   const struct vtm *vtm, struct timespec *ts, int gmt);
-VALUE rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
-		  const struct vtm *vtm, VALUE timev, int gmt);
-#endif
 
 /* string.c */
 VALUE rb_fstring(VALUE);
