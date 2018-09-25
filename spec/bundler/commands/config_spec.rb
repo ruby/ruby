@@ -478,12 +478,10 @@ end
 RSpec.describe "setting gemfile via config" do
   context "when only the non-default Gemfile exists" do
     it "persists the gemfile location to .bundle/config" do
-      File.open(bundled_app("NotGemfile"), "w") do |f|
-        f.write <<-G
-          source "#{file_uri_for(gem_repo1)}"
-          gem 'rack'
-        G
-      end
+      gemfile bundled_app("NotGemfile"), <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'rack'
+      G
 
       bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
       expect(File.exist?(".bundle/config")).to eq(true)
