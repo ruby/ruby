@@ -1,6 +1,12 @@
 require 'mspec/guards/guard'
+require 'mspec/utils/deprecate'
 
 class ConflictsGuard < SpecGuard
+  def initialize(*args)
+    MSpec.deprecate 'conflicts_with', 'guard -> { condition } do'
+    super(*args)
+  end
+
   def match?
     # Always convert constants to symbols regardless of version.
     constants = Object.constants.map { |x| x.to_sym }

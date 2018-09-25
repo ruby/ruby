@@ -75,7 +75,7 @@ class MkSpec
     parents = '../' * (sub.split('/').length + 1)
 
     File.open(file, 'w') do |f|
-      f.puts "require File.expand_path('../#{parents}spec_helper', __FILE__)"
+      f.puts "require_relative '#{parents}spec_helper'"
       config[:requires].each do |lib|
         f.puts "require '#{lib}'"
       end
