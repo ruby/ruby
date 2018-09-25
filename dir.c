@@ -2055,11 +2055,12 @@ dirent_match_brace(const char *pattern, VALUE val, void *enc)
 }
 
 /* join paths from pattern list of glob_make_pattern() */
-static const char*
+static char*
 join_path_from_pattern(struct glob_pattern **beg)
 {
     struct glob_pattern *p;
-    const char *path = "";
+    char *path = NULL;
+    size_t path_len;
 
     for (p = *beg; p; p = p->next) {
 	const char *str;
@@ -2070,7 +2071,23 @@ join_path_from_pattern(struct glob_pattern **beg)
 	  default:
 	    str = p->str;
 	}
-	path = join_path(path, strlen(path), (p != *beg), str, strlen(str));
+	if (!path) {
+	    path_len = strlen(str);
+	    path = GLOB_ALLOC_N(char, path_len + 1);
+	    memcpy(path, str, path_len);
+	    path[path_len] = '\0';
+	} else {
+	    size_t len = strlen(str);
+	    char *tmp;
+	    tmp = GLOB_REALLOC(path, path_len + len + 2);
+	    if (tmp) {
+		path = tmp;
+		path[path_len++] = '/';
+		memcpy(path + path_len, str, len);
+		path_len += len;
+		path[path_len] = '\0';
+	    }
+	}
     }
     return path;
 }
@@ -2138,7 +2155,8 @@ glob_helper(
 
     if (brace) {
 	struct push_glob_args args;
-	const char* brace_path = join_path_from_pattern(beg);
+	char* brace_path = join_path_from_pattern(beg);
+	if (!brace_path) return -1;
 	args.fd = fd;
 	args.path = path;
 	args.baselen = baselen;
@@ -2147,7 +2165,9 @@ glob_helper(
 	args.flags = flags;
 	args.funcs = funcs;
 	args.arg = arg;
-	return ruby_brace_expand(brace_path, flags, push_caller, (VALUE)&args, enc, Qfalse);
+	status = ruby_brace_expand(brace_path, flags, push_caller, (VALUE)&args, enc, Qfalse);
+	GLOB_FREE(brace_path);
+	return status;
     }
 
     if (*path) {
