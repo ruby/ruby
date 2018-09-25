@@ -14,7 +14,19 @@
 
 #ifdef RB_DEBUG_COUNTER
 
-/* method search */
+/*
+ * method cache (mc) counts.
+ *
+ * * mc_inline_hit/miss: inline mc hit/miss counts (VM send insn)
+ * * mc_global_hit/miss: global method cache hit/miss counts
+ *                       two types: (1) inline cache miss (VM send insn)
+ *                                  (2) called from C (rb_funcall).
+ * * mc_global_state_miss: inline mc miss by global_state miss.
+ * * mc_class_serial_miss:            ... by mc_class_serial_miss
+ * * mc_cme_complement: cme complement counts.
+ * * mc_cme_complement_hit: cme cache hit counts.
+ * * mc_search_super: search_method() call counts.
+ */
 RB_DEBUG_COUNTER(mc_inline_hit)
 RB_DEBUG_COUNTER(mc_inline_miss)
 RB_DEBUG_COUNTER(mc_global_hit)
@@ -25,7 +37,17 @@ RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
 
-/* ivar access */
+/* instance variable counts
+ *
+ * * ivar_get_ic_hit/miss: ivar_get inline cache (ic) hit/miss counts (VM insn)
+ * * ivar_get_ic_miss_serial: ivar_get ic miss reason by serial (VM insn)
+ * * ivar_get_ic_miss_unset:                      ... by unset (VM insn)
+ * * ivar_get_ic_miss_noobject:                   ... by "not T_OBJECT" (VM insn)
+ * * ivar_set_...: same counts with ivar_set (VM insn)
+ * * ivar_get/set_base: call counts of "rb_ivar_get/set()".
+ *                      because of (1) ic miss.
+ *                                 (2) direct call by C extensions.
+ */
 RB_DEBUG_COUNTER(ivar_get_ic_hit)
 RB_DEBUG_COUNTER(ivar_get_ic_miss)
 RB_DEBUG_COUNTER(ivar_get_ic_miss_serial)
@@ -40,15 +62,52 @@ RB_DEBUG_COUNTER(ivar_set_ic_miss_noobject)
 RB_DEBUG_COUNTER(ivar_get_base)
 RB_DEBUG_COUNTER(ivar_set_base)
 
-/* lvar access */
+/* local variable counts
+ *
+ * * lvar_get: total lvar get counts (VM insn)
+ * * lvar_get_dynamic: lvar get counts if accessing upper env (VM insn)
+ * * lvar_set*: same as "get"
+ * * lvar_set_slowpath: counts using vm_env_write_slowpath()
+ */
 RB_DEBUG_COUNTER(lvar_get)
 RB_DEBUG_COUNTER(lvar_get_dynamic)
 RB_DEBUG_COUNTER(lvar_set)
 RB_DEBUG_COUNTER(lvar_set_dynamic)
 RB_DEBUG_COUNTER(lvar_set_slowpath)
 
-/* object counts */
+/* object allocation counts:
+ *
+ * * obj_newobj: newobj counts
+ * * obj_newobj_slowpath: newobj with slowpath counts
+ * * obj_newobj_wb_unprotected: newobj for wb_unprotecte.
+ * * obj_free: obj_free() counts
+ *
+ * * obj_[type]_[attr]: free'ed counts for each type.
+ * * [type]
+ *   * _obj: T_OBJECT
+ *   * _str: T_STRING
+ *   * _ary: T_ARRAY
+ *   * _hash: T_HASH
+ *
+ * * [attr]
+ *   * _ptr: R?? is not embed.
+ *   * _embed: R?? is embed.
+ * * type specific attr.
+ *   * str_shared: str is shared.
+ *   * str_nofree:        nofree
+ *   * str_fstr:          fstr
+ *   * hash_empty: hash is empty
+ *   * hash_under4:     has under 4 entries
+ *   * hash_ge4:        has n entries (4<=n<8)
+ *   * hash_ge8:        has n entries (8<=n)
+ */
+RB_DEBUG_COUNTER(obj_newobj)
+RB_DEBUG_COUNTER(obj_newobj_slowpath)
+RB_DEBUG_COUNTER(obj_newobj_wb_unprotected)
 RB_DEBUG_COUNTER(obj_free)
+
+RB_DEBUG_COUNTER(obj_obj_ptr)
+RB_DEBUG_COUNTER(obj_obj_embed)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)
@@ -59,13 +118,24 @@ RB_DEBUG_COUNTER(obj_str_fstr)
 RB_DEBUG_COUNTER(obj_ary_ptr)
 RB_DEBUG_COUNTER(obj_ary_embed)
 
-RB_DEBUG_COUNTER(obj_obj_ptr)
-RB_DEBUG_COUNTER(obj_obj_embed)
+RB_DEBUG_COUNTER(obj_hash_empty)
+RB_DEBUG_COUNTER(obj_hash_under4)
+RB_DEBUG_COUNTER(obj_hash_ge4)
+RB_DEBUG_COUNTER(obj_hash_ge8)
 
-/* load */
+/* heap function counts
+ *
+ * * heap_xmalloc/realloc/xfree: call counts
+ */
+RB_DEBUG_COUNTER(heap_xmalloc)
+RB_DEBUG_COUNTER(heap_xrealloc)
+RB_DEBUG_COUNTER(heap_xfree)
+
+/* load (not implemented yet) */
+/*
 RB_DEBUG_COUNTER(load_files)
 RB_DEBUG_COUNTER(load_path_is_not_realpath)
-
+*/
 #endif
 
 #ifndef RUBY_DEBUG_COUNTER_H
@@ -105,5 +175,7 @@ rb_debug_counter_add(enum rb_debug_counter_type type, int add, int cond)
 #define RB_DEBUG_COUNTER_INC_UNLESS(type, cond) (cond)
 #define RB_DEBUG_COUNTER_INC_IF(type, cond)     (cond)
 #endif
+
+void rb_debug_counter_show_results(const char *msg);
 
 #endif /* RUBY_DEBUG_COUNTER_H */

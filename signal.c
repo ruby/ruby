@@ -395,9 +395,17 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     return rb_call_super(2, args);
 }
 
+#include "debug_counter.h"
+void rb_malloc_info_show_results(void); /* gc.c */
+
 void
 ruby_default_signal(int sig)
 {
+#if USE_DEBUG_COUNTER
+    rb_debug_counter_show_results("killed by signal.");
+#endif
+    rb_malloc_info_show_results();
+
     signal(sig, SIG_DFL);
     raise(sig);
 }
