@@ -42,9 +42,9 @@ typedef unsigned LONG_LONG unsigned_time_t;
 /* strftime.c */
 #ifdef RUBY_ENCODING_H
 VALUE rb_strftime_timespec(const char *format, size_t format_len, rb_encoding *enc,
-			   const struct vtm *vtm, struct timespec *ts, int gmt);
+                           const struct vtm *vtm, struct timespec *ts, int gmt);
 VALUE rb_strftime(const char *format, size_t format_len, rb_encoding *enc,
-		  const struct vtm *vtm, VALUE timev, int gmt);
+                  const struct vtm *vtm, VALUE timev, int gmt);
 #endif
 
 #endif
