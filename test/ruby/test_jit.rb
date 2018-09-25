@@ -478,14 +478,6 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('[1] << 2', result_inspect: '[1, 2]', insns: %i[opt_ltlt])
   end
 
-  def test_compile_insn_opt_and
-    assert_compile_once('1 & 3', result_inspect: '1', insns: %i[opt_and])
-  end
-
-  def test_compile_insn_opt_or
-    assert_compile_once('1 | 3', result_inspect: '3', insns: %i[opt_or])
-  end
-
   def test_compile_insn_opt_aref
     skip_on_mswin
     # optimized call (optimized JIT) -> send call
