@@ -81,6 +81,8 @@ RB_DEBUG_COUNTER(lvar_set_slowpath)
  * * obj_newobj_slowpath: newobj with slowpath counts
  * * obj_newobj_wb_unprotected: newobj for wb_unprotecte.
  * * obj_free: obj_free() counts
+ * * obj_promote: promoted counts (oldgen)
+ * * obj_wb_unprotect: wb unprotect counts
  *
  * * obj_[type]_[attr]: free'ed counts for each type.
  * * [type]
@@ -88,6 +90,7 @@ RB_DEBUG_COUNTER(lvar_set_slowpath)
  *   * _str: T_STRING
  *   * _ary: T_ARRAY
  *   * _hash: T_HASH
+ *   * _struct: T_STRUCT
  *
  * * [attr]
  *   * _ptr: R?? is not embed.
@@ -105,6 +108,8 @@ RB_DEBUG_COUNTER(obj_newobj)
 RB_DEBUG_COUNTER(obj_newobj_slowpath)
 RB_DEBUG_COUNTER(obj_newobj_wb_unprotected)
 RB_DEBUG_COUNTER(obj_free)
+RB_DEBUG_COUNTER(obj_promote)
+RB_DEBUG_COUNTER(obj_wb_unprotect)
 
 RB_DEBUG_COUNTER(obj_obj_ptr)
 RB_DEBUG_COUNTER(obj_obj_embed)
@@ -122,6 +127,9 @@ RB_DEBUG_COUNTER(obj_hash_empty)
 RB_DEBUG_COUNTER(obj_hash_under4)
 RB_DEBUG_COUNTER(obj_hash_ge4)
 RB_DEBUG_COUNTER(obj_hash_ge8)
+
+RB_DEBUG_COUNTER(obj_struct_ptr)
+RB_DEBUG_COUNTER(obj_struct_embed)
 
 /* heap function counts
  *

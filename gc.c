@@ -1200,6 +1200,7 @@ RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, struct heap_page *pag
 static inline void
 RVALUE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, VALUE obj)
 {
+    RB_DEBUG_COUNTER_INC(obj_promote);
     RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(objspace, GET_HEAP_PAGE(obj), obj);
 }
 
@@ -2366,7 +2367,11 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
 	    RANY(obj)->as.rstruct.as.heap.ptr) {
 	    xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
+            RB_DEBUG_COUNTER_INC(obj_struct_ptr);
 	}
+        else {
+            RB_DEBUG_COUNTER_INC(obj_struct_embed);
+        }
 	break;
 
       case T_SYMBOL:
@@ -6053,6 +6058,7 @@ rb_gc_writebarrier_unprotect(VALUE obj)
 	    RVALUE_AGE_RESET(obj);
 	}
 
+        RB_DEBUG_COUNTER_INC(obj_wb_unprotect);
 	MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
     }
 }
