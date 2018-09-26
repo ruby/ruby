@@ -2261,8 +2261,6 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
       case T_HASH:
 	if (RANY(obj)->as.hash.ntbl) {
-	    st_free_table(RANY(obj)->as.hash.ntbl);
-
             if (RHASH_SIZE(obj) >= 8) {
                 RB_DEBUG_COUNTER_INC(obj_hash_ge8);
             }
@@ -2272,6 +2270,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             else {
                 RB_DEBUG_COUNTER_INC(obj_hash_under4);
             }
+
+	    st_free_table(RANY(obj)->as.hash.ntbl);
 	}
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
