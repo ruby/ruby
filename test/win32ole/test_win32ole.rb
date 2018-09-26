@@ -74,7 +74,7 @@ if defined?(WIN32OLE)
 
     def test_methods
       methods = @dict1.methods
-      assert_include(methods, 'Add')
+      assert_include(methods, :Add)
     end
 
     def test_ole_func_methods
