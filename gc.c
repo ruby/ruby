@@ -2272,7 +2272,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
                 RB_DEBUG_COUNTER_INC(obj_hash_under4);
             }
 #endif
-	    st_free_table(RANY(obj)->as.hash.ntbl);
+            st_free_table(RANY(obj)->as.hash.ntbl);
 	}
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
