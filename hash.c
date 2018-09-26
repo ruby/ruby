@@ -3360,7 +3360,7 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
     rb_encoding *utf8 = rb_utf8_encoding();
     VALUE str = rb_enc_str_new(NULL, 0, (internal ? internal : enc));
     if (NIL_P(rb_str_cat_conv_enc_opts(str, 0, ptr, len, utf8, ecflags, Qnil))) {
-	rb_str_initialize(str, ptr, len, utf8);
+        rb_str_initialize(str, ptr, len, NULL);
     }
 #else
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
