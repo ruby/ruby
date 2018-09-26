@@ -30,9 +30,19 @@
  */
 
 /* C compiler dependent */
-#define OPT_DIRECT_THREADED_CODE     1
-#define OPT_TOKEN_THREADED_CODE      0
-#define OPT_CALL_THREADED_CODE       0
+
+/*
+ * 0: direct (using labeled goto using GCC special)
+ * 1: token (switch/case)
+ * 2: call (function call for each insn dispatch)
+ */
+#ifndef OPT_THREADED_CODE
+#define OPT_THREADED_CODE 0
+#endif
+
+#define OPT_DIRECT_THREADED_CODE (OPT_THREADED_CODE == 0)
+#define OPT_TOKEN_THREADED_CODE  (OPT_THREADED_CODE == 1)
+#define OPT_CALL_THREADED_CODE   (OPT_THREADED_CODE == 2)
 
 /* VM running option */
 #define OPT_CHECKED_RUN              1

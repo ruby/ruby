@@ -751,6 +751,22 @@ send
     CALL_METHOD(&calling, ci, cc);
 }
 
+/* Invoke method without block */
+DEFINE_INSN
+opt_send_without_block
+(CALL_INFO ci, CALL_CACHE cc)
+(...)
+(VALUE val)
+// attr bool leaf = false; /* Of course it isn't. */
+// attr bool handles_sp = true;
+// attr rb_snum_t sp_inc = -ci->orig_argc;
+{
+    struct rb_calling_info calling;
+    calling.block_handler = VM_BLOCK_HANDLER_NONE;
+    vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
+    CALL_METHOD(&calling, ci, cc);
+}
+
 DEFINE_INSN
 opt_str_freeze
 (VALUE str, CALL_INFO ci, CALL_CACHE cc)
@@ -804,22 +820,6 @@ opt_newarray_min
 // attr rb_snum_t sp_inc = 1 - num;
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
-}
-
-/* Invoke method without block */
-DEFINE_INSN
-opt_send_without_block
-(CALL_INFO ci, CALL_CACHE cc)
-(...)
-(VALUE val)
-// attr bool leaf = false; /* Of course it isn't. */
-// attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = -ci->orig_argc;
-{
-    struct rb_calling_info calling;
-    calling.block_handler = VM_BLOCK_HANDLER_NONE;
-    vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
-    CALL_METHOD(&calling, ci, cc);
 }
 
 /* super(args) # args.size => num */
