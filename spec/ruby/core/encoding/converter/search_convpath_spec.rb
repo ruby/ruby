@@ -26,15 +26,9 @@ with_feature :encoding do
     end
 
     it "raises an Encoding::ConverterNotFoundError if no conversion path exists" do
-#      lambda do
-#        Encoding::Converter.search_convpath(
-#          Encoding::ASCII_8BIT, Encoding::Emacs_Mule)
-#      end.should raise_error(Encoding::ConverterNotFoundError)
-      begin
-        Encoding::Converter.search_convpath(Encoding::ASCII_8BIT, Encoding::Emacs_Mule)
-      rescue => e
-        e.class.should == Encoding::ConverterNotFoundError
-      end
+     lambda do
+       Encoding::Converter.search_convpath(Encoding::ASCII_8BIT.name, Encoding::Emacs_Mule.name)
+     end.should raise_error(Encoding::ConverterNotFoundError)
     end
   end
 end
