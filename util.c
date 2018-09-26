@@ -1342,7 +1342,7 @@ mult(Bigint *a, Bigint *b)
 #else
 #ifdef Pack_32
     for (; xb < xbe; xb++, xc0++) {
-        if (y = *xb & 0xffff) {
+        if ((y = *xb & 0xffff) != 0) {
             x = xa;
             xc = xc0;
             carry = 0;
@@ -1355,7 +1355,7 @@ mult(Bigint *a, Bigint *b)
             } while (x < xae);
             *xc = (ULong)carry;
         }
-        if (y = *xb >> 16) {
+        if ((y = *xb >> 16) != 0) {
             x = xa;
             xc = xc0;
             carry = 0;
