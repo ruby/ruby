@@ -2150,6 +2150,7 @@ glob_helper(
 	args.baselen = baselen;
 	args.namelen = namelen;
 	args.dirsep = dirsep;
+	args.pathtype = pathtype;
 	args.flags = flags;
 	args.funcs = funcs;
 	args.arg = arg;
