@@ -238,6 +238,10 @@ AS_IF([test "$GCC" = yes], [
     linker_flag=
 ])
 
+AS_IF([test "$GCC" = yes -a "$gcc_major" -lt 3 ], [
+    AC_MSG_ERROR([too old GCC])
+])
+
 RUBY_PROG_GNU_LD
 RUBY_CPPOUTFILE
 
