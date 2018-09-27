@@ -375,6 +375,16 @@ class TestTime < Test::Unit::TestCase
     end
   end
 
+  def test_marshal_distant_past
+    assert_marshal_roundtrip(Time.utc(1890, 1, 1))
+    assert_marshal_roundtrip(Time.utc(-4.5e9, 1, 1))
+  end
+
+  def test_marshal_distant_future
+    assert_marshal_roundtrip(Time.utc(30000, 1, 1))
+    assert_marshal_roundtrip(Time.utc(5.67e9, 4, 8))
+  end
+
   def test_at3
     t2000 = get_t2000
     assert_equal(t2000, Time.at(t2000))

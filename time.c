@@ -5005,6 +5005,8 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+int ruby_marshal_write_long(long x, char *buf);
+
 /* :nodoc: */
 static VALUE
 time_mdump(VALUE time)
@@ -5020,19 +5022,33 @@ time_mdump(VALUE time)
     long usec, nsec;
     VALUE subsecx, nano, subnano, v, zone;
 
+    VALUE year_extend = Qnil;
+    const int max_year = 1900+0xffff;
+
     GetTimeval(time, tobj);
 
     gmtimew(tobj->timew, &vtm);
 
     if (FIXNUM_P(vtm.year)) {
         year = FIX2LONG(vtm.year);
-        if (year < 1900 || 1900+0xffff < year)
-            rb_raise(rb_eArgError, "year too %s to marshal: %ld UTC",
-                     (year < 1900 ? "small" : "big"), year);
+        if (year > max_year) {
+            year_extend = INT2FIX(year - max_year);
+            year = max_year;
+        }
+        else if (year < 1900) {
+            year_extend = LONG2NUM(1900 - year);
+            year = 1900;
+        }
     }
     else {
-        rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
-                 (le(vtm.year, INT2FIX(1900)) ? "small" : "big"), vtm.year);
+        if (rb_int_positive_p(vtm.year)) {
+            year_extend = rb_int_minus(vtm.year, INT2FIX(max_year));
+            year = max_year;
+        }
+        else {
+            year_extend = rb_int_minus(INT2FIX(1900), vtm.year);
+            year = 1900;
+        }
     }
 
     subsecx = vtm.subsecx;
@@ -5065,6 +5081,26 @@ time_mdump(VALUE time)
     }
 
     str = rb_str_new(buf, 8);
+    if (!NIL_P(year_extend)) {
+        /*
+         * Append extended year distance from 1900..(1900+0xffff).  In
+         * each cases, there is no sign as the value is positive.  The
+         * format is length (marshaled long) + little endian packed
+         * binary (like as Fixnum and Bignum).
+         */
+        size_t ysize = rb_absint_size(year_extend, NULL);
+        char *p;
+        if (ysize > LONG_MAX ||
+            (i = ruby_marshal_write_long((long)ysize, buf)) < 0) {
+            rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
+                     (year == 1900 ? "small" : "big"), vtm.year);
+        }
+        rb_str_resize(str, sizeof(buf) + i + ysize);
+        p = RSTRING_PTR(str) + sizeof(buf);
+        memcpy(p, buf, i);
+        p += i;
+        rb_integer_pack(year_extend, p, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
+    }
     rb_copy_generic_ivar(str, time);
     if (!rb_equal(nano, INT2FIX(0))) {
         if (RB_TYPE_P(nano, T_RATIONAL)) {
@@ -5142,6 +5178,8 @@ mload_zone(VALUE time, VALUE zone)
     return z;
 }
 
+long ruby_marshal_read_long(const char **buf, long len);
+
 /* :nodoc: */
 static VALUE
 time_mload(VALUE time, VALUE str)
@@ -5154,7 +5192,7 @@ time_mload(VALUE time, VALUE str)
     struct vtm vtm;
     int i, gmt;
     long nsec;
-    VALUE submicro, nano_num, nano_den, offset, zone;
+    VALUE submicro, nano_num, nano_den, offset, zone, year;
     wideval_t timew;
 
     time_modify(time);
@@ -5170,6 +5208,7 @@ time_mload(VALUE time, VALUE str)
     get_attr(submicro, {});
     get_attr(offset, (offset = rb_rescue(validate_utc_offset, offset, NULL, Qnil)));
     get_attr(zone, (zone = rb_rescue(validate_zone_name, zone, NULL, Qnil)));
+    get_attr(year, {});
 
 #undef get_attr
 
@@ -5177,7 +5216,8 @@ time_mload(VALUE time, VALUE str)
 
     StringValue(str);
     buf = (unsigned char *)RSTRING_PTR(str);
-    if (RSTRING_LEN(str) != 8) {
+    if (RSTRING_LEN(str) < 8) {
+      invalid_format:
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
 
@@ -5201,7 +5241,26 @@ time_mload(VALUE time, VALUE str)
 	p &= ~(1UL<<31);
 	gmt        = (int)((p >> 30) & 0x1);
 
-	vtm.year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+        if (NIL_P(year)) {
+            year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
+        }
+        if (RSTRING_LEN(str) > 8) {
+            long len = RSTRING_LEN(str) - 8;
+            long ysize = 0;
+            VALUE year_extend;
+            const char *ybuf = (const char *)(buf += 8);
+            ysize = ruby_marshal_read_long(&ybuf, len);
+            len -= ybuf - (const char *)buf;
+            if (ysize < 0 || ysize > len) goto invalid_format;
+            year_extend = rb_integer_unpack(ybuf, ysize, 1, 0, INTEGER_PACK_LITTLE_ENDIAN);
+            if (year == INT2FIX(1900)) {
+                year = rb_int_minus(year, year_extend);
+            }
+            else {
+                year = rb_int_plus(year, year_extend);
+            }
+        }
+        vtm.year = year;
 	vtm.mon  = ((int)(p >> 10) & 0xf) + 1;
 	vtm.mday = (int)(p >>  5) & 0x1f;
 	vtm.hour = (int) p        & 0x1f;
