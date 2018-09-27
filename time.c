@@ -4579,10 +4579,12 @@ time_mdump(VALUE time)
     if (FIXNUM_P(vtm.year)) {
         year = FIX2LONG(vtm.year);
         if (year < 1900 || 1900+0xffff < year)
-            rb_raise(rb_eArgError, "year too big to marshal: %ld UTC", year);
+            rb_raise(rb_eArgError, "year too %s to marshal: %ld UTC",
+                     (year < 1900 ? "small" : "big"), year);
     }
     else {
-        rb_raise(rb_eArgError, "year too big to marshal");
+        rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
+                 (le(vtm.year, INT2FIX(1900)) ? "small" : "big"), vtm.year);
     }
 
     subsecx = vtm.subsecx;
