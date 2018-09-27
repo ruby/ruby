@@ -188,6 +188,13 @@ sufficient information, see the ChangeLog file or Redmine
         * `NameError#initialize` accepts `:receiver` option to set receiver
           in Ruby code.  [Feature #14313]
 
+* `NoMethodError`
+
+    * New options:
+
+        * `NoMethodError#initialize` accepts `:receiver` option to set
+          receiver in Ruby code.  [Feature #14313]
+
 * `Numeric`
 
     * Incompatible changes:
@@ -195,13 +202,6 @@ sufficient information, see the ChangeLog file or Redmine
         * `Numeric#step` now returns an instance of
           `Enumerator::ArithmeticSequence` class rather than one of
           `Enumerator` class.
-
-* `NoMethodError`
-
-    * New options:
-
-        * `NoMethodError#initialize` accepts `:receiver` option to set
-          receiver in Ruby code.  [Feature #14313]
 
 * `Proc`
 
