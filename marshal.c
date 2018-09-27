@@ -9,10 +9,6 @@
 
 **********************************************************************/
 
-#if defined __GNUC__ && __GNUC__ < 3
-# error too old GCC
-#endif
-
 #include "ruby/ruby.h"
 #include "ruby/io.h"
 #include "internal.h"
