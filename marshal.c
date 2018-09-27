@@ -256,6 +256,7 @@ class2path(VALUE klass)
     return path;
 }
 
+int ruby_marshal_write_long(long x, char *buf);
 static void w_long(long, struct dump_arg*);
 static void w_encoding(VALUE encname, struct dump_call_arg *arg);
 static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
@@ -298,26 +299,36 @@ static void
 w_long(long x, struct dump_arg *arg)
 {
     char buf[sizeof(long)+1];
+    int i = ruby_marshal_write_long(x, buf);
+    if (i < 0) {
+        rb_raise(rb_eTypeError, "long too big to dump");
+    }
+    w_nbyte(buf, i, arg);
+}
+
+int
+ruby_marshal_write_long(long x, char *buf)
+{
     int i;
 
 #if SIZEOF_LONG > 4
     if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
 	/* big long does not fit in 4 bytes */
-	rb_raise(rb_eTypeError, "long too big to dump");
+        return -1;
     }
 #endif
 
     if (x == 0) {
-	w_byte(0, arg);
-	return;
+        buf[0] = 0;
+        return 1;
     }
     if (0 < x && x < 123) {
-	w_byte((char)(x + 5), arg);
-	return;
+        buf[0] = (char)(x + 5);
+        return 1;
     }
     if (-124 < x && x < 0) {
-	w_byte((char)((x - 5)&0xff), arg);
-	return;
+        buf[0] = (char)((x - 5)&0xff);
+        return 1;
     }
     for (i=1;i<(int)sizeof(long)+1;i++) {
 	buf[i] = (char)(x & 0xff);
@@ -331,7 +342,7 @@ w_long(long x, struct dump_arg *arg)
 	    break;
 	}
     }
-    w_nbyte(buf, i+1, arg);
+    return i+1;
 }
 
 #ifdef DBL_MANT_DIG
@@ -1225,6 +1236,19 @@ r_long(struct load_arg *arg)
 	    x |= (long)r_byte(arg) << (8*i);
 	}
     }
+    return x;
+}
+
+long
+ruby_marshal_read_long(const char **buf, long len)
+{
+    long x;
+    struct RString src;
+    struct load_arg arg;
+    memset(&arg, 0, sizeof(arg));
+    arg.src = rb_setup_fake_str(&src, *buf, len, 0);
+    x = r_long(&arg);
+    *buf += arg.offset;
     return x;
 }
 
