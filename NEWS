@@ -47,7 +47,7 @@ sufficient information, see the ChangeLog file or Redmine
     * Modified methods:
 
         * `Array#to_h` now maps elements to new keys and values by the
-	  block if given.  [Feature #15143]
+          block if given.  [Feature #15143]
 
     * Aliased methods:
 
@@ -82,7 +82,7 @@ sufficient information, see the ChangeLog file or Redmine
     * Modified methods:
 
         * `Enumerable#to_h` now maps elements to new keys and values
-	  by the block if given.  [Feature #15143]
+          by the block if given.  [Feature #15143]
 
     * Aliased methods:
 
@@ -108,7 +108,7 @@ sufficient information, see the ChangeLog file or Redmine
     * Modified methods:
 
         * `ENV.to_h` now maps names and values to new keys and values
-	  by the block if given.  [Feature #15143]
+          by the block if given.  [Feature #15143]
 
 * `Exception`
 
@@ -125,7 +125,7 @@ sufficient information, see the ChangeLog file or Redmine
            arguments.  [Feature #15111]
 
         * `Hash#to_h` now maps keys and values to new keys and values
-	  by the block if given.  [Feature #15143]
+          by the block if given.  [Feature #15143]
 
     * Aliased methods:
 
@@ -221,7 +221,7 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `Range#===` now uses `#cover?` instead of `#include?` method.
           [Feature #14575]
-	* `Range#cover?` now accepts Range object. [Feature #14473]
+        * `Range#cover?` now accepts Range object. [Feature #14473]
         * `Range#step` now returns an instance of
           `Enumerator::ArithmeticSequence` class rather than one of
           `Enumerator` class.
@@ -248,7 +248,7 @@ sufficient information, see the ChangeLog file or Redmine
     * Modified methods:
 
         * `Struct#to_h` now maps keys and values to new keys and values
-	  by the block if given.  [Feature #15143]
+          by the block if given.  [Feature #15143]
 
     * Aliased method:
 
