@@ -89,6 +89,13 @@ sufficient information, see the ChangeLog file or Redmine
         * `Enumerable#filter` is a new alias for `Enumerable#select`.
           [Feature #13784]
 
+* `Enumerator::ArithmeticSequence`
+
+    * This is a new class to represent a generator of an arithmetic sequence,
+      that is a number sequence defined by a common difference. It can be used
+      for representing what is similar to Python's slice. You can get an
+      instance of this class from `Numeric#step` and `Range#step`.
+
 * `Enumerator::Lazy`
 
     * Aliased methods:
@@ -181,6 +188,14 @@ sufficient information, see the ChangeLog file or Redmine
         * `NameError#initialize` accepts `:receiver` option to set receiver
           in Ruby code.  [Feature #14313]
 
+* `Numeric`
+
+    * Incompatible changes:
+
+        * `Numeric#step` now returns an instance of
+          `Enumerator::ArithmeticSequence` class rather than one of
+          `Enumerator` class.
+
 * `NoMethodError`
 
     * New options:
@@ -207,6 +222,9 @@ sufficient information, see the ChangeLog file or Redmine
         * `Range#===` now uses `#cover?` instead of `#include?` method.
           [Feature #14575]
 	* `Range#cover?` now accepts Range object. [Feature #14473]
+        * `Range#step` now returns an instance of
+          `Enumerator::ArithmeticSequence` class rather than one of
+          `Enumerator` class.
 
 * `RubyVM::AST`
 
