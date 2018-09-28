@@ -217,6 +217,10 @@ sufficient information, see the ChangeLog file or Redmine
 
 * `Range`
 
+    * New methods:
+
+        * Added `Range#%` instance method.  [Feature #14697]
+
     * Incompatible changes:
 
         * `Range#===` now uses `#cover?` instead of `#include?` method.
