@@ -322,6 +322,15 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a", "b", "c"], a)
   end
 
+  def test_percent_step
+    aseq = (1..10) % 2
+    assert_equal(Enumerator::ArithmeticSequence, aseq.class)
+    assert_equal(1, aseq.begin)
+    assert_equal(10, aseq.end)
+    assert_equal(2, aseq.step)
+    assert_equal([1, 3, 5, 7, 9], aseq.to_a)
+  end
+
   def test_step_ruby_core_35753
     assert_equal(6, (1...6.3).step.to_a.size)
     assert_equal(5, (1.1...6).step.to_a.size)

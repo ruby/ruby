@@ -497,6 +497,12 @@ range_step(int argc, VALUE *argv, VALUE range)
     return range;
 }
 
+static VALUE
+range_percent_step(VALUE range, VALUE step)
+{
+  return range_step(1, &step, range);
+}
+
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
 union int64_double {
     int64_t i;
@@ -1549,6 +1555,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "hash", range_hash, 0);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "step", range_step, -1);
+    rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
     rb_define_method(rb_cRange, "begin", range_begin, 0);
     rb_define_method(rb_cRange, "end", range_end, 0);
