@@ -350,10 +350,14 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
 }
 
 /*
+ *  Document-method: Range#step
+ *  Document-method: Range#%
  *  call-seq:
  *     rng.step(n=1) {| obj | block }    -> rng
  *     rng.step(n=1)                     -> an_enumerator
  *     rng.step(n=1)                     -> an_arithmetic_sequence
+ *     rng % n                           -> an_enumerator
+ *     rng % n                           -> an_arithmetic_sequence
  *
  *  Iterates over the range, passing each <code>n</code>th element to the block.
  *  If begin and end are numeric, +n+ is added for each iteration.
