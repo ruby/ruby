@@ -504,7 +504,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_percent_step(VALUE range, VALUE step)
 {
-  return range_step(1, &step, range);
+    return range_step(1, &step, range);
 }
 
 #if SIZEOF_DOUBLE == 8 && defined(HAVE_INT64_T)
