@@ -34,7 +34,7 @@ rb_debug_counter_show_results(const char *msg)
 	int i;
         fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%d %s\n", getpid(), msg);
 	for (i=0; i<RB_DEBUG_COUNTER_MAX; i++) {
-            fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%-30s\t%'12"PRIuSIZE"\n",
+            fprintf(stderr, "[RUBY_DEBUG_COUNTER]\t%-30s\t%'14"PRIuSIZE"\n",
 		    debug_counter_names[i],
 		    rb_debug_counter[i]);
 	}

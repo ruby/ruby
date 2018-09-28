@@ -37,6 +37,22 @@ RB_DEBUG_COUNTER(mc_cme_complement)
 RB_DEBUG_COUNTER(mc_cme_complement_hit)
 RB_DEBUG_COUNTER(mc_search_super)
 
+/*
+ * control frame push counts.
+ *
+ * * frame_push: frame push counts.
+ */
+RB_DEBUG_COUNTER(frame_push)
+RB_DEBUG_COUNTER(frame_push_method)
+RB_DEBUG_COUNTER(frame_push_block)
+RB_DEBUG_COUNTER(frame_push_class)
+RB_DEBUG_COUNTER(frame_push_top)
+RB_DEBUG_COUNTER(frame_push_cfunc)
+RB_DEBUG_COUNTER(frame_push_ifunc)
+RB_DEBUG_COUNTER(frame_push_eval)
+RB_DEBUG_COUNTER(frame_push_rescue)
+RB_DEBUG_COUNTER(frame_push_dummy)
+
 /* instance variable counts
  *
  * * ivar_get_ic_hit/miss: ivar_get inline cache (ic) hit/miss counts (VM insn)
@@ -84,13 +100,13 @@ RB_DEBUG_COUNTER(lvar_set_slowpath)
  * * obj_promote: promoted counts (oldgen)
  * * obj_wb_unprotect: wb unprotect counts
  *
- * * obj_[type]_[attr]: free'ed counts for each type.
+ * * obj_[type]_[attr]: *free'ed counts* for each type.
+ *                      Note that it is not a allocated counts.
  * * [type]
  *   * _obj: T_OBJECT
  *   * _str: T_STRING
  *   * _ary: T_ARRAY
- *   * _hash: T_HASH
- *   * _struct: T_STRUCT
+ *   * _xxx: T_XXX (hash, struct, ...)
  *
  * * [attr]
  *   * _ptr: R?? is not embed.
@@ -103,6 +119,11 @@ RB_DEBUG_COUNTER(lvar_set_slowpath)
  *   * hash_under4:     has under 4 entries
  *   * hash_ge4:        has n entries (4<=n<8)
  *   * hash_ge8:        has n entries (8<=n)
+ *   * data_empty: T_DATA but no memory free.
+ *   * data_xfree:        free'ed by xfree().
+ *   * data_imm_free:     free'ed immediately.
+ *   * data_zombie:       free'ed with zombie.
+ *   * imemo_*: T_IMEMO with each type.
  */
 RB_DEBUG_COUNTER(obj_newobj)
 RB_DEBUG_COUNTER(obj_newobj_slowpath)
@@ -130,6 +151,35 @@ RB_DEBUG_COUNTER(obj_hash_ge8)
 
 RB_DEBUG_COUNTER(obj_struct_ptr)
 RB_DEBUG_COUNTER(obj_struct_embed)
+
+RB_DEBUG_COUNTER(obj_regexp_ptr)
+
+RB_DEBUG_COUNTER(obj_data_empty)
+RB_DEBUG_COUNTER(obj_data_xfree)
+RB_DEBUG_COUNTER(obj_data_imm_free)
+RB_DEBUG_COUNTER(obj_data_zombie)
+
+RB_DEBUG_COUNTER(obj_match_ptr)
+RB_DEBUG_COUNTER(obj_file_ptr)
+RB_DEBUG_COUNTER(obj_bignum_ptr)
+
+RB_DEBUG_COUNTER(obj_symbol)
+
+RB_DEBUG_COUNTER(obj_imemo_ment)
+RB_DEBUG_COUNTER(obj_imemo_iseq)
+RB_DEBUG_COUNTER(obj_imemo_env)
+RB_DEBUG_COUNTER(obj_imemo_tmpbuf)
+RB_DEBUG_COUNTER(obj_imemo_ast)
+RB_DEBUG_COUNTER(obj_imemo_cref)
+RB_DEBUG_COUNTER(obj_imemo_svar)
+RB_DEBUG_COUNTER(obj_imemo_throw_data)
+RB_DEBUG_COUNTER(obj_imemo_ifunc)
+RB_DEBUG_COUNTER(obj_imemo_memo)
+RB_DEBUG_COUNTER(obj_imemo_parser_strterm)
+
+RB_DEBUG_COUNTER(obj_iclass_ptr)
+RB_DEBUG_COUNTER(obj_class_ptr)
+RB_DEBUG_COUNTER(obj_module_ptr)
 
 /* heap function counts
  *
