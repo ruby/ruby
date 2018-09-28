@@ -2222,7 +2222,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    RB_DEBUG_COUNTER_INC(obj_obj_ptr);
 	}
 	else {
-	    RB_DEBUG_COUNTER_INC(obj_obj_embed);
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
 	}
 	break;
       case T_MODULE:
@@ -2252,6 +2252,9 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	if (RANY(obj)->as.klass.ptr)
 	    xfree(RANY(obj)->as.klass.ptr);
 	RANY(obj)->as.klass.ptr = NULL;
+
+        (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
+        (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
 	break;
       case T_STRING:
 	rb_str_free(obj);
@@ -2281,6 +2284,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_REGEXP:
 	if (RANY(obj)->as.regexp.ptr) {
 	    onig_free(RANY(obj)->as.regexp.ptr);
+            RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
 	}
 	break;
       case T_DATA:
@@ -2304,15 +2308,21 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	    if (dfree) {
 		if (dfree == RUBY_DEFAULT_FREE) {
 		    xfree(data);
+                    RB_DEBUG_COUNTER_INC(obj_data_xfree);
 		}
 		else if (free_immediately) {
 		    (*dfree)(data);
+                    RB_DEBUG_COUNTER_INC(obj_data_imm_free);
 		}
 		else {
 		    make_zombie(objspace, obj, dfree, data);
+                    RB_DEBUG_COUNTER_INC(obj_data_zombie);
 		    return 1;
 		}
 	    }
+            else {
+                RB_DEBUG_COUNTER_INC(obj_data_empty);
+            }
 	}
 	break;
       case T_MATCH:
@@ -2322,11 +2332,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             if (rm->char_offset)
 		xfree(rm->char_offset);
 	    xfree(rm);
+
+            RB_DEBUG_COUNTER_INC(obj_match_ptr);
 	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
 	    make_io_zombie(objspace, obj);
+            RB_DEBUG_COUNTER_INC(obj_file_ptr);
 	    return 1;
 	}
 	break;
@@ -2349,6 +2362,8 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_class_remove_from_super_subclasses(obj);
 	xfree(RANY(obj)->as.klass.ptr);
 	RANY(obj)->as.klass.ptr = NULL;
+
+        RB_DEBUG_COUNTER_INC(obj_iclass_ptr);
 	break;
 
       case T_FLOAT:
@@ -2357,6 +2372,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_BIGNUM:
 	if (!(RBASIC(obj)->flags & BIGNUM_EMBED_FLAG) && BIGNUM_DIGITS(obj)) {
 	    xfree(BIGNUM_DIGITS(obj));
+            RB_DEBUG_COUNTER_INC(obj_bignum_ptr);
 	}
 	break;
 
@@ -2378,6 +2394,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_SYMBOL:
 	{
             rb_gc_free_dsymbol(obj);
+            RB_DEBUG_COUNTER_INC(obj_symbol);
 	}
 	break;
 
@@ -2385,21 +2402,45 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	switch (imemo_type(obj)) {
 	  case imemo_ment:
 	    rb_free_method_entry(&RANY(obj)->as.imemo.ment);
+            RB_DEBUG_COUNTER_INC(obj_imemo_ment);
 	    break;
 	  case imemo_iseq:
 	    rb_iseq_free(&RANY(obj)->as.imemo.iseq);
+            RB_DEBUG_COUNTER_INC(obj_imemo_iseq);
 	    break;
 	  case imemo_env:
 	    GC_ASSERT(VM_ENV_ESCAPED_P(RANY(obj)->as.imemo.env.ep));
 	    xfree((VALUE *)RANY(obj)->as.imemo.env.env);
+            RB_DEBUG_COUNTER_INC(obj_imemo_env);
 	    break;
 	  case imemo_tmpbuf:
 	    xfree(RANY(obj)->as.imemo.alloc.ptr);
+            RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 	    break;
 	  case imemo_ast:
 	    rb_ast_free(&RANY(obj)->as.imemo.ast);
+            RB_DEBUG_COUNTER_INC(obj_imemo_ast);
 	    break;
+          case imemo_cref:
+            RB_DEBUG_COUNTER_INC(obj_imemo_cref);
+            break;
+          case imemo_svar:
+            RB_DEBUG_COUNTER_INC(obj_imemo_svar);
+            break;
+          case imemo_throw_data:
+            RB_DEBUG_COUNTER_INC(obj_imemo_throw_data);
+            break;
+          case imemo_ifunc:
+            RB_DEBUG_COUNTER_INC(obj_imemo_ifunc);
+            break;
+          case imemo_memo:
+            RB_DEBUG_COUNTER_INC(obj_imemo_memo);
+            break;
+          case imemo_parser_strterm:
+            RB_DEBUG_COUNTER_INC(obj_imemo_parser_strterm);
+            break;
 	  default:
+            /* unreachable */
 	    break;
 	}
 	return 0;
