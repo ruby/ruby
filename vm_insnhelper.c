@@ -214,21 +214,6 @@ vm_push_frame(rb_execution_context_t *ec,
     rb_control_frame_t *const cfp = ec->cfp - 1;
     int i;
 
-#if USE_DEBUG_COUNTER
-    RB_DEBUG_COUNTER_INC(frame_push);
-    switch (type & VM_FRAME_MAGIC_MASK) {
-      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); break;
-      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  break;
-      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  break;
-      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    break;
-      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  break;
-      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  break;
-      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   break;
-      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); break;
-      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  break;
-      default: rb_bug("unreachable");
-    }
-#endif
     vm_check_frame(type, specval, cref_or_me, iseq);
     VM_ASSERT(local_size >= 0);
 
@@ -269,6 +254,33 @@ vm_push_frame(rb_execution_context_t *ec,
     if (VMDEBUG == 2) {
 	SDR();
     }
+
+#if USE_DEBUG_COUNTER
+    RB_DEBUG_COUNTER_INC(frame_push);
+    switch (type & VM_FRAME_MAGIC_MASK) {
+      case VM_FRAME_MAGIC_METHOD: RB_DEBUG_COUNTER_INC(frame_push_method); break;
+      case VM_FRAME_MAGIC_BLOCK:  RB_DEBUG_COUNTER_INC(frame_push_block);  break;
+      case VM_FRAME_MAGIC_CLASS:  RB_DEBUG_COUNTER_INC(frame_push_class);  break;
+      case VM_FRAME_MAGIC_TOP:    RB_DEBUG_COUNTER_INC(frame_push_top);    break;
+      case VM_FRAME_MAGIC_CFUNC:  RB_DEBUG_COUNTER_INC(frame_push_cfunc);  break;
+      case VM_FRAME_MAGIC_IFUNC:  RB_DEBUG_COUNTER_INC(frame_push_ifunc);  break;
+      case VM_FRAME_MAGIC_EVAL:   RB_DEBUG_COUNTER_INC(frame_push_eval);   break;
+      case VM_FRAME_MAGIC_RESCUE: RB_DEBUG_COUNTER_INC(frame_push_rescue); break;
+      case VM_FRAME_MAGIC_DUMMY:  RB_DEBUG_COUNTER_INC(frame_push_dummy);  break;
+      default: rb_bug("unreachable");
+    }
+    {
+        rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        int cur_ruby_frame = VM_FRAME_RUBYFRAME_P(cfp);
+        int pre_ruby_frame = VM_FRAME_RUBYFRAME_P(prev_cfp);
+        if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
+            pre_ruby_frame ? (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_R2R) :
+                                               RB_DEBUG_COUNTER_INC(frame_R2C)):
+                             (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_C2R) :
+                                               RB_DEBUG_COUNTER_INC(frame_C2C));
+        }
+    }
+#endif
 
     return cfp;
 }
