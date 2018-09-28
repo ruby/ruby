@@ -41,6 +41,11 @@ RB_DEBUG_COUNTER(mc_search_super)
  * control frame push counts.
  *
  * * frame_push: frame push counts.
+ * * frame_push_*: frame push counts per each type.
+ * * frame_R2R: Ruby frame to Ruby frame
+ * * frame_R2C: Ruby frame to C frame
+ * * frame_C2C: C frame to C frame
+ * * frame_C2R: C frame to Ruby frame
  */
 RB_DEBUG_COUNTER(frame_push)
 RB_DEBUG_COUNTER(frame_push_method)
@@ -52,6 +57,11 @@ RB_DEBUG_COUNTER(frame_push_ifunc)
 RB_DEBUG_COUNTER(frame_push_eval)
 RB_DEBUG_COUNTER(frame_push_rescue)
 RB_DEBUG_COUNTER(frame_push_dummy)
+
+RB_DEBUG_COUNTER(frame_R2R)
+RB_DEBUG_COUNTER(frame_R2C)
+RB_DEBUG_COUNTER(frame_C2C)
+RB_DEBUG_COUNTER(frame_C2R)
 
 /* instance variable counts
  *
