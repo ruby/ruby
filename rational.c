@@ -445,8 +445,8 @@ nurat_int_value(VALUE num)
 static void
 nurat_canonicalize(VALUE *num, VALUE *den)
 {
-    assert(num != NULL && RB_INTEGER_TYPE_P(*num));
-    assert(den != NULL && RB_INTEGER_TYPE_P(*den));
+    assert(num); assert(RB_INTEGER_TYPE_P(*num));
+    assert(den); assert(RB_INTEGER_TYPE_P(*den));
     if (INT_NEGATIVE_P(*den)) {
         *num = rb_int_uminus(*num);
         *den = rb_int_uminus(*den);
