@@ -683,6 +683,7 @@ module Net   #:nodoc:
       @proxy_pass     = nil
 
       @use_ssl = false
+      @ssl_server_name = address
       @ssl_context = nil
       @ssl_session = nil
       @sspi_enabled = false
@@ -816,6 +817,11 @@ module Net   #:nodoc:
       end
       @use_ssl = flag
     end
+
+    # The server_name parameter used for establishing the SSL connection (only
+    # if SNI is supported by OpenSSL). Defaults to the +address+ used to create
+    # this HTTP object.
+    attr_accessor :ssl_server_name
 
     SSL_IVNAMES = [
       :@ca_file,
@@ -988,14 +994,14 @@ module Net   #:nodoc:
         s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
         s.sync_close = true
         # Server Name Indication (SNI) RFC 3546
-        s.hostname = @address if s.respond_to? :hostname=
+        s.hostname = @ssl_server_name if s.respond_to? :hostname=
         if @ssl_session and
            Process.clock_gettime(Process::CLOCK_REALTIME) < @ssl_session.time.to_f + @ssl_session.timeout
           s.session = @ssl_session
         end
         ssl_socket_connect(s, @open_timeout)
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
-          s.post_connection_check(@address)
+          s.post_connection_check(@ssl_server_name)
         end
         D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
