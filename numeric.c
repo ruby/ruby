@@ -4040,7 +4040,7 @@ fix_pow(VALUE x, VALUE y)
                 double d = pow((double)a, RFLOAT_VALUE(y));
                 return DBL2NUM(d);
             }
-	    return rb_rational_raw(INT2FIX(1), y);
+            return rb_rational_raw(INT2FIX(1), y);
 	}
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
