@@ -726,6 +726,7 @@ install?(:ext, :arch, :gem, :'default-gems', :'default-gems-arch') do
 end
 
 def load_gemspec(file)
+  file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
   code.gsub!(/`git.*?`/m, '""')
   begin
