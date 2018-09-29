@@ -1340,6 +1340,16 @@ rb_vm_search_method_slowpath(const struct rb_call_info *ci, struct rb_call_cache
 #endif
 }
 
+#if OPT_INLINE_METHOD_CACHE
+# define INLINE_METHOD_CACHE_HIT(cc, klass) \
+    RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss, \
+                                GET_GLOBAL_METHOD_STATE() == cc->method_state) && \
+    RB_DEBUG_COUNTER_INC_UNLESS(mc_class_serial_miss, \
+                                RCLASS_SERIAL(klass) == cc->class_serial)
+#else
+# define INLINE_METHOD_CACHE_HIT(cc, klass) FALSE
+#endif
+
 static void
 vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE recv)
 {
@@ -1349,11 +1359,7 @@ vm_search_method(const struct rb_call_info *ci, struct rb_call_cache *cc, VALUE 
     VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
 
 #if OPT_INLINE_METHOD_CACHE
-    if (LIKELY(RB_DEBUG_COUNTER_INC_UNLESS(mc_global_state_miss,
-					   GET_GLOBAL_METHOD_STATE() == cc->method_state) &&
-	       RB_DEBUG_COUNTER_INC_UNLESS(mc_class_serial_miss,
-					   RCLASS_SERIAL(klass) == cc->class_serial))) {
-	/* cache hit! */
+    if (LIKELY(INLINE_METHOD_CACHE_HIT(cc, klass))) {
 	VM_ASSERT(cc->call != NULL);
 	RB_DEBUG_COUNTER_INC(mc_inline_hit);
 	return;
@@ -3840,6 +3846,67 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     else {
 	return Qundef;
     }
+}
+
+#define PC_OFFSET(insn, ci, cc) leaf ? 0 : attr_width_##insn(ci, cc)
+
+static void
+vm_change_insn(rb_control_frame_t *cfp, int pc_offset, int insn)
+{
+    *((VALUE *)cfp->pc - pc_offset) = (VALUE)rb_vm_insn_insn2addr(insn, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
+}
+
+static VALUE
+vm_specialize_insn(rb_control_frame_t *cfp, int pc_offset, const struct rb_call_info *ci)
+{
+#define SP_INSN0(opt) \
+    recv = *(cfp->sp - 1); \
+    if ((val = vm_opt_##opt(recv)) != Qundef) { \
+        vm_change_insn(cfp, pc_offset, BIN(opt_##opt)); \
+        cfp->sp -= 1; \
+        return val; \
+    }
+#define SP_INSN1(opt) \
+    recv = *(cfp->sp - 2); \
+    obj = *(cfp->sp - 1); \
+    if ((val = vm_opt_##opt(recv, obj)) != Qundef) { \
+        vm_change_insn(cfp, pc_offset, BIN(opt_##opt)); \
+        cfp->sp -= 2; \
+        return val; \
+    }
+
+    if (ci->flag & VM_CALL_ARGS_SIMPLE) {
+        VALUE recv, obj, val;
+        /* idAREF and idASET must be handled in compile.c */
+        switch (ci->orig_argc) {
+          case 0:
+            switch (ci->mid) {
+              case idEmptyP: SP_INSN0(empty_p); break;
+              case idSucc:   SP_INSN0(succ); break;
+            }
+            break;
+          case 1:
+            switch (ci->mid) {
+              case idPLUS:  SP_INSN1(plus);  break;
+              case idMINUS: SP_INSN1(minus); break;
+              case idMULT:  SP_INSN1(mult);  break;
+              case idDIV:   SP_INSN1(div);   break;
+              case idMOD:   SP_INSN1(mod);   break;
+              case idLT:    SP_INSN1(lt);    break;
+              case idLE:    SP_INSN1(le);    break;
+              case idGT:    SP_INSN1(gt);    break;
+              case idGE:    SP_INSN1(ge);    break;
+              case idLTLT:  SP_INSN1(ltlt);  break;
+              case idAnd:   SP_INSN1(and);   break;
+              case idOr:    SP_INSN1(or);    break;
+            }
+            break;
+        }
+    }
+
+#undef SP_INSN0
+#undef SP_INSN1
+    return Qundef;
 }
 
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);

@@ -182,6 +182,7 @@ VALUE rb_iseq_method_name(const rb_iseq_t *iseq);
 void rb_iseq_code_location(const rb_iseq_t *iseq, int *first_lineno, int *first_column, int *last_lineno, int *last_column);
 
 void rb_iseq_remove_coverage_all(void);
+void *rb_vm_insn_insn2addr(int insn, int trace_p);
 
 /* proc.c */
 const rb_iseq_t *rb_method_iseq(VALUE body);

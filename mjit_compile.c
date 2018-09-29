@@ -205,8 +205,12 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     /* For performance, we verify stack size only on compilation time (mjit_compile.inc.erb) without --jit-debug */
     if (!mjit_opts.debug) {
         fprintf(f, "#undef OPT_CHECKED_RUN\n");
-        fprintf(f, "#define OPT_CHECKED_RUN 0\n\n");
+        fprintf(f, "#define OPT_CHECKED_RUN 0\n");
     }
+
+    /* Instruction change should be finished on VM */
+    fprintf(f, "#define vm_change_insn(cfp, pc_offset, insn)\n");
+    fprintf(f, "#define vm_specialize_insn(cfp, pc_offset, ci) Qundef\n\n");
 
 #ifdef _WIN32
     fprintf(f, "__declspec(dllexport)\n");

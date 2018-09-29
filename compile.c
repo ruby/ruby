@@ -3225,28 +3225,14 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
 		switch (ci->mid) {
 		  case idLength: SP_INSN(length); return COMPILE_OK;
 		  case idSize:	 SP_INSN(size);	  return COMPILE_OK;
-		  case idEmptyP: SP_INSN(empty_p);return COMPILE_OK;
-		  case idSucc:	 SP_INSN(succ);	  return COMPILE_OK;
 		  case idNot:	 SP_INSN(not);	  return COMPILE_OK;
 		}
 		break;
 	      case 1:
 		switch (ci->mid) {
-		  case idPLUS:	 SP_INSN(plus);	  return COMPILE_OK;
-		  case idMINUS:	 SP_INSN(minus);  return COMPILE_OK;
-		  case idMULT:	 SP_INSN(mult);	  return COMPILE_OK;
-		  case idDIV:	 SP_INSN(div);	  return COMPILE_OK;
-		  case idMOD:	 SP_INSN(mod);	  return COMPILE_OK;
 		  case idEq:	 SP_INSN(eq);	  return COMPILE_OK;
 		  case idNeq:	 SP_INSN(neq);	  return COMPILE_OK;
-		  case idLT:	 SP_INSN(lt);	  return COMPILE_OK;
-		  case idLE:	 SP_INSN(le);	  return COMPILE_OK;
-		  case idGT:	 SP_INSN(gt);	  return COMPILE_OK;
-		  case idGE:	 SP_INSN(ge);	  return COMPILE_OK;
-		  case idLTLT:	 SP_INSN(ltlt);	  return COMPILE_OK;
 		  case idAREF:	 SP_INSN(aref);	  return COMPILE_OK;
-                  case idAnd:    SP_INSN(and);    return COMPILE_OK;
-                  case idOr:     SP_INSN(or);    return COMPILE_OK;
 		}
 		break;
 	      case 2:

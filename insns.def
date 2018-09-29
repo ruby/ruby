@@ -761,10 +761,19 @@ opt_send_without_block
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = -ci->orig_argc;
 {
+    VALUE klass;
     struct rb_calling_info calling;
+
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
-    vm_search_method(ci, cc, calling.recv = TOPN(calling.argc = ci->orig_argc));
-    CALL_METHOD(&calling, ci, cc);
+    calling.recv = TOPN(calling.argc = ci->orig_argc);
+    klass = CLASS_OF(calling.recv);
+    if (LIKELY(INLINE_METHOD_CACHE_HIT(cc, klass))) {
+        CALL_METHOD(&calling, ci, cc);
+    }
+    else if ((val = vm_specialize_insn(GET_CFP(), PC_OFFSET(opt_send_without_block, ci, cc), ci)) == Qundef) {
+        rb_vm_search_method_slowpath(ci, cc, klass);
+        CALL_METHOD(&calling, ci, cc);
+    }
 }
 
 DEFINE_INSN
@@ -1052,6 +1061,7 @@ opt_plus
     val = vm_opt_plus(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_plus, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1066,6 +1076,7 @@ opt_minus
     val = vm_opt_minus(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_minus, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1080,6 +1091,7 @@ opt_mult
     val = vm_opt_mult(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_mult, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1094,6 +1106,7 @@ opt_div
     val = vm_opt_div(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_div, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1108,6 +1121,7 @@ opt_mod
     val = vm_opt_mod(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_mod, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1156,6 +1170,7 @@ opt_lt
     val = vm_opt_lt(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_lt, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1170,6 +1185,7 @@ opt_le
     val = vm_opt_le(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_le, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1184,6 +1200,7 @@ opt_gt
     val = vm_opt_gt(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_gt, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1198,6 +1215,7 @@ opt_ge
     val = vm_opt_ge(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_ge, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1212,6 +1230,7 @@ opt_ltlt
     val = vm_opt_ltlt(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_ltlt, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1226,6 +1245,7 @@ opt_and
     val = vm_opt_and(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_and, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1240,6 +1260,7 @@ opt_or
     val = vm_opt_or(recv, obj);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_or, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1360,6 +1381,7 @@ opt_empty_p
     val = vm_opt_empty_p(recv);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_empty_p, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
@@ -1374,6 +1396,7 @@ opt_succ
     val = vm_opt_succ(recv);
 
     if (val == Qundef) {
+        vm_change_insn(GET_CFP(), PC_OFFSET(opt_succ, ci, cc), BIN(opt_send_without_block));
         CALL_SIMPLE_METHOD();
     }
 }
