@@ -805,6 +805,16 @@ f_muldiv(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
     VALUE num, den;
 
     assert(RB_TYPE_P(self, T_RATIONAL));
+
+    /* Integer#** can return Rational with Float right now */
+    if (RB_FLOAT_TYPE_P(anum) || RB_FLOAT_TYPE_P(aden) ||
+        RB_FLOAT_TYPE_P(bnum) || RB_FLOAT_TYPE_P(bden)) {
+        double an = NUM2DBL(anum), ad = NUM2DBL(aden);
+        double bn = NUM2DBL(bnum), bd = NUM2DBL(bden);
+        double x = (an * bn) / (ad * bd);
+        return DBL2NUM(x);
+    }
+
     assert(RB_INTEGER_TYPE_P(anum));
     assert(RB_INTEGER_TYPE_P(aden));
     assert(RB_INTEGER_TYPE_P(bnum));

@@ -24,6 +24,9 @@ class TestInteger < Test::Unit::TestCase
                         rescue
                           nil
                         end, "[ruby-dev:32084] [ruby-dev:34547]")
+
+    x = EnvUtil.suppress_warning {2 ** -0x4000000000000000}
+    assert_in_delta(0.0, (x / 2), Float::EPSILON)
   end
 
   def test_lshift

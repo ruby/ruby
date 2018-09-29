@@ -4034,7 +4034,13 @@ fix_pow(VALUE x, VALUE y)
 	}
 	if (BIGNUM_NEGATIVE_P(y)) {
 	    if (a == 0) rb_num_zerodiv();
-	    return rb_rational_raw(INT2FIX(1), rb_int_pow(x, rb_big_uminus(y)));
+            y = rb_int_pow(x, rb_big_uminus(y));
+            if (0 && RB_FLOAT_TYPE_P(y)) {
+                /* Maybe should return a Float */
+                double d = pow((double)a, RFLOAT_VALUE(y));
+                return DBL2NUM(d);
+            }
+	    return rb_rational_raw(INT2FIX(1), y);
 	}
 	if (a == 0) return INT2FIX(0);
 	x = rb_int2big(FIX2LONG(x));
