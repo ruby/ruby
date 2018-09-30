@@ -97,12 +97,12 @@ comment_id(FILE *f, ID id)
     e = RSTRING_END(name);
     fputs("/* :\"", f);
     for (; p < e; ++p) {
-	switch (c = *p) {
-	  case '*': case '/': if (prev != (c ^ ('/' ^ '*'))) break;
-	  case '\\': case '"': fputc('\\', f);
-	}
-	fputc(c, f);
-	prev = c;
+        switch (c = *p) {
+          case '*': case '/': if (prev != (c ^ ('/' ^ '*'))) break;
+          case '\\': case '"': fputc('\\', f);
+        }
+        fputc(c, f);
+        prev = c;
     }
     fputs("\" */", f);
 #endif
@@ -168,7 +168,7 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
         pos = compile_insn(f, body, insn, body->iseq_encoded + (pos+1), pos, status, &branch);
         if (status->success && branch.stack_size > body->stack_max) {
             if (mjit_opts.warnings || mjit_opts.verbose)
-                fprintf(stderr, "MJIT warning: JIT stack exceeded its max\n");
+		fprintf(stderr, "MJIT warning: JIT stack size (%d) exceeded its max size (%d)\n", branch.stack_size, body->stack_max);
             status->success = FALSE;
         }
         if (!status->success)
