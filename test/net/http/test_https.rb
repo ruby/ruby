@@ -166,6 +166,17 @@ class TestNetHTTPS < Test::Unit::TestCase
     assert_match(re_msg, ex.message)
   end
 
+  def test_server_name_used_for_verify
+    http = Net::HTTP.new("127.0.0.1", config("port"))
+    http.use_ssl = true
+    http.ssl_server_name = "localhost"
+    http.cert_store = TEST_STORE
+
+    assert_nothing_raised{
+      http.request_get("/") {|res| }
+    }
+  end
+
   def test_timeout_during_SSL_handshake
     bug4246 = "expected the SSL connection to have timed out but have not. [ruby-core:34203]"
 
