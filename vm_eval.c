@@ -83,11 +83,9 @@ vm_call0_cfunc_with_frame(rb_execution_context_t* ec, struct rb_calling_info *ca
 
 	if (len >= 0) rb_check_arity(argc, len, len);
 
-	VM_PROFILE_UP(C2C_CALL);
 	val = (*cfunc->invoker)(cfunc->func, recv, argc, argv);
 
 	CHECK_CFP_CONSISTENCY("vm_call0_cfunc_with_frame");
-	VM_PROFILE_UP(C2C_POPF);
 	rb_vm_pop_frame(ec);
     }
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_RETURN, recv, me->def->original_id, mid, me->owner, val);
