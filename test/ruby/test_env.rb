@@ -459,7 +459,7 @@ class TestEnv < Test::Unit::TestCase
   def test_huge_value
     huge_value = "bar" * 40960
     ENV["foo"] = "bar"
-    if /mswin/ =~ RUBY_PLATFORM && windows_version < 7
+    if /mswin/ =~ RUBY_PLATFORM
       assert_raise(Errno::EINVAL) { ENV["foo"] = huge_value }
       assert_equal("bar", ENV["foo"])
     else
