@@ -130,6 +130,15 @@ def lldb_rp(debugger, command, result, internal_dict):
                 else:
                     debugger.HandleCommand("expression -Z %d -fx -- (const VALUE*)((struct RArray*)%d)->as.heap.ptr" % (len, val.GetValueAsUnsigned()))
             debugger.HandleCommand("p (struct RArray *) %0#x" % val.GetValueAsUnsigned())
+        elif flType == RUBY_T_DATA:
+            tRTypedData = target.FindFirstType("struct RTypedData").GetPointerType()
+            val = val.Cast(tRTypedData)
+            flag = val.GetValueForExpressionPath("->typed_flag")
+            if flag.GetValueAsUnsigned() == 1:
+                debugger.HandleCommand("p *(rb_data_type_t *) %0#x" % val.GetValueForExpressionPath("->type").GetValueAsUnsigned())
+                debugger.HandleCommand("p (void *) %0#x" % val.GetValueForExpressionPath("->data").GetValueAsUnsigned())
+            else:
+                debugger.HandleCommand("p *(struct RData *) %0#x" % val.GetValueAsUnsigned())
 
 def count_objects(debugger, command, ctx, result, internal_dict):
     objspace = ctx.frame.EvaluateExpression("ruby_current_vm->objspace")
