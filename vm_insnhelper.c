@@ -1859,35 +1859,6 @@ call_cfunc_15(VALUE (*func)(ANYARGS), VALUE recv, int argc, const VALUE *argv)
     return (*func)(recv, argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6], argv[7], argv[8], argv[9], argv[10], argv[11], argv[12], argv[13], argv[14]);
 }
 
-#ifndef VM_PROFILE
-#define VM_PROFILE 0
-#endif
-
-#if VM_PROFILE
-enum {
-    VM_PROFILE_R2C_CALL,
-    VM_PROFILE_R2C_POPF,
-    VM_PROFILE_C2C_CALL,
-    VM_PROFILE_C2C_POPF,
-    VM_PROFILE_COUNT
-};
-static int vm_profile_counter[VM_PROFILE_COUNT];
-#define VM_PROFILE_UP(x) (vm_profile_counter[VM_PROFILE_##x]++)
-#define VM_PROFILE_ATEXIT() atexit(vm_profile_show_result)
-static void
-vm_profile_show_result(void)
-{
-    fprintf(stderr, "VM Profile results: \n");
-    fprintf(stderr, "r->c call: %d\n", vm_profile_counter[VM_PROFILE_R2C_CALL]);
-    fprintf(stderr, "r->c popf: %d\n", vm_profile_counter[VM_PROFILE_R2C_POPF]);
-    fprintf(stderr, "c->c call: %d\n", vm_profile_counter[VM_PROFILE_C2C_CALL]);
-    fprintf(stderr, "c->c popf: %d\n", vm_profile_counter[VM_PROFILE_C2C_POPF]);
-}
-#else
-#define VM_PROFILE_UP(x)
-#define VM_PROFILE_ATEXIT()
-#endif
-
 static inline int
 vm_cfp_consistent_p(rb_execution_context_t *ec, const rb_control_frame_t *reg_cfp)
 {
@@ -1954,7 +1925,6 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     if (len >= 0) rb_check_arity(argc, len, len);
 
     reg_cfp->sp -= argc + 1;
-    VM_PROFILE_UP(R2C_CALL);
     val = (*cfunc->invoker)(cfunc->func, recv, argc, reg_cfp->sp + 1);
 
     CHECK_CFP_CONSISTENCY("vm_call_cfunc");
