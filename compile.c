@@ -2469,6 +2469,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		  IS_INSN_ID(piobj, branchunless))) {
 	    INSN *pdiobj = (INSN *)get_destination_insn(piobj);
 	    if (niobj == pdiobj) {
+		int refcnt = IS_LABEL(piobj->link.next) ?
+		    ((LABEL *)piobj->link.next)->refcnt : 0;
 		/*
 		 * useless jump elimination (if/unless destination):
 		 *   if   L1
@@ -2486,7 +2488,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 		piobj->insn_id = (IS_INSN_ID(piobj, branchif))
 		  ? BIN(branchunless) : BIN(branchif);
 		replace_destination(piobj, iobj);
-		ELEM_REMOVE(&iobj->link);
+		if (refcnt <= 1) {
+		    ELEM_REMOVE(&iobj->link);
+		}
+		else {
+		    /* TODO: replace other branch destinations too */
+		}
 		return COMPILE_OK;
 	    }
 	    else if (diobj == pdiobj) {

@@ -589,3 +589,13 @@ assert_equal "foo", %q{
   end
   Bug6460.new.m1
 }, '[ruby-dev:46372]'
+
+assert_equal "foo", %q{
+  obj = "foo"
+  if obj || any1
+    any2 = any2
+  else
+    raise obj.inspect
+  end
+  obj
+}, '[ruby-core:87830]'
