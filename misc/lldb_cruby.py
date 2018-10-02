@@ -56,6 +56,9 @@ def flonum_p(x):
     return (x&RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
 
 def lldb_rp(debugger, command, result, internal_dict):
+    if not ('RUBY_Qfalse' in globals()):
+        lldb_init(debugger)
+
     target = debugger.GetSelectedTarget()
     process = target.GetProcess()
     thread = process.GetSelectedThread()
