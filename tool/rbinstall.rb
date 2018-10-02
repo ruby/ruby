@@ -42,6 +42,7 @@ def parse_args(argv = ARGV)
   $installed_list = nil
   $dryrun = false
   $rdocdir = nil
+  $htmldir = nil
   $data_mode = 0644
   $prog_mode = 0755
   $dir_mode = nil
@@ -80,6 +81,7 @@ def parse_args(argv = ARGV)
   end
   opt.on('--installed-list [FILENAME]') {|name| $installed_list = name}
   opt.on('--rdoc-output [DIR]') {|dir| $rdocdir = dir}
+  opt.on('--html-output [DIR]') {|dir| $htmldir = dir}
   opt.on('--cmd-type=TYPE', %w[cmd plain]) {|cmd| $cmdtype = (cmd unless cmd == 'plain')}
   opt.on('--[no-]strip') {|strip| $strip = strip}
 
@@ -134,6 +136,7 @@ def parse_args(argv = ARGV)
   end
 
   $rdocdir ||= $mflags.defined?('RDOCOUT')
+  $htmldir ||= $mflags.defined?('HTMLOUT')
 
   $dir_mode ||= $prog_mode | 0700
   $script_mode ||= $prog_mode
@@ -419,6 +422,12 @@ install?(:doc, :rdoc) do
     ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
     prepare "rdoc", ridatadir
     install_recursive($rdocdir, ridatadir, :mode => $data_mode)
+  end
+end
+install?(:doc, :html) do
+  if $htmldir
+    prepare "html-docs", docdir
+    install_recursive($htmldir, docdir+"/html", :mode => $data_mode)
   end
 end
 install?(:doc, :capi) do
