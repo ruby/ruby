@@ -403,6 +403,9 @@ class TestRubyOptions < Test::Unit::TestCase
                       %w[4], [], bug4118)
 
     assert_ruby_status(%w[], "#! ruby -- /", '[ruby-core:82267] [Bug #13786]')
+
+    assert_ruby_status(%w[], "#!")
+    assert_in_out_err(%w[-c], "#!", ["Syntax OK"])
   end
 
   def test_flag_in_shebang

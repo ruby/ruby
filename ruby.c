@@ -1913,11 +1913,7 @@ load_file_internal(VALUE argp_v)
 	c = rb_io_getbyte(f);
 	if (c == INT2FIX('#')) {
 	    c = rb_io_getbyte(f);
-	    if (c == INT2FIX('!')) {
-		line = rb_io_gets(f);
-		if (NIL_P(line))
-		    return 0;
-
+            if (c == INT2FIX('!') && !NIL_P(line = rb_io_gets(f))) {
 		RSTRING_GETMEM(line, str, len);
 		warn_cr_in_shebang(str, len);
 		if ((p = strstr(str, ruby_engine)) == 0) {
