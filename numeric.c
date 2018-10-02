@@ -4015,7 +4015,8 @@ fix_pow(VALUE x, VALUE y)
 	}
 	if (b < 0) {
 	    if (a == 0) rb_num_zerodiv();
-	    return rb_rational_raw(INT2FIX(1), rb_int_pow(x, LONG2NUM(-b)));
+            y = rb_int_pow(x, LONG2NUM(-b));
+            goto inverted;
 	}
 
 	if (b == 0) return INT2FIX(1);
@@ -4035,10 +4036,10 @@ fix_pow(VALUE x, VALUE y)
 	if (BIGNUM_NEGATIVE_P(y)) {
 	    if (a == 0) rb_num_zerodiv();
             y = rb_int_pow(x, rb_big_uminus(y));
-            if (0 && RB_FLOAT_TYPE_P(y)) {
-                /* Maybe should return a Float */
+          inverted:
+            if (RB_FLOAT_TYPE_P(y)) {
                 double d = pow((double)a, RFLOAT_VALUE(y));
-                return DBL2NUM(d);
+                return DBL2NUM(1.0 / d);
             }
             return rb_rational_raw(INT2FIX(1), y);
 	}

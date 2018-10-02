@@ -6207,6 +6207,7 @@ rb_big_pow(VALUE x, VALUE y)
 
   again:
     if (y == INT2FIX(0)) return INT2FIX(1);
+    if (y == INT2FIX(1)) return x;
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
@@ -6223,8 +6224,13 @@ rb_big_pow(VALUE x, VALUE y)
     else if (FIXNUM_P(y)) {
 	yy = FIX2LONG(y);
 
-	if (yy < 0)
-	    return rb_rational_raw(INT2FIX(1), rb_big_pow(x, INT2NUM(-yy)));
+        if (yy < 0) {
+            x = rb_big_pow(x, INT2NUM(-yy));
+            if (RB_INTEGER_TYPE_P(x))
+                return rb_rational_raw(INT2FIX(1), x);
+            else
+                return DBL2NUM(1.0 / NUM2DBL(x));
+        }
 	else {
 	    VALUE z = 0;
 	    SIGNED_VALUE mask;
