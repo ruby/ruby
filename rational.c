@@ -696,7 +696,8 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	a = rb_int_idiv(bden, g);
 	den = rb_int_mul(a, b);
     }
-    else {
+    else if (RB_INTEGER_TYPE_P(anum) && RB_INTEGER_TYPE_P(aden) &&
+             RB_INTEGER_TYPE_P(bnum) && RB_INTEGER_TYPE_P(bden)) {
 	VALUE g = f_gcd(aden, bden);
 	VALUE a = rb_int_mul(anum, rb_int_idiv(bden, g));
 	VALUE b = rb_int_mul(bnum, rb_int_idiv(aden, g));
@@ -712,6 +713,12 @@ f_addsub(VALUE self, VALUE anum, VALUE aden, VALUE bnum, VALUE bden, int k)
 	num = rb_int_idiv(c, g);
 	a = rb_int_idiv(bden, g);
 	den = rb_int_mul(a, b);
+    }
+    else {
+        double a = NUM2DBL(anum) / NUM2DBL(aden);
+        double b = NUM2DBL(bnum) / NUM2DBL(bden);
+        double c = k == '+' ? a + b : a - b;
+        return DBL2NUM(c);
     }
     return f_rational_new_no_reduce2(CLASS_OF(self), num, den);
 }
@@ -1144,9 +1151,9 @@ static VALUE
 nurat_eqeq_p(VALUE self, VALUE other)
 {
     if (RB_INTEGER_TYPE_P(other)) {
-	{
-	    get_dat1(self);
+        get_dat1(self);
 
+        if (RB_INTEGER_TYPE_P(dat->num) && RB_INTEGER_TYPE_P(dat->den)) {
 	    if (INT_ZERO_P(dat->num) && INT_ZERO_P(other))
 		return Qtrue;
 
@@ -1156,6 +1163,10 @@ nurat_eqeq_p(VALUE self, VALUE other)
 		return Qfalse;
 	    return rb_int_equal(dat->num, other);
 	}
+        else {
+            const double d = nurat_to_double(self);
+            return f_boolcast(FIXNUM_ZERO_P(rb_dbl_cmp(d, NUM2DBL(other))));
+        }
     }
     else if (RB_FLOAT_TYPE_P(other)) {
 	const double d = nurat_to_double(self);
@@ -1544,6 +1555,10 @@ static double
 nurat_to_double(VALUE self)
 {
     get_dat1(self);
+    if (!RB_INTEGER_TYPE_P(dat->num) || !RB_INTEGER_TYPE_P(dat->den)) {
+        double d = NUM2DBL(dat->num) / NUM2DBL(dat->den);
+        return DBL2NUM(d);
+    }
     return rb_int_fdiv_double(dat->num, dat->den);
 }
 
