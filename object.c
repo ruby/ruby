@@ -3421,17 +3421,16 @@ rb_str_to_dbl(VALUE str, int badcheck)
 #define big2dbl_without_to_f(x) rb_big2dbl(x)
 #define int2dbl_without_to_f(x) \
     (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : big2dbl_without_to_f(x))
+#define num2dbl_without_to_f(x) \
+    (FIXNUM_P(x) ? fix2dbl_without_to_f(x) : \
+     RB_TYPE_P(x, T_BIGNUM) ? big2dbl_without_to_f(x) : \
+     (Check_Type(x, T_FLOAT), RFLOAT_VALUE(x)))
 static inline double
 rat2dbl_without_to_f(VALUE x)
 {
     VALUE num = rb_rational_num(x);
     VALUE den = rb_rational_den(x);
-    if (RB_INTEGER_TYPE_P(num) && RB_INTEGER_TYPE_P(den)) {
-        return int2dbl_without_to_f(num) / int2dbl_without_to_f(den);
-    }
-    else {
-        return NUM2DBL(num) / NUM2DBL(den);
-    }
+    return num2dbl_without_to_f(num) / num2dbl_without_to_f(den);
 }
 
 #define special_const_to_float(val, pre, post) \
