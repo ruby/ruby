@@ -1,5 +1,11 @@
 # frozen_string_literal: true
-#
+
+begin
+  require 'rbconfig'
+rescue LoadError
+  # for make mjit-headers
+end
+
 # = fileutils.rb
 #
 # Copyright (c) 2000-2007 Minero Aoki
@@ -83,13 +89,6 @@
 # This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in FileUtils.
-#
-
-begin
-  require 'rbconfig'
-rescue LoadError
-  # for make mjit-headers
-end
 
 module FileUtils
 
