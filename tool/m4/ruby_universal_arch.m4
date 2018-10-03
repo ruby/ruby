@@ -14,10 +14,7 @@ AS_IF([test ${target_archs+set}], [
     for archs in $target_archs
     do
 	AS_CASE([",$universal_binary,"],[*",$archs,"*], [],[
-	    cpu=`$SHELL "$ac_aux_dir/config.sub" "${archs}-${target_os}" 2>&1` || {
-	        AC_MSG_RESULT([failed])
-		AC_MSG_ERROR([$cpu])
-	    }
+	    cpu=$archs
 	    cpu=`echo $cpu | sed 's/-.*-.*//'`
 	    universal_binary="${universal_binary+$universal_binary,}$cpu"
 	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
