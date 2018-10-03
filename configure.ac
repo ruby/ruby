@@ -262,7 +262,7 @@ AS_CASE(["$build_os"],
 	@%:@error ignore linker warnings
 	@%:@endif
 SRC
-	CC_WRAPPER=`PWD=; cd "$srcdir/tool" && pwd`/darwin-cc
+	CC_WRAPPER=`cd -P "$srcdir/tool" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
   ])
