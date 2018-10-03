@@ -5567,6 +5567,61 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     return ary_union;
 }
 
+/*
+ *  call-seq:
+ *     ary.intersect?(other_ary)   -> true or false
+ *
+ *  Returns +true+ if the array and +other_ary+ have at least one element in
+ *  common, otherwise returns +false+.
+ *
+ *     a = [ 1, 2, 3 ]
+ *     b = [ 3, 4, 5 ]
+ *     c = [ 5, 6, 7 ]
+ *     a.intersect?(b)   #=> true
+ *     a.intersect?(c)   #=> false
+ */
+
+static VALUE
+rb_ary_intersect_p(VALUE ary1, VALUE ary2)
+{
+    VALUE hash, v, result, shorter, longer;
+    st_data_t vv;
+    long i;
+
+    ary2 = to_ary(ary2);
+    if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
+
+    if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
+        for (i=0; i<RARRAY_LEN(ary1); i++) {
+            v = RARRAY_AREF(ary1, i);
+            if (rb_ary_includes_by_eql(ary2, v)) return Qtrue;
+        }
+        return Qfalse;
+    }
+
+    shorter = ary1;
+    longer = ary2;
+    if (RARRAY_LEN(ary1) > RARRAY_LEN(ary2)) {
+        longer = ary1;
+        shorter = ary2;
+    }
+
+    hash = ary_make_hash(shorter);
+    result = Qfalse;
+
+    for (i=0; i<RARRAY_LEN(longer); i++) {
+        v = RARRAY_AREF(longer, i);
+        vv = (st_data_t)v;
+        if (rb_hash_stlike_lookup(hash, vv, 0)) {
+            result = Qtrue;
+            break;
+        }
+    }
+    ary_recycle_hash(hash);
+
+    return result;
+}
+
 static VALUE
 ary_max_generic(VALUE ary, long i, VALUE vmax)
 {
@@ -8295,6 +8350,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "union", rb_ary_union_multi, -1);
     rb_define_method(rb_cArray, "difference", rb_ary_difference_multi, -1);
     rb_define_method(rb_cArray, "intersection", rb_ary_intersection_multi, -1);
+    rb_define_method(rb_cArray, "intersect?", rb_ary_intersect_p, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
     rb_define_alias(rb_cArray,  "append", "push");

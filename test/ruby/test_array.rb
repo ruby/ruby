@@ -1100,6 +1100,19 @@ class TestArray < Test::Unit::TestCase
     assert_not_include(a, [1,2])
   end
 
+  def test_intersect?
+    a = @cls[ 1, 2, 3]
+    assert_send([a, :intersect?, [3]])
+    assert_not_send([a, :intersect?, [4]])
+    assert_not_send([a, :intersect?, []])
+  end
+
+  def test_intersect_big_array
+    assert_send([@cls[ 1, 4, 5 ]*64, :intersect?, @cls[ 1, 2, 3 ]*64])
+    assert_not_send([@cls[ 1, 2, 3 ]*64, :intersect?, @cls[ 4, 5, 6 ]*64])
+    assert_not_send([@cls[], :intersect?, @cls[ 1, 2, 3 ]*64])
+  end
+
   def test_index
     a = @cls[ 'cat', 99, /a/, 99, @cls[ 1, 2, 3] ]
     assert_equal(0, a.index('cat'))
