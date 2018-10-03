@@ -3853,7 +3853,7 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 static void
 vm_change_insn(rb_control_frame_t *cfp, int pc_offset, int insn)
 {
-    *((VALUE *)cfp->pc - pc_offset) = (VALUE)rb_vm_insn_insn2addr(insn, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
+    *((VALUE *)cfp->pc - pc_offset) = rb_vm_insn_insn2addr(insn, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
 }
 
 static VALUE
