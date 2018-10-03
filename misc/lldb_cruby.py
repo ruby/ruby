@@ -109,6 +109,10 @@ def lldb_rp(debugger, command, result, internal_dict):
             tRObject = target.FindFirstType("struct RObject").GetPointerType()
             val = val.Cast(tRObject)
             print >> result, 'T_OBJECT: %s' % val.Dereference()
+        elif flType == RUBY_T_CLASS or flType == RUBY_T_MODULE or flType == RUBY_T_ICLASS:
+            tRClass = target.FindFirstType("struct RClass").GetPointerType()
+            val = val.Cast(tRClass)
+            print >> result, 'T_%s: %s' % ('CLASS' if flType == RUBY_T_CLASS else 'MODULE' if flType == RUBY_T_MODULE else 'ICLASS', val.Dereference())
         elif flType == RUBY_T_STRING:
             tRString = target.FindFirstType("struct RString").GetPointerType()
             val = val.Cast(tRString)
