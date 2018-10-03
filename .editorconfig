@@ -22,3 +22,6 @@ indent_size = 2
 
 [{*[Mm]akefile*,*.mak,*.mk,depend}]
 indent_style = tab
+
+[reg*.[ch]]
+indent_size = 2
