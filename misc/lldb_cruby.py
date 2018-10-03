@@ -91,7 +91,7 @@ def lldb_rp(debugger, command, result, internal_dict):
     elif fixnum_p(num):
         print >> result, num >> 1
     elif flonum_p(num):
-        debugger.HandleCommand("print rb_float_value(%0#x)" % val.GetValueAsUnsigned())
+        append_command_output(debugger, "print rb_float_value(%0#x)" % val.GetValueAsUnsigned(), result)
     elif num & RUBY_IMMEDIATE_MASK:
         print >> result, 'immediate(%x)' % num
     else:
@@ -141,7 +141,7 @@ def lldb_rp(debugger, command, result, internal_dict):
                 result.write("\n")
                 append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
         elif flType == RUBY_T_HASH:
-            debugger.HandleCommand("p *(struct RHash *) %0#x" % val.GetValueAsUnsigned())
+            append_command_output(debugger, "p *(struct RHash *) %0#x" % val.GetValueAsUnsigned(), result)
         elif flType == RUBY_T_BIGNUM:
             tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
             val = val.Cast(tRBignum)
@@ -158,7 +158,7 @@ def lldb_rp(debugger, command, result, internal_dict):
         elif flType == RUBY_T_FLOAT:
             tRFloat = target.FindFirstType("struct RFloat").GetPointerType()
             val = val.Cast(tRFloat)
-            debugger.HandleCommand("p *(double *)%0#x" % val.GetValueForExpressionPath("->float_value").GetAddress())
+            append_command_output(debugger, "p *(double *)%0#x" % val.GetValueForExpressionPath("->float_value").GetAddress(), result)
         elif flType == RUBY_T_DATA:
             tRTypedData = target.FindFirstType("struct RTypedData").GetPointerType()
             val = val.Cast(tRTypedData)
