@@ -53,14 +53,15 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
 
 /*
  *  call-seq:
- *     RubyVM::AST.parse("...") -> RubyVM::AST::Node
+ *     RubyVM::AST.parse(string) -> RubyVM::AST::Node
  *
- *  Parses the given string into an abstract systax tree,
+ *  Parses the given string into an abstract syntax tree,
  *  returning the root node of that tree.
  *
  *  Returns <code>nil</code> if the given string is invalid syntax.
  *
- *     RubyVM::AST.parse("1 + 1") # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 1:5): >
+ *    RubyVM::AST.parse("x = 1 + 2")
+ *    # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 1:9): >
  */
 static VALUE
 rb_ast_s_parse(VALUE module, VALUE str)
@@ -86,15 +87,16 @@ rb_ast_s_parse(VALUE module, VALUE str)
 
 /*
  *  call-seq:
- *     RubyVM::AST.parse_file(filepath) -> RubyVM::AST::Node
+ *     RubyVM::AST.parse_file(pathname) -> RubyVM::AST::Node
  *
- *   Reads the file from <code>filepath</code>, then parses it like <code>.parse</code>,
+ *   Reads the file from <code>pathname</code>, then parses it like ::parse,
  *   returning the root node of the abstract syntax tree.
  *
- *   Returns <code>nil</code> if <code>filepath</code>'s contents are not
+ *   Returns <code>nil</code> if <code>pathname</code>'s contents are not
  *   valid Ruby syntax.
  *
- *      RubyVM::AST.parse_file("my-app/app.rb") # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 31:3): >
+ *     RubyVM::AST.parse_file("my-app/app.rb")
+ *     # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 31:3): >
  */
 static VALUE
 rb_ast_s_parse_file(VALUE module, VALUE path)
@@ -142,11 +144,11 @@ node_type_to_str(NODE *node)
  *  call-seq:
  *     node.type -> string
  *
- *  Returns the type of node parsed into <code>code</code>.
+ *  Returns the type of this node as a string.
  *
- *    root = RubyVM::AST.parse("1 + 1")
+ *    root = RubyVM::AST.parse("x = 1 + 2")
  *    root.type # => "NODE_SCOPE"
- *    call = root.children[1]
+ *    call = root.children[2]
  *    call.type # => "NODE_OPCALL"
  */
 static VALUE
@@ -578,7 +580,7 @@ rb_ast_node_last_column(VALUE self)
  *  call-seq:
  *     node.inspect -> string
  *
- *  Print this node for debugging.
+ *  Returns debugging information about this node as a string.
  */
 static VALUE
 rb_ast_node_inspect(VALUE self)
@@ -603,7 +605,7 @@ void
 Init_ast(void)
 {
     /*
-     * AST has methods to parse Ruby code into
+     * AST provides methods to parse Ruby code into
      * abstract syntax trees. The nodes in the tree
      * are instances of RubyVM::AST::Node.
      */
