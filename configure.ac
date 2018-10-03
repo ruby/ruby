@@ -3687,7 +3687,7 @@ AS_IF([test "${universal_binary-no}" = yes ], [
 	for archs in ${universal_archnames}; do
 	    cpu=`echo $archs | sed 's/.*=//'`
 	    archs=`echo $archs | sed 's/=.*//'`
-	    RUBY_DEFINE_IF([defined __${archs}__], RUBY_PLATFORM_CPU, ["${cpu}"])
+	    RUBY_DEFINE_IF([defined __${archs}__ &&! defined RUBY_PLATFORM_CPU], RUBY_PLATFORM_CPU, ["${cpu}"])
 	done
     ])
     ints='long int short'
