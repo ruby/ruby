@@ -140,6 +140,25 @@ def lldb_rp(debugger, command, result, internal_dict):
             else:
                 result.write("\n")
                 append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
+        elif flType == RUBY_T_HASH:
+            debugger.HandleCommand("p *(struct RHash *) %0#x" % val.GetValueAsUnsigned())
+        elif flType == RUBY_T_BIGNUM:
+            tRBignum = target.FindFirstType("struct RBignum").GetPointerType()
+            val = val.Cast(tRBignum)
+            if flags & RUBY_FL_USER2:
+                len = ((flags & (RUBY_FL_USER3|RUBY_FL_USER4|RUBY_FL_USER5)) >> (RUBY_FL_USHIFT+3))
+                print >> result, "T_BIGNUM: len=%d (embed)" % len
+                append_command_output(debugger, "print ((struct RBignum *) %0#x)->as.ary" % val.GetValueAsUnsigned(), result)
+            else:
+                len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
+                print >> result, "T_BIGNUM: len=%d" % len
+                print >> result, val.Dereference()
+                append_command_output(debugger, "expression -Z %x -fx -- (const BDIGIT*)((struct RBignum*)%d)->as.heap.digits" % (len, val.GetValueAsUnsigned()), result)
+                # append_command_output(debugger, "x ((struct RBignum *) %0#x)->as.heap.digits / %d" % (val.GetValueAsUnsigned(), len), result)
+        elif flType == RUBY_T_FLOAT:
+            tRFloat = target.FindFirstType("struct RFloat").GetPointerType()
+            val = val.Cast(tRFloat)
+            debugger.HandleCommand("p *(double *)%0#x" % val.GetValueForExpressionPath("->float_value").GetAddress())
         elif flType == RUBY_T_DATA:
             tRTypedData = target.FindFirstType("struct RTypedData").GetPointerType()
             val = val.Cast(tRTypedData)
@@ -150,6 +169,9 @@ def lldb_rp(debugger, command, result, internal_dict):
             else:
                 print >> result, "T_DATA:"
                 append_command_output(debugger, "p *(struct RData *) %0#x" % val.GetValueAsUnsigned(), result)
+        else:
+            print >> result, "Not-handled type %0#x" % flType
+            print >> result, val
 
 def count_objects(debugger, command, ctx, result, internal_dict):
     objspace = ctx.frame.EvaluateExpression("ruby_current_vm->objspace")
