@@ -55,6 +55,14 @@ def fixnum_p(x):
 def flonum_p(x):
     return (x&RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
 
+def append_command_output(debugger, command, result):
+    output1 = result.GetOutput()
+    debugger.GetCommandInterpreter().HandleCommand(command, result)
+    output2 = result.GetOutput()
+    result.Clear()
+    result.write(output1)
+    result.write(output2)
+
 def lldb_rp(debugger, command, result, internal_dict):
     if not ('RUBY_Qfalse' in globals()):
         lldb_init(debugger)
@@ -113,35 +121,35 @@ def lldb_rp(debugger, command, result, internal_dict):
             val = val.Cast(tRArray)
             if flags & RUBY_FL_USER1:
                 len = ((flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-                print >> result, "T_ARRAY: len=%d (embed)" % len
-                if len == 0:
-                    print >> result, "{(empty)}"
-                else:
-                    print >> result, val.GetValueForExpressionPath("->as.ary")
+                ptr = val.GetValueForExpressionPath("->as.ary")
             else:
                 len = val.GetValueForExpressionPath("->as.heap.len").GetValueAsSigned()
-                print >> result, "T_ARRAY: len=%d " % len
+                ptr = val.GetValueForExpressionPath("->as.heap.ptr")
                 #print >> result, val.GetValueForExpressionPath("->as.heap")
-                if flags & RUBY_FL_USER2:
-                    shared = val.GetValueForExpressionPath("->as.heap.aux.shared").GetValueAsUnsigned()
-                    print >> result, "(shared) shared=%016x " % shared
-                else:
-                    capa = val.GetValueForExpressionPath("->as.heap.aux.capa").GetValueAsSigned()
-                    print >> result, "(ownership) capa=%d " % capa
-                if len == 0:
-                    print >> result, "{(empty)}"
-                else:
-                    debugger.HandleCommand("expression -Z %d -fx -- (const VALUE*)((struct RArray*)%d)->as.heap.ptr" % (len, val.GetValueAsUnsigned()))
-            debugger.HandleCommand("p (struct RArray *) %0#x" % val.GetValueAsUnsigned())
+            result.write("T_ARRAY: len=%d" % len)
+            if flags & RUBY_FL_USER1:
+                result.write(" (embed)")
+            elif flags & RUBY_FL_USER2:
+                shared = val.GetValueForExpressionPath("->as.heap.aux.shared").GetValueAsUnsigned()
+                result.write(" (shared) shared=%016x")
+            else:
+                capa = val.GetValueForExpressionPath("->as.heap.aux.capa").GetValueAsSigned()
+                result.write(" (ownership) capa=%d" % capa)
+            if len == 0:
+                result.write(" {(empty)}")
+            else:
+                result.write("\n")
+                append_command_output(debugger, "expression -Z %d -fx -- (const VALUE*)%0#x" % (len, ptr.GetValueAsUnsigned()), result)
         elif flType == RUBY_T_DATA:
             tRTypedData = target.FindFirstType("struct RTypedData").GetPointerType()
             val = val.Cast(tRTypedData)
             flag = val.GetValueForExpressionPath("->typed_flag")
             if flag.GetValueAsUnsigned() == 1:
-                debugger.HandleCommand("p *(rb_data_type_t *) %0#x" % val.GetValueForExpressionPath("->type").GetValueAsUnsigned())
-                debugger.HandleCommand("p (void *) %0#x" % val.GetValueForExpressionPath("->data").GetValueAsUnsigned())
+                print >> result, "T_DATA: %s" % val.GetValueForExpressionPath("->type->wrap_struct_name")
+                append_command_output(debugger, "p *(struct RTypedData *) %0#x" % val.GetValueAsUnsigned(), result)
             else:
-                debugger.HandleCommand("p *(struct RData *) %0#x" % val.GetValueAsUnsigned())
+                print >> result, "T_DATA:"
+                append_command_output(debugger, "p *(struct RData *) %0#x" % val.GetValueAsUnsigned(), result)
 
 def count_objects(debugger, command, ctx, result, internal_dict):
     objspace = ctx.frame.EvaluateExpression("ruby_current_vm->objspace")
