@@ -313,7 +313,6 @@ rb_struct_s_inspect(VALUE klass)
 static VALUE
 setup_struct(VALUE nstr, VALUE members)
 {
-    const VALUE *ptr_members;
     long i, len;
 
     members = struct_set_members(nstr, members);
@@ -323,17 +322,17 @@ setup_struct(VALUE nstr, VALUE members)
     rb_define_singleton_method(nstr, "[]", rb_class_new_instance, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     rb_define_singleton_method(nstr, "inspect", rb_struct_s_inspect, 0);
-    ptr_members = RARRAY_CONST_PTR(members);
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
-	ID id = SYM2ID(ptr_members[i]);
+        VALUE sym = RARRAY_AREF(members, i);
+	ID id = SYM2ID(sym);
 	VALUE off = LONG2NUM(i);
 
 	if (i < N_REF_FUNC) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
 	else {
-	    define_aref_method(nstr, ptr_members[i], off);
+	    define_aref_method(nstr, sym, off);
 	}
 	define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
     }
