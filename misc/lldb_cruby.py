@@ -55,6 +55,9 @@ def fixnum_p(x):
 def flonum_p(x):
     return (x&RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
 
+def static_sym_p(x):
+    return (x&~(~0<<RUBY_SPECIAL_SHIFT)) == RUBY_SYMBOL_FLAG
+
 def append_command_output(debugger, command, result):
     output1 = result.GetOutput()
     debugger.GetCommandInterpreter().HandleCommand(command, result)
@@ -92,6 +95,11 @@ def lldb_rp(debugger, command, result, internal_dict):
         print >> result, num >> 1
     elif flonum_p(num):
         append_command_output(debugger, "print rb_float_value(%0#x)" % val.GetValueAsUnsigned(), result)
+    elif static_sym_p(num):
+        if num < 128:
+            print >> result, "T_SYMBOL: %c" % num
+        else:
+            print >> result, "T_SYMBOL: (%x)" % num
     elif num & RUBY_IMMEDIATE_MASK:
         print >> result, 'immediate(%x)' % num
     else:
@@ -120,6 +128,9 @@ def lldb_rp(debugger, command, result, internal_dict):
                 print >> result, val.GetValueForExpressionPath("->as.heap")
             else:
                 print >> result, val.GetValueForExpressionPath("->as.ary")
+        elif flType == RUBY_T_SYMBOL:
+            tRSymbol = target.FindFirstType("struct RSymbol").GetPointerType()
+            print >> result, val.Cast(tRSymbol).Dereference()
         elif flType == RUBY_T_ARRAY:
             tRArray = target.FindFirstType("struct RArray").GetPointerType()
             val = val.Cast(tRArray)
