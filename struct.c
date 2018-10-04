@@ -325,14 +325,14 @@ setup_struct(VALUE nstr, VALUE members)
     len = RARRAY_LEN(members);
     for (i=0; i< len; i++) {
         VALUE sym = RARRAY_AREF(members, i);
-	ID id = SYM2ID(sym);
+        ID id = SYM2ID(sym);
 	VALUE off = LONG2NUM(i);
 
 	if (i < N_REF_FUNC) {
 	    rb_define_method_id(nstr, id, ref_func[i], 0);
 	}
 	else {
-	    define_aref_method(nstr, sym, off);
+            define_aref_method(nstr, sym, off);
 	}
 	define_aset_method(nstr, ID2SYM(rb_id_attrset(id)), off);
     }
