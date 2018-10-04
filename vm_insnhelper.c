@@ -3848,7 +3848,7 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     }
 }
 
-#define PC_OFFSET(insn, ci, cc) leaf ? 0 : attr_width_##insn(ci, cc)
+#define PC_OFFSET(insn, ci, cc) leaf ? 0 : (int)attr_width_##insn(ci, cc)
 
 static void
 vm_change_insn(rb_control_frame_t *cfp, int pc_offset, int insn)
