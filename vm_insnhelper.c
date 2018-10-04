@@ -3863,7 +3863,6 @@ vm_specialize_insn(rb_control_frame_t *cfp, int pc_offset, const struct rb_call_
     recv = *(cfp->sp - 1); \
     if ((val = vm_opt_##opt(recv)) != Qundef) { \
         vm_change_insn(cfp, pc_offset, BIN(opt_##opt)); \
-        cfp->sp -= 1; \
         return val; \
     }
 #define SP_INSN1(opt) \
@@ -3871,7 +3870,6 @@ vm_specialize_insn(rb_control_frame_t *cfp, int pc_offset, const struct rb_call_
     obj = *(cfp->sp - 1); \
     if ((val = vm_opt_##opt(recv, obj)) != Qundef) { \
         vm_change_insn(cfp, pc_offset, BIN(opt_##opt)); \
-        cfp->sp -= 2; \
         return val; \
     }
 
