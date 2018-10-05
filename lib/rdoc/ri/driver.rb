@@ -17,7 +17,7 @@ require 'rdoc'
 ##
 # For RubyGems backwards compatibility
 
-require 'rdoc/ri/formatter'
+require_relative 'formatter'
 
 ##
 # The RI driver implements the command-line ri tool.
