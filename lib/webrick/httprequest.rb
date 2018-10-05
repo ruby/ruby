@@ -10,10 +10,10 @@
 # $IPR: httprequest.rb,v 1.64 2003/07/13 17:18:22 gotoyuzo Exp $
 
 require 'uri'
-require 'webrick/httpversion'
-require 'webrick/httpstatus'
-require 'webrick/httputils'
-require 'webrick/cookie'
+require_relative 'httpversion'
+require_relative 'httpstatus'
+require_relative 'httputils'
+require_relative 'cookie'
 
 module WEBrick
 

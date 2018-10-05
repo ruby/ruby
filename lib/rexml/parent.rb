@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rexml/child"
+require_relative "child"
 
 module REXML
   # A parent has children, and has methods for accessing them.  The Parent

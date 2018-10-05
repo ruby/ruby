@@ -197,7 +197,7 @@ module IRB # :nodoc:
         print IRB.version, "\n"
         exit 0
       when "-h", "--help"
-        require "irb/help"
+        require_relative "help"
         IRB.print_usage
         exit 0
       when "--"

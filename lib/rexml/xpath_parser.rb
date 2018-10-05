@@ -1,9 +1,9 @@
 # frozen_string_literal: false
-require 'rexml/namespace'
-require 'rexml/xmltokens'
-require 'rexml/attribute'
-require 'rexml/syncenumerator'
-require 'rexml/parsers/xpathparser'
+require_relative 'namespace'
+require_relative 'xmltokens'
+require_relative 'attribute'
+require_relative 'syncenumerator'
+require_relative 'parsers/xpathparser'
 
 class Object
   # provides a unified +clone+ operation, for REXML::XPathParser

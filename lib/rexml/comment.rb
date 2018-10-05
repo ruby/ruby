@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rexml/child"
+require_relative "child"
 
 module REXML
   ##

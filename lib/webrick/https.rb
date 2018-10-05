@@ -9,8 +9,8 @@
 #
 # $IPR: https.rb,v 1.15 2003/07/22 19:20:42 gotoyuzo Exp $
 
-require 'webrick/ssl'
-require 'webrick/httpserver'
+require_relative 'ssl'
+require_relative 'httpserver'
 
 module WEBrick
   module Config

@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/rss"
+require_relative "rss"
 
 module RSS
   # The prefix for the Content XML namespace.

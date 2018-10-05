@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/functions'
-require 'rexml/xmltokens'
+require_relative 'functions'
+require_relative 'xmltokens'
 
 module REXML
   class QuickPath

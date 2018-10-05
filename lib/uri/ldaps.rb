@@ -6,7 +6,7 @@
 # See URI for general documentation
 #
 
-require 'uri/ldap'
+require_relative 'ldap'
 
 module URI
 

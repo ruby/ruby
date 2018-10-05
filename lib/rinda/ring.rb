@@ -3,7 +3,7 @@
 # Note: Rinda::Ring API is unstable.
 #
 require 'drb/drb'
-require 'rinda/rinda'
+require_relative 'rinda'
 require 'ipaddr'
 
 module Rinda
