@@ -41,7 +41,7 @@ sufficient information, see the ChangeLog file or Redmine
 
     * New methods:
 
-        * Added `Array#union` instance method.
+        * Added `Array#union` and `Array#difference` instance method.
           [Feature #14097]
 
     * Modified methods:
