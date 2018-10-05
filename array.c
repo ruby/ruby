@@ -4253,22 +4253,22 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     length = RARRAY_LEN(ary);
 
     for (i = 0; i < argc; i++) {
-	argv[i] = to_ary(argv[i]);
-	is_hash[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
-	if (is_hash[i]) argv[i] = ary_make_hash(argv[i]);
+        argv[i] = to_ary(argv[i]);
+        is_hash[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
+        if (is_hash[i]) argv[i] = ary_make_hash(argv[i]);
     }
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
-	int j;
-	VALUE elt = rb_ary_elt(ary, i);
-	for (j = 0; j < argc; j++){
-	    if (is_hash[j]) {
-		if (st_lookup(rb_hash_tbl_raw(argv[j]), RARRAY_AREF(ary, i), 0))
-		    break;
+        int j;
+        VALUE elt = rb_ary_elt(ary, i);
+        for (j = 0; j < argc; j++){
+            if (is_hash[j]) {
+                if (st_lookup(rb_hash_tbl_raw(argv[j]), RARRAY_AREF(ary, i), 0))
+                    break;
             }
             else {
-		if (rb_ary_includes_by_eql(argv[j], elt)) break;
-	    }
+                if (rb_ary_includes_by_eql(argv[j], elt)) break;
+            }
         }
         if (j == argc) rb_ary_push(ary_diff, elt);
     }
