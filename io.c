@@ -10288,7 +10288,7 @@ io_s_foreach(struct getline_arg *arg)
  *
  *  If no block is given, an enumerator is returned instead.
  *
- *     IO.foreach("testfile") {|x| print "GOT ", x }
+ *     IO.foreach("testfile") {|x| puts "GOT #{x}" }
  *
  *  <em>produces:</em>
  *
