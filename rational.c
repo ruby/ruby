@@ -1556,8 +1556,7 @@ nurat_to_double(VALUE self)
 {
     get_dat1(self);
     if (!RB_INTEGER_TYPE_P(dat->num) || !RB_INTEGER_TYPE_P(dat->den)) {
-        double d = NUM2DBL(dat->num) / NUM2DBL(dat->den);
-        return DBL2NUM(d);
+        return NUM2DBL(dat->num) / NUM2DBL(dat->den);
     }
     return rb_int_fdiv_double(dat->num, dat->den);
 }
