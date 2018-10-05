@@ -237,7 +237,7 @@ GET /
 
   def test_chunked
     crlf = "\x0d\x0a"
-    expect = File.read(__FILE__).freeze
+    expect = File.binread(__FILE__).freeze
     msg = <<-_end_of_message_
       POST /path HTTP/1.1
       Host: test.ruby-lang.org:8080
