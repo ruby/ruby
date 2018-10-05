@@ -4222,6 +4222,63 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
     return ary3;
 }
 
+
+/*
+ *  call-seq:
+ *     ary.difference(other_ary1, other_ary2,...)   -> ary
+ *
+ *  Array Difference
+ *
+ *  Returns a new array that is a copy of +self+, removing any items
+ *  that also appear in any of the +other_ary+s. The order of +self+ is
+ *  preserved.
+ *
+ *  It compares elements using their #hash and #eql? methods for efficiency.
+ *
+ *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])       #=>  [ 3, 3, 5 ]
+ *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])    #=> [:s, "yep"]
+ *
+ *  If you need set-like behavior, see the library class Set.
+ *
+ *  See Array#-.
+ */
+
+static VALUE
+rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
+{
+    VALUE ary_diff;
+    long i, length;
+    volatile VALUE t0;
+    bool *is_hash = ALLOCV_N(bool, t0, argc);
+    ary_diff = rb_ary_new();
+    length = RARRAY_LEN(ary);
+
+    for (i = 0; i < argc; i++) {
+	argv[i] = to_ary(argv[i]);
+	is_hash[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
+	if(is_hash[i]) argv[i] = ary_make_hash(argv[i]);
+    }
+
+    for (i=0; i < RARRAY_LEN(ary); i++) {
+	int j;
+	VALUE elt = rb_ary_elt(ary, i);
+	for (j = 0; j < argc; j++){
+	    if (is_hash[j]) {
+		if (st_lookup(rb_hash_tbl_raw(argv[j]), RARRAY_AREF(ary, i), 0))
+		    break;
+        } else {
+		if (rb_ary_includes_by_eql(argv[j], elt)) break;
+	    }
+        }
+        if (j == argc) rb_ary_push(ary_diff, elt);
+    }
+
+    ALLOCV_END(t0);
+
+    return ary_diff;
+}
+
+
 /*
  *  call-seq:
  *     ary.difference(other_ary1, other_ary2,...)   -> ary
