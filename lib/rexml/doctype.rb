@@ -1,10 +1,10 @@
 # frozen_string_literal: false
-require "rexml/parent"
-require "rexml/parseexception"
-require "rexml/namespace"
-require 'rexml/entity'
-require 'rexml/attlistdecl'
-require 'rexml/xmltokens'
+require_relative "parent"
+require_relative "parseexception"
+require_relative "namespace"
+require_relative 'entity'
+require_relative 'attlistdecl'
+require_relative 'xmltokens'
 
 module REXML
   # Represents an XML DOCTYPE declaration; that is, the contents of <!DOCTYPE

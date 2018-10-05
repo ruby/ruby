@@ -11,7 +11,7 @@
 #
 
 require "e2mmap"
-require "irb/slex"
+require_relative "slex"
 require "irb/ruby-token"
 
 # :stopdoc:

@@ -9,7 +9,7 @@
 #
 #
 #
-require 'irb/src_encoding'
+require_relative 'src_encoding'
 require 'irb/magic-file'
 
 module IRB

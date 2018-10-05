@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rexml/xmltokens'
+require_relative 'xmltokens'
 
 module REXML
   # Adds named attributes to an object.

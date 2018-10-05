@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rexml/parseexception'
-require 'rexml/undefinednamespaceexception'
-require 'rexml/source'
+require_relative '../parseexception'
+require_relative '../undefinednamespaceexception'
+require_relative '../source'
 require 'set'
 
 module REXML

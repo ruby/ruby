@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'cgi/util'
+require_relative 'util'
 class CGI
   # Class representing an HTTP cookie.
   #

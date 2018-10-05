@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/encoding'
-require 'rexml/source'
+require_relative 'encoding'
+require_relative 'source'
 
 module REXML
   # NEEDS DOCUMENTATION

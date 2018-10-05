@@ -12,7 +12,7 @@
 # See URI for general documentation
 #
 
-require 'uri/generic'
+require_relative 'generic'
 
 module URI
 

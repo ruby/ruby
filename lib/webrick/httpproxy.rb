@@ -10,7 +10,7 @@
 # $IPR: httpproxy.rb,v 1.18 2003/03/08 18:58:10 gotoyuzo Exp $
 # $kNotwork: straw.rb,v 1.3 2002/02/12 15:13:07 gotoken Exp $
 
-require "webrick/httpserver"
+require_relative "httpserver"
 require "net/http"
 
 module WEBrick

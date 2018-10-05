@@ -48,7 +48,7 @@
 
 require 'socket'
 require 'io/wait'
-require 'drb/eq'
+require_relative 'eq'
 
 #
 # == Overview
@@ -1638,7 +1638,7 @@ module DRb
 
     end
 
-    require 'drb/invokemethod'
+    require_relative 'invokemethod'
     class InvokeMethod
       include InvokeMethod18Mixin
     end

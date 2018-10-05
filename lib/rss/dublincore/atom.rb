@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/atom"
+require_relative "../atom"
 
 module RSS
   module Atom

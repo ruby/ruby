@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require 'socket'
-require 'drb/drb'
+require_relative 'drb'
 require 'tmpdir'
 
 raise(LoadError, "UNIXServer is required") unless defined?(UNIXServer)

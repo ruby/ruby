@@ -11,7 +11,7 @@
 #
 
 require "irb/cmd/nop.rb"
-require "irb/ext/loader"
+require_relative "../ext/loader"
 
 # :stopdoc:
 module IRB

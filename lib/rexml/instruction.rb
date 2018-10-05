@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require "rexml/child"
-require "rexml/source"
+require_relative "child"
+require_relative "source"
 
 module REXML
   # Represents an XML Instruction; IE, <? ... ?>

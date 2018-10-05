@@ -1,10 +1,10 @@
 # frozen_string_literal: false
-require "rexml/parent"
-require "rexml/namespace"
-require "rexml/attribute"
-require "rexml/cdata"
-require "rexml/xpath"
-require "rexml/parseexception"
+require_relative "parent"
+require_relative "namespace"
+require_relative "attribute"
+require_relative "cdata"
+require_relative "xpath"
+require_relative "parseexception"
 
 module REXML
   # An implementation note about namespaces:
@@ -713,7 +713,7 @@ module REXML
       Kernel.warn("#{self.class.name}.write is deprecated.  See REXML::Formatters", uplevel: 1)
       formatter = if indent > -1
           if transitive
-            require "rexml/formatters/transitive"
+            require_relative "formatters/transitive"
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )

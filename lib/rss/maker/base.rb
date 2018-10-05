@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'forwardable'
 
-require 'rss/rss'
+require_relative '../rss'
 
 module RSS
   module Maker

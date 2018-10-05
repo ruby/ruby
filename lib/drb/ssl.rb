@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 require 'socket'
 require 'openssl'
-require 'drb/drb'
+require_relative 'drb'
 require 'singleton'
 
 module DRb

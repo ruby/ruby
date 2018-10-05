@@ -9,8 +9,8 @@
 #
 #
 #
-require "irb/workspace"
-require "irb/inspector"
+require_relative "workspace"
+require_relative "inspector"
 require "irb/input-method"
 require "irb/output-method"
 

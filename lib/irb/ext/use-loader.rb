@@ -10,8 +10,8 @@
 #
 #
 
-require "irb/cmd/load"
-require "irb/ext/loader"
+require_relative "../cmd/load"
+require_relative "loader"
 
 class Object
   alias __original__load__IRB_use_loader__ load
