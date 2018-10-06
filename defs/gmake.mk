@@ -4,25 +4,22 @@ override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 
-CHECK_TARGETS := great exam love check test check% test% btest%
-# expand test targets, and those dependents
-TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
-TEST_DEPENDS := $(filter-out commit $(TEST_TARGETS),$(MAKECMDGOALS))
-TEST_TARGETS := $(patsubst great,exam,$(TEST_TARGETS))
-TEST_DEPENDS := $(filter-out great $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst exam,check,$(TEST_TARGETS))
-TEST_TARGETS := $(patsubst check,test-spec test-all,$(TEST_TARGETS))
-TEST_TARGETS := $(patsubst test-rubyspec,test-spec,$(TEST_TARGETS))
-TEST_DEPENDS := $(filter-out exam check test-spec $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst love,check,$(TEST_TARGETS))
-TEST_DEPENDS := $(filter-out love $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst test-all,test test-testframework test-almost,$(patsubst check-%,test test-%,$(TEST_TARGETS)))
-TEST_DEPENDS := $(filter-out test-all $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst test,test-short,$(TEST_TARGETS))
-TEST_DEPENDS := $(filter-out test $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_TARGETS := $(patsubst test-short,btest-ruby test-knownbug test-basic,$(TEST_TARGETS))
-TEST_DEPENDS := $(filter-out test-short $(TEST_TARGETS),$(TEST_DEPENDS))
-TEST_DEPENDS += $(if $(filter great exam love check,$(MAKECMDGOALS)),all exts)
+ifeq ($(firstword $(filter test-short main check,$(MAKECMDGOALS))),test-short)
+ext/configure-ext.mk: | test-short
+encdb.h $(ENC_MK): | test-short
+else
+yes-btest-ruby: | main
+endif
+yes-test-knownbug: | yes-btest-ruby
+yes-test-basic: | yes-test-knownbug
+yes-test-testframework: | test-short main
+yes-test-almost: | yes-test-testframework
+yes-test-spec: | yes-test-almost
+install-all install-nodoc: | yes-test-spec
+ifneq ($(filter reinstall,$(MAKECMDGOALS)),)
+install-all install-nodoc: | uninstall
+uninstall: | yes-test-spec
+endif
 
 ifneq ($(filter -O0 -Od,$(optflags)),)
 override XCFLAGS := $(filter-out -D_FORTIFY_SOURCE=%,$(XCFLAGS))
