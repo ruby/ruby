@@ -27,6 +27,13 @@ class TestVector < Test::Unit::TestCase
     assert_raise(ArgumentError) { Vector.basis(index: 3) }
   end
 
+  def test_get_element
+    assert_equal(@v1[0..], [1, 2, 3])
+    assert_equal(@v1[0..1], [1, 2])
+    assert_equal(@v1[2], 3)
+    assert_equal(@v1[4], nil)
+  end
+
   def test_set_element
 
     assert_block do

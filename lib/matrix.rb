@@ -1907,7 +1907,11 @@ class Vector
   # ACCESSING
 
   #
-  # Returns element number +i+ (starting at zero) of the vector.
+  # :call-seq:
+  #   vector[range]
+  #   vector[integer]
+  #
+  # Returns element or elements of the vector.
   #
   def [](i)
     @elements[i]
