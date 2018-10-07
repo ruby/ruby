@@ -52,7 +52,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_local
-    skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '1', insns: %i[setlocal_WC_0 getlocal_WC_0])
     begin;
       foo = 1
@@ -79,7 +78,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_blockparam
     skip_on_mingw
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2, insns: %i[getblockparam setblockparam])
     begin;
       def foo(&b)
@@ -102,7 +100,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_setspecial
     verbose_bak, $VERBOSE = $VERBOSE, nil
-    skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[setspecial])
     begin;
       true if nil.nil?..nil.nil?
@@ -154,7 +151,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putself
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hello', success_count: 1, insns: %i[putself])
     begin;
       proc { print "hello" }.call
@@ -169,7 +165,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_putspecialobject_putiseq
     skip_on_mingw # [Bug #14948]
-    skip_on_mswin
 
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[putspecialobject putiseq])
     begin;
@@ -184,12 +179,10 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_putstring_concatstrings_tostring
     skip_on_mingw
-    skip_on_mswin
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
 
   def test_compile_insn_freezestring
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~'end;'}", stdout: 'true', success_count: 1, insns: %i[freezestring])
     begin;
       # frozen_string_literal: true
@@ -198,7 +191,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_toregexp
-    skip_on_mswin
     assert_compile_once('/#{true}/ =~ "true"', result_inspect: '0', insns: %i[toregexp])
   end
 
@@ -212,7 +204,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_intern_duparray
     skip_on_mingw
-    skip_on_mswin
     assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
 
@@ -221,7 +212,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_concatarray
-    skip_on_mswin
     assert_compile_once('["t", "r", *x = "u", "e"].join', result_inspect: '"true"', insns: %i[concatarray])
   end
 
@@ -255,7 +245,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_dupn
-    skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: 'true', insns: %i[dupn])
     begin;
       klass = Class.new
@@ -289,12 +278,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_defined
-    skip_on_mswin
     assert_compile_once('defined?(a)', result_inspect: 'nil', insns: %i[defined])
   end
 
   def test_compile_insn_checkkeyword
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'true', success_count: 1, insns: %i[checkkeyword])
     begin;
       def test(x: rand)
@@ -313,7 +300,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_send
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2, insns: %i[send])
     begin;
       print proc { yield_self { 1 } }.call
@@ -353,13 +339,11 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_send_without_block
-    skip_on_mswin
     assert_compile_once('print', result_inspect: 'nil', insns: %i[opt_send_without_block])
   end
 
   def test_compile_insn_invokesuper
     skip_on_mingw
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 4, insns: %i[invokesuper])
     begin;
       mod = Module.new {
@@ -379,7 +363,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_invokeblock_leave
     skip_on_mingw
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '2', success_count: 2, insns: %i[invokeblock leave])
     begin;
       def foo
@@ -390,7 +373,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_throw
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '4', success_count: 2, insns: %i[throw])
     begin;
       def test
@@ -436,7 +418,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_checktype
-    skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"42"', insns: %i[checktype])
     begin;
       a = '2'
@@ -450,7 +431,6 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_once
     skip_on_mingw
-    skip_on_mswin
     assert_compile_once('/#{true}/o =~ "true" && $~.to_a', result_inspect: '["true"]', insns: %i[once])
   end
 
@@ -470,7 +450,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_cmp
-    skip_on_mswin
     assert_compile_once('(1 == 1) && (1 != 2)', result_inspect: 'true', insns: %i[opt_eq opt_neq])
   end
 
@@ -491,7 +470,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_aref
-    skip_on_mswin
     # optimized call (optimized JIT) -> send call
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '21', success_count: 2, min_calls: 1, insns: %i[opt_aref])
     begin;
@@ -522,13 +500,11 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_aref_with
     skip_on_mingw
-    skip_on_mswin
     assert_compile_once("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
   end
 
   def test_compile_insn_opt_aset
     skip_on_mingw
-    skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
     begin;
       hash = { '1' => 2 }
@@ -553,7 +529,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_not
-    skip_on_mswin
     assert_compile_once('!!true', result_inspect: 'true', insns: %i[opt_not])
   end
 
@@ -570,7 +545,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_jit_output
-    skip_on_mswin
     out, err = eval_with_jit('5.times { puts "MJIT" }', verbose: 1, min_calls: 5)
     assert_equal("MJIT\n" * 5, out)
     assert_match(/^#{JIT_SUCCESS_PREFIX}: block in <main>@-e:1 -> .+_ruby_mjit_p\d+u\d+\.c$/, err)
@@ -618,7 +592,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_local_stack_on_exception
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2)
     begin;
       def b
@@ -638,7 +611,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_local_stack_with_sp_motion_by_blockargs
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 2)
     begin;
       def b(base)
@@ -660,7 +632,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_catching_deep_exception
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '1', success_count: 4)
     begin;
       def catch_true(paths, prefixes) # catch_except_p: TRUE
@@ -680,7 +651,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_attr_reader
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "4nil\nnil\n6", success_count: 2, min_calls: 2)
     begin;
       class A
@@ -758,7 +728,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_lambda_longjmp
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '5', success_count: 1)
     begin;
       fib = lambda do |x|
@@ -770,7 +739,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_stack_pointer_with_assignment
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
     begin;
       2.times do
@@ -781,7 +749,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_program_pointer_with_regexpmatch
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
       2.times do
@@ -792,7 +759,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_pushed_values_with_opt_aset_with
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "{}{}", success_count: 1)
     begin;
       2.times do
@@ -802,7 +768,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_pushed_values_with_opt_aref_with
-    skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "nil\nnil\n", success_count: 1)
     begin;
       2.times do
