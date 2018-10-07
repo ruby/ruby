@@ -691,9 +691,9 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = { NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
-    char *p;
+    char *p, *obj_file;
 
     /* files[0] = "-Fe*.dll" */
     files[0] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fe") + strlen(so_file) + 1));
@@ -701,20 +701,28 @@ compile_c_to_so(const char *c_file, const char *so_file)
     p = append_str2(p, so_file, strlen(so_file));
     *p = '\0';
 
-    /* files[1] = "-Yu*.pch" */
-    files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
+    /* files[1] = "-Fo*.obj" */
+    /* We don't need .obj file, but it's somehow created to cwd without -Fo and we want to control the output directory. */
+    files[1] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fo") + strlen(so_file) - rb_strlen_lit(DLEXT) + rb_strlen_lit(".obj") + 1));
+    obj_file = p = append_lit(p, "-Fo");
+    p = append_str2(p, so_file, strlen(so_file) - rb_strlen_lit(DLEXT));
+    p = append_lit(p, ".obj");
+    *p = '\0';
+
+    /* files[2] = "-Yu*.pch" */
+    files[2] = p = alloca(sizeof(char) * (rb_strlen_lit("-Yu") + strlen(pch_file) + 1));
     p = append_lit(p, "-Yu");
     p = append_str2(p, pch_file, strlen(pch_file));
     *p = '\0';
 
-    /* files[2] = "C:/.../rb_mjit_header-*.obj" */
-    files[2] = p = alloca(sizeof(char) * (strlen(pch_file) + 1));
+    /* files[3] = "C:/.../rb_mjit_header-*.obj" */
+    files[3] = p = alloca(sizeof(char) * (strlen(pch_file) + 1));
     p = append_str2(p, pch_file, strlen(pch_file) - strlen(".pch"));
     p = append_lit(p, ".obj");
     *p = '\0';
 
-    /* files[3] = "-Tc*.c" */
-    files[3] = p = alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
+    /* files[4] = "-Tc*.c" */
+    files[4] = p = alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
     p = append_lit(p, "-Tc");
     p = append_str2(p, c_file, strlen(c_file));
     *p = '\0';
@@ -742,8 +750,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
     }
     free(args);
 
-    if (exit_code != 0)
+    if (exit_code == 0) {
+        /* remove never-used .obj file. XXX: Is there any way not to generate this? */
+        if (!mjit_opts.save_temps) remove_file(obj_file);
+    }
+    else {
         verbose(2, "compile_c_to_so: compile error: %d", exit_code);
+    }
     return exit_code == 0;
 }
 #else /* _MSC_VER */
