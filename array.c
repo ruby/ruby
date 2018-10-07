@@ -4234,7 +4234,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])       #=>  [ 3, 3, 5 ]
+ *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])       #=> [ 3, 3, 5 ]
  *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])    #=> [:s, "yep"]
  *
  *  If you need set-like behavior, see the library class Set.
