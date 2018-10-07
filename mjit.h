@@ -59,7 +59,7 @@ RUBY_EXTERN struct mjit_options mjit_opts;
 RUBY_EXTERN int mjit_call_p;
 
 extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
-extern mjit_func_t mjit_get_iseq_func(struct rb_iseq_constant_body *body);
+extern VALUE mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 RUBY_SYMBOL_EXPORT_END
 
 extern int mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname);
@@ -110,7 +110,7 @@ mjit_exec(rb_execution_context_t *ec)
             if (total_calls == mjit_opts.min_calls && mjit_target_iseq_p(body)) {
                 mjit_add_iseq_to_process(iseq);
                 if (UNLIKELY(mjit_opts.wait)) {
-                    func = mjit_get_iseq_func(body);
+                    return mjit_wait_call(ec, body);
                 }
             }
             return Qundef;
