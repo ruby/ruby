@@ -304,8 +304,8 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 /* For this timeout seconds, --jit-wait will wait for JIT compilation finish. */
 #define MJIT_WAIT_TIMEOUT_SECONDS 60
 
-/* Wait for JIT compilation finish for --jit-wait. This should only return a function pointer
-   or NOT_COMPILED_JIT_ISEQ_FUNC. */
+/* Wait for JIT compilation finish for --jit-wait, and call the function pointer
+   if the compiled result is not NOT_COMPILED_JIT_ISEQ_FUNC. */
 VALUE
 mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body)
 {
