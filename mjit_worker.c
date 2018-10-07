@@ -734,20 +734,24 @@ compile_c_to_so(const char *c_file, const char *so_file)
         return FALSE;
 
     {
-        int stdout_fileno = _fileno(stdout);
-        int orig_fd = dup(stdout_fileno);
-        int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-
         /* Discard cl.exe's outputs like:
              _ruby_mjit_p12u3.c
-               Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp
-           TODO: Don't discard them on --jit-verbose=2+ */
-        dup2(dev_null, stdout_fileno);
-        exit_code = exec_process(cc_path, args);
-        dup2(orig_fd, stdout_fileno);
+               Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp */
+        int stdout_fileno, orig_fd, dev_null;
+        if (mjit_opts.verbose <= 1) {
+            stdout_fileno = _fileno(stdout);
+            orig_fd = dup(stdout_fileno);
+            dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
 
-        close(orig_fd);
-        close(dev_null);
+            dup2(dev_null, stdout_fileno);
+        }
+        exit_code = exec_process(cc_path, args);
+        if (mjit_opts.verbose <= 1) {
+            dup2(orig_fd, stdout_fileno);
+
+            close(orig_fd);
+            close(dev_null);
+        }
     }
     free(args);
 
