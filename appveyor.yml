@@ -84,7 +84,6 @@ for:
   build_script:
     - cd %APPVEYOR_BUILD_FOLDER%
     - cd %Platform%-mswin_%vs%
-    - mkdir tmp
     - ..\win32\configure.bat --without-ext=+,dbm,gdbm,readline --with-opt-dir=/usr/local --with-openssl-dir=%OPENSSL_DIR:\=/%
     - nmake -l
     - nmake install-nodoc
@@ -93,7 +92,7 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=3.0" test-all RUBY_FORCE_TEST_JIT=1 TMPDIR=".\tmp"
+    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=3.0" test-all RUBY_FORCE_TEST_JIT=1
     - nmake -l test-spec
 -
   matrix:
