@@ -107,7 +107,7 @@
 #define dlopen(name,flag) ((void*)LoadLibrary(name))
 #define dlerror() strerror(rb_w32_map_errno(GetLastError()))
 #define dlsym(handle,name) ((void*)GetProcAddress((handle),(name)))
-#define dlclose(handle) (FreeLibrary(handle))
+#define dlclose(handle) (!FreeLibrary(handle))
 #define RTLD_NOW  -1
 
 #define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
@@ -423,8 +423,9 @@ free_unit(struct rb_mjit_unit *unit)
         unit->iseq->body->jit_func = (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
         unit->iseq->body->jit_unit = NULL;
     }
-    if (unit->handle) /* handle is NULL if it's in queue */
-        dlclose(unit->handle);
+    if (unit->handle && dlclose(unit->handle)) { /* handle is NULL if it's in queue */
+        mjit_warning("failed to close handle for u%d: %s", unit->id, dlerror());
+    }
     clean_object_files(unit);
     free(unit);
 }
