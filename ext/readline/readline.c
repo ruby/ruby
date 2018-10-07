@@ -77,6 +77,8 @@ static ID id_special_prefixes;
 #endif
 #ifndef HAVE_RL_USERNAME_COMPLETION_FUNCTION
 # define rl_username_completion_function username_completion_function
+#else
+char *rl_username_completion_function(const char *, int);
 #endif
 #ifndef HAVE_RL_COMPLETION_MATCHES
 # define rl_completion_matches completion_matches
@@ -688,6 +690,7 @@ readline_s_insert_text(VALUE self, VALUE str)
 #endif
 
 #if defined(HAVE_RL_DELETE_TEXT)
+int rl_delete_text(int, int);
 static const char *
 str_subpos(const char *ptr, const char *end, long beg, long *sublen, rb_encoding *enc)
 {
@@ -1146,6 +1149,7 @@ readline_s_get_screen_size(VALUE self)
 #endif
 
 #ifdef HAVE_RL_VI_EDITING_MODE
+int rl_vi_editing_mode(int, int);
 /*
  * call-seq:
  *   Readline.vi_editing_mode -> nil
@@ -1184,6 +1188,7 @@ readline_s_vi_editing_mode_p(VALUE self)
 #endif
 
 #ifdef HAVE_RL_EMACS_EDITING_MODE
+int rl_emacs_editing_mode(int, int);
 /*
  * call-seq:
  *   Readline.emacs_editing_mode -> nil
@@ -1668,6 +1673,7 @@ readline_s_get_filename_quote_characters(VALUE self, VALUE str)
 #endif
 
 #ifdef HAVE_RL_REFRESH_LINE
+int rl_refresh_line(int, int);
 /*
  * call-seq:
  *   Readline.refresh_line -> nil
@@ -1912,6 +1918,10 @@ username_completion_proc_call(VALUE self, VALUE str)
     }
     return result;
 }
+
+#ifdef HAVE_RL_CLEAR_SIGNALS
+int rl_clear_signals(void);
+#endif
 
 #undef rb_intern
 void
