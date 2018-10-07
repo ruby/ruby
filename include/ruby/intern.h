@@ -36,12 +36,9 @@ extern "C" {
 
 /* On mswin, MJIT header transformation can't be used since cl.exe can't output
    preprocessed output preserving macros. So this `MJIT_STATIC` is needed
-   to force non-static function to static on MJIT header to avoid symbol conflict.
-   `MJIT_FUNC_EXPORTED` is also changed to `static` on MJIT header for the same reason. */
+   to force non-static function to static on MJIT header to avoid symbol conflict. */
 #ifdef MJIT_HEADER
 # define MJIT_STATIC static
-# undef MJIT_FUNC_EXPORTED
-# define MJIT_FUNC_EXPORTED static
 #else
 # define MJIT_STATIC
 #endif
