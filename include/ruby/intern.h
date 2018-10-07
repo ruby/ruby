@@ -34,6 +34,18 @@ extern "C" {
 
 #include "ruby/st.h"
 
+/* On mswin, MJIT header transformation can't be used since cl.exe can't output
+   preprocessed output preserving macros. So this `MJIT_STATIC` is needed
+   to force non-static function to static on MJIT header to avoid symbol conflict.
+   `MJIT_FUNC_EXPORTED` is also changed to `static` on MJIT header for the same reason. */
+#ifdef MJIT_HEADER
+# define MJIT_STATIC static
+# undef MJIT_FUNC_EXPORTED
+# define MJIT_FUNC_EXPORTED static
+#else
+# define MJIT_STATIC
+#endif
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 /*
@@ -286,7 +298,7 @@ int rb_sourceline(void);
 const char *rb_sourcefile(void);
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 
-NORETURN(void rb_error_arity(int, int, int));
+NORETURN(MJIT_STATIC void rb_error_arity(int, int, int));
 static inline int
 rb_check_arity(int argc, int min, int max)
 {
