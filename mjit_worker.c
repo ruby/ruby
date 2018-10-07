@@ -756,8 +756,16 @@ compile_c_to_so(const char *c_file, const char *so_file)
     free(args);
 
     if (exit_code == 0) {
-        /* remove never-used .obj file. XXX: Is there any way not to generate this? */
-        if (!mjit_opts.save_temps) remove_file(obj_file);
+        /* remove never-used files (.obj, .lib, .exp, .pdb). XXX: Is there any way not to generate this? */
+        if (!mjit_opts.save_temps) {
+            char *before_dot;
+            remove_file(obj_file);
+
+            before_dot = obj_file + strlen(obj_file) - rb_strlen_lit(".obj");
+            append_lit(before_dot, ".lib"); remove_file(obj_file);
+            append_lit(before_dot, ".exp"); remove_file(obj_file);
+            append_lit(before_dot, ".pdb"); remove_file(obj_file);
+        }
     }
     else {
         verbose(2, "compile_c_to_so: compile error: %d", exit_code);

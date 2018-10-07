@@ -552,7 +552,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_unload_units
-    skip_on_mswin
     Dir.mktmpdir("jit_test_unload_units_") do |dir|
       # MIN_CACHE_SIZE is 10
       out, err = eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~'end;'}", verbose: 1, min_calls: 1, max_cache: 10)
@@ -717,7 +716,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_clean_so
-    skip_on_mswin
     Dir.mktmpdir("jit_test_clean_so_") do |dir|
       code = "x = 0; 10.times {|i|x+=i}"
       eval_with_jit({"TMPDIR"=>dir}, code)
@@ -796,13 +794,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   private
-
-  # Some tests are stil failing on VC++.
-  def skip_on_mswin
-    if RUBY_PLATFORM.match?(/mswin/)
-      skip 'This test does not succeed on mswin yet.'
-    end
-  end
 
   def skip_on_mingw
     if RUBY_PLATFORM.match?(/mingw/)
