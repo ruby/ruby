@@ -92,6 +92,10 @@ Outstanding ones only.
     * File.dirname now accepts an optional argument for the level to
       strip path components. [[Feature #12194]]
 
+* Integer
+
+    * Integer.try_convert is added. [[Feature #15211]]
+
 * Module
 
     * Module#prepend now modifies the ancestor chain if the receiver
@@ -191,6 +195,7 @@ Excluding feature bug fixes.
 [Feature #12194]: https://bugs.ruby-lang.org/issues/12194
 [Feature #14256]: https://bugs.ruby-lang.org/issues/14256
 [Feature #15198]: https://bugs.ruby-lang.org/issues/15198
+[Feature #15211]: https://bugs.ruby-lang.org/issues/15211
 [Feature #16043]: https://bugs.ruby-lang.org/issues/16043
 [Feature #16806]: https://bugs.ruby-lang.org/issues/16806
 [Feature #17312]: https://bugs.ruby-lang.org/issues/17312
