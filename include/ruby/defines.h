@@ -361,6 +361,11 @@ ruby_xrealloc2_with_location(void *ptr, size_t s1, size_t s2, const char *file, 
 #define MJIT_SYMBOL_EXPORT_BEGIN RUBY_SYMBOL_EXPORT_BEGIN
 #define MJIT_SYMBOL_EXPORT_END RUBY_SYMBOL_EXPORT_END
 
+#if defined(MJIT_HEADER) && defined(_MSC_VER)
+# undef MJIT_FUNC_EXPORTED
+# define MJIT_FUNC_EXPORTED static
+#endif
+
 #ifndef RUBY_EXTERN
 #define RUBY_EXTERN extern
 #endif
