@@ -78,6 +78,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_blockparam
+    skip_on_mingw
     skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2, insns: %i[getblockparam setblockparam])
     begin;
@@ -167,10 +168,8 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putspecialobject_putiseq
+    skip_on_mingw # [Bug #14948]
     skip_on_mswin
-    if /mingw/ =~ RUBY_PLATFORM
-      skip "this is currently failing on MinGW [Bug #14948]"
-    end
 
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[putspecialobject putiseq])
     begin;
@@ -184,6 +183,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putstring_concatstrings_tostring
+    skip_on_mingw
     skip_on_mswin
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
@@ -211,6 +211,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_intern_duparray
+    skip_on_mingw
     skip_on_mswin
     assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
@@ -357,6 +358,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_invokesuper
+    skip_on_mingw
     skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 4, insns: %i[invokesuper])
     begin;
@@ -376,6 +378,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_invokeblock_leave
+    skip_on_mingw
     skip_on_mswin
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '2', success_count: 2, insns: %i[invokeblock leave])
     begin;
@@ -446,6 +449,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_once
+    skip_on_mingw
     skip_on_mswin
     assert_compile_once('/#{true}/o =~ "true" && $~.to_a', result_inspect: '["true"]', insns: %i[once])
   end
@@ -517,11 +521,13 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_aref_with
+    skip_on_mingw
     skip_on_mswin
     assert_compile_once("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
   end
 
   def test_compile_insn_opt_aset
+    skip_on_mingw
     skip_on_mswin
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
     begin;
@@ -830,6 +836,12 @@ class TestJIT < Test::Unit::TestCase
   def skip_on_mswin
     if RUBY_PLATFORM.match?(/mswin/)
       skip 'This test does not succeed on mswin yet.'
+    end
+  end
+
+  def skip_on_mingw
+    if RUBY_PLATFORM.match?(/mingw/)
+      skip 'This test does not succeed on mingw yet.'
     end
   end
 
