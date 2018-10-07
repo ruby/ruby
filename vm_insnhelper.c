@@ -23,7 +23,7 @@
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 
-VALUE
+MJIT_STATIC VALUE
 ruby_vm_special_exception_copy(VALUE exc)
 {
     VALUE e = rb_obj_alloc(rb_class_real(RBASIC_CLASS(exc)));
@@ -55,8 +55,8 @@ vm_stackoverflow(void)
     ec_stack_overflow(GET_EC(), TRUE);
 }
 
-NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
-void
+NORETURN(MJIT_STATIC void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
+MJIT_STATIC void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
     if (crit || rb_during_gc()) {
@@ -314,7 +314,7 @@ vm_pop_frame(rb_execution_context_t *ec, rb_control_frame_t *cfp, const VALUE *e
     return flags & VM_FRAME_FLAG_FINISH;
 }
 
-void
+MJIT_STATIC void
 rb_vm_pop_frame(rb_execution_context_t *ec)
 {
     vm_pop_frame(ec, ec->cfp, ec->cfp->ep);
@@ -337,7 +337,7 @@ rb_arity_error_new(int argc, int min, int max)
     return rb_exc_new3(rb_eArgError, err_mess);
 }
 
-void
+MJIT_STATIC void
 rb_error_arity(int argc, int min, int max)
 {
     rb_exc_raise(rb_arity_error_new(argc, min, max));
@@ -369,7 +369,7 @@ vm_env_write(const VALUE *ep, int index, VALUE v)
     }
 }
 
-VALUE
+MJIT_STATIC VALUE
 rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 {
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
@@ -562,7 +562,7 @@ check_method_entry(VALUE obj, int can_be_svar)
     }
 }
 
-const rb_callable_method_entry_t *
+MJIT_STATIC const rb_callable_method_entry_t *
 rb_vm_frame_method_entry(const rb_control_frame_t *cfp)
 {
     const VALUE *ep = cfp->ep;
@@ -1628,7 +1628,7 @@ vm_call_iseq_setup_normal_0start(rb_execution_context_t *ec, rb_control_frame_t 
     return vm_call_iseq_setup_normal(ec, cfp, calling, cc->me, 0, param, local);
 }
 
-int
+MJIT_STATIC int
 rb_simple_iseq_p(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_opt == FALSE &&
