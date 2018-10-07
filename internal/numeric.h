@@ -77,6 +77,7 @@ VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
+VALUE rb_check_integer_type(VALUE);
 VALUE rb_num_pow(VALUE x, VALUE y);
 VALUE rb_float_ceil(VALUE num, int ndigits);
 VALUE rb_float_floor(VALUE x, int ndigits);

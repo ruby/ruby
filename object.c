@@ -3232,19 +3232,23 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 #define try_to_int(val, mid, raise) \
     convert_type_with_id(val, "Integer", mid, raise, -1)
 
-ALWAYS_INLINE(static VALUE rb_to_integer(VALUE val, const char *method, ID mid));
+ALWAYS_INLINE(static VALUE rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise));
+/* Integer specific rb_check_convert_type_with_id */
 static inline VALUE
-rb_to_integer(VALUE val, const char *method, ID mid)
+rb_to_integer_with_id_exception(VALUE val, const char *method, ID mid, int raise)
 {
     VALUE v;
 
     if (RB_INTEGER_TYPE_P(val)) return val;
-    v = try_to_int(val, mid, TRUE);
+    v = try_to_int(val, mid, raise);
+    if (!raise && NIL_P(v)) return Qnil;
     if (!RB_INTEGER_TYPE_P(v)) {
         conversion_mismatch(val, "Integer", method, v);
     }
     return v;
 }
+#define rb_to_integer(val, method, mid) \
+    rb_to_integer_with_id_exception(val, method, mid, TRUE)
 
 /**
  * Tries to convert \a val into \c Integer.
@@ -3369,6 +3373,12 @@ VALUE
 rb_Integer(VALUE val)
 {
     return rb_convert_to_integer(val, 0, TRUE);
+}
+
+VALUE
+rb_check_integer_type(VALUE val)
+{
+    return rb_to_integer_with_id_exception(val, "to_int", idTo_int, FALSE);
 }
 
 int

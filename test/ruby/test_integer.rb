@@ -660,4 +660,21 @@ class TestInteger < Test::Unit::TestCase
     def o.fdiv(x); 1; end
     assert_equal(1.0, 1.fdiv(o))
   end
+
+  def test_try_convert
+    assert_equal(1, Integer.try_convert(1))
+    assert_equal(1, Integer.try_convert(1.0))
+    assert_nil Integer.try_convert("1")
+    o = Object.new
+    assert_nil Integer.try_convert(o)
+    def o.to_i; 1; end
+    assert_nil Integer.try_convert(o)
+    o = Object.new
+    def o.to_int; 1; end
+    assert_equal(1, Integer.try_convert(o))
+
+    o = Object.new
+    def o.to_int; Object.new; end
+    assert_raise_with_message(TypeError, /can't convert Object to Integer/) {Integer.try_convert(o)}
+  end
 end

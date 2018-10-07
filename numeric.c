@@ -5247,6 +5247,12 @@ rb_int_s_isqrt(VALUE self, VALUE num)
     }
 }
 
+static VALUE
+int_s_try_convert(VALUE self, VALUE num)
+{
+    return rb_check_integer_type(num);
+}
+
 /*
  *  Document-class: ZeroDivisionError
  *
@@ -5473,6 +5479,7 @@ Init_Numeric(void)
     rb_undef_alloc_func(rb_cInteger);
     rb_undef_method(CLASS_OF(rb_cInteger), "new");
     rb_define_singleton_method(rb_cInteger, "sqrt", rb_int_s_isqrt, 1);
+    rb_define_singleton_method(rb_cInteger, "try_convert", int_s_try_convert, 1);
 
     rb_define_method(rb_cInteger, "to_s", int_to_s, -1);
     rb_define_alias(rb_cInteger, "inspect", "to_s");
