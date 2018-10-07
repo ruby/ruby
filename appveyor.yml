@@ -93,8 +93,8 @@ for:
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
     - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=1.5" test-all RUBY_FORCE_TEST_JIT=1
-    # execute unstable tests separately without -j.
-    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0" test-all TEST_EXCLUDES= TESTS="../test/win32ole/test_win32ole.rb ../test/ruby/test_thread_queue.rb"
+    # separately execute tests that may crash worker without -j.
+    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=1.5" test-all TEST_EXCLUDES= TESTS="../test/win32ole/test_win32ole.rb"
     - nmake -l test-spec
 -
   matrix:
