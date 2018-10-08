@@ -520,24 +520,24 @@ class TestTimeTZ::WithTZ < Test::Unit::TestCase
     "JST"
   end
 
-  def test_new_with_timezone
+  def test_new
     t = Time.new(2018, 9, 1, 12, 0, 0, tz)
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(Time.utc(2018, 9, 1, 3, 0, 0).to_i, t.to_i)
   end
 
-  def test_getlocal_with_timezone
+  def test_getlocal
     t = Time.utc(2018, 9, 1, 12, 0, 0).getlocal(tz)
     assert_equal([2018, 9, 1, 21, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(Time.utc(2018, 9, 1, 12, 0, 0), t)
   end
 
-  def test_strftime_with_timezone
+  def test_strftime
     t = Time.new(2018, 9, 1, 12, 0, 0, tz)
     assert_equal("+0900 #{abbr}", t.strftime("%z %Z"))
   end
 
-  def test_plus_with_timezone
+  def test_plus
     t = Time.new(2018, 9, 1, 12, 0, 0, tz) + 4000
     assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(Time.utc(2018, 9, 1, 4, 6, 40), t)
