@@ -29,7 +29,7 @@ extern "C" {
 #include "defines.h"
 
 /* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT.
-   mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */ 
+   mswin's RUBY_EXTERN already has that. See also: win32/Makefile.sub */
 #if defined(MJIT_HEADER) && defined(_WIN32) && defined(__GNUC__)
 # undef RUBY_EXTERN
 # define RUBY_EXTERN extern __declspec(dllimport)
