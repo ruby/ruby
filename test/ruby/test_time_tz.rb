@@ -542,4 +542,10 @@ class TestTimeTZ::WithTZ < Test::Unit::TestCase
     assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(Time.utc(2018, 9, 1, 4, 6, 40), t)
   end
+
+  def test_marshal
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
+    t2 = Marshal.load(Marshal.dump(t))
+    assert_equal(t, t2)
+  end
 end
