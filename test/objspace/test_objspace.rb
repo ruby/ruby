@@ -318,6 +318,62 @@ class TestObjSpace < Test::Unit::TestCase
     end
   end
 
+  def test_dump_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_class_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['class']
+      found  = output.drop(1).find { |l| JSON.parse(l)['address'] == addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
+  def test_dump_reference_addresses_match_dump_all_addresses
+    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def dump_my_heap_please
+          obj = Object.new
+          obj2 = Object.new
+          obj2.instance_variable_set(:@ref, obj)
+          puts ObjectSpace.dump(obj)
+          ObjectSpace.dump_all(output: $stdout)
+        end
+
+        dump_my_heap_please
+      end;
+      needle = JSON.parse(output.first)
+      addr = needle['address']
+      found  = output.drop(1).find { |l| (JSON.parse(l)['references'] || []).include? addr }
+      assert found, "object #{addr} should be findable in full heap dump"
+    end
+  end
+
   def test_dump_all
     entry = /"bytesize":11, "value":"TEST STRING", "encoding":"UTF-8", "file":"-", "line":4, "method":"dump_my_heap_please", "generation":/
 
