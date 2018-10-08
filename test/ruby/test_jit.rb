@@ -77,7 +77,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_blockparam
-    skip_on_mingw
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 2, insns: %i[getblockparam setblockparam])
     begin;
       def foo(&b)
@@ -164,8 +163,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putspecialobject_putiseq
-    skip_on_mingw # [Bug #14948]
-
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: 'hellohello', success_count: 2, insns: %i[putspecialobject putiseq])
     begin;
       print 2.times.map {
@@ -178,7 +175,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_putstring_concatstrings_tostring
-    skip_on_mingw
     assert_compile_once('"a#{}b" + "c"', result_inspect: '"abc"', insns: %i[putstring concatstrings tostring])
   end
 
@@ -203,7 +199,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_intern_duparray
-    skip_on_mingw
     assert_compile_once('[:"#{0}"] + [1,2,3]', result_inspect: '[:"0", 1, 2, 3]', insns: %i[intern duparray])
   end
 
@@ -343,7 +338,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_invokesuper
-    skip_on_mingw
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '3', success_count: 4, insns: %i[invokesuper])
     begin;
       mod = Module.new {
@@ -362,7 +356,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_invokeblock_leave
-    skip_on_mingw
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '2', success_count: 2, insns: %i[invokeblock leave])
     begin;
       def foo
@@ -430,7 +423,6 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_once
-    skip_on_mingw
     assert_compile_once('/#{true}/o =~ "true" && $~.to_a', result_inspect: '["true"]', insns: %i[once])
   end
 
@@ -499,12 +491,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_opt_aref_with
-    skip_on_mingw
     assert_compile_once("{ '1' => 2 }['1']", result_inspect: '2', insns: %i[opt_aref_with])
   end
 
   def test_compile_insn_opt_aset
-    skip_on_mingw
     assert_compile_once("#{<<~"begin;"}\n#{<<~"end;"}", result_inspect: '5', insns: %i[opt_aset opt_aset_with])
     begin;
       hash = { '1' => 2 }
@@ -805,12 +795,6 @@ class TestJIT < Test::Unit::TestCase
 
   def appveyor_mswin?
     ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
-  end
-
-  def skip_on_mingw
-    if RUBY_PLATFORM.match?(/mingw/)
-      skip 'This test does not succeed on mingw yet.'
-    end
   end
 
   # The shortest way to test one proc

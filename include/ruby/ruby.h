@@ -28,6 +28,12 @@ extern "C" {
 
 #include "defines.h"
 
+/* For MinGW, we need __declspec(dllimport) for RUBY_EXTERN on MJIT. mswin's RUBY_EXTERN already has that. */
+#if defined(MJIT_HEADER) && defined(_WIN32) && defined(__GNUC__)
+# undef RUBY_EXTERN
+# define RUBY_EXTERN extern __declspec(dllimport)
+#endif
+
 #if defined(__cplusplus)
 /* __builtin_choose_expr and __builtin_types_compatible aren't available
  * on C++.  See https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html */
