@@ -36,6 +36,21 @@ end
 # * /etc/nsswitch.conf is not supported.
 
 class Resolv
+  CURRENT_RESOLVER_KEY = :__rb_resolv_current_resolver
+
+  ##
+  # Returns the resolver for the current thread.
+
+  def self.current_resolver
+    Thread.current[CURRENT_RESOLVER_KEY] || DefaultResolver
+  end
+
+  ##
+  # Sets +resolver+ as the resolver for the current thread.
+
+  def self.current_resolver=(resolver)
+    Thread.current[CURRENT_RESOLVER_KEY] = resolver
+  end
 
   VERSION = "0.4.0"
 
@@ -43,42 +58,42 @@ class Resolv
   # Looks up the first IP address for +name+.
 
   def self.getaddress(name)
-    DefaultResolver.getaddress(name)
+    current_resolver.getaddress(name)
   end
 
   ##
   # Looks up all IP address for +name+.
 
   def self.getaddresses(name)
-    DefaultResolver.getaddresses(name)
+    current_resolver.getaddresses(name)
   end
 
   ##
   # Iterates over all IP addresses for +name+.
 
   def self.each_address(name, &block)
-    DefaultResolver.each_address(name, &block)
+    current_resolver.each_address(name, &block)
   end
 
   ##
   # Looks up the hostname of +address+.
 
   def self.getname(address)
-    DefaultResolver.getname(address)
+    current_resolver.getname(address)
   end
 
   ##
   # Looks up all hostnames for +address+.
 
   def self.getnames(address)
-    DefaultResolver.getnames(address)
+    current_resolver.getnames(address)
   end
 
   ##
   # Iterates over all hostnames for +address+.
 
   def self.each_name(address, &proc)
-    DefaultResolver.each_name(address, &proc)
+    current_resolver.each_name(address, &proc)
   end
 
   ##
