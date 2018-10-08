@@ -3899,6 +3899,11 @@ time_add(struct time_object *tobj, VALUE torig, VALUE offset, int sign)
         GetTimeval(result, tobj);
         TZMODE_SET_FIXOFF(tobj, off);
     }
+    else if (TZMODE_LOCALTIME_P(tobj)) {
+        VALUE zone = tobj->vtm.zone;
+        GetTimeval(result, tobj);
+        tobj->vtm.zone = zone;
+    }
 
     return result;
 }
@@ -3982,6 +3987,9 @@ rb_time_succ(VALUE time)
     time = time_new_timew(rb_cTime, wadd(tobj->timew, WINT2FIXWV(TIME_SCALE)));
     GetTimeval(time, tobj2);
     TZMODE_COPY(tobj2, tobj);
+    if (TZMODE_LOCALTIME_P(tobj2) && maybe_tzobj_p(tobj2->vtm.zone)) {
+        zone_localtime(tobj2->vtm.zone, time);
+    }
     return time;
 }
 

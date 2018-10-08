@@ -536,4 +536,10 @@ class TestTimeTZ::WithTZ < Test::Unit::TestCase
     t = Time.new(2018, 9, 1, 12, 0, 0, tz)
     assert_equal("+0900 #{abbr}", t.strftime("%z %Z"))
   end
+
+  def test_plus_with_timezone
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz) + 4000
+    assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(Time.utc(2018, 9, 1, 4, 6, 40), t)
+  end
 end
