@@ -172,9 +172,9 @@ reachable_object_i(VALUE ref, void *data)
 	return;
 
     if (dc->cur_obj_references == 0)
-	dump_append(dc, ", \"references\":[\"0x%"PRIxPTR"\"", ref);
+        dump_append(dc, ", \"references\":[\"0x%"PRIxPTR"\"", ref);
     else
-	dump_append(dc, ", \"0x%"PRIxPTR"\"", ref);
+        dump_append(dc, ", \"0x%"PRIxPTR"\"", ref);
 
     dc->cur_obj_references++;
 }
@@ -238,7 +238,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, "{\"address\":\"0x%"PRIxPTR"\", \"type\":\"%s\"", obj, obj_type(obj));
 
     if (dc->cur_obj_klass)
-	dump_append(dc, ", \"class\":\"0x%"PRIxPTR"\"", dc->cur_obj_klass);
+        dump_append(dc, ", \"class\":\"0x%"PRIxPTR"\"", dc->cur_obj_klass);
     if (rb_obj_frozen_p(obj))
 	dump_append(dc, ", \"frozen\":true");
 
@@ -274,7 +274,7 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_HASH:
 	dump_append(dc, ", \"size\":%"PRIuSIZE, (size_t)RHASH_SIZE(obj));
 	if (FL_TEST(obj, HASH_PROC_DEFAULT))
-	    dump_append(dc, ", \"default\":\"0x%"PRIxPTR"\"", RHASH_IFNONE(obj));
+            dump_append(dc, ", \"default\":\"0x%"PRIxPTR"\"", RHASH_IFNONE(obj));
 	break;
 
       case T_ARRAY:
@@ -363,9 +363,9 @@ root_obj_i(const char *category, VALUE obj, void *data)
     if (dc->root_category != NULL && category != dc->root_category)
 	dump_append(dc, "]}\n");
     if (dc->root_category == NULL || category != dc->root_category)
-	dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"0x%"PRIxPTR"\"", category, obj);
+        dump_append(dc, "{\"type\":\"ROOT\", \"root\":\"%s\", \"references\":[\"0x%"PRIxPTR"\"", category, obj);
     else
-	dump_append(dc, ", \"0x%"PRIxPTR"\"", obj);
+        dump_append(dc, ", \"0x%"PRIxPTR"\"", obj);
 
     dc->root_category = category;
     dc->roots++;
