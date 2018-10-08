@@ -4735,7 +4735,7 @@ time_strftime(VALUE time, VALUE format)
 	return rb_enc_str_new(0, 0, enc);
     }
     else {
-	VALUE str = rb_strftime_alloc(fmt, len, enc, time, &tobj->vtm, tobj->timew,
+        VALUE str = rb_strftime_alloc(fmt, len, enc, time, &tobj->vtm, tobj->timew,
 				      TZMODE_UTC_P(tobj));
 	rb_str_tmp_frozen_release(format, tmp);
 	if (!str) rb_raise(rb_eArgError, "invalid format: %"PRIsVALUE, format);
