@@ -47,6 +47,19 @@ describe "Time#+" do
     (Time.new(2012, 1, 1, 0, 0, 0, 3600) + 10).utc_offset.should == 3600
   end
 
+  ruby_version_is "2.6" do
+    it "returns a time with the same timezone as self" do
+      zone = mock("timezone")
+      zone.should_receive(:local_to_utc).and_return(Time.utc(2012, 1, 1, 6, 30, 0))
+      zone.should_receive(:utc_to_local).and_return(Time.utc(2012, 1, 1, 12, 0, 10))
+      t = Time.new(2012, 1, 1, 12, 0, 0, zone) + 10
+      t.zone.should == zone
+      t.utc_offset.should == 19800
+      t.to_a[0, 6].should == [10, 0, 12, 1, 1, 2012]
+      t.should == Time.utc(2012, 1, 1, 6, 30, 10)
+    end
+  end
+
   it "does not return a subclass instance" do
     c = Class.new(Time)
     x = c.now + 1
