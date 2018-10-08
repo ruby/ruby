@@ -258,6 +258,13 @@ sufficient information, see the ChangeLog file or Redmine
 
         * `Struct#filter` is a new alias for `Struct#select` [Feature #13784]
 
+* `Time`
+
+    * New features:
+
+        * `Time.new` and `Time#getlocal` accept a timezone object as
+	  well as UTC offset string.  [Feature #14850]
+
 * `TracePoint`
 
     * New methods:
