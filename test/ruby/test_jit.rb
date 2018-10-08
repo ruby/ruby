@@ -585,8 +585,13 @@ class TestJIT < Test::Unit::TestCase
         assert_equal(2, compactions.size, debug_info)
       end
 
-      # verify .o files are deleted on unload_units
-      assert_send([Dir, :empty?, dir], debug_info)
+      if appveyor_mswin?
+        # "Permission Denied" error is preventing to remove so file on AppVeyor.
+        warn 'skipped to test directory emptiness in TestJIT#test_unload_units on AppVeyor mswin'
+      else
+        # verify .o files are deleted on unload_units
+        assert_send([Dir, :empty?, dir], debug_info)
+      end
     end
   end
 
@@ -716,6 +721,9 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_clean_so
+    if appveyor_mswin?
+      skip 'Removing so file is failing on AppVeyor mswin due to Permission Denied.'
+    end
     Dir.mktmpdir("jit_test_clean_so_") do |dir|
       code = "x = 0; 10.times {|i|x+=i}"
       eval_with_jit({"TMPDIR"=>dir}, code)
@@ -794,6 +802,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   private
+
+  def appveyor_mswin?
+    ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
+  end
 
   def skip_on_mingw
     if RUBY_PLATFORM.match?(/mingw/)
