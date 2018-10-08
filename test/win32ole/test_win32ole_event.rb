@@ -68,6 +68,7 @@ if defined?(WIN32OLE_EVENT)
           WIN32OLE_EVENT.message_loop
           sleep 1
         end
+        sleep 1
       end
 
       def default_handler(event, *args)
