@@ -21,18 +21,30 @@ dist: trusty
 
 sudo: false
 
+# Custom definitions
+.definitions:
+  if: &secondary type = cron OR env(RUBY_CI_SECONDARY) = 1
 matrix:
   include:
     - os: linux
       compiler: gcc
     - os: linux
       compiler: gcc-8
-      addons:
+      addons: &addons_gcc8
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-8
+    - os: linux
+      compiler: gcc-8
+      addons: *addons_gcc8
+      env:
+        - OPENSSL_VERSION=1.1.1
+      install:
+        - source ./tool/install_openssl.sh "${OPENSSL_VERSION}"
+        - openssl version
+      if: *secondary
     - os: linux
       language: ruby
       rvm: 2.3
