@@ -263,8 +263,8 @@ sufficient information, see the ChangeLog file or Redmine
     * New features:
 
         * `Time.new` and `Time#getlocal` accept a timezone object as
-           well as UTC offset string. `Time#+`, `Time#-` and `Time#succ`
-           also preserve the timezone.  [Feature #14850]
+          well as UTC offset string. `Time#+`, `Time#-` and `Time#succ`
+          also preserve the timezone.  [Feature #14850]
 
 * `TracePoint`
 
