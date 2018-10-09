@@ -1,7 +1,11 @@
 # coding: utf-8
 # frozen_string_literal: true
 
-require File.expand_path("../lib/bundler/version", __FILE__)
+begin
+  require File.expand_path("../lib/bundler/version", __FILE__)
+rescue LoadError # for Ruby core repository
+  require File.expand_path("../bundler/version", __FILE__)
+end
 require "shellwords"
 
 Gem::Specification.new do |s|
