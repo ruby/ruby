@@ -980,6 +980,14 @@ main()
 [aix*],[	LIBS="-lm $LIBS"
 		ac_cv_func_round=no
 		],
+[linux*],[	LIBS="-lm $LIBS"
+		# __builtin_longjmp in ppc64* Linux does not restore
+		# the TOC register (r2), which is problematic
+		# when a global exit happens from JITted .so code.
+		AS_CASE(["$target_cpu"], [powerpc64*], [
+			ac_cv_func___builtin_setjmp=no
+		])
+		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
 
