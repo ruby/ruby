@@ -782,6 +782,19 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.call, feature8391)
   end
 
+  def test_singleton_method_prepend
+    bug14658 = '[Bug #14658]'
+    c1 = Class.new
+    o = c1.new
+    def o.bar; :bar; end
+    class << o; prepend Module.new; end
+    m = assert_nothing_raised(NameError, bug14658) {o.singleton_method(:bar)}
+    assert_equal(:bar, m.call, bug14658)
+
+    o = Object.new
+    assert_raise(NameError, bug14658) {o.singleton_method(:bar)}
+  end
+
   Feature9783 = '[ruby-core:62212] [Feature #9783]'
 
   def assert_curry_three_args(m)

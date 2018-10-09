@@ -1769,21 +1769,23 @@ VALUE
 rb_obj_singleton_method(VALUE obj, VALUE vid)
 {
     const rb_method_entry_t *me;
-    VALUE klass;
+    VALUE klass = rb_singleton_class_get(obj);
     ID id = rb_check_id(&vid);
 
-    if (!id) {
-	if (!NIL_P(klass = rb_singleton_class_get(obj)) &&
-	    respond_to_missing_p(klass, obj, vid, FALSE)) {
-	    id = rb_intern_str(vid);
-	    return mnew_missing(klass, obj, id, rb_cMethod);
-	}
+    if (NIL_P(klass) || NIL_P(klass = RCLASS_ORIGIN(klass))) {
       undef:
 	rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
 			  obj, vid);
     }
-    if (NIL_P(klass = rb_singleton_class_get(obj)) ||
-	UNDEFINED_METHOD_ENTRY_P(me = rb_method_entry_at(klass, id)) ||
+    if (!id) {
+	if (respond_to_missing_p(klass, obj, vid, FALSE)) {
+	    id = rb_intern_str(vid);
+	    return mnew_missing(klass, obj, id, rb_cMethod);
+	}
+	goto undef;
+    }
+    me = rb_method_entry_at(klass, id);
+    if (UNDEFINED_METHOD_ENTRY_P(me) ||
 	UNDEFINED_REFINED_METHOD_P(me->def)) {
 	vid = ID2SYM(id);
 	goto undef;
