@@ -507,10 +507,50 @@ End
   end
 end
 
-class TestTimeTZ::WithTZ < Test::Unit::TestCase
+module TestTimeTZ::WithTZ
   def tz
-    @tz ||= TestTimeTZ::TZ.new(tzname, abbr, +9*3600)
+    @tz ||= TestTimeTZ::TZ.new(tzname, abbr, utc_offset)
   end
+
+  def test_new
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
+    assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    h, m = (-utc_offset / 60).divmod(60)
+    assert_equal(Time.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
+  end
+
+  def test_getlocal
+    t = Time.utc(2018, 9, 1, 12, 0, 0).getlocal(tz)
+    h, m = (utc_offset / 60).divmod(60)
+    assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(Time.utc(2018, 9, 1, 12, 0, 0), t)
+  end
+
+  def test_strftime
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
+    h, m = (utc_offset.abs / 60).divmod(60)
+    h = -h if utc_offset < 0
+    assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
+  end
+
+  def test_plus
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz) + 4000
+    assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    m, s = (4000-utc_offset).divmod(60)
+    h, m = m.divmod(60)
+    assert_equal(Time.utc(2018, 9, 1, 12+h, m, s), t)
+  end
+
+  def test_marshal
+    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
+    t2 = Marshal.load(Marshal.dump(t))
+    assert_equal(t, t2)
+    assert_equal(t.utc_offset, t2.utc_offset)
+  end
+end
+
+class TestTimeTZ::JST < Test::Unit::TestCase
+  include TestTimeTZ::WithTZ
 
   def tzname
     "Asia/Tokyo"
@@ -520,32 +560,23 @@ class TestTimeTZ::WithTZ < Test::Unit::TestCase
     "JST"
   end
 
-  def test_new
-    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
-    assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
-    assert_equal(Time.utc(2018, 9, 1, 3, 0, 0).to_i, t.to_i)
+  def utc_offset
+    +9*3600
+  end
+end
+
+class TestTimeTZ::EDT < Test::Unit::TestCase
+  include TestTimeTZ::WithTZ
+
+  def tzname
+    "America/New_York"
   end
 
-  def test_getlocal
-    t = Time.utc(2018, 9, 1, 12, 0, 0).getlocal(tz)
-    assert_equal([2018, 9, 1, 21, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
-    assert_equal(Time.utc(2018, 9, 1, 12, 0, 0), t)
+  def abbr
+    "EDT"
   end
 
-  def test_strftime
-    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
-    assert_equal("+0900 #{abbr}", t.strftime("%z %Z"))
-  end
-
-  def test_plus
-    t = Time.new(2018, 9, 1, 12, 0, 0, tz) + 4000
-    assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
-    assert_equal(Time.utc(2018, 9, 1, 4, 6, 40), t)
-  end
-
-  def test_marshal
-    t = Time.new(2018, 9, 1, 12, 0, 0, tz)
-    t2 = Marshal.load(Marshal.dump(t))
-    assert_equal(t, t2)
+  def utc_offset
+    -4*3600
   end
 end
