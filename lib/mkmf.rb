@@ -657,7 +657,8 @@ MSG
   end
 
   def try_ldflags(flags, opts = {})
-    try_link(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
+    opts = {:werror => true}.update(opts) if $mswin
+    try_link(MAIN_DOES_NOTHING, flags, opts)
   end
 
   def append_ldflags(flags, *opts)
