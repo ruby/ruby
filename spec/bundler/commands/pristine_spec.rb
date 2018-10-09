@@ -2,7 +2,7 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
     build_lib "baz", :path => bundled_app do |s|
       s.version = "1.0.0"
@@ -14,6 +14,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       build_gem "baz-dev", "1.0.0"
       build_gem "very_simple_binary", &:add_c_extension
       build_git "foo", :path => lib_path("foo")
+      build_git "git_with_ext", :path => lib_path("git_with_ext"), &:add_c_extension
       build_lib "bar", :path => lib_path("bar")
     end
 
@@ -22,6 +23,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       gem "weakling"
       gem "very_simple_binary"
       gem "foo", :git => "#{lib_path("foo")}"
+      gem "git_with_ext", :git => "#{lib_path("git_with_ext")}"
       gem "bar", :path => "#{lib_path("bar")}"
 
       gemspec
@@ -40,20 +42,15 @@ RSpec.describe "bundle pristine", :ruby_repo do
       expect(changes_txt).to_not be_file
     end
 
-    it "does not delete the bundler gem", :ruby_repo do
+    it "does not delete the bundler gem" do
       ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"] = "true"
       system_gems :bundler
       bundle! "install"
       bundle! "pristine", :system_bundler => true
       bundle! "-v", :system_bundler => true
-
-      expected = if Bundler::VERSION < "2.0"
-        "Bundler version"
-      else
-        Bundler::VERSION
-      end
-
-      expect(out).to start_with(expected)
+      # An old rubygems couldn't handle a correct version of vendoered bundler.
+      bundler_version = Gem::VERSION < "2.1" ? "1.16.0" : Bundler::VERSION
+      expect(out).to end_with(bundler_version)
     end
   end
 
@@ -159,6 +156,23 @@ RSpec.describe "bundle pristine", :ruby_repo do
     let(:c_ext_dir)          { Pathname.new(very_simple_binary.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
     before { bundle "config build.very_simple_binary -- #{build_opt}" }
+
+    # This just verifies that the generated Makefile from the c_ext gem makes
+    # use of the build_args from the bundle config
+    it "applies the config when installing the gem" do
+      bundle! "pristine"
+
+      makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
+      expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
+      expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+    end
+  end
+
+  context "when a build config exists for a git sourced gem" do
+    let(:git_with_ext) { Bundler.definition.specs["git_with_ext"].first }
+    let(:c_ext_dir)          { Pathname.new(git_with_ext.full_gem_path).join("ext") }
+    let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
+    before { bundle "config build.git_with_ext -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config

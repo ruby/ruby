@@ -64,7 +64,7 @@ Usage: "bundle inject GEM VERSION"
     it "add gem with group option in gemfile" do
       bundle "inject 'rack-obama' '>0' --group=development"
       gemfile = bundled_app("Gemfile").read
-      str = "gem \"rack-obama\", \"> 0\", :group => [:development]"
+      str = "gem \"rack-obama\", \"> 0\", :group => :development"
       expect(gemfile).to include str
     end
 

@@ -166,6 +166,17 @@ module Bundler
       Check.new(options).run
     end
 
+    desc "remove [GEM [GEM ...]]", "Removes gems from the Gemfile"
+    long_desc <<-D
+      Removes the given gems from the Gemfile while ensuring that the resulting Gemfile is still valid. If the gem is not found, Bundler prints a error message and if gem could not be removed due to any reason Bundler will display a warning.
+    D
+    method_option "install", :type => :boolean, :banner =>
+      "Runs 'bundle install' after removing the gems from the Gemfile"
+    def remove(*gems)
+      require "bundler/cli/remove"
+      Remove.new(gems, options).run
+    end
+
     desc "install [OPTIONS]", "Install the current environment to the system"
     long_desc <<-D
       Install will install all of the gems in the current bundle, making them available
@@ -195,8 +206,7 @@ module Bundler
       "Do not attempt to fetch gems remotely and use the gem cache instead"
     deprecated_option "no-cache", :type => :boolean, :banner =>
       "Don't update the existing gem cache."
-    method_option "redownload", :type => :boolean, :aliases =>
-      [Bundler.feature_flag.forget_cli_options? ? nil : "--force"].compact, :banner =>
+    method_option "redownload", :type => :boolean, :aliases => "--force", :banner =>
       "Force downloading every gem."
     deprecated_option "no-prune", :type => :boolean, :banner =>
       "Don't remove stale gems from the cache."
@@ -219,6 +229,7 @@ module Bundler
       "Include gems that are part of the specified named group."
     map "i" => "install"
     def install
+      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require "bundler/cli/install"
       Bundler.settings.temporary(:no_install => false) do
         Install.new(options.dup).run
@@ -233,6 +244,8 @@ module Bundler
     D
     method_option "full-index", :type => :boolean, :banner =>
       "Fall back to using the single-file index of all gems"
+    method_option "gemfile", :type => :string, :banner =>
+      "Use the specified gemfile instead of Gemfile"
     method_option "group", :aliases => "-g", :type => :array, :banner =>
       "Update a specific group"
     method_option "jobs", :aliases => "-j", :type => :numeric, :banner =>
@@ -243,7 +256,7 @@ module Bundler
       "Only output warnings and errors."
     method_option "source", :type => :array, :banner =>
       "Update a specific source (and all gems associated with it)"
-    method_option "force", :type => :boolean, :banner =>
+    method_option "redownload", :type => :boolean, :aliases => "--force", :banner =>
       "Force downloading every gem."
     method_option "ruby", :type => :boolean, :banner =>
       "Update ruby specified in Gemfile.lock"
@@ -262,6 +275,7 @@ module Bundler
     method_option "all", :type => :boolean, :banner =>
       "Update everything."
     def update(*gems)
+      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require "bundler/cli/update"
       Update.new(options, gems).run
     end
@@ -276,7 +290,21 @@ module Bundler
     method_option "outdated", :type => :boolean,
                               :banner => "Show verbose output including whether gems are outdated."
     def show(gem_name = nil)
-      Bundler::SharedHelpers.major_deprecation(2, "use `bundle list` instead of `bundle show`") if ARGV[0] == "show"
+      if ARGV[0] == "show"
+        rest = ARGV[1..-1]
+
+        new_command = rest.find {|arg| !arg.start_with?("--") } ? "info" : "list"
+
+        new_arguments = rest.map do |arg|
+          next arg if arg != "--paths"
+          next "--path" if new_command == "info"
+        end
+
+        old_argv = ARGV.join(" ")
+        new_argv = [new_command, *new_arguments.compact].join(" ")
+
+        Bundler::SharedHelpers.major_deprecation(2, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
+      end
       require "bundler/cli/show"
       Show.new(options, gem_name).run
     end
@@ -285,6 +313,9 @@ module Bundler
     if Bundler.feature_flag.list_command?
       desc "list", "List all gems in the bundle"
       method_option "name-only", :type => :boolean, :banner => "print only the gem names"
+      method_option "only-group", :type => :string, :banner => "print gems from a particular group"
+      method_option "without-group", :type => :string, :banner => "print all gems expect from a group"
+      method_option "paths", :type => :boolean, :banner => "print the path to each gem in the bundle"
       def list
         require "bundler/cli/list"
         List.new(options).run
@@ -316,6 +347,8 @@ module Bundler
       "Specify a different shebang executable name than the default (usually 'ruby')"
     method_option "standalone", :type => :boolean, :banner =>
       "Make binstubs that can work without the Bundler runtime"
+    method_option "all", :type => :boolean, :banner =>
+      "Install binstubs for all gems"
     def binstubs(*gems)
       require "bundler/cli/binstubs"
       Binstubs.new(options, gems).run
@@ -328,10 +361,13 @@ module Bundler
     method_option "version", :aliases => "-v", :type => :string
     method_option "group", :aliases => "-g", :type => :string
     method_option "source", :aliases => "-s", :type => :string
-
-    def add(gem_name)
+    method_option "skip-install", :type => :boolean, :banner =>
+      "Adds gem to the Gemfile but does not install it"
+    method_option "optimistic", :type => :boolean, :banner => "Adds optimistic declaration of version to gem"
+    method_option "strict", :type => :boolean, :banner => "Adds strict declaration of version to gem"
+    def add(*gems)
       require "bundler/cli/add"
-      Add.new(options.dup, gem_name).run
+      Add.new(options.dup, gems).run
     end
 
     desc "outdated GEM [OPTIONS]", "List installed gems with newer versions available"
@@ -350,9 +386,10 @@ module Bundler
       "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "pre", :type => :boolean, :banner => "Check for newer pre-release gems"
     method_option "source", :type => :array, :banner => "Check against a specific source"
-    method_option "strict", :type => :boolean, :banner =>
+    strict_is_update = Bundler.feature_flag.forget_cli_options?
+    method_option "filter-strict", :type => :boolean, :aliases => strict_is_update ? [] : %w[--strict], :banner =>
       "Only list newer versions allowed by your Gemfile requirements"
-    method_option "update-strict", :type => :boolean, :banner =>
+    method_option "update-strict", :type => :boolean, :aliases => strict_is_update ? %w[--strict] : [], :banner =>
       "Strict conservative resolution, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "minor", :type => :boolean, :banner => "Prefer updating only to next minor version"
     method_option "major", :type => :boolean, :banner => "Prefer updating to next major version (default)"
@@ -362,6 +399,8 @@ module Bundler
     method_option "filter-patch", :type => :boolean, :banner => "Only list patch newer versions"
     method_option "parseable", :aliases => "--porcelain", :type => :boolean, :banner =>
       "Use minimal formatting for more parseable output"
+    method_option "only-explicit", :type => :boolean, :banner =>
+      "Only list gems specified in your Gemfile, not their dependencies"
     def outdated(*gems)
       require "bundler/cli/outdated"
       Outdated.new(options, gems).run
@@ -413,6 +452,7 @@ module Bundler
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
     method_option :keep_file_descriptors, :type => :boolean, :default => false
+    method_option :gemfile, :type => :string, :required => false
     long_desc <<-D
       Exec runs a command, providing it access to the gems in the bundle. While using
       bundle exec you can require and call the bundled gems as if they were installed
@@ -436,11 +476,8 @@ module Bundler
       will show the current value, as well as any superceded values and
       where they were specified.
     D
-    method_option "parseable", :type => :boolean, :banner => "Use minimal formatting for more parseable output"
-    def config(*args)
-      require "bundler/cli/config"
-      Config.new(options, args, self).run
-    end
+    require "bundler/cli/config"
+    subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
     def open(name)
@@ -485,20 +522,23 @@ module Bundler
       end
     end
 
-    desc "viz [OPTIONS]", "Generates a visual dependency graph", :hide => true
-    long_desc <<-D
-      Viz generates a PNG file of the current Gemfile as a dependency graph.
-      Viz requires the ruby-graphviz gem (and its dependencies).
-      The associated gems must also be installed via 'bundle install'.
-    D
-    method_option :file, :type => :string, :default => "gem_graph", :aliases => "-f", :desc => "The name to use for the generated file. see format option"
-    method_option :format, :type => :string, :default => "png", :aliases => "-F", :desc => "This is output format option. Supported format is png, jpg, svg, dot ..."
-    method_option :requirements, :type => :boolean, :default => false, :aliases => "-R", :desc => "Set to show the version of each required dependency."
-    method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
-    method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
-    def viz
-      require "bundler/cli/viz"
-      Viz.new(options.dup).run
+    if Bundler.feature_flag.viz_command?
+      desc "viz [OPTIONS]", "Generates a visual dependency graph", :hide => true
+      long_desc <<-D
+        Viz generates a PNG file of the current Gemfile as a dependency graph.
+        Viz requires the ruby-graphviz gem (and its dependencies).
+        The associated gems must also be installed via 'bundle install'.
+      D
+      method_option :file, :type => :string, :default => "gem_graph", :aliases => "-f", :desc => "The name to use for the generated file. see format option"
+      method_option :format, :type => :string, :default => "png", :aliases => "-F", :desc => "This is output format option. Supported format is png, jpg, svg, dot ..."
+      method_option :requirements, :type => :boolean, :default => false, :aliases => "-R", :desc => "Set to show the version of each required dependency."
+      method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
+      method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
+      def viz
+        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+        require "bundler/cli/viz"
+        Viz.new(options.dup).run
+      end
     end
 
     old_gem = instance_method(:gem)
@@ -741,7 +781,7 @@ module Bundler
       end
 
       Bundler.ui.warn "The latest bundler is #{latest}, but you are currently running #{current}.\n#{suggestion}"
-    rescue
+    rescue RuntimeError
       nil
     end
   end

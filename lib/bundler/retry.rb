@@ -35,7 +35,7 @@ module Bundler
   private
 
     def run(&block)
-      @failed      = false
+      @failed = false
       @current_run += 1
       @result = block.call
     rescue => e

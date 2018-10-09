@@ -152,7 +152,7 @@ module Bundler
             socket.connect_nonblock(address)
           rescue Errno::EINPROGRESS
             wait_for_writtable_socket(socket, address, timeout)
-          rescue # Connection failed somehow, again
+          rescue RuntimeError # Connection failed somehow, again
             false
           end
         end
@@ -172,7 +172,7 @@ module Bundler
         socket.connect_nonblock(address)
       rescue Errno::EISCONN
         true
-      rescue # Connection failed
+      rescue StandardError # Connection failed
         false
       end
     end

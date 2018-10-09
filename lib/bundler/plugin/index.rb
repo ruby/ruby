@@ -63,7 +63,7 @@ module Bundler
         @plugin_paths[name] = path
         @load_paths[name] = load_paths
         save_index
-      rescue
+      rescue StandardError
         @commands = old_commands
         raise
       end
@@ -98,6 +98,14 @@ module Bundler
 
       def installed?(name)
         @plugin_paths[name]
+      end
+
+      def installed_plugins
+        @plugin_paths.keys
+      end
+
+      def plugin_commands(plugin)
+        @commands.find_all {|_, n| n == plugin }.map(&:first)
       end
 
       def source?(source)

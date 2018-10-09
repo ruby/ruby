@@ -23,7 +23,7 @@ module Bundler
       groups = Bundler.settings[:without]
       group_list = [groups[0...-1].join(", "), groups[-1..-1]].
         reject {|s| s.to_s.empty? }.join(" and ")
-      group_str = (groups.size == 1) ? "group" : "groups"
+      group_str = groups.size == 1 ? "group" : "groups"
       "Gems in the #{group_str} #{group_list} were not installed."
     end
 
@@ -83,7 +83,7 @@ module Bundler
       raise InvalidOption, "Provide only one of the following options: #{patch_level.join(", ")}" unless patch_level.length <= 1
       definition.gem_version_promoter.tap do |gvp|
         gvp.level = patch_level.first || :major
-        gvp.strict = options[:strict] || options["update-strict"]
+        gvp.strict = options[:strict] || options["update-strict"] || options["filter-strict"]
       end
     end
 

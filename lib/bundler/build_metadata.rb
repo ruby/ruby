@@ -23,7 +23,15 @@ module Bundler
 
     # The SHA for the git commit the bundler gem was built from.
     def self.git_commit_sha
-      @git_commit_sha ||= Dir.chdir(File.expand_path("..", __FILE__)) do
+      return @git_commit_sha if @git_commit_sha
+
+      # If Bundler has been installed without its .git directory and without a
+      # commit instance variable then we can't determine its commits SHA.
+      git_dir = File.join(File.expand_path("../../..", __FILE__), ".git")
+      return "unknown" unless File.directory?(git_dir)
+
+      # Otherwise shell out to git.
+      @git_commit_sha = Dir.chdir(File.expand_path("..", __FILE__)) do
         `git rev-parse --short HEAD`.strip.freeze
       end
     end

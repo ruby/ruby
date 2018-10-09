@@ -21,7 +21,7 @@ module Bundler
       raise
     rescue Errno::ENOSPC
       return false, out_of_space_message
-    rescue => e
+    rescue StandardError => e
       return false, specific_failure_message(e)
     end
 
@@ -44,9 +44,11 @@ module Bundler
     end
 
     def gem_install_message
-      remotes = spec.source.remotes
-      if remotes.size == 1
-        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{remotes.first}'` succeeds before bundling."
+      source = spec.source
+      return unless source.respond_to?(:remotes)
+
+      if source.remotes.size == 1
+        "Make sure that `gem install #{spec.name} -v '#{spec.version}' --source '#{source.remotes.first}'` succeeds before bundling."
       else
         "Make sure that `gem install #{spec.name} -v '#{spec.version}'` succeeds before bundling."
       end

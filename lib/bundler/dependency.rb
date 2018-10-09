@@ -7,8 +7,7 @@ require "bundler/rubygems_ext"
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
-    attr_reader :groups
-    attr_reader :platforms
+    attr_reader :groups, :platforms, :gemfile
 
     PLATFORM_MAP = {
       :ruby     => Gem::Platform::RUBY,
@@ -30,6 +29,7 @@ module Bundler
       :mri_24   => Gem::Platform::RUBY,
       :mri_25   => Gem::Platform::RUBY,
       :rbx      => Gem::Platform::RUBY,
+      :truffleruby => Gem::Platform::RUBY,
       :jruby    => Gem::Platform::JAVA,
       :jruby_18 => Gem::Platform::JAVA,
       :jruby_19 => Gem::Platform::JAVA,
@@ -87,6 +87,7 @@ module Bundler
       @platforms      = Array(options["platforms"])
       @env            = options["env"]
       @should_include = options.fetch("should_include", true)
+      @gemfile        = options["gemfile"]
 
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end

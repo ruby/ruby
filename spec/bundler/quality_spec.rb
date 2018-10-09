@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 if defined?(Encoding) && Encoding.default_external.name != "UTF-8"
-  # Poor man's ruby -E UTF-8, since it works on 1.8.7
+  # An approximation of ruby -E UTF-8, since it works on 1.8.7
   Encoding.default_external = Encoding.find("UTF-8")
 end
 
@@ -104,7 +104,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "has no malformed whitespace", :ruby_repo do
+  it "has no malformed whitespace" do
     exempt = /\.gitmodules|\.marshal|fixtures|vendor|ssl_certs|LICENSE|vcr_cassettes/
     error_messages = []
     Dir.chdir(root) do
@@ -117,7 +117,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any leftover debugging or development mechanisms", :ruby_repo do
+  it "does not include any leftover debugging or development mechanisms" do
     exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn}
     error_messages = []
     Dir.chdir(root) do
@@ -129,7 +129,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any unresolved merge conflicts", :ruby_repo do
+  it "does not include any unresolved merge conflicts" do
     error_messages = []
     exempt = %r{lock/lockfile_(bundler_1_)?spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     Dir.chdir(root) do
@@ -141,7 +141,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of the documentation", :ruby_repo do
+  it "maintains language quality of the documentation" do
     included = /ronn/
     error_messages = []
     Dir.chdir(root) do
@@ -154,7 +154,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of sentences used in source code", :ruby_repo do
+  it "maintains language quality of sentences used in source code" do
     error_messages = []
     exempt = /vendor/
     Dir.chdir(root) do
@@ -167,22 +167,23 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "documents all used settings", :ruby_repo do
+  it "documents all used settings" do
     exemptions = %w[
+      auto_config_jobs
       cache_command_is_package
       console_command
-      default_cli_command
       deployment_means_frozen
       forget_cli_options
       gem.coc
       gem.mit
       inline
       lockfile_uses_separate_rubygems_sources
-      warned_version
+      use_gem_version_promoter_for_major_updates
+      viz_command
     ]
 
     all_settings = Hash.new {|h, k| h[k] = [] }
-    documented_settings = exemptions
+    documented_settings = []
 
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
@@ -198,8 +199,14 @@ RSpec.describe "The library itself" do
       documented_settings = File.read("man/bundle-config.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
     end
 
-    documented_settings.each {|s| all_settings.delete(s) }
-    exemptions.each {|s| all_settings.delete(s) }
+    documented_settings.each do |s|
+      all_settings.delete(s)
+      expect(exemptions.delete(s)).to be_nil, "setting #{s} was exempted but was actually documented"
+    end
+
+    exemptions.each do |s|
+      expect(all_settings.delete(s)).to be_truthy, "setting #{s} was exempted but unused"
+    end
     error_messages = all_settings.map do |setting, refs|
       "The `#{setting}` setting is undocumented\n\t- #{refs.join("\n\t- ")}\n"
     end
@@ -209,12 +216,12 @@ RSpec.describe "The library itself" do
     expect(documented_settings).to be_sorted
   end
 
-  it "can still be built", :ruby_repo do
+  it "can still be built" do
     Dir.chdir(root) do
       begin
         gem_command! :build, "bundler.gemspec"
         if Bundler.rubygems.provides?(">= 2.4")
-          # there's no way aroudn this warning
+          # there's no way around this warning
           last_command.stderr.sub!(/^YAML safe loading.*/, "")
 
           # older rubygems have weird warnings, and we won't actually be using them
@@ -228,7 +235,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "does not contain any warnings", :ruby_repo do
+  it "does not contain any warnings" do
     Dir.chdir(root) do
       exclusions = %w[
         lib/bundler/capistrano.rb

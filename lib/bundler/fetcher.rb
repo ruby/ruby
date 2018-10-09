@@ -178,7 +178,7 @@ module Bundler
           # engine_version raises on unknown engines
           engine_version = begin
                              ruby.engine_versions
-                           rescue
+                           rescue RuntimeError
                              "???"
                            end
           agent << " #{ruby.engine}/#{ruby.versions_string(engine_version)}"

@@ -89,6 +89,7 @@ module Bundler
       possibilities = [
         "#!/usr/bin/env ruby\n",
         "#!/usr/bin/env jruby\n",
+        "#!/usr/bin/env truffleruby\n",
         "#!#{Gem.ruby}\n",
       ]
 

@@ -34,7 +34,9 @@ module Gem
         (defined?(@source) && @source) || Gem::Source::Installed.new
       end
     else
+      # rubocop:disable Lint/DuplicateMethods
       attr_accessor :source
+      # rubocop:enable Lint/DuplicateMethods
     end
 
     alias_method :rg_full_gem_path, :full_gem_path

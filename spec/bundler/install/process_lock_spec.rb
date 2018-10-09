@@ -20,5 +20,16 @@ RSpec.describe "process lock spec" do
       thread.join
       expect(the_bundle).to include_gems "rack 1.0"
     end
+
+    context "when creating a lock raises Errno::ENOTSUP", :ruby => ">= 1.9" do
+      before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
+
+      it "skips creating the lock file and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
+      end
+    end
   end
 end

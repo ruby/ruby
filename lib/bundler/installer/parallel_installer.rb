@@ -87,6 +87,7 @@ module Bundler
       @force = force
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
       @spec_set = all_specs
+      @rake = @specs.find {|s| s.name == "rake" }
     end
 
     def call
@@ -114,7 +115,7 @@ module Bundler
           s,
           s.missing_lockfile_dependencies(@specs.map(&:name)),
         ]
-      end.reject { |a| a.last.empty? }
+      end.reject {|a| a.last.empty? }
       return if missing_dependencies.empty?
 
       warning = []
@@ -149,18 +150,19 @@ module Bundler
     end
 
     def worker_pool
-      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda { |spec_install, worker_num|
+      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
         do_install(spec_install, worker_num)
       }
     end
 
     def do_install(spec_install, worker_num)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
       gem_installer = Bundler::GemInstaller.new(
         spec_install.spec, @installer, @standalone, worker_num, @force
       )
       success, message = begin
         gem_installer.install_from_spec
-      rescue => e
+      rescue RuntimeError => e
         raise e, "#{e}\n\n#{require_tree_for_spec(spec_install.spec)}"
       end
       if success
@@ -170,6 +172,7 @@ module Bundler
         spec_install.state = :failed
         spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
       end
+      Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL, spec_install)
       spec_install
     end
 
@@ -218,6 +221,8 @@ module Bundler
     # are installed.
     def enqueue_specs
       @specs.select(&:ready_to_enqueue?).each do |spec|
+        next if @rake && !@rake.installed? && spec.name != @rake.name
+
         if spec.dependencies_installed? @specs
           spec.state = :enqueued
           worker_pool.enq spec

@@ -79,7 +79,7 @@ module Spec
       when "jruby"
         JRUBY_VERSION
       else
-        raise BundlerError, "That RUBY_ENGINE is not recognized"
+        RUBY_ENGINE_VERSION
       end
     end
 

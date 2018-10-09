@@ -196,7 +196,7 @@ RSpec.describe "bundle gem" do
     process_file(bundled_app("newgem", "newgem.gemspec")) do |line|
       # Simulate replacing TODOs with real values
       case line
-      when /spec\.metadata\['allowed_push_host'\]/, /spec\.homepage/
+      when /spec\.metadata\["(?:allowed_push_host|homepage_uri|source_code_uri|changelog_uri)"\]/, /spec\.homepage/
         line.gsub(/\=.*$/, "= 'http://example.org'")
       when /spec\.summary/
         line.gsub(/\=.*$/, "= %q{A short summary of my new gem.}")
@@ -211,9 +211,7 @@ RSpec.describe "bundle gem" do
     end
 
     Dir.chdir(bundled_app("newgem")) do
-      gems = ["rake-10.0.2", :bundler]
-      gems.delete(:bundler) if ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]
-      system_gems gems, :path => :bundle_path
+      system_gems ["rake-10.0.2", :bundler], :path => :bundle_path
       bundle! "exec rake build"
     end
 
@@ -312,6 +310,10 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("test_gem/lib/test_gem.rb").read).to match(%r{require "test_gem/version"})
     end
 
+    it "creates a base error class" do
+      expect(bundled_app("test_gem/lib/test_gem.rb").read).to match(/class Error < StandardError; end$/)
+    end
+
     it "runs rake without problems" do
       system_gems ["rake-10.0.2"]
 
@@ -325,7 +327,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec(rake)
+        sys_exec("rake")
         expect(out).to include("SUCCESS")
       end
     end
@@ -610,7 +612,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec(rake)
+        sys_exec("rake")
         expect(out).to include("SUCCESS")
       end
     end

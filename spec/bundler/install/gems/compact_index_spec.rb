@@ -717,7 +717,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     end
   end
 
-  context "when ruby is compiled without openssl", :ruby_repo do
+  context "when ruby is compiled without openssl" do
     before do
       # Install a monkeypatch that reproduces the effects of openssl being
       # missing when the fetcher runs, as happens in real life. The reason
@@ -819,6 +819,37 @@ The checksum of /versions does not match the checksum provided by the server! So
 
     expect(File.read(versions)).to start_with("created_at")
     expect(the_bundle).to include_gems "rack 1.0.0"
+  end
+
+  it "performs full update of compact index info cache if range is not satisfiable" do
+    gemfile <<-G
+      source "#{source_uri}"
+      gem 'rack', '0.9.1'
+    G
+
+    rake_info_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info", "rack")
+
+    bundle! :install, :artifice => "compact_index"
+
+    expected_rack_info_content = File.read(rake_info_path)
+
+    # Modify the cache files. We expect them to be reset to the normal ones when we re-run :install
+    File.open(rake_info_path, "w") {|f| f << (expected_rack_info_content + "this is different") }
+
+    # Update the Gemfile so the next install does its normal things
+    gemfile <<-G
+      source "#{source_uri}"
+      gem 'rack', '1.0.0'
+    G
+
+    # The cache files now being longer means the requested range is going to be not satisfiable
+    # Bundler must end up requesting the whole file to fix things up.
+    bundle! :install, :artifice => "compact_index_range_not_satisfiable"
+
+    resulting_rack_info_content = File.read(rake_info_path)
+
+    expect(resulting_rack_info_content).to eq(expected_rack_info_content)
   end
 
   it "fails gracefully when the source URI has an invalid scheme" do

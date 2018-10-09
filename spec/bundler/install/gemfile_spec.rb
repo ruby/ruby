@@ -1,3 +1,4 @@
+# encoding: utf-8
 # frozen_string_literal: true
 
 RSpec.describe "bundle install" do
@@ -20,6 +21,8 @@ RSpec.describe "bundle install" do
 
       bundle :install, :gemfile => bundled_app("NotGemfile")
 
+      # Specify BUNDLE_GEMFILE for `the_bundle`
+      # to retrieve the proper Gemfile
       ENV["BUNDLE_GEMFILE"] = "NotGemfile"
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
@@ -108,6 +111,35 @@ RSpec.describe "bundle install" do
           expect(the_bundle).to include_gems "rack 1.0.0"
         end
       end
+    end
+  end
+
+  context "with a Gemfile containing non-US-ASCII characters" do
+    it "reads the Gemfile with the UTF-8 encoding by default" do
+      skip "Ruby 1.8 has no encodings" if RUBY_VERSION < "1.9"
+
+      install_gemfile <<-G
+        str = "Il était une fois ..."
+        puts "The source encoding is: " + str.encoding.name
+      G
+
+      expect(out).to include("The source encoding is: UTF-8")
+      expect(out).not_to include("The source encoding is: ASCII-8BIT")
+      expect(out).to include("Bundle complete!")
+    end
+
+    it "respects the magic encoding comment" do
+      skip "Ruby 1.8 has no encodings" if RUBY_VERSION < "1.9"
+
+      # NOTE: This works thanks to #eval interpreting the magic encoding comment
+      install_gemfile <<-G
+        # encoding: iso-8859-1
+        str = "Il #{"\xE9".dup.force_encoding("binary")}tait une fois ..."
+        puts "The source encoding is: " + str.encoding.name
+      G
+
+      expect(out).to include("The source encoding is: ISO-8859-1")
+      expect(out).to include("Bundle complete!")
     end
   end
 end

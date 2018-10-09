@@ -9,7 +9,6 @@ module Bundler
 
     attr_reader(
       :dependencies,
-      :gem_version_promoter,
       :locked_deps,
       :locked_gems,
       :platforms,
@@ -125,25 +124,25 @@ module Bundler
         @unlock[:gems] = @locked_specs.for(eager_unlock, [], false, false, false).map(&:name)
       end
 
-      @gem_version_promoter = create_gem_version_promoter
-
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
 
       @requires = compute_requires
     end
 
-    def create_gem_version_promoter
-      locked_specs =
-        if unlocking? && @locked_specs.empty? && !@lockfile_contents.empty?
-          # Definition uses an empty set of locked_specs to indicate all gems
-          # are unlocked, but GemVersionPromoter needs the locked_specs
-          # for conservative comparison.
-          Bundler::SpecSet.new(@locked_gems.specs)
-        else
-          @locked_specs
-        end
-      GemVersionPromoter.new(locked_specs, @unlock[:gems])
+    def gem_version_promoter
+      @gem_version_promoter ||= begin
+        locked_specs =
+          if unlocking? && @locked_specs.empty? && !@lockfile_contents.empty?
+            # Definition uses an empty set of locked_specs to indicate all gems
+            # are unlocked, but GemVersionPromoter needs the locked_specs
+            # for conservative comparison.
+            Bundler::SpecSet.new(@locked_gems.specs)
+          else
+            @locked_specs
+          end
+        GemVersionPromoter.new(locked_specs, @unlock[:gems])
+      end
     end
 
     def resolve_with_cache!
@@ -214,7 +213,7 @@ module Bundler
       @index = nil
       @resolve = nil
       @specs = nil
-      @gem_version_promoter = create_gem_version_promoter
+      @gem_version_promoter = nil
 
       Bundler.ui.debug "The definition is missing dependencies, failed to resolve & materialize locally (#{e})"
       true
@@ -246,17 +245,22 @@ module Bundler
     def resolve
       @resolve ||= begin
         last_resolve = converge_locked_specs
-        if Bundler.frozen_bundle?
-          Bundler.ui.debug "Frozen, using resolution from the lockfile"
-          last_resolve
-        elsif !unlocking? && nothing_changed?
-          Bundler.ui.debug("Found no changes, using resolution from the lockfile")
-          last_resolve
-        else
-          # Run a resolve against the locally available gems
-          Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
-          last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
-        end
+        resolve =
+          if Bundler.frozen_bundle?
+            Bundler.ui.debug "Frozen, using resolution from the lockfile"
+            last_resolve
+          elsif !unlocking? && nothing_changed?
+            Bundler.ui.debug("Found no changes, using resolution from the lockfile")
+            last_resolve
+          else
+            # Run a resolve against the locally available gems
+            Bundler.ui.debug("Found changes from the lockfile, re-resolving dependencies because #{change_reason}")
+            last_resolve.merge Resolver.resolve(expanded_dependencies, index, source_requirements, last_resolve, gem_version_promoter, additional_base_requirements_for_resolve, platforms)
+          end
+
+        # filter out gems that _can_ be installed on multiple platforms, but don't need
+        # to be
+        resolve.for(expand_dependencies(dependencies, true), [], false, false, false)
       end
     end
 
@@ -851,8 +855,8 @@ module Bundler
           concat_ruby_version_requirements(locked_ruby_version_object) unless @unlock[:ruby]
         end
         [
-          Dependency.new("ruby\0", ruby_versions),
-          Dependency.new("rubygems\0", Gem::VERSION),
+          Dependency.new("Ruby\0", ruby_versions),
+          Dependency.new("RubyGems\0", Gem::VERSION),
         ]
       end
     end
@@ -880,7 +884,7 @@ module Bundler
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next if !remote && !dep.current_platform?
         platforms = dep.gem_platforms(sorted_platforms)
-        if platforms.empty?
+        if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
           mapped_platforms = dep.platforms.map {|p| Dependency::PLATFORM_MAP[p] }
           Bundler.ui.warn \
             "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \
@@ -970,10 +974,10 @@ module Bundler
 
     def additional_base_requirements_for_resolve
       return [] unless @locked_gems && Bundler.feature_flag.only_update_to_newer_versions?
-      dependencies_by_name = dependencies.group_by(&:name)
+      dependencies_by_name = dependencies.inject({}) {|memo, dep| memo.update(dep.name => dep) }
       @locked_gems.specs.reduce({}) do |requirements, locked_spec|
         name = locked_spec.name
-        next requirements if @locked_deps[name] != dependencies_by_name[name]
+        next requirements if @locked_gems.dependencies[name] != dependencies_by_name[name]
         dep = Gem::Dependency.new(name, ">= #{locked_spec.version}")
         requirements[name] = DepProxy.new(dep, locked_spec.platform)
         requirements

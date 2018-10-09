@@ -80,7 +80,7 @@ module Bundler
             "To use the platform-specific version of the gem, run `bundle config specific_platform true` and install again."
           search = source.specs.search(self).last
         end
-        search.dependencies = dependencies if search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification)
+        search.dependencies = dependencies if search && (search.is_a?(RemoteSpecification) || search.is_a?(EndpointSpecification))
         search
       end
     end

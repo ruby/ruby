@@ -238,5 +238,9 @@ module Spec
     def lockfile_should_be(expected)
       expect(bundled_app("Gemfile.lock")).to read_as(normalize_uri_file(strip_whitespace(expected)))
     end
+
+    def gemfile_should_be(expected)
+      expect(bundled_app("Gemfile")).to read_as(strip_whitespace(expected))
+    end
   end
 end

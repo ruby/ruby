@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle_ruby", :ruby_repo, :bundler => "< 2" do
+RSpec.describe "bundle_ruby", :bundler => "< 2" do
   context "without patchlevel" do
     it "returns the ruby version" do
       gemfile <<-G
@@ -52,6 +52,19 @@ RSpec.describe "bundle_ruby", :ruby_repo, :bundler => "< 2" do
       bundle_ruby
 
       expect(out).to include("ruby 1.8.7 (rbx 1.2.4)")
+    end
+
+    it "handles truffleruby", :rubygems => ">= 2.1.0" do
+      gemfile <<-G
+        source "file://#{gem_repo1}"
+        ruby "2.5.1", :engine => 'truffleruby', :engine_version => '1.0.0-rc6'
+
+        gem "foo"
+      G
+
+      bundle_ruby
+
+      expect(out).to include("ruby 2.5.1 (truffleruby 1.0.0-rc6)")
     end
 
     it "raises an error if engine is used but engine version is not" do

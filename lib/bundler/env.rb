@@ -61,10 +61,10 @@ module Bundler
     end
 
     def self.read_file(filename)
-      File.read(filename.to_s).strip
+      Bundler.read_file(filename.to_s).strip
     rescue Errno::ENOENT
       "<No #{filename} found>"
-    rescue => e
+    rescue RuntimeError => e
       "#{e.class}: #{e.message}"
     end
 
@@ -88,7 +88,7 @@ module Bundler
 
     def self.version_of(script)
       return "not installed" unless Bundler.which(script)
-      `#{script} --version`
+      `#{script} --version`.chomp
     end
 
     def self.chruby_version
@@ -110,11 +110,13 @@ module Bundler
       out << ["  Gem Path", ENV.fetch("GEM_PATH") { Gem.path.join(File::PATH_SEPARATOR) }]
       out << ["  User Path", Gem.user_dir]
       out << ["  Bin Dir", Gem.bindir]
-      out << ["OpenSSL"] if defined?(OpenSSL)
-      out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
-      out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)
-      out << ["  Cert File", OpenSSL::X509::DEFAULT_CERT_FILE] if defined?(OpenSSL::X509::DEFAULT_CERT_FILE)
-      out << ["  Cert Dir", OpenSSL::X509::DEFAULT_CERT_DIR] if defined?(OpenSSL::X509::DEFAULT_CERT_DIR)
+      if defined?(OpenSSL)
+        out << ["OpenSSL"]
+        out << ["  Compiled", OpenSSL::OPENSSL_VERSION] if defined?(OpenSSL::OPENSSL_VERSION)
+        out << ["  Loaded", OpenSSL::OPENSSL_LIBRARY_VERSION] if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)
+        out << ["  Cert File", OpenSSL::X509::DEFAULT_CERT_FILE] if defined?(OpenSSL::X509::DEFAULT_CERT_FILE)
+        out << ["  Cert Dir", OpenSSL::X509::DEFAULT_CERT_DIR] if defined?(OpenSSL::X509::DEFAULT_CERT_DIR)
+      end
       out << ["Tools"]
       out << ["  Git", git_version]
       out << ["  RVM", ENV.fetch("rvm_version") { version_of("rvm") }]

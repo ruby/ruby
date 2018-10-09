@@ -77,6 +77,7 @@ RSpec.describe Bundler::GemHelper do
     before(:each) do
       content = app_gemspec_content.gsub("TODO: ", "")
       content.sub!(/homepage\s+= ".*"/, 'homepage = ""')
+      content.gsub!(/spec\.metadata.+\n/, "")
       File.open(app_gemspec_path, "w") {|file| file << content }
     end
 
@@ -197,6 +198,7 @@ RSpec.describe Bundler::GemHelper do
           `git init`
           `git config user.email "you@example.com"`
           `git config user.name "name"`
+          `git config commit.gpgsign false`
           `git config push.default simple`
         end
 

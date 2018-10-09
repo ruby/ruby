@@ -260,7 +260,11 @@ module Bundler
       end
 
       def requires_checkout?
-        allow_git_ops? && !local?
+        allow_git_ops? && !local? && !cached_revision_checked_out?
+      end
+
+      def cached_revision_checked_out?
+        cached_revision && cached_revision == revision && install_path.exist?
       end
 
       def base_name

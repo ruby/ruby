@@ -113,7 +113,7 @@ class Bundler::Thor
       end
 
       # Whenever a class inherits from Bundler::Thor or Bundler::Thor::Group, we should track the
-      # class and the file on Bundler::Thor::Base. This is the method responsable for it.
+      # class and the file on Bundler::Thor::Base. This is the method responsible for it.
       #
       def register_klass_file(klass) #:nodoc:
         file = caller[1].match(/(.*):\d+/)[1]

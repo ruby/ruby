@@ -1,3 +1,4 @@
+# encoding: utf-8
 # frozen_string_literal: true
 
 RSpec.describe "bundle install" do
@@ -47,16 +48,43 @@ RSpec.describe "bundle install" do
   end
 
   it "does not hang when gemspec has incompatible encoding" do
-    create_file "foo.gemspec", <<-G
+    create_file("foo.gemspec", <<-G)
       Gem::Specification.new do |gem|
         gem.name = "pry-byebug"
         gem.version = "3.4.2"
-        gem.author = "David Rodriguez"
+        gem.author = "David Rodríguez"
         gem.summary = "Good stuff"
       end
     G
 
     install_gemfile <<-G, :env => { "LANG" => "C" }
+      gemspec
+    G
+
+    expect(out).to include("Bundle complete!")
+  end
+
+  it "reads gemspecs respecting their encoding" do
+    skip "Unicode is not supported on Ruby 1.x without extra work" if RUBY_VERSION < "2.0"
+
+    create_file "version.rb", <<-RUBY
+      module Persistent💎
+        VERSION = "0.0.1"
+      end
+    RUBY
+
+    create_file "persistent-dmnd.gemspec", <<-G
+      require_relative "version"
+
+      Gem::Specification.new do |gem|
+        gem.name = "persistent-dmnd"
+        gem.version = Persistent💎::VERSION
+        gem.author = "Ivo Anjo"
+        gem.summary = "Unscratchable stuff"
+      end
+    G
+
+    install_gemfile <<-G
       gemspec
     G
 

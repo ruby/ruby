@@ -1099,7 +1099,7 @@ RSpec.describe "bundle install with git sources" do
   end
 
   context "with an extension" do
-    it "installs the extension", :ruby_repo do
+    it "installs the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1131,7 +1131,7 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
-    it "does not use old extension after ref changes", :ruby_repo do
+    it "does not use old extension after ref changes" do
       git_reader = build_git "foo", :no_default => true do |s|
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-RUBY
@@ -1193,7 +1193,7 @@ In Gemfile:
       expect(out).not_to include("gem install foo")
     end
 
-    it "does not reinstall the extension", :ruby_repo, :rubygems => ">= 2.3.0" do
+    it "does not reinstall the extension", :rubygems => ">= 2.3.0" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1232,6 +1232,103 @@ In Gemfile:
         puts FOO
       R
       expect(out).to eq(installed_time)
+    end
+
+    it "does not reinstall the extension when changing another gem", :rubygems => ">= 2.3.0" do
+      build_git "foo" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            cur_time = Time.now.to_f.to_s
+            File.open("\#{path}/foo.rb", "w") do |f|
+              f.puts "FOO = \#{cur_time}"
+            end
+          end
+        RUBY
+      end
+
+      install_gemfile <<-G
+        source "file://#{gem_repo1}"
+        gem "rack", "0.9.1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      run! <<-R
+        require 'foo'
+        puts FOO
+      R
+
+      installed_time = out
+      expect(installed_time).to match(/\A\d+\.\d+\z/)
+
+      install_gemfile <<-G
+        source "file://#{gem_repo1}"
+        gem "rack", "1.0.0"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      run! <<-R
+        require 'foo'
+        puts FOO
+      R
+      expect(out).to eq(installed_time)
+    end
+
+    it "does reinstall the extension when changing refs", :rubygems => ">= 2.3.0" do
+      build_git "foo" do |s|
+        s.add_dependency "rake"
+        s.extensions << "Rakefile"
+        s.write "Rakefile", <<-RUBY
+          task :default do
+            path = File.expand_path("../lib", __FILE__)
+            FileUtils.mkdir_p(path)
+            cur_time = Time.now.to_f.to_s
+            File.open("\#{path}/foo.rb", "w") do |f|
+              f.puts "FOO = \#{cur_time}"
+            end
+          end
+        RUBY
+      end
+
+      install_gemfile <<-G
+        source "file://#{gem_repo1}"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      run! <<-R
+        require 'foo'
+        puts FOO
+      R
+
+      update_git("foo", :branch => "branch2")
+
+      installed_time = out
+      expect(installed_time).to match(/\A\d+\.\d+\z/)
+
+      install_gemfile <<-G
+        source "file://#{gem_repo1}"
+        gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "branch2"
+      G
+
+      run! <<-R
+        require 'foo'
+        puts FOO
+      R
+      expect(out).not_to eq(installed_time)
+
+      installed_time = out
+
+      update_git("foo")
+      bundle! "update foo"
+
+      run! <<-R
+        require 'foo'
+        puts FOO
+      R
+      expect(out).not_to eq(installed_time)
     end
   end
 

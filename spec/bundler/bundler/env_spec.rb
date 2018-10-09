@@ -140,4 +140,12 @@ RSpec.describe Bundler::Env do
       end
     end
   end
+
+  describe ".version_of" do
+    let(:parsed_version) { described_class.send(:version_of, "ruby") }
+
+    it "strips version of new line characters" do
+      expect(parsed_version).to_not include("\n")
+    end
+  end
 end

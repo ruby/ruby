@@ -120,8 +120,14 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          s = Bundler.rubygems.spec_from_gem(fetch_gem(spec), Bundler.settings["trust-policy"])
-          spec.__swap__(s)
+          path = fetch_gem(spec)
+          begin
+            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
+            spec.__swap__(s)
+          rescue
+            Bundler.rm_rf(path)
+            raise
+          end
         end
 
         unless Bundler.settings[:no_install]
@@ -138,7 +144,7 @@ module Bundler
             bin_path     = Bundler.system_bindir
           end
 
-          Bundler.mkdir_p bin_path unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
+          Bundler.mkdir_p bin_path, :no_sudo => true unless spec.executables.empty? || Bundler.rubygems.provides?(">= 2.7.5")
 
           installed_spec = nil
           Bundler.rubygems.preserve_paths do

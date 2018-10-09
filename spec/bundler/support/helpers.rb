@@ -99,9 +99,6 @@ module Spec
       with_sudo = options.delete(:sudo)
       sudo = with_sudo == :preserve_env ? "sudo -E" : "sudo" if with_sudo
 
-      no_color = options.delete("no-color") { cmd.to_s !~ /\A(e|ex|exe|exec|conf|confi|config)(\s|\z)/ }
-      options["no-color"] = true if no_color
-
       bundle_bin = options.delete("bundle_bin") || bindir.join("bundle")
 
       if system_bundler = options.delete(:system_bundler)
@@ -213,18 +210,9 @@ module Spec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
-      gem = ENV['BUNDLE_GEM'] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
-      sys_exec("#{gem} #{command} #{args}")
+      sys_exec("#{Gem.ruby} -rrubygems -S gem --backtrace #{command} #{args}")
     end
     bang :gem_command
-
-    def rake
-      if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
-        "'#{ENV['BUNDLE_RUBY']}' -S '#{ENV['GEM_PATH']}/bin/rake'"
-      else
-        'rake'
-      end
-    end
 
     def sys_exec(cmd)
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
@@ -328,7 +316,11 @@ module Spec
 
         raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-        gem_command! :install, "--no-rdoc --no-ri --ignore-dependencies '#{path}'"
+        if Gem::VERSION < "2.0.0"
+          gem_command! :install, "--no-rdoc --no-ri --ignore-dependencies '#{path}'"
+        else
+          gem_command! :install, "--no-document --ignore-dependencies '#{path}'"
+        end
         bundler_path && bundler_path.rmtree
       end
     end

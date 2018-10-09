@@ -38,8 +38,8 @@ module Bundler
         Bundler::CLI::Common.ensure_all_gems_in_lockfile!(gems)
 
         if groups.any?
-          specs = Bundler.definition.specs_for groups
-          gems.concat(specs.map(&:name))
+          deps = Bundler.definition.dependencies.select {|d| (d.groups & groups).any? }
+          gems.concat(deps.map(&:name))
         end
 
         Bundler.definition(:gems => gems, :sources => sources, :ruby => options[:ruby],
@@ -76,7 +76,7 @@ module Bundler
           if !new_version
             Bundler.ui.warn "Bundler attempted to update #{name} but it was removed from the bundle"
           elsif new_version < locked_version
-            Bundler.ui.warn "Bundler attempted to update #{name} but its version regressed from #{locked_version} to #{new_version}"
+            Bundler.ui.warn "Note: #{name} version regressed from #{locked_version} to #{new_version}"
           elsif new_version == locked_version
             Bundler.ui.warn "Bundler attempted to update #{name} but its version stayed the same"
           end

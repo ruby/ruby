@@ -443,7 +443,7 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         context "engine is ruby" do
           before do
             stub_const("RUBY_VERSION", "2.2.4")
-            allow(Bundler).to receive(:ruby_engine).and_return("ruby")
+            stub_const("RUBY_ENGINE", "ruby")
           end
 
           it "should return a copy of the value of RUBY_VERSION" do
@@ -479,11 +479,11 @@ RSpec.describe "Bundler::RubyVersion and its subclasses" do
         context "engine is some other ruby engine" do
           before do
             stub_const("RUBY_ENGINE", "not_supported_ruby_engine")
-            allow(Bundler).to receive(:ruby_engine).and_return("not_supported_ruby_engine")
+            stub_const("RUBY_ENGINE_VERSION", "1.2.3")
           end
 
-          it "should raise a BundlerError with a 'not recognized' message" do
-            expect { bundler_system_ruby_version.engine_versions }.to raise_error(Bundler::BundlerError, "RUBY_ENGINE value not_supported_ruby_engine is not recognized")
+          it "returns RUBY_ENGINE_VERSION" do
+            expect(bundler_system_ruby_version.engine_versions).to eq(["1.2.3"])
           end
         end
       end

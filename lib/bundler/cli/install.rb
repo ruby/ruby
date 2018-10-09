@@ -71,8 +71,7 @@ module Bundler
       if Bundler.use_system_gems?
         Bundler.ui.confirm "Use `bundle info [gemname]` to see where a bundled gem is installed."
       else
-        absolute_path = File.expand_path(Bundler.configured_bundle_path.base_path)
-        relative_path = absolute_path.sub(File.expand_path(".") + File::SEPARATOR, "." + File::SEPARATOR)
+        relative_path = Bundler.configured_bundle_path.base_path_relative_to_pwd
         Bundler.ui.confirm "Bundled gems are installed into `#{relative_path}`"
       end
 
@@ -169,9 +168,13 @@ module Bundler
 
     def normalize_settings
       Bundler.settings.set_command_option :path, nil if options[:system]
-      Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
-      Bundler.settings.set_command_option_if_given :path, options["path"]
-      Bundler.settings.set_command_option :path, "bundle" if options["standalone"] && Bundler.settings[:path].nil?
+      Bundler.settings.temporary(:path_relative_to_cwd => false) do
+        Bundler.settings.set_command_option :path, "vendor/bundle" if options[:deployment]
+      end
+      Bundler.settings.set_command_option_if_given :path, options[:path]
+      Bundler.settings.temporary(:path_relative_to_cwd => false) do
+        Bundler.settings.set_command_option :path, "bundle" if options["standalone"] && Bundler.settings[:path].nil?
+      end
 
       bin_option = options["binstubs"]
       bin_option = nil if bin_option && bin_option.empty?

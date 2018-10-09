@@ -54,7 +54,7 @@ RSpec.shared_examples "bundle install --standalone" do
         source "file://#{gem_repo1}"
         gem "rails"
       G
-      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -67,16 +67,17 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
   end
 
-  describe "with gems with native extension", :ruby_repo do
+  describe "with gems with native extension" do
     before do
-      install_gemfile <<-G, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
         source "file://#{gem_repo1}"
         gem "very_simple_binary"
       G
     end
 
     it "generates a bundle/bundler/setup.rb with the proper paths", :rubygems => "2.4" do
-      extension_line = File.read(bundled_app("bundle/bundler/setup.rb")).each_line.find {|line| line.include? "/extensions/" }.strip
+      expected_path = bundled_app("bundle/bundler/setup.rb")
+      extension_line = File.read(expected_path).each_line.find {|line| line.include? "/extensions/" }.strip
       expect(extension_line).to start_with '$:.unshift "#{path}/../#{ruby_engine}/#{ruby_version}/extensions/'
       expect(extension_line).to end_with '/very_simple_binary-1.0"'
     end
@@ -101,7 +102,7 @@ RSpec.shared_examples "bundle install --standalone" do
           end
         G
       end
-      install_gemfile <<-G, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      install_gemfile <<-G, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
     end
@@ -121,7 +122,7 @@ RSpec.shared_examples "bundle install --standalone" do
         gem "rails"
         gem "devise", :git => "#{lib_path("devise-1.0")}"
       G
-      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -148,7 +149,7 @@ RSpec.shared_examples "bundle install --standalone" do
           gem "rack-test"
         end
       G
-      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
     end
 
     let(:expected_gems) do
@@ -161,7 +162,7 @@ RSpec.shared_examples "bundle install --standalone" do
     include_examples "common functionality"
 
     it "allows creating a standalone file with limited groups" do
-      bundle! "install", forgotten_command_line_options(:path => "bundle").merge(:standalone => "default")
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => "default")
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -179,7 +180,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
 
     it "allows --without to limit the groups used in a standalone" do
-      bundle! :install, forgotten_command_line_options(:path => "bundle", :without => "test").merge(:standalone => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle"), :without => "test").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -196,7 +197,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
 
-    it "allows --path to change the location of the standalone bundle" do
+    it "allows --path to change the location of the standalone bundle", :bundler => "< 2" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
@@ -212,9 +213,26 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stdout).to eq("2.3.2")
     end
 
+    it "allows --path to change the location of the standalone bundle", :bundler => "2" do
+      bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
+      path = File.expand_path("path/to/bundle")
+
+      Dir.chdir(bundled_app) do
+        ruby <<-RUBY, :no_lib => true
+          $:.unshift File.expand_path(#{path.dump})
+          require "bundler/setup"
+
+          require "actionpack"
+          puts ACTIONPACK
+        RUBY
+      end
+
+      expect(last_command.stdout).to eq("2.3.2")
+    end
+
     it "allows remembered --without to limit the groups used in a standalone" do
       bundle! :install, forgotten_command_line_options(:without => "test")
-      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
         load_error_ruby <<-RUBY, "spec", :no_lib => true
@@ -241,7 +259,7 @@ RSpec.shared_examples "bundle install --standalone" do
           source "#{source_uri}"
           gem "rails"
         G
-        bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true, :artifice => "endpoint")
+        bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :artifice => "endpoint")
       end
 
       let(:expected_gems) do
@@ -261,7 +279,7 @@ RSpec.shared_examples "bundle install --standalone" do
         source "file://#{gem_repo1}"
         gem "rails"
       G
-      bundle! :install, forgotten_command_line_options(:path => "bundle").merge(:standalone => true, :binstubs => true)
+      bundle! :install, forgotten_command_line_options(:path => bundled_app("bundle")).merge(:standalone => true, :binstubs => true)
     end
 
     let(:expected_gems) do
@@ -312,9 +330,7 @@ end
 
 RSpec.describe "bundle install --standalone run in a subdirectory" do
   before do
-    subdir = bundled_app("bob")
-    FileUtils.mkdir_p(subdir)
-    Dir.chdir(subdir)
+    Dir.chdir(bundled_app("bob").tap(&:mkpath))
   end
 
   include_examples("bundle install --standalone")

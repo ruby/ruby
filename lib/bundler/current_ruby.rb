@@ -32,11 +32,13 @@ module Bundler
       mswin64
       rbx
       ruby
+      truffleruby
       x64_mingw
     ].freeze
 
     def ruby?
-      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev")
+      !mswin? && (!defined?(RUBY_ENGINE) || RUBY_ENGINE == "ruby" ||
+          RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
     def mri?
@@ -53,6 +55,10 @@ module Bundler
 
     def maglev?
       defined?(RUBY_ENGINE) && RUBY_ENGINE == "maglev"
+    end
+
+    def truffleruby?
+      defined?(RUBY_ENGINE) && RUBY_ENGINE == "truffleruby"
     end
 
     def mswin?

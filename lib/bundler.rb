@@ -159,16 +159,18 @@ module Bundler
     def user_home
       @user_home ||= begin
         home = Bundler.rubygems.user_home
+        bundle_home = home ? File.join(home, ".bundle") : nil
 
         warning = if home.nil?
           "Your home directory is not set."
         elsif !File.directory?(home)
           "`#{home}` is not a directory."
-        elsif !File.writable?(home)
+        elsif !File.writable?(home) && (!File.directory?(bundle_home) || !File.writable?(bundle_home))
           "`#{home}` is not writable."
         end
 
         if warning
+          Kernel.send(:require, "etc")
           user_home = tmp_home_path(Etc.getlogin, warning)
           Bundler.ui.warn "#{warning}\nBundler will use `#{user_home}' as your home directory temporarily.\n"
           user_home
@@ -189,12 +191,30 @@ module Bundler
         end
         tmp_home_path.join(login).tap(&:mkpath)
       end
-    rescue => e
+    rescue RuntimeError => e
       raise e.exception("#{warning}\nBundler also failed to create a temporary home directory at `#{path}':\n#{e}")
     end
 
-    def user_bundle_path
-      Pathname.new(user_home).join(".bundle")
+    def user_bundle_path(dir = "home")
+      env_var, fallback = case dir
+                          when "home"
+                            ["BUNDLE_USER_HOME", Pathname.new(user_home).join(".bundle")]
+                          when "cache"
+                            ["BUNDLE_USER_CACHE", user_bundle_path.join("cache")]
+                          when "config"
+                            ["BUNDLE_USER_CONFIG", user_bundle_path.join("config")]
+                          when "plugin"
+                            ["BUNDLE_USER_PLUGIN", user_bundle_path.join("plugin")]
+                          else
+                            raise BundlerError, "Unknown user path requested: #{dir}"
+      end
+      # `fallback` will already be a Pathname, but Pathname.new() is
+      # idempotent so it's OK
+      Pathname.new(ENV.fetch(env_var, fallback))
+    end
+
+    def user_cache
+      user_bundle_path("cache")
     end
 
     def home
@@ -207,10 +227,6 @@ module Bundler
 
     def specs_path
       bundle_path.join("specifications")
-    end
-
-    def user_cache
-      user_bundle_path.join("cache")
     end
 
     def root
@@ -351,16 +367,20 @@ EOF
         bin_dir = bin_dir.parent until bin_dir.exist?
 
         # if any directory is not writable, we need sudo
-        files = [path, bin_dir] | Dir[path.join("build_info/*").to_s] | Dir[path.join("*").to_s]
-        sudo_needed = files.any? {|f| !File.writable?(f) }
+        files = [path, bin_dir] | Dir[bundle_path.join("build_info/*").to_s] | Dir[bundle_path.join("*").to_s]
+        unwritable_files = files.reject {|f| File.writable?(f) }
+        sudo_needed = !unwritable_files.empty?
+        if sudo_needed
+          Bundler.ui.warn "Following files may not be writable, so sudo is needed:\n  #{unwritable_files.sort.map(&:to_s).join("\n  ")}"
+        end
       end
 
       @requires_sudo_ran = true
       @requires_sudo = settings.allow_sudo? && sudo_present && sudo_needed
     end
 
-    def mkdir_p(path)
-      if requires_sudo?
+    def mkdir_p(path, options = {})
+      if requires_sudo? && !options[:no_sudo]
         sudo "mkdir -p '#{path}'" unless File.exist?(path)
       else
         SharedHelpers.filesystem_access(path, :write) do |p|
@@ -407,12 +427,14 @@ EOF
     end
 
     def read_file(file)
-      File.open(file, "rb", &:read)
+      SharedHelpers.filesystem_access(file, :read) do
+        File.open(file, "r:UTF-8", &:read)
+      end
     end
 
     def load_marshal(data)
       Marshal.load(data)
-    rescue => e
+    rescue StandardError => e
       raise MarshalError, "#{e.class}: #{e.message}"
     end
 

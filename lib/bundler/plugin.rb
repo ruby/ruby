@@ -5,6 +5,7 @@ require "bundler/plugin/api"
 module Bundler
   module Plugin
     autoload :DSL,        "bundler/plugin/dsl"
+    autoload :Events,     "bundler/plugin/events"
     autoload :Index,      "bundler/plugin/index"
     autoload :Installer,  "bundler/plugin/installer"
     autoload :SourceList, "bundler/plugin/source_list"
@@ -46,6 +47,26 @@ module Bundler
       Bundler.ui.error "Failed to install plugin #{name}: #{e.message}\n  #{e.backtrace.join("\n ")}"
     end
 
+    # List installed plugins and commands
+    #
+    def list
+      installed_plugins = index.installed_plugins
+      if installed_plugins.any?
+        output = String.new
+        installed_plugins.each do |plugin|
+          output << "#{plugin}\n"
+          output << "-----\n"
+          index.plugin_commands(plugin).each do |command|
+            output << "  #{command}\n"
+          end
+          output << "\n"
+        end
+      else
+        output = "No plugins installed"
+      end
+      Bundler.ui.info output
+    end
+
     # Evaluates the Gemfile with a limited DSL and installs the plugins
     # specified by plugin method
     #
@@ -66,7 +87,7 @@ module Bundler
       installed_specs = Installer.new.install_definition(definition)
 
       save_plugins plugins, installed_specs, builder.inferred_plugins
-    rescue => e
+    rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"
       end
@@ -80,8 +101,8 @@ module Bundler
 
     # The directory root for all plugin related data
     #
-    # Points to root in app_config_path if ran in an app else points to the one
-    # in user_bundle_path
+    # If run in an app, points to local root, in app_config_path
+    # Otherwise, points to global root, in Bundler.user_bundle_path("plugin")
     def root
       @root ||= if SharedHelpers.in_bundle?
         local_root
@@ -96,7 +117,7 @@ module Bundler
 
     # The global directory root for all plugin related data
     def global_root
-      Bundler.user_bundle_path.join("plugin")
+      Bundler.user_bundle_path("plugin")
     end
 
     # The cache directory for plugin stuffs
@@ -155,6 +176,9 @@ module Bundler
     # To be called via the API to register a hooks and corresponding block that
     # will be called to handle the hook
     def add_hook(event, &block)
+      unless Events.defined_event?(event)
+        raise ArgumentError, "Event '#{event}' not defined in Bundler::Plugin::Events"
+      end
       @hooks_by_event[event.to_s] << block
     end
 
@@ -166,6 +190,9 @@ module Bundler
     # @param [String] event
     def hook(event, *args, &arg_blk)
       return unless Bundler.feature_flag.plugins?
+      unless Events.defined_event?(event)
+        raise ArgumentError, "Event '#{event}' not defined in Bundler::Plugin::Events"
+      end
 
       plugins = index.hook_plugins(event)
       return unless plugins.any?
@@ -264,7 +291,7 @@ module Bundler
       load path.join(PLUGIN_FILE_NAME)
 
       @loaded_plugin_names << name
-    rescue => e
+    rescue RuntimeError => e
       Bundler.ui.error "Failed loading plugin #{name}: #{e.message}"
       raise
     end

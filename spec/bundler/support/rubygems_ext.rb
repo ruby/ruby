@@ -33,7 +33,7 @@ module Spec
 
       ENV["BUNDLE_PATH"] = nil
       ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
-      ENV["PATH"] = [Path.bindir, "#{Path.system_gem_path}/bin", ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = ["#{Path.root}/exe", "#{Path.system_gem_path}/bin", ENV["PATH"]].join(File::PATH_SEPARATOR)
 
       manifest = DEPS.to_a.sort_by(&:first).map {|k, v| "#{k} => #{v}\n" }
       manifest_path = "#{Path.base_system_gems}/manifest.txt"
@@ -59,7 +59,11 @@ module Spec
       no_reqs.map!(&:first)
       reqs.map! {|name, req| "'#{name}:#{req}'" }
       deps = reqs.concat(no_reqs).join(" ")
-      cmd = "#{ENV['BUNDLE_GEM'] || 'gem'} install #{deps} --no-rdoc --no-ri --conservative"
+      cmd = if Gem::VERSION < "2.0.0"
+        "gem install #{deps} --no-rdoc --no-ri --conservative"
+      else
+        "gem install #{deps} --no-document --conservative"
+      end
       puts cmd
       system(cmd) || raise("Installing gems #{deps} for the tests to use failed!")
     end
