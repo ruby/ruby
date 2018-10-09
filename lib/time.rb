@@ -267,7 +267,7 @@ class Time
         return make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
       end
 
-      if now
+      if now and now.respond_to?(:getlocal)
         if off
           now = now.getlocal(off) if now.utc_offset != off
         else

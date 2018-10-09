@@ -523,4 +523,23 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     define_method(test) {__send__(sub, :xmlschema)}
     define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
   end
+
+  def test_parse_with_various_object
+    d  = Date.new(2010, 10, 28)
+    dt = DateTime.new(2010, 10, 28)
+    md = MyDate.new(10, 28, 2010)
+
+    t = Time.local(2010, 10, 28, 21, 26, 00)
+    assert_equal(t, Time.parse("21:26",  d))
+    assert_equal(t, Time.parse("21:26", dt))
+    assert_equal(t, Time.parse("21:26", md))
+  end
+
+  class MyDate
+    attr_reader :mon, :day, :year
+
+    def initialize(mon, day, year)
+      @mon, @day, @year = mon, day, year
+    end
+  end
 end
