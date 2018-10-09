@@ -210,7 +210,6 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
 
     /* Instruction change should be finished on VM */
     fprintf(f, "#define vm_change_insn(cfp, pc_offset, insn)\n");
-    fprintf(f, "#define vm_specialize_insn(cfp, pc_offset, ci) Qundef\n\n");
 
 #ifdef _WIN32
     fprintf(f, "__declspec(dllexport)\n");

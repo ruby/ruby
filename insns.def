@@ -770,9 +770,11 @@ opt_send_without_block
     if (LIKELY(INLINE_METHOD_CACHE_HIT(cc, klass))) {
         CALL_METHOD(&calling, ci, cc);
     }
+#ifndef MJIT_HEADER
     else if ((val = vm_specialize_insn(GET_CFP(), PC_OFFSET(opt_send_without_block, ci, cc), ci)) != Qundef) {
         INC_SP(INSN_ATTR(sp_inc) - 1 /* recv */);
     }
+#endif
     else {
         rb_vm_search_method_slowpath(ci, cc, klass);
         CALL_METHOD(&calling, ci, cc);
