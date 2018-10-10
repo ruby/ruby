@@ -1899,7 +1899,7 @@ check_exec_redirect(VALUE key, VALUE val, struct rb_execarg *eargp)
         else if (RB_TYPE_P(key, T_ARRAY)) {
 	    int i;
 	    for (i = 0; i < RARRAY_LEN(key); i++) {
-		VALUE v = RARRAY_PTR(key)[i];
+		VALUE v = RARRAY_AREF(key, i);
 		VALUE fd = check_exec_redirect_fd(v, 1);
 		if (FIX2INT(fd) != 1 && FIX2INT(fd) != 2) break;
 	    }
