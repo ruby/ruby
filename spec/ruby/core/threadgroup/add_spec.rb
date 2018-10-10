@@ -13,6 +13,8 @@ describe "ThreadGroup#add" do
     @thread.join
   end
 
+  # This spec randomly kills mspec worker like: https://ci.appveyor.com/project/ruby/ruby/build/9806/job/37tx2atojy96227m
+  # TODO: Investigate the cause or at least print helpful logs, and remove this `platform_is_not` guard.
   platform_is_not :mingw do
     it "adds the given thread to a group and returns self" do
       @thread.group.should_not == nil
