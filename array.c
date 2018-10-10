@@ -6212,6 +6212,124 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 }
 
 /*
+ *  call-seq:
+ *     ary.all? [{|obj| block}  ]   -> true or false
+ *     ary.all?(pattern)            -> true or false
+ *
+ *  See also Enumerable#all?
+ */
+
+static VALUE
+rb_ary_all_p(int argc, VALUE *argv, VALUE ary)
+{
+    long i, len = RARRAY_LEN(ary);
+
+    rb_check_arity(argc, 0, 1);
+    if (!len) return Qtrue;
+    if (argc) {
+        if (rb_block_given_p()) {
+            rb_warn("given block not used");
+        }
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (!RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qfalse;
+        }
+    }
+    else if (!rb_block_given_p()) {
+        for (i = 0; i < len; ++i) {
+            if (!RTEST(RARRAY_AREF(ary, i))) return Qfalse;
+        }
+    }
+    else {
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (!RTEST(rb_yield(RARRAY_AREF(ary, i)))) return Qfalse;
+        }
+    }
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     ary.none? [{|obj| block}  ]   -> true or false
+ *     ary.none?(pattern)            -> true or false
+ *
+ *  See also Enumerable#none?
+ */
+
+static VALUE
+rb_ary_none_p(int argc, VALUE *argv, VALUE ary)
+{
+    long i, len = RARRAY_LEN(ary);
+
+    rb_check_arity(argc, 0, 1);
+    if (!len) return Qtrue;
+    if (argc) {
+        if (rb_block_given_p()) {
+            rb_warn("given block not used");
+        }
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) return Qfalse;
+        }
+    }
+    else if (!rb_block_given_p()) {
+        for (i = 0; i < len; ++i) {
+            if (RTEST(RARRAY_AREF(ary, i))) return Qfalse;
+        }
+    }
+    else {
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) return Qfalse;
+        }
+    }
+    return Qtrue;
+}
+
+/*
+ *  call-seq:
+ *     ary.one? [{|obj| block}  ]   -> true or false
+ *     ary.one?(pattern)            -> true or false
+ *
+ *  See also Enumerable#one?
+ */
+
+static VALUE
+rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
+{
+    long i, len = RARRAY_LEN(ary);
+    VALUE result = Qfalse;
+
+    rb_check_arity(argc, 0, 1);
+    if (!len) return Qfalse;
+    if (argc) {
+        if (rb_block_given_p()) {
+            rb_warn("given block not used");
+        }
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (RTEST(rb_funcall(argv[0], idEqq, 1, RARRAY_AREF(ary, i)))) {
+                if (RTEST(result)) return Qfalse;
+                result = Qtrue;
+            }
+        }
+    }
+    else if (!rb_block_given_p()) {
+        for (i = 0; i < len; ++i) {
+            if (RTEST(RARRAY_AREF(ary, i))) {
+              if (RTEST(result)) return Qfalse;
+              result = Qtrue;
+            }
+        }
+    }
+    else {
+        for (i = 0; i < RARRAY_LEN(ary); ++i) {
+            if (RTEST(rb_yield(RARRAY_AREF(ary, i)))) {
+              if (RTEST(result)) return Qfalse;
+              result = Qtrue;
+            }
+        }
+    }
+    return result;
+}
+
+/*
  * call-seq:
  *   ary.dig(idx, ...)                 -> object
  *
@@ -6770,6 +6888,9 @@ Init_Array(void)
     rb_define_method(rb_cArray, "bsearch", rb_ary_bsearch, 0);
     rb_define_method(rb_cArray, "bsearch_index", rb_ary_bsearch_index, 0);
     rb_define_method(rb_cArray, "any?", rb_ary_any_p, -1);
+    rb_define_method(rb_cArray, "all?", rb_ary_all_p, -1);
+    rb_define_method(rb_cArray, "none?", rb_ary_none_p, -1);
+    rb_define_method(rb_cArray, "one?", rb_ary_one_p, -1);
     rb_define_method(rb_cArray, "dig", rb_ary_dig, -1);
     rb_define_method(rb_cArray, "sum", rb_ary_sum, -1);
 
