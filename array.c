@@ -171,28 +171,22 @@ ary_memfill(VALUE ary, long beg, long size, VALUE val)
 static void
 ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_ary)
 {
-#if 1
     assert(!ARY_SHARED_P(buff_owner_ary));
 
     if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
-	rb_gc_writebarrier_remember(buff_owner_ary);
-	RARRAY_PTR_USE(ary, ptr, {
-	    MEMCPY(ptr+beg, argv, VALUE, argc);
-	});
+        rb_gc_writebarrier_remember(buff_owner_ary);
+        RARRAY_PTR_USE(ary, ptr, {
+            MEMCPY(ptr+beg, argv, VALUE, argc);
+        });
     }
     else {
-	int i;
-	RARRAY_PTR_USE(ary, ptr, {
-	    for (i=0; i<argc; i++) {
-		RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
-	    }
-	});
+        int i;
+        RARRAY_PTR_USE(ary, ptr, {
+            for (i=0; i<argc; i++) {
+                RB_OBJ_WRITE(buff_owner_ary, &ptr[i+beg], argv[i]);
+            }
+        });
     }
-#else
-    /* giveup write barrier (traditional way) */
-    RARRAY_PTR(buff_owner_ary);
-    MEMCPY(RARRAY_PTR(ary)+beg, argv, VALUE, argc);
-#endif
 }
 
 static void
@@ -1620,6 +1614,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	}
 	if (rlen > 0) {
 	    if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+            /* give up wb-protected ary */
 	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
 	}
     }
@@ -2298,24 +2293,27 @@ rotate_count(long cnt, long len)
     return (cnt < 0) ? (len - (~cnt % len) - 1) : (cnt % len);
 }
 
+static void
+ary_rotate_ptr(VALUE *ptr, long len, long cnt)
+{
+    --len;
+    if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
+    if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
+    if (len > 0) ary_reverse(ptr, ptr + len);
+}
+
 VALUE
 rb_ary_rotate(VALUE ary, long cnt)
 {
     rb_ary_modify(ary);
 
     if (cnt != 0) {
-	VALUE *ptr = RARRAY_PTR(ary);
-	long len = RARRAY_LEN(ary);
-
-	if (len > 0 && (cnt = rotate_count(cnt, len)) > 0) {
-	    --len;
-	    if (cnt < len) ary_reverse(ptr + cnt, ptr + len);
-	    if (--cnt > 0) ary_reverse(ptr, ptr + cnt);
-	    if (len > 0) ary_reverse(ptr, ptr + len);
-	    return ary;
-	}
+        long len = RARRAY_LEN(ary);
+        if (len > 0 && (cnt = rotate_count(cnt, len)) > 0) {
+            RARRAY_PTR_USE(ary, ptr, ary_rotate_ptr(ptr, len, cnt));
+            return ary;
+        }
     }
-
     return Qnil;
 }
 
