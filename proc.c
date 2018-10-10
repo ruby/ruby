@@ -1206,7 +1206,6 @@ rb_sym_to_proc(VALUE sym)
     VALUE proc;
     long index;
     ID id;
-    VALUE *aryp;
 
     if (!sym_proc_cache) {
 	sym_proc_cache = rb_ary_tmp_new(SYM_PROC_CACHE_SIZE * 2);
@@ -1217,14 +1216,13 @@ rb_sym_to_proc(VALUE sym)
     id = SYM2ID(sym);
     index = (id % SYM_PROC_CACHE_SIZE) << 1;
 
-    aryp = RARRAY_PTR(sym_proc_cache);
-    if (aryp[index] == sym) {
-	return aryp[index + 1];
+    if (RARRAY_AREF(sym_proc_cache, index) == sym) {
+        return RARRAY_AREF(sym_proc_cache, index + 1);
     }
     else {
-	proc = sym_proc_new(rb_cProc, ID2SYM(id));
-	aryp[index] = sym;
-	aryp[index + 1] = proc;
+        proc = sym_proc_new(rb_cProc, ID2SYM(id));
+        RARRAY_ASET(sym_proc_cache, index, sym);
+        RARRAY_ASET(sym_proc_cache, index + 1, proc);
 	return proc;
     }
 }
