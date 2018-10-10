@@ -1440,7 +1440,7 @@ nmin_filter(struct nmin_data *data)
 #undef GETPTR
 #undef SWAP
 
-    data->limit = RARRAY_PTR(data->buf)[store_index*eltsize]; /* the last pivot */
+    data->limit = RARRAY_AREF(data->buf, store_index*eltsize); /* the last pivot */
     data->curlen = data->n;
     rb_ary_resize(data->buf, data->n * eltsize);
 }
@@ -1518,18 +1518,22 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     result = data.buf;
     if (by) {
 	long i;
-	ruby_qsort(RARRAY_PTR(result),
-	           RARRAY_LEN(result)/2,
-		   sizeof(VALUE)*2,
-		   data.cmpfunc, (void *)&data);
-	for (i=1; i<RARRAY_LEN(result); i+=2) {
-	    RARRAY_PTR(result)[i/2] = RARRAY_PTR(result)[i];
-	}
+        RARRAY_PTR_USE(result, ptr, {
+            ruby_qsort(ptr,
+                       RARRAY_LEN(result)/2,
+                       sizeof(VALUE)*2,
+                       data.cmpfunc, (void *)&data);
+            for (i=1; i<RARRAY_LEN(result); i+=2) {
+                ptr[i/2] = ptr[i];
+            }
+        });
 	rb_ary_resize(result, RARRAY_LEN(result)/2);
     }
     else {
-	ruby_qsort(RARRAY_PTR(result), RARRAY_LEN(result), sizeof(VALUE),
-		   data.cmpfunc, (void *)&data);
+        RARRAY_PTR_USE(result, ptr, {
+            ruby_qsort(ptr, RARRAY_LEN(result), sizeof(VALUE),
+                       data.cmpfunc, (void *)&data);
+        });
     }
     if (rev) {
         rb_ary_reverse(result);

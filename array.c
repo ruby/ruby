@@ -5228,11 +5228,9 @@ static int
 yield_indexed_values(const VALUE values, const long r, const long *const p)
 {
     const VALUE result = rb_ary_new2(r);
-    VALUE *const result_array = RARRAY_PTR(result);
-    const VALUE *const values_array = RARRAY_CONST_PTR(values);
     long i;
 
-    for (i = 0; i < r; i++) result_array[i] = values_array[p[i]];
+    for (i = 0; i < r; i++) RARRAY_ASET(result, i, RARRAY_AREF(values, p[i]));
     ARY_SET_LEN(result, r);
     rb_yield(result);
     return !RBASIC(values)->klass;
