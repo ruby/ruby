@@ -5,7 +5,20 @@ platform_is :windows do
 
   describe :win32ole_ole_method, shared: true do
     before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
+      # This part is unstable, so retrying 3 times.
+      tries = 0
+      begin
+        @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
+      rescue WIN32OLERuntimeError => e
+        # WIN32OLERuntimeError: failed to create WIN32OLE object from `InternetExplorer.Application'
+        #     HRESULT error code:0x800704a6
+        #       A system shutdown has already been scheduled.
+        if tries < 3
+          tries += 1
+          $stderr.puts "win32ole_ole_method retry (#{tries}): #{e.class}: #{e.message}"
+          retry
+        end
+      end
     end
 
     after :each do
