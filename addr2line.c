@@ -847,6 +847,13 @@ read_uint16(char **ptr) {
 }
 
 static uint32_t
+read_uint24(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 3);
+    return (get_uint8(p) << 16) | get_uint16(p+1);
+}
+
+static uint32_t
 read_uint32(char **ptr) {
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 4);
@@ -1050,7 +1057,14 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uleb128(reader));
         break;
       case DW_FORM_ref_addr:
-        goto fail;
+        if (reader->address_size == 4) {
+            set_uint_value(v, read_uint32(&reader->p));
+        } else if (reader->address_size == 8) {
+            set_uint_value(v, read_uint64(&reader->p));
+        } else {
+            fprintf(stderr,"unknown address_size:%d", reader->address_size);
+            abort();
+        }
         break;
       case DW_FORM_ref1:
         set_uint_value(v, read_uint8(&reader->p));
@@ -1065,10 +1079,11 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uint64(&reader->p));
         break;
       case DW_FORM_ref_udata:
-        goto fail;
+        set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_indirect:
-        goto fail;
+        /* TODO: read the refered value */
+        set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_sec_offset:
         set_uint_value(v, read_uint(reader)); /* offset */
@@ -1090,63 +1105,66 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, 1);
         break;
       case DW_FORM_strx:
-        goto fail;
+        set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_addrx:
-        goto fail;
+        /* TODO: read .debug_addr */
+        set_uint_value(v, uleb128(&reader->p));
         break;
       case DW_FORM_ref_sup4:
-        goto fail;
+        set_uint_value(v, read_uint32(&reader->p));
         break;
       case DW_FORM_strp_sup:
         set_uint_value(v, read_uint(reader));
         //*p = reader->sup_file + reader->sup_str->sh_offset + ret;
         break;
       case DW_FORM_data16:
-        goto fail;
+        v->size = 16;
+        set_data_value(v, reader->p);
+        reader->p += v->size;
         break;
       case DW_FORM_line_strp:
         set_uint_value(v, read_uint(reader));
         //*p = reader->file + reader->line->sh_offset + ret;
         break;
       case DW_FORM_ref_sig8:
-        goto fail;
+        set_uint_value(v, read_uint64(&reader->p));
         break;
       case DW_FORM_implicit_const:
-        goto fail;
+        set_sint_value(v, read_sleb128(&reader->q));
         break;
       case DW_FORM_loclistx:
-        goto fail;
+        set_uint_value(v, read_uleb128(&reader->q));
         break;
       case DW_FORM_rnglistx:
-        goto fail;
+        set_uint_value(v, read_uleb128(&reader->q));
         break;
       case DW_FORM_ref_sup8:
-        goto fail;
+        set_uint_value(v, read_uint64(&reader->p));
         break;
       case DW_FORM_strx1:
-        goto fail;
+        set_uint_value(v, read_uint8(&reader->p));
         break;
       case DW_FORM_strx2:
-        goto fail;
+        set_uint_value(v, read_uint16(&reader->p));
         break;
       case DW_FORM_strx3:
-        goto fail;
+        set_uint_value(v, read_uint24(&reader->p));
         break;
       case DW_FORM_strx4:
-        goto fail;
+        set_uint_value(v, read_uint32(&reader->p));
         break;
       case DW_FORM_addrx1:
-        goto fail;
+        set_uint_value(v, read_uint8(&reader->p));
         break;
       case DW_FORM_addrx2:
-        goto fail;
+        set_uint_value(v, read_uint16(&reader->p));
         break;
       case DW_FORM_addrx3:
-        goto fail;
+        set_uint_value(v, read_uint24(&reader->p));
         break;
       case DW_FORM_addrx4:
-        goto fail;
+        set_uint_value(v, read_uint32(&reader->p));
         break;
       case 0:
         goto fail;
