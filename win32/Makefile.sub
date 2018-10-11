@@ -1277,6 +1277,8 @@ clean-local::
 	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.pch
 	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_header-*.$(OBJEXT)
 	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
+	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.pch
+	$(Q)$(RM) $(arch_hdrdir)/rb_mjit_header-*.$(OBJEXT)
 
 # Non-mswin environment is not using prebuilt precompiled header because upgrading compiler
 # or changing compiler options may break MJIT so build (currently only by --jit-debug though).
@@ -1299,6 +1301,9 @@ $(MJIT_PRECOMPILED_HEADER): $(MJIT_PRECOMPILED_HEADER_NAME)
 	$(Q) $(MAKEDIRS) $(MJIT_HEADER_INSTALL_DIR)
 	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $@
 	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(MJIT_HEADER_INSTALL_DIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
+	$(Q) $(MAKEDIRS) $(arch_hdrdir)
+	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME)
+	$(Q) $(MAKE_LINK) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT) $(arch_hdrdir)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
 
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc mjit_compile.inc
