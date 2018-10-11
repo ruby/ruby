@@ -850,7 +850,7 @@ static uint32_t
 read_uint24(char **ptr) {
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 3);
-    return (get_uint8(p) << 16) | get_uint16(p+1);
+    return (*p << 16) | get_uint16(p+1);
 }
 
 static uint32_t
@@ -1131,13 +1131,13 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_uint_value(v, read_uint64(&reader->p));
         break;
       case DW_FORM_implicit_const:
-        set_sint_value(v, read_sleb128(&reader->q));
+        set_int_value(v, sleb128(&reader->q));
         break;
       case DW_FORM_loclistx:
-        set_uint_value(v, read_uleb128(&reader->q));
+        set_uint_value(v, read_uleb128(reader));
         break;
       case DW_FORM_rnglistx:
-        set_uint_value(v, read_uleb128(&reader->q));
+        set_uint_value(v, read_uleb128(reader));
         break;
       case DW_FORM_ref_sup8:
         set_uint_value(v, read_uint64(&reader->p));
