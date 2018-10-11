@@ -195,7 +195,7 @@ get_nth_dirname(unsigned long dir, char *p)
 
 static void
 fill_filename(int file, char *include_directories, char *filenames,
-	      line_info_t *line)
+              line_info_t *line)
 {
     int i;
     char *p = filenames;
@@ -488,8 +488,8 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
 #ifdef SUPPORT_COMPRESSED_DEBUG_LINE
 static int
 parse_compressed_debug_line(int num_traces, void **traces,
-		 char *debug_line, unsigned long size,
-		 obj_info_t *obj, line_info_t *lines, int offset)
+                 char *debug_line, unsigned long size,
+                 obj_info_t *obj, line_info_t *lines, int offset)
 {
     void *uncompressed_debug_line;
     ElfW(Chdr) *chdr = (ElfW(Chdr) *)debug_line;
@@ -498,18 +498,18 @@ parse_compressed_debug_line(int num_traces, void **traces,
 
     if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
 	/* unsupported compression type */
-	return -1;
+        return -1;
     }
 
     uncompressed_debug_line = malloc(destsize);
     if (!uncompressed_debug_line) return -1;
     ret = uncompress(uncompressed_debug_line, &destsize,
-	    (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
+            (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
     if (ret != Z_OK) goto fail;
     ret = parse_debug_line(num_traces, traces,
-	    uncompressed_debug_line,
-	    destsize,
-	    obj, lines, offset);
+            uncompressed_debug_line,
+            destsize,
+            obj, lines, offset);
     if (ret) goto fail;
     obj->uncompressed_debug_line = uncompressed_debug_line;
     return 0;
@@ -605,13 +605,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    dynsym_shdr = shdr + i;
 	    break;
 	  case SHT_PROGBITS:
-	    if (!strcmp(section_name, ".debug_line")) {
-		if (shdr[i].sh_flags & SHF_COMPRESSED) {
-		    compressed_p = true;
-		}
-		debug_line_shdr = shdr + i;
-	    }
-	    else if (!strcmp(section_name, ".gnu_debuglink")) {
+            if (!strcmp(section_name, ".debug_line")) {
+                if (shdr[i].sh_flags & SHF_COMPRESSED) {
+                    compressed_p = true;
+                }
+                debug_line_shdr = shdr + i;
+            }
+            else if (!strcmp(section_name, ".gnu_debuglink")) {
 		gnu_debuglink_shdr = shdr + i;
 	    }
 	    break;
@@ -625,21 +625,21 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
-	    for (j = 0; j < symtab_count; j++) {
-		ElfW(Sym) *sym = &symtab[j];
-		Dl_info info;
-		void *h, *s;
-		if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-		h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
-		if (!h) continue;
-		s = dlsym(h, strtab + sym->st_name);
-		if (s && dladdr(s, &info)) {
-		    dladdr_fbase = (uintptr_t)info.dli_fbase;
+            for (j = 0; j < symtab_count; j++) {
+                ElfW(Sym) *sym = &symtab[j];
+                Dl_info info;
+                void *h, *s;
+                if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
+                h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
+                if (!h) continue;
+                s = dlsym(h, strtab + sym->st_name);
+                if (s && dladdr(s, &info)) {
+                    dladdr_fbase = (uintptr_t)info.dli_fbase;
                     dlclose(h);
-		    break;
-		}
+                    break;
+                }
                 dlclose(h);
-	    }
+            }
 	    if (ehdr->e_type == ET_EXEC) {
 		obj->base_addr = 0;
 	    }
@@ -651,29 +651,29 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     }
 
     if (!symtab_shdr) {
-	symtab_shdr = dynsym_shdr;
-	strtab_shdr = dynstr_shdr;
+        symtab_shdr = dynsym_shdr;
+        strtab_shdr = dynstr_shdr;
     }
 
     if (symtab_shdr && strtab_shdr) {
-	char *strtab = file + strtab_shdr->sh_offset;
-	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
-	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
-	for (j = 0; j < symtab_count; j++) {
-	    ElfW(Sym) *sym = &symtab[j];
-	    uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
-	    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-	    for (i = offset; i < num_traces; i++) {
-		uintptr_t d = (uintptr_t)traces[i] - saddr;
-		if (lines[i].line > 0 || d <= 0 || d > (uintptr_t)sym->st_size)
-		    continue;
-		/* fill symbol name and addr from .symtab */
-		lines[i].sname = strtab + sym->st_name;
-		lines[i].saddr = saddr;
-		lines[i].path  = obj->path;
-		lines[i].base_addr = obj->base_addr;
-	    }
-	}
+        char *strtab = file + strtab_shdr->sh_offset;
+        ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
+        int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
+        for (j = 0; j < symtab_count; j++) {
+            ElfW(Sym) *sym = &symtab[j];
+            uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
+            if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
+            for (i = offset; i < num_traces; i++) {
+                uintptr_t d = (uintptr_t)traces[i] - saddr;
+                if (lines[i].line > 0 || d <= 0 || d > (uintptr_t)sym->st_size)
+                    continue;
+                /* fill symbol name and addr from .symtab */
+                lines[i].sname = strtab + sym->st_name;
+                lines[i].saddr = saddr;
+                lines[i].path  = obj->path;
+                lines[i].base_addr = obj->base_addr;
+            }
+        }
     }
 
     if (!debug_line_shdr) {
@@ -689,19 +689,19 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 
     if (compressed_p) {
 #ifdef SUPPORT_COMPRESSED_DEBUG_LINE
-	int r = parse_compressed_debug_line(num_traces, traces,
-		file + debug_line_shdr->sh_offset,
-		debug_line_shdr->sh_size,
-		obj, lines, offset);
-	if (r) goto fail;
+        int r = parse_compressed_debug_line(num_traces, traces,
+                file + debug_line_shdr->sh_offset,
+                debug_line_shdr->sh_size,
+                obj, lines, offset);
+        if (r) goto fail;
 #endif
     }
     else {
-	int r = parse_debug_line(num_traces, traces,
-		file + debug_line_shdr->sh_offset,
-		debug_line_shdr->sh_size,
-		obj, lines, offset);
-	if (r) goto fail;
+        int r = parse_debug_line(num_traces, traces,
+                file + debug_line_shdr->sh_offset,
+                debug_line_shdr->sh_size,
+                obj, lines, offset);
+        if (r) goto fail;
     }
 finish:
     return dladdr_fbase;
@@ -810,43 +810,43 @@ next_line:
 
     /* output */
     for (i = 0; i < num_traces; i++) {
-	line_info_t *line = &lines[i];
-	uintptr_t addr = (uintptr_t)traces[i];
-	uintptr_t d = addr - line->saddr;
-	if (!line->path) {
-	    kprintf("[0x%lx]\n", addr);
-	}
-	else if (!line->saddr || !line->sname) {
-	    kprintf("%s(0x%lx) [0x%lx]\n", line->path, addr-line->base_addr, addr);
-	}
-	else if (line->line <= 0) {
-	    kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
-		    d, addr);
-	}
-	else if (!line->filename) {
-	    kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
-		    d, addr, line->line);
-	}
-	else if (line->dirname && line->dirname[0]) {
-	    kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
-		    d, addr, line->dirname, line->filename, line->line);
-	}
-	else {
-	    kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
-		    d, addr, line->filename, line->line);
-	}
+        line_info_t *line = &lines[i];
+        uintptr_t addr = (uintptr_t)traces[i];
+        uintptr_t d = addr - line->saddr;
+        if (!line->path) {
+            kprintf("[0x%lx]\n", addr);
+        }
+        else if (!line->saddr || !line->sname) {
+            kprintf("%s(0x%lx) [0x%lx]\n", line->path, addr-line->base_addr, addr);
+        }
+        else if (line->line <= 0) {
+            kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
+                    d, addr);
+        }
+        else if (!line->filename) {
+            kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
+                    d, addr, line->line);
+        }
+        else if (line->dirname && line->dirname[0]) {
+            kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
+                    d, addr, line->dirname, line->filename, line->line);
+        }
+        else {
+            kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
+                    d, addr, line->filename, line->line);
+        }
 	/* FreeBSD's backtrace may show _start and so on */
-	if (line->sname && strcmp("main", line->sname) == 0)
+        if (line->sname && strcmp("main", line->sname) == 0)
 	    break;
     }
 
     /* free */
     while (obj) {
 	obj_info_t *o = obj;
-	obj = o->next;
-	if (o->mapped_size) {
-	    munmap(o->mapped, o->mapped_size);
-	}
+        obj = o->next;
+        if (o->mapped_size) {
+            munmap(o->mapped, o->mapped_size);
+        }
         if (o->uncompressed_debug_line) {
             free(o->uncompressed_debug_line);
         }
