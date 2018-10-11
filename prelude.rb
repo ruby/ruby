@@ -151,4 +151,6 @@ module Kernel
 
   # suppress redefinition warning
   alias pp pp # :nodoc:
+
+  private :pp
 end
