@@ -272,6 +272,7 @@ rb_mutex_lock(VALUE self)
 	    list_add_tail(&mutex->waitq, &w.node);
 	    native_sleep(th, timeout); /* release GVL */
 	    list_del(&w.node);
+
 	    if (!mutex->th) {
 		mutex->th = th;
 	    }
@@ -287,10 +288,13 @@ rb_mutex_lock(VALUE self)
 		th->status = prev_status;
 	    }
 	    th->vm->sleeper--;
-
 	    if (mutex->th == th) mutex_locked(th, self);
 
-	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
+	    if (!mutex->th) {
+		mutex->th = th;
+	        mutex_locked(th, self);
+	    }
 	}
     }
     return self;
