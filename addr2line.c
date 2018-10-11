@@ -1577,20 +1577,21 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
-	    for (j = 0; j < symtab_count; j++) {
-		ElfW(Sym) *sym = &symtab[j];
-		Dl_info info;
-		void *h, *s;
-		if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-		h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
-		if (!h) continue;
-		s = dlsym(h, strtab + sym->st_name);
-		if (!s) continue;
-		if (dladdr(s, &info)) {
-		    dladdr_fbase = (uintptr_t)info.dli_fbase;
-		    break;
-		}
-	    }
+            void *handle = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
+            if (handle) {
+                for (j = 0; j < symtab_count; j++) {
+                    ElfW(Sym) *sym = &symtab[j];
+                    Dl_info info;
+                    void *s;
+                    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC) continue;
+                    s = dlsym(handle, strtab + sym->st_name);
+                    if (s && dladdr(s, &info)) {
+                        dladdr_fbase = (uintptr_t)info.dli_fbase;
+                        break;
+                    }
+                }
+                dlclose(handle);
+            }
 	    if (ehdr->e_type == ET_EXEC) {
 		obj->base_addr = 0;
 	    }
