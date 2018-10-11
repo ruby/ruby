@@ -692,7 +692,7 @@ static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
-    const char *files[] = { NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
+    const char *files[] = { NULL, NULL, NULL, NULL, NULL, NULL, "-link", libruby_pathflag, NULL };
     char **args;
     char *p, *obj_file;
 
@@ -726,6 +726,13 @@ compile_c_to_so(const char *c_file, const char *so_file)
     files[4] = p = alloca(sizeof(char) * (rb_strlen_lit("-Tc") + strlen(c_file) + 1));
     p = append_lit(p, "-Tc");
     p = append_str2(p, c_file, strlen(c_file));
+    *p = '\0';
+
+    /* files[5] = "-Fd*.pdb" */
+    files[5] = p = alloca(sizeof(char) * (rb_strlen_lit("-Fd") + strlen(pch_file) + 1));
+    p = append_lit(p, "-Fd");
+    p = append_str2(p, pch_file, strlen(pch_file) - rb_strlen_lit(".pch"));
+    p = append_lit(p, ".pdb");
     *p = '\0';
 
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,

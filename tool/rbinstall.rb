@@ -406,6 +406,7 @@ install?(:ext, :arch, :hdr, :'arch-hdr', :'hdr-arch') do
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "rb_mjit_header-*.obj", :mode => $data_mode)
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "rb_mjit_header-*.pch", :mode => $data_mode)
+  install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "rb_mjit_header-*.pdb", :mode => $data_mode)
 end
 install?(:ext, :comm, :'ext-comm') do
   prepare "extension scripts", rubylibdir
