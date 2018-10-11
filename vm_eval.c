@@ -800,7 +800,9 @@ rb_apply(VALUE recv, ID mid, VALUE args)
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
+#ifdef rb_funcall
 #undef rb_funcall
+#endif
 /*!
  * Calls a method
  * \param recv   receiver of the method
@@ -834,6 +836,9 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     return rb_call(recv, mid, n, argv, CALL_FCALL);
 }
 
+#ifdef rb_funcallv
+#undef rb_funcallv
+#endif
 /*!
  * Calls a method
  * \param recv   receiver of the method
@@ -860,6 +865,51 @@ VALUE
 rb_funcallv_public(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     return rb_call(recv, mid, argc, argv, CALL_PUBLIC);
+}
+
+/*!
+ * Calls a method
+ * \param ptr    opaque call cache
+ * \param recv   receiver of the method
+ * \param mid    an ID that represents the name of the method
+ * \param argc   the number of arguments
+ * \param argv   pointer to an array of method arguments
+ */
+VALUE
+rb_funcallv_with_cc(void **ptr, VALUE recv, ID mid, int argc, const VALUE *argv)
+{
+    VM_ASSERT(ptr);
+    const VALUE klass = CLASS_OF(recv);
+    VM_ASSERT(klass != Qfalse);
+    VM_ASSERT(RBASIC_CLASS(klass) == 0 || rb_obj_is_kind_of(klass, rb_cClass));
+    rb_serial_t now = GET_GLOBAL_METHOD_STATE();
+    rb_serial_t serial = RCLASS_SERIAL(klass);
+    struct opaque {
+        const rb_callable_method_entry_t *me;
+        rb_serial_t updated_at;
+        rb_serial_t class_at;
+        ID mid;
+    } *cc;
+    if (UNLIKELY(! *ptr)) {
+        *ptr = ZALLOC(struct opaque);
+    }
+    cc = *ptr;
+
+    if (cc->updated_at != now ||
+        cc->class_at != serial ||
+        cc->mid != mid) {
+        *cc = (struct opaque) {
+            rb_callable_method_entry(klass, mid), now, serial, mid,
+        };
+    }
+
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(cc->me))) {
+        /* :FIXME: this path can be made faster */
+        return rb_funcallv(recv, mid, argc, argv);
+    }
+    else {
+        return rb_vm_call0(GET_EC(), recv, mid, argc, argv, cc->me);
+    }
 }
 
 VALUE
