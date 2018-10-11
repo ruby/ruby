@@ -55,6 +55,11 @@ for:
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
     - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+    - SET %VS%
+    - SET %VS120COMNTOOLS%
+    - SET %VS140COMNTOOLS%
+    - SET %VS150COMNTOOLS%
+    - SET %VS160COMNTOOLS%
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
