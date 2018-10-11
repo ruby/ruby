@@ -390,4 +390,18 @@ class TestISeq < Test::Unit::TestCase
       end
     }
   end
+
+  def test_to_binary_tracepoint
+    filename = "#{File.basename(__FILE__)}_#{__LINE__}"
+    iseq = RubyVM::InstructionSequence.compile("x = 1\n y = 2", filename)
+    iseq_bin = iseq.to_binary
+    ary = []
+    TracePoint.new(:line){|tp|
+      next unless tp.path == filename
+      ary << [tp.path, tp.lineno]
+    }.enable{
+      ISeq.load_from_binary(iseq_bin).eval
+    }
+    assert_equal [[filename, 1], [filename, 2]], ary, '[Bug #14702]'
+  end
 end
