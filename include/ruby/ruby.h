@@ -1892,6 +1892,10 @@ VALUE rb_funcallv_public(VALUE, ID, int, const VALUE*);
 #define rb_funcall3 rb_funcallv_public
 VALUE rb_funcall_passing_block(VALUE, ID, int, const VALUE*);
 VALUE rb_funcall_with_block(VALUE, ID, int, const VALUE*, VALUE);
+#if GCC_VERSION_SINCE(3, 3, 0)
+__attribute__((__nonnull__ (1))) /* TODO: should check using configure */
+#endif
+VALUE rb_funcallv_with_cc(void**, VALUE, ID, int, const VALUE*);
 int rb_scan_args(int, const VALUE*, const char*, ...);
 VALUE rb_call_super(int, const VALUE*);
 VALUE rb_current_receiver(void);
@@ -2607,9 +2611,18 @@ __extension__({ \
 	const VALUE rb_funcall_args[] = {__VA_ARGS__}; \
 	const int rb_funcall_nargs = \
 	    (int)(sizeof(rb_funcall_args) / sizeof(VALUE)); \
-	rb_funcallv(recv, mid, \
+        static void *rb_funcall_opaque_cc = NULL; \
+        rb_funcallv_with_cc(&rb_funcall_opaque_cc, \
+            recv, mid, \
 	    rb_varargs_argc_check(rb_funcall_argc, rb_funcall_nargs), \
 	    rb_funcall_nargs ? rb_funcall_args : NULL); \
+    })
+
+# define rb_funcallv(recv, mid, argc, argv) \
+__extension__({ \
+        static void *rb_funcallv_opaque_cc = NULL; \
+        rb_funcallv_with_cc(&rb_funcallv_opaque_cc, \
+            recv, mid, argc,argv); \
     })
 #endif
 
