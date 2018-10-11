@@ -1825,6 +1825,14 @@ next_line:
         }
 	free(o);
     }
+    for (i = 0; i < num_traces; i++) {
+        line_info_t *line = lines[i].next;
+        while (line) {
+            line_info_t *l = line;
+            line = line->next;
+            free(l);
+        }
+    }
     free(lines);
     free(dladdr_fbases);
 }
