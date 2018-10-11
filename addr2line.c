@@ -1230,7 +1230,6 @@ di_skip_records(DebugInfoReader *reader) {
 }
 
 typedef struct {
-    char *debug_ranges;
     uint64_t low_pc;
     uint64_t high_pc;
     uint64_t ranges;
@@ -1257,14 +1256,14 @@ ranges_set_ranges(ranges_t *ptr, uint64_t ranges) {
     ptr->ranges_set = true;
 }
 
-static bool
+static uintptr_t
 ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             exit(1);
         }
         if (ptr->low_pc <= addr && addr <= ptr->low_pc + ptr->high_pc) {
-            return true;
+            return ptr->low_pc;
         }
     }
     else if (ptr->ranges_set) {
@@ -1274,13 +1273,13 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
             uint64_t to = read_uint64(&p);
             if (!from && !to) break;
             if (from <= addr && addr <= to) {
-                return true;
+                return from;
             }
         }
     }
     else if (ptr->low_pc_set) {
         if (ptr->low_pc == addr) {
-            return true;
+            return ptr->low_pc;
         }
     }
     return false;
@@ -1288,7 +1287,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
 
 #if 0
 static void
-ranges_inspect(ranges_t *ptr) {
+ranges_inspect(DebugInfoReader *reader, ranges_t *ptr) {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             fprintf(stderr,"low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
@@ -1298,13 +1297,15 @@ ranges_inspect(ranges_t *ptr) {
     }
     else if (ptr->ranges_set) {
         char *p;
-        fprintf(stderr,"low_pc:%lx ranges:%lx\n",ptr->low_pc,ptr->ranges);
-        p = ptr->debug_ranges + ptr->ranges;
+        fprintf(stderr,"low_pc:%lx ranges:%lx ",ptr->low_pc,ptr->ranges);
+        p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
             uint64_t from = read_uint64(&p);
             uint64_t to = read_uint64(&p);
             if (!from && !to) break;
+            fprintf(stderr,"%lx-%lx ",ptr->low_pc+from,ptr->low_pc+to);
         }
+        fprintf(stderr,"\n");
     }
     else if (ptr->low_pc_set) {
         fprintf(stderr,"low_pc:%lx\n",ptr->low_pc);
@@ -1395,12 +1396,14 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 break;
             }
         }
+        /* ranges_inspect(reader, &ranges); */
         /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr;
-            if (ranges_include(reader, &ranges, offset)) {
-                //fprintf(stderr, "%d:%tx: %lx->%lx %x %s: %s/%s %d %s\n",__LINE__,die.pos, addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path);
+            uintptr_t saddr;
+            if (saddr = ranges_include(reader, &ranges, offset)) {
+                fprintf(stderr, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname);
                 if (lines[i].sname) {
                     line_info_t *lp = malloc(sizeof(line_info_t));
                     memcpy(lp, &lines[i], sizeof(line_info_t));
@@ -1413,7 +1416,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 lines[i].path = reader->obj->path;
                 lines[i].base_addr = line.base_addr;
                 lines[i].sname = line.sname;
-                lines[i].saddr = reader->obj->base_addr + ranges.low_pc;
+                lines[i].saddr = reader->obj->base_addr + saddr;
             }
         }
     } while (reader->level > 0);
@@ -1622,6 +1625,46 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         }
     }
 
+    if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
+        DebugInfoReader reader;
+        debug_info_reader_init(&reader, obj);
+        i = 0;
+        while (reader.p < reader.pend) {
+            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
+            di_read_cu(&reader);
+            debug_info_read(&reader, num_traces, traces, lines, offset);
+        }
+    }
+    else {
+        /* This file doesn't have dwarf, use symtab or dynsym */
+        if (!symtab_shdr) {
+            /* This file doesn't have symtab, use dynsym instead */
+            symtab_shdr = dynsym_shdr;
+            strtab_shdr = dynstr_shdr;
+        }
+
+        if (symtab_shdr && strtab_shdr) {
+            char *strtab = file + strtab_shdr->sh_offset;
+            ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
+            int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
+            for (j = 0; j < symtab_count; j++) {
+                ElfW(Sym) *sym = &symtab[j];
+                uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
+                if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
+                for (i = offset; i < num_traces; i++) {
+                    uintptr_t d = (uintptr_t)traces[i] - saddr;
+                    if (lines[i].line > 0 || d <= 0 || d > (uintptr_t)sym->st_size)
+                        continue;
+                    /* fill symbol name and addr from .symtab */
+                    if (!lines[i].sname) lines[i].sname = strtab + sym->st_name;
+                    lines[i].saddr = saddr;
+                    lines[i].path  = obj->path;
+                    lines[i].base_addr = obj->base_addr;
+                }
+            }
+        }
+    }
+
     if (!obj->debug_line.shdr) {
 	/* This file doesn't have .debug_line section,
 	   let's check .gnu_debuglink section instead. */
@@ -1633,50 +1676,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
-        DebugInfoReader reader;
-        debug_info_reader_init(&reader, obj);
-        i = 0;
-        while (reader.p < reader.pend) {
-            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
-            di_read_cu(&reader);
-            debug_info_read(&reader, num_traces, traces, lines, offset);
-        }
-    }
-
     if (parse_debug_line(num_traces, traces,
             obj->debug_line.ptr,
             obj->debug_line.size,
             obj, lines, offset) == -1)
         goto fail;
-
-    /* This file doesn't have symtab, use dynsym instead */
-    if (!symtab_shdr) {
-	symtab_shdr = dynsym_shdr;
-	strtab_shdr = dynstr_shdr;
-    }
-
-    /* This file doesn't have dwarf, use symtab */
-    if (symtab_shdr && strtab_shdr) {
-	char *strtab = file + strtab_shdr->sh_offset;
-	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
-	int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
-	for (j = 0; j < symtab_count; j++) {
-	    ElfW(Sym) *sym = &symtab[j];
-	    uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
-	    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-	    for (i = offset; i < num_traces; i++) {
-		uintptr_t d = (uintptr_t)traces[i] - saddr;
-		if (lines[i].line > 0 || d <= 0 || d > (uintptr_t)sym->st_size)
-		    continue;
-		/* fill symbol name and addr from .symtab */
-		if (!lines[i].sname) lines[i].sname = strtab + sym->st_name;
-		lines[i].saddr = saddr;
-		lines[i].path  = obj->path;
-		lines[i].base_addr = obj->base_addr;
-	    }
-	}
-    }
 
 finish:
     return dladdr_fbase;
