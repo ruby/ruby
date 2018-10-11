@@ -125,14 +125,32 @@ typedef struct line_info {
 
     struct line_info *next;
 } line_info_t;
-typedef struct obj_info obj_info_t;
-struct obj_info {
+
+struct dwarf_section {
+    ElfW(Shdr) *shdr;
+    char *ptr;
+    size_t size;
+};
+
+typedef struct obj_info {
     const char *path; /* object path */
-    void *mapped;
+    char *mapped;
     size_t mapped_size;
-    void *uncompressed_debug_line;
+    void *uncompressed;
     uintptr_t base_addr;
-    obj_info_t *next;
+    struct dwarf_section debug_abbrev;
+    struct dwarf_section debug_info;
+    struct dwarf_section debug_line;
+    struct dwarf_section debug_ranges;
+    struct dwarf_section debug_str;
+    struct obj_info *next;
+} obj_info_t;
+#define obj_dwarf_section_at(obj,n) (&obj->debug_abbrev + n)
+#define DWARF_SECTION_COUNT 5
+
+struct debug_section_definition {
+    const char *name;
+    struct dwarf_section *dwarf;
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
@@ -486,63 +504,6 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     fill_lines(num_traces, traces, 0, objp, lines, offset);
 }
 
-#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
-static int
-parse_compressed_debug_line(int num_traces, void **traces,
-		 char *debug_line, unsigned long size,
-		 obj_info_t *obj, line_info_t *lines, int offset)
-{
-    void *uncompressed_debug_line;
-    ElfW(Chdr) *chdr = (ElfW(Chdr) *)debug_line;
-    unsigned long destsize = chdr->ch_size;
-    int ret = 0;
-
-    if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
-	/* unsupported compression type */
-	return -1;
-    }
-
-    uncompressed_debug_line = malloc(destsize);
-    if (!uncompressed_debug_line) return -1;
-    ret = uncompress(uncompressed_debug_line, &destsize,
-	    (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
-    if (ret != Z_OK) goto fail;
-    ret = parse_debug_line(num_traces, traces,
-	    uncompressed_debug_line,
-	    destsize,
-	    obj, lines, offset);
-    if (ret) goto fail;
-    obj->uncompressed_debug_line = uncompressed_debug_line;
-    return 0;
-
-fail:
-    free(uncompressed_debug_line);
-    return -1;
-}
-#endif
-
-void hexdump0(const unsigned char *p, size_t n) {
-    size_t i;
-    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-    for (i=0; i < n; i++){
-        switch (i & 15) {
-          case 0:
-            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
-            break;
-          case 15:
-            fprintf(stderr, "%02X\n", p[i]);
-            break;
-          default:
-            fprintf(stderr, "%02X ", p[i]);
-            break;
-        }
-    }
-    if ((i & 15) != 15) {
-        fprintf(stderr, "\n");
-    }
-}
-#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
-
 enum
 {
     DW_TAG_inlined_subroutine = 0x1d,
@@ -769,22 +730,12 @@ typedef struct {
 } __attribute__((packed)) DW_CompilationUnitHeader64;
 
 typedef struct {
-    ElfW(Shdr) *abbrev;
-    ElfW(Shdr) *info;
-    ElfW(Shdr) *ranges;
-    ElfW(Shdr) *str;
-    ElfW(Shdr) *line;
-} dwarf_args;
-
-typedef struct {
-    dwarf_args *dwarf;
     obj_info_t *obj;
     char *file;
     char *current_cu;
     char *debug_line_cu_end;
     char *debug_line_files;
     char *debug_line_directories;
-    char *p0;
     char *p;
     char *pend;
     char *q0;
@@ -795,6 +746,7 @@ typedef struct {
 } DebugInfoReader;
 
 typedef struct {
+    ptrdiff_t pos;
     int tag;
     int has_children;
 } DIE;
@@ -805,6 +757,7 @@ typedef struct {
         uint64_t uint64;
         int64_t int64;
     } as;
+    uint64_t off;
     uint64_t at;
     uint64_t form;
     size_t size;
@@ -891,14 +844,13 @@ read_sleb128(DebugInfoReader *reader)
 }
 
 static void
-debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj, dwarf_args *dwarf)
+debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
 {
     reader->file = obj->mapped;
     reader->obj = obj;
-    reader->dwarf = dwarf;
-    reader->p0 = reader->p = reader->file + dwarf->info->sh_offset;
-    reader->pend = reader->file + dwarf->info->sh_offset + dwarf->info->sh_size;
-    reader->debug_line_cu_end = reader->file + dwarf->line->sh_offset;
+    reader->p = obj->debug_info.ptr;
+    reader->pend = obj->debug_info.ptr + obj->debug_info.size;
+    reader->debug_line_cu_end = obj->debug_line.ptr;
 }
 
 static void
@@ -933,7 +885,7 @@ di_read_debug_line_cu(DebugInfoReader *reader)
 	p = memchr(p, '\0', reader->debug_line_cu_end - p);
 	if (!p) {
             fprintf(stderr, "Wrongly reached the end of Directory Table at %tx",
-                    reader->debug_line_directories - (reader->file + reader->dwarf->line->sh_offset));
+                    reader->debug_line_directories - reader->obj->debug_line.ptr);
             abort();
         }
 	p++;
@@ -951,13 +903,13 @@ di_read_cu(DebugInfoReader *reader)
     if (hdr32->unit_length == 0xffffffff) {
         DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
         reader->p += 23;
-        reader->q0 = reader->file + reader->dwarf->abbrev->sh_offset + hdr->debug_abbrev_offset;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 64;
     } else {
         DW_CompilationUnitHeader32 *hdr = hdr32;
         reader->p += 11;
-        reader->q0 = reader->file + reader->dwarf->abbrev->sh_offset + hdr->debug_abbrev_offset;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 32;
     }
@@ -983,6 +935,15 @@ static void
 set_cstr_value(DebugInfoValue *v, char *s)
 {
     v->as.ptr = s;
+    v->off = 0;
+    v->type = VAL_cstr;
+}
+
+static void
+set_cstrp_value(DebugInfoValue *v, char *s, uint64_t off)
+{
+    v->as.ptr = s;
+    v->off = off;
     v->type = VAL_cstr;
 }
 
@@ -991,6 +952,16 @@ set_data_value(DebugInfoValue *v, char *s)
 {
     v->as.ptr = s;
     v->type = VAL_data;
+}
+
+static const char *
+get_cstr_value(DebugInfoValue *v)
+{
+    if (v->as.ptr) {
+        return v->as.ptr + v->off;
+    } else {
+        return NULL;
+    }
 }
 
 static void
@@ -1051,7 +1022,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         set_int_value(v, read_sleb128(reader));
         break;
       case DW_FORM_strp:
-        set_cstr_value(v, reader->file + reader->dwarf->str->sh_offset + read_uint(reader));
+        set_cstrp_value(v, reader->obj->debug_str.ptr, read_uint(reader));
         break;
       case DW_FORM_udata:
         set_uint_value(v, read_uleb128(reader));
@@ -1227,6 +1198,7 @@ di_read_die(DebugInfoReader *reader, DIE *die) {
 
     reader->q = find_abbrev(reader->q0, abbrev_number);
 
+    die->pos = reader->p - reader->obj->debug_info.ptr - 1;
     die->tag = uleb128(&reader->q); /* tag */
     die->has_children = *reader->q++; /* has_children */
     if (die->has_children) {
@@ -1258,8 +1230,7 @@ di_skip_records(DebugInfoReader *reader) {
 }
 
 typedef struct {
-    char *file;
-    uintptr_t debug_ranges_offset;
+    char *debug_ranges;
     uint64_t low_pc;
     uint64_t high_pc;
     uint64_t ranges;
@@ -1286,8 +1257,8 @@ ranges_set_ranges(ranges_t *ptr, uint64_t ranges) {
     ptr->ranges_set = true;
 }
 
-static int
-ranges_include(ranges_t *ptr, uint64_t addr) {
+static bool
+ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             exit(1);
@@ -1297,7 +1268,7 @@ ranges_include(ranges_t *ptr, uint64_t addr) {
         }
     }
     else if (ptr->ranges_set) {
-        char *p = ptr->file + ptr->debug_ranges_offset + ptr->ranges;
+        char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
             uint64_t from = read_uint64(&p);
             uint64_t to = read_uint64(&p);
@@ -1328,7 +1299,7 @@ ranges_inspect(ranges_t *ptr) {
     else if (ptr->ranges_set) {
         char *p;
         fprintf(stderr,"low_pc:%lx ranges:%lx\n",ptr->low_pc,ptr->ranges);
-        p = ptr->file + ptr->debug_ranges_offset + ptr->ranges;
+        p = ptr->debug_ranges + ptr->ranges;
         for (;;) {
             uint64_t from = read_uint64(&p);
             uint64_t to = read_uint64(&p);
@@ -1360,7 +1331,7 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_inf
         if (!di_read_record(reader, &v)) break;
         switch (v.at) {
           case DW_AT_name:
-            line->sname = v.as.ptr;
+            line->sname = get_cstr_value(&v);
             break;
         }
     }
@@ -1376,8 +1347,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
          line_info_t *lines, int offset) {
     do {
         DIE die;
-        ranges_t ranges = {reader->file, reader->dwarf->ranges->sh_offset};
-        //ptrdiff_t diepos = reader->p - reader->p0;
+        ranges_t ranges = {0};
         line_info_t line = {0};
 
         if (!di_read_die(reader, &die)) continue;
@@ -1398,7 +1368,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
             //div_inspect(&v);
             switch (v.at) {
               case DW_AT_name:
-                line.sname = v.as.ptr;
+                line.sname = get_cstr_value(&v);
                 break;
               case DW_AT_call_file:
                 fill_filename(v.as.uint64, reader->debug_line_directories, reader->debug_line_files, &line);
@@ -1429,9 +1399,9 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr;
-            if (ranges_include(&ranges, offset)) {
-                //fprintf(stderr, "%d:%tx: %lx %x %s: %s/%s %d\n",__LINE__,diepos,addr, die.tag,line.sname,line.dirname,line.filename,line.line);
-                if (lines[i].path) {
+            if (ranges_include(reader, &ranges, offset)) {
+                //fprintf(stderr, "%d:%tx: %lx->%lx %x %s: %s/%s %d %s\n",__LINE__,die.pos, addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path);
+                if (lines[i].sname) {
                     line_info_t *lp = malloc(sizeof(line_info_t));
                     memcpy(lp, &lines[i], sizeof(line_info_t));
                     lines[i].next = lp;
@@ -1449,14 +1419,54 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
     } while (reader->level > 0);
 }
 
-static void print_line0(line_info_t *line, void *address);
-static void
-print_line(line_info_t *line, void *address) {
-    print_line0(line, address);
-    if (line->next) {
-        print_line(line->next, NULL);
+static unsigned long
+uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
+{
+#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
+    ElfW(Chdr) *chdr = (ElfW(Chdr) *)(file + shdr->sh_offset);
+    unsigned long destsize = chdr->ch_size;
+    int ret = 0;
+
+    if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
+	/* unsupported compression type */
+	return 0;
+    }
+
+    *ptr = malloc(destsize);
+    if (!*ptr) return 0;
+    ret = uncompress((Bytef *)*ptr, &destsize,
+	    (const Bytef*)chdr + sizeof(ElfW(Chdr)),
+            shdr->sh_size - sizeof(ElfW(Chdr)));
+    if (ret != Z_OK) goto fail;
+    return destsize;
+
+fail:
+    free(*ptr);
+#endif
+    return 0;
+}
+
+void hexdump0(const unsigned char *p, size_t n) {
+    size_t i;
+    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
+    for (i=0; i < n; i++){
+        switch (i & 15) {
+          case 0:
+            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
+            break;
+          case 15:
+            fprintf(stderr, "%02X\n", p[i]);
+            break;
+          default:
+            fprintf(stderr, "%02X ", p[i]);
+            break;
+        }
+    }
+    if ((i & 15) != 15) {
+        fprintf(stderr, "\n");
     }
 }
+#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
 
 /* read file and fill lines */
 static uintptr_t
@@ -1468,8 +1478,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     char *section_name;
     ElfW(Ehdr) *ehdr;
     ElfW(Shdr) *shdr, *shstr_shdr;
-    ElfW(Shdr) *debug_line_shdr = NULL, *gnu_debuglink_shdr = NULL;
-    dwarf_args dwarf = {0};
+    ElfW(Shdr) *gnu_debuglink_shdr = NULL;
     int fd;
     off_t filesize;
     char *file;
@@ -1477,7 +1486,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
     uintptr_t dladdr_fbase = 0;
-    bool compressed_p = false;
+    const char *debug_section_names[] = {
+        ".debug_abbrev",
+        ".debug_info",
+        ".debug_line",
+        ".debug_ranges",
+        ".debug_str"
+    };
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -1544,28 +1559,18 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    dynsym_shdr = shdr + i;
 	    break;
 	  case SHT_PROGBITS:
-	    if (!strcmp(section_name, ".debug_line")) {
-		if (shdr[i].sh_flags & SHF_COMPRESSED) {
-		    compressed_p = true;
-		}
-		debug_line_shdr = shdr + i;
-                dwarf.line = shdr + i;
-	    }
-	    else if (!strcmp(section_name, ".gnu_debuglink")) {
+	    if (!strcmp(section_name, ".gnu_debuglink")) {
 		gnu_debuglink_shdr = shdr + i;
 	    }
-	    else if (!strcmp(section_name, ".debug_abbrev")) {
-                dwarf.abbrev = shdr + i;
+            else {
+                int j;
+                for (j=0; j < DWARF_SECTION_COUNT; j++) {
+                    if (strcmp(section_name, debug_section_names[j]) == 0) {
+                        obj_dwarf_section_at(obj, j)->shdr = &shdr[i];
+                        break;
+                    }
+                }
             }
-	    else if (!strcmp(section_name, ".debug_info")) {
-                dwarf.info = shdr + i;
-	    }
-            else if (!strcmp(section_name, ".debug_ranges")) {
-                dwarf.ranges = shdr + i;
-	    }
-            else if (!strcmp(section_name, ".debug_str")) {
-                dwarf.str = shdr + i;
-	    }
 	    break;
 	}
     }
@@ -1583,7 +1588,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     ElfW(Sym) *sym = &symtab[j];
                     Dl_info info;
                     void *s;
-                    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC) continue;
+                    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size == 0) continue;
                     s = dlsym(handle, strtab + sym->st_name);
                     if (s && dladdr(s, &info)) {
                         dladdr_fbase = (uintptr_t)info.dli_fbase;
@@ -1602,21 +1607,56 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	}
     }
 
-    if (dwarf.str && dwarf.info && dwarf.line && dwarf.abbrev && dwarf.ranges) {
+    if (obj->debug_info.shdr) {
+        size_t j;
+        for (j=0; j < DWARF_SECTION_COUNT; j++) {
+            struct dwarf_section *s = obj_dwarf_section_at(obj, j);
+            ElfW(Shdr) *shdr = s->shdr;
+            if (!shdr) break;
+            s->ptr = file + shdr->sh_offset;
+            s->size = shdr->sh_size;
+            if (shdr->sh_flags & SHF_COMPRESSED) {
+                s->size = uncompress_debug_section(shdr, file, &s->ptr);
+                if (!s->size) goto fail;
+            }
+        }
+    }
+
+    if (!obj->debug_line.shdr) {
+	/* This file doesn't have .debug_line section,
+	   let's check .gnu_debuglink section instead. */
+	if (gnu_debuglink_shdr && check_debuglink) {
+	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
+			     num_traces, traces,
+			     objp, lines, offset);
+	}
+	goto finish;
+    }
+
+    if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
         DebugInfoReader reader;
-        debug_info_reader_init(&reader, obj, &dwarf);
+        debug_info_reader_init(&reader, obj);
+        i = 0;
         while (reader.p < reader.pend) {
-            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, di_pos(&reader), i++);
+            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
             di_read_cu(&reader);
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
 
+    if (parse_debug_line(num_traces, traces,
+            obj->debug_line.ptr,
+            obj->debug_line.size,
+            obj, lines, offset) == -1)
+        goto fail;
+
+    /* This file doesn't have symtab, use dynsym instead */
     if (!symtab_shdr) {
 	symtab_shdr = dynsym_shdr;
 	strtab_shdr = dynstr_shdr;
     }
 
+    /* This file doesn't have dwarf, use symtab */
     if (symtab_shdr && strtab_shdr) {
 	char *strtab = file + strtab_shdr->sh_offset;
 	ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
@@ -1638,33 +1678,6 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	}
     }
 
-    if (!debug_line_shdr) {
-	/* This file doesn't have .debug_line section,
-	   let's check .gnu_debuglink section instead. */
-	if (gnu_debuglink_shdr && check_debuglink) {
-	    follow_debuglink(file + gnu_debuglink_shdr->sh_offset,
-			     num_traces, traces,
-			     objp, lines, offset);
-	}
-	goto finish;
-    }
-
-    if (compressed_p) {
-#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
-	int r = parse_compressed_debug_line(num_traces, traces,
-		file + debug_line_shdr->sh_offset,
-		debug_line_shdr->sh_size,
-		obj, lines, offset);
-	if (r) goto fail;
-#endif
-    }
-    else {
-	int r = parse_debug_line(num_traces, traces,
-		file + debug_line_shdr->sh_offset,
-		debug_line_shdr->sh_size,
-		obj, lines, offset);
-	if (r) goto fail;
-    }
 finish:
     return dladdr_fbase;
 fail:
@@ -1745,6 +1758,14 @@ print_line0(line_info_t *line, void *address) {
     }
 }
 
+static void
+print_line(line_info_t *line, void *address) {
+    print_line0(line, address);
+    if (line->next) {
+        print_line(line->next, NULL);
+    }
+}
+
 void
 rb_dump_backtrace_with_lines(int num_traces, void **traces)
 {
@@ -1816,13 +1837,16 @@ next_line:
     /* free */
     while (obj) {
 	obj_info_t *o = obj;
-	obj = o->next;
-	if (o->mapped_size) {
-	    munmap(o->mapped, o->mapped_size);
-	}
-        if (o->uncompressed_debug_line) {
-            free(o->uncompressed_debug_line);
+        for (i=0; i < DWARF_SECTION_COUNT; i++) {
+            struct dwarf_section *s = obj_dwarf_section_at(obj, i);
+            if (s->shdr && (s->shdr->sh_flags & SHF_COMPRESSED)) {
+                free(s->ptr);
+            }
         }
+	if (obj->mapped_size) {
+	    munmap(obj->mapped, obj->mapped_size);
+	}
+	obj = o->next;
 	free(o);
     }
     for (i = 0; i < num_traces; i++) {
