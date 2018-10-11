@@ -520,6 +520,630 @@ fail:
 }
 #endif
 
+void hexdump0(const unsigned char *p, size_t n) {
+    size_t i;
+    for (i=0; i < n; i++){
+        if ((i & 15) != 15) {
+            fprintf(stderr, "%02X ", p[i]);
+        } else {
+            fprintf(stderr, "%02X\n", p[i]);
+        }
+    }
+    if ((i & 15) != 15) {
+        fprintf(stderr, "\n");
+    }
+}
+#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
+
+/* Attributes encodings */
+enum
+{
+  DW_AT_sibling = 0x01,
+  DW_AT_location = 0x02,
+  DW_AT_name = 0x03,
+  /* Reserved 0x04 */
+  /* Reserved 0x05 */
+  /* Reserved 0x06 */
+  /* Reserved 0x07 */
+  /* Reserved 0x08 */
+  DW_AT_ordering = 0x09,
+  /* Reserved 0x0a */
+  DW_AT_byte_size = 0x0b,
+  /* Reserved 0x0c */
+  DW_AT_bit_size = 0x0d,
+  /* Reserved 0x0e */
+  /* Reserved 0x0f */
+  DW_AT_stmt_list = 0x10,
+  DW_AT_low_pc = 0x11,
+  DW_AT_high_pc = 0x12,
+  DW_AT_language = 0x13,
+  /* Reserved 0x14 */
+  DW_AT_discr = 0x15,
+  DW_AT_discr_value = 0x16,
+  DW_AT_visibility = 0x17,
+  DW_AT_import = 0x18,
+  DW_AT_string_length = 0x19,
+  DW_AT_common_reference = 0x1a,
+  DW_AT_comp_dir = 0x1b,
+  DW_AT_const_value = 0x1c,
+  DW_AT_containing_type = 0x1d,
+  DW_AT_default_value = 0x1e,
+  /* Reserved 0x1f */
+  DW_AT_inline = 0x20,
+  DW_AT_is_optional = 0x21,
+  DW_AT_lower_bound = 0x22,
+  /* Reserved 0x23 */
+  /* Reserved 0x24 */
+  DW_AT_producer = 0x25,
+  /* Reserved 0x26 */
+  DW_AT_prototyped = 0x27,
+  /* Reserved 0x28 */
+  /* Reserved 0x29 */
+  DW_AT_return_addr = 0x2a,
+  /* Reserved 0x2b */
+  DW_AT_start_scope = 0x2c,
+  /* Reserved 0x2d */
+  DW_AT_bit_stride = 0x2e,
+  DW_AT_upper_bound = 0x2f,
+  /* Reserved 0x30 */
+  DW_AT_abstract_origin = 0x31,
+  DW_AT_accessibility = 0x32,
+  DW_AT_address_class = 0x33,
+  DW_AT_artificial = 0x34,
+  DW_AT_base_types = 0x35,
+  DW_AT_calling_convention = 0x36,
+  DW_AT_count = 0x37,
+  DW_AT_data_member_location = 0x38,
+  DW_AT_decl_column = 0x39,
+  DW_AT_decl_file = 0x3a,
+  DW_AT_decl_line = 0x3b,
+  DW_AT_declaration = 0x3c,
+  DW_AT_discr_list = 0x3d,
+  DW_AT_encoding = 0x3e,
+  DW_AT_external = 0x3f,
+  DW_AT_frame_base = 0x40,
+  DW_AT_friend = 0x41,
+  DW_AT_identifier_case = 0x42,
+  /* Reserved 0x43 */
+  DW_AT_namelist_item = 0x44,
+  DW_AT_priority = 0x45,
+  DW_AT_segment = 0x46,
+  DW_AT_specification = 0x47,
+  DW_AT_static_link = 0x48,
+  DW_AT_type = 0x49,
+  DW_AT_use_location = 0x4a,
+  DW_AT_variable_parameter = 0x4b,
+  DW_AT_virtuality = 0x4c,
+  DW_AT_vtable_elem_location = 0x4d,
+  DW_AT_allocated = 0x4e,
+  DW_AT_associated = 0x4f,
+  DW_AT_data_location = 0x50,
+  DW_AT_byte_stride = 0x51,
+  DW_AT_entry_pc = 0x52,
+  DW_AT_use_UTF8 = 0x53,
+  DW_AT_extension = 0x54,
+  DW_AT_ranges = 0x55,
+  DW_AT_trampoline = 0x56,
+  DW_AT_call_column = 0x57,
+  DW_AT_call_file = 0x58,
+  DW_AT_call_line = 0x59,
+  DW_AT_description = 0x5a,
+  DW_AT_binary_scale = 0x5b,
+  DW_AT_decimal_scale = 0x5c,
+  DW_AT_small = 0x5d,
+  DW_AT_decimal_sign = 0x5e,
+  DW_AT_digit_count = 0x5f,
+  DW_AT_picture_string = 0x60,
+  DW_AT_mutable = 0x61,
+  DW_AT_threads_scaled = 0x62,
+  DW_AT_explicit = 0x63,
+  DW_AT_object_pointer = 0x64,
+  DW_AT_endianity = 0x65,
+  DW_AT_elemental = 0x66,
+  DW_AT_pure = 0x67,
+  DW_AT_recursive = 0x68,
+  DW_AT_signature = 0x69,
+  DW_AT_main_subprogram = 0x6a,
+  DW_AT_data_bit_offset = 0x6b,
+  DW_AT_const_expr = 0x6c,
+  DW_AT_enum_class = 0x6d,
+  DW_AT_linkage_name = 0x6e,
+  DW_AT_string_length_bit_size = 0x6f,
+  DW_AT_string_length_byte_size = 0x70,
+  DW_AT_rank = 0x71,
+  DW_AT_str_offsets_base = 0x72,
+  DW_AT_addr_base = 0x73,
+  DW_AT_rnglists_base = 0x74,
+  /* Reserved 0x75 */
+  DW_AT_dwo_name = 0x76,
+  DW_AT_reference = 0x77,
+  DW_AT_rvalue_reference = 0x78,
+  DW_AT_macros = 0x79,
+  DW_AT_call_all_calls = 0x7a,
+  DW_AT_call_all_source_calls = 0x7b,
+  DW_AT_call_all_tail_calls = 0x7c,
+  DW_AT_call_return_pc = 0x7d,
+  DW_AT_call_value = 0x7e,
+  DW_AT_call_origin = 0x7f,
+  DW_AT_call_parameter = 0x80,
+  DW_AT_call_pc = 0x81,
+  DW_AT_call_tail_call = 0x82,
+  DW_AT_call_target = 0x83,
+  DW_AT_call_target_clobbered = 0x84,
+  DW_AT_call_data_location = 0x85,
+  DW_AT_call_data_value = 0x86,
+  DW_AT_noreturn = 0x87,
+  DW_AT_alignment = 0x88,
+  DW_AT_export_symbols = 0x89,
+  DW_AT_deleted = 0x8a,
+  DW_AT_defaulted = 0x8b,
+  DW_AT_loclists_base = 0x8c,
+  DW_AT_lo_user = 0x2000,
+  DW_AT_hi_user = 0x3fff
+};
+
+/* Attribute form encodings */
+enum
+{
+  DW_FORM_addr = 0x01,
+  /* Reserved 0x02 */
+  DW_FORM_block2 = 0x03,
+  DW_FORM_block4 = 0x04,
+  DW_FORM_data2 = 0x05,
+  DW_FORM_data4 = 0x06,
+  DW_FORM_data8 = 0x07,
+  DW_FORM_string = 0x08,
+  DW_FORM_block = 0x09,
+  DW_FORM_block1 = 0x0a,
+  DW_FORM_data1 = 0x0b,
+  DW_FORM_flag = 0x0c,
+  DW_FORM_sdata = 0x0d,
+  DW_FORM_strp = 0x0e,
+  DW_FORM_udata = 0x0f,
+  DW_FORM_ref_addr = 0x10,
+  DW_FORM_ref1 = 0x11,
+  DW_FORM_ref2 = 0x12,
+  DW_FORM_ref4 = 0x13,
+  DW_FORM_ref8 = 0x14,
+  DW_FORM_ref_udata = 0x15,
+  DW_FORM_indirect = 0x16,
+  DW_FORM_sec_offset = 0x17,
+  DW_FORM_exprloc = 0x18,
+  DW_FORM_flag_present = 0x19,
+  DW_FORM_strx = 0x1a,
+  DW_FORM_addrx = 0x1b,
+  DW_FORM_ref_sup4 = 0x1c,
+  DW_FORM_strp_sup = 0x1d,
+  DW_FORM_data16 = 0x1e,
+  DW_FORM_line_strp = 0x1f,
+  DW_FORM_ref_sig8 = 0x20,
+  DW_FORM_implicit_const = 0x21,
+  DW_FORM_loclistx = 0x22,
+  DW_FORM_rnglistx = 0x23,
+  DW_FORM_ref_sup8 = 0x24,
+  DW_FORM_strx1 = 0x25,
+  DW_FORM_strx2 = 0x26,
+  DW_FORM_strx3 = 0x27,
+  DW_FORM_strx4 = 0x28,
+  DW_FORM_addrx1 = 0x29,
+  DW_FORM_addrx2 = 0x2a,
+  DW_FORM_addrx3 = 0x2b,
+  DW_FORM_addrx4 = 0x2c
+};
+
+typedef struct {
+    uint32_t unit_length;
+    uint16_t version;
+    uint32_t debug_abbrev_offset;
+    uint8_t address_size;
+} __attribute__((packed)) DW_CompilationUnitHeader32;
+
+typedef struct {
+    uint32_t initial_length; /* 0xffffffff */
+    uint64_t unit_length;
+    uint16_t version;
+    uint64_t debug_abbrev_offset;
+    uint8_t address_size;
+} __attribute__((packed)) DW_CompilationUnitHeader64;
+
+typedef struct {
+    char *file;
+    ElfW(Shdr) *info;
+    char *p0;
+    char *p;
+    char *pend;
+    ElfW(Shdr) *abbrev;
+    char *q0;
+    char *q;
+    ElfW(Shdr) *str;
+    int format; /* 32 or 64 */;
+    uint8_t address_size;
+    int level;
+} DebugInfoReader;
+
+typedef struct {
+    union {
+        char *ptr;
+        uint64_t uint64;
+    } as;
+    size_t size;
+    int type;
+} DebugInfoValue;
+
+/* TODO: Big Endian */
+#define MERGE_2INTS(a,b,sz) (((uint64_t)(b)<<sz)|(a))
+
+static uint16_t
+get_uint16(const uint8_t *p)
+{
+    return MERGE_2INTS(p[0],p[1],8);
+}
+
+static uint32_t
+get_uint32(const uint8_t *p)
+{
+    return MERGE_2INTS(get_uint16(p),get_uint16(p+2),16);
+}
+
+static uint64_t
+get_uint64(const uint8_t *p)
+{
+    return MERGE_2INTS(get_uint32(p),get_uint32(p+4),32);
+}
+
+static uint8_t
+read_uint8(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 1);
+    return *p;
+}
+
+static uint16_t
+read_uint16(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 2);
+    return get_uint16(p);
+}
+
+static uint32_t
+read_uint32(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 4);
+    return get_uint32(p);
+}
+
+static uint64_t
+read_uint64(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 8);
+    return get_uint64(p);
+}
+
+uint64_t
+read_uint(DebugInfoReader *reader) {
+    uint64_t v;
+    if (reader->format == 32) {
+        v = read_uint32(&reader->p);
+    } else { /* 64 bit */
+        v = read_uint64(&reader->p);
+    }
+    return v;
+}
+
+uint64_t
+read_uleb128(DebugInfoReader *reader)
+{
+    return uleb128(&reader->p);
+}
+
+int64_t
+read_sleb128(DebugInfoReader *reader)
+{
+    return sleb128(&reader->p);
+}
+
+static DebugInfoReader *
+debug_info_reader_new(char *file, ElfW(Shdr) *debug_info_shdr, ElfW(Shdr) *debug_abbrev_shdr, ElfW(Shdr) *debug_str_shdr)
+{
+    DebugInfoReader *p = malloc(sizeof(DebugInfoReader));
+    p->file = file;
+    p->info = debug_info_shdr;
+    p->abbrev = debug_abbrev_shdr;
+    p->str = debug_str_shdr;
+    p->p0 = p->p = p->file + debug_info_shdr->sh_offset;
+    p->pend = p->file + debug_info_shdr->sh_offset + debug_info_shdr->sh_size;
+    return p;
+}
+
+static void
+debug_info_reader_read_cu(DebugInfoReader *reader)
+{
+    DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
+    if (hdr32->unit_length == 0xffffffff) {
+        DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
+        reader->p += 23;
+        reader->q0 = reader->file + reader->abbrev->sh_offset + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 64;
+    } else {
+        DW_CompilationUnitHeader32 *hdr = hdr32;
+        reader->p += 11;
+        reader->q0 = reader->file + reader->abbrev->sh_offset + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 32;
+    }
+}
+
+static void
+set_uint_value(DebugInfoValue *v, uint64_t n)
+{
+    v->as.uint64 = n;
+    v->type = 1;
+}
+
+static void
+set_sint_value(DebugInfoValue *v, int64_t n)
+{
+    v->as.uint64 = (uint64_t)n;
+    v->type = 2;
+}
+
+static void
+set_cstr_value(DebugInfoValue *v, char *s)
+{
+    v->as.ptr = s;
+    v->type = 3;
+}
+
+static void
+set_bytes_value(DebugInfoValue *v, char *s)
+{
+    v->as.ptr = s;
+    v->type = 4;
+}
+
+static void
+debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
+{
+    switch (form) {
+      case DW_FORM_addr:
+        fprintf(stderr, "%d: %d\n", __LINE__, reader->address_size);
+        if (reader->address_size == 4) {
+            set_uint_value(v, read_uint32(&reader->p));
+        } else if (reader->address_size == 8) {
+            set_uint_value(v, read_uint64(&reader->p));
+        } else {
+            fprintf(stderr,"unknown address_size:%d", reader->address_size);
+            abort();
+        }
+        break;
+      case DW_FORM_block2:
+        v->size = read_uint16(&reader->p);
+        set_bytes_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_block4:
+        v->size = read_uint32(&reader->p);
+        set_bytes_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_data2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_data4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_data8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_string:
+        v->size = strlen(reader->p);
+        set_cstr_value(v, reader->p);
+        reader->p += v->size + 1;
+        break;
+      case DW_FORM_block:
+        v->size = uleb128(&reader->p);
+        set_bytes_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_block1:
+        v->size = read_uint8(&reader->p);
+        set_bytes_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_data1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_flag:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_sdata:
+        set_sint_value(v, read_sleb128(reader));
+        break;
+      case DW_FORM_strp:
+        set_cstr_value(v, reader->file + reader->str->sh_offset + read_uint(reader));
+        break;
+      case DW_FORM_udata:
+        set_uint_value(v, read_uleb128(reader));
+        break;
+      case DW_FORM_ref_addr:
+        goto fail;
+        break;
+      case DW_FORM_ref1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_ref2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_ref4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_ref8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_ref_udata:
+        goto fail;
+        break;
+      case DW_FORM_indirect:
+        goto fail;
+        break;
+      case DW_FORM_sec_offset:
+        set_uint_value(v, read_uint(reader)); /* offset */
+        /* addrptr: debug_addr */
+        /* lineptr: debug_line */
+        /* loclist: debug_loclists */
+        /* loclistptr: debug_loclists */
+        /* macptr: debug_macro */
+        /* rnglist: debug_rnglists */
+        /* rnglistptr: debug_rnglists */
+        /* stroffsetsptr: debug_str_offsets */
+        break;
+      case DW_FORM_exprloc:
+        v->size = read_uleb128(reader);
+        set_bytes_value(v, reader->p);
+        hexdump(reader->p, v->size);
+        reader->p += v->size;
+        break;
+      case DW_FORM_flag_present:
+        set_uint_value(v, 1);
+        break;
+      case DW_FORM_strx:
+        goto fail;
+        break;
+      case DW_FORM_addrx:
+        goto fail;
+        break;
+      case DW_FORM_ref_sup4:
+        goto fail;
+        break;
+      case DW_FORM_strp_sup:
+        set_uint_value(v, read_uint(reader));
+        //*p = reader->sup_file + reader->sup_str->sh_offset + ret;
+        break;
+      case DW_FORM_data16:
+        goto fail;
+        break;
+      case DW_FORM_line_strp:
+        set_uint_value(v, read_uint(reader));
+        //*p = reader->file + reader->line->sh_offset + ret;
+        break;
+      case DW_FORM_ref_sig8:
+        goto fail;
+        break;
+      case DW_FORM_implicit_const:
+        goto fail;
+        break;
+      case DW_FORM_loclistx:
+        goto fail;
+        break;
+      case DW_FORM_rnglistx:
+        goto fail;
+        break;
+      case DW_FORM_ref_sup8:
+        goto fail;
+        break;
+      case DW_FORM_strx1:
+        goto fail;
+        break;
+      case DW_FORM_strx2:
+        goto fail;
+        break;
+      case DW_FORM_strx3:
+        goto fail;
+        break;
+      case DW_FORM_strx4:
+        goto fail;
+        break;
+      case DW_FORM_addrx1:
+        goto fail;
+        break;
+      case DW_FORM_addrx2:
+        goto fail;
+        break;
+      case DW_FORM_addrx3:
+        goto fail;
+        break;
+      case DW_FORM_addrx4:
+        goto fail;
+        break;
+      case 0:
+        goto fail;
+        break;
+    }
+    return;
+
+  fail:
+    fprintf(stderr, "%d: unsupported form: %#lx\n", __LINE__, form);
+    exit(1);
+}
+
+static void
+debug_info_read(DebugInfoReader *reader) {
+    reader->level = 0;
+    for (;;) {
+        uint64_t abbrev_number = uleb128(&reader->p);
+        char has_children;
+        fprintf(stderr,"\n\n%d: <%d> Abbrev Number: %lu\n",__LINE__,reader->level,abbrev_number);
+        if (abbrev_number == 0) {
+            if (reader->level == 1) {
+                return;
+            }
+            reader->level--;
+            continue;
+        }
+
+        reader->q = reader->q0;
+
+        /* find abbrev */
+        for (uint64_t n = uleb128(&reader->q); abbrev_number != n; n = uleb128(&reader->q)) {
+            if (n == 0) {
+                fprintf(stderr,"%d: Abbrev Number not found\n",__LINE__);
+                abort();
+            }
+            /* fprintf(stderr,"%d: %lu != %lu\n",__LINE__, abbrev_number, n); */
+            uleb128(&reader->q); /* tag */
+            reader->q++; /* children */
+            /* skip content */
+            for (;;) {
+                uint64_t at = uleb128(&reader->q);
+                uint64_t form = uleb128(&reader->q);
+                if (!at && !form) break;
+            }
+        }
+
+        uleb128(&reader->q); /* tag */
+        has_children = *reader->q++; /* has_children */
+        if (has_children) {
+            reader->level++;
+        }
+
+        /* enumerate abbrev */
+        for (;;) {
+            uint64_t at = uleb128(&reader->q);
+            uint64_t form = uleb128(&reader->q);
+            DebugInfoValue v = {0};
+            fprintf(stderr,"\n%d:%lx: AT:%lx FORM:%lx\n",__LINE__,reader->p-reader->p0,at,form);
+            if (!at && !form) break;
+            debug_info_reader_read_value(reader, form, &v);
+            switch (v.type) {
+              case 1:
+                fprintf(stderr,"%d: type:%d size:%zx v:%lx\n",__LINE__,v.type,v.size,v.as.uint64);
+                break;
+              case 2:
+                fprintf(stderr,"%d: type:%d size:%zx v:%ld\n",__LINE__,v.type,v.size,(int64_t)v.as.uint64);
+                break;
+              case 3:
+                fprintf(stderr,"%d: type:%d size:%zx v:'%s'\n",__LINE__,v.type,v.size,v.as.ptr);
+                break;
+              case 4:
+                fprintf(stderr,"%d: type:%d size:%zx v:\n",__LINE__,v.type,v.size);
+                hexdump(v.as.ptr, 16);
+                break;
+            }
+        }
+    }
+}
+
 /* read file and fill lines */
 static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
@@ -531,9 +1155,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     ElfW(Ehdr) *ehdr;
     ElfW(Shdr) *shdr, *shstr_shdr;
     ElfW(Shdr) *debug_line_shdr = NULL, *gnu_debuglink_shdr = NULL;
+    ElfW(Shdr) *debug_info_shdr = NULL, *debug_abbrev_shdr = NULL;
+    ElfW(Shdr) *debug_str_shdr = NULL;
     int fd;
-    off_t filesize = 0;
-    char *file = NULL;
+    off_t filesize;
+    char *file;
     ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
@@ -614,9 +1240,46 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    else if (!strcmp(section_name, ".gnu_debuglink")) {
 		gnu_debuglink_shdr = shdr + i;
 	    }
+	    else if (!strcmp(section_name, ".debug_info")) {
+                debug_info_shdr = shdr + i;
+	    }
+	    else if (!strcmp(section_name, ".debug_abbrev")) {
+                debug_abbrev_shdr = shdr + i;
+            }
+            else if (!strcmp(section_name, ".debug_str")) {
+                debug_str_shdr = shdr + i;
+	    }
 	    break;
 	}
     }
+
+    if (debug_info_shdr) {
+	unsigned char *info = (unsigned char *)(file + debug_info_shdr->sh_offset);
+        size_t info_count = debug_info_shdr->sh_size;
+        fprintf(stderr, "size: %zd\n", info_count);
+        hexdump(info, 11);
+        info += 11;
+        hexdump(info, 11);
+        info += 11;
+        hexdump(info, 32);
+    }
+    if (debug_abbrev_shdr) {
+	unsigned char *abbrev = (unsigned char *)(file + debug_abbrev_shdr->sh_offset);
+        size_t abbrev_count = debug_abbrev_shdr->sh_size;
+        fprintf(stderr, "size: %zd\n", abbrev_count);
+        hexdump(abbrev, 128);
+    }
+    {
+        int i = 0;
+        DebugInfoReader *reader = debug_info_reader_new(file, debug_info_shdr, debug_abbrev_shdr, debug_str_shdr);
+
+        while (reader->p < reader->pend) {
+            fprintf(stderr, "CU[%d]\n", i++);
+            debug_info_reader_read_cu(reader);
+            debug_info_read(reader);
+        }
+    }
+    exit(0);
 
     if (offset == -1) {
 	/* main executable */
@@ -633,12 +1296,11 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 		h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
 		if (!h) continue;
 		s = dlsym(h, strtab + sym->st_name);
-		if (s && dladdr(s, &info)) {
+		if (!s) continue;
+		if (dladdr(s, &info)) {
 		    dladdr_fbase = (uintptr_t)info.dli_fbase;
-                    dlclose(h);
 		    break;
 		}
-                dlclose(h);
 	    }
 	    if (ehdr->e_type == ET_EXEC) {
 		obj->base_addr = 0;
@@ -706,9 +1368,6 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 finish:
     return dladdr_fbase;
 fail:
-    if (file != NULL) {
-        munmap(file, (size_t)filesize);
-    }
     return (uintptr_t)-1;
 }
 
