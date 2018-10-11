@@ -15,7 +15,8 @@ RSpec.describe "bundle executable" do
 
   it "looks for a binary and executes it if it's named bundler-<task>" do
     File.open(tmp("bundler-testtasks"), "w", 0o755) do |f|
-      f.puts "#!/usr/bin/env ruby\nputs 'Hello, world'\n"
+      ruby = ENV['BUNDLE_RUBY'] || "/usr/bin/env ruby"
+      f.puts "#!#{ruby}\nputs 'Hello, world'\n"
     end
 
     with_path_added(tmp) do
@@ -71,17 +72,17 @@ RSpec.describe "bundle executable" do
     it "prints the running command" do
       gemfile ""
       bundle! "info bundler", :verbose => true
-      expect(last_command.stdout).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION}")
+      expect(last_command.stdout).to start_with("Running `bundle info bundler --no-color --verbose` with bundler #{Bundler::VERSION}")
     end
 
     it "doesn't print defaults" do
       install_gemfile! "", :verbose => true
-      expect(last_command.stdout).to start_with("Running `bundle install --retry 0 --verbose` with bundler #{Bundler::VERSION}")
+      expect(last_command.stdout).to start_with("Running `bundle install --no-color --retry 0 --verbose` with bundler #{Bundler::VERSION}")
     end
 
     it "doesn't print defaults" do
       install_gemfile! "", :verbose => true
-      expect(last_command.stdout).to start_with("Running `bundle install --retry 0 --verbose` with bundler #{Bundler::VERSION}")
+      expect(last_command.stdout).to start_with("Running `bundle install --no-color --retry 0 --verbose` with bundler #{Bundler::VERSION}")
     end
   end
 

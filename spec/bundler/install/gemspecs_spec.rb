@@ -48,11 +48,11 @@ RSpec.describe "bundle install" do
   end
 
   it "does not hang when gemspec has incompatible encoding" do
-    create_file("foo.gemspec", <<-G)
+    create_file "foo.gemspec", <<-G
       Gem::Specification.new do |gem|
         gem.name = "pry-byebug"
         gem.version = "3.4.2"
-        gem.author = "David Rodríguez"
+        gem.author = "David Rodriguez"
         gem.summary = "Good stuff"
       end
     G

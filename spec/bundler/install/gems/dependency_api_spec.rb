@@ -691,7 +691,7 @@ RSpec.describe "gemcutter's dependency API" do
     end
   end
 
-  context "when ruby is compiled without openssl" do
+  context "when ruby is compiled without openssl", :ruby_repo do
     before do
       # Install a monkeypatch that reproduces the effects of openssl being
       # missing when the fetcher runs, as happens in real life. The reason

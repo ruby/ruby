@@ -50,25 +50,14 @@ module Bundler::Molinillo
         incoming_edges.map(&:origin)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is a
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is a
       #   {#descendent?}
       def recursive_predecessors
-        _recursive_predecessors
-      end
-
-      # @param [Set<Vertex>] vertices the set to add the predecessors to
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is a
-      #   {#descendent?}
-      def _recursive_predecessors(vertices = Set.new)
-        incoming_edges.each do |edge|
-          vertex = edge.origin
-          next unless vertices.add?(vertex)
-          vertex._recursive_predecessors(vertices)
-        end
-
+        vertices = predecessors
+        vertices += Compatibility.flat_map(vertices, &:recursive_predecessors)
+        vertices.uniq!
         vertices
       end
-      protected :_recursive_predecessors
 
       # @return [Array<Vertex>] the vertices of {#graph} that have an edge with
       #   `self` as their {Edge#origin}
@@ -76,25 +65,14 @@ module Bundler::Molinillo
         outgoing_edges.map(&:destination)
       end
 
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is an
+      # @return [Array<Vertex>] the vertices of {#graph} where `self` is an
       #   {#ancestor?}
       def recursive_successors
-        _recursive_successors
-      end
-
-      # @param [Set<Vertex>] vertices the set to add the successors to
-      # @return [Set<Vertex>] the vertices of {#graph} where `self` is an
-      #   {#ancestor?}
-      def _recursive_successors(vertices = Set.new)
-        outgoing_edges.each do |edge|
-          vertex = edge.destination
-          next unless vertices.add?(vertex)
-          vertex._recursive_successors(vertices)
-        end
-
+        vertices = successors
+        vertices += Compatibility.flat_map(vertices, &:recursive_successors)
+        vertices.uniq!
         vertices
       end
-      protected :_recursive_successors
 
       # @return [String] a string suitable for debugging
       def inspect

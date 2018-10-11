@@ -120,14 +120,8 @@ module Bundler
           uris.uniq!
           Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
 
-          path = fetch_gem(spec)
-          begin
-            s = Bundler.rubygems.spec_from_gem(path, Bundler.settings["trust-policy"])
-            spec.__swap__(s)
-          rescue
-            Bundler.rm_rf(path)
-            raise
-          end
+          s = Bundler.rubygems.spec_from_gem(fetch_gem(spec), Bundler.settings["trust-policy"])
+          spec.__swap__(s)
         end
 
         unless Bundler.settings[:no_install]

@@ -190,7 +190,6 @@ module Spec
         end
 
         build_gem "very_simple_binary", &:add_c_extension
-        build_gem "simple_binary", &:add_c_extension
 
         build_gem "bundler", "0.9" do |s|
           s.executables = "bundle"
@@ -653,7 +652,6 @@ module Spec
           `git add *`
           `git config user.email "lol@wut.com"`
           `git config user.name "lolwut"`
-          `git config commit.gpgsign false`
           `git commit -m 'OMG INITIAL COMMIT'`
         end
       end

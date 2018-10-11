@@ -35,7 +35,7 @@ RSpec.describe "Resolving" do
     should_resolve_as %w[berkshelf-2.0.7 chef-10.26 chef_app-1.0.0 json-1.7.7]
   end
 
-  it "prefers explicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
+  it "prefers expicitly requested dependencies when resolving an index which would otherwise be ambiguous" do
     @index = an_ambiguous_index
     dep "a"
     dep "b"
@@ -169,10 +169,10 @@ Bundler could not find compatible versions for gem "a":
         s.required_ruby_version = "~> 2.0.0"
       end
 
-      gem "Ruby\0", "1.8.7"
+      gem "ruby\0", "1.8.7"
     end
     dep "foo"
-    dep "Ruby\0", "1.8.7"
+    dep "ruby\0", "1.8.7"
 
     deps = []
     @deps.each do |d|

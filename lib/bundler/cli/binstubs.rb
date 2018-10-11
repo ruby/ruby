@@ -16,13 +16,7 @@ module Bundler
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
       installer = Installer.new(Bundler.root, Bundler.definition)
 
-      installer_opts = { :force => options[:force], :binstubs_cmd => true }
-
-      if options[:all]
-        raise InvalidOption, "Cannot specify --all with specific gems" unless gems.empty?
-        @gems = Bundler.definition.specs.map(&:name)
-        installer_opts.delete(:binstubs_cmd)
-      elsif gems.empty?
+      if gems.empty?
         Bundler.ui.error "`bundle binstubs` needs at least one gem to run."
         exit 1
       end
@@ -41,7 +35,7 @@ module Bundler
             installer.generate_standalone_bundler_executable_stubs(spec)
           end
         else
-          installer.generate_bundler_executable_stubs(spec, installer_opts)
+          installer.generate_bundler_executable_stubs(spec, :force => options[:force], :binstubs_cmd => true)
         end
       end
     end

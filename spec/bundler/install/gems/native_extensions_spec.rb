@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "installing a gem with native extensions" do
+RSpec.describe "installing a gem with native extensions", :ruby_repo do
   it "installs" do
     build_repo2 do
       build_gem "c_extension" do |s|

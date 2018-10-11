@@ -20,10 +20,5 @@ module Bundler
     def install(*plugins)
       Bundler::Plugin.install(plugins, options)
     end
-
-    desc "list", "List the installed plugins and available commands"
-    def list
-      Bundler::Plugin.list
-    end
   end
 end

@@ -13,7 +13,7 @@ RSpec.describe Bundler::PersistentHTTP do
 
     before do
       allow(connection).to receive(:use_ssl?).and_return(!tls_version.nil?)
-      allow(socket).to receive(:io).and_return(socket_io) if socket
+      allow(socket).to receive(:io).and_return(socket_io)
       connection.instance_variable_set(:@socket, socket)
 
       if tls_version

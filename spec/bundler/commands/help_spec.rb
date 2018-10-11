@@ -10,21 +10,21 @@ RSpec.describe "bundle help" do
     expect(err).to include("running `gem cleanup bundler`.")
   end
 
-  it "uses mann when available" do
+  it "uses mann when available", :ruby_repo do
     with_fake_man do
       bundle "help gemfile"
     end
     expect(out).to eq(%(["#{root}/man/gemfile.5"]))
   end
 
-  it "prefixes bundle commands with bundle- when finding the groff files" do
+  it "prefixes bundle commands with bundle- when finding the groff files", :ruby_repo do
     with_fake_man do
       bundle "help install"
     end
     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
   end
 
-  it "simply outputs the txt file when there is no man on the path" do
+  it "simply outputs the txt file when there is no man on the path", :ruby_repo do
     with_path_as("") do
       bundle "help install"
     end
@@ -49,28 +49,28 @@ RSpec.describe "bundle help" do
     expect(out).to eq("--help")
   end
 
-  it "is called when the --help flag is used after the command" do
+  it "is called when the --help flag is used after the command", :ruby_repo do
     with_fake_man do
       bundle "install --help"
     end
     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
   end
 
-  it "is called when the --help flag is used before the command" do
+  it "is called when the --help flag is used before the command", :ruby_repo do
     with_fake_man do
       bundle "--help install"
     end
     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
   end
 
-  it "is called when the -h flag is used before the command" do
+  it "is called when the -h flag is used before the command", :ruby_repo do
     with_fake_man do
       bundle "-h install"
     end
     expect(out).to eq(%(["#{root}/man/bundle-install.1"]))
   end
 
-  it "is called when the -h flag is used after the command" do
+  it "is called when the -h flag is used after the command", :ruby_repo do
     with_fake_man do
       bundle "install -h"
     end
@@ -84,7 +84,7 @@ RSpec.describe "bundle help" do
     expect(out).to include('Could not find command "instill".')
   end
 
-  it "is called when only using the --help flag" do
+  it "is called when only using the --help flag", :ruby_repo do
     with_fake_man do
       bundle "--help"
     end

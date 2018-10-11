@@ -195,26 +195,8 @@ module Bundler
       raise e.exception("#{warning}\nBundler also failed to create a temporary home directory at `#{path}':\n#{e}")
     end
 
-    def user_bundle_path(dir = "home")
-      env_var, fallback = case dir
-                          when "home"
-                            ["BUNDLE_USER_HOME", Pathname.new(user_home).join(".bundle")]
-                          when "cache"
-                            ["BUNDLE_USER_CACHE", user_bundle_path.join("cache")]
-                          when "config"
-                            ["BUNDLE_USER_CONFIG", user_bundle_path.join("config")]
-                          when "plugin"
-                            ["BUNDLE_USER_PLUGIN", user_bundle_path.join("plugin")]
-                          else
-                            raise BundlerError, "Unknown user path requested: #{dir}"
-      end
-      # `fallback` will already be a Pathname, but Pathname.new() is
-      # idempotent so it's OK
-      Pathname.new(ENV.fetch(env_var, fallback))
-    end
-
-    def user_cache
-      user_bundle_path("cache")
+    def user_bundle_path
+      Pathname.new(user_home).join(".bundle")
     end
 
     def home
@@ -227,6 +209,10 @@ module Bundler
 
     def specs_path
       bundle_path.join("specifications")
+    end
+
+    def user_cache
+      user_bundle_path.join("cache")
     end
 
     def root
@@ -367,12 +353,8 @@ EOF
         bin_dir = bin_dir.parent until bin_dir.exist?
 
         # if any directory is not writable, we need sudo
-        files = [path, bin_dir] | Dir[bundle_path.join("build_info/*").to_s] | Dir[bundle_path.join("*").to_s]
-        unwritable_files = files.reject {|f| File.writable?(f) }
-        sudo_needed = !unwritable_files.empty?
-        if sudo_needed
-          Bundler.ui.warn "Following files may not be writable, so sudo is needed:\n  #{unwritable_files.sort.map(&:to_s).join("\n  ")}"
-        end
+        files = [path, bin_dir] | Dir[path.join("build_info/*").to_s] | Dir[path.join("*").to_s]
+        sudo_needed = files.any? {|f| !File.writable?(f) }
       end
 
       @requires_sudo_ran = true

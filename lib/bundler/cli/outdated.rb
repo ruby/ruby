@@ -41,7 +41,7 @@ module Bundler
 
       # the patch level options imply strict is also true. It wouldn't make
       # sense otherwise.
-      strict = options["filter-strict"] ||
+      strict = options[:strict] ||
         Bundler::CLI::Common.patch_level_options(options).any?
 
       filter_options_patch = options.keys &
@@ -66,13 +66,7 @@ module Bundler
         current_dependencies.key? spec.name
       end
 
-      specs = if options["only-explicit"]
-        gemfile_specs
-      else
-        gemfile_specs + dependency_specs
-      end
-
-      specs.sort_by(&:name).each do |current_spec|
+      (gemfile_specs + dependency_specs).sort_by(&:name).each do |current_spec|
         next if !gems.empty? && !gems.include?(current_spec.name)
 
         dependency = current_dependencies[current_spec.name]
@@ -124,7 +118,7 @@ module Bundler
           [nil, ordered_groups].flatten.each do |groups|
             gems = outdated_gems_by_groups[groups]
             contains_group = if groups
-              groups.split(", ").include?(options[:group])
+              groups.split(",").include?(options[:group])
             else
               options[:group] == "group"
             end

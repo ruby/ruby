@@ -119,7 +119,7 @@ RSpec.describe "Bundler.setup" do
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
     end
 
-    it "puts loaded gems after -I and RUBYLIB" do
+    it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -144,7 +144,7 @@ RSpec.describe "Bundler.setup" do
       expect(rack_load_order).to be > 0
     end
 
-    it "orders the load path correctly when there are dependencies" do
+    it "orders the load path correctly when there are dependencies", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
@@ -158,6 +158,10 @@ RSpec.describe "Bundler.setup" do
       RUBY
 
       load_path = clean_load_path(out.split("\n"))
+
+      unless Bundler.load.specs["bundler"].empty?
+        load_path.delete_if {|path| path =~ /bundler/ }
+      end
 
       expect(load_path).to start_with(
         "/gems/rails-2.3.2/lib",
@@ -824,10 +828,10 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly" do
+  it "should clean $LOAD_PATH properly", :ruby_repo do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
-    ext_dir = File.join(tmp("extensions", full_gem_name))
+    ext_dir = File.join(tmp "extenstions", full_gem_name)
 
     install_gem full_gem_name
 
@@ -859,12 +863,12 @@ end
 
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
-    let(:symlinked_gem_home) { Tempfile.new("gem_home").path }
+    let(:symlinked_gem_home) { Tempfile.new("gem_home") }
     let(:bundler_dir) { File.expand_path("../../..", __FILE__) }
     let(:bundler_lib) { File.join(bundler_dir, "lib") }
 
     before do
-      FileUtils.ln_sf(gem_home, symlinked_gem_home)
+      FileUtils.ln_sf(gem_home, symlinked_gem_home.path)
       gems_dir = File.join(gem_home, "gems")
       specifications_dir = File.join(gem_home, "specifications")
       Dir.mkdir(gems_dir)
@@ -881,13 +885,18 @@ end
       end
     end
 
-    it "should successfully require 'bundler/setup'" do
+    it "should succesfully require 'bundler/setup'" do
       install_gemfile ""
 
-      ruby <<-'R', :env => { "GEM_PATH" => symlinked_gem_home }, :no_lib => true
-        # Remove any bundler that's not the current bundler from $LOAD_PATH
-        $LOAD_PATH.each do |path|
-          $LOAD_PATH.delete(path) if File.exist?("#{path}/bundler.rb")
+      ENV["GEM_PATH"] = symlinked_gem_home.path
+
+      ruby <<-R
+        if $LOAD_PATH.include?("#{bundler_lib}")
+          # We should use bundler from GEM_PATH for this test, so we should
+          # remove path to the bundler source tree
+          $LOAD_PATH.delete("#{bundler_lib}")
+        else
+          raise "We don't have #{bundler_lib} in $LOAD_PATH"
         end
         puts (require 'bundler/setup')
       R
@@ -1265,7 +1274,7 @@ end
       expect(out).to eq("undefined\nconstant")
     end
 
-    describe "default gem activation" do
+    describe "default gem activation", :ruby_repo do
       let(:exemptions) do
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7") || ENV["RGV"] == "master"
           []
@@ -1298,6 +1307,7 @@ end
       end
 
       let(:code) { strip_whitespace(<<-RUBY) }
+        require "bundler/setup"
         require "pp"
         loaded_specs = Gem.loaded_specs.dup
         #{exemptions.inspect}.each {|s| loaded_specs.delete(s) }
@@ -1312,18 +1322,22 @@ end
 
       it "activates no gems with -rbundler/setup" do
         install_gemfile! ""
-        ruby! code, :env => { :RUBYOPT => activation_warning_hack_rubyopt + " -rbundler/setup" }
+        ruby! code, :env => { :RUBYOPT => activation_warning_hack_rubyopt }
         expect(last_command.stdout).to eq("{}")
       end
 
       it "activates no gems with bundle exec" do
         install_gemfile! ""
+        # ensure we clean out the default gems, bceause bundler's allowed to be activated
         create_file("script.rb", code)
-        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt }
+        bundle! "exec ruby ./script.rb", :env => { :RUBYOPT => activation_warning_hack_rubyopt + " -rbundler/setup" }
         expect(last_command.stdout).to eq("{}")
       end
 
       it "activates no gems with bundle exec that is loaded" do
+        # TODO: remove once https://github.com/erikhuda/thor/pull/539 is released
+        exemptions << "io-console"
+
         install_gemfile! ""
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))

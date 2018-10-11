@@ -49,7 +49,7 @@ RSpec.describe "command plugins" do
     bundle "plugin install the-echoer --source file://#{gem_repo2}"
     expect(out).to include("Installed plugin the-echoer")
 
-    bundle "echo tacos tofu lasange"
+    bundle "echo tacos tofu lasange", "no-color" => false
     expect(out).to eq("You gave me tacos, tofu, lasange")
   end
 

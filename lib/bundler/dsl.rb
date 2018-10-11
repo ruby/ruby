@@ -16,7 +16,7 @@ module Bundler
     VALID_PLATFORMS = Bundler::Dependency::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms type source install_if gemfile].freeze
+                    platform platforms type source install_if].freeze
 
     attr_reader :gemspecs
     attr_accessor :dependencies
@@ -93,7 +93,6 @@ module Bundler
 
     def gem(name, *args)
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
-      options["gemfile"] = @gemfile
       version = args || [">= 0"]
 
       normalize_options(name, version, options)
@@ -107,28 +106,13 @@ module Bundler
         if current.requirement != dep.requirement
           unless deleted_dep
             return if dep.type == :development
-
-            update_prompt = ""
-
-            if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current.requirements_list.include?(">= 0")
-                update_prompt = ". Gem already added"
-              else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
-
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current.requirements_list.include?(">= 0")
-              end
-            end
-
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                             "#{update_prompt}"
+                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})"
           end
 
         else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
-                          "Remove any duplicate entries and specify the gem only once (per group).\n" \
                           "While it's not a problem now, it could cause errors if you change the version of one of them later."
         end
 
@@ -363,7 +347,9 @@ repo_name ||= user_name
       if name =~ /\s/
         raise GemfileError, %('#{name}' is not a valid gem name because it contains whitespace)
       end
-      raise GemfileError, %(an empty gem name is not valid) if name.empty?
+      if name.empty?
+        raise GemfileError, %(an empty gem name is not valid)
+      end
 
       normalize_hash(opts)
 

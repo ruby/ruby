@@ -211,7 +211,9 @@ RSpec.describe "bundle gem" do
     end
 
     Dir.chdir(bundled_app("newgem")) do
-      system_gems ["rake-10.0.2", :bundler], :path => :bundle_path
+      gems = ["rake-10.0.2", :bundler]
+      gems.delete(:bundler) if ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]
+      system_gems gems, :path => :bundle_path
       bundle! "exec rake build"
     end
 
@@ -310,10 +312,6 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("test_gem/lib/test_gem.rb").read).to match(%r{require "test_gem/version"})
     end
 
-    it "creates a base error class" do
-      expect(bundled_app("test_gem/lib/test_gem.rb").read).to match(/class Error < StandardError; end$/)
-    end
-
     it "runs rake without problems" do
       system_gems ["rake-10.0.2"]
 
@@ -327,7 +325,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec("rake")
+        sys_exec(rake)
         expect(out).to include("SUCCESS")
       end
     end
@@ -612,7 +610,7 @@ RSpec.describe "bundle gem" do
       end
 
       Dir.chdir(bundled_app(gem_name)) do
-        sys_exec("rake")
+        sys_exec(rake)
         expect(out).to include("SUCCESS")
       end
     end

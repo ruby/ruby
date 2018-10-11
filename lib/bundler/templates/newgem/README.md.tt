@@ -14,7 +14,7 @@ gem '<%= config[:name] %>'
 
 And then execute:
 
-    $ bundle install
+    $ bundle
 
 Or install it yourself as:
 

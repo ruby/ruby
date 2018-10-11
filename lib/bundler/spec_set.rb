@@ -7,8 +7,7 @@ require "set"
 module Bundler
   class SpecSet
     extend Forwardable
-    include Enumerable
-    include TSort
+    include TSort, Enumerable
 
     def_delegators :@specs, :<<, :length, :add, :remove, :size, :empty?
     def_delegators :sorted, :each
@@ -65,6 +64,7 @@ module Bundler
       @specs << value
       @lookup = nil
       @sorted = nil
+      value
     end
 
     def sort!

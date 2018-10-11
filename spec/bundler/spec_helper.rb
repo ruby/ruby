@@ -28,22 +28,25 @@ require "bundler/vendored_fileutils"
 require "uri"
 require "digest"
 
-if File.expand_path(__FILE__) =~ %r{([^\w/\.-])}
+# Delete the default copy of Bundler that RVM installs for us when running in CI
+require "fileutils"
+if ENV.select {|k, _v| k =~ /TRAVIS/ }.any? && Gem::Version.new(Gem::VERSION) > Gem::Version.new("2.0")
+  Dir.glob(File.join(Gem::Specification.default_specifications_dir, "bundler*.gemspec")).each do |file|
+    FileUtils.rm_rf(file)
+  end
+
+  Dir.glob(File.join(RbConfig::CONFIG["sitelibdir"], "bundler*")).each do |file|
+    FileUtils.rm_rf(file)
+  end
+end
+
+if File.expand_path(__FILE__) =~ %r{([^\w/\.:\-])}
   abort "The bundler specs cannot be run from a path that contains special characters (particularly #{$1.inspect})"
 end
 
 require "bundler"
 
-# Require the correct version of popen for the current platform
-if RbConfig::CONFIG["host_os"] =~ /mingw|mswin/
-  begin
-    require "win32/open3"
-  rescue LoadError
-    abort "Run `gem install win32-open3` to be able to run specs"
-  end
-else
-  require "open3"
-end
+require "open3"
 
 Dir["#{File.expand_path("../support", __FILE__)}/*.rb"].each do |file|
   file = file.gsub(%r{\A#{Regexp.escape File.expand_path("..", __FILE__)}/}, "")
@@ -62,6 +65,12 @@ ENV["BUNDLE_SPEC_RUN"] = "true"
 ENV["THOR_COLUMNS"] = "10000"
 
 Spec::CodeClimate.setup
+
+module Gem
+  def self.ruby= ruby
+    @ruby = ruby
+  end
+end
 
 RSpec.configure do |config|
   config.include Spec::Builders
@@ -104,6 +113,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :git => LessThanProc.with(git_version)
   config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
   config.filter_run_excluding :bundler => LessThanProc.with(Bundler::VERSION.split(".")[0, 2].join("."))
+  config.filter_run_excluding :ruby_repo => !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
@@ -114,8 +124,11 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  config.mock_with :rspec do |mocks|
-    mocks.allow_message_expectations_on_nil = false
+  config.before :suite do
+    if ENV['BUNDLE_RUBY']
+      @orig_ruby = Gem.ruby
+      Gem.ruby = ENV['BUNDLE_RUBY']
+    end
   end
 
   config.before :all do
@@ -141,5 +154,11 @@ RSpec.configure do |config|
 
     Dir.chdir(original_wd)
     ENV.replace(original_env)
+  end
+
+  config.after :suite do
+    if ENV['BUNDLE_RUBY']
+      Gem.ruby = @orig_ruby
+    end
   end
 end

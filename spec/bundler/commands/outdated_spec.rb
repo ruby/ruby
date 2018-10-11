@@ -135,17 +135,6 @@ RSpec.describe "bundle outdated" do
       expect(out).to include("activesupport")
       expect(out).to include("duradura")
     end
-
-    it "returns a sorted list of outdated gems from one group => 'test'" do
-      test_group_option("test", 2)
-
-      expect(out).not_to include("===== Group default =====")
-      expect(out).not_to include("terranova (")
-
-      expect(out).to include("===== Group development, test =====")
-      expect(out).to include("activesupport")
-      expect(out).to include("duradura")
-    end
   end
 
   describe "with --groups option" do
@@ -313,15 +302,14 @@ RSpec.describe "bundle outdated" do
     end
   end
 
-  filter_strict_option = Bundler.feature_flag.bundler_2_mode? ? :"filter-strict" : :strict
-  describe "with --#{filter_strict_option} option" do
+  describe "with --strict option" do
     it "only reports gems that have a newer version that matches the specified dependency version requirements" do
       update_repo2 do
         build_gem "activesupport", "3.0"
         build_gem "weakling", "0.0.5"
       end
 
-      bundle :outdated, filter_strict_option => true
+      bundle "outdated --strict"
 
       expect(out).to_not include("activesupport (newest")
       expect(out).to include("(newest 0.0.5, installed 0.0.3, requested ~> 0.0.1)")
@@ -333,7 +321,7 @@ RSpec.describe "bundle outdated" do
         gem "rack_middleware", "1.0"
       G
 
-      bundle :outdated, filter_strict_option => true
+      bundle "outdated --strict"
 
       expect(out).to_not include("rack (1.2")
     end
@@ -351,7 +339,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.0.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-patch" => true
+        bundle "outdated --strict --filter-patch"
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 0.0.5, installed 0.0.3")
@@ -369,7 +357,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "0.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-minor" => true
+        bundle "outdated --strict --filter-minor"
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 0.1.5, installed 0.0.3")
@@ -387,7 +375,7 @@ RSpec.describe "bundle outdated" do
           build_gem "weakling", "1.1.5"
         end
 
-        bundle :outdated, filter_strict_option => true, "filter-major" => true
+        bundle "outdated --strict --filter-major"
 
         expect(out).to_not include("activesupport (newest")
         expect(out).to include("(newest 1.1.5, installed 0.0.3")
@@ -762,33 +750,6 @@ RSpec.describe "bundle outdated" do
         expect(out).to include("bar (newest 2.0.5")
         expect(out).not_to include("qux (newest")
       end
-    end
-  end
-
-  describe "with --only-explicit" do
-    it "does not report outdated dependent gems" do
-      build_repo4 do
-        build_gem "weakling", %w[0.2 0.3] do |s|
-          s.add_dependency "bar", "~> 2.1"
-        end
-        build_gem "bar", %w[2.1 2.2]
-      end
-
-      install_gemfile <<-G
-        source "file://#{gem_repo4}"
-        gem 'weakling', '0.2'
-        gem 'bar', '2.1'
-      G
-
-      gemfile  <<-G
-        source "file://#{gem_repo4}"
-        gem 'weakling'
-      G
-
-      bundle "outdated --only-explicit"
-
-      expect(out).to include("weakling (newest 0.3")
-      expect(out).not_to include("bar (newest 2.2")
     end
   end
 end

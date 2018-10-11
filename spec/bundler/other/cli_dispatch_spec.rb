@@ -23,7 +23,7 @@ RSpec.describe "bundle command names" do
 
     it "dispatches `bundle cache` to the package command" do
       bundle "cache --verbose"
-      expect(last_command.stdout).to start_with "Running `bundle package --verbose`"
+      expect(last_command.stdout).to start_with "Running `bundle package --no-color --verbose`"
     end
   end
 end

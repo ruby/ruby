@@ -140,13 +140,12 @@ module Bundler
     end
 
     def major_deprecation(major_version, message)
-      bundler_major_version = Bundler.bundler_major_version
-      if bundler_major_version > major_version
+      if Bundler.bundler_major_version >= major_version
         require "bundler/errors"
-        raise DeprecatedError, "[REMOVED FROM #{major_version.succ}.0] #{message}"
+        raise DeprecatedError, "[REMOVED FROM #{major_version}.0] #{message}"
       end
 
-      return unless bundler_major_version >= major_version || prints_major_deprecations?
+      return unless prints_major_deprecations?
       @major_deprecation_ui ||= Bundler::UI::Shell.new("no-color" => true)
       ui = Bundler.ui.is_a?(@major_deprecation_ui.class) ? Bundler.ui : @major_deprecation_ui
       ui.warn("[DEPRECATED FOR #{major_version}.0] #{message}")
@@ -198,12 +197,10 @@ module Bundler
     def pretty_dependency(dep, print_source = false)
       msg = String.new(dep.name)
       msg << " (#{dep.requirement})" unless dep.requirement == Gem::Requirement.default
-
       if dep.is_a?(Bundler::Dependency)
         platform_string = dep.platforms.join(", ")
         msg << " " << platform_string if !platform_string.empty? && platform_string != Gem::Platform::RUBY
       end
-
       msg << " from the `#{dep.source}` source" if print_source && dep.source
       msg
     end
@@ -224,10 +221,6 @@ module Bundler
     def digest(name)
       require "digest"
       Digest(name)
-    end
-
-    def write_to_gemfile(gemfile_path, contents)
-      filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
 
   private
@@ -275,7 +268,13 @@ module Bundler
       until !File.directory?(current) || current == previous
         if ENV["BUNDLE_SPEC_RUN"]
           # avoid stepping above the tmp directory when testing
-          return nil if File.file?(File.join(current, "bundler.gemspec"))
+          if !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+            # for Ruby Core
+            gemspec = "lib/bundler.gemspec"
+          else
+            gemspec = "bundler.gemspec"
+          end
+          return nil if File.file?(File.join(current, gemspec))
         end
 
         names.each do |name|
@@ -307,7 +306,11 @@ module Bundler
 
         Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       rescue Gem::GemNotFoundException
-        Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", File.expand_path("../../../exe/bundle", __FILE__)
+        if File.exist?(File.expand_path("../../../exe/bundle", __FILE__))
+          Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", File.expand_path("../../../exe/bundle", __FILE__)
+        else
+          Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", File.expand_path("../../../../bin/bundle", __FILE__)
+        end
       end
 
       # Set BUNDLE_GEMFILE

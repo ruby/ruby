@@ -100,14 +100,6 @@ module Bundler
         @plugin_paths[name]
       end
 
-      def installed_plugins
-        @plugin_paths.keys
-      end
-
-      def plugin_commands(plugin)
-        @commands.find_all {|_, n| n == plugin }.map(&:first)
-      end
-
       def source?(source)
         @sources.key? source
       end

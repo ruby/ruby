@@ -187,7 +187,7 @@ RSpec.describe "global gem caching" do
     end
   end
 
-  describe "extension caching", :rubygems => "2.2" do
+  describe "extension caching", :ruby_repo, :rubygems => "2.2" do
     it "works" do
       build_git "very_simple_git_binary", &:add_c_extension
       build_lib "very_simple_path_binary", &:add_c_extension

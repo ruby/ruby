@@ -21,8 +21,6 @@ RSpec.describe "bundle install" do
 
       bundle :install, :gemfile => bundled_app("NotGemfile")
 
-      # Specify BUNDLE_GEMFILE for `the_bundle`
-      # to retrieve the proper Gemfile
       ENV["BUNDLE_GEMFILE"] = "NotGemfile"
       expect(the_bundle).to include_gems "rack 1.0.0"
     end

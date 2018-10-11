@@ -140,7 +140,6 @@ RSpec.describe "bundle install" do
 
     it "can install dependencies with newer bundler version with a local path", :ruby => "> 2" do
       bundle! "config path .bundle"
-      bundle! "config global_path_appends_ruby_scope true"
       install_gemfile! <<-G
         source "file://#{gem_repo2}"
         gem "rails", "3.0"
