@@ -119,7 +119,7 @@ static char *w32_getenv(const char *name, UINT cp);
 
 int rb_w32_reparse_symlink_p(const WCHAR *path);
 
-static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE, DWORD);
+static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, HANDLE, HANDLE, HANDLE, DWORD);
 static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -1197,8 +1197,7 @@ child_result(struct ChildRecord *child, int mode)
 
 /* License: Ruby's */
 static struct ChildRecord *
-CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
-	    HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
+CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
 {
     BOOL fRet;
     STARTUPINFOW aStartupInfo;
@@ -1217,12 +1216,9 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
 	return NULL;
     }
 
-    if (!psa) {
-	sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
-	sa.lpSecurityDescriptor = NULL;
-	sa.bInheritHandle       = TRUE;
-	psa = &sa;
-    }
+    sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle       = TRUE;
 
     memset(&aStartupInfo, 0, sizeof(aStartupInfo));
     memset(&aProcessInformation, 0, sizeof(aProcessInformation));
@@ -1256,8 +1252,8 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, SECURITY_ATTRIBUTES *psa,
     }
 
     RUBY_CRITICAL {
-	fRet = CreateProcessW(prog, (WCHAR *)cmd, psa, psa,
-			      psa->bInheritHandle, dwCreationFlags, NULL, NULL,
+	fRet = CreateProcessW(prog, (WCHAR *)cmd, &sa, &sa,
+			      sa.bInheritHandle, dwCreationFlags, NULL, NULL,
 			      &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
     }
@@ -1328,7 +1324,7 @@ rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
         return 0;
     }
 
-    child = CreateChild(wcmd, wprog, NULL, NULL, outHandle, outHandle, 0);
+    child = CreateChild(wcmd, wprog, NULL, outHandle, outHandle, 0);
     if (child == NULL) {
         return 0;
     }
@@ -1455,7 +1451,7 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     if (v) ALLOCV_END(v);
 
     if (!e) {
-	ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, NULL, 0), mode);
+        ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, 0), mode);
     }
     free(wshell);
     free(wcmd);
@@ -1540,7 +1536,7 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     if (!e && prog && !(wprog = mbstr_to_wstr(cp, prog, -1, NULL))) e = E2BIG;
 
     if (!e) {
-	ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, NULL, flags), mode);
+        ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, flags), mode);
     }
     free(wprog);
     free(wcmd);
