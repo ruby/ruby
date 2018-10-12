@@ -110,7 +110,7 @@
 #define dlclose(handle) (!FreeLibrary(handle))
 #define RTLD_NOW  -1
 
-#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), (pid))
+#define waitpid(pid,stat_loc,options) (WaitForSingleObject((HANDLE)(pid), INFINITE), GetExitCodeProcess((HANDLE)(pid), (LPDWORD)(stat_loc)), CloseHandle((HANDLE)pid), (pid))
 #define WIFEXITED(S) ((S) != STILL_ACTIVE)
 #define WEXITSTATUS(S) (S)
 #define WIFSIGNALED(S) (0)
@@ -572,6 +572,17 @@ static pid_t
 start_process(const char *path, char *const *argv)
 {
     pid_t pid;
+    /*
+     * Not calling non-async-signal-safe functions between vfork
+     * and execv for safety
+     */
+    int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
+    char fbuf[MAXPATHLEN];
+    const char *abspath = dln_find_exe_r(path, 0, fbuf, sizeof(fbuf));
+    if (!abspath) {
+        verbose(1, "MJIT: failed to find `%s' in PATH", path);
+        return -1;
+    }
 
     if (mjit_opts.verbose >= 2) {
         int i;
@@ -583,43 +594,42 @@ start_process(const char *path, char *const *argv)
         fprintf(stderr, "\n");
     }
 #ifdef _WIN32
-    pid = spawnvp(_P_NOWAIT, path, argv);
-#else
     {
-        /*
-         * Not calling non-async-signal-safe functions between vfork
-         * and execv for safety
-         */
-        char fbuf[MAXPATHLEN];
-        const char *abspath = dln_find_exe_r(path, 0, fbuf, sizeof(fbuf));
-        int dev_null;
+        extern HANDLE rb_w32_start_process(const char *abspath, char *const *argv, int out_fd);
+        int out_fd = 0;
+        if (mjit_opts.verbose <= 1) {
+            /* Discard cl.exe's outputs like:
+                 _ruby_mjit_p12u3.c
+                   Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp */
+            out_fd = dev_null;
+        }
 
-        if (!abspath) {
-            verbose(1, "MJIT: failed to find `%s' in PATH\n", path);
+        pid = (pid_t)rb_w32_start_process(abspath, argv, out_fd);
+        if (pid == 0) {
+            verbose(1, "MJIT: Failed to create process: %s", dlerror());
             return -1;
         }
-        dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-
-        if ((pid = vfork()) == 0) {
-            umask(0077);
-            if (mjit_opts.verbose == 0) {
-                /* CC can be started in a thread using a file which has been
-                   already removed while MJIT is finishing.  Discard the
-                   messages about missing files.  */
-                dup2(dev_null, STDERR_FILENO);
-                dup2(dev_null, STDOUT_FILENO);
-            }
-            (void)close(dev_null);
-            pid = execv(abspath, argv); /* Pid will be negative on an error */
-            /* Even if we successfully found CC to compile PCH we still can
-             fail with loading the CC in very rare cases for some reasons.
-             Stop the forked process in this case.  */
-            verbose(1, "MJIT: Error in execv: %s\n", abspath);
-            _exit(1);
+    }
+#else
+    if ((pid = vfork()) == 0) {
+        umask(0077);
+        if (mjit_opts.verbose == 0) {
+            /* CC can be started in a thread using a file which has been
+               already removed while MJIT is finishing.  Discard the
+               messages about missing files.  */
+            dup2(dev_null, STDERR_FILENO);
+            dup2(dev_null, STDOUT_FILENO);
         }
         (void)close(dev_null);
+        pid = execv(abspath, argv); /* Pid will be negative on an error */
+        /* Even if we successfully found CC to compile PCH we still can
+         fail with loading the CC in very rare cases for some reasons.
+         Stop the forked process in this case.  */
+        verbose(1, "MJIT: Error in execv: %s", abspath);
+        _exit(1);
     }
 #endif
+    (void)close(dev_null);
     return pid;
 }
 COMPILER_WARNING_POP
@@ -740,26 +750,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     if (args == NULL)
         return FALSE;
 
-    {
-        /* Discard cl.exe's outputs like:
-             _ruby_mjit_p12u3.c
-               Creating library C:.../_ruby_mjit_p12u3.lib and object C:.../_ruby_mjit_p12u3.exp */
-        int stdout_fileno, orig_fd, dev_null;
-        if (mjit_opts.verbose <= 1) {
-            stdout_fileno = _fileno(stdout);
-            orig_fd = dup(stdout_fileno);
-            dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-
-            dup2(dev_null, stdout_fileno);
-        }
-        exit_code = exec_process(cc_path, args);
-        if (mjit_opts.verbose <= 1) {
-            dup2(orig_fd, stdout_fileno);
-
-            close(orig_fd);
-            close(dev_null);
-        }
-    }
+    exit_code = exec_process(cc_path, args);
     free(args);
 
     if (exit_code == 0) {
