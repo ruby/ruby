@@ -63,12 +63,26 @@ if defined?(WIN32OLE_EVENT)
         @sql = "SELECT * FROM __InstanceModificationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_LocalTime'"
       end
 
-      def message_loop
+      def message_loop(watch_ivar = nil)
+        if watch_ivar
+          orig_ivar = instance_variable_get(watch_ivar)
+        end
+
         2.times do
           WIN32OLE_EVENT.message_loop
           sleep 1
         end
-        sleep 1
+
+        if watch_ivar
+          # wait until event is proceeded
+          tries = 0
+          while tries < 5 && instance_variable_get(watch_ivar) == orig_ivar
+            seconds = 2 ** tries # sleep at most 31s in total
+            $stderr.puts "test_win32ole_event.rb: sleeping #{seconds}s until #{watch_ivar} is changed from #{orig_ivar.inspect}..."
+            sleep(seconds)
+            tries += 1
+          end
+        end
       end
 
       def default_handler(event, *args)
@@ -109,7 +123,7 @@ if defined?(WIN32OLE_EVENT)
         exec_notification_query_async
         ev = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
         ev.on_event {|*args| default_handler(*args)}
-        message_loop
+        message_loop(:@event)
         assert_match(/OnObjectReady/, @event)
       end
 
