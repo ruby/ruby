@@ -873,6 +873,8 @@ zone_str(const char *zone)
 {
     const char *p;
     int ascii_only = 1;
+    VALUE str;
+    size_t len;
 
     if (zone == NULL) {
         return rb_fstring_usascii("(NO-TIMEZONE-ABBREVIATION)");
@@ -883,12 +885,14 @@ zone_str(const char *zone)
             ascii_only = 0;
             break;
         }
+    len = p - zone + strlen(p);
     if (ascii_only) {
-        return rb_fstring_usascii(zone);
+        str = rb_usascii_str_new(zone, len);
     }
     else {
-        return rb_fstring_enc_cstr(zone, rb_locale_encoding());
+        str = rb_enc_str_new(zone, len, rb_locale_encoding());
     }
+    return rb_fstring(str);
 }
 
 static void
