@@ -15,8 +15,6 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     - build: msys2
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-matrix:
-  fast_finish: true
 notifications:
   - provider: Webhook
     url:
