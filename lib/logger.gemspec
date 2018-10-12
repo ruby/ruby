@@ -1,6 +1,7 @@
 begin
   require_relative "lib/logger"
 rescue LoadError
+  # for Ruby core repository
   require_relative "logger"
 end
 

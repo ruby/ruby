@@ -1,6 +1,7 @@
 begin
   require_relative "lib/rexml/rexml"
 rescue LoadError
+  # for Ruby core repository
   require_relative "rexml"
 end
 

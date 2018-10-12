@@ -2,6 +2,7 @@
 begin
   require_relative 'lib/webrick/version'
 rescue LoadError
+  # for Ruby core repository
   require_relative 'version'
 end
 
