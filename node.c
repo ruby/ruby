@@ -1139,7 +1139,6 @@ void
 rb_ast_dispose(rb_ast_t *ast)
 {
     rb_ast_free(ast);
-    if (ast->node_buffer) RB_OBJ_WRITE(ast, &ast->node_buffer->mark_ary, Qnil);
 }
 
 void
