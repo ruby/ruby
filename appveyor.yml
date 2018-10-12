@@ -62,7 +62,7 @@ for:
     - SET VS140COMNTOOLS=C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
-    - dir "C:\\Program Files (x86)"
+    - dir "C:\Program Files (x86)"
     - '"%vcvars%" %Platform:x64=amd64%'
     - SET ruby_path=C:\Ruby%ruby_version:-x86=%
     - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\mingw64\bin;C:\msys64\usr\bin
