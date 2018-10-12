@@ -3,7 +3,7 @@
 
 def factL(n):
 	r = 1
-	for x in range(2, n):
+	for x in range(2, n+1):
 		r *= x
 	return r
 
