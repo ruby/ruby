@@ -2845,8 +2845,8 @@ Init_VM(void)
     /*
      * Document-class: RubyVM
      *
-     * RubyVM module provides some access to Ruby internal.
-     * This module is for very limited purpose, such as debugging,
+     * The RubyVM module provides some access to Ruby internals.
+     * This module is for very limited purposes, such as debugging,
      * prototyping, and research.  Normal users must not use it.
      */
     rb_cRubyVM = rb_define_class("RubyVM", rb_cObject);
