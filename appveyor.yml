@@ -9,12 +9,12 @@ environment:
   matrix:
     - build: vs
       vs: 120
-      image: Visual Studio 2013
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
     - build: vs
       vs: 140
-      image: Visual Studio 2015
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     - build: msys2
-      image: Visual Studio 2015
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 matrix:
   fast_finish: true
 notifications:
