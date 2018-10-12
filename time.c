@@ -3882,28 +3882,18 @@ time_to_s(VALUE time)
 }
 
 static VALUE
-time_add(struct time_object *tobj, VALUE torig, VALUE offset, int sign)
+time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 {
     VALUE result;
+    struct time_object *result_tobj;
+
     offset = num_exact(offset);
     if (sign < 0)
         result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
     else
         result = time_new_timew(rb_cTime, wadd(tobj->timew, rb_time_magnify(v2w(offset))));
-    if (TZMODE_UTC_P(tobj)) {
-	GetTimeval(result, tobj);
-        TZMODE_SET_UTC(tobj);
-    }
-    else if (TZMODE_FIXOFF_P(tobj)) {
-        VALUE off = tobj->vtm.utc_offset;
-        GetTimeval(result, tobj);
-        TZMODE_SET_FIXOFF(tobj, off);
-    }
-    else if (TZMODE_LOCALTIME_P(tobj)) {
-        VALUE zone = tobj->vtm.zone;
-        GetTimeval(result, tobj);
-        tobj->vtm.zone = zone;
-    }
+    GetTimeval(result, result_tobj);
+    TZMODE_COPY(result_tobj, tobj);
 
     return result;
 }
