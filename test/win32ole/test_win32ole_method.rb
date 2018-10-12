@@ -18,9 +18,6 @@ if defined?(WIN32OLE_METHOD)
 
       ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "File")
       @m_file_name = WIN32OLE_METHOD.new(ole_type, "name")
-
-      ole_type = WIN32OLE_TYPE.new("Microsoft Internet Controls", "WebBrowser")
-      @m_navigate_complete = WIN32OLE_METHOD.new(ole_type, "NavigateComplete")
     end
 
     def test_initialize
@@ -79,16 +76,6 @@ if defined?(WIN32OLE_METHOD)
     def test_visible?
       assert(@m_namespace.visible?)
       assert(!@m_invoke.visible?)
-    end
-
-    def test_event?
-      assert(@m_navigate_complete.event?)
-      assert(!@m_namespace.event?)
-    end
-
-    def test_event_interface
-      assert_equal("DWebBrowserEvents", @m_navigate_complete.event_interface)
-      assert_equal(nil, @m_namespace.event_interface)
     end
 
     def test_helpstring
