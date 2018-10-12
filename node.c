@@ -1116,7 +1116,7 @@ rb_ast_new(void)
     node_buffer_t *nb = rb_node_buffer_new();
     VALUE mark_ary = nb->mark_ary;
     rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    RB_GC_GUARD(mark_ary);
+    RB_OBJ_WRITTEN(ast, Qnil, mark_ary);
     return ast;
 }
 
