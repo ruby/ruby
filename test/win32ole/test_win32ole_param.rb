@@ -66,25 +66,25 @@ if defined?(WIN32OLE_PARAM)
     end
 
     def test_input?
-      assert(@param_url.input?)
-      assert(@param_cancel.input?)
-      assert(!@param_pbs.input?)
+      assert_equal(true, @param_url.input?)
+      assert_equal(true, @param_cancel.input?)
+      assert_equal(false, @param_pbs.input?)
     end
 
     def test_output?
-      assert(!@param_url.output?)
-      assert(@param_cancel.output?)
-      assert(@param_pbs.output?)
+      assert_equal(false, @param_url.output?)
+      assert_equal(true, @param_cancel.output?)
+      assert_equal(true, @param_pbs.output?)
     end
 
     def test_optional?
-      assert(!@param_url.optional?)
-      assert(@param_flags.optional?)
+      assert_equal(false, @param_url.optional?)
+      assert_equal(true, @param_flags.optional?)
     end
 
     def test_retval?
-      assert(!@param_url.retval?)
-      assert(@param_p.retval?)
+      assert_equal(false, @param_url.retval?)
+      assert_equal(true, @param_p.retval?)
     end
 
     def test_default
