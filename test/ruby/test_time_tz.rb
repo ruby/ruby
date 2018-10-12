@@ -546,6 +546,7 @@ module TestTimeTZ::WithTZ
     t2 = Marshal.load(Marshal.dump(t))
     assert_equal(t, t2)
     assert_equal(t.utc_offset, t2.utc_offset)
+    assert_equal(t.utc_offset, (t2+1).utc_offset)
   end
 end
 
