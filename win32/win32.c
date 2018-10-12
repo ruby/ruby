@@ -1252,8 +1252,8 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, 
     }
 
     RUBY_CRITICAL {
-	fRet = CreateProcessW(prog, (WCHAR *)cmd, &sa, &sa,
-			      sa.bInheritHandle, dwCreationFlags, NULL, NULL,
+        fRet = CreateProcessW(prog, (WCHAR *)cmd, &sa, &sa,
+                              sa.bInheritHandle, dwCreationFlags, NULL, NULL,
 			      &aStartupInfo, &aProcessInformation);
 	errno = map_errno(GetLastError());
     }
