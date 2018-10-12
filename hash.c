@@ -1731,15 +1731,14 @@ rb_hash_replace(VALUE hash, VALUE hash2)
  *     hsh.size      ->  integer
  *
  *  Returns the number of key-value pairs in the hash.
- *  <code>Hash#length</code> and <code>Hash#size</code> are both equivalent to
- *  each other.
  *
  *     h = { "d" => 100, "a" => 200, "v" => 300, "e" => 400 }
- *     h.length        #=> 4
  *     h.size          #=> 4
  *     h.delete("a")   #=> 200
- *     h.length        #=> 3
  *     h.size          #=> 3
+ *     h.length        #=> 3
+ *
+ *  Hash#length is an alias for Hash#size.
  */
 
 VALUE
