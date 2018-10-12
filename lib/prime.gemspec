@@ -1,6 +1,7 @@
 begin
   require_relative "lib/prime"
 rescue LoadError
+  # for Ruby core repository
   require_relative "prime"
 end
 

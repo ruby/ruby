@@ -3,6 +3,7 @@
 begin
   require_relative "lib/csv/version"
 rescue LoadError
+  # for Ruby core repository
   require_relative "version"
 end
 

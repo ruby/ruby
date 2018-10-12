@@ -1,6 +1,7 @@
 begin
   require_relative "lib/rss"
 rescue LoadError
+  # for Ruby core repository
   require_relative "rss"
 end
 
