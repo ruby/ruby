@@ -1360,15 +1360,16 @@ static int r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val);
  *  This tests <code>begin <= obj <= end</code> when #exclude_end? is +false+
  *  and <code>begin <= obj < end</code> when #exclude_end? is +true+.
  *
- *  Returns <code>true</code> for a Range when it is covered by the reciver,
+ *  If called with a Range argument, returns <code>true</code> when the
+ *  given range is covered by the receiver,
  *  by comparing the begin and end values. If the argument can be treated as
  *  a sequence, this method treats it that way. In the specific case of
  *  <code>(a..b).cover?(c...d)</code> with <code>a <= c && b < d</code>,
- *  end of sequence must be calculated, which may exhibit poor performance if
- *  c is non-numeric. Returns <code>false</code> if the begin value of the
- *  Range is larger than the end value.
+ *  the end of the sequence must be calculated, which may exhibit poor
+ *  performance if <code>c</code> is non-numeric.
+ *  Returns <code>false</code> if the begin value of the
+ *  range is larger than the end value.
  *
- *  Return
  *     ("a".."z").cover?("c")  #=> true
  *     ("a".."z").cover?("5")  #=> false
  *     ("a".."z").cover?("cc") #=> true
