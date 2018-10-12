@@ -42,9 +42,6 @@ if defined?(WIN32OLE_PARAM)
       assert_raise(IndexError) {
         WIN32OLE_PARAM.new(m_copyfile, 0);
       }
-      assert_raise(IndexError) {
-        WIN32OLE_PARAM.new(m_copyfile, 0);
-      }
       param = WIN32OLE_PARAM.new(m_copyfile, 3)
       assert_equal("OverWriteFiles", param.name)
       assert_equal(WIN32OLE_PARAM, param.class)
