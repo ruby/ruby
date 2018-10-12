@@ -3717,6 +3717,7 @@ time_gmtime(VALUE time)
 	time_modify(time);
     }
 
+    vtm.zone = rb_fstring_usascii("UTC");
     GMTIMEW(tobj->timew, &vtm);
     tobj->vtm = vtm;
 
