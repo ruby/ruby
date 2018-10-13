@@ -866,8 +866,6 @@ timegmw_noleapsecond(struct vtm *vtm)
     return wret;
 }
 
-#define rb_fstring_usascii(str) rb_fstring_enc_cstr((str), rb_usascii_encoding())
-
 static VALUE
 zone_str(const char *zone)
 {
@@ -877,7 +875,7 @@ zone_str(const char *zone)
     size_t len;
 
     if (zone == NULL) {
-        return rb_fstring_usascii("(NO-TIMEZONE-ABBREVIATION)");
+        return rb_fstring_lit("(NO-TIMEZONE-ABBREVIATION)");
     }
 
     for (p = zone; *p; p++)
@@ -994,7 +992,7 @@ gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
     }
 
     vtm->utc_offset = INT2FIX(0);
-    vtm->zone = rb_fstring_usascii("UTC");
+    vtm->zone = rb_fstring_lit("UTC");
 }
 
 static struct tm *
@@ -1262,7 +1260,7 @@ gmtimew(wideval_t timew, struct vtm *result)
     result->yday = tm.tm_yday+1;
     result->isdst = tm.tm_isdst;
 #if 0
-    result->zone = rb_fstring_usascii("UTC");
+    result->zone = rb_fstring_lit("UTC");
 #endif
 
     return result;
@@ -1382,7 +1380,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     if (lt(vtm_utc->year, INT2FIX(1916))) {
         VALUE off = INT2FIX(0);
         int isdst = 0;
-        zone = rb_fstring_usascii("UTC");
+        zone = rb_fstring_lit("UTC");
 
 # if defined(NEGATIVE_TIME_T)
 #  if SIZEOF_TIME_T <= 4
@@ -1426,7 +1424,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
 
     timev = w2v(rb_time_unmagnify(timegmw(&vtm2)));
     t = NUM2TIMET(timev);
-    zone = rb_fstring_usascii("UTC");
+    zone = rb_fstring_lit("UTC");
     if (localtime_with_gmtoff_zone(&t, &tm, &gmtoff, &zone)) {
         if (isdst_ret)
             *isdst_ret = tm.tm_isdst;
@@ -2220,7 +2218,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     vtm.wday = VTM_WDAY_INITVAL;
     vtm.yday = 0;
-    vtm.zone = rb_fstring_usascii("");
+    vtm.zone = rb_fstring_lit("");
 
     /*                             year  mon   mday  hour  min   sec   off */
     rb_scan_args(argc, argv, "16", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5],&v[6]);
@@ -2837,7 +2835,7 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
     vtm->wday = 0;
     vtm->yday = 0;
     vtm->isdst = 0;
-    vtm->zone = rb_fstring_usascii("");
+    vtm->zone = rb_fstring_lit("");
 
     if (argc == 10) {
 	v[0] = argv[5];
@@ -3721,7 +3719,7 @@ time_gmtime(VALUE time)
 	time_modify(time);
     }
 
-    vtm.zone = rb_fstring_usascii("UTC");
+    vtm.zone = rb_fstring_lit("UTC");
     GMTIMEW(tobj->timew, &vtm);
     tobj->vtm = vtm;
 
@@ -4935,7 +4933,7 @@ time_mload(VALUE time, VALUE str)
         vtm.utc_offset = INT2FIX(0);
 	vtm.yday = vtm.wday = 0;
 	vtm.isdst = 0;
-	vtm.zone = rb_fstring_usascii("");
+	vtm.zone = rb_fstring_lit("");
 
 	usec = (long)(s & 0xfffff);
         nsec = usec * 1000;
@@ -5149,7 +5147,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
         goto found;
     }
 #endif
-    strftime_args[0] = rb_fstring_cstr("%Z");
+    strftime_args[0] = rb_fstring_lit("%Z");
     strftime_args[1] = tm;
     abbr = rb_check_funcall(zone, rb_intern("strftime"), 2, strftime_args);
     if (abbr != Qundef) {

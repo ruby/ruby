@@ -292,7 +292,7 @@ rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
     rb_ec_raised_set(ec, raised_flag);
 }
 
-#define undef_mesg_for(v, k) rb_fstring_cstr("undefined"v" method `%1$s' for "k" `%2$s'")
+#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method `%1$s' for "k" `%2$s'")
 #define undef_mesg(v) ( \
 	is_mod ? \
 	undef_mesg_for(v, "module") : \
@@ -320,7 +320,7 @@ rb_print_undef_str(VALUE klass, VALUE name)
     rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
-#define inaccessible_mesg_for(v, k) rb_fstring_cstr("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg_for(v, k) rb_fstring_lit("method `%1$s' for "k" `%2$s' is "v)
 #define inaccessible_mesg(v) ( \
 	is_mod ? \
 	inaccessible_mesg_for(v, "module") : \

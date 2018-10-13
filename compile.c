@@ -7153,7 +7153,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
       }
       case NODE_SCLASS:{
 	ID singletonclass;
-	const rb_iseq_t *singleton_class = NEW_ISEQ(node->nd_body, rb_fstring_cstr("singleton class"),
+	const rb_iseq_t *singleton_class = NEW_ISEQ(node->nd_body, rb_fstring_lit("singleton class"),
 						    ISEQ_TYPE_CLASS, line);
 
 	CHECK(COMPILE(ret, "sclass#recv", node->nd_recv));
@@ -8281,7 +8281,7 @@ caller_location(VALUE *path, VALUE *realpath)
 	return line;
     }
     else {
-	*path = rb_fstring_cstr("<compiled>");
+	*path = rb_fstring_lit("<compiled>");
 	*realpath = *path;
 	return 1;
     }

@@ -976,7 +976,7 @@ rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const I
 	iseq = rb_iseq_new(&ast, base_iseq->body->location.label, path, realpath, base_iseq, ISEQ_TYPE_EVAL);
     }
     else {
-	VALUE tempstr = rb_fstring_cstr("<temp>");
+	VALUE tempstr = rb_fstring_lit("<temp>");
 	iseq = rb_iseq_new_top(&ast, tempstr, tempstr, tempstr, NULL);
     }
     tmp_node.nd_tbl = 0; /* reset table */
@@ -3098,7 +3098,7 @@ Init_VM(void)
     {
 	rb_vm_t *vm = ruby_current_vm_ptr;
 	rb_thread_t *th = GET_THREAD();
-	VALUE filename = rb_fstring_cstr("<main>");
+	VALUE filename = rb_fstring_lit("<main>");
 	const rb_iseq_t *iseq = rb_iseq_new(0, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
         volatile VALUE th_self;
 
