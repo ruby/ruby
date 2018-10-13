@@ -368,12 +368,20 @@ setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
     return (VALUE)fake_str;
 }
 
+/*
+ * set up a fake string which refers a static string literal.
+ */
 VALUE
 rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc)
 {
     return setup_fake_str(fake_str, name, len, rb_enc_to_index(enc));
 }
 
+/*
+ * rb_fstring_new and rb_fstring_cstr family create or lookup a frozen
+ * shared string which refers a static string literal.  `ptr` must
+ * point a constant string.
+ */
 MJIT_FUNC_EXPORTED VALUE
 rb_fstring_new(const char *ptr, long len)
 {
