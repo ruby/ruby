@@ -1083,13 +1083,20 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
     }
 }
 
-#define BOUND_PRIVATE  0x01
-#define BOUND_RESPONDS 0x02
+#define BOUND_PRIVATE     0x01
+#define BOUND_RESPONDS    0x02
+#define BOUND_REFINEMENTS 0x04
 
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, NULL);
+    const rb_method_entry_t *me;
+    if (ex & BOUND_REFINEMENTS) {
+        me = method_entry_resolve_refinement(klass, id, TRUE, NULL);
+    }
+    else {
+        me = rb_method_entry_without_refinements(klass, id, NULL);
+    }
 
     if (me != 0) {
 	if ((ex & ~BOUND_RESPONDS) &&
@@ -1966,7 +1973,7 @@ basic_obj_respond_to(rb_execution_context_t *ec, VALUE obj, ID id, int pub)
     VALUE klass = CLASS_OF(obj);
     VALUE ret;
 
-    switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS)) {
+    switch (rb_method_boundp(klass, id, pub|BOUND_RESPONDS|BOUND_REFINEMENTS)) {
       case 2:
 	return FALSE;
       case 0:
