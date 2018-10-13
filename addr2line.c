@@ -825,16 +825,16 @@ next_line:
         }
         else if (!line->filename) {
             kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] ???:%d\n",
-	            line->path, line->sname, d, addr, line->line);
+                    line->path, line->sname, d, addr, line->line);
         }
         else if (line->dirname && line->dirname[0]) {
             kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s/%s:%d\n",
-	            line->path, line->sname,
+                    line->path, line->sname,
                     d, addr, line->dirname, line->filename, line->line);
         }
         else {
             kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s:%d\n",
-	            line->path, line->sname,
+                    line->path, line->sname,
                     d, addr, line->filename, line->line);
         }
 	/* FreeBSD's backtrace may show _start and so on */
