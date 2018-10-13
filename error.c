@@ -1840,7 +1840,7 @@ syntax_error_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE mesg;
     if (argc == 0) {
-	mesg = rb_fstring_cstr("compile error");
+	mesg = rb_fstring_lit("compile error");
 	argc = 1;
 	argv = &mesg;
     }

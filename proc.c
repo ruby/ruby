@@ -1643,7 +1643,7 @@ method_owner(VALUE obj)
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
-#define MSG(s) rb_fstring_cstr("undefined method `%1$s' for"s" `%2$s'")
+#define MSG(s) rb_fstring_lit("undefined method `%1$s' for"s" `%2$s'")
     VALUE c = klass;
     VALUE s;
 
@@ -2819,7 +2819,7 @@ proc_binding(VALUE self)
 	    const struct vm_ifunc *ifunc = block->as.captured.code.ifunc;
 	    if (IS_METHOD_PROC_IFUNC(ifunc)) {
 		VALUE method = (VALUE)ifunc->data;
-		VALUE name = rb_fstring_cstr("<empty_iseq>");
+		VALUE name = rb_fstring_lit("<empty_iseq>");
 		rb_iseq_t *empty;
 		binding_self = method_receiver(method);
 		iseq = rb_method_iseq(method);
@@ -2852,7 +2852,7 @@ proc_binding(VALUE self)
     }
     else {
 	RB_OBJ_WRITE(bindval, &bind->pathobj,
-		     rb_iseq_pathobj_new(rb_fstring_cstr("(binding)"), Qnil));
+		     rb_iseq_pathobj_new(rb_fstring_lit("(binding)"), Qnil));
 	bind->first_lineno = 1;
     }
 

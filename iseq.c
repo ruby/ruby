@@ -668,7 +668,7 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
 rb_iseq_t *
 rb_iseq_new_main(const rb_ast_body_t *ast, VALUE path, VALUE realpath, const rb_iseq_t *parent)
 {
-    return rb_iseq_new_with_opt(ast, rb_fstring_cstr("<main>"),
+    return rb_iseq_new_with_opt(ast, rb_fstring_lit("<main>"),
 				path, realpath, INT2FIX(0),
 				parent, ISEQ_TYPE_MAIN, &COMPILE_OPTION_DEFAULT);
 }
@@ -894,7 +894,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, c
     else {
 	INITIALIZED VALUE label = parent ?
 	    parent->body->location.label :
-	    rb_fstring_cstr("<compiled>");
+	    rb_fstring_lit("<compiled>");
 	iseq = rb_iseq_new_with_opt(&ast->body, label, file, realpath, line,
 				    parent, type, &option);
 	rb_ast_dispose(ast);
@@ -1076,7 +1076,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
       case 2: file = argv[--i];
     }
 
-    if (NIL_P(file)) file = rb_fstring_cstr("<compiled>");
+    if (NIL_P(file)) file = rb_fstring_lit("<compiled>");
     if (NIL_P(path)) path = file;
     if (NIL_P(line)) line = INT2FIX(1);
 
@@ -1139,7 +1139,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 
     make_compile_option(&option, opt);
 
-    ret = iseqw_new(rb_iseq_new_with_opt(&ast->body, rb_fstring_cstr("<main>"),
+    ret = iseqw_new(rb_iseq_new_with_opt(&ast->body, rb_fstring_lit("<main>"),
 					 file,
 					 rb_realpath_internal(Qnil, file, 1),
 					 line, NULL, ISEQ_TYPE_TOP, &option));
@@ -1702,10 +1702,10 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 	if (insn == BIN(defined) && op_no == 0) {
 	    enum defined_type deftype = (enum defined_type)op;
 	    if (deftype == DEFINED_FUNC) {
-		ret = rb_fstring_cstr("func"); break;
+		ret = rb_fstring_lit("func"); break;
 	    }
 	    if (deftype == DEFINED_REF) {
-		ret = rb_fstring_cstr("ref"); break;
+		ret = rb_fstring_lit("ref"); break;
 	    }
 	    ret = rb_iseq_defined_string(deftype);
 	    if (ret) break;

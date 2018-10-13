@@ -4294,7 +4294,7 @@ rb_str_upto_each(VALUE beg, VALUE end, int excl, int (*each)(VALUE, VALUE), VALU
 	}
 	else {
 	    ID op = excl ? '<' : idLE;
-	    VALUE args[2], fmt = rb_fstring_cstr("%.*d");
+	    VALUE args[2], fmt = rb_fstring_lit("%.*d");
 
 	    args[0] = INT2FIX(width);
 	    while (rb_funcall(b, op, 1, e)) {
@@ -4337,7 +4337,7 @@ rb_str_upto_endless_each(VALUE beg, int (*each)(VALUE, VALUE), VALUE arg)
     /* both edges are all digits */
     if (is_ascii_string(beg) && ISDIGIT(RSTRING_PTR(beg)[0]) &&
 	all_digits_p(RSTRING_PTR(beg), RSTRING_LEN(beg))) {
-	VALUE b, args[2], fmt = rb_fstring_cstr("%.*d");
+	VALUE b, args[2], fmt = rb_fstring_lit("%.*d");
 	int width = RSTRING_LENINT(beg);
 	b = rb_str_to_inum(beg, 10, FALSE);
 	if (FIXNUM_P(b)) {
