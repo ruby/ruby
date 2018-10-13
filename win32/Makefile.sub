@@ -762,8 +762,10 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_SSIZE_T 1
 !if "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define ssize_t __int64
+#define PRI_PTR_PREFIX "I64"
 !else
 #define ssize_t int
+#define PRI_PTR_PREFIX PRI_INT_PREFIX
 !endif
 #define PRI_LL_PREFIX "I64"
 #define PRI_PIDT_PREFIX PRI_INT_PREFIX
