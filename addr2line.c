@@ -814,25 +814,27 @@ next_line:
         uintptr_t addr = (uintptr_t)traces[i];
         uintptr_t d = addr - line->saddr;
         if (!line->path) {
-            kprintf("[0x%lx]\n", addr);
+            kprintf("[0x%"PRIuPTR"]\n", addr);
         }
         else if (!line->saddr || !line->sname) {
-            kprintf("%s(0x%lx) [0x%lx]\n", line->path, addr-line->base_addr, addr);
+            kprintf("%s(0x%"PRIuPTR") [0x%"PRIuPTR"]\n", line->path, addr-line->base_addr, addr);
         }
         else if (line->line <= 0) {
-            kprintf("%s(%s+0x%lx) [0x%lx]\n", line->path, line->sname,
+            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"]\n", line->path, line->sname,
                     d, addr);
         }
         else if (!line->filename) {
-            kprintf("%s(%s+0x%lx) [0x%lx] ???:%d\n", line->path, line->sname,
-                    d, addr, line->line);
+            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] ???:%d\n",
+	            line->path, line->sname, d, addr, line->line);
         }
         else if (line->dirname && line->dirname[0]) {
-            kprintf("%s(%s+0x%lx) [0x%lx] %s/%s:%d\n", line->path, line->sname,
+            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s/%s:%d\n",
+	            line->path, line->sname,
                     d, addr, line->dirname, line->filename, line->line);
         }
         else {
-            kprintf("%s(%s+0x%lx) [0x%lx] %s:%d\n", line->path, line->sname,
+            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s:%d\n",
+	            line->path, line->sname,
                     d, addr, line->filename, line->line);
         }
 	/* FreeBSD's backtrace may show _start and so on */
