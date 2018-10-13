@@ -8981,6 +8981,9 @@ rb_str_rstrip(VALUE str)
  *  <code>nil</code> if <i>str</i> was not altered.
  *
  *  Refer to <code>strip</code> for the definition of whitespace.
+ *
+ *     "  hello  ".strip!  #=> "hello"
+ *     "hello".strip!      #=> nil
  */
 
 static VALUE
