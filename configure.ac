@@ -1596,6 +1596,9 @@ RUBY_DEFINT(int128_t, 16)
 RUBY_DEFINT(uint128_t, 16, unsigned)
 RUBY_DEFINT(intptr_t, void*)
 RUBY_DEFINT(uintptr_t, void*, unsigned)
+AS_IF([test "x$rb_cv_type_intptr_t" != xno], [
+    RUBY_CHECK_PRINTF_PREFIX(intptr_t, '' ll I64 l, PTR)
+])
 RUBY_DEFINT(ssize_t, size_t, [], [@%:@include <sys/types.h>])	dnl may differ from int, so not use AC_TYPE_SSIZE_T.
 AS_IF([test "x$rb_cv_type_int64_t" != xno], [
     RUBY_CHECK_PRINTF_PREFIX(int64_t, ll I64 l, 64)

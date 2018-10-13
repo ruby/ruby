@@ -139,6 +139,15 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #endif
 #endif
 
+#ifndef PRIdPTR
+#define PRIdPTR PRI_PTR_PREFIX"d"
+#define PRIiPTR PRI_PTR_PREFIX"i"
+#define PRIoPTR PRI_PTR_PREFIX"o"
+#define PRIuPTR PRI_PTR_PREFIX"u"
+#define PRIxPTR PRI_PTR_PREFIX"x"
+#define PRIXPTR PRI_PTR_PREFIX"X"
+#endif
+
 #define RUBY_PRI_VALUE_MARK "\v"
 #if defined PRIdPTR && !defined PRI_VALUE_PREFIX
 #define PRIdVALUE PRIdPTR
