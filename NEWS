@@ -121,7 +121,7 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Modified methods:
 
-        * `Hash#merge`, `update`, `merge!` and `update!` now accept multiple
+        * `Hash#merge`, `merge!`, and `update` now accept multiple
            arguments.  [Feature #15111]
 
         * `Hash#to_h` now maps keys and values to new keys and values
