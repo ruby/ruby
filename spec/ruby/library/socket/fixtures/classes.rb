@@ -50,7 +50,7 @@ module SocketSpecs
   def self.ipv6_available?
     @ipv6_available ||= begin
       server = TCPServer.new('::1', 0)
-    rescue Errno::EADDRNOTAVAIL, SocketError
+    rescue Errno::EAFNOSUPPORT, Errno::EADDRNOTAVAIL, SocketError
       :no
     else
       server.close
