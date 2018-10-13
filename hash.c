@@ -2590,39 +2590,43 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *     hsh.merge!(other_hash1, other_hash2, ...)              -> hsh
  *     hsh.update(other_hash1, other_hash2, ...)              -> hsh
- *     hsh.merge!(other_hash1, other_hash2, ...){|key, oldval, newval| block}
+ *     hsh.merge!(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
  *                                                            -> hsh
- *     hsh.update(other_hash1, other_hash2, ...){|key, oldval, newval| block}
+ *     hsh.update(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
  *                                                            -> hsh
  *
- *  Adds the contents of _other_hash_s to _hsh_ repeatedly. If no block is
- *  specified, entries with duplicate keys are overwritten with the values from
- *  each _other_hash_, otherwise the value of each duplicate key is determined by
- *  calling the block with the key, its value in _hsh_ and its value in
- *  each _other_hash_.
+ *  Adds the contents of the given hashes to the receiver.
+ *
+ *  If no block is given, entries with duplicate keys are overwritten
+ *  with the values from each +other_hash+ successively,
+ *  otherwise the value for each duplicate key is determined by
+ *  calling the block with the key, its value in the receiver and
+ *  its value in each +other_hash+.
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h1.merge!()     #=> {"a"=>100, "b"=>200}
- *     h1              #=> {"a"=>100, "b"=>200}
+ *     h1.merge!          #=> {"a"=>100, "b"=>200}
+ *     h1                 #=> {"a"=>100, "b"=>200}
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 254, "c" => 300 }
- *     h1.merge!(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
- *     h1              #=> {"a"=>100, "b"=>254, "c"=>300}
+ *     h2 = { "b" => 246, "c" => 300 }
+ *     h1.merge!(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
+ *     h1                 #=> {"a"=>100, "b"=>246, "c"=>300}
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 254, "c" => 300 }
- *     h3 = { "b" => 100, "d" => 400 }
+ *     h2 = { "b" => 246, "c" => 300 }
+ *     h3 = { "b" => 357, "d" => 400 }
  *     h1.merge!(h2, h3)
- *                     #=> {"a"=>100, "b"=>100, "c"=>300, "d"=>400}
- *     h1              #=> {"a"=>100, "b"=>100, "c"=>300, "d"=>400}
+ *                        #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *     h1                 #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 254, "c" => 300 }
- *     h3 = { "b" => 100, "d" => 400 }
- *     h1.merge!(h2, h3) { |key, v1, v2| v1 }
- *                     #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
- *     h1              #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *     h2 = { "b" => 246, "c" => 300 }
+ *     h3 = { "b" => 357, "d" => 400 }
+ *     h1.merge!(h2, h3) {|key, v1, v2| v1 }
+ *                        #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *     h1                 #=> {"a"=>100, "b"=>200, "c"=>300, "d"=>400}
+ *
+ *  Hash#update is an alias for Hash#merge!.
  */
 
 static VALUE
@@ -2701,30 +2705,31 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 /*
  *  call-seq:
  *     hsh.merge(other_hash1, other_hash2, ...)           -> new_hash
- *     hsh.merge(other_hash1, other_hash2, ...){|key, oldval, newval| block}
+ *     hsh.merge(other_hash1, other_hash2, ...) {|key, oldval, newval| block}
  *                                                        -> new_hash
  *
- *  Returns a new hash containing the contents of <i>other_hash</i>s and
- *  the contents of <i>hsh</i>. If no block is specified, the value for
- *  entries with duplicate keys will be that of each <i>other_hash</i>.
- *  Otherwise the value for each duplicate key is determined by calling
- *  the block with the key, its value in <i>hsh</i> and its value
- *  in each <i>other_hash</i>. The method also can be called with no argument,
- *  then a new hash, whose content is same as that of the receiver,
- *  will be returned;
+ *  Returns a new hash that combines the contents of the receiver and
+ *  the contents of the given hashes.
+ *
+ *  If no block is given, entries with duplicate keys are overwritten
+ *  with the values from each +other_hash+ successively,
+ *  otherwise the value for each duplicate key is determined by
+ *  calling the block with the key, its value in the receiver and
+ *  its value in each +other_hash+.
+ *
+ *  When called without any argument, returns a copy of the receiver.
  *
  *     h1 = { "a" => 100, "b" => 200 }
- *     h2 = { "b" => 254, "c" => 300 }
- *     h3 = { "b" => 100, "d" => 400 }
- *     h1.merge()     #=> {"a"=>100, "b"=>200}
- *     h1.merge(h2)   #=> {"a"=>100, "b"=>254, "c"=>300}
- *     h1.merge(h2, h3)
- *                    #=> {"a"=>100, "b"=>100, "c"=>300, "d"=>400}
- *     h1.merge(h2){|key, oldval, newval| newval - oldval}
- *                    #=> {"a"=>100, "b"=>54,  "c"=>300}
- *     h1.merge(h2, h3){|key, oldval, newval| newval - oldval}
- *                    #=> {"a"=>100, "b"=>46,  "c"=>300, "d"=>400}
- *     h1             #=> {"a"=>100, "b"=>200}
+ *     h2 = { "b" => 246, "c" => 300 }
+ *     h3 = { "b" => 357, "d" => 400 }
+ *     h1.merge          #=> {"a"=>100, "b"=>200}
+ *     h1.merge(h2)      #=> {"a"=>100, "b"=>246, "c"=>300}
+ *     h1.merge(h2, h3)  #=> {"a"=>100, "b"=>357, "c"=>300, "d"=>400}
+ *     h1.merge(h2) {|key, oldval, newval| newval - oldval}
+ *                       #=> {"a"=>100, "b"=>46,  "c"=>300}
+ *     h1.merge(h2, h3) {|key, oldval, newval| newval - oldval}
+ *                       #=> {"a"=>100, "b"=>311, "c"=>300, "d"=>400}
+ *     h1                #=> {"a"=>100, "b"=>200}
  *
  */
 
