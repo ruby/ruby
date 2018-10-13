@@ -12,10 +12,9 @@
 #ifndef RUBY_ISEQ_H
 #define RUBY_ISEQ_H 1
 
-#include "ruby/version.h"
-
-#define ISEQ_MAJOR_VERSION RUBY_API_VERSION_MAJOR
-#define ISEQ_MINOR_VERSION RUBY_API_VERSION_MINOR
+RUBY_EXTERN const int ruby_api_version[];
+#define ISEQ_MAJOR_VERSION ((unsigned int)ruby_api_version[0])
+#define ISEQ_MINOR_VERSION ((unsigned int)ruby_api_version[1])
 
 #ifndef rb_iseq_t
 typedef struct rb_iseq_struct rb_iseq_t;
