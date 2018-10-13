@@ -3709,7 +3709,7 @@ ary_append(VALUE x, VALUE y)
  *  call-seq:
  *     ary.concat(other_ary1, other_ary2,...)   -> ary
  *
- *  Appends the elements of +other_ary+s to +self+.
+ *  Appends the elements of <code>other_ary</code>s to +self+.
  *
  *     [ "a", "b" ].concat( ["c", "d"])   #=> [ "a", "b", "c", "d" ]
  *     [ "a" ].concat( ["b"], ["c", "d"]) #=> [ "a", "b", "c", "d" ]
@@ -4227,7 +4227,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
  *  Array Difference
  *
  *  Returns a new array that is a copy of +self+, removing any items
- *  that also appear in any of the +other_ary+s. The order of +self+ is
+ *  that also appear in any of the <code>other_ary</code>s. The order of +self+ is
  *  preserved.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
@@ -4401,7 +4401,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *  call-seq:
  *     ary.union(other_ary1, other_ary2,...)   -> ary
  *
- *  Set Union --- Returns a new array by joining +other_ary+s with +self+,
+ *  Set Union --- Returns a new array by joining <code>other_ary</code>s with +self+,
  *  excluding any duplicates and preserving the order from the given arrays.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
