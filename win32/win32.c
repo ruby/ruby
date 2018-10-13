@@ -1297,8 +1297,8 @@ rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
 {
     /* NOTE: This function is used by MJIT worker, so it can be used parallelly with
        Ruby's main thread. So functions touching things shared with main thread can't
-       be sued, like `ALLOCV` that may trigger GC or `FindChildSlot` that finds a slot
-       from shared memory without locks. */
+       be sued, like `ALLOCV` that may trigger GC or `FindFreeChildSlot` that finds
+       a slot from shared memory without atomic locks. */
     struct ChildRecord child;
     char *cmd;
     size_t len;
