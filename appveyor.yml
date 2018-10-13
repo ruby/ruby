@@ -7,13 +7,13 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
+    - build: msys2
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     - build: vs
       vs: 120
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
     - build: vs
       vs: 140
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    - build: msys2
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 notifications:
   - provider: Webhook
