@@ -119,7 +119,6 @@ static char *w32_getenv(const char *name, UINT cp);
 
 int rb_w32_reparse_symlink_p(const WCHAR *path);
 
-static struct ChildRecord *CreateChild(const WCHAR *, const WCHAR *, HANDLE, HANDLE, HANDLE, DWORD);
 static int has_redirection(const char *, UINT);
 int rb_w32_wait_events(HANDLE *events, int num, DWORD timeout);
 static int rb_w32_open_osfhandle(intptr_t osfhandle, int flags);
@@ -1196,24 +1195,22 @@ child_result(struct ChildRecord *child, int mode)
 }
 
 /* License: Ruby's */
-static struct ChildRecord *
-CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
+static int
+CreateChild(struct ChildRecord *child, const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, HANDLE hError, DWORD dwCreationFlags)
 {
     BOOL fRet;
     STARTUPINFOW aStartupInfo;
     PROCESS_INFORMATION aProcessInformation;
     SECURITY_ATTRIBUTES sa;
-    struct ChildRecord *child;
 
     if (!cmd && !prog) {
 	errno = EFAULT;
-	return NULL;
+        return FALSE;
     }
 
-    child = FindFreeChildSlot();
     if (!child) {
-	errno = EAGAIN;
-	return NULL;
+        errno = EAGAIN;
+        return FALSE;
     }
 
     sa.nLength              = sizeof(SECURITY_ATTRIBUTES);
@@ -1248,7 +1245,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, 
     if (lstrlenW(cmd) > 32767) {
 	child->pid = 0;		/* release the slot */
 	errno = E2BIG;
-	return NULL;
+        return FALSE;
     }
 
     RUBY_CRITICAL {
@@ -1260,7 +1257,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, 
 
     if (!fRet) {
 	child->pid = 0;		/* release the slot */
-	return NULL;
+        return FALSE;
     }
 
     CloseHandle(aProcessInformation.hThread);
@@ -1268,7 +1265,7 @@ CreateChild(const WCHAR *cmd, const WCHAR *prog, HANDLE hInput, HANDLE hOutput, 
     child->hProcess = aProcessInformation.hProcess;
     child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
 
-    return child;
+    return TRUE;
 }
 
 /* License: Ruby's */
@@ -1298,10 +1295,11 @@ is_batch(const char *cmd)
 MJIT_FUNC_EXPORTED HANDLE
 rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
 {
-    /* NOTE: This function is used by MJIT worker, i.e. it must not touch Ruby VM.
-       This function is not using ALLOCV that may trigger GC. So this can't be
-       replaced with some families in this file. */
-    struct ChildRecord *child;
+    /* NOTE: This function is used by MJIT worker, so it can be used parallelly with
+       Ruby's main thread. So functions touching things shared with main thread can't
+       be sued, like `ALLOCV` that may trigger GC or `FindChildSlot` that finds a slot
+       from shared memory without locks. */
+    struct ChildRecord child;
     char *cmd;
     size_t len;
     WCHAR *wcmd = NULL, *wprog = NULL;
@@ -1317,22 +1315,20 @@ rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
 
     if (!(wcmd = mbstr_to_wstr(filecp(), cmd, -1, NULL))) {
         errno = E2BIG;
-        return 0;
+        return NULL;
     }
     if (!(wprog = mbstr_to_wstr(filecp(), abspath, -1, NULL))) {
         errno = E2BIG;
-        return 0;
+        return NULL;
     }
 
-    child = CreateChild(wcmd, wprog, NULL, outHandle, outHandle, 0);
-    if (child == NULL) {
-        return 0;
+    if (!CreateChild(&child, wcmd, wprog, NULL, outHandle, outHandle, 0)) {
+        return NULL;
     }
-    child->pid = 0; /* release the slot */
 
     free(wcmd);
     free(wprog);
-    return child->hProcess;
+    return child.hProcess;
 }
 
 /* License: Artistic or GPL */
@@ -1451,7 +1447,10 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     if (v) ALLOCV_END(v);
 
     if (!e) {
-        ret = child_result(CreateChild(wcmd, wshell, NULL, NULL, NULL, 0), mode);
+        struct ChildRecord *child = FindFreeChildSlot();
+        if (CreateChild(child, wcmd, wshell, NULL, NULL, NULL, 0)) {
+            ret = child_result(child, mode);
+        }
     }
     free(wshell);
     free(wcmd);
@@ -1536,7 +1535,10 @@ w32_aspawn_flags(int mode, const char *prog, char *const *argv, DWORD flags, UIN
     if (!e && prog && !(wprog = mbstr_to_wstr(cp, prog, -1, NULL))) e = E2BIG;
 
     if (!e) {
-        ret = child_result(CreateChild(wcmd, wprog, NULL, NULL, NULL, flags), mode);
+        struct ChildRecord *child = FindFreeChildSlot();
+        if (CreateChild(child, wcmd, wprog, NULL, NULL, NULL, flags)) {
+            ret = child_result(child, mode);
+        }
     }
     free(wprog);
     free(wcmd);
