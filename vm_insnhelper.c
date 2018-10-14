@@ -954,7 +954,6 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
 #define USE_IC_FOR_IVAR 1
 #endif
 
-/* `index` argument is used in MJIT to inline index value of call cache */
 ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IC, struct rb_call_cache *, int));
 static inline VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
