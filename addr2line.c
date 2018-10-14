@@ -788,42 +788,48 @@ get_uint64(const uint8_t *p)
 }
 
 static uint8_t
-read_uint8(char **ptr) {
+read_uint8(char **ptr)
+{
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 1);
     return *p;
 }
 
 static uint16_t
-read_uint16(char **ptr) {
+read_uint16(char **ptr)
+{
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 2);
     return get_uint16(p);
 }
 
 static uint32_t
-read_uint24(char **ptr) {
+read_uint24(char **ptr)
+{
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 3);
     return (*p << 16) | get_uint16(p+1);
 }
 
 static uint32_t
-read_uint32(char **ptr) {
+read_uint32(char **ptr)
+{
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 4);
     return get_uint32(p);
 }
 
 static uint64_t
-read_uint64(char **ptr) {
+read_uint64(char **ptr)
+{
     const unsigned char *p = (const unsigned char *)*ptr;
     *ptr = (char *)(p + 8);
     return get_uint64(p);
 }
 
-uint64_t
-read_uint(DebugInfoReader *reader) {
+static uint64_t
+read_uint(DebugInfoReader *reader)
+{
     uint64_t v;
     if (reader->format == 32) {
         v = read_uint32(&reader->p);
@@ -833,13 +839,13 @@ read_uint(DebugInfoReader *reader) {
     return v;
 }
 
-uint64_t
+static uint64_t
 read_uleb128(DebugInfoReader *reader)
 {
     return uleb128(&reader->p);
 }
 
-int64_t
+static int64_t
 read_sleb128(DebugInfoReader *reader)
 {
     return sleb128(&reader->p);
@@ -1176,7 +1182,8 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
 
 /* find abbrev in current compilation unit */
 static char *
-di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number) {
+di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
+{
     char *p;
     if (abbrev_number < ABBREV_TABLE_SIZE) {
         return reader->abbrev_table[abbrev_number];
@@ -1210,7 +1217,8 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number) {
 
 #if 0
 static void
-div_inspect(DebugInfoValue *v) {
+div_inspect(DebugInfoValue *v)
+{
     switch (v->type) {
       case VAL_uint:
         fprintf(stderr,"%d: type:%d size:%zx v:%lx\n",__LINE__,v->type,v->size,v->as.uint64);
@@ -1230,7 +1238,8 @@ div_inspect(DebugInfoValue *v) {
 #endif
 
 static DIE *
-di_read_die(DebugInfoReader *reader, DIE *die) {
+di_read_die(DebugInfoReader *reader, DIE *die)
+{
     uint64_t abbrev_number = uleb128(&reader->p);
     if (abbrev_number == 0) {
         reader->level--;
@@ -1249,7 +1258,8 @@ di_read_die(DebugInfoReader *reader, DIE *die) {
 }
 
 static DebugInfoValue *
-di_read_record(DebugInfoReader *reader, DebugInfoValue *vp) {
+di_read_record(DebugInfoReader *reader, DebugInfoValue *vp)
+{
     uint64_t at = uleb128(&reader->q);
     uint64_t form = uleb128(&reader->q);
     if (!at || !form) return NULL;
@@ -1260,7 +1270,8 @@ di_read_record(DebugInfoReader *reader, DebugInfoValue *vp) {
 }
 
 static void
-di_skip_records(DebugInfoReader *reader) {
+di_skip_records(DebugInfoReader *reader)
+{
     for (;;) {
         DebugInfoValue v = {{}};
         uint64_t at = uleb128(&reader->q);
@@ -1280,25 +1291,29 @@ typedef struct {
 } ranges_t;
 
 static void
-ranges_set_low_pc(ranges_t *ptr, uint64_t low_pc) {
+ranges_set_low_pc(ranges_t *ptr, uint64_t low_pc)
+{
     ptr->low_pc = low_pc;
     ptr->low_pc_set = true;
 }
 
 static void
-ranges_set_high_pc(ranges_t *ptr, uint64_t high_pc) {
+ranges_set_high_pc(ranges_t *ptr, uint64_t high_pc)
+{
     ptr->high_pc = high_pc;
     ptr->high_pc_set = true;
 }
 
 static void
-ranges_set_ranges(ranges_t *ptr, uint64_t ranges) {
+ranges_set_ranges(ranges_t *ptr, uint64_t ranges)
+{
     ptr->ranges = ranges;
     ptr->ranges_set = true;
 }
 
 static uintptr_t
-ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
+ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
+{
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             exit(1);
@@ -1328,7 +1343,8 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
 
 #if 0
 static void
-ranges_inspect(DebugInfoReader *reader, ranges_t *ptr) {
+ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
+{
     if (ptr->high_pc_set) {
         if (ptr->ranges_set || !ptr->low_pc_set) {
             fprintf(stderr,"low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
@@ -1358,7 +1374,8 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr) {
 #endif
 
 static void
-read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line) {
+read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line)
+{
     char *p = reader->p;
     char *q = reader->q;
     int level = reader->level;
@@ -1490,7 +1507,9 @@ fail:
     return 0;
 }
 
-void hexdump0(const unsigned char *p, size_t n) {
+static void
+hexdump0(const unsigned char *p, size_t n)
+{
     size_t i;
     fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
     for (i=0; i < n; i++){
@@ -1766,7 +1785,8 @@ main_exe_path(void)
 #endif
 
 static void
-print_line0(line_info_t *line, void *address) {
+print_line0(line_info_t *line, void *address)
+{
     uintptr_t addr = (uintptr_t)address;
     uintptr_t d = addr - line->saddr;
     if (!address) {
@@ -1803,7 +1823,8 @@ print_line0(line_info_t *line, void *address) {
 }
 
 static void
-print_line(line_info_t *line, void *address) {
+print_line(line_info_t *line, void *address)
+{
     print_line0(line, address);
     if (line->next) {
         print_line(line->next, NULL);
@@ -1946,7 +1967,7 @@ next_line:
 #define MAXNBUF (sizeof(intmax_t) * CHAR_BIT + 1)
 static inline int toupper(int c) { return ('A' <= c && c <= 'Z') ? (c&0x5f) : c; }
 #define    hex2ascii(hex)  (hex2ascii_data[hex])
-char const hex2ascii_data[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+static const char hex2ascii_data[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 static inline int imax(int a, int b) { return (a > b ? a : b); }
 static int kvprintf(char const *fmt, void (*func)(int), void *arg, int radix, va_list ap);
 
