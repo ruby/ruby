@@ -113,7 +113,7 @@ void *alloca();
 
 PRINTF_ARGS(static int kprintf(const char *fmt, ...), 1, 2);
 
-typedef struct {
+typedef struct line_info {
     const char *dirname;
     const char *filename;
     const char *path; /* object path */
@@ -122,15 +122,35 @@ typedef struct {
     uintptr_t base_addr;
     uintptr_t saddr;
     const char *sname; /* function name */
+
+    struct line_info *next;
 } line_info_t;
-typedef struct obj_info obj_info_t;
-struct obj_info {
+
+struct dwarf_section {
+    ElfW(Shdr) *shdr;
+    char *ptr;
+    size_t size;
+};
+
+typedef struct obj_info {
     const char *path; /* object path */
-    void *mapped;
+    char *mapped;
     size_t mapped_size;
-    void *uncompressed_debug_line;
+    void *uncompressed;
     uintptr_t base_addr;
-    obj_info_t *next;
+    struct dwarf_section debug_abbrev;
+    struct dwarf_section debug_info;
+    struct dwarf_section debug_line;
+    struct dwarf_section debug_ranges;
+    struct dwarf_section debug_str;
+    struct obj_info *next;
+} obj_info_t;
+#define obj_dwarf_section_at(obj,n) (&obj->debug_abbrev + n)
+#define DWARF_SECTION_COUNT 5
+
+struct debug_section_definition {
+    const char *name;
+    struct dwarf_section *dwarf;
 };
 
 /* Avoid consuming stack as this module may be used from signal handler */
@@ -194,8 +214,7 @@ get_nth_dirname(unsigned long dir, char *p)
 }
 
 static void
-fill_filename(int file, char *include_directories, char *filenames,
-              line_info_t *line)
+fill_filename(int file, char *include_directories, char *filenames, line_info_t *line)
 {
     int i;
     char *p = filenames;
@@ -485,40 +504,1013 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
     fill_lines(num_traces, traces, 0, objp, lines, offset);
 }
 
-#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
-static int
-parse_compressed_debug_line(int num_traces, void **traces,
-                 char *debug_line, unsigned long size,
-                 obj_info_t *obj, line_info_t *lines, int offset)
+enum
 {
-    void *uncompressed_debug_line;
-    ElfW(Chdr) *chdr = (ElfW(Chdr) *)debug_line;
+    DW_TAG_inlined_subroutine = 0x1d,
+    DW_TAG_subprogram = 0x2e,
+};
+
+/* Attributes encodings */
+enum
+{
+    DW_AT_sibling = 0x01,
+    DW_AT_location = 0x02,
+    DW_AT_name = 0x03,
+    /* Reserved 0x04 */
+    /* Reserved 0x05 */
+    /* Reserved 0x06 */
+    /* Reserved 0x07 */
+    /* Reserved 0x08 */
+    DW_AT_ordering = 0x09,
+    /* Reserved 0x0a */
+    DW_AT_byte_size = 0x0b,
+    /* Reserved 0x0c */
+    DW_AT_bit_size = 0x0d,
+    /* Reserved 0x0e */
+    /* Reserved 0x0f */
+    DW_AT_stmt_list = 0x10,
+    DW_AT_low_pc = 0x11,
+    DW_AT_high_pc = 0x12,
+    DW_AT_language = 0x13,
+    /* Reserved 0x14 */
+    DW_AT_discr = 0x15,
+    DW_AT_discr_value = 0x16,
+    DW_AT_visibility = 0x17,
+    DW_AT_import = 0x18,
+    DW_AT_string_length = 0x19,
+    DW_AT_common_reference = 0x1a,
+    DW_AT_comp_dir = 0x1b,
+    DW_AT_const_value = 0x1c,
+    DW_AT_containing_type = 0x1d,
+    DW_AT_default_value = 0x1e,
+    /* Reserved 0x1f */
+    DW_AT_inline = 0x20,
+    DW_AT_is_optional = 0x21,
+    DW_AT_lower_bound = 0x22,
+    /* Reserved 0x23 */
+    /* Reserved 0x24 */
+    DW_AT_producer = 0x25,
+    /* Reserved 0x26 */
+    DW_AT_prototyped = 0x27,
+    /* Reserved 0x28 */
+    /* Reserved 0x29 */
+    DW_AT_return_addr = 0x2a,
+    /* Reserved 0x2b */
+    DW_AT_start_scope = 0x2c,
+    /* Reserved 0x2d */
+    DW_AT_bit_stride = 0x2e,
+    DW_AT_upper_bound = 0x2f,
+    /* Reserved 0x30 */
+    DW_AT_abstract_origin = 0x31,
+    DW_AT_accessibility = 0x32,
+    DW_AT_address_class = 0x33,
+    DW_AT_artificial = 0x34,
+    DW_AT_base_types = 0x35,
+    DW_AT_calling_convention = 0x36,
+    DW_AT_count = 0x37,
+    DW_AT_data_member_location = 0x38,
+    DW_AT_decl_column = 0x39,
+    DW_AT_decl_file = 0x3a,
+    DW_AT_decl_line = 0x3b,
+    DW_AT_declaration = 0x3c,
+    DW_AT_discr_list = 0x3d,
+    DW_AT_encoding = 0x3e,
+    DW_AT_external = 0x3f,
+    DW_AT_frame_base = 0x40,
+    DW_AT_friend = 0x41,
+    DW_AT_identifier_case = 0x42,
+    /* Reserved 0x43 */
+    DW_AT_namelist_item = 0x44,
+    DW_AT_priority = 0x45,
+    DW_AT_segment = 0x46,
+    DW_AT_specification = 0x47,
+    DW_AT_static_link = 0x48,
+    DW_AT_type = 0x49,
+    DW_AT_use_location = 0x4a,
+    DW_AT_variable_parameter = 0x4b,
+    DW_AT_virtuality = 0x4c,
+    DW_AT_vtable_elem_location = 0x4d,
+    DW_AT_allocated = 0x4e,
+    DW_AT_associated = 0x4f,
+    DW_AT_data_location = 0x50,
+    DW_AT_byte_stride = 0x51,
+    DW_AT_entry_pc = 0x52,
+    DW_AT_use_UTF8 = 0x53,
+    DW_AT_extension = 0x54,
+    DW_AT_ranges = 0x55,
+    DW_AT_trampoline = 0x56,
+    DW_AT_call_column = 0x57,
+    DW_AT_call_file = 0x58,
+    DW_AT_call_line = 0x59,
+    DW_AT_description = 0x5a,
+    DW_AT_binary_scale = 0x5b,
+    DW_AT_decimal_scale = 0x5c,
+    DW_AT_small = 0x5d,
+    DW_AT_decimal_sign = 0x5e,
+    DW_AT_digit_count = 0x5f,
+    DW_AT_picture_string = 0x60,
+    DW_AT_mutable = 0x61,
+    DW_AT_threads_scaled = 0x62,
+    DW_AT_explicit = 0x63,
+    DW_AT_object_pointer = 0x64,
+    DW_AT_endianity = 0x65,
+    DW_AT_elemental = 0x66,
+    DW_AT_pure = 0x67,
+    DW_AT_recursive = 0x68,
+    DW_AT_signature = 0x69,
+    DW_AT_main_subprogram = 0x6a,
+    DW_AT_data_bit_offset = 0x6b,
+    DW_AT_const_expr = 0x6c,
+    DW_AT_enum_class = 0x6d,
+    DW_AT_linkage_name = 0x6e,
+    DW_AT_string_length_bit_size = 0x6f,
+    DW_AT_string_length_byte_size = 0x70,
+    DW_AT_rank = 0x71,
+    DW_AT_str_offsets_base = 0x72,
+    DW_AT_addr_base = 0x73,
+    DW_AT_rnglists_base = 0x74,
+    /* Reserved 0x75 */
+    DW_AT_dwo_name = 0x76,
+    DW_AT_reference = 0x77,
+    DW_AT_rvalue_reference = 0x78,
+    DW_AT_macros = 0x79,
+    DW_AT_call_all_calls = 0x7a,
+    DW_AT_call_all_source_calls = 0x7b,
+    DW_AT_call_all_tail_calls = 0x7c,
+    DW_AT_call_return_pc = 0x7d,
+    DW_AT_call_value = 0x7e,
+    DW_AT_call_origin = 0x7f,
+    DW_AT_call_parameter = 0x80,
+    DW_AT_call_pc = 0x81,
+    DW_AT_call_tail_call = 0x82,
+    DW_AT_call_target = 0x83,
+    DW_AT_call_target_clobbered = 0x84,
+    DW_AT_call_data_location = 0x85,
+    DW_AT_call_data_value = 0x86,
+    DW_AT_noreturn = 0x87,
+    DW_AT_alignment = 0x88,
+    DW_AT_export_symbols = 0x89,
+    DW_AT_deleted = 0x8a,
+    DW_AT_defaulted = 0x8b,
+    DW_AT_loclists_base = 0x8c,
+    DW_AT_lo_user = 0x2000,
+    DW_AT_hi_user = 0x3fff
+};
+
+/* Attribute form encodings */
+enum
+{
+    DW_FORM_addr = 0x01,
+    /* Reserved 0x02 */
+    DW_FORM_block2 = 0x03,
+    DW_FORM_block4 = 0x04,
+    DW_FORM_data2 = 0x05,
+    DW_FORM_data4 = 0x06,
+    DW_FORM_data8 = 0x07,
+    DW_FORM_string = 0x08,
+    DW_FORM_block = 0x09,
+    DW_FORM_block1 = 0x0a,
+    DW_FORM_data1 = 0x0b,
+    DW_FORM_flag = 0x0c,
+    DW_FORM_sdata = 0x0d,
+    DW_FORM_strp = 0x0e,
+    DW_FORM_udata = 0x0f,
+    DW_FORM_ref_addr = 0x10,
+    DW_FORM_ref1 = 0x11,
+    DW_FORM_ref2 = 0x12,
+    DW_FORM_ref4 = 0x13,
+    DW_FORM_ref8 = 0x14,
+    DW_FORM_ref_udata = 0x15,
+    DW_FORM_indirect = 0x16,
+    DW_FORM_sec_offset = 0x17,
+    DW_FORM_exprloc = 0x18,
+    DW_FORM_flag_present = 0x19,
+    DW_FORM_strx = 0x1a,
+    DW_FORM_addrx = 0x1b,
+    DW_FORM_ref_sup4 = 0x1c,
+    DW_FORM_strp_sup = 0x1d,
+    DW_FORM_data16 = 0x1e,
+    DW_FORM_line_strp = 0x1f,
+    DW_FORM_ref_sig8 = 0x20,
+    DW_FORM_implicit_const = 0x21,
+    DW_FORM_loclistx = 0x22,
+    DW_FORM_rnglistx = 0x23,
+    DW_FORM_ref_sup8 = 0x24,
+    DW_FORM_strx1 = 0x25,
+    DW_FORM_strx2 = 0x26,
+    DW_FORM_strx3 = 0x27,
+    DW_FORM_strx4 = 0x28,
+    DW_FORM_addrx1 = 0x29,
+    DW_FORM_addrx2 = 0x2a,
+    DW_FORM_addrx3 = 0x2b,
+    DW_FORM_addrx4 = 0x2c
+};
+
+enum {
+    VAL_none = 0,
+    VAL_cstr = 1,
+    VAL_data = 2,
+    VAL_uint = 3,
+    VAL_int = 4
+};
+
+typedef struct {
+    uint32_t unit_length;
+    uint16_t version;
+    uint32_t debug_abbrev_offset;
+    uint8_t address_size;
+} __attribute__((packed)) DW_CompilationUnitHeader32;
+
+typedef struct {
+    uint32_t initial_length; /* 0xffffffff */
+    uint64_t unit_length;
+    uint16_t version;
+    uint64_t debug_abbrev_offset;
+    uint8_t address_size;
+} __attribute__((packed)) DW_CompilationUnitHeader64;
+
+# define ABBREV_TABLE_SIZE 256
+typedef struct {
+    obj_info_t *obj;
+    char *file;
+    char *current_cu;
+    char *debug_line_cu_end;
+    char *debug_line_files;
+    char *debug_line_directories;
+    char *p;
+    char *pend;
+    char *q0;
+    char *q;
+    int format; /* 32 or 64 */;
+    uint8_t address_size;
+    int level;
+    char *abbrev_table[ABBREV_TABLE_SIZE];
+} DebugInfoReader;
+
+typedef struct {
+    ptrdiff_t pos;
+    int tag;
+    int has_children;
+} DIE;
+
+typedef struct {
+    union {
+        char *ptr;
+        uint64_t uint64;
+        int64_t int64;
+    } as;
+    uint64_t off;
+    uint64_t at;
+    uint64_t form;
+    size_t size;
+    int type;
+} DebugInfoValue;
+
+/* TODO: Big Endian */
+#define MERGE_2INTS(a,b,sz) (((uint64_t)(b)<<sz)|(a))
+
+static uint16_t
+get_uint16(const uint8_t *p)
+{
+    return (uint16_t)MERGE_2INTS(p[0],p[1],8);
+}
+
+static uint32_t
+get_uint32(const uint8_t *p)
+{
+    return (uint32_t)MERGE_2INTS(get_uint16(p),get_uint16(p+2),16);
+}
+
+static uint64_t
+get_uint64(const uint8_t *p)
+{
+    return MERGE_2INTS(get_uint32(p),get_uint32(p+4),32);
+}
+
+static uint8_t
+read_uint8(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 1);
+    return *p;
+}
+
+static uint16_t
+read_uint16(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 2);
+    return get_uint16(p);
+}
+
+static uint32_t
+read_uint24(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 3);
+    return (*p << 16) | get_uint16(p+1);
+}
+
+static uint32_t
+read_uint32(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 4);
+    return get_uint32(p);
+}
+
+static uint64_t
+read_uint64(char **ptr) {
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + 8);
+    return get_uint64(p);
+}
+
+uint64_t
+read_uint(DebugInfoReader *reader) {
+    uint64_t v;
+    if (reader->format == 32) {
+        v = read_uint32(&reader->p);
+    } else { /* 64 bit */
+        v = read_uint64(&reader->p);
+    }
+    return v;
+}
+
+uint64_t
+read_uleb128(DebugInfoReader *reader)
+{
+    return uleb128(&reader->p);
+}
+
+int64_t
+read_sleb128(DebugInfoReader *reader)
+{
+    return sleb128(&reader->p);
+}
+
+static void
+debug_info_reader_init(DebugInfoReader *reader, obj_info_t *obj)
+{
+    reader->file = obj->mapped;
+    reader->obj = obj;
+    reader->p = obj->debug_info.ptr;
+    reader->pend = obj->debug_info.ptr + obj->debug_info.size;
+    reader->debug_line_cu_end = obj->debug_line.ptr;
+}
+
+static void
+di_read_debug_abbrev_cu(DebugInfoReader *reader)
+{
+    uint64_t prev = 0;
+    char *p = reader->q0;
+    for (;;) {
+        uint64_t abbrev_number = uleb128(&p);
+        if (abbrev_number <= prev) break;
+        if (abbrev_number < ABBREV_TABLE_SIZE) {
+            reader->abbrev_table[abbrev_number] = p;
+        }
+        prev = abbrev_number;
+        uleb128(&p); /* tag */
+        p++; /* has_children */
+        /* skip content */
+        for (;;) {
+            uint64_t at = uleb128(&p);
+            uint64_t form = uleb128(&p);
+            if (!at && !form) break;
+        }
+    }
+}
+
+static void
+di_read_debug_line_cu(DebugInfoReader *reader)
+{
+    char *p;
+    unsigned long unit_length;
+    unsigned int opcode_base;
+
+    p = reader->debug_line_cu_end;
+
+    unit_length = *(unsigned int *)p;
+    p += sizeof(unsigned int);
+    if (unit_length == 0xffffffff) {
+	unit_length = *(unsigned long *)p;
+	p += sizeof(unsigned long);
+    }
+
+    reader->debug_line_cu_end = p + unit_length;
+    p += 2;
+    p += sizeof(unsigned int);
+    p += 4;
+    opcode_base = *(unsigned char *)p++;
+
+    /* standard_opcode_lengths = (unsigned char *)p - 1; */
+    p += opcode_base - 1;
+
+    reader->debug_line_directories = p;
+
+    /* skip include directories */
+    while (*p) {
+	p = memchr(p, '\0', reader->debug_line_cu_end - p);
+	if (!p) {
+            fprintf(stderr, "Wrongly reached the end of Directory Table at %tx",
+                    reader->debug_line_directories - reader->obj->debug_line.ptr);
+            abort();
+        }
+	p++;
+    }
+    p++;
+    reader->debug_line_files = p;
+}
+
+
+static void
+di_read_cu(DebugInfoReader *reader)
+{
+    DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
+    reader->current_cu = reader->p;
+    if (hdr32->unit_length == 0xffffffff) {
+        DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
+        reader->p += 23;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 64;
+    } else {
+        DW_CompilationUnitHeader32 *hdr = hdr32;
+        reader->p += 11;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 32;
+    }
+    reader->level = 0;
+    di_read_debug_abbrev_cu(reader);
+    di_read_debug_line_cu(reader);
+}
+
+static void
+set_uint_value(DebugInfoValue *v, uint64_t n)
+{
+    v->as.uint64 = n;
+    v->type = VAL_uint;
+}
+
+static void
+set_int_value(DebugInfoValue *v, int64_t n)
+{
+    v->as.int64 = n;
+    v->type = VAL_int;
+}
+
+static void
+set_cstr_value(DebugInfoValue *v, char *s)
+{
+    v->as.ptr = s;
+    v->off = 0;
+    v->type = VAL_cstr;
+}
+
+static void
+set_cstrp_value(DebugInfoValue *v, char *s, uint64_t off)
+{
+    v->as.ptr = s;
+    v->off = off;
+    v->type = VAL_cstr;
+}
+
+static void
+set_data_value(DebugInfoValue *v, char *s)
+{
+    v->as.ptr = s;
+    v->type = VAL_data;
+}
+
+static const char *
+get_cstr_value(DebugInfoValue *v)
+{
+    if (v->as.ptr) {
+        return v->as.ptr + v->off;
+    } else {
+        return NULL;
+    }
+}
+
+static void
+debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoValue *v)
+{
+    switch (form) {
+      case DW_FORM_addr:
+        if (reader->address_size == 4) {
+            set_uint_value(v, read_uint32(&reader->p));
+        } else if (reader->address_size == 8) {
+            set_uint_value(v, read_uint64(&reader->p));
+        } else {
+            fprintf(stderr,"unknown address_size:%d", reader->address_size);
+            abort();
+        }
+        break;
+      case DW_FORM_block2:
+        v->size = read_uint16(&reader->p);
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_block4:
+        v->size = read_uint32(&reader->p);
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_data2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_data4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_data8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_string:
+        v->size = strlen(reader->p);
+        set_cstr_value(v, reader->p);
+        reader->p += v->size + 1;
+        break;
+      case DW_FORM_block:
+        v->size = uleb128(&reader->p);
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_block1:
+        v->size = read_uint8(&reader->p);
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_data1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_flag:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_sdata:
+        set_int_value(v, read_sleb128(reader));
+        break;
+      case DW_FORM_strp:
+        set_cstrp_value(v, reader->obj->debug_str.ptr, read_uint(reader));
+        break;
+      case DW_FORM_udata:
+        set_uint_value(v, read_uleb128(reader));
+        break;
+      case DW_FORM_ref_addr:
+        if (reader->address_size == 4) {
+            set_uint_value(v, read_uint32(&reader->p));
+        } else if (reader->address_size == 8) {
+            set_uint_value(v, read_uint64(&reader->p));
+        } else {
+            fprintf(stderr,"unknown address_size:%d", reader->address_size);
+            abort();
+        }
+        break;
+      case DW_FORM_ref1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_ref2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_ref4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_ref8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_ref_udata:
+        set_uint_value(v, uleb128(&reader->p));
+        break;
+      case DW_FORM_indirect:
+        /* TODO: read the refered value */
+        set_uint_value(v, uleb128(&reader->p));
+        break;
+      case DW_FORM_sec_offset:
+        set_uint_value(v, read_uint(reader)); /* offset */
+        /* addrptr: debug_addr */
+        /* lineptr: debug_line */
+        /* loclist: debug_loclists */
+        /* loclistptr: debug_loclists */
+        /* macptr: debug_macro */
+        /* rnglist: debug_rnglists */
+        /* rnglistptr: debug_rnglists */
+        /* stroffsetsptr: debug_str_offsets */
+        break;
+      case DW_FORM_exprloc:
+        v->size = read_uleb128(reader);
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_flag_present:
+        set_uint_value(v, 1);
+        break;
+      case DW_FORM_strx:
+        set_uint_value(v, uleb128(&reader->p));
+        break;
+      case DW_FORM_addrx:
+        /* TODO: read .debug_addr */
+        set_uint_value(v, uleb128(&reader->p));
+        break;
+      case DW_FORM_ref_sup4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_strp_sup:
+        set_uint_value(v, read_uint(reader));
+        //*p = reader->sup_file + reader->sup_str->sh_offset + ret;
+        break;
+      case DW_FORM_data16:
+        v->size = 16;
+        set_data_value(v, reader->p);
+        reader->p += v->size;
+        break;
+      case DW_FORM_line_strp:
+        set_uint_value(v, read_uint(reader));
+        //*p = reader->file + reader->line->sh_offset + ret;
+        break;
+      case DW_FORM_ref_sig8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_implicit_const:
+        set_int_value(v, sleb128(&reader->q));
+        break;
+      case DW_FORM_loclistx:
+        set_uint_value(v, read_uleb128(reader));
+        break;
+      case DW_FORM_rnglistx:
+        set_uint_value(v, read_uleb128(reader));
+        break;
+      case DW_FORM_ref_sup8:
+        set_uint_value(v, read_uint64(&reader->p));
+        break;
+      case DW_FORM_strx1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_strx2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_strx3:
+        set_uint_value(v, read_uint24(&reader->p));
+        break;
+      case DW_FORM_strx4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case DW_FORM_addrx1:
+        set_uint_value(v, read_uint8(&reader->p));
+        break;
+      case DW_FORM_addrx2:
+        set_uint_value(v, read_uint16(&reader->p));
+        break;
+      case DW_FORM_addrx3:
+        set_uint_value(v, read_uint24(&reader->p));
+        break;
+      case DW_FORM_addrx4:
+        set_uint_value(v, read_uint32(&reader->p));
+        break;
+      case 0:
+        goto fail;
+        break;
+    }
+    return;
+
+  fail:
+    fprintf(stderr, "%d: unsupported form: %#"PRIx64"\n", __LINE__, form);
+    exit(1);
+}
+
+/* find abbrev in current compilation unit */
+static char *
+di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number) {
+    char *p;
+    if (abbrev_number < ABBREV_TABLE_SIZE) {
+        return reader->abbrev_table[abbrev_number];
+    }
+    p = reader->abbrev_table[ABBREV_TABLE_SIZE-1];
+    /* skip 255th record */
+    uleb128(&p); /* tag */
+    p++; /* has_children */
+    /* skip content */
+    for (;;) {
+        uint64_t at = uleb128(&p);
+        uint64_t form = uleb128(&p);
+        if (!at && !form) break;
+    }
+    for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
+        if (n == 0) {
+            fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
+            exit(1);
+        }
+        uleb128(&p); /* tag */
+        p++; /* has_children */
+        /* skip content */
+        for (;;) {
+            uint64_t at = uleb128(&p);
+            uint64_t form = uleb128(&p);
+            if (!at && !form) break;
+        }
+    }
+    return p;
+}
+
+#if 0
+static void
+div_inspect(DebugInfoValue *v) {
+    switch (v->type) {
+      case VAL_uint:
+        fprintf(stderr,"%d: type:%d size:%zx v:%lx\n",__LINE__,v->type,v->size,v->as.uint64);
+        break;
+      case VAL_int:
+        fprintf(stderr,"%d: type:%d size:%zx v:%ld\n",__LINE__,v->type,v->size,(int64_t)v->as.uint64);
+        break;
+      case VAL_cstr:
+        fprintf(stderr,"%d: type:%d size:%zx v:'%s'\n",__LINE__,v->type,v->size,v->as.ptr);
+        break;
+      case VAL_data:
+        fprintf(stderr,"%d: type:%d size:%zx v:\n",__LINE__,v->type,v->size);
+        hexdump(v->as.ptr, 16);
+        break;
+    }
+}
+#endif
+
+static DIE *
+di_read_die(DebugInfoReader *reader, DIE *die) {
+    uint64_t abbrev_number = uleb128(&reader->p);
+    if (abbrev_number == 0) {
+        reader->level--;
+        return NULL;
+    }
+
+    reader->q = di_find_abbrev(reader, abbrev_number);
+
+    die->pos = reader->p - reader->obj->debug_info.ptr - 1;
+    die->tag = (int)uleb128(&reader->q); /* tag */
+    die->has_children = *reader->q++; /* has_children */
+    if (die->has_children) {
+        reader->level++;
+    }
+    return die;
+}
+
+static DebugInfoValue *
+di_read_record(DebugInfoReader *reader, DebugInfoValue *vp) {
+    uint64_t at = uleb128(&reader->q);
+    uint64_t form = uleb128(&reader->q);
+    if (!at || !form) return NULL;
+    vp->at = at;
+    vp->form = form;
+    debug_info_reader_read_value(reader, form, vp);
+    return vp;
+}
+
+static void
+di_skip_records(DebugInfoReader *reader) {
+    for (;;) {
+        DebugInfoValue v = {{}};
+        uint64_t at = uleb128(&reader->q);
+        uint64_t form = uleb128(&reader->q);
+        if (!at || !form) return;
+        debug_info_reader_read_value(reader, form, &v);
+    }
+}
+
+typedef struct {
+    uint64_t low_pc;
+    uint64_t high_pc;
+    uint64_t ranges;
+    bool low_pc_set;
+    bool high_pc_set;
+    bool ranges_set;
+} ranges_t;
+
+static void
+ranges_set_low_pc(ranges_t *ptr, uint64_t low_pc) {
+    ptr->low_pc = low_pc;
+    ptr->low_pc_set = true;
+}
+
+static void
+ranges_set_high_pc(ranges_t *ptr, uint64_t high_pc) {
+    ptr->high_pc = high_pc;
+    ptr->high_pc_set = true;
+}
+
+static void
+ranges_set_ranges(ranges_t *ptr, uint64_t ranges) {
+    ptr->ranges = ranges;
+    ptr->ranges_set = true;
+}
+
+static uintptr_t
+ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr) {
+    if (ptr->high_pc_set) {
+        if (ptr->ranges_set || !ptr->low_pc_set) {
+            exit(1);
+        }
+        if (ptr->low_pc <= addr && addr <= ptr->low_pc + ptr->high_pc) {
+            return ptr->low_pc;
+        }
+    }
+    else if (ptr->ranges_set) {
+        char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
+        for (;;) {
+            uint64_t from = read_uint64(&p);
+            uint64_t to = read_uint64(&p);
+            if (!from && !to) break;
+            if (from <= addr && addr <= to) {
+                return from;
+            }
+        }
+    }
+    else if (ptr->low_pc_set) {
+        if (ptr->low_pc == addr) {
+            return ptr->low_pc;
+        }
+    }
+    return false;
+}
+
+#if 0
+static void
+ranges_inspect(DebugInfoReader *reader, ranges_t *ptr) {
+    if (ptr->high_pc_set) {
+        if (ptr->ranges_set || !ptr->low_pc_set) {
+            fprintf(stderr,"low_pc_set:%d high_pc_set:%d ranges_set:%d\n",ptr->low_pc_set,ptr->high_pc_set,ptr->ranges_set);
+            exit(1);
+        }
+        fprintf(stderr,"low_pc:%lx high_pc:%lx\n",ptr->low_pc,ptr->high_pc);
+    }
+    else if (ptr->ranges_set) {
+        char *p;
+        fprintf(stderr,"low_pc:%lx ranges:%lx ",ptr->low_pc,ptr->ranges);
+        p = reader->obj->debug_ranges.ptr + ptr->ranges;
+        for (;;) {
+            uint64_t from = read_uint64(&p);
+            uint64_t to = read_uint64(&p);
+            if (!from && !to) break;
+            fprintf(stderr,"%lx-%lx ",ptr->low_pc+from,ptr->low_pc+to);
+        }
+        fprintf(stderr,"\n");
+    }
+    else if (ptr->low_pc_set) {
+        fprintf(stderr,"low_pc:%lx\n",ptr->low_pc);
+    }
+    else {
+        fprintf(stderr,"empty\n");
+    }
+}
+#endif
+
+static void
+read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line) {
+    char *p = reader->p;
+    char *q = reader->q;
+    int level = reader->level;
+    DIE die;
+
+    reader->p = reader->current_cu + abstract_origin;
+    if (!di_read_die(reader, &die)) goto finish;
+
+    /* enumerate abbrev */
+    for (;;) {
+        DebugInfoValue v = {{}};
+        if (!di_read_record(reader, &v)) break;
+        switch (v.at) {
+          case DW_AT_name:
+            line->sname = get_cstr_value(&v);
+            break;
+        }
+    }
+
+  finish:
+    reader->p = p;
+    reader->q = q;
+    reader->level = level;
+}
+
+static void
+debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
+         line_info_t *lines, int offset) {
+    do {
+        DIE die;
+        ranges_t ranges = {};
+        line_info_t line = {};
+
+        if (!di_read_die(reader, &die)) continue;
+        //fprintf(stderr,"%d:%tx: <%d> Abbrev Number: %lu\n",__LINE__,diepos,reader->level,die.tag);
+
+        if (die.tag != DW_TAG_subprogram && die.tag != DW_TAG_inlined_subroutine) {
+          skip_die:
+            di_skip_records(reader);
+            continue;
+        }
+
+        /* enumerate abbrev */
+        for (;;) {
+            DebugInfoValue v = {{}};
+            //ptrdiff_t pos = reader->p - reader->p0;
+            if (!di_read_record(reader, &v)) break;
+            //fprintf(stderr,"\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form);
+            //div_inspect(&v);
+            switch (v.at) {
+              case DW_AT_name:
+                line.sname = get_cstr_value(&v);
+                break;
+              case DW_AT_call_file:
+                fill_filename((int)v.as.uint64, reader->debug_line_directories, reader->debug_line_files, &line);
+                break;
+              case DW_AT_call_line:
+                line.line = (int)v.as.uint64;
+                break;
+              case DW_AT_low_pc:
+                ranges_set_low_pc(&ranges, v.as.uint64);
+                break;
+              case DW_AT_high_pc:
+                ranges_set_high_pc(&ranges, v.as.uint64);
+                break;
+              case DW_AT_declaration:
+                goto skip_die;
+              case DW_AT_inline:
+                /* 1 or 3 */
+                break; // goto skip_die;
+              case DW_AT_abstract_origin:
+                read_abstract_origin(reader, v.as.uint64, &line);
+                break; //goto skip_die;
+              case DW_AT_ranges:
+                ranges_set_ranges(&ranges, v.as.uint64);
+                break;
+            }
+        }
+        /* ranges_inspect(reader, &ranges); */
+        /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
+        for (int i=offset; i < num_traces; i++) {
+            uintptr_t addr = (uintptr_t)traces[i];
+            uintptr_t offset = addr - reader->obj->base_addr;
+            uintptr_t saddr = ranges_include(reader, &ranges, offset);
+            if (saddr) {
+                //fprintf(stderr, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname);
+                if (lines[i].sname) {
+                    line_info_t *lp = malloc(sizeof(line_info_t));
+                    memcpy(lp, &lines[i], sizeof(line_info_t));
+                    lines[i].next = lp;
+                    lp->dirname = line.dirname;
+                    lp->filename = line.filename;
+                    lp->line = line.line;
+                    lp->saddr = 0;
+                }
+                lines[i].path = reader->obj->path;
+                lines[i].base_addr = line.base_addr;
+                lines[i].sname = line.sname;
+                lines[i].saddr = reader->obj->base_addr + saddr;
+            }
+        }
+    } while (reader->level > 0);
+}
+
+static unsigned long
+uncompress_debug_section(ElfW(Shdr) *shdr, char *file, char **ptr)
+{
+#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
+    ElfW(Chdr) *chdr = (ElfW(Chdr) *)(file + shdr->sh_offset);
     unsigned long destsize = chdr->ch_size;
     int ret = 0;
 
     if (chdr->ch_type != ELFCOMPRESS_ZLIB) {
 	/* unsupported compression type */
-        return -1;
+	return 0;
     }
 
-    uncompressed_debug_line = malloc(destsize);
-    if (!uncompressed_debug_line) return -1;
-    ret = uncompress(uncompressed_debug_line, &destsize,
-            (const Bytef *)debug_line + sizeof(ElfW(Chdr)), size-sizeof(ElfW(Chdr)));
+    *ptr = malloc(destsize);
+    if (!*ptr) return 0;
+    ret = uncompress((Bytef *)*ptr, &destsize,
+	    (const Bytef*)chdr + sizeof(ElfW(Chdr)),
+            shdr->sh_size - sizeof(ElfW(Chdr)));
     if (ret != Z_OK) goto fail;
-    ret = parse_debug_line(num_traces, traces,
-            uncompressed_debug_line,
-            destsize,
-            obj, lines, offset);
-    if (ret) goto fail;
-    obj->uncompressed_debug_line = uncompressed_debug_line;
-    return 0;
+    return destsize;
 
 fail:
-    free(uncompressed_debug_line);
-    return -1;
-}
+    free(*ptr);
 #endif
+    return 0;
+}
+
+void hexdump0(const unsigned char *p, size_t n) {
+    size_t i;
+    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
+    for (i=0; i < n; i++){
+        switch (i & 15) {
+          case 0:
+            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
+            break;
+          case 15:
+            fprintf(stderr, "%02X\n", p[i]);
+            break;
+          default:
+            fprintf(stderr, "%02X ", p[i]);
+            break;
+        }
+    }
+    if ((i & 15) != 15) {
+        fprintf(stderr, "\n");
+    }
+}
+#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
 
 /* read file and fill lines */
 static uintptr_t
@@ -530,15 +1522,14 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     char *section_name;
     ElfW(Ehdr) *ehdr;
     ElfW(Shdr) *shdr, *shstr_shdr;
-    ElfW(Shdr) *debug_line_shdr = NULL, *gnu_debuglink_shdr = NULL;
+    ElfW(Shdr) *gnu_debuglink_shdr = NULL;
     int fd;
-    off_t filesize = 0;
-    char *file = NULL;
+    off_t filesize;
+    char *file;
     ElfW(Shdr) *symtab_shdr = NULL, *strtab_shdr = NULL;
     ElfW(Shdr) *dynsym_shdr = NULL, *dynstr_shdr = NULL;
     obj_info_t *obj = *objp;
     uintptr_t dladdr_fbase = 0;
-    bool compressed_p = false;
 
     fd = open(binary_filename, O_RDONLY);
     if (fd < 0) {
@@ -605,15 +1596,24 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    dynsym_shdr = shdr + i;
 	    break;
 	  case SHT_PROGBITS:
-            if (!strcmp(section_name, ".debug_line")) {
-                if (shdr[i].sh_flags & SHF_COMPRESSED) {
-                    compressed_p = true;
-                }
-                debug_line_shdr = shdr + i;
-            }
-            else if (!strcmp(section_name, ".gnu_debuglink")) {
+	    if (!strcmp(section_name, ".gnu_debuglink")) {
 		gnu_debuglink_shdr = shdr + i;
 	    }
+            else {
+                const char *debug_section_names[] = {
+                    ".debug_abbrev",
+                    ".debug_info",
+                    ".debug_line",
+                    ".debug_ranges",
+                    ".debug_str"
+                };
+                for (j=0; j < DWARF_SECTION_COUNT; j++) {
+                    if (strcmp(section_name, debug_section_names[j]) == 0) {
+                        obj_dwarf_section_at(obj, j)->shdr = &shdr[i];
+                        break;
+                    }
+                }
+            }
 	    break;
 	}
     }
@@ -625,20 +1625,20 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	    char *strtab = file + dynstr_shdr->sh_offset;
 	    ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);
 	    int symtab_count = (int)(dynsym_shdr->sh_size / sizeof(ElfW(Sym)));
-            for (j = 0; j < symtab_count; j++) {
-                ElfW(Sym) *sym = &symtab[j];
-                Dl_info info;
-                void *h, *s;
-                if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-                h = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
-                if (!h) continue;
-                s = dlsym(h, strtab + sym->st_name);
-                if (s && dladdr(s, &info)) {
-                    dladdr_fbase = (uintptr_t)info.dli_fbase;
-                    dlclose(h);
-                    break;
+            void *handle = dlopen(NULL, RTLD_NOW|RTLD_LOCAL);
+            if (handle) {
+                for (j = 0; j < symtab_count; j++) {
+                    ElfW(Sym) *sym = &symtab[j];
+                    Dl_info info;
+                    void *s;
+                    if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size == 0) continue;
+                    s = dlsym(handle, strtab + sym->st_name);
+                    if (s && dladdr(s, &info)) {
+                        dladdr_fbase = (uintptr_t)info.dli_fbase;
+                        break;
+                    }
                 }
-                dlclose(h);
+                dlclose(handle);
             }
 	    if (ehdr->e_type == ET_EXEC) {
 		obj->base_addr = 0;
@@ -650,33 +1650,62 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	}
     }
 
-    if (!symtab_shdr) {
-        symtab_shdr = dynsym_shdr;
-        strtab_shdr = dynstr_shdr;
-    }
-
-    if (symtab_shdr && strtab_shdr) {
-        char *strtab = file + strtab_shdr->sh_offset;
-        ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
-        int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
-        for (j = 0; j < symtab_count; j++) {
-            ElfW(Sym) *sym = &symtab[j];
-            uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
-            if (ELF_ST_TYPE(sym->st_info) != STT_FUNC || sym->st_size <= 0) continue;
-            for (i = offset; i < num_traces; i++) {
-                uintptr_t d = (uintptr_t)traces[i] - saddr;
-                if (lines[i].line > 0 || d <= 0 || d > (uintptr_t)sym->st_size)
-                    continue;
-                /* fill symbol name and addr from .symtab */
-                lines[i].sname = strtab + sym->st_name;
-                lines[i].saddr = saddr;
-                lines[i].path  = obj->path;
-                lines[i].base_addr = obj->base_addr;
+    if (obj->debug_info.shdr) {
+        size_t j;
+        for (j=0; j < DWARF_SECTION_COUNT; j++) {
+            struct dwarf_section *s = obj_dwarf_section_at(obj, j);
+            ElfW(Shdr) *shdr = s->shdr;
+            if (!shdr) break;
+            s->ptr = file + shdr->sh_offset;
+            s->size = shdr->sh_size;
+            if (shdr->sh_flags & SHF_COMPRESSED) {
+                s->size = uncompress_debug_section(shdr, file, &s->ptr);
+                if (!s->size) goto fail;
             }
         }
     }
 
-    if (!debug_line_shdr) {
+    if (obj->debug_info.ptr && obj->debug_abbrev.ptr) {
+        DebugInfoReader reader;
+        debug_info_reader_init(&reader, obj);
+        i = 0;
+        while (reader.p < reader.pend) {
+            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
+            di_read_cu(&reader);
+            debug_info_read(&reader, num_traces, traces, lines, offset);
+        }
+    }
+    else {
+        /* This file doesn't have dwarf, use symtab or dynsym */
+        if (!symtab_shdr) {
+            /* This file doesn't have symtab, use dynsym instead */
+            symtab_shdr = dynsym_shdr;
+            strtab_shdr = dynstr_shdr;
+        }
+
+        if (symtab_shdr && strtab_shdr) {
+            char *strtab = file + strtab_shdr->sh_offset;
+            ElfW(Sym) *symtab = (ElfW(Sym) *)(file + symtab_shdr->sh_offset);
+            int symtab_count = (int)(symtab_shdr->sh_size / sizeof(ElfW(Sym)));
+            for (j = 0; j < symtab_count; j++) {
+                ElfW(Sym) *sym = &symtab[j];
+                uintptr_t saddr = (uintptr_t)sym->st_value + obj->base_addr;
+                if (ELF_ST_TYPE(sym->st_info) != STT_FUNC) continue;
+                for (i = offset; i < num_traces; i++) {
+                    uintptr_t d = (uintptr_t)traces[i] - saddr;
+                    if (lines[i].line > 0 || d > (uintptr_t)sym->st_size)
+                        continue;
+                    /* fill symbol name and addr from .symtab */
+                    if (!lines[i].sname) lines[i].sname = strtab + sym->st_name;
+                    lines[i].saddr = saddr;
+                    lines[i].path  = obj->path;
+                    lines[i].base_addr = obj->base_addr;
+                }
+            }
+        }
+    }
+
+    if (!obj->debug_line.shdr) {
 	/* This file doesn't have .debug_line section,
 	   let's check .gnu_debuglink section instead. */
 	if (gnu_debuglink_shdr && check_debuglink) {
@@ -687,28 +1716,15 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
 	goto finish;
     }
 
-    if (compressed_p) {
-#ifdef SUPPORT_COMPRESSED_DEBUG_LINE
-        int r = parse_compressed_debug_line(num_traces, traces,
-                file + debug_line_shdr->sh_offset,
-                debug_line_shdr->sh_size,
-                obj, lines, offset);
-        if (r) goto fail;
-#endif
-    }
-    else {
-        int r = parse_debug_line(num_traces, traces,
-                file + debug_line_shdr->sh_offset,
-                debug_line_shdr->sh_size,
-                obj, lines, offset);
-        if (r) goto fail;
-    }
+    if (parse_debug_line(num_traces, traces,
+            obj->debug_line.ptr,
+            obj->debug_line.size,
+            obj, lines, offset) == -1)
+        goto fail;
+
 finish:
     return dladdr_fbase;
 fail:
-    if (file != NULL) {
-        munmap(file, (size_t)filesize);
-    }
     return (uintptr_t)-1;
 }
 
@@ -748,6 +1764,51 @@ main_exe_path(void)
 #else
 #undef HAVE_MAIN_EXE_PATH
 #endif
+
+static void
+print_line0(line_info_t *line, void *address) {
+    uintptr_t addr = (uintptr_t)address;
+    uintptr_t d = addr - line->saddr;
+    if (!address) {
+        /* inlined */
+        if (line->dirname && line->dirname[0]) {
+            kprintf("%s(%s) %s/%s:%d\n", line->path, line->sname, line->dirname, line->filename, line->line);
+        }
+        else {
+            kprintf("%s(%s) %s:%d\n", line->path, line->sname, line->filename, line->line);
+        }
+    }
+    else if (!line->path) {
+        kprintf("[0x%"PRIxPTR"]\n", addr);
+    }
+    else if (!line->saddr || !line->sname) {
+        kprintf("%s(0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, addr-line->base_addr, addr);
+    }
+    else if (line->line <= 0) {
+        kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"]\n", line->path, line->sname,
+                d, addr);
+    }
+    else if (!line->filename) {
+        kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"] ???:%d\n", line->path, line->sname,
+                d, addr, line->line);
+    }
+    else if (line->dirname && line->dirname[0]) {
+        kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"] %s/%s:%d\n", line->path, line->sname,
+                d, addr, line->dirname, line->filename, line->line);
+    }
+    else {
+        kprintf("%s(%s+0x%"PRIxPTR") [0x%"PRIxPTR"] %s:%d\n", line->path, line->sname,
+                d, addr, line->filename, line->line);
+    }
+}
+
+static void
+print_line(line_info_t *line, void *address) {
+    print_line0(line, address);
+    if (line->next) {
+        print_line(line->next, NULL);
+    }
+}
 
 void
 rb_dump_backtrace_with_lines(int num_traces, void **traces)
@@ -810,49 +1871,35 @@ next_line:
 
     /* output */
     for (i = 0; i < num_traces; i++) {
-        line_info_t *line = &lines[i];
-        uintptr_t addr = (uintptr_t)traces[i];
-        uintptr_t d = addr - line->saddr;
-        if (!line->path) {
-            kprintf("[0x%"PRIuPTR"]\n", addr);
-        }
-        else if (!line->saddr || !line->sname) {
-            kprintf("%s(0x%"PRIuPTR") [0x%"PRIuPTR"]\n", line->path, addr-line->base_addr, addr);
-        }
-        else if (line->line <= 0) {
-            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"]\n", line->path, line->sname,
-                    d, addr);
-        }
-        else if (!line->filename) {
-            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] ???:%d\n",
-                    line->path, line->sname, d, addr, line->line);
-        }
-        else if (line->dirname && line->dirname[0]) {
-            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s/%s:%d\n",
-                    line->path, line->sname,
-                    d, addr, line->dirname, line->filename, line->line);
-        }
-        else {
-            kprintf("%s(%s+0x%"PRIuPTR") [0x%"PRIuPTR"] %s:%d\n",
-                    line->path, line->sname,
-                    d, addr, line->filename, line->line);
-        }
+        print_line(&lines[i], traces[i]);
+
 	/* FreeBSD's backtrace may show _start and so on */
-        if (line->sname && strcmp("main", line->sname) == 0)
+	if (lines[i].sname && strcmp("main", lines[i].sname) == 0)
 	    break;
     }
 
     /* free */
     while (obj) {
 	obj_info_t *o = obj;
-        obj = o->next;
-        if (o->mapped_size) {
-            munmap(o->mapped, o->mapped_size);
+        for (i=0; i < DWARF_SECTION_COUNT; i++) {
+            struct dwarf_section *s = obj_dwarf_section_at(obj, i);
+            if (s->shdr && (s->shdr->sh_flags & SHF_COMPRESSED)) {
+                free(s->ptr);
+            }
         }
-        if (o->uncompressed_debug_line) {
-            free(o->uncompressed_debug_line);
-        }
+	if (obj->mapped_size) {
+	    munmap(obj->mapped, obj->mapped_size);
+	}
+	obj = o->next;
 	free(o);
+    }
+    for (i = 0; i < num_traces; i++) {
+        line_info_t *line = lines[i].next;
+        while (line) {
+            line_info_t *l = line;
+            line = line->next;
+            free(l);
+        }
     }
     free(lines);
     free(dladdr_fbases);
