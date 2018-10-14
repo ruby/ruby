@@ -113,6 +113,25 @@ class TestJIT < Test::Unit::TestCase
       @foo = 1
       @foo
     end;
+
+    # optimized getinstancevariable call
+    assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '33', success_count: 1, min_calls: 2)
+    begin;
+      class A
+        def initialize
+          @a = 1
+          @b = 2
+        end
+
+        def three
+          @a + @b
+        end
+      end
+
+      a = A.new
+      print(a.three) # set ic
+      print(a.three) # inlined ic
+    end;
   end
 
   def test_compile_insn_classvariable
