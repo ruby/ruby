@@ -1217,6 +1217,30 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
 
 #if 0
 static void
+hexdump0(const unsigned char *p, size_t n)
+{
+    size_t i;
+    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
+    for (i=0; i < n; i++){
+        switch (i & 15) {
+          case 0:
+            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
+            break;
+          case 15:
+            fprintf(stderr, "%02X\n", p[i]);
+            break;
+          default:
+            fprintf(stderr, "%02X ", p[i]);
+            break;
+        }
+    }
+    if ((i & 15) != 15) {
+        fprintf(stderr, "\n");
+    }
+}
+#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
+
+static void
 div_inspect(DebugInfoValue *v)
 {
     switch (v->type) {
@@ -1506,30 +1530,6 @@ fail:
 #endif
     return 0;
 }
-
-static void
-hexdump0(const unsigned char *p, size_t n)
-{
-    size_t i;
-    fprintf(stderr, "     0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-    for (i=0; i < n; i++){
-        switch (i & 15) {
-          case 0:
-            fprintf(stderr, "%02zd: %02X ", i/16, p[i]);
-            break;
-          case 15:
-            fprintf(stderr, "%02X\n", p[i]);
-            break;
-          default:
-            fprintf(stderr, "%02X ", p[i]);
-            break;
-        }
-    }
-    if ((i & 15) != 15) {
-        fprintf(stderr, "\n");
-    }
-}
-#define hexdump(p,n) hexdump0((const unsigned char *)p, n)
 
 /* read file and fill lines */
 static uintptr_t
