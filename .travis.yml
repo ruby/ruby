@@ -33,10 +33,11 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - gcc-8
-      env:
-        - OPENSSL_VERSION=1.1.1
       install:
-        - source ./tool/install_openssl.sh "${OPENSSL_VERSION}"
+        - |
+          if [ "${TRAVIS_EVENT_TYPE}" = "cron" ]; then
+            source ./tool/install_openssl.sh 1.1.1
+          fi
         - openssl version
     - os: linux
       language: ruby
