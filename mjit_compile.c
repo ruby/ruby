@@ -108,11 +108,6 @@ comment_id(FILE *f, ID id)
 #endif
 }
 
-/* TODO: share this with vm_insnhelper.c */
-#ifndef USE_IC_FOR_IVAR
-#define USE_IC_FOR_IVAR 1
-#endif
-
 static void compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int stack_size,
                           unsigned int pos, struct compile_status *status);
 
