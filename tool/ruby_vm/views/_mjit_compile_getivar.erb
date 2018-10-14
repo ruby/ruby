@@ -7,7 +7,7 @@
 % # details.
 %
 % # Optimized case of get_instancevariable instruction.
-#if USE_IC_FOR_IVAR
+#if OPT_IC_FOR_IVAR
 {
 % # compiler: Prepare operands which may be used by `insn.call_attribute`
 % insn.opes.each_with_index do |ope, i|
@@ -41,4 +41,4 @@
         break;
     }
 }
-#endif	/* USE_IC_FOR_IVAR */
+#endif /* OPT_IC_FOR_IVAR */

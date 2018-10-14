@@ -950,15 +950,11 @@ vm_search_const_defined_class(const VALUE cbase, ID id)
     return 0;
 }
 
-#ifndef USE_IC_FOR_IVAR
-#define USE_IC_FOR_IVAR 1
-#endif
-
 ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, IC, struct rb_call_cache *, int));
 static inline VALUE
 vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 {
-#if USE_IC_FOR_IVAR
+#if OPT_IC_FOR_IVAR
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
 	VALUE val = Qundef;
         if (LIKELY(is_attr ?
@@ -1000,7 +996,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
     else {
 	RB_DEBUG_COUNTER_INC(ivar_get_ic_miss_noobject);
     }
-#endif	/* USE_IC_FOR_IVAR */
+#endif /* OPT_IC_FOR_IVAR */
     RB_DEBUG_COUNTER_INC(ivar_get_ic_miss);
 
     if (is_attr)
@@ -1011,7 +1007,7 @@ vm_getivar(VALUE obj, ID id, IC ic, struct rb_call_cache *cc, int is_attr)
 static inline VALUE
 vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_attr)
 {
-#if USE_IC_FOR_IVAR
+#if OPT_IC_FOR_IVAR
     rb_check_frozen_internal(obj);
 
     if (LIKELY(RB_TYPE_P(obj, T_OBJECT))) {
@@ -1051,7 +1047,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, IC ic, struct rb_call_cache *cc, int is_
     else {
 	RB_DEBUG_COUNTER_INC(ivar_set_ic_miss_noobject);
     }
-#endif	/* USE_IC_FOR_IVAR */
+#endif /* OPT_IC_FOR_IVAR */
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
     return rb_ivar_set(obj, id, val);
 }

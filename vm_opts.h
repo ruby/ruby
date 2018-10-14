@@ -50,6 +50,10 @@
 #define OPT_GLOBAL_METHOD_CACHE      1
 #define OPT_BLOCKINLINING            0
 
+#ifndef OPT_IC_FOR_IVAR
+#define OPT_IC_FOR_IVAR 1
+#endif
+
 /* architecture independent, affects generated code */
 #define OPT_OPERANDS_UNIFICATION     1
 #define OPT_INSTRUCTIONS_UNIFICATION 0
