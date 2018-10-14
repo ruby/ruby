@@ -14,7 +14,7 @@
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
 %
-% # compiler: Consider receiver as T_OBJECT if ic->ic_serial is set
+% # compiler: Consider cfp->self as T_OBJECT if ic->ic_serial is set
     if (ic->ic_serial) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
