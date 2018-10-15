@@ -108,7 +108,7 @@ extern void onig_set_verb_warn_func(OnigWarnFunc f)
   onig_verb_warn = f;
 }
 
-static void CC_DUP_WARN(ScanEnv *env);
+static void CC_DUP_WARN(ScanEnv *env, OnigCodePoint from, OnigCodePoint to);
 
 
 static unsigned int ParseDepthLimit = DEFAULT_PARSE_DEPTH_LIMIT;
@@ -174,7 +174,7 @@ bbuf_clone(BBuf** rto, BBuf* from)
 
 
 #define BITSET_SET_BIT_CHKDUP(bs, pos) do { \
-  if (BITSET_AT(bs, pos)) CC_DUP_WARN(env); \
+  if (BITSET_AT(bs, pos)) CC_DUP_WARN(env, pos, pos); \
   BS_ROOM(bs, pos) |= BS_BIT(pos); \
 } while (0)
 
@@ -1720,7 +1720,7 @@ add_code_range_to_buf0(BBuf** pbuf, ScanEnv* env, OnigCodePoint from, OnigCodePo
   if (inc_n != 1) {
     if (checkdup && from <= data[low*2+1]
 	&& (data[low*2] <= from || data[low*2+1] <= to))
-      CC_DUP_WARN(env);
+      CC_DUP_WARN(env, from, to);
     if (from > data[low*2])
       from = data[low*2];
     if (to < data[(high - 1)*2 + 1])
@@ -2886,14 +2886,18 @@ CLOSE_BRACKET_WITHOUT_ESC_WARN(ScanEnv* env, UChar* c)
 #endif
 
 static void
-CC_DUP_WARN(ScanEnv *env)
+CC_DUP_WARN(ScanEnv *env, OnigCodePoint from ARG_UNUSED, OnigCodePoint to ARG_UNUSED)
 {
   if (onig_warn == onig_null_warn || !RTEST(ruby_verbose)) return ;
 
   if (IS_SYNTAX_BV(env->syntax, ONIG_SYN_WARN_CC_DUP) &&
       !(env->warnings_flag & ONIG_SYN_WARN_CC_DUP)) {
+#ifdef WARN_ALL_CC_DUP
+    onig_syntax_warn(env, "character class has duplicated range: %04x-%04x", from, to);
+#else
     env->warnings_flag |= ONIG_SYN_WARN_CC_DUP;
     onig_syntax_warn(env, "character class has duplicated range");
+#endif
   }
 }
 
