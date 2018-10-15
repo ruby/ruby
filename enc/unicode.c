@@ -786,7 +786,6 @@ SpecialsCopy:
   return (int )(to - to_start);
 }
 
-#if 0
 const char onigenc_unicode_version_string[] =
 #ifdef ONIG_UNICODE_VERSION_STRING
     ONIG_UNICODE_VERSION_STRING
@@ -802,4 +801,3 @@ const int onigenc_unicode_version_number[3] = {
     0
 #endif
 };
-#endif
