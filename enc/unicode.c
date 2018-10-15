@@ -786,6 +786,57 @@ SpecialsCopy:
   return (int )(to - to_start);
 }
 
+const OnigCodePoint
+onigenc_unicode_GCB_ranges_GAZ[] = {
+#if ONIG_UNICODE_VERSION_MAJOR < 10
+    13,
+    0x1F308, 0x1F308,
+    0x1F33E, 0x1F33E,
+    0x1F373, 0x1F373,
+    0x1F393, 0x1F393,
+    0x1F3A4, 0x1F3A4,
+    0x1F3A8, 0x1F3A8,
+    0x1F3EB, 0x1F3EB,
+    0x1F3ED, 0x1F3ED,
+    0x1F4BB, 0x1F4BC,
+    0x1F527, 0x1F527,
+    0x1F52C, 0x1F52C,
+    0x1F680, 0x1F680,
+    0x1F692, 0x1F692,
+#else
+    0,
+#endif
+};
+
+const OnigCodePoint
+onigenc_unicode_GCB_ranges_E_Base[] = {
+#if ONIG_UNICODE_VERSION_MAJOR < 10
+    8,
+    0x1F3C2, 0x1F3C2,
+    0x1F3C7, 0x1F3C7,
+    0x1F3CC, 0x1F3CC,
+#else
+    3,
+#endif
+    0x1F3F3, 0x1F3F3,
+    0x1F441, 0x1F441,
+    0x1F46F, 0x1F46F,
+#if ONIG_UNICODE_VERSION_MAJOR < 10
+    0x1F574, 0x1F574,
+    0x1F6CC, 0x1F6CC,
+#endif
+};
+
+const OnigCodePoint
+onigenc_unicode_GCB_ranges_Emoji[] = {
+    4,
+    0x2640, 0x2640,
+    0x2642, 0x2642,
+    0x2695, 0x2696,
+    0x2708, 0x2708,
+};
+
+#if 0
 const char onigenc_unicode_version_string[] =
 #ifdef ONIG_UNICODE_VERSION_STRING
     ONIG_UNICODE_VERSION_STRING
@@ -801,3 +852,4 @@ const int onigenc_unicode_version_number[3] = {
     0
 #endif
 };
+#endif
