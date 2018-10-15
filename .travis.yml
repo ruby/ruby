@@ -29,6 +29,7 @@ matrix:
       compiler: gcc-8
       addons:
         apt:
+          update: true
           sources:
             - ubuntu-toolchain-r-test
           packages:
