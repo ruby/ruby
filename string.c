@@ -8428,10 +8428,13 @@ get_reg_grapheme_cluster(rb_encoding *enc)
     }
     if (!reg_grapheme_cluster) {
 	const OnigUChar source[] = "\\X";
+        OnigErrorInfo einfo;
 	int r = onig_new(&reg_grapheme_cluster, source, source + sizeof(source) - 1,
-			 ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, NULL);
+                         ONIG_OPTION_DEFAULT, enc, OnigDefaultSyntax, &einfo);
 	if (r) {
-	    rb_bug("cannot compile grapheme cluster regexp");
+            UChar message[ONIG_MAX_ERROR_MESSAGE_LEN];
+            onig_error_code_to_str(message, r, &einfo);
+            rb_fatal("cannot compile grapheme cluster regexp: %s", (char *)message);
 	}
 	if (encidx == rb_utf8_encindex()) {
 	    reg_grapheme_cluster_utf8 = reg_grapheme_cluster;
