@@ -270,11 +270,11 @@ class CaseMapping
     when 'CaseFold_11'
       flags += '|F'
       if item
-        flags += '|U'  if to==item.upper
-        flags += '|D'  if to==item.lower
+        flags += '|U'  if to==item.upper      # ONIGENC_CASE_UPCASE
+        flags += '|D'  if to==item.lower      # ONIGENC_CASE_DOWNCASE
         unless item.upper == item.title
           if item.code == item.title
-            flags += '|IT'
+            flags += '|IT'                    # ONIGENC_CASE_IS_TITLECASE
             swap = case item.code
             when '01C5' then '0064 017D'
             when '01C8' then '006C 004A'
@@ -285,25 +285,25 @@ class CaseMapping
             end
             specials << swap
           else
-            flags += '|ST'
+            flags += '|ST'                    # ONIGENC_CASE_TITLECASE
             specials << item.title
           end
         end
         unless item.lower.nil? or item.lower==from or item.lower==to
           specials << item.lower
-          flags += '|SL'
+          flags += '|SL'                      # ONIGENC_CASE_DOWN_SPECIAL
         end
         unless item.upper.nil? or item.upper==from or item.upper==to
           specials << item.upper
-          flags += '|SU'
+          flags += '|SU'                      # ONIGENC_CASE_UP_SPECIAL
         end
       end
     when 'CaseUnfold_11'
       to = to.split(/ /)
       if item
         case to.first
-        when item.upper  then  flags += '|U'
-        when item.lower  then  flags += '|D'
+        when item.upper  then  flags += '|U'  # ONIGENC_CASE_UPCASE
+        when item.lower  then  flags += '|D'  # ONIGENC_CASE_DOWNCASE
         else
           raise "Unpredicted case 0 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
         end
@@ -311,7 +311,7 @@ class CaseMapping
           if item.code == item.title
             raise "Unpredicted case 1 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
           elsif item.title==to[1]
-            flags += '|ST'
+            flags += '|ST'                    # ONIGENC_CASE_TITLECASE
           else
             raise "Unpredicted case 2 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
           end
