@@ -1348,7 +1348,11 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
             uintptr_t from = read_uintptr(&p);
             uintptr_t to = read_uintptr(&p);
             if (!from && !to) break;
-            if (base + from <= addr && addr <= base + to) {
+            if (from == UINTPTR_MAX) {
+                /* base address selection entry */
+                base = to;
+            }
+            else if (base + from <= addr && addr <= base + to) {
                 return from;
             }
         }
