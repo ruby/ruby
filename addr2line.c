@@ -926,7 +926,7 @@ di_read_debug_line_cu(DebugInfoReader *reader)
 }
 
 
-static void
+static int
 di_read_cu(DebugInfoReader *reader)
 {
     DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
@@ -937,16 +937,19 @@ di_read_cu(DebugInfoReader *reader)
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 64;
+        if (hdr->version != 4) return -1;
     } else {
         DW_CompilationUnitHeader32 *hdr = hdr32;
         reader->p += 11;
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 32;
+        if (hdr->version != 4) return -1;
     }
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
     di_read_debug_line_cu(reader);
+    return 0;
 }
 
 static void
@@ -1690,12 +1693,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         i = 0;
         while (reader.p < reader.pend) {
             //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
-            di_read_cu(&reader);
+            if (di_read_cu(&reader)) goto use_symtab;
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
     else {
         /* This file doesn't have dwarf, use symtab or dynsym */
+      use_symtab:
         if (!symtab_shdr) {
             /* This file doesn't have symtab, use dynsym instead */
             symtab_shdr = dynsym_shdr;
