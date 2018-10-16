@@ -937,14 +937,12 @@ di_read_cu(DebugInfoReader *reader)
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 64;
-        if (hdr->version != 4) return -1;
     } else {
         DW_CompilationUnitHeader32 *hdr = hdr32;
         reader->p += 11;
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 32;
-        if (hdr->version != 4) return -1;
     }
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
@@ -1318,24 +1316,27 @@ typedef struct {
 } ranges_t;
 
 static void
-ranges_set_low_pc(ranges_t *ptr, uint64_t low_pc)
+ranges_set(ranges_t *ptr, DebugInfoValue *v)
 {
-    ptr->low_pc = low_pc;
-    ptr->low_pc_set = true;
-}
-
-static void
-ranges_set_high_pc(ranges_t *ptr, uint64_t high_pc)
-{
-    ptr->high_pc = high_pc;
-    ptr->high_pc_set = true;
-}
-
-static void
-ranges_set_ranges(ranges_t *ptr, uint64_t ranges)
-{
-    ptr->ranges = ranges;
-    ptr->ranges_set = true;
+    switch (v->at) {
+      case DW_AT_low_pc:
+        ptr->low_pc = v->as.uint64;
+        ptr->low_pc_set = true;
+        break;
+      case DW_AT_high_pc:
+        if (v->form == DW_FORM_addr) {
+            ptr->high_pc = v->as.uint64;
+        }
+        else {
+            ptr->high_pc = ptr->low_pc + v->as.uint64;
+        }
+        ptr->high_pc_set = true;
+        break;
+      case DW_AT_ranges:
+        ptr->ranges = v->as.uint64;
+        ptr->ranges_set = true;
+        break;
+    }
 }
 
 static uintptr_t
@@ -1345,7 +1346,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         if (ptr->ranges_set || !ptr->low_pc_set) {
             exit(1);
         }
-        if (ptr->low_pc <= addr && addr <= ptr->low_pc + ptr->high_pc) {
+        if (ptr->low_pc <= addr && addr <= ptr->high_pc) {
             return ptr->low_pc;
         }
     }
@@ -1463,10 +1464,9 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 line.line = (int)v.as.uint64;
                 break;
               case DW_AT_low_pc:
-                ranges_set_low_pc(&ranges, v.as.uint64);
-                break;
               case DW_AT_high_pc:
-                ranges_set_high_pc(&ranges, v.as.uint64);
+              case DW_AT_ranges:
+                ranges_set(&ranges, &v);
                 break;
               case DW_AT_declaration:
                 goto skip_die;
@@ -1476,9 +1476,6 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
               case DW_AT_abstract_origin:
                 read_abstract_origin(reader, v.as.uint64, &line);
                 break; //goto skip_die;
-              case DW_AT_ranges:
-                ranges_set_ranges(&ranges, v.as.uint64);
-                break;
             }
         }
         /* ranges_inspect(reader, &ranges); */
