@@ -138,6 +138,7 @@ typedef struct obj_info {
     size_t mapped_size;
     void *uncompressed;
     uintptr_t base_addr;
+    uintptr_t vmaddr;
     struct dwarf_section debug_abbrev;
     struct dwarf_section debug_info;
     struct dwarf_section debug_line;
@@ -249,7 +250,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
 	  obj_info_t *obj, line_info_t *lines, int offset)
 {
     int i;
-    addr += obj->base_addr;
+    addr += obj->base_addr - obj->vmaddr;
     for (i = offset; i < num_traces; i++) {
 	uintptr_t a = (uintptr_t)traces[i];
 	/* We assume one line code doesn't result >100 bytes of native code.
@@ -506,6 +507,7 @@ follow_debuglink(const char *debuglink, int num_traces, void **traces,
 
 enum
 {
+    DW_TAG_compile_unit = 0x11,
     DW_TAG_inlined_subroutine = 0x1d,
     DW_TAG_subprogram = 0x2e,
 };
@@ -734,6 +736,7 @@ typedef struct {
     obj_info_t *obj;
     char *file;
     char *current_cu;
+    uint64_t current_low_pc;
     char *debug_line_cu_end;
     char *debug_line_files;
     char *debug_line_directories;
@@ -935,31 +938,6 @@ di_read_debug_line_cu(DebugInfoReader *reader)
     }
     p++;
     reader->debug_line_files = p;
-}
-
-
-static int
-di_read_cu(DebugInfoReader *reader)
-{
-    DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
-    reader->current_cu = reader->p;
-    if (hdr32->unit_length == 0xffffffff) {
-        DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
-        reader->p += 23;
-        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
-        reader->address_size = hdr->address_size;
-        reader->format = 64;
-    } else {
-        DW_CompilationUnitHeader32 *hdr = hdr32;
-        reader->p += 11;
-        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
-        reader->address_size = hdr->address_size;
-        reader->format = 32;
-    }
-    reader->level = 0;
-    di_read_debug_abbrev_cu(reader);
-    di_read_debug_line_cu(reader);
-    return 0;
 }
 
 static void
@@ -1363,12 +1341,14 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
         }
     }
     else if (ptr->ranges_set) {
+        /* TODO: support base address selection entry */
         char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
+        uint64_t base = ptr->low_pc_set ? ptr->low_pc : reader->current_low_pc;
         for (;;) {
             uintptr_t from = read_uintptr(&p);
             uintptr_t to = read_uintptr(&p);
             if (!from && !to) break;
-            if (from <= addr && addr <= to) {
+            if (base + from <= addr && addr <= base + to) {
                 return from;
             }
         }
@@ -1412,6 +1392,56 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
     }
 }
 #endif
+
+static void
+di_read_cu(DebugInfoReader *reader)
+{
+    DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
+    reader->current_cu = reader->p;
+    if (hdr32->unit_length == 0xffffffff) {
+        DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
+        reader->p += 23;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 64;
+    } else {
+        DW_CompilationUnitHeader32 *hdr = hdr32;
+        reader->p += 11;
+        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
+        reader->address_size = hdr->address_size;
+        reader->format = 32;
+    }
+    reader->level = 0;
+    di_read_debug_abbrev_cu(reader);
+    di_read_debug_line_cu(reader);
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER_BUILD_DATE)
+    /* Though DWARF specifies "the applicable base address defaults to the base
+       address of the compilation unit", but GCC seems to use zero as default */
+#else
+    do {
+        DIE die;
+
+        if (!di_read_die(reader, &die)) continue;
+
+        if (die.tag != DW_TAG_compile_unit) {
+            di_skip_records(reader);
+            break;
+        }
+
+        /* enumerate abbrev */
+        for (;;) {
+            DebugInfoValue v = {{}};
+            if (!di_read_record(reader, &v)) break;
+            switch (v.at) {
+              case DW_AT_low_pc:
+                reader->current_low_pc = v.as.uint64;
+                break;
+            }
+        }
+    } while (0);
+#endif
+}
 
 static void
 read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_info_t *line)
@@ -1494,10 +1524,10 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
         for (int i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
-            uintptr_t offset = addr - reader->obj->base_addr;
+            uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
             uintptr_t saddr = ranges_include(reader, &ranges, offset);
             if (saddr) {
-                //fprintf(stderr, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname);
+                /* fprintf(stderr, "%d:%tx: %d %lx->%lx %x %s: %s/%s %d %s %s %s\n",__LINE__,die.pos, i,addr,offset, die.tag,line.sname,line.dirname,line.filename,line.line,reader->obj->path,line.sname,lines[i].sname); */
                 if (lines[i].sname) {
                     line_info_t *lp = malloc(sizeof(line_info_t));
                     memcpy(lp, &lines[i], sizeof(line_info_t));
@@ -1702,13 +1732,12 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         i = 0;
         while (reader.p < reader.pend) {
             //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
-            if (di_read_cu(&reader)) goto use_symtab;
+            di_read_cu(&reader);
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
     else {
         /* This file doesn't have dwarf, use symtab or dynsym */
-      use_symtab:
         if (!symtab_shdr) {
             /* This file doesn't have symtab, use dynsym instead */
             symtab_shdr = dynsym_shdr;
