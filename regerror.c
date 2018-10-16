@@ -242,8 +242,8 @@ static int to_ascii(OnigEncoding enc, UChar *s, UChar *end,
 }
 
 
-/* for ONIG_MAX_ERROR_MESSAGE_LEN */
-#define MAX_ERROR_PAR_LEN   30
+/* < ONIG_MAX_ERROR_MESSAGE_LEN - max length of messages with %n */
+#define MAX_ERROR_PAR_LEN   50
 
 extern int
 onig_error_code_to_str(UChar* s, OnigPosition code, ...)
