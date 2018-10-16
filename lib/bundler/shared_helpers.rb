@@ -267,12 +267,10 @@ module Bundler
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLE_SPEC_RUN"]
-          if File.file?(File.join(current, "bundler.gemspec"))
-            gemspec = "bundler.gemspec"
-          else
-            # for Ruby Core
-            gemspec = "lib/bundler.gemspec"
-          end
+          gemspec = File.join(current, "bundler.gemspec")
+          # for Ruby Core
+          gemspec = File.join(current, "lib/bundler.gemspec") unless File.file?(gemspec)
+
           # avoid stepping above the tmp directory when testing
           return nil if File.file?(File.join(current, gemspec))
         end
@@ -303,11 +301,11 @@ module Bundler
         unless File.exist?(exe_file)
           exe_file = File.expand_path("../../../exe/bundle", __FILE__)
         end
+        Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       rescue Gem::GemNotFoundException
         exe_file = File.expand_path("../../../exe/bundle", __FILE__)
         # for Ruby core repository
         exe_file = File.expand_path("../../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
-      ensure
         Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
       end
 

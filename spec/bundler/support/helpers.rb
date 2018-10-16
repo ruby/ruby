@@ -219,11 +219,7 @@ module Spec
     bang :gem_command
 
     def rake
-      if ENV['BUNDLE_RUBY'] && ENV['BUNDLE_GEM']
-        "'#{ENV['BUNDLE_RUBY']}' -S '#{ENV['GEM_PATH']}/bin/rake'"
-      else
-        'rake'
-      end
+      "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
     end
 
     def sys_exec(cmd)
