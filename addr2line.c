@@ -827,6 +827,18 @@ read_uint64(char **ptr)
     return get_uint64(p);
 }
 
+static uintptr_t
+read_uintptr(char **ptr)
+{
+    const unsigned char *p = (const unsigned char *)*ptr;
+    *ptr = (char *)(p + SIZEOF_VOIDP);
+#if SIZEOF_VOIDP == 8
+    return get_uint64(p);
+#else
+    return get_uint32(p);
+#endif
+}
+
 static uint64_t
 read_uint(DebugInfoReader *reader)
 {
@@ -1353,8 +1365,8 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
     else if (ptr->ranges_set) {
         char *p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
-            uint64_t from = read_uint64(&p);
-            uint64_t to = read_uint64(&p);
+            uintptr_t from = read_uintptr(&p);
+            uintptr_t to = read_uintptr(&p);
             if (!from && !to) break;
             if (from <= addr && addr <= to) {
                 return from;
@@ -1385,8 +1397,8 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
         fprintf(stderr,"low_pc:%lx ranges:%lx ",ptr->low_pc,ptr->ranges);
         p = reader->obj->debug_ranges.ptr + ptr->ranges;
         for (;;) {
-            uint64_t from = read_uint64(&p);
-            uint64_t to = read_uint64(&p);
+            uintptr_t from = read_uintptr(&p);
+            uintptr_t to = read_uintptr(&p);
             if (!from && !to) break;
             fprintf(stderr,"%lx-%lx ",ptr->low_pc+from,ptr->low_pc+to);
         }
