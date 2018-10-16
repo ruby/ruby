@@ -126,10 +126,13 @@ describe "Array#reject!" do
       a = [1, 2, 3, 4]
       begin
         a.reject! do |x|
-          return true if x == 2
-          raise raise StandardError, 'Oops' if x == 3
+          case x
+          when 2 then true
+          when 3 then raise StandardError, 'Oops'
+          else false
+          end
         end
-      rescue
+      rescue StandardError
       end
 
       a.should == [1, 3, 4]

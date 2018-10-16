@@ -13,15 +13,11 @@ module ArraySpecs
   SampleCount = 1000
 
   def self.frozen_array
-    frozen_array = [1,2,3]
-    frozen_array.freeze
-    frozen_array
+    [1,2,3].freeze
   end
 
   def self.empty_frozen_array
-    frozen_array = []
-    frozen_array.freeze
-    frozen_array
+    [].freeze
   end
 
   def self.recursive_array
