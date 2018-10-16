@@ -309,7 +309,7 @@ class CaseMapping
         end
         unless item.upper == item.title
           if item.code == item.title
-            raise "Unpredicted case 1 in enc/unicode/case_folding.rb. Please contact https://bugs.ruby-lang.org/."
+            flags += '|IT'   # was unpredicted case 1
           elsif item.title==to[1]
             flags += '|ST'                    # ONIGENC_CASE_TITLECASE
           else
