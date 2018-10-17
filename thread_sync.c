@@ -299,7 +299,11 @@ rb_mutex_lock(VALUE self)
 	    if (mutex->th == th) mutex_locked(th, self);
 
 	    if (interrupted) {
-		RUBY_VM_CHECK_INTS_BLOCKING(th);
+		RUBY_VM_CHECK_INTS_BLOCKING(th); /* may release mutex */
+		if (!mutex->th) {
+		    mutex->th = th;
+		    mutex_locked(th, self);
+		}
 	    }
 	}
     }
