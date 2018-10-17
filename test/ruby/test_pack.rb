@@ -860,4 +860,20 @@ EXPECTED
     assert_equal "hogefuga", "aG9nZWZ1Z2E=".unpack1("m")
     assert_equal "01000001", "A".unpack1("B*")
   end
+
+  def test_pack_infection
+    tainted_array_string = ["123456"]
+    tainted_array_string.first.taint
+    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm', 'P', 'p'].each do |f|
+      assert_predicate(tainted_array_string.pack(f), :tainted?)
+    end
+  end
+
+  def test_unpack_infection
+    tainted_string = "123456"
+    tainted_string.taint
+    ['a', 'A', 'Z', 'B', 'b', 'H', 'h', 'u', 'M', 'm'].each do |f|
+      assert_predicate(tainted_string.unpack(f).first, :tainted?)
+    end
+  end
 end
