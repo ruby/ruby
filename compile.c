@@ -5361,7 +5361,7 @@ static int
 compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
-    unsigned long level = 0;
+    unsigned long throw_flag = 0;
 
     if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
 	/* while/until */
@@ -5382,7 +5382,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
       break_by_insn:
 	/* escape from block */
 	CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
-	ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_BREAK));
+	ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_BREAK));
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
@@ -5401,13 +5401,11 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 		break;
 	    }
 
-	    level++;
 	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		level = VM_THROW_NO_ESCAPE_FLAG;
+		throw_flag = VM_THROW_NO_ESCAPE_FLAG;
 		goto break_by_insn;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
-		level <<= VM_THROW_LEVEL_SHIFT;
 		goto break_by_insn;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_EVAL) {
@@ -5426,7 +5424,7 @@ static int
 compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     const int line = nd_line(node);
-    unsigned long level = 0;
+    unsigned long throw_flag = 0;
 
     if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
 	LABEL *splabel = NEW_LABEL(0);
@@ -5470,7 +5468,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 		break;
 	    }
 
-	    level = VM_THROW_NO_ESCAPE_FLAG;
+	    throw_flag = VM_THROW_NO_ESCAPE_FLAG;
 	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
 		/* while loop */
 		break;
@@ -5486,7 +5484,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	}
 	if (ip != 0) {
 	    CHECK(COMPILE(ret, "next val", node->nd_stts));
-	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_NEXT));
+	    ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_NEXT));
 
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
@@ -5538,7 +5536,6 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     }
     else {
 	const rb_iseq_t *ip = iseq;
-	const unsigned long level = VM_THROW_NO_ESCAPE_FLAG;
 
 	while (ip) {
 	    if (!ISEQ_COMPILE_DATA(ip)) {
@@ -5560,7 +5557,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	}
 	if (ip != 0) {
 	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, throw, INT2FIX(level | TAG_REDO));
+	    ADD_INSN1(ret, line, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
 
 	    if (popped) {
 		ADD_INSN(ret, line, pop);

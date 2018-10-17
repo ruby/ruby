@@ -1086,7 +1086,7 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
 
 static VALUE
 vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, enum ruby_tag_type state,
-	       const int flag, const rb_num_t level, const VALUE throwobj)
+	       const int flag, const VALUE throwobj)
 {
     const rb_control_frame_t *escape_cfp = NULL;
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
@@ -1154,12 +1154,7 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
 	}
     }
     else if (state == TAG_RETRY) {
-	rb_num_t i;
 	const VALUE *ep = VM_ENV_PREV_EP(GET_EP());
-
-	for (i = 0; i < level; i++) {
-	    ep = VM_ENV_PREV_EP(ep);
-	}
 
 	escape_cfp = rb_vm_search_cf_from_ep(ec, reg_cfp, ep);
     }
@@ -1244,10 +1239,9 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     const int state = (int)(throw_state & VM_THROW_STATE_MASK);
     const int flag = (int)(throw_state & VM_THROW_NO_ESCAPE_FLAG);
-    const rb_num_t level = throw_state >> VM_THROW_LEVEL_SHIFT;
 
     if (state != 0) {
-	return vm_throw_start(ec, reg_cfp, state, flag, level, throwobj);
+	return vm_throw_start(ec, reg_cfp, state, flag, throwobj);
     }
     else {
 	return vm_throw_continue(ec, throwobj);
