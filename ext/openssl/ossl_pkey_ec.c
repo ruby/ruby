@@ -1649,6 +1649,7 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 
 void Init_ossl_ec(void)
 {
+#undef rb_intern
 #if 0
     mPKey = rb_define_module_under(mOSSL, "PKey");
     cPKey = rb_define_class_under(mPKey, "PKey", rb_cObject);

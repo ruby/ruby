@@ -149,7 +149,7 @@ void ossl_X509_REQ_get0_signature(const X509_REQ *, const ASN1_BIT_STRING **, co
 static inline _type *EVP_PKEY_get0_##_type(EVP_PKEY *pkey) { \
 	return pkey->pkey._name; }
 #define IMPL_KEY_ACCESSOR2(_type, _group, a1, a2, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; } \
 static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
@@ -158,7 +158,7 @@ static inline int _type##_set0_##_group(_type *obj, BIGNUM *a1, BIGNUM *a2) { \
 	BN_clear_free(obj->a2); obj->a2 = a2; \
 	return 1; }
 #define IMPL_KEY_ACCESSOR3(_type, _group, a1, a2, a3, _fail_cond) \
-static inline void _type##_get0_##_group(_type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
+static inline void _type##_get0_##_group(const _type *obj, const BIGNUM **a1, const BIGNUM **a2, const BIGNUM **a3) { \
 	if (a1) *a1 = obj->a1; \
 	if (a2) *a2 = obj->a2; \
 	if (a3) *a3 = obj->a3; } \

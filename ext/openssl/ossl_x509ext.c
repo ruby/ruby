@@ -437,6 +437,7 @@ ossl_x509ext_to_der(VALUE obj)
 void
 Init_ossl_x509ext(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);
