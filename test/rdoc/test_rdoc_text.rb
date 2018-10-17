@@ -259,8 +259,7 @@ paragraph will be cut off some point after the one-hundredth character.
     TEXT
 
     expected = <<-EXPECTED
-<p>This is one-hundred characters or more of text in a single paragraph.  This
-paragraph will be cut off …
+<p>This is one-hundred characters or more of text in a single paragraph.  This paragraph will be cut off …
     EXPECTED
 
     assert_equal expected, snippet(text)

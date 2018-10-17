@@ -355,7 +355,7 @@ option)
         relative_path.relative_path_from @options.page_dir
     end
 
-    top_level = @store.add_file filename, relative_path.to_s
+    top_level = @store.add_file filename, relative_name: relative_path.to_s
 
     parser = RDoc::Parser.for top_level, filename, content, @options, @stats
 

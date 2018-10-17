@@ -40,7 +40,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     @show_hash     = @options.show_hash
 
     crossref_re = @hyperlink_all ? ALL_CROSSREF_REGEXP : CROSSREF_REGEXP
-    @markup.add_special crossref_re, :CROSSREF
+    @markup.add_regexp_handling crossref_re, :CROSSREF
 
     @cross_reference = RDoc::CrossReference.new @context
   end
@@ -68,8 +68,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # example, ToHtml is found, even without the <tt>RDoc::Markup::</tt> prefix,
   # because we look for it in module Markup first.
 
-  def handle_special_CROSSREF(special)
-    name = special.text
+  def handle_regexp_CROSSREF(target)
+    name = target.text
 
     return name if name =~ /@[\w-]+\.[\w-]/ # labels that look like emails
 
@@ -87,22 +87,22 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Handles <tt>rdoc-ref:</tt> scheme links and allows RDoc::Markup::ToHtml to
   # handle other schemes.
 
-  def handle_special_HYPERLINK special
-    return cross_reference $' if special.text =~ /\Ardoc-ref:/
+  def handle_regexp_HYPERLINK target
+    return cross_reference $' if target.text =~ /\Ardoc-ref:/
 
     super
   end
 
   ##
-  # +special+ is an rdoc-schemed link that will be converted into a hyperlink.
+  # +target+ is an rdoc-schemed link that will be converted into a hyperlink.
   # For the rdoc-ref scheme the cross-reference will be looked up and the
   # given name will be used.
   #
   # All other contents are handled by
-  # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_special_RDOCLINK]
+  # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK]
 
-  def handle_special_RDOCLINK special
-    url = special.text
+  def handle_regexp_RDOCLINK target
+    url = target.text
 
     case url
     when /\Ardoc-ref:/ then
@@ -126,8 +126,6 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates an HTML link to +name+ with the given +text+.
 
   def link name, text
-    original_name = name
-
     if name =~ /(.*[^#:])@/ then
       name = $1
       label = $'

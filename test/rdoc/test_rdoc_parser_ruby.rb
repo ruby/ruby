@@ -495,6 +495,43 @@ ruby
     assert_equal 'my attr', bar.comment.text
   end
 
+  def test_parse_attr_accessor_with_newline
+    klass = RDoc::NormalClass.new 'Foo'
+    klass.parent = @top_level
+
+    comment = RDoc::Comment.new "##\n# my attr\n", @top_level
+
+    util_parser "attr_accessor :foo, :bar,\n  :baz,\n  :qux"
+
+    tk = @parser.get_tk
+
+    @parser.parse_attr_accessor klass, RDoc::Parser::Ruby::NORMAL, tk, comment
+
+    assert_equal 4, klass.attributes.length
+
+    foo = klass.attributes[0]
+    assert_equal 'foo', foo.name
+    assert_equal 'RW', foo.rw
+    assert_equal 'my attr', foo.comment.text
+    assert_equal @top_level, foo.file
+    assert_equal 1, foo.line
+
+    bar = klass.attributes[1]
+    assert_equal 'bar', bar.name
+    assert_equal 'RW', bar.rw
+    assert_equal 'my attr', bar.comment.text
+
+    bar = klass.attributes[2]
+    assert_equal 'baz', bar.name
+    assert_equal 'RW', bar.rw
+    assert_equal 'my attr', bar.comment.text
+
+    bar = klass.attributes[3]
+    assert_equal 'qux', bar.name
+    assert_equal 'RW', bar.rw
+    assert_equal 'my attr', bar.comment.text
+  end
+
   def test_parse_attr_accessor_nodoc
     klass = RDoc::NormalClass.new 'Foo'
     klass.parent = @top_level
@@ -2833,6 +2870,35 @@ RUBY
     expected = <<EXPECTED
   <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blah</span>()
     <span class="ruby-identifier">&lt;&lt;-EOM</span> <span class="ruby-keyword">if</span> <span class="ruby-keyword">true</span>
+<span class="ruby-value"></span><span class="ruby-identifier">    EOM</span>
+  <span class="ruby-keyword">end</span>
+EXPECTED
+    expected = expected.rstrip
+
+    @parser.scan
+
+    foo = @top_level.classes.first
+    assert_equal 'Foo', foo.full_name
+
+    blah = foo.method_list.first
+    markup_code = blah.markup_code.sub(/^.*\n/, '')
+    assert_equal expected, markup_code
+  end
+
+  def test_parse_mutable_heredocbeg
+    @filename = 'file.rb'
+    util_parser <<RUBY
+class Foo
+  def blah()
+    @str = -<<-EOM
+    EOM
+  end
+end
+RUBY
+
+    expected = <<EXPECTED
+  <span class="ruby-keyword">def</span> <span class="ruby-identifier ruby-title">blah</span>()
+    <span class="ruby-ivar">@str</span> = <span class="ruby-identifier">-&lt;&lt;-EOM</span>
 <span class="ruby-value"></span><span class="ruby-identifier">    EOM</span>
   <span class="ruby-keyword">end</span>
 EXPECTED

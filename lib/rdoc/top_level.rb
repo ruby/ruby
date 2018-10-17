@@ -33,7 +33,7 @@ class RDoc::TopLevel < RDoc::Context
   ##
   # The parser class that processed this file
 
-  attr_accessor :parser
+  attr_reader :parser
 
   ##
   # Creates a new TopLevel for the file at +absolute_name+.  If documentation
@@ -50,6 +50,12 @@ class RDoc::TopLevel < RDoc::Context
     @parser        = nil
 
     @classes_or_modules = []
+  end
+
+  def parser=(val)
+    @parser = val
+    @store.update_parser_of_file(absolute_name, val) if @store
+    @parser
   end
 
   ##
@@ -272,7 +278,7 @@ class RDoc::TopLevel < RDoc::Context
   # Is this TopLevel from a text file instead of a source code file?
 
   def text?
-    @parser and @parser.ancestors.include? RDoc::Parser::Text
+    @parser and @parser.include? RDoc::Parser::Text
   end
 
   def to_s # :nodoc:

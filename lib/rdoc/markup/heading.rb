@@ -23,12 +23,12 @@ RDoc::Markup::Heading =
     return @to_html if @to_html
 
     markup = RDoc::Markup.new
-    markup.add_special RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
+    markup.add_regexp_handling RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
 
     @to_html = RDoc::Markup::ToHtml.new nil
 
-    def @to_html.handle_special_CROSSREF special
-      special.text.sub(/^\\/, '')
+    def @to_html.handle_regexp_CROSSREF target
+      target.text.sub(/^\\/, '')
     end
 
     @to_html

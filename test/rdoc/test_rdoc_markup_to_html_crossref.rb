@@ -116,66 +116,66 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
                  @to.gen_url('http://example', 'HTTP example')
   end
 
-  def test_handle_special_CROSSREF
-    assert_equal "<a href=\"C2/C3.html\">C2::C3</a>", SPECIAL('C2::C3')
+  def test_handle_regexp_CROSSREF
+    assert_equal "<a href=\"C2/C3.html\">C2::C3</a>", REGEXP_HANDLING('C2::C3')
   end
 
-  def test_handle_special_CROSSREF_label
+  def test_handle_regexp_CROSSREF_label
     assert_equal "<a href=\"C1.html#method-i-m-label-foo\">foo at C1#m</a>",
-                  SPECIAL('C1#m@foo')
+                 REGEXP_HANDLING('C1#m@foo')
   end
 
-  def test_handle_special_CROSSREF_show_hash_false
+  def test_handle_regexp_CROSSREF_show_hash_false
     @to.show_hash = false
 
     assert_equal "<a href=\"C1.html#method-i-m\">m</a>",
-                 SPECIAL('#m')
+                 REGEXP_HANDLING('#m')
   end
 
-  def test_handle_special_HYPERLINK_rdoc
+  def test_handle_regexp_HYPERLINK_rdoc
     readme = @store.add_file 'README.txt'
     readme.parser = RDoc::Parser::Simple
 
     @to = RDoc::Markup::ToHtmlCrossref.new @options, 'C2.html', @c2
 
-    link = @to.handle_special_HYPERLINK hyper 'C2::C3'
+    link = @to.handle_regexp_HYPERLINK hyper 'C2::C3'
 
     assert_equal '<a href="C2/C3.html">C2::C3</a>', link
 
-    link = @to.handle_special_HYPERLINK hyper 'C4'
+    link = @to.handle_regexp_HYPERLINK hyper 'C4'
 
     assert_equal '<a href="C4.html">C4</a>', link
 
-    link = @to.handle_special_HYPERLINK hyper 'README.txt'
+    link = @to.handle_regexp_HYPERLINK hyper 'README.txt'
 
     assert_equal '<a href="README_txt.html">README.txt</a>', link
   end
 
-  def test_handle_special_TIDYLINK_rdoc
+  def test_handle_regexp_TIDYLINK_rdoc
     readme = @store.add_file 'README.txt'
     readme.parser = RDoc::Parser::Simple
 
     @to = RDoc::Markup::ToHtmlCrossref.new @options, 'C2.html', @c2
 
-    link = @to.handle_special_TIDYLINK tidy 'C2::C3'
+    link = @to.handle_regexp_TIDYLINK tidy 'C2::C3'
 
     assert_equal '<a href="C2/C3.html">tidy</a>', link
 
-    link = @to.handle_special_TIDYLINK tidy 'C4'
+    link = @to.handle_regexp_TIDYLINK tidy 'C4'
 
     assert_equal '<a href="C4.html">tidy</a>', link
 
-    link = @to.handle_special_TIDYLINK tidy 'C1#m'
+    link = @to.handle_regexp_TIDYLINK tidy 'C1#m'
 
     assert_equal '<a href="C1.html#method-i-m">tidy</a>', link
 
-    link = @to.handle_special_TIDYLINK tidy 'README.txt'
+    link = @to.handle_regexp_TIDYLINK tidy 'README.txt'
 
     assert_equal '<a href="README_txt.html">tidy</a>', link
   end
 
-  def test_handle_special_TIDYLINK_label
-    link = @to.handle_special_TIDYLINK tidy 'C1#m@foo'
+  def test_handle_regexp_TIDYLINK_label
+    link = @to.handle_regexp_TIDYLINK tidy 'C1#m@foo'
 
     assert_equal "<a href=\"C1.html#method-i-m-label-foo\">tidy</a>",
                  link, 'C1#m@foo'
@@ -217,20 +217,20 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
     "\n<p>#{text}</p>\n"
   end
 
-  def SPECIAL text
-    @to.handle_special_CROSSREF special text
+  def REGEXP_HANDLING text
+    @to.handle_regexp_CROSSREF regexp_handling text
   end
 
   def hyper reference
-    RDoc::Markup::Special.new 0, "rdoc-ref:#{reference}"
+    RDoc::Markup::RegexpHandling.new 0, "rdoc-ref:#{reference}"
   end
 
-  def special text
-    RDoc::Markup::Special.new 0, text
+  def regexp_handling text
+    RDoc::Markup::RegexpHandling.new 0, text
   end
 
   def tidy reference
-    RDoc::Markup::Special.new 0, "{tidy}[rdoc-ref:#{reference}]"
+    RDoc::Markup::RegexpHandling.new 0, "{tidy}[rdoc-ref:#{reference}]"
   end
 
 end
