@@ -46,7 +46,7 @@ addons:
       - gdbm
       - gmp
       - libffi
-      - openssl@1.0
+      - openssl@1.1
       - zlib
 
 matrix:
@@ -61,7 +61,7 @@ matrix:
       compiler: clang
       # We are not going to make rdoc here; that is to be done above.
       env:
-        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.0:/usr/local/opt/zlib'"
+        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
     - os: linux
       language: ruby
       rvm: 2.3
@@ -74,15 +74,18 @@ matrix:
 before_install: |
   : ${CONFIG_FLAG=}
   case "$TRAVIS_OS_NAME" in
-  linux) JOBS=-j`nproc` ;;
+  linux) JOBS=-j`nproc`
+         TEST_ALL_JOBS="$JOBS" ;;
   osx)   JOBS=-j`sysctl -n hw.activecpu`
+         : parallel test-all hangs on travis osx build for now.
+         TEST_ALL_JOBS=""
          : Bare "brew update" nukes everything.
          : These steps are very carefully chosen to avoid breaking things.
          brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
          git -C $brew_core_dir fetch -q origin
          git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
-         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.0
-         /usr/local/opt/openssl@1.0/bin/openssl version
+         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
+         /usr/local/opt/openssl@1.1/bin/openssl version
          ;;
   esac
 
@@ -116,7 +119,7 @@ before_script:
 
 script:
   - "make -s test TESTOPTS=--color=never"
-  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
+  - "make -s $TEST_ALL_JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
   - "make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
