@@ -39,13 +39,12 @@ with all sufficient information, see the ChangeLog file or Redmine
   * New methods:
 
     * Exception#full_message to retrieve a String expression of an exception,
-      formatted in the same way in which Ruby prints out an uncaught exception.
-      [Feature #14141] [experimental]
+      formatted in the same way in which Ruby prints out an uncaught
+      exception.  [Feature #14141] [experimental]
 
 * Dir
 
-  * Dir.glob provides new optional keyword argument, :base.
-    [Feature #13056]
+  * Dir.glob provides new optional keyword argument, +:base+ .  [Feature #13056]
   * Dir.chdir (without block arg), Dir.open, Dir.new, Dir.mkdir, Dir.rmdir,
     Dir.empty? releases GVL
 
@@ -56,20 +55,21 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Enumerable
 
-  * Enumerable#{any?,all?,none?,one?} accept a pattern argument [Feature #11286]
+  * Enumerable#any?, Enumerable#all?, Enumerable#none? and Enumerable#one?
+    accept a pattern argument. [Feature #11286]
 
 * File
 
-  * File.open accepts :newline option to imply text mode.  [Bug #13350]
+  * File.open accepts +:newline+ option to imply text mode. [Bug #13350]
   * File#path raises an IOError for files opened with
     File::Constants::TMPFILE option. [Feature #13568]
-  * File.stat, File.exist?, and other rb_stat()-using methods release GVL
-    [Bug #13941]
-  * File.rename releases GVL [Feature #13951]
-  * File::Stat#{atime,mtime,ctime} support fractional second timestamps on
-    Windows 8 and later  [Feature #13726]
+  * File.stat, File.exist? and other <code>rb_stat()</code>-using methods
+    release GVL. [Bug #13941]
+  * File.rename releases GVL. [Feature #13951]
+  * File::Stat#atime, File::Stat#mtime and File::Stat#ctime support fractional
+    second timestamps on Windows 8 and later.  [Feature #13726]
   * File::Stat#ino and File.indentical? support ReFS 128bit ino on Windows 8.1
-    and later  [Feature #13731]
+    and later.  [Feature #13731]
   * File.readable?, File.readable_real?, File.writable?, File.writable_real?,
     File.executable?, File.executable_real?, File.mkfifo, File.readlink,
     File.truncate, File#truncate, File.chmod, File.lchmod, File.chown,
@@ -101,13 +101,12 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * IO#close might raise an error with message "stream closed",
     but it is refined to "stream closed in another thread". The new message
-    is more clear for user.
-    [Bug #13405]
+    is more clear for user. [Bug #13405]
 
 * Integer
 
-  * Integer#{round,floor,ceil,truncate} always return an Integer.
-    [Bug #13420]
+  * Integer#round, Integer#floor, Integer#ceil and Integer#truncate always
+    return an Integer. [Bug #13420]
   * Integer#pow accepts modulo argument for calculating modular
     exponentiation.  [Feature #12508] [Feature #11003]
 
@@ -130,14 +129,15 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * Module
 
-  * Module#{attr,attr_accessor,attr_reader,attr_writer} become public [Feature #14132]
-  * Module#{define_method,alias_method,undef_method,remove_method} become public [Feature #14133]
+  * Module#attr, Module#attr_accessor, Module#attr_reader and Module#attr_writer
+    become public. [Feature #14132]
+  * Module#define_method, Module#alias_method, Module#undef_method and
+    Module#remove_method become public. [Feature #14133]
 
 * Numeric
 
   * Numeric#step no longer hides errors from coerce method when
-    given a step value which cannot be compared with #> to 0.
-    [Feature #7688]
+    given a step value which cannot be compared with #> to 0. [Feature #7688]
   * Numerical comparison operators (<,<=,>=,>) no longer hide exceptions
     from #coerce method internally. Return nil in #coerce if the coercion is
     impossible.  [Feature #7688]
@@ -153,8 +153,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * Range
   * Range#initialize no longer hides exceptions when comparing begin and
     end with #<=> and raise a "bad value for range" ArgumentError
-    but instead lets the exception from the #<=> call go through.
-    [Feature #7688]
+    but instead lets the exception from the #<=> call go through. [Feature #7688]
 
 * Regexp
 
@@ -173,11 +172,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 * String
 
-  * String#-@ deduplicates unfrozen strings.  Already-frozen
+  * <code>String#-@</code> deduplicates unfrozen strings.  Already-frozen
     strings remain unchanged for compatibility.  [Feature #13077]
-  * -"literal" (String#-@) optimized to return the same object
-    (same as "literal".freeze in Ruby 2.1+) [Feature #13295]
-  * String#{casecmp,casecmp?} return nil for non-string arguments
+  * <code>-"literal"</code> (<code>String#-@</code>) optimized to return the same object
+    (same as <code>"literal".freeze</code> in Ruby 2.1+) [Feature #13295]
+  * String#casecmp and String#casecmp? return nil for non-string arguments
     instead of raising a TypeError. [Bug #13312]
   * String#start_with? accepts a regexp [Feature #13712]
 
@@ -204,13 +203,11 @@ with all sufficient information, see the ChangeLog file or Redmine
     * Thread#fetch  [Feature #13009]
 
   * The default of Thread.report_on_exception is now true,
-    showing unhandled exceptions terminating threads on $stderr.
-    [Feature #14143]
+    showing unhandled exceptions terminating threads on $stderr. [Feature #14143]
 
 * Time
 
-  * Time.at receives 3rd argument which specifies the unit of 2nd argument.
-    [Feature #13919]
+  * Time.at receives 3rd argument which specifies the unit of 2nd argument. [Feature #13919]
 
 * KeyError
 
@@ -329,7 +326,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 * IPAddr
 
   * IPAddr no longer accepts invalid address mask. [Bug #13399]
-  * IPAddr#{ipv4_compat,ipv4_compat?} are marked for deprecation. [Bug #13769]
+  * IPAddr#ipv4_compat and IPAddr#ipv4_compat? are marked for deprecation. [Bug #13769]
 
   * New methods:
 
@@ -342,24 +339,23 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Print backtrace and error message in reverse order [Feature #8661] [experimental]
   * `binding.irb` automatically requires irb and runs [Bug #13099] [experimental]
-  * `binding.irb` on its start shows source around the line where it was called
-    [Feature #14124]
+  * `binding.irb` on its start shows source around the line where it was called [Feature #14124]
 
 * Matrix
 
   * New methods:
 
     * Matrix.combine and Matrix#combine [Feature #10903]
-    * Matrix#{hadamard_product,entrywise_product}
+    * Matrix#hadamard_product and Matrix#entrywise_product
 
 * Net::HTTP
 
   * Net::HTTP.new supports no_proxy parameter [Feature #11195]
-  * Net::HTTP#{min_version,max_version} [Feature #9450]
+  * Net::HTTP#min_version and Net::HTTP#max_version [Feature #9450]
   * Add more HTTP status classes
   * Net::HTTP::STATUS_CODES is added as HTTP Status Code Repository [Misc #12935]
-  * Net::HTTP#{proxy_user,proxy_pass} reflect http_proxy environment variable
-    if the system's environment variable is multiuser safe. [Bug #12921]
+  * Net::HTTP#proxy_user and Net::HTTP#proxy_pass reflect http_proxy environment
+    variable if the system's environment variable is multiuser safe. [Bug #12921]
 
 * open-uri
   * URI.open method defined as an alias to open-uri's Kernel.open.
@@ -514,8 +510,7 @@ with all sufficient information, see the ChangeLog file or Redmine
 
   * Logger.new("| command") had been working to open a command
     unintentionally. It was prohibited, and now Logger#initialize
-    treats a String argument only as a filename, as its specification.
-    [Bug #14212]
+    treats a String argument only as a filename, as its specification. [Bug #14212]
 
 * Net::HTTP
 
@@ -557,11 +552,11 @@ with all sufficient information, see the ChangeLog file or Redmine
 
 === Miscellaneous changes
 
-* Print backtrace and error message in reverse order if $stderr is unchanged and a tty.
-  [Feature #8661] [experimental]
+* Print backtrace and error message in reverse order if $stderr is unchanged
+  and a tty. [Feature #8661] [experimental]
 
-* Print error message in bold/underlined text if $stderr is unchanged and a tty.
-  [Feature #14140] [experimental]
+* Print error message in bold/underlined text if $stderr is unchanged and a
+  tty. [Feature #14140] [experimental]
 
 * configure option --with-ext now mandates its arguments.  So for
   instance if you run ./configure --with-ext=openssl,+ then the
