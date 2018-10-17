@@ -1,7 +1,7 @@
 X=[];class String def-@;replace ?-+self end;def-a;X.reject!{|x|x.
 __id__==__id__};a.replace(self+?-+a) end end;at_exit{eval C=(Zlib
-.inflate Integer((X*?-).tr(?-,'').tr('q-z','0-9'),26).digits(256)
-.pack'C*')};def method_missing n;(X<<n.to_s)[-1]end;require'zlib'
+.inflate((X*?-).tr(?-,'').tr('q-z','0-9').to_i(26).digits(0x100).
+pack'C*'))};def method_missing n;(X<<n.to_s)[-1]end;require'zlib'
 fzygtoxyzgntmdmuwvfoffbpmvzojpkhczvjvjdbtscnldwbdoprackddovivvmkz
 ponzmosvtjciwkgaslscxxxwudeesmmqpfhislxuxnnypulxstzgobyaekqqhbjcg
 mvko------------ddkeys----eivhnccaqyiw---bzyccmt-----------ymtnge
