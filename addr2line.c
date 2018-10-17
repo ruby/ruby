@@ -741,6 +741,7 @@ typedef struct {
     char *debug_line_files;
     char *debug_line_directories;
     char *p;
+    char *cu_end;
     char *pend;
     char *q0;
     char *q;
@@ -1404,12 +1405,14 @@ di_read_cu(DebugInfoReader *reader)
     reader->current_cu = reader->p;
     if (hdr32->unit_length == 0xffffffff) {
         DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
+        reader->cu_end = reader->p + 12 + hdr->unit_length;
         reader->p += 23;
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
         reader->format = 64;
     } else {
         DW_CompilationUnitHeader32 *hdr = hdr32;
+        reader->cu_end = reader->p + 4 + hdr->unit_length;
         reader->p += 11;
         reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
         reader->address_size = hdr->address_size;
@@ -1478,13 +1481,13 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_inf
 static void
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
          line_info_t *lines, int offset) {
-    do {
+    while (reader->p < reader->cu_end) {
         DIE die;
         ranges_t ranges = {};
         line_info_t line = {};
 
         if (!di_read_die(reader, &die)) continue;
-        //fprintf(stderr,"%d:%tx: <%d> Abbrev Number: %lu\n",__LINE__,diepos,reader->level,die.tag);
+        /* fprintf(stderr,"%d:%tx: <%d>\n",__LINE__,die.pos,reader->level,die.tag); */
 
         if (die.tag != DW_TAG_subprogram && die.tag != DW_TAG_inlined_subroutine) {
           skip_die:
@@ -1547,7 +1550,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 lines[i].saddr = reader->obj->base_addr + saddr;
             }
         }
-    } while (reader->level > 0);
+    }
 }
 
 static unsigned long
@@ -1735,7 +1738,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         debug_info_reader_init(&reader, obj);
         i = 0;
         while (reader.p < reader.pend) {
-            //fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info, i++);
+            /* fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
             di_read_cu(&reader);
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
