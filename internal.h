@@ -965,7 +965,7 @@ VALUE rb_invcmp(VALUE, VALUE);
 struct rb_block;
 int rb_dvar_defined(ID, const struct rb_block *);
 int rb_local_defined(ID, const struct rb_block *);
-CONSTFUNC(const char * rb_insns_name(int i));
+const char * rb_insns_name(int i);
 VALUE rb_insns_name_array(void);
 
 /* complex.c */
@@ -988,7 +988,7 @@ void Init_ext(void);
 
 /* encoding.c */
 ID rb_id_encoding(void);
-CONSTFUNC(void rb_gc_mark_encodings(void));
+void rb_gc_mark_encodings(void);
 rb_encoding *rb_enc_get_from_index(int index);
 rb_encoding *rb_enc_check_str(VALUE str1, VALUE str2);
 int rb_encdb_replicate(const char *alias, const char *orig);
