@@ -20,22 +20,48 @@ language: c
 dist: trusty
 
 sudo: false
+addons:
+  apt:
+    config:
+      retries: true
+    update: true
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-8
+      - libffi-dev
+      - libgdbm-dev
+      - libgmp-dev
+      - libjemalloc-dev
+      - libncurses5-dev
+      - libncursesw5-dev
+      - libreadline6-dev
+      - libssl-dev
+      - libyaml-dev
+      - openssl
+      - valgrind
+      - zlib1g-dev
+  homebrew:
+    packages:
+      - gdbm
+      - gmp
+      - libffi
+      - openssl@1.1
+      - zlib
 
 matrix:
   include:
     - os: linux
       compiler: gcc
+      env:
+        - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
     - os: linux
       compiler: gcc-8
-      addons:
-        apt:
-          config:
-            retries: true
-          update: true
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-8
+    - os: osx
+      compiler: clang
+      # We are not going to make rdoc here; that is to be done above.
+      env:
+        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
     - os: linux
       language: ruby
       rvm: 2.3
@@ -45,9 +71,20 @@ matrix:
       before_script: chmod -R u+w spec/ruby
       script: ruby -C spec/ruby ../mspec/bin/mspec -j .
 
-before_install:
-  - "CONFIG_FLAG="
-  - "JOBS=-j`nproc`"
+before_install: |
+  : ${CONFIG_FLAG=}
+  case "$TRAVIS_OS_NAME" in
+  linux) JOBS=-j`nproc` ;;
+  osx)   JOBS=-j`sysctl -n hw.activecpu`
+         : Bare "brew update" nukes everything.
+         : These steps are very carefully chosen to avoid breaking things.
+         brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
+         git -C $brew_core_dir fetch -q origin
+         git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
+         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
+         /usr/local/opt/openssl@1.1/bin/openssl version
+         ;;
+  esac
 
 before_script:
   - "echo JOBS=$JOBS"
