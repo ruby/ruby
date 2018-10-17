@@ -751,7 +751,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    StringValue(from);
 	    ptr = RSTRING_PTR(from);
 	    plen = RSTRING_LEN(from);
-	    OBJ_INFECT(res, from);
+            OBJ_INFECT(res, from);
 
 	    if (len == 0 && type == 'm') {
 		encodes(res, ptr, plen, type, 0);
@@ -779,7 +779,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 
 	  case 'M':		/* quoted-printable encoded string */
 	    from = rb_obj_as_string(NEXTFROM);
-	    OBJ_INFECT(res, from);
+            OBJ_INFECT(res, from);
 	    if (len <= 1)
 		len = 72;
 	    qpencode(res, from, len);
@@ -805,7 +805,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		}
 		else {
 		    t = StringValuePtr(from);
-		    OBJ_INFECT(res, from);
+                    OBJ_INFECT(res, from);
 		    rb_obj_taint(from);
 		}
 		if (!associates) {
@@ -1189,7 +1189,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits >>= 1;
@@ -1211,7 +1211,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 8;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 7) bits <<= 1;
@@ -1233,7 +1233,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
@@ -1257,7 +1257,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 		    len = (send - s) * 2;
 		bits = 0;
 		bitstr = rb_usascii_str_new(0, len);
-		OBJ_INFECT(bitstr, str);
+                OBJ_INFECT(bitstr, str);
 		t = RSTRING_PTR(bitstr);
 		for (i=0; i<len; i++) {
 		    if (i & 1)
