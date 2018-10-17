@@ -70,15 +70,15 @@ matrix:
       install:
       before_script: chmod -R u+w spec/ruby
       script: ruby -C spec/ruby ../mspec/bin/mspec -j .
+  allow_failures:
+    # It randomly hangs on travis osx. Let's remove this from allow_failures once it gets stable.
+    - os: osx
 
 before_install: |
   : ${CONFIG_FLAG=}
   case "$TRAVIS_OS_NAME" in
-  linux) JOBS=-j`nproc`
-         TEST_ALL_JOBS="$JOBS" ;;
+  linux) JOBS=-j`nproc` ;;
   osx)   JOBS=-j`sysctl -n hw.activecpu`
-         : parallel test-all hangs on travis osx build for now.
-         TEST_ALL_JOBS=""
          : Bare "brew update" nukes everything.
          : These steps are very carefully chosen to avoid breaking things.
          brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
@@ -119,7 +119,7 @@ before_script:
 
 script:
   - "make -s test TESTOPTS=--color=never"
-  - "make -s $TEST_ALL_JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
+  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
   - "make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
