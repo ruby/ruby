@@ -338,10 +338,16 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
   end
 
   def test_spaceship
-    n1 = OpenSSL::X509::Name.parse 'CN=a'
-    n2 = OpenSSL::X509::Name.parse 'CN=b'
+    n1 = OpenSSL::X509::Name.new([["CN", "a"]])
+    n2 = OpenSSL::X509::Name.new([["CN", "a"]])
+    n3 = OpenSSL::X509::Name.new([["CN", "ab"]])
 
-    assert_equal(-1, n1 <=> n2)
+    assert_equal 0, n1 <=> n2
+    assert_equal -1, n1 <=> n3
+    assert_equal 0, n2 <=> n1
+    assert_equal -1, n2 <=> n3
+    assert_equal 1, n3 <=> n1
+    assert_equal 1, n3 <=> n2
   end
 
   def name_hash(name)

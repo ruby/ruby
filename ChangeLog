@@ -1,3 +1,7 @@
+Thu Oct 18 00:33:13 2018  Kazuki Yamaguchi <k@rhe.jp>
+
+	* ext/openssl: backport changes from openssl 2.1.2.
+
 Wed Mar 28 23:08:46 2018  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	get rid of test error/failure on Windows introduced at r62955
