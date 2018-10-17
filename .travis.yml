@@ -46,7 +46,7 @@ addons:
       - gdbm
       - gmp
       - libffi
-      - openssl@1.1
+      - openssl@1.0
       - zlib
 
 matrix:
@@ -61,7 +61,7 @@ matrix:
       compiler: clang
       # We are not going to make rdoc here; that is to be done above.
       env:
-        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
+        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.0:/usr/local/opt/zlib'"
     - os: linux
       language: ruby
       rvm: 2.3
@@ -81,8 +81,8 @@ before_install: |
          brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
          git -C $brew_core_dir fetch -q origin
          git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
-         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
-         /usr/local/opt/openssl@1.1/bin/openssl version
+         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.0
+         /usr/local/opt/openssl@1.0/bin/openssl version
          ;;
   esac
 
