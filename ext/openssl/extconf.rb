@@ -33,6 +33,9 @@ end
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
 have_library("socket", "socket")
+if $mswin || $mingw
+  have_library("ws2_32")
+end
 
 Logging::message "=== Checking for required stuff... ===\n"
 result = pkg_config("openssl") && have_header("openssl/ssl.h")
@@ -121,6 +124,10 @@ engines = %w{builtin_engines openbsd_dev_crypto dynamic 4758cca aep atalla chil
 engines.each { |name|
   OpenSSL.check_func_or_macro("ENGINE_load_#{name}", "openssl/engine.h")
 }
+
+if ($mswin || $mingw) && have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
+  $defs.push("-DNOCRYPT")
+end
 
 # added in 0.9.8X
 have_func("EVP_CIPHER_CTX_new")

@@ -800,6 +800,7 @@ ossl_x509stctx_set_time(VALUE self, VALUE time)
 void
 Init_ossl_x509store(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

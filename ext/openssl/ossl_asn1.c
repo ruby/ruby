@@ -1412,6 +1412,7 @@ OSSL_ASN1_IMPL_FACTORY_METHOD(EndOfContent)
 void
 Init_ossl_asn1(void)
 {
+#undef rb_intern
     VALUE ary;
     int i;
 

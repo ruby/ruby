@@ -237,6 +237,7 @@ ossl_pkcs12_to_der(VALUE self)
 void
 Init_ossl_pkcs12(void)
 {
+#undef rb_intern
 #if 0
     mOSSL = rb_define_module("OpenSSL");
     eOSSLError = rb_define_class_under(mOSSL, "OpenSSLError", rb_eStandardError);

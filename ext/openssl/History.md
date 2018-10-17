@@ -1,3 +1,26 @@
+Version 2.0.9
+=============
+
+Security fixes
+--------------
+
+* OpenSSL::X509::Name#<=> could incorrectly return 0 (= equal) for non-equal
+  objects. CVE-2018-16395 is assigned for this issue.
+  https://hackerone.com/reports/387250
+
+Bug fixes
+---------
+
+* Fixed OpenSSL::PKey::*.{new,generate} immediately aborting if the thread is
+  interrupted.
+  [[Bug #14882]](https://bugs.ruby-lang.org/issues/14882)
+  [[GitHub #205]](https://github.com/ruby/openssl/pull/205)
+* Fixed OpenSSL::X509::Name#to_s failing with OpenSSL::X509::NameError if
+  called against an empty instance.
+  [[GitHub #200]](https://github.com/ruby/openssl/issues/200)
+  [[GitHub #211]](https://github.com/ruby/openssl/pull/211)
+
+
 Version 2.0.8
 =============
 

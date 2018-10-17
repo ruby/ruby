@@ -48,6 +48,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         assert_equal 2, ssl.peer_cert_chain.size
         assert_equal @svr_cert.to_der, ssl.peer_cert_chain[0].to_der
         assert_equal @ca_cert.to_der, ssl.peer_cert_chain[1].to_der
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       ensure
         ssl&.close
         sock&.close
@@ -77,6 +79,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.connect
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         ssl.close
         assert_not_predicate sock, :closed?
       ensure
@@ -88,6 +91,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.sync_close = true  # !!
         ssl.connect
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         ssl.close
         assert_predicate sock, :closed?
       ensure
@@ -179,7 +183,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         client_ca_from_server = sslconn.client_ca
         [@cli_cert, @cli_key]
       end
-      server_connect(port, ctx) { |ssl| assert_equal([@ca], client_ca_from_server) }
+      server_connect(port, ctx) { |ssl|
+        assert_equal([@ca], client_ca_from_server)
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
     }
   end
 
@@ -276,21 +283,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
 
     start_server { |port|
-      sock = TCPSocket.new("127.0.0.1", port)
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
       ctx.verify_callback = Proc.new do |preverify_ok, store_ctx|
         store_ctx.error = OpenSSL::X509::V_OK
         true
       end
-      ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
-      ssl.sync_close = true
-      begin
-        ssl.connect
+      server_connect(port, ctx) { |ssl|
         assert_equal(OpenSSL::X509::V_OK, ssl.verify_result)
-      ensure
-        ssl.close
-      end
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
     }
 
     start_server(ignore_listener_error: true) { |port|
@@ -377,6 +379,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     start_server { |port|
       server_connect(port) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+
         assert_raise(sslerr){ssl.post_connection_check("localhost.localdomain")}
         assert_raise(sslerr){ssl.post_connection_check("127.0.0.1")}
         assert(ssl.post_connection_check("localhost"))
@@ -398,6 +402,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     @svr_cert = issue_cert(@svr, @svr_key, 4, exts, @ca_cert, @ca_key)
     start_server { |port|
       server_connect(port) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+
         assert(ssl.post_connection_check("localhost.localdomain"))
         assert(ssl.post_connection_check("127.0.0.1"))
         assert_raise(sslerr){ssl.post_connection_check("localhost")}
@@ -418,6 +424,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     @svr_cert = issue_cert(@svr, @svr_key, 5, exts, @ca_cert, @ca_key)
     start_server { |port|
       server_connect(port) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+
         assert(ssl.post_connection_check("localhost.localdomain"))
         assert_raise(sslerr){ssl.post_connection_check("127.0.0.1")}
         assert_raise(sslerr){ssl.post_connection_check("localhost")}
@@ -644,6 +652,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.connect
         assert_equal @cli_cert.serial, ssl.peer_cert.serial
         assert_predicate fooctx, :frozen?
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       ensure
         ssl&.close
         sock.close
@@ -655,6 +665,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.hostname = "bar.example.com"
         ssl.connect
         assert_equal @svr_cert.serial, ssl.peer_cert.serial
+
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       ensure
         ssl&.close
         sock.close
@@ -727,7 +739,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
           ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
           ssl.hostname = name
           if expected_ok
-            assert_nothing_raised { ssl.connect }
+            ssl.connect
+            ssl.puts "abc"; assert_equal "abc\n", ssl.gets
           else
             assert_handshake_error { ssl.connect }
           end
@@ -856,6 +869,7 @@ end
     start_server_version(:SSLv23, ctx_proc) { |port|
       server_connect(port) { |ssl|
         assert_equal(1, num_handshakes)
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     }
   end
@@ -874,6 +888,7 @@ if openssl?(1, 0, 2) || libressl?
       ctx.alpn_protocols = advertised
       server_connect(port, ctx) { |ssl|
         assert_equal(advertised.first, ssl.alpn_protocol)
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
     }
   end
@@ -996,14 +1011,11 @@ end
   end
 
   def test_close_after_socket_close
-    server_proc = proc { |ctx, ssl|
-      # Do nothing
-    }
-    start_server(server_proc: server_proc) { |port|
+    start_server { |port|
       sock = TCPSocket.new("127.0.0.1", port)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
-      ssl.sync_close = true
       ssl.connect
+      ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       sock.close
       assert_nothing_raised do
         ssl.close
@@ -1068,6 +1080,7 @@ end
         ctx.ciphers = "DEFAULT:!kRSA:!kEDH"
         server_connect(port, ctx) { |ssl|
           assert_instance_of OpenSSL::PKey::EC, ssl.tmp_key
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
       end
     end
@@ -1158,6 +1171,7 @@ end
             assert_equal "secp384r1", ssl.tmp_key.group.curve_name
           end
         end
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
       }
 
       if openssl?(1, 0, 2) || libressl?(2, 5, 1)
@@ -1173,6 +1187,7 @@ end
 
         server_connect(port, ctx) { |ssl|
           assert_equal "secp521r1", ssl.tmp_key.group.curve_name
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
       end
     end

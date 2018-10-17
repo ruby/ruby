@@ -1078,6 +1078,7 @@ static void Init_ossl_locks(void)
 void
 Init_openssl(void)
 {
+#undef rb_intern
     /*
      * Init timezone info
      */
