@@ -5382,7 +5382,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
       break_by_insn:
 	/* escape from block */
 	CHECK(COMPILE(ret, "break val (block)", node->nd_stts));
-	ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_BREAK));
+        ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_BREAK));
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
@@ -5402,7 +5402,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
 	    }
 
 	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-		throw_flag = VM_THROW_NO_ESCAPE_FLAG;
+                throw_flag = VM_THROW_NO_ESCAPE_FLAG;
 		goto break_by_insn;
 	    }
 	    else if (ip->body->type == ISEQ_TYPE_BLOCK) {
@@ -5468,7 +5468,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 		break;
 	    }
 
-	    throw_flag = VM_THROW_NO_ESCAPE_FLAG;
+            throw_flag = VM_THROW_NO_ESCAPE_FLAG;
 	    if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
 		/* while loop */
 		break;
@@ -5484,7 +5484,7 @@ compile_next(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	}
 	if (ip != 0) {
 	    CHECK(COMPILE(ret, "next val", node->nd_stts));
-	    ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_NEXT));
+            ADD_INSN1(ret, line, throw, INT2FIX(throw_flag | TAG_NEXT));
 
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
@@ -5557,7 +5557,7 @@ compile_redo(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 	}
 	if (ip != 0) {
 	    ADD_INSN(ret, line, putnil);
-	    ADD_INSN1(ret, line, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
+            ADD_INSN1(ret, line, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
 
 	    if (popped) {
 		ADD_INSN(ret, line, pop);
