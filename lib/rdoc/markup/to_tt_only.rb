@@ -91,8 +91,8 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
       when RDoc::Markup::AttrChanger then
         off_tags res, item
         on_tags res, item
-      when RDoc::Markup::Special then
-        @res << convert_special(item) if in_tt? # TODO can this happen?
+      when RDoc::Markup::RegexpHandling then
+        @res << convert_regexp_handling(item) if in_tt? # TODO can this happen?
       else
         raise "Unknown flow element: #{item.inspect}"
       end

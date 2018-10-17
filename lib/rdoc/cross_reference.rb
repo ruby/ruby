@@ -23,8 +23,8 @@ class RDoc::CrossReference
 
   ##
   # Regular expressions matching text that should potentially have
-  # cross-reference links generated are passed to add_special.  Note that
-  # these expressions are meant to pick up text for which cross-references
+  # cross-reference links generated are passed to add_regexp_handling. Note
+  # that these expressions are meant to pick up text for which cross-references
   # have been suppressed, since the suppression characters are removed by the
   # code that is triggered.
 

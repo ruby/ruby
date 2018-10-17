@@ -8,8 +8,6 @@
 #       by Keiju ISHITSUKA (Nippon Rational Inc.)
 #
 
-$TOKEN_DEBUG ||= nil
-
 ##
 # Extracts code elements from a source file returning a TopLevel object
 # containing the constituent file elements.
@@ -267,7 +265,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
         tk = get_tk
 
         if :on_nl === tk then
-          skip_tkspace false
+          skip_tkspace_without_nl
           tk = get_tk
         end
       end
@@ -282,7 +280,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Consumes trailing whitespace from the token stream
 
   def consume_trailing_spaces # :nodoc:
-    skip_tkspace false
+    skip_tkspace_without_nl
   end
 
   ##
@@ -354,7 +352,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       given_name << '::'
     end
 
-    skip_tkspace false
+    skip_tkspace_without_nl
     given_name << name_t[:text]
 
     is_self = name_t[:kind] == :on_op && name_t[:text] == '<<'
@@ -378,7 +376,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       record_location container
 
       get_tk
-      skip_tkspace false
+      skip_tkspace_without_nl
       name_t = get_tk
       unless :on_const == name_t[:kind] || :on_ident == name_t[:kind]
         raise RDoc::Error, "Invalid class or module definition: #{given_name}"
@@ -390,7 +388,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       end
     end
 
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     return [container, name_t, given_name, new_modules]
   end
@@ -410,7 +408,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     res = get_constant
 
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     get_tkread # empty out read buffer
 
@@ -433,7 +431,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def get_constant
     res = ""
-    skip_tkspace false
+    skip_tkspace_without_nl
     tk = get_tk
 
     while tk && ((:on_op == tk[:kind] && '::' == tk[:text]) || :on_const == tk[:kind]) do
@@ -449,7 +447,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Get an included module that may be surrounded by parens
 
   def get_included_module_with_optional_parens
-    skip_tkspace false
+    skip_tkspace_without_nl
     get_tkread
     tk = get_tk
     end_token = get_end_token tk
@@ -685,7 +683,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     if args.size > 0 then
       name = args[0]
       rw = "R"
-      skip_tkspace false
+      skip_tkspace_without_nl
       tk = get_tk
 
       if :on_comma == tk[:kind] then
@@ -935,7 +933,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     line_no = tk[:line_no]
 
     name = tk[:text]
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     return unless name =~ /^\w+$/
 
@@ -961,7 +959,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
           break if nest == 0
         end
       end
-      skip_tkspace false
+      skip_tkspace_without_nl
       is_array_or_hash = true
     end
 
@@ -1298,7 +1296,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     add_token tk
     add_token_listener self
 
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     comment.text = comment.text.sub(/(^# +:?)(singleton-)(method:)/, '\1\3')
     singleton = !!$~
@@ -1487,7 +1485,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   def parse_method_name container # :nodoc:
     skip_tkspace
     name_t = get_tk
-    back_tk = skip_tkspace(false)
+    back_tk = skip_tkspace_without_nl
     singleton = false
 
     dot = get_tk
@@ -1575,7 +1573,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def parse_method_or_yield_parameters(method = nil,
                                        modifiers = RDoc::METHOD_MODIFIERS)
-    skip_tkspace false
+    skip_tkspace_without_nl
     tk = get_tk
     end_token = get_end_token tk
     return '' unless end_token
@@ -1648,7 +1646,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     return if  method.block_params
 
-    skip_tkspace false
+    skip_tkspace_without_nl
     read_documentation_modifiers method, RDoc::METHOD_MODIFIERS
   end
 
@@ -1699,19 +1697,19 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # Parses a rescue
 
   def parse_rescue
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     while tk = get_tk
       case tk[:kind]
       when :on_nl, :on_semicolon, :on_comment then
         break
       when :on_comma then
-        skip_tkspace false
+        skip_tkspace_without_nl
 
         get_tk if :on_nl == peek_tk[:kind]
       end
 
-      skip_tkspace false
+      skip_tkspace_without_nl
     end
   end
 
@@ -1784,7 +1782,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
             comment += "\n" unless "\n" == comment_body.chars.to_a.last
 
             if comment_body.size > 1 && "\n" == comment_body.chars.to_a.last then
-              skip_tkspace false # leading spaces
+              skip_tkspace_without_nl # leading spaces
             end
             tk = get_tk
           end
@@ -1968,7 +1966,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
     end
 
     loop do
-      skip_tkspace false
+      skip_tkspace_without_nl
 
       tk1 = get_tk
       if tk1.nil? || :on_comma != tk1[:kind] then
@@ -2117,7 +2115,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # See also RDoc::Markup::PreProcess#handle_directive
 
   def read_documentation_modifiers context, allowed
-    skip_tkspace(false)
+    skip_tkspace_without_nl
     directive, value = read_directive allowed
 
     return unless directive
@@ -2195,7 +2193,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # while, until, and for have an optional do
 
   def skip_optional_do_after_expression
-    skip_tkspace false
+    skip_tkspace_without_nl
     tk = get_tk
 
     b_nest = 0
@@ -2227,7 +2225,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
       tk = get_tk
     end
 
-    skip_tkspace false
+    skip_tkspace_without_nl
 
     get_tk if peek_tk && :on_kw == peek_tk[:kind] && 'do' == peek_tk[:text]
   end
@@ -2236,9 +2234,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
   # skip the var [in] part of a 'for' statement
 
   def skip_for_variable
-    skip_tkspace false
+    skip_tkspace_without_nl
     get_tk
-    skip_tkspace false
+    skip_tkspace_without_nl
     tk = get_tk
     unget_tk(tk) unless :on_kw == tk[:kind] and 'in' == tk[:text]
   end
@@ -2257,7 +2255,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
   def skip_tkspace_comment(skip_nl = true)
     loop do
-      skip_tkspace skip_nl
+      skip_nl ? skip_tkspace : skip_tkspace_without_nl
       next_tk = peek_tk
       return if next_tk.nil? || (:on_comment != next_tk[:kind] and :on_embdoc != next_tk[:kind])
       get_tk
