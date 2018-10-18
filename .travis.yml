@@ -74,6 +74,44 @@ matrix:
         - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
         - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
         - /usr/local/opt/openssl@1.1/bin/openssl version
+    - name: pedanticism
+      os: linux
+      compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
+      env:
+        - "JOBS="
+      # construct warnflags (using bashism...)
+      before_install: |
+        warnflags_array=(
+          -Wall
+          -Wextra
+          -Werror=declaration-after-statement
+          -Werror=deprecated-declarations
+          -Werror=division-by-zero
+          -Werror=extra-tokens
+          -Werror=implicit-function-declaration
+          -Werror=implicit-int
+          -Werror=long-long
+          -Werror=pointer-arith
+          -Werror=shorten-64-to-32
+          -Werror=write-strings
+          -Wmissing-noreturn
+          -Wno-constant-logical-operand
+          -Wno-extended-offsetof
+          -Wno-missing-field-initializers
+          -Wno-overlength-strings
+          -Wno-parentheses-equality
+          -Wno-self-assign
+          -Wno-tautological-compare
+          -Wno-unused-local-typedef
+          -Wno-unused-parameter
+          -Wunused-variable
+        )
+        CONFIG_FLAG=(
+          --disable-install-doc
+          optflags=-O0
+          debugflags=-g0
+          warnflags="${warnflags_array[*]}"
+          LDFLAGS=-Wno-unused-command-line-argument)
     - os: linux
       language: ruby
       rvm: 2.3
@@ -88,6 +126,8 @@ matrix:
   allow_failures:
     # It randomly hangs on travis osx. Let's remove this from allow_failures once it gets stable.
     - os: osx
+    - name: pedanticism
+  fast_finish: true
 
 before_script:
   - "echo JOBS=$JOBS"
@@ -105,7 +145,7 @@ before_script:
   - "chmod -R a-w ."
   - "chmod u+w build config_1st config_2nd"
   - "cd build"
-  - "../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=$CC $CONFIG_FLAG"
+  - "../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"$CC\" \"${CONFIG_FLAG[@]}\""
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
