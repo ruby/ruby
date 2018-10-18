@@ -64,7 +64,7 @@ matrix:
       compiler: clang
       # We are not going to make rdoc here; that is to be done above.
       env:
-        - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
+        - "CONFIG_FLAG='--disable-install-doc --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
       before_install:
         - "JOBS=-j`sysctl -n hw.activecpu`"
         # Bare "brew update" nukes everything.
