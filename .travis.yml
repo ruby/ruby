@@ -55,13 +55,25 @@ matrix:
       compiler: gcc
       env:
         - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
+      before_install: &prepare_linux
+        - "JOBS=-j`nproc`"
     - os: linux
       compiler: gcc-8
+      before_install: *prepare_linux
     - os: osx
       compiler: clang
       # We are not going to make rdoc here; that is to be done above.
       env:
         - "CONFIG_FLAG='--disable-install-docs --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
+      before_install:
+        - "JOBS=-j`sysctl -n hw.activecpu`"
+        # Bare "brew update" nukes everything.
+        # These steps are very carefully chosen to avoid breaking things.
+        - brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
+        - git -C $brew_core_dir fetch -q origin
+        - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
+        - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
+        - /usr/local/opt/openssl@1.1/bin/openssl version
     - os: linux
       language: ruby
       rvm: 2.3
@@ -73,21 +85,6 @@ matrix:
   allow_failures:
     # It randomly hangs on travis osx. Let's remove this from allow_failures once it gets stable.
     - os: osx
-
-before_install: |
-  : ${CONFIG_FLAG=}
-  case "$TRAVIS_OS_NAME" in
-  linux) JOBS=-j`nproc` ;;
-  osx)   JOBS=-j`sysctl -n hw.activecpu`
-         : Bare "brew update" nukes everything.
-         : These steps are very carefully chosen to avoid breaking things.
-         brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
-         git -C $brew_core_dir fetch -q origin
-         git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
-         HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
-         /usr/local/opt/openssl@1.1/bin/openssl version
-         ;;
-  esac
 
 before_script:
   - "echo JOBS=$JOBS"
