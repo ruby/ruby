@@ -9613,8 +9613,8 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 		IMEMO_NAME(ment);
 		IMEMO_NAME(iseq);
 		IMEMO_NAME(tmpbuf);
-		IMEMO_NAME(ast);
-		IMEMO_NAME(parser_strterm);
+                IMEMO_NAME(ast);
+                IMEMO_NAME(parser_strterm);
 #undef IMEMO_NAME
 	      default: UNREACHABLE;
 	    }
