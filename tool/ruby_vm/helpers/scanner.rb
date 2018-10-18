@@ -20,10 +20,10 @@ class RubyVM::Scanner
   attr_reader :__LINE__
 
   def initialize path
-    src       = Pathname.new(__FILE__).realpath.dirname
+    src       = Pathname.new(__FILE__).relative_path_from(Pathname.pwd).dirname
     src      += path
     @__LINE__ = 1
-    @__FILE__ = src.realpath.to_path
+    @__FILE__ = src.to_path
     @str      = src.read mode: 'rt:utf-8:utf-8'
     @pos      = 0
   end
