@@ -21,9 +21,6 @@ dist: trusty
 
 sudo: false
 
-# Custom definitions
-.definitions:
-  if: &secondary type = cron OR env(RUBY_CI_SECONDARY) = 1
 matrix:
   include:
     - os: linux
@@ -44,7 +41,7 @@ matrix:
       install:
         - source ./tool/install_openssl.sh "${OPENSSL_VERSION}"
         - openssl version
-      if: *secondary
+      if: type = cron OR env(RUBY_CI_SECONDARY) = 1
     - os: linux
       language: ruby
       rvm: 2.3
