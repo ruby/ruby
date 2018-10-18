@@ -55,18 +55,18 @@ matrix:
       compiler: gcc
       env:
         - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
-      before_install: &prepare_linux
         - "JOBS=-j`nproc`"
     - os: linux
       compiler: gcc-8
-      before_install: *prepare_linux
+      env:
+        - "JOBS=-j`nproc`"
     - os: osx
       compiler: clang
       # We are not going to make rdoc here; that is to be done above.
       env:
         - "CONFIG_FLAG='--disable-install-doc --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-      before_install:
         - "JOBS=-j`sysctl -n hw.activecpu`"
+      before_install:
         # Bare "brew update" nukes everything.
         # These steps are very carefully chosen to avoid breaking things.
         - brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
