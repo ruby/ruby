@@ -15,7 +15,7 @@ require_relative '../controllers/application_controller.rb'
 
 module RubyVM::Insns2VM
   def self.router argv
-    options = { destdir: Dir.getwd }
+    options = { destdir: nil }
     targets = generate_parser(options).parse argv
     return targets.map do |i|
       next ApplicationController.new.generate i, options[:destdir]
