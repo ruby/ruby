@@ -155,8 +155,6 @@ def tag intv_p = false, relname=nil
     end
   end
   system(*%w'svn cp -m', "add tag #{tagname}", branch_url, tag_url)
-  puts "run following command in git-svn working directory to push the tag into GitHub:"
-  puts "git tag #{tagname}  origin/tags/#{tagname} && git push ruby #{tagname}"
 end
 
 def remove_tag intv_p = false, relname
