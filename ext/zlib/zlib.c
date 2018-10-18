@@ -25,7 +25,7 @@
 # define VALGRIND_MAKE_MEM_UNDEFINED(p, n) 0
 #endif
 
-#define RUBY_ZLIB_VERSION  "0.6.0"
+#define RUBY_ZLIB_VERSION "1.0.0"
 
 #ifndef GZIP_SUPPORT
 #define GZIP_SUPPORT  1
