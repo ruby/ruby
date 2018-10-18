@@ -155,6 +155,46 @@ unless tmp = $exported
   } unless $keep_temp
 end
 
+def tar_create(tarball, dir)
+  require 'rubygems'
+  require 'rubygems/package'
+  require 'rubygems/package/tar_writer'
+  header = Gem::Package::TarHeader
+  dir_type = "5"
+  uname = gname = "ruby"
+  File.open(tarball, "wb") do |f|
+    w = Gem::Package::TarWriter.new(f)
+    Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH) do |path|
+      next if File.basename(path) == "."
+      s = File.stat(path)
+      case
+      when s.file?
+        type = nil
+        size = s.size
+      when s.directory?
+        path += "/"
+        type = dir_type
+        size = 0
+      else
+        next
+      end
+      name, prefix = w.split_name(path)
+      h = header.new(name: name, prefix: prefix,
+                     mode: s.mode, size: size, mtime: s.mtime,
+                     uname: uname, gname: gname)
+      f.write(h)
+      if size > 0
+        IO.copy_stream(path, f)
+        f.write("\0" * (-size % 512))
+      end
+    end
+  end
+  true
+rescue => e
+  warn e.message
+  false
+end
+
 def package(vcs, rev, destdir, tmp = nil)
   patchlevel = false
   prerelease = false
@@ -417,7 +457,7 @@ _touch-unicode-files:
       else
         tarball = "#{$archname||v}.tar"
         print "creating tarball... #{tarball}"
-        if system("tar", "cf", tarball, v)
+        if tar_create(tarball, v)
           puts $colorize.pass(" done")
         else
           puts $colorize.fail(" failed")
