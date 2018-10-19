@@ -29,6 +29,7 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - gcc-8
+      - gcc-8-multilib
       - libffi-dev
       - libgdbm-dev
       - libgmp-dev
@@ -74,6 +75,43 @@ matrix:
         - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
         - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
         - /usr/local/opt/openssl@1.1/bin/openssl version
+    # - os: osx
+    #   compiler: clang
+    #   env:
+    #     - "CONFIG_FLAG='--with-arch=i386 --disable-install-doc'"
+    #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
+    # - os: osx
+    #   compiler: clang
+    #   env:
+    #     - "CONFIG_FLAG='--with-arch=x86_64h --disable-install-doc'"
+    #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
+    - os: linux
+      sudo: required
+      compiler: "'gcc-8 -m32'"
+      env:
+        - "CONFIG_FLAG='--disable-install-doc debugflags=-g0'"
+        - "JOBS=-j`nproc`"
+        - "SETARCH='setarch i686 --verbose --3gb'"
+      before_install:
+        - sudo dpkg --add-architecture i386
+        - sudo apt-get update -qq
+        - >-
+          sudo apt-get -yq --no-install-suggests --no-install-recommends
+          ${travis_apt_get_options} install
+          libffi-dev:i386
+          libffi6:i386
+          libgdbm-dev:i386
+          libgdbm3:i386
+          libncurses5-dev:i386
+          libncurses5:i386
+          libncursesw5-dev:i386
+          libreadline6-dev:i386
+          libreadline6:i386
+          libssl-dev:i386
+          libssl1.0.0:i386
+          linux-libc-dev:i386
+          zlib1g-dev:i386
+          zlib1g:i386
     - name: pedanticism
       os: linux
       compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
@@ -131,9 +169,9 @@ matrix:
   fast_finish: true
 
 before_script:
-  - "echo JOBS=$JOBS"
-  - "uname -a"
-  - "uname -r"
+  - "echo JOBS=$JOBS SETARCH=${SETARCH=}"
+  - "$SETARCH uname -a"
+  - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
   - "echo $TERM"
   - "> config.status"
@@ -146,17 +184,17 @@ before_script:
   - "chmod -R a-w ."
   - "chmod u+w build config_1st config_2nd"
   - "cd build"
-  - "../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"$CC\" $CONFIG_FLAG \"${CONFIG_FLAG_ARRAY[@]}\""
+  - "$SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"$CC\" $CONFIG_FLAG \"${CONFIG_FLAG_ARRAY[@]}\""
   - "cp -pr config.cache config.status .ext/include ../config_1st"
-  - "make reconfig"
+  - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
   - "(cd .. && exec diff -ru config_1st config_2nd)"
-  - "make -s $JOBS && make install"
+  - "$SETARCH make -s $JOBS && make install"
 
 script:
-  - "make -s test TESTOPTS=--color=never"
-  - "make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
-  - "make -s $JOBS test-spec MSPECOPT=-j"
+  - "$SETARCH make -s test TESTOPTS=--color=never"
+  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
+  - "$SETARCH make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
