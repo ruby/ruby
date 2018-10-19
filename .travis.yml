@@ -66,9 +66,8 @@ matrix:
     - name: x86_64-darwin17
       os: osx
       compiler: clang
-      # We are not going to make rdoc here; that is to be done above.
       env:
-        - "CONFIG_FLAG='--disable-install-doc --with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
+        - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
         - "JOBS=\"-j`sysctl -n hw.activecpu`\""
       before_install:
         # Bare "brew update" nukes everything.
@@ -82,20 +81,20 @@ matrix:
     #   os: osx
     #   compiler: clang
     #   env:
-    #     - "CONFIG_FLAG='--with-arch=i386 --disable-install-doc'"
+    #     - "CONFIG_FLAG='--with-arch=i386'"
     #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
     # - name: uinversal.x86_64h-darwin17
     #   os: osx
     #   compiler: clang
     #   env:
-    #     - "CONFIG_FLAG='--with-arch=x86_64h --disable-install-doc'"
+    #     - "CONFIG_FLAG='--with-arch=x86_64h'"
     #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
     - name: i686-linux
       os: linux
       sudo: required
       compiler: "'gcc-8 -m32'"
       env:
-        - "CONFIG_FLAG='--disable-install-doc debugflags=-g0'"
+        - "CONFIG_FLAG='debugflags=-g0'"
         - "JOBS=-j`nproc`"
         - "SETARCH='setarch i686 --verbose --3gb'"
       before_install:
@@ -152,7 +151,6 @@ matrix:
           -Wunused-variable
         )
         CONFIG_FLAG_ARRAY=(
-          --disable-install-doc
           optflags=-O0
           debugflags=-g0
           warnflags="${warnflags_array[*]}"
