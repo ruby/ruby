@@ -95,7 +95,7 @@ for:
     - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=1.5 --exclude win32ole --exclude test_syntax --exclude test_open-uri" test-all RUBY_FORCE_TEST_JIT=1
     # separately execute tests that may crash worker without -j.
     - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=1.5" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb"
-    - nmake -l test-spec
+    - nmake -l test-spec MSPECOPT=-fs
 -
   matrix:
     only:
