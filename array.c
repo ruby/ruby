@@ -3707,7 +3707,7 @@ ary_append(VALUE x, VALUE y)
 
 /*
  *  call-seq:
- *     ary.concat(other_ary1, other_ary2,...)   -> ary
+ *     ary.concat(other_ary1, other_ary2, ...)   -> ary
  *
  *  Appends the elements of <code>other_ary</code>s to +self+.
  *
@@ -4399,7 +4399,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.union(other_ary1, other_ary2,...)   -> ary
+ *     ary.union(other_ary1, other_ary2, ...)   -> ary
  *
  *  Set Union --- Returns a new array by joining <code>other_ary</code>s with +self+,
  *  excluding any duplicates and preserving the order from the given arrays.

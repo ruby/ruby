@@ -2975,7 +2975,7 @@ rb_str_concat_literals(size_t num, const VALUE *strary)
 
 /*
  *  call-seq:
- *     str.concat(obj1, obj2,...)          -> str
+ *     str.concat(obj1, obj2, ...)          -> str
  *
  *  Concatenates the given object(s) to <i>str</i>. If an object is an
  *  <code>Integer</code>, it is considered a codepoint and converted
@@ -3095,7 +3095,7 @@ rb_str_concat(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *     str.prepend(other_str1, other_str2,...)  -> str
+ *     str.prepend(other_str1, other_str2, ...)  -> str
  *
  *  Prepend---Prepend the given strings to <i>str</i>.
  *
@@ -6683,7 +6683,7 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
  *    This option cannot be combined with any other option.
  *  :turkic ::
  *    Full Unicode case mapping, adapted for Turkic languages
- *    (Turkish, Azerbaijani,...). This means that upper case I is mapped to
+ *    (Turkish, Azerbaijani, ...). This means that upper case I is mapped to
  *    lower case dotless i, and so on.
  *  :lithuanian ::
  *    Currently, just full Unicode case mapping. In the future, full Unicode
