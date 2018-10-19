@@ -1,9 +1,8 @@
 module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
-  SUPPORTED_COMPILERS = [
-    'gcc',
-    'clang',
+  UNSUPPORTED_COMPILERS = [
+    'icc',
   ]
 
   module_function
@@ -33,6 +32,11 @@ module JITSupport
     EnvUtil.invoke_ruby(args,
       '', true, true, timeout: timeout,
     )
+  end
+
+  def supported?
+    return @supported if defined?(@supported)
+    @supported = !UNSUPPORTED_COMPILERS.include?(RbConfig::CONFIG['CC'])
   end
 
   def remove_mjit_logs(stderr)
