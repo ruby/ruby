@@ -302,6 +302,9 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
+!ifndef INSTALL_MJIT_HEADER
+INSTALL_MJIT_HEADER = yes
+!endif
 !if "$(CPPOUTFLAG)" == ">"
 MJIT_HEADER_FLAGS =
 !else
@@ -1271,8 +1274,8 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-main: $(MJIT_PRECOMPILED_HEADER)
-mjit-headers: $(MJIT_PRECOMPILED_HEADER)
+main: mjit-headers
+yes-mjit-headers: $(MJIT_PRECOMPILED_HEADER)
 clean-local::
 	$(Q)$(RM) $(MJIT_PRECOMPILED_HEADER_NAME) $(MJIT_PRECOMPILED_HEADER_NAME:.pch=.)$(OBJEXT)
 	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_PRECOMPILED_HEADER_NAME:.pch=.time) mjit_config.h
