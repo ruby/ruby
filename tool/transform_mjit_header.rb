@@ -228,11 +228,12 @@ if MJITHeader.windows? # transformation is broken with Windows headers for now
 end
 
 macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
-code_to_check = "#{<<header}#{code}#{macro}" # macro should not affect code again
+code = <<header + code
 #ifdef __GNUC__
 # pragma GCC system_header
 #endif
 header
+code_to_check = "#{code}#{macro}" # macro should not affect code again
 
 if MJITHeader.conflicting_types?(code_to_check, cc, cflags)
   cflags = "#{cflags} -std=c99" # For AIX gcc
