@@ -138,9 +138,11 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_enable
-    assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
-    assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
-    assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
+    if JITSupport.supported?
+      assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
+      assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
+    end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: `foobarbazqux'/)
     assert_in_out_err(%w(--enable), "", [], /missing argument for --enable/)
@@ -198,19 +200,21 @@ class TestRubyOptions < Test::Unit::TestCase
       end
     end
 
-    [
-      %w(--version --jit),
-      %w(--version --enable=jit),
-      %w(--version --enable-jit),
-    ].each do |args|
-      assert_in_out_err(args) do |r, e|
-        assert_match(VERSION_PATTERN_WITH_JIT, r[0])
-        if RubyVM::MJIT.enabled?
-          assert_equal(RUBY_DESCRIPTION, r[0])
-        else
-          assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+    if JITSupport.supported?
+      [
+        %w(--version --jit),
+        %w(--version --enable=jit),
+        %w(--version --enable-jit),
+      ].each do |args|
+        assert_in_out_err(args) do |r, e|
+          assert_match(VERSION_PATTERN_WITH_JIT, r[0])
+          if RubyVM::MJIT.enabled?
+            assert_equal(RUBY_DESCRIPTION, r[0])
+          else
+            assert_equal(EnvUtil.invoke_ruby(['--jit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
+          end
+          assert_equal([], e)
         end
-        assert_equal([], e)
       end
     end
   end

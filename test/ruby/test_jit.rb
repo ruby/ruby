@@ -32,6 +32,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def setup
+    unless JITSupport.supported?
+      skip 'JIT seems not supported on this platform'
+    end
+
     # ruby -w -Itest/lib test/ruby/test_jit.rb
     if $VERBOSE && !defined?(@@at_exit_hooked)
       at_exit do
