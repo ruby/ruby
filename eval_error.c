@@ -268,7 +268,7 @@ VALUE rb_get_message(VALUE exc);
 void
 rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
 {
-    volatile int raised_flag = ec->raised_flag;
+    volatile uint8_t raised_flag = ec->raised_flag;
     volatile VALUE errat = Qundef;
     volatile VALUE emesg = Qundef;
 

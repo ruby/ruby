@@ -845,8 +845,12 @@ typedef struct rb_execution_context_struct {
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
     const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
-    int raised_flag;
-    enum method_missing_reason method_missing_reason;
+
+    uint8_t raised_flag; /* only 3 bits needed */
+
+    /* n.b. only 7 bits needed, really: */
+    BITFIELD(enum method_missing_reason, method_missing_reason, 8);
+
     VALUE private_const_reference;
 
     /* for GC */
