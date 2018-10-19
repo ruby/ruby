@@ -1117,7 +1117,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         break;
       case DW_FORM_strp_sup:
         set_uint_value(v, read_uint(reader));
-        //*p = reader->sup_file + reader->sup_str->sh_offset + ret;
+        /* *p = reader->sup_file + reader->sup_str->sh_offset + ret; */
         break;
       case DW_FORM_data16:
         v->size = 16;
@@ -1126,7 +1126,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         break;
       case DW_FORM_line_strp:
         set_uint_value(v, read_uint(reader));
-        //*p = reader->file + reader->line->sh_offset + ret;
+        /* *p = reader->file + reader->line->sh_offset + ret; */
         break;
       case DW_FORM_ref_sig8:
         set_uint_value(v, read_uint64(&reader->p));
