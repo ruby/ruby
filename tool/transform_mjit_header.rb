@@ -27,6 +27,7 @@ module MJITHeader
   # These macros are relied on this script's transformation
   PREFIXED_MACROS = [
     'ALWAYS_INLINE',
+    'inline',
   ]
 
   # For MinGW's ras.h. Those macros have its name in its definition and can't be preprocessed multiple times.
