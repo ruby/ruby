@@ -29,7 +29,6 @@ addons:
       - ubuntu-toolchain-r-test
     packages:
       - gcc-8
-      - gcc-8-multilib
       - libffi-dev
       - libgdbm-dev
       - libgmp-dev
@@ -97,26 +96,29 @@ matrix:
         - "CONFIG_FLAG='debugflags=-g0'"
         - "JOBS=-j`nproc`"
         - "SETARCH='setarch i686 --verbose --3gb'"
-      before_install:
-        - sudo dpkg --add-architecture i386
-        - sudo apt-get update -qq
-        - >-
-          sudo apt-get -yq --no-install-suggests --no-install-recommends
-          ${travis_apt_get_options} install
-          libffi-dev:i386
-          libffi6:i386
-          libgdbm-dev:i386
-          libgdbm3:i386
-          libncurses5-dev:i386
-          libncurses5:i386
-          libncursesw5-dev:i386
-          libreadline6-dev:i386
-          libreadline6:i386
-          libssl-dev:i386
-          libssl1.0.0:i386
-          linux-libc-dev:i386
-          zlib1g-dev:i386
-          zlib1g:i386
+      addons:
+        apt:
+          config:
+            retries: true
+          update: true
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-8-multilib
+            - libffi-dev:i386
+            - libffi6:i386
+            - libgdbm-dev:i386
+            - libgdbm3:i386
+            - libncurses5-dev:i386
+            - libncurses5:i386
+            - libncursesw5-dev:i386
+            - libreadline6-dev:i386
+            - libreadline6:i386
+            - libssl-dev:i386
+            - libssl1.0.0:i386
+            - linux-libc-dev:i386
+            - zlib1g-dev:i386
+            - zlib1g:i386
     - name: pedanticism
       os: linux
       compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
