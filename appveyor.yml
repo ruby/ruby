@@ -92,7 +92,7 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=1.5 --exclude win32ole --exclude test_syntax --exclude test_open-uri" test-all RUBY_FORCE_TEST_JIT=1
+    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=1.5 --exclude win32ole --exclude test_syntax --exclude test_open-uri" test-all
     # separately execute tests that may crash worker without -j.
     - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=1.5" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb"
     - nmake -l test-spec MSPECOPT=-fs
@@ -135,5 +135,5 @@ for:
     - mingw32-make DESTDIR=../install install-nodoc
   test_script:
     - mingw32-make test
-    - mingw32-make test-all  TESTOPTS="-j %JOBS% --retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" RUBY_FORCE_TEST_JIT=1 V=1
+    - mingw32-make test-all  TESTOPTS="-j %JOBS% --retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5"
     - mingw32-make test-spec MSPECOPT=-j
