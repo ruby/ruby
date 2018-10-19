@@ -78,14 +78,53 @@ describe "Hash literal" do
     {rbx: :cool, specs: 'fail_sometimes',}.should == h
   end
 
+  ruby_version_is "2.7" do
+    it "accepts short notation 'key' for 'key: value' syntax" do
+      a, b, c = 1, 2, 3
+      h = eval('{a:}')
+      {a: 1}.should == h
+      h = eval('{a:, b:, c:}')
+      {a: 1, b: 2, c: 3}.should == h
+    end
+
+    it "accepts short notation on method call" do
+      def foo(param1:, param2:)
+        param1 + param2
+      end
+
+      param1 = 1
+      param2 = 2
+
+      h = eval('foo(param1:, param2:)')
+
+      3.should == h
+    end
+
+    it "ignores hanging comma on short notation" do
+      a, b, c = 1, 2, 3
+      h = eval('{a:, b:, c:,}')
+      {a: 1, b: 2, c: 3}.should == h
+    end
+  end
+
   it "accepts mixed 'key: value' and 'key => value' syntax" do
     h = {:a => 1, :b => 2, "c" => 3}
     {a: 1, b: 2, "c" => 3}.should == h
   end
 
-  it "accepts mixed 'key: value', 'key => value' and '\"key\"': value' syntax" do
-    h = {:a => 1, :b => 2, "c" => 3, :d => 4}
-    eval('{a: 1, :b => 2, "c" => 3, "d": 4}').should == h
+  ruby_version_is "2.7" do
+    it "accepts mixed 'key', 'key: value', 'key => value' and '\"key\"': value' syntax" do
+      a, e = 1, 5
+      h = eval('{a:, :b => 2, "c" => 3, :d => 4, e:}')
+      eval('{a: 1, :b => 2, "c" => 3, "d": 4, e: 5}').should == h
+    end
+  end
+
+  ruby_version_is ""..."2.6" do
+    it "accepts mixed 'key: value', 'key => value' and '\"key\"': value' syntax" do
+      h = {:a => 1, :b => 2, "c" => 3, :d => 4}
+      eval('{a: 1, :b => 2, "c" => 3, "d": 4}').should == h
+    end
   end
 
   it "expands an '**{}' element into the containing Hash literal initialization" do

@@ -327,6 +327,14 @@ is equal to
 
   { :"a 1" => 1, :"b 2" => 2 }
 
+You may also use the shorthand syntax for creating hash with symbol keys:
+
+  { a:, b: }
+
+which equals to
+
+  { :a => a, :b => b }
+
 See Hash for the methods you may use with a hash.
 
 == Ranges
