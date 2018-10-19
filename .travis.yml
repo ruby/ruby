@@ -195,7 +195,7 @@ before_script:
 
 script:
   - "$SETARCH make -s test TESTOPTS=--color=never"
-  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal' RUBY_FORCE_TEST_JIT=1"
+  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal'"
   - "$SETARCH make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
