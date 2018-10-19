@@ -33,6 +33,18 @@ class TestRubyVMMJIT < Test::Unit::TestCase
     )
   end
 
+  def test_pause_does_not_hang_on_full_units
+    out, _ = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, max_cache: 10, wait: false)
+      i = 0
+      while i < 11
+        eval("def mjit#{i}; end; mjit#{i}")
+        i += 1
+      end
+      print RubyVM::MJIT.pause
+    EOS
+    assert_equal('true', out)
+  end
+
   def test_pause_wait_false
     out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
       i = 0

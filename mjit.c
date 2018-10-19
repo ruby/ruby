@@ -647,7 +647,7 @@ mjit_pause(int wait_p)
         tv.tv_sec = 0;
         tv.tv_usec = 1000;
 
-        while (unit_queue.length > 0) {
+        while (unit_queue.length > 0 && active_units.length < mjit_opts.max_cache_size) { /* inverse of condition that waits for mjit_worker_wakeup */
             CRITICAL_SECTION_START(3, "in mjit_pause for a worker wakeup");
             rb_native_cond_broadcast(&mjit_worker_wakeup);
             CRITICAL_SECTION_FINISH(3, "in mjit_pause for a worker wakeup");
