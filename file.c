@@ -2497,7 +2497,7 @@ chown_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.chown(owner_int, group_int, file_name,... )  ->  integer
+ *     File.chown(owner_int, group_int, file_name, ...)  ->  integer
  *
  *  Changes the owner and group of the named file(s) to the given
  *  numeric owner and group id's. Only a process with superuser
@@ -2751,7 +2751,7 @@ utime_internal_i(int argc, VALUE *argv, int follow)
 
 /*
  * call-seq:
- *  File.utime(atime, mtime, file_name,...)   ->  integer
+ *  File.utime(atime, mtime, file_name, ...)   ->  integer
  *
  * Sets the access and modification times of each named file to the
  * first two arguments. If a file is a symlink, this method acts upon
@@ -2770,7 +2770,7 @@ rb_file_s_utime(int argc, VALUE *argv)
 
 /*
  * call-seq:
- *  File.lutime(atime, mtime, file_name,...)   ->  integer
+ *  File.lutime(atime, mtime, file_name, ...)   ->  integer
  *
  * Sets the access and modification times of each named file to the
  * first two arguments. If a file is a symlink, this method acts upon
