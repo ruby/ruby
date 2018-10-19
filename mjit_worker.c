@@ -1187,7 +1187,7 @@ mjit_worker(void)
 
         /* wait until unit is available */
         CRITICAL_SECTION_START(3, "in worker dequeue");
-        while ((unit_queue.head == NULL || active_units.length > mjit_opts.max_cache_size) && !stop_worker_p) {
+        while ((unit_queue.head == NULL || active_units.length >= mjit_opts.max_cache_size) && !stop_worker_p) {
             rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
             verbose(3, "Getting wakeup from client");
         }
