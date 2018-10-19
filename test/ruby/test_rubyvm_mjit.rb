@@ -5,12 +5,6 @@ require_relative '../lib/jit_support'
 class TestRubyVMMJIT < Test::Unit::TestCase
   include JITSupport
 
-  def setup
-    unless JITSupport.supported?
-      skip 'JIT seems not supported on this platform'
-    end
-  end
-
   def test_pause
     out, err = eval_with_jit(<<~'EOS', verbose: 1, min_calls: 1, wait: false)
       i = 0
