@@ -201,8 +201,9 @@ all: $(SHOWFLAGS) main docs
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
-.PHONY: mjit-headers
-mjit-headers: mjit_config.h
+mjit-headers: $(INSTALL_MJIT_HEADER)-mjit-headers
+no-mjit-headers: PHONY
+yes-mjit-headers: mjit_config.h PHONY
 
 mjit.$(OBJEXT): mjit_config.h
 mjit_config.h: Makefile
