@@ -167,8 +167,6 @@ matrix:
       before_script: chmod -R u+w spec/ruby
       script: ruby -C spec/ruby ../mspec/bin/mspec -j .
   allow_failures:
-    # It randomly hangs on travis osx. Let's remove this from allow_failures once it gets stable.
-    - os: osx
     - name: pedanticism
   fast_finish: true
 
