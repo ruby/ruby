@@ -271,9 +271,10 @@ vm_push_frame(rb_execution_context_t *ec,
     }
     {
         rb_control_frame_t *prev_cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-        int cur_ruby_frame = VM_FRAME_RUBYFRAME_P(cfp);
-        int pre_ruby_frame = VM_FRAME_RUBYFRAME_P(prev_cfp);
         if (RUBY_VM_END_CONTROL_FRAME(ec) != prev_cfp) {
+            int cur_ruby_frame = VM_FRAME_RUBYFRAME_P(cfp);
+            int pre_ruby_frame = VM_FRAME_RUBYFRAME_P(prev_cfp);
+
             pre_ruby_frame ? (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_R2R) :
                                                RB_DEBUG_COUNTER_INC(frame_R2C)):
                              (cur_ruby_frame ? RB_DEBUG_COUNTER_INC(frame_C2R) :
