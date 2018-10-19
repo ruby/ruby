@@ -1945,24 +1945,25 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 #endif
 
 void
-rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
+rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
 {
     struct pollfd pfd;
+    struct timespec ts;
 
     pfd.fd = sigwait_fd;
     pfd.events = POLLIN;
 
     if (!BUSY_WAIT_SIGNALS && ubf_threads_empty()) {
-        (void)ppoll(&pfd, 1, ts, 0);
+        (void)ppoll(&pfd, 1, rb_hrtime2timespec(&ts, rel), 0);
         check_signals_nogvl(th, sigwait_fd);
     }
     else {
-        rb_hrtime_t rel, end;
+        rb_hrtime_t to = RB_HRTIME_MAX, end;
         int n = 0;
 
-        if (ts) {
-            rel = rb_timespec2hrtime(ts);
-            end = rb_hrtime_add(rb_hrtime_now(), rel);
+        if (rel) {
+            to = *rel;
+            end = rb_hrtime_add(rb_hrtime_now(), to);
         }
         /*
          * tricky: this needs to return on spurious wakeup (no auto-retry).
@@ -1970,16 +1971,15 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const struct timespec *ts)
          * wakeups, so we care about the result of consume_communication_pipe
          */
         for (;;) {
-            const rb_hrtime_t *sto = sigwait_timeout(th, sigwait_fd, &rel, &n);
-            struct timespec tmp;
+            const rb_hrtime_t *sto = sigwait_timeout(th, sigwait_fd, &to, &n);
 
             if (n) return;
-            n = ppoll(&pfd, 1, rb_hrtime2timespec(&tmp, sto), 0);
+            n = ppoll(&pfd, 1, rb_hrtime2timespec(&ts, sto), 0);
             if (check_signals_nogvl(th, sigwait_fd))
                 return;
             if (n || (th && RUBY_VM_INTERRUPTED(th->ec)))
                 return;
-            if (ts && hrtime_update_expire(&rel, end))
+            if (rel && hrtime_update_expire(&to, end))
                 return;
         }
     }
@@ -2035,8 +2035,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         GVL_UNLOCK_BEGIN(th);
 
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
-            struct timespec ts;
-            rb_sigwait_sleep(th, sigwait_fd, rb_hrtime2timespec(&ts, rel));
+            rb_sigwait_sleep(th, sigwait_fd, rel);
         }
         else {
             check_signals_nogvl(th, sigwait_fd);

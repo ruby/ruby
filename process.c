@@ -17,6 +17,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
+#include "hrtime.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -931,7 +932,7 @@ void rb_native_mutex_unlock(rb_nativethread_lock_t *);
 void rb_native_cond_signal(rb_nativethread_cond_t *);
 void rb_native_cond_wait(rb_nativethread_cond_t *, rb_nativethread_lock_t *);
 int rb_sigwait_fd_get(const rb_thread_t *);
-void rb_sigwait_sleep(const rb_thread_t *, int fd, const struct timespec *);
+void rb_sigwait_sleep(const rb_thread_t *, int fd, const rb_hrtime_t *);
 void rb_sigwait_fd_put(const rb_thread_t *, int fd);
 void rb_thread_sleep_interruptible(void);
 
@@ -1026,11 +1027,11 @@ waitpid_state_init(struct waitpid_state *w, rb_pid_t pid, int options)
     w->options = options;
 }
 
-static const struct timespec *
+static const rb_hrtime_t *
 sigwait_sleep_time(void)
 {
     if (SIGCHLD_LOSSY) {
-        static const struct timespec busy_wait = { 0, 100000000 };
+        static const rb_hrtime_t busy_wait = 100 * RB_HRTIME_PER_MSEC;
 
         return &busy_wait;
     }
