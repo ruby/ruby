@@ -29,7 +29,7 @@ sufficient information, see the ChangeLog file or Redmine
     (1..).each {|index| ... }           # infinite loop from index 1
     ary.zip(1..) {|elem, index| ... }   # ary.each.with_index(1) { }
 
-* Non- Symbol key in keyword arguments hash causes an exception.
+* Non-Symbol key in keyword arguments hash causes an exception.
 
 === Core classes updates (outstanding ones only)
 
@@ -37,7 +37,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * Added Array#union and Array#difference instance method. [Feature #14097]
+    * Added Array#union and Array#difference instance methods.  [Feature #14097]
 
   [Modified methods]
 
@@ -149,8 +149,8 @@ sufficient information, see the ChangeLog file or Redmine
   [Incompatible changes]
 
     * Kernel#system and Kernel#exec do not close non-standard file descriptors
-      (The default of +:close_others+ option is changed to +false+ by
-      default.  but we still set the +FD_CLOEXEC+ flag on descriptors we
+      (The default of the +:close_others+ option is changed to +false+,
+      but we still set the +FD_CLOEXEC+ flag on descriptors we
       create).  [Misc #14907]
 
 [KeyError]
@@ -165,7 +165,7 @@ sufficient information, see the ChangeLog file or Redmine
   [New methods]
 
     * Module#method_defined?, Module#private_method_defined? and
-      Module#protected_method_defined? now accepts the second
+      Module#protected_method_defined? now accept the second
       parameter as optional. If it's +true+ (=default), checks ancestor
       modules/classes, or checks only the class itself. [Feature #14944]
 
@@ -271,7 +271,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [FileUtils]
 
-  [New method]
+  [New methods]
 
     * FileUtils#cp_lr.  [Feature #4189]
 
@@ -409,7 +409,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Miscellaneous changes
 
-* On macOS, shared libraries no longer include a full version number of ruby
+* On macOS, shared libraries no longer include a full version number of Ruby
   in their names.  This eliminates the burden of each teeny upgrade on the
   platform that users need to rebuild every extension library.
 
