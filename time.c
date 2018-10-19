@@ -275,14 +275,12 @@ v2w_bignum(VALUE v)
         INTEGER_PACK_NATIVE_BYTE_ORDER);
     if (sign == 0)
         return WINT2FIXWV(0);
-    else if (sign == -1) {
+    if (sign == -1) 
         if (u <= -FIXWV_MIN)
             return WINT2FIXWV(-(wideint_t)u);
-    }
-    else if (sign == +1) {
+    if (sign == +1)
         if (u <= FIXWV_MAX)
             return WINT2FIXWV((wideint_t)u);
-    }
     return WIDEVAL_WRAP(v);
 }
 #endif
