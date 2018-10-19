@@ -86,8 +86,18 @@
 #include <setjmp.h>
 #include <signal.h>
 
-#ifndef NSIG
-# define NSIG (_SIGMAX + 1)      /* For QNX */
+#if defined(NSIG_MAX)           /* POSIX issue 8 */
+# undef NSIG
+# define NSIG NSIG_MAX
+#elif defined(_SIG_MAXSIG)      /* FreeBSD */
+# undef NSIG
+# define NSIG _SIG_MAXSIG
+#elif defined(_SIGMAX)          /* QNX */
+# define NSIG (_SIGMAX + 1)
+#elif defined(NSIG)             /* 99% of everything else */
+# /* take it */
+#else                           /* Last resort */
+# define NSIG (sizeof(sigset_t) * CHAR_BIT + 1)
 #endif
 
 #define RUBY_NSIG NSIG
