@@ -4189,7 +4189,7 @@ ary_recycle_hash(VALUE hash)
  *
  *  If you need set-like behavior, see the library class Set.
  *
- *  See Array#difference.
+ *  See also Array#difference.
  */
 
 static VALUE
@@ -4222,22 +4222,22 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
 /*
  *  call-seq:
- *     ary.difference(other_ary1, other_ary2,...)   -> ary
+ *     ary.difference(other_ary1, other_ary2, ...)   -> ary
  *
  *  Array Difference
  *
- *  Returns a new array that is a copy of +self+, removing any items
- *  that also appear in any of the <code>other_ary</code>s. The order of +self+ is
- *  preserved.
+ *  Returns a new array that is a copy of the receiver, removing any items
+ *  that also appear in any of the arrays given as arguments.
+ *  The order is preserved from the original array.
  *
  *  It compares elements using their #hash and #eql? methods for efficiency.
  *
- *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])       #=> [ 3, 3, 5 ]
- *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])    #=> [:s, "yep"]
+ *     [ 1, 1, 2, 2, 3, 3, 4, 5 ].difference([ 1, 2, 4 ])     #=> [ 3, 3, 5 ]
+ *     [ 1, 'c', :s, 'yep' ].difference([ 1 ], [ 'a', 'c' ])  #=> [ :s, "yep" ]
  *
  *  If you need set-like behavior, see the library class Set.
  *
- *  See Array#-.
+ *  See also Array#-.
  */
 
 static VALUE
