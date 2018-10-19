@@ -63,8 +63,7 @@
     (statement-case-intro . *)
     (statement-case-open . *)
     (statement-block-intro . (ruby-style-case-indent +))
-    (access-label /)
-    )))
+    (access-label /))))
 
 ;;;###autoload
 (defun ruby-style-c-mode ()
