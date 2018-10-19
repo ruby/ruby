@@ -181,10 +181,17 @@ module MJITHeader
   end
 
   def self.with_code(code)
-    Tempfile.open(['', '.c'], mode: File::BINARY) do |f|
+    # for `system_header` pragma which can't be in the main file.
+    Tempfile.open(['', '.h'], mode: File::BINARY) do |f|
       f.puts code
       f.close
-      return yield(f.path)
+      Tempfile.open(['', '.c'], mode: File::BINARY) do |c|
+        c.puts <<SRC
+#include "#{f.path}"
+SRC
+        c.close
+        return yield(c.path)
+      end
     end
   end
   private_class_method :with_code
@@ -220,7 +227,11 @@ if MJITHeader.windows? # transformation is broken with Windows headers for now
 end
 
 macro, code = MJITHeader.separate_macro_and_code(code) # note: this does not work on MinGW
-code_to_check = "#{code}#{macro}" # macro should not affect code again
+code_to_check = "#{<<header}#{code}#{macro}" # macro should not affect code again
+#ifdef __GNUC__
+# pragma GCC system_header
+#endif
+header
 
 if MJITHeader.conflicting_types?(code_to_check, cc, cflags)
   cflags = "#{cflags} -std=c99" # For AIX gcc
