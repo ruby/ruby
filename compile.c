@@ -8083,6 +8083,9 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 	keyword->table = ids;
 	return keyword;
     }
+    else if (default_len < 0) {
+        UNREACHABLE;
+    }
 
     dvs = ALLOC_N(VALUE, (unsigned int)default_len);
 
