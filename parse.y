@@ -372,6 +372,9 @@ static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
 static void block_dup_check(struct parser_params*,NODE*,NODE*);
 
+static NODE *assoc_concat_gen(struct parser_params*,NODE*,NODE*);
+#define assoc_concat(assocs,tail) assoc_concat_gen(p,(assocs),(tail))
+
 static NODE *block_append(struct parser_params*,NODE*,NODE*);
 static NODE *list_append(struct parser_params*,NODE*,NODE*);
 static NODE *list_concat(NODE*,NODE*);
@@ -834,7 +837,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> command_asgn mrhs mrhs_arg superclass block_call block_command
 %type <node> f_block_optarg f_block_opt
 %type <node> f_arglist f_args f_arg f_arg_item f_optarg f_marg f_marg_list f_margs
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assoc_items assoc_item assocs assoc undef_list backref string_dvar for_var
 %type <node> block_param opt_block_param block_param_def f_opt
 %type <node> f_kwarg f_kw f_block_kwarg f_block_kw
 %type <node> bv_decls opt_bv_decl bvar
@@ -4294,7 +4297,7 @@ singleton	: var_ref
 		;
 
 assoc_list	: none
-		| assocs trailer
+		| assoc_items trailer
 		    {
 		    /*%%%*/
 			$$ = $1;
@@ -4303,26 +4306,35 @@ assoc_list	: none
 		    }
 		;
 
+assoc_items	: assoc_item
+			/*% ripper[brace]: rb_ary_new3(1, get_value($1)) %*/
+		| assoc_items ',' assoc_item
+			{
+			/*%%%*/
+			$$ = assoc_concat($1, $3);
+			/*% %*/
+			/*% ripper: rb_ary_push($1, get_value($3)) %*/
+			}
+		;
+assoc_item	: assoc
+		| tIDENTIFIER
+			{
+			/*%%%*/
+			NODE *key, *val;
+			key = NEW_LIT(ID2SYM($1), &@1);
+			if (!(val = gettable(p, $1, &@$))) val = NEW_BEGIN(0, &@$);
+			$$ = list_append(p, NEW_LIST(key, &@1), val);
+			/*% %*/
+			/*% ripper: assoc_new!($1, get_value($1)) %*/
+			}
+		;
+
 assocs		: assoc
 		    /*% ripper[brace]: rb_ary_new3(1, get_value($1)) %*/
 		| assocs ',' assoc
 		    {
 		    /*%%%*/
-			NODE *assocs = $1;
-			NODE *tail = $3;
-			if (!assocs) {
-			    assocs = tail;
-			}
-			else if (tail) {
-			    if (assocs->nd_head &&
-				!tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
-				nd_type(tail->nd_next->nd_head) == NODE_HASH) {
-				/* DSTAR */
-				tail = tail->nd_next->nd_head->nd_head;
-			    }
-			    assocs = list_concat(assocs, tail);
-			}
-			$$ = assocs;
+			$$ = assoc_concat($1, $3);
 		    /*% %*/
 		    /*% ripper: rb_ary_push($1, get_value($3)) %*/
 		    }
@@ -8344,6 +8356,24 @@ static void
 parser_warn(struct parser_params *p, NODE *node, const char *mesg)
 {
     rb_compile_warn(p->ruby_sourcefile, nd_line(node), "%s", mesg);
+}
+
+static NODE *
+assoc_concat_gen(struct parser_params *parser, NODE *assocs, NODE *tail)
+{
+	if (!assocs) {
+		assocs = tail;
+	}
+	else if (tail) {
+		if (assocs->nd_head &&
+		!tail->nd_head && nd_type(tail->nd_next) == NODE_ARRAY &&
+		nd_type(tail->nd_next->nd_head) == NODE_HASH) {
+			/* DSTAR */
+			tail = tail->nd_next->nd_head->nd_head;
+		}
+		assocs = list_concat(assocs, tail);
+	}
+	return assocs;
 }
 
 static NODE*
