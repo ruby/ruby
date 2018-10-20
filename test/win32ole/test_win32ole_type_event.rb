@@ -3,51 +3,46 @@ begin
   require 'win32ole'
 rescue LoadError
 end
-require "test/unit"
+
+require 'test/unit'
 
 if defined?(WIN32OLE_TYPE)
-  def ado_installed?
-    installed = false
-    if defined?(WIN32OLE)
-      begin
-        WIN32OLE.new('ADODB.Connection')
-        installed = true
-      rescue
-      end
-    end
-    installed
+  def sysmon_available?
+    WIN32OLE_TYPE.new('System Monitor Control', 'SystemMonitor')
+    true
+  rescue
+    false
   end
 
   class TestWIN32OLE_TYPE_EVENT < Test::Unit::TestCase
-    unless ado_installed?
+    unless sysmon_available?
       def test_dummy_for_skip_message
-        skip 'ActiveX Data Object Library not found'
+        skip 'System Monitor Control is not available'
       end
     else
 
       def setup
-        typelib = WIN32OLE.new('ADODB.Connection').ole_typelib
-        @ole_type = WIN32OLE_TYPE.new(typelib.name, 'Connection')
+        @ole_type = WIN32OLE_TYPE.new('System Monitor Control', 'SystemMonitor')
       end
 
       def test_implemented_ole_types
         ole_types = @ole_type.implemented_ole_types.map(&:name).sort
-        assert_equal(['ConnectionEvents', '_Connection'], ole_types)
+        assert_equal(['DISystemMonitor', 'DISystemMonitorEvents', 'ISystemMonitor'], ole_types)
       end
 
       def test_default_ole_types
         ole_types = @ole_type.default_ole_types.map(&:name).sort
-        assert_equal(['ConnectionEvents', '_Connection'], ole_types)
+        assert_equal(['DISystemMonitor', 'DISystemMonitorEvents'], ole_types)
       end
 
       def test_source_ole_types
         ole_types = @ole_type.source_ole_types.map(&:name)
-        assert_equal(['ConnectionEvents'], ole_types)
+        assert_equal(['DISystemMonitorEvents'], ole_types)
       end
 
       def test_default_event_sources
         event_sources = @ole_type.default_event_sources.map(&:name)
-        assert_equal(['ConnectionEvents'], event_sources)
+        assert_equal(['DISystemMonitorEvents'], event_sources)
       end
     end
   end
