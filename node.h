@@ -192,6 +192,8 @@ typedef struct RNode {
 #define nd_set_first_column(n, v) ((n)->nd_loc.beg_pos.column = (v))
 #define nd_first_lineno(n) ((int)((n)->nd_loc.beg_pos.lineno))
 #define nd_set_first_lineno(n, v) ((n)->nd_loc.beg_pos.lineno = (v))
+#define nd_first_loc(n) ((n)->nd_loc.beg_pos)
+#define nd_set_first_loc(n, v) (nd_first_loc(n) = (v))
 
 #define nd_last_column(n) ((int)((n)->nd_loc.end_pos.column))
 #define nd_set_last_column(n, v) ((n)->nd_loc.end_pos.column = (v))
