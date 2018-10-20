@@ -2013,7 +2013,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		sp = calc_sp_depth(sp, iobj);
 		code_index += insn_data_length(iobj);
 		insn_num++;
-		if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE)) {
+                if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
+                    (events & RUBY_EVENT_COVERAGE_LINE) &&
+                    !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
 		    int line = iobj->insn_info.line_no;
 		    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, INT2FIX(0));
 		}

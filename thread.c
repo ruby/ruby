@@ -4323,11 +4323,16 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
 
     if (lines) {
-	for (i = 0; i < RARRAY_LEN(lines); i++) {
-	    if (RARRAY_AREF(lines, i) != Qnil) {
-		RARRAY_ASET(lines, i, INT2FIX(0));
-	    }
-	}
+        if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
+            rb_ary_clear(lines);
+        }
+        else {
+            int i;
+            for (i = 0; i < RARRAY_LEN(lines); i++) {
+                if (RARRAY_AREF(lines, i) != Qnil)
+                    RARRAY_ASET(lines, i, INT2FIX(0));
+            }
+        }
     }
     if (branches) {
 	VALUE counters = RARRAY_AREF(branches, 1);
@@ -4339,8 +4344,8 @@ clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
     return ST_CONTINUE;
 }
 
-static void
-clear_coverage(void)
+void
+rb_clear_coverages(void)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
@@ -4373,7 +4378,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     vm->fork_gen++;
 
     vm->sleeper = 0;
-    clear_coverage();
+    rb_clear_coverages();
 }
 
 static void
@@ -5219,13 +5224,20 @@ rb_check_deadlock(rb_vm_t *vm)
 static void
 update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
-    VALUE coverage = rb_iseq_coverage(GET_EC()->cfp->iseq);
+    const rb_control_frame_t *cfp = GET_EC()->cfp;
+    VALUE coverage = rb_iseq_coverage(cfp->iseq);
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
 	VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
 	if (lines) {
 	    long line = rb_sourceline() - 1;
 	    long count;
 	    VALUE num;
+            void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
+            if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
+                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - cfp->iseq->body->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
+                rb_ary_push(lines, LONG2FIX(line + 1));
+                return;
+            }
 	    if (line >= RARRAY_LEN(lines)) { /* no longer tracked */
 		return;
 	    }
@@ -5340,6 +5352,12 @@ rb_get_coverages(void)
     return GET_VM()->coverages;
 }
 
+int
+rb_get_coverage_mode(void)
+{
+    return GET_VM()->coverage_mode;
+}
+
 void
 rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 {
@@ -5355,22 +5373,10 @@ rb_set_coverages(VALUE coverages, int mode, VALUE me2counter)
 }
 
 /* Make coverage arrays empty so old covered files are no longer tracked. */
-static int
-reset_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
-{
-    VALUE coverage = (VALUE)val;
-    VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
-    VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
-    if (lines) rb_ary_clear(lines);
-    if (branches) rb_ary_clear(branches);
-    return ST_CONTINUE;
-}
-
 void
 rb_reset_coverages(void)
 {
-    VALUE coverages = rb_get_coverages();
-    st_foreach(rb_hash_tbl_raw(coverages), reset_coverage_i, 0);
+    rb_clear_coverages();
     rb_iseq_remove_coverage_all();
     GET_VM()->coverages = Qfalse;
     rb_remove_event_hook((rb_event_hook_func_t) update_line_coverage);

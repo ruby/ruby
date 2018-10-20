@@ -656,7 +656,8 @@ rb_iseq_new_top(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpath
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
         if (ast->line_count >= 0) {
-            VALUE coverage = rb_default_coverage(ast->line_count);
+            int len = (rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES) ? 0 : ast->line_count;
+            VALUE coverage = rb_default_coverage(len);
             rb_hash_aset(coverages, path, coverage);
         }
     }
@@ -1652,6 +1653,19 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
     }
     else {
 	return 0;
+    }
+}
+
+void
+rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset)
+{
+    struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
+    if (entry) {
+	entry->events &= ~reset;
+        if (!(entry->events & iseq->aux.trace_events)) {
+            void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, int pos);
+            rb_iseq_trace_flag_cleared(iseq, pos);
+        }
     }
 }
 
@@ -2932,6 +2946,14 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
     }
 
     rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
+}
+
+void
+rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, int pos)
+{
+    const struct rb_iseq_constant_body *const body = iseq->body;
+    VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
+    encoded_iseq_trace_instrument(&iseq_encoded[pos], 0);
 }
 
 void
