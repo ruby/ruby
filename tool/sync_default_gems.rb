@@ -122,6 +122,7 @@ def sync_default_gems(gem)
     `cp -rf ../fiddle/test/fiddle test`
     `cp -f ../fiddle/fiddle.gemspec ext/fiddle`
     `git checkout ext/fiddle/depend`
+    `rm -rf ext/fiddle/lib/fiddle.{bundle,so}`
   when "stringio"
     `rm -rf ext/stringio test/stringio`
     `cp -rf ../stringio/ext/stringio ext`
