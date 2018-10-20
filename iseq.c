@@ -214,6 +214,7 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	}
 
 	rb_gc_mark(body->variable.coverage);
+	rb_gc_mark(body->variable.pc2branchindex);
 	rb_gc_mark(body->location.label);
 	rb_gc_mark(body->location.base_label);
 	rb_gc_mark(body->location.pathobj);
@@ -468,6 +469,8 @@ prepare_iseq_build(rb_iseq_t *iseq,
 	}
     }
     ISEQ_COVERAGE_SET(iseq, coverage);
+    if (coverage && ISEQ_BRANCH_COVERAGE(iseq))
+        ISEQ_PC2BRANCHINDEX_SET(iseq, rb_ary_tmp_new(0));
 
     return Qtrue;
 }
@@ -1922,7 +1925,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
     {
 	rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
 	if (events) {
-	    str = rb_str_catf(str, "[%s%s%s%s%s%s%s%s%s]",
+	    str = rb_str_catf(str, "[%s%s%s%s%s%s%s%s%s%s%s]",
 			      events & RUBY_EVENT_LINE     ? "Li" : "",
 			      events & RUBY_EVENT_CLASS    ? "Cl" : "",
 			      events & RUBY_EVENT_END      ? "En" : "",
@@ -1931,7 +1934,10 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
 			      events & RUBY_EVENT_C_CALL   ? "Cc" : "",
 			      events & RUBY_EVENT_C_RETURN ? "Cr" : "",
 			      events & RUBY_EVENT_B_CALL   ? "Bc" : "",
-			      events & RUBY_EVENT_B_RETURN ? "Br" : "");
+			      events & RUBY_EVENT_B_RETURN ? "Br" : "",
+			      events & RUBY_EVENT_COVERAGE_LINE   ? "Cli" : "",
+			      events & RUBY_EVENT_COVERAGE_BRANCH ? "Cbr" : ""
+                              );
 	}
     }
 

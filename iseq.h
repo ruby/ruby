@@ -32,6 +32,9 @@ rb_call_info_kw_arg_bytes(int keyword_len)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
 
+#define ISEQ_PC2BRANCHINDEX(iseq)         iseq->body->variable.pc2branchindex
+#define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &iseq->body->variable.pc2branchindex, h)
+
 #define ISEQ_FLIP_CNT(iseq) (iseq)->body->variable.flip_count
 
 static inline rb_snum_t
@@ -72,7 +75,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 			   RUBY_EVENT_RETURN| \
 			   RUBY_EVENT_B_CALL| \
 			   RUBY_EVENT_B_RETURN| \
-			   RUBY_EVENT_COVERAGE_LINE)
+			   RUBY_EVENT_COVERAGE_LINE| \
+			   RUBY_EVENT_COVERAGE_BRANCH)
 
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
