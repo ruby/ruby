@@ -315,8 +315,8 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
     dwarf_version = *(unsigned short *)p;
     p += 2;
 
-    header_length = *(unsigned int *)p;
-    p += sizeof(unsigned int);
+    header_length = dwarf_word == 4 ? *(unsigned int *)p : *(unsigned long *)p;
+    p += dwarf_word;
 
     cu_start = p + header_length;
 
@@ -1795,7 +1795,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         }
     }
 
-    if (!obj->debug_line.shdr) {
+    if (!obj->debug_line.ptr) {
 	/* This file doesn't have .debug_line section,
 	   let's check .gnu_debuglink section instead. */
 	if (gnu_debuglink_shdr && check_debuglink) {
