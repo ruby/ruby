@@ -41,12 +41,6 @@ have_struct_member('struct passwd', 'pw_expire', 'pwd.h')
 have_struct_member('struct passwd', 'pw_passwd', 'pwd.h')
 have_struct_member('struct group', 'gr_passwd', 'grp.h')
 
-# for https://github.com/ruby/etc
-srcdir = File.expand_path("..", __FILE__)
-if !File.exists?("#{srcdir}/constdefs.h")
-  %x[#{RbConfig.ruby} #{srcdir}/mkconstants.rb -o #{srcdir}/constdefs.h]
-end
-
 $distcleanfiles << "constdefs.h"
 
 create_makefile("etc")
