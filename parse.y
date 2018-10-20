@@ -3132,7 +3132,8 @@ lambda		:   {
 			p->lex.lpar_beg = $<num>2;
 			CMDARG_POP();
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, $5, &@$);
+                        YYLTYPE loc = code_loc_gen(&@3, &@5);
+			$$ = NEW_LAMBDA($3, $5, &loc);
 			nd_set_line($$->nd_body, @5.end_pos.lineno);
 			nd_set_line($$, @3.end_pos.lineno);
 		    /*% %*/
