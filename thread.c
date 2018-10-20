@@ -4313,7 +4313,6 @@ rb_thread_start_timer_thread(void)
     rb_thread_create_timer_thread();
 }
 
-#if defined(HAVE_WORKING_FORK)
 static int
 clear_coverage_i(st_data_t key, st_data_t val, st_data_t dummy)
 {
@@ -4353,6 +4352,7 @@ rb_clear_coverages(void)
     }
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const rb_thread_t *))
 {
