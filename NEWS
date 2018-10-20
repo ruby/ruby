@@ -270,7 +270,7 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Add +:oneshot_lines+ keyword argument to Coverage.start.
 
-    * Add +:stop:+ and +:clear:+ keyword arguments to Coverage.result.
+    * Add +:stop+ and +:clear+ keyword arguments to Coverage.result.
       If +clear+ is true, it clears the counters to zero.
       If +stop+ is true, it disables coverage measurement.
 
