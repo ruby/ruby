@@ -57,6 +57,19 @@ RSpec.describe "bundle update" do
     end
   end
 
+  describe "with --gemfile" do
+    it "creates lock files based on the Gemfile name" do
+      gemfile bundled_app("OmgFile"), <<-G
+        source "file://#{gem_repo1}"
+        gem "rack", "1.0"
+      G
+
+      bundle! "update --gemfile OmgFile", :all => bundle_update_requires_all?
+
+      expect(bundled_app("OmgFile.lock")).to exist
+    end
+  end
+
   context "when update_requires_all_flag is set" do
     before { bundle! "config update_requires_all_flag true" }
 

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "open3"
+
 module Spec
   module Helpers
     def reset!
@@ -98,9 +100,6 @@ module Spec
     def bundle(cmd, options = {})
       with_sudo = options.delete(:sudo)
       sudo = with_sudo == :preserve_env ? "sudo -E" : "sudo" if with_sudo
-
-      no_color = options.delete("no-color") { cmd.to_s !~ /\A(e|ex|exe|exec|conf|confi|config)(\s|\z)/ }
-      options["no-color"] = true if no_color
 
       bundle_bin = options.delete("bundle_bin") || bindir.join("bundle")
 
@@ -213,14 +212,10 @@ module Spec
         args = args.gsub(/(?=")/, "\\")
         args = %("#{args}")
       end
-      gem = ENV['BUNDLE_GEM'] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
+      gem = ENV["BUNDLE_GEM"] || "#{Gem.ruby} -rrubygems -S gem --backtrace"
       sys_exec("#{gem} #{command} #{args}")
     end
     bang :gem_command
-
-    def rake
-      "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
-    end
 
     def sys_exec(cmd)
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)

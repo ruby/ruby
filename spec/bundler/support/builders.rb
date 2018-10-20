@@ -190,6 +190,7 @@ module Spec
         end
 
         build_gem "very_simple_binary", &:add_c_extension
+        build_gem "simple_binary", &:add_c_extension
 
         build_gem "bundler", "0.9" do |s|
           s.executables = "bundle"

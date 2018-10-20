@@ -752,4 +752,31 @@ RSpec.describe "bundle outdated" do
       end
     end
   end
+
+  describe "with --only-explicit" do
+    it "does not report outdated dependent gems" do
+      build_repo4 do
+        build_gem "weakling", %w[0.2 0.3] do |s|
+          s.add_dependency "bar", "~> 2.1"
+        end
+        build_gem "bar", %w[2.1 2.2]
+      end
+
+      install_gemfile <<-G
+        source "file://#{gem_repo4}"
+        gem 'weakling', '0.2'
+        gem 'bar', '2.1'
+      G
+
+      gemfile  <<-G
+        source "file://#{gem_repo4}"
+        gem 'weakling'
+      G
+
+      bundle "outdated --only-explicit"
+
+      expect(out).to include("weakling (newest 0.3")
+      expect(out).not_to include("bar (newest 2.2")
+    end
+  end
 end

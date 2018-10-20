@@ -197,10 +197,12 @@ module Bundler
     def pretty_dependency(dep, print_source = false)
       msg = String.new(dep.name)
       msg << " (#{dep.requirement})" unless dep.requirement == Gem::Requirement.default
+
       if dep.is_a?(Bundler::Dependency)
         platform_string = dep.platforms.join(", ")
         msg << " " << platform_string if !platform_string.empty? && platform_string != Gem::Platform::RUBY
       end
+
       msg << " from the `#{dep.source}` source" if print_source && dep.source
       msg
     end
@@ -221,6 +223,10 @@ module Bundler
     def digest(name)
       require "digest"
       Digest(name)
+    end
+
+    def write_to_gemfile(gemfile_path, contents)
+      filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
     end
 
   private
@@ -267,9 +273,13 @@ module Bundler
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLE_SPEC_RUN"]
-          gemspec = File.join(current, "bundler.gemspec")
-          # for Ruby Core
-          gemspec = File.join(current, "lib/bundler.gemspec") unless File.file?(gemspec)
+          # avoid stepping above the tmp directory when testing
+          gemspec = if ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]
+            # for Ruby Core
+            "lib/bundler.gemspec"
+          else
+            "bundler.gemspec"
+          end
 
           # avoid stepping above the tmp directory when testing
           return nil if File.file?(File.join(current, gemspec))

@@ -733,4 +733,39 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bundler/gems/extensions")).to exist
     expect(vendored_gems("bundler/gems/very_simple_git_binary-1.0-#{revision[0..11]}")).to exist
   end
+
+  it "removes extension directories", :rubygems => "2.2" do
+    gemfile <<-G
+      source "file://#{gem_repo1}"
+
+      gem "thin"
+      gem "very_simple_binary"
+      gem "simple_binary"
+    G
+
+    bundle! "install", forgotten_command_line_options(:path => "vendor/bundle")
+
+    very_simple_binary_extensions_dir =
+      Pathname.glob("#{vendored_gems}/extensions/*/*/very_simple_binary-1.0").first
+
+    simple_binary_extensions_dir =
+      Pathname.glob("#{vendored_gems}/extensions/*/*/simple_binary-1.0").first
+
+    expect(very_simple_binary_extensions_dir).to exist
+    expect(simple_binary_extensions_dir).to exist
+
+    gemfile <<-G
+      source "file://#{gem_repo1}"
+
+      gem "thin"
+      gem "simple_binary"
+    G
+
+    bundle! "install"
+    bundle! :clean
+    expect(out).to eq("Removing very_simple_binary (1.0)")
+
+    expect(very_simple_binary_extensions_dir).not_to exist
+    expect(simple_binary_extensions_dir).to exist
+  end
 end

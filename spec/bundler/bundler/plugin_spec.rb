@@ -228,6 +228,16 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
+  describe "#add_hook" do
+    it "raises an ArgumentError on an unregistered event" do
+      ran = false
+      expect do
+        Plugin.add_hook("unregistered-hook") { ran = true }
+      end.to raise_error(ArgumentError)
+      expect(ran).to be(false)
+    end
+  end
+
   describe "#hook" do
     before do
       path = lib_path("foo-plugin")
@@ -235,7 +245,13 @@ RSpec.describe Bundler::Plugin do
         s.write "plugins.rb", code
       end
 
-      allow(index).to receive(:hook_plugins).with(event).
+      Bundler::Plugin::Events.send(:reset)
+      Bundler::Plugin::Events.send(:define, :EVENT_1, "event-1")
+      Bundler::Plugin::Events.send(:define, :EVENT_2, "event-2")
+
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_1).
+        and_return(["foo-plugin"])
+      allow(index).to receive(:hook_plugins).with(Bundler::Plugin::Events::EVENT_2).
         and_return(["foo-plugin"])
       allow(index).to receive(:plugin_path).with("foo-plugin").and_return(path)
       allow(index).to receive(:load_paths).with("foo-plugin").and_return([])
@@ -245,11 +261,15 @@ RSpec.describe Bundler::Plugin do
       Bundler::Plugin::API.hook("event-1") { puts "hook for event 1" }
     RUBY
 
-    let(:event) { "event-1" }
+    it "raises an ArgumentError on an unregistered event" do
+      expect do
+        Plugin.hook("unregistered-hook")
+      end.to raise_error(ArgumentError)
+    end
 
     it "executes the hook" do
       out = capture(:stdout) do
-        Plugin.hook("event-1")
+        Plugin.hook(Bundler::Plugin::Events::EVENT_1)
       end.strip
 
       expect(out).to eq("hook for event 1")
@@ -257,17 +277,15 @@ RSpec.describe Bundler::Plugin do
 
     context "single plugin declaring more than one hook" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook("event-1") {}
-        Bundler::Plugin::API.hook("event-2") {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) {}
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_2) {}
         puts "loaded"
       RUBY
 
-      let(:event) { /event-1|event-2/ }
-
       it "evals plugins.rb once" do
         out = capture(:stdout) do
-          Plugin.hook("event-1")
-          Plugin.hook("event-2")
+          Plugin.hook(Bundler::Plugin::Events::EVENT_1)
+          Plugin.hook(Bundler::Plugin::Events::EVENT_2)
         end.strip
 
         expect(out).to eq("loaded")
@@ -276,12 +294,12 @@ RSpec.describe Bundler::Plugin do
 
     context "a block is passed" do
       let(:code) { <<-RUBY }
-        Bundler::Plugin::API.hook("#{event}") { |&blk| blk.call }
+        Bundler::Plugin::API.hook(Bundler::Plugin::Events::EVENT_1) { |&blk| blk.call }
       RUBY
 
       it "is passed to the hook" do
         out = capture(:stdout) do
-          Plugin.hook("event-1") { puts "win" }
+          Plugin.hook(Bundler::Plugin::Events::EVENT_1) { puts "win" }
         end.strip
 
         expect(out).to eq("win")

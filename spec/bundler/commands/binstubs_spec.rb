@@ -39,6 +39,18 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(bundled_app("bin/rails")).to exist
     end
 
+    it "allows installing all binstubs" do
+      install_gemfile! <<-G
+        source "file://#{gem_repo1}"
+        gem "rails"
+      G
+
+      bundle! :binstubs, :all => true
+
+      expect(bundled_app("bin/rails")).to exist
+      expect(bundled_app("bin/rake")).to exist
+    end
+
     it "displays an error when used without any gem" do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
@@ -48,6 +60,17 @@ RSpec.describe "bundle binstubs <gem>" do
       bundle "binstubs"
       expect(exitstatus).to eq(1) if exitstatus
       expect(out).to include("`bundle binstubs` needs at least one gem to run.")
+    end
+
+    it "displays an error when used with --all and gems" do
+      install_gemfile <<-G
+        source "file://#{gem_repo1}"
+        gem "rack"
+      G
+
+      bundle "binstubs rack", :all => true
+      expect(last_command).to be_failure
+      expect(last_command.bundler_err).to include("Cannot specify --all with specific gems")
     end
 
     context "when generating bundle binstub outside bundler" do

@@ -52,6 +52,8 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "installs when BUNDLE_PATH is owned by root" do
+      bundle! "config global_path_appends_ruby_scope false" # consistency in tests between 1.x and 2.x modes
+
       bundle_path = tmp("owned_by_root")
       FileUtils.mkdir_p bundle_path
       sudo "chown -R root #{bundle_path}"
@@ -68,6 +70,8 @@ RSpec.describe "when using sudo", :sudo => true do
     end
 
     it "installs when BUNDLE_PATH does not exist" do
+      bundle! "config global_path_appends_ruby_scope false" # consistency in tests between 1.x and 2.x modes
+
       root_path = tmp("owned_by_root")
       FileUtils.mkdir_p root_path
       sudo "chown -R root #{root_path}"

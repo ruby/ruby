@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle viz", :ruby => "1.9.3", :if => Bundler.which("dot") do
+RSpec.describe "bundle viz", :ruby => "1.9.3", :bundler => "< 2", :if => Bundler.which("dot") do
   let(:ruby_graphviz) do
     graphviz_glob = base_system_gems.join("cache/ruby-graphviz*")
     Pathname.glob(graphviz_glob).first

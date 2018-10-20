@@ -7,6 +7,8 @@ module Bundler
   # available dependency versions as found in its index, before returning it to
   # to the resolution engine to select the best version.
   class GemVersionPromoter
+    DEBUG = ENV["DEBUG_RESOLVER"]
+
     attr_reader :level, :locked_specs, :unlock_gems
 
     # By default, strict is false, meaning every available version of a gem
@@ -64,7 +66,7 @@ module Bundler
     # @return [SpecGroup] A new instance of the SpecGroup Array sorted and
     #    possibly filtered.
     def sort_versions(dep, spec_groups)
-      before_result = "before sort_versions: #{debug_format_result(dep, spec_groups).inspect}" if ENV["DEBUG_RESOLVER"]
+      before_result = "before sort_versions: #{debug_format_result(dep, spec_groups).inspect}" if DEBUG
 
       @sort_versions[dep] ||= begin
         gem_name = dep.name
@@ -78,7 +80,7 @@ module Bundler
         else
           sort_dep_specs(spec_groups, locked_spec)
         end.tap do |specs|
-          if ENV["DEBUG_RESOLVER"]
+          if DEBUG
             STDERR.puts before_result
             STDERR.puts " after sort_versions: #{debug_format_result(dep, specs).inspect}"
           end

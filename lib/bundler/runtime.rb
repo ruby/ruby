@@ -163,6 +163,7 @@ module Bundler
       gem_dirs             = Dir["#{Gem.dir}/gems/*"]
       gem_files            = Dir["#{Gem.dir}/cache/*.gem"]
       gemspec_files        = Dir["#{Gem.dir}/specifications/*.gemspec"]
+      extension_dirs       = Dir["#{Gem.dir}/extensions/*/*/*"]
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths
@@ -170,6 +171,7 @@ module Bundler
       spec_gem_executables = []
       spec_cache_paths     = []
       spec_gemspec_paths   = []
+      spec_extension_paths = []
       specs.each do |spec|
         spec_gem_paths << spec.full_gem_path
         # need to check here in case gems are nested like for the rails git repo
@@ -181,6 +183,7 @@ module Bundler
         end
         spec_cache_paths << spec.cache_file
         spec_gemspec_paths << spec.spec_file
+        spec_extension_paths << spec.extension_dir if spec.respond_to?(:extension_dir)
         spec_git_cache_dirs << spec.source.cache_path.to_s if spec.source.is_a?(Bundler::Source::Git)
       end
       spec_gem_paths.uniq!
@@ -192,6 +195,7 @@ module Bundler
       stale_gem_dirs       = gem_dirs - spec_gem_paths
       stale_gem_files      = gem_files - spec_cache_paths
       stale_gemspec_files  = gemspec_files - spec_gemspec_paths
+      stale_extension_dirs = extension_dirs - spec_extension_paths
 
       removed_stale_gem_dirs = stale_gem_dirs.collect {|dir| remove_dir(dir, dry_run) }
       removed_stale_git_dirs = stale_git_dirs.collect {|dir| remove_dir(dir, dry_run) }
@@ -204,8 +208,10 @@ module Bundler
             FileUtils.rm(file) if File.exist?(file)
           end
         end
-        stale_git_cache_dirs.each do |cache_dir|
-          SharedHelpers.filesystem_access(cache_dir) do |dir|
+
+        stale_dirs = stale_git_cache_dirs + stale_extension_dirs
+        stale_dirs.each do |stale_dir|
+          SharedHelpers.filesystem_access(stale_dir) do |dir|
             FileUtils.rm_rf(dir) if File.exist?(dir)
           end
         end

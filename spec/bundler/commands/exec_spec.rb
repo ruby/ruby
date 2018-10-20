@@ -6,6 +6,15 @@ RSpec.describe "bundle exec" do
     system_gems(system_gems_to_install, :path => :bundle_path)
   end
 
+  it "works with --gemfile flag" do
+    create_file "CustomGemfile", <<-G
+      gem "rack", "1.0.0"
+    G
+
+    bundle "exec --gemfile CustomGemfile rackup"
+    expect(out).to eq("1.0.0")
+  end
+
   it "activates the correct gem" do
     gemfile <<-G
       gem "rack", "0.9.1"
@@ -836,7 +845,7 @@ __FILE__: #{path.to_s.inspect}
           expect(bundle!("exec ruby #{file}", :artifice => nil)).to eq(expected)
           # Ignore expectaion for default bundler gem conflict.
           unless ENV["BUNDLER_SPEC_SUB_VERSION"]
-            expect(run!(file.read, :no_lib => true, :artifice => nil)).to eq(expected)
+            expect(run!(file.read, :artifice => nil)).to eq(expected)
           end
         end
 

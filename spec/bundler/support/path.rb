@@ -5,8 +5,7 @@ require "pathname"
 module Spec
   module Path
     def root
-      @root ||=
-        Pathname.new(for_ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+      @root ||= Pathname.new(for_ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
     end
 
     def gemspec
@@ -113,7 +112,8 @@ module Spec
 
     extend self
 
-    private
+  private
+
     def for_ruby_core?
       # avoid to wornings
       @for_ruby_core ||= nil

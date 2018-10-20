@@ -66,7 +66,13 @@ module Bundler
         current_dependencies.key? spec.name
       end
 
-      (gemfile_specs + dependency_specs).sort_by(&:name).each do |current_spec|
+      specs = if options["only-explicit"]
+        gemfile_specs
+      else
+        gemfile_specs + dependency_specs
+      end
+
+      specs.sort_by(&:name).each do |current_spec|
         next if !gems.empty? && !gems.include?(current_spec.name)
 
         dependency = current_dependencies[current_spec.name]

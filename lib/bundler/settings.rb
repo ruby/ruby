@@ -14,6 +14,7 @@ module Bundler
       allow_offline_install
       auto_clean_without_path
       auto_install
+      auto_config_jobs
       cache_all
       cache_all_platforms
       cache_command_is_package
@@ -25,6 +26,7 @@ module Bundler
       disable_exec_load
       disable_local_branch_check
       disable_multisource
+      disable_platform_warnings
       disable_shared_gems
       disable_version_check
       error_on_stderr
@@ -33,6 +35,7 @@ module Bundler
       frozen
       gem.coc
       gem.mit
+      global_path_appends_ruby_scope
       global_gem_cache
       ignore_messages
       init_gems_rb
@@ -42,6 +45,7 @@ module Bundler
       no_install
       no_prune
       only_update_to_newer_versions
+      path_relative_to_cwd
       path.system
       plugins
       prefer_gems_rb
@@ -53,9 +57,12 @@ module Bundler
       suppress_install_using_messages
       unlock_source_unlocks_spec
       update_requires_all_flag
+      use_gem_version_promoter_for_major_updates
+      viz_command
     ].freeze
 
     NUMBER_KEYS = %w[
+      jobs
       redirect
       retry
       ssl_verify_mode
@@ -213,13 +220,13 @@ module Bundler
       locations
     end
 
-    # for legacy reasons, the ruby scope isnt appended when the setting comes from ENV or the global config,
+    # for legacy reasons, in Bundler 1, the ruby scope isnt appended when the setting comes from ENV or the global config,
     # nor do we respect :disable_shared_gems
     def path
       key  = key_for(:path)
       path = ENV[key] || @global_config[key]
       if path && !@temporary.key?(key) && !@local_config.key?(key)
-        return Path.new(path, false, false, false)
+        return Path.new(path, Bundler.feature_flag.global_path_appends_ruby_scope?, false, false)
       end
 
       system_path = self["path.system"] || (self[:disable_shared_gems] == false)
@@ -244,6 +251,20 @@ module Bundler
         path ||= ".bundle" unless use_system_gems?
         path ||= Bundler.rubygems.gem_dir
         path
+      end
+
+      def base_path_relative_to_pwd
+        base_path = Pathname.new(self.base_path)
+        expanded_base_path = base_path.expand_path(Bundler.root)
+        relative_path = expanded_base_path.relative_path_from(Pathname.pwd)
+        if relative_path.to_s.start_with?("..")
+          relative_path = base_path if base_path.absolute?
+        else
+          relative_path = Pathname.new(File.join(".", relative_path))
+        end
+        relative_path
+      rescue ArgumentError
+        expanded_base_path
       end
 
       def validate!
@@ -374,7 +395,7 @@ module Bundler
         Pathname.new(ENV["BUNDLE_CONFIG"])
       else
         begin
-          Bundler.user_bundle_path.join("config")
+          Bundler.user_bundle_path("config")
         rescue PermissionError, GenericSystemCallError
           nil
         end

@@ -21,8 +21,9 @@ module Bundler
     # For more information see the #run method on this class.
     def self.install(root, definition, options = {})
       installer = new(root, definition)
-      Plugin.hook("before-install-all", definition.dependencies)
+      Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL_ALL, definition.dependencies)
       installer.run(options)
+      Plugin.hook(Plugin::Events::GEM_AFTER_INSTALL_ALL, definition.dependencies)
       installer
     end
 
@@ -192,14 +193,36 @@ module Bundler
     # installation is SO MUCH FASTER. so we let people opt in.
     def install(options)
       force = options["force"]
-      jobs = options.delete(:jobs) do
-        if can_install_in_parallel?
-          [Bundler.settings[:jobs].to_i - 1, 1].max
-        else
-          1
-        end
-      end
+      jobs = installation_parallelization(options)
       install_in_parallel jobs, options[:standalone], force
+    end
+
+    def installation_parallelization(options)
+      if jobs = options.delete(:jobs)
+        return jobs
+      end
+
+      return 1 unless can_install_in_parallel?
+
+      auto_config_jobs = Bundler.feature_flag.auto_config_jobs?
+      if jobs = Bundler.settings[:jobs]
+        if auto_config_jobs
+          jobs
+        else
+          [jobs.pred, 1].max
+        end
+      elsif auto_config_jobs
+        processor_count
+      else
+        1
+      end
+    end
+
+    def processor_count
+      require "etc"
+      Etc.nprocessors
+    rescue
+      1
     end
 
     def load_plugins

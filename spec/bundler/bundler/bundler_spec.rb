@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require "bundler"
+require "tmpdir"
 
 RSpec.describe Bundler do
   describe "#load_gemspec_uncached" do
@@ -304,6 +305,173 @@ EOF
       expect(FileUtils).to receive(:mkpath).once.ordered.with("/TMP/bundler/home/USER")
       expect(File).to receive(:chmod).with(0o777, "/TMP/bundler/home")
       expect(Bundler.tmp_home_path("USER", "")).to eq(Pathname("/TMP/bundler/home/USER"))
+    end
+  end
+
+  describe "#requires_sudo?" do
+    let!(:tmpdir) { Dir.mktmpdir }
+    let(:bundle_path) { Pathname("#{tmpdir}/bundle") }
+
+    def clear_cached_requires_sudo
+      # Private in ruby 1.8.7
+      return unless Bundler.instance_variable_defined?(:@requires_sudo_ran)
+      Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
+      Bundler.send(:remove_instance_variable, :@requires_sudo)
+    end
+
+    before do
+      clear_cached_requires_sudo
+      allow(Bundler).to receive(:which).with("sudo").and_return("/usr/bin/sudo")
+      allow(Bundler).to receive(:bundle_path).and_return(bundle_path)
+    end
+
+    after do
+      FileUtils.rm_rf(tmpdir)
+      clear_cached_requires_sudo
+    end
+
+    subject { Bundler.requires_sudo? }
+
+    context "bundle_path doesn't exist" do
+      it { should be false }
+
+      context "and parent dir can't be written" do
+        before do
+          FileUtils.chmod(0o500, tmpdir)
+        end
+
+        it { should be true }
+      end
+
+      context "with unwritable files in a parent dir" do
+        # Regression test for https://github.com/bundler/bundler/pull/6316
+        # It doesn't matter if there are other unwritable files so long as
+        # bundle_path can be created
+        before do
+          file = File.join(tmpdir, "unrelated_file")
+          FileUtils.touch(file)
+          FileUtils.chmod(0o400, file)
+        end
+
+        it { should be false }
+      end
+    end
+
+    context "bundle_path exists" do
+      before do
+        FileUtils.mkdir_p(bundle_path)
+      end
+
+      it { should be false }
+
+      context "and is unwritable" do
+        before do
+          FileUtils.chmod(0o500, bundle_path)
+        end
+
+        it { should be true }
+      end
+    end
+  end
+
+  describe "#requires_sudo?" do
+    before do
+      allow(Bundler).to receive(:which).with("sudo").and_return("/usr/bin/sudo")
+      FileUtils.mkdir_p("tmp/vendor/bundle")
+    end
+    after do
+      FileUtils.rm_rf("tmp/vendor/bundle")
+      if Bundler.respond_to?(:remove_instance_variable)
+        Bundler.remove_instance_variable(:@requires_sudo_ran)
+        Bundler.remove_instance_variable(:@requires_sudo)
+      else
+        # TODO: Remove these code when Bundler drops Ruby 1.8.7 support
+        Bundler.send(:remove_instance_variable, :@requires_sudo_ran)
+        Bundler.send(:remove_instance_variable, :@requires_sudo)
+      end
+    end
+    context "writable paths" do
+      it "should return false and display nothing" do
+        allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
+        expect(Bundler.ui).to_not receive(:warn)
+        expect(Bundler.requires_sudo?).to eq(false)
+      end
+    end
+    context "unwritable paths" do
+      before do
+        FileUtils.touch("tmp/vendor/bundle/unwritable1.txt")
+        FileUtils.touch("tmp/vendor/bundle/unwritable2.txt")
+        FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable1.txt")
+        FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable2.txt")
+      end
+      it "should return true and display warn message" do
+        allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
+        message = <<-MESSAGE.chomp
+Following files may not be writable, so sudo is needed:
+  tmp/vendor/bundle/unwritable1.txt
+  tmp/vendor/bundle/unwritable2.txt
+MESSAGE
+        expect(Bundler.ui).to receive(:warn).with(message)
+        expect(Bundler.requires_sudo?).to eq(true)
+      end
+    end
+  end
+
+  context "user cache dir" do
+    let(:home_path)                  { Pathname.new(ENV["HOME"]) }
+
+    let(:xdg_data_home)              { home_path.join(".local") }
+    let(:xdg_cache_home)             { home_path.join(".cache") }
+    let(:xdg_config_home)            { home_path.join(".config") }
+
+    let(:bundle_user_home_default)   { home_path.join(".bundle") }
+    let(:bundle_user_home_custom)    { xdg_data_home.join("bundle") }
+
+    let(:bundle_user_cache_default)  { bundle_user_home_default.join("cache") }
+    let(:bundle_user_cache_custom)   { xdg_cache_home.join("bundle") }
+
+    let(:bundle_user_config_default) { bundle_user_home_default.join("config") }
+    let(:bundle_user_config_custom)  { xdg_config_home.join("bundle") }
+
+    let(:bundle_user_plugin_default) { bundle_user_home_default.join("plugin") }
+    let(:bundle_user_plugin_custom)  { xdg_data_home.join("bundle").join("plugin") }
+
+    describe "#user_bundle_path" do
+      before do
+        allow(Bundler.rubygems).to receive(:user_home).and_return(home_path)
+      end
+
+      it "should use the default home path" do
+        expect(Bundler.user_bundle_path).to           eq(bundle_user_home_default)
+        expect(Bundler.user_bundle_path("home")).to   eq(bundle_user_home_default)
+        expect(Bundler.user_bundle_path("cache")).to  eq(bundle_user_cache_default)
+        expect(Bundler.user_cache).to                 eq(bundle_user_cache_default)
+        expect(Bundler.user_bundle_path("config")).to eq(bundle_user_config_default)
+        expect(Bundler.user_bundle_path("plugin")).to eq(bundle_user_plugin_default)
+      end
+
+      it "should use custom home path as root for other paths" do
+        ENV["BUNDLE_USER_HOME"] = bundle_user_home_custom.to_s
+        expect(Bundler.user_bundle_path).to           eq(bundle_user_home_custom)
+        expect(Bundler.user_bundle_path("home")).to   eq(bundle_user_home_custom)
+        expect(Bundler.user_bundle_path("cache")).to  eq(bundle_user_home_custom.join("cache"))
+        expect(Bundler.user_cache).to                 eq(bundle_user_home_custom.join("cache"))
+        expect(Bundler.user_bundle_path("config")).to eq(bundle_user_home_custom.join("config"))
+        expect(Bundler.user_bundle_path("plugin")).to eq(bundle_user_home_custom.join("plugin"))
+      end
+
+      it "should use all custom paths, except home" do
+        ENV.delete("BUNDLE_USER_HOME")
+        ENV["BUNDLE_USER_CACHE"]  = bundle_user_cache_custom.to_s
+        ENV["BUNDLE_USER_CONFIG"] = bundle_user_config_custom.to_s
+        ENV["BUNDLE_USER_PLUGIN"] = bundle_user_plugin_custom.to_s
+        expect(Bundler.user_bundle_path).to           eq(bundle_user_home_default)
+        expect(Bundler.user_bundle_path("home")).to   eq(bundle_user_home_default)
+        expect(Bundler.user_bundle_path("cache")).to  eq(bundle_user_cache_custom)
+        expect(Bundler.user_cache).to                 eq(bundle_user_cache_custom)
+        expect(Bundler.user_bundle_path("config")).to eq(bundle_user_config_custom)
+        expect(Bundler.user_bundle_path("plugin")).to eq(bundle_user_plugin_custom)
+      end
     end
   end
 end

@@ -9,7 +9,6 @@ module Bundler
 
     attr_reader(
       :dependencies,
-      :gem_version_promoter,
       :locked_deps,
       :locked_gems,
       :platforms,
@@ -125,25 +124,25 @@ module Bundler
         @unlock[:gems] = @locked_specs.for(eager_unlock, [], false, false, false).map(&:name)
       end
 
-      @gem_version_promoter = create_gem_version_promoter
-
       @dependency_changes = converge_dependencies
       @local_changes = converge_locals
 
       @requires = compute_requires
     end
 
-    def create_gem_version_promoter
-      locked_specs =
-        if unlocking? && @locked_specs.empty? && !@lockfile_contents.empty?
-          # Definition uses an empty set of locked_specs to indicate all gems
-          # are unlocked, but GemVersionPromoter needs the locked_specs
-          # for conservative comparison.
-          Bundler::SpecSet.new(@locked_gems.specs)
-        else
-          @locked_specs
-        end
-      GemVersionPromoter.new(locked_specs, @unlock[:gems])
+    def gem_version_promoter
+      @gem_version_promoter ||= begin
+        locked_specs =
+          if unlocking? && @locked_specs.empty? && !@lockfile_contents.empty?
+            # Definition uses an empty set of locked_specs to indicate all gems
+            # are unlocked, but GemVersionPromoter needs the locked_specs
+            # for conservative comparison.
+            Bundler::SpecSet.new(@locked_gems.specs)
+          else
+            @locked_specs
+          end
+        GemVersionPromoter.new(locked_specs, @unlock[:gems])
+      end
     end
 
     def resolve_with_cache!
@@ -214,7 +213,7 @@ module Bundler
       @index = nil
       @resolve = nil
       @specs = nil
-      @gem_version_promoter = create_gem_version_promoter
+      @gem_version_promoter = nil
 
       Bundler.ui.debug "The definition is missing dependencies, failed to resolve & materialize locally (#{e})"
       true
@@ -885,7 +884,7 @@ module Bundler
         dep = Dependency.new(dep, ">= 0") unless dep.respond_to?(:name)
         next if !remote && !dep.current_platform?
         platforms = dep.gem_platforms(sorted_platforms)
-        if platforms.empty?
+        if platforms.empty? && !Bundler.settings[:disable_platform_warnings]
           mapped_platforms = dep.platforms.map {|p| Dependency::PLATFORM_MAP[p] }
           Bundler.ui.warn \
             "The dependency #{dep} will be unused by any of the platforms Bundler is installing for. " \

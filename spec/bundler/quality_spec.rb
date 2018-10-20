@@ -169,20 +169,21 @@ RSpec.describe "The library itself" do
 
   it "documents all used settings", :ruby_repo do
     exemptions = %w[
+      auto_config_jobs
       cache_command_is_package
       console_command
-      default_cli_command
       deployment_means_frozen
       forget_cli_options
       gem.coc
       gem.mit
       inline
       lockfile_uses_separate_rubygems_sources
-      warned_version
+      use_gem_version_promoter_for_major_updates
+      viz_command
     ]
 
     all_settings = Hash.new {|h, k| h[k] = [] }
-    documented_settings = exemptions
+    documented_settings = []
 
     Bundler::Settings::BOOL_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::BOOL_KEYS" }
     Bundler::Settings::NUMBER_KEYS.each {|k| all_settings[k] << "in Bundler::Settings::NUMBER_KEYS" }
@@ -198,8 +199,14 @@ RSpec.describe "The library itself" do
       documented_settings = File.read("man/bundle-config.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
     end
 
-    documented_settings.each {|s| all_settings.delete(s) }
-    exemptions.each {|s| all_settings.delete(s) }
+    documented_settings.each do |s|
+      all_settings.delete(s)
+      expect(exemptions.delete(s)).to be_nil, "setting #{s} was exempted but was actually documented"
+    end
+
+    exemptions.each do |s|
+      expect(all_settings.delete(s)).to be_truthy, "setting #{s} was exempted but unused"
+    end
     error_messages = all_settings.map do |setting, refs|
       "The `#{setting}` setting is undocumented\n\t- #{refs.join("\n\t- ")}\n"
     end
