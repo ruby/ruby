@@ -19,6 +19,8 @@ require "irb/ruby-lex"
 require "irb/input-method"
 require "irb/locale"
 
+require "irb/version"
+
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
 #
@@ -354,7 +356,6 @@ module IRB
   def IRB.version
     if v = @CONF[:VERSION] then return v end
 
-    require "irb/version"
     rv = @RELEASE_VERSION.sub(/\.0/, "")
     @CONF[:VERSION] = format("irb %s(%s)", rv, @LAST_UPDATE_DATE)
   end
