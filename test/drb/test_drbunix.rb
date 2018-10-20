@@ -16,20 +16,17 @@ class DRbUNIXService < DRbService
     add_service_command(nm)
   end
 
-  uri = ARGV.shift if $0 == __FILE__
-  @server = DRb::DRbServer.new(uri || 'drbunix:', self.manager, {})
+  def start
+    @server = DRb::DRbServer.new('drbunix:', manager, {})
+  end
 end
 
 class TestDRbUNIXCore < Test::Unit::TestCase
   include DRbCore
   def setup
+    @drb_service = DRbUNIXService.new
+    super
     setup_service 'ut_drb_drbunix.rb'
-    super
-  end
-
-  def teardown
-    super
-    DRbService.finish
   end
 
   def test_02_unknown
@@ -51,12 +48,9 @@ end
 class TestDRbUNIXAry < Test::Unit::TestCase
   include DRbAry
   def setup
+    @drb_service = DRbUNIXService.new
+    super
     setup_service 'ut_array_drbunix.rb'
-    super
-  end
-  def teardown
-    super
-    DRbService.finish
   end
 end
 
