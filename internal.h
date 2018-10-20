@@ -1174,6 +1174,7 @@ VALUE rb_complex_mul(VALUE, VALUE);
 VALUE rb_complex_abs(VALUE x);
 VALUE rb_complex_sqrt(VALUE x);
 VALUE rb_dbl_complex_polar(double abs, double ang);
+VALUE rb_complex_pow(VALUE self, VALUE other);
 
 /* cont.c */
 VALUE rb_obj_is_fiber(VALUE);
@@ -1471,6 +1472,7 @@ VALUE rb_int_abs(VALUE num);
 VALUE rb_int_odd_p(VALUE num);
 int rb_int_positive_p(VALUE num);
 int rb_int_negative_p(VALUE num);
+VALUE rb_num_pow(VALUE x, VALUE y);
 
 static inline VALUE
 rb_num_compare_with_zero(VALUE num, ID mid)
@@ -1735,6 +1737,7 @@ VALUE rb_rational_reciprocal(VALUE x);
 VALUE rb_cstr_to_rat(const char *, int);
 VALUE rb_rational_abs(VALUE self);
 VALUE rb_rational_cmp(VALUE self, VALUE other);
+VALUE rb_rational_pow(VALUE self, VALUE other);
 VALUE rb_numeric_quo(VALUE x, VALUE y);
 
 /* re.c */

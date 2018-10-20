@@ -725,6 +725,19 @@ safe_mul(VALUE a, VALUE b, int az, int bz)
     return f_mul(a, b);
 }
 
+static void
+comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE *imag)
+{
+    int arzero = f_zero_p(areal);
+    int aizero = f_zero_p(aimag);
+    int brzero = f_zero_p(breal);
+    int bizero = f_zero_p(bimag);
+    *real = f_sub(safe_mul(areal, breal, arzero, brzero),
+                  safe_mul(aimag, bimag, aizero, bizero));
+    *imag = f_add(safe_mul(areal, bimag, arzero, bizero),
+                  safe_mul(aimag, breal, aizero, brzero));
+}
+
 /*
  * call-seq:
  *    cmp * numeric  ->  complex
@@ -742,19 +755,9 @@ rb_complex_mul(VALUE self, VALUE other)
 {
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	VALUE real, imag;
-	VALUE areal, aimag, breal, bimag;
-	int arzero, aizero, brzero, bizero;
-
 	get_dat2(self, other);
 
-	arzero = f_zero_p(areal = adat->real);
-	aizero = f_zero_p(aimag = adat->imag);
-	brzero = f_zero_p(breal = bdat->real);
-	bizero = f_zero_p(bimag = bdat->imag);
-	real = f_sub(safe_mul(areal, breal, arzero, brzero),
-		     safe_mul(aimag, bimag, aizero, bizero));
-	imag = f_add(safe_mul(areal, bimag, arzero, bizero),
-		     safe_mul(aimag, breal, aizero, brzero));
+        comp_mul(adat->real, adat->imag, bdat->real, bdat->imag, &real, &imag);
 
 	return f_complex_new2(CLASS_OF(self), real, imag);
     }
@@ -867,8 +870,8 @@ f_reciprocal(VALUE x)
  *    Complex('i') ** 2              #=> (-1+0i)
  *    Complex(-8) ** Rational(1, 3)  #=> (1.0000000000000002+1.7320508075688772i)
  */
-static VALUE
-nucomp_expt(VALUE self, VALUE other)
+VALUE
+rb_complex_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_complex_new_bang1(CLASS_OF(self), ONE);
@@ -898,38 +901,45 @@ nucomp_expt(VALUE self, VALUE other)
 	return f_complex_polar(CLASS_OF(self), nr, ntheta);
     }
     if (FIXNUM_P(other)) {
-	if (f_gt_p(other, ZERO)) {
-	    VALUE x, z;
-	    long n;
+        long n = FIX2LONG(other);
+        if (n == 0) {
+	    return nucomp_s_new_internal(CLASS_OF(self), ONE, ZERO);
+        }
+        if (n < 0) {
+            self = f_reciprocal(self);
+            other = rb_int_uminus(other);
+            n = -n;
+        }
+        {
+            get_dat1(self);
+            VALUE xr = dat->real, xi = dat->imag, zr = xr, zi = xi;
 
-	    x = self;
-	    z = x;
-	    n = FIX2LONG(other) - 1;
+            if (f_zero_p(xi)) {
+                zr = rb_num_pow(zr, other);
+            }
+            else if (f_zero_p(xr)) {
+                zi = rb_num_pow(zi, other);
+                if (n & 2) zi = f_negate(zi);
+                if (!(n & 1)) {
+                    VALUE tmp = zr;
+                    zr = zi;
+                    zi = tmp;
+                }
+            }
+            else {
+                while (--n) {
+                    long q, r;
 
-	    while (n) {
-		long q, r;
-
-		while (1) {
-		    get_dat1(x);
-
-		    q = n / 2;
-		    r = n % 2;
-
-		    if (r)
-			break;
-
-		    x = nucomp_s_new_internal(CLASS_OF(self),
-				       f_sub(f_mul(dat->real, dat->real),
-					     f_mul(dat->imag, dat->imag)),
-				       f_mul(f_mul(TWO, dat->real), dat->imag));
-		    n = q;
-		}
-		z = f_mul(z, x);
-		n--;
-	    }
-	    return z;
+                    for (; q = n / 2, r = n % 2, r == 0; n = q) {
+                        VALUE tmp = f_sub(f_mul(xr, xr), f_mul(xi, xi));
+                        xi = f_mul(f_mul(TWO, xr), xi);
+                        xr = tmp;
+                    }
+                    comp_mul(zr, zi, xr, xi, &zr, &zi);
+                }
+            }
+	    return nucomp_s_new_internal(CLASS_OF(self), zr, zi);
 	}
-	return f_expt(f_reciprocal(self), rb_int_uminus(other));
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	VALUE r, theta;
@@ -945,6 +955,7 @@ nucomp_expt(VALUE self, VALUE other)
     }
     return rb_num_coerce_bin(self, other, id_expt);
 }
+#define nucomp_expt rb_complex_pow
 
 /*
  * call-seq:

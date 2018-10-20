@@ -1001,8 +1001,8 @@ f_odd_p(VALUE integer)
  *    Rational(1, 2) ** 0               #=> (1/1)
  *    Rational(1, 2) ** 0.0             #=> 1.0
  */
-static VALUE
-nurat_expt(VALUE self, VALUE other)
+VALUE
+rb_rational_pow(VALUE self, VALUE other)
 {
     if (k_numeric_p(other) && k_exact_zero_p(other))
 	return f_rational_new_bang1(CLASS_OF(self), ONE);
@@ -1077,6 +1077,7 @@ nurat_expt(VALUE self, VALUE other)
 	return rb_num_coerce_bin(self, other, rb_intern("**"));
     }
 }
+#define nurat_expt rb_rational_pow
 
 /*
  * call-seq:
