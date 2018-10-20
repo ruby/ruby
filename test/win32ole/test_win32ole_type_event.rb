@@ -7,15 +7,10 @@ end
 require 'test/unit'
 
 if defined?(WIN32OLE_TYPE)
-  def sysmon_available?
-    WIN32OLE_TYPE.new('System Monitor Control', 'SystemMonitor')
-    true
-  rescue
-    false
-  end
+  require_relative 'available_ole'
 
   class TestWIN32OLE_TYPE_EVENT < Test::Unit::TestCase
-    unless sysmon_available?
+    unless AvailableOLE.sysmon_available?
       def test_dummy_for_skip_message
         skip 'System Monitor Control is not available'
       end
