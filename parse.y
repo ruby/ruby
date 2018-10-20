@@ -3132,10 +3132,12 @@ lambda		:   {
 			p->lex.lpar_beg = $<num>2;
 			CMDARG_POP();
 		    /*%%%*/
-                        YYLTYPE loc = code_loc_gen(&@3, &@5);
-			$$ = NEW_LAMBDA($3, $5, &loc);
-			nd_set_line($$->nd_body, @5.end_pos.lineno);
-			nd_set_line($$, @3.end_pos.lineno);
+                        {
+                            YYLTYPE loc = code_loc_gen(&@3, &@5);
+                            $$ = NEW_LAMBDA($3, $5, &loc);
+                            nd_set_line($$->nd_body, @5.end_pos.lineno);
+                            nd_set_line($$, @3.end_pos.lineno);
+                        }
 		    /*% %*/
 		    /*% ripper: lambda!($3, $5) %*/
 			dyna_pop(p, $<vars>1);
