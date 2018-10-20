@@ -389,6 +389,23 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
+* These standard libbraries promoted as the default gems.
+
+  * e2mmap
+  * forwardable
+  * irb
+  * logger
+  * matrix
+  * mutex_m
+  * ostruct
+  * prime
+  * rexml
+  * rss
+  * shell
+  * sync
+  * thwait
+  * tracer
+
 === C API updates
 
 === Supported platform changes
