@@ -297,9 +297,9 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
-  def test_respond_to_should_not_use_refinements
+  def test_respond_to_should_use_refinements
     assert_equal(false, 1.respond_to?(:foo))
-    assert_equal(false, eval_using(IntegerFooExt, "1.respond_to?(:foo)"))
+    assert_equal(true, eval_using(IntegerFooExt, "1.respond_to?(:foo)"))
   end
 
   module StringCmpExt
