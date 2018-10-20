@@ -27,12 +27,31 @@ This sends the +my_method+ message to +my_object+.  Any object can be a
 receiver but depending on the method's visibility sending a message may raise a
 NoMethodError.
 
-You may use <code>&.</code> to designate a receiver, then +my_method+ is not
-invoked and the result is +nil+ when the receiver is +nil+.  In that case, the
-arguments of +my_method+ are not evaluated.
-
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
+
+=== Safe navigation operator
+
+<code>&.</code>, called "safe navigation operator", allows to skip method call
+when receiver is +nil+. It returns +nil+ and doesn't evaluate method's arguments
+if the call is skipped.
+
+  REGEX = /(ruby) is (\w+)/i
+  "Ruby is awesome!".match(REGEX).values_at(1, 2)
+  # => ["Ruby", "awesome"]
+  "Python is fascinating!".match(REGEX).values_at(1, 2)
+  # NoMethodError: undefined method `values_at' for nil:NilClass
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2)
+  # => nil
+
+This allows to easily chain methods which could return empty value. Note that
+<code>&.</code> skips only one next call, so for a longer chain it is necessary
+to add operator on each level:
+
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2).join(' - ')
+  # NoMethodError: undefined method `join' for nil:NilClass
+  "Python is fascinating!".match(REGEX)&.values_at(1, 2)&.join(' - ')
+  # => nil
 
 == Arguments
 
