@@ -5,8 +5,14 @@ require 'stringio'
 require 'tempfile'
 
 class TestPsych < Psych::TestCase
+
+  def setup
+    @orig_verbose, $VERBOSE = $VERBOSE, nil
+  end
+
   def teardown
     Psych.domain_types.clear
+    $VERBOSE = @orig_verbose
   end
 
   def test_line_width_invalid

@@ -3,6 +3,14 @@ require 'psych/helper'
 
 module Psych
   class TestSafeLoad < TestCase
+    def setup
+      @orig_verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    def teardown
+      $VERBOSE = @orig_verbose
+    end
+
     class Foo; end
 
     [1, 2.2, {}, [], "foo"].each do |obj|
