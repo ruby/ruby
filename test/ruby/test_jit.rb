@@ -3,8 +3,6 @@ require 'test/unit'
 require 'tmpdir'
 require_relative '../lib/jit_support'
 
-require 'rbconfig'
-
 return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
 
 # Test for --jit option
