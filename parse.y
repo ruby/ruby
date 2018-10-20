@@ -2443,6 +2443,9 @@ primary		: literal
 		  lambda
 		    {
 			$$ = $3;
+                    /*%%%*/
+                        nd_set_first_loc($$, @1.beg_pos);
+                    /*% %*/
 		    }
 		| k_if expr_value then
 		  compstmt
