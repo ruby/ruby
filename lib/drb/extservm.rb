@@ -61,8 +61,7 @@ module DRb
     private
     def invoke_thread
       Thread.new do
-        while true
-          name = @queue.pop
+        while name = @queue.pop
           invoke_service_command(name, @@command[name])
         end
       end
