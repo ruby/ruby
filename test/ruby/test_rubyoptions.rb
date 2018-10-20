@@ -188,6 +188,8 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
 
+    return if RbConfig::CONFIG["MJIT_SUPPORT"] == 'no'
+
     [
       %w(--version --jit --disable=jit),
       %w(--version --enable=jit --disable=jit),
