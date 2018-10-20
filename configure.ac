@@ -2515,6 +2515,11 @@ AS_IF([test "$rb_cv_binary_elf" = yes], [
   ])
 ])
 
+AC_CHECK_HEADERS([mach-o/loader.h])
+AS_IF([test "$ac_cv_header_mach_o_loader_h" = yes], [
+  AC_LIBOBJ([addr2line])
+])
+
 AS_CASE(["$target_os"],
 [linux* | gnu* | k*bsd*-gnu | bsdi* | kopensolaris*-gnu], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
