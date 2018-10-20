@@ -19,7 +19,7 @@ if ! bundle
 end or
 begin
   # for https://github.com/ruby/fiddle
-  if bundle && File.exit?("../../bin/extlibs.rb")
+  if bundle && File.exist?("../../bin/extlibs.rb")
     require "fileutils"
     require_relative "../../bin/extlibs"
     extlibs = ExtLibs.new
