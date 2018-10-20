@@ -864,7 +864,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define MJIT_SUPPORT 1
+#define USE_MJIT 1
 #endif /* $(guard) */
 <<
 
