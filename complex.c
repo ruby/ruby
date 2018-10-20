@@ -903,7 +903,7 @@ rb_complex_pow(VALUE self, VALUE other)
     if (FIXNUM_P(other)) {
         long n = FIX2LONG(other);
         if (n == 0) {
-	    return nucomp_s_new_internal(CLASS_OF(self), ONE, ZERO);
+            return nucomp_s_new_internal(CLASS_OF(self), ONE, ZERO);
         }
         if (n < 0) {
             self = f_reciprocal(self);
@@ -938,7 +938,7 @@ rb_complex_pow(VALUE self, VALUE other)
                     comp_mul(zr, zi, xr, xi, &zr, &zi);
                 }
             }
-	    return nucomp_s_new_internal(CLASS_OF(self), zr, zi);
+            return nucomp_s_new_internal(CLASS_OF(self), zr, zi);
 	}
     }
     if (k_numeric_p(other) && f_real_p(other)) {
