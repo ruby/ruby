@@ -997,7 +997,7 @@ module Net   #:nodoc:
         if @ssl_context.verify_mode != OpenSSL::SSL::VERIFY_NONE
           s.post_connection_check(@address)
         end
-        D "SSL established"
+        D "SSL established, protocol: #{s.ssl_version}, cipher: #{s.cipher[0]}"
       end
       @socket = BufferedIO.new(s, read_timeout: @read_timeout,
                                write_timeout: @write_timeout,
