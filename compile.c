@@ -91,6 +91,7 @@ typedef struct iseq_adjust_data {
 typedef struct iseq_trace_data {
     LINK_ELEMENT link;
     rb_event_flag_t event;
+    long data;
 } TRACE;
 
 struct ensure_range {
@@ -259,7 +260,9 @@ struct iseq_compile_data_ensure_node_stack {
   ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (line), (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
 #define ADD_TRACE(seq, event) \
-  ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event)))
+  ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), 0))
+#define ADD_TRACE_WITH_DATA(seq, event, data) \
+  ADD_ELEM((seq), (LINK_ELEMENT *)new_trace_body(iseq, (event), (data)))
 
 
 #define DECL_BRANCH_BASE(branches, first_line, first_column, last_line, last_column, type) \
@@ -291,7 +294,8 @@ struct iseq_compile_data_ensure_node_stack {
 	  rb_ary_push(branches, INT2FIX(last_line)); \
 	  rb_ary_push(branches, INT2FIX(last_column)); \
 	  rb_ary_push(branches, INT2FIX(counter_idx)); \
-	  ADD_INSN2((seq), (first_line), tracecoverage, INT2FIX(RUBY_EVENT_COVERAGE_BRANCH), INT2FIX(counter_idx)); \
+          ADD_TRACE_WITH_DATA(seq, RUBY_EVENT_COVERAGE_BRANCH, counter_idx); \
+          ADD_INSN(seq, last_line, nop); \
       } \
   } while (0)
 
@@ -478,7 +482,7 @@ static int calc_sp_depth(int depth, INSN *iobj);
 static INSN *new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int argc, ...);
 static LABEL *new_label_body(rb_iseq_t *iseq, long line);
 static ADJUST *new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line);
-static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event);
+static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data);
 
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
@@ -1081,13 +1085,14 @@ debug_list(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor)
 #endif
 
 static TRACE *
-new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event)
+new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data)
 {
     TRACE *trace = compile_data_alloc_trace(iseq);
 
     trace->link.type = ISEQ_ELEMENT_TRACE;
     trace->link.next = NULL;
     trace->event = event;
+    trace->data = data;
 
     return trace;
 }
@@ -1995,6 +2000,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     LINK_ELEMENT *list;
     VALUE *generated_iseq;
     rb_event_flag_t events = 0;
+    long data = 0;
 
     int insn_num, code_index, insns_info_index, sp = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
@@ -2011,16 +2017,24 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		INSN *iobj = (INSN *)list;
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
-		code_index += insn_data_length(iobj);
 		insn_num++;
-                if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq) &&
-                    (events & RUBY_EVENT_COVERAGE_LINE) &&
-                    !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
-		    int line = iobj->insn_info.line_no;
-		    RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, INT2FIX(0));
+		if (ISEQ_COVERAGE(iseq)) {
+                    if (ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE) &&
+                        !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
+                        int line = iobj->insn_info.line_no;
+                        RARRAY_ASET(ISEQ_LINE_COVERAGE(iseq), line - 1, INT2FIX(0));
+                    }
+                    if (ISEQ_BRANCH_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_BRANCH)) {
+                        while (RARRAY_LEN(ISEQ_PC2BRANCHINDEX(iseq)) <= code_index) {
+                            rb_ary_push(ISEQ_PC2BRANCHINDEX(iseq), Qnil);
+                        }
+                        RARRAY_ASET(ISEQ_PC2BRANCHINDEX(iseq), code_index, INT2FIX(data));
+                    }
 		}
+		code_index += insn_data_length(iobj);
 		iobj->insn_info.events |= events;
 		events = 0;
+                data = 0;
 		break;
 	    }
 	  case ISEQ_ELEMENT_LABEL:
@@ -2034,6 +2048,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	    {
 		TRACE *trace = (TRACE *)list;
 		events |= trace->event;
+                if (trace->event & RUBY_EVENT_COVERAGE_BRANCH) data = trace->data;
 		break;
 	    }
 	  case ISEQ_ELEMENT_ADJUST:

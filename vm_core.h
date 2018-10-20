@@ -449,6 +449,7 @@ struct rb_iseq_constant_body {
     struct {
 	rb_snum_t flip_count;
 	VALUE coverage;
+	VALUE pc2branchindex;
 	VALUE *original_iseq;
     } variable;
 

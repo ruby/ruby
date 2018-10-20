@@ -688,19 +688,6 @@ checktype
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
 
-/* fire a coverage event (currently, this is used for line coverage and branch coverage) */
-DEFINE_INSN
-tracecoverage
-(rb_num_t nf, VALUE data)
-()
-()
-{
-    rb_event_flag_t flag = (rb_event_flag_t)nf;
-
-    vm_dtrace(flag, ec);
-    EXEC_EVENT_HOOK(ec, flag, GET_SELF(), 0, 0, 0 /* id and klass are resolved at callee */, data);
-}
-
 /**********************************************************/
 /* deal with control flow 1: class/module                 */
 /**********************************************************/
