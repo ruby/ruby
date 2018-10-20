@@ -6,6 +6,9 @@ rescue LoadError
   # for make mjit-headers
 end
 
+require "fileutils/version"
+
+#
 # = fileutils.rb
 #
 # Copyright (c) 2000-2007 Minero Aoki
@@ -62,7 +65,7 @@ end
 #
 # There are some `low level' methods, which do not accept any option:
 #
-#   FileUtils.copy_entry(src, dest, preserve = false, dereference = false)
+#   FileUtils.copy_entry(src, dest, preserve = false, dereference_root = false, remove_destination = false)
 #   FileUtils.copy_file(src, dest, preserve = false, dereference = true)
 #   FileUtils.copy_stream(srcstream, deststream)
 #   FileUtils.remove_entry(path, force = false)
@@ -89,10 +92,8 @@ end
 # This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the <tt>:noop</tt> and
 # <tt>:verbose</tt> flags to methods in FileUtils.
-
+#
 module FileUtils
-
-  VERSION = "1.1.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
