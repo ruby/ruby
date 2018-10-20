@@ -58,7 +58,7 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
  *  Parses the given string into an abstract syntax tree,
  *  returning the root node of that tree.
  *
- *  Returns <code>nil</code> if the given string is invalid syntax.
+ *  SyntaxError is raised if the given string is invalid syntax.
  *
  *    RubyVM::AST.parse("x = 1 + 2")
  *    # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 1:9): >
@@ -92,7 +92,7 @@ rb_ast_s_parse(VALUE module, VALUE str)
  *   Reads the file from <code>pathname</code>, then parses it like ::parse,
  *   returning the root node of the abstract syntax tree.
  *
- *   Returns <code>nil</code> if <code>pathname</code>'s contents are not
+ *   SyntaxError is raised if <code>pathname</code>'s contents are not
  *   valid Ruby syntax.
  *
  *     RubyVM::AST.parse_file("my-app/app.rb")
