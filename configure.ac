@@ -3325,10 +3325,16 @@ AC_SUBST(CAPITARGET)
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
-AC_ARG_ENABLE(install-mjit-header,
-        AS_HELP_STRING([--disable-install-mjit-header], [do not install MJIT header]),
-        [INSTALL_MJIT_HEADER=$enableval], [INSTALL_MJIT_HEADER=yes])
-AC_SUBST(INSTALL_MJIT_HEADER)
+AC_ARG_ENABLE(mjit,
+        AS_HELP_STRING([--disable-mjit], [disable MJIT features]),
+        [ENABLE_MJIT=$enableval
+         AS_IF([test x"$enable_mjit" = "xyes"],
+                 [AC_DEFINE(USE_MJIT, 1)],
+                 [AC_DEFINE(USE_MJIT, 0)])],
+        [ENABLE_MJIT=yes
+         AC_DEFINE(USE_MJIT, 1)])
+
+AC_SUBST(ENABLE_MJIT)
 
 AC_ARG_ENABLE(install-static-library,
 	AS_HELP_STRING([--disable-install-static-library], [do not install static ruby library]),
@@ -3991,7 +3997,7 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$install_doc"
-config_summary "install MJIT header" "$INSTALL_MJIT_HEADER"
+config_summary "enable MJIT"         "$ENABLE_MJIT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

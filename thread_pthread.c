@@ -1853,6 +1853,7 @@ rb_nativethread_self(void)
     return pthread_self();
 }
 
+#if USE_MJIT
 /* A function that wraps actual worker function, for pthread abstraction. */
 static void *
 mjit_worker(void *arg)
@@ -1884,6 +1885,7 @@ rb_thread_create_mjit_thread(void (*worker_func)(void))
     pthread_attr_destroy(&attr);
     return ret;
 }
+#endif
 
 int
 rb_sigwait_fd_get(const rb_thread_t *th)

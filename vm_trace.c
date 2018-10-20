@@ -70,7 +70,9 @@ update_global_event_hook(rb_event_flag_t vm_events)
 
     if (new_iseq_events & ~enabled_iseq_events) {
         /* Stop calling all JIT-ed code. Compiling trace insns is not supported for now. */
+#if USE_MJIT
         mjit_call_p = FALSE;
+#endif
 
 	/* write all ISeqs iff new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);

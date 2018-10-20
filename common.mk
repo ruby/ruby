@@ -201,7 +201,7 @@ all: $(SHOWFLAGS) main docs
 main: $(SHOWFLAGS) exts $(ENCSTATIC:static=lib)encs
 	@$(NULLCMD)
 
-mjit-headers: $(INSTALL_MJIT_HEADER)-mjit-headers
+mjit-headers: $(ENABLE_MJIT)-mjit-headers
 no-mjit-headers: PHONY
 yes-mjit-headers: mjit_config.h PHONY
 

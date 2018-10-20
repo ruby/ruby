@@ -811,6 +811,7 @@ native_set_thread_name(rb_thread_t *th)
 {
 }
 
+#if USE_MJIT
 static unsigned long __stdcall
 mjit_worker(void *arg)
 {
@@ -833,5 +834,6 @@ rb_thread_create_mjit_thread(void (*worker_func)(void))
     w32_resume_thread(thread_id);
     return TRUE;
 }
+#endif
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

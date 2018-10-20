@@ -142,7 +142,9 @@ struct ruby_cmdline_options {
     VALUE req_list;
     unsigned int features;
     unsigned int dump;
+#if USE_MJIT
     struct mjit_options mjit;
+#endif
     int safe_level;
     int sflag, xflag;
     unsigned int warning: 1;
@@ -948,6 +950,7 @@ set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen
 #define set_source_encoding_once(opt, e, elen) \
     set_option_encoding_once("source", &(opt)->src.enc.name, (e), (elen))
 
+#if USE_MJIT
 static void
 setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
 {
@@ -978,6 +981,7 @@ setup_mjit_options(const char *s, struct mjit_options *mjit_opt)
                  "invalid MJIT option `%s' (--help will show valid MJIT options)", s + 1);
     }
 }
+#endif
 
 static long
 proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
@@ -1332,8 +1336,12 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 		ruby_verbose = Qtrue;
 	    }
             else if (strncmp("jit", s, 3) == 0) {
+#if USE_MJIT
                 opt->features |= FEATURE_BIT(jit);
                 setup_mjit_options(s + 3, &opt->mjit);
+#else
+                rb_warn("MJIT is disabled.");
+#endif
             }
 	    else if (strcmp("yydebug", s) == 0) {
 		if (envopt) goto noenvopt_long;
@@ -1574,11 +1582,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (opt->src.enc.name)
 	rb_warning("-K is specified; it is for 1.8 compatibility and may cause odd behavior");
 
+#if USE_MJIT
     if (opt->features & FEATURE_BIT(jit)) {
         opt->mjit.on = TRUE; /* set mjit.on for ruby_show_version() API and check to call mjit_init() */
     }
+#endif
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {
+#if USE_MJIT
         mjit_opts.on = opt->mjit.on; /* used by ruby_show_version(). mjit_init() still can't be called here. */
+#endif
 	ruby_show_version();
 	if (opt->dump & DUMP_BIT(version)) return Qtrue;
     }
@@ -1631,9 +1643,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_gc_set_params(opt->safe_level);
     ruby_init_loadpath_safe(opt->safe_level);
 
+#if USE_MJIT
     if (opt->mjit.on)
         /* Using TMP_RUBY_PREFIX created by ruby_init_loadpath_safe(). */
         mjit_init(&opt->mjit);
+#endif
 
     Init_ruby_description();
     Init_enc();

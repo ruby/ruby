@@ -74,6 +74,7 @@
 #include "internal.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "mjit.h"
 #include "hrtime.h"
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
@@ -4392,7 +4393,6 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 }
 
 /* mjit.c */
-void mjit_child_after_fork(void);
 void rb_fiber_atfork(rb_thread_t *);
 void
 rb_thread_atfork(void)

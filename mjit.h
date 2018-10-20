@@ -11,6 +11,8 @@
 
 #include "ruby.h"
 
+#if USE_MJIT
+
 /* Special address values of a function generated from the
    corresponding iseq by MJIT: */
 enum rb_mjit_iseq_func {
@@ -125,4 +127,20 @@ mjit_exec(rb_execution_context_t *ec)
     return func(ec, ec->cfp);
 }
 
+void mjit_child_after_fork(void);
+
+#else /* USE_MJIT */
+static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
+static inline void mjit_cont_free(struct mjit_cont *cont){}
+static inline void mjit_finish(void){}
+static inline void mjit_gc_start_hook(void){}
+static inline void mjit_gc_finish_hook(void){}
+static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
+static inline void mjit_mark(void){}
+static inline void mjit_add_class_serial(rb_serial_t class_serial){}
+static inline void mjit_remove_class_serial(rb_serial_t class_serial){}
+static inline VALUE mjit_exec(rb_execution_context_t *ec) { return Qundef; /* unreachable */ }
+static inline void mjit_child_after_fork(void){}
+
+#endif /* USE_MJIT */
 #endif /* RUBY_MJIT_H */

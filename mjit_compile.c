@@ -11,6 +11,9 @@
    GC (using ZALLOC, xmalloc, xfree, etc.) in this file. */
 
 #include "internal.h"
+
+#if USE_MJIT
+
 #include "vm_core.h"
 #include "vm_exec.h"
 #include "mjit.h"
@@ -242,3 +245,5 @@ mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *func
     free(status.stack_size_for_pos);
     return status.success;
 }
+
+#endif /* USE_MJIT */
