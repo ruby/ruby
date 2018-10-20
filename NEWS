@@ -139,7 +139,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * Kernel#Complex, Kernel#Float, Kernel#Integer and
+    * Kernel#Complex, Kernel#Float, Kernel#Integer, and
       Kernel#Rational take +:exception+ option to specify the way of
       error handling.  [Feature #12732]
 
@@ -164,7 +164,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * Module#method_defined?, Module#private_method_defined? and
+    * Module#method_defined?, Module#private_method_defined?, and
       Module#protected_method_defined? now accept the second
       parameter as optional. If it's +true+ (=default), checks ancestor
       modules/classes, or checks only the class itself. [Feature #14944]
@@ -312,7 +312,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * Add Net::HTTP#write_timeout, and Net::HTTP#write_timeout=.  [Feature #13396]
+    * Add Net::HTTP#write_timeout and Net::HTTP#write_timeout=.  [Feature #13396]
 
   [New constant]
 
@@ -429,7 +429,7 @@ sufficient information, see the ChangeLog file or Redmine
   * <tt>--enable=jit</tt> option is added to enable JIT. <tt>--jit-verbose=1</tt>
     is good for inspection.  See <tt>ruby --help</tt> for others.
   * To generate machine code, this JIT compiler uses C compiler used for building
-    the interpreter. Currently GCC, Clang and Microsoft Visual C++ are supported for it.
+    the interpreter. Currently GCC, Clang, and Microsoft Visual C++ are supported for it.
   * rb_waitpid reimplemented on Unix-like platforms to maintain
     compatibility with processes created for JIT [Bug #14867]
 
