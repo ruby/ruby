@@ -1866,6 +1866,11 @@ module DRb
   # Removes +server+ from the list of registered servers.
   def remove_server(server)
     @server.delete(server.uri)
+    mutex.synchronize do
+      if @primary_server == server
+        @primary_server = nil
+      end
+    end
   end
   module_function :remove_server
 
