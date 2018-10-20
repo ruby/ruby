@@ -45,7 +45,7 @@ rb_coverage_start(int argc, VALUE *argv, VALUE klass)
 	    mode |= COVERAGE_TARGET_BRANCHES;
 	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("methods")))))
 	    mode |= COVERAGE_TARGET_METHODS;
-	if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("oneshot_lines"))))) {
+        if (RTEST(rb_hash_lookup(opt, ID2SYM(rb_intern("oneshot_lines"))))) {
             if (mode & COVERAGE_TARGET_LINES)
                 rb_raise(rb_eRuntimeError, "cannot enable lines and oneshot_lines simultaneously");
             mode |= COVERAGE_TARGET_LINES;
@@ -185,7 +185,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
             const char *kw = (current_mode & COVERAGE_TARGET_ONESHOT_LINES) ? "oneshot_lines" : "lines";
 	    lines = rb_ary_dup(lines);
 	    rb_ary_freeze(lines);
-	    rb_hash_aset(h, ID2SYM(rb_intern(kw)), lines);
+            rb_hash_aset(h, ID2SYM(rb_intern(kw)), lines);
 	}
 
 	if (current_mode & COVERAGE_TARGET_BRANCHES) {

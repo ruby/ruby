@@ -1661,7 +1661,7 @@ rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t res
 {
     struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
     if (entry) {
-	entry->events &= ~reset;
+        entry->events &= ~reset;
         if (!(entry->events & iseq->aux.trace_events)) {
             void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, int pos);
             rb_iseq_trace_flag_cleared(iseq, pos);
