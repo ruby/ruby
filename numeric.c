@@ -4077,6 +4077,22 @@ rb_int_pow(VALUE x, VALUE y)
     return Qnil;
 }
 
+VALUE
+rb_num_pow(VALUE x, VALUE y)
+{
+    VALUE z = rb_int_pow(x, y);
+    if (!NIL_P(z)) return z;
+    if (RB_FLOAT_TYPE_P(x)) return rb_float_pow(x, y);
+    if (SPECIAL_CONST_P(x)) return Qnil;
+    switch (BUILTIN_TYPE(x)) {
+      case T_COMPLEX:
+        return rb_complex_pow(x, y);
+      case T_RATIONAL:
+        return rb_rational_pow(x, y);
+    }
+    return Qnil;
+}
+
 /*
  * Document-method: Integer#==
  * Document-method: Integer#===

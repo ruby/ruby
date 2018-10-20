@@ -407,6 +407,10 @@ class Complex_Test < Test::Unit::TestCase
     r = c ** Rational(-2,3)
     assert_in_delta(0.432, r.real, 0.001)
     assert_in_delta(-0.393, r.imag, 0.001)
+
+    c = Complex(0.0, -888888888888888.0)**8888
+    assert_not_predicate(c.real, :nan?)
+    assert_not_predicate(c.imag, :nan?)
   end
 
   def test_cmp
