@@ -15,7 +15,7 @@
 % end
 %
 % # compiler: Consider cfp->self as T_OBJECT if ic->ic_serial is set
-    if (ic->ic_serial) {
+    if (ic->ic_serial >= RUBY_VM_CLASS_SERIAL_MIN_VALID_VALUE) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
