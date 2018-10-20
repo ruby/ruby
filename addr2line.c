@@ -221,7 +221,7 @@ get_nth_dirname(unsigned long dir, char *p)
 }
 
 static void
-fill_filename(int file, char *include_directories, char *filenames, line_info_t *line)
+fill_filename(int file, char *include_directories, char *filenames, line_info_t *line, obj_info_t *obj)
 {
     int i;
     char *p = filenames;
@@ -231,8 +231,8 @@ fill_filename(int file, char *include_directories, char *filenames, line_info_t 
 	filename = p;
 	if (!*p) {
 	    /* Need to output binary file name? */
-	    kprintf("Unexpected file number %d in %s\n",
-		    file, binary_filename);
+	    kprintf("Unexpected file number %d in %s at %tx\n",
+		    file, binary_filename, filenames - obj->mapped);
 	    return;
 	}
 	while (*p) p++;
@@ -262,7 +262,7 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
 	/* We assume one line code doesn't result >100 bytes of native code.
        We may want more reliable way eventually... */
 	if (addr < a && a < addr + 100) {
-	    fill_filename(file, include_directories, filenames, &lines[i]);
+	    fill_filename(file, include_directories, filenames, &lines[i], obj);
 	    lines[i].line = line;
 	}
     }
@@ -274,6 +274,8 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 {
     char *p, *cu_end, *cu_start, *include_directories, *filenames;
     unsigned long unit_length;
+    unsigned short dwarf_version;
+    ptrdiff_t dwarf_word = 4;
     int default_is_stmt, line_base;
     unsigned int header_length, minimum_instruction_length, line_range,
 		 opcode_base;
@@ -298,11 +300,12 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
     if (unit_length == 0xffffffff) {
 	unit_length = *(unsigned long *)p;
 	p += sizeof(unsigned long);
+        dwarf_word = 8;
     }
 
     cu_end = p + unit_length;
 
-    /*dwarf_version = *(unsigned short *)p;*/
+    dwarf_version = *(unsigned short *)p;
     p += 2;
 
     header_length = *(unsigned int *)p;
@@ -312,6 +315,11 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
     minimum_instruction_length = *(unsigned char *)p;
     p++;
+
+    if (dwarf_version >= 4) {
+        /* maximum_operations_per_instruction = *(unsigned char *)p; */
+        p++;
+    }
 
     is_stmt = default_is_stmt = *(unsigned char *)p;
     p++;
@@ -911,7 +919,9 @@ di_read_debug_line_cu(DebugInfoReader *reader)
 {
     char *p;
     unsigned long unit_length;
+    unsigned short dwarf_version;
     unsigned int opcode_base;
+    ptrdiff_t dwarf_word = 4;
 
     p = reader->debug_line_cu_end;
 
@@ -920,12 +930,14 @@ di_read_debug_line_cu(DebugInfoReader *reader)
     if (unit_length == 0xffffffff) {
 	unit_length = *(unsigned long *)p;
 	p += sizeof(unsigned long);
+        dwarf_word = 8;
     }
 
     reader->debug_line_cu_end = p + unit_length;
+    dwarf_version = *(unsigned short *)p;
     p += 2;
-    p += sizeof(unsigned int);
-    p += 4;
+    p += dwarf_word;
+    p += dwarf_version >= 4 ? 5 : 4;
     opcode_base = *(unsigned char *)p++;
 
     /* standard_opcode_lengths = (unsigned char *)p - 1; */
@@ -1513,7 +1525,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 line.sname = get_cstr_value(&v);
                 break;
               case DW_AT_call_file:
-                fill_filename((int)v.as.uint64, reader->debug_line_directories, reader->debug_line_files, &line);
+                fill_filename((int)v.as.uint64, reader->debug_line_directories, reader->debug_line_files, &line, reader->obj);
                 break;
               case DW_AT_call_line:
                 line.line = (int)v.as.uint64;
