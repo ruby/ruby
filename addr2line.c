@@ -280,12 +280,11 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
     char *p, *cu_end, *cu_start, *include_directories, *filenames;
-    unsigned long unit_length;
+    unsigned long unit_length, header_length;
     unsigned short dwarf_version;
     ptrdiff_t dwarf_word = 4;
     int default_is_stmt, line_base;
-    unsigned int header_length, minimum_instruction_length, line_range,
-		 opcode_base;
+    unsigned int minimum_instruction_length, line_range, opcode_base;
     /* unsigned char *standard_opcode_lengths; */
 
     /* The registers. */
