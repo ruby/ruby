@@ -6,39 +6,26 @@ end
 require 'test/unit'
 
 if defined?(WIN32OLE_METHOD)
-
-  def ado_installed?
-    installed = false
-    if defined?(WIN32OLE)
-      begin
-        WIN32OLE.new('ADODB.Connection')
-        installed = true
-      rescue
-      end
-    end
-    installed
-  end
-
+  require_relative 'available_ole'
   class TestWIN32OLE_METHOD_EVENT < Test::Unit::TestCase
-    unless ado_installed?
+    unless AvailableOLE.sysmon_available?
       def test_dummy_for_skip_message
-        skip 'ActiveX Data Object Library not found'
+        skip 'System Monitor Control is not available'
       end
     else
       def setup
-        typelib = WIN32OLE.new('ADODB.Connection').ole_typelib
-        otype = WIN32OLE_TYPE.new(typelib.name, 'Connection')
-        @will_connect = WIN32OLE_METHOD.new(otype, 'WillConnect')
+        ole_type = WIN32OLE_TYPE.new('System Monitor Control', 'SystemMonitor')
+        @on_dbl_click = WIN32OLE_METHOD.new(ole_type, 'OnDblClick')
         ole_type = WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation', 'Shell')
         @namespace = WIN32OLE_METHOD.new(ole_type, 'namespace')
       end
 
       def test_event?
-        assert(@will_connect.event?)
+        assert(@on_dbl_click.event?)
       end
 
       def test_event_interface
-        assert('ConnectionEvents', @will_connect.event_interface)
+        assert('DISystemMonitorEvents', @on_dbl_click.event_interface)
       end
 
       def test_event_interface_is_nil
