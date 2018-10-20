@@ -67,14 +67,10 @@ End Class
 
 if defined?(WIN32OLE_RECORD)
   def rbcomtest_exist?
-    exist = false
-    begin
-      obj = WIN32OLE.new(PROGID_RBCOMTEST)
-      exist = true
-    rescue WIN32OLERuntimeError
-      exist = false
-    end
-    exist
+    WIN32OLE.new(PROGID_RBCOMTEST)
+    true
+  rescue WIN32OLERuntimeError
+    false
   end
 
   class TestWIN32OLE_RECORD_BY_RBCOMTEST < Test::Unit::TestCase
@@ -102,13 +98,13 @@ if defined?(WIN32OLE_RECORD)
 
       def test_s_new_raise
         assert_raise(WIN32OLERuntimeError) {
-          rec = WIN32OLE_RECORD.new('NonExistRecordName', @obj)
+          WIN32OLE_RECORD.new('NonExistRecordName', @obj)
         }
         assert_raise(ArgumentError) {
-          rec = WIN32OLE_RECORD.new
+          WIN32OLE_RECORD.new
         }
         assert_raise(ArgumentError) {
-          rec = WIN32OLE_RECORD.new('NonExistRecordName')
+          WIN32OLE_RECORD.new('NonExistRecordName')
         }
       end
 
