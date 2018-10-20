@@ -499,13 +499,14 @@ mjit_valid_class_serial_p(rb_serial_t class_serial)
 static struct rb_mjit_unit_node *
 get_from_list(struct rb_mjit_unit_list *list)
 {
-    struct rb_mjit_unit_node *node, *best = NULL;
+    struct rb_mjit_unit_node *node, *next, *best = NULL;
 
     if (list->head == NULL)
         return NULL;
 
     /* Find iseq with max total_calls */
-    for (node = list->head; node != NULL; node = node ? node->next : NULL) {
+    for (node = list->head; node != NULL; node = next) {
+        next = node->next;
         if (node->unit->iseq == NULL) { /* ISeq is GCed. */
             free_unit(node->unit);
             remove_from_list(node, list);
