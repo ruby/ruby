@@ -1663,7 +1663,7 @@ rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t res
     if (entry) {
         entry->events &= ~reset;
         if (!(entry->events & iseq->aux.trace_events)) {
-            void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, int pos);
+            void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
             rb_iseq_trace_flag_cleared(iseq, pos);
         }
     }
@@ -2949,7 +2949,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon)
 }
 
 void
-rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, int pos)
+rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 {
     const struct rb_iseq_constant_body *const body = iseq->body;
     VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
