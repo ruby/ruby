@@ -1846,9 +1846,4 @@ void rb_postponed_job_flush(rb_vm_t *vm);
 
 RUBY_SYMBOL_EXPORT_END
 
-/* special values for ruby_vm_class_serial */
-#define RUBY_VM_CLASS_SERIAL_UNSET 0 /* Not cached yet. Fields in `is_entries` and `cc_entries` start from 0 due to ZALLOC_N. */
-#define RUBY_VM_CLASS_SERIAL_INVALID 1 /* Cache invalidated and never cached again. */
-#define RUBY_VM_CLASS_SERIAL_MIN_VALID_VALUE 2 /* Actual class serials are larger than this value. */
-
 #endif /* RUBY_VM_CORE_H */
