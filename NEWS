@@ -389,7 +389,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
-* These standard libbraries promoted as the default gems.
+* These standard libraries have been promoted to default gems.
 
   * e2mmap
   * forwardable
