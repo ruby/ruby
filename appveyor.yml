@@ -135,5 +135,7 @@ for:
     - mingw32-make DESTDIR=../install install-nodoc
   test_script:
     - mingw32-make test
-    - mingw32-make test-all  TESTOPTS="-j %JOBS% --retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 -j %JOBS% --exclude win32ole"
+    # separately execute tests that may crash worker without -j.
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" TESTS="../test/win32ole"
     - mingw32-make test-spec MSPECOPT=-j
