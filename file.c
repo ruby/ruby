@@ -1948,6 +1948,8 @@ check3rdbyte(VALUE fname, int mode)
  *   File.setuid?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the setuid bit set.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1965,6 +1967,8 @@ rb_file_suid_p(VALUE obj, VALUE fname)
  *   File.setgid?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the setgid bit set.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE
@@ -1982,6 +1986,8 @@ rb_file_sgid_p(VALUE obj, VALUE fname)
  *   File.sticky?(file_name)   ->  true or false
  *
  * Returns <code>true</code> if the named file has the sticky bit set.
+ *
+ * _file_name_ can be an IO object.
  */
 
 static VALUE

@@ -495,22 +495,39 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_file.grpowned?(utf8_file)
   end if POSIX
 
+  def io_open(file_name)
+    # avoid File.open since we do not want #to_path
+    io = IO.for_fd(IO.sysopen(file_name))
+    yield io
+  ensure
+    io&.close
+  end
+
   def test_suid
     assert_file.not_setuid?(regular_file)
     assert_file.not_setuid?(utf8_file)
-    assert_file.setuid?(suidfile) if suidfile
+    if suidfile
+      assert_file.setuid?(suidfile)
+      io_open(suidfile) { |io| assert_file.setuid?(io) }
+    end
   end
 
   def test_sgid
     assert_file.not_setgid?(regular_file)
     assert_file.not_setgid?(utf8_file)
-    assert_file.setgid?(sgidfile) if sgidfile
+    if sgidfile
+      assert_file.setgid?(sgidfile)
+      io_open(sgidfile) { |io| assert_file.setgid?(io) }
+    end
   end
 
   def test_sticky
     assert_file.not_sticky?(regular_file)
     assert_file.not_sticky?(utf8_file)
-    assert_file.sticky?(stickyfile) if stickyfile
+    if stickyfile
+      assert_file.sticky?(stickyfile)
+      io_open(stickyfile) { |io| assert_file.sticky?(io) }
+    end
   end
 
   def test_path_identical_p
