@@ -10,6 +10,11 @@
    So you can safely use Ruby methods and GC in this file. */
 
 /* To share variables privately, include mjit_worker.c instead of linking. */
+
+#include "internal.h"
+
+#if USE_MJIT
+
 #include "mjit_worker.c"
 
 #include "constant.h"
@@ -774,3 +779,5 @@ mjit_remove_class_serial(rb_serial_t class_serial)
     rb_hash_delete_entry(valid_class_serials, LONG2FIX(class_serial));
     CRITICAL_SECTION_FINISH(3, "in mjit_remove_class_serial");
 }
+
+#endif

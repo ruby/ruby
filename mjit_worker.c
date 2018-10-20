@@ -72,7 +72,6 @@
 #define __EXTENSIONS__ 1
 #endif
 
-#include "internal.h"
 #include "vm_core.h"
 #include "mjit.h"
 #include "gc.h"

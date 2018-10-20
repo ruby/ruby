@@ -1403,9 +1403,16 @@ VALUE rb_math_sinh(VALUE);
 VALUE rb_math_sqrt(VALUE);
 
 /* mjit.c */
+
+#if USE_MJIT
 extern int mjit_enabled;
 VALUE mjit_pause(int wait_p);
 VALUE mjit_resume(void);
+#else
+#define mjit_enabled 0
+static inline VALUE mjit_pause(int wait_p){ return Qnil; } /* unreachable */
+static inline VALUE mjit_resume(void){ return Qnil; } /* unreachable */
+#endif
 
 /* newline.c */
 void Init_newline(void);

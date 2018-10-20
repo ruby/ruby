@@ -81,17 +81,24 @@ Init_version(void)
     rb_define_global_const("RUBY_ENGINE_VERSION", (1 ? version : MKSTR(version)));
 }
 
+#if USE_MJIT
+#define MJIT_OPTS_ON mjit_opts.on
+#else
+#define MJIT_OPTS_ON 0
+#endif
+
 void
 Init_ruby_description(void)
 {
     VALUE description;
 
-    if (mjit_opts.on) {
+    if (MJIT_OPTS_ON) {
         description = MKSTR(description_with_jit);
     }
     else {
         description = MKSTR(description);
     }
+
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
@@ -102,7 +109,7 @@ Init_ruby_description(void)
 void
 ruby_show_version(void)
 {
-    if (mjit_opts.on) {
+    if (MJIT_OPTS_ON) {
         PRINT(description_with_jit);
     }
     else {
