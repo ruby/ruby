@@ -411,15 +411,10 @@ sufficient information, see the ChangeLog file or Redmine
 
   * <tt>--enable=jit</tt> option is added to enable JIT. <tt>--jit-verbose=1</tt>
     is good for inspection.  See <tt>ruby --help</tt> for others.
-  * This JIT relies on C compiler used to build Ruby, on runtime.  Only
-    gcc and clang are supported for the JIT for now, and MinGW support has
-    some issues.
-  * As of 2.6.0-preview1, we're just preparing infrastructure for JIT and
-    very few optimizations are implemented.  So it's not ready for
-    benchmarking Ruby's JIT performance yet. It's known that current JIT
-    enablement makes Rails application slower for now.
+  * To generate machine code, this JIT compiler uses C compiler used for building
+    the interpreter. Currently GCC, Clang and Microsoft Visual C++ are supported for it.
   * rb_waitpid reimplemented on Unix-like platforms to maintain
-    compatibility [Bug #14867]
+    compatibility with processes created for JIT [Bug #14867]
 
 * VM generator script renewal; makes the generated VM more optimized. [GH-1779]
 
