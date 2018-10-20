@@ -28,11 +28,19 @@ module Gem
 
     if ::YAML.respond_to? :safe_load
       def self.safe_load input
-        ::YAML.safe_load(input, WHITELISTED_CLASSES, WHITELISTED_SYMBOLS, true)
+        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
+          ::YAML.safe_load(input, whitelist_classes: WHITELISTED_CLASSES, whitelist_symbols: WHITELISTED_SYMBOLS, aliases: true)
+        else
+          ::YAML.safe_load(input, WHITELISTED_CLASSES, WHITELISTED_SYMBOLS, true)
+        end
       end
 
       def self.load input
-        ::YAML.safe_load(input, [::Symbol])
+        if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
+          ::YAML.safe_load(input, whitelist_classes: [::Symbol])
+        else
+          ::YAML.safe_load(input, [::Symbol])
+        end
       end
     else
       unless Gem::Deprecate.skip
