@@ -186,13 +186,10 @@ module Net   #:nodoc:
   #     res.value
   #   end
   #
-  # At this time Net::HTTP does not support multipart/form-data.  To send
-  # multipart/form-data use Net::HTTPRequest#body= and
-  # Net::HTTPRequest#content_type=:
+  # To send multipart/form-data use Net::HTTPHeader#set_form
   #
   #   req = Net::HTTP::Post.new(uri)
-  #   req.body = multipart_data
-  #   req.content_type = 'multipart/form-data'
+  #   req.set_form([['upload', File.open('foo.bar')]], 'multipart/form-data')
   #
   # Other requests that can contain a body such as PUT can be created in the
   # same way using the corresponding request class (Net::HTTP::Put).
