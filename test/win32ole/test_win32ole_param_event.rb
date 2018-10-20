@@ -6,38 +6,24 @@ end
 require 'test/unit'
 
 if defined?(WIN32OLE_PARAM)
-
-  def ado_installed?
-    installed = false
-    if defined?(WIN32OLE)
-      begin
-        WIN32OLE.new('ADODB.Connection')
-        installed = true
-      rescue
-      end
-    end
-    installed
-  end
+  require_relative 'available_ole'
 
   class TestWIN32OLE_PARAM_EVENT < Test::Unit::TestCase
-    unless ado_installed?
-      def test_dummy_for_skip_message
-        skip 'ActiveX Data Object Library not found'
-      end
-    else
+    if AvailableOLE.msxml_available? || AvailableOLE.ado_available?
       def setup
-        typelib = WIN32OLE.new('ADODB.Connection').ole_typelib
-        otype = WIN32OLE_TYPE.new(typelib.name, 'Connection')
-        m_will_connect = WIN32OLE_METHOD.new(otype, 'WillConnect')
-        @param_user_id = m_will_connect.params[0]
+        @param = AvailableOLE.event_param
       end
 
       def test_input?
-        assert_equal(true, @param_user_id.input?)
+        assert_equal(true, @param.input?)
       end
 
       def test_output?
-        assert_equal(true, @param_user_id.output?)
+        assert_equal(true, @param.output?)
+      end
+    else
+      def test_dummy_for_skip_message
+        skip 'ActiveX Data Object Library and MS XML not found'
       end
     end
   end
