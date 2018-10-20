@@ -1,3 +1,5 @@
+require 'rbconfig'
+
 module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
