@@ -17,7 +17,7 @@ module Psych
       assert_equal [], Psych.load_stream(s)
       assert_equal false, Psych.parse(s)
       assert_equal [], Psych.parse_stream(s).transform
-      assert_equal nil, Psych.safe_load(s)
+      assert_nil   Psych.safe_load(s)
     end
 
     def test_false
@@ -49,11 +49,11 @@ module Psych
 
     def test_inf
       s = "-.inf"
-      assert_equal -Float::INFINITY, Psych.load(s)
-      assert_equal [-Float::INFINITY], Psych.load_stream(s)
-      assert_equal -Float::INFINITY, Psych.parse(s).transform
-      assert_equal [-Float::INFINITY], Psych.parse_stream(s).transform
-      assert_equal -Float::INFINITY, Psych.safe_load(s)
+      assert_equal(-Float::INFINITY, Psych.load(s))
+      assert_equal([-Float::INFINITY], Psych.load_stream(s))
+      assert_equal(-Float::INFINITY, Psych.parse(s).transform)
+      assert_equal([-Float::INFINITY], Psych.parse_stream(s).transform)
+      assert_equal(-Float::INFINITY, Psych.safe_load(s))
     end
 
     def test_NaN
@@ -112,11 +112,11 @@ module Psych
 
     def test_null
       s = "null"
-      assert_equal nil, Psych.load(s)
+      assert_nil   Psych.load(s)
       assert_equal [nil], Psych.load_stream(s)
-      assert_equal nil, Psych.parse(s).transform
+      assert_nil   Psych.parse(s).transform
       assert_equal [nil], Psych.parse_stream(s).transform
-      assert_equal nil, Psych.safe_load(s)
+      assert_nil   Psych.safe_load(s)
     end
 
     private

@@ -15,6 +15,12 @@ module Psych
     def setup
       super
       @wups = Wups.new
+
+      @orig_verbose, $VERBOSE = $VERBOSE, nil
+    end
+
+    def teardown
+      $VERBOSE = @orig_verbose
     end
 
     def test_naming_exception

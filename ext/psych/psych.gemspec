@@ -4,6 +4,7 @@
 begin
   require_relative 'lib/psych/versions'
 rescue LoadError
+  # for Ruby core repository
   require_relative 'versions'
 end
 
@@ -14,7 +15,7 @@ Gem::Specification.new do |s|
   s.email = ["aaron@tenderlovemaking.com", "hsbt@ruby-lang.org", "headius@headius.com"]
   s.summary = "Psych is a YAML parser and emitter"
   s.description = <<-DESCRIPTION
-Psych is a YAML parser and emitter. Psych leverages libyaml[http://pyyaml.org/wiki/LibYAML]
+Psych is a YAML parser and emitter. Psych leverages libyaml[https://pyyaml.org/wiki/LibYAML]
 for its YAML parsing and emitting capabilities. In addition to wrapping libyaml,
 Psych also knows how to serialize and de-serialize most Ruby objects to and from the YAML format.
 DESCRIPTION
@@ -64,6 +65,6 @@ DESCRIPTION
     s.add_development_dependency 'ruby-maven'
   else
     s.extensions = ["ext/psych/extconf.rb"]
-    s.add_development_dependency 'rake-compiler-dock', ">= 0.6.1"
+    s.add_development_dependency 'rake-compiler-dock', ">= 0.6.3"
   end
 end
