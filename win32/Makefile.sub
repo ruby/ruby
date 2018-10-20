@@ -864,6 +864,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
+#define MJIT_SUPPORT 1
 #endif /* $(guard) */
 <<
 
@@ -1052,6 +1053,7 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
+s,@MJIT_SUPPORT,$(MJIT_SUPPORT),;t t
 <<KEEP
 
 miniruby: miniruby$(EXEEXT)
