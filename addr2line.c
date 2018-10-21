@@ -283,7 +283,7 @@ struct LineNumberProgramHeader {
     uint8_t minimum_instruction_length;
     uint8_t maximum_operations_per_instruction;
     uint8_t default_is_stmt;
-    uint8_t line_base;
+    int8_t line_base;
     uint8_t line_range;
     uint8_t opcode_base;
     /* uint8_t standard_opcode_lengths[opcode_base-1]; */
