@@ -336,7 +336,6 @@ p Foo::Bar
   end
 
   def test_no_leak
-    skip "This sometimes fails with -DMJIT_FORCE_ENABLE. To be investigated." if RubyVM::MJIT.enabled?
     assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 30)
       200000.times do |i|
         m = Module.new
