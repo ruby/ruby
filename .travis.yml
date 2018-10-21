@@ -67,9 +67,9 @@ matrix:
       compiler: clang
       env:
         - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-        # debugging which test is causing hang
+        # osx build randomly fails with -j
         - "JOBS="
-        - "TEST_ALL_TESTOPTS=\"-v --color=never --job-status=normal\""
+        - "TEST_ALL_TESTOPTS=\"--color=never --job-status=replace\""
       before_install:
         # Bare "brew update" nukes everything.
         # These steps are very carefully chosen to avoid breaking things.
