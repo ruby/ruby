@@ -800,7 +800,7 @@ rb_block_lambda(void)
     return proc_new(rb_cProc, TRUE);
 }
 
-/*  Document-method: ===
+/*  Document-method: Proc#===
  *
  *  call-seq:
  *     proc === obj   -> result_of_proc
@@ -813,9 +813,9 @@ rb_block_lambda(void)
 /* CHECKME: are the argument checking semantics correct? */
 
 /*
- *  Document-method: []
- *  Document-method: call
- *  Document-method: yield
+ *  Document-method: Proc#[]
+ *  Document-method: Proc#call
+ *  Document-method: Proc#yield
  *
  *  call-seq:
  *     prc.call(params,...)   -> obj
@@ -1482,6 +1482,11 @@ method_entry_defined_class(const rb_method_entry_t *me)
  *     meth.call(9)                 #=> 81
  *     [ 1, 2, 3 ].collect(&meth)   #=> [1, 4, 9]
  *
+ *     [ 1, 2, 3 ].each(&method(:puts)) #=> prints 1, 2, 3
+ *
+ *     require 'date'
+ *     %w[2017-03-01 2017-03-02].collect(&Date.method(:parse))
+ *     #=> [#<Date: 2017-03-01 ((2457814j,0s,0n),+0s,2299161j)>, #<Date: 2017-03-02 ((2457815j,0s,0n),+0s,2299161j)>]
  */
 
 /*
@@ -1576,6 +1581,8 @@ method_unbind(VALUE obj)
  *     meth.receiver    -> object
  *
  *  Returns the bound receiver of the method object.
+ *
+ *    (1..3).method(:map).receiver # => 1..3
  */
 
 static VALUE
@@ -1630,6 +1637,9 @@ method_original_name(VALUE obj)
  *     meth.owner    -> class_or_module
  *
  *  Returns the class or module that defines the method.
+ *  See also receiver.
+ *
+ *    (1..3).method(:map).owner #=> Enumerable
  */
 
 static VALUE
@@ -1712,6 +1722,18 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     l = Demo.new('Fred')
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
+ *
+ *  Note that <code>Method</code> implements <code>to_proc</code> method,
+ *  which means it can be used with iterators.
+ *
+ *     [ 1, 2, 3 ].each(&method(:puts)) # => prints 3 lines to stdout
+ *
+ *     out = File.open('test.txt', 'w')
+ *     [ 1, 2, 3 ].each(&out.method(:puts)) # => prints 3 lines to file
+ *
+ *     require 'date'
+ *     %w[2017-03-01 2017-03-02].collect(&Date.method(:parse))
+ *     #=> [#<Date: 2017-03-01 ((2457814j,0s,0n),+0s,2299161j)>, #<Date: 2017-03-02 ((2457815j,0s,0n),+0s,2299161j)>]
  */
 
 VALUE
@@ -2059,6 +2081,24 @@ method_clone(VALUE self)
     RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
     return clone;
 }
+
+/*  Document-method: Method#===
+ *
+ *  call-seq:
+ *     method === obj   -> result_of_method
+ *
+ *  Invokes the method with +obj+ as the parameter like #call. It
+ *  is to allow a method object to be a target of +when+ clause in a case
+ *  statement.
+ *
+ *      require 'prime'
+ *
+ *      case 1373
+ *      when Prime.method(:prime?)
+ *        # ....
+ *      end
+ */
+
 
 /*
  *  call-seq:
@@ -2573,9 +2613,13 @@ rb_method_parameters(VALUE method)
  *   meth.to_s      ->  string
  *   meth.inspect   ->  string
  *
- *  Returns the name of the underlying method.
+ *  Returns a human-readable description of the underlying method.
  *
  *    "cat".method(:count).inspect   #=> "#<Method: String#count>"
+ *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map>"
+ *
+ *  In the latter case, method description includes the "owner" of original
+ *  method (+Enumerable+ module, which is included into +Range+).
  */
 
 static VALUE
