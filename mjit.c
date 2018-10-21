@@ -20,6 +20,19 @@
 #include "constant.h"
 #include "id_table.h"
 
+/* Copy ISeq's states so that race condition does not happen on compilation. */
+static void
+mjit_copy_job_handler(void *data)
+{
+    struct mjit_copy_job *job = (struct mjit_copy_job *)data;
+    memcpy(job->is_entries, job->body->is_entries, sizeof(union iseq_inline_storage_entry) * job->body->is_size);
+
+    CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+    job->finish_p = TRUE;
+    rb_native_cond_broadcast(&mjit_worker_wakeup);
+    CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+}
+
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
 
 /* Return an unique file name in /tmp with PREFIX and SUFFIX and
