@@ -337,6 +337,7 @@ parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
 
     if (header->version >= 4) {
         /* maximum_operations_per_instruction = *(uint8_t *)p; */
+        if (*p != 1) return -1; /* For non-VLIW architectures, this field is 1 */
         p++;
     }
 
@@ -478,13 +479,11 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    }
 	    break;
 	default: {
-	    unsigned long addr_incr;
-	    unsigned long line_incr;
-	    a = op - header.opcode_base;
-	    addr_incr = (a / header.line_range) * header.minimum_instruction_length;
-	    line_incr = header.line_base + (a % header.line_range);
-	    addr += (unsigned int)addr_incr;
-	    line += (unsigned int)line_incr;
+            uint8_t adjusted_opcode = op - header.opcode_base;
+            uint8_t operation_advance = adjusted_opcode / header.line_range;
+            /* NOTE: this code doesn't support VLIW */
+            addr += operation_advance * header.minimum_instruction_length;
+            line += header.line_base + (adjusted_opcode % header.line_range);
 	    FILL_LINE();
 	}
 	}
