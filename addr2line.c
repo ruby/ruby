@@ -275,17 +275,88 @@ fill_line(int num_traces, void **traces, uintptr_t addr, int file, int line,
     }
 }
 
+struct LineNumberProgramHeader {
+    uint64_t unit_length;
+    uint16_t version;
+    uint8_t format; /* 4 or 8 */
+    uint64_t header_length;
+    uint8_t minimum_instruction_length;
+    uint8_t maximum_operations_per_instruction;
+    uint8_t default_is_stmt;
+    uint8_t line_base;
+    uint8_t line_range;
+    uint8_t opcode_base;
+    /* uint8_t standard_opcode_lengths[opcode_base-1]; */
+    const char *include_directories;
+    const char *filenames;
+    const char *cu_start;
+    const char *cu_end;
+};
+
+static int
+parse_debug_line_header(const char **pp, struct LineNumberProgramHeader *header)
+{
+    const char *p = *pp;
+    header->unit_length = *(uint32_t *)p;
+    p += sizeof(uint32_t);
+
+    header->format = 4;
+    if (header->unit_length == 0xffffffff) {
+	header->unit_length = *(uint64_t *)p;
+	p += sizeof(uint64_t);
+        header->format = 8;
+    }
+
+    header->cu_end = p + header->unit_length;
+
+    header->version = *(uint16_t *)p;
+    p += sizeof(uint16_t);
+    if (header->version > 4) return -1;
+
+    header->header_length = header->format == 4 ? *(uint32_t *)p : *(uint64_t *)p;
+    p += header->format;
+    header->cu_start = p + header->header_length;
+
+    header->minimum_instruction_length = *(uint8_t *)p++;
+
+    if (header->version >= 4) {
+        /* maximum_operations_per_instruction = *(uint8_t *)p; */
+        p++;
+    }
+
+    header->default_is_stmt = *(uint8_t *)p++;
+    header->line_base = *(int8_t *)p++;
+    header->line_range = *(uint8_t *)p++;
+    header->opcode_base = *(uint8_t *)p++;
+    /* header->standard_opcode_lengths = (uint8_t *)p - 1; */
+    p += header->opcode_base - 1;
+
+    header->include_directories = p;
+
+    /* temporary measure for compress-debug-sections */
+    if (p >= header->cu_end) return -1;
+
+    /* skip include directories */
+    while (*p) {
+	p = memchr(p, '\0', header->cu_end - p);
+	if (!p) return -1;
+	p++;
+    }
+    p++;
+
+    header->filenames = p;
+
+    *pp = header->cu_start;
+
+    return 0;
+}
+
 static int
 parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		obj_info_t *obj, line_info_t *lines, int offset)
 {
-    char *p, *cu_end, *cu_start, *include_directories, *filenames;
-    unsigned long unit_length, header_length;
-    unsigned short dwarf_version;
-    ptrdiff_t dwarf_word = 4;
-    int default_is_stmt, line_base;
-    unsigned int minimum_instruction_length, line_range, opcode_base;
-    /* unsigned char *standard_opcode_lengths; */
+    const char *p = (const char *)*debug_line;
+    struct LineNumberProgramHeader header;
 
     /* The registers. */
     unsigned long addr = 0;
@@ -299,75 +370,19 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
     /* int epilogue_begin = 0; */
     /* unsigned int isa = 0; */
 
-    p = *debug_line;
-
-    unit_length = *(unsigned int *)p;
-    p += sizeof(unsigned int);
-    if (unit_length == 0xffffffff) {
-	unit_length = *(unsigned long *)p;
-	p += sizeof(unsigned long);
-        dwarf_word = 8;
-    }
-
-    cu_end = p + unit_length;
-
-    dwarf_version = *(unsigned short *)p;
-    p += 2;
-
-    header_length = dwarf_word == 4 ? *(unsigned int *)p : *(unsigned long *)p;
-    p += dwarf_word;
-
-    cu_start = p + header_length;
-
-    minimum_instruction_length = *(unsigned char *)p;
-    p++;
-
-    if (dwarf_version >= 4) {
-        /* maximum_operations_per_instruction = *(unsigned char *)p; */
-        p++;
-    }
-
-    is_stmt = default_is_stmt = *(unsigned char *)p;
-    p++;
-
-    line_base = *(signed char *)p;
-    p++;
-
-    line_range = *(unsigned char *)p;
-    p++;
-
-    opcode_base = *(unsigned char *)p;
-    p++;
-
-    /* standard_opcode_lengths = (unsigned char *)p - 1; */
-    p += opcode_base - 1;
-
-    include_directories = p;
-
-    /* temporary measure for compress-debug-sections */
-    if (p >= cu_end) return -1;
-
-    /* skip include directories */
-    while (*p) {
-	p = memchr(p, '\0', cu_end - p);
-	if (!p) return -1;
-	p++;
-    }
-    p++;
-
-    filenames = p;
-
-    p = cu_start;
+    if (parse_debug_line_header(&p, &header))
+        return -1;
 
 #define FILL_LINE()						    \
     do {							    \
 	fill_line(num_traces, traces, addr, file, line,		    \
-		  include_directories, filenames,		    \
+                  (char *)header.include_directories,               \
+                  (char *)header.filenames,                         \
 		  obj, lines, offset);				    \
 	/*basic_block = prologue_end = epilogue_begin = 0;*/	    \
     } while (0)
 
-    while (p < cu_end) {
+    while (p < header.cu_end) {
 	unsigned long a;
 	unsigned char op = *p++;
 	switch (op) {
@@ -375,19 +390,19 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    FILL_LINE();
 	    break;
 	case DW_LNS_advance_pc:
-	    a = uleb128(&p);
+	    a = uleb128((char **)&p);
 	    addr += a;
 	    break;
 	case DW_LNS_advance_line: {
-	    long a = sleb128(&p);
+	    long a = sleb128((char **)&p);
 	    line += a;
 	    break;
 	}
 	case DW_LNS_set_file:
-	    file = (unsigned int)uleb128(&p);
+	    file = (unsigned int)uleb128((char **)&p);
 	    break;
 	case DW_LNS_set_column:
-	    /*column = (unsigned int)*/(void)uleb128(&p);
+	    /*column = (unsigned int)*/(void)uleb128((char **)&p);
 	    break;
 	case DW_LNS_negate_stmt:
 	    is_stmt = !is_stmt;
@@ -396,8 +411,8 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /*basic_block = 1; */
 	    break;
 	case DW_LNS_const_add_pc:
-	    a = ((255 - opcode_base) / line_range) *
-		minimum_instruction_length;
+	    a = ((255 - header.opcode_base) / header.line_range) *
+		header.minimum_instruction_length;
 	    addr += a;
 	    break;
 	case DW_LNS_fixed_advance_pc:
@@ -411,7 +426,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	    /* epilogue_begin = 1; */
 	    break;
 	case DW_LNS_set_isa:
-	    /* isa = (unsigned int)*/(void)uleb128(&p);
+	    /* isa = (unsigned int)*/(void)uleb128((char **)&p);
 	    break;
 	case 0:
 	    a = *(unsigned char *)p++;
@@ -424,7 +439,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		file = 1;
 		line = 1;
 		/* column = 0; */
-		is_stmt = default_is_stmt;
+		is_stmt = header.default_is_stmt;
 		/* end_sequence = 0; */
 		/* isa = 0; */
 		break;
@@ -438,7 +453,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 		break;
 	    case DW_LNE_set_discriminator:
 		/* TODO:currently ignore */
-		uleb128(&p);
+		uleb128((char **)&p);
 		break;
 	    default:
 		kprintf("Unknown extended opcode: %d in %s\n",
@@ -448,16 +463,16 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 	default: {
 	    unsigned long addr_incr;
 	    unsigned long line_incr;
-	    a = op - opcode_base;
-	    addr_incr = (a / line_range) * minimum_instruction_length;
-	    line_incr = line_base + (a % line_range);
+	    a = op - header.opcode_base;
+	    addr_incr = (a / header.line_range) * header.minimum_instruction_length;
+	    line_incr = header.line_base + (a % header.line_range);
 	    addr += (unsigned int)addr_incr;
 	    line += (unsigned int)line_incr;
 	    FILL_LINE();
 	}
 	}
     }
-    *debug_line = p;
+    *debug_line = (char *)p;
     return 0;
 }
 
@@ -922,49 +937,21 @@ di_read_debug_abbrev_cu(DebugInfoReader *reader)
     }
 }
 
-static void
+static int
 di_read_debug_line_cu(DebugInfoReader *reader)
 {
-    char *p;
-    unsigned long unit_length;
-    unsigned short dwarf_version;
-    unsigned int opcode_base;
-    ptrdiff_t dwarf_word = 4;
+    const char *p;
+    struct LineNumberProgramHeader header;
 
-    p = reader->debug_line_cu_end;
+    p = (const char *)reader->debug_line_cu_end;
+    if (parse_debug_line_header(&p, &header))
+        return -1;
 
-    unit_length = *(unsigned int *)p;
-    p += sizeof(unsigned int);
-    if (unit_length == 0xffffffff) {
-	unit_length = *(unsigned long *)p;
-	p += sizeof(unsigned long);
-        dwarf_word = 8;
-    }
+    reader->debug_line_cu_end = (char *)header.cu_end;
+    reader->debug_line_directories = (char *)header.include_directories;
+    reader->debug_line_files = (char *)header.filenames;
 
-    reader->debug_line_cu_end = p + unit_length;
-    dwarf_version = *(unsigned short *)p;
-    p += 2;
-    p += dwarf_word;
-    p += dwarf_version >= 4 ? 5 : 4;
-    opcode_base = *(unsigned char *)p++;
-
-    /* standard_opcode_lengths = (unsigned char *)p - 1; */
-    p += opcode_base - 1;
-
-    reader->debug_line_directories = p;
-
-    /* skip include directories */
-    while (*p) {
-	p = memchr(p, '\0', reader->debug_line_cu_end - p);
-	if (!p) {
-            fprintf(stderr, "Wrongly reached the end of Directory Table at %tx",
-                    reader->debug_line_directories - reader->obj->debug_line.ptr);
-            abort();
-        }
-	p++;
-    }
-    p++;
-    reader->debug_line_files = p;
+    return 0;
 }
 
 static void
@@ -1423,7 +1410,7 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
 }
 #endif
 
-static void
+static int
 di_read_cu(DebugInfoReader *reader)
 {
     DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
@@ -1445,7 +1432,7 @@ di_read_cu(DebugInfoReader *reader)
     }
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
-    di_read_debug_line_cu(reader);
+    if (di_read_debug_line_cu(reader)) return -1;
 
 #if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER_BUILD_DATE)
     /* Though DWARF specifies "the applicable base address defaults to the base
@@ -1473,6 +1460,7 @@ di_read_cu(DebugInfoReader *reader)
         }
     } while (0);
 #endif
+    return 0;
 }
 
 static void
@@ -1760,7 +1748,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         i = 0;
         while (reader.p < reader.pend) {
             /* fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
-            di_read_cu(&reader);
+            if (di_read_cu(&reader)) goto fail;
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
@@ -1952,7 +1940,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         DebugInfoReader reader;
         debug_info_reader_init(&reader, obj);
         while (reader.p < reader.pend) {
-            di_read_cu(&reader);
+            if (di_read_cu(&reader)) goto fail;
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
