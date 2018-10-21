@@ -647,10 +647,6 @@ CODE
   end
 
   def test_crypt
-    if RubyVM::MJIT.enabled?
-      skip "This sometimes fails with -DMJIT_FORCE_ENABLE. This seems important to be fixed..."
-    end
-
     assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
     assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
     assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
