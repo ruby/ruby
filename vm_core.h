@@ -444,7 +444,7 @@ struct rb_iseq_constant_body {
 				      * So that:
 				      * struct rb_call_info_with_kwarg *cikw_entries = &body->ci_entries[ci_size];
 				      */
-    struct rb_call_cache *cc_entries; /* size is ci_size = ci_kw_size */
+    struct rb_call_cache *cc_entries; /* size is ci_size + ci_kw_size */
 
     struct {
 	rb_snum_t flip_count;
