@@ -69,7 +69,7 @@ matrix:
         - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
         # osx build randomly fails with -j
         - "JOBS="
-        - "TEST_ALL_TESTOPTS=\"--color=never --job-status=replace\" --excludes='$(TESTSDIR)/excludes/_travis'"
+        - "TEST_ALL_TESTOPTS='--color=never --job-status=replace --excludes=$(TESTSDIR)/excludes/_travis'"
       before_install:
         # Bare "brew update" nukes everything.
         # These steps are very carefully chosen to avoid breaking things.
