@@ -67,7 +67,9 @@ matrix:
       compiler: clang
       env:
         - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-        - "JOBS=\"-j`sysctl -n hw.activecpu`\""
+        # debugging which test is causing hang
+        - "JOBS="
+        - "TEST_ALL_TESTOPTS=\"-v --color=never --job-status=normal\""
       before_install:
         # Bare "brew update" nukes everything.
         # These steps are very carefully chosen to avoid breaking things.
@@ -197,7 +199,8 @@ before_script:
 
 script:
   - "$SETARCH make -s test TESTOPTS=--color=never"
-  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS='-q --color=never --job-status=normal'"
+  - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- -q --color=never --job-status=normal}\""
+  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
   - "$SETARCH make -s $JOBS test-spec MSPECOPT=-j"
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
