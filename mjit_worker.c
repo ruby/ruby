@@ -1029,7 +1029,7 @@ compile_prelude(FILE *f)
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
-convert_unit_to_func(struct rb_mjit_unit *unit, union iseq_inline_storage_entry *is_entries)
+convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
 {
     char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
     int success;
@@ -1097,7 +1097,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit, union iseq_inline_storage_entry 
         verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
-    success = mjit_compile(f, unit->iseq->body, funcname, is_entries);
+    success = mjit_compile(f, unit->iseq->body, funcname, cc_entries, is_entries);
 
     /* release blocking mjit_gc_start_hook */
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
@@ -1163,11 +1163,28 @@ convert_unit_to_func(struct rb_mjit_unit *unit, union iseq_inline_storage_entry 
 
 struct mjit_copy_job {
     const struct rb_iseq_constant_body *body;
+    struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
     int finish_p;
 };
 
 static void mjit_copy_job_handler(void *data);
+
+/* We're lazily copying cache values from main thread because these cache values
+   could be different between ones on enqueue timing and ones on dequeue timing. */
+static void
+copy_cache_from_main_thread(struct mjit_copy_job *job)
+{
+    job->finish_p = FALSE;
+
+    rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job);
+    CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+    while (!job->finish_p) {
+        rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+        verbose(3, "Getting wakeup from client");
+    }
+    CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+}
 
 /* The function implementing a worker. It is executed in a separate
    thread by rb_thread_create_mjit_thread. It compiles precompiled header
@@ -1207,24 +1224,21 @@ mjit_worker(void)
             mjit_func_t func;
             struct mjit_copy_job job;
 
-            /* Copy ISeq's inline caches from main thread. */
-            job.is_entries = NULL;
             job.body = node->unit->iseq->body;
-            if (job.body->is_size > 0) {
-                job.is_entries = malloc(sizeof(union iseq_inline_storage_entry) * job.body->is_size);
-                job.finish_p = FALSE;
+            job.cc_entries = NULL;
+            if (job.body->ci_size > 0 || job.body->ci_kw_size > 0)
+                job.cc_entries = alloca(sizeof(struct rb_call_cache) * (job.body->ci_size + job.body->ci_kw_size));
+            job.is_entries = NULL;
+            if (job.body->is_size > 0)
+                job.is_entries = alloca(sizeof(union iseq_inline_storage_entry) * job.body->is_size);
 
-                rb_postponed_job_register(0, mjit_copy_job_handler, (void *)&job);
-                CRITICAL_SECTION_START(3, "in MJIT copy job wait");
-                while (!job.finish_p) {
-                    rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
-                    verbose(3, "Getting wakeup from client");
-                }
-                CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+            /* Copy ISeq's inline caches values to avoid race condition. */
+            if (job.cc_entries != NULL || job.is_entries != NULL) {
+                copy_cache_from_main_thread(&job);
             }
 
             /* JIT compile */
-            func = convert_unit_to_func(node->unit, job.is_entries);
+            func = convert_unit_to_func(node->unit, job.cc_entries, job.is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             if (node->unit->iseq) { /* Check whether GCed or not */
@@ -1241,9 +1255,6 @@ mjit_worker(void)
                 compact_all_jit_code();
             }
 #endif
-            if (job.is_entries != NULL) {
-                free(job.is_entries);
-            }
         }
     }
 
