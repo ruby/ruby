@@ -15,7 +15,6 @@
 % end
 % # compiler: Use copied cc to avoid race condition
     CALL_CACHE cc_copy = status->cc_entries + (cc - body->cc_entries);
-    cc_copy = cc;
 %
     if (has_valid_method_type(cc)) {
         const rb_iseq_t *iseq;
