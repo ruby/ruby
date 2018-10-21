@@ -25,7 +25,12 @@ static void
 mjit_copy_job_handler(void *data)
 {
     struct mjit_copy_job *job = (struct mjit_copy_job *)data;
-    memcpy(job->is_entries, job->body->is_entries, sizeof(union iseq_inline_storage_entry) * job->body->is_size);
+    if (job->cc_entries) {
+        memcpy(job->cc_entries, job->body->cc_entries, sizeof(struct rb_call_cache) * (job->body->ci_size + job->body->ci_kw_size));
+    }
+    if (job->is_entries) {
+        memcpy(job->is_entries, job->body->is_entries, sizeof(union iseq_inline_storage_entry) * job->body->is_size);
+    }
 
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
     job->finish_p = TRUE;
