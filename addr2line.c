@@ -753,21 +753,6 @@ enum {
     VAL_int = 4
 };
 
-typedef struct {
-    uint32_t unit_length;
-    uint16_t version;
-    uint32_t debug_abbrev_offset;
-    uint8_t address_size;
-} __attribute__((packed)) DW_CompilationUnitHeader32;
-
-typedef struct {
-    uint32_t initial_length; /* 0xffffffff */
-    uint64_t unit_length;
-    uint16_t version;
-    uint64_t debug_abbrev_offset;
-    uint8_t address_size;
-} __attribute__((packed)) DW_CompilationUnitHeader64;
-
 # define ABBREV_TABLE_SIZE 256
 typedef struct {
     obj_info_t *obj;
@@ -782,7 +767,7 @@ typedef struct {
     char *pend;
     char *q0;
     char *q;
-    int format; /* 32 or 64 */;
+    int format; /* 4 or 8 */;
     uint8_t address_size;
     int level;
     char *abbrev_table[ABBREV_TABLE_SIZE];
@@ -883,13 +868,11 @@ read_uintptr(char **ptr)
 static uint64_t
 read_uint(DebugInfoReader *reader)
 {
-    uint64_t v;
-    if (reader->format == 32) {
-        v = read_uint32(&reader->p);
+    if (reader->format == 4) {
+        return read_uint32(&reader->p);
     } else { /* 64 bit */
-        v = read_uint64(&reader->p);
+        return read_uint64(&reader->p);
     }
-    return v;
 }
 
 static uint64_t
@@ -1413,23 +1396,32 @@ ranges_inspect(DebugInfoReader *reader, ranges_t *ptr)
 static int
 di_read_cu(DebugInfoReader *reader)
 {
-    DW_CompilationUnitHeader32 *hdr32 = (DW_CompilationUnitHeader32 *)reader->p;
+    uint64_t unit_length;
+    uint16_t version;
+    uint64_t debug_abbrev_offset;
+    reader->format = 4;
     reader->current_cu = reader->p;
-    if (hdr32->unit_length == 0xffffffff) {
-        DW_CompilationUnitHeader64 *hdr = (DW_CompilationUnitHeader64 *)hdr32;
-        reader->cu_end = reader->p + 12 + hdr->unit_length;
-        reader->p += 23;
-        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
-        reader->address_size = hdr->address_size;
-        reader->format = 64;
-    } else {
-        DW_CompilationUnitHeader32 *hdr = hdr32;
-        reader->cu_end = reader->p + 4 + hdr->unit_length;
-        reader->p += 11;
-        reader->q0 = reader->obj->debug_abbrev.ptr + hdr->debug_abbrev_offset;
-        reader->address_size = hdr->address_size;
-        reader->format = 32;
+    unit_length = read_uint32(&reader->p);
+    if (unit_length == 0xffffffff) {
+        unit_length = read_uint64(&reader->p);
+        reader->format = 8;
     }
+    reader->cu_end = reader->p + unit_length;
+    version = read_uint16(&reader->p);
+    if (version > 5) {
+        return -1;
+    }
+    else if (version == 5) {
+        /* unit_type = */ read_uint8(&reader->p);
+        reader->address_size = read_uint8(&reader->p);
+        debug_abbrev_offset = read_uint(reader);
+    }
+    else {
+        debug_abbrev_offset = read_uint(reader);
+        reader->address_size = read_uint8(&reader->p);
+    }
+    reader->q0 = reader->obj->debug_abbrev.ptr + debug_abbrev_offset;
+
     reader->level = 0;
     di_read_debug_abbrev_cu(reader);
     if (di_read_debug_line_cu(reader)) return -1;
@@ -1748,12 +1740,13 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         i = 0;
         while (reader.p < reader.pend) {
             /* fprintf(stderr, "%d:%tx: CU[%d]\n", __LINE__, reader.p - reader.obj->debug_info.ptr, i++); */
-            if (di_read_cu(&reader)) goto fail;
+            if (di_read_cu(&reader)) goto use_symtab;
             debug_info_read(&reader, num_traces, traces, lines, offset);
         }
     }
     else {
         /* This file doesn't have dwarf, use symtab or dynsym */
+use_symtab:
         if (!symtab_shdr) {
             /* This file doesn't have symtab, use dynsym instead */
             symtab_shdr = dynsym_shdr;
