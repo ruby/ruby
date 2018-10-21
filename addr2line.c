@@ -388,6 +388,7 @@ parse_debug_line_cu(int num_traces, void **traces, char **debug_line,
 
     if (parse_debug_line_header(&p, &header))
         return -1;
+    is_stmt = header.default_is_stmt;
 
 #define FILL_LINE()						    \
     do {							    \
