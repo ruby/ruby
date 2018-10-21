@@ -541,10 +541,15 @@ options which control how the pattern can match.
 subexpression level with the
 <tt>(?</tt><i>on</i><tt>-</tt><i>off</i><tt>)</tt> construct, which
 enables options <i>on</i>, and disables options <i>off</i> for the
-expression enclosed by the parentheses.
+expression enclosed by the parentheses:
 
-    /a(?i:b)c/.match('aBc') #=> #<MatchData "aBc">
-    /a(?i:b)c/.match('abc') #=> #<MatchData "abc">
+    /a(?i:b)c/.match('aBc')   #=> #<MatchData "aBc">
+    /a(?-i:b)c/i.match('ABC') #=> nil
+
+Additionally, these options can also be toggled for the remainder of the
+pattern:
+
+    /a(?i)bc/.match('abC') #=> #<MatchData "abC">
 
 Options may also be used with <tt>Regexp.new</tt>:
 
