@@ -426,10 +426,13 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Introduce an initial implementation of JIT (Just-in-time) compiler. [Feature #14235] [experimental]
 
-  * <tt>--jit</tt> option is added to enable JIT. <tt>--jit-verbose=1</tt>
+  * <tt>--jit</tt> command line option is added to enable JIT. <tt>--jit-verbose=1</tt>
     is good for inspection.  See <tt>ruby --help</tt> for others.
   * To generate machine code, this JIT compiler uses C compiler used for building
     the interpreter. Currently GCC, Clang, and Microsoft Visual C++ are supported for it.
+  * <tt>--disable-mjit-support</tt> option is added to configure. This is added for JIT debugging,
+    but if you get an error on building a header file for JIT, you can use this option to skip
+    building it as a workaround.
   * rb_waitpid reimplemented on Unix-like platforms to maintain
     compatibility with processes created for JIT [Bug #14867]
 
