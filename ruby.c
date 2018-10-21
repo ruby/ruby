@@ -1340,7 +1340,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
                 opt->features |= FEATURE_BIT(jit);
                 setup_mjit_options(s + 3, &opt->mjit);
 #else
-                rb_warn("MJIT is disabled.");
+                rb_warn("MJIT support is disabled.");
 #endif
             }
 	    else if (strcmp("yydebug", s) == 0) {
