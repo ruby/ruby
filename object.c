@@ -570,6 +570,25 @@ rb_obj_size(VALUE self, VALUE args, VALUE obj)
  *     3.next.then {|x| x**x }.to_s             #=> "256"
  *     "my string".yield_self {|s| s.upcase }   #=> "MY STRING"
  *
+ *  Good usage for +yield_self+ is values piping in long method
+ *  chains:
+ *
+ *     require 'open-uri'
+ *     require 'json'
+ *
+ *     construct_url(arguments).
+ *       yield_self { |url| open(url).read }.
+ *       yield_self { |response| JSON.parse(response) }
+ *
+ *  When called without block, the method returns +Enumerator+,
+ *  which can be used, for example, for conditional
+ *  circuit-breaking:
+ *
+ *     # meets condition, no-op
+ *     1.yield_self.detect(&:odd?)            # => 1
+ *     # does not meet condition, drop value
+ *     2.yeild_self.detect(&:odd?)            # => nil
+ *
  */
 
 static VALUE
