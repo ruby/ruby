@@ -13,17 +13,19 @@
 % insn.opes.each_with_index do |ope, i|
     MAYBE_UNUSED(<%= ope.fetch(:decl) %>) = (<%= ope.fetch(:type) %>)operands[<%= i %>];
 % end
+% # compiler: Use copied IC to avoid race condition
+    IC ic_copy = &(status->is_entries + ((union iseq_inline_storage_entry *)ic - body->is_entries))->cache;
 %
-% # compiler: Consider cfp->self as T_OBJECT if ic->ic_serial is set
-    if (ic->ic_serial) {
+% # compiler: Consider cfp->self as T_OBJECT if ic_copy->ic_serial is set
+    if (ic_copy->ic_serial) {
 % # JIT: optimize away motion of sp and pc. This path does not call rb_warning() and so it's always leaf and not `handles_sp`.
 % # <%= render 'mjit_compile_pc_and_sp', locals: { insn: insn } -%>
 %
 % # JIT: prepare vm_getivar's arguments and variables
         fprintf(f, "{\n");
         fprintf(f, "    VALUE obj = GET_SELF();\n");
-        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic->ic_serial);
-        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic->ic_value.index);
+        fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
+        fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->ic_value.index);
 % if insn.name == 'setinstancevariable'
         fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
 % end

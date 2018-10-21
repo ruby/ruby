@@ -76,6 +76,7 @@
 #include "mjit.h"
 #include "gc.h"
 #include "ruby_assert.h"
+#include "ruby/debug.h"
 #include "ruby/thread.h"
 
 #ifdef _WIN32
@@ -1028,7 +1029,7 @@ compile_prelude(FILE *f)
 /* Compile ISeq in UNIT and return function pointer of JIT-ed code.
    It may return NOT_COMPILED_JIT_ISEQ_FUNC if something went wrong. */
 static mjit_func_t
-convert_unit_to_func(struct rb_mjit_unit *unit)
+convert_unit_to_func(struct rb_mjit_unit *unit, union iseq_inline_storage_entry *is_entries)
 {
     char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
     int success;
@@ -1096,7 +1097,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
         verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
-    success = mjit_compile(f, unit->iseq->body, funcname);
+    success = mjit_compile(f, unit->iseq->body, funcname, is_entries);
 
     /* release blocking mjit_gc_start_hook */
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
@@ -1160,6 +1161,14 @@ convert_unit_to_func(struct rb_mjit_unit *unit)
     return (mjit_func_t)func;
 }
 
+struct mjit_copy_job {
+    const struct rb_iseq_constant_body *body;
+    union iseq_inline_storage_entry *is_entries;
+    int finish_p;
+};
+
+static void mjit_copy_job_handler(void *data);
+
 /* The function implementing a worker. It is executed in a separate
    thread by rb_thread_create_mjit_thread. It compiles precompiled header
    and then compiles requested ISeqs. */
@@ -1195,7 +1204,27 @@ mjit_worker(void)
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (node) {
-            mjit_func_t func = convert_unit_to_func(node->unit);
+            mjit_func_t func;
+            struct mjit_copy_job job;
+
+            /* Copy ISeq's inline caches from main thread. */
+            job.is_entries = NULL;
+            job.body = node->unit->iseq->body;
+            if (job.body->is_size > 0) {
+                job.is_entries = malloc(sizeof(union iseq_inline_storage_entry) * job.body->is_size);
+                job.finish_p = FALSE;
+
+                rb_postponed_job_register(0, mjit_copy_job_handler, (void *)&job);
+                CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+                while (!job.finish_p) {
+                    rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
+                    verbose(3, "Getting wakeup from client");
+                }
+                CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+            }
+
+            /* JIT compile */
+            func = convert_unit_to_func(node->unit, job.is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             if (node->unit->iseq) { /* Check whether GCed or not */
@@ -1212,6 +1241,9 @@ mjit_worker(void)
                 compact_all_jit_code();
             }
 #endif
+            if (job.is_entries != NULL) {
+                free(job.is_entries);
+            }
         }
     }
 
