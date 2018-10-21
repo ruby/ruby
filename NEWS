@@ -426,7 +426,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Introduce an initial implementation of JIT (Just-in-time) compiler. [Feature #14235] [experimental]
 
-  * <tt>--enable=jit</tt> option is added to enable JIT. <tt>--jit-verbose=1</tt>
+  * <tt>--jit</tt> option is added to enable JIT. <tt>--jit-verbose=1</tt>
     is good for inspection.  See <tt>ruby --help</tt> for others.
   * To generate machine code, this JIT compiler uses C compiler used for building
     the interpreter. Currently GCC, Clang, and Microsoft Visual C++ are supported for it.
