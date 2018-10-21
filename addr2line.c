@@ -159,8 +159,24 @@ typedef struct obj_info {
     struct dwarf_section debug_str;
     struct obj_info *next;
 } obj_info_t;
-#define obj_dwarf_section_at(obj,n) (&obj->debug_abbrev + n)
+
 #define DWARF_SECTION_COUNT 5
+
+static struct dwarf_section *
+obj_dwarf_section_at(obj_info_t *obj, int n)
+{
+    struct dwarf_section *ary[] = {
+        &obj->debug_abbrev,
+        &obj->debug_info,
+        &obj->debug_line,
+        &obj->debug_ranges,
+        &obj->debug_str
+    };
+    if (n < 0 || DWARF_SECTION_COUNT <= n) {
+        abort();
+    }
+    return ary[n];
+}
 
 struct debug_section_definition {
     const char *name;
