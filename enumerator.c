@@ -550,6 +550,8 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
 	    args = rb_ary_new4(argc, argv);
 	}
 	e->args = args;
+	e->size = Qnil;
+	e->size_fn = 0;
     }
     if (!rb_block_given_p()) return obj;
     return enumerator_block_call(obj, 0, obj);
