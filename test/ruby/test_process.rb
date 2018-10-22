@@ -94,8 +94,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_rlimit_name
-    skip 'This test fails with MJIT copy job. Under investigation.' if RubyVM::MJIT.enabled?
-
     return unless rlimit_exist?
     [
       :AS, "AS",
