@@ -41,7 +41,9 @@ static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
 
-#define TM_IS_TIME 1
+#ifndef TM_IS_TIME
+#define TM_IS_TIME 0
+#endif
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
@@ -5127,6 +5129,34 @@ tm_to_time(VALUE tm)
 #endif
 }
 
+#if !TM_IS_TIME
+static VALUE
+tm_zero(VALUE tm)
+{
+    return INT2FIX(0);
+}
+
+#define tm_subsec tm_zero
+#define tm_utc_offset tm_zero
+
+static VALUE
+tm_isdst(VALUE tm)
+{
+    return Qfalse;
+}
+
+static VALUE
+tm_to_s(VALUE tm)
+{
+    const VALUE *p = RSTRUCT_CONST_PTR(tm);
+
+    return rb_sprintf("%.4"PRIsVALUE"-%.2"PRIsVALUE"-%.2"PRIsVALUE" "
+                      "%.2"PRIsVALUE":%.2"PRIsVALUE":%.2"PRIsVALUE" "
+                      "UTC",
+                      p[5], p[4], p[3], p[2], p[1], p[0]);
+}
+#endif
+
 VALUE
 rb_time_zone_abbreviation(VALUE zone, VALUE time)
 {
@@ -5285,9 +5315,13 @@ Init_Time(void)
     rb_cTimeTM = rb_struct_define_under(rb_cTime, "TM",
                                         "sec", "min", "hour",
                                         "mday", "mon", "year",
-                                        "subsec", "isdst",
                                         "to_i", NULL);
-    rb_alias(rb_cTimeTM, rb_intern("dst?"), id_isdst);
+    rb_define_method(rb_cTimeTM, "subsec", tm_subsec, 0);
+    rb_define_method(rb_cTimeTM, "utc_offset", tm_utc_offset, 0);
+    rb_define_method(rb_cTimeTM, "to_s", tm_to_s, 0);
+    rb_define_method(rb_cTimeTM, "inspect", tm_to_s, 0);
+    rb_define_method(rb_cTimeTM, "isdst", tm_isdst, 0);
+    rb_define_method(rb_cTimeTM, "dst?", tm_isdst, 0);
 #endif
     rb_define_method(rb_cTimeTM, "initialize", tm_initialize, -1);
     rb_define_method(rb_cTimeTM, "utc", tm_to_time, 0);
