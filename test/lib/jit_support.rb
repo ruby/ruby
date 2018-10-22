@@ -42,7 +42,7 @@ module JITSupport
   end
 
   def remove_mjit_logs(stderr)
-    if RubyVM::MJIT.enabled?
+    if RubyVM::MJIT.enabled? # utility for -DFORCE_MJIT_ENABLE
       stderr.gsub(/^MJIT warning: Skipped to compile unsupported instruction: \w+\n/m, '')
     else
       stderr
