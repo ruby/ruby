@@ -42,7 +42,7 @@ static ID id_local_to_utc, id_utc_to_local;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
 
 #ifndef TM_IS_TIME
-#define TM_IS_TIME 0
+#define TM_IS_TIME 1
 #endif
 
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
