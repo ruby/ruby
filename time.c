@@ -5090,12 +5090,6 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
     RSTRUCT_SET(tm, i++, INT2FIX(vtm.mday));
     RSTRUCT_SET(tm, i++, INT2FIX(vtm.mon));
     RSTRUCT_SET(tm, i++, vtm.year);
-    RSTRUCT_SET(tm, i++, INT2FIX(0));
-    switch (vtm.isdst) {
-      case 0: RSTRUCT_SET(tm, i++, Qfalse); break;
-      case 1: RSTRUCT_SET(tm, i++, Qtrue); break;
-      default: RSTRUCT_SET(tm, i++, Qnil); break;
-    }
     RSTRUCT_SET(tm, i++, w2v(rb_time_unmagnify(t)));
     return tm;
 #endif
