@@ -32,7 +32,7 @@ class Gem::Resolver::Stats
     @iterations += 1
   end
 
-  PATTERN = "%20s: %d\n"
+  PATTERN = "%20s: %d\n".freeze
 
   def display
     $stdout.puts "=== Resolver Statistics ==="

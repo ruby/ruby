@@ -22,12 +22,12 @@ class Gem::Requirement
     ">=" =>  lambda { |v, r| v >= r },
     "<=" =>  lambda { |v, r| v <= r },
     "~>" =>  lambda { |v, r| v >= r && v.release < r.bump }
-  }
+  }.freeze
 
   SOURCE_SET_REQUIREMENT = Struct.new(:for_lockfile).new "!" # :nodoc:
 
   quoted  = OPS.keys.map { |k| Regexp.quote k }.join "|"
-  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*" # :nodoc:
+  PATTERN_RAW = "\\s*(#{quoted})?\\s*(#{Gem::Version::VERSION_PATTERN})\\s*".freeze # :nodoc:
 
   ##
   # A regular expression that matches a requirement
@@ -37,7 +37,7 @@ class Gem::Requirement
   ##
   # The default requirement matches any version
 
-  DefaultRequirement = [">=", Gem::Version.new(0)]
+  DefaultRequirement = [">=", Gem::Version.new(0)].freeze
 
   ##
   # Raised when a bad requirement is encountered

@@ -149,15 +149,15 @@ class Gem::Commands::CertCommand < Gem::Command
   end
 
   def build_cert email, key # :nodoc:
-    expiration_length_days = options[:expiration_length_days]
-    age =
-      if expiration_length_days.nil? || expiration_length_days == 0
-        Gem::Security::ONE_YEAR
-      else
-        Gem::Security::ONE_DAY * expiration_length_days
-      end
+    expiration_length_days = options[:expiration_length_days] ||
+      Gem.configuration.cert_expiration_length_days
 
-    cert = Gem::Security.create_cert_email email, key, age
+    cert = Gem::Security.create_cert_email(
+      email,
+      key,
+      (Gem::Security::ONE_DAY * expiration_length_days)
+    )
+
     Gem::Security.write cert, "gem-public_cert.pem"
   end
 

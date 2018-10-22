@@ -38,7 +38,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       destdir = ENV["DESTDIR"]
 
       begin
-        cmd = [Gem.ruby, "-r", get_relative_path(siteconf.path), File.basename(extension), *args].join ' '
+        cmd = [Gem.ruby, "-I", File.expand_path("../../..", __FILE__), "-r", get_relative_path(siteconf.path), File.basename(extension), *args].join ' '
 
         begin
           run cmd, results

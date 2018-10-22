@@ -26,7 +26,7 @@ class Gem::Doctor
     ['doc',            ''],
     ['extensions',     ''],
     ['gems',           ''],
-  ]
+  ].freeze
 
   missing =
     Gem::REPOSITORY_SUBDIRECTORIES.sort -

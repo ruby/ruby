@@ -22,7 +22,7 @@ module Gem
     EXEEXT RUBY_SO_NAME arch bindir datadir libdir ruby_install_name
     ruby_version rubylibprefix sitedir sitelibdir vendordir vendorlibdir
     rubylibdir
-  ]
+  ].freeze
 
   unless defined?(ConfigMap)
     ##

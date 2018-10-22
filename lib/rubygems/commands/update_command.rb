@@ -168,12 +168,8 @@ command to remove old versions.
     Dir.chdir update_dir do
       say "Installing RubyGems #{version}"
 
-      # Make sure old rubygems isn't loaded
-      old = ENV["RUBYOPT"]
-      ENV.delete("RUBYOPT") if old
-      installed = system Gem.ruby, 'setup.rb', *args
+      installed = system Gem.ruby, '--disable-gems', 'setup.rb', *args
       say "RubyGems system software updated" if installed
-      ENV["RUBYOPT"] = old if old
     end
   end
 

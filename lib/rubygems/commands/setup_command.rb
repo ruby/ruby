@@ -9,7 +9,7 @@ class Gem::Commands::SetupCommand < Gem::Command
   HISTORY_HEADER = /^===\s*[\d.a-zA-Z]+\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/
   VERSION_MATCHER = /^===\s*([\d.a-zA-Z]+)\s*\/\s*\d{4}-\d{2}-\d{2}\s*$/
 
-  ENV_PATHS = %w[/usr/bin/env /bin/env]
+  ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
     require 'tmpdir'
@@ -84,8 +84,8 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option '--[no-]regenerate-binstubs',
                'Regenerate gem binstubs' do |value, options|
-     options[:regenerate_binstubs] = value
-   end
+      options[:regenerate_binstubs] = value
+    end
 
     add_option('-E', '--[no-]env-shebang',
                'Rewrite executables with a shebang',

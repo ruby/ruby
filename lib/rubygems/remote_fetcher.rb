@@ -71,13 +71,10 @@ class Gem::RemoteFetcher
   #        HTTP_PROXY_PASS)
   # * <tt>:no_proxy</tt>: ignore environment variables and _don't_ use a proxy
   #
-  # +dns+: An object to use for DNS resolution of the API endpoint.
-  #        By default, use Resolv::DNS.
-  #
   # +headers+: A set of additional HTTP headers to be sent to the server when
   #            fetching the gem.
 
-  def initialize(proxy=nil, dns=Resolv::DNS.new, headers={})
+  def initialize(proxy=nil, dns=nil, headers={})
     require 'net/http'
     require 'stringio'
     require 'time'
@@ -90,32 +87,7 @@ class Gem::RemoteFetcher
     @pool_lock = Mutex.new
     @cert_files = Gem::Request.get_cert_files
 
-    @dns = dns
     @headers = headers
-  end
-
-  ##
-  # Given a source at +uri+, calculate what hostname to actually
-  # connect to query the data for it.
-
-  def api_endpoint(uri)
-    host = uri.host
-
-    begin
-      res = @dns.getresource "_rubygems._tcp.#{host}",
-                             Resolv::DNS::Resource::IN::SRV
-    rescue Resolv::ResolvError => e
-      verbose "Getting SRV record failed: #{e}"
-      uri
-    else
-      target = res.target.to_s.strip
-
-      if URI("http://" + target).host.end_with?(".#{host}")
-        return URI.parse "#{uri.scheme}://#{target}#{uri.path}"
-      end
-
-      uri
-    end
   end
 
   ##

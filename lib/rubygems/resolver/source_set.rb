@@ -37,7 +37,7 @@ class Gem::Resolver::SourceSet < Gem::Resolver::Set
     @links[name] = source
   end
 
-private
+  private
 
   def get_set(name)
     link = @links[name]

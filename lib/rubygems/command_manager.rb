@@ -69,11 +69,11 @@ class Gem::CommandManager
     :update,
     :which,
     :yank,
-  ]
+  ].freeze
 
   ALIAS_COMMANDS = {
     'i' => 'install'
-  }
+  }.freeze
 
   ##
   # Return the authoritative instance of the command manager.

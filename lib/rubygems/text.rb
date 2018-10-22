@@ -73,7 +73,7 @@ module Gem::Text
              d[j+1] + 1, # insertion
              e + 1,      # deletion
              d[j] + cost # substitution
-            )
+           )
         d[j] = e
         e = x
       end

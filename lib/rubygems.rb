@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.0.0.beta1"
+  VERSION = "3.0.0.beta1".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -126,14 +126,14 @@ module Gem
     /mingw/i,
     /mswin/i,
     /wince/i,
-  ]
+  ].freeze
 
   GEM_DEP_FILES = %w[
     gem.deps.rb
     gems.rb
     Gemfile
     Isolate
-  ]
+  ].freeze
 
   ##
   # Subdirectories in a gem repository
@@ -145,7 +145,7 @@ module Gem
     extensions
     gems
     specifications
-  ]
+  ].freeze
 
   ##
   # Subdirectories in a gem repository for default gems
@@ -153,7 +153,7 @@ module Gem
   REPOSITORY_DEFAULT_GEM_SUBDIRECTORIES = %w[
     gems
     specifications/default
-  ]
+  ].freeze
 
   ##
   # Exception classes used in a Gem.read_binary +rescue+ statement. Not all of
@@ -1342,7 +1342,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Location of Marshal quick gemspecs on remote repositories
 
-  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
+  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :BundlerVersionFinder, 'rubygems/bundler_version_finder'
   autoload :ConfigFile,         'rubygems/config_file'

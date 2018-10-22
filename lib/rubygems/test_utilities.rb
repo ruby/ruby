@@ -25,17 +25,11 @@ class Gem::FakeFetcher
 
   attr_reader :data
   attr_reader :last_request
-  attr_reader :api_endpoints
   attr_accessor :paths
 
   def initialize
     @data = {}
     @paths = []
-    @api_endpoints = {}
-  end
-
-  def api_endpoint(uri)
-    @api_endpoints[uri] || uri
   end
 
   def find_data(path)
@@ -111,14 +105,6 @@ class Gem::FakeFetcher
 
       q.breakable
       q.pp @data.keys
-
-      unless @api_endpoints.empty? then
-        q.breakable
-        q.text 'API endpoints:'
-
-        q.breakable
-        q.pp @api_endpoints.keys
-      end
     end
   end
 

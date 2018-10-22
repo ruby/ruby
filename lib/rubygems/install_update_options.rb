@@ -63,30 +63,6 @@ module Gem::InstallUpdateOptions
       options[:document] = []
     end
 
-    add_option(:Deprecated, '--[no-]rdoc',
-               'Generate RDoc for installed gems',
-               'Use --document instead') do |value, options|
-      if value then
-        options[:document] << 'rdoc'
-      else
-        options[:document].delete 'rdoc'
-      end
-
-      options[:document].uniq!
-    end
-
-    add_option(:Deprecated, '--[no-]ri',
-               'Generate ri data for installed gems.',
-               'Use --document instead') do |value, options|
-      if value then
-        options[:document] << 'ri'
-      else
-        options[:document].delete 'ri'
-      end
-
-      options[:document].uniq!
-    end
-
     add_option(:"Install/Update", '-E', '--[no-]env-shebang',
                "Rewrite the shebang line on installed",
                "scripts to use /usr/bin/env") do |value, options|

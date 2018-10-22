@@ -34,7 +34,7 @@ class Gem::Installer
   # Paths where env(1) might live.  Some systems are broken and have it in
   # /bin
 
-  ENV_PATHS = %w[/usr/bin/env /bin/env]
+  ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   ##
   # Deprecated in favor of Gem::Ext::BuildError
