@@ -1176,24 +1176,18 @@ static void mjit_copy_job_handler(void *data);
 static int
 copy_cache_from_main_thread(struct mjit_copy_job *job)
 {
-    int success_p = TRUE;
     job->finish_p = FALSE;
 
     if (!rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job))
         return FALSE;
 
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
-    while (!job->finish_p) {
+    while (!job->finish_p && !stop_worker_p) {
         rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
         verbose(3, "Getting wakeup from client");
-
-        if (stop_worker_p) { /* for cond broadcast from stop_worker() */
-            success_p = FALSE;
-            break;
-        }
     }
     CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
-    return success_p;
+    return job->finish_p;
 }
 
 /* The function implementing a worker. It is executed in a separate
