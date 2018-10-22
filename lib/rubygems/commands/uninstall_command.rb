@@ -20,7 +20,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
 
     add_option('-a', '--[no-]all',
       'Uninstall all matching versions'
-      ) do |value, options|
+    ) do |value, options|
       options[:all] = value
     end
 

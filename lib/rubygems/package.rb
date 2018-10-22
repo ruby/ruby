@@ -119,7 +119,7 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build spec, skip_validation=false, strict_validation=false
+  def self.build spec, skip_validation = false, strict_validation = false
     gem_file = spec.file_name
 
     package = new gem_file
@@ -263,7 +263,11 @@ class Gem::Package
     @spec.mark_version
     @spec.validate true, strict_validation unless skip_validation
 
-    setup_signer
+    setup_signer(
+      signer_options: {
+        expiration_length_days: Gem.configuration.cert_expiration_length_days
+      }
+    )
 
     @gem.with_write_io do |gem_io|
       Gem::Package::TarWriter.new gem_io do |gem|
@@ -521,10 +525,17 @@ EOM
   # Prepares the gem for signing and checksum generation.  If a signing
   # certificate and key are not present only checksum generation is set up.
 
-  def setup_signer
+  def setup_signer(signer_options: {})
     passphrase = ENV['GEM_PRIVATE_KEY_PASSPHRASE']
     if @spec.signing_key then
-      @signer = Gem::Security::Signer.new @spec.signing_key, @spec.cert_chain, passphrase
+      @signer =
+        Gem::Security::Signer.new(
+          @spec.signing_key,
+          @spec.cert_chain,
+          passphrase,
+          signer_options
+        )
+
       @spec.signing_key = nil
       @spec.cert_chain = @signer.cert_chain.map { |cert| cert.to_s }
     else

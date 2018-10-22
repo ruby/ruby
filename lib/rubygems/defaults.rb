@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 module Gem
-  DEFAULT_HOST = "https://rubygems.org"
+  DEFAULT_HOST = "https://rubygems.org".freeze
 
   @post_install_hooks   ||= []
   @done_installing_hooks  ||= []
@@ -36,9 +36,9 @@ module Gem
              ]
            elsif RbConfig::CONFIG['rubylibprefix'] then
              [
-              RbConfig::CONFIG['rubylibprefix'],
-              'gems',
-              RbConfig::CONFIG['ruby_version']
+               RbConfig::CONFIG['rubylibprefix'],
+               'gems',
+               RbConfig::CONFIG['ruby_version']
              ]
            else
              [

@@ -203,9 +203,9 @@ class Gem::SpecFetcher
 
     matches = if matches.empty? && type != :prerelease
                 suggest_gems_from_name gem_name, :prerelease
-    else
-      matches.uniq.sort_by { |name, dist| dist }
-    end
+              else
+                matches.uniq.sort_by { |name, dist| dist }
+              end
 
     matches.first(5).map { |name, dist| name }
   end

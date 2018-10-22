@@ -44,6 +44,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal Gem::ConfigFile::DEFAULT_BULK_THRESHOLD, @cfg.bulk_threshold
     assert_equal true, @cfg.verbose
     assert_equal [@gem_repo], Gem.sources
+    assert_equal 365, @cfg.cert_expiration_length_days
 
     File.open @temp_conf, 'w' do |fp|
       fp.puts ":backtrace: true"
@@ -58,6 +59,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts "- /var/ruby/1.8/gem_home"
       fp.puts ":ssl_verify_mode: 0"
       fp.puts ":ssl_ca_cert: /etc/ssl/certs"
+      fp.puts ":cert_expiration_length_days: 28"
     end
 
     util_config_file
@@ -71,6 +73,7 @@ class TestGemConfigFile < Gem::TestCase
                  @cfg.path)
     assert_equal 0, @cfg.ssl_verify_mode
     assert_equal '/etc/ssl/certs', @cfg.ssl_ca_cert
+    assert_equal 28, @cfg.cert_expiration_length_days
   end
 
   def test_initialize_handle_arguments_config_file

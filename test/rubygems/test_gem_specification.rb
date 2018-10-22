@@ -9,7 +9,7 @@ require 'rubygems/installer'
 
 class TestGemSpecification < Gem::TestCase
 
-  LEGACY_YAML_SPEC = <<-EOF
+  LEGACY_YAML_SPEC = <<-EOF.freeze
 --- !ruby/object:Gem::Specification
 rubygems_version: "1.0"
 name: keyedlist
@@ -28,7 +28,7 @@ email: flgr@ccan.de
 has_rdoc: true
   EOF
 
-  LEGACY_RUBY_SPEC = <<-EOF
+  LEGACY_RUBY_SPEC = <<-EOF.freeze
 Gem::Specification.new do |s|
   s.name = %q{keyedlist}
   s.version = %q{0.4.0}
@@ -3428,10 +3428,10 @@ Did you mean 'Ruby'?
     end
 
     expected = %W[
-                  a-2
-                  a-2-x86-my_platform-1
-                  a-3-x86-other_platform-1
-                 ]
+      a-2
+      a-2-x86-my_platform-1
+      a-3-x86-other_platform-1
+    ]
 
     latest_specs = Gem::Specification.latest_specs.map(&:full_name).sort
 

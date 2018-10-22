@@ -6,10 +6,10 @@
 
 class Gem::StubSpecification < Gem::BasicSpecification
   # :nodoc:
-  PREFIX = "# stub: "
+  PREFIX = "# stub: ".freeze
 
   # :nodoc:
-  OPEN_MODE = 'r:UTF-8:-'
+  OPEN_MODE = 'r:UTF-8:-'.freeze
 
   class StubLine # :nodoc: all
     attr_reader :name, :version, :platform, :require_paths, :extensions,
@@ -22,7 +22,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
       'lib'  => 'lib'.freeze,
       'test' => 'test'.freeze,
       'ext'  => 'ext'.freeze,
-    }
+    }.freeze
 
     # These are common require path lists.  This hash is used to optimize
     # and consolidate require_path objects.  Most specs just specify "lib"
@@ -30,7 +30,7 @@ class Gem::StubSpecification < Gem::BasicSpecification
     # a require path list for that case.
     REQUIRE_PATH_LIST = { # :nodoc:
       'lib' => ['lib'].freeze
-    }
+    }.freeze
 
     def initialize data, extensions
       parts          = data[PREFIX.length..-1].split(" ".freeze, 4)

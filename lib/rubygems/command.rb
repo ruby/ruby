@@ -570,7 +570,7 @@ class Gem::Command
 
   # :stopdoc:
 
-  HELP = <<-HELP
+  HELP = <<-HELP.freeze
 RubyGems is a sophisticated package manager for Ruby.  This is a
 basic help message containing pointers to more information.
 

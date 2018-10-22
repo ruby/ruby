@@ -19,12 +19,12 @@ module Gem
       Gem::Version::Requirement
       YAML::Syck::DefaultKey
       Syck::DefaultKey
-    )
+    ).freeze
 
     WHITELISTED_SYMBOLS = %w(
       development
       runtime
-    )
+    ).freeze
 
     if ::YAML.respond_to? :safe_load
       def self.safe_load input

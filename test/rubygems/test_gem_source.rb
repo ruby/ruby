@@ -36,18 +36,6 @@ class TestGemSource < Gem::TestCase
     assert_equal repository, source.uri
   end
 
-  def test_api_uri
-    assert_equal @source.api_uri, @source.uri
-  end
-
-  def test_api_uri_resolved_from_remote_fetcher
-    uri = URI.parse "http://gem.example/foo"
-    @fetcher.api_endpoints[uri] = URI.parse "http://api.blah"
-
-    src = Gem::Source.new uri
-    assert_equal URI.parse("http://api.blah"), src.api_uri
-  end
-
   def test_cache_dir_escapes_windows_paths
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir

@@ -21,8 +21,7 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
       --build-root build_root
       --format-exec
       --ignore-dependencies
-      --rdoc
-      --ri
+      --document
       -E
       -f
       -i /install_to
@@ -90,24 +89,6 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     @cmd.handle_options %w[--document ri]
 
     assert_equal %w[ri], @cmd.options[:document]
-  end
-
-  def test_rdoc
-    @cmd.handle_options %w[--rdoc]
-
-    assert_equal %w[rdoc ri], @cmd.options[:document].sort
-  end
-
-  def test_rdoc_no
-    @cmd.handle_options %w[--no-rdoc]
-
-    assert_equal %w[ri], @cmd.options[:document]
-  end
-
-  def test_ri
-    @cmd.handle_options %w[--no-ri]
-
-    assert_equal %w[], @cmd.options[:document]
   end
 
   def test_security_policy

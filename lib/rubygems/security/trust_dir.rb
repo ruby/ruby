@@ -11,7 +11,7 @@ class Gem::Security::TrustDir
   DEFAULT_PERMISSIONS = {
     :trust_dir    => 0700,
     :trusted_cert => 0600,
-  }
+  }.freeze
 
   ##
   # The directory where trusted certificates will be stored.

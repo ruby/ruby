@@ -50,7 +50,7 @@ class Gem::Package::TarHeader
     :uid,
     :uname,
     :version,
-  ]
+  ].freeze
 
   ##
   # Pack format for a tar header

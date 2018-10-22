@@ -14,7 +14,7 @@ end
 
 class TestGem < Gem::TestCase
 
-  PLUGINS_LOADED = []
+  PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
   def setup
     super
@@ -1494,7 +1494,7 @@ class TestGem < Gem::TestCase
 
   if Gem::USE_BUNDLER_FOR_GEMDEPS
     BUNDLER_LIB_PATH = File.expand_path $LOAD_PATH.find {|lp| File.file?(File.join(lp, "bundler.rb")) }.dup.untaint
-    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}"
+    BUNDLER_FULL_NAME = "bundler-#{Bundler::VERSION}".freeze
   end
 
   def add_bundler_full_name(names)
@@ -1757,19 +1757,20 @@ class TestGem < Gem::TestCase
     else
       platform = " #{platform}"
     end
-    expected = if Gem::USE_BUNDLER_FOR_GEMDEPS
-                 <<-EXPECTED
+    expected =
+      if Gem::USE_BUNDLER_FOR_GEMDEPS
+        <<-EXPECTED
 Could not find gem 'a#{platform}' in any of the gem sources listed in your Gemfile.
 You may need to `gem install -g` to install missing gems
 
-      EXPECTED
-    else
-      <<-EXPECTED
+        EXPECTED
+      else
+        <<-EXPECTED
 Unable to resolve dependency: user requested 'a (>= 0)'
 You may need to `gem install -g` to install missing gems
 
-      EXPECTED
-    end
+        EXPECTED
+      end
 
     assert_output nil, expected do
       Gem.use_gemdeps

@@ -35,7 +35,7 @@ class TestGemRemoteFetcher < Gem::TestCase
 
   include Gem::DefaultUserInteraction
 
-  SERVER_DATA = <<-EOY
+  SERVER_DATA = <<-EOY.freeze
 --- !ruby/object:Gem::Cache
 gems:
   rake-0.4.11: !ruby/object:Gem::Specification
@@ -183,106 +183,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       assert_data_from_server @fetcher.fetch_path(@server_uri)
       assert_equal SERVER_DATA.size, @fetcher.fetch_size(@server_uri)
     end
-  end
-
-  def test_api_endpoint
-    uri = URI.parse "http://example.com/foo"
-    target = MiniTest::Mock.new
-    target.expect :target, "gems.example.com"
-
-    dns = MiniTest::Mock.new
-    dns.expect :getresource, target, [String, Object]
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    assert_equal URI.parse("http://gems.example.com/foo"), fetch.api_endpoint(uri)
-
-    target.verify
-    dns.verify
-  end
-
-  def test_api_endpoint_ignores_trans_domain_values
-    uri = URI.parse "http://gems.example.com/foo"
-    target = MiniTest::Mock.new
-    target.expect :target, "blah.com"
-
-    dns = MiniTest::Mock.new
-    dns.expect :getresource, target, [String, Object]
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    assert_equal URI.parse("http://gems.example.com/foo"), fetch.api_endpoint(uri)
-
-    target.verify
-    dns.verify
-  end
-
-  def test_api_endpoint_ignores_trans_domain_values_that_starts_with_original
-    uri = URI.parse "http://example.com/foo"
-    target = MiniTest::Mock.new
-    target.expect :target, "example.combadguy.com"
-
-    dns = MiniTest::Mock.new
-    dns.expect :getresource, target, [String, Object]
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
-
-    target.verify
-    dns.verify
-  end
-
-  def test_api_endpoint_ignores_trans_domain_values_that_end_with_original
-    uri = URI.parse "http://example.com/foo"
-    target = MiniTest::Mock.new
-    target.expect :target, "badexample.com"
-
-    dns = MiniTest::Mock.new
-    dns.expect :getresource, target, [String, Object]
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
-
-    target.verify
-    dns.verify
-  end
-
-  def test_api_endpoint_ignores_trans_domain_values_that_end_with_original_in_path
-    uri = URI.parse "http://example.com/foo"
-    target = MiniTest::Mock.new
-    target.expect :target, "evil.com/a.example.com"
-
-    dns = MiniTest::Mock.new
-    dns.expect :getresource, target, [String, Object]
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    assert_equal URI.parse("http://example.com/foo"), fetch.api_endpoint(uri)
-
-    target.verify
-    dns.verify
-  end
-
-  def test_api_endpoint_timeout_warning
-    uri = URI.parse "http://gems.example.com/foo"
-
-    dns = MiniTest::Mock.new
-    def dns.getresource arg, *rest
-      raise Resolv::ResolvError.new('timeout!')
-    end
-
-    fetch = Gem::RemoteFetcher.new nil, dns
-    begin
-      old_verbose, Gem.configuration.verbose = Gem.configuration.verbose, 1
-      endpoint = use_ui @stub_ui do
-        fetch.api_endpoint(uri)
-      end
-    ensure
-      Gem.configuration.verbose = old_verbose
-    end
-
-    assert_equal uri, endpoint
-
-    assert_equal "Getting SRV record failed: timeout!\n", @stub_ui.output
-
-    dns.verify
   end
 
   def test_cache_update_path
@@ -1064,7 +964,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
         :DocumentRoot    => nil,
         :Logger          => null_logger,
         :AccessLog       => null_logger
-        )
+      )
       s.mount_proc("/kill") { |req, res| s.shutdown }
       s.mount_proc("/yaml") { |req, res|
         if req["X-Captain"]

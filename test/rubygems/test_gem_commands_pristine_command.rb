@@ -495,11 +495,13 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert_equal([
-                   "Restoring gems to pristine condition...",
-                   "Skipped default-2.0.0.0, it is a default gem",
-                 ],
-                 @ui.output.split("\n"))
+    assert_equal(
+      [
+        "Restoring gems to pristine condition...",
+        "Skipped default-2.0.0.0, it is a default gem",
+      ],
+      @ui.output.split("\n")
+    )
     assert_empty(@ui.error)
   end
 

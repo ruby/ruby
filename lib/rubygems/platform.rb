@@ -195,12 +195,12 @@ class Gem::Platform
   # A pure-Ruby gem that may use Gem::Specification#extensions to build
   # binary files.
 
-  RUBY = 'ruby'
+  RUBY = 'ruby'.freeze
 
   ##
   # A platform-specific gem that is built for the packaging Ruby's platform.
   # This will be replaced with Gem::Platform::local.
 
-  CURRENT = 'current'
+  CURRENT = 'current'.freeze
 end
 

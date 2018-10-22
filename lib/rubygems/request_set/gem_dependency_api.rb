@@ -48,7 +48,7 @@ class Gem::RequestSet::GemDependencyAPI
     :ruby_19      => %w[ruby rbx maglev],
     :ruby_20      => %w[ruby rbx maglev],
     :ruby_21      => %w[ruby rbx maglev],
-  }
+  }.freeze
 
   mswin     = Gem::Platform.new 'x86-mswin32'
   mswin64   = Gem::Platform.new 'x64-mswin64'
@@ -88,7 +88,7 @@ class Gem::RequestSet::GemDependencyAPI
     :x64_mingw    => x64_mingw,
     :x64_mingw_20 => x64_mingw,
     :x64_mingw_21 => x64_mingw
-  }
+  }.freeze
 
   gt_eq_0        = Gem::Requirement.new '>= 0'
   tilde_gt_1_8_0 = Gem::Requirement.new '~> 1.8.0'
@@ -129,7 +129,7 @@ class Gem::RequestSet::GemDependencyAPI
     :x64_mingw    => gt_eq_0,
     :x64_mingw_20 => tilde_gt_2_0_0,
     :x64_mingw_21 => tilde_gt_2_1_0,
-  }
+  }.freeze
 
   WINDOWS = { # :nodoc:
     :mingw        => :only,
@@ -160,7 +160,7 @@ class Gem::RequestSet::GemDependencyAPI
     :x64_mingw    => :only,
     :x64_mingw_20 => :only,
     :x64_mingw_21 => :only,
-  }
+  }.freeze
 
   ##
   # The gems required by #gem statements in the gem.deps.rb file

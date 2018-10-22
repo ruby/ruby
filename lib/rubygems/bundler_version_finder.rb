@@ -104,9 +104,9 @@ To install the missing version, run `gem install bundler:#{vr.first}`
     return unless gemfile
 
     lockfile = case gemfile
-    when "gems.rb" then "gems.locked"
-    else "#{gemfile}.lock"
-    end.dup.untaint
+               when "gems.rb" then "gems.locked"
+               else "#{gemfile}.lock"
+               end.dup.untaint
 
     return unless File.file?(lockfile)
 

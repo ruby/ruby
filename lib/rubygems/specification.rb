@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: true
+# -*- coding: utf-8 -*-
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -89,13 +89,13 @@ class Gem::Specification < Gem::BasicSpecification
       'Added "required_rubygems_version"',
       'Now forward-compatible with future versions',
     ],
-    3 => [
-       'Added Fixnum validation to the specification_version'
+    3  => [
+      'Added Fixnum validation to the specification_version'
     ],
-    4 => [
+    4  => [
       'Added sandboxed freeform metadata to the specification version.'
     ]
-  }
+  }.freeze
 
   MARSHAL_FIELDS = { # :nodoc:
     -1 => 16,
@@ -103,12 +103,14 @@ class Gem::Specification < Gem::BasicSpecification
      2 => 16,
      3 => 17,
      4 => 18,
-  }
+  }.freeze
 
   today = Time.now.utc
   TODAY = Time.utc(today.year, today.month, today.day) # :nodoc:
 
+  # rubocop:disable Style/MutableConstant
   LOAD_CACHE = {} # :nodoc:
+  # rubocop:enable Style/MutableConstant
 
   private_constant :LOAD_CACHE if defined? private_constant
 
@@ -163,19 +165,21 @@ class Gem::Specification < Gem::BasicSpecification
     :version                   => nil,
   }.freeze
 
+  # rubocop:disable Style/MutableConstant
   INITIALIZE_CODE_FOR_DEFAULTS = { } # :nodoc:
+  # rubocop:enable Style/MutableConstant
 
   @@default_value.each do |k,v|
     INITIALIZE_CODE_FOR_DEFAULTS[k] = case v
-    when [], {}, true, false, nil, Numeric, Symbol
-      v.inspect
-    when String
-      v.dump
-    when Numeric
-      "default_value(:#{k})"
-    else
-      "default_value(:#{k}).dup"
-    end
+                                      when [], {}, true, false, nil, Numeric, Symbol
+                                        v.inspect
+                                      when String
+                                        v.dump
+                                      when Numeric
+                                        "default_value(:#{k})"
+                                      else
+                                        "default_value(:#{k}).dup"
+                                      end
   end
 
   @@attributes = @@default_value.keys.sort_by { |s| s.to_s }
@@ -260,22 +264,11 @@ class Gem::Specification < Gem::BasicSpecification
              ].flatten.compact.uniq.sort
   end
 
-  ######################################################################
-  # :section: Recommended gemspec attributes
-
   ##
-  # Singular writer for #authors
+  # A list of authors for this gem.
   #
-  # Usage:
-  #
-  #   spec.author = 'John Jones'
-
-  def author= o
-    self.authors = [o]
-  end
-
-  ##
-  # Sets the list of authors, ensuring it is an array.
+  # Alternatively, a single author can be specified by assigning a string to
+  # `spec.author`
   #
   # Usage:
   #
@@ -284,6 +277,9 @@ class Gem::Specification < Gem::BasicSpecification
   def authors= value
     @authors = Array(value).flatten.grep(String)
   end
+
+  ######################################################################
+  # :section: Recommended gemspec attributes
 
   ##
   # A long description of this gem
@@ -402,6 +398,17 @@ class Gem::Specification < Gem::BasicSpecification
 
   ######################################################################
   # :section: Optional gemspec attributes
+
+  ##
+  # Singular (alternative) writer for #authors
+  #
+  # Usage:
+  #
+  #   spec.author = 'John Jones'
+
+  def author= o
+    self.authors = [o]
+  end
 
   ##
   # The path in the gem for executable scripts.  Usually 'bin'

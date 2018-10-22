@@ -401,7 +401,7 @@ module Gem::Security
     'keyUsage'             =>
       'keyEncipherment,dataEncipherment,digitalSignature',
     'subjectKeyIdentifier' => 'hash',
-  }
+  }.freeze
 
   def self.alt_name_or_x509_entry certificate, x509_entry
     alt_name = certificate.extensions.find do |extension|

@@ -19,7 +19,7 @@ class Gem::Dependency
   TYPES = [
     :development,
     :runtime,
-  ]
+  ].freeze
 
   ##
   # Dependency name or regular expression.

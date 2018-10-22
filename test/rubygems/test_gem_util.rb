@@ -5,7 +5,8 @@ require 'rubygems/util'
 class TestGemUtil < Gem::TestCase
 
   def test_class_popen
-    assert_equal "0\n", Gem::Util.popen(Gem.ruby, '-e', 'p 0')
+    skip "MJIT executes process and it's caught by Process.wait(-1)" if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    assert_equal "0\n", Gem::Util.popen(Gem.ruby, '-I', File.expand_path('../../../lib', __FILE__), '-e', 'p 0')
 
     assert_raises Errno::ECHILD do
       Process.wait(-1)
@@ -14,7 +15,7 @@ class TestGemUtil < Gem::TestCase
 
   def test_silent_system
     assert_silent do
-      Gem::Util.silent_system Gem.ruby, '-e', 'puts "hello"; warn "hello"'
+      Gem::Util.silent_system Gem.ruby, '-I', File.expand_path('../../../lib', __FILE__), '-e', 'puts "hello"; warn "hello"'
     end
   end
 

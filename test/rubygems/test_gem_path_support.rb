@@ -44,10 +44,10 @@ class TestGemPathSupport < Gem::TestCase
     assert_equal ENV["GEM_HOME"], ps.home
 
     expected = [
-                File.join(@tempdir, 'foo'),
-                File.join(@tempdir, 'bar'),
-                ENV["GEM_HOME"],
-               ]
+      File.join(@tempdir, 'foo'),
+      File.join(@tempdir, 'bar'),
+      ENV["GEM_HOME"],
+    ]
 
     assert_equal expected, ps.path
   end
@@ -63,9 +63,9 @@ class TestGemPathSupport < Gem::TestCase
       assert_equal ENV["GEM_HOME"], ps.home
 
       expected = [
-                  File.join(@tempdir, 'foo'),
-                  File.join(@tempdir, 'bar'),
-                  ] + Gem.default_path << ENV["GEM_HOME"]
+        File.join(@tempdir, 'foo'),
+        File.join(@tempdir, 'bar'),
+      ] + Gem.default_path << ENV["GEM_HOME"]
 
       assert_equal expected, ps.path
     end
@@ -81,9 +81,9 @@ class TestGemPathSupport < Gem::TestCase
     assert_equal ENV["GEM_HOME"], ps.home
 
     expected = [
-                File.join(@tempdir, 'foo'),
-                File.join(@tempdir, 'bar'),
-                ] + Gem.default_path << ENV["GEM_HOME"]
+      File.join(@tempdir, 'foo'),
+      File.join(@tempdir, 'bar'),
+    ] + Gem.default_path << ENV["GEM_HOME"]
 
     assert_equal expected, ps.path
   end

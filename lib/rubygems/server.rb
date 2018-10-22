@@ -35,7 +35,7 @@ class Gem::Server
   include ERB::Util
   include Gem::UserInteraction
 
-  SEARCH = <<-ERB
+  SEARCH = <<-ERB.freeze
       <form class="headerSearch" name="headerSearchForm" method="get" action="/rdoc">
         <div id="search" style="float:right">
           <label for="q">Filter/Search</label>
@@ -45,7 +45,7 @@ class Gem::Server
       </form>
   ERB
 
-  DOC_TEMPLATE = <<-'ERB'
+  DOC_TEMPLATE = <<-'ERB'.freeze
   <?xml version="1.0" encoding="iso-8859-1"?>
   <!DOCTYPE html
        PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -129,7 +129,7 @@ class Gem::Server
   ERB
 
   # CSS is copy & paste from rdoc-style.css, RDoc V1.0.1 - 20041108
-  RDOC_CSS = <<-CSS
+  RDOC_CSS = <<-CSS.freeze
 body {
     font-family: Verdana,Arial,Helvetica,sans-serif;
     font-size:   90%;
@@ -339,7 +339,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 .ruby-value   { color: #7fffd4; background: transparent; }
   CSS
 
-  RDOC_NO_DOCUMENTATION = <<-'ERB'
+  RDOC_NO_DOCUMENTATION = <<-'ERB'.freeze
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -373,7 +373,7 @@ div.method-source-code pre { color: #ffdead; overflow: hidden; }
 </html>
   ERB
 
-  RDOC_SEARCH_TEMPLATE = <<-'ERB'
+  RDOC_SEARCH_TEMPLATE = <<-'ERB'.freeze
 <?xml version="1.0" encoding="iso-8859-1"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
           "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
