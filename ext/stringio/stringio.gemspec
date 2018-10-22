@@ -12,8 +12,8 @@ Gem::Specification.new do |s|
   s.authors = ["Nobu Nakada".freeze]
   s.description = "Pseudo `IO` class from/to `String`.".freeze
   s.email = "nobu@ruby-lang.org".freeze
-  s.extensions = ["extconf.rb".freeze]
-  s.files = ["README.md".freeze, "depend".freeze, "extconf.rb".freeze, "stringio.c".freeze]
+  s.extensions = ["ext/stringio/extconf.rb".freeze]
+  s.files = ["README.md".freeze, "ext/stringio/extconf.rb".freeze, "ext/stringio/stringio.c".freeze]
   s.homepage = "https://github.com/ruby/stringio".freeze
   s.licenses = ["BSD-2-Clause".freeze]
   s.required_ruby_version = Gem::Requirement.new(">= 2.2".freeze)
