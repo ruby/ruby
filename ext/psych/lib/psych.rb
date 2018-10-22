@@ -270,7 +270,7 @@ module Psych
   #
   def self.load yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: false, symbolize_names: false
     if legacy_filename != NOT_GIVEN
-      warn 'warning: Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.'
+      warn 'Passing filename with the 2nd argument of Psych.load is deprecated. Use keyword argument like Psych.load(yaml, filename: ...) instead.', uplevel: 1
       filename = legacy_filename
     end
 
@@ -327,22 +327,22 @@ module Psych
   #
   def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
     if legacy_permitted_classes != NOT_GIVEN
-      warn 'warning: Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.'
+      warn 'Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.', uplevel: 1
       permitted_classes = legacy_permitted_classes
     end
 
     if legacy_permitted_symbols != NOT_GIVEN
-      warn 'warning: Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.'
+      warn 'Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.', uplevel: 1
       permitted_symbols = legacy_permitted_symbols
     end
 
     if legacy_aliases != NOT_GIVEN
-      warn 'warning: Passing aliases with the 4th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, aliases: ...) instead.'
+      warn 'Passing aliases with the 4th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, aliases: ...) instead.', uplevel: 1
       aliases = legacy_aliases
     end
 
     if legacy_filename != NOT_GIVEN
-      warn 'warning: Passing filename with the 5th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, filename: ...) instead.'
+      warn 'Passing filename with the 5th argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, filename: ...) instead.', uplevel: 1
       filename = legacy_filename
     end
 
@@ -383,7 +383,7 @@ module Psych
   # See Psych::Nodes for more information about YAML AST.
   def self.parse yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: NOT_GIVEN
     if legacy_filename != NOT_GIVEN
-      warn 'warning: Passing filename with the 2nd argument of Psych.parse is deprecated. Use keyword argument like Psych.parse(yaml, filename: ...) instead.'
+      warn 'Passing filename with the 2nd argument of Psych.parse is deprecated. Use keyword argument like Psych.parse(yaml, filename: ...) instead.', uplevel: 1
       filename = legacy_filename
     end
 
@@ -392,7 +392,7 @@ module Psych
     end
 
     if fallback != NOT_GIVEN
-      warn 'warning: Passing the `fallback` keyword argument of Psych.parse is deprecated.'
+      warn 'Passing the `fallback` keyword argument of Psych.parse is deprecated.', uplevel: 1
       fallback
     else
       false
@@ -447,7 +447,7 @@ module Psych
   # See Psych::Nodes for more information about YAML AST.
   def self.parse_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, &block
     if legacy_filename != NOT_GIVEN
-      warn 'warning: Passing filename with the 2nd argument of Psych.parse_stream is deprecated. Use keyword argument like Psych.parse_stream(yaml, filename: ...) instead.'
+      warn 'Passing filename with the 2nd argument of Psych.parse_stream is deprecated. Use keyword argument like Psych.parse_stream(yaml, filename: ...) instead.', uplevel: 1
       filename = legacy_filename
     end
 
@@ -553,7 +553,7 @@ module Psych
   #
   def self.load_stream yaml, legacy_filename = NOT_GIVEN, filename: nil, fallback: []
     if legacy_filename != NOT_GIVEN
-      warn 'warning: Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.'
+      warn 'Passing filename with the 2nd argument of Psych.load_stream is deprecated. Use keyword argument like Psych.load_stream(yaml, filename: ...) instead.', uplevel: 1
       filename = legacy_filename
     end
 
