@@ -1691,6 +1691,11 @@ ossl_start_ssl(VALUE self, int (*func)(), const char *funcname, VALUE opts)
             rb_io_wait_readable(fptr->fd);
             continue;
 	case SSL_ERROR_SYSCALL:
+#ifdef __APPLE__
+            /* See ossl_ssl_write_internal() */
+            if (errno == EPROTOTYPE)
+                continue;
+#endif
 	    if (errno) rb_sys_fail(funcname);
 	    ossl_raise(eSSLError, "%s SYSCALL returned=%d errno=%d state=%s", funcname, ret2, errno, SSL_state_string_long(ssl));
 #if defined(SSL_R_CERTIFICATE_VERIFY_FAILED)
@@ -1982,6 +1987,16 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
                 rb_io_wait_readable(fptr->fd);
                 continue;
 	    case SSL_ERROR_SYSCALL:
+#ifdef __APPLE__
+                /*
+                 * It appears that send syscall can return EPROTOTYPE if the
+                 * socket is being torn down. Retry to get a proper errno to
+                 * make the error handling in line with the socket library.
+                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+                 */
+                if (errno == EPROTOTYPE)
+                    continue;
+#endif
 		if (errno) rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_write");
