@@ -1171,19 +1171,29 @@ struct mjit_copy_job {
 static void mjit_copy_job_handler(void *data);
 
 /* We're lazily copying cache values from main thread because these cache values
-   could be different between ones on enqueue timing and ones on dequeue timing. */
-static void
+   could be different between ones on enqueue timing and ones on dequeue timing.
+   Return TRUE if copy succeeds. */
+static int
 copy_cache_from_main_thread(struct mjit_copy_job *job)
 {
+    int success_p = TRUE;
     job->finish_p = FALSE;
 
-    rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job);
+    if (!rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job))
+        return FALSE;
+
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
     while (!job->finish_p) {
         rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
         verbose(3, "Getting wakeup from client");
+
+        if (worker_stopped) { /* for cond broadcast from stop_worker() */
+            success_p = FALSE;
+            break;
+        }
     }
     CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+    return success_p;
 }
 
 /* The function implementing a worker. It is executed in a separate
@@ -1234,7 +1244,8 @@ mjit_worker(void)
 
             /* Copy ISeq's inline caches values to avoid race condition. */
             if (job.cc_entries != NULL || job.is_entries != NULL) {
-                copy_cache_from_main_thread(&job);
+                if (copy_cache_from_main_thread(&job) == FALSE)
+                    continue; /* retry postponed_job failure, or stop worker */
             }
 
             /* JIT compile */
