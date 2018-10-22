@@ -301,8 +301,11 @@ class TestEnumerator < Test::Unit::TestCase
       yield
     end
     ary = []
-    e = o.to_enum.each(ary)
-    e.next
+    e = o.to_enum { 1 }
+    assert_equal(1, e.size)
+    e_arg = e.each(ary)
+    assert_equal(nil, e_arg.size)
+    e_arg.next
     assert_equal([1], ary)
   end
 
