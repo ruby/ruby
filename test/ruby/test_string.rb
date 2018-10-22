@@ -647,6 +647,7 @@ CODE
   end
 
   def test_crypt
+    skip 'assert_no_memory_leak may consider MJIT memory usage as leak' if RubyVM::MJIT.enabled?
     assert_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("aa")))
     assert_not_equal(S('aaGUC/JkO9/Sc'), S("mypassword").crypt(S("ab")))
     assert_raise(ArgumentError) {S("mypassword").crypt(S(""))}
