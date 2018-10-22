@@ -1187,7 +1187,7 @@ copy_cache_from_main_thread(struct mjit_copy_job *job)
         rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
         verbose(3, "Getting wakeup from client");
 
-        if (worker_stopped) { /* for cond broadcast from stop_worker() */
+        if (stop_worker_p) { /* for cond broadcast from stop_worker() */
             success_p = FALSE;
             break;
         }
