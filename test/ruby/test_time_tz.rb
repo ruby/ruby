@@ -488,7 +488,7 @@ End
     end
 
     def add_offset(t, ofs)
-      Time::TM.new(*Time.send(:apply_offset, *t.to_a[0, 6].reverse, ofs))
+      Time.utc(*Time.send(:apply_offset, *t.to_a[0, 6].reverse, ofs))
     rescue => e
       raise e.class, sprintf("%s: %p %+d", e.message, t, ofs)
     end
