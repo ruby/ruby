@@ -155,8 +155,6 @@ matrix:
           -Wunused-variable
         )
         CONFIG_FLAG_ARRAY=(
-          optflags=-O0
-          debugflags=-g0
           warnflags="${warnflags_array[*]}"
           LDFLAGS=-Wno-unused-command-line-argument)
     - os: linux
