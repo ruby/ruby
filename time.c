@@ -5014,7 +5014,7 @@ tm_from_time(VALUE klass, VALUE time)
 {
     struct time_object *tobj;
     struct vtm vtm, *v;
-#ifdef TM_IS_TIME
+#if TM_IS_TIME
     VALUE tm;
     struct time_object *ttm;
 
@@ -5065,11 +5065,11 @@ tm_from_time(VALUE klass, VALUE time)
 static VALUE
 tm_initialize(int argc, VALUE *argv, VALUE tm)
 {
-#ifdef TM_IS_TIME
+#if TM_IS_TIME
     struct time_object *tobj = DATA_PTR(tm);
     struct vtm vtm;
 
-    rb_check_arity(argc, 6, 6);
+    rb_check_arity(argc, 1, 6);
     time_arg(argc, argv, &vtm);
     tobj->tzmode = TIME_TZMODE_UTC;
     tobj->timew = timegmw(&vtm);
@@ -5109,7 +5109,7 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
 static VALUE
 tm_to_time(VALUE tm)
 {
-#ifdef TM_IS_TIME
+#if TM_IS_TIME
     struct time_object *torig = get_timeval(tm);
     VALUE dup = time_s_alloc(rb_cTime);
     struct time_object *tobj = DATA_PTR(dup);
@@ -5279,7 +5279,7 @@ Init_Time(void)
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
 
-#ifdef TM_IS_TIME
+#if TM_IS_TIME
     rb_cTimeTM = rb_define_class_under(rb_cTime, "TM", rb_cTime);
 #else
     rb_cTimeTM = rb_struct_define_under(rb_cTime, "TM",
