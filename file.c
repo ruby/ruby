@@ -572,7 +572,7 @@ static VALUE
 rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
-    return DEVT2NUM(major(get_stat(self)->st_dev));
+    return UINT2NUM(major(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -593,7 +593,7 @@ static VALUE
 rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
-    return DEVT2NUM(minor(get_stat(self)->st_dev));
+    return UINT2NUM(minor(get_stat(self)->st_dev));
 #else
     return Qnil;
 #endif
@@ -731,7 +731,7 @@ static VALUE
 rb_stat_rdev_major(VALUE self)
 {
 #if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(major)
-    return DEVT2NUM(major(get_stat(self)->st_rdev));
+    return UINT2NUM(major(get_stat(self)->st_rdev));
 #else
     return Qnil;
 #endif
@@ -752,7 +752,7 @@ static VALUE
 rb_stat_rdev_minor(VALUE self)
 {
 #if defined(HAVE_STRUCT_STAT_ST_RDEV) && defined(minor)
-    return DEVT2NUM(minor(get_stat(self)->st_rdev));
+    return UINT2NUM(minor(get_stat(self)->st_rdev));
 #else
     return Qnil;
 #endif
