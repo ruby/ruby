@@ -1182,6 +1182,9 @@ copy_cache_from_main_thread(struct mjit_copy_job *job)
         return FALSE;
 
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+    /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
+       lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then
+       `stop_worker()` could dead lock with this function. */
     while (!job->finish_p && !stop_worker_p) {
         rb_native_cond_wait(&mjit_worker_wakeup, &mjit_engine_mutex);
         verbose(3, "Getting wakeup from client");
