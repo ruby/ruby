@@ -5304,7 +5304,36 @@ Init_Time(void)
     rb_include_module(rb_cTime, rb_mComparable);
 
 #if TM_IS_TIME
-    rb_cTimeTM = rb_define_class_under(rb_cTime, "TM", rb_cTime);
+    rb_cTimeTM = rb_define_class_under(rb_cTime, "TM", rb_cObject);
+    rb_define_alloc_func(rb_cTimeTM, time_s_alloc);
+    rb_define_method(rb_cTimeTM, "sec", time_sec, 0);
+    rb_define_method(rb_cTimeTM, "min", time_min, 0);
+    rb_define_method(rb_cTimeTM, "hour", time_hour, 0);
+    rb_define_method(rb_cTimeTM, "mday", time_mday, 0);
+    rb_define_method(rb_cTimeTM, "day", time_mday, 0);
+    rb_define_method(rb_cTimeTM, "mon", time_mon, 0);
+    rb_define_method(rb_cTimeTM, "month", time_mon, 0);
+    rb_define_method(rb_cTimeTM, "year", time_year, 0);
+    rb_define_method(rb_cTimeTM, "isdst", time_isdst, 0);
+    rb_define_method(rb_cTimeTM, "dst?", time_isdst, 0);
+    rb_define_method(rb_cTimeTM, "zone", time_zone, 0);
+    rb_define_method(rb_cTimeTM, "gmtoff", rb_time_utc_offset, 0);
+    rb_define_method(rb_cTimeTM, "gmt_offset", rb_time_utc_offset, 0);
+    rb_define_method(rb_cTimeTM, "utc_offset", rb_time_utc_offset, 0);
+    rb_define_method(rb_cTimeTM, "utc?", time_utc_p, 0);
+    rb_define_method(rb_cTimeTM, "gmt?", time_utc_p, 0);
+    rb_define_method(rb_cTimeTM, "to_s", time_to_s, 0);
+    rb_define_method(rb_cTimeTM, "inspect", time_to_s, 0);
+    rb_define_method(rb_cTimeTM, "to_a", time_to_a, 0);
+    rb_define_method(rb_cTimeTM, "tv_sec", time_to_i, 0);
+    rb_define_method(rb_cTimeTM, "tv_usec", time_usec, 0);
+    rb_define_method(rb_cTimeTM, "usec", time_usec, 0);
+    rb_define_method(rb_cTimeTM, "tv_nsec", time_nsec, 0);
+    rb_define_method(rb_cTimeTM, "nsec", time_nsec, 0);
+    rb_define_method(rb_cTimeTM, "subsec", time_subsec, 0);
+    rb_define_method(rb_cTimeTM, "to_i", time_to_i, 0);
+    rb_define_method(rb_cTimeTM, "to_f", time_to_f, 0);
+    rb_define_method(rb_cTimeTM, "to_r", time_to_r, 0);
 #else
     rb_cTimeTM = rb_struct_define_under(rb_cTime, "TM",
                                         "sec", "min", "hour",
