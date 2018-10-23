@@ -1241,8 +1241,12 @@ mjit_worker(void)
 
             /* Copy ISeq's inline caches values to avoid race condition. */
             if (job.cc_entries != NULL || job.is_entries != NULL) {
-                if (copy_cache_from_main_thread(&job) == FALSE)
+                if (UNLIKELY(mjit_opts.wait)) {
+                    mjit_copy_job_handler((void *)&job); /* main thread is waiting in mjit_wait_call() and doesn't race */
+                }
+                else if (copy_cache_from_main_thread(&job) == FALSE) {
                     continue; /* retry postponed_job failure, or stop worker */
+                }
             }
 
             /* JIT compile */
