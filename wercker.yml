@@ -25,13 +25,9 @@ build:
     - script:
         name: make test (JIT)
         code: /usr/bin/sudo -H -u test -- bash -c 'make test RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
-    # split test-all to 2 steps to loosen timeout
     - script:
-        name: make test-all1 (JIT) # only: test/ruby/
-        code: /usr/bin/sudo -H -u test -- bash -c 'make test-all TESTS="test/ruby/" TESTOPTS="--color=never --job-status=normal --longest 10" RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
-    - script:
-        name: make test-all2 (JIT) # except: test/ruby/
-        code: /usr/bin/sudo -H -u test -- bash -c 'make test-all TESTOPTS="--exclude test/ruby/ --color=never --job-status=normal --longest 10" RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
+        name: make test-all (JIT)
+        code: /usr/bin/sudo -H -u test -- bash -c 'make test-all TESTOPTS="--color=never --job-status=normal --longest 10" RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
     - script:
         name: make test-spec (JIT)
         code: /usr/bin/sudo -H -u test -- bash -c 'make test-spec RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
