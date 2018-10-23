@@ -2,35 +2,37 @@
 # Wercker is dedicated for testing MJIT. Please use Travis or AppVeyor for non-MJIT testing.
 # This runs all Ruby tests with --jit-wait, which synchronously JITs all methods.
 #
-box: k0kubun/mjit-test # move this to some ruby/xxx repository
+box: ruby:2.5-stretch
 no-response-timeout: 30
 command-timeout: 60
 build:
   steps:
+    - install-packages:
+        packages: bison sudo
     - script:
         name: workaround ipv6 localhost
         code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
     - script:
-        name: show last commit
-        code: git log -n1
-    - script:
-        name: change owner to test user # using "test" user because some test-all tests fail with root user.
-        code: chown -R test:test .
+        name: create user # some file permission tests don't succeed with root.
+        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
+
     - script:
         name: configure
         code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
     - script:
         name: make all install
-        code: /usr/bin/sudo -H -u test -- bash -c 'make -j$(nproc) all install'
+        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
+
     - script:
         name: make test (JIT)
-        code: /usr/bin/sudo -H -u test -- bash -c 'make test RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
+        code: /usr/bin/sudo -H -u test -- make test RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
     - script:
         name: make test-all (JIT)
-        code: /usr/bin/sudo -H -u test -- bash -c 'make test-all TESTOPTS="--color=never --job-status=normal --longest 10" RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
+        code: /usr/bin/sudo -H -u test -- make test-all TESTOPTS="--color=never --job-status=normal --longest 10" RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
     - script:
         name: make test-spec (JIT)
-        code: /usr/bin/sudo -H -u test -- bash -c 'make test-spec RUN_OPTS="--disable-gems --jit-wait --jit-warnings"'
+        code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
+
   after-steps:
     - wantedly/pretty-slack-notify:
       webhook_url: $SLACK_WEBHOOK_URL
