@@ -24,7 +24,15 @@
 static void
 mjit_copy_job_handler(void *data)
 {
-    struct mjit_copy_job *job = (struct mjit_copy_job *)data;
+    struct mjit_copy_job *job;
+    if (stop_worker_p) {
+        /* `copy_cache_from_main_thread()` stops to wait for this job. Then job
+           data which is allocated by `alloca()` could be expired and we might
+           not be able to access that. */
+        return;
+    }
+
+    job = (struct mjit_copy_job *)data;
     if (job->cc_entries) {
         memcpy(job->cc_entries, job->body->cc_entries, sizeof(struct rb_call_cache) * (job->body->ci_size + job->body->ci_kw_size));
     }
