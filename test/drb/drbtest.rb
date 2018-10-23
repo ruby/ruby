@@ -115,7 +115,7 @@ module DRbBase
         end
       }
     end
-    @drb_service.finish
+    @drb_service&.finish
   end
 end
 

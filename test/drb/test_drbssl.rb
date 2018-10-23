@@ -41,6 +41,7 @@ end
 class TestDRbSSLCore < Test::Unit::TestCase
   include DRbCore
   def setup
+    skip 'FIXME: BUG in OpenSSL on Solaris' if RUBY_PLATFORM =~ /solaris/i
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_drb_drbssl.rb'
@@ -59,6 +60,7 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
+    skip 'FIXME: BUG in OpenSSL on Solaris' if RUBY_PLATFORM =~ /solaris/i
     @drb_service = DRbSSLService.new
     super
     setup_service 'ut_array_drbssl.rb'
