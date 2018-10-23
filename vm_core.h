@@ -630,7 +630,8 @@ typedef struct rb_vm_struct {
     struct st_table *ensure_rollback_table;
 
     /* postponed_job */
-    struct st_table *postponed_jobs;
+    struct rb_postponed_job_struct *postponed_job_buffer;
+    int postponed_job_index;
 
     int src_encoding_index;
 

@@ -83,7 +83,11 @@ VALUE rb_tracearg_return_value(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg);
 VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
 
-/* Postponed Job API */
+/*
+ * Postponed Job API
+ * rb_postponed_job_register and rb_postponed_job_register_one are
+ * async-signal-safe and used via SIGPROF by the "stackprof" RubyGem
+ */
 typedef void (*rb_postponed_job_func_t)(void *arg);
 int rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data);
 int rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data);
