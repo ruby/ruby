@@ -86,11 +86,12 @@ def sync_default_gems(gem)
     `cp -r ../../rubygems/rubygems/lib/rubygems* ./lib`
     `cp -r ../../rubygems/rubygems/test/rubygems ./test`
   when "bundler"
-    `rm -rf lib/bundler* bin/bundler bin/bundle bin/bundle_ruby spec/bundler`
+    `rm -rf lib/bundler* bin/bundler bin/bundle bin/bundle_ruby spec/bundler man/bundler*`
     `cp -r ../../bundler/bundler/lib/bundler* ./lib`
     `cp -r ../../bundler/bundler/exe/bundle* ./bin`
     `cp ../../bundler/bundler/bundler.gemspec ./lib`
     `cp -r ../../bundler/bundler/spec spec/bundler`
+    `cp -r ../../bundler/bundler/man/*.1 ./man`
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc`
     `cp -rf ../rdoc/lib/rdoc* ./lib`
