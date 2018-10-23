@@ -2,7 +2,7 @@
 
 require "bundler/vendored_fileutils"
 
-RSpec.describe "bundle pristine", :ruby_repo do
+RSpec.describe "bundle pristine" do
   before :each do
     build_lib "baz", :path => bundled_app do |s|
       s.version = "1.0.0"
@@ -42,7 +42,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       expect(changes_txt).to_not be_file
     end
 
-    it "does not delete the bundler gem", :ruby_repo do
+    it "does not delete the bundler gem" do
       ENV["BUNDLER_SPEC_KEEP_DEFAULT_BUNDLER_GEM"] = "true"
       system_gems :bundler
       bundle! "install"

@@ -104,7 +104,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "has no malformed whitespace", :ruby_repo do
+  it "has no malformed whitespace" do
     exempt = /\.gitmodules|\.marshal|fixtures|vendor|ssl_certs|LICENSE|vcr_cassettes/
     error_messages = []
     Dir.chdir(root) do
@@ -117,7 +117,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any leftover debugging or development mechanisms", :ruby_repo do
+  it "does not include any leftover debugging or development mechanisms" do
     exempt = %r{quality_spec.rb|support/helpers|vcr_cassettes|\.md|\.ronn}
     error_messages = []
     Dir.chdir(root) do
@@ -129,7 +129,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "does not include any unresolved merge conflicts", :ruby_repo do
+  it "does not include any unresolved merge conflicts" do
     error_messages = []
     exempt = %r{lock/lockfile_(bundler_1_)?spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
     Dir.chdir(root) do
@@ -141,7 +141,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of the documentation", :ruby_repo do
+  it "maintains language quality of the documentation" do
     included = /ronn/
     error_messages = []
     Dir.chdir(root) do
@@ -154,7 +154,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "maintains language quality of sentences used in source code", :ruby_repo do
+  it "maintains language quality of sentences used in source code" do
     error_messages = []
     exempt = /vendor/
     Dir.chdir(root) do
@@ -167,7 +167,7 @@ RSpec.describe "The library itself" do
     expect(error_messages.compact).to be_well_formed
   end
 
-  it "documents all used settings", :ruby_repo do
+  it "documents all used settings" do
     exemptions = %w[
       auto_config_jobs
       cache_command_is_package
@@ -216,7 +216,7 @@ RSpec.describe "The library itself" do
     expect(documented_settings).to be_sorted
   end
 
-  it "can still be built", :ruby_repo do
+  it "can still be built" do
     Dir.chdir(root) do
       begin
         gem_command! :build, "bundler.gemspec"
@@ -235,7 +235,7 @@ RSpec.describe "The library itself" do
     end
   end
 
-  it "does not contain any warnings", :ruby_repo do
+  it "does not contain any warnings" do
     Dir.chdir(root) do
       exclusions = %w[
         lib/bundler/capistrano.rb

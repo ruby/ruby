@@ -205,7 +205,7 @@ RSpec.describe "bundle binstubs <gem>" do
         end
       end
 
-      context "using another binstub", :ruby_repo do
+      context "using another binstub" do
         let(:system_bundler_version) { :bundler }
         it "loads all gems" do
           sys_exec! bundled_app("bin/print_loaded_gems").to_s

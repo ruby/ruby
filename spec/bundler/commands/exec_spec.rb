@@ -33,7 +33,7 @@ RSpec.describe "bundle exec" do
     expect(out).to eq("1.0.0")
   end
 
-  it "works when running from a random directory", :ruby_repo do
+  it "works when running from a random directory" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -178,7 +178,7 @@ RSpec.describe "bundle exec" do
     expect(out).to have_rubyopts(rubyopt)
   end
 
-  it "does not duplicate already exec'ed RUBYLIB", :ruby_repo do
+  it "does not duplicate already exec'ed RUBYLIB" do
     install_gemfile <<-G
       gem "rack"
     G
@@ -226,7 +226,7 @@ RSpec.describe "bundle exec" do
     expect(out).to include("bundler: exec needs a command to run")
   end
 
-  it "raises a helpful error when exec'ing to something outside of the bundle", :ruby_repo, :rubygems => ">= 2.5.2" do
+  it "raises a helpful error when exec'ing to something outside of the bundle", :rubygems => ">= 2.5.2" do
     bundle! "config clean false" # want to keep the rackup binstub
     install_gemfile! <<-G
       source "file://#{gem_repo1}"
@@ -303,35 +303,35 @@ RSpec.describe "bundle exec" do
           expect(out).to eq('args: ["-h"]')
         end
 
-        it "shows bundle-exec's man page when --help is between exec and the executable", :ruby_repo do
+        it "shows bundle-exec's man page when --help is between exec and the executable" do
           with_fake_man do
             bundle "#{exec} --help cat"
           end
           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
         end
 
-        it "shows bundle-exec's man page when --help is before exec", :ruby_repo do
+        it "shows bundle-exec's man page when --help is before exec" do
           with_fake_man do
             bundle "--help #{exec}"
           end
           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
         end
 
-        it "shows bundle-exec's man page when -h is before exec", :ruby_repo do
+        it "shows bundle-exec's man page when -h is before exec" do
           with_fake_man do
             bundle "-h #{exec}"
           end
           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
         end
 
-        it "shows bundle-exec's man page when --help is after exec", :ruby_repo do
+        it "shows bundle-exec's man page when --help is after exec" do
           with_fake_man do
             bundle "#{exec} --help"
           end
           expect(out).to include(%(["#{root}/man/bundle-exec.1"]))
         end
 
-        it "shows bundle-exec's man page when -h is after exec", :ruby_repo do
+        it "shows bundle-exec's man page when -h is after exec" do
           with_fake_man do
             bundle "#{exec} -h"
           end
@@ -349,13 +349,13 @@ RSpec.describe "bundle exec" do
         G
       end
 
-      it "works when unlocked", :ruby_repo do
+      it "works when unlocked" do
         bundle "exec 'cd #{tmp("gems")} && rackup'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
         expect(out).to eq("1.0.0")
         expect(out).to include("1.0.0")
       end
 
-      it "works when locked", :ruby_repo do
+      it "works when locked" do
         expect(the_bundle).to be_locked
         bundle "exec 'cd #{tmp("gems")} && rackup'", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
         expect(out).to include("1.0.0")
@@ -633,7 +633,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when the file uses the current ruby shebang", :ruby_repo do
+    context "when the file uses the current ruby shebang" do
       let(:shebang) { "#!#{Gem.ruby}" }
       it_behaves_like "it runs"
     end
@@ -785,7 +785,7 @@ __FILE__: #{path.to_s.inspect}
     end
   end
 
-  context "nested bundle exec", :ruby_repo do
+  context "nested bundle exec" do
     let(:system_gems_to_install) { super() << :bundler }
 
     context "with shared gems disabled" do

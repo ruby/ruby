@@ -717,7 +717,7 @@ The checksum of /versions does not match the checksum provided by the server! So
     end
   end
 
-  context "when ruby is compiled without openssl", :ruby_repo do
+  context "when ruby is compiled without openssl" do
     before do
       # Install a monkeypatch that reproduces the effects of openssl being
       # missing when the fetcher runs, as happens in real life. The reason

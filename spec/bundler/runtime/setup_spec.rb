@@ -119,7 +119,7 @@ RSpec.describe "Bundler.setup" do
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
     end
 
-    it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
+    it "puts loaded gems after -I and RUBYLIB" do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -144,7 +144,7 @@ RSpec.describe "Bundler.setup" do
       expect(rack_load_order).to be > 0
     end
 
-    it "orders the load path correctly when there are dependencies", :ruby_repo do
+    it "orders the load path correctly when there are dependencies" do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
@@ -828,7 +828,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly", :ruby_repo do
+  it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp "extenstions", full_gem_name)
@@ -1274,7 +1274,7 @@ end
       expect(out).to eq("undefined\nconstant")
     end
 
-    describe "default gem activation", :ruby_repo do
+    describe "default gem activation" do
       let(:exemptions) do
         if Gem::Version.new(Gem::VERSION) >= Gem::Version.new("2.7") || ENV["RGV"] == "master"
           []

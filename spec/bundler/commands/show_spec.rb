@@ -41,7 +41,7 @@ RSpec.describe "bundle show", :bundler => "< 2", :ruby => ">= 2.0" do
         )
       end
 
-      it "prints the path to the running bundler", :ruby_repo do
+      it "prints the path to the running bundler" do
         bundle "show bundler"
         expect(out).to eq(
           "[DEPRECATED FOR 2.0] use `bundle info bundler` instead of `bundle show bundler`\n" +

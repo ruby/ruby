@@ -1099,7 +1099,7 @@ RSpec.describe "bundle install with git sources" do
   end
 
   context "with an extension" do
-    it "installs the extension", :ruby_repo do
+    it "installs the extension" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
@@ -1131,7 +1131,7 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq(Pathname.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s)
     end
 
-    it "does not use old extension after ref changes", :ruby_repo do
+    it "does not use old extension after ref changes" do
       git_reader = build_git "foo", :no_default => true do |s|
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-RUBY
@@ -1193,7 +1193,7 @@ In Gemfile:
       expect(out).not_to include("gem install foo")
     end
 
-    it "does not reinstall the extension", :ruby_repo, :rubygems => ">= 2.3.0" do
+    it "does not reinstall the extension", :rubygems => ">= 2.3.0" do
       build_git "foo" do |s|
         s.add_dependency "rake"
         s.extensions << "Rakefile"
