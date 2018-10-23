@@ -67,9 +67,9 @@ matrix:
       compiler: clang
       env:
         - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-        # osx build randomly fails with -j
-        - "JOBS="
-        - "TEST_ALL_TESTOPTS='--color=never --job-status=replace --excludes=$(TESTSDIR)/excludes/_travis'"
+        - "JOBS=" # osx build randomly fails with `-j`
+        # `-v` prints too long outputs, but sometimes it osx build hangs and we can't know which test is bad without `-v`.
+        - "TEST_ALL_TESTOPTS='-v --color=never --job-status=normal --excludes=$(TESTSDIR)/excludes/_travis'"
       before_install:
         # Bare "brew update" nukes everything.
         # These steps are very carefully chosen to avoid breaking things.
