@@ -1597,17 +1597,17 @@ enum postponed_job_register_result {
 /* Async-signal-safe */
 static enum postponed_job_register_result
 postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
-		       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
+                       unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
 {
     rb_postponed_job_t *pjob;
 
     if (expected_index >= max) return PJRR_FULL; /* failed */
 
     if (ATOMIC_CAS(vm->postponed_job_index, expected_index, expected_index+1) == expected_index) {
-	pjob = &vm->postponed_job_buffer[expected_index];
+        pjob = &vm->postponed_job_buffer[expected_index];
     }
     else {
-	return PJRR_INTERRUPTED;
+        return PJRR_INTERRUPTED;
     }
 
     /* unused: pjob->flags = flags; */
@@ -1653,11 +1653,11 @@ rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, 
   begin:
     index = vm->postponed_job_index;
     for (i=0; i<index; i++) {
-	pjob = &vm->postponed_job_buffer[i];
-	if (pjob->func == func) {
-	    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
-	    return 2;
-	}
+        pjob = &vm->postponed_job_buffer[i];
+        if (pjob->func == func) {
+            RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
+            return 2;
+        }
     }
     switch (postponed_job_register(ec, vm, flags, func, data, MAX_POSTPONED_JOB + MAX_POSTPONED_JOB_SPECIAL_ADDITION, index)) {
       case PJRR_SUCCESS    : return 1;
@@ -1681,12 +1681,12 @@ rb_postponed_job_flush(rb_vm_t *vm)
     {
 	EC_PUSH_TAG(ec);
 	if (EC_EXEC_TAG() == TAG_NONE) {
-	    int index;
-	    while ((index = vm->postponed_job_index) > 0) {
-		if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
-		    rb_postponed_job_t *pjob = &vm->postponed_job_buffer[index-1];
-		    (*pjob->func)(pjob->data);
-		}
+            int index;
+            while ((index = vm->postponed_job_index) > 0) {
+                if (ATOMIC_CAS(vm->postponed_job_index, index, index-1) == index) {
+                    rb_postponed_job_t *pjob = &vm->postponed_job_buffer[index-1];
+                    (*pjob->func)(pjob->data);
+                }
 	    }
 	}
 	EC_POP_TAG();
