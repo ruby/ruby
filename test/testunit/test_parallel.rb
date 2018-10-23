@@ -195,7 +195,8 @@ module TestParallel
       # this test depends to --jobs-status
       spawn_runner "--jobs-status", "--separate"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
-      assert(buf.scan(/(\d+?)[:=]/).flatten.uniq.size > 1)
+      assert(buf.scan(/^\[\s*\d+\/\d+\]\s*(\d+?)=/).flatten.uniq.size > 1,
+             message("retried tests should run in different processes") {buf})
     end
   end
 end
