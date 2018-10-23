@@ -27,7 +27,7 @@ test-mjit:
         code: /usr/bin/sudo -H -u test -- make test RUN_OPTS="--disable-gems --jit --jit-warnings"
     - script:
         name: make test-all (JIT)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit --jit-warnings" TESTOPTS="--color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0"
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit --jit-warnings" TESTOPTS="--color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit"
     - script:
         name: make test-spec (JIT)
         code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit --jit-warnings"
