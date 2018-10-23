@@ -7,6 +7,7 @@ environment:
   ruby_version: "24-%Platform%"
   zlib_version: "1.2.11"
   matrix:
+    # to reduce time for finishing all jobs, run the slowest msys2 build first.
     - build: msys2
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
     - build: vs

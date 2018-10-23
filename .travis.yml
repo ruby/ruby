@@ -51,17 +51,7 @@ addons:
 
 matrix:
   include:
-    - name: x86_64-linux --with-jemalloc
-      os: linux
-      compiler: gcc
-      env:
-        - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
-        - "JOBS=-j`nproc`"
-    - name: x86_64-linux
-      os: linux
-      compiler: gcc-8
-      env:
-        - "JOBS=-j`nproc`"
+    # to reduce time for finishing all jobs, run the slowest osx build first.
     - name: x86_64-darwin17
       os: osx
       compiler: clang
@@ -78,6 +68,17 @@ matrix:
         - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
         - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
         - /usr/local/opt/openssl@1.1/bin/openssl version
+    - name: x86_64-linux --with-jemalloc
+      os: linux
+      compiler: gcc
+      env:
+        - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
+        - "JOBS=-j`nproc`"
+    - name: x86_64-linux
+      os: linux
+      compiler: gcc-8
+      env:
+        - "JOBS=-j`nproc`"
     # - name: uinversal.i386-darwin17
     #   os: osx
     #   compiler: clang
