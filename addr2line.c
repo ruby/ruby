@@ -1104,7 +1104,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
         /* stroffsetsptr: debug_str_offsets */
         break;
       case DW_FORM_exprloc:
-        v->size = read_uleb128(reader);
+        v->size = (size_t)read_uleb128(reader);
         set_data_value(v, reader->p);
         reader->p += v->size;
         break;
@@ -1350,7 +1350,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
             exit(1);
         }
         if (ptr->low_pc <= addr && addr <= ptr->high_pc) {
-            return ptr->low_pc;
+            return (uintptr_t)ptr->low_pc;
         }
     }
     else if (ptr->ranges_set) {
@@ -1372,7 +1372,7 @@ ranges_include(DebugInfoReader *reader, ranges_t *ptr, uint64_t addr)
     }
     else if (ptr->low_pc_set) {
         if (ptr->low_pc == addr) {
-            return ptr->low_pc;
+            return (uintptr_t)ptr->low_pc;
         }
     }
     return false;
