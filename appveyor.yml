@@ -96,7 +96,7 @@ for:
     - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=3.0 --exclude win32ole --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
     # separately execute tests that may crash worker without -j.
     - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
-    - nmake -l test-spec MSPECOPT=-fs
+    - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 -
   matrix:
     only:
@@ -139,4 +139,4 @@ for:
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 -j %JOBS% --exclude win32ole"
     # separately execute tests that may crash worker without -j.
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" TESTS="../ruby/test/win32ole"
-    - mingw32-make test-spec MSPECOPT=-j
+    - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
