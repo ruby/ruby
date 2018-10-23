@@ -404,7 +404,7 @@ module Test
           end
           if @options[:separate] and not bang
             worker.quit
-            worker = add_worker
+            worker = launch_worker
           end
           worker.run(task, type)
           @test_count += 1
