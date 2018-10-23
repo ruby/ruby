@@ -50,6 +50,7 @@ describe 'Socket.getifaddrs' do
     it 'is an Addrinfo' do
       @addrs.all? do |addr|
         addr.should be_an_instance_of(Addrinfo)
+        true
       end.should be_true
     end
 
@@ -57,6 +58,7 @@ describe 'Socket.getifaddrs' do
       @addrs.all? do |addr|
         addr.afamily.should be_kind_of(Integer)
         addr.afamily.should_not == Socket::AF_UNSPEC
+        true
       end.should be_true
     end
   end
@@ -70,6 +72,7 @@ describe 'Socket.getifaddrs' do
       it 'is an Addrinfo' do
         @addrs.all? do |addr|
           addr.should be_an_instance_of(Addrinfo)
+          true
         end.should be_true
       end
 
@@ -77,6 +80,7 @@ describe 'Socket.getifaddrs' do
         @addrs.all? do |addr|
           addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
+          true
         end.should be_true
       end
     end
@@ -89,6 +93,7 @@ describe 'Socket.getifaddrs' do
       it 'is an Addrinfo' do
         @addrs.all? do |addr|
           addr.should be_an_instance_of(Addrinfo)
+          true
         end.should be_true
       end
 
@@ -96,12 +101,14 @@ describe 'Socket.getifaddrs' do
         @addrs.all? do |addr|
           addr.afamily.should be_kind_of(Integer)
           addr.afamily.should_not == Socket::AF_UNSPEC
+          true
         end.should be_true
       end
 
       it 'has an IP address' do
         @addrs.all? do |addr|
           addr.ip_address.should be_an_instance_of(String)
+          true
         end.should be_true
       end
     end
