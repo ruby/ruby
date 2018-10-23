@@ -3815,7 +3815,6 @@ __END__
   end
 
   def test_select_leak
-    skip 'assert_no_memory_leak may consider MJIT memory usage as leak' if RubyVM::MJIT.enabled?
     # avoid malloc arena explosion from glibc and jemalloc:
     env = {
       'MALLOC_ARENA_MAX' => '1',
