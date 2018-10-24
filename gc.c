@@ -6536,6 +6536,23 @@ gc_start(rb_objspace_t *objspace, int reason)
 	      reason,
 	      do_full_mark, !is_incremental_marking(objspace), objspace->flags.immediate_sweep);
 
+#if USE_DEBUG_COUNTER
+    RB_DEBUG_COUNTER_INC(gc_count);
+    if (reason & GPR_FLAG_MAJOR_MASK) {
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_major_nofree, reason & GPR_FLAG_MAJOR_BY_NOFREE);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_major_oldgen, reason & GPR_FLAG_MAJOR_BY_OLDGEN);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_major_shady,  reason & GPR_FLAG_MAJOR_BY_SHADY);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_major_force,  reason & GPR_FLAG_MAJOR_BY_FORCE);
+    }
+    else {
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_newobj, reason & GPR_FLAG_NEWOBJ);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_malloc, reason & GPR_FLAG_MALLOC);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_method, reason & GPR_FLAG_METHOD);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_capi,   reason & GPR_FLAG_CAPI);
+        (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_stress, reason & GPR_FLAG_NEWOBJ);
+    }
+#endif
+
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
     objspace->profile.total_allocated_objects_at_gc_start = objspace->total_allocated_objects;

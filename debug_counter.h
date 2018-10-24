@@ -101,6 +101,25 @@ RB_DEBUG_COUNTER(lvar_set)
 RB_DEBUG_COUNTER(lvar_set_dynamic)
 RB_DEBUG_COUNTER(lvar_set_slowpath)
 
+/* GC counts:
+ *
+ * * count: simple count
+ * * _minor: minor gc
+ * * _major: major gc
+ * * other suffix is corresponding to last_gc_info or
+ *   gc_profile_record_flag in gc.c.
+ */
+RB_DEBUG_COUNTER(gc_count)
+RB_DEBUG_COUNTER(gc_minor_newobj)
+RB_DEBUG_COUNTER(gc_minor_malloc)
+RB_DEBUG_COUNTER(gc_minor_method)
+RB_DEBUG_COUNTER(gc_minor_capi)
+RB_DEBUG_COUNTER(gc_minor_stress)
+RB_DEBUG_COUNTER(gc_major_nofree)
+RB_DEBUG_COUNTER(gc_major_oldgen)
+RB_DEBUG_COUNTER(gc_major_shady)
+RB_DEBUG_COUNTER(gc_major_force)
+
 /* object allocation counts:
  *
  * * obj_newobj: newobj counts
