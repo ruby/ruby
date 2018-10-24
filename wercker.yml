@@ -58,9 +58,13 @@ test-mjit-wait:
     - script:
         name: make test (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
+    # split test-all to 2 steps to loosen timeout
     - script:
-        name: make test-all (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="--color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker"
+        name: make test-all1 (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/ruby/ test/testunit/" TESTOPTS="--color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker"
+    - script:
+        name: make test-all2 (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTOPTS="--exclude test/ruby/ --exclude test/testunit/ --color=never --job-status=normal --longest 10 --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker"
     - script:
         name: make test-spec (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-spec RUN_OPTS="--disable-gems --jit-wait --jit-warnings"
