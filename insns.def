@@ -518,6 +518,7 @@ newhashfromarray
 (rb_num_t num, VALUE ary)
 ()
 (VALUE hash)
+// attr bool leaf = false; /* rb_hash_bulk_insert() can call methods. */
 {
     VM_ASSERT(num * 2 == (rb_num_t)RARRAY_LEN(ary));
     hash = rb_hash_new_with_size(num);
