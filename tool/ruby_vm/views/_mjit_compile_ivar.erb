@@ -26,19 +26,19 @@
         fprintf(f, "    VALUE obj = GET_SELF();\n");
         fprintf(f, "    const rb_serial_t ic_serial = (rb_serial_t)%"PRI_SERIALT_PREFIX"u;\n", ic_copy->ic_serial);
         fprintf(f, "    const st_index_t index = %"PRIuSIZE";\n", ic_copy->ic_value.index);
+% # JIT: cache hit path of vm_getivar, or cancel JIT.
 % if insn.name == 'setinstancevariable'
         fprintf(f, "    VALUE val = stack[%d];\n", b->stack_size - 1);
-% end
-%
-% # JIT: cache hit path of vm_getivar, or cancel JIT.
         fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj))) {\n");
-% if insn.name == 'setinstancevariable'
         fprintf(f, "        VALUE *ptr = ROBJECT_IVPTR(obj);\n");
         fprintf(f, "        RB_OBJ_WRITE(obj, &ptr[index], val);\n");
-% else
-        fprintf(f, "        stack[%d] = ROBJECT_IVPTR(obj)[index];\n", b->stack_size);
-% end
         fprintf(f, "    }\n");
+% else
+        fprintf(f, "    VALUE val;\n");
+        fprintf(f, "    if (LIKELY(RB_TYPE_P(obj, T_OBJECT) && ic_serial == RCLASS_SERIAL(RBASIC(obj)->klass) && index < ROBJECT_NUMIV(obj) && (val = ROBJECT_IVPTR(obj)[index]) != Qundef)) {\n");
+        fprintf(f, "        stack[%d] = val;\n", b->stack_size);
+        fprintf(f, "    }\n");
+% end
         fprintf(f, "    else {\n");
         fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", pos);
         fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + 1);
