@@ -512,6 +512,18 @@ newhash
     }
 }
 
+/* make new Hash object from (frozen) Array object */
+DEFINE_INSN
+newhashfromarray
+(rb_num_t num, VALUE ary)
+()
+(VALUE hash)
+{
+    VM_ASSERT(num * 2 == RARRAY_LEN(ary));
+    hash = rb_hash_new_with_size(num);
+    rb_hash_bulk_insert(num * 2, RARRAY_CONST_PTR(ary), hash);
+}
+
 /* put new Range object.(Range.new(low, high, flag)) */
 DEFINE_INSN
 newrange

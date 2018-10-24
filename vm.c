@@ -2676,8 +2676,6 @@ m_core_set_postexe(VALUE self)
     return Qnil;
 }
 
-static VALUE core_hash_merge_ary(VALUE hash, VALUE ary);
-static VALUE core_hash_from_ary(VALUE ary);
 static VALUE core_hash_merge_kwd(VALUE hash, VALUE kw);
 
 static VALUE
@@ -2686,40 +2684,6 @@ core_hash_merge(VALUE hash, long argc, const VALUE *argv)
     Check_Type(hash, T_HASH);
     VM_ASSERT(argc % 2 == 0);
     rb_hash_bulk_insert(argc, argv, hash);
-    return hash;
-}
-
-static VALUE
-m_core_hash_from_ary(VALUE self, VALUE ary)
-{
-    VALUE hash;
-    REWIND_CFP(hash = core_hash_from_ary(ary));
-    return hash;
-}
-
-static VALUE
-core_hash_from_ary(VALUE ary)
-{
-    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
-
-    RUBY_DTRACE_CREATE_HOOK(HASH, (Check_Type(ary, T_ARRAY), RARRAY_LEN(ary)));
-    return core_hash_merge_ary(hash, ary);
-}
-
-#if 0
-static VALUE
-m_core_hash_merge_ary(VALUE self, VALUE hash, VALUE ary)
-{
-    REWIND_CFP(core_hash_merge_ary(hash, ary));
-    return hash;
-}
-#endif
-
-static VALUE
-core_hash_merge_ary(VALUE hash, VALUE ary)
-{
-    Check_Type(ary, T_ARRAY);
-    core_hash_merge(hash, RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
     return hash;
 }
 
@@ -2864,10 +2828,6 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_define_method, m_core_define_method, 2);
     rb_define_method_id(klass, id_core_define_singleton_method, m_core_define_singleton_method, 3);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
-    rb_define_method_id(klass, id_core_hash_from_ary, m_core_hash_from_ary, 1);
-#if 0
-    rb_define_method_id(klass, id_core_hash_merge_ary, m_core_hash_merge_ary, 2);
-#endif
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);
     rb_define_method_id(klass, idProc, rb_block_proc, 0);

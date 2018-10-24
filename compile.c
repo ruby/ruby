@@ -3957,9 +3957,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    ADD_INSN1(ret, line, duparray, ary);
 			}
 			else { /* COMPILE_ARRAY_TYPE_HASH */
-			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-			    ADD_INSN1(ret, line, putobject, ary);
-			    ADD_SEND(ret, line, id_core_hash_from_ary, INT2FIX(1));
+                            ADD_INSN2(ret, line, newhashfromarray, INT2FIX(RARRAY_LEN(ary)/2), ary);
 			}
 		    }
 		    else {
@@ -3968,15 +3966,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    ADD_INSN(ret, line, concatarray);
 			}
 			else {
-#if 0
-			    ADD_INSN1(ret, line, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-			    ADD_INSN1(ret, line, putobject, ary);
-			    ADD_SEND(ret, line, id_core_hash_merge_ary, INT2FIX(1));
-			    /* wrong number of arguments -----------------------^ */
-#else
 			    COMPILE_ERROR(ERROR_ARGS "core#hash_merge_ary");
 			    return -1;
-#endif
 			}
 		    }
 		}
