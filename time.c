@@ -3623,6 +3623,7 @@ time_localtime(VALUE time)
 {
     struct time_object *tobj;
     struct vtm vtm;
+    VALUE zone;
 
     GetTimeval(time, tobj);
     if (TZMODE_LOCALTIME_P(tobj)) {
@@ -3633,7 +3634,8 @@ time_localtime(VALUE time)
 	time_modify(time);
     }
 
-    if (!NIL_P(tobj->vtm.zone) && zone_localtime(tobj->vtm.zone, time)) {
+    zone = tobj->vtm.zone;
+    if (maybe_tzobj_p(zone) && zone_localtime(zone, time)) {
         return time;
     }
 
