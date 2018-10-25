@@ -119,6 +119,7 @@ RB_DEBUG_COUNTER(gc_major_nofree)
 RB_DEBUG_COUNTER(gc_major_oldgen)
 RB_DEBUG_COUNTER(gc_major_shady)
 RB_DEBUG_COUNTER(gc_major_force)
+RB_DEBUG_COUNTER(gc_major_oldmalloc)
 
 /* object allocation counts:
  *
