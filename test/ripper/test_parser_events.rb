@@ -1487,13 +1487,6 @@ class TestRipper::ParserEvents < Test::Unit::TestCase
     assert_equal("`$' without identifiers is not allowed as a global variable name", compile_error('$'))
   end
 
-  def test_warning_shadowing
-    fmt, *args = warning("x = 1; tap {|;x|}")
-    assert_match(/shadowing outer local variable/, fmt)
-    assert_equal("x", args[0])
-    assert_match(/x/, fmt % args)
-  end
-
   def test_warning_ignored_magic_comment
     fmt, *args = warning("1; #-*- frozen-string-literal: true -*-")
     assert_match(/ignored after any tokens/, fmt)

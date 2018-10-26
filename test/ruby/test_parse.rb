@@ -911,10 +911,8 @@ x = __ENCODING__
     assert_equal(expected, actual, bug5614)
   end
 
-  def test_shadowing_variable
-    assert_warning(/shadowing outer local variable/) {eval("a=1; tap {|a|}")}
-    a = "\u{3042}"
-    assert_warning(/#{a}/o) {eval("#{a}=1; tap {|#{a}|}")}
+  def test_no_shadowing_variable_warning
+    assert_no_warning(/shadowing outer local variable/) {eval("a=1; tap {|a|}")}
   end
 
   def test_unused_variable
