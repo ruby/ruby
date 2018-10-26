@@ -805,9 +805,9 @@ rb_block_lambda(void)
  *  call-seq:
  *     proc === obj   -> result_of_proc
  *
- *  Invokes the block with +obj+ as the proc's parameter like Proc#call.  It
- *  is to allow a proc object to be a target of +when+ clause in a case
- *  statement.
+ *  Invokes the block with +obj+ as the proc's parameter like Proc#call.
+ *  This allows a proc object to be the target of a +when+ clause
+ *  in a case statement.
  */
 
 /* CHECKME: are the argument checking semantics correct? */
@@ -2087,15 +2087,15 @@ method_clone(VALUE self)
  *  call-seq:
  *     method === obj   -> result_of_method
  *
- *  Invokes the method with +obj+ as the parameter like #call. It
- *  is to allow a method object to be a target of +when+ clause in a case
- *  statement.
+ *  Invokes the method with +obj+ as the parameter like #call.
+ *  This allows a method object to be the target of a +when+ clause
+ *  in a case statement.
  *
  *      require 'prime'
  *
  *      case 1373
  *      when Prime.method(:prime?)
- *        # ....
+ *        # ...
  *      end
  */
 
