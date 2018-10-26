@@ -9220,7 +9220,6 @@ shadowing_lvar_0(struct parser_params *p, ID name)
 	    yyerror0("duplicated argument name");
 	}
 	else if (dvar_defined(p, name) || local_id(p, name)) {
-	    rb_warning1("shadowing outer local variable - %"PRIsWARN, rb_id2str(name));
 	    vtable_add(p->lvtbl->vars, name);
 	    if (p->lvtbl->used) {
 		vtable_add(p->lvtbl->used, (ID)p->ruby_sourceline | LVAR_USED);

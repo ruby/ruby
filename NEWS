@@ -31,6 +31,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Non-Symbol key in keyword arguments hash causes an exception.
 
+* "shadowing outer local variable" warning was removed.  [Feature #12490]
+  You can now write the following without warning.
+
+  user = User.all.find {|user| cond(user) }
+
 === Core classes updates (outstanding ones only)
 
 [Array]
