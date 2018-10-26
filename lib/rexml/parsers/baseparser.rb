@@ -438,7 +438,7 @@ module REXML
           raise
         rescue REXML::ParseException
           raise
-        rescue Exception, NameError => error
+        rescue => error
           raise REXML::ParseException.new( "Exception parsing",
             @source, self, (error ? error : $!) )
         end
