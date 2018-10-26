@@ -693,16 +693,6 @@ eom
         assert_warning(*args) {$VERBOSE = false; yield}
       end
 
-      def assert_no_warning(pat, msg = nil)
-        stderr = EnvUtil.verbose_warning {
-          EnvUtil.with_default_internal(pat.encoding) {
-            yield
-          }
-        }
-        msg = message(msg) {diff pat, stderr}
-        refute(pat === stderr, msg)
-      end
-
       def assert_no_memory_leak(args, prepare, code, message=nil, limit: 2.0, rss: false, **opt)
         # TODO: consider choosing some appropriate limit for MJIT and stop skipping this once it does not randomly fail
         skip 'assert_no_memory_leak may consider MJIT memory usage as leak' if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
