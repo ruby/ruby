@@ -8822,11 +8822,11 @@ lstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  call-seq:
  *     str.lstrip!   -> self or nil
  *
- *  Removes leading whitespace from <i>str</i>, returning <code>nil</code> if no
- *  change was made. See also <code>String#rstrip!</code> and
- *  <code>String#strip!</code>.
+ *  Removes leading whitespace from the receiver.
+ *  Returns the altered receiver, or +nil+ if no change was made.
+ *  See also String#rstrip! and String#strip!.
  *
- *  Refer to <code>strip</code> for the definition of whitespace.
+ *  Refer to String#strip for the definition of whitespace.
  *
  *     "  hello  ".lstrip!  #=> "hello  "
  *     "hello  ".lstrip!    #=> nil
@@ -8862,10 +8862,10 @@ rb_str_lstrip_bang(VALUE str)
  *  call-seq:
  *     str.lstrip   -> new_str
  *
- *  Returns a copy of <i>str</i> with leading whitespace removed. See also
- *  <code>String#rstrip</code> and <code>String#strip</code>.
+ *  Returns a copy of the receiver with leading whitespace removed.
+ *  See also String#rstrip and String#strip.
  *
- *  Refer to <code>strip</code> for the definition of whitespace.
+ *  Refer to String#strip for the definition of whitespace.
  *
  *     "  hello  ".lstrip   #=> "hello  "
  *     "hello".lstrip       #=> "hello"
@@ -8912,11 +8912,11 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
  *  call-seq:
  *     str.rstrip!   -> self or nil
  *
- *  Removes trailing whitespace from <i>str</i>, returning <code>nil</code> if
- *  no change was made. See also <code>String#lstrip!</code> and
- *  <code>String#strip!</code>.
+ *  Removes trailing whitespace from the receiver.
+ *  Returns the altered receiver, or +nil+ if no change was made.
+ *  See also String#lstrip! and String#strip!.
  *
- *  Refer to <code>strip</code> for the definition of whitespace.
+ *  Refer to String#strip for the definition of whitespace.
  *
  *     "  hello  ".rstrip!  #=> "  hello"
  *     "  hello".rstrip!    #=> nil
@@ -8951,10 +8951,10 @@ rb_str_rstrip_bang(VALUE str)
  *  call-seq:
  *     str.rstrip   -> new_str
  *
- *  Returns a copy of <i>str</i> with trailing whitespace removed. See also
- *  <code>String#lstrip</code> and <code>String#strip</code>.
+ *  Returns a copy of the receiver with trailing whitespace removed.
+ *  See also String#lstrip and String#strip.
  *
- *  Refer to <code>strip</code> for the definition of whitespace.
+ *  Refer to String#strip for the definition of whitespace.
  *
  *     "  hello  ".rstrip   #=> "  hello"
  *     "hello".rstrip       #=> "hello"
@@ -8978,12 +8978,12 @@ rb_str_rstrip(VALUE str)
 
 /*
  *  call-seq:
- *     str.strip!   -> str or nil
+ *     str.strip!   -> self or nil
  *
- *  Removes leading and trailing whitespace from <i>str</i>. Returns
- *  <code>nil</code> if <i>str</i> was not altered.
+ *  Removes leading and trailing whitespace from the receiver.
+ *  Returns the altered receiver, or +nil+ if there was no change.
  *
- *  Refer to <code>strip</code> for the definition of whitespace.
+ *  Refer to String#strip for the definition of whitespace.
  *
  *     "  hello  ".strip!  #=> "hello"
  *     "hello".strip!      #=> nil
@@ -9022,7 +9022,7 @@ rb_str_strip_bang(VALUE str)
  *  call-seq:
  *     str.strip   -> new_str
  *
- *  Returns a copy of <i>str</i> with leading and trailing whitespace removed.
+ *  Returns a copy of the receiver with leading and trailing whitespace removed.
  *
  *  Whitespace is defined as any of the following characters:
  *  null, horizontal tab, line feed, vertical tab, form feed, carriage return, space.
