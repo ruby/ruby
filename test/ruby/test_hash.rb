@@ -280,6 +280,24 @@ class TestHash < Test::Unit::TestCase
     assert_same a.keys[0], b.keys[0]
   end
 
+  def test_ASET_fstring_non_literal_key
+    underscore = "_"
+    non_literal_strings = Proc.new{ ["abc#{underscore}def", "abc" * 5, "abc" + "def", "" << "ghi" << "jkl"] }
+
+    a, b = {}, {}
+    non_literal_strings.call.each do |string|
+      assert_equal 1, a[string] = 1
+    end
+
+    non_literal_strings.call.each do |string|
+      assert_equal 1, b[string] = 1
+    end
+
+    [a.keys, b.keys].transpose.each do |key_a, key_b|
+      assert_same key_a, key_b
+    end
+  end
+
   def test_hash_aset_fstring_identity
     h = {}.compare_by_identity
     h['abc'] = 1

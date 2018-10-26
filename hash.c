@@ -1587,10 +1587,14 @@ VALUE
 rb_hash_key_str(VALUE key)
 {
     VALUE k;
+    int not_tainted = !RB_OBJ_TAINTED(key);
 
-    if (!RB_OBJ_TAINTED(key) &&
+    if (not_tainted &&
 	(k = fstring_existing_str(key)) != Qnil) {
 	return k;
+    }
+    else if(not_tainted) {
+        return rb_fstring(key);
     }
     else {
 	return rb_str_new_frozen(key);
