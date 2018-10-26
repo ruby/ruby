@@ -265,11 +265,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Coverage]
 
-  An oneshot_lines mode is added.  [Feature #15022]
+  A oneshot_lines mode is added.  [Feature #15022]
   This mode checks "whether each line was executed at least once or not",
   instead of "how many times each line was executed".
-  A hook for each line is fired at most once, and after it is fired,
-  the hook flag was removed, i.e., it runs with zero overhead.
+  A hook for each line is fired at most once, and after it is fired
+  the hook flag is removed, i.e., it runs with zero overhead.
 
   [New options]
 
