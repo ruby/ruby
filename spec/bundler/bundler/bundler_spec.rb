@@ -378,9 +378,11 @@ EOF
     before do
       allow(Bundler).to receive(:which).with("sudo").and_return("/usr/bin/sudo")
       FileUtils.mkdir_p("tmp/vendor/bundle")
+      FileUtils.mkdir_p("tmp/vendor/bin_dir")
     end
     after do
       FileUtils.rm_rf("tmp/vendor/bundle")
+      FileUtils.rm_rf("tmp/vendor/bin_dir")
       if Bundler.respond_to?(:remove_instance_variable)
         Bundler.remove_instance_variable(:@requires_sudo_ran)
         Bundler.remove_instance_variable(:@requires_sudo)
@@ -401,13 +403,24 @@ EOF
       before do
         FileUtils.touch("tmp/vendor/bundle/unwritable1.txt")
         FileUtils.touch("tmp/vendor/bundle/unwritable2.txt")
+        FileUtils.touch("tmp/vendor/bin_dir/unwritable3.txt")
         FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable1.txt")
         FileUtils.chmod(0o400, "tmp/vendor/bundle/unwritable2.txt")
+        FileUtils.chmod(0o400, "tmp/vendor/bin_dir/unwritable3.txt")
       end
       it "should return true and display warn message" do
         allow(Bundler).to receive(:bundle_path).and_return(Pathname("tmp/vendor/bundle"))
+        bin_dir = Pathname("tmp/vendor/bin_dir/")
+
+        # allow File#writable? to be called with args other than the stubbed on below
+        allow(File).to receive(:writable?).and_call_original
+
+        # fake make the directory unwritable
+        allow(File).to receive(:writable?).with(bin_dir).and_return(false)
+        allow(Bundler).to receive(:system_bindir).and_return(Pathname("tmp/vendor/bin_dir/"))
         message = <<-MESSAGE.chomp
 Following files may not be writable, so sudo is needed:
+  tmp/vendor/bin_dir/
   tmp/vendor/bundle/unwritable1.txt
   tmp/vendor/bundle/unwritable2.txt
 MESSAGE
