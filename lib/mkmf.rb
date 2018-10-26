@@ -7,8 +7,9 @@ require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
 
-# :stopdoc:
 class String
+  # :stopdoc:
+
   # Wraps a string in escaped quotes if it contains whitespace.
   def quote
     /\s/ =~ self ? "\"#{self}\"" : "#{self}"
@@ -31,15 +32,20 @@ class String
   def sans_arguments
     self[/\A[^()]+/]
   end
+
+  # :startdoc:
 end
 
 class Array
+  # :stopdoc:
+
   # Wraps all strings in escaped quotes if they contain whitespace.
   def quote
     map {|s| s.quote}
   end
+
+  # :startdoc:
 end
-# :startdoc:
 
 ##
 # mkmf.rb is used by Ruby C extensions to generate a Makefile which will

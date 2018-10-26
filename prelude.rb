@@ -132,8 +132,8 @@ class IO
   end
 end
 
-# :stopdoc:
 class Binding
+  # :nodoc:
   def irb
     require 'irb'
     irb
