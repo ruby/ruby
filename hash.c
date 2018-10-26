@@ -1582,7 +1582,7 @@ VALUE
 rb_hash_key_str(VALUE key)
 {
     if (!FL_ANY_RAW(key, FL_TAINT|FL_SINGLETON)) {
-	return fstring_key_str(key);
+        return fstring_key_str(key);
     }
     else {
 	return rb_str_new_frozen(key);
