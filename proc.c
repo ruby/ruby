@@ -2618,8 +2618,8 @@ rb_method_parameters(VALUE method)
  *    "cat".method(:count).inspect   #=> "#<Method: String#count>"
  *    (1..3).method(:map).inspect    #=> "#<Method: Range(Enumerable)#map>"
  *
- *  In the latter case, method description includes the "owner" of original
- *  method (+Enumerable+ module, which is included into +Range+).
+ *  In the latter case, the method description includes the "owner" of the
+ *  original method (+Enumerable+ module, which is included into +Range+).
  */
 
 static VALUE
