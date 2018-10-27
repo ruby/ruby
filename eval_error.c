@@ -232,12 +232,12 @@ show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse)
         VALUE emesg = rb_get_message(cause);
         if (reverse) {
             show_cause(cause, str, highlight, reverse);
-            print_errinfo(eclass, errat, emesg, str, highlight!=0);
-            print_backtrace(eclass, errat, str, FALSE);
-        }
-        else {
             print_backtrace(eclass, errat, str, TRUE);
             print_errinfo(eclass, errat, emesg, str, highlight!=0);
+        }
+        else {
+            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_backtrace(eclass, errat, str, FALSE);
             show_cause(cause, str, highlight, reverse);
         }
     }
