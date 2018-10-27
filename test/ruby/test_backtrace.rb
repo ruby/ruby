@@ -314,9 +314,9 @@ class TestBacktrace < Test::Unit::TestCase
     err = ["-:7:in `rescue in bar': bar! (RuntimeError)",
            "\tfrom -:4:in `bar'",
            "\tfrom -:9:in `<main>'",
-           "\t2: from -:9:in `<main>'",
-           "\t1: from -:5:in `bar'",
-           "-:2:in `foo': foo! (RuntimeError)"]
+           "-:2:in `foo': foo! (RuntimeError)",
+           "\tfrom -:5:in `bar'",
+           "\tfrom -:9:in `<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
     def foo
       raise "foo!"
