@@ -1509,6 +1509,24 @@ readline_s_get_special_prefixes(VALUE self)
 #define readline_s_get_special_prefixes rb_f_notimplement
 #endif
 
+/*
+ * call-set:
+ *   Readline.variable_value(variable) -> string
+ *
+ * Gets a value of Readline's variable. For boolean variables, this string is
+ * either `on' or `off'.
+ */
+static VALUE
+readline_s_variable_value(VALUE self, VALUE variable)
+{
+    const char * value;
+
+    OutputStringValue(variable);
+    value = rl_variable_value(RSTRING_PTR(variable));
+    if (!value) { rb_raise(rb_eRuntimeError, "Variable not set"); }
+    return rb_str_new2(value);
+}
+
 #ifdef HAVE_RL_BASIC_QUOTE_CHARACTERS
 /*
  * call-seq:
@@ -2035,6 +2053,8 @@ Init_readline(void)
                                readline_s_set_special_prefixes, 1);
     rb_define_singleton_method(mReadline, "special_prefixes",
                                readline_s_get_special_prefixes, 0);
+    rb_define_singleton_method(mReadline, "variable_value",
+                               readline_s_variable_value, 1);
 
 #if USE_INSERT_IGNORE_ESCAPE
     id_orig_prompt = rb_intern("orig_prompt");
@@ -2139,4 +2159,6 @@ Init_readline(void)
  * Local variables:
  * indent-tabs-mode: nil
  * end:
+ *
+ * vim: et:st=4:ts=4:sts=4
  */
