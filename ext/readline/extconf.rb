@@ -102,6 +102,7 @@ readline.have_func("clear_history")
 readline.have_func("rl_redisplay")
 readline.have_func("rl_insert_text")
 readline.have_func("rl_delete_text")
+readline.have_func("rl_callback_handler_install")
 unless readline.have_type("rl_hook_func_t*")
   # rl_hook_func_t is available since readline-4.2 (2001).
   # Function is removed at readline-6.3 (2014).

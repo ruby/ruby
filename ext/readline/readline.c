@@ -22,6 +22,7 @@
 #include "ruby/config.h"
 #include <errno.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/readline.h>
@@ -1923,6 +1924,130 @@ username_completion_proc_call(VALUE self, VALUE str)
 int rl_clear_signals(void);
 #endif
 
+#ifdef HAVE_RL_CALLBACK_HANDLER_INSTALL
+#define READ_CHAR_CB "read_char_cb_block"
+static ID read_char_cb_block;
+#define READLINE_CALLBACK_ADD_HISTORY "readline_callback_add_history"
+static ID readline_callback_add_history;
+
+static void readline_callback_callback(char * line) {
+    VALUE vline = line ? rb_tainted_str_new2(line) : Qnil;
+
+    VALUE should_add_history = rb_attr_get(
+	mReadline,
+	readline_callback_add_history
+    );
+    if (RTEST(should_add_history) && line) {
+	add_history(line);
+    }
+
+    free(line);
+
+    VALUE proc = rb_attr_get(mReadline, read_char_cb_block);
+    rb_funcall(proc, id_call, 1, vline);
+}
+
+/*
+ * call-seq:
+ *   Readline.readline(prompt = "", add_hist = false) &block -> nil
+
+ * Set up the terminal for readline I/O and display the initial expanded
+ * value of prompt. Save the provided block to use as a function to call when
+ * a complete line of input has been entered. The block should take the text
+ * of the line as an argument.
+ *
+ * = Example
+ *
+ *   PROMPT = "rltest$ "
+ *
+ *   $running = true
+ *   $sigwinch_received = false
+ *
+ *   Readline.handler_install(PROMPT, add_hist: true) do |line|
+ *     # Can use ^D (stty eof) or `exit' to exit.
+ *     if !line || line == "exit"
+ *       puts unless line
+ *       puts "exit"
+ *       Readline.handler_remove
+ *       $running = false
+ *     else
+ *       puts "input line: #{line}"
+ *     end
+ *   end
+ *
+ *   Signal.trap('SIGWINCH') { $sigwinch_received = true }
+ *
+ *   while $running do
+ *     rs = IO.select([$stdin])
+ *     if $sigwinch_received
+ *       Readline.resize_terminal
+ *       $sigwinch_received = false
+ *     end
+ *     Readline.read_char if r = rs[0]
+ *   end
+ *
+ *   puts "rltest: Event loop has exited"
+ */
+static VALUE readline_callback_handler_install(
+    int argc,
+    VALUE * argv,
+    VALUE self
+) {
+    VALUE tmp, add_hist, block;
+    char * prompt = NULL;
+
+    rb_need_block();
+
+    if (rb_scan_args(argc, argv, "02&", &tmp, &add_hist, &block) > 0) {
+	prompt = RSTRING_PTR(tmp);
+    }
+
+    rb_ivar_set(mReadline, readline_callback_add_history, add_hist);
+    rb_ivar_set(mReadline, read_char_cb_block, block);
+
+    rl_callback_handler_install(prompt, readline_callback_callback);
+
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   Readline.read_char -> nil
+ *
+ * Whenever an application determines that keyboard input is available, it
+ * should call read_char, which will read the next character from the current
+ * input source. If that character completes the line, read_char will invoke
+ * the handler function saved by handler_install to process the line.
+ * Before calling the handler function, the terminal settings are reset to
+ * the values they had before calling handler_install. If the handler function
+ * returns, the terminal settings are modified for Readline's use again. EOF
+ * is indicated by calling handler with a nil.
+ */
+static VALUE readline_callback_read_char(VALUE self) {
+    VALUE proc = rb_attr_get(mReadline, read_char_cb_block);
+    if (NIL_P(proc)) {
+	rb_raise(rb_eRuntimeError, "No handler installed.");
+    }
+    rl_callback_read_char();
+    return Qnil;
+}
+/*
+ * call-seq:
+ *   Readline.handler_remove -> nil
+ *
+ * Restore the terminal to its initial state and remove the line handler.
+ * This may be called from within a callback as well as independently. If
+ * the handler installed by handler_install does not exit the program, this
+ * function should be called before the program exits to reset the terminal
+ * settings.
+ */
+static VALUE readline_callback_handler_remove(VALUE self) {
+    rb_ivar_set(mReadline, read_char_cb_block, Qnil);
+    rl_callback_handler_remove();
+    return Qnil;
+}
+#endif
+
 #undef rb_intern
 void
 Init_readline(void)
@@ -1946,6 +2071,10 @@ Init_readline(void)
     id_call = rb_intern("call");
     completion_proc = rb_intern(COMPLETION_PROC);
     completion_case_fold = rb_intern(COMPLETION_CASE_FOLD);
+#ifdef HAVE_RL_CALLBACK_HANDLER_INSTALL
+    read_char_cb_block = rb_intern(READ_CHAR_CB);
+    readline_callback_add_history = rb_intern(READLINE_CALLBACK_ADD_HISTORY);
+#endif
 #if defined(HAVE_RL_PRE_INPUT_HOOK)
     id_pre_input_hook = rb_intern("pre_input_hook");
 #endif
@@ -2035,6 +2164,26 @@ Init_readline(void)
                                readline_s_set_special_prefixes, 1);
     rb_define_singleton_method(mReadline, "special_prefixes",
                                readline_s_get_special_prefixes, 0);
+#ifdef HAVE_RL_CALLBACK_HANDLER_INSTALL
+    rb_define_singleton_method(
+	mReadline,
+	"handler_install",
+	readline_callback_handler_install,
+	-1
+    );
+    rb_define_singleton_method(
+	mReadline,
+	"read_char",
+	readline_callback_read_char,
+	0
+    );
+    rb_define_singleton_method(
+	mReadline,
+	"handler_remove",
+	readline_callback_handler_remove,
+	0
+    );
+#endif
 
 #if USE_INSERT_IGNORE_ESCAPE
     id_orig_prompt = rb_intern("orig_prompt");
@@ -2140,3 +2289,4 @@ Init_readline(void)
  * indent-tabs-mode: nil
  * end:
  */
+/* vim: set ts=8 sw=4 noexpandtab: */

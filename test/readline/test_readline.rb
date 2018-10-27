@@ -26,6 +26,26 @@ module BasetestReadline
     SAVED_ENV.each_with_index {|k, i| ENV[k] = @saved_env[i] }
   end
 
+  def test_callback_interface
+    with_temp_stdio do |stdin, stdout|
+      stdin.write("hello\n")
+      stdin.close
+      stdout.flush
+      line = nil
+      replace_stdio(stdin.path, stdout.path) {
+        Readline.handler_install("> ", true) { |l| line = l if l }
+        6.times { Readline.read_char }
+        Readline.handler_remove
+      }
+      assert_equal("hello", line)
+      assert_equal(true, line.tainted?)
+      stdout.rewind
+      assert_equal("> ", stdout.read(2))
+      assert_equal(1, Readline::HISTORY.length)
+      assert_equal("hello", Readline::HISTORY[0])
+    end
+  end
+
   def test_readline
     skip "Skip Editline" if /EditLine/n.match(Readline::VERSION)
     with_temp_stdio do |stdin, stdout|
@@ -727,3 +747,5 @@ class TestRelineAsReadline < Test::Unit::TestCase
     super
   end
 end
+
+# vim: set nowrap tabstop=8 tw=0 sw=2 expandtab
