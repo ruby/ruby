@@ -2,9 +2,10 @@ class Object
   # This helper is defined here rather than in MSpec because
   # it is only used in #pack specs.
   def pack_format(count=nil, repeat=nil)
-    format = "#{instance_variable_get(:@method)}#{count}"
+    format = instance_variable_get(:@method)
+    format += count.to_s unless format == 'P' || format == 'p'
     format *= repeat if repeat
-    format
+    format.dup # because it may then become tainted
   end
 end
 

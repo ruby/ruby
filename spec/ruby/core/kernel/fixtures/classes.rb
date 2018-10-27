@@ -68,6 +68,7 @@ module KernelSpecs
   module SomeOtherModule; end
   module AncestorModule; end
   module MyModule; end
+  module MyPrependedModule; end
   module MyExtensionModule; end
 
   class AncestorClass < String
@@ -80,6 +81,8 @@ module KernelSpecs
 
   class KindaClass < AncestorClass
     include MyModule
+    prepend MyPrependedModule
+
     def initialize
       self.extend MyExtensionModule
     end

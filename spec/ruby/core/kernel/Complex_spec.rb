@@ -126,8 +126,8 @@ describe "Kernel.Complex()" do
 
   describe "when passed a non-Numeric second argument" do
     it "raises TypeError" do
-      lambda { Complex.send(@method, :sym, :sym) }.should raise_error(TypeError)
-      lambda { Complex.send(@method, 0,    :sym) }.should raise_error(TypeError)
+      lambda { Complex(:sym, :sym) }.should raise_error(TypeError)
+      lambda { Complex(0,    :sym) }.should raise_error(TypeError)
     end
   end
 

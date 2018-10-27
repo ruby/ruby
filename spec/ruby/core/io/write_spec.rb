@@ -127,6 +127,17 @@ end
 
 describe "IO#write" do
   it_behaves_like :io_write, :write
+
+  ruby_version_is "2.5" do
+    it "accepts multiple arguments" do
+      IO.pipe do |r, w|
+        w.write("foo", "bar")
+        w.close
+
+        r.read.should == "foobar"
+      end
+    end
+  end
 end
 
 platform_is :windows do

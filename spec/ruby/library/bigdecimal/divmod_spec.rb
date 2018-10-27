@@ -38,9 +38,9 @@ describe "BigDecimal#mod_part_of_divmod" do
   it "raises ZeroDivisionError if other is zero" do
     bd5667 = BigDecimal("5667.19")
 
-    lambda { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    lambda { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    lambda { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
+    lambda { bd5667.mod_part_of_divmod(0) }.should raise_error(ZeroDivisionError)
+    lambda { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should raise_error(ZeroDivisionError)
+    lambda { @zero.mod_part_of_divmod(@zero) }.should raise_error(ZeroDivisionError)
   end
 end
 

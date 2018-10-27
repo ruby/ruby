@@ -19,6 +19,23 @@ describe "String#%" do
     ("%d%% %s" % [10, "of chickens!"]).should == "10% of chickens!"
   end
 
+  describe "output's encoding" do
+    it "is the same as the format string if passed value is encoding-compatible" do
+      [Encoding::ASCII_8BIT, Encoding::US_ASCII, Encoding::UTF_8, Encoding::SHIFT_JIS].each do |encoding|
+        ("hello %s!".encode(encoding) % "world").encoding.should == encoding
+      end
+    end
+
+    it "negotiates a compatible encoding if necessary" do
+      ("hello %s" % 195.chr).encoding.should == Encoding::ASCII_8BIT
+      ("hello %s".encode("shift_jis") % "wörld").encoding.should == Encoding::UTF_8
+    end
+
+    it "raises if a compatible encoding can't be found" do
+      lambda { "hello %s".encode("utf-8") % "world".encode("UTF-16LE") }.should raise_error(Encoding::CompatibilityError)
+    end
+  end
+
   ruby_version_is ""..."2.5" do
     it "formats single % character at the end as literal %" do
       ("%" % []).should == "%"

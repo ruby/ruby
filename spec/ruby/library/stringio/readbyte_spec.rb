@@ -8,10 +8,10 @@ describe "StringIO#readbyte" do
   it "reads the next 8-bit byte from self's current position" do
     io = StringIO.new("example")
 
-    io.send(@method).should == 101
+    io.readbyte.should == 101
 
     io.pos = 4
-    io.send(@method).should == 112
+    io.readbyte.should == 112
   end
 end
 

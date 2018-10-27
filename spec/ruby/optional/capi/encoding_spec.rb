@@ -139,21 +139,21 @@ describe "C-API Encoding function" do
     it_behaves_like :rb_enc_get_index, :rb_enc_get_index
 
     it "returns the index of the encoding of a Symbol" do
-      @s.send(@method, :symbol).should >= 0
+      @s.rb_enc_get_index(:symbol).should >= 0
     end
 
     it "returns -1 as the index of nil" do
-      @s.send(@method, nil).should == -1
+      @s.rb_enc_get_index(nil).should == -1
     end
 
     it "returns -1 as the index for immediates" do
-      @s.send(@method, 1).should == -1
+      @s.rb_enc_get_index(1).should == -1
     end
 
     ruby_version_is "2.6" do
       it "returns -1 for an object without an encoding" do
         obj = Object.new
-        @s.send(@method, obj).should == -1
+        @s.rb_enc_get_index(obj).should == -1
       end
     end
   end

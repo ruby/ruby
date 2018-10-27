@@ -46,4 +46,8 @@ describe "Regexps with back-references" do
   it "resets nested \<n> backreference before match of outer subexpression" do
     /(a\1?){2}/.match("aaaa").to_a.should == ["aa", "a"]
   end
+
+  it "can match an optional quote, followed by content, followed by a matching quote, as the whole string" do
+    /^("|)(.*)\1$/.match('x').to_a.should == ["x", "", "x"]
+  end
 end

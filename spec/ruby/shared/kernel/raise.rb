@@ -41,7 +41,7 @@ describe :kernel_raise, shared: true do
     lambda { @object.raise(nil) }.should raise_error(TypeError)
   end
 
-  it "re-raises the rescued exception" do
+  it "re-raises the previously rescued exception if no exception is specified" do
     lambda do
       begin
         raise Exception, "outer"
@@ -58,6 +58,22 @@ describe :kernel_raise, shared: true do
     end.should raise_error(Exception, "outer")
 
     ScratchPad.recorded.should be_nil
+  end
+
+  it "re-raises a previously rescued exception without overwriting the backtrace" do
+    begin
+      raise 'raised'
+    rescue => raised
+      begin
+        raise_again_line = __LINE__; raise raised
+      rescue => raised_again
+        # This spec is written using #backtrace and matching the line number
+        # from the string, as backtrace_locations is a more advanced
+        # method that is not always supported by implementations.
+
+        raised_again.backtrace.first.should_not include(":#{raise_again_line}:")
+      end
+    end
   end
 
   it "allows Exception, message, and backtrace parameters" do

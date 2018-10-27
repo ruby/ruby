@@ -29,6 +29,13 @@ describe :basicobject_send, shared: true do
     SendSpecs::Foo.send(@method, :bar).should == 'done'
   end
 
+  it "raises a TypeError if the method name is not a string or symbol" do
+    -> { SendSpecs.send(@method, nil) }.should raise_error(TypeError, /not a symbol nor a string/)
+    -> { SendSpecs.send(@method, 42) }.should raise_error(TypeError, /not a symbol nor a string/)
+    -> { SendSpecs.send(@method, 3.14) }.should raise_error(TypeError, /not a symbol nor a string/)
+    -> { SendSpecs.send(@method, true) }.should raise_error(TypeError, /not a symbol nor a string/)
+  end
+
   it "raises a NameError if the corresponding method can't be found" do
     class SendSpecs::Foo
       def bar

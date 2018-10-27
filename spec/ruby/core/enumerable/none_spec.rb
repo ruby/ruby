@@ -51,7 +51,6 @@ describe "Enumerable#none?" do
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
-      # This spec doesn't spec what it says it does
       multi = EnumerableSpecs::YieldsMultiWithFalse.new
       multi.none?.should be_false
     end

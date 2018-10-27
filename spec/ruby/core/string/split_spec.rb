@@ -402,4 +402,14 @@ describe "String#split with Regexp" do
     broken_str.force_encoding('utf-8')
     lambda{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is "2.6" do
+    it "yields each split substrings if a block is given" do
+      a = []
+      returned_object = "chunky bacon".split(" ") { |str| a << str.capitalize }
+
+      returned_object.should == "chunky bacon"
+      a.should == ["Chunky", "Bacon"]
+    end
+  end
 end

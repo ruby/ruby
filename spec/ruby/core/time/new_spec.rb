@@ -49,6 +49,14 @@ describe "Time.new with a utc_offset argument" do
     Time.new(2000, 1, 1, 0, 0, 0, "-04:10").utc_offset.should == -15000
   end
 
+  it "returns a Time with a UTC offset specified as +HH:MM:SS" do
+    Time.new(2000, 1, 1, 0, 0, 0, "+05:30:37").utc_offset.should == 19837
+  end
+
+  it "returns a Time with a UTC offset specified as -HH:MM" do
+    Time.new(2000, 1, 1, 0, 0, 0, "-04:10:43").utc_offset.should == -15043
+  end
+
   describe "with an argument that responds to #to_str" do
     it "coerces using #to_str" do
       o = mock('string')
@@ -95,6 +103,14 @@ describe "Time.new with a utc_offset argument" do
   it "raises ArgumentError if the argument represents a value greater than or equal to 86400 seconds" do
     Time.new(2000, 1, 1, 0, 0, 0, 86400 - 1).utc_offset.should == (86400 - 1)
     lambda { Time.new(2000, 1, 1, 0, 0, 0, 86400) }.should raise_error(ArgumentError)
+  end
+
+  it "raises ArgumentError if the seconds argument is negative" do
+    lambda { Time.new(2000, 1, 1, 0, 0, -1) }.should raise_error(ArgumentError)
+  end
+
+  it "raises ArgumentError if the utc_offset argument is greater than or equal to 10e9" do
+    lambda { Time.new(2000, 1, 1, 0, 0, 0, 1000000000) }.should raise_error(ArgumentError)
   end
 end
 
