@@ -220,6 +220,29 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
     }
 }
 
+VALUE rb_get_message(VALUE exc);
+
+static void
+show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse)
+{
+    VALUE cause = rb_attr_get(errinfo, id_cause);
+    if (!NIL_P(cause)) {
+        volatile VALUE eclass = CLASS_OF(cause);
+        VALUE errat = rb_get_backtrace(cause);
+        VALUE emesg = rb_get_message(cause);
+        if (reverse) {
+            show_cause(cause, str, highlight, reverse);
+            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            print_backtrace(eclass, errat, str, FALSE);
+        }
+        else {
+            print_backtrace(eclass, errat, str, TRUE);
+            print_errinfo(eclass, errat, emesg, str, highlight!=0);
+            show_cause(cause, str, highlight, reverse);
+        }
+    }
+}
+
 void
 rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlight, VALUE reverse)
 {
@@ -254,16 +277,16 @@ rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE highlig
 	    len = p - (msg = buff);
 	}
 	write_warn2(str, msg, len);
+        show_cause(errinfo, str, highlight, reverse);
 	print_backtrace(eclass, errat, str, TRUE);
 	print_errinfo(eclass, errat, emesg, str, highlight!=0);
     }
     else {
 	print_errinfo(eclass, errat, emesg, str, highlight!=0);
 	print_backtrace(eclass, errat, str, FALSE);
+        show_cause(errinfo, str, highlight, reverse);
     }
 }
-
-VALUE rb_get_message(VALUE exc);
 
 void
 rb_ec_error_print(rb_execution_context_t * volatile ec, volatile VALUE errinfo)
