@@ -297,4 +297,36 @@ class TestBacktrace < Test::Unit::TestCase
     end
     assert_not_match(/\Acore#/, e.backtrace_locations[0].base_label)
   end
+
+  def test_notty_backtrace
+    err = ["-:1:in `<main>': unhandled exception"]
+    assert_in_out_err([], "raise", [], err)
+
+    err = ["-:2:in `foo': foo! (RuntimeError)",
+           "\tfrom -:4:in `<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    def foo
+      raise "foo!"
+    end
+    foo
+    end;
+
+    err = ["-:7:in `rescue in bar': bar! (RuntimeError)",
+           "\tfrom -:4:in `bar'",
+           "\tfrom -:9:in `<main>'",
+           "\t2: from -:9:in `<main>'",
+           "\t1: from -:5:in `bar'",
+           "-:2:in `foo': foo! (RuntimeError)"]
+    assert_in_out_err([], <<-"end;", [], err)
+    def foo
+      raise "foo!"
+    end
+    def bar
+      foo
+    rescue
+      raise "bar!"
+    end
+    bar
+    end;
+  end
 end
