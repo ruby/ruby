@@ -3,12 +3,14 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
 require_relative 'shared/encodings'
+require_relative 'shared/taint'
 
 describe "Array#pack with format 'H'" do
   it_behaves_like :array_pack_basic, 'H'
   it_behaves_like :array_pack_basic_non_float, 'H'
   it_behaves_like :array_pack_arguments, 'H'
   it_behaves_like :array_pack_hex, 'H'
+  it_behaves_like :array_pack_taint, 'H'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack H string")
@@ -105,6 +107,7 @@ describe "Array#pack with format 'h'" do
   it_behaves_like :array_pack_basic_non_float, 'h'
   it_behaves_like :array_pack_arguments, 'h'
   it_behaves_like :array_pack_hex, 'h'
+  it_behaves_like :array_pack_taint, 'h'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack H string")

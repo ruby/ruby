@@ -2,10 +2,12 @@
 require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
+require_relative 'shared/taint'
 
 describe "String#unpack with format 'B'" do
   it_behaves_like :string_unpack_basic, 'B'
   it_behaves_like :string_unpack_no_platform, 'B'
+  it_behaves_like :string_unpack_taint, 'B'
 
   it "decodes one bit from each byte for each format character starting with the most significant bit" do
     [ ["\x00",     "B",  ["0"]],
@@ -96,6 +98,7 @@ end
 describe "String#unpack with format 'b'" do
   it_behaves_like :string_unpack_basic, 'b'
   it_behaves_like :string_unpack_no_platform, 'b'
+  it_behaves_like :string_unpack_taint, 'b'
 
   it "decodes one bit from each byte for each format character starting with the least significant bit" do
     [ ["\x00",     "b",  ["0"]],

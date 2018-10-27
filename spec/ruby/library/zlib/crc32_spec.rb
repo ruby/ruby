@@ -24,6 +24,8 @@ describe "Zlib.crc32" do
     Zlib.crc32(test_string, 1).should == 1809313411
     Zlib.crc32(test_string, 2**8).should == 1722745982
     Zlib.crc32(test_string, 2**16).should == 1932511220
+    Zlib.crc32("p", ~305419896).should == 4046865307
+    Zlib.crc32("p", -305419897).should == 4046865307
     lambda { Zlib.crc32(test_string, 2**128) }.should raise_error(RangeError)
   end
 

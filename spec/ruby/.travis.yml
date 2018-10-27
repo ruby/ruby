@@ -6,15 +6,15 @@ script:
   - ../mspec/bin/mspec $MSPEC_OPTS
 matrix:
   include:
-    - rvm: 2.5.1
+    - rvm: 2.5.3
       env: MSPEC_OPTS="-R2 -ff"
-    - rvm: 2.3.7
-    - rvm: 2.4.4
-    - rvm: 2.5.1
+    - rvm: 2.3.8
+    - rvm: 2.4.5
+    - rvm: 2.5.3
       env: CHECK_LEAKS=true
     - rvm: ruby-head
     - env: RUBOCOP=true
-      rvm: 2.4.4
+      rvm: 2.4.5
       script:
         - gem install rubocop -v 0.54.0
         - rubocop

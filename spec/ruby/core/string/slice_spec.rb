@@ -75,9 +75,9 @@ describe "String#slice! with index" do
   with_feature :encoding do
 
     it "returns the character given by the character index" do
-      "hellö there".send(@method, 1).should == "e"
-      "hellö there".send(@method, 4).should == "ö"
-      "hellö there".send(@method, 6).should == "t"
+      "hellö there".slice!(1).should == "e"
+      "hellö there".slice!(4).should == "ö"
+      "hellö there".slice!(6).should == "t"
     end
 
   end
@@ -151,15 +151,15 @@ describe "String#slice! with index, length" do
   with_feature :encoding do
 
     it "returns the substring given by the character offsets" do
-      "hellö there".send(@method, 1,0).should == ""
-      "hellö there".send(@method, 1,3).should == "ell"
-      "hellö there".send(@method, 1,6).should == "ellö t"
-      "hellö there".send(@method, 1,9).should == "ellö ther"
+      "hellö there".slice!(1,0).should == ""
+      "hellö there".slice!(1,3).should == "ell"
+      "hellö there".slice!(1,6).should == "ellö t"
+      "hellö there".slice!(1,9).should == "ellö ther"
     end
 
     it "treats invalid bytes as single bytes" do
       xE6xCB = [0xE6,0xCB].pack('CC').force_encoding('utf-8')
-      "a#{xE6xCB}b".send(@method, 1, 2).should == xE6xCB
+      "a#{xE6xCB}b".slice!(1, 2).should == xE6xCB
     end
   end
 end
@@ -239,13 +239,13 @@ describe "String#slice! Range" do
   with_feature :encoding do
 
     it "returns the substring given by the character offsets of the range" do
-      "hellö there".send(@method, 1..1).should == "e"
-      "hellö there".send(@method, 1..3).should == "ell"
-      "hellö there".send(@method, 1...3).should == "el"
-      "hellö there".send(@method, -4..-2).should == "her"
-      "hellö there".send(@method, -4...-2).should == "he"
-      "hellö there".send(@method, 5..-1).should == " there"
-      "hellö there".send(@method, 5...-1).should == " ther"
+      "hellö there".slice!(1..1).should == "e"
+      "hellö there".slice!(1..3).should == "ell"
+      "hellö there".slice!(1...3).should == "el"
+      "hellö there".slice!(-4..-2).should == "her"
+      "hellö there".slice!(-4...-2).should == "he"
+      "hellö there".slice!(5..-1).should == " there"
+      "hellö there".slice!(5...-1).should == " ther"
     end
 
   end
@@ -307,8 +307,8 @@ describe "String#slice! with Regexp" do
 
   with_feature :encoding do
     it "returns the matching portion of self with a multi byte character" do
-      "hëllo there".send(@method, /[ë](.)\1/).should == "ëll"
-      "".send(@method, //).should == ""
+      "hëllo there".slice!(/[ë](.)\1/).should == "ëll"
+      "".slice!(//).should == ""
     end
   end
 
@@ -391,13 +391,13 @@ describe "String#slice! with Regexp, index" do
 
   with_feature :encoding do
     it "returns the encoding aware capture for the given index" do
-      "hår".send(@method, /(.)(.)(.)/, 0).should == "hår"
-      "hår".send(@method, /(.)(.)(.)/, 1).should == "h"
-      "hår".send(@method, /(.)(.)(.)/, 2).should == "å"
-      "hår".send(@method, /(.)(.)(.)/, 3).should == "r"
-      "hår".send(@method, /(.)(.)(.)/, -1).should == "r"
-      "hår".send(@method, /(.)(.)(.)/, -2).should == "å"
-      "hår".send(@method, /(.)(.)(.)/, -3).should == "h"
+      "hår".slice!(/(.)(.)(.)/, 0).should == "hår"
+      "hår".slice!(/(.)(.)(.)/, 1).should == "h"
+      "hår".slice!(/(.)(.)(.)/, 2).should == "å"
+      "hår".slice!(/(.)(.)(.)/, 3).should == "r"
+      "hår".slice!(/(.)(.)(.)/, -1).should == "r"
+      "hår".slice!(/(.)(.)(.)/, -2).should == "å"
+      "hår".slice!(/(.)(.)(.)/, -3).should == "h"
     end
   end
 
