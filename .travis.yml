@@ -160,7 +160,7 @@ matrix:
           LDFLAGS=-Wno-unused-command-line-argument)
     - os: linux
       language: ruby
-      rvm: 2.3
+      rvm: 2.3.8
       name: Running ruby/spec on 2.3 to ensure version guards are correctly added
       addons:
         apt:
