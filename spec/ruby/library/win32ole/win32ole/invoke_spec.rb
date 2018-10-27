@@ -1,19 +1,19 @@
-require_relative '../fixtures/classes'
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
+  guard -> { WIN32OLESpecs::MSXML_AVAILABLE } do
 
-  describe "WIN32OLE#invoke" do
-    before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
-    end
+    describe "WIN32OLE#invoke" do
+      before :all do
+        @xml_dom = WIN32OLESpecs.new_ole('MSXML.DOMDocument')
+      end
 
-    after :each do
-      @ie.Quit
-    end
+      after :all do
+        @xml_dom = nil
+      end
 
-    it "get name by invoking 'Name' OLE method" do
-      @ie.invoke('Name').should =~ /explorer/i
+      it "get name by invoking 'validateOnParse' OLE method" do
+        @xml_dom.invoke('validateOnParse').should be_true
+      end
     end
   end
 end

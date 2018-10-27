@@ -1,27 +1,27 @@
-require_relative '../fixtures/classes'
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
+  guard -> { WIN32OLESpecs::MSXML_AVAILABLE } do
 
-  describe "WIN32OLE#ole_put_methods" do
-    before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
-    end
+    describe "WIN32OLE#ole_put_methods" do
+      before :all do
+        @xml_dom = WIN32OLESpecs.new_ole('MSXML.DOMDocument')
+      end
 
-    after :each do
-      @ie.Quit
-    end
+      after :all do
+        @xml_dom = nil
+      end
 
-    it "raises ArgumentError if argument is given" do
-      lambda { @ie.ole_put_methods(1) }.should raise_error ArgumentError
-    end
+      it "raises ArgumentError if argument is given" do
+        lambda { @xml_dom.ole_put_methods(1) }.should raise_error ArgumentError
+      end
 
-    it "returns an array of WIN32OLE_METHODs" do
-      @ie.ole_put_methods.all? { |m| m.kind_of? WIN32OLE_METHOD }.should be_true
-    end
+      it "returns an array of WIN32OLE_METHODs" do
+        @xml_dom.ole_put_methods.all? { |m| m.kind_of? WIN32OLE_METHOD }.should be_true
+      end
 
-    it "contains a 'Height' method for Internet Explorer" do
-      @ie.ole_put_methods.map { |m| m.name }.include?('Height').should be_true
+      it "contains a 'preserveWhiteSpace' method" do
+        @xml_dom.ole_put_methods.map { |m| m.name }.include?('preserveWhiteSpace').should be_true
+      end
     end
   end
 end

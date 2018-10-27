@@ -1,19 +1,19 @@
-require_relative '../fixtures/classes'
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
+  guard -> { WIN32OLESpecs::MSXML_AVAILABLE } do
 
-  describe "WIN32OLE#_getproperty" do
-    before :each do
-      @ie = WIN32OLESpecs.new_ole('InternetExplorer.Application')
-    end
+    describe "WIN32OLE#_getproperty" do
+      before :all do
+        @xml_dom = WIN32OLESpecs.new_ole('MSXML.DOMDocument')
+      end
 
-    after :each do
-      @ie.Quit
-    end
+      after :all do
+        @xml_dom = nil
+      end
 
-    it "gets name" do
-      @ie._getproperty(0, [], []).should =~ /explorer/i
+      it "gets validateOnParse" do
+        @xml_dom._getproperty(65, [], []).should be_true
+      end
     end
   end
 end
