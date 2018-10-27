@@ -34,7 +34,7 @@ sufficient information, see the ChangeLog file or Redmine
 * "shadowing outer local variable" warning was removed.  [Feature #12490]
   You can now write the following without warning.
 
-    user = User.all.find {|user| cond(user) }
+    user = users.find {|user| cond(user) }
 
 === Core classes updates (outstanding ones only)
 
