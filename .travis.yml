@@ -201,7 +201,7 @@ script:
   - "$SETARCH make -s test TESTOPTS=--color=never"
   - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- -q --color=never --job-status=normal}\""
   - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
-  - "$SETARCH make -s $JOBS test-spec MSPECOPT=-j"
+  - "$SETARCH make -s $JOBS test-spec MSPECOPT=-fs" # not using `-j` because sometimes `mspec -j` silently dies
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
