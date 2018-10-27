@@ -3,6 +3,10 @@ describe :thread_exit, shared: true do
     ScratchPad.clear
   end
 
+  # This spec randomly kills mspec worker like: https://ci.appveyor.com/project/ruby/ruby/builds/19390874/job/wv1bsm8skd4e1pxl
+  # TODO: Investigate the cause or at least print helpful logs, and remove this `platform_is_not` guard.
+  platform_is_not :mingw do
+
   it "kills sleeping thread" do
     sleeping_thread = Thread.new do
       sleep
@@ -173,4 +177,6 @@ describe :thread_exit, shared: true do
       t.join.should == t
     end
   end
+
+  end # platform_is_not :mingw
 end
