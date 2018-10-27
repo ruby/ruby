@@ -52,11 +52,13 @@ for:
     only:
       - build: vs
   install:
+    - ren C:\Windows\System32\libssl-1_1-x64.dll    libssl-1_1-x64.dll_
+    - ren C:\Windows\System32\libcrypto-1_1-x64.dll libcrypto-1_1-x64.dll_
     - ver
     - chcp
     - SET BITS=%Platform:x86=32%
     - SET BITS=%BITS:x=%
-    - SET OPENSSL_DIR=c:\OpenSSL-Win%BITS%
+    - SET OPENSSL_DIR=c:\OpenSSL-v11-Win%BITS%
     - CALL SET vcvars=%%^VS%VS%COMNTOOLS^%%..\..\VC\vcvarsall.bat
     - SET vcvars
     - '"%vcvars%" %Platform:x64=amd64%'
@@ -90,6 +92,8 @@ for:
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
   test_script:
+    # make sure mingw dll's are not in path, but allow *nix exe's in C:\msys64\usr\bin
+    - SET PATH=\usr\local\bin;%ruby_path%\bin;%PATH%;C:\msys64\usr\bin
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
@@ -97,11 +101,16 @@ for:
     # separately execute tests that may crash worker without -j.
     - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+  on_finish:
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - \usr\bin\ruby.exe -ropenssl -e "puts '', 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
 -
   matrix:
     only:
       - build: msys2
   install:
+    - ren C:\Windows\System32\libssl-1_1-x64.dll    libssl-1_1-x64.dll_
+    - ren C:\Windows\System32\libcrypto-1_1-x64.dll libcrypto-1_1-x64.dll_
     - ver
     - chcp
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
@@ -122,7 +131,9 @@ for:
     # always update database
     - pacman -Sy
     - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-toolchain
-    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
+    # 2018-10 below needed until next Appveyor MSYS2 update 
+    - pacman -Rdd --noconfirm --noprogressbar mingw-w64-x86_64-openssl
+    - pacman -S --noconfirm --needed --noprogressbar mingw-w64-x86_64-gdbm mingw-w64-x86_64-gmp mingw-w64-x86_64-libffi mingw-w64-x86_64-ncurses mingw-w64-x86_64-openssl mingw-w64-x86_64-readline mingw-w64-x86_64-zlib
     - cd %APPVEYOR_BUILD_FOLDER%
     - set CFLAGS=-march=%MSYS2_ARCH:_=-% -mtune=generic -O3 -pipe
     - set CXXFLAGS=%CFLAGS%
@@ -140,3 +151,6 @@ for:
     # separately execute tests that may crash worker without -j.
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" TESTS="../ruby/test/win32ole"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
+  on_finish:
+    - cd %APPVEYOR_BUILD_FOLDER%
+    - ..\install\bin\ruby.exe -ropenssl -e "puts '', 'Build    ' + OpenSSL::OPENSSL_VERSION, 'Runtime  ' + OpenSSL::OPENSSL_LIBRARY_VERSION"
