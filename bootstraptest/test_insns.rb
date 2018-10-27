@@ -112,6 +112,7 @@ tests = [
 
   [ 'newhash',  %q{ x = {}; x[x] = true }, ],
   [ 'newhash',  %q{ x = true; { x => x }[x] }, ],
+  [ 'newhashfromarray', %q{ { a: true }[:a] }, ],
   [ 'newrange', %q{ x = 1; [*(0..x)][0] == 0 }, ],
   [ 'newrange', %q{ x = 1; [*(0...x)][0] == 0 }, ],
 
