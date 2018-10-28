@@ -217,6 +217,7 @@ class RDoc::Parser::C < RDoc::Parser
   def deduplicate_call_seq
     @methods.each do |var_name, functions|
       class_name = @known_classes[var_name]
+      next unless class_name
       class_obj  = find_class var_name, class_name
 
       functions.each_value do |method_names|
