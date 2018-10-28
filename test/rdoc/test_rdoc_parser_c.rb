@@ -1630,6 +1630,19 @@ Init_IO(void) {
     assert read_method.singleton
   end
 
+  def test_define_method_dynamically
+    content = <<-EOF
+void
+Init_foo(void)
+{
+    rb_define_singleton_method(obj, "foo", foo, -1);
+}
+    EOF
+
+    klass = util_get_class content, 'obj'
+    assert_nil klass
+  end
+
   def test_define_method_with_prototype
     content = <<-EOF
 static VALUE rb_io_s_read(int, VALUE*, VALUE);
