@@ -9422,7 +9422,7 @@ ibf_dump_object_hash(struct ibf_dump *dump, VALUE obj)
 {
     long len = RHASH_SIZE(obj);
     (void)IBF_W(&len, long, 1);
-    if (len > 0) st_foreach(RHASH(obj)->ntbl, ibf_dump_object_hash_i, (st_data_t)dump);
+    if (len > 0) rb_hash_foreach(obj, ibf_dump_object_hash_i, (st_data_t)dump);
 }
 
 static VALUE
