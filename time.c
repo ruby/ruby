@@ -3897,20 +3897,26 @@ time_to_s(VALUE time)
 }
 
 static VALUE
-time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
+time_add0(VALUE klass, const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
 {
     VALUE result;
     struct time_object *result_tobj;
 
     offset = num_exact(offset);
     if (sign < 0)
-        result = time_new_timew(rb_cTime, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
+        result = time_new_timew(klass, wsub(tobj->timew, rb_time_magnify(v2w(offset))));
     else
-        result = time_new_timew(rb_cTime, wadd(tobj->timew, rb_time_magnify(v2w(offset))));
+        result = time_new_timew(klass, wadd(tobj->timew, rb_time_magnify(v2w(offset))));
     GetTimeval(result, result_tobj);
     TZMODE_COPY(result_tobj, tobj);
 
     return result;
+}
+
+static VALUE
+time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
+{
+    return time_add0(rb_cTime, tobj, torig, offset, sign);
 }
 
 /*
@@ -5153,6 +5159,18 @@ tm_to_s(VALUE tm)
                       "UTC",
                       p[5], p[4], p[3], p[2], p[1], p[0]);
 }
+#else
+static VALUE
+tm_plus(VALUE tm, VALUE offset)
+{
+    return time_add0(rb_obj_class(tm), get_timeval(tm), tm, offset, +1);
+}
+
+static VALUE
+tm_minus(VALUE tm, VALUE offset)
+{
+    return time_add0(rb_obj_class(tm), get_timeval(tm), tm, offset, -1);
+}
 #endif
 
 VALUE
@@ -5295,7 +5313,7 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  e.g. #year, #month, and so on, and epoch time readers, #to_i.  The
  *  sub-second attributes are fixed as 0, and #utc_offset, #zone,
  *  #isdst, and their aliases are same as a Time object in UTC.
- *  Also #to_time method is defined.
+ *  Also #to_time, #+, and #- methods are defined.
  *
  *  The +name+ method is used for marshaling. If this method is not
  *  defined on a timezone object, Time objects using that timezone
@@ -5368,6 +5386,8 @@ Init_Time(void)
     rb_define_method(rb_cTimeTM, "to_i", time_to_i, 0);
     rb_define_method(rb_cTimeTM, "to_f", time_to_f, 0);
     rb_define_method(rb_cTimeTM, "to_r", time_to_r, 0);
+    rb_define_method(rb_cTimeTM, "+", tm_plus, 1);
+    rb_define_method(rb_cTimeTM, "-", tm_minus, 1);
 #else
     rb_cTimeTM = rb_struct_define_under(rb_cTime, "TM",
                                         "sec", "min", "hour",
