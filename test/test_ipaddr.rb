@@ -116,6 +116,23 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("192.168.2.1", IPAddr.new_ntoh(a.hton).to_s)
   end
 
+  def test_ntop
+    # IPv4
+    assert_equal("192.168.1.1", IPAddr.ntop("\xC0\xA8\x01\x01"))
+    # IPv6
+    assert_equal("0000:0000:0000:0000:0000:0000:0000:0001",
+                 IPAddr.ntop("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"))
+
+    # Invalid parameters
+    assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("192.168.1.1")
+    }
+
+    assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("\xC0\xA8\x01\xFF1")
+    }
+  end
+
   def test_ipv4_compat
     a = IPAddr.new("::192.168.1.2")
     assert_equal("::192.168.1.2", a.to_s)

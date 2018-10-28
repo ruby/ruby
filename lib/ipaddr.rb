@@ -112,13 +112,12 @@ class IPAddr
   def self.ntop(addr)
     case addr.size
     when 4
-      s = addr.unpack('C4').join('.')
+      addr.unpack('C4').join('.')
     when 16
-      s = IN6FORMAT % addr.unpack('n8')
+      IN6FORMAT % addr.unpack('n8')
     else
       raise AddressFamilyError, "unsupported address family"
     end
-    return s
   end
 
   # Returns a new ipaddr built by bitwise AND.
