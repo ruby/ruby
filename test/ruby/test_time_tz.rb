@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require '-test-/time'
-require 'time'
 
 class TestTimeTZ < Test::Unit::TestCase
   has_right_tz = true
@@ -493,18 +492,12 @@ End
       @offset = offset
     end
 
-    def add_offset(t, ofs)
-      Time.utc(*Time.send(:apply_offset, *t.to_a[0, 6].reverse, ofs))
-    rescue => e
-      raise e.class, sprintf("%s: %p %+d", e.message, t, ofs)
-    end
-
     def local_to_utc(t)
-      add_offset(t, +@offset)
+      t - @offset
     end
 
     def utc_to_local(t)
-      add_offset(t, -@offset)
+      t + @offset
     end
 
     def abbr(t)
