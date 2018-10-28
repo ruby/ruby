@@ -5285,18 +5285,25 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  == Timezone argument
  *
- *  A timezone argument must have #local_to_utc, #utc_to_local, #name methods,
- *  and may have #abbr method.
+ *  A timezone argument must have +local_to_utc+ and +utc_to_local+
+ *  methods, and may have +name+ and +abbr+ methods.
  *
- *  The +#local_to_utc+ method should convert a Time-like object from the
- *  timezone to UTC, and +#utc_to_local+ is the opposite.  The Time-like
- *  argument to these methods is similar to a Time object in UTC without
- *  sub-second; it has attribute readers for the parts, and #to_i.  The
- *  sub-second attributes are fixed as 0, and #utc_offset, #zone, #isdst, and
- *  the aliases are same as a Time object in UTC.
+ *  The +local_to_utc+ method should convert a Time-like object from
+ *  the timezone to UTC, and +utc_to_local+ is the opposite.  The
+ *  result also should be a Time or Time-like object (not necessary to
+ *  be the same class).  The #zone of the result is just ignored.
+ *  Time-like argument to these methods is similar to a Time object in
+ *  UTC without sub-second; it has attribute readers for the parts,
+ *  e.g. #year, #month, and so on, and epoch time readers, #to_i.  The
+ *  sub-second attributes are fixed as 0, and #utc_offset, #zone,
+ *  #isdst, and their aliases are same as a Time object in UTC.
+ *  Also #to_time method is defined.
  *
- *  The #name method is used for marshaling, and the #abbr method is used by
- *  '%Z' in #strftime.
+ *  The +name+ method is used for marshaling. If this method is not
+ *  defined on a timezone object, Time objects using that timezone
+ *  object are not able to dump by Marshal.
+ *
+ *  The +abbr+ method is used by '%Z' in #strftime.
  */
 
 void
