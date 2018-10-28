@@ -2298,7 +2298,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 /*
  *  call-seq:
  *     Time.new -> time
- *     Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, utc_offset=nil) -> time
+ *     Time.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> time
  *
  *  Returns a Time object.
  *
@@ -2312,7 +2312,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *
  *  +sec+ may have fraction if it is a rational.
  *
- *  +utc_offset+ is the offset from UTC.
+ *  +tz+ is the offset from UTC, or a timezone object.
  *  It can be a string such as "+09:00" or a number of seconds such as 32400.
  *
  *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
@@ -2337,6 +2337,8 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *     p((t6-t5)/3600.0)                          #=> 1.95
  *     p((t8-t7)/3600.0)                          #=> 13.416666666666666
  *
+ *  Or it can be a timezone object.  See Timezone argument for
+ *  details.
  */
 
 static VALUE
@@ -3769,6 +3771,7 @@ time_fixoff(VALUE time)
  *  call-seq:
  *     time.getlocal -> new_time
  *     time.getlocal(utc_offset) -> new_time
+ *     time.getlocal(timezone) -> new_time
  *
  *  Returns a new Time object representing _time_ in
  *  local time (using the local time zone in effect for this process).
@@ -5219,7 +5222,15 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *    Time.new(2002)         #=> 2002-01-01 00:00:00 -0500
  *    Time.new(2002, 10)     #=> 2002-10-01 00:00:00 -0500
  *    Time.new(2002, 10, 31) #=> 2002-10-31 00:00:00 -0500
+ *
+ *  You can pass a UTC offset:
+ *
  *    Time.new(2002, 10, 31, 2, 2, 2, "+02:00") #=> 2002-10-31 02:02:02 +0200
+ *
+ *  Or a timezone object:
+ *
+ *    tz = timezone("Europe/Athens") # Eastern European Time, UTC+2
+ *    Time.new(2002, 10, 31, 2, 2, 2, tz) #=> 2002-10-31 02:02:02 +0200
  *
  *  You can also use #gm, #local and
  *  #utc to infer GMT, local and UTC timezones instead of using
@@ -5270,6 +5281,21 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *    t1 >  t2 #=> false
  *
  *    Time.new(2010,10,31).between?(t1, t2) #=> true
+ *
+ *  == Timezone argument
+ *
+ *  A timezone argument must have #local_to_utc, #utc_to_local, #name methods,
+ *  and may have #abbr method.
+ *
+ *  The +#local_to_utc+ method should convert a Time-like object from the
+ *  timezone to UTC, and +#utc_to_local+ is the opposite.  The Time-like
+ *  argument to these methods is similar to a Time object in UTC without
+ *  sub-second; it has attribute readers for the parts, and #to_i.  The
+ *  sub-second attributes are fixed as 0, and #utc_offset, #zone, #isdst, and
+ *  the aliases are same as a Time object in UTC.
+ *
+ *  The #name method is used for marshaling, and the #abbr method is used by
+ *  '%Z' in #strftime.
  */
 
 void
