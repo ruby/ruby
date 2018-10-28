@@ -2337,7 +2337,8 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *     p((t6-t5)/3600.0)                          #=> 1.95
  *     p((t8-t7)/3600.0)                          #=> 13.416666666666666
  *
- *  Or it can be a timezone object.  See Timezone argument for
+ *  Or it can be a timezone object.
+ *  See {Timezone argument}[#class-Time-label-Timezone+argument] for
  *  details.
  */
 
