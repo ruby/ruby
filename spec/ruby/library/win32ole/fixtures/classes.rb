@@ -1,7 +1,14 @@
-require 'win32ole'
+begin
+  require 'win32ole'
+rescue LoadError
+end
 
 module WIN32OLESpecs
-  MSXML_AVAILABLE = !!WIN32OLE_TYPELIB.typelibs.find { |t| t.name.start_with?('Microsoft XML') }
+  begin
+    MSXML_AVAILABLE = !!WIN32OLE_TYPELIB.typelibs.find { |t| t.name.start_with?('Microsoft XML') }
+  rescue
+    MSXML_AVAILABLE = false
+  end
 
   def self.new_ole(name)
     tries = 0
