@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'tempfile'
-require 'pty'
 
 class TestBacktrace < Test::Unit::TestCase
   def test_exception
@@ -319,54 +318,6 @@ class TestBacktrace < Test::Unit::TestCase
            "\tfrom -:5:in `bar'",
            "\tfrom -:9:in `<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
-    def foo
-      raise "foo!"
-    end
-    def bar
-      foo
-    rescue
-      raise "bar!"
-    end
-    bar
-    end;
-  end
-
-  def assert_pty(args, test_stdin = "", dummy, expected)
-    actual = nil
-    PTY.spawn(EnvUtil.rubybin, *args) do |r, w, pid|
-      w.puts test_stdin
-      w.puts "__END__"
-      w.close
-      actual = r.read
-    end
-    expected = test_stdin.chomp + "\n__END__\n" + expected.to_s
-    expected.gsub!(/\n/, "\r\n")
-    assert_equal expected, actual
-  end
-
-  def test_tty_backtrace
-    err = "\e[1mTraceback\e[m (most recent call last):\n" +
-           "-:1:in `<main>': \e[1m\e[1;4munhandled exception\e[m\n"
-    assert_pty([], "raise", [], err)
-
-    err = "\e[1mTraceback\e[m (most recent call last):\n" +
-      "\t1: from -:4:in `<main>'\n" +
-      "-:2:in `foo': \e[1mfoo! (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n"
-    assert_pty([], <<-"end;", [], err)
-    def foo
-      raise "foo!"
-    end
-    foo
-    end;
-
-    err = "\e[1mTraceback\e[m (most recent call last):\n" +
-      "\t2: from -:9:in `<main>'\n" +
-      "\t1: from -:5:in `bar'\n" +
-      "-:2:in `foo': \e[1mfoo! (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n" +
-      "\t2: from -:9:in `<main>'\n" +
-      "\t1: from -:4:in `bar'\n" +
-      "-:7:in `rescue in bar': \e[1mbar! (\e[1;4mRuntimeError\e[m\e[1m)\e[m\n"
-    assert_pty([], <<-"end;", [], err)
     def foo
       raise "foo!"
     end
