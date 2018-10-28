@@ -1,7 +1,5 @@
-require_relative '../fixtures/classes'
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLE.codepage=" do
     it "sets codepage" do
