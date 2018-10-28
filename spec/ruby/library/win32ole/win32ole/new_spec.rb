@@ -1,7 +1,5 @@
-require_relative '../fixtures/classes'
-
 platform_is :windows do
-  require 'win32ole'
+  require_relative '../fixtures/classes'
 
   describe "WIN32OLESpecs.new_ole" do
     it "creates a WIN32OLE object from OLE server name" do
