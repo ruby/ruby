@@ -5065,7 +5065,7 @@ tm_from_time(VALUE klass, VALUE time)
 /*
  * call-seq:
  *
- *   Time::TM.new(year, month, day, hour, min, sec) -> tm
+ *   Time::TM.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> tm
  *
  * Creates new Time::TM object.
  */
@@ -5073,32 +5073,30 @@ tm_from_time(VALUE klass, VALUE time)
 static VALUE
 tm_initialize(int argc, VALUE *argv, VALUE tm)
 {
-#if TM_IS_TIME
-    struct time_object *tobj = DATA_PTR(tm);
-    struct vtm vtm;
-
-    rb_check_arity(argc, 1, 6);
-    time_arg(argc, argv, &vtm);
-    tobj->tzmode = TIME_TZMODE_UTC;
-    tobj->timew = timegmw(&vtm);
-    tobj->vtm = vtm;
-    return tm;
-#else
-    int i = 0;
     struct vtm vtm;
     wideval_t t;
 
+    if (rb_check_arity(argc, 1, 7) > 6) argc = 6;
     time_arg(argc, argv, &vtm);
     t = timegmw(&vtm);
-    RSTRUCT_SET(tm, i++, INT2FIX(vtm.sec));
-    RSTRUCT_SET(tm, i++, INT2FIX(vtm.min));
-    RSTRUCT_SET(tm, i++, INT2FIX(vtm.hour));
-    RSTRUCT_SET(tm, i++, INT2FIX(vtm.mday));
-    RSTRUCT_SET(tm, i++, INT2FIX(vtm.mon));
-    RSTRUCT_SET(tm, i++, vtm.year);
-    RSTRUCT_SET(tm, i++, w2v(rb_time_unmagnify(t)));
-    return tm;
+    {
+#if TM_IS_TIME
+        struct time_object *tobj = DATA_PTR(tm);
+        tobj->tzmode = TIME_TZMODE_UTC;
+        tobj->timew = t;
+        tobj->vtm = vtm;
+#else
+        int i = 0;
+        RSTRUCT_SET(tm, i++, INT2FIX(vtm.sec));
+        RSTRUCT_SET(tm, i++, INT2FIX(vtm.min));
+        RSTRUCT_SET(tm, i++, INT2FIX(vtm.hour));
+        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mday));
+        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mon));
+        RSTRUCT_SET(tm, i++, vtm.year);
+        RSTRUCT_SET(tm, i++, w2v(rb_time_unmagnify(t)));
 #endif
+    }
+    return tm;
 }
 
 /* call-seq:
