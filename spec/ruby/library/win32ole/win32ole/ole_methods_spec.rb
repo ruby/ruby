@@ -14,7 +14,7 @@ platform_is :windows do
       @dict.ole_methods.all? { |m| m.kind_of? WIN32OLE_METHOD }.should be_true
     end
 
-    it "contains a 'AddRef' method for Internet Explorer" do
+    it "contains a 'AddRef' method for Scripting Dictionary" do
       @dict.ole_methods.map { |m| m.name }.include?('AddRef').should be_true
     end
   end
