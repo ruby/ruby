@@ -1782,7 +1782,7 @@ rb_keyword_error_new(const char *error, VALUE keys)
     if (len > 0) {
 	rb_str_cat_cstr(error_message, ": ");
 	while (1) {
-	    const VALUE k = RARRAY_AREF(keys, i);
+            const VALUE k = RARRAY_AREF(keys, i);
 	    Check_Type(k, T_SYMBOL); /* wrong hash is given to rb_get_kwargs */
 	    rb_str_append(error_message, rb_sym2str(k));
 	    if (++i >= len) break;
