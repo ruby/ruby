@@ -49,16 +49,19 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates a link to the reference +name+ if the name exists.  If +text+ is
   # given it is used as the link text, otherwise +name+ is used.
 
-  def cross_reference name, text = nil
+  def cross_reference name, text = nil, code = true
     lookup = name
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
 
-    name = "#{CGI.unescape $'} at #{$1}" if name =~ /(.*[^#:])@/
+    if name =~ /(.*[^#:])@/
+      text ||= "#{CGI.unescape $'} at <code>#{$1}</code>"
+      code = false
+    else
+      text ||= name
+    end
 
-    text = name unless text
-
-    link lookup, text
+    link lookup, text, code
   end
 
   ##
@@ -119,13 +122,14 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   def gen_url url, text
     return super unless url =~ /\Ardoc-ref:/
 
-    cross_reference $', text
+    name = $'
+    cross_reference name, text, name == text
   end
 
   ##
   # Creates an HTML link to +name+ with the given +text+.
 
-  def link name, text
+  def link name, text, code = true
     if name =~ /(.*[^#:])@/ then
       name = $1
       label = $'
@@ -138,6 +142,10 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
       ref
     else
       path = ref.as_href @from_path
+
+      if code and RDoc::CodeObject === ref and !(RDoc::TopLevel === ref)
+        text = "<code>#{text}</code>"
+      end
 
       if path =~ /#/ then
         path << "-label-#{label}"
