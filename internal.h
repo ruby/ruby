@@ -1671,6 +1671,7 @@ VALUE rb_block_to_s(VALUE self, const struct rb_block *block, const char *additi
 /* process.c */
 #define RB_MAX_GROUPS (65536)
 
+struct waitpid_state;
 struct rb_execarg {
     union {
         struct {
@@ -1700,7 +1701,7 @@ struct rb_execarg {
     unsigned uid_given : 1;
     unsigned gid_given : 1;
     unsigned exception : 1;
-    unsigned nocldwait_prev : 1;
+    struct waitpid_state *waitpid_state; /* for async process management */
     rb_pid_t pgroup_pgid; /* asis(-1), new pgroup(0), specified pgroup (0<V). */
     VALUE rlimit_limits; /* Qfalse or [[rtype, softlim, hardlim], ...] */
     mode_t umask_mask;
