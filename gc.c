@@ -2797,13 +2797,13 @@ define_final0(VALUE obj, VALUE block)
 
 	/* avoid duplicate block, table is usually small */
 	{
-	    const VALUE *ptr = RARRAY_CONST_PTR(table);
 	    long len = RARRAY_LEN(table);
 	    long i;
 
-	    for (i = 0; i < len; i++, ptr++) {
-		if (rb_funcall(*ptr, idEq, 1, block)) {
-		    return *ptr;
+	    for (i = 0; i < len; i++) {
+                VALUE recv = RARRAY_AREF(table, i);
+		if (rb_funcall(recv, idEq, 1, block)) {
+		    return recv;
 		}
 	    }
 	}
