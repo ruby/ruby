@@ -58,7 +58,9 @@ class RubyVM::BareInstructions
   end
 
   def attributes
-    return @attrs.values
+    return @attrs           \
+      . sort_by {|k, _| k } \
+      . map     {|_, v| v }
   end
 
   def width
