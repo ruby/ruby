@@ -138,7 +138,6 @@ static inline int
 struct_member_pos(VALUE s, VALUE name)
 {
     VALUE back = struct_ivar_get(rb_obj_class(s), id_back_members);
-    VALUE const * p;
     long j, mask;
 
     if (UNLIKELY(NIL_P(back))) {
@@ -148,7 +147,6 @@ struct_member_pos(VALUE s, VALUE name)
 	rb_raise(rb_eTypeError, "corrupted struct");
     }
 
-    p = RARRAY_CONST_PTR(back);
     mask = RARRAY_LEN(back);
 
     if (mask <= AREF_HASH_THRESHOLD) {
@@ -158,7 +156,7 @@ struct_member_pos(VALUE s, VALUE name)
 		     mask, RSTRUCT_LEN(s));
 	}
 	for (j = 0; j < mask; j++) {
-	    if (p[j] == name)
+	    if (RARRAY_AREF(back, j) == name)
 		return (int)j;
 	}
 	return -1;
@@ -173,9 +171,10 @@ struct_member_pos(VALUE s, VALUE name)
     j = struct_member_pos_ideal(name, mask);
 
     for (;;) {
-	if (p[j] == name)
-	    return FIX2INT(p[j + 1]);
-	if (!RTEST(p[j])) {
+        VALUE e = RARRAY_AREF(back, j);
+	if (e == name)
+	    return FIX2INT(RARRAY_AREF(back, j + 1));
+        if (!RTEST(e)) {
 	    return -1;
 	}
 	j = struct_member_pos_probe(j, mask);

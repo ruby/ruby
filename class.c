@@ -1776,14 +1776,13 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 MJIT_FUNC_EXPORTED VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
-    const VALUE *ptr = RARRAY_CONST_PTR(keys);
     long i = 0, len = RARRAY_LEN(keys);
     VALUE error_message = rb_sprintf("%s keyword%.*s", error, len > 1, "s");
 
     if (len > 0) {
 	rb_str_cat_cstr(error_message, ": ");
 	while (1) {
-	    const VALUE k = ptr[i];
+	    const VALUE k = RARRAY_AREF(keys, i);
 	    Check_Type(k, T_SYMBOL); /* wrong hash is given to rb_get_kwargs */
 	    rb_str_append(error_message, rb_sym2str(k));
 	    if (++i >= len) break;

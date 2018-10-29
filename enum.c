@@ -744,7 +744,8 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
         }
     }
     for (; i < RARRAY_LEN(ary); i++) {
-        v = rb_funcallv_public(v, id, 1, &RARRAY_CONST_PTR(ary)[i]);
+        VALUE arg = RARRAY_AREF(ary, i);
+        v = rb_funcallv_public(v, id, 1, &arg);
     }
     return v;
 }
