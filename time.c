@@ -5249,9 +5249,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *    tz = timezone("Europe/Athens") # Eastern European Time, UTC+2
  *    Time.new(2002, 10, 31, 2, 2, 2, tz) #=> 2002-10-31 02:02:02 +0200
  *
- *  You can also use #gm, #local and
- *  #utc to infer GMT, local and UTC timezones instead of using
- *  the current system setting.
+ *  You can also use Time::gm, Time::local and Time::utc to infer GMT,
+ *  local and UTC timezones instead of using the current system
+ *  setting.
  *
  *  You can also create a new time using Time::at which takes the number of
  *  seconds (or fraction of seconds) since the {Unix
