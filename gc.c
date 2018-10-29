@@ -2800,10 +2800,10 @@ define_final0(VALUE obj, VALUE block)
 	    long len = RARRAY_LEN(table);
 	    long i;
 
-	    for (i = 0; i < len; i++) {
+            for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
-		if (rb_funcall(recv, idEq, 1, block)) {
-		    return recv;
+                if (rb_funcall(recv, idEq, 1, block)) {
+                    return recv;
 		}
 	    }
 	}

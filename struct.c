@@ -156,7 +156,7 @@ struct_member_pos(VALUE s, VALUE name)
 		     mask, RSTRUCT_LEN(s));
 	}
 	for (j = 0; j < mask; j++) {
-	    if (RARRAY_AREF(back, j) == name)
+            if (RARRAY_AREF(back, j) == name)
 		return (int)j;
 	}
 	return -1;
@@ -172,8 +172,8 @@ struct_member_pos(VALUE s, VALUE name)
 
     for (;;) {
         VALUE e = RARRAY_AREF(back, j);
-	if (e == name)
-	    return FIX2INT(RARRAY_AREF(back, j + 1));
+        if (e == name)
+            return FIX2INT(RARRAY_AREF(back, j + 1));
         if (!RTEST(e)) {
 	    return -1;
 	}
