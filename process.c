@@ -3873,7 +3873,7 @@ static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
         char *errmsg, size_t errmsg_buflen,
-	struct waitpid_state *w)
+        struct waitpid_state *w)
 {
     rb_pid_t pid;
     volatile int try_gc = 1;
