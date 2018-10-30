@@ -7761,18 +7761,18 @@ iseq_build_from_ary_exception(rb_iseq_t *iseq, struct st_table *labels_table,
 	if (RARRAY_LEN(v) != 6) {
 	    rb_raise(rb_eSyntaxError, "wrong exception entry");
 	}
-	type = get_exception_sym2type(RARRAY_AREF(v, 0));
+        type = get_exception_sym2type(RARRAY_AREF(v, 0));
         if (RARRAY_AREF(v, 1) == Qnil) {
 	    eiseq = NULL;
 	}
 	else {
-	    eiseq = rb_iseqw_to_iseq(rb_iseq_load(RARRAY_AREF(v, 1), (VALUE)iseq, Qnil));
+            eiseq = rb_iseqw_to_iseq(rb_iseq_load(RARRAY_AREF(v, 1), (VALUE)iseq, Qnil));
         }
 
-	lstart = register_label(iseq, labels_table, RARRAY_AREF(v, 2));
-	lend   = register_label(iseq, labels_table, RARRAY_AREF(v, 3));
-	lcont  = register_label(iseq, labels_table, RARRAY_AREF(v, 4));
-	sp     = NUM2UINT(RARRAY_AREF(v, 5));
+        lstart = register_label(iseq, labels_table, RARRAY_AREF(v, 2));
+        lend   = register_label(iseq, labels_table, RARRAY_AREF(v, 3));
+        lcont  = register_label(iseq, labels_table, RARRAY_AREF(v, 4));
+        sp     = NUM2UINT(RARRAY_AREF(v, 5));
 
 	/* TODO: Dirty Hack!  Fix me */
 	if (type == CATCH_TYPE_RESCUE ||
@@ -7896,7 +7896,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
     }
 
     for (i=0; i<len; i++) {
-	VALUE obj = RARRAY_AREF(body, i);
+        VALUE obj = RARRAY_AREF(body, i);
 
 	if (SYMBOL_P(obj)) {
 	    rb_event_flag_t event;
