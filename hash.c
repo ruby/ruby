@@ -347,15 +347,12 @@ empty_entry(li_table_entry *entry)
     return entry->hash == 0;
 }
 
-#define RHASH_ARRAY_SIZE_RAW(h) \
-  ((long)((RBASIC(h)->flags & RHASH_ARRAY_SIZE_MASK) >> RHASH_ARRAY_SIZE_SHIFT))
-
 #define RHASH_ARRAY_SIZE(h) (HASH_ASSERT(RHASH_ARRAY_P(h)), \
                              RHASH_ARRAY_SIZE_RAW(h))
 
 #define RHASH_ARRAY_BOUND_RAW(h) \
-  ((long)((RBASIC(h)->flags >> RHASH_ARRAY_BOUND_SHIFT) & \
-          (RHASH_ARRAY_BOUND_MASK >> RHASH_ARRAY_BOUND_SHIFT)))
+  ((int)((RBASIC(h)->flags >> RHASH_ARRAY_BOUND_SHIFT) & \
+         (RHASH_ARRAY_BOUND_MASK >> RHASH_ARRAY_BOUND_SHIFT)))
 
 #define RHASH_ARRAY_BOUND(h) (HASH_ASSERT(RHASH_ARRAY_P(h)), \
                               RHASH_ARRAY_BOUND_RAW(h))
@@ -949,11 +946,11 @@ linear_shift(VALUE hash, st_data_t *key, st_data_t *value)
     return 0;
 }
 
-static int
+static long
 linear_keys(VALUE hash, st_data_t *keys, st_index_t size)
 {
     uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
-    st_data_t *keys_start = keys, *keys_end = keys_end;
+    st_data_t *keys_start = keys, *keys_end = keys + size;
 
     for (i = 0; i < bound; i++) {
         if (keys == keys_end) {
@@ -969,7 +966,7 @@ linear_keys(VALUE hash, st_data_t *keys, st_index_t size)
     return keys - keys_start;
 }
 
-static int
+static long
 linear_values(VALUE hash, st_data_t *values, st_index_t size)
 {
     uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
