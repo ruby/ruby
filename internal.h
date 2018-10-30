@@ -1073,26 +1073,6 @@ VALUE rb_gvar_set(struct rb_global_entry *, VALUE);
 VALUE rb_gvar_defined(struct rb_global_entry *);
 
 /* array.c */
-
-#ifndef ARRAY_DEBUG
-#define ARRAY_DEBUG 0
-#endif
-
-#ifdef ARRAY_DEBUG
-#define RARRAY_PTR_IN_USE_FLAG FL_USER14
-#define ARY_PTR_USING_P(ary) FL_TEST_RAW((ary), RARRAY_PTR_IN_USE_FLAG)
-
-#else
-
-/* disable debug function */
-#undef  RARRAY_PTR_USE_START
-#undef  RARRAY_PTR_USE_END
-#define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR_TRANSIENT(a))
-#define RARRAY_PTR_USE_END(a)
-#define ARY_PTR_USING_P(ary) 0
-
-#endif
-
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
@@ -1120,7 +1100,7 @@ static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
     long len = RARRAY_LEN(ary);
-    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
     if (len == 0) return Qnil;
     if (offset < 0) {
         offset += len;
@@ -1356,9 +1336,6 @@ RUBY_SYMBOL_EXPORT_END
 			rb_wb_protected_newobj_of(klass, (flags) & ~FL_WB_PROTECTED) : \
 			rb_wb_unprotected_newobj_of(klass, flags))
 #define NEWOBJ_OF(obj,type,klass,flags) RB_NEWOBJ_OF(obj,type,klass,flags)
-
-void *rb_aligned_malloc(size_t, size_t);
-void rb_aligned_free(void *);
 
 /* hash.c */
 struct st_table *rb_hash_tbl_raw(VALUE hash);
@@ -1922,9 +1899,6 @@ extern rb_encoding OnigEncodingUTF_8;
 #endif
 
 /* variable.c */
-#define ROBJECT_TRANSIENT_FLAG FL_USER13
-#define ROBJ_TRANSIENT_P(obj) FL_TEST_RAW((obj), ROBJECT_TRANSIENT_FLAG)
-
 void rb_gc_mark_global_tbl(void);
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);

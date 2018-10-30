@@ -764,7 +764,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 	return ret;
     }
     argv = ALLOCA_N(VALUE, argc);
-    MEMCPY(argv, RARRAY_CONST_PTR_TRANSIENT(args), VALUE, argc);
+    MEMCPY(argv, RARRAY_CONST_PTR(args), VALUE, argc);
     return rb_call(recv, mid, argc, argv, CALL_FCALL);
 }
 
