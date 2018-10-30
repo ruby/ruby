@@ -135,6 +135,7 @@ free_list(struct rb_mjit_unit_list *list)
         free_unit(node->unit);
         xfree(node);
     }
+    list->length = 0;
 }
 
 /* MJIT info related to an existing continutaion.  */
