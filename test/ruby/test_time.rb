@@ -1138,6 +1138,7 @@ class TestTime < Test::Unit::TestCase
     case size
     when 20 then expect = 50
     when 40 then expect = 86
+    when 48 then expect = 94
     else
       flunk "Unsupported RVALUE_SIZE=#{size}, update test_memsize"
     end

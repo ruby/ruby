@@ -3492,11 +3492,11 @@ rb_thread_variable_p(VALUE thread, VALUE key)
 
     locals = rb_ivar_get(thread, id_locals);
 
-    if (!RHASH(locals)->ntbl)
+    if (rb_hash_lookup(locals, ID2SYM(id)) != Qnil) {
+        return Qtrue;
+    }
+    else {
         return Qfalse;
-
-    if (st_lookup(RHASH(locals)->ntbl, ID2SYM(id), 0)) {
-	return Qtrue;
     }
 
     return Qfalse;
@@ -4349,7 +4349,7 @@ rb_clear_coverages(void)
 {
     VALUE coverages = rb_get_coverages();
     if (RTEST(coverages)) {
-	st_foreach(rb_hash_tbl_raw(coverages), clear_coverage_i, 0);
+        rb_hash_foreach(coverages, clear_coverage_i, 0);
     }
 }
 

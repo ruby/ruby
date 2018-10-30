@@ -672,23 +672,90 @@ struct RComplex {
 #define RCOMPLEX_SET_REAL(cmp, r) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->real,(r))
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
+enum ruby_rhash_flags {
+    RHASH_ST_TABLE_FLAG = FL_USER3,
+    RHASH_ARRAY_MAX_SIZE = 8,
+    RHASH_ARRAY_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),
+    RHASH_ARRAY_SIZE_SHIFT = (FL_USHIFT+4),
+    RHASH_ARRAY_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11),
+    RHASH_ARRAY_BOUND_SHIFT = (FL_USHIFT+8),
+
+    RHASH_ENUM_END
+};
+
+#define HASH_PROC_DEFAULT FL_USER2
+
+#define RHASH_ARRAY_SIZE_RAW(h) \
+  ((long)((RBASIC(h)->flags & RHASH_ARRAY_SIZE_MASK) >> RHASH_ARRAY_SIZE_SHIFT))
+
+int rb_hash_array_p(VALUE hash);
+struct li_table *rb_hash_array(VALUE hash);
+st_table *rb_hash_st_table(VALUE hash);
+void rb_hash_st_table_set(VALUE hash, st_table *st);
+
+#if 0 /* for debug */
+#define RHASH_ARRAY_P(hash)       rb_hash_array_p(hash)
+#define RHASH_ARRAY(h)            rb_hash_array(h)
+#define RHASH_ST_TABLE(h)         rb_hash_st_table(h)
+#else
+#define RHASH_ARRAY_P(hash)       (!FL_TEST_RAW((hash), RHASH_ST_TABLE_FLAG))
+#define RHASH_ARRAY(hash)         (RHASH(hash)->as.li)
+#define RHASH_ST_TABLE(hash)      (RHASH(hash)->as.st)
+#endif
+
+#define RHASH(obj)                (R_CAST(RHash)(obj))
+#define RHASH_ST_SIZE(h)          (RHASH_ST_TABLE(h)->num_entries)
+#define RHASH_TABLE_P(h)          (!RHASH_ARRAY_P(h))
+#define RHASH_CLEAR(h)            (FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG), RHASH(h)->as.li = NULL)
+
+#define RHASH_ARRAY_SIZE_MASK     (VALUE)RHASH_ARRAY_SIZE_MASK
+#define RHASH_ARRAY_SIZE_SHIFT    RHASH_ARRAY_SIZE_SHIFT
+#define RHASH_ARRAY_BOUND_MASK    (VALUE)RHASH_ARRAY_BOUND_MASK
+#define RHASH_ARRAY_BOUND_SHIFT   RHASH_ARRAY_BOUND_SHIFT
+#define RHASH_TRANSIENT_FLAG      FL_USER14
+#define RHASH_TRANSIENT_P(hash)   FL_TEST_RAW((hash), RHASH_TRANSIENT_FLAG)
+
+#define RHASH_ARRAY_MAX_SIZE      8
+#define RHASH_ARRAY_MAX_BOUND     RHASH_ARRAY_MAX_SIZE
+
+typedef struct li_table_entry {
+    VALUE hash;
+    VALUE key;
+    VALUE record;
+} li_table_entry;
+
+typedef struct li_table {
+    li_table_entry entries[RHASH_ARRAY_MAX_SIZE];
+} li_table;
+
+/*
+ * RHASH_ARRAY_P(h):
+ * * as.li == NULL or
+ *   as.li points li_table.
+ * * as.li is allocated by transient heap or xmalloc.
+ *
+ * !RHASH_ARRAY_P(h):
+ * * as.st points st_table.
+ */
 struct RHash {
     struct RBasic basic;
-    struct st_table *ntbl;      /* possibly 0 */
+    union {
+	struct st_table *st;
+	struct li_table *li; /* possibly 0 */
+    } as;
     int iter_lev;
     const VALUE ifnone;
 };
 
-#define RHASH(obj)   (R_CAST(RHash)(obj))
-
 #ifdef RHASH_ITER_LEV
-#undef RHASH_ITER_LEV
-#undef RHASH_IFNONE
-#undef RHASH_SIZE
-#define RHASH_ITER_LEV(h) (RHASH(h)->iter_lev)
-#define RHASH_IFNONE(h) (RHASH(h)->ifnone)
-#define RHASH_SIZE(h) (RHASH(h)->ntbl ? RHASH(h)->ntbl->num_entries : (st_index_t)0)
-#endif
+#  undef RHASH_ITER_LEV
+#  undef RHASH_IFNONE
+#  undef RHASH_SIZE
+
+#  define RHASH_ITER_LEV(h)  (RHASH(h)->iter_lev)
+#  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
+#  define RHASH_SIZE(h)      (RHASH_ARRAY_P(h) ? RHASH_ARRAY_SIZE_RAW(h) : RHASH_ST_SIZE(h))
+#endif /* #ifdef RHASH_ITER_LEV */
 
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
@@ -1372,7 +1439,14 @@ void *rb_aligned_malloc(size_t, size_t);
 void rb_aligned_free(void *);
 
 /* hash.c */
+#if RHASH_CONVERT_TABLE_DEBUG
+struct st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
+#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
+#else
 struct st_table *rb_hash_tbl_raw(VALUE hash);
+#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
+#endif
+
 VALUE rb_hash_new_with_size(st_index_t size);
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_hash_new_compare_by_id(void);
@@ -1387,14 +1461,17 @@ st_table *rb_init_identtable_with_size(st_index_t size);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
-
-#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h)
 VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_values(VALUE hash);
 VALUE rb_hash_rehash(VALUE hash);
 int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
-#define HASH_PROC_DEFAULT FL_USER2
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
+void rb_hash_bulk_insert(long, const VALUE *, VALUE);
+
+int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
+int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
+int rb_hash_stlike_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg);
+int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func func, st_data_t arg);
 
 /* inits.c */
 void rb_call_inits(void);

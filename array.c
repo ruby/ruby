@@ -4420,11 +4420,11 @@ static inline void
 ary_recycle_hash(VALUE hash)
 {
     assert(RBASIC_CLASS(hash) == 0);
-    if (RHASH(hash)->ntbl) {
-	st_table *tbl = RHASH(hash)->ntbl;
+    if (RHASH_TABLE_P(hash)) {
+	st_table *tbl = RHASH_ST_TABLE(hash);
 	st_free_table(tbl);
+	RHASH_CLEAR(hash);
     }
-    rb_gc_force_recycle(hash);
 }
 
 /*
@@ -4467,7 +4467,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
     hash = ary_make_hash(ary2);
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (st_lookup(rb_hash_tbl_raw(hash), RARRAY_AREF(ary1, i), 0)) continue;
+	if (rb_hash_stlike_lookup(hash, RARRAY_AREF(ary1, i), NULL)) continue;
 	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
     ary_recycle_hash(hash);
@@ -4515,7 +4515,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
         VALUE elt = rb_ary_elt(ary, i);
         for (j = 0; j < argc; j++){
             if (is_hash[j]) {
-                if (st_lookup(rb_hash_tbl_raw(argv[j]), RARRAY_AREF(ary, i), 0))
+                if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
                     break;
             }
             else {
@@ -4551,7 +4551,6 @@ static VALUE
 rb_ary_and(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3, v;
-    st_table *table;
     st_data_t vv;
     long i;
 
@@ -4570,12 +4569,11 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     }
 
     hash = ary_make_hash(ary2);
-    table = rb_hash_tbl_raw(hash);
 
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	v = RARRAY_AREF(ary1, i);
 	vv = (st_data_t)v;
-	if (st_delete(table, &vv, 0)) {
+	if (rb_hash_stlike_delete(hash, &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
@@ -4609,7 +4607,7 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
     long i;
     for (i = 0; i < RARRAY_LEN(ary2); i++) {
         VALUE elt = RARRAY_AREF(ary2, i);
-        if (!st_update(RHASH_TBL_RAW(hash), (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
+        if (!rb_hash_stlike_update(hash, (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
             RB_OBJ_WRITTEN(hash, Qundef, elt);
         }
     }
@@ -4866,7 +4864,7 @@ rb_ary_uniq_bang(VALUE ary)
 	FL_SET_EMBED(ary);
     }
     ary_resize_capa(ary, hash_size);
-    st_foreach(rb_hash_tbl_raw(hash), push_value, ary);
+    rb_hash_foreach(hash, push_value, ary);
     ary_recycle_hash(hash);
 
     return ary;

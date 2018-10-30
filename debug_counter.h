@@ -181,6 +181,11 @@ RB_DEBUG_COUNTER(obj_hash_empty)
 RB_DEBUG_COUNTER(obj_hash_under4)
 RB_DEBUG_COUNTER(obj_hash_ge4)
 RB_DEBUG_COUNTER(obj_hash_ge8)
+RB_DEBUG_COUNTER(obj_hash_array)
+RB_DEBUG_COUNTER(obj_hash_st)
+RB_DEBUG_COUNTER(obj_hash_transient)
+
+RB_DEBUG_COUNTER(obj_hash_force_convert)
 
 RB_DEBUG_COUNTER(obj_struct_embed)
 RB_DEBUG_COUNTER(obj_struct_transient)

@@ -1088,11 +1088,13 @@ struct RRegexp {
 #define RREGEXP_SRC_LEN(r) RSTRING_LEN(RREGEXP(r)->src)
 #define RREGEXP_SRC_END(r) RSTRING_END(RREGEXP(r)->src)
 
-/* RHASH_TBL allocates st_table if not available. */
-#define RHASH_TBL(h) rb_hash_tbl(h)
+/* RHash is defined at internal.h */
+size_t rb_hash_size_num(VALUE hash);
+
+#define RHASH_TBL(h) rb_hash_tbl(h, __FILE__, __LINE__)
 #define RHASH_ITER_LEV(h) rb_hash_iter_lev(h)
 #define RHASH_IFNONE(h) rb_hash_ifnone(h)
-#define RHASH_SIZE(h) NUM2SIZET(rb_hash_size(h))
+#define RHASH_SIZE(h) rb_hash_size_num(h)
 #define RHASH_EMPTY_P(h) (RHASH_SIZE(h) == 0)
 #define RHASH_SET_IFNONE(h, ifnone) rb_hash_set_ifnone((VALUE)h, ifnone)
 

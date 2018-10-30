@@ -887,7 +887,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 	    else {
 		w_byte(TYPE_HASH_DEF, arg);
 	    }
-	    w_long(RHASH_SIZE(obj), arg);
+	    w_long(rb_hash_size_num(obj), arg);
 	    rb_hash_foreach(obj, hash_each, (st_data_t)&c_arg);
 	    if (!NIL_P(RHASH_IFNONE(obj))) {
 		w_object(RHASH_IFNONE(obj), arg, limit);

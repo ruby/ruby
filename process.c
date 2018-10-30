@@ -2214,7 +2214,7 @@ rb_check_exec_options(VALUE opthash, VALUE execarg_obj)
 {
     if (RHASH_EMPTY_P(opthash))
         return;
-    st_foreach(rb_hash_tbl_raw(opthash), check_exec_options_i, (st_data_t)execarg_obj);
+    rb_hash_stlike_foreach(opthash, check_exec_options_i, (st_data_t)execarg_obj);
 }
 
 VALUE
@@ -2225,7 +2225,7 @@ rb_execarg_extract_options(VALUE execarg_obj, VALUE opthash)
         return Qnil;
     args[0] = execarg_obj;
     args[1] = Qnil;
-    st_foreach(rb_hash_tbl_raw(opthash), check_exec_options_i_extract, (st_data_t)args);
+    rb_hash_stlike_foreach(opthash, check_exec_options_i_extract, (st_data_t)args);
     return args[1];
 }
 
@@ -2269,7 +2269,7 @@ rb_check_exec_env(VALUE hash, VALUE *path)
 
     env[0] = hide_obj(rb_ary_new());
     env[1] = Qfalse;
-    st_foreach(rb_hash_tbl_raw(hash), check_exec_env_i, (st_data_t)env);
+    rb_hash_stlike_foreach(hash, check_exec_env_i, (st_data_t)env);
     *path = env[1];
 
     return env[0];
@@ -2733,7 +2733,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         envp_buf = rb_str_buf_new(0);
         hide_obj(envp_buf);
-        st_foreach(RHASH_TBL_RAW(envtbl), fill_envp_buf_i, (st_data_t)envp_buf);
+        rb_hash_stlike_foreach(envtbl, fill_envp_buf_i, (st_data_t)envp_buf);
         envp_str = rb_str_buf_new(sizeof(char*) * (RHASH_SIZE(envtbl) + 1));
         hide_obj(envp_str);
         p = RSTRING_PTR(envp_buf);
