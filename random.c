@@ -775,19 +775,17 @@ random_load(VALUE obj, VALUE dump)
     rb_random_t *rnd = get_rnd(obj);
     struct MT *mt = &rnd->mt;
     VALUE state, left = INT2FIX(1), seed = INT2FIX(0);
-    const VALUE *ary;
     unsigned long x;
 
     rb_check_copyable(obj, dump);
     Check_Type(dump, T_ARRAY);
-    ary = RARRAY_CONST_PTR(dump);
     switch (RARRAY_LEN(dump)) {
       case 3:
-	seed = ary[2];
+	seed = RARRAY_AREF(dump, 2);
       case 2:
-	left = ary[1];
+	left = RARRAY_AREF(dump, 1);
       case 1:
-	state = ary[0];
+	state = RARRAY_AREF(dump, 0);
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong dump data");

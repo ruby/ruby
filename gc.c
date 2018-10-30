@@ -1955,9 +1955,8 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 #if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
 	long i, cnt = RARRAY_LEN(stress_to_class);
-	const VALUE *ptr = RARRAY_CONST_PTR(stress_to_class);
 	for (i = 0; i < cnt; ++i) {
-	    if (klass == ptr[i]) rb_memerror();
+	    if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
 	}
     }
 #endif
