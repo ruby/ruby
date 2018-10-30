@@ -1532,7 +1532,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     /* assign heap_page entry */
     page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
     if (page == 0) {
-	rb_aligned_free(page_body);
+        rb_aligned_free(page_body);
 	rb_memerror();
     }
 
@@ -4674,13 +4674,13 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_ARRAY:
         if (FL_TEST(obj, ELTS_SHARED)) {
             VALUE root = any->as.array.as.heap.aux.shared;
-	    gc_mark(objspace, root);
+            gc_mark(objspace, root);
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
-	    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(obj);
+            const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(obj);
 	    for (i=0; i < len; i++) {
-		gc_mark(objspace, ptr[i]);
+                gc_mark(objspace, ptr[i]);
 	    }
 
             if (objspace->mark_func_data == NULL) {
