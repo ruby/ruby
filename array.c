@@ -4421,9 +4421,9 @@ ary_recycle_hash(VALUE hash)
 {
     assert(RBASIC_CLASS(hash) == 0);
     if (RHASH_TABLE_P(hash)) {
-	st_table *tbl = RHASH_ST_TABLE(hash);
+        st_table *tbl = RHASH_ST_TABLE(hash);
 	st_free_table(tbl);
-	RHASH_CLEAR(hash);
+        RHASH_CLEAR(hash);
     }
 }
 
@@ -4467,7 +4467,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 
     hash = ary_make_hash(ary2);
     for (i=0; i<RARRAY_LEN(ary1); i++) {
-	if (rb_hash_stlike_lookup(hash, RARRAY_AREF(ary1, i), NULL)) continue;
+        if (rb_hash_stlike_lookup(hash, RARRAY_AREF(ary1, i), NULL)) continue;
 	rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
     ary_recycle_hash(hash);
@@ -4573,7 +4573,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
     for (i=0; i<RARRAY_LEN(ary1); i++) {
 	v = RARRAY_AREF(ary1, i);
 	vv = (st_data_t)v;
-	if (rb_hash_stlike_delete(hash, &vv, 0)) {
+        if (rb_hash_stlike_delete(hash, &vv, 0)) {
 	    rb_ary_push(ary3, v);
 	}
     }
