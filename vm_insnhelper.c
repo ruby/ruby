@@ -1590,15 +1590,6 @@ static inline VALUE vm_call_method(rb_execution_context_t *ec, rb_control_frame_
 
 static vm_call_handler vm_call_iseq_setup_func(const struct rb_call_info *ci, const int param_size, const int local_size);
 
-static const rb_iseq_t *
-def_iseq_ptr(rb_method_definition_t *def)
-{
-#if VM_CHECK_MODE > 0
-    if (def->type != VM_METHOD_TYPE_ISEQ) rb_bug("def_iseq_ptr: not iseq (%d)", def->type);
-#endif
-    return rb_iseq_check(def->body.iseq.iseqptr);
-}
-
 static VALUE
 vm_call_iseq_setup_tailcall_0start(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const struct rb_call_info *ci, struct rb_call_cache *cc)
 {
