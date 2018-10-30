@@ -2215,15 +2215,18 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
-            RANY(obj)->as.object.as.heap.ivptr) {
+        if ((RANY(obj)->as.basic.flags & ROBJECT_EMBED) ||
+            RANY(obj)->as.object.as.heap.ivptr == NULL) {
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
+        }
+        else if (ROBJ_TRANSIENT_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_obj_transient);
+        }
+        else {
             xfree(RANY(obj)->as.object.as.heap.ivptr);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
-        else {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
-        }
-	break;
+        break;
       case T_MODULE:
       case T_CLASS:
         mjit_remove_class_serial(RCLASS_SERIAL(obj));
@@ -4717,10 +4720,18 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            uint32_t i, len = ROBJECT_NUMIV(obj);
-            VALUE *ptr = ROBJECT_IVPTR(obj);
-            for (i  = 0; i < len; i++) {
-                gc_mark(objspace, *ptr++);
+            const VALUE * const ptr = ROBJECT_IVPTR(obj);
+
+            if (ptr) {
+                uint32_t i, len = ROBJECT_NUMIV(obj);
+                for (i  = 0; i < len; i++) {
+                    gc_mark(objspace, ptr[i]);
+                }
+
+                if (objspace->mark_func_data == NULL &&
+                    ROBJ_TRANSIENT_P(obj)) {
+                    rb_transient_heap_mark(obj, ptr);
+                }
             }
         }
 	break;
@@ -9645,6 +9656,19 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    }
 	    break;
 	  }
+          case T_OBJECT:
+            {
+                uint32_t len = ROBJECT_NUMIV(obj);
+
+                if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
+                    snprintf(buff, buff_size, "%s (embed) len:%d", buff, len);
+                }
+                else {
+                    VALUE *ptr = ROBJECT_IVPTR(obj);
+                    snprintf(buff, buff_size, "%s len:%d ptr:%p", buff, len, ptr);
+                }
+            }
+            break;
 	  case T_DATA: {
 	    const struct rb_block *block;
 	    const rb_iseq_t *iseq;

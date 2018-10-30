@@ -22,6 +22,7 @@
 #include "id_table.h"
 #include "debug_counter.h"
 #include "vm_core.h"
+#include "transient_heap.h"
 
 static struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
@@ -1333,61 +1334,132 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
     RB_OBJ_WRITTEN(obj, Qundef, val);
 }
 
-VALUE
-rb_ivar_set(VALUE obj, ID id, VALUE val)
+static VALUE *
+obj_ivar_heap_alloc(VALUE obj, size_t newsize)
+{
+    VALUE *newptr = rb_transient_heap_alloc(obj, sizeof(VALUE) * newsize);
+
+    if (newptr != NULL) {
+        FL_SET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+    }
+    else {
+        FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+        newptr = ALLOC_N(VALUE, newsize);
+    }
+    return newptr;
+}
+
+static VALUE *
+obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
+{
+    VALUE *newptr;
+    int i;
+
+    if (ROBJ_TRANSIENT_P(obj)) {
+        const VALUE *orig_ptr = ROBJECT(obj)->as.heap.ivptr;
+        if ((newptr = obj_ivar_heap_alloc(obj, newsize)) != NULL) {
+            /* ok */
+        }
+        else {
+            newptr = ALLOC_N(VALUE, newsize);
+            FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+        }
+        ROBJECT(obj)->as.heap.ivptr = newptr;
+        for (i=0; i<(int)len; i++) {
+            newptr[i] = orig_ptr[i];
+        }
+    }
+    else {
+        REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, newsize);
+        newptr = ROBJECT(obj)->as.heap.ivptr;
+    }
+
+    return newptr;
+}
+
+void
+rb_obj_transient_heap_evacuate(VALUE obj, int promote)
+{
+    if (ROBJ_TRANSIENT_P(obj)) {
+        uint32_t len = ROBJECT_NUMIV(obj);
+        const VALUE *old_ptr = ROBJECT_IVPTR(obj);
+        VALUE *new_ptr;
+
+        if (promote) {
+            new_ptr = ALLOC_N(VALUE, len);
+            FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+        }
+        else {
+            new_ptr = obj_ivar_heap_alloc(obj, len);
+        }
+        MEMCPY(new_ptr, old_ptr, VALUE, len);
+        ROBJECT(obj)->as.heap.ivptr = new_ptr;
+    }
+}
+
+static VALUE
+obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
     struct ivar_update ivup;
     uint32_t i, len;
 
+    ivup.iv_extended = 0;
+    ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
+    iv_index_tbl_extend(&ivup, id);
+    len = ROBJECT_NUMIV(obj);
+    if (len <= ivup.index) {
+        VALUE *ptr = ROBJECT_IVPTR(obj);
+        if (ivup.index < ROBJECT_EMBED_LEN_MAX) {
+            RBASIC(obj)->flags |= ROBJECT_EMBED;
+            ptr = ROBJECT(obj)->as.ary;
+            for (i = 0; i < ROBJECT_EMBED_LEN_MAX; i++) {
+                ptr[i] = Qundef;
+            }
+        }
+        else {
+            VALUE *newptr;
+            uint32_t newsize = iv_index_tbl_newsize(&ivup);
+
+            if (RBASIC(obj)->flags & ROBJECT_EMBED) {
+                newptr = obj_ivar_heap_alloc(obj, newsize);
+                // newptr = ALLOC_N(VALUE, newsize);
+                MEMCPY(newptr, ptr, VALUE, len);
+                RBASIC(obj)->flags &= ~ROBJECT_EMBED;
+                ROBJECT(obj)->as.heap.ivptr = newptr;
+            }
+            else {
+                newptr = obj_ivar_heap_realloc(obj, len, newsize);
+            }
+            for (; len < newsize; len++) {
+                newptr[len] = Qundef;
+            }
+            ROBJECT(obj)->as.heap.numiv = newsize;
+            ROBJECT(obj)->as.heap.iv_index_tbl = ivup.u.iv_index_tbl;
+        }
+    }
+    RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
+
+    return val;
+}
+
+VALUE
+rb_ivar_set(VALUE obj, ID id, VALUE val)
+{
     RB_DEBUG_COUNTER_INC(ivar_set_base);
 
     rb_check_frozen(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivup.iv_extended = 0;
-        ivup.u.iv_index_tbl = iv_index_tbl_make(obj);
-        iv_index_tbl_extend(&ivup, id);
-        len = ROBJECT_NUMIV(obj);
-        if (len <= ivup.index) {
-            VALUE *ptr = ROBJECT_IVPTR(obj);
-            if (ivup.index < ROBJECT_EMBED_LEN_MAX) {
-                RBASIC(obj)->flags |= ROBJECT_EMBED;
-                ptr = ROBJECT(obj)->as.ary;
-                for (i = 0; i < ROBJECT_EMBED_LEN_MAX; i++) {
-                    ptr[i] = Qundef;
-                }
-            }
-            else {
-                VALUE *newptr;
-                uint32_t newsize = iv_index_tbl_newsize(&ivup);
-
-                if (RBASIC(obj)->flags & ROBJECT_EMBED) {
-                    newptr = ALLOC_N(VALUE, newsize);
-                    MEMCPY(newptr, ptr, VALUE, len);
-                    RBASIC(obj)->flags &= ~ROBJECT_EMBED;
-                    ROBJECT(obj)->as.heap.ivptr = newptr;
-                }
-                else {
-                    REALLOC_N(ROBJECT(obj)->as.heap.ivptr, VALUE, newsize);
-                    newptr = ROBJECT(obj)->as.heap.ivptr;
-                }
-                for (; len < newsize; len++)
-                    newptr[len] = Qundef;
-                ROBJECT(obj)->as.heap.numiv = newsize;
-                ROBJECT(obj)->as.heap.iv_index_tbl = ivup.u.iv_index_tbl;
-            }
-        }
-        RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
-        break;
+        return obj_ivar_set(obj, id, val);
       case T_CLASS:
       case T_MODULE:
-	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
-	rb_class_ivar_set(obj, id, val);
+        if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
+        rb_class_ivar_set(obj, id, val);
         break;
       default:
-	generic_ivar_set(obj, id, val);
-	break;
+        generic_ivar_set(obj, id, val);
+        break;
     }
     return val;
 }
