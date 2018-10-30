@@ -524,7 +524,7 @@ newhashfromarray
 {
     VM_ASSERT(num * 2 == (rb_num_t)RARRAY_LEN(ary));
     hash = rb_hash_new_with_size(num);
-    rb_hash_bulk_insert(num * 2, RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+    rb_hash_bulk_insert(num * 2, RARRAY_CONST_PTR(ary), hash);
 }
 
 /* put new Range object.(Range.new(low, high, flag)) */

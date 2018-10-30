@@ -35,7 +35,6 @@
 #include <sys/types.h>
 #include "ruby_assert.h"
 #include "debug_counter.h"
-#include "transient_heap.h"
 #include "mjit.h"
 
 #undef rb_data_object_wrap
@@ -846,6 +845,8 @@ static void rb_objspace_call_finalizer(rb_objspace_t *objspace);
 static VALUE define_final0(VALUE obj, VALUE block);
 
 static void negative_size_allocation_error(const char *);
+static void *aligned_malloc(size_t, size_t);
+static void aligned_free(void *);
 
 static void init_mark_stack(mark_stack_t *stack);
 
@@ -1189,7 +1190,6 @@ RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, struct heap_page *pag
 {
     MARK_IN_BITMAP(&page->uncollectible_bits[0], obj);
     objspace->rgengc.old_objects++;
-    rb_transient_heap_promote(obj);
 
 #if RGENGC_PROFILE >= 2
     objspace->profile.total_promoted_count++;
@@ -1486,7 +1486,7 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 {
     heap_allocated_pages--;
     objspace->profile.total_freed_pages++;
-    rb_aligned_free(GET_PAGE_BODY(page->start));
+    aligned_free(GET_PAGE_BODY(page->start));
     free(page);
 }
 
@@ -1524,7 +1524,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     int limit = HEAP_PAGE_OBJ_LIMIT;
 
     /* assign heap_page body (contains heap_page_header and RVALUEs) */
-    page_body = (struct heap_page_body *)rb_aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
+    page_body = (struct heap_page_body *)aligned_malloc(HEAP_PAGE_ALIGN, HEAP_PAGE_SIZE);
     if (page_body == 0) {
 	rb_memerror();
     }
@@ -1532,7 +1532,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     /* assign heap_page entry */
     page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
     if (page == 0) {
-        rb_aligned_free(page_body);
+	aligned_free(page_body);
 	rb_memerror();
     }
 
@@ -1954,10 +1954,10 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 
 #if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
-        long i, cnt = RARRAY_LEN(stress_to_class);
-        for (i = 0; i < cnt; ++i) {
+	long i, cnt = RARRAY_LEN(stress_to_class);
+	for (i = 0; i < cnt; ++i) {
             if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
-        }
+	}
     }
 #endif
     if (!(during_gc ||
@@ -2215,17 +2215,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if ((RANY(obj)->as.basic.flags & ROBJECT_EMBED) ||
-            RANY(obj)->as.object.as.heap.ivptr == NULL) {
-            RB_DEBUG_COUNTER_INC(obj_obj_embed);
-        }
-        else if (ROBJ_TRANSIENT_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_obj_transient);
-        }
-        else {
+	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
+            RANY(obj)->as.object.as.heap.ivptr) {
 	    xfree(RANY(obj)->as.object.as.heap.ivptr);
-            RB_DEBUG_COUNTER_INC(obj_obj_ptr);
-        }
+	    RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+	}
+	else {
+            RB_DEBUG_COUNTER_INC(obj_obj_embed);
+	}
 	break;
       case T_MODULE:
       case T_CLASS:
@@ -2262,7 +2259,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_str_free(obj);
 	break;
       case T_ARRAY:
-        rb_ary_free(obj);
+	rb_ary_free(obj);
 	break;
       case T_HASH:
 	if (RANY(obj)->as.hash.ntbl) {
@@ -4518,7 +4515,6 @@ static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
     if (LIKELY(objspace->mark_func_data == NULL)) {
-        if (RB_TYPE_P(obj, T_NONE)) rb_bug("...");
 	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
 	gc_aging(objspace, obj);
@@ -4675,24 +4671,16 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ARRAY:
-        if (FL_TEST(obj, ELTS_SHARED)) {
-            VALUE root = any->as.array.as.heap.aux.shared;
-            gc_mark(objspace, root);
+	if (FL_TEST(obj, ELTS_SHARED)) {
+	    gc_mark(objspace, any->as.array.as.heap.aux.shared);
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
-            const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(obj);
+	    const VALUE *ptr = RARRAY_CONST_PTR(obj);
 	    for (i=0; i < len; i++) {
-                gc_mark(objspace, ptr[i]);
+		gc_mark(objspace, *ptr++);
 	    }
-
-            if (objspace->mark_func_data == NULL) {
-                if (!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG) &&
-                    RARRAY_TRANSIENT_P(obj)) {
-                    rb_transient_heap_mark(obj, ptr);
-                }
-            }
-        }
+	}
 	break;
 
       case T_HASH:
@@ -4720,18 +4708,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_OBJECT:
         {
-            const VALUE * const ptr = ROBJECT_IVPTR(obj);
-
-            if (ptr) {
-                uint32_t i, len = ROBJECT_NUMIV(obj);
-                for (i  = 0; i < len; i++) {
-                    gc_mark(objspace, ptr[i]);
-                }
-
-                if (objspace->mark_func_data == NULL &&
-                    ROBJ_TRANSIENT_P(obj)) {
-                    rb_transient_heap_mark(obj, ptr);
-                }
+            uint32_t i, len = ROBJECT_NUMIV(obj);
+	    VALUE *ptr = ROBJECT_IVPTR(obj);
+            for (i  = 0; i < len; i++) {
+		gc_mark(objspace, *ptr++);
             }
         }
 	break;
@@ -5475,13 +5455,6 @@ rb_gc_verify_internal_consistency(void)
     gc_verify_internal_consistency(Qnil);
 }
 
-static VALUE
-gc_verify_transient_heap_internal_consistency(VALUE dmy)
-{
-    rb_transient_heap_verify();
-    return Qnil;
-}
-
 /* marks */
 
 static void
@@ -5697,8 +5670,6 @@ gc_marks_finish(rb_objspace_t *objspace)
 	}
 #endif
     }
-
-    rb_transient_heap_finish_marking();
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_END_MARK, 0);
 
@@ -6591,7 +6562,6 @@ gc_start(rb_objspace_t *objspace, int reason)
     objspace->profile.heap_used_at_gc_start = heap_allocated_pages;
     gc_prof_setup_new_record(objspace, reason);
     gc_reset_malloc_info(objspace);
-    rb_transient_heap_start_marking(do_full_mark);
 
     gc_event_hook(objspace, RUBY_INTERNAL_EVENT_GC_START, 0 /* TODO: pass minor/immediate flag? */);
     GC_ASSERT(during_gc);
@@ -7842,8 +7812,8 @@ rb_memerror(void)
     EC_JUMP_TAG(ec, TAG_RAISE);
 }
 
-void *
-rb_aligned_malloc(size_t alignment, size_t size)
+static void *
+aligned_malloc(size_t alignment, size_t size)
 {
     void *res;
 
@@ -7876,8 +7846,8 @@ rb_aligned_malloc(size_t alignment, size_t size)
     return res;
 }
 
-void
-rb_aligned_free(void *ptr)
+static void
+aligned_free(void *ptr)
 {
 #if defined __MINGW32__
     __mingw_aligned_free(ptr);
@@ -9581,21 +9551,13 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #if USE_RGENGC
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
-        if (is_pointer_to_heap(&rb_objspace, (void *)obj)) {
-            snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
-                     (void *)obj, age,
-                     C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
-                     C(RVALUE_MARK_BITMAP(obj),           "M"),
-                     C(RVALUE_MARKING_BITMAP(obj),        "R"),
-                     C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
-                     obj_type_name(obj));
-        }
-        else {
-            /* fake */
-            snprintf(buff, buff_size, "%p [%dXXXX] %s",
-                     (void *)obj, age,
-                     obj_type_name(obj));
-        }
+	snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
+		 (void *)obj, age,
+		 C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
+		 C(RVALUE_MARK_BITMAP(obj),           "M"),
+		 C(RVALUE_MARKING_BITMAP(obj),        "R"),
+		 C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
+		 obj_type_name(obj));
 #else
 	snprintf(buff, buff_size, "%p [%s] %s",
 		 (void *)obj,
@@ -9625,25 +9587,10 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    UNEXPECTED_NODE(rb_raw_obj_info);
 	    break;
 	  case T_ARRAY:
-            if (FL_TEST(obj, ELTS_SHARED)) {
-                snprintf(buff, buff_size, "%s shared -> %s", buff,
-                         rb_obj_info(RARRAY(obj)->as.heap.aux.shared));
-            }
-            else if (FL_TEST(obj, RARRAY_EMBED_FLAG)) {
-                snprintf(buff, buff_size, "%s [%s%s] len: %d (embed)", buff,
-                         C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"),
-                         (int)RARRAY_LEN(obj));
-            }
-            else {
-                snprintf(buff, buff_size, "%s [%s%s%s] len: %d, capa:%d ptr:%p", buff,
-                         C(ARY_EMBED_P(obj),  "E"),
-                         C(ARY_SHARED_P(obj), "S"),
-                         C(RARRAY_TRANSIENT_P(obj), "T"),
-                         (int)RARRAY_LEN(obj),
-                         ARY_EMBED_P(obj) ? -1 : (int)RARRAY(obj)->as.heap.aux.capa,
-                         RARRAY_CONST_PTR_TRANSIENT(obj));
-            }
+	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
+		     C(ARY_EMBED_P(obj),  "E"),
+		     C(ARY_SHARED_P(obj), "S"),
+		     (int)RARRAY_LEN(obj));
 	    break;
 	  case T_STRING: {
 	    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
@@ -9656,19 +9603,6 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    }
 	    break;
 	  }
-          case T_OBJECT:
-            {
-                uint32_t len = ROBJECT_NUMIV(obj);
-
-                if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
-                    snprintf(buff, buff_size, "%s (embed) len:%d", buff, len);
-                }
-                else {
-                    VALUE *ptr = ROBJECT_IVPTR(obj);
-                    snprintf(buff, buff_size, "%s len:%d ptr:%p", buff, len, ptr);
-                }
-            }
-            break;
 	  case T_DATA: {
 	    const struct rb_block *block;
 	    const rb_iseq_t *iseq;
@@ -10020,7 +9954,6 @@ Init_GC(void)
 
     /* internal methods */
     rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
-    rb_define_singleton_method(rb_mGC, "verify_transient_heap_internal_consistency", gc_verify_transient_heap_internal_consistency, 0);
 #if MALLOC_ALLOCATED_SIZE
     rb_define_singleton_method(rb_mGC, "malloc_allocated_size", gc_malloc_allocated_size, 0);
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
