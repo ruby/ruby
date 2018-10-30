@@ -1265,7 +1265,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 	len = 1;
     }
     else {
-        ptr = RARRAY_CONST_PTR(ary);
+	ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
 	len = (rb_num_t)RARRAY_LEN(ary);
     }
 

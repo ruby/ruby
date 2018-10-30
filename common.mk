@@ -130,6 +130,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		thread.$(OBJEXT) \
 		time.$(OBJEXT) \
 		transcode.$(OBJEXT) \
+		transient_heap.$(OBJEXT) \
 		util.$(OBJEXT) \
 		variable.$(OBJEXT) \
 		version.$(OBJEXT) \
@@ -2898,6 +2899,15 @@ transcode.$(OBJEXT): {$(VPATH)}st.h
 transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
+transient_heap.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+transient_heap.$(OBJEXT): $(top_srcdir)/include/ruby.h
+transient_heap.$(OBJEXT): {$(VPATH)}debug_counter.h
+transient_heap.$(OBJEXT): {$(VPATH)}gc.h
+transient_heap.$(OBJEXT): {$(VPATH)}internal.h
+transient_heap.$(OBJEXT): {$(VPATH)}ruby_assert.h
+transient_heap.$(OBJEXT): {$(VPATH)}transient_heap.c
+transient_heap.$(OBJEXT): {$(VPATH)}transient_heap.h
+transient_heap.$(OBJEXT): {$(VPATH)}vm_debug.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/include/ruby.h
 util.$(OBJEXT): {$(VPATH)}config.h

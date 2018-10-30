@@ -164,7 +164,7 @@ args_copy(struct args_info *args)
 static inline const VALUE *
 args_rest_argv(struct args_info *args)
 {
-    return RARRAY_CONST_PTR(args->rest) + args->rest_index;
+    return RARRAY_CONST_PTR_TRANSIENT(args->rest) + args->rest_index;
 }
 
 static inline VALUE
@@ -314,7 +314,7 @@ args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
     long len;
     len = RARRAY_LEN(args->rest);
-    MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
+    MEMCPY(locals, RARRAY_CONST_PTR_TRANSIENT(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
 }
 
@@ -334,13 +334,13 @@ args_setup_opt_parameters(struct args_info *args, int opt_max, VALUE *locals)
 	args->argc = 0;
 
 	if (args->rest) {
-	    int len = RARRAY_LENINT(args->rest);
-            const VALUE *argv = RARRAY_CONST_PTR(args->rest);
+            int len = RARRAY_LENINT(args->rest);
+            const VALUE *argv = RARRAY_CONST_PTR_TRANSIENT(args->rest);
 
-	    for (; i<opt_max && args->rest_index < len; i++, args->rest_index++) {
-		locals[i] = argv[args->rest_index];
-	    }
-	}
+            for (; i<opt_max && args->rest_index < len; i++, args->rest_index++) {
+                locals[i] = argv[args->rest_index];
+            }
+        }
 
 	/* initialize by nil */
 	for (j=i; j<opt_max; j++) {
@@ -785,15 +785,15 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
     cfp->sp--;
 
     if (!NIL_P(ary)) {
-        const VALUE *ptr = RARRAY_CONST_PTR(ary);
-	long len = RARRAY_LEN(ary), i;
+        const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+        long len = RARRAY_LEN(ary), i;
 
-	CHECK_VM_STACK_OVERFLOW(cfp, len);
+        CHECK_VM_STACK_OVERFLOW(cfp, len);
 
-	for (i = 0; i < len; i++) {
-	    *cfp->sp++ = ptr[i];
-	}
-	calling->argc += i - 1;
+        for (i = 0; i < len; i++) {
+            *cfp->sp++ = ptr[i];
+        }
+        calling->argc += i - 1;
     }
 }
 
