@@ -1351,7 +1351,7 @@ command		: fcall command_args       %prec tLOWEST
 		    {
 		    /*%%%*/
 			$1->nd_args = $2;
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.end_pos);
 			$$ = $1;
 		    /*% %*/
 		    /*% ripper: command!($1, $2) %*/
@@ -1363,7 +1363,7 @@ command		: fcall command_args       %prec tLOWEST
 			$1->nd_args = $2;
 			$$ = method_add_block(p, $1, $3, &@$);
 			fixpos($$, $1);
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.end_pos);
 		    /*% %*/
 		    /*% ripper: method_add_block!(command!($1, $2), $3) %*/
 		    }
