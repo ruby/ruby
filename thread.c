@@ -3091,7 +3091,7 @@ rb_thread_to_s(VALUE thread)
     if (!target_th->first_func && target_th->first_proc) {
 	VALUE loc = rb_proc_location(target_th->first_proc);
 	if (!NIL_P(loc)) {
-	    rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
+            rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
                         RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
             rb_gc_force_recycle(loc);
 	}

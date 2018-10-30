@@ -781,11 +781,11 @@ random_load(VALUE obj, VALUE dump)
     Check_Type(dump, T_ARRAY);
     switch (RARRAY_LEN(dump)) {
       case 3:
-	seed = RARRAY_AREF(dump, 2);
+        seed = RARRAY_AREF(dump, 2);
       case 2:
-	left = RARRAY_AREF(dump, 1);
+        left = RARRAY_AREF(dump, 1);
       case 1:
-	state = RARRAY_AREF(dump, 0);
+        state = RARRAY_AREF(dump, 0);
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong dump data");
