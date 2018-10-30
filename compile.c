@@ -7990,7 +7990,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			    int i;
 			    VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
-			    RHASH_TBL_RAW(map)->type = &cdhash_type;
+                            RHASH_TBL_RAW(map)->type = &cdhash_type;
 			    op = rb_to_array_type(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE key = RARRAY_AREF(op, i);

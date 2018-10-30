@@ -382,7 +382,7 @@ rb_hash_dump(VALUE hash)
         for (i=0; i<bound; i++) {
             li_table_entry *cur_entry = RHASH_ARRAY_REF(hash, i);
             st_data_t k, v;
-            
+
             if (!empty_entry(cur_entry)) {
                 char b1[0x100], b2[0x100];
                 /* h = cur_entry->hash; */
@@ -435,7 +435,7 @@ hash_verify_(VALUE hash, const char *file, int line)
 
     if (RHASH_TRANSIENT_P(hash)) {
         volatile st_data_t MAYBE_UNUSED(key) = RHASH_ARRAY_REF(hash, 0)->key; /* read */
-	HASH_ASSERT(RHASH_ARRAY(hash) != NULL);
+        HASH_ASSERT(RHASH_ARRAY(hash) != NULL);
         HASH_ASSERT(rb_transient_heap_managed_ptr_p(RHASH_ARRAY(hash)));
     }
     return hash;
@@ -544,11 +544,11 @@ linear_init_table(VALUE hash)
 
     tab = (li_table*)rb_transient_heap_alloc(hash, sizeof(li_table));
     if (tab != NULL) {
-	RHASH_SET_TRANSIENT_FLAG(hash);
+        RHASH_SET_TRANSIENT_FLAG(hash);
     }
     else {
-	RHASH_UNSET_TRANSIENT_FLAG(hash);
-	tab = (li_table*)ruby_xmalloc(sizeof(li_table));
+        RHASH_UNSET_TRANSIENT_FLAG(hash);
+        tab = (li_table*)ruby_xmalloc(sizeof(li_table));
     }
 
     RHASH_ARRAY_SIZE_SET(hash, 0);
@@ -580,7 +580,7 @@ linear_free_and_clear_table(VALUE hash)
     if (tab) {
         if (RHASH_TRANSIENT_P(hash)) {
             RHASH_UNSET_TRANSIENT_FLAG(hash);
-	}
+        }
         else {
             ruby_xfree(RHASH_ARRAY(hash));
         }
@@ -642,11 +642,11 @@ linear_force_convert_table(VALUE hash, const char *file, int line)
 
         for (i = 0; i < bound; i++) {
             entry = RHASH_ARRAY_REF(hash, i);
-	    if (empty_entry(entry)) continue;
+            if (empty_entry(entry)) continue;
 
             st_add_direct_with_hash(new_tab, entry->key, entry->record, entry->hash);
         }
-	linear_free_and_clear_table(hash);
+        linear_free_and_clear_table(hash);
     }
     else {
         new_tab = st_init_table(&objhash);
@@ -660,7 +660,7 @@ static li_table *
 hash_ltbl(VALUE hash)
 {
     if (RHASH_TABLE_EMPTY(hash)) {
-	linear_init_table(hash);
+        linear_init_table(hash);
     }
     return RHASH_ARRAY(hash);
 }
@@ -711,7 +711,7 @@ linear_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t 
     li_table_entry *entry;
 
     if (RHASH_ARRAY_SIZE(hash) >= RHASH_ARRAY_MAX_SIZE) {
-	return 1;
+        return 1;
     }
     else {
         if (UNLIKELY(bin >= RHASH_ARRAY_MAX_BOUND)) {
@@ -808,7 +808,7 @@ linear_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
 
 static int
 linear_update(VALUE hash, st_data_t key,
-	      st_update_callback_func *func, st_data_t arg)
+              st_update_callback_func *func, st_data_t arg)
 {
     int retval, existing;
     uint8_t bin;
@@ -910,7 +910,7 @@ linear_delete(VALUE hash, st_data_t *key, st_data_t *value)
 {
     st_index_t bin;
     st_hash_t hash_value = do_hash(*key);
-    
+
 
     bin = find_entry(hash, hash_value, *key);
 
@@ -1035,25 +1035,25 @@ void
 rb_hash_transient_heap_evacuate(VALUE hash, int promote)
 {
     if (RHASH_TRANSIENT_P(hash)) {
-	li_table *new_tab;
-	li_table *old_tab = RHASH_ARRAY(hash);
+        li_table *new_tab;
+        li_table *old_tab = RHASH_ARRAY(hash);
 
         if (UNLIKELY(old_tab == NULL)) {
-	    rb_gc_force_recycle(hash);
-	    return;
-	}
-	HASH_ASSERT(old_tab != NULL);
-	if (promote) {
+            rb_gc_force_recycle(hash);
+            return;
+        }
+        HASH_ASSERT(old_tab != NULL);
+        if (promote) {
           promote:
-	    new_tab = ruby_xmalloc(sizeof(li_table));
-	    RHASH_UNSET_TRANSIENT_FLAG(hash);
-	}
-	else {
-	    new_tab = rb_transient_heap_alloc(hash, sizeof(li_table));
+            new_tab = ruby_xmalloc(sizeof(li_table));
+            RHASH_UNSET_TRANSIENT_FLAG(hash);
+        }
+        else {
+            new_tab = rb_transient_heap_alloc(hash, sizeof(li_table));
             if (new_tab == NULL) goto promote;
-	}
-	*new_tab = *old_tab;
-	RHASH_ARRAY_SET(hash, new_tab);
+        }
+        *new_tab = *old_tab;
+        RHASH_ARRAY_SET(hash, new_tab);
     }
     hash_verify(hash);
 }
@@ -1114,11 +1114,11 @@ hash_linear_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int err
 
     switch (status) {
       case ST_DELETE:
-	return ST_DELETE;
+        return ST_DELETE;
       case ST_CONTINUE:
-	break;
+        break;
       case ST_STOP:
-	return ST_STOP;
+        return ST_STOP;
     }
     return ST_CHECK;
 }
@@ -1186,7 +1186,7 @@ hash_foreach_call(VALUE arg)
                                (st_data_t)arg, (st_data_t)Qundef);
     }
     if (ret) {
-	rb_raise(rb_eRuntimeError, "ret: %d, hash modified during iteration", ret);
+        rb_raise(rb_eRuntimeError, "ret: %d, hash modified during iteration", ret);
     }
     return Qnil;
 }
@@ -1266,9 +1266,9 @@ hash_dup(VALUE hash, VALUE klass, VALUE flags)
     VALUE ret = hash_alloc_flags(klass, flags,
 				 RHASH_IFNONE(hash));
     if (!RHASH_EMPTY_P(hash)) {
-	if (RHASH_ARRAY_P(hash))
-	    linear_copy(ret, hash);
-	else if (RHASH_TABLE_P(hash))
+        if (RHASH_ARRAY_P(hash))
+            linear_copy(ret, hash);
+        else if (RHASH_TABLE_P(hash))
             RHASH_ST_TABLE_SET(ret, st_copy(RHASH_ST_TABLE(hash)));
     }
     return ret;
@@ -1498,15 +1498,15 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     VALUE hash, tmp;
 
     if (argc == 1) {
-	tmp = rb_hash_s_try_convert(Qnil, argv[0]); //TODO tmp array flag
+        tmp = rb_hash_s_try_convert(Qnil, argv[0]); //TODO tmp array flag
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc(klass);
-	    if (RHASH_ARRAY_P(tmp)) {
-		linear_copy(hash, tmp);
+            if (RHASH_ARRAY_P(tmp)) {
+                linear_copy(hash, tmp);
 	    }
             else {
-		RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(tmp)));
-	    }
+                RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(tmp)));
+            }
 	    return hash;
 	}
 
@@ -1596,10 +1596,10 @@ static int
 rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 {
     if (RHASH_ARRAY_P(arg)) {
-	linear_insert(arg, (st_data_t)key, (st_data_t)value);
+        linear_insert(arg, (st_data_t)key, (st_data_t)value);
     }
     else {
-	st_insert(RHASH_ST_TABLE(arg), (st_data_t)key, (st_data_t)value);
+        st_insert(RHASH_ST_TABLE(arg), (st_data_t)key, (st_data_t)value);
     }
     return ST_CONTINUE;
 }
@@ -1635,22 +1635,22 @@ rb_hash_rehash(VALUE hash)
     }
     rb_hash_modify_check(hash);
     if (RHASH_ARRAY_P(hash)) {
-	tmp = hash_alloc(0);
-	linear_init_table(tmp);
-	rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
-	linear_free_and_clear_table(hash);
+        tmp = hash_alloc(0);
+        linear_init_table(tmp);
+        rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
+        linear_free_and_clear_table(hash);
         linear_copy(hash, tmp);
-	linear_free_and_clear_table(tmp);
+        linear_free_and_clear_table(tmp);
     }
     else if (RHASH_TABLE_P(hash)) {
-	st_table *old_tab = RHASH_ST_TABLE(hash);
-	tmp = hash_alloc(0);
-	tbl = st_init_table_with_size(old_tab->type, old_tab->num_entries);
+        st_table *old_tab = RHASH_ST_TABLE(hash);
+        tmp = hash_alloc(0);
+        tbl = st_init_table_with_size(old_tab->type, old_tab->num_entries);
         RHASH_ST_TABLE_SET(tmp, tbl);
-	rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
-	st_free_table(old_tab);
-	RHASH_ST_TABLE_SET(hash, tbl);
-	RHASH_CLEAR(tmp);
+        rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
+        st_free_table(old_tab);
+        RHASH_ST_TABLE_SET(hash, tbl);
+        RHASH_CLEAR(tmp);
     }
     hash_verify(hash);
     return hash;
@@ -1690,10 +1690,10 @@ rb_hash_aref(VALUE hash, VALUE key)
     st_data_t val;
 
     if (RHASH_ARRAY_P(hash) && linear_lookup(hash, key, &val)) {
-	return (VALUE)val;
+        return (VALUE)val;
     }
     else if (RHASH_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-	return (VALUE)val;
+        return (VALUE)val;
     }
     hash_verify(hash);
     return rb_hash_default_value(hash, key);
@@ -1775,19 +1775,19 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
 	rb_warn("block supersedes default value argument");
     }
     if (RHASH_ARRAY_P(hash) && linear_lookup(hash, key, &val)) {
-	return (VALUE)val;
+        return (VALUE)val;
     }
     else if (RHASH_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-	return (VALUE)val;
+        return (VALUE)val;
     }
     if (block_given) return rb_yield(key);
     if (argc == 1) {
-	VALUE desc = rb_protect(rb_inspect, key, 0);
-	if (NIL_P(desc)) {
-	    desc = rb_any_to_s(key);
+        VALUE desc = rb_protect(rb_inspect, key, 0);
+        if (NIL_P(desc)) {
+            desc = rb_any_to_s(key);
 	}
-	desc = rb_str_ellipsize(desc, 65);
-	rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
+        desc = rb_str_ellipsize(desc, 65);
+        rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
     }
     hash_verify(hash);
     return argv[1];
@@ -2092,26 +2092,26 @@ rb_hash_shift(VALUE hash)
     if (RHASH_ARRAY_P(hash)) {
 	var.key = Qundef;
 	if (RHASH_ITER_LEV(hash) == 0) {
-	    if (linear_shift(hash, &var.key, &var.val)) {
+            if (linear_shift(hash, &var.key, &var.val)) {
 		return rb_assoc_new(var.key, var.val);
 	    }
 	}
 	else {
             rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
-	    if (var.key != Qundef) {
-		rb_hash_delete_entry(hash, var.key);
-		return rb_assoc_new(var.key, var.val);
-	    }
-	}
+            if (var.key != Qundef) {
+                rb_hash_delete_entry(hash, var.key);
+                return rb_assoc_new(var.key, var.val);
+            }
+        }
     }
     if (RHASH_TABLE_P(hash)) {
-	var.key = Qundef;
-	if (RHASH_ITER_LEV(hash) == 0) {
-	    if (st_shift(RHASH_ST_TABLE(hash), &var.key, &var.val)) {
-		return rb_assoc_new(var.key, var.val);
-	    }
-	}
-	else {
+        var.key = Qundef;
+        if (RHASH_ITER_LEV(hash) == 0) {
+            if (st_shift(RHASH_ST_TABLE(hash), &var.key, &var.val)) {
+                return rb_assoc_new(var.key, var.val);
+            }
+        }
+        else {
 	    rb_hash_foreach(hash, shift_i_safe, (VALUE)&var);
 	    if (var.key != Qundef) {
 		rb_hash_delete_entry(hash, var.key);
@@ -2511,7 +2511,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     if (RHASH_TABLE_EMPTY(hash)) {
 	if (iter_lev > 0) no_new_key();
-	linear_init_table(hash);
+        linear_init_table(hash);
     }
 
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
@@ -2543,22 +2543,22 @@ rb_hash_initialize_copy(VALUE hash, VALUE hash2)
     if (hash == hash2) return hash;
 
     if (RHASH_ARRAY_P(hash2)) {
-	if (RHASH_ARRAY_P(hash)) linear_free_and_clear_table(hash);
-	linear_copy(hash, hash2);
-	if (RHASH_ARRAY_SIZE(hash))
+        if (RHASH_ARRAY_P(hash)) linear_free_and_clear_table(hash);
+        linear_copy(hash, hash2);
+        if (RHASH_ARRAY_SIZE(hash))
 	    rb_hash_rehash(hash);
     }
     else if (RHASH_TABLE_P(hash2)) {
-	if (RHASH_TABLE_P(hash)) st_free_table(RHASH_ST_TABLE(hash));
+        if (RHASH_TABLE_P(hash)) st_free_table(RHASH_ST_TABLE(hash));
         RHASH_ST_TABLE_SET(hash, st_copy(RHASH_ST_TABLE(hash2)));
-	if (RHASH_ST_TABLE(hash)->num_entries)
-	    rb_hash_rehash(hash);
+        if (RHASH_ST_TABLE(hash)->num_entries)
+            rb_hash_rehash(hash);
     }
     else if (RHASH_ARRAY_P(hash)) {
-	linear_clear(hash);
+        linear_clear(hash);
     }
     else if (RHASH_TABLE_P(hash)) {
-	st_clear(RHASH_ST_TABLE(hash));
+        st_clear(RHASH_ST_TABLE(hash));
     }
 
     COPY_DEFAULT(hash, hash2);
@@ -3096,20 +3096,20 @@ rb_hash_keys(VALUE hash)
     if (size == 0) return keys;
 
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
-	if (RHASH_ARRAY_P(hash)) {
-	    rb_gc_writebarrier_remember(keys);
-	    RARRAY_PTR_USE(keys, ptr, {
-		size = linear_keys(hash, ptr, size);
-	    });
-	}
-	else if (RHASH_TABLE_P(hash)) {
-	    st_table *table = RHASH_ST_TABLE(hash);
+        if (RHASH_ARRAY_P(hash)) {
+            rb_gc_writebarrier_remember(keys);
+            RARRAY_PTR_USE(keys, ptr, {
+                size = linear_keys(hash, ptr, size);
+            });
+        }
+        else if (RHASH_TABLE_P(hash)) {
+            st_table *table = RHASH_ST_TABLE(hash);
 
-	    rb_gc_writebarrier_remember(keys);
-	    RARRAY_PTR_USE(keys, ptr, {
-		 size = st_keys(table, ptr, size);
-	    });
-	}
+            rb_gc_writebarrier_remember(keys);
+            RARRAY_PTR_USE(keys, ptr, {
+                 size = st_keys(table, ptr, size);
+            });
+        }
 	rb_ary_set_len(keys, size);
     }
     else {
@@ -3148,20 +3148,20 @@ rb_hash_values(VALUE hash)
     if (size == 0) return values;
 
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
-	if (RHASH_ARRAY_P(hash)) {
-	    rb_gc_writebarrier_remember(values);
-	    RARRAY_PTR_USE(values, ptr, {
-		size = linear_values(hash, ptr, size);
-	    });
-	}
-	else if (RHASH_TABLE_P(hash)) {
-	    st_table *table = RHASH_ST_TABLE(hash);
+        if (RHASH_ARRAY_P(hash)) {
+            rb_gc_writebarrier_remember(values);
+            RARRAY_PTR_USE(values, ptr, {
+                size = linear_values(hash, ptr, size);
+            });
+        }
+        else if (RHASH_TABLE_P(hash)) {
+            st_table *table = RHASH_ST_TABLE(hash);
 
-	    rb_gc_writebarrier_remember(values);
-	    RARRAY_PTR_USE(values, ptr, {
-		size = st_values(table, ptr, size);
-	    });
-	}
+            rb_gc_writebarrier_remember(values);
+            RARRAY_PTR_USE(values, ptr, {
+                size = st_values(table, ptr, size);
+            });
+        }
 	rb_ary_set_len(values, size);
     }
     else {
@@ -3255,8 +3255,8 @@ eql_i(VALUE key, VALUE val1, VALUE arg)
 	return ST_STOP;
     }
     else if (RHASH_TABLE_P(data->hash) && !st_lookup(RHASH_ST_TABLE(data->hash), key, &val2)) {
-	data->result = Qfalse;
-	return ST_STOP;
+        data->result = Qfalse;
+        return ST_STOP;
     }
 
     if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
@@ -3304,14 +3304,14 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;
     if (!RHASH_TABLE_EMPTY(hash1) && !RHASH_TABLE_EMPTY(hash2)) {
-	if (RHASH_TYPE(hash1) != RHASH_TYPE(hash2))
-	    return Qfalse;
+        if (RHASH_TYPE(hash1) != RHASH_TYPE(hash2))
+            return Qfalse;
 
-	data.hash = hash2;
-	data.eql = eql;
-	return rb_exec_recursive_paired(recursive_eql, hash1, hash2, (VALUE)&data);
+        data.hash = hash2;
+        data.eql = eql;
+        return rb_exec_recursive_paired(recursive_eql, hash1, hash2, (VALUE)&data);
     }
-    
+
 #if 0
     if (!(rb_equal(RHASH_IFNONE(hash1), RHASH_IFNONE(hash2)) &&
 	  FL_TEST(hash1, HASH_PROC_DEFAULT) == FL_TEST(hash2, HASH_PROC_DEFAULT)))
@@ -3896,7 +3896,7 @@ rb_hash_compact_bang(VALUE hash)
     n = RHASH_SIZE(hash);
     if (n) {
 	rb_hash_foreach(hash, delete_if_nil, hash);
-	if (n != RHASH_SIZE(hash))
+        if (n != RHASH_SIZE(hash))
 	    return hash;
     }
     return Qnil;
@@ -4237,9 +4237,9 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val) //TODO
     if (RHASH_ARRAY_P(hash)) {
         hash_ltbl(hash);
 
-	ret = linear_update(hash, (st_data_t)key, add_new_i, (st_data_t)args);
+        ret = linear_update(hash, (st_data_t)key, add_new_i, (st_data_t)args);
         if (ret != -1) {
-	    return ret;
+            return ret;
         }
         linear_try_convert_table(hash);
     }
@@ -4260,11 +4260,11 @@ linear_bulk_insert(VALUE hash, long argc, const VALUE *argv)
 {
     long i;
     for (i = 0; i < argc; ) {
-	st_data_t k = key_stringify(argv[i++]);
-	st_data_t v = argv[i++];
-	linear_insert(hash, k, v);
-	RB_OBJ_WRITTEN(hash, Qundef, k);
-	RB_OBJ_WRITTEN(hash, Qundef, v);
+        st_data_t k = key_stringify(argv[i++]);
+        st_data_t v = argv[i++];
+        linear_insert(hash, k, v);
+        RB_OBJ_WRITTEN(hash, Qundef, k);
+        RB_OBJ_WRITTEN(hash, Qundef, v);
     }
 }
 
@@ -4278,15 +4278,15 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
         return;
     size = argc / 2;
     if (RHASH_TABLE_EMPTY(hash)) {
-	if (size <= RHASH_ARRAY_MAX_SIZE)
-	    hash_ltbl(hash);
-	else
+        if (size <= RHASH_ARRAY_MAX_SIZE)
+            hash_ltbl(hash);
+        else
             RHASH_TBL_RAW(hash);
     }
-    if (RHASH_ARRAY_P(hash) && 
+    if (RHASH_ARRAY_P(hash) &&
         (RHASH_ARRAY_SIZE(hash) + size <= RHASH_ARRAY_MAX_SIZE)) {
-	linear_bulk_insert(hash, argc, argv);
-	return;
+        linear_bulk_insert(hash, argc, argv);
+        return;
     }
 
     rb_hash_bulk_insert_into_st_table(argc, argv, hash);

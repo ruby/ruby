@@ -740,8 +740,8 @@ typedef struct li_table {
 struct RHash {
     struct RBasic basic;
     union {
-	struct st_table *st;
-	struct li_table *li; /* possibly 0 */
+        struct st_table *st;
+        struct li_table *li; /* possibly 0 */
     } as;
     int iter_lev;
     const VALUE ifnone;

@@ -569,12 +569,12 @@ transient_heap_ptr(VALUE obj, int error)
       case T_HASH:
         if (RHASH_TRANSIENT_P(obj)) {
             TH_ASSERT(RHASH_ARRAY_P(obj));
-	    ptr = (VALUE *)(RHASH(obj)->as.li);
-	}
-	else {
-	    ptr = NULL;
-	}
-	break;
+            ptr = (VALUE *)(RHASH(obj)->as.li);
+        }
+        else {
+            ptr = NULL;
+        }
+        break;
       default:
         if (error) {
             rb_bug("transient_heap_ptr: unknown obj %s\n", rb_obj_info(obj));
@@ -666,8 +666,8 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
     while (marked_index >= 0) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
         VALUE obj = header->obj;
-	TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
-	if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header %s\n", rb_obj_info(obj));
+        TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
+        if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header %s\n", rb_obj_info(obj));
 
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", header, rb_obj_info(obj));
 

@@ -3358,12 +3358,12 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	break;
       case T_HASH:
         if (RHASH_ARRAY_P(obj)) {
-	    size += sizeof(li_table);
+            size += sizeof(li_table);
 	}
-	else {
+        else {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
-	    size += st_memsize(RHASH_ST_TABLE(obj));
-	}
+            size += st_memsize(RHASH_ST_TABLE(obj));
+        }
 	break;
       case T_REGEXP:
 	if (RREGEXP_PTR(obj)) {
@@ -4739,7 +4739,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_HASH:
-	mark_hash(objspace, obj);
+        mark_hash(objspace, obj);
 	break;
 
       case T_STRING:
