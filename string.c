@@ -2006,9 +2006,9 @@ rb_str_format_m(VALUE str, VALUE arg)
     VALUE tmp = rb_check_array_type(arg);
 
     if (!NIL_P(tmp)) {
-	VALUE rv = rb_str_format(RARRAY_LENINT(tmp), RARRAY_CONST_PTR(tmp), str);
-	RB_GC_GUARD(tmp);
-	return rv;
+        const long len = RARRAY_LENINT(tmp);
+        VALUE rv = rb_str_format(len, RARRAY_CONST_PTR(tmp), str);
+        return rv;
     }
     return rb_str_format(1, &arg, str);
 }

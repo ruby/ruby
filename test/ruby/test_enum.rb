@@ -1115,4 +1115,19 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
   end
+
+  def test_transient_heap_sort_by
+    klass = Class.new do
+      include Comparable
+      attr_reader :i
+      def initialize e
+        @i = e
+      end
+      def <=> other
+        GC.start
+        i <=> other.i
+      end
+    end
+    assert_equal [1, 2, 3, 4, 5], (1..5).sort_by{|e| klass.new e}
+  end
 end
