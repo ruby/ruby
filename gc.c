@@ -2383,14 +2383,17 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_STRUCT:
-	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) == 0 &&
-	    RANY(obj)->as.rstruct.as.heap.ptr) {
-	    xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
-            RB_DEBUG_COUNTER_INC(obj_struct_ptr);
-	}
-        else {
+	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) ||
+            RANY(obj)->as.rstruct.as.heap.ptr == NULL) {
             RB_DEBUG_COUNTER_INC(obj_struct_embed);
         }
+        else if (RSTRUCT_TRANSIENT_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_struct_transient);
+        }
+        else {
+            xfree((void *)RANY(obj)->as.rstruct.as.heap.ptr);
+            RB_DEBUG_COUNTER_INC(obj_struct_ptr);
+	}
 	break;
 
       case T_SYMBOL:
@@ -4775,12 +4778,18 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_STRUCT:
 	{
-	    long len = RSTRUCT_LEN(obj);
-	    const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+            long i;
+            const long len = RSTRUCT_LEN(obj);
+            const VALUE * const ptr = RSTRUCT_CONST_PTR(obj);
 
-	    while (len--) {
-		gc_mark(objspace, *ptr++);
-	    }
+            for (i=0; i<len; i++) {
+                gc_mark(objspace, ptr[i]);
+            }
+
+            if (objspace->mark_func_data == NULL &&
+                RSTRUCT_TRANSIENT_P(obj)) {
+                rb_transient_heap_mark(obj, ptr);
+            }
 	}
 	break;
 

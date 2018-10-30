@@ -12,6 +12,7 @@
 #include "internal.h"
 #include "vm_core.h"
 #include "id.h"
+#include "transient_heap.h"
 
 /* only for struct[:field] access */
 enum {
@@ -654,6 +655,41 @@ rb_struct_initialize(VALUE self, VALUE values)
     return rb_struct_initialize_m(RARRAY_LENINT(values), RARRAY_CONST_PTR(values), self);
 }
 
+static VALUE *
+struct_heap_alloc(VALUE st, size_t len)
+{
+    VALUE *ptr = rb_transient_heap_alloc((VALUE)st, sizeof(VALUE) * len);
+
+    if (ptr) {
+        FL_SET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
+        return ptr;
+    }
+    else {
+        FL_UNSET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
+        return ALLOC_N(VALUE, len);
+    }
+}
+
+void
+rb_struct_transient_heap_evacuate(VALUE obj, int promote)
+{
+    if (RSTRUCT_TRANSIENT_P(obj)) {
+        const VALUE *old_ptr = rb_struct_const_heap_ptr(obj);
+        VALUE *new_ptr;
+        long len = RSTRUCT_LEN(obj);
+
+        if (promote) {
+            new_ptr = ALLOC_N(VALUE, len);
+            FL_UNSET_RAW(obj, RSTRUCT_TRANSIENT_FLAG);
+        }
+        else {
+            new_ptr = struct_heap_alloc(obj, len);
+        }
+        MEMCPY(new_ptr, old_ptr, VALUE, len);
+        RSTRUCT(obj)->as.heap.ptr = new_ptr;
+    }
+}
+
 static VALUE
 struct_alloc(VALUE klass)
 {
@@ -668,9 +704,9 @@ struct_alloc(VALUE klass)
 	rb_mem_clear((VALUE *)st->as.ary, n);
     }
     else {
-	st->as.heap.ptr = ALLOC_N(VALUE, n);
-	rb_mem_clear((VALUE *)st->as.heap.ptr, n);
-	st->as.heap.len = n;
+        st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
+        rb_mem_clear((VALUE *)st->as.heap.ptr, n);
+        st->as.heap.len = n;
     }
 
     return (VALUE)st;

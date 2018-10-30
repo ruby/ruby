@@ -354,7 +354,8 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
     size_t size = ROUND_UP(req_size + sizeof(struct transient_alloc_header), TRANSIENT_HEAP_ALLOC_ALIGN);
 
     TH_ASSERT(RB_TYPE_P(obj, T_ARRAY) ||
-              RB_TYPE_P(obj, T_OBJECT)); /* supported types */
+              RB_TYPE_P(obj, T_OBJECT) ||
+              RB_TYPE_P(obj, T_STRUCT)); /* supported types */
 
     if (size > TRANSIENT_HEAP_ALLOC_MAX) {
         if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: [too big: %ld] %s\n", (long)size, rb_obj_info(obj));
@@ -546,7 +547,7 @@ rb_transient_heap_mark(VALUE obj, const void *ptr)
 static const void *
 transient_heap_ptr(VALUE obj, int error)
 {
-    const void *ptr;
+    const void *ptr = NULL;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
@@ -554,24 +555,20 @@ transient_heap_ptr(VALUE obj, int error)
             TH_ASSERT(!FL_TEST_RAW(obj, RARRAY_EMBED_FLAG));
             ptr = RARRAY(obj)->as.heap.ptr;
         }
-        else {
-            ptr = NULL;
-        }
         break;
       case T_OBJECT:
         if (ROBJ_TRANSIENT_P(obj)) {
             ptr = ROBJECT_IVPTR(obj);
         }
-        else {
-            ptr = NULL;
+        break;
+      case T_STRUCT:
+        if (RSTRUCT_TRANSIENT_P(obj)) {
+            ptr = rb_struct_const_heap_ptr(obj);
         }
         break;
       default:
         if (error) {
             rb_bug("transient_heap_ptr: unknown obj %s\n", rb_obj_info(obj));
-        }
-        else {
-            ptr = NULL;
         }
     }
 
@@ -672,6 +669,9 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
                 break;
               case T_OBJECT:
                 rb_obj_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
+                break;
+              case T_STRUCT:
+                rb_struct_transient_heap_evacuate(obj, !TRANSIENT_HEAP_DEBUG_DONT_PROMOTE);
                 break;
               default:
                 rb_bug("unsupporeted");
