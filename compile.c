@@ -1649,7 +1649,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
 
 	    opt_table = ALLOC_N(VALUE, i+1);
 
-	    MEMCPY(opt_table, RARRAY_CONST_PTR(labels), VALUE, i+1);
+	    MEMCPY(opt_table, RARRAY_CONST_PTR_TRANSIENT(labels), VALUE, i+1);
 	    for (j = 0; j < i+1; j++) {
 		opt_table[j] &= ~1;
 	    }
@@ -2297,14 +2297,14 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     struct iseq_catch_table_entry *entry;
 
     tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
-    tptr = RARRAY_CONST_PTR(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+    tptr = RARRAY_CONST_PTR_TRANSIENT(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
 
     if (tlen > 0) {
 	struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
 	table->size = tlen;
 
 	for (i = 0; i < table->size; i++) {
-	    ptr = RARRAY_CONST_PTR(tptr[i]);
+	    ptr = RARRAY_CONST_PTR_TRANSIENT(tptr[i]);
 	    entry = &table->entries[i];
 	    entry->type = (enum catch_type)(ptr[0] & 0xffff);
 	    entry->start = label_get_position((LABEL *)(ptr[1] & ~1));

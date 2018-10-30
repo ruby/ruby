@@ -1020,12 +1020,15 @@ enum ruby_rarray_flags {
     RARRAY_EMBED_LEN_MASK = (RUBY_FL_USER4|RUBY_FL_USER3),
     RARRAY_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+3),
 
+    RARRAY_TRANSIENT_FLAG = RUBY_FL_USER13,
+
     RARRAY_ENUM_END
 };
 #define RARRAY_EMBED_FLAG (VALUE)RARRAY_EMBED_FLAG
 #define RARRAY_EMBED_LEN_MASK (VALUE)RARRAY_EMBED_LEN_MASK
 #define RARRAY_EMBED_LEN_MAX RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
+#define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
 struct RArray {
     struct RBasic basic;
     union {
@@ -1046,9 +1049,14 @@ struct RArray {
 #define RARRAY_LEN(a) rb_array_len(a)
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 #define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
+#define RARRAY_CONST_PTR_TRANSIENT(a) rb_array_const_ptr_transient(a)
+#define RARRAY_TRANSIENT_P(ary) FL_TEST_RAW((ary), RARRAY_TRANSIENT_FLAG)
 
-#define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR(a))
-#define RARRAY_PTR_USE_END(a) /* */
+VALUE *rb_ary_ptr_use_start(VALUE ary);
+void rb_ary_ptr_use_end(VALUE ary);
+
+#define RARRAY_PTR_USE_START(a) rb_ary_ptr_use_start(a)
+#define RARRAY_PTR_USE_END(a) rb_ary_ptr_use_end(a)
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
     const VALUE _ary = (ary); \
@@ -1057,11 +1065,12 @@ struct RArray {
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
-#define RARRAY_AREF(a, i)    (RARRAY_CONST_PTR(a)[i])
+#define RARRAY_AREF(a, i) (RARRAY_CONST_PTR_TRANSIENT(a)[i])
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary = (a); \
+    const VALUE _v = (v); \
     VALUE *ptr = (VALUE *)RARRAY_PTR_USE_START(_ary); \
-    RB_OBJ_WRITE(_ary, &ptr[i], (v)); \
+    RB_OBJ_WRITE(_ary, &ptr[i], _v); \
     RARRAY_PTR_USE_END(_ary); \
 } while (0)
 
@@ -2110,10 +2119,21 @@ rb_array_len(VALUE a)
 #endif
 
 static inline const VALUE *
-rb_array_const_ptr(VALUE a)
+rb_array_const_ptr_transient(VALUE a)
 {
     return FIX_CONST_VALUE_PTR((RBASIC(a)->flags & RARRAY_EMBED_FLAG) ?
 	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
+}
+
+void rb_ary_detransient(VALUE a);
+
+static inline const VALUE *
+rb_array_const_ptr(VALUE a)
+{
+    if (RARRAY_TRANSIENT_P(a)) {
+        rb_ary_detransient(a);
+    }
+    return rb_array_const_ptr_transient(a);
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)

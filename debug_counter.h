@@ -219,6 +219,11 @@ RB_DEBUG_COUNTER(heap_xmalloc)
 RB_DEBUG_COUNTER(heap_xrealloc)
 RB_DEBUG_COUNTER(heap_xfree)
 
+/* transient_heap */
+RB_DEBUG_COUNTER(theap_alloc)
+RB_DEBUG_COUNTER(theap_alloc_fail)
+RB_DEBUG_COUNTER(theap_evacuate)
+
 /* load (not implemented yet) */
 /*
 RB_DEBUG_COUNTER(load_files)
