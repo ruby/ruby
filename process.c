@@ -3872,7 +3872,8 @@ COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 static rb_pid_t
 retry_fork_async_signal_safe(int *status, int *ep,
         int (*chfunc)(void*, char *, size_t), void *charg,
-        char *errmsg, size_t errmsg_buflen)
+        char *errmsg, size_t errmsg_buflen,
+        struct waitpid_state *w)
 {
     rb_pid_t pid;
     volatile int try_gc = 1;
@@ -3882,6 +3883,9 @@ retry_fork_async_signal_safe(int *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
+        if (w && WAITPID_USE_SIGCHLD) {
+            rb_native_mutex_lock(&rb_ec_vm_ptr(w->ec)->waitpid_lock);
+        }
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
             pid = vfork();
@@ -3906,6 +3910,13 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #endif
         }
 	err = errno;
+        if (w && WAITPID_USE_SIGCHLD) {
+            if (pid > 0) {
+                w->pid = pid;
+                list_add(&rb_ec_vm_ptr(w->ec)->waiting_pids, &w->wnode);
+            }
+            rb_native_mutex_unlock(&rb_ec_vm_ptr(w->ec)->waitpid_lock);
+        }
 	disable_child_handler_fork_parent(&old);
         if (0 < pid) /* fork succeed, parent process */
             return pid;
@@ -3916,34 +3927,55 @@ retry_fork_async_signal_safe(int *status, int *ep,
 }
 COMPILER_WARNING_POP
 
-rb_pid_t
-rb_fork_async_signal_safe(int *status, int (*chfunc)(void*, char *, size_t), void *charg, VALUE fds,
-        char *errmsg, size_t errmsg_buflen)
+static rb_pid_t
+fork_check_err(int *status, int (*chfunc)(void*, char *, size_t), void *charg,
+        VALUE fds, char *errmsg, size_t errmsg_buflen,
+        struct rb_execarg *eargp)
 {
     rb_pid_t pid;
     int err;
     int ep[2];
     int error_occurred;
+    struct waitpid_state *w;
+
+    w = eargp && eargp->waitpid_state ? eargp->waitpid_state : 0;
 
     if (status) *status = 0;
 
     if (pipe_nocrash(ep, fds)) return -1;
-    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg, errmsg, errmsg_buflen);
+    pid = retry_fork_async_signal_safe(status, ep, chfunc, charg,
+                                       errmsg, errmsg_buflen, w);
     if (pid < 0)
         return pid;
     close(ep[1]);
     error_occurred = recv_child_error(ep[0], &err, errmsg, errmsg_buflen);
     if (error_occurred) {
         if (status) {
+            VM_ASSERT(w == 0 && "only used by extensions");
             rb_protect(proc_syswait, (VALUE)pid, status);
         }
-        else {
+        else if (!w) {
             rb_syswait(pid);
         }
         errno = err;
         return -1;
     }
     return pid;
+}
+
+/*
+ * The "async_signal_safe" name is a lie, but it is used by pty.c and
+ * maybe other exts.  fork() is not async-signal-safe due to pthread_atfork
+ * and future POSIX revisions will remove it from a list of signal-safe
+ * functions.  rb_waitpid is not async-signal-safe since MJIT, either.
+ * For our purposes, we do not need async-signal-safety, here
+ */
+rb_pid_t
+rb_fork_async_signal_safe(int *status,
+                          int (*chfunc)(void*, char *, size_t), void *charg,
+                          VALUE fds, char *errmsg, size_t errmsg_buflen)
+{
+    return fork_check_err(status, chfunc, charg, fds, errmsg, errmsg_buflen, 0);
 }
 
 COMPILER_WARNING_PUSH
@@ -4234,7 +4266,8 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
 #endif
 
 #if defined HAVE_WORKING_FORK && !USE_SPAWNV
-    pid = rb_fork_async_signal_safe(NULL, rb_exec_atfork, eargp, eargp->redirect_fds, errmsg, errmsg_buflen);
+    pid = fork_check_err(0, rb_exec_atfork, eargp, eargp->redirect_fds,
+                         errmsg, errmsg_buflen, eargp);
 #else
     prog = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
 
@@ -4261,7 +4294,9 @@ rb_spawn_process(struct rb_execarg *eargp, char *errmsg, size_t errmsg_buflen)
     rb_last_status_set((status & 0xff) << 8, 0);
     pid = 1;			/* dummy */
 # endif
-
+    if (eargp->waitpid_state) {
+        eargp->waitpid_state->pid = pid;
+    }
     rb_execarg_run_options(&sarg, NULL, errmsg, errmsg_buflen);
 #endif
     return pid;
@@ -4353,37 +4388,39 @@ rb_spawn(int argc, const VALUE *argv)
 static VALUE
 rb_f_system(int argc, VALUE *argv)
 {
-    rb_pid_t pid;
-    int status;
+    /*
+     * n.b. using alloca for now to simplify future Thread::Light code
+     * when we need to use malloc for non-native Fiber
+     */
+    struct waitpid_state *w = alloca(sizeof(struct waitpid_state));
+    rb_pid_t pid; /* may be different from waitpid_state.pid on exec failure */
     VALUE execarg_obj;
     struct rb_execarg *eargp;
+    int exec_errnum;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
     TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
-#if RUBY_SIGCHLD
-    eargp->nocldwait_prev = ruby_nocldwait;
-    ruby_nocldwait = 0;
-#endif
-    pid = rb_execarg_spawn(execarg_obj, NULL, 0);
+    w->ec = GET_EC();
+    waitpid_state_init(w, 0, 0);
+    eargp->waitpid_state = w;
+    pid = rb_execarg_spawn(execarg_obj, 0, 0);
+    exec_errnum = pid < 0 ? errno : 0;
+
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
-    if (pid > 0) {
-        int ret, status;
-        ret = rb_waitpid(pid, &status, 0);
-        if (ret == (rb_pid_t)-1) {
-# if RUBY_SIGCHLD
-            ruby_nocldwait = eargp->nocldwait_prev;
-# endif
-            RB_GC_GUARD(execarg_obj);
-            rb_sys_fail("Another thread waited the process started by system().");
+    if (w->pid > 0) {
+        /* `pid' (not w->pid) may be < 0 here if execve failed in child */
+        if (WAITPID_USE_SIGCHLD) {
+            rb_ensure(waitpid_sleep, (VALUE)w, waitpid_cleanup, (VALUE)w);
         }
+        else {
+            waitpid_no_SIGCHLD(w);
+        }
+        rb_last_status_set(w->status, w->ret);
     }
 #endif
-#if RUBY_SIGCHLD
-    ruby_nocldwait = eargp->nocldwait_prev;
-#endif
-    if (pid < 0) {
+    if (w->pid < 0 /* fork failure */ || pid < 0 /* exec failure */) {
         if (eargp->exception) {
-            int err = errno;
+            int err = exec_errnum ? exec_errnum : w->errnum;
             VALUE command = eargp->invoke.sh.shell_script;
             RB_GC_GUARD(execarg_obj);
             rb_syserr_fail_str(err, command);
@@ -4392,12 +4429,11 @@ rb_f_system(int argc, VALUE *argv)
             return Qnil;
         }
     }
-    status = PST2INT(rb_last_status_get());
-    if (status == EXIT_SUCCESS) return Qtrue;
+    if (w->status == EXIT_SUCCESS) return Qtrue;
     if (eargp->exception) {
         VALUE command = eargp->invoke.sh.shell_script;
         VALUE str = rb_str_new_cstr("Command failed with");
-        rb_str_cat_cstr(pst_message_status(str, status), ": ");
+        rb_str_cat_cstr(pst_message_status(str, w->status), ": ");
         rb_str_append(str, command);
         RB_GC_GUARD(execarg_obj);
         rb_exc_raise(rb_exc_new_str(rb_eRuntimeError, str));
