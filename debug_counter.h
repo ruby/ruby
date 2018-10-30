@@ -182,8 +182,9 @@ RB_DEBUG_COUNTER(obj_hash_under4)
 RB_DEBUG_COUNTER(obj_hash_ge4)
 RB_DEBUG_COUNTER(obj_hash_ge8)
 
-RB_DEBUG_COUNTER(obj_struct_ptr)
 RB_DEBUG_COUNTER(obj_struct_embed)
+RB_DEBUG_COUNTER(obj_struct_transient)
+RB_DEBUG_COUNTER(obj_struct_ptr)
 
 RB_DEBUG_COUNTER(obj_regexp_ptr)
 

@@ -698,13 +698,17 @@ extern void ruby_init_setproctitle(int argc, char *argv[]);
 #define RSTRUCT_EMBED_LEN_MAX RSTRUCT_EMBED_LEN_MAX
 #define RSTRUCT_EMBED_LEN_MASK RSTRUCT_EMBED_LEN_MASK
 #define RSTRUCT_EMBED_LEN_SHIFT RSTRUCT_EMBED_LEN_SHIFT
+
 enum {
     RSTRUCT_EMBED_LEN_MAX = 3,
     RSTRUCT_EMBED_LEN_MASK = (RUBY_FL_USER2|RUBY_FL_USER1),
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
+    RSTRUCT_TRANSIENT_FLAG = FL_USER3,
 
     RSTRUCT_ENUM_END
 };
+
+#define RSTRUCT_TRANSIENT_P(st) FL_TEST_RAW((obj), RSTRUCT_TRANSIENT_FLAG)
 
 struct RStruct {
     struct RBasic basic;
@@ -744,6 +748,13 @@ rb_struct_const_ptr(VALUE st)
 {
     return FIX_CONST_VALUE_PTR((RBASIC(st)->flags & RSTRUCT_EMBED_LEN_MASK) ?
 	RSTRUCT(st)->as.ary : RSTRUCT(st)->as.heap.ptr);
+}
+
+static inline const VALUE *
+rb_struct_const_heap_ptr(VALUE st)
+{
+    /* TODO: check embed on debug mode */
+    return RSTRUCT(st)->as.heap.ptr;
 }
 
 /* class.c */
