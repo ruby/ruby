@@ -1196,7 +1196,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
 
 /* Insert (KEY, VALUE, HASH) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
-static inline void
+void
 st_add_direct_with_hash(st_table *tab,
 			st_data_t key, st_data_t value, st_hash_t hash)
 {
@@ -2281,24 +2281,16 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
     st_rehash(tab);
 }
 
-/* Mimics ruby's { foo => bar } syntax. This function is placed here
-   because it touches table internals and write barriers at once. */
+/* Mimics ruby's { foo => bar } syntax. This function is subpart
+   of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
 {
-    st_index_t n;
-    st_table *tab = RHASH(hash)->ntbl;
+    st_index_t n, size = argc / 2;
+    st_table *tab = RHASH_ST_TABLE(hash);
 
-    st_assert(argc % 2 == 0);
-    if (! argc)
-        return;
-    if (! tab) {
-        VALUE tmp = rb_hash_new_with_size(argc / 2);
-        RBASIC_CLEAR_CLASS(tmp);
-        RHASH(hash)->ntbl = tab = RHASH(tmp)->ntbl;
-        RHASH(tmp)->ntbl = NULL;
-    }
-    n = tab->num_entries + argc / 2;
+    tab = RHASH_TBL_RAW(hash);
+    n = tab->num_entries + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
         st_insert_generic(tab, argc, argv, hash);

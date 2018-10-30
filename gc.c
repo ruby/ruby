@@ -2265,22 +2265,42 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         rb_ary_free(obj);
 	break;
       case T_HASH:
-	if (RANY(obj)->as.hash.ntbl) {
 #if USE_DEBUG_COUNTER
-            if (RHASH_SIZE(obj) >= 8) {
-                RB_DEBUG_COUNTER_INC(obj_hash_ge8);
-            }
-            if (RHASH_SIZE(obj) >= 4) {
-                RB_DEBUG_COUNTER_INC(obj_hash_ge4);
-            }
-            else {
-                RB_DEBUG_COUNTER_INC(obj_hash_under4);
-            }
-#endif
-            st_free_table(RANY(obj)->as.hash.ntbl);
-	}
+        if (RHASH_SIZE(obj) >= 8) {
+            RB_DEBUG_COUNTER_INC(obj_hash_ge8);
+        }
+        else if (RHASH_SIZE(obj) >= 4) {
+            RB_DEBUG_COUNTER_INC(obj_hash_ge4);
+        }
+        else if (RHASH_SIZE(obj) >= 1) {
+            RB_DEBUG_COUNTER_INC(obj_hash_under4);
+        }
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
+        }
+
+        if (RHASH_ARRAY_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_hash_array);
+        }
+        else {
+            RB_DEBUG_COUNTER_INC(obj_hash_st);
+        }
+#endif
+        if (/* RHASH_ARRAY_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
+            li_table *tab = RHASH(obj)->as.li;
+
+            if (tab) {
+                if (RHASH_TRANSIENT_P(obj)) {
+                    RB_DEBUG_COUNTER_INC(obj_hash_transient);
+                }
+                else {
+                    ruby_xfree(tab);
+                }
+            }
+        }
+        else {
+            GC_ASSERT(RHASH_TABLE_P(obj));
+            st_free_table(RHASH(obj)->as.st);
         }
 	break;
       case T_REGEXP:
@@ -3337,8 +3357,12 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	size += rb_ary_memsize(obj);
 	break;
       case T_HASH:
-	if (RHASH(obj)->ntbl) {
-	    size += st_memsize(RHASH(obj)->ntbl);
+        if (RHASH_ARRAY_P(obj)) {
+	    size += sizeof(li_table);
+	}
+	else {
+            VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
+	    size += st_memsize(RHASH_ST_TABLE(obj));
 	}
 	break;
       case T_REGEXP:
@@ -3491,7 +3515,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
         hash = rb_hash_new();
     }
     else if (!RHASH_EMPTY_P(hash)) {
-        st_foreach(RHASH_TBL_RAW(hash), set_zero, hash);
+        rb_hash_stlike_foreach(hash, set_zero, hash);
     }
     rb_hash_aset(hash, ID2SYM(rb_intern("TOTAL")), SIZET2NUM(total));
     rb_hash_aset(hash, ID2SYM(rb_intern("FREE")), SIZET2NUM(freed));
@@ -4225,7 +4249,23 @@ mark_keyvalue(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static void
-mark_hash(rb_objspace_t *objspace, st_table *tbl)
+mark_hash(rb_objspace_t *objspace, VALUE hash)
+{
+    rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
+
+    if (RHASH_ARRAY_P(hash)) {
+        if (objspace->mark_func_data == NULL && RHASH_TRANSIENT_P(hash)) {
+            rb_transient_heap_mark(hash, RHASH_ARRAY(hash));
+        }
+    }
+    else {
+        VM_ASSERT(!RHASH_TRANSIENT_P(hash));
+    }
+    gc_mark(objspace, RHASH(hash)->ifnone);
+}
+
+static void
+mark_st(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl) return;
     st_foreach(tbl, mark_keyvalue, (st_data_t)objspace);
@@ -4234,7 +4274,7 @@ mark_hash(rb_objspace_t *objspace, st_table *tbl)
 void
 rb_mark_hash(st_table *tbl)
 {
-    mark_hash(&rb_objspace, tbl);
+    mark_st(&rb_objspace, tbl);
 }
 
 static void
@@ -4699,8 +4739,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_HASH:
-	mark_hash(objspace, any->as.hash.ntbl);
-	gc_mark(objspace, any->as.hash.ifnone);
+	mark_hash(objspace, obj);
 	break;
 
       case T_STRING:
@@ -9582,6 +9621,13 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 {
     if (SPECIAL_CONST_P(obj)) {
 	snprintf(buff, buff_size, "%s", obj_type_name(obj));
+
+        if (FIXNUM_P(obj)) {
+            snprintf(buff, buff_size, "%s %ld", buff, FIX2LONG(obj));
+        }
+        else if (SYMBOL_P(obj)) {
+            snprintf(buff, buff_size, "%s %s", buff, rb_id2name(SYM2ID(obj)));
+        }
     }
     else {
 #define TF(c) ((c) != 0 ? "true" : "false")
@@ -9658,6 +9704,13 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));
 	    break;
 	  }
+          case T_HASH: {
+              snprintf(buff, buff_size, "%s [%c%c] %d", buff,
+                       RHASH_ARRAY_P(obj) ? 'A' : 'S',
+                       RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
+                       (int)RHASH_SIZE(obj));
+              break;
+          }
 	  case T_CLASS: {
 	    VALUE class_path = rb_class_path_cached(obj);
 	    if (!NIL_P(class_path)) {

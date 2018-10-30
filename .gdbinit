@@ -156,8 +156,12 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
-    if ((struct RHash *)($arg0))->ntbl
-      printf "len=%ld ", ((struct RHash *)($arg0))->ntbl->num_entries
+    if (((struct RHash *)($arg0))->basic->flags & RHASH_ST_TABLE_FLAG)
+      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+    else
+      printf "li len=%ld bound=%ld ", \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_ARRAY_LEN_MASK) >> RHASH_ARRAY_LEN_SHIFT), \
+        ((((struct RHash *)($arg0))->basic->flags & RHASH_ARRAY_BOUND_MASK) >> RHASH_ARRAY_BOUND_SHIFT)
     end
     print (struct RHash *)($arg0)
   else

@@ -32,9 +32,9 @@ void rb_transient_heap_dump(void);
 void rb_transient_heap_verify(void);
 int  rb_transient_heap_managed_ptr_p(const void *ptr);
 
-/* evacuate functions */
+/* evacuate functions for each type */
 void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
 void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
+void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
-
 #endif

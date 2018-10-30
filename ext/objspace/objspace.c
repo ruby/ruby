@@ -824,7 +824,7 @@ static int
 collect_values_of_values(VALUE category, VALUE category_objects, VALUE categories)
 {
     VALUE ary = rb_ary_new();
-    st_foreach(rb_hash_tbl(category_objects), collect_values, ary);
+    rb_hash_foreach(category_objects, collect_values, ary);
     rb_hash_aset(categories, category, ary);
     return ST_CONTINUE;
 }

@@ -5017,7 +5017,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
 
-    rb_hash_tbl_raw(literals)->type = &cdhash_type;
+    RHASH_TBL_RAW(literals)->type = &cdhash_type;
 
     CHECK(COMPILE(head, "case base", node->nd_head));
 
@@ -7990,7 +7990,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
 			    int i;
 			    VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
-			    rb_hash_tbl_raw(map)->type = &cdhash_type;
+			    RHASH_TBL_RAW(map)->type = &cdhash_type;
 			    op = rb_to_array_type(op);
 			    for (i=0; i<RARRAY_LEN(op); i+=2) {
 				VALUE key = RARRAY_AREF(op, i);

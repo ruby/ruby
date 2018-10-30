@@ -489,7 +489,7 @@ mjit_valid_class_serial_p(rb_serial_t class_serial)
     int found_p;
 
     CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    found_p = st_lookup(RHASH_TBL_RAW(valid_class_serials), LONG2FIX(class_serial), NULL);
+    found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
     CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
     return found_p;
 }

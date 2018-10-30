@@ -520,11 +520,12 @@ VALUE rb_hash_delete(VALUE,VALUE);
 VALUE rb_hash_set_ifnone(VALUE hash, VALUE ifnone);
 typedef VALUE rb_hash_update_func(VALUE newkey, VALUE oldkey, VALUE value);
 VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
-struct st_table *rb_hash_tbl(VALUE);
+struct st_table *rb_hash_tbl(VALUE, const char *file, int line);
 int rb_path_check(const char*);
 int rb_env_path_tainted(void);
 VALUE rb_env_clear(void);
 VALUE rb_hash_size(VALUE);
+void rb_hash_free(VALUE);
 /* io.c */
 #define rb_defout rb_stdout
 RUBY_EXTERN VALUE rb_fs;
