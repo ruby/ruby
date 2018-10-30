@@ -454,6 +454,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 * timer thread is eliminated for platforms with POSIX timers [Misc #14937]
 
+* Transient Heap (theap) is supported. [Bug #14858] [Feature #14989]
+  theap is managed heap for short-living memory objects. For example,
+  making small and short-living Hash object is x2 faster. With rdoc benchmark,
+  we maesured 6-7% performance improvement.
+
 === Miscellaneous changes
 
 * On macOS, shared libraries no longer include a full version number of Ruby
