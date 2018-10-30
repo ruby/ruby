@@ -1532,7 +1532,7 @@ heap_page_allocate(rb_objspace_t *objspace)
     /* assign heap_page entry */
     page = (struct heap_page *)calloc(1, sizeof(struct heap_page));
     if (page == 0) {
-	aligned_free(page_body);
+        aligned_free(page_body);
 	rb_memerror();
     }
 
@@ -1954,10 +1954,10 @@ newobj_of(VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protect
 
 #if GC_DEBUG_STRESS_TO_CLASS
     if (UNLIKELY(stress_to_class)) {
-	long i, cnt = RARRAY_LEN(stress_to_class);
-	for (i = 0; i < cnt; ++i) {
+        long i, cnt = RARRAY_LEN(stress_to_class);
+        for (i = 0; i < cnt; ++i) {
             if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
-	}
+        }
     }
 #endif
     if (!(during_gc ||
@@ -2215,14 +2215,14 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-	if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
+        if (!(RANY(obj)->as.basic.flags & ROBJECT_EMBED) &&
             RANY(obj)->as.object.as.heap.ivptr) {
-	    xfree(RANY(obj)->as.object.as.heap.ivptr);
-	    RB_DEBUG_COUNTER_INC(obj_obj_ptr);
-	}
-	else {
+            xfree(RANY(obj)->as.object.as.heap.ivptr);
+            RB_DEBUG_COUNTER_INC(obj_obj_ptr);
+        }
+        else {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
-	}
+        }
 	break;
       case T_MODULE:
       case T_CLASS:
@@ -2259,7 +2259,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	rb_str_free(obj);
 	break;
       case T_ARRAY:
-	rb_ary_free(obj);
+        rb_ary_free(obj);
 	break;
       case T_HASH:
 	if (RANY(obj)->as.hash.ntbl) {
@@ -4671,16 +4671,16 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_ARRAY:
-	if (FL_TEST(obj, ELTS_SHARED)) {
-	    gc_mark(objspace, any->as.array.as.heap.aux.shared);
+        if (FL_TEST(obj, ELTS_SHARED)) {
+            gc_mark(objspace, any->as.array.as.heap.aux.shared);
 	}
 	else {
 	    long i, len = RARRAY_LEN(obj);
-	    const VALUE *ptr = RARRAY_CONST_PTR(obj);
+            const VALUE *ptr = RARRAY_CONST_PTR(obj);
 	    for (i=0; i < len; i++) {
-		gc_mark(objspace, *ptr++);
+                gc_mark(objspace, *ptr++);
 	    }
-	}
+        }
 	break;
 
       case T_HASH:
@@ -4709,9 +4709,9 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_OBJECT:
         {
             uint32_t i, len = ROBJECT_NUMIV(obj);
-	    VALUE *ptr = ROBJECT_IVPTR(obj);
+            VALUE *ptr = ROBJECT_IVPTR(obj);
             for (i  = 0; i < len; i++) {
-		gc_mark(objspace, *ptr++);
+                gc_mark(objspace, *ptr++);
             }
         }
 	break;
@@ -9551,13 +9551,13 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 #if USE_RGENGC
 	const int age = RVALUE_FLAGS_AGE(RBASIC(obj)->flags);
 
-	snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
-		 (void *)obj, age,
-		 C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
-		 C(RVALUE_MARK_BITMAP(obj),           "M"),
-		 C(RVALUE_MARKING_BITMAP(obj),        "R"),
-		 C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
-		 obj_type_name(obj));
+        snprintf(buff, buff_size, "%p [%d%s%s%s%s] %s",
+                 (void *)obj, age,
+                 C(RVALUE_UNCOLLECTIBLE_BITMAP(obj),  "L"),
+                 C(RVALUE_MARK_BITMAP(obj),           "M"),
+                 C(RVALUE_MARKING_BITMAP(obj),        "R"),
+                 C(RVALUE_WB_UNPROTECTED_BITMAP(obj), "U"),
+                 obj_type_name(obj));
 #else
 	snprintf(buff, buff_size, "%p [%s] %s",
 		 (void *)obj,
@@ -9587,10 +9587,10 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	    UNEXPECTED_NODE(rb_raw_obj_info);
 	    break;
 	  case T_ARRAY:
-	    snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
-		     C(ARY_EMBED_P(obj),  "E"),
-		     C(ARY_SHARED_P(obj), "S"),
-		     (int)RARRAY_LEN(obj));
+            snprintf(buff, buff_size, "%s [%s%s] len: %d", buff,
+                     C(ARY_EMBED_P(obj),  "E"),
+                     C(ARY_SHARED_P(obj), "S"),
+                     (int)RARRAY_LEN(obj));
 	    break;
 	  case T_STRING: {
 	    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(obj));

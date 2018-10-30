@@ -1379,7 +1379,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
             }
         }
         RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[ivup.index], val);
-	break;
+        break;
       case T_CLASS:
       case T_MODULE:
 	if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
