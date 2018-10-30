@@ -5925,7 +5925,6 @@ static VALUE
 rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 {
     long i, len = RARRAY_LEN(ary);
-    const VALUE *ptr = RARRAY_CONST_PTR(ary);
 
     rb_check_arity(argc, 0, 1);
     if (!len) return Qfalse;
@@ -5938,7 +5937,9 @@ rb_ary_any_p(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else if (!rb_block_given_p()) {
-	for (i = 0; i < len; ++i) if (RTEST(ptr[i])) return Qtrue;
+        for (i = 0; i < len; ++i) {
+            if (RTEST(RARRAY_AREF(ary, i))) return Qtrue;
+        }
     }
     else {
 	for (i = 0; i < RARRAY_LEN(ary); ++i) {

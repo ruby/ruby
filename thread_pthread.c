@@ -1615,18 +1615,17 @@ native_set_thread_name(rb_thread_t *th)
 	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
 	}
 	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
-	    const VALUE *ptr = RARRAY_CONST_PTR(loc); /* [ String, Integer ] */
 	    char *name, *p;
 	    char buf[16];
 	    size_t len;
 	    int n;
 
-	    name = RSTRING_PTR(ptr[0]);
+	    name = RSTRING_PTR(RARRAY_AREF(loc, 0));
 	    p = strrchr(name, '/'); /* show only the basename of the path. */
 	    if (p && p[1])
 		name = p + 1;
 
-	    n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(ptr[1]));
+	    n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(RARRAY_AREF(loc, 1)));
 	    rb_gc_force_recycle(loc); /* acts as a GC guard, too */
 
 	    len = (size_t)n;
