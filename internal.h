@@ -1922,6 +1922,9 @@ extern rb_encoding OnigEncodingUTF_8;
 #endif
 
 /* variable.c */
+#define ROBJECT_TRANSIENT_FLAG FL_USER13
+#define ROBJ_TRANSIENT_P(obj) FL_TEST_RAW((obj), ROBJECT_TRANSIENT_FLAG)
+
 void rb_gc_mark_global_tbl(void);
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
