@@ -2383,7 +2383,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
 	break;
 
       case T_STRUCT:
-	if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) ||
+        if ((RBASIC(obj)->flags & RSTRUCT_EMBED_LEN_MASK) ||
             RANY(obj)->as.rstruct.as.heap.ptr == NULL) {
             RB_DEBUG_COUNTER_INC(obj_struct_embed);
         }
