@@ -141,6 +141,7 @@ RB_DEBUG_COUNTER(gc_major_oldmalloc)
  * * [attr]
  *   * _ptr: R?? is not embed.
  *   * _embed: R?? is embed.
+ *   * _transient: R?? uses transient heap.
  * * type specific attr.
  *   * str_shared: str is shared.
  *   * str_nofree:        nofree
@@ -162,8 +163,9 @@ RB_DEBUG_COUNTER(obj_free)
 RB_DEBUG_COUNTER(obj_promote)
 RB_DEBUG_COUNTER(obj_wb_unprotect)
 
-RB_DEBUG_COUNTER(obj_obj_ptr)
 RB_DEBUG_COUNTER(obj_obj_embed)
+RB_DEBUG_COUNTER(obj_obj_transient)
+RB_DEBUG_COUNTER(obj_obj_ptr)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)
@@ -171,8 +173,9 @@ RB_DEBUG_COUNTER(obj_str_shared)
 RB_DEBUG_COUNTER(obj_str_nofree)
 RB_DEBUG_COUNTER(obj_str_fstr)
 
-RB_DEBUG_COUNTER(obj_ary_ptr)
 RB_DEBUG_COUNTER(obj_ary_embed)
+RB_DEBUG_COUNTER(obj_ary_transient)
+RB_DEBUG_COUNTER(obj_ary_ptr)
 
 RB_DEBUG_COUNTER(obj_hash_empty)
 RB_DEBUG_COUNTER(obj_hash_under4)

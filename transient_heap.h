@@ -34,5 +34,6 @@ int  rb_transient_heap_managed_ptr_p(const void *ptr);
 
 /* evacuate functions */
 void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
+void rb_obj_transient_heap_evacuate(VALUE ary, int promote);
 
 #endif
