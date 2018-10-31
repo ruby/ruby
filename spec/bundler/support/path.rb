@@ -5,19 +5,19 @@ require "pathname"
 module Spec
   module Path
     def root
-      @root ||= Pathname.new(for_ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
+      @root ||= Pathname.new(ruby_core? ? "../../../.." : "../../..").expand_path(__FILE__)
     end
 
     def gemspec
-      @gemspec ||= root.join(for_ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
+      @gemspec ||= root.join(ruby_core? ? "lib/bundler.gemspec" : "bundler.gemspec")
     end
 
     def bindir
-      @bindir ||= root.join(for_ruby_core? ? "bin" : "exe")
+      @bindir ||= root.join(ruby_core? ? "bin" : "exe")
     end
 
     def spec_dir
-      @spec_dir ||= root.join(for_ruby_core? ? "spec/bundler" : "spec")
+      @spec_dir ||= root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
     def tmp(*path)
@@ -110,19 +110,17 @@ module Spec
       tmp "tmpdir", *args
     end
 
-    extend self
-
-  private
-
-    def for_ruby_core?
+    def ruby_core?
       # avoid to wornings
-      @for_ruby_core ||= nil
+      @ruby_core ||= nil
 
-      if @for_ruby_core.nil?
-        @for_ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+      if @ruby_core.nil?
+        @ruby_core = true & (ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
       else
-        @for_ruby_core
+        @ruby_core
       end
     end
+
+    extend self
   end
 end
