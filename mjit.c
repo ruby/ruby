@@ -119,7 +119,7 @@ mjit_free_iseq(const rb_iseq_t *iseq)
 static void
 init_list(struct rb_mjit_unit_list *list)
 {
-    list->head = NULL;
+    list_head_init(&list->head);
     list->length = 0;
 }
 
@@ -129,11 +129,11 @@ init_list(struct rb_mjit_unit_list *list)
 static void
 free_list(struct rb_mjit_unit_list *list)
 {
-    struct rb_mjit_unit_node *node, *next;
-    for (node = list->head; node != NULL; node = next) {
-        next = node->next;
-        free_unit(node->unit);
-        xfree(node);
+    struct rb_mjit_unit *unit = 0, *next;
+
+    list_for_each_safe(&list->head, unit, next, unode) {
+        list_del(&unit->unode);
+        free_unit(unit);
     }
     list->length = 0;
 }
@@ -248,24 +248,23 @@ unload_units(void)
 {
     rb_vm_t *vm = GET_THREAD()->vm;
     rb_thread_t *th = NULL;
-    struct rb_mjit_unit_node *node, *next, *worst_node;
+    struct rb_mjit_unit *unit = 0, *next, *worst;
     struct mjit_cont *cont;
     int delete_num, units_num = active_units.length;
 
     /* For now, we don't unload units when ISeq is GCed. We should
        unload such ISeqs first here. */
-    for (node = active_units.head; node != NULL; node = next) {
-        next = node->next;
-        if (node->unit->iseq == NULL) { /* ISeq is GCed. */
-            free_unit(node->unit);
-            remove_from_list(node, &active_units);
+    list_for_each_safe(&active_units.head, unit, next, unode) {
+        if (unit->iseq == NULL) { /* ISeq is GCed. */
+            remove_from_list(unit, &active_units);
+            free_unit(unit);
         }
     }
 
     /* Detect units which are in use and can't be unloaded. */
-    for (node = active_units.head; node != NULL; node = node->next) {
-        assert(node->unit != NULL && node->unit->iseq != NULL && node->unit->handle != NULL);
-        node->unit->used_code_p = FALSE;
+    list_for_each(&active_units.head, unit, unode) {
+        assert(unit->iseq != NULL && unit->handle != NULL);
+        unit->used_code_p = FALSE;
     }
     list_for_each(&vm->living_threads, th, vmlt_node) {
         mark_ec_units(th->ec);
@@ -280,23 +279,23 @@ unload_units(void)
     delete_num = active_units.length / 10;
     for (; active_units.length > mjit_opts.max_cache_size - delete_num;) {
         /* Find one unit that has the minimum total_calls. */
-        worst_node = NULL;
-        for (node = active_units.head; node != NULL; node = node->next) {
-            if (node->unit->used_code_p) /* We can't unload code on stack. */
+        worst = NULL;
+        list_for_each(&active_units.head, unit, unode) {
+            if (unit->used_code_p) /* We can't unload code on stack. */
                 continue;
 
-            if (worst_node == NULL || worst_node->unit->iseq->body->total_calls > node->unit->iseq->body->total_calls) {
-                worst_node = node;
+            if (worst == NULL || worst->iseq->body->total_calls > unit->iseq->body->total_calls) {
+                worst = unit;
             }
         }
-        if (worst_node == NULL)
+        if (worst == NULL)
             break;
 
         /* Unload the worst node. */
-        verbose(2, "Unloading unit %d (calls=%lu)", worst_node->unit->id, worst_node->unit->iseq->body->total_calls);
-        assert(worst_node->unit->handle != NULL);
-        free_unit(worst_node->unit);
-        remove_from_list(worst_node, &active_units);
+        verbose(2, "Unloading unit %d (calls=%lu)", worst->id, worst->iseq->body->total_calls);
+        assert(worst->handle != NULL);
+        remove_from_list(worst, &active_units);
+        free_unit(worst);
     }
     verbose(1, "Too many JIT code -- %d units unloaded", units_num - active_units.length);
 }
@@ -306,8 +305,6 @@ unload_units(void)
 void
 mjit_add_iseq_to_process(const rb_iseq_t *iseq)
 {
-    struct rb_mjit_unit_node *node;
-
     if (!mjit_enabled || pch_status == PCH_FAILED)
         return;
 
@@ -317,14 +314,8 @@ mjit_add_iseq_to_process(const rb_iseq_t *iseq)
         /* Failure in creating the unit.  */
         return;
 
-    node = create_list_node(iseq->body->jit_unit);
-    if (node == NULL) {
-        mjit_warning("failed to allocate a node to be added to unit_queue");
-        return;
-    }
-
     CRITICAL_SECTION_START(3, "in add_iseq_to_process");
-    add_to_list(node, &unit_queue);
+    add_to_list(iseq->body->jit_unit, &unit_queue);
     if (active_units.length >= mjit_opts.max_cache_size) {
         unload_units();
     }
@@ -762,14 +753,14 @@ mjit_finish(void)
 void
 mjit_mark(void)
 {
-    struct rb_mjit_unit_node *node;
+    struct rb_mjit_unit *unit = 0;
     if (!mjit_enabled)
         return;
     RUBY_MARK_ENTER("mjit");
     CRITICAL_SECTION_START(4, "mjit_mark");
-    for (node = unit_queue.head; node != NULL; node = node->next) {
-        if (node->unit->iseq) { /* ISeq is still not GCed */
-            VALUE iseq = (VALUE)node->unit->iseq;
+    list_for_each(&unit_queue.head, unit, unode) {
+        if (unit->iseq) { /* ISeq is still not GCed */
+            VALUE iseq = (VALUE)unit->iseq;
             CRITICAL_SECTION_FINISH(4, "mjit_mark rb_gc_mark");
 
             /* Don't wrap critical section with this. This may trigger GC,
