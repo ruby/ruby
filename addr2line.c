@@ -1519,10 +1519,10 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         /* enumerate abbrev */
         for (;;) {
             DebugInfoValue v = {{}};
-            //ptrdiff_t pos = reader->p - reader->p0;
+            /* ptrdiff_t pos = reader->p - reader->p0; */
             if (!di_read_record(reader, &v)) break;
-            //fprintf(stderr,"\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form);
-            //div_inspect(&v);
+            /* fprintf(stderr,"\n%d:%tx: AT:%lx FORM:%lx\n",__LINE__,pos,v.at,v.form); */
+            /* div_inspect(&v); */
             switch (v.at) {
               case DW_AT_name:
                 line.sname = get_cstr_value(&v);
@@ -1542,10 +1542,10 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
                 goto skip_die;
               case DW_AT_inline:
                 /* 1 or 3 */
-                break; // goto skip_die;
+                break; /* goto skip_die; */
               case DW_AT_abstract_origin:
                 read_abstract_origin(reader, v.as.uint64, &line);
-                break; //goto skip_die;
+                break; /* goto skip_die; */
             }
         }
         /* ranges_inspect(reader, &ranges); */
