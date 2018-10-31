@@ -235,7 +235,8 @@ RSpec.describe "The library itself" do
         end
       ensure
         # clean up the .gem generated
-        FileUtils.rm("bundler-#{Bundler::VERSION}.gem")
+        path_prefix = ruby_core? ? "lib/" : "./"
+        FileUtils.rm("#{path_prefix}bundler-#{Bundler::VERSION}.gem")
       end
     end
   end
