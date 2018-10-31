@@ -759,6 +759,10 @@ eom
     assert_syntax_error('<<~ "#{}"', /unexpected <</)
   end
 
+  def test_dedented_heredoc_concatenation
+    assert_equal("\n0\n1", eval("<<~0 '1'\n \n0\#{}\n0"))
+  end
+
   def test_lineno_operation_brace_block
     expected = __LINE__ + 1
     actual = caller_lineno\
