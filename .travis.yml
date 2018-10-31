@@ -158,6 +158,8 @@ matrix:
         CONFIG_FLAG_ARRAY=(
           warnflags="${warnflags_array[*]}"
           LDFLAGS=-Wno-unused-command-line-argument)
+      script:
+        - "$SETARCH make -s test TESTOPTS=--color=never"
     - os: linux
       language: ruby
       rvm: 2.3.8
@@ -170,9 +172,6 @@ matrix:
       before_script: chmod -R u+w spec/ruby
       # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
       script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
-  allow_failures:
-    - name: pedanticism
-  fast_finish: true
 
 before_script:
   - "echo JOBS=$JOBS SETARCH=${SETARCH=}"
