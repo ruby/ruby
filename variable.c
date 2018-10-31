@@ -1422,7 +1422,6 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 
             if (RBASIC(obj)->flags & ROBJECT_EMBED) {
                 newptr = obj_ivar_heap_alloc(obj, newsize);
-                // newptr = ALLOC_N(VALUE, newsize);
                 MEMCPY(newptr, ptr, VALUE, len);
                 RBASIC(obj)->flags &= ~ROBJECT_EMBED;
                 ROBJECT(obj)->as.heap.ivptr = newptr;
