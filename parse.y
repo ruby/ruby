@@ -6134,12 +6134,14 @@ heredoc_dedent(struct parser_params *p, NODE *root)
 	    return 0;
 	}
 	else {
+	    NODE *end = node->nd_end;
 	    node = prev_node->nd_next = node->nd_next;
 	    if (!node) {
 		if (nd_type(prev_node) == NODE_DSTR)
 		    nd_set_type(prev_node, NODE_STR);
 		break;
 	    }
+	    node->nd_end = end;
 	    goto next_str;
 	}
 
