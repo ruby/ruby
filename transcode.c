@@ -4084,7 +4084,7 @@ econv_insert_output(VALUE self, VALUE string)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   ec.putback                    -> string
  *   ec.putback(max_numbytes)      -> string
  *
