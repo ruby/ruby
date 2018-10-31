@@ -10,7 +10,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     # Details: https://github.com/rubygems/rubygems/issues/1270#issuecomment-177368340
     skip "CmakeBuilder doesn't work on Windows." if Gem.win_platform?
 
-    `cmake #{Gem::Ext::Builder.redirector}`
+    system('cmake', out: IO::NULL, err: [:child, :out])
 
     skip 'cmake not present' unless $?.success?
 

@@ -56,6 +56,7 @@ class Gem::Ext::Builder
   end
 
   def self.redirector
+    warn "#{caller[0]}: Use IO.popen(..., err: [:child, :out])"
     '2>&1'
   end
 
@@ -63,7 +64,6 @@ class Gem::Ext::Builder
     verbose = Gem.configuration.really_verbose
 
     begin
-      # TODO use Process.spawn when ruby 1.8 support is dropped.
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
         puts("current directory: #{Dir.pwd}")
@@ -71,9 +71,11 @@ class Gem::Ext::Builder
         system(command)
       else
         results << "current directory: #{Dir.pwd}"
-        results << command
-        results << `#{command} #{redirector}`
+        results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
+        results << IO.popen(command, "r", err: [:child, :out], &:read)
       end
+    rescue => error
+      raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
     ensure
       ENV['RUBYGEMS_GEMDEPS'] = rubygems_gemdeps
     end

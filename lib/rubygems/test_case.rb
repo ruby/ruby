@@ -1319,9 +1319,26 @@ Also, a list:
     end
   end
 
+  class << self
+    # :nodoc:
+    ##
+    # Return the join path, with escaping backticks, dollars, and
+    # double-quotes.  Unlike `shellescape`, equal-sign is not escaped.
+    private
+    def escape_path(*path)
+      path = File.join(*path)
+      if %r'\A[-+:/=@,.\w]+\z' =~ path
+        path
+      else
+        "\"#{path.gsub(/[`$"]/, '\\&')}\""
+      end
+    end
+  end
+
   @@ruby = rubybin
-  @@good_rake = "#{rubybin} \"#{File.expand_path('../../../test/rubygems/good_rake.rb', __FILE__)}\""
-  @@bad_rake = "#{rubybin} \"#{File.expand_path('../../../test/rubygems/bad_rake.rb', __FILE__)}\""
+  gempath = File.expand_path('../../../test/rubygems', __FILE__)
+  @@good_rake = "#{rubybin} #{escape_path(gempath, 'good_rake.rb')}"
+  @@bad_rake = "#{rubybin} #{escape_path(gempath, 'bad_rake.rb')}"
 
   ##
   # Construct a new Gem::Dependency.
