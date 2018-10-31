@@ -402,8 +402,6 @@ hash_verify_(VALUE hash, const char *file, int line)
 {
     HASH_ASSERT(RB_TYPE_P(hash, T_HASH));
 
-    // hash_dump(hash);
-
     if (RHASH_ARRAY_P(hash)) {
         int i, n = 0, bound = RHASH_ARRAY_BOUND(hash);
 
@@ -1495,7 +1493,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
     VALUE hash, tmp;
 
     if (argc == 1) {
-        tmp = rb_hash_s_try_convert(Qnil, argv[0]); //TODO tmp array flag
+        tmp = rb_hash_s_try_convert(Qnil, argv[0]);
 	if (!NIL_P(tmp)) {
 	    hash = hash_alloc(klass);
             if (RHASH_ARRAY_P(tmp)) {
@@ -4223,7 +4221,7 @@ add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
  * returns non-zero if +key+ was contained.
  */
 int
-rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val) //TODO
+rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 {
     st_table *tbl;
     int ret = 0;
