@@ -1342,11 +1342,17 @@ ubf_select(void *ptr)
      * in unblock_function_clear.
      */
     if (cur != vm->gvl.timer && cur != sigwait_th) {
-        rb_native_mutex_lock(&vm->gvl.lock);
-        if (!vm->gvl.timer) {
-            rb_thread_wakeup_timer_thread(-1);
+        /*
+         * Double-checked locking above was to prevent nested locking
+         * by the SAME thread.  We use trylock here to prevent deadlocks
+         * between DIFFERENT threads
+         */
+        if (native_mutex_trylock(&vm->gvl.lock) == 0) {
+            if (!vm->gvl.timer) {
+                rb_thread_wakeup_timer_thread(-1);
+            }
+            rb_native_mutex_unlock(&vm->gvl.lock);
         }
-        rb_native_mutex_unlock(&vm->gvl.lock);
     }
 
     ubf_wakeup_thread(th);
