@@ -9697,7 +9697,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                          C(RARRAY_TRANSIENT_P(obj), "T"),
                          (int)RARRAY_LEN(obj),
                          ARY_EMBED_P(obj) ? -1 : (int)RARRAY(obj)->as.heap.aux.capa,
-                         RARRAY_CONST_PTR_TRANSIENT(obj));
+                         (void *)RARRAY_CONST_PTR_TRANSIENT(obj));
             }
 	    break;
 	  case T_STRING: {
@@ -9727,7 +9727,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 }
                 else {
                     VALUE *ptr = ROBJECT_IVPTR(obj);
-                    snprintf(buff, buff_size, "%s len:%d ptr:%p", buff, len, ptr);
+                    snprintf(buff, buff_size, "%s len:%d ptr:%p", buff, len, (void *)ptr);
                 }
             }
             break;
