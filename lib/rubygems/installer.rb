@@ -771,33 +771,38 @@ TEXT
   # return the stub script text used to launch the true Ruby script
 
   def windows_stub_script(bindir, bin_file_name)
-    rb_bindir = RbConfig::CONFIG["bindir"]
-    # All comparisons should be case insensitive
-    if bindir.downcase == rb_bindir.downcase
+    rb_config = RbConfig::CONFIG
+    rb_topdir = RbConfig::TOPDIR || File.dirname(rb_config["bindir"])
+
+    # get ruby executable file name from RbConfig
+    ruby_exe = "#{rb_config['RUBY_INSTALL_NAME']}#{rb_config['EXEEXT']}"
+    ruby_exe = "ruby.exe" if ruby_exe.empty?
+
+    if File.exist?(File.join bindir, ruby_exe)
       # stub & ruby.exe withing same folder.  Portable
       <<-TEXT
 @ECHO OFF
 @"%~dp0ruby.exe" "%~dpn0" %*
       TEXT
-    elsif bindir.downcase.start_with?((RbConfig::TOPDIR || File.dirname(rb_bindir)).downcase)
-      # stub within ruby folder, but not standard bin.  Not portable
+    elsif bindir.downcase.start_with? rb_topdir.downcase
+      # stub within ruby folder, but not standard bin.  Portable
       require 'pathname'
       from = Pathname.new bindir
-      to   = Pathname.new rb_bindir
+      to   = Pathname.new "#{rb_topdir}/bin"
       rel  = to.relative_path_from from
       <<-TEXT
 @ECHO OFF
 @"%~dp0#{rel}/ruby.exe" "%~dpn0" %*
       TEXT
     else
-      # outside ruby folder, maybe -user-install or bundler.  Portable
+      # outside ruby folder, maybe -user-install or bundler.  Portable, but ruby
+      # is dependent on PATH
       <<-TEXT
 @ECHO OFF
 @ruby.exe "%~dpn0" %*
       TEXT
     end
   end
-
   ##
   # Builds extensions.  Valid types of extensions are extconf.rb files,
   # configure scripts and rakefiles or mkrf_conf files.
