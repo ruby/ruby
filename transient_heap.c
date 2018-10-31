@@ -115,11 +115,11 @@ static void
 transient_heap_block_dump(struct transient_heap* theap, struct transient_heap_block *block)
 {
     int i=0, n=0;
-    struct transient_alloc_header *header = NULL;
 
     while (i<block->info.index) {
-        header = (void *)&block->buff[i];
-        fprintf(stderr, "%4d %8d %p size:%4d next:%4d %s\n", n, i, header, header->size, header->next_marked_index, rb_obj_info(header->obj));
+        void *ptr = &block->buff[i];
+        struct transient_alloc_header *header = ptr;
+        fprintf(stderr, "%4d %8d %p size:%4d next:%4d %s\n", n, i, ptr, header->size, header->next_marked_index, rb_obj_info(header->obj));
         i += header->size;
         n++;
     }
@@ -130,7 +130,7 @@ transient_heap_blocks_dump(struct transient_heap* theap, struct transient_heap_b
 {
     while (block) {
         fprintf(stderr, "- transient_heap_dump: %s:%p index:%d objects:%d last_marked_index:%d next:%p\n",
-                type_str, block, block->info.index, block->info.objects, block->info.last_marked_index, block->info.next_block);
+                type_str, (void *)block, block->info.index, block->info.objects, block->info.last_marked_index, (void *)block->info.next_block);
 
         transient_heap_block_dump(theap, block);
         block = block->info.next_block;
@@ -298,7 +298,7 @@ transient_heap_block_alloc(struct transient_heap* theap)
     reset_block(block);
 
     TH_ASSERT(((intptr_t)block->buff & (TRANSIENT_HEAP_ALLOC_ALIGN-1)) == 0);
-    if (0) fprintf(stderr, "transient_heap_block_alloc: %4d %p\n", theap->total_blocks, block);
+    if (0) fprintf(stderr, "transient_heap_block_alloc: %4d %p\n", theap->total_blocks, (void *)block);
     return block;
 }
 
@@ -391,7 +391,7 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
                 transient_heap_promote_add(theap, obj);
             }
 #endif
-            if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: header:%p ptr:%p size:%d obj:%s\n", header, ptr, (int)size, rb_obj_info(obj));
+            if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: header:%p ptr:%p size:%d obj:%s\n", (void *)header, ptr, (int)size, rb_obj_info(obj));
 
             RB_DEBUG_COUNTER_INC(theap_alloc);
             return ptr;
@@ -669,7 +669,7 @@ transient_heap_block_evacuate(struct transient_heap* theap, struct transient_hea
         TH_ASSERT(header->magic == TRANSIENT_HEAP_ALLOC_MAGIC);
         if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header %s\n", rb_obj_info(obj));
 
-        if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", header, rb_obj_info(obj));
+        if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, " * transient_heap_block_evacuate %p %s\n", (void *)header, rb_obj_info(obj));
 
         if (obj != Qnil) {
             RB_DEBUG_COUNTER_INC(theap_evacuate);
@@ -763,7 +763,7 @@ clear_marked_index(struct transient_heap_block* block)
     while (marked_index != TRANSIENT_HEAP_ALLOC_MARKING_LAST) {
         struct transient_alloc_header *header = alloc_header(block, marked_index);
         TH_ASSERT(marked_index != TRANSIENT_HEAP_ALLOC_MARKING_FREE);
-        if (0) fprintf(stderr, "clear_marked_index - block:%p mark_index:%d\n", block, marked_index);
+        if (0) fprintf(stderr, "clear_marked_index - block:%p mark_index:%d\n", (void *)block, marked_index);
 
         marked_index = header->next_marked_index;
         header->next_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_FREE;
