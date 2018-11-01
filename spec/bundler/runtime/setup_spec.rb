@@ -119,7 +119,7 @@ RSpec.describe "Bundler.setup" do
       lp.map! {|p| p.sub(/^#{Regexp.union system_gem_path.to_s, default_bundle_path.to_s}/i, "") }
     end
 
-    it "puts loaded gems after -I and RUBYLIB" do
+    it "puts loaded gems after -I and RUBYLIB", :ruby_repo do
       install_gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -828,7 +828,7 @@ end
     expect(out).to eq("yay")
   end
 
-  it "should clean $LOAD_PATH properly" do
+  it "should clean $LOAD_PATH properly", :ruby_repo do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
     ext_dir = File.join(tmp "extenstions", full_gem_name)
@@ -864,7 +864,7 @@ end
   context "with bundler is located in symlinked GEM_HOME" do
     let(:gem_home) { Dir.mktmpdir }
     let(:symlinked_gem_home) { Tempfile.new("gem_home") }
-    let(:bundler_dir) { File.expand_path("../../..", __FILE__) }
+    let(:bundler_dir) { ruby_core? ? File.expand_path("../../../..", __FILE__) : File.expand_path("../../..", __FILE__) }
     let(:bundler_lib) { File.join(bundler_dir, "lib") }
 
     before do
@@ -876,7 +876,8 @@ end
 
       FileUtils.ln_s(bundler_dir, File.join(gems_dir, "bundler-#{Bundler::VERSION}"))
 
-      gemspec = File.read("#{bundler_dir}/bundler.gemspec").
+      gemspec_file = ruby_core? ? "#{bundler_dir}/lib/bundler.gemspec" : "#{bundler_dir}/bundler.gemspec"
+      gemspec = File.read(gemmspec_file).
                 sub("Bundler::VERSION", %("#{Bundler::VERSION}"))
       gemspec = gemspec.lines.reject {|line| line =~ %r{lib/bundler/version} }.join
 

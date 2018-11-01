@@ -34,7 +34,7 @@ RSpec.describe "Bundler.with_env helpers" do
       end
     end
 
-    it "works with nested bundle exec invocations" do
+    it "works with nested bundle exec invocations", :ruby_repo do
       create_file("exe.rb", <<-'RB')
         count = ARGV.first.to_i
         exit if count < 0
@@ -55,7 +55,7 @@ RSpec.describe "Bundler.with_env helpers" do
       EOS
     end
 
-    it "removes variables that bundler added" do
+    it "removes variables that bundler added", :ruby_repo do
       original = ruby!('puts ENV.to_a.map {|e| e.join("=") }.sort.join("\n")', :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" })
       code = 'puts Bundler.original_env.to_a.map {|e| e.join("=") }.sort.join("\n")'
       bundle! "exec '#{Gem.ruby}' -e #{code.dump}", :env => { :RUBYOPT => "-r#{spec_dir.join("support/hax")}" }
@@ -84,7 +84,7 @@ RSpec.describe "Bundler.with_env helpers" do
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
-    it "should clean up RUBYLIB" do
+    it "should clean up RUBYLIB", :ruby_repo do
       code = "print Bundler.clean_env['RUBYLIB']"
       ENV["RUBYLIB"] = root.join("lib").to_s + File::PATH_SEPARATOR + "/foo"
       bundle_exec_ruby! code.dump
