@@ -1003,12 +1003,16 @@ linear_copy(VALUE hash1, VALUE hash2)
         RHASH_ARRAY_BOUND_SET(hash1, RHASH_ARRAY_BOUND(hash2));
         RHASH_ARRAY_SIZE_SET(hash1, RHASH_ARRAY_SIZE(hash2));
         RHASH_ARRAY_SET(hash1, new_tab);
+
+        rb_gc_writebarrier_remember(hash1);
         return new_tab;
     }
     else {
         RHASH_ARRAY_BOUND_SET(hash1, RHASH_ARRAY_BOUND(hash2));
         RHASH_ARRAY_SIZE_SET(hash1, RHASH_ARRAY_SIZE(hash2));
         RHASH_ARRAY_SET(hash1, old_tab);
+
+        rb_gc_writebarrier_remember(hash1);
         return old_tab;
     }
 }
