@@ -310,7 +310,11 @@ module Spec
       gems.each do |g|
         path = if g == :bundler
           Dir.chdir(root) { gem_command! :build, gemspec.to_s }
-          bundler_path = root + "bundler-#{Bundler::VERSION}.gem"
+          bundler_path = if ruby_core?
+            root + "lib/bundler-#{Bundler::VERSION}.gem"
+          else
+            root + "bundler-#{Bundler::VERSION}.gem"
+          end
         elsif g.to_s =~ %r{\A/.*\.gem\z}
           g
         else
