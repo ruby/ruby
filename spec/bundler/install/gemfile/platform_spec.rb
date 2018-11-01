@@ -96,15 +96,15 @@ RSpec.describe "bundle install across platforms" do
     simulate_platform java
 
     install_gemfile! <<-G
-      source "file://#{gem_repo4}"
+      source "file://localhost/#{gem_repo4}"
 
       gem "empyrean", "0.1.0"
       gem "pry"
     G
 
-    expect(the_bundle.lockfile).to read_as strip_whitespace(<<-L)
+    expect(the_bundle.lockfile).to read_as normalize_uri_file(strip_whitespace(<<-L))
       GEM
-        remote: file://#{gem_repo4}/
+        remote: file://localhost/#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -132,7 +132,7 @@ RSpec.describe "bundle install across platforms" do
 
     good_lockfile = strip_whitespace(<<-L)
       GEM
-        remote: file://#{gem_repo4}/
+        remote: file://localhost/#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -160,11 +160,11 @@ RSpec.describe "bundle install across platforms" do
          #{Bundler::VERSION}
     L
 
-    expect(the_bundle.lockfile).to read_as good_lockfile
+    expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
 
     bad_lockfile = strip_whitespace <<-L
       GEM
-        remote: file://#{gem_repo4}/
+        remote: file://localhost/#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -196,23 +196,23 @@ RSpec.describe "bundle install across platforms" do
     aggregate_failures do
       lockfile bad_lockfile
       bundle! :install
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
 
       lockfile bad_lockfile
       bundle! :update, :all => true
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
 
       lockfile bad_lockfile
       bundle! "update ffi"
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
 
       lockfile bad_lockfile
       bundle! "update empyrean"
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
 
       lockfile bad_lockfile
       bundle! :lock
-      expect(the_bundle.lockfile).to read_as good_lockfile
+      expect(the_bundle.lockfile).to read_as normalize_uri_file(good_lockfile)
     end
   end
 
