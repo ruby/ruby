@@ -384,7 +384,8 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
-        expect(ENV["BUNDLE_BIN_PATH"]).to eq(File.expand_path("../../../exe/bundle", __FILE__))
+        bundle_exe = ruby_core? ? "../../../../exe/bundle" : "../../../exe/bundle"
+        expect(ENV["BUNDLE_BIN_PATH"]).to eq(File.expand_path(bundle_exe, __FILE__))
       end
     end
 

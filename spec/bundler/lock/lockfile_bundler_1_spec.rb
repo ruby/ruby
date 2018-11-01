@@ -75,7 +75,7 @@ RSpec.describe "the lockfile format", :bundler => "< 2" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install", :ruby_repo do
     version = "#{Bundler::VERSION.split(".").first}.0.0.0.a"
 
     lockfile <<-L
