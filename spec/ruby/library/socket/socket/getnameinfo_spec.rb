@@ -105,15 +105,6 @@ describe 'Socket.getnameinfo' do
         lambda { Socket.getnameinfo([family_name]) }.should raise_error(ArgumentError)
       end
 
-      describe 'without custom flags' do
-        it 'returns an Array containing the hostname and service name' do
-          array = Socket.getnameinfo(@addr)
-          array.should be_an_instance_of(Array)
-          array[0].should include(@hostname)
-          array[1].should == 'ftp'
-        end
-      end
-
       platform_is_not :windows do
         describe 'using NI_NUMERICHOST as the flag' do
           it 'returns an Array containing the numeric hostname and service name' do
