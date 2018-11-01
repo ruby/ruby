@@ -6,30 +6,6 @@ box: ruby:2.5-stretch
 no-response-timeout: 30
 command-timeout: 60
 
-test-mjit:
-  steps:
-    - install-packages:
-        packages: bison sudo
-    - script:
-        name: workaround ipv6 localhost
-        code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
-    - script:
-        name: create user # some file permission tests don't succeed with root.
-        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
-    - script:
-        name: configure
-        code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
-    - script:
-        name: make all install
-        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
-  after-steps:
-    - wantedly/pretty-slack-notify:
-      webhook_url: $SLACK_WEBHOOK_URL
-      username: Wercker test-mjit
-      channel: alerts
-      notify_on: "failed"
-      branches: ^trunk$
-
 ### Code to generate test-all definition with --jit-wait ###
 
 # allow_failures = ['test/webrick/']
