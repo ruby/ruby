@@ -398,7 +398,7 @@ ossl_debug_set(VALUE self, VALUE val)
 }
 
 /*
- * call-seq
+ * call-seq:
  *   OpenSSL.fips_mode -> true | false
  */
 static VALUE
