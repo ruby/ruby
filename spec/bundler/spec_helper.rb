@@ -112,7 +112,7 @@ RSpec.configure do |config|
   config.filter_run_excluding :git => LessThanProc.with(git_version)
   config.filter_run_excluding :rubygems_master => (ENV["RGV"] != "master")
   config.filter_run_excluding :bundler => LessThanProc.with(Bundler::VERSION.split(".")[0, 2].join("."))
-  config.filter_run_excluding :ruby_repo => !!(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"])
+  config.filter_run_excluding :ruby_repo => !(ENV["BUNDLE_RUBY"] && ENV["BUNDLE_GEM"]).nil?
 
   config.filter_run_when_matching :focus unless ENV["CI"]
 
