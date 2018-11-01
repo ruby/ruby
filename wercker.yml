@@ -174,15 +174,6 @@ mjit-test1:
     - script:
         name: make test-all37 -- test/psych/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/psych/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
-    - script:
-        name: make test-all38 -- test/rdoc/ (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/rdoc/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
-    - script:
-        name: make test-all39 -- test/readline/ (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/readline/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
-    - script:
-        name: make test-all40 -- test/resolv/ (JIT wait)
-        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/resolv/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
     # -- AUTO GENERATED 1st half END ---
   after-steps:
     - wantedly/pretty-slack-notify:
@@ -211,6 +202,15 @@ mjit-test2:
         code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
 
     # -- AUTO GENERATED 2nd half START (by above code) ---
+    - script:
+        name: make test-all38 -- test/rdoc/ (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/rdoc/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
+    - script:
+        name: make test-all39 -- test/readline/ (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/readline/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
+    - script:
+        name: make test-all40 -- test/resolv/ (JIT wait)
+        code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/resolv/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
     - script:
         name: make test-all41 -- test/rexml/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/rexml/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
