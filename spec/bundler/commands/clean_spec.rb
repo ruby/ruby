@@ -712,7 +712,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "foo-1.0"
   end
 
-  it "doesn't remove extensions artifacts from bundled git gems after clean", :rubygems => "2.2" do
+  it "doesn't remove extensions artifacts from bundled git gems after clean", :ruby_repo, :rubygems => "2.2" do
     build_git "very_simple_git_binary", &:add_c_extension
 
     revision = revision_for(lib_path("very_simple_git_binary-1.0"))
@@ -734,7 +734,7 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bundler/gems/very_simple_git_binary-1.0-#{revision[0..11]}")).to exist
   end
 
-  it "removes extension directories", :rubygems => "2.2" do
+  it "removes extension directories", :ruby_repo, :rubygems => "2.2" do
     gemfile <<-G
       source "file://#{gem_repo1}"
 
