@@ -2146,7 +2146,7 @@ rb_array_const_ptr(VALUE a)
 {
 #if USE_TRANSIENT_HEAP
     void rb_ary_detransient(VALUE a);
- 
+
     if (RARRAY_TRANSIENT_P(a)) {
         rb_ary_detransient(a);
     }
