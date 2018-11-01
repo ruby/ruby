@@ -96,7 +96,7 @@ RSpec.describe "bundle install across platforms" do
     simulate_platform java
 
     install_gemfile! <<-G
-      source "file://localhost/#{gem_repo4}"
+      source "file://#{gem_repo4}"
 
       gem "empyrean", "0.1.0"
       gem "pry"
@@ -104,7 +104,7 @@ RSpec.describe "bundle install across platforms" do
 
     expect(the_bundle.lockfile).to read_as strip_whitespace(<<-L)
       GEM
-        remote: file://localhost/#{gem_repo4}/
+        remote: file://#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -132,7 +132,7 @@ RSpec.describe "bundle install across platforms" do
 
     good_lockfile = strip_whitespace(<<-L)
       GEM
-        remote: file://localhost/#{gem_repo4}/
+        remote: file://#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
@@ -164,7 +164,7 @@ RSpec.describe "bundle install across platforms" do
 
     bad_lockfile = strip_whitespace <<-L
       GEM
-        remote: file://localhost/#{gem_repo4}/
+        remote: file://#{gem_repo4}/
         specs:
           coderay (1.1.2)
           empyrean (0.1.0)
