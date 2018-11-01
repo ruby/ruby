@@ -14,7 +14,7 @@ command-timeout: 60
 # dirs.each do |dir|
 #   puts <<-EOS
 #     - script:
-#         name: make test-all#{index} -- #{dir} (JIT wait)
+#         name: make test-all#{index} -- #{dir} (JIT wait#{(', allow failure' if allow_failures.include?(dir))})
 #         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="#{dir}" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"#{(' || true' if allow_failures.include?(dir))}
 #   EOS
 #   index += 1
@@ -257,7 +257,7 @@ mjit-test2:
         name: make test-all55 -- test/uri/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/uri/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
     - script:
-        name: make test-all56 -- test/webrick/ (JIT wait)
+        name: make test-all56 -- test/webrick/ (JIT wait, allow failure)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/webrick/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait" || true
     - script:
         name: make test-all57 -- test/win32ole/ (JIT wait)
