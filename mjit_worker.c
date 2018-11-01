@@ -178,7 +178,7 @@ int mjit_call_p = FALSE;
 static struct rb_mjit_unit_list unit_queue = { LIST_HEAD_INIT(unit_queue.head) };
 /* List of units which are successfully compiled. */
 static struct rb_mjit_unit_list active_units = { LIST_HEAD_INIT(active_units.head) };
-/* List of compacted so files which will be deleted in `mjit_finish()`. */
+/* List of compacted so files which will be cleaned up by `free_list()` in `mjit_finish()`. */
 static struct rb_mjit_unit_list compact_units = { LIST_HEAD_INIT(compact_units.head) };
 /* The number of so far processed ISEQs, used to generate unique id.  */
 static int current_unit_num;
