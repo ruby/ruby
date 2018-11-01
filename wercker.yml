@@ -153,34 +153,6 @@ mjit-test1:
     - script:
         name: make test-all30 -- test/nkf/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/nkf/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
-    # -- AUTO GENERATED 1st half END ---
-  after-steps:
-    - wantedly/pretty-slack-notify:
-      webhook_url: $SLACK_WEBHOOK_URL
-      username: Wercker test-mjit-wait
-      channel: alerts
-      notify_on: "failed"
-      branches: ^trunk$
-
-# second half of --jit-wait.
-mjit-test2:
-  steps:
-    - install-packages:
-        packages: bison sudo
-    - script:
-        name: workaround ipv6 localhost
-        code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
-    - script:
-        name: create user # some file permission tests don't succeed with root.
-        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
-    - script:
-        name: configure
-        code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
-    - script:
-        name: make all install
-        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
-
-    # -- AUTO GENERATED 2nd half START (by above code) ---
     - script:
         name: make test-all31 -- test/objspace/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/objspace/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
@@ -211,6 +183,34 @@ mjit-test2:
     - script:
         name: make test-all40 -- test/resolv/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/resolv/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
+    # -- AUTO GENERATED 1st half END ---
+  after-steps:
+    - wantedly/pretty-slack-notify:
+      webhook_url: $SLACK_WEBHOOK_URL
+      username: Wercker test-mjit-wait
+      channel: alerts
+      notify_on: "failed"
+      branches: ^trunk$
+
+# second half of --jit-wait.
+mjit-test2:
+  steps:
+    - install-packages:
+        packages: bison sudo
+    - script:
+        name: workaround ipv6 localhost
+        code: ruby -e "hosts = File.read('/etc/hosts').sub(/^::1\s*localhost.*$/, ''); File.write('/etc/hosts', hosts)"
+    - script:
+        name: create user # some file permission tests don't succeed with root.
+        code: useradd --shell /bin/bash --create-home test && chown -R test:test .
+    - script:
+        name: configure
+        code: /usr/bin/sudo -H -u test -- bash -c 'autoconf && ./configure --disable-install-doc --prefix=/tmp/ruby-prefix'
+    - script:
+        name: make all install
+        code: /usr/bin/sudo -H -u test -- make -j$(nproc) all install
+
+    # -- AUTO GENERATED 2nd half START (by above code) ---
     - script:
         name: make test-all41 -- test/rexml/ (JIT wait)
         code: /usr/bin/sudo -H -u test -- make test-all RUN_OPTS="--disable-gems --jit-wait --jit-warnings" TESTS="test/rexml/" TESTOPTS="--color=never --job-status=normal --subprocess-timeout-scale=3.0 --excludes=test/excludes/_wercker/test-mjit-wait"
