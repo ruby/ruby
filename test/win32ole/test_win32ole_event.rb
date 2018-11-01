@@ -117,7 +117,10 @@ if defined?(WIN32OLE_EVENT)
           message_loop
           GC.start
         end
-        assert_match(/OnObjectReady/, @event)
+
+        # @event randomly becomes "OnCompleted" here. Try to wait until it matches.
+        # https://ci.appveyor.com/project/ruby/ruby/builds/19963142/job/8gaxepksa0i3b998
+        assert_match_with_retries(/OnObjectReady/, :@event)
       end
 
       def test_on_event
@@ -146,6 +149,19 @@ if defined?(WIN32OLE_EVENT)
           skip "No administrator privilege?"
         end
         raise
+      end
+
+      def assert_match_with_retries(regexp, ivarname)
+        ivar = instance_variable_get(ivarname)
+
+        tries = 0
+        while tries < 5 && !ivar.match(regexp)
+          $stderr.puts "test_win32ole_event.rb: retrying until #{ivarname} matches #{regexp} (tries: #{tries})..."
+          sleep(2 ** tries) # sleep at most 31s in total
+          ivar = instance_variable_get(ivarname)
+        end
+
+        assert_match(regexp, ivar)
       end
     end
   end
