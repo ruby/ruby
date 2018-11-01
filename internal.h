@@ -712,8 +712,17 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_ARRAY_SIZE_SHIFT    RHASH_ARRAY_SIZE_SHIFT
 #define RHASH_ARRAY_BOUND_MASK    (VALUE)RHASH_ARRAY_BOUND_MASK
 #define RHASH_ARRAY_BOUND_SHIFT   RHASH_ARRAY_BOUND_SHIFT
+
+#if USE_TRANSIENT_HEAP
 #define RHASH_TRANSIENT_FLAG      FL_USER14
 #define RHASH_TRANSIENT_P(hash)   FL_TEST_RAW((hash), RHASH_TRANSIENT_FLAG)
+#define RHASH_SET_TRANSIENT_FLAG(h)   FL_SET_RAW(h, RHASH_TRANSIENT_FLAG)
+#define RHASH_UNSET_TRANSIENT_FLAG(h) FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG)
+#else
+#define RHASH_TRANSIENT_P(hash)   0
+#define RHASH_SET_TRANSIENT_FLAG(h)   ((void)0)
+#define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
+#endif
 
 #define RHASH_ARRAY_MAX_SIZE      8
 #define RHASH_ARRAY_MAX_BOUND     RHASH_ARRAY_MAX_SIZE
@@ -775,7 +784,15 @@ enum {
     RSTRUCT_ENUM_END
 };
 
+#if USE_TRANSIENT_HEAP
 #define RSTRUCT_TRANSIENT_P(st) FL_TEST_RAW((obj), RSTRUCT_TRANSIENT_FLAG)
+#define RSTRUCT_TRANSIENT_SET(st) FL_SET_RAW((st), RSTRUCT_TRANSIENT_FLAG)
+#define RSTRUCT_TRANSIENT_UNSET(st) FL_UNSET_RAW((st), RSTRUCT_TRANSIENT_FLAG)
+#else
+#define RSTRUCT_TRANSIENT_P(st) 0
+#define RSTRUCT_TRANSIENT_SET(st) ((void)0)
+#define RSTRUCT_TRANSIENT_UNSET(st) ((void)0)
+#endif
 
 struct RStruct {
     struct RBasic basic;
@@ -1170,6 +1187,17 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 #define ARY_PTR_USING_P(ary) 0
 
 #endif
+
+#if USE_TRANSIENT_HEAP
+#define RARY_TRANSIENT_SET(ary) FL_SET_RAW((ary), RARRAY_TRANSIENT_FLAG);
+#define RARY_TRANSIENT_UNSET(ary) FL_UNSET_RAW((ary), RARRAY_TRANSIENT_FLAG);
+#else
+#undef RARRAY_TRANSIENT_P
+#define RARRAY_TRANSIENT_P(a) 0
+#define RARY_TRANSIENT_SET(ary) ((void)0)
+#define RARY_TRANSIENT_UNSET(ary) ((void)0)
+#endif
+
 
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
@@ -2010,9 +2038,16 @@ extern rb_encoding OnigEncodingUTF_8;
 #endif
 
 /* variable.c */
-#define ROBJECT_TRANSIENT_FLAG FL_USER13
-#define ROBJ_TRANSIENT_P(obj) FL_TEST_RAW((obj), ROBJECT_TRANSIENT_FLAG)
-
+#if USE_TRANSIENT_HEAP
+#define ROBJECT_TRANSIENT_FLAG    FL_USER13
+#define ROBJ_TRANSIENT_P(obj)     FL_TEST_RAW((obj), ROBJECT_TRANSIENT_FLAG)
+#define ROBJ_TRANSIENT_SET(obj)   FL_SET_RAW((obj), ROBJECT_TRANSIENT_FLAG)
+#define ROBJ_TRANSIENT_UNSET(obj) FL_UNSET_RAW((obj), ROBJECT_TRANSIENT_FLAG)
+#else
+#define ROBJ_TRANSIENT_P(obj)     0
+#define ROBJ_TRANSIENT_SET(obj)   ((void)0)
+#define ROBJ_TRANSIENT_UNSET(obj) ((void)0)
+#endif
 void rb_gc_mark_global_tbl(void);
 size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);

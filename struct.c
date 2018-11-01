@@ -661,15 +661,16 @@ struct_heap_alloc(VALUE st, size_t len)
     VALUE *ptr = rb_transient_heap_alloc((VALUE)st, sizeof(VALUE) * len);
 
     if (ptr) {
-        FL_SET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
+        RSTRUCT_TRANSIENT_SET(st);
         return ptr;
     }
     else {
-        FL_UNSET_RAW(st, RSTRUCT_TRANSIENT_FLAG);
+        RSTRUCT_TRANSIENT_UNSET(st);
         return ALLOC_N(VALUE, len);
     }
 }
 
+#if USE_TRANSIENT_HEAP
 void
 rb_struct_transient_heap_evacuate(VALUE obj, int promote)
 {
@@ -689,6 +690,7 @@ rb_struct_transient_heap_evacuate(VALUE obj, int promote)
         RSTRUCT(obj)->as.heap.ptr = new_ptr;
     }
 }
+#endif
 
 static VALUE
 struct_alloc(VALUE klass)

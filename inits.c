@@ -16,7 +16,9 @@
 void
 rb_call_inits(void)
 {
+#if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
+#endif
     CALL(Method);
     CALL(RandomSeedCore);
     CALL(sym);

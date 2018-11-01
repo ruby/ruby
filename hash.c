@@ -499,8 +499,6 @@ hash_array_set(VALUE hash, struct li_table *li)
 
 #define RHASH_SET_ST_FLAG(h)          FL_SET_RAW(h, RHASH_ST_TABLE_FLAG)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
-#define RHASH_SET_TRANSIENT_FLAG(h)   FL_SET_RAW(h, RHASH_TRANSIENT_FLAG)
-#define RHASH_UNSET_TRANSIENT_FLAG(h) FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG)
 
 #define RHASH_ARRAY_BOUND_SET(h, n) do { \
     long tmp_n = n; \
@@ -1030,6 +1028,7 @@ linear_clear(VALUE hash)
     }
 }
 
+#if USE_TRANSIENT_HEAP
 void
 rb_hash_transient_heap_evacuate(VALUE hash, int promote)
 {
@@ -1056,7 +1055,7 @@ rb_hash_transient_heap_evacuate(VALUE hash, int promote)
     }
     hash_verify(hash);
 }
-
+#endif
 
 typedef int st_foreach_func(st_data_t, st_data_t, st_data_t);
 

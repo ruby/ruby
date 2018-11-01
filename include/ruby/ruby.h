@@ -1013,6 +1013,10 @@ struct RString {
      ((ptrvar) = RSTRING(str)->as.ary, (lenvar) = RSTRING_EMBED_LEN(str)) : \
      ((ptrvar) = RSTRING(str)->as.heap.ptr, (lenvar) = RSTRING(str)->as.heap.len))
 
+#ifndef USE_TRANSIENT_HEAP
+#define USE_TRANSIENT_HEAP 1
+#endif
+
 enum ruby_rarray_flags {
     RARRAY_EMBED_LEN_MAX = 3,
     RARRAY_EMBED_FLAG = RUBY_FL_USER1,
@@ -1020,7 +1024,12 @@ enum ruby_rarray_flags {
     RARRAY_EMBED_LEN_MASK = (RUBY_FL_USER4|RUBY_FL_USER3),
     RARRAY_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+3),
 
+#if USE_TRANSIENT_HEAP
     RARRAY_TRANSIENT_FLAG = RUBY_FL_USER13,
+#define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
+#else
+#define RARRAY_TRANSIENT_FLAG 0
+#endif
 
     RARRAY_ENUM_END
 };
@@ -1028,7 +1037,7 @@ enum ruby_rarray_flags {
 #define RARRAY_EMBED_LEN_MASK (VALUE)RARRAY_EMBED_LEN_MASK
 #define RARRAY_EMBED_LEN_MAX RARRAY_EMBED_LEN_MAX
 #define RARRAY_EMBED_LEN_SHIFT RARRAY_EMBED_LEN_SHIFT
-#define RARRAY_TRANSIENT_FLAG RARRAY_TRANSIENT_FLAG
+
 struct RArray {
     struct RBasic basic;
     union {
@@ -1050,7 +1059,12 @@ struct RArray {
 #define RARRAY_LENINT(ary) rb_long2int(RARRAY_LEN(ary))
 #define RARRAY_CONST_PTR(a) rb_array_const_ptr(a)
 #define RARRAY_CONST_PTR_TRANSIENT(a) rb_array_const_ptr_transient(a)
+
+#if USE_TRANSIENT_HEAP
 #define RARRAY_TRANSIENT_P(ary) FL_TEST_RAW((ary), RARRAY_TRANSIENT_FLAG)
+#else
+#define RARRAY_TRANSIENT_P(ary) 0
+#endif
 
 VALUE *rb_ary_ptr_use_start(VALUE ary);
 void rb_ary_ptr_use_end(VALUE ary);
@@ -2127,14 +2141,16 @@ rb_array_const_ptr_transient(VALUE a)
 	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
 }
 
-void rb_ary_detransient(VALUE a);
-
 static inline const VALUE *
 rb_array_const_ptr(VALUE a)
 {
+#if USE_TRANSIENT_HEAP
+    void rb_ary_detransient(VALUE a);
+ 
     if (RARRAY_TRANSIENT_P(a)) {
         rb_ary_detransient(a);
     }
+#endif
     return rb_array_const_ptr_transient(a);
 }
 

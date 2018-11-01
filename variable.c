@@ -1340,10 +1340,10 @@ obj_ivar_heap_alloc(VALUE obj, size_t newsize)
     VALUE *newptr = rb_transient_heap_alloc(obj, sizeof(VALUE) * newsize);
 
     if (newptr != NULL) {
-        FL_SET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+        ROBJ_TRANSIENT_SET(obj);
     }
     else {
-        FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+        ROBJ_TRANSIENT_UNSET(obj);
         newptr = ALLOC_N(VALUE, newsize);
     }
     return newptr;
@@ -1362,7 +1362,7 @@ obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
         }
         else {
             newptr = ALLOC_N(VALUE, newsize);
-            FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+            ROBJ_TRANSIENT_UNSET(obj);
         }
         ROBJECT(obj)->as.heap.ivptr = newptr;
         for (i=0; i<(int)len; i++) {
@@ -1377,6 +1377,7 @@ obj_ivar_heap_realloc(VALUE obj, int32_t len, size_t newsize)
     return newptr;
 }
 
+#if USE_TRANSIENT_HEAP
 void
 rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 {
@@ -1387,7 +1388,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
 
         if (promote) {
             new_ptr = ALLOC_N(VALUE, len);
-            FL_UNSET_RAW(obj, ROBJECT_TRANSIENT_FLAG);
+            ROBJ_TRANSIENT_UNSET(obj);
         }
         else {
             new_ptr = obj_ivar_heap_alloc(obj, len);
@@ -1396,6 +1397,7 @@ rb_obj_transient_heap_evacuate(VALUE obj, int promote)
         ROBJECT(obj)->as.heap.ivptr = new_ptr;
     }
 }
+#endif
 
 static VALUE
 obj_ivar_set(VALUE obj, ID id, VALUE val)
