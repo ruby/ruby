@@ -9,6 +9,10 @@
 #ifndef RUBY_TRANSIENT_HEAP_H
 #define RUBY_TRANSIENT_HEAP_H
 
+#include "internal.h"
+
+#if USE_TRANSIENT_HEAP
+
 /* public API */
 
 /* Allocate req_size bytes from transient_heap.
@@ -37,4 +41,20 @@ void rb_ary_transient_heap_evacuate(VALUE ary, int promote);
 void rb_obj_transient_heap_evacuate(VALUE obj, int promote);
 void rb_hash_transient_heap_evacuate(VALUE hash, int promote);
 void rb_struct_transient_heap_evacuate(VALUE st, int promote);
+
+#else /* USE_TRANSIENT_HEAP */
+
+#define rb_transient_heap_alloc(o, s) NULL
+#define rb_transient_heap_verify() ((void)0)
+#define rb_transient_heap_promote(obj) ((void)0)
+#define rb_transient_heap_start_marking(full_marking) ((void)0)
+#define rb_transient_heap_finish_marking() ((void)0)
+#define rb_transient_heap_mark(obj, ptr) ((void)0)
+
+#define rb_ary_transient_heap_evacuate(x, y) ((void)0)
+#define rb_obj_transient_heap_evacuate(x, y) ((void)0)
+#define rb_hash_transient_heap_evacuate(x, y) ((void)0)
+#define rb_struct_transient_heap_evacuate(x, y) ((void)0)
+
+#endif /* USE_TRANSIENT_HEAP */
 #endif

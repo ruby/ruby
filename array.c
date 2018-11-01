@@ -57,7 +57,7 @@ VALUE rb_cArray;
 #define FL_SET_EMBED(a) do { \
     assert(!ARY_SHARED_P(a)); \
     FL_SET((a), RARRAY_EMBED_FLAG); \
-    FL_UNSET_RAW((a), RARRAY_TRANSIENT_FLAG); \
+    RARY_TRANSIENT_UNSET(a); \
     ary_verify(a); \
 } while (0)
 #define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
@@ -278,10 +278,10 @@ ary_heap_alloc(VALUE ary, size_t capa)
     VALUE *ptr = rb_transient_heap_alloc(ary, sizeof(VALUE) * capa);
 
     if (ptr != NULL) {
-        FL_SET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+        RARY_TRANSIENT_SET(ary);
     }
     else {
-        FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+        RARY_TRANSIENT_UNSET(ary);
         ptr = ALLOC_N(VALUE, capa);
     }
 
@@ -303,7 +303,7 @@ static void
 ary_heap_free(VALUE ary)
 {
     if (RARRAY_TRANSIENT_P(ary)) {
-        FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+        RARY_TRANSIENT_UNSET(ary);
     }
     else {
         ary_heap_free_ptr(ary, ARY_HEAP_PTR(ary), ARY_HEAP_SIZE(ary));
@@ -324,7 +324,7 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
 
             if (new_ptr == NULL) {
                 new_ptr = ALLOC_N(VALUE, new_capa);
-                FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+                RARY_TRANSIENT_UNSET(ary);
             }
 
             MEMCPY(new_ptr, ARY_HEAP_PTR(ary), VALUE, old_capa);
@@ -337,6 +337,7 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
     ary_verify(ary);
 }
 
+#if USE_TRANSIENT_HEAP
 static inline void
 rb_ary_transient_heap_evacuate_(VALUE ary, int transient, int promote)
 {
@@ -356,7 +357,7 @@ rb_ary_transient_heap_evacuate_(VALUE ary, int transient, int promote)
 
         if (promote) {
             new_ptr = ALLOC_N(VALUE, capa);
-            FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
+            RARY_TRANSIENT_UNSET(ary);
         }
         else {
             new_ptr = ary_heap_alloc(ary, capa);
@@ -382,6 +383,13 @@ rb_ary_detransient(VALUE ary)
     assert(RARRAY_TRANSIENT_P(ary));
     rb_ary_transient_heap_evacuate_(ary, TRUE, TRUE);
 }
+#else
+void
+rb_ary_detransient(VALUE ary)
+{
+    /* do nothing */
+}
+#endif
 
 static void
 ary_resize_capa(VALUE ary, long capacity)

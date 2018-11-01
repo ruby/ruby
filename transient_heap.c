@@ -15,6 +15,7 @@
 #include "transient_heap.h"
 #include "debug_counter.h"
 
+#if USE_TRANSIENT_HEAP /* USE_TRANSIENT_HEAP */
 /*
  * 1: enable assertions
  * 2: enable verify all transient heaps
@@ -854,3 +855,4 @@ rb_transient_heap_finish_marking(void)
 
     transient_heap_verify(theap);
 }
+#endif /* USE_TRANSIENT_HEAP */
