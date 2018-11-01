@@ -26,7 +26,7 @@ command-timeout: 60
 # EOS
 
 # --jit + first half of --jit-wait.
-test-mjit:
+mjit-test1:
   steps:
     - install-packages:
         packages: bison sudo
@@ -163,7 +163,7 @@ test-mjit:
       branches: ^trunk$
 
 # second half of --jit-wait.
-test-mjit-wait:
+mjit-test2:
   steps:
     - install-packages:
         packages: bison sudo
