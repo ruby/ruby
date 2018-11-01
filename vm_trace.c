@@ -596,6 +596,7 @@ get_event_id(rb_event_flag_t event)
 	C(b_return, B_RETURN);
 	C(thread_begin, THREAD_BEGIN);
 	C(thread_end, THREAD_END);
+	C(specified_insn, SPECIFIED_INSN);
 	C(fiber_switch, FIBER_SWITCH);
 #undef C
       default:
@@ -725,6 +726,7 @@ symbol2event_flag(VALUE v)
     C(b_return, B_RETURN);
     C(thread_begin, THREAD_BEGIN);
     C(thread_end, THREAD_END);
+    C(specified_insn, SPECIFIED_INSN);
     C(fiber_switch, FIBER_SWITCH);
     C(a_call, A_CALL);
     C(a_return, A_RETURN);

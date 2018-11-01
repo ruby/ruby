@@ -169,6 +169,7 @@ VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 struct st_table *ruby_insn_make_insn_table(void);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+static VALUE rb_iseqw_insn_trace_specify(VALUE iseqw, VALUE insn_ordinalw, VALUE set);
 void rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events);
 void rb_iseq_trace_set_all(rb_event_flag_t turnon_events);
 void rb_iseq_trace_on_all(void);

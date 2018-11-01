@@ -3880,6 +3880,12 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_LINE, GET_SELF(), 0, 0, 0, Qundef);
 	    reg_cfp->pc--;
 	}
+	if (events & RUBY_EVENT_SPECIFIED_INSN) {
+            reg_cfp->pc++;
+            vm_dtrace(RUBY_EVENT_SPECIFIED_INSN, ec);
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_SPECIFIED_INSN, GET_SELF(), 0, 0, 0, Qundef);
+            reg_cfp->pc--;
+        }
 	if (events & RUBY_EVENT_COVERAGE_LINE) {
 	    reg_cfp->pc++;
 	    vm_dtrace(RUBY_EVENT_COVERAGE_LINE, ec);

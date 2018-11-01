@@ -2181,6 +2181,7 @@ int ruby_native_thread_p(void);
 #define RUBY_EVENT_THREAD_BEGIN      0x0400
 #define RUBY_EVENT_THREAD_END        0x0800
 #define RUBY_EVENT_FIBER_SWITCH      0x1000
+#define RUBY_EVENT_SPECIFIED_INSN    0x2000
 #define RUBY_EVENT_TRACEPOINT_ALL    0xffff
 
 /* special events */

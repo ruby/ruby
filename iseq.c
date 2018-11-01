@@ -2234,6 +2234,7 @@ push_event_info(const rb_iseq_t *iseq, rb_event_flag_t events, int line, VALUE a
     C(RUBY_EVENT_END,      "end",      INT2FIX(line));
     C(RUBY_EVENT_RETURN,   "return",   INT2FIX(line));
     C(RUBY_EVENT_B_RETURN, "b_return", INT2FIX(line));
+    C(RUBY_EVENT_SPECIFIED_INSN, "specified_insn", INT2FIX(line));
 #undef C
 }
 
@@ -2962,6 +2963,55 @@ rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
     encoded_iseq_trace_instrument(&iseq_encoded[pos], 0);
 }
 
+static VALUE
+rb_iseqw_insn_trace_specify(VALUE iseqw, VALUE insn_ordinalw, VALUE set)
+{
+    VALUE *iseq_encoded;
+    VALUE *code;
+    struct iseq_insn_info_entry *entry;
+    const rb_iseq_t *iseq = iseqw_check(iseqw);
+    int insn_ordinal = NUM2INT(insn_ordinalw);
+    int i, insn_counter = 0;
+
+    if(insn_ordinal < 0) {
+        rb_raise(rb_eTypeError, "`insn_ordinal' is out of range.");
+    }
+
+    iseq_encoded = (VALUE *)iseq->body->iseq_encoded;
+    code = rb_iseq_original_iseq(iseq);
+
+    for (i = 0; i<iseq->body->iseq_size;) {
+        if(insn_counter == insn_ordinal) {
+            break;
+        }
+        insn_counter++;
+        i += insn_len(code[i]);
+    }
+
+    if(insn_counter != insn_ordinal) {
+        rb_raise(rb_eTypeError, "`insn_ordinal' is out of range.");
+    }
+
+    entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, i);
+
+    switch (set) {
+      case Qtrue:
+        entry->events |= RUBY_EVENT_SPECIFIED_INSN;
+        encoded_iseq_trace_instrument(&iseq_encoded[i], entry->events);
+        break;
+      case Qfalse:
+        if(entry->events & RUBY_EVENT_SPECIFIED_INSN) {
+            entry->events ^= RUBY_EVENT_SPECIFIED_INSN;
+            encoded_iseq_trace_instrument(&iseq_encoded[i], entry->events);
+        }
+        break;
+      default:
+        rb_raise(rb_eTypeError, "`set' should be true/false");
+    }
+
+    return iseqw;
+}
+
 void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 {
@@ -3255,6 +3305,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "first_lineno", iseqw_first_lineno, 0);
     rb_define_method(rb_cISeq, "trace_points", iseqw_trace_points, 0);
     rb_define_method(rb_cISeq, "each_child", iseqw_each_child, 0);
+    rb_define_method(rb_cISeq, "insn_trace_specify", rb_iseqw_insn_trace_specify, 2);
 
 #if 0 /* TBD */
     rb_define_private_method(rb_cISeq, "marshal_dump", iseqw_marshal_dump, 0);

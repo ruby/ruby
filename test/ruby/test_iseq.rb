@@ -108,31 +108,44 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_line_trace
-    iseq = compile \
-  %q{ a = 1
-      b = 2
-      c = 3
-      # d = 4
-      e = 5
-      # f = 6
-      g = 7
+    iseq = RubyVM::InstructionSequence.compile \
+    %q{ a = 1
+        b = 2
+        c = 3
+        # d = 4
+        e = 5
+        # f = 6
+        g = 7
+      }
 
-    }
-    assert_equal([1, 2, 3, 5, 7], iseq.line_trace_all)
-    iseq.line_trace_specify(1, true) # line 2
-    iseq.line_trace_specify(3, true) # line 5
+    # == disasm: #<ISeq:<compiled>@<compiled>:1 (1,0)-(7,9)> (catch: FALSE)
+    #     local table (size: 5, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: -1])
+    # [ 5] a@0        [ 4] b@1        [ 3] c@2        [ 2] e@3        [ 1] g@4
+    # 0000 putobject_INT2FIX_1_                                             (   1)[Li]
+    # 0001 setlocal_WC_0                a@0
+    # 0003 putobject                    2                                   (   2)[Li]
+    # 0005 setlocal_WC_0                b@1
+    # 0007 putobject                    3                                   (   3)[Li]
+    # 0009 setlocal_WC_0                c@2
+    # 0011 putobject                    5                                   (   5)[Li]
+    # 0013 setlocal_WC_0                e@3
+    # 0015 putobject                    7                                   (   7)[Li]
+    # 0017 dup
+    # 0018 setlocal_WC_0                g@4
+    # 0020 leave
+
+    iseq.insn_trace_specify(6, true)
+    iseq.insn_trace_specify(8, true)
+    iseq.insn_trace_specify(9, true)
 
     result = []
-    TracePoint.new(:specified_line){|tp|
+    TracePoint.new(:specified_insn){|tp|
       result << tp.lineno
     }.enable{
       iseq.eval
     }
-    assert_equal([2, 5], result)
-
-    iseq = ISeq.of(self.class.instance_method(:method_test_line_trace))
-    assert_equal([LINE_BEFORE_METHOD + 3, LINE_BEFORE_METHOD + 5], iseq.line_trace_all)
-  end if false # TODO: now, it is only for C APIs.
+    assert_equal([5, 7, 7], result)
+  end
 
   LINE_OF_HERE = __LINE__
   def test_location
