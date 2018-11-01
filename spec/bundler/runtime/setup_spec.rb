@@ -886,7 +886,7 @@ end
       end
     end
 
-    it "should succesfully require 'bundler/setup'" do
+    it "should succesfully require 'bundler/setup'", :ruby_repo do
       install_gemfile ""
 
       ENV["GEM_PATH"] = symlinked_gem_home.path
