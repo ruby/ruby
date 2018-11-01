@@ -217,6 +217,10 @@ module Spec
     end
     bang :gem_command
 
+    def rake
+      "#{Gem.ruby} -S #{ENV["GEM_PATH"]}/bin/rake"
+    end
+
     def sys_exec(cmd)
       command_execution = CommandExecution.new(cmd.to_s, Dir.pwd)
 
