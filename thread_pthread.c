@@ -1395,10 +1395,12 @@ static int ubf_threads_empty(void) { return 1; }
 static struct {
     /* pipes are closed in forked children when owner_process does not match */
     int normal[2]; /* [0] == sigwait_fd */
+    int ub_main[2]; /* unblock main thread from native_ppoll_sleep */
 
     /* volatile for signal handler use: */
     volatile rb_pid_t owner_process;
 } signal_self_pipe = {
+    {-1, -1},
     {-1, -1},
 };
 
@@ -1717,10 +1719,12 @@ rb_thread_create_timer_thread(void)
 
     if (owner && owner != current) {
         CLOSE_INVALIDATE_PAIR(signal_self_pipe.normal);
+        CLOSE_INVALIDATE_PAIR(signal_self_pipe.ub_main);
         ubf_timer_invalidate();
     }
 
     if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
+    if (setup_communication_pipe_internal(signal_self_pipe.ub_main) < 0) return;
 
     if (owner != current) {
         /* validate pipe on this process */
@@ -1844,7 +1848,8 @@ rb_reserved_fd_p(int fd)
 #endif
     if (fd == signal_self_pipe.normal[0] || fd == signal_self_pipe.normal[1])
         goto check_pid;
-
+    if (fd == signal_self_pipe.ub_main[0] || fd == signal_self_pipe.ub_main[1])
+        goto check_pid;
     return 0;
 check_pid:
     if (signal_self_pipe.owner_process == getpid()) /* async-signal-safe */
@@ -1993,6 +1998,17 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
 }
 
 /*
+ * we need to guarantee wakeups from native_ppoll_sleep because
+ * ubf_select may not be going through ubf_list if other threads
+ * are all sleeping.
+ */
+static void
+ubf_ppoll_sleep(void *ignore)
+{
+    rb_thread_wakeup_timer_thread_fd(signal_self_pipe.ub_main[1]);
+}
+
+/*
  * This function does not exclusively acquire sigwait_fd, so it
  * cannot safely read from it.  However, it can be woken up in
  * 4 ways:
@@ -2006,22 +2022,26 @@ static void
 native_ppoll_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     rb_native_mutex_lock(&th->interrupt_lock);
-    th->unblock.func = ubf_select;
-    th->unblock.arg = th;
+    th->unblock.func = ubf_ppoll_sleep;
     rb_native_mutex_unlock(&th->interrupt_lock);
 
     GVL_UNLOCK_BEGIN(th);
     if (!RUBY_VM_INTERRUPTED(th->ec)) {
-        struct pollfd pfd;
+        struct pollfd pfd[2];
         struct timespec ts;
 
-        pfd.fd = signal_self_pipe.normal[0]; /* sigwait_fd */
-        pfd.events = POLLIN;
-        (void)ppoll(&pfd, 1, rb_hrtime2timespec(&ts, rel), 0);
-
+        pfd[0].fd = signal_self_pipe.normal[0]; /* sigwait_fd */
+        pfd[1].fd = signal_self_pipe.ub_main[0];
+        pfd[0].events = pfd[1].events = POLLIN;
+        if (ppoll(pfd, 2, rb_hrtime2timespec(&ts, rel), 0) > 0) {
+            if (pfd[1].revents & POLLIN) {
+                (void)consume_communication_pipe(pfd[1].fd);
+            }
+        }
         /*
-         * do not read the fd, here, let uplevel callers or other threads
-         * that, otherwise we may steal and starve other threads
+         * do not read the sigwait_fd, here, let uplevel callers
+         * or other threads that, otherwise we may steal and starve
+         * other threads
          */
     }
     unblock_function_clear(th);
