@@ -1,0 +1,24 @@
+HTTP/1.1 200 OK
+content-type: text/plain; charset=utf-8
+x-frame-options: SAMEORIGIN
+x-xss-protection: 1; mode=block
+x-content-type-options: nosniff
+content-security-policy: default-src 'self'; script-src 'self' https://secure.gaug.es; style-src 'self' https://fonts.googleapis.com; img-src 'self' https://secure.gaug.es https://gravatar.com https://secure.gravatar.com; font-src 'self' https://fonts.gstatic.com; connect-src https://s3-us-west-2.amazonaws.com/rubygems-dumps/; frame-src https://ghbtns.com
+cache-control: no-cache
+x-request-id: a7d87e66-6bb3-4b7a-9d3a-89ee68784d0e
+x-runtime: 0.003648
+x-ua-compatible: IE=Edge,chrome=1
+x-backend: F_Rails 54.186.104.15:443
+content-length: 0
+accept-ranges: bytes
+date: Fri, 28 Apr 2017 09:22:23 GMT
+via: 1.1 varnish
+age: 3103
+connection: keep-alive
+x-served-by: cache-fra1243-FRA
+x-cache: HIT
+x-cache-hits: 107
+x-timer: S1493371344.878545,VS0,VE0
+vary: Accept-Encoding,Fastly-SSL
+server: RubyGems.org
+

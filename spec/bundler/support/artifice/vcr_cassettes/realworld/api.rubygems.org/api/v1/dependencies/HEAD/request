@@ -1,0 +1,6 @@
+> HEAD /api/v1/dependencies
+> accept: */*
+> user-agent: Ruby
+> connection: keep-alive
+> keep-alive: 30
+> host: api.rubygems.org
