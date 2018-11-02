@@ -1223,7 +1223,7 @@ test-bundled-gems-fetch: $(PREP)
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb src bundled_gems
 
 test-bundled-gems-prepare: test-bundled-gems-precheck test-bundled-gems-fetch
-	$(XRUBY) -C "$(srcdir)" bin/gem install --no-ri --no-rdoc \
+	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
 		--install-dir .bundle --conservative "bundler" "minitest:~> 5" 'test-unit' 'rake' 'hoe' 'yard' 'pry' 'packnga'
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
