@@ -814,15 +814,6 @@ class Matrix
   end
 
   #
-  # Returns +true+ if this is a reflexive matrix.
-  # Raises an error if matrix is not square.
-  #
-  def reflexive?
-    Matrix.Raise ErrDimensionMismatch unless square?
-    each(:diagonal).all? { |e| e == 1 }
-  end
-
-  #
   # Returns +true+ if this is a unitary matrix
   # Raises an error if matrix is not square.
   #
