@@ -10,7 +10,7 @@
 #
 #
 
-require "irb/cmd/nop.rb"
+require_relative "nop"
 require_relative "../ext/loader"
 
 # :stopdoc:

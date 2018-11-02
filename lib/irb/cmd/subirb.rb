@@ -9,8 +9,8 @@
 #
 #
 
-require "irb/cmd/nop.rb"
-require "irb/ext/multi-irb"
+require_relative "nop"
+require_relative "../ext/multi-irb"
 
 # :stopdoc:
 module IRB

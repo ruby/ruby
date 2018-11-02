@@ -10,8 +10,8 @@
 #
 #
 
-require "irb/cmd/nop.rb"
-require "irb/ext/change-ws.rb"
+require_relative "nop"
+require_relative "../ext/change-ws"
 
 # :stopdoc:
 module IRB

@@ -11,8 +11,8 @@
 #
 require_relative "workspace"
 require_relative "inspector"
-require "irb/input-method"
-require "irb/output-method"
+require_relative "input-method"
+require_relative "output-method"
 
 module IRB
   # A class that wraps the current state of the irb session, including the
