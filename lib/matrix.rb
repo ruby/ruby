@@ -145,8 +145,8 @@ class Matrix
     scalar(n, 1)
   end
   class << Matrix
-    alias unit identity
-    alias I identity
+    alias_method :unit, :identity
+    alias_method :I, :identity
   end
 
   #
@@ -370,7 +370,7 @@ class Matrix
     rows = @rows.collect{|row| row.collect(&block)}
     new_matrix rows, column_count
   end
-  alias map collect
+  alias_method :map, :collect
 
   #
   # Yields all elements of the matrix, starting with those of the first row,
@@ -1013,7 +1013,7 @@ class Matrix
     Matrix.Raise ErrDimensionMismatch unless square?
     self.class.I(row_count).send(:inverse_from, self)
   end
-  alias inv inverse
+  alias_method :inv, :inverse
 
   def inverse_from(src) # :nodoc:
     last = row_count - 1
@@ -1200,7 +1200,7 @@ class Matrix
     warn "Matrix#determinant_e is deprecated; use #determinant", uplevel: 1
     determinant
   end
-  alias det_e determinant_e
+  alias_method :det_e, :determinant_e
 
   #
   # Returns a new matrix resulting by stacking horizontally
@@ -1277,7 +1277,7 @@ class Matrix
       tr + @rows[i][i]
     end
   end
-  alias tr trace
+  alias_method :tr, :trace
 
   #
   # Returns the transpose of the matrix.
@@ -1293,7 +1293,7 @@ class Matrix
     return self.class.empty(column_count, 0) if row_count.zero?
     new_matrix @rows.transpose, row_count
   end
-  alias t transpose
+  alias_method :t, :transpose
 
   #
   # Returns a new matrix resulting by stacking vertically
@@ -1322,7 +1322,7 @@ class Matrix
   def eigensystem
     EigenvalueDecomposition.new(self)
   end
-  alias eigen eigensystem
+  alias_method :eigen, :eigensystem
 
   #
   # Returns the LUP decomposition of the matrix; see +LUPDecomposition+.
@@ -1337,7 +1337,7 @@ class Matrix
   def lup
     LUPDecomposition.new(self)
   end
-  alias lup_decomposition lup
+  alias_method :lup_decomposition, :lup
 
   #--
   # COMPLEX ARITHMETIC -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -1355,7 +1355,7 @@ class Matrix
   def conjugate
     collect(&:conjugate)
   end
-  alias conj conjugate
+  alias_method :conj, :conjugate
 
   #
   # Returns the imaginary part of the matrix.
@@ -1369,7 +1369,7 @@ class Matrix
   def imaginary
     collect(&:imaginary)
   end
-  alias imag imaginary
+  alias_method :imag, :imaginary
 
   #
   # Returns the real part of the matrix.
@@ -1393,7 +1393,7 @@ class Matrix
   def rect
     [real, imag]
   end
-  alias rectangular rect
+  alias_method :rectangular, :rect
 
   #--
   # CONVERTING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -2045,7 +2045,7 @@ class Vector
     els = @elements.collect(&block)
     self.class.elements(els, false)
   end
-  alias map collect
+  alias_method :map, :collect
 
   #
   # Returns the modulus (Pythagorean distance) of the vector.
@@ -2054,8 +2054,8 @@ class Vector
   def magnitude
     Math.sqrt(@elements.inject(0) {|v, e| v + e.abs2})
   end
-  alias r magnitude
-  alias norm magnitude
+  alias_method :r, :magnitude
+  alias_method :norm, :magnitude
 
   #
   # Like Vector#collect2, but returns a Vector instead of an Array.
