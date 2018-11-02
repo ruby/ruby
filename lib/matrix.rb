@@ -289,10 +289,9 @@ class Matrix
     @column_count = column_count
   end
 
-  def new_matrix(rows, column_count = rows[0].size) # :nodoc:
+  private def new_matrix(rows, column_count = rows[0].size) # :nodoc:
     self.class.send(:new, rows, column_count) # bypass privacy of Matrix.new
   end
-  private :new_matrix
 
   #
   # Returns element (+i+,+j+) of the matrix.  That is: row +i+, column +j+.
@@ -1015,7 +1014,7 @@ class Matrix
   end
   alias_method :inv, :inverse
 
-  def inverse_from(src) # :nodoc:
+  private def inverse_from(src) # :nodoc:
     last = row_count - 1
     a = src.to_a
 
@@ -1058,7 +1057,6 @@ class Matrix
     end
     self
   end
-  private :inverse_from
 
   #
   # Matrix exponentiation.
@@ -1165,7 +1163,7 @@ class Matrix
   # with smaller bignums (if any), while a matrix of Float will usually have
   # intermediate results with better precision.
   #
-  def determinant_bareiss
+  private def determinant_bareiss
     size = row_count
     last = size - 1
     a = to_a
@@ -1191,7 +1189,6 @@ class Matrix
     end
     sign * pivot
   end
-  private :determinant_bareiss
 
   #
   # deprecated; use Matrix#determinant
@@ -1506,7 +1503,7 @@ class Matrix
     # Converts the obj to an Array. If copy is set to true
     # a copy of obj will be made if necessary.
     #
-    def convert_to_array(obj, copy = false) # :nodoc:
+    private def convert_to_array(obj, copy = false) # :nodoc:
       case obj
       when Array
         copy ? obj.dup : obj
@@ -1522,7 +1519,6 @@ class Matrix
         converted
       end
     end
-    private :convert_to_array
   end
 
   extend ConversionHelper
@@ -1532,14 +1528,13 @@ class Matrix
     # Applies the operator +oper+ with argument +obj+
     # through coercion of +obj+
     #
-    def apply_through_coercion(obj, oper)
+    private def apply_through_coercion(obj, oper)
       coercion = obj.coerce(self)
       raise TypeError unless coercion.is_a?(Array) && coercion.length == 2
       coercion[0].public_send(oper, coercion[1])
     rescue
       raise TypeError, "#{obj.inspect} can't be coerced into #{self.class}"
     end
-    private :apply_through_coercion
 
     #
     # Helper method to coerce a value into a specific class.
