@@ -302,12 +302,107 @@ class Matrix
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   matrix[range, range] = matrix/element
+  #   matrix[range, integer] = vector/column_matrix/element
+  #   matrix[integer, range] = vector/row_matrix/element
+  #   matrix[integer, integer] = element
+  #
+  # Set element or elements of matrix.
   def []=(i, j, v)
-    @rows[i][j] = v
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
+    rows = check_range(i, :row) or row = check_int(i, :row)
+    columns = check_range(j, :column) or column = check_int(j, :column)
+    if rows && columns
+      set_row_and_col_range(rows, columns, v)
+    elsif rows
+      set_row_range(rows, column, v)
+    elsif columns
+      set_col_range(row, columns, v)
+    else
+      set_value(row, column, v)
+    end
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
+  private :set_element, :set_component
+
+  # Returns range or nil
+  private def check_range(val, direction)
+    return unless val.is_a?(Range)
+    count = direction == :row ? row_count : column_count
+    CoercionHelper.check_range(val, count, direction)
+  end
+
+  private def check_int(val, direction)
+    count = direction == :row ? row_count : column_count
+    CoercionHelper.check_int(val, count, direction)
+  end
+
+  private def set_value(row, col, value)
+    raise ErrDimensionMismatch, "Expected a a value, got a #{value.class}" if value.respond_to?(:to_matrix)
+
+    @rows[row][col] = value
+  end
+
+  private def set_row_and_col_range(row_range, col_range, value)
+    if value.is_a?(Matrix)
+      if row_range.size != value.row_count || col_range.size != value.column_count
+        raise ErrDimensionMismatch, [
+          'Expected a Matrix of dimensions',
+          "#{row_range.size}x#{col_range.size}",
+          'got',
+          "#{value.row_count}x#{value.column_count}",
+        ].join(' ')
+      end
+      source = value.instance_variable_get :@rows
+      row_range.each_with_index do |row, i|
+        @rows[row][col_range] = source[i]
+      end
+    elsif value.is_a?(Vector)
+      raise ErrDimensionMismatch, 'Expected a Matrix or a value, got a Vector'
+    else
+      value_to_set = Array.new(col_range.size, value)
+      row_range.each do |i|
+        @rows[i][col_range] = value_to_set
+      end
+    end
+  end
+
+  private def set_row_range(row_range, col, value)
+    if value.is_a?(Vector)
+      Matrix.Raise ErrDimensionMismatch unless row_range.size == value.size
+      set_column_vector(row_range, col, value)
+    elsif value.is_a?(Matrix)
+      Matrix.Raise ErrDimensionMismatch unless value.column_count == 1
+      value = value.column(0)
+      Matrix.Raise ErrDimensionMismatch unless row_range.size == value.size
+      set_column_vector(row_range, col, value)
+    else
+      @rows[row_range].each{|e| e[col] = value }
+    end
+  end
+
+  private def set_column_vector(row_range, col, value)
+    value.each_with_index do |e, index|
+      r = row_range.begin + index
+      @rows[r][col] = e
+    end
+  end
+
+  private def set_col_range(row, col_range, value)
+    value = if value.is_a?(Vector)
+      value.to_a
+    elsif value.is_a?(Matrix)
+      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
+      value.row(0).to_a
+    else
+      Array.new(col_range.size, value)
+    end
+    Matrix.Raise ErrDimensionMismatch unless col_range.size == value.size
+    @rows[row][col_range] = value
+  end
 
   #
   # Returns the number of rows.
@@ -360,16 +455,48 @@ class Matrix
   #
   # Returns a matrix that is the result of iteration of the given block over all
   # elements of the matrix.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
   #   Matrix[ [1,2], [3,4] ].collect { |e| e**2 }
   #     => 1  4
   #        9 16
   #
-  def collect(&block) # :yield: e
-    return to_enum(:collect) unless block_given?
-    rows = @rows.collect{|row| row.collect(&block)}
-    new_matrix rows, column_count
+  def collect(which = :all, &block) # :yield: e
+    return to_enum(:collect, which) unless block_given?
+    dup.collect!(which, &block)
   end
   alias_method :map, :collect
+
+  #
+  # Invokes the given block for each element of matrix, replacing the element with the value
+  # returned by the block.
+  # Elements can be restricted by passing an argument:
+  # * :all (default): yields all elements
+  # * :diagonal: yields only elements on the diagonal
+  # * :off_diagonal: yields all elements except on the diagonal
+  # * :lower: yields only elements on or below the diagonal
+  # * :strict_lower: yields only elements below the diagonal
+  # * :strict_upper: yields only elements above the diagonal
+  # * :upper: yields only elements on or above the diagonal
+  #
+  def collect!(which = :all)
+    return to_enum(:collect!, which) unless block_given?
+    raise FrozenError, "can't modify frozen Matrix" if frozen?
+    each_with_index(which){ |e, row_index, col_index| @rows[row_index][col_index] = yield e }
+  end
+
+  alias map! collect!
+
+  def freeze
+    @rows.freeze
+    super
+  end
 
   #
   # Yields all elements of the matrix, starting with those of the first row,
@@ -865,12 +992,11 @@ class Matrix
   end
 
   #
-  # Returns a clone of the matrix, so that the contents of each do not reference
-  # identical objects.
-  # There should be no good reason to do this since Matrices are immutable.
+  # Called for dup & clone.
   #
-  def clone
-    new_matrix @rows.map(&:dup), column_count
+  private def initialize_copy(m)
+    super
+    @rows = @rows.map(&:dup) unless frozen?
   end
 
   #
@@ -1562,6 +1688,26 @@ class Matrix
     def self.coerce_to_matrix(obj)
       coerce_to(obj, Matrix, :to_matrix)
     end
+
+    # Returns `nil` for non Ranges
+    # Checks range validity, return canonical range with 0 <= begin <= end < count
+    def self.check_range(val, count, kind)
+      canonical = (val.begin + (val.begin < 0 ? count : 0))..
+                  (val.end ? val.end + (val.end < 0 ? count : 0) - (val.exclude_end? ? 1 : 0)
+                           : count - 1)
+      unless 0 <= canonical.begin && canonical.begin <= canonical.end && canonical.end < count
+        raise IndexError, "given range #{val} is outside of #{kind} dimensions: 0...#{count}"
+      end
+      canonical
+    end
+
+    def self.check_int(val, count, kind)
+      val = CoercionHelper.coerce_to_int(val)
+      if val >= count || val < -count
+        raise IndexError, "given #{kind} #{val} is outside of #{-count}...#{count}"
+      end
+      val
+    end
   end
 
   include CoercionHelper
@@ -1656,6 +1802,9 @@ end
 # To access elements:
 # * #[](i)
 #
+# To set elements:
+# * #[]=(i, v)
+#
 # To enumerate the elements:
 # * #each2(v)
 # * #collect2(v)
@@ -1678,8 +1827,10 @@ end
 # * #inner_product(v), dot(v)
 # * #cross_product(v), cross(v)
 # * #collect
+# * #collect!
 # * #magnitude
 # * #map
+# * #map!
 # * #map2(v)
 # * #norm
 # * #normalize
@@ -1758,7 +1909,11 @@ class Vector
   # ACCESSING
 
   #
-  # Returns element number +i+ (starting at zero) of the vector.
+  # :call-seq:
+  #   vector[range]
+  #   vector[integer]
+  #
+  # Returns element or elements of the vector.
   #
   def [](i)
     @elements[i]
@@ -1766,12 +1921,44 @@ class Vector
   alias element []
   alias component []
 
+  #
+  # :call-seq:
+  #   vector[range] = new_vector
+  #   vector[range] = row_matrix
+  #   vector[range] = new_element
+  #   vector[integer] = new_element
+  #
+  # Set element or elements of vector.
+  #
   def []=(i, v)
-    @elements[i]= v
+    raise FrozenError, "can't modify frozen Vector" if frozen?
+    if i.is_a?(Range)
+      range = Matrix::CoercionHelper.check_range(i, size, :vector)
+      set_range(range, v)
+    else
+      index = Matrix::CoercionHelper.check_int(i, size, :index)
+      set_value(index, v)
+    end
   end
   alias set_element []=
   alias set_component []=
-  private :[]=, :set_element, :set_component
+  private :set_element, :set_component
+
+  private def set_value(index, value)
+    @elements[index] = value
+  end
+
+  private def set_range(range, value)
+    if value.is_a?(Vector)
+      raise ArgumentError, "vector to be set has wrong size" unless range.size == value.size
+      @elements[range] = value.elements
+    elsif value.is_a?(Matrix)
+      Matrix.Raise ErrDimensionMismatch unless value.row_count == 1
+      @elements[range] = value.row(0).elements
+    else
+      @elements[range] = Array.new(range.size, value)
+    end
+  end
 
   # Returns a vector with entries rounded to the given precision
   # (see Float#round)
@@ -1868,6 +2055,20 @@ class Vector
     all?(&:zero?)
   end
 
+  def freeze
+    @elements.freeze
+    super
+  end
+
+  #
+  # Called for dup & clone.
+  #
+  private def initialize_copy(v)
+    super
+    @elements = @elements.dup unless frozen?
+  end
+
+
   #--
   # COMPARING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
@@ -1883,13 +2084,6 @@ class Vector
   def eql?(other)
     return false unless Vector === other
     @elements.eql? other.elements
-  end
-
-  #
-  # Returns a copy of the vector.
-  #
-  def clone
-    self.class.elements(@elements)
   end
 
   #
@@ -2041,6 +2235,17 @@ class Vector
     self.class.elements(els, false)
   end
   alias_method :map, :collect
+
+  #
+  # Like Array#collect!
+  #
+  def collect!(&block)
+    return to_enum(:collect!) unless block_given?
+    raise FrozenError, "can't modify frozen Vector" if frozen?
+    @elements.collect!(&block)
+    self
+  end
+  alias map! collect!
 
   #
   # Returns the modulus (Pythagorean distance) of the vector.

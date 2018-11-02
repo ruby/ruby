@@ -283,7 +283,18 @@ class TestMatrix < Test::Unit::TestCase
   end
 
   def test_collect
-    assert_equal(Matrix[[1, 4, 9], [16, 25, 36]], @m1.collect {|x| x ** 2 })
+    m1 = Matrix.zero(2,2)
+    m2 = Matrix.build(3,4){|row, col| 1}
+
+    assert_equal(Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.collect{|e| e * 5})
+    assert_equal(Matrix[[7, 0],[0, 7]], m1.collect(:diagonal){|e| e + 7})
+    assert_equal(Matrix[[0, 5],[5, 0]], m1.collect(:off_diagonal){|e| e + 5})
+    assert_equal(Matrix[[8, 1, 1, 1], [8, 8, 1, 1], [8, 8, 8, 1]], m2.collect(:lower){|e| e + 7})
+    assert_equal(Matrix[[1, 1, 1, 1], [-11, 1, 1, 1], [-11, -11, 1, 1]], m2.collect(:strict_lower){|e| e - 12})
+    assert_equal(Matrix[[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 1]], m2.collect(:strict_upper){|e| e ** 2})
+    assert_equal(Matrix[[-1, -1, -1, -1], [1, -1, -1, -1], [1, 1, -1, -1]], m2.collect(:upper){|e| -e})
+    assert_raise(ArgumentError) {m1.collect(:test){|e| e + 7}}
+    assert_not_equal(m2, m2.collect {|e| e * 2 })
   end
 
   def test_minor
@@ -621,6 +632,134 @@ class TestMatrix < Test::Unit::TestCase
     assert_equal Matrix.empty, Matrix.combine{ raise }
     assert_equal Matrix.empty(3,0), Matrix.combine(Matrix.empty(3,0), Matrix.empty(3,0)) { raise }
     assert_equal Matrix.empty(0,3), Matrix.combine(Matrix.empty(0,3), Matrix.empty(0,3)) { raise }
+  end
+
+  def test_set_element
+    src = Matrix[
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ]
+    rows = {
+      range:   [1..2, 1...3, 1..-1, -2..2, 1.., 1..., -2.., -2...],
+      int:     [2, -1],
+      invalid: [-4, 4, -4..2, 2..-4, 0...0, 2..0, -4..],
+    }
+    columns = {
+      range:   [2..3, 2...4, 2..-1, -2..3, 2.., 2..., -2..., -2..],
+      int:     [3, -1],
+      invalid: [-5, 5, -5..2, 2..-5, 0...0, -5..],
+    }
+    values = {
+      element: 42,
+      matrix:  Matrix[[20, 21], [22, 23]],
+      vector:  Vector[30, 31],
+      row:     Matrix[[60, 61]],
+      column:  Matrix[[50], [51]],
+      mismatched_matrix: Matrix.identity(3),
+      mismatched_vector: Vector[0, 1, 2, 3],
+    }
+    solutions = {
+      [:int, :int] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 42]],
+      },
+      [:range , :int] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 42], [9, 10, 11, 42]],
+        column:  Matrix[[1, 2, 3, 4], [5, 6, 7, 50], [9, 10, 11, 51]],
+        vector:  Matrix[[1, 2, 3, 4], [5, 6, 7, 30], [9, 10, 11, 31]],
+      },
+      [:int, :range] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 42, 42]],
+        row:     Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 60, 61]],
+        vector:  Matrix[[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 30, 31]],
+      },
+      [:range , :range] => {
+        element: Matrix[[1, 2, 3, 4], [5, 6, 42, 42], [9, 10, 42, 42]],
+        matrix:  Matrix[[1, 2, 3, 4], [5, 6, 20, 21], [9, 10, 22, 23]],
+      },
+    }
+    solutions.default = Hash.new(IndexError)
+
+    rows.each do |row_style, row_arguments|
+      row_arguments.each do |row_argument|
+        columns.each do |column_style, column_arguments|
+          column_arguments.each do |column_argument|
+            values.each do |value_type, value|
+              expected = solutions[[row_style, column_style]][value_type] || Matrix::ErrDimensionMismatch
+
+              result = src.clone
+              begin
+                result[row_argument, column_argument] = value
+                assert_equal expected, result,
+                  "m[#{row_argument.inspect}][#{column_argument.inspect}] = #{value.inspect} failed"
+              rescue Exception => e
+                raise if e.class != expected
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  def test_map!
+    m1 = Matrix.zero(2,2)
+    m2 = Matrix.build(3,4){|row, col| 1}
+    m3 = Matrix.zero(3,5).freeze
+    m4 = Matrix.empty.freeze
+
+    assert_equal Matrix[[5, 5, 5, 5], [5, 5, 5, 5], [5, 5, 5, 5]], m2.map!{|e| e * 5}
+    assert_equal Matrix[[7, 0],[0, 7]], m1.map!(:diagonal){|e| e + 7}
+    assert_equal Matrix[[7, 5],[5, 7]], m1.map!(:off_diagonal){|e| e + 5}
+    assert_equal Matrix[[12, 5, 5, 5], [12, 12, 5, 5], [12, 12, 12, 5]], m2.map!(:lower){|e| e + 7}
+    assert_equal Matrix[[12, 5, 5, 5], [0, 12, 5, 5], [0, 0, 12, 5]], m2.map!(:strict_lower){|e| e - 12}
+    assert_equal Matrix[[12, 25, 25, 25], [0, 12, 25, 25], [0, 0, 12, 25]], m2.map!(:strict_upper){|e| e ** 2}
+    assert_equal Matrix[[-12, -25, -25, -25], [0, -12, -25, -25], [0, 0, -12, -25]], m2.map!(:upper){|e| -e}
+    assert_equal m1, m1.map!{|e| e ** 2 }
+    assert_equal m2, m2.map!(:lower){ |e| e - 3 }
+    assert_raise(ArgumentError) {m1.map!(:test){|e| e + 7}}
+    assert_raise(FrozenError) { m3.map!{|e| e * 2} }
+    assert_raise(FrozenError) { m4.map!{} }
+  end
+
+  def test_freeze
+    m = Matrix[[1, 2, 3],[4, 5, 6]]
+    f = m.freeze
+    assert_equal true, f.frozen?
+    assert m.equal?(f)
+    assert m.equal?(f.freeze)
+    assert_raise(FrozenError){ m[0, 1] = 56 }
+    assert_equal m.dup, m
+  end
+
+  def test_clone
+    a = Matrix[[4]]
+    def a.foo
+      42
+    end
+
+    m = a.clone
+    m[0, 0] = 2
+    assert_equal a, m * 2
+    assert_equal 42, m.foo
+
+    a.freeze
+    m = a.clone
+    assert m.frozen?
+    assert_equal 42, m.foo
+  end
+
+  def test_dup
+    a = Matrix[[4]]
+    def a.foo
+      42
+    end
+    a.freeze
+
+    m = a.dup
+    m[0, 0] = 2
+    assert_equal a, m * 2
+    assert !m.respond_to?(:foo)
   end
 
   def test_eigenvalues_and_eigenvectors_symmetric
