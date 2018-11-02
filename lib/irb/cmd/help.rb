@@ -11,7 +11,7 @@
 
 require 'rdoc/ri/driver'
 
-require "irb/cmd/nop.rb"
+require_relative "nop"
 
 # :stopdoc:
 module IRB

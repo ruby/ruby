@@ -11,7 +11,7 @@
 #
 
 require "e2mmap"
-require "irb/output-method"
+require_relative "output-method"
 
 module IRB
   # An output formatter used internally by the lexer.
