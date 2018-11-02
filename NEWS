@@ -311,7 +311,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * Matrix#antisymmetric?
+    * Matrix#antisymmetric? / #skew_symmetric?
 
 [Net]
 

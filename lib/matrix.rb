@@ -812,6 +812,7 @@ class Matrix
     end
     true
   end
+  alias_method :skew_symmetric?, :antisymmetric?
 
   #
   # Returns +true+ if this is a unitary matrix
