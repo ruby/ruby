@@ -313,8 +313,6 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Matrix#antisymmetric?
 
-    * Matrix#reflexive?
-
 [Net]
 
   [New options]
