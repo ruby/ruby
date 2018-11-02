@@ -18,7 +18,7 @@
 # content are purely an implementation detail, and should not be exposed in
 # any test or spec or otherwise.
 
-require 'unicode_normalize/tables.rb'
+require_relative 'tables'
 
 
 module UnicodeNormalize  # :nodoc:

@@ -14,8 +14,8 @@ require "e2mmap"
 
 require_relative "error"
 require_relative "filter"
-require "shell/system-command"
-require "shell/builtin-command"
+require_relative "system-command"
+require_relative "builtin-command"
 
 class Shell
   # In order to execute a command on your OS, you need to define it as a
