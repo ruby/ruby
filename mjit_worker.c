@@ -1045,12 +1045,13 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
         if (!mjit_opts.save_temps)
             remove_file(c_file);
         free_unit(unit);
+        in_jit = FALSE; /* just being explicit for return */
     }
     else {
         in_jit = TRUE;
     }
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
-    if (unit->iseq == NULL) {
+    if (!in_jit) {
         return (mjit_func_t)NOT_COMPILED_JIT_ISEQ_FUNC;
     }
 
