@@ -313,6 +313,14 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Matrix#antisymmetric? / #skew_symmetric?
 
+    * Matrix#map! / #collect! [Feature #14151]
+
+    * Matrix#[]=
+
+    * Vector#map! / #collect!
+
+    * Vector#[]=
+
 [Net]
 
   [New options]
