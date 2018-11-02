@@ -206,12 +206,14 @@ module DRbCore
   end
 
   def test_06_timeout
-    ten = Onecky.new(10)
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
-    end
-    assert_raise(Timeout::Error) do
-      @there.do_timeout(ten)
+    Timeout.timeout(60) do
+      ten = Onecky.new(10)
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
+      assert_raise(Timeout::Error) do
+        @there.do_timeout(ten)
+      end
     end
   end
 
