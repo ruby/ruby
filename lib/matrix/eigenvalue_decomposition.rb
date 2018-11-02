@@ -43,7 +43,7 @@ class Matrix
     def eigenvector_matrix
       Matrix.send(:new, build_eigenvectors.transpose)
     end
-    alias v eigenvector_matrix
+    alias_method :v, :eigenvector_matrix
 
     # Returns the inverse of the eigenvector matrix +V+
     #
@@ -52,7 +52,7 @@ class Matrix
       r = r.transpose.inverse unless @symmetric
       r
     end
-    alias v_inv eigenvector_matrix_inv
+    alias_method :v_inv, :eigenvector_matrix_inv
 
     # Returns the eigenvalues in an array
     #
@@ -73,7 +73,7 @@ class Matrix
     def eigenvalue_matrix
       Matrix.diagonal(*eigenvalues)
     end
-    alias d eigenvalue_matrix
+    alias_method :d, :eigenvalue_matrix
 
     # Returns [eigenvector_matrix, eigenvalue_matrix, eigenvector_matrix_inv]
     #
