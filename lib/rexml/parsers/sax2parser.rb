@@ -1,8 +1,8 @@
 # frozen_string_literal: false
-require 'rexml/parsers/baseparser'
-require 'rexml/parseexception'
-require 'rexml/namespace'
-require 'rexml/text'
+require_relative 'baseparser'
+require_relative '../parseexception'
+require_relative '../namespace'
+require_relative '../text'
 
 module REXML
   module Parsers

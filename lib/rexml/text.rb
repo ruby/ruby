@@ -1,10 +1,10 @@
 # frozen_string_literal: false
-require 'rexml/security'
-require 'rexml/entity'
-require 'rexml/doctype'
-require 'rexml/child'
-require 'rexml/doctype'
-require 'rexml/parseexception'
+require_relative 'security'
+require_relative 'entity'
+require_relative 'doctype'
+require_relative 'child'
+require_relative 'doctype'
+require_relative 'parseexception'
 
 module REXML
   # Represents text nodes in an XML document

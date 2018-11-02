@@ -1,7 +1,7 @@
 # frozen_string_literal: false
-require 'rexml/child'
-require 'rexml/source'
-require 'rexml/xmltokens'
+require_relative 'child'
+require_relative 'source'
+require_relative 'xmltokens'
 
 module REXML
   class Entity < Child

@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require 'rexml/parsers/streamparser'
-require 'rexml/parsers/baseparser'
+require_relative 'streamparser'
+require_relative 'baseparser'
 
 module REXML
   module Parsers

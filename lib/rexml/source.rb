@@ -1,6 +1,6 @@
 # coding: US-ASCII
 # frozen_string_literal: false
-require 'rexml/encoding'
+require_relative 'encoding'
 
 module REXML
   # Generates Source-s.  USE THIS CLASS.

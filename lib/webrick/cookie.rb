@@ -10,7 +10,7 @@
 # $IPR: cookie.rb,v 1.16 2002/09/21 12:23:35 gotoyuzo Exp $
 
 require 'time'
-require 'webrick/httputils'
+require_relative 'httputils'
 
 module WEBrick
 

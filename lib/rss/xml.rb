@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/utils"
+require_relative "utils"
 
 module RSS
   module XML

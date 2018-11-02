@@ -862,24 +862,24 @@ class CGI
 
     case @options[:tag_maker]
     when "html3"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html3
       extend HtmlExtension
     when "html4"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4
       extend HtmlExtension
     when "html4Tr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend HtmlExtension
     when "html4Fr"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html4Tr
       extend Html4Fr
       extend HtmlExtension
     when "html5"
-      require 'cgi/html'
+      require_relative 'html'
       extend Html5
       extend HtmlExtension
     end

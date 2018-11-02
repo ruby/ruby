@@ -8,8 +8,8 @@
 #
 # $IPR: htdigest.rb,v 1.4 2003/07/22 19:20:45 gotoyuzo Exp $
 
-require 'webrick/httpauth/userdb'
-require 'webrick/httpauth/digestauth'
+require_relative 'userdb'
+require_relative 'digestauth'
 require 'tempfile'
 
 module WEBrick

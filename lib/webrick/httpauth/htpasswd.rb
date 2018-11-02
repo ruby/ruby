@@ -8,8 +8,8 @@
 #
 # $IPR: htpasswd.rb,v 1.4 2003/07/22 19:20:45 gotoyuzo Exp $
 
-require 'webrick/httpauth/userdb'
-require 'webrick/httpauth/basicauth'
+require_relative 'userdb'
+require_relative 'basicauth'
 require 'tempfile'
 
 module WEBrick

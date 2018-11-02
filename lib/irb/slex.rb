@@ -11,7 +11,7 @@
 #
 
 require "e2mmap"
-require "irb/notifier"
+require_relative "notifier"
 
 # :stopdoc:
 module IRB

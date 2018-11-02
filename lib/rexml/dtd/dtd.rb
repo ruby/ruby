@@ -1,10 +1,10 @@
 # frozen_string_literal: false
-require "rexml/dtd/elementdecl"
-require "rexml/dtd/entitydecl"
-require "rexml/comment"
-require "rexml/dtd/notationdecl"
-require "rexml/dtd/attlistdecl"
-require "rexml/parent"
+require_relative "elementdecl"
+require_relative "entitydecl"
+require_relative "../comment"
+require_relative "notationdecl"
+require_relative "attlistdecl"
+require_relative "../parent"
 
 module REXML
   module DTD

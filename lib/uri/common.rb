@@ -10,8 +10,8 @@
 # See URI for general documentation
 #
 
-require "uri/rfc2396_parser"
-require "uri/rfc3986_parser"
+require_relative "rfc2396_parser"
+require_relative "rfc3986_parser"
 
 module URI
   REGEXP = RFC2396_REGEXP
