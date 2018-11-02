@@ -1,5 +1,6 @@
-[![Build Status](https://travis-ci.org/ruby/ruby.svg)](https://travis-ci.org/ruby/ruby)
+[![Build Status](https://travis-ci.org/ruby/ruby.svg?branch=trunk)](https://travis-ci.org/ruby/ruby)
 [![Build status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/trunk?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/trunk)
+[![wercker status](https://app.wercker.com/status/e5e7e1704f62b76525022aa424aef6ef/s/trunk "wercker status")](https://app.wercker.com/project/byKey/e5e7e1704f62b76525022aa424aef6ef)
 
 # What's Ruby
 
