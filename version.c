@@ -62,7 +62,7 @@ Init_version(void)
     rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
     /*
      * The patchlevel string for this ruby. If this is a development build
-     * of ruby the patchlevel string will be dev otherwise the respective
+     * of ruby, the patchlevel string will be dev, otherwise the respective
      * rc or preview candidate.
      */
     rb_define_global_const("RUBY_PATCHNAME", MKSTR(patchlevel_str));
