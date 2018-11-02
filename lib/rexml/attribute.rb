@@ -1,6 +1,6 @@
 # frozen_string_literal: false
-require "rexml/namespace"
-require 'rexml/text'
+require_relative "namespace"
+require_relative 'text'
 
 module REXML
   # Defines an Element Attribute; IE, a attribute=value pair, as in:

@@ -10,7 +10,7 @@
 #
 #
 
-require "shell/filter"
+require_relative "filter"
 
 class Shell
   class BuiltInCommand < Filter

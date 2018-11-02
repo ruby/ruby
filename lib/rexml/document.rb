@@ -1,17 +1,17 @@
 # frozen_string_literal: false
-require "rexml/security"
-require "rexml/element"
-require "rexml/xmldecl"
-require "rexml/source"
-require "rexml/comment"
-require "rexml/doctype"
-require "rexml/instruction"
-require "rexml/rexml"
-require "rexml/parseexception"
-require "rexml/output"
-require "rexml/parsers/baseparser"
-require "rexml/parsers/streamparser"
-require "rexml/parsers/treeparser"
+require_relative "security"
+require_relative "element"
+require_relative "xmldecl"
+require_relative "source"
+require_relative "comment"
+require_relative "doctype"
+require_relative "instruction"
+require_relative "rexml"
+require_relative "parseexception"
+require_relative "output"
+require_relative "parsers/baseparser"
+require_relative "parsers/streamparser"
+require_relative "parsers/treeparser"
 
 module REXML
   # Represents a full XML document, including PIs, a doctype, etc.  A
@@ -226,7 +226,7 @@ module REXML
       end
       formatter = if indent > -1
           if transitive
-            require "rexml/formatters/transitive"
+            require_relative "formatters/transitive"
             REXML::Formatters::Transitive.new( indent, ie_hack )
           else
             REXML::Formatters::Pretty.new( indent, ie_hack )

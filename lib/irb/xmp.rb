@@ -11,7 +11,7 @@
 #
 
 require "irb"
-require "irb/frame"
+require_relative "frame"
 
 # An example printer for irb.
 #

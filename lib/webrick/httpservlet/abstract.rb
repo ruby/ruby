@@ -9,9 +9,9 @@
 #
 # $IPR: abstract.rb,v 1.24 2003/07/11 11:16:46 gotoyuzo Exp $
 
-require 'webrick/htmlutils'
-require 'webrick/httputils'
-require 'webrick/httpstatus'
+require_relative '../htmlutils'
+require_relative '../httputils'
+require_relative '../httpstatus'
 
 module WEBrick
   module HTTPServlet

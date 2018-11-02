@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rss/syndication'
+require_relative '../syndication'
 require 'rss/maker/1.0'
 
 module RSS

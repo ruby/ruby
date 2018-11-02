@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rss/dublincore'
+require_relative '../dublincore'
 require 'rss/maker/1.0'
 
 module RSS

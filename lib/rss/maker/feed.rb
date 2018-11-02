@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/maker/atom"
+require_relative "atom"
 
 module RSS
   module Maker

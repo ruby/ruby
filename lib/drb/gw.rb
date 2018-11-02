@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'drb/drb'
+require_relative 'drb'
 require 'monitor'
 
 module DRb
@@ -109,7 +109,7 @@ s2.thread.join
 =begin
 # foo.rb
 
-require 'drb/drb'
+require_relative 'drb'
 
 class Foo
   include DRbUndumped
@@ -127,7 +127,7 @@ end
 
 =begin
 # gw_a.rb
-require 'drb/unix'
+require_relative 'unix'
 require 'foo'
 
 obj = Foo.new('a')
@@ -141,7 +141,7 @@ DRb.thread.join
 
 =begin
 # gw_c.rb
-require 'drb/unix'
+require_relative 'unix'
 require 'foo'
 
 foo = Foo.new('c', nil)

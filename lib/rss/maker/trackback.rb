@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require 'rss/trackback'
+require_relative '../trackback'
 require 'rss/maker/1.0'
 require 'rss/maker/2.0'
 

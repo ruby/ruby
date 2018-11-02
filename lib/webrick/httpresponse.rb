@@ -11,10 +11,10 @@
 
 require 'time'
 require 'uri'
-require 'webrick/httpversion'
-require 'webrick/htmlutils'
-require 'webrick/httputils'
-require 'webrick/httpstatus'
+require_relative 'httpversion'
+require_relative 'htmlutils'
+require_relative 'httputils'
+require_relative 'httpstatus'
 
 module WEBrick
   ##

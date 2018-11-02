@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'uri/generic'
+require_relative 'generic'
 
 module URI
 

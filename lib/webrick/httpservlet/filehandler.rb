@@ -11,9 +11,9 @@
 
 require 'time'
 
-require 'webrick/htmlutils'
-require 'webrick/httputils'
-require 'webrick/httpstatus'
+require_relative '../htmlutils'
+require_relative '../httputils'
+require_relative '../httpstatus'
 
 module WEBrick
   module HTTPServlet

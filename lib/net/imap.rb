@@ -18,7 +18,7 @@ require "socket"
 require "monitor"
 require "digest/md5"
 require "strscan"
-require 'net/protocol'
+require_relative 'protocol'
 begin
   require "openssl"
 rescue LoadError

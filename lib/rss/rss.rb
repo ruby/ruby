@@ -63,8 +63,8 @@ end
 
 
 require "English"
-require "rss/utils"
-require "rss/converter"
+require_relative "utils"
+require_relative "converter"
 require "rss/xml-stylesheet"
 
 module RSS

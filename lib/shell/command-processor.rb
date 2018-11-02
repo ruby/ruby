@@ -12,8 +12,8 @@
 
 require "e2mmap"
 
-require "shell/error"
-require "shell/filter"
+require_relative "error"
+require_relative "filter"
 require "shell/system-command"
 require "shell/builtin-command"
 
