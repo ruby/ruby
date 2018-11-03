@@ -206,14 +206,13 @@ module DRbCore
   end
 
   def test_06_timeout
-    Timeout.timeout(60) do
-      ten = Onecky.new(10)
-      assert_raise(Timeout::Error) do
-        @there.do_timeout(ten)
-      end
-      assert_raise(Timeout::Error) do
-        @there.do_timeout(ten)
-      end
+    skip if RUBY_PLATFORM.include?("armv7l-linux")
+    ten = Onecky.new(10)
+    assert_raise(Timeout::Error) do
+      @there.do_timeout(ten)
+    end
+    assert_raise(Timeout::Error) do
+      @there.do_timeout(ten)
     end
   end
 
