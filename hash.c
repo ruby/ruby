@@ -351,8 +351,8 @@ empty_entry(li_table_entry *entry)
                              RHASH_ARRAY_SIZE_RAW(h))
 
 #define RHASH_ARRAY_BOUND_RAW(h) \
-  ((int)((RBASIC(h)->flags >> RHASH_ARRAY_BOUND_SHIFT) & \
-         (RHASH_ARRAY_BOUND_MASK >> RHASH_ARRAY_BOUND_SHIFT)))
+  ((unsigned int)((RBASIC(h)->flags >> RHASH_ARRAY_BOUND_SHIFT) & \
+                  (RHASH_ARRAY_BOUND_MASK >> RHASH_ARRAY_BOUND_SHIFT)))
 
 #define RHASH_ARRAY_BOUND(h) (HASH_ASSERT(RHASH_ARRAY_P(h)), \
                               RHASH_ARRAY_BOUND_RAW(h))
@@ -371,10 +371,10 @@ rb_hash_dump(VALUE hash)
     rb_obj_info_dump(hash);
 
     if (RHASH_ARRAY_P(hash)) {
-        int i, n = 0, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, n = 0, bound = RHASH_ARRAY_BOUND(hash);
 
-        fprintf(stderr, "  size:%d bound:%d\n",
-                (int)RHASH_ARRAY_SIZE(hash), (int)RHASH_ARRAY_BOUND(hash));
+        fprintf(stderr, "  size:%u bound:%u\n",
+                RHASH_ARRAY_SIZE(hash), RHASH_ARRAY_BOUND(hash));
 
         for (i=0; i<bound; i++) {
             li_table_entry *cur_entry = RHASH_ARRAY_REF(hash, i);
@@ -403,7 +403,7 @@ hash_verify_(VALUE hash, const char *file, int line)
     HASH_ASSERT(RB_TYPE_P(hash, T_HASH));
 
     if (RHASH_ARRAY_P(hash)) {
-        int i, n = 0, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, n = 0, bound = RHASH_ARRAY_BOUND(hash);
 
         for (i=0; i<bound; i++) {
             li_table_entry *cur_entry = RHASH_ARRAY_REF(hash, i);
@@ -419,7 +419,7 @@ hash_verify_(VALUE hash, const char *file, int line)
             }
         }
         if (n != RHASH_ARRAY_SIZE(hash)) {
-            rb_bug("n:%d, RHASH_ARRAY_SIZE:%d", (int)n, (int)RHASH_ARRAY_SIZE(hash));
+            rb_bug("n:%u, RHASH_ARRAY_SIZE:%u", n, RHASH_ARRAY_SIZE(hash));
         }
     }
     else {
@@ -501,7 +501,7 @@ hash_array_set(VALUE hash, struct li_table *li)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
 
 #define RHASH_ARRAY_BOUND_SET(h, n) do { \
-    long tmp_n = n; \
+    st_index_t tmp_n = (n);          \
     HASH_ASSERT(RHASH_ARRAY_P(h)); \
     HASH_ASSERT(tmp_n <= RHASH_ARRAY_MAX_BOUND); \
     RBASIC(h)->flags &= ~RHASH_ARRAY_BOUND_MASK; \
@@ -509,7 +509,7 @@ hash_array_set(VALUE hash, struct li_table *li)
 } while (0)
 
 #define RHASH_ARRAY_SIZE_SET(h, n) do { \
-    long tmp_n = n; \
+    st_index_t tmp_n = n; \
     HASH_ASSERT(RHASH_ARRAY_P(h)); \
     RBASIC(h)->flags &= ~RHASH_ARRAY_SIZE_MASK; \
     RBASIC(h)->flags |= (tmp_n) << RHASH_ARRAY_SIZE_SHIFT; \
@@ -550,10 +550,10 @@ linear_init_table(VALUE hash)
     return tab;
 }
 
-static st_index_t
+static unsigned
 find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
 {
-    uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
+    unsigned i, bound = RHASH_ARRAY_BOUND(hash);
 
     /* if table is NULL, then bound also should be 0 */
 
@@ -592,7 +592,7 @@ linear_try_convert_table(VALUE hash)
 {
     st_table *new_tab;
     li_table_entry *entry;
-    const int size = RHASH_ARRAY_SIZE(hash);
+    const unsigned size = RHASH_ARRAY_SIZE(hash);
     st_index_t i;
 
     if (!RHASH_ARRAY_P(hash) || size < RHASH_ARRAY_MAX_SIZE) {
@@ -623,7 +623,7 @@ linear_force_convert_table(VALUE hash, const char *file, int line)
 
     if (RHASH_ARRAY(hash)) {
         li_table_entry *entry;
-        int i, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, bound = RHASH_ARRAY_BOUND(hash);
 
 #if RHASH_CONVERT_TABLE_DEBUG
         rb_obj_info_dump(hash);
@@ -661,14 +661,14 @@ hash_ltbl(VALUE hash)
 static int
 linear_compact_table(VALUE hash)
 {
-    const int bound = RHASH_ARRAY_BOUND(hash);
-    const int size = RHASH_ARRAY_SIZE(hash);
+    const unsigned bound = RHASH_ARRAY_BOUND(hash);
+    const unsigned size = RHASH_ARRAY_SIZE(hash);
 
     if (size == bound) {
         return size;
     }
     else {
-        int i, j=0;
+        unsigned i, j=0;
         li_table_entry *entries = RHASH_ARRAY_REF(hash, 0);
 
         for (i=0; i<bound; i++) {
@@ -699,7 +699,7 @@ linear_compact_table(VALUE hash)
 static int
 linear_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash_value)
 {
-    uint8_t bin = RHASH_ARRAY_BOUND(hash);
+    unsigned bin = RHASH_ARRAY_BOUND(hash);
     li_table *tab = RHASH_ARRAY(hash);
     li_table_entry *entry;
 
@@ -725,7 +725,7 @@ static int
 linear_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
 {
     if (RHASH_ARRAY_SIZE(hash) > 0) {
-        int i, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, bound = RHASH_ARRAY_BOUND(hash);
 
         for (i = 0; i < bound; i++) {
             enum st_retval retval;
@@ -755,7 +755,7 @@ linear_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
                      st_data_t never)
 {
     if (RHASH_ARRAY_SIZE(hash) > 0) {
-        uint8_t i, ret = 0, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, ret = 0, bound = RHASH_ARRAY_BOUND(hash);
         enum st_retval retval;
         li_table_entry *cur_entry;
         st_data_t key;
@@ -804,7 +804,7 @@ linear_update(VALUE hash, st_data_t key,
               st_update_callback_func *func, st_data_t arg)
 {
     int retval, existing;
-    uint8_t bin;
+    unsigned bin;
     st_data_t value = 0, old_key;
     st_hash_t hash_value = do_hash(key);
 
@@ -853,7 +853,7 @@ linear_update(VALUE hash, st_data_t key,
 static int
 linear_insert(VALUE hash, st_data_t key, st_data_t value)
 {
-    st_index_t bin = RHASH_ARRAY_BOUND(hash);
+    unsigned bin = RHASH_ARRAY_BOUND(hash);
     st_hash_t hash_value = do_hash(key);
 
     hash_ltbl(hash); /* prepare ltbl */
@@ -884,7 +884,7 @@ static int
 linear_lookup(VALUE hash, st_data_t key, st_data_t *value)
 {
     st_hash_t hash_value = do_hash(key);
-    st_index_t bin = find_entry(hash, hash_value, key);
+    unsigned bin = find_entry(hash, hash_value, key);
 
     if (bin == RHASH_ARRAY_MAX_BOUND) {
         return 0;
@@ -901,7 +901,7 @@ linear_lookup(VALUE hash, st_data_t key, st_data_t *value)
 static int
 linear_delete(VALUE hash, st_data_t *key, st_data_t *value)
 {
-    st_index_t bin;
+    unsigned bin;
     st_hash_t hash_value = do_hash(*key);
 
 
@@ -924,7 +924,7 @@ static int
 linear_shift(VALUE hash, st_data_t *key, st_data_t *value)
 {
     if (RHASH_ARRAY_SIZE(hash) > 0) {
-        uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
+        unsigned i, bound = RHASH_ARRAY_BOUND(hash);
         li_table_entry *entry, *entries = RHASH_ARRAY(hash)->entries;
 
         for (i = 0; i < bound; i++) {
@@ -945,7 +945,7 @@ linear_shift(VALUE hash, st_data_t *key, st_data_t *value)
 static long
 linear_keys(VALUE hash, st_data_t *keys, st_index_t size)
 {
-    uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
+    unsigned i, bound = RHASH_ARRAY_BOUND(hash);
     st_data_t *keys_start = keys, *keys_end = keys + size;
 
     for (i = 0; i < bound; i++) {
@@ -965,7 +965,7 @@ linear_keys(VALUE hash, st_data_t *keys, st_index_t size)
 static long
 linear_values(VALUE hash, st_data_t *values, st_index_t size)
 {
-    uint8_t i, bound = RHASH_ARRAY_BOUND(hash);
+    unsigned i, bound = RHASH_ARRAY_BOUND(hash);
     st_data_t *values_start = values, *values_end = values + size;
 
     for (i = 0; i < bound; i++) {
