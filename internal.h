@@ -686,7 +686,7 @@ enum ruby_rhash_flags {
 #define HASH_PROC_DEFAULT FL_USER2
 
 #define RHASH_ARRAY_SIZE_RAW(h) \
-  ((int)((RBASIC(h)->flags & RHASH_ARRAY_SIZE_MASK) >> RHASH_ARRAY_SIZE_SHIFT))
+  ((unsigned int)((RBASIC(h)->flags & RHASH_ARRAY_SIZE_MASK) >> RHASH_ARRAY_SIZE_SHIFT))
 
 int rb_hash_array_p(VALUE hash);
 struct li_table *rb_hash_array(VALUE hash);
