@@ -127,6 +127,7 @@ struct enumerator {
     VALUE args;
     VALUE fib;
     VALUE dst;
+    VALUE buffer;
     VALUE lookahead;
     VALUE feedvalue;
     VALUE stop_exc;
@@ -182,6 +183,7 @@ enumerator_mark(void *p)
     rb_gc_mark(ptr->args);
     rb_gc_mark(ptr->fib);
     rb_gc_mark(ptr->dst);
+    rb_gc_mark(ptr->buffer);
     rb_gc_mark(ptr->lookahead);
     rb_gc_mark(ptr->feedvalue);
     rb_gc_mark(ptr->stop_exc);
@@ -354,6 +356,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
     if (argc) ptr->args = rb_ary_new4(argc, argv);
     ptr->fib = 0;
     ptr->dst = Qnil;
+    ptr->buffer = Qundef;
     ptr->lookahead = Qundef;
     ptr->feedvalue = Qundef;
     ptr->stop_exc = Qfalse;
@@ -457,6 +460,7 @@ enumerator_init_copy(VALUE obj, VALUE orig)
     ptr1->meth = ptr0->meth;
     ptr1->args = ptr0->args;
     ptr1->fib  = 0;
+    ptr1->buffer = Qundef;
     ptr1->lookahead  = Qundef;
     ptr1->feedvalue  = Qundef;
     ptr1->size  = ptr0->size;
@@ -678,8 +682,8 @@ next_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, obj))
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE feedvalue = Qnil;
-    VALUE args = rb_ary_new4(argc, argv);
-    rb_fiber_yield(1, &args);
+    e->buffer = rb_ary_new4(argc, argv);
+    rb_fiber_yield(0, NULL);
     if (e->feedvalue != Qundef) {
         feedvalue = e->feedvalue;
         e->feedvalue = Qundef;
@@ -691,13 +695,14 @@ static VALUE
 next_i(VALUE curr, VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
-    VALUE nil = Qnil;
     VALUE result;
 
     result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
     e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached an end");
     rb_ivar_set(e->stop_exc, id_result, result);
-    return rb_fiber_yield(1, &nil);
+    
+    e->buffer = Qnil;
+    return rb_fiber_yield(0, NULL);
 }
 
 static void
@@ -723,14 +728,27 @@ get_next_values(VALUE obj, struct enumerator *e)
 	next_init(obj, e);
     }
 
-    vs = rb_fiber_resume(e->fib, 1, &curr);
-    if (e->stop_exc) {
-	e->fib = 0;
-	e->dst = Qnil;
-	e->lookahead = Qundef;
-	e->feedvalue = Qundef;
-	rb_exc_raise(e->stop_exc);
+    e->buffer = Qundef;
+    while (e->buffer == Qundef) {
+        vs = rb_fiber_resume(e->fib, 1, &curr);
+        
+        if (e->buffer == Qundef) {
+            rb_fiber_yield(1, &vs);
+        } else {
+            vs = e->buffer;
+            e->buffer = Qundef;
+            break;
+        }
     }
+    
+    if (e->stop_exc) {
+        e->fib = 0;
+        e->dst = Qnil;
+        e->lookahead = Qundef;
+        e->feedvalue = Qundef;
+        rb_exc_raise(e->stop_exc);
+    }
+    
     return vs;
 }
 

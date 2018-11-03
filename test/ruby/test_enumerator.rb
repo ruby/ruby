@@ -697,6 +697,21 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([0, 1], u.force)
   end
 
+  def test_fiber
+    e = Enumerator.new do |y|
+      Fiber.yield 10
+      y << 20
+    end
+
+    f = Fiber.new do
+      Fiber.yield e.next
+    end
+
+    assert_equal(10, f.resume)
+    assert_equal(20, f.resume)
+  end
+end
+
   def test_enum_chain_and_plus
     r = 1..5
 

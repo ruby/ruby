@@ -240,6 +240,7 @@ NORETURN(void rb_cmperr(VALUE, VALUE));
 /* cont.c */
 VALUE rb_fiber_new(VALUE (*)(ANYARGS), VALUE);
 VALUE rb_fiber_resume(VALUE fib, int argc, const VALUE *argv);
+VALUE rb_fiber_transfer(VALUE fib, int argc, const VALUE *argv);
 VALUE rb_fiber_yield(int argc, const VALUE *argv);
 VALUE rb_fiber_current(void);
 VALUE rb_fiber_alive_p(VALUE);
