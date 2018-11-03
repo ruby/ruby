@@ -2132,6 +2132,9 @@ const char *rb_objspace_data_type_name(VALUE obj);
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 
+/* array.c (export) */
+void rb_ary_detransient(VALUE a);
+
 /* bignum.c (export) */
 VALUE rb_big_mul_normal(VALUE x, VALUE y);
 VALUE rb_big_mul_balance(VALUE x, VALUE y);
