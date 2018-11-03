@@ -16,6 +16,7 @@ top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 PLATFORM_DIR = @PLATFORM_DIR@
 
+CC_WRAPPER = @XCC_WRAPPER@
 CC = @CC@
 CPP = @CPP@
 LD = @LD@
