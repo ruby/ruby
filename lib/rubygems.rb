@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.0.0.beta1".freeze
+  VERSION = "3.0.0.beta2".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -175,7 +175,7 @@ module Gem
     write_binary_errors
   end.freeze
 
-  USE_BUNDLER_FOR_GEMDEPS = false # :nodoc:
+  USE_BUNDLER_FOR_GEMDEPS = !ENV['DONT_USE_BUNDLER_FOR_GEMDEPS'] # :nodoc:
 
   @@win_platform = nil
 
