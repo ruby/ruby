@@ -182,7 +182,7 @@ mjit-test1:
   after-steps:
     - wantedly/pretty-slack-notify:
       webhook_url: $SLACK_WEBHOOK_URL
-      username: Wercker test-mjit-wait
+      username: Wercker mjit-test1
       channel: alerts
       notify_on: "failed"
       branches: ^trunk$
@@ -276,7 +276,7 @@ mjit-test2:
   after-steps:
     - wantedly/pretty-slack-notify:
       webhook_url: $SLACK_WEBHOOK_URL
-      username: Wercker test-mjit-wait
+      username: Wercker mjit-test2
       channel: alerts
       notify_on: "failed"
       branches: ^trunk$
