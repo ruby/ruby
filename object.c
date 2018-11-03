@@ -3055,7 +3055,8 @@ rb_check_convert_type_with_id(VALUE val, int type, const char *tname, ID method)
 #define try_to_int(val, mid, raise) \
     convert_type_with_id(val, "Integer", mid, raise, -1)
 
-static VALUE
+ALWAYS_INLINE(static VALUE rb_to_integer(VALUE val, const char *method, ID mid));
+static inline VALUE
 rb_to_integer(VALUE val, const char *method, ID mid)
 {
     VALUE v;
