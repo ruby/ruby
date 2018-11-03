@@ -55,7 +55,7 @@ module CGI::Util
   end
 
   begin
-    require_relative 'escape'
+    require 'cgi/escape'
   rescue LoadError
   end
 
