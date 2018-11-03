@@ -117,9 +117,11 @@ class Gem::Request
       "Certificate #{cert.subject} has an invalid purpose"
     when OpenSSL::X509::V_ERR_SELF_SIGNED_CERT_IN_CHAIN then
       "Root certificate is not trusted (#{cert.subject})"
-    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY,
-      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+    when OpenSSL::X509::V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY then
       "You must add #{cert.issuer} to your local trusted store"
+    when
+      OpenSSL::X509::V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE then
+      "Cannot verify certificate issued by #{cert.issuer}"
     end
   end
 

@@ -442,7 +442,7 @@ ERROR:  Certificate  is an invalid CA certificate
     message =
       Gem::Request.verify_certificate_message error_number, EXPIRED_CERT
 
-    assert_equal "You must add #{EXPIRED_CERT.issuer} to your local trusted store",
+    assert_equal "Cannot verify certificate issued by #{EXPIRED_CERT.issuer}",
                  message
   end
 
