@@ -257,14 +257,13 @@ AS_CASE(["$build_os"],
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
     CC_WRAPPER=""
-    AS_IF([! $CC -E -xc - <<SRC >/dev/null 2>&1], [
-	@%:@if defined __APPLE_CC__ && defined __clang_major__ && __clang_major__ >= 10
-	@%:@error ignore linker warnings
-	@%:@endif
-SRC
+    echo 'int main(void) {return 0;}' > conftest.c
+    AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
+	   grep '^ld: warning: text-based stub file' >/dev/null], [
 	CC_WRAPPER=`cd -P "$srcdir/tool" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
+    rm -fr conftest*
   ])
 
 cc_version=
