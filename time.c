@@ -5010,7 +5010,8 @@ time_load(VALUE klass, VALUE str)
     return time;
 }
 
-/* Document-class: Time::TM
+/* :nodoc:*/
+/* Document-class: Time::tm
  *
  * A container class for timezone conversion.
  */
@@ -5018,9 +5019,9 @@ time_load(VALUE klass, VALUE str)
 /*
  * call-seq:
  *
- *   Time::TM.from_time(t) -> tm
+ *   Time::tm.from_time(t) -> tm
  *
- * Creates new Time::TM object from a Time object.
+ * Creates new Time::tm object from a Time object.
  */
 
 static VALUE
@@ -5071,9 +5072,9 @@ tm_from_time(VALUE klass, VALUE time)
 /*
  * call-seq:
  *
- *   Time::TM.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> tm
+ *   Time::tm.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, tz=nil) -> tm
  *
- * Creates new Time::TM object.
+ * Creates new Time::tm object.
  */
 
 static VALUE
@@ -5172,6 +5173,65 @@ tm_minus(VALUE tm, VALUE offset)
     return time_add0(rb_obj_class(tm), get_timeval(tm), tm, offset, -1);
 }
 #endif
+
+static VALUE
+Init_tm(VALUE outer, const char *name)
+{
+    /* :stopdoc:*/
+    VALUE tm;
+#if TM_IS_TIME
+    tm = rb_define_class_under(outer, name, rb_cObject);
+    rb_define_alloc_func(tm, time_s_alloc);
+    rb_define_method(tm, "sec", time_sec, 0);
+    rb_define_method(tm, "min", time_min, 0);
+    rb_define_method(tm, "hour", time_hour, 0);
+    rb_define_method(tm, "mday", time_mday, 0);
+    rb_define_method(tm, "day", time_mday, 0);
+    rb_define_method(tm, "mon", time_mon, 0);
+    rb_define_method(tm, "month", time_mon, 0);
+    rb_define_method(tm, "year", time_year, 0);
+    rb_define_method(tm, "isdst", time_isdst, 0);
+    rb_define_method(tm, "dst?", time_isdst, 0);
+    rb_define_method(tm, "zone", time_zone, 0);
+    rb_define_method(tm, "gmtoff", rb_time_utc_offset, 0);
+    rb_define_method(tm, "gmt_offset", rb_time_utc_offset, 0);
+    rb_define_method(tm, "utc_offset", rb_time_utc_offset, 0);
+    rb_define_method(tm, "utc?", time_utc_p, 0);
+    rb_define_method(tm, "gmt?", time_utc_p, 0);
+    rb_define_method(tm, "to_s", time_to_s, 0);
+    rb_define_method(tm, "inspect", time_to_s, 0);
+    rb_define_method(tm, "to_a", time_to_a, 0);
+    rb_define_method(tm, "tv_sec", time_to_i, 0);
+    rb_define_method(tm, "tv_usec", time_usec, 0);
+    rb_define_method(tm, "usec", time_usec, 0);
+    rb_define_method(tm, "tv_nsec", time_nsec, 0);
+    rb_define_method(tm, "nsec", time_nsec, 0);
+    rb_define_method(tm, "subsec", time_subsec, 0);
+    rb_define_method(tm, "to_i", time_to_i, 0);
+    rb_define_method(tm, "to_f", time_to_f, 0);
+    rb_define_method(tm, "to_r", time_to_r, 0);
+    rb_define_method(tm, "+", tm_plus, 1);
+    rb_define_method(tm, "-", tm_minus, 1);
+#else
+    tm = rb_struct_define_under(outer,  "tm",
+                                        "sec", "min", "hour",
+                                        "mday", "mon", "year",
+                                        "to_i", NULL);
+    rb_define_method(tm, "subsec", tm_subsec, 0);
+    rb_define_method(tm, "utc_offset", tm_utc_offset, 0);
+    rb_define_method(tm, "to_s", tm_to_s, 0);
+    rb_define_method(tm, "inspect", tm_to_s, 0);
+    rb_define_method(tm, "isdst", tm_isdst, 0);
+    rb_define_method(tm, "dst?", tm_isdst, 0);
+#endif
+    rb_define_method(tm, "initialize", tm_initialize, -1);
+    rb_define_method(tm, "utc", tm_to_time, 0);
+    rb_alias(tm, rb_intern("to_time"), rb_intern("utc"));
+    rb_define_singleton_method(tm, "from_time", tm_from_time, 1);
+    /* :startdoc:*/
+
+    return tm;
+}
 
 VALUE
 rb_time_zone_abbreviation(VALUE zone, VALUE time)
@@ -5355,56 +5415,6 @@ Init_Time(void)
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
 
-#if TM_IS_TIME
-    rb_cTimeTM = rb_define_class_under(rb_cTime, "TM", rb_cObject);
-    rb_define_alloc_func(rb_cTimeTM, time_s_alloc);
-    rb_define_method(rb_cTimeTM, "sec", time_sec, 0);
-    rb_define_method(rb_cTimeTM, "min", time_min, 0);
-    rb_define_method(rb_cTimeTM, "hour", time_hour, 0);
-    rb_define_method(rb_cTimeTM, "mday", time_mday, 0);
-    rb_define_method(rb_cTimeTM, "day", time_mday, 0);
-    rb_define_method(rb_cTimeTM, "mon", time_mon, 0);
-    rb_define_method(rb_cTimeTM, "month", time_mon, 0);
-    rb_define_method(rb_cTimeTM, "year", time_year, 0);
-    rb_define_method(rb_cTimeTM, "isdst", time_isdst, 0);
-    rb_define_method(rb_cTimeTM, "dst?", time_isdst, 0);
-    rb_define_method(rb_cTimeTM, "zone", time_zone, 0);
-    rb_define_method(rb_cTimeTM, "gmtoff", rb_time_utc_offset, 0);
-    rb_define_method(rb_cTimeTM, "gmt_offset", rb_time_utc_offset, 0);
-    rb_define_method(rb_cTimeTM, "utc_offset", rb_time_utc_offset, 0);
-    rb_define_method(rb_cTimeTM, "utc?", time_utc_p, 0);
-    rb_define_method(rb_cTimeTM, "gmt?", time_utc_p, 0);
-    rb_define_method(rb_cTimeTM, "to_s", time_to_s, 0);
-    rb_define_method(rb_cTimeTM, "inspect", time_to_s, 0);
-    rb_define_method(rb_cTimeTM, "to_a", time_to_a, 0);
-    rb_define_method(rb_cTimeTM, "tv_sec", time_to_i, 0);
-    rb_define_method(rb_cTimeTM, "tv_usec", time_usec, 0);
-    rb_define_method(rb_cTimeTM, "usec", time_usec, 0);
-    rb_define_method(rb_cTimeTM, "tv_nsec", time_nsec, 0);
-    rb_define_method(rb_cTimeTM, "nsec", time_nsec, 0);
-    rb_define_method(rb_cTimeTM, "subsec", time_subsec, 0);
-    rb_define_method(rb_cTimeTM, "to_i", time_to_i, 0);
-    rb_define_method(rb_cTimeTM, "to_f", time_to_f, 0);
-    rb_define_method(rb_cTimeTM, "to_r", time_to_r, 0);
-    rb_define_method(rb_cTimeTM, "+", tm_plus, 1);
-    rb_define_method(rb_cTimeTM, "-", tm_minus, 1);
-#else
-    rb_cTimeTM = rb_struct_define_under(rb_cTime, "TM",
-                                        "sec", "min", "hour",
-                                        "mday", "mon", "year",
-                                        "to_i", NULL);
-    rb_define_method(rb_cTimeTM, "subsec", tm_subsec, 0);
-    rb_define_method(rb_cTimeTM, "utc_offset", tm_utc_offset, 0);
-    rb_define_method(rb_cTimeTM, "to_s", tm_to_s, 0);
-    rb_define_method(rb_cTimeTM, "inspect", tm_to_s, 0);
-    rb_define_method(rb_cTimeTM, "isdst", tm_isdst, 0);
-    rb_define_method(rb_cTimeTM, "dst?", tm_isdst, 0);
-#endif
-    rb_define_method(rb_cTimeTM, "initialize", tm_initialize, -1);
-    rb_define_method(rb_cTimeTM, "utc", tm_to_time, 0);
-    rb_alias(rb_cTimeTM, rb_intern("to_time"), rb_intern("utc"));
-    rb_define_singleton_method(rb_cTimeTM, "from_time", tm_from_time, 1);
-
     rb_define_alloc_func(rb_cTime, time_s_alloc);
     rb_define_singleton_method(rb_cTime, "now", time_s_now, 0);
     rb_define_singleton_method(rb_cTime, "at", time_s_at, -1);
@@ -5490,4 +5500,6 @@ Init_Time(void)
 #ifdef DEBUG_FIND_TIME_NUMGUESS
     rb_define_virtual_variable("$find_time_numguess", find_time_numguess_getter, NULL);
 #endif
+
+    rb_cTimeTM = Init_tm(rb_cTime, "tm");
 }
