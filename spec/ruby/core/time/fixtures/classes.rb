@@ -9,4 +9,18 @@ module TimeSpecs
     end
   end
 
+  Timezone = Struct.new(:name, :abbr, :offset)
+  class Timezone
+    def utc_offset(t = nil)
+      offset
+    end
+
+    def local_to_utc(t)
+      t - utc_offset(t)
+    end
+
+    def utc_to_local(t)
+      t + utc_offset(t)
+    end
+  end
 end

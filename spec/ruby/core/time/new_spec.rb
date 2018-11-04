@@ -117,8 +117,7 @@ end
 ruby_version_is "2.6" do
   describe "Time.new with a timezone argument" do
     it "returns a Time correspoinding to UTC time returned by local_to_utc" do
-      zone = mock('timezone')
-      zone.should_receive(:local_to_utc).and_return(Time::TM.new(2000, 1, 1, 6, 30, 0))
+      zone = TimeSpecs::Timezone.new("Asia/Colombo", "MMT", (5*3600+30*60))
       t = Time.new(2000, 1, 1, 12, 0, 0, zone)
       t.to_a[0, 6].should == [0, 0, 12, 1, 1, 2000]
       t.utc_offset.should == 19800
