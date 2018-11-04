@@ -380,6 +380,10 @@ init_header_filename(void)
         ;
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
+#ifndef LOAD_RELATIVE
+    static const char build_dir[] = MJIT_BUILD_DIR;
+    struct stat st;
+#endif
 
     basedir_val = ruby_prefix_path;
     basedir = StringValuePtr(basedir_val);
@@ -390,8 +394,15 @@ init_header_filename(void)
         /* This path is not intended to be used on production, but using build directory's
            header file here because people want to run `make test-all` without running
            `make install`. Don't use $MJIT_SEARCH_BUILD_DIR except for test-all. */
-        basedir = MJIT_BUILD_DIR;
-        baselen = strlen(basedir);
+        if (build_dir[0] != '/' ||
+            stat(build_dir, &st) || !S_ISDIR(st.st_mode) ||
+            st.st_uid != getuid() || (st.st_mode & 022) ||
+            !rb_path_check(build_dir)) {
+            verbose(1, "Unsafe MJIT_BUILD_DIR: %s", build_dir);
+            return FALSE;
+        }
+        basedir = build_dir;
+        baselen = sizeof(build_dir) - 1;
     }
 #endif
 
@@ -410,6 +421,18 @@ init_header_filename(void)
             header_file = NULL;
             return FALSE;
         }
+#ifndef LOAD_RELATIVE
+        if ((basedir == build_dir) &&
+            (fstat(fd, &st) ||
+             st.st_uid != getuid() ||
+             (st.st_mode & 022))) {
+            (void)close(fd);
+            verbose(1, "Unsafe header file: %s", header_file);
+            xfree(header_file);
+            header_file = NULL;
+            return FALSE;
+        }
+#endif
         (void)close(fd);
     }
 
