@@ -8,6 +8,12 @@
 
 **********************************************************************/
 
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wpedantic"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 #include "ruby/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
