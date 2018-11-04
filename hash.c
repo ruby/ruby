@@ -5086,10 +5086,14 @@ env_values_at(int argc, VALUE *argv)
  * call-seq:
  *   ENV.select { |name, value| block } -> Hash
  *   ENV.select                         -> Enumerator
+ *   ENV.filter { |name, value| block } -> Hash
+ *   ENV.filter                         -> Enumerator
  *
  * Returns a copy of the environment for entries where the block returns true.
  *
  * Returns an Enumerator if no block was given.
+ *
+ * ENV.filter is an alias for ENV.select.
  */
 static VALUE
 env_select(VALUE ehash)
@@ -5119,8 +5123,12 @@ env_select(VALUE ehash)
  * call-seq:
  *   ENV.select! { |name, value| block } -> ENV or nil
  *   ENV.select!                         -> Enumerator
+ *   ENV.filter! { |name, value| block } -> ENV or nil
+ *   ENV.filter!                         -> Enumerator
  *
  * Equivalent to ENV.keep_if but returns +nil+ if no changes were made.
+ *
+ * ENV.filter! is an alias for ENV.select!.
  */
 static VALUE
 env_select_bang(VALUE ehash)
