@@ -1100,6 +1100,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *  call-seq:
  *     struct.select {|obj| block }  -> array
  *     struct.select                 -> enumerator
+ *     struct.filter {|obj| block }  -> array
+ *     struct.filter                 -> enumerator
  *
  *  Yields each member value from the struct to the block and returns an Array
  *  containing the member values from the +struct+ for which the given block
@@ -1108,6 +1110,8 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *     Lots = Struct.new(:a, :b, :c, :d, :e, :f)
  *     l = Lots.new(11, 22, 33, 44, 55, 66)
  *     l.select {|v| v.even? }   #=> [22, 44, 66]
+ *
+ *  Struct#filter is an alias for Struct#select.
  */
 
 static VALUE
