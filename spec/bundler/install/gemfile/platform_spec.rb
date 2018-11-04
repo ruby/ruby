@@ -230,7 +230,7 @@ RSpec.describe "bundle install across platforms" do
     expect(the_bundle).to include_gems "nokogiri 1.4.2 JAVA", "weakling 0.0.3"
   end
 
-  it "works with gems that have extra platform-specific runtime dependencies", :bundler => "< 2" do
+  it "works with gems that have extra platform-specific runtime dependencies", :bundler => "< 3" do
     simulate_platform x64_mac
 
     update_repo2 do

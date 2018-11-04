@@ -570,7 +570,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable is empty", :bundler => "< 2" do
+    context "the executable is empty", :bundler => "< 3" do
       let(:executable) { "" }
 
       let(:exit_code) { 0 }
@@ -585,7 +585,7 @@ RSpec.describe "bundle exec" do
       end
     end
 
-    context "the executable is empty", :bundler => "2" do
+    context "the executable is empty", :bundler => "3" do
       let(:executable) { "" }
 
       let(:exit_code) { 0 }
@@ -594,7 +594,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises", :bundler => "< 2" do
+    context "the executable raises", :bundler => "< 3" do
       let(:executable) { super() << "\nraise 'ERROR'" }
       let(:exit_code) { 1 }
       let(:expected) { super() << "\nbundler: failed to load command: #{path} (#{path})" }
@@ -605,7 +605,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises", :bundler => "2" do
+    context "the executable raises", :bundler => "3" do
       let(:executable) { super() << "\nraise 'ERROR'" }
       let(:exit_code) { 1 }
       let(:expected_err) do
@@ -615,7 +615,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises an error without a backtrace", :bundler => "< 2" do
+    context "the executable raises an error without a backtrace", :bundler => "< 3" do
       let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
       let(:exit_code) { 1 }
       let(:expected) { super() << "\nbundler: failed to load command: #{path} (#{path})" }
@@ -624,7 +624,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises an error without a backtrace", :bundler => "2" do
+    context "the executable raises an error without a backtrace", :bundler => "3" do
       let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
       let(:exit_code) { 1 }
       let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\nErr: Err" }
@@ -638,7 +638,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when Bundler.setup fails", :bundler => "< 2" do
+    context "when Bundler.setup fails", :bundler => "< 3" do
       before do
         gemfile <<-G
           gem 'rack', '2'
@@ -655,7 +655,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when Bundler.setup fails", :bundler => "2" do
+    context "when Bundler.setup fails", :bundler => "3" do
       before do
         gemfile <<-G
           gem 'rack', '2'

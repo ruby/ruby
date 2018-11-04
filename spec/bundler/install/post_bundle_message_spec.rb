@@ -101,7 +101,7 @@ RSpec.describe "post bundle message" do
     end
 
     describe "with misspelled or non-existent gem name" do
-      it "should report a helpful error message", :bundler => "< 2" do
+      it "should report a helpful error message", :bundler => "< 3" do
         install_gemfile <<-G
           source "file://localhost#{gem_repo1}"
           gem "rack"
@@ -110,7 +110,7 @@ RSpec.describe "post bundle message" do
         expect(out).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
       end
 
-      it "should report a helpful error message", :bundler => "2" do
+      it "should report a helpful error message", :bundler => "3" do
         install_gemfile <<-G
           source "file://localhost#{gem_repo1}"
           gem "rack"

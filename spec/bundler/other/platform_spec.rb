@@ -633,7 +633,7 @@ G
       end
     end
 
-    it "fails if ruby version doesn't match", :bundler => "< 2" do
+    it "fails if ruby version doesn't match", :bundler => "< 3" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
@@ -645,7 +645,7 @@ G
       should_be_ruby_version_incorrect
     end
 
-    it "fails if engine doesn't match", :bundler => "< 2" do
+    it "fails if engine doesn't match", :bundler => "< 3" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rails"
@@ -657,7 +657,7 @@ G
       should_be_engine_incorrect
     end
 
-    it "fails if engine version doesn't match", :bundler => "< 2" do
+    it "fails if engine version doesn't match", :bundler => "< 3" do
       simulate_ruby_engine "jruby" do
         gemfile <<-G
           source "file://#{gem_repo1}"
@@ -671,7 +671,7 @@ G
       end
     end
 
-    it "fails when patchlevel doesn't match", :bundler => "< 2" do
+    it "fails when patchlevel doesn't match", :bundler => "< 3" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -928,7 +928,7 @@ G
     end
   end
 
-  context "bundle console", :bundler => "< 2" do
+  context "bundle console", :bundler => "< 3" do
     before do
       install_gemfile <<-G
         source "file://#{gem_repo1}"

@@ -99,7 +99,7 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/rackup")).not_to exist
   end
 
-  it "allows you to stop installing binstubs", :bundler => "< 2" do
+  it "allows you to stop installing binstubs", :bundler => "< 3" do
     bundle! "install --binstubs bin/"
     bundled_app("bin/rackup").rmtree
     bundle! "install --binstubs \"\""
@@ -110,7 +110,7 @@ RSpec.describe "Running bin/* commands" do
     expect(out).to include("You have not configured a value for `bin`")
   end
 
-  it "remembers that the option was specified", :bundler => "< 2" do
+  it "remembers that the option was specified", :bundler => "< 3" do
     gemfile <<-G
       source "file://#{gem_repo1}"
       gem "activesupport"

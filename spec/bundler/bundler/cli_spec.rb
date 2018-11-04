@@ -28,7 +28,7 @@ RSpec.describe "bundle executable" do
   end
 
   context "with no arguments" do
-    it "prints a concise help message", :bundler => "2" do
+    it "prints a concise help message", :bundler => "3" do
       bundle! ""
       expect(last_command.stderr).to be_empty
       expect(last_command.stdout).to include("Bundler version #{Bundler::VERSION}").
@@ -161,12 +161,12 @@ To install the latest version, run `gem install bundler --pre`
 end
 
 RSpec.describe "bundler executable" do
-  it "shows the bundler version just as the `bundle` executable does", :bundler => "< 2" do
+  it "shows the bundler version just as the `bundle` executable does", :bundler => "< 3" do
     bundler "--version"
     expect(out).to eq("Bundler version #{Bundler::VERSION}")
   end
 
-  it "shows the bundler version just as the `bundle` executable does", :bundler => "2" do
+  it "shows the bundler version just as the `bundle` executable does", :bundler => "3" do
     bundler "--version"
     expect(out).to eq(Bundler::VERSION)
   end
