@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "the lockfile format", :bundler => "2" do
+RSpec.describe "the lockfile format", :bundler => "3" do
   include Bundler::GemHelpers
 
   before { ENV["BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD"] = "TRUE" }
@@ -428,7 +428,7 @@ RSpec.describe "the lockfile format", :bundler => "2" do
     expect(the_bundle).to include_gems "net-sftp 1.1.1", "net-ssh 1.0.0"
   end
 
-  it "generates a simple lockfile for a single pinned source, gem with a version requirement", :bundler => "< 2" do
+  it "generates a simple lockfile for a single pinned source, gem with a version requirement", :bundler => "< 3" do
     git = build_git "foo"
 
     install_gemfile <<-G

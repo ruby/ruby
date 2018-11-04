@@ -32,7 +32,7 @@ RSpec.describe Bundler::Definition do
   end
 
   describe "detects changes" do
-    it "for a path gem with changes", :bundler => "< 2" do
+    it "for a path gem with changes", :bundler => "< 3" do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
@@ -70,7 +70,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with changes", :bundler => "2" do
+    it "for a path gem with changes", :bundler => "3" do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
@@ -108,7 +108,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "< 2" do
+    it "for a path gem with deps and no changes", :bundler => "< 3" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"
@@ -145,7 +145,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "2" do
+    it "for a path gem with deps and no changes", :bundler => "3" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"

@@ -282,8 +282,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
        o   1mpath.system  22m(1mBUNDLE_PATH__SYSTEM22m):  Whether  Bundler  will install
 	   gems into the default system path (1mGem.dir22m).
 
-       o   1mpath_relative_to_cwd 22m(1mPATH_RELATIVE_TO_CWD22m) Makes	1m--path  22mrelative
-	   to the CWD instead of the 1mGemfile22m.
+       o   1mpath_relative_to_cwd  22m(1mBUNDLE_PATH_RELATIVE_TO_CWD22m)  Makes   1m--path0m
+	   relative to the CWD instead of the 1mGemfile22m.
 
        o   1mplugins 22m(1mBUNDLE_PLUGINS22m): Enable Bundler's experimental plugin sys-
 	   tem.
@@ -507,7 +507,23 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
+1mCONFIGURE BUNDLER DIRECTORIES0m
+       Bundler's home, config, cache and plugin directories  are  able	to  be
+       configured  through  environment  variables.  The  default location for
+       Bundler's home directory is 1m~/.bundle22m, which  all  directories  inherit
+       from by default. The following outlines the available environment vari-
+       ables and their default values
 
 
 
-				 October 2018		      BUNDLE-CONFIG(1)
+	   BUNDLE_USER_HOME : $HOME/.bundle
+	   BUNDLE_USER_CACHE : $BUNDLE_USER_HOME/cache
+	   BUNDLE_USER_CONFIG : $BUNDLE_USER_HOME/config
+	   BUNDLE_USER_PLUGIN : $BUNDLE_USER_HOME/plugin
+
+
+
+
+
+
+				 November 2018		      BUNDLE-CONFIG(1)

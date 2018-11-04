@@ -13,7 +13,7 @@ RSpec.describe "bundle install" do
       G
     end
 
-    it "does not use available system gems with bundle --path vendor/bundle", :bundler => "< 2" do
+    it "does not use available system gems with bundle --path vendor/bundle", :bundler => "< 3" do
       bundle! :install, forgotten_command_line_options(:path => "vendor/bundle")
       expect(the_bundle).to include_gems "rack 1.0.0"
     end
@@ -35,13 +35,13 @@ RSpec.describe "bundle install" do
       expect(out).to include("gems are installed into `./vendor/bundle`")
     end
 
-    it "disallows --path vendor/bundle --system", :bundler => "< 2" do
+    it "disallows --path vendor/bundle --system", :bundler => "< 3" do
       bundle "install --path vendor/bundle --system"
       expect(out).to include("Please choose only one option.")
       expect(exitstatus).to eq(15) if exitstatus
     end
 
-    it "remembers to disable system gems after the first time with bundle --path vendor/bundle", :bundler => "< 2" do
+    it "remembers to disable system gems after the first time with bundle --path vendor/bundle", :bundler => "< 3" do
       bundle "install --path vendor/bundle"
       FileUtils.rm_rf bundled_app("vendor")
       bundle "install"
@@ -53,7 +53,7 @@ RSpec.describe "bundle install" do
     context "with path_relative_to_cwd set to true" do
       before { bundle! "config path_relative_to_cwd true" }
 
-      it "installs the bundle relatively to current working directory", :bundler => "< 2" do
+      it "installs the bundle relatively to current working directory", :bundler => "< 3" do
         Dir.chdir(bundled_app.parent) do
           bundle! "install --gemfile='#{bundled_app}/Gemfile' --path vendor/bundle"
           expect(out).to include("installed into `./vendor/bundle`")
@@ -113,7 +113,7 @@ RSpec.describe "bundle install" do
           expect(the_bundle).to include_gems "rack 1.0.0"
         end
 
-        context "with global_path_appends_ruby_scope set", :bundler => "2" do
+        context "with global_path_appends_ruby_scope set", :bundler => "3" do
           it "installs gems to ." do
             set_bundle_path(type, ".")
             bundle! "config --global disable_shared_gems true"
@@ -147,7 +147,7 @@ RSpec.describe "bundle install" do
           end
         end
 
-        context "with global_path_appends_ruby_scope unset", :bundler => "< 2" do
+        context "with global_path_appends_ruby_scope unset", :bundler => "< 3" do
           it "installs gems to ." do
             set_bundle_path(type, ".")
             bundle! "config --global disable_shared_gems true"
