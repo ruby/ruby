@@ -2322,6 +2322,8 @@ select_i(VALUE key, VALUE value, VALUE result)
  *  call-seq:
  *     hsh.select {|key, value| block}   -> a_hash
  *     hsh.select                        -> an_enumerator
+ *     hsh.filter {|key, value| block}   -> a_hash
+ *     hsh.filter                        -> an_enumerator
  *
  *  Returns a new hash consisting of entries for which the block returns true.
  *
@@ -2330,6 +2332,8 @@ select_i(VALUE key, VALUE value, VALUE result)
  *     h = { "a" => 100, "b" => 200, "c" => 300 }
  *     h.select {|k,v| k > "a"}  #=> {"b" => 200, "c" => 300}
  *     h.select {|k,v| v < 200}  #=> {"a" => 100}
+ *
+ *  Hash#filter is an alias for Hash#select.
  */
 
 VALUE
@@ -2358,9 +2362,13 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *     hsh.select! {| key, value | block }  -> hsh or nil
  *     hsh.select!                          -> an_enumerator
+ *     hsh.filter! {| key, value | block }  -> hsh or nil
+ *     hsh.filter!                          -> an_enumerator
  *
  *  Equivalent to Hash#keep_if, but returns
  *  +nil+ if no changes were made.
+ *
+ *  Hash#filter! is an alias for Hash#select!.
  */
 
 VALUE
