@@ -8,12 +8,6 @@
 
 **********************************************************************/
 
-#if defined(__clang__)
-#pragma clang diagnostic ignored "-Wpedantic"
-#elif defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wpedantic"
-#endif
-
 #include "ruby/config.h"
 #include "ruby/defines.h"
 #include "ruby/missing.h"
@@ -66,6 +60,8 @@ void *alloca();
 
 #ifdef HAVE_MACH_O_LOADER_H
 # include <mach-o/loader.h>
+# include <mach-o/nlist.h>
+# include <mach-o/stab.h>
 #endif
 
 #ifdef USE_ELF
@@ -1834,6 +1830,7 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         size_t basesize = size - (base - binary_filename);
         s += size;
         max -= size;
+        p = s;
         size = strlcpy(s, ".dSYM/Contents/Resources/DWARF/", max);
         if (size == 0) goto fail;
         s += size;
@@ -1841,12 +1838,17 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         if (max <= basesize) goto fail;
         memcpy(s, base, basesize);
         s[basesize] = 0;
+
+        fd = open(binary_filename, O_RDONLY);
+        if (fd < 0) {
+            *p = 0; /* binary_filename becomes original file name */
+            fd = open(binary_filename, O_RDONLY);
+            if (fd < 0) {
+                goto fail;
+            }
+        }
     }
 
-    fd = open(binary_filename, O_RDONLY);
-    if (fd < 0) {
-        goto fail;
-    }
     filesize = lseek(fd, 0, SEEK_END);
     if (filesize < 0) {
         int e = errno;
@@ -1924,23 +1926,38 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
             }
             break;
 
-#if 0
           case LC_SYMTAB:
             {
-                struct symtab_command *c = (struct symtab_command *)lcmd;
-                struct nlist_64 *nl = (struct nlist *)(file + c->symoff);
-                char *strtab = file + c->stroff;
+                struct symtab_command *cmd = (struct symtab_command *)lcmd;
+                struct nlist_64 *nl = (struct nlist_64 *)(file + cmd->symoff);
+                char *strtab = file + cmd->stroff, *sname;
                 uint32_t j;
-                kprintf("[%2d]: %x/symtab %lx\n", i, c->cmd, p);
-                for (j = 0; j < c->nsyms; j++) {
+                uintptr_t saddr;
+                /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
+                for (j = 0; j < cmd->nsyms; j++) {
+                    uintptr_t symsize, d;
                     struct nlist_64 *e = &nl[j];
-                    if (!(e->n_type & N_STAB)) continue;
-                    /* if (e->n_type != N_FUN) continue; */
-                    kprintf("[%2d][%4d]: %02x/%x/%x: %s %lx\n", i, j,
-                            e->n_type,e->n_sect,e->n_desc,strtab+e->n_un.n_strx,e->n_value);
+                    if (e->n_type != N_FUN) continue;
+                    if (e->n_sect) {
+                        saddr = (uintptr_t)e->n_value + obj->base_addr - obj->vmaddr;
+                        sname = strtab + e->n_un.n_strx;
+                        continue;
+                    }
+                    /* kprintf("[%2d][%4d]: %02x/%x/%x: %s %llx\n", i, j, e->n_type,e->n_sect,e->n_desc,strtab+e->n_un.n_strx,e->n_value); */
+                    for (int k = offset; k < num_traces; k++) {
+                        d = (uintptr_t)traces[k] - saddr;
+                        symsize = e->n_value;
+                        /* kprintf("%lx %lx %lx\n",saddr,symsize,traces[k]); */
+                        if (lines[k].line > 0 || d > (uintptr_t)symsize)
+                            continue;
+                        /* fill symbol name and addr from .symtab */
+                        if (!lines[k].sname) lines[k].sname = sname;
+                        lines[k].saddr = saddr;
+                        lines[k].path  = obj->path;
+                        lines[k].base_addr = obj->base_addr;
+                    }
                 }
             }
-#endif
         }
         p += lcmd->cmdsize;
     }
