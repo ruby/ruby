@@ -2359,8 +2359,8 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *     hsh.select! {| key, value | block }  -> hsh or nil
  *     hsh.select!                          -> an_enumerator
  *
- *  Equivalent to <code>Hash#keep_if</code>, but returns
- *  <code>nil</code> if no changes were made.
+ *  Equivalent to Hash#keep_if, but returns
+ *  +nil+ if no changes were made.
  */
 
 VALUE
@@ -2383,10 +2383,11 @@ rb_hash_select_bang(VALUE hash)
  *     hsh.keep_if                          -> an_enumerator
  *
  *  Deletes every key-value pair from <i>hsh</i> for which <i>block</i>
- *  evaluates to false.
+ *  evaluates to +false+.
  *
  *  If no block is given, an enumerator is returned instead.
  *
+ *  See also Hash#select!.
  */
 
 VALUE
