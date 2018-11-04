@@ -3145,10 +3145,10 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *
  *  If no block is given, an Enumerator is returned instead.
  *
- *     [1,2,3,4,5].select {|num|  num.even? }     #=> [2, 4]
+ *     [1,2,3,4,5].select {|num| num.even? }     #=> [2, 4]
  *
- *     a = %w{ a b c d e f }
- *     a.select {|v| v =~ /[aeiou]/}    #=> ["a", "e"]
+ *     a = %w[ a b c d e f ]
+ *     a.select {|v| v =~ /[aeiou]/ }    #=> ["a", "e"]
  *
  *  See also Enumerable#select.
  */
@@ -3215,8 +3215,8 @@ select_bang_ensure(VALUE a)
 
 /*
  *  call-seq:
- *     ary.select!  {|item| block } -> ary or nil
- *     ary.select!                  -> Enumerator
+ *     ary.select! {|item| block } -> ary or nil
+ *     ary.select!                 -> Enumerator
  *
  *  Invokes the given block passing in successive elements from +self+,
  *  deleting elements for which the block returns a +false+ value.
@@ -3225,10 +3225,9 @@ select_bang_ensure(VALUE a)
  *
  *  If changes were made, it will return +self+, otherwise it returns +nil+.
  *
- *  See also Array#keep_if
- *
  *  If no block is given, an Enumerator is returned instead.
  *
+ *  See also Array#keep_if.
  */
 
 static VALUE
@@ -3250,14 +3249,15 @@ rb_ary_select_bang(VALUE ary)
  *     ary.keep_if                  -> Enumerator
  *
  *  Deletes every element of +self+ for which the given block evaluates to
- *  +false+.
- *
- *  See also Array#select!
+ *  +false+, and returns +self+.
  *
  *  If no block is given, an Enumerator is returned instead.
  *
- *     a = %w{ a b c d e f }
- *     a.keep_if {|v| v =~ /[aeiou]/}    #=> ["a", "e"]
+ *     a = %w[ a b c d e f ]
+ *     a.keep_if {|v| v =~ /[aeiou]/ }    #=> ["a", "e"]
+ *     a                                  #=> ["a", "e"]
+ *
+ *  See also Array#select!.
  */
 
 static VALUE
