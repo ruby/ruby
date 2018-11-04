@@ -67,12 +67,18 @@ class Gem::Ext::Builder
       rubygems_gemdeps, ENV['RUBYGEMS_GEMDEPS'] = ENV['RUBYGEMS_GEMDEPS'], nil
       if verbose
         puts("current directory: #{Dir.pwd}")
-        puts(command)
-        system(command)
-      else
-        results << "current directory: #{Dir.pwd}"
-        results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
-        results << IO.popen(command, "r", err: [:child, :out], &:read)
+        p(command)
+      end
+      results << "current directory: #{Dir.pwd}"
+      results << (command.respond_to?(:shelljoin) ? command.shelljoin : command)
+
+      redirections = verbose ? {} : {err: [:child, :out]}
+      IO.popen(command, "r", redirections) do |io|
+        if verbose
+          IO.copy_stream(io, $stdout)
+        else
+          results << io.read
+        end
       end
     rescue => error
       raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
