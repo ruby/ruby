@@ -4478,8 +4478,8 @@ env_delete(VALUE obj, VALUE name)
 
 /*
  * call-seq:
- *   ENV.delete(name)            -> value
- *   ENV.delete(name) { |name| } -> value
+ *   ENV.delete(name)                  -> value
+ *   ENV.delete(name) { |name| block } -> value
  *
  * Deletes the environment variable with +name+ and returns the value of the
  * variable.  If a block is given it will be called when the named environment
@@ -4518,9 +4518,9 @@ rb_f_getenv(VALUE obj, VALUE name)
 /*
  * :yield: missing_name
  * call-seq:
- *   ENV.fetch(name)                        -> value
- *   ENV.fetch(name, default)               -> value
- *   ENV.fetch(name) { |missing_name| ... } -> value
+ *   ENV.fetch(name)                          -> value
+ *   ENV.fetch(name, default)                 -> value
+ *   ENV.fetch(name) { |missing_name| block } -> value
  *
  * Retrieves the environment variable +name+.
  *
@@ -4897,8 +4897,8 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
 
 /*
  * call-seq:
- *   ENV.each_key { |name| } -> Hash
- *   ENV.each_key            -> Enumerator
+ *   ENV.each_key { |name| block } -> Hash
+ *   ENV.each_key                  -> Enumerator
  *
  * Yields each environment variable name.
  *
@@ -4945,8 +4945,8 @@ env_values(void)
 
 /*
  * call-seq:
- *   ENV.each_value { |value| } -> Hash
- *   ENV.each_value             -> Enumerator
+ *   ENV.each_value { |value| block } -> Hash
+ *   ENV.each_value                   -> Enumerator
  *
  * Yields each environment variable +value+.
  *
@@ -4968,10 +4968,10 @@ env_each_value(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.each      { |name, value| } -> Hash
- *   ENV.each                        -> Enumerator
- *   ENV.each_pair { |name, value| } -> Hash
- *   ENV.each_pair                   -> Enumerator
+ *   ENV.each      { |name, value| block } -> Hash
+ *   ENV.each                              -> Enumerator
+ *   ENV.each_pair { |name, value| block } -> Hash
+ *   ENV.each_pair                         -> Enumerator
  *
  * Yields each environment variable +name+ and +value+.
  *
@@ -5013,8 +5013,8 @@ env_each_pair(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.reject! { |name, value| } -> ENV or nil
- *   ENV.reject!                   -> Enumerator
+ *   ENV.reject! { |name, value| block } -> ENV or nil
+ *   ENV.reject!                         -> Enumerator
  *
  * Equivalent to ENV#delete_if but returns +nil+ if no changes were made.
  *
@@ -5047,8 +5047,8 @@ env_reject_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.delete_if { |name, value| } -> Hash
- *   ENV.delete_if                   -> Enumerator
+ *   ENV.delete_if { |name, value| block } -> Hash
+ *   ENV.delete_if                         -> Enumerator
  *
  * Deletes every environment variable for which the block evaluates to +true+.
  *
@@ -5084,8 +5084,8 @@ env_values_at(int argc, VALUE *argv)
 
 /*
  * call-seq:
- *   ENV.select { |name, value| } -> Hash
- *   ENV.select                   -> Enumerator
+ *   ENV.select { |name, value| block } -> Hash
+ *   ENV.select                         -> Enumerator
  *
  * Returns a copy of the environment for entries where the block returns true.
  *
@@ -5117,8 +5117,8 @@ env_select(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.select! { |name, value| } -> ENV or nil
- *   ENV.select!                   -> Enumerator
+ *   ENV.select! { |name, value| block } -> ENV or nil
+ *   ENV.select!                         -> Enumerator
  *
  * Equivalent to ENV#keep_if but returns +nil+ if no changes were made.
  */
@@ -5149,8 +5149,8 @@ env_select_bang(VALUE ehash)
 
 /*
  * call-seq:
- *   ENV.keep_if { |name, value| } -> Hash
- *   ENV.keep_if                   -> Enumerator
+ *   ENV.keep_if { |name, value| block } -> Hash
+ *   ENV.keep_if                         -> Enumerator
  *
  * Deletes every environment variable where the block evaluates to +false+.
  *
@@ -5537,8 +5537,8 @@ env_to_h(void)
 
 /*
  * call-seq:
- *   ENV.reject { |name, value| } -> Hash
- *   ENV.reject                   -> Enumerator
+ *   ENV.reject { |name, value| block } -> Hash
+ *   ENV.reject                         -> Enumerator
  *
  * Same as ENV#delete_if, but works on (and returns) a copy of the
  * environment.
@@ -5636,8 +5636,8 @@ env_update_i(VALUE key, VALUE val)
 
 /*
  * call-seq:
- *   ENV.update(hash)                                  -> Hash
- *   ENV.update(hash) { |name, old_value, new_value| } -> Hash
+ *   ENV.update(hash)                                        -> Hash
+ *   ENV.update(hash) { |name, old_value, new_value| block } -> Hash
  *
  * Adds the contents of +hash+ to the environment variables.  If no block is
  * specified entries with duplicate keys are overwritten, otherwise the value
