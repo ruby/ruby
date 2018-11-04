@@ -3139,6 +3139,8 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *  call-seq:
  *     ary.select {|item| block}   -> new_ary
  *     ary.select                  -> Enumerator
+ *     ary.filter {|item| block}   -> new_ary
+ *     ary.filter                  -> Enumerator
  *
  *  Returns a new array containing all elements of +ary+
  *  for which the given +block+ returns a true value.
@@ -3151,6 +3153,8 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
  *     a.select {|v| v =~ /[aeiou]/ }    #=> ["a", "e"]
  *
  *  See also Enumerable#select.
+ *
+ *  Array#filter is an alias for Array#select.
  */
 
 static VALUE
@@ -3217,6 +3221,8 @@ select_bang_ensure(VALUE a)
  *  call-seq:
  *     ary.select! {|item| block } -> ary or nil
  *     ary.select!                 -> Enumerator
+ *     ary.filter! {|item| block } -> ary or nil
+ *     ary.filter!                 -> Enumerator
  *
  *  Invokes the given block passing in successive elements from +self+,
  *  deleting elements for which the block returns a +false+ value.
@@ -3228,6 +3234,8 @@ select_bang_ensure(VALUE a)
  *  If no block is given, an Enumerator is returned instead.
  *
  *  See also Array#keep_if.
+ *
+ *  Array#filter! is an alias for Array#select!.
  */
 
 static VALUE
