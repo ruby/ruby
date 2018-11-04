@@ -546,7 +546,7 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 
 /* returns a Complex or Float of ang*PI-rotated abs */
 VALUE
-rb_dbl_complex_polar(double abs, double ang)
+rb_dbl_complex_polar_pi(double abs, double ang)
 {
     double fi;
     const double fr = modf(ang, &fi);
