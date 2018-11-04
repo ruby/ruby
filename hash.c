@@ -5016,7 +5016,7 @@ env_each_pair(VALUE ehash)
  *   ENV.reject! { |name, value| block } -> ENV or nil
  *   ENV.reject!                         -> Enumerator
  *
- * Equivalent to ENV#delete_if but returns +nil+ if no changes were made.
+ * Equivalent to ENV.delete_if but returns +nil+ if no changes were made.
  *
  * Returns an Enumerator if no block was given.
  */
@@ -5120,7 +5120,7 @@ env_select(VALUE ehash)
  *   ENV.select! { |name, value| block } -> ENV or nil
  *   ENV.select!                         -> Enumerator
  *
- * Equivalent to ENV#keep_if but returns +nil+ if no changes were made.
+ * Equivalent to ENV.keep_if but returns +nil+ if no changes were made.
  */
 static VALUE
 env_select_bang(VALUE ehash)
@@ -5540,7 +5540,7 @@ env_to_h(void)
  *   ENV.reject { |name, value| block } -> Hash
  *   ENV.reject                         -> Enumerator
  *
- * Same as ENV#delete_if, but works on (and returns) a copy of the
+ * Same as ENV.delete_if, but works on (and returns) a copy of the
  * environment.
  */
 static VALUE
