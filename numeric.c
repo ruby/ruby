@@ -1276,7 +1276,7 @@ rb_float_pow(VALUE x, VALUE y)
 	dx = RFLOAT_VALUE(x);
 	dy = RFLOAT_VALUE(y);
 	if (dx < 0 && dy != round(dy))
-	    return rb_dbl_complex_polar(pow(-dx, dy), dy);
+            return rb_dbl_complex_polar_pi(pow(-dx, dy), dy);
     }
     else {
 	return rb_num_coerce_bin(x, y, idPow);
@@ -4056,7 +4056,7 @@ fix_pow(VALUE x, VALUE y)
 	if (a == 1) return DBL2NUM(1.0);
 	{
 	    if (a < 0 && dy != round(dy))
-		return rb_dbl_complex_polar(pow(-(double)a, dy), dy);
+                return rb_dbl_complex_polar_pi(pow(-(double)a, dy), dy);
 	    return DBL2NUM(pow((double)a, dy));
 	}
     }

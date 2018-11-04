@@ -6211,7 +6211,7 @@ rb_big_pow(VALUE x, VALUE y)
     if (RB_FLOAT_TYPE_P(y)) {
 	d = RFLOAT_VALUE(y);
 	if ((BIGNUM_NEGATIVE_P(x) && !BIGZEROP(x))) {
-	    return rb_dbl_complex_polar(pow(-rb_big2dbl(x), d), d);
+            return rb_dbl_complex_polar_pi(pow(-rb_big2dbl(x), d), d);
 	}
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
