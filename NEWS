@@ -269,6 +269,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
+[Bundler]
+
+  * Add Bundler to Standard Library. [Feature #12733]
+
+  * Use 1.17.1. It's latest stable version.
+
 [Coverage]
 
   A oneshot_lines mode is added.  [Feature #15022]
@@ -391,24 +397,18 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Add URI::File to handle file URI scheme.  [Feature #14035]
 
-[Bundler]
-
-  * Add Bundler to Standard Library. [Feature #12733]
-
-  * Use 1.17.1. It's latest stable version.
-
 === Compatibility issues (excluding feature bug fixes)
+
+[Dir]
+
+  * Dir.glob with <code>'\0'</code>-separated pattern list will be deprecated,
+    and is now warned.  [Feature #14643]
 
 [File]
 
   * File.read, File.binread, File.write, File.binwrite, File.foreach, and
     File.readlines do not invoke external commands even if the path starts
     with the pipe character <code>'|'</code>. [Feature #14245]
-
-[Dir]
-
-  * Dir.glob with <code>'\0'</code>-separated pattern list will be deprecated,
-    and is now warned.  [Feature #14643]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
