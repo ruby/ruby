@@ -394,15 +394,20 @@ init_header_filename(void)
         /* This path is not intended to be used on production, but using build directory's
            header file here because people want to run `make test-all` without running
            `make install`. Don't use $MJIT_SEARCH_BUILD_DIR except for test-all. */
-        if (build_dir[0] != '/' ||
-            stat(build_dir, &st) || !S_ISDIR(st.st_mode) ||
-            st.st_uid != getuid() || (st.st_mode & 022) ||
-            !rb_path_check(build_dir)) {
+        if (build_dir[0] != '/') {
+            verbose(1, "Non-absolute path MJIT_BUILD_DIR: %s", build_dir);
+        }
+        else if (stat(build_dir, &st) || !S_ISDIR(st.st_mode)) {
+            verbose(1, "Non-directory path MJIT_BUILD_DIR: %s", build_dir);
+        }
+        else if (!rb_path_check(build_dir)) {
             verbose(1, "Unsafe MJIT_BUILD_DIR: %s", build_dir);
             return FALSE;
         }
-        basedir = build_dir;
-        baselen = sizeof(build_dir) - 1;
+        else {
+            basedir = build_dir;
+            baselen = sizeof(build_dir) - 1;
+        }
     }
 #endif
 
