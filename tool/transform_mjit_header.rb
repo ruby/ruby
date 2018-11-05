@@ -149,7 +149,7 @@ module MJITHeader
 
   def self.write(code, out)
     # create with strict permission, then will install proper
-    # permmsion
+    # permission
     FileUtils.mkdir_p(File.dirname(out), mode: 0700)
     File.binwrite("#{out}.new", code, perm: 0600)
     FileUtils.mv("#{out}.new", out)
