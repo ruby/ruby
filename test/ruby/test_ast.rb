@@ -170,6 +170,18 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_of
+    proc = Proc.new { 1 + 2 }
+    method = self.method(__method__)
+
+    node_proc = RubyVM::AST.of(proc)
+    node_method = RubyVM::AST.of(method)
+
+    assert_instance_of(RubyVM::AST::Node, node_proc)
+    assert_instance_of(RubyVM::AST::Node, node_method)
+    assert_raise(TypeError) { RubyVM::AST.of("1 + 2") }
+  end
+
   def test_scope_local_variables
     node = RubyVM::AST.parse("x = 0")
     lv, _, body = *node.children

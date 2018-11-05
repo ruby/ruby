@@ -164,6 +164,7 @@ typedef struct RNode {
 	VALUE value;
     } u3;
     rb_code_location_t nd_loc;
+    int node_id;
 } NODE;
 
 #define RNODE(obj)  (R_CAST(RNode)(obj))
@@ -201,6 +202,8 @@ typedef struct RNode {
 #define nd_set_last_lineno(n, v) ((n)->nd_loc.end_pos.lineno = (v))
 #define nd_last_loc(n) ((n)->nd_loc.end_pos)
 #define nd_set_last_loc(n, v) (nd_last_loc(n) = (v))
+#define nd_node_id(n) ((n)->node_id)
+#define nd_set_node_id(n,id) ((n)->node_id = (id))
 
 #define nd_head  u1.node
 #define nd_alen  u2.argc

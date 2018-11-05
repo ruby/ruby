@@ -234,6 +234,7 @@ struct parser_params {
     ID cur_arg;
 
     rb_ast_t *ast;
+    int node_id;
 
     unsigned int command_start:1;
     unsigned int eofp: 1;
@@ -338,6 +339,14 @@ static NODE* node_newnode(struct parser_params *, enum node_type, VALUE, VALUE, 
 #define rb_node_newnode(type, a1, a2, a3, loc) node_newnode(p, (type), (a1), (a2), (a3), (loc))
 
 static NODE *nd_set_loc(NODE *nd, const YYLTYPE *loc);
+
+static int
+parser_get_node_id(struct parser_params *p)
+{
+    int node_id = p->node_id;
+    p->node_id++;
+    return node_id;
+}
 
 #ifndef RIPPER
 static inline void
@@ -8294,6 +8303,7 @@ node_newnode(struct parser_params *p, enum node_type type, VALUE a0, VALUE a1, V
     rb_node_init(n, type, a0, a1, a2);
 
     nd_set_loc(n, loc);
+    nd_set_node_id(n, parser_get_node_id(p));
     return n;
 }
 
@@ -10774,6 +10784,7 @@ parser_initialize(struct parser_params *p)
     p->command_start = TRUE;
     p->ruby_sourcefile_string = Qnil;
     p->lex.lpar_beg = -1; /* make lambda_beginning_p() == FALSE at first */
+    p->node_id = 0;
 #ifdef RIPPER
     p->delayed = Qnil;
     p->result = Qnil;
