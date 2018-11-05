@@ -109,7 +109,7 @@ s2.thread.join
 =begin
 # foo.rb
 
-require_relative 'drb'
+require 'drb/drb'
 
 class Foo
   include DRbUndumped
@@ -127,7 +127,7 @@ end
 
 =begin
 # gw_a.rb
-require_relative 'unix'
+require 'drb/unix'
 require 'foo'
 
 obj = Foo.new('a')
@@ -141,7 +141,7 @@ DRb.thread.join
 
 =begin
 # gw_c.rb
-require_relative 'unix'
+require 'drb/unix'
 require 'foo'
 
 foo = Foo.new('c', nil)
