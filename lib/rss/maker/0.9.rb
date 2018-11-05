@@ -1,5 +1,5 @@
 # frozen_string_literal: false
-require "rss/0.9"
+require_relative "../0.9"
 
 require_relative "base"
 

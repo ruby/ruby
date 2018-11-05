@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 require_relative '../itunes'
-require 'rss/maker/2.0'
+require_relative '2.0'
 
 module RSS
   module Maker
