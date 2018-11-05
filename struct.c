@@ -1140,7 +1140,7 @@ recursive_equal(VALUE s, VALUE s2, int recur)
     if (recur) return Qtrue; /* Subtle! */
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
+        if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1192,7 +1192,7 @@ rb_struct_hash(VALUE s)
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
     len = RSTRUCT_LEN(s);
     for (i = 0; i < len; i++) {
-	n = rb_hash(RSTRUCT_GET(s, i));
+        n = rb_hash(RSTRUCT_GET(s, i));
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
@@ -1207,7 +1207,7 @@ recursive_eql(VALUE s, VALUE s2, int recur)
     if (recur) return Qtrue; /* Subtle! */
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
+        if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
