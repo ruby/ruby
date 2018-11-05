@@ -5,6 +5,7 @@
 #include "internal.h"
 #include "node.h"
 #include "vm_core.h"
+#include "iseq.h"
 
 static VALUE rb_mAST;
 static VALUE rb_cNode;
@@ -123,6 +124,59 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
     obj = ast_new_internal(ast, (NODE *)ast->body.root);
 
     return obj;
+}
+
+static VALUE node_children(rb_ast_t*, NODE*);
+
+static VALUE
+node_find(VALUE self, const int node_id)
+{
+    VALUE ary;
+    long i;
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
+
+    if (nd_node_id(data->node) == node_id) return self;
+
+    ary = node_children(data->ast, data->node);
+
+    for (i = 0; i < RARRAY_LEN(ary); i++) {
+        VALUE child = RARRAY_AREF(ary, i);
+
+        if (CLASS_OF(child) == rb_cNode) {
+            VALUE result = node_find(child, node_id);
+            if (RTEST(result)) return result;
+        }
+    }
+
+    return Qnil;
+}
+
+static VALUE
+rb_ast_s_of(VALUE module, VALUE body)
+{
+    VALUE path, node;
+    int node_id;
+    const rb_iseq_t *iseq = NULL;
+
+    if (rb_obj_is_proc(body)) {
+        iseq = vm_proc_iseq(body);
+
+        if (!rb_obj_is_iseq((VALUE)iseq)) {
+            iseq = NULL;
+        }
+    }
+    else {
+        iseq = rb_method_iseq(body);
+    }
+
+    if (!iseq) return Qnil;
+
+    path = rb_iseq_path(iseq);
+    node_id = iseq->body->location.node_id;
+    node = rb_ast_s_parse_file(module, path);
+
+    return node_find(node, node_id);
 }
 
 static VALUE
@@ -619,6 +673,7 @@ Init_ast(void)
     rb_undef_alloc_func(rb_cNode);
     rb_define_singleton_method(rb_mAST, "parse", rb_ast_s_parse, 1);
     rb_define_singleton_method(rb_mAST, "parse_file", rb_ast_s_parse_file, 1);
+    rb_define_singleton_method(rb_mAST, "of", rb_ast_s_of, 1);
     rb_define_method(rb_cNode, "type", rb_ast_node_type, 0);
     rb_define_method(rb_cNode, "first_lineno", rb_ast_node_first_lineno, 0);
     rb_define_method(rb_cNode, "first_column", rb_ast_node_first_column, 0);
