@@ -260,7 +260,7 @@ AS_CASE(["$build_os"],
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep '^ld: warning: text-based stub file' >/dev/null], [
-	MJIT_CC="$CC"
+	: ${MJIT_CC="$CC"}
 	CC_WRAPPER=`cd -P "$srcdir/tool" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
