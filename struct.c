@@ -1135,15 +1135,12 @@ rb_struct_select(int argc, VALUE *argv, VALUE s)
 static VALUE
 recursive_equal(VALUE s, VALUE s2, int recur)
 {
-    const VALUE *ptr, *ptr2;
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_CONST_PTR(s);
-    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_equal(ptr[i], ptr2[i])) return Qfalse;
+	if (!rb_equal(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
@@ -1191,13 +1188,11 @@ rb_struct_hash(VALUE s)
     long i, len;
     st_index_t h;
     VALUE n;
-    const VALUE *ptr;
 
     h = rb_hash_start(rb_hash(rb_obj_class(s)));
-    ptr = RSTRUCT_CONST_PTR(s);
     len = RSTRUCT_LEN(s);
     for (i = 0; i < len; i++) {
-	n = rb_hash(ptr[i]);
+	n = rb_hash(RSTRUCT_GET(s, i));
 	h = rb_hash_uint(h, NUM2LONG(n));
     }
     h = rb_hash_end(h);
@@ -1207,15 +1202,12 @@ rb_struct_hash(VALUE s)
 static VALUE
 recursive_eql(VALUE s, VALUE s2, int recur)
 {
-    const VALUE *ptr, *ptr2;
     long i, len;
 
     if (recur) return Qtrue; /* Subtle! */
-    ptr = RSTRUCT_CONST_PTR(s);
-    ptr2 = RSTRUCT_CONST_PTR(s2);
     len = RSTRUCT_LEN(s);
     for (i=0; i<len; i++) {
-	if (!rb_eql(ptr[i], ptr2[i])) return Qfalse;
+	if (!rb_eql(RSTRUCT_GET(s, i), RSTRUCT_GET(s2, i))) return Qfalse;
     }
     return Qtrue;
 }
