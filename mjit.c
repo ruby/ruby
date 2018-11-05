@@ -422,15 +422,18 @@ init_header_filename(void)
             return FALSE;
         }
 #ifndef LOAD_RELATIVE
-        if ((basedir == build_dir) &&
-            (fstat(fd, &st) ||
-             st.st_uid != getuid() ||
-             (st.st_mode & 022))) {
-            (void)close(fd);
-            verbose(1, "Unsafe header file: %s", header_file);
-            xfree(header_file);
-            header_file = NULL;
-            return FALSE;
+        if (basedir == build_dir) {
+            memset(&st, 0, sizeof(st));
+            if (fstat(fd, &st) ||
+                (st.st_uid != getuid()) ||
+                (st.st_mode & 022)) {
+                (void)close(fd);
+                verbose(1, "Unsafe header file: uid=%ld mode=%#o %s",
+                        (long)st.st_uid, (unsigned)st.st_mode, header_file);
+                xfree(header_file);
+                header_file = NULL;
+                return FALSE;
+            }
         }
 #endif
         (void)close(fd);
