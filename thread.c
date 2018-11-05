@@ -4043,12 +4043,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     fds[0].fd = fd;
     fds[0].events = (short)events;
     do {
-        fds[0].revents = 0;
         fds[1].fd = rb_sigwait_fd_get(th);
 
         if (fds[1].fd >= 0) {
             fds[1].events = POLLIN;
-            fds[1].revents = 0;
             nfds = 2;
             ubf = ubf_sigwait;
         }
@@ -4072,7 +4070,6 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         if (fds[1].fd >= 0) {
             if (result > 0 && fds[1].revents) {
                 result--;
-                fds[1].revents = 0;
             }
             (void)check_signals_nogvl(th, fds[1].fd);
             rb_sigwait_fd_put(th, fds[1].fd);
