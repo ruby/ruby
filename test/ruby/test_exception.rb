@@ -698,6 +698,12 @@ end.join
     assert_same(a, e.cause.cause)
   end
 
+  def test_cause_at_end
+    assert_in_out_err([], <<-'end;', [], [/-: unexpected return\n/, /.*undefined local variable or method `n'.*\n/])
+      END{n}; END{return}
+    end;
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
