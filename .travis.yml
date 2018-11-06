@@ -277,6 +277,7 @@ matrix:
     - name: uinversal.x86_64h-darwin17
     - name: -fsanitize=address
     - name: -fsanitize=memory
+    - name: -fsanitize=undefined
   fast_finish: true
 
 before_script:
