@@ -2201,7 +2201,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 	struct rb_objspace *objspace = vm->objspace;
 	vm->main_thread = 0;
 	if (th) {
-	    rb_fiber_reset_root_local_storage(th);
+            rb_fiber_reset_root_local_storage(th);
 	    thread_free(th);
 	}
 	rb_vm_living_threads_init(vm);
