@@ -618,15 +618,17 @@ rb_f_expand(int argc, VALUE *argv){
     VALUE result = rb_hash_new();
     VALUE binding = rb_binding_new();
     VALUE local_variables = bind_local_variables(binding);
+    int i;
 
-    for (int i = 0; i < argc; i++){
+    for (i = 0; i < argc; i++){
         VALUE key = argv[i];
         VALUE value;
         if (rb_ary_includes(local_variables, key) == Qtrue) {
             value = bind_local_variable_get(binding, key);
         }
         else {
-            VALUE args[] = { key };
+            VALUE args[1];
+            args[0] = key;
             value = rb_f_send(1, args, bind_receiver(binding));
         }
         rb_hash_aset(result, key, value);
