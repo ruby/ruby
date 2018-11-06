@@ -95,6 +95,8 @@ extern "C" {
 # define __has_extension __has_feature
 #endif
 
+#ifndef MJIT_HEADER
+
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
 # include <sanitizer/asan_interface.h>
 #endif
@@ -148,6 +150,8 @@ unpoison_object(VALUE obj, bool newobj_p)
     struct RVALUE *ptr = (void *)obj;
     unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
 }
+
+#endif
 
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
