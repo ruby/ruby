@@ -598,8 +598,11 @@ mjit_config.h:
 	        esac; \
 	    done; \
 	}; \
-	mjit_cc=`command -v $(MJIT_CC)`; \
-	case $(arch) in *-mingw*) mjit_cc="`cygpath -m $$mjit_cc`";; esac; \
+	mjit_cc="$(MJIT_CC)"; \
+	if [ "$(CROSS_COMPILING)" = no ]; then \
+	    mjit_cc="`command -v $$mjit_cc`"; \
+	    case $(arch) in *-mingw*) mjit_cc="`cygpath -m $$mjit_cc`";; esac; \
+	fi; \
 	test "$(Q)" = @ || set -x; \
 	archs="$(UNIVERSAL_ARCHNAMES)"; \
 	arch_flag=""; \
