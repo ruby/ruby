@@ -1145,7 +1145,7 @@ copy_cache_from_main_thread(struct mjit_copy_job *job)
         return job->finish_p;
     }
 
-    if (!rb_postponed_job_register_one(0, mjit_copy_job_handler, (void *)job))
+    if (!rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job))
         return FALSE;
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
     /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
