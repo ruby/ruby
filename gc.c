@@ -1434,6 +1434,7 @@ heap_page_add_freeobj(rb_objspace_t *objspace, struct heap_page *page, VALUE obj
     if (RGENGC_CHECK_MODE && !is_pointer_to_heap(objspace, p)) {
 	rb_bug("heap_page_add_freeobj: %p is not rvalue.", (void *)p);
     }
+    poison_object(obj);
 
     gc_report(3, objspace, "heap_page_add_freeobj: add %p to freelist\n", (void *)obj);
 }
@@ -1758,6 +1759,7 @@ heap_get_freeobj_from_next_freepage(rb_objspace_t *objspace, rb_heap_t *heap)
     p = page->freelist;
     page->freelist = NULL;
     page->free_slots = 0;
+    unpoison_object((VALUE)p, true);
     return p;
 }
 
@@ -1768,6 +1770,7 @@ heap_get_freeobj_head(rb_objspace_t *objspace, rb_heap_t *heap)
     if (LIKELY(p != NULL)) {
 	heap->freelist = p->as.free.next;
     }
+    unpoison_object((VALUE)p, true);
     return (VALUE)p;
 }
 
@@ -1778,6 +1781,7 @@ heap_get_freeobj(rb_objspace_t *objspace, rb_heap_t *heap)
 
     while (1) {
 	if (LIKELY(p != NULL)) {
+            unpoison_object((VALUE)p, true);
 	    heap->freelist = p->as.free.next;
 	    return (VALUE)p;
 	}
@@ -2612,8 +2616,11 @@ static int
 internal_object_p(VALUE obj)
 {
     RVALUE *p = (RVALUE *)obj;
+    void *ptr = __asan_region_is_poisoned(p, SIZEOF_VALUE);
+    bool used_p = p->as.basic.flags;
+    unpoison_object(obj, false);
 
-    if (p->as.basic.flags) {
+    if (used_p) {
 	switch (BUILTIN_TYPE(p)) {
 	  case T_NODE:
 	    UNEXPECTED_NODE(internal_object_p);
@@ -2633,6 +2640,9 @@ internal_object_p(VALUE obj)
 	    if (!p->as.basic.klass) break;
 	    return 0;
 	}
+    }
+    if (ptr || ! used_p) {
+        poison_object(obj);
     }
     return 1;
 }
@@ -2924,8 +2934,11 @@ static void
 finalize_list(rb_objspace_t *objspace, VALUE zombie)
 {
     while (zombie) {
-	VALUE next_zombie = RZOMBIE(zombie)->next;
-	struct heap_page *page = GET_HEAP_PAGE(zombie);
+        VALUE next_zombie;
+        struct heap_page *page;
+        unpoison_object(zombie, false);
+        next_zombie = RZOMBIE(zombie)->next;
+        page = GET_HEAP_PAGE(zombie);
 
 	run_final(objspace, zombie);
 
@@ -3044,6 +3057,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     for (i = 0; i < heap_allocated_pages; i++) {
 	p = heap_pages_sorted[i]->start; pend = p + heap_pages_sorted[i]->total_slots;
 	while (p < pend) {
+            unpoison_object((VALUE)p, false);
 	    switch (BUILTIN_TYPE(p)) {
 	      case T_DATA:
 		if (!DATA_PTR(p) || !RANY(p)->as.data.dfree) break;
@@ -3067,6 +3081,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 		}
 		break;
 	    }
+            poison_object((VALUE)p);
 	    p++;
 	}
     }
@@ -3610,6 +3625,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 	if (bitset) {
 	    p = offset  + i * BITS_BITLENGTH;
 	    do {
+                unpoison_object((VALUE)p, false);
 		if (bitset & 1) {
 		    switch (BUILTIN_TYPE(p)) {
 		      default: { /* majority case */
@@ -3628,6 +3644,7 @@ gc_page_sweep(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *sweep_
 			      heap_page_add_freeobj(objspace, sweep_page, (VALUE)p);
 			      gc_report(3, objspace, "page_sweep: %s is added to freelist\n", obj_info((VALUE)p));
 			      freed_slots++;
+                              poison_object((VALUE)p);
 			  }
 			  break;
 		      }
@@ -4419,10 +4436,17 @@ gc_mark_maybe(rb_objspace_t *objspace, VALUE obj)
 {
     (void)VALGRIND_MAKE_MEM_DEFINED(&obj, sizeof(obj));
     if (is_pointer_to_heap(objspace, (void *)obj)) {
-	int type = BUILTIN_TYPE(obj);
+        int type;
+        void *ptr = __asan_region_is_poisoned((void *)obj, SIZEOF_VALUE);
+
+        unpoison_object(obj, false);
+        type = BUILTIN_TYPE(obj);
 	if (type != T_ZOMBIE && type != T_NONE) {
 	    gc_mark_ptr(objspace, obj);
 	}
+        if (ptr) {
+            poison_object(obj);
+        }
     }
 }
 

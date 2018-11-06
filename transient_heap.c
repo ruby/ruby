@@ -230,11 +230,13 @@ transient_heap_get(void)
 static void
 reset_block(struct transient_heap_block *block)
 {
+    __msan_allocated_memory(block, sizeof block);
     block->info.size = TRANSIENT_HEAP_BLOCK_SIZE - sizeof(struct transient_heap_block_header);
     block->info.index = 0;
     block->info.objects = 0;
     block->info.last_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_LAST;
     block->info.next_block = NULL;
+    __asan_poison_memory_region(&block->buff, sizeof block->buff);
 }
 
 static void
@@ -379,10 +381,17 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
         if (header) {
             void *ptr;
 
+            /* header is poisoned to prevent buffer overflow, should
+             * unpoison first... */
+            unpoison_memory_region(header, sizeof *header, true);
+
             header->size = size;
             header->magic = TRANSIENT_HEAP_ALLOC_MAGIC;
             header->next_marked_index = TRANSIENT_HEAP_ALLOC_MARKING_FREE;
             header->obj = obj; /* TODO: can we eliminate it? */
+
+            /* header is fixed; shall poison again */
+            poison_memory_region(header, sizeof *header);
             ptr = header + 1;
 
             theap->total_objects++; /* statistics */
@@ -395,6 +404,9 @@ rb_transient_heap_alloc(VALUE obj, size_t req_size)
             if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_alloc: header:%p ptr:%p size:%d obj:%s\n", (void *)header, ptr, (int)size, rb_obj_info(obj));
 
             RB_DEBUG_COUNTER_INC(theap_alloc);
+
+            /* ptr is set up; OK to unpoison. */
+            unpoison_memory_region(ptr, size, true);
             return ptr;
         }
         else {
@@ -509,6 +521,7 @@ void
 rb_transient_heap_mark(VALUE obj, const void *ptr)
 {
     struct transient_alloc_header *header = ptr_to_alloc_header(ptr);
+    unpoison_memory_region(header, sizeof *header, false);
     if (header->magic != TRANSIENT_HEAP_ALLOC_MAGIC) rb_bug("rb_transient_heap_mark: wrong header, %s (%p)", rb_obj_info(obj), ptr);
     if (TRANSIENT_HEAP_DEBUG >= 3) fprintf(stderr, "rb_transient_heap_mark: %s (%p)\n", rb_obj_info(obj), ptr);
 
@@ -537,6 +550,7 @@ rb_transient_heap_mark(VALUE obj, const void *ptr)
     else {
         struct transient_heap* theap = transient_heap_get();
         struct transient_heap_block *block = alloc_header_to_block(theap, header);
+        __asan_unpoison_memory_region(&block->info, sizeof block->info);
         header->next_marked_index = block->info.last_marked_index;
         block->info.last_marked_index = (int)((char *)header - block->buff);
         theap->total_marked_objects++;

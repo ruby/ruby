@@ -69,7 +69,7 @@ extern "C" {
 #endif
 
 #ifndef NO_SANITIZE
-#define NO_SANITIZE(x, y) y
+# define NO_SANITIZE(x, y) y
 #endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
@@ -94,6 +94,60 @@ extern "C" {
 #ifndef __has_extension
 # define __has_extension __has_feature
 #endif
+
+#ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
+# include <sanitizer/asan_interface.h>
+#endif
+
+#if !__has_feature(address_sanitizer)
+# define __asan_poison_memory_region(x, y)
+# define __asan_unpoison_memory_region(x, y)
+# define __asan_region_is_poisoned(x, y) 0
+#endif
+
+#ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
+# include <sanitizer/msan_interface.h>
+#endif
+
+#if !__has_feature(memory_sanitizer)
+# define __msan_allocated_memory(x, y)
+# define __msan_poison(x, y)
+# define __msan_unpoison(x, y)
+# define __msan_unpoison_string(x)
+#endif
+
+static inline void
+poison_memory_region(const volatile void *ptr, size_t size)
+{
+    __msan_poison(ptr, size);
+    __asan_poison_memory_region(ptr, size);
+}
+
+static inline void
+poison_object(VALUE obj)
+{
+    struct RVALUE *ptr = (void *)obj;
+    poison_memory_region(ptr, SIZEOF_VALUE);
+}
+
+static inline void
+unpoison_memory_region(const volatile void *ptr, size_t size, bool malloc_p)
+{
+    __asan_unpoison_memory_region(ptr, size);
+    if (malloc_p) {
+        __msan_allocated_memory(ptr, size);
+    }
+    else {
+        __msan_unpoison(ptr, size);
+    }
+}
+
+static inline void
+unpoison_object(VALUE obj, bool newobj_p)
+{
+    struct RVALUE *ptr = (void *)obj;
+    unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
+}
 
 /* Prevent compiler from reordering access */
 #define ACCESS_ONCE(type,x) (*((volatile type *)&(x)))
