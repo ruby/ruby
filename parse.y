@@ -10789,6 +10789,7 @@ static NODE *
 arg_blk_pass(NODE *node1, NODE *node2)
 {
     if (node2) {
+        if (!node1) return node2;
 	node2->nd_head = node1;
 	nd_set_first_lineno(node2, nd_first_lineno(node1));
 	nd_set_first_column(node2, nd_first_column(node1));
