@@ -95,6 +95,13 @@ addons:
     env:
       - "CFLAGS=-DVM_CHECK_MODE=0x0003"
 
+  - &FIBER_USE_sjlj
+    name: FIBER_USE_NATIVE=0
+    <<: *linux
+    <<: *cron-only
+    env:
+      - "CFLAGS=-DFIBER_USE_NATIVE=0"
+
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
     <<: *linux
@@ -269,6 +276,7 @@ matrix:
     - <<: *MSAN
     - <<: *UBSAN
     - <<: *VM_CHECK_MODE
+    - <<: *FIBER_USE_sjlj
     - <<: *TOKEN_THREADED_CODE
     - <<: *CALL_THREADED_CODE
     - <<: *NO_THREADED_CODE
