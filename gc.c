@@ -61,16 +61,6 @@
 # endif
 #endif
 
-#if /* is ASAN enabled? */ \
-    __has_feature(address_sanitizer) /* Clang */ || \
-    defined(__SANITIZE_ADDRESS__)  /* GCC 4.8.x */
-  #define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS \
-        __attribute__((no_address_safety_analysis)) \
-        __attribute__((noinline))
-#else
-  #define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
-#endif
-
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -4158,8 +4148,10 @@ ruby_stack_check(void)
 }
 
 ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
+(
 static void
 mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register long n)
+)
 {
     VALUE v;
     while (n--) {
