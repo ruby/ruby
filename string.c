@@ -803,6 +803,11 @@ VALUE
 rb_str_new_cstr(const char *ptr)
 {
     must_not_null(ptr);
+    /* rb_str_new_cstr() can take pointer from non-malloc-generated
+     * memory regions, and that cannot be detected by the MSAN.  Just
+     * trust the programmer that the argument passed here is a sane C
+     * string. */
+    __msan_unpoison_string(ptr);
     return rb_str_new(ptr, strlen(ptr));
 }
 
