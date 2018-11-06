@@ -179,6 +179,11 @@ class TestSyntax < Test::Unit::TestCase
       bug13756 = '[ruby-core:82113] [Bug #13756]'
       assert_valid_syntax("defined? foo(**{})", bug13756)
     end;
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      bug15271 = '[ruby-core:89648] [Bug #15271]'
+      assert_valid_syntax("a **{}", bug15271)
+    end;
   end
 
   def test_keyword_self_reference

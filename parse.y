@@ -1673,7 +1673,7 @@ command		: fcall command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = $1;
 			$$->nd_args = $2;
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.last_loc);
 		    /*%
 			$$ = dispatch2(command, $1, $2);
 		    %*/
@@ -1686,7 +1686,7 @@ command		: fcall command_args       %prec tLOWEST
 			fixpos($$, $1);
 		    /*%%%*/
 			$$->nd_loc = @$;
-			nd_set_last_loc($1, nd_last_loc($2));
+			nd_set_last_loc($1, @2.last_loc);
 		    /*%
 		    %*/
 		    }
