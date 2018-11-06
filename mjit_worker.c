@@ -1136,11 +1136,17 @@ static void mjit_copy_job_handler(void *data);
 static int
 copy_cache_from_main_thread(struct mjit_copy_job *job)
 {
-    job->finish_p = FALSE;
+    CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
+    job->finish_p = FALSE; /* allow dispatching this job in mjit_copy_job_handler */
+    CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
 
-    if (!rb_postponed_job_register(0, mjit_copy_job_handler, (void *)job))
+    if (UNLIKELY(mjit_opts.wait)) {
+        mjit_copy_job_handler((void *)job);
+        return job->finish_p;
+    }
+
+    if (!rb_postponed_job_register_one(0, mjit_copy_job_handler, (void *)job))
         return FALSE;
-
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
     /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
        lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then
@@ -1159,6 +1165,8 @@ copy_cache_from_main_thread(struct mjit_copy_job *job)
 void
 mjit_worker(void)
 {
+    struct mjit_copy_job job;
+
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
         make_pch();
@@ -1185,11 +1193,11 @@ mjit_worker(void)
             verbose(3, "Getting wakeup from client");
         }
         unit = get_from_list(&unit_queue);
+        job.finish_p = TRUE; /* disable dispatching this job in mjit_copy_job_handler while it's being modified */
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
             mjit_func_t func;
-            struct mjit_copy_job job;
 
             job.body = unit->iseq->body;
             job.cc_entries = NULL;
@@ -1201,10 +1209,7 @@ mjit_worker(void)
 
             /* Copy ISeq's inline caches values to avoid race condition. */
             if (job.cc_entries != NULL || job.is_entries != NULL) {
-                if (UNLIKELY(mjit_opts.wait)) {
-                    mjit_copy_job_handler((void *)&job); /* main thread is waiting in mjit_wait_call() and doesn't race */
-                }
-                else if (copy_cache_from_main_thread(&job) == FALSE) {
+                if (copy_cache_from_main_thread(&job) == FALSE) {
                     continue; /* retry postponed_job failure, or stop worker */
                 }
             }

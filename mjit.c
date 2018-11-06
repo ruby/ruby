@@ -24,15 +24,20 @@
 static void
 mjit_copy_job_handler(void *data)
 {
-    struct mjit_copy_job *job;
-    if (stop_worker_p) {
-        /* `copy_cache_from_main_thread()` stops to wait for this job. Then job
-           data which is allocated by `alloca()` could be expired and we might
-           not be able to access that. */
+    struct mjit_copy_job *job = data;
+    int finish_p;
+    CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
+    finish_p = job->finish_p;
+    CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
+
+    if (stop_worker_p || finish_p) {
+        /* `stop_worker_p`: `copy_cache_from_main_thread()` stops to wait for this job.
+           Then job data which is allocated by `alloca()` could be expired and we might
+           not be able to access that.
+           `finish_p`: make sure that this job is never executed while job is being modified. */
         return;
     }
 
-    job = (struct mjit_copy_job *)data;
     if (job->cc_entries) {
         memcpy(job->cc_entries, job->body->cc_entries, sizeof(struct rb_call_cache) * (job->body->ci_size + job->body->ci_kw_size));
     }
@@ -40,10 +45,10 @@ mjit_copy_job_handler(void *data)
         memcpy(job->is_entries, job->body->is_entries, sizeof(union iseq_inline_storage_entry) * job->body->is_size);
     }
 
-    CRITICAL_SECTION_START(3, "in MJIT copy job wait");
+    CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
     job->finish_p = TRUE;
     rb_native_cond_broadcast(&mjit_worker_wakeup);
-    CRITICAL_SECTION_FINISH(3, "in MJIT copy job wait");
+    CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
 }
 
 extern int rb_thread_create_mjit_thread(void (*worker_func)(void));
