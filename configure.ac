@@ -256,7 +256,7 @@ AC_SUBST(CSRCFLAG)
 AS_IF([test "x$cross_compiling" = xno], [
     AC_PATH_PROG([MJIT_CC], ${MJIT_CC-$CC})
     AS_CASE([$build_os:$host_os],
-	[*mingw*:*cygwin*], [MJIT_CC=`cygpath -ma $MJIT_CC`])
+	[*cygwin*:*mingw*], [MJIT_CC=`cygpath -ma $MJIT_CC`])
     shift 2
     MJIT_CC="$MJIT_CC${1+ }$*"
 ])
