@@ -26,16 +26,18 @@ mjit_copy_job_handler(void *data)
 {
     struct mjit_copy_job *job = data;
     int finish_p;
+    if (stop_worker_p) {
+        /* `copy_cache_from_main_thread()` stops to wait for this job. Then job data which is
+           allocated by `alloca()` could be expired and we might not be able to access that.
+           Also this should be checked before CRITICAL_SECTION_START to ensure that mutex is alive. */
+        return;
+    }
+
     CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
     finish_p = job->finish_p;
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-
-    if (stop_worker_p || finish_p) {
-        /* `stop_worker_p`: `copy_cache_from_main_thread()` stops to wait for this job.
-           Then job data which is allocated by `alloca()` could be expired and we might
-           not be able to access that.
-           `finish_p`: make sure that this job is never executed while job is being modified. */
-        return;
+    if (finish_p) {
+        return; /* make sure that this job is never executed while job is being modified. */
     }
 
     if (job->cc_entries) {
