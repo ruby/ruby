@@ -864,7 +864,7 @@ static void gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *heap);
 
 static inline void gc_mark(rb_objspace_t *objspace, VALUE ptr);
 static void gc_mark_ptr(rb_objspace_t *objspace, VALUE ptr);
-static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr);
+NO_SANITIZE("memory", static void gc_mark_maybe(rb_objspace_t *objspace, VALUE ptr));
 static void gc_mark_children(rb_objspace_t *objspace, VALUE ptr);
 
 static int gc_mark_stacked_objects_incremental(rb_objspace_t *, size_t count);
@@ -872,7 +872,7 @@ static int gc_mark_stacked_objects_all(rb_objspace_t *);
 static void gc_grey(rb_objspace_t *objspace, VALUE ptr);
 
 static inline int gc_mark_set(rb_objspace_t *objspace, VALUE obj);
-static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr);
+NO_SANITIZE("memory", static inline int is_pointer_to_heap(rb_objspace_t *objspace, void *ptr));
 
 static void   push_mark_stack(mark_stack_t *, VALUE);
 static int    pop_mark_stack(mark_stack_t *, VALUE *);
