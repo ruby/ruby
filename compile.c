@@ -9891,6 +9891,7 @@ rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
     ibf_load_iseq_each(load, iseq, offset);
     ISEQ_COMPILE_DATA_CLEAR(iseq);
     FL_UNSET(iseq, ISEQ_NOT_LOADED_YET);
+    rb_iseq_init_trace(iseq);
     load->iseq = prev_src_iseq;
 }
 
@@ -10038,8 +10039,6 @@ rb_iseq_ibf_load(VALUE str)
 
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
-
-    rb_iseq_init_trace(iseq);
 
     RB_GC_GUARD(loader_obj);
     return iseq;
