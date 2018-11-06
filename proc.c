@@ -614,6 +614,28 @@ bind_location(VALUE bindval)
 }
 
 static VALUE
+rb_f_expand(int argc, VALUE *argv){
+    VALUE result = rb_hash_new();
+    VALUE binding = rb_binding_new();
+    VALUE local_variables = bind_local_variables(binding);
+
+    for (int i = 0; i < argc; i++){
+        VALUE key = argv[i];
+        VALUE value;
+        if (rb_ary_includes(local_variables, key) == Qtrue) {
+            value = bind_local_variable_get(binding, key);
+        }
+        else {
+            VALUE args[] = { key };
+            value = rb_f_send(1, args, bind_receiver(binding));
+        }
+        rb_hash_aset(result, key, value);
+    }
+
+    return result;
+}
+
+static VALUE
 cfunc_proc_new(VALUE klass, VALUE ifunc, int8_t is_lambda)
 {
     rb_proc_t *proc;
@@ -3267,4 +3289,5 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
+    rb_define_global_function("expand", rb_f_expand, -1);
 }

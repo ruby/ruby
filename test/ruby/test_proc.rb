@@ -1371,6 +1371,31 @@ class TestProc < Test::Unit::TestCase
     assert_same(obj, obj.b.receiver, feature8779)
   end
 
+  def test_expand
+    obj = Object.new
+    def obj.meth
+      "meth"
+    end
+
+    def obj.valid
+      a, b, c = 1, 2, 3
+      expand(:a, :b, :meth, :class)
+    end
+    assert_equal(obj.valid, { a: 1, b: 2, meth: "meth", class: Object })
+
+    def obj.invalid_no_method
+      expand(:a, :meth)
+    end
+    assert_raise(NoMethodError){
+      obj.invalid_no_method
+    }
+
+    def obj.valid_blank_args
+      expand
+    end
+    assert_equal(obj.valid_blank_args, {})
+  end
+
   def test_proc_mark
     assert_normal_exit(<<-'EOS')
       def f
