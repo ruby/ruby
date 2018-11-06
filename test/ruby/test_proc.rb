@@ -1377,6 +1377,10 @@ class TestProc < Test::Unit::TestCase
       "meth"
     end
 
+    def obj.b
+      "b"
+    end
+
     def obj.valid
       a, b, c = 1, 2, 3
       expand(:a, :b, :meth, :class)
