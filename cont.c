@@ -1833,10 +1833,8 @@ rb_fiber_yield(int argc, const VALUE *argv)
 }
 
 void
-rb_fiber_reset_root_local_storage(VALUE thval)
+rb_fiber_reset_root_local_storage(rb_thread_t *th)
 {
-    rb_thread_t *th = rb_thread_ptr(thval);
-
     if (th->root_fiber && th->root_fiber != th->ec->fiber_ptr) {
 	th->ec->local_storage = th->root_fiber->cont.saved_ec.local_storage;
     }
