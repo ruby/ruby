@@ -69,7 +69,7 @@ extern "C" {
 #endif
 
 #ifndef NO_SANITIZE
-#define NO_SANITIZE(x, y)
+#define NO_SANITIZE(x, y) y
 #endif
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
