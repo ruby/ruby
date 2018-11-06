@@ -49,132 +49,238 @@ addons:
       - openssl@1.1
       - zlib
 
+.org.ruby-lang.ci.matrix-definitions:
+
+  - &cron-only
+    if: (type = cron) AND (branch = trunk) AND (fork = false)
+
+  - &make-test-only
+    script:
+      - "$SETARCH make -s test TESTOPTS=--color=never"
+
+  - &linux
+    os: linux
+    compiler: gcc-8
+
+  - &osx
+    os: osx
+    compiler: clang
+    before_install:
+      # Bare "brew update" nukes everything.
+      # These steps are very carefully chosen to avoid breaking things.
+      - brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
+      - git -C $brew_core_dir fetch -q origin
+      - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
+      - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
+      - /usr/local/opt/openssl@1.1/bin/openssl version
+
+  # --------
+
+  - &x86_64-linux
+    name: x86_64-linux
+    <<: *linux
+
+  - &jemalloc
+    name: --with-jemalloc
+    <<: *linux
+    <<: *cron-only
+    env:
+      - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
+
+  - &VM_CHECK_MODE
+    name: VM_CHECK_MODE=3
+    <<: *linux
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - "CFLAGS=-DVM_CHECK_MODE=0x0003"
+
+  - &TOKEN_THREADED_CODE
+    name: TOKEN_THREADED_CODE
+    <<: *linux
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - "CFLAGS=-DOPT_THREADED_CODE=1"
+
+  - &CALL_THREADED_CODE
+    name: CALL_THREADED_CODE
+    <<: *linux
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - "CFLAGS=-DOPT_THREADED_CODE=2"
+
+  - &NO_THREADED_CODE
+    name: NO_THREADED_CODE
+    <<: *linux
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - "CFLAGS=-DOPT_THREADED_CODE=3"
+
+  - &ASAN
+    name: -fsanitize=address
+    <<: *linux
+    #<<: *cron-only
+    <<: *make-test-only
+    compiler: clang
+    env:
+      - "ASAN_OPTIONS=detect_leaks=0"
+      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=address -fno-omit-frame-pointer'"
+      - "LD=clang"
+      - "LDFLAGS=-fsanitize=address"
+
+  - &MSAN
+    name: -fsanitize=memory
+    <<: *linux
+    #<<: *cron-only
+    <<: *make-test-only
+    compiler: clang
+    env:
+      - "CFLAGS='-fsanitize=memory'"
+      - "LD=clang"
+      - "LDFLAGS=-fsanitize=memory"
+
+  - &UBSAN
+    name: -fsanitize=undefined
+    <<: *linux
+    #<<: *cron-only
+    <<: *make-test-only
+    compiler: clang
+    env:
+      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'"
+      - "LD=clang"
+      - "LDFLAGS=-fsanitize=undefined,integer,nullability"
+
+  - &i686-linux
+    name: i686-linux
+    <<: *linux
+    sudo: required
+    compiler: "'gcc-8 -m32'"
+    env:
+      - "CONFIG_FLAG='debugflags=-g0'"
+      - "SETARCH='setarch i686 --verbose --3gb'"
+    addons:
+      apt:
+        config:
+          retries: true
+        update: true
+        sources:
+          - ubuntu-toolchain-r-test
+        packages:
+          - gcc-8-multilib
+          - libffi-dev:i386
+          - libffi6:i386
+          - libgdbm-dev:i386
+          - libgdbm3:i386
+          - libncurses5-dev:i386
+          - libncurses5:i386
+          - libncursesw5-dev:i386
+          - libreadline6-dev:i386
+          - libreadline6:i386
+          - libssl-dev:i386
+          - libssl1.0.0:i386
+          - linux-libc-dev:i386
+          - zlib1g-dev:i386
+          - zlib1g:i386
+
+  - &pedanticism
+    name: "-ansi -pedantic"
+    <<: *linux
+    <<: *make-test-only
+    compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
+    env:
+      - "CONFIG_FLAG="
+      - "JOBS="
+    # construct warnflags (using bashism...)
+    before_install: |
+      warnflags_array=(
+        -Wall
+        -Wextra
+        -Werror=declaration-after-statement
+        -Werror=deprecated-declarations
+        -Werror=division-by-zero
+        -Werror=extra-tokens
+        -Werror=implicit-function-declaration
+        -Werror=implicit-int
+        -Werror=long-long
+        -Werror=pointer-arith
+        -Werror=shorten-64-to-32
+        -Werror=write-strings
+        -Wmissing-noreturn
+        -Wno-constant-logical-operand
+        -Wno-extended-offsetof
+        -Wno-missing-field-initializers
+        -Wno-overlength-strings
+        -Wno-parentheses-equality
+        -Wno-self-assign
+        -Wno-tautological-compare
+        -Wno-unused-local-typedef
+        -Wno-unused-parameter
+        -Wunused-variable
+      )
+      CONFIG_FLAG_ARRAY=(
+        warnflags="${warnflags_array[*]}"
+        LDFLAGS=-Wno-unused-command-line-argument)
+
+  - &rubyspec
+    name: Running ruby/spec on 2.3 to ensure version guards are correctly added
+    <<: *linux
+    language: ruby
+    rvm: 2.3.8
+    addons:
+      apt:
+        packages:
+    before_install:
+    install:
+    before_script: chmod -R u+w spec/ruby
+    # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
+    script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
+
+  - &x86_64-darwin17
+    name: x86_64-darwin17
+    <<: *osx
+    env:
+      - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
+      - "JOBS=" # osx build randomly fails with `-j`
+      # `-v` prints too long outputs, but sometimes it osx build hangs and we can't know which test is bad without `-v`.
+      - "TEST_ALL_TESTOPTS='-v --color=never --job-status=normal --excludes=$(TESTSDIR)/excludes/_travis'"
+
+  - &universal-darwin17
+    name: uinversal.x86_64h-darwin17
+    <<: *osx
+    <<: *cron-only
+    <<: *make-test-only
+    env:
+      - "CONFIG_FLAG='--with-arch=x86_64h,x86_64,i386'"
+      - "JOBS=\"-j`sysctl -n hw.activecpu`\""
+
 matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
-    - name: x86_64-darwin17
-      os: osx
-      compiler: clang
-      env:
-        - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-        - "JOBS=" # osx build randomly fails with `-j`
-        # `-v` prints too long outputs, but sometimes it osx build hangs and we can't know which test is bad without `-v`.
-        - "TEST_ALL_TESTOPTS='-v --color=never --job-status=normal --excludes=$(TESTSDIR)/excludes/_travis'"
-      before_install:
-        # Bare "brew update" nukes everything.
-        # These steps are very carefully chosen to avoid breaking things.
-        - brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
-        - git -C $brew_core_dir fetch -q origin
-        - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
-        - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
-        - /usr/local/opt/openssl@1.1/bin/openssl version
-    - name: x86_64-linux --with-jemalloc
-      os: linux
-      compiler: gcc
-      env:
-        - "CONFIG_FLAG='--with-gmp --with-jemalloc --with-valgrind'"
-        - "JOBS=-j`nproc`"
-    - name: x86_64-linux
-      os: linux
-      compiler: gcc-8
-      env:
-        - "JOBS=-j`nproc`"
-    # - name: uinversal.i386-darwin17
-    #   os: osx
-    #   compiler: clang
-    #   env:
-    #     - "CONFIG_FLAG='--with-arch=i386'"
-    #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
-    # - name: uinversal.x86_64h-darwin17
-    #   os: osx
-    #   compiler: clang
-    #   env:
-    #     - "CONFIG_FLAG='--with-arch=x86_64h'"
-    #     - "JOBS=\"-j`sysctl -n hw.activecpu`\""
-    - name: i686-linux
-      os: linux
-      sudo: required
-      compiler: "'gcc-8 -m32'"
-      env:
-        - "CONFIG_FLAG='debugflags=-g0'"
-        - "JOBS=-j`nproc`"
-        - "SETARCH='setarch i686 --verbose --3gb'"
-      addons:
-        apt:
-          config:
-            retries: true
-          update: true
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - gcc-8-multilib
-            - libffi-dev:i386
-            - libffi6:i386
-            - libgdbm-dev:i386
-            - libgdbm3:i386
-            - libncurses5-dev:i386
-            - libncurses5:i386
-            - libncursesw5-dev:i386
-            - libreadline6-dev:i386
-            - libreadline6:i386
-            - libssl-dev:i386
-            - libssl1.0.0:i386
-            - linux-libc-dev:i386
-            - zlib1g-dev:i386
-            - zlib1g:i386
-    - name: pedanticism
-      os: linux
-      compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
-      env:
-        - "CONFIG_FLAG="
-        - "JOBS="
-      # construct warnflags (using bashism...)
-      before_install: |
-        warnflags_array=(
-          -Wall
-          -Wextra
-          -Werror=declaration-after-statement
-          -Werror=deprecated-declarations
-          -Werror=division-by-zero
-          -Werror=extra-tokens
-          -Werror=implicit-function-declaration
-          -Werror=implicit-int
-          -Werror=long-long
-          -Werror=pointer-arith
-          -Werror=shorten-64-to-32
-          -Werror=write-strings
-          -Wmissing-noreturn
-          -Wno-constant-logical-operand
-          -Wno-extended-offsetof
-          -Wno-missing-field-initializers
-          -Wno-overlength-strings
-          -Wno-parentheses-equality
-          -Wno-self-assign
-          -Wno-tautological-compare
-          -Wno-unused-local-typedef
-          -Wno-unused-parameter
-          -Wunused-variable
-        )
-        CONFIG_FLAG_ARRAY=(
-          warnflags="${warnflags_array[*]}"
-          LDFLAGS=-Wno-unused-command-line-argument)
-      script:
-        - "$SETARCH make -s test TESTOPTS=--color=never"
-    - os: linux
-      language: ruby
-      rvm: 2.3.8
-      name: Running ruby/spec on 2.3 to ensure version guards are correctly added
-      addons:
-        apt:
-          packages:
-      before_install:
-      install:
-      before_script: chmod -R u+w spec/ruby
-      # -j randomly hangs. Using -fs to make sure we can know problematic spec on failure.
-      script: ruby -C spec/ruby ../mspec/bin/mspec -fs .
+    - <<: *x86_64-darwin17
+    - <<: *universal-darwin17
+    - <<: *x86_64-linux
+    - <<: *i686-linux
+    - <<: *jemalloc
+    - <<: *pedanticism
+    - <<: *ASAN
+    - <<: *MSAN
+    - <<: *UBSAN
+    - <<: *VM_CHECK_MODE
+    - <<: *TOKEN_THREADED_CODE
+    - <<: *CALL_THREADED_CODE
+    - <<: *NO_THREADED_CODE
+    - <<: *rubyspec
+  allow_failures:
+    - name: uinversal.x86_64h-darwin17
+    - name: -fsanitize=address
+    - name: -fsanitize=memory
+  fast_finish: true
 
 before_script:
-  - "echo JOBS=$JOBS SETARCH=${SETARCH=}"
+  - "echo JOBS=${JOBS=-j`nproc`} SETARCH=${SETARCH=}"
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
