@@ -68,6 +68,10 @@ extern "C" {
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
 
+#ifndef NO_SANITIZE
+#define NO_SANITIZE(x, y)
+#endif
+
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 # include <valgrind/memcheck.h>
 # ifndef VALGRIND_MAKE_MEM_DEFINED
