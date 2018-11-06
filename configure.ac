@@ -252,6 +252,15 @@ AC_SUBST(OUTFLAG)
 AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
+: ${MJIT_CC=$CC}
+AS_IF([test "x$cross_compiling" = xno], [
+    AC_PATH_PROG([MJIT_CC], ${MJIT_CC-$CC})
+    AS_CASE([$build_os:$host_os],
+	[*mingw*:*cygwin*], [MJIT_CC=`cygpath -ma $MJIT_CC`])
+    shift 2
+    MJIT_CC="$MJIT_CC${1+ }$*"
+])
+
 AS_CASE(["$build_os"],
   [darwin1*.*], [
     # Xcode linker warns for deprecated architecture and wrongly
@@ -260,7 +269,6 @@ AS_CASE(["$build_os"],
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
 	   grep '^ld: warning: text-based stub file' >/dev/null], [
-	: ${MJIT_CC="$CC"}
 	CC_WRAPPER=`cd -P "$srcdir/tool" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
@@ -2538,7 +2546,7 @@ AC_SUBST(DLDFLAGS)dnl
 AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(MJIT_HEADER_FLAGS)dnl
 AC_SUBST(MJIT_HEADER_INSTALL_DIR)dnl
-AC_SUBST(MJIT_CC, [${MJIT_CC-'$(CC)'}])dnl
+AC_SUBST(MJIT_CC)dnl
 AC_SUBST(MJIT_CFLAGS, [${MJIT_CFLAGS-"-w ${orig_cflags}"}])dnl
 AC_SUBST(MJIT_OPTFLAGS, [${MJIT_OPTFLAGS-'$(optflags)'}])dnl
 AC_SUBST(MJIT_DEBUGFLAGS, [${MJIT_DEBUGFLAGS-'$(debugflags)'}])dnl

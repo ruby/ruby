@@ -598,11 +598,6 @@ mjit_config.h:
 	        esac; \
 	    done; \
 	}; \
-	mjit_cc="$(MJIT_CC)"; \
-	if [ "$(CROSS_COMPILING)" = no ]; then \
-	    mjit_cc="`command -v $$mjit_cc`"; \
-	    case $(arch) in *-mingw*) mjit_cc="`cygpath -m $$mjit_cc`";; esac; \
-	fi; \
 	test "$(Q)" = @ || set -x; \
 	archs="$(UNIVERSAL_ARCHNAMES)"; \
 	arch_flag=""; \
@@ -615,7 +610,7 @@ mjit_config.h:
 	quote MJIT_BUILD_DIR "`$(CHDIR) . && pwd`"; \
 	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
-	quote "MJIT_CC_COMMON  " "$${mjit_cc}"; \
+	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
 	quote "MJIT_CFLAGS     $${need_mjit_archflag:+ MJIT_ARCHFLAG}" $(MJIT_CFLAGS); \
 	quote "MJIT_OPTFLAGS   " $(MJIT_OPTFLAGS); \
 	quote "MJIT_DEBUGFLAGS " $(MJIT_DEBUGFLAGS); \
