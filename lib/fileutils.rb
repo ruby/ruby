@@ -1274,8 +1274,7 @@ module FileUtils
     def entries
       opts = {}
       opts[:encoding] = ::Encoding::UTF_8 if fu_windows?
-      Dir.entries(path(), opts)\
-          .reject {|n| n == '.' or n == '..' }\
+      Dir.children(path, opts)\
           .map {|n| Entry_.new(prefix(), join(rel(), n.untaint)) }
     end
 
