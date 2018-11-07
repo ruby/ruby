@@ -692,7 +692,7 @@ gem 'other', version
 
     @installer.generate_bin
 
-    default_shebang = Gem.ruby
+    default_shebang = Gem.ruby.shellescape
     shebang_line = open("#{@gemhome}/bin/executable") { |f| f.readlines.first }
     assert_match(/\A#!/, shebang_line)
     assert_match(/#{default_shebang}/, shebang_line)

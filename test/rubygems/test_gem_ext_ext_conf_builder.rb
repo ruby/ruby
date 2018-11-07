@@ -35,7 +35,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     end
 
     assert_match(/^current directory:/, output[0])
-    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[1])
+    assert_match(/^#{Regexp.quote(Gem.ruby.shellescape)}.* extconf.rb/, output[1])
     assert_equal "creating Makefile\n", output[2]
     assert_match(/^current directory:/, output[3])
     assert_contains_make_command 'clean', output[4]
@@ -109,7 +109,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     assert_equal 'extconf failed, exit code 1', error.message
 
-    assert_match(/^#{Gem.ruby}.* extconf.rb/, output[1])
+    assert_match(/^#{Regexp.quote(Gem.ruby.shellescape)}.* extconf.rb/, output[1])
     assert_match(File.join(@dest_path, 'mkmf.log'), output[4])
     assert_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
