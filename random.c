@@ -112,6 +112,9 @@ struct MT {
 #define genrand_initialized(mt) ((mt)->next != 0)
 #define uninit_genrand(mt) ((mt)->next = 0)
 
+NO_SANITIZE("unsigned-integer-overflow", static void init_genrand(struct MT *mt, unsigned int s));
+NO_SANITIZE("unsigned-integer-overflow", static void init_by_array(struct MT *mt, const uint32_t init_key[], int key_length));
+
 /* initializes state[N] with a seed */
 static void
 init_genrand(struct MT *mt, unsigned int s)
