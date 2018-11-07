@@ -2037,7 +2037,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
 /*
  *  call-seq:
  *
- *     mtch.values_at([index]*)   -> array
+ *     mtch.values_at(index, ...)   -> array
  *
  *  Uses each <i>index</i> to access the matching values, returning an array of
  *  the corresponding matches.
