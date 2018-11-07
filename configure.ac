@@ -3883,6 +3883,7 @@ AS_IF([test x"$CC_WRAPPER" != x], [
     CC_WRAPPER='$(rubyarchdir)/darwin-cc'
     XCC_WRAPPER='$(top_srcdir)/tool/darwin-cc'
 ])
+AC_SUBST(CC_WRAPPER, '')
 AC_SUBST(XCC_WRAPPER)
 
 AS_CASE([" $CPP "], [*" $CC "*], [CPP=`echo " $CPP " | sed "s| $CC |"' $(CC) |;s/^ *//;s/  *$//'`])

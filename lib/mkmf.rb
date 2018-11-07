@@ -1971,6 +1971,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     headers << '$(RUBY_EXTCONF_H)' if $extconf_h
     mk << %{
 
+CC_WRAPPER = #{CONFIG['CC_WRAPPER']}
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
@@ -2518,6 +2519,9 @@ site-install-rb: install-rb
         RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val
       end
       $warnflags = config['warnflags'] unless $extmk
+    end
+    if (w = rbconfig['CC_WRAPPER']) and !w.empty? and !File.executable?(w)
+      rbconfig['CC_WRAPPER'] = config['CC_WRAPPER'] = ''
     end
     $CFLAGS = with_config("cflags", arg_config("CFLAGS", config["CFLAGS"])).dup
     $CXXFLAGS = (with_config("cxxflags", arg_config("CXXFLAGS", config["CXXFLAGS"]))||'').dup
