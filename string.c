@@ -490,7 +490,7 @@ search_nonascii(const char *p, const char *e)
 	    }
 	}
 #endif
-#ifdef HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED
+#if defined(HAVE_BUILTIN___BUILTIN_ASSUME_ALIGNED) &&! UNALIGNED_WORD_ACCESS
 #define aligned_ptr(value) \
         __builtin_assume_aligned((value), sizeof(uintptr_t))
 #else
