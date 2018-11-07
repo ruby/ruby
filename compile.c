@@ -6829,9 +6829,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    LABEL *lend = NEW_LABEL(line);
 	    int ic_index = body->is_size++;
 
-	    ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
+            ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
 	    ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_vid));
-	    ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
+            ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
 	    ADD_LABEL(ret, lend);
 	}
 	else {
@@ -7187,7 +7187,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    CHECK(compile_const_prefix(iseq, node, pref, body));
 	    if (LIST_INSN_SIZE_ZERO(pref)) {
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-		    ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
+                    ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
 		}
 		else {
 		    ADD_INSN(ret, line, putnil);
@@ -7196,7 +7196,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 		ADD_SEQ(ret, body);
 
 		if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-		    ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
+                    ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
 		    ADD_LABEL(ret, lend);
 		}
 	    }
@@ -7224,7 +7224,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	/* add cache insn */
 	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	    ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
+            ADD_INSN2(ret, line, opt_getinlinecache, lend, INT2FIX(ic_index));
 	    ADD_INSN(ret, line, pop);
 	}
 
@@ -7232,7 +7232,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	ADD_INSN1(ret, line, getconstant, ID2SYM(node->nd_mid));
 
 	if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
-	    ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
+            ADD_INSN1(ret, line, opt_setinlinecache, INT2FIX(ic_index));
 	    ADD_LABEL(ret, lend);
 	}
 
