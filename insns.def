@@ -380,7 +380,7 @@ concatstrings
 (rb_num_t num)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = 1 - num;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = rb_str_concat_literals(num, STACK_ADDR_FROM_TOP(num));
 }
@@ -416,7 +416,7 @@ toregexp
 /* This instruction has StringValue(), which is a method call.  But it
  * seems that path is never covered. */
 // attr bool leaf = true; /* yes it is */
-// attr rb_snum_t sp_inc = 1 - cnt;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)cnt;
 {
     const VALUE ary = rb_ary_tmp_new_from_values(0, cnt, STACK_ADDR_FROM_TOP(cnt));
     val = rb_reg_new_ary(ary, (int)opt);
@@ -439,7 +439,7 @@ newarray
 (rb_num_t num)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = 1 - num;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = rb_ary_new4(num, STACK_ADDR_FROM_TOP(num));
 }
@@ -503,7 +503,7 @@ newhash
 (...)
 (VALUE val)
 // attr bool leaf = false; /* has rb_hash_key_str() */
-// attr rb_snum_t sp_inc = 1 - num;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, num);
 
@@ -804,7 +804,7 @@ opt_newarray_max
  * necessary.  No way to detect such method calls beforehand.  We
  * cannot but mark it being not leaf. */
 // attr bool leaf = false; /* has rb_funcall() */
-// attr rb_snum_t sp_inc = 1 - num;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = vm_opt_newarray_max(num, STACK_ADDR_FROM_TOP(num));
 }
@@ -816,7 +816,7 @@ opt_newarray_min
 (VALUE val)
 /* Same discussion as opt_newarray_max. */
 // attr bool leaf = false; /* has rb_funcall() */
-// attr rb_snum_t sp_inc = 1 - num;
+// attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 {
     val = vm_opt_newarray_min(num, STACK_ADDR_FROM_TOP(num));
 }
