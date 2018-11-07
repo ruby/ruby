@@ -271,6 +271,7 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
   when /darwin/
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
+    MANDATORY_ENVS.concat(['MJIT_SEARCH_BUILD_DIR', 'DYLD_INSERT_LIBRARIES']) # set on tool/runruby.rb (ruby-runner.c)
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
