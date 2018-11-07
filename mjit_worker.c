@@ -521,11 +521,10 @@ COMPILER_WARNING_PUSH
 #ifdef __GNUC__
 COMPILER_WARNING_IGNORED(-Wdeprecated-declarations)
 #endif
-/* Start an OS process of executable PATH with arguments ARGV.  Return
-   PID of the process.
-   TODO: Use the same function in process.c */
+/* Start an OS process of absolute executable path with arguments ARGV.
+   Return PID of the process. */
 static pid_t
-start_process(const char *path, char *const *argv)
+start_process(const char *abspath, char *const *argv)
 {
     pid_t pid;
     /*
@@ -533,18 +532,12 @@ start_process(const char *path, char *const *argv)
      * and execv for safety
      */
     int dev_null = rb_cloexec_open(ruby_null_device, O_WRONLY, 0);
-    char fbuf[MAXPATHLEN];
-    const char *abspath = dln_find_exe_r(path, 0, fbuf, sizeof(fbuf));
-    if (!abspath) {
-        verbose(1, "MJIT: failed to find `%s' in PATH", path);
-        return -1;
-    }
 
     if (mjit_opts.verbose >= 2) {
         int i;
         const char *arg;
 
-        fprintf(stderr, "Starting process: %s", path);
+        fprintf(stderr, "Starting process: %s", abspath);
         for (i = 0; (arg = argv[i]) != NULL; i++)
             fprintf(stderr, " %s", arg);
         fprintf(stderr, "\n");
@@ -567,7 +560,7 @@ start_process(const char *path, char *const *argv)
         }
     }
 #else
-    if ((pid = vfork()) == 0) {
+    if ((pid = vfork()) == 0) { /* TODO: reuse some function in process.c */
         umask(0077);
         if (mjit_opts.verbose == 0) {
             /* CC can be started in a thread using a file which has been
