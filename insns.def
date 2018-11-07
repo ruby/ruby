@@ -469,7 +469,7 @@ expandarray
 (..., VALUE ary)
 (...)
 // attr bool leaf = false; /* has rb_check_array_type() */
-// attr rb_snum_t sp_inc = num - 1 + (flag & 1 ? 1 : 0);
+// attr rb_snum_t sp_inc = (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
 {
     vm_expandarray(GET_SP(), ary, num, (int)flag);
 }
