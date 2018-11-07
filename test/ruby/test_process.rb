@@ -263,7 +263,7 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB]
+  MANDATORY_ENVS = %w[RUBYLIB MJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
@@ -271,9 +271,11 @@ class TestProcess < Test::Unit::TestCase
     MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
   when /darwin/
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
-    MANDATORY_ENVS.concat(['MJIT_SEARCH_BUILD_DIR', 'DYLD_INSERT_LIBRARIES']) # set on tool/runruby.rb (ruby-runner.c)
   end
   if e = RbConfig::CONFIG['LIBPATHENV']
+    MANDATORY_ENVS << e
+  end
+  if e = RbConfig::CONFIG['PRELOADENV'] and !e.empty?
     MANDATORY_ENVS << e
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
