@@ -4164,11 +4164,9 @@ ruby_stack_check(void)
     return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
-ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS
-(
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register long n));
 static void
 mark_locations_array(rb_objspace_t *objspace, register const VALUE *x, register long n)
-)
 {
     VALUE v;
     while (n--) {

@@ -68,6 +68,16 @@ extern "C" {
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
 
+#if defined(NO_SANITIZE) && defined(__GNUC__) &&! defined(__clang__)
+/* GCC warns about unknown sanitizer, which is annoying. */
+#undef NO_SANITIZE
+#define NO_SANITIZE(x, y) \
+    COMPILER_WARNING_PUSH; \
+    COMPILER_WARNING_IGNORED(-Wattributes); \
+    __attribute__((__no_sanitize__(x))) y; \
+    COMPILER_WARNING_POP
+#endif
+
 #ifndef NO_SANITIZE
 # define NO_SANITIZE(x, y) y
 #endif
