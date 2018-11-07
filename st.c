@@ -1766,6 +1766,10 @@ st_values_check(st_table *tab, st_data_t *values, st_index_t size,
 #define C1 BIG_CONSTANT(0x87c37b91,0x114253d5);
 #define C2 BIG_CONSTANT(0x4cf5ad43,0x2745937f);
 #endif
+NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_step(st_index_t h, st_index_t k));
+NO_SANITIZE("unsigned-integer-overflow", static inline st_index_t murmur_finish(st_index_t h));
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash(const void *ptr, size_t len, st_index_t h));
+
 static inline st_index_t
 murmur_step(st_index_t h, st_index_t k)
 {
@@ -2052,7 +2056,7 @@ st_locale_insensitive_strncasecmp(const char *s1, const char *s2, size_t n)
     return 0;
 }
 
-PUREFUNC(static st_index_t strcasehash(st_data_t));
+NO_SANITIZE("unsigned-integer-overflow", PUREFUNC(static st_index_t strcasehash(st_data_t)));
 static st_index_t
 strcasehash(st_data_t arg)
 {
