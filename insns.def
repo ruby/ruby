@@ -985,7 +985,7 @@ branchnil
 
 /* push inline-cached value and go to dst if it is valid */
 DEFINE_INSN
-getinlinecache
+opt_getinlinecache
 (OFFSET dst, IC ic)
 ()
 (VALUE val)
@@ -1001,7 +1001,7 @@ getinlinecache
 
 /* set inline cache */
 DEFINE_INSN
-setinlinecache
+opt_setinlinecache
 (IC ic)
 (VALUE val)
 (VALUE val)
