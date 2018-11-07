@@ -156,7 +156,7 @@ addons:
     <<: *make-test-only
     compiler: clang
     env:
-      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'"
+      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=undefined,integer,nullability -fno-omit-frame-pointer -DUNALIGNED_WORD_ACCESS=0'"
       - "LD=clang"
       - "LDFLAGS=-fsanitize=undefined,integer,nullability"
 
