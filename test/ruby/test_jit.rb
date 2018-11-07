@@ -444,7 +444,7 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_compile_insn_inlinecache
-    assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[getinlinecache setinlinecache])
+    assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getinlinecache opt_setinlinecache])
   end
 
   def test_compile_insn_once
