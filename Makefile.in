@@ -445,6 +445,7 @@ clean-local::
 	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
 	$(Q)$(RM) $(MJIT_HEADER_INSTALL_DIR)/rb_mjit_min_header-*.h
 	$(Q)$(RM) $(TIMESTAMPDIR)/$(MJIT_HEADER:.h=)$(MJIT_HEADER_SUFFIX).time mjit_config.h
+	$(Q)$(RM) mjit_build_dir.*
 	-$(Q) $(RMDIRS) $(MJIT_HEADER_INSTALL_DIR) 2> $(NULL) || exit 0
 
 # DTrace static library hacks described here:
@@ -607,7 +608,6 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
 	sep=; \
-	quote MJIT_BUILD_DIR "`$(CHDIR) . && pwd`"; \
 	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
@@ -617,6 +617,7 @@ mjit_config.h:
 	quote "MJIT_LDSHARED   " $(MJIT_LDSHARED); \
 	quote "MJIT_DLDFLAGS   $${need_mjit_archflag:+ MJIT_ARCHFLAG}" $(MJIT_DLDFLAGS); \
 	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
+	quote 'PRELOADENV       "@PRELOADENV@"'; \
 	$${archs:+echo} $${archs:+'#if 0'}; \
 	for arch in $$archs; do \
 	    echo "#elif defined __$${arch%=*}__"; \
@@ -630,3 +631,12 @@ mjit_config.h:
 	echo; \
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
+
+yes-test-all: mjit_build_dir.$(SOEXT)
+mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER)
+	$(ECHO) making $@
+	$(Q) { \
+	echo 'const char MJIT_BUILD_DIR[] = "'"`$(CHDIR) . && pwd`"'";'; \
+	} > $(@:.$(SOEXT)=.c)
+	$(Q) cat $(@:.$(SOEXT)=.c)
+	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) $(@:.$(SOEXT)=.c) $(OUTFLAG)$@

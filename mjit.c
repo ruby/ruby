@@ -388,7 +388,7 @@ init_header_filename(void)
     const size_t libpathflag_len = sizeof(libpathflag) - 1;
 #endif
 #ifndef LOAD_RELATIVE
-    static const char build_dir[] = MJIT_BUILD_DIR;
+    const char *build_dir = 0;
     struct stat st;
 #endif
 
@@ -401,7 +401,12 @@ init_header_filename(void)
         /* This path is not intended to be used on production, but using build directory's
            header file here because people want to run `make test-all` without running
            `make install`. Don't use $MJIT_SEARCH_BUILD_DIR except for test-all. */
-        if (build_dir[0] != '/') {
+
+        build_dir = dlsym(RTLD_DEFAULT, "MJIT_BUILD_DIR");
+        if (!build_dir) {
+            verbose(1, "No mjit_build_directory");
+        }
+        else if (build_dir[0] != '/') {
             verbose(1, "Non-absolute path MJIT_BUILD_DIR: %s", build_dir);
         }
         else if (stat(build_dir, &st) || !S_ISDIR(st.st_mode)) {
@@ -412,8 +417,14 @@ init_header_filename(void)
             return FALSE;
         }
         else {
+            /* Do not pass PRELOADENV to child processes, on
+             * multi-arch environment */
+            verbose(3, "PRELOADENV("PRELOADENV")=%s", getenv(PRELOADENV));
+            /* assume no other PRELOADENV in test-all */
+            unsetenv(PRELOADENV);
+            verbose(3, "MJIT_BUILD_DIR: %s", build_dir);
             basedir = build_dir;
-            baselen = sizeof(build_dir) - 1;
+            baselen = strlen(build_dir);
         }
     }
 #endif
