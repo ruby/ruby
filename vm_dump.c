@@ -1095,7 +1095,7 @@ rb_vmdebug_stack_dump_all_threads(void)
 	ruby_fill_thread_id_string(th->thread_id, buf);
 	fprintf(stderr, "th: %p, native_id: %s\n", th, buf);
 #else
-	fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
+        fprintf(stderr, "th: %p, native_id: %p\n", (void *)th, (void *)(uintptr_t)th->thread_id);
 #endif
 	rb_vmdebug_stack_dump_raw(th->ec, th->ec->cfp);
     }
