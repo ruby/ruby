@@ -92,6 +92,7 @@ def sync_default_gems(gem)
     `cp ../../bundler/bundler/bundler.gemspec ./lib`
     `cp -r ../../bundler/bundler/spec spec/bundler`
     `cp -r ../../bundler/bundler/man/*.{1,5,1\.txt,5\.txt,ronn} ./man`
+    `rm -rf spec/bundler/support/artifice/vcr_cassettes`
   when "rdoc"
     `rm -rf lib/rdoc* test/rdoc`
     `cp -rf ../rdoc/lib/rdoc* ./lib`
