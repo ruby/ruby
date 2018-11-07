@@ -238,6 +238,10 @@ MACHINE = x86
 # RFLAGS = -r
 # EXTLIBS =
 CC = cl -nologo
+<<
+	@for %I in (cl.exe) do @echo MJIT_CC = %~$$PATH:I>>$(MAKEFILE)
+	@type << >>$(MAKEFILE)
+MJIT_CC = "$$(MJIT_CC:\=/)" -nologo
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
