@@ -2336,13 +2336,13 @@ negate_num(VALUE num)
 }
 
 static int
-read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
+read_num(const char **s, const char *const end, VALUE *num, VALUE *nexp)
 {
     VALUE fp = ONE, exp, fn = ZERO, n = ZERO;
     int expsign = 0, ok = 0;
     char *e;
 
-    *div = ONE;
+    *nexp = ZERO;
     *num = ZERO;
     if (*s < end && **s != '.') {
 	n = rb_int_parse_cstr(*s, end-*s, &e, NULL,
@@ -2364,10 +2364,9 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 	    return 1;
 	*s = e;
 	{
-	    VALUE l = f_expt10(SIZET2NUM(count));
+            VALUE l = f_expt10(*nexp = SIZET2NUM(count));
 	    n = n == ZERO ? fp : rb_int_plus(rb_int_mul(*num, l), fp);
 	    *num = n;
-	    *div = l;
 	    fn = SIZET2NUM(count);
 	}
 	ok = 1;
@@ -2384,18 +2383,12 @@ read_num(const char **s, const char *const end, VALUE *num, VALUE *div)
 	if (exp != ZERO) {
 	    if (expsign == '-') {
 		if (fn != ZERO) exp = rb_int_plus(exp, fn);
-		*div = f_expt10(exp);
 	    }
 	    else {
 		if (fn != ZERO) exp = rb_int_minus(exp, fn);
-		if (INT_NEGATIVE_P(exp)) {
-		    *div = f_expt10(negate_num(exp));
-		}
-		else {
-		    if (exp != ZERO) *num = rb_int_mul(n, f_expt10(exp));
-		    *div = ONE;
-		}
+                exp = negate_num(exp);
 	    }
+            *nexp = exp;
 	}
     }
 
@@ -2414,22 +2407,21 @@ static VALUE
 parse_rat(const char *s, const char *const e, int strict, int raise)
 {
     int sign;
-    VALUE num, den, ndiv, ddiv;
+    VALUE num, den, nexp, dexp;
 
     s = skip_ws(s, e);
     sign = read_sign(&s, e);
 
-    if (!read_num(&s, e, &num, &ndiv)) {
+    if (!read_num(&s, e, &num, &nexp)) {
 	if (strict) return Qnil;
 	return canonicalization ? ZERO : nurat_s_alloc(rb_cRational);
     }
-    nurat_reduce(&num, &ndiv);
-    den = ndiv;
+    den = ONE;
     if (s < e && *s == '/') {
 	s++;
-	if (!read_num(&s, e, &den, &ddiv)) {
+        if (!read_num(&s, e, &den, &dexp)) {
 	    if (strict) return Qnil;
-	    den = ndiv;
+            den = ONE;
 	}
 	else if (den == ZERO) {
             if (!raise) return Qnil;
@@ -2439,15 +2431,36 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	    return Qnil;
 	}
 	else {
-	    nurat_reduce(&den, &ddiv);
+            nexp = rb_int_minus(nexp, dexp);
 	    nurat_reduce(&num, &den);
-	    nurat_reduce(&ndiv, &ddiv);
-	    if (ndiv != ONE) den = rb_int_mul(den, ndiv);
-	    if (ddiv != ONE) num = rb_int_mul(num, ddiv);
 	}
     }
     else if (strict && skip_ws(s, e) != e) {
 	return Qnil;
+    }
+
+    if (nexp != ZERO) {
+        if (INT_NEGATIVE_P(nexp)) {
+            VALUE mul;
+            if (!FIXNUM_P(nexp)) {
+              overflow:
+                return sign == '-' ? DBL2NUM(-HUGE_VAL) : DBL2NUM(HUGE_VAL);
+            }
+            mul = f_expt10(LONG2NUM(-FIX2LONG(nexp)));
+            if (RB_FLOAT_TYPE_P(mul)) goto overflow;
+            num = rb_int_mul(num, mul);
+        }
+        else {
+            VALUE div;
+            if (!FIXNUM_P(nexp)) {
+              underflow:
+                return sign == '-' ? DBL2NUM(-0.0) : DBL2NUM(+0.0);
+            }
+            div = f_expt10(nexp);
+            if (RB_FLOAT_TYPE_P(div)) goto underflow;
+            den = rb_int_mul(den, div);
+        }
+        nurat_reduce(&num, &den);
     }
 
     if (sign == '-') {
@@ -2458,6 +2471,8 @@ parse_rat(const char *s, const char *const e, int strict, int raise)
 	num = rb_rational_raw(num, den);
     return num;
 }
+
+#define FLOAT_ZERO_P(x) (rb_float_value(x) == 0.0)
 
 static VALUE
 string_to_r_strict(VALUE self, int raise)
@@ -2473,7 +2488,7 @@ string_to_r_strict(VALUE self, int raise)
                  self);
     }
 
-    if (RB_FLOAT_TYPE_P(num)) {
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num)) {
         if (!raise) return Qnil;
         rb_raise(rb_eFloatDomainError, "Infinity");
     }
@@ -2517,7 +2532,7 @@ string_to_r(VALUE self)
 
     num = parse_rat(RSTRING_PTR(self), RSTRING_END(self), 0, TRUE);
 
-    if (RB_FLOAT_TYPE_P(num))
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
@@ -2529,7 +2544,7 @@ rb_cstr_to_rat(const char *s, int strict) /* for complex's internal */
 
     num = parse_rat(s, s + strlen(s), strict, TRUE);
 
-    if (RB_FLOAT_TYPE_P(num))
+    if (RB_FLOAT_TYPE_P(num) && !FLOAT_ZERO_P(num))
 	rb_raise(rb_eFloatDomainError, "Infinity");
     return num;
 }
