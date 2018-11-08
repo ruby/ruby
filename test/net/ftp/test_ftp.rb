@@ -2171,7 +2171,7 @@ EOF
           begin
             ftp = Net::FTP.new
             ftp.resume = resume
-            ftp.read_timeout = RubyVM::MJIT.enabled? ? 1 : 0.2 # use large timeout for --jit-wait
+            ftp.read_timeout = RubyVM::MJIT.enabled? ? 5 : 0.2 # use large timeout for --jit-wait
             ftp.connect(SERVER_ADDR, server.port)
             ftp.login
             assert_match(/\AUSER /, commands.shift)
