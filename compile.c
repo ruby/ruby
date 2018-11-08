@@ -370,7 +370,7 @@ NORETURN(static void append_compile_error(rb_iseq_t *iseq, int line, const char 
 #endif
 
 static void
-append_compile_error(rb_iseq_t *iseq, int line, const char *fmt, ...)
+append_compile_error(const rb_iseq_t *iseq, int line, const char *fmt, ...)
 {
     VALUE err_info = ISEQ_COMPILE_DATA(iseq)->err_info;
     VALUE file = rb_iseq_path(iseq);
@@ -566,6 +566,8 @@ APPEND_ELEM(ISEQ_ARG_DECLARE LINK_ANCHOR *const anchor, LINK_ELEMENT *before, LI
 #define ADD_ELEM(anchor, elem) ADD_ELEM(iseq, (anchor), (elem))
 #define APPEND_ELEM(anchor, before, elem) APPEND_ELEM(iseq, (anchor), (before), (elem))
 #endif
+
+#define ISEQ_LAST_LINE(iseq) (ISEQ_COMPILE_DATA(iseq)->last_line)
 
 static int
 iseq_add_mark_object_compile_time(const rb_iseq_t *iseq, VALUE v)
@@ -1393,7 +1395,8 @@ get_local_var_idx(const rb_iseq_t *iseq, ID id)
     int idx = get_dyna_var_idx_at_raw(iseq->body->local_iseq, id);
 
     if (idx < 0) {
-	rb_bug("get_local_var_idx: %d", idx);
+        COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq),
+                      "get_local_var_idx: %d", idx);
     }
 
     return idx;
@@ -1414,7 +1417,8 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     }
 
     if (idx < 0) {
-	rb_bug("get_dyna_var_idx: -1");
+        COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq),
+                      "get_dyna_var_idx: -1");
     }
 
     *level = lv;
@@ -2154,7 +2158,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 			    unsigned int ic_index = FIX2UINT(operands[j]);
 			    IC ic = (IC)&body->is_entries[ic_index];
 			    if (UNLIKELY(ic_index >= body->is_size)) {
-				rb_bug("iseq_set_sequence: ic_index overflow: index: %d, size: %d", ic_index, body->is_size);
+                                BADINSN_DUMP(anchor, &iobj->link, 0);
+                                COMPILE_ERROR(iseq, iobj->insn_info.line_no,
+                                              "iseq_set_sequence: ic_index overflow: index: %d, size: %d",
+                                              ic_index, body->is_size);
 			    }
 			    generated_iseq[code_index + 1 + j] = (VALUE)ic;
 			    break;
