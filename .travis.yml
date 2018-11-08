@@ -232,7 +232,7 @@ addons:
         LDFLAGS=-Wno-unused-command-line-argument)
 
   - &rubyspec
-    name: Running ruby/spec on 2.3 to ensure version guards are correctly added
+    name: ruby/spec on Ruby 2.3 # to ensure version guards are correctly added
     <<: *linux
     language: ruby
     rvm: 2.3.8
