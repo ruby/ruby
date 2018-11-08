@@ -2943,7 +2943,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 	run_final(objspace, zombie);
 
 	RZOMBIE(zombie)->basic.flags = 0;
-	heap_pages_final_slots--;
+	if (LIKELY(heap_pages_final_slots)) heap_pages_final_slots--;
 	page->final_slots--;
 	page->free_slots++;
 	heap_page_add_freeobj(objspace, GET_HEAP_PAGE(zombie), zombie);
