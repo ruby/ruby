@@ -1510,7 +1510,7 @@ iseq_calc_param_size(rb_iseq_t *iseq)
 	    body->param.size = body->param.lead_num + body->param.opt_num;
 	}
 	else {
-	    rb_bug("unreachable");
+            UNREACHABLE;
 	}
     }
     else {
