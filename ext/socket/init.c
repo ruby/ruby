@@ -508,10 +508,29 @@ wait_connectable(int fd)
     int sockerr, revents;
     socklen_t sockerrlen;
 
-    /* only to clear pending error */
     sockerrlen = (socklen_t)sizeof(sockerr);
     if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
         return -1;
+
+    /* necessary for non-blocking sockets (at least ECONNREFUSED) */
+    switch (sockerr) {
+      case 0:
+        break;
+#ifdef EALREADY
+      case EALREADY:
+#endif
+#ifdef EISCONN
+      case EISCONN:
+#endif
+#ifdef ECONNREFUSED
+      case ECONNREFUSED:
+#endif
+#ifdef EHOSTUNREACH
+      case EHOSTUNREACH:
+#endif
+        errno = sockerr;
+        return -1;
+    }
 
     /*
      * Stevens book says, successful finish turn on RB_WAITFD_OUT and
