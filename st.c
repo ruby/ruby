@@ -1973,6 +1973,7 @@ st_hash_uint32(st_index_t h, uint32_t i)
     return murmur_step(h, i);
 }
 
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t st_hash_uint(st_index_t h, st_index_t i));
 st_index_t
 st_hash_uint(st_index_t h, st_index_t i)
 {
