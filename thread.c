@@ -654,23 +654,42 @@ rb_vm_proc_local_ep(VALUE proc)
 }
 
 static void
-thread_do_start(rb_thread_t *th, VALUE args)
+thread_do_start(rb_thread_t *th)
 {
     native_set_thread_name(th);
-    if (!th->first_func) {
+
+    if (th->invoke_type == thread_invoke_type_proc) {
+        VALUE args = th->invoke_arg.proc.args;
+        long args_len = RARRAY_LEN(args);
+        const VALUE *args_ptr;
+        VALUE procval = th->invoke_arg.proc.proc;
 	rb_proc_t *proc;
-	GetProcPtr(th->first_proc, proc);
-	th->ec->errinfo = Qnil;
-	th->ec->root_lep = rb_vm_proc_local_ep(th->first_proc);
+        GetProcPtr(procval, proc);
+
+        th->ec->errinfo = Qnil;
+	th->ec->root_lep = rb_vm_proc_local_ep(procval);
 	th->ec->root_svar = Qfalse;
-	EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
-	th->value = rb_vm_invoke_proc(th->ec, proc,
-				      (int)RARRAY_LEN(args), RARRAY_CONST_PTR(args),
-				      VM_BLOCK_HANDLER_NONE);
-	EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
+
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
+
+        if (args_len < 8) {
+            /* free proc.args if the length is enough small */
+            args_ptr = ALLOCA_N(VALUE, args_len);
+            MEMCPY((VALUE *)args_ptr, RARRAY_CONST_PTR_TRANSIENT(args), VALUE, args_len);
+            th->invoke_arg.proc.args = Qnil;
+        }
+        else {
+            args_ptr = RARRAY_CONST_PTR(args);
+        }
+
+        th->value = rb_vm_invoke_proc(th->ec, proc,
+                                      (int)args_len, args_ptr,
+                                      VM_BLOCK_HANDLER_NONE);
+
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
     else {
-	th->value = (*th->first_func)((void *)args);
+	th->value = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
     }
 }
 
@@ -680,7 +699,6 @@ static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_start)
 {
     enum ruby_tag_type state;
-    VALUE args = th->first_args;
     rb_thread_list_t *join_list;
     rb_thread_t *main_th;
     VALUE errinfo = Qnil;
@@ -703,7 +721,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	EC_PUSH_TAG(th->ec);
 	if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	    SAVE_ROOT_JMPBUF(th, thread_do_start(th, args));
+	    SAVE_ROOT_JMPBUF(th, thread_do_start(th));
 	}
 	else {
 	    errinfo = th->ec->errinfo;
@@ -793,10 +811,16 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
 		 "can't start a new thread (frozen ThreadGroup)");
     }
 
-    /* setup thread environment */
-    th->first_func = fn;
-    th->first_proc = fn ? Qfalse : rb_block_proc();
-    th->first_args = args; /* GC: shouldn't put before above line */
+    if (fn) {
+        th->invoke_type = thread_invoke_type_func;
+        th->invoke_arg.func.func = fn;
+        th->invoke_arg.func.arg = (void *)args;
+    }
+    else {
+        th->invoke_type = thread_invoke_type_proc;
+        th->invoke_arg.proc.proc = rb_block_proc();
+        th->invoke_arg.proc.args = args;
+    }
 
     th->priority = current_th->priority;
     th->thgroup = current_th->thgroup;
@@ -818,7 +842,7 @@ thread_create_core(VALUE thval, VALUE args, VALUE (*fn)(ANYARGS))
     return thval;
 }
 
-#define threadptr_initialized(th) ((th)->first_args != 0)
+#define threadptr_initialized(th) ((th)->invoke_type != thread_invoke_type_none)
 
 /*
  * call-seq:
@@ -874,6 +898,17 @@ thread_start(VALUE klass, VALUE args)
     return thread_create_core(rb_thread_alloc(klass), args, 0);
 }
 
+static VALUE
+threadptr_invoke_proc_location(rb_thread_t *th)
+{
+    if (th->invoke_type == thread_invoke_type_proc) {
+        return rb_proc_location(th->invoke_arg.proc.proc);
+    }
+    else {
+        return Qnil;
+    }
+}
+
 /* :nodoc: */
 static VALUE
 thread_initialize(VALUE thread, VALUE args)
@@ -881,19 +916,21 @@ thread_initialize(VALUE thread, VALUE args)
     rb_thread_t *th = rb_thread_ptr(thread);
 
     if (!rb_block_given_p()) {
-	rb_raise(rb_eThreadError, "must be called with a block");
+        rb_raise(rb_eThreadError, "must be called with a block");
     }
-    else if (th->first_args) {
-	VALUE proc = th->first_proc, loc;
-	if (!proc || !RTEST(loc = rb_proc_location(proc))) {
-	    rb_raise(rb_eThreadError, "already initialized thread");
-	}
-	rb_raise(rb_eThreadError,
-		 "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
-		 RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
+    else if (th->invoke_type != thread_invoke_type_none) {
+        VALUE loc = threadptr_invoke_proc_location(th);
+        if (!NIL_P(loc)) {
+            rb_raise(rb_eThreadError,
+                     "already initialized thread - %"PRIsVALUE":%"PRIsVALUE,
+                     RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
+        }
+        else {
+            rb_raise(rb_eThreadError, "already initialized thread");
+        }
     }
     else {
-	return thread_create_core(thread, args, 0);
+        return thread_create_core(thread, args, NULL);
     }
 }
 
@@ -3081,20 +3118,17 @@ rb_thread_to_s(VALUE thread)
     VALUE cname = rb_class_path(rb_obj_class(thread));
     rb_thread_t *target_th = rb_thread_ptr(thread);
     const char *status;
-    VALUE str;
+    VALUE str, loc;
 
     status = thread_status_name(target_th, TRUE);
     str = rb_sprintf("#<%"PRIsVALUE":%p", cname, (void *)thread);
     if (!NIL_P(target_th->name)) {
-	rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
+        rb_str_catf(str, "@%"PRIsVALUE, target_th->name);
     }
-    if (!target_th->first_func && target_th->first_proc) {
-	VALUE loc = rb_proc_location(target_th->first_proc);
-	if (!NIL_P(loc)) {
-            rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
-                        RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
-            rb_gc_force_recycle(loc);
-	}
+    if ((loc = threadptr_invoke_proc_location(target_th)) != Qnil) {
+        rb_str_catf(str, "@%"PRIsVALUE":%"PRIsVALUE,
+                    RARRAY_AREF(loc, 0), RARRAY_AREF(loc, 1));
+        rb_gc_force_recycle(loc);
     }
     rb_str_catf(str, " %s>", status);
     OBJ_INFECT(str, thread);

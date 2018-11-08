@@ -2435,8 +2435,17 @@ thread_mark(void *ptr)
     rb_fiber_mark_self(th->ec->fiber_ptr);
 
     /* mark ruby objects */
-    RUBY_MARK_UNLESS_NULL(th->first_proc);
-    if (th->first_proc) RUBY_MARK_UNLESS_NULL(th->first_args);
+    switch (th->invoke_type) {
+      case thread_invoke_type_proc:
+        RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.proc);
+        RUBY_MARK_UNLESS_NULL(th->invoke_arg.proc.args);
+        break;
+      case thread_invoke_type_func:
+        rb_gc_mark_maybe((VALUE)th->invoke_arg.func.arg);
+        break;
+      default:
+        break;
+    }
 
     RUBY_MARK_UNLESS_NULL(th->thgroup);
     RUBY_MARK_UNLESS_NULL(th->value);
