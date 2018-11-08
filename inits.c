@@ -19,6 +19,7 @@ rb_call_inits(void)
 #if USE_TRANSIENT_HEAP
     CALL(TransientHeap);
 #endif
+    CALL(vm_postponed_job);
     CALL(Method);
     CALL(RandomSeedCore);
     CALL(sym);

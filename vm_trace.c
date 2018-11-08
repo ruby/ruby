@@ -1470,8 +1470,6 @@ tracepoint_stat_s(VALUE self)
     return stat;
 }
 
-static void Init_postponed_job(void);
-
 /* This function is called from inits.c */
 void
 Init_vm_trace(void)
@@ -1566,10 +1564,6 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
 
     rb_define_singleton_method(rb_cTracePoint, "stat", tracepoint_stat_s, 0);
-
-    /* initialized for postponed job */
-
-    Init_postponed_job();
 }
 
 typedef struct rb_postponed_job_struct {
@@ -1580,8 +1574,8 @@ typedef struct rb_postponed_job_struct {
 #define MAX_POSTPONED_JOB                  1000
 #define MAX_POSTPONED_JOB_SPECIAL_ADDITION   24
 
-static void
-Init_postponed_job(void)
+void
+Init_vm_postponed_job(void)
 {
     rb_vm_t *vm = GET_VM();
     vm->postponed_job_buffer = ALLOC_N(rb_postponed_job_t, MAX_POSTPONED_JOB);
