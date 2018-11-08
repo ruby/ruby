@@ -120,6 +120,9 @@ class Rational_Test < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /\u{221a 2668}/) {
       Rational("\u{221a 2668}")
     }
+    assert_warning('') {
+      assert_predicate(Rational('1e-99999999999999999999'), :zero?)
+    }
 
     assert_raise(TypeError){Rational(Object.new)}
     assert_raise(TypeError){Rational(Object.new, Object.new)}
