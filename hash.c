@@ -522,7 +522,11 @@ hash_array_set(VALUE hash, struct li_table *li)
 } while (0)
 
 #define RHASH_ARRAY_SIZE_INC(h) HASH_ARRAY_SIZE_ADD(h, 1)
-#define RHASH_ARRAY_SIZE_DEC(h) HASH_ARRAY_SIZE_ADD(h, -1)
+#define RHASH_ARRAY_SIZE_DEC(h) do  { \
+    HASH_ASSERT(RHASH_ARRAY_P(h)); \
+    RHASH_ARRAY_SIZE_SET((h), RHASH_ARRAY_SIZE(h) - 1); \
+    hash_verify(h); \
+} while (0)
 
 #define RHASH_CLEAR_BITS(h) do { \
     RBASIC(h)->flags &= ~RHASH_ARRAY_SIZE_MASK; \
