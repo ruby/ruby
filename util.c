@@ -35,12 +35,8 @@ ruby_scan_oct(const char *start, size_t len, size_t *retlen)
 {
     register const char *s = start;
     register unsigned long retval = 0;
-    size_t i;
 
-    for (i = 0; i < len; i++) {
-        if ((s[0] < '0') || ('7' <= s[0])) {
-            break;
-        }
+    while (len-- && *s >= '0' && *s <= '7') {
 	retval <<= 3;
 	retval |= *s++ - '0';
     }
