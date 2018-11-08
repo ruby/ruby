@@ -936,9 +936,22 @@ typedef struct rb_thread_struct {
 
     rb_thread_list_t *join_list;
 
-    VALUE first_proc;
-    VALUE first_args;
-    VALUE (*first_func)(ANYARGS);
+    union {
+        struct {
+            VALUE proc;
+            VALUE args;
+        } proc;
+        struct {
+            VALUE (*func)(ANYARGS);
+            void *arg;
+        } func;
+    } invoke_arg;
+
+    enum {
+        thread_invoke_type_none = 0,
+        thread_invoke_type_proc,
+        thread_invoke_type_func,
+    } invoke_type;
 
     /* statistics data for profiler */
     VALUE stat_insn_usage;

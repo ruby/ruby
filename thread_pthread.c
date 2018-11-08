@@ -1613,36 +1613,36 @@ setup_communication_pipe_internal(int pipes[2])
 # define SET_CURRENT_THREAD_NAME(name) prctl(PR_SET_NAME, name)
 #endif
 
+static VALUE threadptr_invoke_proc_location(rb_thread_t *th);
+
 static void
 native_set_thread_name(rb_thread_t *th)
 {
 #ifdef SET_CURRENT_THREAD_NAME
-    if (!th->first_func && th->first_proc) {
-	VALUE loc;
-	if (!NIL_P(loc = th->name)) {
-	    SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
-	}
-	else if (!NIL_P(loc = rb_proc_location(th->first_proc))) {
-	    char *name, *p;
-	    char buf[16];
-	    size_t len;
-	    int n;
+    VALUE loc;
+    if (!NIL_P(loc = th->name)) {
+        SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
+    }
+    else if ((loc = threadptr_invoke_proc_location(th)) != Qnil) {
+        char *name, *p;
+        char buf[16];
+        size_t len;
+        int n;
 
-            name = RSTRING_PTR(RARRAY_AREF(loc, 0));
-	    p = strrchr(name, '/'); /* show only the basename of the path. */
-	    if (p && p[1])
-		name = p + 1;
+        name = RSTRING_PTR(RARRAY_AREF(loc, 0));
+        p = strrchr(name, '/'); /* show only the basename of the path. */
+        if (p && p[1])
+          name = p + 1;
 
-            n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(RARRAY_AREF(loc, 1)));
-	    rb_gc_force_recycle(loc); /* acts as a GC guard, too */
+        n = snprintf(buf, sizeof(buf), "%s:%d", name, NUM2INT(RARRAY_AREF(loc, 1)));
+        rb_gc_force_recycle(loc); /* acts as a GC guard, too */
 
-	    len = (size_t)n;
-	    if (len >= sizeof(buf)) {
-		buf[sizeof(buf)-2] = '*';
-		buf[sizeof(buf)-1] = '\0';
-	    }
-	    SET_CURRENT_THREAD_NAME(buf);
-	}
+        len = (size_t)n;
+        if (len >= sizeof(buf)) {
+            buf[sizeof(buf)-2] = '*';
+            buf[sizeof(buf)-1] = '\0';
+        }
+        SET_CURRENT_THREAD_NAME(buf);
     }
 #endif
 }
