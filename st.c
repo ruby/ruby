@@ -2184,13 +2184,13 @@ st_rehash_indexed(st_table *tab)
         ind = hash_bin(p->hash, tab);
         for(;;) {
             st_index_t bin = get_bin(bins, size_ind, ind);
-            st_table_entry *q = &tab->entries[bin - ENTRY_BASE];
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
                 set_bin(bins, size_ind, ind, i + ENTRY_BASE);
                 break;
             }
             else {
+                st_table_entry *q = &tab->entries[bin - ENTRY_BASE];
 		DO_PTR_EQUAL_CHECK(tab, q, p->hash, p->key, eq_p, rebuilt_p);
 		if (EXPECT(rebuilt_p, 0))
 		    return TRUE;
