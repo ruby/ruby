@@ -950,7 +950,7 @@ typedef struct rb_thread_struct {
     enum {
         thread_invoke_type_none = 0,
         thread_invoke_type_proc,
-        thread_invoke_type_func,
+        thread_invoke_type_func
     } invoke_type;
 
     /* statistics data for profiler */
