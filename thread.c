@@ -667,7 +667,7 @@ thread_do_start(rb_thread_t *th)
         GetProcPtr(procval, proc);
 
         th->ec->errinfo = Qnil;
-	th->ec->root_lep = rb_vm_proc_local_ep(procval);
+        th->ec->root_lep = rb_vm_proc_local_ep(procval);
 	th->ec->root_svar = Qfalse;
 
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_BEGIN, th->self, 0, 0, 0, Qundef);
@@ -689,7 +689,7 @@ thread_do_start(rb_thread_t *th)
         EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
     else {
-	th->value = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
+        th->value = (*th->invoke_arg.func.func)(th->invoke_arg.func.arg);
     }
 }
 
@@ -721,7 +721,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start, VALUE *register_stack_s
 
 	EC_PUSH_TAG(th->ec);
 	if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-	    SAVE_ROOT_JMPBUF(th, thread_do_start(th));
+            SAVE_ROOT_JMPBUF(th, thread_do_start(th));
 	}
 	else {
 	    errinfo = th->ec->errinfo;
