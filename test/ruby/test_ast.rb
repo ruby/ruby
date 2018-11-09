@@ -3,7 +3,7 @@ require 'test/unit'
 require 'tempfile'
 
 class RubyVM
-  module AST
+  module AbstractSyntaxTree
     class Node
       class CodePosition
         include Comparable
@@ -64,14 +64,14 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      @ast = RubyVM::AST.parse_file(@path)
+      @ast = RubyVM::AbstractSyntaxTree.parse_file(@path)
     end
 
     private
 
     def validate_range0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST::Node)
+      children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       return true if children.empty?
       # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
@@ -99,7 +99,7 @@ class TestAst < Test::Unit::TestCase
 
     def validate_not_cared0(node)
       beg_pos, end_pos = node.beg_pos, node.end_pos
-      children = node.children.grep(RubyVM::AST::Node)
+      children = node.children.grep(RubyVM::AbstractSyntaxTree::Node)
 
       @errors << { type: :first_lineno, node: node } if beg_pos.lineno == 0
       @errors << { type: :first_column, node: node } if beg_pos.column == -1
@@ -131,24 +131,24 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_allocate
-    assert_raise(TypeError) {RubyVM::AST::Node.allocate}
+    assert_raise(TypeError) {RubyVM::AbstractSyntaxTree::Node.allocate}
   end
 
   def test_column_with_long_heredoc_identifier
     term = "A"*257
-    ast = RubyVM::AST.parse("<<-#{term}\n""ddddddd\n#{term}\n")
+    ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
     assert_equal("NODE_STR", node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
-    node = RubyVM::AST.parse("<<-SRC\nddddddd\nSRC\n").children[2]
+    node = RubyVM::AbstractSyntaxTree.parse("<<-SRC\nddddddd\nSRC\n").children[2]
     assert_equal("NODE_STR", node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
-    node = RubyVM::AST.parse("<<SRC\nddddddd\nSRC\n").children[2]
+    node = RubyVM::AbstractSyntaxTree.parse("<<SRC\nddddddd\nSRC\n").children[2]
     assert_equal("NODE_STR", node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
@@ -156,7 +156,7 @@ class TestAst < Test::Unit::TestCase
 
   def test_parse_raises_syntax_error
     assert_raise_with_message(SyntaxError, /keyword_end/) do
-      RubyVM::AST.parse("end")
+      RubyVM::AbstractSyntaxTree.parse("end")
     end
   end
 
@@ -165,7 +165,7 @@ class TestAst < Test::Unit::TestCase
       f.puts "end"
       f.close
       assert_raise_with_message(SyntaxError, /keyword_end/) do
-        RubyVM::AST.parse_file(f.path)
+        RubyVM::AbstractSyntaxTree.parse_file(f.path)
       end
     end
   end
@@ -174,23 +174,23 @@ class TestAst < Test::Unit::TestCase
     proc = Proc.new { 1 + 2 }
     method = self.method(__method__)
 
-    node_proc = RubyVM::AST.of(proc)
-    node_method = RubyVM::AST.of(method)
+    node_proc = RubyVM::AbstractSyntaxTree.of(proc)
+    node_method = RubyVM::AbstractSyntaxTree.of(method)
 
-    assert_instance_of(RubyVM::AST::Node, node_proc)
-    assert_instance_of(RubyVM::AST::Node, node_method)
-    assert_raise(TypeError) { RubyVM::AST.of("1 + 2") }
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_proc)
+    assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_method)
+    assert_raise(TypeError) { RubyVM::AbstractSyntaxTree.of("1 + 2") }
   end
 
   def test_scope_local_variables
-    node = RubyVM::AST.parse("x = 0")
+    node = RubyVM::AbstractSyntaxTree.parse("x = 0")
     lv, _, body = *node.children
     assert_equal([:x], lv)
     assert_equal("NODE_LASGN", body.type)
   end
 
   def test_call
-    node = RubyVM::AST.parse("nil.foo")
+    node = RubyVM::AbstractSyntaxTree.parse("nil.foo")
     _, _, body = *node.children
     assert_equal("NODE_CALL", body.type)
     recv, mid, args = body.children
@@ -200,7 +200,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_fcall
-    node = RubyVM::AST.parse("foo()")
+    node = RubyVM::AbstractSyntaxTree.parse("foo()")
     _, _, body = *node.children
     assert_equal("NODE_FCALL", body.type)
     mid, args = body.children
@@ -209,7 +209,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_vcall
-    node = RubyVM::AST.parse("foo")
+    node = RubyVM::AbstractSyntaxTree.parse("foo")
     _, _, body = *node.children
     assert_equal("NODE_VCALL", body.type)
     mid, args = body.children
@@ -218,7 +218,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_defn
-    node = RubyVM::AST.parse("def a; end")
+    node = RubyVM::AbstractSyntaxTree.parse("def a; end")
     _, _, body = *node.children
     assert_equal("NODE_DEFN", body.type)
     mid, defn = body.children
@@ -227,7 +227,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_defs
-    node = RubyVM::AST.parse("def a.b; end")
+    node = RubyVM::AbstractSyntaxTree.parse("def a.b; end")
     _, _, body = *node.children
     assert_equal("NODE_DEFS", body.type)
     recv, mid, defn = body.children

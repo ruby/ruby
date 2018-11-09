@@ -226,17 +226,17 @@ sufficient information, see the ChangeLog file or Redmine
     * Range#step now returns an instance of Enumerator::ArithmeticSequence
       class rather than one of Enumerator class.
 
-[RubyVM::AST]
+[RubyVM::AbstractSyntaxTree]
 
   [New methods]
 
-    * RubyVM::AST.parse parses a given string and returns AST
+    * RubyVM::AbstractSyntaxTree.parse parses a given string and returns AST
       nodes. [experimental]
 
-    * RubyVM::AST.parse_file parses a given file and returns AST
+    * RubyVM::AbstractSyntaxTree.parse_file parses a given file and returns AST
       nodes.  [experimental]
 
-    * RubyVM::AST.of returns AST nodes of the given proc or method.
+    * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or method.
       [experimental]
 
 [String]
