@@ -299,7 +299,9 @@ static void vm_collect_usage_register(int reg, int isset);
 #endif
 
 static VALUE vm_make_env_object(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
-extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
+extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
+                                  int argc, const VALUE *argv, VALUE block_handler,
+                                  const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
 static VALUE rb_block_param_proxy;
@@ -1031,18 +1033,22 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     return ret;
 }
 
+ALWAYS_INLINE(static inline VALUE
+              invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
+                                       VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
+                                       const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me));
+
 static inline VALUE
 invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
-			 const rb_cref_t *cref, int is_lambda)
+			 const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
     VALUE type = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
     rb_control_frame_t *cfp = ec->cfp;
     VALUE *sp = cfp->sp;
-    const rb_callable_method_entry_t *me = ec->passed_bmethod_me;
-    ec->passed_bmethod_me = NULL;
+
     stack_check(ec);
 
     CHECK_VM_STACK_OVERFLOW(cfp, argc);
@@ -1076,7 +1082,7 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
 	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
 	    return invoke_iseq_block_from_c(ec, captured, captured->self,
 					    argc, argv, passed_block_handler,
-					    cref, is_lambda);
+					    cref, is_lambda, NULL);
 	}
       case block_handler_type_ifunc:
 	return vm_yield_with_cfunc(ec, VM_BH_TO_IFUNC_BLOCK(block_handler),
@@ -1139,17 +1145,24 @@ vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args)
 				  VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
 }
 
+ALWAYS_INLINE(static inline VALUE
+              invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
+                                       VALUE self, int argc, const VALUE *argv,
+                                       VALUE passed_block_handler, int is_lambda,
+                                       const rb_callable_method_entry_t *me));
+
 static inline VALUE
 invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
 			 VALUE self, int argc, const VALUE *argv,
-			 VALUE passed_block_handler, int is_lambda)
+			 VALUE passed_block_handler, int is_lambda,
+                         const rb_callable_method_entry_t *me)
 {
     const struct rb_block *block = &proc->block;
 
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda);
+	return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda, me);
       case block_type_ifunc:
 	return vm_yield_with_cfunc(ec, &block->as.captured, self, argc, argv, passed_block_handler);
       case block_type_symbol:
@@ -1167,14 +1180,14 @@ static VALUE
 vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
 	       int argc, const VALUE *argv, VALUE passed_block_handler)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, passed_block_handler, proc->is_lambda, NULL);
 }
 
 MJIT_FUNC_EXPORTED VALUE
 rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self,
-		  int argc, const VALUE *argv, VALUE block_handler)
+                     int argc, const VALUE *argv, VALUE block_handler, const rb_callable_method_entry_t *me)
 {
-    return invoke_block_from_c_proc(ec, proc, self, argc, argv, block_handler, TRUE);
+    return invoke_block_from_c_proc(ec, proc, self, argc, argv, block_handler, TRUE, me);
 }
 
 MJIT_FUNC_EXPORTED VALUE
@@ -1185,7 +1198,7 @@ rb_vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc,
     vm_block_handler_verify(passed_block_handler);
 
     if (proc->is_from_method) {
-        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, passed_block_handler);
+        return rb_vm_invoke_bmethod(ec, proc, self, argc, argv, passed_block_handler, NULL);
     }
     else {
 	return vm_invoke_proc(ec, proc, self, argc, argv, passed_block_handler);

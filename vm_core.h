@@ -858,7 +858,6 @@ typedef struct rb_execution_context_struct {
     /* temporary places */
     VALUE errinfo;
     VALUE passed_block_handler; /* for rb_iterate */
-    const rb_callable_method_entry_t *passed_bmethod_me; /* for bmethod */
 
     uint8_t raised_flag; /* only 3 bits needed */
 
