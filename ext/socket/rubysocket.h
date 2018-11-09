@@ -408,7 +408,7 @@ NORETURN(void rsock_sys_fail_raddrinfo_or_sockaddr(const char *, VALUE addr, VAL
  * all cases.  For some syscalls (e.g. accept/accept4), blocking on the
  * syscall instead of relying on select/poll allows the kernel to use
  * "wake-one" behavior and avoid the thundering herd problem.
- * This is likely safe on all other *nix-like systems, so this whitelist
+ * This is likely safe on all other *nix-like systems, so this safelist
  * can be expanded by interested parties.
  */
 #if defined(__linux__)
