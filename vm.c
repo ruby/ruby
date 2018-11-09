@@ -1041,7 +1041,7 @@ ALWAYS_INLINE(static inline VALUE
 static inline VALUE
 invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
 			 VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
-			 const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
+                         const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me)
 {
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
     int i, opt_pc;
@@ -1082,7 +1082,7 @@ invoke_block_from_c_bh(rb_execution_context_t *ec, VALUE block_handler,
 	    const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
 	    return invoke_iseq_block_from_c(ec, captured, captured->self,
 					    argc, argv, passed_block_handler,
-					    cref, is_lambda, NULL);
+                                            cref, is_lambda, NULL);
 	}
       case block_handler_type_ifunc:
 	return vm_yield_with_cfunc(ec, VM_BH_TO_IFUNC_BLOCK(block_handler),
@@ -1154,7 +1154,7 @@ ALWAYS_INLINE(static inline VALUE
 static inline VALUE
 invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
 			 VALUE self, int argc, const VALUE *argv,
-			 VALUE passed_block_handler, int is_lambda,
+                         VALUE passed_block_handler, int is_lambda,
                          const rb_callable_method_entry_t *me)
 {
     const struct rb_block *block = &proc->block;
@@ -1162,7 +1162,7 @@ invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
   again:
     switch (vm_block_type(block)) {
       case block_type_iseq:
-	return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda, me);
+        return invoke_iseq_block_from_c(ec, &block->as.captured, self, argc, argv, passed_block_handler, NULL, is_lambda, me);
       case block_type_ifunc:
 	return vm_yield_with_cfunc(ec, &block->as.captured, self, argc, argv, passed_block_handler);
       case block_type_symbol:
