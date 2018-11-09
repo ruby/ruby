@@ -2511,7 +2511,8 @@ block_proc_is_lambda(const VALUE procval)
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
 		    const struct rb_captured_block *captured,
-		    VALUE self, int argc, const VALUE *argv, VALUE block_handler)
+		    VALUE self, int argc, const VALUE *argv, VALUE block_handler,
+                    const rb_callable_method_entry_t *me)
 {
     int is_lambda = FALSE; /* TODO */
     VALUE val, arg, blockarg;
@@ -2530,10 +2531,11 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
-		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME,
+		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME |
+                  (me ? VM_FRAME_FLAG_BMETHOD : 0),
 		  self,
 		  VM_GUARDED_PREV_EP(captured->ep),
-                  Qfalse,
+                  (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
     val = (*ifunc->func)(arg, ifunc->data, argc, argv, blockarg);
     rb_vm_pop_frame(ec);
@@ -2680,7 +2682,7 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     int argc;
     CALLER_SETUP_ARG(ec->cfp, calling, ci);
     argc = calling->argc;
-    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler);
+    val = vm_yield_with_cfunc(ec, captured, captured->self, argc, STACK_ADDR_FROM_TOP(argc), calling->block_handler, NULL);
     POPN(argc); /* TODO: should put before C/yield? */
     return val;
 }
