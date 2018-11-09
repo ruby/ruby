@@ -1981,6 +1981,9 @@ rb_sigwait_sleep(rb_thread_t *th, int sigwait_fd, const rb_hrtime_t *rel)
          * tricky: this needs to return on spurious wakeup (no auto-retry).
          * But we also need to distinguish between periodic quantum
          * wakeups, so we care about the result of consume_communication_pipe
+         *
+         * We want to avoid spurious wakeup for Mutex#sleep compatibility
+         * [ruby-core:88102]
          */
         for (;;) {
             const rb_hrtime_t *sto = sigwait_timeout(th, sigwait_fd, &to, &n);
