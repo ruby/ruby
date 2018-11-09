@@ -4873,7 +4873,7 @@ yycompile0(VALUE arg)
     struct parser_params *p = (struct parser_params *)arg;
     VALUE cov = Qfalse;
 
-    if (!compile_for_eval && rb_safe_level() == 0) {
+    if (!compile_for_eval && rb_safe_level() == 0 && !NIL_P(p->ruby_sourcefile_string)) {
 	p->debug_lines = debug_lines(p->ruby_sourcefile_string);
 	if (p->debug_lines && p->ruby_sourceline > 0) {
 	    VALUE str = STR_NEW0();
@@ -4933,8 +4933,14 @@ static rb_ast_t *
 yycompile(VALUE vparser, struct parser_params *p, VALUE fname, int line)
 {
     rb_ast_t *ast;
-    p->ruby_sourcefile_string = rb_str_new_frozen(fname);
-    p->ruby_sourcefile = StringValueCStr(fname);
+    if (NIL_P(fname)) {
+	p->ruby_sourcefile_string = Qnil;
+	p->ruby_sourcefile = "(none)";
+    }
+    else {
+	p->ruby_sourcefile_string = rb_str_new_frozen(fname);
+	p->ruby_sourcefile = StringValueCStr(fname);
+    }
     p->ruby_sourceline = line - 1;
 
     p->ast = ast = rb_ast_new();
@@ -8716,7 +8722,14 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
 	return NEW_FALSE(loc);
       case keyword__FILE__:
 	WARN_LOCATION("__FILE__");
-	node = NEW_STR(add_mark_object(p, rb_str_dup(p->ruby_sourcefile_string)), loc);
+	{
+	    VALUE file = p->ruby_sourcefile_string;
+	    if (NIL_P(file))
+		file = rb_str_new(0, 0);
+	    else
+		file = rb_str_dup(file);
+	    node = NEW_STR(add_mark_object(p, file), loc);
+	}
 	return node;
       case keyword__LINE__:
 	WARN_LOCATION("__LINE__");

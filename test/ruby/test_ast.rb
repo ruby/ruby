@@ -180,6 +180,20 @@ class TestAst < Test::Unit::TestCase
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_proc)
     assert_instance_of(RubyVM::AbstractSyntaxTree::Node, node_method)
     assert_raise(TypeError) { RubyVM::AbstractSyntaxTree.of("1 + 2") }
+
+    Tempfile.create(%w"test_of .rb") do |tmp|
+      tmp.print "#{<<-"begin;"}\n#{<<-'end;'}"
+      begin;
+        SCRIPT_LINES__ = {}
+        assert_instance_of(RubyVM::AbstractSyntaxTree::Node, RubyVM::AbstractSyntaxTree.of(proc {|x| x}))
+      end;
+      tmp.close
+      assert_separately(["-", tmp.path], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        load ARGV[0]
+        assert_empty(SCRIPT_LINES__)
+      end;
+    end
   end
 
   def test_scope_local_variables
