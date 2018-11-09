@@ -54,15 +54,15 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
 
 /*
  *  call-seq:
- *     RubyVM::AST.parse(string) -> RubyVM::AST::Node
+ *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
  *
  *  Parses the given string into an abstract syntax tree,
  *  returning the root node of that tree.
  *
  *  SyntaxError is raised if the given string is invalid syntax.
  *
- *    RubyVM::AST.parse("x = 1 + 2")
- *    # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 1:9): >
+ *    RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
+ *    # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 1:9): >
  */
 static VALUE
 rb_ast_s_parse(VALUE module, VALUE str)
@@ -88,7 +88,7 @@ rb_ast_s_parse(VALUE module, VALUE str)
 
 /*
  *  call-seq:
- *     RubyVM::AST.parse_file(pathname) -> RubyVM::AST::Node
+ *     RubyVM::AbstractSyntaxTree.parse_file(pathname) -> RubyVM::AbstractSyntaxTree::Node
  *
  *   Reads the file from <code>pathname</code>, then parses it like ::parse,
  *   returning the root node of the abstract syntax tree.
@@ -96,8 +96,8 @@ rb_ast_s_parse(VALUE module, VALUE str)
  *   SyntaxError is raised if <code>pathname</code>'s contents are not
  *   valid Ruby syntax.
  *
- *     RubyVM::AST.parse_file("my-app/app.rb")
- *     # => #<RubyVM::AST::Node(NODE_SCOPE(0) 1:0, 31:3): >
+ *     RubyVM::AbstractSyntaxTree.parse_file("my-app/app.rb")
+ *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 31:3): >
  */
 static VALUE
 rb_ast_s_parse_file(VALUE module, VALUE path)
@@ -200,7 +200,7 @@ node_type_to_str(NODE *node)
  *
  *  Returns the type of this node as a string.
  *
- *    root = RubyVM::AST.parse("x = 1 + 2")
+ *    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
  *    root.type # => "NODE_SCOPE"
  *    call = root.children[2]
  *    call.type # => "NODE_OPCALL"
@@ -659,14 +659,14 @@ void
 Init_ast(void)
 {
     /*
-     * AST provides methods to parse Ruby code into
+     * AbstractSyntaxTree provides methods to parse Ruby code into
      * abstract syntax trees. The nodes in the tree
-     * are instances of RubyVM::AST::Node.
+     * are instances of RubyVM::AbstractSyntaxTree::Node.
      */
-    rb_mAST = rb_define_module_under(rb_cRubyVM, "AST");
+    rb_mAST = rb_define_module_under(rb_cRubyVM, "AbstractSyntaxTree");
     /*
-     * RubyVM::AST::Node instances are created by parse methods in
-     * RubyVM::AST.
+     * RubyVM::AbstractSyntaxTree::Node instances are created by parse methods in
+     * RubyVM::AbstractSyntaxTree.
      */
     rb_cNode = rb_define_class_under(rb_mAST, "Node", rb_cObject);
 
