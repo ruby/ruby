@@ -52,6 +52,9 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
     return obj;
 }
 
+VALUE rb_ast_parse_str(VALUE str);
+VALUE rb_ast_parse_file(VALUE path);
+
 /*
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
@@ -66,6 +69,12 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
  */
 static VALUE
 rb_ast_s_parse(VALUE module, VALUE str)
+{
+    return rb_ast_parse_str(str);
+}
+
+VALUE
+rb_ast_parse_str(VALUE str)
 {
     VALUE obj;
     rb_ast_t *ast = 0;
@@ -101,6 +110,12 @@ rb_ast_s_parse(VALUE module, VALUE str)
  */
 static VALUE
 rb_ast_s_parse_file(VALUE module, VALUE path)
+{
+    return rb_ast_parse_file(path);
+}
+
+VALUE
+rb_ast_parse_file(VALUE path)
 {
     VALUE obj, f;
     rb_ast_t *ast = 0;
@@ -174,7 +189,7 @@ rb_ast_s_of(VALUE module, VALUE body)
 
     path = rb_iseq_path(iseq);
     node_id = iseq->body->location.node_id;
-    node = rb_ast_s_parse_file(module, path);
+    node = rb_ast_parse_file(path);
 
     return node_find(node, node_id);
 }
