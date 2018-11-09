@@ -1821,11 +1821,16 @@ static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
         obj_info_t **objp, line_info_t *lines, int offset)
 {
+# ifdef __LP64__
+#  define LP(x) x##_64
+# else
+#  define LP(x) x
+# endif
     int fd;
     off_t filesize;
     char *file, *p;
     obj_info_t *obj = *objp;
-    struct mach_header_64 *header;
+    struct LP(mach_header) *header;
     uintptr_t dladdr_fbase = 0;
 
     {
@@ -1883,19 +1888,25 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
     obj->mapped = file;
     obj->mapped_size = (size_t)filesize;
 
-    header = (struct mach_header_64 *)file;
-    if (header->magic != MH_MAGIC_64) {
+    header = (struct LP(mach_header) *)file;
+    if (header->magic != LP(MH_MAGIC)) {
         /* TODO: universal binaries */
-        kprintf("'%s' is not a 64-bit Mach-O file!\n",binary_filename);
+        kprintf("'%s' is not a "
+# ifdef __LP64__
+                "64"
+# else
+                "32"
+# endif
+                "-bit Mach-O file!\n",binary_filename);
         close(fd);
         goto fail;
     }
 
-    p = file + sizeof(struct mach_header_64);
+    p = file + sizeof(*header);
     for (uint32_t i = 0; i < (uint32_t)header->ncmds; i++) {
         struct load_command *lcmd = (struct load_command *)p;
         switch (lcmd->cmd) {
-          case LC_SEGMENT_64:
+          case LP(LC_SEGMENT):
             {
                 static const char *debug_section_names[] = {
                     "__debug_abbrev",
@@ -1904,15 +1915,15 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
                     "__debug_ranges",
                     "__debug_str"
                 };
-                struct segment_command_64 *scmd = (struct segment_command_64 *)lcmd;
+                struct LP(segment_command) *scmd = (struct LP(segment_command) *)lcmd;
                 if (strcmp(scmd->segname, "__TEXT") == 0) {
                     obj->vmaddr = scmd->vmaddr;
                 }
                 else if (strcmp(scmd->segname, "__DWARF") == 0) {
-                    p += sizeof(struct segment_command_64);
+                    p += sizeof(struct LP(segment_command));
                     for (uint64_t i = 0; i < scmd->nsects; i++) {
-                        struct section_64 *sect = (struct section_64 *)p;
-                        p += sizeof(struct section_64);
+                        struct LP(section) *sect = (struct LP(section) *)p;
+                        p += sizeof(struct LP(section));
                         for (int j=0; j < DWARF_SECTION_COUNT; j++) {
                             struct dwarf_section *s = obj_dwarf_section_at(obj, j);
 
@@ -1935,14 +1946,14 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
           case LC_SYMTAB:
             {
                 struct symtab_command *cmd = (struct symtab_command *)lcmd;
-                struct nlist_64 *nl = (struct nlist_64 *)(file + cmd->symoff);
+                struct LP(nlist) *nl = (struct LP(nlist) *)(file + cmd->symoff);
                 char *strtab = file + cmd->stroff, *sname;
                 uint32_t j;
                 uintptr_t saddr;
                 /* kprintf("[%2d]: %x/symtab %p\n", i, cmd->cmd, p); */
                 for (j = 0; j < cmd->nsyms; j++) {
                     uintptr_t symsize, d;
-                    struct nlist_64 *e = &nl[j];
+                    struct LP(nlist) *e = &nl[j];
                     if (e->n_type != N_FUN) continue;
                     if (e->n_sect) {
                         saddr = (uintptr_t)e->n_value + obj->base_addr - obj->vmaddr;
