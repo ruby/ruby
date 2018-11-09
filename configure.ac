@@ -254,7 +254,7 @@ AC_SUBST(CSRCFLAG)
 
 : ${MJIT_CC=$CC}
 AS_IF([test "x$cross_compiling" = xno], [
-    AC_PATH_PROG([MJIT_CC], ${MJIT_CC-$CC})
+    AC_PATH_PROG([MJIT_CC], ${MJIT_CC})
     AS_CASE([$target_os],
 	[*mingw*], [command -v cygpath && MJIT_CC=`cygpath -ma $MJIT_CC`])
     shift 2
