@@ -1083,6 +1083,12 @@ flo_mul(VALUE x, VALUE y)
     }
 }
 
+static bool
+flo_iszero(VALUE f)
+{
+    return RFLOAT_VALUE(f) == 0.0;
+}
+
 /*
  * call-seq:
  *   float / other  ->  float
@@ -1093,22 +1099,51 @@ flo_mul(VALUE x, VALUE y)
 static VALUE
 flo_div(VALUE x, VALUE y)
 {
-    long f_y;
-    double d;
+    double den;
+    double num = RFLOAT_VALUE(x);
+    double sign = 1.0;
 
     if (RB_TYPE_P(y, T_FIXNUM)) {
-	f_y = FIX2LONG(y);
-	return DBL2NUM(RFLOAT_VALUE(x) / (double)f_y);
+        if (FIXNUM_ZERO_P(y)) {
+            goto zerodiv;
+        }
+        else {
+            den = FIX2LONG(y);
+            goto nonzero;
+        }
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
-	d = rb_big2dbl(y);
-	return DBL2NUM(RFLOAT_VALUE(x) / d);
+        if (rb_bigzero_p(y)) {
+            goto zerodiv;
+        }
+        else {
+            den = rb_big2dbl(y);
+            goto nonzero;
+        }
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-	return DBL2NUM(RFLOAT_VALUE(x) / RFLOAT_VALUE(y));
+        if (flo_iszero(y)) {
+            sign = signbit(RFLOAT_VALUE(y)) ? -1.0 : 1.0;
+            goto zerodiv;
+        }
+        else {
+            den = RFLOAT_VALUE(y);
+            goto nonzero;
+        }
     }
     else {
 	return rb_num_coerce_bin(x, y, '/');
+    }
+
+nonzero:
+    return DBL2NUM(num / den);
+
+zerodiv:
+    if (num == 0.0) {
+        return DBL2NUM(nan(""));
+    }
+    else {
+        return DBL2NUM(num * sign * HUGE_VAL);
     }
 }
 
@@ -1676,10 +1711,7 @@ rb_float_abs(VALUE flt)
 static VALUE
 flo_zero_p(VALUE num)
 {
-    if (RFLOAT_VALUE(num) == 0.0) {
-	return Qtrue;
-    }
-    return Qfalse;
+    return flo_iszero(num) ? Qtrue : Qfalse;
 }
 
 /*
