@@ -2511,7 +2511,7 @@ block_proc_is_lambda(const VALUE procval)
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
 		    const struct rb_captured_block *captured,
-		    VALUE self, int argc, const VALUE *argv, VALUE block_handler,
+                    VALUE self, int argc, const VALUE *argv, VALUE block_handler,
                     const rb_callable_method_entry_t *me)
 {
     int is_lambda = FALSE; /* TODO */
@@ -2531,7 +2531,7 @@ vm_yield_with_cfunc(rb_execution_context_t *ec,
     blockarg = rb_vm_bh_to_procval(ec, block_handler);
 
     vm_push_frame(ec, (const rb_iseq_t *)captured->code.ifunc,
-		  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME |
+                  VM_FRAME_MAGIC_IFUNC | VM_FRAME_FLAG_CFRAME |
                   (me ? VM_FRAME_FLAG_BMETHOD : 0),
 		  self,
 		  VM_GUARDED_PREV_EP(captured->ep),
