@@ -83,7 +83,7 @@ rb_ast_parse_str(VALUE str)
 
     str = rb_check_string_type(str);
     rb_parser_set_context(parser, NULL, 0);
-    ast = rb_parser_compile_string_path(parser, rb_str_new_cstr("no file name"), str, 1);
+    ast = rb_parser_compile_string_path(parser, Qnil, str, 1);
 
     if (!ast->body.root) {
         rb_ast_dispose(ast);
@@ -127,7 +127,7 @@ rb_ast_parse_file(VALUE path)
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     rb_parser_set_context(parser, NULL, 0);
-    ast = rb_parser_compile_file_path(parser, path, f, 1);
+    ast = rb_parser_compile_file_path(parser, Qnil, f, 1);
 
     rb_io_close(f);
 
