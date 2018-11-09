@@ -84,6 +84,7 @@ const signed char ruby_digit36_to_number_table[] = {
     /*f*/ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
 
+NO_SANITIZE("unsigned-integer-overflow", extern unsigned long ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow));
 unsigned long
 ruby_scan_digits(const char *str, ssize_t len, int base, size_t *retlen, int *overflow)
 {
@@ -2970,6 +2971,7 @@ ret:
     return sign ? -dval(rv) : dval(rv);
 }
 
+NO_SANITIZE("unsigned-integer-overflow", static int quorem(Bigint *b, Bigint *S));
 static int
 quorem(Bigint *b, Bigint *S)
 {
