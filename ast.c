@@ -55,6 +55,23 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
 VALUE rb_ast_parse_str(VALUE str);
 VALUE rb_ast_parse_file(VALUE path);
 
+static VALUE
+ast_parse_new(void)
+{
+    return rb_parser_set_context(rb_parser_new(), NULL, 0);
+}
+
+static VALUE
+ast_parse_done(rb_ast_t *ast)
+{
+    if (!ast->body.root) {
+        rb_ast_dispose(ast);
+        rb_exc_raise(GET_EC()->errinfo);
+    }
+
+    return ast_new_internal(ast, (NODE *)ast->body.root);
+}
+
 /*
  *  call-seq:
  *     RubyVM::AbstractSyntaxTree.parse(string) -> RubyVM::AbstractSyntaxTree::Node
@@ -76,23 +93,11 @@ rb_ast_s_parse(VALUE module, VALUE str)
 VALUE
 rb_ast_parse_str(VALUE str)
 {
-    VALUE obj;
     rb_ast_t *ast = 0;
 
-    const VALUE parser = rb_parser_new();
-
     str = rb_check_string_type(str);
-    rb_parser_set_context(parser, NULL, 0);
-    ast = rb_parser_compile_string_path(parser, Qnil, str, 1);
-
-    if (!ast->body.root) {
-        rb_ast_dispose(ast);
-        rb_exc_raise(GET_EC()->errinfo);
-    }
-
-    obj = ast_new_internal(ast, (NODE *)ast->body.root);
-
-    return obj;
+    ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
+    return ast_parse_done(ast);
 }
 
 /*
@@ -117,28 +122,16 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
 VALUE
 rb_ast_parse_file(VALUE path)
 {
-    VALUE obj, f;
+    VALUE f;
     rb_ast_t *ast = 0;
     rb_encoding *enc = rb_utf8_encoding();
-
-    const VALUE parser = rb_parser_new();
 
     FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
-    rb_parser_set_context(parser, NULL, 0);
-    ast = rb_parser_compile_file_path(parser, Qnil, f, 1);
-
+    ast = rb_parser_compile_file_path(ast_parse_new(), Qnil, f, 1);
     rb_io_close(f);
-
-    if (!ast->body.root) {
-        rb_ast_dispose(ast);
-        rb_exc_raise(GET_EC()->errinfo);
-    }
-
-    obj = ast_new_internal(ast, (NODE *)ast->body.root);
-
-    return obj;
+    return ast_parse_done(ast);
 }
 
 static VALUE node_children(rb_ast_t*, NODE*);
