@@ -201,7 +201,10 @@ struct parser_params {
 	const char *pcur;
 	const char *pend;
 	const char *ptok;
-	long gets_ptr;
+	union {
+	    long ptr;
+	    VALUE (*call)(VALUE, int);
+	} gets_;
 	enum lex_state_e state;
 	/* track the nest level of any parens "()[]{}" */
 	int paren_nest;
@@ -4971,14 +4974,14 @@ lex_get_str(struct parser_params *p, VALUE s)
     beg = RSTRING_PTR(s);
     len = RSTRING_LEN(s);
     start = beg;
-    if (p->lex.gets_ptr) {
-	if (len == p->lex.gets_ptr) return Qnil;
-	beg += p->lex.gets_ptr;
-	len -= p->lex.gets_ptr;
+    if (p->lex.gets_.ptr) {
+	if (len == p->lex.gets_.ptr) return Qnil;
+	beg += p->lex.gets_.ptr;
+	len -= p->lex.gets_.ptr;
     }
     end = memchr(beg, '\n', len);
     if (end) len = ++end - beg;
-    p->lex.gets_ptr += len;
+    p->lex.gets_.ptr += len;
     return rb_str_subseq(s, beg - start, len);
 }
 
@@ -5009,7 +5012,7 @@ parser_compile_string(VALUE vparser, VALUE fname, VALUE s, int line)
     TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
 
     p->lex.gets = lex_get_str;
-    p->lex.gets_ptr = 0;
+    p->lex.gets_.ptr = 0;
     p->lex.input = rb_str_new_frozen(s);
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
@@ -5081,6 +5084,27 @@ rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE file, int start)
 
     p->lex.gets = lex_io_gets;
     p->lex.input = file;
+    p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
+
+    return yycompile(vparser, p, fname, start);
+}
+
+static VALUE
+lex_generic_gets(struct parser_params *p, VALUE input)
+{
+    return (*p->lex.gets_.call)(input, p->line_count);
+}
+
+rb_ast_t*
+rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int start)
+{
+    struct parser_params *p;
+
+    TypedData_Get_Struct(vparser, struct parser_params, &parser_data_type, p);
+
+    p->lex.gets = lex_generic_gets;
+    p->lex.gets_.call = lex_gets;
+    p->lex.input = input;
     p->lex.pbeg = p->lex.pcur = p->lex.pend = 0;
 
     return yycompile(vparser, p, fname, start);
