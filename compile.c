@@ -1406,6 +1406,7 @@ static int
 get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
 {
     int lv = 0, idx = -1;
+    const rb_iseq_t *const topmost_iseq = iseq;
 
     while (iseq) {
 	idx = get_dyna_var_idx_at_raw(iseq, id);
@@ -1417,7 +1418,7 @@ get_dyna_var_idx(const rb_iseq_t *iseq, ID id, int *level, int *ls)
     }
 
     if (idx < 0) {
-        COMPILE_ERROR(iseq, ISEQ_LAST_LINE(iseq),
+        COMPILE_ERROR(topmost_iseq, ISEQ_LAST_LINE(topmost_iseq),
                       "get_dyna_var_idx: -1");
     }
 
