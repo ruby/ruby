@@ -54,6 +54,7 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
 
 VALUE rb_ast_parse_str(VALUE str);
 VALUE rb_ast_parse_file(VALUE path);
+VALUE rb_ast_parse_array(VALUE array);
 
 static VALUE
 ast_parse_new(void)
@@ -134,6 +135,29 @@ rb_ast_parse_file(VALUE path)
     return ast_parse_done(ast);
 }
 
+VALUE
+lex_array(VALUE array, int index)
+{
+    VALUE str = rb_ary_entry(array, index);
+    if (!NIL_P(str)) {
+        StringValue(str);
+        if (!rb_enc_asciicompat(rb_enc_get(str))) {
+            rb_raise(rb_eArgError, "invalid source encoding");
+        }
+    }
+    return str;
+}
+
+VALUE
+rb_ast_parse_array(VALUE array)
+{
+    rb_ast_t *ast = 0;
+
+    array = rb_check_array_type(array);
+    ast = rb_parser_compile_generic(ast_parse_new(), lex_array, Qnil, array, 1);
+    return ast_parse_done(ast);
+}
+
 static VALUE node_children(rb_ast_t*, NODE*);
 
 static VALUE
@@ -197,7 +221,7 @@ rb_ast_s_of(VALUE module, VALUE body)
     path = rb_iseq_path(iseq);
     node_id = iseq->body->location.node_id;
     if (!NIL_P(lines = script_lines(path))) {
-        node = rb_ast_parse_str(rb_ary_join(lines, Qnil));
+        node = rb_ast_parse_array(lines);
     }
     else {
         node = rb_ast_parse_file(path);

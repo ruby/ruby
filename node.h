@@ -402,6 +402,7 @@ rb_ast_t *rb_parser_compile_string(VALUE, const char*, VALUE, int);
 rb_ast_t *rb_parser_compile_file(VALUE, const char*, VALUE, int);
 rb_ast_t *rb_parser_compile_string_path(VALUE vparser, VALUE fname, VALUE src, int line);
 rb_ast_t *rb_parser_compile_file_path(VALUE vparser, VALUE fname, VALUE input, int line);
+rb_ast_t *rb_parser_compile_generic(VALUE vparser, VALUE (*lex_gets)(VALUE, int), VALUE fname, VALUE input, int line);
 
 rb_ast_t *rb_compile_cstr(const char*, const char*, int, int);
 rb_ast_t *rb_compile_string(const char*, VALUE, int);
