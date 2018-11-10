@@ -168,9 +168,23 @@ node_find(VALUE self, const int node_id)
 }
 
 static VALUE
+script_lines(VALUE path)
+{
+    VALUE hash, lines;
+    ID script_lines;
+    CONST_ID(script_lines, "SCRIPT_LINES__");
+    if (!rb_const_defined_at(rb_cObject, script_lines)) return Qnil;
+    hash = rb_const_get_at(rb_cObject, script_lines);
+    if (!RB_TYPE_P(hash, T_HASH)) return Qnil;
+    lines = rb_hash_lookup(hash, path);
+    if (!RB_TYPE_P(lines, T_ARRAY)) return Qnil;
+    return lines;
+}
+
+static VALUE
 rb_ast_s_of(VALUE module, VALUE body)
 {
-    VALUE path, node;
+    VALUE path, node, lines;
     int node_id;
     const rb_iseq_t *iseq = NULL;
 
@@ -189,7 +203,12 @@ rb_ast_s_of(VALUE module, VALUE body)
 
     path = rb_iseq_path(iseq);
     node_id = iseq->body->location.node_id;
-    node = rb_ast_parse_file(path);
+    if (!NIL_P(lines = script_lines(path))) {
+        node = rb_ast_parse_str(rb_ary_join(lines, Qnil));
+    }
+    else {
+        node = rb_ast_parse_file(path);
+    }
 
     return node_find(node, node_id);
 }
