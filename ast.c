@@ -184,6 +184,8 @@ node_find(VALUE self, const int node_id)
     return Qnil;
 }
 
+extern VALUE rb_e_script;
+
 static VALUE
 script_lines(VALUE path)
 {
@@ -222,6 +224,9 @@ rb_ast_s_of(VALUE module, VALUE body)
     node_id = iseq->body->location.node_id;
     if (!NIL_P(lines = script_lines(path))) {
         node = rb_ast_parse_array(lines);
+    }
+    else if (RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0) {
+        node = rb_ast_parse_str(rb_e_script);
     }
     else {
         node = rb_ast_parse_file(path);
