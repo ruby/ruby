@@ -225,7 +225,7 @@ struct parser_params {
     struct local_vars *lvtbl;
     int line_count;
     int ruby_sourceline;	/* current line no. */
-    char *ruby_sourcefile; /* current source file */
+    const char *ruby_sourcefile; /* current source file */
     VALUE ruby_sourcefile_string;
     rb_encoding *enc;
     token_info *token_info;
