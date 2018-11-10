@@ -1429,6 +1429,7 @@ opt_enc_index(VALUE enc_name)
 #define rb_progname      (GET_VM()->progname)
 #define rb_orig_progname (GET_VM()->orig_progname)
 VALUE rb_argv0;
+VALUE rb_e_script;
 
 static VALUE
 false_value(void)
@@ -1855,6 +1856,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     rb_define_readonly_boolean("$-p", opt->do_print);
     rb_define_readonly_boolean("$-l", opt->do_line);
     rb_define_readonly_boolean("$-a", opt->do_split);
+
+    if ((rb_e_script = opt->e_script) != 0) {
+        rb_gc_register_mark_object(opt->e_script);
+    }
 
     rb_set_safe_level(opt->safe_level);
 
