@@ -294,10 +294,10 @@ module Psych
   # * Hash
   #
   # Recursive data structures are not allowed by default.  Arbitrary classes
-  # can be allowed by adding those classes to the +permitted_classes+ keyword argument.  They are
+  # can be allowed by adding those classes to the +whitelist_classes+ keyword argument.  They are
   # additive.  For example, to allow Date deserialization:
   #
-  #   Psych.safe_load(yaml, permitted_classes: [Date])
+  #   Psych.safe_load(yaml, whitelist_classes: [Date])
   #
   # Now the Date class can be loaded in addition to the classes listed above.
   #
@@ -311,7 +311,7 @@ module Psych
   #   Psych.safe_load yaml, aliases: true # => loads the aliases
   #
   # A Psych::DisallowedClass exception will be raised if the yaml contains a
-  # class that isn't in the +permitted_classes+ list.
+  # class that isn't in the whitelist.
   #
   # A Psych::BadAlias exception will be raised if the yaml contains aliases
   # but the +aliases+ keyword argument is set to false.
@@ -325,15 +325,15 @@ module Psych
   #   Psych.safe_load("---\n foo: bar")                         # => {"foo"=>"bar"}
   #   Psych.safe_load("---\n foo: bar", symbolize_names: true)  # => {:foo=>"bar"}
   #
-  def self.safe_load yaml, legacy_permitted_classes = NOT_GIVEN, legacy_permitted_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, permitted_classes: [], permitted_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
-    if legacy_permitted_classes != NOT_GIVEN
-      warn 'warning: Passing permitted_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_classes: ...) instead.'
-      permitted_classes = legacy_permitted_classes
+  def self.safe_load yaml, legacy_whitelist_classes = NOT_GIVEN, legacy_whitelist_symbols = NOT_GIVEN, legacy_aliases = NOT_GIVEN, legacy_filename = NOT_GIVEN, whitelist_classes: [], whitelist_symbols: [], aliases: false, filename: nil, fallback: nil, symbolize_names: false
+    if legacy_whitelist_classes != NOT_GIVEN
+      warn 'warning: Passing whitelist_classes with the 2nd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, whitelist_classes: ...) instead.'
+      whitelist_classes = legacy_whitelist_classes
     end
 
-    if legacy_permitted_symbols != NOT_GIVEN
-      warn 'warning: Passing permitted_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, permitted_symbols: ...) instead.'
-      permitted_symbols = legacy_permitted_symbols
+    if legacy_whitelist_symbols != NOT_GIVEN
+      warn 'warning: Passing whitelist_symbols with the 3rd argument of Psych.safe_load is deprecated. Use keyword argument like Psych.safe_load(yaml, whitelist_symbols: ...) instead.'
+      whitelist_symbols = legacy_whitelist_symbols
     end
 
     if legacy_aliases != NOT_GIVEN
@@ -349,8 +349,8 @@ module Psych
     result = parse(yaml, filename: filename)
     return fallback unless result
 
-    class_loader = ClassLoader::Restricted.new(permitted_classes.map(&:to_s),
-                                               permitted_symbols.map(&:to_s))
+    class_loader = ClassLoader::Restricted.new(whitelist_classes.map(&:to_s),
+                                               whitelist_symbols.map(&:to_s))
     scanner      = ScalarScanner.new class_loader
     visitor = if aliases
                 Visitors::ToRuby.new scanner, class_loader
