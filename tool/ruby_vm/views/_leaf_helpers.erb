@@ -18,7 +18,7 @@ leafness_of_getglobal(VALUE gentry)
     else {
         /* We cannot write this function using a switch() because a
          * case label cannot be a function pointer. */
-        static rb_gvar_getter_t *const whitelist[] = {
+        static rb_gvar_getter_t *const allowlist[] = {
             rb_gvar_val_getter,
             rb_gvar_var_getter,
             rb_gvar_undef_getter,
@@ -26,8 +26,8 @@ leafness_of_getglobal(VALUE gentry)
         rb_gvar_getter_t *f = rb_gvar_getter_function_of(e);
         int i;
 
-        for (i = 0; i < numberof(whitelist); i++) {
-            if (f == whitelist[i]) {
+        for (i = 0; i < numberof(allowlist); i++) {
+            if (f == allowlist[i]) {
                 return true;
             }
         }
@@ -46,7 +46,7 @@ leafness_of_setglobal(VALUE gentry)
     else {
         /* We cannot write this function using a switch() because a
          * case label cannot be a function pointer. */
-        static rb_gvar_setter_t *const whitelist[] = {
+        static rb_gvar_setter_t *const allowlist[] = {
             rb_gvar_val_setter,
             rb_gvar_readonly_setter,
             rb_gvar_var_setter,
@@ -55,8 +55,8 @@ leafness_of_setglobal(VALUE gentry)
         rb_gvar_setter_t *f = rb_gvar_setter_function_of(e);
         int i;
 
-        for (i = 0; i < numberof(whitelist); i++) {
-            if (f == whitelist[i]) {
+        for (i = 0; i < numberof(allowlist); i++) {
+            if (f == allowlist[i]) {
                 return true;
             }
         }
