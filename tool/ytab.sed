@@ -68,6 +68,7 @@ a\
   s/fprintf *(stderr,/YYFPRINTF (p,/g
 }
 s/\( YYFPRINTF *(\)yyoutput,/\1p,/
+s/\( YYFPRINTF *(\)yyo,/\1p,/
 s/\( YYFPRINTF *(\)stderr,/\1p,/
 s/\( YYDPRINTF *((\)stderr,/\1p,/
 s/^\([ 	]*\)\(yyerror[ 	]*([ 	]*parser,\)/\1parser_\2/
