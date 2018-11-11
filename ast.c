@@ -200,6 +200,23 @@ script_lines(VALUE path)
     return lines;
 }
 
+/*
+ *  call-seq:
+ *     RubyVM::AbstractSyntaxTree.of(proc)   -> RubyVM::AbstractSyntaxTree::Node
+ *     RubyVM::AbstractSyntaxTree.of(method) -> RubyVM::AbstractSyntaxTree::Node
+ *
+ *   Returns AST nodes of the given proc or method.
+ *
+ *     RubyVM::AbstractSyntaxTree.of(proc {1 + 2})
+ *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:35, 1:42): >
+ *
+ *     def hello
+ *       puts "hello, world"
+ *     end
+ *
+ *     RubyVM::AbstractSyntaxTree.of(method(:hello))
+ *     # => #<RubyVM::AbstractSyntaxTree::Node(NODE_SCOPE(0) 1:0, 3:3): >
+ */
 static VALUE
 rb_ast_s_of(VALUE module, VALUE body)
 {
