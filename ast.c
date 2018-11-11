@@ -52,9 +52,9 @@ ast_new_internal(rb_ast_t *ast, NODE *node)
     return obj;
 }
 
-VALUE rb_ast_parse_str(VALUE str);
-VALUE rb_ast_parse_file(VALUE path);
-VALUE rb_ast_parse_array(VALUE array);
+static VALUE rb_ast_parse_str(VALUE str);
+static VALUE rb_ast_parse_file(VALUE path);
+static VALUE rb_ast_parse_array(VALUE array);
 
 static VALUE
 ast_parse_new(void)
@@ -91,7 +91,7 @@ rb_ast_s_parse(VALUE module, VALUE str)
     return rb_ast_parse_str(str);
 }
 
-VALUE
+static VALUE
 rb_ast_parse_str(VALUE str)
 {
     rb_ast_t *ast = 0;
@@ -120,7 +120,7 @@ rb_ast_s_parse_file(VALUE module, VALUE path)
     return rb_ast_parse_file(path);
 }
 
-VALUE
+static VALUE
 rb_ast_parse_file(VALUE path)
 {
     VALUE f;
@@ -135,7 +135,7 @@ rb_ast_parse_file(VALUE path)
     return ast_parse_done(ast);
 }
 
-VALUE
+static VALUE
 lex_array(VALUE array, int index)
 {
     VALUE str = rb_ary_entry(array, index);
@@ -148,7 +148,7 @@ lex_array(VALUE array, int index)
     return str;
 }
 
-VALUE
+static VALUE
 rb_ast_parse_array(VALUE array)
 {
     rb_ast_t *ast = 0;
