@@ -7,7 +7,7 @@ module Gem
   # Psych.safe_load
 
   module SafeYAML
-    WHITELISTED_CLASSES = %w(
+    PERMITTED_CLASSES = %w(
       Symbol
       Time
       Date
@@ -21,7 +21,7 @@ module Gem
       Syck::DefaultKey
     ).freeze
 
-    WHITELISTED_SYMBOLS = %w(
+    PERMITTED_SYMBOLS = %w(
       development
       runtime
     ).freeze
@@ -29,15 +29,15 @@ module Gem
     if ::YAML.respond_to? :safe_load
       def self.safe_load input
         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
-          ::YAML.safe_load(input, whitelist_classes: WHITELISTED_CLASSES, whitelist_symbols: WHITELISTED_SYMBOLS, aliases: true)
+          ::YAML.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
         else
-          ::YAML.safe_load(input, WHITELISTED_CLASSES, WHITELISTED_SYMBOLS, true)
+          ::YAML.safe_load(input, PERMITTED_CLASSES, PERMITTED_SYMBOLS, true)
         end
       end
 
       def self.load input
         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
-          ::YAML.safe_load(input, whitelist_classes: [::Symbol])
+          ::YAML.safe_load(input, permitted_classes: [::Symbol])
         else
           ::YAML.safe_load(input, [::Symbol])
         end
