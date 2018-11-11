@@ -239,9 +239,8 @@ MACHINE = x86
 # EXTLIBS =
 CC = cl -nologo
 <<
-	@for %I in (cl.exe) do @echo MJIT_CC = %~$$PATH:I>>$(MAKEFILE)
+	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
-MJIT_CC = "$$(MJIT_CC:\=/)" -nologo
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
