@@ -159,7 +159,7 @@ class TestResolvDNS < Test::Unit::TestCase
     u.bind("127.0.0.1", 0)
     _, port, _, host = u.addr
     u.close
-    # A rase condition here.
+    # A race condition here.
     # Another program may use the port.
     # But no way to prevent it.
     Timeout.timeout(5) do
