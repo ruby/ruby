@@ -616,8 +616,12 @@ static int
 bytes_2comp(unsigned char *buf, size_t len)
 {
     size_t i;
-    for (i = 0; i < len; i++)
-        buf[i] = ~buf[i];
+    for (i = 0; i < len; i++) {
+        signed char c = buf[i];
+        signed int d = ~c;
+        unsigned int e = d & 0xFF;
+        buf[i] = e;
+    }
     for (i = 0; i < len; i++) {
         buf[i]++;
         if (buf[i] != 0)
