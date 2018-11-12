@@ -4,7 +4,7 @@ RSpec.describe "bundle platform" do
   context "without flags" do
     let(:bundle_platform_platforms_string) do
       platforms = [rb]
-      platforms.unshift(specific_local_platform) if Bundler.feature_flag.bundler_2_mode?
+      platforms.unshift(specific_local_platform) if Bundler.feature_flag.bundler_3_mode?
       platforms.map {|pl| "* #{pl}" }.join("\n")
     end
 

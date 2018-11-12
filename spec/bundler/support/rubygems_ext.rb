@@ -33,7 +33,7 @@ module Spec
 
       ENV["BUNDLE_PATH"] = nil
       ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gems.to_s
-      ENV["PATH"] = ["#{Path.root}/exe", "#{Path.system_gem_path}/bin", ENV["PATH"]].join(File::PATH_SEPARATOR)
+      ENV["PATH"] = [Path.bindir, "#{Path.system_gem_path}/bin", ENV["PATH"]].join(File::PATH_SEPARATOR)
 
       manifest = DEPS.to_a.sort_by(&:first).map {|k, v| "#{k} => #{v}\n" }
       manifest_path = "#{Path.base_system_gems}/manifest.txt"

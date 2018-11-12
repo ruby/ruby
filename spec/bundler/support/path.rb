@@ -29,7 +29,7 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      if Bundler::VERSION.split(".").first.to_i < 2
+      if Bundler::VERSION.split(".").first.to_i < 3
         system_gem_path(*path)
       else
         bundled_app(*[".bundle", ENV.fetch("BUNDLER_SPEC_RUBY_ENGINE", Gem.ruby_engine), Gem::ConfigMap[:ruby_version], *path].compact)

@@ -36,7 +36,7 @@ RSpec.describe "bundle show", :bundler => "< 3", :ruby => ">= 2.0" do
       it "prints path if gem exists in bundle" do
         bundle "show rails"
         expect(out).to eq(
-          "[DEPRECATED FOR 2.0] use `bundle info rails` instead of `bundle show rails`\n" +
+          "[DEPRECATED FOR 3.0] use `bundle info rails` instead of `bundle show rails`\n" +
           default_bundle_path("gems", "rails-2.3.2").to_s
         )
       end
@@ -44,7 +44,7 @@ RSpec.describe "bundle show", :bundler => "< 3", :ruby => ">= 2.0" do
       it "prints the path to the running bundler" do
         bundle "show bundler"
         expect(out).to eq(
-          "[DEPRECATED FOR 2.0] use `bundle info bundler` instead of `bundle show bundler`\n" +
+          "[DEPRECATED FOR 3.0] use `bundle info bundler` instead of `bundle show bundler`\n" +
           root.to_s
         )
       end
@@ -52,7 +52,7 @@ RSpec.describe "bundle show", :bundler => "< 3", :ruby => ">= 2.0" do
       it "prints path if gem exists in bundle (with --paths option)" do
         bundle "show rails --paths"
         expect(out).to eq(
-          "[DEPRECATED FOR 2.0] use `bundle info rails --path` instead of `bundle show rails --paths`\n" +
+          "[DEPRECATED FOR 3.0] use `bundle info rails --path` instead of `bundle show rails --paths`\n" +
           default_bundle_path("gems", "rails-2.3.2").to_s
         )
       end
@@ -64,7 +64,7 @@ RSpec.describe "bundle show", :bundler => "< 3", :ruby => ">= 2.0" do
         expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
         out_lines = out.split("\n")
-        expect(out_lines[0]).to eq("[DEPRECATED FOR 2.0] use `bundle list` instead of `bundle show --paths`")
+        expect(out_lines[0]).to eq("[DEPRECATED FOR 3.0] use `bundle list` instead of `bundle show --paths`")
 
         # Gem names are the last component of their path.
         gem_list = out_lines[1..-1].map {|p| p.split("/").last }

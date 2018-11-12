@@ -134,6 +134,33 @@ RSpec.describe "bundle binstubs <gem>" do
         if ENV["BUNDLER_SPEC_SUB_VERSION"]
           let(:system_bundler_version) { Bundler::VERSION }
         end
+
+        before do
+          gemfile <<-G
+            source "file:///Users/colby/Projects/bundler/tmp/gems/remote2"
+            gem "rack"
+            gem "prints_loaded_gems"
+          G
+
+          lockfile <<-G
+          GEM
+            remote: file:///Users/colby/Projects/bundler/tmp/gems/remote2/
+            specs:
+              prints_loaded_gems (1.0)
+              rack (1.2)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            prints_loaded_gems
+            rack
+
+          BUNDLED WITH
+             #{system_bundler_version}
+          G
+        end
+
         it "runs bundler" do
           sys_exec! "#{bundled_app("bin/bundle")} install"
           expect(out).to eq %(system bundler #{system_bundler_version}\n["install"])
