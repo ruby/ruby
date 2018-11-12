@@ -1269,7 +1269,10 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
 	len = (rb_num_t)RARRAY_LEN(ary);
     }
 
-    if (flag & 0x02) {
+    if (space_size == 0) {
+        /* no space left on stack */
+    }
+    else if (flag & 0x02) {
 	/* post: ..., nil ,ary[-1], ..., ary[0..-num] # top */
 	rb_num_t i = 0, j;
 
