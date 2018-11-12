@@ -2389,7 +2389,8 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
 {
     const char *p = *pp;
     int chmaxlen = rb_enc_mbmaxlen(enc);
-    char *chbuf = ALLOCA_N(char, chmaxlen);
+    unsigned char *area = ALLOCA_N(unsigned char, chmaxlen);
+    char *chbuf = (char *)area;
     int chlen = 0;
     int byte;
     int l;
@@ -2401,14 +2402,14 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         return -1;
     }
 
-    chbuf[chlen++] = byte;
+    area[chlen++] = byte;
     while (chlen < chmaxlen &&
            MBCLEN_NEEDMORE_P(rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc))) {
         byte = read_escaped_byte(&p, end, err);
         if (byte == -1) {
             return -1;
         }
-        chbuf[chlen++] = byte;
+        area[chlen++] = byte;
     }
 
     l = rb_enc_precise_mbclen(chbuf, chbuf+chlen, enc);
@@ -2416,7 +2417,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
         errcpy(err, "invalid multibyte escape");
         return -1;
     }
-    if (1 < chlen || (chbuf[0] & 0x80)) {
+    if (1 < chlen || (area[0] & 0x80)) {
         rb_str_buf_cat(buf, chbuf, chlen);
 
         if (*encp == 0)
@@ -2428,7 +2429,7 @@ unescape_escaped_nonascii(const char **pp, const char *end, rb_encoding *enc,
     }
     else {
         char escbuf[5];
-        snprintf(escbuf, sizeof(escbuf), "\\x%02X", chbuf[0]&0xff);
+        snprintf(escbuf, sizeof(escbuf), "\\x%02X", area[0]&0xff);
         rb_str_buf_cat(buf, escbuf, 4);
     }
     *pp = p;
