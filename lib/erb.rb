@@ -665,9 +665,13 @@ class ERB
         return [false, '>']
       when 2
         return [false, '<>']
-      when 0
+      when 0, nil
         return [false, nil]
       when String
+        unless mode.match?(/\A(%|-|>|<>){1,2}\z/)
+          warn_invalid_trim_mode(mode, uplevel: 5)
+        end
+
         perc = mode.include?('%')
         if mode.include?('-')
           return [perc, '-']
@@ -679,6 +683,7 @@ class ERB
           [perc, nil]
         end
       else
+        warn_invalid_trim_mode(mode, uplevel: 5)
         return [false, nil]
       end
     end
@@ -729,6 +734,10 @@ class ERB
         end
       end
       return enc, frozen
+    end
+
+    def warn_invalid_trim_mode(mode, uplevel:)
+      warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
     end
   end
 end
