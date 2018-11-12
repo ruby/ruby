@@ -235,6 +235,28 @@ EOS
     assert_equal("line\r\n" * 3, erb.result)
   end
 
+  def test_invalid_trim_mode
+    assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
+      @erb.new("", trim_mode: 'abc-def')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: 'abc-def')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: '%<')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: '%<>-')
+    end
+
+    assert_warning(/Invalid ERB trim mode/) do
+      @erb.new("", trim_mode: 3)
+    end
+  end
+
   def test_run
     out = StringIO.new
     orig, $stdout = $stdout, out
