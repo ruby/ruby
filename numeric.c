@@ -1104,7 +1104,7 @@ double_div_double(double x, double y)
     }
 }
 
-VALUE
+MJIT_FUNC_EXPORTED VALUE
 rb_flo_div_flo(VALUE x, VALUE y)
 {
     double num = RFLOAT_VALUE(x);

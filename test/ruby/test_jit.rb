@@ -463,6 +463,7 @@ class TestJIT < Test::Unit::TestCase
 
   def test_compile_insn_opt_calc
     assert_compile_once('4 + 2 - ((2 * 3 / 2) % 2)', result_inspect: '5', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
+    assert_compile_once('4.0 + 2.0 - ((2.0 * 3.0 / 2.0) % 2.0)', result_inspect: '5.0', insns: %i[opt_plus opt_minus opt_mult opt_div opt_mod])
     assert_compile_once('4 + 2', result_inspect: '6')
   end
 
