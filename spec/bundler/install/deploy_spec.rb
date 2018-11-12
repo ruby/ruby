@@ -297,7 +297,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     context "when replacing a host with the same host with credentials" do
       let(:success_message) do
-        if Bundler::VERSION.split(".", 2).first == "1"
+        if Bundler.bundler_major_version < 3
           "Could not reach host localgemserver.test"
         else
           "Bundle complete!"

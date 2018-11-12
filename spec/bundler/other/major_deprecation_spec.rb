@@ -205,7 +205,7 @@ The :github git source is deprecated, and will be removed in Bundler 2.0. Change
     git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
 
         EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, msg)
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("sparks", :github => "indirect/sparks")
       end
 
@@ -217,8 +217,8 @@ The :github git source is deprecated, and will be removed in Bundler 2.0. Change
     git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
 
         EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, msg)
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, "The `github.https` setting will be removed")
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, "The `github.https` setting will be removed")
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
@@ -238,7 +238,7 @@ The :bitbucket git source is deprecated, and will be removed in Bundler 2.0. Add
     end
 
         EOS
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, msg)
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
       end
     end
@@ -250,7 +250,7 @@ The :bitbucket git source is deprecated, and will be removed in Bundler 2.0. Add
           "in Bundler 2.0. Add this code to the top of your Gemfile to ensure it " \
           "continues to work:\n\n    git_source(:gist) {|repo_name| " \
           "\"https://gist.github.com/\#{repo_name}.git\" }\n\n"
-        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(2, msg)
+        expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
         subject.gem("not-really-a-gem", :gist => "1234")
       end
     end

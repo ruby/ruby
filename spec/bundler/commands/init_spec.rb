@@ -115,7 +115,7 @@ RSpec.describe "bundle init" do
 
       bundle :init, :gemspec => spec_file
 
-      gemfile = if Bundler::VERSION[0, 2] == "1."
+      gemfile = if Bundler::VERSION[0, 2].to_i < 3
         bundled_app("Gemfile").read
       else
         bundled_app("gems.rb").read
