@@ -1089,6 +1089,30 @@ flo_iszero(VALUE f)
     return RFLOAT_VALUE(f) == 0.0;
 }
 
+static double
+double_div_double(double x, double y)
+{
+    if (LIKELY(y != 0.0)) {
+        return x / y;
+    }
+    else if (x == 0.0) {
+        return nan("");
+    }
+    else {
+        double z = signbit(y) ? -1.0 : 1.0;
+        return x * z * HUGE_VAL;
+    }
+}
+
+VALUE
+rb_flo_div_flo(VALUE x, VALUE y)
+{
+    double num = RFLOAT_VALUE(x);
+    double den = RFLOAT_VALUE(y);
+    double ret = double_div_double(x, y);
+    return DBL2NUM(ret);
+}
+
 /*
  * call-seq:
  *   float / other  ->  float
@@ -1099,52 +1123,25 @@ flo_iszero(VALUE f)
 static VALUE
 flo_div(VALUE x, VALUE y)
 {
-    double den;
     double num = RFLOAT_VALUE(x);
-    double sign = 1.0;
+    double den;
+    double ret;
 
     if (RB_TYPE_P(y, T_FIXNUM)) {
-        if (FIXNUM_ZERO_P(y)) {
-            goto zerodiv;
-        }
-        else {
-            den = FIX2LONG(y);
-            goto nonzero;
-        }
+        den = FIX2LONG(y);
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
-        if (rb_bigzero_p(y)) {
-            goto zerodiv;
-        }
-        else {
-            den = rb_big2dbl(y);
-            goto nonzero;
-        }
+        den = rb_big2dbl(y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-        if (flo_iszero(y)) {
-            sign = signbit(RFLOAT_VALUE(y)) ? -1.0 : 1.0;
-            goto zerodiv;
-        }
-        else {
-            den = RFLOAT_VALUE(y);
-            goto nonzero;
-        }
+        den = RFLOAT_VALUE(y);
     }
     else {
 	return rb_num_coerce_bin(x, y, '/');
     }
 
-nonzero:
-    return DBL2NUM(num / den);
-
-zerodiv:
-    if (num == 0.0) {
-        return DBL2NUM(nan(""));
-    }
-    else {
-        return DBL2NUM(num * sign * HUGE_VAL);
-    }
+    ret = double_div_double(num, den);
+    return DBL2NUM(ret);
 }
 
 /*
