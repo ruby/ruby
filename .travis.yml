@@ -250,7 +250,7 @@ addons:
     <<: *osx
     env:
       - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-      - "JOBS=" # osx build randomly fails with `-j`
+      - "JOBS=\"-j`sysctl -n hw.activecpu`\""
       # `-v` prints too long outputs, but sometimes it osx build hangs and we can't know which test is bad without `-v`.
       - "TEST_ALL_TESTOPTS='-v --color=never --job-status=normal --excludes=$(TESTSDIR)/excludes/_travis'"
 
@@ -313,9 +313,9 @@ before_script:
 
 script:
   - "$SETARCH make -s test TESTOPTS=--color=never"
-  - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- -q --color=never --job-status=normal}\""
-  - "$SETARCH make -s $JOBS test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
-  - "$SETARCH make -s $JOBS test-spec MSPECOPT=-fs" # not using `-j` because sometimes `mspec -j` silently dies
+  - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- $JOBS -q --color=never --job-status=normal}\""
+  - "$SETARCH make -s test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
+  - "$SETARCH make -s test-spec MSPECOPT=-ff" # not using `-j` because sometimes `mspec -j` silently dies
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
 branches:
