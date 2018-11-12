@@ -951,7 +951,6 @@ missing-srcs: $(srcdir)/missing/des_tables.c
 srcs: common-srcs missing-srcs srcs-enc
 
 EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
-	   $(srcdir)/ext/ripper/eventids2table.c \
 	   $(srcdir)/ext/rbconfig/sizeof/sizes.c \
 	   $(srcdir)/ext/rbconfig/sizeof/limits.c \
 	   $(srcdir)/ext/socket/constdefs.c \
@@ -1057,7 +1056,6 @@ $(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FOR
 	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
-$(srcdir)/ext/ripper/eventids2table.c \
 $(srcdir)/ext/ripper/ripper.c: $(srcdir)/ext/ripper/tools/preproc.rb $(srcdir)/parse.y id.h
 	$(ECHO) generating $@
 	$(Q) VPATH=$${PWD-`pwd`} && $(CHDIR) $(@D) && \
