@@ -31,8 +31,16 @@ END
 
   it "compiles eRuby script into ruby code when trim mode is 0 or not specified" do
     expected = "<ul>\n\n\n\n<li>1</li>\n\n\n\n<li>2</li>\n\n\n\n<li>3</li>\n\n\n</ul>\n"
-    [0, '', nil].each do |trim_mode|
+    [0, nil].each do |trim_mode|
       ERBSpecs.new_erb(@eruby_str, trim_mode: trim_mode).result.should == expected
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "warns invalid trim_mode" do
+      lambda do
+        ERBSpecs.new_erb(@eruby_str, trim_mode: '')
+      end.should output(nil, /Invalid ERB trim mode/)
     end
   end
 
