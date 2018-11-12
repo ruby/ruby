@@ -38,9 +38,14 @@ END
 
   ruby_version_is "2.6" do
     it "warns invalid trim_mode" do
-      lambda do
-        ERBSpecs.new_erb(@eruby_str, trim_mode: '')
-      end.should output(nil, /Invalid ERB trim mode/)
+      begin
+        $VERBOSE, verbose = false, $VERBOSE # Some other specs make $VERBOSE `nil`.
+        lambda do
+          ERBSpecs.new_erb(@eruby_str, trim_mode: '')
+        end.should output(nil, /Invalid ERB trim mode/)
+      ensure
+        $VERBOSE = verbose
+      end
     end
   end
 
