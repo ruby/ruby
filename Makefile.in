@@ -340,7 +340,7 @@ uncommon.mk: $(srcdir)/common.mk
 .PHONY: reconfig
 reconfig-args = $(srcdir)/$(CONFIGURE) $(configure_args)
 config.status-args = ./config.status --recheck
-reconfig-exec-0 = test -t 1 && { CONFIGURE_TTY=yes; export CONFIGURE_TTY; }; exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3 3>&- 4>&-`
+reconfig-exec-0 = test -t 1 && { CONFIGURE_TTY=${CONFIGURE_TTY=yes}; export CONFIGURE_TTY; }; exec 3>&1; exit `exec 4>&1; { "$$@" 3>&- 4>&-; echo $$? 1>&4; } | fgrep -v '(cached)' 1>&3 3>&- 4>&-`
 reconfig-exec-1 = set -x; "$$@"
 
 reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \

@@ -48,7 +48,9 @@ addons:
       - libffi
       - openssl@1.1
       - zlib
-
+env:
+  global:
+    - "CONFIGURE_TTY=no"
 .org.ruby-lang.ci.matrix-definitions:
 
   - &cron-only
@@ -304,9 +306,8 @@ before_script:
   - "$SETARCH make -s $JOBS && make install"
 
 script:
-  - "$SETARCH make -s test TESTOPTS=--color=never"
-  - "export TEST_ALL_TESTOPTS=\"${TEST_ALL_TESTOPTS:- $JOBS -q --color=never --job-status=normal}\""
-  - "$SETARCH make -s test-all -o exts TESTOPTS=\"$TEST_ALL_TESTOPTS\""
+  - "$SETARCH make -s test TESTOPTS=\"${TESTOPTS=$JOBS -q --tty=no}\""
+  - "$SETARCH make -s test-all -o exts TESTOPTS=\"${TEST_ALL_OPTS=$TESTOPTS}\""
   - "$SETARCH make -s test-spec MSPECOPT=-ff" # not using `-j` because sometimes `mspec -j` silently dies
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
