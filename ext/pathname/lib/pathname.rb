@@ -503,6 +503,7 @@ class Pathname
   # ArgumentError is raised when it cannot find a relative path.
   #
   def relative_path_from(base_directory)
+    base_directory = Pathname.new(base_directory) unless Pathname === base_directory
     dest_directory = self.cleanpath.to_s
     base_directory = base_directory.cleanpath.to_s
     dest_prefix = dest_directory
