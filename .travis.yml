@@ -246,7 +246,7 @@ env:
     env:
       - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
       - "JOBS=\"-j`sysctl -n hw.activecpu`\""
-      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis\""
+      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
@@ -256,7 +256,7 @@ env:
     env:
       - "CONFIG_FLAG='--with-arch=x86_64h,x86_64,i386'"
       - "JOBS=\"-j`sysctl -n hw.activecpu`\""
-      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis\""
+      - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
 
 matrix:
   include:
