@@ -244,8 +244,6 @@ addons:
     env:
       - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
       - "JOBS=\"-j`sysctl -n hw.activecpu`\""
-      # `-v` prints too long outputs, but sometimes it osx build hangs and we can't know which test is bad without `-v`.
-      - "TEST_ALL_TESTOPTS='-v --color=never --job-status=normal --excludes=$(TESTSDIR)/excludes/_travis'"
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
