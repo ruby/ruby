@@ -2587,10 +2587,9 @@ bigdivrem_single1(BDIGIT *qds, const BDIGIT *xds, size_t xn, BDIGIT x_higher_bdi
         size_t i;
         BDIGIT_DBL t2;
         t2 = x_higher_bdigit;
-        i = xn;
-        while (i--) {
-            t2 = BIGUP(t2) + xds[i];
-            qds[i] = (BDIGIT)(t2 / y);
+        for (i = 0; i < xn; i++) {
+            t2 = BIGUP(t2) + xds[xn - i - 1];
+            qds[xn - i - 1] = (BDIGIT)(t2 / y);
             t2 %= y;
         }
         return (BDIGIT)t2;

@@ -1199,7 +1199,7 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
 {
     rb_ensure_list_t *p;
     rb_ensure_entry_t *entry;
-    size_t i;
+    size_t i, j;
     size_t cur_size;
     size_t target_size;
     size_t base_point;
@@ -1237,11 +1237,11 @@ rollback_ensure_stack(VALUE self,rb_ensure_list_t *current,rb_ensure_entry_t *ta
 	cur_size--;
     }
     /* push ensure stack */
-    while (i--) {
-	func = (VALUE (*)(ANYARGS)) lookup_rollback_func(target[i].e_proc);
-	if ((VALUE)func != Qundef) {
-	    (*func)(target[i].data2);
-	}
+    for (j = 0; j < i; j++) {
+        func = (VALUE (*)(ANYARGS)) lookup_rollback_func(target[i - j - 1].e_proc);
+        if ((VALUE)func != Qundef) {
+            (*func)(target[i - j - 1].data2);
+        }
     }
 }
 

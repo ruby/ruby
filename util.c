@@ -54,8 +54,16 @@ ruby_scan_hex(const char *start, size_t len, size_t *retlen)
     register const char *s = start;
     register unsigned long retval = 0;
     const char *tmp;
+    size_t i = 0;
 
-    while (len-- && *s && (tmp = strchr(hexdigit, *s))) {
+    for (i = 0; i < len; i++) {
+        if (! s[0]) {
+            break;
+        }
+        tmp = strchr(hexdigit, *s);
+        if (! tmp) {
+            break;
+        }
 	retval <<= 4;
 	retval |= (tmp - hexdigit) & 15;
 	s++;
