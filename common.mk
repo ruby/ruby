@@ -1052,7 +1052,7 @@ preludes: {$(srcdir)}golf_prelude.c
 $(srcdir)/revision.h:
 	@exit > $@
 
-$(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
+$(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb PHONY
 	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
 	$(Q)$(IFCHANGE) "--timestamp=$@" "$(srcdir)/revision.h" revision.tmp
 
@@ -1168,7 +1168,7 @@ dist:
 up:: update-remote
 
 up::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY "$(REVISION_H)"
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) "$(REVISION_H)"
 
 up::
 	-$(Q)$(MAKE) $(mflags) Q=$(Q) after-update

@@ -150,7 +150,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
-		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
+		VCSUP="" ENC_MK=.top-enc.mk CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
