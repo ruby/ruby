@@ -93,9 +93,9 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=3.0 --exclude win32ole --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
-    # separately execute tests that may crash worker without -j.
-    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - nmake -l "TESTOPTS=-q -j%JOBS% --subprocess-timeout-scale=3.0 --exclude win32ole --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca --exclude ruby/test_array" test-all
+    # separately execute tests without -j which may exhaust memory (ruby/test_array.rb) or crash worker (others) with -j.
+    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0" test-all TESTS="../test/ruby/test_array.rb ../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 -
   matrix:
@@ -136,7 +136,7 @@ for:
     - mingw32-make DESTDIR=../install install-nodoc
   test_script:
     - mingw32-make test
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 -j %JOBS% --exclude win32ole --exclude test_open-uri"
-    # separately execute tests that may crash worker without -j.
-    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" TESTS="../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 -j %JOBS% --exclude ruby/test_array --exclude win32ole --exclude test_open-uri"
+    # separately execute tests without -j which may exhaust memory (ruby/test_array.rb) or crash worker (others) with -j.
+    - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5" TESTS="../ruby/test/ruby/test_array.rb ../ruby/test/win32ole ../ruby/test/open-uri/test_open-uri.rb"
     - mingw32-make test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
