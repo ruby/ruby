@@ -4,6 +4,10 @@ override gnumake_recursive := $(if $(findstring n,$(firstword $(MFLAGS))),,+)
 override mflags := $(filter-out -j%,$(MFLAGS))
 MSPECOPT += $(if $(filter -j%,$(MFLAGS)),-j)
 
+ifeq ($(HAVE_BASERUBY),yes)
+override REVISION_FORCE := PHONY
+endif
+
 CHECK_TARGETS := great exam love check test check% test% btest%
 # expand test targets, and those dependents
 TEST_TARGETS := $(filter $(CHECK_TARGETS),$(MAKECMDGOALS))
@@ -150,7 +154,7 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	} | \
 	$(MAKE) $(mflags) Q=$(Q) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
-		VCSUP="" ENC_MK=.top-enc.mk CONFIGURE="$(CONFIGURE)" -f - \
+		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
 
 ifeq ($(words $(filter update-gems extract-gems,$(MAKECMDGOALS))),2)
