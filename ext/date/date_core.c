@@ -322,7 +322,7 @@ do {\
     (x)->year = _year;\
     (x)->mon = _mon;\
     (x)->mday = _mday;\
-    (x)->flags = _flags;\
+    (x)->flags = (_flags) & ~COMPLEX_DAT;\
 } while (0)
 #else
 #define set_to_simple(obj, x, _nth, _jd ,_sg, _year, _mon, _mday, _flags) \
@@ -332,7 +332,7 @@ do {\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->pc = PACK2(_mon, _mday);\
-    (x)->flags = _flags;\
+    (x)->flags = (_flags) & ~COMPLEX_DAT;\
 } while (0)
 #endif
 
@@ -352,7 +352,7 @@ do {\
     (x)->hour = _hour;\
     (x)->min = _min;\
     (x)->sec = _sec;\
-    (x)->flags = _flags;\
+    (x)->flags = (_flags) | COMPLEX_DAT;\
 } while (0)
 #else
 #define set_to_complex(obj, x, _nth, _jd ,_df, _sf, _of, _sg,\
@@ -366,7 +366,7 @@ do {\
     (x)->sg = (date_sg_t)(_sg);\
     (x)->year = _year;\
     (x)->pc = PACK5(_mon, _mday, _hour, _min, _sec);\
-    (x)->flags = _flags;\
+    (x)->flags = (_flags) | COMPLEX_DAT;\
 } while (0)
 #endif
 
@@ -2966,7 +2966,7 @@ d_simple_new_internal(VALUE klass,
 
     obj = TypedData_Make_Struct(klass, struct SimpleDateData,
 				&d_lite_type, dat);
-    set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags & ~COMPLEX_DAT);
+    set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
 
@@ -2988,7 +2988,7 @@ d_complex_new_internal(VALUE klass,
     obj = TypedData_Make_Struct(klass, struct ComplexDateData,
 				&d_lite_type, dat);
     set_to_complex(obj, dat, nth, jd, df, sf, of, sg,
-		   y, m, d, h, min, s, flags | COMPLEX_DAT);
+		   y, m, d, h, min, s, flags);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
     assert(have_df_p(dat) || have_time_p(dat));
@@ -4749,7 +4749,7 @@ d_lite_initialize(int argc, VALUE *argv, VALUE self)
 			 "cannot load complex into simple");
 
 	    set_to_complex(self, &dat->c, nth, rjd, df, sf, of, sg,
-			   0, 0, 0, 0, 0, 0, HAVE_JD | HAVE_DF | COMPLEX_DAT);
+			   0, 0, 0, 0, 0, 0, HAVE_JD | HAVE_DF);
 	}
     }
     return self;
@@ -7144,7 +7144,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
 
 		set_to_complex(self, &dat->c, nth, jd, df, sf, rof, rsg,
 			       0, 0, 0, 0, 0, 0,
-			       HAVE_JD | HAVE_DF | COMPLEX_DAT);
+			       HAVE_JD | HAVE_DF);
 	    }
 	}
 	break;
@@ -7169,7 +7169,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
 
 		set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
 			       0, 0, 0, 0, 0, 0,
-			       HAVE_JD | HAVE_DF | COMPLEX_DAT);
+			       HAVE_JD | HAVE_DF);
 	    }
 	}
 	break;
