@@ -819,7 +819,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
         modifier_until     "until (modifier)"
         modifier_rescue    "rescue (modifier)"
         keyword_alias      "alias"
-        keyword_defined    "defined"
+        keyword_defined    "defined?"
         keyword_BEGIN      "BEGIN"
         keyword_END        "END"
         keyword__LINE__      "__LINE__"
