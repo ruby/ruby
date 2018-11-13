@@ -17,8 +17,8 @@
 # is also a good place to look at.
 
 language: c
-dist: trusty
-
+dist: xenial
+osx_image: xcode10.1
 sudo: false
 addons:
   apt:
@@ -66,12 +66,6 @@ addons:
     os: osx
     compiler: clang
     before_install:
-      # Bare "brew update" nukes everything.
-      # These steps are very carefully chosen to avoid breaking things.
-      - brew_core_dir=/usr/local/Homebrew/Library/Taps/homebrew/homebrew-core/
-      - git -C $brew_core_dir fetch -q origin
-      - git -C $brew_core_dir checkout -q 25590710e3f7af9cfa173c5cd3eb41a0532107b6
-      - HOMEBREW_NO_AUTO_UPDATE=1 brew upgrade openssl@1.1
       - /usr/local/opt/openssl@1.1/bin/openssl version
 
   # --------
@@ -217,7 +211,6 @@ addons:
         -Werror=write-strings
         -Wmissing-noreturn
         -Wno-constant-logical-operand
-        -Wno-extended-offsetof
         -Wno-missing-field-initializers
         -Wno-overlength-strings
         -Wno-parentheses-equality
