@@ -7121,6 +7121,10 @@ d_lite_marshal_dump(VALUE self)
 static VALUE
 d_lite_marshal_load(VALUE self, VALUE a)
 {
+    VALUE nth, sf;
+    int jd, df, of;
+    double sg;
+
     get_d1(self);
 
     rb_check_frozen(self);
@@ -7133,68 +7137,50 @@ d_lite_marshal_load(VALUE self, VALUE a)
       case 2: /* 1.6.x */
       case 3: /* 1.8.x, 1.9.2 */
 	{
-	    VALUE ajd, of, sg, nth, sf;
-	    int jd, df, rof;
-	    double rsg;
-
+	    VALUE ajd, vof, vsg;
 
 	    if  (RARRAY_LEN(a) == 2) {
 		ajd = f_sub(RARRAY_AREF(a, 0), half_days_in_day);
-		of = INT2FIX(0);
-		sg = RARRAY_AREF(a, 1);
-		if (!k_numeric_p(sg))
-		    sg = DBL2NUM(RTEST(sg) ? GREGORIAN : JULIAN);
+		vof = INT2FIX(0);
+		vsg = RARRAY_AREF(a, 1);
+		if (!k_numeric_p(vsg))
+		    vsg = DBL2NUM(RTEST(vsg) ? GREGORIAN : JULIAN);
 	    }
 	    else {
 		ajd = RARRAY_AREF(a, 0);
-		of = RARRAY_AREF(a, 1);
-		sg = RARRAY_AREF(a, 2);
+		vof = RARRAY_AREF(a, 1);
+		vsg = RARRAY_AREF(a, 2);
 	    }
 
-	    old_to_new(ajd, of, sg,
-		       &nth, &jd, &df, &sf, &rof, &rsg);
-
-	    if (!df && f_zero_p(sf) && !rof) {
-		set_to_simple(self, &dat->s, nth, jd, rsg, 0, 0, 0, HAVE_JD);
-	    } else {
-		if (!complex_dat_p(dat))
-		    rb_raise(rb_eArgError,
-			     "cannot load complex into simple");
-
-		set_to_complex(self, &dat->c, nth, jd, df, sf, rof, rsg,
-			       0, 0, 0, 0, 0, 0,
-			       HAVE_JD | HAVE_DF);
-	    }
+	    old_to_new(ajd, vof, vsg,
+		       &nth, &jd, &df, &sf, &of, &sg);
 	}
 	break;
       case 6:
 	{
-	    VALUE nth, sf;
-	    int jd, df, of;
-	    double sg;
-
 	    nth = RARRAY_AREF(a, 0);
 	    jd = NUM2INT(RARRAY_AREF(a, 1));
 	    df = NUM2INT(RARRAY_AREF(a, 2));
 	    sf = RARRAY_AREF(a, 3);
 	    of = NUM2INT(RARRAY_AREF(a, 4));
 	    sg = NUM2DBL(RARRAY_AREF(a, 5));
-	    if (!df && f_zero_p(sf) && !of) {
-		set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
-	    } else {
-		if (!complex_dat_p(dat))
-		    rb_raise(rb_eArgError,
-			     "cannot load complex into simple");
-
-		set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
-			       0, 0, 0, 0, 0, 0,
-			       HAVE_JD | HAVE_DF);
-	    }
 	}
 	break;
       default:
 	rb_raise(rb_eTypeError, "invalid size");
 	break;
+    }
+
+    if (simple_dat_p(dat)) {
+	if (df || !f_zero_p(sf) || of) {
+	    rb_raise(rb_eArgError,
+		     "cannot load complex into simple");
+	}
+	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);
+    } else {
+	set_to_complex(self, &dat->c, nth, jd, df, sf, of, sg,
+		       0, 0, 0, 0, 0, 0,
+		       HAVE_JD | HAVE_DF);
     }
 
     if (FL_TEST(a, FL_EXIVAR)) {
