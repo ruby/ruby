@@ -3211,7 +3211,7 @@ vm_opt_newarray_max(rb_num_t num, const VALUE *ptr)
 	else {
 	    struct cmp_opt_data cmp_opt = { 0, 0 };
 	    VALUE result = *ptr;
-	    rb_num_t i = num - 1;
+            rb_snum_t i = num - 1;
 	    while (i-- > 0) {
 		const VALUE v = *++ptr;
 		if (OPTIMIZED_CMP(v, result, cmp_opt) > 0) {
@@ -3237,7 +3237,7 @@ vm_opt_newarray_min(rb_num_t num, const VALUE *ptr)
 	else {
 	    struct cmp_opt_data cmp_opt = { 0, 0 };
 	    VALUE result = *ptr;
-	    rb_num_t i = num - 1;
+            rb_snum_t i = num - 1;
 	    while (i-- > 0) {
 		const VALUE v = *++ptr;
 		if (OPTIMIZED_CMP(v, result, cmp_opt) < 0) {

@@ -1573,6 +1573,7 @@ init_seed(struct MT *mt)
 	seed.u32[i] = genrand_int32(mt);
 }
 
+NO_SANITIZE("unsigned-integer-overflow", extern st_index_t rb_hash_start(st_index_t h));
 st_index_t
 rb_hash_start(st_index_t h)
 {
