@@ -2943,6 +2943,7 @@ class TestArray < Test::Unit::TestCase
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
+      GC.start # avoid NoMemoryError on the next line
       assert_separately(['-', ARY_MAX.to_s, Bug11235], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
       begin;
         a = Array.new(ARGV[0].to_i)
