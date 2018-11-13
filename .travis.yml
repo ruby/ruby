@@ -275,6 +275,7 @@ matrix:
     - <<: *NO_THREADED_CODE
     - <<: *rubyspec
   allow_failures:
+    - os: osx
     - name: uinversal.x86_64h-darwin17
     - name: -fsanitize=address
     - name: -fsanitize=memory
