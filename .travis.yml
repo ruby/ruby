@@ -58,7 +58,7 @@ env:
 
   - &make-test-only
     script:
-      - "$SETARCH make -s test TESTOPTS=--color=never"
+      - "$SETARCH make -s test TESTOPTS=\"${TESTOPTS=$JOBS -q --tty=no}\""
 
   - &linux
     os: linux
