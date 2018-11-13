@@ -97,7 +97,7 @@ f_ge_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return f_boolcast(FIX2LONG(x) >= FIX2LONG(y));
-    return rb_funcall(x, rb_intern(">="), 1, y);
+    return rb_funcall(x, id_ge_p, 1, y);
 }
 
 inline static VALUE
@@ -105,7 +105,7 @@ f_eqeq_p(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x) && FIXNUM_P(y))
 	return f_boolcast(FIX2LONG(x) == FIX2LONG(y));
-    return rb_funcall(x, rb_intern("=="), 1, y);
+    return rb_funcall(x, id_eqeq_p, 1, y);
 }
 
 inline static VALUE
@@ -6271,7 +6271,7 @@ cmp_gen(VALUE self, VALUE other)
 	return INT2FIX(f_cmp(m_ajd(dat), other));
     else if (k_date_p(other))
 	return INT2FIX(f_cmp(m_ajd(dat), f_ajd(other)));
-    return rb_num_coerce_cmp(self, other, rb_intern("<=>"));
+    return rb_num_coerce_cmp(self, other, id_cmp);
 }
 
 static VALUE
@@ -6400,7 +6400,7 @@ equal_gen(VALUE self, VALUE other)
 	return f_eqeq_p(m_real_local_jd(dat), other);
     else if (k_date_p(other))
 	return f_eqeq_p(m_real_local_jd(dat), f_jd(other));
-    return rb_num_coerce_cmp(self, other, rb_intern("=="));
+    return rb_num_coerce_cmp(self, other, id_eqeq_p);
 }
 
 /*
