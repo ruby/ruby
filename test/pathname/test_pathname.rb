@@ -291,9 +291,10 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def relative_path_from(dest_directory, base_directory)
-    Pathname.new(dest_directory).relative_path_from(Pathname.new(base_directory)).to_s
+    Pathname.new(dest_directory).relative_path_from(base_directory).to_s
   end
 
+  defassert(:relative_path_from, "../a", Pathname.new("a"), "b")
   defassert(:relative_path_from, "../a", "a", "b")
   defassert(:relative_path_from, "../a", "a", "b/")
   defassert(:relative_path_from, "../a", "a/", "b")
