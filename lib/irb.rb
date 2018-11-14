@@ -733,12 +733,12 @@ module IRB
 end
 
 class Binding
-  # Opens an IRB session where `binding.irb` is called which allows for
+  # Opens an IRB session where +binding.irb+ is called which allows for
   # interactive debugging. You can call any methods or variables available in
   # the current scope, and mutate state if you need to.
   #
   #
-  # Given a Ruby file called `potato.rb` containing the following code:
+  # Given a Ruby file called +potato.rb+ containing the following code:
   #
   #     class Potato
   #       def initialize
@@ -750,7 +750,7 @@ class Binding
   #
   #     Potato.new
   #
-  # Running `ruby potato.rb` will open an IRB session where `binding.irb` is
+  # Running +ruby potato.rb+ will open an IRB session where +binding.irb+ is
   # called, and you will see the following:
   #
   #     $ ruby potato.rb
@@ -782,7 +782,7 @@ class Binding
   #     => true
   #
   # You can exit the IRB session with the `exit` command. Note that exiting will
-  # resume execution where +binding.call+ had paused it, as you can see from the
+  # resume execution where +binding.irb+ had paused it, as you can see from the
   # output printed to standard output in this example:
   #
   #     irb(#<Potato:0x00007feea1916670>):005:0> exit
