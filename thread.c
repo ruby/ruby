@@ -4010,12 +4010,12 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     set.timeout = timeout;
 
     if (!set.rset && !set.wset && !set.eset) {
-	if (!timeout) {
-	    rb_thread_sleep_forever();
-	    return 0;
-	}
-	rb_thread_wait_for(*timeout);
-	return 0;
+        if (!timeout) {
+            rb_thread_sleep_forever();
+            return 0;
+        }
+        rb_thread_wait_for(*timeout);
+        return 0;
     }
 
     set.sigwait_fd = rb_sigwait_fd_get(set.th);
