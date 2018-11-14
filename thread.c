@@ -4004,21 +4004,11 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     set.th = GET_THREAD();
     RUBY_VM_CHECK_INTS_BLOCKING(set.th->ec);
     set.max = max;
-    set.sigwait_fd = rb_sigwait_fd_get(set.th);
     set.rset = read;
     set.wset = write;
     set.eset = except;
     set.timeout = timeout;
 
-    if (set.sigwait_fd >= 0) {
-        if (set.rset)
-            rb_fd_set(set.sigwait_fd, set.rset);
-        else
-            set.rset = init_set_fd(set.sigwait_fd, &set.orig_rset);
-        if (set.sigwait_fd >= set.max) {
-            set.max = set.sigwait_fd + 1;
-        }
-    }
     if (!set.rset && !set.wset && !set.eset) {
 	if (!timeout) {
 	    rb_thread_sleep_forever();
@@ -4028,6 +4018,16 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 	return 0;
     }
 
+    set.sigwait_fd = rb_sigwait_fd_get(set.th);
+    if (set.sigwait_fd >= 0) {
+        if (set.rset)
+            rb_fd_set(set.sigwait_fd, set.rset);
+        else
+            set.rset = init_set_fd(set.sigwait_fd, &set.orig_rset);
+        if (set.sigwait_fd >= set.max) {
+            set.max = set.sigwait_fd + 1;
+        }
+    }
 #define fd_init_copy(f) do { \
         if (set.f) { \
             rb_fd_resize(set.max - 1, set.f); \
