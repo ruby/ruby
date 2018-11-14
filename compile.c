@@ -8635,7 +8635,15 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
 		rb_raise(rb_eRuntimeError, "path object size mismatch");
 	    }
 	    path = rb_fstring(RARRAY_AREF(pathobj, 0));
-	    realpath = rb_fstring(RARRAY_AREF(pathobj, 1));
+	    realpath = RARRAY_AREF(pathobj, 1);
+	    if (!NIL_P(realpath)) {
+		if (!RB_TYPE_P(realpath, T_STRING)) {
+		    rb_raise(rb_eArgError, "unexpected realpath %"PRIxVALUE
+			     "(%x), path=%+"PRIsVALUE,
+			     realpath, TYPE(realpath), path);
+		}
+		realpath = rb_fstring(realpath);
+	    }
 	}
 	else {
 	    rb_raise(rb_eRuntimeError, "unexpected path object");
