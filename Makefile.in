@@ -556,6 +556,10 @@ update-simplecov:
 
 update-coverage: update-simplecov update-simplecov-html update-doclie
 
+update-known-errors:
+	errno --list | cut -d' ' -f1 | sort -u - $(srcdir)/defs/known_errors.def | \
+	$(IFCHANGE) $(srcdir)/defs/known_errors.def -
+
 INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
 	  vmtc.inc vm.inc mjit_compile.inc
 
