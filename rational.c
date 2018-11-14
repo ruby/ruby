@@ -930,9 +930,9 @@ nurat_div(VALUE self, VALUE other)
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
-	double d = nurat_to_double(self);
-	VALUE v = rb_float_new(d);
-	return rb_flo_div_flo(v, other);
+        double d = nurat_to_double(self);
+        VALUE v = rb_float_new(d);
+        return rb_flo_div_flo(v, other);
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
 	if (f_zero_p(other))
@@ -971,7 +971,7 @@ nurat_fdiv(VALUE self, VALUE other)
 {
     VALUE div;
     if (f_zero_p(other))
-	return nurat_div(self, rb_float_new(0.0));
+        return nurat_div(self, rb_float_new(0.0));
     if (FIXNUM_P(other) && other == LONG2FIX(1))
 	return nurat_to_f(self);
     div = nurat_div(self, other);
