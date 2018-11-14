@@ -4,6 +4,7 @@ require 'rubygems/user_interaction'
 require 'timeout'
 
 class TestGemStreamUI < Gem::TestCase
+  SHORT_TIMEOUT = (defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?) ? 1.0 : 0.1 # increase timeout with MJIT for --jit-wait testing
 
   module IsTty
     attr_accessor :tty
@@ -47,7 +48,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_no_tty
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask("what is your favorite color?")
       assert_nil answer
     end
@@ -65,7 +66,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_for_password_no_tty
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
       assert_nil answer
     end
@@ -74,7 +75,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_yes_no_no_tty_with_default
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_yes_no("do coconuts migrate?", false)
       assert_equal false, answer
 
@@ -86,7 +87,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_yes_no_no_tty_without_default
     @in.tty = false
 
-    Timeout.timeout(0.1) do
+    Timeout.timeout(SHORT_TIMEOUT) do
       assert_raises(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end
