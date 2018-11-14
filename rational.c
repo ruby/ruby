@@ -41,6 +41,8 @@ static ID id_abs, id_idiv, id_integer_p,
 #define f_inspect rb_inspect
 #define f_to_s rb_obj_as_string
 
+static VALUE nurat_to_f(VALUE self);
+
 #define binop(n,op) \
 inline static VALUE \
 f_##n(VALUE x, VALUE y)\
@@ -930,8 +932,7 @@ nurat_div(VALUE self, VALUE other)
 	}
     }
     else if (RB_FLOAT_TYPE_P(other)) {
-        double d = nurat_to_double(self);
-        VALUE v = rb_float_new(d);
+        VALUE v = nurat_to_f(self);
         return rb_flo_div_flo(v, other);
     }
     else if (RB_TYPE_P(other, T_RATIONAL)) {
@@ -953,8 +954,6 @@ nurat_div(VALUE self, VALUE other)
 	return rb_num_coerce_bin(self, other, '/');
     }
 }
-
-static VALUE nurat_to_f(VALUE self);
 
 /*
  * call-seq:
