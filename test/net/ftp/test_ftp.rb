@@ -335,7 +335,7 @@ class FTPTest < Test::Unit::TestCase
       sleep(0.1)
       sock.print("331 Please specify the password.\r\n")
       commands.push(sock.gets)
-      sleep(0.3)
+      sleep(2.0) # Net::ReadTimeout
       sock.print("230 Login successful.\r\n")
       commands.push(sock.gets)
       sleep(0.1)
@@ -344,7 +344,7 @@ class FTPTest < Test::Unit::TestCase
     begin
       begin
         ftp = Net::FTP.new
-        ftp.read_timeout = 0.2
+        ftp.read_timeout = 0.4
         ftp.connect(SERVER_ADDR, server.port)
         assert_raise(Net::ReadTimeout) do
           ftp.login
