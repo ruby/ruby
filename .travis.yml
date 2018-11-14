@@ -17,9 +17,13 @@
 # is also a good place to look at.
 
 language: c
+
 dist: xenial
+
 osx_image: xcode10.1
+
 sudo: false
+
 addons:
   apt:
     config:
@@ -48,9 +52,11 @@ addons:
       - libffi
       - openssl@1.1
       - zlib
+
 env:
   global:
     - "CONFIGURE_TTY=no"
+
 .org.ruby-lang.ci.matrix-definitions:
 
   - &cron-only
