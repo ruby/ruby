@@ -24,6 +24,9 @@ osx_image: xcode10.1
 
 sudo: false
 
+git:
+  quiet: true
+
 addons:
   apt:
     config:
