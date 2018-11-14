@@ -55,10 +55,19 @@ addons:
       - libffi
       - openssl@1.1
       - zlib
+      - ccache
+
+cache:
+  ccache: true
+  directories:
+    - "$HOME/config_2nd"
 
 env:
   global:
     - "CONFIGURE_TTY=no"
+    - "CCACHE_COMPILERCHECK=none"
+    - "CCACHE_NOCOMPRESS=1"
+    - "CCACHE_MAXSIZE=512Mi"
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -169,8 +178,8 @@ env:
     name: i686-linux
     <<: *linux
     sudo: required
-    compiler: "'gcc-8 -m32'"
     env:
+      - "GCC_FLAGS=-m32"
       - "CONFIG_FLAG='debugflags=-g0'"
       - "SETARCH='setarch i686 --verbose --3gb'"
     addons:
@@ -201,8 +210,9 @@ env:
     name: "-ansi -pedantic"
     <<: *linux
     <<: *make-test-only
-    compiler: "'clang -ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
+    compiler: clang
     env:
+      - "GCC_FLAGS='-ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
       - "CONFIG_FLAG="
       - "JOBS="
     # construct warnflags (using bashism...)
@@ -304,16 +314,33 @@ before_script:
   - "make touch-unicode-files"
   - "make -s $JOBS srcs UNICODE_FILES=."
   - "rm config.status Makefile rbconfig.rb .rbconfig.time"
-  - "mkdir build config_1st config_2nd"
+  - |-
+    if [ -d ~/config_2nd ]; then
+      cp -pr ~/config_2nd build;
+    else
+      mkdir build
+    fi
+  - "mkdir config_1st config_2nd"
   - "chmod -R a-w ."
-  - "chmod u+w build config_1st config_2nd"
+  - "chmod -R u+w build config_1st config_2nd"
   - "cd build"
-  - "$SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"$CC\" $CONFIG_FLAG \"${CONFIG_FLAG_ARRAY[@]}\""
+  - |-
+    case "$CC" in
+    gcc*)   the_gcc=(ccache $CC -fno-diagnostics-color ${GCC_FLAGS[@]}) ;;
+    clang*) the_gcc=(ccache $CC -fno-color-diagnostics ${GCC_FLAGS[@]}) ;;
+    esac
+    $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc="${the_gcc[*]}" $CONFIG_FLAG "${CONFIG_FLAG_ARRAY[@]}"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
   - "(cd .. && exec diff -ru config_1st config_2nd)"
+  - |
+    chmod u+w ..
+    rm -r ~/config_2nd
+    mv ../config_2nd ~
+    chmod u-w ..
   - "$SETARCH make -s $JOBS && make install"
+  - "ccache --show-stats"
 
 script:
   - "$SETARCH make -s test TESTOPTS=\"${TESTOPTS=$JOBS -q --tty=no}\""
