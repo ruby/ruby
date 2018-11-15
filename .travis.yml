@@ -287,7 +287,6 @@ matrix:
   include:
     # to reduce time for finishing all jobs, run the slowest osx build first.
     - <<: *x86_64-darwin17
-    - <<: *universal-darwin17
     - <<: *x86_64-linux
     - <<: *i686-linux
     - <<: *jemalloc
