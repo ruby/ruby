@@ -583,7 +583,8 @@ un-runnable:
 mjit_config.h:
 	$(ECHO) making $@
 	@{ \
-	. $(srcdir)/tool/mjit_archflag.sh "$(UNIVERSAL_ARCHNAMES)" $(ARCH_FLAG); \
+	. $(srcdir)/tool/mjit_archflag.sh; \
+	parse_arch_flags "$(UNIVERSAL_ARCHNAMES)" $(ARCH_FLAG); \
 	test "$(Q)" = @ || set -x; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
