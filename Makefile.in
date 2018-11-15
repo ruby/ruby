@@ -583,31 +583,8 @@ un-runnable:
 mjit_config.h:
 	$(ECHO) making $@
 	@{ \
-	quote() { \
-	    printf "#define $$1"; shift; \
-	    $${1+printf} $${1+' "%s"'$$sep} $${1+"$$@"}; \
-	    echo; \
-	}; \
-	parse_arch_flag() { \
-	    while [ "$$#" -gt 0 ]; do \
-	        case "$$1" in \
-	        -arch) \
-	            shift; \
-	            archs="$${archs:+$$archs }$$1"; \
-	            shift; \
-	            ;; \
-	        *) \
-	            arch_flag="$${arch_flag:+$${arch_flag} }$$1"; \
-	            shift; \
-	            ;; \
-	        esac; \
-	    done; \
-	}; \
+	. $(srcdir)/tool/mjit_archflag.sh "$(UNIVERSAL_ARCHNAMES)" $(ARCH_FLAG); \
 	test "$(Q)" = @ || set -x; \
-	archs="$(UNIVERSAL_ARCHNAMES)"; \
-	arch_flag=""; \
-	parse_arch_flag $(ARCH_FLAG); \
-	need_mjit_archflag="$${archs}$${arch_flag}"; \
 	echo '#ifndef RUBY_MJIT_CONFIG_H'; \
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
@@ -615,23 +592,14 @@ mjit_config.h:
 	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
-	quote "MJIT_CFLAGS     $${need_mjit_archflag:+ MJIT_ARCHFLAG}" $(MJIT_CFLAGS); \
+	quote "MJIT_CFLAGS      MJIT_ARCHFLAG" $(MJIT_CFLAGS); \
 	quote "MJIT_OPTFLAGS   " $(MJIT_OPTFLAGS); \
 	quote "MJIT_DEBUGFLAGS " $(MJIT_DEBUGFLAGS); \
 	quote "MJIT_LDSHARED   " $(MJIT_LDSHARED); \
-	quote "MJIT_DLDFLAGS   $${need_mjit_archflag:+ MJIT_ARCHFLAG}" $(MJIT_DLDFLAGS); \
+	quote "MJIT_DLDFLAGS    MJIT_ARCHFLAG" $(MJIT_DLDFLAGS); \
 	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
 	quote 'PRELOADENV       "@PRELOADENV@"'; \
-	$${archs:+echo} $${archs:+'#if 0'}; \
-	for arch in $$archs; do \
-	    echo "#elif defined __$${arch%=*}__"; \
-	    quote "  MJIT_ARCHFLAG " -arch $${arch%=*}; \
-	done; \
-	$${archs:+echo} $${archs:+'#else'}; \
-	if [ "$${arch_flag}" != "" ]; then \
-	    quote "  MJIT_ARCHFLAG " $${arch_flag}; \
-	fi; \
-	$${archs:+echo} $${archs:+'#endif'}; \
+	indent=$${archs+  } define_arch_flags; \
 	echo; \
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
