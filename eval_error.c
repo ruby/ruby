@@ -195,7 +195,7 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 	long len = RARRAY_LEN(errat);
         int skip = eclass == rb_eSysStackError;
 	const int threshold = 1000000000;
-	int width = ((int)log10((double)(len > threshold ?
+        int width = (len <= 1) ? INT_MIN : ((int)log10((double)(len > threshold ?
 					 ((len - 1) / threshold) :
 					 len - 1)) +
 		     (len < threshold ? 0 : 9) + 1);
