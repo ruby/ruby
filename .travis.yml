@@ -330,6 +330,7 @@ before_script:
     gcc*)   the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-diagnostics-color) ;;
     clang*) the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-color-diagnostics) ;;
     esac
+    if [ ccache = "${the_gcc[0]}" ]; then export MJIT_CC="${the_gcc[*]:1}"; fi
     $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc="${the_gcc[*]}" $CONFIG_FLAG "${CONFIG_FLAG_ARRAY[@]}"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "$SETARCH make reconfig"
