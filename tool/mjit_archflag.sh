@@ -10,21 +10,23 @@ quote() {
 archs=""
 arch_flag=""
 
-for arch in $1; do
-    archs="${archs:+$archs }${arch%=*}"
-done
+parse_arch_flags() {
+    for arch in $1; do
+	archs="${archs:+$archs }${arch%=*}"
+    done
 
-while shift && [ "$#" -gt 0 ]; do
-    case "$1" in
-	-arch)
-	    shift
-	    archs="${archs:+$archs }$1"
-	    ;;
-	*)
-	    arch_flag="${arch_flag:+${arch_flag} }$1"
-	    ;;
-    esac
-done
+    while shift && [ "$#" -gt 0 ]; do
+	case "$1" in
+	    -arch)
+		shift
+		archs="${archs:+$archs }$1"
+		;;
+	    *)
+		arch_flag="${arch_flag:+${arch_flag} }$1"
+		;;
+	esac
+    done
+}
 
 define_arch_flags() {
     local indent=${archs:+  }
