@@ -68,6 +68,14 @@ env:
     - "CCACHE_COMPILERCHECK=none"
     - "CCACHE_NOCOMPRESS=1"
     - "CCACHE_MAXSIZE=512Mi"
+    - >-
+      NPROC="`case ${TRAVIS_OS_NAME} in
+      osx)   sysctl -n hw.activecpu ;;
+      linux) nproc ;;
+      esac`"
+    # JOBS and SETARCH are overridden when necessary; see below.
+    - "JOBS=-j$((1+${NPROC}))"
+    - "SETARCH="
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -264,7 +272,6 @@ env:
     <<: *osx
     env:
       - "CONFIG_FLAG='--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib'"
-      - "JOBS=\"-j`sysctl -n hw.activecpu`\""
       - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
 
   - &universal-darwin17
@@ -274,7 +281,6 @@ env:
     <<: *make-test-only
     env:
       - "CONFIG_FLAG='--with-arch=x86_64h,x86_64,i386'"
-      - "JOBS=\"-j`sysctl -n hw.activecpu`\""
       - "TEST_ALL_OPTS=\"$JOBS -q --tty=no --excludes=\\$(TESTSDIR)/excludes/_travis/osx\""
 
 matrix:
@@ -303,7 +309,7 @@ matrix:
   fast_finish: true
 
 before_script:
-  - "echo JOBS=${JOBS=-j`nproc`} SETARCH=${SETARCH=}"
+  - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
@@ -335,7 +341,7 @@ before_script:
   - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
   - "(cd .. && exec diff -ru config_1st config_2nd)"
-  - |
+  - |-
     chmod u+w ..
     rm -r ~/config_2nd
     mv ../config_2nd ~
