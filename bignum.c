@@ -425,9 +425,9 @@ bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT hi
 
     num = BIGUP(higher_bdigit);
     for (i = 0; i < n; i++) {
-	BDIGIT x = xds[n - i - 1];
+        BDIGIT x = xds[n - i - 1];
 	num = (num | x) >> shift;
-	zds[n - i - 1] = BIGLO(num);
+        zds[n - i - 1] = BIGLO(num);
 	num = BIGUP(x);
     }
 }
@@ -5106,7 +5106,7 @@ big2ulong(VALUE x, const char *type)
     num = 0;
     for (i = 0; i < len; i++) {
 	num <<= BITSPERDIG;
-	num += (unsigned long)ds[len - i - 1]; /* overflow is already checked */
+        num += (unsigned long)ds[len - i - 1]; /* overflow is already checked */
     }
 #endif
     return num;
