@@ -418,15 +418,16 @@ bary_small_lshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift)
 static void
 bary_small_rshift(BDIGIT *zds, const BDIGIT *xds, size_t n, int shift, BDIGIT higher_bdigit)
 {
+    size_t i;
     BDIGIT_DBL num = 0;
 
     assert(0 <= shift && shift < BITSPERDIG);
 
     num = BIGUP(higher_bdigit);
-    while (n--) {
-	BDIGIT x = xds[n];
+    for (i = 0; i < n; i++) {
+	BDIGIT x = xds[n - i - 1];
 	num = (num | x) >> shift;
-	zds[n] = BIGLO(num);
+	zds[n - i - 1] = BIGLO(num);
 	num = BIGUP(x);
     }
 }
@@ -445,8 +446,9 @@ bary_zero_p(const BDIGIT *xds, size_t xn)
 static void
 bary_neg(BDIGIT *ds, size_t n)
 {
-    while (n--)
-        ds[n] = BIGLO(~ds[n]);
+    size_t i;
+    for (i = 0; i < n; i++)
+        ds[n - i - 1] = BIGLO(~ds[n - i - 1]);
 }
 
 static int
@@ -5087,6 +5089,7 @@ rb_big2str(VALUE x, int base)
 static unsigned long
 big2ulong(VALUE x, const char *type)
 {
+    size_t i;
     size_t len = BIGNUM_LEN(x);
     unsigned long num;
     BDIGIT *ds;
@@ -5101,9 +5104,9 @@ big2ulong(VALUE x, const char *type)
     num = (unsigned long)ds[0];
 #else
     num = 0;
-    while (len--) {
+    for (i = 0; i < len; i++) {
 	num <<= BITSPERDIG;
-	num += (unsigned long)ds[len]; /* overflow is already checked */
+	num += (unsigned long)ds[len - i - 1]; /* overflow is already checked */
     }
 #endif
     return num;

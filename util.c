@@ -1541,6 +1541,7 @@ cmp(Bigint *a, Bigint *b)
     return 0;
 }
 
+NO_SANITIZE("unsigned-integer-overflow", static Bigint * diff(Bigint *a, Bigint *b));
 static Bigint *
 diff(Bigint *a, Bigint *b)
 {
@@ -2020,6 +2021,7 @@ hexnan(double *rvp, const char **sp)
 #endif /*No_Hex_NaN*/
 #endif /* INFNAN_CHECK */
 
+NO_SANITIZE("unsigned-integer-overflow", double ruby_strtod(const char *s00, char **se));
 double
 ruby_strtod(const char *s00, char **se)
 {
