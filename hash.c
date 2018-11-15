@@ -293,7 +293,9 @@ rb_ident_hash(st_data_t n)
      *   many integers get interpreted as 2.0 or -2.0 [Bug #10761]
      */
     if (FLONUM_P(n)) {
-	n ^= (st_data_t)rb_float_value(n);
+        union { double d; st_data_t i; } u;
+        u.d = rb_float_value(n);
+        n ^= u.i;
     }
 #endif
 
