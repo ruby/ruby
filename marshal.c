@@ -817,6 +817,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		char sign = BIGNUM_SIGN(obj) ? '+' : '-';
 		size_t len = BIGNUM_LEN(obj);
 		size_t slen;
+                size_t j;
 		BDIGIT *d = BIGNUM_DIGITS(obj);
 
                 slen = SHORTLEN(len);
@@ -826,7 +827,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 
 		w_byte(sign, arg);
 		w_long((long)slen, arg);
-		while (len--) {
+                for (j = 0; j < len; j++) {
 #if SIZEOF_BDIGIT > SIZEOF_SHORT
 		    BDIGIT num = *d;
 		    int i;
@@ -834,7 +835,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 		    for (i=0; i<SIZEOF_BDIGIT; i+=SIZEOF_SHORT) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
-			if (len == 0 && num == 0) break;
+                        if (j == len - 1 && num == 0) break;
 		    }
 #else
 		    w_short(*d, arg);
