@@ -3702,7 +3702,7 @@ static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-        return (double)FIX2LONG(x) / (double)FIX2LONG(y);
+        return double_div_double(FIX2LONG(x), FIX2LONG(y));
     }
     else if (RB_TYPE_P(y, T_BIGNUM)) {
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
