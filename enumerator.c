@@ -2790,14 +2790,15 @@ static double
 arith_seq_float_step_size(double beg, double end, double step, int excl)
 {
     double const epsilon = DBL_EPSILON;
-    double n = (end - beg) / step;
-    double err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
+    double n, err;
 
-    if (isinf(step)) {
-        return step > 0 ? beg <= end : beg >= end;
-    }
     if (step == 0) {
         return HUGE_VAL;
+    }
+    n = (end - beg) / step;
+    err = (fabs(beg) + fabs(end) + fabs(end - beg)) / fabs(step) * epsilon;
+    if (isinf(step)) {
+        return step > 0 ? beg <= end : beg >= end;
     }
     if (err > 0.5) err = 0.5;
     if (excl) {

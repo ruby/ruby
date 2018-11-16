@@ -6041,12 +6041,15 @@ rb_big_divide(VALUE x, VALUE y, ID op)
     }
     else if (RB_FLOAT_TYPE_P(y)) {
 	if (op == '/') {
-	    return DBL2NUM(rb_big2dbl(x) / RFLOAT_VALUE(y));
+            double dx = rb_big2dbl(x);
+            return rb_flo_div_flo(DBL2NUM(dx), y);
 	}
 	else {
+            VALUE v;
 	    double dy = RFLOAT_VALUE(y);
 	    if (dy == 0.0) rb_num_zerodiv();
-	    return rb_dbl2big(rb_big2dbl(x) / dy);
+            v = rb_big_divide(x, y, '/');
+            return rb_dbl2big(RFLOAT_VALUE(v));
 	}
     }
     else {
@@ -6179,6 +6182,7 @@ double
 rb_big_fdiv_double(VALUE x, VALUE y)
 {
     double dx, dy;
+    VALUE v;
 
     dx = big2dbl(x);
     if (FIXNUM_P(y)) {
@@ -6199,7 +6203,8 @@ rb_big_fdiv_double(VALUE x, VALUE y)
     else {
 	return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
     }
-    return dx / dy;
+    v = rb_flo_div_flo(DBL2NUM(dx), DBL2NUM(dy));
+    return NUM2DBL(v);
 }
 
 VALUE
