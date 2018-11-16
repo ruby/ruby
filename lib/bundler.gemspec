@@ -49,7 +49,16 @@ Gem::Specification.new do |s|
   s.add_development_dependency "ronn",       "~> 0.7.3"
   s.add_development_dependency "rspec",      "~> 3.6"
 
+  # s.files = `git ls-files -z`.split("\x0").select {|f| f.match(%r{^(lib|exe)/}) }
+  # we don't check in man pages, but we need to ship them because
+  # we use them to generate the long-form help for each command.
+  # s.files += Dir.glob("man/**/*")
+  # Include the CHANGELOG.md, LICENSE.md, README.md manually
+  # s.files += %w[CHANGELOG.md LICENSE.md README.md]
+  # include the gemspec itself because warbler breaks w/o it
   s.files += %w[bundler.gemspec]
 
+  # s.bindir        = "exe"
+  # s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
 end

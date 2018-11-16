@@ -28,7 +28,6 @@ require "bundler/vendored_fileutils"
 require "uri"
 require "digest"
 
-
 # Delete the default copy of Bundler that RVM installs for us when running in CI
 require "fileutils"
 if ENV.select {|k, _v| k =~ /TRAVIS/ }.any? && Gem::Version.new(Gem::VERSION) > Gem::Version.new("2.0")
@@ -123,11 +122,13 @@ RSpec.configure do |config|
     c.syntax = :expect
   end
 
-  config.before :suite do
+  config.around :each do |example|
     if ENV["BUNDLE_RUBY"]
-      @orig_ruby = Gem.ruby
+      orig_ruby = Gem.ruby
       Gem.ruby = ENV["BUNDLE_RUBY"]
     end
+    example.run
+    Gem.ruby = orig_ruby if ENV["BUNDLE_RUBY"]
   end
 
   config.before :all do
@@ -153,9 +154,5 @@ RSpec.configure do |config|
 
     Dir.chdir(original_wd)
     ENV.replace(original_env)
-  end
-
-  config.after :suite do
-    Gem.ruby = @orig_ruby if ENV["BUNDLE_RUBY"]
   end
 end
