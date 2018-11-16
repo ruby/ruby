@@ -5283,7 +5283,8 @@ big2dbl(VALUE x)
                     mask <<= bits;
                     bit <<= bits;
                     dl &= mask;
-                    dl |= bit;
+                    dl += bit;
+                    dl = BIGLO(dl);
 		    if (!dl) d += 1;
 		}
 	    }
