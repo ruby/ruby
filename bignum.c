@@ -5089,7 +5089,9 @@ rb_big2str(VALUE x, int base)
 static unsigned long
 big2ulong(VALUE x, const char *type)
 {
+#if SIZEOF_LONG > SIZEOF_BDIGIT
     size_t i;
+#endif
     size_t len = BIGNUM_LEN(x);
     unsigned long num;
     BDIGIT *ds;
