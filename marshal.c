@@ -401,8 +401,8 @@ w_float(double d, struct dump_arg *arg)
 	w_cstr("nan", arg);
     }
     else if (d == 0.0) {
-	if (1.0/d < 0) w_cstr("-0", arg);
-	else           w_cstr("0", arg);
+        if (signbit(d)) w_cstr("-0", arg);
+        else            w_cstr("0", arg);
     }
     else {
 	int decpt, sign, digs, len = 0;

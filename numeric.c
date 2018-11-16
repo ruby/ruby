@@ -2485,14 +2485,15 @@ static double
 ruby_float_step_size(double beg, double end, double unit, int excl)
 {
     const double epsilon = DBL_EPSILON;
-    double n = (end - beg)/unit;
-    double err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
+    double n, err;
 
+    if (unit == 0) {
+        return HUGE_VAL;
+    }
+    n= (end - beg)/unit;
+    err = (fabs(beg) + fabs(end) + fabs(end-beg)) / fabs(unit) * epsilon;
     if (isinf(unit)) {
 	return unit > 0 ? beg <= end : beg >= end;
-    }
-    if (unit == 0) {
-	return HUGE_VAL;
     }
     if (err>0.5) err=0.5;
     if (excl) {
@@ -3707,7 +3708,7 @@ fix_fdiv_double(VALUE x, VALUE y)
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-        return (double)FIX2LONG(x) / RFLOAT_VALUE(y);
+        return double_div_double(FIX2LONG(x), RFLOAT_VALUE(y));
     }
     else {
         return NUM2DBL(rb_num_coerce_bin(x, y, rb_intern("fdiv")));
@@ -3777,19 +3778,16 @@ fix_divide(VALUE x, VALUE y, ID op)
 	return rb_big_div(x, y);
     }
     else if (RB_TYPE_P(y, T_FLOAT)) {
-	{
-	    double div;
-
 	    if (op == '/') {
-		div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
-		return DBL2NUM(div);
+                double d = FIX2LONG(x);
+                return rb_flo_div_flo(DBL2NUM(d), y);
 	    }
 	    else {
+                VALUE v;
 		if (RFLOAT_VALUE(y) == 0) rb_num_zerodiv();
-		div = (double)FIX2LONG(x) / RFLOAT_VALUE(y);
-		return rb_dbl2big(floor(div));
+                v = fix_divide(x, y, '/');
+                return flo_floor(0, 0, v);
 	    }
-	}
     }
     else {
 	if (RB_TYPE_P(y, T_RATIONAL) &&
