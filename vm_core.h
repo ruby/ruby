@@ -880,7 +880,7 @@ typedef struct rb_execution_context_struct {
     } machine;
 } rb_execution_context_t;
 
-void ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);
+void rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size);
 
 typedef struct rb_thread_struct {
     struct list_node vmlt_node;
