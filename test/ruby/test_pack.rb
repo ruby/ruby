@@ -802,6 +802,13 @@ EXPECTED
     assert_warning(/\A(.* in '\u{3042}'\n)+\z/) {
       [].pack("\u{3042}")
     }
+
+    assert_warning(/\A.* in '.*U'\Z/) {
+      assert_equal "\000", [0].pack("\0U")
+    }
+    assert_warning(/\A.* in '.*U'\Z/) {
+      "\000".unpack("\0U")
+    }
   end
 
   def test_pack_resize
