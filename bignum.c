@@ -385,6 +385,7 @@ bdigitdbl2bary(BDIGIT *ds, size_t n, BDIGIT_DBL num)
 static int
 bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
 {
+    size_t i;
     BARY_TRUNC(xds, xn);
     BARY_TRUNC(yds, yn);
 
@@ -393,11 +394,12 @@ bary_cmp(const BDIGIT *xds, size_t xn, const BDIGIT *yds, size_t yn)
     if (xn > yn)
         return 1;
 
-    while (xn-- && xds[xn] == yds[xn])
-        ;
-    if (xn == (size_t)-1)
+    for (i = 0; i < xn; i++)
+        if (xds[xn - i - 1] != yds[yn - i - 1])
+            break;
+    if (i == xn)
         return 0;
-    return xds[xn] < yds[xn] ? -1 : 1;
+    return xds[xn - i - 1] < yds[yn - i - 1] ? -1 : 1;
 }
 
 static BDIGIT
@@ -5152,6 +5154,9 @@ rb_big2long(VALUE x)
 static unsigned LONG_LONG
 big2ull(VALUE x, const char *type)
 {
+#if SIZEOF_LONG_LONG > SIZEOF_BDIGIT
+    size_t i;
+#endif
     size_t len = BIGNUM_LEN(x);
     unsigned LONG_LONG num;
     BDIGIT *ds = BDIGITS(x);
@@ -5164,9 +5169,9 @@ big2ull(VALUE x, const char *type)
     num = (unsigned LONG_LONG)ds[0];
 #else
     num = 0;
-    while (len--) {
+    for (i = 0; i < len; i++) {
 	num = BIGUP(num);
-	num += ds[len];
+        num += ds[len - i - 1];
     }
 #endif
     return num;
