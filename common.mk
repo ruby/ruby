@@ -344,7 +344,7 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 
 ruby.imp: $(COMMONOBJS)
 	$(Q)$(NM) -Pgp $(COMMONOBJS) | \
-	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^(Init_|ruby_static_id_|.*_threadptr_|rb_ec_\.)/{print $$1}' | \
+	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^_?(Init_|InitVM_|ruby_static_id_|.*_threadptr_|rb_ec_)|^\./{print $$1}' | \
 	sort -u -o $@
 
 install: install-$(INSTALLDOC)
