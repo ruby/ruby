@@ -3902,7 +3902,7 @@ rb_int_modulo(VALUE x, VALUE y)
  *  See Numeric#divmod.
  */
 
-VALUE
+static VALUE
 int_remainder(VALUE x, VALUE y)
 {
     if (FIXNUM_P(x)) {
