@@ -693,7 +693,7 @@ rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n)
     return backtrace_to_str_ary(rb_ec_backtrace_object(ec), lev, n);
 }
 
-VALUE
+static VALUE
 ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n)
 {
     return backtrace_to_location_ary(rb_ec_backtrace_object(ec), lev, n);
