@@ -2557,7 +2557,7 @@ th_init(rb_thread_t *th, VALUE self)
 	/* vm_stack_size is word number.
 	 * th->vm->default_params.thread_vm_stack_size is byte size. */
 	size_t size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-	ec_set_vm_stack(th->ec, rb_thread_recycle_stack(size), size);
+	rb_ec_set_vm_stack(th->ec, rb_thread_recycle_stack(size), size);
     }
 
     th->ec->cfp = (void *)(th->ec->vm_stack + th->ec->vm_stack_size);

@@ -250,7 +250,7 @@ fiber_status_set(rb_fiber_t *fib, enum fiber_status s)
 }
 
 void
-ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
+rb_ec_set_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 {
     ec->vm_stack = stack;
     ec->vm_stack_size = size;
@@ -673,7 +673,7 @@ cont_capture(volatile int *volatile stat)
     cont->saved_vm_stack.ptr = ALLOC_N(VALUE, ec->vm_stack_size);
     MEMCPY(cont->saved_vm_stack.ptr, ec->vm_stack, VALUE, ec->vm_stack_size);
 #endif
-    ec_set_vm_stack(&cont->saved_ec, NULL, 0);
+    rb_ec_set_vm_stack(&cont->saved_ec, NULL, 0);
     cont_save_machine_stack(th, cont);
 
     /* backup ensure_list to array for search in another context */
@@ -1425,7 +1425,7 @@ fiber_init(VALUE fibval, VALUE proc)
     else {
         vm_stack = ruby_xmalloc(fib_stack_bytes);
     }
-    ec_set_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
+    rb_ec_set_vm_stack(sec, vm_stack, fib_stack_bytes / sizeof(VALUE));
     sec->cfp = (void *)(sec->vm_stack + sec->vm_stack_size);
 
     rb_vm_push_frame(sec,
@@ -1777,7 +1777,7 @@ rb_fiber_close(rb_fiber_t *fib)
     else {
         ruby_xfree(vm_stack);
     }
-    ec_set_vm_stack(ec, NULL, 0);
+    rb_ec_set_vm_stack(ec, NULL, 0);
 
 #if !FIBER_USE_NATIVE
     /* should not mark machine stack any more */
