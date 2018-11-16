@@ -127,6 +127,27 @@ str_associated(VALUE str)
     return rb_ivar_lookup(str, id_associated, Qfalse);
 }
 
+static void
+unknown_directive(const char *mode, char type, VALUE fmt)
+{
+    VALUE f;
+    char unknown[5];
+
+    if (ISPRINT(type)) {
+        unknown[0] = type;
+        unknown[1] = '\0';
+    }
+    else {
+        snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
+    }
+    f = rb_str_quote_unprintable(fmt);
+    if (f != fmt) {
+        fmt = rb_str_subseq(f, 1, RSTRING_LEN(f) - 2);
+    }
+    rb_warning("unknown %s directive '%s' in '%"PRIsVALUE"'",
+               mode, unknown, fmt);
+}
+
 /*
  *  call-seq:
  *     arr.pack( aTemplateString ) -> aBinaryString
@@ -849,16 +870,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    break;
 
 	  default: {
-	    char unknown[5];
-	    if (ISPRINT(type)) {
-		unknown[0] = type;
-		unknown[1] = '\0';
-	    }
-	    else {
-		snprintf(unknown, sizeof(unknown), "\\x%.2x", type & 0xff);
-	    }
-	    rb_warning("unknown pack directive '%s' in '% "PRIsVALUE"'",
-		       unknown, fmt);
+            unknown_directive("pack", type, fmt);
 	    break;
 	  }
 	}
@@ -1748,8 +1760,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, int mode)
 	    break;
 
 	  default:
-	    rb_warning("unknown unpack directive '%c' in '%s'",
-		type, RSTRING_PTR(fmt));
+            unknown_directive("unpack", type, fmt);
 	    break;
 	}
     }
