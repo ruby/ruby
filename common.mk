@@ -343,8 +343,12 @@ $(STATIC_RUBY)$(EXEEXT): $(MAINOBJ) $(DLDOBJS) $(EXTOBJS) $(LIBRUBY_A)
 	$(PURIFY) $(CC) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $(MAINLIBS) $(EXTLIBS) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(XLDFLAGS)
 
 ruby.imp: $(COMMONOBJS)
-	$(Q)$(NM) -Pgp $(COMMONOBJS) | \
-	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^_?(Init_|InitVM_|ruby_static_id_|.*_threadptr_|rb_ec_)|^\./{print $$1}' | \
+	$(Q){ \
+	$(NM) -Pgp $(COMMONOBJS) | \
+	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^$(SYMBOL_PREFIX)(Init_|InitVM_|ruby_static_id_|.*_threadptr_|rb_ec_)|^\./{print $$1}'; \
+	($(CHDIR) $(srcdir) && exec grep -h -A1 ^MJIT_FUNC_EXPORTED cont.c gc.c thread*.c vm*.c) | \
+	grep -e ^rb_ec_ -e ^rb_threadptr_ | sed 's/^\(rb_[a-zA-Z_0-9]*\).*/$(SYMBOL_PREFIX)\1/'; \
+	} | \
 	sort -u -o $@
 
 install: install-$(INSTALLDOC)
