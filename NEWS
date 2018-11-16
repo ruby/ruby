@@ -168,8 +168,8 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * KeyError#initialize accepts +:receiver+ and +:key+ options to
-      set receiver and key in Ruby code.  [Feature #14313]
+    * KeyError.new accepts +:receiver+ and +:key+ options to set receiver and
+      key in Ruby code.  [Feature #14313]
 
 [Module]
 
@@ -184,15 +184,15 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * NameError#initialize accepts +:receiver+ option to set receiver
-      in Ruby code.  [Feature #14313]
+    * NameError.new accepts +:receiver+ option to set receiver in Ruby
+      code.  [Feature #14313]
 
 [NoMethodError]
 
   [New options]
 
-    * NoMethodError#initialize accepts +:receiver+ option to set receiver
-      in Ruby code.  [Feature #14313]
+    * NoMethodError.new accepts +:receiver+ option to set receiver in Ruby
+      code.  [Feature #14313]
 
 [Numeric]
 
