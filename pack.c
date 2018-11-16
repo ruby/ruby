@@ -42,20 +42,20 @@ static const char endstr[] = "sSiIlLqQjJ";
 #endif
 
 #ifdef DYNAMIC_ENDIAN
- /* for universal binary of NEXTSTEP and MacOS X */
- /* useless since autoconf 2.63? */
- static int
- is_bigendian(void)
- {
-     static int init = 0;
-     static int endian_value;
-     char *p;
+/* for universal binary of NEXTSTEP and MacOS X */
+/* useless since autoconf 2.63? */
+static int
+is_bigendian(void)
+{
+    static int init = 0;
+    static int endian_value;
+    char *p;
 
-     if (init) return endian_value;
-     init = 1;
-     p = (char*)&init;
-     return endian_value = p[0]?0:1;
- }
+    if (init) return endian_value;
+    init = 1;
+    p = (char*)&init;
+    return endian_value = p[0]?0:1;
+}
 # define BIGENDIAN_P() (is_bigendian())
 #elif defined(WORDS_BIGENDIAN)
 # define BIGENDIAN_P() 1
@@ -839,9 +839,9 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 
                 cp = RSTRING_PTR(buf);
                 while (1 < numbytes) {
-                  *cp |= 0x80;
-                  cp++;
-                  numbytes--;
+                    *cp |= 0x80;
+                    cp++;
+                    numbytes--;
                 }
 
                 rb_str_buf_cat(res, RSTRING_PTR(buf), RSTRING_LEN(buf));
@@ -1005,7 +1005,7 @@ hex2num(char c)
     tmp_len = 0;				\
     if (len > (long)((send-s)/(sz))) {		\
         if (!star) {				\
-	    tmp_len = len-(send-s)/(sz);		\
+	    tmp_len = len-(send-s)/(sz);	\
         }					\
 	len = (send-s)/(sz);			\
     }						\
