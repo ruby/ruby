@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <errno.h>
+#include <float.h>
 
 /*
  * It is intentional that the condition for natstr is HAVE_TRUE_LONG_LONG
@@ -146,6 +147,26 @@ unknown_directive(const char *mode, char type, VALUE fmt)
     }
     rb_warning("unknown %s directive '%s' in '%"PRIsVALUE"'",
                mode, unknown, fmt);
+}
+
+static float
+VALUE_to_float(VALUE obj)
+{
+    VALUE v = rb_to_float(obj);
+    double d = RFLOAT_VALUE(v);
+
+    if (isnan(d)) {
+        return NAN;
+    }
+    else if (d < -FLT_MAX) {
+        return -INFINITY;
+    }
+    else if (d <= FLT_MAX) {
+        return d;
+    }
+    else {
+        return INFINITY;
+    }
 }
 
 /*
@@ -663,7 +684,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		float f;
 
 		from = NEXTFROM;
-		f = (float)RFLOAT_VALUE(rb_to_float(from));
+                f = VALUE_to_float(from);
 		rb_str_buf_cat(res, (char*)&f, sizeof(float));
 	    }
 	    break;
@@ -673,7 +694,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 		FLOAT_CONVWITH(tmp);
 
 		from = NEXTFROM;
-		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+                tmp.f = VALUE_to_float(from);
 		HTOVF(tmp);
 		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
@@ -704,7 +725,7 @@ pack_pack(int argc, VALUE *argv, VALUE ary)
 	    while (len-- > 0) {
 		FLOAT_CONVWITH(tmp);
 		from = NEXTFROM;
-		tmp.f = (float)RFLOAT_VALUE(rb_to_float(from));
+                tmp.f = VALUE_to_float(from);
 		HTONF(tmp);
 		rb_str_buf_cat(res, tmp.buf, sizeof(float));
 	    }
