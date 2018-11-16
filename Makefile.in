@@ -605,7 +605,7 @@ mjit_config.h:
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
 	} > $@
 
-yes-test-all: mjit_build_dir.$(SOEXT)
+yes-test-almost yes-test-all: mjit_build_dir.$(SOEXT)
 mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER)
 	$(ECHO) making $@
 	$(Q) { \
