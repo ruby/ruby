@@ -342,6 +342,8 @@ lib = CONFIG["LIBRUBY", true]
 arc = CONFIG["LIBRUBY_A", true]
 load_relative = CONFIG["LIBRUBY_RELATIVE"] == 'yes'
 
+rdoc_noinst = %w[created.rid]
+
 install?(:local, :arch, :bin, :'bin-arch') do
   prepare "binary commands", bindir
 
@@ -424,13 +426,13 @@ install?(:doc, :rdoc) do
   if $rdocdir
     ridatadir = File.join(CONFIG['ridir'], CONFIG['ruby_version'], "system")
     prepare "rdoc", ridatadir
-    install_recursive($rdocdir, ridatadir, :mode => $data_mode)
+    install_recursive($rdocdir, ridatadir, :no_install => rdoc_noinst, :mode => $data_mode)
   end
 end
 install?(:doc, :html) do
   if $htmldir
     prepare "html-docs", docdir
-    install_recursive($htmldir, docdir+"/html", :mode => $data_mode)
+    install_recursive($htmldir, docdir+"/html", :no_install => rdoc_noinst, :mode => $data_mode)
   end
 end
 install?(:doc, :capi) do
