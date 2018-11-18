@@ -132,6 +132,10 @@ struct rb_mjit_unit {
 #ifndef _MSC_VER
     /* This value is always set for `compact_all_jit_code`. Also used for lazy deletion. */
     char *o_file;
+    /* TRUE if it's inherited from parent Ruby process and lazy deletion should be skipped.
+       `o_file = NULL` can't be used to skip lazy deletion because `o_file` could be used
+       by child for `compact_all_jit_code`. */
+    int o_file_inherited_p;
 #endif
 #if defined(_WIN32)
     /* DLL cannot be removed while loaded on Windows. If this is set, it'll be lazily deleted. */
@@ -213,6 +217,8 @@ static VALUE valid_class_serials;
 static const char *cc_path;
 /* Name of the precompiled header file.  */
 static char *pch_file;
+/* The process id which should delete the pch_file on mjit_finish. */
+static rb_pid_t pch_owner_pid;
 /* Status of the precompiled header creation.  The status is
    shared by the workers and the pch thread.  */
 static enum {PCH_NOT_READY, PCH_FAILED, PCH_SUCCESS} pch_status;
@@ -347,7 +353,7 @@ clean_object_files(struct rb_mjit_unit *unit)
         unit->o_file = NULL;
         /* For compaction, unit->o_file is always set when compilation succeeds.
            So save_temps needs to be checked here. */
-        if (!mjit_opts.save_temps)
+        if (!mjit_opts.save_temps && !unit->o_file_inherited_p)
             remove_file(o_file);
         free(o_file);
     }

@@ -1502,12 +1502,26 @@ after_exec(void)
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
-#define before_fork_ruby() before_exec()
 static void
-after_fork_ruby(void)
+before_fork_ruby(void)
+{
+    if (mjit_enabled) {
+        /* avoid leaving locked mutex and units being modified for child process. */
+        mjit_pause(FALSE);
+    }
+
+    before_exec();
+}
+
+static void
+after_fork_ruby(int parent_p)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     after_exec();
+
+    if (mjit_enabled && parent_p) { /* child is cared by `rb_thread_atfork` */
+        mjit_resume();
+    }
 }
 #endif
 
@@ -3997,7 +4011,7 @@ rb_fork_ruby(int *status)
 	before_fork_ruby();
 	pid = fork();
 	err = errno;
-	after_fork_ruby();
+	after_fork_ruby(pid > 0);
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
 	if (pid >= 0) /* fork succeed */
 	    return pid;
@@ -6422,7 +6436,7 @@ rb_daemon(int nochdir, int noclose)
 #ifdef HAVE_DAEMON
     before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork_ruby();
+    after_fork_ruby(TRUE);
     rb_thread_atfork();
 #else
     int n;
