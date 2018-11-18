@@ -10725,7 +10725,7 @@ nogvl_wait_for_single_fd(int fd, short events)
         ret = rb_fd_select(fd + 1, 0, &fds, 0, 0);
         break;
       default:
-        assert(0 && "not supported yet, should never get here");
+        VM_UNREACHABLE(nogvl_wait_for_single_fd);
     }
 
     rb_fd_term(&fds);
