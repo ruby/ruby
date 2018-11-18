@@ -1753,7 +1753,7 @@ static inline void
 rb_thread_set_current(rb_thread_t *th)
 {
     if (th->vm->running_thread != th) {
-	th->running_time_us = 0;
+        th->running_time_us = 0;
     }
     rb_thread_set_current_raw(th);
     th->vm->running_thread = th;
