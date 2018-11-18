@@ -458,7 +458,7 @@ clean-local::
 	$(Q)$(RM) ext/extinit.c ext/extinit.$(OBJEXT) ext/ripper/y.output \
 		enc/encinit.c enc/encinit.$(OBJEXT)
 	-$(Q)$(RM) $(pkgconfig_DATA)
-	-$(Q)$(RMALL) exe/ ruby-runner.h *.dSYM
+	-$(Q)$(RMALL) exe/ ruby-runner.$(OBJEXT) ruby-runner.h *.dSYM
 
 distclean-local::
 	$(Q)$(RM) ext/config.cache $(RBCONFIG) Doxyfile
