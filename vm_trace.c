@@ -1665,8 +1665,8 @@ void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
     rb_execution_context_t *ec = GET_EC();
-    const unsigned long block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
-    volatile unsigned long saved_mask = ec->interrupt_mask & block_mask;
+    const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK|TRAP_INTERRUPT_MASK;
+    volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;
     VALUE volatile saved_errno = ec->errinfo;
 
     ec->errinfo = Qnil;
