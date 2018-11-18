@@ -10707,6 +10707,7 @@ nogvl_wait_for_single_fd(int fd, short events)
     return poll(&fds, 1, -1);
 }
 #else /* !USE_POLL */
+#  include "vm_core.h"
 #  define IOWAIT_SYSCALL "select"
 static int
 nogvl_wait_for_single_fd(int fd, short events)
