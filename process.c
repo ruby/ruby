@@ -4011,7 +4011,7 @@ rb_fork_ruby(int *status)
 	before_fork_ruby();
 	pid = fork();
 	err = errno;
-	after_fork_ruby(pid > 0);
+        after_fork_ruby(pid > 0);
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
 	if (pid >= 0) /* fork succeed */
 	    return pid;
