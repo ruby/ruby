@@ -1743,14 +1743,21 @@ rb_current_vm(void)
     return ruby_current_vm_ptr;
 }
 
-#define rb_thread_set_current_raw(th) (void)(ruby_current_execution_context_ptr = (th)->ec)
-#define rb_thread_set_current(th) do { \
-    if ((th)->vm->running_thread != (th)) { \
-	(th)->running_time_us = 0; \
-    } \
-    rb_thread_set_current_raw(th); \
-    (th)->vm->running_thread = (th); \
-} while (0)
+static inline void
+rb_thread_set_current_raw(const rb_thread_t *th)
+{
+    ruby_current_execution_context_ptr = th->ec;
+}
+
+static inline void
+rb_thread_set_current(rb_thread_t *th)
+{
+    if (th->vm->running_thread != th) {
+	th->running_time_us = 0;
+    }
+    rb_thread_set_current_raw(th);
+    th->vm->running_thread = th;
+}
 
 #else
 #error "unsupported thread model"
