@@ -4426,7 +4426,6 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
     }
 }
 
-/* mjit.c */
 void rb_fiber_atfork(rb_thread_t *);
 void
 rb_thread_atfork(void)
