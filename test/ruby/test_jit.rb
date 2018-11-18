@@ -791,7 +791,7 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
-  def test_program_pointer_with_regexpmatch
+  def test_program_counter_with_regexpmatch
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: "aa", success_count: 1)
     begin;
       2.times do
