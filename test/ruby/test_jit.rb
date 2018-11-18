@@ -867,8 +867,7 @@ class TestJIT < Test::Unit::TestCase
       debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
 
       # assert no remove error
-      assert_match(/^Successful MJIT finish$/, lines[3], debug_info)
-      assert_match(/^Successful MJIT finish$/, lines[4], debug_info)
+      assert_equal("Successful MJIT finish\n" * 2, err.gsub(/^#{JIT_SUCCESS_PREFIX}:[^\n]+\n/, ''), debug_info)
 
       # ensure objects are deleted
       assert_send([Dir, :empty?, dir], debug_info)
