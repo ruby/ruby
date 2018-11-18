@@ -863,13 +863,14 @@ class TestJIT < Test::Unit::TestCase
       success_count = err.scan(/^#{JIT_SUCCESS_PREFIX}:/).size
       assert_equal(3, success_count)
 
-      # assert no remove error
       lines = err.lines
-      assert_match(/^Successful MJIT finish$/, lines[3])
-      assert_match(/^Successful MJIT finish$/, lines[4])
+      debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
+
+      # assert no remove error
+      assert_match(/^Successful MJIT finish$/, lines[3], debug_info)
+      assert_match(/^Successful MJIT finish$/, lines[4], debug_info)
 
       # ensure objects are deleted
-      debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
       assert_send([Dir, :empty?, dir], debug_info)
     end
   end if defined?(fork)
