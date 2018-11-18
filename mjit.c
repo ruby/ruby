@@ -496,18 +496,6 @@ init_header_filename(void)
     return TRUE;
 }
 
-/* This is called after each fork in the child in to switch off MJIT
-   engine in the child as it does not inherit MJIT threads.  */
-void
-mjit_child_after_fork(void)
-{
-    if (mjit_enabled) {
-        verbose(3, "Switching off MJIT in a forked child");
-        mjit_enabled = FALSE;
-    }
-    /* TODO: Should we initiate MJIT in the forked Ruby.  */
-}
-
 static enum rb_id_table_iterator_result
 valid_class_serials_add_i(ID key, VALUE v, void *unused)
 {
@@ -661,6 +649,7 @@ mjit_init(struct mjit_options *opts)
         verbose(1, "Failure in MJIT header file name initialization\n");
         return;
     }
+    pch_owner_pid = getpid();
 
     init_list(&unit_queue);
     init_list(&active_units);
@@ -748,6 +737,54 @@ mjit_resume(void)
     return Qtrue;
 }
 
+/* Skip calling `clean_object_files` for units which currently exist in the list. */
+static void
+skip_cleaning_object_files(struct rb_mjit_unit_list *list)
+{
+    struct rb_mjit_unit *unit = NULL, *next;
+
+    /* No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork. */
+    list_for_each_safe(&list->head, unit, next, unode) {
+#ifndef _MSC_VER /* Actualy mswin does not reach here since it doesn't have fork */
+        if (unit->o_file) unit->o_file_inherited_p = TRUE;
+#endif
+
+#if defined(_WIN32) /* mswin doesn't reach here either. This is for MinGW. */
+        if (unit->so_file) unit->so_file = NULL;
+#endif
+    }
+}
+
+/* This is called after fork initiated by Ruby's method to launch MJIT worker thread
+   for child Ruby process.
+
+   In multi-process Ruby applications, child Ruby processes do most of the jobs.
+   Thus we want child Ruby processes to enqueue ISeqs to MJIT worker's queue and
+   call the JIT-ed code.
+
+   But unfortunately current MJIT-generated code is process-specific. After the fork,
+   JIT-ed code created by parent Ruby process cannnot be used in child Ruby process
+   because the code could rely on inline cache values (ivar's IC, send's CC) which
+   may vary between processes after fork or embed some process-specific addresses.
+
+   So child Ruby process can't request parent process to JIT an ISeq and use the code.
+   Instead of that, MJIT worker thread is created for all child Ruby processes, even
+   while child processes would end up with compiling the same ISeqs.
+ */
+void
+mjit_child_after_fork(void)
+{
+    if (!mjit_enabled)
+        return;
+
+    /* Let parent process delete the already-compiled object files.
+       This must be done before starting MJIT worker on child process. */
+    skip_cleaning_object_files(&active_units);
+
+    /* MJIT worker thread is not inherited on fork. Start it for this child process. */
+    start_worker();
+}
+
 /* Finish the threads processing units and creating PCH, finalize
    and free MJIT data.  It should be called last during MJIT
    life.  */
@@ -781,7 +818,7 @@ mjit_finish(void)
     rb_native_cond_destroy(&mjit_gc_wakeup);
 
 #ifndef _MSC_VER /* mswin has prebuilt precompiled header */
-    if (!mjit_opts.save_temps)
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
         remove_file(pch_file);
 
     xfree(header_file); header_file = NULL;

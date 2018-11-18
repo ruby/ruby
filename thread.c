@@ -4438,6 +4438,8 @@ rb_thread_atfork(void)
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();
+
+    /* For child, starting MJIT worker thread in this place which is safer than `after_fork_ruby`. */
     mjit_child_after_fork();
 }
 
