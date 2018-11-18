@@ -1083,7 +1083,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
         o_files[0] = o_file;
         success = link_o_to_so(o_files, so_file);
 
-        /* Alwasy set o_file for compaction. The value is also used for lazy deletion. */
+        /* Always set o_file for compaction. The value is also used for lazy deletion. */
         unit->o_file = strdup(o_file);
         if (unit->o_file == NULL) {
             mjit_warning("failed to allocate memory to remember '%s' (%s), removing it...", o_file, strerror(errno));
