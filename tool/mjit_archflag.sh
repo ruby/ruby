@@ -29,7 +29,7 @@ parse_arch_flags() {
 }
 
 define_arch_flags() {
-    local indent=${archs:+  }
+    local indent=${archs:+'  '}
     ${archs:+echo} ${archs:+'#if 0'}
     for arch in $archs; do
 	echo "#elif defined __${arch}__"
