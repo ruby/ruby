@@ -115,14 +115,14 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "CFLAGS=-DVM_CHECK_MODE=0x0003"
+      - "cppflags=-DVM_CHECK_MODE=0x0003"
 
   - &FIBER_USE_sjlj
     name: FIBER_USE_NATIVE=0
     <<: *linux
     <<: *cron-only
     env:
-      - "CFLAGS=-DFIBER_USE_NATIVE=0"
+      - "cppflags=-DFIBER_USE_NATIVE=0"
 
   - &TOKEN_THREADED_CODE
     name: TOKEN_THREADED_CODE
@@ -130,7 +130,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "CFLAGS=-DOPT_THREADED_CODE=1"
+      - "cppflags=-DOPT_THREADED_CODE=1"
 
   - &CALL_THREADED_CODE
     name: CALL_THREADED_CODE
@@ -138,7 +138,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "CFLAGS=-DOPT_THREADED_CODE=2"
+      - "cppflags=-DOPT_THREADED_CODE=2"
 
   - &NO_THREADED_CODE
     name: NO_THREADED_CODE
@@ -146,7 +146,7 @@ env:
     <<: *cron-only
     <<: *make-test-only
     env:
-      - "CFLAGS=-DOPT_THREADED_CODE=3"
+      - "cppflags=-DOPT_THREADED_CODE=3"
 
   - &ASAN
     name: -fsanitize=address
@@ -156,7 +156,9 @@ env:
     compiler: clang
     env:
       - "ASAN_OPTIONS=detect_leaks=0"
-      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=address -fno-omit-frame-pointer'"
+      - "cflags='-march=native -fsanitize=address -fno-omit-frame-pointer'"
+      - "debugflags=-ggdb3"
+      - "optflags='-O1'"
       - "LD=clang"
       - "LDFLAGS=-fsanitize=address"
 
@@ -167,7 +169,7 @@ env:
     <<: *make-test-only
     compiler: clang
     env:
-      - "CFLAGS='-fsanitize=memory'"
+      - "cflags='-fsanitize=memory'"
       - "LD=clang"
       - "LDFLAGS=-fsanitize=memory"
 
@@ -178,7 +180,10 @@ env:
     <<: *make-test-only
     compiler: clang
     env:
-      - "CFLAGS='-ggdb3 -O1 -march=native -fsanitize=undefined,integer,nullability -fno-omit-frame-pointer -DUNALIGNED_WORD_ACCESS=0'"
+      - "cflags='-fsanitize=undefined,integer,nullability -fno-omit-frame-pointer'"
+      - "cppflags='-DUNALIGNED_WORD_ACCESS=0'"
+      - "debugflags='-ggdb3'"
+      - "optflags='-O1 -march=native'"
       - "LD=clang"
       - "LDFLAGS=-fsanitize=undefined,integer,nullability"
 
@@ -188,7 +193,7 @@ env:
     sudo: required
     env:
       - "GCC_FLAGS=-m32"
-      - "CONFIG_FLAG='debugflags=-g0'"
+      - "debugflags='-g0'"
       - "SETARCH='setarch i686 --verbose --3gb'"
     addons:
       apt:
@@ -249,8 +254,8 @@ env:
         -Wno-unused-parameter
         -Wunused-variable
       )
+      warnflags="${warnflags_array[*]}"
       CONFIG_FLAG_ARRAY=(
-        warnflags="${warnflags_array[*]}"
         LDFLAGS=-Wno-unused-command-line-argument)
 
   - &rubyspec
@@ -309,10 +314,8 @@ matrix:
 
 before_script:
   - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
-  - |-
-    if [ ! -z "$CFLAGS" ]; then
-      CFLAGS="$CFLAGS -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wno-unknown-warning-option"
-    fi
+  - warnflags="$warnflags${warnflags:+ }-Wno-unknown-warning-option"
+  - export warnflags
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
