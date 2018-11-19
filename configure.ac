@@ -1001,6 +1001,12 @@ main()
 		AS_CASE(["$target_cpu"], [powerpc64*], [
 			ac_cv_func___builtin_setjmp=no
 		])
+		# With gcc-8's -fcf-protection, MJIT's __builtin_longjmp fails.
+		# TODO: Check if CFLAGS actually includes -fcf-protection instead of using RUBY_TRY_CFLAGS
+		RUBY_TRY_CFLAGS(-fcf-protection, [cf_protection=yes], [cf_protection=no])
+		AS_IF([test "$cf_protection" = yes], [
+			ac_cv_func___builtin_setjmp=no
+		])
 		],
 [	LIBS="-lm $LIBS"])
 : ${ORIG_LIBS=$LIBS}
