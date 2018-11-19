@@ -3598,7 +3598,8 @@ static VALUE
 take_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, cbarg))
 {
     VALUE *args = (VALUE *)cbarg;
-    if (args[1]-- == 0) rb_iter_break();
+    if (args[1] == 0) rb_iter_break();
+    else args[1]--;
     if (argc > 1) val = rb_ary_new4(argc, argv);
     rb_ary_push(args[0], val);
     return Qnil;
