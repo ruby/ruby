@@ -677,7 +677,7 @@ mjit_init(struct mjit_options *opts)
 }
 
 static void
-stop_worker(int check_ints_p)
+stop_worker(void)
 {
     rb_execution_context_t *ec = GET_EC();
 
@@ -687,15 +687,8 @@ stop_worker(int check_ints_p)
         stop_worker_p = TRUE; /* Setting this inside loop because RUBY_VM_CHECK_INTS may make this FALSE. */
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in stop_worker");
-        if (check_ints_p) RUBY_VM_CHECK_INTS(ec);
+        RUBY_VM_CHECK_INTS(ec);
     }
-}
-
-/* A function to stop MJIT worker when it's not safe to allow interrupts. */
-void
-mjit_pause_without_ints(void)
-{
-    stop_worker(FALSE);
 }
 
 /* Stop JIT-compiling methods but compiled code is kept available. */
@@ -723,7 +716,7 @@ mjit_pause(int wait_p)
         }
     }
 
-    stop_worker(TRUE);
+    stop_worker();
     return Qtrue;
 }
 
@@ -816,7 +809,7 @@ mjit_finish(void)
     CRITICAL_SECTION_FINISH(3, "in mjit_finish to wakeup from pch");
 
     /* Stop worker */
-    stop_worker(TRUE);
+    stop_worker();
 
     rb_native_mutex_destroy(&mjit_engine_mutex);
     rb_native_cond_destroy(&mjit_pch_wakeup);
