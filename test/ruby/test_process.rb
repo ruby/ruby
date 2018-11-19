@@ -1724,7 +1724,7 @@ class TestProcess < Test::Unit::TestCase
 
   if Process.respond_to?(:daemon)
     def test_daemon_default
-      skip 'Process.daemon in IO.popen block deadlocks with MJIT [Bug #15320]' if RubyVM::MJIT.enabled?
+      skip 'IO.popen deadlocks with MJIT [Bug #15320]' if RubyVM::MJIT.enabled?
       data = IO.popen("-", "r+") do |f|
         break f.read if f
         Process.daemon
@@ -1774,7 +1774,7 @@ class TestProcess < Test::Unit::TestCase
 
     if File.directory?("/proc/self/task") && /netbsd[a-z]*[1-6]/ !~ RUBY_PLATFORM
       def test_daemon_no_threads
-        skip 'Process.daemon in IO.popen block deadlocks with MJIT [Bug #15320]' if RubyVM::MJIT.enabled?
+        skip 'IO.popen deadlocks with MJIT [Bug #15320]' if RubyVM::MJIT.enabled?
         pid, data = IO.popen("-", "r+") do |f|
           break f.pid, f.readlines if f
           Process.daemon(true, true)
