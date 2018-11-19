@@ -1638,6 +1638,7 @@ VALUE mjit_resume(void);
 #else
 #define mjit_enabled 0
 static inline VALUE mjit_pause(int wait_p){ return Qnil; } /* unreachable */
+static inline void mjit_pause_without_ints(void){} /* unreachable */
 static inline VALUE mjit_resume(void){ return Qnil; } /* unreachable */
 #endif
 
