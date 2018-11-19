@@ -486,32 +486,34 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
     AS_IF([test $icc_version -gt 0], [
 	particular_werror_flags=no
     ])
-    for wflag in -Wno-unused-parameter -Wno-long-long \
-                 -diag-disable=175,188,2259 \
-		 -Wno-missing-field-initializers \
-		 -Wno-tautological-compare \
-		 -Wno-parentheses-equality \
-		 -Wno-constant-logical-operand \
-		 -Wno-self-assign \
-		 -Wno-cast-function-type \
-		 -Wunused-variable \
-		 -Werror=implicit-int \
-		 -Werror=pointer-arith \
-		 -Werror=write-strings \
+    for wflag in \
 		 -Werror=declaration-after-statement \
-		 -Werror=shorten-64-to-32 \
-		 -Werror=implicit-function-declaration \
-		 -Werror=division-by-zero \
 		 -Werror=deprecated-declarations \
+		 -Werror=division-by-zero \
+		 -Werror=duplicated-cond \
+		 -Werror=implicit-function-declaration \
+		 -Werror=implicit-int \
 		 -Werror=misleading-indentation \
+		 -Werror=pointer-arith \
+		 -Werror=restrict \
+		 -Werror=shorten-64-to-32 \
+		 -Werror=write-strings \
+		 -Wimplicit-fallthrough=0 \
+		 -Wmissing-noreturn \
+		 -Wno-cast-function-type \
+		 -Wno-constant-logical-operand \
+		 -Wno-long-long \
+		 -Wno-missing-field-initializers \
 		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
-		 -Wsuggest-attribute=noreturn \
+		 -Wno-parentheses-equality \
+		 -Wno-self-assign \
+		 -Wno-tautological-compare \
+		 -Wno-unused-parameter \
 		 -Wsuggest-attribute=format \
-		 -Wmissing-noreturn \
-		 -Wimplicit-fallthrough=0 \
-		 -Werror=duplicated-cond \
-		 -Werror=restrict \
+		 -Wsuggest-attribute=noreturn \
+		 -Wunused-variable \
+		 -diag-disable=175,188,2259 \
 		 $extra_warning \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
