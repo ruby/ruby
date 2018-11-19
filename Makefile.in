@@ -346,6 +346,7 @@ reconfig-exec-1 = set -x; "$$@"
 reconfig config.status:	$(srcdir)/$(CONFIGURE) $(srcdir)/enc/Makefile.in \
 			$(srcdir)/include/ruby/version.h
 	@PWD= MINIRUBY="$(MINIRUBY)"; export MINIRUBY; \
+	warnflags="@warnflags@"; export warnflags; \
 	set $(SHELL) $($@-args); $(reconfig-exec-$(V))
 
 $(srcdir)/$(CONFIGURE): $(srcdir)/configure.ac $(srcdir)/aclocal.m4
