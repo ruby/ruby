@@ -4212,8 +4212,18 @@ rb_io_ungetbyte(VALUE io, VALUE b)
     rb_io_check_byte_readable(fptr);
     if (NIL_P(b)) return Qnil;
     if (FIXNUM_P(b)) {
-	char cc = FIX2INT(b);
-	b = rb_str_new(&cc, 1);
+        int i = FIX2INT(b);
+        if (0 <= i && i <= UCHAR_MAX) {
+            unsigned char cc = i & 0xFF;
+            b = rb_str_new((const char *)&cc, 1);
+        }
+        else {
+            rb_raise(rb_eRangeError,
+                "integer % d too big to convert into `unsigned char'", i);
+        }
+    }
+    else if (RB_TYPE_P(b, T_BIGNUM)) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `unsigned char'");
     }
     else {
 	SafeStringValue(b);
