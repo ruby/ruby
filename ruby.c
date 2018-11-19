@@ -252,8 +252,8 @@ usage(const char *name, int help)
 	M("-w",		   "",			   "turn warnings on for your script"),
 	M("-W[level=2]",   "",			   "set warning level; 0=silence, 1=medium, 2=verbose"),
 	M("-x[directory]", "",			   "strip off text before #!ruby line and perhaps cd to directory"),
-        M("--jit",         "",                     "enable MJIT with default options (experimental)"),
-        M("--jit-[option]","",                     "enable MJIT with an option (experimental)"),
+        M("--jit",         "",                     "enable JIT with default options (experimental)"),
+        M("--jit-[option]","",                     "enable JIT with an option (experimental)"),
 	M("-h",		   "",			   "show this message, --help for more info"),
     };
     static const struct message help_msg[] = {
@@ -279,14 +279,14 @@ usage(const char *name, int help)
 	M("did_you_mean", "",   "did_you_mean (default: "DEFAULT_RUBYGEMS_ENABLED")"),
 	M("rubyopt", "",        "RUBYOPT environment variable (default: enabled)"),
 	M("frozen-string-literal", "", "freeze all string literals (default: disabled)"),
-        M("jit", "",            "MJIT (default: disabled)"),
+        M("jit", "",            "JIT compiler (default: disabled)"),
     };
     static const struct message mjit_options[] = {
-        M("--jit-warnings",      "", "Enable printing MJIT warnings"),
-        M("--jit-debug",         "", "Enable MJIT debugging (very slow)"),
+        M("--jit-warnings",      "", "Enable printing JIT warnings"),
+        M("--jit-debug",         "", "Enable JIT debugging (very slow)"),
         M("--jit-wait",          "", "Wait until JIT compilation is finished everytime (for testing)"),
-        M("--jit-save-temps",    "", "Save MJIT temporary files in $TMP or /tmp (for testing)"),
-        M("--jit-verbose=num",   "", "Print MJIT logs of level num or less to stderr (default: 0)"),
+        M("--jit-save-temps",    "", "Save JIT temporary files in $TMP or /tmp (for testing)"),
+        M("--jit-verbose=num",   "", "Print JIT logs of level num or less to stderr (default: 0)"),
         M("--jit-max-cache=num", "", "Max number of methods to be JIT-ed in a cache (default: 1000)"),
         M("--jit-min-calls=num", "", "Number of calls to trigger JIT (for testing, default: 5)"),
     };
@@ -308,7 +308,7 @@ usage(const char *name, int help)
     puts("Features:");
     for (i = 0; i < numberof(features); ++i)
 	SHOW(features[i]);
-    puts("MJIT options (experimental):");
+    puts("JIT options (experimental):");
     for (i = 0; i < numberof(mjit_options); ++i)
 	SHOW(mjit_options[i]);
 }
