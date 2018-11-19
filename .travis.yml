@@ -311,7 +311,7 @@ before_script:
   - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
   - |-
     if [ ! -z "$CFLAGS" ]; then
-      CFLAGS="$CFLAGS -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value"
+      CFLAGS="$CFLAGS -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value -Wno-unknown-warning-option"
     fi
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
