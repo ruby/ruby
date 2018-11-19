@@ -254,8 +254,8 @@ env:
         -Wno-unused-parameter
         -Wunused-variable
       )
-      warnflags="${warnflags_array[*]}"
       CONFIG_FLAG_ARRAY=(
+        warnflags="${warnflags_array[*]}"
         LDFLAGS=-Wno-unused-command-line-argument)
 
   - &rubyspec
@@ -314,8 +314,6 @@ matrix:
 
 before_script:
   - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
-  - warnflags="$warnflags${warnflags:+ }-Wno-unknown-warning-option"
-  - export warnflags
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
