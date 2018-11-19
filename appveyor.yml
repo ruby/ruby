@@ -93,9 +93,9 @@ for:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
     - nmake -l "TESTOPTS=-v -q" test-basic
-    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude win32ole --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
+    - nmake -l "TESTOPTS=-q --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor -j%JOBS% --exclude win32ole --exclude test_bignum --exclude test_syntax --exclude test_open-uri --exclude test_bundled_ca" test-all
     # separately execute tests without -j which may crash worker with -j.
-    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
+    - nmake -l "TESTOPTS=-v --subprocess-timeout-scale=3.0 --excludes=../test/excludes/_appveyor" test-all TESTS="../test/win32ole ../test/ruby/test_bignum.rb ../test/ruby/test_syntax.rb ../test/open-uri/test_open-uri.rb ../test/rubygems/test_bundled_ca.rb"
     - nmake -l test-spec MSPECOPT=-fs # not using `-j` because sometimes `mspec -j` silently dies on Windows
 -
   matrix:
