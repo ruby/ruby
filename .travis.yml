@@ -309,6 +309,10 @@ matrix:
 
 before_script:
   - "echo JOBS=${JOBS} SETARCH=${SETARCH}"
+  - |-
+    if [ ! -z "$CFLAGS" ]; then
+      CFLAGS="$CFLAGS -Wno-cast-function-type -Wno-constant-logical-operand -Wno-long-long -Wno-missing-field-initializers -Wno-overlength-strings -Wno-packed-bitfield-compat -Wno-parentheses-equality -Wno-self-assign -Wno-tautological-compare -Wno-unused-parameter -Wno-unused-value"
+    fi
   - "$SETARCH uname -a"
   - "$SETARCH uname -r"
   - "rm -fr .ext autom4te.cache"
@@ -335,6 +339,7 @@ before_script:
     gcc*)   the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-diagnostics-color) ;;
     clang*) the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-color-diagnostics) ;;
     esac
+  - |-
     $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc="${the_gcc[*]}" $CONFIG_FLAG "${CONFIG_FLAG_ARRAY[@]}"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "$SETARCH make reconfig"
