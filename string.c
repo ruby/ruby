@@ -5413,7 +5413,8 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
     long pos = NUM2LONG(index);
     int byte = NUM2INT(value);
     long len = RSTRING_LEN(str);
-    char *head, *ptr, *left = 0;
+    char *head, *left = 0;
+    unsigned char *ptr;
     rb_encoding *enc;
     int cr = ENC_CODERANGE_UNKNOWN, width, nlen;
 
@@ -5421,17 +5422,21 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
         rb_raise(rb_eIndexError, "index %ld out of string", pos);
     if (pos < 0)
         pos += len;
+    if (byte < 0)
+        rb_raise(rb_eRangeError, "integer %d too small to convert into `unsigned char'", byte);
+    if (UCHAR_MAX < byte)
+        rb_raise(rb_eRangeError, "integer %d too big to convert into `unsigned char'", byte);
 
     if (!str_independent(str))
 	str_make_independent(str);
     enc = STR_ENC_GET(str);
     head = RSTRING_PTR(str);
-    ptr = &head[pos];
+    ptr = (unsigned char *)&head[pos];
     if (!STR_EMBED_P(str)) {
 	cr = ENC_CODERANGE(str);
 	switch (cr) {
 	  case ENC_CODERANGE_7BIT:
-	    left = ptr;
+            left = (char *)ptr;
 	    *ptr = byte;
 	    if (ISASCII(byte)) goto end;
 	    nlen = rb_enc_precise_mbclen(left, head+len, enc);
