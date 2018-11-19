@@ -3341,10 +3341,10 @@ AC_SUBST(CAPITARGET)
 AS_CASE(["$RDOCTARGET:$CAPITARGET"],[nodoc:nodoc],[INSTALLDOC=nodoc],[INSTALLDOC=all])
 AC_SUBST(INSTALLDOC)
 
-AC_ARG_ENABLE(mjit-support,
-        AS_HELP_STRING([--disable-mjit-support], [disable MJIT features]),
+AC_ARG_ENABLE(jit-support,
+        AS_HELP_STRING([--disable-jit-support], [disable JIT features]),
         [MJIT_SUPPORT=$enableval
-         AS_IF([test x"$enable_mjit_support" = "xyes"],
+         AS_IF([test x"$enable_jit_support" = "xyes"],
                  [AC_DEFINE(USE_MJIT, 1)],
                  [AC_DEFINE(USE_MJIT, 0)])],
         [MJIT_SUPPORT=yes
@@ -4016,7 +4016,7 @@ config_summary "debugflags"          "$debugflags"
 config_summary "warnflags"           "$warnflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$install_doc"
-config_summary "MJIT support"        "$MJIT_SUPPORT"
+config_summary "JIT support"         "$MJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}
