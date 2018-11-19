@@ -2316,10 +2316,10 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
      rb_scan_args_length_mismatch(fmt, varc)))
 
 # if defined(__has_attribute) && __has_attribute(diagnose_if)
-#  define rb_scan_args_verify(fmt, varc) 0
+#  define rb_scan_args_verify(fmt, varc) (void)0
 # elif defined(__GNUC__)
 # define rb_scan_args_verify(fmt, varc) \
-    __extension__ ({ \
+    (void)__extension__ ({ \
 	int verify; \
 	_Pragma("GCC diagnostic push"); \
 	_Pragma("GCC diagnostic ignored \"-Warray-bounds\""); \
@@ -2329,7 +2329,7 @@ ERRORFUNC(("variable argument length doesn't match"), int rb_scan_args_length_mi
     })
 # else
 # define rb_scan_args_verify(fmt, varc) \
-    rb_scan_args_verify_count(fmt, varc)
+    (void)rb_scan_args_verify_count(fmt, varc)
 # endif
 
 ALWAYS_INLINE(static int rb_scan_args_lead_p(const char *fmt));
