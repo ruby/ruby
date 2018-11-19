@@ -510,6 +510,7 @@ AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
 		 -Wno-self-assign \
 		 -Wno-tautological-compare \
 		 -Wno-unused-parameter \
+		 -Wno-unused-value \
 		 -Wsuggest-attribute=format \
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
