@@ -1506,8 +1506,9 @@ static void
 before_fork_ruby(void)
 {
     if (mjit_enabled) {
-        /* avoid leaving locked mutex and units being modified for child process. */
-        mjit_pause(FALSE);
+        /* Avoid leaving locked mutex and units being modified for child process. Here may not be
+           safe for proceeding SIGCHLD handler, so this does not allow RUBY_VM_CHECK_INTS. */
+        mjit_pause_without_ints();
     }
 
     before_exec();
