@@ -1633,6 +1633,7 @@ VALUE rb_math_sqrt(VALUE);
 #if USE_MJIT
 extern int mjit_enabled;
 VALUE mjit_pause(int wait_p);
+void mjit_pause_without_ints(void);
 VALUE mjit_resume(void);
 #else
 #define mjit_enabled 0
