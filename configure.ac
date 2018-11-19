@@ -473,11 +473,10 @@ AC_ARG_ENABLE(werror,
 	[particular_werror_flags=$enableval])
 
 rb_cv_warnflags="$warnflags"
-AS_IF([test "$GCC:${warnflags+set}:no" = yes::no], [
+AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
+[yes::*|yes:*:set:], [# GCC && (!warnflags || extra_warnflags)
     AS_IF([test $gcc_major -ge 4], [
-	extra_warning=-Werror=extra-tokens
-    ], [
-	extra_warning=
+	extra_warning="$extra_warning -Werror=extra-tokens"
     ])
     AS_IF([test $gcc_major -ge 5 -a $gcc_major -le 6], [
 	extra_warning="$extra_warning -Wno-maybe-uninitialized"
