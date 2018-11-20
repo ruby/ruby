@@ -406,7 +406,7 @@ cont_free(void *ptr)
     }
     else {
 	/* fiber */
-	const rb_fiber_t *fib = (rb_fiber_t*)cont;
+	rb_fiber_t *fib = (rb_fiber_t*)cont;
 #if defined(FIBER_USE_COROUTINE)
 	coroutine_destroy(&fib->context);
 	if (fib->ss_sp != NULL) {
