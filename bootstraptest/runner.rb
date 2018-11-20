@@ -383,15 +383,9 @@ def assert_finish(timeout_seconds, testsrc, message = '')
       end
       if io.respond_to?(:read_nonblock)
         if IO.select([io], nil, nil, diff)
-          tries = 0
           begin
             io.read_nonblock(1024)
-          rescue IO::WaitReadable
-            IO.select([io])
-            tries += 1
-            break if tries > 3
-            retry
-          rescue Errno::EAGAIN, EOFError
+          rescue Errno::EAGAIN, IO::WaitReadable, EOFError
             break
           end while true
         end
