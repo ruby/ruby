@@ -908,7 +908,7 @@ fiber_machine_stack_alloc(size_t size)
 }
 #endif
 
-#ifdef FIBER_USE_NATIVE
+#if FIBER_USE_NATIVE
 static void
 fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 {
@@ -999,7 +999,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     swapcontext(&oldfib->context, &newfib->context);
 #endif
 }
-#endif /* FIBER_ALLOCATE_STACK */
+#endif /* FIBER_USE_NATIVE */
 
 NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
 
