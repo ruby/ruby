@@ -289,6 +289,13 @@ MISSING = $(MISSING) acosh.obj cbrt.obj erf.obj nan.obj tgamma.obj
 MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
+!if "$(ARCH)" == "x64"
+MISSING = $(MISSING) coroutine/Win64/Context.obj
+COROUTINE_H = coroutine/Win64/Context.h
+!elseif "$(ARCH)" == "i386"
+MISSING = $(MISSING) coroutine/Win32/Context.obj
+COROUTINE_H = coroutine/Win32/Context.h
+!endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -857,6 +864,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
 !endif
+!if defined(COROUTINE_H)
+#define FIBER_USE_COROUTINE "$(COROUTINE_H)"
+!endif
 #define DEFAULT_KCODE KCODE_NONE
 #define LOAD_RELATIVE 1
 #define DLEXT ".so"
@@ -1214,6 +1224,15 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
+{$(srcdir)/coroutine/Win32}.asm.obj:
+	$(ECHO) assembling $(<:\=/)
+	@if not exist $(@D:/=\) md $(@D:/=\)
+	$(Q) $(AS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/Win64}.asm.obj:
+	$(ECHO) assembling $(<:\=/)
+	@if not exist $(@D:/=\) md $(@D:/=\)
+	$(Q) $(AS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
@@ -1392,3 +1411,7 @@ mjit_config.h:
 	@echo.>> $@
 	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
 	@$(Q:@=: :) type $@
+
+!if defined(COROUTINE_H)
+cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
+!endif
