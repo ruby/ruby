@@ -7,8 +7,10 @@
 
 .text
 .align 2
+
 .global coroutine_transfer
 coroutine_transfer:
+
 	# Make space on the stack for caller registers
 	sub sp, sp, 0xb0
 	
