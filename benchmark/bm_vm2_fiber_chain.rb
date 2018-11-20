@@ -16,11 +16,11 @@ def make_chain
       Fiber.yield(message)
     end
   end
-  
+
   (fibers - 1).times do
     chain = make_link(chain)
   end
-  
+
   return chain
 end
 
