@@ -407,8 +407,10 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 .s.@OBJEXT@:
 	@$(ECHO) assembling $<
 	$(MAKEDIRS) $(@D)
-	@$(ECHO) $(Q) $(AS) $(ASFLAGS) -o $@ $<
-	$(Q) $(AS) $(ASFLAGS) -o $@ $<
+	# @$(ECHO) $(Q) $(AS) $(ASFLAGS) -o $@ $<
+	# $(Q) $(AS) $(ASFLAGS) -o $@ $<
+	@$(ECHO) $(Q) $(CC) $(ASFLAGS) -o $@ -c $<
+	$(Q) $(CC) $(ASFLAGS) -o $@ -c $<
 
 .c.S:
 	@$(ECHO) translating $<
