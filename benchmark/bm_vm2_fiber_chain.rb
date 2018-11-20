@@ -12,7 +12,7 @@ end
 
 def make_chain(length, &block)
   chain = Fiber.new(&block)
-  
+
   (length - 1).times do
     chain = make_link(chain)
   end
