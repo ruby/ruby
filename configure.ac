@@ -2329,18 +2329,21 @@ AC_MSG_CHECKING(native fiber implementation)
 AS_CASE(["$target_cpu-$target_os"],
   [x*64-*], [
     AC_MSG_RESULT(amd64)
-    AC_DEFINE(FIBER_USE_COROUTINE, "coroutine/amd64/Context.h")
+    COROUTINE_H=coroutine/amd64/Context.h
+    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
     AC_LIBOBJ([coroutine/amd64/Context])
   ],
   [*86-*], [
     AC_MSG_RESULT(x86)
-    AC_DEFINE(FIBER_USE_COROUTINE, "coroutine/x86/Context.h")
+    COROUTINE_H=coroutine/x86/Context.h
+    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
     AC_LIBOBJ([coroutine/x86/Context])
   ]
   [*], [
     AC_MSG_RESULT(no)
   ]
 )
+AC_SUBST(X_FIBER_COROUTINE_H, [$COROUTINE_H])
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
