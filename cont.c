@@ -27,7 +27,7 @@
  */
 
 /*
-  Enable this include to make fiber yield/resume about twice as fast.
+  Enable FIBER_USE_COROUTINE to make fiber yield/resume much faster by using native assembly implementations.
   
   rvm install ruby-head-ioquatix-native-fiber --url https://github.com/ioquatix/ruby --branch native-fiber
   
@@ -832,10 +832,19 @@ fiber_entry(void *arg)
 }
 #else /* _WIN32 */
 
+#if defined(FIBER_USE_COROUTINE)
 COROUTINE fiber_entry(coroutine_context * from, coroutine_context * to)
 {
     rb_fiber_start();
 }
+#else
+NORETURN(static void fiber_entry(void *arg));
+static void
+fiber_entry(void *arg)
+{
+    rb_fiber_start();
+}
+#endif
 
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
@@ -978,7 +987,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     swapcontext(&oldfib->context, &newfib->context);
 #endif
 }
-#endif
+#endif /* FIBER_USE_NATIVE */
 
 NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
 
