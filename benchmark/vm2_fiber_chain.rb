@@ -1,6 +1,4 @@
-#!/usr/bin/env ruby
-
-require 'benchmark'
+# Check performance of fiber creation and transfer.
 
 def make_link(previous)
   Fiber.new do
@@ -22,24 +20,16 @@ end
 
 def run_benchmark(length, repeats, message = :hello)
   chain = nil
-
-  time = Benchmark.realtime do
-    chain = make_chain(length) do
-      while true
-        Fiber.yield(message)
-      end
+  
+  chain = make_chain(length) do
+    while true
+      Fiber.yield(message)
     end
   end
-
-  puts "Creating #{fibers} fibers took #{time}..."
-
-  time = Benchmark.realtime do
-    repeats.times do
-      abort "invalid result" unless chain.resume == message
-    end
+  
+  repeats.times do
+    abort "invalid result" unless chain.resume == message
   end
-
-  puts "Passing #{repeats} messages took #{time}..."
 end
 
 n = (ARGV[0] || 1000).to_i
