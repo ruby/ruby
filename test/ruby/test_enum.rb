@@ -1135,4 +1135,14 @@ class TestEnumerable < Test::Unit::TestCase
     end
     assert_equal [1, 2, 3, 4, 5], (1..5).sort_by{|e| klass.new e}
   end
+
+  def test_filter_map
+    @obj = (1..8).to_a
+    assert_equal([4, 8, 12, 16], @obj.filter_map { |i| i * 2 if i.even? })
+    assert_equal([2, 4, 6, 8, 10, 12, 14, 16], @obj.filter_map { |i| i * 2 })
+    assert_equal([0, 0, 0, 0, 0, 0, 0, 0], @obj.filter_map { 0 })
+    assert_equal([], @obj.filter_map { false })
+    assert_equal([], @obj.filter_map { nil })
+    assert_instance_of(Enumerator, @obj.filter_map)
+  end
 end

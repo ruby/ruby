@@ -542,7 +542,7 @@ class TestEnumerator < Test::Unit::TestCase
 
   def test_size_for_enum_created_from_enumerable
     %i[find_all reject map flat_map partition group_by sort_by min_by max_by
-      minmax_by each_with_index reverse_each each_entry].each do |method|
+      minmax_by each_with_index reverse_each each_entry filter_map].each do |method|
       assert_equal nil, @obj.send(method).size
       assert_equal 42, @sized.send(method).size
     end
