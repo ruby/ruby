@@ -745,7 +745,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
 
     /* No mutex for list, assuming MJIT worker does not exist yet since it's immediately after fork. */
     list_for_each_safe(&list->head, unit, next, unode) {
-#ifndef _MSC_VER /* Actualy mswin does not reach here since it doesn't have fork */
+#ifndef _MSC_VER /* Actually mswin does not reach here since it doesn't have fork */
         if (unit->o_file) unit->o_file_inherited_p = TRUE;
 #endif
 
@@ -763,7 +763,7 @@ skip_cleaning_object_files(struct rb_mjit_unit_list *list)
    call the JIT-ed code.
 
    But unfortunately current MJIT-generated code is process-specific. After the fork,
-   JIT-ed code created by parent Ruby process cannnot be used in child Ruby process
+   JIT-ed code created by parent Ruby process cannot be used in child Ruby process
    because the code could rely on inline cache values (ivar's IC, send's CC) which
    may vary between processes after fork or embed some process-specific addresses.
 
