@@ -20,29 +20,29 @@ const size_t COROUTINE_REGISTERS = 9;
 
 typedef struct
 {
-	void **stack_pointer;
+    void **stack_pointer;
 } coroutine_context;
 
 typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self);
 
 static inline void coroutine_initialize(
-	coroutine_context *context,
-	coroutine_start start,
-	void *stack_pointer,
-	size_t stack_size
+    coroutine_context *context,
+    coroutine_start start,
+    void *stack_pointer,
+    size_t stack_size
 ) {
-	context->stack_pointer = (void**)stack_pointer;
+    context->stack_pointer = (void**)stack_pointer;
 
-	if (!start) {
-		assert(!context->stack_pointer);
-		/* We are main coroutine for this thread */
-		return;
-	}
+    if (!start) {
+        assert(!context->stack_pointer);
+        /* We are main coroutine for this thread */
+        return;
+    }
 
-	*--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)start;
 
-	context->stack_pointer -= COROUTINE_REGISTERS;
-	memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
+    context->stack_pointer -= COROUTINE_REGISTERS;
+    memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 }
 
 coroutine_context * coroutine_transfer(coroutine_context * current, coroutine_context * target);
