@@ -2346,7 +2346,7 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_LIBOBJ([coroutine/x86/Context])
   ],
   [x64-mingw32], [
-    AC_MSG_RESULT(x86)
+    AC_MSG_RESULT(win64)
     COROUTINE_H=coroutine/win64/Context.h
     AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
     AC_LIBOBJ([coroutine/win64/Context])
