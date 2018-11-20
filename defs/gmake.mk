@@ -184,3 +184,9 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 	$(Q) $(MAKE_LINK) $@ $(MJIT_HEADER_INSTALL_DIR)/$(@F)
 
 endif
+
+# Query on the generated rdoc
+#
+#   $ make rdoc:Integer#+
+rdoc\:%: PHONY
+	$(Q)$(RUNRUBY) $(srcdir)/bin/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
