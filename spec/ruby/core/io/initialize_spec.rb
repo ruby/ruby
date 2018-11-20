@@ -13,12 +13,16 @@ describe "IO#initialize" do
     rm_r @name
   end
 
-  it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
-    fd = new_fd @name, "r:utf-8"
-    @io.send :initialize, fd, 'r'
-    @io.fileno.should == fd
-    # initialize has closed the old descriptor
-    lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
+  # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469621
+  # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1454818
+  without_feature :mjit do # with RubyVM::MJIT.enabled?, this randomly fails for now
+    it "reassociates the IO instance with the new descriptor when passed a Fixnum" do
+      fd = new_fd @name, "r:utf-8"
+      @io.send :initialize, fd, 'r'
+      @io.fileno.should == fd
+      # initialize has closed the old descriptor
+      lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
+    end
   end
 
   it "calls #to_int to coerce the object passed as an fd" do

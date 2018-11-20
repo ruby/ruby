@@ -2146,6 +2146,10 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_autoclose_true_closed_by_finalizer
+    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1465760
+    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469765
+    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
+
     feature2250 = '[ruby-core:26222]'
     pre = 'ft2250'
     t = Tempfile.new(pre)
