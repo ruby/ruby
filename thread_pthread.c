@@ -1842,6 +1842,10 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 int
 rb_reserved_fd_p(int fd)
 {
+    /* no false-positive if out-of-FD at startup */
+    if (fd < 0)
+        return 0;
+
 #if UBF_TIMER == UBF_TIMER_PTHREAD
     if (fd == timer_pthread.low[0] || fd == timer_pthread.low[1])
         goto check_pid;
