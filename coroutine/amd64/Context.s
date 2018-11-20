@@ -38,7 +38,7 @@ _coroutine_transfer:
 	popq %rbp
 	
 	# Put the first argument into the return value
-	# movq %rdi, %rax
+	movq %rdi, %rax
 	
 	# We pop the return address and jump to it
 	ret
