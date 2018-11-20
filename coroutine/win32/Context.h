@@ -24,7 +24,7 @@ struct coroutine_context
 	void **stack_pointer;
 };
 
-typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self);
+typedef void(__fastcall * coroutine_start)(coroutine_context *from, coroutine_context *self);
 
 static inline void coroutine_initialize(
 	coroutine_context *context,
@@ -40,12 +40,12 @@ static inline void coroutine_initialize(
 		return;
 	}
 
+	*--context->stack_pointer = (void*)start;
+
 	/* Windows Thread Information Block */
 	*--context->stack_pointer = 0; /* fs:[0] */
-	*--context->stack_pointer = stack_pointer + stack_size; /* fs:[4] */
-	*--context->stack_pointer = (void*)stack_pointer;  /* fs:[8] */
-
-	*--context->stack_pointer = (void*)start;
+	*--context->stack_pointer = (void*)stack_pointer; /* fs:[4] */
+	*--context->stack_pointer = (void*)((char *)stack_pointer - stack_size);  /* fs:[8] */
 
 	context->stack_pointer -= COROUTINE_REGISTERS;
 	memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);

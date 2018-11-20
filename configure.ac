@@ -2325,8 +2325,14 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
 
-AC_MSG_CHECKING(native fiber implementation)
+AC_MSG_CHECKING(native coroutine implementation for $target_cpu-$target_os)
 AS_CASE(["$target_cpu-$target_os"],
+  [x*64-darwin], [
+    AC_MSG_RESULT(amd64)
+    COROUTINE_H=coroutine/amd64/Context.h
+    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
+    AC_LIBOBJ([coroutine/amd64/Context])
+  ],
   [x*64-linux], [
     AC_MSG_RESULT(amd64)
     COROUTINE_H=coroutine/amd64/Context.h
@@ -2338,6 +2344,12 @@ AS_CASE(["$target_cpu-$target_os"],
     COROUTINE_H=coroutine/x86/Context.h
     AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
     AC_LIBOBJ([coroutine/x86/Context])
+  ]
+  [x64-mingw32], [
+    AC_MSG_RESULT(x86)
+    COROUTINE_H=coroutine/win64/Context.h
+    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
+    AC_LIBOBJ([coroutine/win64/Context])
   ]
   [*], [
     AC_MSG_RESULT(no)
