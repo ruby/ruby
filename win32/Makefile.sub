@@ -290,11 +290,12 @@ MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
 !if "$(ARCH)" == "x64"
-MISSING = $(MISSING) coroutine/Win64/Context.obj
 COROUTINE_H = coroutine/Win64/Context.h
 !elseif "$(ARCH)" == "i386"
-MISSING = $(MISSING) coroutine/Win32/Context.obj
 COROUTINE_H = coroutine/Win32/Context.h
+!endif
+!if defined(COROUTINE_H)
+MISSING = $(MISSING) $(COROUTINE_H:.h=.obj)
 !endif
 
 ARFLAGS = -machine:$(MACHINE) -out:
