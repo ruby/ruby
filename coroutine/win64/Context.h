@@ -19,10 +19,10 @@ extern "C" {
 const size_t COROUTINE_REGISTERS = 8;
 const size_t COROUTINE_XMM_REGISTERS = 1+10*2;
 
-struct coroutine_context
+typedef struct
 {
 	void **stack_pointer;
-};
+} coroutine_context;
 
 typedef void(* coroutine_start)(coroutine_context *from, coroutine_context *self);
 

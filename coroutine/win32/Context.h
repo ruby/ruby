@@ -19,10 +19,10 @@ extern "C" {
 /* This doesn't include thread information block */
 const size_t COROUTINE_REGISTERS = 4;
 
-struct coroutine_context
+typedef struct
 {
 	void **stack_pointer;
-};
+} coroutine_context;
 
 typedef void(__fastcall * coroutine_start)(coroutine_context *from, coroutine_context *self);
 
