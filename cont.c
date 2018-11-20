@@ -179,7 +179,7 @@ fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, 
 }
 #endif
 
-#if FIBER_USE_NATIVE
+#if FIBER_USE_NATIVE && !defined(_WIN32)
 #define MAX_MACHINE_STACK_CACHE  10
 static int machine_stack_cache_index = 0;
 typedef struct machine_stack_cache_struct {
@@ -1861,7 +1861,7 @@ rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
 #elif !defined(_WIN32)
     fib->context.uc_stack.ss_sp = NULL;
 #endif
-#endif
+
 #ifdef MAX_MACHINE_STACK_CACHE
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
     terminated_machine_stack.ptr = fib->ss_sp;
@@ -1869,6 +1869,7 @@ rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
     fib->ss_sp = NULL;
     fib->cont.machine.stack = NULL;
     fib->cont.machine.stack_size = 0;
+#endif
 #endif
 
     ret_fib = return_fiber();
