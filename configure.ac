@@ -2345,13 +2345,13 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
     AC_LIBOBJ([coroutine/x86/Context])
   ],
-  # TODO: Enable this after AppVeyor msys2 build succeeds
-  # [x64-mingw32], [
-  #   AC_MSG_RESULT(win64)
-  #   COROUTINE_H=coroutine/win64/Context.h
-  #   AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-  #   AC_LIBOBJ([coroutine/win64/Context])
-  # ],
+  # TODO: intermittent AppVeyor msys2 failures may occur
+  [x64-mingw32], [
+    AC_MSG_RESULT(win64)
+    COROUTINE_H=coroutine/win64/Context.h
+    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
+    AC_LIBOBJ([coroutine/win64/Context])
+  ],
   [*], [
     AC_MSG_RESULT(no)
   ]

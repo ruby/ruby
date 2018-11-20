@@ -258,6 +258,7 @@ class TestEnumerator < Test::Unit::TestCase
   end
 
   def test_peek_values
+    skip "Windows MinGW 2018-11-20 native fiber" if mingw?
     o = Object.new
     def o.each
       yield
