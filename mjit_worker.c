@@ -1217,6 +1217,10 @@ mjit_worker(void)
             func = convert_unit_to_func(unit, job.cc_entries, job.is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
+            while (in_gc) { /* Make sure we're not GC-ing when touching ISeq */
+                verbose(3, "Waiting wakeup from GC");
+                rb_native_cond_wait(&mjit_gc_wakeup, &mjit_engine_mutex);
+            }
             if (unit->iseq) { /* Check whether GCed or not */
                 /* Usage of jit_code might be not in a critical section.  */
                 MJIT_ATOMIC_SET(unit->iseq->body->jit_func, func);
