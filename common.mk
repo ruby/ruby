@@ -852,7 +852,7 @@ exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time miniruby$(EXEEXT) {$(VPATH
 	$(@F) $(@D)
 
 exe/.time:
-	$(Q) $(MAKEDIRS) exe $(@D)
+	$(Q) $(MAKEDIRS) $(@D)
 	@exit > $@
 
 $(BUILTIN_ENCOBJS) $(BUILTIN_TRANSOBJS): $(ENC_TRANS_D)
@@ -895,7 +895,11 @@ strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
-coroutine/amd64/Context.$(OBJECT): {$(VPATH)}coroutine/amd64/Context.s
+coroutine/amd64/Context.$(OBJEXT): {$(VPATH)}coroutine/amd64/Context.s
+coroutine/amd64/Context.$(OBJEXT): coroutine/amd64/.time
+coroutine/amd64/.time:
+	$(Q) $(MAKEDIRS) $(@D)
+	@exit > $@
 
 ###
 

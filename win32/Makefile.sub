@@ -1226,11 +1226,9 @@ $(ruby_pc): $(RBCONFIG)
 
 {$(srcdir)/coroutine/Win32}.asm.obj:
 	$(ECHO) assembling $(<:\=/)
-	@if not exist $(@D:/=\) md $(@D:/=\)
 	$(Q) $(AS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 {$(srcdir)/coroutine/Win64}.asm.obj:
 	$(ECHO) assembling $(<:\=/)
-	@if not exist $(@D:/=\) md $(@D:/=\)
 	$(Q) $(AS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 
 {$(srcdir)/enc/trans}.c.obj:
