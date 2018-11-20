@@ -20,13 +20,13 @@ end
 
 def run_benchmark(length, repeats, message = :hello)
   chain = nil
-  
+
   chain = make_chain(length) do
     while true
       Fiber.yield(message)
     end
   end
-  
+
   repeats.times do
     abort "invalid result" unless chain.resume == message
   end
