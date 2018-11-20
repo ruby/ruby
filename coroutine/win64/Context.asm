@@ -18,7 +18,7 @@ coroutine_transfer proc
 	push r15
 
 	; Save caller stack pointer
-	mov [rcx], rsp 
+	mov [rcx], rsp
 
 	; Restore callee stack pointer
 	mov rsp, [rdx]
