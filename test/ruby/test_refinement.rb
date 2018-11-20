@@ -19,6 +19,10 @@ class TestRefinement < Test::Unit::TestCase
       return "Foo#a"
     end
 
+    def b
+      return "Foo#b"
+    end
+
     def call_x
       return x
     end
@@ -40,6 +44,10 @@ class TestRefinement < Test::Unit::TestCase
 
       def a
         return "FooExt#a"
+      end
+
+      private def b
+        return "FooExt#b"
       end
     end
   end
@@ -92,6 +100,18 @@ class TestRefinement < Test::Unit::TestCase
 
       def self.send_z_on(foo)
         return foo.send(:z)
+      end
+
+      def self.send_b_on(foo)
+        return foo.send(:b)
+      end
+
+      def self.public_send_z_on(foo)
+        return foo.public_send(:z)
+      end
+
+      def self.public_send_b_on(foo)
+        return foo.public_send(:b)
       end
 
       def self.method_z(foo)
@@ -179,9 +199,18 @@ class TestRefinement < Test::Unit::TestCase
     foo = Foo.new
     assert_raise(NoMethodError) { foo.send(:z) }
     assert_equal("FooExt#z", FooExtClient.send_z_on(foo))
+    assert_equal("FooExt#b", FooExtClient.send_b_on(foo))
     assert_raise(NoMethodError) { foo.send(:z) }
 
     assert_equal(true, RespondTo::Sub.new.respond_to?(:foo))
+  end
+
+  def test_public_send_should_use_refinements
+    foo = Foo.new
+    assert_raise(NoMethodError) { foo.public_send(:z) }
+    assert_equal("FooExt#z", FooExtClient.public_send_z_on(foo))
+    assert_equal("Foo#b", foo.public_send(:b))
+    assert_raise(NoMethodError) { FooExtClient.public_send_b_on(foo) }
   end
 
   def test_method_should_not_use_refinements
@@ -907,6 +936,9 @@ class TestRefinement < Test::Unit::TestCase
       return foo.send(:z)
     end
 
+    def self.public_send_z_on(foo)
+      return foo.public_send(:z)
+    end
     def self.method_z(foo)
       return foo.method(:z)
     end

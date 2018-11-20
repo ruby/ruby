@@ -290,8 +290,15 @@ rb_call0(rb_execution_context_t *ec,
 	 VALUE recv, ID mid, int argc, const VALUE *argv,
 	 call_type scope, VALUE self)
 {
-    const rb_callable_method_entry_t *me = rb_search_method_entry(recv, mid);
-    enum method_missing_reason call_status = rb_method_call_status(ec, me, scope, self);
+    const rb_callable_method_entry_t *me;
+    enum method_missing_reason call_status;
+    if (scope == CALL_PUBLIC) {
+        me = rb_callable_method_entry_with_refinements(CLASS_OF(recv), mid, NULL);
+    }
+    else {
+        me = rb_search_method_entry(recv, mid);
+    }
+    call_status = rb_method_call_status(ec, me, scope, self);
 
     if (call_status != MISSING_NONE) {
 	return method_missing(recv, mid, argc, argv, call_status);
