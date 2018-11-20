@@ -2274,6 +2274,12 @@ AS_IF([test x"$target_cpu" = xia64], [
     ])
 ])
 
+AS_CASE(["$target_cpu-$target_os"],
+  [*-darwin*], [
+    AC_LIBOBJ([coroutine/amd64/Context])
+  ],
+)
+
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))])],
 	rb_cv_rshift_sign=yes,

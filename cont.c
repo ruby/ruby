@@ -26,6 +26,27 @@
  * in Proc. of 51th Programming Symposium, pp.21--28 (2010) (in Japanese).
  */
 
+/*
+  Enable this include to make fiber yield/resume about twice as fast.
+  
+  # Without libcoro
+  koyoko% ./build/bin/ruby ./fiber_benchmark.rb 10000 1000
+  setup time for 10000 fibers:   0.099961
+  execution time for 1000 messages:  19.505909
+
+  # With libcoro
+  koyoko% ./build/bin/ruby ./fiber_benchmark.rb 10000 1000
+  setup time for 10000 fibers:   0.099268
+  execution time for 1000 messages:   8.491746
+*/
+
+#define FIBER_USE_COROUTINE
+
+#ifdef FIBER_USE_COROUTINE
+#include "coroutine/amd64/Context.h"
+#define FIBER_USE_NATIVE 1
+#endif
+
 #if !defined(FIBER_USE_NATIVE)
 # if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
 #   if 0
@@ -139,7 +160,7 @@ enum fiber_status {
 #define FIBER_TERMINATED_P(fib) ((fib)->status == FIBER_TERMINATED)
 #define FIBER_RUNNABLE_P(fib)   (FIBER_CREATED_P(fib) || FIBER_SUSPENDED_P(fib))
 
-#if FIBER_USE_NATIVE && !defined(_WIN32)
+#if FIBER_USE_NATIVE && !defined(FIBER_USE_COROUTINE) && !defined(_WIN32)
 static inline int
 fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, size_t size)
 {
@@ -181,7 +202,11 @@ struct rb_fiber_struct {
     unsigned int transferred : 1;
 
 #if FIBER_USE_NATIVE
-#ifdef _WIN32
+#if defined(FIBER_USE_COROUTINE)
+    coroutine_context context;
+    void *ss_sp;
+    size_t ss_size;
+#elif defined(_WIN32)
     void *fib_handle;
 #else
     ucontext_t context;
@@ -382,8 +407,16 @@ cont_free(void *ptr)
     else {
 	/* fiber */
 	const rb_fiber_t *fib = (rb_fiber_t*)cont;
-#ifdef _WIN32
-        if (!fiber_is_root_p(fib)) {
+#if defined(FIBER_USE_COROUTINE)
+	coroutine_destroy(&fib->context);
+	if (fib->ss_sp != NULL) {
+	    if (fiber_is_root_p(fib)) {
+		rb_bug("Illegal root fiber parameter");
+	    }
+	    munmap((void*)fib->ss_sp, fib->ss_size);
+	}
+#elif defined(_WIN32)
+	if (!fiber_is_root_p(fib)) {
 	    /* don't delete root fiber handle */
 	    if (fib->fib_handle) {
 		DeleteFiber(fib->fib_handle);
@@ -799,9 +832,7 @@ fiber_entry(void *arg)
 }
 #else /* _WIN32 */
 
-NORETURN(static void fiber_entry(void *arg));
-static void
-fiber_entry(void *arg)
+COROUTINE fiber_entry(coroutine_context * from, coroutine_context * to)
 {
     rb_fiber_start();
 }
@@ -862,7 +893,17 @@ fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 {
     rb_execution_context_t *sec = &fib->cont.saved_ec;
 
-#ifdef _WIN32
+#if defined(FIBER_USE_COROUTINE)
+    char *ptr;
+    STACK_GROW_DIR_DETECTION;
+
+    ptr = fiber_machine_stack_alloc(size);
+    fib->ss_sp = ptr;
+    fib->ss_size = size;
+    coroutine_initialize(&fib->context, fiber_entry, ptr+size, size);
+    sec->machine.stack_start = (VALUE*)(ptr + STACK_DIR_UPPER(0, size));
+    sec->machine.stack_maxsize = size - RB_PAGE_SIZE;
+#elif defined(_WIN32)
 # if defined(_MSC_VER) && _MSC_VER <= 1200
 #   define CreateFiberEx(cs, stacksize, flags, entry, param) \
     CreateFiber((stacksize), (entry), (param))
@@ -925,15 +966,15 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     /* restore thread context */
     fiber_restore_thread(th, newfib);
 
-#ifndef _WIN32
+    /* swap machine context */
+#if defined(FIBER_USE_COROUTINE)
+    coroutine_transfer(&oldfib->context, &newfib->context);
+#elif defined(_WIN32)
+    SwitchToFiber(newfib->fib_handle);
+#else
     if (!newfib->context.uc_stack.ss_sp && th->root_fiber != newfib) {
 	rb_bug("non_root_fiber->context.uc_stac.ss_sp should not be NULL");
     }
-#endif
-    /* swap machine context */
-#ifdef _WIN32
-    SwitchToFiber(newfib->fib_handle);
-#else
     swapcontext(&oldfib->context, &newfib->context);
 #endif
 }
@@ -1532,7 +1573,9 @@ root_fiber_alloc(rb_thread_t *th)
     fib->cont.self = fibval;
 
 #if FIBER_USE_NATIVE
-#ifdef _WIN32
+#if defined(FIBER_USE_COROUTINE)
+    coroutine_initialize(&fib->context, NULL, NULL, 0);
+#elif defined(_WIN32)
     /* setup fib_handle for root Fiber */
     if (fib->fib_handle == 0) {
         if ((fib->fib_handle = ConvertThreadToFiber(0)) == 0) {
@@ -1794,8 +1837,12 @@ rb_fiber_terminate(rb_fiber_t *fib, int need_interrupt)
     VM_ASSERT(FIBER_RESUMED_P(fib));
     rb_fiber_close(fib);
 
-#if FIBER_USE_NATIVE && !defined(_WIN32)
+#if FIBER_USE_NATIVE
+#if defined(FIBER_USE_COROUTINE)
+    coroutine_destroy(&fib->context);
+#elif !defined(_WIN32)
     fib->context.uc_stack.ss_sp = NULL;
+#endif
 #endif
 #ifdef MAX_MACHINE_STACK_CACHE
     /* Ruby must not switch to other thread until storing terminated_machine_stack */
