@@ -407,6 +407,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 .s.@OBJEXT@:
 	@$(ECHO) assembling $<
 	$(MAKEDIRS) $(@D)
+	@$(ECHO) $(Q) $(AS) $(ASFLAGS) -o $@ $<
 	$(Q) $(AS) $(ASFLAGS) -o $@ $<
 
 .c.S:
