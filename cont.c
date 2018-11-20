@@ -819,7 +819,8 @@ cont_restore_thread(rb_context_t *cont)
 
 #if FIBER_USE_NATIVE
 #if defined(FIBER_USE_COROUTINE)
-COROUTINE fiber_entry(coroutine_context * from, coroutine_context * to)
+static COROUTINE
+fiber_entry(coroutine_context * from, coroutine_context * to)
 {
     rb_fiber_start();
 }
