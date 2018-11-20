@@ -23,7 +23,7 @@ typedef struct
 	void **stack_pointer;
 } coroutine_context;
 
-typedef void(* coroutine_start)(coroutine_context *from, coroutine_context *self);
+typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self);
 
 inline void coroutine_initialize(
 	coroutine_context *context,
