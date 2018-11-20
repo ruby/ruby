@@ -143,6 +143,8 @@ XRUBY_RUBYLIBDIR = @XRUBY_RUBYLIBDIR@
 XRUBY_RUBYHDRDIR = @XRUBY_RUBYHDRDIR@
 BOOTSTRAPRUBY = @BOOTSTRAPRUBY@
 
+COROUTINE_H = @X_FIBER_COROUTINE_H@
+
 #### End of system configuration section. ####
 
 MAJOR=	@MAJOR@
@@ -241,7 +243,7 @@ DESTDIR       = @DESTDIR@
 configure_args = @configure_args@
 #### End of variables
 
-.SUFFIXES: .inc .h .c .y .i .$(DTRACE_EXT)
+.SUFFIXES: .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
 all:
 
@@ -406,7 +408,6 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 
 .s.@OBJEXT@:
 	@$(ECHO) assembling $<
-	$(Q) $(MAKEDIRS) $(@D)
 	$(Q) $(CC) $(ASFLAGS) -o $@ -c $<
 
 .c.S:
@@ -517,7 +518,7 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
-cont.$(OBJEXT): @X_FIBER_COROUTINE_H@
+cont.$(OBJEXT): $(COROUTINE_H)
 
 test-bundled-gems-run:
 	$(Q) set -e; while read gem _; do \

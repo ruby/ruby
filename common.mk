@@ -2,7 +2,7 @@ bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY)
 dll: $(LIBRUBY_SO)
 
-.SUFFIXES: .inc .h .c .y .i .$(DTRACE_EXT)
+.SUFFIXES: .inc .h .c .y .i .$(ASMEXT) .$(DTRACE_EXT)
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = 0
@@ -895,9 +895,9 @@ strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
-coroutine/amd64/Context.$(OBJEXT): {$(VPATH)}coroutine/amd64/Context.$(ASMEXT)
-coroutine/amd64/Context.$(OBJEXT): coroutine/amd64/.time
-coroutine/amd64/.time:
+$(COROUTINE_H:.h=).$(OBJEXT): {$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT)
+$(COROUTINE_H:.h=).$(OBJEXT): $(COROUTINE_H:Context.h=.time)
+$(COROUTINE_H:Context.h=.time):
 	$(Q) $(MAKEDIRS) $(@D)
 	@exit > $@
 
