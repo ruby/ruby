@@ -25,7 +25,7 @@ typedef struct
 
 typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self);
 
-inline void coroutine_initialize(
+static inline void coroutine_initialize(
 	coroutine_context *context,
 	coroutine_start start,
 	void *stack_pointer,
@@ -48,7 +48,7 @@ inline void coroutine_initialize(
 
 coroutine_context * coroutine_transfer(coroutine_context * current, coroutine_context * target);
 
-inline void coroutine_destroy(coroutine_context * context)
+static inline void coroutine_destroy(coroutine_context * context)
 {
 }
 
