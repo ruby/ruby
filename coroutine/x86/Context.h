@@ -1,9 +1,9 @@
-//
-//  File file is part of the "Coroutine" project and released under the MIT License.
-//
-//  Created by Samuel Williams on 3/11/2018.
-//  Copyright, 2018, by Samuel Williams. All rights reserved.
-//
+/*
+ *  This file is part of the "Coroutine" project and released under the MIT License.
+ *
+ *  Created by Samuel Williams on 3/11/2018.
+ *  Copyright, 2018, by Samuel Williams. All rights reserved.
+*/
 
 #pragma once
 
@@ -18,13 +18,11 @@ extern "C" {
 
 const size_t COROUTINE_REGISTERS = 4;
 
-// The fiber context (stack pointer).
 typedef struct
 {
         void **stack_pointer;
 } coroutine_context;
 
-// The initialization function.
 typedef void(* coroutine_start)(coroutine_context *from, coroutine_context *self) __attribute__((fastcall));
 
 void coroutine_initialize(
