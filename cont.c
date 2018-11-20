@@ -905,7 +905,9 @@ fiber_machine_stack_alloc(size_t size)
 
     return ptr;
 }
+#endif
 
+#ifdef FIBER_USE_NATIVE
 static void
 fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
 {
