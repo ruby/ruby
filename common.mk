@@ -895,7 +895,7 @@ strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
-coroutine/amd64/Context.$(OBJEXT): {$(VPATH)}coroutine/amd64/Context.s
+coroutine/amd64/Context.$(OBJEXT): {$(VPATH)}coroutine/amd64/Context.$(ASMEXT)
 coroutine/amd64/Context.$(OBJEXT): coroutine/amd64/.time
 coroutine/amd64/.time:
 	$(Q) $(MAKEDIRS) $(@D)
