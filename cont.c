@@ -29,6 +29,8 @@
 /*
   Enable this include to make fiber yield/resume about twice as fast.
   
+  rvm install ruby-head-ioquatix-native-fiber --url https://github.com/ioquatix/ruby --branch native-fiber
+  
   # Without libcoro
   koyoko% ./build/bin/ruby ./fiber_benchmark.rb 10000 1000
   setup time for 10000 fibers:   0.099961
@@ -40,10 +42,8 @@
   execution time for 1000 messages:   8.491746
 */
 
-#define FIBER_USE_COROUTINE
-
 #ifdef FIBER_USE_COROUTINE
-#include "coroutine/amd64/Context.h"
+#include FIBER_USE_COROUTINE
 #define FIBER_USE_NATIVE 1
 #endif
 

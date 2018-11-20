@@ -2274,12 +2274,6 @@ AS_IF([test x"$target_cpu" = xia64], [
     ])
 ])
 
-AS_CASE(["$target_cpu-$target_os"],
-  [*-darwin*], [
-    AC_LIBOBJ([coroutine/amd64/Context])
-  ],
-)
-
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([], [(-1==(-1>>1))])],
 	rb_cv_rshift_sign=yes,
@@ -2330,6 +2324,18 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     RUBY_STACK_GROW_DIRECTION($target_cpu, dir)
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
+
+AC_MSG_CHECKING(native fiber implementation)
+AS_CASE(["$target_cpu-$target_os"],
+  [x*64-*], [
+    AC_MSG_RESULT(amd64)
+    AC_DEFINE(FIBER_USE_COROUTINE, "coroutine/amd64/Context.h")
+    AC_LIBOBJ([coroutine/amd64/Context])
+  ],
+  [*], [
+    AC_MSG_RESULT(no)
+  ]
+)
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
