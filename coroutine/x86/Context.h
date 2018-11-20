@@ -26,10 +26,10 @@ typedef struct
 typedef COROUTINE(* coroutine_start)(coroutine_context *from, coroutine_context *self) __attribute__((fastcall));
 
 static inline void coroutine_initialize(
-	coroutine_context *context,
-	coroutine_start start,
-	void *stack_pointer,
-	size_t stack_size
+        coroutine_context *context,
+        coroutine_start start,
+        void *stack_pointer,
+        size_t stack_size
 ) {
         /* Force 16-byte alignment */
         context->stack_pointer = (void**)((uintptr_t)stack_pointer & ~0xF);
