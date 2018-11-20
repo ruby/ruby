@@ -179,7 +179,7 @@ fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, 
 }
 #endif
 
-#if FIBER_USE_NATIVE && !defined(_WIN32)
+#if FIBER_USE_NATIVE
 #define MAX_MACHINE_STACK_CACHE  10
 static int machine_stack_cache_index = 0;
 typedef struct machine_stack_cache_struct {
@@ -413,7 +413,11 @@ cont_free(void *ptr)
 	    if (fiber_is_root_p(fib)) {
 		rb_bug("Illegal root fiber parameter");
 	    }
+#ifdef _WIN32
+            free((void*)fib->ss_sp);
+#else
 	    munmap((void*)fib->ss_sp, fib->ss_size);
+#endif
 	}
 #elif defined(_WIN32)
 	if (!fiber_is_root_p(fib)) {
@@ -812,7 +816,12 @@ cont_restore_thread(rb_context_t *cont)
 }
 
 #if FIBER_USE_NATIVE
-#ifdef _WIN32
+#if defined(FIBER_USE_COROUTINE)
+COROUTINE fiber_entry(coroutine_context * from, coroutine_context * to)
+{
+    rb_fiber_start();
+}
+#elif defined(_WIN32)
 static void
 fiber_set_stack_location(void)
 {
@@ -828,13 +837,6 @@ static VOID CALLBACK
 fiber_entry(void *arg)
 {
     fiber_set_stack_location();
-    rb_fiber_start();
-}
-#else /* _WIN32 */
-
-#if defined(FIBER_USE_COROUTINE)
-COROUTINE fiber_entry(coroutine_context * from, coroutine_context * to)
-{
     rb_fiber_start();
 }
 #else
@@ -877,6 +879,9 @@ fiber_machine_stack_alloc(size_t size)
 	}
     }
     else {
+#ifdef _WIN32
+        return malloc(size);
+#else
 	void *page;
 	STACK_GROW_DIR_DETECTION;
 
@@ -891,11 +896,11 @@ fiber_machine_stack_alloc(size_t size)
 	if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
 	    rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
 	}
+#endif
     }
 
     return ptr;
 }
-#endif
 
 static void
 fiber_initialize_machine_stack_context(rb_fiber_t *fib, size_t size)
@@ -1712,7 +1717,11 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
 	}
 	else {
 	    if (terminated_machine_stack.ptr != fib->cont.machine.stack) {
-		munmap((void*)terminated_machine_stack.ptr, terminated_machine_stack.size * sizeof(VALUE));
+#ifdef _WIN32
+                free((void*)terminated_machine_stack.ptr);
+#else
+                munmap((void*)terminated_machine_stack.ptr, terminated_machine_stack.size * sizeof(VALUE));
+#endif
 	    }
 	    else {
 		rb_bug("terminated fiber resumed");
