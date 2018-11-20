@@ -4219,7 +4219,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
         }
         else {
             rb_raise(rb_eRangeError,
-                "integer % d too big to convert into `unsigned char'", i);
+                "integer %d too big to convert into `unsigned char'", i);
         }
     }
     else if (RB_TYPE_P(b, T_BIGNUM)) {
