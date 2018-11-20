@@ -179,17 +179,6 @@ fiber_context_create(ucontext_t *context, void (*func)(), void *arg, void *ptr, 
 }
 #endif
 
-#if FIBER_USE_NATIVE && !defined(_WIN32)
-#define MAX_MACHINE_STACK_CACHE  10
-static int machine_stack_cache_index = 0;
-typedef struct machine_stack_cache_struct {
-    void *ptr;
-    size_t size;
-} machine_stack_cache_t;
-static machine_stack_cache_t machine_stack_cache[MAX_MACHINE_STACK_CACHE];
-static machine_stack_cache_t terminated_machine_stack;
-#endif
-
 struct rb_fiber_struct {
     rb_context_t cont;
     VALUE first_proc;
@@ -203,12 +192,14 @@ struct rb_fiber_struct {
 
 #if FIBER_USE_NATIVE
 #if defined(FIBER_USE_COROUTINE)
+#define FIBER_ALLOCATE_STACK
     coroutine_context context;
     void *ss_sp;
     size_t ss_size;
 #elif defined(_WIN32)
     void *fib_handle;
 #else
+#define FIBER_ALLOCATE_STACK
     ucontext_t context;
     /* Because context.uc_stack.ss_sp and context.uc_stack.ss_size
      * are not necessarily valid after makecontext() or swapcontext(),
@@ -219,6 +210,17 @@ struct rb_fiber_struct {
 #endif
 #endif
 };
+
+#ifdef FIBER_ALLOCATE_STACK
+#define MAX_MACHINE_STACK_CACHE  10
+static int machine_stack_cache_index = 0;
+typedef struct machine_stack_cache_struct {
+    void *ptr;
+    size_t size;
+} machine_stack_cache_t;
+static machine_stack_cache_t machine_stack_cache[MAX_MACHINE_STACK_CACHE];
+static machine_stack_cache_t terminated_machine_stack;
+#endif
 
 static const char *
 fiber_status_name(enum fiber_status s)
@@ -847,7 +849,9 @@ fiber_entry(void *arg)
     rb_fiber_start();
 }
 #endif
+#endif
 
+#ifdef FIBER_ALLOCATE_STACK
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
  * if MAP_STACK is passed.
@@ -992,7 +996,7 @@ fiber_setcontext(rb_fiber_t *newfib, rb_fiber_t *oldfib)
     swapcontext(&oldfib->context, &newfib->context);
 #endif
 }
-#endif /* FIBER_USE_NATIVE */
+#endif /* FIBER_ALLOCATE_STACK */
 
 NOINLINE(NORETURN(static void cont_restore_1(rb_context_t *)));
 
