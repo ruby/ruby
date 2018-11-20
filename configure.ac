@@ -2332,6 +2332,11 @@ AS_CASE(["$target_cpu-$target_os"],
     AC_DEFINE(FIBER_USE_COROUTINE, "coroutine/amd64/Context.h")
     AC_LIBOBJ([coroutine/amd64/Context])
   ],
+  [*86-*], [
+    AC_MSG_RESULT(x86)
+    AC_DEFINE(FIBER_USE_COROUTINE, "coroutine/x86/Context.h")
+    AC_LIBOBJ([coroutine/x86/Context])
+  ]
   [*], [
     AC_MSG_RESULT(no)
   ]
