@@ -40,9 +40,10 @@ static inline void coroutine_initialize(
 	}
 
 	/* Windows Thread Information Block */
-	*--context->stack_pointer = 0;
-	*--context->stack_pointer = stack_pointer;
-	*--context->stack_pointer = (void*)stack_size;
+	*--context->stack_pointer = 0; /* gs:[0x00] */
+	*--context->stack_pointer = stack_pointer + stack_size; /* gs:[0x08] */
+	*--context->stack_pointer = (void*)stack_pointer;  /* gs:[0x10] */
+
 
 	*--context->stack_pointer = (void*)start;
 

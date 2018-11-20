@@ -16,6 +16,7 @@ extern "C" {
 
 #define COROUTINE __declspec(noreturn) void __fastcall
 
+/* This doesn't include thread information block */
 const size_t COROUTINE_REGISTERS = 4;
 
 struct coroutine_context
@@ -40,9 +41,9 @@ static inline void coroutine_initialize(
 	}
 
 	/* Windows Thread Information Block */
-	*--context->stack_pointer = 0;
-	*--context->stack_pointer = stack_pointer;
-	*--context->stack_pointer = (void*)stack_size;
+	*--context->stack_pointer = 0; /* fs:[0] */
+	*--context->stack_pointer = stack_pointer + stack_size; /* fs:[4] */
+	*--context->stack_pointer = (void*)stack_pointer;  /* fs:[8] */
 
 	*--context->stack_pointer = (void*)start;
 
