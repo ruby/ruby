@@ -9,6 +9,8 @@
 
 .code
 
+assume fs:nothing
+
 ; Using fastcall is a big win (and it's the same has how x64 works).
 ; In coroutine transfer, the arguments are passed in ecx and edx. We don't need
 ; to touch these in order to pass them to the destination coroutine.
