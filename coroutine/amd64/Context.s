@@ -7,13 +7,12 @@
 
 .text
 
-.globl coroutine_transfer
-coroutine_transfer:
-
 # For older linkers
 .globl _coroutine_transfer
 _coroutine_transfer:
 
+.globl coroutine_transfer
+coroutine_transfer:
 	# Save caller state
 	pushq %rbp
 	pushq %rbx
