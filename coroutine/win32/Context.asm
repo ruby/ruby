@@ -19,10 +19,10 @@
 	push ebx
 	push edi
 	push esi
-	
+
 	; Save caller stack pointer
 	mov dword ptr [ecx], esp
-	
+
 	; Restore callee stack pointer
 	mov esp, dword ptr [edx]
 
