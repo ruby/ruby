@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define COROUTINE void
+#define COROUTINE __declspec(noreturn) void
 
 const size_t COROUTINE_REGISTERS = 8;
 
