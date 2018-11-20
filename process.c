@@ -1502,26 +1502,12 @@ after_exec(void)
 }
 
 #if defined HAVE_WORKING_FORK || defined HAVE_DAEMON
+#define before_fork_ruby() before_exec()
 static void
-before_fork_ruby(void)
-{
-    if (mjit_enabled) {
-        /* avoid leaving locked mutex and units being modified for child process. */
-        mjit_pause(FALSE);
-    }
-
-    before_exec();
-}
-
-static void
-after_fork_ruby(int parent_p)
+after_fork_ruby(void)
 {
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     after_exec();
-
-    if (mjit_enabled && parent_p) { /* child is cared by `rb_thread_atfork` */
-        mjit_resume();
-    }
 }
 #endif
 
@@ -4007,12 +3993,14 @@ rb_fork_ruby(int *status)
 
     while (1) {
 	prefork();
+        if (mjit_enabled) mjit_pause(FALSE); /* Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT. */
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
 	pid = fork();
 	err = errno;
-        after_fork_ruby(pid > 0);
+        after_fork_ruby();
 	disable_child_handler_fork_parent(&old); /* yes, bad name */
+        if (mjit_enabled && pid > 0) mjit_resume(); /* child (pid == 0) is cared by rb_thread_atfork */
 	if (pid >= 0) /* fork succeed */
 	    return pid;
 	/* fork failed */
@@ -6434,10 +6422,11 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
+    if (mjit_enabled) mjit_pause(FALSE); /* Don't leave locked mutex to child. */
     before_fork_ruby();
     err = daemon(nochdir, noclose);
-    after_fork_ruby(TRUE);
-    rb_thread_atfork();
+    after_fork_ruby();
+    rb_thread_atfork(); /* calls mjit_resume() */
 #else
     int n;
 
