@@ -37,11 +37,3 @@ assert_normal_exit %q{
   r.instance_eval { initialize r, r }
   r.inspect
 }
-
-# This test randomly fails on AppVeyor msys2 with:
-# test_thread.rb: A non-blocking socket operation could not be completed immediately. - read would block
-assert_finish 3, %{
-  th = Thread.new {sleep 0.2}
-  th.join(0.1)
-  th.join
-}

@@ -249,6 +249,12 @@ assert_equal 'ok', %{
 }
 
 assert_finish 3, %{
+  th = Thread.new {sleep 0.2}
+  th.join(0.1)
+  th.join
+}
+
+assert_finish 3, %{
   require 'timeout'
   th = Thread.new {sleep 0.2}
   begin
