@@ -8,6 +8,12 @@
 .code
 
 coroutine_transfer proc
+	; Save the thread information block:
+	push gs:[0x00]
+	push gs:[0x08]
+	push gs:[0x10]
+
+	; Save caller registers:
 	push rbp
 	push rbx
 	push rdi
@@ -17,13 +23,13 @@ coroutine_transfer proc
 	push r14
 	push r15
 
-	; Save caller stack pointer
+	; Save caller stack pointer:
 	mov [rcx], rsp
 
-	; Restore callee stack pointer
+	; Restore callee stack pointer:
 	mov rsp, [rdx]
 
-	; Restore callee stack
+	; Restore callee stack:
 	pop r15
 	pop r14
 	pop r13
@@ -33,10 +39,15 @@ coroutine_transfer proc
 	pop rbx
 	pop rbp
 
-	; Put the first argument into the return value
+	; Restore the thread information block:
+	pop gs:[0x10]
+	pop gs:[0x08]
+	pop gs:[0x00]
+
+	; Put the first argument into the return value:
 	mov rax, rcx
 
-	; We pop the return address and jump to it
+	; We pop the return address and jump to it:
 	ret
 coroutine_transfer endp
 
