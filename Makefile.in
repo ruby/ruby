@@ -520,6 +520,8 @@ ext/extinit.$(OBJEXT): ext/extinit.c $(SETUP)
 
 enc/encinit.$(OBJEXT): enc/encinit.c $(SETUP)
 
+cont.$(OBJEXT): @X_FIBER_COROUTINE_H@
+
 test-bundled-gems-run:
 	$(Q) set -e; while read gem _; do \
 	  echo testing $$gem gem && \
