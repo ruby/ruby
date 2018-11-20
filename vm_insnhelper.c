@@ -3766,27 +3766,27 @@ static VALUE
 fix_succ(VALUE x)
 {
     switch (x) {
-    case ~0UL:
-      /* 0xFFFF_FFFF == INT2FIX(-1)
-       * `-1.succ` is of course 0. */
-      return INT2FIX(0);
-    case RSHIFT(~0UL, 1):
-      /* 0x7FFF_FFFF == LONG2FIX(0x3FFF_FFFF)
-       * 0x3FFF_FFFF + 1 == 0x4000_0000, which is a Bignum. */
-      return rb_uint2big(1UL << (SIZEOF_LONG * CHAR_BIT - 2));
-    default:
-      /*    LONG2FIX(FIX2LONG(x)+FIX2LONG(y))
-       * == ((lx*2+1)/2 + (ly*2+1)/2)*2+1
-       * == lx*2 + ly*2 + 1
-       * == (lx*2+1) + (ly*2+1) - 1
-       * == x + y - 1
-       *
-       * Here, if we put y := INT2FIX(1):
-       *
-       * == x + INT2FIX(1) - 1
-       * == x + 2 .
-       */
-      return x + 2;
+      case ~0UL:
+        /* 0xFFFF_FFFF == INT2FIX(-1)
+         * `-1.succ` is of course 0. */
+        return INT2FIX(0);
+      case RSHIFT(~0UL, 1):
+        /* 0x7FFF_FFFF == LONG2FIX(0x3FFF_FFFF)
+         * 0x3FFF_FFFF + 1 == 0x4000_0000, which is a Bignum. */
+        return rb_uint2big(1UL << (SIZEOF_LONG * CHAR_BIT - 2));
+      default:
+        /*    LONG2FIX(FIX2LONG(x)+FIX2LONG(y))
+         * == ((lx*2+1)/2 + (ly*2+1)/2)*2+1
+         * == lx*2 + ly*2 + 1
+         * == (lx*2+1) + (ly*2+1) - 1
+         * == x + y - 1
+         *
+         * Here, if we put y := INT2FIX(1):
+         *
+         * == x + INT2FIX(1) - 1
+         * == x + 2 .
+         */
+        return x + 2;
     }
 }
 
