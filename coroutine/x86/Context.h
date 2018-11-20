@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define COROUTINE void __attribute__((fastcall))
+#define COROUTINE __attribute__((noreturn, fastcall)) void
 
 const size_t COROUTINE_REGISTERS = 4;
 

@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-#define COROUTINE void
+#define COROUTINE __attribute__((noreturn)) void
 
 const size_t COROUTINE_REGISTERS = 9;
 
