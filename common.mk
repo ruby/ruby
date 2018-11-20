@@ -895,6 +895,7 @@ strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
+coroutine/amd64/Context.$(OBJECT): {$(VPATH)}coroutine/amd64/Context.s
 
 ###
 
