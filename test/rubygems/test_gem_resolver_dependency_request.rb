@@ -82,4 +82,3 @@ class TestGemResolverDependencyRequest < Gem::TestCase
   end
 
 end
-

@@ -29,4 +29,3 @@ class TestGemSourceVendor < Gem::TestCase
   end
 
 end
-

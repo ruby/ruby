@@ -95,7 +95,7 @@ module Gem::UserInteraction
   ##
   # Displays an alert +statement+.  Asks a +question+ if given.
 
-  def alert statement, question = nil
+  def alert(statement, question = nil)
     ui.alert statement, question
   end
 
@@ -103,7 +103,7 @@ module Gem::UserInteraction
   # Displays an error +statement+ to the error output location.  Asks a
   # +question+ if given.
 
-  def alert_error statement, question = nil
+  def alert_error(statement, question = nil)
     ui.alert_error statement, question
   end
 
@@ -111,49 +111,49 @@ module Gem::UserInteraction
   # Displays a warning +statement+ to the warning output location.  Asks a
   # +question+ if given.
 
-  def alert_warning statement, question = nil
+  def alert_warning(statement, question = nil)
     ui.alert_warning statement, question
   end
 
   ##
   # Asks a +question+ and returns the answer.
 
-  def ask question
+  def ask(question)
     ui.ask question
   end
 
   ##
   # Asks for a password with a +prompt+
 
-  def ask_for_password prompt
+  def ask_for_password(prompt)
     ui.ask_for_password prompt
   end
 
   ##
   # Asks a yes or no +question+.  Returns true for yes, false for no.
 
-  def ask_yes_no question, default = nil
+  def ask_yes_no(question, default = nil)
     ui.ask_yes_no question, default
   end
 
   ##
   # Asks the user to answer +question+ with an answer from the given +list+.
 
-  def choose_from_list question, list
+  def choose_from_list(question, list)
     ui.choose_from_list question, list
   end
 
   ##
   # Displays the given +statement+ on the standard output (or equivalent).
 
-  def say statement = ''
+  def say(statement = '')
     ui.say statement
   end
 
   ##
   # Terminates the RubyGems process with the given +exit_code+
 
-  def terminate_interaction exit_code = 0
+  def terminate_interaction(exit_code = 0)
     ui.terminate_interaction exit_code
   end
 
@@ -161,7 +161,7 @@ module Gem::UserInteraction
   # Calls +say+ with +msg+ or the results of the block if really_verbose
   # is true.
 
-  def verbose msg = nil
+  def verbose(msg = nil)
     say(msg || yield) if Gem.configuration.really_verbose
   end
 end
@@ -212,7 +212,7 @@ class Gem::StreamUI
   # Prints a formatted backtrace to the errors stream if backtraces are
   # enabled.
 
-  def backtrace exception
+  def backtrace(exception)
     return unless Gem.configuration.backtrace
 
     @errs.puts "\t#{exception.backtrace.join "\n\t"}"
@@ -247,8 +247,8 @@ class Gem::StreamUI
   # default.
 
   def ask_yes_no(question, default=nil)
-    unless tty? then
-      if default.nil? then
+    unless tty?
+      if default.nil?
         raise Gem::OperationNotSupportedError,
               "Not connected to a tty and no default specified"
       else
@@ -568,6 +568,7 @@ class Gem::StreamUI
     # +out_stream+.  The other arguments are ignored.
 
     def initialize(out_stream, *args)
+      @file_name = nil
       @out = out_stream
     end
 

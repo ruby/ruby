@@ -17,7 +17,7 @@ class Gem::Resolver::LocalSpecification < Gem::Resolver::SpecSpecification
     true
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[LocalSpecification', ']' do
       q.breakable
       q.text "name: #{name}"
@@ -39,4 +39,3 @@ class Gem::Resolver::LocalSpecification < Gem::Resolver::SpecSpecification
   end
 
 end
-

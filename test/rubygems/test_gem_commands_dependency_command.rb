@@ -227,4 +227,3 @@ ERROR:  Only reverse dependencies for local gems are supported.
   end
 
 end
-

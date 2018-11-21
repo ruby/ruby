@@ -9,7 +9,7 @@ class Gem::Commands::ServerCommand < Gem::Command
           :port => 8808, :gemdir => [], :daemon => false
 
     OptionParser.accept :Port do |port|
-      if port =~ /\A\d+\z/ then
+      if port =~ /\A\d+\z/
         port = Integer port
         raise OptionParser::InvalidArgument, "#{port}: not a port number" if
           port > 65535
@@ -84,4 +84,3 @@ You can set up a shortcut to gem server documentation using the URL:
   end
 
 end
-

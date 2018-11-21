@@ -50,11 +50,11 @@ with gem spec:
       gemspec += '.gemspec' if File.exist? gemspec + '.gemspec'
     end
 
-    if File.exist? gemspec then
+    if File.exist? gemspec
       Dir.chdir(File.dirname(gemspec)) do
         spec = Gem::Specification.load File.basename(gemspec)
 
-        if spec then
+        if spec
           Gem::Package.build(
             spec,
             options[:force],
@@ -72,4 +72,3 @@ with gem spec:
   end
 
 end
-

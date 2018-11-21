@@ -212,19 +212,19 @@ class TestGemVersion < Gem::TestCase
 
   # Asserts that +version+ is a prerelease.
 
-  def assert_prerelease version
+  def assert_prerelease(version)
     assert v(version).prerelease?, "#{version} is a prerelease"
   end
 
   # Assert that +expected+ is the "approximate" recommendation for +version+.
 
-  def assert_approximate_equal expected, version
+  def assert_approximate_equal(expected, version)
     assert_equal expected, v(version).approximate_recommendation
   end
 
   # Assert that the "approximate" recommendation for +version+ satifies +version+.
 
-  def assert_approximate_satisfies_itself version
+  def assert_approximate_satisfies_itself(version)
     gem_version = v(version)
 
     assert Gem::Requirement.new(gem_version.approximate_recommendation).satisfied_by?(gem_version)
@@ -232,33 +232,33 @@ class TestGemVersion < Gem::TestCase
 
   # Assert that bumping the +unbumped+ version yields the +expected+.
 
-  def assert_bumped_version_equal expected, unbumped
+  def assert_bumped_version_equal(expected, unbumped)
     assert_version_equal expected, v(unbumped).bump
   end
 
   # Assert that +release+ is the correct non-prerelease +version+.
 
-  def assert_release_equal release, version
+  def assert_release_equal(release, version)
     assert_version_equal release, v(version).release
   end
 
   # Assert that two versions are equal. Handles strings or
   # Gem::Version instances.
 
-  def assert_version_equal expected, actual
+  def assert_version_equal(expected, actual)
     assert_equal v(expected), v(actual)
     assert_equal v(expected).hash, v(actual).hash, "since #{actual} == #{expected}, they must have the same hash"
   end
 
   # Assert that two versions are eql?. Checks both directions.
 
-  def assert_version_eql first, second
+  def assert_version_eql(first, second)
     first, second = v(first), v(second)
     assert first.eql?(second), "#{first} is eql? #{second}"
     assert second.eql?(first), "#{second} is eql? #{first}"
   end
 
-  def assert_less_than left, right
+  def assert_less_than(left, right)
     l = v(left)
     r = v(right)
     assert l < r, "#{left} not less than #{right}"
@@ -266,14 +266,14 @@ class TestGemVersion < Gem::TestCase
 
   # Refute the assumption that +version+ is a prerelease.
 
-  def refute_prerelease version
+  def refute_prerelease(version)
     refute v(version).prerelease?, "#{version} is NOT a prerelease"
   end
 
   # Refute the assumption that two versions are eql?. Checks both
   # directions.
 
-  def refute_version_eql first, second
+  def refute_version_eql(first, second)
     first, second = v(first), v(second)
     refute first.eql?(second), "#{first} is NOT eql? #{second}"
     refute second.eql?(first), "#{second} is NOT eql? #{first}"
@@ -281,7 +281,7 @@ class TestGemVersion < Gem::TestCase
 
   # Refute the assumption that the two versions are equal?.
 
-  def refute_version_equal unexpected, actual
+  def refute_version_equal(unexpected, actual)
     refute_equal v(unexpected), v(actual)
   end
 end

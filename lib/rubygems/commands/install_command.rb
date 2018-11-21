@@ -132,7 +132,7 @@ You can use `i` command instead of `install`.
   end
 
   def check_install_dir # :nodoc:
-    if options[:install_dir] and options[:user_install] then
+    if options[:install_dir] and options[:user_install]
       alert_error "Use --install-dir or --user-install but not both"
       terminate_interaction 1
     end
@@ -140,7 +140,7 @@ You can use `i` command instead of `install`.
 
   def check_version # :nodoc:
     if options[:version] != Gem::Requirement.default and
-         get_all_gem_names.size > 1 then
+         get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
                   " version requirments using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
       terminate_interaction 1
@@ -148,8 +148,7 @@ You can use `i` command instead of `install`.
   end
 
   def execute
-
-    if options.include? :gemdeps then
+    if options.include? :gemdeps
       install_from_gemdeps
       return # not reached
     end
@@ -189,13 +188,13 @@ You can use `i` command instead of `install`.
     terminate_interaction
   end
 
-  def install_gem name, version # :nodoc:
+  def install_gem(name, version) # :nodoc:
     return if options[:conservative] and
       not Gem::Dependency.new(name, version).matching_specs.empty?
 
     req = Gem::Requirement.create(version)
 
-    if options[:ignore_dependencies] then
+    if options[:ignore_dependencies]
       install_gem_without_dependencies name, req
     else
       inst = Gem::DependencyInstaller.new options
@@ -217,11 +216,11 @@ You can use `i` command instead of `install`.
     end
   end
 
-  def install_gem_without_dependencies name, req # :nodoc:
+  def install_gem_without_dependencies(name, req) # :nodoc:
     gem = nil
 
-    if local? then
-      if name =~ /\.gem$/ and File.file? name then
+    if local?
+      if name =~ /\.gem$/ and File.file? name
         source = Gem::Source::SpecificFile.new name
         spec = source.spec
       else
@@ -231,7 +230,7 @@ You can use `i` command instead of `install`.
       gem = source.download spec if spec
     end
 
-    if remote? and not gem then
+    if remote? and not gem
       dependency = Gem::Dependency.new name, req
       dependency.prerelease = options[:prerelease]
 
@@ -293,7 +292,7 @@ You can use `i` command instead of `install`.
     require 'rubygems/rdoc'
   end
 
-  def show_install_errors errors # :nodoc:
+  def show_install_errors(errors) # :nodoc:
     return unless errors
 
     errors.each do |x|

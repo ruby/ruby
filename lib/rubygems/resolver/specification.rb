@@ -81,7 +81,7 @@ class Gem::Resolver::Specification
   # After installation #spec is updated to point to the just-installed
   # specification.
 
-  def install options = {}
+  def install(options = {})
     require 'rubygems/installer'
 
     gem = download options
@@ -93,7 +93,7 @@ class Gem::Resolver::Specification
     @spec = installer.install
   end
 
-  def download options
+  def download(options)
     dir = options[:install_dir] || Gem.dir
 
     Gem.ensure_gem_subdirectories dir
@@ -112,4 +112,3 @@ class Gem::Resolver::Specification
     false
   end
 end
-

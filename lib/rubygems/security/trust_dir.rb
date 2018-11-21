@@ -22,7 +22,7 @@ class Gem::Security::TrustDir
   # Creates a new TrustDir using +dir+ where the directory and file
   # permissions will be checked according to +permissions+
 
-  def initialize dir, permissions = DEFAULT_PERMISSIONS
+  def initialize(dir, permissions = DEFAULT_PERMISSIONS)
     @dir = dir
     @permissions = permissions
 
@@ -32,7 +32,7 @@ class Gem::Security::TrustDir
   ##
   # Returns the path to the trusted +certificate+
 
-  def cert_path certificate
+  def cert_path(certificate)
     name_path certificate.subject
   end
 
@@ -59,7 +59,7 @@ class Gem::Security::TrustDir
   # Returns the issuer certificate of the given +certificate+ if it exists in
   # the trust directory.
 
-  def issuer_of certificate
+  def issuer_of(certificate)
     path = name_path certificate.issuer
 
     return unless File.exist? path
@@ -70,7 +70,7 @@ class Gem::Security::TrustDir
   ##
   # Returns the path to the trusted certificate with the given ASN.1 +name+
 
-  def name_path name
+  def name_path(name)
     digest = @digester.hexdigest name.to_s
 
     File.join @dir, "cert-#{digest}.pem"
@@ -79,7 +79,7 @@ class Gem::Security::TrustDir
   ##
   # Loads the given +certificate_file+
 
-  def load_certificate certificate_file
+  def load_certificate(certificate_file)
     pem = File.read certificate_file
 
     OpenSSL::X509::Certificate.new pem
@@ -88,7 +88,7 @@ class Gem::Security::TrustDir
   ##
   # Add a certificate to trusted certificate list.
 
-  def trust_cert certificate
+  def trust_cert(certificate)
     verify
 
     destination = cert_path certificate
@@ -105,7 +105,7 @@ class Gem::Security::TrustDir
   # permissions.
 
   def verify
-    if File.exist? @dir then
+    if File.exist? @dir
       raise Gem::Security::Exception,
         "trust directory #{@dir} is not a directory" unless
           File.directory? @dir
@@ -117,4 +117,3 @@ class Gem::Security::TrustDir
   end
 
 end
-

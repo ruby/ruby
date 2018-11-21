@@ -25,7 +25,7 @@ module Gem
       List.new value, self
     end
 
-    def pretty_print q # :nodoc:
+    def pretty_print(q) # :nodoc:
       q.pp to_a
     end
 

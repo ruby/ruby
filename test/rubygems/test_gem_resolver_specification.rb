@@ -7,7 +7,7 @@ class TestGemResolverSpecification < Gem::TestCase
     attr_writer :source
     attr_reader :spec
 
-    def initialize spec
+    def initialize(spec)
       super()
 
       @spec = spec
@@ -62,4 +62,3 @@ class TestGemResolverSpecification < Gem::TestCase
   end
 
 end
-

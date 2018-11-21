@@ -10,7 +10,7 @@ class TestGemCommandsCheckCommand < Gem::TestCase
     @cmd = Gem::Commands::CheckCommand.new
   end
 
-  def gem name
+  def gem(name)
     spec = quick_gem name do |gem|
       gem.files = %W[lib/#{name}.rb Rakefile]
     end

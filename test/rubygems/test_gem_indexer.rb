@@ -2,7 +2,7 @@
 require 'rubygems/test_case'
 require 'rubygems/indexer'
 
-unless defined?(Builder::XChar) then
+unless defined?(Builder::XChar)
   warn "Gem::Indexer tests are being skipped.  Install builder gem." if $VERBOSE
 end
 
@@ -363,4 +363,3 @@ class TestGemIndexer < Gem::TestCase
   end
 
 end if defined?(Builder::XChar)
-

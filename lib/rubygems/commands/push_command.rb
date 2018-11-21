@@ -79,7 +79,7 @@ command.  For further discussion see the help for the yank command.
 
     if latest_rubygems_version < Gem.rubygems_version and
          Gem.rubygems_version.prerelease? and
-         Gem::Version.new('2.0.0.rc.2') != Gem.rubygems_version then
+         Gem::Version.new('2.0.0.rc.2') != Gem.rubygems_version
       alert_error <<-ERROR
 You are using a beta release of RubyGems (#{Gem::VERSION}) which is not
 allowed to push gems.  Please downgrade or upgrade to a release version.
@@ -96,7 +96,7 @@ You can upgrade or downgrade to the latest release version with:
 
     gem_data = Gem::Package.new(name)
 
-    unless @host then
+    unless @host
       @host = gem_data.spec.metadata['default_gem_server']
     end
 
@@ -134,4 +134,3 @@ You can upgrade or downgrade to the latest release version with:
     ]
   end
 end
-

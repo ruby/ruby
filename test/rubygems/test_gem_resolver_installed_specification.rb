@@ -47,4 +47,3 @@ class TestGemResolverInstalledSpecification < Gem::TestCase
 
 
 end
-

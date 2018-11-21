@@ -98,7 +98,7 @@ class Gem::Commands::CertCommand < Gem::Command
     end
   end
 
-  def add_certificate certificate # :nodoc:
+  def add_certificate(certificate) # :nodoc:
     Gem::Security.trust_dir.trust_cert certificate
 
     say "Added '#{certificate.subject}'"
@@ -132,7 +132,7 @@ class Gem::Commands::CertCommand < Gem::Command
     sign_certificates unless options[:sign].empty?
   end
 
-  def build email
+  def build(email)
     if !valid_email?(email)
       raise Gem::CommandLineError, "Invalid email address #{email}"
     end
@@ -148,7 +148,7 @@ class Gem::Commands::CertCommand < Gem::Command
     end
   end
 
-  def build_cert email, key # :nodoc:
+  def build_cert(email, key) # :nodoc:
     expiration_length_days = options[:expiration_length_days] ||
       Gem.configuration.cert_expiration_length_days
 
@@ -179,7 +179,7 @@ class Gem::Commands::CertCommand < Gem::Command
     return key, key_path
   end
 
-  def certificates_matching filter
+  def certificates_matching(filter)
     return enum_for __method__, filter unless block_given?
 
     Gem::Security.trusted_certificates.select do |certificate, _|
@@ -231,7 +231,7 @@ For further reading on signing gems see `ri Gem::Security`.
     EOF
   end
 
-  def list_certificates_matching filter # :nodoc:
+  def list_certificates_matching(filter) # :nodoc:
     certificates_matching filter do |certificate, _|
       # this could probably be formatted more gracefully
       say certificate.subject.to_s
@@ -276,14 +276,14 @@ For further reading on signing gems see `ri Gem::Security`.
     load_default_key  unless options[:key]
   end
 
-  def remove_certificates_matching filter # :nodoc:
+  def remove_certificates_matching(filter) # :nodoc:
     certificates_matching filter do |certificate, path|
       FileUtils.rm path
       say "Removed '#{certificate.subject}'"
     end
   end
 
-  def sign cert_file
+  def sign(cert_file)
     cert = File.read cert_file
     cert = OpenSSL::X509::Certificate.new cert
 
@@ -314,11 +314,10 @@ For further reading on signing gems see `ri Gem::Security`.
 
   private
 
-  def valid_email? email
+  def valid_email?(email)
     # It's simple, but is all we need
     email =~ /\A.+@.+\z/
   end
 
 
 end if defined?(OpenSSL::SSL)
-

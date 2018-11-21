@@ -66,7 +66,6 @@ EOF
         @cmd.show_owners("freewill")
       end
     end
-
   end
 
 

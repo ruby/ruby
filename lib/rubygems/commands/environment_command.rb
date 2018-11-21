@@ -97,7 +97,7 @@ lib/rubygems/defaults/operating_system.rb
     true
   end
 
-  def add_path out, path
+  def add_path(out, path)
     path.each do |component|
       out << "     - #{component}\n"
     end

@@ -248,4 +248,3 @@ class TestGemCommandsSpecificationCommand < Gem::TestCase
   end
 
 end
-

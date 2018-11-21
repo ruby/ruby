@@ -15,7 +15,7 @@ class Gem::Source::Local < Gem::Source
   ##
   # Local sorts before Gem::Source and after Gem::Source::Installed
 
-  def <=> other
+  def <=>(other)
     case other
     when Gem::Source::Installed,
          Gem::Source::Lock then
@@ -34,7 +34,7 @@ class Gem::Source::Local < Gem::Source
     "#<%s specs: %p>" % [self.class, keys]
   end
 
-  def load_specs type # :nodoc:
+  def load_specs(type) # :nodoc:
     @load_specs_names[type] ||= begin
       names = []
 
@@ -78,8 +78,8 @@ class Gem::Source::Local < Gem::Source
     end
   end
 
-  def find_gem gem_name, version = Gem::Requirement.default, # :nodoc:
-               prerelease = false
+  def find_gem(gem_name, version = Gem::Requirement.default, # :nodoc:
+               prerelease = false)
     load_specs :complete
 
     found = []
@@ -101,7 +101,7 @@ class Gem::Source::Local < Gem::Source
     found.max_by { |s| s.version }
   end
 
-  def fetch_spec name # :nodoc:
+  def fetch_spec(name) # :nodoc:
     load_specs :complete
 
     if data = @specs[name]
@@ -111,7 +111,7 @@ class Gem::Source::Local < Gem::Source
     end
   end
 
-  def download spec, cache_dir = nil # :nodoc:
+  def download(spec, cache_dir = nil) # :nodoc:
     load_specs :complete
 
     @specs.each do |name, data|
@@ -121,7 +121,7 @@ class Gem::Source::Local < Gem::Source
     raise Gem::Exception, "Unable to find file for '#{spec.full_name}'"
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Local gems:', ']' do
       q.breakable
       q.seplist @specs.keys do |v|

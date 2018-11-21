@@ -35,7 +35,7 @@ class Gem::FakeFetcher
   def find_data(path)
     return File.read path.path if URI === path and 'file' == path.scheme
 
-    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name then
+    if URI === path and "URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
         "mismatch for scheme #{path.scheme} and class #{path.class}"
     end
@@ -44,20 +44,20 @@ class Gem::FakeFetcher
     @paths << path
     raise ArgumentError, 'need full URI' unless path =~ %r'^https?://'
 
-    unless @data.key? path then
+    unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
     @data[path]
   end
 
-  def fetch_path path, mtime = nil, head = false
+  def fetch_path(path, mtime = nil, head = false)
     data = find_data(path)
 
-    if data.respond_to?(:call) then
+    if data.respond_to?(:call)
       data.call
     else
-      if path.to_s =~ /gz$/ and not data.nil? and not data.empty? then
+      if path.to_s =~ /gz$/ and not data.nil? and not data.empty?
         data = Gem::Util.gunzip data
       end
 
@@ -65,7 +65,7 @@ class Gem::FakeFetcher
     end
   end
 
-  def cache_update_path uri, path = nil, update = true
+  def cache_update_path(uri, path = nil, update = true)
     if data = fetch_path(uri)
       open(path, 'wb') { |io| io.write data } if path and update
       data
@@ -98,7 +98,7 @@ class Gem::FakeFetcher
     response
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[FakeFetcher', ']' do
       q.breakable
       q.text 'URIs:'
@@ -114,7 +114,7 @@ class Gem::FakeFetcher
 
     raise ArgumentError, 'need full URI' unless path =~ %r'^http://'
 
-    unless @data.key? path then
+    unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
     end
 
@@ -123,9 +123,9 @@ class Gem::FakeFetcher
     data.respond_to?(:call) ? data.call : data.length
   end
 
-  def download spec, source_uri, install_dir = Gem.dir
+  def download(spec, source_uri, install_dir = Gem.dir)
     name = File.basename spec.cache_file
-    path = if Dir.pwd == install_dir then # see fetch_command
+    path = if Dir.pwd == install_dir  # see fetch_command
              install_dir
            else
              File.join install_dir, "cache"
@@ -133,7 +133,7 @@ class Gem::FakeFetcher
 
     path = File.join path, name
 
-    if source_uri =~ /^http/ then
+    if source_uri =~ /^http/
       File.open(path, "wb") do |f|
         f.write fetch_path(File.join(source_uri, "gems", name))
       end
@@ -144,7 +144,7 @@ class Gem::FakeFetcher
     path
   end
 
-  def download_to_cache dependency
+  def download_to_cache(dependency)
     found, _ = Gem::SpecFetcher.fetcher.spec_for_dependency dependency
 
     return if found.empty?
@@ -187,7 +187,7 @@ class Gem::TestCase::SpecFetcherSetup
   # Executes a SpecFetcher setup block.  Yields an instance then creates the
   # gems and specifications defined in the instance.
 
-  def self.declare test, repository
+  def self.declare(test, repository)
     setup = new test, repository
 
     yield setup
@@ -195,7 +195,7 @@ class Gem::TestCase::SpecFetcherSetup
     setup.execute
   end
 
-  def initialize test, repository # :nodoc:
+  def initialize(test, repository) # :nodoc:
     @test       = test
     @repository = repository
 
@@ -263,7 +263,7 @@ class Gem::TestCase::SpecFetcherSetup
   # The specification will be yielded before gem creation for customization,
   # but only the block or the dependencies may be set, not both.
 
-  def gem name, version, dependencies = nil, &block
+  def gem(name, version, dependencies = nil, &block)
     @operations << [:gem, name, version, dependencies, block]
   end
 
@@ -274,7 +274,7 @@ class Gem::TestCase::SpecFetcherSetup
   # The specification will be yielded before gem creation for customization,
   # but only the block or the dependencies may be set, not both.
 
-  def download name, version, dependencies = nil, &block
+  def download(name, version, dependencies = nil, &block)
     @operations << [:download, name, version, dependencies, block]
   end
 
@@ -293,7 +293,7 @@ class Gem::TestCase::SpecFetcherSetup
     require 'socket'
     require 'rubygems/remote_fetcher'
 
-    unless @test.fetcher then
+    unless @test.fetcher
       @test.fetcher = Gem::FakeFetcher.new
       Gem::RemoteFetcher.fetcher = @test.fetcher
     end
@@ -327,11 +327,11 @@ class Gem::TestCase::SpecFetcherSetup
   # The specification will be yielded before creation for customization,
   # but only the block or the dependencies may be set, not both.
 
-  def spec name, version, dependencies = nil, &block
+  def spec(name, version, dependencies = nil, &block)
     @operations << [:spec, name, version, dependencies, block]
   end
 
-  def write_spec spec # :nodoc:
+  def write_spec(spec) # :nodoc:
     File.open spec.spec_file, 'w' do |io|
       io.write spec.to_ruby_for_cache
     end
@@ -367,4 +367,3 @@ class TempIO < Tempfile
     Gem.read_binary path
   end
 end
-

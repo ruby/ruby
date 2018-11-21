@@ -54,7 +54,7 @@ class Gem::SpecFetcher
   # If you need to retrieve specifications from a different +source+, you can
   # send it as an argument.
 
-  def initialize sources = nil
+  def initialize(sources = nil)
     @sources = sources || Gem.sources
 
     @update_cache =
@@ -271,4 +271,3 @@ class Gem::SpecFetcher
   end
 
 end
-

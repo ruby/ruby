@@ -103,7 +103,7 @@ class Gem::AvailableSet
   # Other options are :shallow for only direct development dependencies of the
   # gems in this set or :all for all development dependencies.
 
-  def to_request_set development = :none
+  def to_request_set(development = :none)
     request_set = Gem::RequestSet.new
     request_set.development = :all == development
 

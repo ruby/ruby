@@ -18,4 +18,3 @@ class TestRemoteFetchError < Gem::TestCase
     assert_equal error.to_s, 'There was an error fetching (https://gemsource.org)'
   end
 end
-

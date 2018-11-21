@@ -43,4 +43,3 @@ class TestGemValidator < Gem::TestCase
   end
 
 end
-

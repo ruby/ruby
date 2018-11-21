@@ -4,17 +4,10 @@ require 'rubygems/package'
 require 'time'
 require 'tmpdir'
 
-rescue_exceptions = [LoadError]
-begin
-  require 'bundler/errors'
-rescue LoadError # this rubygems + old ruby
-else # this rubygems + ruby trunk with bundler
-  rescue_exceptions << Bundler::GemfileNotFound
-end
 begin
   gem 'builder'
   require 'builder/xchar'
-rescue *rescue_exceptions
+rescue LoadError
 end
 
 ##
@@ -62,7 +55,7 @@ class Gem::Indexer
     require 'tmpdir'
     require 'zlib'
 
-    unless defined?(Builder::XChar) then
+    unless defined?(Builder::XChar)
       raise "Gem::Indexer requires that the XML Builder library be installed:" +
             "\n\tgem install builder"
     end
@@ -116,7 +109,7 @@ class Gem::Indexer
   ##
   # Builds Marshal quick index gemspecs.
 
-  def build_marshal_gemspecs specs
+  def build_marshal_gemspecs(specs)
     count = specs.count
     progress = ui.progress_reporter count,
                                     "Generating Marshal quick index gemspecs for #{count} gems",
@@ -161,7 +154,7 @@ class Gem::Indexer
           platform = spec.original_platform
 
           # win32-api-1.0.4-x86-mswin32-60
-          unless String === platform then
+          unless String === platform
             alert_warning "Skipping invalid platform in gem: #{spec.full_name}"
             next
           end
@@ -179,7 +172,7 @@ class Gem::Indexer
   ##
   # Builds indices for RubyGems 1.2 and newer. Handles full, latest, prerelease
 
-  def build_modern_indices specs
+  def build_modern_indices(specs)
     prerelease, released = specs.partition { |s|
       s.version.prerelease?
     }
@@ -199,9 +192,9 @@ class Gem::Indexer
                "#{@prerelease_specs_index}.gz"]
   end
 
-  def map_gems_to_specs gems
+  def map_gems_to_specs(gems)
     gems.map { |gemfile|
-      if File.size(gemfile) == 0 then
+      if File.size(gemfile) == 0
         alert_warning "Skipping zero-length gem: #{gemfile}"
         next
       end
@@ -235,7 +228,7 @@ class Gem::Indexer
     say "Compressing indices"
 
     Gem.time 'Compressed indices' do
-      if @build_modern then
+      if @build_modern
         gzip @specs_index
         gzip @latest_specs_index
         gzip @prerelease_specs_index
@@ -313,7 +306,7 @@ class Gem::Indexer
     files = @files
     files.delete @quick_marshal_dir if files.include? @quick_dir
 
-    if files.include? @quick_marshal_dir and not files.include? @quick_dir then
+    if files.include? @quick_marshal_dir and not files.include? @quick_dir
       files.delete @quick_marshal_dir
 
       dst_name = File.join(@dest_directory, @quick_marshal_dir_base)
@@ -354,7 +347,7 @@ class Gem::Indexer
     data = Gem.read_binary path
     compressed_data = Gem.read_binary "#{path}.#{extension}"
 
-    unless data == Gem::Util.inflate(compressed_data) then
+    unless data == Gem::Util.inflate(compressed_data)
       raise "Compressed file #{compressed_path} does not match uncompressed file #{path}"
     end
   end
@@ -374,7 +367,7 @@ class Gem::Indexer
       gem_mtime >= specs_mtime
     end
 
-    if updated_gems.empty? then
+    if updated_gems.empty?
       say 'No new gems'
       terminate_interaction 0
     end

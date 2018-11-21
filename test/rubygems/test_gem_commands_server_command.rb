@@ -57,4 +57,3 @@ class TestGemCommandsServerCommand < Gem::TestCase
   end
 
 end
-

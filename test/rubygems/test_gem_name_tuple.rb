@@ -42,4 +42,3 @@ class TestGemNameTuple < Gem::TestCase
   end
 
 end
-

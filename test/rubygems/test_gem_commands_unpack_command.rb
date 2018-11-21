@@ -223,4 +223,3 @@ class TestGemCommandsUnpackCommand < Gem::TestCase
   end
 
 end
-

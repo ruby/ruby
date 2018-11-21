@@ -344,7 +344,7 @@ if you believe they were disclosed to a third party.
 
     assert_equal expected, YAML.load_file(@cfg.credentials_path)
 
-    unless win_platform? then
+    unless win_platform?
       stat = File.stat @cfg.credentials_path
 
       assert_equal 0600, stat.mode & 0600
@@ -490,4 +490,3 @@ if you believe they were disclosed to a third party.
     assert_equal(true, @cfg.disable_default_gem_server)
   end
 end
-

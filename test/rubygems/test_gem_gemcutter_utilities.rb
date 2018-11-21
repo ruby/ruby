@@ -187,7 +187,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     assert_match %r{Access Denied.}, @sign_in_ui.output
   end
 
-  def util_sign_in response, host = nil, args = []
+  def util_sign_in(response, host = nil, args = [])
     email    = 'you@example.com'
     password = 'secret'
 
@@ -204,7 +204,7 @@ class TestGemGemcutterUtilities < Gem::TestCase
     @sign_in_ui = Gem::MockGemUi.new "#{email}\n#{password}\n"
 
     use_ui @sign_in_ui do
-      if args.length > 0 then
+      if args.length > 0
         @cmd.sign_in(*args)
       else
         @cmd.sign_in

@@ -28,13 +28,13 @@ module Gem
   # specified in the environment
 
   def self.default_dir
-    path = if defined? RUBY_FRAMEWORK_VERSION then
+    path = if defined? RUBY_FRAMEWORK_VERSION
              [
                File.dirname(RbConfig::CONFIG['sitedir']),
                'Gems',
                RbConfig::CONFIG['ruby_version']
              ]
-           elsif RbConfig::CONFIG['rubylibprefix'] then
+           elsif RbConfig::CONFIG['rubylibprefix']
              [
                RbConfig::CONFIG['rubylibprefix'],
                'gems',
@@ -59,7 +59,7 @@ module Gem
   # By default, the binary extensions are located side by side with their
   # Ruby counterparts, therefore nil is returned
 
-  def self.default_ext_dir_for base_dir
+  def self.default_ext_dir_for(base_dir)
     nil
   end
 
@@ -103,7 +103,7 @@ module Gem
   def self.default_exec_format
     exec_format = RbConfig::CONFIG['ruby_install_name'].sub('ruby', '%s') rescue '%s'
 
-    unless exec_format =~ /%s/ then
+    unless exec_format =~ /%s/
       raise Gem::Exception,
         "[BUG] invalid exec_format #{exec_format.inspect}, no %s"
     end
@@ -115,7 +115,7 @@ module Gem
   # The default directory for binaries
 
   def self.default_bindir
-    if defined? RUBY_FRAMEWORK_VERSION then # mac framework support
+    if defined? RUBY_FRAMEWORK_VERSION  # mac framework support
       '/usr/bin'
     else # generic install
       RbConfig::CONFIG['bindir']
@@ -126,7 +126,7 @@ module Gem
   # A wrapper around RUBY_ENGINE const that may not be defined
 
   def self.ruby_engine
-    if defined? RUBY_ENGINE then
+    if defined? RUBY_ENGINE
       RUBY_ENGINE
     else
       'ruby'
@@ -165,7 +165,7 @@ module Gem
   # Directory where vendor gems are installed.
 
   def self.vendor_dir # :nodoc:
-    if vendor_dir = ENV['GEM_VENDOR'] then
+    if vendor_dir = ENV['GEM_VENDOR']
       return vendor_dir.dup
     end
 

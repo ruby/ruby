@@ -387,26 +387,26 @@ class TestGemRequirement < Gem::TestCase
   # Assert that two requirements are equal. Handles Gem::Requirements,
   # strings, arrays, numbers, and versions.
 
-  def assert_requirement_equal expected, actual
+  def assert_requirement_equal(expected, actual)
     assert_equal req(expected), req(actual)
   end
 
   # Assert that +version+ satisfies +requirement+.
 
-  def assert_satisfied_by version, requirement
+  def assert_satisfied_by(version, requirement)
     assert req(requirement).satisfied_by?(v(version)),
       "#{requirement} is satisfied by #{version}"
   end
 
   # Refute the assumption that two requirements are equal.
 
-  def refute_requirement_equal unexpected, actual
+  def refute_requirement_equal(unexpected, actual)
     refute_equal req(unexpected), req(actual)
   end
 
   # Refute the assumption that +version+ satisfies +requirement+.
 
-  def refute_satisfied_by version, requirement
+  def refute_satisfied_by(version, requirement)
     refute req(requirement).satisfied_by?(v(version)),
       "#{requirement} is not satisfied by #{version}"
   end

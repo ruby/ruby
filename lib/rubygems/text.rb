@@ -28,7 +28,7 @@ module Gem::Text
     work = clean_text(text)
 
     while work.length > wrap do
-      if work =~ /^(.{0,#{wrap}})[ \n]/ then
+      if work =~ /^(.{0,#{wrap}})[ \n]/
         result << $1.rstrip
         work.slice!(0, $&.length)
       else
@@ -40,10 +40,10 @@ module Gem::Text
     result.join("\n").gsub(/^/, " " * indent)
   end
 
-  def min3 a, b, c # :nodoc:
-    if a < b && a < c then
+  def min3(a, b, c) # :nodoc:
+    if a < b && a < c
       a
-    elsif b < c then
+    elsif b < c
       b
     else
       c
@@ -52,7 +52,7 @@ module Gem::Text
 
   # This code is based directly on the Text gem implementation
   # Returns a value representing the "cost" of transforming str1 into str2
-  def levenshtein_distance str1, str2
+  def levenshtein_distance(str1, str2)
     s = str1
     t = str2
     n = s.length

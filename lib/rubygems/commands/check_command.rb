@@ -44,7 +44,7 @@ class Gem::Commands::CheckCommand < Gem::Command
     gems = get_all_gem_names rescue []
 
     Gem::Validator.new.alien(gems).sort.each do |key, val|
-      unless val.empty? then
+      unless val.empty?
         say "#{key} has #{val.size} problems"
         val.each do |error_entry|
           say "  #{error_entry.path}:"

@@ -29,7 +29,7 @@ class Gem::RequestSet::Lockfile
     # Raises a ParseError with the given +message+ which was encountered at a
     # +line+ and +column+ while parsing.
 
-    def initialize message, column, line, path
+    def initialize(message, column, line, path)
       @line   = line
       @column = column
       @path   = path
@@ -41,13 +41,13 @@ class Gem::RequestSet::Lockfile
   # Creates a new Lockfile for the given +request_set+ and +gem_deps_file+
   # location.
 
-  def self.build request_set, gem_deps_file, dependencies = nil
+  def self.build(request_set, gem_deps_file, dependencies = nil)
     request_set.resolve
     dependencies ||= requests_to_deps request_set.sorted_requests
     new request_set, gem_deps_file, dependencies
   end
 
-  def self.requests_to_deps requests # :nodoc:
+  def self.requests_to_deps(requests) # :nodoc:
     deps = {}
 
     requests.each do |request|
@@ -56,7 +56,7 @@ class Gem::RequestSet::Lockfile
       requirement = request.request.dependency.requirement
 
       deps[name] = if [Gem::Resolver::VendorSpecification,
-                       Gem::Resolver::GitSpecification].include? spec.class then
+                       Gem::Resolver::GitSpecification].include? spec.class
                      Gem::Requirement.source_set
                    else
                      requirement
@@ -71,7 +71,7 @@ class Gem::RequestSet::Lockfile
 
   attr_reader :platforms
 
-  def initialize request_set, gem_deps_file, dependencies
+  def initialize(request_set, gem_deps_file, dependencies)
     @set           = request_set
     @dependencies  = dependencies
     @gem_deps_file = File.expand_path(gem_deps_file)
@@ -82,7 +82,7 @@ class Gem::RequestSet::Lockfile
     @platforms      = []
   end
 
-  def add_DEPENDENCIES out # :nodoc:
+  def add_DEPENDENCIES(out) # :nodoc:
     out << "DEPENDENCIES"
 
     out.concat @dependencies.sort_by { |name,| name }.map { |name, requirement|
@@ -92,7 +92,7 @@ class Gem::RequestSet::Lockfile
     out << nil
   end
 
-  def add_GEM out, spec_groups # :nodoc:
+  def add_GEM(out, spec_groups) # :nodoc:
     return if spec_groups.empty?
 
     source_groups = spec_groups.values.flatten.group_by do |request|
@@ -122,7 +122,7 @@ class Gem::RequestSet::Lockfile
     end
   end
 
-  def add_GIT out, git_requests
+  def add_GIT(out, git_requests)
     return if git_requests.empty?
 
     by_repository_revision = git_requests.group_by do |request|
@@ -148,11 +148,11 @@ class Gem::RequestSet::Lockfile
     end
   end
 
-  def relative_path_from dest, base # :nodoc:
+  def relative_path_from(dest, base) # :nodoc:
     dest = File.expand_path(dest)
     base = File.expand_path(base)
 
-    if dest.index(base) == 0 then
+    if dest.index(base) == 0
       offset = dest[base.size+1..-1]
 
       return '.' unless offset
@@ -163,7 +163,7 @@ class Gem::RequestSet::Lockfile
     end
   end
 
-  def add_PATH out, path_requests # :nodoc:
+  def add_PATH(out, path_requests) # :nodoc:
     return if path_requests.empty?
 
     out << "PATH"
@@ -178,7 +178,7 @@ class Gem::RequestSet::Lockfile
     out << nil
   end
 
-  def add_PLATFORMS out # :nodoc:
+  def add_PLATFORMS(out) # :nodoc:
     out << "PLATFORMS"
 
     platforms = requests.map { |request| request.spec.platform }.uniq

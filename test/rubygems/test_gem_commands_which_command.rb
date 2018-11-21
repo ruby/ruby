@@ -84,4 +84,3 @@ class TestGemCommandsWhichCommand < Gem::TestCase
   end
 
 end
-

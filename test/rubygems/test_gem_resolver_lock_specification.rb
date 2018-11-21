@@ -97,4 +97,3 @@ class TestGemResolverLockSpecification < Gem::TestCase
   end
 
 end
-

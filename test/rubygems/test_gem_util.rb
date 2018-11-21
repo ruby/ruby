@@ -59,4 +59,3 @@ class TestGemUtil < Gem::TestCase
   end
 
 end
-

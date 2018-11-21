@@ -8,7 +8,7 @@
 class Gem::Request::HTTPPool # :nodoc:
   attr_reader :cert_files, :proxy_uri
 
-  def initialize http_args, cert_files, proxy_uri
+  def initialize(http_args, cert_files, proxy_uri)
     @http_args  = http_args
     @cert_files = cert_files
     @proxy_uri  = proxy_uri
@@ -20,7 +20,7 @@ class Gem::Request::HTTPPool # :nodoc:
     @queue.pop || make_connection
   end
 
-  def checkin connection
+  def checkin(connection)
     @queue.push connection
   end
 
@@ -39,10 +39,9 @@ class Gem::Request::HTTPPool # :nodoc:
     setup_connection Gem::Request::ConnectionPools.client.new(*@http_args)
   end
 
-  def setup_connection connection
+  def setup_connection(connection)
     connection.start
     connection
   end
 
 end
-

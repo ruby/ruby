@@ -43,4 +43,3 @@ class TestGemResolverLocalSpecification < Gem::TestCase
   end
 
 end
-

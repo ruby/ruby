@@ -87,4 +87,3 @@ class TestGemPackageOld < Gem::TestCase
   end
 
 end
-

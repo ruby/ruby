@@ -65,18 +65,18 @@ class Gem::Security::Signer
   # +chain+ containing X509 certificates, encoding certificates or paths to
   # certificates.
 
-  def initialize key, cert_chain, passphrase = nil, options = {}
+  def initialize(key, cert_chain, passphrase = nil, options = {})
     @cert_chain = cert_chain
     @key        = key
     @passphrase = passphrase
     @options = DEFAULT_OPTIONS.merge(options)
 
-    unless @key then
+    unless @key
       default_key  = File.join Gem.default_key_path
       @key = default_key if File.exist? default_key
     end
 
-    unless @cert_chain then
+    unless @cert_chain
       default_cert = File.join Gem.default_cert_path
       @cert_chain = [default_cert] if File.exist? default_cert
     end
@@ -89,7 +89,7 @@ class Gem::Security::Signer
       @key = OpenSSL::PKey::RSA.new(File.read(@key), @passphrase)
     end
 
-    if @cert_chain then
+    if @cert_chain
       @cert_chain = @cert_chain.compact.map do |cert|
         next cert if OpenSSL::X509::Certificate === cert
 
@@ -106,10 +106,10 @@ class Gem::Security::Signer
   # Extracts the full name of +cert+.  If the certificate has a subjectAltName
   # this value is preferred, otherwise the subject is used.
 
-  def extract_name cert # :nodoc:
+  def extract_name(cert) # :nodoc:
     subject_alt_name = cert.extensions.find { |e| 'subjectAltName' == e.oid }
 
-    if subject_alt_name then
+    if subject_alt_name
       /\Aemail:/ =~ subject_alt_name.value
 
       $' || subject_alt_name.value
@@ -138,12 +138,12 @@ class Gem::Security::Signer
   ##
   # Sign data with given digest algorithm
 
-  def sign data
+  def sign(data)
     return unless @key
 
     raise Gem::Security::Exception, 'no certs provided' if @cert_chain.empty?
 
-    if @cert_chain.length == 1 and @cert_chain.last.not_after < Time.now then
+    if @cert_chain.length == 1 and @cert_chain.last.not_after < Time.now
       re_sign_key(
         expiration_length: (Gem::Security::ONE_DAY * options[:expiration_length_days])
       )
@@ -203,4 +203,3 @@ class Gem::Security::Signer
   end
 
 end
-

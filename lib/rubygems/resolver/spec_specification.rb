@@ -10,7 +10,7 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   # +spec+.  The +source+ is either where the +spec+ came from, or should be
   # loaded from.
 
-  def initialize set, spec, source = nil
+  def initialize(set, spec, source = nil)
     @set    = set
     @source = source
     @spec   = spec
@@ -54,4 +54,3 @@ class Gem::Resolver::SpecSpecification < Gem::Resolver::Specification
   end
 
 end
-

@@ -87,4 +87,3 @@ class TestGemResolverIndexSpecification < Gem::TestCase
   end
 
 end
-

@@ -306,4 +306,3 @@ class TestGemSourceGit < Gem::TestCase
   end
 
 end
-

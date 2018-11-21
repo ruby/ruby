@@ -25,4 +25,3 @@ class TestGemSourceFetchProblem < Gem::TestCase
     refute_match sf.wordy, 'secret'
   end
 end
-

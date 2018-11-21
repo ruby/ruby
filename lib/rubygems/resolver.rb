@@ -59,7 +59,7 @@ class Gem::Resolver
   # uniform manner.  If one of the +sets+ is itself a ComposedSet its sets are
   # flattened into the result ComposedSet.
 
-  def self.compose_sets *sets
+  def self.compose_sets(*sets)
     sets.compact!
 
     sets = sets.map do |set|
@@ -87,7 +87,7 @@ class Gem::Resolver
   # Creates a Resolver that queries only against the already installed gems
   # for the +needed+ dependencies.
 
-  def self.for_current_gems needed
+  def self.for_current_gems(needed)
     new needed, Gem::Resolver::CurrentSet.new
   end
 
@@ -99,7 +99,7 @@ class Gem::Resolver
   # satisfy the Dependencies. This defaults to IndexSet, which will query
   # rubygems.org.
 
-  def initialize needed, set = nil
+  def initialize(needed, set = nil)
     @set = set || Gem::Resolver::IndexSet.new
     @needed = needed
 
@@ -112,14 +112,14 @@ class Gem::Resolver
     @stats               = Gem::Resolver::Stats.new
   end
 
-  def explain stage, *data # :nodoc:
+  def explain(stage, *data) # :nodoc:
     return unless DEBUG_RESOLVER
 
     d = data.map { |x| x.pretty_inspect }.join(", ")
     $stderr.printf "%10s %s\n", stage.to_s.upcase, d
   end
 
-  def explain_list stage # :nodoc:
+  def explain_list(stage) # :nodoc:
     return unless DEBUG_RESOLVER
 
     data = yield
@@ -133,7 +133,7 @@ class Gem::Resolver
   #
   # Returns the Specification and the ActivationRequest
 
-  def activation_request dep, possible # :nodoc:
+  def activation_request(dep, possible) # :nodoc:
     spec = possible.pop
 
     explain :activate, [spec.full_name, possible.size]
@@ -145,7 +145,7 @@ class Gem::Resolver
     return spec, activation_request
   end
 
-  def requests s, act, reqs=[] # :nodoc:
+  def requests(s, act, reqs=[]) # :nodoc:
     return reqs if @ignore_dependencies
 
     s.fetch_development_dependencies if @development
@@ -197,7 +197,7 @@ class Gem::Resolver
   # Extracts the specifications that may be able to fulfill +dependency+ and
   # returns those that match the local platform and all those that match.
 
-  def find_possible dependency # :nodoc:
+  def find_possible(dependency) # :nodoc:
     all = @set.find_all dependency
 
     if (skip_dep_gems = skip_gems[dependency.name]) && !skip_dep_gems.empty?
@@ -216,7 +216,7 @@ class Gem::Resolver
   ##
   # Returns the gems in +specs+ that match the local platform.
 
-  def select_local_platforms specs # :nodoc:
+  def select_local_platforms(specs) # :nodoc:
     specs.select do |spec|
       Gem::Platform.installable? spec
     end

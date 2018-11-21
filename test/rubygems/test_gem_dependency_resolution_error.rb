@@ -26,4 +26,3 @@ class TestGemDependencyResolutionError < Gem::TestCase
   end
 
 end
-

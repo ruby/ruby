@@ -23,7 +23,7 @@ class TestGemResolver < Gem::TestCase
     StaticSet.new(specs)
   end
 
-  def assert_resolves_to expected, resolver
+  def assert_resolves_to(expected, resolver)
     actual = resolver.resolve
 
     exp = expected.sort_by { |s| s.full_name }

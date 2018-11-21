@@ -85,4 +85,3 @@ class TestGemResolverConflict < Gem::TestCase
   end
 
 end
-

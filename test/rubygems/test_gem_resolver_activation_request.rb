@@ -71,4 +71,3 @@ class TestGemResolverActivationRequest < Gem::TestCase
   end
 
 end
-

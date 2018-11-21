@@ -101,7 +101,7 @@ class Gem::Installer
   ##
   # Construct an installer object for the gem file located at +path+
 
-  def self.at path, options = {}
+  def self.at(path, options = {})
     security_policy = options[:security_policy]
     package = Gem::Package.new path, security_policy
     new package, options
@@ -118,7 +118,7 @@ class Gem::Installer
       @spec = spec
     end
 
-    def extract_files destination_dir, pattern = '*'
+    def extract_files(destination_dir, pattern = '*')
       FileUtils.mkdir_p destination_dir
 
       spec.files.each do |file|
@@ -129,7 +129,7 @@ class Gem::Installer
       end
     end
 
-    def copy_to path
+    def copy_to(path)
     end
   end
 
@@ -137,7 +137,7 @@ class Gem::Installer
   # Construct an installer object for an ephemeral gem (one where we don't
   # actually have a .gem file, just a spec)
 
-  def self.for_spec spec, options = {}
+  def self.for_spec(spec, options = {})
     # FIXME: we should have a real Package class for this
     new FakePackage.new(spec), options
   end
@@ -189,7 +189,7 @@ class Gem::Installer
 
     @bin_dir = options[:bin_dir] if options[:bin_dir]
 
-    if options[:user_install] and not options[:unpack] then
+    if options[:user_install] and not options[:unpack]
       @gem_home = Gem.user_dir
       @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
       check_that_user_bin_dir_is_in_path
@@ -209,7 +209,7 @@ class Gem::Installer
   #
   # Otherwise +filename+ is overwritten.
 
-  def check_executable_overwrite filename # :nodoc:
+  def check_executable_overwrite(filename) # :nodoc:
     return if @force
 
     generated_bin = File.join @bin_dir, formatted_program_filename(filename)
@@ -245,7 +245,7 @@ class Gem::Installer
 
     question = "#{spec.name}'s executable \"#{filename}\" conflicts with ".dup
 
-    if ruby_executable then
+    if ruby_executable
       question << (existing || 'an unknown executable')
 
       return if ask_yes_no "#{question}\nOverwrite the executable?", false
@@ -298,7 +298,7 @@ class Gem::Installer
     run_pre_install_hooks
 
     # Set loaded_from to ensure extension_dir is correct
-    if @options[:install_as_default] then
+    if @options[:install_as_default]
       spec.loaded_from = default_spec_file
     else
       spec.loaded_from = spec_file
@@ -311,7 +311,7 @@ class Gem::Installer
     dir_mode = options[:dir_mode]
     FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0700
 
-    if @options[:install_as_default] then
+    if @options[:install_as_default]
       extract_bin
       write_default_spec
     else
@@ -344,7 +344,7 @@ class Gem::Installer
 
   def run_pre_install_hooks # :nodoc:
     Gem.pre_install_hooks.each do |hook|
-      if hook.call(self) == false then
+      if hook.call(self) == false
         location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
 
         message = "pre-install hook#{location} failed for #{spec.full_name}"
@@ -355,7 +355,7 @@ class Gem::Installer
 
   def run_post_build_hooks # :nodoc:
     Gem.post_build_hooks.each do |hook|
-      if hook.call(self) == false then
+      if hook.call(self) == false
         FileUtils.rm_rf gem_dir
 
         location = " at #{$1}" if hook.inspect =~ /@(.*:\d+)/
@@ -398,7 +398,7 @@ class Gem::Installer
   # dependency :: Gem::Dependency
 
   def ensure_dependency(spec, dependency)
-    unless installation_satisfies_dependency? dependency then
+    unless installation_satisfies_dependency? dependency
       raise Gem::InstallError, "#{spec.name} requires #{dependency}"
     end
     true
@@ -466,7 +466,7 @@ class Gem::Installer
   # Creates windows .bat files for easy running of commands
 
   def generate_windows_script(filename, bindir)
-    if Gem.win_platform? then
+    if Gem.win_platform?
       script_name = filename + ".bat"
       script_path = File.join bindir, File.basename(script_name)
       File.open script_path, 'w' do |file|
@@ -492,7 +492,7 @@ class Gem::Installer
       filename.untaint
       bin_path = File.join gem_dir, spec.bindir, filename
 
-      unless File.exist? bin_path then
+      unless File.exist? bin_path
         # TODO change this to a more useful warning
         warn "`#{bin_path}` does not exist, maybe `gem pristine #{spec.name}` will fix it?"
         next
@@ -504,7 +504,7 @@ class Gem::Installer
 
       check_executable_overwrite filename
 
-      if @wrappers then
+      if @wrappers
         generate_bin_script filename, @bin_dir
       else
         generate_bin_symlink filename, @bin_dir
@@ -543,8 +543,8 @@ class Gem::Installer
     src = File.join gem_dir, spec.bindir, filename
     dst = File.join bindir, formatted_program_filename(filename)
 
-    if File.exist? dst then
-      if File.symlink? dst then
+    if File.exist? dst
+      if File.symlink? dst
         link = File.readlink(dst).split File::SEPARATOR
         cur_version = Gem::Version.create(link[-3].sub(/^.*-/, ''))
         return if spec.version < cur_version
@@ -578,7 +578,7 @@ class Gem::Installer
     path = File.join gem_dir, spec.bindir, bin_file_name
     first_line = File.open(path, "rb") {|file| file.gets}
 
-    if /\A#!/ =~ first_line then
+    if /\A#!/ =~ first_line
       # Preserve extra words on shebang line, like "-w".  Thanks RPA.
       shebang = first_line.sub(/\A\#!.*?ruby\S*((\s+\S+)+)/, "#!#{Gem.ruby}")
       opts = $1
@@ -603,9 +603,9 @@ class Gem::Installer
       end
 
       "#!#{which}"
-    elsif not ruby_name then
+    elsif not ruby_name
       "#!#{Gem.ruby}#{opts}"
-    elsif opts then
+    elsif opts
       "#!/bin/sh\n'exec' #{ruby_name.dump} '-x' \"$0\" \"$@\"\n#{shebang}"
     else
       # Create a plain shebang line.
@@ -631,9 +631,9 @@ class Gem::Installer
   end
 
   def ensure_required_ruby_version_met # :nodoc:
-    if rrv = spec.required_ruby_version then
-      unless rrv.satisfied_by? Gem.ruby_version then
-        ruby_version = Gem.ruby_api_version
+    if rrv = spec.required_ruby_version
+      ruby_version = Gem.ruby_version
+      unless rrv.satisfied_by? ruby_version
         raise Gem::RuntimeRequirementNotMetError,
           "#{spec.name} requires Ruby version #{rrv}. The current ruby version is #{ruby_version}."
       end
@@ -641,8 +641,8 @@ class Gem::Installer
   end
 
   def ensure_required_rubygems_version_met # :nodoc:
-    if rrgv = spec.required_rubygems_version then
-      unless rrgv.satisfied_by? Gem.rubygems_version then
+    if rrgv = spec.required_rubygems_version
+      unless rrgv.satisfied_by? Gem.rubygems_version
         rg_version = Gem::VERSION
         raise Gem::RuntimeRequirementNotMetError,
           "#{spec.name} requires RubyGems version #{rrgv}. The current RubyGems version is #{rg_version}. " +
@@ -702,16 +702,16 @@ class Gem::Installer
       File::ALT_SEPARATOR
 
     path = ENV['PATH']
-    if Gem.win_platform? then
+    if Gem.win_platform?
       path = path.downcase
       user_bin_dir = user_bin_dir.downcase
     end
 
     path = path.split(File::PATH_SEPARATOR)
 
-    unless path.include? user_bin_dir then
+    unless path.include? user_bin_dir
       unless !Gem.win_platform? && (path.include? user_bin_dir.sub(ENV['HOME'], '~'))
-        unless self.class.path_warning then
+        unless self.class.path_warning
           alert_warning "You don't have #{user_bin_dir} in your PATH,\n\t  gem executables will not run."
           self.class.path_warning = true
         end
@@ -752,7 +752,7 @@ version = "#{Gem::Requirement.default}.a"
 if ARGV.first
   str = ARGV.first
   str = str.dup.force_encoding("BINARY")
-  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
+  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1)
     version = $1
     ARGV.shift
   end
@@ -847,7 +847,7 @@ TEXT
   # Prefix and suffix the program filename the same as ruby.
 
   def formatted_program_filename(filename)
-    if @format_executable then
+    if @format_executable
       self.class.exec_format % File.basename(filename)
     else
       filename

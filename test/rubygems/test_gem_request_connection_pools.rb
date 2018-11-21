@@ -5,7 +5,7 @@ require 'timeout'
 
 class TestGemRequestConnectionPool < Gem::TestCase
   class FakeHttp
-    def initialize *args
+    def initialize(*args)
     end
 
     def start

@@ -298,4 +298,3 @@ beta-gems.example.com is not a URI
   end
 
 end
-

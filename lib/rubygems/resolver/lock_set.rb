@@ -9,7 +9,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   ##
   # Creates a new LockSet from the given +sources+
 
-  def initialize sources
+  def initialize(sources)
     super()
 
     @sources = sources.map do |source|
@@ -26,7 +26,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   # The specification's set will be the current set, and the source will be
   # the current set's source.
 
-  def add name, version, platform # :nodoc:
+  def add(name, version, platform) # :nodoc:
     version = Gem::Version.new version
     specs = [
       Gem::Resolver::LockSpecification.new(self, name, version, @sources, platform)
@@ -41,7 +41,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   # Returns an Array of IndexSpecification objects matching the
   # DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     @specs.select do |spec|
       req.match? spec
     end
@@ -51,7 +51,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   # Loads a Gem::Specification with the given +name+, +version+ and
   # +platform+.  +source+ is ignored.
 
-  def load_spec name, version, platform, source # :nodoc:
+  def load_spec(name, version, platform, source) # :nodoc:
     dep = Gem::Dependency.new name, version
 
     found = @specs.find do |spec|
@@ -63,7 +63,7 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
     found.source.fetch_spec tuple
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[LockSet', ']' do
       q.breakable
       q.text 'source:'
@@ -80,4 +80,3 @@ class Gem::Resolver::LockSet < Gem::Resolver::Set
   end
 
 end
-

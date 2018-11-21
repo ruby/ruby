@@ -81,4 +81,3 @@ class TestGemPackageTask < Gem::TestCase
   end
 
 end if defined?(Rake::PackageTask)
-

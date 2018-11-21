@@ -97,4 +97,3 @@ class TestGemCommandsYankCommand < Gem::TestCase
   end
 
 end
-
