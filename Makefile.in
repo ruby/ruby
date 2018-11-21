@@ -606,6 +606,7 @@ mjit_config.h:
 	quote "MJIT_DLDFLAGS    MJIT_ARCHFLAG" $(MJIT_DLDFLAGS); \
 	quote "MJIT_LIBS       " $(LIBRUBYARG_SHARED); \
 	quote 'PRELOADENV       "@PRELOADENV@"'; \
+	indent=$${archs:+'  '}; \
 	define_arch_flags; \
 	echo; \
 	echo '#endif /* RUBY_MJIT_CONFIG_H */'; \
