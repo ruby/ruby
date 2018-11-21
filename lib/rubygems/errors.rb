@@ -25,7 +25,7 @@ module Gem
   # system.  Instead of rescuing from this class, make sure to rescue from the
   # superclass Gem::LoadError to catch all types of load errors.
   class MissingSpecError < Gem::LoadError
-    def initialize name, requirement
+    def initialize(name, requirement)
       @name        = name
       @requirement = requirement
     end
@@ -50,7 +50,7 @@ module Gem
   class MissingSpecVersionError < MissingSpecError
     attr_reader :specs
 
-    def initialize name, requirement, specs
+    def initialize(name, requirement, specs)
       super(name, requirement)
       @specs = specs
     end
@@ -81,7 +81,7 @@ module Gem
 
     attr_reader :target
 
-    def initialize target, conflicts
+    def initialize(target, conflicts)
       @target    = target
       @conflicts = conflicts
       @name      = target.name

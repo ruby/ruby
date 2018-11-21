@@ -134,7 +134,7 @@ class Gem::Package::TarHeader
   # Creates a new TarHeader using +vals+
 
   def initialize(vals)
-    unless vals[:name] && vals[:size] && vals[:prefix] && vals[:mode] then
+    unless vals[:name] && vals[:size] && vals[:prefix] && vals[:mode]
       raise ArgumentError, ":name, :size, :prefix and :mode required"
     end
 

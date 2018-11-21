@@ -66,4 +66,3 @@ class TestGemGemRunner < Gem::TestCase
   end
 
 end
-

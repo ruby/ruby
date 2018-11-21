@@ -59,4 +59,3 @@ rye-0.9.8 requires net-ssh (>= 2.0.13) but it conflicted:
   end
 
 end
-

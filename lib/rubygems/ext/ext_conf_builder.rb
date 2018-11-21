@@ -47,7 +47,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
           run cmd, results
         ensure
           if File.exist? 'mkmf.log'
-            unless $?.success? then
+            unless $?.success?
               results << "To see why this extension failed to compile, please check" \
                 " the mkmf.log which can be found here:\n"
               results << "  " + File.join(dest_path, 'mkmf.log') + "\n"
@@ -63,7 +63,7 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
         if tmp_dest
           # TODO remove in RubyGems 3
-          if Gem.install_extension_in_lib and lib_dir then
+          if Gem.install_extension_in_lib and lib_dir
             FileUtils.mkdir_p lib_dir
             entries = Dir.entries(tmp_dest) - %w[. ..]
             entries = entries.map { |entry| File.join tmp_dest, entry }

@@ -79,15 +79,15 @@ command help for an example.
       dependency = Gem::Dependency.new name, options[:version]
       path = get_path dependency
 
-      unless path then
+      unless path
         alert_error "Gem '#{name}' not installed nor fetchable."
         next
       end
 
-      if @options[:spec] then
+      if @options[:spec]
         spec, metadata = get_metadata path, security_policy
 
-        if metadata.nil? then
+        if metadata.nil?
           alert_error "--spec is unsupported on '#{name}' (old format gem)"
           next
         end
@@ -152,7 +152,7 @@ command help for an example.
   # TODO: It just uses Gem.dir for now.  What's an easy way to get the list of
   # source directories?
 
-  def get_path dependency
+  def get_path(dependency)
     return dependency.name if dependency.name =~ /\.gem$/i
 
     specs = dependency.matching_specs
@@ -180,7 +180,7 @@ command help for an example.
   #--
   # TODO move to Gem::Package as #raw_spec or something
 
-  def get_metadata path, security_policy = nil
+  def get_metadata(path, security_policy = nil)
     format = Gem::Package.new path, security_policy
     spec = format.spec
 
@@ -202,4 +202,3 @@ command help for an example.
   end
 
 end
-

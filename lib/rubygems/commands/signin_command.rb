@@ -12,7 +12,6 @@ class Gem::Commands::SigninCommand < Gem::Command
     add_option('--host HOST', 'Push to another gemcutter-compatible host') do |value, options|
       options[:host] = value
     end
-
   end
 
   def description # :nodoc:

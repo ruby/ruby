@@ -51,7 +51,7 @@ data you will need to change them immediately and yank your gem.
     version   = get_version_from_requirements(options[:version])
     platform  = get_platform_from_requirements(options)
 
-    if version then
+    if version
       yank_gem(version, platform)
     else
       say "A version argument is required: #{usage}"
@@ -93,4 +93,3 @@ data you will need to change them immediately and yank your gem.
   end
 
 end
-

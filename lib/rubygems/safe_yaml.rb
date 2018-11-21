@@ -27,7 +27,7 @@ module Gem
     ).freeze
 
     if ::YAML.respond_to? :safe_load
-      def self.safe_load input
+      def self.safe_load(input)
         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
           ::YAML.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
         else
@@ -35,7 +35,7 @@ module Gem
         end
       end
 
-      def self.load input
+      def self.load(input)
         if Gem::Version.new(Psych::VERSION) >= Gem::Version.new('3.1.0.pre1')
           ::YAML.safe_load(input, permitted_classes: [::Symbol])
         else
@@ -47,11 +47,11 @@ module Gem
         warn "YAML safe loading is not available. Please upgrade psych to a version that supports safe loading (>= 2.0)."
       end
 
-      def self.safe_load input, *args
+      def self.safe_load(input, *args)
         ::YAML.load input
       end
 
-      def self.load input
+      def self.load(input)
         ::YAML.load input
       end
     end

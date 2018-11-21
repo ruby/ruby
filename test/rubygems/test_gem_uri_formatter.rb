@@ -26,4 +26,3 @@ class TestGemUriFormatter < Gem::TestCase
   end
 
 end
-

@@ -112,4 +112,3 @@ class TestGemSourceLock < Gem::TestCase
   end
 
 end
-

@@ -46,7 +46,7 @@ module Gem::Util
   # and implements an IO.popen-like behavior where it does not accept an array
   # for a command.
 
-  def self.popen *command
+  def self.popen(*command)
     IO.popen command, &:read
   rescue TypeError # ruby 1.8 only supports string command
     r, w = IO.pipe
@@ -70,7 +70,7 @@ module Gem::Util
   ##
   # Invokes system, but silences all output.
 
-  def self.silent_system *command
+  def self.silent_system(*command)
     opt = {:out => IO::NULL, :err => [:child, :out]}
     if Hash === command.last
       opt.update(command.last)
@@ -103,7 +103,7 @@ module Gem::Util
   ##
   # Enumerates the parents of +directory+.
 
-  def self.traverse_parents directory, &block
+  def self.traverse_parents(directory, &block)
     return enum_for __method__, directory unless block_given?
 
     here = File.expand_path directory

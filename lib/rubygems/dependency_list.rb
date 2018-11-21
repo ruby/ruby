@@ -40,7 +40,7 @@ class Gem::DependencyList
   # Creates a new DependencyList.  If +development+ is true, development
   # dependencies will be included.
 
-  def initialize development = false
+  def initialize(development = false)
     @specs = []
 
     @development = development
@@ -79,8 +79,8 @@ class Gem::DependencyList
     seen = {}
 
     sorted.each do |spec|
-      if index = seen[spec.name] then
-        if result[index].version < spec.version then
+      if index = seen[spec.name]
+        if result[index].version < spec.version
           result[index] = spec
         end
       else
@@ -114,7 +114,7 @@ class Gem::DependencyList
     why_not_ok?(:quick).empty?
   end
 
-  def why_not_ok? quick = false
+  def why_not_ok?(quick = false)
     unsatisfied = Hash.new { |h,k| h[k] = [] }
     each do |spec|
       spec.runtime_dependencies.each do |dep|
@@ -123,7 +123,7 @@ class Gem::DependencyList
             dep.requirement.satisfied_by? installed_spec.version
         }
 
-        unless inst or @specs.find { |s| s.satisfies_requirement? dep } then
+        unless inst or @specs.find { |s| s.satisfies_requirement? dep }
           unsatisfied[spec.name] << dep
           return unsatisfied if quick
         end
@@ -172,7 +172,7 @@ class Gem::DependencyList
   # satisfy items in +dependencies+ (a hash of gem names to arrays of
   # dependencies).
 
-  def remove_specs_unsatisfied_by dependencies
+  def remove_specs_unsatisfied_by(dependencies)
     specs.reject! { |spec|
       dep = dependencies[spec.name]
       dep and not dep.requirement.satisfied_by? spec.version
@@ -200,7 +200,7 @@ class Gem::DependencyList
         next if spec == other
 
         other.dependencies.each do |dep|
-          if spec.satisfies_requirement? dep then
+          if spec.satisfies_requirement? dep
             result[spec] << other
           end
         end
@@ -222,7 +222,7 @@ class Gem::DependencyList
 
     dependencies.each do |dep|
       specs.each do |spec|
-        if spec.satisfies_requirement? dep then
+        if spec.satisfies_requirement? dep
           yield spec
           break
         end
@@ -241,4 +241,3 @@ class Gem::DependencyList
   end
 
 end
-

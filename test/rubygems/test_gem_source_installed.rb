@@ -34,4 +34,3 @@ class TestGemSourceInstalled < Gem::TestCase
   end
 
 end
-

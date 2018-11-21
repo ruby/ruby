@@ -2,7 +2,7 @@
 require 'rubygems/test_case'
 require 'rubygems/commands/cert_command'
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping `gem cert` tests.  openssl not found.'
 end
 
@@ -192,7 +192,6 @@ Added '/CN=alternate/DC=example'
 
     test = (cert.not_after - cert.not_before).to_i / (24 * 60 * 60)
     assert_equal(test, 26)
-
   end
 
   def test_execute_build_bad_passphrase_confirmation
@@ -795,4 +794,3 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
   end
 
 end if defined?(OpenSSL::SSL)
-

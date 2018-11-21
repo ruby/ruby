@@ -56,7 +56,7 @@ version = \">= 0.a\"
 if ARGV.first
   str = ARGV.first
   str = str.dup.force_encoding("BINARY")
-  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1) then
+  if str =~ /\\A_(.*)_\\z/ and Gem::Version.correct?($1)
     version = $1
     ARGV.shift
   end
@@ -121,7 +121,7 @@ end
   ensure
     Object.const_set :RUBY_FRAMEWORK_VERSION, orig_RUBY_FRAMEWORK_VERSION if
       orig_RUBY_FRAMEWORK_VERSION
-    if orig_bindir then
+    if orig_bindir
       RbConfig::CONFIG['bindir'] = orig_bindir
     else
       RbConfig::CONFIG.delete 'bindir'
@@ -250,7 +250,7 @@ gem 'other', version
 
     expected = @installer.bin_dir
 
-    if Gem.win_platform? then
+    if Gem.win_platform?
       expected = expected.downcase.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
     end
 
@@ -488,7 +488,7 @@ gem 'other', version
     real_exec = File.join @spec.gem_dir, 'bin', 'executable'
 
     # fake --no-wrappers for previous install
-    unless Gem.win_platform? then
+    unless Gem.win_platform?
       FileUtils.mkdir_p File.dirname(installed_exec)
       FileUtils.ln_s real_exec, installed_exec
     end
@@ -692,7 +692,7 @@ gem 'other', version
 
     @installer.generate_bin
 
-    default_shebang = Gem.ruby.shellescape
+    default_shebang = Gem.ruby
     shebang_line = open("#{@gemhome}/bin/executable") { |f| f.readlines.first }
     assert_match(/\A#!/, shebang_line)
     assert_match(/#{default_shebang}/, shebang_line)
@@ -965,7 +965,7 @@ gem 'other', version
 
   def test_install_force
     use_ui @ui do
-      installer = Gem::Installer.at old_ruby_required, :force => true
+      installer = Gem::Installer.at old_ruby_required('= 1.4.6'), :force => true
       installer.install
     end
 
@@ -1380,14 +1380,30 @@ gem 'other', version
 
   def test_pre_install_checks_ruby_version
     use_ui @ui do
-      installer = Gem::Installer.at old_ruby_required
+      installer = Gem::Installer.at old_ruby_required('= 1.4.6')
       e = assert_raises Gem::RuntimeRequirementNotMetError do
         installer.pre_install_checks
       end
-      rv = Gem.ruby_api_version
+      rv = Gem.ruby_version
       assert_equal "old_ruby_required requires Ruby version = 1.4.6. The current ruby version is #{rv}.",
                    e.message
     end
+  end
+
+  def test_pre_install_checks_ruby_version_with_prereleases
+    util_set_RUBY_VERSION '2.6.0', -1, '63539', 'ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]'
+
+    installer = Gem::Installer.at old_ruby_required('>= 2.6.0.preview2')
+    assert installer.pre_install_checks
+
+    installer = Gem::Installer.at old_ruby_required('> 2.6.0.preview2')
+    e = assert_raises Gem::RuntimeRequirementNotMetError do
+      assert installer.pre_install_checks
+    end
+    assert_equal "old_ruby_required requires Ruby version > 2.6.0.preview2. The current ruby version is 2.6.0.preview2.",
+                 e.message
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def test_pre_install_checks_wrong_rubygems_version
@@ -1415,7 +1431,7 @@ gem 'other', version
     def spec.full_name # so the spec is buildable
       "malicious-1"
     end
-    def spec.validate packaging, strict; end
+    def spec.validate(packaging, strict); end
 
     util_build_gem spec
 
@@ -1720,9 +1736,9 @@ gem 'other', version
     assert_equal ['bin/executable'], default_spec.files
   end
 
-  def old_ruby_required
+  def old_ruby_required(requirement)
     spec = util_spec 'old_ruby_required', '1' do |s|
-      s.required_ruby_version = '= 1.4.6'
+      s.required_ruby_version = requirement
     end
 
     util_build_gem spec
@@ -1737,7 +1753,7 @@ gem 'other', version
     @installer = util_installer @spec, @gemhome
   end
 
-  def util_conflict_executable wrappers
+  def util_conflict_executable(wrappers)
     conflict = quick_gem 'conflict' do |spec|
       util_make_exec spec
     end

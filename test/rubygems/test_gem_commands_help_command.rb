@@ -48,7 +48,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
         assert_match(/\s+#{cmd}\s+\S+/, out)
       end
 
-      if defined?(OpenSSL::SSL) then
+      if defined?(OpenSSL::SSL)
         assert_empty err
 
         refute_match 'No command found for ', out
@@ -64,7 +64,7 @@ class TestGemCommandsHelpCommand < Gem::TestCase
     end
   end
 
-  def util_gem *args
+  def util_gem(*args)
     @cmd.options[:args] = args
 
     use_ui @ui do

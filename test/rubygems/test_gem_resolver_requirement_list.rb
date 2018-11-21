@@ -18,4 +18,3 @@ class TestGemResolverRequirementList < Gem::TestCase
   end
 
 end
-

@@ -4,7 +4,7 @@ require 'rubygems/request'
 require 'ostruct'
 require 'base64'
 
-unless defined?(OpenSSL::SSL) then
+unless defined?(OpenSSL::SSL)
   warn 'Skipping Gem::Request tests.  openssl not found.'
 end
 
@@ -17,7 +17,7 @@ class TestGemRequest < Gem::TestCase
   PUBLIC_CERT_FILE = cert_path 'public'
   SSL_CERT         = load_cert 'ssl'
 
-  def make_request uri, request_class, last_modified, proxy
+  def make_request(uri, request_class, last_modified, proxy)
     Gem::Request.create_with_proxy uri, request_class, last_modified, proxy
   end
 
@@ -465,7 +465,7 @@ ERROR:  Certificate  is an invalid CA certificate
     @orig_RUBY_REVISION   = RUBY_REVISION if defined? RUBY_REVISION
   end
 
-  def util_stub_net_http hash
+  def util_stub_net_http(hash)
     old_client = Gem::Request::ConnectionPools.client
     conn = Conn.new OpenStruct.new(hash)
     Gem::Request::ConnectionPools.client = conn
@@ -477,7 +477,7 @@ ERROR:  Certificate  is an invalid CA certificate
   class Conn
     attr_accessor :payload
 
-    def new *args; self; end
+    def new(*args); self; end
     def use_ssl=(bool); end
     def verify_callback=(setting); end
     def verify_mode=(setting); end

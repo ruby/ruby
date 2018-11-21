@@ -136,7 +136,6 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
       assert_equal 2048, @io.pos
     end
-
   end
 
   def test_add_file_signer_empty

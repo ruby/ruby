@@ -183,4 +183,3 @@ class Gem::InstallerTestCase < Gem::TestCase
   end
 
 end
-

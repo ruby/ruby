@@ -38,7 +38,7 @@ class Gem::GemRunner
   ##
   # Run the gem command with the following arguments.
 
-  def run args
+  def run(args)
     build_args = extract_build_args args
 
     do_configuration args
@@ -63,7 +63,7 @@ class Gem::GemRunner
   # Separates the build arguments (those following <code>--</code>) from the
   # other arguments in the list.
 
-  def extract_build_args args # :nodoc:
+  def extract_build_args(args) # :nodoc:
     return [] unless offset = args.index('--')
 
     build_args = args.slice!(offset...args.length)

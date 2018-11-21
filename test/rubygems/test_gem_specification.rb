@@ -1561,7 +1561,7 @@ dependencies: []
     @ext.build_extensions
     refute_path_exists @ext.extension_dir
   ensure
-    unless ($DEBUG or win_platform? or Process.uid.zero?) then
+    unless ($DEBUG or win_platform? or Process.uid.zero?)
       FileUtils.chmod 0755, File.join(@ext.base_dir, 'extensions')
       FileUtils.chmod 0755, @ext.base_dir
     end
@@ -2131,7 +2131,7 @@ dependencies: []
       remove_method :default_ext_dir_for
     end
 
-    def Gem.default_ext_dir_for base_dir
+    def Gem.default_ext_dir_for(base_dir)
       '/foo'
     end
 
@@ -2613,7 +2613,7 @@ end
     end
   end
 
-  def x s; s.gsub(/xxx/, ''); end
+  def x(s); s.gsub(/xxx/, ''); end
   def w; x "WARxxxNING"; end
   def t; x "TOxxxDO"; end
   def f; x "FxxxIXME"; end
@@ -2875,7 +2875,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_empty_require_paths
-    if win_platform? then
+    if win_platform?
       skip 'test_validate_empty_require_paths skipped on MS Windows (symlink)'
     else
       util_setup_validate
@@ -2914,6 +2914,8 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   def test_unresolved_specs
     specification = Gem::Specification.clone
 
+    set_orig specification
+
     specification.define_singleton_method(:unresolved_deps) do
       { b: Gem::Dependency.new("x","1") }
     end
@@ -2936,6 +2938,8 @@ Please report a bug if this causes problems.
 
   def test_unresolved_specs_with_versions
     specification = Gem::Specification.clone
+
+    set_orig specification
 
     specification.define_singleton_method(:unresolved_deps) do
       { b: Gem::Dependency.new("x","1") }
@@ -2961,6 +2965,12 @@ Please report a bug if this causes problems.
     assert_output nil, expected do
       specification.reset
     end
+  end
+
+  def set_orig(cls)
+    s_cls = cls.singleton_class
+    s_cls.send :alias_method, :orig_unresolved_deps , :unresolved_deps
+    s_cls.send :alias_method, :orig_find_all_by_name, :find_all_by_name
   end
 
   def test_validate_files_recursive

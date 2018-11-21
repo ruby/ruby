@@ -15,11 +15,11 @@ class Gem::Source::Lock < Gem::Source
   # Creates a new Lock source that wraps +source+ and moves it earlier in the
   # sort list.
 
-  def initialize source
+  def initialize(source)
     @wrapped = source
   end
 
-  def <=> other # :nodoc:
+  def <=>(other) # :nodoc:
     case other
     when Gem::Source::Lock then
       @wrapped <=> other.wrapped
@@ -30,7 +30,7 @@ class Gem::Source::Lock < Gem::Source
     end
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     0 == (self <=> other)
   end
 
@@ -41,7 +41,7 @@ class Gem::Source::Lock < Gem::Source
   ##
   # Delegates to the wrapped source's fetch_spec method.
 
-  def fetch_spec name_tuple
+  def fetch_spec(name_tuple)
     @wrapped.fetch_spec name_tuple
   end
 

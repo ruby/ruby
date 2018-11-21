@@ -30,4 +30,3 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 end
-

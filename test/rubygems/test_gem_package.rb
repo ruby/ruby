@@ -94,7 +94,7 @@ class TestGemPackage < Gem::Package::TarTestCase
       }
     }
 
-    if defined?(OpenSSL::Digest) then
+    if defined?(OpenSSL::Digest)
       expected['SHA256'] = {
         'metadata.gz' => metadata_sha256,
         'data.tar.gz' => Digest::SHA256.hexdigest(tar),

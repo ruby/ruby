@@ -31,7 +31,7 @@ class Gem::Resolver::Set
   # The find_all method must be implemented.  It returns all Resolver
   # Specification objects matching the given DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     raise NotImplementedError
   end
 
@@ -43,7 +43,7 @@ class Gem::Resolver::Set
   # When overridden, the #prefetch method should look up specifications
   # matching +reqs+.
 
-  def prefetch reqs
+  def prefetch(reqs)
   end
 
   ##

@@ -25,7 +25,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # API URL +dep_uri+ which is described at
   # http://guides.rubygems.org/rubygems-org-api
 
-  def initialize dep_uri = 'https://rubygems.org/api/v1/dependencies'
+  def initialize(dep_uri = 'https://rubygems.org/api/v1/dependencies')
     super()
 
     dep_uri = URI dep_uri unless URI === dep_uri # for ruby 1.8
@@ -43,7 +43,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # Return an array of APISpecification objects matching
   # DependencyRequest +req+.
 
-  def find_all req
+  def find_all(req)
     res = []
 
     return res unless @remote
@@ -65,7 +65,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # A hint run by the resolver to allow the Set to fetch
   # data for DependencyRequests +reqs+.
 
-  def prefetch reqs
+  def prefetch(reqs)
     return unless @remote
     names = reqs.map { |r| r.dependency.name }
     needed = names - @data.keys - @to_fetch
@@ -93,7 +93,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     end
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[APISet', ']' do
       q.breakable
       q.text "URI: #{@dep_uri}"
@@ -107,7 +107,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   ##
   # Return data for all versions of the gem +name+.
 
-  def versions name # :nodoc:
+  def versions(name) # :nodoc:
     if @data.key?(name)
       return @data[name]
     end
@@ -123,4 +123,3 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   end
 
 end
-

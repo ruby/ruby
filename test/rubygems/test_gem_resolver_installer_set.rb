@@ -255,4 +255,3 @@ class TestGemResolverInstallerSet < Gem::TestCase
   end
 
 end
-

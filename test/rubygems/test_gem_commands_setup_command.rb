@@ -66,7 +66,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     FileUtils.mkdir_p 'default/gems/bundler-audit-1.0.0'
   end
 
-  def gem_install name
+  def gem_install(name)
     gem = util_spec name do |s|
       s.executables = [name]
       s.files = %W[bin/#{name}]

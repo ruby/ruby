@@ -286,7 +286,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
 
-    trust_dir = Gem::Security.trust_dir
+    Gem::Security.trust_dir
 
     tmp_expired_cert_file = File.join gem_path, "gem-public_cert.pem"
     File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))

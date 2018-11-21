@@ -111,4 +111,3 @@ class TestGemResolverGitSpecification < Gem::TestCase
   end
 
 end
-

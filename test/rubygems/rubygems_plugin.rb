@@ -23,4 +23,3 @@ class Gem::Commands::InterruptCommand < Gem::Command
 end
 
 Gem::CommandManager.instance.register_command :interrupt
-

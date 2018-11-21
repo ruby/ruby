@@ -32,7 +32,7 @@ class Gem::Requirement
   ##
   # A regular expression that matches a requirement
 
-  PATTERN = /\A#{PATTERN_RAW}\z/
+  PATTERN = /\A#{PATTERN_RAW}\z/.freeze
 
   ##
   # The default requirement matches any version
@@ -51,7 +51,7 @@ class Gem::Requirement
   # If the input is "weird", the default version requirement is
   # returned.
 
-  def self.create *inputs
+  def self.create(*inputs)
     return new inputs if inputs.length > 1
 
     input = inputs.shift
@@ -64,7 +64,7 @@ class Gem::Requirement
     when '!' then
       source_set
     else
-      if input.respond_to? :to_str then
+      if input.respond_to? :to_str
         new [input.to_str]
       else
         default
@@ -98,7 +98,7 @@ class Gem::Requirement
   #     parse("1.0")                   # => ["=", Gem::Version.new("1.0")]
   #     parse(Gem::Version.new("1.0")) # => ["=,  Gem::Version.new("1.0")]
 
-  def self.parse obj
+  def self.parse(obj)
     return ["=", obj] if Gem::Version === obj
 
     unless PATTERN =~ obj.to_s
@@ -124,7 +124,7 @@ class Gem::Requirement
   # requirements are ignored. An empty set of +requirements+ is the
   # same as <tt>">= 0"</tt>.
 
-  def initialize *requirements
+  def initialize(*requirements)
     requirements = requirements.flatten
     requirements.compact!
     requirements.uniq!
@@ -140,7 +140,7 @@ class Gem::Requirement
   ##
   # Concatenates the +new+ requirements onto this requirement.
 
-  def concat new
+  def concat(new)
     new = new.flatten
     new.compact!
     new.uniq!
@@ -198,7 +198,7 @@ class Gem::Requirement
     [@requirements]
   end
 
-  def marshal_load array # :nodoc:
+  def marshal_load(array) # :nodoc:
     @requirements = array[0]
 
     fix_syck_default_key_in_requirements
@@ -213,7 +213,7 @@ class Gem::Requirement
     fix_syck_default_key_in_requirements
   end
 
-  def init_with coder # :nodoc:
+  def init_with(coder) # :nodoc:
     yaml_initialize coder.tag, coder.map
   end
 
@@ -221,7 +221,7 @@ class Gem::Requirement
     ["@requirements"]
   end
 
-  def encode_with coder # :nodoc:
+  def encode_with(coder) # :nodoc:
     coder.add 'requirements', @requirements
   end
 
@@ -233,7 +233,7 @@ class Gem::Requirement
     requirements.any? { |r| r.last.prerelease? }
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 1, 'Gem::Requirement.new(', ')' do
       q.pp as_list
     end
@@ -242,7 +242,7 @@ class Gem::Requirement
   ##
   # True if +version+ satisfies this Requirement.
 
-  def satisfied_by? version
+  def satisfied_by?(version)
     raise ArgumentError, "Need a Gem::Version: #{version.inspect}" unless
       Gem::Version === version
     # #28965: syck has a bug with unquoted '=' YAML.loading as YAML::DefaultKey
@@ -265,7 +265,7 @@ class Gem::Requirement
     as_list.join ", "
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     return unless Gem::Requirement === other
     requirements == other.requirements
   end

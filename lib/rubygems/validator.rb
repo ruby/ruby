@@ -62,7 +62,7 @@ class Gem::Validator
   # Describes a problem with a file in a gem.
 
   ErrorData = Struct.new :path, :problem do
-    def <=> other # :nodoc:
+    def <=>(other) # :nodoc:
       return nil unless self.class === other
 
       [path, problem] <=> [other.path, other.problem]
@@ -94,13 +94,13 @@ class Gem::Validator
       spec_path     = spec.spec_file
       gem_directory = spec.full_gem_path
 
-      unless File.directory? gem_directory then
+      unless File.directory? gem_directory
         errors[gem_name][spec.full_name] =
           "Gem registered but doesn't exist at #{gem_directory}"
         next
       end
 
-      unless File.exist? spec_path then
+      unless File.exist? spec_path
         errors[gem_name][spec_path] = "Spec file missing for installed gem"
       end
 
@@ -135,7 +135,7 @@ class Gem::Validator
               source = File.join gem_directory, entry['path']
 
               File.open source, Gem.binary_mode do |f|
-                unless f.read == data then
+                unless f.read == data
                   errors[gem_name][entry['path']] = "Modified from original"
                 end
               end
@@ -163,4 +163,3 @@ class Gem::Validator
     errors
   end
 end
-

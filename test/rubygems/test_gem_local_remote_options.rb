@@ -132,4 +132,3 @@ class TestGemLocalRemoteOptions < Gem::TestCase
   end
 
 end
-

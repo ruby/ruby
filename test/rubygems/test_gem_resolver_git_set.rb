@@ -187,4 +187,3 @@ class TestGemResolverGitSet < Gem::TestCase
   end
 
 end
-

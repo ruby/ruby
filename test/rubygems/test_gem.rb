@@ -278,6 +278,41 @@ class TestGem < Gem::TestCase
     assert_equal %w(a-1 b-2 c-1), loaded_spec_names
   end
 
+  def test_activate_bin_path_gives_proper_error_for_bundler
+    bundler = util_spec 'bundler', '2' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          9999
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    e = assert_raises Gem::GemNotFoundException do
+      load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+    end
+
+    assert_includes e.message, "Could not find 'bundler' (9999) required by your #{File.expand_path("Gemfile.lock")}."
+    assert_includes e.message, "To update to the latest version installed on your system, run `bundle update --bundler`."
+    assert_includes e.message, "To install the missing version, run `gem install bundler:9999`"
+    refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
+  end
+
   def test_self_bin_path_no_exec_name
     e = assert_raises ArgumentError do
       Gem.bin_path 'a'
@@ -531,7 +566,7 @@ class TestGem < Gem::TestCase
     assert File.directory?(util_cache_dir)
   end
 
-  unless win_platform? || Process.uid.zero? then # only for FS that support write protection
+  unless win_platform? || Process.uid.zero?  # only for FS that support write protection
     def test_self_ensure_gem_directories_write_protected
       gemdir = File.join @tempdir, "egd"
       FileUtils.rm_r gemdir rescue nil
@@ -958,7 +993,7 @@ class TestGem < Gem::TestCase
     assert_equal Gem::Requirement.default, Gem.env_requirement('qux')
   end
 
-  def test_self_ruby_version_1_8_5
+  def test_self_ruby_version_with_patchlevel_less_ancient_rubies
     util_set_RUBY_VERSION '1.8.5'
 
     assert_equal Gem::Version.new('1.8.5'), Gem.ruby_version
@@ -966,7 +1001,7 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_1_8_6p287
+  def test_self_ruby_version_with_release
     util_set_RUBY_VERSION '1.8.6', 287
 
     assert_equal Gem::Version.new('1.8.6.287'), Gem.ruby_version
@@ -974,10 +1009,34 @@ class TestGem < Gem::TestCase
     util_restore_RUBY_VERSION
   end
 
-  def test_self_ruby_version_1_9_2dev_r23493
-    util_set_RUBY_VERSION '1.9.2', -1, 23493
+  def test_self_ruby_version_with_non_mri_implementations
+    util_set_RUBY_VERSION '2.5.0', 0, 60928, 'jruby 9.2.0.0 (2.5.0) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]'
 
-    assert_equal Gem::Version.new('1.9.2.dev.23493'), Gem.ruby_version
+    assert_equal Gem::Version.new('2.5.0'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_prerelease
+    util_set_RUBY_VERSION '2.6.0', -1, 63539, 'ruby 2.6.0preview2 (2018-05-31 trunk 63539) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_non_mri_implementations_with_mri_prerelase_compatibility
+    util_set_RUBY_VERSION '2.6.0', -1, 63539, 'weirdjruby 9.2.0.0 (2.6.0preview2) 2018-05-24 81156a8 OpenJDK 64-Bit Server VM 25.171-b11 on 1.8.0_171-8u171-b11-0ubuntu0.16.04.1-b11 [linux-x86_64]', 'weirdjruby', '9.2.0.0'
+
+    assert_equal Gem::Version.new('2.6.0.preview2'), Gem.ruby_version
+  ensure
+    util_restore_RUBY_VERSION
+  end
+
+  def test_self_ruby_version_with_trunk
+    util_set_RUBY_VERSION '1.9.2', -1, 23493, 'ruby 1.9.2dev (2009-05-20 trunk 23493) [x86_64-linux]'
+
+    assert_equal Gem::Version.new('1.9.2.dev'), Gem.ruby_version
   ensure
     util_restore_RUBY_VERSION
   end
@@ -1225,7 +1284,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_user_home
-    if ENV['HOME'] then
+    if ENV['HOME']
       assert_equal ENV['HOME'], Gem.user_home
     else
       assert true, 'count this test'
@@ -1610,7 +1669,7 @@ class TestGem < Gem::TestCase
 
   def test_default_gems_use_full_paths
     begin
-      if defined?(RUBY_ENGINE) then
+      if defined?(RUBY_ENGINE)
         engine = RUBY_ENGINE
         Object.send :remove_const, :RUBY_ENGINE
       end
@@ -1623,7 +1682,7 @@ class TestGem < Gem::TestCase
     end
 
     begin
-      if defined?(RUBY_ENGINE) then
+      if defined?(RUBY_ENGINE)
         engine = RUBY_ENGINE
         Object.send :remove_const, :RUBY_ENGINE
       end
@@ -1813,13 +1872,13 @@ You may need to `gem install -g` to install missing gems
     assert platform_defaults.is_a? Hash
   end
 
-  def ruby_install_name name
+  def ruby_install_name(name)
     orig_RUBY_INSTALL_NAME = RbConfig::CONFIG['ruby_install_name']
     RbConfig::CONFIG['ruby_install_name'] = name
 
     yield
   ensure
-    if orig_RUBY_INSTALL_NAME then
+    if orig_RUBY_INSTALL_NAME
       RbConfig::CONFIG['ruby_install_name'] = orig_RUBY_INSTALL_NAME
     else
       RbConfig::CONFIG.delete 'ruby_install_name'

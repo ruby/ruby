@@ -135,4 +135,3 @@ class TestGemResolverBestSet < Gem::TestCase
   end
 
 end
-

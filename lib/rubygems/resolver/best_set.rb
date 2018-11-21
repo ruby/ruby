@@ -10,7 +10,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   # Creates a BestSet for the given +sources+ or Gem::sources if none are
   # specified.  +sources+ must be a Gem::SourceList.
 
-  def initialize sources = Gem.sources
+  def initialize(sources = Gem.sources)
     super()
 
     @sources = sources
@@ -25,7 +25,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     end
   end
 
-  def find_all req # :nodoc:
+  def find_all(req) # :nodoc:
     pick_sets if @remote and @sets.empty?
 
     super
@@ -35,13 +35,13 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
     retry
   end
 
-  def prefetch reqs # :nodoc:
+  def prefetch(reqs) # :nodoc:
     pick_sets if @remote and @sets.empty?
 
     super
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[BestSet', ']' do
       q.breakable
       q.text 'sets:'
@@ -58,7 +58,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   #
   # The calling method must retry the exception to repeat the lookup.
 
-  def replace_failed_api_set error # :nodoc:
+  def replace_failed_api_set(error) # :nodoc:
     uri = error.uri
     uri = URI uri unless URI === uri
     uri.query = nil
@@ -76,4 +76,3 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
   end
 
 end
-

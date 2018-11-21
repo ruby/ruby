@@ -19,12 +19,12 @@ class Gem::Resolver::DependencyRequest
   # Creates a new DependencyRequest for +dependency+ from +requester+.
   # +requester may be nil if the request came from a user.
 
-  def initialize dependency, requester
+  def initialize(dependency, requester)
     @dependency = dependency
     @requester  = requester
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     case other
     when Gem::Dependency
       @dependency == other
@@ -48,7 +48,7 @@ class Gem::Resolver::DependencyRequest
   # NOTE:  #match? only matches prerelease versions when #dependency is a
   # prerelease dependency.
 
-  def match? spec, allow_prerelease = false
+  def match?(spec, allow_prerelease = false)
     @dependency.match? spec, nil, allow_prerelease
   end
 
@@ -95,7 +95,7 @@ class Gem::Resolver::DependencyRequest
     @requester ? @requester.request : "(unknown)"
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Dependency request ', ']' do
       q.breakable
       q.text @dependency.to_s

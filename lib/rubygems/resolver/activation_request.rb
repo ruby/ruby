@@ -22,13 +22,13 @@ class Gem::Resolver::ActivationRequest
   # +others_possible+ indicates that other specifications may also match this
   # activation request.
 
-  def initialize spec, request, others_possible = true
+  def initialize(spec, request, others_possible = true)
     @spec = spec
     @request = request
     @others_possible = others_possible
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     case other
     when Gem::Specification
       @spec == other
@@ -49,7 +49,7 @@ class Gem::Resolver::ActivationRequest
   ##
   # Downloads a gem at +path+ and returns the file path.
 
-  def download path
+  def download(path)
     Gem.ensure_gem_subdirectories path
 
     if @spec.respond_to? :sources
@@ -97,7 +97,7 @@ class Gem::Resolver::ActivationRequest
       when false then # TODO remove at RubyGems 3
         nil
       else
-        unless @others_possible.empty? then
+        unless @others_possible.empty?
           others = @others_possible.map { |s| s.full_name }
           " (others possible: #{others.join ', '})"
         end
@@ -152,7 +152,7 @@ class Gem::Resolver::ActivationRequest
     @request.requester
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[Activation request', ']' do
       q.breakable
       q.pp @spec
@@ -167,7 +167,7 @@ class Gem::Resolver::ActivationRequest
         q.breakable
         q.text 'others possible'
       else
-        unless @others_possible.empty? then
+        unless @others_possible.empty?
           q.breakable
           q.text 'others '
           q.pp @others_possible.map { |s| s.full_name }

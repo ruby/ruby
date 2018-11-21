@@ -15,4 +15,3 @@ class TestGemCommandsSearchCommand < Gem::TestCase
   end
 
 end
-

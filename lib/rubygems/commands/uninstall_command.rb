@@ -81,7 +81,7 @@ class Gem::Commands::UninstallCommand < Gem::Command
     add_option('--vendor',
                'Uninstall gem from the vendor directory.',
                'Only for use by gem repackagers.') do |value, options|
-      unless Gem.vendor_dir then
+      unless Gem.vendor_dir
         raise OptionParser::InvalidOption.new 'your platform is not supported'
       end
 
@@ -115,9 +115,9 @@ that is a dependency of an existing gem.  You can use the
   end
 
   def execute
-    if options[:all] and not options[:args].empty? then
+    if options[:all] and not options[:args].empty?
       uninstall_specific
-    elsif options[:all] then
+    elsif options[:all]
       uninstall_all
     else
       uninstall_specific

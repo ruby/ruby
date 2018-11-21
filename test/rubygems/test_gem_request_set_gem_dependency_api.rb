@@ -19,7 +19,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     @gda.instance_variable_set :@vendor_set, @vendor_set
   end
 
-  def with_engine_version name, version
+  def with_engine_version(name, version)
     engine               = RUBY_ENGINE if Object.const_defined? :RUBY_ENGINE
     engine_version_const = "#{Gem.ruby_engine.upcase}_VERSION"
     engine_version       = Object.const_get engine_version_const
@@ -824,4 +824,3 @@ end
   end
 
 end
-

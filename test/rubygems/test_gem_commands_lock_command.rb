@@ -66,4 +66,3 @@ gem 'd', '= 1'
   end
 
 end
-

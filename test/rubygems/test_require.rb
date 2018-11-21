@@ -4,7 +4,7 @@ require 'rubygems'
 
 class TestGemRequire < Gem::TestCase
   class Latch
-    def initialize count = 1
+    def initialize(count = 1)
       @count = count
       @lock  = Monitor.new
       @cv    = @lock.new_cond

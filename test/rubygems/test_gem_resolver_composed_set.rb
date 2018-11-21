@@ -43,4 +43,3 @@ class TestGemResolverComposedSet < Gem::TestCase
   end
 
 end
-

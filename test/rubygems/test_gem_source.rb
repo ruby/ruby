@@ -236,4 +236,3 @@ class TestGemSource < Gem::TestCase
   end
 
 end
-

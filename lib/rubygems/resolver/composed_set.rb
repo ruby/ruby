@@ -16,7 +16,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   # Creates a new ComposedSet containing +sets+.  Use
   # Gem::Resolver::compose_sets instead.
 
-  def initialize *sets
+  def initialize(*sets)
     super()
 
     @sets = sets
@@ -26,7 +26,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   # When +allow_prerelease+ is set to +true+ prereleases gems are allowed to
   # match dependencies.
 
-  def prerelease= allow_prerelease
+  def prerelease=(allow_prerelease)
     super
 
     sets.each do |set|
@@ -37,7 +37,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   ##
   # Sets the remote network access for all composed sets.
 
-  def remote= remote
+  def remote=(remote)
     super
 
     @sets.each { |set| set.remote = remote }
@@ -50,7 +50,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   ##
   # Finds all specs matching +req+ in all sets.
 
-  def find_all req
+  def find_all(req)
     @sets.map do |s|
       s.find_all req
     end.flatten
@@ -59,9 +59,8 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   ##
   # Prefetches +reqs+ in all sets.
 
-  def prefetch reqs
+  def prefetch(reqs)
     @sets.each { |s| s.prefetch(reqs) }
   end
 
 end
-

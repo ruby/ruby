@@ -11,7 +11,7 @@ class Gem::Package::IOSource < Gem::Package::Source # :nodoc: all
 
   attr_reader :io
 
-  def initialize io
+  def initialize(io)
     @io = io
   end
 
@@ -43,4 +43,3 @@ class Gem::Package::IOSource < Gem::Package::Source # :nodoc: all
   end
 
 end
-

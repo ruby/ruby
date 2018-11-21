@@ -267,4 +267,3 @@ class TestGemCommandManager < Gem::TestCase
   end
 
 end
-
