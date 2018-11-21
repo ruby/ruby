@@ -293,10 +293,10 @@ DLNOBJ = dln.obj
 COROUTINE_H = coroutine/Win64/Context.h
 !elseif "$(ARCH)" == "i386"
 COROUTINE_H = coroutine/Win32/Context.h
+!else
+COROUTINE_H =
 !endif
-!if defined(COROUTINE_H)
-MISSING = $(MISSING) $(COROUTINE_H:.h=.obj)
-!endif
+COROUTINE_OBJ = $(COROUTINE_H:.h=.obj)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
