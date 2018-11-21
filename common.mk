@@ -898,8 +898,8 @@ ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
 .coroutine_obj $(COROUTINE_OBJ): \
 	{$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT) \
-	$(COROUTINE_H:Context.h=.time)
-$(COROUTINE_H:Context.h=.time):
+	$(COROUTINE_H:/Context.h=/.time)
+$(COROUTINE_H:/Context.h=/.time):
 	$(Q) $(MAKEDIRS) $(@D)
 	@exit > $@
 
