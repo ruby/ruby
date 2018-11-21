@@ -24,7 +24,6 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-#include <errno.h>
 #include "ruby/encoding.h"
 
 #if defined(HAVE_STDIO_EXT_H)
@@ -32,6 +31,7 @@ extern "C" {
 #endif
 
 #include "ruby/config.h"
+#include <errno.h>
 #if defined(HAVE_POLL)
 #  ifdef _AIX
 #    define reqevents events
