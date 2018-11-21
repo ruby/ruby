@@ -19,7 +19,7 @@ module Bundler
     end
 
     def default_gemfile
-      gemfile = find_gemfile(:order_matters)
+      gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
       Pathname.new(gemfile).untaint.expand_path
     end
@@ -225,7 +225,7 @@ module Bundler
       raise Bundler::PathError, message
     end
 
-    def find_gemfile(order_matters = false)
+    def find_gemfile
       given = ENV["BUNDLE_GEMFILE"]
       return given if given && !given.empty?
       find_file(*gemfile_names)
@@ -290,7 +290,7 @@ module Bundler
       # for Ruby core repository
       exe_file = File.expand_path("../../../../bin/bundle", __FILE__) unless File.exist?(exe_file)
       Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
-      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile(:order_matters).to_s
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
       Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
     end
 
