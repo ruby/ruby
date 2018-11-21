@@ -138,6 +138,7 @@ COMMONOBJS    = array.$(OBJEXT) \
 		vm_backtrace.$(OBJEXT) \
 		vm_dump.$(OBJEXT) \
 		vm_trace.$(OBJEXT) \
+		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
 		$(BUILTIN_TRANSOBJS) \
@@ -895,8 +896,9 @@ strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<
-$(COROUTINE_H:.h=).$(OBJEXT): {$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT)
-$(COROUTINE_H:.h=).$(OBJEXT): $(COROUTINE_H:Context.h=.time)
+.coroutine_obj $(COROUTINE_OBJ): \
+	{$(VPATH)}$(COROUTINE_H:.h=).$(ASMEXT) \
+	$(COROUTINE_H:Context.h=.time)
 $(COROUTINE_H:Context.h=.time):
 	$(Q) $(MAKEDIRS) $(@D)
 	@exit > $@

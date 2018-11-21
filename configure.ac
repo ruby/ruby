@@ -963,6 +963,7 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=no
 		    ac_cv_func_round=no
+		    rb_cv_fiber_coroutine=no # TODO: Enable this after AppVeyor msys2 build succeeds
 		])
 		ac_cv_func_tgamma=no
 		rb_cv_negative_time_t=yes
@@ -2326,38 +2327,35 @@ AS_IF([test "${universal_binary-no}" = yes ], [
     AC_DEFINE_UNQUOTED(STACK_GROW_DIRECTION, $dir)
 ])
 
-AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
-AS_CASE(["$target_cpu-$target_os"],
-  [x*64-darwin*], [
-    AC_MSG_RESULT(amd64)
-    COROUTINE_H=coroutine/amd64/Context.h
+AC_ARG_ENABLE(fiber-coroutine,
+    AS_HELP_STRING([--disable-fiber-coroutine], [disable native coroutine implementation for fiber]),
+    [rb_cv_fiber_coroutine=$enableval])
+AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
+    AC_MSG_CHECKING(native coroutine implementation for ${target_cpu}-${target_os})
+    AS_CASE(["$target_cpu-$target_os"],
+	[x*64-darwin*], [
+	    rb_cv_fiber_coroutine=amd64
+	],
+	[x*64-linux], [
+	    rb_cv_fiber_coroutine=amd64
+	],
+	[*86-linux], [
+	    rb_cv_fiber_coroutine=x86
+	],
+	[x64-mingw32], [
+	    rb_cv_fiber_coroutine=win64
+	],
+	[*], [
+	    rb_cv_fiber_coroutine=
+	]
+    )
+    AC_MSG_RESULT(${rb_cv_fiber_coroutine:-no})
+])
+AS_IF([test "${rb_cv_fiber_coroutine:-no}" != no], [
+    COROUTINE_H=coroutine/$rb_cv_fiber_coroutine/Context.h
     AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-    AC_LIBOBJ([coroutine/amd64/Context])
-  ],
-  [x*64-linux], [
-    AC_MSG_RESULT(amd64)
-    COROUTINE_H=coroutine/amd64/Context.h
-    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-    AC_LIBOBJ([coroutine/amd64/Context])
-  ],
-  [*86-linux], [
-    AC_MSG_RESULT(x86)
-    COROUTINE_H=coroutine/x86/Context.h
-    AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-    AC_LIBOBJ([coroutine/x86/Context])
-  ],
-  # TODO: Enable this after AppVeyor msys2 build succeeds
-  # [x64-mingw32], [
-  #   AC_MSG_RESULT(win64)
-  #   COROUTINE_H=coroutine/win64/Context.h
-  #   AC_DEFINE_UNQUOTED(FIBER_USE_COROUTINE, ["$COROUTINE_H"])
-  #   AC_LIBOBJ([coroutine/win64/Context])
-  # ],
-  [*], [
-    AC_MSG_RESULT(no)
-  ]
-)
-AC_SUBST(X_FIBER_COROUTINE_H, [$COROUTINE_H])
+    AC_SUBST(X_FIBER_COROUTINE_H, [$COROUTINE_H])
+])
 
 AS_IF([test x"$enable_pthread" = xyes], [
     for pthread_lib in thr pthread pthreads c c_r root; do
