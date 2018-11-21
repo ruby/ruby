@@ -6190,7 +6190,7 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
     unsigned int c;
     int codelen;
     size_t hexlen;
-    char buf[6];
+    unsigned char buf[6];
     static rb_encoding *enc_utf8 = NULL;
 
     switch (*s) {
@@ -6208,8 +6208,8 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
       case 'b':
       case 'a':
       case 'e':
-	*buf = (char)unescape_ascii(*s);
-	rb_str_cat(undumped, buf, 1);
+        *buf = unescape_ascii(*s);
+        rb_str_cat(undumped, (char *)buf, 1);
 	s++;
 	break;
       case 'u':
@@ -6249,8 +6249,8 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
 		if (0xd800 <= c && c <= 0xdfff) {
 		    rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
 		}
-		codelen = rb_enc_mbcput(c, buf, *penc);
-		rb_str_cat(undumped, buf, codelen);
+                codelen = rb_enc_mbcput(c, (char *)buf, *penc);
+                rb_str_cat(undumped, (char *)buf, codelen);
 		s += hexlen;
 	    }
 	}
@@ -6262,8 +6262,8 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
 	    if (0xd800 <= c && c <= 0xdfff) {
 		rb_raise(rb_eRuntimeError, "invalid Unicode codepoint");
 	    }
-	    codelen = rb_enc_mbcput(c, buf, *penc);
-	    rb_str_cat(undumped, buf, codelen);
+            codelen = rb_enc_mbcput(c, (char *)buf, *penc);
+            rb_str_cat(undumped, (char *)buf, codelen);
 	    s += hexlen;
 	}
 	break;
@@ -6279,7 +6279,7 @@ undump_after_backslash(VALUE undumped, const char **ss, const char *s_end, rb_en
 	if (hexlen != 2) {
 	    rb_raise(rb_eRuntimeError, "invalid hex escape");
 	}
-	rb_str_cat(undumped, buf, 1);
+        rb_str_cat(undumped, (char *)buf, 1);
 	s += hexlen;
 	break;
       default:
@@ -6915,7 +6915,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     int cflag = 0;
     unsigned int c, c0, last = 0;
     int modify = 0, i, l;
-    char *s, *send;
+    unsigned char *s, *send;
     VALUE hash = 0;
     int singlebyte = single_byte_optimizable(str);
     int termlen;
@@ -6999,18 +6999,18 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     if (cr == ENC_CODERANGE_VALID && rb_enc_asciicompat(e1))
 	cr = ENC_CODERANGE_7BIT;
     str_modify_keep_cr(str);
-    s = RSTRING_PTR(str); send = RSTRING_END(str);
+    s = (unsigned char *)RSTRING_PTR(str); send = (unsigned char *)RSTRING_END(str);
     termlen = rb_enc_mbminlen(enc);
     if (sflag) {
 	int clen, tlen;
 	long offset, max = RSTRING_LEN(str);
 	unsigned int save = -1;
-	char *buf = ALLOC_N(char, max + termlen), *t = buf;
+        unsigned char *buf = ALLOC_N(unsigned char, max + termlen), *t = buf;
 
 	while (s < send) {
 	    int may_modify = 0;
 
-	    c0 = c = rb_enc_codepoint_len(s, send, &clen, e1);
+            c0 = c = rb_enc_codepoint_len((char *)s, (char *)send, &clen, e1);
 	    tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
 	    s += clen;
@@ -7046,7 +7046,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    if ((offset = t - buf) + tlen > max) {
 		size_t MAYBE_UNUSED(old) = max + termlen;
 		max = offset + tlen + (send - s);
-		SIZED_REALLOC_N(buf, char, max + termlen, old);
+                SIZED_REALLOC_N(buf, unsigned char, max + termlen, old);
 		t = buf + offset;
 	    }
 	    rb_enc_mbcput(c, t, enc);
@@ -7059,8 +7059,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	if (!STR_EMBED_P(str)) {
 	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
-	TERM_FILL(t, termlen);
-	RSTRING(str)->as.heap.ptr = buf;
+        TERM_FILL((char *)t, termlen);
+        RSTRING(str)->as.heap.ptr = (char *)buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.aux.capa = max;
@@ -7086,11 +7086,11 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     else {
 	int clen, tlen;
 	long offset, max = (long)((send - s) * 1.2);
-	char *buf = ALLOC_N(char, max + termlen), *t = buf;
+        unsigned char *buf = ALLOC_N(unsigned char, max + termlen), *t = buf;
 
 	while (s < send) {
 	    int may_modify = 0;
-	    c0 = c = rb_enc_codepoint_len(s, send, &clen, e1);
+            c0 = c = rb_enc_codepoint_len((char *)s, (char *)send, &clen, e1);
 	    tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
 	    if (c < 256) {
@@ -7119,7 +7119,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	    if ((offset = t - buf) + tlen > max) {
 		size_t MAYBE_UNUSED(old) = max + termlen;
 		max = offset + tlen + (long)((send - s) * 1.2);
-		SIZED_REALLOC_N(buf, char, max + termlen, old);
+                SIZED_REALLOC_N(buf, unsigned char, max + termlen, old);
 		t = buf + offset;
 	    }
 	    if (s != t) {
@@ -7135,8 +7135,8 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 	if (!STR_EMBED_P(str)) {
 	    ruby_sized_xfree(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
 	}
-	TERM_FILL(t, termlen);
-	RSTRING(str)->as.heap.ptr = buf;
+        TERM_FILL((char *)t, termlen);
+        RSTRING(str)->as.heap.ptr = (char *)buf;
 	RSTRING(str)->as.heap.len = t - buf;
 	STR_SET_NOEMBED(str);
 	RSTRING(str)->as.heap.aux.capa = max;
@@ -7405,7 +7405,7 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     char squeez[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0;
-    char *s, *send, *t;
+    unsigned char *s, *send, *t;
     int i, modify = 0;
     int ascompat, singlebyte = single_byte_optimizable(str);
     unsigned int save;
@@ -7426,15 +7426,15 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
     }
 
     str_modify_keep_cr(str);
-    s = t = RSTRING_PTR(str);
+    s = t = (unsigned char *)RSTRING_PTR(str);
     if (!s || RSTRING_LEN(str) == 0) return Qnil;
-    send = RSTRING_END(str);
+    send = (unsigned char *)RSTRING_END(str);
     save = -1;
     ascompat = rb_enc_asciicompat(enc);
 
     if (singlebyte) {
         while (s < send) {
-	    unsigned int c = *(unsigned char*)s++;
+            unsigned int c = *s++;
 	    if (c != save || (argc > 0 && !squeez[c])) {
 	        *t++ = save = c;
 	    }
@@ -7445,14 +7445,14 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	    unsigned int c;
 	    int clen;
 
-	    if (ascompat && (c = *(unsigned char*)s) < 0x80) {
+            if (ascompat && (c = *s) < 0x80) {
 		if (c != save || (argc > 0 && !squeez[c])) {
 		    *t++ = save = c;
 		}
 		s++;
 	    }
 	    else {
-		c = rb_enc_codepoint_len(s, send, &clen, enc);
+                c = rb_enc_codepoint_len((char *)s, (char *)send, &clen, enc);
 
 		if (c != save || (argc > 0 && !tr_find(c, squeez, del, nodel))) {
 		    if (t != s) rb_enc_mbcput(c, t, enc);
@@ -7464,9 +7464,9 @@ rb_str_squeeze_bang(int argc, VALUE *argv, VALUE str)
 	}
     }
 
-    TERM_FILL(t, TERM_LEN(str));
-    if (t - RSTRING_PTR(str) != RSTRING_LEN(str)) {
-	STR_SET_LEN(str, t - RSTRING_PTR(str));
+    TERM_FILL((char *)t, TERM_LEN(str));
+    if ((char *)t - RSTRING_PTR(str) != RSTRING_LEN(str)) {
+        STR_SET_LEN(str, (char *)t - RSTRING_PTR(str));
 	modify = 1;
     }
 

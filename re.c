@@ -2539,7 +2539,7 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
         VALUE buf, rb_encoding **encp, int *has_property,
         onig_errmsg_buffer err)
 {
-    char c;
+    unsigned char c;
     char smallbuf[2];
 
     while (p < end) {
@@ -2602,8 +2602,9 @@ unescape_nonascii(const char *p, const char *end, rb_encoding *enc,
                 p = p-2;
 		if (enc == rb_usascii_encoding()) {
 		    const char *pbeg = p;
-		    c = read_escaped_byte(&p, end, err);
-		    if (c == (char)-1) return -1;
+                    int byte = read_escaped_byte(&p, end, err);
+                    if (byte == -1) return -1;
+                    c = byte;
 		    rb_str_buf_cat(buf, pbeg, p-pbeg);
 		}
 		else {
@@ -2652,7 +2653,7 @@ escape_asis:
             break;
 
           default:
-            rb_str_buf_cat(buf, &c, 1);
+            rb_str_buf_cat(buf, (char *)&c, 1);
             break;
         }
     }
