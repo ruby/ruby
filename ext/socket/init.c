@@ -481,6 +481,7 @@ rsock_socket0(int domain, int type, int proto)
     if (ret == -1)
         return -1;
     rb_fd_fix_cloexec(ret);
+    rsock_make_fd_nonblock(ret);
 
     return ret;
 }
