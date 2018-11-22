@@ -141,6 +141,7 @@ lcov*.info
 
 # /coroutine/
 !/coroutine/**/*.s
+/coroutine/**/.time
 
 # /enc/trans/
 /enc/trans/*.c
