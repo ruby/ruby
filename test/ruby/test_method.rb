@@ -1064,14 +1064,28 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(6, h.call(2))
   end
 
-  def test_compose_with_nonproc_or_method
+  def test_compose_with_callable
+    c = Class.new {
+      def f(x) x * 2 end
+    }
+    c2 = Class.new {
+      def call(x) x + 1 end
+    }
+    f = c.new.method(:f)
+    g = f * c2.new
+
+    assert_equal(6, g.call(2))
+  end
+
+  def test_compose_with_noncallable
     c = Class.new {
       def f(x) x * 2 end
     }
     f = c.new.method(:f)
+    g = f * 5
 
-    assert_raise(TypeError) {
-      f * 5
+    assert_raise(NoMethodError) {
+      g.call(2)
     }
   end
 end
