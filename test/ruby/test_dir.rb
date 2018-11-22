@@ -374,8 +374,7 @@ class TestDir < Test::Unit::TestCase
       assert_equal(@nodir, Dir.home)
       assert_equal(@nodir, Dir.home(""))
       if user = ENV["USER"]
-        ENV["HOME"] = env_home
-        assert_equal(File.expand_path(env_home), Dir.home(user))
+        assert_equal(File.expand_path("~#{user}"), Dir.home(user))
       end
     }
     %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
