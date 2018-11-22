@@ -3052,7 +3052,7 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
     VALUE f, g, fargs;
     f = RARRAY_AREF(args, 0);
     g = RARRAY_AREF(args, 1);
-    fargs = rb_ary_new3(1, rb_proc_call_with_block(g, argc, argv, passed_proc));
+    fargs = rb_ary_new3(1, rb_funcall_with_block(g, idCall, argc, argv, passed_proc));
 
     return rb_proc_call(f, fargs);
 }
@@ -3061,7 +3061,7 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
  *  call-seq:
  *     prc * g -> a_proc
  *
- *  Returns a proc that is the composition of this proc and the given proc <i>g</i>.
+ *  Returns a proc that is the composition of this proc and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
  *  then calls this proc with the result.
  *
@@ -3076,16 +3076,6 @@ proc_compose(VALUE self, VALUE g)
     VALUE proc, args;
     rb_proc_t *procp;
     int is_lambda;
-
-    if (!rb_obj_is_method(g) && !rb_obj_is_proc(g)) {
-        rb_raise(rb_eTypeError,
-                "wrong argument type %s (expected Proc/Method)",
-                rb_obj_classname(g));
-    }
-
-    if (rb_obj_is_method(g)) {
-        g = method_to_proc(g);
-    }
 
     args = rb_ary_new3(2, self, g);
 
@@ -3103,7 +3093,7 @@ proc_compose(VALUE self, VALUE g)
  *  call-seq:
  *     meth * g -> a_proc
  *
- *  Returns a proc that is the composition of this method and the given proc <i>g</i>.
+ *  Returns a proc that is the composition of this method and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
  *  then calls this method with the result.
  *
