@@ -1474,6 +1474,39 @@ before_exec_non_async_signal_safe(void)
     rb_thread_stop_timer_thread();
 }
 
+#define WRITE_CONST(fd, str) (void)(write((fd),(str),sizeof(str)-1)<0)
+#ifdef _WIN32
+int rb_w32_set_nonblock2(int fd, int nonblock);
+#endif
+
+static int
+set_blocking(int fd)
+{
+#ifdef _WIN32
+    return rb_w32_set_nonblock2(fd, 0);
+#elif defined(F_GETFL) && defined(F_SETFL)
+    int fl = fcntl(fd, F_GETFL); /* async-signal-safe */
+
+    /* EBADF ought to be possible */
+    if (fl == -1) return fl;
+    if (fl & O_NONBLOCK) {
+        fl &= ~O_NONBLOCK;
+        return fcntl(fd, F_SETFL, fl);
+    }
+    return 0;
+#endif
+}
+
+static void
+stdfd_clear_nonblock(void)
+{
+    /* many programs cannot deal with non-blocking stdin/stdout/stderr */
+    int fd;
+    for (fd = 0; fd < 3; fd++) {
+        (void)set_blocking(fd); /* can't do much about errors anyhow */
+    }
+}
+
 static void
 before_exec(void)
 {
@@ -3445,6 +3478,11 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
             rb_execarg_allocate_dup2_tmpbuf(sargp, RARRAY_LEN(ary));
         }
     }
+    {
+        int preserve = errno;
+        stdfd_clear_nonblock();
+        errno = preserve;
+    }
 
     return 0;
 }
@@ -3644,6 +3682,12 @@ static ssize_t
 read_retry(int fd, void *buf, size_t len)
 {
     ssize_t r;
+
+    if (set_blocking(fd) != 0) {
+#ifndef _WIN32
+        rb_async_bug_errno("set_blocking failed reading child error", errno);
+#endif
+    }
 
     do {
 	r = read(fd, buf, len);

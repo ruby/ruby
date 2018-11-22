@@ -34,6 +34,12 @@ describe 'Socket#connect' do
 
       lambda {
         @client.connect(@server.getsockname)
+
+        # A second call needed if non-blocking sockets become default
+        # XXX honestly I don't expect any real code to care about this spec
+        # as it's too implementation-dependent and checking for connect()
+        # errors is futile anyways because of TOCTOU
+        @client.connect(@server.getsockname)
       }.should raise_error(Errno::EISCONN)
     end
 

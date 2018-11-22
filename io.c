@@ -316,6 +316,27 @@ rb_cloexec_dup2(int oldfd, int newfd)
     return ret;
 }
 
+static int
+rb_fd_set_nonblock(int fd)
+{
+#ifdef _WIN32
+    return rb_w32_set_nonblock(fd);
+#elif defined(F_GETFL)
+    int err;
+    int oflags = fcntl(fd, F_GETFL);
+
+    if (oflags == -1)
+        return -1;
+    if (oflags & O_NONBLOCK)
+        return 0;
+    oflags |= O_NONBLOCK;
+    err = fcntl(fd, F_SETFL, oflags);
+    if (err == -1)
+        return -1;
+#endif
+    return 0;
+}
+
 int
 rb_cloexec_pipe(int fildes[2])
 {
@@ -324,7 +345,7 @@ rb_cloexec_pipe(int fildes[2])
 #if defined(HAVE_PIPE2)
     static int try_pipe2 = 1;
     if (try_pipe2) {
-        ret = pipe2(fildes, O_CLOEXEC);
+        ret = pipe2(fildes, O_CLOEXEC | O_NONBLOCK);
         if (ret != -1)
             return ret;
         /* pipe2 is available since Linux 2.6.27, glibc 2.9. */
@@ -350,6 +371,8 @@ rb_cloexec_pipe(int fildes[2])
 #endif
     rb_maygvl_fd_fix_cloexec(fildes[0]);
     rb_maygvl_fd_fix_cloexec(fildes[1]);
+    rb_fd_set_nonblock(fildes[0]);
+    rb_fd_set_nonblock(fildes[1]);
     return ret;
 }
 
@@ -2696,27 +2719,9 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
 void
 rb_io_set_nonblock(rb_io_t *fptr)
 {
-#ifdef _WIN32
-    if (rb_w32_set_nonblock(fptr->fd) != 0) {
+    if (rb_fd_set_nonblock(fptr->fd) != 0) {
 	rb_sys_fail_path(fptr->pathv);
     }
-#else
-    int oflags;
-#ifdef F_GETFL
-    oflags = fcntl(fptr->fd, F_GETFL);
-    if (oflags == -1) {
-        rb_sys_fail_path(fptr->pathv);
-    }
-#else
-    oflags = 0;
-#endif
-    if ((oflags & O_NONBLOCK) == 0) {
-        oflags |= O_NONBLOCK;
-        if (fcntl(fptr->fd, F_SETFL, oflags) == -1) {
-            rb_sys_fail_path(fptr->pathv);
-        }
-    }
-#endif
 }
 
 struct read_internal_arg {

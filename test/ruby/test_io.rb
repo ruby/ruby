@@ -1360,6 +1360,7 @@ class TestIO < Test::Unit::TestCase
   def test_readpartial_lock
     with_pipe do |r, w|
       s = ""
+      r.nonblock = false if have_nonblock?
       t = Thread.new { r.readpartial(5, s) }
       Thread.pass until t.stop?
       assert_raise(RuntimeError) { s.clear }
