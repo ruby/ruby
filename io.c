@@ -1997,6 +1997,16 @@ rb_io_rewind(VALUE io)
 }
 
 static int
+fptr_wait_readable(rb_io_t *fptr)
+{
+    int ret = rb_io_wait_readable(fptr->fd);
+
+    if (ret)
+        rb_io_check_closed(fptr);
+    return ret;
+}
+
+static int
 io_fillbuf(rb_io_t *fptr)
 {
     ssize_t r;
@@ -2016,7 +2026,7 @@ io_fillbuf(rb_io_t *fptr)
 	    r = rb_read_internal(fptr->fd, fptr->rbuf.ptr, fptr->rbuf.capa);
 	}
         if (r < 0) {
-            if (rb_io_wait_readable(fptr->fd))
+            if (fptr_wait_readable(fptr))
                 goto retry;
 	    {
 		int e = errno;
@@ -2363,7 +2373,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
 	    c = rb_read_internal(fptr->fd, ptr+offset, n);
 	    if (c == 0) break;
 	    if (c < 0) {
-                if (rb_io_wait_readable(fptr->fd))
+                if (fptr_wait_readable(fptr))
                     goto again;
 		return -1;
 	    }
@@ -2788,7 +2798,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
 	n = arg.len;
         if (n < 0) {
 	    int e = errno;
-            if (!nonblock && rb_io_wait_readable(fptr->fd))
+            if (!nonblock && fptr_wait_readable(fptr))
                 goto again;
 	    if (nonblock && (e == EWOULDBLOCK || e == EAGAIN)) {
                 if (no_exception_p(opts))
