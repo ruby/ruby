@@ -44,7 +44,6 @@ describe "IO#read_nonblock" do
   platform_is_not :windows do
     it 'sets the IO in nonblock mode' do
       require 'io/nonblock'
-      @read.nonblock?.should == false
       @write.write "abc"
       @read.read_nonblock(1).should == "a"
       @read.nonblock?.should == true

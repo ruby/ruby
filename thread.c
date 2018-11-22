@@ -4068,17 +4068,19 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     int result = 0, lerrno;
     rb_hrtime_t *to, rel, end = 0;
     int drained;
-    rb_thread_t *th = GET_THREAD();
     nfds_t nfds;
     rb_unblock_function_t *ubf;
+    struct waiting_fd wfd;
 
-    RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+    wfd.th = GET_THREAD();
+    wfd.fd = fd;
+    RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
     timeout_prepare(&to, &rel, &end, timeout);
     fds[0].fd = fd;
     fds[0].events = (short)events;
     do {
         fds[0].revents = 0;
-        fds[1].fd = rb_sigwait_fd_get(th);
+        fds[1].fd = rb_sigwait_fd_get(wfd.th);
 
         if (fds[1].fd >= 0) {
             fds[1].events = POLLIN;
@@ -4092,27 +4094,29 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         }
 
         lerrno = 0;
-        BLOCKING_REGION(th, {
+        list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
+        BLOCKING_REGION(wfd.th, {
             const rb_hrtime_t *sto;
             struct timespec ts;
 
-            sto = sigwait_timeout(th, fds[1].fd, to, &drained);
-            if (!RUBY_VM_INTERRUPTED(th->ec)) {
+            sto = sigwait_timeout(wfd.th, fds[1].fd, to, &drained);
+            if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
                 result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), NULL);
                 if (result < 0) lerrno = errno;
             }
-        }, ubf, th, TRUE);
+        }, ubf, wfd.th, TRUE);
+        list_del(&wfd.wfd_node);
 
         if (fds[1].fd >= 0) {
             if (result > 0 && fds[1].revents) {
                 result--;
                 fds[1].revents = 0;
             }
-            (void)check_signals_nogvl(th, fds[1].fd);
-            rb_sigwait_fd_put(th, fds[1].fd);
-            rb_sigwait_fd_migrate(th->vm);
+            (void)check_signals_nogvl(wfd.th, fds[1].fd);
+            rb_sigwait_fd_put(wfd.th, fds[1].fd);
+            rb_sigwait_fd_migrate(wfd.th->vm);
         }
-        RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
+        RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
     } while (wait_retryable(&result, lerrno, to, end));
 
     if (result < 0) {
@@ -4152,6 +4156,7 @@ struct select_args {
     rb_fdset_t *read;
     rb_fdset_t *write;
     rb_fdset_t *except;
+    struct waiting_fd wfd;
     struct timeval *tv;
 };
 
@@ -4182,6 +4187,7 @@ select_single_cleanup(VALUE ptr)
 {
     struct select_args *args = (struct select_args *)ptr;
 
+    list_del(&args->wfd.wfd_node);
     if (args->read) rb_fd_term(args->read);
     if (args->write) rb_fd_term(args->write);
     if (args->except) rb_fd_term(args->except);
@@ -4202,7 +4208,10 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *tv)
     args.write = (events & RB_WAITFD_OUT) ? init_set_fd(fd, &wfds) : NULL;
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = tv;
+    args.wfd.fd = fd;
+    args.wfd.th = GET_THREAD();
 
+    list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
     r = (int)rb_ensure(select_single, ptr, select_single_cleanup, ptr);
     if (r == -1)
 	errno = args.as.error;

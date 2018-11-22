@@ -4429,11 +4429,11 @@ fcntl(int fd, int cmd, ...)
 
 /* License: Ruby's */
 int
-rb_w32_set_nonblock(int fd)
+rb_w32_set_nonblock2(int fd, int nonblock)
 {
     SOCKET sock = TO_SOCKET(fd);
     if (is_socket(sock)) {
-	return setfl(sock, O_NONBLOCK);
+	return setfl(sock, nonblock ? O_NONBLOCK : 0);
     }
     else if (is_pipe(sock)) {
 	DWORD state;
@@ -4441,7 +4441,12 @@ rb_w32_set_nonblock(int fd)
 	    errno = map_errno(GetLastError());
 	    return -1;
 	}
-	state |= PIPE_NOWAIT;
+        if (nonblock) {
+            state |= PIPE_NOWAIT;
+        }
+        else {
+            state &= ~PIPE_NOWAIT;
+        }
 	if (!SetNamedPipeHandleState((HANDLE)sock, &state, NULL, NULL)) {
 	    errno = map_errno(GetLastError());
 	    return -1;
@@ -4452,6 +4457,12 @@ rb_w32_set_nonblock(int fd)
 	errno = EBADF;
 	return -1;
     }
+}
+
+int
+rb_w32_set_nonblock(int fd)
+{
+    return rb_w32_set_nonblock2(fd, TRUE);
 }
 
 #ifndef WNOHANG
