@@ -2045,6 +2045,7 @@ RUBY_EXTERN VALUE rb_eMathDomainError;
 
 RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
 
+ALWAYS_INLINE(static VALUE rb_class_of(VALUE obj));
 static inline VALUE
 rb_class_of(VALUE obj)
 {
