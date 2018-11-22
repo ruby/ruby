@@ -3100,6 +3100,30 @@ proc_compose(VALUE self, VALUE g)
 }
 
 /*
+ *  call-seq:
+ *     meth * g -> a_proc
+ *
+ *  Returns a proc that is the composition of this method and the given proc <i>g</i>.
+ *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
+ *  then calls this method with the result.
+ *
+ *     def f(x)
+ *       x * 2
+ *     end
+ *
+ *     f = self.method(:f)
+ *     g = proc {|x, y| x + y }
+ *     h = f * g
+ *     p h.call(1, 2) #=> 6
+ */
+static VALUE
+rb_method_compose(VALUE self, VALUE g)
+{
+    VALUE proc = method_to_proc(self);
+    return proc_compose(proc, g);
+}
+
+/*
  *  Document-class: LocalJumpError
  *
  *  Raised when Ruby can't yield as requested.
@@ -3222,6 +3246,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
     rb_define_method(rb_cMethod, "===", rb_method_call, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
+    rb_define_method(rb_cMethod, "*", rb_method_compose, 1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
