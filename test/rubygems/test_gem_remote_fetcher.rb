@@ -124,13 +124,9 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     Gem::RemoteFetcher.fetcher = nil
     @stub_ui = Gem::MockGemUi.new
     @fetcher = Gem::RemoteFetcher.fetcher
-
-    RubyVM::MJIT.pause(wait: false) if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # sometimes timeout is too short for --jit-wait, but remote_fetcher can't configure timeout
   end
 
   def teardown
-    RubyVM::MJIT.resume if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # enable testing again
-
     @fetcher.close_all
     self.class.stop_servers
     super
