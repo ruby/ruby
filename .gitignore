@@ -18,6 +18,7 @@
 *.pch
 *.pdb
 *.rej
+*.s
 *.sav
 *.swp
 *.yarb
@@ -137,6 +138,9 @@ lcov*.info
 /enc/*.lib
 /enc/jis/props.h
 /enc/unicode/data
+
+# /coroutine/
+!/coroutine/**/*.s
 
 # /enc/trans/
 /enc/trans/*.c
