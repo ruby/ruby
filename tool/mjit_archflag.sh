@@ -35,6 +35,6 @@ define_arch_flags() {
 	quote "MJIT_ARCHFLAG   " -arch "${arch}"
     done
     ${archs:+echo} ${archs:+'#else'}
-    quote "MJIT_ARCHFLAG   ${arch_flag:- /* no flag */}" ${arch_flag}
+    quote "MJIT_ARCHFLAG    /* ${arch_flag:-no flag} */" ${arch_flag}
     ${archs:+echo} ${archs:+'#endif'}
 }
