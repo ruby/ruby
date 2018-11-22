@@ -25,7 +25,7 @@ static void
 mjit_copy_job_handler(void *data)
 {
     struct mjit_copy_job *job = data;
-    int finish_p;
+    const struct rb_iseq_constant_body *body;
     if (stop_worker_p) {
         /* `copy_cache_from_main_thread()` stops to wait for this job. Then job data which is
            allocated by `alloca()` could be expired and we might not be able to access that.
@@ -34,20 +34,20 @@ mjit_copy_job_handler(void *data)
     }
 
     CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
-    finish_p = job->finish_p;
-    CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
-    if (finish_p) {
-        return; /* make sure that this job is never executed while job is being modified. */
+    /* Make sure that this job is never executed while job is being modified or ISeq is GC-ed */
+    if (job->finish_p || job->unit->iseq == NULL) {
+        CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
+        return;
     }
 
+    body = job->unit->iseq->body;
     if (job->cc_entries) {
-        memcpy(job->cc_entries, job->body->cc_entries, sizeof(struct rb_call_cache) * (job->body->ci_size + job->body->ci_kw_size));
+        memcpy(job->cc_entries, body->cc_entries, sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
     }
     if (job->is_entries) {
-        memcpy(job->is_entries, job->body->is_entries, sizeof(union iseq_inline_storage_entry) * job->body->is_size);
+        memcpy(job->is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
     }
 
-    CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
     job->finish_p = TRUE;
     rb_native_cond_broadcast(&mjit_worker_wakeup);
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
