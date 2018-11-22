@@ -549,7 +549,9 @@ class TestArray < Test::Unit::TestCase
 
     assert_kind_of Enumerator, @cls[1, 2, 3].collect
 
-    assert_equal([[1, 2, 3]], [[1, 2, 3]].collect(&->(a, b, c) {[a, b, c]}))
+    assert_raise(ArgumentError) {
+      assert_equal([[1, 2, 3]], [[1, 2, 3]].collect(&->(a, b, c) {[a, b, c]}))
+    }
   end
 
   # also update map!
