@@ -1089,7 +1089,14 @@ rb_export_method(VALUE klass, ID name, rb_method_visibility_t visi)
 int
 rb_method_boundp(VALUE klass, ID id, int ex)
 {
-    const rb_method_entry_t *me = rb_method_entry_without_refinements(klass, id, NULL);
+    const rb_method_entry_t *me;
+
+    if (ex & BOUND_RESPONDS) {
+        me = method_entry_resolve_refinement(klass, id, TRUE, NULL);
+    }
+    else {
+        me = rb_method_entry_without_refinements(klass, id, NULL);
+    }
 
     if (me != 0) {
 	if ((ex & ~BOUND_RESPONDS) &&
