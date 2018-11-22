@@ -2337,7 +2337,11 @@ AS_CASE(["$rb_cv_fiber_coroutine"], [yes|''], [
 	    rb_cv_fiber_coroutine=amd64
 	],
 	[x*64-linux], [
-	    rb_cv_fiber_coroutine=amd64
+	    AS_CASE(["$ac_cv_sizeof_voidp"],
+	        [8], [ rb_cv_fiber_coroutine=amd64 ],
+	        [4], [ rb_cv_fiber_coroutine=x86 ],
+		[*], [ rb_cv_fiber_coroutine= ]
+	    )
 	],
 	[*86-linux], [
 	    rb_cv_fiber_coroutine=x86
