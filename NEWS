@@ -171,6 +171,12 @@ sufficient information, see the ChangeLog file or Redmine
     * KeyError.new accepts +:receiver+ and +:key+ options to set receiver and
       key in Ruby code.  [Feature #14313]
 
+[Method]
+
+  [New methods]
+
+    * added Method#<< and Method#>> for Proc composition.  [Feature #6284]
+
 [Module]
 
   [New methods]
@@ -202,6 +208,10 @@ sufficient information, see the ChangeLog file or Redmine
       class rather than one of Enumerator class.
 
 [Proc]
+
+  [New methods]
+
+    * added Proc#<< and Proc#>> for Proc composition.  [Feature #6284]
 
   [Incompatible changes]
 

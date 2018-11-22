@@ -1420,33 +1420,33 @@ class TestProc < Test::Unit::TestCase
   def test_compose
     f = proc {|x| x * 2}
     g = proc {|x| x + 1}
-    h = f * g
 
-    assert_equal(6, h.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(6, (g >> f).call(2))
   end
 
   def test_compose_with_multiple_args
     f = proc {|x| x * 2}
     g = proc {|x, y| x + y}
-    h = f * g
 
-    assert_equal(6, h.call(1, 2))
+    assert_equal(6, (f << g).call(1, 2))
+    assert_equal(6, (g >> f).call(1, 2))
   end
 
   def test_compose_with_block
     f = proc {|x| x * 2}
     g = proc {|&blk| blk.call(1) }
-    h = f * g
 
-    assert_equal(8, h.call { |x| x + 3 })
+    assert_equal(8, (f << g).call { |x| x + 3 })
+    assert_equal(8, (g >> f).call { |x| x + 3 })
   end
 
   def test_compose_with_lambda
     f = lambda {|x| x * 2}
     g = lambda {|x| x}
-    h = f * g
 
-    assert_predicate(h, :lambda?)
+    assert_predicate((f << g), :lambda?)
+    assert_predicate((g >> f), :lambda?)
   end
 
   def test_compose_with_method
@@ -1455,9 +1455,9 @@ class TestProc < Test::Unit::TestCase
       def g(x) x + 1 end
     }
     g = c.new.method(:g)
-    h = f * g
 
-    assert_equal(6, h.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(5, (f >> g).call(2))
   end
 
   def test_compose_with_callable
@@ -1465,17 +1465,20 @@ class TestProc < Test::Unit::TestCase
     c = Class.new {
       def call(x) x + 1 end
     }
-    g = f * c.new
+    g = c.new
 
-    assert_equal(6, g.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(5, (f >> g).call(2))
   end
 
   def test_compose_with_noncallable
     f = proc {|x| x * 2}
-    g = f * 5
 
     assert_raise(NoMethodError) {
-      g.call(2)
+      (f << 5).call(2)
+    }
+    assert_raise(NoMethodError) {
+      (f >> 5).call(2)
     }
   end
 end

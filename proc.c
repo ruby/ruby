@@ -3052,14 +3052,21 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
     VALUE f, g, fargs;
     f = RARRAY_AREF(args, 0);
     g = RARRAY_AREF(args, 1);
-    fargs = rb_ary_new3(1, rb_funcall_with_block(g, idCall, argc, argv, passed_proc));
 
-    return rb_proc_call(f, fargs);
+    if (rb_obj_is_proc(g))
+        fargs = rb_proc_call_with_block(g, argc, argv, passed_proc);
+    else
+        fargs = rb_funcall_with_block(g, idCall, argc, argv, passed_proc);
+
+    if (rb_obj_is_proc(f))
+        return rb_proc_call(f, rb_ary_new3(1, fargs));
+    else
+        return rb_funcallv(f, idCall, 1, &fargs);
 }
 
 /*
  *  call-seq:
- *     prc * g -> a_proc
+ *     prc << g -> a_proc
  *
  *  Returns a proc that is the composition of this proc and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
@@ -3067,17 +3074,19 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
  *
  *     f = proc {|x| x * 2 }
  *     g = proc {|x, y| x + y }
- *     h = f * g
+ *     h = f << g
  *     p h.call(1, 2) #=> 6
  */
 static VALUE
-proc_compose(VALUE self, VALUE g)
+proc_compose_to_left(VALUE self, VALUE g)
 {
-    VALUE proc, args;
+    VALUE proc, args, procs[2];
     rb_proc_t *procp;
     int is_lambda;
 
-    args = rb_ary_new3(2, self, g);
+    procs[0] = self;
+    procs[1] = g;
+    args = rb_ary_tmp_new_from_values(0, 2, procs);
 
     GetProcPtr(self, procp);
     is_lambda = procp->is_lambda;
@@ -3091,7 +3100,41 @@ proc_compose(VALUE self, VALUE g)
 
 /*
  *  call-seq:
- *     meth * g -> a_proc
+ *     prc >> g -> a_proc
+ *
+ *  Returns a proc that is the composition of this proc and the given <i>g</i>.
+ *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
+ *  then calls this proc with the result.
+ *
+ *     f = proc {|x, y| x + y }
+ *     g = proc {|x| x * 2 }
+ *     h = f >> g
+ *     p h.call(1, 2) #=> 6
+ */
+static VALUE
+proc_compose_to_right(VALUE self, VALUE g)
+{
+    VALUE proc, args, procs[2];
+    rb_proc_t *procp;
+    int is_lambda;
+
+    procs[0] = g;
+    procs[1] = self;
+    args = rb_ary_tmp_new_from_values(0, 2, procs);
+
+    GetProcPtr(self, procp);
+    is_lambda = procp->is_lambda;
+
+    proc = rb_proc_new(compose, args);
+    GetProcPtr(proc, procp);
+    procp->is_lambda = is_lambda;
+
+    return proc;
+}
+
+/*
+ *  call-seq:
+ *     meth << g -> a_proc
  *
  *  Returns a proc that is the composition of this method and the given <i>g</i>.
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
@@ -3103,14 +3146,38 @@ proc_compose(VALUE self, VALUE g)
  *
  *     f = self.method(:f)
  *     g = proc {|x, y| x + y }
- *     h = f * g
+ *     h = f << g
  *     p h.call(1, 2) #=> 6
  */
 static VALUE
-rb_method_compose(VALUE self, VALUE g)
+rb_method_compose_to_left(VALUE self, VALUE g)
 {
     VALUE proc = method_to_proc(self);
-    return proc_compose(proc, g);
+    return proc_compose_to_left(proc, g);
+}
+
+/*
+ *  call-seq:
+ *     meth >> g -> a_proc
+ *
+ *  Returns a proc that is the composition of this method and the given <i>g</i>.
+ *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
+ *  then calls this method with the result.
+ *
+ *     def f(x, y)
+ *       x + y
+ *     end
+ *
+ *     f = self.method(:f)
+ *     g = proc {|x| x * 2 }
+ *     h = f >> g
+ *     p h.call(1, 2) #=> 6
+ */
+static VALUE
+rb_method_compose_to_right(VALUE self, VALUE g)
+{
+    VALUE proc = method_to_proc(self);
+    return proc_compose_to_right(proc, g);
 }
 
 /*
@@ -3209,7 +3276,8 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "lambda?", rb_proc_lambda_p, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
-    rb_define_method(rb_cProc, "*", proc_compose, 1);
+    rb_define_method(rb_cProc, "<<", proc_compose_to_left, 1);
+    rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
 
@@ -3236,7 +3304,8 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "call", rb_method_call, -1);
     rb_define_method(rb_cMethod, "===", rb_method_call, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
-    rb_define_method(rb_cMethod, "*", rb_method_compose, 1);
+    rb_define_method(rb_cMethod, "<<", rb_method_compose_to_left, 1);
+    rb_define_method(rb_cMethod, ">>", rb_method_compose_to_right, 1);
     rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);

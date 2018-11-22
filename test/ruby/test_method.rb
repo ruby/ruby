@@ -1048,9 +1048,9 @@ class TestMethod < Test::Unit::TestCase
     }
     f = c.new.method(:f)
     g = c.new.method(:g)
-    h = f * g
 
-    assert_equal(6, h.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(6, (g >> f).call(2))
   end
 
   def test_compose_with_proc
@@ -1059,9 +1059,9 @@ class TestMethod < Test::Unit::TestCase
     }
     f = c.new.method(:f)
     g = proc {|x| x + 1}
-    h = f * g
 
-    assert_equal(6, h.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(6, (g >> f).call(2))
   end
 
   def test_compose_with_callable
@@ -1072,9 +1072,10 @@ class TestMethod < Test::Unit::TestCase
       def call(x) x + 1 end
     }
     f = c.new.method(:f)
-    g = f * c2.new
+    g = c2.new
 
-    assert_equal(6, g.call(2))
+    assert_equal(6, (f << g).call(2))
+    assert_equal(5, (f >> g).call(2))
   end
 
   def test_compose_with_noncallable
@@ -1082,10 +1083,12 @@ class TestMethod < Test::Unit::TestCase
       def f(x) x * 2 end
     }
     f = c.new.method(:f)
-    g = f * 5
 
     assert_raise(NoMethodError) {
-      g.call(2)
+      (f << 5).call(2)
+    }
+    assert_raise(NoMethodError) {
+      (f >> 5).call(2)
     }
   end
 end
