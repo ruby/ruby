@@ -1121,7 +1121,7 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
 }
 
 struct mjit_copy_job {
-    const struct rb_iseq_constant_body *body;
+    struct rb_mjit_unit *unit;
     struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
     int finish_p;
@@ -1197,14 +1197,15 @@ mjit_worker(void)
 
         if (unit) {
             mjit_func_t func;
+            const struct rb_iseq_constant_body *body = unit->iseq->body;
 
-            job.body = unit->iseq->body;
+            job.unit = unit;
             job.cc_entries = NULL;
-            if (job.body->ci_size > 0 || job.body->ci_kw_size > 0)
-                job.cc_entries = alloca(sizeof(struct rb_call_cache) * (job.body->ci_size + job.body->ci_kw_size));
+            if (body->ci_size > 0 || body->ci_kw_size > 0)
+                job.cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
             job.is_entries = NULL;
-            if (job.body->is_size > 0)
-                job.is_entries = alloca(sizeof(union iseq_inline_storage_entry) * job.body->is_size);
+            if (body->is_size > 0)
+                job.is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
 
             /* Copy ISeq's inline caches values to avoid race condition. */
             if (job.cc_entries != NULL || job.is_entries != NULL) {
