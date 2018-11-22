@@ -26,7 +26,13 @@
 #  if defined(_MSC_VER)
 #    undef HAVE_TYPE_STRUCT_SOCKADDR_DL
 #  endif
+/*
+ * FIXME: failures if we make nonblocking the default
+ * [ruby-core:89973] [ruby-core:89976] [ruby-core:89977] [Bug #14968]
+ */
+#  define RSOCK_NONBLOCK_DEFAULT (0)
 #else
+#  define RSOCK_NONBLOCK_DEFAULT (1)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H

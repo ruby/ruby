@@ -466,7 +466,9 @@ rsock_socket0(int domain, int type, int proto)
         return -1;
 fix_cloexec:
     rb_maygvl_fd_fix_cloexec(ret);
-    rsock_make_fd_nonblock(ret);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(ret);
+    }
 update_max_fd:
     rb_update_max_fd(ret);
 
@@ -481,7 +483,9 @@ rsock_socket0(int domain, int type, int proto)
     if (ret == -1)
         return -1;
     rb_fd_fix_cloexec(ret);
-    rsock_make_fd_nonblock(ret);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(ret);
+    }
 
     return ret;
 }
@@ -661,7 +665,9 @@ cloexec_accept(int socket, struct sockaddr *address, socklen_t *address_len,
 #ifdef HAVE_ACCEPT4
     static int try_accept4 = 1;
 #endif
-    nonblock = 1; /* TODO remove parameter */
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        nonblock = 1;
+    }
     if (address_len) len0 = *address_len;
 #ifdef HAVE_ACCEPT4
     if (try_accept4) {

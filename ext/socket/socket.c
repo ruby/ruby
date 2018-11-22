@@ -213,8 +213,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 fix_cloexec:
     rb_maygvl_fd_fix_cloexec(sv[0]);
     rb_maygvl_fd_fix_cloexec(sv[1]);
-    rsock_make_fd_nonblock(sv[0]);
-    rsock_make_fd_nonblock(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
 
 update_max_fd:
     rb_update_max_fd(sv[0]);
@@ -233,8 +235,10 @@ rsock_socketpair0(int domain, int type, int protocol, int sv[2])
 
     rb_fd_fix_cloexec(sv[0]);
     rb_fd_fix_cloexec(sv[1]);
-    rsock_make_fd_nonblock(sv[0]);
-    rsock_make_fd_nonblock(sv[1]);
+    if (RSOCK_NONBLOCK_DEFAULT) {
+        rsock_make_fd_nonblock(sv[0]);
+        rsock_make_fd_nonblock(sv[1]);
+    }
     return ret;
 }
 #endif /* !SOCK_CLOEXEC */
