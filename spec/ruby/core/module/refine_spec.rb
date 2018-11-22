@@ -524,21 +524,42 @@ describe "Module#refine" do
       }.should raise_error(NameError, /undefined method `foo'/)
     end
 
-    it "is not honored by Kernel#respond_to?" do
-      klass = Class.new
-      refinement = Module.new do
-        refine klass do
-          def foo; end
+    ruby_version_is "" ... "2.6" do
+      it "is not honored by Kernel#respond_to?" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
         end
-      end
 
-      result = nil
-      Module.new do
-        using refinement
-        result = klass.new.respond_to?(:foo)
-      end
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.respond_to?(:foo)
+        end
 
-      result.should == false
+        result.should == false
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "is honored by Kernel#respond_to?" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def foo; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.respond_to?(:foo)
+        end
+
+        result.should == true
+      end
     end
   end
 

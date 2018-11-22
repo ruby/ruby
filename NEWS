@@ -20,6 +20,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 * refinements takes place at Kernel#public_send.  [Feature #15326]
 
+* refinements takes place at Kernel#respond_to?.  [Feature #15327]
+
 * +else+ without +rescue+ now causes a syntax error.  [EXPERIMENTAL]
 
 * constant names may start with a non-ASCII capital letter. [Feature #13770]
