@@ -425,6 +425,24 @@ describe "Module#refine" do
       end
     end
 
+    ruby_version_is "2.6" do
+      it "is honored by Kernel#public_send" do
+        refinement = Module.new do
+          refine ModuleSpecs::ClassWithFoo do
+            def foo; "foo from refinement"; end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = ModuleSpecs::ClassWithFoo.new.public_send :foo
+        end
+
+        result.should == "foo from refinement"
+      end
+    end
+
     ruby_version_is "" ... "2.5" do
       it "is not honored by string interpolation" do
         refinement = Module.new do

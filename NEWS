@@ -16,7 +16,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 * <code>$SAFE</code> is a process global state and we can set 0 again. [Feature #14250]
 
-* refinements take place at block passing.  [Feature #14223]
+* refinements takes place at block passing.  [Feature #14223]
+
+* refinements takes place at Kernel#public_send.  [Feature #15326]
 
 * +else+ without +rescue+ now causes a syntax error.  [EXPERIMENTAL]
 
