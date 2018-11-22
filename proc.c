@@ -3046,6 +3046,59 @@ rb_method_curry(int argc, const VALUE *argv, VALUE self)
     return proc_curry(argc, argv, proc);
 }
 
+static VALUE
+compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
+{
+    VALUE f, g, fargs;
+    f = RARRAY_AREF(args, 0);
+    g = RARRAY_AREF(args, 1);
+    fargs = rb_ary_new3(1, rb_proc_call_with_block(g, argc, argv, passed_proc));
+
+    return rb_proc_call(f, fargs);
+}
+
+/*
+ *  call-seq:
+ *     prc * g -> a_proc
+ *
+ *  Returns a proc that is the composition of this proc and the given proc <i>g</i>.
+ *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
+ *  then calls this proc with the result.
+ *
+ *     f = proc {|x| x * 2 }
+ *     g = proc {|x, y| x + y }
+ *     h = f * g
+ *     p h.call(1, 2) #=> 6
+ */
+static VALUE
+proc_compose(VALUE self, VALUE g)
+{
+    VALUE proc, args;
+    rb_proc_t *procp;
+    int is_lambda;
+
+    if (!rb_obj_is_method(g) && !rb_obj_is_proc(g)) {
+        rb_raise(rb_eTypeError,
+                "wrong argument type %s (expected Proc/Method)",
+                rb_obj_classname(g));
+    }
+
+    if (rb_obj_is_method(g)) {
+        g = method_to_proc(g);
+    }
+
+    args = rb_ary_new3(2, self, g);
+
+    GetProcPtr(self, procp);
+    is_lambda = procp->is_lambda;
+
+    proc = rb_proc_new(compose, args);
+    GetProcPtr(proc, procp);
+    procp->is_lambda = is_lambda;
+
+    return proc;
+}
+
 /*
  *  Document-class: LocalJumpError
  *
@@ -3142,6 +3195,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "lambda?", rb_proc_lambda_p, 0);
     rb_define_method(rb_cProc, "binding", proc_binding, 0);
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
+    rb_define_method(rb_cProc, "*", proc_compose, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, 0);
 

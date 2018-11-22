@@ -1416,4 +1416,55 @@ class TestProc < Test::Unit::TestCase
   def test_proc_without_block_for_symbol
     assert_equal('1', method_for_test_proc_without_block_for_symbol(&:to_s).call(1), '[Bug #14782]')
   end
+
+  def test_compose
+    f = proc {|x| x * 2}
+    g = proc {|x| x + 1}
+    h = f * g
+
+    assert_equal(6, h.call(2))
+  end
+
+  def test_compose_with_multiple_args
+    f = proc {|x| x * 2}
+    g = proc {|x, y| x + y}
+    h = f * g
+
+    assert_equal(6, h.call(1, 2))
+  end
+
+  def test_compose_with_block
+    f = proc {|x| x * 2}
+    g = proc {|&blk| blk.call(1) }
+    h = f * g
+
+    assert_equal(8, h.call { |x| x + 3 })
+  end
+
+  def test_compose_with_lambda
+    f = lambda {|x| x * 2}
+    g = lambda {|x| x}
+    h = f * g
+
+    assert_predicate(h, :lambda?)
+  end
+
+  def test_compose_with_method
+    f = proc {|x| x * 2}
+    c = Class.new {
+      def g(x) x + 1 end
+    }
+    g = c.new.method(:g)
+    h = f * g
+
+    assert_equal(6, h.call(2))
+  end
+
+  def test_compose_with_nonproc_or_method
+    f = proc {|x| x * 2}
+
+    assert_raise(TypeError) {
+      f * 5
+    }
+  end
 end
