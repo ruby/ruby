@@ -87,7 +87,7 @@ describe 'Socket#accept_nonblock' do
 
             @client.connect(addr)
 
-            platform_is(:darwin, :freebsd) { IO.select([@server]) }
+            platform_is(:darwin, :freebsd, :solaris) { IO.select([@server]) }
           end
 
           after do
