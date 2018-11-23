@@ -3072,10 +3072,9 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
  *  then calls this proc with the result.
  *
- *     f = proc {|x| x * 2 }
- *     g = proc {|x, y| x + y }
- *     h = f << g
- *     p h.call(1, 2) #=> 6
+ *     f = proc {|x| x * x }
+ *     g = proc {|x| x + x }
+ *     p (f << g).call(2) #=> 16
  */
 static VALUE
 proc_compose_to_left(VALUE self, VALUE g)
@@ -3106,10 +3105,9 @@ proc_compose_to_left(VALUE self, VALUE g)
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
  *  then calls this proc with the result.
  *
- *     f = proc {|x, y| x + y }
- *     g = proc {|x| x * 2 }
- *     h = f >> g
- *     p h.call(1, 2) #=> 6
+ *     f = proc {|x| x * x }
+ *     g = proc {|x| x + x }
+ *     p (f >> g).call(2) #=> 8
  */
 static VALUE
 proc_compose_to_right(VALUE self, VALUE g)
@@ -3141,13 +3139,12 @@ proc_compose_to_right(VALUE self, VALUE g)
  *  then calls this method with the result.
  *
  *     def f(x)
- *       x * 2
+ *       x * x
  *     end
  *
  *     f = self.method(:f)
- *     g = proc {|x, y| x + y }
- *     h = f << g
- *     p h.call(1, 2) #=> 6
+ *     g = proc {|x| x + x }
+ *     p (f << g).call(2) #=> 16
  */
 static VALUE
 rb_method_compose_to_left(VALUE self, VALUE g)
@@ -3164,14 +3161,13 @@ rb_method_compose_to_left(VALUE self, VALUE g)
  *  The returned proc takes a variable number of arguments, calls <i>g</i> with them
  *  then calls this method with the result.
  *
- *     def f(x, y)
- *       x + y
+ *     def f(x)
+ *       x * x
  *     end
  *
  *     f = self.method(:f)
- *     g = proc {|x| x * 2 }
- *     h = f >> g
- *     p h.call(1, 2) #=> 6
+ *     g = proc {|x| x + x }
+ *     p (f >> g).call(2) #=> 8
  */
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)
