@@ -4552,7 +4552,8 @@ static void free_io_buffer(rb_io_buffer_t *buf);
 static void clear_codeconv(rb_io_t *fptr);
 
 static void
-fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
+fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
+                    struct list_head *busy)
 {
     VALUE err = Qnil;
     int fd = fptr->fd;
@@ -4583,6 +4584,14 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
     fptr->fd = -1;
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
+
+    /*
+     * ensure waiting_fd users do not hit EBADF, wait for them
+     * to exit before we call close().
+     */
+    if (busy) {
+        do rb_thread_schedule(); while (!list_empty(busy));
+    }
 
     if (IS_PREP_STDIO(fptr) || fd <= 2) {
 	/* need to keep FILE objects of stdin, stdout and stderr */
@@ -4616,7 +4625,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    fptr_finalize_flush(fptr, noraise, FALSE);
+    fptr_finalize_flush(fptr, noraise, FALSE, 0);
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -4741,8 +4750,8 @@ io_close_fptr(VALUE io)
     if (fptr->fd < 0) return 0;
 
     if (rb_notify_fd_close(fptr->fd, &busy)) {
-	fptr_finalize_flush(fptr, FALSE, KEEPGVL); /* calls close(fptr->fd) */
-	do rb_thread_schedule(); while (!list_empty(&busy));
+        /* calls close(fptr->fd): */
+        fptr_finalize_flush(fptr, FALSE, KEEPGVL, &busy);
     }
     rb_io_fptr_cleanup(fptr, FALSE);
     return fptr;
