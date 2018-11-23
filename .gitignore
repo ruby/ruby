@@ -4,6 +4,7 @@
 *.a
 *.bak
 *.bc
+*.bundle
 *.dSYM
 *.dmyh
 *.dylib
@@ -20,6 +21,8 @@
 *.rej
 *.s
 *.sav
+*.sl
+*.so
 *.swp
 *.yarb
 *~
