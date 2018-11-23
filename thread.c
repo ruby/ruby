@@ -4071,53 +4071,60 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     nfds_t nfds;
     rb_unblock_function_t *ubf;
     struct waiting_fd wfd;
+    int state;
 
     wfd.th = GET_THREAD();
     wfd.fd = fd;
-    RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-    timeout_prepare(&to, &rel, &end, timeout);
-    fds[0].fd = fd;
-    fds[0].events = (short)events;
-    do {
-        fds[0].revents = 0;
-        fds[1].fd = rb_sigwait_fd_get(wfd.th);
-
-        if (fds[1].fd >= 0) {
-            fds[1].events = POLLIN;
-            fds[1].revents = 0;
-            nfds = 2;
-            ubf = ubf_sigwait;
-        }
-        else {
-            nfds = 1;
-            ubf = ubf_select;
-        }
-
-        lerrno = 0;
-        list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
-        BLOCKING_REGION(wfd.th, {
-            const rb_hrtime_t *sto;
-            struct timespec ts;
-
-            sto = sigwait_timeout(wfd.th, fds[1].fd, to, &drained);
-            if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
-                result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), NULL);
-                if (result < 0) lerrno = errno;
-            }
-        }, ubf, wfd.th, TRUE);
-        list_del(&wfd.wfd_node);
-
-        if (fds[1].fd >= 0) {
-            if (result > 0 && fds[1].revents) {
-                result--;
-                fds[1].revents = 0;
-            }
-            (void)check_signals_nogvl(wfd.th, fds[1].fd);
-            rb_sigwait_fd_put(wfd.th, fds[1].fd);
-            rb_sigwait_fd_migrate(wfd.th->vm);
-        }
+    list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
+    EC_PUSH_TAG(wfd.th->ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-    } while (wait_retryable(&result, lerrno, to, end));
+        timeout_prepare(&to, &rel, &end, timeout);
+        fds[0].fd = fd;
+        fds[0].events = (short)events;
+        fds[0].revents = 0;
+        do {
+            fds[1].fd = rb_sigwait_fd_get(wfd.th);
+
+            if (fds[1].fd >= 0) {
+                fds[1].events = POLLIN;
+                fds[1].revents = 0;
+                nfds = 2;
+                ubf = ubf_sigwait;
+            }
+            else {
+                nfds = 1;
+                ubf = ubf_select;
+            }
+
+            lerrno = 0;
+            BLOCKING_REGION(wfd.th, {
+                const rb_hrtime_t *sto;
+                struct timespec ts;
+
+                sto = sigwait_timeout(wfd.th, fds[1].fd, to, &drained);
+                if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
+                    result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, sto), 0);
+                    if (result < 0) lerrno = errno;
+                }
+            }, ubf, wfd.th, TRUE);
+
+            if (fds[1].fd >= 0) {
+                if (result > 0 && fds[1].revents) {
+                    result--;
+                }
+                (void)check_signals_nogvl(wfd.th, fds[1].fd);
+                rb_sigwait_fd_put(wfd.th, fds[1].fd);
+                rb_sigwait_fd_migrate(wfd.th->vm);
+            }
+            RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+        } while (wait_retryable(&result, lerrno, to, end));
+    }
+    EC_POP_TAG();
+    list_del(&wfd.wfd_node);
+    if (state) {
+	EC_JUMP_TAG(wfd.th->ec, state);
+    }
 
     if (result < 0) {
 	errno = lerrno;
