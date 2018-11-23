@@ -2728,7 +2728,7 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 	of = 0;
     }
     else {
-	rb_scan_args(argc, argv, "01", &of);
+	rb_scan_args_fastpath_0_1(argc, argv, &of);
     }
     RETURN_ENUMERATOR(os, 1, &of);
     return os_obj_of(of);
@@ -3491,7 +3491,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     size_t i;
     VALUE hash;
 
-    if (rb_scan_args(argc, argv, "01", &hash) == 1) {
+    if (rb_scan_args_fastpath_0_1(argc, argv, &hash) == 1) {
         if (!RB_TYPE_P(hash, T_HASH))
             rb_raise(rb_eTypeError, "non-hash given");
     }
@@ -7078,7 +7078,7 @@ gc_latest_gc_info(int argc, VALUE *argv, VALUE self)
     rb_objspace_t *objspace = &rb_objspace;
     VALUE arg = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+    if (rb_scan_args_fastpath_0_1(argc, argv, &arg) == 1) {
 	if (!SYMBOL_P(arg) && !RB_TYPE_P(arg, T_HASH)) {
 	    rb_raise(rb_eTypeError, "non-hash or symbol given");
 	}
@@ -7453,7 +7453,7 @@ gc_stat(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+    if (rb_scan_args_fastpath_0_1(argc, argv, &arg) == 1) {
 	if (SYMBOL_P(arg)) {
 	    size_t value = gc_stat_internal(arg);
 	    return SIZET2NUM(value);
@@ -9460,7 +9460,7 @@ gc_profile_report(int argc, VALUE *argv, VALUE self)
 	out = rb_stdout;
     }
     else {
-	rb_scan_args(argc, argv, "01", &out);
+	rb_scan_args_fastpath_0_1(argc, argv, &out);
     }
     gc_profile_dump_on(out, rb_io_write);
 

@@ -604,7 +604,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
 
-    rb_scan_args(argc, argv, "01", &memo);
+    rb_scan_args_fastpath_0_1(argc, argv, &memo);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     if (NIL_P(memo))
 	memo = INT2FIX(0);

@@ -3701,7 +3701,7 @@ static VALUE
 time_localtime_m(int argc, VALUE *argv, VALUE time)
 {
     VALUE off;
-    rb_scan_args(argc, argv, "01", &off);
+    rb_scan_args_fastpath_0_1(argc, argv, &off);
 
     if (!NIL_P(off)) {
         if (zone_localtime(off, time)) return time;
@@ -3824,7 +3824,7 @@ static VALUE
 time_getlocaltime(int argc, VALUE *argv, VALUE time)
 {
     VALUE off;
-    rb_scan_args(argc, argv, "01", &off);
+    rb_scan_args_fastpath_0_1(argc, argv, &off);
 
     if (!NIL_P(off)) {
         if (maybe_tzobj_p(off)) {
@@ -4073,7 +4073,7 @@ time_round(int argc, VALUE *argv, VALUE time)
     long nd;
     struct time_object *tobj;
 
-    rb_scan_args(argc, argv, "01", &ndigits);
+    rb_scan_args_fastpath_0_1(argc, argv, &ndigits);
 
     if (NIL_P(ndigits))
         ndigits = INT2FIX(0);
@@ -4896,7 +4896,7 @@ time_dump(int argc, VALUE *argv, VALUE time)
 {
     VALUE str;
 
-    rb_scan_args(argc, argv, "01", 0);
+    rb_scan_args_fastpath_0_1(argc, argv, 0);
     str = time_mdump(time);
 
     return str;

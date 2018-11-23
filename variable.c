@@ -2734,7 +2734,7 @@ rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 	inherit = Qtrue;
     }
     else {
-	rb_scan_args(argc, argv, "01", &inherit);
+	rb_scan_args_fastpath_0_1(argc, argv, &inherit);
     }
 
     if (RTEST(inherit)) {
@@ -3301,7 +3301,7 @@ rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
 	inherit = Qtrue;
     }
     else {
-	rb_scan_args(argc, argv, "01", &inherit);
+	rb_scan_args_fastpath_0_1(argc, argv, &inherit);
     }
     if (RTEST(inherit)) {
 	tbl = mod_cvar_of(mod, 0);

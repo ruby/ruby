@@ -506,7 +506,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout;
 
-    rb_scan_args(argc, argv, "01", &timeout);
+    rb_scan_args_fastpath_0_1(argc, argv, &timeout);
     return rb_mutex_sleep(self, timeout);
 }
 

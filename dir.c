@@ -1080,7 +1080,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &path) == 1) {
+    if (rb_scan_args_fastpath_0_1(argc, argv, &path) == 1) {
 	FilePathValue(path);
 	path = rb_str_encode_ospath(path);
     }

@@ -401,7 +401,7 @@ range_step(int argc, VALUE *argv, VALUE range)
         step = INT2FIX(1);
     }
     else {
-        rb_scan_args(argc, argv, "01", &step);
+        rb_scan_args_fastpath_0_1(argc, argv, &step);
     }
 
     if (!rb_block_given_p()) {

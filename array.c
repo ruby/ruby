@@ -2347,7 +2347,7 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE sep;
 
-    rb_scan_args(argc, argv, "01", &sep);
+    rb_scan_args_fastpath_0_1(argc, argv, &sep);
     if (NIL_P(sep)) sep = rb_output_fs;
 
     return rb_ary_join(ary, sep);
@@ -2595,7 +2595,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
     switch (argc) {
       case 1: n = NUM2LONG(argv[0]);
       case 0: break;
-      default: rb_scan_args(argc, argv, "01", NULL);
+      default: rb_scan_args_fastpath_0_1(argc, argv, NULL);
     }
     rb_ary_rotate(ary, n);
     return ary;
@@ -2628,7 +2628,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     switch (argc) {
       case 1: cnt = NUM2LONG(argv[0]);
       case 0: break;
-      default: rb_scan_args(argc, argv, "01", NULL);
+      default: rb_scan_args_fastpath_0_1(argc, argv, NULL);
     }
 
     len = RARRAY_LEN(ary);
@@ -4742,7 +4742,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
     VALUE num;
     long i;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     if (!NIL_P(num))
        return rb_nmin_run(ary, num, 0, 1, 1);
@@ -4797,7 +4797,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     VALUE num;
     long i;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     if (!NIL_P(num))
        return rb_nmin_run(ary, num, 0, 0, 1);
@@ -5118,7 +5118,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     int mod = 0, level = -1;
     VALUE result, lv;
 
-    rb_scan_args(argc, argv, "01", &lv);
+    rb_scan_args_fastpath_0_1(argc, argv, &lv);
     rb_ary_modify_check(ary);
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
@@ -5163,7 +5163,7 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     int mod = 0, level = -1;
     VALUE result, lv;
 
-    rb_scan_args(argc, argv, "01", &lv);
+    rb_scan_args_fastpath_0_1(argc, argv, &lv);
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return ary_make_shared_copy(ary);
 
@@ -5466,7 +5466,7 @@ rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
     long n, i;
     VALUE nv = Qnil;
 
-    rb_scan_args(argc, argv, "01", &nv);
+    rb_scan_args_fastpath_0_1(argc, argv, &nv);
 
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_cycle_size);
     if (NIL_P(nv)) {
@@ -5640,7 +5640,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 
     n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
     r = NIL_P(num) ? n : NUM2LONG(num);   /* Permutation size from argument */
 
     if (r < 0 || n < r) {
@@ -6313,7 +6313,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     long i, n;
     int block_given;
 
-    if (rb_scan_args(argc, argv, "01", &v) == 0)
+    if (rb_scan_args_fastpath_0_1(argc, argv, &v) == 0)
         v = LONG2FIX(0);
 
     block_given = rb_block_given_p();

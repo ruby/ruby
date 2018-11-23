@@ -294,7 +294,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo;
     VALUE if_none;
 
-    rb_scan_args(argc, argv, "01", &if_none);
+    rb_scan_args_fastpath_0_1(argc, argv, &if_none);
     RETURN_ENUMERATOR(obj, argc, argv);
     memo = MEMO_NEW(Qundef, 0, 0);
     rb_block_call(obj, id_each, 0, 0, find_i, (VALUE)memo);
@@ -1700,7 +1700,7 @@ enum_min(int argc, VALUE *argv, VALUE obj)
     VALUE result;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     if (!NIL_P(num))
        return rb_nmin_run(obj, num, 0, 0, 0);
@@ -1794,7 +1794,7 @@ enum_max(int argc, VALUE *argv, VALUE obj)
     VALUE result;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     if (!NIL_P(num))
        return rb_nmin_run(obj, num, 0, 1, 0);
@@ -2015,7 +2015,7 @@ enum_min_by(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
@@ -2122,7 +2122,7 @@ enum_max_by(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
+    rb_scan_args_fastpath_0_1(argc, argv, &num);
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
@@ -2977,7 +2977,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
     VALUE nv = Qnil;
     long n, i, len;
 
-    rb_scan_args(argc, argv, "01", &nv);
+    rb_scan_args_fastpath_0_1(argc, argv, &nv);
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_cycle_size);
     if (NIL_P(nv)) {
@@ -3950,7 +3950,7 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     VALUE beg, end;
     int excl;
 
-    if (rb_scan_args(argc, argv, "01", &memo.v) == 0)
+    if (rb_scan_args_fastpath_0_1(argc, argv, &memo.v) == 0)
         memo.v = LONG2FIX(0);
 
     memo.block_given = rb_block_given_p();

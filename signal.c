@@ -391,7 +391,7 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
     VALUE args[2];
 
     args[0] = INT2FIX(SIGINT);
-    rb_scan_args(argc, argv, "01", &args[1]);
+    rb_scan_args_fastpath_0_1(argc, argv, &args[1]);
     return rb_call_super(2, args);
 }
 

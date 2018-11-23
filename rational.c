@@ -1388,7 +1388,7 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
     if (argc == 0)
 	return (*func)(self);
 
-    rb_scan_args(argc, argv, "01", &n);
+    rb_scan_args_fastpath_0_1(argc, argv, &n);
 
     if (!k_integer_p(n))
 	rb_raise(rb_eTypeError, "not an integer");
@@ -1717,7 +1717,7 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
     if (nurat_negative_p(self))
 	return rb_rational_uminus(nurat_rationalize(argc, argv, rb_rational_uminus(self)));
 
-    rb_scan_args(argc, argv, "01", &e);
+    rb_scan_args_fastpath_0_1(argc, argv, &e);
     e = f_abs(e);
     a = f_sub(self, e);
     b = f_add(self, e);
@@ -2121,7 +2121,7 @@ nilclass_to_r(VALUE self)
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_scan_args_fastpath_0_1(argc, argv, NULL);
     return nilclass_to_r(self);
 }
 
@@ -2150,7 +2150,7 @@ integer_to_r(VALUE self)
 static VALUE
 integer_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_scan_args_fastpath_0_1(argc, argv, NULL);
     return integer_to_r(self);
 }
 
@@ -2289,7 +2289,7 @@ float_rationalize(int argc, VALUE *argv, VALUE self)
     if (d < 0.0)
         return rb_rational_uminus(float_rationalize(argc, argv, DBL2NUM(-d)));
 
-    rb_scan_args(argc, argv, "01", &e);
+    rb_scan_args_fastpath_0_1(argc, argv, &e);
 
     if (argc != 0) {
         return rb_flt_rationalize_with_prec(self, e);

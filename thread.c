@@ -1110,7 +1110,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
     VALUE limit;
     rb_hrtime_t rel, *to = 0;
 
-    rb_scan_args(argc, argv, "01", &limit);
+    rb_scan_args_fastpath_0_1(argc, argv, &limit);
 
     /*
      * This supports INFINITY and negative values, so we can't use
@@ -2043,7 +2043,7 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
     else {
 	if (argc == 1) {
 	    VALUE err;
-	    rb_scan_args(argc, argv, "01", &err);
+	    rb_scan_args_fastpath_0_1(argc, argv, &err);
 	    if (!rb_obj_is_kind_of(err, rb_cModule)) {
 		rb_raise(rb_eTypeError, "class or module required for rescue clause");
 	    }

@@ -3047,7 +3047,7 @@ static VALUE
 iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt;
-    rb_scan_args(argc, argv, "01", &opt);
+    rb_scan_args_fastpath_0_1(argc, argv, &opt);
     return rb_iseq_ibf_dump(iseqw_check(self), opt);
 }
 

@@ -940,7 +940,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
 {
     VALUE arg;
 
-    rb_scan_args(argc, argv, "01", &arg);
+    rb_scan_args_fastpath_0_1(argc, argv, &arg);
     return exc_init(exc, arg);
 }
 

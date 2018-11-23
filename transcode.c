@@ -4115,7 +4115,7 @@ econv_putback(int argc, VALUE *argv, VALUE self)
     int putbackable;
     VALUE str, max;
 
-    rb_scan_args(argc, argv, "01", &max);
+    rb_scan_args_fastpath_0_1(argc, argv, &max);
 
     if (NIL_P(max))
         n = rb_econv_putbackable(ec);

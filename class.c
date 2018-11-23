@@ -1186,7 +1186,7 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
     }
     else {
 	VALUE r;
-	rb_scan_args(argc, argv, "01", &r);
+	rb_scan_args_fastpath_0_1(argc, argv, &r);
 	recur = RTEST(r);
     }
 
@@ -1425,7 +1425,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 	recur = Qtrue;
     }
     else {
-	rb_scan_args(argc, argv, "01", &recur);
+	rb_scan_args_fastpath_0_1(argc, argv, &recur);
     }
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);

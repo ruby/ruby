@@ -2993,7 +2993,7 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
     int sarity, max_arity, min_arity = rb_proc_min_max_arity(self, &max_arity);
     VALUE arity;
 
-    rb_scan_args(argc, argv, "01", &arity);
+    rb_scan_args_fastpath_0_1(argc, argv, &arity);
     if (NIL_P(arity)) {
 	arity = INT2FIX(min_arity);
     }

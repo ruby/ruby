@@ -7876,7 +7876,7 @@ rb_obj_display(int argc, VALUE *argv, VALUE self)
 	out = rb_stdout;
     }
     else {
-	rb_scan_args(argc, argv, "01", &out);
+	rb_scan_args_fastpath_0_1(argc, argv, &out);
     }
     rb_io_write(out, self);
 

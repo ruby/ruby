@@ -1957,7 +1957,7 @@ rb_f_catch(int argc, VALUE *argv)
 	tag = rb_obj_alloc(rb_cObject);
     }
     else {
-	rb_scan_args(argc, argv, "01", &tag);
+	rb_scan_args_fastpath_0_1(argc, argv, &tag);
     }
     return rb_catch_obj(tag, catch_i, 0);
 }

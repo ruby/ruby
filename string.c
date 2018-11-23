@@ -5730,7 +5730,7 @@ rb_str_to_i(int argc, VALUE *argv, VALUE str)
     else {
 	VALUE b;
 
-	rb_scan_args(argc, argv, "01", &b);
+	rb_scan_args_fastpath_0_1(argc, argv, &b);
 	base = NUM2INT(b);
     }
     if (base < 0) {
@@ -9336,7 +9336,7 @@ rb_str_sum(int argc, VALUE *argv, VALUE str)
 	bits = 16;
     }
     else {
-	rb_scan_args(argc, argv, "01", &vbits);
+	rb_scan_args_fastpath_0_1(argc, argv, &vbits);
 	bits = NUM2INT(vbits);
         if (bits < 0)
             bits = 0;
@@ -10354,7 +10354,7 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 	UnicodeNormalizeRequired = 1;
     }
     argv2[0] = str;
-    rb_scan_args(argc, argv, "01", &argv2[1]);
+    rb_scan_args_fastpath_0_1(argc, argv, &argv2[1]);
     return rb_funcallv(mUnicodeNormalize, id, argc+1, argv2);
 }
 
