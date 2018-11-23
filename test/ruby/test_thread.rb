@@ -226,9 +226,9 @@ class TestThread < Test::Unit::TestCase
     assert_equal(t1, t3.value)
 
   ensure
-    t1.kill if t1
-    t2.kill if t2
-    t3.kill if t3
+    t1&.kill
+    t2&.kill
+    t3&.kill
   end
 
   { 'FIXNUM_MAX' => RbConfig::LIMITS['FIXNUM_MAX'],
@@ -629,7 +629,8 @@ class TestThread < Test::Unit::TestCase
     end
     Thread.pass until t.stop?
     assert_predicate(t, :alive?)
-    t.kill
+  ensure
+    t&.kill
   end
 
   def test_mutex_deadlock
@@ -1111,7 +1112,7 @@ q.pop
       Thread.pass until mutex.locked?
       assert_equal(mutex.owned?, false)
     ensure
-      th.kill if th
+      th&.kill
     end
   end
 
