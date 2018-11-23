@@ -4123,7 +4123,7 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     EC_POP_TAG();
     list_del(&wfd.wfd_node);
     if (state) {
-	EC_JUMP_TAG(wfd.th->ec, state);
+        EC_JUMP_TAG(wfd.th->ec, state);
     }
 
     if (result < 0) {
