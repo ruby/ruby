@@ -638,7 +638,8 @@ static void
 io_fd_check_closed(int fd)
 {
     if (fd < 0) {
-	rb_raise(rb_eIOError, closed_stream);
+        rb_thread_check_ints(); /* check for ruby_error_stream_closed */
+        rb_raise(rb_eIOError, closed_stream);
     }
 }
 
