@@ -1275,6 +1275,7 @@ UNICODE_PROPERTY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/PropertyValueAliases.txt \
 		$(UNICODE_SRC_DATA_DIR)/Scripts.txt \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
+		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakTest.txt \
 		$(empty)
 
 UNICODE_EMOJI_FILES = \
