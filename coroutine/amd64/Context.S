@@ -40,3 +40,7 @@ coroutine_transfer:
 
 	# We pop the return address and jump to it
 	ret
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
