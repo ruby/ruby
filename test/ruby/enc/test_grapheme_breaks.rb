@@ -22,8 +22,6 @@ class BreakTest
                         end.join
                     end
     @string = @clusters.join
-    # remove the following line once we have fixed bug #15337
-    raise ArgumentError if @string == "\r\n"
   end
 end
 
