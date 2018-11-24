@@ -670,5 +670,119 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([0, 1], u.force)
     assert_equal([0, 1], u.force)
   end
-end
 
+  def test_enum_chain_and_plus
+    r = 1..5
+
+    e1 = r.chain()
+    assert_kind_of(Enumerator::Chain, e1)
+    assert_equal(5, e1.size)
+    ary = []
+    e1.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5], ary)
+
+    e2 = r.chain([6, 7, 8])
+    assert_kind_of(Enumerator::Chain, e2)
+    assert_equal(8, e2.size)
+    ary = []
+    e2.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8], ary)
+
+    e3 = r.chain([6, 7], 8.step)
+    assert_kind_of(Enumerator::Chain, e3)
+    assert_equal(Float::INFINITY, e3.size)
+    ary = []
+    e3.take(10).each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ary)
+
+    # `a + b + c` should not return `Enumerator::Chain.new(a, b, c)`
+    # because it is expected that `(a + b).each` be called.
+    e4 = e2.dup
+    class << e4
+      attr_reader :each_is_called
+      def each
+        super
+        @each_is_called = true
+      end
+    end
+    e5 = e4 + 9.step
+    assert_kind_of(Enumerator::Chain, e5)
+    assert_equal(Float::INFINITY, e5.size)
+    ary = []
+    e5.take(10).each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ary)
+    assert_equal(true, e4.each_is_called)
+  end
+
+  def test_chained_enums
+    a = (1..5).each
+
+    e0 = Enumerator::Chain.new()
+    assert_kind_of(Enumerator::Chain, e0)
+    assert_equal(0, e0.size)
+    ary = []
+    e0.each { |x| ary << x }
+    assert_equal([], ary)
+
+    e1 = Enumerator::Chain.new(a)
+    assert_kind_of(Enumerator::Chain, e1)
+    assert_equal(5, e1.size)
+    ary = []
+    e1.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5], ary)
+
+    e2 = Enumerator::Chain.new(a, [6, 7, 8])
+    assert_kind_of(Enumerator::Chain, e2)
+    assert_equal(8, e2.size)
+    ary = []
+    e2.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8], ary)
+
+    e3 = Enumerator::Chain.new(a, [6, 7], 8.step)
+    assert_kind_of(Enumerator::Chain, e3)
+    assert_equal(Float::INFINITY, e3.size)
+    ary = []
+    e3.take(10).each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ary)
+
+    e4 = Enumerator::Chain.new(a, Enumerator.new { |y| y << 6 << 7 << 8 })
+    assert_kind_of(Enumerator::Chain, e4)
+    assert_equal(nil, e4.size)
+    ary = []
+    e4.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 6, 7, 8], ary)
+
+    e5 = Enumerator::Chain.new(e1, e2)
+    assert_kind_of(Enumerator::Chain, e5)
+    assert_equal(13, e5.size)
+    ary = []
+    e5.each { |x| ary << x }
+    assert_equal([1, 2, 3, 4, 5, 1, 2, 3, 4, 5, 6, 7, 8], ary)
+
+    rewound = []
+    e1.define_singleton_method(:rewind) { rewound << object_id }
+    e2.define_singleton_method(:rewind) { rewound << object_id }
+    e5.rewind
+    assert_equal(rewound, [e2.object_id, e1.object_id])
+
+    rewound = []
+    a = [1]
+    e6 = Enumerator::Chain.new(a)
+    a.define_singleton_method(:rewind) { rewound << object_id }
+    e6.rewind
+    assert_equal(rewound, [])
+
+    assert_equal(
+      '#<Enumerator::Chain: [' +
+        '#<Enumerator::Chain: [' +
+          '#<Enumerator: 1..5:each>' +
+        ']>, ' +
+        '#<Enumerator::Chain: [' +
+          '#<Enumerator: 1..5:each>, ' +
+          '[6, 7, 8]' +
+        ']>' +
+      ']>',
+      e5.inspect
+    )
+  end
+end
