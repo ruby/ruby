@@ -1360,7 +1360,6 @@ class TestIO < Test::Unit::TestCase
   def test_readpartial_lock
     with_pipe do |r, w|
       s = ""
-      r.nonblock = false if have_nonblock?
       t = Thread.new { r.readpartial(5, s) }
       Thread.pass until t.stop?
       assert_raise(RuntimeError) { s.clear }
@@ -3256,17 +3255,12 @@ __END__
 
       assert_equal 100, buf.bytesize
 
-      begin
+      msg = /can't modify string; temporarily locked/
+      assert_raise_with_message(RuntimeError, msg) do
         buf.replace("")
-      rescue RuntimeError => e
-        assert_match(/can't modify string; temporarily locked/, e.message)
-        Thread.pass
-      end until buf.empty?
-
-      assert_empty(buf, bug6099)
+      end
       assert_predicate(th, :alive?)
       w.write(data)
-      Thread.pass while th.alive?
       th.join
     end
     assert_equal(data, buf, bug6099)
