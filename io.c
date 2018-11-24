@@ -944,6 +944,7 @@ io_alloc(VALUE klass)
 
 struct io_internal_read_struct {
     int fd;
+    int nonblock;
     void *buf;
     size_t capa;
 };
@@ -962,11 +963,24 @@ struct io_internal_writev_struct {
 };
 #endif
 
+static int nogvl_wait_for_single_fd(int fd, short events);
 static VALUE
 internal_read_func(void *ptr)
 {
     struct io_internal_read_struct *iis = ptr;
-    return read(iis->fd, iis->buf, iis->capa);
+    ssize_t r;
+retry:
+    r = read(iis->fd, iis->buf, iis->capa);
+    if (r < 0 && !iis->nonblock) {
+        int e = errno;
+        if (e == EAGAIN || e == EWOULDBLOCK) {
+            if (nogvl_wait_for_single_fd(iis->fd, RB_WAITFD_IN) != -1) {
+                goto retry;
+            }
+            errno = e;
+        }
+    }
+    return r;
 }
 
 #if defined __APPLE__
@@ -1004,7 +1018,9 @@ static ssize_t
 rb_read_internal(int fd, void *buf, size_t count)
 {
     struct io_internal_read_struct iis;
+
     iis.fd = fd;
+    iis.nonblock = 0;
     iis.buf = buf;
     iis.capa = count;
 
@@ -2735,18 +2751,18 @@ rb_io_set_nonblock(rb_io_t *fptr)
     }
 }
 
-struct read_internal_arg {
-    int fd;
-    char *str_ptr;
-    long len;
-};
-
 static VALUE
 read_internal_call(VALUE arg)
 {
-    struct read_internal_arg *p = (struct read_internal_arg *)arg;
-    p->len = rb_read_internal(p->fd, p->str_ptr, p->len);
-    return Qundef;
+    struct io_internal_read_struct *iis = (struct io_internal_read_struct *)arg;
+
+    return rb_thread_io_blocking_region(internal_read_func, iis, iis->fd);
+}
+
+static long
+read_internal_locktmp(VALUE str, struct io_internal_read_struct *iis)
+{
+    return (long)rb_str_locktmp_ensure(str, read_internal_call, (VALUE)iis);
 }
 
 static int
@@ -2765,7 +2781,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
     rb_io_t *fptr;
     VALUE length, str;
     long n, len;
-    struct read_internal_arg arg;
+    struct io_internal_read_struct iis;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &length, &str);
@@ -2792,11 +2808,11 @@ io_getpartial(int argc, VALUE *argv, VALUE io, VALUE opts, int nonblock)
             rb_io_set_nonblock(fptr);
         }
 	io_setstrbuf(&str, len);
-	arg.fd = fptr->fd;
-	arg.str_ptr = RSTRING_PTR(str);
-	arg.len = len;
-	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
-	n = arg.len;
+        iis.fd = fptr->fd;
+        iis.nonblock = nonblock;
+        iis.buf = RSTRING_PTR(str);
+        iis.capa = len;
+        n = read_internal_locktmp(str, &iis);
         if (n < 0) {
 	    int e = errno;
             if (!nonblock && fptr_wait_readable(fptr))
@@ -2906,7 +2922,7 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
     long n, len;
-    struct read_internal_arg arg;
+    struct io_internal_read_struct iis;
     int shrinkable;
 
     if ((len = NUM2LONG(length)) < 0) {
@@ -2925,11 +2941,11 @@ io_read_nonblock(VALUE io, VALUE length, VALUE str, VALUE ex)
     if (n <= 0) {
 	rb_io_set_nonblock(fptr);
 	shrinkable |= io_setstrbuf(&str, len);
-	arg.fd = fptr->fd;
-	arg.str_ptr = RSTRING_PTR(str);
-	arg.len = len;
-	rb_str_locktmp_ensure(str, read_internal_call, (VALUE)&arg);
-	n = arg.len;
+        iis.fd = fptr->fd;
+        iis.nonblock = 1;
+        iis.buf = RSTRING_PTR(str);
+        iis.capa = len;
+        n = read_internal_locktmp(str, &iis);
         if (n < 0) {
 	    int e = errno;
 	    if ((e == EWOULDBLOCK || e == EAGAIN)) {
@@ -5094,7 +5110,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     VALUE len, str;
     rb_io_t *fptr;
     long n, ilen;
-    struct read_internal_arg arg;
+    struct io_internal_read_struct iis;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &len, &str);
@@ -5122,12 +5138,11 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_check_closed(fptr);
 
     io_setstrbuf(&str, ilen);
-    rb_str_locktmp(str);
-    arg.fd = fptr->fd;
-    arg.str_ptr = RSTRING_PTR(str);
-    arg.len = ilen;
-    rb_ensure(read_internal_call, (VALUE)&arg, rb_str_unlocktmp, str);
-    n = arg.len;
+    iis.fd = fptr->fd;
+    iis.nonblock = 1; /* for historical reasons, maybe (see above) */
+    iis.buf = RSTRING_PTR(str);
+    iis.capa = ilen;
+    n = read_internal_locktmp(str, &iis);
 
     if (n == -1) {
 	rb_sys_fail_path(fptr->pathv);
