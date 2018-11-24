@@ -23,23 +23,6 @@ coroutine_transfer:
 	pushq %r14
 	pushq %r15
 
-	movaps -24(%rsp), %xmm6
-	movaps -40(%rsp), %xmm7
-	movaps -56(%rsp), %xmm8
-	movaps -72(%rsp), %xmm9
-	movaps -88(%rsp), %xmm10
-	movaps -104(%rsp), %xmm11
-	movaps -120(%rsp), %xmm12
-	movaps -136(%rsp), %xmm13
-	movaps -152(%rsp), %xmm14
-	movaps -168(%rsp), %xmm15
-
-	# Save caller stack pointer:
-	mov %rsp, (%rcx)
-
-	# Restore callee stack pointer:
-	mov (%rdx), %rsp
-
 	movaps %xmm15, -168(%rsp)
 	movaps %xmm14, -152(%rsp)
 	movaps %xmm13, -136(%rsp)
@@ -50,6 +33,23 @@ coroutine_transfer:
 	movaps %xmm8, -56(%rsp)
 	movaps %xmm7, -40(%rsp)
 	movaps %xmm6, -24(%rsp)
+
+	# Save caller stack pointer:
+	mov %rsp, (%rcx)
+
+	# Restore callee stack pointer:
+	mov (%rdx), %rsp
+
+	movaps -24(%rsp), %xmm6
+	movaps -40(%rsp), %xmm7
+	movaps -56(%rsp), %xmm8
+	movaps -72(%rsp), %xmm9
+	movaps -88(%rsp), %xmm10
+	movaps -104(%rsp), %xmm11
+	movaps -120(%rsp), %xmm12
+	movaps -136(%rsp), %xmm13
+	movaps -152(%rsp), %xmm14
+	movaps -168(%rsp), %xmm15
 
 	# Restore callee stack:
 	popq %r15
