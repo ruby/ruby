@@ -8459,7 +8459,7 @@ rb_str_each_grapheme_cluster_size(VALUE str, VALUE args, VALUE eobj)
     rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
     const char *ptr, *end;
 
-    if (!rb_enc_unicode_p(enc) || single_byte_optimizable(str)) {
+    if (!rb_enc_unicode_p(enc)) {
 	return rb_str_length(str);
     }
 
@@ -8487,7 +8487,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
     rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
     const char *ptr, *end;
 
-    if (!rb_enc_unicode_p(enc) || single_byte_optimizable(str)) {
+    if (!rb_enc_unicode_p(enc)) {
 	return rb_str_enumerate_chars(str, ary);
     }
 
