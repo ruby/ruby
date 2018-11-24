@@ -377,8 +377,9 @@ class TestDir < Test::Unit::TestCase
       assert_equal(@nodir, Dir.home(""))
     end
     if user = ENV["USER"]
+      tilde = windows? ? "~" : "~#{user}"
       assert_nothing_raised(ArgumentError) do
-        assert_equal(File.expand_path("~#{user}"), Dir.home(user))
+        assert_equal(File.expand_path(tilde), Dir.home(user))
       end
     end
     %W[no:such:user \u{7559 5b88}:\u{756a}].each do |user|
