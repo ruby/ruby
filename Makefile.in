@@ -407,11 +407,11 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
-.s.@OBJEXT@:
+.$(ASMEXT).@OBJEXT@:
 	@$(ECHO) assembling $<
 	$(Q) $(CC) $(ASFLAGS) -o $@ -c $<
 
-.c.S:
+.c.$(ASMEXT):
 	@$(ECHO) translating $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -S $<
 
