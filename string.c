@@ -8501,7 +8501,7 @@ rb_str_enumerate_grapheme_clusters(VALUE str, VALUE ary)
 				      (const OnigUChar *)ptr, (const OnigUChar *)end,
 				      (const OnigUChar *)ptr, NULL, 0);
 	if (len <= 0) break;
-	ENUM_ELEM(ary, rb_str_subseq(str, ptr-ptr0, len));
+        ENUM_ELEM(ary, rb_str_subseq(str, ptr-ptr0, len));
 	ptr += len;
     }
     RB_GC_GUARD(str);
