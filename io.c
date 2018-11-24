@@ -135,6 +135,14 @@ off_t __syscall(quad_t number, ...);
 #define rename(f, t)	rb_w32_urename((f), (t))
 #endif
 
+#if defined(_WIN32)
+#  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
+#elif defined(O_NONBLOCK)
+#  define RUBY_PIPE_NONBLOCK_DEFAULT    (O_NONBLOCK)
+#else /* any platforms where O_NONBLOCK does not exist? */
+#  define RUBY_PIPE_NONBLOCK_DEFAULT    (0)
+#endif
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
@@ -345,7 +353,7 @@ rb_cloexec_pipe(int fildes[2])
 #if defined(HAVE_PIPE2)
     static int try_pipe2 = 1;
     if (try_pipe2) {
-        ret = pipe2(fildes, O_CLOEXEC | O_NONBLOCK);
+        ret = pipe2(fildes, O_CLOEXEC | RUBY_PIPE_NONBLOCK_DEFAULT);
         if (ret != -1)
             return ret;
         /* pipe2 is available since Linux 2.6.27, glibc 2.9. */
@@ -371,8 +379,10 @@ rb_cloexec_pipe(int fildes[2])
 #endif
     rb_maygvl_fd_fix_cloexec(fildes[0]);
     rb_maygvl_fd_fix_cloexec(fildes[1]);
-    rb_fd_set_nonblock(fildes[0]);
-    rb_fd_set_nonblock(fildes[1]);
+    if (RUBY_PIPE_NONBLOCK_DEFAULT) {
+        rb_fd_set_nonblock(fildes[0]);
+        rb_fd_set_nonblock(fildes[1]);
+    }
     return ret;
 }
 
