@@ -963,7 +963,7 @@ main()
 		AS_IF([test "$target_cpu" = x64], [
 		    ac_cv_func___builtin_setjmp=no
 		    ac_cv_func_round=no
-		    rb_cv_fiber_coroutine=no # TODO: Enable this after AppVeyor msys2 build succeeds
+		    rb_cv_fiber_coroutine=yes
 		])
 		ac_cv_func_tgamma=no
 		rb_cv_negative_time_t=yes
