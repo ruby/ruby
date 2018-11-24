@@ -622,12 +622,26 @@ distclean-spec: clean-spec
 distclean-rubyspec: distclean-spec
 
 realclean:: realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
-realclean-local:: distclean-local
+realclean-local:: distclean-local realclean-srcs-local
+
+clean-srcs:: clean-srcs-local clean-srcs-ext
+realclean-srcs:: realclean-srcs-local realclean-srcs-ext
+
+clean-srcs-local::
 	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c revision.h
-	$(Q)$(RM) id.c id.h probes.dmyh
+	$(Q)$(RM) id.c id.h probes.dmyh probes.h
+	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
+	$(Q)$(RM) mjit_build_dir.c mjit_config.h rb_mjit_header.h
+	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
+
+realclean-srcs-local:: clean-srcs-local
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) parse.c parse.h lex.c enc/trans/newline.c $(PRELUDES) revision.h
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) id.c id.h probes.dmyh
 	$(Q)$(CHDIR) $(srcdir) && $(exec) $(RM) configure aclocal.m4 tool/config.guess tool/config.sub gems/*.gem
+
+clean-srcs-ext::
+realclean-srcs-ext:: clean-srcs-ext
+
 realclean-ext:: PHONY
 realclean-golf: distclean-golf
 	$(Q)$(RM) $(GOLFPRELUDES)
@@ -970,10 +984,16 @@ EXT_SRCS = $(srcdir)/ext/ripper/ripper.c \
 	   # EXT_SRCS
 
 srcs-ext: $(EXT_SRCS)
+realclean-srcs-ext::
+	$(Q)$(RM) $(EXT_SRCS)
 
-srcs-extra: $(srcdir)/ext/json/parser/parser.c \
-	    $(srcdir)/ext/date/zonetab.h \
-	    $(empty)
+EXTRA_SRCS = $(srcdir)/ext/json/parser/parser.c \
+	     $(srcdir)/ext/date/zonetab.h \
+	     $(empty)
+
+srcs-extra: $(EXTRA_SRCS)
+realclean-srcs-extra::
+	$(Q)$(RM) $(EXTRA_SRCS)
 
 LIB_SRCS = $(srcdir)/lib/unicode_normalize/tables.rb
 
