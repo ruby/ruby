@@ -193,3 +193,9 @@ rdoc\:%: PHONY
 
 test_%.rb test/%: programs PHONY
 	+$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(patsubst test/%,%,$@)
+
+clean-srcs-ext::
+	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXT_SRCS))
+
+clean-srcs-extra::
+	$(Q)$(RM) $(patsubst $(srcdir)/%,%,$(EXTRA_SRCS))
