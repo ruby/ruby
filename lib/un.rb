@@ -321,6 +321,7 @@ end
 def httpd
   setup("", "BindAddress=ADDR", "Port=PORT", "MaxClients=NUM", "TempDir=DIR",
         "DoNotReverseLookup", "RequestTimeout=SECOND", "HTTPVersion=VERSION",
+        "ServerName=NAME", "ServerSoftware=NAME",
         "SSLCertificate=CERT", "SSLPrivateKey=KEY") do
     |argv, options|
     require 'webrick'
