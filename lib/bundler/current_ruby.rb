@@ -38,6 +38,8 @@ module Bundler
     ].freeze
 
     def ruby?
+      return true if Bundler::GemHelpers.generic_local_platform == Gem::Platform::RUBY
+
       !mswin? && (RUBY_ENGINE == "ruby" || RUBY_ENGINE == "rbx" || RUBY_ENGINE == "maglev" || RUBY_ENGINE == "truffleruby")
     end
 
