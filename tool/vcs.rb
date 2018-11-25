@@ -480,10 +480,13 @@ class VCS
             s.sub!(/^git-svn-id: .*@(\d+) .*\n+\z/, '')
             rev = $1
             s.gsub!(/^ {8}/, '') if /^(?! {8}|$)/ !~ s
+            s.sub!(/\n\n\z/, "\n")
             if /\A(\d+)-(\d+)-(\d+)/ =~ time
               date = Time.new($1.to_i, $2.to_i, $3.to_i).strftime("%a, %d %b %Y")
             end
-            w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{s.count("\n")} lines\n\n"
+            lines = s.count("\n")
+            lines = "#{lines} line#{lines == 1 ? '' : 's'}"
+            w.puts "r#{rev} | #{author} | #{time} (#{date}) | #{lines}\n\n"
             w.puts s, sep
           end
         end
