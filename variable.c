@@ -610,10 +610,12 @@ global_id(const char *name)
     if (name[0] == '$') id = rb_intern(name);
     else {
 	size_t len = strlen(name);
-	char *buf = ALLOCA_N(char, len+1);
+        VALUE vbuf = 0;
+        char *buf = ALLOCV_N(char, vbuf, len+1);
 	buf[0] = '$';
 	memcpy(buf+1, name, len);
 	id = rb_intern2(buf, len+1);
+        ALLOCV_END(vbuf);
     }
     return id;
 }
