@@ -1307,6 +1307,10 @@ UNICODE_PROPERTY_FILES =  \
 
 UNICODE_EMOJI_FILES = \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-data.txt \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-sequences.txt \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-test.txt \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-variation-sequences.txt \
+		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
 update-unicode: $(UNICODE_FILES)
