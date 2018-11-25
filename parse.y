@@ -1784,7 +1784,7 @@ undef_list	: fitem
 		| undef_list ',' {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
 		    {
 		    /*%%%*/
-			NODE *undef = NEW_UNDEF($4, &@$);
+			NODE *undef = NEW_UNDEF($4, &@4);
 			$$ = block_append(p, $1, undef);
 		    /*% %*/
 		    /*% ripper: rb_ary_push($1, get_value($4)) %*/
