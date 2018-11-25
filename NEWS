@@ -43,7 +43,7 @@ sufficient information, see the ChangeLog file or Redmine
 * Print exception backtrace and error message in reverse order when the
   exception is not caught and STDOUT is unchanged and a tty. [Feature #8661]
 
-* Print `cause` of the exception if the exception is not caught and printed
+* Print +cause+ of the exception if the exception is not caught and printed
   its backtraces and error message [Feature #8257]
 
 === Core classes updates (outstanding ones only)
