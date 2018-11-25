@@ -116,6 +116,25 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
   end
 
+  it "allows specifying only-ruby-platform on windows with gemspec dependency" do
+    build_lib("foo", "1.0", :path => ".") do |s|
+      s.add_dependency "rack"
+    end
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gemspec
+    G
+    bundle! :lock
+
+    simulate_windows do
+      bundle! "config set force_ruby_platform true"
+      bundle! "install"
+
+      expect(the_bundle).to include_gems "rack 1.0"
+    end
+  end
+
   it "recovers when the lockfile is missing a platform-specific gem" do
     build_repo2 do
       build_gem "requires_platform_specific" do |s|
