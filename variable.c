@@ -483,13 +483,25 @@ struct rb_global_variable {
     struct trace_var *trace;
 };
 
-MJIT_FUNC_EXPORTED struct rb_global_entry*
-rb_global_entry(ID id)
+static struct rb_global_entry*
+rb_find_global_entry(ID id)
 {
     struct rb_global_entry *entry;
     VALUE data;
 
     if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
+        return NULL;
+    }
+    entry = (struct rb_global_entry *)data;
+    ASSUME(entry != NULL);
+    return entry;
+}
+
+MJIT_FUNC_EXPORTED struct rb_global_entry*
+rb_global_entry(ID id)
+{
+    struct rb_global_entry *entry = rb_find_global_entry(id);
+    if (!entry) {
 	struct rb_global_variable *var;
 	entry = ALLOC(struct rb_global_entry);
 	var = ALLOC(struct rb_global_variable);
@@ -504,9 +516,6 @@ rb_global_entry(ID id)
 	var->block_trace = 0;
 	var->trace = 0;
 	rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
-    }
-    else {
-	entry = (struct rb_global_entry *)data;
     }
     return entry;
 }
@@ -617,6 +626,27 @@ global_id(const char *name)
 	id = rb_intern2(buf, len+1);
         ALLOCV_END(vbuf);
     }
+    return id;
+}
+
+static ID
+find_global_id(const char *name)
+{
+    ID id;
+    size_t len = strlen(name);
+
+    if (name[0] == '$') {
+        id = rb_check_id_cstr(name, len, NULL);
+    }
+    else {
+        VALUE vbuf = 0;
+        char *buf = ALLOCV_N(char, vbuf, len+1);
+        buf[0] = '$';
+        memcpy(buf+1, name, len);
+        id = rb_check_id_cstr(buf, len+1, NULL);
+        ALLOCV_END(vbuf);
+    }
+
     return id;
 }
 
@@ -858,8 +888,14 @@ VALUE
 rb_gv_get(const char *name)
 {
     struct rb_global_entry *entry;
+    ID id = find_global_id(name);
 
-    entry = rb_global_entry(global_id(name));
+    if (!id) {
+        rb_warning("global variable `%s' not initialized", name);
+        return Qnil;
+    }
+
+    entry = rb_global_entry(id);
     return rb_gvar_get(entry);
 }
 
