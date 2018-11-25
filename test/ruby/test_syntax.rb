@@ -989,7 +989,7 @@ eom
   end
 
   def test_parenthesised_statement_argument
-    assert_syntax_error("foo(bar rescue nil)", /unexpected modifier_rescue/)
+    assert_syntax_error("foo(bar rescue nil)", /unexpected rescue \(modifier\)/)
     assert_valid_syntax("foo (bar rescue nil)")
   end
 

@@ -155,7 +155,7 @@ class TestAst < Test::Unit::TestCase
   end
 
   def test_parse_raises_syntax_error
-    assert_raise_with_message(SyntaxError, /keyword_end/) do
+    assert_raise_with_message(SyntaxError, /\bend\b/) do
       RubyVM::AbstractSyntaxTree.parse("end")
     end
   end
@@ -164,7 +164,7 @@ class TestAst < Test::Unit::TestCase
     Tempfile.create(%w"test_ast .rb") do |f|
       f.puts "end"
       f.close
-      assert_raise_with_message(SyntaxError, /keyword_end/) do
+      assert_raise_with_message(SyntaxError, /\bend\b/) do
         RubyVM::AbstractSyntaxTree.parse_file(f.path)
       end
     end
