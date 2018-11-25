@@ -1056,6 +1056,29 @@ class TestTime < Test::Unit::TestCase
       assert_equal(min, t.min)
       assert_equal(sec, t.sec)
     }
+    assert_equal(Time.local(2038,3,1), Time.local(2038,2,29))
+    assert_equal(Time.local(2038,3,2), Time.local(2038,2,30))
+    assert_equal(Time.local(2038,3,3), Time.local(2038,2,31))
+    assert_equal(Time.local(2040,2,29), Time.local(2040,2,29))
+    assert_equal(Time.local(2040,3,1), Time.local(2040,2,30))
+    assert_equal(Time.local(2040,3,2), Time.local(2040,2,31))
+    n = 2 ** 64
+    n += 400 - n % 400 # n is over 2^64 and multiple of 400
+    assert_equal(Time.local(n,2,29),Time.local(n,2,29))
+    assert_equal(Time.local(n,3,1), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,31))
+    n += 100
+    assert_equal(Time.local(n,3,1), Time.local(n,2,29))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,3), Time.local(n,2,31))
+    n += 4
+    assert_equal(Time.local(n,2,29),Time.local(n,2,29))
+    assert_equal(Time.local(n,3,1), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,31))
+    n += 1
+    assert_equal(Time.local(n,3,1), Time.local(n,2,29))
+    assert_equal(Time.local(n,3,2), Time.local(n,2,30))
+    assert_equal(Time.local(n,3,3), Time.local(n,2,31))
   end
 
   def test_future
