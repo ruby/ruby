@@ -772,10 +772,15 @@ SpecialsCopy:
 	  }
 	}
       }
-      else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0  /* data about character found in CaseUnfold_11_Table */
-	  && flags & OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
-	MODIFIED;
-	code = folded->code[(flags & OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_TITLECASE) ? 1 : 0];
+      else if ((folded = onigenc_unicode_unfold1_lookup(code)) != 0) { /* data about character found in CaseUnfold_11_Table */
+	if ((flags & ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
+	    && (OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_IS_TITLECASE)) { /* but already Titlecase */
+	  /* already Titlecase, no changes needed */
+	}
+	else if (flags & OnigCaseFoldFlags(folded->n)) { /* needs and data availability match */
+	  MODIFIED;
+	  code = folded->code[(flags & OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_TITLECASE) ? 1 : 0];
+	}
       }
     }
     to += ONIGENC_CODE_TO_MBC(enc, code, to);
