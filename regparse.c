@@ -5723,6 +5723,21 @@ extern const OnigCodePoint onigenc_unicode_GCB_ranges_E_Base[];
 extern const OnigCodePoint onigenc_unicode_GCB_ranges_Emoji[];
 
 static int
+create_property_node(Node **np, ScanEnv* env, const char* propname)
+{
+  int r;
+  CClassNode* cc;
+
+  *np = node_new_cclass();
+  if (IS_NULL(*np)) return ONIGERR_MEMORY;
+  cc = NCCLASS(*np);
+  r = add_property_to_cc(cc, propname, 0, env);
+  if (r != 0)
+    onig_node_free(*np);
+  return r;
+}
+
+static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 {
   Node* tmp = NULL;
@@ -5811,10 +5826,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      *  | T+ */
 
     /* T+ */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=T", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
@@ -5828,10 +5840,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* L+ */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=L", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
@@ -5845,10 +5854,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* L* LVT T* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=T", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5861,10 +5867,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=LVT", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=LVT");
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -5872,10 +5875,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=L", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5894,10 +5894,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* L* LV V* T* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=T", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5910,10 +5907,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=V", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=V");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5926,10 +5920,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=LV", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=LV");
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -5937,10 +5928,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=L", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5959,10 +5947,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* L* V+ T* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=T", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -5975,10 +5960,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=V", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=V");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
@@ -5991,10 +5973,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=L", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -6016,10 +5995,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      *                   (ZWJ (Glue_After_Zwj | EBG Extend* E_Modifier?) )* */
 
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Modifier", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, 1, 0);
@@ -6048,10 +6024,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Base_GAZ", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Base_GAZ");
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -6167,10 +6140,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* E_Modifier? */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Modifier", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, 1, 0);
@@ -6229,10 +6199,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      * has such examples.
      * http://www.unicode.org/Public/9.0.0/ucd/auxiliary/GraphemeBreakTest.html
      */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Modifier", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, 1, 0);
@@ -6301,10 +6268,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = NULL;
 
     /* Prepend* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=Prepend", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -6349,10 +6313,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_property_to_cc(cc, "Grapheme_Cluster_Break=Prepend", 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
