@@ -13,7 +13,7 @@ module Spec
     end
 
     def bindir
-      @bindir ||= root.join(ruby_core? ? "bin" : "exe")
+      @bindir ||= root.join(ruby_core? ? "libexec" : "exe")
     end
 
     def spec_dir
