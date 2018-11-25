@@ -131,6 +131,12 @@ RSpec.configure do |config|
     Gem.ruby = orig_ruby if ENV["BUNDLE_RUBY"]
   end
 
+  config.before :suite do
+    if ENV["BUNDLE_RUBY"]
+      FileUtils.cp_r Spec::Path.bindir, File.join(Spec::Path.root, "lib", "exe")
+    end
+  end
+
   config.before :all do
     build_repo1
   end
@@ -154,5 +160,11 @@ RSpec.configure do |config|
 
     Dir.chdir(original_wd)
     ENV.replace(original_env)
+  end
+
+  config.after :suite do
+    if ENV["BUNDLE_RUBY"]
+      FileUtils.rm_rf File.join(Spec::Path.root, "lib", "exe")
+    end
   end
 end
