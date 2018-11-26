@@ -206,7 +206,7 @@ static void
 clean_hooks_check(const rb_execution_context_t *ec, rb_hook_list_t *list)
 {
     if (UNLIKELY(list->need_clean != FALSE)) {
-	if (list->running == 0) {
+        if (list->running == 0) {
             clean_hooks(ec, list);
         }
     }

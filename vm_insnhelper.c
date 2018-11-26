@@ -3892,7 +3892,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
     else {
 	const rb_iseq_t *iseq = reg_cfp->iseq;
 	size_t pos = pc - iseq->body->iseq_encoded;
-	rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
+        rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
         rb_hook_list_t *local_hooks = iseq->local_hooks;
         rb_event_flag_t local_hook_events = local_hooks != NULL ? local_hooks->events : 0;
         enabled_flags |= local_hook_events;

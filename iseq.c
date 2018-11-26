@@ -3091,7 +3091,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 	return;
     }
     else {
-	unsigned int pc;
+        unsigned int pc;
 	const struct rb_iseq_constant_body *const body = iseq->body;
 	VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
         rb_event_flag_t enabled_events;
@@ -3100,7 +3100,7 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
         enabled_events = turnon_events | local_events;
 
         for (pc=0; pc<body->iseq_size;) {
-	    rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+            rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
             pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events);
 	}
     }

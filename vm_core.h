@@ -485,7 +485,7 @@ struct rb_iseq_struct {
 	    int index;
 	} loader;
 
-	rb_event_flag_t global_trace_events;
+        rb_event_flag_t global_trace_events;
     } aux;
 };
 
@@ -1835,7 +1835,7 @@ void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *
     rb_hook_list_t *hooks_arg_ = (hooks_); \
     if (UNLIKELY((hooks_arg_)->events & (flag_arg_))) { \
         /* defer evaluating the other arguments */ \
-	rb_exec_event_hook_orig(ec_, hooks_arg_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
+        rb_exec_event_hook_orig(ec_, hooks_arg_, flag_arg_, self_, id_, called_id_, klass_, data_, pop_p_); \
     } \
 } while (0)
 
