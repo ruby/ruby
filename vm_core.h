@@ -1825,7 +1825,7 @@ struct rb_trace_arg_struct {
 
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
-void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval);
+void rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 void rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval);
 
 void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *hooks, int pop_p);

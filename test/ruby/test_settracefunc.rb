@@ -2056,4 +2056,31 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal [:tp2, :tp2, :tp1, :tp2, :___], events
   end
+
+  def test_tracepoint_enable_with_target_line
+    events = []
+    code1 = proc{
+      events << 1
+      events << 2
+      events << 3
+    }
+    tp = TracePoint.new(:line) do |tp|
+      events << :tp
+    end
+    tp.enable(target: code1, target_line: 2064) do
+      code1.call
+    end
+    assert_equal [1, :tp, 2, 3], events
+    
+
+    e = assert_raise(ArgumentError) do
+      TracePoint.new(:line){}.enable(target_line: 10){}
+    end
+    assert_equal 'only target_line is specified', e.message
+    
+    e = assert_raise(ArgumentError) do
+      TracePoint.new(:call){}.enable(target: code1, target_line: 10){}
+    end
+    assert_equal 'target_line is specified, but line event is not specified', e.message
+  end
 end

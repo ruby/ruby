@@ -2980,7 +2980,7 @@ rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 }
 
 static int
-iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval)
+iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line)
 {
     unsigned int pc;
     int n = 0;
@@ -2990,18 +2990,29 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
     VM_ASSERT((iseq->flags & ISEQ_USE_COMPILE_DATA) == 0);
 
     for (pc=0; pc<body->iseq_size;) {
-        rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
-        if (pc_events & turnon_events) {
+        const struct iseq_insn_info_entry *entry = get_insn_info(iseq, pc);
+        rb_event_flag_t pc_events = entry->events;
+        rb_event_flag_t target_events = turnon_events;
+        unsigned int line = (int)entry->line_no;
+
+        if (target_line == 0 || target_line == line) {
+            /* ok */
+        }
+        else {
+            target_events &= ~RUBY_EVENT_LINE;
+        }
+
+        if (pc_events & target_events) {
             n++;
         }
-        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (turnon_events | iseq->aux.global_trace_events));
+        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (target_events | iseq->aux.global_trace_events));
     }
 
     if (n > 0) {
         if (iseq->local_hooks == NULL) {
             ((rb_iseq_t *)iseq)->local_hooks = RB_ZALLOC(rb_hook_list_t);
         }
-        rb_hook_list_connect_tracepoint((VALUE)iseq, iseq->local_hooks, tpval);
+        rb_hook_list_connect_tracepoint((VALUE)iseq, iseq->local_hooks, tpval, target_line);
     }
 
     return n;
@@ -3010,6 +3021,7 @@ iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, 
 struct trace_set_local_events_struct {
     rb_event_flag_t turnon_events;
     VALUE tpval;
+    unsigned int target_line;
     int n;
 };
 
@@ -3017,16 +3029,17 @@ static void
 iseq_add_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
 {
     struct trace_set_local_events_struct *data = (struct trace_set_local_events_struct *)p;
-    data->n += iseq_add_local_tracepoint(iseq, data->turnon_events, data->tpval);
+    data->n += iseq_add_local_tracepoint(iseq, data->turnon_events, data->tpval, data->target_line);
     iseq_iterate_children(iseq, iseq_add_local_tracepoint_i, p);
 }
 
 int
-rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval)
+rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line)
 {
     struct trace_set_local_events_struct data;
     data.turnon_events = turnon_events;
     data.tpval = tpval;
+    data.target_line = target_line;
     data.n = 0;
 
     iseq_add_local_tracepoint_i(iseq, (void *)&data);

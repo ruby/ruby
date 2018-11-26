@@ -40,6 +40,7 @@ typedef struct rb_event_hook_struct {
 
     struct {
 	rb_thread_t *th;
+        unsigned int target_line;
     } filter;
 } rb_event_hook_t;
 
@@ -107,7 +108,8 @@ alloc_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE data, 
     hook->data = data;
 
     /* no filters */
-    hook->filter.th = 0;
+    hook->filter.th = NULL;
+    hook->filter.target_line = 0;
 
     return hook;
 }
@@ -293,7 +295,8 @@ exec_hooks_body(const rb_execution_context_t *ec, rb_hook_list_t *list, const rb
     for (hook = list->hooks; hook; hook = hook->next) {
 	if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_DELETED) &&
 	    (trace_arg->event & hook->events) &&
-	    (hook->filter.th == 0 || hook->filter.th == rb_ec_thread_ptr(ec))) {
+            (LIKELY(hook->filter.th == 0) || hook->filter.th == rb_ec_thread_ptr(ec)) &&
+            (LIKELY(hook->filter.target_line == 0) || (hook->filter.target_line == (unsigned int)rb_vm_get_sourceline(ec->cfp)))) {
 	    if (!(hook->hook_flags & RUBY_EVENT_HOOK_FLAG_RAW_ARG)) {
 		(*hook->func)(trace_arg->event, hook->data, trace_arg->self, trace_arg->id, trace_arg->klass);
 	    }
@@ -1154,21 +1157,31 @@ iseq_of(VALUE target)
 const rb_method_definition_t *rb_method_def(VALUE method); /* proc.c */
 
 static VALUE
-rb_tracepoint_enable_for_target(VALUE tpval, VALUE target)
+rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
 {
     rb_tp_t *tp = tpptr(tpval);
     const rb_iseq_t *iseq = iseq_of(target);
     int n;
+    unsigned int line = 0;
 
     if (tp->tracing > 0) {
         rb_raise(rb_eArgError, "can't nest-enable a targetting TracePoint");
+    }
+
+    if (!NIL_P(target_line)) {
+        if ((tp->events & RUBY_EVENT_LINE) == 0) {
+            rb_raise(rb_eArgError, "target_line is specified, but line event is not specified");
+        }
+        else {
+            line = NUM2UINT(target_line);
+        }
     }
 
     VM_ASSERT(tp->local_target_set == Qfalse);
     tp->local_target_set = rb_obj_hide(rb_ident_hash_new());
 
     /* iseq */
-    n = rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval);
+    n = rb_iseq_add_local_tracepoint_recursively(iseq, tp->events, tpval, line);
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
     /* bmethod */
@@ -1177,7 +1190,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target)
         if (def->type == VM_METHOD_TYPE_BMETHOD &&
             (tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN))) {
             def->body.bmethod.hooks = ZALLOC(rb_hook_list_t);
-            rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval);
+            rb_hook_list_connect_tracepoint(target, def->body.bmethod.hooks, tpval, 0);
             rb_hash_aset(tp->local_target_set, target, Qfalse);
 
             n++;
@@ -1240,11 +1253,12 @@ rb_tracepoint_disable(VALUE tpval)
 }
 
 void
-rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval)
+rb_hook_list_connect_tracepoint(VALUE target, rb_hook_list_t *list, VALUE tpval, unsigned int target_line)
 {
     rb_tp_t *tp = tpptr(tpval);
     rb_event_hook_t *hook = alloc_event_hook((rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
                                              RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+    hook->filter.target_line = target_line;
     hook_list_connect(target, list, hook, FALSE);
 }
 
@@ -1306,16 +1320,19 @@ rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval)
  *
  */
 static VALUE
-tracepoint_enable_m(VALUE tpval, VALUE target)
+tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line)
 {
     rb_tp_t *tp = tpptr(tpval);
     int previous_tracing = tp->tracing;
 
     if (NIL_P(target)) {
+        if (!NIL_P(target_line)) {
+            rb_raise(rb_eArgError, "only target_line is specified");
+        }
         rb_tracepoint_enable(tpval);
     }
     else {
-        rb_tracepoint_enable_for_target(tpval, target);
+        rb_tracepoint_enable_for_target(tpval, target, target_line);
     }
 
     if (rb_block_given_p()) {
@@ -1706,7 +1723,7 @@ Init_vm_trace(void)
      */
     rb_define_singleton_method(rb_cTracePoint, "trace", tracepoint_trace_s, -1);
 
-    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 1);
+    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 2);
     rb_define_method(rb_cTracePoint, "disable", tracepoint_disable_m, 0);
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
 
