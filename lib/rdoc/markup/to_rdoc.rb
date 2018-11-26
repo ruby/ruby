@@ -234,7 +234,7 @@ class RDoc::Markup::ToRdoc < RDoc::Markup::Formatter
       @res << part
     end
 
-    @res << "\n" unless @res =~ /\n\z/
+    @res << "\n"
   end
 
   ##
