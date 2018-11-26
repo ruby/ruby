@@ -1588,7 +1588,7 @@ enum postponed_job_register_result {
     PJRR_INTERRUPTED = 2
 };
 
-/* Async-signal-safe */
+/* Async-signal-safe, thread-safe against MJIT worker thread */
 static enum postponed_job_register_result
 postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
                        unsigned int flags, rb_postponed_job_func_t func, void *data, int max, int expected_index)
@@ -1596,11 +1596,13 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
     rb_postponed_job_t *pjob;
 
     if (expected_index >= max) return PJRR_FULL; /* failed */
+    if (mjit_enabled) mjit_postponed_job_register_start_hook();
 
     if (ATOMIC_CAS(vm->postponed_job_index, expected_index, expected_index+1) == expected_index) {
         pjob = &vm->postponed_job_buffer[expected_index];
     }
     else {
+        if (mjit_enabled) mjit_postponed_job_register_finish_hook();
         return PJRR_INTERRUPTED;
     }
 
@@ -1609,6 +1611,7 @@ postponed_job_register(rb_execution_context_t *ec, rb_vm_t *vm,
     pjob->data = data;
 
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
+    if (mjit_enabled) mjit_postponed_job_register_finish_hook();
 
     return PJRR_SUCCESS;
 }
