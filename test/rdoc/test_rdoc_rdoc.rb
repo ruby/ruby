@@ -69,6 +69,13 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_gather_files
+    # TODO: dummy finish
+    # RDoc::Options#@exclude is initialized as an empty array.
+    # Then, #finish converts it to a regexp or nil and reassign it to @exclude.
+    # RDoc#gather_files assumes that #finish has been already called.
+    # So, it forces to assign nil to @exclude.
+    @rdoc.options.exclude = nil
+
     a = File.expand_path __FILE__
     b = File.expand_path '../test_rdoc_text.rb', __FILE__
 
@@ -182,6 +189,13 @@ class TestRDocRDoc < RDoc::TestCase
   end
 
   def test_normalized_file_list_with_dot_doc
+    # TODO: dummy finish
+    # RDoc::Options#@exclude is initialized as an empty array.
+    # Then, #finish converts it to a regexp or nil and reassign it to @exclude.
+    # RDoc#normalized_file_list assumes that #finish has been already called.
+    # So, it forces to assign nil to @exclude.
+    @rdoc.options.exclude = nil
+
     expected_files = []
     files = temp_dir do |dir|
       a = File.expand_path('a.rb')
