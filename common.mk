@@ -347,8 +347,8 @@ ruby.imp: $(COMMONOBJS)
 	$(Q){ \
 	$(NM) -Pgp $(COMMONOBJS) | \
 	awk 'BEGIN{print "#!"}; $$2~/^[BDT]$$/&&$$1!~/^$(SYMBOL_PREFIX)(Init_|InitVM_|ruby_static_id_|.*_threadptr_|rb_ec_)|^\./{print $$1}'; \
-	($(CHDIR) $(srcdir) && for filename in cont.c gc.c thread*c vm*.c; do for linenum in `grep -n -h ^MJIT_FUNC_EXPORTED $${filename} | cut -f 1 -d :`; do sed -n "$${linenum},`expr $${linenum} + 1` p" $${filename}; done; done) | \
-	grep -e ^rb_ec_ -e ^rb_threadptr_ | sed 's/^\(rb_[a-zA-Z_0-9]*\).*/$(SYMBOL_PREFIX)\1/'; \
+	($(CHDIR) $(srcdir) && \
+	 exec sed -n '/^MJIT_FUNC_EXPORTED/!d;N;s/.*\n\(rb_[a-zA-Z_0-9]*\).*/$(SYMBOL_PREFIX)\1/p' cont.c gc.c thread*c vm*.c) \
 	} | \
 	sort -u -o $@
 
