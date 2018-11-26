@@ -4,10 +4,17 @@ require 'rubygems/package'
 require 'time'
 require 'tmpdir'
 
+rescue_exceptions = [LoadError]
+begin
+  require 'bundler/errors'
+rescue LoadError # this rubygems + old ruby
+else # this rubygems + ruby trunk with bundler
+  rescue_exceptions << Bundler::GemfileNotFound
+end
 begin
   gem 'builder'
   require 'builder/xchar'
-rescue LoadError
+rescue *rescue_exceptions
 end
 
 ##
