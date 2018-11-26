@@ -777,6 +777,10 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_clean_objects_on_exec
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      # TODO: check call stack and close handle of code which is not on stack, and remove objects on best-effort basis
+      skip 'Removing so file being used does not work on Windows'
+    end
     Dir.mktmpdir("jit_test_clean_objects_on_exec_") do |dir|
       eval_with_jit({"TMPDIR"=>dir}, "#{<<~"begin;"}\n#{<<~"end;"}", min_calls: 1)
       begin;
@@ -786,7 +790,7 @@ class TestJIT < Test::Unit::TestCase
       error_message = "Undeleted files:\n  #{Dir.glob("#{dir}/*").join("\n  ")}\n"
       assert_send([Dir, :empty?, dir], error_message)
     end
-  end if system("which true")
+  end
 
   def test_lambda_longjmp
     assert_eval_with_jit("#{<<~"begin;"}\n#{<<~"end;"}", stdout: '5', success_count: 1)
