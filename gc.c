@@ -4303,7 +4303,7 @@ mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
 	    gc_mark(objspace, def->body.attr.location);
 	    break;
 	  case VM_METHOD_TYPE_BMETHOD:
-	    gc_mark(objspace, def->body.bmethod.proc);
+            gc_mark(objspace, def->body.bmethod.proc);
             if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
 	    break;
 	  case VM_METHOD_TYPE_ALIAS:

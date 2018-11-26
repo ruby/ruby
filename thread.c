@@ -5340,7 +5340,7 @@ rb_resolve_me_location(const rb_method_entry_t *me, VALUE resolved_location[5])
 	break;
       }
       case VM_METHOD_TYPE_BMETHOD: {
-	const rb_iseq_t *iseq = rb_proc_get_iseq(me->def->body.bmethod.proc, 0);
+        const rb_iseq_t *iseq = rb_proc_get_iseq(me->def->body.bmethod.proc, 0);
 	if (iseq) {
 	    rb_iseq_location_t *loc;
 	    rb_iseq_check(iseq);
