@@ -134,12 +134,13 @@ init_list(struct rb_mjit_unit_list *list)
    because node of unit_queue and one of active_units may have the same unit
    during proceeding unit. */
 static void
-free_list(struct rb_mjit_unit_list *list)
+free_list(struct rb_mjit_unit_list *list, int close_handle_p)
 {
     struct rb_mjit_unit *unit = 0, *next;
 
     list_for_each_safe(&list->head, unit, next, unode) {
         list_del(&unit->unode);
+        if (!close_handle_p) unit->handle = NULL; /* Skip dlclose in free_unit() */
         free_unit(unit);
     }
     list->length = 0;
@@ -787,9 +788,12 @@ mjit_child_after_fork(void)
 
 /* Finish the threads processing units and creating PCH, finalize
    and free MJIT data.  It should be called last during MJIT
-   life.  */
+   life.
+
+   If close_handle_p is TRUE, it calls dlclose() for JIT-ed code. So it should be FALSE
+   if the code can still be on stack. ...But it means to leak JIT-ed handle forever (FIXME). */
 void
-mjit_finish(void)
+mjit_finish(int close_handle_p)
 {
     if (!mjit_enabled)
         return;
@@ -827,9 +831,9 @@ mjit_finish(void)
     xfree(pch_file); pch_file = NULL;
 
     mjit_call_p = FALSE;
-    free_list(&unit_queue);
-    free_list(&active_units);
-    free_list(&compact_units);
+    free_list(&unit_queue, close_handle_p);
+    free_list(&active_units, close_handle_p);
+    free_list(&compact_units, close_handle_p);
     finish_conts();
 
     mjit_enabled = FALSE;
