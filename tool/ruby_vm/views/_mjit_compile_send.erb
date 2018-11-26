@@ -76,7 +76,7 @@
             fprintf(f, "    }\n");
 
 % # JIT: We should evaluate ISeq modified for TracePoint if it's enabled. Note: This is slow.
-            fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS)) {\n");
+            fprintf(f, "    if (UNLIKELY(ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS)) {\n");
             fprintf(f, "        reg_cfp->sp = (VALUE *)reg_cfp->bp + %d;\n", b->stack_size + (int)<%= insn.call_attribute('sp_inc') %> + 1);
             if (!pc_moved_p) {
                 fprintf(f, "        reg_cfp->pc = original_body_iseq + %d;\n", next_pos);

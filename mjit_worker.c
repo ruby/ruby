@@ -173,7 +173,7 @@ struct mjit_options mjit_opts;
 
 /* TRUE if MJIT is enabled.  */
 int mjit_enabled = FALSE;
-/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS`
+/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
    and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
 int mjit_call_p = FALSE;
 

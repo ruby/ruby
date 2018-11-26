@@ -799,15 +799,6 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec->root_svar = sec->root_svar;
 	th->ec->ensure_list = sec->ensure_list;
 	th->ec->errinfo = sec->errinfo;
-
-	/* trace on -> trace off */
-	if (th->ec->trace_arg != NULL && sec->trace_arg == NULL) {
-	    GET_VM()->trace_running--;
-	}
-	/* trace off -> trace on */
-	else if (th->ec->trace_arg == NULL && sec->trace_arg != NULL) {
-	    GET_VM()->trace_running++;
-	}
 	th->ec->trace_arg = sec->trace_arg;
 
 	VM_ASSERT(th->ec->vm_stack != NULL);

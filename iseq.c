@@ -111,6 +111,11 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	compile_data_free(ISEQ_COMPILE_DATA(iseq));
 	ruby_xfree(body);
     }
+
+    if (iseq->local_hooks) {
+        rb_hook_list_free(iseq->local_hooks);
+    }
+
     RUBY_FREE_LEAVE("iseq");
 }
 
@@ -247,6 +252,9 @@ rb_iseq_mark(const rb_iseq_t *iseq)
 	}
     }
 
+    if (iseq->local_hooks) {
+        rb_hook_list_mark(iseq->local_hooks);
+    }
 
     if (FL_TEST(iseq, ISEQ_NOT_LOADED_YET)) {
 	rb_gc_mark(iseq->aux.loader.obj);
@@ -511,9 +519,9 @@ rb_iseq_insns_info_decode_positions(const struct rb_iseq_constant_body *body)
 void
 rb_iseq_init_trace(rb_iseq_t *iseq)
 {
-    iseq->aux.trace_events = 0;
-    if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
-        rb_iseq_trace_set(iseq, ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS);
+    iseq->aux.global_trace_events = 0;
+    if (ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS) {
+        rb_iseq_trace_set(iseq, ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS);
     }
 }
 
@@ -1668,7 +1676,7 @@ rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t res
     struct iseq_insn_info_entry *entry = (struct iseq_insn_info_entry *)get_insn_info(iseq, pos);
     if (entry) {
         entry->events &= ~reset;
-        if (!(entry->events & iseq->aux.trace_events)) {
+        if (!(entry->events & iseq->aux.global_trace_events)) {
             void rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos);
             rb_iseq_trace_flag_cleared(iseq, pos);
         }
@@ -1939,8 +1947,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
 			      events & RUBY_EVENT_B_CALL   ? "Bc" : "",
                               events & RUBY_EVENT_B_RETURN ? "Br" : "",
                               events & RUBY_EVENT_COVERAGE_LINE   ? "Cli" : "",
-                              events & RUBY_EVENT_COVERAGE_BRANCH ? "Cbr" : ""
-                              );
+                              events & RUBY_EVENT_COVERAGE_BRANCH ? "Cbr" : "");
 	}
     }
 
@@ -2137,47 +2144,6 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
     return rb_iseq_disasm_recursive(iseq, rb_str_new(0, 0));
 }
 
-static VALUE
-rb_iseq_all_children(const rb_iseq_t *iseq)
-{
-    unsigned int i;
-    VALUE *code = rb_iseq_original_iseq(iseq);
-    VALUE all_children = rb_obj_hide(rb_ident_hash_new());
-    VALUE child;
-    const struct rb_iseq_constant_body *const body = iseq->body;
-
-    if (body->catch_table) {
-	for (i = 0; i < body->catch_table->size; i++) {
-	    const struct iseq_catch_table_entry *entry = &body->catch_table->entries[i];
-	    child = (VALUE)entry->iseq;
-	    if (child) {
-		rb_hash_aset(all_children, child, Qtrue);
-	    }
-	}
-    }
-    for (i=0; i<body->iseq_size;) {
-	VALUE insn = code[i];
-	int len = insn_len(insn);
-	const char *types = insn_op_types(insn);
-	int j;
-
-	for (j=0; types[j]; j++) {
-	    switch (types[j]) {
-	      case TS_ISEQ:
-		child = code[i+j+1];
-		if (child) {
-		    rb_hash_aset(all_children, child, Qtrue);
-		}
-		break;
-	      default:
-		break;
-	    }
-	}
-	i += len;
-    }
-    return all_children;
-}
-
 /*
  *  call-seq:
  *     iseq.disasm -> str
@@ -2203,10 +2169,58 @@ iseqw_disasm(VALUE self)
 }
 
 static int
-iseqw_each_child_i(VALUE key, VALUE value, VALUE dummy)
+iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *child_iseq, void *data), void *data)
 {
-    rb_yield(iseqw_new((const rb_iseq_t *)key));
-    return ST_CONTINUE;
+    unsigned int i;
+    VALUE *code = rb_iseq_original_iseq(iseq);
+    const struct rb_iseq_constant_body *const body = iseq->body;
+    const rb_iseq_t *child;
+    VALUE all_children = rb_obj_hide(rb_ident_hash_new());
+
+    if (body->catch_table) {
+        for (i = 0; i < body->catch_table->size; i++) {
+            const struct iseq_catch_table_entry *entry = &body->catch_table->entries[i];
+            child = entry->iseq;
+            if (child) {
+                if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                    rb_hash_aset(all_children, (VALUE)child, Qtrue);
+                    (*iter_func)(child, data);
+                }
+            }
+        }
+    }
+
+    for (i=0; i<body->iseq_size;) {
+        VALUE insn = code[i];
+        int len = insn_len(insn);
+        const char *types = insn_op_types(insn);
+        int j;
+
+        for (j=0; types[j]; j++) {
+            switch (types[j]) {
+              case TS_ISEQ:
+                child = (const rb_iseq_t *)code[i+j+1];
+                if (child) {
+                    if (rb_hash_aref(all_children, (VALUE)child) == Qnil) {
+                        rb_hash_aset(all_children, (VALUE)child, Qtrue);
+                        (*iter_func)(child, data);
+                    }
+                }
+                break;
+              default:
+                break;
+            }
+        }
+        i += len;
+    }
+
+    return RHASH_SIZE(all_children);
+}
+
+static void
+yield_each_children(const rb_iseq_t *child_iseq, void *data)
+{
+    rb_yield(iseqw_new(child_iseq));
 }
 
 /*
@@ -2221,8 +2235,7 @@ static VALUE
 iseqw_each_child(VALUE self)
 {
     const rb_iseq_t *iseq = iseqw_check(self);
-    VALUE all_children = rb_iseq_all_children(iseq);
-    rb_hash_foreach(all_children, iseqw_each_child_i, Qnil);
+    iseq_iterate_children(iseq, yield_each_children, NULL);
     return self;
 }
 
@@ -2966,12 +2979,111 @@ rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
     encoded_iseq_trace_instrument(&iseq_encoded[pos], 0);
 }
 
+static int
+iseq_add_local_tracepoint(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval)
+{
+    unsigned int pc;
+    int n = 0;
+    const struct rb_iseq_constant_body *const body = iseq->body;
+    VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
+
+    VM_ASSERT((iseq->flags & ISEQ_USE_COMPILE_DATA) == 0);
+
+    for (pc=0; pc<body->iseq_size;) {
+        rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+        if (pc_events & turnon_events) {
+            n++;
+        }
+        pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (turnon_events | iseq->aux.global_trace_events));
+    }
+
+    if (n > 0) {
+        if (iseq->local_hooks == NULL) {
+            ((rb_iseq_t *)iseq)->local_hooks = RB_ZALLOC(rb_hook_list_t);
+        }
+        rb_hook_list_connect_tracepoint((VALUE)iseq, iseq->local_hooks, tpval);
+    }
+
+    return n;
+}
+
+struct trace_set_local_events_struct {
+    rb_event_flag_t turnon_events;
+    VALUE tpval;
+    int n;
+};
+
+static void
+iseq_add_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
+{
+    struct trace_set_local_events_struct *data = (struct trace_set_local_events_struct *)p;
+    data->n += iseq_add_local_tracepoint(iseq, data->turnon_events, data->tpval);
+    iseq_iterate_children(iseq, iseq_add_local_tracepoint_i, p);
+}
+
+int
+rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval)
+{
+    struct trace_set_local_events_struct data = {turnon_events, tpval, 0};
+    iseq_add_local_tracepoint_i(iseq, (void *)&data);
+    if (0) rb_funcall(Qnil, rb_intern("puts"), 1, rb_iseq_disasm(iseq)); /* for debug */
+    return data.n;
+}
+
+static int
+iseq_remove_local_tracepoint(const rb_iseq_t *iseq, VALUE tpval)
+{
+    int n = 0;
+
+    if (iseq->local_hooks) {
+        unsigned int pc;
+        const struct rb_iseq_constant_body *const body = iseq->body;
+        VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
+        rb_event_flag_t local_events = 0;
+
+        rb_hook_list_remove_tracepoint(iseq->local_hooks, tpval);
+        local_events = iseq->local_hooks->events;
+
+        if (local_events == 0) {
+            if (iseq->local_hooks->running == 0) {
+                rb_hook_list_free(iseq->local_hooks);
+            }
+            ((rb_iseq_t *)iseq)->local_hooks = NULL;
+        }
+
+        for (pc = 0; pc<body->iseq_size;) {
+            rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & (local_events | iseq->aux.global_trace_events));
+        }
+    }
+    return n;
+}
+
+struct trace_clear_local_events_struct {
+    VALUE tpval;
+    int n;
+};
+
+static void
+iseq_remove_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
+{
+    struct trace_clear_local_events_struct *data = (struct trace_clear_local_events_struct *)p;
+    data->n += iseq_remove_local_tracepoint(iseq, data->tpval);
+    iseq_iterate_children(iseq, iseq_remove_local_tracepoint_i, p);
+}
+
+int
+rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval)
+{
+    struct trace_clear_local_events_struct data = {tpval, 0};
+    iseq_remove_local_tracepoint_i(iseq, (void *)&data);
+    return data.n;
+}
+
 void
 rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 {
-    VM_ASSERT((turnon_events & ~ISEQ_TRACE_EVENTS) == 0);
-
-    if (iseq->aux.trace_events == turnon_events) {
+    if (iseq->aux.global_trace_events == turnon_events) {
 	return;
     }
     if (iseq->flags & ISEQ_USE_COMPILE_DATA) {
@@ -2979,16 +3091,18 @@ rb_iseq_trace_set(const rb_iseq_t *iseq, rb_event_flag_t turnon_events)
 	return;
     }
     else {
-	unsigned int i;
+	unsigned int pc;
 	const struct rb_iseq_constant_body *const body = iseq->body;
 	VALUE *iseq_encoded = (VALUE *)body->iseq_encoded;
-	((rb_iseq_t *)iseq)->aux.trace_events = turnon_events;
+        rb_event_flag_t enabled_events;
+        rb_event_flag_t local_events = iseq->local_hooks ? iseq->local_hooks->events : 0;
+        ((rb_iseq_t *)iseq)->aux.global_trace_events = turnon_events;
+        enabled_events = turnon_events | local_events;
 
-	for (i=0; i<body->iseq_size;) {
-	    rb_event_flag_t events = rb_iseq_event_flags(iseq, i);
-            i += encoded_iseq_trace_instrument(&iseq_encoded[i], events & turnon_events);
+        for (pc=0; pc<body->iseq_size;) {
+	    rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pc);
+            pc += encoded_iseq_trace_instrument(&iseq_encoded[pc], pc_events & enabled_events);
 	}
-	/* clear for debugging: ISEQ_ORIGINAL_ISEQ_CLEAR(iseq); */
     }
 }
 
@@ -3013,7 +3127,7 @@ rb_iseq_trace_set_all(rb_event_flag_t turnon_events)
 }
 
 /* This is exported since Ruby 2.5 but not internally used for now. If you're going to use this, please
-   update `ruby_vm_event_enabled_flags` and set `mjit_call_p = FALSE` as well to cancel MJIT code. */
+   update `ruby_vm_event_enabled_global_flags` and set `mjit_call_p = FALSE` as well to cancel MJIT code. */
 void
 rb_iseq_trace_on_all(void)
 {

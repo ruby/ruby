@@ -132,6 +132,12 @@ class IO
   end
 end
 
+class TracePoint
+  def enable target: nil, &blk
+    self.__enable target, &blk
+  end
+end
+
 class Binding
   # :nodoc:
   def irb
