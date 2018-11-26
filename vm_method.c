@@ -152,7 +152,9 @@ rb_method_definition_release(rb_method_definition_t *def, int complemented)
 	VM_ASSERT(complemented_count >= 0);
 
 	if (alias_count + complemented_count == 0) {
-	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def, rb_id2name(def->original_id), alias_count, complemented_count);
+	    if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d,%d (remove)\n", (void *)def,
+                                      rb_id2name(def->original_id), alias_count, complemented_count);
+            VM_ASSERT(def->type == VM_METHOD_TYPE_BMETHOD ? def->body.bmethod.hooks == NULL : TRUE);
 	    xfree(def);
 	}
 	else {
@@ -277,7 +279,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
 		return;
 	    }
 	  case VM_METHOD_TYPE_BMETHOD:
-	    RB_OBJ_WRITE(me, &def->body.proc, (VALUE)opts);
+	    RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
 	    return;
 	  case VM_METHOD_TYPE_NOTIMPLEMENTED:
 	    setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), rb_f_notimplement, -1);
@@ -318,7 +320,9 @@ method_definition_reset(const rb_method_entry_t *me)
 	RB_OBJ_WRITTEN(me, Qundef, def->body.attr.location);
 	break;
       case VM_METHOD_TYPE_BMETHOD:
-	RB_OBJ_WRITTEN(me, Qundef, def->body.proc);
+	RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
+        /* give up to check all in a list */
+        if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
 	break;
       case VM_METHOD_TYPE_REFINED:
 	RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
@@ -579,7 +583,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 		iseq = def_iseq_ptr(old_def);
 		break;
 	      case VM_METHOD_TYPE_BMETHOD:
-		iseq = rb_proc_get_iseq(old_def->body.proc, 0);
+		iseq = rb_proc_get_iseq(old_def->body.bmethod.proc, 0);
 		break;
 	      default:
 		break;
@@ -1521,7 +1525,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_IVAR:
 	return d1->body.attr.id == d2->body.attr.id;
       case VM_METHOD_TYPE_BMETHOD:
-	return RTEST(rb_equal(d1->body.proc, d2->body.proc));
+	return RTEST(rb_equal(d1->body.bmethod.proc, d2->body.bmethod.proc));
       case VM_METHOD_TYPE_MISSING:
 	return d1->original_id == d2->original_id;
       case VM_METHOD_TYPE_ZSUPER:
@@ -1555,7 +1559,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
       case VM_METHOD_TYPE_IVAR:
 	return rb_hash_uint(hash, def->body.attr.id);
       case VM_METHOD_TYPE_BMETHOD:
-	return rb_hash_proc(hash, def->body.proc);
+        return rb_hash_proc(hash, def->body.bmethod.proc);
       case VM_METHOD_TYPE_MISSING:
 	return rb_hash_uint(hash, def->original_id);
       case VM_METHOD_TYPE_ZSUPER:

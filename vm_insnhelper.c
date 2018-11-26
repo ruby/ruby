@@ -1946,7 +1946,7 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     VALUE val;
 
     /* control block frame */
-    GetProcPtr(cc->me->def->body.proc, proc);
+    GetProcPtr(cc->me->def->body.bmethod.proc, proc);
     val = rb_vm_invoke_bmethod(ec, proc, calling->recv, calling->argc, argv, calling->block_handler, cc->me);
 
     return val;
@@ -3847,23 +3847,62 @@ rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
 
 NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc));
 
+static inline void
+vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
+              rb_event_flag_t pc_events, rb_event_flag_t target_event,
+              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
+{
+    rb_event_flag_t event = pc_events & target_event;
+    VALUE self = GET_SELF();
+
+    VM_ASSERT(rb_popcount64((uint64_t)event) == 1);
+
+    if (event & global_hooks->events) {
+        /* increment PC because source line is calculated with PC-1 */
+        reg_cfp->pc++;
+        vm_dtrace(event, ec);
+        rb_exec_event_hook_orig(ec, global_hooks, event, self, 0, 0, 0 , val, 0);
+        reg_cfp->pc--;
+    }
+
+    if (local_hooks != NULL) {
+        if (event & local_hooks->events) {
+            /* increment PC because source line is calculated with PC-1 */
+            reg_cfp->pc++;
+            rb_exec_event_hook_orig(ec, local_hooks, event, self, 0, 0, 0 , val, 0);
+            reg_cfp->pc--;
+        }
+    }
+}
+
+#define VM_TRACE_HOOK(target_event, val) do { \
+    if ((pc_events & (target_event)) & enabled_flags) { \
+        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
+    } \
+} while (0)
+
 static void
 vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc)
 {
-    rb_event_flag_t vm_event_flags = ruby_vm_event_flags;
+    rb_event_flag_t enabled_flags = ruby_vm_event_flags & ISEQ_TRACE_EVENTS;
 
-    if (vm_event_flags == 0) {
-	return;
+    if (enabled_flags == 0 && ruby_vm_event_local_num == 0) {
+        return;
     }
     else {
 	const rb_iseq_t *iseq = reg_cfp->iseq;
 	size_t pos = pc - iseq->body->iseq_encoded;
-	rb_event_flag_t events = rb_iseq_event_flags(iseq, pos);
-	rb_event_flag_t event;
+	rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
+        rb_hook_list_t *local_hooks = iseq->local_hooks;
+        rb_event_flag_t local_hook_events = local_hooks != NULL ? local_hooks->events : 0;
+        enabled_flags |= local_hook_events;
 
-	if ((events & vm_event_flags) == 0) {
+        VM_ASSERT((local_hook_events & ~ISEQ_TRACE_EVENTS) == 0);
+
+        if ((pc_events & enabled_flags) == 0) {
 #if 0
 	    /* disable trace */
+            /* TODO: incomplete */
 	    rb_iseq_trace_set(iseq, vm_event_flags & ISEQ_TRACE_EVENTS);
 #else
 	    /* do not disable trace because of performance problem
@@ -3871,60 +3910,33 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *p
 	     */
 #endif
 	    return;
-	}
-
-	if (ec->trace_arg != NULL) return;
-
-	if (0) {
-	    fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",
-		    (int)pos,
-		    (int)events,
-		    RSTRING_PTR(rb_iseq_path(iseq)),
-		    (int)rb_iseq_line_no(iseq, pos),
-		    RSTRING_PTR(rb_iseq_label(iseq)));
-	}
-
-	VM_ASSERT(reg_cfp->pc == pc);
-	VM_ASSERT(events != 0);
-	VM_ASSERT(vm_event_flags & events);
-
-	/* increment PC because source line is calculated with PC-1 */
-        if ((event = (events & (RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL))) != 0) {
-	    VM_ASSERT(event == RUBY_EVENT_CLASS ||
-		      event == RUBY_EVENT_CALL  ||
-		      event == RUBY_EVENT_B_CALL);
-	    reg_cfp->pc++;
-	    vm_dtrace(event, ec);
-	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, Qundef);
-	    reg_cfp->pc--;
-	}
-	if (events & RUBY_EVENT_LINE) {
-	    reg_cfp->pc++;
-	    vm_dtrace(RUBY_EVENT_LINE, ec);
-	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_LINE, GET_SELF(), 0, 0, 0, Qundef);
-	    reg_cfp->pc--;
-	}
-	if (events & RUBY_EVENT_COVERAGE_LINE) {
-	    reg_cfp->pc++;
-	    vm_dtrace(RUBY_EVENT_COVERAGE_LINE, ec);
-	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_COVERAGE_LINE, GET_SELF(), 0, 0, 0, Qundef);
-	    reg_cfp->pc--;
-	}
-        if (events & RUBY_EVENT_COVERAGE_BRANCH) {
-            reg_cfp->pc++;
-            vm_dtrace(RUBY_EVENT_COVERAGE_BRANCH, ec);
-            EXEC_EVENT_HOOK(ec, RUBY_EVENT_COVERAGE_BRANCH, GET_SELF(), 0, 0, 0, Qundef);
-            reg_cfp->pc--;
         }
-        if ((event = (events & (RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN))) != 0) {
-	    VM_ASSERT(event == RUBY_EVENT_END ||
-		      event == RUBY_EVENT_RETURN  ||
-		      event == RUBY_EVENT_B_RETURN);
-	    reg_cfp->pc++;
-	    vm_dtrace(event, ec);
-	    EXEC_EVENT_HOOK(ec, event, GET_SELF(), 0, 0, 0, TOPN(0));
-	    reg_cfp->pc--;
-	}
+        else if (ec->trace_arg != NULL) {
+            /* already tracing */
+            return;
+        }
+        else {
+            rb_hook_list_t *global_hooks = rb_vm_global_hooks(ec);
+
+            if (0) {
+                fprintf(stderr, "vm_trace>>%4d (%4x) - %s:%d %s\n",
+                        (int)pos,
+                        (int)pc_events,
+                        RSTRING_PTR(rb_iseq_path(iseq)),
+                        (int)rb_iseq_line_no(iseq, pos),
+                        RSTRING_PTR(rb_iseq_label(iseq)));
+            }
+            VM_ASSERT(reg_cfp->pc == pc);
+            VM_ASSERT(pc_events != 0);
+            VM_ASSERT(enabled_flags & pc_events);
+
+            /* check traces */
+            VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_LINE,                                          Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_LINE,                                 Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_COVERAGE_BRANCH,                               Qundef);
+            VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
+        }
     }
 }
 

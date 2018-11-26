@@ -338,8 +338,11 @@ VALUE rb_mRubyVMFrozenCore;
 VALUE ruby_vm_const_missing_count = 0;
 rb_vm_t *ruby_current_vm_ptr = NULL;
 rb_execution_context_t *ruby_current_execution_context_ptr = NULL;
+
 rb_event_flag_t ruby_vm_event_flags;
-rb_event_flag_t ruby_vm_event_enabled_flags;
+rb_event_flag_t ruby_vm_event_enabled_global_flags;
+unsigned int    ruby_vm_event_local_num;
+
 rb_serial_t ruby_vm_global_method_state = 1;
 rb_serial_t ruby_vm_global_constant_state = 1;
 rb_serial_t ruby_vm_class_serial = 1;
@@ -1015,6 +1018,9 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     /* bmethod */
     int arg_size = iseq->body->param.size;
     VALUE ret;
+    rb_hook_list_t *hooks;
+
+    VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
 
     vm_push_frame(ec, iseq, type | VM_FRAME_FLAG_BMETHOD, self,
 		  VM_GUARDED_PREV_EP(captured->ep),
@@ -1026,9 +1032,21 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
 
     RUBY_DTRACE_METHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_CALL, self, me->def->original_id, me->called_id, me->owner, Qnil);
+
+    if (UNLIKELY((hooks = me->def->body.bmethod.hooks) != NULL) &&
+        hooks->events & RUBY_EVENT_CALL) {
+        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_CALL, self,
+                                me->def->original_id, me->called_id, me->owner, Qnil, FALSE);
+    }
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH);
     ret = vm_exec(ec, TRUE);
+
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_RETURN, self, me->def->original_id, me->called_id, me->owner, ret);
+    if ((hooks = me->def->body.bmethod.hooks) != NULL &&
+        hooks->events & RUBY_EVENT_RETURN) {
+        rb_exec_event_hook_orig(ec, hooks, RUBY_EVENT_RETURN, self,
+                                me->def->original_id, me->called_id, me->owner, ret, FALSE);
+    }
     RUBY_DTRACE_METHOD_RETURN_HOOK(ec, me->owner, me->def->original_id);
     return ret;
 }
@@ -1687,39 +1705,72 @@ frame_name(const rb_control_frame_t *cfp)
 #endif
 
 static void
-hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp, int will_finish_vm_exec, int state, struct vm_throw_data *err)
+hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
+                   int will_finish_vm_exec, int state, struct vm_throw_data *err)
 {
     if (state == TAG_RAISE && RBASIC_CLASS(err) == rb_eSysStackError) {
 	return;
     }
-    switch (VM_FRAME_TYPE(ec->cfp)) {
-      case VM_FRAME_MAGIC_METHOD:
-	RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
-	EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
-	THROW_DATA_CONSUMED_SET(err);
-	break;
-      case VM_FRAME_MAGIC_BLOCK:
-	if (VM_FRAME_BMETHOD_P(ec->cfp)) {
-	    EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
+    else {
+        const rb_iseq_t *iseq = cfp->iseq;
+        rb_hook_list_t *local_hooks = iseq->local_hooks;
 
-	    if (!will_finish_vm_exec) {
-		/* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
-		EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self,
-					      rb_vm_frame_method_entry(ec->cfp)->def->original_id,
-					      rb_vm_frame_method_entry(ec->cfp)->called_id,
-					      rb_vm_frame_method_entry(ec->cfp)->owner,
-					      frame_return_value(err));
-	    }
-	    THROW_DATA_CONSUMED_SET(err);
-	}
-	else {
-	    EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
-	    THROW_DATA_CONSUMED_SET(err);
-	}
-	break;
-      case VM_FRAME_MAGIC_CLASS:
-	EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_END, ec->cfp->self, 0, 0, 0, Qnil);
-	break;
+        switch (VM_FRAME_TYPE(ec->cfp)) {
+          case VM_FRAME_MAGIC_METHOD:
+            RUBY_DTRACE_METHOD_RETURN_HOOK(ec, 0, 0);
+            EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
+
+            if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
+                rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN,
+                                        ec->cfp->self, 0, 0, 0, frame_return_value(err), TRUE);
+            }
+
+            THROW_DATA_CONSUMED_SET(err);
+            break;
+          case VM_FRAME_MAGIC_BLOCK:
+            if (VM_FRAME_BMETHOD_P(ec->cfp)) {
+                EXEC_EVENT_HOOK(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
+                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
+                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
+                                            ec->cfp->self, 0, 0, 0, frame_return_value(err), FALSE);
+                }
+
+                if (!will_finish_vm_exec) {
+                    const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(ec->cfp);
+
+                    /* kick RUBY_EVENT_RETURN at invoke_block_from_c() for bmethod */
+                    EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_RETURN, ec->cfp->self,
+                                                  rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+                                                  rb_vm_frame_method_entry(ec->cfp)->called_id,
+                                                  rb_vm_frame_method_entry(ec->cfp)->owner,
+                                                  frame_return_value(err));
+
+                    VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
+                    local_hooks = me->def->body.bmethod.hooks;
+
+                    if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_RETURN)) {
+                        rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_RETURN, ec->cfp->self,
+                                                rb_vm_frame_method_entry(ec->cfp)->def->original_id,
+                                                rb_vm_frame_method_entry(ec->cfp)->called_id,
+                                                rb_vm_frame_method_entry(ec->cfp)->owner,
+                                                frame_return_value(err), TRUE);
+                    }
+                }
+                THROW_DATA_CONSUMED_SET(err);
+            }
+            else {
+                EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_B_RETURN, ec->cfp->self, 0, 0, 0, frame_return_value(err));
+                if (UNLIKELY(local_hooks && local_hooks->events & RUBY_EVENT_B_RETURN)) {
+                    rb_exec_event_hook_orig(ec, local_hooks, RUBY_EVENT_B_RETURN,
+                                            ec->cfp->self, 0, 0, 0, frame_return_value(err), TRUE);
+                }
+                THROW_DATA_CONSUMED_SET(err);
+            }
+            break;
+          case VM_FRAME_MAGIC_CLASS:
+            EXEC_EVENT_HOOK_AND_POP_FRAME(ec, RUBY_EVENT_END, ec->cfp->self, 0, 0, 0, Qnil);
+            break;
+        }
     }
 }
 
@@ -2135,8 +2186,6 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 
 /* vm */
 
-void rb_vm_trace_mark_event_hooks(rb_hook_list_t *hooks);
-
 void
 rb_vm_mark(void *ptr)
 {
@@ -2165,7 +2214,7 @@ rb_vm_mark(void *ptr)
 	    rb_mark_tbl(vm->loading_table);
 	}
 
-	rb_vm_trace_mark_event_hooks(&vm->event_hooks);
+	rb_hook_list_mark(&vm->global_hooks);
 
 	rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
