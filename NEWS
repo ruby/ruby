@@ -217,6 +217,12 @@ sufficient information, see the ChangeLog file or Redmine
     * NameError.new accepts +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
 
+[NilClass]
+
+  [New methods]
+
+    * NilClass#=~ is added for compatibility.  [Feature #15231]
+
 [NoMethodError]
 
   [New options]
@@ -446,6 +452,10 @@ sufficient information, see the ChangeLog file or Redmine
   * File.read, File.binread, File.write, File.binwrite, File.foreach, and
     File.readlines do not invoke external commands even if the path starts
     with the pipe character <code>'|'</code>. [Feature #14245]
+
+[Object]
+
+  * Object#=~ is deprecated.  [Feature #15231]
 
 === Stdlib compatibility issues (excluding feature bug fixes)
 
