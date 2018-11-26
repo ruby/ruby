@@ -1634,10 +1634,12 @@ VALUE rb_math_sqrt(VALUE);
 extern int mjit_enabled;
 VALUE mjit_pause(int wait_p);
 VALUE mjit_resume(void);
+void mjit_finish(void);
 #else
 #define mjit_enabled 0
 static inline VALUE mjit_pause(int wait_p){ return Qnil; } /* unreachable */
 static inline VALUE mjit_resume(void){ return Qnil; } /* unreachable */
+static inline void mjit_finish(void){}
 #endif
 
 /* newline.c */
