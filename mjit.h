@@ -66,6 +66,7 @@ RUBY_SYMBOL_EXPORT_END
 
 extern int mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
 extern void mjit_init(struct mjit_options *opts);
+extern void mjit_finish(void);
 extern void mjit_gc_start_hook(void);
 extern void mjit_gc_finish_hook(void);
 extern void mjit_free_iseq(const rb_iseq_t *iseq);
@@ -131,6 +132,7 @@ void mjit_child_after_fork(void);
 #else /* USE_MJIT */
 static inline struct mjit_cont *mjit_cont_new(rb_execution_context_t *ec){return NULL;}
 static inline void mjit_cont_free(struct mjit_cont *cont){}
+static inline void mjit_finish(void){}
 static inline void mjit_gc_start_hook(void){}
 static inline void mjit_gc_finish_hook(void){}
 static inline void mjit_free_iseq(const rb_iseq_t *iseq){}
