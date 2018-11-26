@@ -9,13 +9,15 @@ class BreakTest
   def initialize (filename, line_number, data, comment='')
     @filename = filename
     @line_number = line_number
-    @comment = comment
+    @comment = comment.gsub(/\s+/, ' ').strip
     if filename=='emoji-test'
       codes, @type = data.split(/\s*;\s*/)
       @shortname = ''
     else
       codes, @type, @shortname = data.split(/\s*;\s*/)
     end
+    @type = @type.gsub(/\s+/, ' ').strip
+    @shortname = @shortname.gsub(/\s+/, ' ').strip
     @string = codes.split(/\s+/)
                    .map do |ch|
                           c = ch.to_i(16)
@@ -82,8 +84,8 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       expected = [test.string]
       actual = test.string.each_grapheme_cluster.to_a
       assert_equal expected, actual,
-        "file: #{test.filename}, line #{test.line_number}, expected '#{expected}', " +
-        "but got '#{actual}', type: #{test.type}, shortname: #{test.shortname}, comment: #{test.comment}"
+        "file: #{test.filename}, line #{test.line_number}, " +
+        "type: #{test.type}, shortname: #{test.shortname}, comment: #{test.comment}"
     end
   end
 
@@ -92,8 +94,8 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       expected = ["A", test.string, "Z"]
       actual = "A#{test.string}Z".each_grapheme_cluster.to_a
       assert_equal expected, actual,
-        "file: #{test.filename}, line #{test.line_number}, expected '#{expected}', " +
-        "but got '#{actual}', type: #{test.type}, shortname: #{test.shortname}, comment: #{test.comment}"
+        "file: #{test.filename}, line #{test.line_number}, " +
+        "type: #{test.type}, shortname: #{test.shortname}, comment: #{test.comment}"
     end
   end
 
@@ -109,8 +111,10 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
         expected = [test1.string, test2.string]
         actual = (test1.string+test2.string).each_grapheme_cluster.to_a
         assert_equal expected, actual,
-          "file: #{test1.filename}, line #{test1.line_number}, expected '#{expected}', " +
-          "but got '#{actual}', type: #{test1.type}, shortname: #{test1.shortname}, comment: #{test1.comment}"
+          "file1: #{test1.filename}, line1 #{test1.line_number}, " +
+          "file2: #{test2.filename}, line2 #{test2.line_number},\n" +
+          "type1: #{test1.type}, shortname1: #{test1.shortname}, comment1: #{test1.comment},\n" +
+          "type2: #{test2.type}, shortname2: #{test2.shortname}, comment2: #{test2.comment}"
       end
     end
   end
