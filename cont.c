@@ -778,6 +778,10 @@ cont_restore_thread(rb_context_t *cont)
 	    ec_switch(th, fib);
 	}
 
+        if (th->ec->trace_arg != sec->trace_arg) {
+            rb_raise(rb_eRuntimeError, "can't call across trace_func");
+        }
+
 	/* copy vm stack */
 #ifdef CAPTURE_JUST_VALID_VM_STACK
 	MEMCPY(th->ec->vm_stack,
@@ -799,7 +803,6 @@ cont_restore_thread(rb_context_t *cont)
 	th->ec->root_svar = sec->root_svar;
 	th->ec->ensure_list = sec->ensure_list;
 	th->ec->errinfo = sec->errinfo;
-	th->ec->trace_arg = sec->trace_arg;
 
 	VM_ASSERT(th->ec->vm_stack != NULL);
     }
