@@ -2071,13 +2071,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
       code1.call
     end
     assert_equal [1, :tp, 2, 3], events
-    
+
 
     e = assert_raise(ArgumentError) do
       TracePoint.new(:line){}.enable(target_line: 10){}
     end
     assert_equal 'only target_line is specified', e.message
-    
+
     e = assert_raise(ArgumentError) do
       TracePoint.new(:call){}.enable(target: code1, target_line: 10){}
     end
