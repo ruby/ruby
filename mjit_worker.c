@@ -1238,6 +1238,10 @@ mjit_worker(void)
         }
     }
 
+    /* Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
+       could be expired after finishing this function. */
+    job.finish_p = TRUE;
+
     /* To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here. */
     worker_stopped = TRUE;
 }
