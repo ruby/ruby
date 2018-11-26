@@ -2595,7 +2595,7 @@ rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
     switch (argc) {
       case 1: n = NUM2LONG(argv[0]);
       case 0: break;
-      default: rb_scan_args_fastpath_0_1(argc, argv, NULL);
+      default: rb_error_arity(argc, 0, 1);
     }
     rb_ary_rotate(ary, n);
     return ary;
@@ -2628,7 +2628,7 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
     switch (argc) {
       case 1: cnt = NUM2LONG(argv[0]);
       case 0: break;
-      default: rb_scan_args_fastpath_0_1(argc, argv, NULL);
+      default: rb_error_arity(argc, 0, 1);
     }
 
     len = RARRAY_LEN(ary);

@@ -4896,7 +4896,7 @@ time_dump(int argc, VALUE *argv, VALUE time)
 {
     VALUE str;
 
-    rb_scan_args_fastpath_0_1(argc, argv, 0);
+    if (argc > 1) rb_error_arity(argc, 0, 1);
     str = time_mdump(time);
 
     return str;

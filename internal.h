@@ -1369,14 +1369,15 @@ void Init_class_hierarchy(void);
 int rb_class_has_methods(VALUE c);
 void rb_undef_methods_from(VALUE klass, VALUE super);
 
+/* Internal optmisation API - caller responsibiity to not pass NULL as arg value */
 static inline int
 rb_scan_args_fastpath_0_1(int argc, const VALUE *argv, VALUE *arg)
 {
     if (argc == 0 ) {
-        if (arg) *arg = Qnil;
+        *arg = Qnil;
         return argc;
     } else if (argc == 1) {
-        if (arg) *arg = argv[0];
+        *arg = argv[0];
         return argc;
     }
     rb_error_arity(argc, 0, 1);
