@@ -2214,7 +2214,7 @@ iseq_iterate_children(const rb_iseq_t *iseq, void (*iter_func)(const rb_iseq_t *
         i += len;
     }
 
-    return RHASH_SIZE(all_children);
+    return (int)RHASH_SIZE(all_children);
 }
 
 static void
