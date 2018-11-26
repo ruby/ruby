@@ -230,9 +230,8 @@ env:
       - "GCC_FLAGS='-ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'"
       - "CONFIG_FLAG="
       - "JOBS="
-    # construct warnflags (using bashism...)
-    before_install: |
-      warnflags_array=(
+      - >-
+        warnflags='
         -Wall
         -Wextra
         -Werror=declaration-after-statement
@@ -255,10 +254,8 @@ env:
         -Wno-unused-local-typedef
         -Wno-unused-parameter
         -Wunused-variable
-      )
-      CONFIG_FLAG_ARRAY=(
-        warnflags="${warnflags_array[*]}"
-        LDFLAGS=-Wno-unused-command-line-argument)
+        '
+      - "LDFLAGS='-Wno-unused-command-line-argument'"
 
   - &rubyspec
     name: ruby/spec on Ruby 2.3 # to ensure version guards are correctly added
@@ -342,8 +339,7 @@ before_script:
     gcc*)   the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-diagnostics-color) ;;
     clang*) the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-color-diagnostics) ;;
     esac
-  - |-
-    $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc="${the_gcc[*]}" $CONFIG_FLAG "${CONFIG_FLAG_ARRAY[@]}"
+  - "$SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"${the_gcc[*]}\" $CONFIG_FLAG"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
