@@ -785,29 +785,6 @@ mjit_child_after_fork(void)
     start_worker();
 }
 
-/* Half-baked version of mjit_finish(). It just deletes MJIT-related files.
-   Caller should disable MJIT because it won't work without the deleted files.
-
-   We want to use mjit_finish() for this function's usage but it's somehow broken like:
-   http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/1480173 */
-void
-mjit_clean_files(void)
-{
-#ifndef _MSC_VER /* mswin has prebuilt precompiled header */
-    if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
-        remove_file(pch_file);
-
-    xfree(header_file); header_file = NULL;
-#endif
-    xfree(tmp_dir); tmp_dir = NULL;
-    xfree(pch_file); pch_file = NULL;
-
-    mjit_call_p = FALSE;
-    free_list(&unit_queue);
-    free_list(&active_units);
-    free_list(&compact_units);
-}
-
 /* Finish the threads processing units and creating PCH, finalize
    and free MJIT data.  It should be called last during MJIT
    life.  */
@@ -840,7 +817,19 @@ mjit_finish(void)
     rb_native_cond_destroy(&mjit_worker_wakeup);
     rb_native_cond_destroy(&mjit_gc_wakeup);
 
-    mjit_clean_files();
+#ifndef _MSC_VER /* mswin has prebuilt precompiled header */
+    if (!mjit_opts.save_temps && getpid() == pch_owner_pid)
+        remove_file(pch_file);
+
+    xfree(header_file); header_file = NULL;
+#endif
+    xfree(tmp_dir); tmp_dir = NULL;
+    xfree(pch_file); pch_file = NULL;
+
+    mjit_call_p = FALSE;
+    free_list(&unit_queue);
+    free_list(&active_units);
+    free_list(&compact_units);
     finish_conts();
 
     mjit_enabled = FALSE;

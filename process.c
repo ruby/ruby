@@ -2944,13 +2944,7 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
-    if (mjit_enabled) {
-        /* TODO: Use mjit_finish() here. We're not doing so because it leads SEGV
-           http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/1480173 and we don't know why. */
-        mjit_pause(FALSE); /* do not leak children */
-        mjit_clean_files(); /* do not leave files. */
-        mjit_enabled = FALSE; /* MJIT won't work without files deleted above. never JIT-able after exec failure + rescue, for now. */
-    }
+    if (mjit_enabled) mjit_finish(); /* do not leave files or leak children */
     before_exec(); /* stop timer thread before redirects */
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
