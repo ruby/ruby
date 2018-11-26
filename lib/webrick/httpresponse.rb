@@ -254,7 +254,7 @@ module WEBrick
         @header.delete('content-length')
       elsif @header['content-length'].nil?
         unless @body.is_a?(IO)
-          @header['content-length'] = @body ? @body.bytesize : 0
+          @header['content-length'] = (@body ? @body.bytesize : 0).to_s
         end
       end
 
@@ -277,7 +277,7 @@ module WEBrick
       # Location is a single absoluteURI.
       if location = @header['location']
         if @request_uri
-          @header['location'] = @request_uri.merge(location)
+          @header['location'] = @request_uri.merge(location).to_s
         end
       end
     end
