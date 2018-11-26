@@ -3024,7 +3024,11 @@ iseq_add_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
 int
 rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval)
 {
-    struct trace_set_local_events_struct data = {turnon_events, tpval, 0};
+    struct trace_set_local_events_struct data;
+    data.turnon_events = turnon_events;
+    data.tpval = tpval;
+    data.n = 0;
+
     iseq_add_local_tracepoint_i(iseq, (void *)&data);
     if (0) rb_funcall(Qnil, rb_intern("puts"), 1, rb_iseq_disasm(iseq)); /* for debug */
     return data.n;
@@ -3075,7 +3079,10 @@ iseq_remove_local_tracepoint_i(const rb_iseq_t *iseq, void *p)
 int
 rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval)
 {
-    struct trace_clear_local_events_struct data = {tpval, 0};
+    struct trace_clear_local_events_struct data;
+    data.tpval = tpval;
+    data.n = 0;
+
     iseq_remove_local_tracepoint_i(iseq, (void *)&data);
     return data.n;
 }
