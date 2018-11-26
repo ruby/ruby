@@ -169,9 +169,11 @@ env:
     <<: *make-test-only
     compiler: clang
     env:
-      - "cflags='-fsanitize=memory'"
+      - "cflags='-fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer'"
+      - "optflags='-O1'"
       - "LD=clang"
       - "LDFLAGS=-fsanitize=memory"
+      - "CONFIG_FLAG=--with-out-ext=openssl"
 
   - &UBSAN
     name: -fsanitize=undefined
