@@ -213,7 +213,7 @@ class Gem::Version
     end
 
     # If version is an empty string convert it to 0
-    version = 0 if version =~ /\A\s*\Z/
+    version = 0 if version.is_a?(String) && version =~ /\A\s*\Z/
 
     @version = version.to_s.strip.gsub("-",".pre.")
     @segments = nil
