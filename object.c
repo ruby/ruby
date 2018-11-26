@@ -1479,6 +1479,19 @@ nil_inspect(VALUE obj)
     return rb_usascii_str_new2("nil");
 }
 
+/*
+ *  call-seq:
+ *     nil =~ other  -> nil
+ *
+ *  Dummy pattern matching -- always returns nil.
+ */
+
+static VALUE
+nil_match(VALUE obj1, VALUE obj2)
+{
+    return Qnil;
+}
+
 /***********************************************************************
  *  Document-class: TrueClass
  *
@@ -1673,6 +1686,7 @@ rb_false(VALUE obj)
 static VALUE
 rb_obj_match(VALUE obj1, VALUE obj2)
 {
+    rb_warning("Object#=~ is deprecated; it always returns nil");
     return Qnil;
 }
 
@@ -4149,6 +4163,7 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "to_h", nil_to_h, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
+    rb_define_method(rb_cNilClass, "=~", nil_match, 1);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
