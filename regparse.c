@@ -5722,6 +5722,9 @@ extern const OnigCodePoint onigenc_unicode_GCB_ranges_GAZ[];
 extern const OnigCodePoint onigenc_unicode_GCB_ranges_E_Base[];
 extern const OnigCodePoint onigenc_unicode_GCB_ranges_Emoji[];
 
+/*
+ * helper methods for node_extended_grapheme_cluster (/\X/)
+ */
 static int
 create_property_node(Node **np, ScanEnv* env, const char* propname)
 {
@@ -5735,6 +5738,16 @@ create_property_node(Node **np, ScanEnv* env, const char* propname)
   if (r != 0)
     onig_node_free(*np);
   return r;
+}
+
+static int
+quantify_node(Node **np, int lower, int upper)
+{
+  Node* tmp = node_new_quantifier(lower, upper, 0);
+  if (IS_NULL(tmp)) return ONIGERR_MEMORY;
+  NQTFR(tmp)->target = *np;
+  *np = tmp;
+  return 0;
 }
 
 static int
@@ -5779,10 +5792,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     r = add_code_range(&(cc->mbuf), env, 0x200D, 0x200D);
     if (r != 0) goto err;
 
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -5840,11 +5851,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* T+ */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 1, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = onig_node_new_alt(np1, alt);
     if (IS_NULL(tmp)) goto err;
@@ -5854,11 +5862,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* L+ */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 1, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = onig_node_new_alt(np1, alt);
     if (IS_NULL(tmp)) goto err;
@@ -5868,11 +5873,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* L* LVT T* */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -5890,10 +5892,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
 
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -5908,11 +5908,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* L* LV V* T* */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -5921,11 +5918,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=V");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -5942,11 +5936,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -5961,11 +5952,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* L* V+ T* */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -5974,11 +5962,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=V");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 1, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -5987,11 +5972,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=L");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -6011,11 +5993,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, 1, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, 1);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -6024,11 +6003,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -6052,11 +6028,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* Glue_After_Zwj */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -6093,10 +6066,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = node_new_str_raw(buf, buf + r);
     if (IS_NULL(np1)) goto err;
 
-    tmp = node_new_quantifier(0, 1, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, 1);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -6138,10 +6109,9 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = list2;
-    np1 = tmp;
+    r = quantify_node(&list2, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
+    np1 = list2;
     list2 = NULL;
 
     tmp = node_new_list(np1, NULL_NODE);
@@ -6152,11 +6122,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* E_Modifier? */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, 1, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, 1);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -6166,11 +6133,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* Extend* */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -6209,11 +6173,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, 1, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, 1);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -6254,11 +6215,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* RI-Sequence := Regional_Indicator{2} */
     r = create_property_node(&np1, env, "Regional_Indicator");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(2, 2, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 2, 2);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
@@ -6278,11 +6236,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* Prepend* */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list);
     if (IS_NULL(tmp)) goto err;
@@ -6311,10 +6266,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = node_new_str_raw(buf, buf + r);
     if (IS_NULL(np1)) goto err;
 
-    tmp = node_new_quantifier(0, 1, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 0, 1);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
@@ -6323,11 +6276,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend");
     if (r != 0) goto err;
-
-    tmp = node_new_quantifier(1, REPEAT_INFINITE, 0);
-    if (IS_NULL(tmp)) goto err;
-    NQTFR(tmp)->target = np1;
-    np1 = tmp;
+    r = quantify_node(&np1, 1, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
     if (IS_NULL(tmp)) goto err;
