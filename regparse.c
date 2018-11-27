@@ -5757,9 +5757,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
     OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80;
-    int extend = propname2ctype(env, "Grapheme_Cluster_Break=Extend");
 
-    if (extend < 0) goto err;
+    if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
     /* main comment: The order of the code is mostly in reverse of the order
      *               the various expressions appear in the grammar */
     /* Unicode 10.0.0 */
@@ -5771,11 +5770,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* Unicode 10.0.0 */
     /* ( Grapheme_Extend | SpacingMark )* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_ctype_to_cc(cc, extend, 0, 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
+
+    cc = NCCLASS(np1);
     r = add_property_to_cc(cc, "Grapheme_Cluster_Break=SpacingMark", 0, env);
     if (r != 0) goto err;
     r = add_code_range(&(cc->mbuf), env, 0x200D, 0x200D);
@@ -6024,10 +6022,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_ctype_to_cc(cc, extend, 0, 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -6055,10 +6050,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* Unicode 10.0.0 */
     /* Glue_After_Zwj */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_ctype_to_cc(cc, extend, 0, 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
@@ -6172,10 +6164,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* Extend* */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_ctype_to_cc(cc, extend, 0, 0, env);
+    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=Extend");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(0, REPEAT_INFINITE, 0);
