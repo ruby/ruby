@@ -5759,11 +5759,32 @@ quantify_property_node(Node **np, ScanEnv* env, const char* propname, int lower,
   return quantify_node(np, lower, upper);
 }
 
+/* IMPORTANT: Make sure node_array ends with NULL_NODE */
+static int
+create_sequence_node(Node **np, Node **node_array)
+{
+  Node* tmp = NULL_NODE;
+  int i = 0;
+
+  while (node_array[i] != NULL_NODE)  i++;
+  while (--i >= 0) {
+    *np = node_new_list(node_array[i], tmp);
+    if (IS_NULL(*np)) {
+      onig_node_free(tmp);
+      return ONIGERR_MEMORY;
+    }
+    tmp = *np;
+  }
+  return 0;
+}
+
 static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 {
   Node* tmp = NULL;
   Node* np1 = NULL;
+  Node* np2 = NULL;
+  Node* np3 = NULL;
   Node* list = NULL;
   Node* list2 = NULL;
   Node* alt = NULL;
@@ -5876,29 +5897,18 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* L* LVT T* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=LVT");
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
     r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
     if (r != 0) goto err;
+    r = create_property_node(&np2, env, "Grapheme_Cluster_Break=LVT");
+    if (r != 0) goto err;
+    r = quantify_property_node(&np3, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+    if (r != 0) goto err;
 
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+    { /* poor man's varargs :-) */
+      Node* sequence[] = { np1, np2, np3, NULL_NODE };
+      create_sequence_node(&list2, sequence);
+      np1 = np2 = np3 = NULL;
+    }
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
@@ -6321,6 +6331,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
  err:
   onig_node_free(np1);
+  onig_node_free(np2);
+  onig_node_free(np3);
   onig_node_free(list);
   onig_node_free(list2);
   onig_node_free(alt);
