@@ -2322,24 +2322,20 @@ iseqw_s_of(VALUE klass, VALUE body)
     if (rb_obj_is_proc(body)) {
         iseq = vm_proc_iseq(body);
 
-        if (rb_obj_is_iseq((VALUE)iseq)) {
-            return iseqw_new(iseq);
-        }
-        else {
-            return Qnil;
+        if (!rb_obj_is_iseq((VALUE)iseq)) {
+            iseq = NULL;
         }
     }
     else if (rb_obj_is_method(body)) {
-        return iseqw_new(rb_method_iseq(body));
+        iseq = rb_method_iseq(body);
     }
     else if (RB_TYPE_P(body, T_DATA) &&
              RTYPEDDATA_P(body) &&
              RTYPEDDATA_TYPE(body) == &iseqw_data_type) {
         return body;
     }
-    else {
-        return Qnil;
-    }
+
+    return iseq ? iseqw_new(iseq) : Qnil;
 }
 
 /*
