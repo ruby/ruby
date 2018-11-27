@@ -18,4 +18,4 @@ BUNDLE-INFO(1)							BUNDLE-INFO(1)
 
 
 
-				   May 2018			BUNDLE-INFO(1)
+				 November 2018			BUNDLE-INFO(1)

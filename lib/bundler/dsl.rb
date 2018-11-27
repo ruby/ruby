@@ -474,7 +474,7 @@ repo_name ||= user_name
         msg = "This Gemfile contains multiple primary sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"
-        unless Bundler.feature_flag.bundler_2_mode?
+        unless Bundler.feature_flag.bundler_3_mode?
           msg += ". To downgrade this error to a warning, run " \
             "`bundle config --delete disable_multisource`"
         end
@@ -499,7 +499,7 @@ repo_name ||= user_name
       end
 
       Bundler::SharedHelpers.major_deprecation 3, <<-EOS
-The :#{name} git source is deprecated, and will be removed in Bundler 2.0.#{additional_message} Add this code to the top of your Gemfile to ensure it continues to work:
+The :#{name} git source is deprecated, and will be removed in Bundler 3.0.#{additional_message} Add this code to the top of your Gemfile to ensure it continues to work:
 
     git_source(:#{name}) #{replacement}
 

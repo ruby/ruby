@@ -7,7 +7,7 @@ module Bundler
   # We're doing this because we might write tests that deal
   # with other versions of bundler and we are unsure how to
   # handle this better.
-  VERSION = "2.0.0.pre.1" unless defined?(::Bundler::VERSION)
+  VERSION = "2.0.0.pre.2" unless defined?(::Bundler::VERSION)
 
   def self.overwrite_loaded_gem_version
     begin

@@ -41,4 +41,4 @@ BUNDLE-DOCTOR(1)					      BUNDLE-DOCTOR(1)
 
 
 
-				   June 2018		      BUNDLE-DOCTOR(1)
+				 November 2018		      BUNDLE-DOCTOR(1)

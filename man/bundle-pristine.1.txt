@@ -41,4 +41,4 @@ BUNDLE-PRISTINE(1)					    BUNDLE-PRISTINE(1)
 
 
 
-				   May 2018		    BUNDLE-PRISTINE(1)
+				 November 2018		    BUNDLE-PRISTINE(1)

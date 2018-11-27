@@ -31,4 +31,4 @@ BUNDLE-REMOVE(1)					      BUNDLE-REMOVE(1)
 
 
 
-				 October 2018		      BUNDLE-REMOVE(1)
+				 November 2018		      BUNDLE-REMOVE(1)

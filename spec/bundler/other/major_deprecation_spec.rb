@@ -200,7 +200,7 @@ RSpec.describe "major deprecations", :bundler => "< 3" do
     context "with github gems" do
       it "warns about the https change" do
         msg = <<-EOS
-The :github git source is deprecated, and will be removed in Bundler 2.0. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
+The :github git source is deprecated, and will be removed in Bundler 3.0. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
 
     git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
 
@@ -212,7 +212,7 @@ The :github git source is deprecated, and will be removed in Bundler 2.0. Change
       it "upgrades to https on request" do
         Bundler.settings.temporary "github.https" => true
         msg = <<-EOS
-The :github git source is deprecated, and will be removed in Bundler 2.0. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
+The :github git source is deprecated, and will be removed in Bundler 3.0. Change any "reponame" :github sources to "username/reponame". Add this code to the top of your Gemfile to ensure it continues to work:
 
     git_source(:github) {|repo_name| "https://github.com/\#{repo_name}.git" }
 
@@ -229,7 +229,7 @@ The :github git source is deprecated, and will be removed in Bundler 2.0. Change
       it "warns about removal" do
         allow(Bundler.ui).to receive(:deprecate)
         msg = <<-EOS
-The :bitbucket git source is deprecated, and will be removed in Bundler 2.0. Add this code to the top of your Gemfile to ensure it continues to work:
+The :bitbucket git source is deprecated, and will be removed in Bundler 3.0. Add this code to the top of your Gemfile to ensure it continues to work:
 
     git_source(:bitbucket) do |repo_name|
       user_name, repo_name = repo_name.split("/")
@@ -247,7 +247,7 @@ The :bitbucket git source is deprecated, and will be removed in Bundler 2.0. Add
       it "warns about removal" do
         allow(Bundler.ui).to receive(:deprecate)
         msg = "The :gist git source is deprecated, and will be removed " \
-          "in Bundler 2.0. Add this code to the top of your Gemfile to ensure it " \
+          "in Bundler 3.0. Add this code to the top of your Gemfile to ensure it " \
           "continues to work:\n\n    git_source(:gist) {|repo_name| " \
           "\"https://gist.github.com/\#{repo_name}.git\" }\n\n"
         expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(3, msg)
