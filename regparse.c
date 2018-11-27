@@ -5760,10 +5760,16 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     int extend = propname2ctype(env, "Grapheme_Cluster_Break=Extend");
 
     if (extend < 0) goto err;
-    /* Prepend*
+    /* main comment: The order of the code is mostly in reverse of the order
+     *               the various expressions appear in the grammar */
+    /* Unicode 10.0.0 */
+    /* CRLF
+     * | Prepend*
      * ( RI-sequence | Hangul-Syllable | !Control )
-     * ( Grapheme_Extend | SpacingMark )* */
+     * ( Grapheme_Extend | SpacingMark )*
+     * | . */
 
+    /* Unicode 10.0.0 */
     /* ( Grapheme_Extend | SpacingMark )* */
     np1 = node_new_cclass();
     if (IS_NULL(np1)) goto err;
@@ -5785,6 +5791,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list = tmp;
     np1 = NULL;
 
+    /* Unicode 10.0.0 */
     /* ( RI-sequence | Hangul-Syllable | !Control ) */
     /* !Control */
     np1 = node_new_cclass();
@@ -5818,12 +5825,19 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = tmp;
     np1 = NULL;
 
+    /* Unicode 10.0.0 */
     /* Hangul-Syllable
      *  := L* V+ T*
      *  | L* LV V* T*
      *  | L* LVT T*
      *  | L+
      *  | T+ */
+    /* Unicode 11.0.0 */
+    /* Hangul-Syllable
+     *  := L* (V+ | LV V* | LVT) T*
+     *  | L+
+     *  | T+ */
+    /* these are equivalent, so we leave things as is for the moment */
 
     /* T+ */
     r = create_property_node(&np1, env, "Grapheme_Cluster_Break=T");
@@ -5990,7 +6004,9 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     if (IS_NULL(tmp)) goto err;
     alt = tmp;
     list2 = NULL;
+    /* end of Hangul-Syllable */
 
+    /* Unicode 10.0.0 */
     /* Emoji sequence := (E_Base | EBG) Extend* E_Modifier?
      *                   (ZWJ (Glue_After_Zwj | EBG Extend* E_Modifier?) )* */
 
@@ -6037,6 +6053,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt2 = tmp;
     list2 = NULL;
 
+    /* Unicode 10.0.0 */
     /* Glue_After_Zwj */
     np1 = node_new_cclass();
     if (IS_NULL(np1)) goto err;
@@ -6075,6 +6092,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt2 = tmp;
     list2 = NULL;
 
+    /* Unicode 10.0.0 */
     /* Emoji variation sequence
      * http://unicode.org/Public/emoji/4.0/emoji-zwj-sequences.txt
      */
@@ -6194,6 +6212,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = tmp;
     list2 = NULL;
 
+    /* Unicode 10.0.0 */
     /* ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
     /* a sequence starting with ZWJ seems artificial, but GraphemeBreakTest
      * has such examples.
@@ -6240,6 +6259,9 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = tmp;
     list2 = NULL;
 
+    /* Unicode 10.0.0/11.0.0 */
+    /* this is actually Regional_Indicator+ in Unicode 10.0.0,
+     * but it is Regional_Indicator{2} in Unicode 11.0.0, so no need to fix */
     /* RI-Sequence := Regional_Indicator{2} */
     np1 = node_new_cclass();
     if (IS_NULL(np1)) goto err;
