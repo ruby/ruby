@@ -6,6 +6,7 @@ describe "main.using" do
     lambda do
       eval('using', TOPLEVEL_BINDING)
     end.should raise_error(ArgumentError)
+
     lambda do
       eval('using "foo"', TOPLEVEL_BINDING)
     end.should raise_error(TypeError)

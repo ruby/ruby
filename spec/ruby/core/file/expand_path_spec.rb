@@ -88,7 +88,8 @@ describe "File.expand_path" do
 
   platform_is_not :windows do
     before do
-      @home = ENV['HOME'].chomp('/')
+      @var_home = ENV['HOME'].chomp('/')
+      @db_home = `echo ~#{ENV['USER']}`.chomp
     end
 
     # FIXME: these are insane!
@@ -107,9 +108,9 @@ describe "File.expand_path" do
       File.expand_path('./////').should == Dir.pwd
       File.expand_path('.').should == Dir.pwd
       File.expand_path(Dir.pwd).should == Dir.pwd
-      File.expand_path('~/').should == @home
-      File.expand_path('~/..badfilename').should == "#{@home}/..badfilename"
-      File.expand_path('~/a','~/b').should == "#{@home}/a"
+      File.expand_path('~/').should == @var_home
+      File.expand_path('~/..badfilename').should == "#{@var_home}/..badfilename"
+      File.expand_path('~/a','~/b').should == "#{@var_home}/a"
       File.expand_path('..').should == File.dirname(Dir.pwd)
     end
 
@@ -126,8 +127,11 @@ describe "File.expand_path" do
     end
 
     it "expands ~ENV['USER'] to the user's home directory" do
-      File.expand_path("~#{ENV['USER']}").should == @home
-      File.expand_path("~#{ENV['USER']}/a").should == "#{@home}/a"
+      File.expand_path("~#{ENV['USER']}").should == @db_home
+    end
+
+    it "expands ~ENV['USER']/a to a in the user's home directory" do
+      File.expand_path("~#{ENV['USER']}/a").should == "#{@db_home}/a"
     end
 
     it "does not expand ~ENV['USER'] when it's not at the start" do
@@ -135,7 +139,7 @@ describe "File.expand_path" do
     end
 
     it "expands ../foo with ~/dir as base dir to /path/to/user/home/foo" do
-      File.expand_path('../foo', '~/dir').should == "#{@home}/foo"
+      File.expand_path('../foo', '~/dir').should == "#{@var_home}/foo"
     end
   end
 
@@ -237,6 +241,21 @@ platform_is_not :windows do
     it "raises an ArgumentError when passed '~' if HOME == ''" do
       ENV["HOME"] = ""
       lambda { File.expand_path("~") }.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "File.expand_path with a non-absolute HOME" do
+    before :each do
+      @home = ENV["HOME"]
+    end
+
+    after :each do
+      ENV["HOME"] = @home
+    end
+
+    it "raises an ArgumentError" do
+      ENV["HOME"] = "non-absolute"
+      lambda { File.expand_path("~") }.should raise_error(ArgumentError, 'non-absolute home')
     end
   end
 end

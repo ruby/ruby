@@ -1269,7 +1269,7 @@ describe "A method" do
         def m(a, b = nil, c = nil, d, e: nil, **f)
           [a, b, c, d, e, f]
         end
-    ruby
+      ruby
 
       result = m(1, 2)
       result.should == [1, nil, nil, 2, nil, {}]
@@ -1279,6 +1279,19 @@ describe "A method" do
 
       result = m(1, {foo: :bar})
       result.should == [1, nil, nil, {foo: :bar}, nil, {}]
+    end
+  end
+
+  context "assigns keyword arguments from a passed Hash without modifying it" do
+    evaluate <<-ruby do
+        def m(a: nil); a; end
+      ruby
+
+      options = {a: 1}.freeze
+      lambda do
+        m(options).should == 1
+      end.should_not raise_error
+      options.should == {a: 1}
     end
   end
 end

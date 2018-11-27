@@ -130,6 +130,17 @@ describe "Struct.new" do
     it "fails with too many arguments" do
       lambda { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
     end
+
+    it "passes a hash as a normal argument" do
+      type = Struct.new(:args)
+
+      obj = type.new(keyword: :arg)
+      obj2 = type.new(*[{keyword: :arg}])
+
+      obj.should == obj2
+      obj.args.should == {keyword: :arg}
+      obj2.args.should == {keyword: :arg}
+    end
   end
 
   ruby_version_is "2.5" do
@@ -161,6 +172,12 @@ describe "Struct.new" do
         it "raises ArgumentError when passed a list of arguments" do
           -> {
             @struct_with_kwa.new("elefant", 4)
+          }.should raise_error(ArgumentError, /wrong number of arguments/)
+        end
+
+        it "raises ArgumentError when passed a single non-hash argument" do
+          -> {
+            @struct_with_kwa.new("elefant")
           }.should raise_error(ArgumentError, /wrong number of arguments/)
         end
       end

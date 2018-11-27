@@ -17,7 +17,7 @@ platform_is :windows do
     end
 
     it "raises WIN32OLERuntimeError if invalid string is given" do
-      lambda { WIN32OLESpecs.new_ole('foo') }.should raise_error( WIN32OLERuntimeError )
+      lambda { WIN32OLE.new('foo') }.should raise_error( WIN32OLERuntimeError )
     end
 
   end

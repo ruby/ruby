@@ -230,6 +230,10 @@ describe :time_params_microseconds, shared: true do
     t.usec.should == 123
   end
 
+  it "raises an ArgumentError for out of range microsecond" do
+    lambda { Time.send(@method, 2000, 1, 1, 20, 15, 1, 1000000) }.should raise_error(ArgumentError)
+  end
+
   it "handles fractional microseconds as a Float" do
     t = Time.send(@method, 2000, 1, 1, 20, 15, 1, 1.75)
     t.usec.should == 1

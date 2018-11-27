@@ -43,6 +43,17 @@ describe "Integer#gcd" do
     bignum.gcd(99).should == 99
   end
 
+  it "doesn't cause an integer overflow" do
+    [2 ** (1.size * 8 - 2), 0x8000000000000000].each do |max|
+      [max - 1, max, max + 1].each do |num|
+        num.gcd(num).should == num
+        (-num).gcd(num).should == num
+        (-num).gcd(-num).should == num
+        num.gcd(-num).should == num
+      end
+    end
+  end
+
   it "raises an ArgumentError if not given an argument" do
     lambda { 12.gcd }.should raise_error(ArgumentError)
   end
