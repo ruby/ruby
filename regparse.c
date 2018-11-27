@@ -5903,7 +5903,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* L* LVT T* */
     {
       Node* seq[4];
-      
+
       r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
       r = create_property_node(seq+1, env, "Grapheme_Cluster_Break=LVT");
