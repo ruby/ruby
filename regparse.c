@@ -5954,7 +5954,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       if (r != 0) goto err;
       r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
-  
+
       seq[3] = NULL_NODE;
       r = create_sequence_node(&list2, seq);
       if (r != 0) goto err;
