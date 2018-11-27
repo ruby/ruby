@@ -5925,13 +5925,13 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     {
       Node* seq[5];
 
-      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
-      r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", 0, REPEAT_INFINITE);
+      r = create_property_node(seq+1, env, "Grapheme_Cluster_Break=LV");
       if (r != 0) goto err;
-      r = create_property_node(seq+2, env, "Grapheme_Cluster_Break=LV");
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=V", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
-      r = quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
 
       seq[4] = NULL_NODE;
@@ -5948,11 +5948,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     {
       Node* seq[4];
 
-      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
       r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", 1, REPEAT_INFINITE);
       if (r != 0) goto err;
-      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
       if (r != 0) goto err;
 
       seq[3] = NULL_NODE;
