@@ -6263,10 +6263,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* this is actually Regional_Indicator+ in Unicode 10.0.0,
      * but it is Regional_Indicator{2} in Unicode 11.0.0, so no need to fix */
     /* RI-Sequence := Regional_Indicator{2} */
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    r = add_code_range(&(cc->mbuf), env, 0x1F1E6, 0x1F1FF);
+    r = create_property_node(&np1, env, "Regional_Indicator");
     if (r != 0) goto err;
 
     tmp = node_new_quantifier(2, 2, 0);
