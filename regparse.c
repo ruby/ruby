@@ -5912,7 +5912,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       if (r != 0) goto err;
 
       seq[3] = NULL_NODE;
-      create_sequence_node(&list2, seq);
+      r = create_sequence_node(&list2, seq);
+      if (r != 0) goto err;
     }
 
     tmp = onig_node_new_alt(list2, alt);
