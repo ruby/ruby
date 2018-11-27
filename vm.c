@@ -1051,7 +1051,7 @@ invoke_bmethod(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE self, co
     return ret;
 }
 
-ALWAYS_INLINE(static inline VALUE
+ALWAYS_INLINE(static VALUE
               invoke_iseq_block_from_c(rb_execution_context_t *ec, const struct rb_captured_block *captured,
                                        VALUE self, int argc, const VALUE *argv, VALUE passed_block_handler,
                                        const rb_cref_t *cref, int is_lambda, const rb_callable_method_entry_t *me));
@@ -1163,7 +1163,7 @@ vm_yield_force_blockarg(rb_execution_context_t *ec, VALUE args)
 				  VM_BLOCK_HANDLER_NONE, NULL, FALSE, TRUE);
 }
 
-ALWAYS_INLINE(static inline VALUE
+ALWAYS_INLINE(static VALUE
               invoke_block_from_c_proc(rb_execution_context_t *ec, const rb_proc_t *proc,
                                        VALUE self, int argc, const VALUE *argv,
                                        VALUE passed_block_handler, int is_lambda,
