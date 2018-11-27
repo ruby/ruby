@@ -5755,7 +5755,7 @@ quantify_property_node(Node **np, ScanEnv* env, const char* propname, int lower,
 {
   int r;
   r = create_property_node(np, env, propname);
-  if (r != 0) return r; 
+  if (r != 0) return r;
   return quantify_node(np, lower, upper);
 }
 
