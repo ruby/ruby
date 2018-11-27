@@ -1120,12 +1120,16 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
     return (mjit_func_t)func;
 }
 
-struct mjit_copy_job {
+typedef struct {
     struct rb_mjit_unit *unit;
     struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
     int finish_p;
-};
+} mjit_copy_job_t;
+
+/* Singleton MJIT copy job. This is made global since it needs to be durable even when MJIT worker thread is stopped.
+   (ex: register job -> MJIT pause -> MJIT resume -> dispatch job. Actually this should be just cancelled by finish_p check) */
+static mjit_copy_job_t mjit_copy_job;
 
 static void mjit_copy_job_handler(void *data);
 
@@ -1133,7 +1137,7 @@ static void mjit_copy_job_handler(void *data);
    could be different between ones on enqueue timing and ones on dequeue timing.
    Return TRUE if copy succeeds. */
 static int
-copy_cache_from_main_thread(struct mjit_copy_job *job)
+copy_cache_from_main_thread(mjit_copy_job_t *job)
 {
     CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
     job->finish_p = FALSE; /* allow dispatching this job in mjit_copy_job_handler */
@@ -1164,7 +1168,7 @@ copy_cache_from_main_thread(struct mjit_copy_job *job)
 void
 mjit_worker(void)
 {
-    struct mjit_copy_job job;
+    mjit_copy_job_t *job = &mjit_copy_job; /* just a shorthand */
 
 #ifndef _MSC_VER
     if (pch_status == PCH_NOT_READY) {
@@ -1192,30 +1196,30 @@ mjit_worker(void)
             verbose(3, "Getting wakeup from client");
         }
         unit = get_from_list(&unit_queue);
-        job.finish_p = TRUE; /* disable dispatching this job in mjit_copy_job_handler while it's being modified */
+        job->finish_p = TRUE; /* disable dispatching this job in mjit_copy_job_handler while it's being modified */
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
             mjit_func_t func;
             const struct rb_iseq_constant_body *body = unit->iseq->body;
 
-            job.unit = unit;
-            job.cc_entries = NULL;
+            job->unit = unit;
+            job->cc_entries = NULL;
             if (body->ci_size > 0 || body->ci_kw_size > 0)
-                job.cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
-            job.is_entries = NULL;
+                job->cc_entries = alloca(sizeof(struct rb_call_cache) * (body->ci_size + body->ci_kw_size));
+            job->is_entries = NULL;
             if (body->is_size > 0)
-                job.is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
+                job->is_entries = alloca(sizeof(union iseq_inline_storage_entry) * body->is_size);
 
             /* Copy ISeq's inline caches values to avoid race condition. */
-            if (job.cc_entries != NULL || job.is_entries != NULL) {
-                if (copy_cache_from_main_thread(&job) == FALSE) {
+            if (job->cc_entries != NULL || job->is_entries != NULL) {
+                if (copy_cache_from_main_thread(job) == FALSE) {
                     continue; /* retry postponed_job failure, or stop worker */
                 }
             }
 
             /* JIT compile */
-            func = convert_unit_to_func(unit, job.cc_entries, job.is_entries);
+            func = convert_unit_to_func(unit, job->cc_entries, job->is_entries);
 
             CRITICAL_SECTION_START(3, "in jit func replace");
             while (in_gc) { /* Make sure we're not GC-ing when touching ISeq */
@@ -1240,7 +1244,7 @@ mjit_worker(void)
 
     /* Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
        could be expired after finishing this function. */
-    job.finish_p = TRUE;
+    job->finish_p = TRUE;
 
     /* To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here. */
     worker_stopped = TRUE;
