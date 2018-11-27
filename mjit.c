@@ -24,17 +24,17 @@
 static void
 mjit_copy_job_handler(void *data)
 {
-    struct mjit_copy_job *job = data;
+    mjit_copy_job_t *job = data;
     const struct rb_iseq_constant_body *body;
-    if (stop_worker_p) {
-        /* `copy_cache_from_main_thread()` stops to wait for this job. Then job data which is
-           allocated by `alloca()` could be expired and we might not be able to access that.
-           Also this should be checked before CRITICAL_SECTION_START to ensure that mutex is alive. */
+    if (stop_worker_p) { /* check if mutex is still alive, before calling CRITICAL_SECTION_START. */
         return;
     }
 
     CRITICAL_SECTION_START(3, "in mjit_copy_job_handler");
-    /* Make sure that this job is never executed while job is being modified or ISeq is GC-ed */
+    /* Make sure that this job is never executed when:
+       1. job is being modified
+       2. alloca memory inside job is expired
+       3. ISeq is GC-ed */
     if (job->finish_p || job->unit->iseq == NULL) {
         CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
         return;
