@@ -2322,7 +2322,7 @@ iseqw_s_of(VALUE klass, VALUE body)
     if (rb_obj_is_proc(body)) {
         iseq = vm_proc_iseq(body);
 
-	if (rb_obj_is_iseq((VALUE)iseq)) {
+        if (rb_obj_is_iseq((VALUE)iseq)) {
             return iseqw_new(iseq);
         }
         else {
