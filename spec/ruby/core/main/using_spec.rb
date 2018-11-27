@@ -3,15 +3,14 @@ require_relative 'fixtures/classes'
 
 describe "main.using" do
   it "requires one Module argument" do
-=begin
     lambda do
       eval('using', TOPLEVEL_BINDING)
     end.should raise_error(ArgumentError)
-=end
-
+=begin
     lambda do
       eval('using "foo"', TOPLEVEL_BINDING)
     end.should raise_error(TypeError)
+=end
   end
 
   it "uses refinements from the given module only in the target file" do
