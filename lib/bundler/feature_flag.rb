@@ -61,6 +61,8 @@ module Bundler
 
     settings_option(:default_cli_command) { bundler_3_mode? ? :cli_help : :install }
 
+    settings_method(:github_https?, "github.https") { bundler_2_mode? }
+
     def initialize(bundler_version)
       @bundler_version = Gem::Version.create(bundler_version)
     end

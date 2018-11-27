@@ -54,4 +54,4 @@ BUNDLE-PLATFORM(1)					    BUNDLE-PLATFORM(1)
 
 
 
-				   May 2018		    BUNDLE-PLATFORM(1)
+				 November 2018		    BUNDLE-PLATFORM(1)

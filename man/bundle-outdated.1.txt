@@ -128,4 +128,4 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 
 
-				 October 2018		    BUNDLE-OUTDATED(1)
+				 November 2018		    BUNDLE-OUTDATED(1)

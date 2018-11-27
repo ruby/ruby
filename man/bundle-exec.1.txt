@@ -175,4 +175,4 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
 
 
-				 October 2018			BUNDLE-EXEC(1)
+				 November 2018			BUNDLE-EXEC(1)

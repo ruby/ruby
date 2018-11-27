@@ -49,4 +49,4 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
 
 
 
-				 October 2018			 BUNDLE-ADD(1)
+				 November 2018			 BUNDLE-ADD(1)
