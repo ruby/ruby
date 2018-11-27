@@ -5901,20 +5901,18 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* L* LVT T* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
-    r = create_property_node(&np2, env, "Grapheme_Cluster_Break=LVT");
-    if (r != 0) goto err;
-    r = quantify_property_node(&np3, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
+    {
+      Node* seq[4];
+      
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
+      r = create_property_node(seq+1, env, "Grapheme_Cluster_Break=LVT");
+      if (r != 0) goto err;
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
 
-    { /* poor man's varargs :-) */
-      Node* sequence[] = { NULL_NODE, NULL_NODE, NULL_NODE, NULL_NODE };
-      sequence[0] = np1;
-      sequence[1] = np2;
-      sequence[2] = np3;
-      create_sequence_node(&list2, sequence);
-      np1 = np2 = np3 = NULL;
+      seq[3] = NULL_NODE;
+      create_sequence_node(&list2, seq);
     }
 
     tmp = onig_node_new_alt(list2, alt);
