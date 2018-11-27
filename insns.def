@@ -777,8 +777,12 @@ send
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, false);
-    bool pop_p = CURRENT_INSN_IS(pop);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_method_wrap);
+    int popped =
+        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
+        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        0;
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -797,8 +801,12 @@ opt_send_without_block
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    bool pop_p = CURRENT_INSN_IS(pop);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_method_wrap);
+    int popped =
+        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
+        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        0;
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -873,8 +881,12 @@ invokesuper
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, true);
-    bool pop_p = CURRENT_INSN_IS(pop);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_super_method);
+    int popped =
+        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
+        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        0;
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_super_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -897,8 +909,12 @@ invokeblock
     };
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    bool pop_p = CURRENT_INSN_IS(pop);
-    val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, pop_p, vm_search_invokeblock);
+    int popped =
+        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
+        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
+        0;
+    val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, popped, vm_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -944,6 +960,29 @@ leave
     else {
 	RESTORE_REGS();
     }
+}
+
+/* This instruction is no-op unless the instruction sequence is called
+ * with VM_FRAME_FLAG_POPPED.  With that flag on, it immediately
+ * leaves the current stack frame with scratching the topmost n stack
+ * values.  The return value of the iseq for that case is always
+ * nil. */
+DEFINE_INSN
+opt_bailout
+(rb_num_t n)
+()
+()
+{
+#ifdef MJIT_HEADER
+    /* :FIXME: don't know how to make it work with JIT... */
+#else
+    if (VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) &&
+        CURRENT_INSN_IS(opt_bailout) /* <- rule out trace instruction */ ) {
+        POPN(n);
+        PUSH(Qnil);
+        DISPATCH_ORIGINAL_INSN(leave);
+    }
+#endif
 }
 
 /**********************************************************/

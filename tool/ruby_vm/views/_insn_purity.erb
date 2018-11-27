@@ -6,6 +6,16 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %#
+PUREFUNC(MAYBE_UNUSED(
+/**
+ * Calculates the actual purity of an instruction and its operands.
+ *
+ * @param [in] insn the (name of) instruction.
+ * @param [in] opes operands.
+ * @return the purity.
+ */
+static enum rb_insn_purity insn_purity_dispatch_casted(enum ruby_vminsn_type insn, const VALUE *opes)));
+
 enum rb_insn_purity
 insn_purity_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
 {
@@ -43,6 +53,35 @@ insn_purity_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
       case <%= i.bin %>:
         return attr_purity_<%= i.name %>(<%=
           i.opes.map.with_index {|v, j| "(#{v[:type]})opes[#{j}]"}.join(", ")
+        %>);
+% end
+    }
+}
+
+enum rb_insn_purity
+insn_purity_dispatch_casted(enum ruby_vminsn_type insn, const VALUE *opes)
+{
+    static const signed char t[] = {
+% ary.each do |(_, a)|
+        <%= a %>,
+% end
+    };
+    signed char c = t[insn];
+
+    ASSERT_VM_INSTRUCTION_SIZE(t);
+    if (c != rb_insn_purity_is_complex) {
+        return c;
+    }
+    else switch(insn) {
+      default:
+        UNREACHABLE;
+% ary.each do |(i, a)|
+%   next unless a == 'rb_insn_purity_is_complex'
+      case <%= i.bin %>:
+        return attr_purity_<%= i.name %>(<%=
+          i.opes.map.with_index {|v, j|
+              i.cast_from_VALUE v, "opes[#{j}]"
+          }.join(", ")
         %>);
 % end
     }

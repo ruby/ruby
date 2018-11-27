@@ -959,7 +959,7 @@ FIRST_ELEMENT(const LINK_ANCHOR *const anchor)
 }
 
 static LINK_ELEMENT *
-LAST_ELEMENT(LINK_ANCHOR *const anchor)
+LAST_ELEMENT(const LINK_ANCHOR *const anchor)
 {
     return anchor->last;
 }
@@ -2223,6 +2223,9 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 				      "unknown operand type: %c", type);
 			return COMPILE_NG;
 		    }
+                    if (IS_INSN_ID(iobj, opt_bailout)) {
+                        generated_iseq[code_index + 1] = sp;
+                    }
 		}
 		if (add_insn_info(insns_info, positions, insns_info_index, code_index, iobj)) insns_info_index++;
 		code_index += len;
@@ -3309,6 +3312,186 @@ tailcallable_p(rb_iseq_t *iseq)
     }
 }
 
+static bool
+is_the_insn_sendish(const INSN *i)
+{
+    const char *t = insn_op_types(INSN_OF(i));
+
+    for (int j = 0; t[j]; j++) {
+        if (t[j] == TS_CALLINFO) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static enum rb_insn_purity
+calc_purity(enum rb_insn_purity p, const INSN *i)
+{
+    switch (INSN_OF(i)) {
+      case BIN(leave):
+      case BIN(jump):
+      case BIN(branchif):
+      case BIN(branchunless):
+      case BIN(branchnil):
+        /* bailout not possible for above insns */
+        return rb_insn_is_not_pure;
+
+      case BIN(opt_setinlinecache):
+        /* When we see setinlinecache that should be a part of
+         * getconstant-getconstant chain.  We should not bail out in
+         * middle of that. */
+        return rb_insn_is_not_pure;
+
+      default:
+        if (is_the_insn_sendish(i)) {
+            /* CALL_CACHE is not filled yet; cannot determine purity. */
+            return rb_insn_is_not_pure;
+        }
+        else {
+            return purity_merge(p,
+                insn_purity_dispatch_casted(i->insn_id, i->operands));
+        }
+    }
+}
+
+static const INSN *
+get_strictly_next_insn(const LINK_ELEMENT *e)
+{
+    for (const LINK_ELEMENT *i = e->next; i; i = i->next) {
+        if (IS_INSN(i)) {
+            return (const INSN *)i;
+        }
+    }
+    return NULL;
+}
+
+static const LINK_ELEMENT *
+fixup_bailout_point(const LINK_ELEMENT *e)
+{
+    const INSN *i = IS_INSN(e) ? (const INSN *)e : NULL;
+    const INSN *j = e ? get_strictly_next_insn(e) : NULL;
+    const INSN *k = j ? get_strictly_next_insn(&j->link) : NULL;
+
+    /* We are going to bail out between `i` and `j`. Is that
+     * appropriate?  Let's check.  Returns NULL if we don't need to
+     * bailout.  Otherwise returns a link element where do so.
+     */
+
+    if (! j) {
+        /* There is no `j`... This is the very end of the iseq. */
+        return NULL;
+    }
+    else switch (INSN_OF(j)) {
+      case BIN(leave):
+        /* The point is immediately before leave; bailing out here
+         * makes no sense.  Just leave normally. */
+        return NULL;
+
+      case BIN(nop):
+      case BIN(pop):
+      case BIN(putiseq):
+      case BIN(putnil):
+      case BIN(putobject):
+      case BIN(putself):
+      case BIN(putspecialobject):
+      case BIN(putstring):
+        if (IS_INSN_ID(k, leave)) {
+            /* We assume these sequences are super-lightweight that
+             * are not worth optimising. Note that `nop; leave;` can
+             * happen inside of ensure.  */
+            return NULL;
+        }
+        else {
+            /* FALLTHROUGH */
+        }
+
+      default: ;
+        const LINK_ELEMENT *ret;
+
+        if (! i) {
+            ret = e;                             /* (non-insn) [HERE] */
+        }
+        else if (! is_the_insn_sendish(i)) {
+            ret = &i->link;                      /* (non-send) [HERE] */
+        }
+        else if (j && ! IS_INSN_ID(j, pop)) {
+            ret = &i->link;                      /* send [HERR] -> (non-pop) */
+        }
+        else if (k && ! IS_INSN_ID(k, leave)) {
+            ret = fixup_bailout_point(&j->link); /* send -> pop [HERE] -> (non-leave) */
+        }
+        else {
+            return NULL;                         /* send -> pop -> leave */
+        }
+        if (ret && ret->next && IS_LABEL(ret->next)) {
+            /* We should not bail out right before a jump destination. */
+            return ret->next;
+        }
+        else {
+            return ret;
+        }
+    }
+}
+
+static void
+iseq_insert_bailouts(rb_iseq_t *iseq, const LINK_ANCHOR *anchor)
+{
+    enum rb_insn_purity p = rb_insn_is_pure;
+    const INSN *leave = NULL;
+
+    for (const LINK_ELEMENT *e = LAST_ELEMENT(anchor); e; e = e->prev) {
+        if (IS_INSN(e) && IS_INSN_ID(e, opt_bailout)) {
+            /* This happens during rb_iseq_build_from_ary()
+             * we should not modify the sequence here. */
+            return;
+        }
+    }
+
+    for (const LINK_ELEMENT *e = LAST_ELEMENT(anchor); e; e = e->prev) {
+        INSN *i = (INSN *)e;
+        const LINK_ELEMENT *j;
+
+        if (! IS_INSN(e)) {
+            continue;
+        }
+        else if (! leave) {
+            goto prev_insn;
+        }
+        else if ((p = calc_purity(p, i)) == rb_insn_is_pure) {
+            continue; /* Still subject to skip */
+        }
+        else if ((j = fixup_bailout_point(&i->link)) != NULL) {
+            /* Got it; we can bail out here */
+            if (IS_INSN(j)) {
+                i = (INSN *)j;
+            }
+            else {
+                i = (INSN *)get_strictly_next_insn(j->prev);
+            }
+            int line = i->insn_info.line_no;
+            INSERT_AFTER_INSN1(i, line, opt_bailout, INT2FIX(0));
+        }
+
+      prev_insn:
+        /* Go find another leave insn, until we hit the first
+         * element. */
+        leave = i && IS_INSN_ID(i, leave) ? i : NULL;
+        p = rb_insn_is_pure;
+    }
+
+    if (leave) {
+        /* bail out candidate reached the entry point */
+        const LINK_ELEMENT *i = fixup_bailout_point(FIRST_ELEMENT(anchor));
+
+        if (i) {
+            INSN *j = (INSN *)get_strictly_next_insn(i);
+            int line = j->insn_info.line_no;
+            INSERT_BEFORE_INSN1(j, line, opt_bailout, INT2FIX(0));
+        }
+    }
+}
+
 static int
 iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
@@ -3348,6 +3531,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	}
 	list = list->next;
     }
+    iseq_insert_bailouts(iseq, anchor);
     return COMPILE_OK;
 }
 

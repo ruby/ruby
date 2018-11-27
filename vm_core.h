@@ -263,6 +263,7 @@ struct rb_calling_info {
     VALUE block_handler;
     VALUE recv;
     int argc;
+    int popped;
 };
 
 struct rb_call_cache;
@@ -1133,11 +1134,11 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ __FF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FF..: 6 bits Frame flags
+     * FF..: 7 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1161,6 +1162,7 @@ enum {
     VM_FRAME_FLAG_CFRAME    = 0x0080,
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
+    VM_FRAME_FLAG_POPPED    = 0x0400,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,

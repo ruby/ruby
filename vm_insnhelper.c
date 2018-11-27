@@ -1767,12 +1767,13 @@ static inline VALUE
 vm_call_iseq_setup_normal(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling, const rb_callable_method_entry_t *me,
                           int opt_pc, int param_size, int local_size)
 {
+    int popped = calling->popped;
     const rb_iseq_t *iseq = def_iseq_ptr(me->def);
     VALUE *argv = cfp->sp - calling->argc;
     VALUE *sp = argv + param_size;
     cfp->sp = argv - 1 /* recv */;
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, calling->recv,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | popped, calling->recv,
                   calling->block_handler, (VALUE)me,
                   iseq->body->iseq_encoded + opt_pc, sp,
                   local_size - param_size,
@@ -1791,6 +1792,7 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
     VALUE *src_argv = argv;
     VALUE *sp_orig, *sp;
     VALUE finish_flag = VM_FRAME_FINISHED_P(cfp) ? VM_FRAME_FLAG_FINISH : 0;
+    unsigned long popped = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_POPPED);
 
     if (VM_BH_FROM_CFP_P(calling->block_handler, cfp)) {
 	struct rb_captured_block *dst_captured = VM_CFP_TO_CAPTURED_BLOCK(RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
@@ -1818,7 +1820,7 @@ vm_call_iseq_setup_tailcall(rb_execution_context_t *ec, rb_control_frame_t *cfp,
 	*sp++ = src_argv[i];
     }
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag,
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL | finish_flag | popped,
 		  calling->recv, calling->block_handler, (VALUE)me,
 		  iseq->body->iseq_encoded + opt_pc, sp,
 		  iseq->body->local_table_size - iseq->body->param.size,
@@ -1994,11 +1996,12 @@ vm_call_cfunc_with_frame(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp
     VALUE recv = calling->recv;
     VALUE block_handler = calling->block_handler;
     int argc = calling->argc;
+    int popped = calling->popped;
 
     RUBY_DTRACE_CMETHOD_ENTRY_HOOK(ec, me->owner, me->def->original_id);
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, recv, me->def->original_id, ci->mid, me->owner, Qundef);
 
-    vm_push_frame(ec, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL, recv,
+    vm_push_frame(ec, NULL, VM_FRAME_MAGIC_CFUNC | VM_FRAME_FLAG_CFRAME | VM_ENV_FLAG_LOCAL | popped, recv,
 		  block_handler, (VALUE)me,
 		  0, ec->cfp->sp, 0, 0);
 
@@ -2736,6 +2739,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
     calling = &calling_entry;
     calling->argc = argc;
     calling->block_handler = block_handler;
+    calling->popped = 0;
 
     ci_entry.flag = 0;
     ci = &ci_entry;
@@ -2754,11 +2758,12 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     const int arg_size = iseq->body->param.size;
     VALUE * const rsp = GET_SP() - calling->argc;
     int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, rsp, is_lambda ? arg_setup_method : arg_setup_block);
+    int popped = calling->popped;
 
     SET_SP(rsp);
 
     vm_push_frame(ec, iseq,
-		  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
+                  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0) | popped,
 		  captured->self,
 		  VM_GUARDED_PREV_EP(captured->ep), 0,
 		  iseq->body->iseq_encoded + opt_pc,
@@ -3338,7 +3343,7 @@ vm_sendish(
     struct rb_call_info *ci,
     struct rb_call_cache *cc,
     VALUE block_handler,
-    bool current_insn_is_pop,
+    int popped,
     void (*method_explorer)(
         const struct rb_control_frame_struct *reg_cfp,
         struct rb_call_info *ci,
@@ -3353,10 +3358,11 @@ vm_sendish(
     calling.block_handler = block_handler;
     calling.recv = recv;
     calling.argc = argc;
+    calling.popped = popped;
 
     method_explorer(GET_CFP(), ci, cc, recv);
 
-    if (current_insn_is_pop &&
+    if (popped &&
         vm_whether_we_can_skip_this_call_site_p(cc, block_handler)) {
         /* We are going to skip execution and "emulate" stack
          * manipulations */

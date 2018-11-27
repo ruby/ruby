@@ -56,6 +56,7 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 
     calling->recv = recv;
     calling->argc = argc;
+    calling->popped = false;
 
     return vm_call0_body(ec, calling, &ci_entry, &cc_entry, argv);
 }
