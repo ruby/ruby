@@ -5905,7 +5905,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     if (r != 0) goto err;
 
     { /* poor man's varargs :-) */
-      Node* sequence[] = { np1, np2, np3, NULL_NODE };
+      Node* sequence[] = { NULL_NODE, NULL_NODE, NULL_NODE, NULL_NODE };
+      sequence[0] = np1;
+      sequence[1] = np2;
+      sequence[2] = np3;
       create_sequence_node(&list2, sequence);
       np1 = np2 = np3 = NULL;
     }
