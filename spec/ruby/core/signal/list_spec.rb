@@ -61,4 +61,8 @@ describe "Signal.list" do
   it "includes the EXIT key with a value of zero" do
     Signal.list["EXIT"].should == 0
   end
+
+  it "includes the KILL key with a value of nine" do
+    Signal.list["KILL"].should == 9
+  end
 end

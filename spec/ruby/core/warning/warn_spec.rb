@@ -8,6 +8,14 @@ describe "Warning.warn" do
       }.should complain("Chunky bacon!")
     end
 
+    it "does not add a newline" do
+      ruby_exe("Warning.warn('test')", args: "2>&1").should == "test"
+    end
+
+    it "returns nil" do
+      ruby_exe("p Warning.warn('test')", args: "2>&1").should == "testnil\n"
+    end
+
     it "extends itself" do
       Warning.singleton_class.ancestors.should include(Warning)
     end

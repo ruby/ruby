@@ -88,9 +88,9 @@ In similar fashion, the following commands run the respective specs:
     $ ../mspec/bin/mspec :library
     $ ../mspec/bin/mspec :capi
 
-### Contributing
+### Contributing and Writing Specs
 
-See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/ruby/spec/blob/master/CONTRIBUTING.md) for documentation about contributing and writing specs (guards, matchers, etc).
 
 ### Socket specs from rubysl-socket
 

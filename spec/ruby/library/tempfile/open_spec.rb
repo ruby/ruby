@@ -41,6 +41,14 @@ describe "Tempfile.open" do
     Tempfile.open(["specs", ".tt"]) { |tempfile| @tempfile = tempfile }
     @tempfile.path.should =~ /specs.*\.tt$/
   end
+
+  it "passes the third argument (options) to open" do
+    Tempfile.open("specs", Dir.tmpdir, encoding: "IBM037:IBM037", binmode: true) do |tempfile|
+      @tempfile = tempfile
+      tempfile.external_encoding.should == Encoding.find("IBM037")
+      tempfile.binmode?.should be_true
+    end
+  end
 end
 
 describe "Tempfile.open when passed a block" do

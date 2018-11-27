@@ -78,6 +78,30 @@ describe "Thread#raise on a sleeping thread" do
     end
     -> { t.value }.should raise_error(RuntimeError)
   end
+
+  it "re-raises a previously rescued exception without overwriting the backtrace" do
+    t = Thread.new do
+      -> { # To make sure there is at least one entry in the call stack
+        begin
+          sleep
+        rescue => e
+          e
+        end
+      }.call
+    end
+
+    ThreadSpecs.spin_until_sleeping(t)
+
+    begin
+      initial_raise_line = __LINE__; raise 'raised'
+    rescue => raised
+      raise_again_line = __LINE__; t.raise raised
+      raised_again = t.value
+
+      raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
+      raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
+    end
+  end
 end
 
 describe "Thread#raise on a running thread" do

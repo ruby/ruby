@@ -717,4 +717,19 @@ describe "Module#refine" do
       result.should == "hello from refinement"
     end
   end
+
+  it 'does not list methods defined only in refinement' do
+    refine_object = Module.new do
+      refine Object do
+        def refinement_only_method
+        end
+      end
+    end
+    spec = self
+    klass = Class.new { instance_methods.should_not spec.send(:include, :refinement_only_method) }
+    instance = klass.new
+    instance.methods.should_not include :refinement_only_method
+    instance.respond_to?(:refinement_only_method).should == false
+    -> { instance.method :refinement_only_method }.should raise_error(NameError)
+  end
 end
