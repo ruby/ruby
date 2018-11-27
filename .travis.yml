@@ -336,11 +336,11 @@ before_script:
   - "ccache --show-stats"
   - |-
     case "$CC" in
-    gcc*)   the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-diagnostics-color) ;;
-    clang*) the_gcc=(ccache $CC ${GCC_FLAGS[@]} -fno-color-diagnostics) ;;
+    gcc*)   CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-diagnostics-color";;
+    clang*) CC="ccache $CC${GCC_FLAGS:+ }$GCC_FLAGS -fno-color-diagnostics";;
     esac
   - "[ ! -f config.cache ] || [ \"$CC\" = \"`sed -n s/^ac_cv_prog_CC=//p config.cache`\" ] || (set -x; exec rm config.cache)"
-  - "$SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix --with-gcc=\"${the_gcc[*]}\" $CONFIG_FLAG"
+  - "$SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix $CONFIG_FLAG"
   - "cp -pr config.cache config.status .ext/include ../config_1st"
   - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
