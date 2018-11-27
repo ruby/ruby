@@ -2266,6 +2266,13 @@ NORETURN(void rb_unexpected_type(VALUE,int));
      ((t) == RUBY_T_DATA && RTYPEDDATA_P(v)) ? \
      rb_unexpected_type((VALUE)(v), (t)) : (void)0)
 
+static inline int
+rb_typeddata_is_instance_of_inline(VALUE obj, const rb_data_type_t *data_type)
+{
+    return RB_TYPE_P(obj, T_DATA) && RTYPEDDATA_P(obj) && (RTYPEDDATA_TYPE(obj) == data_type);
+}
+#define rb_typeddata_is_instance_of rb_typeddata_is_instance_of_inline
+
 /* file.c (export) */
 #if defined HAVE_READLINK && defined RUBY_ENCODING_H
 VALUE rb_readlink(VALUE path, rb_encoding *enc);

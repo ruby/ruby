@@ -830,6 +830,13 @@ rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
     return 1;
 }
 
+#undef rb_typeddata_is_instance_of
+int
+rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
+{
+    return rb_typeddata_is_instance_of_inline(obj, data_type);
+}
+
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
