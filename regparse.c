@@ -5770,6 +5770,10 @@ create_sequence_node(Node **np, Node **node_array)
   while (--i >= 0) {
     *np = node_new_list(node_array[i], tmp);
     if (IS_NULL(*np)) {
+      while (i >= 0) {
+        onig_node_free(node_array[i]);
+        node_array[i--] = NULL_NODE;
+      }
       onig_node_free(tmp);
       return ONIGERR_MEMORY;
     }
