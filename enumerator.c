@@ -2553,7 +2553,7 @@ enum_chain_total_size(VALUE enums)
 
 /*
  * call-seq:
- *   obj.size -> integer
+ *   obj.size -> int, Float::INFINITY or nil
  *
  * Returns the total size of the enumerator chain calculated by
  * summing up the size of each enumerable in the chain.  If any of the
