@@ -344,11 +344,10 @@ before_script:
   - "$SETARCH make reconfig"
   - "cp -pr config.cache config.status .ext/include ../config_2nd"
   - "(cd .. && exec diff -ru config_1st config_2nd)"
-  - |-
-    chmod u+w ..
-    rm -r ~/config_2nd
-    mv ../config_2nd ~
-    chmod u-w ..
+  - "chmod u+w .."
+  - "rm -r ~/config_2nd"
+  - "mv ../config_2nd ~"
+  - "chmod u-w .."
   - "$SETARCH make -s $JOBS && make install"
   - "ccache --show-stats"
 
