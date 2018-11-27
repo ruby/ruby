@@ -260,7 +260,7 @@ class TestRDocRIDriver < RDoc::TestCase
         para('alias comment'),
         blank_line,
         blank_line,
-        para('(this method is alias for Qux#original)'),
+        para('(This method is an alias for Qux#original.)'),
         blank_line,
         para('original comment'),
         blank_line,

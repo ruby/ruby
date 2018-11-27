@@ -1468,7 +1468,7 @@ or the PAGER environment variable.
         out << method.comment
       end
       out << RDoc::Markup::BlankLine.new
-      out << RDoc::Markup::Paragraph.new("(this method is alias for #{alias_for.full_name})")
+      out << RDoc::Markup::Paragraph.new("(This method is an alias for #{alias_for.full_name}.)")
       out << RDoc::Markup::BlankLine.new
       out << alias_for.comment
       out << RDoc::Markup::BlankLine.new
