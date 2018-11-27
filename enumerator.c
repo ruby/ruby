@@ -2575,7 +2575,7 @@ enum_chain_enum_size(VALUE obj, VALUE args, VALUE eobj)
 static VALUE
 enum_chain_yield_block(VALUE arg, VALUE block, int argc, VALUE *argv)
 {
-    return rb_funcallv(block, rb_intern("call"), argc, argv);
+    return rb_funcallv(block, id_call, argc, argv);
 }
 
 static VALUE
