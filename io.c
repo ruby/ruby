@@ -10697,11 +10697,11 @@ struct copy_stream_struct {
 
     int src_fd;
     int dst_fd;
-    int close_src;
-    int close_dst;
+    unsigned close_src : 1;
+    unsigned close_dst : 1;
+    int error_no;
     off_t total;
     const char *syserr;
-    int error_no;
     const char *notimp;
     VALUE th;
 };
