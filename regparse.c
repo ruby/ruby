@@ -5922,37 +5922,22 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* L* LV V* T* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
+    {
+      Node* seq[5];
 
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
+      r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
+      r = create_property_node(seq+2, env, "Grapheme_Cluster_Break=LV");
+      if (r != 0) goto err;
+      r = quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
 
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=V", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    r = create_property_node(&np1, env, "Grapheme_Cluster_Break=LV");
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[4] = NULL_NODE;
+      r = create_sequence_node(&list2, seq);
+      if (r != 0) goto err;
+    }
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
@@ -5960,29 +5945,20 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* L* V+ T* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
+    {
+      Node* seq[4];
 
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=V", 1, REPEAT_INFINITE);
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
-    if (r != 0) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
+      r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", 1, REPEAT_INFINITE);
+      if (r != 0) goto err;
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      if (r != 0) goto err;
+  
+      seq[3] = NULL_NODE;
+      r = create_sequence_node(&list2, seq);
+      if (r != 0) goto err;
+    }
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
