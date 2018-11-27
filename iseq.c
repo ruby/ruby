@@ -2329,9 +2329,7 @@ iseqw_s_of(VALUE klass, VALUE body)
     else if (rb_obj_is_method(body)) {
         iseq = rb_method_iseq(body);
     }
-    else if (RB_TYPE_P(body, T_DATA) &&
-             RTYPEDDATA_P(body) &&
-             RTYPEDDATA_TYPE(body) == &iseqw_data_type) {
+    else if (rb_typeddata_is_instance_of(body, &iseqw_data_type)) {
         return body;
     }
 
