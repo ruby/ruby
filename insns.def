@@ -777,7 +777,8 @@ send
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, false);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_method_wrap);
+    bool pop_p = CURRENT_INSN_IS(pop);
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -796,7 +797,8 @@ opt_send_without_block
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_method_wrap);
+    bool pop_p = CURRENT_INSN_IS(pop);
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_method_wrap);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -871,7 +873,8 @@ invokesuper
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, true);
-    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, vm_search_super_method);
+    bool pop_p = CURRENT_INSN_IS(pop);
+    val = vm_sendish(ec, GET_CFP(), ci, cc, bh, pop_p, vm_search_super_method);
 
     if (val == Qundef) {
         RESTORE_REGS();
@@ -894,7 +897,8 @@ invokeblock
     };
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, vm_search_invokeblock);
+    bool pop_p = CURRENT_INSN_IS(pop);
+    val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, pop_p, vm_search_invokeblock);
 
     if (val == Qundef) {
         RESTORE_REGS();

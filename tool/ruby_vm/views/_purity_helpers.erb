@@ -149,6 +149,28 @@ PUREFUNC(
  */
 static const struct rb_iseq_struct *iseq_of_def(const struct rb_method_definition_struct *def));
 
+#ifdef INSIDE_VM_INSNHELPER_C
+PUREFUNC(
+/**
+ * Utility attribute accessor.
+ *
+ * @param [in] bh block handler
+ * @retval NULL it is not an ISeq-backended block.
+ * @retval otherwise a valid pointer to an iseq.
+ */
+static const struct rb_iseq_struct *iseq_of_bh(VALUE bh));
+
+PUREFUNC(
+/**
+ * Nullable version of purity_of_cc.
+ *
+ * @param [in, out] cc call cache in question.
+ * @retval rb_insn_purity_is_unpredictable cc is NULL.
+ * @retval otherise purity of cc's method entry.
+ */
+static enum rb_insn_purity purity_of_ccish(struct rb_call_cache * cc));
+#endif
+
 MAYBE_UNUSED(
 /**
  * Utility function.   A cache  entry can be  stale.  That's OK,  as far  as we
@@ -698,4 +720,58 @@ purity_of_iseq(const rb_iseq_t *iseq)
     }
 }
 
+#ifdef INSIDE_VM_INSNHELPER_C
+
+const rb_iseq_t *
+iseq_of_bh(VALUE block_handler)
+{
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+        return NULL;
+    }
+    else if (VM_BH_IFUNC_P(block_handler)) {
+        return NULL;
+    }
+    else if (VM_BH_ISEQ_BLOCK_P(block_handler)) {
+        return VM_BH_TO_ISEQ_BLOCK(block_handler)->code.iseq;
+    }
+    else switch (vm_block_handler_type(block_handler)) {
+      default:
+      case block_handler_type_iseq:
+      case block_handler_type_ifunc:
+        VM_UNREACHABLE(iseq_of_bh);
+      case block_handler_type_symbol:
+        return NULL;
+      case block_handler_type_proc:
+        return rb_proc_get_iseq(VM_BH_TO_PROC(block_handler), 0);
+    }
+}
+
+static enum rb_insn_purity
+purity_of_ccish(struct rb_call_cache * cc)
+{
+    return cc->me ? purity_of_live_cc(cc) : rb_insn_purity_is_unpredictable;
+}
+
+MJIT_FUNC_EXPORTED bool
+vm_whether_we_can_skip_this_call_site_p(
+    struct rb_call_cache *cc,
+    VALUE block_handler)
+{
+    const rb_iseq_t *iseq;
+    enum rb_insn_purity p;
+
+    if ((p = purity_of_ccish(cc)) != rb_insn_purity_depends_block) {
+        return p == rb_insn_is_pure; /* not pure */
+    }
+    else if (block_handler == VM_BLOCK_HANDLER_NONE) {
+        return true;                 /* no block given */
+    }
+    else if (! (iseq = iseq_of_bh(block_handler))) {
+        return false;                /* ifunc, etc. */
+    }
+    else {
+        return purity_of_iseq(iseq) == rb_insn_is_pure;
+    }
+}
+#endif
 #pragma RubyVM reset source

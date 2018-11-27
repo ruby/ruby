@@ -69,6 +69,8 @@ error !
 #define START_OF_ORIGINAL_INSN(x) /* ignore */
 #define DISPATCH_ORIGINAL_INSN(x) return LABEL(x)(ec, reg_cfp);
 
+#define CURRENT_INSN_IS(pop) ((rb_insn_func_t)GET_CURRENT_INSN() == LABEL(pop))
+
 /************************************************/
 #elif OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 /* threaded code with gcc */
@@ -138,6 +140,8 @@ error !
 #define START_OF_ORIGINAL_INSN(x) start_of_##x:
 #define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 
+#define CURRENT_INSN_IS(pop) (GET_CURRENT_INSN() == (VALUE)LABEL_PTR(pop))
+
 /************************************************/
 #else /* no threaded code */
 /* most common method */
@@ -165,11 +169,17 @@ default:                        \
 #define START_OF_ORIGINAL_INSN(x) start_of_##x:
 #define DISPATCH_ORIGINAL_INSN(x) goto  start_of_##x;
 
+#define CURRENT_INSN_IS(pop) (GET_CURRENT_INSN() == BIN(pop))
+
 #endif
 
 #define VM_SP_CNT(ec, sp) ((sp) - (ec)->vm_stack)
 
 #ifdef MJIT_HEADER
+/* MJIT_HEADER lacks LABEL_PTR() */
+#undef CURRENT_INSN_IS
+#define CURRENT_INSN_IS(pop) false
+
 #define THROW_EXCEPTION(exc) do { \
     ec->errinfo = (VALUE)(exc); \
     EC_JUMP_TAG(ec, ec->tag->state); \
