@@ -2670,6 +2670,14 @@ get_scale(VALUE unit)
  *     Time.at(seconds, microseconds, :microsecond) -> time
  *     Time.at(seconds, nanoseconds, :nsec) -> time
  *     Time.at(seconds, nanoseconds, :nanosecond) -> time
+ *     Time.at(time, in: tz) -> time
+ *     Time.at(seconds_with_frac, in: tz) -> time
+ *     Time.at(seconds, microseconds_with_frac, in: tz) -> time
+ *     Time.at(seconds, milliseconds, :millisecond, in: tz) -> time
+ *     Time.at(seconds, microseconds, :usec, in: tz) -> time
+ *     Time.at(seconds, microseconds, :microsecond, in: tz) -> time
+ *     Time.at(seconds, nanoseconds, :nsec, in: tz) -> time
+ *     Time.at(seconds, nanoseconds, :nanosecond, in: tz) -> time
  *
  *  Creates a new Time object with the value given by +time+,
  *  the given number of +seconds_with_frac+, or
@@ -2678,7 +2686,8 @@ get_scale(VALUE unit)
  *  can be an Integer, Float, Rational, or other Numeric.
  *  non-portable feature allows the offset to be negative on some systems.
  *
- *  If a numeric argument is given, the result is in local time.
+ *  If +tz+ argument is given, the result is in that timezone or UTC offset, or
+ *  if a numeric argument is given, the result is in local time.
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
  *     Time.at(Time.at(0))                       #=> 1969-12-31 18:00:00 -0600
@@ -2692,9 +2701,12 @@ get_scale(VALUE unit)
 static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE time, t, unit = Qundef;
+    VALUE time, t, unit = Qundef, zone = Qnil;
     wideval_t timew;
 
+    if (argc > 1 && rb_obj_respond_to(argv[argc-1], id_utc_to_local, Qfalse)) {
+        zone = argv[--argc];
+    }
     if (rb_scan_args(argc, argv, "12", &time, &t, &unit) >= 2) {
         int scale = argc == 3 ? get_scale(unit) : 1000000;
         time = num_exact(time);
@@ -2712,6 +2724,9 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
     else {
         timew = rb_time_magnify(v2w(num_exact(time)));
         t = time_new_timew(klass, timew);
+    }
+    if (!NIL_P(zone)) {
+        time_zonelocal(t, zone);
     }
 
     return t;
