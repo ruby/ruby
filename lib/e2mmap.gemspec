@@ -5,7 +5,6 @@ rescue LoadError
   require_relative "e2mmap/version"
 end
 
-
 Gem::Specification.new do |spec|
   spec.name          = "e2mmap"
   spec.version       = Exception2MessageMapper::VERSION
