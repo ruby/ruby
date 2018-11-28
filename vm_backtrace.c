@@ -1201,6 +1201,9 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
     enum ruby_tag_type state;
     volatile VALUE MAYBE_UNUSED(result);
 
+    /* escape all env to heap */
+    rb_vm_stack_to_heap(ec);
+
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
     dbg_context.backtrace = ec_backtrace_location_ary(ec, 0, 0);
