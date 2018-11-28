@@ -5751,11 +5751,29 @@ quantify_node(Node **np, int lower, int upper)
 }
 
 static int
-quantify_property_node(Node **np, ScanEnv* env, const char* propname, int lower, int upper)
+quantify_property_node(Node **np, ScanEnv* env, const char* propname, char repetitions)
 {
   int r;
+  int lower = 0;
+  int upper = REPEAT_INFINITE;
+
   r = create_property_node(np, env, propname);
   if (r != 0) return r;
+  switch (repetitions) {
+    case '?':
+      upper = 1;
+      break;
+    case '+':
+      lower = 1;
+      break;
+    case '*':
+      break;
+    case '2':
+      lower = upper = 2;
+      break;
+    default:
+      return ONIGERR_PARSER_BUG;
+  }
   return quantify_node(np, lower, upper);
 }
 
@@ -5883,7 +5901,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* these are equivalent, so we leave things as is for the moment */
 
     /* T+ */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=T", 1, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=T", '+');
     if (r != 0) goto err;
 
     tmp = onig_node_new_alt(np1, alt);
@@ -5892,7 +5910,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* L+ */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", 1, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=L", '+');
     if (r != 0) goto err;
 
     tmp = onig_node_new_alt(np1, alt);
@@ -5904,11 +5922,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     {
       Node* seq[4];
 
-      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*');
       if (r != 0) goto err;
       r = create_property_node(seq+1, env, "Grapheme_Cluster_Break=LVT");
       if (r != 0) goto err;
-      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*');
       if (r != 0) goto err;
 
       seq[3] = NULL_NODE;
@@ -5925,13 +5943,13 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     {
       Node* seq[5];
 
-      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*');
       if (r != 0) goto err;
       r = create_property_node(seq+1, env, "Grapheme_Cluster_Break=LV");
       if (r != 0) goto err;
-      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=V", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=V", '*');
       if (r != 0) goto err;
-      r = quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=T", '*');
       if (r != 0) goto err;
 
       seq[4] = NULL_NODE;
@@ -5948,11 +5966,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     {
       Node* seq[4];
 
-      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*');
       if (r != 0) goto err;
-      r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", 1, REPEAT_INFINITE);
+      r = quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", '+');
       if (r != 0) goto err;
-      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", 0, REPEAT_INFINITE);
+      r = quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*');
       if (r != 0) goto err;
 
       seq[3] = NULL_NODE;
@@ -5971,7 +5989,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      *                   (ZWJ (Glue_After_Zwj | EBG Extend* E_Modifier?) )* */
 
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", 0, 1);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", '?');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
@@ -5979,7 +5997,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", 0, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", '*');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -6002,7 +6020,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* Unicode 10.0.0 */
     /* Glue_After_Zwj */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", 0, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", '*');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
@@ -6094,7 +6112,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* E_Modifier? */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", 0, 1);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", '?');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -6103,7 +6121,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* Extend* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", 0, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", '*');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -6141,7 +6159,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      * has such examples.
      * http://www.unicode.org/Public/9.0.0/ucd/auxiliary/GraphemeBreakTest.html
      */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", 0, 1);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", '?');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, NULL_NODE);
@@ -6181,7 +6199,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* this is actually Regional_Indicator+ in Unicode 10.0.0,
      * but it is Regional_Indicator{2} in Unicode 11.0.0, so no need to fix */
     /* RI-Sequence := Regional_Indicator{2} */
-    r = quantify_property_node(&np1, env, "Regional_Indicator", 2, 2);
+    r = quantify_property_node(&np1, env, "Regional_Indicator", '2');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
@@ -6200,7 +6218,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = NULL;
 
     /* Prepend* */
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend", 0, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend", '*');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list);
@@ -6238,7 +6256,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = tmp;
     np1 = NULL;
 
-    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend", 1, REPEAT_INFINITE);
+    r = quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend", '+');
     if (r != 0) goto err;
 
     tmp = node_new_list(np1, list2);
