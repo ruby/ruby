@@ -503,41 +503,49 @@ End
     def abbr(t)
       @abbr
     end
+
+    def ==(other)
+      @name == other.name and @abbr == other.abbr(0) and @offset == other.offset
+    end
+
+    def inspect
+      "#<TZ: #@name #@abbr #@offset>"
+    end
   end
 end
 
 module TestTimeTZ::WithTZ
-  def subtest_new(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_new(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     assert_equal([2018, 9, 1, 12, 0, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     h, m = (-utc_offset / 60).divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, 0).to_i, t.to_i)
   end
 
-  def subtest_getlocal(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.utc(2018, 9, 1, 12, 0, 0).getlocal(tz)
+  def subtest_getlocal(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.utc(2018, 9, 1, 12, 0, 0).getlocal(tzarg)
     h, m = (utc_offset / 60).divmod(60)
     assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     assert_equal(time_class.utc(2018, 9, 1, 12, 0, 0), t)
   end
 
-  def subtest_strftime(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_strftime(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     h, m = (utc_offset.abs / 60).divmod(60)
     h = -h if utc_offset < 0
     assert_equal("%+.2d%.2d %s" % [h, m, abbr], t.strftime("%z %Z"))
   end
 
-  def subtest_plus(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz) + 4000
+  def subtest_plus(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg) + 4000
     assert_equal([2018, 9, 1, 13, 6, 40, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
     m, s = (4000-utc_offset).divmod(60)
     h, m = m.divmod(60)
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, s), t)
   end
 
-  def subtest_marshal(time_class, tz, tzname, abbr, utc_offset)
-    t = time_class.new(2018, 9, 1, 12, 0, 0, tz)
+  def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
     assert_equal(t, t2)
     assert_equal(t.utc_offset, t2.utc_offset)
@@ -561,7 +569,8 @@ module TestTimeTZ::WithTZ
       define_method("#{test}@#{tzname}") do
         tz = make_timezone(tzname, abbr, utc_offset)
         time_class = self.class::TIME_CLASS
-        __send__(subtest, time_class, tz, tzname, abbr, utc_offset)
+        __send__(subtest, time_class, tz, tz, tzname, abbr, utc_offset)
+        __send__(subtest, time_class, tz, tzname, tzname, abbr, utc_offset)
       end
     end
   end

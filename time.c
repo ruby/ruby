@@ -642,6 +642,7 @@ static uint32_t obj2subsecx(VALUE obj, VALUE *subsecx);
 static VALUE time_gmtime(VALUE);
 static VALUE time_localtime(VALUE);
 static VALUE time_fixoff(VALUE);
+static VALUE time_zonelocal(VALUE time, VALUE off);
 
 static time_t timegm_noleapsecond(struct tm *tm);
 static int tmcmp(struct tm *a, struct tm *b);
@@ -2040,6 +2041,13 @@ maybe_tzobj_p(VALUE obj)
     return TRUE;
 }
 
+NORETURN(static void invalid_utc_offset(void));
+static void
+invalid_utc_offset(void)
+{
+    rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
+}
+
 static VALUE
 utc_offset_arg(VALUE arg)
 {
@@ -2049,7 +2057,7 @@ utc_offset_arg(VALUE arg)
         char *s = RSTRING_PTR(tmp);
         if (!rb_enc_str_asciicompat_p(tmp)) {
 	  invalid_utc_offset:
-            rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
+            return Qnil;
 	}
 	switch (RSTRING_LEN(tmp)) {
 	  case 9:
@@ -2263,8 +2271,9 @@ time_init_1(int argc, VALUE *argv, VALUE time)
             vtm.isdst = 0;
         else if (maybe_tzobj_p(arg))
             zone = arg;
-        else
-            vtm.utc_offset = utc_offset_arg(arg);
+        else if (NIL_P(vtm.utc_offset = utc_offset_arg(arg)))
+            if (NIL_P(zone = find_timezone(time, arg)))
+                invalid_utc_offset();
     }
 
     validate_vtm(&vtm);
@@ -2280,8 +2289,9 @@ time_init_1(int argc, VALUE *argv, VALUE time)
         if (zone_timelocal(zone, time)) {
             return time;
         }
-        else {
-            vtm.utc_offset = utc_offset_arg(zone);
+        else if (NIL_P(vtm.utc_offset = utc_offset_arg(zone))) {
+            if (NIL_P(zone = find_timezone(time, zone)) || !zone_timelocal(zone, time))
+                invalid_utc_offset();
         }
     }
 
@@ -2480,11 +2490,18 @@ rb_time_num_new(VALUE timev, VALUE off)
     VALUE time = time_new_timew(rb_cTime, rb_time_magnify(v2w(timev)));
 
     if (!NIL_P(off)) {
-        if (maybe_tzobj_p(off)) {
+        VALUE zone = off;
+
+        if (maybe_tzobj_p(zone)) {
             time_gmtime(time);
-            if (zone_timelocal(off, time)) return time;
+            if (zone_timelocal(zone, time)) return time;
         }
-        off = utc_offset_arg(off);
+        if (NIL_P(off = utc_offset_arg(off))) {
+            if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
+            time_gmtime(time);
+            if (!zone_timelocal(zone, time)) invalid_utc_offset();
+            return time;
+        }
         validate_utc_offset(off);
         time_set_utc_offset(time, off);
         return time;
@@ -3682,6 +3699,23 @@ time_localtime(VALUE time)
     return time;
 }
 
+static VALUE
+time_zonelocal(VALUE time, VALUE off)
+{
+    VALUE zone = off;
+    if (zone_localtime(zone, time)) return time;
+
+    if (NIL_P(off = utc_offset_arg(off))) {
+        if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
+        if (!zone_localtime(zone, time)) invalid_utc_offset();
+        return time;
+    }
+    validate_utc_offset(off);
+
+    time_set_utc_offset(time, off);
+    return time_fixoff(time);
+}
+
 /*
  *  call-seq:
  *     time.localtime -> time
@@ -3712,13 +3746,7 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
     rb_scan_args(argc, argv, "01", &off);
 
     if (!NIL_P(off)) {
-        if (zone_localtime(off, time)) return time;
-
-        off = utc_offset_arg(off);
-        validate_utc_offset(off);
-
-        time_set_utc_offset(time, off);
-        return time_fixoff(time);
+        return time_zonelocal(time, off);
     }
 
     return time_localtime(time);
@@ -3835,12 +3863,18 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
     rb_scan_args(argc, argv, "01", &off);
 
     if (!NIL_P(off)) {
-        if (maybe_tzobj_p(off)) {
+        VALUE zone = off;
+        if (maybe_tzobj_p(zone)) {
             VALUE t = time_dup(time);
             if (zone_localtime(off, t)) return t;
         }
 
-        off = utc_offset_arg(off);
+        if (NIL_P(off = utc_offset_arg(off))) {
+            if (NIL_P(zone = find_timezone(time, zone))) invalid_utc_offset();
+            time = time_dup(time);
+            if (!zone_localtime(zone, time)) invalid_utc_offset();
+            return time;
+        }
         validate_utc_offset(off);
 
         time = time_dup(time);
@@ -5417,6 +5451,9 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *
  *  At loading marshaled data, a timezone name will be converted to a timezone
  *  object by +find_timezone+ class method, if the method is defined.
+ *
+ *  Similary, that class method will be called when a timezone argument does
+ *  not have the necessary methods mentioned above.
  */
 
 void
