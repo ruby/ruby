@@ -542,6 +542,7 @@ module TestTimeTZ::WithTZ
     assert_equal(t, t2)
     assert_equal(t.utc_offset, t2.utc_offset)
     assert_equal(t.utc_offset, (t2+1).utc_offset)
+    assert_instance_of(t.zone.class, t2.zone)
   end
 
   ZONES = {

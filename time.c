@@ -38,7 +38,7 @@
 static ID id_divmod, id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
 static ID id_quo, id_div;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
-static ID id_local_to_utc, id_utc_to_local;
+static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
 
 #ifndef TM_IS_TIME
@@ -2208,6 +2208,14 @@ zone_localtime(VALUE zone, VALUE time)
     tobj->tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
     return 1;
+}
+
+static VALUE
+find_timezone(VALUE time, VALUE zone)
+{
+    VALUE klass = CLASS_OF(time);
+
+    return rb_check_funcall_default(klass, id_find_timezone, 1, &zone, Qnil);
 }
 
 static VALUE
@@ -5016,7 +5024,8 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-	zone = rb_fstring(zone);
+        VALUE z = find_timezone(time, zone);
+        zone = NIL_P(z) ? rb_fstring(zone) : RB_TYPE_P(z, T_STRING) ? rb_fstring(z) : z;
 	tobj->vtm.zone = zone;
     }
 
@@ -5403,6 +5412,11 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
  *  object are not able to dump by Marshal.
  *
  *  The +abbr+ method is used by '%Z' in #strftime.
+ *
+ *  === Auto conversion to Timezone
+ *
+ *  At loading marshaled data, a timezone name will be converted to a timezone
+ *  object by +find_timezone+ class method, if the method is defined.
  */
 
 void
@@ -5434,6 +5448,7 @@ Init_Time(void)
     id_sec = rb_intern("sec");
     id_isdst = rb_intern("isdst");
     id_name = rb_intern("name");
+    id_find_timezone = rb_intern("find_timezone");
 
     rb_cTime = rb_define_class("Time", rb_cObject);
     rb_include_module(rb_cTime, rb_mComparable);
