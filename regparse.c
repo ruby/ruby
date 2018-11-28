@@ -5968,28 +5968,18 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* Unicode 10.0.0 */
     /* Emoji sequence := (E_Base | EBG) Extend* E_Modifier?
      *                   (ZWJ (Glue_After_Zwj | EBG Extend* E_Modifier?) )* */
-
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
-    R_ERR(quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
 
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+    /* E_Base_GAZ Extend* E_Modifier? */
+    {
+      Node* seq[4];
+      R_ERR(create_property_node(seq+0, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
+      R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
+      R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
 
-    R_ERR(quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", '*'));
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    R_ERR(create_property_node(&np1, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[3] = NULL_NODE;
+      R_ERR(create_sequence_node(&list2, seq));
+    }
 
     tmp = onig_node_new_alt(list2, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
