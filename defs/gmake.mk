@@ -109,7 +109,7 @@ endif
 STUBPROGRAM = rubystub$(EXEEXT)
 IGNOREDPATTERNS = %~ .% %.orig %.rej \#%\#
 SCRIPTBINDIR := $(if $(EXEEXT),,exec/)
-SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/bin/*)))))
+SCRIPTPROGRAMS = $(addprefix $(SCRIPTBINDIR),$(addsuffix $(EXEEXT),$(filter-out $(IGNOREDPATTERNS),$(notdir $(wildcard $(srcdir)/libexec/*)))))
 
 stub: $(STUBPROGRAM)
 scriptbin: $(SCRIPTPROGRAMS)
@@ -189,7 +189,7 @@ endif
 #
 #   $ make rdoc:Integer#+
 rdoc\:%: PHONY
-	$(Q)$(RUNRUBY) $(srcdir)/bin/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
+	$(Q)$(RUNRUBY) $(srcdir)/libexec/ri --no-standard-docs --doc-dir=$(RDOCOUT) $(patsubst rdoc:%,%,$@)
 
 test_%.rb test/%: programs PHONY
 	+$(Q)$(exec) $(RUNRUBY) "$(srcdir)/test/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(patsubst test/%,%,$@)
