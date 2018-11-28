@@ -193,14 +193,22 @@ static rb_atomic_t max_file_descriptor = NOFILE;
 void
 rb_update_max_fd(int fd)
 {
-    struct stat buf;
     rb_atomic_t afd = (rb_atomic_t)fd;
     rb_atomic_t max_fd = max_file_descriptor;
+    int err;
 
     if (afd <= max_fd)
         return;
 
-    if (fstat(fd, &buf) != 0 && errno == EBADF) {
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
+    err = fcntl(fd, F_GETFL) == -1;
+#else
+    {
+        struct stat buf;
+        err = fstat(fd, &buf) != 0;
+    }
+#endif
+    if (err && errno == EBADF) {
         rb_bug("rb_update_max_fd: invalid fd (%d) given.", fd);
     }
 
