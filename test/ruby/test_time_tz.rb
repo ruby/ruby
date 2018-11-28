@@ -544,6 +544,18 @@ module TestTimeTZ::WithTZ
     assert_equal(time_class.utc(2018, 9, 1, 12+h, m, s), t)
   end
 
+  def subtest_at(time_class, tz, tzarg, tzname, abbr, utc_offset)
+    h, m = (utc_offset / 60).divmod(60)
+    utc = time_class.utc(2018, 9, 1, 12, 0, 0)
+    t = time_class.at(utc, tzarg)
+    assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(utc.to_i, t.to_i)
+    utc = utc.to_i
+    t = time_class.at(utc, tzarg)
+    assert_equal([2018, 9, 1, 12+h, m, 0, tz], [t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.zone])
+    assert_equal(utc, t.to_i)
+  end
+
   def subtest_marshal(time_class, tz, tzarg, tzname, abbr, utc_offset)
     t = time_class.new(2018, 9, 1, 12, 0, 0, tzarg)
     t2 = Marshal.load(Marshal.dump(t))
