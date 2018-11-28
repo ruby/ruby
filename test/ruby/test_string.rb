@@ -968,6 +968,7 @@ CODE
 
   def test_each_grapheme_cluster
     [
+      "\u{0D 0A}",
       "\u{20 200d}",
       "\u{600 600}",
       "\u{600 20}",
