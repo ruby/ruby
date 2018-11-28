@@ -722,7 +722,16 @@ begin
     end
     targets.each do |tgt|
       exts.each do |d|
-        mf.puts "#{d[0..-2]}#{tgt}:\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
+        d = d[0..-2]
+        t = "#{d}#{tgt}"
+        if  /^(dist|real)?clean$/ =~ tgt
+          deps = exts.select {|e|e.start_with?(d)}.map {|e|"#{e[0..-2]}#{tgt}"} - [t]
+          pd = ' ' + deps.join(' ') unless deps.empty?
+        else
+          pext = File.dirname(d)
+          pd = " #{pext}/#{tgt}" if exts.include?("#{pext}/.")
+        end
+        mf.puts "#{t}:#{pd}\n\t$(Q)#{submake} $(MFLAGS) V=$(V) $(@F)"
       end
     end
     mf.puts "\n""extso:\n"
