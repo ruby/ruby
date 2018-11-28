@@ -1661,16 +1661,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Used to detect if the gem is bundled in older version of Ruby, but not
-  # detectable as default gem (see BasicSpecification#default_gem?).
-
-  def bundled_gem_in_old_ruby?
-    !default_gem? &&
-      RUBY_VERSION < "2.0.0" &&
-      summary == "This #{name} is bundled with Ruby"
-  end
-
-  ##
   # Returns the full path to the cache directory containing this
   # spec's cached gem.
 

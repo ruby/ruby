@@ -3724,18 +3724,6 @@ end
     assert_equal ["default-2.0.0.0"], Gem::Specification.map(&:full_name)
   end
 
-  def test_detect_bundled_gem_in_old_ruby
-    util_set_RUBY_VERSION '1.9.3', 551
-
-    spec = util_spec 'bigdecimal', '1.1.0' do |s|
-      s.summary = "This bigdecimal is bundled with Ruby"
-    end
-
-    assert spec.bundled_gem_in_old_ruby?
-  ensure
-    util_restore_RUBY_VERSION
-  end
-
   def util_setup_deps
     @gem = util_spec "awesome", "1.0" do |awesome|
       awesome.add_runtime_dependency "bonobo", []

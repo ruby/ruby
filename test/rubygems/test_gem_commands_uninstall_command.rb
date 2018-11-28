@@ -151,11 +151,13 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
     assert_match(/Successfully uninstalled/, output)
   end
 
-  def test_execute_with_force_leaves_executable
+  def test_execute_with_version_leaves_non_matching_versions
     ui = Gem::MockGemUi.new
 
     util_make_gems
     util_setup_gem ui
+
+    assert_equal 3, Gem::Specification.find_all_by_name('a').length
 
     @cmd.options[:version] = '1'
     @cmd.options[:force] = true
@@ -165,17 +167,43 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    assert !Gem::Specification.all_names.include?('a')
+    assert_equal 2, Gem::Specification.find_all_by_name('a').length
+
     assert File.exist? File.join(@gemhome, 'bin', 'executable')
   end
 
-  def test_execute_with_force_uninstalls_all_versions
+  def test_execute_with_version_specified_as_colon
     ui = Gem::MockGemUi.new "y\n"
 
     util_make_gems
     util_setup_gem ui
 
-    assert Gem::Specification.find_all_by_name('a').length > 1
+    assert_equal 3, Gem::Specification.find_all_by_name('a').length
+
+    @cmd.options[:force] = true
+    @cmd.options[:args] = ['a:1']
+
+    use_ui ui do
+      @cmd.execute
+    end
+
+    assert_equal 2, Gem::Specification.find_all_by_name('a').length
+
+    assert File.exist? File.join(@gemhome, 'bin', 'executable')
+  end
+
+  def test_execute_with_force_and_without_version_uninstalls_everything
+    ui = Gem::MockGemUi.new "y\n"
+
+    a_1, = util_gem 'a', 1
+    install_gem a_1
+
+    a_3a, = util_gem 'a', '3.a'
+    install_gem a_3a
+
+    util_setup_gem ui
+
+    assert_equal 3, Gem::Specification.find_all_by_name('a').length
 
     @cmd.options[:force] = true
     @cmd.options[:args] = ['a']
@@ -184,7 +212,9 @@ class TestGemCommandsUninstallCommand < Gem::InstallerTestCase
       @cmd.execute
     end
 
-    refute_includes Gem::Specification.all_names, 'a'
+    assert_empty Gem::Specification.find_all_by_name('a')
+    assert_match "Removing executable", ui.output
+    refute File.exist? @executable
   end
 
   def test_execute_with_force_ignores_dependencies
@@ -259,6 +289,25 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     EXPECTED
 
     assert_match expected, @ui.error
+  end
+
+  def test_execute_two_version
+    @cmd.options[:args] = %w[a b]
+    @cmd.options[:version] = Gem::Requirement.new("> 1")
+
+    use_ui @ui do
+      e = assert_raises Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+
+      assert_equal 1, e.exit_code
+    end
+
+    msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
+      " version requirements using `gem uninstall 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+
+    assert_empty @ui.output
+    assert_equal msg, @ui.error.lines.last.chomp
   end
 
   def test_handle_options_vendor_missing

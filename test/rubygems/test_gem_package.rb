@@ -150,8 +150,6 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_add_files_symlink
-    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
-
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/code_sym.rb]
 
@@ -472,8 +470,6 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_tar_gz_symlink_relative_path
-    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
-
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
@@ -501,8 +497,6 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_extract_symlink_parent
-    skip 'symlink not supported' if Gem.win_platform? && RUBY_VERSION < '2.3'
-
     package = Gem::Package.new @gem
 
     tgz_io = util_tar_gz do |tar|
