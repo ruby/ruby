@@ -2686,7 +2686,7 @@ get_scale(VALUE unit)
  *  can be an Integer, Float, Rational, or other Numeric.
  *  non-portable feature allows the offset to be negative on some systems.
  *
- *  If +tz+ argument is given, the result is in that timezone or UTC offset, or
+ *  If +in+ argument is given, the result is in that timezone or UTC offset, or
  *  if a numeric argument is given, the result is in local time.
  *
  *     Time.at(0)                                #=> 1969-12-31 18:00:00 -0600
@@ -2701,13 +2701,19 @@ get_scale(VALUE unit)
 static VALUE
 time_s_at(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE time, t, unit = Qundef, zone = Qnil;
+    VALUE time, t, unit = Qundef, zone = Qundef, opts;
     wideval_t timew;
 
-    if (argc > 1 && rb_obj_respond_to(argv[argc-1], id_utc_to_local, Qfalse)) {
-        zone = argv[--argc];
+    argc = rb_scan_args(argc, argv, "12:", &time, &t, &unit, &opts);
+    if (!NIL_P(opts)) {
+        ID ids[1];
+        VALUE vals[numberof(ids)];
+
+        CONST_ID(ids[0], "in");
+        rb_get_kwargs(opts, ids, 0, 1, vals);
+        zone = vals[0];
     }
-    if (rb_scan_args(argc, argv, "12", &time, &t, &unit) >= 2) {
+    if (argc >= 2) {
         int scale = argc == 3 ? get_scale(unit) : 1000000;
         time = num_exact(time);
         t = num_exact(t);
@@ -2725,7 +2731,7 @@ time_s_at(int argc, VALUE *argv, VALUE klass)
         timew = rb_time_magnify(v2w(num_exact(time)));
         t = time_new_timew(klass, timew);
     }
-    if (!NIL_P(zone)) {
+    if (zone != Qundef) {
         time_zonelocal(t, zone);
     }
 
