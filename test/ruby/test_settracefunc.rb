@@ -2059,6 +2059,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_tracepoint_enable_with_target_line
     events = []
+    line_0 = __LINE__
     code1 = proc{
       events << 1
       events << 2
@@ -2067,7 +2068,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     tp = TracePoint.new(:line) do |tp|
       events << :tp
     end
-    tp.enable(target: code1, target_line: 2064) do
+    tp.enable(target: code1, target_line: line_0 + 3) do
       code1.call
     end
     assert_equal [1, :tp, 2, 3], events
