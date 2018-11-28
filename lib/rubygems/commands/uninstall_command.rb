@@ -114,7 +114,18 @@ that is a dependency of an existing gem.  You can use the
     "#{program_name} GEMNAME [GEMNAME ...]"
   end
 
+  def check_version # :nodoc:
+    if options[:version] != Gem::Requirement.default and
+         get_all_gem_names.size > 1
+      alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
+                  " version requirements using `gem uninstall 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+      terminate_interaction 1
+    end
+  end
+
   def execute
+    check_version
+
     if options[:all] and not options[:args].empty?
       uninstall_specific
     elsif options[:all]
@@ -138,8 +149,9 @@ that is a dependency of an existing gem.  You can use the
   def uninstall_specific
     deplist = Gem::DependencyList.new
 
-    get_all_gem_names.uniq.each do |name|
-      gem_specs = Gem::Specification.find_all_by_name(name)
+    get_all_gem_names_and_versions.each do |name, version|
+      requirement = Array(version || options[:version])
+      gem_specs = Gem::Specification.find_all_by_name(name, *requirement)
       say("Gem '#{name}' is not installed") if gem_specs.empty?
       gem_specs.each do |spec|
         deplist.add spec
@@ -148,8 +160,9 @@ that is a dependency of an existing gem.  You can use the
 
     deps = deplist.strongly_connected_components.flatten.reverse
 
-    deps.map(&:name).uniq.each do |gem_name|
-      uninstall_gem(gem_name)
+    deps.each do |dep|
+      options[:version] = dep.version
+      uninstall_gem(dep.name)
     end
   end
 

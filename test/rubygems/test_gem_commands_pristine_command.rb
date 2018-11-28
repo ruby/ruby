@@ -505,30 +505,6 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty(@ui.error)
   end
 
-  def test_execute_bundled_gem_on_old_rubies
-    util_set_RUBY_VERSION '1.9.3', 551
-
-    spec = util_spec 'bigdecimal', '1.1.0' do |s|
-      s.summary = "This bigdecimal is bundled with Ruby"
-    end
-    install_specs spec
-
-    @cmd.options[:args] = %w[bigdecimal]
-
-    use_ui @ui do
-      @cmd.execute
-    end
-
-    assert_equal([
-      "Restoring gems to pristine condition...",
-      "Skipped bigdecimal-1.1.0, it is bundled with old Ruby"
-    ], @ui.output.split("\n"))
-
-    assert_empty @ui.error
-  ensure
-    util_restore_RUBY_VERSION
-  end
-
   def test_handle_options
     @cmd.handle_options %w[]
 
