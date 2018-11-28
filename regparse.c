@@ -5988,26 +5988,23 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* Unicode 10.0.0 */
     /* Glue_After_Zwj */
-    R_ERR(quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Extend", '*'));
-
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
     {
-      const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_GAZ;
-      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
-    }
-    R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
+      Node* seq[3];
 
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[0] = node_new_cclass();
+      if (IS_NULL(seq[0])) goto err;
+      cc = NCCLASS(seq[0]);
+      {
+        const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_GAZ;
+        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
+      }
+      R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
+
+      R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
+
+      seq[2] = NULL_NODE;
+      R_ERR(create_sequence_node(&list2, seq));
+    }
 
     tmp = onig_node_new_alt(list2, alt2);
     if (IS_NULL(tmp)) goto err;
@@ -6018,30 +6015,26 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* Emoji variation sequence
      * http://unicode.org/Public/emoji/4.0/emoji-zwj-sequences.txt
      */
-    r = ONIGENC_CODE_TO_MBC(env->enc, 0xfe0f, buf);
-    if (r < 0) goto err;
-    np1 = node_new_str_raw(buf, buf + r);
-    if (IS_NULL(np1)) goto err;
-
-    R_ERR(quantify_node(&np1, 0, 1));
-
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
     {
-      const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_Emoji;
-      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
-    }
+      Node* seq[3];
 
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[0] = node_new_cclass();
+      if (IS_NULL(seq[0])) goto err;
+      cc = NCCLASS(seq[0]);
+      {
+        const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_Emoji;
+        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
+      }
+
+      r = ONIGENC_CODE_TO_MBC(env->enc, 0xfe0f, buf); /* VARIATION SELECTOR-16 */
+      if (r < 0) goto err;
+      seq[1] = node_new_str_raw(buf, buf + r);
+      if (IS_NULL(seq[1])) goto err;
+      R_ERR(quantify_node(seq+1, 0, 1));
+
+      seq[2] = NULL_NODE;
+      R_ERR(create_sequence_node(&list2, seq));
+    }
 
     tmp = onig_node_new_alt(list2, alt2);
     if (IS_NULL(tmp)) goto err;
@@ -6054,7 +6047,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt2 = NULL;
 
     /* ZWJ */
-    r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf);
+    r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf); /* ZERO WIDTH JOINER (ZWJ) */
     if (r < 0) goto err;
     np1 = node_new_str_raw(buf, buf + r);
     if (IS_NULL(np1)) goto err;
@@ -6111,38 +6104,30 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* Unicode 10.0.0 */
-    /* ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
     /* a sequence starting with ZWJ seems artificial, but GraphemeBreakTest
      * has such examples.
      * http://www.unicode.org/Public/9.0.0/ucd/auxiliary/GraphemeBreakTest.html
      */
-    R_ERR(quantify_property_node(&np1, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
+    /* ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
+    {
+      Node* seq[4];
 
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf); /* ZERO WIDTH JOINER (ZWJ) */
+      if (r < 0) goto err;
+      seq[0] = node_new_str_raw(buf, buf + r);
+      if (IS_NULL(seq[0])) goto err;
 
-    np1 = node_new_cclass();
-    if (IS_NULL(np1)) goto err;
-    cc = NCCLASS(np1);
-    R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
-    R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Base_GAZ", 0, env));
+      seq[1] = node_new_cclass();
+      if (IS_NULL(seq[1])) goto err;
+      cc = NCCLASS(seq[1]);
+      R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
+      R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Base_GAZ", 0, env));
 
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
 
-    r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf);
-    if (r < 0) goto err;
-    np1 = node_new_str_raw(buf, buf + r);
-    if (IS_NULL(np1)) goto err;
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[3] = NULL_NODE;
+      R_ERR(create_sequence_node(&list2, seq));
+    }
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
@@ -6155,7 +6140,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* RI-Sequence := Regional_Indicator{2} */
     R_ERR(quantify_property_node(&np1, env, "Regional_Indicator", '2'));
 
-    tmp = node_new_list(np1, list2);
+    tmp = node_new_list(np1, list2); /* here, list2 should be guaranteed to be NULL */
     if (IS_NULL(tmp)) goto err;
     list2 = tmp;
     np1 = NULL;
@@ -6195,24 +6180,20 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
 
     /* Prepend+ */
-    r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf);
-    if (r < 0) goto err;
-    np1 = node_new_str_raw(buf, buf + r);
-    if (IS_NULL(np1)) goto err;
+    {
+      Node* seq[3];
 
-    R_ERR(quantify_node(&np1, 0, 1));
+      R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=Prepend", '+'));
 
-    tmp = node_new_list(np1, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf); /* does this belong to Prepend?? */
+      if (r < 0) goto err;
+      seq[1] = node_new_str_raw(buf, buf + r);
+      if (IS_NULL(seq[1])) goto err;
+      R_ERR(quantify_node(seq+1, 0, 1));
 
-    R_ERR(quantify_property_node(&np1, env, "Grapheme_Cluster_Break=Prepend", '+'));
-
-    tmp = node_new_list(np1, list2);
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
+      seq[2] = NULL_NODE;
+      R_ERR(create_sequence_node(&list2, seq));
+    }
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
