@@ -654,7 +654,7 @@ class OptionParser
       return if sopts.empty? and lopts.empty? # completely hidden
 
       (sopts+lopts).each do |opt|
-        # "(-x -c -r)-l[left justify]" \
+        # "(-x -c -r)-l[left justify]"
         if /^--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
