@@ -5994,10 +5994,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       seq[0] = node_new_cclass();
       if (IS_NULL(seq[0])) goto err;
       cc = NCCLASS(seq[0]);
-      {
-        const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_GAZ;
-        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
-      }
+      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_GAZ));
       R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
 
       R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
@@ -6021,10 +6018,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       seq[0] = node_new_cclass();
       if (IS_NULL(seq[0])) goto err;
       cc = NCCLASS(seq[0]);
-      {
-        const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_Emoji;
-        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
-      }
+      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_Emoji));
 
       r = ONIGENC_CODE_TO_MBC(env->enc, 0xfe0f, buf); /* VARIATION SELECTOR-16 */
       if (r < 0) goto err;
@@ -6086,10 +6080,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = node_new_cclass();
     if (IS_NULL(np1)) goto err;
     cc = NCCLASS(np1);
-    {
-      const OnigCodePoint *ranges = onigenc_unicode_GCB_ranges_E_Base;
-      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, ranges));
-    }
+    R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_E_Base));
     R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Base", 0, env));
     R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=E_Base_GAZ", 0, env));
 
