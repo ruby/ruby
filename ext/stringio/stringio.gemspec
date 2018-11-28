@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = "stringio".freeze
-  s.version = "0.0.1"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 2.6".freeze)
   s.require_paths = ["lib".freeze]
@@ -19,8 +19,9 @@ Gem::Specification.new do |s|
   s.required_ruby_version = Gem::Requirement.new(">= 2.2".freeze)
   s.rubygems_version = "2.6.11".freeze
   s.summary = "Pseudo IO on String".freeze
-  s.cert_chain  = %w[certs/nobu.pem]
-  s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
+
+  # s.cert_chain  = %w[certs/nobu.pem]
+  # s.signing_key = File.expand_path("~/.ssh/gem-private_key.pem") if $0 =~ /gem\z/
 
   s.add_development_dependency 'rake-compiler'
 end
