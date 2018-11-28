@@ -4965,6 +4965,26 @@ time_dump(int argc, VALUE *argv, VALUE time)
     return str;
 }
 
+static VALUE
+mload_findzone(VALUE arg)
+{
+    VALUE *argp = (VALUE *)arg;
+    VALUE time = argp[0], zone = argp[1];
+    return find_timezone(time, zone);
+}
+
+static VALUE
+mload_zone(VALUE time, VALUE zone)
+{
+    VALUE z, args[2];
+    args[0] = time;
+    args[1] = zone;
+    z = rb_rescue(mload_findzone, (VALUE)args, (VALUE (*)(ANYARGS))NULL, Qnil);
+    if (NIL_P(z)) return rb_fstring(zone);
+    if (RB_TYPE_P(z, T_STRING)) return rb_fstring(z);
+    return z;
+}
+
 /* :nodoc: */
 static VALUE
 time_mload(VALUE time, VALUE str)
@@ -5079,8 +5099,7 @@ end_submicro: ;
 	time_fixoff(time);
     }
     if (!NIL_P(zone)) {
-        VALUE z = find_timezone(time, zone);
-        zone = NIL_P(z) ? rb_fstring(zone) : RB_TYPE_P(z, T_STRING) ? rb_fstring(z) : z;
+        zone = mload_zone(time, zone);
 	tobj->vtm.zone = zone;
     }
 

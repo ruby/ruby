@@ -565,6 +565,26 @@ module TestTimeTZ::WithTZ
     assert_instance_of(t.zone.class, t2.zone)
   end
 
+  def test_invalid_zone
+    make_timezone("INVALID", "INV", 0)
+  rescue => e
+    assert_kind_of(StandardError, e)
+  else
+    assert false, "ArgumentError expected but nothing was raised."
+  end
+
+  def nametest_marshal_compatibility(time_class, tzname, abbr, utc_offset)
+    data = [
+      "\x04\x08Iu:".b, Marshal.dump(time_class)[3..-1],
+      "\x0d""\xEF\xA7\x1D\x80\x00\x00\x00\x00".b,
+      Marshal.dump({offset: utc_offset, zone: abbr})[3..-1],
+    ].join('')
+    t = Marshal.load(data)
+    assert_equal(utc_offset, t.utc_offset)
+    assert_equal(utc_offset, (t+1).utc_offset)
+    # t.zone may be a mere String or timezone object.
+  end
+
   ZONES = {
     "Asia/Tokyo" => ["JST", +9*3600],
     "America/Los_Angeles" => ["PDT", -7*3600],
@@ -583,6 +603,16 @@ module TestTimeTZ::WithTZ
         time_class = self.class::TIME_CLASS
         __send__(subtest, time_class, tz, tz, tzname, abbr, utc_offset)
         __send__(subtest, time_class, tz, tzname, tzname, abbr, utc_offset)
+      end
+    end
+  end
+
+  instance_methods(false).grep(/\Aname(?=test_)/) do |subtest|
+    test = $'
+    ZONES.each_pair do |tzname, (abbr, utc_offset)|
+      define_method("#{test}@#{tzname}") do
+        time_class = self.class::TIME_CLASS
+        __send__(subtest, time_class, tzname, abbr, utc_offset)
       end
     end
   end
@@ -632,7 +662,7 @@ else
 
     class TIME_CLASS < ::Time
       def self.find_timezone(name)
-        Timezone[name]
+        Timezone.fetch(name)
       end
     end
 
