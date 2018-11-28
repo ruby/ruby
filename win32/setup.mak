@@ -20,8 +20,9 @@ MAKE = $(MAKE) -f $(MAKEFILE)
 MAKEFILE = Makefile
 !endif
 CPU = PROCESSOR_LEVEL
-CC = cl -nologo
+CC = $(CC) -nologo
 CPP = $(CC) -EP
+AS = $(AS) -nologo
 
 all: -prologue- -generic- -epilogue-
 i386-mswin32: -prologue- -i386- -epilogue-
@@ -237,7 +238,8 @@ MACHINE = x86
 # XLDFLAGS =
 # RFLAGS = -r
 # EXTLIBS =
-CC = cl -nologo
+CC = $(CC)
+AS = $(AS)
 <<
 	@(for %I in (cl.exe) do @set MJIT_CC=%~$$PATH:I) && (call echo MJIT_CC = "%MJIT_CC:\=/%" -nologo>>$(MAKEFILE))
 	@type << >>$(MAKEFILE)
