@@ -603,3 +603,41 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     TestTimeTZ::TZ.new(tzname, abbr, utc_offset)
   end
 end
+
+begin
+  require "tzinfo"
+rescue LoadError
+else
+  class TestTimeTZ::GemTZInfo < Test::Unit::TestCase
+    include TestTimeTZ::WithTZ
+
+    class TIME_CLASS < ::Time
+      def self.find_timezone(tzname)
+        TZInfo::Timezone.get(tzname)
+      end
+    end
+
+    def tz
+      @tz ||= TZInfo::Timezone.get(tzname)
+    end
+  end
+end
+
+begin
+  require "timezone"
+rescue LoadError
+else
+  class TestTimeTZ::GemTimezone < Test::Unit::TestCase
+    include TestTimeTZ::WithTZ
+
+    class TIME_CLASS < ::Time
+      def self.find_timezone(name)
+        Timezone[name]
+      end
+    end
+
+    def tz
+      @tz ||= Timezone[tzname]
+    end
+  end
+end

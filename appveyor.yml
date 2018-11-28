@@ -16,6 +16,7 @@ environment:
     - build: vs
       vs: 140
       APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  GEMS_FOR_TEST: "timezone tzinfo"
 notifications:
   - provider: Webhook
     url:
@@ -89,6 +90,7 @@ for:
     - nmake -l
     - nmake install-nodoc
     - \usr\bin\ruby -v -e "p :locale => Encoding.find('locale'), :filesystem => Encoding.find('filesystem')"
+    - if not "%GEMS_FOR_TEST%" == "" \usr\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - set /a JOBS=%NUMBER_OF_PROCESSORS%
     - nmake -l "TESTOPTS=-v -q" btest
@@ -134,6 +136,7 @@ for:
     - mingw32-make -j%JOBS% up
     - mingw32-make -j%JOBS%
     - mingw32-make DESTDIR=../install install-nodoc
+    - if not "%GEMS_FOR_TEST%" == "" ..\install\bin\gem install --no-document %GEMS_FOR_TEST%
   test_script:
     - mingw32-make test
     - mingw32-make test-all TESTOPTS="--retry --job-status=normal --show-skip --subprocess-timeout-scale=1.5 --excludes=../ruby/test/excludes/_appveyor -j %JOBS% --exclude win32ole --exclude test_open-uri"

@@ -76,6 +76,8 @@ env:
     # JOBS and SETARCH are overridden when necessary; see below.
     - JOBS=-j$((1+${NPROC}))
     - SETARCH=
+    - RUBY_PREFIX=/tmp/ruby-prefix
+    - GEMS_FOR_TEST='timezone tzinfo'
 
 .org.ruby-lang.ci.matrix-definitions:
 
@@ -343,7 +345,7 @@ before_script:
     [ ! -f config.cache ] ||
     [ "$CC" = "`sed -n s/^ac_cv_prog_CC=//p config.cache`" ] ||
     (set -x; exec rm config.cache)
-  - $SETARCH ../configure -C --disable-install-doc --prefix=/tmp/ruby-prefix $CONFIG_FLAG
+  - $SETARCH ../configure -C --disable-install-doc --prefix=$RUBY_PREFIX $CONFIG_FLAG
   - cp -pr config.cache config.status .ext/include ../config_1st
   - $SETARCH make reconfig
   - cp -pr config.cache config.status .ext/include ../config_2nd
@@ -354,6 +356,7 @@ before_script:
   - chmod u-w ..
   - $SETARCH make -s $JOBS && make install
   - ccache --show-stats
+  - [ -z "${GEMS_FOR_TEST}" ] || $RUBY_PREFIX/bin/gem install --no-document $GEMS_FOR_TEST
 
 script:
   - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
