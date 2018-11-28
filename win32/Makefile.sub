@@ -1225,10 +1225,10 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
-{$(srcdir)/coroutine/Win32}.asm.obj:
+{$(srcdir)/coroutine/Win32}.asm{coroutine/Win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
-{$(srcdir)/coroutine/Win64}.asm.obj:
+{$(srcdir)/coroutine/Win64}.asm{coroutine/Win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 

@@ -5,6 +5,7 @@
 ;;  Copyright, 2018, by Samuel Williams. All rights reserved.
 ;;
 
+.386
 .model flat
 
 .code
