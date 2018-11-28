@@ -10890,10 +10890,10 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
                 stp->error_no = errno;
                 return -1;
             }
-	    copy_length = src_size - current_offset;
+            copy_length = src_size - current_offset;
 	}
 	else {
-	    copy_length = src_size - src_offset;
+            copy_length = src_size - src_offset;
 	}
     }
 
