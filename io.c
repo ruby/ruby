@@ -10848,22 +10848,23 @@ simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offse
 static int
 nogvl_copy_file_range(struct copy_stream_struct *stp)
 {
-    struct stat src_stat, dst_stat;
+    struct stat sb;
     ssize_t ss;
+    off_t src_size;
     int ret;
-
     off_t copy_length, src_offset, *src_offset_ptr;
 
-    ret = fstat(stp->src_fd, &src_stat);
+    ret = fstat(stp->src_fd, &sb);
     if (ret == -1) {
         stp->syserr = "fstat";
         stp->error_no = errno;
         return -1;
     }
-    if (!S_ISREG(src_stat.st_mode))
+    if (!S_ISREG(sb.st_mode))
         return 0;
 
-    ret = fstat(stp->dst_fd, &dst_stat);
+    src_size = sb.st_size;
+    ret = fstat(stp->dst_fd, &sb);
     if (ret == -1) {
         stp->syserr = "fstat";
         stp->error_no = errno;
@@ -10889,10 +10890,10 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
                 stp->error_no = errno;
                 return -1;
             }
-	    copy_length = src_stat.st_size - current_offset;
+	    copy_length = src_size - current_offset;
 	}
 	else {
-	    copy_length = src_stat.st_size - src_offset;
+	    copy_length = src_size - src_offset;
 	}
     }
 
@@ -11003,31 +11004,32 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 static int
 nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 {
-    struct stat src_stat, dst_stat;
+    struct stat sb;
     ssize_t ss;
     int ret;
-
+    off_t src_size;
     off_t copy_length;
     off_t src_offset;
     int use_pread;
 
-    ret = fstat(stp->src_fd, &src_stat);
+    ret = fstat(stp->src_fd, &sb);
     if (ret == -1) {
         stp->syserr = "fstat";
         stp->error_no = errno;
         return -1;
     }
-    if (!S_ISREG(src_stat.st_mode))
+    if (!S_ISREG(sb.st_mode))
         return 0;
 
-    ret = fstat(stp->dst_fd, &dst_stat);
+    src_size = sb.st_size;
+    ret = fstat(stp->dst_fd, &sb);
     if (ret == -1) {
         stp->syserr = "fstat";
         stp->error_no = errno;
         return -1;
     }
 #ifndef __linux__
-    if ((dst_stat.st_mode & S_IFMT) != S_IFSOCK)
+    if ((sb.st_mode & S_IFMT) != S_IFSOCK)
 	return 0;
 #endif
 
@@ -11037,7 +11039,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
     copy_length = stp->copy_length;
     if (copy_length == (off_t)-1) {
         if (use_pread)
-            copy_length = src_stat.st_size - src_offset;
+            copy_length = src_size - src_offset;
         else {
             off_t cur;
             errno = 0;
@@ -11047,7 +11049,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
                 stp->error_no = errno;
                 return -1;
             }
-            copy_length = src_stat.st_size - cur;
+            copy_length = src_size - cur;
         }
     }
 
