@@ -2,16 +2,14 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "main.using" do
-  platform_is_not :mingw do # This is broken after TracePoint target [Feature #15289], and ko1 is fixing this
-    it "requires one Module argument" do
-      lambda do
-        eval('using', TOPLEVEL_BINDING)
-      end.should raise_error(ArgumentError)
+  it "requires one Module argument" do
+    lambda do
+      eval('using', TOPLEVEL_BINDING)
+    end.should raise_error(ArgumentError)
 
-      lambda do
-        eval('using "foo"', TOPLEVEL_BINDING)
-      end.should raise_error(TypeError)
-    end
+    lambda do
+      eval('using "foo"', TOPLEVEL_BINDING)
+    end.should raise_error(TypeError)
   end
 
   it "uses refinements from the given module only in the target file" do
