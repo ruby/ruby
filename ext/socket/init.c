@@ -435,7 +435,7 @@ rsock_socket0(int domain, int type, int proto)
     static int cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
     if (cloexec_state > 0) { /* common path, if SOCK_CLOEXEC is defined */
-        ret = socket(domain, type|SOCK_CLOEXEC|SOCK_NONBLOCK, proto);
+        ret = socket(domain, type|SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT, proto);
         if (ret >= 0) {
             if (ret <= 2)
                 goto fix_cloexec;
@@ -443,7 +443,7 @@ rsock_socket0(int domain, int type, int proto)
         }
     }
     else if (cloexec_state < 0) { /* usually runs once only for detection */
-        ret = socket(domain, type|SOCK_CLOEXEC|SOCK_NONBLOCK, proto);
+        ret = socket(domain, type|SOCK_CLOEXEC|RSOCK_NONBLOCK_DEFAULT, proto);
         if (ret >= 0) {
             cloexec_state = rsock_detect_cloexec(ret);
             if (cloexec_state == 0 || ret <= 2)
