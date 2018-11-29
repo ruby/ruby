@@ -32,7 +32,7 @@
  */
 #  define RSOCK_NONBLOCK_DEFAULT (0)
 #else
-#  define RSOCK_NONBLOCK_DEFAULT (1)
+#  define RSOCK_NONBLOCK_DEFAULT (0)
 #  include <sys/socket.h>
 #  include <netinet/in.h>
 #  ifdef HAVE_NETINET_IN_SYSTM_H
