@@ -493,6 +493,7 @@ static void
 hash_array_set(VALUE hash, struct li_table *li)
 {
     HASH_ASSERT(RHASH_ARRAY_P(hash));
+    HASH_ASSERT((RHASH_TRANSIENT_P(hash) && li == NULL) ? FALSE : TRUE);
     RHASH(hash)->as.li = li;
     hash_verify(hash);
 }
@@ -993,15 +994,17 @@ linear_copy(VALUE hash1, VALUE hash2)
 {
     li_table *old_tab = RHASH_ARRAY(hash2);
 
-    if (old_tab) {
-        li_table *new_tab;
-        new_tab = (li_table*) rb_transient_heap_alloc(hash1, sizeof(li_table));
-        if (new_tab != NULL) {
-            RHASH_SET_TRANSIENT_FLAG(hash1);
-        }
-        else {
-            RHASH_UNSET_TRANSIENT_FLAG(hash1);
-            new_tab = (li_table*)ruby_xmalloc(sizeof(li_table));
+    if (old_tab != NULL) {
+        li_table *new_tab = RHASH_ARRAY(hash1);
+        if (new_tab == NULL) {
+            new_tab = (li_table*) rb_transient_heap_alloc(hash1, sizeof(li_table));
+            if (new_tab != NULL) {
+                RHASH_SET_TRANSIENT_FLAG(hash1);
+            }
+            else {
+                RHASH_UNSET_TRANSIENT_FLAG(hash1);
+                new_tab = (li_table*)ruby_xmalloc(sizeof(li_table));
+            }
         }
         *new_tab = *old_tab;
         RHASH_ARRAY_BOUND_SET(hash1, RHASH_ARRAY_BOUND(hash2));
@@ -1014,7 +1017,15 @@ linear_copy(VALUE hash1, VALUE hash2)
     else {
         RHASH_ARRAY_BOUND_SET(hash1, RHASH_ARRAY_BOUND(hash2));
         RHASH_ARRAY_SIZE_SET(hash1, RHASH_ARRAY_SIZE(hash2));
-        RHASH_ARRAY_SET(hash1, old_tab);
+
+        if (RHASH_TRANSIENT_P(hash1)) {
+            RHASH_UNSET_TRANSIENT_FLAG(hash1);
+        }
+        else if (RHASH_ARRAY(hash1)) {
+            ruby_xfree(RHASH_ARRAY(hash1));
+        }
+
+        RHASH_ARRAY_SET(hash1, NULL);
 
         rb_gc_writebarrier_remember(hash1);
         return old_tab;

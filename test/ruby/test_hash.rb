@@ -755,6 +755,14 @@ class TestHash < Test::Unit::TestCase
     assert_predicate(h, :compare_by_identity?)
   end
 
+  def test_replace_bug15358
+    h1 = {}
+    h2 = {a:1,b:2,c:3,d:4,e:5}
+    h2.replace(h1)
+    GC.start
+    assert(true)
+  end
+
   def test_shift
     h = @h.dup
 
