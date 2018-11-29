@@ -2191,7 +2191,7 @@ rb_ary_dup(VALUE ary)
 VALUE
 rb_ary_resurrect(VALUE ary)
 {
-    return rb_ary_new4(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary));
+    return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
 extern VALUE rb_output_fs;
