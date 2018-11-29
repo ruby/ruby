@@ -1083,7 +1083,8 @@ preludes: {$(VPATH)}miniprelude.c
 preludes: {$(srcdir)}golf_prelude.c
 
 $(srcdir)/revision.h:
-	$(Q)$(gnumake:yes=#) exit > $@
+	$(Q)$(gnumake:yes=#) $(RM) $(@F)
+	$(Q)$(gnumake:yes=#) exit > $@ || exit > $(@F)
 
 $(REVISION_H): $(srcdir)/version.h $(srcdir)/tool/file2lastrev.rb $(REVISION_FORCE)
 	-$(Q) $(BASERUBY) $(srcdir)/tool/file2lastrev.rb -q --revision.h "$(srcdir)" > revision.tmp
