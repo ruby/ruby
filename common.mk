@@ -1221,7 +1221,7 @@ update-mspec:
 update-rubyspec:
 
 update-config_files: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb -d tool -e gnu \
+	$(Q) $(BASERUBY) -C "$(srcdir)" tool/downloader.rb -d tool --cache-dir=$(CACHE_DIR) -e gnu \
 	    config.guess config.sub
 
 update-gems: PHONY
@@ -1313,7 +1313,7 @@ UNICODE_EMOJI_FILES = \
 		$(UNICODE_SRC_EMOJI_DATA_DIR)/emoji-zwj-sequences.txt \
 		$(empty)
 
-update-unicode: $(UNICODE_FILES)
+update-unicode: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 
 CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
