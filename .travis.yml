@@ -61,6 +61,7 @@ cache:
   ccache: true
   directories:
     - $HOME/config_2nd
+    - $HOME/.downloaded-cache
 
 env:
   global:
@@ -319,11 +320,14 @@ before_script:
   - $SETARCH uname -r
   - rm -fr .ext autom4te.cache
   - echo $TERM
+  - |-
+    [ -d ~/.downloaded-cache ] ||
+    mkdir ~/.downloaded-cache
+  - ln -s ~/.downloaded-cache
   - "> config.status"
   - sed -f tool/prereq.status Makefile.in common.mk > Makefile
-  - make update-config_files
-  - make touch-unicode-files
-  - make -s $JOBS srcs UNICODE_FILES=.
+  - make -s $JOBS update-download
+  - make -s $JOBS srcs
   - rm config.status Makefile rbconfig.rb .rbconfig.time
   - |-
     if [ -d ~/config_2nd ]; then
