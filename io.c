@@ -234,7 +234,7 @@ rb_maygvl_fd_fix_cloexec(int fd)
         flags2 = flags | FD_CLOEXEC; /* Set CLOEXEC for non-standard file descriptors: 3, 4, 5, ... */
     if (flags != flags2) {
         ret = fcntl(fd, F_SETFD, flags2);
-        if (ret == -1) {
+        if (ret != 0) {
             rb_bug("rb_maygvl_fd_fix_cloexec: fcntl(%d, F_SETFD, %d) failed: %s", fd, flags2, strerror(errno));
         }
     }
@@ -278,7 +278,7 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     flags |= O_NOINHERIT;
 #endif
     ret = open(pathname, flags, mode);
-    if (ret == -1) return -1;
+    if (ret < 0) return ret;
     if (ret <= 2 || o_cloexec_state == 0) {
 	rb_maygvl_fd_fix_cloexec(ret);
     }
@@ -327,7 +327,7 @@ rb_cloexec_dup2(int oldfd, int newfd)
 #else
         ret = dup2(oldfd, newfd);
 #endif
-        if (ret == -1) return -1;
+        if (ret < 0) return ret;
     }
     rb_maygvl_fd_fix_cloexec(ret);
     return ret;
@@ -339,7 +339,6 @@ rb_fd_set_nonblock(int fd)
 #ifdef _WIN32
     return rb_w32_set_nonblock(fd);
 #elif defined(F_GETFL)
-    int err;
     int oflags = fcntl(fd, F_GETFL);
 
     if (oflags == -1)
@@ -347,9 +346,7 @@ rb_fd_set_nonblock(int fd)
     if (oflags & O_NONBLOCK)
         return 0;
     oflags |= O_NONBLOCK;
-    err = fcntl(fd, F_SETFL, oflags);
-    if (err == -1)
-        return -1;
+    return fcntl(fd, F_SETFL, oflags);
 #endif
     return 0;
 }
@@ -377,7 +374,7 @@ rb_cloexec_pipe(int fildes[2])
 #else
     ret = pipe(fildes);
 #endif
-    if (ret == -1) return -1;
+    if (ret < 0) return ret;
 #ifdef __CYGWIN__
     if (ret == 0 && fildes[1] == -1) {
 	close(fildes[0]);
@@ -424,7 +421,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
     ret = fcntl(fd, F_DUPFD, minfd);
 #elif defined(HAVE_DUP)
     ret = dup(fd);
-    if (ret != -1 && ret < minfd) {
+    if (ret >= 0 && ret < minfd) {
         const int prev_fd = ret;
         ret = rb_cloexec_fcntl_dupfd(fd, minfd);
         close(prev_fd);
@@ -433,7 +430,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 #else
 # error "dup() or fcntl(F_DUPFD) must be supported."
 #endif
-    if (ret == -1) return -1;
+    if (ret < 0) return ret;
     rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
@@ -1314,8 +1311,8 @@ io_binwrite_string(VALUE arg)
 
 	r = rb_writev_internal(fptr->fd, iov, 2);
 
-        if (r == -1)
-            return -1;
+        if (r < 0)
+            return r;
 
 	if (fptr->wbuf.len <= r) {
 	    r -= fptr->wbuf.len;
@@ -1546,7 +1543,7 @@ io_write(VALUE io, VALUE str, int nosync)
     rb_io_check_writable(fptr);
 
     n = io_fwrite(str, fptr, nosync);
-    if (n == -1L) rb_sys_fail_path(fptr->pathv);
+    if (n < 0L) rb_sys_fail_path(fptr->pathv);
 
     return LONG2FIX(n);
 }
@@ -1733,7 +1730,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
 	    /* sync at last item */
 	    n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
 	}
-	if (n == -1L) rb_sys_fail_path(fptr->pathv);
+	if (n < 0L) rb_sys_fail_path(fptr->pathv);
 	total = rb_fix_plus(LONG2FIX(n), total);
     }
 
@@ -2595,7 +2592,7 @@ fill_cbuf(rb_io_t *fptr, int ec_flags)
         if (res == econv_source_buffer_empty) {
             if (fptr->rbuf.len == 0) {
 		READ_CHECK(fptr);
-                if (io_fillbuf(fptr) == -1) {
+                if (io_fillbuf(fptr) < 0) {
 		    if (!fptr->readconv) {
 			return MORE_CHAR_FINISHED;
 		    }
@@ -3005,7 +3002,7 @@ io_write_nonblock(VALUE io, VALUE str, VALUE ex)
     rb_io_set_nonblock(fptr);
     n = write(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str));
 
-    if (n == -1) {
+    if (n < 0) {
 	int e = errno;
 	if (e == EWOULDBLOCK || e == EAGAIN) {
 	    if (ex == Qfalse) {
@@ -4446,7 +4443,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
             if ((ret & FD_CLOEXEC) != flag) {
                 ret = (ret & ~FD_CLOEXEC) | flag;
                 ret = fcntl(fd, F_SETFD, ret);
-                if (ret == -1) rb_sys_fail_path(fptr->pathv);
+                if (ret != 0) rb_sys_fail_path(fptr->pathv);
             }
         }
 
@@ -4458,7 +4455,7 @@ rb_io_set_close_on_exec(VALUE io, VALUE arg)
         if ((ret & FD_CLOEXEC) != flag) {
             ret = (ret & ~FD_CLOEXEC) | flag;
             ret = fcntl(fd, F_SETFD, ret);
-            if (ret == -1) rb_sys_fail_path(fptr->pathv);
+            if (ret != 0) rb_sys_fail_path(fptr->pathv);
         }
     }
     return Qnil;
@@ -5057,7 +5054,7 @@ rb_io_sysseek(int argc, VALUE *argv, VALUE io)
     }
     errno = 0;
     pos = lseek(fptr->fd, pos, whence);
-    if (pos == -1 && errno) rb_sys_fail_path(fptr->pathv);
+    if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
 
     return OFFT2NUM(pos);
 }
@@ -5097,7 +5094,7 @@ rb_io_syswrite(VALUE io, VALUE str)
     tmp = rb_str_tmp_frozen_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
     n = rb_write_internal(fptr->fd, ptr, len);
-    if (n == -1) rb_sys_fail_path(fptr->pathv);
+    if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
     return LONG2FIX(n);
@@ -5163,7 +5160,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     iis.capa = ilen;
     n = read_internal_locktmp(str, &iis);
 
-    if (n == -1) {
+    if (n < 0) {
 	rb_sys_fail_path(fptr->pathv);
     }
     io_set_read_length(str, n, shrinkable);
@@ -5248,7 +5245,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     rb_str_locktmp(str);
     n = (ssize_t)rb_ensure(pread_internal_call, (VALUE)&arg, rb_str_unlocktmp, str);
 
-    if (n == -1) {
+    if (n < 0) {
 	rb_sys_fail_path(fptr->pathv);
     }
     io_set_read_length(str, n, shrinkable);
@@ -5314,7 +5311,7 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     arg.count = (size_t)RSTRING_LEN(tmp);
 
     n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
-    if (n == -1) rb_sys_fail_path(fptr->pathv);
+    if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
     return SSIZET2NUM(n);
@@ -6361,7 +6358,7 @@ rb_pipe(int *pipes)
 {
     int ret;
     ret = rb_cloexec_pipe(pipes);
-    if (ret == -1) {
+    if (ret < 0) {
         if (rb_gc_for_fd(errno)) {
             ret = rb_cloexec_pipe(pipes);
         }
@@ -6438,9 +6435,9 @@ linux_get_maxfd(void)
     char buf[4096], *p, *np, *e;
     ssize_t ss;
     fd = rb_cloexec_open("/proc/self/status", O_RDONLY|O_NOCTTY, 0);
-    if (fd == -1) return -1;
+    if (fd < 0) return fd;
     ss = read(fd, buf, sizeof(buf));
-    if (ss == -1) goto err;
+    if (ss < 0) goto err;
     p = buf;
     e = buf + ss;
     while ((int)sizeof("FDSize:\t0\n")-1 <= e-p &&
@@ -6459,7 +6456,7 @@ linux_get_maxfd(void)
 
   err:
     close(fd);
-    return -1;
+    return ss;
 }
 #endif
 
@@ -6629,7 +6626,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 #   if defined(HAVE_SPAWNVE)
 	if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
 #   endif
-	while ((pid = DO_SPAWN(cmd, args, envp)) == -1) {
+	while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
 	    /* exec failed */
 	    switch (e = errno) {
 	      case EAGAIN:
@@ -6662,7 +6659,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
     }
 
     /* parent */
-    if (pid == -1) {
+    if (pid < 0) {
 # if defined(HAVE_WORKING_FORK)
 	e = errno;
 # endif
@@ -8262,7 +8259,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     oflags = fcntl(fd, F_GETFL);
     if (oflags == -1) rb_sys_fail(0);
 #else
-    if (fstat(fd, &st) == -1) rb_sys_fail(0);
+    if (fstat(fd, &st) < 0) rb_sys_fail(0);
 #endif
     rb_update_max_fd(fd);
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
@@ -10232,7 +10229,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE ret;
 
     argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
-    if (rb_pipe(pipes) == -1)
+    if (rb_pipe(pipes) < 0)
         rb_sys_fail(0);
 
     args[0] = klass;
@@ -10815,12 +10812,12 @@ maygvl_copy_stream_wait_read(int has_gvl, struct copy_stream_struct *stp)
 	else {
 	    ret = nogvl_wait_for_single_fd(stp->src_fd, RB_WAITFD_IN);
 	}
-    } while (ret == -1 && maygvl_copy_stream_continue_p(has_gvl, stp));
+    } while (ret < 0 && maygvl_copy_stream_continue_p(has_gvl, stp));
 
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = IOWAIT_SYSCALL;
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
     return 0;
 }
@@ -10832,12 +10829,12 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 
     do {
 	ret = nogvl_wait_for_single_fd(stp->dst_fd, RB_WAITFD_OUT);
-    } while (ret == -1 && maygvl_copy_stream_continue_p(0, stp));
+    } while (ret < 0 && maygvl_copy_stream_continue_p(0, stp));
 
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = IOWAIT_SYSCALL;
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
     return 0;
 }
@@ -10864,24 +10861,24 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
     off_t copy_length, src_offset, *src_offset_ptr;
 
     ret = fstat(stp->src_fd, &sb);
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = "fstat";
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
     if (!S_ISREG(sb.st_mode))
         return 0;
 
     src_size = sb.st_size;
     ret = fstat(stp->dst_fd, &sb);
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = "fstat";
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
 
     src_offset = stp->src_offset;
-    if (src_offset != (off_t)-1) {
+    if (src_offset >= (off_t)0) {
 	src_offset_ptr = &src_offset;
     }
     else {
@@ -10889,15 +10886,15 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
     }
 
     copy_length = stp->copy_length;
-    if (copy_length == (off_t)-1) {
-	if (src_offset == (off_t)-1) {
+    if (copy_length < (off_t)0) {
+	if (src_offset < (off_t)0) {
 	    off_t current_offset;
             errno = 0;
             current_offset = lseek(stp->src_fd, 0, SEEK_CUR);
-            if (current_offset == (off_t)-1 && errno) {
+            if (current_offset < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
-                return -1;
+                return current_offset;
             }
             copy_length = src_size - current_offset;
 	}
@@ -10921,7 +10918,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
             goto retry_copy_file_range;
         }
     }
-    if (ss == -1) {
+    if (ss < 0) {
 	if (maygvl_copy_stream_continue_p(0, stp)) {
             goto retry_copy_file_range;
 	}
@@ -10940,8 +10937,10 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (nogvl_copy_stream_wait_write(stp) == -1)
-                return -1;
+            {
+                int ret = nogvl_copy_stream_wait_write(stp);
+                if (ret < 0) return ret;
+            }
             goto retry_copy_file_range;
 	  case EBADF:
 	    {
@@ -10956,7 +10955,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
         }
         stp->syserr = "copy_file_range";
         stp->error_no = errno;
-        return -1;
+        return ss;
     }
     return 1;
 }
@@ -10995,7 +10994,7 @@ simple_sendfile(int out_fd, int in_fd, off_t *offset, off_t count)
 #  else
     r = sendfile(in_fd, out_fd, pos, (size_t)count, NULL, &sbytes, 0);
 #  endif
-    if (r != 0 && sbytes == 0) return -1;
+    if (r != 0 && sbytes == 0) return r;
     if (offset) {
 	*offset += sbytes;
     }
@@ -11022,20 +11021,20 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
     int use_pread;
 
     ret = fstat(stp->src_fd, &sb);
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = "fstat";
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
     if (!S_ISREG(sb.st_mode))
         return 0;
 
     src_size = sb.st_size;
     ret = fstat(stp->dst_fd, &sb);
-    if (ret == -1) {
+    if (ret < 0) {
         stp->syserr = "fstat";
         stp->error_no = errno;
-        return -1;
+        return ret;
     }
 #ifndef __linux__
     if ((sb.st_mode & S_IFMT) != S_IFSOCK)
@@ -11043,20 +11042,20 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #endif
 
     src_offset = stp->src_offset;
-    use_pread = src_offset != (off_t)-1;
+    use_pread = src_offset >= (off_t)0;
 
     copy_length = stp->copy_length;
-    if (copy_length == (off_t)-1) {
+    if (copy_length < (off_t)0) {
         if (use_pread)
             copy_length = src_size - src_offset;
         else {
             off_t cur;
             errno = 0;
             cur = lseek(stp->src_fd, 0, SEEK_CUR);
-            if (cur == (off_t)-1 && errno) {
+            if (cur < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
-                return -1;
+                return cur;
             }
             copy_length = src_size - cur;
         }
@@ -11082,7 +11081,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
             goto retry_sendfile;
         }
     }
-    if (ss == -1) {
+    if (ss < 0) {
 	if (maygvl_copy_stream_continue_p(0, stp))
 	    goto retry_sendfile;
         switch (errno) {
@@ -11095,24 +11094,27 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
+            {
+                int ret;
 #ifndef __linux__
-           /*
-            * Linux requires stp->src_fd to be a mmap-able (regular) file,
-            * select() reports regular files to always be "ready", so
-            * there is no need to select() on it.
-            * Other OSes may have the same limitation for sendfile() which
-            * allow us to bypass maygvl_copy_stream_wait_read()...
-            */
-            if (maygvl_copy_stream_wait_read(0, stp) == -1)
-                return -1;
+               /*
+                * Linux requires stp->src_fd to be a mmap-able (regular) file,
+                * select() reports regular files to always be "ready", so
+                * there is no need to select() on it.
+                * Other OSes may have the same limitation for sendfile() which
+                * allow us to bypass maygvl_copy_stream_wait_read()...
+                */
+                ret = maygvl_copy_stream_wait_read(0, stp);
+                if (ret < 0) return ret;
 #endif
-            if (nogvl_copy_stream_wait_write(stp) == -1)
-                return -1;
+                ret = nogvl_copy_stream_wait_write(stp);
+                if (ret < 0) return ret;
+            }
             goto retry_sendfile;
         }
         stp->syserr = "sendfile";
         stp->error_no = errno;
-        return -1;
+        return ss;
     }
     return 1;
 }
@@ -11132,7 +11134,7 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
 {
     ssize_t ss;
   retry_read:
-    if (offset == (off_t)-1) {
+    if (offset < (off_t)0) {
         ss = maygvl_read(has_gvl, stp->src_fd, buf, len);
     }
     else {
@@ -11146,7 +11148,7 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
     if (ss == 0) {
         return 0;
     }
-    if (ss == -1) {
+    if (ss < 0) {
 	if (maygvl_copy_stream_continue_p(has_gvl, stp))
 	    goto retry_read;
         switch (errno) {
@@ -11154,18 +11156,19 @@ maygvl_copy_stream_read(int has_gvl, struct copy_stream_struct *stp, char *buf, 
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
-            if (maygvl_copy_stream_wait_read(has_gvl, stp) == -1)
-                return -1;
+            {
+                int ret = maygvl_copy_stream_wait_read(has_gvl, stp);
+                if (ret < 0) return ret;
+            }
             goto retry_read;
 #ifdef ENOSYS
 	  case ENOSYS:
             stp->notimp = "pread";
-            return -1;
+            return ss;
 #endif
         }
-        stp->syserr = offset == (off_t)-1 ?  "read" : "pread";
+        stp->syserr = offset < (off_t)0 ?  "read" : "pread";
         stp->error_no = errno;
-        return -1;
     }
     return ss;
 }
@@ -11177,17 +11180,17 @@ nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, size_t len)
     int off = 0;
     while (len) {
         ss = write(stp->dst_fd, buf+off, len);
-        if (ss == -1) {
-	    if (maygvl_copy_stream_continue_p(0, stp))
-		continue;
+        if (ss < 0) {
+            if (maygvl_copy_stream_continue_p(0, stp))
+                continue;
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                if (nogvl_copy_stream_wait_write(stp) == -1)
-                    return -1;
+                int ret = nogvl_copy_stream_wait_write(stp);
+                if (ret < 0) return ret;
                 continue;
             }
             stp->syserr = "write";
             stp->error_no = errno;
-            return -1;
+            return ss;
         }
         off += (int)ss;
         len -= (int)ss;
@@ -11209,15 +11212,15 @@ nogvl_copy_stream_read_write(struct copy_stream_struct *stp)
     int use_pread;
 
     copy_length = stp->copy_length;
-    use_eof = copy_length == (off_t)-1;
+    use_eof = copy_length < (off_t)0;
     src_offset = stp->src_offset;
-    use_pread = src_offset != (off_t)-1;
+    use_pread = src_offset >= (off_t)0;
 
     if (use_pread && stp->close_src) {
         off_t r;
 	errno = 0;
         r = lseek(stp->src_fd, src_offset, SEEK_SET);
-        if (r == (off_t)-1 && errno) {
+        if (r < (off_t)0 && errno) {
             stp->syserr = "lseek";
             stp->error_no = errno;
             return;
@@ -11292,7 +11295,7 @@ copy_stream_fallback_body(VALUE arg)
     off_t off = stp->src_offset;
     ID read_method = id_readpartial;
 
-    if (stp->src_fd == -1) {
+    if (stp->src_fd < 0) {
 	if (!rb_respond_to(stp->src, read_method)) {
 	    read_method = id_read;
 	}
@@ -11301,7 +11304,7 @@ copy_stream_fallback_body(VALUE arg)
     while (1) {
         long numwrote;
         long l;
-        if (stp->copy_length == (off_t)-1) {
+        if (stp->copy_length < (off_t)0) {
             l = buflen;
         }
         else {
@@ -11311,7 +11314,7 @@ copy_stream_fallback_body(VALUE arg)
 	    }
             l = buflen < rest ? buflen : (long)rest;
         }
-        if (stp->src_fd == -1) {
+        if (stp->src_fd < 0) {
             VALUE rc = rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
 
             if (read_method == id_read && NIL_P(rc))
@@ -11322,11 +11325,11 @@ copy_stream_fallback_body(VALUE arg)
             rb_str_resize(buf, buflen);
             ss = maygvl_copy_stream_read(1, stp, RSTRING_PTR(buf), l, off);
             rb_str_resize(buf, ss > 0 ? ss : 0);
-            if (ss == -1)
+            if (ss < 0)
                 return Qnil;
             if (ss == 0)
                 rb_eof_error();
-            if (off != (off_t)-1)
+            if (off >= (off_t)0)
                 off += ss;
         }
         n = rb_io_write(stp->dst, buf);
@@ -11344,7 +11347,7 @@ copy_stream_fallback_body(VALUE arg)
 static VALUE
 copy_stream_fallback(struct copy_stream_struct *stp)
 {
-    if (stp->src_fd == -1 && stp->src_offset != (off_t)-1) {
+    if (stp->src_fd < 0 && stp->src_offset >= (off_t)0) {
 	rb_raise(rb_eArgError, "cannot specify src_offset for non-IO");
     }
     rb_rescue2(copy_stream_fallback_body, (VALUE)stp,
@@ -11434,10 +11437,10 @@ copy_stream_body(VALUE arg)
     if (dst_fptr)
 	io_ascii8bit_binmode(dst_fptr);
 
-    if (stp->src_offset == (off_t)-1 && src_fptr && src_fptr->rbuf.len) {
+    if (stp->src_offset < (off_t)0 && src_fptr && src_fptr->rbuf.len) {
         size_t len = src_fptr->rbuf.len;
         VALUE str;
-        if (stp->copy_length != (off_t)-1 && stp->copy_length < (off_t)len) {
+        if (stp->copy_length >= (off_t)0 && stp->copy_length < (off_t)len) {
             len = (size_t)stp->copy_length;
         }
         str = rb_str_buf_new(len);
@@ -11451,7 +11454,7 @@ copy_stream_body(VALUE arg)
 	    rb_io_write(dst_io, str);
         rb_str_resize(str, 0);
         stp->total += len;
-        if (stp->copy_length != (off_t)-1)
+        if (stp->copy_length >= (off_t)0)
             stp->copy_length -= len;
     }
 
@@ -11462,7 +11465,7 @@ copy_stream_body(VALUE arg)
     if (stp->copy_length == 0)
         return Qnil;
 
-    if (src_fd == -1 || dst_fd == -1) {
+    if (src_fd < 0 || dst_fd < 0) {
         return copy_stream_fallback(stp);
     }
 
