@@ -1730,7 +1730,7 @@ io_writev(int argc, VALUE *argv, VALUE io)
 	    /* sync at last item */
 	    n = io_fwrite(rb_obj_as_string(argv[i]), fptr, (i < argc-1));
 	}
-	if (n < 0L) rb_sys_fail_path(fptr->pathv);
+        if (n < 0L) rb_sys_fail_path(fptr->pathv);
 	total = rb_fix_plus(LONG2FIX(n), total);
     }
 
@@ -6626,7 +6626,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 #   if defined(HAVE_SPAWNVE)
 	if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
 #   endif
-	while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
+        while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
 	    /* exec failed */
 	    switch (e = errno) {
 	      case EAGAIN:
@@ -10887,7 +10887,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
 
     copy_length = stp->copy_length;
     if (copy_length < (off_t)0) {
-	if (src_offset < (off_t)0) {
+        if (src_offset < (off_t)0) {
 	    off_t current_offset;
             errno = 0;
             current_offset = lseek(stp->src_fd, 0, SEEK_CUR);
