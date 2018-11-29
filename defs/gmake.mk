@@ -185,6 +185,10 @@ $(MJIT_MIN_HEADER): $(mjit_min_headers) $(PREP)
 
 endif
 
+# GNU make treat the target as unmodified when its dependents get
+# updated but it is not updated, while others may not.
+$(srcdir)/revision.h: $(REVISION_H)
+
 # Query on the generated rdoc
 #
 #   $ make rdoc:Integer#+
