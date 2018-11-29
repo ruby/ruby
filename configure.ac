@@ -961,7 +961,7 @@ main()
 		ac_cv_type_off_t=yes
 		ac_cv_sizeof_off_t=8
 		AS_IF([test "$target_cpu" = x64], [
-		    ac_cv_func___builtin_setjmp=no
+		    ac_cv_func___builtin_setjmp=yes
 		    ac_cv_func_round=no
 		    rb_cv_fiber_coroutine=yes
 		])
