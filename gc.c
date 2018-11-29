@@ -649,10 +649,8 @@ typedef struct rb_objspace {
 } rb_objspace_t;
 
 
-#ifndef HEAP_PAGE_ALIGN_LOG
 /* default tiny heap size: 16KB */
 #define HEAP_PAGE_ALIGN_LOG 14
-#endif
 #define CEILDIV(i, mod) (((i) + (mod) - 1)/(mod))
 enum {
     HEAP_PAGE_ALIGN = (1UL << HEAP_PAGE_ALIGN_LOG),
