@@ -585,7 +585,6 @@ class Time
     #
     #     require 'time'
     #
-    #     t = Time.now
     #     Time.xmlschema("2011-10-05T22:26:12-04:00")
     #     #=> 2011-10-05 22:26:12-04:00
     #
