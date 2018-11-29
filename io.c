@@ -6456,7 +6456,7 @@ linux_get_maxfd(void)
 
   err:
     close(fd);
-    return ss;
+    return (int)ss;
 }
 #endif
 
@@ -10894,7 +10894,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
             if (current_offset < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
-                return current_offset;
+                return (int)current_offset;
             }
             copy_length = src_size - current_offset;
 	}
@@ -10955,7 +10955,7 @@ nogvl_copy_file_range(struct copy_stream_struct *stp)
         }
         stp->syserr = "copy_file_range";
         stp->error_no = errno;
-        return ss;
+        return (int)ss;
     }
     return 1;
 }
@@ -11055,7 +11055,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
             if (cur < (off_t)0 && errno) {
                 stp->syserr = "lseek";
                 stp->error_no = errno;
-                return cur;
+                return (int)cur;
             }
             copy_length = src_size - cur;
         }
@@ -11190,7 +11190,7 @@ nogvl_copy_stream_write(struct copy_stream_struct *stp, char *buf, size_t len)
             }
             stp->syserr = "write";
             stp->error_no = errno;
-            return ss;
+            return (int)ss;
         }
         off += (int)ss;
         len -= (int)ss;
