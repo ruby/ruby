@@ -11114,7 +11114,7 @@ nogvl_copy_stream_sendfile(struct copy_stream_struct *stp)
         }
         stp->syserr = "sendfile";
         stp->error_no = errno;
-        return ss;
+        return (int)ss;
     }
     return 1;
 }
