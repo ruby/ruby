@@ -793,8 +793,8 @@ SpecialsCopy:
   return (int )(to - to_start);
 }
 
-/* for extended grapheme cluster */
-/* TODO: generate from Unicode data */
+/* These GAZ/E_Base/Emoji tables are for extended grapheme cluster */
+/* TODO: generate these 3 tables from Unicode data */
 const OnigCodePoint
 onigenc_unicode_GCB_ranges_GAZ[] = {
     0,
