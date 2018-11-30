@@ -64,63 +64,63 @@ struct strscanner
                             Function Prototypes
    ======================================================================= */
 
-static inline long minl _((const long n, const long x));
-static VALUE infect _((VALUE str, struct strscanner *p));
-static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
-static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
+static inline long minl(const long n, const long x);
+static VALUE infect(VALUE str, struct strscanner *p);
+static VALUE extract_range(struct strscanner *p, long beg_i, long end_i);
+static VALUE extract_beg_len(struct strscanner *p, long beg_i, long len);
 
-static struct strscanner *check_strscan _((VALUE obj));
-static void strscan_mark _((void *p));
-static void strscan_free _((void *p));
-static size_t strscan_memsize _((const void *p));
-static VALUE strscan_s_allocate _((VALUE klass));
-static VALUE strscan_initialize _((int argc, VALUE *argv, VALUE self));
-static VALUE strscan_init_copy _((VALUE vself, VALUE vorig));
+static struct strscanner *check_strscan(VALUE obj);
+static void strscan_mark(void *p);
+static void strscan_free(void *p);
+static size_t strscan_memsize(const void *p);
+static VALUE strscan_s_allocate(VALUE klass);
+static VALUE strscan_initialize(int argc, VALUE *argv, VALUE self);
+static VALUE strscan_init_copy(VALUE vself, VALUE vorig);
 
-static VALUE strscan_s_mustc _((VALUE self));
-static VALUE strscan_terminate _((VALUE self));
-static VALUE strscan_clear _((VALUE self));
-static VALUE strscan_get_string _((VALUE self));
-static VALUE strscan_set_string _((VALUE self, VALUE str));
-static VALUE strscan_concat _((VALUE self, VALUE str));
-static VALUE strscan_get_pos _((VALUE self));
-static VALUE strscan_set_pos _((VALUE self, VALUE pos));
-static VALUE strscan_do_scan _((VALUE self, VALUE regex,
-                                int succptr, int getstr, int headonly));
-static VALUE strscan_scan _((VALUE self, VALUE re));
-static VALUE strscan_match_p _((VALUE self, VALUE re));
-static VALUE strscan_skip _((VALUE self, VALUE re));
-static VALUE strscan_check _((VALUE self, VALUE re));
-static VALUE strscan_scan_full _((VALUE self, VALUE re,
-                                  VALUE succp, VALUE getp));
-static VALUE strscan_scan_until _((VALUE self, VALUE re));
-static VALUE strscan_skip_until _((VALUE self, VALUE re));
-static VALUE strscan_check_until _((VALUE self, VALUE re));
-static VALUE strscan_search_full _((VALUE self, VALUE re,
-                                    VALUE succp, VALUE getp));
-static void adjust_registers_to_matched _((struct strscanner *p));
-static VALUE strscan_getch _((VALUE self));
-static VALUE strscan_get_byte _((VALUE self));
-static VALUE strscan_getbyte _((VALUE self));
-static VALUE strscan_peek _((VALUE self, VALUE len));
-static VALUE strscan_peep _((VALUE self, VALUE len));
-static VALUE strscan_unscan _((VALUE self));
-static VALUE strscan_bol_p _((VALUE self));
-static VALUE strscan_eos_p _((VALUE self));
-static VALUE strscan_empty_p _((VALUE self));
-static VALUE strscan_rest_p _((VALUE self));
-static VALUE strscan_matched_p _((VALUE self));
-static VALUE strscan_matched _((VALUE self));
-static VALUE strscan_matched_size _((VALUE self));
-static VALUE strscan_aref _((VALUE self, VALUE idx));
-static VALUE strscan_pre_match _((VALUE self));
-static VALUE strscan_post_match _((VALUE self));
-static VALUE strscan_rest _((VALUE self));
-static VALUE strscan_rest_size _((VALUE self));
+static VALUE strscan_s_mustc(VALUE self);
+static VALUE strscan_terminate(VALUE self);
+static VALUE strscan_clear(VALUE self);
+static VALUE strscan_get_string(VALUE self);
+static VALUE strscan_set_string(VALUE self, VALUE str);
+static VALUE strscan_concat(VALUE self, VALUE str);
+static VALUE strscan_get_pos(VALUE self);
+static VALUE strscan_set_pos(VALUE self, VALUE pos);
+static VALUE strscan_do_scan(VALUE self, VALUE regex,
+                                int succptr, int getstr, int headonly);
+static VALUE strscan_scan(VALUE self, VALUE re);
+static VALUE strscan_match_p(VALUE self, VALUE re);
+static VALUE strscan_skip(VALUE self, VALUE re);
+static VALUE strscan_check(VALUE self, VALUE re);
+static VALUE strscan_scan_full(VALUE self, VALUE re,
+                                  VALUE succp, VALUE getp);
+static VALUE strscan_scan_until(VALUE self, VALUE re);
+static VALUE strscan_skip_until(VALUE self, VALUE re);
+static VALUE strscan_check_until(VALUE self, VALUE re);
+static VALUE strscan_search_full(VALUE self, VALUE re,
+                                    VALUE succp, VALUE getp);
+static void adjust_registers_to_matched(struct strscanner *p);
+static VALUE strscan_getch(VALUE self);
+static VALUE strscan_get_byte(VALUE self);
+static VALUE strscan_getbyte(VALUE self);
+static VALUE strscan_peek(VALUE self, VALUE len);
+static VALUE strscan_peep(VALUE self, VALUE len);
+static VALUE strscan_unscan(VALUE self);
+static VALUE strscan_bol_p(VALUE self);
+static VALUE strscan_eos_p(VALUE self);
+static VALUE strscan_empty_p(VALUE self);
+static VALUE strscan_rest_p(VALUE self);
+static VALUE strscan_matched_p(VALUE self);
+static VALUE strscan_matched(VALUE self);
+static VALUE strscan_matched_size(VALUE self);
+static VALUE strscan_aref(VALUE self, VALUE idx);
+static VALUE strscan_pre_match(VALUE self);
+static VALUE strscan_post_match(VALUE self);
+static VALUE strscan_rest(VALUE self);
+static VALUE strscan_rest_size(VALUE self);
 
-static VALUE strscan_inspect _((VALUE self));
-static VALUE inspect1 _((struct strscanner *p));
-static VALUE inspect2 _((struct strscanner *p));
+static VALUE strscan_inspect(VALUE self);
+static VALUE inspect1(struct strscanner *p);
+static VALUE inspect2(struct strscanner *p);
 
 /* =======================================================================
                                    Utils

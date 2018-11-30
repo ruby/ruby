@@ -24,19 +24,6 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
-#ifndef _
-#ifdef __cplusplus
-# ifndef  HAVE_PROTOTYPES
-#  define HAVE_PROTOTYPES 1
-# endif
-#endif
-#ifdef HAVE_PROTOTYPES
-# define _(args) args
-#else
-# define _(args) ()
-#endif
-#endif
-
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #define DECIMAL_SIZE_OF_BITS(n) (((n) * 3010 + 9998) / 9999)

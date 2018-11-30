@@ -29,9 +29,6 @@ typedef unsigned LONG_LONG st_data_t;
 
 #include <limits.h>
 
-#ifndef _
-# define _(args) args
-#endif
 #ifndef ANYARGS
 # ifdef __cplusplus
 #   define ANYARGS ...

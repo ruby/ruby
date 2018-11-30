@@ -159,18 +159,6 @@ extern "C" {
 
 #define RUBY
 
-#ifdef __cplusplus
-# ifndef  HAVE_PROTOTYPES
-#  define HAVE_PROTOTYPES 1
-# endif
-#endif
-
-#undef _
-#ifdef HAVE_PROTOTYPES
-# define _(args) args
-#else
-# define _(args) ()
-#endif
 
 #ifdef __cplusplus
 #define ANYARGS ...

@@ -43,10 +43,10 @@ typedef struct {
 #endif
 
 __BEGIN_DECLS
-int	RMD160_Init _((RMD160_CTX *));
-void	RMD160_Transform _((uint32_t[5], const uint32_t[16]));
-void	RMD160_Update _((RMD160_CTX *, const uint8_t *, size_t));
-int	RMD160_Finish _((RMD160_CTX *, uint8_t[20]));
+int	RMD160_Init(RMD160_CTX *);
+void	RMD160_Transform(uint32_t[5], const uint32_t[16]);
+void	RMD160_Update(RMD160_CTX *, const uint8_t *, size_t);
+int	RMD160_Finish(RMD160_CTX *, uint8_t[20]);
 __END_DECLS
 
 #define RMD160_BLOCK_LENGTH             64

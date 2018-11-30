@@ -142,12 +142,12 @@ static const struct afd {
 #define PTON_MAX	4
 #endif
 
-static int get_name __P((const char *, const struct afd *,
+static int get_name(const char *, const struct afd *,
 			  struct addrinfo **, char *, struct addrinfo *,
-			  int));
-static int get_addr __P((const char *, int, struct addrinfo **,
-			struct addrinfo *, int));
-static int str_isnumber __P((const char *));
+			  int);
+static int get_addr(const char *, int, struct addrinfo **,
+			struct addrinfo *, int);
+static int str_isnumber(const char *);
 
 #ifndef HAVE_GAI_STRERROR
 static const char *const ai_errlist[] = {

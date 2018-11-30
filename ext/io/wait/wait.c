@@ -39,10 +39,10 @@
 #define FIONREAD_POSSIBLE_P(fd) ((void)(fd),Qtrue)
 #endif
 
-static VALUE io_ready_p _((VALUE io));
-static VALUE io_wait_readable _((int argc, VALUE *argv, VALUE io));
-static VALUE io_wait_writable _((int argc, VALUE *argv, VALUE io));
-void Init_wait _((void));
+static VALUE io_ready_p(VALUE io);
+static VALUE io_wait_readable(int argc, VALUE *argv, VALUE io);
+static VALUE io_wait_writable(int argc, VALUE *argv, VALUE io);
+void Init_wait(void);
 
 static struct timeval *
 get_timeout(int argc, VALUE *argv, struct timeval *timerec)

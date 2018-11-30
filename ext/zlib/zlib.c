@@ -135,7 +135,7 @@ static VALUE rb_inflate_set_dictionary(VALUE, VALUE);
 struct gzfile;
 static void gzfile_mark(void*);
 static void gzfile_free(void*);
-static VALUE gzfile_new(VALUE, const struct zstream_funcs*, void (*) _((struct gzfile*)));
+static VALUE gzfile_new(VALUE, const struct zstream_funcs*, void (*)(struct gzfile*));
 static void gzfile_reset(struct gzfile*);
 static void gzfile_close(struct gzfile*, int);
 static void gzfile_write_raw(struct gzfile*);

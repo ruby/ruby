@@ -61,14 +61,6 @@
 #undef NI_NUMERICSERV
 #undef NI_DGRAM
 
-#ifndef __P
-# ifdef HAVE_PROTOTYPES
-#  define __P(args) args
-# else
-#  define __P(args) ()
-# endif
-#endif
-
 /* special compatibility hack -- end*/
 
 
@@ -157,12 +149,12 @@ struct addrinfo {
 #define freeaddrinfo freeaddrinfo__compat
 #endif
 
-extern int getaddrinfo __P((
+extern int getaddrinfo (
 	const char *hostname, const char *servname,
 	const struct addrinfo *hints,
 	struct addrinfo **res));
 
-extern int getnameinfo __P((
+extern int getnameinfo(
 	const struct sockaddr *sa,
 	socklen_t salen,
 	char *host,
@@ -171,13 +163,13 @@ extern int getnameinfo __P((
 	socklen_t servlen,
 	int flags));
 
-extern void freehostent __P((struct hostent *));
-extern void freeaddrinfo __P((struct addrinfo *));
+extern void freehostent(struct hostent *);
+extern void freeaddrinfo(struct addrinfo *);
 extern
 #ifdef GAI_STRERROR_CONST
 const
 #endif
-char *gai_strerror __P((int));
+char *gai_strerror(int);
 
 /* In case there is no definition of offsetof() provided - though any proper
 Standard C system should have one. */

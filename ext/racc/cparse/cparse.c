@@ -72,8 +72,8 @@ static ID id_d_e_pop;
 #  define LONG2NUM(i) INT2NUM(i)
 #endif
 
-static ID value_to_id _((VALUE v));
-static inline long num_to_long _((VALUE n));
+static ID value_to_id(VALUE v);
+static inline long num_to_long(VALUE n);
 
 static ID
 value_to_id(VALUE v)
@@ -97,8 +97,8 @@ num_to_long(VALUE n)
                         Parser Stack Interfaces
 ----------------------------------------------------------------------- */
 
-static VALUE get_stack_tail _((VALUE stack, long len));
-static void cut_stack_tail _((VALUE stack, long len));
+static VALUE get_stack_tail(VALUE stack, long len);
+static void cut_stack_tail(VALUE stack, long len);
 
 static VALUE
 get_stack_tail(VALUE stack, long len)
@@ -187,28 +187,28 @@ struct cparse_params {
                         Parser Main Routines
 ----------------------------------------------------------------------- */
 
-static VALUE racc_cparse _((VALUE parser, VALUE arg, VALUE sysdebug));
-static VALUE racc_yyparse _((VALUE parser, VALUE lexer, VALUE lexmid,
-                             VALUE arg, VALUE sysdebug));
+static VALUE racc_cparse(VALUE parser, VALUE arg, VALUE sysdebug);
+static VALUE racc_yyparse(VALUE parser, VALUE lexer, VALUE lexmid,
+                             VALUE arg, VALUE sysdebug);
 
-static void call_lexer _((struct cparse_params *v));
-static VALUE lexer_i _((RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data)));
+static void call_lexer(struct cparse_params *v);
+static VALUE lexer_i(RB_BLOCK_CALL_FUNC_ARGLIST(block_args, data);
 
-static VALUE assert_array _((VALUE a));
-static long assert_integer _((VALUE n));
-static VALUE assert_hash _((VALUE h));
-static VALUE initialize_params _((VALUE vparams, VALUE parser, VALUE arg,
-                                 VALUE lexer, VALUE lexmid));
-static void cparse_params_mark _((void *ptr));
-static size_t cparse_params_memsize _((const void *ptr));
+static VALUE assert_array(VALUE a);
+static long assert_integer(VALUE n);
+static VALUE assert_hash(VALUE h);
+static VALUE initialize_params(VALUE vparams, VALUE parser, VALUE arg,
+                                 VALUE lexer, VALUE lexmid);
+static void cparse_params_mark(void *ptr);
+static size_t cparse_params_memsize(const void *ptr);
 
-static void parse_main _((struct cparse_params *v,
-                         VALUE tok, VALUE val, int resume));
-static void extract_user_token _((struct cparse_params *v,
-                                  VALUE block_args, VALUE *tok, VALUE *val));
-static void shift _((struct cparse_params* v, long act, VALUE tok, VALUE val));
-static int reduce _((struct cparse_params* v, long act));
-static VALUE reduce0 _((VALUE block_args, VALUE data, VALUE self));
+static void parse_main(struct cparse_params *v,
+                         VALUE tok, VALUE val, int resume);
+static void extract_user_token(struct cparse_params *v,
+                                  VALUE block_args, VALUE *tok, VALUE *val);
+static void shift(struct cparse_params* v, long act, VALUE tok, VALUE val);
+static int reduce(struct cparse_params* v, long act);
+static VALUE reduce0(VALUE block_args, VALUE data, VALUE self);
 
 #ifdef DEBUG
 # define D_puts(msg)        if (v->sys_debug) puts(msg)

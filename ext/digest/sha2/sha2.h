@@ -50,11 +50,6 @@ extern "C" {
 #include <sys/types.h>
 
 #ifdef RUBY
-# ifdef HAVE_PROTOTYPES
-#  undef NOPROTO
-# else
-#  define NOPROTO
-# endif /* HAVE_PROTOTYPES */
 # ifndef BYTE_ORDER
 #  define LITTLE_ENDIAN	1234
 #  define BIG_ENDIAN	4321
@@ -163,8 +158,6 @@ typedef SHA512_CTX SHA384_CTX;
 #define SHA512_Final(d, c)	SHA512_Finish(c, d)
 #endif /* RUBY */
 
-#ifndef NOPROTO
-
 int SHA256_Init(SHA256_CTX *);
 void SHA256_Update(SHA256_CTX*, const uint8_t*, size_t);
 int SHA256_Final(uint8_t[SHA256_DIGEST_LENGTH], SHA256_CTX*);
@@ -182,40 +175,6 @@ void SHA512_Update(SHA512_CTX*, const uint8_t*, size_t);
 int SHA512_Final(uint8_t[SHA512_DIGEST_LENGTH], SHA512_CTX*);
 char* SHA512_End(SHA512_CTX*, char[SHA512_DIGEST_STRING_LENGTH]);
 char* SHA512_Data(const uint8_t*, size_t, char[SHA512_DIGEST_STRING_LENGTH]);
-
-#else /* NOPROTO */
-
-int SHA256_Init();
-void SHA256_Update();
-#ifdef RUBY
-int SHA256_Finish();
-#else
-int SHA256_Final();
-#endif /* RUBY */
-char* SHA256_End();
-char* SHA256_Data();
-
-int SHA384_Init();
-void SHA384_Update();
-#ifdef RUBY
-int SHA384_Finish();
-#else
-int SHA384_Final();
-#endif /* RUBY */
-char* SHA384_End();
-char* SHA384_Data();
-
-int SHA512_Init();
-void SHA512_Update();
-#ifdef RUBY
-int SHA512_Finish();
-#else
-int SHA512_Final();
-#endif /* RUBY */
-char* SHA512_End();
-char* SHA512_Data();
-
-#endif /* NOPROTO */
 
 #ifdef	__cplusplus
 }

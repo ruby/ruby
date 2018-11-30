@@ -1232,14 +1232,6 @@ RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
 
-AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
-  [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
-	rb_cv_have_prototypes=yes,
-	rb_cv_have_prototypes=no)])
-AS_IF([test "$rb_cv_have_prototypes" = yes], [
-  AC_DEFINE(HAVE_PROTOTYPES)
-])
-
 AC_CACHE_CHECK(token paste string, rb_cv_tokenpaste,
   [AC_TRY_COMPILE([@%:@define paste(a,b) a@%:@@%:@b],
 		  [int xy = 1; return paste(x,y);],
