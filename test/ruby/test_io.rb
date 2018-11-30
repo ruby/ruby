@@ -3774,14 +3774,6 @@ __END__
             th = Thread.new { r.read(1) }
             w.write(dot)
 
-            # XXX not sure why this is needed on Linux, otherwise
-            # the "good" reader thread doesn't always join properly
-            # because the reader never sees the first write
-            if RUBY_PLATFORM =~ /linux/
-              # assert_equal can fail if this is another char...
-              w.write(dot)
-            end
-
             assert_same th, th.join(15), '"good" reader timeout'
             assert_equal(dot, th.value)
           end
@@ -3799,9 +3791,6 @@ __END__
             end
           end
           Thread.pass until th.stop?
-
-          # XXX not sure why, this reduces Linux CI failures
-          assert_nil th.join(0.001)
 
           r.close
           assert_same th, th.join(30), '"bad" reader timeout'
