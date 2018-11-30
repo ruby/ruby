@@ -106,20 +106,6 @@ mjit_gc_finish_hook(void)
     CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
 }
 
-/* Wrap critical section to prevent [Bug #15316] */
-void
-mjit_postponed_job_register_start_hook(void)
-{
-    CRITICAL_SECTION_START(4, "mjit_postponed_job_register_start_hook");
-}
-
-/* Unwrap critical section of mjit_postponed_job_register_start_hook() */
-void
-mjit_postponed_job_register_finish_hook(void)
-{
-    CRITICAL_SECTION_FINISH(4, "mjit_postponed_job_register_finish_hook");
-}
-
 /* Iseqs can be garbage collected.  This function should call when it
    happens.  It removes iseq from the unit.  */
 void
