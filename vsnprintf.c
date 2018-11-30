@@ -65,28 +65,7 @@
 #define u_short unsigned short
 #define u_int unsigned int
 
-#if !defined(HAVE_STDARG_PROTOTYPES)
-#if defined(__STDC__)
-#define HAVE_STDARG_PROTOTYPES 1
-#endif
-#endif
-
-#undef __P
-#if defined(HAVE_STDARG_PROTOTYPES)
-# include <stdarg.h>
-# if !defined(__P)
-#  define __P(x) x
-# endif
-#else
-# define __P(x) ()
-# if !defined(const)
-#  define const
-# endif
-# include <varargs.h>
-#endif
-#ifndef _BSD_VA_LIST_
-#define	_BSD_VA_LIST_ va_list
-#endif
+#include <stdarg.h>
 
 #ifdef __STDC__
 # include <limits.h>

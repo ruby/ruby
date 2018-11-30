@@ -795,7 +795,7 @@ rb_funcall(VALUE recv, ID mid, int n, ...)
     if (n > 0) {
 	long i;
 
-	va_init_list(ar, n);
+	va_start(ar, n);
 
 	argv = ALLOCA_N(VALUE, n);
 
@@ -1008,7 +1008,7 @@ rb_yield_values(int n, ...)
 	va_list args;
 	argv = ALLOCA_N(VALUE, n);
 
-	va_init_list(args, n);
+	va_start(args, n);
 	for (i=0; i<n; i++) {
 	    argv[i] = va_arg(args, VALUE);
 	}

@@ -48,7 +48,7 @@ ole_raise(HRESULT hr, VALUE ecs, const char *fmt, ...)
     va_list args;
     VALUE msg;
     VALUE err_msg;
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     msg = rb_vsprintf(fmt, args);
     va_end(args);
 

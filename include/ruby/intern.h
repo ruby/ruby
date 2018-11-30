@@ -26,11 +26,7 @@ extern "C" {
 #include RUBY_EXTCONF_H
 #endif
 
-#ifdef HAVE_STDARG_PROTOTYPES
-# include <stdarg.h>
-#else
-# include <varargs.h>
-#endif
+#include <stdarg.h>
 
 #include "ruby/st.h"
 

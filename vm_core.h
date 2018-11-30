@@ -120,13 +120,7 @@
 /* define to 0 to test old code path */
 #define WAITPID_USE_SIGCHLD (RUBY_SIGCHLD || SIGCHLD_LOSSY)
 
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start((a),(b))
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start((a))
-#endif
 
 #if defined(SIGSEGV) && defined(HAVE_SIGALTSTACK) && defined(SA_SIGINFO) && !defined(__NetBSD__)
 #  define USE_SIGALTSTACK

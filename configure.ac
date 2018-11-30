@@ -1288,24 +1288,6 @@ AS_IF([test "$rb_cv_string_literal_concatenation" = no], [
   AC_MSG_ERROR([No string literal concatenation])
 ])
 
-AC_CACHE_CHECK(for variable length prototypes and stdarg.h, rb_cv_stdarg,
-  [AC_TRY_COMPILE([
-#include <stdarg.h>
-int foo(int x, ...) {
-	va_list va;
-	va_start(va, x);
-	va_arg(va, int);
-	va_arg(va, char *);
-	va_arg(va, double);
-	return 0;
-}
-], [return foo(10, "", 3.14);],
-	rb_cv_stdarg=yes,
-	rb_cv_stdarg=no)])
-AS_IF([test "$rb_cv_stdarg" = yes], [
-  AC_DEFINE(HAVE_STDARG_PROTOTYPES)
-])
-
 AC_CACHE_CHECK(for variable length macro, rb_cv_va_args_macro,
   [AC_TRY_COMPILE([
 int foo(int x, ...);

@@ -1155,7 +1155,7 @@ new_insn_body(rb_iseq_t *iseq, int line_no, enum ruby_vminsn_type insn_id, int a
     va_list argv;
     if (argc > 0) {
 	int i;
-	va_init_list(argv, argc);
+	va_start(argv, argc);
 	operands = (VALUE *)compile_data_alloc(iseq, sizeof(VALUE) * argc);
 	for (i = 0; i < argc; i++) {
 	    VALUE v = va_arg(argv, VALUE);

@@ -26,13 +26,7 @@
 #endif
 #include <stdlib.h>
 #include <math.h>
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 #include <objidl.h>
 
 #define DOUT fprintf(stderr,"%s(%d)\n", __FILE__, __LINE__)

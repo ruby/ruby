@@ -926,7 +926,7 @@ rb_rescue2(VALUE (* b_proc) (ANYARGS), VALUE data1,
 	    int handle = FALSE;
 	    VALUE eclass;
 
-	    va_init_list(args, data2);
+	    va_start(args, data2);
 	    while ((eclass = va_arg(args, VALUE)) != 0) {
 		if (rb_obj_is_kind_of(ec->errinfo, eclass)) {
 		    handle = TRUE;
