@@ -19,9 +19,7 @@
 #endif
 #include "dln.h"
 
-#ifdef HAVE_STDLIB_H
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #ifdef USE_DLN_A_OUT
 char *dln_argv0;

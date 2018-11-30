@@ -17,9 +17,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 #include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -33,10 +31,6 @@
  * \defgroup exception Exception handlings
  * \{
  */
-
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
 
 #ifndef WIFEXITED
 #define WIFEXITED(status) 1

@@ -22,9 +22,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <signal.h>
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -37,13 +35,6 @@
 
 #include <time.h>
 #include <ctype.h>
-
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
-#endif
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>

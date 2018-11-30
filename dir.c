@@ -69,11 +69,6 @@
 #endif
 
 #include <errno.h>
-
-#ifndef HAVE_STDLIB_H
-char *getenv();
-#endif
-
 #include <ctype.h>
 
 #include "ruby/util.h"

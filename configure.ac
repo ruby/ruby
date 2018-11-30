@@ -1883,12 +1883,7 @@ AS_IF([test "$ac_cv_func_getcwd" = yes], [
 @%:@ifdef HAVE_UNISTD_H
 @%:@include <unistd.h>
 @%:@endif
-@%:@ifndef EXIT_SUCCESS
-@%:@define EXIT_SUCCESS 0
-@%:@endif
-@%:@ifndef EXIT_FAILURE
-@%:@define EXIT_FAILURE 1
-@%:@endif
+@%:@include <stdlib.h>
 
 int
 main(int argc, char **argv)
@@ -1978,12 +1973,7 @@ AC_CACHE_CHECK(whether atan2 handles Inf as C99, rb_cv_atan2_inf_c99, [
 @%:@ifdef HAVE_UNISTD_H
 @%:@include <unistd.h>
 @%:@endif
-@%:@ifndef EXIT_SUCCESS
-@%:@define EXIT_SUCCESS 0
-@%:@endif
-@%:@ifndef EXIT_FAILURE
-@%:@define EXIT_FAILURE 1
-@%:@endif
+@%:@include <stdlib.h>
 
 int
 main(int argc, char **argv)
@@ -2420,12 +2410,6 @@ AS_IF([test "$ac_cv_func_fork_works" = "yes" -a "$rb_with_pthread" = "yes"], [
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
-#endif
 
 void *
 thread_func(void *dmy)

@@ -22,16 +22,7 @@ pass_passed_block_handler(rb_execution_context_t *ec)
 #define PASS_PASSED_BLOCK_HANDLER_EC(ec) pass_passed_block_handler(ec)
 #define PASS_PASSED_BLOCK_HANDLER() pass_passed_block_handler(GET_EC())
 
-#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-#ifndef EXIT_SUCCESS
-#define EXIT_SUCCESS 0
-#endif
-#ifndef EXIT_FAILURE
-#define EXIT_FAILURE 1
-#endif
-
 #include <stdio.h>
 #include <setjmp.h>
 

@@ -56,10 +56,6 @@
 
 void Init_ruby_description(void);
 
-#ifndef HAVE_STDLIB_H
-char *getenv();
-#endif
-
 #ifndef DISABLE_RUBYGEMS
 # define DISABLE_RUBYGEMS 0
 #endif

@@ -619,7 +619,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if $(MSC_VER) >= 1800
 #define HAVE_STDBOOL_H 1
 !endif
-#define HAVE_STDLIB_H 1
 #define HAVE_STDDEF_H 1
 !if $(MSC_VER) >= 1400
 #define HAVE_LONG_LONG 1
