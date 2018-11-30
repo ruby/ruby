@@ -1062,7 +1062,6 @@ AC_CHECK_HEADERS(sys/times.h)
 AC_CHECK_HEADERS(sys/uio.h)
 AC_CHECK_HEADERS(sys/utime.h)
 AC_CHECK_HEADERS(syscall.h)
-AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
 
@@ -1225,9 +1224,7 @@ RUBY_REPLACE_TYPE(rlim_t, [int long "long long"], RLIM, [
 @%:@include <sys/resource.h>
 ])
 RUBY_REPLACE_TYPE(off_t, [], OFFT)
-RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@ifdef HAVE_TIME_H
-@%:@ include <time.h>
-@%:@endif
+RUBY_REPLACE_TYPE(clockid_t, [], CLOCKID, [@%:@include <time.h>
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
@@ -1533,18 +1530,14 @@ AC_CHECK_MEMBERS([struct stat.st_ctimespec])
 AC_CHECK_MEMBERS([struct stat.st_ctimensec])
 AC_CHECK_MEMBERS([struct stat.st_birthtimespec])
 
-AC_CHECK_TYPES([struct timeval], [], [], [@%:@ifdef HAVE_TIME_H
-@%:@include <time.h>
-@%:@endif
+AC_CHECK_TYPES([struct timeval], [], [], [@%:@include <time.h>
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@include <sys/time.h>
 @%:@endif])
 
 AS_IF([test "${ac_cv_type_struct_timeval}" = yes], [
     RUBY_CHECK_SIZEOF([struct timeval.tv_sec], [time_t long "long long"], [],
-		      [@%:@ifdef HAVE_TIME_H
-@%:@include <time.h>
-@%:@endif
+		      [@%:@include <time.h>
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@include <sys/time.h>
 @%:@endif])
@@ -1558,16 +1551,12 @@ AS_IF([test "${ac_cv_type_struct_timeval}" = yes], [
     ])
 ])
 
-AC_CHECK_TYPES([struct timespec], [], [], [@%:@ifdef HAVE_TIME_H
-@%:@include <time.h>
-@%:@endif
+AC_CHECK_TYPES([struct timespec], [], [], [@%:@include <time.h>
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@include <sys/time.h>
 @%:@endif])
 
-AC_CHECK_TYPES([struct timezone], [], [], [@%:@ifdef HAVE_TIME_H
-@%:@ include <time.h>
-@%:@endif
+AC_CHECK_TYPES([struct timezone], [], [], [@%:@include <time.h>
 @%:@ifdef HAVE_SYS_TIME_H
 @%:@ include <sys/time.h>
 @%:@endif])
