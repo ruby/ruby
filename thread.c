@@ -419,6 +419,7 @@ rb_vm_gvl_destroy(rb_vm_t *vm)
     if (0) {
         /* may be held by running threads */
         rb_native_mutex_destroy(&vm->waitpid_lock);
+        rb_native_mutex_destroy(&vm->workqueue_lock);
     }
 }
 
@@ -4422,6 +4423,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     /* may be held by MJIT threads in parent */
     rb_native_mutex_initialize(&vm->waitpid_lock);
+    rb_native_mutex_initialize(&vm->workqueue_lock);
 
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
@@ -5183,6 +5185,7 @@ Init_Thread(void)
 	    gvl_init(th->vm);
 	    gvl_acquire(th->vm, th);
             rb_native_mutex_initialize(&th->vm->waitpid_lock);
+            rb_native_mutex_initialize(&th->vm->workqueue_lock);
             rb_native_mutex_initialize(&th->interrupt_lock);
 
 	    th->pending_interrupt_queue = rb_ary_tmp_new(0);

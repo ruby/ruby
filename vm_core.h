@@ -638,11 +638,15 @@ typedef struct rb_vm_struct {
     /* relation table of ensure - rollback for callcc */
     struct st_table *ensure_rollback_table;
 
-    /* postponed_job */
+    /* postponed_job (async-signal-safe, NOT thread-safe) */
     struct rb_postponed_job_struct *postponed_job_buffer;
     int postponed_job_index;
 
     int src_encoding_index;
+
+    /* workqueue (thread-safe, NOT async-signal-safe) */
+    struct list_head workqueue; /* <=> rb_workqueue_job.jnode */
+    rb_nativethread_lock_t workqueue_lock;
 
     VALUE verbose, debug, orig_progname, progname;
     VALUE coverages;
@@ -1628,6 +1632,7 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 {
     list_head_init(&vm->waiting_fds);
     list_head_init(&vm->waiting_pids);
+    list_head_init(&vm->workqueue);
     list_head_init(&vm->waiting_grps);
     list_head_init(&vm->living_threads);
     vm->living_thread_num = 0;
