@@ -42,11 +42,7 @@ isinf(double n)
 
 #else
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
-# include <strings.h>
-#endif
+#include <string.h>
 
 static double zero(void) { return 0.0; }
 static double one (void) { return 1.0; }

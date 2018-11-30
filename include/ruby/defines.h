@@ -119,9 +119,8 @@ extern "C" {
 #endif
 # include <stdlib.h>
 # include <stddef.h>
-#ifdef HAVE_STRING_H
-# include <string.h>
-#endif
+#include <string.h>
+
 #ifdef HAVE_STRINGS_H
 # include <strings.h>
 #endif

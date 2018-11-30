@@ -74,10 +74,6 @@
 char *getenv();
 #endif
 
-#ifndef HAVE_STRING_H
-char *strchr(char*,char);
-#endif
-
 #include <ctype.h>
 
 #include "ruby/util.h"

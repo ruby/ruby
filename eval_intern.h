@@ -43,10 +43,6 @@ pass_passed_block_handler(rb_execution_context_t *ec)
 # endif
 #endif
 
-#ifndef HAVE_STRING_H
-char *strrchr(const char *, const char);
-#endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

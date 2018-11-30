@@ -36,11 +36,7 @@ char *dln_argv0;
 #include <alloca.h>
 #endif
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
-# include <strings.h>
-#endif
+#include <string.h>
 
 #ifndef xmalloc
 void *xmalloc();
