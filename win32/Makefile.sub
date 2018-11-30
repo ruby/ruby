@@ -614,7 +614,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #error MSC version unmatch: _MSC_VER: $(MSC_VER) is expected.
 #endif
 #define RUBY_MSVCRT_VERSION $(RT_VER)
-#define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
 !if $(MSC_VER) >= 1800

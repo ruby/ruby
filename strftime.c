@@ -99,28 +99,13 @@
 
 #undef strchr	/* avoid AIX weirdness */
 
-#if !defined __STDC__ && !defined _WIN32
-#define const	/**/
-static int weeknumber();
-adddecl(static int iso8601wknum();)
-static int weeknumber_v();
-adddecl(static int iso8601wknum_v();)
-#else
 static int weeknumber(const struct tm *timeptr, int firstweekday);
 adddecl(static int iso8601wknum(const struct tm *timeptr);)
 static int weeknumber_v(const struct vtm *vtm, int firstweekday);
 adddecl(static int iso8601wknum_v(const struct vtm *vtm);)
-#endif
 
-#ifdef STDC_HEADERS
 #include <stdlib.h>
 #include <string.h>
-#else
-extern void *malloc();
-extern void *realloc();
-extern char *getenv();
-extern char *strchr();
-#endif
 
 #define range(low, item, hi)	max((low), min((item), (hi)))
 

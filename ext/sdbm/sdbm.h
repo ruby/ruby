@@ -54,12 +54,6 @@ typedef struct {
 
 extern datum nullitem;
 
-#if defined(__STDC__)
-#define proto(p) p
-#else
-#define proto(p) ()
-#endif
-
 /*
  * flags to sdbm_store
  */
@@ -69,18 +63,18 @@ extern datum nullitem;
 /*
  * ndbm interface
  */
-extern DBM *sdbm_open proto((char *, int, int));
-extern void sdbm_close proto((DBM *));
-extern datum sdbm_fetch proto((DBM *, datum));
-extern int sdbm_delete proto((DBM *, datum));
-extern int sdbm_store proto((DBM *, datum, datum, int));
-extern datum sdbm_firstkey proto((DBM *));
-extern datum sdbm_nextkey proto((DBM *));
+extern DBM *sdbm_open(char *, int, int);
+extern void sdbm_close(DBM *);
+extern datum sdbm_fetch(DBM *, datum);
+extern int sdbm_delete(DBM *, datum);
+extern int sdbm_store(DBM *, datum, datum, int);
+extern datum sdbm_firstkey(DBM *);
+extern datum sdbm_nextkey(DBM *);
 
 /*
  * other
  */
-extern DBM *sdbm_prep proto((char *, char *, int, int));
-extern long sdbm_hash proto((char *, int));
+extern DBM *sdbm_prep(char *, char *, int, int);
+extern long sdbm_hash(char *, int);
 
 #endif	/* _SDBM_H_ */

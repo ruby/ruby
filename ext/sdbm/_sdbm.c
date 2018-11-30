@@ -60,15 +60,15 @@
 #endif
 
 /*#include "pair.h"*/
-static int   fitpair proto((char *, int));
-static void  putpair proto((char *, datum, datum));
-static datum getpair proto((char *, datum));
-static int   delpair proto((char *, datum));
-static int   chkpage proto((char *));
-static datum getnkey proto((char *, int));
-static void  splpage proto((char *, char *, long));
+static int   fitpair(char *, int);
+static void  putpair(char *, datum, datum);
+static datum getpair(char *, datum);
+static int   delpair(char *, datum);
+static int   chkpage(char *);
+static datum getnkey(char *, int);
+static void  splpage(char *, char *, long);
 #if SEEDUPS
-static int   duppair proto((char *, datum));
+static int   duppair(char *, datum);
 #endif
 
 #include <stdio.h>
@@ -82,7 +82,6 @@ static int   duppair proto((char *, datum));
 #include <sys/file.h>
 #else
 #include <fcntl.h>
-/*#include <memory.h>*/
 #endif
 #ifndef O_BINARY
 #define O_BINARY	0
@@ -112,11 +111,11 @@ extern int errno;
 /*
  * forward
  */
-static int getdbit proto((DBM *, long));
-static int setdbit proto((DBM *, long));
-static int getpage proto((DBM *, long));
-static datum getnext proto((DBM *));
-static int makroom proto((DBM *, long, int));
+static int getdbit(DBM *, long);
+static int setdbit(DBM *, long);
+static int getpage(DBM *, long);
+static datum getnext(DBM *);
+static int makroom(DBM *, long, int);
 
 /*
  * useful macros
@@ -631,16 +630,12 @@ getnext(register DBM *db)
  * page-level routines
  */
 
-#ifndef BSD42
-/*#include <memory.h>*/
-#endif
-
 #define exhash(item)	sdbm_hash((item).dptr, (item).dsize)
 
 /*
  * forward
  */
-static int seepair proto((char *, int, char *, int));
+static int seepair(char *, int, char *, int);
 
 /*
  * page format:
