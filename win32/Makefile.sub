@@ -719,7 +719,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_ALIGNAS(n) __declspec(align(n))
 #define RUBY_ALIGNOF __alignof
 #define HAVE_DECL_SYS_NERR 1
-#define HAVE_LIMITS_H 1
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1
 #define HAVE_TIME_H 1

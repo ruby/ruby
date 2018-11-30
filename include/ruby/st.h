@@ -27,13 +27,8 @@ typedef unsigned LONG_LONG st_data_t;
 #endif
 #define ST_DATA_T_DEFINED
 
-#ifndef CHAR_BIT
-# ifdef HAVE_LIMITS_H
-#  include <limits.h>
-# else
-#  define CHAR_BIT 8
-# endif
-#endif
+#include <limits.h>
+
 #ifndef _
 # define _(args) args
 #endif

@@ -208,24 +208,7 @@ typedef char ruby_check_sizeof_voidp[SIZEOF_VOIDP == sizeof(void*) ? 1 : -1];
 #define PRIxSIZE PRI_SIZE_PREFIX"x"
 #define PRIXSIZE PRI_SIZE_PREFIX"X"
 
-#ifdef __STDC__
-# include <limits.h>
-#else
-# ifndef LONG_MAX
-#  ifdef HAVE_LIMITS_H
-#   include <limits.h>
-#  else
-    /* assuming 32bit(2's complement) long */
-#   define LONG_MAX 2147483647
-#  endif
-# endif
-# ifndef LONG_MIN
-#  define LONG_MIN (-LONG_MAX-1)
-# endif
-# ifndef CHAR_BIT
-#  define CHAR_BIT 8
-# endif
-#endif
+#include <limits.h>
 
 #ifdef HAVE_LONG_LONG
 # ifndef LLONG_MAX

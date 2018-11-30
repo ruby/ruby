@@ -66,19 +66,7 @@
 #define u_int unsigned int
 
 #include <stdarg.h>
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# ifndef LONG_MAX
-#  ifdef HAVE_LIMITS_H
-#   include <limits.h>
-#  else
-    /* assuming 32bit(2's complement) long */
-#   define LONG_MAX 2147483647
-#  endif
-# endif
-#endif
+#include <limits.h>
 
 #if defined(__hpux) && !defined(__GNUC__) && !defined(__STDC__)
 #define const
