@@ -12,9 +12,7 @@
 #include "internal.h"
 #include "id.h"
 
-#ifdef HAVE_FLOAT_H
 #include <float.h>
-#endif
 #include <math.h>
 
 VALUE rb_cRange;

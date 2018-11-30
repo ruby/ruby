@@ -18,9 +18,8 @@
 #include "id_table.h"
 
 #include <math.h>
-#ifdef HAVE_FLOAT_H
 #include <float.h>
-#endif
+
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif
@@ -334,7 +333,6 @@ w_long(long x, struct dump_arg *arg)
     w_nbyte(buf, i+1, arg);
 }
 
-#ifdef DBL_MANT_DIG
 #define DECIMAL_MANT (53-16)	/* from IEEE754 double precision */
 
 #if DBL_MANT_DIG > 32
@@ -378,15 +376,8 @@ load_mantissa(double d, const char *buf, long len)
     }
     return d;
 }
-#else
-#define load_mantissa(d, buf, len) (d)
-#endif
 
-#ifdef DBL_DIG
 #define FLOAT_DIG (DBL_DIG+2)
-#else
-#define FLOAT_DIG 17
-#endif
 
 static void
 w_float(double d, struct dump_arg *arg)

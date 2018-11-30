@@ -16,9 +16,7 @@
 #include "internal.h"
 #include "id.h"
 
-#ifdef HAVE_FLOAT_H
 #include <float.h>
-#endif
 
 /*
  * Document-class: Enumerator

@@ -14,10 +14,6 @@
 #include <math.h>
 #include "ruby.h"
 
-/* DBL_MANT_DIG must be less than 4 times of bits of int */
-#ifndef DBL_MANT_DIG
-#define DBL_MANT_DIG 53		/* in this case, at least 12 digit precision */
-#endif
 #define BIG_CRITERIA_BIT (1<<DBL_MANT_DIG/2)
 #if BIG_CRITERIA_BIT > 0
 #define BIG_CRITERIA (1.0*BIG_CRITERIA_BIT)

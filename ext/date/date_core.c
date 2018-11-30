@@ -221,9 +221,7 @@ f_negative_p(VALUE x)
     (((m) << MON_SHIFT) | ((d) << MDAY_SHIFT))
 #endif
 
-#ifdef HAVE_FLOAT_H
 #include <float.h>
-#endif
 
 #if defined(FLT_RADIX) && defined(FLT_MANT_DIG) && FLT_RADIX == 2 && FLT_MANT_DIG > 22
 #define date_sg_t float
