@@ -1249,11 +1249,11 @@ extract-gems: PHONY
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
 	    -pla \
-	    -e '$$_=Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
-	    -e   'if s.platform=="ruby"&&s.name==$$F[0]' \
-	    -e     'break [s.name, s.version, *$$F[2..-1]].join(" ")' \
-	    -e   'end' \
+	    -e '(gem,src), = Gem::SpecFetcher.fetcher.detect(:latest) {'"|s|" \
+	    -e   's.platform=="ruby"&&s.name==$$F[0]' \
 	    -e '}' \
+	    -e 'gem = src.fetch_spec(gem)' \
+	    -e '$$_ = [gem.name, gem.version, gem.metadata["source_code_uri"]||gem.homepage].join(" ")' \
 	     "$(srcdir)/gems/bundled_gems" | \
 	"$(IFCHANGE)" "$(srcdir)/gems/bundled_gems" -
 
