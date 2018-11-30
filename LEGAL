@@ -446,11 +446,6 @@ missing/hypot.c:
 missing/isinf.c:
 missing/isnan.c:
 missing/lgamma_r.c:
-missing/memcmp.c:
-missing/memmove.c:
-missing/strchr.c:
-missing/strerror.c:
-missing/strstr.c:
 missing/tgamma.c:
 ext/date/date_strftime.c:
 ext/digest/sha1/sha1.[ch]:

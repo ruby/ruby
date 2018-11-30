@@ -804,8 +804,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !endif
 #define HAVE_ALLOCA 1
 #define HAVE_DUP2 1
-#define HAVE_MEMCMP 1
-#define HAVE_MEMMOVE 1
 #define HAVE_MKDIR 1
 #define HAVE_CLOCK_GETTIME 1
 #define HAVE_CLOCK_GETRES 1
@@ -813,10 +811,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_SPAWNV 1
 #define HAVE_STRCASECMP 1
 #define HAVE_STRNCASECMP 1
-#define HAVE_STRERROR 1
 #define HAVE_STRFTIME 1
-#define HAVE_STRCHR 1
-#define HAVE_STRSTR 1
 #define HAVE_FLOCK 1
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
@@ -824,9 +819,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define HAVE_NAN 1
 !endif
 #define HAVE_HYPOT 1
-#define HAVE_FMOD 1
-#define HAVE_FREXP 1
-#define HAVE_MODF 1
 #define HAVE_WAITPID 1
 #define HAVE_FSYNC 1
 #define HAVE_GETCWD 1

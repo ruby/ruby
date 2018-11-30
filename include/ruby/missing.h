@@ -109,12 +109,6 @@ RUBY_EXTERN int finite(double);
 RUBY_EXTERN int flock(int, int);
 #endif
 
-/*
-#ifndef HAVE_FREXP
-RUBY_EXTERN double frexp(double, int *);
-#endif
-*/
-
 #ifndef HAVE_HYPOT
 RUBY_EXTERN double hypot(double, double);
 #endif
@@ -199,35 +193,6 @@ RUBY_EXTERN double nan(const char *);
 
 #ifndef HAVE_NEXTAFTER
 RUBY_EXTERN double nextafter(double x, double y);
-#endif
-
-/*
-#ifndef HAVE_MEMCMP
-RUBY_EXTERN int memcmp(const void *, const void *, size_t);
-#endif
-*/
-
-#ifndef HAVE_MEMMOVE
-RUBY_EXTERN void *memmove(void *, const void *, size_t);
-#endif
-
-/*
-#ifndef HAVE_MODF
-RUBY_EXTERN double modf(double, double *);
-#endif
-*/
-
-#ifndef HAVE_STRCHR
-RUBY_EXTERN char *strchr(const char *, int);
-RUBY_EXTERN char *strrchr(const char *, int);
-#endif
-
-#ifndef HAVE_STRERROR
-RUBY_EXTERN char *strerror(int);
-#endif
-
-#ifndef HAVE_STRSTR
-RUBY_EXTERN char *strstr(const char *, const char *);
 #endif
 
 #ifndef HAVE_STRLCPY

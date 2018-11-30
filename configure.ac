@@ -946,7 +946,6 @@ main()
 		ac_cv_func_symlink=yes
 		ac_cv_lib_crypt_crypt=no
 		ac_cv_func_getpgrp_void=no
-		ac_cv_func_memcmp_working=yes
 		ac_cv_lib_dl_dlopen=no
 		rb_cv_binary_elf=no
 		rb_cv_negative_time_t=no
@@ -1681,7 +1680,6 @@ AS_IF([test "x$ALLOCA" = "x"], [
 	],)
     ])
 ])
-AC_FUNC_MEMCMP
 
 # http://sources.redhat.com/ml/libc-hacker/2005-08/msg00008.html
 # Debian GNU/Linux Etch's libc6.1 2.3.6.ds1-13etch5 has this problem.
@@ -1719,15 +1717,11 @@ AC_REPLACE_FUNCS(hypot)
 AC_REPLACE_FUNCS(isinf)
 AC_REPLACE_FUNCS(isnan)
 AC_REPLACE_FUNCS(lgamma_r)
-AC_REPLACE_FUNCS(memmove)
 AC_REPLACE_FUNCS(nan)
 AC_REPLACE_FUNCS(nextafter)
 AC_REPLACE_FUNCS(setproctitle)
-AC_REPLACE_FUNCS(strchr)
-AC_REPLACE_FUNCS(strerror)
 AC_REPLACE_FUNCS(strlcat)
 AC_REPLACE_FUNCS(strlcpy)
-AC_REPLACE_FUNCS(strstr)
 AC_REPLACE_FUNCS(tgamma)
 
 # for missing/setproctitle.c

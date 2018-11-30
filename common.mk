@@ -897,16 +897,11 @@ erf.$(OBJEXT): {$(VPATH)}erf.c
 explicit_bzero.$(OBJEXT): {$(VPATH)}explicit_bzero.c
 finite.$(OBJEXT): {$(VPATH)}finite.c
 flock.$(OBJEXT): {$(VPATH)}flock.c
-memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
-memmove.$(OBJEXT): {$(VPATH)}memmove.c
 mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
 setproctitle.$(OBJEXT): {$(VPATH)}setproctitle.c
-strchr.$(OBJEXT): {$(VPATH)}strchr.c
 strdup.$(OBJEXT): {$(VPATH)}strdup.c
-strerror.$(OBJEXT): {$(VPATH)}strerror.c
 strlcat.$(OBJEXT): {$(VPATH)}strlcat.c
 strlcpy.$(OBJEXT): {$(VPATH)}strlcpy.c
-strstr.$(OBJEXT): {$(VPATH)}strstr.c
 nt.$(OBJEXT): {$(VPATH)}nt.c
 ia64.$(OBJEXT): {$(VPATH)}ia64.s
 	$(CC) $(CFLAGS) -c $<

@@ -1173,14 +1173,7 @@ flodivmod(double x, double y, double *divp, double *modp)
     if ((x == 0.0) || (isinf(y) && !isinf(x)))
         mod = x;
     else {
-#ifdef HAVE_FMOD
 	mod = fmod(x, y);
-#else
-	double z;
-
-	modf(x/y, &z);
-	mod = x - z * y;
-#endif
     }
     if (isinf(x) && !isinf(y))
 	div = x;
