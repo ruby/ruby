@@ -2823,53 +2823,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 	}
     }
 
-    /*
-     * putobject "foo"
-     * putobject "bar"
-     * newarray 2
-     *
-     * ==>
-     *
-     * duparray ["foo", "bar"]
-     */
-    if (IS_INSN_ID(iobj, newarray)) {
-        int len;
-
-        len = NUM2INT(OPERAND_AT(iobj, 0));
-
-        if (len > 0) {
-            INSN *link;
-            INSN *cur;
-            int i;
-
-            link = iobj;
-            i = len;
-            while(i > 0) {
-                link = (INSN *)get_prev_insn(link);
-                if (!IS_INSN_ID(link, putobject))
-                    break;
-
-                i--;
-            }
-
-            /* All previous instructions were `putobject` */
-            if (i == 0) {
-                VALUE list = rb_ary_new_capa(len);
-                iseq_add_mark_object_compile_time(iseq, list);
-
-                while(i < len) {
-                    cur = link;
-                    rb_ary_push(list, OPERAND_AT(cur, 0));
-                    link = (INSN *)get_next_insn(link);
-                    ELEM_REMOVE(&cur->link);
-                    i++;
-                }
-                iobj->insn_id = BIN(duparray);
-                OPERAND_AT(iobj, 0) = list;
-            }
-        }
-    }
-
     if (IS_INSN_ID(iobj, leave)) {
 	remove_unreachable_chunk(iseq, iobj->link.next);
     }
