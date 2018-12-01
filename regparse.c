@@ -5878,22 +5878,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     if (IS_NULL(np1)) goto err;
     cc = NCCLASS(np1);
     R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 1, env));
-    if (ONIGENC_MBC_MINLEN(env->enc) > 1) {
-      BBuf *pbuf2 = NULL;
-      R_ERR(add_code_range(&pbuf1, env, 0x0a, 0x0a));
-      R_ERR(add_code_range(&pbuf1, env, 0x0d, 0x0d));
-      if (r != 0) goto err;
-      r = and_code_range_buf(cc->mbuf, 0, pbuf1, 1, &pbuf2, env);
-      if (r != 0) {
-	bbuf_free(pbuf2);
-	goto err;
-      }
-      bbuf_free(pbuf1);
-      pbuf1 = NULL;
-      bbuf_free(cc->mbuf);
-      cc->mbuf = pbuf2;
-    }
-    else {
+    if (! (ONIGENC_MBC_MINLEN(env->enc) > 1)) {
       BITSET_CLEAR_BIT(cc->bs, 0x0a);
       BITSET_CLEAR_BIT(cc->bs, 0x0d);
     }
