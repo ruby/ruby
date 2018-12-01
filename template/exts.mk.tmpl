@@ -128,14 +128,25 @@ libencs:
 ext/extinit.<%=objext%>:
 	$(Q)$(MAKE)<%=mflags%> V=$(V) EXTINITS="$(EXTINITS)" $@
 
-% targets.product(macros["extensions"].map {|e|e.chomp("/.")}) do |t, e|
-<%=e%>/<%=t%>:
-%   if /^(dist|real)clean$/ =~ t
+% exts = macros["extensions"].map {|e|e.chomp("/.")}.sort
+% targets.each do |tgt|
+%   exts.each do |d|
+%     t = "#{d}/#{tgt}"
+%     if /^(dist|real)?clean$/ =~ tgt
+%       deps = exts.select {|e|e.start_with?("#{d}/")}.map {|e|"#{e}/#{tgt}"}
+%       pd = ' ' + deps.join(' ') unless deps.empty?
+%     else
+%       pext = File.dirname(d)
+%       pd = " #{pext}/#{tgt}" if exts.include?(pext)
+%     end
+<%=t%>:<%=pd%>
+%     if /^(dist|real)clean$/ =~ tgt
 	$(ECHO) $(@F)ing $(@D)
-%   end
+%     end
 	$(Q)<%= submake %><%=mflags%> V=$(V) $(@F)
-%   if /^(dist|real)clean$/ =~ t
+%     if /^(dist|real)clean$/ =~ tgt
 	$(Q)$(RMDIRS) $(@D)
+%     end
 %   end
 % end
 
