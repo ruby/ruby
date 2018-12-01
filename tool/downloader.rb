@@ -271,7 +271,7 @@ class Downloader
     times = 0
     begin
       block.call
-    rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError, Net::ReadTimeout => e
+    rescue Errno::ETIMEDOUT, SocketError, OpenURI::HTTPError, Net::ReadTimeout, Net::OpenTimeout => e
       raise if e.is_a?(OpenURI::HTTPError) && e.message !~ /^50[023] / # retry only 500, 502, 503 for http error
       times += 1
       if times <= max_times
