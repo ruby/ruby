@@ -86,7 +86,9 @@ class TestTimeTZ < Test::Unit::TestCase
   has_lisbon_tz &&= have_tz_offset?("Europe/Lisbon")
   CORRECT_TOKYO_DST_1951 = with_tz("Asia/Tokyo") {
     if Time.local(1951, 5, 6, 12, 0, 0).dst? # noon, DST
-      Time.local(1951, 5, 6, 1, 0, 0).dst?   # DST with fixed tzdata
+      if Time.local(1951, 5, 6, 1, 0, 0).dst? # DST with fixed tzdata
+        Time.local(1951, 9, 8, 23, 0, 0).dst? ? "2018f" : "2018e"
+      end
     end
   }
   CORRECT_KIRITIMATI_SKIP_1994 = with_tz("Pacific/Kiritimati") {
@@ -347,12 +349,16 @@ Asia/Singapore  Sun Aug  8 16:30:00 1965 UTC = Mon Aug  9 00:00:00 1965 SGT isds
 Asia/Singapore  Thu Dec 31 16:29:59 1981 UTC = Thu Dec 31 23:59:59 1981 SGT isdst=0 gmtoff=27000
 Asia/Singapore  Thu Dec 31 16:30:00 1981 UTC = Fri Jan  1 00:30:00 1982 SGT isdst=0 gmtoff=28800
 End
-  gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' : <<'End'
+  gen_zdump_test CORRECT_TOKYO_DST_1951 ? <<'End' + (CORRECT_TOKYO_DST_1951 < "2018f" ? <<'2018e' : <<'2018f') : <<'End'
 Asia/Tokyo  Sat May  5 14:59:59 1951 UTC = Sat May  5 23:59:59 1951 JST isdst=0 gmtoff=32400
 Asia/Tokyo  Sat May  5 15:00:00 1951 UTC = Sun May  6 01:00:00 1951 JDT isdst=1 gmtoff=36000
+End
 Asia/Tokyo  Sat Sep  8 13:59:59 1951 UTC = Sat Sep  8 23:59:59 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Sat Sep  8 14:00:00 1951 UTC = Sat Sep  8 23:00:00 1951 JST isdst=0 gmtoff=32400
-End
+2018e
+Asia/Tokyo  Sat Sep  8 14:59:59 1951 UTC = Sun Sep  9 00:59:59 1951 JDT isdst=1 gmtoff=36000
+Asia/Tokyo  Sat Sep  8 15:00:00 1951 UTC = Sun Sep  9 00:00:00 1951 JST isdst=0 gmtoff=32400
+2018f
 Asia/Tokyo  Sat May  5 16:59:59 1951 UTC = Sun May  6 01:59:59 1951 JST isdst=0 gmtoff=32400
 Asia/Tokyo  Sat May  5 17:00:00 1951 UTC = Sun May  6 03:00:00 1951 JDT isdst=1 gmtoff=36000
 Asia/Tokyo  Fri Sep  7 15:59:59 1951 UTC = Sat Sep  8 01:59:59 1951 JDT isdst=1 gmtoff=36000
