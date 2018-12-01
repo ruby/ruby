@@ -6129,15 +6129,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* RI-Sequence := Regional_Indicator{2} */
     R_ERR(quantify_property_node(&np1, env, "Regional_Indicator", '2'));
 
-    tmp = node_new_list(np1, list2); /* here, list2 should be guaranteed to be NULL */
-    if (IS_NULL(tmp)) goto err;
-    list2 = tmp;
-    np1 = NULL;
-
-    tmp = onig_node_new_alt(list2, alt);
+    tmp = onig_node_new_alt(np1, alt);
     if (IS_NULL(tmp)) goto err;
     alt = tmp;
-    list2 = NULL;
+    np1 = NULL;
 
     tmp = node_new_list(alt, list);
     if (IS_NULL(tmp)) goto err;
