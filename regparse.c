@@ -5800,6 +5800,29 @@ create_sequence_node(Node **np, Node **node_array)
   return 0;
 }
 
+/* IMPORTANT: Make sure node_array ends with NULL_NODE */
+static int
+create_alternate_node(Node **np, Node **node_array)
+{
+  Node* tmp = NULL_NODE;
+  int i = 0;
+
+  while (node_array[i] != NULL_NODE)  i++;
+  while (--i >= 0) {
+    *np = onig_node_new_alt(node_array[i], tmp);
+    if (IS_NULL(*np)) {
+      while (i >= 0) {
+        onig_node_free(node_array[i]);
+        node_array[i--] = NULL_NODE;
+      }
+      onig_node_free(tmp);
+      return ONIGERR_MEMORY;
+    }
+    tmp = *np;
+  }
+  return 0;
+}
+
 #define R_ERR(call) r=(call);if(r!=0)goto err
 
 static int
@@ -5968,70 +5991,63 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      *                   (ZWJ (Glue_After_Zwj | EBG Extend* E_Modifier?) )* */
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
 
-    /* E_Base_GAZ Extend* E_Modifier? */
     {
-      Node* seq[4];
-      R_ERR(create_property_node(seq+0, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
-      R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
-      R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
+      Node* alts[4];
 
-      seq[3] = NULL_NODE;
-      R_ERR(create_sequence_node(&list2, seq));
+      /* Unicode 10.0.0 */
+      /* Emoji variation sequence
+       * http://unicode.org/Public/emoji/4.0/emoji-zwj-sequences.txt
+       */
+      /* Emoji U+FE0F */
+      {
+        Node* seq[3];
+
+        seq[0] = node_new_cclass();
+        if (IS_NULL(seq[0])) goto err;
+        cc = NCCLASS(seq[0]);
+        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_Emoji));
+
+        r = ONIGENC_CODE_TO_MBC(env->enc, 0xfe0f, buf); /* VARIATION SELECTOR-16 */
+        if (r < 0) goto err;
+        seq[1] = node_new_str_raw(buf, buf + r);
+        if (IS_NULL(seq[1])) goto err;
+        R_ERR(quantify_node(seq+1, 0, 1));
+
+        seq[2] = NULL_NODE;
+        R_ERR(create_sequence_node(alts+0, seq));
+      }
+
+      /* Unicode 10.0.0 */
+      /* Glue_After_Zwj */
+      {
+        Node* seq[3];
+
+        seq[0] = node_new_cclass();
+        if (IS_NULL(seq[0])) goto err;
+        cc = NCCLASS(seq[0]);
+        R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_GAZ));
+        R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
+
+        R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
+
+        seq[2] = NULL_NODE;
+        R_ERR(create_sequence_node(alts+1, seq));
+      }
+
+      /* E_Base_GAZ Extend* E_Modifier? */
+      {
+        Node* seq[4];
+        R_ERR(create_property_node(seq+0, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
+        R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
+        R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
+  
+        seq[3] = NULL_NODE;
+        R_ERR(create_sequence_node(alts+2, seq));
+      }
+
+      alts[3] = NULL_NODE;
+      R_ERR(create_alternate_node(&alt2, alts));
     }
-
-    tmp = onig_node_new_alt(list2, NULL_NODE);
-    if (IS_NULL(tmp)) goto err;
-    alt2 = tmp;
-    list2 = NULL;
-
-    /* Unicode 10.0.0 */
-    /* Glue_After_Zwj */
-    {
-      Node* seq[3];
-
-      seq[0] = node_new_cclass();
-      if (IS_NULL(seq[0])) goto err;
-      cc = NCCLASS(seq[0]);
-      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_GAZ));
-      R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Glue_After_Zwj", 0, env));
-
-      R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
-
-      seq[2] = NULL_NODE;
-      R_ERR(create_sequence_node(&list2, seq));
-    }
-
-    tmp = onig_node_new_alt(list2, alt2);
-    if (IS_NULL(tmp)) goto err;
-    alt2 = tmp;
-    list2 = NULL;
-
-    /* Unicode 10.0.0 */
-    /* Emoji variation sequence
-     * http://unicode.org/Public/emoji/4.0/emoji-zwj-sequences.txt
-     */
-    {
-      Node* seq[3];
-
-      seq[0] = node_new_cclass();
-      if (IS_NULL(seq[0])) goto err;
-      cc = NCCLASS(seq[0]);
-      R_ERR(add_ctype_to_cc_by_range(cc, -1, 0, env, sb_out, onigenc_unicode_GCB_ranges_Emoji));
-
-      r = ONIGENC_CODE_TO_MBC(env->enc, 0xfe0f, buf); /* VARIATION SELECTOR-16 */
-      if (r < 0) goto err;
-      seq[1] = node_new_str_raw(buf, buf + r);
-      if (IS_NULL(seq[1])) goto err;
-      R_ERR(quantify_node(seq+1, 0, 1));
-
-      seq[2] = NULL_NODE;
-      R_ERR(create_sequence_node(&list2, seq));
-    }
-
-    tmp = onig_node_new_alt(list2, alt2);
-    if (IS_NULL(tmp)) goto err;
-    alt2 = tmp;
-    list2 = NULL;
 
     tmp = node_new_list(alt2, NULL_NODE);
     if (IS_NULL(tmp)) goto err;
