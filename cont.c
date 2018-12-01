@@ -1747,6 +1747,7 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
     return fib->cont.value;
 
 #else /* FIBER_USE_NATIVE */
+    fib->cont.saved_ec.machine.stack_end = NULL;
     if (ruby_setjmp(fib->cont.jmpbuf)) {
         /* restored */
         fib = th->ec->fiber_ptr;
