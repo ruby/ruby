@@ -6040,7 +6040,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         R_ERR(create_property_node(seq+0, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
         R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
         R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
-  
+
         seq[3] = NULL_NODE;
         R_ERR(create_sequence_node(alts+2, seq));
       }
