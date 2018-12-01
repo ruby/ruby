@@ -3019,6 +3019,7 @@ util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/include/ruby.h
 util.$(OBJEXT): {$(VPATH)}config.h
 util.$(OBJEXT): {$(VPATH)}defines.h
+util.$(OBJEXT): {$(VPATH)}dtoa.c
 util.$(OBJEXT): {$(VPATH)}encoding.h
 util.$(OBJEXT): {$(VPATH)}intern.h
 util.$(OBJEXT): {$(VPATH)}internal.h
