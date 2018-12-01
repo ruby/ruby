@@ -235,4 +235,39 @@ EOF
     assert_equal "Removing missing@example: #{response}\n", @stub_ui.output
   end
 
+  def test_otp_verified_success
+    response_fail = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    response_success = "Owner added successfully."
+
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = proc do
+      @call_count ||= 0
+      (@call_count += 1).odd? ? [response_fail, 401, 'Unauthorized'] : [response_success, 200, 'OK']
+    end
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    end
+
+    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
+    assert_match 'Code: ', @otp_ui.output
+    assert_match response_success, @otp_ui.output
+    assert_equal '111111', @stub_fetcher.last_request['OTP']
+  end
+
+  def test_otp_verified_failure
+    response = "You have enabled multifactor authentication but your request doesn't have the correct OTP code. Please check it and retry."
+    @stub_fetcher.data["#{Gem.host}/api/v1/gems/freewill/owners"] = [response, 401, 'Unauthorized']
+
+    @otp_ui = Gem::MockGemUi.new "111111\n"
+    use_ui @otp_ui do
+      @cmd.add_owners("freewill", ["user-new1@example.com"])
+    end
+
+    assert_match response, @otp_ui.output
+    assert_match 'You have enabled multi-factor authentication. Please enter OTP code.', @otp_ui.output
+    assert_match 'Code: ', @otp_ui.output
+    assert_equal '111111', @stub_fetcher.last_request['OTP']
+  end
+
 end

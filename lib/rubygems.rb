@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.0.0.beta2".freeze
+  VERSION = "3.0.0.beta3".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2

@@ -33,6 +33,7 @@ command.  For further discussion see the help for the yank command.
 
     add_proxy_option
     add_key_option
+    add_otp_option
 
     add_option('--host HOST',
                'Push to another gemcutter-compatible host',
@@ -113,17 +114,26 @@ You can upgrade or downgrade to the latest release version with:
 
     say "Pushing gem to #{@host || Gem.host}..."
 
-    response = rubygems_api_request(*args) do |request|
-      request.body = Gem.read_binary name
-      request.add_field "Content-Length", request.body.size
-      request.add_field "Content-Type",   "application/octet-stream"
-      request.add_field "Authorization",  api_key
+    response = send_push_request(name, args)
+
+    if need_otp? response
+      response = send_push_request(name, args, true)
     end
 
     with_response response
   end
 
   private
+
+  def send_push_request(name, args, use_otp = false)
+    rubygems_api_request(*args) do |request|
+      request.body = Gem.read_binary name
+      request.add_field "Content-Length", request.body.size
+      request.add_field "Content-Type",   "application/octet-stream"
+      request.add_field "Authorization",  api_key
+      request.add_field "OTP", options[:otp] if use_otp
+    end
+  end
 
   def get_hosts_for(name)
     gem_metadata = Gem::Package.new(name).spec.metadata

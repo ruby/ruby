@@ -87,7 +87,7 @@ class Gem::FakeFetcher
 
   def request(uri, request_class, last_modified = nil)
     data = find_data(uri)
-    body, code, msg = data
+    body, code, msg = (data.respond_to?(:call) ? data.call : data)
 
     @last_request = request_class.new uri.request_uri
     yield @last_request if block_given?
