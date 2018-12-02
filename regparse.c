@@ -5839,8 +5839,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80;
 
     if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
-    /* main comment: The order of the code is mostly in reverse of the order
-     *               the various expressions appear in the grammar */
+    /* main comment: The order of the code is backwards (compared to the
+     *               order the various expressions appear in the grammar)
+     *               in the old-style parts. It is forwards in the new-style
+     *               parts (in blocks ending with create_sequence_node()). */
     /* Unicode 10.0.0 */
     /* CRLF
      * | Prepend*
@@ -6109,7 +6111,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       seq[3] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
-    }
+    } /* End of ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
 
     tmp = onig_node_new_alt(list2, alt);
     if (IS_NULL(tmp)) goto err;
@@ -6117,8 +6119,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     list2 = NULL;
 
     /* Unicode 10.0.0/11.0.0 */
-    /* this is actually Regional_Indicator+ in Unicode 10.0.0,
-     * but it is Regional_Indicator{2} in Unicode 11.0.0, so no need to fix */
+    /* this is Regional_Indicator+ in the Unicode 10.0.0 regular expression,
+     * but the segmentation rules and Unicode 11.0.0 use Regional_Indicator{2}, so no need to fix */
     /* RI-Sequence := Regional_Indicator{2} */
     R_ERR(quantify_property_node(&np1, env, "Regional_Indicator", '2'));
 
