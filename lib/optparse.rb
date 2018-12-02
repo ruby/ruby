@@ -1352,6 +1352,8 @@ XXX
   # [Description:]
   #   Description string for the option.
   #     "Run verbosely"
+  #   If you give multiple description strings, each string will be printed
+  #   line by line.
   #
   # [Handler:]
   #   Handler for the parsed argument value. Either give a block or pass a
