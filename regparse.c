@@ -5846,11 +5846,12 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     Node **seq  = node_array;   /* seq[5] */
     Node **alts = node_array+5; /* alts[4] */
 
-    for (i=0; i<8; i++)
-      node_array[i] = NULL_NODE;
     /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
     OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80;
+
+    for (i=0; i<8; i++)
+      node_array[i] = NULL_NODE;
 
     if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
     /* main comment: The order of the code is backwards (compared to the
