@@ -25,9 +25,6 @@ class BreakTest
                           # raise ArgumentError if 0xD800 <= c and c <= 0xDFFF
                           c.chr('UTF-8')
                         end.join
-    raise ArgumentError if data.match? /genie/ or comment.match? /genie/
-    raise ArgumentError if data.match? /zombie/ or comment.match? /zombie/
-    raise ArgumentError if data.match? /wrestling/ or comment.match? /wrestling/
   end
 end
 
