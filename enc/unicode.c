@@ -802,19 +802,21 @@ onigenc_unicode_GCB_ranges_GAZ[] = {
 
 const OnigCodePoint
 onigenc_unicode_GCB_ranges_E_Base[] = {
-    3,
-    0x1F3F3, 0x1F3F3,
-    0x1F441, 0x1F441,
-    0x1F46F, 0x1F46F,
+    5,
+    0x1F3F3, 0x1F3F3, /* WAVING WHITE FLAG */
+    0x1F441, 0x1F441, /* EYE */
+    0x1F46F, 0x1F46F, /* WOMAN WITH BUNNY EARS */
+    0x1F93C, 0x1F93C, /* WRESTLERS */
+    0x1F9DE, 0x1F9DF, /* GENIE, ZOMBIE */
 };
 
 const OnigCodePoint
 onigenc_unicode_GCB_ranges_Emoji[] = {
     4,
-    0x2640, 0x2640,
-    0x2642, 0x2642,
-    0x2695, 0x2696,
-    0x2708, 0x2708,
+    0x2640, 0x2640, /* FEMALE SIGN */
+    0x2642, 0x2642, /* MALE SIGN */
+    0x2695, 0x2696, /* SCALES */
+    0x2708, 0x2708, /* AIRPLANE */
 };
 
 #if 0
