@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 require 'bundler/errors'
 begin
-  gem 'minitest', '~> 5.0'
+  gem 'test-unit'
 rescue NoMethodError, Gem::LoadError, Bundler::GemfileNotFound
   # for ruby tests
 end
 
-require 'minitest/autorun'
-require 'minitest/benchmark' unless ENV['NOBENCHMARK']
+require 'test-unit'
+# require 'minitest/benchmark' unless ENV['NOBENCHMARK']
 
 require 'fileutils'
 require 'pp'
@@ -30,7 +30,7 @@ require 'rdoc'
 # * <code>@pwd</code> containing the current working directory
 # * FileUtils, pp, Tempfile, Dir.tmpdir and StringIO
 
-class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Unit::TestCase)
+class RDoc::TestCase < Test::Unit::TestCase
 
   ##
   # Abstract test-case setup
@@ -202,4 +202,7 @@ class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Un
       end
     end
   end
+
+  alias capture_io capture_output
+  alias skip omit
 end
