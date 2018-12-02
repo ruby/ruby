@@ -5843,12 +5843,11 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
 #ifdef USE_UNICODE_PROPERTIES
   if (ONIGENC_IS_UNICODE(env->enc)) {
-    Node **seq  = node_array;   /* seq[5] */
-    Node **alts = node_array+5; /* alts[4] */
-
     /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
     OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80;
+    Node **seq  = node_array;   /* seq[5] */
+    Node **alts = node_array+5; /* alts[4] */
 
     for (i=0; i<8; i++)
       node_array[i] = NULL_NODE;
