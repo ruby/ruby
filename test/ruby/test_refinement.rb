@@ -309,6 +309,7 @@ class TestRefinement < Test::Unit::TestCase
   end
 
   def test_override_builtin_method
+    assert_equal(0, 1 / 2)
     assert_equal(Rational(1, 2), eval_using(IntegerSlashExt, "1 / 2"))
     assert_equal(0, 1 / 2)
   end
