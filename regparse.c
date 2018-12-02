@@ -5787,6 +5787,8 @@ create_sequence_node(Node **np, Node **node_array)
       onig_node_free(tmp);
       return ONIGERR_MEMORY;
     }
+    else
+      node_array[i] = NULL_NODE;
     tmp = *np;
   }
   return 0;
@@ -5810,12 +5812,15 @@ create_alternate_node(Node **np, Node **node_array)
       onig_node_free(tmp);
       return ONIGERR_MEMORY;
     }
+    else
+      node_array[i] = NULL_NODE;
     tmp = *np;
   }
   return 0;
 }
 
 #define R_ERR(call) r=(call);if(r!=0)goto err
+#define NODE_ARRAY_SIZE 9
 
 static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
@@ -5829,11 +5834,20 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   BBuf *pbuf1 = NULL;
   int r = 0;
   int num1;
+  int i;
   UChar buf[ONIGENC_CODE_TO_MBC_MAXLEN * 2];
   OnigOptionType option;
+  /* node_array is function-global so that we can free all nodes
+   * in case of error. Unused slots are set to NULL_NODE at all times. */
+  Node *node_array[NODE_ARRAY_SIZE];
 
 #ifdef USE_UNICODE_PROPERTIES
   if (ONIGENC_IS_UNICODE(env->enc)) {
+    Node **seq  = node_array;   /* seq[5] */
+    Node **alts = node_array+5; /* alts[4] */
+
+    for (i=0; i<8; i++)
+      node_array[i] = NULL_NODE;
     /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
     OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80;
@@ -5914,8 +5928,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* L* LVT T* */
     {
-      Node* seq[4];
-
       R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*'));
       R_ERR(create_property_node(seq+1, env, "Grapheme_Cluster_Break=LVT"));
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*'));
@@ -5931,8 +5943,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* L* LV V* T* */
     {
-      Node* seq[5];
-
       R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*'));
       R_ERR(create_property_node(seq+1, env, "Grapheme_Cluster_Break=LV"));
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=V", '*'));
@@ -5949,8 +5959,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* L* V+ T* */
     {
-      Node* seq[4];
-
       R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=L", '*'));
       R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", '+'));
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*'));
@@ -5971,16 +5979,12 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     /* ZWJ (Glue_After_Zwj | E_Base_GAZ Extend* E_Modifier?) */
 
     {
-      Node* alts[4];
-
       /* Unicode 10.0.0 */
       /* Emoji variation sequence
        * http://unicode.org/Public/emoji/4.0/emoji-zwj-sequences.txt
        */
       /* Emoji U+FE0F */
       {
-        Node* seq[3];
-
         seq[0] = node_new_cclass();
         if (IS_NULL(seq[0])) goto err;
         cc = NCCLASS(seq[0]);
@@ -5999,8 +6003,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       /* Unicode 10.0.0 */
       /* Glue_After_Zwj */
       {
-        Node* seq[3];
-
         seq[0] = node_new_cclass();
         if (IS_NULL(seq[0])) goto err;
         cc = NCCLASS(seq[0]);
@@ -6015,7 +6017,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       /* E_Base_GAZ Extend* E_Modifier? */
       {
-        Node* seq[4];
         R_ERR(create_property_node(seq+0, env, "Grapheme_Cluster_Break=E_Base_GAZ"));
         R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
         R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
@@ -6094,8 +6095,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      */
     /* ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
     {
-      Node* seq[4];
-
       r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf); /* ZERO WIDTH JOINER (ZWJ) */
       if (r < 0) goto err;
       seq[0] = node_new_str_raw(buf, buf + r);
@@ -6160,8 +6159,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
     /* Prepend+ ZWJ* */
     {
-      Node* seq[3];
-
       R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=Prepend", '+'));
 
       r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf); /* does this belong to Prepend?? */
@@ -6246,6 +6243,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   onig_node_free(alt);
   onig_node_free(alt2);
   bbuf_free(pbuf1);
+  for (i=0; i<NODE_ARRAY_SIZE; i++)
+    onig_node_free(node_array[i]);
   return (r == 0) ? ONIGERR_MEMORY : r;
 }
 #undef R_ERR
