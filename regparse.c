@@ -6158,7 +6158,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     alt = tmp;
     np1 = NULL;
 
-    /* Prepend+ */
+    /* Prepend+ ZWJ* */
     {
       Node* seq[3];
 
