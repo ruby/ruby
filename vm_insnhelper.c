@@ -2097,7 +2097,7 @@ vm_call_method_missing(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
 
     cc_entry = *orig_cc;
     cc_entry.me =
-	rb_callable_method_entry_without_refinements(CLASS_OF(calling->recv),
+	rb_callable_method_entry_with_refinements(CLASS_OF(calling->recv),
 						     idMethodMissing, NULL);
     cc = &cc_entry;
 

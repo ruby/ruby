@@ -15,6 +15,7 @@ describe "Module#refine" do
     inner_self.name.should == nil
   end
 
+
   it "uses the same anonymous module for future refines of the same class" do
     selves = []
     mod = Module.new do
@@ -559,6 +560,45 @@ describe "Module#refine" do
         end
 
         result.should == true
+      end
+    end
+
+	ruby_version_is ""..."2.5" do
+      it "is not honored by #method_missing" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def method_missing(*); end
+          end
+        end
+
+        -> {
+          Module.new do
+            using refinement
+            klass.new.hoge
+          end
+        }.should raise_error(NameError, /undefined method `hoge'/)
+      end
+    end
+
+    ruby_version_is "2.6" do
+      it "is honored by #method_missing" do
+        klass = Class.new
+        refinement = Module.new do
+          refine klass do
+            def method_missing(name)
+              "method_missing:#{name}"
+            end
+          end
+        end
+
+        result = nil
+        Module.new do
+          using refinement
+          result = klass.new.hoge
+        end
+
+        result.should == "method_missing:hoge"
       end
     end
   end
