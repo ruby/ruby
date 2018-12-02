@@ -2313,7 +2313,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
     n = NIL_P(prec) ? (ssize_t)(x->Prec*VpBaseFig()) : NUM2SSIZET(prec);
 
     if (VpIsNaN(x)) {
-	y = VpCreateRbObject(n, "0");
+        y = VpCreateRbObject(n, "0");
 	RB_GC_GUARD(y->obj);
 	VpSetNaN(y);
 	return ToValue(y);
@@ -2437,7 +2437,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	    }
 	}
 	else {
-	    y = VpCreateRbObject(n, "0");
+            y = VpCreateRbObject(n, "0");
 	    if (BIGDECIMAL_NEGATIVE_P(x)) {
 		if (is_integer(vexp)) {
 		    if (is_even(vexp)) {
@@ -2470,7 +2470,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	}
 	else if (RTEST(rb_funcall(abs_value, '<', 1, INT2FIX(1)))) {
 	    if (is_negative(vexp)) {
-		y = VpCreateRbObject(n, "0");
+                y = VpCreateRbObject(n, "0");
 		if (is_even(vexp)) {
 		    VpSetInf(y, VpGetSign(x));
 		}
@@ -2488,7 +2488,7 @@ BigDecimal_power(int argc, VALUE*argv, VALUE self)
 	}
 	else {
 	    if (is_positive(vexp)) {
-		y = VpCreateRbObject(n, "0");
+                y = VpCreateRbObject(n, "0");
 		if (is_even(vexp)) {
 		    VpSetInf(y, VpGetSign(x));
 		}
@@ -4838,7 +4838,7 @@ VpMult(Real *c, Real *a, Real *b)
 
     if (MxIndC < MxIndAB) {    /* The Max. prec. of c < Prec(a)+Prec(b) */
 	w = c;
-	c = VpAlloc((size_t)((MxIndAB + 1) * BASE_FIG), "#0", 1);
+        c = VpAlloc((size_t)((MxIndAB + 1) * BASE_FIG), "#0", 1);
 	MxIndC = MxIndAB;
     }
 
