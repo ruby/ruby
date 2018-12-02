@@ -1,10 +1,10 @@
 #define RUBY_VERSION "2.5.4"
-#define RUBY_RELEASE_DATE "2018-12-01"
-#define RUBY_PATCHLEVEL 116
+#define RUBY_RELEASE_DATE "2018-12-02"
+#define RUBY_PATCHLEVEL 117
 
 #define RUBY_RELEASE_YEAR 2018
 #define RUBY_RELEASE_MONTH 12
-#define RUBY_RELEASE_DAY 1
+#define RUBY_RELEASE_DAY 2
 
 #include "ruby/version.h"
 

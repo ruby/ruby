@@ -4580,6 +4580,7 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
     DECL_ANCHOR(else_seq);
     LABEL *then_label, *else_label, *end_label;
     VALUE branches = 0;
+    int ci_size, ci_kw_size;
 
     INIT_ANCHOR(cond_seq);
     INIT_ANCHOR(then_seq);
@@ -4590,8 +4591,22 @@ compile_if(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int 
 
     compile_branch_condition(iseq, cond_seq, node->nd_cond,
 			     then_label, else_label);
+
+    ci_size = iseq->body->ci_size;
+    ci_kw_size = iseq->body->ci_kw_size;
     CHECK(COMPILE_(then_seq, "then", node_body, popped));
+    if (!then_label->refcnt) {
+        iseq->body->ci_size = ci_size;
+        iseq->body->ci_kw_size = ci_kw_size;
+    }
+
+    ci_size = iseq->body->ci_size;
+    ci_kw_size = iseq->body->ci_kw_size;
     CHECK(COMPILE_(else_seq, "else", node_else, popped));
+    if (!else_label->refcnt) {
+        iseq->body->ci_size = ci_size;
+        iseq->body->ci_kw_size = ci_kw_size;
+    }
 
     ADD_SEQ(ret, cond_seq);
 

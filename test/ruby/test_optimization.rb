@@ -703,6 +703,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     END
   end
 
+  def test_callinfo_unreachable_path
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      iseq = RubyVM::InstructionSequence.compile("if false; foo(bar: :baz); else :ok end")
+      bin = iseq.to_binary
+      iseq = RubyVM::InstructionSequence.load_from_binary(bin)
+      assert_instance_of(RubyVM::InstructionSequence, iseq)
+      assert_equal(:ok, iseq.eval)
+    end;
+  end
+
   def test_side_effect_in_popped_splat
     bug = '[ruby-core:84340] [Bug #14201]'
     eval("{**(bug = nil; {})};42")
