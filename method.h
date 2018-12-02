@@ -196,6 +196,7 @@ rb_method_entry_t *rb_method_entry_create(ID called_id, VALUE klass, rb_method_v
 const rb_method_entry_t *rb_method_entry_at(VALUE obj, ID id);
 
 const rb_method_entry_t *rb_method_entry(VALUE klass, ID id);
+const rb_method_entry_t *rb_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_method_entry_without_refinements(VALUE klass, ID id, VALUE *defined_class);
 const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_method_entry_t *me);
 RUBY_SYMBOL_EXPORT_BEGIN
