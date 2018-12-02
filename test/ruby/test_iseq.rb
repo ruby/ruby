@@ -394,7 +394,12 @@ class TestISeq < Test::Unit::TestCase
   def test_to_binary_with_objects
     code = "[]"+100.times.map{|i|"<</#{i}/"}.join
     iseq = RubyVM::InstructionSequence.compile(code)
-    bin = assert_nothing_raised {iseq.to_binary}
+    bin = assert_nothing_raised do
+      iseq.to_binary
+    rescue RuntimeError => e
+      skip e.message if /compile with coverage/ =~ e.message
+      raise
+    end
     iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
     assert_equal(iseq2.to_a, iseq.to_a)
   end
