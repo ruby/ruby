@@ -5849,7 +5849,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     Node **seq  = node_array;   /* seq[5] */
     Node **alts = node_array+5; /* alts[4] */
 
-    for (i=0; i<8; i++)
+    for (i=0; i<NODE_ARRAY_SIZE; i++)
       node_array[i] = NULL_NODE;
 
     if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
@@ -5932,7 +5932,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       R_ERR(create_property_node(seq+1, env, "Grapheme_Cluster_Break=LVT"));
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*'));
 
-      seq[3] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
     }
 
@@ -5948,7 +5947,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=V", '*'));
       R_ERR(quantify_property_node(seq+3, env, "Grapheme_Cluster_Break=T", '*'));
 
-      seq[4] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
     }
 
@@ -5963,7 +5961,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=V", '+'));
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=T", '*'));
 
-      seq[3] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
     }
 
@@ -5996,7 +5993,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         if (IS_NULL(seq[1])) goto err;
         R_ERR(quantify_node(seq+1, 0, 1));
 
-        seq[2] = NULL_NODE;
         R_ERR(create_sequence_node(alts+0, seq));
       }
 
@@ -6011,7 +6007,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
         R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
 
-        seq[2] = NULL_NODE;
         R_ERR(create_sequence_node(alts+1, seq));
       }
 
@@ -6021,11 +6016,9 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         R_ERR(quantify_property_node(seq+1, env, "Grapheme_Cluster_Break=Extend", '*'));
         R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
 
-        seq[3] = NULL_NODE;
         R_ERR(create_sequence_node(alts+2, seq));
       }
 
-      alts[3] = NULL_NODE;
       R_ERR(create_alternate_node(&alt2, alts));
     }
 
@@ -6108,7 +6101,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       R_ERR(quantify_property_node(seq+2, env, "Grapheme_Cluster_Break=E_Modifier", '?'));
 
-      seq[3] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
     } /* End of ZWJ (E_Base_GAZ | Glue_After_Zwj) E_Modifier? */
 
@@ -6167,7 +6159,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       if (IS_NULL(seq[1])) goto err;
       R_ERR(quantify_node(seq+1, 0, 1));
 
-      seq[2] = NULL_NODE;
       R_ERR(create_sequence_node(&list2, seq));
     }
 
