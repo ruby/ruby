@@ -162,7 +162,7 @@ module DRb
           return
         end
 
-        rsa = OpenSSL::PKey::RSA.new(1024){|p, n|
+        rsa = OpenSSL::PKey::RSA.new(2048){|p, n|
           next unless self[:verbose]
           case p
           when 0; $stderr.putc "."  # BN_generate_prime
@@ -196,7 +196,7 @@ module DRb
         if comment = self[:SSLCertComment]
           cert.add_extension(ef.create_extension("nsComment", comment))
         end
-        cert.sign(rsa, OpenSSL::Digest::SHA1.new)
+        cert.sign(rsa, OpenSSL::Digest::SHA256.new)
 
         @cert = cert
         @pkey = rsa
