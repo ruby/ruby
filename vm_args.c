@@ -851,17 +851,13 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     ID mid;
     const rb_callable_method_entry_t *me;
     rb_execution_context_t *ec;
-    const VALUE symbol = RARRAY_AREF(callback_arg, 0);
-    const VALUE refinements = RARRAY_AREF(callback_arg, 1);
 
     if (argc-- < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
     }
     obj = *argv++;
-
-    mid = SYM2ID(symbol);
-    me = rb_resolve_refined_method_callable(refinements, (const rb_callable_method_entry_t *)rb_method_entry(CLASS_OF(obj), mid));
-
+    mid = SYM2ID(callback_arg);
+    me = rb_callable_method_entry_with_refinements(CLASS_OF(obj), mid, NULL);
     ec = GET_EC();
     if (!NIL_P(blockarg)) {
 	vm_passed_block_handler_set(ec, blockarg);
@@ -889,8 +885,12 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 	    const rb_cref_t *cref = vm_env_cref(reg_cfp->ep);
 	    if (cref && !NIL_P(cref->refinements)) {
 		VALUE ref = cref->refinements;
-		VALUE callback_arg = rb_ary_new_from_args(2, block_code, ref);
-		VALUE func = rb_func_proc_new(refine_sym_proc_call, callback_arg);
+		VALUE func = rb_hash_lookup(ref, block_code);
+		if (NIL_P(func)) {
+		    /* TODO: limit cached funcs */
+		    func = rb_func_proc_new(refine_sym_proc_call, block_code);
+		    rb_hash_aset(ref, block_code, func);
+		}
 		block_code = func;
 	    }
             return block_code;
