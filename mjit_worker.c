@@ -215,6 +215,8 @@ static VALUE valid_class_serials;
 
 /* Used C compiler path.  */
 static const char *cc_path;
+/* Used C compiler flags. */
+static const char **cc_common_args;
 /* Name of the precompiled header file.  */
 static char *pch_file;
 /* The process id which should delete the pch_file on mjit_finish. */
@@ -238,10 +240,11 @@ static char *libruby_pathflag;
 #if defined(__GNUC__) && \
      (!defined(__clang__) || \
       (defined(__clang__) && (defined(__FreeBSD__) || defined(__GLIBC__))))
-#define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", \
-    "-pipe",
+# define GCC_PIC_FLAGS "-Wfatal-errors", "-fPIC", "-shared", "-w", "-pipe",
+# define MJIT_CFLAGS_PIPE 1
 #else
-#define GCC_PIC_FLAGS /* empty */
+# define GCC_PIC_FLAGS /* empty */
+# define MJIT_CFLAGS_PIPE 0
 #endif
 
 static const char *const CC_COMMON_ARGS[] = {
@@ -741,7 +744,7 @@ make_pch(void)
     rest_args[len - 2] = header_file;
     rest_args[len - 3] = pch_file;
     verbose(2, "Creating precompiled header");
-    args = form_args(3, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, rest_args);
+    args = form_args(3, cc_common_args, CC_CODEFLAG_ARGS, rest_args);
     if (args == NULL) {
         mjit_warning("making precompiled header failed on forming args");
         CRITICAL_SECTION_START(3, "in make_pch");
@@ -785,7 +788,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
 # ifdef __clang__
     files[4] = pch_file;
 # endif
-    args = form_args(5, CC_COMMON_ARGS, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
+    args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
         return FALSE;
 
