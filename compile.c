@@ -3857,11 +3857,11 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
       case NODE_FALSE:
 	return TRUE;
       case NODE_STR:
-	if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-	    return TRUE;
-	} else {
-	    return FALSE;
-	}
+        if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
       default:
 	return FALSE;
     }
@@ -3879,16 +3879,16 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
       case NODE_FALSE:
 	return Qfalse;
       case NODE_STR:
-	if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
-	    VALUE lit;
-	    VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX((int)nd_line(node)));
-	    lit = rb_str_dup(node->nd_lit);
-	    rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
-	    return rb_str_freeze(lit);
-	}
-	else {
-	    return rb_fstring(node->nd_lit);
-	}
+        if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
+            VALUE lit;
+            VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX((int)nd_line(node)));
+            lit = rb_str_dup(node->nd_lit);
+            rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
+            return rb_str_freeze(lit);
+        }
+        else {
+            return rb_fstring(node->nd_lit);
+        }
       default:
 	return node->nd_lit;
     }
@@ -3938,7 +3938,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    }
 		    break;
 		}
-		if (opt_p && !static_literal_node_p(node, iseq)) {
+                if (opt_p && !static_literal_node_p(node, iseq)) {
 		    opt_p = 0;
 		}
 
@@ -3960,15 +3960,15 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    node = start_node;
 
 		    while (node != end_node) {
-			rb_ary_push(ary, static_literal_value(node, iseq));
+                        rb_ary_push(ary, static_literal_value(node, iseq));
 			node = node->nd_next;
 		    }
 		    while (node && node->nd_next &&
-			   static_literal_node_p(node, iseq) &&
-			   static_literal_node_p(node->nd_next, iseq)) {
+                           static_literal_node_p(node, iseq) &&
+                           static_literal_node_p(node->nd_next, iseq)) {
 			VALUE elem[2];
-			elem[0] = static_literal_value(node, iseq);
-			elem[1] = static_literal_value(node->nd_next, iseq);
+                        elem[0] = static_literal_value(node, iseq);
+                        elem[1] = static_literal_value(node->nd_next, iseq);
 			rb_ary_cat(ary, elem, 2);
 			node = node->nd_next->nd_next;
 			len++;
