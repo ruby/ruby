@@ -7,7 +7,7 @@ THESE ARE BAD EXAMPLES!  You must NOT use them as a sample code.
 * 02-mame/entry.rb: "Best spiral" - **Silver award**
 * 03-tompng/entry.rb: "Best png viewer" - **Bronze award**
 * 04-colin/entry.rb: "Best one-liner" - 4th prize
-* 05-tompng/entry.rb: "Most three-dimentional" - 5th prize
+* 05-tompng/entry.rb: "Most three-dimensional" - 5th prize
 
 These files are licensed under MIT license.
 
