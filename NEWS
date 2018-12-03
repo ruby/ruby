@@ -312,6 +312,11 @@ sufficient information, see the ChangeLog file or Redmine
 
     * TracePoint#parameters [Feature #14694]
 
+  [Modified methods]
+
+    * TracePoint#enable accepts new keywords "target:" and "target_line:".
+      [Feature #15289]
+
 === Stdlib updates (outstanding ones only)
 
 [Bundler]
