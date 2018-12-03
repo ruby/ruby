@@ -2582,16 +2582,6 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
     RB_GC_GUARD(execarg_obj);
 }
 
-VALUE
-rb_execarg_new(int argc, const VALUE *argv, int accept_shell, int allow_exc_opt)
-{
-    VALUE execarg_obj;
-    struct rb_execarg *eargp;
-    execarg_obj = TypedData_Make_Struct(0, struct rb_execarg, &exec_arg_data_type, eargp);
-    rb_execarg_init(argc, argv, accept_shell, execarg_obj, allow_exc_opt);
-    return execarg_obj;
-}
-
 struct rb_execarg *
 rb_execarg_get(VALUE execarg_obj)
 {
@@ -2600,7 +2590,7 @@ rb_execarg_get(VALUE execarg_obj)
     return eargp;
 }
 
-VALUE
+static VALUE
 rb_execarg_init(int argc, const VALUE *orig_argv, int accept_shell, VALUE execarg_obj, int allow_exc_opt)
 {
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
@@ -2622,6 +2612,16 @@ rb_execarg_init(int argc, const VALUE *orig_argv, int accept_shell, VALUE execar
     ret = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
     RB_GC_GUARD(execarg_obj);
     return ret;
+}
+
+VALUE
+rb_execarg_new(int argc, const VALUE *argv, int accept_shell, int allow_exc_opt)
+{
+    VALUE execarg_obj;
+    struct rb_execarg *eargp;
+    execarg_obj = TypedData_Make_Struct(0, struct rb_execarg, &exec_arg_data_type, eargp);
+    rb_execarg_init(argc, argv, accept_shell, execarg_obj, allow_exc_opt);
+    return execarg_obj;
 }
 
 void
