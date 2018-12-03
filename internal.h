@@ -1262,14 +1262,13 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 #ifdef ARRAY_DEBUG
 #define RARRAY_PTR_IN_USE_FLAG FL_USER14
 #define ARY_PTR_USING_P(ary) FL_TEST_RAW((ary), RARRAY_PTR_IN_USE_FLAG)
-
 #else
 
 /* disable debug function */
-#undef  RARRAY_PTR_USE_START
-#undef  RARRAY_PTR_USE_END
-#define RARRAY_PTR_USE_START(a) ((VALUE *)RARRAY_CONST_PTR_TRANSIENT(a))
-#define RARRAY_PTR_USE_END(a)
+#undef  RARRAY_PTR_USE_START_TRANSIENT
+#undef  RARRAY_PTR_USE_END_TRANSIENT
+#define RARRAY_PTR_USE_START_TRANSIENT(a) ((VALUE *)RARRAY_CONST_PTR_TRANSIENT(a))
+#define RARRAY_PTR_USE_END_TRANSIENT(a)
 #define ARY_PTR_USING_P(ary) 0
 
 #endif
