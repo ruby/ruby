@@ -155,6 +155,7 @@ lcov*.info
 /enc/trans/.time
 
 # /exe/
+/exe/goruby
 /exe/ruby
 /exe/.time
 
