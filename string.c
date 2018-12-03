@@ -2548,21 +2548,22 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     return p;
 }
 
-static VALUE str_substr(VALUE str, long beg, long len, int empty);
+static VALUE str_substr(VALUE str, long beg, long len, bool empty, bool needstr);
 
 VALUE
 rb_str_substr(VALUE str, long beg, long len)
 {
-    return str_substr(str, beg, len, TRUE);
+    return str_substr(str, beg, len, TRUE, true);
 }
 
 static VALUE
-str_substr(VALUE str, long beg, long len, int empty)
+str_substr(VALUE str, long beg, long len, bool empty, bool needstr)
 {
     VALUE str2;
     char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
+    if (!needstr) return Qundef;
     if (!STR_EMBEDDABLE_P(len, TERM_LEN(str)) &&
 	SHARABLE_SUBSTRING_P(p, len, RSTRING_END(str))) {
 	long ofs = p - RSTRING_PTR(str);
@@ -4427,18 +4428,23 @@ rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive)
 }
 
 static VALUE
-rb_str_subpat(VALUE str, VALUE re, VALUE backref)
+rb_str_subpat(VALUE str, VALUE re, VALUE backref, bool needstr)
 {
-    if (rb_reg_search(re, str, 0, 0) >= 0) {
+    if (rb_reg_search(re, str, 0, 0) < 0) {
+        return Qnil;
+    }
+    else if (! needstr) {
+        return Qundef;
+    }
+    else {
         VALUE match = rb_backref_get();
         int nth = rb_reg_backref_number(match, backref);
 	return rb_reg_nth_match(nth, match);
     }
-    return Qnil;
 }
 
 static VALUE
-rb_str_aref(VALUE str, VALUE indx)
+rb_str_aref(VALUE str, VALUE indx, bool needstr)
 {
     long idx;
 
@@ -4446,12 +4452,18 @@ rb_str_aref(VALUE str, VALUE indx)
 	idx = FIX2LONG(indx);
     }
     else if (RB_TYPE_P(indx, T_REGEXP)) {
-	return rb_str_subpat(str, indx, INT2FIX(0));
+        return rb_str_subpat(str, indx, INT2FIX(0), needstr);
     }
     else if (RB_TYPE_P(indx, T_STRING)) {
-	if (rb_str_index(str, indx, 0) != -1)
+        if (rb_str_index(str, indx, 0) == -1) {
+            return Qnil;
+        }
+        else if (! needstr) {
+            return Qundef;
+        }
+        else {
 	    return rb_str_dup(indx);
-	return Qnil;
+        }
     }
     else {
 	/* check if indx is Range */
@@ -4462,14 +4474,32 @@ rb_str_aref(VALUE str, VALUE indx)
 	  case Qnil:
 	    return Qnil;
 	  default:
-	    return rb_str_substr(str, beg, len);
+            return str_substr(str, beg, len, true, needstr);
 	}
 	idx = NUM2LONG(indx);
     }
 
-    return str_substr(str, idx, 1, FALSE);
+    return str_substr(str, idx, 1, FALSE, needstr);
 }
 
+static VALUE
+rb_str_aref_m_embracing_unused_return_values(int argc, VALUE *argv, VALUE str)
+{
+    bool needstr = rb_whether_the_return_value_is_used_p();
+
+    if (argc == 2) {
+        if (RB_TYPE_P(argv[0], T_REGEXP)) {
+            return rb_str_subpat(str, argv[0], argv[1], needstr);
+        }
+        else {
+            long beg = NUM2LONG(argv[0]);
+            long len = NUM2LONG(argv[1]);
+            return str_substr(str, beg, len, true, needstr);
+        }
+    }
+    rb_check_arity(argc, 1, 2);
+    return rb_str_aref(str, argv[0], needstr);
+}
 
 /*
  *  call-seq:
@@ -4543,18 +4573,15 @@ rb_str_aref(VALUE str, VALUE indx)
 static VALUE
 rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 {
-    if (argc == 2) {
-	if (RB_TYPE_P(argv[0], T_REGEXP)) {
-	    return rb_str_subpat(str, argv[0], argv[1]);
-	}
-	else {
-	    long beg = NUM2LONG(argv[0]);
-	    long len = NUM2LONG(argv[1]);
-	    return rb_str_substr(str, beg, len);
-	}
+    VALUE val = rb_str_aref_m_embracing_unused_return_values(argc, argv, str);
+
+    switch (val) {
+      case Qnil:
+      case Qundef:
+        return Qnil;
+      default:
+        return val;
     }
-    rb_check_arity(argc, 1, 2);
-    return rb_str_aref(str, argv[0]);
 }
 
 VALUE
@@ -4860,8 +4887,14 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	buf[i] = argv[i];
     }
     str_modify_keep_cr(str);
-    result = rb_str_aref_m(argc, buf, str);
-    if (!NIL_P(result)) {
+    result = rb_str_aref_m_embracing_unused_return_values(argc, buf, str);
+    switch (result) {
+      case Qnil:
+        return Qnil;
+      case Qundef:
+        result = Qnil;
+        /* FALLTHROUGH */
+      default:
 	buf[i] = rb_str_new(0,0);
 	rb_str_aset_m(argc+1, buf, str);
     }
@@ -9591,7 +9624,10 @@ rb_str_partition(VALUE str, VALUE sep)
 	  failed:
 	    return rb_ary_new3(3, rb_str_dup(str), str_new_empty(str), str_new_empty(str));
 	}
-	sep = rb_str_subpat(str, sep, INT2FIX(0));
+        sep = rb_str_subpat(str, sep, INT2FIX(0), true);
+        assert(sep != Qnil);
+        assert(sep != Qundef);
+        assert(TYPE(sep) == T_STRING);
 	if (pos == 0 && RSTRING_LEN(sep) == 0) goto failed;
     }
     else {
