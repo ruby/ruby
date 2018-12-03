@@ -1066,11 +1066,18 @@ struct RArray {
 #define RARRAY_TRANSIENT_P(ary) 0
 #endif
 
-VALUE *rb_ary_ptr_use_start(VALUE ary);
-void rb_ary_ptr_use_end(VALUE ary);
+#define RARRAY_PTR_USE_START_TRANSIENT(a) rb_array_ptr_use_start(a, 1)
+#define RARRAY_PTR_USE_END_TRANSIENT(a) rb_array_ptr_use_end(a, 1)
 
-#define RARRAY_PTR_USE_START(a) rb_ary_ptr_use_start(a)
-#define RARRAY_PTR_USE_END(a) rb_ary_ptr_use_end(a)
+#define RARRAY_PTR_USE_TRANSIENT(ary, ptr_name, expr) do { \
+    const VALUE _ary = (ary); \
+    VALUE *ptr_name = (VALUE *)RARRAY_PTR_USE_START_TRANSIENT(_ary); \
+    expr; \
+    RARRAY_PTR_USE_END_TRANSIENT(_ary); \
+} while (0)
+
+#define RARRAY_PTR_USE_START(a) rb_array_ptr_use_start(a, 0)
+#define RARRAY_PTR_USE_END(a) rb_array_ptr_use_end(a, 0)
 
 #define RARRAY_PTR_USE(ary, ptr_name, expr) do { \
     const VALUE _ary = (ary); \
@@ -1083,9 +1090,9 @@ void rb_ary_ptr_use_end(VALUE ary);
 #define RARRAY_ASET(a, i, v) do { \
     const VALUE _ary = (a); \
     const VALUE _v = (v); \
-    VALUE *ptr = (VALUE *)RARRAY_PTR_USE_START(_ary); \
+    VALUE *ptr = (VALUE *)RARRAY_PTR_USE_START_TRANSIENT(_ary); \
     RB_OBJ_WRITE(_ary, &ptr[i], _v); \
-    RARRAY_PTR_USE_END(_ary); \
+    RARRAY_PTR_USE_END_TRANSIENT(_ary); \
 } while (0)
 
 #define RARRAY_PTR(a) ((VALUE *)RARRAY_CONST_PTR(RB_OBJ_WB_UNPROTECT_FOR(ARRAY, a)))
@@ -2134,6 +2141,7 @@ rb_array_len(VALUE a)
 # define FIX_CONST_VALUE_PTR(x) (x)
 #endif
 
+/* internal function. do not use this function */
 static inline const VALUE *
 rb_array_const_ptr_transient(VALUE a)
 {
@@ -2141,6 +2149,7 @@ rb_array_const_ptr_transient(VALUE a)
 	RARRAY(a)->as.ary : RARRAY(a)->as.heap.ptr);
 }
 
+/* internal function. do not use this function */
 static inline const VALUE *
 rb_array_const_ptr(VALUE a)
 {
@@ -2152,6 +2161,32 @@ rb_array_const_ptr(VALUE a)
     }
 #endif
     return rb_array_const_ptr_transient(a);
+}
+
+/* internal function. do not use this function */
+static inline VALUE *
+rb_array_ptr_use_start(VALUE a, int allow_transient)
+{
+    VALUE *rb_ary_ptr_use_start(VALUE ary);
+
+#if USE_TRANSIENT_HEAP
+    if (!allow_transient) {
+        if (RARRAY_TRANSIENT_P(a)) {
+            void rb_ary_detransient(VALUE a);
+            rb_ary_detransient(a);
+        }
+    }
+#endif
+
+    return rb_ary_ptr_use_start(a);
+}
+
+/* internal function. do not use this function */
+static inline void
+rb_array_ptr_use_end(VALUE a, int allow_transient)
+{
+    void rb_ary_ptr_use_end(VALUE a);
+    rb_ary_ptr_use_end(a);
 }
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)

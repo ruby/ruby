@@ -3113,27 +3113,22 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_keys(VALUE hash)
 {
-    VALUE keys;
     st_index_t size = RHASH_SIZE(hash);
+    VALUE keys =  rb_ary_new_capa(size);
 
-    keys = rb_ary_new_capa(size);
     if (size == 0) return keys;
 
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
-        if (RHASH_ARRAY_P(hash)) {
-            rb_gc_writebarrier_remember(keys);
-            RARRAY_PTR_USE(keys, ptr, {
+        RARRAY_PTR_USE_TRANSIENT(keys, ptr, {
+            if (RHASH_ARRAY_P(hash)) {
                 size = linear_keys(hash, ptr, size);
-            });
-        }
-        else if (RHASH_TABLE_P(hash)) {
-            st_table *table = RHASH_ST_TABLE(hash);
-
-            rb_gc_writebarrier_remember(keys);
-            RARRAY_PTR_USE(keys, ptr, {
-                 size = st_keys(table, ptr, size);
-            });
-        }
+            }
+            else {
+                st_table *table = RHASH_ST_TABLE(hash);
+                size = st_keys(table, ptr, size);
+            }
+        });
+        rb_gc_writebarrier_remember(keys);
 	rb_ary_set_len(keys, size);
     }
     else {
@@ -3174,15 +3169,14 @@ rb_hash_values(VALUE hash)
     if (ST_DATA_COMPATIBLE_P(VALUE)) {
         if (RHASH_ARRAY_P(hash)) {
             rb_gc_writebarrier_remember(values);
-            RARRAY_PTR_USE(values, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(values, ptr, {
                 size = linear_values(hash, ptr, size);
             });
         }
         else if (RHASH_TABLE_P(hash)) {
             st_table *table = RHASH_ST_TABLE(hash);
-
             rb_gc_writebarrier_remember(values);
-            RARRAY_PTR_USE(values, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(values, ptr, {
                 size = st_values(table, ptr, size);
             });
         }
