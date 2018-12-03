@@ -3925,13 +3925,15 @@ retry_fork_async_signal_safe(int *status, int *ep,
     volatile int try_gc = 1;
     struct child_handler_disabler_state old;
     int err;
-    rb_vm_t *vm = w && WAITPID_USE_SIGCHLD ? GET_VM() : 0;
+    rb_nativethread_lock_t *waitpid_lock;
+
+    waitpid_lock = w && WAITPID_USE_SIGCHLD ? &GET_VM()->waitpid_lock : 0;
 
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-        if (vm) {
-            rb_native_mutex_lock(&vm->waitpid_lock);
+        if (waitpid_lock) {
+            rb_native_mutex_lock(waitpid_lock);
         }
 #ifdef HAVE_WORKING_VFORK
         if (!has_privilege())
@@ -3957,12 +3959,12 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #endif
         }
 	err = errno;
-        if (vm) {
+        if (waitpid_lock) {
             if (pid > 0 && w != WAITPID_LOCK_ONLY) {
                 w->pid = pid;
-                list_add(&vm->waiting_pids, &w->wnode);
+                list_add(&GET_VM()->waiting_pids, &w->wnode);
             }
-            rb_native_mutex_unlock(&vm->waitpid_lock);
+            rb_native_mutex_unlock(waitpid_lock);
         }
 	disable_child_handler_fork_parent(&old);
         if (0 < pid) /* fork succeed, parent process */
