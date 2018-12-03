@@ -398,7 +398,7 @@ class Time
     # %m :: Month of the year (01..12)
     # %M :: Minute of the hour (00..59)
     # %n :: Newline (\n)
-    # %N :: Fractional seconds digits (nanosecond)
+    # %N :: Fractional seconds digits
     # %p :: Meridian indicator ("AM" or "PM")
     # %P :: Meridian indicator ("am" or "pm")
     # %Q :: Number of milliseconds since 1970-01-01 00:00:00 UTC.
