@@ -262,21 +262,21 @@ rb_ast_node_alloc(VALUE klass)
 }
 
 static const char*
-node_type_to_str(NODE *node)
+node_type_to_str(const NODE *node)
 {
-    return ruby_node_name(nd_type(node));
+    return (ruby_node_name(nd_type(node)) + rb_strlen_lit("NODE_"));
 }
 
 /*
  *  call-seq:
- *     node.type -> string
+ *     node.type -> symbol
  *
- *  Returns the type of this node as a string.
+ *  Returns the type of this node as a symbol.
  *
  *    root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2")
- *    root.type # => "NODE_SCOPE"
+ *    root.type # => :SCOPE
  *    call = root.children[2]
- *    call.type # => "NODE_OPCALL"
+ *    call.type # => :OPCALL
  */
 static VALUE
 rb_ast_node_type(VALUE self)
@@ -284,7 +284,7 @@ rb_ast_node_type(VALUE self)
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    return rb_fstring_cstr(node_type_to_str(data->node));
+    return rb_sym_intern_ascii_cstr(node_type_to_str(data->node));
 }
 
 #define NEW_CHILD(ast, node) node ? ast_new_internal(ast, node) : Qnil

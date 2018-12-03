@@ -76,7 +76,7 @@ class TestAst < Test::Unit::TestCase
       return true if children.empty?
       # These NODE_D* has NODE_ARRAY as nd_next->nd_next whose last locations
       # we can not update when item is appended.
-      return true if ["NODE_DSTR", "NODE_DXSTR", "NODE_DREGX", "NODE_DSYM"].include? node.type
+      return true if [:DSTR, :DXSTR, :DREGX, :DSYM].include? node.type
 
       min = children.map(&:beg_pos).min
       max = children.map(&:end_pos).max
@@ -138,18 +138,18 @@ class TestAst < Test::Unit::TestCase
     term = "A"*257
     ast = RubyVM::AbstractSyntaxTree.parse("<<-#{term}\n""ddddddd\n#{term}\n")
     node = ast.children[2]
-    assert_equal("NODE_STR", node.type)
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
   end
 
   def test_column_of_heredoc
     node = RubyVM::AbstractSyntaxTree.parse("<<-SRC\nddddddd\nSRC\n").children[2]
-    assert_equal("NODE_STR", node.type)
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(6, node.last_column)
 
     node = RubyVM::AbstractSyntaxTree.parse("<<SRC\nddddddd\nSRC\n").children[2]
-    assert_equal("NODE_STR", node.type)
+    assert_equal(:STR, node.type)
     assert_equal(0, node.first_column)
     assert_equal(5, node.last_column)
   end
@@ -200,15 +200,15 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.parse("x = 0")
     lv, _, body = *node.children
     assert_equal([:x], lv)
-    assert_equal("NODE_LASGN", body.type)
+    assert_equal(:LASGN, body.type)
   end
 
   def test_call
     node = RubyVM::AbstractSyntaxTree.parse("nil.foo")
     _, _, body = *node.children
-    assert_equal("NODE_CALL", body.type)
+    assert_equal(:CALL, body.type)
     recv, mid, args = body.children
-    assert_equal("NODE_NIL", recv.type)
+    assert_equal(:NIL, recv.type)
     assert_equal(:foo, mid)
     assert_nil(args)
   end
@@ -216,7 +216,7 @@ class TestAst < Test::Unit::TestCase
   def test_fcall
     node = RubyVM::AbstractSyntaxTree.parse("foo()")
     _, _, body = *node.children
-    assert_equal("NODE_FCALL", body.type)
+    assert_equal(:FCALL, body.type)
     mid, args = body.children
     assert_equal(:foo, mid)
     assert_nil(args)
@@ -225,7 +225,7 @@ class TestAst < Test::Unit::TestCase
   def test_vcall
     node = RubyVM::AbstractSyntaxTree.parse("foo")
     _, _, body = *node.children
-    assert_equal("NODE_VCALL", body.type)
+    assert_equal(:VCALL, body.type)
     mid, args = body.children
     assert_equal(:foo, mid)
     assert_nil(args)
@@ -234,19 +234,19 @@ class TestAst < Test::Unit::TestCase
   def test_defn
     node = RubyVM::AbstractSyntaxTree.parse("def a; end")
     _, _, body = *node.children
-    assert_equal("NODE_DEFN", body.type)
+    assert_equal(:DEFN, body.type)
     mid, defn = body.children
     assert_equal(:a, mid)
-    assert_equal("NODE_SCOPE", defn.type)
+    assert_equal(:SCOPE, defn.type)
   end
 
   def test_defs
     node = RubyVM::AbstractSyntaxTree.parse("def a.b; end")
     _, _, body = *node.children
-    assert_equal("NODE_DEFS", body.type)
+    assert_equal(:DEFS, body.type)
     recv, mid, defn = body.children
-    assert_equal("NODE_VCALL", recv.type)
+    assert_equal(:VCALL, recv.type)
     assert_equal(:b, mid)
-    assert_equal("NODE_SCOPE", defn.type)
+    assert_equal(:SCOPE, defn.type)
   end
 end
