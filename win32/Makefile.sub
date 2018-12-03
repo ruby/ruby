@@ -290,13 +290,18 @@ MISSING = $(MISSING) explicit_bzero.obj
 !endif
 DLNOBJ = dln.obj
 !if "$(ARCH)" == "x64"
-COROUTINE_H = coroutine/Win64/Context.h
+COROUTINE_OBJ = coroutine/Win64/Context.obj
 !elseif "$(ARCH)" == "i386"
+COROUTINE_OBJ = coroutine/Win32/Context.obj
+!else
+COROUTINE_OBJ =
+!endif
+!if "$(COROUTINE_OBJ)" == ""
+# get rid of empty value not to leave VPATH only in dependencies
 COROUTINE_H = coroutine/Win32/Context.h
 !else
-COROUTINE_H =
+COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 !endif
-COROUTINE_OBJ = $(COROUTINE_H:.h=.obj)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -865,7 +870,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64" || "$(ARCH)" == "ia64"
 #define STACK_GROW_DIRECTION -1
 !endif
-!if defined(COROUTINE_H)
+!if "$(COROUTINE_OBJ)" != ""
 #define FIBER_USE_COROUTINE "$(COROUTINE_H)"
 !endif
 #define DEFAULT_KCODE KCODE_NONE
@@ -1410,7 +1415,3 @@ mjit_config.h:
 	@echo.>> $@
 	@echo #endif /* RUBY_MJIT_CONFIG_H */>> $@
 	@$(Q:@=: :) type $@
-
-!if defined(COROUTINE_H)
-cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
-!endif

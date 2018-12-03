@@ -1495,6 +1495,7 @@ array.$(OBJEXT): {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h
 array.$(OBJEXT): {$(VPATH)}encoding.h
+array.$(OBJEXT): {$(VPATH)}gc.h
 array.$(OBJEXT): {$(VPATH)}id.h
 array.$(OBJEXT): {$(VPATH)}intern.h
 array.$(OBJEXT): {$(VPATH)}internal.h
@@ -1522,6 +1523,7 @@ ast.$(OBJEXT): {$(VPATH)}encoding.h
 ast.$(OBJEXT): {$(VPATH)}id.h
 ast.$(OBJEXT): {$(VPATH)}intern.h
 ast.$(OBJEXT): {$(VPATH)}internal.h
+ast.$(OBJEXT): {$(VPATH)}iseq.h
 ast.$(OBJEXT): {$(VPATH)}method.h
 ast.$(OBJEXT): {$(VPATH)}missing.h
 ast.$(OBJEXT): {$(VPATH)}node.h
@@ -1656,6 +1658,7 @@ cont.$(OBJEXT): $(CCAN_DIR)/list/list.h
 cont.$(OBJEXT): $(CCAN_DIR)/str/str.h
 cont.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 cont.$(OBJEXT): $(top_srcdir)/include/ruby.h
+cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 cont.$(OBJEXT): {$(VPATH)}config.h
 cont.$(OBJEXT): {$(VPATH)}cont.c
 cont.$(OBJEXT): {$(VPATH)}defines.h
@@ -2050,6 +2053,7 @@ goruby.$(OBJEXT): {$(VPATH)}vm_debug.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 hash.$(OBJEXT): $(top_srcdir)/include/ruby.h
 hash.$(OBJEXT): {$(VPATH)}config.h
+hash.$(OBJEXT): {$(VPATH)}debug_counter.h
 hash.$(OBJEXT): {$(VPATH)}defines.h
 hash.$(OBJEXT): {$(VPATH)}encoding.h
 hash.$(OBJEXT): {$(VPATH)}gc.h
@@ -2063,9 +2067,11 @@ hash.$(OBJEXT): {$(VPATH)}onigmo.h
 hash.$(OBJEXT): {$(VPATH)}oniguruma.h
 hash.$(OBJEXT): {$(VPATH)}probes.dmyh
 hash.$(OBJEXT): {$(VPATH)}probes.h
+hash.$(OBJEXT): {$(VPATH)}ruby_assert.h
 hash.$(OBJEXT): {$(VPATH)}st.h
 hash.$(OBJEXT): {$(VPATH)}subst.h
 hash.$(OBJEXT): {$(VPATH)}symbol.h
+hash.$(OBJEXT): {$(VPATH)}transient_heap.h
 hash.$(OBJEXT): {$(VPATH)}util.h
 inits.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 inits.$(OBJEXT): $(top_srcdir)/include/ruby.h
@@ -2107,6 +2113,7 @@ io.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 io.$(OBJEXT): {$(VPATH)}st.h
 io.$(OBJEXT): {$(VPATH)}subst.h
 io.$(OBJEXT): {$(VPATH)}thread.h
+io.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 io.$(OBJEXT): {$(VPATH)}thread_native.h
 io.$(OBJEXT): {$(VPATH)}util.h
 io.$(OBJEXT): {$(VPATH)}vm_core.h
@@ -2272,6 +2279,7 @@ mjit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 mjit.$(OBJEXT): $(top_srcdir)/include/ruby.h
 mjit.$(OBJEXT): {$(VPATH)}config.h
 mjit.$(OBJEXT): {$(VPATH)}constant.h
+mjit.$(OBJEXT): {$(VPATH)}debug.h
 mjit.$(OBJEXT): {$(VPATH)}defines.h
 mjit.$(OBJEXT): {$(VPATH)}dln.h
 mjit.$(OBJEXT): {$(VPATH)}gc.h
@@ -2502,6 +2510,7 @@ process.$(OBJEXT): {$(VPATH)}config.h
 process.$(OBJEXT): {$(VPATH)}defines.h
 process.$(OBJEXT): {$(VPATH)}dln.h
 process.$(OBJEXT): {$(VPATH)}encoding.h
+process.$(OBJEXT): {$(VPATH)}hrtime.h
 process.$(OBJEXT): {$(VPATH)}id.h
 process.$(OBJEXT): {$(VPATH)}intern.h
 process.$(OBJEXT): {$(VPATH)}internal.h
@@ -2665,6 +2674,7 @@ regsyntax.$(OBJEXT): {$(VPATH)}regint.h
 regsyntax.$(OBJEXT): {$(VPATH)}regsyntax.c
 regsyntax.$(OBJEXT): {$(VPATH)}st.h
 regsyntax.$(OBJEXT): {$(VPATH)}subst.h
+ruby-runner.$(OBJEXT): {$(VPATH)}config.h
 ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.c
 ruby-runner.$(OBJEXT): {$(VPATH)}ruby-runner.h
 ruby.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -2672,6 +2682,7 @@ ruby.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ruby.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ruby.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+ruby.$(OBJEXT): $(hdrdir)/ruby/version.h
 ruby.$(OBJEXT): $(top_srcdir)/include/ruby.h
 ruby.$(OBJEXT): {$(VPATH)}config.h
 ruby.$(OBJEXT): {$(VPATH)}defines.h
@@ -2745,6 +2756,7 @@ signal.$(OBJEXT): $(CCAN_DIR)/str/str.h
 signal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 signal.$(OBJEXT): $(top_srcdir)/include/ruby.h
 signal.$(OBJEXT): {$(VPATH)}config.h
+signal.$(OBJEXT): {$(VPATH)}debug_counter.h
 signal.$(OBJEXT): {$(VPATH)}defines.h
 signal.$(OBJEXT): {$(VPATH)}encoding.h
 signal.$(OBJEXT): {$(VPATH)}eval_intern.h
@@ -2972,10 +2984,18 @@ transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 transient_heap.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 transient_heap.$(OBJEXT): $(top_srcdir)/include/ruby.h
+transient_heap.$(OBJEXT): {$(VPATH)}config.h
+transient_heap.$(OBJEXT): {$(VPATH)}debug.h
 transient_heap.$(OBJEXT): {$(VPATH)}debug_counter.h
+transient_heap.$(OBJEXT): {$(VPATH)}defines.h
 transient_heap.$(OBJEXT): {$(VPATH)}gc.h
+transient_heap.$(OBJEXT): {$(VPATH)}intern.h
 transient_heap.$(OBJEXT): {$(VPATH)}internal.h
+transient_heap.$(OBJEXT): {$(VPATH)}missing.h
+transient_heap.$(OBJEXT): {$(VPATH)}node.h
 transient_heap.$(OBJEXT): {$(VPATH)}ruby_assert.h
+transient_heap.$(OBJEXT): {$(VPATH)}st.h
+transient_heap.$(OBJEXT): {$(VPATH)}subst.h
 transient_heap.$(OBJEXT): {$(VPATH)}transient_heap.c
 transient_heap.$(OBJEXT): {$(VPATH)}transient_heap.h
 transient_heap.$(OBJEXT): {$(VPATH)}vm_debug.h
