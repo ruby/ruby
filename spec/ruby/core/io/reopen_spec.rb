@@ -145,9 +145,9 @@ describe "IO#reopen with a String" do
     File.read(@other_name).should == "new data"
   end
 
-  # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1461550
-  # http://ci.rvm.jp/results/trunk-mjit-wait@silicon-docker/1448152
-  without_feature :mjit do # with RubyVM::MJIT.enabled?, this randomly fails for now
+  # File descriptor numbers are not predictable in multi-threaded code;
+  # MJIT will be opening/closing files the background
+  without_feature :mjit do
     it "closes the file descriptor obtained by opening the new file" do
       @io = new_io @name, "w"
 
