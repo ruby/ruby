@@ -230,7 +230,7 @@ class TestWEBrickHTTPProxy < Test::Unit::TestCase
     cert.not_after = Time.now + 3600
     ef = OpenSSL::X509::ExtensionFactory.new(cert, cert)
     exts.each {|args| cert.add_extension(ef.create_extension(*args)) }
-    cert.sign(key, "sha1")
+    cert.sign(key, "sha256")
     return cert
   end if defined?(OpenSSL::SSL)
 
