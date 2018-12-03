@@ -31,6 +31,21 @@ int rb_sourceline(void);
 const char *rb_sourcefile(void);
 int rb_frame_method_id_and_class(ID *idp, VALUE *klassp);
 
+/**
+ * Checks if the innermost block/method that the calling function represents is
+ * expected to return meaningful return value(s) or not.
+ *
+ * @retval false It isn't.
+ * @retval true  Not sure.
+ *
+ * When this function returns `false`, the  VM detects that the return value of
+ * the  current  block/method  is  discarded.   Such  block/method  can  return
+ * anything.  Care  should be taken  if this function returns  otherwise.  That
+ * merely indicates that the VM cannot detect the usage of the return values of
+ * the current block/method.  They might or might not be actually used.
+ */
+bool rb_whether_the_return_value_is_used_p(void);
+
 /* vm_eval.c */
 VALUE rb_check_funcall(VALUE, ID, int, const VALUE*);
 VALUE rb_check_funcall_kw(VALUE, ID, int, const VALUE*, int);

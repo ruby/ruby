@@ -3806,4 +3806,14 @@ rb_vm_empty_cc(void)
 
 #endif /* #ifndef MJIT_HEADER */
 
+bool
+rb_whether_the_return_value_is_used_p(void)
+{
+    const struct rb_execution_context_struct *ec = GET_EC();
+    const struct rb_control_frame_struct *reg_cfp = ec->cfp;
+    const VALUE *ep = GET_EP();
+
+    return ! VM_ENV_FLAGS(ep, VM_FRAME_FLAG_DISCARDED);
+}
+
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */
