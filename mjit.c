@@ -640,6 +640,19 @@ mjit_init(struct mjit_options *opts)
 #endif
     cc_path = CC_COMMON_ARGS[0];
     verbose(2, "MJIT: CC defaults to %s", cc_path);
+    cc_common_args = xmalloc(sizeof(CC_COMMON_ARGS));
+    memcpy(cc_common_args, CC_COMMON_ARGS, sizeof(CC_COMMON_ARGS));
+#if MJIT_CFLAGS_PIPE
+    { /* eliminate a flag incompatible with `-pipe` */
+        size_t i, j;
+        for (i = 0, j = 0; i < sizeof(CC_COMMON_ARGS) / sizeof(char *); i++) {
+            if (CC_COMMON_ARGS[i] && strncmp("-save-temps", CC_COMMON_ARGS[i], strlen("-save-temps")) == 0)
+                continue; /* skip -save-temps flag */
+            cc_common_args[j] = CC_COMMON_ARGS[i];
+            j++;
+        }
+    }
+#endif
 
     tmp_dir = system_tmpdir();
     verbose(2, "MJIT: tmp_dir is %s", tmp_dir);
@@ -826,6 +839,7 @@ mjit_finish(int close_handle_p)
 
     xfree(header_file); header_file = NULL;
 #endif
+    xfree(cc_common_args); cc_common_args = NULL;
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
 
