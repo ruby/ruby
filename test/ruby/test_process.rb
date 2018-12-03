@@ -343,11 +343,6 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_execopt_env_path
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1455223
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1450027
-    # http://ci.rvm.jp/results/trunk-mjit@silicon-docker/1469867
-    skip 'this randomly fails with MJIT' if RubyVM::MJIT.enabled?
-
     bug8004 = '[ruby-core:53103] [Bug #8004]'
     Dir.mktmpdir do |d|
       open("#{d}/tmp_script.cmd", "w") {|f| f.puts ": ;"; f.chmod(0755)}
