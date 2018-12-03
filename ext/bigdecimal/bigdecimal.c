@@ -3687,19 +3687,13 @@ VpSetRoundMode(unsigned short n)
 
 /*
  *  0.0 & 1.0 generator
- *    These gZero_..... and gOne_..... can be any name
- *    referenced from nowhere except Zero() and One().
- *    gZero_..... and gOne_..... must have global scope
+ *    These gOne_..... can be any name
+ *    referenced from nowhere except One().
+ *    gOne_..... must have global scope
  *    (to let the compiler know they may be changed in outside
  *    (... but not actually..)).
  */
-volatile const double gZero_ABCED9B1_CE73__00400511F31D = 0.0;
-volatile const double gOne_ABCED9B4_CE73__00400511F31D  = 1.0;
-static double
-Zero(void)
-{
-    return gZero_ABCED9B1_CE73__00400511F31D;
-}
+volatile const double gOne_ABCED9B4_CE73__00400511F31D = 1.0;
 
 static double
 One(void)
