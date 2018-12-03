@@ -4445,7 +4445,7 @@ rb_f_system(int argc, VALUE *argv)
     int exec_errnum;
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, TRUE);
-    TypedData_Get_Struct(execarg_obj, struct rb_execarg, &exec_arg_data_type, eargp);
+    eargp = rb_execarg_get(execarg_obj);
     w->ec = GET_EC();
     waitpid_state_init(w, 0, 0);
     eargp->waitpid_state = w;
