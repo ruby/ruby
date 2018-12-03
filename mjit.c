@@ -632,15 +632,14 @@ mjit_init(struct mjit_options *opts)
     if (mjit_opts.max_cache_size < MIN_CACHE_SIZE)
         mjit_opts.max_cache_size = MIN_CACHE_SIZE;
 
-    verbose(2, "MJIT: CC defaults to %s", CC_PATH);
-
     /* Initialize variables for compilation */
 #ifdef _MSC_VER
     pch_status = PCH_SUCCESS; /* has prebuilt precompiled header */
 #else
     pch_status = PCH_NOT_READY;
 #endif
-    cc_path = CC_PATH;
+    cc_path = CC_COMMON_ARGS[0];
+    verbose(2, "MJIT: CC defaults to %s", cc_path);
 
     tmp_dir = system_tmpdir();
     verbose(2, "MJIT: tmp_dir is %s", tmp_dir);
