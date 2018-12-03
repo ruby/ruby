@@ -199,7 +199,7 @@ class PPAbstractSyntaxTree < Test::Unit::TestCase
   def test_literal
     ast = AST.parse("1")
     expected = "(SCOPE@1:0-1:1 tbl: [] args: nil body: (LIT@1:0-1:1 1))"
-    assert_equal(expected, PP.singleline_pp(ast, ''.dup))
+    assert_equal(expected, PP.singleline_pp(ast, ''.dup), ast)
   end
 end
 
