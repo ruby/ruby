@@ -539,7 +539,7 @@ rb_ary_modify(VALUE ary)
 	    FL_UNSET_SHARED(ary);
             ARY_SET_PTR(ary, RARRAY_CONST_PTR_TRANSIENT(shared));
 	    ARY_SET_CAPA(ary, shared_len);
-	    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 		MEMMOVE(ptr, ptr+shift, VALUE, len);
 	    });
 	    FL_SET_EMBED(shared);
@@ -1254,7 +1254,7 @@ rb_ary_shift(VALUE ary)
     top = RARRAY_AREF(ary, 0);
     if (!ARY_SHARED_P(ary)) {
 	if (len < ARY_DEFAULT_SIZE) {
-	    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 		MEMMOVE(ptr, ptr+1, VALUE, len-1);
 	    }); /* WB: no new reference */
             ARY_INCREASE_LEN(ary, -1);
@@ -1267,7 +1267,7 @@ rb_ary_shift(VALUE ary)
 	ary_make_shared(ary);
     }
     else if (ARY_SHARED_OCCUPIED(ARY_SHARED(ary))) {
-	RARRAY_PTR_USE_TRANSIENT(ary, ptr, ptr[0] = Qnil);
+        RARRAY_PTR_USE_TRANSIENT(ary, ptr, ptr[0] = Qnil);
     }
     ARY_INCREASE_PTR(ary, 1);		/* shift ptr */
     ARY_INCREASE_LEN(ary, -1);
@@ -1333,7 +1333,7 @@ rb_ary_behead(VALUE ary, long n)
     }
     else {
 	if (RARRAY_LEN(ary) < ARY_DEFAULT_SIZE) {
-	    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
                 MEMMOVE(ptr, ptr+n, VALUE, RARRAY_LEN(ary)-n);
 	    }); /* WB: no new reference */
 	}
@@ -1403,7 +1403,7 @@ ary_ensure_room_for_unshift(VALUE ary, int argc)
     }
     else {
 	/* sliding items */
-	RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+        RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 	    MEMMOVE(ptr + argc, ptr, VALUE, len);
 	});
 
@@ -1856,7 +1856,7 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	}
 
 	if (len != rlen) {
-	    RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr,
                                      MEMMOVE(ptr + beg + rlen, ptr + beg + len,
                                              VALUE, olen - (beg + len)));
 	    ARY_SET_LEN(ary, alen);
@@ -3208,7 +3208,7 @@ select_bang_ensure(VALUE a)
 	long tail = 0;
 	if (i1 < len) {
 	    tail = len - i1;
-	    RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr, {
 		    MEMMOVE(ptr + i2, ptr + i1, VALUE, tail);
 		});
 	}
