@@ -281,6 +281,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 [String]
 
+  * String#crypt is now deprecated. [Feature #14915]
+
   [New features]
 
     * String#split yields each substring to the block if given. [Feature #4780]
