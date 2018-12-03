@@ -249,10 +249,6 @@ static const char *const CC_COMMON_ARGS[] = {
     NULL
 };
 
-/* GCC and CLANG executable paths.  TODO: The paths should absolute
-   ones to prevent changing C compiler for security reasons.  */
-#define CC_PATH CC_COMMON_ARGS[0]
-
 static const char *const CC_DEBUG_ARGS[] = {MJIT_DEBUGFLAGS NULL};
 static const char *const CC_OPTIMIZE_ARGS[] = {MJIT_OPTFLAGS NULL};
 
