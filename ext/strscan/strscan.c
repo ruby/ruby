@@ -527,7 +527,8 @@ strscan_do_scan(VALUE self, VALUE regex, int succptr, int getstr, int headonly)
 static VALUE
 strscan_scan(VALUE self, VALUE re)
 {
-    return strscan_do_scan(self, re, 1, 1, 1);
+    int needstr = rb_whether_the_return_value_is_used_p();
+    return strscan_do_scan(self, re, 1, needstr, 1);
 }
 
 /*
@@ -588,7 +589,8 @@ strscan_skip(VALUE self, VALUE re)
 static VALUE
 strscan_check(VALUE self, VALUE re)
 {
-    return strscan_do_scan(self, re, 0, 1, 1);
+    int needstr = rb_whether_the_return_value_is_used_p();
+    return strscan_do_scan(self, re, 0, needstr, 1);
 }
 
 /*
@@ -622,7 +624,8 @@ strscan_scan_full(VALUE self, VALUE re, VALUE s, VALUE f)
 static VALUE
 strscan_scan_until(VALUE self, VALUE re)
 {
-    return strscan_do_scan(self, re, 1, 1, 0);
+    int needstr = rb_whether_the_return_value_is_used_p();
+    return strscan_do_scan(self, re, 1, needstr, 0);
 }
 
 /*
@@ -682,7 +685,8 @@ strscan_skip_until(VALUE self, VALUE re)
 static VALUE
 strscan_check_until(VALUE self, VALUE re)
 {
-    return strscan_do_scan(self, re, 0, 1, 0);
+    int needstr = rb_whether_the_return_value_is_used_p();
+    return strscan_do_scan(self, re, 0, needstr, 0);
 }
 
 /*

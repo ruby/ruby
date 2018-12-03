@@ -992,6 +992,8 @@ VALUE rb_time_succ(VALUE);
 VALUE rb_make_backtrace(void);
 VALUE rb_make_exception(int, const VALUE*);
 
+int rb_whether_the_return_value_is_used_p(void);
+
 RUBY_SYMBOL_EXPORT_END
 
 #if defined(__cplusplus)
