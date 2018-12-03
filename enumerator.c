@@ -2530,23 +2530,20 @@ static VALUE
 enum_chain_total_size(VALUE enums)
 {
     VALUE total = INT2FIX(0);
+    long i;
 
-    RARRAY_PTR_USE(enums, ptr, {
-        long i;
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        VALUE size = enum_size(RARRAY_AREF(enums, i));
 
-        for (i = 0; i < RARRAY_LEN(enums); i++) {
-            VALUE size = enum_size(ptr[i]);
-
-            if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
-                return size;
-            }
-            if (!RB_INTEGER_TYPE_P(size)) {
-                return Qnil;
-            }
-
-            total = rb_funcall(total, '+', 1, size);
+        if (NIL_P(size) || (RB_TYPE_P(size, T_FLOAT) && isinf(NUM2DBL(size)))) {
+            return size;
         }
-    });
+        if (!RB_INTEGER_TYPE_P(size)) {
+            return Qnil;
+        }
+
+        total = rb_funcall(total, '+', 1, size);
+    }
 
     return total;
 }
@@ -2601,6 +2598,7 @@ enum_chain_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums, block;
     struct enum_chain *objptr;
+    long i;
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, argc > 0 ? enum_chain_enum_no_size : enum_chain_enum_size);
 
@@ -2608,14 +2606,11 @@ enum_chain_each(int argc, VALUE *argv, VALUE obj)
     enums = objptr->enums;
     block = rb_block_proc();
 
-    RARRAY_PTR_USE(enums, ptr, {
-        long i;
 
-        for (i = 0; i < RARRAY_LEN(enums); i++) {
-            objptr->pos = i;
-            rb_block_call(ptr[i], id_each, argc, argv, enum_chain_yield_block, block);
-        }
-    });
+    for (i = 0; i < RARRAY_LEN(enums); i++) {
+        objptr->pos = i;
+        rb_block_call(RARRAY_AREF(enums, i), id_each, argc, argv, enum_chain_yield_block, block);
+    }
 
     return obj;
 }
@@ -2633,14 +2628,11 @@ enum_chain_rewind(VALUE obj)
 {
     struct enum_chain *objptr = enum_chain_ptr(obj);
     VALUE enums = objptr->enums;
+    long i;
 
-    RARRAY_PTR_USE(enums, ptr, {
-        long i;
-
-        for (i = objptr->pos; 0 <= i && i < RARRAY_LEN(enums); objptr->pos = --i) {
-            rb_check_funcall(ptr[i], id_rewind, 0, 0);
-        }
-    });
+    for (i = objptr->pos; 0 <= i && i < RARRAY_LEN(enums); objptr->pos = --i) {
+        rb_check_funcall(RARRAY_AREF(enums, i), id_rewind, 0, 0);
+    }
 
     return obj;
 }
