@@ -15,7 +15,6 @@ describe "Module#refine" do
     inner_self.name.should == nil
   end
 
-
   it "uses the same anonymous module for future refines of the same class" do
     selves = []
     mod = Module.new do
