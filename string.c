@@ -4961,7 +4961,9 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 	beg = rb_str_index(str, indx, 0);
 	if (beg == -1) return Qnil;
 	len = RSTRING_LEN(indx);
-	result = rb_str_dup(indx);
+        if (rb_whether_the_return_value_is_used_p()) {
+            result = rb_str_dup(indx);
+        }
         goto squash;
     }
     else {
@@ -4981,8 +4983,10 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
     beg = p - RSTRING_PTR(str);
 
   subseq:
-    result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
-    rb_enc_cr_str_copy_for_substr(result, str);
+    if (rb_whether_the_return_value_is_used_p()) {
+        result = rb_str_new_with_class(str, RSTRING_PTR(str)+beg, len);
+        rb_enc_cr_str_copy_for_substr(result, str);
+    }
 
   squash:
     if (len > 0) {
