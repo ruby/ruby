@@ -386,7 +386,7 @@ class Range # :nodoc:
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
-    q.pp self.end
+    q.pp self.end if self.end
   end
 end
 
