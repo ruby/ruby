@@ -176,7 +176,7 @@ def in_makefile(target, source)
   target = target.to_s
   source = source.to_s
   case target
-  when %r{\A[^/]*\z}
+  when %r{\A[^/]*\z}, %r{\Acoroutine/}
     target2 = "#{target.sub(/\.o\z/, '.$(OBJEXT)')}"
     case source
     when *FILES_IN_SOURCE_DIRECTORY then source2 = "$(top_srcdir)/#{source}"
@@ -193,6 +193,7 @@ def in_makefile(target, source)
     when %r{\Amissing/} then source2 = "{$(VPATH)}#{$'}"
     when %r{\Accan/} then source2 = "$(CCAN_DIR)/#{$'}"
     when %r{\Adefs/} then source2 = "{$(VPATH)}#{source}"
+    when %r{\Acoroutine/} then source2 = "{$(VPATH)}$(COROUTINE_H)"
     else source2 = "$(top_srcdir)/#{source}"
     end
     ["common.mk", target2, source2]
@@ -368,6 +369,7 @@ def read_cc_deps(cwd)
   Pathname.glob('**/*.o').sort.each {|fn_o|
     fn_i = fn_o.sub_ext('.i')
     if !fn_i.exist?
+      next if fn_o.sub_ext('.S').exist?
       warn "warning: not found: #{fn_i}"
       $i_not_found = true
       next
