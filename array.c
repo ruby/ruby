@@ -470,6 +470,22 @@ ary_shrink_capa(VALUE ary)
     ary_verify(ary);
 }
 
+void rb_ary_shrink_capa(VALUE ary)
+{
+    long capacity, old_capa;
+    /* OK to modify a frozen array by only reducing capacity */
+    if (ARY_OWNS_HEAP_P(ary) && !RARRAY_TRANSIENT_P(ary))
+    {
+       capacity = ARY_HEAP_LEN(ary);
+       old_capa = ARY_HEAP_CAPA(ary);
+       if (old_capa > capacity && capacity > RARRAY_EMBED_LEN_MAX) {
+           SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, old_capa);
+           ARY_SET_CAPA(ary, capacity);
+           ary_verify(ary);
+       }
+    }
+}
+
 static void
 ary_double_capa(VALUE ary, long min)
 {
