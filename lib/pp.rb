@@ -529,13 +529,13 @@ class RubyVM::AbstractSyntaxTree::Node
   end
 
   def pretty_print(q)
-    q.group(1, "(#{type.sub(/\ANODE_/,'')}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
+    q.group(1, "(#{type}@#{first_lineno}:#{first_column}-#{last_lineno}:#{last_column}", ")") {
       case type
-      when "NODE_SCOPE"
+      when :SCOPE
         pretty_print_children(q, %w"tbl args body")
-      when "NODE_ARGS"
+      when :ARGS
         pretty_print_children(q, %w[pre_num pre_init opt first_post post_num post_init rest kw kwrest block])
-      when "NODE_DEFN"
+      when :DEFN
         pretty_print_children(q, %w[mid body])
       else
         pretty_print_children(q)
