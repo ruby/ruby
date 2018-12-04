@@ -957,7 +957,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_match /\A\X\z/, "\u{1f600}"
     assert_match /\A\X\z/, "\u{20 324}"
     assert_match /\A\X\X\z/, "\u{a 324}"
-    assert_match /\A\X\X\z/, "\u{d 308}"
+    assert_match /\A\X\X\z/, "\u{d 324}"
     assert_match /\A\X\z/, "\u{1F477 1F3FF 200D 2640 FE0F}"
     assert_match /\A\X\z/, "\u{1F468 200D 1F393}"
     assert_match /\A\X\z/, "\u{1F46F 200D 2642 FE0F}"
