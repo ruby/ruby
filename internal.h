@@ -1358,7 +1358,7 @@ VALUE rb_gvar_defined(struct rb_global_entry *);
 #endif
 
 
-void rb_ary_shrink_capa(VALUE ary);
+void rb_ary_shrink_capa(void *obj);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);

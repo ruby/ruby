@@ -1438,7 +1438,7 @@ RVALUE_PAGE_OLD_UNCOLLECTIBLE_SET(rb_objspace_t *objspace, struct heap_page *pag
     objspace->rgengc.old_objects++;
     rb_transient_heap_promote(obj);
 
-    if (BUILTIN_TYPE(obj) == T_ARRAY) rb_ary_shrink_capa(obj);
+    if (BUILTIN_TYPE(obj) == T_ARRAY) rb_postponed_job_register_one(0, rb_ary_shrink_capa, (void *)obj);
 
 #if RGENGC_PROFILE >= 2
     objspace->profile.total_promoted_count++;
