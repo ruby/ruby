@@ -1491,7 +1491,7 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 {
     get_dat1(self);
 
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_check_arity(argc, 0, 1);
 
     if (!k_exact_zero_p(dat->imag)) {
        rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",

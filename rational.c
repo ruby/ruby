@@ -2121,7 +2121,7 @@ nilclass_to_r(VALUE self)
 static VALUE
 nilclass_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_check_arity(argc, 0, 1);
     return nilclass_to_r(self);
 }
 
@@ -2150,7 +2150,7 @@ integer_to_r(VALUE self)
 static VALUE
 integer_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    rb_scan_args(argc, argv, "01", NULL);
+    rb_check_arity(argc, 0, 1);
     return integer_to_r(self);
 }
 

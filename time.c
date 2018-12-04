@@ -4959,7 +4959,7 @@ time_dump(int argc, VALUE *argv, VALUE time)
 {
     VALUE str;
 
-    rb_scan_args(argc, argv, "01", 0);
+    rb_check_arity(argc, 0, 1);
     str = time_mdump(time);
 
     return str;
