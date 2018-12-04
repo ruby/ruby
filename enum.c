@@ -93,6 +93,25 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     return Qnil;
 }
 
+static VALUE
+grep_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, pat))
+{
+    /* This function exists only to prevent Bug #5801 */
+    ENUM_WANT_SVALUE();
+    rb_funcallv(pat, id_eqq, 1, &i);
+    return Qnil;
+}
+
+static VALUE
+grep_iter_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, pat))
+{
+    ENUM_WANT_SVALUE();
+    if (RTEST(rb_funcallv(pat, id_eqq, 1, &i))) {
+        enum_yield(argc, i);
+    }
+    return Qnil;
+}
+
 /*
  *  call-seq:
  *     enum.grep(pattern)                  -> array
@@ -114,12 +133,16 @@ grep_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 static VALUE
 enum_grep(VALUE obj, VALUE pat)
 {
-    VALUE ary = rb_ary_new();
-    struct MEMO *memo = MEMO_NEW(pat, ary, Qtrue);
-
-    rb_block_call(obj, id_each, 0, 0, rb_block_given_p() ? grep_iter_i : grep_i, (VALUE)memo);
-
-    return ary;
+    if (rb_whether_the_return_value_is_used_p()) {
+        struct MEMO *memo = MEMO_NEW(pat, rb_ary_new(), Qtrue);
+        rb_block_call_func_t f = rb_block_given_p() ? grep_iter_i : grep_i;
+        rb_block_call(obj, id_each, 0, NULL, f, (VALUE)memo);
+        return memo->v2;
+    }
+    else {
+        rb_block_call_func_t f = rb_block_given_p() ? grep_iter_ii : grep_ii;
+        return rb_block_call(obj, id_each, 0, NULL, f, pat);
+    }
 }
 
 /*
