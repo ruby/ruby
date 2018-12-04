@@ -991,8 +991,8 @@ CODE
     end
 
     [
-      ["\u{a 308}", ["\u000A", "\u0308"]],
-      ["\u{d 308}", ["\u000D", "\u0308"]],
+      ["\u{a 324}", ["\u000A", "\u0324"]],
+      ["\u{d 324}", ["\u000D", "\u0324"]],
       ["abc", ["a", "b", "c"]],
     ].each do |str, grapheme_clusters|
       assert_equal grapheme_clusters, str.each_grapheme_cluster.to_a
@@ -1023,8 +1023,8 @@ CODE
       assert_predicate g.dup.taint.grapheme_clusters[0], :tainted?
     end
 
-    assert_equal ["\u000A", "\u0308"], "\u{a 308}".grapheme_clusters
-    assert_equal ["\u000D", "\u0308"], "\u{d 308}".grapheme_clusters
+    assert_equal ["\u000A", "\u0324"], "\u{a 324}".grapheme_clusters
+    assert_equal ["\u000D", "\u0324"], "\u{d 324}".grapheme_clusters
     assert_equal ["a", "b", "c"], "abc".b.grapheme_clusters
 
     if ENUMERATOR_WANTARRAY
