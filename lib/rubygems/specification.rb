@@ -2693,7 +2693,7 @@ class Gem::Specification < Gem::BasicSpecification
     @version = Gem::Version.create(version)
     # skip to set required_ruby_version when pre-released rubygems.
     # It caused to raise CircularDependencyError
-    if @version.prerelease? && @name.strip != "rubygems"
+    if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
       self.required_rubygems_version = '> 1.3.1'
     end
     invalidate_memoized_attributes

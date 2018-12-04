@@ -1345,6 +1345,16 @@ dependencies: []
     assert_equal '/path/to/file', e.file_path
   end
 
+  def test_initialize_prerelease_version_before_name
+    spec = Gem::Specification.new do |s|
+      s.version = '1.0.0.dev'
+      s.name = 'a'
+    end
+
+    assert_equal "a", spec.name
+    assert_equal "1.0.0.dev", spec.version.to_s
+  end
+
   def test__dump
     @a2.platform = Gem::Platform.local
     @a2.instance_variable_set :@original_platform, 'old_platform'
