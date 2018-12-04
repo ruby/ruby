@@ -188,7 +188,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
             activemodel (= 4.2.7.1)
             activerecord (= 4.2.7.1)
             activesupport (= 4.2.7.1)
-            bundler (>= 1.3.0, < 2.0)
+            bundler (>= 1.3.0, < 3.0)
             railties (= 4.2.7.1)
             sprockets-rails
           rails-deprecated_sanitizer (1.0.3)
