@@ -122,14 +122,6 @@ mjit_free_iseq(const rb_iseq_t *iseq)
     CRITICAL_SECTION_FINISH(4, "mjit_free_iseq");
 }
 
-/* Do we need this...? */
-static void
-init_list(struct rb_mjit_unit_list *list)
-{
-    list_head_init(&list->head);
-    list->length = 0;
-}
-
 /* Free unit list. This should be called only when worker is finished
    because node of unit_queue and one of active_units may have the same unit
    during proceeding unit. */
@@ -663,10 +655,6 @@ mjit_init(struct mjit_options *opts)
         return;
     }
     pch_owner_pid = getpid();
-
-    init_list(&unit_queue);
-    init_list(&active_units);
-    init_list(&compact_units);
 
     /* Initialize mutex */
     rb_native_mutex_initialize(&mjit_engine_mutex);
