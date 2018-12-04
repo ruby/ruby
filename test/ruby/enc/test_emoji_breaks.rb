@@ -105,6 +105,8 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
       start = rand step
       start.step(by: step, to: length-1) do |t2|
         test2 = all_tests[t2]
+        # exclude skin tones, because they glue to previous grapheme clusters
+        next  if (0x1F3FB..0x1F3FF).include? test2.string.ord
         expected = [test1.string, test2.string]
         actual = (test1.string+test2.string).each_grapheme_cluster.to_a
         assert_equal expected, actual,
