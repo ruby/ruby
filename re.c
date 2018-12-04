@@ -3960,13 +3960,11 @@ match_setter(VALUE val)
 static VALUE
 rb_reg_s_last_match(int argc, VALUE *argv)
 {
-    VALUE nth;
-
-    if (argc > 0 && rb_scan_args(argc, argv, "01", &nth) == 1) {
+    if (rb_check_arity(argc, 0, 1) == 1) {
         VALUE match = rb_backref_get();
         int n;
         if (NIL_P(match)) return Qnil;
-        n = match_backref_number(match, nth);
+        n = match_backref_number(match, argv[0]);
 	return rb_reg_nth_match(n, match);
     }
     return match_getter();

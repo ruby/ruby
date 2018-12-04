@@ -2590,13 +2590,7 @@ rb_ary_rotate(VALUE ary, long cnt)
 static VALUE
 rb_ary_rotate_bang(int argc, VALUE *argv, VALUE ary)
 {
-    long n = 1;
-
-    switch (argc) {
-      case 1: n = NUM2LONG(argv[0]);
-      case 0: break;
-      default: rb_scan_args(argc, argv, "01", NULL);
-    }
+    long n = (rb_check_arity(argc, 0, 1) ? NUM2LONG(argv[0]) : 1);
     rb_ary_rotate(ary, n);
     return ary;
 }
@@ -2623,13 +2617,8 @@ rb_ary_rotate_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE rotated;
     const VALUE *ptr;
-    long len, cnt = 1;
-
-    switch (argc) {
-      case 1: cnt = NUM2LONG(argv[0]);
-      case 0: break;
-      default: rb_scan_args(argc, argv, "01", NULL);
-    }
+    long len;
+    long cnt = (rb_check_arity(argc, 0, 1) ? NUM2LONG(argv[0]) : 1);
 
     len = RARRAY_LEN(ary);
     rotated = rb_ary_new2(len);
