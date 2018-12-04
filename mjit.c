@@ -641,7 +641,7 @@ mjit_init(struct mjit_options *opts)
     cc_path = CC_COMMON_ARGS[0];
     verbose(2, "MJIT: CC defaults to %s", cc_path);
     cc_common_args = xmalloc(sizeof(CC_COMMON_ARGS));
-    memcpy(cc_common_args, CC_COMMON_ARGS, sizeof(CC_COMMON_ARGS));
+    memcpy((void *)cc_common_args, CC_COMMON_ARGS, sizeof(CC_COMMON_ARGS));
 #if MJIT_CFLAGS_PIPE
     { /* eliminate a flag incompatible with `-pipe` */
         size_t i, j;
@@ -839,7 +839,7 @@ mjit_finish(int close_handle_p)
 
     xfree(header_file); header_file = NULL;
 #endif
-    xfree(cc_common_args); cc_common_args = NULL;
+    xfree((void *)cc_common_args); cc_common_args = NULL;
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
 
