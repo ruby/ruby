@@ -88,8 +88,8 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
 
   def test_embedded_emoji
     all_tests.each do |test|
-      expected = ["A", test.string, "Z"]
-      actual = "A#{test.string}Z".each_grapheme_cluster.to_a
+      expected = ["\t", test.string, "\t"]
+      actual = "\t#{test.string}\t".each_grapheme_cluster.to_a
       assert_equal expected, actual,
         "file: #{test.filename}, line #{test.line_number}, " +
         "type: #{test.type}, shortname: #{test.shortname}, comment: #{test.comment}"
