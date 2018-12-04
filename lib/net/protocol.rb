@@ -311,7 +311,7 @@ module Net # :nodoc:
       read_bytes = 0
       while (line = readuntil("\r\n")) != ".\r\n"
         read_bytes += line.size
-        yield line.sub(/\A\./, '')
+        yield line.delete_prefix('.')
       end
       LOG_on()
       LOG "read message (#{read_bytes} bytes)"

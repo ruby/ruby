@@ -207,14 +207,14 @@ class Ripper
     end
 
     def map_tokens(tokens)
-      tokens.map {|pos,type,str| map_token(type.to_s.sub(/\Aon_/,'')) }.join
+      tokens.map {|pos,type,str| map_token(type.to_s.delete_prefix('on_')) }.join
     end
 
     MAP = {}
     seed = ('a'..'z').to_a + ('A'..'Z').to_a + ('0'..'9').to_a
     SCANNER_EVENT_TABLE.each do |ev, |
       raise CompileError, "[RIPPER FATAL] too many system token" if seed.empty?
-      MAP[ev.to_s.sub(/\Aon_/,'')] = seed.shift
+      MAP[ev.to_s.delete_prefix('on_')] = seed.shift
     end
 
     def map_token(tok)
