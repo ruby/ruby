@@ -3925,11 +3925,11 @@ retry_fork_async_signal_safe(int *status, int *ep,
     volatile int try_gc = 1;
     struct child_handler_disabler_state old;
     int err;
-    rb_nativethread_lock_t *waitpid_lock;
-
-    waitpid_lock = w && WAITPID_USE_SIGCHLD ? &GET_VM()->waitpid_lock : 0;
+    rb_nativethread_lock_t *const waitpid_lock_init =
+        (w && WAITPID_USE_SIGCHLD) ? &GET_VM()->waitpid_lock : 0;
 
     while (1) {
+        rb_nativethread_lock_t *waitpid_lock = waitpid_lock_init;
         prefork();
         disable_child_handler_before_fork(&old);
         if (waitpid_lock) {
@@ -3959,6 +3959,7 @@ retry_fork_async_signal_safe(int *status, int *ep,
 #endif
         }
 	err = errno;
+        waitpid_lock = waitpid_lock_init;
         if (waitpid_lock) {
             if (pid > 0 && w != WAITPID_LOCK_ONLY) {
                 w->pid = pid;
