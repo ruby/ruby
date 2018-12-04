@@ -478,9 +478,9 @@ void rb_ary_shrink_capa(VALUE ary)
     {
        capacity = ARY_HEAP_LEN(ary);
        old_capa = ARY_HEAP_CAPA(ary);
-       if (old_capa > capacity && capacity > RARRAY_EMBED_LEN_MAX) {
+       if (old_capa > capacity) {
            SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, old_capa);
-           ARY_SET_CAPA(ary, capacity);
+           RARRAY(ary)->as.heap.aux.capa = capacity;
            ary_verify(ary);
        }
     }
