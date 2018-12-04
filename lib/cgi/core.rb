@@ -421,7 +421,7 @@ class CGI
   module QueryExtension
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         (val = env_table[env]) && Integer(val)
       end
     end
@@ -434,7 +434,7 @@ class CGI
         HTTP_ACCEPT HTTP_ACCEPT_CHARSET HTTP_ACCEPT_ENCODING
         HTTP_ACCEPT_LANGUAGE HTTP_CACHE_CONTROL HTTP_FROM HTTP_HOST
         HTTP_NEGOTIATE HTTP_PRAGMA HTTP_REFERER HTTP_USER_AGENT ].each do |env|
-      define_method(env.sub(/^HTTP_/, '').downcase) do
+      define_method(env.delete_prefix('HTTP_').downcase) do
         env_table[env]
       end
     end

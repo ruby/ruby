@@ -2264,7 +2264,7 @@ RULES
     origdef ||= ''
 
     if $extout and $INSTALLFILES
-      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.sub(/\A\.\//, ''))})
+      $cleanfiles.concat($INSTALLFILES.collect {|files, dir|File.join(dir, files.delete_prefix('./'))})
       $distcleandirs.concat($INSTALLFILES.collect {|files, dir| dir})
     end
 

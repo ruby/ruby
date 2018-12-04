@@ -1595,7 +1595,7 @@ XXX
               begin
                 sw, = complete(:short, opt)
                 # short option matched.
-                val = arg.sub(/\A-/, '')
+                val = arg.delete_prefix('-')
                 has_arg = true
               rescue InvalidOption
                 # if no short options match, try completion with long

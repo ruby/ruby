@@ -47,7 +47,7 @@ def setup(options = "", *long_options)
     end
     long_options.each do |s|
       opt_name, arg_name = s.split(/(?=[\s=])/, 2)
-      opt_name.sub!(/\A--/, '')
+      opt_name.delete_prefix!('--')
       s = "--#{opt_name.gsub(/([A-Z]+|[a-z])([A-Z])/, '\1-\2').downcase}#{arg_name}"
       puts "#{opt_name}=>#{s}" if $DEBUG
       opt_name = opt_name.intern
