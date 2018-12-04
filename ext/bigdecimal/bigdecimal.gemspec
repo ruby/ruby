@@ -1,6 +1,6 @@
 # coding: utf-8
 
-bigdecimal_version = '1.4.0.pre.20181121a'
+bigdecimal_version = '1.4.0.pre.20181204a'
 
 Gem::Specification.new do |s|
   s.name          = "bigdecimal"
@@ -18,6 +18,7 @@ Gem::Specification.new do |s|
   s.files         = %w[
     bigdecimal.gemspec
     ext/bigdecimal/bigdecimal.c
+    ext/bigdecimal/bigdecimal.def
     ext/bigdecimal/bigdecimal.h
     ext/bigdecimal/depend
     ext/bigdecimal/extconf.rb
