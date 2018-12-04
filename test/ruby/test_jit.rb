@@ -239,8 +239,8 @@ class TestJIT < Test::Unit::TestCase
     assert_compile_once('a = 1; { a: a }', result_inspect: '{:a=>1}', insns: %i[newhash])
   end
 
-  def test_compile_insn_newhashfromarray
-    assert_compile_once('{ a: 1 }', result_inspect: '{:a=>1}', insns: %i[newhashfromarray])
+  def test_compile_insn_duphash
+    assert_compile_once('{ a: 1 }', result_inspect: '{:a=>1}', insns: %i[duphash])
   end
 
   def test_compile_insn_newrange
