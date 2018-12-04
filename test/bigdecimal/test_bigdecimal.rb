@@ -151,6 +151,63 @@ class TestBigDecimal < Test::Unit::TestCase
     $SAFE = 0
   end
 
+  def test_BigDecimal_with_exception_keyword
+    assert_raise(ArgumentError) {
+      BigDecimal('.', exception: true)
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, BigDecimal(".", exception: false))
+    }
+    assert_raise(ArgumentError) {
+      BigDecimal("1", -1, exception: true)
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, BigDecimal("1", -1, exception: false))
+    }
+    assert_raise(ArgumentError) {
+      BigDecimal(42.quo(7), exception: true)
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, BigDecimal(42.quo(7), exception: false))
+    }
+    assert_raise(ArgumentError) {
+      BigDecimal(4.2, exception: true)
+    }
+    assert_nothing_raised(ArgumentError) {
+      assert_equal(nil, BigDecimal(4.2, exception: false))
+    }
+    # TODO: support conversion from complex
+    # assert_raise(RangeError) {
+    #   BigDecimal(1i, exception: true)
+    # }
+    # assert_nothing_raised(RangeError) {
+    #   assert_equal(nil, BigDecimal(1i, exception: false))
+    # }
+    assert_raise(TypeError) {
+      BigDecimal(nil, exception: true)
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, BigDecimal(nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, BigDecimal(:test, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, BigDecimal(Object.new, exception: false))
+    }
+    # TODO: support to_d
+    # assert_nothing_raised(TypeError) {
+    #   o = Object.new
+    #   def o.to_d; 3.14; end
+    #   assert_equal(3.14, BigDecimal(o, exception: false))
+    # }
+    # assert_nothing_raised(RuntimeError) {
+    #   o = Object.new
+    #   def o.to_d; raise; end
+    #   assert_equal(nil, BigDecimal(o, exception: false))
+    # }
+  end
+
   def test_s_ver
     assert_raise(NoMethodError, /undefined method `ver`/) { BigDecimal.ver }
   end
