@@ -1108,13 +1108,17 @@ enum ary_take_pos_flags
 static VALUE
 ary_take_first_or_last(int argc, const VALUE *argv, VALUE ary, enum ary_take_pos_flags last)
 {
-    VALUE nv;
     long n;
     long len;
     long offset = 0;
 
-    rb_scan_args(argc, argv, "1", &nv);
-    n = NUM2LONG(nv);
+    argc = rb_check_arity(argc, 0, 1);
+    /* the case optional argument is ommited should be handled in
+     * callers of this function.  if another arity case is added,
+     * this arity check needs to rewrite. */
+    RUBY_ASSERT_WHEN(TRUE, argc == 1);
+
+    n = NUM2LONG(argv[0]);
     len = RARRAY_LEN(ary);
     if (n > len) {
 	n = len;
