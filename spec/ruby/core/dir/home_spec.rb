@@ -16,7 +16,7 @@ describe "Dir.home" do
 
   platform_is :solaris do
     it "returns the named user's home directory, from the user database, as a string if called with an argument" do
-      Dir.home(ENV['USER']).should == `getent passwd ~#{ENV['USER']}|cut -d: -f6`.chomp
+      Dir.home(ENV['USER']).should == `getent passwd #{ENV['USER']}|cut -d: -f6`.chomp
     end
   end
 
