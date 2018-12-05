@@ -308,7 +308,7 @@ VP_EXPORT size_t VpInit(BDIGIT BaseVal);
 VP_EXPORT void *VpMemAlloc(size_t mb);
 VP_EXPORT void *VpMemRealloc(void *ptr, size_t mb);
 VP_EXPORT void VpFree(Real *pv);
-VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal);
+VP_EXPORT Real *VpAlloc(size_t mx, const char *szVal, int strict_p, int exc);
 VP_EXPORT size_t VpAsgn(Real *c, Real *a, int isw);
 VP_EXPORT size_t VpAddSub(Real *c,Real *a,Real *b,int operation);
 VP_EXPORT size_t VpMult(Real *c,Real *a,Real *b);
