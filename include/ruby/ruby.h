@@ -1901,7 +1901,7 @@ enum rb_io_wait_readwrite {RB_IO_WAIT_READABLE, RB_IO_WAIT_WRITABLE};
 
 PRINTF_ARGS(NORETURN(void rb_raise(VALUE, const char*, ...)), 2, 3);
 PRINTF_ARGS(NORETURN(void rb_fatal(const char*, ...)), 1, 2);
-PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
+COLDFUNC PRINTF_ARGS(NORETURN(void rb_bug(const char*, ...)), 1, 2);
 NORETURN(void rb_bug_errno(const char*, int));
 NORETURN(void rb_sys_fail(const char*));
 NORETURN(void rb_sys_fail_str(VALUE));
@@ -1925,7 +1925,7 @@ PRINTF_ARGS(void rb_warning(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warning(const char *, int, const char*, ...), 3, 4);
 PRINTF_ARGS(void rb_sys_warning(const char*, ...), 1, 2);
 /* reports always */
-PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
+COLDFUNC PRINTF_ARGS(void rb_warn(const char*, ...), 1, 2);
 PRINTF_ARGS(void rb_compile_warn(const char *, int, const char*, ...), 3, 4);
 
 #define RUBY_BLOCK_CALL_FUNC_TAKES_BLOCKARG 1
