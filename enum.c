@@ -1323,15 +1323,15 @@ DEFINE_ENUMFUNCS(one)
 }
 
 struct nmin_data {
-  long n;
-  long bufmax;
-  long curlen;
-  VALUE buf;
-  VALUE limit;
-  int (*cmpfunc)(const void *, const void *, void *);
-  int rev; /* max if 1 */
-  int by; /* min_by if 1 */
-  const char *method;
+    long n;
+    long bufmax;
+    long curlen;
+    VALUE buf;
+    VALUE limit;
+    int (*cmpfunc)(const void *, const void *, void *);
+    int rev; /* max if 1 */
+    int by; /* min_by if 1 */
+    const char *method;
 };
 
 static VALUE
