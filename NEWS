@@ -279,6 +279,12 @@ sufficient information, see the ChangeLog file or Redmine
     * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or method.
       [experimental]
 
+[Regexp/String]
+
+    * Update Unicode version from 10.0.0 to 11.0.0 [Feature #14802]
+
+    * Update Emoji version from 5.0 to 11.0.0 [Feature #14802]
+
 [String]
 
   * String#crypt is now deprecated. [Feature #14915]
