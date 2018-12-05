@@ -60,4 +60,10 @@ end
 
 create_makefile('bigdecimal') {|mf|
   mf << "\nall:\n\nextconf.h: $(srcdir)/#{gemspec_name}\n"
+  case RUBY_PLATFORM
+  when /mswin/
+    mf << "\nall:\n\tdir $(TARGET_SO_DIR)"
+  else
+    mf << "\nall:\n\tls $(TARGET_SO_DIR)"
+  end
 }
