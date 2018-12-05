@@ -9351,7 +9351,7 @@ ibf_dump_setup(struct ibf_dump *dump, VALUE dumper_obj)
 }
 
 VALUE
-iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
+rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
 {
     struct ibf_dump *dump;
     struct ibf_header header = {{0}};
@@ -9410,7 +9410,7 @@ ibf_iseq_list(const struct ibf_load *load)
 }
 
 void
-ibf_load_iseq_complete(rb_iseq_t *iseq)
+rb_ibf_load_iseq_complete(rb_iseq_t *iseq)
 {
     struct ibf_load *load = RTYPEDDATA_DATA(iseq->aux.loader.obj);
     rb_iseq_t *prev_src_iseq = load->iseq;
@@ -9425,7 +9425,7 @@ ibf_load_iseq_complete(rb_iseq_t *iseq)
 const rb_iseq_t *
 rb_iseq_complete(const rb_iseq_t *iseq)
 {
-    ibf_load_iseq_complete((rb_iseq_t *)iseq);
+    rb_ibf_load_iseq_complete((rb_iseq_t *)iseq);
     return iseq;
 }
 #endif
@@ -9452,7 +9452,7 @@ ibf_load_iseq(const struct ibf_load *load, const rb_iseq_t *index_iseq)
 	    rb_ary_store(load->iseq_list, iseq_index, (VALUE)iseq);
 
 #if !USE_LAZY_LOAD
-	    ibf_load_iseq_complete(iseq);
+	    rb_ibf_load_iseq_complete(iseq);
 #endif /* !USE_LAZY_LOAD */
 
 	    if (load->iseq) {
@@ -9527,7 +9527,7 @@ static const rb_data_type_t ibf_load_type = {
 };
 
 const rb_iseq_t *
-iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load(VALUE str)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
@@ -9536,14 +9536,14 @@ iseq_ibf_load(VALUE str)
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
 
-    iseq_init_trace(iseq);
+    rb_iseq_init_trace(iseq);
 
     RB_GC_GUARD(loader_obj);
     return iseq;
 }
 
 VALUE
-iseq_ibf_load_extra_data(VALUE str)
+rb_iseq_ibf_load_extra_data(VALUE str)
 {
     struct ibf_load *load;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);

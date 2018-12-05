@@ -156,11 +156,11 @@ iseq_imemo_alloc(void)
     return (rb_iseq_t *)rb_imemo_new(imemo_iseq, 0, 0, 0, 0);
 }
 
-VALUE iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
-void ibf_load_iseq_complete(rb_iseq_t *iseq);
-const rb_iseq_t *iseq_ibf_load(VALUE str);
-VALUE iseq_ibf_load_extra_data(VALUE str);
-void iseq_init_trace(rb_iseq_t *iseq);
+VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
+void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
+const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
+VALUE rb_iseq_ibf_load_extra_data(VALUE str);
+void rb_iseq_init_trace(rb_iseq_t *iseq);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

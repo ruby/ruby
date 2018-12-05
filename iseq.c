@@ -350,7 +350,7 @@ static void validate_get_insn_info(rb_iseq_t *iseq);
 #endif
 
 void
-iseq_init_trace(rb_iseq_t *iseq)
+rb_iseq_init_trace(rb_iseq_t *iseq)
 {
     iseq->aux.trace_events = 0;
     if (ruby_vm_event_enabled_flags & ISEQ_TRACE_EVENTS) {
@@ -377,7 +377,7 @@ finish_iseq_build(rb_iseq_t *iseq)
 	rb_exc_raise(err);
     }
 
-    iseq_init_trace(iseq);
+    rb_iseq_init_trace(iseq);
     return Qtrue;
 }
 
@@ -1000,7 +1000,7 @@ iseqw_check(VALUE iseqw)
     rb_iseq_t *iseq = DATA_PTR(iseqw);
 
     if (!iseq->body) {
-	ibf_load_iseq_complete(iseq);
+	rb_ibf_load_iseq_complete(iseq);
     }
 
     if (!iseq->body->location.label) {
@@ -2652,7 +2652,7 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt;
     rb_scan_args(argc, argv, "01", &opt);
-    return iseq_ibf_dump(iseqw_check(self), opt);
+    return rb_iseq_ibf_dump(iseqw_check(self), opt);
 }
 
 /*
@@ -2671,7 +2671,7 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_load_from_binary(VALUE self, VALUE str)
 {
-    return iseqw_new(iseq_ibf_load(str));
+    return iseqw_new(rb_iseq_ibf_load(str));
 }
 
 /*
@@ -2683,7 +2683,7 @@ iseqw_s_load_from_binary(VALUE self, VALUE str)
 static VALUE
 iseqw_s_load_from_binary_extra_data(VALUE self, VALUE str)
 {
-    return  iseq_ibf_load_extra_data(str);
+    return rb_iseq_ibf_load_extra_data(str);
 }
 
 /*
