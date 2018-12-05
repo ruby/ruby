@@ -1178,17 +1178,10 @@ static VALUE
 class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
 {
     VALUE ary;
-    int recur, prepended = 0;
+    int recur = TRUE, prepended = 0;
     struct method_entry_arg me_arg;
 
-    if (argc == 0) {
-	recur = TRUE;
-    }
-    else {
-	VALUE r;
-	rb_scan_args(argc, argv, "01", &r);
-	recur = RTEST(r);
-    }
+    if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
 
     if (!recur && RCLASS_ORIGIN(mod) != mod) {
 	mod = RCLASS_ORIGIN(mod);
@@ -1417,25 +1410,21 @@ rb_obj_public_methods(int argc, const VALUE *argv, VALUE obj)
 VALUE
 rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
 {
-    VALUE recur, ary, klass, origin;
+    VALUE ary, klass, origin;
     struct method_entry_arg me_arg;
     struct rb_id_table *mtbl;
+    int recur = TRUE;
 
-    if (argc == 0) {
-	recur = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &recur);
-    }
+    if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
     klass = CLASS_OF(obj);
     origin = RCLASS_ORIGIN(klass);
     me_arg.list = st_init_numtable();
-    me_arg.recur = RTEST(recur);
+    me_arg.recur = recur;
     if (klass && FL_TEST(klass, FL_SINGLETON)) {
 	if ((mtbl = RCLASS_M_TBL(origin)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
 	klass = RCLASS_SUPER(klass);
     }
-    if (RTEST(recur)) {
+    if (recur) {
 	while (klass && (FL_TEST(klass, FL_SINGLETON) || RB_TYPE_P(klass, T_ICLASS))) {
 	    if (klass != origin && (mtbl = RCLASS_M_TBL(klass)) != 0) rb_id_table_foreach(mtbl, method_entry_i, &me_arg);
 	    klass = RCLASS_SUPER(klass);

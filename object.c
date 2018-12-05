@@ -2061,11 +2061,11 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0) {
 	super = rb_cObject;
     }
     else {
-	rb_scan_args(argc, argv, "01", &super);
+        super = argv[0];
 	rb_check_inheritable(super);
 	if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
 	    rb_raise(rb_eTypeError, "can't inherit uninitialized class");
