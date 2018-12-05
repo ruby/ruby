@@ -45,6 +45,7 @@ typedef struct rb_mutex_struct {
     rb_thread_t *th;
     struct rb_mutex_struct *next_mutex;
     struct list_head waitq; /* protected by GVL */
+    rb_serial_t fork_gen;
 } rb_mutex_t;
 
 #if defined(HAVE_WORKING_FORK)
@@ -121,8 +122,18 @@ static rb_mutex_t *
 mutex_ptr(VALUE obj)
 {
     rb_mutex_t *mutex;
+    rb_serial_t fork_gen = GET_VM()->fork_gen;
 
     TypedData_Get_Struct(obj, rb_mutex_t, &mutex_data_type, mutex);
+
+    if (mutex->fork_gen != fork_gen) {
+        /* forked children can't reach into parent thread stacks */
+        mutex->fork_gen = fork_gen;
+        list_head_init(&mutex->waitq);
+        mutex->next_mutex = 0;
+        mutex->th = 0;
+    }
+
     return mutex;
 }
 
