@@ -1329,16 +1329,17 @@ struct nmin_data {
     VALUE buf;
     VALUE limit;
     int (*cmpfunc)(const void *, const void *, void *);
-    int rev; /* max if 1 */
-    int by; /* min_by if 1 */
-    const char *method;
+    int rev: 1; /* max if 1 */
+    int by: 1; /* min_by if 1 */
 };
 
 static VALUE
 cmpint_reenter_check(struct nmin_data *data, VALUE val)
 {
     if (RBASIC(data->buf)->klass) {
-	rb_raise(rb_eRuntimeError, "%s reentered", data->method);
+        rb_raise(rb_eRuntimeError, "%s%s reentered",
+                 data->rev ? "max" : "min",
+                 data->by ? "_by" : "");
     }
     return val;
 }
@@ -1503,8 +1504,6 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 		   nmin_cmp;
     data.rev = rev;
     data.by = by;
-    data.method = rev ? (by ? "max_by" : "max")
-                      : (by ? "min_by" : "min");
     if (ary) {
 	long i;
 	for (i = 0; i < RARRAY_LEN(obj); i++) {
