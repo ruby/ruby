@@ -59,5 +59,5 @@ checking_for(checking_message("Windows")) do
 end
 
 create_makefile('bigdecimal') {|mf|
-  mf << "GEMSPEC = #{gemspec_name}\n"
+  mf << "\nall:\n\nextconf.h: $(srcdir)/#{gemspec_name}\n"
 }
