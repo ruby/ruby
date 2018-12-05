@@ -89,6 +89,16 @@ extern "C" {
 #define RB_UNLIKELY(x) (x)
 #endif /* __GNUC__ >= 3 */
 
+/*
+  cold attribute for code layout improvements
+  RUBY_FUNC_ATTRIBUTE not used because MSVC does not like nested func macros
+ */
+#if defined(__clang__) || GCC_VERSION_SINCE(4, 3, 0)
+#define COLDFUNC __attribute__((cold))
+#else
+#define COLDFUNC
+#endif
+
 #ifdef __GNUC__
 #if defined __MINGW_PRINTF_FORMAT
 #define PRINTF_ARGS(decl, string_index, first_to_check) \
