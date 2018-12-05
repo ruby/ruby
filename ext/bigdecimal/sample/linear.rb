@@ -28,8 +28,8 @@ def rd_order(na)
 end
 
 na   = ARGV.size
-zero = BigDecimal.new("0.0")
-one  = BigDecimal.new("1.0")
+zero = BigDecimal("0.0")
+one  = BigDecimal("1.0")
 
 while (n=rd_order(na))>0
   a = []
@@ -37,27 +37,28 @@ while (n=rd_order(na))>0
   b = []
   if na <= 0
      # Read data from console.
-     printf("\nEnter coefficient matrix element A[i,j]\n");
+     printf("\nEnter coefficient matrix element A[i,j]\n")
      for i in 0...n do
        for j in 0...n do
          printf("A[%d,%d]? ",i,j); s = ARGF.gets
-         a  << BigDecimal.new(s);
-         as << BigDecimal.new(s);
+         a  << BigDecimal(s)
+         as << BigDecimal(s)
        end
-       printf("Contatant vector element b[%d] ? ",i); b << BigDecimal.new(ARGF.gets);
+       printf("Contatant vector element b[%d] ? ",i)
+       b << BigDecimal(ARGF.gets)
      end
   else
      # Read data from specified file.
-     printf("Coefficient matrix and constant vector.\n");
+     printf("Coefficient matrix and constant vector.\n")
      for i in 0...n do
        s = ARGF.gets
        printf("%d) %s",i,s)
        s = s.split
        for j in 0...n do
-         a  << BigDecimal.new(s[j]);
-         as << BigDecimal.new(s[j]);
+         a  << BigDecimal(s[j])
+         as << BigDecimal(s[j])
        end
-       b << BigDecimal.new(s[n]);
+       b << BigDecimal(s[n])
      end
   end
   x = lusolve(a,b,ludecomp(a,n,zero,one),zero)
