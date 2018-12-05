@@ -17,6 +17,8 @@ bigdecimal_version =
 
 $defs << %Q[-DRUBY_BIGDECIMAL_VERSION=\\"#{bigdecimal_version}\\"]
 
+alias __have_macro__ have_macro
+
 have_func("labs", "stdlib.h")
 have_func("llabs", "stdlib.h")
 have_func("finite", "math.h")
@@ -29,5 +31,5 @@ have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
 
 create_makefile('bigdecimal') {|mf|
-  mf << "GEMSPEC = #{gemspec_name}\n"
+  mf << "\nall:\n\nextconf.h: $(srcdir)/#{gemspec_name}\n"
 }
