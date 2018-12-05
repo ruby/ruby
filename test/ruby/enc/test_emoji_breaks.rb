@@ -30,7 +30,7 @@ end
 
 class TestEmojiBreaks < Test::Unit::TestCase
   EMOJI_DATA_FILES = %w[emoji-sequences emoji-test emoji-variation-sequences emoji-zwj-sequences]
-  EMOJI_VERSION = '5.0' # hard-coded, should be replaced by
+  EMOJI_VERSION = '11.0' # hard-coded, should be replaced by
                         # RbConfig::CONFIG['UNICODE_EMOJI_VERSION'] or so, see feature #15341
   EMOJI_DATA_PATH = File.expand_path("../../../enc/unicode/data/emoji/#{EMOJI_VERSION}", __dir__)
 
@@ -100,7 +100,7 @@ TestEmojiBreaks.data_files_available? and  class TestEmojiBreaks
   def test_mixed_emoji
     srand 0
     length = all_tests.length
-    step = 503 # use a prime number
+    step =  503 # use a prime number
     all_tests.each do |test1|
       start = rand step
       start.step(by: step, to: length-1) do |t2|
