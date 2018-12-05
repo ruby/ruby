@@ -5930,7 +5930,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
             H_seq[3] = NULL_NODE;
             R_ERR(create_sequence_node(core_alts+0, H_seq));
           }
-          /* end of L* (V+ | LV V* | LVT) T*, result is in core_alts[0] */
 
           /* L+ */
           R_ERR(quantify_property_node(core_alts+1, env, "Grapheme_Cluster_Break=L", '+'));
@@ -5966,12 +5965,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
               R_ERR(create_sequence_node(XP_seq+1, Ex_seq));
             }
             R_ERR(quantify_node(XP_seq+1, 0, REPEAT_INFINITE)); /* TODO: Check about node freeing */
-            /* end of (Extend* ZWJ \p{Extended_Pictographic})* */
 
             XP_seq[2] = NULL_NODE;
             R_ERR(create_sequence_node(core_alts+4, XP_seq));
           }
-          /* end of xpicto-sequence, result is in core_alts[4] */
 
           /* [^Control CR LF] */
           core_alts[5] = node_new_cclass();
@@ -5980,8 +5977,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           if (ONIGENC_MBC_MINLEN(env->enc) > 1) { /* UTF-16/UTF-32 */
             BBuf *inverted_buf = NULL;
 
-            /* Start with a positive buffer and invert at the end,
-             * because otherwise adding single-character ranges works the wrong way. */
+            /* Start with a positive buffer and invert at the end.
+             * Otherwise, adding single-character ranges work the wrong way. */
             R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=Control", 0, env));
             R_ERR(add_code_range(&(cc->mbuf), env, 0x000A, 0x000A)); /* CR */
             R_ERR(add_code_range(&(cc->mbuf), env, 0x000D, 0x000D)); /* LF */
@@ -5993,13 +5990,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
             BITSET_CLEAR_BIT(cc->bs, 0x0a);
             BITSET_CLEAR_BIT(cc->bs, 0x0d);
           }
-          /* end of [^Control CR LF], result in core_alts[5] */
 
           core_alts[6] = NULL_NODE;
           R_ERR(create_alternate_node(seq+1, core_alts));
         }
-        /* end of core := hangul-syllable | ri-sequence | xpicto-sequence | [^Control CR LF],
-         * result is in seq[1] */
 
         /* postcore*; postcore = [Extend ZWJ SpacingMark] */
         R_ERR(create_property_node(seq+2, env, "Grapheme_Cluster_Break=Extend"));
@@ -6011,7 +6005,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         seq[3] = NULL_NODE;
         R_ERR(create_sequence_node(alts+1, seq));
       }
-      /* end of (precore* core postcore*), result is in alts[1] */
 
       /* PerlSyntax: (?s:.), RubySyntax: (?m:.) */
       /* Not in Unicode spec (UAX #29), but added to catch invalid stuff,
@@ -6029,7 +6022,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       alts[3] = NULL_NODE;
       R_ERR(create_alternate_node(&top_alt, alts));
     }
-    /* end of (CRLF | Control | precore* core postcore*) (without CRLF!), result is in top_alt */
   }
   else
 #endif /* USE_UNICODE_PROPERTIES */
