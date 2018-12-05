@@ -2826,6 +2826,8 @@ main(void)
 {
     volatile int *a = NULL;
     stack_t ss;
+    struct sigaction sa;
+
     ss.ss_sp = malloc(SIGSTKSZ);
     if (ss.ss_sp == NULL) {
 	fprintf(stderr, "cannot allocate memory for sigaltstack\n");
@@ -2837,7 +2839,6 @@ main(void)
 	fprintf(stderr, "sigaltstack failed\n");
 	return EXIT_FAILURE;
     }
-    struct sigaction sa;
     memset(&sa, 0, sizeof(struct sigaction));
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = sigsegv;
