@@ -147,9 +147,8 @@ ruby_deprecated_internal_feature(const char *func)
  * call-seq:
  *    warn(msg)  -> nil
  *
- * Writes warning message +msg+ to $stderr, followed by a newline
- * if the message does not end in a newline.  This method is called
- * by Ruby for all emitted warnings.
+ * Writes warning message +msg+ to $stderr. This method is called by
+ * Ruby for all emitted warnings.
  */
 
 static VALUE
