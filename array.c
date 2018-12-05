@@ -475,14 +475,13 @@ void rb_ary_shrink_capa(void *obj)
     long capacity, old_capa;
     VALUE ary = (VALUE)obj;
     /* OK to modify a frozen array by only reducing capacity */
-    if (ARY_OWNS_HEAP_P(ary) && !RARRAY_TRANSIENT_P(ary))
+    if (ARY_OWNS_HEAP_P(ary))
     {
        capacity = ARY_HEAP_LEN(ary);
        old_capa = ARY_HEAP_CAPA(ary);
        if (old_capa > capacity) {
-           SIZED_REALLOC_N(RARRAY(ary)->as.heap.ptr, VALUE, capacity, old_capa);
+           ary_heap_realloc(ary, capacity);
            RARRAY(ary)->as.heap.aux.capa = capacity;
-           ary_verify(ary);
        }
     }
 }
