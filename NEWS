@@ -336,6 +336,10 @@ sufficient information, see the ChangeLog file or Redmine
   Update to the version 1.4.0.  This version includes several compatibility
   issues, see Compatibility issues section below for the detail.
 
+  [Modified methods]
+
+  * BigDecimal() accepts new keywords "exception:" likewise Float().
+
 [Coverage]
 
   A oneshot_lines mode is added.  [Feature #15022]
