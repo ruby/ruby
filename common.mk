@@ -15,8 +15,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 10.0.0
-UNICODE_EMOJI_VERSION = 5.0
+UNICODE_VERSION = 11.0.0
+UNICODE_EMOJI_VERSION = 11.0
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
