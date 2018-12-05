@@ -5843,8 +5843,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   Node *node_array[NODE_ARRAY_SIZE];
 
 #ifdef USE_UNICODE_PROPERTIES
-  if (ONIGENC_IS_UNICODE(env->enc)) {
-    /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
+  if (ONIGENC_IS_UNICODE(env->enc)) {  /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
     /* OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80; */
     /* Node **seq  = node_array;   * seq[5] */
@@ -5854,11 +5853,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       node_array[i] = NULL_NODE;
 
     if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
-    /* main comment: The order of the code is backwards (compared to the
-     *               order the various expressions appear in the grammar)
-     *               in the old-style parts. It is forwards in the new-style
-     *               parts (in blocks ending with create_sequence_node()). */
-
     /* Unicode 11.0.0
      * CRLF     (this is added last because it is common with non-Unicode encodings)
      * | [Control CR LF]
@@ -5972,7 +5966,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
               R_ERR(create_sequence_node(XP_seq+1, Ex_seq));
             }
             R_ERR(quantify_node(XP_seq+1, 0, REPEAT_INFINITE)); /* TODO: Check about node freeing */
-             /* end of (Extend* ZWJ \p{Extended_Pictographic})* */
+            /* end of (Extend* ZWJ \p{Extended_Pictographic})* */
 
             XP_seq[2] = NULL_NODE;
             R_ERR(create_sequence_node(core_alts+4, XP_seq));
@@ -6020,8 +6014,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       /* end of (precore* core postcore*), result is in alts[1] */
 
       /* PerlSyntax: (?s:.), RubySyntax: (?m:.) */
-      /* Not in spec, but added to catch invalid stuff,
-       * because this is spec for String#grapheme_clusters. */
+      /* Not in Unicode spec (UAX #29), but added to catch invalid stuff,
+       * because this is Ruby spec for String#grapheme_clusters. */
       np1 = node_new_anychar();
       if (IS_NULL(np1)) goto err;
 
@@ -6034,7 +6028,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       alts[3] = NULL_NODE;
       R_ERR(create_alternate_node(&top_alt, alts));
-    } /* end of (CRLF | Control | precore* core postcore*) (without CRLF!), result is in top_alt */
+    }
+    /* end of (CRLF | Control | precore* core postcore*) (without CRLF!), result is in top_alt */
   }
   else
 #endif /* USE_UNICODE_PROPERTIES */
@@ -6055,7 +6050,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
     np1 = NULL;
   }
 
-  /* add in CRLF to complete (CRLF | Control | precore* core postcore*) */
+  /* add in CRLF to complete (CRLF | Control | precore* core postcore* | .) */
   /* \x0D\x0A */
   r = ONIGENC_CODE_TO_MBC(env->enc, 0x0D, buf);
   if (r < 0) goto err;
@@ -6070,7 +6065,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   top_alt = tmp;
   np1 = NULL;
 
-  /* (?>\x0D\x0A|...) */
+  /* (?>): For efficiency, because there is nothing that isn't in a grapheme cluster,
+           and there is only one way to split a string into grapheme clusters. */
   tmp = node_new_enclose(ENCLOSE_STOP_BACKTRACK);
   if (IS_NULL(tmp)) goto err;
   NENCLOSE(tmp)->target = top_alt;
