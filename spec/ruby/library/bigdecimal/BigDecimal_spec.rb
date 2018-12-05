@@ -34,11 +34,22 @@ describe "Kernel#BigDecimal" do
     BigDecimal("  \t\n \r-Infinity   \n").infinite?.should == -1
   end
 
-  it "ignores trailing garbage" do
-    BigDecimal("123E45ruby").should == BigDecimal("123E45")
-    BigDecimal("123x45").should == BigDecimal("123")
-    BigDecimal("123.4%E5").should == BigDecimal("123.4")
-    BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
+  ruby_version_is ""..."2.6" do
+    it "ignores trailing garbage" do
+      BigDecimal("123E45ruby").should == BigDecimal("123E45")
+      BigDecimal("123x45").should == BigDecimal("123")
+      BigDecimal("123.4%E5").should == BigDecimal("123.4")
+      BigDecimal("1E2E3E4E5E").should == BigDecimal("100")
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "does not ignores trailing garbage" do
+      lambda { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
+      lambda { BigDecimal("123x45") }.should raise_error(ArgumentError)
+      lambda { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
+      lambda { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
+    end
   end
 
   ruby_version_is ""..."2.4" do
@@ -59,12 +70,24 @@ describe "Kernel#BigDecimal" do
     BigDecimal(".123").should == BigDecimal("0.123")
   end
 
-  it "allows for underscores in all parts" do
-    reference = BigDecimal("12345.67E89")
+  ruby_version_is ""..."2.6" do
+    it "allows for underscores in all parts" do
+      reference = BigDecimal("12345.67E89")
 
-    BigDecimal("12_345.67E89").should == reference
-    BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
-    BigDecimal("12345_.67E_8__9_").should == reference
+      BigDecimal("12_345.67E89").should == reference
+      BigDecimal("1_2_3_4_5_._6____7_E89").should == reference
+      BigDecimal("12345_.67E_8__9_").should == reference
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "process underscores as Float()" do
+      reference = BigDecimal("12345.67E89")
+
+      BigDecimal("12_345.67E89").should == reference
+      lambda { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
+      lambda { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
+    end
   end
 
   it "accepts NaN and [+-]Infinity" do

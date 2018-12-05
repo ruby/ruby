@@ -325,6 +325,11 @@ sufficient information, see the ChangeLog file or Redmine
 
   * Use 1.17.1. It's latest stable version.
 
+[BigDecimal]
+
+  Update to the version 1.4.0.  This version includes several compatibility
+  issues, see Compatibility issues section below for the detail.
+
 [Coverage]
 
   A oneshot_lines mode is added.  [Feature #15022]
@@ -482,6 +487,20 @@ sufficient information, see the ChangeLog file or Redmine
   * sync
   * thwait
   * tracer
+
+[BigDecimal]
+
+  * The following methods are removed.
+
+    * BigDecimal.allocate
+    * BigDecimal.new
+    * BigDecimal.ver
+
+  * Every BigDecimal object is frozen. [Feature #13984]
+
+  * BigDecimal() parses the given string like Float().
+
+  * String#to_d parses the receiver string like String#to_f.
 
 === C API updates
 
