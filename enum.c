@@ -294,7 +294,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
     struct MEMO *memo;
     VALUE if_none;
 
-    rb_scan_args(argc, argv, "01", &if_none);
+    if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     RETURN_ENUMERATOR(obj, argc, argv);
     memo = MEMO_NEW(Qundef, 0, 0);
     rb_block_call(obj, id_each, 0, 0, find_i, (VALUE)memo);
@@ -1699,9 +1699,7 @@ enum_min(int argc, VALUE *argv, VALUE obj)
     VALUE result;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
-
-    if (!NIL_P(num))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(obj, num, 0, 0, 0);
 
     m->min = Qundef;
@@ -1793,9 +1791,7 @@ enum_max(int argc, VALUE *argv, VALUE obj)
     VALUE result;
     VALUE num;
 
-    rb_scan_args(argc, argv, "01", &num);
-
-    if (!NIL_P(num))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(obj, num, 0, 1, 0);
 
     m->max = Qundef;

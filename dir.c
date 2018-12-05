@@ -1080,9 +1080,8 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	FilePathValue(path);
-	path = rb_str_encode_ospath(path);
+    if (rb_check_arity(argc, 0, 1) == 1) {
+        path = rb_str_encode_ospath(rb_get_path(argv[0]));
     }
     else {
 	const char *dist = getenv("HOME");

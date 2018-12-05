@@ -2351,8 +2351,12 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE sep;
 
-    rb_scan_args(argc, argv, "01", &sep);
-    if (NIL_P(sep)) sep = rb_output_fs;
+    if (rb_check_arity(argc, 0, 1) == 0) {
+        sep = rb_output_fs;
+    }
+    else if (NIL_P(sep = argv[0])) {
+        sep = rb_output_fs;
+    }
 
     return rb_ary_join(ary, sep);
 }
@@ -3448,10 +3452,7 @@ rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 	return arg2;
     }
 
-    if (argc != 1) {
-	/* error report */
-	rb_scan_args(argc, argv, "11", NULL, NULL);
-    }
+    rb_check_arity(argc, 1, 2);
     arg1 = argv[0];
 
     if (!FIXNUM_P(arg1)) {
@@ -4735,9 +4736,7 @@ rb_ary_max(int argc, VALUE *argv, VALUE ary)
     VALUE num;
     long i;
 
-    rb_scan_args(argc, argv, "01", &num);
-
-    if (!NIL_P(num))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(ary, num, 0, 1, 1);
 
     if (rb_block_given_p()) {
@@ -4790,9 +4789,7 @@ rb_ary_min(int argc, VALUE *argv, VALUE ary)
     VALUE num;
     long i;
 
-    rb_scan_args(argc, argv, "01", &num);
-
-    if (!NIL_P(num))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(num = argv[0]))
        return rb_nmin_run(ary, num, 0, 0, 1);
 
     if (rb_block_given_p()) {
@@ -5001,7 +4998,7 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 {
     long i, n = 0;
 
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0) {
 	VALUE v;
 
 	if (!rb_block_given_p())
@@ -5013,9 +5010,8 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 	}
     }
     else {
-	VALUE obj;
+        VALUE obj = argv[0];
 
-	rb_scan_args(argc, argv, "1", &obj);
 	if (rb_block_given_p()) {
 	    rb_warn("given block not used");
 	}
@@ -5111,7 +5107,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     int mod = 0, level = -1;
     VALUE result, lv;
 
-    rb_scan_args(argc, argv, "01", &lv);
+    lv = (rb_check_arity(argc, 0, 1) ? argv[0] : Qnil);
     rb_ary_modify_check(ary);
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
@@ -5154,11 +5150,12 @@ static VALUE
 rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
 {
     int mod = 0, level = -1;
-    VALUE result, lv;
+    VALUE result;
 
-    rb_scan_args(argc, argv, "01", &lv);
-    if (!NIL_P(lv)) level = NUM2INT(lv);
-    if (level == 0) return ary_make_shared_copy(ary);
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
+        level = NUM2INT(argv[0]);
+        if (level == 0) return ary_make_shared_copy(ary);
+    }
 
     result = flatten(ary, level, &mod);
     OBJ_INFECT(result, ary);
@@ -5295,7 +5292,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 	}
     }
     len = RARRAY_LEN(ary);
-    if (argc == 0) {
+    if (rb_check_arity(argc, 0, 1) == 0) {
 	if (len < 2)
 	    i = 0;
 	else
@@ -5303,7 +5300,7 @@ rb_ary_sample(int argc, VALUE *argv, VALUE ary)
 
 	return rb_ary_elt(ary, i);
     }
-    rb_scan_args(argc, argv, "1", &nv);
+    nv = argv[0];
     n = NUM2LONG(nv);
     if (n < 0) rb_raise(rb_eArgError, "negative sample number");
     if (n > len) n = len;
@@ -5457,16 +5454,15 @@ static VALUE
 rb_ary_cycle(int argc, VALUE *argv, VALUE ary)
 {
     long n, i;
-    VALUE nv = Qnil;
 
-    rb_scan_args(argc, argv, "01", &nv);
+    rb_check_arity(argc, 0, 1);
 
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_cycle_size);
-    if (NIL_P(nv)) {
+    if (argc == 0 || NIL_P(argv[0])) {
         n = -1;
     }
     else {
-        n = NUM2LONG(nv);
+        n = NUM2LONG(argv[0]);
         if (n <= 0) return Qnil;
     }
 
@@ -5628,13 +5624,13 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE num;
     long r, n, i;
 
     n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
-    rb_scan_args(argc, argv, "01", &num);
-    r = NIL_P(num) ? n : NUM2LONG(num);   /* Permutation size from argument */
+    r = n;
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0]))
+        r = NUM2LONG(argv[0]);            /* Permutation size from argument */
 
     if (r < 0 || n < r) {
 	/* no permutations: yield nothing */
@@ -6306,8 +6302,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     long i, n;
     int block_given;
 
-    if (rb_scan_args(argc, argv, "01", &v) == 0)
-        v = LONG2FIX(0);
+    v = (rb_check_arity(argc, 0, 1) ? argv[0] : LONG2FIX(0));
 
     block_given = rb_block_given_p();
 
