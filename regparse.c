@@ -5827,10 +5827,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 {
   Node* tmp = NULL;
   Node* np1 = NULL;
-  Node* list = NULL;
-  Node* list2 = NULL;
-  Node* alt = NULL;
-  Node* alt2 = NULL;
   Node* top_alt = NULL;
   BBuf *pbuf1 = NULL;
   int r = 0;
@@ -6082,10 +6078,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
  err:
   onig_node_free(np1);
-  onig_node_free(list);
-  onig_node_free(list2);
-  onig_node_free(alt);
-  onig_node_free(alt2);
   bbuf_free(pbuf1);
   for (i=0; i<NODE_ARRAY_SIZE; i++)
     onig_node_free(node_array[i]);
