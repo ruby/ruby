@@ -2869,6 +2869,8 @@ static VALUE usage_analysis_operand_stop(VALUE self);
 static VALUE usage_analysis_register_stop(VALUE self);
 #endif
 
+VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
+
 void
 Init_VM(void)
 {
@@ -3171,6 +3173,8 @@ Init_VM(void)
 
     /* vm_backtrace.c */
     Init_vm_backtrace();
+
+    rb_define_singleton_method(rb_cRubyVM, "resolve_feature_path", rb_resolve_feature_path, 1);
 }
 
 void
