@@ -83,6 +83,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
 #define ISEQ_MARKABLE_ISEQ    IMEMO_FL_USER4
 
+#define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW((iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
+
 struct iseq_compile_data {
     /* GC is needed */
     const VALUE err_info;
@@ -126,8 +128,8 @@ ISEQ_COMPILE_DATA(const rb_iseq_t *iseq)
 static inline void
 ISEQ_COMPILE_DATA_ALLOC(rb_iseq_t *iseq)
 {
-    iseq->flags |= ISEQ_USE_COMPILE_DATA;
     iseq->aux.compile_data = ZALLOC(struct iseq_compile_data);
+    iseq->flags |= ISEQ_USE_COMPILE_DATA;
 }
 
 static inline void
