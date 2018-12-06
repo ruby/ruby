@@ -266,6 +266,13 @@ sufficient information, see the ChangeLog file or Redmine
     * Range#step now returns an instance of Enumerator::ArithmeticSequence
       class rather than one of Enumerator class.
 
+[RubyVM]
+
+  [New methods]
+
+    * RubyVM.resolve_feature_path identifies the file that will be loaded by
+      "require(feature)". [experimental] [Feature #15230]
+
 [RubyVM::AbstractSyntaxTree]
 
   [New methods]
