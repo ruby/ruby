@@ -629,6 +629,7 @@ get_event_id(rb_event_flag_t event)
 	C(thread_begin, THREAD_BEGIN);
 	C(thread_end, THREAD_END);
 	C(fiber_switch, FIBER_SWITCH);
+        C(script_compiled, SCRIPT_COMPILED);
 #undef C
       default:
 	return 0;
@@ -763,6 +764,9 @@ symbol2event_flag(VALUE v)
     C(thread_begin, THREAD_BEGIN);
     C(thread_end, THREAD_END);
     C(fiber_switch, FIBER_SWITCH);
+    C(script_compiled, SCRIPT_COMPILED);
+
+    /* joke */
     C(a_call, A_CALL);
     C(a_return, A_RETURN);
 #undef C
@@ -880,6 +884,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
       case RUBY_EVENT_LINE:
       case RUBY_EVENT_CLASS:
       case RUBY_EVENT_END:
+      case RUBY_EVENT_SCRIPT_COMPILED:
 	rb_raise(rb_eRuntimeError, "not supported by this event");
 	break;
     }
@@ -955,6 +960,57 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
     return trace_arg->data;
+}
+
+VALUE
+rb_tracearg_compiled_eval_script(rb_trace_arg_t *trace_arg)
+{
+    VALUE data = trace_arg->data;
+
+    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
+	/* ok */
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    if (data == Qundef) {
+        rb_bug("rb_tracearg_raised_exception: unreachable");
+    }
+    if (rb_obj_is_iseq(data)) {
+        return Qnil;
+    }
+    else {
+        VM_ASSERT(RB_TYPE_P(data, T_ARRAY));
+        /* [src, iseq] */
+        return RARRAY_AREF(data, 0);
+    }
+}
+
+VALUE
+rb_tracearg_compiled_instruction_sequence(rb_trace_arg_t *trace_arg)
+{
+    VALUE data = trace_arg->data;
+
+    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
+	/* ok */
+    }
+    else {
+	rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+    if (data == Qundef) {
+        rb_bug("rb_tracearg_raised_exception: unreachable");
+    }
+
+    if (rb_obj_is_iseq(data)) {
+        return rb_iseqw_new((const rb_iseq_t *)data);
+    }
+    else {
+        VM_ASSERT(RB_TYPE_P(data, T_ARRAY));
+        VM_ASSERT(rb_obj_is_iseq(RARRAY_AREF(data, 1)));
+
+        /* [src, iseq] */
+        return rb_iseqw_new((const rb_iseq_t *)RARRAY_AREF(data, 1));
+    }
 }
 
 VALUE
@@ -1105,6 +1161,28 @@ static VALUE
 tracepoint_attr_raised_exception(VALUE tpval)
 {
     return rb_tracearg_raised_exception(get_trace_arg());
+}
+
+/*
+ * Compiled source code (String) on *eval methods on the +:script_compiled+ event.
+ * If loaded from a file, it will return nil.
+ */
+static VALUE
+tracepoint_attr_compiled_eval_script(VALUE tpval)
+{
+    return rb_tracearg_compiled_eval_script(get_trace_arg());
+}
+
+/*
+ * Compiled instruction sequence represented by a RubyVM::InstructionSequence instance
+ * on the +:script_compiled+ event.
+ *
+ * Note that this method is MRI specific.
+ */
+static VALUE
+tracepoint_attr_compiled_instruction_sequence(VALUE tpval)
+{
+    return rb_tracearg_compiled_instruction_sequence(get_trace_arg());
 }
 
 static void
@@ -1740,6 +1818,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
+    rb_define_method(rb_cTracePoint, "compiled_eval_script", tracepoint_attr_compiled_eval_script, 0);
+    rb_define_method(rb_cTracePoint, "compiled_instruction_sequence", tracepoint_attr_compiled_instruction_sequence, 0);
 
     rb_define_singleton_method(rb_cTracePoint, "stat", tracepoint_stat_s, 0);
 }
