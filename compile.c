@@ -3862,6 +3862,18 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
         } else {
             return FALSE;
         }
+      case NODE_HASH:
+      case NODE_ARRAY:
+	if (ISEQ_COMPILE_DATA(iseq)->option->frozen_hash_and_array_literal) {
+	    int i;
+	    const NODE * arg;
+	    for (i = 0, arg = node; i < node->nd_alen; i++, arg = arg->nd_next) {
+		if (!static_literal_node_p(arg, iseq)) {
+		    return FALSE;
+		}
+	    }
+	    return TRUE;
+	}
       default:
 	return FALSE;
     }
@@ -3889,6 +3901,39 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         else {
             return rb_fstring(node->nd_lit);
         }
+      case NODE_HASH:
+	{
+	    int i;
+	    const NODE * arg;
+
+	    VALUE hash = rb_hash_new_with_size(node->nd_alen);
+	    iseq_add_mark_object_compile_time(iseq, hash);
+
+	    for (i = 0, arg = node->nd_head; i < node->nd_alen; i++, arg = arg->nd_next) {
+		rb_hash_aset(hash, static_literal_value(arg, iseq),
+			           static_literal_value(arg->nd_next, iseq));
+		arg = arg->nd_next;
+	    }
+
+	    OBJ_FREEZE(hash);
+
+	    return hash;
+	}
+      case NODE_ARRAY:
+	{
+	    int i;
+	    const NODE * arg;
+	    VALUE ary = rb_ary_new_capa(node->nd_alen);
+	    iseq_add_mark_object_compile_time(iseq, ary);
+
+	    for (i = 0, arg = node; i < node->nd_alen; i++, arg = arg->nd_next) {
+		rb_ary_push(ary, static_literal_value(arg, iseq));
+	    }
+
+	    OBJ_FREEZE(ary);
+
+	    return ary;
+	}
       default:
 	return node->nd_lit;
     }
@@ -3954,7 +3999,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
 	    if (opt_p && type != COMPILE_ARRAY_TYPE_ARGS) {
 		if (!popped) {
-		    VALUE ary = rb_ary_tmp_new(i);
+		    VALUE ary = rb_ary_new_capa(i);
 
 		    end_node = node;
 		    node = start_node;
@@ -3981,7 +4026,11 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 		    if (first) {
 			first = 0;
 			if (type == COMPILE_ARRAY_TYPE_ARRAY) {
-			    ADD_INSN1(ret, line, duparray, ary);
+			    if (ISEQ_COMPILE_DATA(iseq)->option->frozen_hash_and_array_literal) {
+				ADD_INSN1(ret, line, putobject, ary);
+			    } else {
+				ADD_INSN1(ret, line, duparray, ary);
+			    }
 			}
 			else { /* COMPILE_ARRAY_TYPE_HASH */
                             VALUE hash;
@@ -3989,7 +4038,14 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
                             hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                             rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
                             iseq_add_mark_object_compile_time(iseq, hash);
-                            ADD_INSN1(ret, line, duphash, hash);
+
+			    OBJ_FREEZE(hash);
+
+			    if (ISEQ_COMPILE_DATA(iseq)->option->frozen_hash_and_array_literal) {
+				ADD_INSN1(ret, line, putobject, hash);
+			    } else {
+				ADD_INSN1(ret, line, duphash, hash);
+			    }
 			}
 		    }
 		    else {
