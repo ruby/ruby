@@ -517,7 +517,7 @@ mutex_sleep(int argc, VALUE *argv, VALUE self)
 {
     VALUE timeout;
 
-    rb_scan_args(argc, argv, "01", &timeout);
+    timeout = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     return rb_mutex_sleep(self, timeout);
 }
 

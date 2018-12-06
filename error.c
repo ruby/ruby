@@ -946,7 +946,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
 {
     VALUE arg;
 
-    rb_scan_args(argc, argv, "01", &arg);
+    arg = (!rb_check_arity(argc, 0, 1) ? Qnil : argv[0]);
     return exc_init(exc, arg);
 }
 

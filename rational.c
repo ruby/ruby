@@ -1385,10 +1385,10 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 {
     VALUE n, b, s;
 
-    if (argc == 0)
+    if (rb_check_arity(argc, 0, 1) == 0)
 	return (*func)(self);
 
-    rb_scan_args(argc, argv, "01", &n);
+    n = argv[0];
 
     if (!k_integer_p(n))
 	rb_raise(rb_eTypeError, "not an integer");
@@ -1711,14 +1711,13 @@ nurat_rationalize(int argc, VALUE *argv, VALUE self)
 {
     VALUE e, a, b, p, q;
 
-    if (argc == 0)
+    if (rb_check_arity(argc, 0, 1) == 0)
 	return self;
 
     if (nurat_negative_p(self))
 	return rb_rational_uminus(nurat_rationalize(argc, argv, rb_rational_uminus(self)));
 
-    rb_scan_args(argc, argv, "01", &e);
-    e = f_abs(e);
+    e = f_abs(argv[0]);
     a = f_sub(self, e);
     b = f_add(self, e);
 
@@ -2283,16 +2282,13 @@ rb_flt_rationalize(VALUE flt)
 static VALUE
 float_rationalize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE e;
     double d = RFLOAT_VALUE(self);
 
     if (d < 0.0)
         return rb_rational_uminus(float_rationalize(argc, argv, DBL2NUM(-d)));
 
-    rb_scan_args(argc, argv, "01", &e);
-
-    if (argc != 0) {
-        return rb_flt_rationalize_with_prec(self, e);
+    if (rb_check_arity(argc, 0, 1)) {
+        return rb_flt_rationalize_with_prec(self, argv[0]);
     }
     else {
         return rb_flt_rationalize(self);
