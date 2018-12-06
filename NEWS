@@ -559,7 +559,7 @@ sufficient information, see the ChangeLog file or Redmine
 * Transient Heap (theap) is supported. [Bug #14858] [Feature #14989]
   theap is managed heap for short-living memory objects. For example,
   making small and short-living Hash object is x2 faster. With rdoc benchmark,
-  we maesured 6-7% performance improvement.
+  we measured 6-7% performance improvement.
 
 === Miscellaneous changes
 
