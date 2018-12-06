@@ -2163,11 +2163,6 @@ rb_array_const_ptr(VALUE a)
     return rb_array_const_ptr_transient(a);
 }
 
-/* fix related to r66200 */
-#ifdef __INTEL_COMPILER
-VALUE *rb_ary_ptr_use_start(VALUE ary);
-#endif
-
 /* internal function. do not use this function */
 static inline VALUE *
 rb_array_ptr_use_start(VALUE a, int allow_transient)

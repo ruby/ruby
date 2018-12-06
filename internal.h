@@ -2223,6 +2223,7 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 
 /* array.c (export) */
 void rb_ary_detransient(VALUE a);
+VALUE *rb_ary_ptr_use_start(VALUE ary);
 
 /* bignum.c (export) */
 VALUE rb_big_mul_normal(VALUE x, VALUE y);
