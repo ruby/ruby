@@ -9361,7 +9361,6 @@ rb_str_ord(VALUE s)
 static VALUE
 rb_str_sum(int argc, VALUE *argv, VALUE str)
 {
-    VALUE vbits;
     int bits = 16;
     char *ptr, *p, *pend;
     long len;
