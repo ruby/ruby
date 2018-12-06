@@ -968,10 +968,10 @@ rb_tracearg_compiled_eval_script(rb_trace_arg_t *trace_arg)
     VALUE data = trace_arg->data;
 
     if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-	/* ok */
+        /* ok */
     }
     else {
-	rb_raise(rb_eRuntimeError, "not supported by this event");
+        rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (data == Qundef) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
@@ -992,10 +992,10 @@ rb_tracearg_compiled_instruction_sequence(rb_trace_arg_t *trace_arg)
     VALUE data = trace_arg->data;
 
     if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-	/* ok */
+        /* ok */
     }
     else {
-	rb_raise(rb_eRuntimeError, "not supported by this event");
+        rb_raise(rb_eRuntimeError, "not supported by this event");
     }
     if (data == Qundef) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
