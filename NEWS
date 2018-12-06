@@ -321,9 +321,17 @@ sufficient information, see the ChangeLog file or Redmine
 
 [TracePoint]
 
+  [New features]
+
+    * "compiled_script" event is supported. [Feature #15287]
+
   [New methods]
 
     * TracePoint#parameters [Feature #14694]
+
+    * TracePoint#compiled_instruction_sequence [Feature #15287]
+
+    * TracePoint#compiled_eval_script [Feature #15287]
 
   [Modified methods]
 
