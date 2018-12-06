@@ -1296,7 +1296,7 @@ VALUE rb_to_array_type(VALUE obj);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_ary_behead(VALUE, long);
-void rb_ary_detransient(VALUE a);
+VALUE *rb_ary_ptr_use_start(VALUE ary);
 #if defined(__GNUC__) && defined(HAVE_VA_ARGS_MACRO)
 #define rb_ary_new_from_args(n, ...) \
     __extension__ ({ \
