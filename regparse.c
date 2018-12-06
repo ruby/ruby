@@ -5718,10 +5718,6 @@ add_property_to_cc(CClassNode* cc, const char* propname, int not, ScanEnv* env)
   return add_ctype_to_cc(cc, ctype, not, 0, env);
 }
 
-extern const OnigCodePoint onigenc_unicode_GCB_ranges_GAZ[];
-extern const OnigCodePoint onigenc_unicode_GCB_ranges_E_Base[];
-extern const OnigCodePoint onigenc_unicode_GCB_ranges_Emoji[];
-
 /*
  * helper methods for node_extended_grapheme_cluster (/\X/)
  */
