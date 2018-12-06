@@ -2728,16 +2728,11 @@ rb_const_list(void *data)
 VALUE
 rb_mod_constants(int argc, const VALUE *argv, VALUE mod)
 {
-    VALUE inherit;
+    bool inherit = TRUE;
 
-    if (argc == 0) {
-	inherit = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &inherit);
-    }
+    if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);
 
-    if (RTEST(inherit)) {
+    if (inherit) {
 	return rb_const_list(rb_mod_const_of(mod, 0));
     }
     else {
@@ -3294,16 +3289,11 @@ cvar_list(void *data)
 VALUE
 rb_mod_class_variables(int argc, const VALUE *argv, VALUE mod)
 {
-    VALUE inherit;
+    bool inherit = TRUE;
     st_table *tbl;
 
-    if (argc == 0) {
-	inherit = Qtrue;
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &inherit);
-    }
-    if (RTEST(inherit)) {
+    if (rb_check_arity(argc, 0, 1)) inherit = RTEST(argv[0]);
+    if (inherit) {
 	tbl = mod_cvar_of(mod, 0);
     }
     else {

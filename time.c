@@ -3764,9 +3764,8 @@ static VALUE
 time_localtime_m(int argc, VALUE *argv, VALUE time)
 {
     VALUE off;
-    rb_scan_args(argc, argv, "01", &off);
 
-    if (!NIL_P(off)) {
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(off = argv[0])) {
         return time_zonelocal(time, off);
     }
 
@@ -3881,9 +3880,8 @@ static VALUE
 time_getlocaltime(int argc, VALUE *argv, VALUE time)
 {
     VALUE off;
-    rb_scan_args(argc, argv, "01", &off);
 
-    if (!NIL_P(off)) {
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(off = argv[0])) {
         VALUE zone = off;
         if (maybe_tzobj_p(zone)) {
             VALUE t = time_dup(time);
@@ -4136,9 +4134,7 @@ time_round(int argc, VALUE *argv, VALUE time)
     long nd;
     struct time_object *tobj;
 
-    rb_scan_args(argc, argv, "01", &ndigits);
-
-    if (NIL_P(ndigits))
+    if (!rb_check_arity(argc, 0, 1) || NIL_P(ndigits = argv[0]))
         ndigits = INT2FIX(0);
     else
         ndigits = rb_to_int(ndigits);

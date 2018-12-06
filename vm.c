@@ -422,7 +422,8 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     VALUE arg = Qnil;
     VALUE hash = Qnil, key = Qnil;
 
-    if (rb_scan_args(argc, argv, "01", &arg) == 1) {
+    if (rb_check_arity(argc, 0, 1) == 1) {
+        arg = argv[0];
 	if (SYMBOL_P(arg))
 	    key = arg;
 	else if (RB_TYPE_P(arg, T_HASH))

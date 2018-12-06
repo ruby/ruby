@@ -3183,8 +3183,7 @@ rb_iseqw_local_variables(VALUE iseqval)
 static VALUE
 iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 {
-    VALUE opt;
-    rb_scan_args(argc, argv, "01", &opt);
+    VALUE opt = !rb_check_arity(argc, 0, 1) ? Qnil : argv[0];
     return rb_iseq_ibf_dump(iseqw_check(self), opt);
 }
 

@@ -5724,16 +5724,9 @@ rb_str_include(VALUE str, VALUE arg)
 static VALUE
 rb_str_to_i(int argc, VALUE *argv, VALUE str)
 {
-    int base;
+    int base = 10;
 
-    if (argc == 0) base = 10;
-    else {
-	VALUE b;
-
-	rb_scan_args(argc, argv, "01", &b);
-	base = NUM2INT(b);
-    }
-    if (base < 0) {
+    if (rb_check_arity(argc, 0, 1) && (base = NUM2INT(argv[0])) < 0) {
 	rb_raise(rb_eArgError, "invalid radix %d", base);
     }
     return rb_str_to_inum(str, base, FALSE);
@@ -9369,20 +9362,14 @@ static VALUE
 rb_str_sum(int argc, VALUE *argv, VALUE str)
 {
     VALUE vbits;
-    int bits;
+    int bits = 16;
     char *ptr, *p, *pend;
     long len;
     VALUE sum = INT2FIX(0);
     unsigned long sum0 = 0;
 
-    if (argc == 0) {
-	bits = 16;
-    }
-    else {
-	rb_scan_args(argc, argv, "01", &vbits);
-	bits = NUM2INT(vbits);
-        if (bits < 0)
-            bits = 0;
+    if (rb_check_arity(argc, 0, 1) && (bits = NUM2INT(argv[0])) < 0) {
+        bits = 0;
     }
     ptr = p = RSTRING_PTR(str);
     len = RSTRING_LEN(str);
@@ -10397,7 +10384,7 @@ unicode_normalize_common(int argc, VALUE *argv, VALUE str, ID id)
 	UnicodeNormalizeRequired = 1;
     }
     argv2[0] = str;
-    rb_scan_args(argc, argv, "01", &argv2[1]);
+    if (rb_check_arity(argc, 0, 1)) argv2[1] = argv[0];
     return rb_funcallv(mUnicodeNormalize, id, argc+1, argv2);
 }
 

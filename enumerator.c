@@ -604,12 +604,9 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
 {
     VALUE memo;
 
-    rb_scan_args(argc, argv, "01", &memo);
+    rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
-    if (NIL_P(memo))
-	memo = INT2FIX(0);
-    else
-	memo = rb_to_int(memo);
+    memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)MEMO_NEW(memo, 0, 0));
 }
 
