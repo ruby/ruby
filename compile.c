@@ -3984,12 +3984,12 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 			    ADD_INSN1(ret, line, duparray, ary);
 			}
 			else { /* COMPILE_ARRAY_TYPE_HASH */
-			    VALUE hash;
+                            VALUE hash;
 
-			    hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
-			    rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
-			    iseq_add_mark_object_compile_time(iseq, hash);
-			    ADD_INSN1(ret, line, duphash, hash);
+                            hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                            rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+                            iseq_add_mark_object_compile_time(iseq, hash);
+                            ADD_INSN1(ret, line, duphash, hash);
 			}
 		    }
 		    else {
