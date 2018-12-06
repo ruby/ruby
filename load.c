@@ -8,6 +8,7 @@
 #include "dln.h"
 #include "eval_intern.h"
 #include "probes.h"
+#include "iseq.h"
 
 static VALUE ruby_dln_librefs;
 
@@ -566,7 +567,6 @@ rb_provide(const char *feature)
 }
 
 NORETURN(static void load_failed(VALUE));
-const rb_iseq_t *rb_iseq_load_iseq(VALUE fname);
 
 static int
 rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
@@ -608,6 +608,8 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	    rb_ast_dispose(ast);
 	}
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_SCRIPT_COMPILED,
+                        ec->cfp->self, 0, 0, 0, (VALUE)iseq);
 	rb_iseq_eval(iseq);
     }
     EC_POP_TAG();
