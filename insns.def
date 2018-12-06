@@ -454,6 +454,16 @@ duparray
     val = rb_ary_resurrect(ary);
 }
 
+/* dup hash */
+DEFINE_INSN
+duphash
+(VALUE hash)
+()
+(VALUE val)
+{
+    val = rb_hash_dup(hash);
+}
+
 /* if TOS is an array expand, expand it to num objects.
      if the number of the array is less than num, push nils to fill.
      if it is greater than num, exceeding elements are dropped.
@@ -512,19 +522,6 @@ newhash
     if (num) {
         rb_hash_bulk_insert(num, STACK_ADDR_FROM_TOP(num), val);
     }
-}
-
-/* make new Hash object from (frozen) Array object */
-DEFINE_INSN
-newhashfromarray
-(rb_num_t num, VALUE ary)
-()
-(VALUE hash)
-// attr bool leaf = false; /* rb_hash_bulk_insert() can call methods. */
-{
-    VM_ASSERT(num * 2 == (rb_num_t)RARRAY_LEN(ary));
-    hash = rb_hash_new_with_size(num);
-    rb_hash_bulk_insert(num * 2, RARRAY_CONST_PTR_TRANSIENT(ary), hash);
 }
 
 /* put new Range object.(Range.new(low, high, flag)) */
