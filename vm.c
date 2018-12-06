@@ -1714,7 +1714,7 @@ hook_before_rewind(rb_execution_context_t *ec, const rb_control_frame_t *cfp,
     }
     else {
         const rb_iseq_t *iseq = cfp->iseq;
-        rb_hook_list_t *local_hooks = iseq->local_hooks;
+        rb_hook_list_t *local_hooks = iseq->aux.exec.local_hooks;
 
         switch (VM_FRAME_TYPE(ec->cfp)) {
           case VM_FRAME_MAGIC_METHOD:

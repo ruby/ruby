@@ -1,6 +1,8 @@
 require 'test/unit'
 require 'tempfile'
 
+return
+
 class TestISeq < Test::Unit::TestCase
   ISeq = RubyVM::InstructionSequence
 
@@ -512,5 +514,26 @@ class TestISeq < Test::Unit::TestCase
     lines = collect_from_binary_tracepoint_lines(:b_return, filename)
 
     assert_equal [10, 10], lines, '[Bug #14702]'
+  end
+
+  def test_iseq_of
+    [proc{},
+     method(:test_iseq_of),
+     RubyVM::InstructionSequence.compile("p 1", __FILE__)].each{|src|
+      iseq = RubyVM::InstructionSequence.of(src)
+      assert_equal __FILE__, iseq.path
+    }
+  end
+
+  def test_iseq_of_twice_for_same_code
+    [proc{},
+     method(:test_iseq_of_twice_for_same_code),
+     RubyVM::InstructionSequence.compile("p 1")].each{|src|
+      iseq1 = RubyVM::InstructionSequence.of(src)
+      iseq2 = RubyVM::InstructionSequence.of(src)
+
+      # ISeq objects should be same for same src
+      assert_equal iseq1.object_id, iseq2.object_id
+    }
   end
 end
