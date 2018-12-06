@@ -188,7 +188,7 @@ class TestInteger < Test::Unit::TestCase
 
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      def method_missing(*);"";end
+      class Integer;def method_missing(*);"";end;end
       assert_equal(0, Integer("0", 2))
     end;
   end

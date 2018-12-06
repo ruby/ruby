@@ -605,8 +605,14 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     rb_clear_method_cache_by_class(klass);
 
     /* check mid */
-    if (klass == rb_cObject && mid == idInitialize) {
-	rb_warn("redefining Object#initialize may cause infinite loop");
+    if (klass == rb_cObject) {
+        switch (mid) {
+          case idInitialize:
+          case idRespond_to_missing:
+          case idMethodMissing:
+          case idRespond_to:
+            rb_warn("redefining Object#%s may cause infinite loop", rb_id2name(mid));
+        }
     }
     /* check mid */
     if (mid == object_id || mid == id__send__) {
