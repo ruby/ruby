@@ -5765,41 +5765,20 @@ quantify_property_node(Node **np, ScanEnv* env, const char* propname, char repet
   return quantify_node(np, lower, upper);
 }
 
+#define LIST 0
+#define ALT  1
+
 /* IMPORTANT: Make sure node_array ends with NULL_NODE */
 static int
-create_sequence_node(Node **np, Node **node_array)
+create_node_from_array(int kind, Node **np, Node **node_array)
 {
   Node* tmp = NULL_NODE;
   int i = 0;
 
   while (node_array[i] != NULL_NODE)  i++;
   while (--i >= 0) {
-    *np = node_new_list(node_array[i], tmp);
-    if (IS_NULL(*np)) {
-      while (i >= 0) {
-        onig_node_free(node_array[i]);
-        node_array[i--] = NULL_NODE;
-      }
-      onig_node_free(tmp);
-      return ONIGERR_MEMORY;
-    }
-    else
-      node_array[i] = NULL_NODE;
-    tmp = *np;
-  }
-  return 0;
-}
-
-/* IMPORTANT: Make sure node_array ends with NULL_NODE */
-static int
-create_alternate_node(Node **np, Node **node_array)
-{
-  Node* tmp = NULL_NODE;
-  int i = 0;
-
-  while (node_array[i] != NULL_NODE)  i++;
-  while (--i >= 0) {
-    *np = onig_node_new_alt(node_array[i], tmp);
+    *np = kind==LIST ? node_new_list(node_array[i], tmp)
+                     : onig_node_new_alt(node_array[i], tmp);
     if (IS_NULL(*np)) {
       while (i >= 0) {
         onig_node_free(node_array[i]);
@@ -5869,10 +5848,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       /* precore* core postcore* */
       {
-        Node *seq[4];
+        Node *list[4];
 
         /* precore*; precore := Prepend */
-        R_ERR(quantify_property_node(seq+0, env, "Grapheme_Cluster_Break=Prepend", '*'));
+        R_ERR(quantify_property_node(list+0, env, "Grapheme_Cluster_Break=Prepend", '*'));
 
         /* core := hangul-syllable
          *       | ri-sequence
@@ -5890,9 +5869,9 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
           /* L* (V+ | LV V* | LVT) T* */
           {
-            Node *H_seq[4];
+            Node *H_list[4];
 
-            R_ERR(quantify_property_node(H_seq+0, env, "Grapheme_Cluster_Break=L", '*'));
+            R_ERR(quantify_property_node(H_list+0, env, "Grapheme_Cluster_Break=L", '*'));
 
             /* V+ | LV V* | LVT */
             {
@@ -5902,25 +5881,25 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
               /* LV V* */
               {
-                Node *H_seq2[3];
+                Node *H_list2[3];
 
-                R_ERR(create_property_node(H_seq2+0, env, "Grapheme_Cluster_Break=LV"));
-                R_ERR(quantify_property_node(H_seq2+1, env, "Grapheme_Cluster_Break=V", '*'));
+                R_ERR(create_property_node(H_list2+0, env, "Grapheme_Cluster_Break=LV"));
+                R_ERR(quantify_property_node(H_list2+1, env, "Grapheme_Cluster_Break=V", '*'));
 
-                H_seq2[2] = NULL_NODE;
-                R_ERR(create_sequence_node(H_alt2+1, H_seq2));
+                H_list2[2] = NULL_NODE;
+                R_ERR(create_node_from_array(LIST, H_alt2+1, H_list2));
               }
 
               R_ERR(create_property_node(H_alt2+2, env, "Grapheme_Cluster_Break=LVT"));
 
               H_alt2[3] = NULL_NODE;
-              R_ERR(create_alternate_node(H_seq+1, H_alt2));
+              R_ERR(create_node_from_array(ALT, H_list+1, H_alt2));
             }
 
-            R_ERR(quantify_property_node(H_seq+2, env, "Grapheme_Cluster_Break=T", '*'));
+            R_ERR(quantify_property_node(H_list+2, env, "Grapheme_Cluster_Break=T", '*'));
 
-            H_seq[3] = NULL_NODE;
-            R_ERR(create_sequence_node(core_alts+0, H_seq));
+            H_list[3] = NULL_NODE;
+            R_ERR(create_node_from_array(LIST, core_alts+0, H_list));
           }
 
           /* L+ */
@@ -5935,31 +5914,31 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
           /* xpicto-sequence := \p{Extended_Pictographic} (Extend* ZWJ \p{Extended_Pictographic})* */
           {
-            Node *XP_seq[3];
+            Node *XP_list[3];
 
-            R_ERR(create_property_node(XP_seq+0, env, "Extended_Pictographic"));
+            R_ERR(create_property_node(XP_list+0, env, "Extended_Pictographic"));
 
             /* (Extend* ZWJ \p{Extended_Pictographic})* */
             {
-              Node *Ex_seq[4];
+              Node *Ex_list[4];
 
-              R_ERR(quantify_property_node(Ex_seq+0, env, "Grapheme_Cluster_Break=Extend", '*'));
+              R_ERR(quantify_property_node(Ex_list+0, env, "Grapheme_Cluster_Break=Extend", '*'));
 
               /* ZWJ (ZERO WIDTH JOINER) */
               r = ONIGENC_CODE_TO_MBC(env->enc, 0x200D, buf);
               if (r < 0) goto err;
-              Ex_seq[1] = node_new_str_raw(buf, buf + r);
-              if (IS_NULL(Ex_seq[1])) goto err;
+              Ex_list[1] = node_new_str_raw(buf, buf + r);
+              if (IS_NULL(Ex_list[1])) goto err;
 
-              R_ERR(create_property_node(Ex_seq+2, env, "Extended_Pictographic"));
+              R_ERR(create_property_node(Ex_list+2, env, "Extended_Pictographic"));
 
-              Ex_seq[3] = NULL_NODE;
-              R_ERR(create_sequence_node(XP_seq+1, Ex_seq));
+              Ex_list[3] = NULL_NODE;
+              R_ERR(create_node_from_array(LIST, XP_list+1, Ex_list));
             }
-            R_ERR(quantify_node(XP_seq+1, 0, REPEAT_INFINITE)); /* TODO: Check about node freeing */
+            R_ERR(quantify_node(XP_list+1, 0, REPEAT_INFINITE)); /* TODO: Check about node freeing */
 
-            XP_seq[2] = NULL_NODE;
-            R_ERR(create_sequence_node(core_alts+4, XP_seq));
+            XP_list[2] = NULL_NODE;
+            R_ERR(create_node_from_array(LIST, core_alts+4, XP_list));
           }
 
           /* [^Control CR LF] */
@@ -5984,18 +5963,18 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           }
 
           core_alts[6] = NULL_NODE;
-          R_ERR(create_alternate_node(seq+1, core_alts));
+          R_ERR(create_node_from_array(ALT, list+1, core_alts));
         }
 
         /* postcore*; postcore = [Extend ZWJ SpacingMark] */
-        R_ERR(create_property_node(seq+2, env, "Grapheme_Cluster_Break=Extend"));
-        cc = NCCLASS(seq[2]);
+        R_ERR(create_property_node(list+2, env, "Grapheme_Cluster_Break=Extend"));
+        cc = NCCLASS(list[2]);
         R_ERR(add_property_to_cc(cc, "Grapheme_Cluster_Break=SpacingMark", 0, env));
         R_ERR(add_code_range(&(cc->mbuf), env, 0x200D, 0x200D));
-        R_ERR(quantify_node(seq+2, 0, REPEAT_INFINITE));
+        R_ERR(quantify_node(list+2, 0, REPEAT_INFINITE));
 
-        seq[3] = NULL_NODE;
-        R_ERR(create_sequence_node(alts+1, seq));
+        list[3] = NULL_NODE;
+        R_ERR(create_node_from_array(LIST, alts+1, list));
       }
 
       /* PerlSyntax: (?s:.), RubySyntax: (?m:.) */
@@ -6012,7 +5991,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       alts[2] = tmp;
 
       alts[3] = NULL_NODE;
-      R_ERR(create_alternate_node(&top_alt, alts));
+      R_ERR(create_node_from_array(ALT, &top_alt, alts));
     }
   }
   else
