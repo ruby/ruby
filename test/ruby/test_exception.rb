@@ -1344,6 +1344,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   def test_super_in_method_missing
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
+      $VERBOSE = nil
       class Object
         def method_missing(name, *args, &block)
           super
