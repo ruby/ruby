@@ -2084,4 +2084,35 @@ class TestSetTraceFunc < Test::Unit::TestCase
     end
     assert_equal 'target_line is specified, but line event is not specified', e.message
   end
+
+  def test_script_compiled
+    events = []
+    tp = TracePoint.new(:script_compiled){|tp|
+      next unless target_thread?
+      events << [tp.compiled_instruction_sequence.path,
+                 tp.compiled_eval_script]
+    }
+
+    eval_script = 'a = 1'
+    tp.enable{
+      eval(eval_script, nil, __FILE__+"/eval")
+      nil.instance_eval(eval_script, __FILE__+"/instance_eval")
+      Object.class_eval(eval_script, __FILE__+"/class_eval")
+    }
+    assert_equal [[__FILE__+"/eval", eval_script],
+                  [__FILE__+"/instance_eval", eval_script],
+                  [__FILE__+"/class_eval", eval_script],
+                 ], events
+    events.clear
+
+    # TODO: test for requires
+    return
+
+    tp.enable{
+      require ''
+      require_relative ''
+      load ''
+    }
+    assert_equal [], events
+  end
 end
