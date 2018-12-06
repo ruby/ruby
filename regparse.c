@@ -5795,7 +5795,29 @@ create_node_from_array(int kind, Node **np, Node **node_array)
 }
 
 #define R_ERR(call) r=(call);if(r!=0)goto err
-#define NODE_ARRAY_SIZE 9
+
+/* Memory layout for common node array:
+ * The main purpose is to be able to easily free all leftover nodes
+ * after an error. As a side effect, we share some memory.
+ *
+ * The layout is as shown below (each line corresponds to one call of
+ * create_node_from_array()). Because create_node_from_array sets all
+ * nodes of the source to NULL_NODE, we can overlap the target array
+ * as long as we do not override the actual target location.
+ *
+ * Target       Array name          Index
+ *
+ *              node_array          0 1 2 3 4 5 6 7 8 9 A B C D E
+ * top_alts     alts[4]             0 1 2 3*
+ * alts+1       list[4]                 0 1 2 3*
+ * list+1       core_alts[7]                0 1 2 3 4 5 6*
+ * core_alts+0  H_list[4]                     0 1 2 3*
+ * H_list+1     H_alt2[4]                         0 1 2 3*
+ * h_alt2+1     H_list2[3]                            0 1 2*
+ * core_alts+4  XP_list[4]                            0 1 2 3*
+ * XP_list+1    Ex_list[4]                                0 1 2 3*
+ */
+#define NODE_COMMON_SIZE 15
 
 static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
@@ -5811,17 +5833,14 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
   OnigOptionType option;
   /* node_array is function-global so that we can free all nodes
    * in case of error. Unused slots are set to NULL_NODE at all times. */
-  Node *node_array[NODE_ARRAY_SIZE];
+  Node *node_common[NODE_COMMON_SIZE];
 
 #ifdef USE_UNICODE_PROPERTIES
   if (ONIGENC_IS_UNICODE(env->enc)) {  /* UTF-8, UTF-16BE/LE, UTF-32BE/LE */
     CClassNode* cc;
-    /* OnigCodePoint sb_out = (ONIGENC_MBC_MINLEN(env->enc) > 1) ? 0x00 : 0x80; */
-    /* Node **seq  = node_array;   * seq[5] */
-    /* Node **alts = node_array+5; * alts[4] */
 
-    for (i=0; i<NODE_ARRAY_SIZE; i++)
-      node_array[i] = NULL_NODE;
+    for (i=0; i<NODE_COMMON_SIZE; i++)
+      node_common[i] = NULL_NODE;
 
     if (propname2ctype(env, "Grapheme_Cluster_Break=Extend") < 0) goto err;
     /* Unicode 11.0.0
@@ -5830,7 +5849,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
      * | precore* core postcore*
      * | .      (to catch invalid stuff, because this seems to be spec for String#grapheme_clusters) */
     {
-      Node *alts[4];
+      Node **alts = node_common+0; /* size: 4 */
 
       /* [Control CR LF]    (CR and LF are not in the spec, but this is a conformed fix) */
       alts[0] = node_new_cclass();
@@ -5848,7 +5867,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
       /* precore* core postcore* */
       {
-        Node *list[4];
+        Node **list = alts + 2; /* size: 4 */
 
         /* precore*; precore := Prepend */
         R_ERR(quantify_property_node(list+0, env, "Grapheme_Cluster_Break=Prepend", '*'));
@@ -5858,7 +5877,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
          *       | xpicto-sequence
          *       | [^Control CR LF] */
         {
-          Node *core_alts[7];
+          Node **core_alts = list + 2; /* size: 7 */
 
           /* hangul-syllable :=
            *     L* (V+ | LV V* | LVT) T*
@@ -5869,43 +5888,32 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
           /* L* (V+ | LV V* | LVT) T* */
           {
-            Node *H_list[4];
-
+            Node **H_list = core_alts + 1; /* size: 4 */
             R_ERR(quantify_property_node(H_list+0, env, "Grapheme_Cluster_Break=L", '*'));
 
             /* V+ | LV V* | LVT */
             {
-              Node *H_alt2[4];
-
+              Node **H_alt2 = H_list + 2; /* size: 4 */
               R_ERR(quantify_property_node(H_alt2+0, env, "Grapheme_Cluster_Break=V", '+'));
 
               /* LV V* */
               {
-                Node *H_list2[3];
+                Node **H_list2 = H_alt2 + 2; /* size: 3 */
 
                 R_ERR(create_property_node(H_list2+0, env, "Grapheme_Cluster_Break=LV"));
                 R_ERR(quantify_property_node(H_list2+1, env, "Grapheme_Cluster_Break=V", '*'));
-
-                H_list2[2] = NULL_NODE;
                 R_ERR(create_node_from_array(LIST, H_alt2+1, H_list2));
               }
 
               R_ERR(create_property_node(H_alt2+2, env, "Grapheme_Cluster_Break=LVT"));
-
-              H_alt2[3] = NULL_NODE;
               R_ERR(create_node_from_array(ALT, H_list+1, H_alt2));
             }
 
             R_ERR(quantify_property_node(H_list+2, env, "Grapheme_Cluster_Break=T", '*'));
-
-            H_list[3] = NULL_NODE;
             R_ERR(create_node_from_array(LIST, core_alts+0, H_list));
           }
 
-          /* L+ */
           R_ERR(quantify_property_node(core_alts+1, env, "Grapheme_Cluster_Break=L", '+'));
-
-          /* T+ */
           R_ERR(quantify_property_node(core_alts+2, env, "Grapheme_Cluster_Break=T", '+'));
           /* end of hangul-syllable */
 
@@ -5914,14 +5922,13 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
 
           /* xpicto-sequence := \p{Extended_Pictographic} (Extend* ZWJ \p{Extended_Pictographic})* */
           {
-            Node *XP_list[3];
-
+            Node **XP_list = core_alts + 5; /* size: 3 */
             R_ERR(create_property_node(XP_list+0, env, "Extended_Pictographic"));
 
             /* (Extend* ZWJ \p{Extended_Pictographic})* */
             {
-              Node *Ex_list[4];
-
+              Node **Ex_list = XP_list + 2; /* size: 4 */
+              /* assert(Ex_list+4 <= node_common+NODE_COMMON_SIZE) */
               R_ERR(quantify_property_node(Ex_list+0, env, "Grapheme_Cluster_Break=Extend", '*'));
 
               /* ZWJ (ZERO WIDTH JOINER) */
@@ -5931,13 +5938,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
               if (IS_NULL(Ex_list[1])) goto err;
 
               R_ERR(create_property_node(Ex_list+2, env, "Extended_Pictographic"));
-
-              Ex_list[3] = NULL_NODE;
               R_ERR(create_node_from_array(LIST, XP_list+1, Ex_list));
             }
             R_ERR(quantify_node(XP_list+1, 0, REPEAT_INFINITE)); /* TODO: Check about node freeing */
 
-            XP_list[2] = NULL_NODE;
             R_ERR(create_node_from_array(LIST, core_alts+4, XP_list));
           }
 
@@ -5962,7 +5966,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
             BITSET_CLEAR_BIT(cc->bs, 0x0d);
           }
 
-          core_alts[6] = NULL_NODE;
           R_ERR(create_node_from_array(ALT, list+1, core_alts));
         }
 
@@ -5973,7 +5976,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
         R_ERR(add_code_range(&(cc->mbuf), env, 0x200D, 0x200D));
         R_ERR(quantify_node(list+2, 0, REPEAT_INFINITE));
 
-        list[3] = NULL_NODE;
         R_ERR(create_node_from_array(LIST, alts+1, list));
       }
 
@@ -5990,7 +5992,6 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       NENCLOSE(tmp)->target = np1;
       alts[2] = tmp;
 
-      alts[3] = NULL_NODE;
       R_ERR(create_node_from_array(ALT, &top_alt, alts));
     }
   }
@@ -6054,8 +6055,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
  err:
   onig_node_free(np1);
   bbuf_free(pbuf1);
-  for (i=0; i<NODE_ARRAY_SIZE; i++)
-    onig_node_free(node_array[i]);
+  for (i=0; i<NODE_COMMON_SIZE; i++)
+    onig_node_free(node_common[i]);
   return (r == 0) ? ONIGERR_MEMORY : r;
 }
 #undef R_ERR
