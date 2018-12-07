@@ -1081,6 +1081,23 @@ if defined? Zlib
         assert_nothing_raised { w.close }
       }
     end
+
+    def test_zlib_writer_buffered_write
+      bug15356 = '[ruby-core:90346] [Bug #15356]'.freeze
+      fixes = 'r61631 (commit a55abcc0ca6f628fc05304f81e5a044d65ab4a68)'.freeze
+      ary = []
+      def ary.write(*args)
+        self.concat(args)
+      end
+      gz = Zlib::GzipWriter.new(ary)
+      gz.write(bug15356)
+      gz.write("\n")
+      gz.write(fixes)
+      gz.close
+      assert_not_predicate ary, :empty?
+      exp = [ bug15356, fixes ]
+      assert_equal exp, Zlib.gunzip(ary.join('')).split("\n")
+    end
   end
 
   class TestZlib < Test::Unit::TestCase
