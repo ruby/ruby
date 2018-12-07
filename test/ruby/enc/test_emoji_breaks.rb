@@ -30,8 +30,7 @@ end
 
 class TestEmojiBreaks < Test::Unit::TestCase
   EMOJI_DATA_FILES = %w[emoji-sequences emoji-test emoji-variation-sequences emoji-zwj-sequences]
-  EMOJI_VERSION = '11.0' # hard-coded, should be replaced by
-                        # RbConfig::CONFIG['UNICODE_EMOJI_VERSION'] or so, see feature #15341
+  EMOJI_VERSION = RbConfig::CONFIG['UNICODE_EMOJI_VERSION']
   EMOJI_DATA_PATH = File.expand_path("../../../enc/unicode/data/emoji/#{EMOJI_VERSION}", __dir__)
 
   def self.expand_filename(basename)
