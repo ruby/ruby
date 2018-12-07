@@ -456,8 +456,11 @@ init_header_filename(void)
     }
 
     pch_file = get_uniq_filename(0, MJIT_TMP_PREFIX "h", ".h.gch");
-    if (pch_file == NULL)
+    if (pch_file == NULL) {
+        xfree(header_file);
+        header_file = NULL;
         return FALSE;
+    }
 #else
     {
         static const char pch_name[] = MJIT_PRECOMPILED_HEADER_NAME;
