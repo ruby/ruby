@@ -5937,7 +5937,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           /* (Extend* ZWJ \p{Extended_Pictographic})* */
           {
             Node **Ex_list = XP_list + 2; /* size: 4 */
-            if (!(Ex_list+4 == node_common+NODE_COMMON_SIZE)) exit(1);
+            /* assert(Ex_list+4 == node_common+NODE_COMMON_SIZE); */
             R_ERR(quantify_property_node(Ex_list+0, env, "Grapheme_Cluster_Break=Extend", '*'));
 
             /* ZWJ (ZERO WIDTH JOINER) */
