@@ -315,6 +315,9 @@ static const struct st_features features[] = {
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
+const st_hash_t st_reserved_hash_val = RESERVED_HASH_VAL;
+const st_hash_t st_reserved_hash_substitution_val = RESERVED_HASH_SUBSTITUTION_VAL;
+
 /* Return hash value of KEY for table TAB.  */
 static inline st_hash_t
 do_hash(st_data_t key, st_table *tab)

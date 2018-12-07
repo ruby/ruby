@@ -1712,6 +1712,15 @@ class TestHash < Test::Unit::TestCase
     assert_equal(0, 1_000_000.times.count{a=Object.new.hash; b=Object.new.hash; 0 + a + b != 0 + b + a}, bug14218)
   end
 
+  def test_reserved_hash_val
+    s = Struct.new(:hash)
+    h = {}
+    keys = [*0..8]
+    keys.each {|i| h[s.new(i)]=true}
+    msg = proc {h.inspect}
+    assert_equal(keys, h.keys.map(&:hash), msg)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)
