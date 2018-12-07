@@ -340,13 +340,13 @@ clear_entry(li_table_entry* entry)
 {
     SET_KEY(entry, Qundef);
     SET_RECORD(entry, Qundef);
-    SET_HASH(entry, 0);
+    SET_HASH(entry, RESERVED_HASH_VAL);
 }
 
 static inline int
 empty_entry(li_table_entry *entry)
 {
-    return entry->hash == 0;
+    return entry->hash == RESERVED_HASH_VAL;
 }
 
 #define RHASH_ARRAY_SIZE(h) (HASH_ASSERT(RHASH_ARRAY_P(h)), \
@@ -414,7 +414,7 @@ hash_verify_(VALUE hash, const char *file, int line)
                 h = cur_entry->hash;
                 k = cur_entry->key;
                 v = cur_entry->record;
-                HASH_ASSERT(h != 0);
+                HASH_ASSERT(h != RESERVED_HASH_VAL);
                 HASH_ASSERT(k != Qundef);
                 HASH_ASSERT(v != Qundef);
                 n++;
@@ -610,7 +610,7 @@ linear_try_convert_table(VALUE hash)
 
     for (i = 0; i < RHASH_ARRAY_MAX_BOUND; i++) {
         entry = RHASH_ARRAY_REF(hash, i);
-        HASH_ASSERT(entry->hash != 0);
+        HASH_ASSERT(entry->hash != RESERVED_HASH_VAL);
 
         st_add_direct_with_hash(new_tab, entry->key, entry->record, entry->hash);
     }
@@ -782,7 +782,8 @@ linear_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
 
             switch (retval) {
               case ST_CHECK: {
-                  if (cur_entry->key == never && cur_entry->hash == 0) break;
+                  if (cur_entry->key == never && cur_entry->hash == RESERVED_HASH_VAL)
+                      break;
                   ret = find_entry(hash, hash_value, key);
                   if (ret == RHASH_ARRAY_MAX_BOUND) {
                       retval = (*func)(0, 0, arg, 1);
