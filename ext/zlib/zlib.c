@@ -2364,7 +2364,6 @@ gzfile_write_raw(struct gzfile *gz)
 	str = zstream_detach_buffer(&gz->z);
 	OBJ_TAINT(str);  /* for safe */
 	rb_funcall(gz->io, id_write, 1, str);
-	rb_str_resize(str, 0);
 	if ((gz->z.flags & GZFILE_FLAG_SYNC)
 	    && rb_respond_to(gz->io, id_flush))
 	    rb_funcall(gz->io, id_flush, 0);
