@@ -311,14 +311,16 @@ static const struct st_hash_type identhash = {
 #define PTR_EQUAL(ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
 
-#define RESERVED_HASH_VAL ((st_hash_t) 0)
-#define RESERVED_HASH_SUBSTITUTION_VAL (~(st_hash_t) 0)
+#define RESERVED_HASH_VAL (~(st_hash_t) 0)
+#define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
 #define SET_KEY(entry, _key) (entry)->key = (_key)
 #define SET_HASH(entry, _hash) (entry)->hash = (_hash)
 #define SET_RECORD(entry, _value) (entry)->record = (_value)
 
 typedef st_data_t st_hash_t;
+extern const st_hash_t st_reserved_hash_val;
+extern const st_hash_t st_reserved_hash_substitution_val;
 
 static inline st_hash_t
 do_hash(st_data_t key)
@@ -5791,6 +5793,9 @@ Init_Hash(void)
 {
 #undef rb_intern
 #define rb_intern(str) rb_intern_const(str)
+
+    RUBY_ASSERT(RESERVED_HASH_VAL == st_reserved_hash_val);
+    RUBY_ASSERT(RESERVED_HASH_SUBSTITUTION_VAL == st_reserved_hash_substitution_val);
 
     id_hash = rb_intern("hash");
     id_yield = rb_intern("yield");
