@@ -89,6 +89,12 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
   end
 
   def test_generate
+    @g.generate
+
+    assert_file 'js/searcher.js'
+    assert_file 'js/navigation.js'
+    assert_file 'js/search_index.js'
+
     srcdir = File.expand_path('lib/rdoc', @pwd)
     if !File.directory? srcdir
       # for Ruby core repository
@@ -96,32 +102,11 @@ class TestRDocGeneratorJsonIndex < RDoc::TestCase
     end
 
     orig_file = Pathname(File.join srcdir, 'generator/template/json_index/js/navigation.js')
-    orig_time = orig_file.mtime
-
-    now = Time.now
-    @g.generate
-
-    assert_file 'js/searcher.js'
-    assert_file 'js/navigation.js'
-    assert_file 'js/search_index.js'
-
     generated_file = Pathname(File.join @tmpdir, 'js/navigation.js')
-    generated_mtime = generated_file.mtime
 
     # This is dirty hack on JRuby for MiniTest 4
-    assert orig_file.mtime.inspect == generated_mtime.inspect,
+    assert orig_file.mtime.inspect == generated_file.mtime.inspect,
       '.js files should be tha same timestamp of original'
-
-    assert generated_mtime < now, proc {t = Time.now; <<~INSPECT}
-      .js files should be the same timestamp,
-      path : #{generated_file}
-      mtime: #{generated_mtime}
-      orig : #{orig_time} -> #{orig_file.mtime}, #{orig_file.mtime-orig_time}
-      now  : #{now} -> #{t}, #{t-now}
-      INSPECT
-
-    generated_search_index = Pathname(File.join @tmpdir, 'js/search_index.js')
-    assert generated_search_index.mtime > (now - 1), 'search_index.js should be generated timestamp'
 
     json = File.read 'js/search_index.js'
 
