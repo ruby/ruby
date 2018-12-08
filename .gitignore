@@ -95,7 +95,6 @@ lcov*.info
 /libruby*.*
 /miniprelude.c
 /miniruby
-/mjit_build_dir.c
 /newdate.rb
 /newline.c
 /newver.rb
