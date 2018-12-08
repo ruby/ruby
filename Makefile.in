@@ -45,6 +45,14 @@ arch = @arch@
 sitearch = @sitearch@
 sitedir = @sitedir@
 archlibdir = @archlibdir@
+includedir = @includedir@
+archincludedir = @archincludedir@
+rubylibprefix = @rubylibprefix@
+rubylibdir = @rubylibdir@
+rubyarchprefix = @rubyarchprefix@
+rubyarchdir = @rubyarchdir@
+rubyhdrdir = @rubyhdrdir@
+rubyarchhdrdir = @rubyarchhdrdir@
 ruby_version = @ruby_version@
 RUBY_VERSION_NAME = @RUBY_VERSION_NAME@
 UNIVERSAL_ARCHNAMES = @UNIVERSAL_ARCHNAMES@
@@ -596,7 +604,11 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
 	sep=; \
+	echo '#ifdef LOAD_RELATIVE'; \
 	quote MJIT_HEADER_INSTALL_DIR "/$(MJIT_HEADER_INSTALL_DIR)"; \
+	echo '#else'; \
+	quote MJIT_HEADER_INSTALL_DIR "$(rubyarchhdrdir)"; \
+	echo '#endif'; \
 	quote MJIT_MIN_HEADER_NAME "$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
