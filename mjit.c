@@ -416,10 +416,10 @@ init_header_filename(void)
             verbose(3, "PRELOADENV("PRELOADENV")=%s", getenv(PRELOADENV));
             /* assume no other PRELOADENV in test-all */
             unsetenv(PRELOADENV);
+            verbose(3, "MJIT_HEADER: %s", hdr);
+            header_file = ruby_strdup(hdr);
+            if (!header_file) return FALSE;
         }
-        verbose(3, "MJIT_HEADER: %s", hdr);
-        header_file = ruby_strdup(hdr);
-        if (!header_file) return FALSE;
     }
     else
 #endif
