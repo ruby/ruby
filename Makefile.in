@@ -614,7 +614,7 @@ mjit_config.h:
 	} > $@
 
 yes-test-almost yes-test-all: mjit_build_dir.$(SOEXT)
-mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h mjit_config.h
+mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h
 	$(ECHO) making $@
 	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) \
 		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
