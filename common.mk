@@ -631,7 +631,7 @@ clean-srcs-local::
 	$(Q)$(RM) parse.c parse.h lex.c enc/trans/newline.c revision.h
 	$(Q)$(RM) id.c id.h probes.dmyh probes.h
 	$(Q)$(RM) encdb.h transdb.h verconf.h ruby-runner.h
-	$(Q)$(RM) mjit_build_dir.c mjit_config.h rb_mjit_header.h
+	$(Q)$(RM) mjit_config.h rb_mjit_header.h
 	$(Q)$(RM) $(MJIT_MIN_HEADER) $(MJIT_MIN_HEADER:.h=)$(MJIT_HEADER_SUFFIX:%=*).h
 
 realclean-srcs-local:: clean-srcs-local
