@@ -596,7 +596,8 @@ mjit_config.h:
 	echo '#define RUBY_MJIT_CONFIG_H 1'; \
 	echo; \
 	sep=; \
-	quote MJIT_MIN_HEADER_NAME "/$(MJIT_HEADER_INSTALL_DIR)/$(MJIT_MIN_HEADER_NAME)"; \
+	quote MJIT_HEADER_INSTALL_DIR "/$(MJIT_HEADER_INSTALL_DIR)"; \
+	quote MJIT_MIN_HEADER_NAME "$(MJIT_MIN_HEADER_NAME)"; \
 	sep=,; \
 	quote "MJIT_CC_COMMON  " $(MJIT_CC); \
 	quote "MJIT_CFLAGS      MJIT_ARCHFLAG" $(MJIT_CFLAGS); \
@@ -613,6 +614,8 @@ mjit_config.h:
 	} > $@
 
 yes-test-almost yes-test-all: mjit_build_dir.$(SOEXT)
-mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h
+mjit_build_dir.$(SOEXT): $(MJIT_MIN_HEADER) $(srcdir)/ruby-runner.c ruby-runner.h mjit_config.h
 	$(ECHO) making $@
-	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) -DMAKE_MJIT_BUILD_DIR=1 $(OUTFLAG)$@ $(srcdir)/ruby-runner.c
+	$(Q) $(DLDSHARED) $(MJIT_DLDFLAGS) $(ARCH_FLAG) $(CFLAGS) $(CPPFLAGS) \
+		-DMAKE_MJIT_BUILD_DIR=1 -DMJIT_MIN_HEADER='"$(MJIT_MIN_HEADER)"' \
+		$(OUTFLAG)$@ $(srcdir)/ruby-runner.c

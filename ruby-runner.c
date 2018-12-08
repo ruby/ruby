@@ -10,7 +10,7 @@
 #include "ruby/config.h"
 
 #ifdef MAKE_MJIT_BUILD_DIR
-const char MJIT_BUILD_DIR[] = BUILDDIR;
+const char MJIT_HEADER[] = BUILDDIR "/" MJIT_MIN_HEADER;
 #else
 
 #define STRINGIZE(expr) STRINGIZE0(expr)
