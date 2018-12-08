@@ -9,8 +9,9 @@ require 'strscan'
 # RDoc::Markup::ToHTML.
 #
 # The parser only handles the block-level constructs Paragraph, List,
-# ListItem, Heading, Verbatim, BlankLine and Rule.  Inline markup such as
-# <tt>\+blah\+</tt> is handled separately by RDoc::Markup::AttributeManager.
+# ListItem, Heading, Verbatim, BlankLine, Rule and BlockQuote.
+# Inline markup such as <tt>\+blah\+</tt> is handled separately by
+# RDoc::Markup::AttributeManager.
 #
 # To see what markup the Parser implements read RDoc.  To see how to use
 # RDoc markup to format text in your program read RDoc::Markup.
@@ -381,6 +382,17 @@ class RDoc::Markup::Parser
       when :TEXT then
         unget
         parse_text parent, indent
+      when :BLOCKQUOTE then
+        type, _, column = get
+        if type == :NEWLINE
+          type, _, column = get
+        end
+        unget if type
+        bq = RDoc::Markup::BlockQuote.new
+        p :blockquote_start => [data, column] if @debug
+        parse bq, column
+        p :blockquote_end => indent if @debug
+        parent << bq
       when *LIST_TOKENS then
         unget
         parent << build_list(indent)
@@ -504,8 +516,12 @@ class RDoc::Markup::Parser
                  # text:: followed by spaces or end of line => :NOTE
                  when @s.scan(/(.*?)::( +|\r?$)/) then
                    [:NOTE, @s[1], *token_pos(pos)]
+                 # >>> followed by end of line => :BLOCKQUOTE
+                 when @s.scan(/>>> *(\w+)?$/) then
+                   [:BLOCKQUOTE, @s[1], *token_pos(pos)]
                  # anything else: :TEXT
-                 else @s.scan(/(.*?)(  )?\r?$/)
+                 else
+                   @s.scan(/(.*?)(  )?\r?$/)
                    token = [:TEXT, @s[1], *token_pos(pos)]
 
                    if @s[2] then
