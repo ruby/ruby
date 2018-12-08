@@ -1726,15 +1726,11 @@ rb_thread_create_timer_thread(void)
     if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
     if (setup_communication_pipe_internal(signal_self_pipe.ub_main) < 0) return;
 
+    ubf_timer_create(current);
     if (owner != current) {
         /* validate pipe on this process */
-        ubf_timer_create(current);
         sigwait_th = THREAD_INVALID;
         signal_self_pipe.owner_process = current;
-    }
-    else if (UBF_TIMER == UBF_TIMER_PTHREAD) {
-        /* UBF_TIMER_PTHREAD needs to recreate after fork */
-        ubf_timer_pthread_create(current);
     }
 }
 
@@ -1763,7 +1759,13 @@ ubf_timer_disarm(void)
 static void
 ubf_timer_destroy(void)
 {
-#if UBF_TIMER == UBF_TIMER_PTHREAD
+#if UBF_TIMER == UBF_TIMER_POSIX
+    if (timer_posix.owner == getpid()) {
+        if (timer_delete(timer_posix.timerid) < 0)
+            rb_sys_fail("timer_delete");
+        memset(&timer_posix, 0, sizeof(timer_posix));
+    }
+#elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
 
     timer_pthread.owner = 0;
@@ -1774,7 +1776,6 @@ ubf_timer_destroy(void)
         rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 #endif
-/* no need to destroy real POSIX timers */
 }
 
 static int
