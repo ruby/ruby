@@ -719,7 +719,11 @@ onigenc_unicode_case_map(OnigCaseFoldType* flagP,
 	}
       }
       else if ((folded = onigenc_unicode_fold_lookup(code)) != 0) { /* data about character found in CaseFold_11_Table */
-	if ((flags & ONIGENC_CASE_TITLECASE)                                 /* Titlecase needed, */
+	if ((flags & ONIGENC_CASE_TITLECASE) && code>=0x1C90 && code<=0x1CBF) { /* Georgian MTAVRULI */
+          MODIFIED;
+	  code += 0x10D0 - 0x1C90;
+        }
+        else if ((flags & ONIGENC_CASE_TITLECASE)                            /* Titlecase needed, */
 	    && (OnigCaseFoldFlags(folded->n) & ONIGENC_CASE_IS_TITLECASE)) { /* but already Titlecase  */
 	  /* already Titlecase, no changes needed */
 	}

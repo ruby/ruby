@@ -6727,6 +6727,8 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
  *
  *  Modifies <i>str</i> by converting the first character to uppercase and the
  *  remainder to lowercase. Returns <code>nil</code> if no changes are made.
+ *  There is an exception for modern Georgian (mkhedruli/MTAVRULI), where
+ *  the result is the same as for String#downcase, to avoid mixed case.
  *
  *  See String#downcase for meaning of +options+ and use with different encodings.
  *
