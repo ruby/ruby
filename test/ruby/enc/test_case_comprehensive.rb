@@ -73,7 +73,11 @@ TestComprehensiveCaseMapping.data_files_available? and  class TestComprehensiveC
       @@codepoints << code
       upcase[code] = hex2utf8 data[12] unless data[12].empty?
       downcase[code] = hex2utf8 data[13] unless data[13].empty?
-      titlecase[code] = hex2utf8 data[14] unless data[14].empty?
+      if code>="\u1C90" and code<="\u1CBF" # exception for Georgian: use lowercase for titlecase
+        titlecase[code] = hex2utf8(data[13]) unless data[13].empty?
+      else
+        titlecase[code] = hex2utf8 data[14] unless data[14].empty?
+      end
     end
     read_data_file('CaseFolding') do |code, data|
       casefold[code] = hex2utf8(data[2]) if data[1] =~ /^[CF]$/

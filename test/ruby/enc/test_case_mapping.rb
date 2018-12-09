@@ -187,6 +187,23 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal 0, "\ua64A" =~ /\uA64B/i
   end
 
+  def test_georgian_canary
+    message = "Reexamine implementation of Georgian in String#capitalize"
+    assert_equal false, "\u1CBB".match?(/\p{assigned}/), message
+    assert_equal false, "\u1CBC".match?(/\p{assigned}/), message
+  end
+
+  def test_georgian_capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u10D1\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u10D1\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u1C91\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u1C91\u10D2".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u10D1\u1C92".capitalize
+    assert_equal "\u10D0\u10D1\u10D2", "\u10D0\u10D1\u10D2".capitalize
+  end
+
   def no_longer_a_test_buffer_allocations
     assert_equal 'TURKISH*ı'*10, ('I'*10).downcase(:turkic)
     assert_equal 'TURKISH*ı'*100, ('I'*100).downcase(:turkic)
