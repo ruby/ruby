@@ -392,6 +392,9 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_with_objects
+    # conceptually backport from r62856.
+    # ISeq binary dump doesn't consider alignment in 2.5 and older
+    skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
     code = "[]"+100.times.map{|i|"<</#{i}/"}.join
     iseq = RubyVM::InstructionSequence.compile(code)
     bin = assert_nothing_raised do
@@ -405,9 +408,20 @@ class TestISeq < Test::Unit::TestCase
   end
 
   def test_to_binary_tracepoint
+    # conceptually backport from r62856.
+    # ISeq binary dump doesn't consider alignment in 2.5 and older
+    skip "does not work on other than x86" unless /x(?:86|64)|i\d86/ =~ RUBY_PLATFORM
     filename = "#{File.basename(__FILE__)}_#{__LINE__}"
     iseq = RubyVM::InstructionSequence.compile("x = 1\n y = 2", filename)
-    iseq_bin = iseq.to_binary
+    # conceptually partial backport from r63103, r65567.
+    # All ISeq#to_binary should rescue to skip when running with coverage.
+    # current trunk (2.6-) has assert_iseq_to_binary.
+    begin
+      iseq_bin = iseq.to_binary
+    rescue RuntimeError => e
+      skip e.message if /compile with coverage/ =~ e.message
+      raise
+    end
     ary = []
     TracePoint.new(:line){|tp|
       next unless tp.path == filename
