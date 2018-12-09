@@ -91,8 +91,8 @@ enc/windows_1251.c::
   Onigmo (Oniguruma-mod) LICENSE
 
   >>>
-    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
-    Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
+    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
+    Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>  
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -119,7 +119,7 @@ enc/windows_1251.c::
   Oniguruma LICENSE
 
   >>>
-    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+    Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>  
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -187,9 +187,9 @@ enc/trans/JIS/JISX0213-2%UCS@SIP.src::
   These files are copyrighted as the following.
 
   >>>
-    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
-    Copyright (C) 2001 I'O, All Rights Reserved.
-    Copyright (C) 2006 Project X0213, All Rights Reserved.
+    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
+    Copyright (C) 2001 I'O, All Rights Reserved.  
+    Copyright (C) 2006 Project X0213, All Rights Reserved.  
     You can use, modify, distribute this table freely.
 
 enc/trans/JIS/UCS@BMP%JISX0213-1.src::
@@ -200,8 +200,8 @@ enc/trans/JIS/UCS@SIP%JISX0213-2.src::
   These files are copyrighted as the following.
 
   >>>
-    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
-    Copyright (C) 2001 I'O, All Rights Reserved.
+    Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.  
+    Copyright (C) 2001 I'O, All Rights Reserved.  
     You can use, modify, distribute this table freely.
 
 configure::
@@ -312,7 +312,7 @@ util.c (partly)::
   This file contains the source code under this license.
 
   >>>
-    Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>
+    Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>  
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -342,7 +342,7 @@ random.c::
 
   >>>
     A C-program for MT19937, with initialization improved 2002/2/10.
-    Coded by Takuji Nishimura and Makoto Matsumoto.
+    Coded by Takuji Nishimura and Makoto Matsumoto.  
     This is a faster version by taking Shawn Cokus's optimization,
     Matthe Bellew's simplification, Isaku Wada's real version.
 
@@ -391,7 +391,7 @@ vm_dump.c:procstat_vm::
   This file contains the source code under the new-style BSD license.
 
   >>>
-    Copyright (c) 2007 Robert N. M. Watson
+    Copyright (c) 2007 Robert N. M. Watson  
     All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -423,7 +423,7 @@ vsnprintf.c::
   paragraph 3 below is now null and void.
 
   >>>
-    Copyright (c) 1990, 1993
+    Copyright (c) 1990, 1993  
     The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
@@ -490,7 +490,7 @@ missing/crypt.c::
   paragraph 3 below is now null and void.
 
   >>>
-    Copyright (c) 1989, 1993
+    Copyright (c) 1989, 1993  
     The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
@@ -526,9 +526,9 @@ missing/setproctitle.c::
   paragraph 3 below is now null and void.
 
   >>>
-    Copyright 2003 Damien Miller
-    Copyright (c) 1983, 1995-1997 Eric P. Allman
-    Copyright (c) 1988, 1993
+    Copyright 2003 Damien Miller  
+    Copyright (c) 1983, 1995-1997 Eric P. Allman  
+    Copyright (c) 1988, 1993  
     The Regents of the University of California.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -582,8 +582,7 @@ missing/langinfo.c::
   author/copyright notice:
 
   >>>
-    Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11
-
+    Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11  
     Permission to use, copy, modify, and distribute this software
     for any purpose and without fee is hereby granted. The author
     disclaims all warranties with regard to this software.
@@ -625,7 +624,6 @@ ext/digest/rmd160/rmd160.h::
   >>>
     AUTHOR::  Antoon Bosselaers, ESAT-COSIC
               (Arranged for libc by Todd C. Miller)
-
     DATE::    1 March 1996
 
     Copyright (c) Katholieke Universiteit Leuven
@@ -670,23 +668,23 @@ ext/json/generator/generator.c::
   >>>
     Copyright 2001-2004 Unicode, Inc.
 
-    Disclaimer
+    Disclaimer::
 
-    This source code is provided as is by Unicode, Inc. No claims are
-    made as to fitness for any particular purpose. No warranties of any
-    kind are expressed or implied. The recipient agrees to determine
-    applicability of information provided. If this file has been
-    purchased on magnetic or optical media from Unicode, Inc., the
-    sole remedy for any claim will be exchange of defective media
-    within 90 days of receipt.
+      This source code is provided as is by Unicode, Inc. No claims are
+      made as to fitness for any particular purpose. No warranties of any
+      kind are expressed or implied. The recipient agrees to determine
+      applicability of information provided. If this file has been
+      purchased on magnetic or optical media from Unicode, Inc., the
+      sole remedy for any claim will be exchange of defective media
+      within 90 days of receipt.
 
-    Limitations on Rights to Redistribute This Code
+    Limitations on Rights to Redistribute This Code::
 
-    Unicode, Inc. hereby grants the right to freely use the information
-    supplied in this file in the creation of products supporting the
-    Unicode Standard, and to make copies of this file in any form
-    for internal or external distribution as long as this notice
-    remains attached.
+      Unicode, Inc. hereby grants the right to freely use the information
+      supplied in this file in the creation of products supporting the
+      Unicode Standard, and to make copies of this file in any form
+      for internal or external distribution as long as this notice
+      remains attached.
 
 ext/nkf/nkf-utf8/config.h::
 ext/nkf/nkf-utf8/nkf.c::
@@ -891,7 +889,7 @@ test/rubygems::
        c. give non-standard executables non-standard names, with
           instructions on where to get the original software distribution.
 
-       d . make other distribution arrangements with the author.
+       d. make other distribution arrangements with the author.
 
     4. You may modify and include the part of the software into any other
        software (possibly commercial).
@@ -916,26 +914,26 @@ man/bundle-*,gemfile.*::
   Bundler is under the following license.
 
   >>>
-    Portions copyright (c) 2010 Andre Arko
-    Portions copyright (c) 2009 Engine Yard
+    Portions copyright (c) 2010 Andre Arko  
+    Portions copyright (c) 2009 Engine Yard  
 
-    MIT License
+    MIT License::
 
-    Permission is hereby granted, free of charge, to any person obtaining
-    a copy of this software and associated documentation files (the
-    "Software"), to deal in the Software without restriction, including
-    without limitation the rights to use, copy, modify, merge, publish,
-    distribute, sublicense, and/or sell copies of the Software, and to
-    permit persons to whom the Software is furnished to do so, subject to
-    the following conditions:
+      Permission is hereby granted, free of charge, to any person obtaining
+      a copy of this software and associated documentation files (the
+      "Software"), to deal in the Software without restriction, including
+      without limitation the rights to use, copy, modify, merge, publish,
+      distribute, sublicense, and/or sell copies of the Software, and to
+      permit persons to whom the Software is furnished to do so, subject to
+      the following conditions:
 
-    The above copyright notice and this permission notice shall be
-    included in all copies or substantial portions of the Software.
+      The above copyright notice and this permission notice shall be
+      included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-    LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-    OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-    WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+      THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+      EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+      MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+      NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+      LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+      OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+      WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
