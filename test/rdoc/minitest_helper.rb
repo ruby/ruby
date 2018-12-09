@@ -1,7 +1,8 @@
 # frozen_string_literal: true
+require 'bundler/errors'
 begin
   gem 'minitest', '~> 5.0'
-rescue NoMethodError, Gem::LoadError
+rescue NoMethodError, Gem::LoadError, Bundler::GemfileNotFound
   # for ruby tests
 end
 
