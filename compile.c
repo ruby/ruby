@@ -627,7 +627,9 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
     DECL_ANCHOR(ret);
     INIT_ANCHOR(ret);
 
-    VM_ASSERT(!imemo_type_p((VALUE)node, imemo_ifunc));
+    if (imemo_type_p((VALUE)node, imemo_ifunc)) {
+        rb_raise(rb_eArgError, "unexpected imemo_ifunc");
+    }
 
     if (node == 0) {
 	COMPILE(ret, "nil", node);
@@ -9280,8 +9282,9 @@ NORETURN(static void ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE ob
 static void
 ibf_dump_object_unsupported(struct ibf_dump *dump, VALUE obj)
 {
-    rb_obj_info_dump(obj);
-    rb_bug("ibf_dump_object_unsupported: unsupported");
+    char buff[0x100];
+    rb_raw_obj_info(buff, sizeof(buff), obj);
+    rb_raise(rb_eNotImpError, "ibf_dump_object_unsupported: %s", buff);
 }
 
 static VALUE
@@ -9493,7 +9496,8 @@ ibf_dump_object_struct(struct ibf_dump *dump, VALUE obj)
 	IBF_WV(range);
     }
     else {
-	rb_bug("ibf_dump_object_struct: unsupported class");
+        rb_raise(rb_eNotImpError, "ibf_dump_object_struct: unsupported class %"PRIsVALUE,
+                 rb_class_name(CLASS_OF(obj)));
     }
 }
 
