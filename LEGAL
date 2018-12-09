@@ -1,7 +1,7 @@
 # -*- rdoc -*-
 
-LEGAL NOTICE INFORMATION
-------------------------
+= LEGAL NOTICE INFORMATION
+--------------------------
 
 All the files in this distribution are covered under either the Ruby's
 license (see the file COPYING) or public-domain except some files
@@ -14,12 +14,14 @@ ccan/str/str.h::
 
   These files are licensed under the CC0.
 
+  >>>
     https://creativecommons.org/choose/zero/
 
 ccan/list/list.h::
 
   This file is licensed under the MIT License.
 
+  >>>
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
     in the Software without restriction, including without limitation the rights
@@ -88,6 +90,7 @@ enc/windows_1251.c::
 
   Onigmo (Oniguruma-mod) LICENSE
 
+  >>>
     Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
     Copyright (c) 2011-2014  K.Takata  <kentkt AT csc DOT jp>
     All rights reserved.
@@ -115,6 +118,7 @@ enc/windows_1251.c::
 
   Oniguruma LICENSE
 
+  >>>
     Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
     All rights reserved.
 
@@ -153,6 +157,7 @@ enc/trans/GB/UCS%GB2312.src::
 
   These files have this explanatory texts.
 
+  >>>
     This mapping data was created from files provided by Unicode, Inc.
     (The Unicode Consortium). The files were used to create a product supporting
     Unicode, as explicitly permitted in the files' copyright notices.
@@ -169,6 +174,7 @@ enc/trans/JIS/UCS%JISX0212.src::
 
   These files are copyrighted as the following.
 
+  >>>
     © 2015 Unicode®, Inc.
 
     For terms of use, see http://www.unicode.org/terms_of_use.html
@@ -180,6 +186,7 @@ enc/trans/JIS/JISX0213-2%UCS@SIP.src::
 
   These files are copyrighted as the following.
 
+  >>>
     Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
     Copyright (C) 2001 I'O, All Rights Reserved.
     Copyright (C) 2006 Project X0213, All Rights Reserved.
@@ -192,6 +199,7 @@ enc/trans/JIS/UCS@SIP%JISX0213-2.src::
 
   These files are copyrighted as the following.
 
+  >>>
     Copyright (C) 2001 earthian@tama.or.jp, All Rights Reserved.
     Copyright (C) 2001 I'O, All Rights Reserved.
     You can use, modify, distribute this table freely.
@@ -200,6 +208,7 @@ configure::
 
   This file is free software.
 
+  >>>
     Copyright (C) 1992-1996, 1998-2012 Free Software Foundation, Inc.
 
     This configure script is free software; the Free Software Foundation
@@ -211,6 +220,7 @@ tool/config.sub::
   As long as you distribute these files with the file configure, they
   are covered under the Ruby's license.
 
+  >>>
     Copyright 1992-2018 Free Software Foundation, Inc.
 
     This file is free software; you can redistribute it and/or modify it
@@ -239,6 +249,7 @@ parse.c::
   redistributed under the terms of the Ruby license, as permitted by the
   exception to the GPL below.
 
+  >>>
     Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
 
     This program is free software: you can redistribute it and/or modify
@@ -271,6 +282,7 @@ util.c (partly)::
 
   This file contains the source code under this license.
 
+  >>>
     Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
 
     Permission to use, copy, modify, and distribute this software for any
@@ -289,6 +301,7 @@ win32/win32.{c,h}::
   You can apply the Artistic License to these files. (or GPL,
   alternatively)
 
+  >>>
     Copyright (c) 1993, Intergraph Corporation
 
     You may distribute under the terms of either the GNU General Public
@@ -298,6 +311,7 @@ util.c (partly)::
 
   This file contains the source code under this license.
 
+  >>>
     Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>
     All rights reserved.
 
@@ -326,6 +340,7 @@ random.c::
 
   This file contains the source code under the new-style BSD license.
 
+  >>>
     A C-program for MT19937, with initialization improved 2002/2/10.
     Coded by Takuji Nishimura and Makoto Matsumoto.
     This is a faster version by taking Shawn Cokus's optimization,
@@ -341,16 +356,16 @@ random.c::
     modification, are permitted provided that the following conditions
     are met:
 
-      1. Redistributions of source code must retain the above copyright
-         notice, this list of conditions and the following disclaimer.
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
 
-      2. Redistributions in binary form must reproduce the above copyright
-         notice, this list of conditions and the following disclaimer in the
-         documentation and/or other materials provided with the distribution.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
 
-      3. The names of its contributors may not be used to endorse or promote
-         products derived from this software without specific prior written
-         permission.
+    3. The names of its contributors may not be used to endorse or promote
+       products derived from this software without specific prior written
+       permission.
 
     THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
     "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -375,6 +390,7 @@ vm_dump.c:procstat_vm::
 
   This file contains the source code under the new-style BSD license.
 
+  >>>
     Copyright (c) 2007 Robert N. M. Watson
     All rights reserved.
 
@@ -406,8 +422,9 @@ vsnprintf.c::
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
+  >>>
     Copyright (c) 1990, 1993
-         The Regents of the University of California.  All rights reserved.
+    The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
     Chris Torek.
@@ -472,8 +489,9 @@ missing/crypt.c::
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
+  >>>
     Copyright (c) 1989, 1993
-    	The Regents of the University of California.  All rights reserved.
+    The Regents of the University of California.  All rights reserved.
 
     This code is derived from software contributed to Berkeley by
     Tom Truscott.
@@ -507,10 +525,11 @@ missing/setproctitle.c::
   This file is under the old-style BSD license.  Note that the
   paragraph 3 below is now null and void.
 
+  >>>
     Copyright 2003 Damien Miller
     Copyright (c) 1983, 1995-1997 Eric P. Allman
     Copyright (c) 1988, 1993
-    	The Regents of the University of California.  All rights reserved.
+    The Regents of the University of California.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
     modification, are permitted provided that the following conditions
@@ -541,6 +560,7 @@ missing/strlcpy.c::
 
   These files are under an ISC-style license.
 
+  >>>
     Copyright (c) 1998, 2015 Todd C. Miller <Todd.Miller@courtesan.com>
 
     Permission to use, copy, modify, and distribute this software for any
@@ -561,7 +581,9 @@ missing/langinfo.c::
   Ruby uses a modified version. The file contains the following
   author/copyright notice:
 
+  >>>
     Markus.Kuhn@cl.cam.ac.uk -- 2002-03-11
+
     Permission to use, copy, modify, and distribute this software
     for any purpose and without fee is hereby granted. The author
     disclaims all warranties with regard to this software.
@@ -572,6 +594,7 @@ ext/digest/md5/md5.h::
   These files are under the following license.  Ruby uses modified
   versions of them.
 
+  >>>
     Copyright (C) 1999, 2000 Aladdin Enterprises.  All rights reserved.
 
     This software is provided 'as-is', without any express or implied
@@ -599,9 +622,11 @@ ext/digest/rmd160/rmd160.h::
   These files have the following copyright information, and by the
   author we are allowed to use it under the new-style BSD license.
 
-    AUTHOR:   Antoon Bosselaers, ESAT-COSIC
+  >>>
+    AUTHOR::  Antoon Bosselaers, ESAT-COSIC
               (Arranged for libc by Todd C. Miller)
-    DATE:     1 March 1996
+
+    DATE::    1 March 1996
 
     Copyright (c) Katholieke Universiteit Leuven
     1996, All Rights Reserved
@@ -611,6 +636,7 @@ ext/digest/sha2/sha2.h::
 
   These files are under the new-style BSD license.
 
+  >>>
     Copyright 2000 Aaron D. Gifford.  All rights reserved.
 
     Redistribution and use in source and binary forms, with or without
@@ -641,6 +667,7 @@ ext/json/generator/generator.c::
 
   The file contains the following copyright notice.
 
+  >>>
     Copyright 2001-2004 Unicode, Inc.
 
     Disclaimer
@@ -668,14 +695,16 @@ ext/nkf/nkf-utf8/utf8tbl.c::
   These files are under the following license.  So to speak, it is
   copyrighted semi-public-domain software.
 
+  >>>
     Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
-       Everyone is permitted to do anything on this program
-       including copying, modifying, improving,
-       as long as you don't try to pretend that you wrote it.
-       i.e., the above copyright notice has to appear in all copies.
-       Binary distribution requires original version messages.
-       You don't have to ask before copying, redistribution or publishing.
-       THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+
+    Everyone is permitted to do anything on this program
+    including copying, modifying, improving,
+    as long as you don't try to pretend that you wrote it.
+    i.e., the above copyright notice has to appear in all copies.
+    Binary distribution requires original version messages.
+    You don't have to ask before copying, redistribution or publishing.
+    THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
 
 ext/psych::
 test/psych::
@@ -683,6 +712,7 @@ test/psych::
   The files under these directories are under the following license, except for
   ext/psych/yaml.
 
+  >>>
     Copyright 2009 Aaron Patterson, et al.
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -707,6 +737,7 @@ ext/psych/yaml::
 
   The files under this directory are under the following license.
 
+  >>>
     Copyright (c) 2006 Kirill Simonov
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -733,6 +764,7 @@ ext/socket/getnameinfo.c::
 
   These files are under the new-style BSD license.
 
+  >>>
     Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
     All rights reserved.
 
@@ -765,6 +797,7 @@ ext/win32ole/win32ole.c::
   You can apply the Artistic License to this file. (or GPL,
   alternatively)
 
+  >>>
     (c) 1995 Microsoft Corporation. All rights reserved.
     Developed by ActiveWare Internet Corp., http://www.ActiveWare.com
 
@@ -781,6 +814,7 @@ lib/rdoc/generator/template/darkfish/css/fonts.css::
 
   This file is licensed under the SIL Open Font License.
 
+  >>>
     http://scripts.sil.org/OFL
 
 spec/mspec::
@@ -788,6 +822,7 @@ spec/ruby::
 
   The files under these directories are under the following license.
 
+  >>>
     Copyright (c) 2008 Engine Yard, Inc. All rights reserved.
 
     Permission is hereby granted, free of charge, to any person
@@ -817,6 +852,7 @@ test/rubygems::
 
   RubyGems is under the following license.
 
+  >>>
     RubyGems is copyrighted free software by Chad Fowler, Rich Kilmer, Jim
     Weirich and others.  You can redistribute it and/or modify it under
     either the terms of the MIT license (see the file MIT.txt), or the
@@ -879,6 +915,7 @@ man/bundle-*,gemfile.*::
 
   Bundler is under the following license.
 
+  >>>
     Portions copyright (c) 2010 Andre Arko
     Portions copyright (c) 2009 Engine Yard
 
