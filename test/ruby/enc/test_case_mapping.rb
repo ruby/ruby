@@ -193,6 +193,12 @@ class TestCaseMappingPreliminary < Test::Unit::TestCase
     assert_equal false, "\u1CBC".match?(/\p{assigned}/), message
   end
 
+  def test_georgian_unassigned
+    message = "Unassigned codepoints should not be converted"
+    assert_equal "\u1CBB", "\u1CBB".capitalize, message
+    assert_equal "\u1CBC", "\u1CBC".capitalize, message
+  end
+
   def test_georgian_capitalize
     assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u1C92".capitalize
     assert_equal "\u10D0\u10D1\u10D2", "\u1C90\u1C91\u10D2".capitalize
