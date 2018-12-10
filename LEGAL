@@ -280,7 +280,7 @@ parse.c::
 
 util.c (partly)::
 
-  This file contains the source code under this license.
+  This file contains the source code under these licenses.
 
   >>>
     Copyright (c) 1991, 2000, 2001 by Lucent Technologies.
@@ -295,21 +295,6 @@ util.c (partly)::
     WARRANTY.  IN PARTICULAR, NEITHER THE AUTHOR NOR LUCENT MAKES ANY
     REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
     OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
-
-win32/win32.{c,h}::
-
-  You can apply the Artistic License to these files. (or GPL,
-  alternatively)
-
-  >>>
-    Copyright (c) 1993, Intergraph Corporation
-
-    You may distribute under the terms of either the GNU General Public
-    License or the Artistic License, as specified in the perl README file.
-
-util.c (partly)::
-
-  This file contains the source code under this license.
 
   >>>
     Copyright (c) 2004-2008 David Schultz <das@FreeBSD.ORG>  
@@ -335,6 +320,17 @@ util.c (partly)::
     LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
     OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
     SUCH DAMAGE.
+
+win32/win32.{c,h}::
+
+  You can apply the Artistic License to these files. (or GPL,
+  alternatively)
+
+  >>>
+    Copyright (c) 1993, Intergraph Corporation
+
+    You may distribute under the terms of either the GNU General Public
+    License or the Artistic License, as specified in the perl README file.
 
 random.c::
 
