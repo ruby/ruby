@@ -8922,9 +8922,9 @@ static void
 ibf_dump_object_regexp(struct ibf_dump *dump, VALUE obj)
 {
     struct ibf_object_regexp regexp;
-    regexp.srcstr = RREGEXP_SRC(obj);
+    VALUE srcstr = RREGEXP_SRC(obj);
     regexp.option = (char)rb_reg_options(obj);
-    regexp.srcstr = (long)ibf_dump_object(dump, regexp.srcstr);
+    regexp.srcstr = (long)ibf_dump_object(dump, srcstr);
     IBF_WV(regexp);
 }
 
