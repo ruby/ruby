@@ -124,11 +124,15 @@ class VCS
     @@dirs << [dir, self, pred]
   end
 
-  def self.detect(path)
+  def self.detect(path, uplevel_limit: 0)
     curr = path
     begin
       @@dirs.each do |dir, klass, pred|
         return klass.new(curr) if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
+      end
+      if uplevel_limit
+        break if uplevel_limit.zero?
+        uplevel_limit -= 1
       end
       prev, curr = curr, File.realpath(File.join(curr, '..'))
     end until curr == prev # stop at the root directory
