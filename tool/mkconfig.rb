@@ -16,7 +16,6 @@ version = $version or raise "missing -version"
 srcdir = File.expand_path('../..', __FILE__)
 $:.unshift(".")
 
-require "fileutils"
 mkconfig = File.basename($0)
 
 fast = {'prefix'=>true, 'ruby_install_name'=>true, 'INSTALL'=>true, 'EXEEXT'=>true}
