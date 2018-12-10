@@ -730,12 +730,14 @@ test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 }
 
-AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
-  int main(void) {
-    return __extension__ ({ int a = 0; a; });
-  }
-  ]])],
-  [AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR, 1)])
+AC_CACHE_CHECK([whether compiler has statement and declarations in expressions],
+  rb_cv_have_stmt_and_decl_in_expr,
+  [AC_TRY_COMPILE([],[ __extension__ ({ int a = 0; a; }); ],
+  [rb_cv_have_stmt_and_decl_in_expr=yes],
+  [rb_cv_have_stmt_and_decl_in_expr=no])])
+AS_IF([test "$rb_cv_have_stmt_and_decl_in_expr" = yes], [
+  AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR)
+])
 
 : "header and library section" && {
 AC_ARG_WITH(winnt-ver,
