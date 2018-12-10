@@ -730,6 +730,13 @@ test -z "${ac_env_CFLAGS_set}" -a -n "${cflags+set}" && eval CFLAGS="\"$cflags $
 test -z "${ac_env_CXXFLAGS_set}" -a -n "${cxxflags+set}" && eval CXXFLAGS="\"$cxxflags $ARCH_FLAG\""
 }
 
+AC_PREPROC_IFELSE([AC_LANG_SOURCE([[
+  int main(void) {
+    return __extension__ ({ int a = 0; a; });
+  }
+  ]])],
+  [AC_DEFINE(HAVE_STMT_AND_DECL_IN_EXPR, 1)])
+
 : "header and library section" && {
 AC_ARG_WITH(winnt-ver,
   AS_HELP_STRING([--with-winnt-ver=0xXXXX], [target Windows NT version (default to 0x0600)]),
