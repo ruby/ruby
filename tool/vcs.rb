@@ -125,14 +125,13 @@ class VCS
   end
 
   def self.detect(path)
-    @@dirs.each do |dir, klass, pred|
-      curr = path
-      loop {
+    curr = path
+    begin
+      @@dirs.each do |dir, klass, pred|
         return klass.new(curr) if pred ? pred[curr, dir] : File.directory?(File.join(curr, dir))
-        prev, curr = curr, File.realpath(File.join(curr, '..'))
-        break if curr == prev # stop at the root directory
-      }
-    end
+      end
+      prev, curr = curr, File.realpath(File.join(curr, '..'))
+    end until curr == prev # stop at the root directory
     raise VCS::NotFoundError, "does not seem to be under a vcs: #{path}"
   end
 
