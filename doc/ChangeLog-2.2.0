@@ -10169,7 +10169,7 @@ Wed Mar  5 15:56:18 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Wed Mar  5 11:58:30 2014  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/ossl.c (ossl_make_error): check NULL for unknown
-	  error reasons with old OpenSSL, and insert a colon iff formatted
+	  error reasons with old OpenSSL, and insert a colon if formatted
 	  message is not empty.
 
 Wed Mar  5 00:42:00 2014  Kazuki Tsujimoto  <kazuki@callcc.net>

@@ -1315,7 +1315,7 @@ module Net
     end
 
     #
-    # Returns +true+ iff the connection is closed.
+    # Returns +true+ if the connection is closed.
     #
     def closed?
       @sock == nil or @sock.closed?

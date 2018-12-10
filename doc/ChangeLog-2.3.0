@@ -1027,7 +1027,7 @@ Tue Dec  8 22:31:58 2015  Koichi Sasada  <ko1@atdot.net>
 
 	* vm.c: ditto.
 
-	* test/lib/iseq_loader_checker.rb: enabled iff suitable
+	* test/lib/iseq_loader_checker.rb: enabled if suitable
 	  environment variables are provided.
 
 	* test/runner.rb: enable lib/iseq_loader_checker.rb.

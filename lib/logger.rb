@@ -318,23 +318,23 @@ class Logger
   alias sev_threshold level
   alias sev_threshold= level=
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if the current severity level allows for the printing of
   # +DEBUG+ messages.
   def debug?; @level <= DEBUG; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if the current severity level allows for the printing of
   # +INFO+ messages.
   def info?; @level <= INFO; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if the current severity level allows for the printing of
   # +WARN+ messages.
   def warn?; @level <= WARN; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if the current severity level allows for the printing of
   # +ERROR+ messages.
   def error?; @level <= ERROR; end
 
-  # Returns +true+ iff the current severity level allows for the printing of
+  # Returns +true+ if the current severity level allows for the printing of
   # +FATAL+ messages.
   def fatal?; @level <= FATAL; end
 

@@ -105,7 +105,7 @@ module Gem::Resolver::Molinillo
 
       # Is there a path from `self` to `other` following edges in the
       # dependency graph?
-      # @return true iff there is a path following edges within this {#graph}
+      # @return true if there is a path following edges within this {#graph}
       def path_to?(other)
         equal?(other) || successors.any? { |v| v.path_to?(other) }
       end
@@ -114,7 +114,7 @@ module Gem::Resolver::Molinillo
 
       # Is there a path from `other` to `self` following edges in the
       # dependency graph?
-      # @return true iff there is a path following edges within this {#graph}
+      # @return true if there is a path following edges within this {#graph}
       def ancestor?(other)
         other.path_to?(self)
       end

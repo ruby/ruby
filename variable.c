@@ -2424,7 +2424,7 @@ rb_autoload_load(VALUE mod, ID id)
 
 	/*
 	 * autoload_reset will wake up any threads added to this
-	 * iff the GVL is released during autoload_require
+	 * if the GVL is released during autoload_require
 	 */
 	list_head_init((struct list_head *)&state.waitq);
     }

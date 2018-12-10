@@ -850,7 +850,7 @@ strscan_unscan(VALUE self)
 }
 
 /*
- * Returns +true+ iff the scan pointer is at the beginning of the line.
+ * Returns +true+ if the scan pointer is at the beginning of the line.
  *
  *   s = StringScanner.new("test\ntest\n")
  *   s.bol?           # => true

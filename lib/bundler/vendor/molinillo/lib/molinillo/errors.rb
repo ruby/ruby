@@ -34,7 +34,7 @@ module Bundler::Molinillo
 
   # An error caused by attempting to fulfil a dependency that was circular
   #
-  # @note This exception will be thrown iff a {Vertex} is added to a
+  # @note This exception will be thrown if a {Vertex} is added to a
   #   {DependencyGraph} that has a {DependencyGraph::Vertex#path_to?} an
   #   existing {DependencyGraph::Vertex}
   class CircularDependencyError < ResolverError

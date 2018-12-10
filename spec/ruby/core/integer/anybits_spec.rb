@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 ruby_version_is '2.5' do
   describe "Integer#anybits?" do
-    it "returns true iff all the bits of the argument are set in the receiver" do
+    it "returns true if all the bits of the argument are set in the receiver" do
       42.anybits?(42).should == true
       0b1010_1010.anybits?(0b1000_0010).should == true
       0b1010_1010.anybits?(0b1000_0001).should == true

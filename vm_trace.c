@@ -81,7 +81,7 @@ update_global_event_hook(rb_event_flag_t vm_events)
         mjit_call_p = FALSE;
 #endif
 
-	/* write all ISeqs iff new events are added */
+	/* write all ISeqs if new events are added */
 	rb_iseq_trace_set_all(new_iseq_events | enabled_iseq_events);
     }
 

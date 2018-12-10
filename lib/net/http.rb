@@ -509,7 +509,7 @@ module Net   #:nodoc:
     #
     #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
     #
-    # This method also does Basic Authentication iff +url+.user exists.
+    # This method also does Basic Authentication if +url+.user exists.
     # But userinfo for authentication is deprecated (RFC3986).
     # So this feature will be removed.
     #

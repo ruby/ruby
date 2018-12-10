@@ -12364,7 +12364,7 @@ Thu Jun 14 05:23:05 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 	* regparse.c (PFETCH_READY): suppress Wunused-but-set-variable.
 
 	* regparse.c (is_onechar_cclass): restructured to clarify that c is
-	  used iff found == 1.
+	  used if found == 1.
 
 Thu Jun 14 02:54:17 2012  NARUSE, Yui  <naruse@ruby-lang.org>
 

@@ -2018,7 +2018,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns +true+ if all of vectors are linearly independent.
   #
   #   Vector.independent?(Vector[1,0], Vector[0,1])
   #     => true
@@ -2036,7 +2036,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all of vectors are linearly independent.
+  # Returns +true+ if all of vectors are linearly independent.
   #
   #   Vector[1,0].independent?(Vector[0,1])
   #     => true
@@ -2049,7 +2049,7 @@ class Vector
   end
 
   #
-  # Returns +true+ iff all elements are zero.
+  # Returns +true+ if all elements are zero.
   #
   def zero?
     all?(&:zero?)
@@ -2074,7 +2074,7 @@ class Vector
   #++
 
   #
-  # Returns +true+ iff the two vectors have the same elements in the same order.
+  # Returns +true+ if the two vectors have the same elements in the same order.
   #
   def ==(other)
     return false unless Vector === other
