@@ -103,14 +103,6 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Enumerable#filter is a new alias for Enumerable#select. [Feature #13784]
 
-[Enumerator]
-
-  [New methods]
-
-    * Enumerator#+ returns an enumerator object that iterates over the
-      elements of the receiver and then those of the other operand.
-      [Feature #15144]
-
 [Enumerator::ArithmeticSequence]
 
   * This is a new class to represent a generator of an arithmetic sequence,
@@ -130,6 +122,14 @@ sufficient information, see the ChangeLog file or Redmine
 
     * Enumerator::Lazy#filter is a new alias for
       Enumerator::Lazy#select.  [Feature #13784]
+
+[Enumerator]
+
+  [New methods]
+
+    * Enumerator#+ returns an enumerator object that iterates over the
+      elements of the receiver and then those of the other operand.
+      [Feature #15144]
 
 [ENV]
 
@@ -268,12 +268,11 @@ sufficient information, see the ChangeLog file or Redmine
     * Range#step now returns an instance of Enumerator::ArithmeticSequence
       class rather than one of Enumerator class.
 
-[RubyVM]
+[Regexp/String]
 
-  [New methods]
+    * Update Unicode version from 10.0.0 to 11.0.0 [Feature #14802]
 
-    * RubyVM.resolve_feature_path identifies the file that will be loaded by
-      "require(feature)". [experimental] [Feature #15230]
+    * Update Emoji version from 5.0 to 11.0.0 [Feature #14802]
 
 [RubyVM::AbstractSyntaxTree]
 
@@ -288,11 +287,12 @@ sufficient information, see the ChangeLog file or Redmine
     * RubyVM::AbstractSyntaxTree.of returns AST nodes of the given proc or method.
       [experimental]
 
-[Regexp/String]
+[RubyVM]
 
-    * Update Unicode version from 10.0.0 to 11.0.0 [Feature #14802]
+  [New methods]
 
-    * Update Emoji version from 5.0 to 11.0.0 [Feature #14802]
+    * RubyVM.resolve_feature_path identifies the file that will be loaded by
+      "require(feature)". [experimental] [Feature #15230]
 
 [String]
 
@@ -342,12 +342,6 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Stdlib updates (outstanding ones only)
 
-[Bundler]
-
-  * Add Bundler to Standard Library. [Feature #12733]
-
-  * Use 2.0.0. It's latest stable version.
-
 [BigDecimal]
 
   Update to the version 1.4.0.  This version includes several compatibility
@@ -356,6 +350,12 @@ sufficient information, see the ChangeLog file or Redmine
   [Modified methods]
 
   * BigDecimal() accepts new keywords "exception:" likewise Float().
+
+[Bundler]
+
+  * Add Bundler to Standard Library. [Feature #12733]
+
+  * Use 2.0.0. It's latest stable version.
 
 [Coverage]
 
