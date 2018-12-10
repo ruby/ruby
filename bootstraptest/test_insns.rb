@@ -409,6 +409,30 @@ tests = [
     'true' =~ /true/
   },
 
+  [ 'opt_RubyVM_return_value_is_used_', <<~'},', ],       # {
+    def used
+      used = yield
+      return used == true
+    end
+
+    used do
+      next RubyVM.return_value_is_used? # <- HERE
+    end
+  },
+
+  [ 'opt_RubyVM_return_value_is_used_', <<~'},', ],       # {
+    def notused
+      yield
+    rescue
+      return true
+    else
+      return false
+    end
+
+    notused do
+      raise unless RubyVM.return_value_is_used? # <- HERE
+    end
+  },
   [ 'opt_call_c_function', 'Struct.new(:x).new.x = true', ],
 ]
 

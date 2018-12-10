@@ -324,6 +324,7 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, VALUE block_handler);
 
 static VALUE rb_block_param_proxy;
+static VALUE rb_whether_the_return_value_is_used_p_m(VALUE self);
 
 #include "mjit.h"
 #include "vm_insnhelper.h"
@@ -2928,6 +2929,7 @@ Init_VM(void)
     rb_undef_alloc_func(rb_cRubyVM);
     rb_undef_method(CLASS_OF(rb_cRubyVM), "new");
     rb_define_singleton_method(rb_cRubyVM, "stat", vm_stat, -1);
+    rb_define_singleton_method(rb_cRubyVM, "return_value_is_used?", rb_whether_the_return_value_is_used_p_m, 0);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
@@ -3535,6 +3537,23 @@ vm_collect_usage_register(int reg, int isset)
 #endif
 
 #endif /* #ifndef MJIT_HEADER */
+
+/*
+ *  call-seq:
+ *    RubyVM.return_value_is_used? -> true or false
+ *
+ *  When this method returns +false+, the VM detects that the return
+ *  value of the calling block (or method) is discarded.  Care should
+ *  be taken if this method returns otherwise.  That merely indicates
+ *  that the VM cannot detect the usage of the return values of the
+ *  calling method.  They might or might not be actually used.
+ *
+ */
+static VALUE
+rb_whether_the_return_value_is_used_p_m(MAYBE_UNUSED(VALUE self))
+{
+    return rb_whether_the_return_value_is_used_p() ? Qtrue : Qfalse;
+}
 
 int
 rb_whether_the_return_value_is_used_p(void)
