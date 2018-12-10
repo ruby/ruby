@@ -814,7 +814,7 @@ linear_update(VALUE hash, st_data_t key,
               st_update_callback_func *func, st_data_t arg)
 {
     int retval, existing;
-    unsigned bin;
+    unsigned bin = RHASH_ARRAY_MAX_BOUND;
     st_data_t value = 0, old_key;
     st_hash_t hash_value = do_hash(key);
 
