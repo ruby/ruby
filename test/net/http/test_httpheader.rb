@@ -31,6 +31,11 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\xff") }
   end
 
+  def test_initialize_with_symbol
+    @c.initialize_http_header(foo: "abc")
+    assert_equal "abc", @c["foo"]
+  end
+
   def test_size
     assert_equal 0, @c.size
     @c['a'] = 'a'
