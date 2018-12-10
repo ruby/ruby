@@ -46,6 +46,8 @@ sufficient information, see the ChangeLog file or Redmine
 * Print +cause+ of the exception if the exception is not caught and printed
   its backtraces and error message [Feature #8257]
 
+* Flip-flop syntax is deprecated. [Feature #5400]
+
 === Core classes updates (outstanding ones only)
 
 [Array]
