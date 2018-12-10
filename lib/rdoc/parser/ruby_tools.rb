@@ -112,7 +112,8 @@ module RDoc::Parser::RubyTools
   ##
   # Skips whitespace tokens including newlines
 
-  def skip_tkspace
+  private \
+  def skip_tkspace_with_nl_with_tokens
     tokens = []
 
     while (tk = get_tk) and (:on_sp == tk[:kind] or :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]) do
@@ -123,10 +124,28 @@ module RDoc::Parser::RubyTools
     tokens
   end
 
+  if !defined? RubyVM.return_value_is_used? then
+    alias skip_tkspace skip_tkspace_with_nl_with_tokens
+  else
+    def skip_tkspace
+      if RubyVM.return_value_is_used? then
+        return skip_tkspace_with_nl_with_tokens
+      else
+        while (tk = get_tk) do
+          case tk[:kind]
+          when :on_sp, :on_nl, :on_ignored_nl then # next
+          else return unget_tk(tk)
+          end
+        end
+      end
+    end
+  end
+
   ##
   # Skips whitespace tokens excluding newlines
 
-  def skip_tkspace_without_nl
+  private \
+  def skip_tkspace_without_nl_with_tokens
     tokens = []
 
     while (tk = get_tk) and :on_sp == tk[:kind] do
@@ -135,6 +154,22 @@ module RDoc::Parser::RubyTools
 
     unget_tk(tk)
     tokens
+  end
+
+  if !defined? RubyVM.return_value_is_used? then
+    alias skip_tkspace_without_nl skip_tkspace_without_nl_with_tokens
+  else
+    def skip_tkspace_without_nl
+      if RubyVM.return_value_is_used? then
+        return skip_tkspace_without_nl_with_tokens
+      else
+        while (tk = get_tk) do
+          if :on_sp != tk[:kind] then
+            return unget_tk(tk)
+          end
+        end
+      end
+    end
   end
 
   ##

@@ -3472,6 +3472,10 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                   case idNilP:   SP_INSN(nil_p);  return COMPILE_OK;
 		  case idSucc:	 SP_INSN(succ);	  return COMPILE_OK;
 		  case idNot:	 SP_INSN(not);	  return COMPILE_OK;
+                  default:
+                    if (vm_ci_mid(ci) == rb_intern("return_value_is_used?")) {
+                        return SP_INSN(RubyVM_return_value_is_used_);
+                    }
 		}
 		break;
 	      case 1:

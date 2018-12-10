@@ -346,7 +346,7 @@ extern VALUE rb_vm_invoke_bmethod(rb_execution_context_t *ec, rb_proc_t *proc, V
                                   int argc, const VALUE *argv, int kw_splat, VALUE block_handler,
                                   const rb_callable_method_entry_t *me);
 static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE self, int argc, const VALUE *argv, int kw_splat, VALUE block_handler);
-
+static VALUE rb_whether_the_return_value_is_used_p_m(VALUE self);
 #include "vm_insnhelper.c"
 
 #ifndef MJIT_HEADER
@@ -3064,6 +3064,7 @@ Init_VM(void)
     rb_define_singleton_method(rb_cRubyVM, "reset_debug_counters", rb_debug_counter_reset, 0);
     rb_define_singleton_method(rb_cRubyVM, "show_debug_counters", rb_debug_counter_show, 0);
 #endif
+    rb_define_singleton_method(rb_cRubyVM, "return_value_is_used?", rb_whether_the_return_value_is_used_p_m, 0);
 
     /* FrozenCore (hidden) */
     fcore = rb_class_new(rb_cBasicObject);
@@ -3805,6 +3806,25 @@ rb_vm_empty_cc(void)
 }
 
 #endif /* #ifndef MJIT_HEADER */
+
+/*
+ *  call-seq:
+ *    RubyVM.return_value_is_used? -> true or false
+ *
+ *  Checks if the innermost block/method is expected to return meaningful
+ *  return value(s) or not.  When this method returns +false+, the VM detects
+ *  that the return value of the calling block/method is discarded.  Such
+ *  block/method can return anything.  Care should be taken if this method
+ *  returns otherwise.  That merely indicates that the VM cannot detect the
+ *  usage of the return values of the current block/method.  They might or
+ *  might not be actually used.
+ *
+ */
+static VALUE
+rb_whether_the_return_value_is_used_p_m(MAYBE_UNUSED(VALUE self))
+{
+    return rb_whether_the_return_value_is_used_p() ? Qtrue : Qfalse;
+}
 
 bool
 rb_whether_the_return_value_is_used_p(void)
