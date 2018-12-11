@@ -487,6 +487,7 @@ static TRACE *new_trace_body(rb_iseq_t *iseq, rb_event_flag_t event, long data);
 
 static int iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *anchor, const NODE *n, int);
 static int iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
+static int iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 static int iseq_insns_unification(rb_iseq_t *iseq, LINK_ANCHOR *const anchor);
 
@@ -618,6 +619,7 @@ rb_iseq_compile_ifunc(rb_iseq_t *iseq, const struct vm_ifunc *ifunc)
 
     ADD_INSN(ret, ISEQ_COMPILE_DATA(iseq)->last_line, leave);
 
+    CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);
 }
 
@@ -732,6 +734,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 	validate_labels(iseq, labels_table);
     }
 #endif
+    CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);
 }
 
@@ -1296,7 +1299,7 @@ update_catch_except_flags(struct rb_iseq_constant_body *body)
 }
 
 static int
-iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+iseq_setup_insn(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
     if (RTEST(ISEQ_COMPILE_DATA(iseq)->err_info))
 	return COMPILE_NG;
@@ -1325,6 +1328,15 @@ iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 	if (compile_debug > 5)
 	    dump_disasm_list(FIRST_ELEMENT(anchor));
     }
+
+    return COMPILE_OK;
+}
+
+static int
+iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
+{
+    if (RTEST(ISEQ_COMPILE_DATA(iseq)->err_info))
+	return COMPILE_NG;
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
