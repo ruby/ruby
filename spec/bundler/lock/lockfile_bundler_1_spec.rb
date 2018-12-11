@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "the lockfile format", :bundler => "< 3" do
+RSpec.describe "the lockfile format", :bundler => "< 2" do
   include Bundler::GemHelpers
 
   before { ENV["BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD"] = "TRUE" }

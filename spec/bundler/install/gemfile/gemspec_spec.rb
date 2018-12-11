@@ -433,7 +433,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
       end
 
-      context "on ruby", :bundler => "< 3" do
+      context "on ruby", :bundler => "< 2" do
         before do
           simulate_platform("ruby")
           bundle :install
@@ -534,7 +534,7 @@ RSpec.describe "bundle install from an existing gemspec" do
         end
       end
 
-      context "on ruby", :bundler => "3" do
+      context "on ruby", :bundler => "2" do
         before do
           simulate_platform("ruby")
           bundle :install

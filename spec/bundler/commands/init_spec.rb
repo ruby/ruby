@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle init" do
-  it "generates a Gemfile", :bundler => "< 3" do
+  it "generates a Gemfile", :bundler => "< 2" do
     bundle! :init
     expect(out).to include("Writing new Gemfile")
     expect(bundled_app("Gemfile")).to be_file
   end
 
-  it "generates a gems.rb", :bundler => "3" do
+  it "generates a gems.rb", :bundler => "2" do
     bundle! :init
     expect(out).to include("Writing new gems.rb")
     expect(bundled_app("gems.rb")).to be_file
   end
 
-  context "when a Gemfile already exists", :bundler => "< 3" do
+  context "when a Gemfile already exists", :bundler => "< 2" do
     before do
       create_file "Gemfile", <<-G
         gem "rails"
@@ -30,7 +30,7 @@ RSpec.describe "bundle init" do
     end
   end
 
-  context "when gems.rb already exists", :bundler => ">= 3" do
+  context "when gems.rb already exists", :bundler => ">= 2" do
     before do
       create_file("gems.rb", <<-G)
         gem "rails"
@@ -47,7 +47,7 @@ RSpec.describe "bundle init" do
     end
   end
 
-  context "when a Gemfile exists in a parent directory", :bundler => "< 3" do
+  context "when a Gemfile exists in a parent directory", :bundler => "< 2" do
     let(:subdir) { "child_dir" }
 
     it "lets users generate a Gemfile in a child directory" do
@@ -82,7 +82,7 @@ RSpec.describe "bundle init" do
     end
   end
 
-  context "when a gems.rb file exists in a parent directory", :bundler => ">= 3" do
+  context "when a gems.rb file exists in a parent directory", :bundler => ">= 2" do
     let(:subdir) { "child_dir" }
 
     it "lets users generate a Gemfile in a child directory" do
@@ -99,7 +99,7 @@ RSpec.describe "bundle init" do
     end
   end
 
-  context "given --gemspec option", :bundler => "< 3" do
+  context "given --gemspec option", :bundler => "< 2" do
     let(:spec_file) { tmp.join("test.gemspec") }
 
     it "should generate from an existing gemspec" do
@@ -115,7 +115,7 @@ RSpec.describe "bundle init" do
 
       bundle :init, :gemspec => spec_file
 
-      gemfile = if Bundler::VERSION[0, 2].to_i < 3
+      gemfile = if Bundler::VERSION[0, 2] == "1."
         bundled_app("Gemfile").read
       else
         bundled_app("gems.rb").read
@@ -146,7 +146,7 @@ RSpec.describe "bundle init" do
   context "when init_gems_rb setting is enabled" do
     before { bundle "config init_gems_rb true" }
 
-    context "given --gemspec option", :bundler => "< 3" do
+    context "given --gemspec option", :bundler => "< 2" do
       let(:spec_file) { tmp.join("test.gemspec") }
 
       before do

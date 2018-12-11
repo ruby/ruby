@@ -3,7 +3,7 @@
 
 require "bundler/shared_helpers"
 
-Bundler::SharedHelpers.major_deprecation(3, "the bundle_ruby executable has been removed in favor of `bundle platform --ruby`")
+Bundler::SharedHelpers.major_deprecation(2, "the bundle_ruby executable has been removed in favor of `bundle platform --ruby`")
 
 Signal.trap("INT") { exit 1 }
 

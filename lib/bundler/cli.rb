@@ -229,7 +229,7 @@ module Bundler
       "Include gems that are part of the specified named group."
     map "i" => "install"
     def install
-      SharedHelpers.major_deprecation(3, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
+      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require "bundler/cli/install"
       Bundler.settings.temporary(:no_install => false) do
         Install.new(options.dup).run
@@ -275,7 +275,7 @@ module Bundler
     method_option "all", :type => :boolean, :banner =>
       "Update everything."
     def update(*gems)
-      SharedHelpers.major_deprecation(3, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
+      SharedHelpers.major_deprecation(2, "The `--force` option has been renamed to `--redownload`") if ARGV.include?("--force")
       require "bundler/cli/update"
       Update.new(options, gems).run
     end
@@ -303,7 +303,7 @@ module Bundler
         old_argv = ARGV.join(" ")
         new_argv = [new_command, *new_arguments.compact].join(" ")
 
-        Bundler::SharedHelpers.major_deprecation(3, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
+        Bundler::SharedHelpers.major_deprecation(2, "use `bundle #{new_argv}` instead of `bundle #{old_argv}`")
       end
       require "bundler/cli/show"
       Show.new(options, gem_name).run
@@ -537,7 +537,7 @@ module Bundler
       method_option :version, :type => :boolean, :default => false, :aliases => "-v", :desc => "Set to show each gem version."
       method_option :without, :type => :array, :default => [], :aliases => "-W", :banner => "GROUP[ GROUP...]", :desc => "Exclude gems that are part of the specified named group."
       def viz
-        SharedHelpers.major_deprecation 3, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
+        SharedHelpers.major_deprecation 2, "The `viz` command has been moved to the `bundle-viz` gem, see https://github.com/bundler/bundler-viz"
         require "bundler/cli/viz"
         Viz.new(options.dup).run
       end
@@ -608,7 +608,7 @@ module Bundler
     method_option "group", :type => :string, :banner =>
      "Install gem into a bundler group"
     def inject(name, version)
-      SharedHelpers.major_deprecation 3, "The `inject` command has been replaced by the `add` command"
+      SharedHelpers.major_deprecation 2, "The `inject` command has been replaced by the `add` command"
       require "bundler/cli/inject"
       Inject.new(options.dup, name, version).run
     end

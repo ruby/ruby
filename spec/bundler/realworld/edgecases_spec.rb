@@ -57,7 +57,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     expect(lockfile).to include("activemodel (3.0.5)")
   end
 
-  it "resolves dependencies correctly", :ruby => "<= 1.9.3" do
+  it "resolves dependencies correctly", :ruby => "1.9.3" do
     gemfile <<-G
       source "https://rubygems.org"
 
@@ -70,7 +70,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
     expect(lockfile).to include("capybara (2.2.1)")
   end
 
-  it "installs the latest version of gxapi_rails", :ruby => "<= 1.9.3" do
+  it "installs the latest version of gxapi_rails", :ruby => "1.9.3" do
     gemfile <<-G
       source "https://rubygems.org"
 
@@ -188,7 +188,7 @@ RSpec.describe "real world edgecases", :realworld => true, :sometimes => true do
             activemodel (= 4.2.7.1)
             activerecord (= 4.2.7.1)
             activesupport (= 4.2.7.1)
-            bundler (>= 1.3.0, < 3.0)
+            bundler (>= 1.3.0, < 2.0)
             railties (= 4.2.7.1)
             sprockets-rails
           rails-deprecated_sanitizer (1.0.3)

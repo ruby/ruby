@@ -142,7 +142,7 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     digest = Digest(:SHA1).hexdigest(git_path.to_s)
-    cache_path = Bundler.bundler_major_version < 3 ? vendored_gems("cache/bundler/git/foo-1.0-#{digest}") : home(".bundle/cache/git/foo-1.0-#{digest}")
+    cache_path = Bundler::VERSION.start_with?("1.") ? vendored_gems("cache/bundler/git/foo-1.0-#{digest}") : home(".bundle/cache/git/foo-1.0-#{digest}")
     expect(cache_path).to exist
   end
 
@@ -343,7 +343,7 @@ RSpec.describe "bundle clean" do
     expect(out).to include("rack (1.0.0)").and include("thin (1.0)")
   end
 
-  it "--clean should override the bundle setting on install", :bundler => "< 3" do
+  it "--clean should override the bundle setting on install", :bundler => "< 2" do
     gemfile <<-G
       source "file://#{gem_repo1}"
 
@@ -363,7 +363,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "thin-1.0"
   end
 
-  it "--clean should override the bundle setting on update", :bundler => "< 3" do
+  it "--clean should override the bundle setting on update", :bundler => "< 2" do
     build_repo2
 
     gemfile <<-G
@@ -383,7 +383,7 @@ RSpec.describe "bundle clean" do
     should_not_have_gems "foo-1.0"
   end
 
-  it "automatically cleans when path has not been set", :bundler => "3" do
+  it "automatically cleans when path has not been set", :bundler => "2" do
     build_repo2
 
     install_gemfile! <<-G

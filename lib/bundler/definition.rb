@@ -331,7 +331,7 @@ module Bundler
       # i.e., Windows with `git config core.autocrlf=true`
       contents.gsub!(/\n/, "\r\n") if @lockfile_contents.match("\r\n")
 
-      if @locked_bundler_version && Bundler.feature_flag.lockfile_upgrade_warning?
+      if @locked_bundler_version
         locked_major = @locked_bundler_version.segments.first
         current_major = Gem::Version.create(Bundler::VERSION).segments.first
 
