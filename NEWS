@@ -48,8 +48,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Flip-flop syntax is deprecated. [Feature #5400]
 
-* Native implementation of coroutines to improve performance of Fiber.
-  [Feature #14739]
+* Native implementations (arm32, arm64, ppc64le, win32, win64, x86, amd64) of
+  coroutines to improve performance of Fiber. [Feature #14739]
 
 === Core classes updates (outstanding ones only)
 
