@@ -46,7 +46,7 @@ ruby$target:::method-return
 
     def ruby_program
       <<-eoruby
-      TracePoint.new{}.enable
+      TracePoint.new{}.__enable(nil, nil)
       class Foo
 	def self.foo; end
       end
