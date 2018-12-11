@@ -37,3 +37,7 @@ _coroutine_transfer:
 
 	# Jump to the address on the stack
 	ret
+
+#if defined(__linux__) && defined(__ELF__)
+.section .note.GNU-stack,"",%progbits
+#endif
