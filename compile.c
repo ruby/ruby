@@ -1336,7 +1336,7 @@ static int
 iseq_setup(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 {
     if (RTEST(ISEQ_COMPILE_DATA(iseq)->err_info))
-	return COMPILE_NG;
+        return COMPILE_NG;
 
     debugs("[compile step 4.1 (iseq_set_sequence)]\n");
     if (!iseq_set_sequence(iseq, anchor)) return COMPILE_NG;
