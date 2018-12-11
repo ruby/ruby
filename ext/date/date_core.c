@@ -239,11 +239,8 @@ f_negative_p(VALUE x)
 struct SimpleDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
     int jd;	/* as utc */
-    /* df is zero */
-    /* sf is zero */
-    /* of is zero */
+    VALUE nth;	/* not always canonicalized */
     date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as utc=local */
     int year;	/* truncated */
@@ -262,11 +259,8 @@ struct SimpleDateData
 struct ComplexDateData
 {
     unsigned flags;
-    VALUE nth;	/* not always canonicalized */
     int jd; 	/* as utc */
-    int df;	/* as utc, in secs */
-    VALUE sf;	/* in nano secs */
-    int of;	/* in secs */
+    VALUE nth;	/* not always canonicalized */
     date_sg_t sg;  /* 2298874..2426355 or -/+oo -- at most 22 bits */
     /* decoded as local */
     int year;	/* truncated */
@@ -280,6 +274,9 @@ struct ComplexDateData
     /* packed civil */
     unsigned pc;
 #endif
+    int df;	/* as utc, in secs */
+    int of;	/* in secs */
+    VALUE sf;	/* in nano secs */
 };
 
 union DateData {
