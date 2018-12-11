@@ -181,7 +181,6 @@ RSpec.describe "The library itself" do
       gem.coc
       gem.mit
       inline
-      lockfile_upgrade_warning
       lockfile_uses_separate_rubygems_sources
       use_gem_version_promoter_for_major_updates
       viz_command

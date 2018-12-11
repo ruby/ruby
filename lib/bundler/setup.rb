@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-return unless defined?(Gem)
-
 require "bundler/shared_helpers"
 
 if Bundler::SharedHelpers.in_bundle?

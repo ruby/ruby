@@ -49,7 +49,7 @@ RSpec.describe "bundle pristine", :ruby_repo do
       bundle! "pristine", :system_bundler => true
       bundle! "-v", :system_bundler => true
 
-      expected = if Bundler::VERSION < "3.0"
+      expected = if Bundler::VERSION < "2.0"
         "Bundler version"
       else
         Bundler::VERSION

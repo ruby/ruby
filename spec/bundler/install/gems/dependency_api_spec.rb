@@ -243,7 +243,7 @@ RSpec.describe "gemcutter's dependency API" do
     end
   end
 
-  it "fetches again when more dependencies are found in subsequent sources", :bundler => "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources", :bundler => "< 2" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -302,7 +302,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "rack 1.2"
   end
 
-  it "considers all possible versions of dependencies from all api gem sources", :bundler => "< 3" do
+  it "considers all possible versions of dependencies from all api gem sources", :bundler => "< 2" do
     # In this scenario, the gem "somegem" only exists in repo4.  It depends on specific version of activesupport that
     # exists only in repo1.  There happens also be a version of activesupport in repo4, but not the one that version 1.0.0
     # of somegem wants. This test makes sure that bundler actually finds version 1.2.3 of active support in the other
@@ -372,7 +372,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(out).to include("Fetching source index from http://localgemserver.test/extra")
   end
 
-  it "does not fetch every spec if the index of gems is large when doing back deps", :bundler => "< 3" do
+  it "does not fetch every spec if the index of gems is large when doing back deps", :bundler => "< 2" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -432,7 +432,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "foo 1.0"
   end
 
-  it "fetches again when more dependencies are found in subsequent sources using --deployment", :bundler => "< 3" do
+  it "fetches again when more dependencies are found in subsequent sources using --deployment", :bundler => "< 2" do
     build_repo2 do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
@@ -496,7 +496,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(the_bundle).to include_gems "rails 2.3.2"
   end
 
-  it "installs the binstubs", :bundler => "< 3" do
+  it "installs the binstubs", :bundler => "< 2" do
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -508,7 +508,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(out).to eq("1.0.0")
   end
 
-  it "installs the bins when using --path and uses autoclean", :bundler => "< 3" do
+  it "installs the bins when using --path and uses autoclean", :bundler => "< 2" do
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -519,7 +519,7 @@ RSpec.describe "gemcutter's dependency API" do
     expect(vendored_gems("bin/rackup")).to exist
   end
 
-  it "installs the bins when using --path and uses bundle clean", :bundler => "< 3" do
+  it "installs the bins when using --path and uses bundle clean", :bundler => "< 2" do
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -594,7 +594,7 @@ RSpec.describe "gemcutter's dependency API" do
       expect(out).not_to include("#{user}:#{password}")
     end
 
-    it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 3" do
+    it "strips http basic auth creds when warning about ambiguous sources", :bundler => "< 2" do
       gemfile <<-G
         source "#{basic_auth_source_uri}"
         source "file://#{gem_repo1}"

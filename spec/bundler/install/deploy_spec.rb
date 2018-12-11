@@ -8,7 +8,7 @@ RSpec.describe "install with --deployment or --frozen" do
     G
   end
 
-  context "with CLI flags", :bundler => "< 3" do
+  context "with CLI flags", :bundler => "< 2" do
     it "fails without a lockfile and says that --deployment requires a lock" do
       bundle "install --deployment"
       expect(out).to include("The --deployment flag requires a Gemfile.lock")
@@ -109,11 +109,11 @@ RSpec.describe "install with --deployment or --frozen" do
       bundle "install"
     end
 
-    it "works with the --deployment flag if you didn't change anything", :bundler => "< 3" do
+    it "works with the --deployment flag if you didn't change anything", :bundler => "< 2" do
       bundle! "install --deployment"
     end
 
-    it "works with the --frozen flag if you didn't change anything", :bundler => "< 3" do
+    it "works with the --frozen flag if you didn't change anything", :bundler => "< 2" do
       bundle! "install --frozen"
     end
 
@@ -165,7 +165,7 @@ RSpec.describe "install with --deployment or --frozen" do
       expect(out).to include("The path `#{lib_path("path_gem-1.0")}` does not exist.")
     end
 
-    it "can have --frozen set via an environment variable", :bundler => "< 3" do
+    it "can have --frozen set via an environment variable", :bundler => "< 2" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -297,7 +297,7 @@ RSpec.describe "install with --deployment or --frozen" do
 
     context "when replacing a host with the same host with credentials" do
       let(:success_message) do
-        if Bundler.bundler_major_version < 3
+        if Bundler::VERSION.split(".", 2).first == "1"
           "Could not reach host localgemserver.test"
         else
           "Bundle complete!"

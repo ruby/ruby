@@ -29,7 +29,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app("Gemfile.lock")).to exist
     end
 
-    it "does not create ./.bundle by default", :bundler => "< 3" do
+    it "does not create ./.bundle by default", :bundler => "< 2" do
       gemfile <<-G
         source "file://#{gem_repo1}"
         gem "rack"
@@ -275,14 +275,14 @@ RSpec.describe "bundle install with gem sources" do
         expect(the_bundle).to include_gems "rack 1.0"
       end
 
-      it "allows running bundle install --system without deleting foo", :bundler => "< 3" do
+      it "allows running bundle install --system without deleting foo", :bundler => "< 2" do
         bundle "install", forgotten_command_line_options(:path => "vendor")
         bundle "install", forgotten_command_line_options(:system => true)
         FileUtils.rm_rf(bundled_app("vendor"))
         expect(the_bundle).to include_gems "rack 1.0"
       end
 
-      it "allows running bundle install --system after deleting foo", :bundler => "< 3" do
+      it "allows running bundle install --system after deleting foo", :bundler => "< 2" do
         bundle "install", forgotten_command_line_options(:path => "vendor")
         FileUtils.rm_rf(bundled_app("vendor"))
         bundle "install", forgotten_command_line_options(:system => true)
@@ -290,7 +290,7 @@ RSpec.describe "bundle install with gem sources" do
       end
     end
 
-    it "finds gems in multiple sources", :bundler => "< 3" do
+    it "finds gems in multiple sources", :bundler => "< 2" do
       build_repo2
       update_repo2
 

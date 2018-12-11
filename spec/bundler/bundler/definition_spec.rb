@@ -13,6 +13,7 @@ RSpec.describe Bundler::Definition do
       subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
 
       it "raises an PermissionError with explanation" do
+        allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with("Gemfile.lock", "wb").
           and_raise(Errno::EACCES)
         expect { subject.lock("Gemfile.lock") }.
@@ -23,6 +24,7 @@ RSpec.describe Bundler::Definition do
       subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
 
       it "raises a TemporaryResourceError with explanation" do
+        allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with("Gemfile.lock", "wb").
           and_raise(Errno::EAGAIN)
         expect { subject.lock("Gemfile.lock") }.
@@ -32,7 +34,7 @@ RSpec.describe Bundler::Definition do
   end
 
   describe "detects changes" do
-    it "for a path gem with changes", :bundler => "< 3" do
+    it "for a path gem with changes", :bundler => "< 2" do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
@@ -70,7 +72,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with changes", :bundler => "3" do
+    it "for a path gem with changes", :bundler => "2" do
       build_lib "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
@@ -108,7 +110,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "< 3" do
+    it "for a path gem with deps and no changes", :bundler => "< 2" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"
@@ -145,7 +147,7 @@ RSpec.describe Bundler::Definition do
       G
     end
 
-    it "for a path gem with deps and no changes", :bundler => "3" do
+    it "for a path gem with deps and no changes", :bundler => "2" do
       build_lib "foo", "1.0", :path => lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"

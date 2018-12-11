@@ -25,23 +25,7 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
-    context "github_https feature flag" do
-      it "is true when github.https is true" do
-        bundle "config github.https true"
-        expect(Bundler.feature_flag.github_https?).to eq "true"
-      end
-    end
-
-    context "default hosts (git, gist)", :bundler => "< 3" do
-      context "when github.https config is true" do
-        before { bundle "config github.https true" }
-        it "converts :github to :git using https" do
-          subject.gem("sparks", :github => "indirect/sparks")
-          github_uri = "https://github.com/indirect/sparks.git"
-          expect(subject.dependencies.first.source.uri).to eq(github_uri)
-        end
-      end
-
+    context "default hosts (git, gist)", :bundler => "< 2" do
       it "converts :github to :git" do
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "git://github.com/indirect/sparks.git"
@@ -79,7 +63,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    context "default git sources", :bundler => "3" do
+    context "default git sources", :bundler => "2" do
       it "has none" do
         expect(subject.instance_variable_get(:@git_sources)).to eq({})
       end
@@ -245,7 +229,7 @@ RSpec.describe Bundler::Dsl do
     #   gem 'spree_api'
     #   gem 'spree_backend'
     # end
-    describe "#github", :bundler => "< 3" do
+    describe "#github", :bundler => "< 2" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]
         subject.github "spree" do
@@ -258,7 +242,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    describe "#github", :bundler => "3" do
+    describe "#github", :bundler => "2" do
       it "from github" do
         expect do
           spree_gems = %w[spree_core spree_api spree_backend]
