@@ -25,7 +25,23 @@ RSpec.describe Bundler::Dsl do
       expect { subject.git_source(:example) }.to raise_error(Bundler::InvalidOption)
     end
 
+    context "github_https feature flag" do
+      it "is true when github.https is true" do
+        bundle "config github.https true"
+        expect(Bundler.feature_flag.github_https?).to eq "true"
+      end
+    end
+
     context "default hosts (git, gist)", :bundler => "< 2" do
+      context "when github.https config is true" do
+        before { bundle "config github.https true" }
+        it "converts :github to :git using https" do
+          subject.gem("sparks", :github => "indirect/sparks")
+          github_uri = "https://github.com/indirect/sparks.git"
+          expect(subject.dependencies.first.source.uri).to eq(github_uri)
+        end
+      end
+
       it "converts :github to :git" do
         subject.gem("sparks", :github => "indirect/sparks")
         github_uri = "git://github.com/indirect/sparks.git"
