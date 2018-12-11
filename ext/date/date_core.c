@@ -6495,7 +6495,7 @@ d_lite_to_s(VALUE self)
 static VALUE
 mk_inspect_raw(union DateData *x, VALUE klass)
 {
-    char flags[5];
+    char flags[6];
 
     flags[0] = (x->flags & COMPLEX_DAT) ? 'C' : 'S';
     flags[1] = (x->flags & HAVE_JD)     ? 'j' : '-';
@@ -9256,20 +9256,19 @@ Init_date_core(void)
     rb_define_alloc_func(cDate, d_lite_s_alloc_simple);
 
 #ifndef NDEBUG
-#define de_define_private_method rb_define_private_method
-    de_define_private_method(CLASS_OF(cDate), "_valid_jd?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_jd?",
 			     date_s__valid_jd_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_ordinal?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_ordinal?",
 			     date_s__valid_ordinal_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_civil?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_civil?",
 			     date_s__valid_civil_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_date?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_date?",
 			     date_s__valid_civil_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_commercial?",
 			     date_s__valid_commercial_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_weeknum?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_weeknum?",
 			     date_s__valid_weeknum_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "_valid_nth_kday?",
+    rb_define_private_method(CLASS_OF(cDate), "_valid_nth_kday?",
 			     date_s__valid_nth_kday_p, -1);
 #endif
 
@@ -9282,11 +9281,11 @@ Init_date_core(void)
 			       date_s_valid_commercial_p, -1);
 
 #ifndef NDEBUG
-    de_define_private_method(CLASS_OF(cDate), "valid_weeknum?",
+    rb_define_private_method(CLASS_OF(cDate), "valid_weeknum?",
 			     date_s_valid_weeknum_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "valid_nth_kday?",
+    rb_define_private_method(CLASS_OF(cDate), "valid_nth_kday?",
 			     date_s_valid_nth_kday_p, -1);
-    de_define_private_method(CLASS_OF(cDate), "zone_to_diff",
+    rb_define_private_method(CLASS_OF(cDate), "zone_to_diff",
 			     date_s_zone_to_diff, 1);
 #endif
 
@@ -9297,10 +9296,8 @@ Init_date_core(void)
 			       date_s_gregorian_leap_p, 1);
 
 #ifndef NDEBUG
-#define de_define_singleton_method rb_define_singleton_method
-#define de_define_alias rb_define_alias
-    de_define_singleton_method(cDate, "new!", date_s_new_bang, -1);
-    de_define_alias(rb_singleton_class(cDate), "new_l!", "new");
+    rb_define_singleton_method(cDate, "new!", date_s_new_bang, -1);
+    rb_define_alias(rb_singleton_class(cDate), "new_l!", "new");
 #endif
 
     rb_define_singleton_method(cDate, "jd", date_s_jd, -1);
@@ -9309,8 +9306,8 @@ Init_date_core(void)
     rb_define_singleton_method(cDate, "commercial", date_s_commercial, -1);
 
 #ifndef NDEBUG
-    de_define_singleton_method(cDate, "weeknum", date_s_weeknum, -1);
-    de_define_singleton_method(cDate, "nth_kday", date_s_nth_kday, -1);
+    rb_define_singleton_method(cDate, "weeknum", date_s_weeknum, -1);
+    rb_define_singleton_method(cDate, "nth_kday", date_s_nth_kday, -1);
 #endif
 
     rb_define_singleton_method(cDate, "today", date_s_today, -1);
@@ -9337,7 +9334,7 @@ Init_date_core(void)
     rb_define_method(cDate, "initialize_copy", d_lite_initialize_copy, 1);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "fill", d_lite_fill, 0);
+    rb_define_method(cDate, "fill", d_lite_fill, 0);
 #endif
 
     rb_define_method(cDate, "ajd", d_lite_ajd, 0);
@@ -9359,8 +9356,8 @@ Init_date_core(void)
     rb_define_method(cDate, "cwday", d_lite_cwday, 0);
 
 #ifndef NDEBUG
-    de_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
-    de_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
+    rb_define_private_method(cDate, "wnum0", d_lite_wnum0, 0);
+    rb_define_private_method(cDate, "wnum1", d_lite_wnum1, 0);
 #endif
 
     rb_define_method(cDate, "wday", d_lite_wday, 0);
@@ -9374,7 +9371,7 @@ Init_date_core(void)
     rb_define_method(cDate, "saturday?", d_lite_saturday_p, 0);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
+    rb_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
 #endif
 
     rb_define_method(cDate, "julian?", d_lite_julian_p, 0);
@@ -9415,7 +9412,7 @@ Init_date_core(void)
 
     rb_define_method(cDate, "to_s", d_lite_to_s, 0);
 #ifndef NDEBUG
-    de_define_method(cDate, "inspect_raw", d_lite_inspect_raw, 0);
+    rb_define_method(cDate, "inspect_raw", d_lite_inspect_raw, 0);
 #endif
     rb_define_method(cDate, "inspect", d_lite_inspect, 0);
 
@@ -9432,7 +9429,7 @@ Init_date_core(void)
     rb_define_method(cDate, "jisx0301", d_lite_jisx0301, 0);
 
 #ifndef NDEBUG
-    de_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
+    rb_define_method(cDate, "marshal_dump_old", d_lite_marshal_dump_old, 0);
 #endif
     rb_define_method(cDate, "marshal_dump", d_lite_marshal_dump, 0);
     rb_define_method(cDate, "marshal_load", d_lite_marshal_load, 1);
@@ -9589,9 +9586,9 @@ Init_date_core(void)
 			       datetime_s_commercial, -1);
 
 #ifndef NDEBUG
-    de_define_singleton_method(cDateTime, "weeknum",
+    rb_define_singleton_method(cDateTime, "weeknum",
 			       datetime_s_weeknum, -1);
-    de_define_singleton_method(cDateTime, "nth_kday",
+    rb_define_singleton_method(cDateTime, "nth_kday",
 			       datetime_s_nth_kday, -1);
 #endif
 
@@ -9656,15 +9653,15 @@ Init_date_core(void)
 #ifndef NDEBUG
     /* tests */
 
-    de_define_singleton_method(cDate, "test_civil", date_s_test_civil, 0);
-    de_define_singleton_method(cDate, "test_ordinal", date_s_test_ordinal, 0);
-    de_define_singleton_method(cDate, "test_commercial",
+    rb_define_singleton_method(cDate, "test_civil", date_s_test_civil, 0);
+    rb_define_singleton_method(cDate, "test_ordinal", date_s_test_ordinal, 0);
+    rb_define_singleton_method(cDate, "test_commercial",
 			       date_s_test_commercial, 0);
-    de_define_singleton_method(cDate, "test_weeknum", date_s_test_weeknum, 0);
-    de_define_singleton_method(cDate, "test_nth_kday", date_s_test_nth_kday, 0);
-    de_define_singleton_method(cDate, "test_unit_conv",
+    rb_define_singleton_method(cDate, "test_weeknum", date_s_test_weeknum, 0);
+    rb_define_singleton_method(cDate, "test_nth_kday", date_s_test_nth_kday, 0);
+    rb_define_singleton_method(cDate, "test_unit_conv",
 			       date_s_test_unit_conv, 0);
-    de_define_singleton_method(cDate, "test_all", date_s_test_all, 0);
+    rb_define_singleton_method(cDate, "test_all", date_s_test_all, 0);
 #endif
 }
 
