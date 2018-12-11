@@ -538,7 +538,7 @@ describe "File.open" do
             io.read.should == "ruby"
             Dir["#{dir}/*"].should == []
           end
-        rescue Errno::EOPNOTSUPP, Errno::EINVAL
+        rescue Errno::EOPNOTSUPP, Errno::EINVAL, Errno::EISDIR
           # EOPNOTSUPP: no support from the filesystem
           # EINVAL: presumably bug in glibc
           1.should == 1
