@@ -537,8 +537,6 @@ sufficient information, see the ChangeLog file or Redmine
 
 === C API updates
 
-=== Supported platform changes
-
 === Implementation improvements
 
 * Speedup Proc#call because we don't need to care about <code>$SAFE</code>
@@ -591,7 +589,5 @@ sufficient information, see the ChangeLog file or Redmine
   [After]
     * libruby.2.6.dylib
     * libruby.dylib -> libruby.2.6.dylib
-
-=== Misc
 
 * Extracted misc/*.el files to https://github.com/ruby/elisp
