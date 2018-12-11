@@ -9377,16 +9377,6 @@ Init_date_core(void)
     de_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
 #endif
 
-    rb_define_private_method(cDate, "hour", d_lite_hour, 0);
-    rb_define_private_method(cDate, "min", d_lite_min, 0);
-    rb_define_private_method(cDate, "minute", d_lite_min, 0);
-    rb_define_private_method(cDate, "sec", d_lite_sec, 0);
-    rb_define_private_method(cDate, "second", d_lite_sec, 0);
-    rb_define_private_method(cDate, "sec_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "second_fraction", d_lite_sec_fraction, 0);
-    rb_define_private_method(cDate, "offset", d_lite_offset, 0);
-    rb_define_private_method(cDate, "zone", d_lite_zone, 0);
-
     rb_define_method(cDate, "julian?", d_lite_julian_p, 0);
     rb_define_method(cDate, "gregorian?", d_lite_gregorian_p, 0);
     rb_define_method(cDate, "leap?", d_lite_leap_p, 0);
@@ -9397,8 +9387,6 @@ Init_date_core(void)
     rb_define_method(cDate, "england", d_lite_england, 0);
     rb_define_method(cDate, "julian", d_lite_julian, 0);
     rb_define_method(cDate, "gregorian", d_lite_gregorian, 0);
-
-    rb_define_private_method(cDate, "new_offset", d_lite_new_offset, -1);
 
     rb_define_method(cDate, "+", d_lite_plus, 1);
     rb_define_method(cDate, "-", d_lite_minus, 1);
@@ -9631,19 +9619,16 @@ Init_date_core(void)
     rb_define_singleton_method(cDateTime, "jisx0301",
 			       datetime_s_jisx0301, -1);
 
-#define f_public(m,s) rb_funcall(m, rb_intern("public"), 1,\
-				 ID2SYM(rb_intern(s)))
-
-    f_public(cDateTime, "hour");
-    f_public(cDateTime, "min");
-    f_public(cDateTime, "minute");
-    f_public(cDateTime, "sec");
-    f_public(cDateTime, "second");
-    f_public(cDateTime, "sec_fraction");
-    f_public(cDateTime, "second_fraction");
-    f_public(cDateTime, "offset");
-    f_public(cDateTime, "zone");
-    f_public(cDateTime, "new_offset");
+    rb_define_method(cDateTime, "hour", d_lite_hour, 0);
+    rb_define_method(cDateTime, "min", d_lite_min, 0);
+    rb_define_method(cDateTime, "minute", d_lite_min, 0);
+    rb_define_method(cDateTime, "sec", d_lite_sec, 0);
+    rb_define_method(cDateTime, "second", d_lite_sec, 0);
+    rb_define_method(cDateTime, "sec_fraction", d_lite_sec_fraction, 0);
+    rb_define_method(cDateTime, "second_fraction", d_lite_sec_fraction, 0);
+    rb_define_method(cDateTime, "offset", d_lite_offset, 0);
+    rb_define_method(cDateTime, "zone", d_lite_zone, 0);
+    rb_define_method(cDateTime, "new_offset", d_lite_new_offset, -1);
 
     rb_define_method(cDateTime, "to_s", dt_lite_to_s, 0);
 
