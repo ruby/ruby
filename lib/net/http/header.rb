@@ -22,7 +22,7 @@ module Net::HTTPHeader
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
         end
-        @header[key.to_s.downcase] = [value]
+        @header[key.downcase.to_s] = [value]
       end
     end
   end
@@ -36,14 +36,14 @@ module Net::HTTPHeader
   # Returns the header field corresponding to the case-insensitive key.
   # For example, a key of "Content-Type" might return "text/html"
   def [](key)
-    a = @header[key.to_s.downcase] or return nil
+    a = @header[key.downcase.to_s] or return nil
     a.join(', ')
   end
 
   # Sets the header field corresponding to the case-insensitive key.
   def []=(key, val)
     unless val
-      @header.delete key.to_s.downcase
+      @header.delete key.downcase.to_s
       return val
     end
     set_field(key, val)
@@ -65,7 +65,7 @@ module Net::HTTPHeader
   #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
   #
   def add_field(key, val)
-    stringified_downcased_key = key.to_s.downcase
+    stringified_downcased_key = key.downcase.to_s
     if @header.key?(stringified_downcased_key)
       append_field_value(@header[stringified_downcased_key], val)
     else
@@ -78,13 +78,13 @@ module Net::HTTPHeader
     when Enumerable
       ary = []
       append_field_value(ary, val)
-      @header[key.to_s.downcase] = ary
+      @header[key.downcase.to_s] = ary
     else
       val = val.to_s # for compatibility use to_s instead of to_str
       if val.b.count("\r\n") > 0
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
-      @header[key.to_s.downcase] = [val]
+      @header[key.downcase.to_s] = [val]
     end
   end
 
@@ -113,7 +113,7 @@ module Net::HTTPHeader
   #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
   #
   def get_fields(key)
-    stringified_downcased_key = key.to_s.downcase
+    stringified_downcased_key = key.downcase.to_s
     return nil unless @header[stringified_downcased_key]
     @header[stringified_downcased_key].dup
   end
@@ -123,7 +123,7 @@ module Net::HTTPHeader
   # raises an IndexError if there's no header field named +key+
   # See Hash#fetch
   def fetch(key, *args, &block)   #:yield: +key+
-    a = @header.fetch(key.to_s.downcase, *args, &block)
+    a = @header.fetch(key.downcase.to_s, *args, &block)
     a.kind_of?(Array) ? a.join(', ') : a
   end
 
@@ -184,12 +184,12 @@ module Net::HTTPHeader
 
   # Removes a header field, specified by case-insensitive key.
   def delete(key)
-    @header.delete(key.to_s.downcase)
+    @header.delete(key.downcase.to_s)
   end
 
   # true if +key+ header exists.
   def key?(key)
-    @header.key?(key.to_s.downcase)
+    @header.key?(key.downcase.to_s)
   end
 
   # Returns a Hash consisting of header names and array of values.
