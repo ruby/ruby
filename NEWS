@@ -271,6 +271,8 @@ sufficient information, see the ChangeLog file or Redmine
 [Regexp/String]
 
     * Update Unicode version from 10.0.0 to 11.0.0 [Feature #14802]
+      This includes a rewrite of the grapheme cluster (/\X/) algorithm
+      and special-casing for Georgian MTAVRULI on String#downcase.
 
     * Update Emoji version from 5.0 to 11.0.0 [Feature #14802]
 
