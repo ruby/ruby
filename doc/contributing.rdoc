@@ -70,8 +70,6 @@ The current active platform maintainers are as follows:
   NAKAMURA Usaku (usa)
 [mingw32 (Minimalist GNU for Windows)]
   Nobuyoshi Nakada (nobu)
-[IA-64 (Debian GNU/Linux)]
-  TAKANO Mitsuhiro (takano32)
 [AIX]
   Yutaka Kanemoto (kanemoto)
 [FreeBSD]
