@@ -48,6 +48,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Flip-flop syntax is deprecated. [Feature #5400]
 
+* Native implementation of coroutines to improve performance of Fiber.
+  [Feature #14739]
+
 === Core classes updates (outstanding ones only)
 
 [Array]
