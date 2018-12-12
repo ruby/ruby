@@ -1384,7 +1384,7 @@ VALUE rb_complex_plus(VALUE, VALUE);
 VALUE rb_complex_mul(VALUE, VALUE);
 VALUE rb_complex_abs(VALUE x);
 VALUE rb_complex_sqrt(VALUE x);
-VALUE rb_dbl_complex_polar_pi(double abs, double ang);
+VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
 VALUE rb_complex_pow(VALUE self, VALUE other);
 
 struct rb_thread_struct;
