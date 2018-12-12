@@ -48,9 +48,6 @@ sufficient information, see the ChangeLog file or Redmine
 
 * Flip-flop syntax is deprecated. [Feature #5400]
 
-* Native implementations (arm32, arm64, ppc64le, win32, win64, x86, amd64) of
-  coroutines to improve performance of Fiber. [Feature #14739]
-
 === Core classes updates (outstanding ones only)
 
 [Array]
@@ -577,6 +574,9 @@ sufficient information, see the ChangeLog file or Redmine
   theap is managed heap for short-living memory objects. For example,
   making small and short-living Hash object is x2 faster. With rdoc benchmark,
   we measured 6-7% performance improvement.
+
+* Native implementations (arm32, arm64, ppc64le, win32, win64, x86, amd64) of
+  coroutines to improve performance of Fiber significantly. [Feature #14739]
 
 === Miscellaneous changes
 
