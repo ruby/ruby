@@ -426,6 +426,10 @@ sufficient information, see the ChangeLog file or Redmine
     * Add Net::HTTPClientException to deprecate Net::HTTPServerException,
       whose name is misleading.  [Bug #14688]
 
+[Psych]
+
+  * Upgrade Psych 3.1.0.pre2
+
 [REXML]
 
   [Improved some XPath implementations]
