@@ -3219,12 +3219,23 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  */
 
 /*
- *  <code>Proc</code> objects are blocks of code that have been bound to
- *  a set of local variables. Once bound, the code may be called in
- *  different contexts and still access those variables.
+ * +Proc+ object is an incapsulation of a block of code, that can be stored
+ * in local variables, passed to methods and other procs and called.
+ * Proc is an essential concept in Ruby and a core of its functional
+ * programming features.
+ *
+ *      square = Proc.new {|x| x**2 }
+ *
+ *      square.call(3)  #=> 9
+ *      # shorthands:
+ *      square.(3)      #=> 9
+ *      square[3]       #=> 9
+ *
+ * Proc objects are _closures_, meaning they remember and can use the entire
+ * context in which they were created.
  *
  *     def gen_times(factor)
- *       return Proc.new {|n| n*factor }
+ *       Proc.new {|n| n*factor } # remembers factor value at a moment of creation
  *     end
  *
  *     times3 = gen_times(3)
@@ -3234,7 +3245,156 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *     times5.call(5)                #=> 25
  *     times3.call(times5.call(4))   #=> 60
  *
+ * == Creation
+ *
+ * There are several methods to create proc
+ *
+ * * Just use Proc class constructor
+ *
+ *      proc1 = Proc.new {|x| x**2 }
+ *
+ * * Use Kernel#proc method as its shorthand:
+ *
+ *      proc2 = proc {|x| x**2 }
+ *
+ * * Receiving block of code into proc argument (note the <code>&</code>):
+ *
+ *      def make_proc(&block)
+ *        block
+ *      end
+ *
+ *      proc3 = make_proc {|x| x**2 }
+ *
+ * * Construct proc with lambda semantic by Kernel#lambda method (see below
+ *   for explanations about lambdas):
+ *
+ *      lambda1 = lambda {|x| x**2 }
+ *
+ * * Lambda literal (also constructs proc with lambda semantics):
+ *
+ *      lambda2 = ->(x) { x**2 }
+ *
+ * == Lambda and non-lambda semantics
+ *
+ * The procs are coming in two flavors: lambda and non-lambda.
+ * Differences are:
+ *
+ * * In lambda, +return+ means exit from this lambda;
+ * * In regular proc, +return+ means exit from embracing method
+ *   (and will throw +LocalJumpError+ if invoked outside the method);
+ * * In lambda, arguments are treated like in method: strict,
+ *   with +ArgumentError+ for mismatching argument number,
+ *   and no additional argument processing;
+ * * Regular proc accepts arguments more generously: it fills missing
+ *   arguments with +nil+, deconstructs single Array argument if
+ *   proc has multiple arguments, and doesn't raise on extra
+ *   arguments.
+ *
+ * Examples:
+ *
+ *      p = proc { |x, y| "x=#{x}, y=#{y}" }
+ *      p.call(1, 2)      #=> "x=1, y=2"
+ *      p.call([1, 2])    #=> "x=1, y=2", array deconstructed
+ *      p.call(1, 2, 8)   #=> "x=1, y=2", extra argument discarded
+ *      p.call(1)         #=> "x=1, y=", nil substituted instead of missing
+ *
+ *      l = lambda {|x, y| "x=#{x}, y=#{y}" }
+ *      l.call(1, 2)      #=> "x=1, y=2"
+ *      l.call([1, 2])    # ArgumentError: wrong number of arguments (given 1, expected 2)
+ *      l.call(1, 2, 8)   # ArgumentError: wrong number of arguments (given 3, expected 2)
+ *      l.call(1)         # ArgumentError: wrong number of arguments (given 1, expected 2)
+ *
+ *      def test_return
+ *        -> { return 3 }.call      # just returns from lambda into method body
+ *        proc { return 4 }.call    # returns from method
+ *        return 5
+ *      end
+ *
+ *      test_return # => 4, return from proc
+ *
+ * Lambdas are useful as a self-sufficient higher-order functions, behaving
+ * exactly like Ruby methods. Procs are useful for implementing iterators:
+ *
+ *      def test
+ *        [[1, 2], [3, 4], [5, 6]].map {|a, b| return a if a + b > 10 }
+ *                                  #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ *      end
+ *
+ * Inside +map+, block of code is treated as regular (non-lambda) proc,
+ * which means that internal arrays would be deconstructed to pairs of
+ * arguments, and +return+ will exit from the method +test+. That would
+ * not be possible with more strict lambda.
+ *
+ * You can tell lambda from regular proc by #lambda? instance method.
+ *
+ * Lambda semantics is typically preserved during the proc lifetime, including
+ * <code>&</code>-deconstruction to block of code:
+ *
+ *      p = proc {|x, y| x }
+ *      l = lambda {|x, y| x }
+ *      [[1, 2], [3, 4]].map(&p) #=> [1, 2]
+ *      [[1, 2], [3, 4]].map(&l) # ArgumentError: wrong number of arguments (given 1, expected 2)
+ *
+ * The only exception is dynamic method definition: even if defined by
+ * passing non-lambda proc, methods still have normal semantic of argument
+ * checking.
+ *
+ *   class C
+ *     define_method(:e, &proc {})
+ *   end
+ *   C.new.e(1,2)       #=> ArgumentError
+ *   C.new.method(:e).to_proc.lambda?   #=> true
+ *
+ * This exception ensures that methods never have unusual argument passing
+ * conventions, and makes it easy to have wrappers defining methods that
+ * behave as usual.
+ *
+ *   class C
+ *     def self.def2(name, &body)
+ *       define_method(name, &body)
+ *     end
+ *
+ *     def2(:f) {}
+ *   end
+ *   C.new.f(1,2)       #=> ArgumentError
+ *
+ * The wrapper <i>def2</i> receives <code>body</code> as a non-lambda proc,
+ * yet defines a method which has normal semantics.
+ *
+ * == Other object conversion to procs
+ *
+ * Any object that implements +to_proc+ method can be converted into
+ * proc by <code>&</code> operator, and therefore consumed by iterators.
+ *
+ *      class Greater
+ *        def initialize(greating)
+ *          @greating = greating
+ *        end
+ *
+ *        def to_proc
+ *          proc {|name| "#{@greating}, #{name}!" }
+ *        end
+ *      end
+ *
+ *      hi = Greater.new("Hi")
+ *      hey = Greater.new("Hey")
+ *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
+ *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
+ *
+ * Of Ruby core classes, this method is implemented by Symbol,
+ * Method and Hash.
+ *
+ *      :to_s.to_proc.call(1)           #=> "1"
+ *      [1, 2].map(&:to_s)              #=> ["1", "2"]
+ *
+ *      method(:puts).to_proc.call(1)   # prints 1
+ *      [1, 2].each(&method(:puts))     # prints 1, 2
+ *
+ *      {test: 1}.to_proc.call(:test)       #=> 1
+ *      %i[test many keys].map(&{test: 1})  #=> [1, nil, nil]
+ *
  */
+
 
 void
 Init_Proc(void)
