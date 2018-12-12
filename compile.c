@@ -9142,6 +9142,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->location.first_lineno = body->location.first_lineno;
     load_body->location.node_id = body->location.node_id;
     load_body->location.code_location = body->location.code_location;
+    load_body->catch_except_p = body->catch_except_p;
 
     load_body->is_entries           = ZALLOC_N(union iseq_inline_storage_entry, body->is_size);
     load_body->ci_entries           = ibf_load_ci_entries(load, body);
