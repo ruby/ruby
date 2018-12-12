@@ -356,8 +356,7 @@ module IRB
   def IRB.version
     if v = @CONF[:VERSION] then return v end
 
-    rv = @RELEASE_VERSION.sub(/\.0/, "")
-    @CONF[:VERSION] = format("irb %s(%s)", rv, @LAST_UPDATE_DATE)
+    @CONF[:VERSION] = format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
   end
 
   # The current IRB::Context of the session, see IRB.conf
