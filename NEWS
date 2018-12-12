@@ -27,10 +27,11 @@ sufficient information, see the ChangeLog file or Redmine
 * constant names may start with a non-ASCII capital letter. [Feature #13770]
 
 * An endless range is introduced.  You can write a range that has no end,
-  like <code>(0..)</code>.  The following shows typical use cases.  [Feature #12912]
+  like <code>(0..)</code> (or similarly  <code>(0...)</code>).
+  The following shows typical use cases.  [Feature #12912]
 
     ary[1..]                            # identical to ary[1..-1]
-    (1..).each {|index| ... }           # infinite loop from index 1
+    (1...).each {|index| ... }          # infinite loop from index 1
     ary.zip(1..) {|elem, index| ... }   # ary.each.with_index(1) { }
 
 * Non-Symbol key in keyword arguments hash causes an exception.
