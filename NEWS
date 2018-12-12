@@ -360,7 +360,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   * Add Bundler to Standard Library. [Feature #12733]
 
-  * Use 2.0.0. It's latest stable version.
+  * Use 1.17.2. It's the latest stable version.
 
 [Coverage]
 
