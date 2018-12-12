@@ -9237,17 +9237,17 @@ rb_str_oct(VALUE str)
  *    * So-called "traditional" usage of <code>crypt(3)</code> is very
  *      very very weak.  According to its manpage, Linux's traditional
  *      <code>crypt(3)</code> output has only 2**56 variations; too
- *      easy to blute force today.  And this is the default behaviour.
+ *      easy to brute force today.  And this is the default behaviour.
  *
  *    * In order to make things robust some OSes implement so-called
  *      "modular" usage. To go through, you have to do a complex
  *      build-up of the <code>salt_str</code> parameter, by hand.
  *      Failure in generation of a proper salt string tends not to
- *      yield any errors; typo in parameters are normally not
+ *      yield any errors; typos in parameters are normally not
  *      detectable.
  *
- *        * For instance, in the following example, second invocation
- *          of <code>String#crypt</code> is wrong; it has typo in
+ *        * For instance, in the following example, the second invocation
+ *          of <code>String#crypt</code> is wrong; it has a typo in
  *          "round=" (lacks "s").  However the call does not fail and
  *          something unexpected is generated.
  *
@@ -9271,7 +9271,7 @@ rb_str_oct(VALUE str)
  *
  *  If for some reason you cannot migrate to other secure contemporary
  *  password hashing algorithms, install the string-crypt gem and
- *  <code>requiire 'string/crypt'</code> to continue using it.
+ *  <code>require 'string/crypt'</code> to continue using it.
  */
 
 static VALUE
