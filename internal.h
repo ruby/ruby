@@ -1964,6 +1964,11 @@ ARGVSTR2ARGC(VALUE argv_str)
 rb_pid_t rb_fork_ruby(int *status);
 void rb_last_status_clear(void);
 
+/* range.c */
+#define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
+#define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
+#define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
+
 /* rational.c */
 VALUE rb_rational_canonicalize(VALUE x);
 VALUE rb_rational_uminus(VALUE self);

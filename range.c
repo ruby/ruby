@@ -24,9 +24,6 @@ static ID id_beg, id_end, id_excl;
 
 static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
-#define RANGE_BEG(r) (RSTRUCT(r)->as.ary[0])
-#define RANGE_END(r) (RSTRUCT(r)->as.ary[1])
-#define RANGE_EXCL(r) (RSTRUCT(r)->as.ary[2])
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
 #define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))

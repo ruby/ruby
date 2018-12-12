@@ -2777,6 +2777,27 @@ arith_seq_exclude_end_p(VALUE self)
     return RTEST(arith_seq_exclude_end(self));
 }
 
+int
+rb_arithmetic_sequence_extract(VALUE obj, VALUE *begin, VALUE *end, VALUE *step, int *exclude_end)
+{
+    if (rb_obj_is_kind_of(obj, rb_cArithSeq)) {
+        *begin = arith_seq_begin(obj);
+        *end   = arith_seq_end(obj);
+        *step  = arith_seq_step(obj);
+        *exclude_end = arith_seq_exclude_end_p(obj);
+        return 1;
+    }
+    else if (rb_obj_is_kind_of(obj, rb_cRange)) {
+        *begin = RANGE_BEG(obj);
+        *end   = RANGE_END(obj);
+        *step  = INT2FIX(1);
+        *exclude_end = RTEST(RANGE_EXCL(obj));
+        return 1;
+    }
+
+    return 0;
+}
+
 /*
  * call-seq:
  *   aseq.first -> num or nil
