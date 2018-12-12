@@ -535,6 +535,14 @@ sufficient information, see the ChangeLog file or Redmine
 
   * String#to_d parses the receiver string like String#to_f.
 
+
+[Pathname]
+
+  * Pathname.read, Pathname.binread, Pathname.write, Pathname.binwrite,
+    Pathname#each_line and Pathname.readlines do not invoke external
+    commands even if the path starts with the pipe character <code>'|'</code>.
+    This follows [Feature #14245].
+
 === C API updates
 
 === Implementation improvements
