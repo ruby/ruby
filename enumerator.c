@@ -2778,20 +2778,20 @@ arith_seq_exclude_end_p(VALUE self)
 }
 
 int
-rb_arithmetic_sequence_extract(VALUE obj, VALUE *begin, VALUE *end, VALUE *step, int *exclude_end)
+rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *component)
 {
     if (rb_obj_is_kind_of(obj, rb_cArithSeq)) {
-        *begin = arith_seq_begin(obj);
-        *end   = arith_seq_end(obj);
-        *step  = arith_seq_step(obj);
-        *exclude_end = arith_seq_exclude_end_p(obj);
+        component->begin = arith_seq_begin(obj);
+        component->end   = arith_seq_end(obj);
+        component->step  = arith_seq_step(obj);
+        component->exclude_end = arith_seq_exclude_end_p(obj);
         return 1;
     }
     else if (rb_obj_is_kind_of(obj, rb_cRange)) {
-        *begin = RANGE_BEG(obj);
-        *end   = RANGE_END(obj);
-        *step  = INT2FIX(1);
-        *exclude_end = RTEST(RANGE_EXCL(obj));
+        component->begin = RANGE_BEG(obj);
+        component->end   = RANGE_END(obj);
+        component->step  = INT2FIX(1);
+        component->exclude_end = RTEST(RANGE_EXCL(obj));
         return 1;
     }
 

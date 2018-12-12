@@ -244,7 +244,13 @@ VALUE rb_enumeratorize_with_size(VALUE, VALUE, int, const VALUE *, rb_enumerator
 	    return SIZED_ENUMERATOR(obj, argc, argv, size_fn);		\
     } while (0)
 #define RETURN_ENUMERATOR(obj, argc, argv) RETURN_SIZED_ENUMERATOR(obj, argc, argv, 0)
-int rb_arithmetic_sequence_extract(VALUE, VALUE *, VALUE *, VALUE *, int *);
+typedef struct {
+    VALUE begin;
+    VALUE end;
+    VALUE step;
+    int exclude_end;
+} rb_arithmetic_sequence_components_t;
+int rb_arithmetic_sequence_extract(VALUE, rb_arithmetic_sequence_components_t *);
 /* error.c */
 VALUE rb_exc_new(VALUE, const char*, long);
 VALUE rb_exc_new_cstr(VALUE, const char*);
