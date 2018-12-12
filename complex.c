@@ -546,7 +546,7 @@ f_complex_polar(VALUE klass, VALUE x, VALUE y)
 
 /* returns a Complex or Float of ang*PI-rotated abs */
 VALUE
-rb_dbl_complex_polar_pi(double abs, double ang)
+rb_dbl_complex_new_polar_pi(double abs, double ang)
 {
     double fi;
     const double fr = modf(ang, &fi);
@@ -1382,9 +1382,15 @@ rb_complex_new(VALUE x, VALUE y)
 }
 
 VALUE
-rb_complex_polar(VALUE x, VALUE y)
+rb_complex_new_polar(VALUE x, VALUE y)
 {
     return f_complex_polar(rb_cComplex, x, y);
+}
+
+VALUE
+rb_complex_polar(VALUE x, VALUE y)
+{
+    return rb_complex_new_polar(x, y);
 }
 
 VALUE
@@ -1737,7 +1743,7 @@ read_comp(const char **s, int strict,
 	    return 0; /* e.g. "1@-" */
 	}
 	num2 = str2num(bb);
-	*ret = rb_complex_polar(num, num2);
+	*ret = rb_complex_new_polar(num, num2);
 	if (!st)
 	    return 0; /* e.g. "1@2." */
 	else
