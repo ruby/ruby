@@ -1,8 +1,7 @@
 begin
-  require_relative "lib/logger"
+  require File.expand_path("../lib/logger/version", __FILE__)
 rescue LoadError
-  # for Ruby core repository
-  require_relative "logger"
+  require File.expand_path("../logger/version", __FILE__)
 end
 
 Gem::Specification.new do |spec|
