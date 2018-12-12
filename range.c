@@ -1487,7 +1487,7 @@ range_alloc(VALUE klass)
  *
  *  == Endless Ranges
  *
- *  An "endless range" represents and semi-infinite ranges.
+ *  An "endless range" represents a semi-infinite ranges.
  *  Literal notation for an endless range is:
  *
  *     (1..)
