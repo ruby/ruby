@@ -9032,6 +9032,12 @@ mk_ary_of_str(long len, const char *a[])
     return o;
 }
 
+static VALUE
+d_lite_zero(VALUE x)
+{
+    return INT2FIX(0);
+}
+
 void
 Init_date_core(void)
 {
@@ -9373,6 +9379,12 @@ Init_date_core(void)
 #ifndef NDEBUG
     rb_define_method(cDate, "nth_kday?", d_lite_nth_kday_p, 2);
 #endif
+
+    rb_define_private_method(cDate, "hour", d_lite_zero, 0);
+    rb_define_private_method(cDate, "min", d_lite_zero, 0);
+    rb_define_private_method(cDate, "minute", d_lite_zero, 0);
+    rb_define_private_method(cDate, "sec", d_lite_zero, 0);
+    rb_define_private_method(cDate, "second", d_lite_zero, 0);
 
     rb_define_method(cDate, "julian?", d_lite_julian_p, 0);
     rb_define_method(cDate, "gregorian?", d_lite_gregorian_p, 0);
