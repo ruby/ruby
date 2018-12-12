@@ -317,7 +317,7 @@ Synchronizer_m = Sync_m
 
 class Sync
 
-  VERSION = "0.1.0"
+  VERSION = "0.5.0"
 
   include Sync_m
 end
