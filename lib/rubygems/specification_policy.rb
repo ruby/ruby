@@ -150,19 +150,24 @@ duplicate dependency on #{dep}, (#{prev.requirement}) use:
       if open_ended
         op, dep_version = dep.requirement.requirements.first
 
-        base = dep_version.segments.first 2
+        segments = dep_version.segments
 
-        bugfix = if op == '>'
-                   ", '> #{dep_version}'"
-                 elsif op == '>=' and base != dep_version.segments
-                   ", '>= #{dep_version}'"
-                 end
+        base = segments.first 2
 
-        warning_messages << <<-WARNING
-open-ended dependency on #{dep} is not recommended
-  if #{dep.name} is semantically versioned, use:
-    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}
-        WARNING
+        recommendation = if (op == '>' || op == '>=') && segments == [0]
+                           "  use a bounded requirement, such as '~> x.y'"
+                         else
+                           bugfix = if op == '>'
+                                      ", '> #{dep_version}'"
+                                    elsif op == '>=' and base != segments
+                                      ", '>= #{dep_version}'"
+                                    end
+
+                           "  if #{dep.name} is semantically versioned, use:\n" \
+                           "    add_#{dep.type}_dependency '#{dep.name}', '~> #{base.join '.'}'#{bugfix}"
+                         end
+
+        warning_messages << ["open-ended dependency on #{dep} is not recommended", recommendation].join("\n") + "\n"
       end
     end
     if error_messages.any?

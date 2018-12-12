@@ -14,6 +14,10 @@ class Gem::Commands::BuildCommand < Gem::Command
     add_option '--strict', 'consider warnings as errors when validating the spec' do |value, options|
       options[:strict] = true
     end
+
+    add_option '-o', '--output FILE', 'output gem with the given filename' do |value, options|
+      options[:output] = value
+    end
   end
 
   def arguments # :nodoc:
@@ -36,6 +40,11 @@ with gem spec:
   $ cd my_gem-1.0
   [edit gem contents]
   $ gem build my_gem-1.0.gemspec
+
+Gems can be saved to a specified filename with the output option:
+
+  $ gem build my_gem-1.0.gemspec --output=release.gem
+
     EOF
   end
 
@@ -58,7 +67,8 @@ with gem spec:
           Gem::Package.build(
             spec,
             options[:force],
-            options[:strict]
+            options[:strict],
+            options[:output]
           )
         else
           alert_error "Error loading gemspec. Aborting."

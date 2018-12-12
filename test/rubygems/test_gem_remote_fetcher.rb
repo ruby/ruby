@@ -51,7 +51,6 @@ gems:
     author: Jim Weirich
     email: jim@weirichhouse.org
     homepage: http://rake.rubyforge.org
-    rubyforge_project: rake
     description: Rake is a Make-like program implemented in Ruby. Tasks and dependencies are specified in standard Ruby syntax.
     autorequire:
     default_executable: rake
