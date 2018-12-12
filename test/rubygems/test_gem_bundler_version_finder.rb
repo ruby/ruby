@@ -88,20 +88,21 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     bvf.stub(:bundler_version, v("2.1.1.1")) do
       assert bvf.compatible?(util_spec("foo"))
       assert bvf.compatible?(util_spec("bundler", "2.1.1.1"))
-      refute bvf.compatible?(util_spec("bundler", "2.1.1.a"))
+      assert bvf.compatible?(util_spec("bundler", "2.1.1.a"))
+      assert bvf.compatible?(util_spec("bundler", "2.999"))
       refute bvf.compatible?(util_spec("bundler", "1.999"))
-      refute bvf.compatible?(util_spec("bundler", "2.999"))
+      refute bvf.compatible?(util_spec("bundler", "3.0.0"))
     end
   end
 
   def test_filter
-    versions = %w[1 1.0 1.0.1.1 2.a 3 3.0]
+    versions = %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1]
     specs = versions.map { |v| util_spec("bundler", v) }
 
-    assert_equal %w[1 1.0 1.0.1.1 2.a 3 3.0], util_filter_specs(specs).map(&:version).map(&:to_s)
+    assert_equal %w[1 1.0 1.0.1.1 2 2.a 2.0 2.1.1 3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
 
     bvf.stub(:bundler_version, v("2.1.1.1")) do
-      assert_empty util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[2 2.a 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
     bvf.stub(:bundler_version, v("1.1.1.1")) do
       assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
@@ -110,10 +111,10 @@ class TestGemBundlerVersionFinder < Gem::TestCase
       assert_equal %w[1 1.0 1.0.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
     bvf.stub(:bundler_version, v("2.a")) do
-      assert_equal %w[2.a], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[2 2.a 2.0 2.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
     bvf.stub(:bundler_version, v("3")) do
-      assert_equal %w[3 3.0], util_filter_specs(specs).map(&:version).map(&:to_s)
+      assert_equal %w[3 3.a 3.0 3.1.1], util_filter_specs(specs).map(&:version).map(&:to_s)
     end
   end
 

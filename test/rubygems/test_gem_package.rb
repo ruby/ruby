@@ -151,7 +151,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_add_files_symlink
     spec = Gem::Specification.new
-    spec.files = %w[lib/code.rb lib/code_sym.rb]
+    spec.files = %w[lib/code.rb lib/code_sym.rb lib/code_sym2.rb]
 
     FileUtils.mkdir_p 'lib'
     File.open 'lib/code.rb',  'w' do |io| io.write '# lib/code.rb'  end
@@ -159,6 +159,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
     begin
       File.symlink('code.rb', 'lib/code_sym.rb')
+      File.symlink('../lib/code.rb', 'lib/code_sym2.rb')
     rescue Errno::EACCES => e
       if win_platform?
         skip "symlink - must be admin with no UAC on Windows"
@@ -189,7 +190,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     assert_equal %w[lib/code.rb], files
-    assert_equal [{'lib/code_sym.rb' => 'lib/code.rb'}], symlinks
+    assert_equal [{'lib/code_sym.rb' => 'lib/code.rb'}, {'lib/code_sym2.rb' => '../lib/code.rb'}], symlinks
   end
 
   def test_build

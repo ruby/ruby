@@ -119,8 +119,8 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build(spec, skip_validation = false, strict_validation = false)
-    gem_file = spec.file_name
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil)
+    gem_file = file_name || spec.file_name
 
     package = new gem_file
     package.spec = spec
@@ -223,8 +223,13 @@ class Gem::Package
       stat = File.lstat file
 
       if stat.symlink?
-        relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
-        target_path = File.join(relative_dir, File.readlink(file))
+        target_path = File.readlink(file)
+
+        unless target_path.start_with? '.'
+          relative_dir = File.dirname(file).sub("#{Dir.pwd}/", '')
+          target_path = File.join(relative_dir, target_path)
+        end
+
         tar.add_symlink file, target_path, stat.mode
       end
 
@@ -281,7 +286,7 @@ class Gem::Package
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{File.basename @spec.cache_file}
+  File: #{File.basename @gem.path}
 EOM
   ensure
     @signer = nil

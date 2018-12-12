@@ -156,7 +156,6 @@ class Gem::Specification < Gem::BasicSpecification
     :required_ruby_version     => Gem::Requirement.default,
     :required_rubygems_version => Gem::Requirement.default,
     :requirements              => [],
-    :rubyforge_project         => nil,
     :rubygems_version          => Gem::VERSION,
     :signing_key               => nil,
     :specification_version     => CURRENT_SPECIFICATION_VERSION,
@@ -730,12 +729,11 @@ class Gem::Specification < Gem::BasicSpecification
   attr_writer :original_platform # :nodoc:
 
   ##
-  # The rubyforge project this gem lives under.  i.e. RubyGems'
-  # rubyforge_project is "rubygems".
+  # Deprecated and ignored.
   #
-  # This option is deprecated.
+  # Formerly used to set rubyforge project.
 
-  attr_accessor :rubyforge_project
+  attr_writer :rubyforge_project
 
   ##
   # The Gem::Specification version of this gemspec.
@@ -1347,7 +1345,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@required_rubygems_version, array[7]
     spec.instance_variable_set :@original_platform,         array[8]
     spec.instance_variable_set :@dependencies,              array[9]
-    spec.instance_variable_set :@rubyforge_project,         array[10]
+    # offset due to rubyforge_project removal
     spec.instance_variable_set :@email,                     array[11]
     spec.instance_variable_set :@authors,                   array[12]
     spec.instance_variable_set :@description,               array[13]
@@ -1392,7 +1390,7 @@ class Gem::Specification < Gem::BasicSpecification
       @required_rubygems_version,
       @original_platform,
       @dependencies,
-      @rubyforge_project,
+      '', # rubyforge_project
       @email,
       @authors,
       @description,

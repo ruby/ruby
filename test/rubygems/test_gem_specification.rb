@@ -48,7 +48,6 @@ end
       s.extensions << 'ext/a/extconf.rb'
       s.test_file = 'test/suite.rb'
       s.requirements << 'A working computer'
-      s.rubyforge_project = 'example'
       s.license = 'MIT'
 
       s.add_dependency 'rake', '> 0.4'
@@ -80,7 +79,6 @@ end
       s.executable = 'exec'
       s.test_file = 'test/suite.rb'
       s.requirements << 'A working computer'
-      s.rubyforge_project = 'example'
       s.license = 'MIT'
 
       s.mark_version
@@ -701,7 +699,6 @@ end
       required_ruby_version
       required_rubygems_version
       requirements
-      rubyforge_project
       rubygems_version
       signing_key
       specification_version
@@ -871,7 +868,6 @@ require_paths:
 author: Austin Ziegler
 email: diff-lcs@halostatue.ca
 homepage: http://rubyforge.org/projects/ruwiki/
-rubyforge_project: ruwiki
 description: "Test"
 bindir: bin
 has_rdoc: true
@@ -1215,7 +1211,7 @@ dependencies: []
 
     data = Marshal.load Gem::Util.inflate(Gem.read_binary(path))
 
-    assert_nil data.rubyforge_project
+    assert_nil data.signing_key
   end
 
   def test_initialize
@@ -2506,7 +2502,6 @@ Gem::Specification.new do |s|
   s.homepage = "http://example.com".freeze
   s.licenses = ["MIT".freeze]
   s.requirements = ["A working computer".freeze]
-  s.rubyforge_project = "example".freeze
   s.rubygems_version = "#{Gem::VERSION}".freeze
   s.summary = "this is a summary".freeze
   s.test_files = ["test/suite.rb".freeze]
@@ -2699,6 +2694,7 @@ end
       @a1.add_runtime_dependency     'l', '> 1.2.3'
       @a1.add_runtime_dependency     'm', '~> 2.1.0'
       @a1.add_runtime_dependency     'n', '~> 0.1.0'
+      @a1.add_runtime_dependency     'o'
 
       use_ui @ui do
         @a1.validate
@@ -2719,6 +2715,8 @@ end
 #{w}:  open-ended dependency on l (> 1.2.3) is not recommended
   if l is semantically versioned, use:
     add_runtime_dependency 'l', '~> 1.2', '> 1.2.3'
+#{w}:  open-ended dependency on o (>= 0) is not recommended
+  use a bounded requirement, such as '~> x.y'
 #{w}:  See http://guides.rubygems.org/specification-reference/ for help
       EXPECTED
 

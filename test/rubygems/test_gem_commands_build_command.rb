@@ -22,7 +22,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     end
 
     @gem = util_spec 'some_gem' do |s|
-      s.rubyforge_project = 'example'
       s.license = 'AGPL-3.0'
       s.files = ['README.md']
     end
@@ -37,11 +36,39 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert @cmd.options[:strict]
   end
 
+  def test_options_filename
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, 'w' do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+    @cmd.options[:output] = "test.gem"
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    file = File.join(@tempdir, File::SEPARATOR, "test.gem")
+    assert File.exist?(file)
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: some_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_equal "  File: test.gem", output.shift
+    assert_equal [], output
+  end
+
   def test_handle_options_defaults
     @cmd.handle_options []
 
     refute @cmd.options[:force]
     refute @cmd.options[:strict]
+    assert_nil @cmd.options[:output]
   end
 
   def test_execute
@@ -97,7 +124,6 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
   def test_execute_strict_with_warnings
     bad_gem = util_spec 'some_bad_gem' do |s|
-      s.rubyforge_project = 'example'
       s.files = ['README.md']
     end
 
