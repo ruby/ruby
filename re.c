@@ -884,13 +884,51 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 /*
  *  Document-class: MatchData
  *
- *  <code>MatchData</code> is the type of the special variable <code>$~</code>,
- *  and is the type of the object returned by <code>Regexp#match</code> and
- *  <code>Regexp.last_match</code>. It encapsulates all the results of a pattern
- *  match, results normally accessed through the special variables
- *  <code>$&</code>, <code>$'</code>, <code>$`</code>, <code>$1</code>,
- *  <code>$2</code>, and so on.
+ *  <code>MatchData</code> encapsulates the result of matching a Regexp against
+ *  string. It is returned by Regexp#match and
+ *  String#match, and also stored in a global variable returned by
+ *  Regexp.last_match
  *
+ *  Usage:
+ *
+ *      url = 'https://docs.ruby-lang.org/en/2.5.0/MatchData.html'
+ *      m = url.match(/(\d\.?)+/)   # => #<MatchData "2.5.0" 1:"0">
+ *      m.string                    # => "https://docs.ruby-lang.org/en/2.5.0/MatchData.html"
+ *      m.regexp                    # => /(\d\.?)+/
+ *      # entire matched substring:
+ *      m[0]                        # => "2.5.0"
+ *
+ *      # Working with unnamed captures
+ *      m = url.match(%r{([^/]+)/([^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *      # Working with named captures
+ *      m = url.match(%r{(?<version>[^/]+)/(?<module>[^/]+)\.html$})
+ *      m.captures                  # => ["2.5.0", "MatchData"]
+ *      m.named_captures            # => {"version"=>"2.5.0", "module"=>"MatchData"}
+ *      m[:version]                 # => "2.5.0"
+ *      m.values_at(:version, :module)
+ *                                  # => ["2.5.0", "MatchData"]
+ *      # Numerical indexes are working, too
+ *      m[1]                        # => "2.5.0"
+ *      m.values_at(1, 2)           # => ["2.5.0", "MatchData"]
+ *
+ *  == Global variables equivalence
+ *
+ *  Parts of last <code>MatchData</code> (returned by Regexp.last_match) are also
+ *  aliased as a global variables:
+ *
+ *  * <code>$~</code> is <code>Regexp.last_match</code>;
+ *  * <code>$&</code> is <code>Regexp.last_match[0]</code>;
+ *  * <code>$1</code>, <code>$2</code> and so on are
+ *    <code>Regexp.last_match[i]</code> (captures by number);
+ *  * <code>$`</code> is <code>Regexp.last_match.pre_match</code>;
+ *  * <code>$`</code> is <code>Regexp.last_match.post_match</code>;
+ *  * <code>$+</code> is <code>Regexp.last_match[-1]</code> (the last capture).
+ *
+ *  See also "Special global variables" section in Regexp documentation.
  */
 
 VALUE rb_cMatch;
