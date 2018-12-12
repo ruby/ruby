@@ -190,6 +190,22 @@ VALUE rb_complex_new(VALUE, VALUE);
 #define rb_complex_new2(x,y) rb_complex_new((x), (y))
 VALUE rb_complex_new_polar(VALUE abs, VALUE arg);
 DEPRECATED_BY(rb_complex_new_polar, VALUE rb_complex_polar(VALUE abs, VALUE arg));
+VALUE rb_complex_real(VALUE z);
+VALUE rb_complex_imag(VALUE z);
+VALUE rb_complex_plus(VALUE x, VALUE y);
+VALUE rb_complex_minus(VALUE x, VALUE y);
+VALUE rb_complex_mul(VALUE x, VALUE y);
+VALUE rb_complex_div(VALUE x, VALUE y);
+VALUE rb_complex_uminus(VALUE z);
+VALUE rb_complex_conjugate(VALUE z);
+VALUE rb_complex_abs(VALUE z);
+VALUE rb_complex_arg(VALUE z);
+VALUE rb_complex_pow(VALUE base, VALUE exp);
+VALUE rb_dbl_complex_new(double real, double imag);
+#define rb_complex_add rb_complex_plus
+#define rb_complex_sub rb_complex_minus
+#define rb_complex_nagate rb_complex_uminus
+
 VALUE rb_Complex(VALUE, VALUE);
 #define rb_Complex1(x) rb_Complex((x), INT2FIX(0))
 #define rb_Complex2(x,y) rb_Complex((x), (y))
