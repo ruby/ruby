@@ -1485,6 +1485,34 @@ range_alloc(VALUE klass)
  *     ('a'..'e').to_a    #=> ["a", "b", "c", "d", "e"]
  *     ('a'...'e').to_a   #=> ["a", "b", "c", "d"]
  *
+ *  == Endless Ranges
+ *
+ *  An "endless range" represents and semi-infinite ranges.
+ *  Literal notation for an endless range is:
+ *
+ *     (1..)
+ *     # or similarly
+ *     (1...)
+ *
+ *  Which is equivalent to
+ *
+ *     (1..nil)  # or similarly (1...nil)
+ *     Range.new(1, nil) # or Range.new(1, nil, true)
+ *
+ *  Endless ranges are useful, for example, for idiomatic slicing of
+ *  arrays:
+ *
+ *    [1, 2, 3, 4, 5][2...]   # => [3, 4, 5]
+ *
+ *  Some implementation details:
+ *
+ *  * +end+ of endless range is +nil+;
+ *  * +each+ of endless range enumerates infinite sequence (may be
+ *    useful in combination with Enumerable#take_while or similar
+ *    methods);
+ *  * <code>(1..)</code> and <code>(1...)</code> are not equal,
+ *    although technically representing the same sequence.
+ *
  *  == Custom Objects in Ranges
  *
  *  Ranges can be constructed using any objects that can be compared
