@@ -17,6 +17,7 @@ require "forwardable"
 require "shell/error"
 require "shell/command-processor"
 require "shell/process-controller"
+require "shell/version"
 
 # Shell implements an idiomatic Ruby interface for common UNIX shell commands.
 #
