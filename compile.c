@@ -9100,6 +9100,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->type = body->type;
     load_body->stack_max = body->stack_max;
     load_body->param = body->param;
+    load_body->param.flags.has_kw = FALSE;
     load_body->local_table_size = body->local_table_size;
     load_body->is_size = body->is_size;
     load_body->ci_size = body->ci_size;
@@ -9149,6 +9150,7 @@ ibf_load_iseq_each(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t of
     load_body->cc_entries           = ZALLOC_N(struct rb_call_cache, body->ci_size + body->ci_kw_size);
     load_body->param.opt_table      = ibf_load_param_opt_table(load, body);
     load_body->param.keyword        = ibf_load_param_keyword(load, body);
+    load_body->param.flags.has_kw   = body->param.flags.has_kw;
     load_body->insns_info.body      = ibf_load_insns_info_body(load, body);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, body);
     load_body->local_table          = ibf_load_local_table(load, body);
