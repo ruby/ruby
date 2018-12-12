@@ -222,7 +222,7 @@ module Forwardable
           #{pre}
           begin
             #{accessor}
-          end#{method_call}#{FILTER_EXCEPTION}
+          end#{method_call}
         end
       end
     end;

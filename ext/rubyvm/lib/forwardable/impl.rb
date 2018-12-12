@@ -1,7 +1,5 @@
 # :stopdoc:
 module Forwardable
-  FILTER_EXCEPTION = ""
-
   def self._valid_method?(method)
     iseq = RubyVM::InstructionSequence.compile("().#{method}", nil, nil, 0, false)
   rescue SyntaxError
@@ -12,8 +10,7 @@ module Forwardable
 
   def self._compile_method(src, file, line)
     RubyVM::InstructionSequence.compile(src, file, file, line,
-               trace_instruction: false,
-               tailcall_optimization: true)
+               trace_instruction: false)
       .eval
   end
 end
