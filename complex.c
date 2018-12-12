@@ -32,9 +32,6 @@ extern int signbit(double);
 
 VALUE rb_cComplex;
 
-static VALUE nucomp_abs(VALUE self);
-static VALUE nucomp_arg(VALUE self);
-
 static ID id_abs, id_arg,
     id_denominator, id_fdiv, id_numerator, id_quo,
     id_real_p, id_i_real, id_i_imag,
@@ -130,8 +127,6 @@ fun1(abs)
 fun1(arg)
 fun1(denominator)
 
-static VALUE nucomp_negate(VALUE self);
-
 inline static VALUE
 f_negate(VALUE x)
 {
@@ -145,7 +140,7 @@ f_negate(VALUE x)
         return rb_rational_uminus(x);
     }
     else if (RB_TYPE_P(x, T_COMPLEX)) {
-        return nucomp_negate(x);
+        return rb_complex_uminus(x);
     }
     return rb_funcall(x, id_negate, 0);
 }
@@ -604,8 +599,8 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
  *    Complex(7).real      #=> 7
  *    Complex(9, -4).real  #=> 9
  */
-static VALUE
-nucomp_real(VALUE self)
+VALUE
+rb_complex_real(VALUE self)
 {
     get_dat1(self);
     return dat->real;
@@ -621,8 +616,8 @@ nucomp_real(VALUE self)
  *    Complex(7).imaginary      #=> 0
  *    Complex(9, -4).imaginary  #=> -4
  */
-static VALUE
-nucomp_imag(VALUE self)
+VALUE
+rb_complex_imag(VALUE self)
 {
     get_dat1(self);
     return dat->imag;
@@ -636,8 +631,8 @@ nucomp_imag(VALUE self)
  *
  *    -Complex(1, 2)  #=> (-1-2i)
  */
-static VALUE
-nucomp_negate(VALUE self)
+VALUE
+rb_complex_uminus(VALUE self)
 {
     get_dat1(self);
     return f_complex_new2(CLASS_OF(self),
@@ -690,8 +685,8 @@ rb_complex_plus(VALUE self, VALUE other)
  *    Complex(9, 8)  - 4               #=> (5+8i)
  *    Complex(20, 9) - 9.8             #=> (10.2+9i)
  */
-static VALUE
-nucomp_sub(VALUE self, VALUE other)
+VALUE
+rb_complex_minus(VALUE self, VALUE other)
 {
     if (RB_TYPE_P(other, T_COMPLEX)) {
 	VALUE real, imag;
@@ -770,7 +765,6 @@ rb_complex_mul(VALUE self, VALUE other)
     }
     return rb_num_coerce_bin(self, other, '*');
 }
-#define nucomp_mul rb_complex_mul
 
 inline static VALUE
 f_divide(VALUE self, VALUE other,
@@ -833,13 +827,13 @@ f_divide(VALUE self, VALUE other,
  *    Complex(9, 8)  / 4               #=> ((9/4)+(2/1)*i)
  *    Complex(20, 9) / 9.8             #=> (2.0408163265306123+0.9183673469387754i)
  */
-static VALUE
-nucomp_div(VALUE self, VALUE other)
+VALUE
+rb_complex_div(VALUE self, VALUE other)
 {
     return f_divide(self, other, f_quo, id_quo);
 }
 
-#define nucomp_quo nucomp_div
+#define nucomp_quo rb_complex_div
 
 /*
  * call-seq:
@@ -955,7 +949,6 @@ rb_complex_pow(VALUE self, VALUE other)
     }
     return rb_num_coerce_bin(self, other, id_expt);
 }
-#define nucomp_expt rb_complex_pow
 
 /*
  * call-seq:
@@ -1010,8 +1003,8 @@ nucomp_coerce(VALUE self, VALUE other)
  *    Complex(-1).abs         #=> 1
  *    Complex(3.0, -4.0).abs  #=> 5.0
  */
-static VALUE
-nucomp_abs(VALUE self)
+VALUE
+rb_complex_abs(VALUE self)
 {
     get_dat1(self);
 
@@ -1057,8 +1050,8 @@ nucomp_abs2(VALUE self)
  *
  *    Complex.polar(3, Math::PI/2).arg  #=> 1.5707963267948966
  */
-static VALUE
-nucomp_arg(VALUE self)
+VALUE
+rb_complex_arg(VALUE self)
 {
     get_dat1(self);
     return rb_math_atan2(dat->imag, dat->real);
@@ -1103,8 +1096,8 @@ nucomp_polar(VALUE self)
  *
  *    Complex(1, 2).conjugate  #=> (1-2i)
  */
-static VALUE
-nucomp_conj(VALUE self)
+VALUE
+rb_complex_conjugate(VALUE self)
 {
     get_dat1(self);
     return f_complex_new2(CLASS_OF(self), dat->real, f_negate(dat->imag));
@@ -1402,10 +1395,17 @@ rb_Complex(VALUE x, VALUE y)
     return nucomp_s_convert(2, a, rb_cComplex);
 }
 
+/*!
+ * Creates a Complex object.
+ *
+ * \param real    real part value
+ * \param imag    imaginary part value
+ * \return        a new Complex object
+ */
 VALUE
-rb_complex_abs(VALUE cmp)
+rb_dbl_complex_new(double real, double imag)
 {
-    return nucomp_abs(cmp);
+    return rb_complex_raw(DBL2NUM(real), DBL2NUM(imag));
 }
 
 /*
@@ -2196,33 +2196,33 @@ Init_Complex(void)
     rb_undef_method(rb_cComplex, "truncate");
     rb_undef_method(rb_cComplex, "i");
 
-    rb_define_method(rb_cComplex, "real", nucomp_real, 0);
-    rb_define_method(rb_cComplex, "imaginary", nucomp_imag, 0);
-    rb_define_method(rb_cComplex, "imag", nucomp_imag, 0);
+    rb_define_method(rb_cComplex, "real", rb_complex_real, 0);
+    rb_define_method(rb_cComplex, "imaginary", rb_complex_imag, 0);
+    rb_define_method(rb_cComplex, "imag", rb_complex_imag, 0);
 
-    rb_define_method(rb_cComplex, "-@", nucomp_negate, 0);
+    rb_define_method(rb_cComplex, "-@", rb_complex_uminus, 0);
     rb_define_method(rb_cComplex, "+", rb_complex_plus, 1);
-    rb_define_method(rb_cComplex, "-", nucomp_sub, 1);
-    rb_define_method(rb_cComplex, "*", nucomp_mul, 1);
-    rb_define_method(rb_cComplex, "/", nucomp_div, 1);
+    rb_define_method(rb_cComplex, "-", rb_complex_minus, 1);
+    rb_define_method(rb_cComplex, "*", rb_complex_mul, 1);
+    rb_define_method(rb_cComplex, "/", rb_complex_div, 1);
     rb_define_method(rb_cComplex, "quo", nucomp_quo, 1);
     rb_define_method(rb_cComplex, "fdiv", nucomp_fdiv, 1);
-    rb_define_method(rb_cComplex, "**", nucomp_expt, 1);
+    rb_define_method(rb_cComplex, "**", rb_complex_pow, 1);
 
     rb_define_method(rb_cComplex, "==", nucomp_eqeq_p, 1);
     rb_define_method(rb_cComplex, "coerce", nucomp_coerce, 1);
 
-    rb_define_method(rb_cComplex, "abs", nucomp_abs, 0);
-    rb_define_method(rb_cComplex, "magnitude", nucomp_abs, 0);
+    rb_define_method(rb_cComplex, "abs", rb_complex_abs, 0);
+    rb_define_method(rb_cComplex, "magnitude", rb_complex_abs, 0);
     rb_define_method(rb_cComplex, "abs2", nucomp_abs2, 0);
-    rb_define_method(rb_cComplex, "arg", nucomp_arg, 0);
-    rb_define_method(rb_cComplex, "angle", nucomp_arg, 0);
-    rb_define_method(rb_cComplex, "phase", nucomp_arg, 0);
+    rb_define_method(rb_cComplex, "arg", rb_complex_arg, 0);
+    rb_define_method(rb_cComplex, "angle", rb_complex_arg, 0);
+    rb_define_method(rb_cComplex, "phase", rb_complex_arg, 0);
     rb_define_method(rb_cComplex, "rectangular", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "rect", nucomp_rect, 0);
     rb_define_method(rb_cComplex, "polar", nucomp_polar, 0);
-    rb_define_method(rb_cComplex, "conjugate", nucomp_conj, 0);
-    rb_define_method(rb_cComplex, "conj", nucomp_conj, 0);
+    rb_define_method(rb_cComplex, "conjugate", rb_complex_conjugate, 0);
+    rb_define_method(rb_cComplex, "conj", rb_complex_conjugate, 0);
 
     rb_define_method(rb_cComplex, "real?", nucomp_false, 0);
 

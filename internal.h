@@ -1380,12 +1380,7 @@ VALUE rb_insns_name_array(void);
 int rb_vm_insn_addr2insn(const void *);
 
 /* complex.c */
-VALUE rb_complex_plus(VALUE, VALUE);
-VALUE rb_complex_mul(VALUE, VALUE);
-VALUE rb_complex_abs(VALUE x);
-VALUE rb_complex_sqrt(VALUE x);
 VALUE rb_dbl_complex_new_polar_pi(double abs, double ang);
-VALUE rb_complex_pow(VALUE self, VALUE other);
 
 struct rb_thread_struct;
 /* cont.c */
