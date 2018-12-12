@@ -2089,8 +2089,8 @@ class TestSetTraceFunc < Test::Unit::TestCase
     events = []
     tp = TracePoint.new(:script_compiled){|tp|
       next unless target_thread?
-      events << [tp.compiled_instruction_sequence.path,
-                 tp.compiled_eval_script]
+      events << [tp.instruction_sequence.path,
+                 tp.eval_script]
     }
 
     eval_script = 'a = 1'

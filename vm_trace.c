@@ -963,7 +963,7 @@ rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 }
 
 VALUE
-rb_tracearg_compiled_eval_script(rb_trace_arg_t *trace_arg)
+rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
@@ -987,7 +987,7 @@ rb_tracearg_compiled_eval_script(rb_trace_arg_t *trace_arg)
 }
 
 VALUE
-rb_tracearg_compiled_instruction_sequence(rb_trace_arg_t *trace_arg)
+rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
@@ -1168,9 +1168,9 @@ tracepoint_attr_raised_exception(VALUE tpval)
  * If loaded from a file, it will return nil.
  */
 static VALUE
-tracepoint_attr_compiled_eval_script(VALUE tpval)
+tracepoint_attr_eval_script(VALUE tpval)
 {
-    return rb_tracearg_compiled_eval_script(get_trace_arg());
+    return rb_tracearg_eval_script(get_trace_arg());
 }
 
 /*
@@ -1180,9 +1180,9 @@ tracepoint_attr_compiled_eval_script(VALUE tpval)
  * Note that this method is MRI specific.
  */
 static VALUE
-tracepoint_attr_compiled_instruction_sequence(VALUE tpval)
+tracepoint_attr_instruction_sequence(VALUE tpval)
 {
-    return rb_tracearg_compiled_instruction_sequence(get_trace_arg());
+    return rb_tracearg_instruction_sequence(get_trace_arg());
 }
 
 static void
@@ -1818,8 +1818,8 @@ Init_vm_trace(void)
     rb_define_method(rb_cTracePoint, "self", tracepoint_attr_self, 0);
     rb_define_method(rb_cTracePoint, "return_value", tracepoint_attr_return_value, 0);
     rb_define_method(rb_cTracePoint, "raised_exception", tracepoint_attr_raised_exception, 0);
-    rb_define_method(rb_cTracePoint, "compiled_eval_script", tracepoint_attr_compiled_eval_script, 0);
-    rb_define_method(rb_cTracePoint, "compiled_instruction_sequence", tracepoint_attr_compiled_instruction_sequence, 0);
+    rb_define_method(rb_cTracePoint, "eval_script", tracepoint_attr_eval_script, 0);
+    rb_define_method(rb_cTracePoint, "instruction_sequence", tracepoint_attr_instruction_sequence, 0);
 
     rb_define_singleton_method(rb_cTracePoint, "stat", tracepoint_stat_s, 0);
 }
