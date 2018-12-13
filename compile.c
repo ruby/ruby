@@ -8786,7 +8786,6 @@ ibf_load_code(const struct ibf_load *load, const rb_iseq_t *iseq, const struct r
 		/* code[code_index] = op; */
 		continue;
 	    }
-	    load_body->iseq_size = code_index + 1;
 	}
 	if (insn_len(insn) != op_index+1) {
 	    rb_raise(rb_eRuntimeError, "operand size mismatch");
