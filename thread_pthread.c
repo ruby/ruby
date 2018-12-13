@@ -2016,6 +2016,27 @@ ubf_ppoll_sleep(void *ignore)
 }
 
 /*
+ * Single CPU setups benefit from explicit sched_yield() before ppoll(),
+ * since threads may be too starved to enter the GVL waitqueue for
+ * us to detect contention.  Instead, we want to kick other threads
+ * so they can run and possibly prevent us from entering slow paths
+ * in ppoll() or similar syscalls.
+ *
+ * Confirmed on FreeBSD 11.2 and Linux 4.19.
+ * [ruby-core:90417] [Bug #15398]
+ */
+#define GVL_UNLOCK_BEGIN_YIELD(th) do { \
+    const native_thread_data_t *next; \
+    rb_vm_t *vm = th->vm; \
+    RB_GC_SAVE_MACHINE_CONTEXT(th); \
+    rb_native_mutex_lock(&vm->gvl.lock); \
+    next = gvl_release_common(vm); \
+    rb_native_mutex_unlock(&vm->gvl.lock); \
+    if (!next && vm_living_thread_num(vm) > 1) { \
+        native_thread_yield(); \
+    }
+
+/*
  * This function does not exclusively acquire sigwait_fd, so it
  * cannot safely read from it.  However, it can be woken up in
  * 4 ways:
@@ -2032,7 +2053,8 @@ native_ppoll_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     th->unblock.func = ubf_ppoll_sleep;
     rb_native_mutex_unlock(&th->interrupt_lock);
 
-    GVL_UNLOCK_BEGIN(th);
+    GVL_UNLOCK_BEGIN_YIELD(th);
+
     if (!RUBY_VM_INTERRUPTED(th->ec)) {
         struct pollfd pfd[2];
         struct timespec ts;
@@ -2066,7 +2088,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
         th->unblock.func = ubf_sigwait;
         rb_native_mutex_unlock(&th->interrupt_lock);
 
-        GVL_UNLOCK_BEGIN(th);
+        GVL_UNLOCK_BEGIN_YIELD(th);
 
         if (!RUBY_VM_INTERRUPTED(th->ec)) {
             rb_sigwait_sleep(th, sigwait_fd, rel);
