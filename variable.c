@@ -2385,14 +2385,11 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 }
 
 static VALUE
-rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
+rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
-    VALUE value, tmp, av;
-    rb_const_flag_t flag;
-    int mod_retry = 0;
+    VALUE value, tmp;
 
     tmp = klass;
-  retry:
     while (RTEST(tmp)) {
 	VALUE am = 0;
 	rb_const_entry_t *ce;
@@ -2414,7 +2411,7 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 		rb_autoload_load(tmp, id);
 		continue;
 	    }
-	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+	    if (exclude && tmp == rb_cObject) {
 		goto not_found;
 	    }
 	    return value;
@@ -2422,15 +2419,24 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	if (!recurse) break;
 	tmp = RCLASS_SUPER(tmp);
     }
-    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
-	mod_retry = 1;
-	tmp = rb_cObject;
-	goto retry;
-    }
 
   not_found:
     GET_EC()->private_const_reference = 0;
     return Qundef;
+}
+
+static VALUE
+rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
+{
+    VALUE value;
+
+    if (klass == rb_cObject) exclude = FALSE;
+    value = rb_const_search_from(klass, id, exclude, recurse, visibility);
+    if (value != Qundef) return value;
+    if (exclude) return value;
+    if (BUILTIN_TYPE(klass) != T_MODULE) return value;
+    /* search global const too, if klass is a module */
+    return rb_const_search_from(rb_cObject, id, FALSE, recurse, visibility);
 }
 
 VALUE
