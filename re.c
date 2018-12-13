@@ -925,7 +925,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  * <code>$1</code>, <code>$2</code> and so on are
  *    <code>Regexp.last_match[i]</code> (captures by number);
  *  * <code>$`</code> is <code>Regexp.last_match.pre_match</code>;
- *  * <code>$`</code> is <code>Regexp.last_match.post_match</code>;
+ *  * <code>$'</code> is <code>Regexp.last_match.post_match</code>;
  *  * <code>$+</code> is <code>Regexp.last_match[-1]</code> (the last capture).
  *
  *  See also "Special global variables" section in Regexp documentation.
