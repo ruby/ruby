@@ -2041,7 +2041,7 @@ ubf_ppoll_sleep(void *ignore)
  * cannot safely read from it.  However, it can be woken up in
  * 4 ways:
  *
- * 1) ubf_select (from another thread)
+ * 1) ubf_ppoll_sleep (from another thread)
  * 2) rb_thread_wakeup_timer_thread (from signal handler)
  * 3) any unmasked signal hitting the process
  * 4) periodic ubf timer wakeups (after 3)
@@ -2074,7 +2074,6 @@ native_ppoll_sleep(rb_thread_t *th, rb_hrtime_t *rel)
          */
     }
     unblock_function_clear(th);
-    unregister_ubf_list(th);
     GVL_UNLOCK_END(th);
 }
 
