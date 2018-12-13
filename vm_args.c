@@ -860,7 +860,8 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     obj = *argv++;
 
     mid = SYM2ID(symbol);
-    me = rb_resolve_refined_method_callable(refinements, (const rb_callable_method_entry_t *)rb_method_entry(CLASS_OF(obj), mid));
+    me = rb_callable_method_entry(CLASS_OF(obj), mid);
+    me = rb_resolve_refined_method_callable(refinements, me);
 
     ec = GET_EC();
     if (!NIL_P(blockarg)) {
