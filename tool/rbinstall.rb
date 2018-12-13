@@ -781,8 +781,8 @@ def install_default_gem(dir, srcdir)
       makedirs(bin_dir)
 
       gemspec.executables.map {|exec|
-        $script_installer.install(File.join(srcdir, 'libexec', exec),
-                                  File.join(bin_dir, exec))
+        install File.join(srcdir, 'libexec', exec),
+                File.join(bin_dir, exec)
       }
     end
   end
