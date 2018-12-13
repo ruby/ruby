@@ -3219,7 +3219,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  */
 
 /*
- * +Proc+ object is an incapsulation of a block of code, that can be stored
+ * A +Proc+ object is an incapsulation of a block of code, that can be stored
  * in local variables, passed to methods and other procs and called.
  * Proc is an essential concept in Ruby and a core of its functional
  * programming features.
@@ -3247,9 +3247,9 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  * == Creation
  *
- * There are several methods to create proc
+ * There are several methods to create procs
  *
- * * Just use Proc class constructor
+ * * Just use Proc class constructor:
  *
  *      proc1 = Proc.new {|x| x**2 }
  *
