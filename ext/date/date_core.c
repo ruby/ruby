@@ -6661,7 +6661,9 @@ tmx_m_of(union DateData *x)
 static char *
 tmx_m_zone(union DateData *x)
 {
-    return RSTRING_PTR(m_zone(x));
+    VALUE zone = m_zone(x);
+    /* TODO: fix potential dangling pointer */
+    return RSTRING_PTR(zone);
 }
 
 static const struct tmx_funcs tmx_funcs = {
