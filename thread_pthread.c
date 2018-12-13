@@ -270,7 +270,7 @@ gvl_acquire(rb_vm_t *vm, rb_thread_t *th)
     rb_native_mutex_unlock(&vm->gvl.lock);
 }
 
-static native_thread_data_t *
+static const native_thread_data_t *
 gvl_release_common(rb_vm_t *vm)
 {
     native_thread_data_t *next;
@@ -292,7 +292,7 @@ gvl_release(rb_vm_t *vm)
 static void
 gvl_yield(rb_vm_t *vm, rb_thread_t *th)
 {
-    native_thread_data_t *next;
+    const native_thread_data_t *next;
 
     /*
      * Perhaps other threads are stuck in blocking region w/o GVL, too,
