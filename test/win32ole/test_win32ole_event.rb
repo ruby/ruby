@@ -138,7 +138,8 @@ if defined?(WIN32OLE_EVENT)
           handler1
         }
         message_loop
-        assert_equal("handler1", @event1)
+        # @event1 randomly becomes "" here: https://ci.appveyor.com/project/ruby/ruby/builds/20975541/job/b380m0q9ed0rdv7v
+        assert_match_with_retries(/\Ahandler1\z/, :@event1)
       end
 
       private
