@@ -2138,8 +2138,25 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     return 0;
 }
 
+struct autoload_const *autoloading_const_entry(VALUE mod, ID id);
+
 MJIT_FUNC_EXPORTED int
 rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
+{
+    struct autoload_const *ac = autoloading_const_entry(mod, id);
+    if (!ac) return FALSE;
+
+    if (value) {
+        *value = ac->value;
+    }
+    if (flag) {
+        *flag = ac->flag;
+    }
+    return TRUE;
+}
+
+struct autoload_const *
+autoloading_const_entry(VALUE mod, ID id)
 {
     VALUE load = autoload_data(mod, id);
     struct autoload_data_i *ele;
@@ -2151,13 +2168,7 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
 
     if (ele->state && ele->state->thread == rb_thread_current()) {
 	if (ac->value != Qundef) {
-	    if (value) {
-		*value = ac->value;
-	    }
-	    if (flag) {
-		*flag = ac->flag;
-	    }
-	    return 1;
+            return ac;
 	}
     }
     return 0;
@@ -2395,9 +2406,11 @@ rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility)
 	    rb_const_warn_if_deprecated(ce, tmp, id);
 	    value = ce->value;
 	    if (value == Qundef) {
+                struct autoload_const *ac;
 		if (am == tmp) break;
 		am = tmp;
-		if (rb_autoloading_value(tmp, id, &av, &flag)) return av;
+                ac = autoloading_const_entry(tmp, id);
+                if (ac) return ac->value;
 		rb_autoload_load(tmp, id);
 		continue;
 	    }
