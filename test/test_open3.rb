@@ -317,9 +317,8 @@ class TestOpen3 < Test::Unit::TestCase
   end
 
   def test_integer_and_symbol_key
-    skip "passing FDs bigger than 2 is not supported on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
     command = [RUBY, '-e', 'puts "test_integer_and_symbol_key"']
-    out, status = Open3.capture2(*command, :in => IO::NULL, 3 => IO::NULL)
+    out, status = Open3.capture2(*command, :chdir => '.', 2 => IO::NULL)
     assert_equal("test_integer_and_symbol_key\n", out)
   end
 end
