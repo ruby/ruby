@@ -887,7 +887,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  <code>MatchData</code> encapsulates the result of matching a Regexp against
  *  string. It is returned by Regexp#match and
  *  String#match, and also stored in a global variable returned by
- *  Regexp.last_match
+ *  Regexp.last_match.
  *
  *  Usage:
  *
@@ -918,11 +918,11 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  == Global variables equivalence
  *
  *  Parts of last <code>MatchData</code> (returned by Regexp.last_match) are also
- *  aliased as a global variables:
+ *  aliased as global variables:
  *
  *  * <code>$~</code> is <code>Regexp.last_match</code>;
  *  * <code>$&</code> is <code>Regexp.last_match[0]</code>;
- *  * <code>$1</code>, <code>$2</code> and so on are
+ *  * <code>$1</code>, <code>$2</code>, and so on are
  *    <code>Regexp.last_match[i]</code> (captures by number);
  *  * <code>$`</code> is <code>Regexp.last_match.pre_match</code>;
  *  * <code>$'</code> is <code>Regexp.last_match.post_match</code>;
