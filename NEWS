@@ -16,23 +16,23 @@ sufficient information, see the ChangeLog file or Redmine
 
 * <code>$SAFE</code> is a process global state and we can set 0 again. [Feature #14250]
 
-* refinements takes place at block passing.  [Feature #14223]
+* refinements take place at block passing.  [Feature #14223]
 
-* refinements takes place at Kernel#public_send.  [Feature #15326]
+* refinements take place at Kernel#public_send.  [Feature #15326]
 
-* refinements takes place at Kernel#respond_to?.  [Feature #15327]
+* refinements take place at Kernel#respond_to?.  [Feature #15327]
 
 * +else+ without +rescue+ now causes a syntax error.  [EXPERIMENTAL] [Feature #14606]
 
 * constant names may start with a non-ASCII capital letter. [Feature #13770]
 
 * An endless range is introduced.  You can write a range that has no end,
-  like <code>(0..)</code> (or similarly  <code>(0...)</code>).
+  like <code>(0..)</code> (or similarly <code>(0...)</code>).
   The following shows typical use cases.  [Feature #12912]
 
-    ary[1..]                            # identical to ary[1..-1]
-    (1...).each {|index| ... }          # infinite loop from index 1
-    ary.zip(1..) {|elem, index| ... }   # ary.each.with_index(1) { }
+    ary[1..]                              # identical to ary[1..-1]
+    (1...).each {|index| block }          # infinite loop from index 1
+    ary.zip(1..) {|elem, index| block }   # ary.each.with_index(1) { }
 
 * Non-Symbol key in keyword arguments hash causes an exception.
 
@@ -92,8 +92,8 @@ sufficient information, see the ChangeLog file or Redmine
   [New methods]
 
     * Enumerable#chain returns an enumerator object that iterates over the
-      elements of the receiver and then those of each argument in sequence.
-      [Feature #15144]
+      elements of the receiver and then those of each argument
+      in sequence.  [Feature #15144]
 
   [Modified methods]
 
@@ -129,8 +129,7 @@ sufficient information, see the ChangeLog file or Redmine
   [New methods]
 
     * Enumerator#+ returns an enumerator object that iterates over the
-      elements of the receiver and then those of the other operand.
-      [Feature #15144]
+      elements of the receiver and then those of the other operand.  [Feature #15144]
 
 [ENV]
 
@@ -150,7 +149,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-    * Hash#merge, merge!, and update now accept multiple
+    * Hash#merge, Hash#merge!, and Hash#update now accept multiple
       arguments.  [Feature #15111]
 
     * Hash#to_h now maps keys and values to new keys and values
@@ -314,14 +313,14 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Aliased method]
 
-    * Struct#filter is a new alias for Struct#select [Feature #13784]
+    * Struct#filter is a new alias for Struct#select. [Feature #13784]
 
 [Time]
 
   [New features]
 
     * Time.new and Time#getlocal accept a timezone object as well as
-      UTC offset string. Time#+, Time#- and Time#succ also preserve
+      an UTC offset string. Time#+, Time#- and Time#succ also preserve
       the timezone.  [Feature #14850]
 
 [TracePoint]
@@ -352,7 +351,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-  * BigDecimal() accepts new keywords "exception:" likewise Float().
+  * BigDecimal() accepts new keyword "exception:" similar to Float().
 
 [Bundler]
 
@@ -402,13 +401,13 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * Matrix#antisymmetric? / #skew_symmetric?
+    * Matrix#antisymmetric?, Matrix#skew_symmetric?
 
-    * Matrix#map! / #collect! [Feature #14151]
+    * Matrix#map!, Matrix#collect! [Feature #14151]
 
     * Matrix#[]=
 
-    * Vector#map! / #collect!
+    * Vector#map!, Vector#collect!
 
     * Vector#[]=
 
@@ -429,7 +428,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Psych]
 
-  * Upgrade Psych 3.1.0.pre2
+  * Upgrade to Psych 3.1.0.pre2
 
 [REXML]
 
@@ -476,7 +475,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [RubyGems]
 
-  * Upgrade RubyGems 3.0.0.beta3
+  * Upgrade to RubyGems 3.0.0.beta3
 
 [Set]
 
@@ -543,8 +542,8 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Pathname]
 
-  * Pathname.read, Pathname.binread, Pathname.write, Pathname.binwrite,
-    Pathname#each_line and Pathname.readlines do not invoke external
+  * Pathname#read, Pathname#binread, Pathname#write, Pathname#binwrite,
+    Pathname#each_line and Pathname#readlines do not invoke external
     commands even if the path starts with the pipe character <code>'|'</code>.
     This follows [Feature #14245].
 
