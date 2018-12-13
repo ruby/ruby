@@ -2483,6 +2483,62 @@ undefined_constant(VALUE mod, VALUE name)
                       mod, name);
 }
 
+static VALUE
+rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
+{
+    while (RTEST(klass)) {
+	rb_const_entry_t *ce;
+
+	while ((ce = rb_const_lookup(klass, id))) {
+	    if (visibility && RB_CONST_PRIVATE_P(ce)) {
+		return Qnil;
+	    }
+	    if (exclude && klass == rb_cObject) {
+		goto not_found;
+	    }
+	    if (NIL_P(ce->file)) return rb_ary_new();
+	    return rb_assoc_new(ce->file, INT2NUM(ce->line));
+	}
+	if (!recurse) break;
+	klass = RCLASS_SUPER(klass);
+    }
+
+  not_found:
+    return Qnil;
+}
+
+static VALUE
+rb_const_location(VALUE klass, ID id, int exclude, int recurse, int visibility)
+{
+    VALUE loc;
+
+    if (klass == rb_cObject) exclude = FALSE;
+    loc = rb_const_location_from(klass, id, exclude, recurse, visibility);
+    if (!NIL_P(loc)) return loc;
+    if (exclude) return loc;
+    if (BUILTIN_TYPE(klass) != T_MODULE) return loc;
+    /* search global const too, if klass is a module */
+    return rb_const_location_from(rb_cObject, id, FALSE, recurse, visibility);
+}
+
+VALUE
+rb_const_source_location_from(VALUE klass, ID id)
+{
+    return rb_const_location(klass, id, TRUE, TRUE, FALSE);
+}
+
+VALUE
+rb_const_source_location(VALUE klass, ID id)
+{
+    return rb_const_location(klass, id, FALSE, TRUE, FALSE);
+}
+
+VALUE
+rb_const_source_location_at(VALUE klass, ID id)
+{
+    return rb_const_location(klass, id, TRUE, FALSE, FALSE);
+}
+
 /*
  *  call-seq:
  *     remove_const(sym)   -> obj
