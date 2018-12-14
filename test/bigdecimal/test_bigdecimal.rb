@@ -56,8 +56,8 @@ class TestBigDecimal < Test::Unit::TestCase
     assert_equal(1234, BigDecimal(" \t\n\r \r1234 \t\n\r \r"))
 
     assert_raise(ArgumentError) { BigDecimal("1", -1) }
-    assert_raise(ArgumentError, /"1__1_1"/) { BigDecimal("1__1_1") }
-    assert_raise(ArgumentError, /"_1_1_1"/) { BigDecimal("_1_1_1") }
+    assert_raise_with_message(ArgumentError, /"1__1_1"/) { BigDecimal("1__1_1") }
+    assert_raise_with_message(ArgumentError, /"_1_1_1"/) { BigDecimal("_1_1_1") }
 
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
@@ -88,10 +88,10 @@ class TestBigDecimal < Test::Unit::TestCase
     BigDecimal.save_exception_mode do
       BigDecimal.mode(BigDecimal::EXCEPTION_OVERFLOW, false)
       BigDecimal.mode(BigDecimal::EXCEPTION_NaN, false)
-      assert_raise(ArgumentError, /"Infinity_"/) { BigDecimal("Infinity_") }
-      assert_raise(ArgumentError, /"+Infinity_"/) { BigDecimal("+Infinity_") }
-      assert_raise(ArgumentError, /"-Infinity_"/) { BigDecimal("-Infinity_") }
-      assert_raise(ArgumentError, /"NaN_"/) { BigDecimal("NaN_") }
+      assert_raise_with_message(ArgumentError, /"Infinity_"/) { BigDecimal("Infinity_") }
+      assert_raise_with_message(ArgumentError, /"\+Infinity_"/) { BigDecimal("+Infinity_") }
+      assert_raise_with_message(ArgumentError, /"-Infinity_"/) { BigDecimal("-Infinity_") }
+      assert_raise_with_message(ArgumentError, /"NaN_"/) { BigDecimal("NaN_") }
     end
   end
 
@@ -209,15 +209,21 @@ class TestBigDecimal < Test::Unit::TestCase
   end
 
   def test_s_ver
-    assert_raise(NoMethodError, /undefined method `ver`/) { BigDecimal.ver }
+    assert_raise_with_message(NoMethodError, /undefined method `ver'/) { BigDecimal.ver }
   end
 
   def test_s_allocate
-    assert_raise(NoMethodError, /undefined method `allocate`/) { BigDecimal.allocate }
+    assert_raise_with_message(NoMethodError, /undefined method `allocate'/) { BigDecimal.allocate }
   end
 
   def test_s_new
-    assert_raise(NoMethodError, /undefined method `new`/) { BigDecimal.new("1") }
+    # TODO: BigDecimal.new will be removed on 1.5
+    # assert_raise_with_message(NoMethodError, /undefined method `new'/) { BigDecimal.new("1") }
+    assert_equal(BigDecimal(1), BigDecimal.new(1))
+    assert_raise(ArgumentError) { BigDecimal.new(',', exception: true) }
+    assert_nothing_raised { assert_equal(nil, BigDecimal.new(',', exception: false)) }
+    assert_raise(TypeError) { BigDecimal.new(nil, exception: true) }
+    assert_nothing_raised { assert_equal(nil, BigDecimal.new(nil, exception: false)) }
   end
 
   def _test_mode(type)
@@ -1821,7 +1827,13 @@ class TestBigDecimal < Test::Unit::TestCase
 
   def test_dup_subclass
     c = Class.new(BigDecimal)
-    assert_raise(NoMethodError, /undefined method `new`/) { c.new(1) }
+    # TODO: BigDecimal.new will be removed on 1.5
+    # assert_raise_with_message(NoMethodError, /undefined method `new'/) { c.new(1) }
+    assert_equal(BigDecimal(1), c.new(1))
+    assert_raise(ArgumentError) { c.new(',', exception: true) }
+    assert_nothing_raised { assert_equal(nil, c.new(',', exception: false)) }
+    assert_raise(TypeError) { c.new(nil, exception: true) }
+    assert_nothing_raised { assert_equal(nil, c.new(nil, exception: false)) }
   end
 
   def test_to_d
