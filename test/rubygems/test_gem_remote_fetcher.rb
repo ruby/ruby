@@ -516,6 +516,24 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     assert_equal url, e.uri
   end
 
+  def test_fetch_path_openssl_ssl_sslerror
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+
+    def fetcher.fetch_http(uri, mtime = nil, head = nil)
+      raise OpenSSL::SSL::SSLError
+    end
+
+    url = 'http://example.com/uri'
+
+    e = assert_raises Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_path url
+    end
+
+    assert_equal "OpenSSL::SSL::SSLError: OpenSSL::SSL::SSLError (#{url})", e.message
+    assert_equal url, e.uri
+  end
+
   def test_fetch_path_unmodified
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher
