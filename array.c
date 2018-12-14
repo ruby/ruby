@@ -4431,10 +4431,10 @@ static inline void
 ary_recycle_hash(VALUE hash)
 {
     assert(RBASIC_CLASS(hash) == 0);
-    if (RHASH_TABLE_P(hash)) {
+    if (RHASH_ST_TABLE_P(hash)) {
         st_table *tbl = RHASH_ST_TABLE(hash);
 	st_free_table(tbl);
-        RHASH_CLEAR(hash);
+        RHASH_ST_CLEAR(hash);
     }
 }
 

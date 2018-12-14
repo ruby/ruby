@@ -2271,15 +2271,15 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_hash_empty);
         }
 
-        if (RHASH_ARRAY_P(obj)) {
-            RB_DEBUG_COUNTER_INC(obj_hash_array);
+        if (RHASH_AR_TABLE_P(obj)) {
+            RB_DEBUG_COUNTER_INC(obj_hash_ar);
         }
         else {
             RB_DEBUG_COUNTER_INC(obj_hash_st);
         }
 #endif
-        if (/* RHASH_ARRAY_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
-            li_table *tab = RHASH(obj)->as.li;
+        if (/* RHASH_AR_TABLE_P(obj) */ !FL_TEST_RAW(obj, RHASH_ST_TABLE_FLAG)) {
+            ar_table *tab = RHASH(obj)->as.ar;
 
             if (tab) {
                 if (RHASH_TRANSIENT_P(obj)) {
@@ -2291,7 +2291,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             }
         }
         else {
-            GC_ASSERT(RHASH_TABLE_P(obj));
+            GC_ASSERT(RHASH_ST_TABLE_P(obj));
             st_free_table(RHASH(obj)->as.st);
         }
 	break;
@@ -3355,8 +3355,8 @@ obj_memsize_of(VALUE obj, int use_all_types)
 	size += rb_ary_memsize(obj);
 	break;
       case T_HASH:
-        if (RHASH_ARRAY_P(obj)) {
-            size += sizeof(li_table);
+        if (RHASH_AR_TABLE_P(obj)) {
+            size += sizeof(ar_table);
 	}
         else {
             VM_ASSERT(RHASH_ST_TABLE(obj) != NULL);
@@ -4254,9 +4254,9 @@ mark_hash(rb_objspace_t *objspace, VALUE hash)
 {
     rb_hash_stlike_foreach(hash, mark_keyvalue, (st_data_t)objspace);
 
-    if (RHASH_ARRAY_P(hash)) {
+    if (RHASH_AR_TABLE_P(hash)) {
         if (objspace->mark_func_data == NULL && RHASH_TRANSIENT_P(hash)) {
-            rb_transient_heap_mark(hash, RHASH_ARRAY(hash));
+            rb_transient_heap_mark(hash, RHASH_AR_TABLE(hash));
         }
     }
     else {
@@ -9710,7 +9710,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
 	  }
           case T_HASH: {
               snprintf(buff, buff_size, "%s [%c%c] %d", buff,
-                       RHASH_ARRAY_P(obj) ? 'A' : 'S',
+                       RHASH_AR_TABLE_P(obj) ? 'A' : 'S',
                        RHASH_TRANSIENT_P(obj) ? 'T' : ' ',
                        (int)RHASH_SIZE(obj));
               break;

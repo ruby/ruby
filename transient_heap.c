@@ -583,8 +583,8 @@ transient_heap_ptr(VALUE obj, int error)
         break;
       case T_HASH:
         if (RHASH_TRANSIENT_P(obj)) {
-            TH_ASSERT(RHASH_ARRAY_P(obj));
-            ptr = (VALUE *)(RHASH(obj)->as.li);
+            TH_ASSERT(RHASH_AR_TABLE_P(obj));
+            ptr = (VALUE *)(RHASH(obj)->as.ar);
         }
         else {
             ptr = NULL;
