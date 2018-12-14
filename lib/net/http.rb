@@ -22,9 +22,9 @@
 
 require_relative 'protocol'
 require 'uri'
+autoload :OpenSSL, 'openssl'
 
 module Net   #:nodoc:
-  autoload :OpenSSL, 'openssl'
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
