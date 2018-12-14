@@ -3219,8 +3219,10 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  */
 
 /*
- * A +Proc+ object is an incapsulation of a block of code, that can be stored
- * in local variables, passed to methods and other procs and called.
+ *  Document-class: Proc
+ *
+ * A +Proc+ object is an encapsulation of a block of code, which can be stored
+ * in a local variable, passed to a method or another Proc, and can be called.
  * Proc is an essential concept in Ruby and a core of its functional
  * programming features.
  *
@@ -3235,7 +3237,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  * context in which they were created.
  *
  *     def gen_times(factor)
- *       Proc.new {|n| n*factor } # remembers factor value at a moment of creation
+ *       Proc.new {|n| n*factor } # remembers the value of factor at the moment of creation
  *     end
  *
  *     times3 = gen_times(3)
@@ -3247,17 +3249,17 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  * == Creation
  *
- * There are several methods to create procs
+ * There are several methods to create a Proc
  *
- * * Just use Proc class constructor:
+ * * Use the Proc class constructor:
  *
  *      proc1 = Proc.new {|x| x**2 }
  *
- * * Use Kernel#proc method as its shorthand:
+ * * Use the Kernel#proc method as a shorthand of Proc.new:
  *
  *      proc2 = proc {|x| x**2 }
  *
- * * Receiving block of code into proc argument (note the <code>&</code>):
+ * * Receiving a block of code into proc argument (note the <code>&</code>):
  *
  *      def make_proc(&block)
  *        block
@@ -3265,38 +3267,38 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  *      proc3 = make_proc {|x| x**2 }
  *
- * * Construct proc with lambda semantic by Kernel#lambda method (see below
- *   for explanations about lambdas):
+ * * Construct a proc with lambda semantics using the Kernel#lambda method
+ *   (see below for explanations about lambdas):
  *
  *      lambda1 = lambda {|x| x**2 }
  *
- * * Lambda literal (also constructs proc with lambda semantics):
+ * * Use the Lambda literal syntax (also constructs a proc with lambda semantics):
  *
  *      lambda2 = ->(x) { x**2 }
  *
  * == Lambda and non-lambda semantics
  *
- * The procs are coming in two flavors: lambda and non-lambda.
+ * Procs are coming in two flavors: lambda and non-lambda (regular procs).
  * Differences are:
  *
- * * In lambda, +return+ means exit from this lambda;
- * * In regular proc, +return+ means exit from embracing method
+ * * In lambdas, +return+ means exit from this lambda;
+ * * In regular procs, +return+ means exit from embracing method
  *   (and will throw +LocalJumpError+ if invoked outside the method);
- * * In lambda, arguments are treated like in method: strict,
+ * * In lambdas, arguments are treated in the same way as in methods: strict,
  *   with +ArgumentError+ for mismatching argument number,
  *   and no additional argument processing;
- * * Regular proc accepts arguments more generously: it fills missing
- *   arguments with +nil+, deconstructs single Array argument if
- *   proc has multiple arguments, and doesn't raise on extra
+ * * Regular procs accept arguments more generously: missing arguments
+ *   are filled with +nil+, single Array arguments are deconstructed if the
+ *   proc has multiple arguments, and there is no error raised on extra
  *   arguments.
  *
  * Examples:
  *
- *      p = proc { |x, y| "x=#{x}, y=#{y}" }
+ *      p = proc {|x, y| "x=#{x}, y=#{y}" }
  *      p.call(1, 2)      #=> "x=1, y=2"
  *      p.call([1, 2])    #=> "x=1, y=2", array deconstructed
  *      p.call(1, 2, 8)   #=> "x=1, y=2", extra argument discarded
- *      p.call(1)         #=> "x=1, y=", nil substituted instead of missing
+ *      p.call(1)         #=> "x=1, y=", nil substituted instead of error
  *
  *      l = lambda {|x, y| "x=#{x}, y=#{y}" }
  *      l.call(1, 2)      #=> "x=1, y=2"
@@ -3312,23 +3314,25 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  *      test_return # => 4, return from proc
  *
- * Lambdas are useful as self-sufficient higher-order functions, behaving
- * exactly like Ruby methods. Procs are useful for implementing iterators:
+ * Lambdas are useful as self-sufficient functions, in particular useful as
+ * arguments to higher-order functions, behaving exactly like Ruby methods.
+ * 
+ * Procs are useful for implementing iterators:
  *
  *      def test
  *        [[1, 2], [3, 4], [5, 6]].map {|a, b| return a if a + b > 10 }
  *                                  #  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
  *      end
  *
- * Inside +map+, block of code is treated as regular (non-lambda) proc,
- * which means that internal arrays would be deconstructed to pairs of
+ * Inside +map+, the block of code is treated as a regular (non-lambda) proc,
+ * which means that the internal arrays will be deconstructed to pairs of
  * arguments, and +return+ will exit from the method +test+. That would
- * not be possible with more strict lambda.
+ * not be possible with a stricter lambda.
  *
- * You can tell lambda from regular proc by #lambda? instance method.
+ * You can tell a lambda from a regular proc by using the #lambda? instance method.
  *
  * Lambda semantics is typically preserved during the proc lifetime, including
- * <code>&</code>-deconstruction to block of code:
+ * <code>&</code>-deconstruction to a block of code:
  *
  *      p = proc {|x, y| x }
  *      l = lambda {|x, y| x }
@@ -3336,7 +3340,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *      [[1, 2], [3, 4]].map(&l) # ArgumentError: wrong number of arguments (given 1, expected 2)
  *
  * The only exception is dynamic method definition: even if defined by
- * passing non-lambda proc, methods still have normal semantic of argument
+ * passing a non-lambda proc, methods still have normal semantics of argument
  * checking.
  *
  *   class C
@@ -3361,10 +3365,11 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  * The wrapper <i>def2</i> receives <code>body</code> as a non-lambda proc,
  * yet defines a method which has normal semantics.
  *
- * == Other object conversion to procs
+ * == Conversion of other objects to procs
  *
- * Any object that implements +to_proc+ method can be converted into
- * proc by <code>&</code> operator, and therefore consumed by iterators.
+ * Any object that implements the +to_proc+ method can be converted into
+ * a proc by the <code>&</code> operator, and therefore con be
+ * consumed by iterators.
  *
  *      class Greater
  *        def initialize(greating)
@@ -3381,7 +3386,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
  *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
  *
- * Of Ruby core classes, this method is implemented by Symbol,
+ * Of Ruby the core classes, this method is implemented by Symbol,
  * Method and Hash.
  *
  *      :to_s.to_proc.call(1)           #=> "1"
