@@ -446,7 +446,7 @@ hash_verify_(VALUE hash, const char *file, int line)
 #endif
 
 static inline int
-RHASH_TABLE_EMPTY(VALUE hash)
+RHASH_TABLE_NULL_P(VALUE hash)
 {
     if (RHASH(hash)->as.ar == NULL) {
         HASH_ASSERT(RHASH_AR_TABLE_P(hash));
@@ -455,6 +455,12 @@ RHASH_TABLE_EMPTY(VALUE hash)
     else {
         return FALSE;
     }
+}
+
+static inline int
+RHASH_TABLE_EMPTY_P(VALUE hash)
+{
+    return RHASH_SIZE(hash) == 0;
 }
 
 MJIT_FUNC_EXPORTED int
@@ -661,7 +667,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
 static ar_table *
 hash_ar_table(VALUE hash)
 {
-    if (RHASH_TABLE_EMPTY(hash)) {
+    if (RHASH_TABLE_NULL_P(hash)) {
         ar_alloc_table(hash);
     }
     return RHASH_AR_TABLE(hash);
@@ -1214,7 +1220,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 {
     struct hash_foreach_arg arg;
 
-    if (RHASH_TABLE_EMPTY(hash))
+    if (RHASH_TABLE_EMPTY_P(hash))
         return;
     RHASH_ITER_LEV(hash)++;
     arg.hash = hash;
@@ -2176,7 +2182,7 @@ rb_hash_delete_if(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
-    if (!RHASH_TABLE_EMPTY(hash)) {
+    if (!RHASH_TABLE_EMPTY_P(hash)) {
         rb_hash_foreach(hash, delete_if_i, hash);
     }
     return hash;
@@ -2424,7 +2430,7 @@ rb_hash_keep_if(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
-    if (!RHASH_TABLE_EMPTY(hash)) {
+    if (!RHASH_TABLE_EMPTY_P(hash)) {
         rb_hash_foreach(hash, keep_if_i, hash);
     }
     return hash;
@@ -2537,7 +2543,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
     rb_hash_modify(hash);
 
-    if (RHASH_TABLE_EMPTY(hash)) {
+    if (RHASH_TABLE_NULL_P(hash)) {
 	if (iter_lev > 0) no_new_key();
         ar_alloc_table(hash);
     }
@@ -2859,7 +2865,7 @@ rb_hash_transform_keys_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
-    if (!RHASH_TABLE_EMPTY(hash)) {
+    if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE pairs = rb_hash_flatten(0, NULL, hash);
         rb_hash_clear(hash);
@@ -2933,7 +2939,7 @@ rb_hash_transform_values_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     rb_hash_modify_check(hash);
-    if (!RHASH_TABLE_EMPTY(hash))
+    if (!RHASH_TABLE_EMPTY_P(hash))
         rb_hash_foreach(hash, transform_values_i, hash);
     return hash;
 }
@@ -3325,13 +3331,15 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
     }
     if (RHASH_SIZE(hash1) != RHASH_SIZE(hash2))
 	return Qfalse;
-    if (!RHASH_TABLE_EMPTY(hash1) && !RHASH_TABLE_EMPTY(hash2)) {
-        if (RHASH_TYPE(hash1) != RHASH_TYPE(hash2))
+    if (!RHASH_TABLE_EMPTY_P(hash1) && !RHASH_TABLE_EMPTY_P(hash2)) {
+        if (RHASH_TYPE(hash1) != RHASH_TYPE(hash2)) {
             return Qfalse;
-
-        data.hash = hash2;
-        data.eql = eql;
-        return rb_exec_recursive_paired(recursive_eql, hash1, hash2, (VALUE)&data);
+        }
+        else {
+            data.hash = hash2;
+            data.eql = eql;
+            return rb_exec_recursive_paired(recursive_eql, hash1, hash2, (VALUE)&data);
+        }
     }
 
 #if 0
@@ -4293,25 +4301,27 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
 MJIT_FUNC_EXPORTED void
 rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
 {
-    st_index_t size;
-
     HASH_ASSERT(argc % 2 == 0);
-    if (! argc)
-        return;
-    size = argc / 2;
-    if (RHASH_TABLE_EMPTY(hash)) {
-        if (size <= RHASH_AR_TABLE_MAX_SIZE)
-            hash_ar_table(hash);
-        else
-            RHASH_TBL_RAW(hash);
-    }
-    if (RHASH_AR_TABLE_P(hash) &&
-        (RHASH_AR_TABLE_SIZE(hash) + size <= RHASH_AR_TABLE_MAX_SIZE)) {
-        ar_bulk_insert(hash, argc, argv);
-        return;
-    }
+    if (argc > 0) {
+        st_index_t size = argc / 2;
 
-    rb_hash_bulk_insert_into_st_table(argc, argv, hash);
+        if (RHASH_TABLE_NULL_P(hash)) {
+            if (size <= RHASH_AR_TABLE_MAX_SIZE) {
+                hash_ar_table(hash);
+            }
+            else {
+                RHASH_TBL_RAW(hash);
+            }
+        }
+
+        if (RHASH_AR_TABLE_P(hash) &&
+            (RHASH_AR_TABLE_SIZE(hash) + size <= RHASH_AR_TABLE_MAX_SIZE)) {
+            ar_bulk_insert(hash, argc, argv);
+        }
+        else {
+            rb_hash_bulk_insert_into_st_table(argc, argv, hash);
+        }
+    }
 }
 
 static int path_tainted = -1;
