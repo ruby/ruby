@@ -3386,8 +3386,8 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
  *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
  *
- * Of Ruby the core classes, this method is implemented by Symbol,
- * Method and Hash.
+ * Of the Ruby core classes, this method is implemented by Symbol,
+ * Method, and Hash.
  *
  *      :to_s.to_proc.call(1)           #=> "1"
  *      [1, 2].map(&:to_s)              #=> ["1", "2"]
