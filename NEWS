@@ -530,7 +530,6 @@ sufficient information, see the ChangeLog file or Redmine
   * The following methods are removed.
 
     * BigDecimal.allocate
-    * BigDecimal.new
     * BigDecimal.ver
 
   * Every BigDecimal object is frozen. [Feature #13984]
@@ -539,6 +538,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   * String#to_d parses the receiver string like String#to_f.
 
+  * BigDecimal.new will be removed on its version 1.5.
 
 [Pathname]
 
