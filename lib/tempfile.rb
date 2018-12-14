@@ -241,7 +241,7 @@ class Tempfile < DelegateClass(File)
     end
   end
 
-  class Remover
+  class Remover # :nodoc:
     def initialize(tmpfile)
       @pid = Process.pid
       @tmpfile = tmpfile
