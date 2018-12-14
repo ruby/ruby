@@ -3316,7 +3316,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
  *
  * Lambdas are useful as self-sufficient functions, in particular useful as
  * arguments to higher-order functions, behaving exactly like Ruby methods.
- * 
+ *
  * Procs are useful for implementing iterators:
  *
  *      def test
