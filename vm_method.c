@@ -899,6 +899,15 @@ method_entry_resolve_refinement(VALUE klass, ID id, int with_refinement, VALUE *
     return me;
 }
 
+const rb_callable_method_entry_t *
+rb_resolve_refined_method_callable2(VALUE refinements, VALUE klass, ID id)
+{
+    VALUE defined_class;
+    const rb_method_entry_t *me = method_entry_get(klass, id, &defined_class);
+    me = resolve_refined_method(refinements, me, &defined_class);
+    return prepare_callable_method_entry(defined_class, id, me);
+}
+
 MJIT_FUNC_EXPORTED const rb_callable_method_entry_t *
 rb_callable_method_entry_with_refinements(VALUE klass, ID id, VALUE *defined_class_ptr)
 {
