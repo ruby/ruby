@@ -1113,23 +1113,23 @@ encode_fallback_java(nkf_char c)
     if(!nkf_char_unicode_bmp_p(c)){
         int high = (c >> 10) + NKF_INT32_C(0xD7C0);   /* high surrogate */
         int low = (c & 0x3FF) + NKF_INT32_C(0xDC00); /* low surrogate */
-        (*oconv)(0, 'u');
-        (*oconv)(0, bin2hex(high>>12));
-        (*oconv)(0, bin2hex(high>> 8));
-        (*oconv)(0, bin2hex(high>> 4));
-        (*oconv)(0, bin2hex(high    ));
-        (*oconv)(0, '\\');
-        (*oconv)(0, 'u');
-        (*oconv)(0, bin2hex(low>>12));
-        (*oconv)(0, bin2hex(low>> 8));
-        (*oconv)(0, bin2hex(low>> 4));
-        (*oconv)(0, bin2hex(low    ));
+	(*oconv)(0, 'u');
+	(*oconv)(0, bin2hex(high>>12));
+	(*oconv)(0, bin2hex(high>> 8));
+	(*oconv)(0, bin2hex(high>> 4));
+	(*oconv)(0, bin2hex(high    ));
+	(*oconv)(0, '\\');
+	(*oconv)(0, 'u');
+	(*oconv)(0, bin2hex(low>>12));
+	(*oconv)(0, bin2hex(low>> 8));
+	(*oconv)(0, bin2hex(low>> 4));
+	(*oconv)(0, bin2hex(low    ));
     }else{
 	(*oconv)(0, 'u');
-        (*oconv)(0, bin2hex(c>>12));
-        (*oconv)(0, bin2hex(c>> 8));
-        (*oconv)(0, bin2hex(c>> 4));
-        (*oconv)(0, bin2hex(c    ));
+	(*oconv)(0, bin2hex(c>>12));
+	(*oconv)(0, bin2hex(c>> 8));
+	(*oconv)(0, bin2hex(c>> 4));
+	(*oconv)(0, bin2hex(c    ));
     }
     return;
 }
@@ -1956,17 +1956,17 @@ unicode_to_jis_common(nkf_char c2, nkf_char c1, nkf_char c0, nkf_char *p2, nkf_c
     }else return -1;
 #ifdef SHIFTJIS_CP932
     if (!ret&& is_eucg3(*p2)) {
-        if (cp932inv_f) {
-            if (encode_fallback) ret = 1;
+	if (cp932inv_f) {
+	    if (encode_fallback) ret = 1;
 	}
-        else {
-            nkf_char s2, s1;
-            if (e2s_conv(*p2, *p1, &s2, &s1) == 0) {
-                s2e_conv(s2, s1, p2, p1);
-            }else{
-                ret = 1;
-            }
-        }
+	else {
+	    nkf_char s2, s1;
+	    if (e2s_conv(*p2, *p1, &s2, &s1) == 0) {
+		s2e_conv(s2, s1, p2, p1);
+	    }else{
+		ret = 1;
+	    }
+	}
     }
 #endif
     return ret;
