@@ -908,11 +908,21 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
 
 /**
  *  call-seq:
- *     obj.tap {|x| block }    -> obj
+ *     obj.tap { |o| block }           -> obj
+ *     obj.tap(:method, *args, &block) -> obj
  *
- *  Yields self to the block, and then returns self.
+ *  Calls a method or yields a block then returns self.
+ *
  *  The primary purpose of this method is to "tap into" a method chain,
  *  in order to perform operations on intermediate results within the chain.
+ *
+ *  When arguments are passed then it behaves like #send but returns self:
+ *
+ *     array = [1, 2, 3]     #=> [1, 2, 3]
+ *     array.tap(:delete, 1) #=> [2, 3]
+ *     array                 #=> [2, 3]
+ *
+ *  When only a block is given then it yields self to the block and returns self:
  *
  *     (1..10)                  .tap {|x| puts "original: #{x}" }
  *       .to_a                  .tap {|x| puts "array:    #{x}" }
@@ -925,9 +935,9 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  */
 
 VALUE
-rb_obj_tap(VALUE obj)
+rb_obj_tap(int argc, VALUE* argv, VALUE obj)
 {
-    rb_yield(obj);
+    argc > 0 ? rb_f_send(argc, argv, obj) : rb_yield(obj);
     return obj;
 }
 
@@ -4316,7 +4326,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "instance_of?", rb_obj_is_instance_of, 1);
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
-    rb_define_method(rb_mKernel, "tap", rb_obj_tap, 0);
+    rb_define_method(rb_mKernel, "tap", rb_obj_tap, -1);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1); /* in sprintf.c */
     rb_define_global_function("format", rb_f_sprintf, -1);  /* in sprintf.c */
