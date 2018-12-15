@@ -2330,8 +2330,11 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *
  *  +sec+ may have fraction if it is a rational.
  *
- *  +tz+ is the offset from UTC, or a timezone object.
- *  It can be a string such as "+09:00" or a number of seconds such as 32400.
+ *  +tz+ specifies the timezone.
+ *  It can be an offset from UTC, given either as a string such as "+09:00"
+ *  or as a number of seconds such as 32400.
+ *  Or it can be a timezone object,
+ *  see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
  *
  *     a = Time.new      #=> 2007-11-19 07:50:02 -0600
  *     b = Time.new      #=> 2007-11-19 07:50:02 -0600
@@ -2355,9 +2358,6 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *     (t6-t5)/3600.0                             #=> 1.95
  *     (t8-t7)/3600.0                             #=> 13.416666666666666
  *
- *  Or it can be a timezone object.
- *  See {Timezone argument}[#class-Time-label-Timezone+argument] for
- *  details.
  */
 
 static VALUE
