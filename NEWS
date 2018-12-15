@@ -426,6 +426,10 @@ sufficient information, see the ChangeLog file or Redmine
     * Add Net::HTTPClientException to deprecate Net::HTTPServerException,
       whose name is misleading.  [Bug #14688]
 
+[NKF]
+
+  * Upgrade to nkf v2.1.5
+
 [Psych]
 
   * Upgrade to Psych 3.1.0.pre2
