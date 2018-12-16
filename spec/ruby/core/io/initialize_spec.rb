@@ -23,16 +23,16 @@ describe "IO#initialize" do
       # initialize has closed the old descriptor
       lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
     end
-  end
 
-  it "calls #to_int to coerce the object passed as an fd" do
-    obj = mock('fileno')
-    fd = new_fd @name, "r:utf-8"
-    obj.should_receive(:to_int).and_return(fd)
-    @io.send :initialize, obj, 'r'
-    @io.fileno.should == fd
-    # initialize has closed the old descriptor
-    lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
+    it "calls #to_int to coerce the object passed as an fd" do
+      obj = mock('fileno')
+      fd = new_fd @name, "r:utf-8"
+      obj.should_receive(:to_int).and_return(fd)
+      @io.send :initialize, obj, 'r'
+      @io.fileno.should == fd
+      # initialize has closed the old descriptor
+      lambda { IO.for_fd(@fd).close }.should raise_error(Errno::EBADF)
+    end
   end
 
   it "raises a TypeError when passed an IO" do
