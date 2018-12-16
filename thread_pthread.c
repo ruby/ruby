@@ -1472,7 +1472,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         switch (ATOMIC_CAS(timer_posix.state, RTIMER_ARMING, RTIMER_ARMED)) {
           case RTIMER_DISARM:
             /* somebody requested a disarm while we were arming */
-	    /* may race harmlessly with ubf_timer_destroy */
+            /* may race harmlessly with ubf_timer_destroy */
             (void)timer_settime(timer_posix.timerid, 0, &zero, 0);
 
           case RTIMER_ARMING: return; /* success */
@@ -1485,7 +1485,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
              */
             return;
           case RTIMER_DEAD:
-	    /* may race harmlessly with ubf_timer_destroy */
+            /* may race harmlessly with ubf_timer_destroy */
             (void)timer_settime(timer_posix.timerid, 0, &zero, 0);
             return;
           default:
@@ -1795,7 +1795,7 @@ ubf_timer_destroy(void)
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
-	if (ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) != RTIMER_DEAD) {
+        if (ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) != RTIMER_DEAD) {
             rb_bug("YOU KNOW I'M NOT DEAD\n");
         }
     }
