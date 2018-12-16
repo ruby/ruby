@@ -1678,9 +1678,10 @@ rb_false(VALUE obj)
  *  call-seq:
  *     obj =~ other  -> nil
  *
- *  Pattern Match---Overridden by descendants (notably
- *  <code>Regexp</code> and <code>String</code>) to provide meaningful
- *  pattern-match semantics.
+ * This method is deprecated.
+ *
+ * This is not only unuseful but also troublesome because it
+ * may hide a type error.
  */
 
 static VALUE
