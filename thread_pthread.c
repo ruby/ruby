@@ -91,12 +91,25 @@
 #  endif
 #endif
 
+enum rtimer_state {
+    /* alive, after timer_create: */
+    RTIMER_DISARM,
+    RTIMER_ARMING,
+    RTIMER_ARMED,
+
+    RTIMER_DEAD
+};
+
 #if UBF_TIMER == UBF_TIMER_POSIX
+static const struct itimerspec zero;
 static struct {
-    timer_t timerid;
-    rb_atomic_t armed; /* 0: disarmed, 1: arming, 2: armed */
+    rb_atomic_t state; /* rtimer_state */
     rb_pid_t owner;
-} timer_posix;
+    timer_t timerid;
+} timer_posix = {
+    /* .state = */ RTIMER_DEAD,
+};
+
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
 static void *timer_pthread_fn(void *);
 static struct {
@@ -1447,7 +1460,7 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if ((!current || timer_posix.owner == current) &&
-            !ATOMIC_CAS(timer_posix.armed, 0, 1)) {
+            !ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_ARMING)) {
         struct itimerspec it;
 
         it.it_interval.tv_sec = it.it_value.tv_sec = 0;
@@ -1456,21 +1469,24 @@ ubf_timer_arm(rb_pid_t current) /* async signal safe */
         if (timer_settime(timer_posix.timerid, 0, &it, 0))
             rb_async_bug_errno("timer_settime (arm)", errno);
 
-        switch (ATOMIC_CAS(timer_posix.armed, 1, 2)) {
-          case 0:
+        switch (ATOMIC_CAS(timer_posix.state, RTIMER_ARMING, RTIMER_ARMED)) {
+          case RTIMER_DISARM:
             /* somebody requested a disarm while we were arming */
-            it.it_interval.tv_nsec = it.it_value.tv_nsec = 0;
-            if (timer_settime(timer_posix.timerid, 0, &it, 0))
-                rb_async_bug_errno("timer_settime (disarm)", errno);
+	    /* may race harmlessly with ubf_timer_destroy */
+            (void)timer_settime(timer_posix.timerid, 0, &zero, 0);
 
-          case 1: return; /* success */
-          case 2:
+          case RTIMER_ARMING: return; /* success */
+          case RTIMER_ARMED:
             /*
              * it is possible to have another thread disarm, and
              * a third thread arm finish re-arming before we get
              * here, so we wasted a syscall with timer_settime but
              * probably unavoidable in a signal handler.
              */
+            return;
+          case RTIMER_DEAD:
+	    /* may race harmlessly with ubf_timer_destroy */
+            (void)timer_settime(timer_posix.timerid, 0, &zero, 0);
             return;
           default:
             rb_async_bug_errno("UBF_TIMER_POSIX unknown state", ERANGE);
@@ -1701,10 +1717,18 @@ ubf_timer_create(rb_pid_t current)
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = SIGVTALRM;
     sev.sigev_value.sival_ptr = &timer_posix;
-    if (!timer_create(UBF_TIMER_CLOCK, &sev, &timer_posix.timerid))
+
+    if (!timer_create(UBF_TIMER_CLOCK, &sev, &timer_posix.timerid)) {
+        rb_atomic_t prev = ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DISARM);
+
+        if (prev != RTIMER_DEAD) {
+            rb_bug("timer_posix was not dead: %u\n", (unsigned)prev);
+        }
         timer_posix.owner = current;
-    else
+    }
+    else {
 	rb_warn("timer_create failed: %s, signals racy", strerror(errno));
+    }
 #endif
     if (UBF_TIMER == UBF_TIMER_PTHREAD)
         ubf_timer_pthread_create(current);
@@ -1726,15 +1750,11 @@ rb_thread_create_timer_thread(void)
     if (setup_communication_pipe_internal(signal_self_pipe.normal) < 0) return;
     if (setup_communication_pipe_internal(signal_self_pipe.ub_main) < 0) return;
 
+    ubf_timer_create(current);
     if (owner != current) {
         /* validate pipe on this process */
-        ubf_timer_create(current);
         sigwait_th = THREAD_INVALID;
         signal_self_pipe.owner_process = current;
-    }
-    else if (UBF_TIMER == UBF_TIMER_PTHREAD) {
-        /* UBF_TIMER_PTHREAD needs to recreate after fork */
-        ubf_timer_pthread_create(current);
     }
 }
 
@@ -1742,19 +1762,21 @@ static void
 ubf_timer_disarm(void)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
-    static const struct itimerspec zero;
-    rb_atomic_t armed = ATOMIC_EXCHANGE(timer_posix.armed, 0);
+    rb_atomic_t prev;
 
-    if (LIKELY(armed) == 0) return;
-    switch (armed) {
-      case 1: return; /* ubf_timer_arm was arming and will disarm itself */
-      case 2:
+    prev = ATOMIC_CAS(timer_posix.state, RTIMER_ARMED, RTIMER_DISARM);
+    switch (prev) {
+      case RTIMER_DISARM: return; /* likely */
+      case RTIMER_ARMING: return; /* ubf_timer_arm will disarm itself */
+      case RTIMER_ARMED:
         if (timer_settime(timer_posix.timerid, 0, &zero, 0))
             rb_bug_errno("timer_settime (disarm)", errno);
         return;
+      case RTIMER_DEAD: return; /* stay dead */
       default:
-        rb_bug("UBF_TIMER_POSIX bad state: %u\n", (unsigned)armed);
+        rb_bug("UBF_TIMER_POSIX bad state: %u\n", (unsigned)prev);
     }
+
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     ATOMIC_SET(timer_pthread.armed, 0);
 #endif
@@ -1763,7 +1785,21 @@ ubf_timer_disarm(void)
 static void
 ubf_timer_destroy(void)
 {
-#if UBF_TIMER == UBF_TIMER_PTHREAD
+#if UBF_TIMER == UBF_TIMER_POSIX
+    if (timer_posix.owner == getpid()) {
+        /* prevent signal handler from arming: */
+        ATOMIC_SET(timer_posix.state, RTIMER_DEAD);
+
+        if (timer_settime(timer_posix.timerid, 0, &zero, 0))
+            rb_bug_errno("timer_settime (destroy)", errno);
+        if (timer_delete(timer_posix.timerid) < 0)
+            rb_sys_fail("timer_delete");
+
+	if (ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) != RTIMER_DEAD) {
+            rb_bug("YOU KNOW I'M NOT DEAD\n");
+        }
+    }
+#elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
 
     timer_pthread.owner = 0;
@@ -1774,7 +1810,6 @@ ubf_timer_destroy(void)
         rb_raise(rb_eThreadError, "native_thread_join() failed (%d)", err);
     }
 #endif
-/* no need to destroy real POSIX timers */
 }
 
 static int
