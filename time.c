@@ -2524,12 +2524,12 @@ time_timespec(VALUE num, int interval)
     if (FIXNUM_P(num)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
-	    rb_raise(rb_eArgError, "%s must be positive", tstr);
+            rb_raise(rb_eArgError, "%s must not be negative", tstr);
 	t.tv_nsec = 0;
     }
     else if (RB_FLOAT_TYPE_P(num)) {
 	if (interval && RFLOAT_VALUE(num) < 0.0)
-	    rb_raise(rb_eArgError, "%s must be positive", tstr);
+            rb_raise(rb_eArgError, "%s must not be negative", tstr);
 	else {
 	    double f, d;
 
@@ -2554,7 +2554,7 @@ time_timespec(VALUE num, int interval)
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	t.tv_sec = NUM2TIMET(num);
 	if (interval && t.tv_sec < 0)
-	    rb_raise(rb_eArgError, "%s must be positive", tstr);
+            rb_raise(rb_eArgError, "%s must not be negative", tstr);
 	t.tv_nsec = 0;
     }
     else {
@@ -2565,7 +2565,7 @@ time_timespec(VALUE num, int interval)
             f = rb_ary_entry(ary, 1);
             t.tv_sec = NUM2TIMET(i);
             if (interval && t.tv_sec < 0)
-                rb_raise(rb_eArgError, "%s must be positive", tstr);
+                rb_raise(rb_eArgError, "%s must not be negative", tstr);
             f = rb_funcall(f, '*', 1, INT2FIX(1000000000));
             t.tv_nsec = NUM2LONG(f);
         }

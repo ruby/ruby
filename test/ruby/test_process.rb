@@ -1509,6 +1509,9 @@ class TestProcess < Test::Unit::TestCase
 
   def test_sleep
     assert_raise(ArgumentError) { sleep(1, 1) }
+    [-1, -1.0, -1r].each do |sec|
+      assert_raise_with_message(ArgumentError, /not.*negative/) { sleep(sec) }
+    end
   end
 
   def test_getpgid
