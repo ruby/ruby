@@ -1429,4 +1429,18 @@ class TestPathname < Test::Unit::TestCase
       assert_instance_of(Pathname, foo.relative_path_from(bar))
     end;
   end
+
+  def test_relative_path_from_mock
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(Pathname.new("/foo/baz")))
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from("/foo/baz"))
+    obj = Object.new
+    def obj.cleanpath() Pathname.new("/foo/baz") end
+    assert_equal(
+      Pathname.new("../bar"),
+      Pathname.new("/foo/bar").relative_path_from(obj))
+  end
 end
