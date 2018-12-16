@@ -1795,9 +1795,7 @@ ubf_timer_destroy(void)
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
-        if (ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) != RTIMER_DEAD) {
-            rb_bug("YOU KNOW I'M NOT DEAD\n");
-        }
+        VM_ASSERT(ATOMIC_EXCHANGE(timer_posix.state, RTIMER_DEAD) == RTIMER_DEAD);
     }
 #elif UBF_TIMER == UBF_TIMER_PTHREAD
     int err;
