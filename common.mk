@@ -1023,12 +1023,9 @@ id.c: $(srcdir)/tool/generic_erb.rb $(srcdir)/template/id.c.tmpl $(srcdir)/defs/
 	$(Q) $(BASERUBY) $(srcdir)/tool/generic_erb.rb --output=$@ \
 		$(srcdir)/template/id.c.tmpl
 
-{$(VPATH)}node.h: $(srcdir)/tool/node_name.rb
-# This dependency is not really correct, but $? should not include
-# node_name.rb in the following recipe.
-node_name.inc: {$(VPATH)}node.h
+node_name.inc: $(srcdir)/tool/node_name.rb $(srcdir)/node.h
 	$(ECHO) generating $@
-	$(Q) $(BASERUBY) -n $(srcdir)/tool/node_name.rb < $? > $@
+	$(Q) $(BASERUBY) -n $(srcdir)/tool/node_name.rb < $(srcdir)/node.h > $@
 
 encdb.h: $(PREP) $(srcdir)/tool/generic_erb.rb $(srcdir)/template/encdb.h.tmpl
 	$(ECHO) generating $@
