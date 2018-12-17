@@ -28,6 +28,17 @@
 
 VALUE rb_str_concat_literals(size_t, const VALUE*);
 
+/* :FIXME: This #ifdef is because we build pch in case of mswin and
+ * not in case of other situations.  That distinction might change in
+ * a future.  We would better make it detectable in something better
+ * than just _MSC_VER. */
+#ifdef _MSC_VER
+RUBY_FUNC_EXPORTED
+#else
+MJIT_FUNC_EXPORTED
+#endif
+VALUE vm_exec(rb_execution_context_t *, int);
+
 PUREFUNC(static inline const VALUE *VM_EP_LEP(const VALUE *));
 static inline const VALUE *
 VM_EP_LEP(const VALUE *ep)
@@ -1870,7 +1881,7 @@ static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial);
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 vm_exec(rb_execution_context_t *ec, int mjit_enable_p)
 {
     enum ruby_tag_type state;
