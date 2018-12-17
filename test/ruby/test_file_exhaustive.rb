@@ -1521,11 +1521,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_integer_or_nil(fs1.rdev_minor)
       assert_integer(fs1.ino)
       assert_integer(fs1.mode)
-      unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
-        # on Windows, nlink is always 1. but this behavior will be changed
-        # in the future.
-        assert_equal(hardlinkfile ? 2 : 1, fs1.nlink)
-      end
+      assert_equal(hardlinkfile ? 2 : 1, fs1.nlink)
       assert_integer(fs1.uid)
       assert_integer(fs1.gid)
       assert_equal(3, fs1.size)
