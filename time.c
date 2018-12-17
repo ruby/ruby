@@ -2518,22 +2518,29 @@ time_timespec(VALUE num, int interval)
     VALUE i, f, ary;
 
 #ifndef NEGATIVE_TIME_T
-    interval = 1;
+# define arg_range_check(v) \
+    (((v) < 0) ? \
+     rb_raise(rb_eArgError, "%s must not be negative", tstr) : \
+     (void)0)
+#else
+# define arg_range_check(v) \
+    ((interval && (v) < 0) ? \
+     rb_raise(rb_eArgError, "time interval must not be negative") : \
+     (void)0)
 #endif
 
     if (FIXNUM_P(num)) {
 	t.tv_sec = NUM2TIMET(num);
-	if (interval && t.tv_sec < 0)
-            rb_raise(rb_eArgError, "%s must not be negative", tstr);
+        arg_range_check(t.tv_sec);
 	t.tv_nsec = 0;
     }
     else if (RB_FLOAT_TYPE_P(num)) {
-	if (interval && RFLOAT_VALUE(num) < 0.0)
-            rb_raise(rb_eArgError, "%s must not be negative", tstr);
-	else {
+        double x = RFLOAT_VALUE(num);
+        arg_range_check(x);
+        {
 	    double f, d;
 
-	    d = modf(RFLOAT_VALUE(num), &f);
+            d = modf(x, &f);
 	    if (d >= 0) {
 		t.tv_nsec = (int)(d*1e9+0.5);
 		if (t.tv_nsec >= 1000000000) {
@@ -2547,14 +2554,13 @@ time_timespec(VALUE num, int interval)
 	    }
 	    t.tv_sec = (time_t)f;
 	    if (f != t.tv_sec) {
-		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT_VALUE(num));
+                rb_raise(rb_eRangeError, "%f out of Time range", x);
 	    }
 	}
     }
     else if (RB_TYPE_P(num, T_BIGNUM)) {
 	t.tv_sec = NUM2TIMET(num);
-	if (interval && t.tv_sec < 0)
-            rb_raise(rb_eArgError, "%s must not be negative", tstr);
+        arg_range_check(t.tv_sec);
 	t.tv_nsec = 0;
     }
     else {
@@ -2564,8 +2570,7 @@ time_timespec(VALUE num, int interval)
             i = rb_ary_entry(ary, 0);
             f = rb_ary_entry(ary, 1);
             t.tv_sec = NUM2TIMET(i);
-            if (interval && t.tv_sec < 0)
-                rb_raise(rb_eArgError, "%s must not be negative", tstr);
+            arg_range_check(t.tv_sec);
             f = rb_funcall(f, '*', 1, INT2FIX(1000000000));
             t.tv_nsec = NUM2LONG(f);
         }
@@ -2575,6 +2580,7 @@ time_timespec(VALUE num, int interval)
         }
     }
     return t;
+#undef arg_range_check
 }
 
 static struct timeval
