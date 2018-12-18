@@ -926,7 +926,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 {
     while (me && me->def->type == VM_METHOD_TYPE_REFINED) {
 	VALUE refinement;
-	rb_method_entry_t *tmp_me;
+        const rb_method_entry_t *tmp_me;
         VALUE super;
 
 	refinement = find_refinement(refinements, me->owner);
