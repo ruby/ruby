@@ -9716,7 +9716,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
               break;
           }
           case T_CLASS:
-	  case T_MODULE:
+          case T_MODULE:
             {
                 VALUE class_path = rb_class_path_cached(obj);
                 if (!NIL_P(class_path)) {
@@ -9724,7 +9724,7 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                 }
                 break;
             }
-	  case T_ICLASS:
+          case T_ICLASS:
             {
                 VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
