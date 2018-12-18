@@ -930,7 +930,7 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
         VALUE super;
 
 	refinement = find_refinement(refinements, me->owner);
-	if (!NIL_P(refinement)) {
+        if (!NIL_P(refinement)) {
 	    tmp_me = method_entry_get(refinement, me->called_id, defined_class_ptr);
 
 	    if (tmp_me && tmp_me->def->type != VM_METHOD_TYPE_REFINED) {
