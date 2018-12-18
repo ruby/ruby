@@ -1439,6 +1439,7 @@ class TestPathname < Test::Unit::TestCase
       Pathname.new("/foo/bar").relative_path_from("/foo/baz"))
     obj = Object.new
     def obj.cleanpath() Pathname.new("/foo/baz") end
+    def obj.is_a?(m) m == Pathname end
     assert_equal(
       Pathname.new("../bar"),
       Pathname.new("/foo/bar").relative_path_from(obj))
