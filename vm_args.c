@@ -893,7 +893,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
 		VALUE func = rb_hash_lookup(ref, block_code);
 		if (NIL_P(func)) {
 		    /* TODO: limit cached funcs */
-                    VALUE callback_arg = rb_ary_new_from_args(2, block_code, ref);
+                    VALUE callback_arg = rb_ary_tmp_new(2);
+                    RARRAY_ASET(callback_arg, 0, block_code);
+                    RARRAY_ASET(callback_arg, 1, ref);
+                    OBJ_FREEZE_RAW(callback_arg);
                     func = rb_func_proc_new(refine_sym_proc_call, callback_arg);
 		    rb_hash_aset(ref, block_code, func);
 		}
