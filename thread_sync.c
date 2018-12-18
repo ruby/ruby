@@ -130,8 +130,6 @@ mutex_ptr(VALUE obj)
         /* forked children can't reach into parent thread stacks */
         mutex->fork_gen = fork_gen;
         list_head_init(&mutex->waitq);
-        mutex->next_mutex = 0;
-        mutex->th = 0;
     }
 
     return mutex;
