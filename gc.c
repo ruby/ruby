@@ -9715,13 +9715,23 @@ rb_raw_obj_info(char *buff, const int buff_size, VALUE obj)
                        (int)RHASH_SIZE(obj));
               break;
           }
-	  case T_CLASS: {
-	    VALUE class_path = rb_class_path_cached(obj);
-	    if (!NIL_P(class_path)) {
-		snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
-	    }
-	    break;
-	  }
+          case T_CLASS:
+	  case T_MODULE:
+            {
+                VALUE class_path = rb_class_path_cached(obj);
+                if (!NIL_P(class_path)) {
+                    snprintf(buff, buff_size, "%s %s", buff, RSTRING_PTR(class_path));
+                }
+                break;
+            }
+	  case T_ICLASS:
+            {
+                VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
+                if (!NIL_P(class_path)) {
+                    snprintf(buff, buff_size, "%s src:%s", buff, RSTRING_PTR(class_path));
+                }
+                break;
+            }
           case T_OBJECT:
             {
                 uint32_t len = ROBJECT_NUMIV(obj);
