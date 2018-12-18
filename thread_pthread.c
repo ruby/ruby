@@ -1787,11 +1787,34 @@ ubf_timer_destroy(void)
 {
 #if UBF_TIMER == UBF_TIMER_POSIX
     if (timer_posix.owner == getpid()) {
-        /* prevent signal handler from arming: */
-        ATOMIC_SET(timer_posix.state, RTIMER_DEAD);
+        rb_atomic_t expect = RTIMER_DISARM;
+        size_t i, max = 10000000;
 
-        if (timer_settime(timer_posix.timerid, 0, &zero, 0))
-            rb_bug_errno("timer_settime (destroy)", errno);
+        /* prevent signal handler from arming: */
+        for (i = 0; i < max; i++) {
+            switch (ATOMIC_CAS(timer_posix.state, expect, RTIMER_DEAD)) {
+              case RTIMER_DISARM:
+                if (expect == RTIMER_DISARM) goto done;
+                expect = RTIMER_DISARM;
+                break;
+              case RTIMER_ARMING:
+                native_thread_yield(); /* let another thread finish arming */
+                expect = RTIMER_ARMED;
+                break;
+              case RTIMER_ARMED:
+                if (expect == RTIMER_ARMED) {
+                    if (timer_settime(timer_posix.timerid, 0, &zero, 0))
+                        rb_bug_errno("timer_settime (destroy)", errno);
+                    goto done;
+                }
+                expect = RTIMER_ARMED;
+                break;
+              case RTIMER_DEAD:
+                rb_bug("RTIMER_DEAD unexpected");
+            }
+        }
+        rb_bug("timed out waiting for timer to arm");
+done:
         if (timer_delete(timer_posix.timerid) < 0)
             rb_sys_fail("timer_delete");
 
