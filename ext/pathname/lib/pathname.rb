@@ -503,13 +503,9 @@ class Pathname
   # ArgumentError is raised when it cannot find a relative path.
   #
   def relative_path_from(base_directory)
+    base_directory = Pathname.new(base_directory) unless base_directory.is_a? Pathname
     dest_directory = self.cleanpath.to_s
-    base_directory =
-      if base_directory.respond_to? :cleanpath
-        base_directory
-      else
-        Pathname.new(base_directory)
-      end.cleanpath.to_s
+    base_directory = base_directory.cleanpath.to_s
     dest_prefix = dest_directory
     dest_names = []
     while r = chop_basename(dest_prefix)
