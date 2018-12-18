@@ -144,11 +144,11 @@ commit: $(if $(filter commit,$(MAKECMDGOALS)),$(filter-out commit,$(MAKECMDGOALS
 	@$(BASERUBY) -C "$(srcdir)" -I./tool -rvcs -e 'VCS.detect(".").commit'
 	+$(Q) \
 	{ \
-	  cd "$(srcdir)"; \
+	  $(CHDIR) "$(srcdir)"; \
 	  sed 's/^@.*@$$//;s/@[A-Za-z_][A-Za-z_0-9]*@//g;/^all-incs:/d' defs/gmake.mk Makefile.in; \
 	  sed 's/{[.;]*$$([a-zA-Z0-9_]*)}//g' common.mk; \
 	} | \
-	$(MAKE) $(mflags) Q=$(Q) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
+	$(MAKE) $(mflags) Q=$(Q) ECHO=$(ECHO) srcdir="$(srcdir)" srcs_vpath="$(srcdir)/" CHDIR="$(CHDIR)" \
 		BOOTSTRAPRUBY="$(BOOTSTRAPRUBY)" MINIRUBY="$(BASERUBY)" BASERUBY="$(BASERUBY)" \
 		VCSUP="" ENC_MK=.top-enc.mk REVISION_FORCE=PHONY CONFIGURE="$(CONFIGURE)" -f - \
 		update-src srcs all-incs
