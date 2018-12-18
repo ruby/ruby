@@ -1260,6 +1260,21 @@ q.pop
     assert_equal 0, failures, '[ruby-core:90312] [Bug #15383]'
   end
 
+  def test_fork_while_mutex_locked_by_forker
+    skip 'needs fork' unless Process.respond_to?(:fork)
+    m = Mutex.new
+    m.synchronize do
+      pid = fork do
+        exit!(2) unless m.locked?
+        m.unlock rescue exit!(3)
+        m.synchronize {} rescue exit!(4)
+        exit!(0)
+      end
+      _, st = Timeout.timeout(30) { Process.waitpid2(pid) }
+      assert_predicate st, :success?, '[ruby-core:90595] [Bug #15430]'
+    end
+  end
+
   def test_subclass_no_initialize
     t = Module.new do
       break eval("class C\u{30b9 30ec 30c3 30c9} < Thread; self; end")
