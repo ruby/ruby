@@ -57,8 +57,13 @@ DESCRIPTION
   if RUBY_ENGINE == 'jruby'
     s.platform = 'java'
     s.files.concat [
-      "ext/java/PsychEmitter.java", "ext/java/PsychLibrary.java", "ext/java/PsychParser.java", "ext/java/PsychToRuby.java",
-      "ext/java/PsychYamlTree.java", "lib/psych_jars.rb", "lib/psych.jar"
+      "ext/java/org/jruby/ext/psych/PsychEmitter.java",
+      "ext/java/org/jruby/ext/psych/PsychLibrary.java",
+      "ext/java/org/jruby/ext/psych/PsychParser.java",
+      "ext/java/org/jruby/ext/psych/PsychToRuby.java",
+      "ext/java/org/jruby/ext/psych/PsychYamlTree.java",
+      "lib/psych_jars.rb",
+      "lib/psych.jar"
     ]
     s.requirements = "jar org.yaml:snakeyaml, #{Psych::DEFAULT_SNAKEYAML_VERSION}"
     s.add_dependency 'jar-dependencies', '>= 0.1.7'
