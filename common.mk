@@ -17,6 +17,7 @@ enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 11.0.0
 UNICODE_EMOJI_VERSION = 11.0
+UNICODE_BETA = NO
 
 ### set the following environment variable or uncomment the line if
 ### the Unicode data files should be updated completely on every update ('make up',...).
@@ -1318,12 +1319,14 @@ CACHE_DIR = $(srcdir)/.downloaded-cache
 UNICODE_DOWNLOAD = \
 	$(BASERUBY) $(srcdir)/tool/downloader.rb \
 	    --cache-dir=$(CACHE_DIR) \
+	    --unicode-beta $(UNICODE_BETA) \
 	    -d $(UNICODE_SRC_DATA_DIR) \
 	    -p $(UNICODE_VERSION)/ucd \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
 UNICODE_EMOJI_DOWNLOAD = \
 	$(BASERUBY) $(srcdir)/tool/downloader.rb \
 	    --cache-dir=$(CACHE_DIR) \
+	    --unicode-beta $(UNICODE_BETA) \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
 	    -p emoji/$(UNICODE_EMOJI_VERSION) \
 	    -e $(ALWAYS_UPDATE_UNICODE:yes=-a) unicode
