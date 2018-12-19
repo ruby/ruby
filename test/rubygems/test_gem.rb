@@ -5,6 +5,7 @@ require 'rubygems/command'
 require 'rubygems/installer'
 require 'pathname'
 require 'tmpdir'
+require 'rbconfig'
 
 # TODO: push this up to test_case.rb once battle tested
 
@@ -13,6 +14,7 @@ $LOAD_PATH.map! do |path|
 end
 
 class TestGem < Gem::TestCase
+  RUBY_INSTALL_NAME = RbConfig::CONFIG['RUBY_INSTALL_NAME']
 
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
@@ -181,7 +183,7 @@ class TestGem < Gem::TestCase
     dir_mode = (options[:dir_mode] & mask).to_s(8)
     data_mode = (options[:data_mode] & mask).to_s(8)
     expected = {
-      'bin/foo.cmd' => prog_mode,
+      "bin/#{RUBY_INSTALL_NAME.sub('ruby', 'foo.cmd')}" => prog_mode,
       'gems/foo-1' => dir_mode,
       'gems/foo-1/bin' => dir_mode,
       'gems/foo-1/data' => dir_mode,

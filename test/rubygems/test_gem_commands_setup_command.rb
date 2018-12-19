@@ -113,9 +113,11 @@ class TestGemCommandsSetupCommand < Gem::TestCase
     @cmd.options[:env_shebang] = true
     @cmd.execute
 
-    default_gem_bin_path = File.join @install_dir, 'bin', 'gem'
+    gem_exec = sprintf Gem.default_exec_format, 'gem'
+    default_gem_bin_path = File.join @install_dir, 'bin', gem_exec
     if Gem::USE_BUNDLER_FOR_GEMDEPS
-      default_bundle_bin_path = File.join @install_dir, 'bin', 'bundle'
+      bundle_exec = sprintf Gem.default_exec_format, 'bundle'
+      default_bundle_bin_path = File.join @install_dir, 'bin', bundle_exec
     end
 
     ruby_exec = sprintf Gem.default_exec_format, 'ruby'
