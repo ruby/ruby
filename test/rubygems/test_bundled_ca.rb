@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'rubygems/test_case'
-require 'net/http'
+require 'net/https'
 require 'rubygems/request'
 
 # = Testing Bundled CA
