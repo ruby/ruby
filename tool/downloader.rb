@@ -310,6 +310,15 @@ if $0 == __FILE__
     when '--cache-dir'
       options[:cache_dir] = ARGV[1]
       ARGV.shift
+    when '--unicode-beta'
+      options[:unicode_beta] = ARGV[1]
+      ARGV.shift
+      # TODO: Move this code further down
+      if options[:unicode_beta]=='YES'
+        raise "Not yet able to deal with Unicode Data beta versions."
+      else
+        # TODO: deal with the case that we just switched from beta to 'regular'
+      end
     when /\A--cache-dir=(.*)/m
       options[:cache_dir] = $1
     when /\A-/
