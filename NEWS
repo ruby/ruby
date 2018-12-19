@@ -22,7 +22,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 * refinements take place at Kernel#respond_to?.  [Feature #15327]
 
-* +else+ without +rescue+ now causes a syntax error.  [EXPERIMENTAL] [Feature #14606]
+* +rescue+ without +else+ now causes a syntax error.  [EXPERIMENTAL] [Feature #14606]
 
 * constant names may start with a non-ASCII capital letter. [Feature #13770]
 
