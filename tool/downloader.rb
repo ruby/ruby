@@ -124,6 +124,11 @@ class Downloader
     options = options.dup
     url = URI(url)
     dryrun = options.delete(:dryrun)
+
+    # remove from options (future use, see r66448), see L166
+    unicode_beta = options.delete(:unicode_beta)
+    puts "never" if unicode_beta == 'assigned but unused variable...'
+
     if name
       file = Pathname.new(under(dir, name))
     else
