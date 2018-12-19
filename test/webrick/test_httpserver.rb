@@ -276,6 +276,38 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
     assert_equal(stopped, 1)
   end
 
+  class CustomRequest < ::WEBrick::HTTPRequest; end
+  class CustomResponse < ::WEBrick::HTTPResponse; end
+  class CustomServer < ::WEBrick::HTTPServer
+    def create_request(config)
+      CustomRequest.new(config)
+    end
+
+    def create_response(config)
+      CustomResponse.new(config)
+    end
+  end
+
+  def test_custom_server_request_and_response
+    config = { :ServerName => "localhost" }
+    TestWEBrick.start_server(CustomServer, config){|server, addr, port, log|
+      server.mount_proc("/", lambda {|req, res|
+        assert_kind_of(CustomRequest, req)
+        assert_kind_of(CustomResponse, res)
+        res.body = "via custom response"
+      })
+      Thread.pass while server.status != :Running
+
+      Net::HTTP.start(addr, port) do |http|
+        req = Net::HTTP::Get.new("/")
+        http.request(req){|res|
+          assert_equal("via custom response", res.body)
+        }
+        server.shutdown
+      end
+    }
+  end
+
   # This class is needed by test_response_io_with_chunked_set method
   class EventManagerForChunkedResponseTest
     def initialize
