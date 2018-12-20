@@ -283,20 +283,23 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "literal", h["string"]
   end
 
-  def frozen_hash_literal_arg
-    {0=>1,1=>4,2=>17}
-  end
-
   def test_hash_literal_frozen
-    assert_not_include frozen_hash_literal_arg, 3
-    assert_raise(FrozenError) do
-      ObjectSpace.each_object(Hash) do |a|
-        if a.class == Hash and !a.default_proc and a.size == 3
-          a[3] = 8 if a[0] == 1 and a[1] == 4 and a[2] == 17
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      def frozen_hash_literal_arg
+        {0=>1,1=>4,2=>17}
+      end
+
+      assert_not_include frozen_hash_literal_arg, 3
+      assert_raise(FrozenError) do
+        ObjectSpace.each_object(Hash) do |a|
+          if a.class == Hash and !a.default_proc and a.size == 3
+            a[3] = 8 if a[0] == 1 and a[1] == 4 and a[2] == 17
+          end
         end
       end
-    end
-    assert_not_include frozen_hash_literal_arg, 3
+      assert_not_include frozen_hash_literal_arg, 3
+    end;
   end
 
   def test_big_array_and_hash_literal
