@@ -4271,7 +4271,7 @@ VpAlloc(size_t mx, const char *szVal, int strict_p, int exc)
             while (ISSPACE(szVal[j])) ++j;
 
             /* Invalid character */
-            if (szVal[j]) {
+            if (szVal[j] && strict_p) {
                 goto invalid_value;
             }
         }
