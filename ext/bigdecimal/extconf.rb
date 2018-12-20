@@ -28,6 +28,13 @@ have_func("rb_rational_den", "ruby.h")
 have_func("rb_array_const_ptr", "ruby.h")
 have_func("rb_sym2str", "ruby.h")
 
+if File.file?(File.expand_path('../lib/bigdecimal.rb', __FILE__))
+  bigdecimal_rb = "$(srcdir)/lib/bigdecimal.rb"
+else
+  bigdecimal_rb = "$(srcdir)/../../lib/bigdecimal.rb"
+end
+
 create_makefile('bigdecimal') {|mf|
   mf << "GEMSPEC = #{gemspec_name}\n"
+  mf << "BIGDECIMAL_RB = #{bigdecimal_rb}\n"
 }
