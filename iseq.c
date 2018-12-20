@@ -51,6 +51,9 @@ obj_resurrect(VALUE obj)
 	  case T_ARRAY:
 	    obj = rb_ary_resurrect(obj);
 	    break;
+          case T_HASH:
+            obj = rb_hash_resurrect(obj);
+            break;
 	}
     }
     return obj;
