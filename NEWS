@@ -14,7 +14,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
-* <code>$SAFE</code> is a process global state and we can set 0 again. [Feature #14250]
+* <code>$SAFE</code> is a process global state and we can set it to 0 again. [Feature #14250]
 
 * refinements take place at block passing.  [Feature #14223]
 
@@ -270,7 +270,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [Regexp/String]
 
-    * Update Unicode version from 10.0.0 to 11.0.0 [Feature #14802]
+    * Update Unicode version from 10.0.0 to 11.0.0. [Feature #14802]
       This includes a rewrite of the grapheme cluster (/\X/) algorithm
       and special-casing for Georgian MTAVRULI on String#downcase.
 
@@ -580,7 +580,7 @@ sufficient information, see the ChangeLog file or Redmine
 * Speedup Proc#call because we don't need to care about <code>$SAFE</code>
   any more. [Feature #14318]
 
-  With +lc_fizzbuzz+ benchmark which uses so many Proc#call we can
+  With +lc_fizzbuzz+ benchmark which uses Proc#call many times we can
   measure x1.4 improvements.  [Bug #10212]
 
 * Speedup block.call where +block+ is passed block parameter. [Feature #14330]
@@ -589,11 +589,11 @@ sufficient information, see the ChangeLog file or Redmine
 
   Additionally, Ruby 2.6 improves the performance of passed block calling.
 
-* Introduce an initial implementation of JIT (Just-in-time) compiler. [Feature #14235] [experimental]
+* Introduce an initial implementation of a JIT (Just-in-time) compiler. [Feature #14235] [experimental]
 
   * <tt>--jit</tt> command line option is added to enable JIT. <tt>--jit-verbose=1</tt>
     is good for inspection.  See <tt>ruby --help</tt> for others.
-  * To generate machine code, this JIT compiler uses C compiler used for building
+  * To generate machine code, this JIT compiler uses the C compiler used for building
     the interpreter. Currently GCC, Clang, and Microsoft Visual C++ are supported for it.
   * <tt>--disable-mjit-support</tt> option is added to configure. This is added for JIT debugging,
     but if you get an error on building a header file for JIT, you can use this option to skip
@@ -609,8 +609,8 @@ sufficient information, see the ChangeLog file or Redmine
 * timer thread is eliminated for platforms with POSIX timers [Misc #14937]
 
 * Transient Heap (theap) is supported. [Bug #14858] [Feature #14989]
-  theap is managed heap for short-living memory objects. For example,
-  making small and short-living Hash object is x2 faster. With rdoc benchmark,
+  theap is a managed heap for short-living memory objects. For example,
+  making a small and short-living Hash object is x2 faster. With rdoc benchmark,
   we measured 6-7% performance improvement.
 
 * Native implementations (arm32, arm64, ppc64le, win32, win64, x86, amd64) of
