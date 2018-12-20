@@ -1,5 +1,6 @@
 # frozen_string_literal: false
-require "rexml/text"
+
+require_relative "rexml_test_utils"
 
 module REXMLTests
   class TextTester < Test::Unit::TestCase
