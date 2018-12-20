@@ -290,12 +290,10 @@ class TestRubyLiteral < Test::Unit::TestCase
         {0=>1,1=>4,2=>17}
       end
 
-      assert_not_include frozen_hash_literal_arg, 3
-      assert_raise(FrozenError) do
-        ObjectSpace.each_object(Hash) do |a|
-          if a.class == Hash and !a.default_proc and a.size == 3
-            a[3] = 8 if a[0] == 1 and a[1] == 4 and a[2] == 17
-          end
+      ObjectSpace.each_object(Hash) do |a|
+        if a.class == Hash and !a.default_proc and a.size == 3
+          # should not be found.
+          raise
         end
       end
       assert_not_include frozen_hash_literal_arg, 3

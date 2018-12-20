@@ -461,7 +461,7 @@ duphash
 ()
 (VALUE val)
 {
-    val = rb_hash_dup(hash);
+    val = rb_hash_resurrect(hash);
 }
 
 /* if TOS is an array expand, expand it to num objects.
