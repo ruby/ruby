@@ -1769,8 +1769,18 @@ ubf_timer_disarm(void)
       case RTIMER_DISARM: return; /* likely */
       case RTIMER_ARMING: return; /* ubf_timer_arm will disarm itself */
       case RTIMER_ARMED:
-        if (timer_settime(timer_posix.timerid, 0, &zero, 0))
-            rb_bug_errno("timer_settime (disarm)", errno);
+        if (timer_settime(timer_posix.timerid, 0, &zero, 0)) {
+            int err = errno;
+
+            if (err == EINVAL) {
+                prev = ATOMIC_CAS(timer_posix.state, RTIMER_DISARM, RTIMER_DISARM);
+
+                /* main thread may have killed the timer */
+                if (prev == RTIMER_DEAD) return;
+
+                rb_bug_errno("timer_settime (disarm)", err);
+            }
+        }
         return;
       case RTIMER_DEAD: return; /* stay dead */
       default:
