@@ -671,7 +671,7 @@ class TestCoverage < Test::Unit::TestCase
           f.puts "end"
         end
 
-        assert_equal([0, 0, 0, nil, 0, nil, 0], Coverage.line_stub("test.rb"))
+        assert_equal([0, 0, 0, nil, 0, nil, nil], Coverage.line_stub("test.rb"))
       }
     }
   end

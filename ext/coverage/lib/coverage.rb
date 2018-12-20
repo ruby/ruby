@@ -6,7 +6,7 @@ module Coverage
     iseqs = [RubyVM::InstructionSequence.compile_file(file)]
     until iseqs.empty?
       iseq = iseqs.pop
-      iseq.trace_points.each {|n, _| lines[n - 1] = 0 }
+      iseq.trace_points.each {|n, type| lines[n - 1] = 0 if type == :line }
       iseq.each_child {|child| iseqs << child }
     end
     lines
