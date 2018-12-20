@@ -10669,11 +10669,12 @@ reg_named_capture_assign_iter(const OnigUChar *name, const OnigUChar *name_end,
     ID var;
     NODE *node, *succ;
 
-    if (!len || (*name != '_' && ISASCII(*name) && !rb_enc_islower(*name, enc)) ||
-	(len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len)) ||
-	!rb_enc_symname2_p(s, len, enc)) {
+    if (!len) return ST_CONTINUE;
+    if (len < MAX_WORD_LENGTH && rb_reserved_word(s, (int)len))
         return ST_CONTINUE;
-    }
+    if (rb_enc_symname_type(s, len, enc, (1U<<ID_LOCAL)) != ID_LOCAL)
+        return ST_CONTINUE;
+
     var = intern_cstr(s, len, enc);
     node = node_assign(p, assignable(p, var, 0, arg->loc), NEW_LIT(ID2SYM(var), arg->loc), arg->loc);
     succ = arg->succ_block;

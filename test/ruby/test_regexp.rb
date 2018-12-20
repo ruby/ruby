@@ -216,6 +216,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_include(local_variables, :nil, "[ruby-dev:32675]")
   end
 
+  def test_assign_named_capture_to_const
+    %W[C \u{1d402}].each do |name|
+      assert_equal(:ok, Class.new.class_eval("#{name} = :ok; /(?<#{name}>.*)/ =~ 'ng'; #{name}"))
+    end
+  end
+
   def test_assign_named_capture_trace
     bug = '[ruby-core:79940] [Bug #13287]'
     assert_normal_exit("#{<<-"begin;"}\n#{<<-"end;"}", bug)

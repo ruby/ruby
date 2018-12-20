@@ -238,7 +238,7 @@ rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
 #define IDSET_ATTRSET_FOR_SYNTAX ((1U<<ID_LOCAL)|(1U<<ID_CONST))
 #define IDSET_ATTRSET_FOR_INTERN (~(~0U<<(1<<ID_SCOPE_SHIFT)) & ~(1U<<ID_ATTRSET))
 
-static int
+int
 rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
 {
     const char *m = name;
