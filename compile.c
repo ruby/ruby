@@ -4026,6 +4026,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node_ro
 
                             hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
                             rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR_TRANSIENT(ary), hash);
+                            rb_hash_freeze(hash);
                             iseq_add_mark_object_compile_time(iseq, hash);
                             ADD_INSN1(ret, line, duphash, hash);
 			}
