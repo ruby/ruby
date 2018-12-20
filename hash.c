@@ -1310,6 +1310,13 @@ rb_hash_dup(VALUE hash)
     return ret;
 }
 
+MJIT_FUNC_EXPORTED VALUE
+rb_hash_resurrect(VALUE hash)
+{
+    VALUE ret = hash_dup(hash, rb_cHash, 0);
+    return ret;
+}
+
 static void
 rb_hash_modify_check(VALUE hash)
 {
