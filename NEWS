@@ -453,6 +453,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 [REXML]
 
+  * Upgrade to REXML 3.1.8
+    https://github.com/ruby/rexml/blob/master/NEWS.md
+
   [Improved some XPath implementations]
 
     * <code>concat()</code> function: Stringify all arguments before concatenating

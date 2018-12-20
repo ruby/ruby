@@ -423,7 +423,7 @@ module REXML
       number = number(number)
       begin
         neg = number.negative?
-        number = number.abs.round(half: :up)
+        number = number.abs.round
         neg ? -number : number
       rescue FloatDomainError
         number
