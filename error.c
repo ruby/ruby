@@ -2082,8 +2082,8 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: Interrupt
  *
- *  Raised with the interrupt signal is received, typically because the
- *  user pressed on Control-C (on most posix platforms). As such, it is a
+ *  Raised when the interrupt signal is received, typically because the
+ *  user has pressed Control-C (on most posix platforms). As such, it is a
  *  subclass of +SignalException+.
  *
  *     begin
