@@ -15,8 +15,8 @@ module REXMLTests
     def test_listener
       data = %Q{<session1 user="han" password="rootWeiler" />\n<session2 user="han" password="rootWeiler" />}
 
-      b = RequestReader.new( data )
-      b = RequestReader.new( data )
+      RequestReader.new( data )
+      RequestReader.new( data )
     end
 
     def test_ticket_49

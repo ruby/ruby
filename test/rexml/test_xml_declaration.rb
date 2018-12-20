@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 #
 #  Created by Henrik Mårtensson on 2007-02-18.
@@ -10,11 +9,11 @@ require "test/unit"
 module REXMLTests
   class TestXmlDeclaration < Test::Unit::TestCase
     def setup
-      xml = <<-'END_XML'
+      xml = <<-XML
       <?xml encoding= 'UTF-8' standalone='yes'?>
       <root>
       </root>
-      END_XML
+      XML
       @doc = REXML::Document.new xml
       @root = @doc.root
       @xml_declaration = @doc.children[0]
@@ -31,6 +30,13 @@ module REXMLTests
     def test_has_sibling
       assert_kind_of(REXML::XMLDecl, @root.previous_sibling.previous_sibling)
       assert_kind_of(REXML::Element, @xml_declaration.next_sibling.next_sibling)
+    end
+
+    def test_write_prologue_quote
+      @doc.context[:prologue_quote] = :quote
+      assert_equal("<?xml version=\"1.0\" " +
+                   "encoding=\"UTF-8\" standalone=\"yes\"?>",
+                   @xml_declaration.to_s)
     end
   end
 end

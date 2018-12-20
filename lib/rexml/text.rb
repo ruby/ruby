@@ -96,27 +96,28 @@ module REXML
 
       @raw = false
       @parent = nil
+      @entity_filter = nil
 
       if parent
         super( parent )
         @raw = parent.raw
       end
 
-      @raw = raw unless raw.nil?
-      @entity_filter = entity_filter
-      clear_cache
-
       if arg.kind_of? String
         @string = arg.dup
-        @string.squeeze!(" \n\t") unless respect_whitespace
       elsif arg.kind_of? Text
-        @string = arg.to_s
+        @string = arg.instance_variable_get(:@string).dup
         @raw = arg.raw
+        @entity_filter = arg.instance_variable_get(:@entity_filter)
       elsif
         raise "Illegal argument of type #{arg.type} for Text constructor (#{arg})"
       end
 
-      @string.gsub!( /\r\n?/, "\n" )
+      @string.squeeze!(" \n\t") unless respect_whitespace
+      @string.gsub!(/\r\n?/, "\n")
+      @raw = raw unless raw.nil?
+      @entity_filter = entity_filter if entity_filter
+      clear_cache
 
       Text.check(@string, illegal, doctype) if @raw
     end
@@ -181,7 +182,7 @@ module REXML
 
 
     def clone
-      return Text.new(self)
+      return Text.new(self, true)
     end
 
 
@@ -226,9 +227,7 @@ module REXML
     #   u.to_s   #-> "sean russell"
     def to_s
       return @string if @raw
-      return @normalized if @normalized
-
-      @normalized = Text::normalize( @string, doctype, @entity_filter )
+      @normalized ||= Text::normalize( @string, doctype, @entity_filter )
     end
 
     def inspect
@@ -249,8 +248,7 @@ module REXML
     #   u = Text.new( "sean russell", false, nil, true )
     #   u.value   #-> "sean russell"
     def value
-      return @unnormalized if @unnormalized
-      @unnormalized = Text::unnormalize( @string, doctype )
+      @unnormalized ||= Text::unnormalize( @string, doctype )
     end
 
     # Sets the contents of this text node.  This expects the text to be
@@ -266,16 +264,16 @@ module REXML
       @raw = false
     end
 
-     def wrap(string, width, addnewline=false)
-       # Recursively wrap string at width.
-       return string if string.length <= width
-       place = string.rindex(' ', width) # Position in string with last ' ' before cutoff
-       if addnewline then
-         return "\n" + string[0,place] + "\n" + wrap(string[place+1..-1], width)
-       else
-         return string[0,place] + "\n" + wrap(string[place+1..-1], width)
-       end
-     end
+    def wrap(string, width, addnewline=false)
+      # Recursively wrap string at width.
+      return string if string.length <= width
+      place = string.rindex(' ', width) # Position in string with last ' ' before cutoff
+      if addnewline then
+        return "\n" + string[0,place] + "\n" + wrap(string[place+1..-1], width)
+      else
+        return string[0,place] + "\n" + wrap(string[place+1..-1], width)
+      end
+    end
 
     def indent_text(string, level=1, style="\t", indentfirstline=true)
       return string if level < 0

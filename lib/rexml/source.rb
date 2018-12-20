@@ -254,6 +254,7 @@ module REXML
           end
         rescue
         end
+        @er_source.seek(pos)
       rescue IOError
         pos = -1
         line = -1
