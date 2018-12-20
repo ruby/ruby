@@ -283,6 +283,22 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_equal "literal", h["string"]
   end
 
+  def frozen_hash_literal_arg
+    {0=>1,1=>4,2=>17}
+  end
+
+  def test_hash_literal_frozen
+    assert_not_include frozen_hash_literal_arg, 3
+    assert_raise(FrozenError) do
+      ObjectSpace.each_object(Hash) do |a|
+        if a.class == Hash and !a.default_proc and a.size == 3
+          a[3] = 8 if a[0] == 1 and a[1] == 4 and a[2] == 17
+        end
+      end
+    end
+    assert_not_include frozen_hash_literal_arg, 3
+  end
+
   def test_big_array_and_hash_literal
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).map{'x'}.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
     assert_normal_exit %q{GC.disable=true; x = nil; raise if eval("[#{(1..1_000_000).to_a.join(", ")}]").size != 1_000_000}, "", timeout: 300, child_env: %[--disable-gems]
