@@ -279,7 +279,8 @@ env:
     <<: *osx
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
-      - TEST_ALL_OPTS="$JOBS -q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+      # Not using $JOBS which might be harmful for some tests because osx build often hangs for unknown reasons.
+      - TEST_ALL_OPTS="-q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
