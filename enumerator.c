@@ -169,7 +169,7 @@ struct enum_chain {
     long pos;
 };
 
-static VALUE rb_cArithSeq;
+VALUE rb_cArithSeq;
 
 /*
  * Enumerator
