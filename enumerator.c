@@ -3030,6 +3030,8 @@ arith_seq_hash(VALUE self)
     return LONG2FIX(hash);
 }
 
+#define NUM_GE(x, y) RTEST(rb_num_coerce_relop((x), (y), idGE))
+
 struct arith_seq_gen {
     VALUE current;
     VALUE end;
@@ -3083,13 +3085,13 @@ arith_seq_each(VALUE self)
     }
 
     if (rb_num_negative_int_p(s)) {
-        while (RTEST(rb_int_ge(c, last))) {
+        while (NUM_GE(c, last)) {
             rb_yield(c);
             c = rb_int_plus(c, s);
         }
     }
     else {
-        while (RTEST(rb_int_ge(last, c))) {
+        while (NUM_GE(last, c)) {
             rb_yield(c);
             c = rb_int_plus(c, s);
         }
