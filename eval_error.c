@@ -226,7 +226,7 @@ static void
 show_cause(VALUE errinfo, VALUE str, VALUE highlight, VALUE reverse)
 {
     VALUE cause = rb_attr_get(errinfo, id_cause);
-    if (!NIL_P(cause)) {
+    if (!NIL_P(cause) && rb_obj_is_kind_of(cause, rb_eException)) {
         volatile VALUE eclass = CLASS_OF(cause);
         VALUE errat = rb_get_backtrace(cause);
         VALUE emesg = rb_get_message(cause);
