@@ -1247,6 +1247,7 @@ q.pop
     run = true
     errs = ''
     nr = 50
+    nr /= 2 if Process.getrlimit(:NPROC)[0] <= 4096 # Bug 15430
     tmps = nr.times.map { Tempfile.new('Bug.15430.diagnosis') }
     thrs = nr.times.map do |_i|
       Thread.new(_i) do |i|
