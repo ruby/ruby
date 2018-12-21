@@ -228,6 +228,12 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_equal([10.0, 8.0, 6.0, 4.0, 2.0], (10.0..1.0).step(-2.0).to_a)
   end
 
+  def test_to_a_bug15444
+    seq = ((1/10r)..(1/2r)).step(1/10r)
+    assert_num_equal_type([1/10r, 1/5r, 3/10r, 2/5r, 1/2r], seq.to_a,
+                          '[ruby-core:90648] [Bug #15444]')
+  end
+
   def test_slice
     seq = 1.step(10, 2)
     assert_equal([[1, 3, 5], [7, 9]], seq.each_slice(3).to_a)
@@ -284,6 +290,14 @@ class TestArithmeticSequence < Test::Unit::TestCase
     [10, 8, 6, 4, 2].each do |i|
       assert_equal(i, seq.next)
     end
+
+    seq = ((1/10r)..(1/2r)).step(0)
+    assert_equal(1/10r, seq.next)
+  end
+
+  def test_next_bug15444
+    seq = ((1/10r)..(1/2r)).step(1/10r)
+    assert_equal(1/10r, seq.next, '[ruby-core:90648] [Bug #15444]')
   end
 
   def test_next_rewind
