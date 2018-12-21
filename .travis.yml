@@ -280,7 +280,8 @@ env:
     env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
       # Not using $JOBS which might be harmful for some tests because osx build often hangs for unknown reasons.
-      - TEST_ALL_OPTS="-q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+      # Using -v because we're too lazy to build hard timeout for each test and thus can't easily detect which test is hanging forever without -v.
+      - TEST_ALL_OPTS="-v --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
       # Also globally disabling $JOBS because even just building ruby could hang forever on osx.
       - JOBS=
 
