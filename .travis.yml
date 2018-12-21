@@ -281,6 +281,8 @@ env:
       - CONFIG_FLAG=--with-opt-dir=/usr/local/opt/openssl@1.1:/usr/local/opt/zlib
       # Not using $JOBS which might be harmful for some tests because osx build often hangs for unknown reasons.
       - TEST_ALL_OPTS="-q --tty=no --excludes=\$(TESTSDIR)/excludes/_travis/osx"
+      # Also globally disabling $JOBS because even just building ruby could hang forever on osx.
+      - JOBS=
 
   - &universal-darwin17
     name: uinversal.x86_64h-darwin17
