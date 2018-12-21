@@ -1414,6 +1414,7 @@ void rb_encdb_set_unicode(int index);
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
 
 /* enum.c */
+extern VALUE rb_cArithSeq;
 VALUE rb_f_send(int argc, VALUE *argv, VALUE recv);
 VALUE rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary);
 
