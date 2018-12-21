@@ -407,9 +407,7 @@ rb_mutex_unlock(VALUE self)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
-    if (th->keeping_mutexes) {
-	rb_mutex_abandon_all(th->keeping_mutexes);
-    }
+    rb_mutex_abandon_all(th->keeping_mutexes);
     th->keeping_mutexes = NULL;
 }
 
