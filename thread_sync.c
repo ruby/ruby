@@ -45,6 +45,16 @@ typedef struct rb_mutex_struct {
     rb_thread_t *th;
     struct rb_mutex_struct *next_mutex;
     struct list_head waitq; /* protected by GVL */
+
+    /*
+     * FIXME: belt-and-suspenders redundancy.  This field should NOT
+     * be necessary at all if:
+     * - rb_mutex_cleanup_keeping_mutexes
+     * - rb_mutex_abandon_keeping_mutexes
+     * - rb_mutex_abandon_locking_mutex
+     * are all correct, but I suspect one of them is buggy.
+     * [Bug #15383] [Bug #15430]
+     */
     rb_serial_t fork_gen;
 } rb_mutex_t;
 
@@ -126,6 +136,7 @@ mutex_ptr(VALUE obj)
 
     TypedData_Get_Struct(obj, rb_mutex_t, &mutex_data_type, mutex);
 
+    /* FIXME: remove (see comment at rb_mutex_t definition) */
     if (mutex->fork_gen != fork_gen) {
         /* forked children can't reach into parent thread stacks */
         mutex->fork_gen = fork_gen;
@@ -445,7 +456,12 @@ static void
 rb_mutex_cleanup_keeping_mutexes(const rb_thread_t *current_thread)
 {
     rb_mutex_t *mutex = current_thread->keeping_mutexes;
+    rb_serial_t fork_gen = current_thread->vm->fork_gen;
+
     while (mutex) {
+        /* FIXME: remove (see comment at rb_mutex_t definition) */
+        mutex->fork_gen = fork_gen;
+
         list_head_init(&mutex->waitq);
         mutex = mutex->next_mutex;
     }
