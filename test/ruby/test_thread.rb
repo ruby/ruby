@@ -1241,23 +1241,44 @@ q.pop
 
   def test_fork_while_parent_locked
     skip 'needs fork' unless Process.respond_to?(:fork)
+    require 'tempfile'
     m = Thread::Mutex.new
     failures = 0
     run = true
-    thrs = 50.times.map do
-      Thread.new do
+    errs = ''
+    nr = 50
+    tmps = nr.times.map { Tempfile.new('Bug.15430.diagnosis') }
+    thrs = nr.times.map do |_i|
+      Thread.new(_i) do |i|
+        t = tmps[i]
+        t.sync = true
         while run
-          pid = fork { m.synchronize {} }
+          pid = fork do
+            STDERR.reopen(t.path)
+            tmps.each(&:close)
+            m.synchronize {}
+          end
           m.synchronize {}
           _, st = Process.waitpid2(pid)
-          m.synchronize { failures += 1 } unless st.success?
+          unless st.success?
+            m.synchronize do
+              failures += 1
+              if errs.empty?
+                errs = st.inspect << t.read
+                t.rewind
+              end
+            end
+          end
         end
       end
     end
     sleep 0.5
     run = false
     thrs.each(&:join)
+    assert_empty errs
     assert_equal 0, failures, '[ruby-core:90312] [Bug #15383]'
+  ensure
+    tmps&.each(&:close!)
   end
 
   def test_fork_while_mutex_locked_by_forker
