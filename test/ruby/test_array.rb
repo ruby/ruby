@@ -2244,6 +2244,7 @@ class TestArray < Test::Unit::TestCase
 
   def test_aref
     assert_raise(ArgumentError) { [][0, 0, 0] }
+    assert_raise(TypeError) { [][(1..10).step(2)] }
   end
 
   def test_fetch

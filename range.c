@@ -1141,6 +1141,9 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
 	e = RANGE_END(range);
 	excl = EXCL(range);
     }
+    else if (RTEST(rb_obj_is_kind_of(range, rb_cArithSeq))) {
+        return (int)Qfalse;
+    }
     else {
 	VALUE x;
 	b = rb_check_funcall(range, id_beg, 0, 0);
