@@ -394,7 +394,7 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Complex(x[, y])  ->  numeric
+ *    Complex(x[, y], exception: false)  ->  numeric
  *
  * Returns x+i*y;
  *
@@ -402,6 +402,9 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
  *    Complex('1+2i')  #=> (1+2i)
  *    Complex(nil)     #=> TypeError
  *    Complex(1, nil)  #=> TypeError
+ *
+ *    Complex(1, nil, exception: false) # => nil
+ *    Complex('1+2', exception: false) # => nil
  *
  * Syntax of string form:
  *
