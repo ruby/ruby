@@ -16,7 +16,6 @@ prelude: |
   </html>
   erb
 
-  max = 15_000
   title = "hello world!"
   content = "hello world!\n" * 10
 benchmark:
