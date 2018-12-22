@@ -529,8 +529,8 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Rational(x, y)  ->  rational
- *    Rational(arg)   ->  rational
+ *    Rational(x, y, exception: true)  ->  rational
+ *    Rational(arg, exception: true)   ->  rational
  *
  * Returns +x/y+ or +arg+ as a Rational.
  *
@@ -545,6 +545,8 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
  *    Rational("10 cents")  #=> ArgumentError
  *    Rational(nil)         #=> TypeError
  *    Rational(1, nil)      #=> TypeError
+ *
+ *    Rational("10 cents", exception: false)  #=> nil
  *
  * Syntax of the string form:
  *
