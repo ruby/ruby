@@ -700,7 +700,11 @@ end.join
   end
 
   def test_cause_at_end
-    assert_in_out_err([], <<-'end;', [], [/-: unexpected return\n/, /.*undefined local variable or method `n'.*\n/])
+    errs = [
+      /-: unexpected return\n/,
+      /.*undefined local variable or method `n'.*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs)
       END{n}; END{return}
     end;
   end
