@@ -3213,7 +3213,7 @@ opts_exception_p(VALUE opts)
     static ID kwds[1];
     VALUE exception;
     if (!kwds[0]) {
-        kwds[0] = rb_intern_const("exception");
+        kwds[0] = idException;
     }
     rb_get_kwargs(opts, kwds, 0, 1, &exception);
     return exception != Qfalse;
