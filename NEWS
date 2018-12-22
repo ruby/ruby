@@ -239,6 +239,13 @@ sufficient information, see the ChangeLog file or Redmine
     * Numeric#step now returns an instance of Enumerator::ArithmeticSequence
       class rather than one of Enumerator class.
 
+[OpenStruct]
+
+  [Modified methods]
+
+    * OpenStruct#to_h now maps keys and values to new keys and values
+      by the block if given.  [Feature #15143]
+
 [Proc]
 
   [New methods]
