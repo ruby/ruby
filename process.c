@@ -250,7 +250,8 @@ typedef unsigned LONG_LONG unsigned_clock_t;
 typedef void (*sig_t) (int);
 #endif
 
-static ID id_in, id_out, id_err, id_pid, id_uid, id_gid, id_exception;
+#define id_exception idException
+static ID id_in, id_out, id_err, id_pid, id_uid, id_gid;
 static ID id_close, id_child;
 #ifdef HAVE_SETPGID
 static ID id_pgroup;
@@ -8497,7 +8498,6 @@ Init_process(void)
     id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC = rb_intern("MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC");
 #endif
     id_hertz = rb_intern("hertz");
-    id_exception = rb_intern("exception");
 
     InitVM(process);
 }
