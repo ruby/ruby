@@ -1246,8 +1246,7 @@ q.pop
     failures = 0
     run = true
     errs = ''
-    nr = 50
-    nr /= 2 if Process.getrlimit(:NPROC)[0] <= 4096 # Bug 15430
+    nr = 25 # reduce if more SIGKILL in tests
     tmps = nr.times.map { Tempfile.new('Bug.15430.diagnosis') }
     thrs = nr.times.map do |_i|
       Thread.new(_i) do |i|
@@ -1276,7 +1275,7 @@ q.pop
     sleep 0.5
     run = false
     thrs.each(&:join)
-    assert_empty errs
+    assert_empty errs, "lower `nr' if SIGKILL because of RLIMIT_NPROC limit"
     assert_equal 0, failures, '[ruby-core:90312] [Bug #15383]'
   ensure
     tmps&.each(&:close!)
