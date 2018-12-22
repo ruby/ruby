@@ -1353,6 +1353,19 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     assert_in_out_err([], code, [], /foo/, success: false, timeout: 2)
   end
 
+  def test_circular_cause_handle
+    errs = [/.*error 1.*\n/, /.*error 2.*\n/, /.*error 1.*/m]
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], errs, success: false, timeout: 2)
+    begin;
+      begin
+        raise "error 1"
+      rescue => e1
+        raise "error 2" rescue e2 = $!
+        raise e1, cause: e2
+      end
+    end;
+  end
+
   def test_super_in_method_missing
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
