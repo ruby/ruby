@@ -1346,7 +1346,6 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_non_exception_cause
-    puts "foo"
     code = "#{<<~"begin;"}\n#{<<~'end;'}"
     begin;
       raise "foo", cause: 1
