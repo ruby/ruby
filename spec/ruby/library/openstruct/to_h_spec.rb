@@ -26,4 +26,11 @@ describe "OpenStruct#to_h" do
     @to_h[:age] = 71
     @os.age.should == 70
   end
+
+  ruby_version_is "2.6" do
+    it "converts [key, value] pairs returned by the block to a hash" do
+      h = @os.to_h {|key, value| [key.to_s, value * 2]}
+      h.should == {"name" => "John SmithJohn Smith", "age" => 140, "pension" => 600}
+    end
+  end
 end

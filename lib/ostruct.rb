@@ -105,15 +105,28 @@ class OpenStruct
   end
 
   #
+  # call-seq:
+  #   ostruct.to_h                        -> hash
+  #   ostruct.to_h {|name, value| block } -> hash
+  #
   # Converts the OpenStruct to a hash with keys representing
   # each attribute (as symbols) and their corresponding values.
+  #
+  # If a block is given, the results of the block on each pair of
+  # the receiver will be used as pairs.
   #
   #   require "ostruct"
   #   data = OpenStruct.new("country" => "Australia", :capital => "Canberra")
   #   data.to_h   # => {:country => "Australia", :capital => "Canberra" }
+  #   data.to_h {|name, value| [name.to_s, value.upcase] }
+  #               # => {"country" => "AUSTRALIA", "capital" => "CANBERRA" }
   #
-  def to_h
-    @table.dup
+  def to_h(&block)
+    if block_given?
+      @table.to_h(&block)
+    else
+      @table.dup
+    end
   end
 
   #
