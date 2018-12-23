@@ -509,6 +509,9 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
 	    *cause = get_ec_errinfo(ec);
 	}
     }
+    else if (!NIL_P(*cause) && !rb_obj_is_kind_of(*cause, rb_eException)) {
+        rb_raise(rb_eTypeError, "exception object expected");
+    }
     return mesg;
 }
 

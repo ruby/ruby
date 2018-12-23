@@ -808,7 +808,7 @@ end.join
     e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar"}
     assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
 
-    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar", cause: "zzz"}
+    e = assert_raise(exc, bug) {raise exc, "foo" => "bar", foo: "bar", cause: RuntimeError.new("zzz")}
     assert_equal({"foo" => "bar", foo: "bar"}, e.arg, bug)
 
     e = assert_raise(exc, bug) {raise exc, {}}
@@ -1346,11 +1346,9 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_non_exception_cause
-    code = "#{<<~"begin;"}\n#{<<~'end;'}"
-    begin;
+    assert_raise_with_message(TypeError, /exception/) do
       raise "foo", cause: 1
     end;
-    assert_in_out_err([], code, [], /foo/, success: false, timeout: 2)
   end
 
   def test_circular_cause_handle
