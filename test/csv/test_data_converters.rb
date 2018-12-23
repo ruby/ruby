@@ -243,23 +243,35 @@ class TestCSV::DataConverters < TestCSV
                   CSV.parse_line(@data, converters: [:numeric, @custom]) )
   end
 
-  def test_unconverted_fields
-    [ [ @data,
-        ["Numbers", :integer, 1, :float, 3.015],
-        %w{Numbers :integer 1 :float 3.015} ],
-      ["\n", Array.new, Array.new] ].each do |test, fields, unconverted|
-      row = nil
-      assert_nothing_raised(Exception) do
-        row = CSV.parse_line( test,
-                              converters:         [:numeric, @custom],
-                              unconverted_fields: true )
-      end
-      assert_not_nil(row)
-      assert_equal(fields, row)
-      assert_respond_to(row, :unconverted_fields)
-      assert_equal(unconverted, row.unconverted_fields)
-    end
+  def test_unconverted_fields_number
+    row = CSV.parse_line(@data,
+                         converters:         [:numeric, @custom],
+                         unconverted_fields: true)
+    assert_equal([
+                   ["Numbers", :integer, 1, :float, 3.015],
+                   ["Numbers", ":integer", "1", ":float", "3.015"],
+                 ],
+                 [
+                   row,
+                   row.unconverted_fields,
+                 ])
+  end
 
+  def test_unconverted_fields_empty_line
+    row = CSV.parse_line("\n",
+                         converters:         [:numeric, @custom],
+                         unconverted_fields: true)
+    assert_equal([
+                   [],
+                   [],
+                 ],
+                 [
+                   row,
+                   row.unconverted_fields,
+                 ])
+  end
+
+  def test_unconverted_fields
     data = <<-CSV
 first,second,third
 1,2,3

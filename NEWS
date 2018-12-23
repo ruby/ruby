@@ -404,6 +404,12 @@ sufficient information, see the ChangeLog file or Redmine
     * Coverage.line_stub, which is a simple helper function that
       creates the "stub" of line coverage from a given source code.
 
+[CSV]
+
+  * Upgrade to 3.0.2. This includes performance improvement especially
+    writing. Writing is about 2 times faster.
+    https://github.com/ruby/csv/blob/master/NEWS.md
+
 [ERB]
 
   [New options]

@@ -21,6 +21,8 @@ class TestCSV::Table < TestCSV
     @header_table = CSV::Table.new(
       [CSV::Row.new(%w{A B C}, %w{A B C}, true)] + @rows
     )
+    
+    @header_only_table = CSV::Table.new([], headers: %w{A B C})
   end
 
   def test_initialze
@@ -61,6 +63,10 @@ class TestCSV::Table < TestCSV
   def test_headers_empty
     t = CSV::Table.new([])
     assert_equal Array.new, t.headers
+  end
+
+  def test_headers_only
+    assert_equal(%w[A B C], @header_only_table.headers)
   end
 
   def test_index
@@ -469,6 +475,21 @@ A
 4
 7
     CSV
+  end
+
+  def test_delete_headers_only
+    ###################
+    ### Column Mode ###
+    ###################
+    @header_only_table.by_col!
+
+    # delete by index
+    assert_equal([], @header_only_table.delete(0))
+    assert_equal(%w[B C], @header_only_table.headers)
+
+    # delete by header
+    assert_equal([], @header_only_table.delete("C"))
+    assert_equal(%w[B], @header_only_table.headers)
   end
 
   def test_values_at

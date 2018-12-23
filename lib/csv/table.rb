@@ -16,6 +16,11 @@ class CSV
     # Construct a new CSV::Table from +array_of_rows+, which are expected
     # to be CSV::Row objects.  All rows are assumed to have the same headers.
     #
+    # The optional +headers+ parameter can be set to Array of headers.
+    # If headers aren't set, headers are fetched from CSV::Row objects.
+    # Otherwise, headers() method will return headers being set in
+    # headers arugument.
+    #
     # A CSV::Table object supports the following Array methods through
     # delegation:
     #
@@ -23,8 +28,17 @@ class CSV
     # * length()
     # * size()
     #
-    def initialize(array_of_rows)
+    def initialize(array_of_rows, headers: nil)
       @table = array_of_rows
+      @headers = headers
+      unless @headers
+        if @table.empty?
+          @headers = []
+        else
+          @headers = @table.first.headers
+        end
+      end
+
       @mode  = :col_or_row
     end
 
@@ -122,11 +136,7 @@ class CSV
     # other rows).  An empty Array is returned for empty tables.
     #
     def headers
-      if @table.empty?
-        Array.new
-      else
-        @table.first.headers
-      end
+      @headers.dup
     end
 
     #
@@ -171,6 +181,10 @@ class CSV
           @table[index_or_header] = value
         end
       else                 # set column
+        unless index_or_header.is_a? Integer
+          index = @headers.index(index_or_header) || @headers.size
+          @headers[index] = index_or_header
+        end
         if value.is_a? Array  # multiple values
           @table.each_with_index do |row, i|
             if row.header_row?
@@ -258,6 +272,11 @@ class CSV
             (@mode == :col_or_row and index_or_header.is_a? Integer)
           @table.delete_at(index_or_header)
         else                 # by header
+          if index_or_header.is_a? Integer
+            @headers.delete_at(index_or_header)
+          else
+            @headers.delete(index_or_header)
+          end
           @table.map { |row| row.delete(index_or_header).last }
         end
       end
