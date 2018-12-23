@@ -58,4 +58,21 @@ class TestGemUtil < Gem::TestCase
     assert_equal 4, list.find { |x| x == 4 }
   end
 
+  def test_glob_files_in_dir
+    FileUtils.mkdir_p 'g'
+    FileUtils.touch File.join('g', 'h.rb')
+    FileUtils.touch File.join('g', 'i.rb')
+
+    expected_paths = [
+      File.join(@tempdir, 'g/h.rb'),
+      File.join(@tempdir, 'g/i.rb'),
+    ]
+
+    files_with_absolute_base = Gem::Util.glob_files_in_dir('*.rb', File.join(@tempdir, 'g'))
+    assert_equal expected_paths.to_set, files_with_absolute_base.to_set
+
+    files_with_relative_base = Gem::Util.glob_files_in_dir('*.rb', 'g')
+    assert_equal expected_paths.to_set, files_with_relative_base.to_set
+  end
+
 end

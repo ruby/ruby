@@ -9,7 +9,7 @@
 require 'rbconfig'
 
 module Gem
-  VERSION = "3.0.0".freeze
+  VERSION = "3.0.1".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -572,7 +572,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   #++
 
   def self.find_home
-    Dir.home
+    Dir.home.dup
   rescue
     if Gem.win_platform?
       File.expand_path File.join(ENV['HOMEDRIVE'] || ENV['SystemDrive'], '/')
