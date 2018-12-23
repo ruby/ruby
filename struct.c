@@ -901,13 +901,19 @@ rb_struct_to_a(VALUE s)
 
 /*
  *  call-seq:
- *     struct.to_h     -> hash
+ *     struct.to_h                        -> hash
+ *     struct.to_h {|name, value| block } -> hash
  *
  *  Returns a Hash containing the names and values for the struct's members.
+ *
+ *  If a block is given, the results of the block on each pair of the receiver
+ *  will be used as pairs.
  *
  *     Customer = Struct.new(:name, :address, :zip)
  *     joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *     joe.to_h[:address]   #=> "123 Maple, Anytown NC"
+ *     joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}[:ADDRESS]
+ *                          #=> "123 MAPLE, ANYTOWN NC"
  */
 
 static VALUE
