@@ -58,26 +58,37 @@ line,4,jkl
   end
 
   def test_row_sep
-    assert_raise(CSV::MalformedCSVError) do
-        CSV.parse_line("1,2,3\n,4,5\r\n", row_sep: "\r\n")
+    error = assert_raise(CSV::MalformedCSVError) do
+      CSV.parse_line("1,2,3\n,4,5\r\n", row_sep: "\r\n")
     end
+    assert_equal("Unquoted fields do not allow \\r or \\n in line 1.",
+                 error.message)
     assert_equal( ["1", "2", "3\n", "4", "5"],
                   CSV.parse_line(%Q{1,2,"3\n",4,5\r\n}, row_sep: "\r\n"))
   end
 
   def test_quote_char
     TEST_CASES.each do |test_case|
-      assert_equal( test_case.last.map { |t| t.tr('"', "'") unless t.nil? },
-                    CSV.parse_line( test_case.first.tr('"', "'"),
-                                    quote_char: "'" ) )
+      assert_equal(test_case.last.map {|t| t.tr('"', "'") unless t.nil?},
+                   CSV.parse_line(test_case.first.tr('"', "'"),
+                                  quote_char: "'" ))
     end
   end
 
-  def test_bug_8405
+  def test_quote_char_special_regexp_char
     TEST_CASES.each do |test_case|
-      assert_equal( test_case.last.map { |t| t.tr('"', "|") unless t.nil? },
-                    CSV.parse_line( test_case.first.tr('"', "|"),
-                                    quote_char: "|" ) )
+      assert_equal(test_case.last.map {|t| t.tr('"', "|") unless t.nil?},
+                   CSV.parse_line(test_case.first.tr('"', "|"),
+                                  quote_char: "|"))
+    end
+  end
+
+  def test_quote_char_special_regexp_char_liberal_parsing
+    TEST_CASES.each do |test_case|
+      assert_equal(test_case.last.map {|t| t.tr('"', "|") unless t.nil?},
+                   CSV.parse_line(test_case.first.tr('"', "|"),
+                                  quote_char: "|",
+                                  liberal_parsing: true))
     end
   end
 
@@ -157,27 +168,68 @@ line,4,jkl
     assert_equal(3, count)
   end
 
-  def test_liberal_parsing
+  def test_liberal_parsing_middle_quote_start
     input = '"Johnson, Dwayne",Dwayne "The Rock" Johnson'
-    assert_raise(CSV::MalformedCSVError) do
+    error = assert_raise(CSV::MalformedCSVError) do
         CSV.parse_line(input)
     end
+    assert_equal("Illegal quoting in line 1.",
+                 error.message)
     assert_equal(["Johnson, Dwayne", 'Dwayne "The Rock" Johnson'],
                  CSV.parse_line(input, liberal_parsing: true))
+  end
 
+  def test_liberal_parsing_middle_quote_end
     input = '"quoted" field'
-    assert_raise(CSV::MalformedCSVError) do
+    error = assert_raise(CSV::MalformedCSVError) do
         CSV.parse_line(input)
     end
+    assert_equal("Do not allow except col_sep_split_separator " +
+                 "after quoted fields in line 1.",
+                 error.message)
     assert_equal(['"quoted" field'],
                  CSV.parse_line(input, liberal_parsing: true))
+  end
 
-    assert_raise(CSV::MalformedCSVError) do
+  def test_liberal_parsing_quote_after_column_separator
+    error = assert_raise(CSV::MalformedCSVError) do
       CSV.parse_line('is,this "three," or four,fields', liberal_parsing: true)
     end
+    assert_equal("Unclosed quoted field in line 1.",
+                 error.message)
+  end
 
+  def test_liberal_parsing_quote_before_column_separator
     assert_equal(["is", 'this "three', ' or four"', "fields"],
-      CSV.parse_line('is,this "three, or four",fields', liberal_parsing: true))
+                 CSV.parse_line('is,this "three, or four",fields',
+                                liberal_parsing: true))
+  end
+
+  def test_liberal_parsing_backslash_quote
+    assert_equal([
+                   "1",
+                   "\"Hamlet says, \\\"Seems",
+                   "\\\" madam! Nay it is; I know not \\\"seems.\\\"\"",
+                 ],
+                 CSV.parse_line('1,' +
+                                '"Hamlet says, \"Seems,' +
+                                '\" madam! Nay it is; I know not \"seems.\""',
+                                liberal_parsing: true))
+  end
+
+  def test_liberal_parsing_space_quote
+    input = <<~CSV
+      Los Angeles,   34°03'N,    118°15'W
+      New York City, 40°42'46"N, 74°00'21"W
+      Paris,         48°51'24"N, 2°21'03"E
+    CSV
+    assert_equal(
+                 [
+                   ["Los Angeles", "   34°03'N", "    118°15'W"],
+                   ["New York City", " 40°42'46\"N", " 74°00'21\"W"],
+                   ["Paris", "         48°51'24\"N", " 2°21'03\"E"],
+                 ],
+                 CSV.parse(input, liberal_parsing: true))
   end
 
   def test_csv_behavior_readers
@@ -338,9 +390,31 @@ line,4,jkl
 
   def test_requires_skip_lines_to_call_match
     regex_stub = RegexStub.new
+    csv = CSV.new(@sample_data, :skip_lines => regex_stub)
     assert_raise_with_message(ArgumentError, /skip_lines/) do
-      CSV.new(@sample_data, :skip_lines => regex_stub)
+      csv.shift
     end
+  end
+
+  class Matchable
+    def initialize(pattern)
+      @pattern = pattern
+    end
+
+    def match(line)
+      @pattern.match(line)
+    end
+  end
+
+  def test_skip_lines_match
+    csv = <<-CSV.chomp
+1
+# 2
+3
+# 4
+    CSV
+    assert_equal([["1"], ["3"]],
+                 CSV.parse(csv, :skip_lines => Matchable.new(/\A#/)))
   end
 
   def test_comment_rows_are_ignored
@@ -374,5 +448,49 @@ line,4,jkl
 
   def test_table_nil_equality
     assert_nothing_raised(NoMethodError) { CSV.parse("test", headers: true) == nil }
+  end
+
+  # non-seekable input stream for testing https://github.com/ruby/csv/issues/44
+  class DummyIO
+    extend Forwardable
+    def_delegators :@io, :gets, :read, :pos, :eof?  # no seek or rewind!
+    def initialize(data)
+      @io = StringIO.new(data)
+    end
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_lf
+    c = CSV.new(DummyIO.new("one,two,three\nfoo,bar,baz\n"))
+    assert_equal [["one", "two", "three"], ["foo", "bar", "baz"]], c.each.to_a
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_cr
+    c = CSV.new(DummyIO.new("one,two,three\rfoo,bar,baz\r"))
+    assert_equal [["one", "two", "three"], ["foo", "bar", "baz"]], c.each.to_a
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_cr_lf
+    c = CSV.new(DummyIO.new("one,two,three\r\nfoo,bar,baz\r\n"))
+    assert_equal [["one", "two", "three"], ["foo", "bar", "baz"]], c.each.to_a
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_1024_over_lf
+    table = (1..10).map { |row| (1..200).map { |col| "row#{row}col#{col}" }.to_a }.to_a
+    input = table.map { |line| line.join(",") }.join("\n")
+    c = CSV.new(DummyIO.new(input))
+    assert_equal table, c.each.to_a
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_1024_over_cr_lf
+    table = (1..10).map { |row| (1..200).map { |col| "row#{row}col#{col}" }.to_a }.to_a
+    input = table.map { |line| line.join(",") }.join("\r\n")
+    c = CSV.new(DummyIO.new(input))
+    assert_equal table, c.each.to_a
+  end
+
+  def test_line_separator_autodetection_for_non_seekable_input_many_cr_only
+    # input with lots of CRs (to make sure no bytes are lost due to look-ahead)
+    c = CSV.new(DummyIO.new("foo\r" + "\r" * 9999 + "bar\r"))
+    assert_equal [["foo"]] + [[]] * 9999 + [["bar"]], c.each.to_a
   end
 end
