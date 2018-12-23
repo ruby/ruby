@@ -4570,9 +4570,9 @@ static void
 gc_mark_ptr(rb_objspace_t *objspace, VALUE obj)
 {
     if (LIKELY(objspace->mark_func_data == NULL)) {
-        if (RB_TYPE_P(obj, T_NONE)) rb_bug("...");
 	rgengc_check_relation(objspace, obj);
 	if (!gc_mark_set(objspace, obj)) return; /* already marked */
+        if (RB_TYPE_P(obj, T_NONE)) rb_bug("try to mark T_NONE object"); /* check here will help debugging */
 	gc_aging(objspace, obj);
 	gc_grey(objspace, obj);
     }
