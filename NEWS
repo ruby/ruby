@@ -374,8 +374,8 @@ sufficient information, see the ChangeLog file or Redmine
     deprecation warning of BigDecimal.new.  Object#to_d method is different
     from BigDecimal() and BigDecimal.new.
 
-  * 1.5.0 will be released after releasing Ruby 2.6.0.  This version doesn't
-    have BigDecimal.new method.
+  * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
+    doesn't have BigDecimal.new method.
 
 [Bundler]
 
