@@ -115,7 +115,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
 	ruby_xfree(body);
     }
 
-    if (ISEQ_EXECUTABLE_P(iseq) && iseq->aux.exec.local_hooks) {
+    if (iseq && ISEQ_EXECUTABLE_P(iseq) && iseq->aux.exec.local_hooks) {
         rb_hook_list_free(iseq->aux.exec.local_hooks);
     }
 
