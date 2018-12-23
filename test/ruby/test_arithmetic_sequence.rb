@@ -430,4 +430,10 @@ class TestArithmeticSequence < Test::Unit::TestCase
     assert_num_equal_type([0.0, 0.0+1.0i, 0.0+2.0i], (0.0..).step(1.0i).take(3))
     assert_num_equal_type([0.0+0.0i, 0.0+1.0i, 0.0+2.0i], (0.0i..).step(1.0i).take(3))
   end
+
+  def test_sum
+    assert_equal([1, 3, 5, 7, 9].sum, (1..10).step(2).sum)
+    assert_equal([1.0, 2.5, 4.0, 5.5, 7.0, 8.5, 10.0].sum, (1.0..10.0).step(1.5).sum)
+    assert_equal([1/2r, 1r, 3/2r, 2, 5/2r, 3, 7/2r, 4].sum, ((1/2r)...(9/2r)).step(1/2r).sum)
+  end
 end
