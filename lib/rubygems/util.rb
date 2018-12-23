@@ -122,7 +122,7 @@ module Gem::Util
 
   def self.glob_files_in_dir(glob, base_path)
     if RUBY_VERSION >= "2.5"
-      Dir.glob(glob, base: base_path).map! {|f| File.join(base_path, f) }
+      Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
     else
       Dir.glob(File.expand_path(glob, base_path))
     end

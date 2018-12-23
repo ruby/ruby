@@ -357,7 +357,7 @@ EOM
   def extract_files(destination_dir, pattern = "*")
     verify unless @spec
 
-    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p destination_dir, :mode => dir_mode && 0755
 
     @gem.with_read_io do |io|
       reader = Gem::Package::TarReader.new io
@@ -394,7 +394,7 @@ EOM
         FileUtils.rm_rf destination
 
         mkdir_options = {}
-        mkdir_options[:mode] = dir_mode ? 0700 : (entry.header.mode if entry.directory?)
+        mkdir_options[:mode] = dir_mode ? 0755 : (entry.header.mode if entry.directory?)
         mkdir =
           if entry.directory?
             destination

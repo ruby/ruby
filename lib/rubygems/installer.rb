@@ -309,7 +309,7 @@ class Gem::Installer
     FileUtils.rm_rf spec.extension_dir
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0755
 
     if @options[:install_as_default]
       extract_bin
@@ -481,7 +481,7 @@ class Gem::Installer
     return if spec.executables.nil? or spec.executables.empty?
 
     begin
-      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0700].compact
+      Dir.mkdir @bin_dir, *[options[:dir_mode] && 0755].compact
     rescue SystemCallError
       raise unless File.directory? @bin_dir
     end
@@ -525,7 +525,7 @@ class Gem::Installer
 
     FileUtils.rm_f bin_script_path # prior install may have been --no-wrappers
 
-    File.open bin_script_path, 'wb', 0700 do |file|
+    File.open bin_script_path, 'wb', 0755 do |file|
       file.print app_script_text(filename)
       file.chmod(options[:prog_mode] || 0755)
     end
@@ -720,7 +720,7 @@ class Gem::Installer
   end
 
   def verify_gem_home(unpack = false) # :nodoc:
-    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0700
+    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0755
     raise Gem::FilePermissionError, gem_home unless
       unpack or File.writable?(gem_home)
   end
@@ -905,7 +905,7 @@ TEXT
     build_info_dir = File.join gem_home, 'build_info'
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0700
+    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0755
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 
