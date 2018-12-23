@@ -491,6 +491,7 @@ static inline VALUE
 exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
 {
     int nocause = 0;
+    int nocircular = 0;
 
     if (NIL_P(mesg)) {
 	mesg = ec->errinfo;
@@ -500,17 +501,31 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
     if (NIL_P(mesg)) {
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
 	nocause = 0;
+        nocircular = 1;
     }
     if (*cause == Qundef) {
 	if (nocause) {
 	    *cause = Qnil;
+            nocircular = 1;
 	}
 	else if (!rb_ivar_defined(mesg, id_cause)) {
 	    *cause = get_ec_errinfo(ec);
 	}
+        else {
+            nocircular = 1;
+        }
     }
     else if (!NIL_P(*cause) && !rb_obj_is_kind_of(*cause, rb_eException)) {
         rb_raise(rb_eTypeError, "exception object expected");
+    }
+
+    if (!nocircular && !NIL_P(*cause) && *cause != Qundef && *cause != mesg) {
+        VALUE c = *cause;
+        while (!NIL_P(c = rb_attr_get(c, id_cause))) {
+            if (c == mesg) {
+                rb_raise(rb_eArgError, "circular causes");
+            }
+        }
     }
     return mesg;
 }
