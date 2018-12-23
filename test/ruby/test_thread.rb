@@ -1241,44 +1241,23 @@ q.pop
 
   def test_fork_while_parent_locked
     skip 'needs fork' unless Process.respond_to?(:fork)
-    require 'tempfile'
     m = Thread::Mutex.new
-    failures = 0
-    run = true
-    errs = ''
-    nr = 25 # reduce if more SIGKILL in tests
-    tmps = nr.times.map { Tempfile.new('Bug.15430.diagnosis') }
-    thrs = nr.times.map do |_i|
-      Thread.new(_i) do |i|
-        t = tmps[i]
-        t.sync = true
-        while run
-          pid = fork do
-            STDERR.reopen(t.path)
-            tmps.each(&:close)
-            m.synchronize {}
-          end
-          m.synchronize {}
-          _, st = Process.waitpid2(pid)
-          unless st.success?
-            m.synchronize do
-              failures += 1
-              if errs.empty?
-                errs = st.inspect << t.read
-                t.rewind
-              end
-            end
-          end
-        end
+    nr = 1
+    thrs = []
+    m.synchronize do
+      thrs = nr.times.map { Thread.new { m.synchronize {} } }
+      thrs.each { Thread.pass }
+      pid = fork do
+        m.locked? or exit!(2)
+        thrs = nr.times.map { Thread.new { m.synchronize {} } }
+        m.unlock
+        thrs.each { |t| t.join(1) == t or exit!(1) }
+        exit!(0)
       end
+      _, st = Process.waitpid2(pid)
+      assert_predicate st, :success?, '[ruby-core:90312] [Bug #15383]'
     end
-    sleep 0.5
-    run = false
-    thrs.each(&:join)
-    assert_empty errs, "lower `nr' if SIGKILL because of RLIMIT_NPROC limit"
-    assert_equal 0, failures, '[ruby-core:90312] [Bug #15383]'
-  ensure
-    tmps&.each(&:close!)
+    thrs.each { |t| assert_same t, t.join(1) }
   end
 
   def test_fork_while_mutex_locked_by_forker
