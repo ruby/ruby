@@ -464,6 +464,23 @@ sufficient information, see the ChangeLog file or Redmine
 
   * Upgrade to Psych 3.1.0
 
+[RDoc]
+  * Become about 2 times faster
+
+  * Use SOURCE_DATE_EPOCH to generate files
+
+  * Fix method line number what slips off
+
+  * Enable --width, --exclude, and --line-numbers that is ignored
+
+  * Add support for blockquote by ">>>" in default markup notation
+
+  * Add support for "Raises" lines in TomDom notation
+
+  * Fix syntax error output
+
+  * Fix many parsing bug
+
 [REXML]
 
   * Upgrade to REXML 3.1.8
