@@ -2668,7 +2668,7 @@ BigDecimal_new(int argc, VALUE *argv)
 }
 
 /* call-seq:
- *   BigDecimal(initial, digits)
+ *   BigDecimal(initial, digits, exception: true)
  *
  * Create a new BigDecimal object.
  *
@@ -2682,8 +2682,13 @@ BigDecimal_new(int argc, VALUE *argv)
  *          the number of significant digits is determined from the initial
  *          value.
  *
- * The actual number of significant digits used in computation is usually
- * larger than the specified number.
+ *          The actual number of significant digits used in computation is
+ *          usually larger than the specified number.
+ *
+ * exception:: Whether an exception should be raised on invalid arguments.
+ *             +true+ by default, if passed +false+, just returns +nil+
+ *             for invalid.
+ *
  *
  * ==== Exceptions
  *
@@ -3955,9 +3960,6 @@ VP_EXPORT size_t
 VpInit(BDIGIT BaseVal)
 {
     /* Setup +/- Inf  NaN -0 */
-    VpGetDoubleNaN();
-    VpGetDoublePosInf();
-    VpGetDoubleNegInf();
     VpGetDoubleNegZero();
 
     /* Allocates Vp constants. */
