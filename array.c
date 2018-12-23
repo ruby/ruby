@@ -1868,7 +1868,13 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
 	if (rlen > 0) {
             if (rofs != -1) rptr = RARRAY_CONST_PTR_TRANSIENT(ary) + rofs;
             /* give up wb-protected ary */
-	    MEMMOVE(RARRAY_PTR(ary) + beg, rptr, VALUE, rlen);
+            RB_OBJ_WB_UNPROTECT_FOR(ARRAY, ary);
+
+            /* do not use RARRAY_PTR() because it can causes GC.
+             * ary can contain T_NONE object because it is not cleared.
+             */
+            RARRAY_PTR_USE_TRANSIENT(ary, ptr,
+                                     MEMMOVE(ptr + beg, rptr, VALUE, rlen));
 	}
     }
 }
