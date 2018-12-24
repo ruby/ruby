@@ -1105,7 +1105,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 
 	    rb_str_buf_cat2(str, "(");
 
-	    if (RB_TYPE_P(argv[argc-1], T_HASH)) {
+            if (RB_TYPE_P(argv[argc-1], T_HASH) && !RHASH_EMPTY_P(argv[argc-1])) {
 		int all_key = TRUE;
 		rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
 		if (all_key) kwds = argv[--argc];
