@@ -721,9 +721,10 @@ rb_ast_node_inspect(VALUE self)
     str = rb_str_new2("#<");
 
     rb_str_append(str, cname);
-    rb_str_cat2(str, "(");
-    rb_str_catf(str, "%s(%d) %d:%d, %d:%d", node_type_to_str(data->node), nd_type(data->node), nd_first_lineno(data->node), nd_first_column(data->node), nd_last_lineno(data->node), nd_last_column(data->node));
-    rb_str_cat2(str, "): >");
+    rb_str_catf(str, ":%s@%d:%d-%d:%d>",
+                node_type_to_str(data->node),
+                nd_first_lineno(data->node), nd_first_column(data->node),
+                nd_last_lineno(data->node), nd_last_column(data->node));
 
     return str;
 }
