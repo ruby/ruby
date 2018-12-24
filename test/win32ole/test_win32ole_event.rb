@@ -160,6 +160,7 @@ if defined?(WIN32OLE_EVENT)
           $stderr.puts "test_win32ole_event.rb: retrying until #{ivarname} matches #{regexp} (tries: #{tries})..."
           sleep(2 ** tries) # sleep at most 31s in total
           ivar = instance_variable_get(ivarname)
+          tries += 1
         end
 
         assert_match(regexp, ivar)
