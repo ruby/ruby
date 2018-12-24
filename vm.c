@@ -2167,7 +2167,7 @@ rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *c
     return rb_vm_control_frame_id_and_class(ec->cfp, idp, called_idp, klassp);
 }
 
-RUBY_FUNC_EXPORTED int
+int
 rb_frame_method_id_and_class(ID *idp, VALUE *klassp)
 {
     return rb_ec_frame_method_id_and_class(GET_EC(), idp, 0, klassp);
