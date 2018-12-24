@@ -706,11 +706,11 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
 /*
  *  call-seq:
  *     raise
- *     raise(string)
- *     raise(exception [, string [, array]])
+ *     raise(string, cause: $!)
+ *     raise(exception [, string [, array]], cause: $!)
  *     fail
- *     fail(string)
- *     fail(exception [, string [, array]])
+ *     fail(string, cause: $!)
+ *     fail(exception [, string [, array]], cause: $!)
  *
  *  With no arguments, raises the exception in <code>$!</code> or raises
  *  a <code>RuntimeError</code> if <code>$!</code> is +nil+.
@@ -725,6 +725,11 @@ extract_raise_opts(int argc, const VALUE *argv, VALUE *opts)
  *
  *     raise "Failed to create socket"
  *     raise ArgumentError, "No parameters", caller
+ *
+ *  The +cause+ of the generated exception is automatically set to the
+ *  "current" exception (<code>$!</code>) if any.  An alternative
+ *  value, either an +Exception+ object or +nil+, can be specified via
+ *  the +:cause+ argument.
  */
 
 static VALUE
