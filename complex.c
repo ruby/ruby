@@ -403,8 +403,8 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
  *    Complex(nil)     #=> TypeError
  *    Complex(1, nil)  #=> TypeError
  *
- *    Complex(1, nil, exception: false) # => nil
- *    Complex('1+2', exception: false) # => nil
+ *    Complex(1, nil, exception: false)  #=> nil
+ *    Complex('1+2', exception: false)   #=> nil
  *
  * Syntax of string form:
  *

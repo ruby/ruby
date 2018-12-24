@@ -3234,10 +3234,10 @@ opts_exception_p(VALUE opts)
  *  <code>String#to_i</code>.  Non string values will be converted by first
  *  trying <code>to_int</code>, then <code>to_i</code>.
  *
- *  Passing <code>nil</code> raises a TypeError, while passing String that
+ *  Passing <code>nil</code> raises a TypeError, while passing a String that
  *  does not conform with numeric representation raises an ArgumentError.
  *  This behavior can be altered by passing <code>exception: false</code>,
- *  in this case not convertible value will return <code>nil</code>.
+ *  in this case a not convertible value will return <code>nil</code>.
  *
  *     Integer(123.999)    #=> 123
  *     Integer("0x1a")     #=> 26
@@ -3589,7 +3589,7 @@ rb_Float(VALUE val)
  *  directly, and with exception to string and nil the rest are converted using <i>arg</i>.to_f.
  *  Converting a <code>string</code> with invalid characters will result in a <code>ArgumentError</code>.
  *  Converting <code>nil</code> generates a <code>TypeError</code>.
- *  Exceptions could be suppressed by passing <code>exception: false</code>.
+ *  Exceptions can be suppressed by passing <code>exception: false</code>.
  *
  *     Float(1)                 #=> 1.0
  *     Float("123.456")         #=> 123.456
