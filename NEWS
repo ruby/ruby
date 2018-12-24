@@ -14,30 +14,32 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
-* <code>$SAFE</code> is a process global state and we can set it to 0 again. [Feature #14250]
+* <code>$SAFE</code> now is a process global state and can be set to 0 again. [Feature #14250]
 
-* refinements take place at block passing.  [Feature #14223]
+* Refinements take place at block passing.  [Feature #14223]
 
-* refinements take place at Kernel#public_send.  [Feature #15326]
+* Refinements take place at Kernel#public_send.  [Feature #15326]
 
-* refinements take place at Kernel#respond_to?.  [Feature #15327]
+* Refinements take place at Kernel#respond_to?.  [Feature #15327]
 
 * +else+ without +rescue+ now causes a syntax error.  [EXPERIMENTAL] [Feature #14606]
 
-* constant names may start with a non-ASCII capital letter. [Feature #13770]
+* Constant names may start with a non-ASCII capital letter. [Feature #13770]
 
-* An endless range is introduced.  You can write a range that has no end,
-  like <code>(0..)</code> (or similarly <code>(0...)</code>).
-  The following shows typical use cases.  [Feature #12912]
+* Endless ranges are introduced.  You can use a Range that has no end,
+  like <code>(0..)</code> (or similarly <code>(0...)</code>).  [Feature #12912]
+
+  The following shows typical use cases:
 
     ary[1..]                              # identical to ary[1..-1]
     (1...).each {|index| block }          # infinite loop from index 1
     ary.zip(1..) {|elem, index| block }   # ary.each.with_index(1) { }
 
-* Non-Symbol key in keyword arguments hash causes an exception.
+* Non-Symbol keys in a keyword arguments hash cause an exception.
 
-* "shadowing outer local variable" warning was removed.  [Feature #12490]
-  You can now write the following without warning.
+* The "shadowing outer local variable" warning is removed.  [Feature #12490]
+
+  You can now write the following without warning:
 
     user = users.find {|user| cond(user) }
 
@@ -45,9 +47,9 @@ sufficient information, see the ChangeLog file or Redmine
   exception is not caught and STDOUT is unchanged and a tty. [Feature #8661]
 
 * Print +cause+ of the exception if the exception is not caught and printed
-  its backtraces and error message [Feature #8257]
+  its backtraces and error message. [Feature #8257]
 
-* Flip-flop syntax is deprecated. [Feature #5400]
+* The flip-flop syntax is deprecated. [Feature #5400]
 
 === Core classes updates (outstanding ones only)
 
@@ -59,8 +61,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-    * Array#to_h now maps elements to new keys and values by the
-      block if given.  [Feature #15143]
+    * Array#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
   [Aliased methods]
 
@@ -71,7 +72,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * added Binding#source_location.  [Feature #14230]
+    * Added Binding#source_location.  [Feature #14230]
 
       This method returns the source location of the binding, a 2-element
       array of <code>__FILE__</code> and <code>__LINE__</code>.
@@ -85,7 +86,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * added Dir#each_child and Dir#children instance methods. [Feature #13969]
+    * Added Dir#each_child and Dir#children instance methods. [Feature #13969]
 
 [Enumerable]
 
@@ -97,8 +98,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-    * Enumerable#to_h now maps elements to new keys and values by the block if
-      given.  [Feature #15143]
+    * Enumerable#to_h now accepts a block that maps elements to new key/value pairs.  [Feature #15143]
 
   [Aliased methods]
 
@@ -135,8 +135,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-    * ENV.to_h now maps names and values to new keys and values
-      by the block if given.  [Feature #15143]
+    * ENV.to_h now accepts a block that maps names and values to new keys and values.  [Feature #15143]
 
 [Exception]
 
@@ -152,8 +151,7 @@ sufficient information, see the ChangeLog file or Redmine
     * Hash#merge, Hash#merge!, and Hash#update now accept multiple
       arguments.  [Feature #15111]
 
-    * Hash#to_h now maps keys and values to new keys and values
-      by the block if given.  [Feature #15143]
+    * Hash#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
   [Aliased methods]
 
@@ -165,7 +163,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * new mode character <code>'x'</code> to open files for exclusive
+    * Added new mode character <code>'x'</code> to open files for exclusive
       access. [Feature #11258]
 
 [Kernel]
@@ -177,16 +175,16 @@ sufficient information, see the ChangeLog file or Redmine
   [New options]
 
     * Kernel#Complex, Kernel#Float, Kernel#Integer, and
-      Kernel#Rational take +:exception+ option to specify the way of
+      Kernel#Rational take an +:exception+ option to specify the way of
       error handling.  [Feature #12732]
 
-    * Kernel#system takes +:exception+ option to raise an exception
+    * Kernel#system takes an +:exception+ option to raise an exception
       on failure.  [Feature #14386]
 
   [Incompatible changes]
 
     * Kernel#system and Kernel#exec do not close non-standard file descriptors
-      (The default of the +:close_others+ option is changed to +false+,
+      (the default of the +:close_others+ option is changed to +false+,
       but we still set the +FD_CLOEXEC+ flag on descriptors we
       create).  [Misc #14907]
 
@@ -201,22 +199,22 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * added Method#<< and Method#>> for Proc composition.  [Feature #6284]
+    * Added Method#<< and Method#>> for Proc composition.  [Feature #6284]
 
 [Module]
 
-  [New methods]
+  [Modified methods]
 
     * Module#method_defined?, Module#private_method_defined?, and
       Module#protected_method_defined? now accept the second
-      parameter as optional. If it's +true+ (=default), checks ancestor
-      modules/classes, or checks only the class itself. [Feature #14944]
+      parameter as optional. If it is +true+ (the default value), it checks
+      ancestor modules/classes, or checks only the class itself. [Feature #14944]
 
 [NameError]
 
   [New options]
 
-    * NameError.new accepts +:receiver+ option to set receiver in Ruby
+    * NameError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
 
 [NilClass]
@@ -229,28 +227,27 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * NoMethodError.new accepts +:receiver+ option to set receiver in Ruby
+    * NoMethodError.new accepts a +:receiver+ option to set receiver in Ruby
       code.  [Feature #14313]
 
 [Numeric]
 
   [Incompatible changes]
 
-    * Numeric#step now returns an instance of Enumerator::ArithmeticSequence
-      class rather than one of Enumerator class.
+    * Numeric#step now returns an instance of the Enumerator::ArithmeticSequence
+      class rather than one of the Enumerator class.
 
 [OpenStruct]
 
   [Modified methods]
 
-    * OpenStruct#to_h now maps keys and values to new keys and values
-      by the block if given.  [Feature #15143]
+    * OpenStruct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
 [Proc]
 
   [New methods]
 
-    * added Proc#<< and Proc#>> for Proc composition.  [Feature #6284]
+    * Added Proc#<< and Proc#>> for Proc composition.  [Feature #6284]
 
   [Incompatible changes]
 
@@ -260,7 +257,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New methods]
 
-    * added Random.bytes.  [Feature #4938]
+    * Added Random.bytes.  [Feature #4938]
 
 [Range]
 
@@ -270,14 +267,15 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Incompatible changes]
 
-    * Range#=== now uses +#cover?+ instead of +#include?+ method. [Feature #14575]
-    * Range#cover? now accepts Range object. [Feature #14473]
-    * Range#step now returns an instance of Enumerator::ArithmeticSequence
-      class rather than one of Enumerator class.
+    * Range#=== now uses the +#cover?+ instead of the +#include?+ method. [Feature #14575]
+    * Range#cover? now accepts a Range object. [Feature #14473]
+    * Range#step now returns an instance of the Enumerator::ArithmeticSequence
+      class rather than one of the Enumerator class.
 
 [Regexp/String]
 
     * Update Unicode version from 10.0.0 to 11.0.0. [Feature #14802]
+
       This includes a rewrite of the grapheme cluster (/\X/) algorithm
       and special-casing for Georgian MTAVRULI on String#downcase.
 
@@ -315,8 +313,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [Modified methods]
 
-    * Struct#to_h now maps keys and values to new keys and values
-      by the block if given.  [Feature #15143]
+    * Struct#to_h now accepts a block that maps keys and values to new keys and values.  [Feature #15143]
 
   [Aliased method]
 
@@ -327,7 +324,7 @@ sufficient information, see the ChangeLog file or Redmine
   [New features]
 
     * Time.new and Time#getlocal accept a timezone object as well as
-      an UTC offset string. Time#+, Time#- and Time#succ also preserve
+      a UTC offset string. Time#+, Time#-, and Time#succ also preserve
       the timezone.  [Feature #14850]
 
 [TracePoint]
@@ -353,12 +350,12 @@ sufficient information, see the ChangeLog file or Redmine
 
 [BigDecimal]
 
-  Update to the version 1.4.0.  This version includes several compatibility
-  issues, see Compatibility issues section below for the detail.
+  Update to version 1.4.0.  This version includes several compatibility
+  issues, see Compatibility issues section below for details.
 
   [Modified methods]
 
-  * BigDecimal() accepts new keyword "exception:" similar to Float().
+  * BigDecimal() accepts the new keyword "exception:" similar to Float().
 
   [Note for the differences among recent versions]
 
@@ -368,24 +365,25 @@ sufficient information, see the ChangeLog file or Redmine
 
   * 1.3.5 has BigDecimal.new without "exception:" keyword.  You can see the
     deprecation warning of BigDecimal.new when you specify "-w" option.
-    BigDecimal(), BigDecimal.new, and Object#to_d methods are same.
+    BigDecimal(), BigDecimal.new, and Object#to_d methods are the same.
 
   * 1.4.0 has BigDecimal.new with "exception:" keyword.  You always see the
     deprecation warning of BigDecimal.new.  Object#to_d method is different
     from BigDecimal() and BigDecimal.new.
 
   * 2.0.0 will be released soon after releasing Ruby 2.6.0.  This version
-    doesn't have BigDecimal.new method.
+    will not have the BigDecimal.new method.
 
 [Bundler]
 
   * Add Bundler to Standard Library. [Feature #12733]
 
-  * Use 1.17.2. It's the latest stable version.
+  * Use 1.17.2, the latest stable version.
 
 [Coverage]
 
   A oneshot_lines mode is added.  [Feature #15022]
+
   This mode checks "whether each line was executed at least once or not",
   instead of "how many times each line was executed".
   A hook for each line is fired at most once, and after it is fired
@@ -406,19 +404,19 @@ sufficient information, see the ChangeLog file or Redmine
 
 [CSV]
 
-  * Upgrade to 3.0.2. This includes performance improvement especially
-    writing. Writing is about 2 times faster.
-    https://github.com/ruby/csv/blob/master/NEWS.md
+  * Upgrade to 3.0.2. This includes performance improvements especially
+    for writing. Writing is about 2 times faster.
+    See https://github.com/ruby/csv/blob/master/NEWS.md.
 
 [ERB]
 
   [New options]
 
     * Add +:trim_mode+ and +:eoutvar+ keyword arguments to ERB.new.
-      Now non-keyword arguments other than first one are softly deprecated
+      Now non-keyword arguments other than the first one are softly deprecated
       and will be removed when Ruby 2.5 becomes EOL. [Feature #14256]
 
-    * erb command's <tt>-S</tt> option is deprecated, which will be removed
+    * erb command's <tt>-S</tt> option is deprecated, and will be removed
       in the next version.
 
 [FileUtils]
@@ -465,36 +463,38 @@ sufficient information, see the ChangeLog file or Redmine
   * Upgrade to Psych 3.1.0
 
 [RDoc]
-  * Become about 2 times faster
 
-  * Use SOURCE_DATE_EPOCH to generate files
+  * Become about 2 times faster.
 
-  * Fix method line number what slips off
+  * Use SOURCE_DATE_EPOCH to generate files.
 
-  * Enable --width, --exclude, and --line-numbers that is ignored
+  * Fix method line number that slipped off.
 
-  * Add support for blockquote by ">>>" in default markup notation
+  * Enable <code>--width</code>, <code>--exclude</code>,
+    and <code>--line-numbers</code> that were ignored.
 
-  * Add support for "Raises" lines in TomDom notation
+  * Add support for blockquote by ">>>" in default markup notation.
 
-  * Fix syntax error output
+  * Add support for "Raises" lines in TomDoc notation.
 
-  * Fix many parsing bug
+  * Fix syntax error output.
+
+  * Fix many parsing bugs.
 
 [REXML]
 
-  * Upgrade to REXML 3.1.8
-    https://github.com/ruby/rexml/blob/master/NEWS.md
+  * Upgrade to REXML 3.1.8.
+    See https://github.com/ruby/rexml/blob/master/NEWS.md.
 
   [Improved some XPath implementations]
 
-    * <code>concat()</code> function: Stringify all arguments before concatenating
+    * <code>concat()</code> function: Stringify all arguments before concatenating.
 
-    * <code>string()</code> function: Support context node
+    * <code>string()</code> function: Support context node.
 
-    * <code>string()</code> function: Support processing instruction node
+    * <code>string()</code> function: Support processing instruction node.
 
-    * Support <code>"*:#{ELEMENT_NAME}"</code> syntax in XPath 2.0
+    * Support <code>"*:#{ELEMENT_NAME}"</code> syntax in XPath 2.0.
 
   [Fixed some XPath implementations]
 
@@ -524,7 +524,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New options]
 
-    * RSS::Parser.parse: Accept options as Hash. +:validate+ ,
+    * RSS::Parser.parse now accepts options as Hash. +:validate+ ,
       +:ignore_unknown_element+ , +:parser_class+ options are available.
 
 [RubyGems]
@@ -543,7 +543,7 @@ sufficient information, see the ChangeLog file or Redmine
 
   [New constant]
 
-    * Add URI::File to handle file URI scheme.  [Feature #14035]
+    * Add URI::File to handle the file URI scheme.  [Feature #14035]
 
 === Compatibility issues (excluding feature bug fixes)
 
@@ -590,11 +590,11 @@ sufficient information, see the ChangeLog file or Redmine
 
   * Every BigDecimal object is frozen. [Feature #13984]
 
-  * BigDecimal() parses the given string like Float().
+  * BigDecimal() parses the given string similar to Float().
 
-  * String#to_d parses the receiver string like String#to_f.
+  * String#to_d parses the receiver string similar to String#to_f.
 
-  * BigDecimal.new will be removed on its version 1.5.
+  * BigDecimal.new will be removed in version 2.0.
 
 [Pathname]
 
@@ -636,9 +636,10 @@ sufficient information, see the ChangeLog file or Redmine
 * Thread cache enabled for pthreads platforms (for Thread.new and
   Thread.start).  [Feature #14757]
 
-* timer thread is eliminated for platforms with POSIX timers [Misc #14937]
+* timer thread is eliminated for platforms with POSIX timers. [Misc #14937]
 
 * Transient Heap (theap) is supported. [Bug #14858] [Feature #14989]
+
   theap is a managed heap for short-living memory objects. For example,
   making a small and short-living Hash object is x2 faster. With rdoc benchmark,
   we measured 6-7% performance improvement.
