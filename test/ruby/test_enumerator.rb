@@ -407,6 +407,12 @@ class TestEnumerator < Test::Unit::TestCase
     e = (0..10).each_cons(2)
     assert_equal("#<Enumerator: 0..10:each_cons(2)>", e.inspect)
 
+    e = (0..10).each_with_object({})
+    assert_equal("#<Enumerator: 0..10:each_with_object({})>", e.inspect)
+
+    e = (0..10).each_with_object(a: 1)
+    assert_equal("#<Enumerator: 0..10:each_with_object(a: 1)>", e.inspect)
+
     e = Enumerator.new {|y| y.yield; 10 }
     assert_match(/\A#<Enumerator: .*:each>/, e.inspect)
 
