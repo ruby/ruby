@@ -556,6 +556,10 @@ class TestTime < Test::Unit::TestCase
 
   def test_zone
     assert_zone_encoding Time.now
+    t = Time.now.utc
+    assert_equal("UTC", t.zone)
+    assert_nil(t.getlocal(0).zone)
+    assert_nil(t.getlocal("+02:00").zone)
   end
 
   def test_plus_minus_succ

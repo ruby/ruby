@@ -1896,6 +1896,7 @@ time_set_utc_offset(VALUE time, VALUE off)
     GetTimeval(time, tobj);
 
     tobj->tm_got = 0;
+    tobj->vtm.zone = Qnil;
     TZMODE_SET_FIXOFF(tobj, off);
 
     return time;
