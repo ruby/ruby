@@ -529,9 +529,11 @@ sufficient information, see the ChangeLog file or Redmine
 
 [RubyGems]
 
-  * Upgrade to RubyGems 3.0.0
+  * Upgrade to RubyGems 3.0.1
 
   * https://blog.rubygems.org/2018/12/19/3.0.0-released.html
+
+  * https://blog.rubygems.org/2018/12/23/3.0.1-released.html
 
 [Set]
 
