@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
     ".travis.yml",
     "Gemfile",
     "LICENSE.txt",
+    "NEWS.md",
     "README.md",
     "Rakefile",
     "lib/rexml/attlistdecl.rb",

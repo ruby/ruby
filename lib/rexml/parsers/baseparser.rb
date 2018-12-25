@@ -37,6 +37,10 @@ module REXML
       QNAME_STR= "(?:(#{NCNAME_STR}):)?(#{NCNAME_STR})"
       QNAME = /(#{QNAME_STR})/
 
+      # Just for backward compatibility. For example, kramdown uses this.
+      # It's not used in REXML.
+      UNAME_STR= "(?:#{NCNAME_STR}:)?#{NCNAME_STR}"
+
       NAMECHAR = '[\-\w\.:]'
       NAME = "([\\w:]#{NAMECHAR}*)"
       NMTOKEN = "(?:#{NAMECHAR})+"
