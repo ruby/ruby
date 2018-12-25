@@ -480,7 +480,7 @@ sufficient information, see the ChangeLog file or Redmine
 
 [REXML]
 
-  * Upgrade to REXML 3.1.8.
+  * Upgrade to REXML 3.1.9.
     See https://github.com/ruby/rexml/blob/master/NEWS.md.
 
   [Improved some XPath implementations]
