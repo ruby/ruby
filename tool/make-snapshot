@@ -179,7 +179,7 @@ def tar_create(tarball, dir)
         next
       end
       name, prefix = w.split_name(path)
-      h = header.new(name: name, prefix: prefix,
+      h = header.new(name: name, prefix: prefix, typeflag: type,
                      mode: s.mode, size: size, mtime: s.mtime,
                      uname: uname, gname: gname)
       f.write(h)
