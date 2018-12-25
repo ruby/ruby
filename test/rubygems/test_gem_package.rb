@@ -105,6 +105,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_build_time_source_date_epoch
+    epoch = ENV["SOURCE_DATE_EPOCH"]
     ENV["SOURCE_DATE_EPOCH"] = "123456789"
 
     spec = Gem::Specification.new 'build', '1'
@@ -118,6 +119,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     package = Gem::Package.new spec.file_name
 
     assert_equal Time.at(ENV["SOURCE_DATE_EPOCH"].to_i).utc, package.build_time
+  ensure
+    ENV["SOURCE_DATE_EPOCH"] = epoch
   end
 
   def test_add_files
