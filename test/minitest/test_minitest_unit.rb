@@ -1529,7 +1529,9 @@ class TestMiniTestUnitTestCase < MiniTest::Unit::TestCase
   def test_refute_match_matcher_object
     @assertion_count = 2
     non_verbose do
-      @tc.refute_match Object.new, 5 # default #=~ returns false
+      obj = Object.new
+      def obj.=~(other); false; end
+      @tc.refute_match obj, 5
     end
   end
 
