@@ -94,7 +94,7 @@ eom
         unless ver.include?("-")
           # assume this is X.Y.0 release
           node.sub!(/^  status: preview\n/, "  status: normal maintenance\n")
-          node.sub!(/^  date:\n/, "  status: #{Time.now.year}-12-25\n")
+          node.sub!(/^  date:\n/, "  date: #{Time.now.year}-12-25\n")
         end
         node
       end
