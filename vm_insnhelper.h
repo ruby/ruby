@@ -137,42 +137,6 @@ enum vm_regan_acttype {
 /* deal with control flow 2: method/iterator              */
 /**********************************************************/
 
-#ifdef MJIT_HEADER
-/* When calling ISeq which may catch an exception from JIT-ed code, we should not call
-   mjit_exec directly to prevent the caller frame from being canceled. That's because
-   the caller frame may have stack values in the local variables and the cancelling
-   the caller frame will purge them. But directly calling mjit_exec is faster... */
-#define EXEC_EC_CFP(val) do { \
-    if (ec->cfp->iseq->body->catch_except_p) { \
-        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
-        val = vm_exec(ec, TRUE); \
-    } \
-    else if ((val = mjit_exec(ec)) == Qundef) { \
-        VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_FINISH); \
-        val = vm_exec(ec, FALSE); \
-    } \
-} while (0)
-#else
-/* When calling from VM, longjmp in the callee won't purge any JIT-ed caller frames.
-   So it's safe to directly call mjit_exec. */
-#define EXEC_EC_CFP(val) do { \
-    if ((val = mjit_exec(ec)) == Qundef) { \
-        RESTORE_REGS(); \
-        NEXT_INSN(); \
-    } \
-} while (0)
-#endif
-
-#define CALL_METHOD(calling, ci, cc) do { \
-    VALUE v = (*(cc)->call)(ec, GET_CFP(), (calling), (ci), (cc)); \
-    if (v == Qundef) { \
-        EXEC_EC_CFP(val); \
-    } \
-    else { \
-	val = v; \
-    } \
-} while (0)
-
 /* set fastpath when cached method is *NOT* protected
  * because inline method cache does not care about receiver.
  */

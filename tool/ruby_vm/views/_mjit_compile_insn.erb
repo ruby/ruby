@@ -81,6 +81,6 @@
 % end
 %
 % # compiler: If insn returns (leave) or does longjmp (throw), the branch should no longer be compiled. TODO: create attr for it?
-% if insn.expr.expr =~ /\sTHROW_EXCEPTION\([^)]+\);/ || insn.expr.expr =~ /\sRESTORE_REGS\(\);/
+% if insn.expr.expr =~ /\sTHROW_EXCEPTION\([^)]+\);/ || insn.expr.expr =~ /\bvm_pop_frame\(/
     b->finish_p = TRUE;
 % end
