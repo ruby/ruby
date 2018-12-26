@@ -878,20 +878,15 @@ CODE
         assert_equal [65, 66, 67], s.bytes {}
       }
     else
-      warning = /passing a block to String#bytes is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.bytes {|x| res << x }.object_id
-        assert_equal(65, res[0])
-        assert_equal(66, res[1])
-        assert_equal(67, res[2])
-      }
-      assert_warning(warning) {
-        s = S("ABC")
-        res = []
-        assert_same s, s.bytes {|x| res << x }
-        assert_equal [65, 66, 67], res
-      }
+      res = []
+      assert_equal s.object_id, s.bytes {|x| res << x }.object_id
+      assert_equal(65, res[0])
+      assert_equal(66, res[1])
+      assert_equal(67, res[2])
+      s = S("ABC")
+      res = []
+      assert_same s, s.bytes {|x| res << x }
+      assert_equal [65, 66, 67], res
     end
   end
 
@@ -922,20 +917,15 @@ CODE
         assert_equal [0x3042, 0x3044, 0x3046], s.codepoints {}
       }
     else
-      warning = /passing a block to String#codepoints is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
-        assert_equal(0x3042, res[0])
-        assert_equal(0x3044, res[1])
-        assert_equal(0x3046, res[2])
-      }
-      assert_warning(warning) {
-        s = S("ABC")
-        res = []
-        assert_same s, s.codepoints {|x| res << x }
-        assert_equal [65, 66, 67], res
-      }
+      res = []
+      assert_equal s.object_id, s.codepoints {|x| res << x }.object_id
+      assert_equal(0x3042, res[0])
+      assert_equal(0x3044, res[1])
+      assert_equal(0x3046, res[2])
+      s = S("ABC")
+      res = []
+      assert_same s, s.codepoints {|x| res << x }
+      assert_equal [65, 66, 67], res
     end
   end
 
@@ -960,14 +950,11 @@ CODE
         assert_equal ["A", "B", "C"], s.chars {}
       }
     else
-      warning = /passing a block to String#chars is deprecated/
-      assert_warning(warning) {
-        res = []
-        assert_equal s.object_id, s.chars {|x| res << x }.object_id
-        assert_equal("A", res[0])
-        assert_equal("B", res[1])
-        assert_equal("C", res[2])
-      }
+      res = []
+      assert_equal s.object_id, s.chars {|x| res << x }.object_id
+      assert_equal("A", res[0])
+      assert_equal("B", res[1])
+      assert_equal("C", res[2])
     end
   end
 
@@ -1032,17 +1019,14 @@ CODE
         assert_equal ["A", "B", "C"], "ABC".grapheme_clusters {}
       }
     else
-      warning = /passing a block to String#grapheme_clusters is deprecated/
-      assert_warning(warning) {
-        s = "ABC".b.taint
-        res = []
-        assert_same s, s.grapheme_clusters {|x| res << x }
-        assert_equal(3, res.size)
-        assert_equal("A", res[0])
-        assert_equal("B", res[1])
-        assert_equal("C", res[2])
-        res.each {|g| assert_predicate(g, :tainted?)}
-      }
+      s = "ABC".b.taint
+      res = []
+      assert_same s, s.grapheme_clusters {|x| res << x }
+      assert_equal(3, res.size)
+      assert_equal("A", res[0])
+      assert_equal("B", res[1])
+      assert_equal("C", res[2])
+      res.each {|g| assert_predicate(g, :tainted?)}
     end
   end
 
@@ -1155,12 +1139,10 @@ CODE
         assert_equal ["hello\n", "world"], s.lines {}
       }
     else
-      assert_warning(/passing a block to String#lines is deprecated/) {
-        res = []
-        assert_equal s.object_id, s.lines {|x| res << x }.object_id
-        assert_equal(S("hello\n"), res[0])
-        assert_equal(S("world"),  res[1])
-      }
+      res = []
+      assert_equal s.object_id, s.lines {|x| res << x }.object_id
+      assert_equal(S("hello\n"), res[0])
+      assert_equal(S("world"),  res[1])
     end
   end
 
