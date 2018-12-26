@@ -42,6 +42,8 @@
 # define HAVE_CRYPT_R 1
 #endif
 
+#define STRING_ENUMERATORS_WANTARRAY 0 /* next major */
+
 #undef rb_str_new
 #undef rb_usascii_str_new
 #undef rb_utf8_str_new
@@ -7954,7 +7956,22 @@ rb_str_split(VALUE str, const char *sep0)
     return rb_str_split_m(1, &sep, str);
 }
 
-#define WANTARRAY(m, size) (!rb_block_given_p() ? rb_ary_new_capa(size) : 0)
+static int
+enumerator_wantarray(const char *method)
+{
+    if (rb_block_given_p()) {
+#if STRING_ENUMERATORS_WANTARRAY
+	rb_warn("given block not used");
+#else
+	rb_warning("passing a block to String#%s is deprecated", method);
+	return 0;
+#endif
+    }
+    return 1;
+}
+
+#define WANTARRAY(m, size) \
+    (enumerator_wantarray(m) ? rb_ary_new_capa(size) : 0)
 
 static inline int
 enumerator_element(VALUE ary, VALUE e)
