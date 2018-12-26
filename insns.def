@@ -738,7 +738,7 @@ send
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     struct rb_calling_info calling;
 
@@ -755,7 +755,7 @@ opt_send_without_block
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = -ci->orig_argc;
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     struct rb_calling_info calling;
     calling.block_handler = VM_BLOCK_HANDLER_NONE;
@@ -824,7 +824,7 @@ invokesuper
 (CALL_INFO ci, CALL_CACHE cc, ISEQ blockiseq)
 (...)
 (VALUE val)
-// attr rb_snum_t sp_inc = - (int)(ci->orig_argc + ((ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0));
+// attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     struct rb_calling_info calling;
 
@@ -841,7 +841,7 @@ invokeblock
 (...)
 (VALUE val)
 // attr bool handles_sp = true;
-// attr rb_snum_t sp_inc = 1 - ci->orig_argc;
+// attr rb_snum_t sp_inc = sp_inc_of_invokeblock(ci);
 {
     struct rb_calling_info calling;
     VALUE block_handler;
