@@ -6,6 +6,7 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %;
+#line <%= __LINE__ + 1 %> <%=cstr __FILE__ %>
 
 static rb_snum_t
 sp_inc_of_sendish(const struct rb_call_info *ci)
@@ -33,3 +34,4 @@ sp_inc_of_invokeblock(const struct rb_call_info *ci)
      * instructions, except that it does not pop receriver. */
     return sp_inc_of_sendish(ci) + 1;
 }
+#pragma RubyVM reset source
