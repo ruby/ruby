@@ -14,7 +14,7 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
     /* Send-ish instructions will:
      *
      * 1. Pop block argument, if any.
-     * 2. Pop ordinal argumanes.
+     * 2. Pop ordinal arguments.
      * 3. Pop receiver.
      * 4. Push return value.
      */
@@ -31,7 +31,7 @@ static rb_snum_t
 sp_inc_of_invokeblock(const struct rb_call_info *ci)
 {
     /* sp_inc of invokeblock is almost identical to that of sendish
-     * instructions, except that it does not pop receriver. */
+     * instructions, except that it does not pop receiver. */
     return sp_inc_of_sendish(ci) + 1;
 }
 #pragma RubyVM reset source
