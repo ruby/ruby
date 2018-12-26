@@ -1871,16 +1871,16 @@ class TestProcess < Test::Unit::TestCase
       if user
         assert_nothing_raised(feature6975) do
           begin
-            system(*TRUECOMMAND, uid: user)
-          rescue Errno::EPERM, NotImplementedError
+            system(*TRUECOMMAND, uid: user, exception: true)
+          rescue Errno::EPERM, Errno::EACCES, NotImplementedError
           end
         end
       end
 
       assert_nothing_raised(feature6975) do
         begin
-          system(*TRUECOMMAND, uid: uid)
-        rescue Errno::EPERM, NotImplementedError
+          system(*TRUECOMMAND, uid: uid, exception: true)
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
 
@@ -1888,7 +1888,7 @@ class TestProcess < Test::Unit::TestCase
         begin
           u = IO.popen([RUBY, "-e", "print Process.uid", uid: user||uid], &:read)
           assert_equal(uid.to_s, u, feature6975)
-        rescue Errno::EPERM, NotImplementedError
+        rescue Errno::EPERM, Errno::EACCES, NotImplementedError
         end
       end
     end
