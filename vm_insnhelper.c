@@ -2462,14 +2462,14 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_info *c
     if (BUILTIN_TYPE(current_defined_class) != T_MODULE &&
 	BUILTIN_TYPE(current_defined_class) != T_ICLASS && /* bound UnboundMethod */
 	!FL_TEST(current_defined_class, RMODULE_INCLUDED_INTO_REFINEMENT) &&
-	!rb_obj_is_kind_of(recv, current_defined_class)) {
+        !rb_obj_is_kind_of(recv, current_defined_class)) {
 	VALUE m = RB_TYPE_P(current_defined_class, T_ICLASS) ?
 	    RBASIC(current_defined_class)->klass : current_defined_class;
 
 	rb_raise(rb_eTypeError,
 		 "self has wrong type to call super in this context: "
 		 "%"PRIsVALUE" (expected %"PRIsVALUE")",
-		 rb_obj_class(recv), m);
+                 rb_obj_class(recv), m);
     }
 
     if (me->def->type == VM_METHOD_TYPE_BMETHOD && (ci->flag & VM_CALL_ZSUPER)) {
@@ -3217,7 +3217,7 @@ vm_invokeblock_i(
     VALUE block_handler = VM_CF_BLOCK_HANDLER(GET_CFP());
 
     if (block_handler == VM_BLOCK_HANDLER_NONE) {
-	rb_vm_localjump_error("no block given (yield)", Qnil, 0);
+        rb_vm_localjump_error("no block given (yield)", Qnil, 0);
     }
     else {
         return vm_invoke_block(ec, GET_CFP(), calling, ci, block_handler);
