@@ -4,11 +4,11 @@ require 'mkmf'
 checking_for(checking_message("Windows")) do
   case RUBY_PLATFORM
   when /cygwin|mingw/
-    if defined?($extlist)
-      build_dir = "$(TARGET_SO_DIR)../"
-    else
+    if ARGV.include?('-rdevkit') # check `rake -rdevkit compile` case
       base_dir = File.expand_path('../../../..', __FILE__)
       build_dir = File.join(base_dir, "tmp", RUBY_PLATFORM, "bigdecimal", RUBY_VERSION, "")
+    else
+      build_dir = "$(TARGET_SO_DIR)../"
     end
     $libs << " #{build_dir}bigdecimal.so"
     true
