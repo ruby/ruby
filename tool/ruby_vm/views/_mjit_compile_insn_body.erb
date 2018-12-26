@@ -29,6 +29,12 @@
 %         #endif
 %       RESTORE_REGS
 %     end
+%     expr.gsub!(/^(?<indent>\s*)NEXT_INSN\(\);\n/) do
+%       indent = Regexp.last_match[:indent]
+%       <<-end.gsub(/^ +/, '')
+%         #{indent}UNREACHABLE_RETURN(Qundef);
+%       end
+%     end
 %   end
 % end
 %
