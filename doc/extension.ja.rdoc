@@ -1328,7 +1328,7 @@ void rb_global_variable(VALUE *var) ::
   マークする必要のあるRubyオブジェクトを含む大域変数を，GC
   によって解放されないように保護する．
 
-void rb_gc_register_mark_object(VALUE *var) ::
+void rb_gc_register_mark_object(VALUE object) ::
 
   マークする必要のあるRubyオブジェクトを，GCによって解放さ
   れないように登録する．
