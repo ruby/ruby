@@ -1882,6 +1882,14 @@ rb_vm_global_hooks(const rb_execution_context_t *ec)
 #define EXEC_EVENT_HOOK_AND_POP_FRAME(ec_, flag_, self_, id_, called_id_, klass_, data_) \
   EXEC_EVENT_HOOK_ORIG(ec_, rb_vm_global_hooks(ec_), flag_, self_, id_, called_id_, klass_, data_, 1)
 
+static inline void
+rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)
+{
+    EXEC_EVENT_HOOK(ec, RUBY_EVENT_SCRIPT_COMPILED, ec->cfp->self, 0, 0, 0,
+                    NIL_P(eval_script) ? (VALUE)iseq : 
+                    rb_ary_new_from_args(2, eval_script, (VALUE)iseq));
+}
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 int rb_thread_check_trap_pending(void);

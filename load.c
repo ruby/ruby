@@ -608,9 +608,8 @@ rb_load_internal0(rb_execution_context_t *ec, VALUE fname, int wrap)
 			    fname, rb_realpath_internal(Qnil, fname, 1), NULL);
 	    rb_ast_dispose(ast);
 	}
-        EXEC_EVENT_HOOK(ec, RUBY_EVENT_SCRIPT_COMPILED,
-                        ec->cfp->self, 0, 0, 0, (VALUE)iseq);
-	rb_iseq_eval(iseq);
+        rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
+        rb_iseq_eval(iseq);
     }
     EC_POP_TAG();
 
