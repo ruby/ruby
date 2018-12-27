@@ -63,7 +63,7 @@ describe 'TCPServer#accept_nonblock' do
       end
     end
 
-    platform_is_not :windows do # spurious
+    platform_is_not :windows, :solaris do # spurious
       describe 'with a connected client' do
         before do
           @client = TCPSocket.new(ip_address, @server.connect_address.ip_port)
