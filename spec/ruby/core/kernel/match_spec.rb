@@ -1,6 +1,14 @@
 require_relative '../../spec_helper'
 
 describe "Kernel#=~" do
+  verbose = $VERBOSE
+  before :each do
+    $VERBOSE = nil
+  end
+  after :each do
+    verbose = $VERBOSE
+  end
+
   it "returns nil matching any object" do
     o = Object.new
 
