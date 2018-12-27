@@ -1886,7 +1886,7 @@ static inline void
 rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *iseq, VALUE eval_script)
 {
     EXEC_EVENT_HOOK(ec, RUBY_EVENT_SCRIPT_COMPILED, ec->cfp->self, 0, 0, 0,
-                    NIL_P(eval_script) ? (VALUE)iseq : 
+                    NIL_P(eval_script) ? (VALUE)iseq :
                     rb_ary_new_from_args(2, eval_script, (VALUE)iseq));
 }
 
