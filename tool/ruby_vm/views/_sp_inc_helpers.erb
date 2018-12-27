@@ -18,8 +18,8 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
      * 3. Pop receiver.
      * 4. Push return value.
      */
-    const int argc = ci->orig_argc;
     const int argb = (ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
+    const int argc = ci->orig_argc;
     const int recv = 1;
     const int retn = 1;
 
