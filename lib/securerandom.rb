@@ -16,6 +16,23 @@
 # * /dev/urandom
 # * Win32
 #
+# SecureRandom is extended by Random::Formatter module which defines
+# following methods:
+#
+# * alphanumeric
+# * base64
+# * choose
+# * gen_random
+# * hex
+# * rand
+# * random_bytes
+# * random_number
+# * urlsafe_base64
+# * uuid
+#
+# These methods are usable as class methods of SecureRandom such as
+# `SecureRandom.hex`.
+#
 # === Examples
 #
 # Generate random hexadecimal strings:
