@@ -2295,9 +2295,3 @@ Init_Complex(void)
 
     rb_provide("complex.so");	/* for backward compatibility */
 }
-
-/*
-Local variables:
-c-file-style: "ruby"
-End:
-*/

@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# -*- mode: ruby -*-
+# -*- Ruby -*-
 # $Id: ackermann-ruby.code,v 1.4 2004/11/13 07:40:41 bfulgham Exp $
 # http://www.bagley.org/~doug/shootout/
 

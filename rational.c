@@ -2799,9 +2799,3 @@ Init_Rational(void)
 
     rb_provide("rational.so");	/* for backward compatibility */
 }
-
-/*
-Local variables:
-c-file-style: "ruby"
-End:
-*/

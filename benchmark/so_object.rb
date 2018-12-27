@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-# -*- mode: ruby -*-
+# -*- Ruby -*-
 # $Id: objinst-ruby.code,v 1.4 2004/11/13 07:42:25 bfulgham Exp $
 # http://www.bagley.org/~doug/shootout/
 # with help from Aristarkh Zagorodnikov
