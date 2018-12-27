@@ -316,8 +316,3 @@ end
 #    directly in the RDoc output.
 #  - in short, it may be worth changing the code layout in this file to make the
 #    documentation easier
-
-# Local variables:
-# mode: Ruby
-# tab-width: 8
-# End:

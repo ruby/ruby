@@ -1,4 +1,4 @@
-/* -*- mode:c; style:ruby; coding: utf-8 -*-
+/* -*- C -*-
   insns.def - YARV instruction definitions
 
   $Author: $

@@ -1,3 +1,4 @@
+# -*- YAML -*-
 # Copyright (C) 2011 Urabe, Shyouhei.  All rights reserved.
 #
 # This file is  a part of the programming language  Ruby.  Permission is hereby
@@ -404,12 +405,3 @@ notifications:
 
   email:
     - ko1c-failure@atdot.net
-
-# Local Variables:
-# mode: YAML
-# coding: utf-8-unix
-# indent-tabs-mode: nil
-# tab-width: 4
-# fill-column: 79
-# default-justification: full
-# End:
