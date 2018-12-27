@@ -949,6 +949,10 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_splat_long_array
+    if File.exist?('/etc/os-release') && File.read('/etc/os-release').include?('openSUSE Leap')
+      # For RubyCI's openSUSE machine http://rubyci.s3.amazonaws.com/opensuseleap/ruby-trunk/recent.html, which tends to die with NoMemoryError here.
+      skip 'do not exhaust memory on RubyCI openSUSE Leap machine'
+    end
     n = 10_000_000
     assert_equal n  , rest_parameter(*(1..n)).size, '[Feature #10440]'
   end
