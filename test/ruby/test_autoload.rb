@@ -336,7 +336,7 @@ p Foo::Bar
   end
 
   def test_no_leak
-    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 30)
+    assert_no_memory_leak([], '', <<~'end;', 'many autoloads', timeout: 60)
       200000.times do |i|
         m = Module.new
         m.instance_eval do
