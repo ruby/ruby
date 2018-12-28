@@ -1228,6 +1228,8 @@ static VALUE
 make_passing_arg(int argc, const VALUE *argv)
 {
     switch (argc) {
+      case -1:
+	return argv[0];
       case 0:
 	return Qnil;
       case 1:
@@ -1956,6 +1958,32 @@ rb_fiber_m_resume(int argc, VALUE *argv, VALUE fib)
 
 /*
  *  call-seq:
+ *     fiber.raise                                 -> obj
+ *     fiber.raise(string)                         -> obj
+ *     fiber.raise(exception [, string [, array]]) -> obj
+ *
+ *  Raises an exception in the fiber at the point at which the last
+ *  <code>Fiber.yield</code> was called, or at the start if neither +resume+
+ *  nor +raise+ were called before.
+ *
+ *  With no arguments, raises a +RuntimeError+. With a single +String+
+ *  argument, raises a +RuntimeError+ with the string as a message.  Otherwise,
+ *  the first parameter should be the name of an +Exception+ class (or an
+ *  object that returns an +Exception+ object when sent an +exception+
+ *  message). The optional second parameter sets the message associated with
+ *  the exception, and the third parameter is an array of callback information.
+ *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
+ *  blocks.
+ */
+static VALUE
+rb_fiber_raise(int argc, VALUE *argv, VALUE fib)
+{
+    VALUE exc = rb_make_exception(argc, argv);
+    return rb_fiber_resume(fib, -1, &exc);
+}
+
+/*
+ *  call-seq:
  *     fiber.transfer(args, ...) -> obj
  *
  *  Transfer control to another fiber, resuming it from where it last
@@ -2112,6 +2140,7 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_method(rb_cFiber, "initialize", rb_fiber_init, 0);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);
+    rb_define_method(rb_cFiber, "raise", rb_fiber_raise, -1);
     rb_define_method(rb_cFiber, "to_s", fiber_to_s, 0);
     rb_define_alias(rb_cFiber, "inspect", "to_s");
 }
