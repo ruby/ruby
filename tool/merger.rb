@@ -54,8 +54,22 @@ def version
       case l
       when /^#define RUBY_VERSION "(\d+)\.(\d+)\.(\d+)"$/
         v = $~.captures
+      when /^#define RUBY_VERSION_TEENY (\d+)$/
+        (v ||= [])[2] = $1
       when /^#define RUBY_PATCHLEVEL (-?\d+)$/
         p = $1
+      end
+    end
+  end
+  if v and !v[0]
+    open 'include/ruby/version.h', 'rb' do |f|
+      f.each_line do |l|
+        case l
+        when /^#define RUBY_API_VERSION_MAJOR (\d+)/
+          v[0] = $1
+        when /^#define RUBY_API_VERSION_MINOR (\d+)/
+          v[1] = $1
+        end
       end
     end
   end

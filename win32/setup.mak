@@ -145,19 +145,11 @@ verconf.mk: nul
 #define STRINGIZE(x) STRINGIZE0(x)
 #include "version.h"
 for %%I in (RUBY_RELEASE_DATE) do set ruby_release_date=%%~I
-for %%I in (RUBY_VERSION) do set ruby_version=%%~I
-for /f "delims=. tokens=1-3" %%I in (RUBY_VERSION) do (
-    set major=%%I
-    set minor=%%J
-    set teeny=%%K
-)
 #undef RUBY_RELEASE_DATE
-#undef RUBY_PROGRAM_VERSION
 echo RUBY_RELEASE_DATE = %ruby_release_date:""=%
-echo RUBY_PROGRAM_VERSION = %ruby_version:""=%
-echo MAJOR = %major%
-echo MINOR = %minor%
-echo TEENY = %teeny%
+echo MAJOR = RUBY_VERSION_MAJOR
+echo MINOR = RUBY_VERSION_MINOR
+echo TEENY = RUBY_VERSION_TEENY
 #if defined RUBY_PATCHLEVEL && RUBY_PATCHLEVEL < 0
 echo RUBY_DEVEL = yes
 #endif

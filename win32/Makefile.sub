@@ -1059,6 +1059,9 @@ s,@archincludedir@,$${includedir}/$${arch},;t t
 s,@sitearchincludedir@,$${includedir}/$${sitearch},;t t
 s,@arch@,$(ARCH)-$(PLATFORM),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
+s,@MAJOR@,$(MAJOR),;t t
+s,@MINOR@,$(MINOR),;t t
+s,@TEENY@,$(TEENY),;t t
 s,@ruby_version@,$(ruby_version),;t t
 s,@RUBY_PROGRAM_VERSION@,$(RUBY_PROGRAM_VERSION),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t

@@ -28,6 +28,10 @@ const int ruby_api_version[] = {
     RUBY_API_VERSION_MINOR,
     RUBY_API_VERSION_TEENY,
 };
+#define RUBY_VERSION \
+    STRINGIZE(RUBY_VERSION_MAJOR) "." \
+    STRINGIZE(RUBY_VERSION_MINOR) "." \
+    STRINGIZE(RUBY_VERSION_TEENY) ""
 const char ruby_version[] = RUBY_VERSION;
 const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
