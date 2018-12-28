@@ -144,6 +144,7 @@ class TestFiber < Test::Unit::TestCase
     }
     assert_raise(RuntimeError){
       fib = Fiber.new{ Fiber.yield }
+      fib.resume
       fib.raise "raise and propagate"
     }
     assert_nothing_raised{
