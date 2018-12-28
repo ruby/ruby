@@ -17,7 +17,7 @@ class TestIseqLoad < Test::Unit::TestCase
   end
 
   def test_stressful_roundtrip
-    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 30)
+    assert_separately(%w[-r-test-/iseq_load], "#{<<~"begin;"}\n#{<<~'end;;'}", timeout: 60)
     begin;
       ISeq = RubyVM::InstructionSequence
       def assert_iseq_roundtrip(src, line=caller_locations(1,1)[0].lineno+1)
