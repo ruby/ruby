@@ -187,7 +187,7 @@ AS_IF([test x"${build}" != x"${host}"], [
   AC_CHECK_TOOL(CC, gcc)
 ])
 
-AC_PROG_CC
+AC_PROG_CC_C99
 AS_CASE([$CC],
 [gcc-*], [
     gcc_prefix=gcc- gcc_suffix=`echo "$CC" | sed 's/^gcc//'`
