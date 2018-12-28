@@ -290,7 +290,8 @@ getglobal
 (VALUE val)
 // attr bool leaf = leafness_of_getglobal(entry);
 {
-    val = GET_GLOBAL((VALUE)entry);
+    struct rb_global_entry *gentry = (void *)entry;
+    val = rb_gvar_get(gentry);
 }
 
 /* set global variable id as val. */
@@ -301,7 +302,8 @@ setglobal
 ()
 // attr bool leaf = leafness_of_setglobal(entry);
 {
-    SET_GLOBAL((VALUE)entry, val);
+    struct rb_global_entry *gentry = (void *)entry;
+    rb_gvar_set(gentry, val);
 }
 
 /**********************************************************/

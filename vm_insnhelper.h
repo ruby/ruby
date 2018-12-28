@@ -36,24 +36,11 @@ RUBY_SYMBOL_EXPORT_END
 /* deal with stack                                        */
 /**********************************************************/
 
-static inline int
-rb_obj_hidden_p(VALUE obj)
-{
-    if (SPECIAL_CONST_P(obj)) {
-        return FALSE;
-    }
-    else {
-        return RBASIC_CLASS(obj) ? FALSE : TRUE;
-    }
-}
-
 #define PUSH(x) (SET_SV(x), INC_SP(1))
 #define TOPN(n) (*(GET_SP()-(n)-1))
 #define POPN(n) (DEC_SP(n))
 #define POP()   (DEC_SP(1))
 #define STACK_ADDR_FROM_TOP(n) (GET_SP()-(n))
-
-#define GET_TOS()  (tos)	/* dummy */
 
 /**********************************************************/
 /* deal with registers                                    */
@@ -68,9 +55,7 @@ rb_obj_hidden_p(VALUE obj)
     VM_REG_CFP = ec->cfp; \
 } while (0)
 
-#define REG_A   reg_a
-#define REG_B   reg_b
-
+#if VM_COLLECT_USAGE_DETAILS
 enum vm_regan_regtype {
     VM_REGAN_PC = 0,
     VM_REGAN_SP = 1,
@@ -84,7 +69,6 @@ enum vm_regan_acttype {
     VM_REGAN_ACT_SET = 1
 };
 
-#if VM_COLLECT_USAGE_DETAILS
 #define COLLECT_USAGE_REGISTER_HELPER(a, b, v) \
   (COLLECT_USAGE_REGISTER((VM_REGAN_##a), (VM_REGAN_ACT_##b)), (v))
 #else
@@ -121,11 +105,6 @@ enum vm_regan_acttype {
 /**********************************************************/
 
 #define GET_PREV_EP(ep)                ((VALUE *)((ep)[VM_ENV_DATA_INDEX_SPECVAL] & ~0x03))
-
-#define GET_GLOBAL(entry)       rb_gvar_get((struct rb_global_entry*)(entry))
-#define SET_GLOBAL(entry, val)  rb_gvar_set((struct rb_global_entry*)(entry), (val))
-
-#define GET_CONST_INLINE_CACHE(dst) ((IC) * (GET_PC() + (dst) + 2))
 
 /**********************************************************/
 /* deal with values                                       */
@@ -175,20 +154,6 @@ enum vm_regan_acttype {
 /* others                                                 */
 /**********************************************************/
 
-/* optimize insn */
-#define FIXNUM_2_P(a, b) ((a) & (b) & 1)
-#if USE_FLONUM
-#define FLONUM_2_P(a, b) (((((a)^2) | ((b)^2)) & 3) == 0) /* (FLONUM_P(a) && FLONUM_P(b)) */
-#else
-#define FLONUM_2_P(a, b) 0
-#endif
-#define FLOAT_HEAP_P(x) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == rb_cFloat)
-#define FLOAT_INSTANCE_P(x) (FLONUM_P(x) || FLOAT_HEAP_P(x))
-
-#ifndef USE_IC_FOR_SPECIALIZED_METHOD
-#define USE_IC_FOR_SPECIALIZED_METHOD 1
-#endif
-
 #ifndef MJIT_HEADER
 #define CALL_SIMPLE_METHOD() do { \
     rb_snum_t x = leaf ? INSN_ATTR(width) : 0; \
@@ -204,13 +169,6 @@ enum vm_regan_acttype {
 #define INC_GLOBAL_METHOD_STATE() (++ruby_vm_global_method_state)
 #define GET_GLOBAL_CONSTANT_STATE() (ruby_vm_global_constant_state)
 #define INC_GLOBAL_CONSTANT_STATE() (++ruby_vm_global_constant_state)
-
-extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
-extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
-extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
-
-extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
-					 int argc, const VALUE *argv, int priv);
 
 static inline struct vm_throw_data *
 THROW_DATA_NEW(VALUE val, const rb_control_frame_t *cf, VALUE st)
@@ -271,10 +229,5 @@ THROW_DATA_CONSUMED_SET(struct vm_throw_data *obj)
 
 #define IS_ARGS_SPLAT(ci)   ((ci)->flag & VM_CALL_ARGS_SPLAT)
 #define IS_ARGS_KEYWORD(ci) ((ci)->flag & VM_CALL_KWARG)
-
-#define CALLER_SETUP_ARG(cfp, calling, ci) do { \
-    if (UNLIKELY(IS_ARGS_SPLAT(ci))) vm_caller_setup_arg_splat((cfp), (calling)); \
-    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) vm_caller_setup_arg_kw((cfp), (calling), (ci)); \
-} while (0)
 
 #endif /* RUBY_INSNHELPER_H */

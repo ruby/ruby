@@ -19,6 +19,12 @@
 #include "ruby/config.h"
 #include "debug_counter.h"
 
+extern rb_method_definition_t *rb_method_definition_create(rb_method_type_t type, ID mid);
+extern void rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
+                                         int argc, const VALUE *argv, int priv);
+
 /* control stack frame */
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
@@ -1385,6 +1391,35 @@ opt_equal_fallback(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 #define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
+static bool
+FIXNUM_2_P(VALUE a, VALUE b)
+{
+    /* FIXNUM_P(a) && FIXNUM_P(b)
+     * == ((a & 1) && (b & 1))
+     * == a & b & 1 */
+    SIGNED_VALUE x = a;
+    SIGNED_VALUE y = b;
+    SIGNED_VALUE z = x & y & 1;
+    return z == 1;
+}
+
+static bool
+FLONUM_2_P(VALUE a, VALUE b)
+{
+#ifdef USE_FLONUM
+    /* FLONUM_P(a) && FLONUM_P(b)
+     * == ((a & 3) == 2) && ((b & 3) == 2)
+     * == ! ((a ^ 2) | (b ^ 2) & 3)
+     */
+    SIGNED_VALUE x = a;
+    SIGNED_VALUE y = b;
+    SIGNED_VALUE z = ((x ^ 2) | (y ^ 2)) & 3;
+    return !z;
+#else
+    return false;
+#endif
+}
+
 /* 1: compare by identity, 0: not applicable, -1: redefined */
 static inline int
 comparable_by_identity(VALUE recv, VALUE obj)
@@ -1617,6 +1652,19 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
 	   iseq->body->param.flags.has_kw == FALSE &&
 	   iseq->body->param.flags.has_kwrest == FALSE &&
 	   iseq->body->param.flags.has_block == FALSE;
+}
+
+static void
+CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
+                 struct rb_calling_info *restrict calling,
+                 const struct rb_call_info *restrict ci)
+{
+    if (UNLIKELY(IS_ARGS_SPLAT(ci))) {
+        vm_caller_setup_arg_splat(cfp, calling);
+    }
+    if (UNLIKELY(IS_ARGS_KEYWORD(ci))) {
+        vm_caller_setup_arg_kw(cfp, calling, ci);
+    }
 }
 
 static inline int
