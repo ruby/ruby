@@ -332,7 +332,7 @@ before_script:
   - sed -f tool/prereq.status Makefile.in common.mk > Makefile
   - make -s $JOBS update-download
   - make -s $JOBS srcs
-  - rm config.status Makefile rbconfig.rb .rbconfig.time
+  - rm -f config.status Makefile rbconfig.rb .rbconfig.time
   - |-
     if [ -d ~/config_2nd ]; then
       cp -pr ~/config_2nd build
