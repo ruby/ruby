@@ -1174,6 +1174,7 @@ AC_C_CHAR_UNSIGNED
 AC_C_INLINE
 AC_C_VOLATILE
 AC_C_TYPEOF
+AC_C_RESTRICT
 
 AS_CASE(":$ac_cv_c_const:$ac_cv_c_volatile:",
     [*:no:*], [AC_MSG_ERROR(ANSI C-conforming const and volatile are mandatory)])
