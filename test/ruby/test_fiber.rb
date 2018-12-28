@@ -109,6 +109,15 @@ class TestFiber < Test::Unit::TestCase
       }
       fib.resume
     }
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.raise "raise in unborn fiber"
+    }
+    assert_raise(FiberError){
+      fib = Fiber.new{}
+      fib.resume
+      fib.raise "raise in dead fiber"
+    }
   end
 
   def test_return
@@ -125,6 +134,37 @@ class TestFiber < Test::Unit::TestCase
         throw :a
       end.resume
     }
+  end
+
+  def test_raise
+    assert_raise(ZeroDivisionError){
+      Fiber.new do
+        1/0
+      end.resume
+    }
+    assert_raise(RuntimeError){
+      fib = Fiber.new{ Fiber.yield }
+      fib.raise "raise and propagate"
+    }
+    assert_nothing_raised{
+      fib = Fiber.new do
+        begin
+          Fiber.yield
+        rescue
+        end
+      end
+      fib.resume
+      fib.raise "rescue in fiber"
+    }
+    fib = Fiber.new do
+      begin
+        Fiber.yield
+      rescue
+        Fiber.yield :ok
+      end
+    end
+    fib.resume
+    assert_equal(:ok, fib.raise)
   end
 
   def test_transfer
