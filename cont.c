@@ -1896,9 +1896,14 @@ rb_fiber_resume(VALUE fibval, int argc, const VALUE *argv)
 {
     rb_fiber_t *fib = fiber_ptr(fibval);
 
+    if (argc == -1 && FIBER_CREATED_P(fib)) {
+        rb_raise(rb_eFiberError, "cannot raise exception on unborn fiber");
+    }
+
     if (fib->prev != 0 || fiber_is_root_p(fib)) {
 	rb_raise(rb_eFiberError, "double resume");
     }
+
     if (fib->transferred != 0) {
 	rb_raise(rb_eFiberError, "cannot resume transferred Fiber");
     }
