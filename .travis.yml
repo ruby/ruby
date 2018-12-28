@@ -328,6 +328,7 @@ before_script:
     mkdir ~/.downloaded-cache
   - ln -s ~/.downloaded-cache
   - "> config.status"
+  - "> .rbconfig.time"
   - sed -f tool/prereq.status Makefile.in common.mk > Makefile
   - make -s $JOBS update-download
   - make -s $JOBS srcs
