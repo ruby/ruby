@@ -1743,7 +1743,7 @@ fiber_store(rb_fiber_t *next_fib, rb_thread_t *th)
         terminated_machine_stack.ptr = NULL;
         terminated_machine_stack.size = 0;
     }
-#endif /* not _WIN32 */
+#endif /* MAX_MACHINE_STACK_CACHE */
     fib = th->ec->fiber_ptr;
     if (fib->cont.argc == -1) rb_exc_raise(fib->cont.value);
     return fib->cont.value;
