@@ -4,7 +4,7 @@ module JITSupport
   JIT_TIMEOUT = 600 # 10min for each...
   JIT_SUCCESS_PREFIX = 'JIT success \(\d+\.\dms\)'
   UNSUPPORTED_COMPILERS = [
-    %r[\Aicc\z],
+    %r[\Aicc\b],
     %r[\A/opt/developerstudio\d+\.\d+/bin/cc\z],
   ]
 
