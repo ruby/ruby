@@ -1406,7 +1406,7 @@ FIXNUM_2_P(VALUE a, VALUE b)
 static bool
 FLONUM_2_P(VALUE a, VALUE b)
 {
-#ifdef USE_FLONUM
+#if USE_FLONUM
     /* FLONUM_P(a) && FLONUM_P(b)
      * == ((a & 3) == 2) && ((b & 3) == 2)
      * == ! ((a ^ 2) | (b ^ 2) & 3)
