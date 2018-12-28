@@ -208,7 +208,7 @@ IO.foreach(File.join(srcdir, "version.h")) do |l|
   end
 end
 %w[MAJOR MINOR TEENY PATCHLEVEL].each do |v|
-  print "  CONFIG[#{v.dump}] = #{versions[v].dump}\n"
+  print "  CONFIG[#{v.dump}] = #{(versions[v]||vars[v]).dump}\n"
 end
 
 dest = drive ? %r'= "(?!\$[\(\{])(?i:[a-z]:)' : %r'= "(?!\$[\(\{])'
