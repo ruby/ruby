@@ -132,10 +132,10 @@ File.foreach "config.status" do |line|
     else
       v_others << v
     end
-    case name
-    when "RUBY_PROGRAM_VERSION"
-      version = val[/\A"(.*)"\z/, 1]
-    end
+    #case name
+    #when "RUBY_PROGRAM_VERSION"
+    #  version = val[/\A"(.*)"\z/, 1]
+    #end
   end
 #  break if /^CEOF/
 end
@@ -163,6 +163,7 @@ end
 prefix = vars.expand(vars["prefix"] ||= "")
 rubyarchdir = vars.expand(vars["rubyarchdir"] ||= "")
 relative_archdir = rubyarchdir.rindex(prefix, 0) ? rubyarchdir[prefix.size..-1] : rubyarchdir
+
 puts %[\
 # encoding: ascii-8bit
 # frozen-string-literal: false
