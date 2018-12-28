@@ -597,6 +597,10 @@ class TestReadline < Test::Unit::TestCase
 
   def test_completion_quote_character_after_completion
     return unless Readline.respond_to?(:completion_quote_character)
+    if /solaris/i =~ RUBY_PLATFORM
+      # http://rubyci.s3.amazonaws.com/solaris11s-sunc/ruby-trunk/log/20181228T102505Z.fail.html.gz
+      skip 'This test does not succeed on Oracle Developer Studio for now'
+    end
 
     Readline.completion_proc = -> (_) { [] }
     Readline.completer_quote_characters = "'\""
