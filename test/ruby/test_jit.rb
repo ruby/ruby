@@ -764,8 +764,8 @@ class TestJIT < Test::Unit::TestCase
   end
 
   def test_clean_so
-    if appveyor_mswin?
-      skip 'Removing so file is failing on AppVeyor mswin due to Permission Denied.'
+    if RUBY_PLATFORM.match?(/mswin/)
+      skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
     end
     Dir.mktmpdir("jit_test_clean_so_") do |dir|
       code = "x = 0; 10.times {|i|x+=i}"
