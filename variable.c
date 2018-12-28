@@ -3028,7 +3028,7 @@ rb_deprecate_constant(VALUE mod, const char *name)
 
     rb_class_modify_check(mod);
     if (!(id = rb_check_id_cstr(name, len, NULL))) {
-	undefined_constant(mod, rb_fstring_new(name, len));
+        undefined_constant(mod, rb_fstring_new(name, len));
     }
     if (!(ce = rb_const_lookup(mod, id))) {
         undefined_constant(mod, ID2SYM(id));
