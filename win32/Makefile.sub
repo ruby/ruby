@@ -1064,7 +1064,8 @@ s,@MAJOR@,$(MAJOR),;t t
 s,@MINOR@,$(MINOR),;t t
 s,@TEENY@,$(TEENY),;t t
 s,@ruby_version@,$(ruby_version),;t t
-s,@RUBY_PROGRAM_VERSION@,$(RUBY_PROGRAM_VERSION),;t t
+s,@RUBY_PROGRAM_VERSION@,$$(MAJOR).$$(MINOR).$$(TEENY),;t t
+s,@RUBY_API_VERSION@,$$(MAJOR).$$(MINOR),;t t
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
