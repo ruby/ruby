@@ -2566,6 +2566,14 @@ rb_public_const_get_at(VALUE klass, ID id)
     return rb_const_get_0(klass, id, TRUE, FALSE, TRUE);
 }
 
+NORETURN(static void undefined_constant(VALUE mod, VALUE name));
+static void
+undefined_constant(VALUE mod, VALUE name)
+{
+    rb_name_err_raise("constant %2$s::%1$s not defined",
+                      mod, name);
+}
+
 /*
  *  call-seq:
  *     remove_const(sym)   -> obj
@@ -2582,8 +2590,7 @@ rb_mod_remove_const(VALUE mod, VALUE name)
     const ID id = id_for_var(mod, name, a, constant);
 
     if (!id) {
-	rb_name_err_raise("constant %2$s::%1$s not defined",
-			  mod, name);
+        undefined_constant(mod, name);
     }
     return rb_const_remove(mod, id);
 }
@@ -2601,8 +2608,7 @@ rb_const_remove(VALUE mod, ID id)
 	    rb_name_err_raise("cannot remove %2$s::%1$s",
 			      mod, ID2SYM(id));
 	}
-	rb_name_err_raise("constant %2$s::%1$s not defined",
-			  mod, ID2SYM(id));
+        undefined_constant(mod, ID2SYM(id));
     }
 
     rb_clear_constant_cache();
@@ -2988,8 +2994,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 		rb_clear_constant_cache();
 	    }
 
-	    rb_name_err_raise("constant %2$s::%1$s not defined",
-			      mod, val);
+            undefined_constant(mod, val);
 	}
 	if ((ce = rb_const_lookup(mod, id))) {
 	    ce->flag &= ~mask;
@@ -3008,8 +3013,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
 	    if (i > 0) {
 		rb_clear_constant_cache();
 	    }
-	    rb_name_err_raise("constant %2$s::%1$s not defined",
-			      mod, ID2SYM(id));
+            undefined_constant(mod, ID2SYM(id));
 	}
     }
     rb_clear_constant_cache();
@@ -3023,10 +3027,11 @@ rb_deprecate_constant(VALUE mod, const char *name)
     long len = strlen(name);
 
     rb_class_modify_check(mod);
-    if (!(id = rb_check_id_cstr(name, len, NULL)) ||
-	!(ce = rb_const_lookup(mod, id))) {
-	rb_name_err_raise("constant %2$s::%1$s not defined",
-			  mod, rb_fstring_new(name, len));
+    if (!(id = rb_check_id_cstr(name, len, NULL))) {
+	undefined_constant(mod, rb_fstring_new(name, len));
+    }
+    if (!(ce = rb_const_lookup(mod, id))) {
+        undefined_constant(mod, ID2SYM(id));
     }
     ce->flag |= CONST_DEPRECATED;
 }
