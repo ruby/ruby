@@ -10,13 +10,16 @@ matrix:
       env: MSPEC_OPTS="-R2 -ff"
     - rvm: 2.3.8
     - rvm: 2.4.5
+      env: CHECK_LEAKS=true
     - rvm: 2.5.3
+      env: CHECK_LEAKS=true
+    - rvm: 2.6.0
       env: CHECK_LEAKS=true
     - rvm: ruby-head
     - env: RUBOCOP=true
       rvm: 2.4.5
       script:
-        - gem install rubocop -v 0.54.0
+        - gem install rubocop:0.61.0
         - rubocop
   allow_failures:
     - rvm: ruby-head

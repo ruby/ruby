@@ -31,6 +31,10 @@ describe "Process.kill" do
       Process.kill("SIGKILL", pid)
     }.should raise_error(Errno::ESRCH)
   end
+
+  it "checks for existence and permissions to signal a process, but does not actually signal it, when using signal 0" do
+    Process.kill(0, @pid).should == 1
+  end
 end
 
 platform_is_not :windows do
@@ -65,7 +69,7 @@ platform_is_not :windows do
       @sp.result.should == "signaled"
     end
 
-    it "acceps an Integer as a signal value" do
+    it "accepts an Integer as a signal value" do
       Process.kill(15, @sp.pid)
       @sp.result.should == "signaled"
     end

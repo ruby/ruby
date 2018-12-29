@@ -63,6 +63,10 @@ describe "Marshal.dump" do
             "\x04\bI:\b\xE2\x86\x92\x06:\x06ET"],
         [Marshal, s.encode("utf-16").to_sym,
             "\x04\bI:\t\xFE\xFF!\x92\x06:\rencoding\"\vUTF-16"],
+        [Marshal, s.encode("utf-16le").to_sym,
+            "\x04\bI:\a\x92!\x06:\rencoding\"\rUTF-16LE"],
+        [Marshal, s.encode("utf-16be").to_sym,
+            "\x04\bI:\a!\x92\x06:\rencoding\"\rUTF-16BE"],
         [Marshal, s.encode("euc-jp").to_sym,
             "\x04\bI:\a\xA2\xAA\x06:\rencoding\"\vEUC-JP"],
         [Marshal, s.encode("sjis").to_sym,
@@ -74,20 +78,6 @@ describe "Marshal.dump" do
       s = "\u2192".force_encoding("binary").to_sym
       Marshal.dump(s).should == "\x04\b:\b\xE2\x86\x92"
     end
-
-  end
-
-  it "dumps an extended_object" do
-    Marshal.dump(Object.new.extend(Meths)).should == "\x04\be:\nMethso:\vObject\x00"
-  end
-
-  it "dumps an object that has had an ivar added and removed as though the ivar never was set" do
-    obj = Object.new
-    initial = Marshal.dump(obj)
-    obj.instance_variable_set(:@ivar, 1)
-    Marshal.dump(obj).should == "\004\bo:\vObject\006:\n@ivari\006"
-    obj.send :remove_instance_variable, :@ivar
-    Marshal.dump(obj).should == initial
   end
 
   describe "with an object responding to #marshal_dump" do
@@ -374,6 +364,13 @@ describe "Marshal.dump" do
       obj = Object.new
       obj.instance_variable_set(:@ivar, 1)
       Marshal.dump(obj).should == "\004\bo:\vObject\006:\n@ivari\006"
+    end
+
+    it "dumps an Object with a non-US-ASCII instance variable" do
+      obj = Object.new
+      ivar = "@é".force_encoding(Encoding::UTF_8).to_sym
+      obj.instance_variable_set(ivar, 1)
+      Marshal.dump(obj).should == "\x04\bo:\vObject\x06I:\b@\xC3\xA9\x06:\x06ETi\x06"
     end
 
     it "dumps an Object that has had an instance variable added and removed as though it was never set" do

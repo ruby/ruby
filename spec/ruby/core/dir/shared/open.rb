@@ -60,4 +60,13 @@ describe :dir_open, shared: true do
     dir = Dir.send(@method, DirSpecs.mock_dir, encoding: nil) {|d| d }
     dir.should be_kind_of(Dir)
   end
+
+  platform_is_not :windows do
+    it 'sets the close-on-exec flag for the directory file descriptor' do
+      Dir.send(@method, DirSpecs.mock_dir) do |dir|
+        io = IO.for_fd(dir.fileno)
+        io.close_on_exec?.should == true
+      end
+    end
+  end
 end

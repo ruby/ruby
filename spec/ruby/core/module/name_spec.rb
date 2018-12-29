@@ -65,4 +65,14 @@ describe "Module#name" do
     ModuleSpecs::Anonymous::E = m
     m::N.name.should == "ModuleSpecs::Anonymous::E::N"
   end
+
+  it "returns a mutable string" do
+    ModuleSpecs.name.frozen?.should be_false
+  end
+
+  it "returns a mutable string that when mutated does not modify the original module name" do
+    ModuleSpecs.name << "foo"
+
+    ModuleSpecs.name.should == "ModuleSpecs"
+  end
 end
