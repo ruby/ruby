@@ -810,33 +810,11 @@ void rb_hash_st_table_set(VALUE hash, st_table *st);
 #define RHASH_UNSET_TRANSIENT_FLAG(h) ((void)0)
 #endif
 
-#define RHASH_AR_TABLE_MAX_SIZE      8
-#define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
-
-typedef struct ar_table_entry {
-    VALUE hash;
-    VALUE key;
-    VALUE record;
-} ar_table_entry;
-
-typedef struct ar_table_struct {
-    ar_table_entry entries[RHASH_AR_TABLE_MAX_SIZE];
-} ar_table;
-
-/*
- * RHASH_AR_TABLE_P(h):
- * * as.ar == NULL or
- *   as.ar points ar_table.
- * * as.ar is allocated by transient heap or xmalloc.
- *
- * !RHASH_AR_TABLE_P(h):
- * * as.st points st_table.
- */
 struct RHash {
     struct RBasic basic;
     union {
         st_table *st;
-        ar_table *ar; /* possibly 0 */
+        struct ar_table_struct *ar; /* possibly 0 */
     } as;
     int iter_lev;
     const VALUE ifnone;
