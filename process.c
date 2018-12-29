@@ -4417,25 +4417,32 @@ rb_spawn(int argc, const VALUE *argv)
 
 /*
  *  call-seq:
- *     system([env,] command... [,options])    -> true, false or nil
+ *     system([env,] command... [,options], exception: false)    -> true, false or nil
  *
  *  Executes _command..._ in a subshell.
  *  _command..._ is one of following forms.
  *
- *    commandline                 : command line string which is passed to the standard shell
- *    cmdname, arg1, ...          : command name and one or more arguments (no shell)
- *    [cmdname, argv0], arg1, ... : command name, argv[0] and zero or more arguments (no shell)
+ *  [<code>commandline</code>]
+ *    command line string which is passed to the standard shell
+ *  [<code>cmdname, arg1, ...</code>]
+ *    command name and one or more arguments (no shell)
+ *  [<code>[cmdname, argv0], arg1, ...</code>]
+ *    command name, <code>argv[0]</code> and zero or more arguments (no shell)
  *
  *  system returns +true+ if the command gives zero exit status,
  *  +false+ for non zero exit status.
  *  Returns +nil+ if command execution fails.
  *  An error status is available in <code>$?</code>.
+ *
+ *  If <code>exception: true</code> argument is passed, the method
+ *  raises exception instead of +false+ or +nil+.
+ *
  *  The arguments are processed in the same way as
- *  for <code>Kernel.spawn</code>.
+ *  for Kernel#spawn.
  *
  *  The hash arguments, env and options, are same as
  *  <code>exec</code> and <code>spawn</code>.
- *  See <code>Kernel.spawn</code> for details.
+ *  See Kernel#spawn for details.
  *
  *     system("echo *")
  *     system("echo", "*")
@@ -4445,7 +4452,19 @@ rb_spawn(int argc, const VALUE *argv)
  *     config.h main.rb
  *     *
  *
- *  See <code>Kernel.exec</code> for the standard shell.
+ *  Errors handling:
+ *
+ *     system("cat nonexistent.txt")
+ *     # => false
+ *     system("catt nonexistent.txt")
+ *     # => nil
+ *
+ *     system("cat nonexistent.txt", exception: true)
+ *     # RuntimeError (Command failed with exit 1: cat)
+ *     system("catt nonexistent.txt", exception: true)
+ *     # Errno::ENOENT (No such file or directory - catt)
+ *
+ *  See Kernel#exec for the standard shell.
  */
 
 static VALUE
