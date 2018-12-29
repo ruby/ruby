@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "IO#dup" do
   before :each do
-    @file = tmp("rubinius_spec_io_dup_#{$$}_#{Time.now.to_f}")
+    @file = tmp("spec_io_dup")
     @f = File.open @file, 'w+'
     @i = @f.dup
 
@@ -65,5 +65,23 @@ end
 
   it "raises IOError on closed stream" do
     lambda { IOSpecs.closed_io.dup }.should raise_error(IOError)
+  end
+
+  it "always sets the close-on-exec flag for the new IO object" do
+    @f.close_on_exec = true
+    dup = @f.dup
+    begin
+      dup.close_on_exec?.should == true
+    ensure
+      dup.close
+    end
+
+    @f.close_on_exec = false
+    dup = @f.dup
+    begin
+      dup.close_on_exec?.should == true
+    ensure
+      dup.close
+    end
   end
 end

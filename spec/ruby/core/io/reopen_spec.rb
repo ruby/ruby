@@ -162,6 +162,18 @@ describe "IO#reopen with a String" do
     end
   end
 
+  it "always resets the close-on-exec flag to true on non-STDIO objects" do
+    @io = new_io @name, "w"
+
+    @io.close_on_exec = true
+    @io.reopen @other_name
+    @io.close_on_exec?.should == true
+
+    @io.close_on_exec = false
+    @io.reopen @other_name
+    @io.close_on_exec?.should == true
+  end
+
   it "creates the file if it doesn't exist if the IO is opened in write mode" do
     @io = new_io @name, "w"
 
@@ -292,6 +304,18 @@ describe "IO#reopen with an IO" do
     @io.flush
     File.read(@name).should == ""
     File.read(@other_name).should == "io data"
+  end
+
+  it "always resets the close-on-exec flag to true on non-STDIO objects" do
+    @other_io.close_on_exec = true
+    @io.close_on_exec = true
+    @io.reopen @other_io
+    @io.close_on_exec?.should == true
+
+    @other_io.close_on_exec = false
+    @io.close_on_exec = false
+    @io.reopen @other_io
+    @io.close_on_exec?.should == true
   end
 
   it "may change the class of the instance" do

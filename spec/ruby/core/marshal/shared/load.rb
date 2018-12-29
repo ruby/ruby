@@ -352,6 +352,54 @@ describe :marshal_load, shared: true do
     end
   end
 
+  describe "for a Symbol" do
+    it "loads a Symbol" do
+      sym = Marshal.send(@method, "\004\b:\vsymbol")
+      sym.should == :symbol
+      sym.encoding.should == Encoding::US_ASCII
+    end
+
+    it "loads a big Symbol" do
+      sym = ('big' * 100).to_sym
+      Marshal.send(@method, "\004\b:\002,\001#{'big' * 100}").should == sym
+    end
+
+    it "loads an encoded Symbol" do
+      s = "\u2192"
+
+      sym = Marshal.send(@method, "\x04\bI:\b\xE2\x86\x92\x06:\x06ET")
+      sym.should == s.encode("utf-8").to_sym
+      sym.encoding.should == Encoding::UTF_8
+
+      sym = Marshal.send(@method, "\x04\bI:\t\xFE\xFF!\x92\x06:\rencoding\"\vUTF-16")
+      sym.should == s.encode("utf-16").to_sym
+      sym.encoding.should == Encoding::UTF_16
+
+      sym = Marshal.send(@method, "\x04\bI:\a\x92!\x06:\rencoding\"\rUTF-16LE")
+      sym.should == s.encode("utf-16le").to_sym
+      sym.encoding.should == Encoding::UTF_16LE
+
+      sym = Marshal.send(@method, "\x04\bI:\a!\x92\x06:\rencoding\"\rUTF-16BE")
+      sym.should == s.encode("utf-16be").to_sym
+      sym.encoding.should == Encoding::UTF_16BE
+
+      sym = Marshal.send(@method, "\x04\bI:\a\xA2\xAA\x06:\rencoding\"\vEUC-JP")
+      sym.should == s.encode("euc-jp").to_sym
+      sym.encoding.should == Encoding::EUC_JP
+
+      sym = Marshal.send(@method, "\x04\bI:\a\x81\xA8\x06:\rencoding\"\x10Windows-31J")
+      sym.should == s.encode("sjis").to_sym
+      sym.encoding.should == Encoding::SJIS
+    end
+
+    it "loads a binary encoded Symbol" do
+      s = "\u2192".force_encoding("binary").to_sym
+      sym = Marshal.send(@method, "\x04\b:\b\xE2\x86\x92")
+      sym.should == s
+      sym.encoding.should == Encoding::BINARY
+    end
+  end
+
   describe "for a String" do
     it "loads a string having ivar with ref to self" do
       obj = 'hi'
@@ -485,30 +533,9 @@ describe :marshal_load, shared: true do
     end
   end
 
-  describe "for a user Class" do
-    it "loads a user-marshaled extended object" do
-      obj = UserMarshal.new.extend(Meths)
-
-      new_obj = Marshal.send(@method, "\004\bU:\020UserMarshal\"\nstuff")
-
-      new_obj.should == obj
-      new_obj_metaclass_ancestors = class << new_obj; ancestors; end
-      new_obj_metaclass_ancestors[@num_self_class].should == UserMarshal
-    end
-
-    it "loads a user_object" do
-      UserObject.new
-      Marshal.send(@method, "\004\bo:\017UserObject\000").should be_kind_of(UserObject)
-    end
-
+  describe "for an Object" do
     it "loads an object" do
       Marshal.send(@method, "\004\bo:\vObject\000").should be_kind_of(Object)
-    end
-
-    it "raises ArgumentError if the object from an 'o' stream is not dumpable as 'o' type user class" do
-      lambda do
-        Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
-      end.should raise_error(ArgumentError)
     end
 
     it "loads an extended Object" do
@@ -519,6 +546,48 @@ describe :marshal_load, shared: true do
       new_obj.class.should == obj.class
       new_obj_metaclass_ancestors = class << new_obj; ancestors; end
       new_obj_metaclass_ancestors[@num_self_class, 2].should == [Meths, Object]
+    end
+
+    it "loads an object having ivar" do
+      s = 'hi'
+      arr = [:so, :so, s, s]
+      obj = Object.new
+      obj.instance_variable_set :@str, arr
+
+      new_obj = Marshal.send(@method, "\004\bo:\vObject\006:\t@str[\t:\aso;\a\"\ahi@\a")
+      new_str = new_obj.instance_variable_get :@str
+
+      new_str.should == arr
+    end
+
+    it "loads an Object with a non-US-ASCII instance variable" do
+      ivar = "@é".force_encoding(Encoding::UTF_8).to_sym
+      obj = Marshal.send(@method, "\x04\bo:\vObject\x06I:\b@\xC3\xA9\x06:\x06ETi\x06")
+      obj.instance_variables.should == [ivar]
+      obj.instance_variables[0].encoding.should == Encoding::UTF_8
+      obj.instance_variable_get(ivar).should == 1
+    end
+
+    it "raises ArgumentError if the object from an 'o' stream is not dumpable as 'o' type user class" do
+      lambda do
+        Marshal.send(@method, "\x04\bo:\tFile\001\001:\001\005@path\"\x10/etc/passwd")
+      end.should raise_error(ArgumentError)
+    end
+  end
+
+  describe "for a user object" do
+    it "loads a user-marshaled extended object" do
+      obj = UserMarshal.new.extend(Meths)
+
+      new_obj = Marshal.send(@method, "\004\bU:\020UserMarshal\"\nstuff")
+
+      new_obj.should == obj
+      new_obj_metaclass_ancestors = class << new_obj; ancestors; end
+      new_obj_metaclass_ancestors[@num_self_class].should == UserMarshal
+    end
+
+    it "loads a UserObject" do
+      Marshal.send(@method, "\004\bo:\017UserObject\000").should be_kind_of(UserObject)
     end
 
     describe "that extends a core type other than Object or BasicObject" do
@@ -536,18 +605,6 @@ describe :marshal_load, shared: true do
         MarshalSpec.set_swapped_class(Class.new)
         lambda { Marshal.send(@method, data) }.should raise_error(ArgumentError)
       end
-    end
-
-    it "loads an object having ivar" do
-      s = 'hi'
-      arr = [:so, :so, s, s]
-      obj = Object.new
-      obj.instance_variable_set :@str, arr
-
-      new_obj = Marshal.send(@method, "\004\bo:\vObject\006:\t@str[\t:\aso;\a\"\ahi@\a")
-      new_str = new_obj.instance_variable_get :@str
-
-      new_str.should == arr
     end
   end
 

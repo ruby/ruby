@@ -15,7 +15,7 @@ describe "File.atime" do
     File.atime(@file).should be_kind_of(Time)
   end
 
-  platform_is :linux do
+  guard -> { platform_is :linux or (platform_is :windows and ruby_version_is '2.5') } do
     ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
     it "returns the last access time for the named file with microseconds" do
       supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d+)/, 1], 10)

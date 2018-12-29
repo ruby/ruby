@@ -25,7 +25,7 @@ describe "File#reopen" do
     @file.read.should == @content_b
   end
 
-  it "calls #to_path to convern an Object" do
+  it "calls #to_path to convert an Object" do
     @file = File.new(@name_a).reopen(mock_to_path(@name_b), "r")
     @file.read.should == @content_b
   end

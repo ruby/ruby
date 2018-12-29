@@ -84,6 +84,11 @@ describe "String#scan" do
     a = "hello".taint.scan(/./)
     a.each { |m| m.tainted?.should be_true }
   end
+
+  # jruby/jruby#5513
+  it "does not raise any errors when passed a multi-byte string" do
+    "あああaaaあああ".scan("あああ").should == ["あああ", "あああ"]
+  end
 end
 
 describe "String#scan with pattern and block" do

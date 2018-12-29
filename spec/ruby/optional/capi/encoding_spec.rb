@@ -42,6 +42,8 @@ describe :rb_enc_set_index, shared: true do
 end
 
 describe "C-API Encoding function" do
+  @n = 0
+
   before :each do
     @s = CApiEncodingSpecs.new
   end
@@ -49,8 +51,9 @@ describe "C-API Encoding function" do
   ruby_version_is "2.6" do
     describe "rb_enc_alias" do
       it "creates an alias for an existing Encoding" do
-        @s.rb_enc_alias("ZOMGWTFBBQ", "UTF-8").should >= 0
-        Encoding.find("ZOMGWTFBBQ").name.should == "UTF-8"
+        name = "ZOMGWTFBBQ#{@n += 1}"
+        @s.rb_enc_alias(name, "UTF-8").should >= 0
+        Encoding.find(name).name.should == "UTF-8"
       end
     end
   end
