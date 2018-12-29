@@ -562,7 +562,7 @@ describe "Module#refine" do
       end
     end
 
-	ruby_version_is ""..."2.5" do
+    ruby_version_is ""..."2.7" do
       it "is not honored by #method_missing" do
         klass = Class.new
         refinement = Module.new do
@@ -580,7 +580,7 @@ describe "Module#refine" do
       end
     end
 
-    ruby_version_is "2.6" do
+    ruby_version_is "2.7" do
       it "is honored by #method_missing" do
         klass = Class.new
         refinement = Module.new do
