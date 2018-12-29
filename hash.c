@@ -48,6 +48,35 @@
 
 #define COPY_DEFAULT(hash, hash2) copy_default(RHASH(hash), RHASH(hash2))
 
+/*
+ * RHASH_AR_TABLE_P(h):
+ * * as.ar == NULL or
+ *   as.ar points ar_table.
+ * * as.ar is allocated by transient heap or xmalloc.
+ *
+ * !RHASH_AR_TABLE_P(h):
+ * * as.st points st_table.
+ */
+
+#define RHASH_AR_TABLE_MAX_SIZE      8
+#define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
+
+typedef struct ar_table_entry {
+    VALUE hash;
+    VALUE key;
+    VALUE record;
+} ar_table_entry;
+
+typedef struct ar_table_struct {
+    ar_table_entry entries[RHASH_AR_TABLE_MAX_SIZE];
+} ar_table;
+
+size_t
+rb_hash_ar_table_size(void)
+{
+    return sizeof(ar_table);
+}
+
 static inline void
 copy_default(struct RHash *hash, const struct RHash *hash2)
 {
