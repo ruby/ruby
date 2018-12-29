@@ -2115,4 +2115,42 @@ class TestSetTraceFunc < Test::Unit::TestCase
     }
     assert_equal [], events
   end
+
+  def test_enable_target_thread
+    events = []
+    TracePoint.new(:line) do |tp|
+      events << Thread.current
+    end.enable(target_thread: Thread.current) do
+      a = 1
+      Thread.new{
+        b = 2
+        c = 3
+      }.join
+      d = 4
+    end
+    assert_equal Array.new(3){Thread.current}, events
+
+    events = []
+    tp = TracePoint.new(:line) do |tp|
+      events << Thread.current
+    end
+
+    q1 = Queue.new
+    q2 = Queue.new
+
+    th = Thread.new{
+      q1 << :ok; q2.pop
+      t1 = 1
+      t2 = 2
+    }
+    q1.pop
+    tp.enable(target_thread: th) do
+      q2 << 1
+      a = 1
+      b = 2
+      th.join
+    end
+
+    assert_equal Array.new(2){th}, events
+  end
 end
