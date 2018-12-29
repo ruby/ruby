@@ -607,9 +607,9 @@ class TestJIT < Test::Unit::TestCase
         assert_equal(3, compactions.size, debug_info)
       end
 
-      if appveyor_mswin?
-        # "Permission Denied" error is preventing to remove so file on AppVeyor.
-        warn 'skipped to test directory emptiness in TestJIT#test_unload_units on AppVeyor mswin'
+      if RUBY_PLATFORM.match?(/mswin/)
+        # "Permission Denied" error is preventing to remove so file on AppVeyor/RubyCI.
+        skip 'Removing so file is randomly failing on AppVeyor/RubyCI mswin due to Permission Denied.'
       else
         # verify .o files are deleted on unload_units
         assert_send([Dir, :empty?, dir], debug_info)
@@ -890,10 +890,6 @@ class TestJIT < Test::Unit::TestCase
   end if defined?(fork)
 
   private
-
-  def appveyor_mswin?
-    ENV['APPVEYOR'] == 'True' && RUBY_PLATFORM.match?(/mswin/)
-  end
 
   # The shortest way to test one proc
   def assert_compile_once(script, result_inspect:, insns: [])
