@@ -537,19 +537,21 @@ describe "Process.spawn" do
       @options = { close_others: true }
     end
 
-    it "closes file descriptors >= 3 in the child process even if fds are set close_on_exec=false" do
-      touch @name
-      IO.pipe do |r, w|
-        r.close_on_exec = false
-        w.close_on_exec = false
+    platform_is_not :windows do
+      it "closes file descriptors >= 3 in the child process even if fds are set close_on_exec=false" do
+        touch @name
+        IO.pipe do |r, w|
+          r.close_on_exec = false
+          w.close_on_exec = false
 
-        begin
-          pid = Process.spawn(ruby_cmd("while File.exist? '#{@name}'; sleep 0.1; end"), @options)
-          w.close
-          r.read(1).should == nil
-        ensure
-          rm_r @name
-          Process.wait(pid) if pid
+          begin
+            pid = Process.spawn(ruby_cmd("while File.exist? '#{@name}'; sleep 0.1; end"), @options)
+            w.close
+            r.read(1).should == nil
+          ensure
+            rm_r @name
+            Process.wait(pid) if pid
+          end
         end
       end
     end
