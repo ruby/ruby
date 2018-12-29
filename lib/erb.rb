@@ -814,7 +814,7 @@ class ERB
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
     if safe_level != NOT_GIVEN
-      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE
+      warn 'Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments.', uplevel: 1 if $VERBOSE || !ZERO_SAFE_LEVELS.include?(safe_level)
     else
       safe_level = nil
     end
@@ -836,6 +836,8 @@ class ERB
   end
   NOT_GIVEN = Object.new
   private_constant :NOT_GIVEN
+  ZERO_SAFE_LEVELS = [0, nil]
+  private_constant :ZERO_SAFE_LEVELS
 
   ##
   # Creates a new compiler for ERB.  See ERB::Compiler.new for details
