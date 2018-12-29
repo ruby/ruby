@@ -582,7 +582,7 @@ describe "Process.spawn" do
           r.close_on_exec = false
           w.close_on_exec = false
 
-          code = "fd = IO.for_fd(#{w.fileno}); fd.write 'abc'; fd.close"
+          code = "fd = IO.for_fd(#{w.fileno}); fd.autoclose = false; fd.write 'abc'; fd.close"
           pid = Process.spawn(ruby_cmd(code), @options)
           begin
             w.close

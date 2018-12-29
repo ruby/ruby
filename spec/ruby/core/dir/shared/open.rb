@@ -65,6 +65,7 @@ describe :dir_open, shared: true do
     it 'sets the close-on-exec flag for the directory file descriptor' do
       Dir.send(@method, DirSpecs.mock_dir) do |dir|
         io = IO.for_fd(dir.fileno)
+        io.autoclose = false
         io.close_on_exec?.should == true
       end
     end
