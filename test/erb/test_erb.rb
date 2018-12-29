@@ -24,7 +24,7 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed later than Ruby 2.7
+  # [deprecated] This will be removed later
   def test_without_filename_with_safe_level
     erb = EnvUtil.suppress_warning do
       ERB.new("<% raise ::TestERB::MyError %>", 1)
@@ -35,7 +35,7 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\A\(erb\):1\b/, e.backtrace[0])
   end
 
-  # [deprecated] This will be removed later than Ruby 2.7
+  # [deprecated] This will be removed later
   def test_with_filename_and_safe_level
     erb = EnvUtil.suppress_warning do
       ERB.new("<% raise ::TestERB::MyError %>", 1)
@@ -98,7 +98,7 @@ class TestERBCore < Test::Unit::TestCase
   end
 
   def test_core
-    # [deprecated] Fix initializer later than Ruby 2.7
+    # [deprecated] Fix initializer later
     EnvUtil.suppress_warning do
       _test_core(nil)
       _test_core(0)
@@ -661,7 +661,7 @@ EOS
     end
   end
 
-  # These interfaces will be removed later than Ruby 2.7.
+  # [deprecated] These interfaces will be removed later
   def test_deprecated_interface_warnings
     [nil, 0, 1, 2].each do |safe|
       assert_warning(/2nd argument of ERB.new is deprecated/) do
