@@ -84,6 +84,10 @@ def new_io(name, mode="w:utf-8")
   IO.new new_fd(name, options_or_mode(mode)), options_or_mode(mode)
 end
 
+def find_unused_fd
+  Dir.entries("/dev/fd").map(&:to_i).max + 1
+end
+
 # This helper simplifies passing file access modes regardless of
 # whether the :encoding feature is enabled. Only the access specifier
 # itself will be returned if :encoding is not enabled. Otherwise,

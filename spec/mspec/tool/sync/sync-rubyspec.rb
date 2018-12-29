@@ -160,9 +160,12 @@ def test_new_specs
   require "yaml"
   Dir.chdir(SOURCE_REPO) do
     versions = YAML.load_file(".travis.yml")
-    versions = versions["matrix"]["include"].map { |job| job["rvm"] }
-    versions.delete "ruby-head"
-    versions.delete "system"
+    versions = if versions.include? "matrix"
+      versions["matrix"]["include"].map { |job| job["rvm"] }
+    else
+      versions["rvm"]
+    end
+    versions = versions.grep(/^\d+\./) # Test on MRI
     min_version, max_version = versions.minmax
 
     test_command = MSPEC ? "bundle exec rspec" : "../mspec/bin/mspec -j"
