@@ -1327,6 +1327,7 @@ rb_tracepoint_disable(VALUE tpval)
         }
     }
     tp->tracing = 0;
+    tp->target_th = NULL;
     return Qundef;
 }
 
@@ -1398,10 +1399,21 @@ rb_hook_list_remove_tracepoint(rb_hook_list_t *list, VALUE tpval)
  *
  */
 static VALUE
-tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line)
+tracepoint_enable_m(VALUE tpval, VALUE target, VALUE target_line, VALUE target_thread)
 {
     rb_tp_t *tp = tpptr(tpval);
     int previous_tracing = tp->tracing;
+
+    /* check target_thread */
+    if (RTEST(target_thread)) {
+        if (tp->target_th) {
+            rb_raise(rb_eArgError, "can not override target_thread filter");
+        }
+        tp->target_th = rb_thread_ptr(target_thread);
+    }
+    else {
+        tp->target_th = NULL;
+    }
 
     if (NIL_P(target)) {
         if (!NIL_P(target_line)) {
@@ -1801,7 +1813,7 @@ Init_vm_trace(void)
      */
     rb_define_singleton_method(rb_cTracePoint, "trace", tracepoint_trace_s, -1);
 
-    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 2);
+    rb_define_method(rb_cTracePoint, "__enable", tracepoint_enable_m, 3);
     rb_define_method(rb_cTracePoint, "disable", tracepoint_disable_m, 0);
     rb_define_method(rb_cTracePoint, "enabled?", rb_tracepoint_enabled_p, 0);
 

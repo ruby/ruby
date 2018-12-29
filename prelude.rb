@@ -133,8 +133,8 @@ class IO
 end
 
 class TracePoint
-  def enable target: nil, target_line: nil, &blk
-    self.__enable target, target_line, &blk
+  def enable target: nil, target_line: nil, target_thread: nil, &blk
+    self.__enable target, target_line, target_thread, &blk
   end
 end
 
