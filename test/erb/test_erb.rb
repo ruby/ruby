@@ -663,8 +663,14 @@ EOS
 
   # [deprecated] These interfaces will be removed later
   def test_deprecated_interface_warnings
-    [nil, 0, 1, 2].each do |safe|
+    [nil, 0].each do |safe|
       assert_warning(/2nd argument of ERB.new is deprecated/) do
+        ERB.new('', safe)
+      end
+    end
+
+    [1, 2].each do |safe|
+      assert_warn(/2nd argument of ERB.new is deprecated/) do
         ERB.new('', safe)
       end
     end
