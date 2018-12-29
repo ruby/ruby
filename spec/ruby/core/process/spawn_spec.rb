@@ -651,7 +651,7 @@ describe "Process.spawn" do
     lambda { Process.spawn("echo", nonesuch: :foo) }.should raise_error(ArgumentError)
   end
 
-  platform_is_not :windows do
+  platform_is_not :windows, :aix do
     describe "with Integer option keys" do
       before :each do
         @name = tmp("spawn_fd_map.txt")
