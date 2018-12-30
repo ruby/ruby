@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Process.clock_gettime" do
-  platform_is_not :windows do
+  platform_is_not :windows, :solaris do
     Process.constants.select { |c|
       c.to_s.start_with?('CLOCK_') &&
       # These require CAP_WAKE_ALARM and are not documented in clock_gettime(),
