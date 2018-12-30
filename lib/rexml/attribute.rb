@@ -86,6 +86,20 @@ module REXML
     #  e.add_attribute("nsx:a", "c")
     #  e.attribute("ns:a").namespace # => "http://url"
     #  e.attribute("nsx:a").namespace # => nil
+    #
+    # TODO: This method should always return nil for no namespace
+    # attribute. Because the default namespace doesn't apply to
+    # attribute name.
+    #
+    # From https://www.w3.org/TR/xml-names/#uniqAttrs
+    #
+    # > the default namespace does not apply to attribute names
+    #
+    #  e = REXML::Element.new("el")
+    #  e.add_namespace("", "http://example.com/")
+    #  e.namespace # => "http://example.com/"
+    #  e.add_attribute("a", "b")
+    #  e.attribute("a").namespace # => nil
     def namespace arg=nil
       arg = prefix if arg.nil?
       @element.namespace arg
