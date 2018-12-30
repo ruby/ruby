@@ -2898,7 +2898,7 @@ static VALUE usage_analysis_register_stop(VALUE self);
  * This API is experimental and just for internal.
  *
  *    RubyVM.resolve_feature_path("set")
- *      #=> [:rb, "/path/to/feature.rb"]
+ *      #=> [:rb, "/path/to/set.rb"]
  */
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
