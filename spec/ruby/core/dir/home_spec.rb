@@ -2,27 +2,40 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
 describe "Dir.home" do
-  it "returns the current user's home directory as a string if called without arguments" do
-    home_directory = ENV['HOME']
-    platform_is :windows do
-      unless home_directory
-        home_directory = ENV['HOMEDRIVE'] + ENV['HOMEPATH']
+  before :each do
+    @home = ENV['HOME']
+    ENV['HOME'] = "/rubyspec_home"
+  end
+
+  after :each do
+    ENV['HOME'] = @home
+  end
+
+  describe "when called without arguments" do
+    it "returns the current user's home directory, reading $HOME first" do
+      Dir.home.should == "/rubyspec_home"
+    end
+
+    it "returns a non-frozen string" do
+      Dir.home.frozen?.should == false
+    end
+  end
+
+  describe "when called with the current user name" do
+    platform_is :solaris do
+      it "returns the named user's home directory from the user database" do
+        Dir.home(ENV['USER']).should == `getent passwd #{ENV['USER']}|cut -d: -f6`.chomp
       end
-      home_directory = home_directory.tr('\\', '/').chomp('/')
     end
 
-    Dir.home.should == home_directory
-  end
-
-  platform_is :solaris do
-    it "returns the named user's home directory, from the user database, as a string if called with an argument" do
-      Dir.home(ENV['USER']).should == `getent passwd #{ENV['USER']}|cut -d: -f6`.chomp
+    platform_is_not :windows, :solaris do
+      it "returns the named user's home directory, from the user database" do
+        Dir.home(ENV['USER']).should == `echo ~#{ENV['USER']}`.chomp
+      end
     end
-  end
 
-  platform_is_not :windows, :solaris do
-    it "returns the named user's home directory, from the user database, as a string if called with an argument" do
-      Dir.home(ENV['USER']).should == `echo ~#{ENV['USER']}`.chomp
+    it "returns a non-frozen string" do
+      Dir.home(ENV['USER']).frozen?.should == false
     end
   end
 

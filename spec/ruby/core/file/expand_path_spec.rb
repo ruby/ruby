@@ -56,40 +56,10 @@ describe "File.expand_path" do
     File.expand_path(".", "#{@rootdir}").should == "#{@rootdir}"
   end
 
-  # FIXME: do not use conditionals like this around #it blocks
-  unless not home = ENV['HOME']
-    platform_is_not :windows do
-      it "converts a pathname to an absolute pathname, using ~ (home) as base" do
-        File.expand_path('~').should == home
-        File.expand_path('~', '/tmp/gumby/ddd').should == home
-        File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home, 'a')
-      end
-
-      it "does not return a frozen string" do
-        File.expand_path('~').frozen?.should == false
-        File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
-        File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
-      end
-    end
-    platform_is :windows do
-      it "converts a pathname to an absolute pathname, using ~ (home) as base" do
-        File.expand_path('~').should == home.tr("\\", '/')
-        File.expand_path('~', '/tmp/gumby/ddd').should == home.tr("\\", '/')
-        File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home.tr("\\", '/'), 'a')
-      end
-
-      it "does not return a frozen string" do
-        File.expand_path('~').frozen?.should == false
-        File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
-        File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
-      end
-    end
-  end
-
   platform_is_not :windows do
     before do
       @var_home = ENV['HOME'].chomp('/')
-      @db_home = Dir.home
+      @db_home = Dir.home(ENV['USER'])
     end
 
     # FIXME: these are insane!
@@ -217,6 +187,32 @@ describe "File.expand_path" do
 end
 
 platform_is_not :windows do
+  describe "File.expand_path when HOME is set" do
+    before :each do
+      @home = ENV["HOME"]
+      ENV["HOME"] = "/rubyspec_home"
+    end
+
+    after :each do
+      ENV["HOME"] = @home
+    end
+
+    it "converts a pathname to an absolute pathname, using ~ (home) as base" do
+      home = "/rubyspec_home"
+      File.expand_path('~').should == home
+      File.expand_path('~', '/tmp/gumby/ddd').should == home
+      File.expand_path('~/a', '/tmp/gumby/ddd').should == File.join(home, 'a')
+    end
+
+    it "does not return a frozen string" do
+      home = "/rubyspec_home"
+      File.expand_path('~').frozen?.should == false
+      File.expand_path('~', '/tmp/gumby/ddd').frozen?.should == false
+      File.expand_path('~/a', '/tmp/gumby/ddd').frozen?.should == false
+    end
+  end
+
+
   describe "File.expand_path when HOME is not set" do
     before :each do
       @home = ENV["HOME"]
