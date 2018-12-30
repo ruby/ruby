@@ -338,6 +338,11 @@ class TestModule < Test::Unit::TestCase
     assert_raise(NameError) {self.class.const_defined?(const)}
   end
 
+  def test_nested_defined_with_include
+    assert_send([Object, :const_defined?, [self.class.name, 'User', 'MIXIN'].join('::')])
+    assert_send([self.class, :const_defined?, 'User::MIXIN'])
+  end
+
   def test_nested_defined_bad_class
     assert_raise(TypeError) do
       self.class.const_defined?('User::USER::Foo')
