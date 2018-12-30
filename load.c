@@ -943,16 +943,7 @@ load_ext(VALUE path)
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
-/*
- *  call-seq:
- *     RubyVM.resolve_feature_path(feature) -> [:rb or :so, path]
- *
- *  Identifies the file that will be loaded by "require(feature)".
- *  This API is experimental and just for internal.
- *
- *     RubyVM.resolve_feature_path("set")
- *       #=> [:rb, "/path/to/feature.rb"]
- */
+/* Method is documented in vm.c */
 
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
