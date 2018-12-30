@@ -7,27 +7,25 @@ platform_is :windows do
 end
 
 describe :process_spawn_does_not_close_std_streams, shared: true do
-  platform_is_not :windows do
-    it "does not close STDIN" do
-      code = "STDOUT.puts STDIN.read(0).inspect"
-      cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
-      ruby_exe(cmd, args: "> #{@name}")
-      File.binread(@name).should == %[""#{newline}]
-    end
+  it "does not close STDIN" do
+    code = "STDOUT.puts STDIN.read(0).inspect"
+    cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
+    ruby_exe(cmd, args: "> #{@name}")
+    File.binread(@name).should == %[""#{newline}]
+  end
 
-    it "does not close STDOUT" do
-      code = "STDOUT.puts 'hello'"
-      cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
-      ruby_exe(cmd, args: "> #{@name}")
-      File.binread(@name).should == "hello#{newline}"
-    end
+  it "does not close STDOUT" do
+    code = "STDOUT.puts 'hello'"
+    cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
+    ruby_exe(cmd, args: "> #{@name}")
+    File.binread(@name).should == "hello#{newline}"
+  end
 
-    it "does not close STDERR" do
-      code = "STDERR.puts 'hello'"
-      cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
-      ruby_exe(cmd, args: "2> #{@name}")
-      File.binread(@name).should =~ /hello#{newline}/
-    end
+  it "does not close STDERR" do
+    code = "STDERR.puts 'hello'"
+    cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
+    ruby_exe(cmd, args: "2> #{@name}")
+    File.binread(@name).should =~ /hello#{newline}/
   end
 end
 
@@ -532,12 +530,12 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
-  context "when passed close_others: true" do
-    before :each do
-      @options = { close_others: true }
-    end
+  platform_is_not :windows do
+    context "when passed close_others: true" do
+      before :each do
+        @options = { close_others: true }
+      end
 
-    platform_is_not :windows do
       it "closes file descriptors >= 3 in the child process even if fds are set close_on_exec=false" do
         touch @name
         IO.pipe do |r, w|
@@ -554,31 +552,29 @@ describe "Process.spawn" do
           end
         end
       end
+
+      it_should_behave_like :process_spawn_does_not_close_std_streams
     end
 
-    it_should_behave_like :process_spawn_does_not_close_std_streams
-  end
+    context "when passed close_others: false" do
+      before :each do
+        @options = { close_others: false }
+      end
 
-  context "when passed close_others: false" do
-    before :each do
-      @options = { close_others: false }
-    end
-
-    it "closes file descriptors >= 3 in the child process because they are set close_on_exec by default" do
-      touch @name
-      IO.pipe do |r, w|
-        begin
-          pid = Process.spawn(ruby_cmd("while File.exist? '#{@name}'; sleep 0.1; end"), @options)
-          w.close
-          r.read(1).should == nil
-        ensure
-          rm_r @name
-          Process.wait(pid) if pid
+      it "closes file descriptors >= 3 in the child process because they are set close_on_exec by default" do
+        touch @name
+        IO.pipe do |r, w|
+          begin
+            pid = Process.spawn(ruby_cmd("while File.exist? '#{@name}'; sleep 0.1; end"), @options)
+            w.close
+            r.read(1).should == nil
+          ensure
+            rm_r @name
+            Process.wait(pid) if pid
+          end
         end
       end
-    end
 
-    platform_is_not :windows do
       it "does not close file descriptors >= 3 in the child process if fds are set close_on_exec=false" do
         IO.pipe do |r, w|
           r.close_on_exec = false
@@ -594,9 +590,9 @@ describe "Process.spawn" do
           end
         end
       end
-    end
 
-    it_should_behave_like :process_spawn_does_not_close_std_streams
+      it_should_behave_like :process_spawn_does_not_close_std_streams
+    end
   end
 
   # error handling

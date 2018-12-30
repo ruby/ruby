@@ -28,12 +28,22 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [TruffleRuby](https://github.com/oracle/truffleruby/tree/master/spec/ruby)
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 
-The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby.
-Each of these repositories has a full copy of the files to ease editing specs.
-
 ruby/spec describes the behavior of Ruby 2.3 and more recent Ruby versions.
-More precisely, every latest stable MRI release [passes](https://rubyci.org/) all specs of ruby/spec
-(2.3.x, 2.4.x, 2.5.x, etc).
+More precisely, every latest stable MRI release should [pass](https://travis-ci.org/ruby/spec) all specs of ruby/spec (2.3.x, 2.4.x, 2.5.x, 2.6.x, etc), and those are tested in TravisCI.
+
+The specs are synchronized both ways around once a month by @eregon between ruby/spec, MRI, JRuby and TruffleRuby.
+Each of these repositories has a full copy of the specs under `spec/ruby` to ease editing specs.
+Any of these repositories can be used to add or edit specs, use what is most convenient for you.
+
+For *testing* a Ruby implementation, one should always test against the implementation's copy of the specs under `spec/ruby`, as that's what the Ruby implementation tests against in their CI.
+Also, this repository doesn't always contain the latest spec changes from MRI (it's synchronized monthly), and does not contain tags (specs marked as failing on that Ruby implementation).
+Running specs in a Ruby implementation can be done with:
+
+```
+$ cd ruby_implementation/spec/ruby
+# Add ../ruby_implementation/bin in PATH, or pass -t /path/to/bin/ruby
+$ ../mspec/bin/mspec
+```
 
 For older specs try these commits:
 * Ruby 2.0.0-p647 - [Suite](https://github.com/ruby/spec/commit/245862558761d5abc676843ef74f86c9bcc8ea8d) using [MSpec](https://github.com/ruby/mspec/commit/f90efa068791064f955de7a843e96e2d7d3041c2) (may encounter 2 failures)
@@ -63,7 +73,7 @@ This will execute all the specs using the executable named `ruby` on your curren
 ### Running Specs with a Specific Ruby Implementation
 
 Use the `-t` option to specify the Ruby implementation with which to run the specs.
-The argument may be a full path to the Ruby binary.
+The argument is either a full path to the Ruby binary, or an executable in `$PATH`.
 
     $ ../mspec/bin/mspec -t /path/to/some/bin/ruby
 
