@@ -341,6 +341,10 @@ class TestModule < Test::Unit::TestCase
   def test_nested_defined_with_include
     assert_send([Object, :const_defined?, [self.class.name, 'User', 'MIXIN'].join('::')])
     assert_send([self.class, :const_defined?, 'User::MIXIN'])
+
+    # const_defined? with `false`
+    assert_not_send([Object, :const_defined?, [self.class.name, 'User', 'MIXIN'].join('::'), false])
+    assert_not_send([self.class, :const_defined?, 'User::MIXIN', false])
   end
 
   def test_nested_defined_bad_class
