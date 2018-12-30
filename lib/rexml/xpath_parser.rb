@@ -499,7 +499,11 @@ module REXML
               else
                 # FIXME: This DOUBLES the time XPath searches take
                 ns = get_namespace(raw_node.element, prefix)
-                raw_node.name == name and raw_node.namespace == ns
+                if ns.empty?
+                  raw_node.name == name and raw_node.prefix.empty?
+                else
+                  raw_node.name == name and raw_node.namespace == ns
+                end
               end
             else
               false
