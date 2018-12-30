@@ -802,7 +802,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_optimized_empty_ensure
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 1)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 10)
     begin;
       assert_raise(RuntimeError) {
         begin raise ensure nil if nil end
