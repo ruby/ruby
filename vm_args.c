@@ -853,6 +853,7 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     rb_execution_context_t *ec;
     const VALUE symbol = RARRAY_AREF(callback_arg, 0);
     const VALUE refinements = RARRAY_AREF(callback_arg, 1);
+    VALUE klass;
 
     if (argc-- < 1) {
 	rb_raise(rb_eArgError, "no receiver given");
@@ -860,8 +861,13 @@ refine_sym_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, callback_arg))
     obj = *argv++;
 
     mid = SYM2ID(symbol);
-    me = rb_callable_method_entry(CLASS_OF(obj), mid);
-    me = rb_resolve_refined_method_callable(refinements, me);
+    for (klass = CLASS_OF(obj); klass; klass = RCLASS_SUPER(klass)) {
+        me = rb_callable_method_entry(klass, mid);
+        if (me) {
+            me = rb_resolve_refined_method_callable(refinements, me);
+            if (me) break;
+        }
+    }
 
     ec = GET_EC();
     if (!NIL_P(blockarg)) {
