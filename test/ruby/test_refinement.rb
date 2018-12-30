@@ -878,7 +878,7 @@ class TestRefinement < Test::Unit::TestCase
         #{PrependAfterRefine_CODE}
         undef PrependAfterRefine
       }
-    }
+    }, timeout: 30
   end
 
   def test_prepend_after_refine
