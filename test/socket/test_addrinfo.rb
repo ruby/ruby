@@ -688,5 +688,10 @@ class TestSocketAddrinfo < Test::Unit::TestCase
       assert_equal(ai1.canonname, ai2.canonname)
     end
 
+    def test_addrinfo_timeout
+      ai = Addrinfo.getaddrinfo("localhost.localdomain", "http", Socket::PF_INET, Socket::SOCK_STREAM, timeout: 1).fetch(0)
+      assert_equal(6, ai.protocol)
+      assert_equal(80, ai.ip_port)
+    end
   end
 end
