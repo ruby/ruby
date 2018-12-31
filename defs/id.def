@@ -106,6 +106,7 @@ token_ops = %[\
   ANDOP         &&
   OROP          ||
   ANDDOT        &.
+  METHREF       .:
 ]
 
 class KeywordError < RuntimeError

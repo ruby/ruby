@@ -908,6 +908,7 @@ eom
   def test_fluent_dot
     assert_valid_syntax("a\n.foo")
     assert_valid_syntax("a\n&.foo")
+    assert_valid_syntax("a\n.:foo")
   end
 
   def test_no_warning_logop_literal

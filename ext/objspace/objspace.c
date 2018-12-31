@@ -471,6 +471,7 @@ count_nodes(int argc, VALUE *argv, VALUE os)
 		COUNT_NODE(NODE_DSYM);
 		COUNT_NODE(NODE_ATTRASGN);
 		COUNT_NODE(NODE_LAMBDA);
+		COUNT_NODE(NODE_METHREF);
 #undef COUNT_NODE
 	      case NODE_LAST: break;
 	    }

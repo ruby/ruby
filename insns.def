@@ -702,6 +702,16 @@ checktype
     ret = (TYPE(val) == (int)type) ? Qtrue : Qfalse;
 }
 
+/* get method reference. */
+DEFINE_INSN
+methodref
+(ID id)
+(VALUE val)
+(VALUE ret)
+{
+    ret = rb_obj_method(val, ID2SYM(id));
+}
+
 /**********************************************************/
 /* deal with control flow 1: class/module                 */
 /**********************************************************/
