@@ -840,8 +840,10 @@ rb_f_require_relative(VALUE obj, VALUE fname)
     return rb_require_safe(rb_file_absolute_path(fname, base), rb_safe_level());
 }
 
+typedef int (*feature_func)(const char *feature, const char *ext, int rb, int expanded, const char **fn);
+
 static int
-search_required(VALUE fname, volatile VALUE *path, int safe_level)
+search_required(VALUE fname, volatile VALUE *path, int safe_level, feature_func rb_feature_p)
 {
     VALUE tmp;
     char *ext, *ftptr;
@@ -945,6 +947,12 @@ load_ext(VALUE path)
 
 /* Method is documented in vm.c */
 
+static int
+no_feature_p(const char *feature, const char *ext, int rb, int expanded, const char **fn)
+{
+    return 0;
+}
+
 VALUE
 rb_resolve_feature_path(VALUE klass, VALUE fname)
 {
@@ -954,7 +962,7 @@ rb_resolve_feature_path(VALUE klass, VALUE fname)
 
     fname = rb_get_path_check(fname, 0);
     path = rb_str_encode_ospath(fname);
-    found = search_required(path, &path, 0);
+    found = search_required(path, &path, 0, no_feature_p);
 
     switch (found) {
       case 'r':
@@ -1003,7 +1011,7 @@ rb_require_internal(VALUE fname, int safe)
 	rb_set_safe_level_force(0);
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-	found = search_required(path, &path, safe);
+	found = search_required(path, &path, safe, rb_feature_p);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
 	if (found) {

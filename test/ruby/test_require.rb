@@ -897,4 +897,24 @@ class TestRequire < Test::Unit::TestCase
       assert_operator(result, :end_with?, "/real/a.rb")
     }
   end
+
+  if defined?(RubyVM.resolve_feature_path)
+    def test_resolve_feature_path
+      paths, loaded = $:.dup, $".dup
+      Dir.mktmpdir do |tmp|
+        Tempfile.create(%w[feature .rb], tmp) do |file|
+          file.close
+          path = File.realpath(file.path)
+          dir, base = File.split(path)
+          $:.unshift(dir)
+          assert_equal([:rb, path], RubyVM.resolve_feature_path(base))
+          $".push(path)
+          assert_equal([:rb, path], RubyVM.resolve_feature_path(base))
+        end
+      end
+    ensure
+      $:.replace(paths)
+      $".replace(loaded)
+    end
+  end
 end
