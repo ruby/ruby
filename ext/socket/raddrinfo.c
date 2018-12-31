@@ -417,13 +417,13 @@ str_is_number(const char *p)
     char *ep;
 
     if (!p || *p == '\0')
-       return 0;
+        return 0;
     ep = NULL;
     (void)STRTOUL(p, &ep, 10);
     if (ep && *ep == '\0')
-       return 1;
+        return 1;
     else
-       return 0;
+        return 0;
 }
 
 #define str_equal(ptr, len, name) \
@@ -515,7 +515,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
 
     if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
-       hints->ai_socktype = SOCK_DGRAM;
+        hints->ai_socktype = SOCK_DGRAM;
     }
     hints->ai_flags |= additional_flags;
 
