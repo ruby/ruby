@@ -1011,7 +1011,7 @@ rb_require_internal(VALUE fname, int safe)
 	rb_set_safe_level_force(0);
 
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
-	found = search_required(path, &path, safe, rb_feature_p);
+        found = search_required(path, &path, safe, rb_feature_p);
 	RUBY_DTRACE_HOOK(FIND_REQUIRE_RETURN, RSTRING_PTR(fname));
 
 	if (found) {
