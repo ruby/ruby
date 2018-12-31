@@ -474,9 +474,7 @@ module REXML
             raw_node = node.raw_node
             case raw_node.node_type
             when :element
-              if prefix.nil?
-                raw_node.name == name
-              elsif prefix.empty?
+              if prefix.empty?
                 if strict?
                   raw_node.name == name and raw_node.namespace == ""
                 else
@@ -490,9 +488,7 @@ module REXML
                 raw_node.name == name and raw_node.namespace == ns
               end
             when :attribute
-              if prefix.nil?
-                raw_node.name == name
-              elsif prefix.empty?
+              if prefix.empty?
                 # FIXME: This DOUBLES the time XPath searches take
                 raw_node.name == name and
                   raw_node.namespace == raw_node.element.namespace
