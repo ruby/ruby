@@ -545,8 +545,10 @@ module Net
         check_auth_method(authtype || DEFAULT_AUTH_TYPE)
         check_auth_args user, secret
       end
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
-        tcp_socket(@address, @port)
+      begin
+        s = Socket.tcp(@address, @port, connect_timeout: @open_timeout)
+      rescue Errno::ETIMEDOUT
+        raise Net::OpenTimeout, "execution expired"
       end
       logging "Connection opened: #{@address}:#{@port}"
       @socket = new_internet_message_io(tls? ? tlsconnect(s) : s)

@@ -942,14 +942,15 @@ module Net   #:nodoc:
       end
 
       D "opening connection to #{conn_address}:#{conn_port}..."
-      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) {
-        begin
-          TCPSocket.open(conn_address, conn_port, @local_host, @local_port)
-        rescue => e
-          raise e, "Failed to open TCP connection to " +
-            "#{conn_address}:#{conn_port} (#{e.message})"
-        end
-      }
+      begin
+        s = Socket.tcp(conn_address, conn_port, @local_host, @local_port, connect_timeout: @open_timeout)
+      rescue Errno::ETIMEDOUT => e
+        raise Net::OpenTimeout, "Failed to open TCP connection to " +
+          "#{conn_address}:#{conn_port} (#{e.message})"
+      rescue => e
+        raise e, "Failed to open TCP connection to " +
+          "#{conn_address}:#{conn_port} (#{e.message})"
+      end
       s.setsockopt(Socket::IPPROTO_TCP, Socket::TCP_NODELAY, 1)
       D "opened"
       if use_ssl?

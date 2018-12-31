@@ -329,14 +329,18 @@ module Net
     # SOCKS_SERVER, then a SOCKSSocket is returned, else a Socket is
     # returned.
     def open_socket(host, port) # :nodoc:
-      return Timeout.timeout(@open_timeout, OpenTimeout) {
-        if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
-          @passive = true
+      if defined? SOCKSSocket and ENV["SOCKS_SERVER"]
+        @passive = true
+        return Timeout.timeout(@open_timeout, OpenTimeout) {
           SOCKSSocket.open(host, port)
-        else
-          Socket.tcp(host, port)
+        }
+      else
+        begin
+          return Socket.tcp(host, port, connect_timeout: @open_timeout)
+        rescue Errno::ETIMEDOUT
+          raise OpenTimeout, "execution expired"
         end
-      }
+      end
     end
     private :open_socket
 
