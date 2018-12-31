@@ -934,6 +934,15 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
 	F_NODE(nd_args, "arguments");
 	return;
 
+      case NODE_METHREF:
+	ANN("method reference");
+	ANN("format: [nd_recv].:[nd_mid]");
+	ANN("example: foo.:method");
+	F_NODE(nd_recv, "receiver");
+	LAST_NODE;
+	F_ID(nd_mid, "method name");
+	return;
+
       case NODE_LAMBDA:
 	ANN("lambda expression");
 	ANN("format: -> [nd_body]");

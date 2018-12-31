@@ -1095,4 +1095,23 @@ class TestMethod < Test::Unit::TestCase
       (f >> 5).call(2)
     }
   end
+
+  def test_method_reference_operator
+    m = 1.:succ
+    assert_equal(1.method(:succ), m)
+    assert_equal(2, m.())
+    m = 1.:+
+    assert_equal(1.method(:+), m)
+    assert_equal(42, m.(41))
+    m = 1.:-@
+    assert_equal(1.method(:-@), m)
+    assert_equal(-1, m.())
+    o = Object.new
+    def o.foo; 42; end
+    m = o.method(:foo)
+    assert_equal(m, o.:foo)
+    def o.method(m); nil; end
+    assert_equal(m, o.:foo)
+    assert_nil(o.method(:foo))
+  end
 end

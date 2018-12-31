@@ -14,6 +14,9 @@ sufficient information, see the ChangeLog file or Redmine
 
 === Language changes
 
+* Method reference operator, <code>.:</code> is introduced as an
+  experimental feature.  [Feature #12125] [Feature #13581]
+
 === Core classes updates (outstanding ones only)
 
 === Stdlib updates (outstanding ones only)
