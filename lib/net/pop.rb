@@ -541,10 +541,8 @@ module Net
 
     # internal method for Net::POP3.start
     def do_start(account, password) # :nodoc:
-      begin
-        s = Socket.tcp(@address, port, connect_timeout: @open_timeout)
-      rescue Errno::ETIMEDOUT
-        raise Net::OpenTimeout, "execution expired"
+      s = Timeout.timeout(@open_timeout, Net::OpenTimeout) do
+        TCPSocket.open(@address, port)
       end
       if use_ssl?
         raise 'openssl library not installed' unless defined?(OpenSSL)
