@@ -269,6 +269,36 @@ class Complex_Test < Test::Unit::TestCase
     assert_equal(Complex(Rational(5,3),Rational(2)), c + Rational(2,3))
   end
 
+  def test_add_with_redefining_int_plus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Integer
+        def +(other); 42; end
+      end
+      a = Complex(1, 2) + Complex(0, 1)
+      puts a == Complex(1, 42)
+    end;
+  end
+
+  def test_add_with_redefining_float_plus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Float
+        def +(other); 42.0; end
+      end
+      a = Complex(1, 2.0) + Complex(0, 1)
+      puts a == Complex(1, 42.0)
+    end;
+  end
+
+  def test_add_with_redefining_rational_plus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Rational
+        def +(other); 355/113r; end
+      end
+      a = Complex(1, 2r) + Complex(0, 1)
+      puts a == Complex(1, 355/113r)
+    end;
+  end
+
   def test_sub
     c = Complex(1,2)
     c2 = Complex(2,3)

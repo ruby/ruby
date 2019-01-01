@@ -1655,6 +1655,7 @@ VALUE rb_int_pred(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_float_uminus(VALUE num);
 VALUE rb_int_plus(VALUE x, VALUE y);
+VALUE rb_float_plus(VALUE x, VALUE y);
 VALUE rb_int_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_int_idiv(VALUE x, VALUE y);
