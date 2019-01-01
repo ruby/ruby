@@ -272,6 +272,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_add_with_redefining_int_plus
     assert_in_out_err([], <<-'end;', ['true'], [])
       class Integer
+        remove_method :+
         def +(other); 42; end
       end
       a = Complex(1, 2) + Complex(0, 1)
@@ -282,6 +283,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_add_with_redefining_float_plus
     assert_in_out_err([], <<-'end;', ['true'], [])
       class Float
+        remove_method :+
         def +(other); 42.0; end
       end
       a = Complex(1, 2.0) + Complex(0, 1)
@@ -292,6 +294,7 @@ class Complex_Test < Test::Unit::TestCase
   def test_add_with_redefining_rational_plus
     assert_in_out_err([], <<-'end;', ['true'], [])
       class Rational
+        remove_method :+
         def +(other); 355/113r; end
       end
       a = Complex(1, 2r) + Complex(0, 1)
