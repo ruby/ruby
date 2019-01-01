@@ -276,7 +276,7 @@ class Complex_Test < Test::Unit::TestCase
         def +(other); 42; end
       end
       a = Complex(1, 2) + Complex(0, 1)
-      puts a == Complex(1, 42)
+      puts a == Complex(42, 42)
     end;
   end
 
@@ -286,8 +286,8 @@ class Complex_Test < Test::Unit::TestCase
         remove_method :+
         def +(other); 42.0; end
       end
-      a = Complex(1, 2.0) + Complex(0, 1)
-      puts a == Complex(1, 42.0)
+      a = Complex(1.0, 2.0) + Complex(0, 1)
+      puts a == Complex(42.0, 42.0)
     end;
   end
 
@@ -297,8 +297,8 @@ class Complex_Test < Test::Unit::TestCase
         remove_method :+
         def +(other); 355/113r; end
       end
-      a = Complex(1, 2r) + Complex(0, 1)
-      puts a == Complex(1, 355/113r)
+      a = Complex(1r, 2r) + Complex(0, 1)
+      puts a == Complex(355/113r, 355/113r)
     end;
   end
 
@@ -313,6 +313,36 @@ class Complex_Test < Test::Unit::TestCase
 
     assert_equal(Complex(Rational(-1,1),Rational(2)), c - Rational(2))
     assert_equal(Complex(Rational(1,3),Rational(2)), c - Rational(2,3))
+  end
+
+  def test_sub_with_redefining_int_minus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Integer
+        def -(other); 42; end
+      end
+      a = Complex(1, 2) - Complex(0, 1)
+      puts a == Complex(42, 42)
+    end;
+  end
+
+  def test_sub_with_redefining_float_minus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Float
+        def -(other); 42.0; end
+      end
+      a = Complex(1.0, 2.0) - Complex(0, 1)
+      puts a == Complex(42.0, 42.0)
+    end;
+  end
+
+  def test_sub_with_redefining_rational_minus
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Rational
+        def -(other); 355/113r; end
+      end
+      a = Complex(1r, 2r) - Complex(0, 1)
+      puts a == Complex(355/113r, 355/113r)
+    end;
   end
 
   def test_mul
@@ -333,6 +363,39 @@ class Complex_Test < Test::Unit::TestCase
     c = Complex(0, Float::INFINITY)
     assert_equal(Complex(0, Float::INFINITY), c * Complex(1, 0))
     assert_equal(Complex(-Float::INFINITY, 0), c * Complex(0, 1))
+
+    assert_equal(Complex(-0.0, -0.0), Complex(-0.0, 0) * Complex(0, 0))
+  end
+
+  def test_mul_with_redefining_int_mult
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Integer
+        def *(other); 42; end
+      end
+      a = Complex(2, 0) * Complex(1, 2)
+      puts a == Complex(0, 84)
+    end;
+  end
+
+  def test_mul_with_redefining_float_mult
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Float
+        def *(other); 42.0; end
+      end
+      a = Complex(2.0, 0.0) * Complex(1, 2)
+      puts a == Complex(0.0, 84.0)
+    end;
+  end
+
+
+  def test_mul_with_redefining_rational_mult
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Rational
+        def *(other); 355/113r; end
+      end
+      a = Complex(2r, 0r) * Complex(1, 2)
+      puts a == Complex(0r, 2*355/113r)
+    end;
   end
 
   def test_div
