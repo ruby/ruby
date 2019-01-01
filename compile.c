@@ -7462,7 +7462,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	DECL_ANCHOR(args);
 	unsigned int flag = 0;
 	ID mid = node->nd_mid;
-	LABEL *lskip = 0;
+        LABEL *lskip = 0;
 	VALUE argc;
 
 	/* optimization shortcut
@@ -7503,8 +7503,8 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    /* safe nav attr */
 	    mid = rb_id_attrset(mid);
 	    ADD_INSN(recv, line, dup);
-	    lskip = NEW_LABEL(line);
-	    ADD_INSNL(recv, line, branchnil, lskip);
+            lskip = NEW_LABEL(line);
+            ADD_INSNL(recv, line, branchnil, lskip);
 	}
 	if (!popped) {
 	    ADD_INSN(ret, line, putnil);
@@ -7536,7 +7536,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_SEQ(ret, args);
 	}
 	ADD_SEND_WITH_FLAG(ret, line, mid, argc, INT2FIX(flag));
-	if (lskip) ADD_LABEL(ret, lskip);
+        if (lskip) ADD_LABEL(ret, lskip);
 	ADD_INSN(ret, line, pop);
 
 	break;
