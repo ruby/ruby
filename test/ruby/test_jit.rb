@@ -443,6 +443,13 @@ class TestJIT < Test::Unit::TestCase
     end;
   end
 
+  def test_compile_insn_methodref
+    assert_compile_once("#{<<~"begin;"}\n#{<<~'end;'}", result_inspect: '"main"', insns: %i[methodref])
+    begin;
+      self.:inspect.call
+    end;
+  end
+
   def test_compile_insn_inlinecache
     assert_compile_once('Struct', result_inspect: 'Struct', insns: %i[opt_getinlinecache opt_setinlinecache])
   end
