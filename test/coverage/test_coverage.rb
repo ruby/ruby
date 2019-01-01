@@ -348,22 +348,15 @@ class TestCoverage < Test::Unit::TestCase
   def test_branch_coverage_for_safe_method_invocation
     result = {
       :branches=>{
-        [:"&.", 0, 6, 0, 6,  6] => {[:then,  1, 6, 0, 6,  6]=>1, [:else,  2, 6, 0, 6,  6]=>0},
-        [:"&.", 3, 7, 0, 7,  6] => {[:then,  4, 7, 0, 7,  6]=>0, [:else,  5, 7, 0, 7,  6]=>1},
-        [:"&.", 6, 8, 0, 8, 10] => {[:then,  7, 8, 0, 8, 10]=>1, [:else,  8, 8, 0, 8, 10]=>0},
-        [:"&.", 9, 9, 0, 9, 10] => {[:then, 10, 9, 0, 9, 10]=>0, [:else, 11, 9, 0, 9, 10]=>1},
+        [:"&.", 0, 3, 0, 3, 6] => {[:then, 1, 3, 0, 3, 6]=>1, [:else, 2, 3, 0, 3, 6]=>0},
+        [:"&.", 3, 4, 0, 4, 6] => {[:then, 4, 4, 0, 4, 6]=>0, [:else, 5, 4, 0, 4, 6]=>1},
       }
     }
     assert_coverage(<<~"end;", { branches: true }, result)
-      class Dummy; def foo; end; def foo=(x); end; end
-      a = Dummy.new
+      a = 10
       b = nil
-      c = Dummy.new
-      d = nil
-      a&.foo
-      b&.foo
-      c&.foo = 1
-      d&.foo = 1
+      a&.abs
+      b&.hoo
     end;
   end
 
