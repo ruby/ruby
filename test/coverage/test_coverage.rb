@@ -167,6 +167,20 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+  def test_coverage_optimized_branch
+    result = {
+      :branches => {
+        [:"&.", 0, 1, 0, 1, 8] => {
+          [:then, 1, 1, 0, 1, 8] => 1,
+          [:else, 2, 1, 0, 1, 8] => 0,
+        },
+      },
+    }
+    assert_coverage(<<~"end;", { branches: true }, result) # Bug #15476
+      nil&.foo
+    end;
+  end
+
   def assert_coverage(code, opt, stdout)
     stdout = [stdout] unless stdout.is_a?(Array)
     stdout = stdout.map {|s| s.to_s }

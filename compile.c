@@ -2061,6 +2061,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
 		insn_num++;
+		events = iobj->insn_info.events |= events;
                 if (ISEQ_COVERAGE(iseq)) {
                     if (ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE) &&
                         !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
@@ -2077,7 +2078,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
 		}
                 code_index += insn_data_length(iobj);
-		iobj->insn_info.events |= events;
 		events = 0;
                 data = 0;
 		break;
