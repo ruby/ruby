@@ -150,6 +150,11 @@ class TestGem < Gem::TestCase
     File.umask(umask)
   end
 
+  def test_self_install_permissions_with_format_executable
+    @format_executable = true
+    assert_self_install_permissions
+  end
+
   def assert_self_install_permissions
     mask = /mingw|mswin/ =~ RUBY_PLATFORM ? 0700 : 0777
     options = {
@@ -157,6 +162,7 @@ class TestGem < Gem::TestCase
       :prog_mode => 0510,
       :data_mode => 0640,
       :wrappers => true,
+      :format_executable => !!(@format_executable if defined?(@format_executable))
     }
     Dir.chdir @tempdir do
       Dir.mkdir 'bin'
@@ -182,8 +188,10 @@ class TestGem < Gem::TestCase
     prog_mode = (options[:prog_mode] & mask).to_s(8)
     dir_mode = (options[:dir_mode] & mask).to_s(8)
     data_mode = (options[:data_mode] & mask).to_s(8)
+    prog_name = 'foo.cmd'
+    prog_name = RUBY_INSTALL_NAME.sub('ruby', 'foo.cmd') if options[:format_executable]
     expected = {
-      "bin/#{RUBY_INSTALL_NAME.sub('ruby', 'foo.cmd')}" => prog_mode,
+      "bin/#{prog_name}" => prog_mode,
       'gems/foo-1' => dir_mode,
       'gems/foo-1/bin' => dir_mode,
       'gems/foo-1/data' => dir_mode,

@@ -20,6 +20,12 @@ class TestGemRequirement < Gem::TestCase
     refute_requirement_equal "= 1.2", "= 1.3"
     refute_requirement_equal "= 1.3", "= 1.2"
 
+    refute_requirement_equal "~> 1.3", "~> 1.3.0"
+    refute_requirement_equal "~> 1.3.0", "~> 1.3"
+
+    assert_requirement_equal ["> 2", "~> 1.3"], ["> 2.0", "~> 1.3"]
+    assert_requirement_equal ["> 2.0", "~> 1.3"], ["> 2", "~> 1.3"]
+
     refute_equal Object.new, req("= 1.2")
     refute_equal req("= 1.2"), Object.new
   end
