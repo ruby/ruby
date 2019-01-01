@@ -75,6 +75,20 @@ f_add(VALUE x, VALUE y)
 	return x;
     if (FIXNUM_ZERO_P(x))
 	return y;
+
+    if (RB_INTEGER_TYPE_P(x) &&
+        UNLIKELY(rb_method_basic_definition_p(rb_cInteger, idPLUS))) {
+      return rb_int_plus(x, y);
+    }
+    else if (RB_FLOAT_TYPE_P(x) &&
+             UNLIKELY(rb_method_basic_definition_p(rb_cFloat, idPLUS))) {
+      return rb_float_plus(x, y);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL) &&
+             UNLIKELY(rb_method_basic_definition_p(rb_cRational, idPLUS))) {
+      return rb_rational_plus(x, y);
+    }
+
     return rb_funcall(x, '+', 1, y);
 }
 
