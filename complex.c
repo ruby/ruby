@@ -71,21 +71,24 @@ f_##n(VALUE x, VALUE y)\
 inline static VALUE
 f_add(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y))
-        return x;
-    if (FIXNUM_ZERO_P(x))
-        return y;
-
     if (RB_INTEGER_TYPE_P(x) &&
         UNLIKELY(rb_method_basic_definition_p(rb_cInteger, idPLUS))) {
+        if (FIXNUM_ZERO_P(x))
+            return y;
+        if (FIXNUM_ZERO_P(y))
+            return x;
         return rb_int_plus(x, y);
     }
     else if (RB_FLOAT_TYPE_P(x) &&
              UNLIKELY(rb_method_basic_definition_p(rb_cFloat, idPLUS))) {
+        if (FIXNUM_ZERO_P(y))
+            return x;
         return rb_float_plus(x, y);
     }
     else if (RB_TYPE_P(x, T_RATIONAL) &&
              UNLIKELY(rb_method_basic_definition_p(rb_cRational, idPLUS))) {
+        if (FIXNUM_ZERO_P(y))
+            return x;
         return rb_rational_plus(x, y);
     }
 
@@ -120,20 +123,28 @@ f_gt_p(VALUE x, VALUE y)
 inline static VALUE
 f_mul(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y) && RB_INTEGER_TYPE_P(x))
-	return ZERO;
-    if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
-	return ZERO;
-    if (y == ONE) return x;
-    if (x == ONE) return y;
+    if (RB_INTEGER_TYPE_P(x) &&
+        UNLIKELY(rb_method_basic_definition_p(rb_cInteger, idMULT))) {
+        if (FIXNUM_ZERO_P(y))
+            return ZERO;
+        if (FIXNUM_ZERO_P(x) && RB_INTEGER_TYPE_P(y))
+            return ZERO;
+        if (x == ONE) return y;
+        if (y == ONE) return x;
+    }
+    else if (UNLIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMULT))) {
+        if (y == ONE) return x;
+    }
     return rb_funcall(x, '*', 1, y);
 }
 
 inline static VALUE
 f_sub(VALUE x, VALUE y)
 {
-    if (FIXNUM_ZERO_P(y))
+    if (FIXNUM_ZERO_P(y) &&
+        UNLIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMINUS))) {
 	return x;
+    }
     return rb_funcall(x, '-', 1, y);
 }
 
