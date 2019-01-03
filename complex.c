@@ -419,7 +419,7 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Complex(x[, y], exception: false)  ->  numeric or nil
+ *    Complex(x[, y], exception: true)  ->  numeric or nil
  *
  * Returns x+i*y;
  *
