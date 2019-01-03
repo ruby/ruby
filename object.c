@@ -3221,7 +3221,7 @@ opts_exception_p(VALUE opts)
 
 /*
  *  call-seq:
- *     Integer(arg, base=0, exception: true)    -> integer
+ *     Integer(arg, base=0, exception: true)    -> integer or nil
  *
  *  Converts <i>arg</i> to an <code>Integer</code>.
  *  Numeric types are converted directly (with floating point numbers
@@ -3583,7 +3583,7 @@ rb_Float(VALUE val)
 
 /*
  *  call-seq:
- *     Float(arg, exception: true)    -> float
+ *     Float(arg, exception: true)    -> float or nil
  *
  *  Returns <i>arg</i> converted to a float. Numeric types are converted
  *  directly, and with exception to string and nil the rest are converted using <i>arg</i>.to_f.

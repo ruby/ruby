@@ -529,8 +529,8 @@ static VALUE nurat_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Rational(x, y, exception: true)  ->  rational
- *    Rational(arg, exception: true)   ->  rational
+ *    Rational(x, y, exception: true)  ->  rational or nil
+ *    Rational(arg, exception: true)   ->  rational or nil
  *
  * Returns +x/y+ or +arg+ as a Rational.
  *
