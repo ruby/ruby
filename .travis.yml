@@ -106,7 +106,7 @@ env:
     name: x86_64-linux
     <<: *linux
     env:
-      - RUN_OPTS="-w"
+      - RUBYOPT="-w" # test the same condition as RubyCI's chkbuild by this
 
   - &jemalloc
     name: --with-jemalloc
