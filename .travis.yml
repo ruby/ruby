@@ -105,6 +105,8 @@ env:
   - &x86_64-linux
     name: x86_64-linux
     <<: *linux
+    env:
+      - RUN_OPTS="-w"
 
   - &jemalloc
     name: --with-jemalloc
