@@ -317,11 +317,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_sub_with_redefining_int_minus
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Integer
+        remove_method :-
         def -(other); 42; end
       end
-      $VERBOSE = verbose
       a = Complex(1, 2) - Complex(0, 1)
       puts a == Complex(42, 42)
     end;
@@ -329,11 +328,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_sub_with_redefining_float_minus
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Float
+        remove_method :-
         def -(other); 42.0; end
       end
-      $VERBOSE = verbose
       a = Complex(1.0, 2.0) - Complex(0, 1)
       puts a == Complex(42.0, 42.0)
     end;
@@ -341,11 +339,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_sub_with_redefining_rational_minus
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Rational
+        remove_method :-
         def -(other); 355/113r; end
       end
-      $VERBOSE = verbose
       a = Complex(1r, 2r) - Complex(0, 1)
       puts a == Complex(355/113r, 355/113r)
     end;
@@ -375,11 +372,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_mul_with_redefining_int_mult
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Integer
+        remove_method :*
         def *(other); 42; end
       end
-      $VERBOSE = verbose
       a = Complex(2, 0) * Complex(1, 2)
       puts a == Complex(0, 84)
     end;
@@ -387,11 +383,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_mul_with_redefining_float_mult
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Float
+        remove_method :*
         def *(other); 42.0; end
       end
-      $VERBOSE = verbose
       a = Complex(2.0, 0.0) * Complex(1, 2)
       puts a == Complex(0.0, 84.0)
     end;
@@ -400,11 +395,10 @@ class Complex_Test < Test::Unit::TestCase
 
   def test_mul_with_redefining_rational_mult
     assert_in_out_err([], <<-'end;', ['true'], [])
-      $VERBOSE, verbose = nil, $VERBOSE
       class Rational
+        remove_method :*
         def *(other); 355/113r; end
       end
-      $VERBOSE = verbose
       a = Complex(2r, 0r) * Complex(1, 2)
       puts a == Complex(0r, 2*355/113r)
     end;
