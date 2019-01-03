@@ -89,6 +89,11 @@ The original copyright notice follows.
 #endif
 #include "ruby_atomic.h"
 
+#ifdef __OpenBSD__
+/* to define OpenBSD for version check */
+#include <sys/param.h>
+#endif
+
 typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
 
 /* Period parameters */
