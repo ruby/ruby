@@ -131,6 +131,17 @@ f_mul(VALUE x, VALUE y)
             return ZERO;
         if (x == ONE) return y;
         if (y == ONE) return x;
+        return rb_int_mul(x, y);
+    }
+    else if (RB_FLOAT_TYPE_P(x) &&
+             UNLIKELY(rb_method_basic_definition_p(rb_cFloat, idMULT))) {
+        if (y == ONE) return x;
+        return rb_float_mul(x, y);
+    }
+    else if (RB_TYPE_P(x, T_RATIONAL) &&
+             UNLIKELY(rb_method_basic_definition_p(rb_cRational, idMULT))) {
+        if (y == ONE) return x;
+        return rb_rational_mul(x, y);
     }
     else if (UNLIKELY(rb_method_basic_definition_p(CLASS_OF(x), idMULT))) {
         if (y == ONE) return x;
