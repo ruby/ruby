@@ -105,8 +105,6 @@ env:
   - &x86_64-linux
     name: x86_64-linux
     <<: *linux
-    env:
-      - RUBYOPT="-w" # test the same condition as RubyCI's chkbuild by this
 
   - &jemalloc
     name: --with-jemalloc
@@ -372,7 +370,7 @@ before_script:
 
 script:
   - $SETARCH make -s test TESTOPTS="${TESTOPTS=$JOBS -q --tty=no}"
-  - travis_wait 40 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}"
+  - travis_wait 40 $SETARCH make -s test-all -o exts TESTOPTS="${TEST_ALL_OPTS=$TESTOPTS}" RUBYOPT="-w"
   - $SETARCH make -s test-spec MSPECOPT=-ff # not using `-j` because sometimes `mspec -j` silently dies
 
 # Branch matrix.  Not all branches are Travis-ready so we limit branches here.
