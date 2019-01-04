@@ -928,18 +928,23 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
 static int
 ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
 {
-    st_hash_t hash_value = do_hash(key);
-    unsigned bin = find_entry(hash, hash_value, key);
-
-    if (bin == RHASH_AR_TABLE_MAX_BOUND) {
+    if (RHASH_AR_TABLE_SIZE(hash) == 0) {
         return 0;
     }
     else {
-        HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
-        if (value != NULL) {
-            *value = RHASH_AR_TABLE_REF(hash, bin)->record;
+        st_hash_t hash_value = do_hash(key);
+        unsigned bin = find_entry(hash, hash_value, key);
+
+        if (bin == RHASH_AR_TABLE_MAX_BOUND) {
+            return 0;
         }
-        return 1;
+        else {
+            HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
+            if (value != NULL) {
+                *value = RHASH_AR_TABLE_REF(hash, bin)->record;
+            }
+            return 1;
+        }
     }
 }
 
