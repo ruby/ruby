@@ -3,8 +3,8 @@ require 'tsort'
 
 ##
 # RDoc::Parser::C attempts to parse C extension files.  It looks for
-# the standard patterns that you find in extensions: <tt>rb_define_class,
-# rb_define_method</tt> and so on.  It tries to find the corresponding
+# the standard patterns that you find in extensions: <tt>rb_define_class</tt>,
+# <tt>rb_define_method</tt> and so on.  It tries to find the corresponding
 # C source for the methods and extract comments, but if we fail
 # we don't worry too much.
 #
