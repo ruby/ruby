@@ -1011,6 +1011,7 @@ zstream_run_func(void *ptr)
 
 /*
  * There is no safe way to interrupt z->run->func().
+ * async-signal-safe
  */
 static void
 zstream_unblock_func(void *ptr)
@@ -1053,8 +1054,9 @@ zstream_run(struct zstream *z, Bytef *src, long len, int flush)
     }
 
 loop:
-    err = (int)(VALUE)rb_thread_call_without_gvl(zstream_run_func, (void *)&args,
-						 zstream_unblock_func, (void *)&args);
+    err = (int)(VALUE)rb_nogvl(zstream_run_func, (void *)&args,
+                               zstream_unblock_func, (void *)&args,
+                               RB_NOGVL_UBF_ASYNC_SAFE);
 
     if (flush != Z_FINISH && err == Z_BUF_ERROR
 	    && z->stream.avail_out > 0) {

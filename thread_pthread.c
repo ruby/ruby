@@ -1542,6 +1542,11 @@ rb_thread_wakeup_timer_thread(int sig)
             if (ec) {
                 RUBY_VM_SET_TRAP_INTERRUPT(ec);
                 ubf_timer_arm(current);
+
+                /* some ubfs can interrupt single-threaded process directly */
+                if (vm->ubf_async_safe && mth->unblock.func) {
+                    (mth->unblock.func)(mth->unblock.arg);
+                }
             }
         }
     }

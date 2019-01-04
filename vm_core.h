@@ -608,6 +608,9 @@ typedef struct rb_vm_struct {
     VALUE thgroup_default;
     int living_thread_num;
 
+    /* set in single-threaded processes only: */
+    volatile int ubf_async_safe;
+
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
     unsigned int thread_report_on_exception: 1;
