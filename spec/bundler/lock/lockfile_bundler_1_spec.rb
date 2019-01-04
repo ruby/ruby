@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "the lockfile format", :bundler => "< 2" do
+RSpec.describe "the lockfile format", :bundler => "< 3" do
   include Bundler::GemHelpers
 
   before { ENV["BUNDLER_SPEC_IGNORE_COMPATIBILITY_GUARD"] = "TRUE" }
@@ -78,7 +78,7 @@ RSpec.describe "the lockfile format", :bundler => "< 2" do
   it "does not update the lockfile's bundler version if nothing changed during bundle install", :ruby_repo do
     version = "#{Bundler::VERSION.split(".").first}.0.0.0.a"
 
-    lockfile <<-L
+    lockfile normalize_uri_file(<<-L)
       GEM
         remote: file://localhost#{gem_repo1}/
         specs:
@@ -94,13 +94,13 @@ RSpec.describe "the lockfile format", :bundler => "< 2" do
          #{version}
     L
 
-    install_gemfile <<-G
+    install_gemfile normalize_uri_file(<<-G)
       source "file://localhost#{gem_repo1}"
 
       gem "rack"
     G
 
-    lockfile_should_be <<-G
+    lockfile_should_be normalize_uri_file(<<-G)
       GEM
         remote: file://localhost#{gem_repo1}/
         specs:

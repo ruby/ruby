@@ -21,8 +21,8 @@ BUNDLE-LOCK(1)							BUNDLE-LOCK(1)
        1m--local0m
 	      Do not attempt to connect to 1mrubygems.org22m. Instead, Bundler will
 	      use  the	gems  already  present	in  Rubygems' cache or in 1mven-0m
-	      1mdor/cache22m. Note that  if  a	appropriate  platform-specific	gem
-	      exists on 1mrubygems.org 22mit will not be found.
+	      1mdor/cache22m. Note that if a appropriate platform-specific gem	ex-
+	      ists on 1mrubygems.org 22mit will not be found.
 
        1m--print0m
 	      Prints  the  lockfile  to  STDOUT instead of writing to the file
@@ -60,17 +60,17 @@ BUNDLE-LOCK(1)							BUNDLE-LOCK(1)
 
 1mUPDATING ALL GEMS0m
        If  you	run  1mbundle  lock  22mwith  1m--update 22moption without list of gems,
-       bundler will ignore any	previously  installed  gems  and  resolve  all
-       dependencies  again  based on the latest versions of all gems available
-       in the sources.
+       bundler will ignore any previously installed gems and resolve  all  de-
+       pendencies  again based on the latest versions of all gems available in
+       the sources.
 
 1mUPDATING A LIST OF GEMS0m
        Sometimes, you want to update a single gem in the Gemfile(5), and leave
        the  rest  of the gems that you specified locked to the versions in the
        1mGemfile.lock22m.
 
-       For instance, you  only	want  to  update  1mnokogiri22m,  run  1mbundle  lock0m
-       1m--update nokogiri22m.
+       For instance, you only want to update 1mnokogiri22m, run 1mbundle  lock	--up-0m
+       1mdate nokogiri22m.
 
        Bundler will update 1mnokogiri 22mand any of its dependencies, but leave the
        rest of the gems that you specified locked to the versions in the  1mGem-0m

@@ -17,8 +17,8 @@ BUNDLE-REMOVE(1)					      BUNDLE-REMOVE(1)
 1mOPTIONS0m
        1m--install0m
 	      Runs 1mbundle install 22mafter the given gems have been removed  from
-	      the  Gemfile,  which  ensures  that  both  the  lockfile and the
-	      installed gems on disk are also  updated	to  remove  the  given
+	      the  Gemfile,  which  ensures that both the lockfile and the in-
+	      stalled gems on disk  are  also  updated	to  remove  the  given
 	      gem(s).
 
        Example:

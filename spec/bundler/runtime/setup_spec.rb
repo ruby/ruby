@@ -886,7 +886,9 @@ end
       end
     end
 
-    it "should succesfully require 'bundler/setup'", :ruby_repo do
+    # Can't make this pass on 2.6 since the ruby standard library has the same $LOAD_PATH
+    # entry as bundler (since it's a default gem)
+    it "should successfully require 'bundler/setup'", :ruby_repo, :ruby => "< 2.6" do
       install_gemfile ""
 
       ENV["GEM_PATH"] = symlinked_gem_home.path
@@ -1395,7 +1397,7 @@ end
   end
 
   describe "after setup" do
-    it "allows calling #gem on random objects", :bundler => "< 2" do
+    it "allows calling #gem on random objects", :bundler => "< 3" do
       install_gemfile <<-G
         source "file:#{gem_repo1}"
         gem "rack"
@@ -1410,7 +1412,7 @@ end
       expect(out).to eq("rack-1.0.0")
     end
 
-    it "keeps Kernel#gem private", :bundler => "2" do
+    it "keeps Kernel#gem private", :bundler => "3" do
       install_gemfile! <<-G
         source "file:#{gem_repo1}"
         gem "rack"

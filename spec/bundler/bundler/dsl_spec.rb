@@ -32,7 +32,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    context "default hosts (git, gist)", :bundler => "< 2" do
+    context "default hosts (git, gist)", :bundler => "< 3" do
       context "when github.https config is true" do
         before { bundle "config github.https true" }
         it "converts :github to :git using https" do
@@ -79,7 +79,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    context "default git sources", :bundler => "2" do
+    context "default git sources", :bundler => "3" do
       it "has none" do
         expect(subject.instance_variable_get(:@git_sources)).to eq({})
       end
@@ -245,7 +245,7 @@ RSpec.describe Bundler::Dsl do
     #   gem 'spree_api'
     #   gem 'spree_backend'
     # end
-    describe "#github", :bundler => "< 2" do
+    describe "#github", :bundler => "< 3" do
       it "from github" do
         spree_gems = %w[spree_core spree_api spree_backend]
         subject.github "spree" do
@@ -258,7 +258,7 @@ RSpec.describe Bundler::Dsl do
       end
     end
 
-    describe "#github", :bundler => "2" do
+    describe "#github", :bundler => "3" do
       it "from github" do
         expect do
           spree_gems = %w[spree_core spree_api spree_backend]

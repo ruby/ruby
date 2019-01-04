@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install" do
   context "git sources" do
-    it "displays the revision hash of the gem repository", :bundler => "< 2" do
+    it "displays the revision hash of the gem repository", :bundler => "< 3" do
       build_git "foo", "1.0", :path => lib_path("foo")
 
       install_gemfile <<-G
@@ -14,7 +14,7 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "foo 1.0", :source => "git@#{lib_path("foo")}"
     end
 
-    it "displays the ref of the gem repository when using branch~num as a ref", :bundler => "< 2" do
+    it "displays the ref of the gem repository when using branch~num as a ref", :bundler => "< 3" do
       build_git "foo", "1.0", :path => lib_path("foo")
       rev = revision_for(lib_path("foo"))[0..6]
       update_git "foo", "2.0", :path => lib_path("foo"), :gemspec => true

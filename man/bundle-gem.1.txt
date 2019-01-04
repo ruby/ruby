@@ -16,8 +16,8 @@ BUNDLE-GEM(1)							 BUNDLE-GEM(1)
        Run  1mrake -T 22min the resulting project for a list of Rake tasks that can
        be used to test and publish the gem to rubygems.org.
 
-       The generated project skeleton  can  be	customized  with  OPTIONS,  as
-       explained  below.  Note	that  these  options can also be specified via
+       The generated project skeleton can be customized with OPTIONS,  as  ex-
+       plained	below.	Note  that  these  options  can  also be specified via
        Bundler's global configuration file using the following names:
 
        o   1mgem.coc0m
@@ -57,9 +57,9 @@ BUNDLE-GEM(1)							 BUNDLE-GEM(1)
 
        1m--mit	22mAdd an MIT license to a 1mLICENSE.txt 22mfile in the root of the gen-
 	      erated project. Your name from the global git config is used for
-	      the copyright statement.	If  this  option  is  unspecified,  an
-	      interactive  prompt  will  be  displayed	and the answer will be
-	      saved in Bundler's global config for future 1mbundle gem 22muse.
+	      the copyright statement. If this option is unspecified,  an  in-
+	      teractive  prompt will be displayed and the answer will be saved
+	      in Bundler's global config for future 1mbundle gem 22muse.
 
        1m--no-mit0m
 	      Do not create a 1mLICENSE.txt 22m(overrides 1m--mit  22mspecified  in  the
@@ -68,12 +68,12 @@ BUNDLE-GEM(1)							 BUNDLE-GEM(1)
        1m-t22m, 1m--test=minitest22m, 1m--test=rspec0m
 	      Specify the test framework that Bundler should use when generat-
 	      ing the project. Acceptable values are 1mminitest 22mand	1mrspec22m.  The
-	      1mGEM_NAME.gemspec  22mwill  be  configured  and a skeleton test/spec
-	      directory will be created based on this option. If  this	option
-	      is  unspecified, an interactive prompt will be displayed and the
-	      answer will be saved in Bundler's global config for future  1mbun-0m
-	      1mdle  gem  22muse.  If  no  option is specified, the default testing
-	      framework is RSpec.
+	      1mGEM_NAME.gemspec 22mwill be configured and a skeleton test/spec di-
+	      rectory will be created based on this option. If this option  is
+	      unspecified, an interactive prompt will be displayed and the an-
+	      swer will be saved in Bundler's global config for future	1mbundle0m
+	      1mgem  22muse.  If no option is specified, the default testing frame-
+	      work is RSpec.
 
        1m-e22m, 1m--edit[=EDITOR]0m
 	      Open the resulting GEM_NAME.gemspec in EDITOR,  or  the  default

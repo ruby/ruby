@@ -4,8 +4,6 @@ module Bundler
   # Represents metadata from when the Bundler gem was built.
   module BuildMetadata
     # begin ivars
-    @built_at = "2018-12-19".freeze
-    @git_commit_sha = "3fc4de72b".freeze
     @release = false
     # end ivars
 

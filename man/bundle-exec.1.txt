@@ -14,8 +14,8 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 
        Essentially, if you  would  normally  have  run	something  like  1mrspec0m
        1mspec/my_spec.rb22m,  and  you	want to use the gems specified in the [1mGem-0m
-       1mfile(5)22m][Gemfile(5)]  and  installed   via	 bundle   install(1)   4mbun-0m
-       4mdle-install.1.html24m, you should run 1mbundle exec rspec spec/my_spec.rb22m.
+       1mfile(5)22m][Gemfile(5)] and installed	via  bundle  install(1)  4mbundle-in-0m
+       4mstall.1.html24m, you should run 1mbundle exec rspec spec/my_spec.rb22m.
 
        Note  that 1mbundle exec 22mdoes not require that an executable is available
        on your shell's 1m$PATH22m.
@@ -27,10 +27,10 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
 	      of passing all file descriptors to the new process.
 
 1mBUNDLE INSTALL --BINSTUBS0m
-       If  you	use  the   1m--binstubs   22mflag   in	 bundle   install(1)   4mbun-0m
-       4mdle-install.1.html24m,  Bundler  will	automatically  create  a  directory
-       (which defaults to 1mapp_root/bin22m)  containing  all  of  the	executables
-       available from gems in the bundle.
+       If  you	use  the  1m--binstubs	22mflag  in  bundle  install(1)  4mbundle-in-0m
+       4mstall.1.html24m,  Bundler will automatically create a directory (which de-
+       faults to 1mapp_root/bin22m) containing all  of	the  executables  available
+       from gems in the bundle.
 
        After  using 1m--binstubs22m, 1mbin/rspec spec/my_spec.rb 22mis identical to 1mbun-0m
        1mdle exec rspec spec/my_spec.rb22m.
@@ -39,8 +39,8 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
        1mbundle exec 22mmakes a number of changes to the  shell  environment,  then
        executes the command you specify in full.
 
-       o   make  sure  that  it's  still  possible to shell out to 1mbundle 22mfrom
-	   inside a command invoked by 1mbundle exec 22m(using 1m$BUNDLE_BIN_PATH22m)
+       o   make  sure that it's still possible to shell out to 1mbundle 22mfrom in-
+	   side a command invoked by 1mbundle exec 22m(using 1m$BUNDLE_BIN_PATH22m)
 
        o   put	the  directory	containing  executables  (like	1mrails22m,  1mrspec22m,
 	   1mrackup22m) for your bundle on 1m$PATH0m
@@ -82,18 +82,18 @@ BUNDLE-EXEC(1)							BUNDLE-EXEC(1)
        By default, when attempting to 1mbundle exec 22mto a file with a  ruby  she-
        bang,  Bundler will 1mKernel.load 22mthat file instead of using 1mKernel.exec22m.
        For the vast majority of cases, this is a performance improvement. In a
-       rare  few  cases,  this	could  cause some subtle side-effects (such as
-       dependence on the exact contents of 1m$0 22mor 1m__FILE__22m) and  the  optimiza-
-       tion can be disabled by enabling the 1mdisable_exec_load 22msetting.
+       rare  few cases, this could cause some subtle side-effects (such as de-
+       pendence on the exact contents of 1m$0 22mor 1m__FILE__22m) and the  optimization
+       can be disabled by enabling the 1mdisable_exec_load 22msetting.
 
    1mShelling out0m
        Any  Ruby  code that opens a subshell (like 1msystem22m, backticks, or 1m%x{}22m)
        will automatically use the current Bundler environment. If you need  to
        shell  out  to  a Ruby command that is not part of your current bundle,
-       use the 1mwith_clean_env 22mmethod  with  a  block.  Any  subshells  created
-       inside  the  block will be given the environment present before Bundler
-       was activated. For example, Homebrew commands run Ruby, but don't  work
-       inside a bundle:
+       use the 1mwith_clean_env 22mmethod with a block. Any subshells  created	in-
+       side the block will be given the environment present before Bundler was
+       activated. For example, Homebrew commands run Ruby, but don't work  in-
+       side a bundle:
 
 
 

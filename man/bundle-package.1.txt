@@ -10,15 +10,15 @@ BUNDLE-PACKAGE(1)					     BUNDLE-PACKAGE(1)
 
 1mDESCRIPTION0m
        Copy  all of the 1m.gem 22mfiles needed to run the application into the 1mven-0m
-       1mdor/cache   22mdirectory.   In   the	future,   when	 running    [bundle
-       install(1)][bundle-install], use the gems in the cache in preference to
+       1mdor/cache  22mdirectory.  In  the  future,  when   running   [bundle	in-
+       stall(1)][bundle-install],  use	the gems in the cache in preference to
        the ones on 1mrubygems.org22m.
 
 1mGIT AND PATH GEMS0m
        Since Bundler 1.2, the 1mbundle package 22mcommand can also package 1m:git 22mand
-       1m:path	22mdependencies  besides  .gem	files.	This needs to be explicitly
-       enabled via the 1m--all 22moption. Once	used,  the  1m--all  22moption	will  be
-       remembered.
+       1m:path	22mdependencies besides .gem files. This needs to be explicitly en-
+       abled via the 1m--all 22moption. Once used, the 1m--all 22moption will be  remem-
+       bered.
 
 1mSUPPORT FOR MULTIPLE PLATFORMS0m
        When  using  gems that have different packages for different platforms,
@@ -48,9 +48,9 @@ BUNDLE-PACKAGE(1)					     BUNDLE-PACKAGE(1)
        run 1mbundle install22m, bundler is forced to check to see whether a  1m"java"0m
        platformed 1mnokogiri 22mexists.
 
-       Even  though  the  1mnokogiri  22mgem  for  the Ruby platform is 4mtechnically0m
-       acceptable on JRuby, it has a C extension that does not run  on	JRuby.
-       As a result, bundler will, by default, still connect to 1mrubygems.org 22mto
+       Even  though  the 1mnokogiri 22mgem for the Ruby platform is 4mtechnically24m ac-
+       ceptable on JRuby, it has a C extension that does not run on JRuby.  As
+       a  result,  bundler  will, by default, still connect to 1mrubygems.org 22mto
        check whether it has a version of one of your  gems  more  specific  to
        your platform.
 

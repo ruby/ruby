@@ -43,8 +43,8 @@ GEMFILE(5)							    GEMFILE(5)
        Some gem sources require a username and password. Use bundle  config(1)
        4mbundle-config.1.html24m  to  set  the username and password for any of the
        sources that need it. The command must be run  once  on	each  computer
-       that  will  install  the  Gemfile,  but this keeps the credentials from
-       being stored in plain text in version control.
+       that  will install the Gemfile, but this keeps the credentials from be-
+       ing stored in plain text in version control.
 
 
 
@@ -98,8 +98,8 @@ GEMFILE(5)							    GEMFILE(5)
        o   Other implementations 4mhttps://www.ruby-lang.org/en/about/24m  of  Ruby
 	   exist. Some of the more well-known implementations include Rubinius
 	   4mhttps://rubinius.com/24m, and JRuby 4mhttp://jruby.org/24m. Rubinius is  an
-	   alternative	implementation	of  Ruby  written in Ruby. JRuby is an
-	   implementation of Ruby on the JVM, short for Java Virtual Machine.
+	   alternative implementation of Ruby written in Ruby. JRuby is an im-
+	   plementation of Ruby on the JVM, short for Java Virtual Machine.
 
 
 
@@ -227,8 +227,8 @@ GEMFILE(5)							    GEMFILE(5)
        Note that on 1mbundle install22m, bundler downloads and evaluates all  gems,
        in  order to create a single canonical list of all of the required gems
        and their dependencies. This means that you cannot list different  ver-
-       sions  of  the  same  gems  in  different groups. For more details, see
-       Understanding Bundler 4mhttp://bundler.io/rationale.html24m.
+       sions  of  the same gems in different groups. For more details, see Un-
+       derstanding Bundler 4mhttp://bundler.io/rationale.html24m.
 
    1mPLATFORMS0m
        If a gem should only be used in a particular platform or set  of  plat-
@@ -256,8 +256,8 @@ GEMFILE(5)							    GEMFILE(5)
 
        1mmswin	22mWindows
 
-       You  can  restrict  further  by	platform and version for all platforms
-       4mexcept24m for 1mrbx22m, 1mjruby22m, 1mtruffleruby 22mand 1mmswin22m.
+       You  can restrict further by platform and version for all platforms 4mex-0m
+       4mcept24m for 1mrbx22m, 1mjruby22m, 1mtruffleruby 22mand 1mmswin22m.
 
        To specify a version in addition to a platform, append the version num-
        ber without the delimiter to the platform. For example, to specify that
@@ -271,14 +271,14 @@ GEMFILE(5)							    GEMFILE(5)
 
        The full list of platforms and supported versions includes:
 
-       1mruby	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+       1mruby	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
-       1mmri	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+       1mmri	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
-       1mmingw	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+       1mmingw	22m1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
        1mx64_mingw0m
-	      2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+	      2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
        As with groups, you can specify one or more platforms:
 
@@ -313,8 +313,8 @@ GEMFILE(5)							    GEMFILE(5)
        it  will  fall  back  on global sources using the ordering described in
        4mSOURCE24m 4mPRIORITY24m.
 
-       Selecting a specific source repository this  way  also  suppresses  the
-       ambiguous gem warning described above in 4mGLOBAL24m 4mSOURCES24m 4m(#source)24m.
+       Selecting a specific source repository this way also suppresses the am-
+       biguous gem warning described above in 4mGLOBAL24m 4mSOURCES24m 4m(#source)24m.
 
        Using  the  1m:source  22moption  for  an individual gem will also make that
        source available as a possible global source for any other  gems  which
@@ -342,13 +342,13 @@ GEMFILE(5)							    GEMFILE(5)
        can deliver malicious code and compromise your system.  HTTPS  and  SSH
        are strongly preferred.
 
-       The  1mgroup22m,  1mplatforms22m,  and  1mrequire  22moptions are available and behave
-       exactly the same as they would for a normal gem.
+       The  1mgroup22m, 1mplatforms22m, and 1mrequire 22moptions are available and behave ex-
+       actly the same as they would for a normal gem.
 
-       A git repository 1mSHOULD 22mhave at least one file,  at  the  root  of	the
-       directory  containing  the  gem, with the extension 1m.gemspec22m. This file
-       1mMUST 22mcontain a valid gem specification, as expected by  the  1mgem	build0m
-       command.
+       A git repository 1mSHOULD 22mhave at least one file, at the root of the	di-
+       rectory containing the gem, with the extension 1m.gemspec22m. This file 1mMUST0m
+       contain a valid gem specification, as expected by the  1mgem  build  22mcom-
+       mand.
 
        If  a  git repository does not have a 1m.gemspec22m, bundler will attempt to
        create one, but it will not contain any dependencies, executables, or C
@@ -419,8 +419,8 @@ GEMFILE(5)							    GEMFILE(5)
    1mGIT SOURCE0m
        A  custom  git source can be defined via the 1mgit_source 22mmethod. Provide
        the source's name as an argument, and a block which receives  a	single
-       argument  and  interpolates  it	into  a string to return the full repo
-       address:
+       argument  and interpolates it into a string to return the full repo ad-
+       dress:
 
 
 
@@ -510,8 +510,8 @@ GEMFILE(5)							    GEMFILE(5)
 
 
 
-       Since the 1mbitbucket  22mmethod  is  a	specialization	of  1mgit_source22m,  it
-       accepts a 1m:branch 22mnamed argument.
+       Since the 1mbitbucket 22mmethod is a specialization of  1mgit_source22m,  it  ac-
+       cepts a 1m:branch 22mnamed argument.
 
    1mPATH0m
        You  can  specify that a gem is located in a particular location on the
@@ -573,8 +573,8 @@ GEMFILE(5)							    GEMFILE(5)
 
 
        In  the	case of the group block form the :optional option can be given
-       to prevent a group from being installed unless  listed  in  the	1m--with0m
-       option given to the 1mbundle install 22mcommand.
+       to prevent a group from being installed unless listed in the 1m--with 22mop-
+       tion given to the 1mbundle install 22mcommand.
 
        In  the	case of the 1mgit 22mblock form, the 1m:ref22m, 1m:branch22m, 1m:tag22m, and 1m:sub-0m
        1mmodules 22moptions may be passed to the 1mgit 22mmethod, and all  gems  in  the
@@ -584,8 +584,8 @@ GEMFILE(5)							    GEMFILE(5)
        available as a possible global source for any other gems which  do  not
        specify explicit sources. Thus, when defining source blocks, it is rec-
        ommended that you also ensure all other gems in the Gemfile  are  using
-       explicit  sources,  either  via	source blocks or 1m:source 22mdirectives on
-       individual gems.
+       explicit sources, either via source blocks or 1m:source 22mdirectives on in-
+       dividual gems.
 
 1mINSTALL_IF0m
        The 1minstall_if 22mmethod allows gems to be installed based on	a  proc  or
@@ -612,12 +612,12 @@ GEMFILE(5)							    GEMFILE(5)
        cies listed in the 1m.gemspec 22mfile.
 
        The 1mgemspec 22mmethod adds any runtime dependencies as gem requirements in
-       the  default  group.  It  also  adds  development  dependencies	as gem
-       requirements in the 1mdevelopment 22mgroup. Finally, it adds a gem  require-
-       ment on your project (1m:path => '.'22m). In conjunction with 1mBundler.setup22m,
-       this allows you to require project files in your test code as you would
-       if  the	project  were  installed as a gem; you need not manipulate the
-       load path manually or require project files via relative paths.
+       the  default  group.  It  also adds development dependencies as gem re-
+       quirements in the 1mdevelopment 22mgroup. Finally, it adds a gem requirement
+       on your project (1m:path => '.'22m). In conjunction with 1mBundler.setup22m, this
+       allows you to require project files in your test code as you  would  if
+       the  project  were installed as a gem; you need not manipulate the load
+       path manually or require project files via relative paths.
 
        The 1mgemspec 22mmethod supports optional 1m:path22m, 1m:glob22m, 1m:name22m, and 1m:develop-0m
        1mment_group 22moptions, which control where bundler looks for the 1m.gemspec22m,
@@ -650,4 +650,4 @@ GEMFILE(5)							    GEMFILE(5)
 
 
 
-				 November 2018			    GEMFILE(5)
+				 January 2019			    GEMFILE(5)

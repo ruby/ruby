@@ -197,7 +197,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stderr).to eq("ZOMG LOAD ERROR")
     end
 
-    it "allows --path to change the location of the standalone bundle", :bundler => "< 2" do
+    it "allows --path to change the location of the standalone bundle", :bundler => "< 3" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
 
       Dir.chdir(bundled_app) do
@@ -213,7 +213,7 @@ RSpec.shared_examples "bundle install --standalone" do
       expect(last_command.stdout).to eq("2.3.2")
     end
 
-    it "allows --path to change the location of the standalone bundle", :bundler => "2" do
+    it "allows --path to change the location of the standalone bundle", :bundler => "3" do
       bundle! "install", forgotten_command_line_options(:path => "path/to/bundle").merge(:standalone => true)
       path = File.expand_path("path/to/bundle")
 
@@ -273,7 +273,7 @@ RSpec.shared_examples "bundle install --standalone" do
     end
   end
 
-  describe "with --binstubs", :bundler => "< 2" do
+  describe "with --binstubs", :bundler => "< 3" do
     before do
       gemfile <<-G
         source "file://#{gem_repo1}"

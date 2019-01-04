@@ -181,6 +181,7 @@ RSpec.describe "The library itself" do
       gem.coc
       gem.mit
       inline
+      lockfile_upgrade_warning
       lockfile_uses_separate_rubygems_sources
       use_gem_version_promoter_for_major_updates
       viz_command
@@ -260,7 +261,11 @@ RSpec.describe "The library itself" do
         end
       end
 
-      expect(last_command.stdboth.split("\n")).to be_well_formed
+      warnings = last_command.stdboth.split("\n")
+      # ignore warnings around deprecated Object#=~ method in RubyGems
+      warnings.reject! {|w| w =~ %r{rubygems\/version.rb.*deprecated\ Object#=~} }
+
+      expect(warnings).to be_well_formed
     end
   end
 end

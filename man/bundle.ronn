@@ -94,6 +94,9 @@ We divide `bundle` subcommands into primary commands and utilities:
 * [`bundle doctor(1)`](bundle-doctor.1.html):
   Display warnings about common problems
 
+* [`bundle remove(1)`](bundle-remove.1.html):
+  Removes gems from the Gemfile
+
 ## PLUGINS
 
 When running a command that isn't listed in PRIMARY COMMANDS or UTILITIES,

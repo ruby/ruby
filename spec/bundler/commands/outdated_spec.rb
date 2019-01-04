@@ -407,7 +407,7 @@ RSpec.describe "bundle outdated" do
     expect(out).to include("Installing foo 1.0")
   end
 
-  context "after bundle install --deployment", :bundler => "< 2" do
+  context "after bundle install --deployment", :bundler => "< 3" do
     before do
       install_gemfile <<-G, forgotten_command_line_options(:deployment => true)
         source "file://#{gem_repo2}"

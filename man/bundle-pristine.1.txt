@@ -18,9 +18,9 @@ BUNDLE-PRISTINE(1)					    BUNDLE-PRISTINE(1)
        gem's git repository as if one were installing from scratch.
 
        Note:  the  Bundler  gem  cannot be restored to its original state with
-       1mpristine22m. One also cannot use 1mbundle pristine 22mon  gems  with  a  'path'
-       option  in  the	Gemfile,  because  bundler has no original copy it can
-       restore from.
+       1mpristine22m. One also cannot use 1mbundle pristine 22mon gems with a 'path' op-
+       tion  in  the  Gemfile, because bundler has no original copy it can re-
+       store from.
 
        When is it practical to use 1mbundle pristine22m?
 

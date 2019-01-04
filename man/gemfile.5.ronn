@@ -216,13 +216,13 @@ used on platforms with Ruby 2.3, use:
 The full list of platforms and supported versions includes:
 
   * `ruby`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `mri`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `mingw`:
-    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
   * `x64_mingw`:
-    2.0, 2.1, 2.2, 2.3, 2.4, 2.5
+    2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6
 
 As with groups, you can specify one or more platforms:
 
