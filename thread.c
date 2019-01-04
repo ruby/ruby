@@ -1436,7 +1436,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
 	data2 = th;
     }
     else if (ubf && vm_living_thread_num(th->vm) == 1) {
-	ubf_th = rb_thread_start_unblock_thread();
+        ubf_th = rb_thread_start_unblock_thread();
     }
 
     BLOCKING_REGION(th, {
@@ -1449,7 +1449,7 @@ call_without_gvl(void *(*func)(void *), void *data1,
     }
 
     if (ubf_th != Qfalse) {
-	thread_value(rb_thread_kill(ubf_th));
+        thread_value(rb_thread_kill(ubf_th));
     }
 
     errno = saved_errno;
