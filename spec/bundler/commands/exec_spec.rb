@@ -570,22 +570,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable is empty", :bundler => "< 2" do
-      let(:executable) { "" }
-
-      let(:exit_code) { 0 }
-      let(:expected) { "#{path} is empty" }
-      let(:expected_err) { "" }
-      if LessThanProc.with(RUBY_VERSION).call("1.9")
-        # Kernel#exec in ruby < 1.9 will raise Errno::ENOEXEC if the command content is empty,
-        # even if the command is set as an executable.
-        pending "Kernel#exec is different"
-      else
-        it_behaves_like "it runs"
-      end
-    end
-
-    context "the executable is empty", :bundler => "2" do
+    context "the executable is empty" do
       let(:executable) { "" }
 
       let(:exit_code) { 0 }
@@ -594,18 +579,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises", :bundler => "< 2" do
-      let(:executable) { super() << "\nraise 'ERROR'" }
-      let(:exit_code) { 1 }
-      let(:expected) { super() << "\nbundler: failed to load command: #{path} (#{path})" }
-      let(:expected_err) do
-        "RuntimeError: ERROR\n  #{path}:10" +
-          (Bundler.current_ruby.ruby_18? ? "" : ":in `<top (required)>'")
-      end
-      it_behaves_like "it runs"
-    end
-
-    context "the executable raises", :bundler => "2" do
+    context "the executable raises" do
       let(:executable) { super() << "\nraise 'ERROR'" }
       let(:exit_code) { 1 }
       let(:expected_err) do
@@ -615,16 +589,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "the executable raises an error without a backtrace", :bundler => "< 2" do
-      let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
-      let(:exit_code) { 1 }
-      let(:expected) { super() << "\nbundler: failed to load command: #{path} (#{path})" }
-      let(:expected_err) { "Err: Err" }
-
-      it_behaves_like "it runs"
-    end
-
-    context "the executable raises an error without a backtrace", :bundler => "2" do
+    context "the executable raises an error without a backtrace" do
       let(:executable) { super() << "\nclass Err < Exception\ndef backtrace; end;\nend\nraise Err" }
       let(:exit_code) { 1 }
       let(:expected_err) { "bundler: failed to load command: #{path} (#{path})\nErr: Err" }
@@ -638,7 +603,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when Bundler.setup fails", :bundler => "< 2" do
+    context "when Bundler.setup fails", :bundler => "< 3" do
       before do
         gemfile <<-G
           gem 'rack', '2'
@@ -655,7 +620,7 @@ RSpec.describe "bundle exec" do
       it_behaves_like "it runs"
     end
 
-    context "when Bundler.setup fails", :bundler => "2" do
+    context "when Bundler.setup fails", :bundler => "3" do
       before do
         gemfile <<-G
           gem 'rack', '2'
@@ -800,10 +765,11 @@ __FILE__: #{path.to_s.inspect}
       it "overrides disable_shared_gems so bundler can be found" do
         skip "bundler 1.16.x is not support with Ruby 2.6 on Travis CI" if RUBY_VERSION >= "2.6"
 
+        system_gems :bundler
         file = bundled_app("file_that_bundle_execs.rb")
         create_file(file, <<-RB)
           #!#{Gem.ruby}
-          puts `bundle exec echo foo`
+          puts `#{system_bundle_bin_path} exec echo foo`
         RB
         file.chmod(0o777)
         bundle! "exec #{file}", :system_bundler => true

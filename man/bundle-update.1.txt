@@ -35,8 +35,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 	      1m--source rails0m
 
        1m--local0m
-	      Do  not  attempt	to  fetch  gems remotely and use the gem cache
-	      instead.
+	      Do  not attempt to fetch gems remotely and use the gem cache in-
+	      stead.
 
        1m--ruby 22mUpdate the locked version of Ruby  to  the  current	version  of
 	      Ruby.
@@ -79,8 +79,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 	      shared dependencies to be updated.
 
 1mUPDATING ALL GEMS0m
-       If  you	run  1mbundle  update  --all22m, bundler will ignore any previously
-       installed gems and resolve all dependencies again based on  the	latest
+       If  you run 1mbundle update --all22m, bundler will ignore any previously in-
+       stalled gems and resolve all dependencies again	based  on  the	latest
        versions of all gems available in the sources.
 
        Consider the following Gemfile(5):
@@ -95,8 +95,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 
 
        When  you  run  bundle install(1) 4mbundle-install.1.html24m the first time,
-       bundler will resolve all of the dependencies, all  the  way  down,  and
-       install what you need:
+       bundler will resolve all of the dependencies, all the way down, and in-
+       stall what you need:
 
 
 
@@ -153,8 +153,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
        To  do  this,  run  1mbundle  update  --all22m,	which  will ignore the 1mGem-0m
        1mfile.lock22m, and resolve all the dependencies again. Keep  in  mind  that
        this  process  can  result  in  a significantly different set of the 25
-       gems, based on the requirements	of  new  gems  that  the  gem  authors
-       released since the last time you ran 1mbundle update --all22m.
+       gems, based on the requirements of new gems that the  gem  authors  re-
+       leased since the last time you ran 1mbundle update --all22m.
 
 1mUPDATING A LIST OF GEMS0m
        Sometimes, you want to update a single gem in the Gemfile(5), and leave
@@ -182,8 +182,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 
 
 
-       The 1mthin 22mgem depends on  1mrack  >=  1.022m,  while  1mrack-perftools-profiler0m
-       depends on 1mrack ~> 1.022m. If you run bundle install, you get:
+       The 1mthin 22mgem depends on 1mrack >= 1.022m, while 1mrack-perftools-profiler  22mde-
+       pends on 1mrack ~> 1.022m. If you run bundle install, you get:
 
 
 
@@ -200,8 +200,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 
 
        In this case, the two gems have their own set of dependencies, but they
-       share 1mrack 22min common. If you  run  1mbundle  update  thin22m,  bundler  will
-       update  1mdaemons22m, 1meventmachine 22mand 1mrack22m, which are dependencies of 1mthin22m,
+       share 1mrack 22min common. If you run 1mbundle update thin22m, bundler  will  up-
+       date  1mdaemons22m,  1meventmachine  22mand 1mrack22m, which are dependencies of 1mthin22m,
        but  not   1mopen4   22mor   1mperftools.rb22m,	 which	 are   dependencies   of
        1mrack-perftools_profiler22m.  Note that 1mbundle update thin 22mwill update 1mrack0m
        even though it's 4malso24m a dependency of 1mrack-perftools_profiler22m.
@@ -215,10 +215,10 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
        4mdle-install.1.html24m:
 
        In this scenario, updating the 1mthin 22mversion manually in the Gemfile(5),
-       and  then  running  bundle  install(1)  4mbundle-install.1.html24m will only
-       update 1mdaemons 22mand 1meventmachine22m, but not 1mrack22m.  For  more  information,
-       see  the  1mCONSERVATIVE  UPDATING  22msection  of  bundle  install(1)  4mbun-0m
-       4mdle-install.1.html24m.
+       and  then running bundle install(1) 4mbundle-install.1.html24m will only up-
+       date 1mdaemons 22mand 1meventmachine22m, but not 1mrack22m. For more information,  see
+       the  1mCONSERVATIVE  UPDATING  22msection  of  bundle  install(1) 4mbundle-in-0m
+       4mstall.1.html24m.
 
        Starting with 1.14, specifying the 1m--conservative 22moption will also pre-
        vent shared dependencies from being updated.
@@ -242,11 +242,11 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 	      Do not allow any gem to be updated past latest 1m--patch 22m| 1m--minor0m
 	      | 1m--major22m.
 
-       When  Bundler  is  resolving  what  versions to use to satisfy declared
-       requirements in the Gemfile or in parent gems, it looks up  all	avail-
-       able versions, filters out any versions that don't satisfy the require-
-       ment, and then, by default, sorts them from newest to oldest, consider-
-       ing them in that order.
+       When  Bundler is resolving what versions to use to satisfy declared re-
+       quirements in the Gemfile or in parent gems, it looks up all  available
+       versions,  filters out any versions that don't satisfy the requirement,
+       and then, by default, sorts them from  newest  to  oldest,  considering
+       them in that order.
 
        Providing  one  of  the	patch level options (e.g. 1m--patch22m) changes the
        sort order of the satisfying versions, causing Bundler to consider  the
@@ -266,16 +266,16 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
        "1.1.1, 1.1.0, 1.0.4, 1.0.3, 1.0.2, 2.0.0".
 
        Combining the 1m--strict 22moption with any of the patch level options  will
-       remove  any  versions  beyond  the  scope of the patch level option, to
-       ensure that no gem is updated that far.
+       remove  any versions beyond the scope of the patch level option, to en-
+       sure that no gem is updated that far.
 
        To continue the previous example, if both 1m--patch 22mand 1m--strict  22moptions
        are used, the available versions for resolution would be "1.0.4, 1.0.3,
        1.0.2". If 1m--minor 22mand 1m--strict 22mare used, it would  be  "1.1.1,  1.1.0,
        1.0.4, 1.0.3, 1.0.2".
 
-       Gem  requirements  as  defined  in  the Gemfile will still be the first
-       determining factor for what versions are available. If the gem require-
+       Gem  requirements as defined in the Gemfile will still be the first de-
+       termining factor for what versions are available. If the  gem  require-
        ment  for 1mfoo 22min the Gemfile is '~> 1.0', that will accomplish the same
        thing as providing the 1m--minor 22mand 1m--strict 22moptions.
 
@@ -328,8 +328,8 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
        In case 1, bar is upgraded to 2.1.1, a minor version increase,  because
        the dependency from foo 1.4.5 required it.
 
-       In  case  2,  only  foo	is  requested  to be unlocked, but bar is also
-       allowed to move because it's not a declared dependency in the Gemfile.
+       In  case  2,  only foo is requested to be unlocked, but bar is also al-
+       lowed to move because it's not a declared dependency in the Gemfile.
 
        In case 3, bar goes up a whole major release, because a minor  increase
        is  preferred now for foo, and when it goes to 1.5.1, it requires 3.0.0
@@ -388,4 +388,4 @@ BUNDLE-UPDATE(1)					      BUNDLE-UPDATE(1)
 
 
 
-				 December 2018		      BUNDLE-UPDATE(1)
+				 January 2019		      BUNDLE-UPDATE(1)

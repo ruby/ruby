@@ -86,7 +86,7 @@
       expect(bundled_app("vendor/cache/bar-1.0")).not_to exist
     end
 
-    it "raises a warning without --all", :bundler => "< 2" do
+    it "raises a warning without --all", :bundler => "< 3" do
       build_lib "foo"
 
       install_gemfile <<-G

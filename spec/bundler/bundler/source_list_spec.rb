@@ -115,7 +115,7 @@ RSpec.describe Bundler::SourceList do
       end
     end
 
-    describe "#add_rubygems_remote", :bundler => "< 2" do
+    describe "#add_rubygems_remote", :bundler => "< 3" do
       let!(:returned_source) { source_list.add_rubygems_remote("https://rubygems.org/") }
 
       it "returns the aggregate rubygems source" do
@@ -372,7 +372,7 @@ RSpec.describe Bundler::SourceList do
       source_list.add_git_source("uri" => "git://first-git.org/path.git")
     end
 
-    it "combines the rubygems sources into a single instance, removing duplicate remotes from the end", :bundler => "< 2" do
+    it "combines the rubygems sources into a single instance, removing duplicate remotes from the end", :bundler => "< 3" do
       expect(source_list.lock_sources).to eq [
         Bundler::Source::Git.new("uri" => "git://first-git.org/path.git"),
         Bundler::Source::Git.new("uri" => "git://second-git.org/path.git"),
@@ -391,7 +391,7 @@ RSpec.describe Bundler::SourceList do
       ]
     end
 
-    it "returns all sources, without combining rubygems sources", :bundler => "2" do
+    it "returns all sources, without combining rubygems sources", :bundler => "3" do
       expect(source_list.lock_sources).to eq [
         Bundler::Source::Rubygems.new,
         Bundler::Source::Rubygems.new("remotes" => ["https://duplicate-rubygems.org"]),

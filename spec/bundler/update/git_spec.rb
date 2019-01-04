@@ -299,7 +299,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "< 2" do
+    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "> 3" do
       spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
       spec_lines[5] = "s.version = '2.0'"
 
@@ -335,7 +335,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "2" do
+    it "the --source flag updates version of gems that were originally pulled in by the source", :bundler => "3" do
       spec_lines = lib_path("bar/foo.gemspec").read.split("\n")
       spec_lines[5] = "s.version = '2.0'"
 

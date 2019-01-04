@@ -53,7 +53,7 @@ module Spec
     end
 
     def bundle_update_requires_all?
-      Bundler::VERSION.start_with?("1.") ? nil : true
+      Bundler::VERSION.start_with?("2.") ? nil : true
     end
 
     def in_app_root(&blk)
@@ -104,7 +104,7 @@ module Spec
       bundle_bin = options.delete("bundle_bin") || bindir.join("bundle")
 
       if system_bundler = options.delete(:system_bundler)
-        bundle_bin = "-S bundle"
+        bundle_bin = system_bundle_bin_path
       end
 
       env = options.delete(:env) || {}
@@ -152,7 +152,7 @@ module Spec
     bang :bundle
 
     def forgotten_command_line_options(options)
-      remembered = Bundler::VERSION.split(".", 2).first == "1"
+      remembered = Bundler.bundler_major_version < 3
       options = options.map do |k, v|
         k = Array(k)[remembered ? 0 : -1]
         v = '""' if v && v.to_s.empty?

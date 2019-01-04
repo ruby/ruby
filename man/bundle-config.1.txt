@@ -44,8 +44,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
        1mapp/.bundle/config22m.
 
        Executing  1mbundle  config --delete <name> 22mwill delete the configuration
-       in both local and global  sources.  Not	compatible  with  --global  or
-       --local flag.
+       in both local and global sources. Not compatible with --global or --lo-
+       cal flag.
 
        Executing bundle with the 1mBUNDLE_IGNORE_CONFIG 22menvironment variable set
        will cause it to ignore all configuration.
@@ -68,13 +68,13 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	      text. If used, you might add this  directory  to	your  environ-
 	      ment's  1mPATH 22mvariable. For instance, if the 1mrails 22mgem comes with
 	      a 1mrails 22mexecutable, this flag will create a 1mbin/rails 22mexecutable
-	      that  ensures  that  all	referred dependencies will be resolved
-	      using the bundled gems.
+	      that ensures that all referred dependencies will be resolved us-
+	      ing the bundled gems.
 
        1mdeployment0m
 	      In deployment mode, Bundler will 'roll-out' the bundle for  1mpro-0m
-	      1mduction  22muse.  Please  check  carefully if you want to have this
-	      option enabled in 1mdevelopment 22mor 1mtest 22menvironments.
+	      1mduction 22muse. Please check carefully if you want to have this op-
+	      tion enabled in 1mdevelopment 22mor 1mtest 22menvironments.
 
        1mpath	22mThe location to install the specified gems to. This defaults  to
 	      Rubygems'  setting.  Bundler shares this location with Rubygems,
@@ -143,8 +143,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
        4mdle-install.1.html24m.
 
        o   1mallow_bundler_dependency_conflicts     22m(1mBUNDLE_ALLOW_BUNDLER_DEPEN-0m
-	   1mDENCY_CONFLICTS22m):  Allow  resolving  to  specifications  that  have
-	   dependencies on 1mbundler 22mthat  are  incompatible  with  the  running
+	   1mDENCY_CONFLICTS22m):  Allow  resolving to specifications that have de-
+	   pendencies on  1mbundler  22mthat  are  incompatible  with  the  running
 	   Bundler version.
 
        o   1mallow_deployment_source_credential_changes    22m(1mBUNDLE_ALLOW_DEPLOY-0m
@@ -160,8 +160,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	   cally  run  1mbundle clean 22mafter installing when an explicit 1mpath 22mhas
 	   not been set and Bundler is not installing into the system gems.
 
-       o   1mauto_install  22m(1mBUNDLE_AUTO_INSTALL22m):   Automatically   run   1mbundle0m
-	   1minstall 22mwhen gems are missing.
+       o   1mauto_install 22m(1mBUNDLE_AUTO_INSTALL22m): Automatically	run  1mbundle  in-0m
+	   1mstall 22mwhen gems are missing.
 
        o   1mbin  22m(1mBUNDLE_BIN22m):  Install  executables from gems in the bundle to
 	   the specified directory. Defaults to 1mfalse22m.
@@ -183,8 +183,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	   Defaults to 1mirb22m.
 
        o   1mdefault_install_uses_path	     22m(1mBUNDLE_DEFAULT_INSTALL_USES_PATH22m):
-	   Whether  a  1mbundle  install  22mwithout  an  explicit  1m--path 22margument
-	   defaults to installing gems in 1m.bundle22m.
+	   Whether  a  1mbundle  install 22mwithout an explicit 1m--path 22margument de-
+	   faults to installing gems in 1m.bundle22m.
 
        o   1mdeployment 22m(1mBUNDLE_DEPLOYMENT22m): Disallow changes  to  the	1mGemfile22m.
 	   When  the 1mGemfile 22mis changed and the lockfile has not been updated,
@@ -194,12 +194,12 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	   Allow  installing  gems even if they do not match the checksum pro-
 	   vided by RubyGems.
 
-       o   1mdisable_exec_load	22m(1mBUNDLE_DISABLE_EXEC_LOAD22m):  Stop  Bundler  from
-	   using 1mload 22mto launch an executable in-process in 1mbundle exec22m.
+       o   1mdisable_exec_load 22m(1mBUNDLE_DISABLE_EXEC_LOAD22m): Stop Bundler from us-
+	   ing 1mload 22mto launch an executable in-process in 1mbundle exec22m.
 
-       o   1mdisable_local_branch_check     22m(1mBUNDLE_DISABLE_LOCAL_BRANCH_CHECK22m):
-	   Allow Bundler to use a local git override without a	branch	speci-
-	   fied in the Gemfile.
+       o   1mdisable_local_branch_check 22m(1mBUNDLE_DISABLE_LOCAL_BRANCH_CHECK22m): Al-
+	   low Bundler to use a local git override without a branch  specified
+	   in the Gemfile.
 
        o   1mdisable_multisource  22m(1mBUNDLE_DISABLE_MULTISOURCE22m):  When  set, Gem-
 	   files containing multiple sources will produce  errors  instead  of
@@ -242,90 +242,89 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	   cache all gems globally, rather than locally to the installing Ruby
 	   installation.
 
-       o   1mglobal_path_appends_ruby_scope				   22m(1mBUN-0m
-	   1mDLE_GLOBAL_PATH_APPENDS_RUBY_SCOPE22m):  Whether Bundler should append
-	   the Ruby scope (e.g. engine and ABI version) to a  globally-config-
-	   ured path.
+       o   1mglobal_path_appends_ruby_scope		 22m(1mBUNDLE_GLOBAL_PATH_AP-0m
+	   1mPENDS_RUBY_SCOPE22m):  Whether  Bundler  should  append the Ruby scope
+	   (e.g. engine and ABI version) to a globally-configured path.
 
        o   1mignore_messages 22m(1mBUNDLE_IGNORE_MESSAGES22m): When set, no post install
 	   messages will be printed. To silence a single gem, use dot notation
 	   like 1mignore_messages.httparty true22m.
 
-       o   1minit_gems_rb  22m(1mBUNDLE_INIT_GEMS_RB22m) Generate a 1mgems.rb 22minstead of a
+       o   1minit_gems_rb 22m(1mBUNDLE_INIT_GEMS_RB22m) Generate a 1mgems.rb 22minstead of  a
 	   1mGemfile 22mwhen running 1mbundle init22m.
 
-       o   1mjobs 22m(1mBUNDLE_JOBS22m): The number of gems Bundler can install in  par-
+       o   1mjobs  22m(1mBUNDLE_JOBS22m): The number of gems Bundler can install in par-
 	   allel. Defaults to 1.
 
        o   1mlist_command 22m(1mBUNDLE_LIST_COMMAND22m) Enable new list command feature
 
-       o   1mmajor_deprecations   22m(1mBUNDLE_MAJOR_DEPRECATIONS22m):	Whether  Bundler
+       o   1mmajor_deprecations  22m(1mBUNDLE_MAJOR_DEPRECATIONS22m):  Whether	 Bundler
 	   should print deprecation warnings for behavior that will be changed
 	   in the next major version.
 
-       o   1mno_install  22m(1mBUNDLE_NO_INSTALL22m): Whether 1mbundle package 22mshould skip
+       o   1mno_install 22m(1mBUNDLE_NO_INSTALL22m): Whether 1mbundle package 22mshould  skip
 	   installing gems.
 
-       o   1mno_prune 22m(1mBUNDLE_NO_PRUNE22m): Whether Bundler should  leave	outdated
+       o   1mno_prune  22m(1mBUNDLE_NO_PRUNE22m):  Whether Bundler should leave outdated
 	   gems unpruned when caching.
 
        o   1monly_update_to_newer_versions     22m(1mBUNDLE_ONLY_UPDATE_TO_NEWER_VER-0m
 	   1mSIONS22m): During 1mbundle update22m, only resolve to newer versions of the
 	   gems in the lockfile.
 
-       o   1mpath  22m(1mBUNDLE_PATH22m):  The	location  on disk where all gems in your
+       o   1mpath 22m(1mBUNDLE_PATH22m): The location on disk where  all  gems	in  your
 	   bundle will be located regardless of 1m$GEM_HOME 22mor 1m$GEM_PATH 22mvalues.
-	   Bundle  gems not found in this location will be installed by 1mbundle0m
-	   1minstall22m. Defaults to 1mGem.dir22m. When --deployment is  used,	defaults
+	   Bundle gems not found in this location will be installed by	1mbundle0m
+	   1minstall22m.  Defaults  to 1mGem.dir22m. When --deployment is used, defaults
 	   to vendor/bundle.
 
-       o   1mpath.system  22m(1mBUNDLE_PATH__SYSTEM22m):  Whether  Bundler  will install
+       o   1mpath.system 22m(1mBUNDLE_PATH__SYSTEM22m):  Whether  Bundler  will  install
 	   gems into the default system path (1mGem.dir22m).
 
-       o   1mpath_relative_to_cwd 22m(1mPATH_RELATIVE_TO_CWD22m) Makes	1m--path  22mrelative
+       o   1mpath_relative_to_cwd  22m(1mPATH_RELATIVE_TO_CWD22m)  Makes 1m--path 22mrelative
 	   to the CWD instead of the 1mGemfile22m.
 
        o   1mplugins 22m(1mBUNDLE_PLUGINS22m): Enable Bundler's experimental plugin sys-
 	   tem.
 
-       o   1mprefer_gems_rb 22m(1mBUNDLE_PREFER_GEMS_RB22m) Prefer  1mgems.rb  22mto  1mGemfile0m
+       o   1mprefer_gems_rb  22m(1mBUNDLE_PREFER_GEMS_RB22m)  Prefer  1mgems.rb 22mto 1mGemfile0m
 	   when Bundler is searching for a Gemfile.
 
-       o   1mprint_only_version_number	22m(1mBUNDLE_PRINT_ONLY_VERSION_NUMBER22m) Print
+       o   1mprint_only_version_number 22m(1mBUNDLE_PRINT_ONLY_VERSION_NUMBER22m)  Print
 	   only version number from 1mbundler --version22m.
 
-       o   1mredirect 22m(1mBUNDLE_REDIRECT22m): The number  of  redirects  allowed  for
+       o   1mredirect  22m(1mBUNDLE_REDIRECT22m):  The	number	of redirects allowed for
 	   network requests. Defaults to 1m522m.
 
-       o   1mretry  22m(1mBUNDLE_RETRY22m):  The number of times to retry failed network
+       o   1mretry 22m(1mBUNDLE_RETRY22m): The number of times to retry  failed  network
 	   requests. Defaults to 1m322m.
 
        o   1msetup_makes_kernel_gem_public   22m(1mBUNDLE_SETUP_MAKES_KERNEL_GEM_PUB-0m
-	   1mLIC22m):  Have  1mBundler.setup  22mmake the 1mKernel#gem 22mmethod public, even
+	   1mLIC22m): Have 1mBundler.setup 22mmake the 1mKernel#gem  22mmethod	public,  even
 	   though RubyGems declares it as private.
 
-       o   1mshebang 22m(1mBUNDLE_SHEBANG22m): The program name that should  be  invoked
-	   for	generated  binstubs. Defaults to the ruby install name used to
+       o   1mshebang  22m(1mBUNDLE_SHEBANG22m):  The program name that should be invoked
+	   for generated binstubs. Defaults to the ruby install name  used  to
 	   generate the binstub.
 
-       o   1msilence_root_warning  22m(1mBUNDLE_SILENCE_ROOT_WARNING22m):  Silence   the
+       o   1msilence_root_warning   22m(1mBUNDLE_SILENCE_ROOT_WARNING22m):  Silence  the
 	   warning Bundler prints when installing gems as root.
 
        o   1mskip_default_git_sources 22m(1mBUNDLE_SKIP_DEFAULT_GIT_SOURCES22m): Whether
 	   Bundler should skip adding default git source shortcuts to the Gem-
 	   file DSL.
 
-       o   1mspecific_platform	 22m(1mBUNDLE_SPECIFIC_PLATFORM22m):  Allow  bundler  to
-	   resolve for the specific running platform and store it in the lock-
+       o   1mspecific_platform 22m(1mBUNDLE_SPECIFIC_PLATFORM22m): Allow bundler to  re-
+	   solve  for  the specific running platform and store it in the lock-
 	   file, instead of only using a generic platform. A specific platform
-	   is the exact platform triple reported by 1mGem::Platform.local22m,  such
-	   as  1mx86_64-darwin-16  22mor  1muniversal-java-1.822m.  On	the  other hand,
-	   generic platforms are those such as 1mruby22m, 1mmswin22m, or 1mjava22m.  In  this
-	   example,  1mx86_64-darwin-16 22mwould map to 1mruby 22mand 1muniversal-java-1.80m
+	   is  the exact platform triple reported by 1mGem::Platform.local22m, such
+	   as 1mx86_64-darwin-16  22mor  1muniversal-java-1.822m.  On  the  other  hand,
+	   generic  platforms  are those such as 1mruby22m, 1mmswin22m, or 1mjava22m. In this
+	   example, 1mx86_64-darwin-16 22mwould map to 1mruby 22mand  1muniversal-java-1.80m
 	   to 1mjava22m.
 
-       o   1mssl_ca_cert 22m(1mBUNDLE_SSL_CA_CERT22m): Path to a designated CA	certifi-
-	   cate  file  or  folder containing multiple certificates for trusted
+       o   1mssl_ca_cert  22m(1mBUNDLE_SSL_CA_CERT22m): Path to a designated CA certifi-
+	   cate file or folder containing multiple  certificates  for  trusted
 	   CAs in PEM format.
 
        o   1mssl_client_cert 22m(1mBUNDLE_SSL_CLIENT_CERT22m): Path to a designated file
@@ -335,46 +334,46 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 	   Bundler uses when making HTTPS requests. Defaults to verify peer.
 
        o   1msuppress_install_using_messages 22m(1mBUNDLE_SUPPRESS_INSTALL_USING_MES-0m
-	   1mSAGES22m):  Avoid printing 1mUsing ... 22mmessages during installation when
+	   1mSAGES22m): Avoid printing 1mUsing ... 22mmessages during installation  when
 	   the version of a gem has not changed.
 
-       o   1msystem_bindir 22m(1mBUNDLE_SYSTEM_BINDIR22m): The location  where	RubyGems
+       o   1msystem_bindir  22m(1mBUNDLE_SYSTEM_BINDIR22m):  The location where RubyGems
 	   installs binstubs. Defaults to 1mGem.bindir22m.
 
        o   1mtimeout 22m(1mBUNDLE_TIMEOUT22m): The seconds allowed before timing out for
 	   network requests. Defaults to 1m1022m.
 
        o   1munlock_source_unlocks_spec     22m(1mBUNDLE_UNLOCK_SOURCE_UNLOCKS_SPEC22m):
-	   Whether  running 1mbundle update --source NAME 22munlocks a gem with the
+	   Whether running 1mbundle update --source NAME 22munlocks a gem with	the
 	   given name. Defaults to 1mtrue22m.
 
-       o   1mupdate_requires_all_flag 22m(1mBUNDLE_UPDATE_REQUIRES_ALL_FLAG22m)  Require
-	   passing  1m--all  22mto 1mbundle update 22mwhen everything should be updated,
+       o   1mupdate_requires_all_flag  22m(1mBUNDLE_UPDATE_REQUIRES_ALL_FLAG22m) Require
+	   passing 1m--all 22mto 1mbundle update 22mwhen everything should  be	updated,
 	   and disallow passing no options to 1mbundle update22m.
 
-       o   1muser_agent 22m(1mBUNDLE_USER_AGENT22m):  The  custom  user  agent	fragment
+       o   1muser_agent  22m(1mBUNDLE_USER_AGENT22m):  The  custom  user  agent fragment
 	   Bundler includes in API requests.
 
        o   1mwith 22m(1mBUNDLE_WITH22m): A 1m:22m-separated list of groups whose gems bundler
 	   should install.
 
-       o   1mwithout 22m(1mBUNDLE_WITHOUT22m): A 1m:22m-separated list of groups  whose  gems
+       o   1mwithout  22m(1mBUNDLE_WITHOUT22m):  A 1m:22m-separated list of groups whose gems
 	   bundler should not install.
 
 
 
-       In  general, you should set these settings per-application by using the
-       applicable flag to the bundle install(1) 4mbundle-install.1.html24m or  bun-
+       In general, you should set these settings per-application by using  the
+       applicable  flag to the bundle install(1) 4mbundle-install.1.html24m or bun-
        dle package(1) 4mbundle-package.1.html24m command.
 
-       You  can  set  them globally either via environment variables or 1mbundle0m
-       1mconfig22m, whichever is preferable for your setup. If you use both,  envi-
+       You can set them globally either via environment  variables  or	1mbundle0m
+       1mconfig22m,  whichever is preferable for your setup. If you use both, envi-
        ronment variables will take preference over global settings.
 
 1mLOCAL GIT REPOS0m
-       Bundler	also  allows  you  to  work  against  a git repository locally
-       instead of using the remote version. This can be achieved by setting up
-       a local override:
+       Bundler also allows you to work against a git  repository  locally  in-
+       stead of using the remote version. This can be achieved by setting up a
+       local override:
 
 
 
@@ -391,30 +390,30 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       Now instead of checking out the remote git repository, the local  over-
-       ride  will  be used. Similar to a path source, every time the local git
-       repository change, changes will be automatically picked up by  Bundler.
-       This  means  a commit in the local git repo will update the revision in
+       Now  instead of checking out the remote git repository, the local over-
+       ride will be used. Similar to a path source, every time the  local  git
+       repository  change, changes will be automatically picked up by Bundler.
+       This means a commit in the local git repo will update the  revision  in
        the 1mGemfile.lock 22mto the local git repo revision. This requires the same
-       attention  as git submodules. Before pushing to the remote, you need to
+       attention as git submodules. Before pushing to the remote, you need  to
        ensure the local override was pushed, otherwise you may point to a com-
-       mit  that  only	exists	in your local machine. You'll also need to CGI
-       escape your usernames and passwords as well.
+       mit that only exists in your local machine. You'll also need to CGI es-
+       cape your usernames and passwords as well.
 
-       Bundler does many checks to ensure a developer won't work with  invalid
-       references.  Particularly,  we force a developer to specify a branch in
-       the 1mGemfile 22min order to use this feature. If the  branch  specified  in
-       the  1mGemfile  22mand the current branch in the local git repository do not
-       match, Bundler will abort. This ensures	that  a  developer  is	always
-       working	against  the correct branches, and prevents accidental locking
+       Bundler	does many checks to ensure a developer won't work with invalid
+       references. Particularly, we force a developer to specify a  branch  in
+       the  1mGemfile  22min  order to use this feature. If the branch specified in
+       the 1mGemfile 22mand the current branch in the local git repository  do	not
+       match,  Bundler	will  abort.  This  ensures that a developer is always
+       working against the correct branches, and prevents  accidental  locking
        to a different branch.
 
-       Finally, Bundler also ensures that the current  revision  in  the  1mGem-0m
-       1mfile.lock  22mexists  in  the local git repository. By doing this, Bundler
+       Finally,  Bundler  also	ensures  that the current revision in the 1mGem-0m
+       1mfile.lock 22mexists in the local git repository. By  doing  this,  Bundler
        forces you to fetch the latest changes in the remotes.
 
 1mMIRRORS OF GEM SOURCES0m
-       Bundler supports overriding gem sources with mirrors. This  allows  you
+       Bundler	supports  overriding gem sources with mirrors. This allows you
        to configure rubygems.org as the gem source in your Gemfile while still
        using your mirror to fetch gems.
 
@@ -424,7 +423,7 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       For example, to use a mirror of rubygems.org  hosted  at  rubygems-mir-
+       For  example,  to  use a mirror of rubygems.org hosted at rubygems-mir-
        ror.org:
 
 
@@ -433,8 +432,8 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       Each  mirror  also  provides  a fallback timeout setting. If the mirror
-       does not respond within the fallback timeout, Bundler will try  to  use
+       Each mirror also provides a fallback timeout  setting.  If  the	mirror
+       does  not  respond within the fallback timeout, Bundler will try to use
        the original server instead of the mirror.
 
 
@@ -451,11 +450,11 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       The  default  fallback timeout is 0.1 seconds, but the setting can cur-
+       The default fallback timeout is 0.1 seconds, but the setting  can  cur-
        rently only accept whole seconds (for example, 1, 15, or 30).
 
 1mCREDENTIALS FOR GEM SOURCES0m
-       Bundler allows you to configure credentials for any gem	source,  which
+       Bundler	allows	you to configure credentials for any gem source, which
        allows you to avoid putting secrets into your Gemfile.
 
 
@@ -464,7 +463,7 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       For  example,  to  save	the  credentials of user 1mclaudette 22mfor the gem
+       For example, to save the credentials of	user  1mclaudette  22mfor  the	gem
        source at 1mgems.longerous.com22m, you would run:
 
 
@@ -498,7 +497,7 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-       This  is  especially  useful  for private repositories on hosts such as
+       This is especially useful for private repositories  on  hosts  such  as
        Github, where you can use personal OAuth tokens:
 
 
@@ -508,9 +507,9 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 1mCONFIGURE BUNDLER DIRECTORIES0m
-       Bundler's home, config, cache and plugin directories  are  able	to  be
-       configured  through  environment  variables.  The  default location for
-       Bundler's home directory is 1m~/.bundle22m, which  all  directories  inherit
+       Bundler's  home,  config,  cache  and plugin directories are able to be
+       configured through environment  variables.  The	default  location  for
+       Bundler's  home	directory  is 1m~/.bundle22m, which all directories inherit
        from by default. The following outlines the available environment vari-
        ables and their default values
 
@@ -526,4 +525,4 @@ BUNDLE-CONFIG(1)					      BUNDLE-CONFIG(1)
 
 
 
-				 December 2018		      BUNDLE-CONFIG(1)
+				 January 2019		      BUNDLE-CONFIG(1)

@@ -39,8 +39,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
 	      text. If used, you might add this  directory  to	your  environ-
 	      ment's  1mPATH 22mvariable. For instance, if the 1mrails 22mgem comes with
 	      a 1mrails 22mexecutable, this flag will create a 1mbin/rails 22mexecutable
-	      that  ensures  that  all	referred dependencies will be resolved
-	      using the bundled gems.
+	      that ensures that all referred dependencies will be resolved us-
+	      ing the bundled gems.
 
        1m--clean0m
 	      On finishing the installation Bundler is	going  to  remove  any
@@ -53,9 +53,9 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
 	      this option enabled in your development environment.
 
        1m--force0m
-	      Force download every gem, even  if  the  required  versions  are
-	      already  available  locally.  1m--redownload  22mis  an alias of this
-	      option.
+	      Force download every gem, even if the required versions are  al-
+	      ready  available	locally.  1m--redownload 22mis an alias of this op-
+	      tion.
 
        1m--frozen0m
 	      Do not allow the Gemfile.lock to be updated after this  install.
@@ -82,8 +82,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        1m--local0m
 	      Do not attempt to connect to 1mrubygems.org22m. Instead, Bundler will
 	      use  the	gems  already  present	in  Rubygems' cache or in 1mven-0m
-	      1mdor/cache22m. Note that  if  a	appropriate  platform-specific	gem
-	      exists on 1mrubygems.org 22mit will not be found.
+	      1mdor/cache22m. Note that if a appropriate platform-specific gem	ex-
+	      ists on 1mrubygems.org 22mit will not be found.
 
        1m--no-cache0m
 	      Do  not  update the cache in 1mvendor/cache 22mwith the newly bundled
@@ -103,8 +103,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
 	      will not get listed.
 
        1m--quiet0m
-	      Do  not  print  progress	information  to  the  standard output.
-	      Instead, Bundler will exit using a status code (1m$?22m).
+	      Do  not  print  progress information to the standard output. In-
+	      stead, Bundler will exit using a status code (1m$?22m).
 
        1m--retry=[<number>]0m
 	      Retry failed network or git requests for 4mnumber24m times.
@@ -155,8 +155,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        1.  A 1mGemfile.lock 22mis required.
 
 	   To ensure that the same versions of the gems you developed with and
-	   tested  with  are  also  used  in  deployments,  a  1mGemfile.lock 22mis
-	   required.
+	   tested  with  are  also  used in deployments, a 1mGemfile.lock 22mis re-
+	   quired.
 
 	   This is mainly to ensure that  you  remember  to  check  your  1mGem-0m
 	   1mfile.lock 22minto version control.
@@ -172,18 +172,18 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        3.  Gems  are  installed to 1mvendor/bundle 22mnot your default system loca-
 	   tion
 
-	   In development, it's convenient to share  the  gems	used  in  your
-	   application	with  other applications and other scripts that run on
-	   the system.
+	   In development, it's convenient to share the gems used in your  ap-
+	   plication with other applications and other scripts that run on the
+	   system.
 
 	   In deployment, isolation is a more important default. In  addition,
-	   the	user  deploying  the  application  may	not have permission to
-	   install gems to the system, or the web server may not have  permis-
-	   sion to read them.
+	   the	user  deploying the application may not have permission to in-
+	   stall gems to the system, or the web server may not have permission
+	   to read them.
 
 	   As  a result, 1mbundle install --deployment 22minstalls gems to the 1mven-0m
-	   1mdor/bundle 22mdirectory in the application.  This	may  be  overridden
-	   using the 1m--path 22moption.
+	   1mdor/bundle 22mdirectory in the application. This may be overridden us-
+	   ing the 1m--path 22moption.
 
 
 
@@ -195,8 +195,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        ask  you  for  your  1msudo 22mpassword in order to copy the gems into their
        system location.
 
-       From your  perspective,	this  is  identical  to  installing  the  gems
-       directly into the system.
+       From your perspective, this is identical to  installing	the  gems  di-
+       rectly into the system.
 
        You should never use 1msudo bundle install22m. This is because several other
        steps in 1mbundle install 22mmust be performed as the current user:
@@ -265,9 +265,9 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        APIs unavailable in Rack 1.x, only to have Bundler switch to  Rack  1.2
        when the 1mproduction 22mgroup 4mis24m used.
 
-       This  should  not  cause  any  problems	in practice, because we do not
-       attempt to 1minstall 22mthe gems in the excluded groups, and  only  evaluate
-       as part of the dependency resolution process.
+       This  should  not cause any problems in practice, because we do not at-
+       tempt to 1minstall 22mthe gems in the excluded groups, and only evaluate  as
+       part of the dependency resolution process.
 
        This  also means that you cannot include different versions of the same
        gem in different groups, because doing so  would  result  in  different
@@ -300,8 +300,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        When Bundler first shipped, the 1mGemfile.lock 22mwas included in the  1m.git-0m
        1mignore 22mfile included with generated gems. Over time, however, it became
        clear that this practice forces the pain of  broken  dependencies  onto
-       new  contributors,  while  leaving  existing  contributors  potentially
-       unaware of the problem. Since 1mbundle install 22mis usually the first  step
+       new  contributors,  while leaving existing contributors potentially un-
+       aware of the problem. Since 1mbundle install 22mis usually  the	first  step
        towards	a contribution, the pain of broken dependencies would discour-
        age new contributors from contributing. As a result,  we  have  revised
        our  guidance for gem authors to now recommend checking in the lock for
@@ -331,8 +331,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        1m1.1.022m,  while the 1mactivemerchant 22mgem depends on 1mactivesupport >= 2.3.222m,
        1mbraintree >= 2.0.022m, and 1mbuilder >= 2.0.022m.
 
-       When  the  dependencies	are  first  resolved,  Bundler	 will	select
-       1mactivesupport	2.3.822m,  which satisfies the requirements of both gems in
+       When the dependencies are  first  resolved,  Bundler  will  select  1mac-0m
+       1mtivesupport  2.3.822m,  which	satisfies  the requirements of both gems in
        your Gemfile(5).
 
        Next, you modify your Gemfile(5) to:
@@ -346,12 +346,12 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
 
 
 
-       The 1mactionpack 3.0.0.rc 22mgem has  a	number	of  new  dependencies,	and
-       updates	the 1mactivesupport 22mdependency to 1m= 3.0.0.rc 22mand the 1mrack 22mdepen-
+       The 1mactionpack 3.0.0.rc 22mgem has a number of new dependencies,  and	up-
+       dates  the  1mactivesupport  22mdependency to 1m= 3.0.0.rc 22mand the 1mrack 22mdepen-
        dency to 1m~> 1.2.122m.
 
-       When you run 1mbundle install22m,  Bundler  notices  that  you  changed	the
-       1mactionpack  22mgem,  but not the 1mactivemerchant 22mgem. It evaluates the gems
+       When you run 1mbundle install22m, Bundler notices that you changed  the	1mac-0m
+       1mtionpack  22mgem,  but  not  the 1mactivemerchant 22mgem. It evaluates the gems
        currently being used to satisfy its requirements:
 
        1mactivesupport 2.3.80m
@@ -370,8 +370,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        retically  matches  1mactivesupport 3.0.0.rc22m, Bundler treats gems in your
        Gemfile(5) that have not changed as an atomic unit together with  their
        dependencies. In this case, the 1mactivemerchant 22mdependency is treated as
-       1mactivemerchant 1.7.1 + activesupport  2.3.822m,  so  1mbundle	install  22mwill
-       report that it cannot update 1mactionpack22m.
+       1mactivemerchant 1.7.1 + activesupport 2.3.822m, so 1mbundle install 22mwill  re-
+       port that it cannot update 1mactionpack22m.
 
        To explicitly update 1mactionpack22m, including its dependencies which other
        gems in the Gemfile(5) still depend on, run  1mbundle  update  actionpack0m
@@ -383,8 +383,8 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
        work, run bundle update(1) 4mbundle-update.1.html24m.
 
 1mSEE ALSO0m
-       o   Gem				install 			  docs
-	   4mhttp://guides.rubygems.org/rubygems-basics/#installing-gems0m
+       o   Gem	install  docs  4mhttp://guides.rubygems.org/rubygems-basics/#in-0m
+	   4mstalling-gems0m
 
        o   Rubygems signing docs 4mhttp://guides.rubygems.org/security/0m
 
@@ -393,4 +393,4 @@ BUNDLE-INSTALL(1)					     BUNDLE-INSTALL(1)
 
 
 
-				 December 2018		     BUNDLE-INSTALL(1)
+				 January 2019		     BUNDLE-INSTALL(1)

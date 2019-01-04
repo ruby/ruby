@@ -19,7 +19,7 @@ RSpec.describe "post bundle message" do
   let(:bundle_complete_message)    { "Bundle complete!" }
   let(:bundle_updated_message)     { "Bundle updated!" }
   let(:installed_gems_stats)       { "4 Gemfile dependencies, 5 gems now installed." }
-  let(:bundle_show_message)        { Bundler::VERSION.split(".").first.to_i < 2 ? bundle_show_system_message : bundle_show_path_message }
+  let(:bundle_show_message)        { Bundler::VERSION.split(".").first.to_i < 3 ? bundle_show_system_message : bundle_show_path_message }
 
   describe "for fresh bundle install" do
     it "without any options" do
@@ -101,7 +101,7 @@ RSpec.describe "post bundle message" do
     end
 
     describe "with misspelled or non-existent gem name" do
-      it "should report a helpful error message", :bundler => "< 2" do
+      it "should report a helpful error message", :bundler => "< 3" do
         install_gemfile <<-G
           source "file://localhost#{gem_repo1}"
           gem "rack"
@@ -110,7 +110,7 @@ RSpec.describe "post bundle message" do
         expect(out).to include("Could not find gem 'not-a-gem' in any of the gem sources listed in your Gemfile.")
       end
 
-      it "should report a helpful error message", :bundler => "2" do
+      it "should report a helpful error message", :bundler => "3" do
         install_gemfile <<-G
           source "file://localhost#{gem_repo1}"
           gem "rack"

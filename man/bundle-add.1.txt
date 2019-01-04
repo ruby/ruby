@@ -10,8 +10,8 @@ BUNDLE-ADD(1)							 BUNDLE-ADD(1)
        [--source=SOURCE] [--skip-install] [--strict] [--optimistic]
 
 1mDESCRIPTION0m
-       Adds the named gem to  the  Gemfile  and  run  1mbundle	install22m.  1mbundle0m
-       1minstall 22mcan be avoided by using the flag 1m--skip-install22m.
+       Adds the named gem to the Gemfile and run 1mbundle  install22m.	1mbundle  in-0m
+       1mstall 22mcan be avoided by using the flag 1m--skip-install22m.
 
        Example:
 

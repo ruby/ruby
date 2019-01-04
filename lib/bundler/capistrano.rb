@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/shared_helpers"
-Bundler::SharedHelpers.major_deprecation 2,
+Bundler::SharedHelpers.major_deprecation 3,
   "The Bundler task for Capistrano. Please use http://github.com/capistrano/bundler"
 
 # Capistrano task for Bundler.

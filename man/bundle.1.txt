@@ -56,8 +56,8 @@ BUNDLE(1)							     BUNDLE(1)
 	      Generate binstubs for executables in a gem
 
        1mbundle check(1) 4m22mbundle-check.1.html0m
-	      Determine whether the  requirements  for	your  application  are
-	      installed and available to Bundler
+	      Determine whether the requirements for your application are  in-
+	      stalled and available to Bundler
 
        1mbundle show(1) 4m22mbundle-show.1.html0m
 	      Show the source location of a particular gem in the bundle
@@ -92,6 +92,9 @@ BUNDLE(1)							     BUNDLE(1)
        1mbundle doctor(1) 4m22mbundle-doctor.1.html0m
 	      Display warnings about common problems
 
+       1mbundle remove(1) 4m22mbundle-remove.1.html0m
+	      Removes gems from the Gemfile
+
 1mPLUGINS0m
        When  running a command that isn't listed in PRIMARY COMMANDS or UTILI-
        TIES, Bundler will try  to  find  an  executable  on  your  path  named
@@ -110,4 +113,4 @@ BUNDLE(1)							     BUNDLE(1)
 
 
 
-				 November 2018			     BUNDLE(1)
+				 January 2019			     BUNDLE(1)

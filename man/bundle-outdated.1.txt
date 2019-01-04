@@ -7,9 +7,9 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 1mSYNOPSIS0m
        1mbundle   outdated   22m[GEM]	[--local]   [--pre]  [--source]  [--strict]
-       [--parseable	|     --porcelain]     [--group=GROUP]	    [--groups]
-       [--update-strict]  [--patch|--minor|--major]  [--filter-major]  [--fil-
-       ter-minor] [--filter-patch] [--only-explicit]
+       [--parseable   |   --porcelain]	 [--group=GROUP]   [--groups]	[--up-
+       date-strict]  [--patch|--minor|--major]	[--filter-major] [--filter-mi-
+       nor] [--filter-patch] [--only-explicit]
 
 1mDESCRIPTION0m
        Outdated lists the names and versions of gems that have a newer version
@@ -20,8 +20,8 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 
 1mOPTIONS0m
        1m--local0m
-	      Do not attempt to fetch gems remotely  and  use  the  gem  cache
-	      instead.
+	      Do not attempt to fetch gems remotely and use the gem cache  in-
+	      stead.
 
        1m--pre	22mCheck for newer pre-release gems.
 
@@ -41,8 +41,8 @@ BUNDLE-OUTDATED(1)					    BUNDLE-OUTDATED(1)
 	      List gems organized by groups.
 
        1m--update-strict0m
-	      Strict  conservative  resolution,  do  not  allow  any gem to be
-	      updated past latest --patch | --minor| --major.
+	      Strict  conservative  resolution, do not allow any gem to be up-
+	      dated past latest --patch | --minor| --major.
 
        1m--minor0m
 	      Prefer updating only to next minor version.
