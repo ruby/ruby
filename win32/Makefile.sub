@@ -867,7 +867,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_LONGJMP(env,val) longjmp(env,val)
 #define RUBY_JMP_BUF jmp_buf
 #define inline __inline
-!if $(MSC_VER) >= 1900
+!if $(MSC_VER) >= 1800
 #define restrict __restrict
 !else
 #define restrict /* not supported */
