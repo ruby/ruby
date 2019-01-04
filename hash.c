@@ -1736,6 +1736,25 @@ rb_hash_default_value(VALUE hash, VALUE key)
     }
 }
 
+static inline int
+hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
+{
+    hash_verify(hash);
+
+    if (RHASH_AR_TABLE_P(hash)) {
+        return ar_lookup(hash, key, pval);
+    }
+    else {
+        return st_lookup(RHASH_ST_TABLE(hash), key, pval);
+    }
+}
+
+MJIT_FUNC_EXPORTED int
+rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
+{
+    return hash_stlike_lookup(hash, key, pval);
+}
+
 /*
  *  call-seq:
  *     hsh[key]    ->  value
@@ -1755,26 +1774,11 @@ rb_hash_aref(VALUE hash, VALUE key)
 {
     st_data_t val;
 
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, &val)) {
+    if (hash_stlike_lookup(hash, key, &val)) {
         return (VALUE)val;
-    }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-        return (VALUE)val;
-    }
-    hash_verify(hash);
-    return rb_hash_default_value(hash, key);
-}
-
-MJIT_FUNC_EXPORTED int
-rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
-{
-    hash_verify(hash);
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        return ar_lookup(hash, key, pval);
     }
     else {
-        return st_lookup(RHASH_ST_TABLE(hash), key, pval);
+        return rb_hash_default_value(hash, key);
     }
 }
 
@@ -1840,23 +1844,22 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
     if (block_given && argc == 2) {
 	rb_warn("block supersedes default value argument");
     }
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, &val)) {
+
+    if (hash_stlike_lookup(hash, key, &val)) {
         return (VALUE)val;
     }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, &val)) {
-        return (VALUE)val;
+    else {
+        if (block_given) return rb_yield(key);
+        if (argc == 1) {
+            VALUE desc = rb_protect(rb_inspect, key, 0);
+            if (NIL_P(desc)) {
+                desc = rb_any_to_s(key);
+            }
+            desc = rb_str_ellipsize(desc, 65);
+            rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
+        }
+        return argv[1];
     }
-    if (block_given) return rb_yield(key);
-    if (argc == 1) {
-        VALUE desc = rb_protect(rb_inspect, key, 0);
-        if (NIL_P(desc)) {
-            desc = rb_any_to_s(key);
-	}
-        desc = rb_str_ellipsize(desc, 65);
-        rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
-    }
-    hash_verify(hash);
-    return argv[1];
 }
 
 VALUE
@@ -3262,13 +3265,12 @@ rb_hash_values(VALUE hash)
 MJIT_FUNC_EXPORTED VALUE
 rb_hash_has_key(VALUE hash, VALUE key)
 {
-    if (RHASH_AR_TABLE_P(hash) && ar_lookup(hash, key, 0)) {
+    if (hash_stlike_lookup(hash, key, NULL)) {
         return Qtrue;
     }
-    else if (RHASH_ST_TABLE_P(hash) && st_lookup(RHASH_ST_TABLE(hash), key, 0)) {
-	return Qtrue;
+    else {
+        return Qfalse;
     }
-    return Qfalse;
 }
 
 static int
@@ -3319,20 +3321,17 @@ eql_i(VALUE key, VALUE val1, VALUE arg)
     struct equal_data *data = (struct equal_data *)arg;
     st_data_t val2;
 
-    if (RHASH_AR_TABLE_P(data->hash) && !ar_lookup(data->hash, key, &val2)) {
-	data->result = Qfalse;
-	return ST_STOP;
-    }
-    else if (RHASH_ST_TABLE_P(data->hash) && !st_lookup(RHASH_ST_TABLE(data->hash), key, &val2)) {
+    if (!hash_stlike_lookup(data->hash, key, &val2)) {
         data->result = Qfalse;
         return ST_STOP;
     }
-
-    if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
-	data->result = Qfalse;
-	return ST_STOP;
+    else {
+        if (!(data->eql ? rb_eql(val1, (VALUE)val2) : (int)rb_equal(val1, (VALUE)val2))) {
+            data->result = Qfalse;
+            return ST_STOP;
+        }
+        return ST_CONTINUE;
     }
-    return ST_CONTINUE;
 }
 
 static VALUE
