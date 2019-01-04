@@ -1297,7 +1297,7 @@ rb_class_public_instance_methods(int argc, const VALUE *argv, VALUE mod)
  *  <i>obj</i>. This will include all the methods accessible in
  *  <i>obj</i>'s ancestors.
  *  If the optional parameter is <code>false</code>, it
- *  returns an array of <i>obj<i>'s public and protected singleton methods,
+ *  returns an array of <i>obj</i>'s public and protected singleton methods,
  *  the array will not include methods in modules included in <i>obj</i>.
  *
  *     class Klass
