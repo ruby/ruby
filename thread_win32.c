@@ -708,6 +708,12 @@ rb_thread_wakeup_timer_thread(int sig)
     /* do nothing */
 }
 
+static VALUE
+rb_thread_start_unblock_thread(void)
+{
+    return Qfalse; /* no-op */
+}
+
 static void
 rb_thread_create_timer_thread(void)
 {

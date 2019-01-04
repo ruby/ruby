@@ -1429,10 +1429,14 @@ call_without_gvl(void *(*func)(void *), void *data1,
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int saved_errno = 0;
+    VALUE ubf_th = Qfalse;
 
     if (ubf == RUBY_UBF_IO || ubf == RUBY_UBF_PROCESS) {
 	ubf = ubf_select;
 	data2 = th;
+    }
+    else if (ubf && vm_living_thread_num(th->vm) == 1) {
+	ubf_th = rb_thread_start_unblock_thread();
     }
 
     BLOCKING_REGION(th, {
@@ -1442,6 +1446,10 @@ call_without_gvl(void *(*func)(void *), void *data1,
 
     if (!fail_if_interrupted) {
 	RUBY_VM_CHECK_INTS_BLOCKING(ec);
+    }
+
+    if (ubf_th != Qfalse) {
+	thread_value(rb_thread_kill(ubf_th));
     }
 
     errno = saved_errno;
