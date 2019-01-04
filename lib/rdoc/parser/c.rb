@@ -3,15 +3,15 @@ require 'tsort'
 
 ##
 # RDoc::Parser::C attempts to parse C extension files.  It looks for
-# the standard patterns that you find in extensions: <tt>rb_define_class</tt>,
-# <tt>rb_define_method</tt> and so on.  It tries to find the corresponding
+# the standard patterns that you find in extensions: +rb_define_class+,
+# +rb_define_method+ and so on.  It tries to find the corresponding
 # C source for the methods and extract comments, but if we fail
 # we don't worry too much.
 #
 # The comments associated with a Ruby method are extracted from the C
 # comment block associated with the routine that _implements_ that
 # method, that is to say the method whose name is given in the
-# <tt>rb_define_method</tt> call. For example, you might write:
+# +rb_define_method+ call. For example, you might write:
 #
 #   /*
 #    * Returns a new array that is a one-dimensional flattening of this
@@ -24,8 +24,7 @@ require 'tsort'
 #    *    a.flatten                 #=> [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 #    */
 #    static VALUE
-#    rb_ary_flatten(ary)
-#        VALUE ary;
+#    rb_ary_flatten(VALUE ary)
 #    {
 #        ary = rb_obj_dup(ary);
 #        rb_ary_flatten_bang(ary);
@@ -35,16 +34,16 @@ require 'tsort'
 #    ...
 #
 #    void
-#    Init_Array()
+#    Init_Array(void)
 #    {
 #      ...
 #      rb_define_method(rb_cArray, "flatten", rb_ary_flatten, 0);
 #
-# Here RDoc will determine from the rb_define_method line that there's a
+# Here RDoc will determine from the +rb_define_method+ line that there's a
 # method called "flatten" in class Array, and will look for the implementation
-# in the method rb_ary_flatten. It will then use the comment from that
+# in the method +rb_ary_flatten+. It will then use the comment from that
 # method in the HTML output. This method must be in the same source file
-# as the rb_define_method.
+# as the +rb_define_method+.
 #
 # The comment blocks may include special directives:
 #
