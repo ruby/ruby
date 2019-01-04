@@ -24,7 +24,7 @@ require 'time'
 #   rdoc.document argv
 #
 # Where +argv+ is an array of strings, each corresponding to an argument you'd
-# give rdoc on the command line.  See <tt>rdoc --help<tt> for details.
+# give rdoc on the command line.  See <tt>rdoc --help</tt> for details.
 
 class RDoc::RDoc
 
