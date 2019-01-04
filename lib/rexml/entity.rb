@@ -90,7 +90,7 @@ module REXML
     # object itself is valid.)
     #
     # out::
-    #   An object implementing <TT>&lt;&lt;<TT> to which the entity will be
+    #   An object implementing <TT>&lt;&lt;</TT> to which the entity will be
     #   output
     # indent::
     #   *DEPRECATED* and ignored

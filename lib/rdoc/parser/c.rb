@@ -74,11 +74,11 @@ require 'tsort'
 #   Documentation for the named method.  Use this when the method name is
 #   unambiguous.
 #
-# [Document-method: <tt>ClassName::method_name<tt>]
+# [Document-method: <tt>ClassName::method_name</tt>]
 #   Documentation for a singleton method in the given class.  Use this when
 #   the method name alone is ambiguous.
 #
-# [Document-method: <tt>ClassName#method_name<tt>]
+# [Document-method: <tt>ClassName#method_name</tt>]
 #   Documentation for a instance method in the given class.  Use this when the
 #   method name alone is ambiguous.
 #
@@ -1266,4 +1266,3 @@ class RDoc::Parser::C < RDoc::Parser
   end
 
 end
-
