@@ -5913,7 +5913,7 @@ qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, co
     LABEL *else_label = NEW_LABEL(line);
     const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
     const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
-    VALUE br;
+    VALUE br = 0;
 
     DECL_BRANCH_BASE(br, first_lineno, first_column, last_lineno, last_column, "&.");
     *branches = br;
