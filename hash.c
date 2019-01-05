@@ -587,10 +587,6 @@ ar_alloc_table(VALUE hash)
     return tab;
 }
 
-#define EQUAL(x,y) ((x) == (y) || rb_any_cmp((x),(y)) == 0)
-#define PTR_EQUAL(ptr, hash_val, key_) \
-    ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
-
 static inline int
 ar_equal(VALUE x, VALUE y)
 {
@@ -611,7 +607,7 @@ ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
     /* if table is NULL, then bound also should be 0 */
 
     for (i = 0; i < bound; i++) {
-        if (PTR_EQUAL(RHASH_AR_TABLE_REF(hash, i), hash_value, key)) {
+        if (ar_ptr_equal(RHASH_AR_TABLE_REF(hash, i), hash_value, key)) {
             return i;
         }
     }
