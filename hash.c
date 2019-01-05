@@ -307,16 +307,8 @@ static const struct st_hash_type identhash = {
     rb_ident_hash,
 };
 
-#define EQUAL(x,y) ((x) == (y) || rb_any_cmp((x),(y)) == 0)
-#define PTR_EQUAL(ptr, hash_val, key_) \
-    ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
-
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
-
-#define SET_KEY(entry, _key) (entry)->key = (_key)
-#define SET_HASH(entry, _hash) (entry)->hash = (_hash)
-#define SET_RECORD(entry, _value) (entry)->record = (_value)
 
 typedef st_index_t st_hash_t;
 extern const st_hash_t st_reserved_hash_val;
@@ -361,17 +353,17 @@ ar_do_hash(st_data_t key)
 static inline void
 ar_set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
 {
-    SET_HASH(entry, hash);
-    SET_KEY(entry, key);
-    SET_RECORD(entry, val);
+    entry->hash = hash;
+    entry->key = key;
+    entry->record = val;
 }
 
 static inline void
 ar_clear_entry(ar_table_entry* entry)
 {
-    SET_KEY(entry, Qundef);
-    SET_RECORD(entry, Qundef);
-    SET_HASH(entry, RESERVED_HASH_VAL);
+    entry->key = Qundef;
+    entry->record = Qundef;
+    entry->hash = RESERVED_HASH_VAL;
 }
 
 static inline int
@@ -593,6 +585,22 @@ ar_alloc_table(VALUE hash)
     RHASH_AR_TABLE_SET(hash, tab);
 
     return tab;
+}
+
+#define EQUAL(x,y) ((x) == (y) || rb_any_cmp((x),(y)) == 0)
+#define PTR_EQUAL(ptr, hash_val, key_) \
+    ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
+
+static inline int
+ar_equal(VALUE x, VALUE y)
+{
+    return x == y || rb_any_cmp(x, y) == 0;
+}
+
+static inline int
+ar_ptr_equal(ar_table_entry *entry, st_hash_t hash_val, VALUE key)
+{
+    return entry->hash == hash_val && ar_equal(key, entry->key);
 }
 
 static unsigned
