@@ -5907,12 +5907,43 @@ iseq_compile_each(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *node, int poppe
     return iseq_compile_each0(iseq, ret, node, popped);
 }
 
+static LABEL *
+qcall_branch_start(rb_iseq_t *iseq, LINK_ANCHOR *const recv, VALUE *branches, const NODE *node, int line)
+{
+    LABEL *else_label = NEW_LABEL(line);
+    const int first_lineno = nd_first_lineno(node), first_column = nd_first_column(node);
+    const int last_lineno = nd_last_lineno(node), last_column = nd_last_column(node);
+    VALUE br;
+
+    DECL_BRANCH_BASE(br, first_lineno, first_column, last_lineno, last_column, "&.");
+    *branches = br;
+    ADD_INSN(recv, line, dup);
+    ADD_INSNL(recv, line, branchnil, else_label);
+    ADD_TRACE_BRANCH_COVERAGE(recv, first_lineno, first_column, last_lineno, last_column, "then", br);
+    return else_label;
+}
+
+static void
+qcall_branch_end(rb_iseq_t *iseq, LINK_ANCHOR *const ret, LABEL *else_label, VALUE branches, const NODE *node, int line)
+{
+    LABEL *end_label;
+    if (!else_label) return;
+    end_label = NEW_LABEL(line);
+    ADD_INSNL(ret, line, jump, end_label);
+    ADD_LABEL(ret, else_label);
+    ADD_TRACE_BRANCH_COVERAGE(ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node),
+                              "else", branches);
+    ADD_LABEL(ret, end_label);
+}
+
 static int
 iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
 {
     const int line = (int)nd_line(node);
     const enum node_type type = nd_type(node);
     struct rb_iseq_constant_body *const body = iseq->body;
+    LABEL *else_label = 0;
+    VALUE branches = 0;
 
     if (ISEQ_COMPILE_DATA(iseq)->last_line == line) {
 	/* ignore */
@@ -6500,9 +6531,6 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	*/
 	DECL_ANCHOR(recv);
 	DECL_ANCHOR(args);
-	LABEL *else_label = 0;
-	LABEL *end_label = 0;
-	VALUE branches = 0;
 	ID mid = node->nd_mid;
 	VALUE argc;
 	unsigned int flag = 0;
@@ -6591,13 +6619,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    }
 
 	    if (type == NODE_QCALL) {
-		else_label = NEW_LABEL(line);
-		end_label = NEW_LABEL(line);
-
-		DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "&.");
-		ADD_INSN(recv, line, dup);
-		ADD_INSNL(recv, line, branchnil, else_label);
-		ADD_TRACE_BRANCH_COVERAGE(recv, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "then", branches);
+                else_label = qcall_branch_start(iseq, recv, &branches, node, line);
 	    }
 	}
 	else if (type == NODE_FCALL || type == NODE_VCALL) {
@@ -6629,12 +6651,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 
 	ADD_SEND_R(ret, line, mid, argc, parent_block, INT2FIX(flag), keywords);
 
-	if (else_label && end_label) {
-	    ADD_INSNL(ret, line, jump, end_label);
-	    ADD_LABEL(ret, else_label);
-	    ADD_TRACE_BRANCH_COVERAGE(ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
-	    ADD_LABEL(ret, end_label);
-	}
+        qcall_branch_end(iseq, ret, else_label, branches, node, line);
 	if (popped) {
 	    ADD_INSN(ret, line, pop);
 	}
@@ -7462,10 +7479,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	DECL_ANCHOR(args);
 	unsigned int flag = 0;
 	ID mid = node->nd_mid;
-        LABEL *else_label = 0;
-        LABEL *end_label = 0;
 	VALUE argc;
-        VALUE branches = 0;
 
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
@@ -7504,12 +7518,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	if (!rb_is_attrset_id(mid)) {
 	    /* safe nav attr */
 	    mid = rb_id_attrset(mid);
-	    ADD_INSN(recv, line, dup);
-            else_label = NEW_LABEL(line);
-            end_label = NEW_LABEL(line);
-            DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "&.");
-            ADD_INSNL(recv, line, branchnil, else_label);
-            ADD_TRACE_BRANCH_COVERAGE(recv, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "then", branches);
+            else_label = qcall_branch_start(iseq, recv, &branches, node, line);
 	}
 	if (!popped) {
 	    ADD_INSN(ret, line, putnil);
@@ -7541,12 +7550,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_SEQ(ret, args);
 	}
 	ADD_SEND_WITH_FLAG(ret, line, mid, argc, INT2FIX(flag));
-        if (else_label && end_label) {
-            ADD_INSNL(ret, line, jump, end_label);
-            ADD_LABEL(ret, else_label);
-            ADD_TRACE_BRANCH_COVERAGE(ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
-            ADD_LABEL(ret, end_label);
-        }
+        qcall_branch_end(iseq, ret, else_label, branches, node, line);
 	ADD_INSN(ret, line, pop);
 
 	break;
