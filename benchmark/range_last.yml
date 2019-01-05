@@ -1,0 +1,4 @@
+prelude: |
+  range = 1..1_000_000
+benchmark:
+  range_last: range.last(1000)
