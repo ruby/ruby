@@ -352,14 +352,14 @@ rb_hash_ar_table_size(void)
 }
 
 static inline st_hash_t
-do_hash(st_data_t key)
+ar_do_hash(st_data_t key)
 {
     st_hash_t hash = (st_hash_t)rb_any_hash(key);
     return (RESERVED_HASH_VAL == hash) ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
 }
 
 static inline void
-set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
+ar_set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
 {
     SET_HASH(entry, hash);
     SET_KEY(entry, key);
@@ -367,7 +367,7 @@ set_entry(ar_table_entry *entry, st_data_t key, st_data_t val, st_hash_t hash)
 }
 
 static inline void
-clear_entry(ar_table_entry* entry)
+ar_clear_entry(ar_table_entry* entry)
 {
     SET_KEY(entry, Qundef);
     SET_RECORD(entry, Qundef);
@@ -375,7 +375,7 @@ clear_entry(ar_table_entry* entry)
 }
 
 static inline int
-empty_entry(ar_table_entry *entry)
+ar_empty_entry(ar_table_entry *entry)
 {
     return entry->hash == RESERVED_HASH_VAL;
 }
@@ -413,7 +413,7 @@ rb_hash_dump(VALUE hash)
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
             st_data_t k, v;
 
-            if (!empty_entry(cur_entry)) {
+            if (!ar_empty_entry(cur_entry)) {
                 char b1[0x100], b2[0x100];
                 /* h = cur_entry->hash; */
                 k = cur_entry->key;
@@ -441,7 +441,7 @@ hash_verify_(VALUE hash, const char *file, int line)
         for (i=0; i<bound; i++) {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
             st_data_t h, k, v;
-            if (!empty_entry(cur_entry)) {
+            if (!ar_empty_entry(cur_entry)) {
                 h = cur_entry->hash;
                 k = cur_entry->key;
                 v = cur_entry->record;
@@ -596,7 +596,7 @@ ar_alloc_table(VALUE hash)
 }
 
 static unsigned
-find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
+ar_find_entry(VALUE hash, st_hash_t hash_value, st_data_t key)
 {
     unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
 
@@ -679,7 +679,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
 
         for (i = 0; i < bound; i++) {
             entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(entry)) continue;
+            if (ar_empty_entry(entry)) continue;
 
             st_add_direct_with_hash(new_tab, entry->key, entry->record, entry->hash);
         }
@@ -716,12 +716,12 @@ ar_compact_table(VALUE hash)
         ar_table_entry *entries = RHASH_AR_TABLE_REF(hash, 0);
 
         for (i=0; i<bound; i++) {
-            if (empty_entry(&entries[i])) {
+            if (ar_empty_entry(&entries[i])) {
                 if (j <= i) j = i+1;
                 for (; j<bound; j++) {
-                    if (!empty_entry(&entries[j])) {
+                    if (!ar_empty_entry(&entries[j])) {
                         entries[i] = entries[j];
-                        clear_entry(&entries[j]);
+                        ar_clear_entry(&entries[j]);
                         j++;
                         goto found;
                     }
@@ -744,8 +744,6 @@ static int
 ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash_value)
 {
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
-    ar_table *tab = RHASH_AR_TABLE(hash);
-    ar_table_entry *entry;
 
     if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
         return 1;
@@ -757,8 +755,7 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
-        entry = &tab->entries[bin];
-        set_entry(entry, key, val, hash_value);
+        ar_set_entry(RHASH_AR_TABLE_REF(hash, bin), key, val, hash_value);
         RHASH_AR_TABLE_BOUND_SET(hash, bin+1);
         RHASH_AR_TABLE_SIZE_INC(hash);
         return 0;
@@ -774,7 +771,7 @@ ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
         for (i = 0; i < bound; i++) {
             enum st_retval retval;
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(cur_entry)) continue;
+            if (ar_empty_entry(cur_entry)) continue;
             retval = (*func)(cur_entry->key, cur_entry->record, arg, 0);
             /* cur_entry is not valid after that */
 
@@ -785,7 +782,7 @@ ar_foreach(VALUE hash, int (*func)(ANYARGS), st_data_t arg)
               case ST_STOP:
                 return 0;
               case ST_DELETE:
-                clear_entry(RHASH_AR_TABLE_REF(hash, i));
+                ar_clear_entry(RHASH_AR_TABLE_REF(hash, i));
                 RHASH_AR_TABLE_SIZE_DEC(hash);
                 break;
             }
@@ -807,7 +804,7 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
 
         for (i = 0; i < bound; i++) {
             cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (empty_entry(cur_entry))
+            if (ar_empty_entry(cur_entry))
               continue;
             key = cur_entry->key;
             hash_value = cur_entry->hash;
@@ -821,7 +818,7 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
               case ST_CHECK: {
                   if (cur_entry->key == never && cur_entry->hash == RESERVED_HASH_VAL)
                       break;
-                  ret = find_entry(hash, hash_value, key);
+                  ret = ar_find_entry(hash, hash_value, key);
                   if (ret == RHASH_AR_TABLE_MAX_BOUND) {
                       retval = (*func)(0, 0, arg, 1);
                       return 2;
@@ -832,8 +829,8 @@ ar_foreach_check(VALUE hash, int (*func)(ANYARGS), st_data_t arg,
               case ST_STOP:
                 return 0;
               case ST_DELETE: {
-                  if (!empty_entry(cur_entry)) {
-                      clear_entry(cur_entry);
+                  if (!ar_empty_entry(cur_entry)) {
+                      ar_clear_entry(cur_entry);
                       RHASH_AR_TABLE_SIZE_DEC(hash);
                   }
                   break;
@@ -851,10 +848,10 @@ ar_update(VALUE hash, st_data_t key,
     int retval, existing;
     unsigned bin = RHASH_AR_TABLE_MAX_BOUND;
     st_data_t value = 0, old_key;
-    st_hash_t hash_value = do_hash(key);
+    st_hash_t hash_value = ar_do_hash(key);
 
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
-        bin = find_entry(hash, hash_value, key);
+        bin = ar_find_entry(hash, hash_value, key);
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
     }
     else {
@@ -887,7 +884,7 @@ ar_update(VALUE hash, st_data_t key,
         break;
       case ST_DELETE:
         if (existing) {
-            clear_entry(RHASH_AR_TABLE_REF(hash, bin));
+            ar_clear_entry(RHASH_AR_TABLE_REF(hash, bin));
             RHASH_AR_TABLE_SIZE_DEC(hash);
         }
         break;
@@ -899,11 +896,11 @@ static int
 ar_insert(VALUE hash, st_data_t key, st_data_t value)
 {
     unsigned bin = RHASH_AR_TABLE_BOUND(hash);
-    st_hash_t hash_value = do_hash(key);
+    st_hash_t hash_value = ar_do_hash(key);
 
     hash_ar_table(hash); /* prepare ltbl */
 
-    bin = find_entry(hash, hash_value, key);
+    bin = ar_find_entry(hash, hash_value, key);
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
             return -1;
@@ -914,7 +911,7 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
         }
         HASH_ASSERT(bin < RHASH_AR_TABLE_MAX_BOUND);
 
-        set_entry(RHASH_AR_TABLE_REF(hash, bin), key, value, hash_value);
+        ar_set_entry(RHASH_AR_TABLE_REF(hash, bin), key, value, hash_value);
         RHASH_AR_TABLE_BOUND_SET(hash, bin+1);
         RHASH_AR_TABLE_SIZE_INC(hash);
         return 0;
@@ -932,8 +929,8 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
         return 0;
     }
     else {
-        st_hash_t hash_value = do_hash(key);
-        unsigned bin = find_entry(hash, hash_value, key);
+        st_hash_t hash_value = ar_do_hash(key);
+        unsigned bin = ar_find_entry(hash, hash_value, key);
 
         if (bin == RHASH_AR_TABLE_MAX_BOUND) {
             return 0;
@@ -952,10 +949,10 @@ static int
 ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
 {
     unsigned bin;
-    st_hash_t hash_value = do_hash(*key);
+    st_hash_t hash_value = ar_do_hash(*key);
 
 
-    bin = find_entry(hash, hash_value, *key);
+    bin = ar_find_entry(hash, hash_value, *key);
 
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (value != 0) *value = 0;
@@ -964,7 +961,7 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     else {
         ar_table_entry *entry = RHASH_AR_TABLE_REF(hash, bin);
         if (value != 0) *value = entry->record;
-        clear_entry(entry);
+        ar_clear_entry(entry);
         RHASH_AR_TABLE_SIZE_DEC(hash);
         return 1;
     }
@@ -979,10 +976,10 @@ ar_shift(VALUE hash, st_data_t *key, st_data_t *value)
 
         for (i = 0; i < bound; i++) {
             entry = &entries[i];
-            if (!empty_entry(entry)) {
+            if (!ar_empty_entry(entry)) {
                 if (value != 0) *value = entry->record;
                 *key = entry->key;
-                clear_entry(entry);
+                ar_clear_entry(entry);
                 RHASH_AR_TABLE_SIZE_DEC(hash);
                 return 1;
             }
@@ -1004,7 +1001,7 @@ ar_keys(VALUE hash, st_data_t *keys, st_index_t size)
         }
         else {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (!empty_entry(cur_entry))
+            if (!ar_empty_entry(cur_entry))
               *keys++ = cur_entry->key;
         }
     }
@@ -1024,7 +1021,7 @@ ar_values(VALUE hash, st_data_t *values, st_index_t size)
         }
         else {
             ar_table_entry *cur_entry = RHASH_AR_TABLE_REF(hash, i);
-            if (!empty_entry(cur_entry))
+            if (!ar_empty_entry(cur_entry))
               *values++ = cur_entry->record;
         }
     }
