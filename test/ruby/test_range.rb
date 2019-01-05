@@ -435,6 +435,19 @@ class TestRange < Test::Unit::TestCase
     assert_equal("a", ("a"..nil).first)
     assert_raise(RangeError) { (0..nil).last }
     assert_raise(RangeError) { (0..nil).last(3) }
+
+    assert_equal([0, 1, 2], (0..10).first(3.0))
+    assert_equal([8, 9, 10], (0..10).last(3.0))
+    assert_raise(TypeError) { (0..10).first("3") }
+    assert_raise(TypeError) { (0..10).last("3") }
+    class << (o = Object.new)
+      def to_int; 3; end
+    end
+    assert_equal([0, 1, 2], (0..10).first(o))
+    assert_equal([8, 9, 10], (0..10).last(o))
+
+    assert_raise(ArgumentError) { (0..10).first(-1) }
+    assert_raise(ArgumentError) { (0..10).last(-1) }
   end
 
   def test_to_s
