@@ -834,7 +834,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
-%type <node> literal numeric simple_numeric dsym cpath
+%type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node> top_compstmt top_stmts top_stmt begin_block
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value fcall rel_expr
@@ -853,7 +853,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %type <node> lambda f_larglist lambda_body brace_body do_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_item mlhs_node mlhs_post mlhs_inner
-%type <id>   fsym keyword_variable user_variable sym symbol operation operation2 operation3
+%type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %token END_OF_INPUT 0	"end-of-input"
@@ -1763,18 +1763,14 @@ fname		: tIDENTIFIER
 		    }
 		;
 
-fsym		: fname
-		| symbol
-		;
-
-fitem		: fsym
+fitem		: fname
 		    {
 		    /*%%%*/
 			$$ = NEW_LIT(ID2SYM($1), &@$);
 		    /*% %*/
 		    /*% ripper: symbol_literal!($1) %*/
 		    }
-		| dsym
+		| symbol
 		;
 
 undef_list	: fitem
@@ -3421,13 +3417,6 @@ opt_ensure	: k_ensure compstmt
 
 literal		: numeric
 		| symbol
-		    {
-		    /*%%%*/
-			$$ = NEW_LIT(ID2SYM($1), &@$);
-		    /*% %*/
-		    /*% ripper: symbol_literal!($1) %*/
-		    }
-		| dsym
 		;
 
 strings		: string
@@ -3757,13 +3746,17 @@ string_dvar	: tGVAR
 		| backref
 		;
 
-symbol		: tSYMBEG sym
+symbol		: ssym
+		| dsym
+		;
+
+ssym		: tSYMBEG sym
 		    {
 			SET_LEX_STATE(EXPR_END);
 		    /*%%%*/
-			$$ = $2;
+			$$ = NEW_LIT(ID2SYM($2), &@$);
 		    /*% %*/
-		    /*% ripper: symbol!($2) %*/
+		    /*% ripper: symbol_literal!(symbol!($2)) %*/
 		    }
 		;
 
