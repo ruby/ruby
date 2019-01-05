@@ -307,7 +307,7 @@ static const struct st_hash_type identhash = {
     rb_ident_hash,
 };
 
-#define EQUAL(x,y) ((x) == (y) || (*objhash.compare)((x),(y)) == 0)
+#define EQUAL(x,y) ((x) == (y) || rb_any_cmp((x),(y)) == 0)
 #define PTR_EQUAL(ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((key_), (ptr)->key))
 
@@ -354,7 +354,7 @@ rb_hash_ar_table_size(void)
 static inline st_hash_t
 do_hash(st_data_t key)
 {
-    st_hash_t hash = (st_hash_t)(*objhash.hash)(key);
+    st_hash_t hash = (st_hash_t)rb_any_hash(key);
     return (RESERVED_HASH_VAL == hash) ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
 }
 
