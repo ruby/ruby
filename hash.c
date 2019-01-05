@@ -1849,8 +1849,10 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
         return (VALUE)val;
     }
     else {
-        if (block_given) return rb_yield(key);
-        if (argc == 1) {
+        if (block_given) {
+            return rb_yield(key);
+        }
+        else if (argc == 1) {
             VALUE desc = rb_protect(rb_inspect, key, 0);
             if (NIL_P(desc)) {
                 desc = rb_any_to_s(key);
@@ -1858,7 +1860,9 @@ rb_hash_fetch_m(int argc, VALUE *argv, VALUE hash)
             desc = rb_str_ellipsize(desc, 65);
             rb_key_err_raise(rb_sprintf("key not found: %"PRIsVALUE, desc), hash, key);
         }
-        return argv[1];
+        else {
+            return argv[1];
+        }
     }
 }
 
