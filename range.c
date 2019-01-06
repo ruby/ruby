@@ -11,6 +11,7 @@
 
 #include "internal.h"
 #include "id.h"
+#include <assert.h>
 
 #ifdef HAVE_FLOAT_H
 #include <float.h>
@@ -1005,6 +1006,58 @@ range_first(int argc, VALUE *argv, VALUE range)
     return ary[1];
 }
 
+static VALUE
+rb_int_range_last(int argc, VALUE *argv, VALUE range)
+{
+    static const VALUE ONE = INT2FIX(1);
+
+    VALUE b, e, len_1, len, nv, ary;
+    int x;
+    long n;
+
+    assert(argc > 0);
+
+    b = RANGE_BEG(range);
+    e = RANGE_END(range);
+    assert(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+
+    x = EXCL(range);
+
+    len_1 = rb_int_minus(e, b);
+    if (FIXNUM_ZERO_P(len_1) || rb_num_negative_p(len_1)) {
+        return rb_ary_new_capa(0);
+    }
+
+    if (x) {
+        e = rb_int_minus(e, ONE);
+        len = len_1;
+    }
+    else {
+        len = rb_int_plus(len_1, ONE);
+    }
+
+    rb_scan_args(argc, argv, "1", &nv);
+    n = NUM2LONG(nv);
+    if (n < 0) {
+        rb_raise(rb_eArgError, "negative array size");
+    }
+
+    nv = LONG2NUM(n);
+    if (RTEST(rb_int_gt(nv, len))) {
+        nv = len;
+        n = NUM2LONG(nv);
+    }
+
+    ary = rb_ary_new_capa(n);
+    b = rb_int_minus(e, nv);
+    while (n) {
+        b = rb_int_plus(b, ONE);
+        rb_ary_push(ary, b);
+        --n;
+    }
+
+    return ary;
+}
 
 /*
  *  call-seq:
@@ -1026,10 +1079,18 @@ range_first(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_last(int argc, VALUE *argv, VALUE range)
 {
+    VALUE b, e;
+
     if (NIL_P(RANGE_END(range))) {
         rb_raise(rb_eRangeError, "cannot get the last element of endless range");
     }
     if (argc == 0) return RANGE_END(range);
+
+    b = RANGE_BEG(range);
+    e = RANGE_END(range);
+    if (RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e)) {
+        return rb_int_range_last(argc, argv, range);
+    }
     return rb_ary_last(argc, argv, rb_Array(range));
 }
 
