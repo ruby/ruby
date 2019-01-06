@@ -5,16 +5,16 @@
 #ifndef _MISSING_STDBOOL_H_
 #define _MISSING_STDBOOL_H_
 
-#ifndef __cplusplus
-
-#define bool _Bool
-#define true 1
-#define false 0
-
-#ifndef HAVE__BOOL /* AC_HEADER_STDBOOL in configure.ac */
-typedef int _Bool;
-#endif /* HAVE__BOOL */
-
-#endif /* __cplusplus */
+#ifndef __bool_true_false_are_defined
+# ifndef __cplusplus
+#  undef bool
+#  undef false
+#  undef true
+#  define bool signed char
+#  define false 0
+#  define true 1
+#  define __bool_true_false_are_defined 1
+# endif
+#endif
 
 #endif /* _MISSING_STDBOOL_H_ */

@@ -23,18 +23,8 @@ extern "C" {
 
 #ifdef HAVE_STDBOOL_H
 # include <stdbool.h>
-#endif
-
-#ifndef __bool_true_false_are_defined
-# ifndef __cplusplus
-#  undef bool
-#  undef false
-#  undef true
-#  define bool signed char
-#  define false 0
-#  define true 1
-#  define __bool_true_false_are_defined 1
-# endif
+#else
+# include "missing/stdbool.h"
 #endif
 
 /* The most significant bit of the lower part of half-long integer.
