@@ -96,7 +96,7 @@ rb_ast_parse_str(VALUE str)
 {
     rb_ast_t *ast = 0;
 
-    str = rb_check_string_type(str);
+    StringValue(str);
     ast = rb_parser_compile_string_path(ast_parse_new(), Qnil, str, 1);
     return ast_parse_done(ast);
 }
