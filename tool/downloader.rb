@@ -84,7 +84,7 @@ class Downloader
           index_file = super(UNICODE_PUBLIC+name_dir_part, "#{name_dir_part}index.html", dir, true, index_options)
           INDEX[:index] = IO.read index_file
         end
-        file_base = name.sub(/^.*\//, '').sub(/\.txt$/, '')
+        file_base = File.basename(name, '.txt')
         beta_name = INDEX[:index].match(/#{file_base}(-[0-9.]+d\d+)?\.txt/)[0]
         # make sure we always check for new versions of files,
         # because they can easily change in the beta period
