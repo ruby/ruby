@@ -201,6 +201,9 @@ class Time
       end
 
       if yday
+        unless (1..366) === yday
+          raise ArgumentError, "yday #{yday} out of range"
+        end
         mon, day = (yday-1).divmod(31)
         mon += 1
         day += 1
@@ -208,6 +211,12 @@ class Time
         diff = yday - t.yday
         return t if diff.zero?
         day += diff
+        if day > 28 and day > (mday = month_days(off_year, mon))
+          if (mon += 1) > 12
+            raise ArgumentError, "yday #{yday} out of range"
+          end
+          day -= mday
+        end
         return make_time(date, year, nil, mon, day, hour, min, sec, sec_fraction, zone, now)
       end
 
@@ -433,7 +442,7 @@ class Time
     #
     def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
-      raise ArgumentError, "invalid strptime format - `#{format}'" unless d
+      raise ArgumentError, "invalid date or strptime format - `#{date}' `#{format}'" unless d
       if seconds = d[:seconds]
         if sec_fraction = d[:sec_fraction]
           usec = sec_fraction * 1000000
