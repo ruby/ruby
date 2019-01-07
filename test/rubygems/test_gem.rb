@@ -341,6 +341,40 @@ class TestGem < Gem::TestCase
     refute_includes e.message, "can't find gem bundler (>= 0.a) with executable bundle"
   end
 
+  def test_activate_bin_path_selects_exact_bundler_version_if_present
+    bundler_latest = util_spec 'bundler', '2.0.1' do |s|
+      s.executables = ['bundle']
+    end
+
+    bundler_previous = util_spec 'bundler', '2.0.0' do |s|
+      s.executables = ['bundle']
+    end
+
+    install_specs bundler_latest, bundler_previous
+
+    File.open("Gemfile.lock", "w") do |f|
+      f.write <<-L.gsub(/ {8}/, "")
+        GEM
+          remote: https://rubygems.org/
+          specs:
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+          2.0.0
+      L
+    end
+
+    File.open("Gemfile", "w") { |f| f.puts('source "https://rubygems.org"') }
+
+    load Gem.activate_bin_path("bundler", "bundle", ">= 0.a")
+
+    assert_equal %w(bundler-2.0.0), loaded_spec_names
+  end
+
   def test_self_bin_path_no_exec_name
     e = assert_raises ArgumentError do
       Gem.bin_path 'a'
