@@ -1153,6 +1153,7 @@ bisect-ruby: PHONY
 	$(srcdir)/tool/bisect.sh ruby $(srcdir)
 
 COMPARE_RUBY = $(BASERUBY)
+BENCH_RUBY = $(MINIRUBY)
 ITEM =
 ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb' | sort)
 OPTS =
@@ -1165,7 +1166,7 @@ OPTS =
 benchmark: miniruby$(EXEEXT) update-benchmark-driver PHONY
 	$(BASERUBY) -rrubygems -I$(srcdir)/benchmark/lib $(srcdir)/benchmark/benchmark-driver/exe/benchmark-driver \
 	            --executables="compare-ruby::$(COMPARE_RUBY) -I$(EXTOUT)/common --disable-gem" \
-	            --executables="built-ruby::$(MINIRUBY) -r$(srcdir)/prelude --disable-gem" \
+	            --executables="built-ruby::$(BENCH_RUBY) -r$(srcdir)/prelude --disable-gem" \
 	            $(ARGS) $(OPTS)
 
 run.gdb:
