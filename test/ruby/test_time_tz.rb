@@ -254,6 +254,12 @@ class TestTimeTZ < Test::Unit::TestCase
     }
   end if has_right_tz
 
+  def test_utc_names
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "UTC"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "utc"), :utc?)
+    assert_predicate(Time.new(2019, 1, 1, 0, 0, 0, "Z"), :utc?)
+  end
+
   MON2NUM = {
     "Jan" => 1, "Feb" => 2, "Mar" => 3, "Apr" => 4, "May" => 5, "Jun" => 6,
     "Jul" => 7, "Aug" => 8, "Sep" => 9, "Oct" => 10, "Nov" => 11, "Dec" => 12
