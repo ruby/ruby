@@ -843,10 +843,11 @@ f_divide(VALUE self, VALUE other,
     }
     if (k_numeric_p(other) && f_real_p(other)) {
 	get_dat1(self);
-
-	return f_complex_new2(CLASS_OF(self),
-			      (*func)(dat->real, other),
-			      (*func)(dat->imag, other));
+        return f_complex_new2(CLASS_OF(self),
+                              rb_rational_canonicalize(
+                                  (*func)(dat->real, other)),
+                              rb_rational_canonicalize(
+                                  (*func)(dat->imag, other)));
     }
     return rb_num_coerce_bin(self, other, id);
 }
