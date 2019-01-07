@@ -2066,9 +2066,21 @@ utc_offset_arg(VALUE arg)
             if (s[0] == 'Z') {
                 return UTC_ZONE;
             }
+            /* Military Time Zone Names */
+            if (s[0] >= 'A' && s[0] <= 'I') {
+                n = (int)s[0] - 'A' + 1;
+            }
+            else if (s[0] >= 'K' && s[0] <= 'M') {
+                n = (int)s[0] - 'A';
+            }
+            else if (s[0] >= 'N' && s[0] <= 'Y') {
+                n = 'M' - (int)s[0];
+            }
             else {
                 goto invalid_utc_offset;
             }
+            n *= 3600;
+            return INT2FIX(n);
           case 3:
             if (STRNCASECMP("UTC", s, 3) == 0) {
                 return UTC_ZONE;
@@ -2356,6 +2368,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *
  *  +tz+ specifies the timezone.
  *  It can be an offset from UTC, given either as a string such as "+09:00"
+ *  or a single letter "A".."Z" excluding "J" so-called military time zone,
  *  or as a number of seconds such as 32400.
  *  Or it can be a timezone object,
  *  see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
