@@ -40,6 +40,7 @@ static ID id_quo, id_div;
 static ID id_nanosecond, id_microsecond, id_millisecond, id_nsec, id_usec;
 static ID id_local_to_utc, id_utc_to_local, id_find_timezone;
 static ID id_year, id_mon, id_mday, id_hour, id_min, id_sec, id_isdst, id_name;
+#define UTC_ZONE Qundef
 
 #ifndef TM_IS_TIME
 #define TM_IS_TIME 1
@@ -2061,6 +2062,18 @@ utc_offset_arg(VALUE arg)
             return Qnil;
 	}
 	switch (RSTRING_LEN(tmp)) {
+          case 1:
+            if (s[0] == 'Z') {
+                return UTC_ZONE;
+            }
+            else {
+                goto invalid_utc_offset;
+            }
+          case 3:
+            if (STRNCASECMP("UTC", s, 3) == 0) {
+                return UTC_ZONE;
+            }
+            goto invalid_utc_offset;
 	  case 9:
 	    if (s[6] != ':') goto invalid_utc_offset;
 	    if (!ISDIGIT(s[7]) || !ISDIGIT(s[8])) goto invalid_utc_offset;
@@ -2232,6 +2245,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 {
     struct vtm vtm;
     VALUE zone = Qnil;
+    VALUE utc = Qnil;
     VALUE v[7];
     struct time_object *tobj;
 
@@ -2272,9 +2286,10 @@ time_init_1(int argc, VALUE *argv, VALUE time)
             vtm.isdst = 0;
         else if (maybe_tzobj_p(arg))
             zone = arg;
-        else if (NIL_P(vtm.utc_offset = utc_offset_arg(arg)))
-            if (NIL_P(zone = find_timezone(time, arg)))
-                invalid_utc_offset();
+        else if (!NIL_P(utc = utc_offset_arg(arg)))
+            vtm.utc_offset = utc == UTC_ZONE ? INT2FIX(0) : utc;
+        else if (NIL_P(zone = find_timezone(time, arg)))
+            invalid_utc_offset();
     }
 
     validate_vtm(&vtm);
@@ -2294,6 +2309,14 @@ time_init_1(int argc, VALUE *argv, VALUE time)
             if (NIL_P(zone = find_timezone(time, zone)) || !zone_timelocal(zone, time))
                 invalid_utc_offset();
         }
+    }
+
+    if (utc == UTC_ZONE) {
+        tobj->timew = timegmw(&vtm);
+        tobj->vtm = vtm;
+        tobj->tm_got = 1;
+        TZMODE_SET_UTC(tobj);
+        return time;
     }
 
     tobj->tzmode = TIME_TZMODE_LOCALTIME;
@@ -2503,6 +2526,10 @@ rb_time_num_new(VALUE timev, VALUE off)
             if (!zone_timelocal(zone, time)) invalid_utc_offset();
             return time;
         }
+        else if (off == UTC_ZONE) {
+            return time_gmtime(time);
+        }
+
         validate_utc_offset(off);
         time_set_utc_offset(time, off);
         return time;
@@ -3738,6 +3765,9 @@ time_zonelocal(VALUE time, VALUE off)
         if (!zone_localtime(zone, time)) invalid_utc_offset();
         return time;
     }
+    else if (off == UTC_ZONE) {
+        return time_gmtime(time);
+    }
     validate_utc_offset(off);
 
     time_set_utc_offset(time, off);
@@ -3900,6 +3930,9 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
             time = time_dup(time);
             if (!zone_localtime(zone, time)) invalid_utc_offset();
             return time;
+        }
+        else if (off == UTC_ZONE) {
+            return time_gmtime(time_dup(time));
         }
         validate_utc_offset(off);
 
