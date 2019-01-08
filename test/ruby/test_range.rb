@@ -450,6 +450,18 @@ class TestRange < Test::Unit::TestCase
     assert_raise(ArgumentError) { (0..10).last(-1) }
   end
 
+  def test_last_with_redefine_each
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Range
+        remove_method :each
+        def each(&b)
+          [1, 2, 3, 4, 5].each(&b)
+        end
+      end
+      puts [3, 4, 5] == (1..10).last(3)
+    end;
+  end
+
   def test_to_s
     assert_equal("0..1", (0..1).to_s)
     assert_equal("0...1", (0...1).to_s)
