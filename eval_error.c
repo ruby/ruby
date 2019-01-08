@@ -172,11 +172,11 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    if (RSTRING_PTR(epath)[0] == '#')
 		epath = 0;
 	    if ((tail = memchr(einfo, '\n', elen)) != 0) {
-		write_warnq(str, emesg, einfo, tail - einfo);
+                write_warnq(str, emesg, einfo, tail - einfo);
 		tail++;		/* skip newline */
 	    }
 	    else {
-		write_warnq(str, emesg, einfo, elen);
+                write_warnq(str, emesg, einfo, elen);
 	    }
 	    if (epath) {
 		write_warn(str, " (");
@@ -192,7 +192,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 	    }
 	    if (tail && einfo+elen > tail) {
 		if (!highlight) {
-		    write_warnq(str, emesg, tail, einfo+elen-tail);
+                    write_warnq(str, emesg, tail, einfo+elen-tail);
 		    if (einfo[elen-1] != '\n') write_warn2(str, "\n", 1);
 		}
 		else {
@@ -202,7 +202,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 			tail = memchr(einfo, '\n', elen);
 			if (!tail || tail > einfo) {
 			    write_warn(str, bold);
-			    write_warnq(str, emesg, einfo, tail ? tail-einfo : elen);
+                            write_warnq(str, emesg, einfo, tail ? tail-einfo : elen);
 			    write_warn(str, reset);
 			    if (!tail) {
 				write_warn2(str, "\n", 1);
@@ -212,7 +212,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 			elen -= tail - einfo;
 			einfo = tail;
 			do ++tail; while (tail < einfo+elen && *tail == '\n');
-			write_warnq(str, emesg, einfo, tail-einfo);
+                        write_warnq(str, emesg, einfo, tail-einfo);
 			elen -= tail - einfo;
 			einfo = tail;
 		    }

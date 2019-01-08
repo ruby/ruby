@@ -1684,7 +1684,7 @@ name_err_mesg_to_str(VALUE obj)
 	else {
 	    c = s = FAKE_CSTR(&s_str, "");
 	}
-	args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
+        args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
 	args[1] = d;
 	args[2] = s;
 	args[3] = c;
