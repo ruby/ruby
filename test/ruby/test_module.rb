@@ -2061,15 +2061,11 @@ class TestModule < Test::Unit::TestCase
       $foo
       \u3042$
     ].each do |name|
-      assert_raise_with_message(NameError, /#{Regexp.quote(quote(name))}/) do
+      e = assert_raise(NameError) do
         Module.new { attr_accessor name.to_sym }
       end
+      assert_equal(name, e.name.to_s)
     end
-  end
-
-  private def quote(name)
-    encoding = Encoding.default_internal || Encoding.default_external
-    (name.encoding == encoding || name.ascii_only?) ? name : name.inspect
   end
 
   class AttrTest
