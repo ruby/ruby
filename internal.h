@@ -2021,6 +2021,7 @@ VALUE rb_sym_to_proc(VALUE sym);
 char *rb_str_to_cstr(VALUE str);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
+const char *ruby_escaped_char(int c);
 
 /* symbol.c */
 #ifdef RUBY_ENCODING_H
