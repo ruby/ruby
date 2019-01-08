@@ -1071,6 +1071,43 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
     end;
   end
 
+  def assert_null_char(src, *args, **opts)
+    begin
+      eval(src)
+    rescue => e
+    end
+    assert_not_nil(e)
+    assert_include(e.message, "\0")
+    assert_in_out_err([], src, [], [], *args, **opts) do |_, err,|
+      err.each do |e|
+        assert_not_include(e, "\0")
+      end
+    end
+    e
+  end
+
+  def test_control_in_message
+    bug7574 = '[ruby-dev:46749]'
+    assert_null_char("#{<<~"begin;"}\n#{<<~'end;'}", bug7574)
+    begin;
+      Object.const_defined?("String\0")
+    end;
+    assert_null_char("#{<<~"begin;"}\n#{<<~'end;'}", bug7574)
+    begin;
+      Object.const_get("String\0")
+    end;
+  end
+
+  def test_encoding_in_message
+    name = "\u{e9}t\u{e9}"
+    e = EnvUtil.with_default_external("US-ASCII") do
+      assert_raise(NameError) do
+        Object.const_get(name)
+      end
+    end
+    assert_include(e.message, name)
+  end
+
   def test_method_missing_reason_clear
     bug10969 = '[ruby-core:68515] [Bug #10969]'
     a = Class.new {def method_missing(*) super end}.new

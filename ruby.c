@@ -1367,16 +1367,9 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
 	  default:
 	    {
-		if (ISPRINT(*s)) {
-                    rb_raise(rb_eRuntimeError,
+                rb_raise(rb_eRuntimeError,
 			"invalid option -%c  (-h will show valid options)",
                         (int)(unsigned char)*s);
-		}
-		else {
-                    rb_raise(rb_eRuntimeError,
-			"invalid option -\\x%02X  (-h will show valid options)",
-                        (int)(unsigned char)*s);
-		}
 	    }
 	    goto switch_end;
 

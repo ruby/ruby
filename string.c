@@ -5818,6 +5818,24 @@ rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p)
     return l;
 }
 
+const char *
+ruby_escaped_char(int c)
+{
+    switch (c) {
+      case '\0': return "\\0";
+      case '\n': return "\\n";
+      case '\r': return "\\r";
+      case '\t': return "\\t";
+      case '\f': return "\\f";
+      case '\013': return "\\v";
+      case '\010': return "\\b";
+      case '\007': return "\\a";
+      case '\033': return "\\e";
+      case '\x7f': return "\\c?";
+    }
+    return NULL;
+}
+
 VALUE
 rb_str_escape(VALUE str)
 {
@@ -5832,7 +5850,8 @@ rb_str_escape(VALUE str)
     int asciicompat = rb_enc_asciicompat(enc);
 
     while (p < pend) {
-	unsigned int c, cc;
+        unsigned int c;
+        const char *cc;
 	int n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
 	    if (p > prev) str_buf_cat(result, prev, p - prev);
@@ -5849,22 +5868,10 @@ rb_str_escape(VALUE str)
         n = MBCLEN_CHARFOUND_LEN(n);
 	c = rb_enc_mbc_to_codepoint(p, pend, enc);
 	p += n;
-	switch (c) {
-	  case '\n': cc = 'n'; break;
-	  case '\r': cc = 'r'; break;
-	  case '\t': cc = 't'; break;
-	  case '\f': cc = 'f'; break;
-	  case '\013': cc = 'v'; break;
-	  case '\010': cc = 'b'; break;
-	  case '\007': cc = 'a'; break;
-	  case 033: cc = 'e'; break;
-	  default: cc = 0; break;
-	}
+        cc = ruby_escaped_char(c);
 	if (cc) {
 	    if (p - n > prev) str_buf_cat(result, prev, p - n - prev);
-	    buf[0] = '\\';
-	    buf[1] = (char)cc;
-	    str_buf_cat(result, buf, 2);
+            str_buf_cat(result, cc, strlen(cc));
 	    prev = p;
 	}
 	else if (asciicompat && rb_enc_isascii(c, enc) && ISPRINT(c)) {

@@ -310,7 +310,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\x0D  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 

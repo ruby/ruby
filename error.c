@@ -1675,7 +1675,6 @@ name_err_mesg_to_str(VALUE obj)
 		d = rb_any_to_s(obj);
 	    }
 	    singleton = (RSTRING_LEN(d) > 0 && RSTRING_PTR(d)[0] == '#');
-	    d = QUOTE(d);
 	    break;
 	}
 	if (!singleton) {
@@ -1685,7 +1684,7 @@ name_err_mesg_to_str(VALUE obj)
 	else {
 	    c = s = FAKE_CSTR(&s_str, "");
 	}
-	args[0] = QUOTE(rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]));
+	args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
 	args[1] = d;
 	args[2] = s;
 	args[3] = c;
