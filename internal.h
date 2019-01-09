@@ -806,7 +806,7 @@ struct RHash {
         st_table *st;
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
-    int iter_lev;
+    const int iter_lev;
     const VALUE ifnone;
 };
 
