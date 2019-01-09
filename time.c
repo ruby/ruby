@@ -2047,7 +2047,10 @@ NORETURN(static void invalid_utc_offset(void));
 static void
 invalid_utc_offset(void)
 {
-    rb_raise(rb_eArgError, "\"+HH:MM\" or \"-HH:MM\" expected for utc_offset");
+    static const char message[] = "\"+HH:MM\", \"-HH:MM\", \"UTC\" "
+        "or \"A\"..\"I\",\"K\"..\"Z\" expected for utc_offset";
+    VALUE str = rb_usascii_str_new_static(message, sizeof(message)-1);
+    rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
 }
 
 static VALUE
