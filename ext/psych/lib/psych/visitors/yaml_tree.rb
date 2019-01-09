@@ -185,13 +185,11 @@ module Psych
 
         @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
 
-        {
-          'message'   => private_iv_get(o, 'mesg'),
-          'backtrace' => private_iv_get(o, 'backtrace'),
-        }.each do |k,v|
-          next unless v
-          @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
-          accept v
+        msg = private_iv_get(o, 'mesg')
+
+        if msg
+          @emitter.scalar 'message', nil, nil, true, false, Nodes::Scalar::ANY
+          accept msg
         end
 
         dump_ivars o
@@ -204,13 +202,11 @@ module Psych
 
         @emitter.start_mapping nil, tag, false, Nodes::Mapping::BLOCK
 
-        {
-          'message'   => o.message.to_s,
-          'backtrace' => private_iv_get(o, 'backtrace'),
-        }.each do |k,v|
-          next unless v
-          @emitter.scalar k, nil, nil, true, false, Nodes::Scalar::ANY
-          accept v
+        msg = o.message.to_s
+
+        if msg
+          @emitter.scalar 'message', nil, nil, true, false, Nodes::Scalar::ANY
+          accept msg
         end
 
         dump_ivars o
