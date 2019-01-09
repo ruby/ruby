@@ -188,7 +188,8 @@ ary_verify_(VALUE ary, const char *file, int line)
 }
 
 void
-rb_ary_verify(VALUE ary){
+rb_ary_verify(VALUE ary)
+{
     ary_verify(ary);
 }
 #else
@@ -4531,7 +4532,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         int j;
         VALUE elt = rb_ary_elt(ary, i);
-        for (j = 0; j < argc; j++){
+        for (j = 0; j < argc; j++) {
             if (is_hash[j]) {
                 if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
                     break;
@@ -4691,7 +4692,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
     VALUE hash, ary_union;
 
     sum = RARRAY_LEN(ary);
-    for (i = 0; i < argc; i++){
+    for (i = 0; i < argc; i++) {
         argv[i] = to_ary(argv[i]);
         sum += RARRAY_LEN(argv[i]);
     }

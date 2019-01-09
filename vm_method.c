@@ -1296,7 +1296,8 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
 
     if (argc == 1) {
 	inc_super = 1;
-    } else {
+    }
+    else {
 	inc_super = RTEST(include_super);
 	if (!inc_super) {
 	    lookup_mod = RCLASS_ORIGIN(mod);

@@ -1472,9 +1472,11 @@ r_cover_range_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 
     if (EXCL(range) == EXCL(val)) {
         return cmp_end >= 0;
-    } else if (EXCL(range)) {
+    }
+    else if (EXCL(range)) {
         return cmp_end > 0;
-    } else if (cmp_end >= 0) {
+    }
+    else if (cmp_end >= 0) {
         return TRUE;
     }
 

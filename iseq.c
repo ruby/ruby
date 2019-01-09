@@ -191,7 +191,8 @@ rb_iseq_each_value(const rb_iseq_t *iseq, iseq_value_itr_t * func, void *data)
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     if (FL_TEST(iseq, ISEQ_TRANSLATED)) {
 	translator = rb_vm_insn_addr2insn2;
-    } else {
+    }
+    else {
 	translator = rb_vm_insn_null_translator;
     }
 #else
