@@ -810,8 +810,8 @@ strio_ungetbyte(VALUE self, VALUE c)
         int i = FIX2INT(c);
         if (0 <= i && i <= UCHAR_MAX) {
             char buf[1];
-	    buf[0] = (char)i;
-	    return strio_unget_bytes(ptr, buf, 1);
+            buf[0] = (char)i;
+            return strio_unget_bytes(ptr, buf, 1);
         }
         else {
             rb_raise(rb_eRangeError,
