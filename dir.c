@@ -2061,7 +2061,8 @@ join_path_from_pattern(struct glob_pattern **beg)
 	    path = GLOB_ALLOC_N(char, path_len + 1);
 	    memcpy(path, str, path_len);
 	    path[path_len] = '\0';
-	} else {
+        }
+        else {
 	    size_t len = strlen(str);
 	    char *tmp;
 	    tmp = GLOB_REALLOC(path, path_len + len + 2);

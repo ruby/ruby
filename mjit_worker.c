@@ -619,7 +619,8 @@ exec_process(const char *path, char *const argv[])
             if (WIFEXITED(stat)) {
                 exit_code = WEXITSTATUS(stat);
                 break;
-            } else if (WIFSIGNALED(stat)) {
+            }
+            else if (WIFSIGNALED(stat)) {
                 exit_code = -1;
                 break;
             }

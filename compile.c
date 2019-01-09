@@ -3895,11 +3895,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
       case NODE_FALSE:
 	return TRUE;
       case NODE_STR:
-        if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
-            return TRUE;
-        } else {
-            return FALSE;
-        }
+        return ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal;
       default:
 	return FALSE;
     }

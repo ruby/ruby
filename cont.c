@@ -875,11 +875,13 @@ fiber_machine_stack_alloc(size_t size)
             machine_stack_cache_index--;
             machine_stack_cache[machine_stack_cache_index].ptr = NULL;
             machine_stack_cache[machine_stack_cache_index].size = 0;
-        } else {
+        }
+        else {
             /* TODO handle multiple machine stack size */
             rb_bug("machine_stack_cache size is not canonicalized");
         }
-    } else {
+    }
+    else {
 #ifdef _WIN32
         ptr = VirtualAlloc(0, size, MEM_COMMIT, PAGE_READWRITE);
 
