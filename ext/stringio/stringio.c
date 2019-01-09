@@ -803,16 +803,27 @@ static VALUE
 strio_ungetbyte(VALUE self, VALUE c)
 {
     struct StringIO *ptr = readable(self);
-    char buf[1], *cp = buf;
-    long cl = 1;
 
     check_modifiable(ptr);
     if (NIL_P(c)) return Qnil;
     if (FIXNUM_P(c)) {
-	buf[0] = (char)FIX2INT(c);
-	return strio_unget_bytes(ptr, buf, 1);
+        int i = FIX2INT(c);
+        if (0 <= i && i <= UCHAR_MAX) {
+            char buf[1];
+	    buf[0] = (char)i;
+	    return strio_unget_bytes(ptr, buf, 1);
+        }
+        else {
+            rb_raise(rb_eRangeError,
+                "integer %d too big to convert into `unsigned char'", i);
+        }
+    }
+    else if (RB_TYPE_P(c, T_BIGNUM)) {
+        rb_raise(rb_eRangeError, "bignum too big to convert into `unsigned char'");
     }
     else {
+        char *cp;
+        long cl;
 	SafeStringValue(c);
 	cp = RSTRING_PTR(c);
 	cl = RSTRING_LEN(c);
