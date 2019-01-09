@@ -1617,6 +1617,8 @@ void Init_newline(void);
 
 #define INT_NEGATIVE_P(x) (FIXNUM_P(x) ? FIXNUM_NEGATIVE_P(x) : BIGNUM_NEGATIVE_P(x))
 
+#define FLOAT_ZERO_P(x) (RFLOAT_VALUE(x) == 0.0)
+
 #ifndef ROUND_DEFAULT
 # define ROUND_DEFAULT RUBY_NUM_ROUND_HALF_UP
 #endif

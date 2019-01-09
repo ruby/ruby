@@ -1086,7 +1086,7 @@ rb_float_mul(VALUE x, VALUE y)
 static bool
 flo_iszero(VALUE f)
 {
-    return RFLOAT_VALUE(f) == 0.0;
+    return FLOAT_ZERO_P(f);
 }
 
 static double
