@@ -227,6 +227,14 @@ class TestObject < Test::Unit::TestCase
     assert_equal([:foo], o.methods(false), bug8044)
   end
 
+  def test_methods_prepend_singleton
+    c = Class.new(Module) {private def foo; end}
+    k = c.new
+    k.singleton_class
+    c.module_eval {prepend(Module.new)}
+    assert_equal([:foo], k.private_methods(false))
+  end
+
   def test_instance_variable_get
     o = Object.new
     o.instance_eval { @foo = :foo }

@@ -1174,6 +1174,23 @@ method_entry_i(ID key, VALUE value, void *data)
     return ID_TABLE_CONTINUE;
 }
 
+static void
+add_instance_method_list(VALUE mod, struct method_entry_arg *me_arg)
+{
+    struct rb_id_table *m_tbl = RCLASS_M_TBL(mod);
+    if (!m_tbl) return;
+    rb_id_table_foreach(m_tbl, method_entry_i, me_arg);
+}
+
+static bool
+particular_class_p(VALUE mod)
+{
+    if (!mod) return false;
+    if (FL_TEST(mod, FL_SINGLETON)) return true;
+    if (BUILTIN_TYPE(mod) == T_ICLASS) return true;
+    return false;
+}
+
 static VALUE
 class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int (*func) (st_data_t, st_data_t, st_data_t))
 {
@@ -1183,17 +1200,23 @@ class_instance_method_list(int argc, const VALUE *argv, VALUE mod, int obj, int 
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
 
+    me_arg.list = st_init_numtable();
+    me_arg.recur = recur;
+
+    if (obj) {
+        for (; particular_class_p(mod); mod = RCLASS_SUPER(mod)) {
+            add_instance_method_list(mod, &me_arg);
+        }
+    }
+
     if (!recur && RCLASS_ORIGIN(mod) != mod) {
 	mod = RCLASS_ORIGIN(mod);
 	prepended = 1;
     }
 
-    me_arg.list = st_init_numtable();
-    me_arg.recur = recur;
     for (; mod; mod = RCLASS_SUPER(mod)) {
-	if (RCLASS_M_TBL(mod)) rb_id_table_foreach(RCLASS_M_TBL(mod), method_entry_i, &me_arg);
+        add_instance_method_list(mod, &me_arg);
 	if (BUILTIN_TYPE(mod) == T_ICLASS && !prepended) continue;
-	if (obj && FL_TEST(mod, FL_SINGLETON)) continue;
 	if (!recur) break;
     }
     ary = rb_ary_new();
