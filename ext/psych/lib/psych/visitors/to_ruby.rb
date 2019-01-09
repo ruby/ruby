@@ -252,6 +252,8 @@ module Psych
 
           e = build_exception((resolve_class($1) || class_loader.exception),
                               h.delete('message'))
+
+          e.set_backtrace h.delete('backtrace') if h.key? 'backtrace'
           init_with(e, h, o)
 
         when '!set', 'tag:yaml.org,2002:set'
