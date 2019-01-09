@@ -1206,17 +1206,29 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_CHECK;
 }
 
+static void
+hash_iter_lev_inc(VALUE hash)
+{
+    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) + 1;
+}
+
+static void
+hash_iter_lev_dec(VALUE hash)
+{
+    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) - 1;
+}
+
 static VALUE
 hash_foreach_ensure_rollback(VALUE hash)
 {
-    RHASH_ITER_LEV(hash)++;
+    hash_iter_lev_inc(hash);
     return 0;
 }
 
 static VALUE
 hash_foreach_ensure(VALUE hash)
 {
-    RHASH_ITER_LEV(hash)--;
+    hash_iter_lev_dec(hash);
     return 0;
 }
 
@@ -1257,7 +1269,7 @@ rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 
     if (RHASH_TABLE_EMPTY_P(hash))
         return;
-    RHASH_ITER_LEV(hash)++;
+    hash_iter_lev_inc(hash);
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
