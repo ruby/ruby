@@ -472,6 +472,9 @@ module Psych
           accept msg
         end
 
+        @emitter.scalar 'backtrace', nil, nil, true, false, Nodes::Scalar::ANY
+        accept o.backtrace
+
         dump_ivars o
 
         @emitter.end_mapping
