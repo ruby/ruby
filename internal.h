@@ -1595,15 +1595,15 @@ VALUE rb_math_sqrt(VALUE);
 /* mjit.c */
 
 #if USE_MJIT
-extern int mjit_enabled;
-VALUE mjit_pause(int wait_p);
+extern bool mjit_enabled;
+VALUE mjit_pause(bool wait_p);
 VALUE mjit_resume(void);
-void mjit_finish(int close_handle_p);
+void mjit_finish(bool close_handle_p);
 #else
 #define mjit_enabled 0
-static inline VALUE mjit_pause(int wait_p){ return Qnil; } /* unreachable */
-static inline VALUE mjit_resume(void){ return Qnil; } /* unreachable */
-static inline void mjit_finish(int close_handle_p){}
+static inline VALUE mjit_pause(bool wait_p){ return Qnil; } // unreachable
+static inline VALUE mjit_resume(void){ return Qnil; } // unreachable
+static inline void mjit_finish(bool close_handle_p){}
 #endif
 
 /* newline.c */

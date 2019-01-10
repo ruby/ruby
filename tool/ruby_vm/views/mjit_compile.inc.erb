@@ -58,7 +58,7 @@ switch (insn) {
     if (b->stack_size != 1) {
         if (mjit_opts.warnings || mjit_opts.verbose)
             fprintf(stderr, "MJIT warning: Unexpected JIT stack_size on leave: %d\n", b->stack_size);
-        status->success = FALSE;
+        status->success = false;
     }
 %   end
 %
@@ -72,6 +72,6 @@ switch (insn) {
   default:
     if (mjit_opts.warnings || mjit_opts.verbose)
         fprintf(stderr, "MJIT warning: Skipped to compile unsupported instruction: %s\n", insn_name(insn));
-    status->success = FALSE;
+    status->success = false;
     break;
 }
