@@ -29,12 +29,12 @@
    which is global during one `mjit_compile` call.  Ones conditional
    in each branch should be stored in `compile_branch`.  */
 struct compile_status {
-    bool success; // has true if compilation has had no issue
-    int *stack_size_for_pos; // stack_size_for_pos[pos] has stack size for the position (otherwise -1)
-    // If true, JIT-ed code will use local variables to store pushed values instead of
-    // using VM's stack and moving stack pointer.
-    bool local_stack_p;
-    // Safely-accessible cache entries copied from main thread.
+    int success; /* has TRUE if compilation has had no issue */
+    int *stack_size_for_pos; /* stack_size_for_pos[pos] has stack size for the position (otherwise -1) */
+    /* If TRUE, JIT-ed code will use local variables to store pushed values instead of
+       using VM's stack and moving stack pointer. */
+    int local_stack_p;
+    /* Safely-accessible cache entries copied from main thread. */
     union iseq_inline_storage_entry *is_entries;
     struct rb_call_cache *cc_entries;
 };
@@ -43,8 +43,8 @@ struct compile_status {
    This is created and used for one `compile_insns` call and its values
    should be copied for extra `compile_insns` call. */
 struct compile_branch {
-    unsigned int stack_size; // this simulates sp (stack pointer) of YARV
-    bool finish_p; // if true, compilation in this branch should stop and let another branch to be compiled
+    unsigned int stack_size; /* this simulates sp (stack pointer) of YARV */
+    int finish_p; /* if TRUE, compilation in this branch should stop and let another branch to be compiled */
 };
 
 struct case_dispatch_var {
@@ -53,21 +53,21 @@ struct case_dispatch_var {
     VALUE last_value;
 };
 
-// Returns true if call cache is still not obsoleted and cc->me->def->type is available.
-static bool
+/* Returns TRUE if call cache is still not obsoleted and cc->me->def->type is available. */
+static int
 has_valid_method_type(CALL_CACHE cc)
 {
-    extern bool mjit_valid_class_serial_p(rb_serial_t class_serial);
+    extern int mjit_valid_class_serial_p(rb_serial_t class_serial);
     return GET_GLOBAL_METHOD_STATE() == cc->method_state
         && mjit_valid_class_serial_p(cc->class_serial) && cc->me;
 }
 
-// Returns true if iseq is inlinable, otherwise NULL. This becomes true in the same condition
-// as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup.
-static bool
+/* Returns TRUE if iseq is inlinable, otherwise NULL. This becomes TRUE in the same condition
+   as CC_SET_FASTPATH (in vm_callee_setup_arg) is called from vm_call_iseq_setup. */
+static int
 inlinable_iseq_p(CALL_INFO ci, CALL_CACHE cc, const rb_iseq_t *iseq)
 {
-    extern bool rb_simple_iseq_p(const rb_iseq_t *iseq);
+    extern int rb_simple_iseq_p(const rb_iseq_t *iseq);
     return iseq != NULL
         && rb_simple_iseq_p(iseq) && !(ci->flag & VM_CALL_KW_SPLAT) /* Top of vm_callee_setup_arg. In this case, opt_pc is 0. */
         && (!IS_ARGS_SPLAT(ci) && !IS_ARGS_KEYWORD(ci) && !(METHOD_ENTRY_VISI(cc->me) == METHOD_VISI_PROTECTED)); /* CC_SET_FASTPATH */
@@ -143,7 +143,7 @@ compile_insn(FILE *f, const struct rb_iseq_constant_body *body, const int insn, 
             if (mjit_opts.warnings || mjit_opts.verbose)
                 fprintf(stderr, "MJIT warning: JIT stack assumption is not the same between branches (%d != %u)\n",
                         status->stack_size_for_pos[next_pos], b->stack_size);
-            status->success = false;
+            status->success = FALSE;
         }
     }
 
@@ -160,7 +160,7 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
     struct compile_branch branch;
 
     branch.stack_size = stack_size;
-    branch.finish_p = false;
+    branch.finish_p = FALSE;
 
     while (pos < body->iseq_size && !ALREADY_COMPILED_P(status, pos) && !branch.finish_p) {
 #if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
@@ -175,7 +175,7 @@ compile_insns(FILE *f, const struct rb_iseq_constant_body *body, unsigned int st
         if (status->success && branch.stack_size > body->stack_max) {
             if (mjit_opts.warnings || mjit_opts.verbose)
                 fprintf(stderr, "MJIT warning: JIT stack size (%d) exceeded its max size (%d)\n", branch.stack_size, body->stack_max);
-            status->success = false;
+            status->success = FALSE;
         }
         if (!status->success)
             break;
@@ -196,16 +196,16 @@ compile_cancel_handler(FILE *f, const struct rb_iseq_constant_body *body, struct
     fprintf(f, "    return Qundef;\n");
 }
 
-// Compile ISeq to C code in `f`. It returns true if it succeeds to compile.
-bool
+/* Compile ISeq to C code in F.  It returns 1 if it succeeds to compile. */
+int
 mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
 {
     struct compile_status status;
-    status.success = false;
+    status.success = TRUE;
     status.local_stack_p = !body->catch_except_p;
     status.stack_size_for_pos = (int *)malloc(sizeof(int) * body->iseq_size);
     if (status.stack_size_for_pos == NULL)
-        return false;
+        return FALSE;
     memset(status.stack_size_for_pos, NOT_COMPILED_STACK_SIZE, sizeof(int) * body->iseq_size);
     status.cc_entries = cc_entries;
     status.is_entries = is_entries;
