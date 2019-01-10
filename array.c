@@ -3241,6 +3241,7 @@ static VALUE
 rb_ary_reject_bang(VALUE ary)
 {
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+    rb_ary_modify(ary);
     return ary_reject_bang(ary);
 }
 

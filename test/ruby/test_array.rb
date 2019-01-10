@@ -1291,6 +1291,65 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[7, 8, 9, 10], a, bug2545)
   end
 
+  def test_shared_array_reject!
+    c = []
+    b = [1, 2, 3, 4]
+    3.times do
+      a = b.dup
+      c << a.dup
+
+      begin
+        a.reject! do |x|
+          case x
+          when 2 then true
+          when 3 then raise StandardError, 'Oops'
+          else false
+          end
+        end
+      rescue StandardError
+      end
+
+      c << a.dup
+    end
+
+    bug90781 = '[ruby-core:90781]'
+    assert_equal [[1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4]], c, bug90781
+  end
+
+  def test_iseq_shared_array_reject!
+    c = []
+    3.times do
+      a = [1, 2, 3, 4]
+      c << a.dup
+
+      begin
+        a.reject! do |x|
+          case x
+          when 2 then true
+          when 3 then raise StandardError, 'Oops'
+          else false
+          end
+        end
+      rescue StandardError
+      end
+
+      c << a.dup
+    end
+
+    bug90781 = '[ruby-core:90781]'
+    assert_equal [[1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4],
+                  [1, 2, 3, 4],
+                  [1, 3, 4]], c, bug90781
+  end
+
   def test_replace
     a = @cls[ 1, 2, 3]
     a_id = a.__id__
