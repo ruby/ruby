@@ -58,13 +58,13 @@ typedef VALUE (*mjit_func_t)(rb_execution_context_t *, rb_control_frame_t *);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN struct mjit_options mjit_opts;
-RUBY_EXTERN int mjit_call_p;
+RUBY_EXTERN bool mjit_call_p;
 
 extern void mjit_add_iseq_to_process(const rb_iseq_t *iseq);
 extern VALUE mjit_wait_call(rb_execution_context_t *ec, struct rb_iseq_constant_body *body);
 RUBY_SYMBOL_EXPORT_END
 
-extern int mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
+extern bool mjit_compile(FILE *f, const struct rb_iseq_constant_body *body, const char *funcname, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries);
 extern void mjit_init(struct mjit_options *opts);
 extern void mjit_postponed_job_register_start_hook(void);
 extern void mjit_postponed_job_register_finish_hook(void);
