@@ -35,3 +35,6 @@ sufficient information, see the ChangeLog file or Redmine
 === Implementation improvements
 
 === Miscellaneous changes
+
+* Require compilers to support C99 [Misc #15347]
+  * Details of our dialect: https://bugs.ruby-lang.org/projects/ruby-trunk/wiki/C99
