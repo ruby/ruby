@@ -1193,6 +1193,7 @@ debug_info_reader_read_value(DebugInfoReader *reader, uint64_t form, DebugInfoVa
 static char *
 di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
 {
+    uint64_t n;
     char *p;
     if (abbrev_number < ABBREV_TABLE_SIZE) {
         return reader->abbrev_table[abbrev_number];
@@ -1207,7 +1208,7 @@ di_find_abbrev(DebugInfoReader *reader, uint64_t abbrev_number)
         uint64_t form = uleb128(&p);
         if (!at && !form) break;
     }
-    for (uint64_t n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
+    for (n = uleb128(&p); abbrev_number != n; n = uleb128(&p)) {
         if (n == 0) {
             fprintf(stderr,"%d: Abbrev Number %"PRId64" not found\n",__LINE__, abbrev_number);
             exit(1);
@@ -1506,7 +1507,9 @@ read_abstract_origin(DebugInfoReader *reader, uint64_t abstract_origin, line_inf
 
 static void
 debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
-         line_info_t *lines, int offset) {
+         line_info_t *lines, int offset)
+{
+    int i;
     while (reader->p < reader->cu_end) {
         DIE die;
         ranges_t ranges = {};
@@ -1555,7 +1558,7 @@ debug_info_read(DebugInfoReader *reader, int num_traces, void **traces,
         }
         /* ranges_inspect(reader, &ranges); */
         /* fprintf(stderr,"%d:%tx: %x ",__LINE__,diepos,die.tag); */
-        for (int i=offset; i < num_traces; i++) {
+        for (i=offset; i < num_traces; i++) {
             uintptr_t addr = (uintptr_t)traces[i];
             uintptr_t offset = addr - reader->obj->base_addr + reader->obj->vmaddr;
             uintptr_t saddr = ranges_include(reader, &ranges, offset);
