@@ -1089,10 +1089,10 @@ class TestMethod < Test::Unit::TestCase
     f = c.new.method(:f)
 
     assert_raise(TypeError) {
-      (f << 5).call(2)
+      f << 5
     }
     assert_raise(TypeError) {
-      (f >> 5).call(2)
+      f >> 5
     }
   end
 
