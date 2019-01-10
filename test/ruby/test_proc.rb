@@ -1474,10 +1474,10 @@ class TestProc < Test::Unit::TestCase
   def test_compose_with_noncallable
     f = proc {|x| x * 2}
 
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f << 5).call(2)
     }
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f >> 5).call(2)
     }
   end
