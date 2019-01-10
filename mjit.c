@@ -48,7 +48,7 @@ mjit_copy_job_handler(void *data)
         memcpy(job->is_entries, body->is_entries, sizeof(union iseq_inline_storage_entry) * body->is_size);
     }
 
-    job->finish_p = true;
+    job->finish_p = TRUE;
     rb_native_cond_broadcast(&mjit_worker_wakeup);
     CRITICAL_SECTION_FINISH(3, "in mjit_copy_job_handler");
 }
@@ -88,7 +88,7 @@ mjit_gc_start_hook(void)
         rb_native_cond_wait(&mjit_client_wakeup, &mjit_engine_mutex);
         verbose(4, "Getting wakeup from a worker for GC");
     }
-    in_gc = true;
+    in_gc = TRUE;
     CRITICAL_SECTION_FINISH(4, "mjit_gc_start_hook");
 }
 
@@ -100,7 +100,7 @@ mjit_gc_finish_hook(void)
     if (!mjit_enabled)
         return;
     CRITICAL_SECTION_START(4, "mjit_gc_finish_hook");
-    in_gc = false;
+    in_gc = FALSE;
     verbose(4, "Sending wakeup signal to workers after GC");
     rb_native_cond_broadcast(&mjit_gc_wakeup);
     CRITICAL_SECTION_FINISH(4, "mjit_gc_finish_hook");
@@ -126,7 +126,7 @@ mjit_free_iseq(const rb_iseq_t *iseq)
    because node of unit_queue and one of active_units may have the same unit
    during proceeding unit. */
 static void
-free_list(struct rb_mjit_unit_list *list, bool close_handle_p)
+free_list(struct rb_mjit_unit_list *list, int close_handle_p)
 {
     struct rb_mjit_unit *unit = 0, *next;
 
@@ -572,11 +572,11 @@ system_tmpdir(void)
 #define MIN_CACHE_SIZE 10
 
 /* Start MJIT worker. Return TRUE if worker is sucessfully started. */
-static bool
+static int
 start_worker(void)
 {
-    stop_worker_p = false;
-    worker_stopped = true;
+    stop_worker_p = FALSE;
+    worker_stopped = FALSE;
 
     if (!rb_thread_create_mjit_thread(mjit_worker)) {
         mjit_enabled = FALSE;
@@ -586,9 +586,9 @@ start_worker(void)
         rb_native_cond_destroy(&mjit_worker_wakeup);
         rb_native_cond_destroy(&mjit_gc_wakeup);
         verbose(1, "Failure in MJIT thread initialization\n");
-        return false;
+        return FALSE;
     }
-    return true;
+    return TRUE;
 }
 
 /* Initialize MJIT.  Start a thread creating the precompiled header and
@@ -598,8 +598,8 @@ void
 mjit_init(struct mjit_options *opts)
 {
     mjit_opts = *opts;
-    mjit_enabled = true;
-    mjit_call_p = true;
+    mjit_enabled = TRUE;
+    mjit_call_p = TRUE;
 
     /* Normalize options */
     if (mjit_opts.min_calls == 0)
@@ -635,7 +635,7 @@ mjit_init(struct mjit_options *opts)
     verbose(2, "MJIT: tmp_dir is %s", tmp_dir);
 
     if (!init_header_filename()) {
-        mjit_enabled = false;
+        mjit_enabled = FALSE;
         verbose(1, "Failure in MJIT header file name initialization\n");
         return;
     }
@@ -670,7 +670,7 @@ stop_worker(void)
     while (!worker_stopped) {
         verbose(3, "Sending cancel signal to worker");
         CRITICAL_SECTION_START(3, "in stop_worker");
-        stop_worker_p = true; /* Setting this inside loop because RUBY_VM_CHECK_INTS may make this FALSE. */
+        stop_worker_p = TRUE; /* Setting this inside loop because RUBY_VM_CHECK_INTS may make this FALSE. */
         rb_native_cond_broadcast(&mjit_worker_wakeup);
         CRITICAL_SECTION_FINISH(3, "in stop_worker");
         RUBY_VM_CHECK_INTS(ec);
@@ -679,7 +679,7 @@ stop_worker(void)
 
 /* Stop JIT-compiling methods but compiled code is kept available. */
 VALUE
-mjit_pause(bool wait_p)
+mjit_pause(int wait_p)
 {
     if (!mjit_enabled) {
         rb_raise(rb_eRuntimeError, "MJIT is not enabled");
@@ -775,10 +775,10 @@ mjit_child_after_fork(void)
    and free MJIT data.  It should be called last during MJIT
    life.
 
-   If close_handle_p is true, it calls dlclose() for JIT-ed code. So it should be false
+   If close_handle_p is TRUE, it calls dlclose() for JIT-ed code. So it should be FALSE
    if the code can still be on stack. ...But it means to leak JIT-ed handle forever (FIXME). */
 void
-mjit_finish(bool close_handle_p)
+mjit_finish(int close_handle_p)
 {
     if (!mjit_enabled)
         return;
@@ -816,13 +816,13 @@ mjit_finish(bool close_handle_p)
     xfree(tmp_dir); tmp_dir = NULL;
     xfree(pch_file); pch_file = NULL;
 
-    mjit_call_p = true;
+    mjit_call_p = FALSE;
     free_list(&unit_queue, close_handle_p);
     free_list(&active_units, close_handle_p);
     free_list(&compact_units, close_handle_p);
     finish_conts();
 
-    mjit_enabled = false;
+    mjit_enabled = FALSE;
     verbose(1, "Successful MJIT finish");
 }
 

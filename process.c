@@ -2947,7 +2947,7 @@ rb_f_exec(int argc, const VALUE *argv)
 
     execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
     eargp = rb_execarg_get(execarg_obj);
-    if (mjit_enabled) mjit_finish(false); // avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued.
+    if (mjit_enabled) mjit_finish(FALSE); /* avoid leaking resources, and do not leave files. XXX: JIT-ed handle can leak after exec error is rescued. */
     before_exec(); /* stop timer thread before redirects */
     rb_execarg_parent_start(execarg_obj);
     fail_str = eargp->use_shell ? eargp->invoke.sh.shell_script : eargp->invoke.cmd.command_name;
@@ -4045,7 +4045,7 @@ rb_fork_ruby(int *status)
 
     while (1) {
 	prefork();
-        if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT.
+        if (mjit_enabled) mjit_pause(FALSE); /* Don't leave locked mutex to child. Note: child_handler must be enabled to pause MJIT. */
 	disable_child_handler_before_fork(&old);
 	before_fork_ruby();
 	pid = fork();
@@ -6502,7 +6502,7 @@ rb_daemon(int nochdir, int noclose)
 {
     int err = 0;
 #ifdef HAVE_DAEMON
-    if (mjit_enabled) mjit_pause(false); // Don't leave locked mutex to child.
+    if (mjit_enabled) mjit_pause(FALSE); /* Don't leave locked mutex to child. */
     before_fork_ruby();
     err = daemon(nochdir, noclose);
     after_fork_ruby();

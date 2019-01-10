@@ -171,11 +171,11 @@ extern rb_pid_t ruby_waitpid_locked(rb_vm_t *, rb_pid_t, int *status, int option
    freed. */
 struct mjit_options mjit_opts;
 
-// true if MJIT is enabled.
-bool mjit_enabled = false;
-// TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
-// and `mjit_call_p == false`, any JIT-ed code execution is cancelled as soon as possible.
-bool mjit_call_p = false;
+/* TRUE if MJIT is enabled.  */
+int mjit_enabled = FALSE;
+/* TRUE if JIT-ed code should be called. When `ruby_vm_event_enabled_global_flags & ISEQ_TRACE_EVENTS`
+   and `mjit_call_p == FALSE`, any JIT-ed code execution is cancelled as soon as possible. */
+int mjit_call_p = FALSE;
 
 /* Priority queue of iseqs waiting for JIT compilation.
    This variable is a pointer to head unit of the queue. */
@@ -198,14 +198,14 @@ static rb_nativethread_cond_t mjit_client_wakeup;
 static rb_nativethread_cond_t mjit_worker_wakeup;
 /* A thread conditional to wake up workers if at the end of GC.  */
 static rb_nativethread_cond_t mjit_gc_wakeup;
-// true when GC is working.
-static bool in_gc;
-// true when JIT is working.
-static bool in_jit;
-// Set to true to stop worker.
-static bool stop_worker_p;
-// Set to true if worker is stopped.
-static bool worker_stopped;
+/* True when GC is working.  */
+static int in_gc;
+/* True when JIT is working.  */
+static int in_jit;
+/* Set to TRUE to stop worker.  */
+static int stop_worker_p;
+/* Set to TRUE if worker is stopped.  */
+static int worker_stopped;
 
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
 static char *tmp_dir;
@@ -363,7 +363,7 @@ clean_object_files(struct rb_mjit_unit *unit)
         char *so_file = unit->so_file;
 
         unit->so_file = NULL;
-        // unit->so_file is set only when mjit_opts.save_temps is false.
+        /* unit->so_file is set only when mjit_opts.save_temps is FALSE. */
         remove_file(so_file);
         free(so_file);
     }
@@ -444,12 +444,14 @@ real_ms_time(void)
 }
 #endif
 
-// Return true if class_serial is not obsoleted. This is used by mjit_compile.c.
-bool
+/* Return TRUE if class_serial is not obsoleted. This is used by mjit_compile.c. */
+int
 mjit_valid_class_serial_p(rb_serial_t class_serial)
 {
+    int found_p;
+
     CRITICAL_SECTION_START(3, "in valid_class_serial_p");
-    bool found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
+    found_p = rb_hash_stlike_lookup(valid_class_serials, LONG2FIX(class_serial), NULL);
     CRITICAL_SECTION_FINISH(3, "in valid_class_serial_p");
     return found_p;
 }
@@ -651,7 +653,7 @@ remove_so_file(const char *so_file, struct rb_mjit_unit *unit)
 
 #ifdef _MSC_VER
 /* Compile C file to so. It returns 1 if it succeeds. (mswin) */
-static bool
+static int
 compile_c_to_so(const char *c_file, const char *so_file)
 {
     int exit_code;
@@ -701,7 +703,7 @@ compile_c_to_so(const char *c_file, const char *so_file)
     args = form_args(5, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
-        return false;
+        return FALSE;
 
     exit_code = exec_process(cc_path, args);
     free(args);
@@ -769,7 +771,7 @@ make_pch(void)
 }
 
 /* Compile .c file to .o file. It returns 1 if it succeeds. (non-mswin) */
-static bool
+static int
 compile_c_to_o(const char *c_file, const char *o_file)
 {
     int exit_code;
@@ -789,7 +791,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
 # endif
     args = form_args(5, cc_common_args, CC_CODEFLAG_ARGS, files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
-        return false;
+        return FALSE;
 
     exit_code = exec_process(cc_path, args);
     free(args);
@@ -800,7 +802,7 @@ compile_c_to_o(const char *c_file, const char *o_file)
 }
 
 /* Link .o files to .so file. It returns 1 if it succeeds. (non-mswin) */
-static bool
+static int
 link_o_to_so(const char **o_files, const char *so_file)
 {
     int exit_code;
@@ -817,7 +819,7 @@ link_o_to_so(const char **o_files, const char *so_file)
     args = form_args(6, CC_LDSHARED_ARGS, CC_CODEFLAG_ARGS,
                      options, o_files, CC_LIBS, CC_DLDFLAGS_ARGS);
     if (args == NULL)
-        return false;
+        return FALSE;
 
     exit_code = exec_process(cc_path, args);
     free(args);
@@ -838,7 +840,7 @@ compact_all_jit_code(void)
     static const char so_ext[] = DLEXT;
     char so_file[MAXPATHLEN];
     const char **o_files;
-    int i = 0;
+    int i = 0, success;
 
     /* Abnormal use case of rb_mjit_unit that doesn't have ISeq */
     unit = calloc(1, sizeof(struct rb_mjit_unit)); /* To prevent GC, don't use ZALLOC */
@@ -856,7 +858,7 @@ compact_all_jit_code(void)
     }
 
     start_time = real_ms_time();
-    bool success = link_o_to_so(o_files, so_file);
+    success = link_o_to_so(o_files, so_file);
     end_time = real_ms_time();
 
     /* TODO: Shrink this big critical section. For now, this is needed to prevent failure by missing .o files.
@@ -981,6 +983,7 @@ static mjit_func_t
 convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries, union iseq_inline_storage_entry *is_entries)
 {
     char c_file_buff[MAXPATHLEN], *c_file = c_file_buff, *so_file, funcname[35]; /* TODO: reconsider `35` */
+    int success;
     int fd;
     FILE *f;
     void *func;
@@ -1041,10 +1044,10 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
         if (!mjit_opts.save_temps)
             remove_file(c_file);
         free_unit(unit);
-        in_jit = false; // just being explicit for return
+        in_jit = FALSE; /* just being explicit for return */
     }
     else {
-        in_jit = true;
+        in_jit = TRUE;
     }
     CRITICAL_SECTION_FINISH(3, "before mjit_compile to wait GC finish");
     if (!in_jit) {
@@ -1059,11 +1062,11 @@ convert_unit_to_func(struct rb_mjit_unit *unit, struct rb_call_cache *cc_entries
         verbose(2, "start compilation: %s@%s:%d -> %s", label, path, lineno, c_file);
         fprintf(f, "/* %s@%s:%d */\n\n", label, path, lineno);
     }
-    bool success = mjit_compile(f, unit->iseq->body, funcname, cc_entries, is_entries);
+    success = mjit_compile(f, unit->iseq->body, funcname, cc_entries, is_entries);
 
     /* release blocking mjit_gc_start_hook */
     CRITICAL_SECTION_START(3, "after mjit_compile to wakeup client for GC");
-    in_jit = false;
+    in_jit = FALSE;
     verbose(3, "Sending wakeup signal to client in a mjit-worker for GC");
     rb_native_cond_signal(&mjit_client_wakeup);
     CRITICAL_SECTION_FINISH(3, "in worker to wakeup client for GC");
@@ -1121,7 +1124,7 @@ typedef struct {
     struct rb_mjit_unit *unit;
     struct rb_call_cache *cc_entries;
     union iseq_inline_storage_entry *is_entries;
-    bool finish_p;
+    int finish_p;
 } mjit_copy_job_t;
 
 /* Singleton MJIT copy job. This is made global since it needs to be durable even when MJIT worker thread is stopped.
@@ -1136,11 +1139,11 @@ int rb_workqueue_register(unsigned flags, rb_postponed_job_func_t , void *);
 /* We're lazily copying cache values from main thread because these cache values
    could be different between ones on enqueue timing and ones on dequeue timing.
    Return TRUE if copy succeeds. */
-static bool
+static int
 copy_cache_from_main_thread(mjit_copy_job_t *job)
 {
     CRITICAL_SECTION_START(3, "in copy_cache_from_main_thread");
-    job->finish_p = false; // allow dispatching this job in mjit_copy_job_handler
+    job->finish_p = FALSE; /* allow dispatching this job in mjit_copy_job_handler */
     CRITICAL_SECTION_FINISH(3, "in copy_cache_from_main_thread");
 
     if (UNLIKELY(mjit_opts.wait)) {
@@ -1149,7 +1152,7 @@ copy_cache_from_main_thread(mjit_copy_job_t *job)
     }
 
     if (!rb_workqueue_register(0, mjit_copy_job_handler, (void *)job))
-        return false;
+        return FALSE;
     CRITICAL_SECTION_START(3, "in MJIT copy job wait");
     /* checking `stop_worker_p` too because `RUBY_VM_CHECK_INTS(ec)` may not
        lush mjit_copy_job_handler when EC_EXEC_TAG() is not TAG_NONE, and then
@@ -1176,9 +1179,9 @@ mjit_worker(void)
     }
 #endif
     if (pch_status == PCH_FAILED) {
-        mjit_enabled = false;
+        mjit_enabled = FALSE;
         CRITICAL_SECTION_START(3, "in worker to update worker_stopped");
-        worker_stopped = true;
+        worker_stopped = TRUE;
         verbose(3, "Sending wakeup signal to client in a mjit-worker");
         rb_native_cond_signal(&mjit_client_wakeup);
         CRITICAL_SECTION_FINISH(3, "in worker to update worker_stopped");
@@ -1196,7 +1199,7 @@ mjit_worker(void)
             verbose(3, "Getting wakeup from client");
         }
         unit = get_from_list(&unit_queue);
-        job->finish_p = true; /* disable dispatching this job in mjit_copy_job_handler while it's being modified */
+        job->finish_p = TRUE; /* disable dispatching this job in mjit_copy_job_handler while it's being modified */
         CRITICAL_SECTION_FINISH(3, "in worker dequeue");
 
         if (unit) {
@@ -1213,7 +1216,7 @@ mjit_worker(void)
 
             /* Copy ISeq's inline caches values to avoid race condition. */
             if (job->cc_entries != NULL || job->is_entries != NULL) {
-                if (copy_cache_from_main_thread(job) == false) {
+                if (copy_cache_from_main_thread(job) == FALSE) {
                     continue; /* retry postponed_job failure, or stop worker */
                 }
             }
@@ -1244,8 +1247,8 @@ mjit_worker(void)
 
     /* Disable dispatching this job in mjit_copy_job_handler while memory allocated by alloca
        could be expired after finishing this function. */
-    job->finish_p = true;
+    job->finish_p = TRUE;
 
     /* To keep mutex unlocked when it is destroyed by mjit_finish, don't wrap CRITICAL_SECTION here. */
-    worker_stopped = true;
+    worker_stopped = TRUE;
 }

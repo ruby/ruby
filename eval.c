@@ -233,7 +233,7 @@ ruby_cleanup(volatile int ex)
 	}
     }
 
-    mjit_finish(true); // We still need ISeqs here.
+    mjit_finish(TRUE); /* We still need ISeqs here. */
 
     ruby_finalize_1();
 
