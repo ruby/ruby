@@ -57,7 +57,7 @@ module JITSupport
   end
 
   def code_block(code)
-    "```\n#{code}\n```\n\n"
+    %Q["""\n#{code}\n"""\n\n]
   end
 
   # We're retrying cc1 not found error on gcc, which should be solved in the future but ignored for now.

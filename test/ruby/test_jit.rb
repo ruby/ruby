@@ -597,7 +597,7 @@ class TestJIT < Test::Unit::TestCase
         end
       end;
 
-      debug_info = "stdout:\n```\n#{out}\n```\n\nstderr:\n```\n#{err}```\n"
+      debug_info = %Q[stdout:\n"""\n#{out}\n"""\n\nstderr:\n"""\n#{err}"""\n]
       assert_equal('012345678910', out, debug_info)
       compactions, errs = err.lines.partition do |l|
         l.match?(/\AJIT compaction \(\d+\.\dms\): Compacted \d+ methods ->/)
