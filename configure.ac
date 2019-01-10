@@ -481,7 +481,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 	particular_werror_flags=no
     ])
     for wflag in \
-		 -Werror=declaration-after-statement \
 		 -Werror=deprecated-declarations \
 		 -Werror=division-by-zero \
 		 -Werror=duplicated-cond \
@@ -489,7 +488,6 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Werror=implicit-int \
 		 -Werror=misleading-indentation \
 		 -Werror=pointer-arith \
-		 -Werror=restrict \
 		 -Werror=shorten-64-to-32 \
 		 -Werror=write-strings \
 		 -Wimplicit-fallthrough=0 \
