@@ -3410,6 +3410,9 @@ time_localtime(VALUE time)
  *
  *     t.localtime("+09:00")                   #=> 2000-01-02 05:15:01 +0900
  *     t.utc?                                  #=> false
+ *
+ *  If +utc_offset+ is not given and _time_ is local time, just return
+ *  the receiver.
  */
 
 static VALUE

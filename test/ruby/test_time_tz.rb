@@ -107,6 +107,18 @@ class TestTimeTZ < Test::Unit::TestCase
     assert_equal(expected, real, m)
   end
 
+  def test_localtime_zone
+    t = with_tz("America/Los_Angeles") {
+      Time.local(2000, 1, 1)
+    }
+    skip "force_tz_test is false on this environment" unless t
+    z1 = t.zone
+    z2 = with_tz(tz="Asia/Singapore") {
+      t.localtime.zone
+    }
+    assert_equal(z2, z1)
+  end
+
   def test_america_los_angeles
     with_tz(tz="America/Los_Angeles") {
       assert_time_constructor(tz, "2007-03-11 03:00:00 -0700", :local, [2007,3,11,2,0,0])
