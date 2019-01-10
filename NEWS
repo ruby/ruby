@@ -17,6 +17,11 @@ sufficient information, see the ChangeLog file or Redmine
 * Method reference operator, <code>.:</code> is introduced as an
   experimental feature.  [Feature #12125] [Feature #13581]
 
+* Proc.new and proc with no block in a method called with a block is warned
+  now.
+
+* lambda with no block in a method called with a block errs.
+
 === Core classes updates (outstanding ones only)
 
 === Stdlib updates (outstanding ones only)

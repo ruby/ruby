@@ -95,16 +95,18 @@ describe "Proc.new with an associated block" do
     obj.second.should == 2
   end
 
-  it "returns a new Proc instance from the block passed to the containing method" do
-    prc = ProcSpecs.new_proc_in_method { "hello" }
-    prc.should be_an_instance_of(Proc)
-    prc.call.should == "hello"
-  end
+  ruby_version_is ""..."2.7" do
+    it "returns a new Proc instance from the block passed to the containing method" do
+      prc = ProcSpecs.new_proc_in_method { "hello" }
+      prc.should be_an_instance_of(Proc)
+      prc.call.should == "hello"
+    end
 
-  it "returns a new Proc instance from the block passed to the containing method" do
-    prc = ProcSpecs.new_proc_subclass_in_method { "hello" }
-    prc.should be_an_instance_of(ProcSpecs::ProcSubclass)
-    prc.call.should == "hello"
+    it "returns a new Proc instance from the block passed to the containing method" do
+      prc = ProcSpecs.new_proc_subclass_in_method { "hello" }
+      prc.should be_an_instance_of(ProcSpecs::ProcSubclass)
+      prc.call.should == "hello"
+    end
   end
 end
 
@@ -178,13 +180,36 @@ describe "Proc.new without a block" do
     lambda { ProcSpecs.new_proc_subclass_in_method }.should raise_error(ArgumentError)
   end
 
-  it "uses the implicit block from an enclosing method" do
-    def some_method
-      Proc.new
+  ruby_version_is ""..."2.7" do
+    it "uses the implicit block from an enclosing method" do
+      def some_method
+        Proc.new
+      end
+
+      prc = some_method { "hello" }
+
+      prc.call.should == "hello"
+    end
+  end
+
+  ruby_version_is "2.7" do
+    it "can be created if invoked from within a method with a block" do
+      lambda { ProcSpecs.new_proc_in_method { "hello" } }.should complain(/tried to create Proc object without a block/)
     end
 
-    prc = some_method { "hello" }
+    it "can be created if invoked on a subclass from within a method with a block" do
+      lambda { ProcSpecs.new_proc_subclass_in_method { "hello" } }.should complain(/tried to create Proc object without a block/)
+    end
 
-    prc.call.should == "hello"
+
+    it "can be create when called with no block" do
+      def some_method
+        Proc.new
+      end
+
+      -> {
+        some_method { "hello" }
+      }.should complain(/tried to create Proc object without a block/)
+    end
   end
 end
