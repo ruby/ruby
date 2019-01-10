@@ -99,6 +99,8 @@ initialize(int argc, VALUE argv[], VALUE self)
     void *cfunc;
 
     rb_scan_args(argc, argv, "31:", &ptr, &args, &ret_type, &abi, &kwds);
+    rb_iv_set(self, "@closure", ptr);
+
     ptr = rb_Integer(ptr);
     cfunc = NUM2PTR(ptr);
     PTR2NUM(cfunc);
