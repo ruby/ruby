@@ -226,25 +226,23 @@ env:
           - zlib1g:i386
 
   - &pedanticism
-    name: -ansi -pedantic
+    name: -std=c99 -pedantic
     <<: *linux
     <<: *make-test-only
     compiler: clang
     env:
-      - GCC_FLAGS='-ansi -Werror=pedantic -pedantic-errors -std=iso9899:1990'
+      - GCC_FLAGS='-std=c99 -Werror=pedantic -pedantic-errors'
       - CONFIG_FLAG=
       - JOBS=
       - >-
         warnflags='
         -Wall
         -Wextra
-        -Werror=declaration-after-statement
         -Werror=deprecated-declarations
         -Werror=division-by-zero
         -Werror=extra-tokens
         -Werror=implicit-function-declaration
         -Werror=implicit-int
-        -Werror=long-long
         -Werror=pointer-arith
         -Werror=shorten-64-to-32
         -Werror=write-strings
