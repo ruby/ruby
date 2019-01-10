@@ -310,14 +310,25 @@ describe "A lambda expression 'lambda { ... }'" do
       def meth; lambda; end
     end
 
-    it "can be created" do
-      implicit_lambda = nil
-      -> {
-        implicit_lambda = meth { 1 }
-      }.should complain(/tried to create Proc object without a block/)
+    ruby_version_is ""..."2.7" do
+      it "can be created" do
+        implicit_lambda = nil
+        -> {
+          implicit_lambda = meth { 1 }
+        }.should complain(/tried to create Proc object without a block/)
 
-      implicit_lambda.lambda?.should be_true
-      implicit_lambda.call.should == 1
+        implicit_lambda.lambda?.should be_true
+        implicit_lambda.call.should == 1
+      end
+    end
+
+    ruby_version_is "2.7" do
+      it "raises ArgumentError" do
+        implicit_lambda = nil
+        -> {
+          meth { 1 }
+        }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
+      end
     end
   end
 

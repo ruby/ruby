@@ -707,6 +707,9 @@ proc_new(VALUE klass, int8_t is_lambda)
 
 	if ((block_handler = rb_vm_frame_block_handler(cfp)) != VM_BLOCK_HANDLER_NONE) {
 	    if (is_lambda) {
+                rb_raise(rb_eArgError, proc_without_block);
+            }
+            else {
 		rb_warn(proc_without_block);
 	    }
 	}

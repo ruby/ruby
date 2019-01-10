@@ -36,14 +36,28 @@ describe "Kernel.proc" do
 end
 
 describe "Kernel#proc" do
-  it "uses the implicit block from an enclosing method" do
-    def some_method
-      proc
+  ruby_version_is ""..."2.7" do
+    it "uses the implicit block from an enclosing method" do
+      def some_method
+        proc
+      end
+
+      prc = some_method { "hello" }
+
+      prc.call.should == "hello"
     end
+  end
 
-    prc = some_method { "hello" }
+  ruby_version_is "2.7" do
+    it "can be created when called with no block" do
+      def some_method
+        proc
+      end
 
-    prc.call.should == "hello"
+      -> {
+        some_method { "hello" }
+      }.should complain(/tried to create Proc object without a block/)
+    end
   end
 
   it "needs to be reviewed for spec completeness"

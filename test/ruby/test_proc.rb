@@ -424,14 +424,14 @@ class TestProc < Test::Unit::TestCase
       1.times { b = lambda }
       b
     end
-    assert_equal(:foo, o.foo { :foo }.call)
+    assert_raise(ArgumentError) {o.foo { :foo }.call}
 
     def o.foo(&b)
       b = nil
       1.times { b = lambda }
       b
     end
-    assert_equal(:foo, o.foo { :foo }.call)
+    assert_raise(ArgumentError) {o.foo { :foo }.call}
   end
 
   def test_arity2
