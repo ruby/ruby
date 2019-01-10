@@ -3063,6 +3063,21 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
         return rb_funcallv(f, idCall, 1, &fargs);
 }
 
+static VALUE
+to_callable(VALUE f)
+{
+    VALUE mesg;
+
+    if (rb_obj_is_proc(f)) return f;
+    if (rb_obj_is_method(f)) return f;
+    if (rb_obj_respond_to(f, idCall, TRUE)) return f;
+    mesg = rb_fstring_lit("callable object is expected");
+    rb_exc_raise(rb_exc_new_str(rb_eTypeError, mesg));
+}
+
+static VALUE rb_proc_compose_to_left(VALUE self, VALUE g);
+static VALUE rb_proc_compose_to_right(VALUE self, VALUE g);
+
 /*
  *  call-seq:
  *     prc << g -> a_proc
@@ -3077,6 +3092,12 @@ compose(VALUE dummy, VALUE args, int argc, VALUE *argv, VALUE passed_proc)
  */
 static VALUE
 proc_compose_to_left(VALUE self, VALUE g)
+{
+    return rb_proc_compose_to_left(self, to_callable(g));
+}
+
+static VALUE
+rb_proc_compose_to_left(VALUE self, VALUE g)
 {
     VALUE proc, args, procs[2];
     rb_proc_t *procp;
@@ -3110,6 +3131,12 @@ proc_compose_to_left(VALUE self, VALUE g)
  */
 static VALUE
 proc_compose_to_right(VALUE self, VALUE g)
+{
+    return rb_proc_compose_to_right(self, to_callable(g));
+}
+
+static VALUE
+rb_proc_compose_to_right(VALUE self, VALUE g)
 {
     VALUE proc, args, procs[2];
     rb_proc_t *procp;
@@ -3148,8 +3175,9 @@ proc_compose_to_right(VALUE self, VALUE g)
 static VALUE
 rb_method_compose_to_left(VALUE self, VALUE g)
 {
-    VALUE proc = method_to_proc(self);
-    return proc_compose_to_left(proc, g);
+    g = to_callable(g);
+    self = method_to_proc(self);
+    return proc_compose_to_left(self, g);
 }
 
 /*
@@ -3171,8 +3199,9 @@ rb_method_compose_to_left(VALUE self, VALUE g)
 static VALUE
 rb_method_compose_to_right(VALUE self, VALUE g)
 {
-    VALUE proc = method_to_proc(self);
-    return proc_compose_to_right(proc, g);
+    g = to_callable(g);
+    self = method_to_proc(self);
+    return proc_compose_to_right(self, g);
 }
 
 /*

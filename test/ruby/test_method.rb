@@ -1088,10 +1088,10 @@ class TestMethod < Test::Unit::TestCase
     }
     f = c.new.method(:f)
 
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f << 5).call(2)
     }
-    assert_raise(NoMethodError) {
+    assert_raise(TypeError) {
       (f >> 5).call(2)
     }
   end
