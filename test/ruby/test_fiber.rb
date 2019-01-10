@@ -378,4 +378,14 @@ class TestFiber < Test::Unit::TestCase
     assert_match(/terminated/, f.to_s)
     assert_match(/resumed/, Fiber.current.to_s)
   end
+
+  def test_machine_stack_gc
+    assert_normal_exit <<-RUBY, '[Bug #14561]', timeout: 10
+      enum = Enumerator.new { |y| y << 1 }
+      thread = Thread.new { enum.peek }
+      thread.join
+      sleep 5     # pause until thread cache wait time runs out. Native thread exits.
+      GC.start
+    RUBY
+  end
 end
