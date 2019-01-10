@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #if defined(__clang__)
+#pragma clang diagnostic ignored "-Wgnu-empty-initializer"
 #pragma clang diagnostic ignored "-Wgcc-compat"
 #endif
 
@@ -785,7 +786,7 @@ typedef struct {
     char *pend;
     char *q0;
     char *q;
-    int format; /* 4 or 8 */;
+    int format; // 4 or 8
     uint8_t address_size;
     int level;
     char *abbrev_table[ABBREV_TABLE_SIZE];
