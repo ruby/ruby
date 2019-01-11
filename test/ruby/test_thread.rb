@@ -967,7 +967,12 @@ _eom
       pid = cpid
       t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
-      Timeout.timeout(10) { Process.wait(pid) }
+      begin
+        Timeout.timeout(10) { Process.wait(pid) }
+      rescue Timeout::Error
+        EnvUtil.terminate(pid)
+        raise
+      end
       t1 = Time.now.to_f
       [$?, t1 - t0, err_p.read]
     end
