@@ -20,18 +20,15 @@ describe "Proc as a block pass argument" do
   end
 end
 
-ruby_version_is ""..."2.8" do
+ruby_version_is ""..."2.7" do
   describe "Proc as an implicit block pass argument" do
     def revivify
       Proc.new
     end
 
     it "remains the same object if re-vivified by the target method" do
-      warning = ruby_version_is("2.7") {/tried to create Proc object without a block/}
-
       p = Proc.new {}
-      p2 = nil
-      -> {p2 = revivify(&p)}.should complain(warning)
+      p2 = revivify(&p)
       p.should equal p2
       p.should == p2
     end
