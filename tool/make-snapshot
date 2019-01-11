@@ -285,6 +285,14 @@ def package(vcs, rev, destdir, tmp = nil)
 
   open("#{v}/revision.h", "wb") {|f| f.puts "#define RUBY_REVISION #{revision}"}
   version ||= (versionhdr = IO.read("#{v}/version.h"))[RUBY_VERSION_PATTERN, 1]
+  version ||=
+    begin
+      include_ruby_versionhdr = IO.read("#{v}/include/ruby/version.h")
+      api_major_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MAJOR\s+([\d.]+)/, 1]
+      api_minor_version = include_ruby_versionhdr[/^\#define\s+RUBY_API_VERSION_MINOR\s+([\d.]+)/, 1]
+      version_teeny = versionhdr[/^\#define\s+RUBY_VERSION_TEENY\s+(\d+)/, 1]
+      [api_major_version, api_minor_version, version_teeny].join('.')
+    end
   version or return
   if patchlevel
     unless tag.empty?
@@ -384,6 +392,9 @@ def package(vcs, rev, destdir, tmp = nil)
         "BASERUBY"=>baseruby,
         "PWD"=>Dir.pwd,
         "ruby_version"=>version,
+        "MAJOR"=>api_major_version,
+        "MINOR"=>api_minor_version,
+        "TEENY"=>version_teeny,
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
