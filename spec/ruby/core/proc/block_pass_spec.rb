@@ -28,7 +28,6 @@ ruby_version_is ""..."2.8" do
 
     it "remains the same object if re-vivified by the target method" do
       warning = ruby_version_is("2.7") {/tried to create Proc object without a block/}
-      warning ||= ''
 
       p = Proc.new {}
       p2 = nil
