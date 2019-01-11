@@ -2809,27 +2809,132 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
 static VALUE
 arith_seq_first(int argc, VALUE *argv, VALUE self)
 {
-    VALUE b, e, s, len_1;
+    VALUE b, e, s, ary;
+    long n;
+    int x;
+
+    rb_check_arity(argc, 0, 1);
 
     b = arith_seq_begin(self);
     e = arith_seq_end(self);
     s = arith_seq_step(self);
-
-    if (!NIL_P(e)) {
-        len_1 = rb_int_idiv(rb_int_minus(e, b), s);
-        if (rb_num_negative_int_p(len_1)) {
-            if (argc == 0) {
+    if (argc == 0) {
+        if (!NIL_P(e)) {
+            VALUE zero = INT2FIX(0);
+            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
+            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
                 return Qnil;
             }
-            return rb_ary_new_capa(0);
+            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
+                return Qnil;
+            }
         }
-    }
-
-    if (argc == 0) {
         return b;
     }
 
-    /* TODO: optimization */
+    // TODO: the following code should be extracted as arith_seq_take
+
+    n = NUM2LONG(argv[0]);
+    if (n < 0) {
+	rb_raise(rb_eArgError, "attempt to take negative size");
+    }
+    if (n == 0) {
+        return rb_ary_new_capa(0);
+    }
+
+    x = arith_seq_exclude_end_p(self);
+
+    if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(s)) {
+        long i = FIX2LONG(b), unit = FIX2LONG(s);
+        ary = rb_ary_new_capa(n);
+        while (n > 0 && FIXABLE(i)) {
+            rb_ary_push(ary, LONG2FIX(i));
+            i += unit;  // FIXABLE + FIXABLE never overflow;
+            --n;
+        }
+        if (n > 0) {
+            b = LONG2NUM(i);
+            while (n > 0) {
+                rb_ary_push(ary, b);
+                b = rb_big_plus(b, s);
+                --n;
+            }
+        }
+        return ary;
+    }
+    else if (FIXNUM_P(b) && FIXNUM_P(e) && FIXNUM_P(s)) {
+        long i = FIX2LONG(b);
+        long end = FIX2LONG(e);
+        long unit = FIX2LONG(s);
+        long len;
+
+        if (unit >= 0) {
+            if (!x) end += 1;
+
+            len = end - i;
+            if (len < 0) len = 0;
+            ary = rb_ary_new_capa((n < len) ? n : len);
+            while (n > 0 && i < end) {
+                rb_ary_push(ary, LONG2FIX(i));
+                if (i + unit < i) break;
+                i += unit;
+                --n;
+            }
+        }
+        else {
+            if (!x) end -= 1;
+
+            len = i - end;
+            if (len < 0) len = 0;
+            ary = rb_ary_new_capa((n < len) ? n : len);
+            while (n > 0 && i > end) {
+                rb_ary_push(ary, LONG2FIX(i));
+                if (i + unit > i) break;
+                i += unit;
+                --n;
+            }
+        }
+        return ary;
+    }
+    else if (RB_FLOAT_TYPE_P(b) || RB_FLOAT_TYPE_P(e) || RB_FLOAT_TYPE_P(s)) {
+        /* generate values like ruby_float_step */
+
+        double unit = NUM2DBL(s);
+        double beg = NUM2DBL(b);
+        double end = NIL_P(e) ? (unit < 0 ? -1 : 1)*HUGE_VAL : NUM2DBL(e);
+        double len = ruby_float_step_size(beg, end, unit, x);
+        long i;
+
+        if (n > len)
+            n = (long)len;
+
+        if (isinf(unit)) {
+            if (len > 0) {
+                ary = rb_ary_new_capa(1);
+                rb_ary_push(ary, DBL2NUM(beg));
+            }
+            else {
+                ary = rb_ary_new_capa(0);
+            }
+        }
+        else if (unit == 0) {
+            VALUE val = DBL2NUM(beg);
+            ary = rb_ary_new_capa(n);
+            for (i = 0; i < len; ++i) {
+                rb_ary_push(ary, val);
+            }
+        }
+        else {
+            ary = rb_ary_new_capa(n);
+            for (i = 0; i < n; ++i) {
+                double d = i*unit+beg;
+                if (unit >= 0 ? end < d : d < end) d = end;
+                rb_ary_push(ary, DBL2NUM(d));
+            }
+        }
+
+        return ary;
+    }
 
     return rb_call_super(argc, argv);
 }
