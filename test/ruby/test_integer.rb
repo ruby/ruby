@@ -175,6 +175,15 @@ class TestInteger < Test::Unit::TestCase
       def o.to_int; raise; end
       assert_equal(nil, Integer(o, exception: false))
     }
+    assert_nothing_raised(FloatDomainError) {
+      assert_equal(nil, Integer(Float::INFINITY, exception: false))
+    }
+    assert_nothing_raised(FloatDomainError) {
+      assert_equal(nil, Integer(-Float::INFINITY, exception: false))
+    }
+    assert_nothing_raised(FloatDomainError) {
+      assert_equal(nil, Integer(Float::NAN, exception: false))
+    }
 
     assert_raise(ArgumentError) {
       Integer("1z", exception: true)

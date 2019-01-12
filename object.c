@@ -3159,6 +3159,7 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
         double f;
         if (base != 0) goto arg_error;
         f = RFLOAT_VALUE(val);
+        if (!raise_exception && !isfinite(f)) return Qnil;
         if (FIXABLE(f)) return LONG2FIX((long)f);
         return rb_dbl2big(f);
     }
