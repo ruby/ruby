@@ -2559,8 +2559,10 @@ nurat_convert(VALUE klass, VALUE numv, VALUE denv, int raise)
     VALUE a1 = numv, a2 = denv;
     int state;
 
-    if (NIL_P(a1) || NIL_P(a2))
+    if (NIL_P(a1) || NIL_P(a2)) {
+        if (!raise) return Qnil;
         rb_raise(rb_eTypeError, "can't convert nil into Rational");
+    }
 
     if (RB_TYPE_P(a1, T_COMPLEX)) {
         if (k_exact_zero_p(RCOMPLEX(a1)->imag))

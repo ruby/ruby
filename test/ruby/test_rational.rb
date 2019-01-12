@@ -816,7 +816,13 @@ class Rational_Test < Test::Unit::TestCase
       assert_equal(nil, Rational("1/0", exception: false))
     }
     assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(nil, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
       assert_equal(nil, Rational(Object.new, exception: false))
+    }
+    assert_nothing_raised(TypeError) {
+      assert_equal(nil, Rational(1, nil, exception: false))
     }
     assert_nothing_raised(TypeError) {
       assert_equal(nil, Rational(1, Object.new, exception: false))
