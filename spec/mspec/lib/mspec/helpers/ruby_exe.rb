@@ -101,12 +101,12 @@ def ruby_exe_options(option)
     end
   when :name
     require 'rbconfig'
-    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+    bin = RUBY_ENGINE + (RbConfig::CONFIG['EXEEXT'] || '')
     File.join(".", bin)
   when :install_name
     require 'rbconfig'
     bin = RbConfig::CONFIG["RUBY_INSTALL_NAME"] || RbConfig::CONFIG["ruby_install_name"]
-    bin << (RbConfig::CONFIG['EXEEXT'] || RbConfig::CONFIG['exeext'] || '')
+    bin << (RbConfig::CONFIG['EXEEXT'] || '')
     File.join(RbConfig::CONFIG['bindir'], bin)
   end
 end
