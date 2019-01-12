@@ -202,9 +202,9 @@ static rb_nativethread_cond_t mjit_gc_wakeup;
 static bool in_gc;
 // True when JIT is working.
 static bool in_jit;
-// Set to TRUE to stop worker.
+// Set to true to stop worker.
 static bool stop_worker_p;
-// Set to TRUE if worker is stopped.
+// Set to true if worker is stopped.
 static bool worker_stopped;
 
 /* Path of "/tmp", which can be changed to $TMP in MinGW. */
