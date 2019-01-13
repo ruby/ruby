@@ -66,7 +66,7 @@ class TestRDocOptions < RDoc::TestCase
     expected = {
       'charset'              => 'UTF-8',
       'encoding'             => encoding,
-      'exclude'              => %w[~\z \.orig\z \.rej\z \.bak\z],
+      'exclude'              => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
       'hyperlink_all'        => false,
       'line_numbers'         => false,
       'locale'               => nil,
