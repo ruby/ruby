@@ -59,10 +59,12 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
+RDOC          = $(XRUBY) "$(srcdir)/libexec/rdoc" --root "$(srcdir)" --encoding=UTF-8 --all
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
+RDOC_GEN_OPTS = --page-dir "$(srcdir)/doc" --no-force-update
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -543,15 +545,15 @@ post-install-gem::
 
 rdoc: PHONY main
 	@echo Generating RDoc documentation
-	$(Q) $(XRUBY) "$(srcdir)/libexec/rdoc" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --ri --op "$(RDOCOUT)" $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
 
 html: PHONY main
 	@echo Generating RDoc HTML files
-	$(Q) $(XRUBY) "$(srcdir)/libexec/rdoc" --root "$(srcdir)" --page-dir "$(srcdir)/doc" --encoding=UTF-8 --no-force-update --all --op "$(HTMLOUT)" $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
 
 rdoc-coverage: PHONY main
 	@echo Generating RDoc coverage report
-	$(Q) $(XRUBY) "$(srcdir)/libexec/rdoc" --root "$(srcdir)" --encoding=UTF-8 --all --quiet -C $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)"
 
 RDOCBENCHOUT=/tmp/rdocbench
 
