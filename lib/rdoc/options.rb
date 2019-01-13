@@ -346,6 +346,7 @@ class RDoc::Options
     @dry_run = false
     @exclude = %w[
       ~\z \.orig\z \.rej\z \.bak\z
+      \.gemspec\z
     ]
     @files = nil
     @force_output = false
