@@ -1911,8 +1911,6 @@ vtm_add_offset(struct vtm *vtm, VALUE off)
     int sec, min, hour;
     int day;
 
-    vtm->utc_offset = subv(vtm->utc_offset, off);
-
     if (lt(off, INT2FIX(0))) {
         sign = -1;
         off = neg(off);
