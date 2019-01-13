@@ -1904,19 +1904,15 @@ time_set_utc_offset(VALUE time, VALUE off)
 }
 
 static void
-vtm_add_offset(struct vtm *vtm, VALUE off)
+vtm_add_offset(struct vtm *vtm, VALUE off, int sign)
 {
-    int sign;
     VALUE subsec, v;
     int sec, min, hour;
     int day;
 
     if (lt(off, INT2FIX(0))) {
-        sign = -1;
+        sign = -sign;
         off = neg(off);
-    }
-    else {
-        sign = 1;
     }
     divmodv(off, INT2FIX(1), &off, &subsec);
     divmodv(off, INT2FIX(60), &off, &v);
@@ -2338,7 +2334,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
 
     if (!NIL_P(vtm.utc_offset)) {
         VALUE off = vtm.utc_offset;
-        vtm_add_offset(&vtm, neg(off));
+        vtm_add_offset(&vtm, off, -1);
         vtm.utc_offset = Qnil;
         tobj->timew = timegmw(&vtm);
         return time_set_utc_offset(time, off);
@@ -3891,7 +3887,7 @@ time_fixoff(VALUE time)
     zone = tobj->vtm.zone;
     tobj->vtm = vtm;
     tobj->vtm.zone = zone;
-    vtm_add_offset(&tobj->vtm, off);
+    vtm_add_offset(&tobj->vtm, off, +1);
 
     tobj->tm_got = 1;
     TZMODE_SET_FIXOFF(tobj, off);
