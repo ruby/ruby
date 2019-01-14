@@ -260,7 +260,7 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
     MJIT_DLDFLAGS
 #if defined __GNUC__ && !defined __clang__
     "-nostartfiles",
-# if !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX)
+# if !defined(_WIN32) && !defined(__CYGWIN__)
     "-nodefaultlibs", "-nostdlib",
 # endif
 #endif
