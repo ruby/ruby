@@ -306,8 +306,9 @@ end
 def backport_command_string
   unless @changesets.respond_to?(:validated)
     @changesets = @changesets.select do |c|
+      # check if the revision is included in trunk
       begin
-        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{c}")
+        uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{c}")
         uri.read($openuri_options)
         true
       rescue
@@ -418,7 +419,7 @@ eom
       next
     end
     rev = $1
-    uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/revisions/#{rev}/issues.json")
+    uri = URI("#{REDMINE_BASE}/projects/ruby-trunk/repository/trunk/revisions/#{rev}/issues.json")
     Net::HTTP.start(uri.host, uri.port, http_options) do |http|
       res = http.post(uri.path, "issue_id=#@issue",
                      'X-Redmine-API-Key' => REDMINE_API_KEY)
