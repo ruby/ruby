@@ -268,14 +268,14 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
 };
 
 static const char *const CC_LIBS[] = {
-#if defined(_WIN32) || defined(__CYGWIN__) // mswin, mingw, cygwin
-    MJIT_LIBS
+#if defined(_WIN32) || defined(__CYGWIN__)
+    MJIT_LIBS // mswin, mingw, cygwin
 #endif
-#if defined(_WIN32) && defined __GNUC__ && !defined __clang__ // mingw
-    "-lmsvcrt",
-#endif
-#if (defined(_WIN32) || defined(__CYGWIN__)) && defined __GNUC__ && !defined __clang__ // mingw, cygwin
-    "-lgcc",
+#if defined __GNUC__ && !defined __clang__
+# if defined(_WIN32)
+    "-lmsvcrt", // mingw
+# endif
+    "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
 #endif
     NULL
 };
