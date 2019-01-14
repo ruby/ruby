@@ -1391,7 +1391,7 @@ opt_equal_fallback(VALUE recv, VALUE obj, CALL_INFO ci, CALL_CACHE cc)
 #define BUILTIN_CLASS_P(x, k) (!SPECIAL_CONST_P(x) && RBASIC_CLASS(x) == k)
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
-static bool
+static inline bool
 FIXNUM_2_P(VALUE a, VALUE b)
 {
     /* FIXNUM_P(a) && FIXNUM_P(b)
@@ -1403,7 +1403,7 @@ FIXNUM_2_P(VALUE a, VALUE b)
     return z == 1;
 }
 
-static bool
+static inline bool
 FLONUM_2_P(VALUE a, VALUE b)
 {
 #if USE_FLONUM
@@ -1654,7 +1654,7 @@ rb_simple_iseq_p(const rb_iseq_t *iseq)
 	   iseq->body->param.flags.has_block == FALSE;
 }
 
-static void
+static inline void
 CALLER_SETUP_ARG(struct rb_control_frame_struct *restrict cfp,
                  struct rb_calling_info *restrict calling,
                  const struct rb_call_info *restrict ci)
