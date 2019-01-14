@@ -1293,8 +1293,8 @@ eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
 	printf("%s\n", StringValuePtr(disasm));
     }
 
-    EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_SCRIPT_COMPILED, GET_EC()->cfp->self, 0, 0, 0,
-                    rb_ary_new_from_args(2, src, (VALUE)iseq));
+    rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
+
     return iseq;
 }
 
