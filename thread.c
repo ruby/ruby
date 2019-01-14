@@ -4231,6 +4231,7 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
     }
 }
 
+void rb_fiber_atfork(rb_thread_t *);
 void
 rb_thread_atfork(void)
 {
@@ -4238,6 +4239,7 @@ rb_thread_atfork(void)
     rb_thread_atfork_internal(th, terminate_atfork_i);
     th->join_list = NULL;
     rb_mutex_cleanup_keeping_mutexes(th);
+    rb_fiber_atfork(th);
 
     /* We don't want reproduce CVE-2003-0900. */
     rb_reset_random_seed();

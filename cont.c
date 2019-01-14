@@ -1932,6 +1932,20 @@ fiber_to_s(VALUE fibval)
     return rb_block_to_s(fibval, &proc->block, status_info);
 }
 
+#ifdef HAVE_WORKING_FORK
+void
+rb_fiber_atfork(rb_thread_t *th)
+{
+    if (th->root_fiber) {
+        if (&th->root_fiber->cont.saved_ec != th->ec) {
+            th->root_fiber = th->ec->fiber_ptr;
+            th->root_fiber->cont.type = ROOT_FIBER_CONTEXT;
+        }
+        th->root_fiber->prev = 0;
+    }
+}
+#endif
+
 /*
  *  Document-class: FiberError
  *

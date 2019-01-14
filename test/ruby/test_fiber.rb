@@ -269,7 +269,11 @@ class TestFiber < Test::Unit::TestCase
     end
     bug5700 = '[ruby-core:41456]'
     assert_nothing_raised(bug5700) do
-      Fiber.new{ pid = fork {} }.resume
+      Fiber.new do
+        pid = fork do
+          Fiber.new {}.transfer
+        end
+      end.resume
     end
     pid, status = Process.waitpid2(pid)
     assert_equal(0, status.exitstatus, bug5700)
