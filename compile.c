@@ -2061,6 +2061,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 		/* update sp */
 		sp = calc_sp_depth(sp, iobj);
 		insn_num++;
+		events = iobj->insn_info.events |= events;
                 if (ISEQ_COVERAGE(iseq)) {
                     if (ISEQ_LINE_COVERAGE(iseq) && (events & RUBY_EVENT_COVERAGE_LINE) &&
                         !(rb_get_coverage_mode() & COVERAGE_TARGET_ONESHOT_LINES)) {
@@ -2077,7 +2078,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                     }
 		}
                 code_index += insn_data_length(iobj);
-		iobj->insn_info.events |= events;
 		events = 0;
                 data = 0;
 		break;
@@ -7459,8 +7459,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	DECL_ANCHOR(args);
 	unsigned int flag = 0;
 	ID mid = node->nd_mid;
-	LABEL *lskip = 0;
+	LABEL *else_label = 0;
+	LABEL *end_label = 0;
 	VALUE argc;
+	VALUE branches = 0;
 
 	/* optimization shortcut
 	 *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
@@ -7500,8 +7502,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    /* safe nav attr */
 	    mid = rb_id_attrset(mid);
 	    ADD_INSN(recv, line, dup);
-	    lskip = NEW_LABEL(line);
-	    ADD_INSNL(recv, line, branchnil, lskip);
+            else_label = NEW_LABEL(line);
+            end_label = NEW_LABEL(line);
+            DECL_BRANCH_BASE(branches, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "&.");
+	    ADD_INSNL(recv, line, branchnil, else_label);
+            ADD_TRACE_BRANCH_COVERAGE(recv, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "then", branches);
 	}
 	if (!popped) {
 	    ADD_INSN(ret, line, putnil);
@@ -7533,7 +7538,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, in
 	    ADD_SEQ(ret, args);
 	}
 	ADD_SEND_WITH_FLAG(ret, line, mid, argc, INT2FIX(flag));
-	if (lskip) ADD_LABEL(ret, lskip);
+	if (else_label && end_label) {
+	    ADD_INSNL(ret, line, jump, end_label);
+            ADD_LABEL(ret, else_label);
+	    ADD_TRACE_BRANCH_COVERAGE(ret, nd_first_lineno(node), nd_first_column(node), nd_last_lineno(node), nd_last_column(node), "else", branches);
+            ADD_LABEL(ret, end_label);
+        }
 	ADD_INSN(ret, line, pop);
 
 	break;
