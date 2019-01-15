@@ -451,6 +451,7 @@ duparray
 ()
 (VALUE val)
 {
+    RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
     val = rb_ary_resurrect(ary);
 }
 
@@ -461,6 +462,7 @@ duphash
 ()
 (VALUE val)
 {
+    RUBY_DTRACE_CREATE_HOOK(HASH, RHASH_SIZE(hash) << 1);
     val = rb_hash_resurrect(hash);
 }
 
