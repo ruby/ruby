@@ -5421,7 +5421,7 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
         pos += len;
 
     VALUE v = rb_to_int(value);
-    VALUE w = rb_int_modulo(v, INT2FIX(256));
+    VALUE w = rb_int_and(v, INT2FIX(0xff));
     unsigned char byte = NUM2INT(w) & 0xFF;
 
     if (!str_independent(str))
