@@ -810,11 +810,11 @@ strio_ungetbyte(VALUE self, VALUE c)
         return Qnil;
       case T_FIXNUM:
       case T_BIGNUM: ;
-        /* rb_int_modulo() not visible from exts */
-        VALUE v = rb_funcall(c, rb_intern("modulo"), 1, INT2FIX(256));
-        unsigned char cc = NUM2INT(v) & 0xFF;
-        c = rb_str_new((const char *)&cc, 1);
-        break;
+        /* rb_int_and() not visible from exts */
+        VALUE v = rb_funcall(c, '&', 1, INT2FIX(0xff));
+        const char cc = NUM2INT(v) & 0xFF;
+        strio_unget_bytes(ptr, &cc, 1);
+        return Qnil;
       default:
         SafeStringValue(c);
     }
