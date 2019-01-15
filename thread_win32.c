@@ -13,8 +13,12 @@
 
 #include <process.h>
 
-#define TIME_QUANTUM_USEC (10 * 1000)
+#define TIME_QUANTUM_USEC_BASE (10 * 1000)
+#define TIME_QUANTUM_USEC TIME_QUANTUM_USEC_BASE
+static const rb_hrtime_t TIME_QUANTUM_NSEC = TIME_QUANTUM_USEC * 1000;
 #define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
+
+void native_update_quantum(int priority) { }
 
 #undef Sleep
 

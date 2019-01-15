@@ -175,11 +175,25 @@ static const void *const condattr_monotonic = NULL;
 /* 100ms.  10ms is too small for user level thread scheduling
  * on recent Linux (tested on 2.6.35)
  */
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
+#define TIME_QUANTUM_USEC_BASE (100 * 1000)
+static rb_hrtime_t TIME_QUANTUM_MSEC = TIME_QUANTUM_USEC_BASE / 1000;
+static rb_hrtime_t TIME_QUANTUM_USEC = TIME_QUANTUM_USEC_BASE;
+static rb_hrtime_t TIME_QUANTUM_NSEC = TIME_QUANTUM_USEC_BASE * 1000;
 
 static rb_hrtime_t native_cond_timeout(rb_nativethread_cond_t *, rb_hrtime_t);
+
+static void
+native_update_quantum(int priority)
+{
+    rb_hrtime_t new_quantum_usec;
+    new_quantum_usec = thread_time_quantum_usec_from_priority(priority);
+    if (TIME_QUANTUM_USEC > new_quantum_usec)
+    {
+        TIME_QUANTUM_USEC = new_quantum_usec;
+        TIME_QUANTUM_MSEC = new_quantum_usec / 1000;
+        TIME_QUANTUM_NSEC = new_quantum_usec * 1000;
+    }
+}
 
 /*
  * Designate the next gvl.timer thread, favor the last thread in
