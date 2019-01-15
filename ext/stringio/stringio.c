@@ -805,33 +805,26 @@ strio_ungetbyte(VALUE self, VALUE c)
     struct StringIO *ptr = readable(self);
 
     check_modifiable(ptr);
-    if (NIL_P(c)) return Qnil;
-    if (FIXNUM_P(c)) {
-        int i = FIX2INT(c);
-        if (0 <= i && i <= UCHAR_MAX) {
-            char buf[1];
-            buf[0] = (char)i;
-            return strio_unget_bytes(ptr, buf, 1);
-        }
-        else {
-            rb_raise(rb_eRangeError,
-                "integer %d too big to convert into `unsigned char'", i);
-        }
+    switch (TYPE(c)) {
+      case T_NIL:
+        return Qnil;
+      case T_FIXNUM:
+      case T_BIGNUM: ;
+        /* rb_int_modulo() not visible from exts */
+        VALUE v = rb_funcall(c, rb_intern("modulo"), 1, INT2FIX(256));
+        unsigned char cc = NUM2INT(v) & 0xFF;
+        c = rb_str_new((const char *)&cc, 1);
+        break;
+      default:
+        SafeStringValue(c);
     }
-    else if (RB_TYPE_P(c, T_BIGNUM)) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `unsigned char'");
-    }
-    else {
-        char *cp;
-        long cl;
-	SafeStringValue(c);
-	cp = RSTRING_PTR(c);
-	cl = RSTRING_LEN(c);
-	if (cl == 0) return Qnil;
-	strio_unget_bytes(ptr, cp, cl);
-	RB_GC_GUARD(c);
-	return Qnil;
-    }
+
+    const char *cp = RSTRING_PTR(c);
+    long cl = RSTRING_LEN(c);
+    if (cl == 0) return Qnil;
+    strio_unget_bytes(ptr, cp, cl);
+    RB_GC_GUARD(c);
+    return Qnil;
 }
 
 static VALUE

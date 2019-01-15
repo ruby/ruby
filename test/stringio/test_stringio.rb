@@ -453,9 +453,9 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(0, t.pos)
     assert_equal("\u{30eb 30d3 30fc}\u7d05\u7389bar\n", s)
 
-    assert_raise(RangeError) {t.ungetbyte(-1)}
-    assert_raise(RangeError) {t.ungetbyte(256)}
-    assert_raise(RangeError) {t.ungetbyte(1<<64)}
+    assert_nothing_raised {t.ungetbyte(-1)}
+    assert_nothing_raised {t.ungetbyte(256)}
+    assert_nothing_raised {t.ungetbyte(1<<64)}
   end
 
   def test_ungetc
