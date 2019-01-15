@@ -19,7 +19,7 @@ class CSV
     # The optional +headers+ parameter can be set to Array of headers.
     # If headers aren't set, headers are fetched from CSV::Row objects.
     # Otherwise, headers() method will return headers being set in
-    # headers arugument.
+    # headers argument.
     #
     # A CSV::Table object supports the following Array methods through
     # delegation:
