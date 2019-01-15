@@ -2299,7 +2299,7 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
     st_table *tab = RHASH_ST_TABLE(hash);
 
     tab = RHASH_TBL_RAW(hash);
-    n = tab->num_entries + size;
+    n = tab->entries_bound + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
         st_insert_generic(tab, argc, argv, hash);
