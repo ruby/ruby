@@ -247,9 +247,9 @@ static char *libruby_pathflag;
 # define MJIT_CFLAGS_PIPE 0
 #endif
 
-// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw and cygwin.
+// Use `-nodefaultlibs -nostdlib` for GCC where possible, which does not work on mingw, cygwin and AIX.
 // This seems to improve MJIT performance on GCC.
-#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__)
+#if defined __GNUC__ && !defined __clang__ && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX)
 # define GCC_NOSTDLIB_FLAGS "-nodefaultlibs", "-nostdlib",
 #else
 # define GCC_NOSTDLIB_FLAGS /* empty */
