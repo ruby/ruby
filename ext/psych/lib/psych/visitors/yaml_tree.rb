@@ -428,21 +428,21 @@ module Psych
           node = @emitter.start_mapping(nil, tag, false, Psych::Nodes::Mapping::BLOCK)
           register(o, node)
 
-          # Dump the elements
-          accept 'elements'
-          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
-          o.each do |k,v|
-            accept k
-            accept v
-          end
-          @emitter.end_mapping
-
           # Dump the ivars
           accept 'ivars'
           @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
           o.instance_variables.each do |ivar|
             accept ivar
             accept o.instance_variable_get ivar
+          end
+          @emitter.end_mapping
+
+          # Dump the elements
+          accept 'elements'
+          @emitter.start_mapping nil, nil, true, Nodes::Mapping::BLOCK
+          o.each do |k,v|
+            accept k
+            accept v
           end
           @emitter.end_mapping
 
