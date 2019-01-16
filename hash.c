@@ -1252,16 +1252,72 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return ST_CHECK;
 }
 
+static int
+iter_lev_in_ivar(VALUE hash)
+{
+    VALUE levval = rb_ivar_get(hash, rb_intern("hash_iter_lev"));
+    HASH_ASSERT(FIXNUM_P(levval));
+    return FIX2INT(levval);
+}
+
+void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
+
+static void
+iter_lev_in_ivar_set(VALUE hash, int lev)
+{
+    rb_ivar_set_internal(hash, rb_intern("hash_iter_lev"), INT2FIX(lev));
+}
+
+static int
+iter_lev_in_flags(VALUE hash)
+{
+    unsigned int u = (unsigned int)(RBASIC(hash)->flags & (unsigned int)RHASH_LEV_MASK) >> RHASH_LEV_SHIFT;
+    return (int)u;
+}
+
+static int
+RHASH_ITER_LEV(VALUE hash)
+{
+    int lev = iter_lev_in_flags(hash);
+
+    if (lev == RHASH_LEV_MAX) {
+        return iter_lev_in_ivar(hash);
+    }
+    else {
+        return lev;
+    }
+}
+
 static void
 hash_iter_lev_inc(VALUE hash)
 {
-    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) + 1;
+    int lev = iter_lev_in_flags(hash);
+    if (lev == RHASH_LEV_MAX) {
+        lev = iter_lev_in_ivar(hash);
+        iter_lev_in_ivar_set(hash, lev+1);
+    }
+    else {
+        lev += 1;
+        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | (lev << RHASH_LEV_SHIFT));
+        if (lev == RHASH_LEV_MAX) {
+            iter_lev_in_ivar_set(hash, lev);
+        }
+    }
 }
 
 static void
 hash_iter_lev_dec(VALUE hash)
 {
-    *((int *)&RHASH(hash)->iter_lev) = RHASH_ITER_LEV(hash) - 1;
+    int lev = iter_lev_in_flags(hash);
+    if (lev == RHASH_LEV_MAX) {
+        lev = iter_lev_in_ivar(hash);
+        HASH_ASSERT(lev > 0);
+        iter_lev_in_ivar_set(hash, lev-1);
+    }
+    else {
+        HASH_ASSERT(lev > 0);
+        RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((lev-1) << RHASH_LEV_SHIFT));
+    }
 }
 
 static VALUE
