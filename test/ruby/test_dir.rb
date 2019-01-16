@@ -191,6 +191,20 @@ class TestDir < Test::Unit::TestCase
     end
   end
 
+  def test_glob_recursive_directory
+    Dir.chdir(@root) do
+      ['d', 'e'].each do |path|
+        FileUtils.mkdir_p("c/#{path}/a/b/c")
+        FileUtils.touch("c/#{path}/a/a.file")
+        FileUtils.touch("c/#{path}/a/b/b.file")
+        FileUtils.touch("c/#{path}/a/b/c/c.file")
+      end
+      bug15540 = '[ruby-core:91110] [Bug #15540]'
+      assert_equal(["c/d/a/", "c/d/a/b/", "c/d/a/b/c/", "c/e/a/", "c/e/a/b/", "c/e/a/b/c/"],
+                   Dir.glob('c/{d,e}/a/**/'), bug15540)
+    end
+  end
+
   if Process.const_defined?(:RLIMIT_NOFILE)
     def test_glob_too_may_open_files
       assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", chdir: @root)
