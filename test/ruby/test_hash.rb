@@ -1720,6 +1720,31 @@ class TestHash < Test::Unit::TestCase
     assert_equal(keys, h.keys.map(&:hash), msg)
   end
 
+  def hrec h, n, &b
+    if n > 0
+      h.each{hrec(h, n-1, &b)}
+    else
+      yield
+    end
+  end
+
+  def test_huge_iter_level
+    h = @cls[a: 1]
+    assert_raise(RuntimeError){
+      hrec(h, 1000){ h[:c] = 3 }
+    }
+
+    h = @cls[a: 1]
+    hrec(h, 1000){}
+    h[:c] = 3
+    assert_equal(3, h[:c])
+
+    h = @cls[a: 1]
+    h.freeze # set hidden attribute for a frozen object
+    hrec(h, 1000){}
+    assert_equal(1, h.size)
+  end
+
   class TestSubHash < TestHash
     class SubHash < Hash
       def reject(*)

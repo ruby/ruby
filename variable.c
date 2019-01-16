@@ -1340,16 +1340,15 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     return val;
 }
 
-VALUE
-rb_ivar_set(VALUE obj, ID id, VALUE val)
+static void
+ivar_set(VALUE obj, ID id, VALUE val)
 {
     RB_DEBUG_COUNTER_INC(ivar_set_base);
 
-    rb_check_frozen(obj);
-
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        return obj_ivar_set(obj, id, val);
+        obj_ivar_set(obj, id, val);
+        break;
       case T_CLASS:
       case T_MODULE:
         if (!RCLASS_IV_TBL(obj)) RCLASS_IV_TBL(obj) = st_init_numtable();
@@ -1359,7 +1358,23 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
         generic_ivar_set(obj, id, val);
         break;
     }
+}
+
+VALUE
+rb_ivar_set(VALUE obj, ID id, VALUE val)
+{
+    rb_check_frozen(obj);
+    ivar_set(obj, id, val);
     return val;
+}
+
+void
+rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
+{
+    // should be internal instance variable name (no @ prefix)
+    VM_ASSERT(!rb_is_instance_id(id));
+
+    ivar_set(obj, id, val);
 }
 
 VALUE
