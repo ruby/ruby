@@ -221,15 +221,8 @@ rb_mutex_trylock(VALUE self)
  */
 static const rb_thread_t *patrol_thread = NULL;
 
-/*
- * call-seq:
- *    mutex.lock  -> self
- *
- * Attempts to grab the lock and waits if it isn't available.
- * Raises +ThreadError+ if +mutex+ was locked by the current thread.
- */
-VALUE
-rb_mutex_lock(VALUE self)
+static VALUE
+do_mutex_lock(VALUE self, int interruptible_p)
 {
     rb_thread_t *th = GET_THREAD();
     rb_mutex_t *mutex;
@@ -290,14 +283,35 @@ rb_mutex_lock(VALUE self)
 	    th->vm->sleeper--;
 	    if (mutex->th == th) mutex_locked(th, self);
 
-	    RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
-	    if (!mutex->th) {
-		mutex->th = th;
-	        mutex_locked(th, self);
-	    }
+            if (interruptible_p) {
+                RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
+                if (!mutex->th) {
+                    mutex->th = th;
+                    mutex_locked(th, self);
+                }
+            }
 	}
     }
     return self;
+}
+
+static VALUE
+mutex_lock_uninterruptible(VALUE self)
+{
+    return do_mutex_lock(self, 0);
+}
+
+/*
+ * call-seq:
+ *    mutex.lock  -> self
+ *
+ * Attempts to grab the lock and waits if it isn't available.
+ * Raises +ThreadError+ if +mutex+ was locked by the current thread.
+ */
+VALUE
+rb_mutex_lock(VALUE self)
+{
+    return do_mutex_lock(self, 1);
 }
 
 /*
@@ -462,11 +476,12 @@ rb_mutex_sleep(VALUE self, VALUE timeout)
     rb_mutex_unlock(self);
     beg = time(0);
     if (NIL_P(timeout)) {
-	rb_ensure(rb_mutex_sleep_forever, Qnil, rb_mutex_lock, self);
+	rb_ensure(rb_mutex_sleep_forever, Qnil, mutex_lock_uninterruptible, self);
     }
     else {
-	rb_ensure(rb_mutex_wait_for, (VALUE)&t, rb_mutex_lock, self);
+	rb_ensure(rb_mutex_wait_for, (VALUE)&t, mutex_lock_uninterruptible, self);
     }
+    RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
     end = time(0) - beg;
     return INT2FIX(end);
 }
