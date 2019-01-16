@@ -2052,6 +2052,10 @@ join_path_from_pattern(struct glob_pattern **beg)
 	  case RECURSIVE:
 	    str = "**";
 	    break;
+	  case MATCH_DIR:
+	    /* append last slash */
+	    str = "";
+	    break;
 	  default:
 	    str = p->str;
 	    if (!str) continue;
