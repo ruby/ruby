@@ -815,6 +815,7 @@ struct RComplex {
 #define RCOMPLEX_SET_IMAG(cmp, i) RB_OBJ_WRITE((cmp), &((struct RComplex *)(cmp))->imag,(i))
 
 enum ruby_rhash_flags {
+    RHASH_PROC_DEFAULT = FL_USER2,                                       /* FL 2 */
     RHASH_ST_TABLE_FLAG = FL_USER3,                                      /* FL 3 */
     RHASH_AR_TABLE_MAX_SIZE = 8,
     RHASH_AR_TABLE_SIZE_MASK = (FL_USER4|FL_USER5|FL_USER6|FL_USER7),    /* FL 4..7 */
@@ -833,8 +834,6 @@ enum ruby_rhash_flags {
 
     RHASH_ENUM_END
 };
-
-#define HASH_PROC_DEFAULT FL_USER2
 
 #define RHASH_AR_TABLE_SIZE_RAW(h) \
   ((unsigned int)((RBASIC(h)->flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT))
@@ -881,7 +880,10 @@ struct RHash {
         struct ar_table_struct *ar; /* possibly 0 */
     } as;
     const VALUE ifnone;
-    const VALUE reserved;
+    union {
+        unsigned char ary[sizeof(VALUE)];
+        VALUE word;
+    } ar_hint;
 };
 
 #ifdef RHASH_IFNONE
@@ -890,7 +892,7 @@ struct RHash {
 
 #  define RHASH_IFNONE(h)    (RHASH(h)->ifnone)
 #  define RHASH_SIZE(h)      (RHASH_AR_TABLE_P(h) ? RHASH_AR_TABLE_SIZE_RAW(h) : RHASH_ST_SIZE(h))
-#endif /* #ifdef RHASH_ITER_LEV */
+#endif /* ifdef RHASH_IFNONE */
 
 struct RMoved {
     VALUE flags;
