@@ -167,20 +167,23 @@ def tar_create(tarball, dir)
     Dir.glob("#{dir}/**/*", File::FNM_DOTMATCH) do |path|
       next if File.basename(path) == "."
       s = File.stat(path)
+      mode = 0644
       case
       when s.file?
         type = nil
         size = s.size
+        mode |= 0111 if s.executable?
       when s.directory?
         path += "/"
         type = dir_type
         size = 0
+        mode |= 0111
       else
         next
       end
       name, prefix = w.split_name(path)
       h = header.new(name: name, prefix: prefix, typeflag: type,
-                     mode: s.mode, size: size, mtime: s.mtime,
+                     mode: mode, size: size, mtime: s.mtime,
                      uname: uname, gname: gname)
       f.write(h)
       if size > 0
