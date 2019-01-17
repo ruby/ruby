@@ -504,6 +504,13 @@ static VALUE string_spec_rb_string_value_cstr(VALUE self, VALUE str) {
 }
 #endif
 
+#ifdef HAVE_RB_STR_MODIFY
+static VALUE string_spec_rb_str_modify(VALUE self, VALUE str) {
+  rb_str_modify(str);
+  return str;
+}
+#endif
+
 void Init_string_spec(void) {
   VALUE cls;
   cls = rb_define_class("CApiStringSpecs", rb_cObject);
@@ -743,6 +750,10 @@ void Init_string_spec(void) {
 
 #ifdef HAVE_RB_STRING_VALUE_CSTR
   rb_define_method(cls, "rb_string_value_cstr", string_spec_rb_string_value_cstr, 1);
+#endif
+
+#ifdef HAVE_RB_STR_MODIFY
+  rb_define_method(cls, "rb_str_modify", string_spec_rb_str_modify, 1);
 #endif
 }
 #ifdef __cplusplus
