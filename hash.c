@@ -554,11 +554,21 @@ hash_ar_table_set(VALUE hash, ar_table *ar)
 } while (0)
 
 #define RHASH_AR_TABLE_SIZE_INC(h) HASH_AR_TABLE_SIZE_ADD(h, 1)
-#define RHASH_AR_TABLE_SIZE_DEC(h) do  { \
-    HASH_ASSERT(RHASH_AR_TABLE_P(h)); \
-    RHASH_AR_TABLE_SIZE_SET((h), RHASH_AR_TABLE_SIZE(h) - 1); \
-    hash_verify(h); \
-} while (0)
+
+static inline void
+RHASH_AR_TABLE_SIZE_DEC(VALUE h) {
+    HASH_ASSERT(RHASH_AR_TABLE_P(h));
+    int new_size = RHASH_AR_TABLE_SIZE(h) - 1;
+
+    if (new_size != 0) {
+        RHASH_AR_TABLE_SIZE_SET(h, new_size);
+    }
+    else {
+        RHASH_AR_TABLE_SIZE_SET(h, 0);
+        RHASH_AR_TABLE_BOUND_SET(h, 0);
+    }
+    hash_verify(h);
+}
 
 #define RHASH_AR_TABLE_CLEAR(h) do { \
     RBASIC(h)->flags &= ~RHASH_AR_TABLE_SIZE_MASK; \
