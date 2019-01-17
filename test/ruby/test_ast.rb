@@ -257,4 +257,16 @@ class TestAst < Test::Unit::TestCase
     assert_equal(:b, mid)
     assert_equal(:SCOPE, defn.type)
   end
+
+  def test_dstr
+    node = RubyVM::AbstractSyntaxTree.parse('"foo#{1}bar"')
+    _, _, body = *node.children
+    assert_equal(:DSTR, body.type)
+    head, body = body.children
+    assert_equal("foo", head)
+    assert_equal(:EVSTR, body.type)
+    body, = body.children
+    assert_equal(:LIT, body.type)
+    assert_equal([1], body.children)
+  end
 end
