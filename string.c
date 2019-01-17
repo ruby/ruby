@@ -5411,7 +5411,6 @@ static VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);
-    int byte = NUM2INT(value);
     long len = RSTRING_LEN(str);
     char *head, *left = 0;
     unsigned char *ptr;
@@ -5422,10 +5421,10 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
         rb_raise(rb_eIndexError, "index %ld out of string", pos);
     if (pos < 0)
         pos += len;
-    if (byte < 0)
-        rb_raise(rb_eRangeError, "integer %d too small to convert into `unsigned char'", byte);
-    if (UCHAR_MAX < byte)
-        rb_raise(rb_eRangeError, "integer %d too big to convert into `unsigned char'", byte);
+
+    VALUE v = rb_to_int(value);
+    VALUE w = rb_int_modulo(v, INT2FIX(256));
+    unsigned char byte = NUM2INT(w) & 0xFF;
 
     if (!str_independent(str))
 	str_make_independent(str);

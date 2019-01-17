@@ -452,6 +452,10 @@ class TestStringIO < Test::Unit::TestCase
     t.ungetbyte("\u{30eb 30d3 30fc}")
     assert_equal(0, t.pos)
     assert_equal("\u{30eb 30d3 30fc}\u7d05\u7389bar\n", s)
+
+    assert_nothing_raised {t.ungetbyte(-1)}
+    assert_nothing_raised {t.ungetbyte(256)}
+    assert_nothing_raised {t.ungetbyte(1<<64)}
   end
 
   def test_ungetc
