@@ -766,6 +766,11 @@ def install_default_gem(dir, srcdir)
     load_gemspec(src)
   }
   gems.compact.sort_by(&:name).each do |gemspec|
+    old_gemspecs = Dir[File.join(default_spec_dir, "#{gemspec.name}-*.gemspec")]
+    if old_gemspecs.size > 0
+      old_gemspecs.each {|spec| FileUtils.rm spec }
+    end
+
     full_name = "#{gemspec.name}-#{gemspec.version}"
 
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
