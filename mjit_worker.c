@@ -260,7 +260,7 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
     MJIT_DLDFLAGS
 #if defined __GNUC__ && !defined __clang__
     "-nostartfiles",
-# if !defined(_WIN32) && !defined(__CYGWIN__) && !defined(_AIX)
+# if !defined(_WIN32) && !defined(__CYGWIN__)
     "-nodefaultlibs", "-nostdlib",
 # endif
 #endif
@@ -269,13 +269,13 @@ static const char *const CC_DLDFLAGS_ARGS[] = {
 
 static const char *const CC_LIBS[] = {
 #if defined(_WIN32) || defined(__CYGWIN__)
-    MJIT_LIBS
-# if defined __GNUC__ && !defined __clang__
-#  if defined(_WIN32)
-    "-lmsvcrt",
-#  endif
-    "-lgcc",
+    MJIT_LIBS // mswin, mingw, cygwin
+#endif
+#if defined __GNUC__ && !defined __clang__
+# if defined(_WIN32)
+    "-lmsvcrt", // mingw
 # endif
+    "-lgcc", // mingw, cygwin, and GCC platforms using `-nodefaultlibs -nostdlib`
 #endif
     NULL
 };
