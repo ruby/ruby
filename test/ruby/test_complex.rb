@@ -864,7 +864,13 @@ class Complex_Test < Test::Unit::TestCase
       assert_equal(nil, Complex('5x', exception: false))
     }
     assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(nil, exception: false))
+    }
+    assert_nothing_raised(ArgumentError){
       assert_equal(nil, Complex(Object.new, exception: false))
+    }
+    assert_nothing_raised(ArgumentError){
+      assert_equal(nil, Complex(1, nil, exception: false))
     }
     assert_nothing_raised(ArgumentError){
       assert_equal(nil, Complex(1, Object.new, exception: false))

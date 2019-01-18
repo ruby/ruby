@@ -1939,8 +1939,10 @@ to_complex(VALUE val)
 static VALUE
 nucomp_convert(VALUE klass, VALUE a1, VALUE a2, int raise)
 {
-    if (NIL_P(a1) || NIL_P(a2))
+    if (NIL_P(a1) || NIL_P(a2)) {
+        if (!raise) return Qnil;
 	rb_raise(rb_eTypeError, "can't convert nil into Complex");
+    }
 
     if (RB_TYPE_P(a1, T_STRING)) {
 	a1 = string_to_c_strict(a1, raise);
