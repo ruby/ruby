@@ -279,6 +279,14 @@ rb_str_set_len(VALUE str, long len) ::
   up to len bytes, regardless RSTRING_LEN(str).  len must not exceed
   the capacity of str.
 
+rb_str_modify(VALUE str) ::
+
+  Prepares a Ruby string to modify.  If str is not modifiable, this
+  function raises an exception, or if the buffer of str is shared,
+  this function allocates new buffer to make it unshared.  Always
+  you MUST call this function before modifying the contents using
+  RSTRING_PTR and/or rb_str_set_len.
+
 ==== Array Functions
 
 rb_ary_new() ::
