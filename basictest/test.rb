@@ -984,13 +984,6 @@ test_ok($z == 0)
 
 test_check "iterator"
 
-test_ok(!iterator?)
-
-def ttt
-  test_ok(iterator?)
-end
-ttt{}
-
 # yield at top level
 test_ok(!defined?(yield))
 
