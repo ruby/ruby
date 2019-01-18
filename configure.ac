@@ -3038,7 +3038,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
   RUNRUBY_COMMAND='$(MINIRUBY) $(srcdir)/tool/runruby.rb --extout=$(EXTOUT) $(RUNRUBYOPT)'
   RUNRUBY='$(RUNRUBY_COMMAND) --'
   XRUBY='$(RUNRUBY)'
-  AS_CASE(["$HAVE_BASERUBY:$build_os"], [no:*|*:msys*], [BOOTSTRAPRUBY='$(MINIRUBY)'])
+  AS_CASE(["$HAVE_BASERUBY:$build_os"], [no:*|*:mingw*], [BOOTSTRAPRUBY='$(MINIRUBY)'])
   TEST_RUNNABLE=yes
   CROSS_COMPILING=no
 ])
