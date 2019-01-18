@@ -147,7 +147,7 @@ class Shell
     #    yorn: Boolean(@shell.debug? or @shell.verbose?)
     def notify(*opts)
       @shell.notify(*opts) do |mes|
-        yield mes if iterator?
+        yield mes if block_given?
 
         mes.gsub!("%id", "#{@command}:##{@pid}")
         mes.gsub!("%name", "#{@command}")
