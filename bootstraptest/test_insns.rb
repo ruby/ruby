@@ -10,8 +10,10 @@ begin
 rescue LoadError
   # OK, just skip
 else
-  $FIXNUM_MAX = RbConfig::LIMITS["FIXNUM_MAX"]
-  $FIXNUM_MIN = RbConfig::LIMITS["FIXNUM_MIN"]
+  if defined? RbConfig::LIMITS
+    $FIXNUM_MAX = RbConfig::LIMITS["FIXNUM_MAX"]
+    $FIXNUM_MIN = RbConfig::LIMITS["FIXNUM_MIN"]
+  end
 end
 
 fsl   = { frozen_string_literal: true } # used later
