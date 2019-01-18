@@ -301,6 +301,14 @@ rb_str_set_len(VALUE str, long len) ::
   lenバイトまでの内容は保存される．lenはstrの容量を越えてい
   てはならない．
 
+rb_str_modify(VALUE str) ::
+
+  Rubyの文字列の変更する準備をする．strが変更可能でなければ例
+  外が発生する．strのバッファが共有されている場合は，新しいバッ
+  ファを割り当てて共有されていない状態にする．RSTRING_PTRを使っ
+  て中身を変更したり，rb_str_set_lenを呼んだりする前には，
+  必ずこの関数を呼ばなけれならない．
+
 ==== 配列に対する関数
 
 rb_ary_new() ::
