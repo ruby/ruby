@@ -2312,7 +2312,6 @@ rb_f_local_variables(VALUE _)
 /*
  *  call-seq:
  *     block_given?   -> true or false
- *     iterator?      -> true or false
  *
  *  Returns <code>true</code> if <code>yield</code> would execute a
  *  block in the current context. The <code>iterator?</code> form
@@ -2330,7 +2329,6 @@ rb_f_local_variables(VALUE _)
  *     try do "hello" end   #=> "hello"
  */
 
-
 static VALUE
 rb_f_block_given_p(VALUE _)
 {
@@ -2344,6 +2342,20 @@ rb_f_block_given_p(VALUE _)
     else {
 	return Qfalse;
     }
+}
+
+/*
+ *  call-seq:
+ *     iterator?      -> true or false
+ *
+ *  Deprecated.  Use block_given? instead.
+ */
+
+static VALUE
+rb_f_iterator_p(VALUE self)
+{
+    rb_warn_deprecated("iterator?", "block_given?");
+    return rb_f_block_given_p(self);
 }
 
 VALUE
@@ -2361,7 +2373,7 @@ Init_vm_eval(void)
 {
     rb_define_global_function("eval", rb_f_eval, -1);
     rb_define_global_function("local_variables", rb_f_local_variables, 0);
-    rb_define_global_function("iterator?", rb_f_block_given_p, 0);
+    rb_define_global_function("iterator?", rb_f_iterator_p, 0);
     rb_define_global_function("block_given?", rb_f_block_given_p, 0);
 
     rb_define_global_function("catch", rb_f_catch, -1);
