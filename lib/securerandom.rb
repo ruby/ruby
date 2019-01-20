@@ -16,8 +16,8 @@
 # * /dev/urandom
 # * Win32
 #
-# SecureRandom is extended by Random::Formatter module which defines
-# following methods:
+# SecureRandom is extended by the Random::Formatter module which
+# defines the following methods:
 #
 # * alphanumeric
 # * base64
