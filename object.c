@@ -3241,7 +3241,8 @@ rb_cstr_to_dbl(const char *p, int badcheck)
     if (*end) {
 	char buf[DBL_DIG * 4 + 10];
 	char *n = buf;
-	char *e = buf + sizeof(buf) - 1;
+	char *const init_e = buf + DBL_DIG * 4;
+	char *e = init_e;
 	char prev = 0;
 
 	while (p < end && n < e) prev = *n++ = *p++;
@@ -3254,6 +3255,9 @@ rb_cstr_to_dbl(const char *p, int badcheck)
 		}
 	    }
 	    prev = *p++;
+	    if (e == init_e && (*p == 'e' || *p == 'E')) {
+	        e = buf + sizeof(buf) - 1;
+	    }
 	    if (n < e) *n++ = prev;
 	}
 	*n = '\0';
