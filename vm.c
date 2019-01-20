@@ -2895,7 +2895,7 @@ static VALUE usage_analysis_register_stop(VALUE self);
  *   RubyVM.resolve_feature_path(feature) -> [:rb or :so, path]
  *
  * Identifies the file that will be loaded by "require(feature)".
- * This API is experimental and just for internal.
+ * This API is experimental and just for internal use.
  *
  *    RubyVM.resolve_feature_path("set")
  *      #=> [:rb, "/path/to/set.rb"]
