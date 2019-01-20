@@ -22,6 +22,10 @@
 #include <unistd.h>
 #endif
 
+#ifndef O_CLOEXEC
+#  define O_CLOEXEC 0
+#endif
+
 #ifndef USE_OPENDIR_AT
 # if defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD) && \
     defined(HAVE_OPENAT) && defined(HAVE_FSTATAT)
