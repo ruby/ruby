@@ -34,6 +34,11 @@ class RDoc::Comment
   attr_reader :text
 
   ##
+  # Alias for text
+
+  alias to_s text
+
+  ##
   # Overrides the content returned by #parse.  Use when there is no #text
   # source for this comment
 
