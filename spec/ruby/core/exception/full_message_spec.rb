@@ -34,5 +34,42 @@ ruby_version_is "2.5" do
         e.full_message(order: :bottom, highlight: false).should =~ /b.rb:2.*a.rb:1/m
       end
     end
+
+    ruby_version_is "2.6" do
+      it "contains cause of exception" do
+        begin
+          begin
+            raise 'the cause'
+          rescue
+            raise 'main exception'
+          end
+        rescue => e
+          exception = e
+        end
+
+        exception.full_message.should include "main exception"
+        exception.full_message.should include "the cause"
+      end
+
+      it 'contains all the chain of exceptions' do
+        begin
+          begin
+            begin
+              raise 'origin exception'
+            rescue
+              raise 'intermediate exception'
+            end
+          rescue
+            raise 'last exception'
+          end
+        rescue => e
+          exception = e
+        end
+
+        exception.full_message.should include "last exception"
+        exception.full_message.should include "intermediate exception"
+        exception.full_message.should include "origin exception"
+      end
+    end
   end
 end

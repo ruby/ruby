@@ -9,14 +9,12 @@ describe "StringScanner#getbyte" do
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
     lambda {
-      $VERBOSE = true
       s.getbyte
-    }.should complain(/getbyte.*obsolete.*get_byte/)
+    }.should complain(/getbyte.*obsolete.*get_byte/, verbose: true)
 
     lambda {
-      $VERBOSE = false
       s.getbyte
-    }.should_not complain
+    }.should_not complain(verbose: false)
   end
 
   it_behaves_like :extract_range, :getbyte

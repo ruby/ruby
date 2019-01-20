@@ -61,6 +61,20 @@ describe "Numeric#step" do
             end
           end
         end
+
+        describe "type" do
+          ruby_version_is ""..."2.6" do
+            it "returns an instance of Enumerator" do
+              1.step(10).class.should == Enumerator
+            end
+          end
+
+          ruby_version_is "2.6" do
+            it "returns an instance of Enumerator::ArithmeticSequence" do
+              1.step(10).class.should == Enumerator::ArithmeticSequence
+            end
+          end
+        end
       end
     end
 

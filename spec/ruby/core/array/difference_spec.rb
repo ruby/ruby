@@ -4,7 +4,7 @@ require_relative 'shared/difference'
 
 ruby_version_is "2.6" do
   describe "Array#difference" do
-    it_behaves_like :array_binary_difference, :-
+    it_behaves_like :array_binary_difference, :difference
 
     it "returns a copy when called without any parameter" do
       x = [1, 2, 3, 2]

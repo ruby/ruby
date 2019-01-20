@@ -63,6 +63,17 @@ describe "Hash#merge" do
     merge_pairs.should == each_pairs
   end
 
+  ruby_version_is "2.6" do
+    it "accepts multiple hashes" do
+      result = { a: 1 }.merge({ b: 2 }, { c: 3 }, { d: 4 })
+      result.should == { a: 1, b: 2, c: 3, d: 4 }
+    end
+
+    it "accepts zero arguments and returns self" do
+      hash = { a: 1 }
+      hash.merge.should eql(hash)
+    end
+  end
 end
 
 describe "Hash#merge!" do

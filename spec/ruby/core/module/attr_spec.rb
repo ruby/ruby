@@ -138,9 +138,8 @@ describe "Module#attr" do
 
   it "with a boolean argument emits a warning when $VERBOSE is true" do
     lambda {
-      $VERBOSE = true
       Class.new { attr :foo, true }
-    }.should complain(/boolean argument is obsoleted/)
+    }.should complain(/boolean argument is obsoleted/, verbose: true)
   end
 
   ruby_version_is ''...'2.5' do

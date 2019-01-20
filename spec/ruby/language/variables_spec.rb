@@ -758,3 +758,31 @@ describe "A local variable assigned only within a conditional block" do
     end
   end
 end
+
+describe 'Local variable shadowing' do
+  ruby_version_is ""..."2.6" do
+    it "leads to warning in verbose mode" do
+      -> do
+        eval <<-CODE
+          a = [1, 2, 3]
+          a.each { |a| a = 3 }
+        CODE
+      end.should complain(/shadowing outer local variable/, verbose: true)
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it "does not warn in verbose mode" do
+      result = nil
+
+      -> do
+        eval <<-CODE
+          a = [1, 2, 3]
+          result = a.map { |a| a = 3 }
+        CODE
+      end.should_not complain(verbose: true)
+
+      result.should == [3, 3, 3]
+    end
+  end
+end

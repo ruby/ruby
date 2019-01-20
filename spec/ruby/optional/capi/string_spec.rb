@@ -32,45 +32,56 @@ describe "C-API String function" do
     end
   end
 
-  describe "rb_str_set_len" do
-    before :each do
-      # Make a completely new copy of the string
-      # for every example (#dup doesn't cut it).
-      @str = "abcdefghij"
-      @s.rb_str_modify(@str)
-    end
+  [Encoding::BINARY, Encoding::UTF_8].each do |enc|
+    describe "rb_str_set_len on a #{enc.name} String" do
+      before :each do
+        @str = "abcdefghij".force_encoding(enc)
+        # Make sure to unshare the string
+        @s.rb_str_modify(@str)
+      end
 
-    it "reduces the size of the string" do
-      @s.rb_str_set_len(@str, 5).should == "abcde"
-    end
+      it "reduces the size of the string" do
+        @s.rb_str_set_len(@str, 5).should == "abcde"
+      end
 
-    it "inserts a NULL byte at the length" do
-      @s.rb_str_set_len(@str, 5).should == "abcde"
-      @s.rb_str_set_len(@str, 8).should == "abcde\x00gh"
-    end
+      it "inserts a NULL byte at the length" do
+        @s.rb_str_set_len(@str, 5).should == "abcde"
+        @s.rb_str_set_len(@str, 8).should == "abcde\x00gh"
+      end
 
-    it "updates the byte size and character size" do
-      @s.rb_str_set_len(@str, 4)
-      @str.bytesize.should == 4
-      @str.size.should == 4
-      @str.should == "abcd"
-    end
+      it "updates the byte size" do
+        @s.rb_str_set_len(@str, 4)
+        @str.bytesize.should == 4
+        @str.should == "abcd"
+      end
 
-    it "updates the string's attributes visible in C code" do
-      @s.rb_str_set_len_RSTRING_LEN(@str, 4).should == 4
-    end
+      it "invalidates the character size" do
+        @str.size.should == 10
+        @s.rb_str_set_len(@str, 4)
+        @str.size.should == 4
+        @str.should == "abcd"
+      end
 
-    it "can reveal characters written from C with RSTRING_PTR" do
-      @s.rb_str_set_len(@str, 1)
-      @str.should == "a"
+      it "invalidates the code range" do
+        @s.rb_str_set_len(@str, 4)
+        @str.ascii_only?.should == true
+      end
 
-      @str.force_encoding(Encoding::UTF_8)
-      @s.RSTRING_PTR_set(@str, 1, 'B'.ord)
-      @s.RSTRING_PTR_set(@str, 2, 'C'.ord)
-      @s.rb_str_set_len(@str, 3)
+      it "updates the string's attributes visible in C code" do
+        @s.rb_str_set_len_RSTRING_LEN(@str, 4).should == 4
+      end
 
-      @str.bytesize.should == 3
-      @str.should == "aBC"
+      it "can reveal characters written from C with RSTRING_PTR" do
+        @s.rb_str_set_len(@str, 1)
+        @str.should == "a"
+
+        @s.RSTRING_PTR_set(@str, 1, 'B'.ord)
+        @s.RSTRING_PTR_set(@str, 2, 'C'.ord)
+        @s.rb_str_set_len(@str, 3)
+
+        @str.bytesize.should == 3
+        @str.should == "aBC"
+      end
     end
   end
 

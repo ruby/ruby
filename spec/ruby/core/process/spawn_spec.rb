@@ -8,10 +8,10 @@ end
 
 describe :process_spawn_does_not_close_std_streams, shared: true do
   it "does not close STDIN" do
-    code = "STDOUT.puts STDIN.read(0).inspect"
+    code = "puts STDIN.read"
     cmd = "Process.wait Process.spawn(#{ruby_cmd(code).inspect}, #{@options.inspect})"
-    ruby_exe(cmd, args: "> #{@name}")
-    File.binread(@name).should == %[""#{newline}]
+    ruby_exe(cmd, args: "< #{fixture(__FILE__, "in.txt")} > #{@name}")
+    File.binread(@name).should == %[stdin#{newline}]
   end
 
   it "does not close STDOUT" do
@@ -530,7 +530,35 @@ describe "Process.spawn" do
     File.read(@name).should == "glarkbang"
   end
 
+  # :close_others
+
   platform_is_not :windows do
+    context "defaults :close_others to" do
+      ruby_version_is ""..."2.6" do
+        it "true" do
+          IO.pipe do |r, w|
+            w.close_on_exec = false
+            code = "begin; IO.new(#{w.fileno}).close; rescue Errno::EBADF; puts 'not inherited'; end"
+            Process.wait Process.spawn(ruby_cmd(code), :out => @name)
+            File.read(@name).should == "not inherited\n"
+          end
+        end
+      end
+
+      ruby_version_is "2.6" do
+        it "false" do
+          IO.pipe do |r, w|
+            w.close_on_exec = false
+            code = "io = IO.new(#{w.fileno}); io.puts('inherited'); io.close"
+            pid = Process.spawn(ruby_cmd(code))
+            w.close
+            Process.wait(pid)
+            r.read.should == "inherited\n"
+          end
+        end
+      end
+    end
+
     context "when passed close_others: true" do
       before :each do
         @options = { close_others: true }

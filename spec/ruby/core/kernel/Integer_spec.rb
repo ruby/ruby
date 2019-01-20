@@ -99,6 +99,65 @@ describe :kernel_integer, shared: true do
   it "raises a FloatDomainError when passed Infinity" do
     lambda { Integer(infinity_value) }.should raise_error(FloatDomainError)
   end
+
+  ruby_version_is "2.6" do
+    describe "when passed exception: false" do
+      describe "and to_i returns a value that is not an Integer" do
+        it "swallows an error" do
+          obj = mock("object")
+          obj.should_receive(:to_i).and_return("1")
+          Integer(obj, exception: false).should == nil
+        end
+      end
+
+      describe "and no to_int or to_i methods exist" do
+        it "swallows an error" do
+          obj = mock("object")
+          Integer(obj, exception: false).should == nil
+        end
+      end
+
+      describe "and to_int returns nil and no to_i exists" do
+        it "swallows an error" do
+          obj = mock("object")
+          obj.should_receive(:to_i).and_return(nil)
+          Integer(obj, exception: false).should == nil
+        end
+      end
+
+      ruby_bug "#15525", "2.6"..."2.6.1" do
+        describe "and passed NaN" do
+          it "swallows an error" do
+            Integer(nan_value, exception: false).should == nil
+          end
+        end
+
+        describe "and passed Infinity" do
+          it "swallows an error" do
+            Integer(infinity_value, exception: false).should == nil
+          end
+        end
+      end
+
+      describe "and passed nil" do
+        it "swallows an error" do
+          Integer(nil, exception: false).should == nil
+        end
+      end
+
+      describe "and passed a String that contains numbers" do
+        it "normally parses it and returns an Integer" do
+          Integer("42", exception: false).should == 42
+        end
+      end
+
+      describe "and passed a String that can't be converted to an Integer" do
+        it "swallows an error" do
+          Integer("abc", exception: false).should == nil
+        end
+      end
+    end
+  end
 end
 
 describe "Integer() given a String", shared: true do
@@ -187,6 +246,34 @@ describe "Integer() given a String", shared: true do
 
   it "raises an ArgumentError for an empty String" do
     lambda { Integer("") }.should raise_error(ArgumentError)
+  end
+
+  ruby_version_is "2.6" do
+    describe "when passed exception: false" do
+      describe "and multiple leading -s" do
+        it "swallows an error" do
+          Integer("---1", exception: false).should == nil
+        end
+      end
+
+      describe "and multiple trailing -s" do
+        it "swallows an error" do
+          Integer("1---", exception: false).should == nil
+        end
+      end
+
+      describe "and an argument that contains a period" do
+        it "swallows an error" do
+          Integer("0.0", exception: false).should == nil
+        end
+      end
+
+      describe "and an empty string" do
+        it "swallows an error" do
+          Integer("", exception: false).should == nil
+        end
+      end
+    end
   end
 
   it "parses the value as 0 if the string consists of a single zero character" do
@@ -506,6 +593,24 @@ describe "Integer() given a String and base", shared: true do
 
     it "raises an ArgumentError if a base is given for a non-String value" do
       lambda { Integer(98, 15) }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "2.6" do
+    describe "when passed exception: false" do
+      describe "and valid argument" do
+        it "returns an Integer number" do
+          Integer("100", 10, exception: false).should == 100
+          Integer("100", 2, exception: false).should == 4
+        end
+      end
+
+      describe "and invalid argument" do
+        it "swallows an error" do
+          Integer("999", 2, exception: false).should == nil
+          Integer("abc", 10, exception: false).should == nil
+        end
+      end
     end
   end
 end

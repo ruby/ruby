@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_RB_RANGE_NEW
 VALUE range_spec_rb_range_new(int argc, VALUE* argv, VALUE self) {
   int exclude_end = 0;
   if(argc == 3) {
@@ -13,9 +12,7 @@ VALUE range_spec_rb_range_new(int argc, VALUE* argv, VALUE self) {
   }
   return rb_range_new(argv[0], argv[1], exclude_end);
 }
-#endif
 
-#ifdef HAVE_RB_RANGE_VALUES
 VALUE range_spec_rb_range_values(VALUE self, VALUE range) {
   VALUE beg;
   VALUE end;
@@ -27,9 +24,7 @@ VALUE range_spec_rb_range_values(VALUE self, VALUE range) {
   rb_ary_store(ary, 2, excl ? Qtrue : Qfalse);
   return ary;
 }
-#endif
 
-#ifdef HAVE_RB_RANGE_BEG_LEN
 VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE begpv, VALUE lenpv, VALUE lenv, VALUE errv) {
   long begp = FIX2LONG(begpv);
   long lenp = FIX2LONG(lenpv);
@@ -42,23 +37,12 @@ VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE begpv, VALUE le
   rb_ary_store(ary, 2, res);
   return ary;
 }
-#endif
 
 void Init_range_spec(void) {
-  VALUE cls;
-  cls = rb_define_class("CApiRangeSpecs", rb_cObject);
-
-#ifdef HAVE_RB_RANGE_NEW
+  VALUE cls = rb_define_class("CApiRangeSpecs", rb_cObject);
   rb_define_method(cls, "rb_range_new", range_spec_rb_range_new, -1);
-#endif
-
-#ifdef HAVE_RB_RANGE_VALUES
   rb_define_method(cls, "rb_range_values", range_spec_rb_range_values, 1);
-#endif
-
-#ifdef HAVE_RB_RANGE_BEG_LEN
   rb_define_method(cls, "rb_range_beg_len", range_spec_rb_range_beg_len, 5);
-#endif
 }
 
 #ifdef __cplusplus

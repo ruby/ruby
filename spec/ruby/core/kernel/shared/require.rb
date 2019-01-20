@@ -225,9 +225,8 @@ describe :kernel_require, shared: true do
     it "loads a file that recursively requires itself" do
       path = File.expand_path "recursive_require_fixture.rb", CODE_LOADING_DIR
       -> {
-        $VERBOSE = true
         @object.require(path).should be_true
-      }.should complain(/circular require considered harmful/)
+      }.should complain(/circular require considered harmful/, verbose: true)
       ScratchPad.recorded.should == [:loaded]
     end
   end
