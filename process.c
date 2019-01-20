@@ -4434,8 +4434,8 @@ rb_spawn(int argc, const VALUE *argv)
  *  Returns +nil+ if command execution fails.
  *  An error status is available in <code>$?</code>.
  *
- *  If <code>exception: true</code> argument is passed, the method
- *  raises exception instead of +false+ or +nil+.
+ *  If the <code>exception: true</code> argument is passed, the method
+ *  raises an exception instead of returning +false+ or +nil+.
  *
  *  The arguments are processed in the same way as
  *  for Kernel#spawn.
@@ -4452,7 +4452,7 @@ rb_spawn(int argc, const VALUE *argv)
  *     config.h main.rb
  *     *
  *
- *  Errors handling:
+ *  Error handling:
  *
  *     system("cat nonexistent.txt")
  *     # => false
