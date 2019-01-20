@@ -8,13 +8,11 @@ describe "StringScanner#restsize" do
   it "warns in verbose mode that the method is obsolete" do
     s = StringScanner.new("abc")
     lambda {
-      $VERBOSE = true
       s.restsize
-    }.should complain(/restsize.*obsolete.*rest_size/)
+    }.should complain(/restsize.*obsolete.*rest_size/, verbose: true)
 
     lambda {
-      $VERBOSE = false
       s.restsize
-    }.should_not complain
+    }.should_not complain(verbose: false)
   end
 end

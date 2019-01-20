@@ -713,3 +713,35 @@ describe "Module#public_constant marked constants" do
     end
   end
 end
+
+describe 'Allowed characters' do
+  it 'allows not ASCII characters in the middle of a name' do
+    mod = Module.new
+    mod.const_set("BBἍBB", 1)
+
+    eval("mod::BBἍBB").should == 1
+  end
+
+  it 'does not allow not ASCII characters that cannot be upcased or lowercased at the beginning' do
+    -> do
+      Module.new.const_set("થBB", 1)
+    end.should raise_error(NameError, /wrong constant name/)
+  end
+
+  ruby_version_is ""..."2.6" do
+    it 'does not allow not ASCII upcased characters at the beginning' do
+      -> do
+        Module.new.const_set("ἍBB", 1)
+      end.should raise_error(NameError, /wrong constant name/)
+    end
+  end
+
+  ruby_version_is "2.6" do
+    it 'allows not ASCII upcased characters at the beginning' do
+      mod = Module.new
+      mod.const_set("ἍBB", 1)
+
+      eval("mod::ἍBB").should == 1
+    end
+  end
+end

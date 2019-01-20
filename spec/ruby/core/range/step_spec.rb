@@ -1,19 +1,8 @@
 require_relative '../../spec_helper'
 
 describe "Range#step" do
-  step_enum_class = Enumerator
-  ruby_version_is "2.6" do
-    step_enum_class = Enumerator::ArithmeticSequence
-  end
-
   before :each do
     ScratchPad.record []
-  end
-
-  it "returns an #{step_enum_class} when no block is given" do
-    enum = (1..10).step(4)
-    enum.should be_an_instance_of(step_enum_class)
-    enum.to_a.should eql([1, 5, 9])
   end
 
   it "returns self" do
@@ -268,7 +257,7 @@ describe "Range#step" do
   end
 
   describe "when no block is given" do
-    describe "returned #{step_enum_class}" do
+    describe "returned Enumerator" do
       describe "size" do
         it "raises a TypeError if step does not respond to #to_int" do
           obj = mock("Range#step non-integer")
@@ -361,6 +350,28 @@ describe "Range#step" do
           enum = (obj..obj).step
           lambda { enum.size }.should_not raise_error
           enum.size.should == nil
+        end
+      end
+
+      describe "type" do
+        ruby_version_is ""..."2.6" do
+          it "returns an instance of Enumerator" do
+            (1..10).step.class.should == Enumerator
+          end
+        end
+
+        ruby_version_is "2.6" do
+          context "when both begin and end are numerics" do
+            it "returns an instance of Enumerator::ArithmeticSequence" do
+              (1..10).step.class.should == Enumerator::ArithmeticSequence
+            end
+          end
+
+          context "when begin and end are not numerics" do
+            it "returns an instance of Enumerator" do
+              ("a".."z").step.class.should == Enumerator
+            end
+          end
         end
       end
     end

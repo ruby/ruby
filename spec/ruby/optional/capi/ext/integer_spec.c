@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-#ifdef HAVE_RB_INTEGER_PACK
 static VALUE integer_spec_rb_integer_pack(VALUE self, VALUE value,
     VALUE words, VALUE numwords, VALUE wordsize, VALUE nails, VALUE flags)
 {
@@ -13,13 +12,9 @@ static VALUE integer_spec_rb_integer_pack(VALUE self, VALUE value,
       FIX2INT(wordsize), FIX2INT(nails), FIX2INT(flags));
   return INT2FIX(result);
 }
-#endif
 
 void Init_integer_spec(void) {
-#ifdef HAVE_RB_INTEGER_PACK
-  VALUE cls;
-  cls = rb_define_class("CApiIntegerSpecs", rb_cObject);
-
+  VALUE cls = rb_define_class("CApiIntegerSpecs", rb_cObject);
   rb_define_const(cls, "MSWORD", INT2NUM(INTEGER_PACK_MSWORD_FIRST));
   rb_define_const(cls, "LSWORD", INT2NUM(INTEGER_PACK_LSWORD_FIRST));
   rb_define_const(cls, "MSBYTE", INT2NUM(INTEGER_PACK_MSBYTE_FIRST));
@@ -32,7 +27,6 @@ void Init_integer_spec(void) {
   rb_define_const(cls, "NEGATIVE", INT2NUM(INTEGER_PACK_NEGATIVE));
 
   rb_define_method(cls, "rb_integer_pack", integer_spec_rb_integer_pack, 6);
-#endif
 }
 
 #ifdef __cplusplus

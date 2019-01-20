@@ -582,9 +582,8 @@ describe "Module#autoload" do
     end
 
     -> {
-      $VERBOSE = true
       Kernel.require fixture(__FILE__, "autoload_during_require.rb")
-    }.should_not complain
+    }.should_not complain(verbose: true)
     ModuleSpecs::Autoload::AutoloadDuringRequire.should be_kind_of(Class)
   end
 

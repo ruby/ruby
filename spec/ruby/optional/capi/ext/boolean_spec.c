@@ -22,8 +22,7 @@ static VALUE boolean_spec_q_false(VALUE self) {
 }
 
 void Init_boolean_spec(void) {
-  VALUE cls;
-  cls = rb_define_class("CApiBooleanSpecs", rb_cObject);
+  VALUE cls = rb_define_class("CApiBooleanSpecs", rb_cObject);
   rb_define_method(cls, "is_true", boolean_spec_is_true, 1);
   rb_define_method(cls, "q_true", boolean_spec_q_true, 0);
   rb_define_method(cls, "q_false", boolean_spec_q_false, 0);

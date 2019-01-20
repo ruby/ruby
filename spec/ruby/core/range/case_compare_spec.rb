@@ -9,12 +9,20 @@ describe "Range#===" do
       range.should_receive(:include?).with(2).and_return(:true)
       (range === 2).should == :true
     end
+
+    it "requires #succ method to be implemented" do
+      range = RangeSpecs::WithoutSucc.new(0)..RangeSpecs::WithoutSucc.new(10)
+
+      lambda do
+        range === RangeSpecs::WithoutSucc.new(2)
+      end.should raise_error(TypeError, /can't iterate from/)
+    end
   end
 
   ruby_version_is "2.6" do
     it "returns the result of calling #cover? on self" do
-      range = RangeSpecs::Custom.new(0)..RangeSpecs::Custom.new(10)
-      (range === RangeSpecs::Custom.new(2)).should == true
+      range = RangeSpecs::WithoutSucc.new(0)..RangeSpecs::WithoutSucc.new(10)
+      (range === RangeSpecs::WithoutSucc.new(2)).should == true
     end
   end
 end

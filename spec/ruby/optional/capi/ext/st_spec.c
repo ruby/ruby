@@ -4,15 +4,12 @@
 #include <string.h>
 #include <stdarg.h>
 
-#ifdef HAVE_RB_ST
 #include <ruby/st.h>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef HAVE_RB_ST
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #  define ST2NUM(x) ULONG2NUM(x)
@@ -72,20 +69,13 @@ VALUE st_spec_st_lookup(VALUE self) {
 #endif
 }
 
-#endif
-
 void Init_st_spec(void) {
-  VALUE cls;
-  cls = rb_define_class("CApiStSpecs", rb_cObject);
-
-#ifdef HAVE_RB_ST
+  VALUE cls = rb_define_class("CApiStSpecs", rb_cObject);
   rb_define_method(cls, "st_init_numtable", st_spec_st_init_numtable, 0);
   rb_define_method(cls, "st_init_numtable_with_size", st_spec_st_init_numtable_with_size, 0);
   rb_define_method(cls, "st_insert", st_spec_st_insert, 0);
   rb_define_method(cls, "st_foreach", st_spec_st_foreach, 0);
   rb_define_method(cls, "st_lookup", st_spec_st_lookup, 0);
-#endif
-
 }
 
 #ifdef __cplusplus

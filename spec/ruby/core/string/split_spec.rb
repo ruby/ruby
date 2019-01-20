@@ -411,5 +411,17 @@ describe "String#split with Regexp" do
       returned_object.should == "chunky bacon"
       a.should == ["Chunky", "Bacon"]
     end
+
+    describe "for a String subclass" do
+      a = []
+      StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
+      first, last = a
+
+      first.should be_an_instance_of(StringSpecs::MyString)
+      first.should == "a"
+
+      last.should be_an_instance_of(StringSpecs::MyString)
+      last.should == "b"
+    end
   end
 end

@@ -7,7 +7,6 @@
 extern "C" {
 #endif
 
-#if defined(HAVE_RDATA) && defined(HAVE_DATA_WRAP_STRUCT)
 struct sample_wrapped_struct {
     int foo;
 };
@@ -66,23 +65,17 @@ VALUE sws_change_struct(VALUE self, VALUE obj, VALUE new_val) {
   RDATA(obj)->data = new_struct;
   return Qnil;
 }
-#endif
 
 void Init_data_spec(void) {
-  VALUE cls;
-  cls = rb_define_class("CApiAllocSpecs", rb_cObject);
-
-#if defined(HAVE_RDATA) && defined(HAVE_DATA_WRAP_STRUCT)
+  VALUE cls = rb_define_class("CApiAllocSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_func);
   rb_define_method(cls, "wrapped_data", sdaf_get_struct, 0);
-
   cls = rb_define_class("CApiWrappedStructSpecs", rb_cObject);
   rb_define_method(cls, "wrap_struct", sws_wrap_struct, 1);
   rb_define_method(cls, "get_struct", sws_get_struct, 1);
   rb_define_method(cls, "get_struct_rdata", sws_get_struct_rdata, 1);
   rb_define_method(cls, "get_struct_data_ptr", sws_get_struct_data_ptr, 1);
   rb_define_method(cls, "change_struct", sws_change_struct, 2);
-#endif
 }
 
 #ifdef __cplusplus

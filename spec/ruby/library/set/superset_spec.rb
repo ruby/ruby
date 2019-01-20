@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/set_like'
 require 'set'
 
 describe "Set#superset?" do
@@ -30,5 +31,11 @@ describe "Set#superset?" do
     lambda { Set[].superset?(1) }.should raise_error(ArgumentError)
     lambda { Set[].superset?("test") }.should raise_error(ArgumentError)
     lambda { Set[].superset?(Object.new) }.should raise_error(ArgumentError)
+  end
+
+  context "when comparing to a Set-like object" do
+    it "returns true if passed a Set-like object that self is a superset of" do
+      Set[1, 2, 3, 4].superset?(SetSpecs::SetLike.new([1, 2, 3])).should be_true
+    end
   end
 end

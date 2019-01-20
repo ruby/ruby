@@ -70,3 +70,69 @@ ruby_version_is "2.5" do
     end
   end
 end
+
+ruby_version_is "2.6" do
+  describe "Dir#children" do
+    before :all do
+      DirSpecs.create_mock_dirs
+    end
+
+    before :each do
+      @internal = Encoding.default_internal
+    end
+
+    after :all do
+      DirSpecs.delete_mock_dirs
+    end
+
+    after :each do
+      Encoding.default_internal = @internal
+      @dir.close if @dir
+    end
+
+    it "returns an Array of filenames in an existing directory including dotfiles" do
+      @dir = Dir.new(DirSpecs.mock_dir)
+      a = @dir.children.sort
+      @dir.close
+
+      a.should == DirSpecs.expected_paths - %w[. ..]
+
+      @dir = Dir.new("#{DirSpecs.mock_dir}/deeply/nested")
+      a = @dir.children.sort
+      a.should == %w|.dotfile.ext directory|
+    end
+
+    it "accepts an options Hash" do
+      @dir = Dir.new("#{DirSpecs.mock_dir}/deeply/nested", encoding: "utf-8")
+      a = @dir.children.sort
+      a.should == %w|.dotfile.ext directory|
+    end
+
+    it "returns children encoded with the filesystem encoding by default" do
+      # This spec depends on the locale not being US-ASCII because if it is, the
+      # children that are not ascii_only? will be ASCII-8BIT encoded.
+      @dir = Dir.new(File.join(DirSpecs.mock_dir, 'special'))
+      children = @dir.children.sort
+      encoding = Encoding.find("filesystem")
+      encoding = Encoding::ASCII_8BIT if encoding == Encoding::US_ASCII
+      platform_is_not :windows do
+        children.should include("こんにちは.txt".force_encoding(encoding))
+      end
+      children.first.encoding.should equal(Encoding.find("filesystem"))
+    end
+
+    it "returns children encoded with the specified encoding" do
+      path = File.join(DirSpecs.mock_dir, 'special')
+      @dir = Dir.new(path, encoding: "euc-jp")
+      children = @dir.children.sort
+      children.first.encoding.should equal(Encoding::EUC_JP)
+    end
+
+    it "returns children transcoded to the default internal encoding" do
+      Encoding.default_internal = Encoding::EUC_KR
+      @dir = Dir.new(File.join(DirSpecs.mock_dir, 'special'))
+      children = @dir.children.sort
+      children.first.encoding.should equal(Encoding::EUC_KR)
+    end
+  end
+end
