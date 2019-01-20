@@ -2365,7 +2365,7 @@ time_init_1(int argc, VALUE *argv, VALUE time)
  *
  *  +tz+ specifies the timezone.
  *  It can be an offset from UTC, given either as a string such as "+09:00"
- *  or a single letter "A".."Z" excluding "J" so-called military time zone,
+ *  or a single letter "A".."Z" excluding "J" (so-called military time zone),
  *  or as a number of seconds such as 32400.
  *  Or it can be a timezone object,
  *  see {Timezone argument}[#class-Time-label-Timezone+argument] for details.
