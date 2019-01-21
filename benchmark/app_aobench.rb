@@ -1,3 +1,5 @@
+# coding: US-ASCII
+
 # AO render benchmark
 # Original program (C) Syoyo Fujita in Javascript (and other languages)
 #      https://code.google.com/p/aobench/
