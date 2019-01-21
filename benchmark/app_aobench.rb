@@ -287,7 +287,7 @@ end
 # File.open("ao.ppm", "w") do |fp|
   printf("P6\n")
   printf("%d %d\n", IMAGE_WIDTH, IMAGE_HEIGHT)
-  printf("255\n", IMAGE_WIDTH, IMAGE_HEIGHT)
+  printf("255\n")
   Scene.new.render(IMAGE_WIDTH, IMAGE_HEIGHT, NSUBSAMPLES)
 # end
 
