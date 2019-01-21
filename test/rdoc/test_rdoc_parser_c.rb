@@ -1381,7 +1381,7 @@ commercial() -> Date <br />
   end
 
   def test_find_modifiers_yields
-    comment = RDoc::Comment.new <<-COMMENT
+    comment = RDoc::Comment.new <<-COMMENT, @top_level, :c
 /* :yields: a, b
  *
  * Blah

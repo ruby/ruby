@@ -97,8 +97,9 @@ class RDoc::TestCase < (defined?(Minitest::Test) ? Minitest::Test : MiniTest::Un
   # Creates an RDoc::Comment with +text+ which was defined on +top_level+.
   # By default the comment has the 'rdoc' format.
 
-  def comment text, top_level = @top_level
-    RDoc::Comment.new text, top_level
+  def comment text, top_level = @top_level, language = nil
+    comment = RDoc::Comment.new text, top_level, language
+    comment
   end
 
   ##
