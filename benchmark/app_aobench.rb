@@ -282,9 +282,11 @@ end
 
 alias printf_orig printf
 def printf *args
+  # $fp.printf(*args)
 end
 
 # File.open("ao.ppm", "w") do |fp|
+  # $fp = fp
   printf("P6\n")
   printf("%d %d\n", IMAGE_WIDTH, IMAGE_HEIGHT)
   printf("255\n")
