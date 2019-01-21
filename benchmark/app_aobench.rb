@@ -282,6 +282,8 @@ alias printf_orig printf
 def printf *args
 end
 
+srand(0)
+
 # File.open("ao.ppm", "w") do |fp|
   printf("P6\n")
   printf("%d %d\n", IMAGE_WIDTH, IMAGE_HEIGHT)
