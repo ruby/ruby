@@ -826,9 +826,21 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
         keyword__FILE__      "__FILE__"
         keyword__ENCODING__  "__ENCODING__"
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL
-%token <node> tINTEGER tFLOAT tRATIONAL tIMAGINARY tSTRING_CONTENT tCHAR
-%token <node> tNTH_REF tBACK_REF
+%token <id>   tIDENTIFIER    "local variable or method"
+%token <id>   tFID           "method"
+%token <id>   tGVAR          "global variable"
+%token <id>   tIVAR          "instance variable"
+%token <id>   tCONSTANT      "constant"
+%token <id>   tCVAR          "class variable"
+%token <id>   tLABEL
+%token <node> tINTEGER       "integer literal"
+%token <node> tFLOAT         "float literal"
+%token <node> tRATIONAL      "rational literal"
+%token <node> tIMAGINARY     "imaginary literal"
+%token <node> tCHAR          "char literal"
+%token <node> tNTH_REF       "numbered reference"
+%token <node> tBACK_REF      "back reference"
+%token <node> tSTRING_CONTENT
 %token <num>  tREGEXP_END
 
 %type <node> singleton strings string string1 xstring regexp
@@ -902,7 +914,12 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token tLAMBDA		"->"
 %token tSYMBEG		"symbol literal"
 %token tSTRING_BEG	"string literal"
-%token tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG tSYMBOLS_BEG tQSYMBOLS_BEG
+%token tXSTRING_BEG	"backtick literal"
+%token tREGEXP_BEG	"regexp literal"
+%token tWORDS_BEG	"word list"
+%token tQWORDS_BEG	"verbatim word list"
+%token tSYMBOLS_BEG	"symbol list"
+%token tQSYMBOLS_BEG	"verbatim symbol list"
 %token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG tLABEL_END
 
 /*
