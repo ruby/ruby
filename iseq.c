@@ -1864,6 +1864,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
 		CALL_FLAG(KWARG);
 		CALL_FLAG(KW_SPLAT);
 		CALL_FLAG(OPT_SEND); /* maybe not reachable */
+		CALL_FLAG(POPIT);
 		rb_ary_push(ary, rb_ary_join(flags, rb_str_new2("|")));
 	    }
 	    ret = rb_sprintf("<callinfo!%"PRIsVALUE">", rb_ary_join(ary, rb_str_new2(", ")));

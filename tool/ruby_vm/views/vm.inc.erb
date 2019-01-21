@@ -13,6 +13,16 @@
 } -%>
 
 #include "vm_insnhelper.h"
+/* Zero is not used here because C preprocessor replaces typos into zero. */
+% RubyVM                                           \
+% . constants                                      \
+% . map {|i| i.to_s }                              \
+% . grep(/.(Instructions|Unifications)$/)          \
+% . map {|i| i.gsub(/([a-z])([A-Z])/, '\\1_\\2') } \
+% . sort                                           \
+% . each_with_index do |i, j|
+#define RUBYVM_<%=upcase i %> <%= j + 1 %>
+% end
 % RubyVM::BareInstructions.to_a.each do |insn|
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
@@ -22,6 +32,10 @@
 % end
 %
 % RubyVM::InstructionsUnifications.to_a.each do |insn|
+<%= render 'insn_entry', locals: { insn: insn } -%>
+% end
+%
+% RubyVM::SendpopInstructions.to_a.each do |insn|
 <%= render 'insn_entry', locals: { insn: insn } -%>
 % end
 %

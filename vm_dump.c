@@ -131,6 +131,12 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
     if (VM_FRAME_FINISHED_P(cfp)) {
 	fprintf(stderr, " [FINISH]");
     }
+    if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_POPIT)) {
+        fprintf(stderr, " [POPIT]");
+    }
+    else if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_POPPED)) {
+        fprintf(stderr, " [POPPED]");
+    }
     if (0) {
 	fprintf(stderr, "              \t");
 	fprintf(stderr, "iseq: %-24s ", iseq_name);

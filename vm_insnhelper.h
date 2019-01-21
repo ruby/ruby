@@ -176,7 +176,12 @@ enum vm_regan_acttype {
     rb_snum_t y = attr_width_opt_send_without_block(0, 0); \
     rb_snum_t z = x - y; \
     ADD_PC(z); \
-    DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
+    if (INSN_CLASS == RUBYVM_SENDPOP_INSTRUCTIONS) { \
+        DISPATCH_ORIGINAL_INSN(opt_sendpop_opt_send_without_block); \
+    } \
+    else { \
+        DISPATCH_ORIGINAL_INSN(opt_send_without_block); \
+    } \
 } while (0)
 #endif
 
@@ -192,6 +197,23 @@ enum vm_regan_acttype {
 # define INC_GLOBAL_TIMESTAMP() ATOMIC_SIZE_INC(ruby_vm_global_timestamp)
 #else
 # define INC_GLOBAL_TIMESTAMP() (++ruby_vm_global_timestamp)
+#endif
+
+#ifdef MJIT_HEADER
+#define INSN_CALLER_RETVAL_POPPED_P() false
+#else
+/* INSN_CLASS changes from place to place.  That prevents us from
+ * writing `#if INSN_CLASS == ...` right here. */
+#define INSN_CALLER_RETVAL_POPPED_P() (int)( \
+    (INSN_CLASS == RUBYVM_SENDPOP_INSTRUCTIONS) ? \
+        (VM_FRAME_FLAG_POPPED | VM_FRAME_FLAG_POPIT) : \
+    CURRENT_INSN_IS(pop) ? \
+        VM_FRAME_FLAG_POPPED : \
+    CURRENT_INSN_IS(leave) ? \
+        VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) : \
+    CURRENT_INSN_IS(opt_bailout) ? \
+        VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) : \
+        0)
 #endif
 
 static inline struct vm_throw_data *

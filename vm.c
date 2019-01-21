@@ -1926,6 +1926,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
                          VALUE errinfo, VALUE *initial)
 {
     struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
+    bool popit = false;
 
     for (;;) {
 	unsigned int i;
@@ -1950,6 +1951,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 						rb_vm_frame_method_entry(ec->cfp)->owner,
 						rb_vm_frame_method_entry(ec->cfp)->def->original_id);
 	    }
+            popit = VM_ENV_FLAGS(ec->cfp->ep, VM_FRAME_FLAG_POPIT);
 	    rb_vm_pop_frame(ec);
 	}
 
@@ -1983,6 +1985,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 			    ec->errinfo = Qnil;
 			    THROW_DATA_CATCH_FRAME_SET(err, cfp + 1);
 			    hook_before_rewind(ec, ec->cfp, TRUE, state, err);
+                            popit = VM_ENV_FLAGS(ec->cfp->ep, VM_FRAME_FLAG_POPIT);
 			    rb_vm_pop_frame(ec);
 			    return THROW_DATA_VAL(err);
 			}
@@ -1994,7 +1997,9 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 #if OPT_STACK_CACHING
 		    *initial = THROW_DATA_VAL(err);
 #else
-		    *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                    if (! popit) {
+                        *ec->cfp->sp++ = THROW_DATA_VAL(err);
+                    }
 #endif
 		    ec->errinfo = Qnil;
 		    return Qundef;
@@ -2128,12 +2133,14 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state,
 	    hook_before_rewind(ec, ec->cfp, FALSE, state, err);
 
 	    if (VM_FRAME_FINISHED_P(ec->cfp)) {
+                popit = VM_ENV_FLAGS(ec->cfp->ep, VM_FRAME_FLAG_POPIT);
 		rb_vm_pop_frame(ec);
 		ec->errinfo = (VALUE)err;
 		ec->tag = ec->tag->prev;
 		EC_JUMP_TAG(ec, state);
 	    }
 	    else {
+                popit = VM_ENV_FLAGS(ec->cfp->ep, VM_FRAME_FLAG_POPIT);
 		rb_vm_pop_frame(ec);
 	    }
 	}

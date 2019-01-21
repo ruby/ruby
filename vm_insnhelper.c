@@ -3453,12 +3453,12 @@ vm_sendish(
     VALUE val;
     int argc = ci->orig_argc;
     VALUE recv = TOPN(argc);
-    struct rb_calling_info calling;
-
-    calling.block_handler = block_handler;
-    calling.recv = recv;
-    calling.argc = argc;
-    calling.popped = popped;
+    struct rb_calling_info calling = {
+        .block_handler = block_handler,
+        .recv = recv,
+        .argc = argc,
+        .popped = popped,
+    };
 
     method_explorer(GET_CFP(), ci, cc, recv);
 

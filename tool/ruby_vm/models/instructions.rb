@@ -18,5 +18,6 @@ RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
                        RubyVM::OperandsUnifications.to_a + \
                        RubyVM::InstructionsUnifications.to_a
 
+require_relative 'sendpop_instructions'
 require_relative 'trace_instructions'
 RubyVM::Instructions.freeze

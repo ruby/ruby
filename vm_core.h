@@ -1078,6 +1078,7 @@ enum vm_call_flag_bits {
     VM_CALL_SUPER_bit,          /* super */
     VM_CALL_ZSUPER_bit,         /* zsuper */
     VM_CALL_OPT_SEND_bit,       /* internal flag */
+    VM_CALL_POPIT_bit,          /* ;m(...); */
     VM_CALL__END
 };
 
@@ -1093,6 +1094,7 @@ enum vm_call_flag_bits {
 #define VM_CALL_SUPER           (0x01 << VM_CALL_SUPER_bit)
 #define VM_CALL_ZSUPER          (0x01 << VM_CALL_ZSUPER_bit)
 #define VM_CALL_OPT_SEND        (0x01 << VM_CALL_OPT_SEND_bit)
+#define VM_CALL_POPIT           (0x01 << VM_CALL_POPIT_bit)
 
 enum vm_special_object_type {
     VM_SPECIAL_OBJECT_VMCORE = 1,
@@ -1134,11 +1136,11 @@ typedef rb_control_frame_t *
 
 enum {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ _FFF FFFF EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ____ FFFF FFFF EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 3 bits Env flags
-     * FF..: 7 bits Frame flags
+     * FF..: 8 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1163,6 +1165,7 @@ enum {
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_POPPED    = 0x0400,
+    VM_FRAME_FLAG_POPIT     = 0x0800,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,

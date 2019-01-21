@@ -7,6 +7,7 @@
 %# details.
 %;
 % body = render_c_expr(insn.expr).gsub(/^#/, '#   ')
+% klass = insn.class.name.sub(/RubyVM::/, '').gsub(/([a-z])([A-Z])/, '\\1_\\2')
 
 /* insn <%= insn.pretty_name %> */
 INSN_ENTRY(<%= insn.name %>)
@@ -35,6 +36,10 @@ INSN_ENTRY(<%= insn.name %>)
 %   next if insn.has_ope?(ret) or insn.has_pop?(ret)
     <%= ret[:decl] %>;
 % end
+% (insn.orig_rets rescue []).each do |ret|
+%   next if insn.has_ope?(ret) or insn.has_pop?(ret)
+    MAYBE_UNUSED(<%= ret[:type] %>) <%= ret[:name] %>;
+% end
 
     /* ### Instruction preambles. ### */
     if (! leaf) ADD_PC(INSN_ATTR(width));
@@ -51,8 +56,10 @@ INSN_ENTRY(<%= insn.name %>)
     /* ### Here we do the instruction body. ### */
 %#  NAME_OF_CURRENT_INSN is used in vm_exec.h
 #   define NAME_OF_CURRENT_INSN <%= insn.name %>
+#   define INSN_CLASS RUBYVM_<%= upcase klass %>
 <%= body -%>
 #   undef NAME_OF_CURRENT_INSN
+#   undef INSN_CLASS
 % end
 
     /* ### Instruction trailers. ### */

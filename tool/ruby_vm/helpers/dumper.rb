@@ -109,4 +109,11 @@ class RubyVM::Dumper
   def render_c_expr expr
     render 'c_expr', locals: { expr: expr, }
   end
+
+  def upcase str
+    # Should stick to ASCII
+    # upcase(:ascii) is not available for old ruby
+    cstr = as_tr_cpp str
+    cstr.tr 'a-z', 'A-Z'
+  end
 end

@@ -13,18 +13,21 @@ sp_inc_of_sendish(const struct rb_call_info *ci)
 {
     /* Send-ish instructions will:
      *
-     * 1. Pop block argument, if any.
-     * 2. Pop ordinal arguments.
-     * 3. Pop receiver.
-     * 4. Push return value.
+     * 1. If there is a block arg, pop it from the stack.
+     * 2. Pop other arguments from the stack.
+     * 3. Pop receiver from the stack.
+     * 4. (The actual evaluation goes here...)
+     * 5. Then, push the return value onto the stack.
+     * 6. Optionally, immediately pop that value if desired.
      */
     const int argb = (ci->flag & VM_CALL_ARGS_BLOCKARG) ? 1 : 0;
     const int argc = ci->orig_argc;
     const int recv = 1;
     const int retn = 1;
+    const int popn = (ci->flag & VM_CALL_POPIT) ? 1 : 0;
 
-    /*         1.     2.     3.     4. */
-    return 0 - argb - argc - recv + retn;
+    /*         1.     2.     3.     5.     6.    */
+    return 0 - argb - argc - recv + retn - popn;
 }
 
 static rb_snum_t

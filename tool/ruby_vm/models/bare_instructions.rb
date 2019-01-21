@@ -152,7 +152,6 @@ class RubyVM::BareInstructions
       type: t,                          \
       location: [],                     \
       expr: v.to_s + ';'
-    return @attrs[k] ||= attr
   end
 
   def predefine_attributes

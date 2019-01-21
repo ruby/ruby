@@ -777,11 +777,7 @@ send
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, false);
-    int popped =
-        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
-        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        0;
+    int popped = INSN_CALLER_RETVAL_POPPED_P();
     val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_method_wrap);
 
     if (val == Qundef) {
@@ -801,11 +797,7 @@ opt_send_without_block
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    int popped =
-        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
-        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        0;
+    int popped = INSN_CALLER_RETVAL_POPPED_P();
     val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_method_wrap);
 
     if (val == Qundef) {
@@ -881,11 +873,7 @@ invokesuper
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(ci);
 {
     VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), ci, blockiseq, true);
-    int popped =
-        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
-        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        0;
+    int popped = INSN_CALLER_RETVAL_POPPED_P();
     val = vm_sendish(ec, GET_CFP(), ci, cc, bh, popped, vm_search_super_method);
 
     if (val == Qundef) {
@@ -909,11 +897,7 @@ invokeblock
     };
 
     VALUE bh = VM_BLOCK_HANDLER_NONE;
-    int popped =
-        CURRENT_INSN_IS(pop)         ? VM_FRAME_FLAG_POPPED :
-        CURRENT_INSN_IS(leave)       ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        CURRENT_INSN_IS(opt_bailout) ? VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPPED) :
-        0;
+    int popped = INSN_CALLER_RETVAL_POPPED_P();
     val = vm_sendish(ec, GET_CFP(), ci, &cc, bh, popped, vm_search_invokeblock);
 
     if (val == Qundef) {
@@ -927,7 +911,7 @@ DEFINE_INSN
 leave
 ()
 (VALUE val)
-(VALUE val)
+(...)
 /* This is super surprising but when leaving from a frame, we check
  * for interrupts.  If any, that should be executed on top of the
  * current execution context.  This is a method call. */
@@ -939,7 +923,10 @@ leave
 // attr enum rb_insn_purity purity = rb_insn_is_pure;
 /* And this instruction handles SP by nature. */
 // attr bool handles_sp = true;
+// attr rb_snum_t sp_inc = 0;
 {
+    bool popit = VM_ENV_FLAGS(GET_EP(), VM_FRAME_FLAG_POPIT);
+
     if (OPT_CHECKED_RUN) {
 	const VALUE *const bp = vm_base_ptr(reg_cfp);
 	if (reg_cfp->sp != bp) {
@@ -959,6 +946,9 @@ leave
     }
     else {
 	RESTORE_REGS();
+        if (! popit) {
+            PUSH(val);
+        }
     }
 }
 
