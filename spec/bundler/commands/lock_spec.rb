@@ -212,6 +212,26 @@ RSpec.describe "bundle lock" do
     end
   end
 
+  it "updates the bundler version in the lockfile without re-resolving", :rubygems => ">= 3.3.0.dev" do
+    build_repo4 do
+      build_gem "rack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    FileUtils.rm_r gem_repo4
+
+    bundle "lock --update --bundler"
+    expect(the_bundle).to include_gem "rack 1.0"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_gems.bundler_version).to eq v(Bundler::VERSION)
+  end
+
   it "supports adding new platforms" do
     bundle "lock --add-platform java x86-mingw32"
 
