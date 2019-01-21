@@ -10828,7 +10828,7 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
     return 0;
 }
 
-#if defined __linux__ && defined __NR_copy_file_range
+#if defined HAVE_COPY_FILE_RANGE || (defined __linux__ && defined __NR_copy_file_range)
 #  define USE_COPY_FILE_RANGE
 #endif
 
@@ -10837,7 +10837,11 @@ nogvl_copy_stream_wait_write(struct copy_stream_struct *stp)
 static ssize_t
 simple_copy_file_range(int in_fd, off_t *in_offset, int out_fd, off_t *out_offset, size_t count, unsigned int flags)
 {
+#ifdef HAVE_COPY_FILE_RANGE
+    return copy_file_range(in_fd, in_offset, out_fd, out_offset, count, flags);
+#else
     return syscall(__NR_copy_file_range, in_fd, in_offset, out_fd, out_offset, count, flags);
+#endif
 }
 
 static int
