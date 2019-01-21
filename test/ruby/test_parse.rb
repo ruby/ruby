@@ -1079,7 +1079,7 @@ x = __ENCODING__
   end
 
   def test_truncated_source_line
-    e = assert_raise_with_message(SyntaxError, /unexpected tIDENTIFIER/) do
+    e = assert_raise_with_message(SyntaxError, /unexpected local variable or method/) do
       eval("'0123456789012345678901234567890123456789' abcdefghijklmnopqrstuvwxyz0123456789 0123456789012345678901234567890123456789")
     end
     line = e.message.lines[1]
