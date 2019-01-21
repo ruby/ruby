@@ -11,6 +11,8 @@ IMAGE_HEIGHT = 256
 NSUBSAMPLES = 2
 NAO_SAMPLES = 8
 
+srand(0)
+
 class Vec
   def initialize(x, y, z)
     @x = x
@@ -281,8 +283,6 @@ end
 alias printf_orig printf
 def printf *args
 end
-
-srand(0)
 
 # File.open("ao.ppm", "w") do |fp|
   printf("P6\n")
