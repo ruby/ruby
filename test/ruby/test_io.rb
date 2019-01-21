@@ -1500,6 +1500,7 @@ class TestIO < Test::Unit::TestCase
   end if have_nonblock?
 
   def test_read_nonblock_no_exceptions
+    skip '[ruby-core:90895] MJIT worker may leave fd open in a forked child' if RubyVM::MJIT.enabled? # TODO: consider acquiring GVL from MJIT worker.
     with_pipe {|r, w|
       assert_equal :wait_readable, r.read_nonblock(4096, exception: false)
       w.puts "HI!"
