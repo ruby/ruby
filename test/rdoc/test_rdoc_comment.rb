@@ -241,6 +241,7 @@ lines, one line per element. Lines are assumed to be separated by _sep_.
     @comment.text = <<-TEXT
   # comment
     TEXT
+    @comment.language = :ruby
 
     assert_same @comment, @comment.normalize
 

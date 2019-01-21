@@ -446,7 +446,7 @@ class RDoc::Parser::C < RDoc::Parser
       next unless cls = @classes[c]
       m = @known_classes[m] || m
 
-      comment = RDoc::Comment.new '', @top_level
+      comment = RDoc::Comment.new '', @top_level, :c
       incl = cls.add_include RDoc::Include.new(m, comment)
       incl.record_location @top_level
     end
@@ -564,7 +564,7 @@ class RDoc::Parser::C < RDoc::Parser
                                    \s*"#{Regexp.escape new_name}"\s*,
                                    \s*"#{Regexp.escape old_name}"\s*\);%xm
 
-    RDoc::Comment.new($1 || '', @top_level)
+    RDoc::Comment.new($1 || '', @top_level, :c)
   end
 
   ##
@@ -603,7 +603,7 @@ class RDoc::Parser::C < RDoc::Parser
                 ''
               end
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -643,7 +643,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     case type
     when :func_def
-      comment = RDoc::Comment.new args[0], @top_level
+      comment = RDoc::Comment.new args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -673,7 +673,7 @@ class RDoc::Parser::C < RDoc::Parser
 
       body
     when :macro_def
-      comment = RDoc::Comment.new args[0], @top_level
+      comment = RDoc::Comment.new args[0], @top_level, :c
       body = args[1]
       offset, = args[2]
 
@@ -780,7 +780,7 @@ class RDoc::Parser::C < RDoc::Parser
       comment = ''
     end
 
-    comment = RDoc::Comment.new comment, @top_level
+    comment = RDoc::Comment.new comment, @top_level, :c
     comment.normalize
 
     look_for_directives_in class_mod, comment
@@ -825,7 +825,7 @@ class RDoc::Parser::C < RDoc::Parser
       table[const_name] ||
       ''
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -856,7 +856,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     return unless comment
 
-    RDoc::Comment.new comment, @top_level
+    RDoc::Comment.new comment, @top_level, :c
   end
 
   ##
@@ -990,7 +990,7 @@ class RDoc::Parser::C < RDoc::Parser
 
         new_comment = "#{$1}#{new_comment.lstrip}"
 
-        new_comment = RDoc::Comment.new new_comment, @top_level
+        new_comment = RDoc::Comment.new new_comment, @top_level, :c
 
         con = RDoc::Constant.new const_name, new_definition, new_comment
       else
