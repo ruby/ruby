@@ -393,7 +393,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([], "#! /test_r_u_b_y_test_r_u_b_y_options_foobarbazqux -foo -bar\r\np 1\r\n",
                       [], /: no Ruby script found in input/)
 
-    warning = /mswin|mingw/ =~ RUBY_PLATFORM ? [] : /shebang line ending with \\r/
+    warning = /mswin|mingw/ =~ RUBY_PLATFORM ? [] : /shebang ending with \\r/
     assert_in_out_err([{'RUBYOPT' => nil}], "#!ruby -KU -Eutf-8\r\np \"\u3042\"\r\n",
                       ["\"\u3042\""], warning,
                       encoding: Encoding::UTF_8)

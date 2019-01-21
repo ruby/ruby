@@ -1876,7 +1876,7 @@ static void
 warn_cr_in_shebang(const char *str, long len)
 {
     if (str[len-1] == '\n' && str[len-2] == '\r') {
-	rb_warn("shebang line ending with \\r may cause problems");
+	rb_warn("shebang ending with \\r may cause problems");
     }
 }
 #else
