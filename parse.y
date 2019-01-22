@@ -609,6 +609,12 @@ rb_strterm_mark(VALUE obj)
 }
 #endif
 
+#define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(yyres, yystr)
+size_t rb_yytnamerr(char *yyres, const char *yystr);
+#ifdef RIPPER
+#define yystpcpy Not used
+#endif
+
 #define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
     tTOKEN_INSTANCE_BEGIN<(tok)&&(tok)<tTOKEN_INSTANCE_END ? TOKEN2INSTANCEID(tok) : \
@@ -776,55 +782,55 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 }
 
 %token <id>
-        keyword_class        "class"
-        keyword_module       "module"
-        keyword_def          "def"
-        keyword_undef        "undef"
-        keyword_begin        "begin"
-        keyword_rescue       "rescue"
-        keyword_ensure       "ensure"
-        keyword_end          "end"
-        keyword_if           "if"
-        keyword_unless       "unless"
-        keyword_then         "then"
-        keyword_elsif        "elsif"
-        keyword_else         "else"
-        keyword_case         "case"
-        keyword_when         "when"
-        keyword_while        "while"
-        keyword_until        "until"
-        keyword_for          "for"
-        keyword_break        "break"
-        keyword_next         "next"
-        keyword_redo         "redo"
-        keyword_retry        "retry"
-        keyword_in           "in"
-        keyword_do           "do"
-        keyword_do_cond      "do (for condition)"
-        keyword_do_block     "do (for block)"
-        keyword_do_LAMBDA    "do (for lambda)"
-        keyword_return       "return"
-        keyword_yield        "yield"
-        keyword_super        "super"
-        keyword_self         "self"
-        keyword_nil          "nil"
-        keyword_true         "true"
-        keyword_false        "false"
-        keyword_and          "and"
-        keyword_or           "or"
-        keyword_not          "not"
-        modifier_if          "if (modifier)"
-        modifier_unless      "unless (modifier)"
-        modifier_while       "while (modifier)"
-        modifier_until       "until (modifier)"
-        modifier_rescue      "rescue (modifier)"
-        keyword_alias        "alias"
-        keyword_defined      "defined?"
-        keyword_BEGIN        "BEGIN"
-        keyword_END          "END"
-        keyword__LINE__      "__LINE__"
-        keyword__FILE__      "__FILE__"
-        keyword__ENCODING__  "__ENCODING__"
+        keyword_class        "`class'"
+        keyword_module       "`module'"
+        keyword_def          "`def'"
+        keyword_undef        "`undef'"
+        keyword_begin        "`begin'"
+        keyword_rescue       "`rescue'"
+        keyword_ensure       "`ensure'"
+        keyword_end          "`end'"
+        keyword_if           "`if'"
+        keyword_unless       "`unless'"
+        keyword_then         "`then'"
+        keyword_elsif        "`elsif'"
+        keyword_else         "`else'"
+        keyword_case         "`case'"
+        keyword_when         "`when'"
+        keyword_while        "`while'"
+        keyword_until        "`until'"
+        keyword_for          "`for'"
+        keyword_break        "`break'"
+        keyword_next         "`next'"
+        keyword_redo         "`redo'"
+        keyword_retry        "`retry'"
+        keyword_in           "`in'"
+        keyword_do           "`do'"
+        keyword_do_cond      "`do' for condition"
+        keyword_do_block     "`do' for block"
+        keyword_do_LAMBDA    "`do' for lambda"
+        keyword_return       "`return'"
+        keyword_yield        "`yield'"
+        keyword_super        "`super'"
+        keyword_self         "`self'"
+        keyword_nil          "`nil'"
+        keyword_true         "`true'"
+        keyword_false        "`false'"
+        keyword_and          "`and'"
+        keyword_or           "`or'"
+        keyword_not          "`not'"
+        modifier_if          "`if' modifier"
+        modifier_unless      "`unless' modifier"
+        modifier_while       "`while' modifier"
+        modifier_until       "`until' modifier"
+        modifier_rescue      "`rescue' modifier"
+        keyword_alias        "`alias'"
+        keyword_defined      "`defined?'"
+        keyword_BEGIN        "`BEGIN'"
+        keyword_END          "`END'"
+        keyword__LINE__      "`__LINE__'"
+        keyword__FILE__      "`__FILE__'"
+        keyword__ENCODING__  "`__ENCODING__'"
 
 %token <id>   tIDENTIFIER    "local variable or method"
 %token <id>   tFID           "method"
@@ -11176,6 +11182,78 @@ parser_compile_error(struct parser_params *p, const char *fmt, ...)
 			       rb_long2int(p->lex.pcur - p->lex.pbeg),
 			       p->enc, fmt, ap);
     va_end(ap);
+}
+
+static size_t
+count_char(const char *str, int c)
+{
+    int n = 0;
+    while (str[n] == c) ++n;
+    return n;
+}
+
+/*
+ * strip enclosing double-quotes, same as the default yytnamerr except
+ * for that single-quotes matching back-quotes do not stop stripping.
+ *
+ *  "\"`class' keyword\"" => "`class' keyword"
+ */
+RUBY_FUNC_EXPORTED size_t
+rb_yytnamerr(char *yyres, const char *yystr)
+{
+    if (*yystr == '"') {
+	size_t yyn = 0, bquote = 0;
+	const char *yyp = yystr;
+
+	while (*++yyp) {
+	    switch (*yyp) {
+	      case '`':
+		if (!bquote) {
+		    bquote = count_char(yyp+1, '`') + 1;
+		    if (yyres) memcpy(&yyres[yyn], yyp, bquote);
+		    yyn += bquote;
+		    yyp += bquote - 1;
+		    break;
+		}
+		goto default_char;
+
+	      case '\'':
+		if (bquote && count_char(yyp+1, '\'') + 1 == bquote) {
+		    if (yyres) memcpy(yyres + yyn, yyp, bquote);
+		    yyn += bquote;
+		    yyp += bquote - 1;
+		    bquote = 0;
+		    break;
+		}
+		goto do_not_strip_quotes;
+
+	      case ',':
+		goto do_not_strip_quotes;
+
+	      case '\\':
+		if (*++yyp != '\\')
+		    goto do_not_strip_quotes;
+		/* Fall through.  */
+	      default_char:
+	      default:
+		if (yyres)
+		    yyres[yyn] = *yyp;
+		yyn++;
+		break;
+
+	      case '"':
+	      case '\0':
+		if (yyres)
+		    yyres[yyn] = '\0';
+		return yyn;
+	    }
+	}
+      do_not_strip_quotes: ;
+    }
+
+    if (!yyres) return strlen(yystr);
+
+    return (YYSIZE_T)(yystpcpy(yyres, yystr) - yyres);
 }
 #endif
 
