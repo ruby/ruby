@@ -1057,6 +1057,8 @@ Also, a list:
     Gem.instance_variable_set :@platforms, nil
     Gem::Platform.instance_variable_set :@local, nil
 
+    yield if block_given?
+
     platform
   end
 

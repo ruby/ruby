@@ -156,7 +156,7 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions
-    mask = /mingw|mswin/ =~ RUBY_PLATFORM ? 0700 : 0777
+    mask = win_platform? ? 0700 : 0777
     options = {
       :dir_mode => 0500,
       :prog_mode => 0510,
@@ -198,6 +198,9 @@ class TestGem < Gem::TestCase
       'gems/foo-1/bin/foo.cmd' => prog_mode,
       'gems/foo-1/data/foo.txt' => data_mode,
     }
+    # below is for intermittent errors on Appveyor & Travis 2019-01,
+    # see https://github.com/rubygems/rubygems/pull/2568
+    sleep 0.2
     result = {}
     Dir.chdir @gemhome do
       expected.each_key do |n|
