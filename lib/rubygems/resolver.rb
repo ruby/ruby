@@ -231,8 +231,6 @@ class Gem::Resolver
       raise exc
     end
 
-    sources = []
-
     groups = Hash.new { |hash, key| hash[key] = [] }
 
     # create groups & sources in the same loop

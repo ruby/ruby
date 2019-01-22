@@ -1285,7 +1285,7 @@ class Gem::Specification < Gem::BasicSpecification
     unresolved = unresolved_deps
     unless unresolved.empty?
       w = "W" + "ARN"
-      warn "#{w}: Unresolved or ambigious specs during Gem::Specification.reset:"
+      warn "#{w}: Unresolved or ambiguous specs during Gem::Specification.reset:"
       unresolved.values.each do |dep|
         warn "      #{dep}"
 
@@ -2254,6 +2254,7 @@ class Gem::Specification < Gem::BasicSpecification
 
       attributes.each do |attr_name|
         current_value = self.send attr_name
+        current_value = current_value.sort if %i(files test_files).include? attr_name
         if current_value != default_value(attr_name) or
            self.class.required_attribute? attr_name
 

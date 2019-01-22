@@ -79,6 +79,17 @@ class TestGemRequest < Gem::TestCase
     assert_equal URI(@proxy_uri), proxy
   end
 
+  def test_proxy_ENV
+    ENV['http_proxy'] = "http://proxy"
+    ENV['https_proxy'] = ""
+
+    request = make_request URI('https://example'), nil, nil, nil
+
+    proxy = request.proxy_uri
+
+    assert_nil proxy
+  end
+
   def test_configure_connection_for_https
     connection = Net::HTTP.new 'localhost', 443
 

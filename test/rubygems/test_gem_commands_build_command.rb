@@ -207,6 +207,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       gs.write @gem.to_ruby
     end
 
+    @cmd.options[:build_path] = gemspec_dir
     @cmd.options[:args] = [gemspec_file]
 
     use_ui @ui do

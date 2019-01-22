@@ -2936,7 +2936,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
 
     expected = <<-EXPECTED
-WARN: Unresolved or ambigious specs during Gem::Specification.reset:
+WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
       x (= 1)
 WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'
 Please report a bug if this causes problems.
@@ -2964,7 +2964,7 @@ Please report a bug if this causes problems.
     end
 
     expected = <<-EXPECTED
-WARN: Unresolved or ambigious specs during Gem::Specification.reset:
+WARN: Unresolved or ambiguous specs during Gem::Specification.reset:
       x (= 1)
       Available/installed versions of this gem:
       - 1

@@ -199,6 +199,21 @@ class TestGemCommandsPushCommand < Gem::TestCase
     send_battery
   end
 
+  def test_sending_gem_with_env_var_api_key
+    @host = "http://privategemserver.example"
+
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata['allowed_push_host'] = @host
+    end
+
+    @api_key = "PRIVKEY"
+    ENV["GEM_HOST_API_KEY"] = "PRIVKEY"
+
+    @response = "Successfully registered gem: freebird (1.0.1)"
+    @fetcher.data["#{@host}/api/v1/gems"]  = [@response, 200, 'OK']
+    send_battery
+  end
+
   def test_sending_gem_to_allowed_push_host_with_basic_credentials
     @sanitized_host = "http://privategemserver.example"
     @host           = "http://user:password@privategemserver.example"

@@ -25,7 +25,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
     File.open File.join(@ext, 'CMakeLists.txt'), 'w' do |cmakelists|
       cmakelists.write <<-eo_cmake
 cmake_minimum_required(VERSION 2.6)
-project(self_build LANGUAGES NONE)
+project(self_build NONE)
 install (FILES test.txt DESTINATION bin)
       eo_cmake
     end
