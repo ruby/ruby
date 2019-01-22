@@ -290,7 +290,7 @@ class Net::HTTPResponse
 
       clen = content_length()
       if clen
-        @socket.read clen, dest, true   # ignore EOF
+        @socket.read clen, dest
         return
       end
       clen = range_length()

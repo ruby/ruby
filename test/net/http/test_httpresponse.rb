@@ -457,6 +457,20 @@ EOS
     assert_equal '#<Net::HTTPUnknownResponse ??? test response readbody=true>', res.inspect
   end
 
+  def test_raise_eof
+    io = dummy_io(<<EOS)
+HTTP/1.1 200
+Content-Length: 5
+Connection: close
+
+h
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+    assert_raise EOFError do
+      res.reading_body(io, true) {}
+    end
+  end
 private
 
   def dummy_io(str)
