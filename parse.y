@@ -611,9 +611,6 @@ rb_strterm_mark(VALUE obj)
 
 #define yytnamerr(yyres, yystr) (YYSIZE_T)rb_yytnamerr(yyres, yystr)
 size_t rb_yytnamerr(char *yyres, const char *yystr);
-#ifdef RIPPER
-#define yystpcpy Not used
-#endif
 
 #define TOKEN2ID(tok) ( \
     tTOKEN_LOCAL_BEGIN<(tok)&&(tok)<tTOKEN_LOCAL_END ? TOKEN2LOCALID(tok) : \
@@ -11649,6 +11646,8 @@ Init_ripper(void)
     id_warn = rb_intern_const("warn");
     id_warning = rb_intern_const("warning");
     id_gets = rb_intern_const("gets");
+
+    (void)yystpcpy; /* may not used in newer bison */
 
     InitVM(ripper);
 }
