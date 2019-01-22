@@ -4480,8 +4480,8 @@ static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t
   rb_parser_set_location(p, &_cur_loc);			\
   yylval.node = (x);					\
 }
-# define set_yylval_str(x) set_yylval_node(NEW_STR(x, &_cur_loc))
-# define set_yylval_literal(x) set_yylval_node(NEW_LIT(x, &_cur_loc))
+# define set_yylval_str(x) set_yylval_node(NEW_STR(add_mark_object(p, (x)), &_cur_loc))
+# define set_yylval_literal(x) set_yylval_node(NEW_LIT(add_mark_object(p, (x)), &_cur_loc))
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
 # define set_yylval_name(x)  (yylval.id = (x))
@@ -4492,11 +4492,11 @@ ripper_yylval_id(struct parser_params *p, ID x)
 {
     return ripper_new_yylval(p, x, ID2SYM(x), 0);
 }
-# define set_yylval_str(x) (yylval.val = (x))
+# define set_yylval_str(x) (yylval.val = add_mark_object(p, (x)))
 # define set_yylval_num(x) (yylval.val = ripper_new_yylval(p, (x), 0, 0))
 # define set_yylval_id(x)  (void)(x)
 # define set_yylval_name(x) (void)(yylval.val = ripper_yylval_id(p, x))
-# define set_yylval_literal(x) (void)(x)
+# define set_yylval_literal(x) add_mark_object(p, (x))
 # define set_yylval_node(x) (void)(x)
 # define yylval_id() yylval.id
 # define _cur_loc NULL_LOC /* dummy */
@@ -6018,7 +6018,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     }
 
     tokfix(p);
-    add_mark_object(p, lit = STR_NEW3(tok(p), toklen(p), enc, func));
+    lit = STR_NEW3(tok(p), toklen(p), enc, func);
     set_yylval_str(lit);
     flush_string_content(p, enc);
 
@@ -6323,7 +6323,6 @@ set_number_literal(struct parser_params *p, VALUE v,
 	type = tIMAGINARY;
     }
     set_yylval_literal(v);
-    add_mark_object(p, v);
     SET_LEX_STATE(EXPR_END);
     return type;
 }
@@ -6485,7 +6484,6 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 		str = STR_NEW3(tok(p), toklen(p), enc, func);
 	      flush_str:
 		set_yylval_str(str);
-		add_mark_object(p, str);
 #ifndef RIPPER
 		if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
 #endif
@@ -6510,7 +6508,6 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     heredoc_restore(p, &p->lex.strterm->u.heredoc);
     p->lex.strterm = NEW_STRTERM(func | STR_FUNC_TERM, 0, 0);
     set_yylval_str(str);
-    add_mark_object(p, str);
 #ifndef RIPPER
     if (bol) yylval.node->flags |= NODE_FL_NEWLINE;
 #endif
@@ -7279,7 +7276,7 @@ parse_qmark(struct parser_params *p, int space_seen)
 	tokadd(p, c);
     }
     tokfix(p);
-    add_mark_object(p, lit = STR_NEW3(tok(p), toklen(p), enc, 0));
+    lit = STR_NEW3(tok(p), toklen(p), enc, 0);
     set_yylval_str(lit);
     SET_LEX_STATE(EXPR_END);
     return tCHAR;
