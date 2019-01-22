@@ -6002,12 +6002,13 @@ rb_str_inspect(VALUE str)
  *     str.dump   -> new_str
  *
  *  Produces a quoted version of +str+ with all non-printing characters replaced
- *  by <code>\xnn</code> notation and all special characters escaped.
+ *  by <code>\xHH</code> notation and all special characters escaped.
  *
  *  This method can be used for round-trip: if the resulting +new_str+ is
  *  eval'ed, it will produce the original string.
  *
- *    "hello \n ''".dump  #=> "\"hello \\n ''\""
+ *    "hello \n ''".dump     #=> "\"hello \\n ''\""
+ *    "\f\x00\xff\\\"".dump  #=> "\"\\f\\x00\\xFF\\\\\\\"\""
  */
 
 VALUE
