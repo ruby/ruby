@@ -843,7 +843,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <node> tCHAR          "char literal"
 %token <node> tNTH_REF       "numbered reference"
 %token <node> tBACK_REF      "back reference"
-%token <node> tSTRING_CONTENT
+%token <node> tSTRING_CONTENT "literal content"
 %token <num>  tREGEXP_END
 
 %type <node> singleton strings string string1 xstring regexp
@@ -903,7 +903,7 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token <id> tCOLON2	RUBY_TOKEN(COLON2) "::"
 %token <id> tMETHREF	RUBY_TOKEN(METHREF) ".:"
 %token tCOLON3		":: at EXPR_BEG"
-%token <id> tOP_ASGN	/* +=, -=  etc. */
+%token <id> tOP_ASGN	"operator-assignment" /* +=, -=  etc. */
 %token tASSOC		"=>"
 %token tLPAREN		"("
 %token tLPAREN_ARG	"( arg"
@@ -923,7 +923,8 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token tQWORDS_BEG	"verbatim word list"
 %token tSYMBOLS_BEG	"symbol list"
 %token tQSYMBOLS_BEG	"verbatim symbol list"
-%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tSTRING_END tLAMBEG tLABEL_END
+%token tSTRING_END	"terminator"
+%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tLAMBEG tLABEL_END
 
 /*
  *	precedence table
