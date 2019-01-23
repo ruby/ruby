@@ -924,7 +924,8 @@ static void token_info_warn(struct parser_params *p, const char *token, token_in
 %token tSYMBOLS_BEG	"symbol list"
 %token tQSYMBOLS_BEG	"verbatim symbol list"
 %token tSTRING_END	"terminator"
-%token tSTRING_DBEG tSTRING_DEND tSTRING_DVAR tLAMBEG tLABEL_END
+%token tSTRING_DEND	"'}'"
+%token tSTRING_DBEG tSTRING_DVAR tLAMBEG tLABEL_END
 
 /*
  *	precedence table
@@ -11218,6 +11219,12 @@ rb_yytnamerr(char *yyres, const char *yystr)
 		    yyn += bquote;
 		    yyp += bquote - 1;
 		    bquote = 0;
+		    break;
+		}
+		if (yyp[1] && yyp[1] != '\'' && yyp[2] == '\'') {
+		    if (yyres) memcpy(yyres + yyn, yyp, 3);
+		    yyn += 3;
+		    yyp += 2;
 		    break;
 		}
 		goto do_not_strip_quotes;
