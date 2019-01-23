@@ -20,6 +20,7 @@
 #include "ccan/list/list.h"
 #include "id_table.h"
 #include "debug_counter.h"
+#include "vm_core.h"
 
 struct rb_id_table *rb_global_tbl;
 static ID autoload, classpath, tmp_classpath, classid;
@@ -1859,6 +1860,7 @@ struct autoload_data_i {
     rb_const_flag_t flag;
     VALUE value;
     struct autoload_state *state; /* points to on-stack struct */
+    rb_serial_t fork_gen;
 };
 
 static void
@@ -1881,8 +1883,18 @@ static const rb_data_type_t autoload_data_i_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-#define check_autoload_data(av) \
-    (struct autoload_data_i *)rb_check_typeddata((av), &autoload_data_i_type)
+static struct autoload_data_i *
+get_autoload_data(VALUE av)
+{
+    struct autoload_data_i *ele = rb_check_typeddata(av, &autoload_data_i_type);
+
+    /* do not reach across stack for ->state after forking: */
+    if (ele && ele->state && ele->fork_gen != GET_VM()->fork_gen) {
+        ele->state = 0;
+        ele->fork_gen = 0;
+    }
+    return ele;
+}
 
 RUBY_FUNC_EXPORTED void
 rb_autoload(VALUE mod, ID id, const char *file)
@@ -1982,7 +1994,7 @@ check_autoload_required(VALUE mod, ID id, const char **loadingpath)
     const char *loading;
     int safe;
 
-    if (!(load = autoload_data(mod, id)) || !(ele = check_autoload_data(load))) {
+    if (!(load = autoload_data(mod, id)) || !(ele = get_autoload_data(load))) {
 	return 0;
     }
     file = ele->feature;
@@ -2020,7 +2032,7 @@ rb_autoloading_value(VALUE mod, ID id, VALUE* value, rb_const_flag_t *flag)
     VALUE load;
     struct autoload_data_i *ele;
 
-    if (!(load = autoload_data(mod, id)) || !(ele = check_autoload_data(load))) {
+    if (!(load = autoload_data(mod, id)) || !(ele = get_autoload_data(load))) {
 	return 0;
     }
     if (ele->state && ele->state->thread == rb_thread_current()) {
@@ -2087,8 +2099,9 @@ autoload_reset(VALUE arg)
     int need_wakeups = 0;
 
     if (state->ele->state == state) {
-	need_wakeups = 1;
-	state->ele->state = 0;
+        need_wakeups = 1;
+        state->ele->state = 0;
+        state->ele->fork_gen = 0;
     }
 
     /* At the last, move a value defined in autoload to constant table */
@@ -2170,7 +2183,7 @@ rb_autoload_load(VALUE mod, ID id)
     if (src && loading && strcmp(src, loading) == 0) return Qfalse;
 
     /* set ele->state for a marker of autoloading thread */
-    if (!(ele = check_autoload_data(load))) {
+    if (!(ele = get_autoload_data(load))) {
 	return Qfalse;
     }
 
@@ -2180,6 +2193,7 @@ rb_autoload_load(VALUE mod, ID id)
     state.thread = rb_thread_current();
     if (!ele->state) {
 	ele->state = &state;
+	ele->fork_gen = GET_VM()->fork_gen;
 
 	/*
 	 * autoload_reset will wake up any threads added to this
@@ -2217,7 +2231,7 @@ rb_autoload_p(VALUE mod, ID id)
     }
     load = check_autoload_required(mod, id, 0);
     if (!load) return Qnil;
-    return (ele = check_autoload_data(load)) ? ele->feature : Qnil;
+    return (ele = get_autoload_data(load)) ? ele->feature : Qnil;
 }
 
 void
@@ -2646,7 +2660,7 @@ current_autoload_data(VALUE mod, ID id)
     struct autoload_data_i *ele;
     VALUE load = autoload_data(mod, id);
     if (!load) return 0;
-    ele = check_autoload_data(load);
+    ele = get_autoload_data(load);
     if (!ele) return 0;
     /* for autoloading thread, keep the defined value to autoloading storage */
     if (ele->state && (ele->state->thread == rb_thread_current())) {

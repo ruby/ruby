@@ -217,4 +217,23 @@ INPUT
       Marshal.dump(condvar)
     end
   end
+
+  def test_condvar_fork
+    mutex = Mutex.new
+    condvar = ConditionVariable.new
+    thrs = (1..10).map do
+      Thread.new { mutex.synchronize { condvar.wait(mutex) } }
+    end
+    thrs.each { 3.times { Thread.pass } }
+    pid = fork do
+      mutex.synchronize { condvar.broadcast }
+      exit!(0)
+    end
+    _, s = Process.waitpid2(pid)
+    assert_predicate s, :success?, 'no segfault [ruby-core:86316] [Bug #14634]'
+    until thrs.empty?
+      mutex.synchronize { condvar.broadcast }
+      thrs.delete_if { |t| t.join(0.01) }
+    end
+  end if Process.respond_to?(:fork)
 end

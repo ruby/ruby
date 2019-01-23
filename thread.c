@@ -4217,6 +4217,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     }
     rb_vm_living_threads_init(vm);
     rb_vm_living_threads_insert(vm, th);
+    vm->fork_gen++;
+
     vm->sleeper = 0;
     clear_coverage();
 }
