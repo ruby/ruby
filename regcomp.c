@@ -5254,7 +5254,7 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
       r = optimize_node_left(qn->target, &nopt, env);
       if (r) break;
 
-      if (/*qn->lower == 0 &&*/ IS_REPEAT_INFINITE(qn->upper)) {
+      if (qn->lower == 0 && IS_REPEAT_INFINITE(qn->upper)) {
         if (env->mmd.max == 0 &&
             NTYPE(qn->target) == NT_CANY && qn->greedy) {
           if (IS_MULTILINE(env->options))
