@@ -888,8 +888,8 @@ eom
     bug10957 = '[ruby-core:68477] [Bug #10957]'
     assert_ruby_status(['-c', '-e', 'p ()..0'], "", bug10957)
     assert_ruby_status(['-c', '-e', 'p ()...0'], "", bug10957)
-    assert_syntax_error('0..%w.', /unterminated string/, bug10957)
-    assert_syntax_error('0...%w.', /unterminated string/, bug10957)
+    assert_syntax_error('0..%q.', /unterminated string/, bug10957)
+    assert_syntax_error('0...%q.', /unterminated string/, bug10957)
   end
 
   def test_too_big_nth_ref
