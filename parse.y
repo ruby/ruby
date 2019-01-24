@@ -5684,6 +5684,26 @@ parser_update_heredoc_indent(struct parser_params *p, int c)
     return FALSE;
 }
 
+static void
+parser_mixed_error(struct parser_params *p, rb_encoding *enc1, rb_encoding *enc2)
+{
+    static const char mixed_msg[] = "%s mixed within %s source";
+    const char *n1 = rb_enc_name(enc1), *n2 = rb_enc_name(enc2);
+    const size_t len = sizeof(mixed_msg) - 4 + strlen(n1) + strlen(n2);
+    char *errbuf = ALLOCA_N(char, len);
+    snprintf(errbuf, len, mixed_msg, n1, n2);
+    yyerror0(errbuf);
+}
+
+static void
+parser_mixed_escape(struct parser_params *p, const char *beg, rb_encoding *enc1, rb_encoding *enc2)
+{
+    const char *pos = p->lex.pcur;
+    p->lex.pcur = beg;
+    parser_mixed_error(p, enc1, enc2);
+    p->lex.pcur = pos;
+}
+
 static int
 tokadd_string(struct parser_params *p,
 	      int func, int term, int paren, long *nest,
@@ -5691,25 +5711,12 @@ tokadd_string(struct parser_params *p,
 {
     int c;
     rb_encoding *enc = 0;
-    char *errbuf = 0;
-    static const char mixed_msg[] = "%s mixed within %s source";
+    bool erred = false;
 
-#define mixed_error(enc1, enc2) if (!errbuf) {	\
-	size_t len = sizeof(mixed_msg) - 4;	\
-	len += strlen(rb_enc_name(enc1));	\
-	len += strlen(rb_enc_name(enc2));	\
-	errbuf = ALLOCA_N(char, len);		\
-	snprintf(errbuf, len, mixed_msg,	\
-		 rb_enc_name(enc1),		\
-		 rb_enc_name(enc2));		\
-	yyerror0(errbuf);			\
-    }
-#define mixed_escape(beg, enc1, enc2) do {	\
-	const char *pos = p->lex.pcur;		\
-	p->lex.pcur = (beg);			\
-	mixed_error((enc1), (enc2));		\
-	p->lex.pcur = pos;			\
-    } while (0)
+#define mixed_error(enc1, enc2) \
+    (void)(erred || (parser_mixed_error(p, enc1, enc2), erred = true))
+#define mixed_escape(beg, enc1, enc2) \
+    (void)(erred || (parser_mixed_escape(p, beg, enc1, enc2), erred = true))
 
     while ((c = nextc(p)) != -1) {
 	if (p->heredoc_indent > 0) {
