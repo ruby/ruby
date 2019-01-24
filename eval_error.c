@@ -87,6 +87,9 @@ write_warnq(VALUE out, VALUE str, const char *ptr, long len)
         const long olen = len;
         for (; len > 0; --len, ++ptr) {
             unsigned char c = *ptr;
+            switch (c) {
+              case '\n': case '\t': continue;
+            }
             if (rb_iscntrl(c)) {
                 char buf[5];
                 const char *cc = 0;
