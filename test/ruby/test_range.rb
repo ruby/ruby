@@ -322,6 +322,11 @@ class TestRange < Test::Unit::TestCase
     assert_equal(["a", "b", "c"], a)
   end
 
+  def test_step_bug15537
+    assert_equal([10.0, 9.0, 8.0, 7.0], (10 ..).step(-1.0).take(4))
+    assert_equal([10.0, 9.0, 8.0, 7.0], (10.0 ..).step(-1).take(4))
+  end
+
   def test_percent_step
     aseq = (1..10) % 2
     assert_equal(Enumerator::ArithmeticSequence, aseq.class)

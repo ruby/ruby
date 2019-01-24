@@ -339,6 +339,20 @@ class TestNumeric < Test::Unit::TestCase
     assert_step [bignum]*4, [bignum, by: 0, to: 0], inf: true
   end
 
+  def test_step_bug15537
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, to: 1, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10.0, 1, -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, to: 1.0, by: -2]
+    assert_step [10.0, 8.0, 6.0, 4.0, 2.0], [10, 1.0, -2]
+
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, by: -1.0, to: nil], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10, nil, -1.0], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, by: -1], inf: true
+    assert_step [10.0, 9.0, 8.0, 7.0], [10.0, nil, -1], inf: true
+  end
+
   def test_num2long
     assert_raise(TypeError) { 1 & nil }
     assert_raise(TypeError) { 1 & 1.0 }
