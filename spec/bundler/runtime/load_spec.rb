@@ -58,7 +58,7 @@ RSpec.describe "Bundler.load" do
     end
 
     it "does not find a Gemfile above the testing directory" do
-      bundler_gemfile = tmp.join("../Gemfile")
+      bundler_gemfile = Pathname.new(__dir__).join("../../Gemfile")
       unless File.exist?(bundler_gemfile)
         FileUtils.touch(bundler_gemfile)
         @remove_bundler_gemfile = true
