@@ -6009,6 +6009,12 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
 # define unterminated_literal(mesg) compile_error(p,  mesg)
 #endif
 	    literal_flush(p, p->lex.pcur);
+	    if (func & STR_FUNC_QWORDS) {
+		/* no content to add, bailing out here */
+		unterminated_literal("unterminated list meets end of file");
+		p->lex.strterm = 0;
+		return tSTRING_END;
+	    }
 	    if (func & STR_FUNC_REGEXP) {
 		unterminated_literal("unterminated regexp meets end of file");
 	    }

@@ -351,6 +351,7 @@ class TestParse < Test::Unit::TestCase
 
   def test_words
     assert_equal([], %W( ))
+    assert_syntax_error('%w[abc', /unterminated list/)
   end
 
   def test_dstr
