@@ -2514,9 +2514,9 @@ int
 ruby_float_step(VALUE from, VALUE to, VALUE step, int excl, int allow_endless)
 {
     if (RB_TYPE_P(from, T_FLOAT) || RB_TYPE_P(to, T_FLOAT) || RB_TYPE_P(step, T_FLOAT)) {
-	double beg = NUM2DBL(from);
-	double end = (allow_endless && NIL_P(to)) ? HUGE_VAL : NUM2DBL(to);
 	double unit = NUM2DBL(step);
+	double beg = NUM2DBL(from);
+	double end = (allow_endless && NIL_P(to)) ? (unit < 0 ? -1 : 1)*HUGE_VAL : NUM2DBL(to);
 	double n = ruby_float_step_size(beg, end, unit, excl);
 	long i;
 
