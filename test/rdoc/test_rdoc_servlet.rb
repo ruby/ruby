@@ -232,6 +232,18 @@ class TestRDocServlet < RDoc::TestCase
     assert_match %r%<body [^>]+ class="file">%,      @res.body
   end
 
+  def test_documentation_page_page_with_nesting
+    store = RDoc::Store.new
+
+    generator = @s.generator_for store
+
+    readme = store.add_file 'nesting/README.rdoc', parser: RDoc::Parser::Simple
+
+    @s.documentation_page store, generator, 'nesting/README_rdoc.html', @req, @res
+
+    assert_equal 200, @res.status
+  end
+
   def test_documentation_source
     store, path = @s.documentation_source '/ruby/Object.html'
 
