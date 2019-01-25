@@ -77,6 +77,8 @@
 module RSS
 end
 
+require "rss/version"
+
 require 'rss/1.0'
 require 'rss/2.0'
 require 'rss/atom'
