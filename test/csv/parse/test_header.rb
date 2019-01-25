@@ -1,14 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_headers.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
+require_relative "../helper"
 
-require_relative "base"
-
-class TestCSV::Headers < TestCSV
+class TestCSVHeaders < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup
@@ -314,5 +309,27 @@ A
     row = csv[0]
     assert_equal([["A"], [nil]],
                  [row.headers, row.fields])
+  end
+
+  def test_parse_empty
+    assert_equal(CSV::Table.new([], {}),
+                 CSV.parse("", headers: true))
+  end
+
+  def test_parse_empty_line
+    assert_equal(CSV::Table.new([], {}),
+                 CSV.parse("\n", headers: true))
+  end
+
+  def test_specified_empty
+    assert_equal(CSV::Table.new([],
+                                headers: ["header1"]),
+                 CSV.parse("", headers: ["header1"]))
+  end
+
+  def test_specified_empty_line
+    assert_equal(CSV::Table.new([CSV::Row.new(["header1"], [])],
+                                headers: ["header1"]),
+                 CSV.parse("\n", headers: ["header1"]))
   end
 end

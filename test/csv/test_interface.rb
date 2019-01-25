@@ -1,15 +1,10 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_interface.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
-
-require_relative "base"
+require_relative "helper"
 require "tempfile"
 
-class TestCSV::Interface < TestCSV
+class TestCSVInterface < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup

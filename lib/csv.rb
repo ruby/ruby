@@ -397,6 +397,7 @@ class CSV
   # <b><tt>:force_quotes</tt></b>::       +false+
   # <b><tt>:skip_lines</tt></b>::         +nil+
   # <b><tt>:liberal_parsing</tt></b>::    +false+
+  # <b><tt>:quote_empty</tt></b>::        +true+
   #
   DEFAULT_OPTIONS = {
     col_sep:            ",",
@@ -412,6 +413,7 @@ class CSV
     force_quotes:       false,
     skip_lines:         nil,
     liberal_parsing:    false,
+    quote_empty:        true,
   }.freeze
 
   #
@@ -534,7 +536,7 @@ class CSV
       str.seek(0, IO::SEEK_END)
     else
       encoding = options[:encoding]
-      str      = String.new
+      str = +""
       str.force_encoding(encoding) if encoding
     end
     csv = new(str, options) # wrap
@@ -557,11 +559,11 @@ class CSV
   #
   def self.generate_line(row, **options)
     options = {row_sep: $INPUT_RECORD_SEPARATOR}.merge(options)
-    str = String.new
+    str = +""
     if options[:encoding]
       str.force_encoding(options[:encoding])
-    elsif field = row.find { |f| not f.nil? }
-      str.force_encoding(String(field).encoding)
+    elsif field = row.find {|f| f.is_a?(String)}
+      str.force_encoding(field.encoding)
     end
     (new(str, options) << row).string
   end
@@ -882,6 +884,7 @@ class CSV
   # <b><tt>:empty_value</tt></b>::        When set an object, any values of a
   #                                       blank string field is replaced by
   #                                       the set object.
+  # <b><tt>:quote_empty</tt></b>::        TODO
   #
   # See CSV::DEFAULT_OPTIONS for the default settings.
   #
@@ -907,7 +910,8 @@ class CSV
                  external_encoding: nil,
                  encoding: nil,
                  nil_value: nil,
-                 empty_value: "")
+                 empty_value: "",
+                 quote_empty: true)
     raise ArgumentError.new("Cannot parse nil as CSV") if data.nil?
 
     # create the IO object we will read from
@@ -947,6 +951,7 @@ class CSV
       column_separator: col_sep,
       row_separator: row_sep,
       quote_character: quote_char,
+      quote_empty: quote_empty,
     }
 
     @writer = nil
@@ -1178,9 +1183,8 @@ class CSV
   #
   def read
     rows = to_a
-    headers = parser.headers
-    if headers
-      Table.new(rows, headers: headers)
+    if parser.use_headers?
+      Table.new(rows, headers: parser.headers)
     else
       rows
     end
@@ -1239,7 +1243,6 @@ class CSV
         str << " " << attr_name << ":" << a.inspect
       end
     end
-    _headers = headers
     _headers = headers
     str << " headers:" << _headers.inspect if _headers
     str << ">"

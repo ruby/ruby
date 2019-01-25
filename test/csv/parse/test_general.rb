@@ -1,14 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
-
-# tc_csv_parsing.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
 
 require "timeout"
 
-require_relative "base"
+require_relative "../helper"
 
 #
 # Following tests are my interpretation of the
@@ -16,7 +11,7 @@ require_relative "base"
 # document in one place (intentionally) and that is to make the default row
 # separator <tt>$/</tt>.
 #
-class TestCSV::Parsing < TestCSV
+class TestCSVParseGeneral < Test::Unit::TestCase
   extend DifferentOFS
 
   BIG_DATA = "123456789\n" * 1024
@@ -226,16 +221,6 @@ line,5,jkl
     assert_parse_errors_out(data, field_size_limit: 5)
   end
 
-  def test_col_sep_comma
-    assert_equal([["a", "b", nil, "d"]],
-                 CSV.parse("a,b,,d", col_sep: ","))
-  end
-
-  def test_col_sep_space
-    assert_equal([["a", "b", nil, "d"]],
-                 CSV.parse("a b  d", col_sep: " "))
-  end
-
   def test_row_sep_auto_cr
     assert_equal([["a"]], CSV.parse("a\r"))
   end
@@ -248,14 +233,7 @@ line,5,jkl
     assert_equal([["a"]], CSV.parse("a\r\n"))
   end
 
-  def test_headers_empty_line
-    assert_equal(CSV::Table.new([CSV::Row.new(["header1"], [])],
-                                headers: ["header1"]),
-                 CSV.parse("\n", headers: "header1"))
-  end
-
   private
-
   def assert_parse_errors_out(*args)
     assert_raise(CSV::MalformedCSVError) do
       Timeout.timeout(0.2) do

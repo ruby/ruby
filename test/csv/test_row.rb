@@ -1,14 +1,9 @@
-#!/usr/bin/env ruby -w
-# encoding: UTF-8
+# -*- coding: utf-8 -*-
 # frozen_string_literal: false
 
-# tc_row.rb
-#
-# Created by James Edward Gray II on 2005-10-31.
+require_relative "helper"
 
-require_relative "base"
-
-class TestCSV::Row < TestCSV
+class TestCSVRow < Test::Unit::TestCase
   extend DifferentOFS
 
   def setup
@@ -105,6 +100,19 @@ class TestCSV::Row < TestCSV
   def test_has_key?
     assert_equal(true, @row.has_key?('B'))
     assert_equal(false, @row.has_key?('foo'))
+
+    # aliases
+    assert_equal(true, @row.header?('B'))
+    assert_equal(false, @row.header?('foo'))
+
+    assert_equal(true, @row.include?('B'))
+    assert_equal(false, @row.include?('foo'))
+
+    assert_equal(true, @row.member?('B'))
+    assert_equal(false, @row.member?('foo'))
+
+    assert_equal(true, @row.key?('B'))
+    assert_equal(false, @row.key?('foo'))
   end
 
   def test_set_field
@@ -261,12 +269,6 @@ class TestCSV::Row < TestCSV
   end
 
   def test_queries
-    # headers
-    assert_send([@row, :header?, "A"])
-    assert_send([@row, :header?, "C"])
-    assert_not_send([@row, :header?, "Z"])
-    assert_send([@row, :include?, "A"])  # alias
-
     # fields
     assert(@row.field?(4))
     assert(@row.field?(nil))
